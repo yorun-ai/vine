@@ -34,7 +34,7 @@ func copyStreamBody(w http.ResponseWriter, body io.ReadCloser) {
 	flusher, _ := w.(http.Flusher)
 	buffer := make([]byte, 32*1024)
 	for {
-		n, err := readStreamBody(body, buffer, DefaultSSEIdleTimeout)
+		n, err := readStreamBody(body, buffer, DefaultStreamIdleTimeout)
 		if n > 0 {
 			_, _ = w.Write(buffer[:n])
 			if flusher != nil {

@@ -3,13 +3,14 @@ package proxy
 import (
 	"context"
 	"net"
-	"net/http/httputil"
+	stdhttputil "net/http/httputil"
 	"net/url"
 	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.yorun.ai/vine/internal/core/logger"
+	"go.yorun.ai/vine/internal/util/httputil"
 )
 
 const (
@@ -27,7 +28,7 @@ type ReverseProxy struct {
 	target         *url.URL
 	dialTimeout    time.Duration
 	detectInterval time.Duration
-	reverseProxy   *httputil.ReverseProxy
+	reverseProxy   *stdhttputil.ReverseProxy
 	context        context.Context
 	cancel         context.CancelFunc
 
@@ -55,14 +56,15 @@ func NewReverseProxy(opt Option) *ReverseProxy {
 }
 
 func (p *ReverseProxy) init() {
-	p.reverseProxy = &httputil.ReverseProxy{
-		Rewrite: func(request *httputil.ProxyRequest) {
+	p.reverseProxy = &stdhttputil.ReverseProxy{
+		Rewrite: func(request *stdhttputil.ProxyRequest) {
 			requestPath := request.In.Context().Value(_RequestPathContextKey{}).(string)
 			request.SetURL(p.target)
 			request.Out.Host = p.target.Host
 			request.Out.URL.Path = requestPath
 			request.Out.URL.RawPath = ""
 		},
+		Transport: httputil.NewUpgradeIdleTransport(nil, httputil.DefaultStreamIdleTimeout),
 	}
 	p.refreshAvailable()
 	go p.watch()

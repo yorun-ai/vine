@@ -3,11 +3,14 @@ package httputil
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 )
 
 func TestIsUpgradeRequest(t *testing.T) {
@@ -85,4 +88,85 @@ func TestForwardUpgrade(t *testing.T) {
 	if gotQuery != "from=proxy" {
 		t.Fatalf("unexpected target query: %s", gotQuery)
 	}
+}
+
+func TestUpgradeIdleReadWriteCloserClosesIdleStream(t *testing.T) {
+	stream := newUpgradeStreamStub()
+	idleStream := newUpgradeIdleReadWriteCloser(stream, 10*time.Millisecond)
+	t.Cleanup(func() { _ = idleStream.Close() })
+
+	select {
+	case <-stream.closed:
+	case <-time.After(time.Second):
+		t.Fatal("idle upgrade stream was not closed")
+	}
+}
+
+func TestUpgradeIdleReadWriteCloserResetsOnTraffic(t *testing.T) {
+	stream := newUpgradeStreamStub()
+	idleStream := newUpgradeIdleReadWriteCloser(stream, 200*time.Millisecond)
+	t.Cleanup(func() { _ = idleStream.Close() })
+
+	time.Sleep(100 * time.Millisecond)
+	if _, err := idleStream.Write([]byte("ping")); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+	select {
+	case <-stream.closed:
+		t.Fatal("active upgrade stream was closed")
+	case <-time.After(150 * time.Millisecond):
+	}
+	select {
+	case <-stream.closed:
+	case <-time.After(time.Second):
+		t.Fatal("upgrade stream was not closed after becoming idle")
+	}
+}
+
+func TestUpgradeIdleTransportWrapsSwitchingProtocolStream(t *testing.T) {
+	stream := newUpgradeStreamStub()
+	transport := NewUpgradeIdleTransport(roundTripFunc(func(*http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusSwitchingProtocols,
+			Body:       stream,
+		}, nil
+	}), time.Second)
+
+	response, err := transport.RoundTrip(httptest.NewRequest(http.MethodGet, "http://demo.local/hmr", nil))
+	if err != nil {
+		t.Fatalf("RoundTrip() error = %v", err)
+	}
+	defer response.Body.Close()
+	if _, ok := response.Body.(*_UpgradeIdleReadWriteCloser); !ok {
+		t.Fatalf("response body type = %T, want idle upgrade stream", response.Body)
+	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(request *http.Request) (*http.Response, error) {
+	return f(request)
+}
+
+type upgradeStreamStub struct {
+	closed    chan struct{}
+	closeOnce sync.Once
+}
+
+func newUpgradeStreamStub() *upgradeStreamStub {
+	return &upgradeStreamStub{closed: make(chan struct{})}
+}
+
+func (s *upgradeStreamStub) Read([]byte) (int, error) {
+	<-s.closed
+	return 0, io.EOF
+}
+
+func (*upgradeStreamStub) Write(buffer []byte) (int, error) {
+	return len(buffer), nil
+}
+
+func (s *upgradeStreamStub) Close() error {
+	s.closeOnce.Do(func() { close(s.closed) })
+	return nil
 }

@@ -235,7 +235,7 @@ func TestForwardRequestContextTimeout(t *testing.T) {
 		}
 	})
 
-	t.Run("event stream keeps sse timeout", func(t *testing.T) {
+	t.Run("event stream has no total timeout", func(t *testing.T) {
 		var hasDeadline bool
 		prevDo := do
 		do = func(req *http.Request) (*http.Response, error) {
@@ -256,8 +256,8 @@ func TestForwardRequestContextTimeout(t *testing.T) {
 			t.Fatalf("ForwardRequest() error = %v", err)
 		}
 		_ = response.Body.Close()
-		if !hasDeadline {
-			t.Fatal("expected event stream request deadline")
+		if hasDeadline {
+			t.Fatal("did not expect event stream request deadline")
 		}
 	})
 

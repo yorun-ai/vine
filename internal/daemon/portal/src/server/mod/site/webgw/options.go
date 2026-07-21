@@ -8,6 +8,7 @@ import (
 
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/gwutil"
+	"go.yorun.ai/vine/internal/util/httputil"
 )
 
 const (
@@ -22,6 +23,16 @@ func requestWithWebOptionsTimeout(request *http.Request, gatewayContext context.
 	}
 
 	timeout := options.Timeout
+	if timeout <= 0 && (httputil.IsUpgradeRequest(request) || httputil.IsEventStreamRequest(request)) {
+		ctx, cancel := context.WithCancel(request.Context())
+		stopGatewayCancel := context.AfterFunc(gatewayContext, cancel)
+		next := request.Clone(ctx)
+		next.Header = request.Header.Clone()
+		return next, func() {
+			stopGatewayCancel()
+			cancel()
+		}, nil
+	}
 	if timeout <= 0 {
 		timeout = defaultWebTimeout
 	}
