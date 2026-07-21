@@ -1,5 +1,8 @@
 # Vine
 
+[![Version](https://img.shields.io/github/v/release/yorun-ai/vine?label=version&cacheSeconds=300)](https://github.com/yorun-ai/vine/releases/latest)
+[![CI](https://github.com/yorun-ai/vine/actions/workflows/ci.yml/badge.svg)](https://github.com/yorun-ai/vine/actions/workflows/ci.yml)
+
 [English](README.md) | **简体中文**
 
 Vine 是一个面向 Go 应用的运行框架。它将应用生命周期、依赖注入、配置、Rpc、Web、Event、Task 和基础设施组件统一到一套应用模型中，并通过 Hub、Link、Portal 支持从单进程开发平滑过渡到多进程部署。
@@ -38,7 +41,7 @@ flowchart LR
 
 ## 5 分钟开始
 
-前提条件：Go 1.26 或更高版本。
+前提条件：Go 1.26.5 或更高版本。
 
 ```bash
 mkdir vine-hello

@@ -91,8 +91,11 @@
 ## Validation
 
 - Run `gofmt` on changed Go files and run `git diff --check`.
-- Run targeted package tests while iterating, then run `go test ./...` for
-  repository-wide Go changes.
+- Run targeted package tests while iterating, then run `bash test/test.sh` for
+  repository-wide Go changes. Run `bash test/race.sh` for the concurrency-focused
+  race suite and `VINE_RACE_SCOPE=all bash test/race.sh` for the full release
+  race suite. These scripts set `GOWORK=off` so the enclosing workspace cannot
+  replace published module dependencies.
 - Run `go vet ./...` after changing public APIs, concurrency, reflection, or
   runtime wiring.
 - Run `pnpm build` in `vine-doc` after changing Vine public documentation there.

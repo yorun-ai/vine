@@ -9,6 +9,7 @@ go_licenses_version="v2.0.1"
 temp_dir="$(mktemp -d)"
 license_dir="${temp_dir}/licenses"
 temp_output_file="${temp_dir}/THIRD_PARTY_LICENSES.txt"
+go_licenses_bin="${temp_dir}/go-licenses"
 
 cleanup() {
   rm -rf -- "${temp_dir}"
@@ -16,7 +17,8 @@ cleanup() {
 trap cleanup EXIT
 
 cd "${repo_dir}"
-GOWORK=off go run "github.com/google/go-licenses/v2@${go_licenses_version}" save \
+GOBIN="${temp_dir}" GOWORK=off go install "github.com/google/go-licenses/v2@${go_licenses_version}"
+GOOS=linux GOARCH=amd64 GOWORK=off "${go_licenses_bin}" save \
   ./cmd/vine \
   --save_path "${license_dir}"
 
@@ -35,7 +37,7 @@ GOWORK=off go run "github.com/google/go-licenses/v2@${go_licenses_version}" save
     printf '\n\n-------------------------------------------------------------------------------\n'
     printf '%s\n' "${relative_path}"
     printf '%s\n' '-------------------------------------------------------------------------------'
-    sed -e '$a\' "${license_file}"
+    LC_ALL=C awk '1' "${license_file}"
   done < <(find "${license_dir}" -type f -print | LC_ALL=C sort)
 } > "${temp_output_file}"
 

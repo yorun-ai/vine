@@ -48,7 +48,7 @@ func formatTestRedisListPattern(prefix string) string {
 
 func TestRegistryRepoSaveAndGetAppStatus(t *testing.T) {
 	repo, redisServer := newTestRegistryRepo(t, false)
-	now := time.Now().Round(0)
+	now := time.Now().UTC().Round(0)
 	setTimeNowForTest(t, func() time.Time { return now })
 
 	status := &core.AppStatus{
