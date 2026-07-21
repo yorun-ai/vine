@@ -203,6 +203,25 @@ func TestWebGatewayDoesNotAddDefaultTimeoutToUpgrade(t *testing.T) {
 	}
 }
 
+func TestWebGatewayDoesNotAddDefaultTimeoutToEventStream(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, "http://demo.local/events", nil)
+	request.Header.Set("Accept", "text/event-stream")
+
+	forwardRequest, cancel, err := requestWithWebOptionsTimeout(request, context.Background())
+	if err != nil {
+		t.Fatalf("requestWithWebOptionsTimeout() error = %v", err)
+	}
+	defer cancel()
+
+	if deadline, ok := forwardRequest.Context().Deadline(); ok {
+		t.Fatalf("event stream deadline = %s, want none", deadline)
+	}
+	encodeWebOptionsToHeader(forwardRequest)
+	if got := forwardRequest.Header.Get(webspec.HeaderWebOptions); got != "" {
+		t.Fatalf("forwarded options = %q, want empty", got)
+	}
+}
+
 func TestWebGatewayIgnoresClientCancelAfterRequestIsAccepted(t *testing.T) {
 	ingressEndpoint := "link+inproc://vine/portal-webgw-client-cancel-test"
 	ingressinproc.Register(ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

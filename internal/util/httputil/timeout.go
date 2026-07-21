@@ -8,8 +8,7 @@ import (
 
 const (
 	DefaultHttpRequestTimeout = 30 * time.Second
-	DefaultSSERequestTimeout  = 600 * time.Second
-	DefaultSSEIdleTimeout     = 60 * time.Second
+	DefaultStreamIdleTimeout  = 60 * time.Second
 )
 
 func ContextWithForwardTimeout(r *http.Request) (context.Context, context.CancelFunc) {
@@ -18,7 +17,7 @@ func ContextWithForwardTimeout(r *http.Request) (context.Context, context.Cancel
 	}
 
 	if IsEventStreamRequest(r) {
-		return context.WithTimeout(r.Context(), DefaultSSERequestTimeout)
+		return context.WithCancel(r.Context())
 	}
 
 	return context.WithTimeout(r.Context(), DefaultHttpRequestTimeout)

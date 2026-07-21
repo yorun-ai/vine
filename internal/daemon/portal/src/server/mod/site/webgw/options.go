@@ -23,7 +23,7 @@ func requestWithWebOptionsTimeout(request *http.Request, gatewayContext context.
 	}
 
 	timeout := options.Timeout
-	if timeout <= 0 && httputil.IsUpgradeRequest(request) {
+	if timeout <= 0 && (httputil.IsUpgradeRequest(request) || httputil.IsEventStreamRequest(request)) {
 		ctx, cancel := context.WithCancel(request.Context())
 		stopGatewayCancel := context.AfterFunc(gatewayContext, cancel)
 		next := request.Clone(ctx)
