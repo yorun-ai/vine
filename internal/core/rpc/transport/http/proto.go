@@ -312,13 +312,11 @@ func logicalAppName(name string) string {
 	return name
 }
 
-// ServerMatchesApp reports whether a server identity from the wire matches an
-// internal application identity. Runtime suffixes are deployment details and
-// are ignored while the version and instance ID remain exact.
+// ServerMatchesApp reports whether a server identity from the wire identifies
+// the expected application instance. Names and versions are descriptive
+// metadata; the instance ID uniquely identifies the routed application.
 func ServerMatchesApp(server meta.App, appInfo meta.App) bool {
-	return logicalAppName(server.Name()) == logicalAppName(appInfo.Name()) &&
-		server.Version() == appInfo.Version() &&
-		server.InstanceId() == appInfo.InstanceId()
+	return server.InstanceId() == appInfo.InstanceId()
 }
 
 func EncodeClientToHeader(header http.Header, client meta.App) {

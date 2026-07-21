@@ -256,16 +256,12 @@ func TestClientAndServerHeaderRoundTrip(t *testing.T) {
 	}
 }
 
-func TestServerMatchesAppAcceptsLegacyRuntimeSuffix(t *testing.T) {
+func TestServerMatchesAppByInstanceID(t *testing.T) {
 	internalApp := meta.MustNewApp("server@vined", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
-	legacyHeaderApp := meta.MustNewApp("server@legacy.runtime", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
+	legacyHeaderApp := meta.MustNewApp("legacy.server@legacy.runtime", "2.0.0", "123e4567-e89b-12d3-a456-426614174000")
 
 	if !ServerMatchesApp(legacyHeaderApp, internalApp) {
-		t.Fatal("expected legacy runtime suffix to be ignored")
-	}
-	wrongVersion := meta.MustNewApp("server", "1.0.1", internalApp.InstanceId())
-	if ServerMatchesApp(wrongVersion, internalApp) {
-		t.Fatal("did not expect a different server version to match")
+		t.Fatal("expected the same server instance ID to match")
 	}
 	wrongInstance := meta.MustNewApp("server", internalApp.Version(), "223e4567-e89b-12d3-a456-426614174000")
 	if ServerMatchesApp(wrongInstance, internalApp) {
