@@ -1,0 +1,7 @@
+domain vine.app
+
+@desc("App's console service, called by Link")
+service ConsoleService {
+    @desc("Application health check")
+    method ping {}
+}

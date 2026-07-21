@@ -1,0 +1,18 @@
+domain vine.link
+
+@desc("Key information obtained from Link when the App starts")
+pub data BootInfo {
+    @desc("The endpoint path that should be accessed when the current application initiates Rpc")
+    rpcProxyEndpointPath: string
+
+    @desc("Whether to skip DomainSchema when app is registered")
+    skipDomainSchemas: bool
+}
+
+@desc("Link's startup information service, called by the App")
+pub service BootService {
+    @desc("Get key startup information")
+    method getInfo {
+        output BootInfo
+    }
+}

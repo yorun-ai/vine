@@ -1,0 +1,185 @@
+domain vine.hub
+
+@desc("Rpc service processing capability registration information provided by the application")
+pub data ServiceHandlerRegistration {
+    @desc("Service Skel name")
+    serviceSkelName: string
+
+    @desc("Service schema hash")
+    schemaHash: string
+
+    @desc("Service agent access address")
+    endpoint: string
+}
+
+@desc("Web processing capability registration information provided by the application")
+pub data WebHandlerRegistration {
+    @desc("Web Skel name")
+    webSkelName: string
+
+    @desc("Web schema hash")
+    schemaHash: string
+
+    @desc("Web proxy access address")
+    endpoint: string
+}
+
+@desc("Event listening capability registration information provided by the application")
+pub data EventListenerRegistration {
+    @desc("Event Skel name")
+    eventSkelName: string
+
+    @desc("Event schema hash")
+    schemaHash: string
+
+    @desc("Execution timeout, in milliseconds")
+    timeoutMs: int
+
+    @desc("Maximum concurrency")
+    concurrency: int
+
+    @desc("Whether to disallow retrying after failure")
+    noRetry: bool
+}
+
+@desc("Task execution capability registration information provided by the application")
+pub data TaskRunnerRegistration {
+    @desc("Task Skel name")
+    taskSkelName: string
+
+    @desc("Task schema hash")
+    schemaHash: string
+
+    @desc("Execution timeout, in milliseconds")
+    timeoutMs: int
+
+    @desc("Maximum concurrency")
+    concurrency: int
+
+    @desc("Whether to disallow retrying after failure")
+    noRetry: bool
+
+    @desc("Cron schedule list")
+    cronSchedulers: list<TaskRunnerCronScheduler>
+}
+
+@desc("Task execution Cron schedule")
+pub data TaskRunnerCronScheduler {
+    @desc("Trigger Skel name")
+    triggerSkelName: string
+
+    @desc("Cron expression")
+    cronExpr: string
+}
+
+@desc("Link application instance information registered with Hub")
+pub data AppRegistration {
+    @desc("Application name")
+    name: string
+
+    @desc("Application instance ID")
+    instanceId: uuid
+
+    @desc("Application version")
+    version: string
+
+    @desc("Application access address")
+    @example("http://10.1.2.3:23001")
+    endpoint: string
+
+    @desc("List of Rpc service processing capabilities provided by the application")
+    serviceHandlers: list<ServiceHandlerRegistration>
+
+    @desc("List of web processing capabilities provided by the application")
+    webHandlers: list<WebHandlerRegistration>
+
+    @desc("List of event listening capabilities provided by the application")
+    eventListeners: list<EventListenerRegistration>
+
+    @desc("List of task execution capabilities provided by the application")
+    taskRunners: list<TaskRunnerRegistration>
+
+    @desc("List of all DomainSchemas registered by the application")
+    domainSchemas: list<json>
+}
+
+@desc("Application instance status information, used for heartbeat refresh")
+pub data AppStatus {
+    @desc("Application name")
+    name: string
+
+    @desc("Application instance ID")
+    instanceId: uuid
+}
+
+@desc("Application instance status view for Dashboard display")
+data AppStatusView {
+    @desc("Application name")
+    name: string
+
+    @desc("Application instance ID")
+    instanceId: string
+
+    @desc("Application version")
+    version: string
+
+    @desc("Application access address")
+    endpoint: string
+
+    @desc("List of Rpc service processing capabilities provided by the application")
+    serviceHandlers: list<ServiceHandlerRegistration>
+
+    @desc("List of web processing capabilities provided by the application")
+    webHandlers: list<WebHandlerRegistration>
+
+    @desc("List of event listening capabilities provided by the application")
+    eventListeners: list<EventListenerRegistration>
+
+    @desc("List of task execution capabilities provided by the application")
+    taskRunners: list<TaskRunnerRegistration>
+}
+
+@desc("Hub's application registration service, called by Link")
+pub service RegistryService {
+    @desc("Register application instance")
+    method register {
+        input {
+            @desc("Application instance registration information")
+            registration: AppRegistration
+        }
+    }
+
+    @desc("Unregister an application instance")
+    method unregister {
+        input {
+            @desc("Application name")
+            name: string
+
+            @desc("Application instance ID")
+            instanceId: uuid
+        }
+    }
+
+    @desc("Application instance heartbeat")
+    method heartbeat {
+        input {
+            @desc("Application instance ID")
+            status: AppStatus
+        }
+
+        @desc("Whether the current instance is still registered in the Hub")
+        output bool
+    }
+}
+
+@desc("Hub Dashboard's application status service")
+service AppStatusService {
+    for AdminActor
+
+    noauth
+
+    @desc("List application instance statuses currently stored in Redis")
+    method list {
+        output list<AppStatusView>
+    }
+}

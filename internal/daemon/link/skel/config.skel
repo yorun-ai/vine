@@ -1,0 +1,23 @@
+domain vine.link
+
+@desc("Link's application configuration service, called by the App")
+pub service ConfigService {
+    @desc("Read Eternal configuration")
+    method getEternal {
+        input {
+            @desc("Configuration key")
+            key: string
+        }
+        @desc("Configuration JSON")
+        output string
+    }
+    @desc("Read Instant configuration")
+    method getInstant {
+        input {
+            @desc("Configuration key")
+            key: string
+        }
+        @desc("Configuration JSON")
+        output string
+    }
+}

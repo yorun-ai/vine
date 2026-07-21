@@ -1,0 +1,565 @@
+domain vine.hub
+
+@desc("Portal site certificate creation parameters")
+data PortalCertCreation {
+    @desc("Certificate name")
+    name: string
+
+    @desc("Certificate Base64")
+    publicKeyBase64: string
+
+    @desc("Private key Base64")
+    privateKeyBase64: string
+}
+
+@desc("Portal site certificate")
+data PortalCert {
+    @desc("Certificate ID")
+    id: int
+
+    @desc("Certificate name")
+    name: string
+
+    @desc("Certificate issuer")
+    issuer: string
+
+    @desc("Certificate domain name")
+    domains: list<string>
+
+    @desc("Certificate Base64")
+    publicKeyBase64: string
+
+    @desc("Whether the private key has been configured")
+    privateKeyConfigured: bool
+
+    @desc("Validity start time")
+    validFrom: timestamp
+
+    @desc("Validity end time")
+    validTo: timestamp
+}
+
+@desc("Portal site certificate update parameters")
+data PortalCertUpdate {
+    @desc("Certificate name")
+    name: string?
+
+    @desc("Certificate Base64")
+    publicKeyBase64: string?
+
+    @desc("Private key Base64")
+    privateKeyBase64: string?
+}
+
+@desc("Portal entry rule creation parameters")
+data PortalRuleCreation {
+    @desc("Rule name")
+    name: string
+
+    @desc("Matching protocol")
+    scheme: string
+
+    @desc("Match Host, empty string means no restriction")
+    host: string
+
+    @desc("Match port, 0 means no restriction")
+    port: int
+
+    @desc("Match path prefix, empty string means match all paths")
+    pathPrefix: string
+
+    @desc("Target type")
+    targetType: string
+
+    @desc("Site name")
+    siteName: string
+
+    @desc("Redirect Pattern")
+    redirectionPattern: string
+}
+
+@desc("Portal entry rules")
+data PortalRule {
+    @desc("Rule ID")
+    id: int
+
+    @desc("Rule name")
+    name: string
+
+    @desc("Matching protocol")
+    scheme: string
+
+    @desc("Match Host, empty string means no restriction")
+    host: string
+
+    @desc("Match port, 0 means no restriction")
+    port: int
+
+    @desc("Match path prefix, empty string means match all paths")
+    pathPrefix: string
+
+    @desc("Target type")
+    targetType: string
+
+    @desc("Site name")
+    siteName: string
+
+    @desc("Redirect Pattern")
+    redirectionPattern: string
+
+}
+
+@desc("Portal entry rule update parameters")
+data PortalRuleUpdate {
+    @desc("Rule name")
+    name: string?
+
+    @desc("Matching protocol")
+    scheme: string?
+
+    @desc("Match Host, empty string means no restriction")
+    host: string?
+
+    @desc("Match port, 0 means no restriction")
+    port: int?
+
+    @desc("Match path prefix, empty string means match all paths")
+    pathPrefix: string?
+
+    @desc("Target type")
+    targetType: string?
+
+    @desc("Site name")
+    siteName: string?
+
+    @desc("Redirect Pattern")
+    redirectionPattern: string?
+}
+
+@desc("Portal access entry")
+data PortalEntry {
+    @desc("Entry name")
+    name: string
+
+    @desc("Entry protocol")
+    scheme: string
+
+    @desc("Match Host, empty string means no restriction")
+    host: string
+
+    @desc("Entry port")
+    port: int
+
+    @desc("Entry rule list")
+    rules: list<PortalEntryRule>
+
+}
+
+@desc("Hub Dashboard access entry")
+data PortalDashboardAccess {
+    @desc("Entry protocol")
+    scheme: string
+
+    @desc("Match Host, empty string means no restriction")
+    host: string
+
+    @desc("Entry port")
+    port: int
+
+    @desc("Match path prefix")
+    pathPrefix: string
+
+    @desc("Whether to allow modification of Dashboard access entry")
+    canUpdate: bool
+}
+
+@desc("Portal access entry configuration update parameters")
+data PortalEntryAccessUpdate {
+    @desc("Entry protocol")
+    scheme: string
+
+    @desc("Match Host, empty string means no restriction")
+    host: string
+
+    @desc("Entry port")
+    port: int
+}
+
+@desc("Portal access entry rules")
+data PortalEntryRule {
+    @desc("Entry rules")
+    rule: PortalRule
+
+    @desc("Target site")
+    site: PortalSite?
+}
+
+@desc("Portal target site type")
+enum PortalSiteType {
+    @desc("Rpc gateway")
+    RPCGW
+
+    @desc("Web gateway")
+    WEBGW
+}
+
+@desc("Portal site CORS mode")
+enum PortalCorsMode {
+    @desc("Disable CORS")
+    DISABLED
+
+    @desc("Allow origins in the same domain as the entry rule")
+    SAME_DOMAIN
+
+    @desc("Only allow Origins in the configuration list")
+    STRICT
+}
+
+@desc("Portal site CORS configuration")
+data PortalCors {
+    @desc("CORS mode: DISABLED/SAME_DOMAIN/STRICT")
+    mode: PortalCorsMode
+
+    @desc("List of origins allowed in strict mode")
+    allowedOrigins: list<string>
+}
+
+@desc("Portal target site creation parameters")
+data PortalSiteCreation {
+    @desc("Target site name")
+    name: string
+
+    @desc("Target site type")
+    type: PortalSiteType
+
+    @desc("Actor Skel name")
+    actorSkelName: string
+
+    @desc("Actor access method")
+    actorVia: string
+
+    @desc("CORS configuration")
+    cors: PortalCors?
+
+    @desc("Web name")
+    webName: string
+}
+
+@desc("Portal target site")
+data PortalSite {
+    @desc("Target site id")
+    id: int
+
+    @desc("Target site name")
+    name: string
+
+    @desc("Target site type")
+    type: PortalSiteType
+
+    @desc("Actor Skel name")
+    actorSkelName: string
+
+    @desc("Actor access method")
+    actorVia: string
+
+    @desc("Rpc gateway service Skel name list")
+    rpcgwServices: list<string>
+
+    @desc("CORS configuration")
+    cors: PortalCors?
+
+    @desc("Web name")
+    webName: string
+
+}
+
+@desc("Portal target site update parameters")
+data PortalSiteUpdate {
+    @desc("Target site name")
+    name: string?
+
+    @desc("Target site type")
+    type: PortalSiteType?
+
+    @desc("Actor Skel name")
+    actorSkelName: string?
+
+    @desc("Actor access method")
+    actorVia: string?
+
+    @desc("CORS configuration")
+    cors: PortalCors?
+
+    @desc("Web name")
+    webName: string?
+}
+
+@desc("Portal target site Actor options")
+data PortalSiteActorOption {
+    @desc("Actor name")
+    name: string
+
+    @desc("Actor Skel name")
+    skelName: string
+
+    @desc("Actor access method list")
+    actorVias: list<string>
+}
+
+@desc("Portal target site service options")
+data PortalSiteServiceOption {
+    @desc("Service name")
+    name: string
+
+    @desc("Service Skel name")
+    skelName: string
+
+    @desc("Actor Skel name list")
+    actorSkelNames: list<string>
+}
+
+@desc("Portal target site web options")
+data PortalSiteWebOption {
+    @desc("Web name")
+    name: string
+
+    @desc("Web Skel name")
+    skelName: string
+
+    @desc("Actor Skel name list")
+    actorSkelNames: list<string>
+}
+
+@desc("Portal target site form options")
+data PortalSiteOptions {
+    @desc("Actor options")
+    actors: list<PortalSiteActorOption>
+
+    @desc("Rpc service options")
+    services: list<PortalSiteServiceOption>
+
+    @desc("Web options")
+    webs: list<PortalSiteWebOption>
+}
+
+@desc("Hub's Portal site certificate service, called by the Portal management client")
+service PortalCertService {
+    for AdminActor
+
+    noauth
+
+    @desc("List Portal site certificates")
+    method list {
+        @desc("Portal site certificate list")
+        output list<PortalCert>
+    }
+
+    @desc("Read the Portal site certificate")
+    method get {
+        input {
+            @desc("Certificate ID")
+            id: int
+        }
+        @desc("Portal site certificate")
+        output PortalCert
+    }
+
+    @desc("Create Portal site certificate")
+    method create {
+        input {
+            @desc("Portal site certificate creation parameters")
+            creation: PortalCertCreation
+        }
+        @desc("Portal site certificate")
+        output PortalCert
+    }
+
+    @desc("Modify Portal site certificate")
+    method update {
+        input {
+            @desc("Certificate ID")
+            id: int
+
+            @desc("Portal site certificate update parameters")
+            update: PortalCertUpdate
+        }
+        @desc("Portal site certificate")
+        output PortalCert
+    }
+
+    @desc("Delete Portal site certificate")
+    method remove {
+        input {
+            @desc("Certificate ID")
+            id: int
+        }
+    }
+}
+
+@desc("Hub's Portal access entry service, called by the Portal management client")
+service PortalEntryService {
+    for AdminActor
+
+    noauth
+
+    @desc("List Portal access entries")
+    method list {
+        @desc("Portal access entry list")
+        output list<PortalEntry>
+    }
+
+    @desc("Modify Portal access configuration")
+    method updateAccess {
+        input {
+            @desc("Entry protocol")
+            scheme: string
+
+            @desc("Match Host, empty string means no restriction")
+            host: string
+
+            @desc("Entry port")
+            port: int
+
+            @desc("Portal access entry configuration update parameters")
+            update: PortalEntryAccessUpdate
+        }
+        @desc("Portal access entry")
+        output PortalEntry
+    }
+}
+
+@desc("Hub's Portal entry rule service, called by the Portal management client")
+service PortalRuleService {
+    for AdminActor
+
+    noauth
+
+    @desc("List Portal entry rules")
+    method list {
+        @desc("Portal entry rule list")
+        output list<PortalRule>
+    }
+
+    @desc("Read Portal entry rules")
+    method get {
+        input {
+            @desc("Rule ID")
+            id: int
+        }
+        @desc("Portal entry rules")
+        output PortalRule
+    }
+
+    @desc("Create Portal entry rules")
+    method create {
+        input {
+            @desc("Portal entry rule creation parameters")
+            creation: PortalRuleCreation
+        }
+        @desc("Portal entry rules")
+        output PortalRule
+    }
+
+    @desc("Modify Portal entry rules")
+    method update {
+        input {
+            @desc("Rule ID")
+            id: int
+
+            @desc("Portal entry rule update parameters")
+            update: PortalRuleUpdate
+        }
+        @desc("Portal entry rules")
+        output PortalRule
+    }
+
+    @desc("Delete Portal entry rules")
+    method remove {
+        input {
+            @desc("Rule ID")
+            id: int
+        }
+    }
+
+    @desc("Get the Hub Dashboard access entry")
+    method getDashboardAccess {
+        @desc("Hub Dashboard access entry")
+        output PortalDashboardAccess
+    }
+
+    @desc("Modify Hub Dashboard access entry")
+    method updateDashboardAccess {
+        input {
+            @desc("Hub Dashboard entry protocol")
+            scheme: string
+            @desc("Hub Dashboard entry host")
+            host: string
+            @desc("Hub Dashboard entry port")
+            port: int
+            @desc("Hub Dashboard entry path prefix")
+            pathPrefix: string
+        }
+        @desc("Hub Dashboard entry rules")
+        output list<PortalRule>
+    }
+}
+
+@desc("Hub's Portal target site service, called by the Portal management client")
+service PortalSiteService {
+    for AdminActor
+
+    noauth
+
+    @desc("List Portal target sites")
+    method list {
+        @desc("Portal target site list")
+        output list<PortalSite>
+    }
+
+    @desc("List Portal target site form options")
+    method listOptions {
+        @desc("Portal target site form options")
+        output PortalSiteOptions
+    }
+
+    @desc("Read the Portal target site")
+    method get {
+        input {
+            @desc("Target site id")
+            id: int
+        }
+        @desc("Portal target site")
+        output PortalSite
+    }
+
+    @desc("Create Portal target site")
+    method create {
+        input {
+            @desc("Portal target site creation parameters")
+            creation: PortalSiteCreation
+        }
+        @desc("Portal target site")
+        output PortalSite
+    }
+
+    @desc("Modify Portal target site")
+    method update {
+        input {
+            @desc("Target site id")
+            id: int
+
+            @desc("Portal target site update parameters")
+            update: PortalSiteUpdate
+        }
+        @desc("Portal target site")
+        output PortalSite
+    }
+
+    @desc("Delete Portal target site")
+    method remove {
+        input {
+            @desc("Target site id")
+            id: int
+        }
+    }
+}

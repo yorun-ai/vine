@@ -1,0 +1,135 @@
+domain vine.hub
+
+@desc("Configuration items")
+data AppConfigItem {
+    @desc("Configuration ID")
+    id: int
+
+    @desc("Configuration key")
+    key: string
+
+    @desc("Configuration status")
+    status: string
+
+    @desc("Configuration lifecycle")
+    lifecycle: string
+
+    @desc("Configuration JSON")
+    value: string
+
+    @desc("Configuration schema")
+    schema: AppConfigSchema?
+}
+
+@desc("Configuration schema fields")
+data AppConfigSchemaField {
+    @desc("Field name")
+    name: string
+
+    @desc("Field type")
+    type: string
+
+    @desc("Field description")
+    description: string?
+
+    @desc("Enumeration options list")
+    enumItems: list<AppConfigSchemaEnumItem>
+}
+
+@desc("Configuration schema enumeration options")
+data AppConfigSchemaEnumItem {
+    @desc("Enum option name")
+    name: string
+
+    @desc("Enumeration options description")
+    description: string?
+}
+
+@desc("Configuration schema items")
+data AppConfigSchema {
+    @desc("Configuration Skel name")
+    skelName: string
+
+    @desc("Configuration name")
+    name: string
+
+    @desc("Configuration description")
+    description: string?
+
+    @desc("Configuration lifecycle")
+    lifecycle: string
+
+    @desc("Configuration field list")
+    fields: list<AppConfigSchemaField>
+}
+
+@desc("Configuration update parameters")
+data AppConfigUpdate {
+    @desc("Configuration JSON")
+    value: string?
+}
+
+@desc("Configuration creation parameters")
+data AppConfigCreation {
+    @desc("Configuration Skel name")
+    skelName: string
+
+    @desc("Configuration JSON")
+    value: string
+}
+
+@desc("Hub's application configuration service, called by Client")
+service AppConfigService {
+    for AdminActor
+
+    noauth
+
+    @desc("List configuration items")
+    method list {
+        @desc("Configuration item list")
+        output list<AppConfigItem>
+    }
+
+    @desc("Read configuration")
+    method get {
+        input {
+            @desc("Configuration ID")
+            id: int
+        }
+        @desc("Configuration items")
+        output AppConfigItem
+    }
+
+    @desc("Modify configuration")
+    method update {
+        input {
+            @desc("Configuration ID")
+            id: int
+
+            @desc("Configuration update parameters")
+            update: AppConfigUpdate
+        }
+        @desc("Configuration items")
+        output AppConfigItem
+    }
+
+    @desc("Create configuration")
+    method create {
+        input {
+            @desc("Configuration creation parameters")
+            creation: AppConfigCreation
+        }
+        @desc("Configuration items")
+        output AppConfigItem
+    }
+
+    @desc("Delete unused configuration")
+    method remove {
+        input {
+            @desc("Configuration ID")
+            id: int
+        }
+        @desc("Whether deletion succeeded")
+        output bool
+    }
+}

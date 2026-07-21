@@ -1,0 +1,45 @@
+domain vine.link
+
+@desc("The meta information carried when the App initiates a task to Link")
+pub data TaskLaunchMeta {
+    @desc("Trace ID of the current calling link")
+    traceId: string
+
+    @desc("Trace Span of the current calling link")
+    traceSpan: string
+
+    @desc("Application name that initiated the task")
+    appName: string
+
+    @desc("The application version that initiated the task")
+    appVersion: string
+
+    @desc("The application instance ID that initiated the task")
+    appInstanceId: uuid
+}
+
+@desc("Task trigger information initiated by App to Link")
+pub data TaskLaunch {
+    @desc("Task trigger meta information")
+    metadata: TaskLaunchMeta
+
+    @desc("Task Skel name")
+    taskSkelName: string
+
+    @desc("Task trigger Skel name")
+    triggerSkelName: string
+
+    @desc("Task parameters JSON")
+    argumentsJson: string
+}
+
+@desc("Link's task service, called by the App")
+pub service TaskService {
+    @desc("Start a task")
+    method launchTask {
+        input {
+            @desc("Task trigger information")
+            launch: TaskLaunch
+        }
+    }
+}

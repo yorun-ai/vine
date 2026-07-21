@@ -1,0 +1,76 @@
+domain vine.hub
+
+@desc("Seed field differences")
+data SeedFieldDiff {
+    @desc("Field name")
+    name: string
+
+    @desc("Current value")
+    currentValue: string
+
+    @desc("Seed value")
+    seedValue: string
+
+    @desc("Whether the values differ")
+    changed: bool
+}
+
+@desc("Seed entity differences")
+data SeedEntityDiff {
+    @desc("Entity type")
+    kind: string
+
+    @desc("Entity name")
+    name: string
+
+    @desc("Whether the entity currently exists")
+    exists: bool
+
+    @desc("Field differences")
+    fields: list<SeedFieldDiff>
+}
+
+@desc("Seed preview")
+data SeedPreview {
+    @desc("Entity differences")
+    items: list<SeedEntityDiff>
+}
+
+@desc("Seed entity selection")
+data SeedItemSelection {
+    @desc("Entity type")
+    kind: string
+
+    @desc("Entity name")
+    name: string
+}
+
+@desc("Hub maintenance service")
+service MaintenanceService {
+    for AdminActor
+
+    noauth
+
+    @desc("Preview Seed YAML differences")
+    method previewSeedYaml {
+        input {
+            @desc("Seed YAML content")
+            content: string
+        }
+        @desc("Seed preview")
+        output SeedPreview
+    }
+
+    @desc("Apply Seed YAML entity updates")
+    method applySeedYaml {
+        input {
+            @desc("Seed YAML content")
+            content: string
+
+            @desc("Entity to update")
+            selections: list<SeedItemSelection>
+        }
+        @desc("Updated Seed preview")
+        output SeedPreview
+    }
+}

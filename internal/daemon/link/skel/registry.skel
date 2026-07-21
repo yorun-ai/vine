@@ -1,0 +1,114 @@
+domain vine.link
+
+@desc("Rpc service processing capability registration information provided by the application")
+pub data ServiceHandlerRegistration {
+    @desc("Service Skel name")
+    serviceSkelName: string
+
+    @desc("Service schema hash")
+    schemaHash: string
+}
+
+@desc("Web processing capability registration information provided by the application")
+pub data WebHandlerRegistration {
+    @desc("Web Skel name")
+    webSkelName: string
+
+    @desc("Web schema hash")
+    schemaHash: string
+}
+
+@desc("Event listening capability registration information provided by the application")
+pub data EventListenerRegistration {
+    @desc("Event Skel name")
+    eventSkelName: string
+
+    @desc("Event schema hash")
+    schemaHash: string
+
+    @desc("Execution timeout, in milliseconds")
+    timeoutMs: int
+
+    @desc("Maximum concurrency")
+    concurrency: int
+
+    @desc("Whether to disallow retrying after failure")
+    noRetry: bool
+}
+
+@desc("Task execution capability registration information provided by the application")
+pub data TaskRunnerRegistration {
+    @desc("Task Skel name")
+    taskSkelName: string
+
+    @desc("Task schema hash")
+    schemaHash: string
+
+    @desc("Execution timeout, in milliseconds")
+    timeoutMs: int
+
+    @desc("Maximum concurrency")
+    concurrency: int
+
+    @desc("Whether to disallow retrying after failure")
+    noRetry: bool
+
+    @desc("Cron schedule list")
+    cronSchedulers: list<TaskRunnerCronScheduler>
+}
+
+@desc("Task execution Cron schedule")
+pub data TaskRunnerCronScheduler {
+    @desc("Trigger Skel name")
+    triggerSkelName: string
+
+    @desc("Cron expression")
+    cronExpr: string
+}
+
+@desc("Application information registered by App to Link")
+pub data AppRegistration {
+    @desc("Console access endpoint of the current application")
+    consoleEndpoint: string
+
+    @desc("The Rpc service access endpoint of the current application")
+    serviceEndpoint: string
+
+    @desc("Web access endpoint prefix of the current application")
+    webEndpointPrefix: string
+
+    @desc("The event processing access endpoint of the current application")
+    eventEndpoint: string
+
+    @desc("The task execution endpoint of the current application")
+    taskEndpoint: string
+
+    @desc("List of Rpc service processing capabilities provided by the current application")
+    serviceHandlers: list<ServiceHandlerRegistration>
+
+    @desc("List of web processing capabilities provided by the current application")
+    webHandlers: list<WebHandlerRegistration>
+
+    @desc("List of event listening capabilities provided by the current application")
+    eventListeners: list<EventListenerRegistration>
+
+    @desc("List of task execution capabilities provided by the current application")
+    taskRunners: list<TaskRunnerRegistration>
+
+    @desc("List of all DomainSchemas registered by the current application")
+    domainSchemas: list<json>
+}
+
+@desc("Link's application registration service, called by the App")
+pub service RegistryService {
+    @desc("Register the currently running application")
+    method register {
+        input {
+            @desc("Application instance registration information")
+            registration: AppRegistration
+        }
+    }
+
+    @desc("Log out of the currently running application and prepare to exit gracefully. This call may block until the current instance's in-progress work on the Link side is drained, or until the wait times out")
+    method unregister {}
+}

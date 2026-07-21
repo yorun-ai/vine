@@ -1,0 +1,25 @@
+domain vine.hub
+
+@desc("Hub information")
+pub data Info {
+    @desc("API service port")
+    apiPort: int
+
+    @desc("Redis service port")
+    redisPort: int
+
+    @desc("NATS service port")
+    natsPort: int
+
+    @desc("Standalone MQ service address")
+    mqEndpoint: string
+}
+
+@desc("Hub's information service, called by Link")
+pub service InfoService {
+    @desc("Read Hub information")
+    method getInfo {
+        @desc("Hub information")
+        output Info
+    }
+}

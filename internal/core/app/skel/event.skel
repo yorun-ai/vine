@@ -1,0 +1,45 @@
+domain vine.app
+
+@desc("Link triggers event processing meta-information to the App")
+data EventOnMeta {
+    @desc("Trace ID of the current calling link")
+    traceId: string
+
+    @desc("Trace Span of the current calling link")
+    traceSpan: string
+
+    @desc("The application name that sent the event")
+    appName: string
+
+    @desc("The application version that sent the event")
+    appVersion: string
+
+    @desc("The application instance ID that sent the event")
+    appInstanceId: uuid
+
+    @desc("The time the event was sent")
+    emittedAt: timestamp
+}
+
+@desc("Link triggers event processing information to the App")
+data EventOn {
+    @desc("Event meta information")
+    metadata: EventOnMeta
+
+    @desc("Event Skel name")
+    eventSkelName: string
+
+    @desc("Event JSON")
+    eventJson: string
+}
+
+@desc("App's event processing service, called by Link")
+service EventService {
+    @desc("Trigger event processing")
+    method onEvent {
+        input {
+            @desc("Event handling information")
+            on: EventOn
+        }
+    }
+}

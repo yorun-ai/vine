@@ -1,0 +1,410 @@
+domain vine.hub
+
+@desc("Application instance called by Service Debug")
+data ServiceDebugAppInstance {
+    @desc("Application name")
+    appName: string
+
+    @desc("Application instance ID")
+    appInstanceId: string
+
+    @desc("Application version")
+    appVersion: string
+
+    @desc("Application access address")
+    endpoint: string
+}
+
+@desc("Service called by Service Debug")
+data ServiceDebugServiceItem {
+    @desc("Service Skel name")
+    serviceSkelName: string
+
+    @desc("Service schema hash")
+    schemaHash: string
+}
+
+@desc("Method called by Service Debug")
+data ServiceDebugMethodItem {
+    @desc("Method name")
+    name: string
+
+    @desc("Method Skel name")
+    skelName: string
+
+    @desc("Method description")
+    description: string?
+
+    @desc("Input description")
+    inputDescription: string?
+
+    @desc("Output description")
+    outputDescription: string?
+
+    @desc("Input example")
+    example: string?
+
+    @desc("Output example")
+    outputExample: string?
+
+    @desc("Parameter list")
+    arguments: list<SkeletonField>
+
+    @desc("Return type")
+    resultType: string
+}
+
+@desc("Service Debug Actor options")
+data ServiceDebugActorItem {
+    @desc("Actor name")
+    name: string
+
+    @desc("Actor Skel name")
+    skelName: string
+
+    @desc("Actor Info Skel name")
+    infoSkelName: string
+
+    @desc("Default Actor Info JSON")
+    actorInfoJson: json
+}
+
+@desc("Service Debug default call request")
+data ServiceDebugDefaultInvokeRequest {
+    @desc("Trace ID")
+    traceId: string
+
+    @desc("Span ID")
+    spanId: string
+
+    @desc("Actor options")
+    actors: list<ServiceDebugActorItem>
+
+    @desc("Default Actor Skel name")
+    actorSkelName: string?
+
+    @desc("Default Actor Info JSON")
+    actorInfoJson: json
+
+    @desc("Default request parameters JSON")
+    paramsJson: json
+}
+
+@desc("Service Debug call request")
+data ServiceDebugInvokeRequest {
+    @desc("Application name")
+    appName: string?
+
+    @desc("Application instance ID")
+    appInstanceId: string?
+
+    @desc("Service Skel name")
+    serviceSkelName: string
+
+    @desc("Service schema hash")
+    schemaHash: string
+
+    @desc("Method Skel name")
+    methodSkelName: string
+
+    @desc("Request parameters JSON")
+    paramsJson: json
+
+    @desc("Call timeout, in seconds")
+    timeoutSeconds: int
+
+    @desc("Trace ID")
+    traceId: string?
+
+    @desc("Span ID")
+    spanId: string?
+
+    @desc("Actor Skel name")
+    actorSkelName: string?
+
+    @desc("Actor Info JSON")
+    actorInfoJson: json
+}
+
+@desc("Service Debug call response")
+data ServiceDebugInvokeResponse {
+    @desc("HTTP status code")
+    httpStatus: int
+
+    @desc("Rpc status code")
+    rpcStatus: string
+
+    @desc("Response header JSON")
+    headersJson: json
+
+    @desc("Response body JSON")
+    bodyJson: json
+}
+
+@desc("Task called by Task Debug")
+data TaskDebugTaskItem {
+    @desc("Task name")
+    name: string
+
+    @desc("Task Skel name")
+    taskSkelName: string
+
+    @desc("Task schema hash")
+    schemaHash: string
+
+    @desc("Task description")
+    description: string?
+}
+
+@desc("Trigger called by Task Debug")
+data TaskDebugTriggerItem {
+    @desc("Trigger name")
+    name: string
+
+    @desc("Trigger Skel name")
+    skelName: string
+
+    @desc("Trigger description")
+    description: string?
+
+    @desc("Input description")
+    inputDescription: string?
+
+    @desc("Input example")
+    example: string?
+
+    @desc("Parameter list")
+    arguments: list<SkeletonField>
+}
+
+@desc("Task Debug initiates a request by default")
+data TaskDebugDefaultLaunchRequest {
+    @desc("Trace ID")
+    traceId: string
+
+    @desc("Span ID")
+    spanId: string
+
+    @desc("Default task parameters JSON")
+    argumentsJson: json
+}
+
+@desc("Task Debug initiates a request")
+data TaskDebugLaunchRequest {
+    @desc("Task Skel name")
+    taskSkelName: string
+
+    @desc("Task schema hash")
+    schemaHash: string
+
+    @desc("Trigger Skel name")
+    triggerSkelName: string
+
+    @desc("Task parameters JSON")
+    argumentsJson: json
+
+    @desc("Trace ID")
+    traceId: string?
+
+    @desc("Span ID")
+    spanId: string?
+}
+
+@desc("Event called by Event Debug")
+data EventDebugEventItem {
+    @desc("Event name")
+    name: string
+
+    @desc("Event Skel name")
+    eventSkelName: string
+
+    @desc("Event schema hash")
+    schemaHash: string
+
+    @desc("Event description")
+    description: string?
+
+    @desc("Field list")
+    fields: list<SkeletonField>
+}
+
+@desc("Default Event Debug send request")
+data EventDebugDefaultEmitRequest {
+    @desc("Trace ID")
+    traceId: string
+
+    @desc("Span ID")
+    spanId: string
+
+    @desc("Default event JSON")
+    eventJson: json
+}
+
+@desc("Event Debug send request")
+data EventDebugEmitRequest {
+    @desc("Event Skel name")
+    eventSkelName: string
+
+    @desc("Event schema hash")
+    schemaHash: string
+
+    @desc("Event JSON")
+    eventJson: json
+
+    @desc("Trace ID")
+    traceId: string?
+
+    @desc("Span ID")
+    spanId: string?
+}
+
+@desc("Hub Dashboard Service debugging service")
+service ServiceDebugService {
+    for AdminActor
+
+    noauth
+
+    @desc("List application instances")
+    method listAppInstances {
+        output list<ServiceDebugAppInstance>
+    }
+
+    @desc("List the services provided by the application instance")
+    method listServices {
+        output list<ServiceDebugServiceItem>
+    }
+
+    @desc("List application instances that provide the specified service")
+    method listServiceAppInstances {
+        input {
+            @desc("Service Skel name")
+            serviceSkelName: string
+
+            @desc("Service schema hash")
+            schemaHash: string
+        }
+
+        output list<ServiceDebugAppInstance>
+    }
+
+    @desc("List Service methods")
+    method listMethods {
+        input {
+            @desc("Service Skel name")
+            serviceSkelName: string
+
+            @desc("Service schema hash")
+            schemaHash: string
+        }
+
+        output list<ServiceDebugMethodItem>
+    }
+
+    @desc("Generate default Service call request")
+    method buildDefaultInvokeRequest {
+        input {
+            @desc("Service Skel name")
+            serviceSkelName: string
+
+            @desc("Service schema hash")
+            schemaHash: string
+
+            @desc("Method Skel name")
+            methodSkelName: string
+        }
+
+        output ServiceDebugDefaultInvokeRequest
+    }
+
+    @desc("Call Service method")
+    method invokeService {
+        input {
+            @desc("Debug call request")
+            request: ServiceDebugInvokeRequest
+        }
+
+        output ServiceDebugInvokeResponse
+    }
+}
+
+@desc("Hub Dashboard Task Debugging Service")
+service TaskDebugService {
+    for AdminActor
+
+    noauth
+
+    @desc("List the tasks provided by the application instance")
+    method listTasks {
+        output list<TaskDebugTaskItem>
+    }
+
+    @desc("List Task triggers")
+    method listTriggers {
+        input {
+            @desc("Task Skel name")
+            taskSkelName: string
+
+            @desc("Task schema hash")
+            schemaHash: string
+        }
+
+        output list<TaskDebugTriggerItem>
+    }
+
+    @desc("Generate a default Task launch request")
+    method buildDefaultLaunchRequest {
+        input {
+            @desc("Task Skel name")
+            taskSkelName: string
+
+            @desc("Task schema hash")
+            schemaHash: string
+
+            @desc("Trigger Skel name")
+            triggerSkelName: string
+        }
+
+        output TaskDebugDefaultLaunchRequest
+    }
+
+    @desc("Initiate Task")
+    method launchTask {
+        input {
+            @desc("Debug launch request")
+            request: TaskDebugLaunchRequest
+        }
+    }
+}
+
+@desc("Hub Dashboard Event Debugging Service")
+service EventDebugService {
+    for AdminActor
+
+    noauth
+
+    @desc("List the events monitored by the application instance")
+    method listEvents {
+        output list<EventDebugEventItem>
+    }
+
+    @desc("Generate a default Event send request")
+    method buildDefaultEmitRequest {
+        input {
+            @desc("Event Skel name")
+            eventSkelName: string
+
+            @desc("Event schema hash")
+            schemaHash: string
+        }
+
+        output EventDebugDefaultEmitRequest
+    }
+
+    @desc("Send Event")
+    method emitEvent {
+        input {
+            @desc("Debug send request")
+            request: EventDebugEmitRequest
+        }
+    }
+}

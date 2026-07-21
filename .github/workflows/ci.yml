@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    name: Go
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Test
+        run: GOWORK=off go test ./...
+
+      - name: Test with race detector
+        run: GOWORK=off go test -race ./...
+
+      - name: Vet
+        run: GOWORK=off go vet ./...
+
+      - name: Check module files
+        shell: bash
+        run: |
+          GOWORK=off go mod tidy
+          git diff --exit-code -- go.mod go.sum
+
+      - name: Check vulnerabilities
+        run: GOWORK=off go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
+
+      - name: Check secrets
+        run: GOWORK=off go run github.com/zricethezav/gitleaks/v8@v8.30.1 git --redact --no-banner .
+
+      - name: Check third-party licenses
+        shell: bash
+        run: |
+          bash script/gen-third-party-licenses.sh
+          git diff --exit-code -- THIRD_PARTY_LICENSES.txt
+
+  dashboard:
+    name: Dashboard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: internal/daemon/hub/src/dashboard
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          version: 11.15.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.11.0
+          cache: pnpm
+          cache-dependency-path: internal/daemon/hub/src/dashboard/pnpm-lock.yaml
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Audit dependencies
+        run: pnpm audit --audit-level=low --registry=https://registry.npmjs.org/

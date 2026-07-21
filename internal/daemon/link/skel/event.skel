@@ -1,0 +1,42 @@
+domain vine.link
+
+@desc("Meta information carried when App initiates event sending to Link")
+pub data EventEmissionMeta {
+    @desc("Trace ID of the current calling link")
+    traceId: string
+
+    @desc("Trace Span of the current calling link")
+    traceSpan: string
+
+    @desc("The application name that sent the event")
+    appName: string
+
+    @desc("The application version that sent the event")
+    appVersion: string
+
+    @desc("The application instance ID that sent the event")
+    appInstanceId: uuid
+}
+
+@desc("Event dispatch information sent from App to Link")
+pub data EventEmission {
+    @desc("Event meta information")
+    metadata: EventEmissionMeta
+
+    @desc("Event Skel name")
+    eventSkelName: string
+
+    @desc("Event JSON")
+    eventJson: string
+}
+
+@desc("Link's event service, called by App")
+pub service EventService {
+    @desc("Send event")
+    method emitEvent {
+        input {
+            @desc("Event sending information")
+            emission: EventEmission
+        }
+    }
+}

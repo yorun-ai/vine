@@ -1,0 +1,605 @@
+domain vine.hub
+
+@desc("SkeletonActor")
+data SkeletonActorItem {
+    @desc("Domain")
+    domain: string
+
+    @desc("Skeleton item hash")
+    schemaHash: string
+
+    @desc("Primary skeleton item hash")
+    mainSchemaHash: string
+
+    @desc("Whether there are multiple valid versions of the skeleton item")
+    isMultiVersion: bool
+
+    @desc("Whether it is the main version of the skeleton item")
+    isMain: bool
+
+    @desc("Owning DomainSchema hash")
+    domainSchemaHash: string
+
+    @desc("Actor name")
+    name: string
+
+    @desc("Actor Skel name")
+    skelName: string
+
+    @desc("Actor description")
+    description: string?
+
+    @desc("Actor access method list")
+    actorVias: list<string>
+
+    @desc("Whether to enable authentication")
+    authEnabled: bool
+
+    @desc("Authentication credentials")
+    credential: SkeletonData?
+
+    @desc("Authentication information")
+    info: SkeletonData?
+
+    @desc("Authentication services")
+    authService: SkeletonServiceItem?
+
+    @desc("Whether to enable permissions")
+    permEnabled: bool
+
+    @desc("Permission service")
+    permService: SkeletonServiceItem?
+
+    @desc("Permission method")
+    permMethod: SkeletonMethod?
+
+    @desc("Accessible Service List")
+    services: list<SkeletonServiceItem>
+
+    @desc("Accessible web list")
+    webs: list<SkeletonWebItem>
+}
+
+@desc("Skeleton Actor Reference")
+data SkeletonActorRef {
+    @desc("Actor name")
+    name: string
+
+    @desc("Actor Skel name")
+    skelName: string
+
+    @desc("Access method")
+    via: string?
+}
+
+@desc("Skeleton field")
+data SkeletonField {
+    @desc("Field name")
+    name: string
+
+    @desc("Field type")
+    type: string
+
+    @desc("Field description")
+    description: string?
+
+    @desc("Field example")
+    example: string?
+}
+
+@desc("Skeleton method")
+data SkeletonMethod {
+    @desc("Method name")
+    name: string
+
+    @desc("Method Skel name")
+    skelName: string
+
+    @desc("Method description")
+    description: string?
+
+    @desc("Input description")
+    inputDescription: string?
+
+    @desc("Output description")
+    outputDescription: string?
+
+    @desc("Input example")
+    example: string?
+
+    @desc("Authentication mode")
+    authMode: string
+
+    @desc("Permission requirements")
+    require: SkeletonPermExpr?
+
+    @desc("Output example")
+    outputExample: string?
+
+    @desc("Parameter list")
+    arguments: list<SkeletonField>
+
+    @desc("Return type")
+    resultType: string
+}
+
+@desc("Skeleton service items")
+data SkeletonServiceItem {
+    @desc("Domain")
+    domain: string
+
+    @desc("Skeleton item hash")
+    schemaHash: string
+
+    @desc("Primary skeleton item hash")
+    mainSchemaHash: string
+
+    @desc("Whether there are multiple valid versions of the skeleton item")
+    isMultiVersion: bool
+
+    @desc("Whether it is the main version of the skeleton item")
+    isMain: bool
+
+    @desc("Owning DomainSchema hash")
+    domainSchemaHash: string
+
+    @desc("Service name")
+    name: string
+
+    @desc("Service Skel name")
+    skelName: string
+
+    @desc("Service Description")
+    description: string?
+
+    @desc("Whether the item is public")
+    pub: bool
+
+    @desc("Authentication mode")
+    authMode: string
+
+    @desc("Permission requirements")
+    require: SkeletonPermExpr?
+
+    @desc("Accessible Actor List")
+    actors: list<SkeletonActorRef>
+
+    @desc("Method list")
+    methods: list<SkeletonMethod>
+}
+
+@desc("Skeleton permission verification parameters")
+data SkeletonPermCheckArgument {
+    @desc("Parameter name")
+    name: string
+
+    @desc("Parameter JSON path")
+    jsonPath: string
+
+    @desc("Parameter type")
+    type: string
+}
+
+@desc("Skeleton permission verification call")
+data SkeletonPermCheck {
+    @desc("Resource Skel name")
+    resourceSkelName: string
+
+    @desc("Action name")
+    actionName: string
+
+    @desc("Check name")
+    checkName: string
+
+    @desc("Check Service Skel name")
+    serviceSkelName: string
+
+    @desc("Check Method Skel name")
+    methodSkelName: string
+
+    @desc("Parameter list")
+    arguments: list<SkeletonPermCheckArgument>
+}
+
+@desc("Skeleton permission expression")
+data SkeletonPermExpr {
+    @desc("Permission expression pattern")
+    mode: string
+
+    @desc("Permission code")
+    code: string?
+
+    @desc("Permission verification call")
+    check: SkeletonPermCheck?
+
+    @desc("Subexpression")
+    children: list<SkeletonPermExpr>
+}
+
+@desc("SkeletonResource Check")
+data SkeletonResourceCheck {
+    @desc("Check name")
+    name: string
+
+    @desc("Check method name")
+    methodName: string
+
+    @desc("Check method Skel name")
+    methodSkelName: string
+
+    @desc("Parameter list")
+    arguments: list<SkeletonField>
+}
+
+@desc("SkeletonResource Action")
+data SkeletonResourceAction {
+    @desc("Action name")
+    name: string
+
+    @desc("Permission code")
+    permissionCode: string
+
+    @desc("Action description")
+    description: string?
+
+    @desc("Check list")
+    checks: list<SkeletonResourceCheck>
+}
+
+@desc("Skeleton Resource item")
+data SkeletonResourceItem {
+    @desc("Domain")
+    domain: string
+
+    @desc("Skeleton item hash")
+    schemaHash: string
+
+    @desc("Primary skeleton item hash")
+    mainSchemaHash: string
+
+    @desc("Whether there are multiple valid versions of the skeleton item")
+    isMultiVersion: bool
+
+    @desc("Whether it is the main version of the skeleton item")
+    isMain: bool
+
+    @desc("Owning DomainSchema hash")
+    domainSchemaHash: string
+
+    @desc("Resource name")
+    name: string
+
+    @desc("Resource Skel name")
+    skelName: string
+
+    @desc("Resource description")
+    description: string?
+
+    @desc("Resource level Check list")
+    checks: list<SkeletonResourceCheck>
+
+    @desc("Action list")
+    actions: list<SkeletonResourceAction>
+
+    @desc("Check service")
+    checkService: SkeletonServiceItem?
+}
+
+@desc("Skeleton web page")
+data SkeletonWebItem {
+    @desc("Domain")
+    domain: string
+
+    @desc("Skeleton item hash")
+    schemaHash: string
+
+    @desc("Primary skeleton item hash")
+    mainSchemaHash: string
+
+    @desc("Whether there are multiple valid versions of the skeleton item")
+    isMultiVersion: bool
+
+    @desc("Whether it is the main version of the skeleton item")
+    isMain: bool
+
+    @desc("Owning DomainSchema hash")
+    domainSchemaHash: string
+
+    @desc("Web page name")
+    name: string
+
+    @desc("Web Skel name")
+    skelName: string
+
+    @desc("Web page description")
+    description: string?
+
+    @desc("Accessible Actor List")
+    actors: list<SkeletonActorRef>
+}
+
+@desc("Skeleton task trigger")
+data SkeletonTrigger {
+    @desc("Trigger name")
+    name: string
+
+    @desc("Trigger Skel name")
+    skelName: string
+
+    @desc("Trigger description")
+    description: string?
+
+    @desc("Input description")
+    inputDescription: string?
+
+    @desc("Input example")
+    example: string?
+
+    @desc("Parameter list")
+    arguments: list<SkeletonField>
+}
+
+@desc("Skeleton task")
+data SkeletonTask {
+    @desc("Domain")
+    domain: string
+
+    @desc("Skeleton item hash")
+    schemaHash: string
+
+    @desc("Primary skeleton item hash")
+    mainSchemaHash: string
+
+    @desc("Whether there are multiple valid versions of the skeleton item")
+    isMultiVersion: bool
+
+    @desc("Whether it is the main version of the skeleton item")
+    isMain: bool
+
+    @desc("Owning DomainSchema hash")
+    domainSchemaHash: string
+
+    @desc("Task name")
+    name: string
+
+    @desc("Task Skel name")
+    skelName: string
+
+    @desc("Task description")
+    description: string?
+
+    @desc("Trigger list")
+    triggers: list<SkeletonTrigger>
+}
+
+@desc("Skeleton event")
+data SkeletonEventItem {
+    @desc("Domain")
+    domain: string
+
+    @desc("Skeleton item hash")
+    schemaHash: string
+
+    @desc("Primary skeleton item hash")
+    mainSchemaHash: string
+
+    @desc("Whether there are multiple valid versions of the skeleton item")
+    isMultiVersion: bool
+
+    @desc("Whether it is the main version of the skeleton item")
+    isMain: bool
+
+    @desc("Owning DomainSchema hash")
+    domainSchemaHash: string
+
+    @desc("Event name")
+    name: string
+
+    @desc("Event Skel name")
+    skelName: string
+
+    @desc("Event description")
+    description: string?
+
+    @desc("Whether the item is public")
+    pub: bool
+
+    @desc("Field list")
+    fields: list<SkeletonField>
+}
+
+@desc("Skeleton enumeration items")
+data SkeletonEnumItem {
+    @desc("Enumeration item name")
+    name: string
+
+    @desc("Enumeration item description")
+    description: string?
+}
+
+@desc("SkeletonData")
+data SkeletonData {
+    @desc("Domain")
+    domain: string
+
+    @desc("Skeleton item hash")
+    schemaHash: string
+
+    @desc("Primary skeleton item hash")
+    mainSchemaHash: string
+
+    @desc("Whether there are multiple valid versions of the skeleton item")
+    isMultiVersion: bool
+
+    @desc("Whether it is the main version of the skeleton item")
+    isMain: bool
+
+    @desc("Owning DomainSchema hash")
+    domainSchemaHash: string
+
+    @desc("Data name")
+    name: string
+
+    @desc("Data Skel name")
+    skelName: string
+
+    @desc("Data description")
+    description: string?
+
+    @desc("Whether it is Enum")
+    enum: bool
+
+    @desc("Type parameter list")
+    typeParameters: list<string>
+
+    @desc("Field list")
+    fields: list<SkeletonField>
+
+    @desc("List of enumeration items")
+    enumItems: list<SkeletonEnumItem>
+}
+
+@desc("SkeletonConfig")
+data SkeletonConfigItem {
+    @desc("Domain")
+    domain: string
+
+    @desc("Skeleton item hash")
+    schemaHash: string
+
+    @desc("Primary skeleton item hash")
+    mainSchemaHash: string
+
+    @desc("Whether there are multiple valid versions of the skeleton item")
+    isMultiVersion: bool
+
+    @desc("Whether it is the main version of the skeleton item")
+    isMain: bool
+
+    @desc("Owning DomainSchema hash")
+    domainSchemaHash: string
+
+    @desc("Config name")
+    name: string
+
+    @desc("Config Skel name")
+    skelName: string
+
+    @desc("Config description")
+    description: string?
+
+    @desc("Whether the item is public")
+    pub: bool
+
+    @desc("Config lifecycle")
+    lifecycle: string
+
+    @desc("Field list")
+    fields: list<SkeletonField>
+}
+
+@desc("Domain skeleton version")
+data SkeletonDomain {
+    @desc("Domain name")
+    domain: string
+
+    @desc("DomainSchema hash")
+    schemaHash: string
+
+    @desc("Primary DomainSchema hash")
+    mainSchemaHash: string
+
+    @desc("Whether multiple active versions exist")
+    isMultiVersion: bool
+
+    @desc("Whether this is the primary version")
+    isMain: bool
+
+    @desc("Total number of skeleton items")
+    total: int
+
+    @desc("Actor list")
+    actors: list<SkeletonActorItem>
+
+    @desc("Service list")
+    services: list<SkeletonServiceItem>
+
+    @desc("Resource list")
+    resources: list<SkeletonResourceItem>
+
+    @desc("Data list")
+    data: list<SkeletonData>
+
+    @desc("Config list")
+    configs: list<SkeletonConfigItem>
+
+    @desc("Web list")
+    webs: list<SkeletonWebItem>
+
+    @desc("Task list")
+    tasks: list<SkeletonTask>
+
+    @desc("Event list")
+    events: list<SkeletonEventItem>
+}
+
+@desc("Hub's skeleton service, called by the Portal management client")
+service SkeletonService {
+    for AdminActor
+
+    noauth
+
+    @desc("List Domain skeleton")
+    method listDomains {
+        @desc("Domain skeleton list")
+        output list<SkeletonDomain>
+    }
+
+    @desc("List Actor Skeleton")
+    method listActors {
+        @desc("Actor skeleton list")
+        output list<SkeletonActorItem>
+    }
+
+    @desc("List Service skeleton")
+    method listServices {
+        @desc("Service skeleton list")
+        output list<SkeletonServiceItem>
+    }
+
+    @desc("List Resource skeleton")
+    method listResources {
+        @desc("Resource skeleton list")
+        output list<SkeletonResourceItem>
+    }
+
+    @desc("List Web Skeletons")
+    method listWebs {
+        @desc("Web skeleton list")
+        output list<SkeletonWebItem>
+    }
+
+    @desc("List Task skeleton")
+    method listTasks {
+        @desc("Task skeleton list")
+        output list<SkeletonTask>
+    }
+
+    @desc("List Event skeletons")
+    method listEvents {
+        @desc("Event skeleton list")
+        output list<SkeletonEventItem>
+    }
+
+    @desc("List Data skeleton")
+    method listData {
+        @desc("Data skeleton list, including Enum")
+        output list<SkeletonData>
+    }
+
+    @desc("List Config skeleton")
+    method listConfigs {
+        @desc("Config skeleton list")
+        output list<SkeletonConfigItem>
+    }
+}

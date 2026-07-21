@@ -1,0 +1,40 @@
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Go build / test artifacts
+bin/
+*.test
+*.out
+*.prof
+coverage/
+coverage.*
+
+# Node / frontend artifacts
+node_modules/
+dist/
+build/
+.vite/
+.turbo/
+.next/
+.nuxt/
+
+# Local package manager caches
+.cache/
+.pnpm-store/
+
+# Runtime data
+*.sqlite
+*.sqlite3
+*.db
+*.log
+tmp/
+temp/
