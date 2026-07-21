@@ -1,5 +1,8 @@
 # Vine
 
+[![Version](https://img.shields.io/github/v/release/yorun-ai/vine?label=version&cacheSeconds=300)](https://github.com/yorun-ai/vine/releases/latest)
+[![CI](https://github.com/yorun-ai/vine/actions/workflows/ci.yml/badge.svg)](https://github.com/yorun-ai/vine/actions/workflows/ci.yml)
+
 **English** | [简体中文](README.zh-CN.md)
 
 Vine is a runtime framework for Go applications. It brings application lifecycle, dependency injection, configuration, Rpc, Web, Event, Task, and infrastructure components into a unified application model. Hub, Link, and Portal let the same application move smoothly from single-process development to multi-process deployment.
