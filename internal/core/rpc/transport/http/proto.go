@@ -307,12 +307,21 @@ func encodeAppToHeader(header http.Header, appInfo meta.App, key string) {
 	header.Set(key, meta.EncodeAppToDelimited(appInfo))
 }
 
+func logicalAppName(name string) string {
+	name, _, _ = strings.Cut(name, "@")
+	return name
+}
+
 func EncodeClientToHeader(header http.Header, client meta.App) {
 	encodeAppToHeader(header, client, HeaderRpcClient)
 }
 
 func EncodeServerToHeader(header http.Header, server meta.App) {
-	encodeAppToHeader(header, server, HeaderRpcServer)
+	header.Set(HeaderRpcServer, vstring.EncodeDelimited(
+		"name", logicalAppName(server.Name()),
+		"version", server.Version(),
+		"instanceId", server.InstanceId(),
+	))
 }
 
 func DecodeActorFromHeader(header http.Header) (meta.Actor, error) {

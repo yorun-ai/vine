@@ -222,7 +222,7 @@ func TestClientAndServerHeaderRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewApp(client) error = %v", err)
 	}
-	server, err := meta.NewApp("server", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
+	server, err := meta.NewApp("server@vined", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
 	if err != nil {
 		t.Fatalf("NewApp(server) error = %v", err)
 	}
@@ -248,7 +248,7 @@ func TestClientAndServerHeaderRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("DecodeServerFromHeader() error = %v", err)
 	}
-	if gotServer.Name() != server.Name() || gotServer.Version() != server.Version() || gotServer.InstanceId() != server.InstanceId() {
+	if gotServer.Name() != "server" || gotServer.Version() != server.Version() || gotServer.InstanceId() != server.InstanceId() {
 		t.Fatalf("unexpected server app")
 	}
 }
