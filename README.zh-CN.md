@@ -43,7 +43,7 @@ flowchart LR
 
 ## 5 分钟开始
 
-前提条件：Go 1.26.5 或更高版本。
+前提条件：Go 1.26 或更高版本。
 
 ```bash
 mkdir vine-hello

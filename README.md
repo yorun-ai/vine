@@ -43,7 +43,7 @@ For local development, standalone mode starts the complete runtime in one proces
 
 ## Get Started in 5 Minutes
 
-Prerequisite: Go 1.26.5 or later.
+Prerequisite: Go 1.26 or later.
 
 ```bash
 mkdir vine-hello
