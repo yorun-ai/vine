@@ -159,6 +159,50 @@ func TestWebGatewayAddsDefaultOptionsTimeoutBeforeForward(t *testing.T) {
 	}
 }
 
+func TestWebGatewayDoesNotAddDefaultTimeoutToUpgrade(t *testing.T) {
+	gatewayContext, stopGateway := context.WithCancel(context.Background())
+	requestContext, cancelRequest := context.WithCancel(context.Background())
+	request := httptest.NewRequest(http.MethodGet, "http://demo.local/hmr", nil).WithContext(requestContext)
+	request.Header.Set("Connection", "Upgrade")
+	request.Header.Set("Upgrade", "websocket")
+
+	forwardRequest, cancel, err := requestWithWebOptionsTimeout(request, gatewayContext)
+	if err != nil {
+		t.Fatalf("requestWithWebOptionsTimeout() error = %v", err)
+	}
+	t.Cleanup(cancel)
+
+	if deadline, ok := forwardRequest.Context().Deadline(); ok {
+		t.Fatalf("upgrade deadline = %s, want none", deadline)
+	}
+	encodeWebOptionsToHeader(forwardRequest)
+	if got := forwardRequest.Header.Get(webspec.HeaderWebOptions); got != "" {
+		t.Fatalf("forwarded options = %q, want empty", got)
+	}
+
+	cancelRequest()
+	select {
+	case <-forwardRequest.Context().Done():
+	case <-time.After(time.Second):
+		t.Fatal("upgrade context was not canceled with request context")
+	}
+
+	request = httptest.NewRequest(http.MethodGet, "http://demo.local/hmr", nil)
+	request.Header.Set("Connection", "Upgrade")
+	request.Header.Set("Upgrade", "websocket")
+	forwardRequest, cancel, err = requestWithWebOptionsTimeout(request, gatewayContext)
+	if err != nil {
+		t.Fatalf("requestWithWebOptionsTimeout() error = %v", err)
+	}
+	defer cancel()
+	stopGateway()
+	select {
+	case <-forwardRequest.Context().Done():
+	case <-time.After(time.Second):
+		t.Fatal("upgrade context was not canceled with gateway context")
+	}
+}
+
 func TestWebGatewayIgnoresClientCancelAfterRequestIsAccepted(t *testing.T) {
 	ingressEndpoint := "link+inproc://vine/portal-webgw-client-cancel-test"
 	ingressinproc.Register(ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
