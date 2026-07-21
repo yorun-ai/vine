@@ -251,22 +251,6 @@ func TestClientAndServerHeaderRoundTrip(t *testing.T) {
 	if gotServer.Name() != "server" || gotServer.Version() != server.Version() || gotServer.InstanceId() != server.InstanceId() {
 		t.Fatalf("unexpected server app")
 	}
-	if !ServerMatchesApp(gotServer, server) {
-		t.Fatal("expected logical server header to match internal server app")
-	}
-}
-
-func TestServerMatchesAppByInstanceID(t *testing.T) {
-	internalApp := meta.MustNewApp("server@vined", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
-	legacyHeaderApp := meta.MustNewApp("legacy.server@legacy.runtime", "2.0.0", "123e4567-e89b-12d3-a456-426614174000")
-
-	if !ServerMatchesApp(legacyHeaderApp, internalApp) {
-		t.Fatal("expected the same server instance ID to match")
-	}
-	wrongInstance := meta.MustNewApp("server", internalApp.Version(), "223e4567-e89b-12d3-a456-426614174000")
-	if ServerMatchesApp(wrongInstance, internalApp) {
-		t.Fatal("did not expect a different server instance to match")
-	}
 }
 
 func TestDecodeClientFromHeaderExported(t *testing.T) {

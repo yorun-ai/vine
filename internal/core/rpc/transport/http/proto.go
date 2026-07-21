@@ -312,13 +312,6 @@ func logicalAppName(name string) string {
 	return name
 }
 
-// ServerMatchesApp reports whether a server identity from the wire identifies
-// the expected application instance. Names and versions are descriptive
-// metadata; the instance ID uniquely identifies the routed application.
-func ServerMatchesApp(server meta.App, appInfo meta.App) bool {
-	return server.InstanceId() == appInfo.InstanceId()
-}
-
 func EncodeClientToHeader(header http.Header, client meta.App) {
 	encodeAppToHeader(header, client, HeaderRpcClient)
 }

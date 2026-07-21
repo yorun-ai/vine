@@ -106,7 +106,7 @@ func (p *RpcProxy) writeValidatedInboundResponse(w http.ResponseWriter, req *htt
 		return
 	}
 
-	if !rpchttp.ServerMatchesApp(serverApp, localApp) {
+	if serverApp.InstanceId() != localApp.InstanceId() {
 		p.writeGatewayError(w, req, ex.New(ex.ServiceUnavailable, "inbound response server mismatch"))
 		return
 	}
