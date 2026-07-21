@@ -30,7 +30,7 @@ jobs:
           cache: true
 
       - name: Test
-        run: GOWORK=off go test ./...
+        run: bash test/test.sh
 
       - name: Vet
         run: GOWORK=off go vet ./...
@@ -52,9 +52,14 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+          cache-dependency-path: |
+            go.sum
+            test/race.sh
 
       - name: Test with race detector
-        run: GOWORK=off go test -race ./...
+        env:
+          VINE_RACE_SCOPE: ${{ github.event_name == 'push' && 'all' || 'targeted' }}
+        run: bash test/race.sh
 
   security:
     name: Security and licenses
