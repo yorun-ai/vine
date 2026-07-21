@@ -1,6 +1,8 @@
 # Vine
 
+[![License](https://img.shields.io/github/license/yorun-ai/vine)](LICENSE)
 [![Version](https://img.shields.io/github/v/release/yorun-ai/vine?label=version&cacheSeconds=300)](https://github.com/yorun-ai/vine/releases/latest)
+[![Go](https://img.shields.io/github/go-mod/go-version/yorun-ai/vine)](go.mod)
 [![CI](https://github.com/yorun-ai/vine/actions/workflows/ci.yml/badge.svg)](https://github.com/yorun-ai/vine/actions/workflows/ci.yml)
 
 **English** | [简体中文](README.zh-CN.md)
