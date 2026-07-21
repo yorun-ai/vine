@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build
+        required: true
+        type: string
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  binaries:
+    name: Release binaries
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - name: Check out release
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Validate release tag
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Release tag must use the v<major>.<minor>.<patch> format"
+            exit 1
+          fi
+
+          git tag --points-at HEAD --list "$RELEASE_TAG" | grep -Fx "$RELEASE_TAG"
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Build archives
+        run: |
+          set -euo pipefail
+
+          version="${RELEASE_TAG#v}"
+          mkdir -p dist
+
+          for target in \
+            darwin/amd64 \
+            darwin/arm64 \
+            linux/amd64 \
+            linux/arm64
+          do
+            goos="${target%/*}"
+            goarch="${target#*/}"
+            archive="vine_${version}_${goos}_${goarch}"
+            stage="dist/$archive"
+            install_root="$RUNNER_TEMP/vine_${goos}_${goarch}"
+
+            mkdir -p "$stage"
+            GOOS="$goos" GOARCH="$goarch" CGO_ENABLED=0 \
+              GOPATH="$install_root" GOMODCACHE="$RUNNER_TEMP/go-mod" \
+              go install -trimpath -ldflags "-s -w" \
+                "go.yorun.ai/vine/cmd/vine@$RELEASE_TAG"
+            installed="$(find "$install_root/bin" -type f -name vine -print -quit)"
+            test -n "$installed"
+            cp "$installed" "$stage/vine"
+            go version -m "$stage/vine" | awk -v version="$RELEASE_TAG" '
+              $1 == "mod" && $2 == "go.yorun.ai/vine" && $3 == version { found = 1 }
+              END { exit !found }
+            '
+            cp LICENSE README.md THIRD_PARTY_LICENSES.txt "$stage/"
+            tar -C dist -czf "dist/$archive.tar.gz" "$archive"
+          done
+
+      - name: Create checksums
+        run: |
+          cd dist
+          sha256sum vine_*.tar.gz > checksums.txt
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$RELEASE_TAG" \
+            dist/vine_*.tar.gz \
+            dist/checksums.txt \
+            --clobber \
+            --repo "$GITHUB_REPOSITORY"
