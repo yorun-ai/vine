@@ -307,12 +307,30 @@ func encodeAppToHeader(header http.Header, appInfo meta.App, key string) {
 	header.Set(key, meta.EncodeAppToDelimited(appInfo))
 }
 
+func logicalAppName(name string) string {
+	name, _, _ = strings.Cut(name, "@")
+	return name
+}
+
+// ServerMatchesApp reports whether a server identity from the wire matches an
+// internal application identity. Runtime suffixes are deployment details and
+// are ignored while the version and instance ID remain exact.
+func ServerMatchesApp(server meta.App, appInfo meta.App) bool {
+	return logicalAppName(server.Name()) == logicalAppName(appInfo.Name()) &&
+		server.Version() == appInfo.Version() &&
+		server.InstanceId() == appInfo.InstanceId()
+}
+
 func EncodeClientToHeader(header http.Header, client meta.App) {
 	encodeAppToHeader(header, client, HeaderRpcClient)
 }
 
 func EncodeServerToHeader(header http.Header, server meta.App) {
-	encodeAppToHeader(header, server, HeaderRpcServer)
+	header.Set(HeaderRpcServer, vstring.EncodeDelimited(
+		"name", logicalAppName(server.Name()),
+		"version", server.Version(),
+		"instanceId", server.InstanceId(),
+	))
 }
 
 func DecodeActorFromHeader(header http.Header) (meta.Actor, error) {

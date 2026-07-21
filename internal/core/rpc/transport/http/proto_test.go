@@ -222,7 +222,7 @@ func TestClientAndServerHeaderRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewApp(client) error = %v", err)
 	}
-	server, err := meta.NewApp("server", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
+	server, err := meta.NewApp("server@vined", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
 	if err != nil {
 		t.Fatalf("NewApp(server) error = %v", err)
 	}
@@ -248,8 +248,28 @@ func TestClientAndServerHeaderRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("DecodeServerFromHeader() error = %v", err)
 	}
-	if gotServer.Name() != server.Name() || gotServer.Version() != server.Version() || gotServer.InstanceId() != server.InstanceId() {
+	if gotServer.Name() != "server" || gotServer.Version() != server.Version() || gotServer.InstanceId() != server.InstanceId() {
 		t.Fatalf("unexpected server app")
+	}
+	if !ServerMatchesApp(gotServer, server) {
+		t.Fatal("expected logical server header to match internal server app")
+	}
+}
+
+func TestServerMatchesAppAcceptsLegacyRuntimeSuffix(t *testing.T) {
+	internalApp := meta.MustNewApp("server@vined", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
+	legacyHeaderApp := meta.MustNewApp("server@legacy.runtime", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
+
+	if !ServerMatchesApp(legacyHeaderApp, internalApp) {
+		t.Fatal("expected legacy runtime suffix to be ignored")
+	}
+	wrongVersion := meta.MustNewApp("server", "1.0.1", internalApp.InstanceId())
+	if ServerMatchesApp(wrongVersion, internalApp) {
+		t.Fatal("did not expect a different server version to match")
+	}
+	wrongInstance := meta.MustNewApp("server", internalApp.Version(), "223e4567-e89b-12d3-a456-426614174000")
+	if ServerMatchesApp(wrongInstance, internalApp) {
+		t.Fatal("did not expect a different server instance to match")
 	}
 }
 
