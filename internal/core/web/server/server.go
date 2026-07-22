@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/web/spec"
 	"go.yorun.ai/vine/util/vpre"
@@ -145,17 +146,50 @@ func (s *Server) ginLogger() gin.HandlerFunc {
 func (s *Server) ginRecovery() gin.HandlerFunc {
 	return func(ginCtx *gin.Context) {
 		defer func() {
-			if err := recover(); err != nil {
-				if isAbortHandlerPanic(err) {
+			if recovered := recover(); recovered != nil {
+				if err, ok := recovered.(ex.Error); ok {
+					s.recoverWebError(ginCtx, err)
+					return
+				}
+				if isAbortHandlerPanic(recovered) {
 					ginCtx.Abort()
 					return
 				}
-				logger.Error("web request panic recovered", "panic", err, "stack", string(debug.Stack()))
+				logger.Error("web request panic recovered", "panic", recovered, "stack", string(debug.Stack()))
 				ginCtx.AbortWithStatus(http.StatusInternalServerError)
 			}
 		}()
 		ginCtx.Next()
 	}
+}
+
+func (s *Server) recoverWebError(ginCtx *gin.Context, err ex.Error) {
+	if err.Type() == ex.SystemError {
+		stack := ex.PanicStack(err)
+		if stack == "" {
+			stack = string(debug.Stack())
+		}
+		logger.Error("web request system error recovered",
+			"error", err,
+			"stack", stack,
+			"method", ginCtx.Request.Method,
+			"path", ginCtx.Request.URL.Path,
+		)
+	}
+
+	if ginCtx.Writer.Written() {
+		if err.Type() == ex.ApplicationError {
+			logger.Warn("web request application error recovered after response started",
+				"error", err,
+				"method", ginCtx.Request.Method,
+				"path", ginCtx.Request.URL.Path,
+			)
+		}
+		ginCtx.Abort()
+		return
+	}
+
+	ginCtx.AbortWithStatus(ex.HTTPStatusCode(err.Code()))
 }
 
 func isAbortHandlerPanic(err any) bool {

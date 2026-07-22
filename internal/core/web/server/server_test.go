@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/web/spec"
 )
@@ -172,6 +173,86 @@ func TestServerRecoveryReturnsInternalServerErrorForPanic(t *testing.T) {
 
 	if recorder.Code != http.StatusInternalServerError {
 		t.Fatalf("unexpected status code: %d", recorder.Code)
+	}
+}
+
+func TestServerRecoveryMapsStructuredErrorToHTTPStatus(t *testing.T) {
+	testCases := []struct {
+		name   string
+		code   ex.Code
+		status int
+	}{
+		{name: "application error", code: ex.NotFound, status: http.StatusNotFound},
+		{name: "client system error", code: ex.InvalidRequest, status: http.StatusBadRequest},
+		{name: "server system error", code: ex.ServiceUnavailable, status: http.StatusServiceUnavailable},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			gin.SetMode(gin.TestMode)
+			server := newServerTestServer(&_ServerTestExecutor{
+				execute: func(route spec.RouteInfo, ginCtx *gin.Context) {
+					ex.PanicNew(testCase.code, "request failed")
+				},
+			})
+
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequest(http.MethodGet, "/demo.user.ServerTestWeb/ping", nil)
+			server.HTTPHandler().ServeHTTP(recorder, request)
+
+			if recorder.Code != testCase.status {
+				t.Fatalf("unexpected status code: got %d want %d", recorder.Code, testCase.status)
+			}
+			if recorder.Body.Len() != 0 {
+				t.Fatalf("structured recovery should not impose a response body: %q", recorder.Body.String())
+			}
+		})
+	}
+}
+
+func TestServerRecoveryPreservesStartedWebResponse(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	server := newServerTestServer(&_ServerTestExecutor{
+		execute: func(route spec.RouteInfo, ginCtx *gin.Context) {
+			ginCtx.String(http.StatusAccepted, "partial response")
+			ex.PanicNew(ex.NotFound, "missing resource")
+		},
+	})
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/demo.user.ServerTestWeb/ping", nil)
+	server.HTTPHandler().ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusAccepted {
+		t.Fatalf("unexpected status code: %d", recorder.Code)
+	}
+	if recorder.Body.String() != "partial response" {
+		t.Fatalf("unexpected response body: %q", recorder.Body.String())
+	}
+}
+
+func TestServerRecoveryLogsSystemErrorRaiseStack(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	logPath := setServerTestDefaultLogger(t)
+	server := newServerTestServer(&_ServerTestExecutor{
+		execute: func(route spec.RouteInfo, ginCtx *gin.Context) {
+			ex.PanicNew(ex.InvalidRequest, "bad request")
+		},
+	})
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/demo.user.ServerTestWeb/ping", nil)
+	server.HTTPHandler().ServeHTTP(recorder, request)
+
+	logOutput, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("read log output: %v", err)
+	}
+	if !strings.Contains(string(logOutput), "web request system error recovered") {
+		t.Fatalf("system error recovery was not logged: %s", logOutput)
+	}
+	if !strings.Contains(string(logOutput), "TestServerRecoveryLogsSystemErrorRaiseStack") {
+		t.Fatalf("system error log does not contain the raise call site: %s", logOutput)
 	}
 }
 
