@@ -109,6 +109,24 @@ func (s *Server) runTask(taskRun spec.Run) (err ex.Error) {
 			switch casted := reErr.(type) {
 			case ex.Error:
 				err = casted
+				if casted.Type() == ex.SystemError {
+					stack := ex.PanicStack(casted)
+					if stack == "" {
+						stack = string(debug.Stack())
+					}
+					fields := []any{
+						"error", casted,
+						"stack", stack,
+						"taskName", taskRun.TriggerInfo().Task().Name(),
+						"taskSkelName", taskRun.TriggerInfo().Task().SkelName(),
+						"triggerName", taskRun.TriggerInfo().Name(),
+						"triggerSkelName", taskRun.TriggerInfo().SkelName(),
+						"runnerMethod", taskRun.TriggerInfo().RunnerMethodName(),
+					}
+					fields = appendPanicAppFields(fields, "launcher", taskRun.Context().Launcher())
+					fields = appendPanicAppFields(fields, "runner", s.opt.App)
+					taskServerLogger.Error("task server recovered system error", fields...)
+				}
 			default:
 				fields := []any{
 					"panic", reErr,

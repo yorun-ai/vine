@@ -105,6 +105,22 @@ func (s *Server) onEvent(messageOn spec.On) (err ex.Error) {
 			switch casted := reErr.(type) {
 			case ex.Error:
 				err = casted
+				if casted.Type() == ex.SystemError {
+					stack := ex.PanicStack(casted)
+					if stack == "" {
+						stack = string(debug.Stack())
+					}
+					fields := []any{
+						"error", casted,
+						"stack", stack,
+						"eventName", messageOn.EventInfo().Name(),
+						"eventSkelName", messageOn.EventInfo().SkelName(),
+						"listenerMethod", messageOn.EventInfo().ListenerMethodName(),
+					}
+					fields = appendPanicAppFields(fields, "emitter", messageOn.Context().Emitter())
+					fields = appendPanicAppFields(fields, "listener", s.opt.App)
+					eventServerLogger.Error("event server recovered system error", fields...)
+				}
 			default:
 				fields := []any{
 					"panic", reErr,
