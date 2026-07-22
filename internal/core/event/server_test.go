@@ -2,15 +2,21 @@ package event
 
 import (
 	"context"
-	"github.com/google/uuid"
-	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
+
+	"github.com/google/uuid"
+	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 
 	"github.com/stretchr/testify/assert"
 	"go.yorun.ai/vine/internal/core/event/spec"
 	"go.yorun.ai/vine/internal/core/ex"
+	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/skel"
 )
@@ -112,9 +118,13 @@ func TestServerOnEventForwardsToListener(t *testing.T) {
 	testServerGroupID = 0
 	trace := meta.InitialTrace()
 
+	logPath := filepath.Join(t.TempDir(), "event-lifecycle.jsonl")
 	server := NewServer(Option{
 		ListenerImplTypes: []reflect.Type{reflect.TypeOf(&testServerListenerImpl{})},
 		Executor:          NewContainerExecutor(nil, nil),
+		Logger: logger.NewLogger(&logger.Option{
+			Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath,
+		}),
 	})
 
 	errI := server.OnEvent(context.Background(), appskeled.EventOn{
@@ -134,4 +144,20 @@ func TestServerOnEventForwardsToListener(t *testing.T) {
 	eventInfo, ok := spec.GetEventInfo("test.event.TestServerEvent")
 	assert.True(t, ok)
 	assert.Equal(t, "EmitTestServer", eventInfo.EmitterMethodName())
+
+	logBytes, readErr := os.ReadFile(logPath)
+	assert.NoError(t, readErr)
+	lines := strings.Split(strings.TrimSpace(string(logBytes)), "\n")
+	assert.Len(t, lines, 2)
+	var started map[string]any
+	assert.NoError(t, json.Unmarshal([]byte(lines[0]), &started))
+	assert.Equal(t, "event listener handle started", started["msg"])
+	assert.Equal(t, "DEBUG", started["level"])
+	assert.Contains(t, started["eventPayload"], `"groupId":9`)
+	var finished map[string]any
+	assert.NoError(t, json.Unmarshal([]byte(lines[1]), &finished))
+	assert.Equal(t, "event listener handle finished", finished["msg"])
+	assert.Equal(t, "OK", finished["code"])
+	_, repeatsPayload := finished["eventPayload"]
+	assert.False(t, repeatsPayload)
 }

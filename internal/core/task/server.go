@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"reflect"
-	"runtime/debug"
+	"time"
 
 	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 
@@ -16,10 +16,12 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-var taskServerLogger = logger.NewLogger(logger.GlobalOption())
-
 type Option struct {
-	App       meta.App
+	App meta.App
+	// LogicalAppName is the stable ApplicationSpec name used for scoped lifecycle logging.
+	LogicalAppName string
+	// Logger overrides dynamic App and task lifecycle logging when non-nil.
+	Logger    *logger.Logger
 	ImplTypes []reflect.Type
 	Executor  Executor
 }
@@ -29,12 +31,22 @@ type Server struct {
 
 	implDict *spec.ImplDict
 	executor Executor
+	log      *logger.Logger
 }
 
 func NewServer(opt Option) *Server {
 	server := &Server{
 		opt:      &opt,
 		executor: opt.Executor,
+	}
+	if opt.Logger != nil {
+		server.log = opt.Logger
+	} else {
+		appName := opt.LogicalAppName
+		if appName == "" && opt.App != nil {
+			appName = opt.App.Name()
+		}
+		server.log = logger.NewScopedLogger(logger.Scope{AppName: appName, Subsystem: logger.SubsystemTask})
 	}
 	server.init()
 	return server
@@ -51,32 +63,45 @@ func (s *Server) init() {
 }
 
 func (s *Server) RunTask(ctx context.Context, run appskeled.TaskRun) ex.Error {
+	startedAt := time.Now()
 	triggerInfo, ok := spec.GetTriggerInfo(run.TaskSkelName, run.TriggerSkelName)
 	if !ok {
-		return ex.New(ex.InvalidTask, "unknown task trigger "+run.TaskSkelName+"/"+run.TriggerSkelName)
+		err := ex.New(ex.InvalidTask, "unknown task trigger "+run.TaskSkelName+"/"+run.TriggerSkelName)
+		tasklog.RunnerRejected(s.log, startedAt, nil, nil, nil, s.opt.App, err, run.TaskSkelName, run.TriggerSkelName)
+		return err
 	}
 
 	trace, err := meta.NewTrace(run.Metadata.TraceId, run.Metadata.TraceSpan)
 	if err != nil {
-		return ex.New(ex.InvalidRequest, err.Error())
+		rejectedErr := ex.New(ex.InvalidRequest, err.Error())
+		tasklog.RunnerRejected(s.log, startedAt, nil, triggerInfo, nil, s.opt.App, rejectedErr)
+		return rejectedErr
 	}
 	client, err := meta.NewApp(run.Metadata.AppName, run.Metadata.AppVersion, run.Metadata.AppInstanceId.String())
 	if err != nil {
-		return ex.New(ex.InvalidRequest, err.Error())
+		rejectedErr := ex.New(ex.InvalidRequest, err.Error())
+		tasklog.RunnerRejected(s.log, startedAt, trace, triggerInfo, nil, s.opt.App, rejectedErr)
+		return rejectedErr
 	}
 
 	arguments := triggerInfo.NewArguments()
 	err = json.Unmarshal([]byte(run.ArgumentsJson), arguments)
 	if err != nil {
-		return ex.New(ex.InvalidTask, err.Error())
+		rejectedErr := ex.New(ex.InvalidTask, err.Error())
+		tasklog.RunnerRejected(s.log, startedAt, trace, triggerInfo, client, s.opt.App, rejectedErr)
+		return rejectedErr
 	}
 	err = triggerInfo.ValidateArguments(arguments)
 	if err != nil {
-		return ex.New(ex.InvalidTask, err.Error())
+		rejectedErr := ex.New(ex.InvalidTask, err.Error())
+		tasklog.RunnerRejected(s.log, startedAt, trace, triggerInfo, client, s.opt.App, rejectedErr)
+		return rejectedErr
 	}
 	triggerImpl, getErr := s.implDict.GetTriggerImplByInfo(triggerInfo)
 	if getErr != nil {
-		return ex.New(ex.InvalidTask, getErr.Error())
+		rejectedErr := ex.New(ex.InvalidTask, getErr.Error())
+		tasklog.RunnerRejected(s.log, startedAt, trace, triggerInfo, client, s.opt.App, rejectedErr)
+		return rejectedErr
 	}
 
 	return s.runTask(&spec.RunImpl{
@@ -94,69 +119,26 @@ func (s *Server) RunTask(ctx context.Context, run appskeled.TaskRun) ex.Error {
 	})
 }
 
-func (s *Server) runTask(taskRun spec.Run) (err ex.Error) {
+func (s *Server) runTask(taskRun spec.Run) (responseErr ex.Error) {
+	var logErr ex.Error
 	logSpan := tasklog.StartRunnerHandle(
-		taskServerLogger,
+		s.log,
 		taskRun.Context().Trace(),
 		taskRun.TriggerInfo(),
 		taskRun.Context().Launcher(),
 		s.opt.App)
 
-	defer func() { logSpan.Finish(err) }()
+	defer func() { logSpan.Finish(logErr) }()
 
 	defer func() {
 		if reErr := recover(); reErr != nil {
-			switch casted := reErr.(type) {
-			case ex.Error:
-				err = casted
-				if casted.Type() == ex.SystemError {
-					stack := ex.PanicStack(casted)
-					if stack == "" {
-						stack = string(debug.Stack())
-					}
-					fields := []any{
-						"error", casted,
-						"stack", stack,
-						"taskName", taskRun.TriggerInfo().Task().Name(),
-						"taskSkelName", taskRun.TriggerInfo().Task().SkelName(),
-						"triggerName", taskRun.TriggerInfo().Name(),
-						"triggerSkelName", taskRun.TriggerInfo().SkelName(),
-						"runnerMethod", taskRun.TriggerInfo().RunnerMethodName(),
-					}
-					fields = appendPanicAppFields(fields, "launcher", taskRun.Context().Launcher())
-					fields = appendPanicAppFields(fields, "runner", s.opt.App)
-					taskServerLogger.Error("task server recovered system error", fields...)
-				}
-			default:
-				fields := []any{
-					"panic", reErr,
-					"stack", string(debug.Stack()),
-					"taskName", taskRun.TriggerInfo().Task().Name(),
-					"taskSkelName", taskRun.TriggerInfo().Task().SkelName(),
-					"triggerName", taskRun.TriggerInfo().Name(),
-					"triggerSkelName", taskRun.TriggerInfo().SkelName(),
-					"runnerMethod", taskRun.TriggerInfo().RunnerMethodName(),
-				}
-				fields = appendPanicAppFields(fields, "launcher", taskRun.Context().Launcher())
-				fields = appendPanicAppFields(fields, "runner", s.opt.App)
-				taskServerLogger.Error("task server recovered panic", fields...)
-				err = ex.NewInternal()
-			}
+			logErr = ex.RecoverExecution(reErr)
 		}
-		if err != nil && err.Code().IsUnresponsive() {
-			err = ex.NewInternal()
+		responseErr = logErr
+		if responseErr != nil && responseErr.Code().IsUnresponsive() {
+			responseErr = ex.NewInternal()
 		}
 	}()
-	return s.executor.Execute(taskRun.Context(), taskRun.TriggerImpl(), taskRun.PositionalArguments())
-}
-
-func appendPanicAppFields(fields []any, prefix string, app meta.App) []any {
-	if app == nil {
-		return fields
-	}
-	return append(fields,
-		prefix+"Name", app.Name(),
-		prefix+"Version", app.Version(),
-		prefix+"InstanceId", app.InstanceId(),
-	)
+	logErr = s.executor.Execute(taskRun.Context(), taskRun.TriggerImpl(), taskRun.PositionalArguments())
+	return logErr
 }

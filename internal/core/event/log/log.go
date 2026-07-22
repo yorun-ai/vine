@@ -33,9 +33,18 @@ func EmitterEmitSuccess(log *logger.Logger, trace meta.Trace, event spec.EventIn
 	log.Debug("event emitter emit success", fields...)
 }
 
-func StartListenerHandle(log *logger.Logger, trace meta.Trace, event spec.EventInfo, emitter meta.App, listener meta.App) *Span {
+func StartListenerHandle(log *logger.Logger, trace meta.Trace, event spec.EventInfo, emitter meta.App, listener meta.App, payload ...any) *Span {
 	span := Start(log, "event listener handle started", "event listener handle finished", trace, event, emitter)
 	span.AddApp("listener", listener)
+	if len(payload) > 0 && log != nil && log.Enabled(logger.LevelDebug) {
+		value := logger.RenderPayload(logger.PayloadDescriptor{
+			Surface:       logger.PayloadSurfaceEvent,
+			EventSkelName: event.SkelName(),
+		}, payload[0])
+		span.fields = appendPayloadFields(span.fields, value)
+		log.Debug("event listener handle started", span.fields...)
+		span.fields = removePayloadFields(span.fields)
+	}
 	return span
 }
 
@@ -55,7 +64,9 @@ func Start(log *logger.Logger, startMsg string, finishMsg string, trace meta.Tra
 		startedAt: time.Now(),
 		fields:    fields,
 	}
-	log.Debug(startMsg, fields...)
+	if startMsg != "event listener handle started" {
+		log.Debug(startMsg, fields...)
+	}
 	return span
 }
 
@@ -71,21 +82,101 @@ func (s *Span) Finish(err ex.Error) {
 		return
 	}
 	code := ex.OK
+	panicked := false
 	if err != nil {
 		code = err.Code()
+		_, panicked = ex.PanicValue(err)
+	}
+	if code != ex.OK && err != nil {
 		s.fields = append(s.fields, "error", err.Error())
+		if panicValue, panicked := ex.PanicValue(err); panicked {
+			s.fields = append(s.fields, "panic", panicValue)
+		}
+		if stack := ex.Stack(err); stack != "" {
+			s.fields = append(s.fields, "stack", stack)
+		}
 	}
 	s.fields = append(s.fields,
 		"code", string(code),
 		"duration", time.Since(s.startedAt),
 	)
-	switch code.Type() {
-	case ex.NoError:
-		s.logger.Info(s.finishMsg, s.fields...)
-	case ex.ApplicationError:
-		s.logger.Warn(s.finishMsg, s.fields...)
+	logLifecycleOutcome(s.logger, s.finishMsg, code, panicked, s.fields...)
+}
+
+func ListenerRejected(log *logger.Logger, startedAt time.Time, trace meta.Trace, event spec.EventInfo, emitter meta.App, listener meta.App, err ex.Error, unresolvedEventSkelNames ...string) {
+	if log == nil {
+		return
+	}
+	fields := make([]any, 0, 20)
+	fields = appendTraceFields(fields, trace)
+	fields = appendEventFields(fields, event)
+	if event == nil && len(unresolvedEventSkelNames) > 0 && unresolvedEventSkelNames[0] != "" {
+		fields = append(fields, "eventSkelName", unresolvedEventSkelNames[0])
+	}
+	fields = appendAppFields(fields, "emitter", emitter)
+	fields = appendAppFields(fields, "listener", listener)
+	fields = appendErrorFields(fields, err)
+	fields = append(fields, "duration", time.Since(startedAt))
+	logLifecycleOutcome(log, "event listener handle rejected", err.Code(), isPanic(err), fields...)
+}
+
+func appendPayloadFields(fields []any, payload logger.PayloadValue) []any {
+	if payload.JSON != "" {
+		fields = append(fields, "eventPayload", payload.JSON)
+	}
+	if payload.Redacted {
+		fields = append(fields, "eventPayloadRedacted", true)
+	}
+	if payload.OmittedReason != "" && payload.OmittedReason != "policy_off" {
+		fields = append(fields, "eventPayloadOmittedReason", payload.OmittedReason)
+	}
+	return fields
+}
+
+func removePayloadFields(fields []any) []any {
+	result := fields[:0]
+	for index := 0; index+1 < len(fields); index += 2 {
+		key, _ := fields[index].(string)
+		if key == "eventPayload" || key == "eventPayloadRedacted" || key == "eventPayloadOmittedReason" {
+			continue
+		}
+		result = append(result, fields[index], fields[index+1])
+	}
+	return result
+}
+
+func appendErrorFields(fields []any, err ex.Error) []any {
+	code := ex.OK
+	if err != nil {
+		code = err.Code()
+	}
+	fields = append(fields, "code", string(code))
+	if code == ex.OK || err == nil {
+		return fields
+	}
+	fields = append(fields, "error", err.Error())
+	if panicValue, panicked := ex.PanicValue(err); panicked {
+		fields = append(fields, "panic", panicValue)
+	}
+	if stack := ex.Stack(err); stack != "" {
+		fields = append(fields, "stack", stack)
+	}
+	return fields
+}
+
+func isPanic(err ex.Error) bool {
+	_, panicked := ex.PanicValue(err)
+	return panicked
+}
+
+func logLifecycleOutcome(log *logger.Logger, msg string, code ex.Code, panicked bool, fields ...any) {
+	switch {
+	case panicked || code.Type() == ex.SystemError:
+		log.Error(msg, fields...)
+	case code.Type() == ex.ApplicationError:
+		log.Warn(msg, fields...)
 	default:
-		s.logger.Error(s.finishMsg, s.fields...)
+		log.Debug(msg, fields...)
 	}
 }
 
@@ -111,9 +202,9 @@ func appendEventFields(fields []any, event spec.EventInfo) []any {
 
 	return append(fields,
 		"eventName", event.Name(),
-		"eventSkel", event.SkelName(),
+		"eventSkelName", event.SkelName(),
 		"eventEmitterMethod", event.EmitterMethodName(),
-		"eventListenerMethod", event.ListenerMethodName(),
+		"listenerMethod", event.ListenerMethodName(),
 	)
 }
 

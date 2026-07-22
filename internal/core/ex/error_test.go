@@ -151,8 +151,9 @@ func TestPanicNewFuncIfNotAppliesOptions(t *testing.T) {
 	}, WithDetail("disk offline"))
 }
 
-func TestPanicIfErrorCapturesSystemErrorStackWithoutMutatingOriginal(t *testing.T) {
+func TestPanicIfErrorClonesWithoutReplacingExistingStack(t *testing.T) {
 	original := New(InvalidRequest, "bad request")
+	originalStack := Stack(original)
 	recovered := recoverValue(func() { PanicIfError(original) })
 	err, ok := recovered.(Error)
 	if !ok {
@@ -161,37 +162,39 @@ func TestPanicIfErrorCapturesSystemErrorStackWithoutMutatingOriginal(t *testing.
 	if err == original {
 		t.Fatal("expected raised error to be cloned")
 	}
-	if stack := PanicStack(original); stack != "" {
-		t.Fatalf("original error unexpectedly has panic stack: %s", stack)
+	if Stack(err) != originalStack {
+		t.Fatalf("raise replaced the existing error stack\nraised=%s\noriginal=%s", Stack(err), originalStack)
 	}
-	stack := PanicStack(err)
-	if !strings.Contains(stack, "TestPanicIfErrorCapturesSystemErrorStackWithoutMutatingOriginal") {
-		t.Fatalf("panic stack does not contain raise call site: %s", stack)
+	if _, panicked := PanicValue(original); panicked {
+		t.Fatal("original error was mutated with panic diagnostics")
 	}
-	if strings.Contains(stack, "internal/core/ex.Panic") {
-		t.Fatalf("panic stack contains helper frame: %s", stack)
+	if panicValue, panicked := PanicValue(err); !panicked || !strings.Contains(panicValue, "bad request") {
+		t.Fatalf("unexpected panic diagnostic: value=%q panicked=%t", panicValue, panicked)
 	}
 }
 
-func TestPanicNewDoesNotCaptureApplicationErrorStack(t *testing.T) {
+func TestPanicNewKeepsApplicationErrorStackAndPanicValue(t *testing.T) {
 	recovered := recoverValue(func() { PanicNew(NotFound, "missing user") })
 	err, ok := recovered.(Error)
 	if !ok {
 		t.Fatalf("unexpected panic value: %#v", recovered)
 	}
-	if stack := PanicStack(err); stack != "" {
-		t.Fatalf("application error unexpectedly has panic stack: %s", stack)
+	if stack := Stack(err); !strings.Contains(stack, "TestPanicNewKeepsApplicationErrorStackAndPanicValue") {
+		t.Fatalf("unexpected application error stack: %s", stack)
+	}
+	if panicValue, panicked := PanicValue(err); !panicked || !strings.Contains(panicValue, "missing user") {
+		t.Fatalf("unexpected panic diagnostic: value=%q panicked=%t", panicValue, panicked)
 	}
 }
 
-func TestRaisedSystemErrorDoesNotSerializePanicStack(t *testing.T) {
+func TestRaisedErrorDoesNotSerializeLocalDiagnostics(t *testing.T) {
 	recovered := recoverValue(func() { PanicNew(InvalidRequest, "bad request") })
 	payload, err := json.Marshal(recovered)
 	if err != nil {
 		t.Fatalf("Marshal() error = %v", err)
 	}
-	if strings.Contains(string(payload), "stack") || strings.Contains(string(payload), "error_test.go") {
-		t.Fatalf("serialized error leaks panic stack: %s", payload)
+	if strings.Contains(string(payload), "stack") || strings.Contains(string(payload), "panic") || strings.Contains(string(payload), "error_test.go") {
+		t.Fatalf("serialized error leaks local diagnostics: %s", payload)
 	}
 }
 
@@ -199,8 +202,11 @@ func TestRecoverApplicationReturnsApplicationError(t *testing.T) {
 	want := New(NotFound, "missing user")
 	got := RecoverApplication(want)
 
-	if got != want {
-		t.Fatalf("unexpected recovered error: got %#v want %#v", got, want)
+	if got == want || got.Code() != want.Code() || got.Message() != want.Message() {
+		t.Fatalf("unexpected recovered error: got %#v want equivalent clone of %#v", got, want)
+	}
+	if _, panicked := PanicValue(got); !panicked {
+		t.Fatal("recovered application error is missing panic diagnostics")
 	}
 }
 
@@ -208,8 +214,11 @@ func TestRecoverReturnsSystemError(t *testing.T) {
 	want := New(Internal, "boom")
 	got := Recover(want)
 
-	if got != want {
-		t.Fatalf("unexpected recovered error: got %#v want %#v", got, want)
+	if got == want || got.Code() != want.Code() || got.Message() != want.Message() {
+		t.Fatalf("unexpected recovered error: got %#v want equivalent clone of %#v", got, want)
+	}
+	if _, panicked := PanicValue(got); !panicked {
+		t.Fatal("recovered system error is missing panic diagnostics")
 	}
 }
 
@@ -237,6 +246,69 @@ func TestRecoverApplicationRepanicsNonExPanic(t *testing.T) {
 	}()
 
 	_ = RecoverApplication(panicValue)
+}
+
+func TestNewCapturesLocalStackWithoutSerializingIt(t *testing.T) {
+	err := New(OperationFailed, "boom")
+	stack := Stack(err)
+	if !strings.Contains(stack, "TestNewCapturesLocalStackWithoutSerializingIt") {
+		t.Fatalf("unexpected stack: %s", stack)
+	}
+
+	payload, marshalErr := json.Marshal(err)
+	if marshalErr != nil {
+		t.Fatalf("json.Marshal() error = %v", marshalErr)
+	}
+	if strings.Contains(string(payload), "stack") || strings.Contains(string(payload), "TestNewCaptures") {
+		t.Fatalf("local stack leaked into wire payload: %s", payload)
+	}
+
+	decoded, decodeErr := DecodeError(payload, json.Unmarshal)
+	if decodeErr != nil {
+		t.Fatalf("DecodeError() error = %v", decodeErr)
+	}
+	if Stack(decoded) != "" {
+		t.Fatalf("remote decoded error should not have a local stack: %s", Stack(decoded))
+	}
+}
+
+func TestWithCausePreservesCauseStack(t *testing.T) {
+	cause := New(OperationFailed, "source")
+	wrapper := New(Internal, "wrapper", WithCause(cause))
+	if Stack(wrapper) != Stack(cause) {
+		t.Fatalf("wrapper should preserve the source stack\nwrapper=%s\ncause=%s", Stack(wrapper), Stack(cause))
+	}
+}
+
+func TestRecoverExecutionCapturesRawPanicStackAndSafeValue(t *testing.T) {
+	var recovered Error
+	func() {
+		defer func() {
+			recovered = RecoverExecution(recover())
+		}()
+		panic(struct{ Secret string }{Secret: "hidden"})
+	}()
+
+	if recovered.Code() != Internal {
+		t.Fatalf("unexpected recovered code: %s", recovered.Code())
+	}
+	panicValue, panicked := PanicValue(recovered)
+	if !panicked || panicValue != "<struct { Secret string }>" {
+		t.Fatalf("unexpected panic value: value=%q panicked=%t", panicValue, panicked)
+	}
+	if stack := Stack(recovered); !strings.Contains(stack, "TestRecoverExecutionCapturesRawPanicStackAndSafeValue") {
+		t.Fatalf("unexpected panic stack: %s", stack)
+	}
+}
+
+func TestRecoverExecutionNormalizesPanickedOKError(t *testing.T) {
+	recovered := RecoverExecution(NewOK())
+	if recovered.Code() != Internal {
+		t.Fatalf("unexpected recovered code: %s", recovered.Code())
+	}
+	if _, panicked := PanicValue(recovered); !panicked {
+		t.Fatal("normalized panic is missing diagnostics")
+	}
 }
 
 func recoverValue(fn func()) (recovered any) {

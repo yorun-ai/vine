@@ -10,14 +10,17 @@ import (
 	"time"
 
 	"github.com/fxamacker/cbor/v2"
+	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 	"go.yorun.ai/vine/util/vcode"
 	"go.yorun.ai/vine/util/vpre"
 )
 
 type _RequestDecoder struct {
-	httpRequest *http.Request
-	rpcRequest  *spec.RequestImpl
+	httpRequest     *http.Request
+	rpcRequest      *spec.RequestImpl
+	serviceSkelName string
+	methodSkelName  string
 }
 
 type _RequestPayloadJson struct {
@@ -28,14 +31,27 @@ type _RequestPayloadCbor struct {
 	Params cbor.RawMessage `json:"params"`
 }
 
+type RejectionDiagnostic struct {
+	Trace           meta.Trace
+	Client          meta.App
+	Method          spec.MethodInfo
+	ServiceSkelName string
+	MethodSkelName  string
+}
+
 func DecodeRequest(httpRequest *http.Request) (spec.Request, error) {
+	request, _, err := DecodeRequestWithDiagnostic(httpRequest)
+	return request, err
+}
+
+func DecodeRequestWithDiagnostic(httpRequest *http.Request) (spec.Request, *RejectionDiagnostic, error) {
 	decoder := &_RequestDecoder{
 		httpRequest: httpRequest,
 	}
 	return decoder.decode()
 }
 
-func (d *_RequestDecoder) decode() (spec.Request, error) {
+func (d *_RequestDecoder) decode() (spec.Request, *RejectionDiagnostic, error) {
 	d.rpcRequest = &spec.RequestImpl{
 		ContextValue: d.httpRequest.Context(),
 	}
@@ -54,11 +70,19 @@ func (d *_RequestDecoder) decode() (spec.Request, error) {
 	}
 	for _, decode := range decodes {
 		if err = decode(); err != nil {
-			return nil, err
+			diagnostic := new(RejectionDiagnostic{
+				Trace:           d.rpcRequest.TraceValue,
+				Client:          d.rpcRequest.ClientValue,
+				Method:          d.rpcRequest.MethodInfoValue,
+				ServiceSkelName: d.serviceSkelName,
+				MethodSkelName:  d.methodSkelName,
+			})
+			d.rpcRequest.Cancel()
+			return nil, diagnostic, err
 		}
 	}
 
-	return d.rpcRequest, nil
+	return d.rpcRequest, nil, nil
 }
 
 func (d *_RequestDecoder) checkHttpMethod() error {
@@ -109,6 +133,8 @@ func (d *_RequestDecoder) decodeMethod() error {
 	if err != nil {
 		return err
 	}
+	d.serviceSkelName = serviceSkelName
+	d.methodSkelName = methodSkelName
 	methodInfo, ok := spec.GetMethodInfo(serviceSkelName, methodSkelName)
 	if ok {
 		d.rpcRequest.MethodInfoValue = methodInfo
@@ -176,10 +202,21 @@ func (d *_RequestDecoder) decodeArgumentsBytes(bodyBytes []byte, arguments any) 
 	return nil
 }
 
-func encodeRequest(endpoint string, rpcRequest spec.Request) (*http.Request, error) {
+func encodeRequest(endpoint string, rpcRequest spec.Request) (request *http.Request, err error) {
+	defer func() {
+		if recover() != nil {
+			request = nil
+			err = fmt.Errorf("request cannot be encoded")
+		}
+	}()
+
 	ctx := rpcRequest.Context()
 	url := endpoint + rpcRequest.MethodInfo().FullURLPath()
-	bodyBytes := bytes.NewReader(encodeArgumentsToBytes(rpcRequest))
+	encodedArguments, err := encodeArgumentsToBytes(rpcRequest)
+	if err != nil {
+		return nil, err
+	}
+	bodyBytes := bytes.NewReader(encodedArguments)
 
 	httpRequest, err := http.NewRequestWithContext(ctx, RequestMethod, url, bodyBytes)
 	if err != nil {
@@ -213,7 +250,14 @@ func EncodeRequestOptionsToHeader(header http.Header, ctx context.Context) {
 	EncodeOptionsToHeader(header, &Options{Timeout: timeout})
 }
 
-func encodeArgumentsToBytes(rpcRequest spec.Request) []byte {
+func encodeArgumentsToBytes(rpcRequest spec.Request) (encoded []byte, err error) {
+	defer func() {
+		if recover() != nil {
+			encoded = nil
+			err = fmt.Errorf("request arguments cannot be encoded")
+		}
+	}()
+
 	methodInfo := rpcRequest.MethodInfo()
 	contentType := requestBodyContentType(methodInfo)
 	var arguments any = &spec.EmptyArguments{}
@@ -224,14 +268,22 @@ func encodeArgumentsToBytes(rpcRequest spec.Request) []byte {
 
 	switch contentType {
 	case ContentTypeCbor:
+		encodedArguments, err := vcode.MarshalCbor(arguments)
+		if err != nil {
+			return nil, err
+		}
 		requestPayload := &_RequestPayloadCbor{
-			Params: vcode.MustMarshalCbor(arguments),
+			Params: encodedArguments,
 		}
-		return vcode.MustMarshalCbor(requestPayload)
+		return vcode.MarshalCbor(requestPayload)
 	default:
-		requestPayload := &_RequestPayloadJson{
-			Params: vcode.MustMarshalJson(arguments),
+		encodedArguments, err := vcode.MarshalJson(arguments)
+		if err != nil {
+			return nil, err
 		}
-		return vcode.MustMarshalJson(requestPayload)
+		requestPayload := &_RequestPayloadJson{
+			Params: encodedArguments,
+		}
+		return vcode.MarshalJson(requestPayload)
 	}
 }

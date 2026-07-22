@@ -45,7 +45,7 @@ func (a *_AppImpl) initInjector() {
 		func(b *di.Binder) {
 			b.Bind(T[context.Context]()).ToInstance(a.ctx)
 			b.Bind(T[meta.Context]()).ToInstance(newMetaContext(a.ctx))
-			b.BindInstance(logger.NewLogger(logger.GlobalOption()))
+			b.BindInstance(logger.NewScopedLogger(logger.Scope{AppName: a.logicalAppName}))
 		})
 }
 
@@ -75,11 +75,14 @@ func (a *_AppImpl) bindEmitters(b *di.Binder) {
 		return
 	}
 
-	b.BindFactory(func(ctx meta.Context, logger *logger.Logger) *event.Emitter {
+	b.BindFactory(func(ctx meta.Context) *event.Emitter {
 		return event.NewEmitter(event.EmitterOption{
-			Context:     ctx,
-			ClientApp:   a.info,
-			Logger:      logger,
+			Context:   ctx,
+			ClientApp: a.info,
+			Logger: logger.NewScopedLogger(logger.Scope{
+				AppName:   a.logicalAppName,
+				Subsystem: logger.SubsystemEvent,
+			}).With(buildLoggerFields(ctx, nil, a.info)...),
 			EventClient: a.linker.EventClient(),
 		})
 	})
@@ -93,11 +96,14 @@ func (a *_AppImpl) bindLaunchers(b *di.Binder) {
 		return
 	}
 
-	b.BindFactory(func(ctx meta.Context, logger *logger.Logger) *task.Launcher {
+	b.BindFactory(func(ctx meta.Context) *task.Launcher {
 		return task.NewLauncher(task.LauncherOption{
-			Context:    ctx,
-			ClientApp:  a.info,
-			Logger:     logger,
+			Context:   ctx,
+			ClientApp: a.info,
+			Logger: logger.NewScopedLogger(logger.Scope{
+				AppName:   a.logicalAppName,
+				Subsystem: logger.SubsystemTask,
+			}).With(buildLoggerFields(ctx, nil, a.info)...),
 			TaskClient: a.linker.TaskClient(),
 		})
 	})
@@ -268,9 +274,11 @@ func checkComponentTypes(componentTypes []reflect.Type) {
 }
 
 func (a *_AppImpl) initServers() {
+	logger.FreezePayloadPolicies()
 	if a.shouldEnableConsole() {
 		a.consoleServer = server.New(server.Option{
 			App:            a.info,
+			LogicalAppName: a.logicalAppName,
 			MuteVerboseLog: true,
 			HandlerTypes:   []reflect.Type{T[*ConsoleServiceServerImpl]()},
 		})
@@ -278,22 +286,22 @@ func (a *_AppImpl) initServers() {
 	}
 
 	if servicerSpec, ok := a.spec.(ServicerSpec); ok {
-		a.servicer = newServicer(servicerSpec, a.info, a.bindAppDeps)
+		a.servicer = newServicer(servicerSpec, a.info, a.bindAppDeps, a.logicalAppName)
 		a.appendRoute(coreapp.PathRpcInvoke, a.servicer.httpHandler(), a.servicer.rpcHandler())
 	}
 
 	if webberSpec, ok := a.spec.(WebberSpec); ok {
-		a.webber = newWebber(webberSpec, a.info, a.bindAppDeps)
+		a.webber = newWebber(webberSpec, a.info, a.bindAppDeps, a.logicalAppName)
 		a.appendRoute(coreapp.PathWebAccess, a.webber.httpHandler(), nil)
 	}
 
 	if eventerSpec, ok := a.spec.(EventerSpec); ok {
-		a.eventer = newEventer(eventerSpec, a.info, a.bindAppDeps)
+		a.eventer = newEventer(eventerSpec, a.info, a.bindAppDeps, a.logicalAppName)
 		a.appendRoute(coreapp.PathEvent, a.eventer.httpHandler(), a.eventer.rpcHandler())
 	}
 
 	if taskerSpec, ok := a.spec.(TaskerSpec); ok {
-		a.tasker = newTasker(taskerSpec, a.info, a.bindAppDeps)
+		a.tasker = newTasker(taskerSpec, a.info, a.bindAppDeps, a.logicalAppName)
 		a.appendRoute(coreapp.PathTask, a.tasker.httpHandler(), a.tasker.rpcHandler())
 	}
 

@@ -2,13 +2,19 @@ package task
 
 import (
 	"context"
-	"github.com/google/uuid"
-	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 
+	"github.com/google/uuid"
+	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
+
 	"go.yorun.ai/vine/internal/core/ex"
+	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/core/task/spec"
@@ -157,9 +163,13 @@ func TestServerResolvesTriggerImplByInfo(t *testing.T) {
 func TestServerReturnsInvalidTaskWhenTriggerNotRegistered(t *testing.T) {
 	ensureRunnerTaskRegistered()
 
+	logPath := filepath.Join(t.TempDir(), "task-rejected.jsonl")
 	server := NewServer(Option{
 		ImplTypes: []reflect.Type{reflect.TypeOf(&testRunnerImpl{})},
 		Executor:  &_RunnerRecorderExecutor{},
+		Logger: logger.NewLogger(&logger.Option{
+			Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath,
+		}),
 	})
 
 	err := server.RunTask(context.Background(), appskeled.TaskRun{
@@ -176,6 +186,21 @@ func TestServerReturnsInvalidTaskWhenTriggerNotRegistered(t *testing.T) {
 	})
 	if err == nil || err.Code() != ex.InvalidTask {
 		t.Fatalf("unexpected error: %#v", err)
+	}
+	logBytes, readErr := os.ReadFile(logPath)
+	if readErr != nil {
+		t.Fatalf("read rejection log: %v", readErr)
+	}
+	lines := strings.Split(strings.TrimSpace(string(logBytes)), "\n")
+	if len(lines) != 1 {
+		t.Fatalf("execution-before rejection should emit one record: %s", logBytes)
+	}
+	var record map[string]any
+	if decodeErr := json.Unmarshal([]byte(lines[0]), &record); decodeErr != nil {
+		t.Fatalf("decode rejection log: %v", decodeErr)
+	}
+	if record["msg"] != "task runner handle rejected" || record["level"] != "ERROR" || record["code"] != string(ex.InvalidTask) {
+		t.Fatalf("unexpected rejection record: %#v", record)
 	}
 }
 

@@ -28,7 +28,7 @@ var newConsoleServiceClient = func(ctx context.Context, app runtime.App, endpoin
 	return appskeled.NewConsoleServiceClientER(rpcclient.New(rpcclient.Option{
 		Context:        rpcCtx,
 		ClientApp:      app,
-		Logger:         logger.NewLogger(logger.GlobalOption()),
+		Logger:         logger.NewGlobalLogger(),
 		ServerEndpoint: endpoint,
 	}))
 }

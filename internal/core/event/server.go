@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"reflect"
-	"runtime/debug"
+	"time"
 
 	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 
@@ -16,10 +16,12 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-var eventServerLogger = logger.NewLogger(logger.GlobalOption())
-
 type Option struct {
-	App               meta.App
+	App meta.App
+	// LogicalAppName is the stable ApplicationSpec name used for scoped lifecycle logging.
+	LogicalAppName string
+	// Logger overrides dynamic App and event lifecycle logging when non-nil.
+	Logger            *logger.Logger
 	ListenerImplTypes []reflect.Type
 	Executor          Executor
 }
@@ -29,12 +31,23 @@ type Server struct {
 
 	listenerImplDict *spec.ListenerImplDict
 	executor         Executor
+	log              *logger.Logger
 }
 
 func NewServer(opt Option) *Server {
+	logger.FreezePayloadPolicies()
 	server := &Server{
 		opt:      &opt,
 		executor: opt.Executor,
+	}
+	if opt.Logger != nil {
+		server.log = opt.Logger
+	} else {
+		appName := opt.LogicalAppName
+		if appName == "" && opt.App != nil {
+			appName = opt.App.Name()
+		}
+		server.log = logger.NewScopedLogger(logger.Scope{AppName: appName, Subsystem: logger.SubsystemEvent})
 	}
 	server.init()
 	return server
@@ -51,28 +64,39 @@ func (s *Server) init() {
 }
 
 func (s *Server) OnEvent(ctx context.Context, on appskeled.EventOn) ex.Error {
+	startedAt := time.Now()
 	eventInfo, ok := spec.GetEventInfo(on.EventSkelName)
 	if !ok {
-		return ex.New(ex.InvalidEvent, "unknown event "+on.EventSkelName)
+		err := ex.New(ex.InvalidEvent, "unknown event "+on.EventSkelName)
+		eventlog.ListenerRejected(s.log, startedAt, nil, nil, nil, s.opt.App, err, on.EventSkelName)
+		return err
 	}
 
 	trace, err := meta.NewTrace(on.Metadata.TraceId, on.Metadata.TraceSpan)
 	if err != nil {
-		return ex.New(ex.InvalidRequest, err.Error())
+		rejectedErr := ex.New(ex.InvalidRequest, err.Error())
+		eventlog.ListenerRejected(s.log, startedAt, nil, eventInfo, nil, s.opt.App, rejectedErr)
+		return rejectedErr
 	}
 	client, err := meta.NewApp(on.Metadata.AppName, on.Metadata.AppVersion, on.Metadata.AppInstanceId.String())
 	if err != nil {
-		return ex.New(ex.InvalidRequest, err.Error())
+		rejectedErr := ex.New(ex.InvalidRequest, err.Error())
+		eventlog.ListenerRejected(s.log, startedAt, trace, eventInfo, nil, s.opt.App, rejectedErr)
+		return rejectedErr
 	}
 
 	payload := reflect.New(eventInfo.PayloadType()).Interface()
 	err = json.Unmarshal([]byte(on.EventJson), payload)
 	if err != nil {
-		return ex.New(ex.InvalidEvent, err.Error())
+		rejectedErr := ex.New(ex.InvalidEvent, err.Error())
+		eventlog.ListenerRejected(s.log, startedAt, trace, eventInfo, client, s.opt.App, rejectedErr)
+		return rejectedErr
 	}
 	listenerImpl, getErr := s.listenerImplDict.GetListenerImplByInfo(eventInfo)
 	if getErr != nil {
-		return ex.New(ex.InvalidEvent, getErr.Error())
+		rejectedErr := ex.New(ex.InvalidEvent, getErr.Error())
+		eventlog.ListenerRejected(s.log, startedAt, trace, eventInfo, client, s.opt.App, rejectedErr)
+		return rejectedErr
 	}
 
 	return s.onEvent(&spec.OnImpl{
@@ -90,65 +114,27 @@ func (s *Server) OnEvent(ctx context.Context, on appskeled.EventOn) ex.Error {
 	})
 }
 
-func (s *Server) onEvent(messageOn spec.On) (err ex.Error) {
+func (s *Server) onEvent(messageOn spec.On) (responseErr ex.Error) {
+	var logErr ex.Error
 	logSpan := eventlog.StartListenerHandle(
-		eventServerLogger,
+		s.log,
 		messageOn.Context().Trace(),
 		messageOn.EventInfo(),
 		messageOn.Context().Emitter(),
-		s.opt.App)
+		s.opt.App,
+		messageOn.EventPayload())
 
-	defer func() { logSpan.Finish(err) }()
+	defer func() { logSpan.Finish(logErr) }()
 
 	defer func() {
 		if reErr := recover(); reErr != nil {
-			switch casted := reErr.(type) {
-			case ex.Error:
-				err = casted
-				if casted.Type() == ex.SystemError {
-					stack := ex.PanicStack(casted)
-					if stack == "" {
-						stack = string(debug.Stack())
-					}
-					fields := []any{
-						"error", casted,
-						"stack", stack,
-						"eventName", messageOn.EventInfo().Name(),
-						"eventSkelName", messageOn.EventInfo().SkelName(),
-						"listenerMethod", messageOn.EventInfo().ListenerMethodName(),
-					}
-					fields = appendPanicAppFields(fields, "emitter", messageOn.Context().Emitter())
-					fields = appendPanicAppFields(fields, "listener", s.opt.App)
-					eventServerLogger.Error("event server recovered system error", fields...)
-				}
-			default:
-				fields := []any{
-					"panic", reErr,
-					"stack", string(debug.Stack()),
-					"eventName", messageOn.EventInfo().Name(),
-					"eventSkelName", messageOn.EventInfo().SkelName(),
-					"listenerMethod", messageOn.EventInfo().ListenerMethodName(),
-				}
-				fields = appendPanicAppFields(fields, "emitter", messageOn.Context().Emitter())
-				fields = appendPanicAppFields(fields, "listener", s.opt.App)
-				eventServerLogger.Error("event server recovered panic", fields...)
-				err = ex.NewInternal()
-			}
+			logErr = ex.RecoverExecution(reErr)
 		}
-		if err != nil && err.Code().IsUnresponsive() {
-			err = ex.NewInternal()
+		responseErr = logErr
+		if responseErr != nil && responseErr.Code().IsUnresponsive() {
+			responseErr = ex.NewInternal()
 		}
 	}()
-	return s.executor.Execute(messageOn.Context(), messageOn.ListenerImpl(), messageOn.EventPayload())
-}
-
-func appendPanicAppFields(fields []any, prefix string, app meta.App) []any {
-	if app == nil {
-		return fields
-	}
-	return append(fields,
-		prefix+"Name", app.Name(),
-		prefix+"Version", app.Version(),
-		prefix+"InstanceId", app.InstanceId(),
-	)
+	logErr = s.executor.Execute(messageOn.Context(), messageOn.ListenerImpl(), messageOn.EventPayload())
+	return logErr
 }

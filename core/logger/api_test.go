@@ -61,3 +61,29 @@ func readFacadeLastRecord(t *testing.T, path string) _LoggedRecord {
 	}
 	return record
 }
+
+func TestFacadeDynamicLoggerConstructorsAndScopeOverrides(t *testing.T) {
+	previousLevel := GlobalOption().Level
+	t.Cleanup(func() {
+		SetGlobalLevel(previousLevel)
+		ReplaceLevelOverrides(LevelOverrides{})
+	})
+	ReplaceLevelOverrides(LevelOverrides{})
+	SetGlobalLevel(LevelInfo)
+
+	global := NewGlobalLogger()
+	fixed := NewLogger(&Option{Mode: ModeText, Level: LevelInfo})
+	SetGlobalLevel(LevelDebug)
+	if !global.Enabled(LevelDebug) {
+		t.Fatal("facade global logger should follow SetGlobalLevel")
+	}
+	if fixed.Enabled(LevelDebug) {
+		t.Fatal("facade fixed logger should keep its configured level")
+	}
+
+	SetAppSubsystemLevel("demo.user", SubsystemEvent, LevelError)
+	scoped := NewScopedLogger(Scope{AppName: "demo.user", Subsystem: SubsystemEvent})
+	if scoped.Enabled(LevelWarn) || !scoped.Enabled(LevelError) {
+		t.Fatal("facade scoped logger should resolve App plus subsystem override")
+	}
+}

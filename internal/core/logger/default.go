@@ -6,14 +6,14 @@ var defaultLogger *Logger
 
 func init() {
 	config := GlobalOption()
-	defaultLogger = NewLogger(config)
-	setStandardLogger(*config)
+	defaultLogger = NewGlobalLogger()
+	setStandardLogger(*config, &globalLevel)
 }
 
 func SetDefault(logger *Logger) {
 	vpre.CheckNotNil(logger, "default logger cannot be nil")
 	defaultLogger = logger
-	setStandardLogger(logger.config)
+	setStandardLogger(logger.config, logger.leveler)
 }
 
 //go:noinline
