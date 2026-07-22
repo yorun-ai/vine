@@ -2,6 +2,7 @@ package ex
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 
 	"go.yorun.ai/vine/util/vpre"
@@ -31,6 +32,7 @@ type _Error struct {
 	DetailValue string `json:"detail"`
 
 	cause error
+	stack []uintptr // Captured only when a system error is raised through a Panic helper.
 }
 
 func (e *_Error) Error() string {
@@ -163,35 +165,78 @@ func decodeError(payload []byte, unmarshal func([]byte, any) error) (*_Error, er
 
 // Panic
 
-// Keep these conditional helpers panicking in place so the captured stack
-// points at the original call site instead of an extra wrapper frame.
+// Keep conditional checks in these helpers so the captured stack includes the
+// original call site without another conditional wrapper frame.
 
 func PanicIfError(err error) {
 	if err != nil {
-		panic(err)
+		panicWithStack(err)
 	}
 }
 
 func PanicNew(code Code, message string, opts ...ErrorOption) {
-	panic(New(code, message, opts...))
+	panicWithStack(New(code, message, opts...))
 }
 
 func PanicNewIfError(err error, code Code) {
 	if err != nil {
-		panic(New(code, err.Error()))
+		panicWithStack(New(code, err.Error()))
 	}
 }
 
 func PanicNewIfNot(condition bool, code Code, message string, opts ...ErrorOption) {
 	if !condition {
-		panic(New(code, message, opts...))
+		panicWithStack(New(code, message, opts...))
 	}
 }
 
 func PanicNewFuncIfNot(condition bool, code Code, messageFunc func() string, opts ...ErrorOption) {
 	if !condition {
-		panic(New(code, messageFunc(), opts...))
+		panicWithStack(New(code, messageFunc(), opts...))
 	}
+}
+
+const panicStackDepth = 64
+
+func panicWithStack(err error) {
+	exErr, ok := err.(*_Error)
+	if !ok || exErr.Type() != SystemError {
+		panic(err)
+	}
+
+	raisedErr := *exErr
+	pcs := make([]uintptr, panicStackDepth)
+	count := runtime.Callers(2, pcs)
+	raisedErr.stack = pcs[:count]
+	panic(&raisedErr)
+}
+
+// PanicStack formats the stack captured when a system Error was raised.
+// It returns an empty string for errors that were not raised through Panic helpers.
+func PanicStack(err Error) string {
+	internalErr, ok := err.(*_Error)
+	if !ok || len(internalErr.stack) == 0 {
+		return ""
+	}
+
+	var builder strings.Builder
+	frames := runtime.CallersFrames(internalErr.stack)
+	for {
+		frame, more := frames.Next()
+		if !isPanicHelperFrame(frame.Function) {
+			fmt.Fprintf(&builder, "%s\n\t%s:%d\n", frame.Function, frame.File, frame.Line)
+		}
+		if !more {
+			break
+		}
+	}
+	return builder.String()
+}
+
+func isPanicHelperFrame(function string) bool {
+	return strings.HasPrefix(function, "go.yorun.ai/vine/internal/core/ex.Panic") ||
+		function == "go.yorun.ai/vine/internal/core/ex.panicWithStack" ||
+		strings.HasPrefix(function, "go.yorun.ai/vine/core/ex.Panic")
 }
 
 // Recover

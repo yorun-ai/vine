@@ -77,6 +77,24 @@ func (s *Server) handle(rpcRequest spec.Request) (response spec.Response) {
 			switch casted := reErr.(type) {
 			case ex.Error:
 				err = casted
+				if casted.Type() == ex.SystemError {
+					stack := ex.PanicStack(casted)
+					if stack == "" {
+						stack = string(debug.Stack())
+					}
+					rpcServerLogger.Error("rpc server recovered system error",
+						"error", casted,
+						"stack", stack,
+						"rpcMethod", rpcRequest.MethodInfo().Name(),
+						"rpcMethodSkel", rpcRequest.MethodInfo().SkelName(),
+						"clientName", rpcRequest.Client().Name(),
+						"clientVersion", rpcRequest.Client().Version(),
+						"clientInstanceId", rpcRequest.Client().InstanceId(),
+						"serverName", s.opt.App.Name(),
+						"serverVersion", s.opt.App.Version(),
+						"serverInstanceId", s.opt.App.InstanceId(),
+					)
+				}
 			default:
 				rpcServerLogger.Error("rpc server recovered panic",
 					"panic", reErr,

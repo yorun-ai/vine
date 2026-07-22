@@ -151,6 +151,50 @@ func TestPanicNewFuncIfNotAppliesOptions(t *testing.T) {
 	}, WithDetail("disk offline"))
 }
 
+func TestPanicIfErrorCapturesSystemErrorStackWithoutMutatingOriginal(t *testing.T) {
+	original := New(InvalidRequest, "bad request")
+	recovered := recoverValue(func() { PanicIfError(original) })
+	err, ok := recovered.(Error)
+	if !ok {
+		t.Fatalf("unexpected panic value: %#v", recovered)
+	}
+	if err == original {
+		t.Fatal("expected raised error to be cloned")
+	}
+	if stack := PanicStack(original); stack != "" {
+		t.Fatalf("original error unexpectedly has panic stack: %s", stack)
+	}
+	stack := PanicStack(err)
+	if !strings.Contains(stack, "TestPanicIfErrorCapturesSystemErrorStackWithoutMutatingOriginal") {
+		t.Fatalf("panic stack does not contain raise call site: %s", stack)
+	}
+	if strings.Contains(stack, "internal/core/ex.Panic") {
+		t.Fatalf("panic stack contains helper frame: %s", stack)
+	}
+}
+
+func TestPanicNewDoesNotCaptureApplicationErrorStack(t *testing.T) {
+	recovered := recoverValue(func() { PanicNew(NotFound, "missing user") })
+	err, ok := recovered.(Error)
+	if !ok {
+		t.Fatalf("unexpected panic value: %#v", recovered)
+	}
+	if stack := PanicStack(err); stack != "" {
+		t.Fatalf("application error unexpectedly has panic stack: %s", stack)
+	}
+}
+
+func TestRaisedSystemErrorDoesNotSerializePanicStack(t *testing.T) {
+	recovered := recoverValue(func() { PanicNew(InvalidRequest, "bad request") })
+	payload, err := json.Marshal(recovered)
+	if err != nil {
+		t.Fatalf("Marshal() error = %v", err)
+	}
+	if strings.Contains(string(payload), "stack") || strings.Contains(string(payload), "error_test.go") {
+		t.Fatalf("serialized error leaks panic stack: %s", payload)
+	}
+}
+
 func TestRecoverApplicationReturnsApplicationError(t *testing.T) {
 	want := New(NotFound, "missing user")
 	got := RecoverApplication(want)
@@ -193,4 +237,12 @@ func TestRecoverApplicationRepanicsNonExPanic(t *testing.T) {
 	}()
 
 	_ = RecoverApplication(panicValue)
+}
+
+func recoverValue(fn func()) (recovered any) {
+	defer func() {
+		recovered = recover()
+	}()
+	fn()
+	return nil
 }
