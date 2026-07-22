@@ -57,7 +57,7 @@ func (o *Auther) parseCredential(writeError _AuthErrorWriter) bool {
 	authorization := o.Request.Header.Get(headerAuthorization)
 	credential, ok := parseCredential(o.actorSchema.AuthCredential, authorization)
 	if !ok {
-		writeError(ex.ClientForbidden, "bad credential")
+		writeError(ex.Unauthorized, "bad credential")
 		return false
 	}
 

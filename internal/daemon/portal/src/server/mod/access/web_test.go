@@ -48,7 +48,7 @@ func TestAuthWebParsesAuthorization(t *testing.T) {
 	assert.JSONEq(t, `{"userId":"u1"}`, actor.RawInfo())
 }
 
-func TestAuthWebRejectsBadAuthorization(t *testing.T) {
+func TestAuthWebRejectsBadAuthorizationAsUnauthorized(t *testing.T) {
 	access := testManager(testAuthValues(""))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/ping", nil)
@@ -58,7 +58,7 @@ func TestAuthWebRejectsBadAuthorization(t *testing.T) {
 	ok := access.AuthWeb(testWebAuthContext(t, redised.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 
 	require.False(t, ok)
-	assert.Equal(t, http.StatusForbidden, recorder.Code)
+	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
 	assert.Contains(t, recorder.Body.String(), "bad credential")
 }
 

@@ -436,23 +436,32 @@ func TestAccessAllowRpcRejectsDifferentActorVia(t *testing.T) {
 	assertRpcAuthError(t, recorder, ex.ClientForbidden, "rpc service does not allow actor via")
 }
 
-func TestRpcAccessOperationParseCredentialWritesBadCredentialError(t *testing.T) {
-	response := httptest.NewRecorder()
-	ctx := &RpcOperation{
-		Auther: Auther{
-			actorSchema: &skel.ActorSchema{
-				AuthCredential: testCredentialSchema(),
-			},
-			Request:  httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil),
-			Response: response,
-		},
-		Server: testServerApp(),
-	}
-	ctx.Request.Header.Set("Authorization", "Key1 token123, unknown value")
+func TestRpcAccessOperationParseCredentialWritesUnauthorized(t *testing.T) {
+	for name, authorization := range map[string]string{
+		"missing":   "",
+		"malformed": "Key1 token123, unknown value",
+	} {
+		t.Run(name, func(t *testing.T) {
+			response := httptest.NewRecorder()
+			ctx := &RpcOperation{
+				Auther: Auther{
+					actorSchema: &skel.ActorSchema{
+						AuthCredential: testCredentialSchema(),
+					},
+					Request:  httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil),
+					Response: response,
+				},
+				Server: testServerApp(),
+			}
+			if authorization != "" {
+				ctx.Request.Header.Set(headerAuthorization, authorization)
+			}
 
-	succeed := ctx.parseCredential(ctx.writeError)
-	assert.False(t, succeed)
-	assertRpcAuthError(t, response, ex.ClientForbidden, "bad credential")
+			succeed := ctx.parseCredential(ctx.writeError)
+			assert.False(t, succeed)
+			assertRpcAuthError(t, response, ex.Unauthorized, "bad credential")
+		})
+	}
 }
 
 func testRpcAuthContext(t *testing.T, actorVia redised.PortalActorVia, request *http.Request, response http.ResponseWriter) *RpcOperation {
