@@ -9,16 +9,25 @@
 //   - Rpc service methods
 //   - Event listener methods
 //   - Task runner methods
+//   - Web handler methods
 //
-// At these boundaries, a recovered Error continues through the normal
-// structured-error path. A non-Error panic is logged with its stack and becomes
-// Internal. A system Error raised through a Panic helper retains its raise stack
-// for server-side logging; the stack is never included in the serialized error.
+// At Rpc, Event, and Task boundaries, a recovered Error continues through the
+// normal structured-error path. A non-Error panic is logged with its stack and
+// becomes Internal.
+//
+// At a Web boundary, an Error is mapped to its canonical HTTP status when the
+// response has not started. Vine does not impose an error response body, so Web
+// handlers remain free to define HTML, JSON, streaming, or other HTTP response
+// contracts. If the response has started, Vine preserves it and only aborts the
+// remaining handler chain.
+//
+// At every managed boundary, a system Error raised through a Panic helper
+// retains its raise stack for server-side logging; the stack is never included
+// in a serialized error or Web response. A non-Error Web panic is logged with
+// its stack and returns HTTP status 500 if the response has not started.
 //
 // The following execution paths do not use that structured-error boundary:
 //
-//   - Web handlers use generic HTTP panic recovery and return status 500; an
-//     Error panic is not mapped to a structured Rpc error.
 //   - Application and module lifecycle hooks are not recovered as business
 //     errors.
 //   - Goroutines started by application code are not automatically recovered.

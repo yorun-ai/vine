@@ -713,7 +713,7 @@ func assertOptionsNotAllowed(t *testing.T, recorder *httptest.ResponseRecorder) 
 func assertRpcGatewayError(t *testing.T, recorder *httptest.ResponseRecorder, code ex.Code, message string) {
 	t.Helper()
 
-	if recorder.Code != rpcHTTPStatusCode(code) {
+	if recorder.Code != ex.HTTPStatusCode(code) {
 		t.Fatalf("unexpected status code: %d", recorder.Code)
 	}
 	if recorder.Header().Get(rpchttp.HeaderRpcStatus) != string(code) {

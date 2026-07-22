@@ -25,26 +25,5 @@ func (o *WebOperation) setActor(actor meta.Actor) {
 }
 
 func (o *WebOperation) writeError(code ex.Code, message string) {
-	http.Error(o.Response, message, webHTTPStatusCode(code))
-}
-
-func webHTTPStatusCode(code ex.Code) int {
-	switch code {
-	case ex.InvalidRequest:
-		return http.StatusBadRequest
-	case ex.Unauthorized:
-		return http.StatusUnauthorized
-	case ex.ClientForbidden, ex.PermissionDenied, ex.ElevationRequired:
-		return http.StatusForbidden
-	case ex.NotFound:
-		return http.StatusNotFound
-	case ex.ValidationFailed, ex.OperationFailed:
-		return http.StatusUnprocessableEntity
-	case ex.GatewayTimeout:
-		return http.StatusGatewayTimeout
-	case ex.ServiceUnavailable:
-		return http.StatusServiceUnavailable
-	default:
-		return http.StatusInternalServerError
-	}
+	http.Error(o.Response, message, ex.HTTPStatusCode(code))
 }
