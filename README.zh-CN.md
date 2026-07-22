@@ -3,6 +3,7 @@
 [![License](https://img.shields.io/github/license/yorun-ai/vine)](LICENSE)
 [![Version](https://img.shields.io/github/v/release/yorun-ai/vine?label=version&cacheSeconds=300)](https://github.com/yorun-ai/vine/releases/latest)
 [![Go](https://img.shields.io/github/go-mod/go-version/yorun-ai/vine)](go.mod)
+[![Go Reference](https://pkg.go.dev/badge/go.yorun.ai/vine.svg)](https://pkg.go.dev/go.yorun.ai/vine)
 [![CI](https://github.com/yorun-ai/vine/actions/workflows/ci.yml/badge.svg)](https://github.com/yorun-ai/vine/actions/workflows/ci.yml)
 
 [English](README.md) | **简体中文**
@@ -104,6 +105,7 @@ go run .
 - [首个应用教程](https://yorun.ai/vine/tutorial-first-app)
 - [运行模式](https://yorun.ai/vine/deployment-modes)
 - [框架包索引](https://yorun.ai/vine/core-packages)
+- [Go API 参考](https://pkg.go.dev/go.yorun.ai/vine)
 - [English documentation](https://yorun.ai/en/vine/)
 
 文档站源码在 [`yorun-ai/vine-doc`](https://github.com/yorun-ai/vine-doc)
