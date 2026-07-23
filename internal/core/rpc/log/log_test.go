@@ -242,7 +242,7 @@ func TestPanicDiagnosticIsMergedIntoSingleFailureFinished(t *testing.T) {
 	for _, record := range records {
 		if record["msg"] == "rpc server handle finished" {
 			finished++
-			if record["level"] != "ERROR" || record["panic"] != "boom" || record["stack"] == "" {
+			if record["level"] != "DEBUG" || record["panic"] != "boom" || record["stack"] == "" {
 				t.Fatalf("unexpected panic finished record: %#v", record)
 			}
 		}

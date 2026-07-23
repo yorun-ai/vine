@@ -76,10 +76,8 @@ func (s *Span) Finish(err ex.Error) {
 		return
 	}
 	code := ex.OK
-	panicked := false
 	if err != nil {
 		code = err.Code()
-		_, panicked = ex.PanicValue(err)
 	}
 	if code != ex.OK && err != nil {
 		s.fields = append(s.fields, "error", err.Error())
@@ -94,7 +92,7 @@ func (s *Span) Finish(err ex.Error) {
 		"code", string(code),
 		"duration", time.Since(s.startedAt),
 	)
-	logLifecycleOutcome(s.logger, s.finishMsg, code, panicked, s.fields...)
+	logLifecycle(s.logger, s.finishMsg, s.fields...)
 }
 
 func RunnerRejected(log *logger.Logger, startedAt time.Time, trace meta.Trace, trigger spec.TriggerInfo, launcher meta.App, runner meta.App, err ex.Error, unresolvedSkelNames ...string) {
@@ -106,17 +104,17 @@ func RunnerRejected(log *logger.Logger, startedAt time.Time, trace meta.Trace, t
 	fields = appendTaskFields(fields, trigger)
 	if trigger == nil {
 		if len(unresolvedSkelNames) > 0 && unresolvedSkelNames[0] != "" {
-			fields = append(fields, "taskSkelName", unresolvedSkelNames[0])
+			fields = append(fields, "taskSkel", unresolvedSkelNames[0])
 		}
 		if len(unresolvedSkelNames) > 1 && unresolvedSkelNames[1] != "" {
-			fields = append(fields, "triggerSkelName", unresolvedSkelNames[1])
+			fields = append(fields, "taskTriggerSkel", unresolvedSkelNames[1])
 		}
 	}
 	fields = appendAppFields(fields, "launcher", launcher)
 	fields = appendAppFields(fields, "runner", runner)
 	fields = appendErrorFields(fields, err)
 	fields = append(fields, "duration", time.Since(startedAt))
-	logLifecycleOutcome(log, "task runner handle rejected", err.Code(), isPanic(err), fields...)
+	logLifecycle(log, "task runner handle rejected", fields...)
 }
 
 func appendErrorFields(fields []any, err ex.Error) []any {
@@ -138,20 +136,8 @@ func appendErrorFields(fields []any, err ex.Error) []any {
 	return fields
 }
 
-func isPanic(err ex.Error) bool {
-	_, panicked := ex.PanicValue(err)
-	return panicked
-}
-
-func logLifecycleOutcome(log *logger.Logger, msg string, code ex.Code, panicked bool, fields ...any) {
-	switch {
-	case panicked || code.Type() == ex.SystemError:
-		log.Error(msg, fields...)
-	case code.Type() == ex.ApplicationError:
-		log.Warn(msg, fields...)
-	default:
-		log.Debug(msg, fields...)
-	}
+func logLifecycle(log *logger.Logger, msg string, fields ...any) {
+	log.Debug(msg, fields...)
 }
 
 func appendTraceFields(fields []any, trace meta.Trace) []any {
@@ -175,15 +161,15 @@ func appendTaskFields(fields []any, trigger spec.TriggerInfo) []any {
 	}
 
 	fields = append(fields,
-		"triggerName", trigger.Name(),
-		"triggerSkelName", trigger.SkelName(),
+		"taskTriggerName", trigger.Name(),
+		"taskTriggerSkel", trigger.SkelName(),
 		"taskLauncherMethod", trigger.LauncherMethodName(),
-		"runnerMethod", trigger.RunnerMethodName(),
+		"taskRunnerMethod", trigger.RunnerMethodName(),
 	)
 	if task := trigger.Task(); task != nil {
 		fields = append(fields,
 			"taskName", task.Name(),
-			"taskSkelName", task.SkelName(),
+			"taskSkel", task.SkelName(),
 		)
 	}
 	return fields

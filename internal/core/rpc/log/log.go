@@ -114,10 +114,8 @@ func (s *Span) finish(err ex.Error, result any, server bool) {
 		return
 	}
 	code := ex.OK
-	panicked := false
 	if err != nil {
 		code = err.Code()
-		_, panicked = ex.PanicValue(err)
 	}
 	if code == ex.OK && s.muteSuccess {
 		return
@@ -145,7 +143,7 @@ func (s *Span) finish(err ex.Error, result any, server bool) {
 		"code", string(code),
 		"duration", time.Since(s.startedAt),
 	)
-	logLifecycleOutcome(s.logger, s.finishMsg, code, panicked, s.fields...)
+	logLifecycle(s.logger, s.finishMsg, s.fields...)
 }
 
 func (s *Span) FinishWithResponse(err ex.Error, response spec.Response) {
@@ -177,7 +175,7 @@ func ServerRejected(log *logger.Logger, startedAt time.Time, trace meta.Trace, m
 	fields = appendAppFields(fields, "server", server)
 	fields = appendErrorFields(fields, err)
 	fields = append(fields, "duration", time.Since(startedAt))
-	logLifecycleOutcome(log, "rpc server request rejected", err.Code(), isPanic(err), fields...)
+	logLifecycle(log, "rpc server request rejected", fields...)
 }
 
 func ClientRejected(log *logger.Logger, startedAt time.Time, trace meta.Trace, method spec.MethodInfo, serverEndpoint string, arguments any, err ex.Error) {
@@ -194,7 +192,7 @@ func ClientRejected(log *logger.Logger, startedAt time.Time, trace meta.Trace, m
 	}
 	fields = appendErrorFields(fields, err)
 	fields = append(fields, "duration", time.Since(startedAt))
-	logLifecycleOutcome(log, "rpc client invoke rejected", err.Code(), isPanic(err), fields...)
+	logLifecycle(log, "rpc client invoke rejected", fields...)
 }
 
 func appendErrorFields(fields []any, err ex.Error) []any {
@@ -216,20 +214,8 @@ func appendErrorFields(fields []any, err ex.Error) []any {
 	return fields
 }
 
-func isPanic(err ex.Error) bool {
-	_, panicked := ex.PanicValue(err)
-	return panicked
-}
-
-func logLifecycleOutcome(log *logger.Logger, msg string, code ex.Code, panicked bool, fields ...any) {
-	switch {
-	case panicked || code.Type() == ex.SystemError:
-		log.Error(msg, fields...)
-	case code.Type() == ex.ApplicationError:
-		log.Warn(msg, fields...)
-	default:
-		log.Debug(msg, fields...)
-	}
+func logLifecycle(log *logger.Logger, msg string, fields ...any) {
+	log.Debug(msg, fields...)
 }
 
 func renderRpcPayload(method spec.MethodInfo, surface logger.PayloadSurface, value any) logger.PayloadValue {

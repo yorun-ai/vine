@@ -280,6 +280,24 @@ func TestWithCausePreservesCauseStack(t *testing.T) {
 	}
 }
 
+func TestPanickedErrorKeepsBothStacksAndPrefersErrorStack(t *testing.T) {
+	source := New(OperationFailed, "source")
+	wantStack := Stack(source)
+
+	recovered := recoverValue(func() { panic(source) })
+	err := RecoverExecution(recovered)
+	internalErr := err.(*_Error)
+	if len(internalErr.errorStack) == 0 {
+		t.Fatal("panicked Error lost its error stack")
+	}
+	if len(internalErr.panicStack) == 0 {
+		t.Fatal("panicked Error is missing its panic stack")
+	}
+	if got := Stack(err); got != wantStack {
+		t.Fatalf("stack should prefer the Error source\ngot=%s\nwant=%s", got, wantStack)
+	}
+}
+
 func TestRecoverExecutionCapturesRawPanicStackAndSafeValue(t *testing.T) {
 	var recovered Error
 	func() {
@@ -298,6 +316,10 @@ func TestRecoverExecutionCapturesRawPanicStackAndSafeValue(t *testing.T) {
 	}
 	if stack := Stack(recovered); !strings.Contains(stack, "TestRecoverExecutionCapturesRawPanicStackAndSafeValue") {
 		t.Fatalf("unexpected panic stack: %s", stack)
+	}
+	internalErr := recovered.(*_Error)
+	if len(internalErr.errorStack) != 0 || len(internalErr.panicStack) == 0 {
+		t.Fatalf("raw panic should use only panic stack: %#v", internalErr)
 	}
 }
 

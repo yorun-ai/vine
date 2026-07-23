@@ -161,3 +161,38 @@ func TestServerOnEventForwardsToListener(t *testing.T) {
 	_, repeatsPayload := finished["eventPayload"]
 	assert.False(t, repeatsPayload)
 }
+
+func TestServerRejectedUsesMainEventFieldNames(t *testing.T) {
+	ensureServerEventRegistered()
+	logPath := filepath.Join(t.TempDir(), "event-rejected.jsonl")
+	server := NewServer(Option{
+		ListenerImplTypes: []reflect.Type{reflect.TypeOf(&testServerListenerImpl{})},
+		Executor:          NewContainerExecutor(nil, nil),
+		Logger: logger.NewLogger(&logger.Option{
+			Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath,
+		}),
+	})
+
+	err := server.OnEvent(context.Background(), appskeled.EventOn{EventSkelName: "missing.event"})
+	if err == nil || err.Code() != ex.InvalidEvent {
+		t.Fatalf("unexpected error: %#v", err)
+	}
+
+	logBytes, readErr := os.ReadFile(logPath)
+	if readErr != nil {
+		t.Fatalf("read rejection log: %v", readErr)
+	}
+	var record map[string]any
+	if decodeErr := json.Unmarshal(logBytes, &record); decodeErr != nil {
+		t.Fatalf("decode rejection log: %v", decodeErr)
+	}
+	if record["msg"] != "event listener handle rejected" || record["level"] != "DEBUG" {
+		t.Fatalf("unexpected rejection record: %#v", record)
+	}
+	if record["eventSkel"] != "missing.event" {
+		t.Fatalf("rejection record must preserve main Event field names: %#v", record)
+	}
+	if _, exists := record["eventSkelName"]; exists {
+		t.Fatalf("rejection record must not emit renamed Event fields: %#v", record)
+	}
+}

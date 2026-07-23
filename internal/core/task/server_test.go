@@ -199,8 +199,11 @@ func TestServerReturnsInvalidTaskWhenTriggerNotRegistered(t *testing.T) {
 	if decodeErr := json.Unmarshal([]byte(lines[0]), &record); decodeErr != nil {
 		t.Fatalf("decode rejection log: %v", decodeErr)
 	}
-	if record["msg"] != "task runner handle rejected" || record["level"] != "ERROR" || record["code"] != string(ex.InvalidTask) {
+	if record["msg"] != "task runner handle rejected" || record["level"] != "DEBUG" || record["code"] != string(ex.InvalidTask) {
 		t.Fatalf("unexpected rejection record: %#v", record)
+	}
+	if record["taskSkel"] != "missing.task" || record["taskTriggerSkel"] != "forGroup" {
+		t.Fatalf("rejection record must preserve main Task field names: %#v", record)
 	}
 }
 

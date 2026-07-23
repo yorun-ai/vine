@@ -82,10 +82,8 @@ func (s *Span) Finish(err ex.Error) {
 		return
 	}
 	code := ex.OK
-	panicked := false
 	if err != nil {
 		code = err.Code()
-		_, panicked = ex.PanicValue(err)
 	}
 	if code != ex.OK && err != nil {
 		s.fields = append(s.fields, "error", err.Error())
@@ -100,7 +98,7 @@ func (s *Span) Finish(err ex.Error) {
 		"code", string(code),
 		"duration", time.Since(s.startedAt),
 	)
-	logLifecycleOutcome(s.logger, s.finishMsg, code, panicked, s.fields...)
+	logLifecycle(s.logger, s.finishMsg, s.fields...)
 }
 
 func ListenerRejected(log *logger.Logger, startedAt time.Time, trace meta.Trace, event spec.EventInfo, emitter meta.App, listener meta.App, err ex.Error, unresolvedEventSkelNames ...string) {
@@ -111,13 +109,13 @@ func ListenerRejected(log *logger.Logger, startedAt time.Time, trace meta.Trace,
 	fields = appendTraceFields(fields, trace)
 	fields = appendEventFields(fields, event)
 	if event == nil && len(unresolvedEventSkelNames) > 0 && unresolvedEventSkelNames[0] != "" {
-		fields = append(fields, "eventSkelName", unresolvedEventSkelNames[0])
+		fields = append(fields, "eventSkel", unresolvedEventSkelNames[0])
 	}
 	fields = appendAppFields(fields, "emitter", emitter)
 	fields = appendAppFields(fields, "listener", listener)
 	fields = appendErrorFields(fields, err)
 	fields = append(fields, "duration", time.Since(startedAt))
-	logLifecycleOutcome(log, "event listener handle rejected", err.Code(), isPanic(err), fields...)
+	logLifecycle(log, "event listener handle rejected", fields...)
 }
 
 func appendPayloadFields(fields []any, payload logger.PayloadValue) []any {
@@ -164,20 +162,8 @@ func appendErrorFields(fields []any, err ex.Error) []any {
 	return fields
 }
 
-func isPanic(err ex.Error) bool {
-	_, panicked := ex.PanicValue(err)
-	return panicked
-}
-
-func logLifecycleOutcome(log *logger.Logger, msg string, code ex.Code, panicked bool, fields ...any) {
-	switch {
-	case panicked || code.Type() == ex.SystemError:
-		log.Error(msg, fields...)
-	case code.Type() == ex.ApplicationError:
-		log.Warn(msg, fields...)
-	default:
-		log.Debug(msg, fields...)
-	}
+func logLifecycle(log *logger.Logger, msg string, fields ...any) {
+	log.Debug(msg, fields...)
 }
 
 func appendTraceFields(fields []any, trace meta.Trace) []any {
@@ -202,9 +188,9 @@ func appendEventFields(fields []any, event spec.EventInfo) []any {
 
 	return append(fields,
 		"eventName", event.Name(),
-		"eventSkelName", event.SkelName(),
+		"eventSkel", event.SkelName(),
 		"eventEmitterMethod", event.EmitterMethodName(),
-		"listenerMethod", event.ListenerMethodName(),
+		"eventListenerMethod", event.ListenerMethodName(),
 	)
 }
 

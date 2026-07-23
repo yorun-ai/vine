@@ -53,24 +53,24 @@ func TestRunnerFailureIncludesSourceStack(t *testing.T) {
 
 	records := readTaskLogRecords(t, path)
 	finished := records[len(records)-1]
-	if finished["level"] != "WARN" || finished["code"] != string(ex.OperationFailed) || finished["error"] == "" {
+	if finished["level"] != "DEBUG" || finished["code"] != string(ex.OperationFailed) || finished["error"] == "" {
 		t.Fatalf("unexpected failure record: %#v", finished)
 	}
 	if stack, _ := finished["stack"].(string); !strings.Contains(stack, "TestRunnerFailureIncludesSourceStack") {
 		t.Fatalf("unexpected error stack: %s", stack)
 	}
 	for key, want := range map[string]any{
-		"taskSkelName":       "test.task.RebuildIndex",
-		"triggerName":        "Nightly",
-		"triggerSkelName":    "nightly",
+		"taskSkel":           "test.task.RebuildIndex",
+		"taskTriggerName":    "Nightly",
+		"taskTriggerSkel":    "nightly",
 		"taskLauncherMethod": "LaunchNightly",
-		"runnerMethod":       "RunNightly",
+		"taskRunnerMethod":   "RunNightly",
 	} {
 		if finished[key] != want {
 			t.Fatalf("%s = %#v, want %#v in %#v", key, finished[key], want, finished)
 		}
 	}
-	for _, key := range []string{"taskSkel", "taskTriggerName", "taskTriggerSkel", "taskRunnerMethod"} {
+	for _, key := range []string{"taskSkelName", "triggerName", "triggerSkelName", "runnerMethod"} {
 		if _, exists := finished[key]; exists {
 			t.Fatalf("unexpected duplicate Task field %s in %#v", key, finished)
 		}

@@ -74,13 +74,13 @@ func TestListenerPanicUsesErrorAndMainFields(t *testing.T) {
 
 	records := readEventLogRecords(t, path)
 	finished := records[len(records)-1]
-	if finished["level"] != "ERROR" || finished["panic"] != "boom" || finished["stack"] == "" {
+	if finished["level"] != "DEBUG" || finished["panic"] != "boom" || finished["stack"] == "" {
 		t.Fatalf("unexpected panic record: %#v", finished)
 	}
-	if finished["eventSkelName"] != "test.event.Created" || finished["eventEmitterMethod"] != "EmitCreated" || finished["listenerMethod"] != "OnCreated" {
+	if finished["eventSkel"] != "test.event.Created" || finished["eventEmitterMethod"] != "EmitCreated" || finished["eventListenerMethod"] != "OnCreated" {
 		t.Fatalf("main Event fields are missing: %#v", finished)
 	}
-	for _, key := range []string{"eventSkel", "eventListenerMethod"} {
+	for _, key := range []string{"eventSkelName", "listenerMethod"} {
 		if _, exists := finished[key]; exists {
 			t.Fatalf("unexpected duplicate Event field %s in %#v", key, finished)
 		}

@@ -33,7 +33,8 @@ type _Error struct {
 	DetailValue string `json:"detail"`
 
 	cause      error
-	stack      []uintptr
+	errorStack []uintptr
+	panicStack []uintptr
 	panicked   bool
 	panicValue string
 }
@@ -100,8 +101,13 @@ func WithCause(cause error) ErrorOption {
 	vpre.CheckNotNil(cause, "missing cause error")
 	return func(err *_Error) {
 		err.cause = cause
-		if causeErr, ok := cause.(*_Error); ok && len(causeErr.stack) > 0 {
-			err.stack = append([]uintptr(nil), causeErr.stack...)
+		if causeErr, ok := cause.(*_Error); ok {
+			if len(causeErr.errorStack) > 0 {
+				err.errorStack = append([]uintptr(nil), causeErr.errorStack...)
+			} else if len(causeErr.panicStack) > 0 {
+				err.errorStack = nil
+			}
+			err.panicStack = append([]uintptr(nil), causeErr.panicStack...)
 			err.panicked = causeErr.panicked
 			err.panicValue = causeErr.panicValue
 		}
@@ -121,7 +127,7 @@ func New(code Code, message string, opts ...ErrorOption) Error {
 		MessageValue: message,
 	}
 	if code != OK {
-		err.stack = captureStack()
+		err.errorStack = captureStack()
 	}
 	for _, opt := range opts {
 		opt(err)
@@ -176,7 +182,7 @@ func decodeError(payload []byte, unmarshal func([]byte, any) error) (*_Error, er
 
 // Panic
 
-// Keep conditional checks in these helpers so a missing stack can be captured
+// Keep conditional checks in these helpers so the panic stack can be captured
 // from the original call site without another conditional wrapper frame.
 
 func PanicIfError(err error) {
@@ -260,8 +266,8 @@ func recoverError(r any, includeSysErr bool) Error {
 
 func withPanic(err Error, value any) Error {
 	internalErr := cloneError(err)
-	if len(internalErr.stack) == 0 {
-		internalErr.stack = captureStack()
+	if len(internalErr.panicStack) == 0 {
+		internalErr.panicStack = captureStack()
 	}
 	internalErr.panicked = true
 	internalErr.panicValue = safePanicValue(value)
@@ -276,7 +282,8 @@ func cloneError(err Error) *_Error {
 		ReasonValue:  internalErr.ReasonValue,
 		DetailValue:  internalErr.DetailValue,
 		cause:        internalErr.cause,
-		stack:        append([]uintptr(nil), internalErr.stack...),
+		errorStack:   append([]uintptr(nil), internalErr.errorStack...),
+		panicStack:   append([]uintptr(nil), internalErr.panicStack...),
 		panicked:     internalErr.panicked,
 		panicValue:   internalErr.panicValue,
 	})
@@ -309,7 +316,10 @@ func Stack(err Error) string {
 	if !ok {
 		return ""
 	}
-	return formatStack(internalErr.stack)
+	if len(internalErr.errorStack) > 0 {
+		return formatStack(internalErr.errorStack)
+	}
+	return formatStack(internalErr.panicStack)
 }
 
 func captureStack() []uintptr {
