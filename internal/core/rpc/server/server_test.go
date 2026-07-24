@@ -306,7 +306,7 @@ func TestServerHTTPHandlerReturnsStandardVrpcErrorForInvalidRequest(t *testing.T
 	if err := json.Unmarshal(bytes.TrimSpace(logBytes), &record); err != nil {
 		t.Fatalf("decode rejection log: %v", err)
 	}
-	if record["msg"] != "rpc server request rejected" || record["level"] != "DEBUG" || record["code"] != "INVALID_REQUEST" {
+	if record["msg"] != "rpc server request rejected" || record["level"] != "ERROR" || record["code"] != "INVALID_REQUEST" {
 		t.Fatalf("unexpected rejection record: %#v", record)
 	}
 	if record["vrpcId"] != trace.Id() || record["clientName"] != client.Name() {

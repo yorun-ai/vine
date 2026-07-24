@@ -98,7 +98,7 @@ func (s *Span) Finish(err ex.Error) {
 		"code", string(code),
 		"duration", time.Since(s.startedAt),
 	)
-	logLifecycle(s.logger, s.finishMsg, s.fields...)
+	logLifecycle(s.logger, s.finishMsg, err, s.fields...)
 }
 
 func ListenerRejected(log *logger.Logger, startedAt time.Time, trace meta.Trace, event spec.EventInfo, emitter meta.App, listener meta.App, err ex.Error, unresolvedEventSkelNames ...string) {
@@ -115,7 +115,7 @@ func ListenerRejected(log *logger.Logger, startedAt time.Time, trace meta.Trace,
 	fields = appendAppFields(fields, "listener", listener)
 	fields = appendErrorFields(fields, err)
 	fields = append(fields, "duration", time.Since(startedAt))
-	logLifecycle(log, "event listener handle rejected", fields...)
+	logLifecycle(log, "event listener handle rejected", err, fields...)
 }
 
 func appendPayloadFields(fields []any, payload logger.PayloadValue) []any {
@@ -162,8 +162,24 @@ func appendErrorFields(fields []any, err ex.Error) []any {
 	return fields
 }
 
-func logLifecycle(log *logger.Logger, msg string, fields ...any) {
-	log.Debug(msg, fields...)
+func logLifecycle(log *logger.Logger, msg string, err ex.Error, fields ...any) {
+	if _, panicked := ex.PanicValue(err); panicked {
+		log.Error(msg, fields...)
+		return
+	}
+
+	code := ex.OK
+	if err != nil {
+		code = err.Code()
+	}
+	switch code.Type() {
+	case ex.SystemError:
+		log.Error(msg, fields...)
+	case ex.ApplicationError:
+		log.Info(msg, fields...)
+	default:
+		log.Debug(msg, fields...)
+	}
 }
 
 func appendTraceFields(fields []any, trace meta.Trace) []any {

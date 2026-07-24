@@ -74,7 +74,7 @@ func TestListenerPanicUsesErrorAndMainFields(t *testing.T) {
 
 	records := readEventLogRecords(t, path)
 	finished := records[len(records)-1]
-	if finished["level"] != "DEBUG" || finished["panic"] != "boom" || finished["stack"] == "" {
+	if finished["level"] != "ERROR" || finished["panic"] != "boom" || finished["stack"] == "" {
 		t.Fatalf("unexpected panic record: %#v", finished)
 	}
 	if finished["eventSkel"] != "test.event.Created" || finished["eventEmitterMethod"] != "EmitCreated" || finished["eventListenerMethod"] != "OnCreated" {
@@ -84,6 +84,20 @@ func TestListenerPanicUsesErrorAndMainFields(t *testing.T) {
 		if _, exists := finished[key]; exists {
 			t.Fatalf("unexpected duplicate Event field %s in %#v", key, finished)
 		}
+	}
+}
+
+func TestListenerApplicationFailureUsesInfo(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "event-application-error.jsonl")
+	log := logger.NewLogger(&logger.Option{Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: path})
+	span := StartListenerHandle(log, meta.InitialTrace(), eventLogTestInfo{}, nil, nil, map[string]any{})
+
+	span.Finish(ex.New(ex.OperationFailed, "boom"))
+
+	records := readEventLogRecords(t, path)
+	finished := records[len(records)-1]
+	if finished["level"] != "INFO" || finished["code"] != string(ex.OperationFailed) {
+		t.Fatalf("unexpected application failure record: %#v", finished)
 	}
 }
 

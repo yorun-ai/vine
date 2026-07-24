@@ -242,7 +242,7 @@ func TestPanicDiagnosticIsMergedIntoSingleFailureFinished(t *testing.T) {
 	for _, record := range records {
 		if record["msg"] == "rpc server handle finished" {
 			finished++
-			if record["level"] != "DEBUG" || record["panic"] != "boom" || record["stack"] == "" {
+			if record["level"] != "ERROR" || record["panic"] != "boom" || record["stack"] == "" {
 				t.Fatalf("unexpected panic finished record: %#v", record)
 			}
 		}
@@ -252,6 +252,49 @@ func TestPanicDiagnosticIsMergedIntoSingleFailureFinished(t *testing.T) {
 	}
 	if finished != 1 {
 		t.Fatalf("expected one terminal finished record, got %d in %#v", finished, records)
+	}
+}
+
+func TestApplicationPanicUsesErrorLevel(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "rpc-application-panic.jsonl")
+	log := logger.NewLogger(&logger.Option{Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: path})
+	span := StartServerHandle(log, meta.InitialTrace(), testRpcLogMethodInfo(), nil, nil, &spec.EmptyArguments{})
+
+	var recovered ex.Error
+	func() {
+		defer func() { recovered = ex.RecoverExecution(recover()) }()
+		ex.PanicNew(ex.OperationFailed, "boom")
+	}()
+	span.FinishServer(recovered, nil)
+
+	records := readRpcLogRecords(t, path)
+	finished := records[len(records)-1]
+	if finished["level"] != "ERROR" || finished["code"] != string(ex.OperationFailed) || finished["panic"] == "" {
+		t.Fatalf("application panic must use Error: %#v", finished)
+	}
+}
+
+func TestFailureLevelsRemainVisibleWithoutDebug(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "rpc-failure-levels.jsonl")
+	log := logger.NewLogger(&logger.Option{Mode: logger.ModeJSON, Level: logger.LevelInfo, OutputPath: path})
+	method := testRpcLogMethodInfo()
+
+	StartServerHandle(log, meta.InitialTrace(), method, nil, nil, &spec.EmptyArguments{}).
+		FinishServer(ex.New(ex.OperationFailed, "application"), nil)
+	StartServerHandle(log, meta.InitialTrace(), method, nil, nil, &spec.EmptyArguments{}).
+		FinishServer(ex.New(ex.InvocationFailed, "system"), nil)
+	StartServerHandle(log, meta.InitialTrace(), method, nil, nil, &spec.EmptyArguments{}).
+		FinishServer(nil, nil)
+
+	records := readRpcLogRecords(t, path)
+	if len(records) != 2 {
+		t.Fatalf("Info threshold should emit only failures: %#v", records)
+	}
+	if records[0]["level"] != "INFO" || records[0]["code"] != string(ex.OperationFailed) {
+		t.Fatalf("unexpected application failure: %#v", records[0])
+	}
+	if records[1]["level"] != "ERROR" || records[1]["code"] != string(ex.InvocationFailed) {
+		t.Fatalf("unexpected system failure: %#v", records[1])
 	}
 }
 
@@ -282,6 +325,9 @@ func TestMutedMethodLogsOnlyFailureFinishedWithStartSnapshot(t *testing.T) {
 	records := readRpcLogRecords(t, path)
 	if len(records) != 1 || records[0]["msg"] != "rpc server handle finished" {
 		t.Fatalf("muted failure should emit one finished record: %#v", records)
+	}
+	if records[0]["level"] != "INFO" {
+		t.Fatalf("application failure should use Info: %#v", records[0])
 	}
 	payload, _ := records[0]["rpcArguments"].(string)
 	if !strings.Contains(payload, `"userId":"before"`) || strings.Contains(payload, "after") || strings.Contains(payload, "secret") {

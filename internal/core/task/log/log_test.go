@@ -53,7 +53,7 @@ func TestRunnerFailureIncludesSourceStack(t *testing.T) {
 
 	records := readTaskLogRecords(t, path)
 	finished := records[len(records)-1]
-	if finished["level"] != "DEBUG" || finished["code"] != string(ex.OperationFailed) || finished["error"] == "" {
+	if finished["level"] != "INFO" || finished["code"] != string(ex.OperationFailed) || finished["error"] == "" {
 		t.Fatalf("unexpected failure record: %#v", finished)
 	}
 	if stack, _ := finished["stack"].(string); !strings.Contains(stack, "TestRunnerFailureIncludesSourceStack") {

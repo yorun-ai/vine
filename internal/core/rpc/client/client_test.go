@@ -172,7 +172,7 @@ func TestInvokeEncodingFailureLogsRejectedWithoutStarted(t *testing.T) {
 	if decodeErr := json.Unmarshal([]byte(lines[0]), &record); decodeErr != nil {
 		t.Fatalf("decode client rejection log: %v", decodeErr)
 	}
-	if record["msg"] != "rpc client invoke rejected" || record["level"] != "DEBUG" || record["code"] != string(ex.InvocationFailed) {
+	if record["msg"] != "rpc client invoke rejected" || record["level"] != "ERROR" || record["code"] != string(ex.InvocationFailed) {
 		t.Fatalf("unexpected client rejection record: %#v", record)
 	}
 	if _, started := record["phase"]; started {

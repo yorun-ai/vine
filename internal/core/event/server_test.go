@@ -186,7 +186,7 @@ func TestServerRejectedUsesMainEventFieldNames(t *testing.T) {
 	if decodeErr := json.Unmarshal(logBytes, &record); decodeErr != nil {
 		t.Fatalf("decode rejection log: %v", decodeErr)
 	}
-	if record["msg"] != "event listener handle rejected" || record["level"] != "DEBUG" {
+	if record["msg"] != "event listener handle rejected" || record["level"] != "ERROR" {
 		t.Fatalf("unexpected rejection record: %#v", record)
 	}
 	if record["eventSkel"] != "missing.event" {

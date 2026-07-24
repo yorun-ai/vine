@@ -92,7 +92,7 @@ func (s *Span) Finish(err ex.Error) {
 		"code", string(code),
 		"duration", time.Since(s.startedAt),
 	)
-	logLifecycle(s.logger, s.finishMsg, s.fields...)
+	logLifecycle(s.logger, s.finishMsg, err, s.fields...)
 }
 
 func RunnerRejected(log *logger.Logger, startedAt time.Time, trace meta.Trace, trigger spec.TriggerInfo, launcher meta.App, runner meta.App, err ex.Error, unresolvedSkelNames ...string) {
@@ -114,7 +114,7 @@ func RunnerRejected(log *logger.Logger, startedAt time.Time, trace meta.Trace, t
 	fields = appendAppFields(fields, "runner", runner)
 	fields = appendErrorFields(fields, err)
 	fields = append(fields, "duration", time.Since(startedAt))
-	logLifecycle(log, "task runner handle rejected", fields...)
+	logLifecycle(log, "task runner handle rejected", err, fields...)
 }
 
 func appendErrorFields(fields []any, err ex.Error) []any {
@@ -136,8 +136,24 @@ func appendErrorFields(fields []any, err ex.Error) []any {
 	return fields
 }
 
-func logLifecycle(log *logger.Logger, msg string, fields ...any) {
-	log.Debug(msg, fields...)
+func logLifecycle(log *logger.Logger, msg string, err ex.Error, fields ...any) {
+	if _, panicked := ex.PanicValue(err); panicked {
+		log.Error(msg, fields...)
+		return
+	}
+
+	code := ex.OK
+	if err != nil {
+		code = err.Code()
+	}
+	switch code.Type() {
+	case ex.SystemError:
+		log.Error(msg, fields...)
+	case ex.ApplicationError:
+		log.Info(msg, fields...)
+	default:
+		log.Debug(msg, fields...)
+	}
 }
 
 func appendTraceFields(fields []any, trace meta.Trace) []any {

@@ -143,7 +143,7 @@ func (s *Span) finish(err ex.Error, result any, server bool) {
 		"code", string(code),
 		"duration", time.Since(s.startedAt),
 	)
-	logLifecycle(s.logger, s.finishMsg, s.fields...)
+	logLifecycle(s.logger, s.finishMsg, err, s.fields...)
 }
 
 func (s *Span) FinishWithResponse(err ex.Error, response spec.Response) {
@@ -175,7 +175,7 @@ func ServerRejected(log *logger.Logger, startedAt time.Time, trace meta.Trace, m
 	fields = appendAppFields(fields, "server", server)
 	fields = appendErrorFields(fields, err)
 	fields = append(fields, "duration", time.Since(startedAt))
-	logLifecycle(log, "rpc server request rejected", fields...)
+	logLifecycle(log, "rpc server request rejected", err, fields...)
 }
 
 func ClientRejected(log *logger.Logger, startedAt time.Time, trace meta.Trace, method spec.MethodInfo, serverEndpoint string, arguments any, err ex.Error) {
@@ -192,7 +192,7 @@ func ClientRejected(log *logger.Logger, startedAt time.Time, trace meta.Trace, m
 	}
 	fields = appendErrorFields(fields, err)
 	fields = append(fields, "duration", time.Since(startedAt))
-	logLifecycle(log, "rpc client invoke rejected", fields...)
+	logLifecycle(log, "rpc client invoke rejected", err, fields...)
 }
 
 func appendErrorFields(fields []any, err ex.Error) []any {
@@ -214,8 +214,24 @@ func appendErrorFields(fields []any, err ex.Error) []any {
 	return fields
 }
 
-func logLifecycle(log *logger.Logger, msg string, fields ...any) {
-	log.Debug(msg, fields...)
+func logLifecycle(log *logger.Logger, msg string, err ex.Error, fields ...any) {
+	if _, panicked := ex.PanicValue(err); panicked {
+		log.Error(msg, fields...)
+		return
+	}
+
+	code := ex.OK
+	if err != nil {
+		code = err.Code()
+	}
+	switch code.Type() {
+	case ex.SystemError:
+		log.Error(msg, fields...)
+	case ex.ApplicationError:
+		log.Info(msg, fields...)
+	default:
+		log.Debug(msg, fields...)
+	}
 }
 
 func renderRpcPayload(method spec.MethodInfo, surface logger.PayloadSurface, value any) logger.PayloadValue {
