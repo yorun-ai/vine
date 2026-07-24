@@ -67,6 +67,11 @@ type Option struct {
 
 var globalOptionMu sync.RWMutex
 var globalOption = newGlobalOption()
+var globalLevel slog.LevelVar
+
+func init() {
+	globalLevel.Set(globalOption.Level.ToSLogLevel())
+}
 
 func newGlobalOption() *Option {
 	mode := ModeText
@@ -92,8 +97,9 @@ func SetGlobalMode(mode Mode) {
 func SetGlobalLevel(level Level) {
 	vpre.Check(IsValidLevel(level), "%+v is not a valid LogLevel", level)
 	globalOptionMu.Lock()
-	defer globalOptionMu.Unlock()
 	globalOption.Level = level
+	globalOptionMu.Unlock()
+	globalLevel.Set(level.ToSLogLevel())
 }
 
 func GlobalOption() *Option {

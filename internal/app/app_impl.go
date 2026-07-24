@@ -35,11 +35,12 @@ import (
 const unregisterTimeout = time.Minute
 
 type _AppImpl struct {
-	spec   ApplicationSpec
-	info   runtime.App
-	ctx    context.Context
-	cancel context.CancelFunc
-	flags  _Flags
+	spec           ApplicationSpec
+	logicalAppName string
+	info           runtime.App
+	ctx            context.Context
+	cancel         context.CancelFunc
+	flags          _Flags
 
 	listenAddr string
 	linker     link.Linker
@@ -84,10 +85,11 @@ var detectHostIP = vnet.DetectHostIP
 func newApp(spec ApplicationSpec, flags _Flags) *_AppImpl {
 	ctx, cancel := context.WithCancel(flags.Context())
 	app := &_AppImpl{
-		spec:   spec,
-		ctx:    ctx,
-		cancel: cancel,
-		flags:  flags,
+		spec:           spec,
+		logicalAppName: spec.Name(),
+		ctx:            ctx,
+		cancel:         cancel,
+		flags:          flags,
 	}
 
 	app.init()

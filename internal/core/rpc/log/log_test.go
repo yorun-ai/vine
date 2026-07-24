@@ -1,16 +1,25 @@
 package log
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 )
+
+type rpcLifecycleArguments struct {
+	UserID string `json:"userId" arg:"0"`
+	Token  string `json:"token" arg:"1"`
+}
 
 func rpcLogTestClientPing() {}
 
@@ -19,6 +28,8 @@ func rpcLogTestServerPing() {}
 func rpcLogTestPubPing() {}
 
 func rpcLogTestPubServerPing() {}
+
+func rpcLogTestMutedFailure(string, string) {}
 
 func resetMuteForTest(t *testing.T) {
 	t.Helper()
@@ -169,4 +180,263 @@ func TestMuteSuccessSpanStillLogsError(t *testing.T) {
 	}
 
 	span.Finish(ex.New(ex.InvocationFailed, "boom"))
+}
+
+func TestServerLifecycleLogsSafePayloadAndDebugFinished(t *testing.T) {
+	method := spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
+		Name:     "LifecycleService",
+		SkelName: "test.lifecycle.Service",
+		Methods: []*spec.MethodSpec{{
+			Name:          "Get",
+			SkelName:      "get",
+			ArgumentsType: reflect.TypeFor[rpcLifecycleArguments](),
+			ResultType:    reflect.TypeFor[map[string]string](),
+		}},
+	}).Methods()[0]
+	path := filepath.Join(t.TempDir(), "rpc.jsonl")
+	log := logger.NewLogger(&logger.Option{Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: path})
+
+	span := StartServerHandle(log, meta.InitialTrace(), method, nil, nil, &rpcLifecycleArguments{
+		UserID: "u-1",
+		Token:  "secret-token",
+	})
+	span.FinishServer(nil, map[string]string{"name": "Alice"})
+
+	records := readRpcLogRecords(t, path)
+	if len(records) != 2 {
+		t.Fatalf("expected started and finished records, got %#v", records)
+	}
+	if records[0]["level"] != "DEBUG" || records[0]["msg"] != "rpc server handle started" {
+		t.Fatalf("unexpected started record: %#v", records[0])
+	}
+	arguments, _ := records[0]["rpcArguments"].(string)
+	if strings.Contains(arguments, "secret-token") || !strings.Contains(arguments, `"token":"<redacted>"`) {
+		t.Fatalf("unexpected Rpc arguments: %s", arguments)
+	}
+	if records[1]["level"] != "DEBUG" || records[1]["code"] != "OK" {
+		t.Fatalf("unexpected finished record: %#v", records[1])
+	}
+	if _, exists := records[1]["error"]; exists {
+		t.Fatalf("successful finished record must not contain error: %#v", records[1])
+	}
+	if result, _ := records[1]["rpcResult"].(string); !strings.Contains(result, `"name":"Alice"`) {
+		t.Fatalf("unexpected Rpc result: %s", result)
+	}
+}
+
+func TestPanicDiagnosticIsMergedIntoSingleFailureFinished(t *testing.T) {
+	method := testRpcLogMethodInfo()
+	path := filepath.Join(t.TempDir(), "rpc-panic.jsonl")
+	log := logger.NewLogger(&logger.Option{Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: path})
+	span := StartServerHandle(log, meta.InitialTrace(), method, nil, nil, &spec.EmptyArguments{})
+
+	var recovered ex.Error
+	func() {
+		defer func() { recovered = ex.RecoverExecution(recover()) }()
+		panic("boom")
+	}()
+	span.FinishServer(recovered, nil)
+
+	records := readRpcLogRecords(t, path)
+	finished := 0
+	for _, record := range records {
+		if record["msg"] == "rpc server handle finished" {
+			finished++
+			if record["level"] != "ERROR" || record["panic"] != "boom" || record["stack"] == "" {
+				t.Fatalf("unexpected panic finished record: %#v", record)
+			}
+		}
+		if strings.Contains(fmt.Sprint(record["msg"]), "recovered panic") {
+			t.Fatalf("unexpected duplicate recovery record: %#v", record)
+		}
+	}
+	if finished != 1 {
+		t.Fatalf("expected one terminal finished record, got %d in %#v", finished, records)
+	}
+}
+
+func TestApplicationPanicUsesErrorLevel(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "rpc-application-panic.jsonl")
+	log := logger.NewLogger(&logger.Option{Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: path})
+	span := StartServerHandle(log, meta.InitialTrace(), testRpcLogMethodInfo(), nil, nil, &spec.EmptyArguments{})
+
+	var recovered ex.Error
+	func() {
+		defer func() { recovered = ex.RecoverExecution(recover()) }()
+		ex.PanicNew(ex.OperationFailed, "boom")
+	}()
+	span.FinishServer(recovered, nil)
+
+	records := readRpcLogRecords(t, path)
+	finished := records[len(records)-1]
+	if finished["level"] != "ERROR" || finished["code"] != string(ex.OperationFailed) || finished["panic"] == "" {
+		t.Fatalf("application panic must use Error: %#v", finished)
+	}
+}
+
+func TestFailureLevelsRemainVisibleWithoutDebug(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "rpc-failure-levels.jsonl")
+	log := logger.NewLogger(&logger.Option{Mode: logger.ModeJSON, Level: logger.LevelInfo, OutputPath: path})
+	method := testRpcLogMethodInfo()
+
+	StartServerHandle(log, meta.InitialTrace(), method, nil, nil, &spec.EmptyArguments{}).
+		FinishServer(ex.New(ex.OperationFailed, "application"), nil)
+	StartServerHandle(log, meta.InitialTrace(), method, nil, nil, &spec.EmptyArguments{}).
+		FinishServer(ex.New(ex.InvocationFailed, "system"), nil)
+	StartServerHandle(log, meta.InitialTrace(), method, nil, nil, &spec.EmptyArguments{}).
+		FinishServer(nil, nil)
+
+	records := readRpcLogRecords(t, path)
+	if len(records) != 2 {
+		t.Fatalf("Info threshold should emit only failures: %#v", records)
+	}
+	if records[0]["level"] != "INFO" || records[0]["code"] != string(ex.OperationFailed) {
+		t.Fatalf("unexpected application failure: %#v", records[0])
+	}
+	if records[1]["level"] != "ERROR" || records[1]["code"] != string(ex.InvocationFailed) {
+		t.Fatalf("unexpected system failure: %#v", records[1])
+	}
+}
+
+func TestMutedMethodLogsOnlyFailureFinishedWithStartSnapshot(t *testing.T) {
+	resetMuteForTest(t)
+	serviceSpec := &spec.ServiceSpec{
+		Type:     spec.ServiceSpecTypeServer,
+		Name:     "MutedFailureService",
+		SkelName: "rpc.log.test.muted.failure",
+		Methods: []*spec.MethodSpec{{
+			Name:          "Run",
+			SkelName:      "run",
+			ArgumentsType: reflect.TypeFor[rpcLifecycleArguments](),
+			MethodFuncs:   []any{rpcLogTestMutedFailure},
+		}},
+	}
+	spec.Register(serviceSpec)
+	MuteSuccessLog(rpcLogTestMutedFailure)
+	method := serviceSpec.Methods[0].Info()
+	path := filepath.Join(t.TempDir(), "rpc-muted.jsonl")
+	log := logger.NewLogger(&logger.Option{Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: path})
+	arguments := &rpcLifecycleArguments{UserID: "before", Token: "secret"}
+
+	span := StartServerHandle(log, nil, method, nil, nil, arguments)
+	arguments.UserID = "after"
+	span.FinishServer(ex.New(ex.OperationFailed, "boom"), nil)
+
+	records := readRpcLogRecords(t, path)
+	if len(records) != 1 || records[0]["msg"] != "rpc server handle finished" {
+		t.Fatalf("muted failure should emit one finished record: %#v", records)
+	}
+	if records[0]["level"] != "INFO" {
+		t.Fatalf("application failure should use Info: %#v", records[0])
+	}
+	payload, _ := records[0]["rpcArguments"].(string)
+	if !strings.Contains(payload, `"userId":"before"`) || strings.Contains(payload, "after") || strings.Contains(payload, "secret") {
+		t.Fatalf("muted failure did not use safe start snapshot: %s", payload)
+	}
+}
+
+func TestMutedFailureMarksArgumentsOmittedWhenDebugWasDisabledAtStart(t *testing.T) {
+	previousLevel := logger.GlobalOption().Level
+	t.Cleanup(func() { logger.SetGlobalLevel(previousLevel) })
+	logger.SetGlobalLevel(logger.LevelInfo)
+	span := &Span{
+		logger:              logger.NewGlobalLogger(),
+		finishMsg:           "rpc server handle finished",
+		startedAt:           time.Now(),
+		muteSuccess:         true,
+		debugEnabledAtStart: false,
+	}
+	logger.SetGlobalLevel(logger.LevelDebug)
+	span.FinishServer(ex.New(ex.OperationFailed, "boom"), nil)
+
+	assertSpanField(t, span, "rpcArgumentsOmittedReason", "debug_disabled_at_start")
+}
+
+func TestDisabledDebugDoesNotInvokePayloadSanitizer(t *testing.T) {
+	method := spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
+		Name:     "LazyPayloadService",
+		SkelName: "rpc.log.test.lazy.payload",
+		Methods: []*spec.MethodSpec{{
+			Name:          "Get",
+			SkelName:      "get",
+			ArgumentsType: reflect.TypeFor[rpcLifecycleArguments](),
+			ResultType:    reflect.TypeFor[string](),
+		}},
+	}).Methods()[0]
+	sanitizerCalls := 0
+	logger.RegisterRpcPayloadPolicy(method.Service().SkelName(), method.SkelName(), logger.PayloadSurfaceRpcArguments, logger.PayloadPolicy{
+		Sanitizer: func(logger.PayloadDescriptor, any) (any, error) {
+			sanitizerCalls++
+			return map[string]string{"value": "safe"}, nil
+		},
+	})
+	logger.RegisterRpcPayloadPolicy(method.Service().SkelName(), method.SkelName(), logger.PayloadSurfaceRpcResult, logger.PayloadPolicy{
+		Sanitizer: func(logger.PayloadDescriptor, any) (any, error) {
+			sanitizerCalls++
+			return "safe", nil
+		},
+	})
+	log := logger.NewLogger(&logger.Option{Mode: logger.ModeText, Level: logger.LevelInfo})
+
+	span := StartServerHandle(log, nil, method, nil, nil, &rpcLifecycleArguments{})
+	span.FinishServer(nil, "result")
+	if sanitizerCalls != 0 {
+		t.Fatalf("payload sanitizer ran while Debug was disabled: %d", sanitizerCalls)
+	}
+}
+
+func TestInternalTaskEventTransportNeverLogsRpcPayload(t *testing.T) {
+	method := spec.ConvertSpecToInfoForTest(new(spec.ServiceSpec{
+		Name:     "EventService",
+		SkelName: "vine.app.EventService",
+		Methods: []*spec.MethodSpec{{
+			Name:          "OnEvent",
+			SkelName:      "onEvent",
+			ArgumentsType: reflect.TypeFor[rpcLifecycleArguments](),
+			ResultType:    reflect.TypeFor[string](),
+		}},
+	})).Methods()[0]
+	logger.RegisterRpcPayloadPolicy(method.Service().SkelName(), method.SkelName(), logger.PayloadSurfaceRpcArguments,
+		logger.PayloadPolicy{Mode: logger.PayloadModeUnsafeFull})
+	logger.RegisterRpcPayloadPolicy(method.Service().SkelName(), method.SkelName(), logger.PayloadSurfaceRpcResult,
+		logger.PayloadPolicy{Mode: logger.PayloadModeUnsafeFull})
+	path := filepath.Join(t.TempDir(), "rpc-internal-envelope.jsonl")
+	log := logger.NewLogger(new(logger.Option{Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: path}))
+
+	span := StartServerHandle(log, nil, method, nil, nil, new(rpcLifecycleArguments{Token: "secret"}))
+	span.FinishServer(nil, "secret-result")
+
+	records := readRpcLogRecords(t, path)
+	if len(records) != 2 {
+		t.Fatalf("internal transport should keep lifecycle logs: %#v", records)
+	}
+	for _, record := range records {
+		if _, exists := record["rpcArguments"]; exists {
+			t.Fatalf("internal transport arguments leaked: %#v", record)
+		}
+		if _, exists := record["rpcResult"]; exists {
+			t.Fatalf("internal transport result leaked: %#v", record)
+		}
+	}
+}
+
+func readRpcLogRecords(t *testing.T, path string) []map[string]any {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read log output: %v", err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	records := make([]map[string]any, 0, len(lines))
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		var record map[string]any
+		if err := json.Unmarshal([]byte(line), &record); err != nil {
+			t.Fatalf("decode log record: %v", err)
+		}
+		records = append(records, record)
+	}
+	return records
 }

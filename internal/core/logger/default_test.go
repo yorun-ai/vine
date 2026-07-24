@@ -6,6 +6,8 @@ import (
 )
 
 func TestDefaultLoggerFunctions(t *testing.T) {
+	previousDefault := defaultLogger
+	t.Cleanup(func() { SetDefault(previousDefault) })
 	Debug("e-ddd")
 	Info("e-iii")
 	Error("e-eee")

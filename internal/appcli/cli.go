@@ -23,8 +23,18 @@ var errIgnoreArgs = errors.New("ignore app args")
 var helpFlagMu sync.Mutex
 
 const (
-	flagLogLevel = "log-level"
-	envLogLevel  = "VINE_LOG_LEVEL"
+	flagLogLevel          = "log-level"
+	flagRpcServerLogLevel = "rpc-server-log-level"
+	flagTaskLogLevel      = "task-log-level"
+	flagEventLogLevel     = "event-log-level"
+	flagAppLogLevel       = "app-log-level"
+	flagAppScopeLogLevel  = "app-scope-log-level"
+	envLogLevel           = "VINE_LOG_LEVEL"
+	envRpcServerLogLevel  = "VINE_RPC_SERVER_LOG_LEVEL"
+	envTaskLogLevel       = "VINE_TASK_LOG_LEVEL"
+	envEventLogLevel      = "VINE_EVENT_LOG_LEVEL"
+	envAppLogLevels       = "VINE_APP_LOG_LEVELS"
+	envAppScopeLogLevels  = "VINE_APP_SCOPE_LOG_LEVELS"
 )
 
 // Handle parses common application arguments together with flags.
@@ -82,13 +92,48 @@ func newArgsCommand(args []string, setShouldExit func(), flags ...ucli.Flag) *uc
 	}
 
 	var logLevel string
+	var rpcServerLogLevel string
+	var taskLogLevel string
+	var eventLogLevel string
+	var appLogLevels []string
+	var appScopeLogLevels []string
 	flags = append([]ucli.Flag{
-		&ucli.StringFlag{
+		new(ucli.StringFlag{
 			Name:        flagLogLevel,
 			Sources:     ucli.EnvVars(envLogLevel),
 			Usage:       "log level: DEBUG, INFO, WARN, ERROR",
 			Destination: &logLevel,
-		},
+		}),
+		new(ucli.StringFlag{
+			Name:        flagRpcServerLogLevel,
+			Sources:     ucli.EnvVars(envRpcServerLogLevel),
+			Usage:       "Rpc server lifecycle log level",
+			Destination: &rpcServerLogLevel,
+		}),
+		new(ucli.StringFlag{
+			Name:        flagTaskLogLevel,
+			Sources:     ucli.EnvVars(envTaskLogLevel),
+			Usage:       "Task lifecycle log level",
+			Destination: &taskLogLevel,
+		}),
+		new(ucli.StringFlag{
+			Name:        flagEventLogLevel,
+			Sources:     ucli.EnvVars(envEventLogLevel),
+			Usage:       "Event lifecycle log level",
+			Destination: &eventLogLevel,
+		}),
+		new(ucli.StringSliceFlag{
+			Name:        flagAppLogLevel,
+			Sources:     ucli.EnvVars(envAppLogLevels),
+			Usage:       "App log level override: app=LEVEL",
+			Destination: &appLogLevels,
+		}),
+		new(ucli.StringSliceFlag{
+			Name:        flagAppScopeLogLevel,
+			Sources:     ucli.EnvVars(envAppScopeLogLevels),
+			Usage:       "App subsystem log level override: app:subsystem=LEVEL",
+			Destination: &appScopeLogLevels,
+		}),
 	}, flags...)
 
 	return &ucli.Command{
@@ -98,8 +143,20 @@ func newArgsCommand(args []string, setShouldExit func(), flags ...ucli.Flag) *uc
 		HideHelpCommand: true,
 		Flags:           flags,
 		Action: func(_ context.Context, cmd *ucli.Command) error {
+			overrides, hasOverrides, err := parseLogLevelOverrides(
+				rpcServerLogLevel, taskLogLevel, eventLogLevel, appLogLevels, appScopeLogLevels)
+			if err != nil {
+				return err
+			}
 			if logLevel != "" {
-				logger.SetGlobalLevel(logger.Level(logLevel))
+				level := logger.Level(logLevel)
+				if !logger.IsValidLevel(level) {
+					return fmt.Errorf("invalid log level %q", logLevel)
+				}
+				logger.SetGlobalLevel(level)
+			}
+			if hasOverrides {
+				logger.ReplaceLevelOverrides(overrides)
 			}
 
 			arg := cmd.Args().First()
@@ -120,6 +177,92 @@ func newArgsCommand(args []string, setShouldExit func(), flags ...ucli.Flag) *uc
 			}
 		},
 	}
+}
+
+func parseLogLevelOverrides(
+	rpcServerLevel string,
+	taskLevel string,
+	eventLevel string,
+	appRules []string,
+	appScopeRules []string,
+) (logger.LevelOverrides, bool, error) {
+	overrides := logger.LevelOverrides{
+		Subsystems: map[logger.Subsystem]logger.Level{},
+		Apps:       map[string]logger.Level{},
+	}
+	hasOverrides := false
+	for subsystem, rawLevel := range map[logger.Subsystem]string{
+		logger.SubsystemRpcServer: rpcServerLevel,
+		logger.SubsystemTask:      taskLevel,
+		logger.SubsystemEvent:     eventLevel,
+	} {
+		if rawLevel == "" {
+			continue
+		}
+		level := logger.Level(rawLevel)
+		if !logger.IsValidLevel(level) {
+			return logger.LevelOverrides{}, false, fmt.Errorf("invalid %s log level %q", subsystem, rawLevel)
+		}
+		overrides.Subsystems[subsystem] = level
+		hasOverrides = true
+	}
+	for _, rule := range appRules {
+		appName, level, err := parseAppLevelRule(rule)
+		if err != nil {
+			return logger.LevelOverrides{}, false, err
+		}
+		overrides.Apps[appName] = level
+		hasOverrides = true
+	}
+	appScopeIndex := map[string]int{}
+	for _, rule := range appScopeRules {
+		appName, subsystem, level, err := parseAppScopeLevelRule(rule)
+		if err != nil {
+			return logger.LevelOverrides{}, false, err
+		}
+		key := appName + "\x00" + string(subsystem)
+		entry := logger.AppSubsystemLevel{AppName: appName, Subsystem: subsystem, Level: level}
+		if index, exists := appScopeIndex[key]; exists {
+			overrides.AppSubsystem[index] = entry
+		} else {
+			appScopeIndex[key] = len(overrides.AppSubsystem)
+			overrides.AppSubsystem = append(overrides.AppSubsystem, entry)
+		}
+		hasOverrides = true
+	}
+	return overrides, hasOverrides, nil
+}
+
+func parseAppLevelRule(rule string) (string, logger.Level, error) {
+	separator := strings.LastIndexByte(rule, '=')
+	if separator <= 0 || separator == len(rule)-1 {
+		return "", "", fmt.Errorf("invalid app log level rule %q", rule)
+	}
+	appName := rule[:separator]
+	level := logger.Level(rule[separator+1:])
+	if !logger.IsValidLevel(level) {
+		return "", "", fmt.Errorf("invalid app log level rule %q", rule)
+	}
+	return appName, level, nil
+}
+
+func parseAppScopeLevelRule(rule string) (string, logger.Subsystem, logger.Level, error) {
+	separator := strings.LastIndexByte(rule, '=')
+	if separator <= 0 || separator == len(rule)-1 {
+		return "", "", "", fmt.Errorf("invalid app scope log level rule %q", rule)
+	}
+	selector := rule[:separator]
+	scopeSeparator := strings.LastIndexByte(selector, ':')
+	if scopeSeparator <= 0 || scopeSeparator == len(selector)-1 {
+		return "", "", "", fmt.Errorf("invalid app scope log level rule %q", rule)
+	}
+	appName := selector[:scopeSeparator]
+	subsystem := logger.Subsystem(selector[scopeSeparator+1:])
+	level := logger.Level(rule[separator+1:])
+	if !logger.IsValidSubsystem(subsystem) || !logger.IsValidLevel(level) {
+		return "", "", "", fmt.Errorf("invalid app scope log level rule %q", rule)
+	}
+	return appName, subsystem, level, nil
 }
 
 func isIgnorableArgsError(err error) bool {

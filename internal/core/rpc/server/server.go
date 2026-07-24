@@ -3,7 +3,7 @@ package server
 import (
 	"net/http"
 	"reflect"
-	"runtime/debug"
+	"time"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/logger"
@@ -14,10 +14,12 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-var rpcServerLogger = logger.NewLogger(logger.GlobalOption())
-
 type Option struct {
-	App            meta.App
+	App meta.App
+	// LogicalAppName is the stable ApplicationSpec name used for scoped lifecycle logging.
+	LogicalAppName string
+	// Logger overrides dynamic App and Rpc-server lifecycle logging when non-nil.
+	Logger         *logger.Logger
 	MuteVerboseLog bool
 	HandlerTypes   []reflect.Type
 	Executor       Executor
@@ -33,12 +35,26 @@ type Server struct {
 
 	implDict *spec.ImplDict
 	executor Executor
+	log      *logger.Logger
+	infraLog *logger.Logger
 }
 
 func New(opt Option) *Server {
+	logger.FreezePayloadPolicies()
 	server := &Server{
 		opt:      &opt,
 		executor: opt.Executor,
+	}
+	if opt.Logger != nil {
+		server.log = opt.Logger
+		server.infraLog = opt.Logger
+	} else {
+		appName := opt.LogicalAppName
+		if appName == "" && opt.App != nil {
+			appName = opt.App.Name()
+		}
+		server.log = logger.NewScopedLogger(logger.Scope{AppName: appName, Subsystem: logger.SubsystemRpcServer})
+		server.infraLog = logger.NewGlobalLogger()
 	}
 	server.init()
 	return server
@@ -67,64 +83,30 @@ func (s *Server) GetServiceInfos() []spec.ServiceInfo {
 func (s *Server) handle(rpcRequest spec.Request) (response spec.Response) {
 	var trace meta.Trace
 	var result any
-	var err ex.Error
+	var logErr ex.Error
 
 	logSpan := rpclog.Noop()
-	defer func() { logSpan.Finish(err) }()
+	defer func() { logSpan.FinishServer(logErr, result) }()
 
 	defer func() {
 		if reErr := recover(); reErr != nil {
-			switch casted := reErr.(type) {
-			case ex.Error:
-				err = casted
-				if casted.Type() == ex.SystemError {
-					stack := ex.PanicStack(casted)
-					if stack == "" {
-						stack = string(debug.Stack())
-					}
-					rpcServerLogger.Error("rpc server recovered system error",
-						"error", casted,
-						"stack", stack,
-						"rpcMethod", rpcRequest.MethodInfo().Name(),
-						"rpcMethodSkel", rpcRequest.MethodInfo().SkelName(),
-						"clientName", rpcRequest.Client().Name(),
-						"clientVersion", rpcRequest.Client().Version(),
-						"clientInstanceId", rpcRequest.Client().InstanceId(),
-						"serverName", s.opt.App.Name(),
-						"serverVersion", s.opt.App.Version(),
-						"serverInstanceId", s.opt.App.InstanceId(),
-					)
-				}
-			default:
-				rpcServerLogger.Error("rpc server recovered panic",
-					"panic", reErr,
-					"stack", string(debug.Stack()),
-					"rpcMethod", rpcRequest.MethodInfo().Name(),
-					"rpcMethodSkel", rpcRequest.MethodInfo().SkelName(),
-					"clientName", rpcRequest.Client().Name(),
-					"clientVersion", rpcRequest.Client().Version(),
-					"clientInstanceId", rpcRequest.Client().InstanceId(),
-					"serverName", s.opt.App.Name(),
-					"serverVersion", s.opt.App.Version(),
-					"serverInstanceId", s.opt.App.InstanceId(),
-				)
-				err = ex.NewInternal()
-			}
+			logErr = ex.RecoverExecution(reErr)
 		}
 
-		if err == nil {
-			err = ex.NewOK()
+		if logErr == nil {
+			logErr = ex.NewOK()
 		}
 
-		if err.Code().IsUnresponsive() {
-			err = ex.NewInternal()
+		responseErr := logErr
+		if responseErr.Code().IsUnresponsive() {
+			responseErr = ex.NewInternal()
 		}
 
 		response = &spec.ResponseImpl{
 			ServerValue: s.opt.App,
 			MethodValue: rpcRequest.MethodInfo(),
 			ResultValue: result,
-			ErrorValue:  err,
+			ErrorValue:  responseErr,
 		}
 	}()
 
@@ -138,11 +120,15 @@ func (s *Server) handle(rpcRequest spec.Request) (response spec.Response) {
 		},
 		ClientValue: rpcRequest.Client(),
 	}
-	logSpan = rpclog.StartServerHandle(rpcServerLogger, trace, rpcRequest.MethodInfo(), rpcRequest.Client(), s.opt.App)
+	logArguments := rpcRequest.Arguments()
+	if !rpcRequest.MethodInfo().HasArguments() {
+		logArguments = new(spec.EmptyArguments)
+	}
+	logSpan = rpclog.StartServerHandle(s.log, trace, rpcRequest.MethodInfo(), rpcRequest.Client(), s.opt.App, logArguments)
 	arguments := rpcRequest.PositionalArguments()
 	methodImpl := rpcRequest.MethodImpl()
 
-	result, err = s.executor.Execute(rpcContext, methodImpl, arguments)
+	result, logErr = s.executor.Execute(rpcContext, methodImpl, arguments)
 	return
 }
 
@@ -153,22 +139,27 @@ func (s *Server) RpcHandler() spec.RpcHandler {
 }
 
 func (s *Server) serveRpc(rpcRequest spec.Request) spec.Response {
+	startedAt := time.Now()
 	methodInfo := rpcRequest.MethodInfo()
 	rpcRequest.(*spec.RequestImpl).ArgumentsValue = spec.CloneInprocRequestArguments(rpcRequest.Arguments(), methodInfo)
 	if err := methodInfo.ValidateArguments(rpcRequest.Arguments()); err != nil {
+		rejectedErr := ex.New(ex.InvalidRequest, err.Error())
+		rpclog.ServerRejected(s.log, startedAt, rpcRequest.Trace(), methodInfo, rpcRequest.Client(), s.opt.App, rejectedErr)
 		return &spec.ResponseImpl{
 			ServerValue: s.opt.App,
 			MethodValue: methodInfo,
-			ErrorValue:  ex.New(ex.InvalidRequest, err.Error()),
+			ErrorValue:  rejectedErr,
 		}
 	}
 
 	methodImpl, err := s.implDict.GetMethodImplByInfo(rpcRequest.MethodInfo())
 	if err != nil {
+		rejectedErr := ex.New(ex.InvalidRequest, err.Error())
+		rpclog.ServerRejected(s.log, startedAt, rpcRequest.Trace(), methodInfo, rpcRequest.Client(), s.opt.App, rejectedErr)
 		return &spec.ResponseImpl{
 			ServerValue: s.opt.App,
 			MethodValue: rpcRequest.MethodInfo(),
-			ErrorValue:  ex.New(ex.InvalidRequest, err.Error()),
+			ErrorValue:  rejectedErr,
 		}
 	}
 
@@ -186,16 +177,22 @@ func (s *Server) HTTPHandler() http.Handler {
 }
 
 func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
-	rpcRequest, err := httptrans.DecodeRequest(r)
+	startedAt := time.Now()
+	rpcRequest, diagnostic, err := httptrans.DecodeRequestWithDiagnostic(r)
 	if err != nil {
-		_ = httptrans.WriteRequestErrorResponse(w, r, s.opt.App, ex.New(ex.InvalidRequest, err.Error()))
+		rejectedErr := ex.New(ex.InvalidRequest, err.Error())
+		rpclog.ServerRejected(s.log, startedAt, diagnostic.Trace, diagnostic.Method, diagnostic.Client, s.opt.App, rejectedErr,
+			diagnostic.ServiceSkelName, diagnostic.MethodSkelName)
+		_ = httptrans.WriteRequestErrorResponse(w, r, s.opt.App, rejectedErr)
 		return
 	}
 	defer rpcRequest.Cancel()
 
 	methodImpl, err := s.implDict.GetMethodImplByInfo(rpcRequest.MethodInfo())
 	if err != nil {
-		_ = httptrans.WriteRequestErrorResponse(w, r, s.opt.App, ex.New(ex.InvalidRequest, err.Error()))
+		rejectedErr := ex.New(ex.InvalidRequest, err.Error())
+		rpclog.ServerRejected(s.log, startedAt, rpcRequest.Trace(), rpcRequest.MethodInfo(), rpcRequest.Client(), s.opt.App, rejectedErr)
+		_ = httptrans.WriteRequestErrorResponse(w, r, s.opt.App, rejectedErr)
 		return
 	}
 
@@ -203,6 +200,6 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	rpcResponse := s.handle(rpcRequest)
 	if err := httptrans.WriteResponse(w, r, rpcResponse); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		rpcServerLogger.Error("response body write failed", "error", err)
+		s.infraLog.Error("response body write failed", "error", err)
 	}
 }

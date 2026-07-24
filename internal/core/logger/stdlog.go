@@ -22,8 +22,8 @@ func init() {
 	stdLog.SetOutput(standardLoggerWriter)
 }
 
-func setStandardLogger(config Option) {
-	standardLogger = newSlogLogger(&config, true)
+func setStandardLogger(config Option, leveler slog.Leveler) {
+	standardLogger = newSlogLogger(&config, true, leveler)
 }
 
 type _StandardLoggerWriter struct{}

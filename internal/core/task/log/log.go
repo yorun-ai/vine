@@ -36,6 +36,9 @@ func LauncherLaunchSuccess(log *logger.Logger, trace meta.Trace, trigger spec.Tr
 func StartRunnerHandle(log *logger.Logger, trace meta.Trace, trigger spec.TriggerInfo, launcher meta.App, runner meta.App) *Span {
 	span := Start(log, "task runner handle started", "task runner handle finished", trace, trigger, launcher)
 	span.AddApp("runner", runner)
+	if log != nil {
+		log.Debug("task runner handle started", span.fields...)
+	}
 	return span
 }
 
@@ -55,7 +58,9 @@ func Start(log *logger.Logger, startMsg string, finishMsg string, trace meta.Tra
 		startedAt: time.Now(),
 		fields:    fields,
 	}
-	log.Debug(startMsg, fields...)
+	if startMsg != "task runner handle started" {
+		log.Debug(startMsg, fields...)
+	}
 	return span
 }
 
@@ -73,19 +78,81 @@ func (s *Span) Finish(err ex.Error) {
 	code := ex.OK
 	if err != nil {
 		code = err.Code()
+	}
+	if code != ex.OK && err != nil {
 		s.fields = append(s.fields, "error", err.Error())
+		if panicValue, panicked := ex.PanicValue(err); panicked {
+			s.fields = append(s.fields, "panic", panicValue)
+		}
+		if stack := ex.Stack(err); stack != "" {
+			s.fields = append(s.fields, "stack", stack)
+		}
 	}
 	s.fields = append(s.fields,
 		"code", string(code),
 		"duration", time.Since(s.startedAt),
 	)
+	logLifecycle(s.logger, s.finishMsg, err, s.fields...)
+}
+
+func RunnerRejected(log *logger.Logger, startedAt time.Time, trace meta.Trace, trigger spec.TriggerInfo, launcher meta.App, runner meta.App, err ex.Error, unresolvedSkelNames ...string) {
+	if log == nil {
+		return
+	}
+	fields := make([]any, 0, 22)
+	fields = appendTraceFields(fields, trace)
+	fields = appendTaskFields(fields, trigger)
+	if trigger == nil {
+		if len(unresolvedSkelNames) > 0 && unresolvedSkelNames[0] != "" {
+			fields = append(fields, "taskSkel", unresolvedSkelNames[0])
+		}
+		if len(unresolvedSkelNames) > 1 && unresolvedSkelNames[1] != "" {
+			fields = append(fields, "taskTriggerSkel", unresolvedSkelNames[1])
+		}
+	}
+	fields = appendAppFields(fields, "launcher", launcher)
+	fields = appendAppFields(fields, "runner", runner)
+	fields = appendErrorFields(fields, err)
+	fields = append(fields, "duration", time.Since(startedAt))
+	logLifecycle(log, "task runner handle rejected", err, fields...)
+}
+
+func appendErrorFields(fields []any, err ex.Error) []any {
+	code := ex.OK
+	if err != nil {
+		code = err.Code()
+	}
+	fields = append(fields, "code", string(code))
+	if code == ex.OK || err == nil {
+		return fields
+	}
+	fields = append(fields, "error", err.Error())
+	if panicValue, panicked := ex.PanicValue(err); panicked {
+		fields = append(fields, "panic", panicValue)
+	}
+	if stack := ex.Stack(err); stack != "" {
+		fields = append(fields, "stack", stack)
+	}
+	return fields
+}
+
+func logLifecycle(log *logger.Logger, msg string, err ex.Error, fields ...any) {
+	if _, panicked := ex.PanicValue(err); panicked {
+		log.Error(msg, fields...)
+		return
+	}
+
+	code := ex.OK
+	if err != nil {
+		code = err.Code()
+	}
 	switch code.Type() {
-	case ex.NoError:
-		s.logger.Info(s.finishMsg, s.fields...)
+	case ex.SystemError:
+		log.Error(msg, fields...)
 	case ex.ApplicationError:
-		s.logger.Warn(s.finishMsg, s.fields...)
+		log.Info(msg, fields...)
 	default:
-		s.logger.Error(s.finishMsg, s.fields...)
+		log.Debug(msg, fields...)
 	}
 }
 

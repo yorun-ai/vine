@@ -87,7 +87,7 @@ func (e *Execution) newClient() *rpc.Client {
 	return rpc.NewClient(rpc.ClientOption{
 		Context:        rpc.NewContext(e.context, e.trace, e.runtime.clientApp, e.initiator, e.actor),
 		ClientApp:      e.runtime.clientApp,
-		Logger:         logger.NewLogger(logger.GlobalOption()),
+		Logger:         logger.NewGlobalLogger(),
 		ServerEndpoint: rpcProxyOutEndpoint,
 	})
 }

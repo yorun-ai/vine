@@ -3,14 +3,18 @@ package server
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"reflect"
 	"sync"
 	"testing"
 
 	"go.yorun.ai/vine/internal/core/ex"
+	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 	httptrans "go.yorun.ai/vine/internal/core/rpc/transport/http"
@@ -252,8 +256,11 @@ func TestServerHTTPHandlerReturnsStandardVrpcErrorForInvalidRequest(t *testing.T
 	if err != nil {
 		t.Fatalf("NewApp() error = %v", err)
 	}
+	logPath := filepath.Join(t.TempDir(), "rpc-rejected.jsonl")
+	log := logger.NewLogger(&logger.Option{Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath})
 	server := New(Option{
 		App:          serverApp,
+		Logger:       log,
 		HandlerTypes: []reflect.Type{reflect.TypeFor[*serverTestServiceImpl]()},
 	})
 
@@ -290,6 +297,27 @@ func TestServerHTTPHandlerReturnsStandardVrpcErrorForInvalidRequest(t *testing.T
 	if !bytes.Contains(bodyBytes, []byte(`"code":"INVALID_REQUEST"`)) {
 		t.Fatalf("unexpected response body: %s", string(bodyBytes))
 	}
+
+	logBytes, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("read rejection log: %v", err)
+	}
+	var record map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(logBytes), &record); err != nil {
+		t.Fatalf("decode rejection log: %v", err)
+	}
+	if record["msg"] != "rpc server request rejected" || record["level"] != "ERROR" || record["code"] != "INVALID_REQUEST" {
+		t.Fatalf("unexpected rejection record: %#v", record)
+	}
+	if record["vrpcId"] != trace.Id() || record["clientName"] != client.Name() {
+		t.Fatalf("validated rejection metadata was not preserved: %#v", record)
+	}
+	if _, exists := record["body"]; exists {
+		t.Fatalf("raw request body leaked into rejection log: %#v", record)
+	}
+	if _, exists := record["rawBody"]; exists {
+		t.Fatalf("raw request body leaked into rejection log: %#v", record)
+	}
 }
 
 func TestServerHandleConvertsRecoveredPanicToInternalError(t *testing.T) {
@@ -320,5 +348,27 @@ func TestServerHandleConvertsRecoveredPanicToInternalError(t *testing.T) {
 
 	if response.Error() == nil || response.Error().Code() != ex.Internal {
 		t.Fatalf("expected internal error, got %#v", response.Error())
+	}
+}
+
+func TestServerHandleDoesNotTreatPanickedOKErrorAsSuccess(t *testing.T) {
+	method := spec.ConvertSpecToInfoForTest(new(spec.ServiceSpec{
+		Name:     "TestService",
+		SkelName: "test.service.handle.ok-panic",
+		Methods:  []*spec.MethodSpec{{Name: "Ping", SkelName: "ping"}},
+	})).Methods()[0]
+	response := (&Server{
+		opt: &Option{},
+		executor: new(_ServerTestExecutor{
+			panicV: ex.NewOK(),
+		}),
+	}).handle(new(spec.RequestImpl{
+		ContextValue:    context.Background(),
+		TraceValue:      meta.InitialTrace(),
+		MethodInfoValue: method,
+	}))
+
+	if response.Error() == nil || response.Error().Code() != ex.Internal {
+		t.Fatalf("panicked OK error must be converted to failure, got %#v", response.Error())
 	}
 }

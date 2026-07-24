@@ -29,15 +29,21 @@ func (*ServicerEnabled) ServicerInitFilters(addFilter TypeAdder)   {}
 type _Servicer struct {
 	spec        ServicerSpec
 	appInfo     runtime.App
+	appName     string
 	bindAppDeps di.BindApplier
 
 	server *rpcserver.Server
 }
 
-func newServicer(spec ServicerSpec, info runtime.App, deps di.BindApplier) *_Servicer {
+func newServicer(spec ServicerSpec, info runtime.App, deps di.BindApplier, logicalAppNames ...string) *_Servicer {
+	appName := info.Name()
+	if len(logicalAppNames) > 0 {
+		appName = logicalAppNames[0]
+	}
 	servicer := &_Servicer{
 		spec:        spec,
 		appInfo:     info,
+		appName:     appName,
 		bindAppDeps: deps,
 	}
 	servicer.init()
@@ -53,9 +59,10 @@ func (s *_Servicer) init() {
 	}
 
 	s.server = rpcserver.New(rpcserver.Option{
-		App:          s.appInfo,
-		HandlerTypes: s.handlerTypes(),
-		Executor:     rpcserver.NewContainerExecutor(s.filterTypes(), bindAppliers),
+		App:            s.appInfo,
+		LogicalAppName: s.appName,
+		HandlerTypes:   s.handlerTypes(),
+		Executor:       rpcserver.NewContainerExecutor(s.filterTypes(), bindAppliers),
 	})
 }
 
@@ -87,7 +94,7 @@ func (*_Servicer) bindContext(b *di.Binder) {
 
 func (s *_Servicer) bindLogger(b *di.Binder) {
 	b.BindFactory(func(ctx rpcspec.Context, method rpcspec.MethodInfo) *logger.Logger {
-		return logger.NewLogger(logger.GlobalOption()).With(buildLoggerFields(ctx, method, s.appInfo)...)
+		return logger.NewScopedLogger(logger.Scope{AppName: s.appName}).With(buildLoggerFields(ctx, method, s.appInfo)...)
 	})
 }
 

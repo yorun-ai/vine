@@ -12,26 +12,57 @@ import (
 )
 
 type Logger struct {
-	slog   *slog.Logger
-	config Option
+	slog    *slog.Logger
+	config  Option
+	leveler slog.Leveler
 }
 
 func NewLogger(config *Option) *Logger {
 	vpre.CheckNotNil(config, "logger config cannot be nil")
-	return &Logger{
-		slog:   newSlogLogger(config, true),
-		config: *config,
+	leveler := config.Level.ToSLogLevel()
+	return new(Logger{
+		slog:    newSlogLogger(config, true, leveler),
+		config:  *config,
+		leveler: leveler,
+	})
+}
+
+func NewGlobalLogger() *Logger {
+	config := GlobalOption()
+	return new(Logger{
+		slog:    newSlogLogger(config, true, &globalLevel),
+		config:  *config,
+		leveler: &globalLevel,
+	})
+}
+
+func NewScopedLogger(scope Scope) *Logger {
+	if scope.Subsystem != "" {
+		validateSubsystem(scope.Subsystem)
 	}
+	leveler := new(_ScopeLeveler{scope: scope})
+	config := GlobalOption()
+	return new(Logger{
+		slog:    newSlogLogger(config, true, leveler),
+		config:  *config,
+		leveler: leveler,
+	})
 }
 
 func (l *Logger) With(attrs ...slog.Attr) *Logger {
 	vpre.Check(len(attrs) > 0, "logger.With requires at least one attr")
 
 	handler := l.slog.Handler().WithAttrs(attrs)
-	return &Logger{
-		slog:   slog.New(handler),
-		config: l.config,
-	}
+	return new(Logger{
+		slog:    slog.New(handler),
+		config:  l.config,
+		leveler: l.leveler,
+	})
+}
+
+// Enabled reports whether the logger currently emits records at level.
+func (l *Logger) Enabled(level Level) bool {
+	return l != nil && l.slog.Handler().Enabled(context.Background(), level.ToSLogLevel())
 }
 
 func (l *Logger) Debug(msg string, args ...any) {

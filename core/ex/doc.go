@@ -21,10 +21,12 @@
 // contracts. If the response has started, Vine preserves it and only aborts the
 // remaining handler chain.
 //
-// At every managed boundary, a system Error raised through a Panic helper
-// retains its raise stack for server-side logging; the stack is never included
-// in a serialized error or Web response. A non-Error Web panic is logged with
-// its stack and returns HTTP status 500 if the response has not started.
+// A non-OK Error retains a local diagnostic stack for server-side logging.
+// Wrapping preserves a cause's stack, and panic recovery fills it only when the
+// Error has no stack yet. The stack and local panic diagnostics are never
+// included in a serialized error or Web response. A non-Error Web panic is
+// logged with its stack and returns HTTP status 500 if the response has not
+// started.
 //
 // The following execution paths do not use that structured-error boundary:
 //
