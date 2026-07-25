@@ -19,6 +19,11 @@ import (
 	"go.yorun.ai/vine/util/vcode"
 )
 
+var (
+	eventLogger       = logger.New("daemon:link:event")
+	eventClientLogger = logger.New("daemon:link:event:client")
+)
+
 var newAppEventServiceClient = func(ctx context.Context, clientApp runtime.App, endpoint string, msg eventspec.NATSMessage) appskeled.EventServiceClientER {
 	trace, err := meta.NewTrace(msg.Metadata.TraceId, msg.Metadata.TraceSpan)
 	ex.PanicIfError(err)
@@ -27,7 +32,7 @@ var newAppEventServiceClient = func(ctx context.Context, clientApp runtime.App, 
 	return appskeled.NewEventServiceClientER(rpcclient.New(rpcclient.Option{
 		Context:             rpcCtx,
 		ClientApp:           clientApp,
-		Logger:              logger.New("link", "event", "client"),
+		Logger:              eventClientLogger,
 		ReturnIfSystemError: true,
 		ServerEndpoint:      endpoint,
 	}))
@@ -111,7 +116,7 @@ func (m *Manager) onEvent(listener *_EventListenerState, natsMsg jetstream.Msg, 
 
 	err := runAppEvent(client, on, time.Duration(listener.registration.TimeoutMs)*time.Millisecond)
 	if err != nil {
-		logger.Error("event app event call failed",
+		eventLogger.Error("event app event call failed",
 			"eventSkelName", msg.EventSkelName,
 			"endpoint", listener.eventEndpoint,
 			"instanceId", listener.appInstanceID,

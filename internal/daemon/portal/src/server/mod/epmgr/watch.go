@@ -11,6 +11,8 @@ import (
 	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
 )
 
+var epmgrLogger = logger.New("daemon:portal:epmgr")
+
 type Watcher struct {
 	manager  *Manager
 	prefix   string
@@ -93,7 +95,7 @@ func parseRegistrations(valuesByKey map[string]string, registrationType reflect.
 func parseRegistration(key string, value string, registrationType reflect.Type) (any, bool) {
 	registration := reflect.New(registrationType)
 	if err := json.Unmarshal([]byte(value), registration.Interface()); err != nil {
-		logger.Warn("vine.portal epmgr registration is invalid", "key", key, "error", err)
+		epmgrLogger.Warn("vine.portal epmgr registration is invalid", "key", key, "error", err)
 		return nil, false
 	}
 	return registration.Interface(), true

@@ -17,11 +17,13 @@ import (
 	"go.yorun.ai/vine/internal/util/httputil"
 )
 
+var rpcGatewayLogger = logger.New("daemon:portal:rpcgw")
+
 func (g *RpcGateway) serveInvoke(ctx *spec.Context) {
 	invokeRequest := httputil.TrimPathPrefix(ctx.Request, pathInvoke)
 
 	if err := rpchttp.CheckRequestContentTypeHeader(invokeRequest.Header); err != nil {
-		logger.Warn("vine.portal rpcgw request content type is invalid", "path", ctx.Request.URL.Path, "error", err)
+		rpcGatewayLogger.Warn("vine.portal rpcgw request content type is invalid", "path", ctx.Request.URL.Path, "error", err)
 		g.writeError(ctx.ResponseWriter, invokeRequest, ex.InvalidRequest, "invalid rpc request content type: "+err.Error())
 		return
 	}
@@ -29,7 +31,7 @@ func (g *RpcGateway) serveInvoke(ctx *spec.Context) {
 	var cancel context.CancelFunc
 	invokeRequest, cancel, err := requestWithRpcOptionsTimeout(invokeRequest, g.context)
 	if err != nil {
-		logger.Warn("vine.portal rpcgw options is invalid", "path", ctx.Request.URL.Path, "error", err)
+		rpcGatewayLogger.Warn("vine.portal rpcgw options is invalid", "path", ctx.Request.URL.Path, "error", err)
 		g.writeError(ctx.ResponseWriter, invokeRequest, ex.InvalidRequest, err.Error())
 		return
 	}
@@ -37,21 +39,21 @@ func (g *RpcGateway) serveInvoke(ctx *spec.Context) {
 
 	trace, err := ensureRpcTrace(invokeRequest)
 	if err != nil {
-		logger.Warn("vine.portal rpcgw trace is invalid", "path", ctx.Request.URL.Path, "error", err)
+		rpcGatewayLogger.Warn("vine.portal rpcgw trace is invalid", "path", ctx.Request.URL.Path, "error", err)
 		g.writeError(ctx.ResponseWriter, invokeRequest, ex.InvalidRequest, err.Error())
 		return
 	}
 
 	initiator, err := ensureRpcInitiator(invokeRequest, ctx.RemoteAddr)
 	if err != nil {
-		logger.Warn("vine.portal rpcgw initiator cannot be created", "path", ctx.Request.URL.Path, "error", err)
+		rpcGatewayLogger.Warn("vine.portal rpcgw initiator cannot be created", "path", ctx.Request.URL.Path, "error", err)
 		g.writeError(ctx.ResponseWriter, invokeRequest, ex.InvalidRequest, "rpc request initiator cannot be created: "+err.Error())
 		return
 	}
 
 	serviceName, methodName, err := rpchttp.ParseServiceAndMethodFromPath(invokeRequest.URL.Path)
 	if err != nil {
-		logger.Warn("vine.portal rpcgw invoke path is invalid", "path", ctx.Request.URL.Path, "error", err)
+		rpcGatewayLogger.Warn("vine.portal rpcgw invoke path is invalid", "path", ctx.Request.URL.Path, "error", err)
 		g.writeError(ctx.ResponseWriter, invokeRequest, ex.InvalidRequest, "invalid rpc request path")
 		return
 	}
@@ -74,12 +76,12 @@ func (g *RpcGateway) serveInvoke(ctx *spec.Context) {
 
 	registration, configured := g.routeService(serviceName)
 	if !configured {
-		logger.Warn("vine.portal rpcgw service is not configured", "site", g.name, "service", serviceName)
+		rpcGatewayLogger.Warn("vine.portal rpcgw service is not configured", "site", g.name, "service", serviceName)
 		g.writeError(ctx.ResponseWriter, invokeRequest, ex.NotFound, "rpcgw service is not configured: "+serviceName)
 		return
 	}
 	if registration == nil {
-		logger.Warn("vine.portal rpcgw service endpoint is unavailable", "site", g.name, "service", serviceName)
+		rpcGatewayLogger.Warn("vine.portal rpcgw service endpoint is unavailable", "site", g.name, "service", serviceName)
 		g.writeError(ctx.ResponseWriter, invokeRequest, ex.ServiceUnavailable, "rpcgw service endpoint is unavailable: "+serviceName)
 		return
 	}
@@ -101,7 +103,7 @@ func (g *RpcGateway) forwardInvoke(ctx *spec.Context, endpoint string) {
 		} else if errors.Is(err, gwutil.ErrInvalidForwardRequest) {
 			statusCode = ex.InvalidRequest
 		}
-		logger.Warn("vine.portal rpcgw forward failed", "endpoint", endpoint, "path", ctx.Request.URL.Path, "error", err)
+		rpcGatewayLogger.Warn("vine.portal rpcgw forward failed", "endpoint", endpoint, "path", ctx.Request.URL.Path, "error", err)
 		g.writeError(ctx.ResponseWriter, ctx.Request, statusCode, "rpcgw forward failed: "+err.Error())
 		return
 	}
@@ -109,13 +111,13 @@ func (g *RpcGateway) forwardInvoke(ctx *spec.Context, endpoint string) {
 	defer func() { _ = response.Body.Close() }()
 	body, err := httputil.ReadResponseBody(response)
 	if err != nil {
-		logger.Warn("vine.portal rpcgw response body cannot be read", "endpoint", endpoint, "path", ctx.Request.URL.Path, "error", err)
+		rpcGatewayLogger.Warn("vine.portal rpcgw response body cannot be read", "endpoint", endpoint, "path", ctx.Request.URL.Path, "error", err)
 		g.writeError(ctx.ResponseWriter, ctx.Request, ex.ServiceUnavailable, "rpcgw response body cannot be read: "+err.Error())
 		return
 	}
 	body, err = rpchttp.ClearResponseErrorDetail(body, response.Header.Get(rpchttp.HeaderContentType))
 	if err != nil {
-		logger.Warn("vine.portal rpcgw response body cannot be parsed", "endpoint", endpoint, "path", ctx.Request.URL.Path, "error", err)
+		rpcGatewayLogger.Warn("vine.portal rpcgw response body cannot be parsed", "endpoint", endpoint, "path", ctx.Request.URL.Path, "error", err)
 		g.writeError(ctx.ResponseWriter, ctx.Request, ex.UnexpectedResponse, "rpcgw response body cannot be parsed")
 		return
 	}

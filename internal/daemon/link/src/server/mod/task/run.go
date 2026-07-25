@@ -20,6 +20,11 @@ import (
 	"go.yorun.ai/vine/util/vslice"
 )
 
+var (
+	taskLogger       = logger.New("daemon:link:task")
+	taskClientLogger = logger.New("daemon:link:task:client")
+)
+
 var newAppTaskServiceClient = func(ctx context.Context, clientApp runtime.App, endpoint string, msg taskspec.NATSMessage) appskeled.TaskServiceClientER {
 	trace, err := meta.NewTrace(msg.Metadata.TraceId, msg.Metadata.TraceSpan)
 	ex.PanicIfError(err)
@@ -28,7 +33,7 @@ var newAppTaskServiceClient = func(ctx context.Context, clientApp runtime.App, e
 	return appskeled.NewTaskServiceClientER(rpcclient.New(rpcclient.Option{
 		Context:             rpcCtx,
 		ClientApp:           clientApp,
-		Logger:              logger.New("link", "task", "client"),
+		Logger:              taskClientLogger,
 		ReturnIfSystemError: true,
 		ServerEndpoint:      endpoint,
 	}))
@@ -174,7 +179,7 @@ func (m *Manager) runTask(runner *_TaskRunnerState, msg taskspec.NATSMessage) ex
 
 	err := runAppTask(client, run, time.Duration(runner.registration.TimeoutMs)*time.Millisecond)
 	if err != nil {
-		logger.Error("task app task call failed",
+		taskLogger.Error("task app task call failed",
 			"taskSkelName", msg.TaskSkelName,
 			"triggerSkelName", msg.TriggerSkelName,
 			"endpoint", runner.taskEndpoint,

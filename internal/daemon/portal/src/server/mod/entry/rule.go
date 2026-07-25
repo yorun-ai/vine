@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
@@ -39,7 +38,7 @@ func newRule(rule redised.PortalRule, siteManager *site.Manager) (*_Rule, bool) 
 	isRedirection := rule.TargetType == targetTypePermanentRedirect || rule.TargetType == targetTypeTemporaryRedirect
 	isEntry := rule.TargetType == targetTypeSite
 	if !isRedirection && !isEntry {
-		logger.Warn("vine.portal entry rule target type is not supported", "rule", rule.Name, "targetType", rule.TargetType)
+		entryLogger.Warn("vine.portal entry rule target type is not supported", "rule", rule.Name, "targetType", rule.TargetType)
 		return nil, false
 	}
 
