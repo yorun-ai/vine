@@ -130,6 +130,16 @@ func (*_CTRWrappedServiceImpl) Preview() _CTRWrappedResult {
 	return _CTRWrappedResult{}
 }
 
+type _CTRWrappedServiceImplWithAdditionalPublicMethod struct {
+	_DefaultTestCTRWrappedServiceServer
+}
+
+func (*_CTRWrappedServiceImplWithAdditionalPublicMethod) AdditionalPublicMethod() {}
+
+func (*_CTRWrappedServiceImplWithAdditionalPublicMethod) Preview() _CTRWrappedResult {
+	return _CTRWrappedResult{Items: []string{"preview"}}
+}
+
 type _CTRWrappedServiceServerERWrapper struct {
 	_DefaultTestCTRWrappedServiceServer
 	serverImpl testCTRWrappedServiceServer
@@ -314,6 +324,37 @@ func TestContainerExecutorReturnsWrappedNonERMethodError(t *testing.T) {
 
 	if rpcResponse.Error() == nil || rpcResponse.Error().Code() != ex.OperationFailed {
 		t.Fatalf("expected operation failed error, got %#v", rpcResponse.Error())
+	}
+}
+
+func TestContainerExecutorResolvesWrappedNonERMethodByName(t *testing.T) {
+	implMethod, ok := reflect.TypeFor[*_CTRWrappedServiceImplWithAdditionalPublicMethod]().MethodByName("Preview")
+	if !ok {
+		t.Fatal("implementation Preview method not found")
+	}
+	wrapperMethod, ok := reflect.TypeFor[*_CTRWrappedServiceServerERWrapper]().MethodByName("Preview")
+	if !ok {
+		t.Fatal("wrapper Preview method not found")
+	}
+	if implMethod.Index == wrapperMethod.Index {
+		t.Fatalf("test setup requires different method indexes, got implementation=%d wrapper=%d",
+			implMethod.Index, wrapperMethod.Index)
+	}
+
+	srv := New(Option{
+		App:          testServerApp(),
+		HandlerTypes: []reflect.Type{reflect.TypeFor[*_CTRWrappedServiceImplWithAdditionalPublicMethod]()},
+		Executor:     NewContainerExecutor(nil, nil),
+	})
+
+	rpcResponse := srv.handle(newContainerExecutorRequest(srv, _CTRWrappedServiceSpec.Methods[0].Info()))
+
+	if rpcResponse.Error() == nil || rpcResponse.Error().Code() != ex.OK {
+		t.Fatalf("expected no error, got %#v", rpcResponse.Error())
+	}
+	result, ok := rpcResponse.Result().(_CTRWrappedResult)
+	if !ok || !reflect.DeepEqual(result.Items, []string{"preview"}) {
+		t.Fatalf("expected wrapped implementation result, got %#v", rpcResponse.Result())
 	}
 }
 
