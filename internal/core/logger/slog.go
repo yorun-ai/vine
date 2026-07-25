@@ -5,6 +5,7 @@ import (
 	stdLog "log"
 	"log/slog"
 	"os"
+	"path/filepath"
 
 	"go.yorun.ai/vine/util/vpre"
 )
@@ -54,6 +55,10 @@ func newLogWriter(outputPath string) io.Writer {
 		return writer
 	}
 
+	err := os.MkdirAll(filepath.Dir(outputPath), 0o755)
+	if err != nil {
+		stdLog.Fatal(err)
+	}
 	file, err := os.OpenFile(outputPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
 		stdLog.Fatal(err)

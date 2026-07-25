@@ -16,13 +16,16 @@ var standardLoggerWriter io.Writer = &_StandardLoggerWriter{}
 var standardLogger *slog.Logger
 var stdLogProcessors = vslice.NewMutexSlice[_StdLogProcessorEntry]()
 
+const standardLoggerName = "vine:stdlog"
+
 func init() {
 	stdLog.SetFlags(0)
 	stdLog.SetPrefix("")
 	stdLog.SetOutput(standardLoggerWriter)
 }
 
-func setStandardLogger(config WithOption, leveler slog.Leveler) {
+func setStandardLogger(config WithOption) {
+	leveler := newLeveler(config.Level, splitNameSegments(standardLoggerName))
 	standardLogger = newSlogLogger(&config, true, leveler)
 }
 

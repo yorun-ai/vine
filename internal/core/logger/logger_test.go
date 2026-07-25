@@ -2,6 +2,9 @@ package logger
 
 import (
 	"log/slog"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -67,6 +70,24 @@ func TestChildKeepsFixedLevel(t *testing.T) {
 	parent := New("daemon:link:event", WithOption{Mode: ModeText, Level: LevelInfo})
 	if parent.Child("client").Enabled(LevelDebug) {
 		t.Fatal("child should inherit the parent's fixed level")
+	}
+}
+
+func TestNewCreatesOutputPathParentDirectories(t *testing.T) {
+	outputPath := filepath.Join(t.TempDir(), "nested", "log", "vine.log")
+	log := New("vine:test", WithOption{
+		Mode:       ModeText,
+		Level:      LevelInfo,
+		OutputPath: outputPath,
+	})
+	log.Info("nested output")
+
+	content, err := os.ReadFile(outputPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), "nested output") {
+		t.Fatalf("output file does not contain the logged message: %q", content)
 	}
 }
 

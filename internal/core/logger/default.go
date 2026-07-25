@@ -5,14 +5,14 @@ import "go.yorun.ai/vine/util/vpre"
 var defaultLogger *Logger
 
 func init() {
-	defaultLogger = New("vine")
-	setStandardLogger(defaultLogger.config, defaultLogger.leveler)
+	defaultLogger = New("vine:default")
+	setStandardLogger(defaultLogger.config)
 }
 
 func SetDefault(logger *Logger) {
 	vpre.CheckNotNil(logger, "default logger cannot be nil")
 	defaultLogger = logger
-	setStandardLogger(logger.config, logger.leveler)
+	setStandardLogger(logger.config)
 }
 
 //go:noinline
