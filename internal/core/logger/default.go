@@ -1,41 +1,45 @@
 package logger
 
 import (
+	"log/slog"
 	"sync/atomic"
 
 	"go.yorun.ai/vine/util/vpre"
 )
 
-var defaultLogger atomic.Pointer[Logger]
-
-func init() {
-	logger := New("vine:default")
-	defaultLogger.Store(logger)
-	setStandardLogger(logger)
+type _DefaultLoggers struct {
+	logger   *Logger
+	standard *slog.Logger
 }
+
+var defaultLoggers atomic.Pointer[_DefaultLoggers]
+
+func init() { SetDefault(New("vine:default")) }
 
 func SetDefault(logger *Logger) {
 	vpre.CheckNotNil(logger, "default logger cannot be nil")
-	defaultLogger.Store(logger)
-	setStandardLogger(logger)
+	defaultLoggers.Store(&_DefaultLoggers{
+		logger:   logger,
+		standard: newStandardLogger(logger),
+	})
 }
 
 //go:noinline
 func Debug(msg string, args ...any) {
-	defaultLogger.Load().Debug(msg, args...)
+	defaultLoggers.Load().logger.Debug(msg, args...)
 }
 
 //go:noinline
 func Info(msg string, args ...any) {
-	defaultLogger.Load().Info(msg, args...)
+	defaultLoggers.Load().logger.Info(msg, args...)
 }
 
 //go:noinline
 func Warn(msg string, args ...any) {
-	defaultLogger.Load().Warn(msg, args...)
+	defaultLoggers.Load().logger.Warn(msg, args...)
 }
 
 //go:noinline
 func Error(msg string, args ...any) {
-	defaultLogger.Load().Error(msg, args...)
+	defaultLoggers.Load().logger.Error(msg, args...)
 }

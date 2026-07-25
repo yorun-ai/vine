@@ -55,6 +55,12 @@ func TestChildAppendsNameAndInheritsParentState(t *testing.T) {
 
 	parent := New("daemon:link:event").With(slog.String("component", "listener"))
 	child := parent.Child("client")
+	if parent.Name() != "daemon:link:event" {
+		t.Fatalf("parent.Name() = %q", parent.Name())
+	}
+	if child.Name() != "daemon:link:event:client" {
+		t.Fatalf("child.Name() = %q", child.Name())
+	}
 
 	if parent.Enabled(LevelDebug) {
 		t.Fatal("parent should continue using the global fallback")
@@ -91,6 +97,32 @@ func TestChildRejectsInvalidNameSegments(t *testing.T) {
 				parent.Child(name)
 			})
 		})
+	}
+}
+
+func TestLoggerRejectsReservedLoggerAttr(t *testing.T) {
+	log := New("vine:test", WithOption{Format: FormatText, Level: LevelInfo})
+
+	assertPanics(t, func() {
+		log.With(slog.String(loggerKey, "custom"))
+	})
+	assertPanics(t, func() {
+		log.Info("reserved string key", loggerKey, "custom")
+	})
+	assertPanics(t, func() {
+		log.Info("reserved attr", slog.String(loggerKey, "custom"))
+	})
+	assertPanics(t, func() {
+		log.With(slog.Group("", slog.String(loggerKey, "custom")))
+	})
+}
+
+func TestLoggerAllowsLoggerAttrInNamedGroup(t *testing.T) {
+	log := New("vine:test").With(
+		slog.Group("nested", slog.String(loggerKey, "custom")),
+	)
+	if log.Name() != "vine:test" {
+		t.Fatalf("log.Name() = %q", log.Name())
 	}
 }
 

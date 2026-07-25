@@ -18,6 +18,15 @@ type _LoggedRecord struct {
 	Source  _LoggedSource `json:"source"`
 }
 
+func TestIsValidFormat(t *testing.T) {
+	if !IsValidFormat(FormatText) || !IsValidFormat(FormatJSON) {
+		t.Fatal("expected public formats to be valid")
+	}
+	if IsValidFormat(Format("YAML")) {
+		t.Fatal("expected unsupported format to be invalid")
+	}
+}
+
 func TestFacadeInfoUsesExternalCallerSource(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "facade-logger.jsonl")
 	log := New("vine:test", WithOption{

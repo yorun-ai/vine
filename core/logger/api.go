@@ -12,6 +12,11 @@ const (
 	FormatText = internallogger.FormatText
 )
 
+// IsValidFormat reports whether format is a supported output format.
+func IsValidFormat(format Format) bool {
+	return internallogger.IsValidFormat(format)
+}
+
 // Level is either a concrete logging threshold or the LevelAuto policy used
 // by WithOption.
 type Level = internallogger.Level
@@ -31,8 +36,8 @@ const (
 )
 
 // WithOption configures the logger created by New. An empty Format or
-// OutputPath dynamically follows its process-wide global setting. When
-// supplied, the option must be the final New argument.
+// OutputPath dynamically follows its process-wide global setting, and an empty
+// Level is LevelAuto. When supplied, the option must be the final New argument.
 type WithOption = internallogger.WithOption
 
 // Logger writes structured log records. Every record includes the reserved

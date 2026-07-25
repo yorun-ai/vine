@@ -26,11 +26,14 @@ type WithOption struct {
 
 // Logger
 
+const loggerKey = "logger"
+
 // Logger writes structured records containing the reserved "logger" field
 // with its complete colon-separated name.
 type Logger struct {
 	slog         *slog.Logger
 	option       WithOption
+	name         string
 	nameSegments []string
 	attrs        []slog.Attr
 	writer       io.Writer
@@ -75,29 +78,38 @@ func splitNameSegments(value string) []string {
 }
 
 func newLogger(option WithOption, nameSegments []string, attrs []slog.Attr, writer io.Writer) *Logger {
+	name := strings.Join(nameSegments, ":")
 	leveler := newLeveler(option.Level, nameSegments)
-	slogLogger := newSlogLoggerWithWriter(option, strings.Join(nameSegments, ":"), true, leveler, writer)
+	slogLogger := newSlogLoggerWithWriter(option, name, true, leveler, writer)
 	if len(attrs) > 0 {
 		slogLogger = slog.New(slogLogger.Handler().WithAttrs(attrs))
 	}
 	return &Logger{
 		slog:         slogLogger,
 		option:       option,
+		name:         name,
 		nameSegments: append([]string(nil), nameSegments...),
 		attrs:        append([]slog.Attr(nil), attrs...),
 		writer:       writer,
 	}
 }
 
+// Name returns the logger's complete colon-separated name.
+func (l *Logger) Name() string {
+	return l.name
+}
+
 // Derived loggers
 
 func (l *Logger) With(attrs ...slog.Attr) *Logger {
 	vpre.Check(len(attrs) > 0, "logger.With requires at least one attr")
+	checkLoggerAttrs(attrs)
 
 	handler := l.slog.Handler().WithAttrs(attrs)
 	return &Logger{
 		slog:         slog.New(handler),
 		option:       l.option,
+		name:         l.name,
 		nameSegments: append([]string(nil), l.nameSegments...),
 		attrs:        append(append([]slog.Attr(nil), l.attrs...), attrs...),
 		writer:       l.writer,
@@ -145,12 +157,44 @@ func (l *Logger) log(level Level, msg string, args ...any) {
 	if !l.slog.Handler().Enabled(context.Background(), slogLevel) {
 		return
 	}
+	checkLoggerArgs(args)
 
 	record := slog.NewRecord(time.Now(), slogLevel, msg, callerPC())
 	if len(args) > 0 {
 		record.Add(args...)
 	}
 	_ = l.slog.Handler().Handle(context.Background(), record)
+}
+
+func checkLoggerArgs(args []any) {
+	for len(args) > 0 {
+		switch arg := args[0].(type) {
+		case slog.Attr:
+			checkLoggerAttr(arg)
+			args = args[1:]
+		case string:
+			if len(args) == 1 {
+				return
+			}
+			checkLoggerAttr(slog.Attr{Key: arg, Value: slog.AnyValue(args[1])})
+			args = args[2:]
+		default:
+			args = args[1:]
+		}
+	}
+}
+
+func checkLoggerAttrs(attrs []slog.Attr) {
+	for _, attr := range attrs {
+		checkLoggerAttr(attr)
+	}
+}
+
+func checkLoggerAttr(attr slog.Attr) {
+	vpre.Check(attr.Key != loggerKey, "%q is a reserved logger attribute", loggerKey)
+	if attr.Key == "" && attr.Value.Kind() == slog.KindGroup {
+		checkLoggerAttrs(attr.Value.Group())
+	}
 }
 
 // Source

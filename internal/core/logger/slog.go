@@ -6,7 +6,7 @@ import (
 )
 
 func newSlogLoggerWithWriter(option WithOption, loggerName string, addSource bool, leveler slog.Leveler, writer io.Writer) *slog.Logger {
-	loggerAttr := []slog.Attr{slog.String("logger", loggerName)}
+	loggerAttr := []slog.Attr{slog.String(loggerKey, loggerName)}
 	if option.Format == "" {
 		return slog.New(&_GlobalFormatHandler{
 			text: newSlogHandler(FormatText, addSource, leveler, writer).WithAttrs(loggerAttr),
