@@ -2,13 +2,19 @@ package task
 
 import (
 	"context"
-	"github.com/google/uuid"
-	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 
+	"github.com/google/uuid"
+	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
+
 	"go.yorun.ai/vine/internal/core/ex"
+	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/core/task/spec"
@@ -16,6 +22,19 @@ import (
 
 type testRunnerArguments struct {
 	GroupId int
+}
+
+func testTaskServerApp() meta.App {
+	return meta.MustNewApp("test.app", "1.0.0", "123e4567-e89b-12d3-a456-426614174011")
+}
+
+func TestNewServerRequiresApp(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected missing App to panic")
+		}
+	}()
+	NewServer(Option{})
 }
 
 type testRunnerTaskRunner interface {
@@ -123,6 +142,7 @@ func TestServerResolvesTriggerImplByInfo(t *testing.T) {
 
 	executor := &_RunnerRecorderExecutor{}
 	server := NewServer(Option{
+		App:       testTaskServerApp(),
 		ImplTypes: []reflect.Type{reflect.TypeOf(&testRunnerImpl{})},
 		Executor:  executor,
 	})
@@ -157,9 +177,14 @@ func TestServerResolvesTriggerImplByInfo(t *testing.T) {
 func TestServerReturnsInvalidTaskWhenTriggerNotRegistered(t *testing.T) {
 	ensureRunnerTaskRegistered()
 
+	logPath := filepath.Join(t.TempDir(), "task-rejected.jsonl")
 	server := NewServer(Option{
+		App:       testTaskServerApp(),
 		ImplTypes: []reflect.Type{reflect.TypeOf(&testRunnerImpl{})},
 		Executor:  &_RunnerRecorderExecutor{},
+		Logger: logger.New("vine:test", logger.WithOption{
+			Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: logPath,
+		}),
 	})
 
 	err := server.RunTask(context.Background(), appskeled.TaskRun{
@@ -177,12 +202,31 @@ func TestServerReturnsInvalidTaskWhenTriggerNotRegistered(t *testing.T) {
 	if err == nil || err.Code() != ex.InvalidTask {
 		t.Fatalf("unexpected error: %#v", err)
 	}
+	logBytes, readErr := os.ReadFile(logPath)
+	if readErr != nil {
+		t.Fatalf("read rejection log: %v", readErr)
+	}
+	lines := strings.Split(strings.TrimSpace(string(logBytes)), "\n")
+	if len(lines) != 1 {
+		t.Fatalf("execution-before rejection should emit one record: %s", logBytes)
+	}
+	var record map[string]any
+	if decodeErr := json.Unmarshal([]byte(lines[0]), &record); decodeErr != nil {
+		t.Fatalf("decode rejection log: %v", decodeErr)
+	}
+	if record["msg"] != "task runner handle rejected" || record["level"] != "ERROR" || record["code"] != string(ex.InvalidTask) {
+		t.Fatalf("unexpected rejection record: %#v", record)
+	}
+	if record["taskSkel"] != "missing.task" || record["taskTriggerSkel"] != "forGroup" {
+		t.Fatalf("rejection record must preserve main Task field names: %#v", record)
+	}
 }
 
 func TestServerConvertsRecoveredPanicToInternalError(t *testing.T) {
 	ensureRunnerTaskRegistered()
 
 	server := NewServer(Option{
+		App:       testTaskServerApp(),
 		ImplTypes: []reflect.Type{reflect.TypeOf(&testRunnerImpl{})},
 		Executor: &_RunnerRecorderExecutor{
 			panicV: "boom",
@@ -214,6 +258,7 @@ func TestServerRunTaskResolvesAndRunsTrigger(t *testing.T) {
 
 	executor := &_RunnerRecorderExecutor{}
 	server := NewServer(Option{
+		App:       testTaskServerApp(),
 		ImplTypes: []reflect.Type{reflect.TypeOf(&testRunnerImpl{})},
 		Executor:  executor,
 	})

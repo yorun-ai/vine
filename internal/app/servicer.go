@@ -87,7 +87,7 @@ func (*_Servicer) bindContext(b *di.Binder) {
 
 func (s *_Servicer) bindLogger(b *di.Binder) {
 	b.BindFactory(func(ctx rpcspec.Context, method rpcspec.MethodInfo) *logger.Logger {
-		return logger.NewLogger(logger.GlobalOption()).With(buildLoggerFields(ctx, method, s.appInfo)...)
+		return newAppLogger(s.appInfo.Name()).With(buildLoggerFields(ctx, method, s.appInfo)...)
 	})
 }
 

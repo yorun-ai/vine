@@ -23,6 +23,8 @@ var detectHostForMQEndpoint = func() string {
 	return vnet.DetectHostIP()
 }
 
+var natsServerLogger = logger.New("daemon:hub:natsserver")
+
 type NATSServer struct {
 	app.BaseComponent
 
@@ -44,14 +46,14 @@ func (s *NATSServer) DIInit() {
 
 	if s.InprocFlag.Enabled {
 		hubnats.SetInprocServer(s.server)
-		logger.Info("vine.hub nats server started", "mode", "inproc")
+		natsServerLogger.Info("vine.hub nats server started", "mode", "inproc")
 		return
 	}
 
 	addr, ok := s.server.Addr().(*net.TCPAddr)
 	vpre.Check(ok, "nats server addr is not tcp")
 	s.endpoint = fmt.Sprintf("nats://%s:%d", detectHostForMQEndpoint(), addr.Port)
-	logger.Info("vine.hub nats server started", "mode", "remote", "addr", addr.String(), "endpoint", s.endpoint)
+	natsServerLogger.Info("vine.hub nats server started", "mode", "remote", "addr", addr.String(), "endpoint", s.endpoint)
 }
 
 func (s *NATSServer) Endpoint() string {

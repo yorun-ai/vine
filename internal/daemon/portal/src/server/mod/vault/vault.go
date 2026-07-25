@@ -21,6 +21,8 @@ var errCertificateNotFound = errors.New("entry certificate not found")
 
 const maxMissingHostCacheSize = 1024
 
+var vaultLogger = logger.New("daemon:portal:vault")
+
 type Vault struct {
 	app.BaseModule
 
@@ -107,7 +109,7 @@ func (v *Vault) handleCertEvent(event hubapiredis.Event) {
 func (v *Vault) setCertLocked(cert *redised.PortalCert) {
 	parsed, err := newCertificate(cert)
 	if err != nil {
-		logger.Error("vine.portal entry cert ignored", "name", cert.Name, "error", err)
+		vaultLogger.Error("vine.portal entry cert ignored", "name", cert.Name, "error", err)
 		delete(v.certs, cert.Name)
 		return
 	}

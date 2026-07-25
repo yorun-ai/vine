@@ -14,13 +14,23 @@ type _LoggedSource struct {
 
 type _LoggedRecord struct {
 	Message string        `json:"msg"`
+	Logger  string        `json:"logger"`
 	Source  _LoggedSource `json:"source"`
+}
+
+func TestIsValidFormat(t *testing.T) {
+	if !IsValidFormat(FormatText) || !IsValidFormat(FormatJSON) {
+		t.Fatal("expected public formats to be valid")
+	}
+	if IsValidFormat(Format("YAML")) {
+		t.Fatal("expected unsupported format to be invalid")
+	}
 }
 
 func TestFacadeInfoUsesExternalCallerSource(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "facade-logger.jsonl")
-	log := NewLogger(&Option{
-		Mode:       ModeJSON,
+	log := New("vine:test", WithOption{
+		Format:     FormatJSON,
 		Level:      LevelDebug,
 		OutputPath: path,
 	})
@@ -30,6 +40,9 @@ func TestFacadeInfoUsesExternalCallerSource(t *testing.T) {
 	record := readFacadeLastRecord(t, path)
 	if record.Message != "facade-helper-log" {
 		t.Fatalf("unexpected message: %q", record.Message)
+	}
+	if record.Logger != "vine:test" {
+		t.Fatalf("unexpected logger: %q", record.Logger)
 	}
 	if !strings.HasSuffix(record.Source.File, "api_test.go") {
 		t.Fatalf("unexpected source file: %q", record.Source.File)
@@ -60,4 +73,36 @@ func readFacadeLastRecord(t *testing.T, path string) _LoggedRecord {
 		t.Fatalf("unmarshal log record: %v", err)
 	}
 	return record
+}
+
+func TestFacadeAutoLoggerAndNamedRules(t *testing.T) {
+	t.Cleanup(func() {
+		SetGlobalLevel(LevelInfo)
+		clearFacadeLevels()
+	})
+	clearFacadeLevels()
+	SetGlobalLevel(LevelInfo)
+
+	auto := New("vine:test", WithOption{Format: FormatText, Level: LevelAuto})
+	fixed := New("vine:test", WithOption{Format: FormatText, Level: LevelInfo})
+	SetGlobalLevel(LevelDebug)
+	if !auto.Enabled(LevelDebug) {
+		t.Fatal("facade auto logger should follow the default level")
+	}
+	if fixed.Enabled(LevelDebug) {
+		t.Fatal("facade fixed logger should keep its configured level")
+	}
+
+	SetLevel("app:*:event", LevelWarn)
+	SetLevel("app:demo.user:event", LevelError)
+	named := New("app", "demo.user", "event")
+	if named.Enabled(LevelWarn) || !named.Enabled(LevelError) {
+		t.Fatal("facade named logger should resolve the most specific rule")
+	}
+}
+
+func clearFacadeLevels() {
+	for pattern := range Levels() {
+		ClearLevel(pattern)
+	}
 }

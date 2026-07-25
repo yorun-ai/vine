@@ -6,11 +6,10 @@ import (
 	"testing"
 
 	internalapp "go.yorun.ai/vine/internal/app"
-	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 )
 
-func TestLinkAppDIInitAppendsRuntimeNameToInfoInInprocMode(t *testing.T) {
+func TestLinkAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 	spec := &LinkApp{
 		InternalApplication: internalapp.InternalApplication{
 			Application: internalapp.Application{
@@ -28,7 +27,7 @@ func TestLinkAppDIInitAppendsRuntimeNameToInfoInInprocMode(t *testing.T) {
 	if got := spec.Name(); got != "vine.link" {
 		t.Fatalf("unexpected spec name: %s", got)
 	}
-	if got := spec.InternalAttrs.Info.Name(); got != "vine.link@"+runtime.Application().Name() {
+	if got := spec.InternalAttrs.Info.Name(); got != "vine.link" {
 		t.Fatalf("unexpected app info name: %s", got)
 	}
 	if got := spec.AppFlag.ListenAddr; got != "" {

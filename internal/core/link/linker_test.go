@@ -138,7 +138,7 @@ func TestNewLinkerBuildsRPCClients(t *testing.T) {
 		rpcClient := client.New(client.Option{
 			Context:        newLinkMetaContext(context.Background()),
 			ClientApp:      linker.app,
-			Logger:         logger.NewLogger(logger.GlobalOption()),
+			Logger:         logger.New("vine:test"),
 			ServerEndpoint: linker.linkBaseEndpoint + coreapp.PathRpcInvoke,
 		})
 		linker.bootClient = linkskeled.NewBootServiceClient(linkskeled.NewBootServiceClientER(rpcClient))

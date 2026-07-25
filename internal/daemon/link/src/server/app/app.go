@@ -35,11 +35,7 @@ func (a *LinkApp) DIInit() {
 	a.Flag.Normalize(a.InprocFlag.Enabled)
 	a.AppFlag.ListenAddr = a.Flag.APIListen
 
-	appName := a.Name()
-	if a.InprocFlag.Enabled {
-		appName += "@" + runtime.Application().Name()
-	}
-	appInfo := meta.MustNewAppWithRandomId(appName, runtime.Application().Version())
+	appInfo := meta.MustNewAppWithRandomId(a.Name(), runtime.Application().Version())
 	a.InternalAttrs = app.InternalAttributes{
 		Info:           appInfo,
 		Linker:         link.NewRedirectedInternalLinker(appInfo, a.Flag.HubEndpoint),

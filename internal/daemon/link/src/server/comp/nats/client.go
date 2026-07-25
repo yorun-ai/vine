@@ -13,6 +13,8 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
+var natsLogger = logger.New("daemon:link:nats")
+
 type _Option struct {
 	InprocMode bool
 	Endpoint   string
@@ -88,7 +90,7 @@ func (c *_Client) recoverJetStream(ctx context.Context) {
 		if ctx.Err() != nil {
 			return
 		}
-		logger.Warn("nats jetstream not ready after reconnect, retrying", "error", err)
+		natsLogger.Warn("nats jetstream not ready after reconnect, retrying", "error", err)
 	}
 
 	c.clearEnsuredStreams()

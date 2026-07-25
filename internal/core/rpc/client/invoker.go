@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"time"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/logger"
@@ -42,8 +43,6 @@ func (c *Client) newInvoker(methodInfo spec.MethodInfo, arguments any, options [
 	if invoker.arguments == nil {
 		invoker.arguments = &spec.EmptyArguments{}
 	}
-	vpre.CheckNilError(methodInfo.ValidateArguments(invoker.arguments), "arguments validation failed")
-
 	for _, option := range options {
 		option.apply(invoker.options)
 	}
@@ -53,16 +52,21 @@ func (c *Client) newInvoker(methodInfo spec.MethodInfo, arguments any, options [
 
 func (i *_Invoker) invoke() (result any, err ex.Error) {
 	var rpcResponse spec.Response
+	startedAt := time.Now()
 
 	defer i.cleanup()
 	rpcRequest := i.buildRequest()
 	logSpan := rpclog.Noop()
-	if !inproc.IsEndpoint(i.serverEndpoint) || rpclog.IsInprocClientLogEnabled() {
-		logSpan = rpclog.StartClientInvoke(i.logger, rpcRequest.Trace(), i.methodInfo, i.serverEndpoint)
-	}
 	defer func() { logSpan.FinishWithResponse(err, rpcResponse) }()
 
-	rpcResponse, err = i.roundTrip(rpcRequest)
+	rpcResponse, err = i.roundTrip(rpcRequest, func() {
+		if !inproc.IsEndpoint(i.serverEndpoint) || rpclog.IsInprocClientLogEnabled() {
+			logSpan = rpclog.StartClientInvoke(i.logger, rpcRequest.Trace(), i.methodInfo, i.serverEndpoint)
+		}
+	})
+	if !inproc.IsEndpoint(i.serverEndpoint) && !logSpan.Started() && err != nil {
+		rpclog.ClientRejected(i.logger, startedAt, rpcRequest.Trace(), i.methodInfo, i.serverEndpoint, i.arguments, err)
+	}
 	result, err = i.parseResponse(rpcResponse, err)
 
 	if err != nil && !i.returnIfSystemError && err.Type() == ex.SystemError {
@@ -102,11 +106,12 @@ func (i *_Invoker) buildRequest() spec.Request {
 	}
 }
 
-func (i *_Invoker) roundTrip(rpcRequest spec.Request) (spec.Response, ex.Error) {
+func (i *_Invoker) roundTrip(rpcRequest spec.Request, prepared func()) (spec.Response, ex.Error) {
 	if inproc.IsEndpoint(i.serverEndpoint) {
+		prepared()
 		return inproc.RoundTrip(i.serverEndpoint, rpcRequest)
 	}
-	return http.RoundTrip(i.serverEndpoint, rpcRequest)
+	return http.RoundTripWithPrepared(i.serverEndpoint, rpcRequest, prepared)
 }
 
 func (i *_Invoker) parseResponse(rpcResponse spec.Response, err ex.Error) (any, ex.Error) {

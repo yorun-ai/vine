@@ -24,7 +24,9 @@ var helpFlagMu sync.Mutex
 
 const (
 	flagLogLevel = "log-level"
+	flagLogRule  = "log-rule"
 	envLogLevel  = "VINE_LOG_LEVEL"
+	envLogRules  = "VINE_LOG_RULES"
 )
 
 // Handle parses common application arguments together with flags.
@@ -82,13 +84,20 @@ func newArgsCommand(args []string, setShouldExit func(), flags ...ucli.Flag) *uc
 	}
 
 	var logLevel string
+	var logRules []string
 	flags = append([]ucli.Flag{
-		&ucli.StringFlag{
+		new(ucli.StringFlag{
 			Name:        flagLogLevel,
 			Sources:     ucli.EnvVars(envLogLevel),
 			Usage:       "log level: DEBUG, INFO, WARN, ERROR",
 			Destination: &logLevel,
-		},
+		}),
+		new(ucli.StringSliceFlag{
+			Name:        flagLogRule,
+			Sources:     ucli.EnvVars(envLogRules),
+			Usage:       "named log rule: pattern=LEVEL",
+			Destination: &logRules,
+		}),
 	}, flags...)
 
 	return &ucli.Command{
@@ -98,8 +107,24 @@ func newArgsCommand(args []string, setShouldExit func(), flags ...ucli.Flag) *uc
 		HideHelpCommand: true,
 		Flags:           flags,
 		Action: func(_ context.Context, cmd *ucli.Command) error {
+			levels, hasLevels, err := parseRules(logRules)
+			if err != nil {
+				return err
+			}
+			var parsedLogLevel logger.Level
 			if logLevel != "" {
-				logger.SetGlobalLevel(logger.Level(logLevel))
+				parsedLogLevel = logger.Level(logLevel)
+				if !logger.IsValidLevel(parsedLogLevel) {
+					return fmt.Errorf("invalid log level %q", logLevel)
+				}
+			}
+			if hasLevels {
+				for pattern, level := range levels {
+					logger.SetLevel(pattern, level)
+				}
+			}
+			if logLevel != "" {
+				logger.SetGlobalLevel(parsedLogLevel)
 			}
 
 			arg := cmd.Args().First()
@@ -120,6 +145,43 @@ func newArgsCommand(args []string, setShouldExit func(), flags ...ucli.Flag) *uc
 			}
 		},
 	}
+}
+
+func parseRules(rules []string) (map[string]logger.Level, bool, error) {
+	levels := make(map[string]logger.Level, len(rules))
+	for _, rule := range rules {
+		pattern, level, err := parseRule(rule)
+		if err != nil {
+			return nil, false, err
+		}
+		levels[pattern] = level
+	}
+	return levels, len(rules) > 0, nil
+}
+
+func parseRule(rule string) (string, logger.Level, error) {
+	separator := strings.LastIndexByte(rule, '=')
+	if separator <= 0 || separator == len(rule)-1 {
+		return "", "", fmt.Errorf("invalid log rule %q", rule)
+	}
+	pattern := rule[:separator]
+	level := logger.Level(rule[separator+1:])
+	if !isValidRulePattern(pattern) || !logger.IsValidLevel(level) {
+		return "", "", fmt.Errorf("invalid log rule %q", rule)
+	}
+	return pattern, level, nil
+}
+
+func isValidRulePattern(pattern string) bool {
+	if pattern == "" || pattern == "*" || pattern == "**" {
+		return false
+	}
+	for _, segment := range strings.Split(pattern, ":") {
+		if segment == "" || (strings.Contains(segment, "*") && segment != "*" && segment != "**") {
+			return false
+		}
+	}
+	return true
 }
 
 func isIgnorableArgsError(err error) bool {

@@ -84,7 +84,7 @@ func TestDatabaseBindProvidesExecutionScopedDao(t *testing.T) {
 	injector := di.NewInjector(
 		func(b *di.Binder) {
 			b.Bind(reflect.TypeFor[context.Context]()).ToInstance(context.Background())
-			b.BindInstance(logger.NewLogger(logger.GlobalOption()))
+			b.BindInstance(logger.New("vine:test"))
 			minder.Bind(b)
 			b.Bind(T[*databaseTestConsumer]()).In(di.TransientScope)
 		},

@@ -16,7 +16,10 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-var listenEntryTCP = net.Listen
+var (
+	entryLogger    = logger.New("daemon:portal:entry")
+	listenEntryTCP = net.Listen
+)
 
 type _Entry struct {
 	scheme spec.Scheme
@@ -117,14 +120,14 @@ func (e *_Entry) Start() {
 	e.started = true
 
 	go func() {
-		logger.Info("vine.portal entry started", "addr", e.addr)
+		entryLogger.Info("vine.portal entry started", "addr", e.addr)
 		err := e.serve(server, listener)
 		if errors.Is(err, http.ErrServerClosed) {
-			logger.Debug("vine.portal entry stopped", "addr", e.addr)
+			entryLogger.Debug("vine.portal entry stopped", "addr", e.addr)
 			return
 		}
 		if err != nil {
-			logger.Error("vine.portal entry failed", "addr", e.addr, "error", err)
+			entryLogger.Error("vine.portal entry failed", "addr", e.addr, "error", err)
 		}
 	}()
 }
@@ -158,6 +161,6 @@ func (e *_Entry) Stop() {
 	}
 	if err != nil {
 		_ = server.Close()
-		logger.Error("vine.portal entry shutdown failed, force closed", "addr", addr, "error", err)
+		entryLogger.Error("vine.portal entry shutdown failed, force closed", "addr", addr, "error", err)
 	}
 }

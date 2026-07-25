@@ -18,6 +18,7 @@ var (
 	healthcheckInterval       = 5 * time.Second
 	healthcheckPingTimeout    = 2 * time.Second
 	healthcheckMaxFailedCount = 3
+	healthcheckLogger         = logger.New("daemon:link:minder:healthcheck")
 )
 
 // newConsoleServiceClient is replaced in tests to stub app console health checks.
@@ -28,7 +29,7 @@ var newConsoleServiceClient = func(ctx context.Context, app runtime.App, endpoin
 	return appskeled.NewConsoleServiceClientER(rpcclient.New(rpcclient.Option{
 		Context:        rpcCtx,
 		ClientApp:      app,
-		Logger:         logger.NewLogger(logger.GlobalOption()),
+		Logger:         healthcheckLogger,
 		ServerEndpoint: endpoint,
 	}))
 }
@@ -54,7 +55,7 @@ func (i *AppInstance) startHealthcheck(onFailure func()) {
 	safeTicker.Go(func() {
 		err := consoleServiceClient.Ping(rpcclient.WithTimeout(healthcheckPingTimeout))
 		if err != nil && err.Code() == ex.InvocationTimeout {
-			logger.Warn("minder console ping timed out",
+			healthcheckLogger.Warn("minder console ping timed out",
 				"instanceId", i.AppInfo.InstanceId(),
 				"endpoint", consoleEndpoint,
 				"timeout", healthcheckPingTimeout,
@@ -63,7 +64,7 @@ func (i *AppInstance) startHealthcheck(onFailure func()) {
 		}
 		if err == nil {
 			if failedCount > 0 {
-				logger.Info("minder console ping recovered",
+				healthcheckLogger.Info("minder console ping recovered",
 					"instanceId", i.AppInfo.InstanceId(),
 					"endpoint", consoleEndpoint,
 					"failedCount", failedCount,
@@ -74,7 +75,7 @@ func (i *AppInstance) startHealthcheck(onFailure func()) {
 		}
 
 		failedCount++
-		logger.Warn("minder console ping failed",
+		healthcheckLogger.Warn("minder console ping failed",
 			"instanceId", i.AppInfo.InstanceId(),
 			"endpoint", consoleEndpoint,
 			"failedCount", failedCount,
@@ -85,7 +86,7 @@ func (i *AppInstance) startHealthcheck(onFailure func()) {
 			return
 		}
 
-		logger.Error("minder unregistering instance after repeated health check failures",
+		healthcheckLogger.Error("minder unregistering instance after repeated health check failures",
 			"instanceId", i.AppInfo.InstanceId(),
 			"endpoint", consoleEndpoint,
 			"failedCount", failedCount,

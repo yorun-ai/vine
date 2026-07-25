@@ -13,9 +13,16 @@ import (
 var defaultHTTPClient = httputil.NewH2CClient()
 
 func RoundTrip(endpoint string, rpcRequest spec.Request) (spec.Response, ex.Error) {
+	return RoundTripWithPrepared(endpoint, rpcRequest, nil)
+}
+
+func RoundTripWithPrepared(endpoint string, rpcRequest spec.Request, prepared func()) (spec.Response, ex.Error) {
 	httpRequest, err := encodeRequest(endpoint, rpcRequest)
 	if err != nil {
 		return nil, ex.New(ex.InvocationFailed, err.Error())
+	}
+	if prepared != nil {
+		prepared()
 	}
 
 	httpResponse, err := defaultHTTPClient.Do(httpRequest)

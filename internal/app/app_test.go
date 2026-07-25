@@ -102,10 +102,10 @@ func TestNewDoesNotRequireRegistration(t *testing.T) {
 	assert.Equal(t, "test.app", app.Name())
 }
 
-func TestNewPanicsWhenApplicationNameContainsAt(t *testing.T) {
+func TestNewPanicsWhenApplicationNameIsInvalid(t *testing.T) {
 	restoreAppRegistry(t)
 
-	assert.PanicsWithError(t, "application name must not contain @", func() {
+	assert.PanicsWithError(t, `invalid application name: "demo@worker"`, func() {
 		New[*testInvalidNamedAppSpec]()
 	})
 }
@@ -173,7 +173,7 @@ func TestNewInprocDerivesDedicatedAppInfoWhenSpecNameMatchesRuntime(t *testing.T
 	app := NewInproc[*testRuntimeNamedAppSpec]().(*_AppImpl)
 	runtimeApp := runtime.Application()
 
-	assert.Equal(t, runtimeApp.Name()+"@"+runtimeApp.Name(), app.info.Name())
+	assert.Equal(t, runtimeApp.Name(), app.info.Name())
 	assert.Equal(t, runtimeApp.Version(), app.info.Version())
 	assert.NotEqual(t, runtimeApp.InstanceId(), app.info.InstanceId())
 }
@@ -184,7 +184,7 @@ func TestNewDerivesDedicatedAppInfoWhenSpecNameDiffersFromRuntime(t *testing.T) 
 	app := New[*testNamedAppSpec]().(*_AppImpl)
 	runtimeApp := runtime.Application()
 
-	assert.Equal(t, "demo.worker@"+runtimeApp.Name(), app.info.Name())
+	assert.Equal(t, "demo.worker", app.info.Name())
 	assert.Equal(t, runtimeApp.Version(), app.info.Version())
 	assert.NotEqual(t, runtimeApp.InstanceId(), app.info.InstanceId())
 }

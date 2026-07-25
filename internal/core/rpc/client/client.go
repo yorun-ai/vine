@@ -7,6 +7,7 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
+	rpclog "go.yorun.ai/vine/internal/core/rpc/log"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 	"go.yorun.ai/vine/util/vpre"
 )
@@ -40,7 +41,13 @@ func New(option Option) *Client {
 }
 
 func (c *Client) Invoke(methodInfo spec.MethodInfo, arguments any, options ...InvokeOption) (any, ex.Error) {
+	startedAt := time.Now()
 	invoker := c.newInvoker(methodInfo, arguments, options)
+	if err := methodInfo.ValidateArguments(invoker.arguments); err != nil {
+		logErr := ex.New(ex.InvalidRequest, err.Error())
+		rpclog.ClientRejected(c.logger, startedAt, c.context.Trace(), methodInfo, c.serverEndpoint, invoker.arguments, logErr)
+		vpre.CheckNilError(err, "arguments validation failed")
+	}
 	return invoker.invoke()
 }
 

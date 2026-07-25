@@ -16,6 +16,8 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
+var embeddedRedisServerLogger = logger.New("daemon:hub:redisserver:embedded")
+
 type Store struct {
 	listen   string
 	inproc   bool
@@ -56,7 +58,7 @@ func (s *Store) Start() {
 		s.server = redcon.NewServer(listener.Addr().String(), s.handleCommand, nil, nil)
 		go s.serve(listener)
 		s.endpoint = hubredis.RedisInprocEndpoint
-		logger.Info("vine.hub embedded redis server started", "mode", "inproc", "endpoint", s.endpoint)
+		embeddedRedisServerLogger.Info("vine.hub embedded redis server started", "mode", "inproc", "endpoint", s.endpoint)
 		return
 	}
 
@@ -70,7 +72,7 @@ func (s *Store) Start() {
 		vpre.CheckNilError(err, "redis server start failed")
 	}
 	s.endpoint = redisEndpoint(listener.Addr().String())
-	logger.Info("vine.hub embedded redis server started", "addr", listener.Addr().String(), "endpoint", s.endpoint)
+	embeddedRedisServerLogger.Info("vine.hub embedded redis server started", "addr", listener.Addr().String(), "endpoint", s.endpoint)
 }
 
 func (s *Store) Stop() {
@@ -96,7 +98,7 @@ func (s *Store) ListenAddr() string {
 func (s *Store) serve(listener net.Listener) {
 	err := s.server.Serve(listener)
 	if err != nil && !errors.Is(err, net.ErrClosed) {
-		logger.Error("vine.hub redis server failed", "error", err)
+		embeddedRedisServerLogger.Error("vine.hub redis server failed", "error", err)
 	}
 }
 

@@ -185,6 +185,7 @@ func init() {
 
 func TestDefaultExecutorInjectsSpecContextField(t *testing.T) {
 	srv := New(Option{
+		App:          testServerApp(),
 		HandlerTypes: []reflect.Type{reflect.TypeFor[*_DefaultExecutorContextServiceImpl]()},
 	})
 
@@ -200,6 +201,7 @@ func TestDefaultExecutorInjectsSpecContextField(t *testing.T) {
 
 func TestDefaultExecutorInjectsSpecContextFieldForERService(t *testing.T) {
 	srv := New(Option{
+		App:          testServerApp(),
 		HandlerTypes: []reflect.Type{reflect.TypeFor[*_DefaultExecutorERContextServiceImpl]()},
 	})
 
@@ -215,6 +217,7 @@ func TestDefaultExecutorInjectsSpecContextFieldForERService(t *testing.T) {
 
 func TestDefaultExecutorReturnsNilForMethodWithoutResult(t *testing.T) {
 	srv := New(Option{
+		App:          testServerApp(),
 		HandlerTypes: []reflect.Type{reflect.TypeFor[*_DefaultExecutorNoResultServiceImpl]()},
 	})
 
@@ -230,6 +233,7 @@ func TestDefaultExecutorReturnsNilForMethodWithoutResult(t *testing.T) {
 
 func TestDefaultExecutorReturnsERMethodError(t *testing.T) {
 	srv := New(Option{
+		App:          testServerApp(),
 		HandlerTypes: []reflect.Type{reflect.TypeFor[*_DefaultExecutorErrorServiceImpl]()},
 	})
 
@@ -242,6 +246,7 @@ func TestDefaultExecutorReturnsERMethodError(t *testing.T) {
 
 func TestDefaultExecutorInjectsInstanceByType(t *testing.T) {
 	srv := New(Option{
+		App:          testServerApp(),
 		HandlerTypes: []reflect.Type{reflect.TypeFor[*_DefaultExecutorInstanceServiceImpl]()},
 		Executor:     NewDefaultExecutor(With(&_DefaultExecutorDependency{Value: "dep"})),
 	})
@@ -258,6 +263,7 @@ func TestDefaultExecutorInjectsInstanceByType(t *testing.T) {
 
 func TestDefaultExecutorInjectsInstanceByAsType(t *testing.T) {
 	srv := New(Option{
+		App:          testServerApp(),
 		HandlerTypes: []reflect.Type{reflect.TypeFor[*_DefaultExecutorInterfaceServiceImpl]()},
 		Executor: NewDefaultExecutor(
 			WithAs(reflect.TypeOf((*testDefaultExecutorDependency)(nil)).Elem(), &_DefaultExecutorInterfaceDependency{value: "iface"}),

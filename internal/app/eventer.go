@@ -127,7 +127,7 @@ func (e *_Eventer) bindLogger(b *di.Binder) {
 				slog.String("instanceId", e.appInfo.InstanceId()),
 			)
 		}
-		return logger.NewLogger(logger.GlobalOption()).With(fields...)
+		return newAppLogger(e.appInfo.Name()).With(fields...)
 	})
 }
 

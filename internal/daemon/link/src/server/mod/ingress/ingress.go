@@ -26,6 +26,8 @@ import (
 
 const ingressShutdownTimeout = 10 * time.Second
 
+var ingressLogger = logger.New("daemon:link:ingress")
+
 // detectHostIP is replaced in tests to make ingress endpoint generation deterministic.
 var detectHostIP = func() string {
 	return vnet.DetectHostIP()
@@ -93,14 +95,14 @@ func (g *Ingress) startHTTPServer() {
 	go func() {
 		defer g.httpWG.Done()
 
-		logger.Info("link ingress server started", "addr", server.Addr)
+		ingressLogger.Info("link ingress server started", "addr", server.Addr)
 		err := server.Serve(listener)
 		if errors.Is(err, http.ErrServerClosed) {
-			logger.Debug("link ingress server stopped", "addr", server.Addr)
+			ingressLogger.Debug("link ingress server stopped", "addr", server.Addr)
 			return
 		}
 		if err != nil {
-			logger.Error("link ingress server failed", "addr", server.Addr, "error", err)
+			ingressLogger.Error("link ingress server failed", "addr", server.Addr, "error", err)
 		}
 	}()
 }
@@ -154,7 +156,7 @@ func (g *Ingress) stopHTTPServer() {
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), ingressShutdownTimeout)
 	defer cancel()
 	if err := server.Shutdown(timeoutCtx); err != nil {
-		logger.Error("link ingress server shutdown failed", "addr", server.Addr, "error", err)
+		ingressLogger.Error("link ingress server shutdown failed", "addr", server.Addr, "error", err)
 	}
 	g.httpWG.Wait()
 

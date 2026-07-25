@@ -16,19 +16,11 @@ func TestNewAppAcceptsValidValues(t *testing.T) {
 	}
 }
 
-func TestNewAppAcceptsDerivedNameWithSuffix(t *testing.T) {
-	app, err := NewApp("demo.worker@demo.runtime", "1.2.3", "123e4567-e89b-12d3-a456-426614174000")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if app.Name() != "demo.worker@demo.runtime" {
-		t.Fatalf("unexpected app name: %s", app.Name())
-	}
-}
-
 func TestNewAppRejectsInvalidName(t *testing.T) {
-	if _, err := NewApp("DemoService", "1.2.3", "123e4567-e89b-12d3-a456-426614174000"); err == nil {
-		t.Fatalf("expected invalid name error")
+	for _, name := range []string{"DemoService", "demo.worker@demo.runtime"} {
+		if _, err := NewApp(name, "1.2.3", "123e4567-e89b-12d3-a456-426614174000"); err == nil {
+			t.Fatalf("expected invalid name error for %q", name)
+		}
 	}
 }
 

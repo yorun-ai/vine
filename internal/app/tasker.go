@@ -130,7 +130,7 @@ func (t *_Tasker) bindLogger(b *di.Binder) {
 				slog.String("instanceId", t.appInfo.InstanceId()),
 			)
 		}
-		return logger.NewLogger(logger.GlobalOption()).With(fields...)
+		return newAppLogger(t.appInfo.Name()).With(fields...)
 	})
 }
 

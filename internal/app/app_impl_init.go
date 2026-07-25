@@ -45,7 +45,7 @@ func (a *_AppImpl) initInjector() {
 		func(b *di.Binder) {
 			b.Bind(T[context.Context]()).ToInstance(a.ctx)
 			b.Bind(T[meta.Context]()).ToInstance(newMetaContext(a.ctx))
-			b.BindInstance(logger.NewLogger(logger.GlobalOption()))
+			b.BindInstance(newAppLogger(a.info.Name()))
 		})
 }
 
@@ -57,11 +57,11 @@ func newMetaContext(ctx context.Context) meta.Context {
 }
 
 func (a *_AppImpl) bindClients(b *di.Binder) {
-	b.BindFactory(func(ctx meta.Context, logger *logger.Logger) *client.Client {
+	b.BindFactory(func(ctx meta.Context) *client.Client {
 		return client.New(client.Option{
 			Context:        ctx,
 			ClientApp:      a.info,
-			Logger:         logger,
+			Logger:         newAppLogger(a.info.Name(), "rpc", "client"),
 			ServerEndpoint: a.linker.RpcProxyEndpoint(),
 		})
 	})
@@ -75,11 +75,12 @@ func (a *_AppImpl) bindEmitters(b *di.Binder) {
 		return
 	}
 
-	b.BindFactory(func(ctx meta.Context, logger *logger.Logger) *event.Emitter {
+	b.BindFactory(func(ctx meta.Context) *event.Emitter {
 		return event.NewEmitter(event.EmitterOption{
-			Context:     ctx,
-			ClientApp:   a.info,
-			Logger:      logger,
+			Context:   ctx,
+			ClientApp: a.info,
+			Logger: newAppLogger(a.info.Name(), "event").
+				With(buildLoggerFields(ctx, nil, a.info)...),
 			EventClient: a.linker.EventClient(),
 		})
 	})
@@ -93,17 +94,28 @@ func (a *_AppImpl) bindLaunchers(b *di.Binder) {
 		return
 	}
 
-	b.BindFactory(func(ctx meta.Context, logger *logger.Logger) *task.Launcher {
+	b.BindFactory(func(ctx meta.Context) *task.Launcher {
 		return task.NewLauncher(task.LauncherOption{
-			Context:    ctx,
-			ClientApp:  a.info,
-			Logger:     logger,
+			Context:   ctx,
+			ClientApp: a.info,
+			Logger: newAppLogger(a.info.Name(), "task").
+				With(buildLoggerFields(ctx, nil, a.info)...),
 			TaskClient: a.linker.TaskClient(),
 		})
 	})
 	for _, factory := range taskspec.RegisteredTaskLauncherFactories() {
 		b.BindFactory(factory)
 	}
+}
+
+func newAppLogger(appName string, categories ...string) *logger.Logger {
+	vpre.Check(appName != "", "application logger requires an app name")
+	args := make([]any, 0, len(categories)+1)
+	args = append(args, appName)
+	for _, category := range categories {
+		args = append(args, category)
+	}
+	return logger.New("app", args...)
 }
 
 func (a *_AppImpl) initComponents() {
@@ -268,6 +280,7 @@ func checkComponentTypes(componentTypes []reflect.Type) {
 }
 
 func (a *_AppImpl) initServers() {
+	logger.FreezePayloadPolicies()
 	if a.shouldEnableConsole() {
 		a.consoleServer = server.New(server.Option{
 			App:            a.info,

@@ -29,11 +29,7 @@ func (*PortalApp) Name() string {
 func (a *PortalApp) DIInit() {
 	a.Flag.Normalize()
 
-	appName := a.Name()
-	if a.InprocFlag.Enabled {
-		appName += "@" + runtime.Application().Name()
-	}
-	appInfo := meta.MustNewAppWithRandomId(appName, runtime.Application().Version())
+	appInfo := meta.MustNewAppWithRandomId(a.Name(), runtime.Application().Version())
 	a.InternalAttrs = app.InternalAttributes{
 		Info:              appInfo,
 		Linker:            link.NewRedirectedInternalLinker(appInfo, a.Flag.HubEndpoint),

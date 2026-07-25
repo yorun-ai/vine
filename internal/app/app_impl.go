@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os/signal"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -95,8 +94,7 @@ func newApp(spec ApplicationSpec, flags _Flags) *_AppImpl {
 }
 
 func (a *_AppImpl) init() {
-	vpre.CheckNotEmpty(a.spec.Name(), "application name must not be empty")
-	vpre.Check(!strings.Contains(a.spec.Name(), "@"), "application name must not contain @")
+	vpre.Check(meta.IsValidName(a.spec.Name()), "invalid application name: %q", a.spec.Name())
 
 	a.inprocFlag = a.flags.InprocFlag()
 	if !a.initByInternalAttrs() {
@@ -133,7 +131,7 @@ func (a *_AppImpl) newAppInfo() runtime.App {
 	if !a.inprocFlag.Enabled && a.spec.Name() == runtimeApp.Name() {
 		return runtimeApp
 	}
-	return meta.MustNewAppWithRandomId(a.spec.Name()+"@"+runtimeApp.Name(), runtimeApp.Version())
+	return meta.MustNewAppWithRandomId(a.spec.Name(), runtimeApp.Version())
 }
 
 func (a *_AppImpl) initLinking() {

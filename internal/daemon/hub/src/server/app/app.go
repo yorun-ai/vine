@@ -40,11 +40,7 @@ func (a *HubApp) Name() string {
 func (a *HubApp) DIInit() {
 	a.Flag.Normalize(a.InprocFlag.Enabled)
 
-	appName := a.Name()
-	if a.InprocFlag.Enabled {
-		appName += "@" + runtime.Application().Name()
-	}
-	appInfo := meta.MustNewAppWithRandomId(appName, runtime.Application().Version())
+	appInfo := meta.MustNewAppWithRandomId(a.Name(), runtime.Application().Version())
 	a.InternalAttrs = app.InternalAttributes{
 		Info:           appInfo,
 		Linker:         link.NewInternalLinker(appInfo),

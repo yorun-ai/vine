@@ -21,11 +21,11 @@ type _App struct {
 	instanceId string
 }
 
-var applicationNamePattern = regexp.MustCompile(`^[a-z]+(?:\.[a-z]+)*(?:@[a-z]+(?:\.[a-z]+)*)?$`)
+var applicationNamePattern = regexp.MustCompile(`^[a-z]+(?:\.[a-z]+)*$`)
 
 func NewApp(name string, version string, instanceId string) (App, error) {
 	if !IsValidName(name) {
-		return nil, fmt.Errorf("invalid name, lowercase letters and dots expected, optional @suffix supported")
+		return nil, fmt.Errorf("invalid name, lowercase letters and dots expected")
 	}
 	if !IsValidVersion(version) {
 		return nil, fmt.Errorf("invalid version, semantic expected")
