@@ -20,10 +20,7 @@ import (
 	"go.yorun.ai/vine/util/vslice"
 )
 
-var (
-	taskLogger       = logger.New("daemon:link:task")
-	taskClientLogger = logger.New("daemon:link:task:client")
-)
+var taskLogger = logger.New("daemon:link:task")
 
 var newAppTaskServiceClient = func(ctx context.Context, clientApp runtime.App, endpoint string, msg taskspec.NATSMessage) appskeled.TaskServiceClientER {
 	trace, err := meta.NewTrace(msg.Metadata.TraceId, msg.Metadata.TraceSpan)
@@ -33,7 +30,7 @@ var newAppTaskServiceClient = func(ctx context.Context, clientApp runtime.App, e
 	return appskeled.NewTaskServiceClientER(rpcclient.New(rpcclient.Option{
 		Context:             rpcCtx,
 		ClientApp:           clientApp,
-		Logger:              taskClientLogger,
+		Logger:              taskLogger.Child("client"),
 		ReturnIfSystemError: true,
 		ServerEndpoint:      endpoint,
 	}))

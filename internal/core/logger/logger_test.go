@@ -14,6 +14,62 @@ func TestWithReturnsChildLogger(t *testing.T) {
 	}
 }
 
+func TestChildAppendsNameAndInheritsParentState(t *testing.T) {
+	resetRulesForTest(t)
+	SetGlobalLevel(LevelError)
+	SetLevel("daemon:link:event:client", LevelDebug)
+
+	parent := New("daemon:link:event").With(slog.String("component", "listener"))
+	child := parent.Child("client")
+
+	if parent.Enabled(LevelDebug) {
+		t.Fatal("parent should continue using the global fallback")
+	}
+	if !child.Enabled(LevelDebug) {
+		t.Fatal("child should resolve levels using its appended name")
+	}
+	if parent.writer != child.writer {
+		t.Fatal("child should reuse the parent output writer")
+	}
+	if len(child.attrs) != 1 || child.attrs[0].Key != "component" {
+		t.Fatal("child should inherit parent attributes")
+	}
+}
+
+func TestChildAcceptsColonSeparatedAndMultipleNameSegments(t *testing.T) {
+	resetRulesForTest(t)
+	SetGlobalLevel(LevelError)
+	SetLevel("daemon:link:event:client", LevelDebug)
+
+	if !New("daemon:link").Child("event:client").Enabled(LevelDebug) {
+		t.Fatal("colon-separated child names should be appended")
+	}
+	if !New("daemon").Child("link", "event", "client").Enabled(LevelDebug) {
+		t.Fatal("multiple child names should be appended")
+	}
+}
+
+func TestChildRejectsInvalidNameSegments(t *testing.T) {
+	parent := New("vine:test")
+	for _, name := range []string{"", ":client", "client:", "client::rpc", "*", "**", "client*"} {
+		t.Run(name, func(t *testing.T) {
+			assertPanics(t, func() {
+				parent.Child(name)
+			})
+		})
+	}
+}
+
+func TestChildKeepsFixedLevel(t *testing.T) {
+	resetRulesForTest(t)
+	SetLevel("daemon:link:event:client", LevelDebug)
+
+	parent := New("daemon:link:event", WithOption{Mode: ModeText, Level: LevelInfo})
+	if parent.Child("client").Enabled(LevelDebug) {
+		t.Fatal("child should inherit the parent's fixed level")
+	}
+}
+
 func TestNewJoinsNameSegmentsAndAcceptsFinalWithOption(t *testing.T) {
 	resetRulesForTest(t)
 	SetGlobalLevel(LevelError)

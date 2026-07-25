@@ -12,6 +12,10 @@ import (
 // newSlogLogger builds the underlying slog logger using the configured output mode,
 // level, source handling, and optional file mirroring.
 func newSlogLogger(config *WithOption, addSource bool, leveler slog.Leveler) *slog.Logger {
+	return newSlogLoggerWithWriter(config, addSource, leveler, newLogWriter(config.OutputPath))
+}
+
+func newSlogLoggerWithWriter(config *WithOption, addSource bool, leveler slog.Leveler, writer io.Writer) *slog.Logger {
 	options := &slog.HandlerOptions{
 		Level:     leveler,
 		AddSource: addSource,
@@ -30,7 +34,6 @@ func newSlogLogger(config *WithOption, addSource bool, leveler slog.Leveler) *sl
 		},
 	}
 
-	writer := newLogWriter(config.OutputPath)
 	vpre.Check(IsValidMode(config.Mode), "%+v is not a valid LogMode", config.Mode)
 	switch config.Mode {
 	case ModeText:

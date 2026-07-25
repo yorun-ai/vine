@@ -19,10 +19,7 @@ import (
 	"go.yorun.ai/vine/util/vcode"
 )
 
-var (
-	eventLogger       = logger.New("daemon:link:event")
-	eventClientLogger = logger.New("daemon:link:event:client")
-)
+var eventLogger = logger.New("daemon:link:event")
 
 var newAppEventServiceClient = func(ctx context.Context, clientApp runtime.App, endpoint string, msg eventspec.NATSMessage) appskeled.EventServiceClientER {
 	trace, err := meta.NewTrace(msg.Metadata.TraceId, msg.Metadata.TraceSpan)
@@ -32,7 +29,7 @@ var newAppEventServiceClient = func(ctx context.Context, clientApp runtime.App, 
 	return appskeled.NewEventServiceClientER(rpcclient.New(rpcclient.Option{
 		Context:             rpcCtx,
 		ClientApp:           clientApp,
-		Logger:              eventClientLogger,
+		Logger:              eventLogger.Child("client"),
 		ReturnIfSystemError: true,
 		ServerEndpoint:      endpoint,
 	}))

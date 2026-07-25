@@ -2,6 +2,7 @@ package logger
 
 import (
 	"context"
+	"io"
 	"log/slog"
 	"path/filepath"
 	"runtime"
@@ -12,9 +13,12 @@ import (
 )
 
 type Logger struct {
-	slog    *slog.Logger
-	config  WithOption
-	leveler slog.Leveler
+	slog         *slog.Logger
+	config       WithOption
+	leveler      slog.Leveler
+	nameSegments []string
+	attrs        []slog.Attr
+	writer       io.Writer
 }
 
 func New(name string, args ...any) *Logger {
@@ -42,7 +46,7 @@ func New(name string, args ...any) *Logger {
 		vpre.Check(ok, "logger name argument %d must be a string segment; WithOption is allowed only as the last argument", index)
 		nameSegments = append(nameSegments, splitNameSegments(segment)...)
 	}
-	return newLogger(config, newLeveler(config.Level, nameSegments))
+	return newLogger(config, nameSegments, nil, newLogWriter(config.OutputPath))
 }
 
 func splitNameSegments(value string) []string {
@@ -54,12 +58,20 @@ func splitNameSegments(value string) []string {
 	return segments
 }
 
-func newLogger(config *WithOption, leveler slog.Leveler) *Logger {
+func newLogger(config *WithOption, nameSegments []string, attrs []slog.Attr, writer io.Writer) *Logger {
+	leveler := newLeveler(config.Level, nameSegments)
+	slogLogger := newSlogLoggerWithWriter(config, true, leveler, writer)
+	if len(attrs) > 0 {
+		slogLogger = slog.New(slogLogger.Handler().WithAttrs(attrs))
+	}
 	log := new(Logger{
-		config:  *config,
-		leveler: leveler,
+		slog:         slogLogger,
+		config:       *config,
+		leveler:      leveler,
+		nameSegments: append([]string(nil), nameSegments...),
+		attrs:        append([]slog.Attr(nil), attrs...),
+		writer:       writer,
 	})
-	log.slog = newSlogLogger(config, true, leveler)
 	return log
 }
 
@@ -68,10 +80,24 @@ func (l *Logger) With(attrs ...slog.Attr) *Logger {
 
 	handler := l.slog.Handler().WithAttrs(attrs)
 	return new(Logger{
-		slog:    slog.New(handler),
-		config:  l.config,
-		leveler: l.leveler,
+		slog:         slog.New(handler),
+		config:       l.config,
+		leveler:      l.leveler,
+		nameSegments: append([]string(nil), l.nameSegments...),
+		attrs:        append(append([]slog.Attr(nil), l.attrs...), attrs...),
+		writer:       l.writer,
 	})
+}
+
+// Child returns a logger whose name extends this logger's name.
+// Options and attributes are inherited from the parent.
+func (l *Logger) Child(name string, names ...string) *Logger {
+	nameSegments := append([]string(nil), l.nameSegments...)
+	nameSegments = append(nameSegments, splitNameSegments(name)...)
+	for _, next := range names {
+		nameSegments = append(nameSegments, splitNameSegments(next)...)
+	}
+	return newLogger(&l.config, nameSegments, l.attrs, l.writer)
 }
 
 // Enabled reports whether the logger currently emits records at level.
