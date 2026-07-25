@@ -5,9 +5,8 @@ import "go.yorun.ai/vine/util/vpre"
 var defaultLogger *Logger
 
 func init() {
-	config := GlobalOption()
-	defaultLogger = NewGlobalLogger()
-	setStandardLogger(*config, &globalLevel)
+	defaultLogger = New()
+	setStandardLogger(defaultLogger.config, defaultLogger.leveler)
 }
 
 func SetDefault(logger *Logger) {

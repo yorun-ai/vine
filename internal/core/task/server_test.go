@@ -167,7 +167,7 @@ func TestServerReturnsInvalidTaskWhenTriggerNotRegistered(t *testing.T) {
 	server := NewServer(Option{
 		ImplTypes: []reflect.Type{reflect.TypeOf(&testRunnerImpl{})},
 		Executor:  &_RunnerRecorderExecutor{},
-		Logger: logger.NewLogger(&logger.Option{
+		Logger: logger.New(logger.WithOption{
 			Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath,
 		}),
 	})

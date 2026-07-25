@@ -12,7 +12,7 @@ func resetGlobalOptionForTest(t *testing.T) {
 	prev := GlobalOption()
 	t.Cleanup(func() {
 		SetGlobalMode(prev.Mode)
-		SetGlobalLevel(prev.Level)
+		SetLevel("**", prev.Level)
 	})
 }
 
@@ -26,32 +26,6 @@ func TestIsValidMode(t *testing.T) {
 	if IsValidMode(Mode("PLAIN")) {
 		t.Fatal("expected invalid mode")
 	}
-}
-
-func TestSetGlobalMode(t *testing.T) {
-	resetGlobalOptionForTest(t)
-
-	SetGlobalMode(ModeJSON)
-	if got := GlobalOption().Mode; got != ModeJSON {
-		t.Fatalf("GlobalOption().Mode = %s, want %s", got, ModeJSON)
-	}
-
-	SetGlobalMode(ModeText)
-	if got := GlobalOption().Mode; got != ModeText {
-		t.Fatalf("GlobalOption().Mode = %s, want %s", got, ModeText)
-	}
-}
-
-func TestSetGlobalModeRejectsInvalidMode(t *testing.T) {
-	resetGlobalOptionForTest(t)
-
-	defer func() {
-		if recovered := recover(); recovered == nil {
-			t.Fatal("expected panic")
-		}
-	}()
-
-	SetGlobalMode(Mode("PLAIN"))
 }
 
 func TestLevelToSLogLevel(t *testing.T) {
@@ -82,23 +56,26 @@ func TestIsValidLevel(t *testing.T) {
 	if IsValidLevel(Level("TRACE")) {
 		t.Fatal("expected invalid level")
 	}
+	if IsValidLevel(LevelAuto) {
+		t.Fatal("AUTO is an option policy, not a concrete logging threshold")
+	}
 }
 
-func TestSetGlobalLevel(t *testing.T) {
+func TestSetGlobalMode(t *testing.T) {
 	resetGlobalOptionForTest(t)
 
-	SetGlobalLevel(LevelDebug)
-	if got := GlobalOption().Level; got != LevelDebug {
-		t.Fatalf("GlobalOption().Level = %s, want %s", got, LevelDebug)
+	SetGlobalMode(ModeJSON)
+	if got := GlobalOption().Mode; got != ModeJSON {
+		t.Fatalf("GlobalOption().Mode = %s, want %s", got, ModeJSON)
 	}
 
-	SetGlobalLevel(LevelError)
-	if got := GlobalOption().Level; got != LevelError {
-		t.Fatalf("GlobalOption().Level = %s, want %s", got, LevelError)
+	SetGlobalMode(ModeText)
+	if got := GlobalOption().Mode; got != ModeText {
+		t.Fatalf("GlobalOption().Mode = %s, want %s", got, ModeText)
 	}
 }
 
-func TestSetGlobalLevelRejectsInvalidLevel(t *testing.T) {
+func TestSetGlobalModeRejectsInvalidMode(t *testing.T) {
 	resetGlobalOptionForTest(t)
 
 	defer func() {
@@ -107,7 +84,33 @@ func TestSetGlobalLevelRejectsInvalidLevel(t *testing.T) {
 		}
 	}()
 
-	SetGlobalLevel(Level("TRACE"))
+	SetGlobalMode(Mode("PLAIN"))
+}
+
+func TestGlobalOptionReadsDefaultLevel(t *testing.T) {
+	resetGlobalOptionForTest(t)
+
+	SetLevel("**", LevelDebug)
+	if got := GlobalOption().Level; got != LevelDebug {
+		t.Fatalf("GlobalOption().Level = %s, want %s", got, LevelDebug)
+	}
+
+	SetLevel("**", LevelError)
+	if got := GlobalOption().Level; got != LevelError {
+		t.Fatalf("GlobalOption().Level = %s, want %s", got, LevelError)
+	}
+}
+
+func TestDefaultLevelRejectsAuto(t *testing.T) {
+	resetGlobalOptionForTest(t)
+
+	defer func() {
+		if recovered := recover(); recovered == nil {
+			t.Fatal("expected panic")
+		}
+	}()
+
+	SetLevel("**", LevelAuto)
 }
 
 func TestGlobalOptionConcurrentAccess(t *testing.T) {
@@ -119,11 +122,57 @@ func TestGlobalOptionConcurrentAccess(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			SetGlobalMode(ModeJSON)
-			SetGlobalLevel(LevelDebug)
+			SetLevel("**", LevelDebug)
 			_ = GlobalOption()
 			SetGlobalMode(ModeText)
-			SetGlobalLevel(LevelInfo)
+			SetLevel("**", LevelInfo)
 		}()
 	}
 	wg.Wait()
+}
+
+func TestAutoLoggerAndChildFollowDefaultLevelChanges(t *testing.T) {
+	resetGlobalOptionForTest(t)
+	SetLevel("**", LevelInfo)
+
+	log := New(WithOption{Mode: ModeText, Level: LevelAuto})
+	child := log.With(slog.String("group", "child"))
+	if log.Enabled(LevelDebug) || child.Enabled(LevelDebug) {
+		t.Fatal("Debug should initially be disabled")
+	}
+
+	SetLevel("**", LevelDebug)
+	if !log.Enabled(LevelDebug) || !child.Enabled(LevelDebug) {
+		t.Fatal("existing auto loggers should follow the default level")
+	}
+}
+
+func TestFixedLoggerDoesNotFollowLevelChanges(t *testing.T) {
+	resetGlobalOptionForTest(t)
+	SetLevel("**", LevelInfo)
+	log := New(WithOption{Mode: ModeText, Level: LevelInfo})
+
+	SetLevel("**", LevelDebug)
+	if log.Enabled(LevelDebug) {
+		t.Fatal("fixed logger should keep its configured level")
+	}
+}
+
+func TestDefaultLoggerKeepsInjectedLoggerLevelSemantics(t *testing.T) {
+	resetGlobalOptionForTest(t)
+	previousDefault := defaultLogger
+	t.Cleanup(func() { SetDefault(previousDefault) })
+	SetLevel("**", LevelInfo)
+
+	SetDefault(New(WithOption{Mode: ModeText, Level: LevelAuto}))
+	SetLevel("**", LevelDebug)
+	if !defaultLogger.Enabled(LevelDebug) {
+		t.Fatal("default auto logger should follow the default level")
+	}
+
+	fixed := New(WithOption{Mode: ModeText, Level: LevelInfo})
+	SetDefault(fixed)
+	if defaultLogger.Enabled(LevelDebug) {
+		t.Fatal("explicit fixed default logger should keep its own threshold")
+	}
 }

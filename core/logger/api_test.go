@@ -19,7 +19,7 @@ type _LoggedRecord struct {
 
 func TestFacadeInfoUsesExternalCallerSource(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "facade-logger.jsonl")
-	log := NewLogger(&Option{
+	log := New(WithOption{
 		Mode:       ModeJSON,
 		Level:      LevelDebug,
 		OutputPath: path,
@@ -62,28 +62,37 @@ func readFacadeLastRecord(t *testing.T, path string) _LoggedRecord {
 	return record
 }
 
-func TestFacadeDynamicLoggerConstructorsAndScopeOverrides(t *testing.T) {
+func TestFacadeAutoLoggerAndNamedRules(t *testing.T) {
 	previousLevel := GlobalOption().Level
 	t.Cleanup(func() {
-		SetGlobalLevel(previousLevel)
-		ReplaceLevelOverrides(LevelOverrides{})
+		SetLevel("**", previousLevel)
+		clearFacadeLevels()
 	})
-	ReplaceLevelOverrides(LevelOverrides{})
-	SetGlobalLevel(LevelInfo)
+	clearFacadeLevels()
+	SetLevel("**", LevelInfo)
 
-	global := NewGlobalLogger()
-	fixed := NewLogger(&Option{Mode: ModeText, Level: LevelInfo})
-	SetGlobalLevel(LevelDebug)
-	if !global.Enabled(LevelDebug) {
-		t.Fatal("facade global logger should follow SetGlobalLevel")
+	auto := New(WithOption{Mode: ModeText, Level: LevelAuto})
+	fixed := New(WithOption{Mode: ModeText, Level: LevelInfo})
+	SetLevel("**", LevelDebug)
+	if !auto.Enabled(LevelDebug) {
+		t.Fatal("facade auto logger should follow the default level")
 	}
 	if fixed.Enabled(LevelDebug) {
 		t.Fatal("facade fixed logger should keep its configured level")
 	}
 
-	SetAppSubsystemLevel("demo.user", SubsystemEvent, LevelError)
-	scoped := NewScopedLogger(Scope{AppName: "demo.user", Subsystem: SubsystemEvent})
-	if scoped.Enabled(LevelWarn) || !scoped.Enabled(LevelError) {
-		t.Fatal("facade scoped logger should resolve App plus subsystem override")
+	SetLevel("*:event", LevelWarn)
+	SetLevel("demo.user:event", LevelError)
+	named := New("demo.user", "event")
+	if named.Enabled(LevelWarn) || !named.Enabled(LevelError) {
+		t.Fatal("facade named logger should resolve the most specific rule")
+	}
+}
+
+func clearFacadeLevels() {
+	for pattern := range Levels() {
+		if pattern != "**" {
+			ClearLevel(pattern)
+		}
 	}
 }

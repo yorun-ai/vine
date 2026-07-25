@@ -26,7 +26,7 @@ func testLauncherContext() meta.Context {
 }
 
 func testLauncherLogger() *logger.Logger {
-	return logger.NewLogger(logger.GlobalOption())
+	return logger.New(logger.GlobalOption())
 }
 
 type testLauncherTaskClient struct {

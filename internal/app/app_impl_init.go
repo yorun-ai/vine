@@ -45,7 +45,7 @@ func (a *_AppImpl) initInjector() {
 		func(b *di.Binder) {
 			b.Bind(T[context.Context]()).ToInstance(a.ctx)
 			b.Bind(T[meta.Context]()).ToInstance(newMetaContext(a.ctx))
-			b.BindInstance(logger.NewScopedLogger(logger.Scope{AppName: a.logicalAppName}))
+			b.BindInstance(newAppLogger(a.logicalAppName))
 		})
 }
 
@@ -57,11 +57,11 @@ func newMetaContext(ctx context.Context) meta.Context {
 }
 
 func (a *_AppImpl) bindClients(b *di.Binder) {
-	b.BindFactory(func(ctx meta.Context, logger *logger.Logger) *client.Client {
+	b.BindFactory(func(ctx meta.Context) *client.Client {
 		return client.New(client.Option{
 			Context:        ctx,
 			ClientApp:      a.info,
-			Logger:         logger,
+			Logger:         newAppLogger(a.logicalAppName, "rpc", "client"),
 			ServerEndpoint: a.linker.RpcProxyEndpoint(),
 		})
 	})
@@ -79,10 +79,8 @@ func (a *_AppImpl) bindEmitters(b *di.Binder) {
 		return event.NewEmitter(event.EmitterOption{
 			Context:   ctx,
 			ClientApp: a.info,
-			Logger: logger.NewScopedLogger(logger.Scope{
-				AppName:   a.logicalAppName,
-				Subsystem: logger.SubsystemEvent,
-			}).With(buildLoggerFields(ctx, nil, a.info)...),
+			Logger: newAppLogger(a.logicalAppName, "event").
+				With(buildLoggerFields(ctx, nil, a.info)...),
 			EventClient: a.linker.EventClient(),
 		})
 	})
@@ -100,16 +98,25 @@ func (a *_AppImpl) bindLaunchers(b *di.Binder) {
 		return task.NewLauncher(task.LauncherOption{
 			Context:   ctx,
 			ClientApp: a.info,
-			Logger: logger.NewScopedLogger(logger.Scope{
-				AppName:   a.logicalAppName,
-				Subsystem: logger.SubsystemTask,
-			}).With(buildLoggerFields(ctx, nil, a.info)...),
+			Logger: newAppLogger(a.logicalAppName, "task").
+				With(buildLoggerFields(ctx, nil, a.info)...),
 			TaskClient: a.linker.TaskClient(),
 		})
 	})
 	for _, factory := range taskspec.RegisteredTaskLauncherFactories() {
 		b.BindFactory(factory)
 	}
+}
+
+func newAppLogger(appName string, categories ...string) *logger.Logger {
+	args := make([]any, 0, len(categories)+1)
+	if appName != "" {
+		args = append(args, appName)
+	}
+	for _, category := range categories {
+		args = append(args, category)
+	}
+	return logger.New(args...)
 }
 
 func (a *_AppImpl) initComponents() {

@@ -204,7 +204,7 @@ func newTestInprocRpcClient(app *_AppImpl, endpoint string) *rpcclient.Client {
 	return rpcclient.New(rpcclient.Option{
 		Context:        meta.NewContext(context.Background(), meta.InitialTrace(), nil, actor),
 		ClientApp:      app.info,
-		Logger:         logger.NewLogger(logger.GlobalOption()),
+		Logger:         logger.New(logger.GlobalOption()),
 		ServerEndpoint: endpoint,
 	})
 }

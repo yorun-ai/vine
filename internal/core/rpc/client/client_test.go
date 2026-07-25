@@ -29,7 +29,7 @@ func testClientContext() meta.Context {
 }
 
 func testClientLogger() *logger.Logger {
-	return logger.NewLogger(logger.GlobalOption())
+	return logger.New(logger.GlobalOption())
 }
 
 var testClientMethodCounter uint64
@@ -147,7 +147,7 @@ func TestInvokeEncodingFailureLogsRejectedWithoutStarted(t *testing.T) {
 		}},
 	}).Methods()[0]
 	logPath := filepath.Join(t.TempDir(), "client-rejected.jsonl")
-	log := logger.NewLogger(&logger.Option{Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath})
+	log := logger.New(logger.WithOption{Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath})
 	client := New(Option{
 		Context:             testClientContext(),
 		ClientApp:           testClientApp(t),

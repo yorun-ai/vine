@@ -303,8 +303,8 @@ func setServerTestDefaultLogger(t *testing.T) string {
 	t.Helper()
 
 	logPath := filepath.Join(t.TempDir(), "server.jsonl")
-	original := logger.NewLogger(logger.GlobalOption())
-	logger.SetDefault(logger.NewLogger(&logger.Option{
+	original := logger.New(logger.GlobalOption())
+	logger.SetDefault(logger.New(logger.WithOption{
 		Mode:       logger.ModeJSON,
 		Level:      logger.LevelDebug,
 		OutputPath: logPath,

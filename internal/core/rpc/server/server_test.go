@@ -257,7 +257,7 @@ func TestServerHTTPHandlerReturnsStandardVrpcErrorForInvalidRequest(t *testing.T
 		t.Fatalf("NewApp() error = %v", err)
 	}
 	logPath := filepath.Join(t.TempDir(), "rpc-rejected.jsonl")
-	log := logger.NewLogger(&logger.Option{Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath})
+	log := logger.New(logger.WithOption{Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath})
 	server := New(Option{
 		App:          serverApp,
 		Logger:       log,

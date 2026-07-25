@@ -12,10 +12,14 @@ const (
 	ModeText = internallogger.ModeText
 )
 
-// Level is the minimum severity emitted by a logger.
+// Level is either a concrete logging threshold or the LevelAuto policy used
+// by WithOption.
 type Level = internallogger.Level
 
 const (
+	// LevelAuto dynamically resolves the logging threshold from the current
+	// pattern-to-level configuration.
+	LevelAuto = internallogger.LevelAuto
 	// LevelDebug enables debug and higher-severity records.
 	LevelDebug = internallogger.LevelDebug
 	// LevelInfo enables informational and higher-severity records.
@@ -26,41 +30,16 @@ const (
 	LevelError = internallogger.LevelError
 )
 
-// Option configures a Logger.
-type Option = internallogger.Option
+// WithOption configures the logger created by New. When supplied, its value or
+// pointer must be the final New argument.
+type WithOption = internallogger.WithOption
 
 // Logger writes structured log records.
 type Logger = internallogger.Logger
 
-// Subsystem identifies a framework logging scope.
-type Subsystem = internallogger.Subsystem
-
-const (
-	// SubsystemRpcServer identifies Rpc server lifecycle logs.
-	SubsystemRpcServer = internallogger.SubsystemRpcServer
-	// SubsystemTask identifies task launcher and runner logs.
-	SubsystemTask = internallogger.SubsystemTask
-	// SubsystemEvent identifies event emitter and listener logs.
-	SubsystemEvent = internallogger.SubsystemEvent
-)
-
-// Scope identifies the local application and framework subsystem that own a logger.
-type Scope = internallogger.Scope
-
-// AppSubsystemLevel defines one App plus subsystem threshold override.
-type AppSubsystemLevel = internallogger.AppSubsystemLevel
-
-// LevelOverrides is a complete replacement input for scoped threshold overrides.
-type LevelOverrides = internallogger.LevelOverrides
-
 // IsValidLevel reports whether level is a supported logging threshold.
 func IsValidLevel(level Level) bool {
 	return internallogger.IsValidLevel(level)
-}
-
-// IsValidSubsystem reports whether subsystem is a supported framework scope.
-func IsValidSubsystem(subsystem Subsystem) bool {
-	return internallogger.IsValidSubsystem(subsystem)
 }
 
 // PayloadSurface identifies a lifecycle payload field.
@@ -99,7 +78,7 @@ type PayloadSanitizer = internallogger.PayloadSanitizer
 type PayloadPolicy = internallogger.PayloadPolicy
 
 // GlobalOption returns a copy of the process-wide logging configuration.
-func GlobalOption() *Option {
+func GlobalOption() *WithOption {
 	return internallogger.GlobalOption()
 }
 
@@ -108,61 +87,36 @@ func SetGlobalMode(mode Mode) {
 	internallogger.SetGlobalMode(mode)
 }
 
-// SetGlobalLevel changes the threshold followed by existing and future global and scoped loggers.
-func SetGlobalLevel(level Level) {
-	internallogger.SetGlobalLevel(level)
+// New creates a logger whose name is formed by joining its arguments with ":".
+// Each name argument may itself contain colon-separated segments.
+// A WithOption value or pointer may be supplied only as the final argument.
+// Without WithOption, the logger uses the current global mode and dynamically
+// follows the current pattern-to-level configuration.
+func New(args ...any) *Logger {
+	return internallogger.New(args...)
 }
 
-// NewLogger creates a fixed-level logger from config.
-// It does not follow later global or scoped threshold changes.
-func NewLogger(config *Option) *Logger {
-	return internallogger.NewLogger(config)
+// SetLevel sets a process-local logging threshold for pattern. Names and
+// patterns are colon-separated. A whole-segment "*" matches exactly one
+// segment, while "**" matches zero or more consecutive segments. A matching
+// pattern also applies to descendant names. When several rules match, literal
+// segments outrank "*", "*" outranks "**", and comparison proceeds from left
+// to right before longer patterns outrank their prefixes. The pattern "*" is
+// reserved. The "**" pattern is the required default level.
+func SetLevel(pattern string, level Level) {
+	internallogger.SetLevel(pattern, level)
 }
 
-// NewGlobalLogger creates a logger that follows later SetGlobalLevel calls.
-func NewGlobalLogger() *Logger {
-	return internallogger.NewGlobalLogger()
+// ClearLevel removes the logging threshold configured for pattern.
+// The required default pattern "**" cannot be cleared.
+func ClearLevel(pattern string) {
+	internallogger.ClearLevel(pattern)
 }
 
-// NewScopedLogger creates a logger that dynamically resolves App plus subsystem, App,
-// subsystem, and global thresholds in that order.
-func NewScopedLogger(scope Scope) *Logger {
-	return internallogger.NewScopedLogger(scope)
-}
-
-// SetSubsystemLevel sets a process-local subsystem threshold override.
-func SetSubsystemLevel(subsystem Subsystem, level Level) {
-	internallogger.SetSubsystemLevel(subsystem, level)
-}
-
-// ClearSubsystemLevel removes a process-local subsystem threshold override.
-func ClearSubsystemLevel(subsystem Subsystem) {
-	internallogger.ClearSubsystemLevel(subsystem)
-}
-
-// SetAppLevel sets a process-local application threshold override.
-func SetAppLevel(appName string, level Level) {
-	internallogger.SetAppLevel(appName, level)
-}
-
-// ClearAppLevel removes a process-local application threshold override.
-func ClearAppLevel(appName string) {
-	internallogger.ClearAppLevel(appName)
-}
-
-// SetAppSubsystemLevel sets a process-local App plus subsystem threshold override.
-func SetAppSubsystemLevel(appName string, subsystem Subsystem, level Level) {
-	internallogger.SetAppSubsystemLevel(appName, subsystem, level)
-}
-
-// ClearAppSubsystemLevel removes a process-local App plus subsystem threshold override.
-func ClearAppSubsystemLevel(appName string, subsystem Subsystem) {
-	internallogger.ClearAppSubsystemLevel(appName, subsystem)
-}
-
-// ReplaceLevelOverrides validates and atomically replaces all scoped overrides.
-func ReplaceLevelOverrides(overrides LevelOverrides) {
-	internallogger.ReplaceLevelOverrides(overrides)
+// Levels returns a copy of the current pattern-to-level configuration,
+// including the required default pattern "**".
+func Levels() map[string]Level {
+	return internallogger.Levels()
 }
 
 // RegisterRpcPayloadPolicy registers a policy for one Rpc payload surface before an App or server starts.

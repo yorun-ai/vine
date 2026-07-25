@@ -94,7 +94,7 @@ func (*_Servicer) bindContext(b *di.Binder) {
 
 func (s *_Servicer) bindLogger(b *di.Binder) {
 	b.BindFactory(func(ctx rpcspec.Context, method rpcspec.MethodInfo) *logger.Logger {
-		return logger.NewScopedLogger(logger.Scope{AppName: s.appName}).With(buildLoggerFields(ctx, method, s.appInfo)...)
+		return newAppLogger(s.appName).With(buildLoggerFields(ctx, method, s.appInfo)...)
 	})
 }
 

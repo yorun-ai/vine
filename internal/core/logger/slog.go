@@ -11,7 +11,7 @@ import (
 
 // newSlogLogger builds the underlying slog logger using the configured output mode,
 // level, source handling, and optional file mirroring.
-func newSlogLogger(config *Option, addSource bool, leveler slog.Leveler) *slog.Logger {
+func newSlogLogger(config *WithOption, addSource bool, leveler slog.Leveler) *slog.Logger {
 	options := &slog.HandlerOptions{
 		Level:     leveler,
 		AddSource: addSource,

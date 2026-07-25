@@ -20,16 +20,24 @@ func resetArgsForTest(t *testing.T) {
 	prevStderr := argsStderr
 	prevExit := argsExit
 	prevLogLevel := logger.GlobalOption().Level
-	logger.ReplaceLevelOverrides(logger.LevelOverrides{})
+	clearLevelsForTest()
 
 	t.Cleanup(func() {
 		os.Args = prevArgs
 		argsStdout = prevStdout
 		argsStderr = prevStderr
 		argsExit = prevExit
-		logger.SetGlobalLevel(prevLogLevel)
-		logger.ReplaceLevelOverrides(logger.LevelOverrides{})
+		logger.SetLevel("**", prevLogLevel)
+		clearLevelsForTest()
 	})
+}
+
+func clearLevelsForTest() {
+	for pattern := range logger.Levels() {
+		if pattern != "**" {
+			logger.ClearLevel(pattern)
+		}
+	}
 }
 
 func testFlag(destination *string) ucli.Flag {
@@ -165,70 +173,79 @@ func TestHandleSetsLogLevelFromEnv(t *testing.T) {
 	assert.Equal(t, logger.LevelWarn, logger.GlobalOption().Level)
 }
 
-func TestHandleSetsScopedLogLevelsWithExactPriority(t *testing.T) {
+func TestHandleSetsNamedRulesWithExactPriority(t *testing.T) {
 	resetArgsForTest(t)
-	logger.SetGlobalLevel(logger.LevelError)
+	logger.SetLevel("**", logger.LevelError)
 	os.Args = []string{
 		"/tmp/vine",
-		"--rpc-server-log-level", "WARN",
-		"--app-log-level", "demo.user=INFO",
-		"--app-scope-log-level", "demo.user:rpc-server=DEBUG",
+		"--log-rule", "*:rpc:server=WARN",
+		"--log-rule", "demo.user=INFO",
+		"--log-rule", "demo.user:rpc:server=DEBUG",
 	}
 	argsExit = func(int) {}
 
 	Handle()
 
-	if !logger.NewScopedLogger(logger.Scope{AppName: "demo.user", Subsystem: logger.SubsystemRpcServer}).Enabled(logger.LevelDebug) {
-		t.Fatal("expected App plus Rpc server DEBUG override")
+	if !logger.New("demo.user", "rpc", "server").Enabled(logger.LevelDebug) {
+		t.Fatal("expected exact Rpc server DEBUG rule")
 	}
-	if logger.NewScopedLogger(logger.Scope{AppName: "demo.order", Subsystem: logger.SubsystemRpcServer}).Enabled(logger.LevelInfo) {
-		t.Fatal("subsystem WARN override should reject INFO")
+	if logger.New("demo.order", "rpc", "server").Enabled(logger.LevelInfo) {
+		t.Fatal("wildcard Rpc server WARN rule should reject INFO")
 	}
-	if !logger.NewScopedLogger(logger.Scope{AppName: "demo.user", Subsystem: logger.SubsystemTask}).Enabled(logger.LevelInfo) {
-		t.Fatal("App INFO override should apply to other subsystems")
+	if !logger.New("demo.user", "task").Enabled(logger.LevelInfo) {
+		t.Fatal("App prefix INFO rule should apply to other categories")
 	}
 }
 
-func TestHandleParsesRepeatedAndEnvironmentScopedRules(t *testing.T) {
+func TestHandleParsesRepeatedRules(t *testing.T) {
 	resetArgsForTest(t)
 	os.Args = []string{
 		"/tmp/vine",
-		"--app-log-level", "demo.user=WARN",
-		"--app-log-level", "demo.user=DEBUG",
+		"--log-rule", "demo.user=WARN",
+		"--log-rule", "demo.user=DEBUG",
 	}
-	t.Setenv(envAppScopeLogLevels, "demo.order:event=DEBUG,demo.order:task=ERROR")
 	argsExit = func(int) {}
 
 	Handle()
 
-	if !logger.NewScopedLogger(logger.Scope{AppName: "demo.user"}).Enabled(logger.LevelDebug) {
-		t.Fatal("last repeated App selector should win")
+	if !logger.New("demo.user").Enabled(logger.LevelDebug) {
+		t.Fatal("last repeated pattern should win")
 	}
-	if !logger.NewScopedLogger(logger.Scope{AppName: "demo.order", Subsystem: logger.SubsystemEvent}).Enabled(logger.LevelDebug) {
+}
+
+func TestHandleParsesEnvironmentRules(t *testing.T) {
+	resetArgsForTest(t)
+	os.Args = []string{"/tmp/vine"}
+	t.Setenv(envLogRules, "demo.order:event=DEBUG,demo.order:task=ERROR")
+	argsExit = func(int) {}
+
+	Handle()
+
+	if !logger.New("demo.order", "event").Enabled(logger.LevelDebug) {
 		t.Fatal("expected Event override from environment")
 	}
-	if logger.NewScopedLogger(logger.Scope{AppName: "demo.order", Subsystem: logger.SubsystemTask}).Enabled(logger.LevelWarn) {
+	if logger.New("demo.order", "task").Enabled(logger.LevelWarn) {
 		t.Fatal("expected Task ERROR override from environment")
 	}
 }
 
-func TestInvalidScopedRuleDoesNotPartiallyUpdateLevels(t *testing.T) {
+func TestInvalidRuleDoesNotPartiallyUpdateLevels(t *testing.T) {
 	resetArgsForTest(t)
-	logger.SetGlobalLevel(logger.LevelInfo)
-	logger.SetAppLevel("demo.user", logger.LevelDebug)
+	logger.SetLevel("**", logger.LevelInfo)
+	logger.SetLevel("demo.user", logger.LevelDebug)
 
 	_, err := parseArgs([]string{
 		"/tmp/vine",
 		"--log-level", "ERROR",
-		"--app-scope-log-level", "demo.user:unknown=DEBUG",
+		"--log-rule", "demo.*=DEBUG",
 	})
 	if err == nil {
-		t.Fatal("expected invalid scoped rule error")
+		t.Fatal("expected invalid wildcard rule error")
 	}
 	if logger.GlobalOption().Level != logger.LevelInfo {
-		t.Fatal("invalid update must preserve global level")
+		t.Fatal("invalid update must preserve the default level")
 	}
-	if !logger.NewScopedLogger(logger.Scope{AppName: "demo.user"}).Enabled(logger.LevelDebug) {
-		t.Fatal("invalid update must preserve existing scoped snapshot")
+	if !logger.New("demo.user").Enabled(logger.LevelDebug) {
+		t.Fatal("invalid update must preserve existing level rules")
 	}
 }

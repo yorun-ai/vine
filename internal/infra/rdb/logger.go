@@ -78,5 +78,5 @@ func getLogger(ctx context.Context) *logger.Logger {
 			return requestLogger
 		}
 	}
-	return logger.NewGlobalLogger()
+	return logger.New()
 }

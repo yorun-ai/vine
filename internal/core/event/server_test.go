@@ -122,7 +122,7 @@ func TestServerOnEventForwardsToListener(t *testing.T) {
 	server := NewServer(Option{
 		ListenerImplTypes: []reflect.Type{reflect.TypeOf(&testServerListenerImpl{})},
 		Executor:          NewContainerExecutor(nil, nil),
-		Logger: logger.NewLogger(&logger.Option{
+		Logger: logger.New(logger.WithOption{
 			Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath,
 		}),
 	})
@@ -168,7 +168,7 @@ func TestServerRejectedUsesMainEventFieldNames(t *testing.T) {
 	server := NewServer(Option{
 		ListenerImplTypes: []reflect.Type{reflect.TypeOf(&testServerListenerImpl{})},
 		Executor:          NewContainerExecutor(nil, nil),
-		Logger: logger.NewLogger(&logger.Option{
+		Logger: logger.New(logger.WithOption{
 			Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath,
 		}),
 	})

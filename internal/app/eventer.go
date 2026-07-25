@@ -135,7 +135,7 @@ func (e *_Eventer) bindLogger(b *di.Binder) {
 				slog.String("instanceId", e.appInfo.InstanceId()),
 			)
 		}
-		return logger.NewScopedLogger(logger.Scope{AppName: e.appName}).With(fields...)
+		return newAppLogger(e.appName).With(fields...)
 	})
 }
 

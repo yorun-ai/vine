@@ -53,8 +53,12 @@ func New(opt Option) *Server {
 		if appName == "" && opt.App != nil {
 			appName = opt.App.Name()
 		}
-		server.log = logger.NewScopedLogger(logger.Scope{AppName: appName, Subsystem: logger.SubsystemRpcServer})
-		server.infraLog = logger.NewGlobalLogger()
+		if appName == "" {
+			server.log = logger.New("rpc", "server")
+		} else {
+			server.log = logger.New(appName, "rpc", "server")
+		}
+		server.infraLog = logger.New()
 	}
 	server.init()
 	return server

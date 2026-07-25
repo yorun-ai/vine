@@ -91,7 +91,7 @@ func (*_Webber) bindContext(b *di.Binder) {
 
 func (w *_Webber) bindLogger(b *di.Binder) {
 	b.BindFactory(func(ctx meta.Context) *logger.Logger {
-		return logger.NewScopedLogger(logger.Scope{AppName: w.appName}).With(buildLoggerFields(ctx, nil, w.appInfo)...)
+		return newAppLogger(w.appName).With(buildLoggerFields(ctx, nil, w.appInfo)...)
 	})
 }
 

@@ -72,7 +72,7 @@ func TestIngressServesRpcProxyIn(t *testing.T) {
 
 	proxy := &rpcproxy.RpcProxy{
 		Context:   context.Background(),
-		Logger:    logger.NewLogger(logger.GlobalOption()),
+		Logger:    logger.New(logger.GlobalOption()),
 		AppMinder: newTestIngressAppMinder(),
 	}
 	proxy.DIInit()
@@ -113,7 +113,7 @@ func TestIngressServesRpcProxyIn(t *testing.T) {
 func TestIngressRegistersInprocEndpointWhenHubInprocModeEnabled(t *testing.T) {
 	proxy := &rpcproxy.RpcProxy{
 		Context:   context.Background(),
-		Logger:    logger.NewLogger(logger.GlobalOption()),
+		Logger:    logger.New(logger.GlobalOption()),
 		AppMinder: newTestIngressAppMinder(),
 	}
 	proxy.DIInit()

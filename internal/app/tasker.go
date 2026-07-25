@@ -138,7 +138,7 @@ func (t *_Tasker) bindLogger(b *di.Binder) {
 				slog.String("instanceId", t.appInfo.InstanceId()),
 			)
 		}
-		return logger.NewScopedLogger(logger.Scope{AppName: t.appName}).With(fields...)
+		return newAppLogger(t.appName).With(fields...)
 	})
 }
 

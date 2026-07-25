@@ -47,7 +47,11 @@ func NewServer(opt Option) *Server {
 		if appName == "" && opt.App != nil {
 			appName = opt.App.Name()
 		}
-		server.log = logger.NewScopedLogger(logger.Scope{AppName: appName, Subsystem: logger.SubsystemEvent})
+		if appName == "" {
+			server.log = logger.New("event")
+		} else {
+			server.log = logger.New(appName, "event")
+		}
 	}
 	server.init()
 	return server

@@ -28,7 +28,7 @@ var newAppTaskServiceClient = func(ctx context.Context, clientApp runtime.App, e
 	return appskeled.NewTaskServiceClientER(rpcclient.New(rpcclient.Option{
 		Context:             rpcCtx,
 		ClientApp:           clientApp,
-		Logger:              logger.NewGlobalLogger(),
+		Logger:              logger.New(),
 		ReturnIfSystemError: true,
 		ServerEndpoint:      endpoint,
 	}))

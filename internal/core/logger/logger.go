@@ -13,40 +13,53 @@ import (
 
 type Logger struct {
 	slog    *slog.Logger
-	config  Option
+	config  WithOption
 	leveler slog.Leveler
 }
 
-func NewLogger(config *Option) *Logger {
-	vpre.CheckNotNil(config, "logger config cannot be nil")
-	leveler := config.Level.ToSLogLevel()
-	return new(Logger{
-		slog:    newSlogLogger(config, true, leveler),
-		config:  *config,
-		leveler: leveler,
-	})
-}
-
-func NewGlobalLogger() *Logger {
+func New(args ...any) *Logger {
 	config := GlobalOption()
-	return new(Logger{
-		slog:    newSlogLogger(config, true, &globalLevel),
-		config:  *config,
-		leveler: &globalLevel,
-	})
-}
-
-func NewScopedLogger(scope Scope) *Logger {
-	if scope.Subsystem != "" {
-		validateSubsystem(scope.Subsystem)
+	config.Level = LevelAuto
+	nameArgs := args
+	if len(args) > 0 {
+		switch last := args[len(args)-1].(type) {
+		case WithOption:
+			config = new(last)
+			nameArgs = args[:len(args)-1]
+		case *WithOption:
+			vpre.CheckNotNil(last, "logger WithOption cannot be nil")
+			copied := *last
+			config = &copied
+			nameArgs = args[:len(args)-1]
+		}
 	}
-	leveler := new(_ScopeLeveler{scope: scope})
-	config := GlobalOption()
-	return new(Logger{
-		slog:    newSlogLogger(config, true, leveler),
+	vpre.Check(isValidOptionLevel(config.Level), "%+v is not a valid logger option level", config.Level)
+	nameSegments := make([]string, 0, len(nameArgs))
+	for index, arg := range nameArgs {
+		segment, ok := arg.(string)
+		vpre.Check(ok, "logger name argument %d must be a string segment; WithOption is allowed only as the last argument", index)
+		nameSegments = append(nameSegments, splitNameSegments(segment)...)
+	}
+	return newLogger(config, newLeveler(config.Level, nameSegments))
+}
+
+func splitNameSegments(value string) []string {
+	segments := strings.Split(value, ":")
+	for _, segment := range segments {
+		validWildcard := segment == "*" || segment == "**"
+		vpre.Check(segment != "" && (!strings.Contains(segment, "*") || validWildcard),
+			"%q is not a valid logger name segment", value)
+	}
+	return segments
+}
+
+func newLogger(config *WithOption, leveler slog.Leveler) *Logger {
+	log := new(Logger{
 		config:  *config,
 		leveler: leveler,
 	})
+	log.slog = newSlogLogger(config, true, leveler)
+	return log
 }
 
 func (l *Logger) With(attrs ...slog.Attr) *Logger {

@@ -26,6 +26,8 @@ func IsValidMode(mode Mode) bool {
 type Level string
 
 const (
+	// LevelAuto follows the current pattern-to-level configuration.
+	LevelAuto  Level = "AUTO"
 	LevelDebug Level = "DEBUG"
 	LevelInfo  Level = "INFO"
 	LevelWarn  Level = "WARN"
@@ -37,6 +39,10 @@ func IsValidLevel(level Level) bool {
 		level == LevelInfo ||
 		level == LevelWarn ||
 		level == LevelError
+}
+
+func isValidOptionLevel(level Level) bool {
+	return level == LevelAuto || IsValidLevel(level)
 }
 
 func (l Level) ToSLogLevel() slog.Level {
@@ -55,59 +61,54 @@ func (l Level) ToSLogLevel() slog.Level {
 	}
 }
 
-// Option
-
-type Option struct {
+// WithOption configures the logger created by New.
+type WithOption struct {
 	Mode       Mode
 	Level      Level
 	OutputPath string
 }
 
-// Global
+var globalModeMu sync.RWMutex
+var globalMode = newGlobalMode()
 
-var globalOptionMu sync.RWMutex
-var globalOption = newGlobalOption()
-var globalLevel slog.LevelVar
-
-func init() {
-	globalLevel.Set(globalOption.Level.ToSLogLevel())
-}
-
-func newGlobalOption() *Option {
-	mode := ModeText
+func newGlobalMode() Mode {
 	if _, ok := os.LookupEnv("KUBERNETES_SERVICE_HOST"); ok {
-		mode = ModeJSON
+		return ModeJSON
 	}
-
-	level := LevelInfo
-
-	return &Option{
-		Mode:  mode,
-		Level: level,
-	}
+	return ModeText
 }
 
 func SetGlobalMode(mode Mode) {
 	vpre.Check(IsValidMode(mode), "%+v is not a valid LogMode", mode)
-	globalOptionMu.Lock()
-	defer globalOptionMu.Unlock()
-	globalOption.Mode = mode
+	globalModeMu.Lock()
+	defer globalModeMu.Unlock()
+	globalMode = mode
 }
 
-func SetGlobalLevel(level Level) {
-	vpre.Check(IsValidLevel(level), "%+v is not a valid LogLevel", level)
-	globalOptionMu.Lock()
-	globalOption.Level = level
-	globalOptionMu.Unlock()
-	globalLevel.Set(level.ToSLogLevel())
-}
-
-func GlobalOption() *Option {
-	globalOptionMu.RLock()
-	defer globalOptionMu.RUnlock()
-	return &Option{
-		Mode:       globalOption.Mode,
-		Level:      globalOption.Level,
-		OutputPath: "",
+func GlobalOption() *WithOption {
+	globalModeMu.RLock()
+	defer globalModeMu.RUnlock()
+	defaultLevel, ok := rules.Load().byPattern["**"]
+	vpre.Check(ok, "default logger level is not configured")
+	return &WithOption{
+		Mode:  globalMode,
+		Level: defaultLevel,
 	}
+}
+
+type _LevelerFunc func() slog.Level
+
+func (f _LevelerFunc) Level() slog.Level {
+	return f()
+}
+
+func newLeveler(level Level, nameSegments []string) slog.Leveler {
+	if level != LevelAuto {
+		return level.ToSLogLevel()
+	}
+	return _LevelerFunc(func() slog.Level {
+		level, ok := rules.Load().resolve(nameSegments)
+		vpre.Check(ok, "no logger level matches %q", nameSegments)
+		return level.ToSLogLevel()
+	})
 }

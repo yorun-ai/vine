@@ -22,7 +22,7 @@ func init() {
 	stdLog.SetOutput(standardLoggerWriter)
 }
 
-func setStandardLogger(config Option, leveler slog.Leveler) {
+func setStandardLogger(config WithOption, leveler slog.Leveler) {
 	standardLogger = newSlogLogger(&config, true, leveler)
 }
 
