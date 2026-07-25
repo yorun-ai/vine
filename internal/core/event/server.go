@@ -18,8 +18,6 @@ import (
 
 type Option struct {
 	App meta.App
-	// LogicalAppName is the stable ApplicationSpec name used for scoped lifecycle logging.
-	LogicalAppName string
 	// Logger overrides dynamic App and event lifecycle logging when non-nil.
 	Logger            *logger.Logger
 	ListenerImplTypes []reflect.Type
@@ -40,18 +38,11 @@ func NewServer(opt Option) *Server {
 		opt:      &opt,
 		executor: opt.Executor,
 	}
+	vpre.CheckNotNil(opt.App, "event server requires an App")
 	if opt.Logger != nil {
 		server.log = opt.Logger
 	} else {
-		appName := opt.LogicalAppName
-		if appName == "" && opt.App != nil {
-			appName = opt.App.Name()
-		}
-		if appName == "" {
-			server.log = logger.New("event")
-		} else {
-			server.log = logger.New(appName, "event")
-		}
+		server.log = logger.New("app", opt.App.Name(), "event")
 	}
 	server.init()
 	return server

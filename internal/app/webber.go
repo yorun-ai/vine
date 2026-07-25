@@ -28,21 +28,15 @@ func (*WebberEnabled) WebberInitFilters(addFilter TypeAdder)   {}
 type _Webber struct {
 	spec        WebberSpec
 	appInfo     runtime.App
-	appName     string
 	bindAppDeps di.BindApplier
 
 	server *webserver.Server
 }
 
-func newWebber(spec WebberSpec, info runtime.App, deps di.BindApplier, logicalAppNames ...string) *_Webber {
-	appName := info.Name()
-	if len(logicalAppNames) > 0 {
-		appName = logicalAppNames[0]
-	}
+func newWebber(spec WebberSpec, info runtime.App, deps di.BindApplier) *_Webber {
 	webber := &_Webber{
 		spec:        spec,
 		appInfo:     info,
-		appName:     appName,
 		bindAppDeps: deps,
 	}
 	webber.init()
@@ -91,7 +85,7 @@ func (*_Webber) bindContext(b *di.Binder) {
 
 func (w *_Webber) bindLogger(b *di.Binder) {
 	b.BindFactory(func(ctx meta.Context) *logger.Logger {
-		return newAppLogger(w.appName).With(buildLoggerFields(ctx, nil, w.appInfo)...)
+		return newAppLogger(w.appInfo.Name()).With(buildLoggerFields(ctx, nil, w.appInfo)...)
 	})
 }
 

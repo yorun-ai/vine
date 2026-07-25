@@ -124,7 +124,7 @@ func newArgsCommand(args []string, setShouldExit func(), flags ...ucli.Flag) *uc
 				}
 			}
 			if logLevel != "" {
-				logger.SetLevel("**", parsedLogLevel)
+				logger.SetGlobalLevel(parsedLogLevel)
 			}
 
 			arg := cmd.Args().First()
@@ -173,7 +173,7 @@ func parseRule(rule string) (string, logger.Level, error) {
 }
 
 func isValidRulePattern(pattern string) bool {
-	if pattern == "" || pattern == "*" {
+	if pattern == "" || pattern == "*" || pattern == "**" {
 		return false
 	}
 	for _, segment := range strings.Split(pattern, ":") {

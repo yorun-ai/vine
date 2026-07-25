@@ -244,6 +244,7 @@ func init() {
 
 func TestExecutorUsesCTRInjectionAndExecutionScoping(t *testing.T) {
 	srv := New(Option{
+		App:          testServerApp(),
 		HandlerTypes: []reflect.Type{reflect.TypeFor[*_CTRTraceServiceImpl]()},
 		Executor: NewContainerExecutor(nil, []di.BindApplier{
 			func(b *di.Binder) {
@@ -273,6 +274,7 @@ func TestExecutorUsesCTRInjectionAndExecutionScoping(t *testing.T) {
 
 func TestContainerExecutorReturnsNilForMethodWithoutResult(t *testing.T) {
 	srv := New(Option{
+		App:          testServerApp(),
 		HandlerTypes: []reflect.Type{reflect.TypeFor[*_CTRNoResultServiceImpl]()},
 		Executor:     NewContainerExecutor(nil, nil),
 	})
@@ -289,6 +291,7 @@ func TestContainerExecutorReturnsNilForMethodWithoutResult(t *testing.T) {
 
 func TestContainerExecutorReturnsERMethodError(t *testing.T) {
 	srv := New(Option{
+		App:          testServerApp(),
 		HandlerTypes: []reflect.Type{reflect.TypeFor[*_CTRErrorServiceImpl]()},
 		Executor:     NewContainerExecutor(nil, nil),
 	})
@@ -302,6 +305,7 @@ func TestContainerExecutorReturnsERMethodError(t *testing.T) {
 
 func TestContainerExecutorReturnsWrappedNonERMethodError(t *testing.T) {
 	srv := New(Option{
+		App:          testServerApp(),
 		HandlerTypes: []reflect.Type{reflect.TypeFor[*_CTRWrappedServiceImpl]()},
 		Executor:     NewContainerExecutor(nil, nil),
 	})
@@ -315,6 +319,7 @@ func TestContainerExecutorReturnsWrappedNonERMethodError(t *testing.T) {
 
 func TestContainerExecutorUsesResolvedMethodImplInsteadOfMethodInfoName(t *testing.T) {
 	srv := New(Option{
+		App:          testServerApp(),
 		HandlerTypes: []reflect.Type{reflect.TypeFor[*_CTRTraceServiceImpl]()},
 		Executor: NewContainerExecutor(nil, []di.BindApplier{
 			func(b *di.Binder) {

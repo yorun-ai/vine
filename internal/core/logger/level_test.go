@@ -8,10 +8,12 @@ import (
 func resetRulesForTest(t *testing.T) {
 	t.Helper()
 	previousRules := rules.Load()
+	previousLevel := globalLevel.Level()
 	t.Cleanup(func() {
 		rules.Store(previousRules)
+		globalLevel.Set(previousLevel)
 	})
-	empty, err := newRules(map[string]Level{"**": LevelInfo})
+	empty, err := newRules(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -20,16 +22,16 @@ func resetRulesForTest(t *testing.T) {
 
 func TestNamedLoggerResolvesRulesBySpecificity(t *testing.T) {
 	resetRulesForTest(t)
+	SetGlobalLevel(LevelError)
 	configured, err := newRules(map[string]Level{
-		"**":                     LevelError,
-		"*:rpc":                  LevelWarn,
-		"*:rpc:server":           LevelError,
-		"demo.user":              LevelInfo,
-		"demo.user:*":            LevelWarn,
-		"demo.user:*:server":     LevelInfo,
-		"demo.user:rpc":          LevelWarn,
-		"demo.user:rpc:server":   LevelDebug,
-		"demo.user:rpc:server:x": LevelError,
+		"app:*:rpc":                  LevelWarn,
+		"app:*:rpc:server":           LevelError,
+		"app:demo.user":              LevelInfo,
+		"app:demo.user:*":            LevelWarn,
+		"app:demo.user:*:server":     LevelInfo,
+		"app:demo.user:rpc":          LevelWarn,
+		"app:demo.user:rpc:server":   LevelDebug,
+		"app:demo.user:rpc:server:x": LevelError,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -40,14 +42,14 @@ func TestNamedLoggerResolvesRulesBySpecificity(t *testing.T) {
 		name string
 		want Level
 	}{
-		{name: "demo.user:rpc:server", want: LevelDebug},
-		{name: "demo.user:rpc:client", want: LevelWarn},
-		{name: "demo.user:event:server", want: LevelInfo},
-		{name: "demo.user:event:listener", want: LevelWarn},
-		{name: "demo.user", want: LevelInfo},
-		{name: "demo.order:rpc:server", want: LevelError},
-		{name: "demo.order:rpc:client", want: LevelWarn},
-		{name: "demo.order:event", want: LevelError},
+		{name: "app:demo.user:rpc:server", want: LevelDebug},
+		{name: "app:demo.user:rpc:client", want: LevelWarn},
+		{name: "app:demo.user:event:server", want: LevelInfo},
+		{name: "app:demo.user:event:listener", want: LevelWarn},
+		{name: "app:demo.user", want: LevelInfo},
+		{name: "app:demo.order:rpc:server", want: LevelError},
+		{name: "app:demo.order:rpc:client", want: LevelWarn},
+		{name: "app:demo.order:event", want: LevelError},
 	}
 	for _, test := range tests {
 		if got := resolvedThreshold(newNamedLoggerForTest(test.name)); got != test.want {
@@ -62,29 +64,29 @@ func newNamedLoggerForTest(name string) *Logger {
 	for index, segment := range segments {
 		args[index] = segment
 	}
-	return New(args...)
+	return New(args[0].(string), args[1:]...)
 }
 
 func TestNamedLoggerFallsBackAsRulesAreCleared(t *testing.T) {
 	resetRulesForTest(t)
-	SetLevel("**", LevelError)
-	SetLevel("*:event", LevelWarn)
-	SetLevel("demo.user", LevelInfo)
-	SetLevel("demo.user:event", LevelDebug)
+	SetGlobalLevel(LevelError)
+	SetLevel("app:*:event", LevelWarn)
+	SetLevel("app:demo.user", LevelInfo)
+	SetLevel("app:demo.user:event", LevelDebug)
 
-	log := New("demo.user", "event")
+	log := New("app", "demo.user", "event")
 	if got := resolvedThreshold(log); got != LevelDebug {
 		t.Fatalf("initial threshold = %s, want DEBUG", got)
 	}
-	ClearLevel("demo.user:event")
+	ClearLevel("app:demo.user:event")
 	if got := resolvedThreshold(log); got != LevelInfo {
 		t.Fatalf("App threshold = %s, want INFO", got)
 	}
-	ClearLevel("demo.user")
+	ClearLevel("app:demo.user")
 	if got := resolvedThreshold(log); got != LevelWarn {
 		t.Fatalf("category threshold = %s, want WARN", got)
 	}
-	ClearLevel("*:event")
+	ClearLevel("app:*:event")
 	if got := resolvedThreshold(log); got != LevelError {
 		t.Fatalf("global threshold = %s, want ERROR", got)
 	}
@@ -92,13 +94,13 @@ func TestNamedLoggerFallsBackAsRulesAreCleared(t *testing.T) {
 
 func TestNamedLoggerMatchingIsCaseSensitive(t *testing.T) {
 	resetRulesForTest(t)
-	SetLevel("**", LevelInfo)
-	SetLevel("demo.user", LevelDebug)
+	SetGlobalLevel(LevelInfo)
+	SetLevel("app:demo.user", LevelDebug)
 
-	if !New("demo.user").Enabled(LevelDebug) {
+	if !New("app", "demo.user").Enabled(LevelDebug) {
 		t.Fatal("exact logger name should match")
 	}
-	if New("Demo.User").Enabled(LevelDebug) {
+	if New("app", "Demo.User").Enabled(LevelDebug) {
 		t.Fatal("logger name matching should be case-sensitive")
 	}
 }
@@ -133,7 +135,7 @@ func TestRulePatternAcceptsOnlyWholeSegmentWildcards(t *testing.T) {
 			t.Errorf("newRule(%q) returned unexpected error: %v", pattern, err)
 		}
 	}
-	for _, pattern := range []string{"a:***", "a:****", "a*", "*b", "*ab*", "a:rpc*"} {
+	for _, pattern := range []string{"*", "**", "a:***", "a:****", "a*", "*b", "*ab*", "a:rpc*"} {
 		if _, err := newRule(pattern, LevelInfo); err == nil {
 			t.Errorf("newRule(%q) returned nil error", pattern)
 		}
@@ -142,14 +144,20 @@ func TestRulePatternAcceptsOnlyWholeSegmentWildcards(t *testing.T) {
 
 func TestSetLevelRejectsInvalidRuleWithoutChangingLevels(t *testing.T) {
 	resetRulesForTest(t)
-	SetLevel("**", LevelInfo)
-	SetLevel("demo.user", LevelDebug)
+	SetGlobalLevel(LevelInfo)
+	SetLevel("app:demo.user", LevelDebug)
 
 	assertPanics(t, func() {
 		SetLevel("demo.*", LevelError)
 	})
+	assertPanics(t, func() {
+		SetLevel("*", LevelError)
+	})
+	assertPanics(t, func() {
+		SetLevel("**", LevelError)
+	})
 
-	if !New("demo.user").Enabled(LevelDebug) {
+	if !New("app", "demo.user").Enabled(LevelDebug) {
 		t.Fatal("invalid rule should keep existing levels")
 	}
 }
@@ -171,14 +179,16 @@ func TestLevelsReturnsIndependentCopy(t *testing.T) {
 	}
 }
 
-func TestDefaultLevelCannotBeCleared(t *testing.T) {
+func TestClearLevelRejectsPureWildcardPatterns(t *testing.T) {
 	resetRulesForTest(t)
 
-	assertPanics(t, func() {
-		ClearLevel("**")
-	})
-	if Levels()["**"] != LevelInfo {
-		t.Fatal("default level should remain configured")
+	for _, pattern := range []string{"*", "**"} {
+		assertPanics(t, func() {
+			ClearLevel(pattern)
+		})
+	}
+	if len(Levels()) != 0 {
+		t.Fatal("invalid clear must not add or remove rules")
 	}
 }
 

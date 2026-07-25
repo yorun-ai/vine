@@ -24,6 +24,19 @@ type testRunnerArguments struct {
 	GroupId int
 }
 
+func testTaskServerApp() meta.App {
+	return meta.MustNewApp("test.app", "1.0.0", "123e4567-e89b-12d3-a456-426614174011")
+}
+
+func TestNewServerRequiresApp(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected missing App to panic")
+		}
+	}()
+	NewServer(Option{})
+}
+
 type testRunnerTaskRunner interface {
 	RunForGroup(testRunnerArguments)
 	mustBeTestRunnerTaskRunner()
@@ -129,6 +142,7 @@ func TestServerResolvesTriggerImplByInfo(t *testing.T) {
 
 	executor := &_RunnerRecorderExecutor{}
 	server := NewServer(Option{
+		App:       testTaskServerApp(),
 		ImplTypes: []reflect.Type{reflect.TypeOf(&testRunnerImpl{})},
 		Executor:  executor,
 	})
@@ -165,9 +179,10 @@ func TestServerReturnsInvalidTaskWhenTriggerNotRegistered(t *testing.T) {
 
 	logPath := filepath.Join(t.TempDir(), "task-rejected.jsonl")
 	server := NewServer(Option{
+		App:       testTaskServerApp(),
 		ImplTypes: []reflect.Type{reflect.TypeOf(&testRunnerImpl{})},
 		Executor:  &_RunnerRecorderExecutor{},
-		Logger: logger.New(logger.WithOption{
+		Logger: logger.New("vine:test", logger.WithOption{
 			Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath,
 		}),
 	})
@@ -211,6 +226,7 @@ func TestServerConvertsRecoveredPanicToInternalError(t *testing.T) {
 	ensureRunnerTaskRegistered()
 
 	server := NewServer(Option{
+		App:       testTaskServerApp(),
 		ImplTypes: []reflect.Type{reflect.TypeOf(&testRunnerImpl{})},
 		Executor: &_RunnerRecorderExecutor{
 			panicV: "boom",
@@ -242,6 +258,7 @@ func TestServerRunTaskResolvesAndRunsTrigger(t *testing.T) {
 
 	executor := &_RunnerRecorderExecutor{}
 	server := NewServer(Option{
+		App:       testTaskServerApp(),
 		ImplTypes: []reflect.Type{reflect.TypeOf(&testRunnerImpl{})},
 		Executor:  executor,
 	})

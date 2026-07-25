@@ -16,9 +16,42 @@ import (
 	coreapp "go.yorun.ai/vine/internal/core/app"
 	"go.yorun.ai/vine/internal/core/di"
 	linkskeled "go.yorun.ai/vine/internal/core/link/skeled"
+	"go.yorun.ai/vine/internal/core/logger"
 	web "go.yorun.ai/vine/internal/core/web/spec"
 	"go.yorun.ai/vine/util/vslice"
 )
+
+func TestNewAppLoggerUsesAppName(t *testing.T) {
+	previousLevel := logger.GlobalOption().Level
+	t.Cleanup(func() {
+		logger.SetGlobalLevel(previousLevel)
+		for _, pattern := range []string{
+			"app:demo.user:rpc",
+			"app:vine.hub:rpc",
+			"app:vine.link:rpc",
+			"app:vine.portal:rpc",
+		} {
+			logger.ClearLevel(pattern)
+		}
+	})
+	logger.SetGlobalLevel(logger.LevelError)
+
+	tests := []struct {
+		appName string
+		pattern string
+	}{
+		{appName: "demo.user", pattern: "app:demo.user:rpc"},
+		{appName: "vine.hub", pattern: "app:vine.hub:rpc"},
+		{appName: "vine.link", pattern: "app:vine.link:rpc"},
+		{appName: "vine.portal", pattern: "app:vine.portal:rpc"},
+	}
+	for _, test := range tests {
+		logger.SetLevel(test.pattern, logger.LevelDebug)
+		if !newAppLogger(test.appName, "rpc").Enabled(logger.LevelDebug) {
+			t.Errorf("logger for %q did not match %q", test.appName, test.pattern)
+		}
+	}
+}
 
 type testFullSpec struct {
 	Application
@@ -524,7 +557,7 @@ func TestNewAppPanicsWhenApplicationNameIsEmpty(t *testing.T) {
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
 
-	assert.PanicsWithError(t, "application name must not be empty", func() {
+	assert.PanicsWithError(t, `invalid application name: ""`, func() {
 		_ = newApp(&testEmptyNameInternalOnlyAppSpec{
 			InternalApplication: InternalApplication{
 				Application: Application{AppFlag: &RunFlag{}},

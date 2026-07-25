@@ -204,7 +204,7 @@ func newTestInprocRpcClient(app *_AppImpl, endpoint string) *rpcclient.Client {
 	return rpcclient.New(rpcclient.Option{
 		Context:        meta.NewContext(context.Background(), meta.InitialTrace(), nil, actor),
 		ClientApp:      app.info,
-		Logger:         logger.New(logger.GlobalOption()),
+		Logger:         logger.New("vine:test", logger.GlobalOption()),
 		ServerEndpoint: endpoint,
 	})
 }

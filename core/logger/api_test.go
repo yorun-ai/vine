@@ -19,7 +19,7 @@ type _LoggedRecord struct {
 
 func TestFacadeInfoUsesExternalCallerSource(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "facade-logger.jsonl")
-	log := New(WithOption{
+	log := New("vine:test", WithOption{
 		Mode:       ModeJSON,
 		Level:      LevelDebug,
 		OutputPath: path,
@@ -65,15 +65,15 @@ func readFacadeLastRecord(t *testing.T, path string) _LoggedRecord {
 func TestFacadeAutoLoggerAndNamedRules(t *testing.T) {
 	previousLevel := GlobalOption().Level
 	t.Cleanup(func() {
-		SetLevel("**", previousLevel)
+		SetGlobalLevel(previousLevel)
 		clearFacadeLevels()
 	})
 	clearFacadeLevels()
-	SetLevel("**", LevelInfo)
+	SetGlobalLevel(LevelInfo)
 
-	auto := New(WithOption{Mode: ModeText, Level: LevelAuto})
-	fixed := New(WithOption{Mode: ModeText, Level: LevelInfo})
-	SetLevel("**", LevelDebug)
+	auto := New("vine:test", WithOption{Mode: ModeText, Level: LevelAuto})
+	fixed := New("vine:test", WithOption{Mode: ModeText, Level: LevelInfo})
+	SetGlobalLevel(LevelDebug)
 	if !auto.Enabled(LevelDebug) {
 		t.Fatal("facade auto logger should follow the default level")
 	}
@@ -81,9 +81,9 @@ func TestFacadeAutoLoggerAndNamedRules(t *testing.T) {
 		t.Fatal("facade fixed logger should keep its configured level")
 	}
 
-	SetLevel("*:event", LevelWarn)
-	SetLevel("demo.user:event", LevelError)
-	named := New("demo.user", "event")
+	SetLevel("app:*:event", LevelWarn)
+	SetLevel("app:demo.user:event", LevelError)
+	named := New("app", "demo.user", "event")
 	if named.Enabled(LevelWarn) || !named.Enabled(LevelError) {
 		t.Fatal("facade named logger should resolve the most specific rule")
 	}
@@ -91,8 +91,6 @@ func TestFacadeAutoLoggerAndNamedRules(t *testing.T) {
 
 func clearFacadeLevels() {
 	for pattern := range Levels() {
-		if pattern != "**" {
-			ClearLevel(pattern)
-		}
+		ClearLevel(pattern)
 	}
 }

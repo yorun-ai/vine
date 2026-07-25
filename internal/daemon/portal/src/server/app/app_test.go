@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	internalapp "go.yorun.ai/vine/internal/app"
-	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubinfo"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubredis"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/flag"
@@ -65,7 +64,7 @@ func TestPortalAppDIInitSetsRunFlagListenAddr(t *testing.T) {
 	}
 }
 
-func TestPortalAppDIInitAppendsRuntimeNameToInfoInInprocMode(t *testing.T) {
+func TestPortalAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 	spec := &PortalApp{
 		InternalApplication: internalapp.InternalApplication{
 			Application: internalapp.Application{
@@ -81,7 +80,7 @@ func TestPortalAppDIInitAppendsRuntimeNameToInfoInInprocMode(t *testing.T) {
 	if got := spec.Name(); got != "vine.portal" {
 		t.Fatalf("unexpected spec name: %s", got)
 	}
-	if got := spec.InternalAttrs.Info.Name(); got != "vine.portal@"+runtime.Application().Name() {
+	if got := spec.InternalAttrs.Info.Name(); got != "vine.portal" {
 		t.Fatalf("unexpected app info name: %s", got)
 	}
 }

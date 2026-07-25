@@ -26,7 +26,8 @@ func IsValidMode(mode Mode) bool {
 type Level string
 
 const (
-	// LevelAuto follows the current pattern-to-level configuration.
+	// LevelAuto follows matching named level rules and falls back to the
+	// process-wide global level.
 	LevelAuto  Level = "AUTO"
 	LevelDebug Level = "DEBUG"
 	LevelInfo  Level = "INFO"
@@ -88,11 +89,24 @@ func SetGlobalMode(mode Mode) {
 func GlobalOption() *WithOption {
 	globalModeMu.RLock()
 	defer globalModeMu.RUnlock()
-	defaultLevel, ok := rules.Load().byPattern["**"]
-	vpre.Check(ok, "default logger level is not configured")
 	return &WithOption{
 		Mode:  globalMode,
-		Level: defaultLevel,
+		Level: levelFromSlog(globalLevel.Level()),
+	}
+}
+
+func levelFromSlog(level slog.Level) Level {
+	switch level {
+	case slog.LevelDebug:
+		return LevelDebug
+	case slog.LevelInfo:
+		return LevelInfo
+	case slog.LevelWarn:
+		return LevelWarn
+	case slog.LevelError:
+		return LevelError
+	default:
+		panic("global logger level is invalid")
 	}
 }
 
@@ -108,7 +122,9 @@ func newLeveler(level Level, nameSegments []string) slog.Leveler {
 	}
 	return _LevelerFunc(func() slog.Level {
 		level, ok := rules.Load().resolve(nameSegments)
-		vpre.Check(ok, "no logger level matches %q", nameSegments)
-		return level.ToSLogLevel()
+		if ok {
+			return level.ToSLogLevel()
+		}
+		return globalLevel.Level()
 	})
 }

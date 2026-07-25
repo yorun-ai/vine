@@ -37,7 +37,6 @@ func (*TaskerEnabled) TaskerInitFilters(TypeAdder)       {}
 type _Tasker struct {
 	spec        TaskerSpec
 	appInfo     runtime.App
-	appName     string
 	bindAppDeps di.BindApplier
 
 	runners    []_RunnerTypeEntry
@@ -45,15 +44,10 @@ type _Tasker struct {
 	rpcServer  *rpcserver.Server
 }
 
-func newTasker(spec TaskerSpec, info runtime.App, deps di.BindApplier, logicalAppNames ...string) *_Tasker {
-	appName := info.Name()
-	if len(logicalAppNames) > 0 {
-		appName = logicalAppNames[0]
-	}
+func newTasker(spec TaskerSpec, info runtime.App, deps di.BindApplier) *_Tasker {
 	t := &_Tasker{
 		spec:        spec,
 		appInfo:     info,
-		appName:     appName,
 		bindAppDeps: deps,
 	}
 	t.init()
@@ -70,17 +64,15 @@ func (t *_Tasker) init() {
 
 	t.runners = t.collectRunners()
 	t.taskServer = task.NewServer(task.Option{
-		App:            t.appInfo,
-		LogicalAppName: t.appName,
-		ImplTypes:      t.runnerTypes(),
-		Executor:       task.NewContainerExecutor(t.filterTypes(), bindAppliers),
+		App:       t.appInfo,
+		ImplTypes: t.runnerTypes(),
+		Executor:  task.NewContainerExecutor(t.filterTypes(), bindAppliers),
 	})
 
 	t.rpcServer = rpcserver.New(rpcserver.Option{
-		App:            t.appInfo,
-		LogicalAppName: t.appName,
-		HandlerTypes:   []reflect.Type{T[*_AppTaskServiceServerImpl]()},
-		Executor:       rpcserver.NewDefaultExecutor(rpcserver.With(t.taskServer)),
+		App:          t.appInfo,
+		HandlerTypes: []reflect.Type{T[*_AppTaskServiceServerImpl]()},
+		Executor:     rpcserver.NewDefaultExecutor(rpcserver.With(t.taskServer)),
 	})
 }
 
@@ -138,7 +130,7 @@ func (t *_Tasker) bindLogger(b *di.Binder) {
 				slog.String("instanceId", t.appInfo.InstanceId()),
 			)
 		}
-		return newAppLogger(t.appName).With(fields...)
+		return newAppLogger(t.appInfo.Name()).With(fields...)
 	})
 }
 

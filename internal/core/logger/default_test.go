@@ -20,7 +20,7 @@ func TestDefaultLoggerFunctions(t *testing.T) {
 		"e": "test",
 		"f": "100",
 	}
-	logger := New(GlobalOption()).With(
+	logger := New("vine:test", GlobalOption()).With(
 		slog.String("a", a["a"]),
 		slog.String("b", a["b"]),
 		slog.String("e", c["e"]),

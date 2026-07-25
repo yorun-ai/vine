@@ -27,7 +27,7 @@ var newAppEventServiceClient = func(ctx context.Context, clientApp runtime.App, 
 	return appskeled.NewEventServiceClientER(rpcclient.New(rpcclient.Option{
 		Context:             rpcCtx,
 		ClientApp:           clientApp,
-		Logger:              logger.New(),
+		Logger:              logger.New("link", "event", "client"),
 		ReturnIfSystemError: true,
 		ServerEndpoint:      endpoint,
 	}))

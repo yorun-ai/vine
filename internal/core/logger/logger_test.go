@@ -6,7 +6,7 @@ import (
 )
 
 func TestWithReturnsChildLogger(t *testing.T) {
-	logger := New(GlobalOption())
+	logger := New("vine:test", GlobalOption())
 	child := logger.With(slog.String("group", "child"))
 
 	if logger == child {
@@ -16,15 +16,15 @@ func TestWithReturnsChildLogger(t *testing.T) {
 
 func TestNewJoinsNameSegmentsAndAcceptsFinalWithOption(t *testing.T) {
 	resetRulesForTest(t)
-	SetLevel("**", LevelError)
-	SetLevel("demo.user:rpc:server", LevelDebug)
+	SetGlobalLevel(LevelError)
+	SetLevel("app:demo.user:rpc:server", LevelDebug)
 
-	auto := New("demo.user:rpc", "server")
+	auto := New("app:demo.user:rpc", "server")
 	if !auto.Enabled(LevelDebug) {
 		t.Fatal("colon-separated arguments should form one matching logger name")
 	}
 
-	fixed := New("demo.user", "rpc", "server", WithOption{
+	fixed := New("app", "demo.user", "rpc", "server", WithOption{
 		Mode:  ModeText,
 		Level: LevelInfo,
 	})
@@ -33,15 +33,9 @@ func TestNewJoinsNameSegmentsAndAcceptsFinalWithOption(t *testing.T) {
 	}
 }
 
-func TestNewAcceptsColonSeparatedAndWildcardNameSegments(t *testing.T) {
+func TestNewRejectsWildcardNameSegments(t *testing.T) {
 	resetRulesForTest(t)
-	SetLevel("**", LevelError)
-	SetLevel("a:**:rpc:server", LevelDebug)
-
-	log := New("a:**", "rpc:server")
-	if !log.Enabled(LevelDebug) {
-		t.Fatal("colon-separated wildcard name segments should be accepted")
-	}
+	assertPanics(t, func() { New("a:**", "rpc:server") })
 }
 
 func TestNewRejectsWithOptionBeforeFinalArgument(t *testing.T) {

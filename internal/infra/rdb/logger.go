@@ -78,5 +78,5 @@ func getLogger(ctx context.Context) *logger.Logger {
 			return requestLogger
 		}
 	}
-	return logger.New()
+	return logger.New("vine", "rdb")
 }

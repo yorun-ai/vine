@@ -17,20 +17,22 @@ type Logger struct {
 	leveler slog.Leveler
 }
 
-func New(args ...any) *Logger {
+func New(name string, args ...any) *Logger {
 	config := GlobalOption()
 	config.Level = LevelAuto
-	nameArgs := args
+	nameArgs := make([]any, 0, len(args)+1)
+	nameArgs = append(nameArgs, name)
+	nameArgs = append(nameArgs, args...)
 	if len(args) > 0 {
 		switch last := args[len(args)-1].(type) {
 		case WithOption:
 			config = new(last)
-			nameArgs = args[:len(args)-1]
+			nameArgs = nameArgs[:len(nameArgs)-1]
 		case *WithOption:
 			vpre.CheckNotNil(last, "logger WithOption cannot be nil")
 			copied := *last
 			config = &copied
-			nameArgs = args[:len(args)-1]
+			nameArgs = nameArgs[:len(nameArgs)-1]
 		}
 	}
 	vpre.Check(isValidOptionLevel(config.Level), "%+v is not a valid logger option level", config.Level)
@@ -46,9 +48,8 @@ func New(args ...any) *Logger {
 func splitNameSegments(value string) []string {
 	segments := strings.Split(value, ":")
 	for _, segment := range segments {
-		validWildcard := segment == "*" || segment == "**"
-		vpre.Check(segment != "" && (!strings.Contains(segment, "*") || validWildcard),
-			"%q is not a valid logger name segment", value)
+		vpre.Check(segment != "" && !strings.Contains(segment, "*"),
+			"%q is not a valid logger name", value)
 	}
 	return segments
 }

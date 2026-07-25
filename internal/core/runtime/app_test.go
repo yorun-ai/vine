@@ -131,7 +131,7 @@ func TestSetVersionIgnoredWhenRuntimeVersionOverrides(t *testing.T) {
 
 func TestValidationHelpers(t *testing.T) {
 	assert.True(t, meta.IsValidName("user.service"))
-	assert.True(t, meta.IsValidName("user.worker@runtime.app"))
+	assert.False(t, meta.IsValidName("user.worker@runtime.app"))
 	assert.False(t, meta.IsValidName(""))
 	assert.False(t, meta.IsValidName("user-service"))
 	assert.False(t, meta.IsValidName("User.Service"))

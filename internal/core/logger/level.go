@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 	"sync/atomic"
@@ -27,7 +28,7 @@ func newRule(pattern string, level Level) (_Rule, error) {
 }
 
 func parseRulePattern(pattern string) ([]string, error) {
-	if pattern == "" || pattern == "*" {
+	if pattern == "" || pattern == "*" || pattern == "**" {
 		return nil, fmt.Errorf("%q is not a valid logger rule pattern", pattern)
 	}
 
@@ -128,15 +129,24 @@ func (r *_Rules) resolve(name []string) (Level, bool) {
 	return "", false
 }
 
+// globalLevel is the fallback for auto-level loggers that match no named rule.
+// slog.LevelVar's zero value is INFO.
+var globalLevel slog.LevelVar
+
 var rules = func() *atomic.Pointer[_Rules] {
 	store := new(atomic.Pointer[_Rules])
-	initial, err := newRules(map[string]Level{"**": LevelInfo})
+	initial, err := newRules(nil)
 	if err != nil {
 		panic(err)
 	}
 	store.Store(initial)
 	return store
 }()
+
+func SetGlobalLevel(level Level) {
+	vpre.Check(IsValidLevel(level), "%+v is not a valid LogLevel", level)
+	globalLevel.Set(level.ToSLogLevel())
+}
 
 func SetLevel(pattern string, level Level) {
 	_, err := newRule(pattern, level)
@@ -145,7 +155,6 @@ func SetLevel(pattern string, level Level) {
 }
 
 func ClearLevel(pattern string) {
-	vpre.Check(pattern != "**", "the default logger level cannot be cleared")
 	_, err := parseRulePattern(pattern)
 	vpre.Check(err == nil, "%v", err)
 	updateRule(pattern, nil)

@@ -17,8 +17,8 @@ const (
 type Level = internallogger.Level
 
 const (
-	// LevelAuto dynamically resolves the logging threshold from the current
-	// pattern-to-level configuration.
+	// LevelAuto dynamically resolves the logging threshold from matching named
+	// rules and falls back to the process-wide global level.
 	LevelAuto = internallogger.LevelAuto
 	// LevelDebug enables debug and higher-severity records.
 	LevelDebug = internallogger.LevelDebug
@@ -87,13 +87,20 @@ func SetGlobalMode(mode Mode) {
 	internallogger.SetGlobalMode(mode)
 }
 
-// New creates a logger whose name is formed by joining its arguments with ":".
+// SetGlobalLevel changes the fallback threshold for auto-level loggers that
+// match no named level rule.
+func SetGlobalLevel(level Level) {
+	internallogger.SetGlobalLevel(level)
+}
+
+// New creates a logger whose required name and additional name arguments are
+// joined with ":".
 // Each name argument may itself contain colon-separated segments.
 // A WithOption value or pointer may be supplied only as the final argument.
 // Without WithOption, the logger uses the current global mode and dynamically
 // follows the current pattern-to-level configuration.
-func New(args ...any) *Logger {
-	return internallogger.New(args...)
+func New(name string, args ...any) *Logger {
+	return internallogger.New(name, args...)
 }
 
 // SetLevel sets a process-local logging threshold for pattern. Names and
@@ -101,20 +108,18 @@ func New(args ...any) *Logger {
 // segment, while "**" matches zero or more consecutive segments. A matching
 // pattern also applies to descendant names. When several rules match, literal
 // segments outrank "*", "*" outranks "**", and comparison proceeds from left
-// to right before longer patterns outrank their prefixes. The pattern "*" is
-// reserved. The "**" pattern is the required default level.
+// to right before longer patterns outrank their prefixes. Pure wildcard
+// patterns "*" and "**" are reserved.
 func SetLevel(pattern string, level Level) {
 	internallogger.SetLevel(pattern, level)
 }
 
 // ClearLevel removes the logging threshold configured for pattern.
-// The required default pattern "**" cannot be cleared.
 func ClearLevel(pattern string) {
 	internallogger.ClearLevel(pattern)
 }
 
-// Levels returns a copy of the current pattern-to-level configuration,
-// including the required default pattern "**".
+// Levels returns a copy of the current pattern-to-level configuration.
 func Levels() map[string]Level {
 	return internallogger.Levels()
 }

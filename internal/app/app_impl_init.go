@@ -45,7 +45,7 @@ func (a *_AppImpl) initInjector() {
 		func(b *di.Binder) {
 			b.Bind(T[context.Context]()).ToInstance(a.ctx)
 			b.Bind(T[meta.Context]()).ToInstance(newMetaContext(a.ctx))
-			b.BindInstance(newAppLogger(a.logicalAppName))
+			b.BindInstance(newAppLogger(a.info.Name()))
 		})
 }
 
@@ -61,7 +61,7 @@ func (a *_AppImpl) bindClients(b *di.Binder) {
 		return client.New(client.Option{
 			Context:        ctx,
 			ClientApp:      a.info,
-			Logger:         newAppLogger(a.logicalAppName, "rpc", "client"),
+			Logger:         newAppLogger(a.info.Name(), "rpc", "client"),
 			ServerEndpoint: a.linker.RpcProxyEndpoint(),
 		})
 	})
@@ -79,7 +79,7 @@ func (a *_AppImpl) bindEmitters(b *di.Binder) {
 		return event.NewEmitter(event.EmitterOption{
 			Context:   ctx,
 			ClientApp: a.info,
-			Logger: newAppLogger(a.logicalAppName, "event").
+			Logger: newAppLogger(a.info.Name(), "event").
 				With(buildLoggerFields(ctx, nil, a.info)...),
 			EventClient: a.linker.EventClient(),
 		})
@@ -98,7 +98,7 @@ func (a *_AppImpl) bindLaunchers(b *di.Binder) {
 		return task.NewLauncher(task.LauncherOption{
 			Context:   ctx,
 			ClientApp: a.info,
-			Logger: newAppLogger(a.logicalAppName, "task").
+			Logger: newAppLogger(a.info.Name(), "task").
 				With(buildLoggerFields(ctx, nil, a.info)...),
 			TaskClient: a.linker.TaskClient(),
 		})
@@ -109,14 +109,13 @@ func (a *_AppImpl) bindLaunchers(b *di.Binder) {
 }
 
 func newAppLogger(appName string, categories ...string) *logger.Logger {
+	vpre.Check(appName != "", "application logger requires an app name")
 	args := make([]any, 0, len(categories)+1)
-	if appName != "" {
-		args = append(args, appName)
-	}
+	args = append(args, appName)
 	for _, category := range categories {
 		args = append(args, category)
 	}
-	return logger.New(args...)
+	return logger.New("app", args...)
 }
 
 func (a *_AppImpl) initComponents() {
@@ -285,7 +284,6 @@ func (a *_AppImpl) initServers() {
 	if a.shouldEnableConsole() {
 		a.consoleServer = server.New(server.Option{
 			App:            a.info,
-			LogicalAppName: a.logicalAppName,
 			MuteVerboseLog: true,
 			HandlerTypes:   []reflect.Type{T[*ConsoleServiceServerImpl]()},
 		})
@@ -293,22 +291,22 @@ func (a *_AppImpl) initServers() {
 	}
 
 	if servicerSpec, ok := a.spec.(ServicerSpec); ok {
-		a.servicer = newServicer(servicerSpec, a.info, a.bindAppDeps, a.logicalAppName)
+		a.servicer = newServicer(servicerSpec, a.info, a.bindAppDeps)
 		a.appendRoute(coreapp.PathRpcInvoke, a.servicer.httpHandler(), a.servicer.rpcHandler())
 	}
 
 	if webberSpec, ok := a.spec.(WebberSpec); ok {
-		a.webber = newWebber(webberSpec, a.info, a.bindAppDeps, a.logicalAppName)
+		a.webber = newWebber(webberSpec, a.info, a.bindAppDeps)
 		a.appendRoute(coreapp.PathWebAccess, a.webber.httpHandler(), nil)
 	}
 
 	if eventerSpec, ok := a.spec.(EventerSpec); ok {
-		a.eventer = newEventer(eventerSpec, a.info, a.bindAppDeps, a.logicalAppName)
+		a.eventer = newEventer(eventerSpec, a.info, a.bindAppDeps)
 		a.appendRoute(coreapp.PathEvent, a.eventer.httpHandler(), a.eventer.rpcHandler())
 	}
 
 	if taskerSpec, ok := a.spec.(TaskerSpec); ok {
-		a.tasker = newTasker(taskerSpec, a.info, a.bindAppDeps, a.logicalAppName)
+		a.tasker = newTasker(taskerSpec, a.info, a.bindAppDeps)
 		a.appendRoute(coreapp.PathTask, a.tasker.httpHandler(), a.tasker.rpcHandler())
 	}
 

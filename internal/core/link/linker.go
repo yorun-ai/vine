@@ -70,7 +70,7 @@ func (l *_Linker) init() {
 	rpcClient := client.New(client.Option{
 		Context:        newLinkMetaContext(context.Background()),
 		ClientApp:      l.app,
-		Logger:         logger.New(),
+		Logger:         logger.New("link", "client"),
 		ServerEndpoint: l.linkBaseEndpoint + coreapp.PathRpcInvoke,
 	})
 	l.bootClient = linkskeled.NewBootServiceClient(linkskeled.NewBootServiceClientER(rpcClient))

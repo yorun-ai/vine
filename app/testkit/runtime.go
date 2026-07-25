@@ -151,7 +151,7 @@ func (r *Runtime) registryClient() linkskeled.RegistryServiceClient {
 	client := internalrpc.New(internalrpc.Option{
 		Context:        rpc.NewContext(context.Background(), meta.InitialTrace(), r.clientApp, nil, meta.NewAbsentActor()),
 		ClientApp:      r.clientApp,
-		Logger:         logger.New(),
+		Logger:         logger.New("app", r.clientApp.Name(), "rpc", "client"),
 		ServerEndpoint: linkRpcInvokeEndpoint,
 	})
 	return linkskeled.NewRegistryServiceClient(linkskeled.NewRegistryServiceClientER(client))

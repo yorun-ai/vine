@@ -16,8 +16,6 @@ import (
 
 type Option struct {
 	App meta.App
-	// LogicalAppName is the stable ApplicationSpec name used for scoped lifecycle logging.
-	LogicalAppName string
 	// Logger overrides dynamic App and Rpc-server lifecycle logging when non-nil.
 	Logger         *logger.Logger
 	MuteVerboseLog bool
@@ -45,20 +43,13 @@ func New(opt Option) *Server {
 		opt:      &opt,
 		executor: opt.Executor,
 	}
+	vpre.CheckNotNil(opt.App, "Rpc server requires an App")
 	if opt.Logger != nil {
 		server.log = opt.Logger
 		server.infraLog = opt.Logger
 	} else {
-		appName := opt.LogicalAppName
-		if appName == "" && opt.App != nil {
-			appName = opt.App.Name()
-		}
-		if appName == "" {
-			server.log = logger.New("rpc", "server")
-		} else {
-			server.log = logger.New(appName, "rpc", "server")
-		}
-		server.infraLog = logger.New()
+		server.log = logger.New("app", opt.App.Name(), "rpc", "server")
+		server.infraLog = logger.New("vine", "rpc", "server", "infra")
 	}
 	server.init()
 	return server

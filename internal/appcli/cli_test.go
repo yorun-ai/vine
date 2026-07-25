@@ -27,16 +27,14 @@ func resetArgsForTest(t *testing.T) {
 		argsStdout = prevStdout
 		argsStderr = prevStderr
 		argsExit = prevExit
-		logger.SetLevel("**", prevLogLevel)
+		logger.SetGlobalLevel(prevLogLevel)
 		clearLevelsForTest()
 	})
 }
 
 func clearLevelsForTest() {
 	for pattern := range logger.Levels() {
-		if pattern != "**" {
-			logger.ClearLevel(pattern)
-		}
+		logger.ClearLevel(pattern)
 	}
 }
 
@@ -175,24 +173,24 @@ func TestHandleSetsLogLevelFromEnv(t *testing.T) {
 
 func TestHandleSetsNamedRulesWithExactPriority(t *testing.T) {
 	resetArgsForTest(t)
-	logger.SetLevel("**", logger.LevelError)
+	logger.SetGlobalLevel(logger.LevelError)
 	os.Args = []string{
 		"/tmp/vine",
-		"--log-rule", "*:rpc:server=WARN",
-		"--log-rule", "demo.user=INFO",
-		"--log-rule", "demo.user:rpc:server=DEBUG",
+		"--log-rule", "app:*:rpc:server=WARN",
+		"--log-rule", "app:demo.user=INFO",
+		"--log-rule", "app:demo.user:rpc:server=DEBUG",
 	}
 	argsExit = func(int) {}
 
 	Handle()
 
-	if !logger.New("demo.user", "rpc", "server").Enabled(logger.LevelDebug) {
+	if !logger.New("app", "demo.user", "rpc", "server").Enabled(logger.LevelDebug) {
 		t.Fatal("expected exact Rpc server DEBUG rule")
 	}
-	if logger.New("demo.order", "rpc", "server").Enabled(logger.LevelInfo) {
+	if logger.New("app", "demo.order", "rpc", "server").Enabled(logger.LevelInfo) {
 		t.Fatal("wildcard Rpc server WARN rule should reject INFO")
 	}
-	if !logger.New("demo.user", "task").Enabled(logger.LevelInfo) {
+	if !logger.New("app", "demo.user", "task").Enabled(logger.LevelInfo) {
 		t.Fatal("App prefix INFO rule should apply to other categories")
 	}
 }
@@ -201,14 +199,14 @@ func TestHandleParsesRepeatedRules(t *testing.T) {
 	resetArgsForTest(t)
 	os.Args = []string{
 		"/tmp/vine",
-		"--log-rule", "demo.user=WARN",
-		"--log-rule", "demo.user=DEBUG",
+		"--log-rule", "app:demo.user=WARN",
+		"--log-rule", "app:demo.user=DEBUG",
 	}
 	argsExit = func(int) {}
 
 	Handle()
 
-	if !logger.New("demo.user").Enabled(logger.LevelDebug) {
+	if !logger.New("app", "demo.user").Enabled(logger.LevelDebug) {
 		t.Fatal("last repeated pattern should win")
 	}
 }
@@ -216,23 +214,23 @@ func TestHandleParsesRepeatedRules(t *testing.T) {
 func TestHandleParsesEnvironmentRules(t *testing.T) {
 	resetArgsForTest(t)
 	os.Args = []string{"/tmp/vine"}
-	t.Setenv(envLogRules, "demo.order:event=DEBUG,demo.order:task=ERROR")
+	t.Setenv(envLogRules, "app:demo.order:event=DEBUG,app:demo.order:task=ERROR")
 	argsExit = func(int) {}
 
 	Handle()
 
-	if !logger.New("demo.order", "event").Enabled(logger.LevelDebug) {
+	if !logger.New("app", "demo.order", "event").Enabled(logger.LevelDebug) {
 		t.Fatal("expected Event override from environment")
 	}
-	if logger.New("demo.order", "task").Enabled(logger.LevelWarn) {
+	if logger.New("app", "demo.order", "task").Enabled(logger.LevelWarn) {
 		t.Fatal("expected Task ERROR override from environment")
 	}
 }
 
 func TestInvalidRuleDoesNotPartiallyUpdateLevels(t *testing.T) {
 	resetArgsForTest(t)
-	logger.SetLevel("**", logger.LevelInfo)
-	logger.SetLevel("demo.user", logger.LevelDebug)
+	logger.SetGlobalLevel(logger.LevelInfo)
+	logger.SetLevel("app:demo.user", logger.LevelDebug)
 
 	_, err := parseArgs([]string{
 		"/tmp/vine",
@@ -245,7 +243,15 @@ func TestInvalidRuleDoesNotPartiallyUpdateLevels(t *testing.T) {
 	if logger.GlobalOption().Level != logger.LevelInfo {
 		t.Fatal("invalid update must preserve the default level")
 	}
-	if !logger.New("demo.user").Enabled(logger.LevelDebug) {
+	if !logger.New("app", "demo.user").Enabled(logger.LevelDebug) {
 		t.Fatal("invalid update must preserve existing level rules")
+	}
+}
+
+func TestParseRuleRejectsPureWildcardPatterns(t *testing.T) {
+	for _, pattern := range []string{"*", "**"} {
+		if _, _, err := parseRule(pattern + "=DEBUG"); err == nil {
+			t.Fatalf("expected pure wildcard pattern %q to be rejected", pattern)
+		}
 	}
 }

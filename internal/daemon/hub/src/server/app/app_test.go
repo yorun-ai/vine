@@ -13,7 +13,6 @@ import (
 	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/internal/core/logger"
-	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
@@ -119,7 +118,7 @@ func TestHubAppDIInitKeepsPGConnUrl(t *testing.T) {
 	assert.Equal(t, flag.HubDefaultAPIListen, spec.AppFlag.ListenAddr)
 }
 
-func TestHubAppDIInitAppendsRuntimeNameToInfoInInprocMode(t *testing.T) {
+func TestHubAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 	spec := &HubApp{
 		InternalApplication: internalapp.InternalApplication{
 			Application: internalapp.Application{
@@ -137,7 +136,7 @@ func TestHubAppDIInitAppendsRuntimeNameToInfoInInprocMode(t *testing.T) {
 	spec.DIInit()
 
 	assert.Equal(t, "vine.hub", spec.Name())
-	assert.Equal(t, "vine.hub@"+runtime.Application().Name(), spec.InternalAttrs.Info.Name())
+	assert.Equal(t, "vine.hub", spec.InternalAttrs.Info.Name())
 	assert.Empty(t, spec.AppFlag.ListenAddr)
 	assert.Empty(t, spec.Flag.APIListen)
 	assert.Empty(t, spec.Flag.RedisListen)
@@ -352,7 +351,7 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForInitializerWithSQLite(t *test
 	injector := di.NewInjector(
 		func(b *di.Binder) {
 			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
-			b.BindInstance(logger.New(logger.GlobalOption()))
+			b.BindInstance(logger.New("vine:test", logger.GlobalOption()))
 			minder.Bind(b)
 			b.BindInstance(redisServer)
 			b.Bind(di.T[*initializer.Initializer]()).In(di.SingletonScope)
@@ -382,7 +381,7 @@ func TestConfigDatabaseBindProvidesAppConfigRepoDAO(t *testing.T) {
 	injector := di.NewInjector(
 		func(b *di.Binder) {
 			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
-			b.BindInstance(logger.New(logger.GlobalOption()))
+			b.BindInstance(logger.New("vine:test", logger.GlobalOption()))
 			minder.Bind(b)
 			b.Bind(di.T[*repo.DBAppConfigRepo]()).In(di.TransientScope)
 		},
@@ -415,7 +414,7 @@ func newHubBoundAppConfigRepo(t *testing.T, spec *HubApp) core.AppConfigRepo {
 	daoInjector := di.NewInjector(
 		func(b *di.Binder) {
 			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
-			b.BindInstance(logger.New(logger.GlobalOption()))
+			b.BindInstance(logger.New("vine:test", logger.GlobalOption()))
 			minder.Bind(b)
 		},
 	)
@@ -430,7 +429,7 @@ func newHubBoundAppConfigRepo(t *testing.T, spec *HubApp) core.AppConfigRepo {
 			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
 			b.Bind(di.T[*flag.Flag]()).ToInstance(spec.Flag)
 			b.BindInstance(daoInstance)
-			b.BindInstance(logger.New(logger.GlobalOption()))
+			b.BindInstance(logger.New("vine:test", logger.GlobalOption()))
 			b.BindInstance(redisServer)
 			spec.BindCommon(b)
 		},
@@ -446,7 +445,7 @@ func newHubBoundSchemaRepo(t *testing.T, spec *HubApp) core.SchemaRepo {
 	injector := di.NewInjector(
 		func(b *di.Binder) {
 			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
-			b.BindInstance(logger.New(logger.GlobalOption()))
+			b.BindInstance(logger.New("vine:test", logger.GlobalOption()))
 			b.Bind(di.T[*flag.Flag]()).ToInstance(spec.Flag)
 			b.Bind(di.T[*internalapp.InternalInprocFlag]()).ToInstance(spec.InprocFlag)
 			spec.BindCommon(b)

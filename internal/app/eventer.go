@@ -36,7 +36,6 @@ func (*EventerEnabled) EventerInitFilters(TypeAdder)           {}
 type _Eventer struct {
 	spec        EventerSpec
 	appInfo     runtime.App
-	appName     string
 	bindAppDeps di.BindApplier
 
 	listeners   []_ListenerTypeEntry
@@ -44,15 +43,10 @@ type _Eventer struct {
 	rpcServer   *rpcserver.Server
 }
 
-func newEventer(spec EventerSpec, info runtime.App, deps di.BindApplier, logicalAppNames ...string) *_Eventer {
-	appName := info.Name()
-	if len(logicalAppNames) > 0 {
-		appName = logicalAppNames[0]
-	}
+func newEventer(spec EventerSpec, info runtime.App, deps di.BindApplier) *_Eventer {
 	eventer := &_Eventer{
 		spec:        spec,
 		appInfo:     info,
-		appName:     appName,
 		bindAppDeps: deps,
 	}
 	eventer.init()
@@ -70,16 +64,14 @@ func (e *_Eventer) init() {
 	e.listeners = e.collectListeners()
 	e.eventServer = event.NewServer(event.Option{
 		App:               e.appInfo,
-		LogicalAppName:    e.appName,
 		ListenerImplTypes: e.listenerTypes(),
 		Executor:          event.NewContainerExecutor(e.filterTypes(), bindAppliers),
 	})
 
 	e.rpcServer = rpcserver.New(rpcserver.Option{
-		App:            e.appInfo,
-		LogicalAppName: e.appName,
-		HandlerTypes:   []reflect.Type{T[*_AppEventServiceServerImpl]()},
-		Executor:       rpcserver.NewDefaultExecutor(rpcserver.With(e.eventServer)),
+		App:          e.appInfo,
+		HandlerTypes: []reflect.Type{T[*_AppEventServiceServerImpl]()},
+		Executor:     rpcserver.NewDefaultExecutor(rpcserver.With(e.eventServer)),
 	})
 }
 
@@ -135,7 +127,7 @@ func (e *_Eventer) bindLogger(b *di.Binder) {
 				slog.String("instanceId", e.appInfo.InstanceId()),
 			)
 		}
-		return newAppLogger(e.appName).With(fields...)
+		return newAppLogger(e.appInfo.Name()).With(fields...)
 	})
 }
 

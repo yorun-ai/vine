@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os/signal"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -35,12 +34,11 @@ import (
 const unregisterTimeout = time.Minute
 
 type _AppImpl struct {
-	spec           ApplicationSpec
-	logicalAppName string
-	info           runtime.App
-	ctx            context.Context
-	cancel         context.CancelFunc
-	flags          _Flags
+	spec   ApplicationSpec
+	info   runtime.App
+	ctx    context.Context
+	cancel context.CancelFunc
+	flags  _Flags
 
 	listenAddr string
 	linker     link.Linker
@@ -85,11 +83,10 @@ var detectHostIP = vnet.DetectHostIP
 func newApp(spec ApplicationSpec, flags _Flags) *_AppImpl {
 	ctx, cancel := context.WithCancel(flags.Context())
 	app := &_AppImpl{
-		spec:           spec,
-		logicalAppName: spec.Name(),
-		ctx:            ctx,
-		cancel:         cancel,
-		flags:          flags,
+		spec:   spec,
+		ctx:    ctx,
+		cancel: cancel,
+		flags:  flags,
 	}
 
 	app.init()
@@ -97,8 +94,7 @@ func newApp(spec ApplicationSpec, flags _Flags) *_AppImpl {
 }
 
 func (a *_AppImpl) init() {
-	vpre.CheckNotEmpty(a.spec.Name(), "application name must not be empty")
-	vpre.Check(!strings.Contains(a.spec.Name(), "@"), "application name must not contain @")
+	vpre.Check(meta.IsValidName(a.spec.Name()), "invalid application name: %q", a.spec.Name())
 
 	a.inprocFlag = a.flags.InprocFlag()
 	if !a.initByInternalAttrs() {
@@ -135,7 +131,7 @@ func (a *_AppImpl) newAppInfo() runtime.App {
 	if !a.inprocFlag.Enabled && a.spec.Name() == runtimeApp.Name() {
 		return runtimeApp
 	}
-	return meta.MustNewAppWithRandomId(a.spec.Name()+"@"+runtimeApp.Name(), runtimeApp.Version())
+	return meta.MustNewAppWithRandomId(a.spec.Name(), runtimeApp.Version())
 }
 
 func (a *_AppImpl) initLinking() {

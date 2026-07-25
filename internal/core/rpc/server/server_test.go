@@ -30,6 +30,19 @@ func (*defaultTestServerServiceServer) Ping() {}
 
 func (*defaultTestServerServiceServer) mustBeServerServiceServer() {}
 
+func testServerApp() meta.App {
+	return meta.MustNewApp("test.app", "1.0.0", "123e4567-e89b-12d3-a456-426614174012")
+}
+
+func TestNewRequiresApp(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected missing App to panic")
+		}
+	}()
+	New(Option{})
+}
+
 type testServerServiceServerER interface {
 	mustBeServerServiceServerER()
 }
@@ -257,7 +270,7 @@ func TestServerHTTPHandlerReturnsStandardVrpcErrorForInvalidRequest(t *testing.T
 		t.Fatalf("NewApp() error = %v", err)
 	}
 	logPath := filepath.Join(t.TempDir(), "rpc-rejected.jsonl")
-	log := logger.New(logger.WithOption{Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath})
+	log := logger.New("vine:test", logger.WithOption{Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath})
 	server := New(Option{
 		App:          serverApp,
 		Logger:       log,

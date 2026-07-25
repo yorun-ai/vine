@@ -29,6 +29,19 @@ type defaultTestServerEmitter struct{}
 
 func (*defaultTestServerEmitter) mustBeTestServerEmitter() {}
 
+func testEventServerApp() meta.App {
+	return meta.MustNewApp("test.app", "1.0.0", "123e4567-e89b-12d3-a456-426614174010")
+}
+
+func TestNewServerRequiresApp(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected missing App to panic")
+		}
+	}()
+	NewServer(Option{})
+}
+
 type testServerListener interface {
 	OnTestServer(event *testServerEvent)
 	mustBeTestServerListener()
@@ -120,9 +133,10 @@ func TestServerOnEventForwardsToListener(t *testing.T) {
 
 	logPath := filepath.Join(t.TempDir(), "event-lifecycle.jsonl")
 	server := NewServer(Option{
+		App:               testEventServerApp(),
 		ListenerImplTypes: []reflect.Type{reflect.TypeOf(&testServerListenerImpl{})},
 		Executor:          NewContainerExecutor(nil, nil),
-		Logger: logger.New(logger.WithOption{
+		Logger: logger.New("vine:test", logger.WithOption{
 			Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath,
 		}),
 	})
@@ -166,9 +180,10 @@ func TestServerRejectedUsesMainEventFieldNames(t *testing.T) {
 	ensureServerEventRegistered()
 	logPath := filepath.Join(t.TempDir(), "event-rejected.jsonl")
 	server := NewServer(Option{
+		App:               testEventServerApp(),
 		ListenerImplTypes: []reflect.Type{reflect.TypeOf(&testServerListenerImpl{})},
 		Executor:          NewContainerExecutor(nil, nil),
-		Logger: logger.New(logger.WithOption{
+		Logger: logger.New("vine:test", logger.WithOption{
 			Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath,
 		}),
 	})
