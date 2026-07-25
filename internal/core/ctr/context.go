@@ -8,31 +8,23 @@ import (
 )
 
 type Context struct {
-	targetType        reflect.Type
-	targetMethodName  string
-	targetMethod      reflect.Method
-	forceMethodByName bool
-	arguments         []any
-	results           []any
+	targetType       reflect.Type
+	targetMethodName string
+	arguments        []any
+	results          []any
 
 	isFinished bool
 }
 
 func newContext(targetType reflect.Type, targetMethodName string) *Context {
 	return &Context{
-		targetType:        targetType,
-		targetMethodName:  targetMethodName,
-		forceMethodByName: true,
+		targetType:       targetType,
+		targetMethodName: targetMethodName,
 	}
 }
 
 func newContextWithMethod(targetType reflect.Type, targetMethod reflect.Method) *Context {
-	return &Context{
-		targetType:        targetType,
-		targetMethodName:  targetMethod.Name,
-		targetMethod:      targetMethod,
-		forceMethodByName: false,
-	}
+	return newContext(targetType, targetMethod.Name)
 }
 
 func (c *Context) TargetType() reflect.Type {
@@ -42,7 +34,6 @@ func (c *Context) TargetType() reflect.Type {
 func (c *Context) SetTargetType(targetType reflect.Type) {
 	vpre.Check(!c.isFinished, "can't change TargetType after execution finished")
 	c.targetType = targetType
-	c.forceMethodByName = true
 }
 
 func (c *Context) TargetMethodName() string {
@@ -52,7 +43,6 @@ func (c *Context) TargetMethodName() string {
 func (c *Context) SetTargetMethodName(targetMethod string) {
 	vpre.Check(!c.isFinished, "can't change TargetMethodName after execution finished")
 	c.targetMethodName = targetMethod
-	c.forceMethodByName = true
 }
 
 func (c *Context) Arguments() []any {
@@ -74,12 +64,7 @@ func (c *Context) SetResults(results []any) {
 }
 
 func (c *Context) TargetMethodValue(instance reflect.Value) reflect.Value {
-	if !c.forceMethodByName {
-		return instance.Method(c.targetMethod.Index)
-	}
 	method := getMethodByName(instance.Type(), c.targetMethodName)
-	c.targetMethod = method
-	c.forceMethodByName = false
 	return instance.Method(method.Index)
 }
 
