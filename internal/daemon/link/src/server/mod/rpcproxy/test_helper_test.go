@@ -86,7 +86,7 @@ func newTestRpcProxy(t *testing.T, redisClient *hubredis.Client) *RpcProxy {
 		Context:     context.Background(),
 		RedisClient: redisClient,
 		App:         mustMetaApp(t, "proxy.app", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-		Logger:      logger.New("vine:test", logger.GlobalOption()),
+		Logger:      logger.New("vine:test"),
 		AppMinder:   minder,
 	}
 	proxy.DIInit()

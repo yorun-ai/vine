@@ -17,8 +17,8 @@ const (
 type Level = internallogger.Level
 
 const (
-	// LevelAuto dynamically resolves the logging threshold from matching named
-	// rules and falls back to the process-wide global level.
+	// LevelAuto is the zero value. It dynamically resolves the logging threshold
+	// from matching named rules and falls back to the process-wide global level.
 	LevelAuto = internallogger.LevelAuto
 	// LevelDebug enables debug and higher-severity records.
 	LevelDebug = internallogger.LevelDebug
@@ -30,8 +30,9 @@ const (
 	LevelError = internallogger.LevelError
 )
 
-// WithOption configures the logger created by New. When supplied, its value or
-// pointer must be the final New argument.
+// WithOption configures the logger created by New. An empty Format or
+// OutputPath dynamically follows its process-wide global setting. When
+// supplied, the option must be the final New argument.
 type WithOption = internallogger.WithOption
 
 // Logger writes structured log records.
@@ -77,14 +78,16 @@ type PayloadSanitizer = internallogger.PayloadSanitizer
 // Payload size and traversal budgets are not part of the current API.
 type PayloadPolicy = internallogger.PayloadPolicy
 
-// GlobalOption returns a copy of the process-wide logging configuration.
-func GlobalOption() *WithOption {
-	return internallogger.GlobalOption()
-}
-
-// SetGlobalFormat changes the output format used by loggers created afterward.
+// SetGlobalFormat changes the format used by loggers that inherit the global
+// output format, including existing loggers.
 func SetGlobalFormat(format Format) {
 	internallogger.SetGlobalFormat(format)
+}
+
+// SetGlobalOutputPath changes the mirrored file used by loggers that inherit
+// the global output. An empty path writes only to stderr.
+func SetGlobalOutputPath(outputPath string) {
+	internallogger.SetGlobalOutputPath(outputPath)
 }
 
 // SetGlobalLevel changes the fallback threshold for auto-level loggers that
@@ -96,9 +99,9 @@ func SetGlobalLevel(level Level) {
 // New creates a logger whose required name and additional name arguments are
 // joined with ":".
 // Each name argument may itself contain colon-separated segments.
-// A WithOption value or pointer may be supplied only as the final argument.
-// Without WithOption, the logger uses the current global format and dynamically
-// follows the current pattern-to-level configuration.
+// A WithOption value may be supplied only as the final argument.
+// Without WithOption, the logger dynamically follows the global format,
+// global output path, and current pattern-to-level configuration.
 func New(name string, args ...any) *Logger {
 	return internallogger.New(name, args...)
 }

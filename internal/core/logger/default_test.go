@@ -2,35 +2,84 @@ package logger
 
 import (
 	"context"
+	stdLog "log"
 	"log/slog"
 	"strings"
+	"sync"
 	"testing"
 )
 
 func TestDefaultLoggerName(t *testing.T) {
-	if got := strings.Join(defaultLogger.nameSegments, ":"); got != "vine:default" {
+	if got := strings.Join(defaultLogger.Load().nameSegments, ":"); got != "vine:default" {
 		t.Fatalf("default logger name = %q, want %q", got, "vine:default")
 	}
 }
 
 func TestStandardLoggerUsesIndependentName(t *testing.T) {
 	resetRulesForTest(t)
-	previousDefault := defaultLogger
+	previousDefault := defaultLogger.Load()
 	t.Cleanup(func() { SetDefault(previousDefault) })
 	SetGlobalLevel(LevelError)
 	SetDefault(New("vine:default", WithOption{Format: FormatText, Level: LevelAuto}))
 	SetLevel("vine:stdlog", LevelDebug)
 
-	if defaultLogger.Enabled(LevelDebug) {
+	if defaultLogger.Load().Enabled(LevelDebug) {
 		t.Fatal("default logger should continue using the global fallback")
 	}
-	if !standardLogger.Handler().Enabled(context.Background(), slog.LevelDebug) {
+	if !standardLogger.Load().Handler().Enabled(context.Background(), slog.LevelDebug) {
 		t.Fatal("standard logger should resolve levels using vine:stdlog")
 	}
 }
 
+func TestDefaultLoggerKeepsInjectedLoggerLevelSemantics(t *testing.T) {
+	resetGlobalOptionForTest(t)
+	previousDefault := defaultLogger.Load()
+	t.Cleanup(func() { SetDefault(previousDefault) })
+	SetGlobalLevel(LevelInfo)
+
+	SetDefault(New("vine:test", WithOption{Format: FormatText, Level: LevelAuto}))
+	SetGlobalLevel(LevelDebug)
+	if !defaultLogger.Load().Enabled(LevelDebug) {
+		t.Fatal("default auto logger should follow the default level")
+	}
+
+	fixed := New("vine:test", WithOption{Format: FormatText, Level: LevelInfo})
+	SetDefault(fixed)
+	if defaultLogger.Load().Enabled(LevelDebug) {
+		t.Fatal("explicit fixed default logger should keep its own threshold")
+	}
+}
+
+func TestSetDefaultConcurrentLogging(t *testing.T) {
+	previousDefault := defaultLogger.Load()
+	t.Cleanup(func() { SetDefault(previousDefault) })
+
+	first := New("vine:test:first", WithOption{Format: FormatText, Level: LevelError})
+	second := New("vine:test:second", WithOption{Format: FormatText, Level: LevelError})
+	var wait sync.WaitGroup
+	wait.Add(2)
+	go func() {
+		defer wait.Done()
+		for index := range 100 {
+			if index%2 == 0 {
+				SetDefault(first)
+			} else {
+				SetDefault(second)
+			}
+		}
+	}()
+	go func() {
+		defer wait.Done()
+		for range 100 {
+			Debug("concurrent-default-log")
+			stdLog.Print("concurrent-standard-log")
+		}
+	}()
+	wait.Wait()
+}
+
 func TestDefaultLoggerFunctions(t *testing.T) {
-	previousDefault := defaultLogger
+	previousDefault := defaultLogger.Load()
 	t.Cleanup(func() { SetDefault(previousDefault) })
 	Debug("e-ddd")
 	Info("e-iii")
@@ -44,7 +93,7 @@ func TestDefaultLoggerFunctions(t *testing.T) {
 		"e": "test",
 		"f": "100",
 	}
-	logger := New("vine:test", GlobalOption()).With(
+	logger := New("vine:test").With(
 		slog.String("a", a["a"]),
 		slog.String("b", a["b"]),
 		slog.String("e", c["e"]),

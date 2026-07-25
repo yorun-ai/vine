@@ -57,7 +57,7 @@ func TestStartClientInvokeMutesSuccessLogWhenMethodMuteSuccessLog(t *testing.T) 
 	spec.Register(serviceSpec)
 	MuteSuccessLog(rpcLogTestClientPing)
 
-	span := StartClientInvoke(logger.New("vine:test", logger.GlobalOption()), nil, serviceSpec.Methods[0].Info(), "http://127.0.0.1:1/rpc/invoke")
+	span := StartClientInvoke(logger.New("vine:test"), nil, serviceSpec.Methods[0].Info(), "http://127.0.0.1:1/rpc/invoke")
 	if !span.muteSuccess {
 		t.Fatal("expected muteSuccess span for muteSuccessLog client method")
 	}
@@ -67,7 +67,7 @@ func TestStartClientInvokeRecordsTraceFields(t *testing.T) {
 	parent := meta.InitialTrace()
 	trace := parent.NewChildTrace()
 
-	span := StartClientInvoke(logger.New("vine:test", logger.GlobalOption()), trace, testRpcLogMethodInfo(), "http://127.0.0.1:1/rpc/invoke")
+	span := StartClientInvoke(logger.New("vine:test"), trace, testRpcLogMethodInfo(), "http://127.0.0.1:1/rpc/invoke")
 
 	assertSpanField(t, span, "vrpcId", trace.Id())
 	assertSpanField(t, span, "vrpcSpan", trace.Span())
@@ -91,7 +91,7 @@ func TestStartServerHandleMutesSuccessLogWhenMethodMuteSuccessLog(t *testing.T) 
 	spec.Register(serviceSpec)
 	MuteSuccessLog(rpcLogTestServerPing)
 
-	span := StartServerHandle(logger.New("vine:test", logger.GlobalOption()), nil, serviceSpec.Methods[0].Info(), nil, nil)
+	span := StartServerHandle(logger.New("vine:test"), nil, serviceSpec.Methods[0].Info(), nil, nil)
 	if !span.muteSuccess {
 		t.Fatal("expected muteSuccess span for muteSuccessLog server method")
 	}
@@ -175,7 +175,7 @@ func TestMuteSuccessLogRejectsUnknownMethod(t *testing.T) {
 
 func TestMuteSuccessSpanStillLogsError(t *testing.T) {
 	span := &Span{
-		logger:      logger.New("vine:test", logger.GlobalOption()),
+		logger:      logger.New("vine:test"),
 		muteSuccess: true,
 	}
 
@@ -336,8 +336,7 @@ func TestMutedMethodLogsOnlyFailureFinishedWithStartSnapshot(t *testing.T) {
 }
 
 func TestMutedFailureMarksArgumentsOmittedWhenDebugWasDisabledAtStart(t *testing.T) {
-	previousLevel := logger.GlobalOption().Level
-	t.Cleanup(func() { logger.SetGlobalLevel(previousLevel) })
+	t.Cleanup(func() { logger.SetGlobalLevel(logger.LevelInfo) })
 	logger.SetGlobalLevel(logger.LevelInfo)
 	span := &Span{
 		logger:              logger.New("vine:test"),

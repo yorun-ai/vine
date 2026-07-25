@@ -19,7 +19,7 @@ func resetArgsForTest(t *testing.T) {
 	prevStdout := argsStdout
 	prevStderr := argsStderr
 	prevExit := argsExit
-	prevLogLevel := logger.GlobalOption().Level
+	logger.SetGlobalLevel(logger.LevelInfo)
 	clearLevelsForTest()
 
 	t.Cleanup(func() {
@@ -27,7 +27,7 @@ func resetArgsForTest(t *testing.T) {
 		argsStdout = prevStdout
 		argsStderr = prevStderr
 		argsExit = prevExit
-		logger.SetGlobalLevel(prevLogLevel)
+		logger.SetGlobalLevel(logger.LevelInfo)
 		clearLevelsForTest()
 	})
 }
@@ -156,7 +156,9 @@ func TestHandleSetsLogLevel(t *testing.T) {
 
 	Handle()
 
-	assert.Equal(t, logger.LevelDebug, logger.GlobalOption().Level)
+	if !logger.New("vine:test").Enabled(logger.LevelDebug) {
+		t.Fatal("expected global DEBUG level")
+	}
 }
 
 func TestHandleSetsLogLevelFromEnv(t *testing.T) {
@@ -168,7 +170,10 @@ func TestHandleSetsLogLevelFromEnv(t *testing.T) {
 
 	Handle()
 
-	assert.Equal(t, logger.LevelWarn, logger.GlobalOption().Level)
+	log := logger.New("vine:test")
+	if log.Enabled(logger.LevelDebug) || !log.Enabled(logger.LevelWarn) {
+		t.Fatal("expected global WARN level")
+	}
 }
 
 func TestHandleSetsNamedRulesWithExactPriority(t *testing.T) {
@@ -240,7 +245,8 @@ func TestInvalidRuleDoesNotPartiallyUpdateLevels(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected invalid wildcard rule error")
 	}
-	if logger.GlobalOption().Level != logger.LevelInfo {
+	log := logger.New("vine:test")
+	if log.Enabled(logger.LevelDebug) || !log.Enabled(logger.LevelInfo) {
 		t.Fatal("invalid update must preserve the default level")
 	}
 	if !logger.New("app", "demo.user").Enabled(logger.LevelDebug) {

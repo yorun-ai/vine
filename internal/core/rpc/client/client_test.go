@@ -29,7 +29,7 @@ func testClientContext() meta.Context {
 }
 
 func testClientLogger() *logger.Logger {
-	return logger.New("vine:test", logger.GlobalOption())
+	return logger.New("vine:test")
 }
 
 var testClientMethodCounter uint64

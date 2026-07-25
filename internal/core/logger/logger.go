@@ -12,49 +12,56 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
+// Option
+
 // WithOption configures the logger created by New.
 type WithOption struct {
-	Format     Format
-	Level      Level
+	// An empty Format follows the process-wide global format.
+	Format Format
+	// An empty Level is LevelAuto.
+	Level Level
+	// An empty OutputPath follows the process-wide global output.
 	OutputPath string
 }
 
+// Logger
+
 type Logger struct {
 	slog         *slog.Logger
-	config       WithOption
-	leveler      slog.Leveler
+	option       WithOption
 	nameSegments []string
 	attrs        []slog.Attr
 	writer       io.Writer
 }
 
 func New(name string, args ...any) *Logger {
-	config := GlobalOption()
-	config.Level = LevelAuto
+	var option WithOption
 	nameArgs := make([]any, 0, len(args)+1)
 	nameArgs = append(nameArgs, name)
 	nameArgs = append(nameArgs, args...)
 	if len(args) > 0 {
 		switch last := args[len(args)-1].(type) {
 		case WithOption:
-			config = new(last)
-			nameArgs = nameArgs[:len(nameArgs)-1]
-		case *WithOption:
-			vpre.CheckNotNil(last, "logger WithOption cannot be nil")
-			copied := *last
-			config = &copied
+			option = last
 			nameArgs = nameArgs[:len(nameArgs)-1]
 		}
 	}
-	vpre.Check(isValidOptionLevel(config.Level), "%+v is not a valid logger option level", config.Level)
+	vpre.Check(isValidOptionLevel(option.Level), "%+v is not a valid logger option level", option.Level)
+	vpre.Check(isValidOptionFormat(option.Format), "%+v is not a valid logger option format", option.Format)
 	nameSegments := make([]string, 0, len(nameArgs))
 	for index, arg := range nameArgs {
 		segment, ok := arg.(string)
 		vpre.Check(ok, "logger name argument %d must be a string segment; WithOption is allowed only as the last argument", index)
 		nameSegments = append(nameSegments, splitNameSegments(segment)...)
 	}
-	return newLogger(config, nameSegments, nil, newLogWriter(config.OutputPath))
+	writer := io.Writer(globalWriter)
+	if option.OutputPath != "" {
+		writer = sharedLogWriter(option.OutputPath)
+	}
+	return newLogger(option, nameSegments, nil, writer)
 }
+
+// Name
 
 func splitNameSegments(value string) []string {
 	segments := strings.Split(value, ":")
@@ -65,35 +72,34 @@ func splitNameSegments(value string) []string {
 	return segments
 }
 
-func newLogger(config *WithOption, nameSegments []string, attrs []slog.Attr, writer io.Writer) *Logger {
-	leveler := newLeveler(config.Level, nameSegments)
-	slogLogger := newSlogLoggerWithWriter(config, true, leveler, writer)
+func newLogger(option WithOption, nameSegments []string, attrs []slog.Attr, writer io.Writer) *Logger {
+	leveler := newLeveler(option.Level, nameSegments)
+	slogLogger := newSlogLoggerWithWriter(option, true, leveler, writer)
 	if len(attrs) > 0 {
 		slogLogger = slog.New(slogLogger.Handler().WithAttrs(attrs))
 	}
-	log := new(Logger{
+	return &Logger{
 		slog:         slogLogger,
-		config:       *config,
-		leveler:      leveler,
+		option:       option,
 		nameSegments: append([]string(nil), nameSegments...),
 		attrs:        append([]slog.Attr(nil), attrs...),
 		writer:       writer,
-	})
-	return log
+	}
 }
+
+// Derived loggers
 
 func (l *Logger) With(attrs ...slog.Attr) *Logger {
 	vpre.Check(len(attrs) > 0, "logger.With requires at least one attr")
 
 	handler := l.slog.Handler().WithAttrs(attrs)
-	return new(Logger{
+	return &Logger{
 		slog:         slog.New(handler),
-		config:       l.config,
-		leveler:      l.leveler,
+		option:       l.option,
 		nameSegments: append([]string(nil), l.nameSegments...),
 		attrs:        append(append([]slog.Attr(nil), l.attrs...), attrs...),
 		writer:       l.writer,
-	})
+	}
 }
 
 // Child returns a logger whose name extends this logger's name.
@@ -104,8 +110,10 @@ func (l *Logger) Child(name string, names ...string) *Logger {
 	for _, next := range names {
 		nameSegments = append(nameSegments, splitNameSegments(next)...)
 	}
-	return newLogger(&l.config, nameSegments, l.attrs, l.writer)
+	return newLogger(l.option, nameSegments, l.attrs, l.writer)
 }
+
+// Logging
 
 // Enabled reports whether the logger currently emits records at level.
 func (l *Logger) Enabled(level Level) bool {
@@ -142,6 +150,8 @@ func (l *Logger) log(level Level, msg string, args ...any) {
 	}
 	_ = l.slog.Handler().Handle(context.Background(), record)
 }
+
+// Source
 
 // callerPC returns the external logging call frame so source attribution
 // points to the caller of this package instead of the wrapper methods here.

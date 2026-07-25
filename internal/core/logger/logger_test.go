@@ -2,14 +2,45 @@ package logger
 
 import (
 	"log/slog"
-	"os"
-	"path/filepath"
-	"strings"
+	"sync"
 	"testing"
 )
 
+func resetGlobalOptionForTest(t *testing.T) {
+	t.Helper()
+
+	previousFormat := currentGlobalFormat()
+	previousLevel := globalLevel.Level()
+	previousOutputPath := globalWriter.OutputPath()
+	t.Cleanup(func() {
+		SetGlobalFormat(previousFormat)
+		globalLevel.Set(previousLevel)
+		SetGlobalOutputPath(previousOutputPath)
+	})
+}
+
+func TestGlobalSettingsConcurrentAccess(t *testing.T) {
+	resetGlobalOptionForTest(t)
+
+	var wg sync.WaitGroup
+	for range 20 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			SetGlobalFormat(FormatJSON)
+			SetGlobalLevel(LevelDebug)
+			_ = currentGlobalFormat()
+			_ = globalLevel.Level()
+			_ = globalWriter.OutputPath()
+			SetGlobalFormat(FormatText)
+			SetGlobalLevel(LevelInfo)
+		}()
+	}
+	wg.Wait()
+}
+
 func TestWithReturnsChildLogger(t *testing.T) {
-	logger := New("vine:test", GlobalOption())
+	logger := New("vine:test")
 	child := logger.With(slog.String("group", "child"))
 
 	if logger == child {
@@ -73,24 +104,6 @@ func TestChildKeepsFixedLevel(t *testing.T) {
 	}
 }
 
-func TestNewCreatesOutputPathParentDirectories(t *testing.T) {
-	outputPath := filepath.Join(t.TempDir(), "nested", "log", "vine.log")
-	log := New("vine:test", WithOption{
-		Format:     FormatText,
-		Level:      LevelInfo,
-		OutputPath: outputPath,
-	})
-	log.Info("nested output")
-
-	content, err := os.ReadFile(outputPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(content), "nested output") {
-		t.Fatalf("output file does not contain the logged message: %q", content)
-	}
-}
-
 func TestNewJoinsNameSegmentsAndAcceptsFinalWithOption(t *testing.T) {
 	resetRulesForTest(t)
 	SetGlobalLevel(LevelError)
@@ -118,6 +131,12 @@ func TestNewRejectsWildcardNameSegments(t *testing.T) {
 func TestNewRejectsWithOptionBeforeFinalArgument(t *testing.T) {
 	assertPanics(t, func() {
 		New("demo.user", WithOption{Format: FormatText, Level: LevelInfo}, "rpc")
+	})
+}
+
+func TestNewRejectsWithOptionPointer(t *testing.T) {
+	assertPanics(t, func() {
+		New("demo.user", &WithOption{})
 	})
 }
 

@@ -351,7 +351,7 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForInitializerWithSQLite(t *test
 	injector := di.NewInjector(
 		func(b *di.Binder) {
 			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
-			b.BindInstance(logger.New("vine:test", logger.GlobalOption()))
+			b.BindInstance(logger.New("vine:test"))
 			minder.Bind(b)
 			b.BindInstance(redisServer)
 			b.Bind(di.T[*initializer.Initializer]()).In(di.SingletonScope)
@@ -381,7 +381,7 @@ func TestConfigDatabaseBindProvidesAppConfigRepoDAO(t *testing.T) {
 	injector := di.NewInjector(
 		func(b *di.Binder) {
 			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
-			b.BindInstance(logger.New("vine:test", logger.GlobalOption()))
+			b.BindInstance(logger.New("vine:test"))
 			minder.Bind(b)
 			b.Bind(di.T[*repo.DBAppConfigRepo]()).In(di.TransientScope)
 		},
@@ -414,7 +414,7 @@ func newHubBoundAppConfigRepo(t *testing.T, spec *HubApp) core.AppConfigRepo {
 	daoInjector := di.NewInjector(
 		func(b *di.Binder) {
 			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
-			b.BindInstance(logger.New("vine:test", logger.GlobalOption()))
+			b.BindInstance(logger.New("vine:test"))
 			minder.Bind(b)
 		},
 	)
@@ -429,7 +429,7 @@ func newHubBoundAppConfigRepo(t *testing.T, spec *HubApp) core.AppConfigRepo {
 			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
 			b.Bind(di.T[*flag.Flag]()).ToInstance(spec.Flag)
 			b.BindInstance(daoInstance)
-			b.BindInstance(logger.New("vine:test", logger.GlobalOption()))
+			b.BindInstance(logger.New("vine:test"))
 			b.BindInstance(redisServer)
 			spec.BindCommon(b)
 		},
@@ -445,7 +445,7 @@ func newHubBoundSchemaRepo(t *testing.T, spec *HubApp) core.SchemaRepo {
 	injector := di.NewInjector(
 		func(b *di.Binder) {
 			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
-			b.BindInstance(logger.New("vine:test", logger.GlobalOption()))
+			b.BindInstance(logger.New("vine:test"))
 			b.Bind(di.T[*flag.Flag]()).ToInstance(spec.Flag)
 			b.Bind(di.T[*internalapp.InternalInprocFlag]()).ToInstance(spec.InprocFlag)
 			spec.BindCommon(b)

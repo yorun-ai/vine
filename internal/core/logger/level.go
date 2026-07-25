@@ -10,12 +10,14 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
+// Level
+
 type Level string
 
 const (
-	// LevelAuto follows matching named level rules and falls back to the
-	// process-wide global level.
-	LevelAuto  Level = "AUTO"
+	// LevelAuto is the zero value. It follows matching named level rules and
+	// falls back to the process-wide global level.
+	LevelAuto  Level = ""
 	LevelDebug Level = "DEBUG"
 	LevelInfo  Level = "INFO"
 	LevelWarn  Level = "WARN"
@@ -64,6 +66,19 @@ func levelFromSlog(level slog.Level) Level {
 	}
 }
 
+// Global level
+
+// globalLevel is the fallback for auto-level loggers that match no named rule.
+// slog.LevelVar's zero value is INFO.
+var globalLevel slog.LevelVar
+
+func SetGlobalLevel(level Level) {
+	vpre.Check(IsValidLevel(level), "%+v is not a valid LogLevel", level)
+	globalLevel.Set(level.ToSLogLevel())
+}
+
+// Leveler
+
 type _LevelerFunc func() slog.Level
 
 func (f _LevelerFunc) Level() slog.Level {
@@ -82,6 +97,8 @@ func newLeveler(level Level, nameSegments []string) slog.Leveler {
 		return globalLevel.Level()
 	})
 }
+
+// Rules
 
 type _Rule struct {
 	pattern  string

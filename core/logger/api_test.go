@@ -63,9 +63,8 @@ func readFacadeLastRecord(t *testing.T, path string) _LoggedRecord {
 }
 
 func TestFacadeAutoLoggerAndNamedRules(t *testing.T) {
-	previousLevel := GlobalOption().Level
 	t.Cleanup(func() {
-		SetGlobalLevel(previousLevel)
+		SetGlobalLevel(LevelInfo)
 		clearFacadeLevels()
 	})
 	clearFacadeLevels()

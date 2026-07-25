@@ -2,18 +2,18 @@ package logger
 
 import (
 	"context"
-	"io"
 	stdLog "log"
 	"log/slog"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"go.yorun.ai/vine/util/vslice"
 )
 
-var standardLoggerWriter io.Writer = &_StandardLoggerWriter{}
-var standardLogger *slog.Logger
+var standardLoggerWriter = new(_StandardLoggerWriter)
+var standardLogger atomic.Pointer[slog.Logger]
 var stdLogProcessors = vslice.NewMutexSlice[_StdLogProcessorEntry]()
 
 const standardLoggerName = "vine:stdlog"
@@ -24,9 +24,9 @@ func init() {
 	stdLog.SetOutput(standardLoggerWriter)
 }
 
-func setStandardLogger(config WithOption) {
-	leveler := newLeveler(config.Level, splitNameSegments(standardLoggerName))
-	standardLogger = newSlogLogger(&config, true, leveler)
+func setStandardLogger(logger *Logger) {
+	leveler := newLeveler(logger.option.Level, splitNameSegments(standardLoggerName))
+	standardLogger.Store(newSlogLoggerWithWriter(logger.option, true, leveler, logger.writer))
 }
 
 type _StandardLoggerWriter struct{}
@@ -138,11 +138,12 @@ func processStdLogMessage(msg string) (string, bool, string) {
 }
 
 func logStandard(level Level, msg string, category string) {
-	if standardLogger == nil {
+	logger := standardLogger.Load()
+	if logger == nil {
 		return
 	}
 
-	handler := standardLogger.Handler()
+	handler := logger.Handler()
 	slogLevel := level.ToSLogLevel()
 	if !handler.Enabled(context.Background(), slogLevel) {
 		return

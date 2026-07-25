@@ -2,21 +2,20 @@ package logger
 
 import (
 	"io"
-	stdLog "log"
 	"log/slog"
-	"os"
-	"path/filepath"
-
-	"go.yorun.ai/vine/util/vpre"
 )
 
-// newSlogLogger builds the underlying slog logger using the configured output format,
-// level, source handling, and optional file mirroring.
-func newSlogLogger(config *WithOption, addSource bool, leveler slog.Leveler) *slog.Logger {
-	return newSlogLoggerWithWriter(config, addSource, leveler, newLogWriter(config.OutputPath))
+func newSlogLoggerWithWriter(option WithOption, addSource bool, leveler slog.Leveler, writer io.Writer) *slog.Logger {
+	if option.Format == "" {
+		return slog.New(&_GlobalFormatHandler{
+			text: newSlogHandler(FormatText, addSource, leveler, writer),
+			json: newSlogHandler(FormatJSON, addSource, leveler, writer),
+		})
+	}
+	return slog.New(newSlogHandler(option.Format, addSource, leveler, writer))
 }
 
-func newSlogLoggerWithWriter(config *WithOption, addSource bool, leveler slog.Leveler, writer io.Writer) *slog.Logger {
+func newSlogHandler(format Format, addSource bool, leveler slog.Leveler, writer io.Writer) slog.Handler {
 	options := &slog.HandlerOptions{
 		Level:     leveler,
 		AddSource: addSource,
@@ -35,33 +34,12 @@ func newSlogLoggerWithWriter(config *WithOption, addSource bool, leveler slog.Le
 		},
 	}
 
-	vpre.Check(IsValidFormat(config.Format), "%+v is not a valid log format", config.Format)
-	switch config.Format {
+	switch format {
 	case FormatText:
-		return slog.New(slog.NewTextHandler(writer, options))
+		return slog.NewTextHandler(writer, options)
 	case FormatJSON:
-		return slog.New(slog.NewJSONHandler(writer, options))
+		return slog.NewJSONHandler(writer, options)
 	default:
 		return nil
 	}
-}
-
-// newLogWriter returns a process-lifetime writer for the logger output.
-// When OutputPath is set, the opened file is intentionally kept for the
-// lifetime of the process and is not closed by the logger package.
-func newLogWriter(outputPath string) io.Writer {
-	writer := io.Writer(os.Stderr)
-	if outputPath == "" {
-		return writer
-	}
-
-	err := os.MkdirAll(filepath.Dir(outputPath), 0o755)
-	if err != nil {
-		stdLog.Fatal(err)
-	}
-	file, err := os.OpenFile(outputPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		stdLog.Fatal(err)
-	}
-	return io.MultiWriter(os.Stderr, file)
 }

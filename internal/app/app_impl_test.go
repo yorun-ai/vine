@@ -22,9 +22,8 @@ import (
 )
 
 func TestNewAppLoggerUsesAppName(t *testing.T) {
-	previousLevel := logger.GlobalOption().Level
 	t.Cleanup(func() {
-		logger.SetGlobalLevel(previousLevel)
+		logger.SetGlobalLevel(logger.LevelInfo)
 		for _, pattern := range []string{
 			"app:demo.user:rpc",
 			"app:vine.hub:rpc",

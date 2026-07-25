@@ -50,7 +50,63 @@ func TestIsValidLevel(t *testing.T) {
 		t.Fatal("expected invalid level")
 	}
 	if IsValidLevel(LevelAuto) {
-		t.Fatal("AUTO is an option policy, not a concrete logging threshold")
+		t.Fatal("LevelAuto is an option policy, not a concrete logging threshold")
+	}
+	if LevelAuto != "" {
+		t.Fatalf("LevelAuto = %q, want the zero value", LevelAuto)
+	}
+}
+
+func TestSetGlobalLevel(t *testing.T) {
+	resetGlobalOptionForTest(t)
+
+	SetGlobalLevel(LevelDebug)
+	if got := levelFromSlog(globalLevel.Level()); got != LevelDebug {
+		t.Fatalf("global level = %s, want %s", got, LevelDebug)
+	}
+
+	SetGlobalLevel(LevelError)
+	if got := levelFromSlog(globalLevel.Level()); got != LevelError {
+		t.Fatalf("global level = %s, want %s", got, LevelError)
+	}
+}
+
+func TestDefaultLevelRejectsAuto(t *testing.T) {
+	resetGlobalOptionForTest(t)
+
+	defer func() {
+		if recovered := recover(); recovered == nil {
+			t.Fatal("expected panic")
+		}
+	}()
+
+	SetGlobalLevel(LevelAuto)
+}
+
+func TestAutoLoggerAndChildFollowDefaultLevelChanges(t *testing.T) {
+	resetGlobalOptionForTest(t)
+	SetGlobalLevel(LevelInfo)
+
+	log := New("vine:test", WithOption{Format: FormatText, Level: LevelAuto})
+	child := log.With(slog.String("group", "child"))
+	if log.Enabled(LevelDebug) || child.Enabled(LevelDebug) {
+		t.Fatal("Debug should initially be disabled")
+	}
+
+	SetGlobalLevel(LevelDebug)
+	if !log.Enabled(LevelDebug) || !child.Enabled(LevelDebug) {
+		t.Fatal("existing auto loggers should follow the default level")
+	}
+}
+
+func TestFixedLoggerDoesNotFollowLevelChanges(t *testing.T) {
+	resetGlobalOptionForTest(t)
+	SetGlobalLevel(LevelInfo)
+	log := New("vine:test", WithOption{Format: FormatText, Level: LevelInfo})
+
+	SetGlobalLevel(LevelDebug)
+	if log.Enabled(LevelDebug) {
+		t.Fatal("fixed logger should keep its configured level")
 	}
 }
 

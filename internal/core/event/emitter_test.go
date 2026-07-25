@@ -78,7 +78,7 @@ func TestEmitterEmitUsesEventClient(t *testing.T) {
 	emitter := NewEmitter(EmitterOption{
 		Context:     ctx,
 		ClientApp:   app,
-		Logger:      logger.New("vine:test", logger.GlobalOption()),
+		Logger:      logger.New("vine:test"),
 		EventClient: client,
 	})
 	eventInfo, ok := spec.GetEventInfo("test.event.TestEmitterEvent")
