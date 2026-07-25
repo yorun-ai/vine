@@ -14,6 +14,7 @@ type _LoggedSource struct {
 
 type _LoggedRecord struct {
 	Message string        `json:"msg"`
+	Logger  string        `json:"logger"`
 	Source  _LoggedSource `json:"source"`
 }
 
@@ -30,6 +31,9 @@ func TestFacadeInfoUsesExternalCallerSource(t *testing.T) {
 	record := readFacadeLastRecord(t, path)
 	if record.Message != "facade-helper-log" {
 		t.Fatalf("unexpected message: %q", record.Message)
+	}
+	if record.Logger != "vine:test" {
+		t.Fatalf("unexpected logger: %q", record.Logger)
 	}
 	if !strings.HasSuffix(record.Source.File, "api_test.go") {
 		t.Fatalf("unexpected source file: %q", record.Source.File)

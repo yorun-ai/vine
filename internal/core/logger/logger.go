@@ -26,6 +26,8 @@ type WithOption struct {
 
 // Logger
 
+// Logger writes structured records containing the reserved "logger" field
+// with its complete colon-separated name.
 type Logger struct {
 	slog         *slog.Logger
 	option       WithOption
@@ -74,7 +76,7 @@ func splitNameSegments(value string) []string {
 
 func newLogger(option WithOption, nameSegments []string, attrs []slog.Attr, writer io.Writer) *Logger {
 	leveler := newLeveler(option.Level, nameSegments)
-	slogLogger := newSlogLoggerWithWriter(option, true, leveler, writer)
+	slogLogger := newSlogLoggerWithWriter(option, strings.Join(nameSegments, ":"), true, leveler, writer)
 	if len(attrs) > 0 {
 		slogLogger = slog.New(slogLogger.Handler().WithAttrs(attrs))
 	}

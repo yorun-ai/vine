@@ -17,6 +17,7 @@ type loggedSource struct {
 
 type loggedRecord struct {
 	Level   string       `json:"level"`
+	Logger  string       `json:"logger"`
 	Message string       `json:"msg"`
 	Source  loggedSource `json:"source"`
 }
@@ -34,6 +35,9 @@ func TestLoggerInfoUsesExternalCallerSource(t *testing.T) {
 	record := readLastRecord(t, path)
 	if record.Message != "helper-log" {
 		t.Fatalf("unexpected message: %q", record.Message)
+	}
+	if record.Logger != "vine:test" {
+		t.Fatalf("unexpected logger: %q", record.Logger)
 	}
 	if !strings.HasSuffix(record.Source.File, "stdlog_test.go") {
 		t.Fatalf("unexpected source file: %q", record.Source.File)
@@ -115,7 +119,8 @@ func TestStandardLogWritesThroughDefaultLogger(t *testing.T) {
 	if len(records) != 2 {
 		t.Fatalf("unexpected record count: %d", len(records))
 	}
-	if records[0].Level != "DEBUG" || records[0].Message != "stdlog-bridge" || records[0].Source.File != "STDLOG" {
+	if records[0].Level != "DEBUG" || records[0].Logger != "vine:stdlog" ||
+		records[0].Message != "stdlog-bridge" || records[0].Source.File != "STDLOG" {
 		t.Fatalf("unexpected debug record: %+v", records[0])
 	}
 	record := records[1]
@@ -124,6 +129,9 @@ func TestStandardLogWritesThroughDefaultLogger(t *testing.T) {
 	}
 	if record.Level != "INFO" {
 		t.Fatalf("unexpected level: %q", record.Level)
+	}
+	if record.Logger != "vine:stdlog" {
+		t.Fatalf("unexpected logger: %q", record.Logger)
 	}
 	if record.Source.File != "STDLOG" {
 		t.Fatalf("unexpected source file: %q", record.Source.File)

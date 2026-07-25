@@ -5,14 +5,15 @@ import (
 	"log/slog"
 )
 
-func newSlogLoggerWithWriter(option WithOption, addSource bool, leveler slog.Leveler, writer io.Writer) *slog.Logger {
+func newSlogLoggerWithWriter(option WithOption, loggerName string, addSource bool, leveler slog.Leveler, writer io.Writer) *slog.Logger {
+	loggerAttr := []slog.Attr{slog.String("logger", loggerName)}
 	if option.Format == "" {
 		return slog.New(&_GlobalFormatHandler{
-			text: newSlogHandler(FormatText, addSource, leveler, writer),
-			json: newSlogHandler(FormatJSON, addSource, leveler, writer),
+			text: newSlogHandler(FormatText, addSource, leveler, writer).WithAttrs(loggerAttr),
+			json: newSlogHandler(FormatJSON, addSource, leveler, writer).WithAttrs(loggerAttr),
 		})
 	}
-	return slog.New(newSlogHandler(option.Format, addSource, leveler, writer))
+	return slog.New(newSlogHandler(option.Format, addSource, leveler, writer).WithAttrs(loggerAttr))
 }
 
 func newSlogHandler(format Format, addSource bool, leveler slog.Leveler, writer io.Writer) slog.Handler {

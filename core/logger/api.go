@@ -35,7 +35,8 @@ const (
 // supplied, the option must be the final New argument.
 type WithOption = internallogger.WithOption
 
-// Logger writes structured log records.
+// Logger writes structured log records. Every record includes the reserved
+// "logger" field containing its complete colon-separated name.
 type Logger = internallogger.Logger
 
 // IsValidLevel reports whether level is a supported logging threshold.

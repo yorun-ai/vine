@@ -96,7 +96,8 @@ func TestLoggerFollowsGlobalFormatAndOutputPathChanges(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(firstContent), "msg=before-global-change") {
+	if !strings.Contains(string(firstContent), "msg=before-global-change") ||
+		!strings.Contains(string(firstContent), "logger=vine:test") {
 		t.Fatalf("first output is not text: %q", firstContent)
 	}
 
@@ -104,7 +105,8 @@ func TestLoggerFollowsGlobalFormatAndOutputPathChanges(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(secondContent), `"msg":"after-global-change"`) {
+	if !strings.Contains(string(secondContent), `"msg":"after-global-change"`) ||
+		!strings.Contains(string(secondContent), `"logger":"vine:test:child"`) {
 		t.Fatalf("second output is not JSON: %q", secondContent)
 	}
 }
