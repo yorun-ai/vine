@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"log/slog"
 	"strings"
 	"testing"
 )
@@ -18,6 +19,39 @@ func resetRulesForTest(t *testing.T) {
 		t.Fatal(err)
 	}
 	rules.Store(empty)
+}
+
+func TestLevelToSLogLevel(t *testing.T) {
+	cases := []struct {
+		level Level
+		want  slog.Level
+	}{
+		{level: LevelDebug, want: slog.LevelDebug},
+		{level: LevelInfo, want: slog.LevelInfo},
+		{level: LevelWarn, want: slog.LevelWarn},
+		{level: LevelError, want: slog.LevelError},
+	}
+
+	for _, tc := range cases {
+		if got := tc.level.ToSLogLevel(); got != tc.want {
+			t.Fatalf("%s.ToSLogLevel() = %v, want %v", tc.level, got, tc.want)
+		}
+	}
+}
+
+func TestIsValidLevel(t *testing.T) {
+	for _, level := range []Level{LevelDebug, LevelInfo, LevelWarn, LevelError} {
+		if !IsValidLevel(level) {
+			t.Fatalf("expected valid level: %s", level)
+		}
+	}
+
+	if IsValidLevel(Level("TRACE")) {
+		t.Fatal("expected invalid level")
+	}
+	if IsValidLevel(LevelAuto) {
+		t.Fatal("AUTO is an option policy, not a concrete logging threshold")
+	}
 }
 
 func TestNamedLoggerResolvesRulesBySpecificity(t *testing.T) {

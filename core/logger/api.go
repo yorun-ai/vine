@@ -2,14 +2,14 @@ package logger
 
 import internallogger "go.yorun.ai/vine/internal/core/logger"
 
-// Mode controls the output encoding of log records.
-type Mode = internallogger.Mode
+// Format controls the output encoding of log records.
+type Format = internallogger.Format
 
 const (
-	// ModeJSON emits one JSON object per log record.
-	ModeJSON = internallogger.ModeJSON
-	// ModeText emits human-readable text records.
-	ModeText = internallogger.ModeText
+	// FormatJSON emits one JSON object per line.
+	FormatJSON = internallogger.FormatJSON
+	// FormatText emits one line of human-readable key=value pairs per record.
+	FormatText = internallogger.FormatText
 )
 
 // Level is either a concrete logging threshold or the LevelAuto policy used
@@ -82,9 +82,9 @@ func GlobalOption() *WithOption {
 	return internallogger.GlobalOption()
 }
 
-// SetGlobalMode changes the output mode used by loggers created afterward.
-func SetGlobalMode(mode Mode) {
-	internallogger.SetGlobalMode(mode)
+// SetGlobalFormat changes the output format used by loggers created afterward.
+func SetGlobalFormat(format Format) {
+	internallogger.SetGlobalFormat(format)
 }
 
 // SetGlobalLevel changes the fallback threshold for auto-level loggers that
@@ -97,7 +97,7 @@ func SetGlobalLevel(level Level) {
 // joined with ":".
 // Each name argument may itself contain colon-separated segments.
 // A WithOption value or pointer may be supplied only as the final argument.
-// Without WithOption, the logger uses the current global mode and dynamically
+// Without WithOption, the logger uses the current global format and dynamically
 // follows the current pattern-to-level configuration.
 func New(name string, args ...any) *Logger {
 	return internallogger.New(name, args...)

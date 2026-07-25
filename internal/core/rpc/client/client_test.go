@@ -147,7 +147,7 @@ func TestInvokeEncodingFailureLogsRejectedWithoutStarted(t *testing.T) {
 		}},
 	}).Methods()[0]
 	logPath := filepath.Join(t.TempDir(), "client-rejected.jsonl")
-	log := logger.New("vine:test", logger.WithOption{Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath})
+	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: logPath})
 	client := New(Option{
 		Context:             testClientContext(),
 		ClientApp:           testClientApp(t),

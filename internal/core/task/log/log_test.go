@@ -15,7 +15,7 @@ import (
 
 func TestRunnerFinishedUsesDebugAndOmitsOKError(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "task.jsonl")
-	log := logger.New("vine:test", logger.WithOption{Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: path})
+	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
 	span := StartRunnerHandle(log, meta.InitialTrace(), nil, nil, nil)
 	span.Finish(ex.NewOK())
 
@@ -37,7 +37,7 @@ func TestRunnerFinishedUsesDebugAndOmitsOKError(t *testing.T) {
 
 func TestRunnerFailureIncludesSourceStack(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "task-error.jsonl")
-	log := logger.New("vine:test", logger.WithOption{Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: path})
+	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
 	taskInfo := spec.ConvertSpecToInfoForTest(new(spec.TaskSpec{
 		Name:     "RebuildIndex",
 		SkelName: "test.task.RebuildIndex",

@@ -20,7 +20,7 @@ type _LoggedRecord struct {
 func TestFacadeInfoUsesExternalCallerSource(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "facade-logger.jsonl")
 	log := New("vine:test", WithOption{
-		Mode:       ModeJSON,
+		Format:     FormatJSON,
 		Level:      LevelDebug,
 		OutputPath: path,
 	})
@@ -71,8 +71,8 @@ func TestFacadeAutoLoggerAndNamedRules(t *testing.T) {
 	clearFacadeLevels()
 	SetGlobalLevel(LevelInfo)
 
-	auto := New("vine:test", WithOption{Mode: ModeText, Level: LevelAuto})
-	fixed := New("vine:test", WithOption{Mode: ModeText, Level: LevelInfo})
+	auto := New("vine:test", WithOption{Format: FormatText, Level: LevelAuto})
+	fixed := New("vine:test", WithOption{Format: FormatText, Level: LevelInfo})
 	SetGlobalLevel(LevelDebug)
 	if !auto.Enabled(LevelDebug) {
 		t.Fatal("facade auto logger should follow the default level")

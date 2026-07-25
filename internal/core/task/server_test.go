@@ -183,7 +183,7 @@ func TestServerReturnsInvalidTaskWhenTriggerNotRegistered(t *testing.T) {
 		ImplTypes: []reflect.Type{reflect.TypeOf(&testRunnerImpl{})},
 		Executor:  &_RunnerRecorderExecutor{},
 		Logger: logger.New("vine:test", logger.WithOption{
-			Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath,
+			Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: logPath,
 		}),
 	})
 

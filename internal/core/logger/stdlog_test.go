@@ -24,7 +24,7 @@ type loggedRecord struct {
 func TestLoggerInfoUsesExternalCallerSource(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "logger.jsonl")
 	log := logger.New("vine:test", logger.WithOption{
-		Mode:       logger.ModeJSON,
+		Format:     logger.FormatJSON,
 		Level:      logger.LevelDebug,
 		OutputPath: path,
 	})
@@ -47,7 +47,7 @@ func TestDefaultLoggerInfoUsesExternalCallerSource(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "default-logger.jsonl")
 	original := logger.New("vine:test", logger.GlobalOption())
 	logger.SetDefault(logger.New("vine:test", logger.WithOption{
-		Mode:       logger.ModeJSON,
+		Format:     logger.FormatJSON,
 		Level:      logger.LevelDebug,
 		OutputPath: path,
 	}))
@@ -74,13 +74,13 @@ func TestDefaultAndCustomLoggerUseSameCallerSource(t *testing.T) {
 	defaultPath := filepath.Join(t.TempDir(), "default.jsonl")
 
 	customLogger := logger.New("vine:test", logger.WithOption{
-		Mode:       logger.ModeJSON,
+		Format:     logger.FormatJSON,
 		Level:      logger.LevelDebug,
 		OutputPath: customPath,
 	})
 	original := logger.New("vine:test", logger.GlobalOption())
 	logger.SetDefault(logger.New("vine:test", logger.WithOption{
-		Mode:       logger.ModeJSON,
+		Format:     logger.FormatJSON,
 		Level:      logger.LevelDebug,
 		OutputPath: defaultPath,
 	}))
@@ -101,7 +101,7 @@ func TestStandardLogWritesThroughDefaultLogger(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "stdlog.jsonl")
 	original := logger.New("vine:test", logger.GlobalOption())
 	logger.SetDefault(logger.New("vine:test", logger.WithOption{
-		Mode:       logger.ModeJSON,
+		Format:     logger.FormatJSON,
 		Level:      logger.LevelDebug,
 		OutputPath: path,
 	}))
@@ -134,7 +134,7 @@ func TestStandardLogProcessorDropsMessage(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "stdlog-drop.jsonl")
 	original := logger.New("vine:test", logger.GlobalOption())
 	logger.SetDefault(logger.New("vine:test", logger.WithOption{
-		Mode:       logger.ModeJSON,
+		Format:     logger.FormatJSON,
 		Level:      logger.LevelDebug,
 		OutputPath: path,
 	}))
@@ -164,7 +164,7 @@ func TestStandardLogProcessorRewritesMessage(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "stdlog-rewrite.jsonl")
 	original := logger.New("vine:test", logger.GlobalOption())
 	logger.SetDefault(logger.New("vine:test", logger.WithOption{
-		Mode:       logger.ModeJSON,
+		Format:     logger.FormatJSON,
 		Level:      logger.LevelDebug,
 		OutputPath: path,
 	}))
@@ -203,7 +203,7 @@ func TestStandardLogProcessorStopsAtFirstMatch(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "stdlog-first-match.jsonl")
 	original := logger.New("vine:test", logger.GlobalOption())
 	logger.SetDefault(logger.New("vine:test", logger.WithOption{
-		Mode:       logger.ModeJSON,
+		Format:     logger.FormatJSON,
 		Level:      logger.LevelDebug,
 		OutputPath: path,
 	}))

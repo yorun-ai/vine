@@ -11,71 +11,26 @@ func resetGlobalOptionForTest(t *testing.T) {
 
 	prev := GlobalOption()
 	t.Cleanup(func() {
-		SetGlobalMode(prev.Mode)
+		SetGlobalFormat(prev.Format)
 		SetGlobalLevel(prev.Level)
 	})
 }
 
-func TestIsValidMode(t *testing.T) {
-	for _, mode := range []Mode{ModeJSON, ModeText} {
-		if !IsValidMode(mode) {
-			t.Fatalf("expected valid mode: %s", mode)
-		}
-	}
-
-	if IsValidMode(Mode("PLAIN")) {
-		t.Fatal("expected invalid mode")
-	}
-}
-
-func TestLevelToSLogLevel(t *testing.T) {
-	cases := []struct {
-		level Level
-		want  slog.Level
-	}{
-		{level: LevelDebug, want: slog.LevelDebug},
-		{level: LevelInfo, want: slog.LevelInfo},
-		{level: LevelWarn, want: slog.LevelWarn},
-		{level: LevelError, want: slog.LevelError},
-	}
-
-	for _, tc := range cases {
-		if got := tc.level.ToSLogLevel(); got != tc.want {
-			t.Fatalf("%s.ToSLogLevel() = %v, want %v", tc.level, got, tc.want)
-		}
-	}
-}
-
-func TestIsValidLevel(t *testing.T) {
-	for _, level := range []Level{LevelDebug, LevelInfo, LevelWarn, LevelError} {
-		if !IsValidLevel(level) {
-			t.Fatalf("expected valid level: %s", level)
-		}
-	}
-
-	if IsValidLevel(Level("TRACE")) {
-		t.Fatal("expected invalid level")
-	}
-	if IsValidLevel(LevelAuto) {
-		t.Fatal("AUTO is an option policy, not a concrete logging threshold")
-	}
-}
-
-func TestSetGlobalMode(t *testing.T) {
+func TestSetGlobalFormat(t *testing.T) {
 	resetGlobalOptionForTest(t)
 
-	SetGlobalMode(ModeJSON)
-	if got := GlobalOption().Mode; got != ModeJSON {
-		t.Fatalf("GlobalOption().Mode = %s, want %s", got, ModeJSON)
+	SetGlobalFormat(FormatJSON)
+	if got := GlobalOption().Format; got != FormatJSON {
+		t.Fatalf("GlobalOption().Format = %s, want %s", got, FormatJSON)
 	}
 
-	SetGlobalMode(ModeText)
-	if got := GlobalOption().Mode; got != ModeText {
-		t.Fatalf("GlobalOption().Mode = %s, want %s", got, ModeText)
+	SetGlobalFormat(FormatText)
+	if got := GlobalOption().Format; got != FormatText {
+		t.Fatalf("GlobalOption().Format = %s, want %s", got, FormatText)
 	}
 }
 
-func TestSetGlobalModeRejectsInvalidMode(t *testing.T) {
+func TestSetGlobalFormatRejectsInvalidFormat(t *testing.T) {
 	resetGlobalOptionForTest(t)
 
 	defer func() {
@@ -84,7 +39,7 @@ func TestSetGlobalModeRejectsInvalidMode(t *testing.T) {
 		}
 	}()
 
-	SetGlobalMode(Mode("PLAIN"))
+	SetGlobalFormat(Format("PLAIN"))
 }
 
 func TestGlobalOptionReadsDefaultLevel(t *testing.T) {
@@ -121,10 +76,10 @@ func TestGlobalOptionConcurrentAccess(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			SetGlobalMode(ModeJSON)
+			SetGlobalFormat(FormatJSON)
 			SetGlobalLevel(LevelDebug)
 			_ = GlobalOption()
-			SetGlobalMode(ModeText)
+			SetGlobalFormat(FormatText)
 			SetGlobalLevel(LevelInfo)
 		}()
 	}
@@ -135,7 +90,7 @@ func TestAutoLoggerAndChildFollowDefaultLevelChanges(t *testing.T) {
 	resetGlobalOptionForTest(t)
 	SetGlobalLevel(LevelInfo)
 
-	log := New("vine:test", WithOption{Mode: ModeText, Level: LevelAuto})
+	log := New("vine:test", WithOption{Format: FormatText, Level: LevelAuto})
 	child := log.With(slog.String("group", "child"))
 	if log.Enabled(LevelDebug) || child.Enabled(LevelDebug) {
 		t.Fatal("Debug should initially be disabled")
@@ -150,7 +105,7 @@ func TestAutoLoggerAndChildFollowDefaultLevelChanges(t *testing.T) {
 func TestFixedLoggerDoesNotFollowLevelChanges(t *testing.T) {
 	resetGlobalOptionForTest(t)
 	SetGlobalLevel(LevelInfo)
-	log := New("vine:test", WithOption{Mode: ModeText, Level: LevelInfo})
+	log := New("vine:test", WithOption{Format: FormatText, Level: LevelInfo})
 
 	SetGlobalLevel(LevelDebug)
 	if log.Enabled(LevelDebug) {
@@ -164,13 +119,13 @@ func TestDefaultLoggerKeepsInjectedLoggerLevelSemantics(t *testing.T) {
 	t.Cleanup(func() { SetDefault(previousDefault) })
 	SetGlobalLevel(LevelInfo)
 
-	SetDefault(New("vine:test", WithOption{Mode: ModeText, Level: LevelAuto}))
+	SetDefault(New("vine:test", WithOption{Format: FormatText, Level: LevelAuto}))
 	SetGlobalLevel(LevelDebug)
 	if !defaultLogger.Enabled(LevelDebug) {
 		t.Fatal("default auto logger should follow the default level")
 	}
 
-	fixed := New("vine:test", WithOption{Mode: ModeText, Level: LevelInfo})
+	fixed := New("vine:test", WithOption{Format: FormatText, Level: LevelInfo})
 	SetDefault(fixed)
 	if defaultLogger.Enabled(LevelDebug) {
 		t.Fatal("explicit fixed default logger should keep its own threshold")

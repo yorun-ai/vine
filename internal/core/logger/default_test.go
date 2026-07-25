@@ -18,7 +18,7 @@ func TestStandardLoggerUsesIndependentName(t *testing.T) {
 	previousDefault := defaultLogger
 	t.Cleanup(func() { SetDefault(previousDefault) })
 	SetGlobalLevel(LevelError)
-	SetDefault(New("vine:default", WithOption{Mode: ModeText, Level: LevelAuto}))
+	SetDefault(New("vine:default", WithOption{Format: FormatText, Level: LevelAuto}))
 	SetLevel("vine:stdlog", LevelDebug)
 
 	if defaultLogger.Enabled(LevelDebug) {

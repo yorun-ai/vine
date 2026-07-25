@@ -12,6 +12,13 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
+// WithOption configures the logger created by New.
+type WithOption struct {
+	Format     Format
+	Level      Level
+	OutputPath string
+}
+
 type Logger struct {
 	slog         *slog.Logger
 	config       WithOption

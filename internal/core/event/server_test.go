@@ -137,7 +137,7 @@ func TestServerOnEventForwardsToListener(t *testing.T) {
 		ListenerImplTypes: []reflect.Type{reflect.TypeOf(&testServerListenerImpl{})},
 		Executor:          NewContainerExecutor(nil, nil),
 		Logger: logger.New("vine:test", logger.WithOption{
-			Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath,
+			Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: logPath,
 		}),
 	})
 
@@ -184,7 +184,7 @@ func TestServerRejectedUsesMainEventFieldNames(t *testing.T) {
 		ListenerImplTypes: []reflect.Type{reflect.TypeOf(&testServerListenerImpl{})},
 		Executor:          NewContainerExecutor(nil, nil),
 		Logger: logger.New("vine:test", logger.WithOption{
-			Mode: logger.ModeJSON, Level: logger.LevelDebug, OutputPath: logPath,
+			Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: logPath,
 		}),
 	})
 

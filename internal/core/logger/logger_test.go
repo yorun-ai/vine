@@ -67,7 +67,7 @@ func TestChildKeepsFixedLevel(t *testing.T) {
 	resetRulesForTest(t)
 	SetLevel("daemon:link:event:client", LevelDebug)
 
-	parent := New("daemon:link:event", WithOption{Mode: ModeText, Level: LevelInfo})
+	parent := New("daemon:link:event", WithOption{Format: FormatText, Level: LevelInfo})
 	if parent.Child("client").Enabled(LevelDebug) {
 		t.Fatal("child should inherit the parent's fixed level")
 	}
@@ -76,7 +76,7 @@ func TestChildKeepsFixedLevel(t *testing.T) {
 func TestNewCreatesOutputPathParentDirectories(t *testing.T) {
 	outputPath := filepath.Join(t.TempDir(), "nested", "log", "vine.log")
 	log := New("vine:test", WithOption{
-		Mode:       ModeText,
+		Format:     FormatText,
 		Level:      LevelInfo,
 		OutputPath: outputPath,
 	})
@@ -102,8 +102,8 @@ func TestNewJoinsNameSegmentsAndAcceptsFinalWithOption(t *testing.T) {
 	}
 
 	fixed := New("app", "demo.user", "rpc", "server", WithOption{
-		Mode:  ModeText,
-		Level: LevelInfo,
+		Format: FormatText,
+		Level:  LevelInfo,
 	})
 	if fixed.Enabled(LevelDebug) {
 		t.Fatal("final WithOption should override the dynamic level policy")
@@ -117,7 +117,7 @@ func TestNewRejectsWildcardNameSegments(t *testing.T) {
 
 func TestNewRejectsWithOptionBeforeFinalArgument(t *testing.T) {
 	assertPanics(t, func() {
-		New("demo.user", WithOption{Mode: ModeText, Level: LevelInfo}, "rpc")
+		New("demo.user", WithOption{Format: FormatText, Level: LevelInfo}, "rpc")
 	})
 }
 

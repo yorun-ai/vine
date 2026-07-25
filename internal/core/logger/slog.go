@@ -10,7 +10,7 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-// newSlogLogger builds the underlying slog logger using the configured output mode,
+// newSlogLogger builds the underlying slog logger using the configured output format,
 // level, source handling, and optional file mirroring.
 func newSlogLogger(config *WithOption, addSource bool, leveler slog.Leveler) *slog.Logger {
 	return newSlogLoggerWithWriter(config, addSource, leveler, newLogWriter(config.OutputPath))
@@ -35,11 +35,11 @@ func newSlogLoggerWithWriter(config *WithOption, addSource bool, leveler slog.Le
 		},
 	}
 
-	vpre.Check(IsValidMode(config.Mode), "%+v is not a valid LogMode", config.Mode)
-	switch config.Mode {
-	case ModeText:
+	vpre.Check(IsValidFormat(config.Format), "%+v is not a valid log format", config.Format)
+	switch config.Format {
+	case FormatText:
 		return slog.New(slog.NewTextHandler(writer, options))
-	case ModeJSON:
+	case FormatJSON:
 		return slog.New(slog.NewJSONHandler(writer, options))
 	default:
 		return nil

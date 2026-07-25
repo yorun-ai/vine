@@ -10,6 +10,79 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
+type Level string
+
+const (
+	// LevelAuto follows matching named level rules and falls back to the
+	// process-wide global level.
+	LevelAuto  Level = "AUTO"
+	LevelDebug Level = "DEBUG"
+	LevelInfo  Level = "INFO"
+	LevelWarn  Level = "WARN"
+	LevelError Level = "ERROR"
+)
+
+func IsValidLevel(level Level) bool {
+	return level == LevelDebug ||
+		level == LevelInfo ||
+		level == LevelWarn ||
+		level == LevelError
+}
+
+func isValidOptionLevel(level Level) bool {
+	return level == LevelAuto || IsValidLevel(level)
+}
+
+func (l Level) ToSLogLevel() slog.Level {
+	vpre.Check(IsValidLevel(l), "%+v is not a valid LogLevel", l)
+	switch l {
+	case LevelDebug:
+		return slog.LevelDebug
+	case LevelInfo:
+		return slog.LevelInfo
+	case LevelWarn:
+		return slog.LevelWarn
+	case LevelError:
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
+}
+
+func levelFromSlog(level slog.Level) Level {
+	switch level {
+	case slog.LevelDebug:
+		return LevelDebug
+	case slog.LevelInfo:
+		return LevelInfo
+	case slog.LevelWarn:
+		return LevelWarn
+	case slog.LevelError:
+		return LevelError
+	default:
+		panic("global logger level is invalid")
+	}
+}
+
+type _LevelerFunc func() slog.Level
+
+func (f _LevelerFunc) Level() slog.Level {
+	return f()
+}
+
+func newLeveler(level Level, nameSegments []string) slog.Leveler {
+	if level != LevelAuto {
+		return level.ToSLogLevel()
+	}
+	return _LevelerFunc(func() slog.Level {
+		level, ok := rules.Load().resolve(nameSegments)
+		if ok {
+			return level.ToSLogLevel()
+		}
+		return globalLevel.Level()
+	})
+}
+
 type _Rule struct {
 	pattern  string
 	segments []string
@@ -129,10 +202,6 @@ func (r *_Rules) resolve(name []string) (Level, bool) {
 	return "", false
 }
 
-// globalLevel is the fallback for auto-level loggers that match no named rule.
-// slog.LevelVar's zero value is INFO.
-var globalLevel slog.LevelVar
-
 var rules = func() *atomic.Pointer[_Rules] {
 	store := new(atomic.Pointer[_Rules])
 	initial, err := newRules(nil)
@@ -142,11 +211,6 @@ var rules = func() *atomic.Pointer[_Rules] {
 	store.Store(initial)
 	return store
 }()
-
-func SetGlobalLevel(level Level) {
-	vpre.Check(IsValidLevel(level), "%+v is not a valid LogLevel", level)
-	globalLevel.Set(level.ToSLogLevel())
-}
 
 func SetLevel(pattern string, level Level) {
 	_, err := newRule(pattern, level)
