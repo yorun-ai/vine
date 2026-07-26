@@ -42,6 +42,7 @@ type DataSchema struct {
 	SkelName       string          `json:"skelName"`
 	Description    string          `json:"description,omitempty"`
 	Hash           string          `json:"hash"`
+	Sensitive      bool            `json:"sensitive,omitempty"`
 	TypeParameters []string        `json:"typeParameters,omitempty"`
 	Members        []*MemberSchema `json:"members,omitempty"`
 }
@@ -52,6 +53,7 @@ type ConfigSchema struct {
 	Description string          `json:"description,omitempty"`
 	Hash        string          `json:"hash"`
 	Pub         bool            `json:"pub"`
+	Sensitive   bool            `json:"sensitive,omitempty"`
 	Lifecycle   string          `json:"lifecycle"`
 	Members     []*MemberSchema `json:"members,omitempty"`
 }
@@ -70,6 +72,7 @@ type EventSchema struct {
 	Description string          `json:"description,omitempty"`
 	Hash        string          `json:"hash"`
 	Pub         bool            `json:"pub"`
+	Sensitive   bool            `json:"sensitive,omitempty"`
 	Members     []*MemberSchema `json:"members,omitempty"`
 }
 
@@ -130,18 +133,20 @@ func (s *ServiceSchema) HasAudience(actorSkelName string, via ActorVia) bool {
 }
 
 type MethodSchema struct {
-	Name              string          `json:"name"`
-	SkelName          string          `json:"skelName"`
-	Description       string          `json:"description,omitempty"`
-	Hash              string          `json:"hash"`
-	Example           string          `json:"example,omitempty"`
-	AuthMode          AuthMode        `json:"authMode"`
-	Require           *PermRequire    `json:"require,omitempty"`
-	InputDescription  string          `json:"inputDescription,omitempty"`
-	OutputDescription string          `json:"outputDescription,omitempty"`
-	OutputExample     string          `json:"outputExample,omitempty"`
-	Arguments         []*MemberSchema `json:"arguments,omitempty"`
-	ResultType        *TypeSchema     `json:"resultType,omitempty"`
+	Name               string          `json:"name"`
+	SkelName           string          `json:"skelName"`
+	Description        string          `json:"description,omitempty"`
+	Hash               string          `json:"hash"`
+	Example            string          `json:"example,omitempty"`
+	AuthMode           AuthMode        `json:"authMode"`
+	Require            *PermRequire    `json:"require,omitempty"`
+	InputDescription   string          `json:"inputDescription,omitempty"`
+	ArgumentsSensitive bool            `json:"argumentsSensitive,omitempty"`
+	OutputDescription  string          `json:"outputDescription,omitempty"`
+	OutputExample      string          `json:"outputExample,omitempty"`
+	ResultSensitive    bool            `json:"resultSensitive,omitempty"`
+	Arguments          []*MemberSchema `json:"arguments,omitempty"`
+	ResultType         *TypeSchema     `json:"resultType,omitempty"`
 }
 
 type ResourceSchema struct {
@@ -211,19 +216,20 @@ type TaskSchema struct {
 }
 
 type TriggerSchema struct {
-	Name             string          `json:"name"`
-	SkelName         string          `json:"skelName"`
-	Description      string          `json:"description,omitempty"`
-	Hash             string          `json:"hash"`
-	Example          string          `json:"example,omitempty"`
-	InputDescription string          `json:"inputDescription,omitempty"`
-	Arguments        []*MemberSchema `json:"arguments,omitempty"`
+	Name               string          `json:"name"`
+	SkelName           string          `json:"skelName"`
+	Description        string          `json:"description,omitempty"`
+	Hash               string          `json:"hash"`
+	InputDescription   string          `json:"inputDescription,omitempty"`
+	ArgumentsSensitive bool            `json:"argumentsSensitive,omitempty"`
+	Arguments          []*MemberSchema `json:"arguments,omitempty"`
 }
 
 type MemberSchema struct {
 	Name        string      `json:"name"`
 	Description string      `json:"description,omitempty"`
 	Example     string      `json:"example,omitempty"`
+	Sensitive   bool        `json:"sensitive,omitempty"`
 	Type        *TypeSchema `json:"type"`
 }
 

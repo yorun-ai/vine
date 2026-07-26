@@ -108,6 +108,29 @@ func testRpcLogMethodInfo() spec.MethodInfo {
 	}).Methods()[0]
 }
 
+func TestRenderRpcPayloadUsesWholeSensitiveMetadata(t *testing.T) {
+	method := spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
+		Name:     "SensitiveService",
+		SkelName: "rpc.log.sensitive",
+		Methods: []*spec.MethodSpec{{
+			Name:               "Secret",
+			SkelName:           "secret",
+			ArgumentsSensitive: true,
+			ResultSensitive:    true,
+		}},
+	}).Methods()[0]
+
+	for _, surface := range []logger.PayloadSurface{
+		logger.PayloadSurfaceRpcArguments,
+		logger.PayloadSurfaceRpcResult,
+	} {
+		payload := renderRpcPayload(method, surface, map[string]string{"value": "secret"})
+		if !payload.Redacted || payload.JSON != `"<redacted>"` {
+			t.Fatalf("unexpected %s payload: %#v", surface, payload)
+		}
+	}
+}
+
 func assertSpanField(t *testing.T, span *Span, key string, want any) {
 	t.Helper()
 

@@ -21,6 +21,7 @@ func TestConvertSpecToInfoForTestBuildsTriggerInfo(t *testing.T) {
 			LauncherMethodName: "LaunchAtTime",
 			RunnerMethodName:   "RunAtTime",
 			ArgumentsType:      reflect.TypeOf(testInfoTaskArguments{}),
+			ArgumentsSensitive: true,
 		}},
 	})
 
@@ -42,5 +43,8 @@ func TestConvertSpecToInfoForTestBuildsTriggerInfo(t *testing.T) {
 	}
 	if triggerInfo.RunnerMethodName() != "RunAtTime" {
 		t.Fatalf("unexpected runner method name: %s", triggerInfo.RunnerMethodName())
+	}
+	if !triggerInfo.ArgumentsSensitive() {
+		t.Fatal("expected trigger arguments to be sensitive")
 	}
 }

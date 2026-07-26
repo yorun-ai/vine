@@ -10,6 +10,7 @@ type payloadTestValue struct {
 	Name          string `json:"name"`
 	AccessToken   string `json:"access_token"`
 	Authorization string `json:"Authorization"`
+	PrivateNote   string `json:"privateNote" skel:"sensitive"`
 	Data          []byte `json:"data"`
 }
 
@@ -45,6 +46,7 @@ func TestRenderPayloadRedactsSensitiveKeysAndBinary(t *testing.T) {
 		Name:          "Alice",
 		AccessToken:   "secret-token",
 		Authorization: "Bearer secret",
+		PrivateNote:   "tagged-secret",
 		Data:          []byte("binary-secret"),
 	})
 
@@ -54,11 +56,39 @@ func TestRenderPayloadRedactsSensitiveKeysAndBinary(t *testing.T) {
 	if !result.Redacted {
 		t.Fatal("expected redaction marker")
 	}
-	if strings.Contains(result.JSON, "secret-token") || strings.Contains(result.JSON, "Bearer secret") || strings.Contains(result.JSON, "binary-secret") {
+	if strings.Contains(result.JSON, "secret-token") || strings.Contains(result.JSON, "Bearer secret") ||
+		strings.Contains(result.JSON, "tagged-secret") || strings.Contains(result.JSON, "binary-secret") {
 		t.Fatalf("sensitive payload leaked: %s", result.JSON)
 	}
-	if !strings.Contains(result.JSON, `"access_token":"<redacted>"`) || !strings.Contains(result.JSON, `"data":"<binary:13 bytes>"`) {
+	if !strings.Contains(result.JSON, `"access_token":"<redacted>"`) ||
+		!strings.Contains(result.JSON, `"privateNote":"<redacted>"`) ||
+		!strings.Contains(result.JSON, `"data":"<binary:13 bytes sha256=`) {
 		t.Fatalf("unexpected safe projection: %s", result.JSON)
+	}
+}
+
+func TestRenderPayloadRedactsSensitiveDescriptorAsAWhole(t *testing.T) {
+	resetPayloadPoliciesForTest(t)
+	descriptor := PayloadDescriptor{
+		Surface:            PayloadSurfaceRpcArguments,
+		Sensitive:          true,
+		RpcServiceSkelName: "demo.SecretService",
+		RpcMethodSkelName:  "exchange",
+	}
+	result := RenderPayload(descriptor, map[string]string{"value": "secret"})
+	if !result.Redacted || result.JSON != `"<redacted>"` {
+		t.Fatalf("unexpected safe projection: %#v", result)
+	}
+
+	RegisterRpcPayloadPolicy(
+		descriptor.RpcServiceSkelName,
+		descriptor.RpcMethodSkelName,
+		descriptor.Surface,
+		PayloadPolicy{Mode: PayloadModeUnsafeFull},
+	)
+	result = RenderPayload(descriptor, map[string]string{"value": "visible"})
+	if result.Redacted || result.JSON != `{"value":"visible"}` {
+		t.Fatalf("unexpected unsafe projection: %#v", result)
 	}
 }
 

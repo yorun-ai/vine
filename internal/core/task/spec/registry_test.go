@@ -83,6 +83,7 @@ func ensureInfoTaskRegistered() {
 				LauncherMethodName: "LaunchForGroup",
 				RunnerMethodName:   "RunForGroup",
 				ArgumentsType:      reflect.TypeOf(testInfoTaskArguments{}),
+				ArgumentsSensitive: true,
 			}},
 		})
 	})
@@ -103,5 +104,8 @@ func TestGetTriggerInfoReturnsRegisteredTrigger(t *testing.T) {
 	}
 	if triggerInfo.RunnerMethodName() != "RunForGroup" {
 		t.Fatalf("unexpected runner method name: %+v", triggerInfo)
+	}
+	if !triggerInfo.ArgumentsSensitive() {
+		t.Fatal("expected trigger arguments to be sensitive")
 	}
 }

@@ -10,6 +10,14 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+type facadeSensitiveValue struct{}
+
+func (facadeSensitiveValue) SkelSensitive() {}
+
+func TestSensitiveMarkerInterface(t *testing.T) {
+	var _ Sensitive = facadeSensitiveValue{}
+}
+
 func TestFacadeBinaryJSONRoundTrip(t *testing.T) {
 	type payload struct {
 		Value Binary `json:"value"`

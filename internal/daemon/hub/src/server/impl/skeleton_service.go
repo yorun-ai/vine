@@ -490,7 +490,6 @@ func toServerSkeletonTask(version _SkeletonVersionFields, schema *skel.TaskSchem
 			SkelName:         trigger.SkelName,
 			Description:      optionalString(trigger.Description),
 			InputDescription: optionalString(trigger.InputDescription),
-			Example:          optionalString(trigger.Example),
 			Arguments:        toServerSkeletonFields(trigger.Arguments),
 		})
 	}

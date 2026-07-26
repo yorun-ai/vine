@@ -27,6 +27,7 @@ type TriggerInfo interface {
 	LauncherMethodName() string
 	RunnerMethodName() string
 	ArgumentsType() reflect.Type
+	ArgumentsSensitive() bool
 	Task() TaskInfo
 	HasArguments() bool
 	NewArguments() any
@@ -64,7 +65,8 @@ type TriggerSpec struct {
 	LauncherMethodName string
 	RunnerMethodName   string
 
-	ArgumentsType reflect.Type
+	ArgumentsType      reflect.Type
+	ArgumentsSensitive bool
 
 	info *_TriggerInfo
 }
@@ -146,6 +148,7 @@ type _TriggerInfo struct {
 	runnerMethodName   string
 
 	argumentsType      reflect.Type
+	argumentsSensitive bool
 	argumentFieldInfos []_ArgumentFieldInfo
 
 	task TaskInfo
@@ -169,6 +172,10 @@ func (ti *_TriggerInfo) RunnerMethodName() string {
 
 func (ti *_TriggerInfo) ArgumentsType() reflect.Type {
 	return ti.argumentsType
+}
+
+func (ti *_TriggerInfo) ArgumentsSensitive() bool {
+	return ti.argumentsSensitive
 }
 
 func (ti *_TriggerInfo) Task() TaskInfo {

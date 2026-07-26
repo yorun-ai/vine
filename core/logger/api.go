@@ -65,11 +65,13 @@ const (
 type PayloadMode = internallogger.PayloadMode
 
 const (
-	// PayloadModeSafe applies built-in sensitive-key redaction.
+	// PayloadModeSafe applies core/redact masking to tagged fields and common
+	// sensitive key names.
 	PayloadModeSafe = internallogger.PayloadModeSafe
 	// PayloadModeOff disables payload logging for a selector.
 	PayloadModeOff = internallogger.PayloadModeOff
-	// PayloadModeUnsafeFull skips sensitive-key redaction for an exact selector.
+	// PayloadModeUnsafeFull reveals ordinary sensitive values for an exact
+	// selector. Binary values remain summarized.
 	PayloadModeUnsafeFull = internallogger.PayloadModeUnsafeFull
 )
 

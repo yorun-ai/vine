@@ -142,7 +142,6 @@ func toTaskDebugTriggerItem(trigger *skel.TriggerSchema) skeled.TaskDebugTrigger
 		SkelName:         trigger.SkelName,
 		Description:      optionalString(trigger.Description),
 		InputDescription: optionalString(trigger.InputDescription),
-		Example:          optionalString(trigger.Example),
 		Arguments:        toDebugSkeletonFields(trigger.Arguments),
 	}
 }

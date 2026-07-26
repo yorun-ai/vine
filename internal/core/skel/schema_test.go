@@ -1,9 +1,65 @@
 package skel
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 )
+
+func TestSchemaSensitiveMetadataJSON(t *testing.T) {
+	schema := &DomainSchema{
+		Domain: "demo.user",
+		Hash:   "domain-hash",
+		Data: []*DataSchema{{
+			Name:      "Credential",
+			SkelName:  "demo.user.Credential",
+			Hash:      "data-hash",
+			Sensitive: true,
+			Members: []*MemberSchema{{
+				Name:      "token",
+				Sensitive: true,
+				Type:      &TypeSchema{Kind: TypeKindScalar, Scalar: ScalarString},
+			}},
+		}},
+		Services: []*ServiceSchema{{
+			Name:     "CredentialService",
+			SkelName: "demo.user.CredentialService",
+			Hash:     "service-hash",
+			Methods: []*MethodSchema{{
+				Name:               "Exchange",
+				SkelName:           "exchange",
+				Hash:               "method-hash",
+				ArgumentsSensitive: true,
+				ResultSensitive:    true,
+			}},
+		}},
+		Tasks: []*TaskSchema{{
+			Name:     "RotateCredentialTask",
+			SkelName: "demo.user.RotateCredentialTask",
+			Hash:     "task-hash",
+			Triggers: []*TriggerSchema{{
+				Name:               "Manually",
+				SkelName:           "manually",
+				Hash:               "trigger-hash",
+				ArgumentsSensitive: true,
+			}},
+		}},
+	}
+
+	encoded, err := json.Marshal(schema)
+	if err != nil {
+		t.Fatalf("marshal schema: %v", err)
+	}
+	for _, expected := range []string{
+		`"sensitive":true`,
+		`"argumentsSensitive":true`,
+		`"resultSensitive":true`,
+	} {
+		if !strings.Contains(string(encoded), expected) {
+			t.Fatalf("expected %s in schema JSON: %s", expected, encoded)
+		}
+	}
+}
 
 func TestRegisterDomainSchemaPanicsOnDuplicatePartialDomain(t *testing.T) {
 	schemasByDomain = map[string]*DomainSchema{}

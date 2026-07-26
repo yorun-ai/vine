@@ -111,6 +111,7 @@ type MethodInfo interface {
 	HasArguments() bool
 	NewArguments() any
 	ArgumentsType() reflect.Type
+	ArgumentsSensitive() bool
 	ArgumentsContainsBinaryType() bool
 	PositionArguments(arguments any) []any
 	ValidateArguments(any) error
@@ -118,6 +119,7 @@ type MethodInfo interface {
 	HasResult() bool
 	NewResult() any
 	ResultType() reflect.Type
+	ResultSensitive() bool
 	ResultContainsBinaryType() bool
 	ValidateResult(any) error
 }
@@ -130,11 +132,13 @@ type _MethodInfo struct {
 	fullURLPath   string
 
 	argumentsType               reflect.Type
+	argumentsSensitive          bool
 	argumentsContainsBinaryType bool
 	argumentFieldInfos          []_ArgumentFieldInfo
 	validateArguments           func(any) error
 
 	resultType               reflect.Type
+	resultSensitive          bool
 	resultContainsBinaryType bool
 	validateResult           func(any) error
 }
@@ -165,6 +169,10 @@ func (mi *_MethodInfo) NewArguments() any {
 
 func (mi *_MethodInfo) ArgumentsType() reflect.Type {
 	return mi.argumentsType
+}
+
+func (mi *_MethodInfo) ArgumentsSensitive() bool {
+	return mi.argumentsSensitive
 }
 
 func (mi *_MethodInfo) ArgumentsContainsBinaryType() bool {
@@ -198,6 +206,10 @@ func (mi *_MethodInfo) NewResult() any {
 
 func (mi *_MethodInfo) ResultType() reflect.Type {
 	return mi.resultType
+}
+
+func (mi *_MethodInfo) ResultSensitive() bool {
+	return mi.resultSensitive
 }
 
 func (mi *_MethodInfo) ResultContainsBinaryType() bool {

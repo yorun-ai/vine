@@ -238,6 +238,12 @@ func renderRpcPayload(method spec.MethodInfo, surface logger.PayloadSurface, val
 	descriptor := logger.PayloadDescriptor{Surface: surface}
 	if method != nil {
 		descriptor.RpcMethodSkelName = method.SkelName()
+		switch surface {
+		case logger.PayloadSurfaceRpcArguments:
+			descriptor.Sensitive = method.ArgumentsSensitive()
+		case logger.PayloadSurfaceRpcResult:
+			descriptor.Sensitive = method.ResultSensitive()
+		}
 		if method.Service() != nil {
 			descriptor.RpcServiceSkelName = method.Service().SkelName()
 		}

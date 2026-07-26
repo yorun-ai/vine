@@ -20,6 +20,11 @@ import (
 
 const timestampLayout = time.RFC3339Nano
 
+// Sensitive is implemented by generated values that are sensitive as a whole.
+type Sensitive interface {
+	SkelSensitive()
+}
+
 // Decimal is the shared skel decimal type.
 // It is encoded as a decimal string in both JSON and CBOR.
 type Decimal struct {

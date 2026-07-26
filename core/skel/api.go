@@ -9,6 +9,9 @@ import (
 	internalskel "go.yorun.ai/vine/internal/core/skel"
 )
 
+// Sensitive is implemented by generated values that are sensitive as a whole.
+type Sensitive = internalskel.Sensitive
+
 // Decimal is the runtime representation of the Skel decimal scalar.
 type Decimal = internalskel.Decimal
 

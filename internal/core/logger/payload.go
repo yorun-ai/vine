@@ -1,18 +1,10 @@
 package logger
 
 import (
-	"bytes"
-	"encoding"
-	"encoding/json"
-	"fmt"
-	"math"
-	"reflect"
-	"sort"
-	"strings"
 	"sync"
 	"sync/atomic"
-	"unicode/utf8"
 
+	"go.yorun.ai/vine/internal/core/redact"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -35,6 +27,8 @@ const (
 type PayloadDescriptor struct {
 	// Surface identifies the log field being rendered.
 	Surface PayloadSurface
+	// Sensitive marks the entire payload as sensitive.
+	Sensitive bool
 	// RpcServiceSkelName and RpcMethodSkelName identify an exact Rpc selector.
 	RpcServiceSkelName string
 	RpcMethodSkelName  string
@@ -145,23 +139,16 @@ func RenderPayload(descriptor PayloadDescriptor, value any) (result PayloadValue
 		}
 	}
 
-	state := new(_PayloadProjectionState{
-		mode:     policy.Mode,
-		visiting: map[_PayloadVisit]struct{}{},
+	rendered, err := redact.Render(value, redact.Option{
+		RevealSensitive: policy.Mode == PayloadModeUnsafeFull,
+		Sensitive:       descriptor.Sensitive,
 	})
-	projected, err := state.project(reflect.ValueOf(value), "")
 	if err != nil {
 		return PayloadValue{OmittedReason: "serialization_failed"}
 	}
-	var encoded bytes.Buffer
-	encoder := json.NewEncoder(&encoded)
-	encoder.SetEscapeHTML(false)
-	if err := encoder.Encode(projected); err != nil {
-		return PayloadValue{OmittedReason: "serialization_failed"}
-	}
 	return PayloadValue{
-		JSON:     strings.TrimSuffix(encoded.String(), "\n"),
-		Redacted: state.redacted,
+		JSON:     rendered.JSON,
+		Redacted: rendered.Redacted,
 	}
 }
 
@@ -224,239 +211,4 @@ func validatePayloadSurface(surface PayloadSurface) {
 	vpre.Check(surface == PayloadSurfaceRpcArguments ||
 		surface == PayloadSurfaceRpcResult ||
 		surface == PayloadSurfaceEvent, "%+v is not a valid payload surface", surface)
-}
-
-type _PayloadVisit struct {
-	kind reflect.Kind
-	ptr  uintptr
-}
-
-type _PayloadProjectionState struct {
-	mode     PayloadMode
-	visiting map[_PayloadVisit]struct{}
-	redacted bool
-}
-
-func (s *_PayloadProjectionState) project(value reflect.Value, key string) (any, error) {
-	if key != "" && s.mode == PayloadModeSafe && isSensitivePayloadKey(key) {
-		s.redacted = true
-		return "<redacted>", nil
-	}
-	if !value.IsValid() {
-		return nil, nil
-	}
-	for value.Kind() == reflect.Interface || value.Kind() == reflect.Pointer {
-		if value.IsNil() {
-			return nil, nil
-		}
-		if value.Kind() == reflect.Pointer {
-			visit := _PayloadVisit{kind: value.Kind(), ptr: value.Pointer()}
-			if _, exists := s.visiting[visit]; exists {
-				return "<cycle>", nil
-			}
-			s.visiting[visit] = struct{}{}
-			defer delete(s.visiting, visit)
-		}
-		value = value.Elem()
-	}
-
-	if isBinaryPayload(value) {
-		return fmt.Sprintf("<binary:%d bytes>", value.Len()), nil
-	}
-	if marshaled, ok, err := marshalPayloadValue(value); ok || err != nil {
-		if err != nil {
-			return nil, err
-		}
-		return s.project(reflect.ValueOf(marshaled), key)
-	}
-
-	switch value.Kind() {
-	case reflect.Bool:
-		return value.Bool(), nil
-	case reflect.String:
-		return strings.ToValidUTF8(value.String(), "�"), nil
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return value.Int(), nil
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return value.Uint(), nil
-	case reflect.Float32, reflect.Float64:
-		floatValue := value.Float()
-		if math.IsNaN(floatValue) || math.IsInf(floatValue, 0) {
-			return "<non-finite-number>", nil
-		}
-		return floatValue, nil
-	case reflect.Complex64, reflect.Complex128:
-		return fmt.Sprintf("<complex:%v>", value.Complex()), nil
-	case reflect.Struct:
-		return s.projectStruct(value)
-	case reflect.Map:
-		return s.projectMap(value)
-	case reflect.Slice, reflect.Array:
-		return s.projectList(value)
-	case reflect.Invalid:
-		return nil, nil
-	default:
-		return "<" + value.Type().String() + ">", nil
-	}
-}
-
-func (s *_PayloadProjectionState) projectStruct(value reflect.Value) (map[string]any, error) {
-	result := map[string]any{}
-	for index := range value.NumField() {
-		fieldInfo := value.Type().Field(index)
-		if fieldInfo.PkgPath != "" {
-			continue
-		}
-		name, embedded, skip := payloadFieldName(fieldInfo)
-		if skip {
-			continue
-		}
-		fieldValue := value.Field(index)
-		if embedded {
-			projected, err := s.project(fieldValue, "")
-			if err != nil {
-				return nil, err
-			}
-			if object, ok := projected.(map[string]any); ok {
-				for embeddedName, embeddedValue := range object {
-					result[embeddedName] = embeddedValue
-				}
-			}
-			continue
-		}
-		projected, err := s.project(fieldValue, name)
-		if err != nil {
-			return nil, err
-		}
-		result[name] = projected
-	}
-	return result, nil
-}
-
-func (s *_PayloadProjectionState) projectMap(value reflect.Value) (map[string]any, error) {
-	if value.IsNil() {
-		return nil, nil
-	}
-	visit := _PayloadVisit{kind: value.Kind(), ptr: value.Pointer()}
-	if _, exists := s.visiting[visit]; exists {
-		return map[string]any{"_value": "<cycle>"}, nil
-	}
-	s.visiting[visit] = struct{}{}
-	defer delete(s.visiting, visit)
-
-	if value.Type().Key().Kind() != reflect.String {
-		return map[string]any{"_value": "<unsupported-map-key>"}, nil
-	}
-	keys := value.MapKeys()
-	sort.Slice(keys, func(i, j int) bool { return keys[i].String() < keys[j].String() })
-	result := make(map[string]any, len(keys))
-	for _, mapKey := range keys {
-		name := mapKey.String()
-		if s.mode == PayloadModeSafe && isSensitivePayloadKey(name) {
-			s.redacted = true
-			result[name] = "<redacted>"
-			continue
-		}
-		projected, err := s.project(value.MapIndex(mapKey), name)
-		if err != nil {
-			return nil, err
-		}
-		result[name] = projected
-	}
-	return result, nil
-}
-
-func (s *_PayloadProjectionState) projectList(value reflect.Value) ([]any, error) {
-	if value.Kind() == reflect.Slice && value.IsNil() {
-		return nil, nil
-	}
-	var visit _PayloadVisit
-	if value.Kind() == reflect.Slice {
-		visit = _PayloadVisit{kind: value.Kind(), ptr: value.Pointer()}
-		if _, exists := s.visiting[visit]; exists {
-			return []any{"<cycle>"}, nil
-		}
-		s.visiting[visit] = struct{}{}
-		defer delete(s.visiting, visit)
-	}
-	result := make([]any, value.Len())
-	for index := range value.Len() {
-		projected, err := s.project(value.Index(index), "")
-		if err != nil {
-			return nil, err
-		}
-		result[index] = projected
-	}
-	return result, nil
-}
-
-func payloadFieldName(field reflect.StructField) (name string, embedded bool, skip bool) {
-	tag := field.Tag.Get("json")
-	if tag == "-" {
-		return "", false, true
-	}
-	name, _, _ = strings.Cut(tag, ",")
-	if name != "" {
-		return name, false, false
-	}
-	if field.Anonymous {
-		return "", true, false
-	}
-	return field.Name, false, false
-}
-
-func marshalPayloadValue(value reflect.Value) (any, bool, error) {
-	if !value.IsValid() || !value.CanInterface() {
-		return nil, false, nil
-	}
-	if marshaler, ok := value.Interface().(json.Marshaler); ok {
-		encoded, err := marshaler.MarshalJSON()
-		if err != nil {
-			return nil, true, err
-		}
-		decoder := json.NewDecoder(bytes.NewReader(encoded))
-		decoder.UseNumber()
-		var decoded any
-		if err := decoder.Decode(&decoded); err != nil {
-			return nil, true, err
-		}
-		return decoded, true, nil
-	}
-	if marshaler, ok := value.Interface().(encoding.TextMarshaler); ok {
-		encoded, err := marshaler.MarshalText()
-		if err != nil {
-			return nil, true, err
-		}
-		if !utf8.Valid(encoded) {
-			encoded = bytes.ToValidUTF8(encoded, []byte("�"))
-		}
-		return string(encoded), true, nil
-	}
-	return nil, false, nil
-}
-
-func isBinaryPayload(value reflect.Value) bool {
-	if value.Kind() != reflect.Slice && value.Kind() != reflect.Array {
-		return false
-	}
-	return value.Type().Elem().Kind() == reflect.Uint8
-}
-
-func isSensitivePayloadKey(key string) bool {
-	normalized := strings.Map(func(r rune) rune {
-		if r == '-' || r == '_' {
-			return -1
-		}
-		if r >= 'A' && r <= 'Z' {
-			return r + ('a' - 'A')
-		}
-		return r
-	}, key)
-	switch normalized {
-	case "password", "passwd", "pwd", "token", "accesstoken", "refreshtoken", "secret",
-		"authorization", "cookie", "setcookie", "apikey", "privatekey", "credential":
-		return true
-	default:
-		return false
-	}
 }
