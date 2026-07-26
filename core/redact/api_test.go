@@ -62,7 +62,19 @@ func TestRenderSkelScalars(t *testing.T) {
 	if !strings.Contains(result.JSON, `"id":"123e4567-e89b-12d3-a456-426614174000"`) {
 		t.Fatalf("UUID should keep its scalar representation: %s", result.JSON)
 	}
-	if strings.Contains(result.JSON, "secret") || !strings.Contains(result.JSON, "<binary:6 bytes sha256=") {
+	if strings.Contains(result.JSON, "secret") || !strings.Contains(result.JSON, "<binary:6 bytes>") {
 		t.Fatalf("binary should be summarized: %s", result.JSON)
+	}
+}
+
+func TestRenderPublicLimits(t *testing.T) {
+	limits := redact.DefaultLimits()
+	limits.MaxStringBytes = 3
+	result, err := redact.Render("value", redact.Option{Limits: &limits})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	if !result.Truncated || result.JSON != `"<truncated:string bytes=5>"` {
+		t.Fatalf("unexpected truncation: %#v", result)
 	}
 }

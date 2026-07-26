@@ -121,7 +121,8 @@ func (s *Server) runTask(taskRun spec.Run) (responseErr ex.Error) {
 		taskRun.Context().Trace(),
 		taskRun.TriggerInfo(),
 		taskRun.Context().Launcher(),
-		s.opt.App)
+		s.opt.App,
+		taskRun.Arguments())
 
 	defer func() { logSpan.Finish(logErr) }()
 

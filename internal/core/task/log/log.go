@@ -6,6 +6,7 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
+	"go.yorun.ai/vine/internal/core/redact"
 	"go.yorun.ai/vine/internal/core/task/spec"
 )
 
@@ -14,6 +15,11 @@ type Span struct {
 	finishMsg string
 	startedAt time.Time
 	fields    []any
+}
+
+type _ArgumentsValue struct {
+	result redact.Result
+	err    error
 }
 
 func Noop() *Span {
@@ -33,13 +39,61 @@ func LauncherLaunchSuccess(log *logger.Logger, trace meta.Trace, trigger spec.Tr
 	log.Debug("task launcher launch success", fields...)
 }
 
-func StartRunnerHandle(log *logger.Logger, trace meta.Trace, trigger spec.TriggerInfo, launcher meta.App, runner meta.App) *Span {
+func StartRunnerHandle(
+	log *logger.Logger,
+	trace meta.Trace,
+	trigger spec.TriggerInfo,
+	launcher meta.App,
+	runner meta.App,
+	arguments ...any,
+) *Span {
 	span := Start(log, "task runner handle started", "task runner handle finished", trace, trigger, launcher)
 	span.AddApp("runner", runner)
-	if log != nil {
-		log.Debug("task runner handle started", span.fields...)
+	if log == nil {
+		return span
 	}
+	if len(arguments) > 0 && log.Enabled(logger.LevelDebug) {
+		value := renderArguments(trigger, arguments[0])
+		span.fields = appendArgumentsFields(span.fields, value)
+	}
+	log.Debug("task runner handle started", span.fields...)
+	span.fields = removeArgumentsFields(span.fields)
 	return span
+}
+
+func renderArguments(trigger spec.TriggerInfo, value any) _ArgumentsValue {
+	sensitive := trigger != nil && trigger.ArgumentsSensitive()
+	result, err := redact.Render(value, redact.Option{RootSensitive: sensitive})
+	return _ArgumentsValue{result: result, err: err}
+}
+
+func appendArgumentsFields(fields []any, arguments _ArgumentsValue) []any {
+	if arguments.err != nil {
+		return append(fields, "taskArgumentsOmittedReason", "redact_failed")
+	}
+	if arguments.result.JSON != "" {
+		fields = append(fields, "taskArguments", arguments.result.JSON)
+	}
+	if arguments.result.Redacted {
+		fields = append(fields, "taskArgumentsRedacted", true)
+	}
+	if arguments.result.Truncated {
+		fields = append(fields, "taskArgumentsTruncated", true)
+	}
+	return fields
+}
+
+func removeArgumentsFields(fields []any) []any {
+	result := fields[:0]
+	for index := 0; index+1 < len(fields); index += 2 {
+		key, _ := fields[index].(string)
+		if key == "taskArguments" || key == "taskArgumentsRedacted" ||
+			key == "taskArgumentsTruncated" || key == "taskArgumentsOmittedReason" {
+			continue
+		}
+		result = append(result, fields[index], fields[index+1])
+	}
+	return result
 }
 
 func Start(log *logger.Logger, startMsg string, finishMsg string, trace meta.Trace, trigger spec.TriggerInfo, launcher meta.App) *Span {

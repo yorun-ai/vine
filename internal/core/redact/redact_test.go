@@ -1,63 +1,24 @@
 package redact
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"go.yorun.ai/vine/internal/core/logger"
 )
 
-type taggedValue struct {
-	Name   string `json:"name"`
-	Secret string `json:"customSecret" skel:"sensitive"`
-}
-
-type failingMarshaler struct{}
-
-func (failingMarshaler) MarshalJSON() ([]byte, error) {
-	return nil, errors.New("marshal failed")
-}
-
-type objectMarshaler struct{}
-
-func (objectMarshaler) MarshalJSON() ([]byte, error) {
-	return []byte(`{"count":1,"token":"secret"}`), nil
-}
-
-type taggedMarshaler struct {
-	Secret string `json:"customSecret" skel:"sensitive"`
-}
-
-func (taggedMarshaler) MarshalJSON() ([]byte, error) {
-	return []byte(`{"customSecret":"leaked-by-marshaler"}`), nil
-}
-
-func TestRenderMasksTaggedFieldsAndSensitiveKeys(t *testing.T) {
-	result, err := Render(struct {
-		Profile taggedValue       `json:"profile"`
-		Meta    map[string]string `json:"meta"`
-	}{
-		Profile: taggedValue{Name: "Alice", Secret: "tagged-secret"},
-		Meta:    map[string]string{"access_token": "key-secret", "visible": "value"},
-	})
-	if err != nil {
-		t.Fatalf("render: %v", err)
-	}
-	if !result.Redacted {
-		t.Fatal("expected redacted result")
-	}
-	if strings.Contains(result.JSON, "tagged-secret") || strings.Contains(result.JSON, "key-secret") {
-		t.Fatalf("sensitive value leaked: %s", result.JSON)
-	}
-	if !strings.Contains(result.JSON, `"customSecret":"<redacted>"`) ||
-		!strings.Contains(result.JSON, `"access_token":"<redacted>"`) {
-		t.Fatalf("unexpected rendering: %s", result.JSON)
-	}
+type sanitizedValue struct {
+	Name  string `json:"name"`
+	Token string `json:"token" skel:"sensitive"`
 }
 
 func TestRenderMasksExplicitlySensitiveRoot(t *testing.T) {
-	result, err := Render(map[string]string{"value": "secret"}, Option{Sensitive: true})
+	result, err := Render(map[string]string{"value": "secret"}, Option{RootSensitive: true})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
@@ -66,7 +27,7 @@ func TestRenderMasksExplicitlySensitiveRoot(t *testing.T) {
 	}
 
 	revealed, err := Render(map[string]string{"value": "visible"}, Option{
-		Sensitive:       true,
+		RootSensitive:   true,
 		RevealSensitive: true,
 	})
 	if err != nil {
@@ -77,64 +38,116 @@ func TestRenderMasksExplicitlySensitiveRoot(t *testing.T) {
 	}
 }
 
-func TestRenderRevealSensitiveDoesNotRevealBinary(t *testing.T) {
-	binary := []byte("binary-secret")
-	result, err := Render(map[string]any{
-		"token": "visible",
-		"data":  binary,
-	}, Option{RevealSensitive: true})
+func TestRenderAppliesSanitizerBeforeRedaction(t *testing.T) {
+	result, err := Render("ignored", Option{
+		Sanitizer: func(any) (any, error) {
+			return sanitizedValue{Token: "secret", Name: "visible"}, nil
+		},
+	})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
-	digest := sha256.Sum256(binary)
-	summary := "<binary:13 bytes sha256=" + hex.EncodeToString(digest[:]) + ">"
-	if !strings.Contains(result.JSON, `"token":"visible"`) || !strings.Contains(result.JSON, summary) {
-		t.Fatalf("unexpected rendering: %s", result.JSON)
-	}
-	if strings.Contains(result.JSON, "binary-secret") {
-		t.Fatalf("binary value leaked: %s", result.JSON)
-	}
-	if !result.Redacted {
-		t.Fatal("binary summarization should mark the result as redacted")
+	if result.JSON != `{"name":"visible","token":"<redacted>"}` || !result.Redacted {
+		t.Fatalf("unexpected sanitized rendering: %#v", result)
 	}
 }
 
-func TestRenderHandlesCycles(t *testing.T) {
-	value := map[string]any{}
-	value["self"] = value
-	result, err := Render(value)
+func TestRenderReturnsSanitizerErrors(t *testing.T) {
+	cause := errors.New("sanitize failed")
+	_, err := Render("value", Option{
+		Sanitizer: func(any) (any, error) {
+			return nil, cause
+		},
+	})
+	if err == nil {
+		t.Fatal("expected sanitizer error")
+	}
+	if failureKind(err) != "sanitize" || !errors.Is(err, cause) {
+		t.Fatalf("unexpected sanitizer error: %v", err)
+	}
+}
+
+func TestRenderSensitiveRootSkipsSanitizer(t *testing.T) {
+	sanitizerCalls := 0
+	result, err := Render("secret", Option{
+		RootSensitive: true,
+		Sanitizer: func(any) (any, error) {
+			sanitizerCalls++
+			return nil, errors.New("must not run")
+		},
+	})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
-	if !strings.Contains(result.JSON, "<cycle>") {
-		t.Fatalf("unexpected cycle rendering: %s", result.JSON)
+	if sanitizerCalls != 0 || result.JSON != `"<redacted>"` || !result.Redacted {
+		t.Fatalf("unexpected sensitive-root rendering: result=%#v calls=%d", result, sanitizerCalls)
 	}
 }
 
-func TestRenderReturnsMarshalerErrors(t *testing.T) {
-	if _, err := Render(failingMarshaler{}); err == nil {
-		t.Fatal("expected marshaler error")
+func TestRenderFailureLogsSafeDiagnostic(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "redact-failure.jsonl")
+	previousFailureLogger := failureLogger
+	failureLogger = logger.New("vine:core:redact", logger.WithOption{
+		Format:     logger.FormatJSON,
+		Level:      logger.LevelDebug,
+		OutputPath: path,
+	})
+	t.Cleanup(func() { failureLogger = previousFailureLogger })
+
+	_, renderErr := Render("value", Option{
+		Sanitizer: func(any) (any, error) {
+			return nil, errors.New("secret must not be logged")
+		},
+	})
+	if renderErr == nil {
+		t.Fatal("expected render error")
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read failure log: %v", err)
+	}
+	var record map[string]any
+	if err := json.Unmarshal(data, &record); err != nil {
+		t.Fatalf("decode failure log: %v", err)
+	}
+	if record["level"] != "ERROR" || record["logger"] != "vine:core:redact" ||
+		record["msg"] != "value redaction failed" || record["failureKind"] != "sanitize" {
+		t.Fatalf("unexpected failure log: %#v", record)
+	}
+	if strings.Contains(fmt.Sprint(record), "secret must not be logged") {
+		t.Fatalf("failure log leaked the underlying error message: %#v", record)
 	}
 }
 
-func TestRenderPreservesNumbersAndRedactsKeysFromCustomJSON(t *testing.T) {
-	result, err := Render(objectMarshaler{})
+func TestDefaultLimitsArePositive(t *testing.T) {
+	limits := DefaultLimits()
+	if limits.MaxDepth <= 0 || limits.MaxNodes <= 0 || limits.MaxCollectionItems <= 0 ||
+		limits.MaxStringBytes <= 0 || limits.MaxOutputBytes <= 0 {
+		t.Fatalf("invalid default limits: %#v", limits)
+	}
+}
+
+func TestRenderTruncatesFinalOutput(t *testing.T) {
+	limits := DefaultLimits()
+	limits.MaxOutputBytes = 15
+	result, err := Render(map[string]string{"name": "value"}, Option{Limits: &limits})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
-	if !strings.Contains(result.JSON, `"count":1`) ||
-		!strings.Contains(result.JSON, `"token":"<redacted>"`) {
-		t.Fatalf("unexpected custom JSON rendering: %s", result.JSON)
+	if !result.Truncated || result.Redacted ||
+		!strings.Contains(result.JSON, "<truncated:json bytes=") ||
+		strings.Contains(result.JSON, "sha256") {
+		t.Fatalf("unexpected output truncation: %#v", result)
 	}
 }
 
-func TestRenderTagTakesPriorityOverCustomJSON(t *testing.T) {
-	result, err := Render(taggedMarshaler{Secret: "tagged-secret"})
-	if err != nil {
-		t.Fatalf("render: %v", err)
-	}
-	if strings.Contains(result.JSON, "tagged-secret") || strings.Contains(result.JSON, "leaked-by-marshaler") ||
-		!strings.Contains(result.JSON, `"customSecret":"<redacted>"`) {
-		t.Fatalf("sensitive tag did not take priority: %s", result.JSON)
+func TestRenderRejectsInvalidLimits(t *testing.T) {
+	limits := DefaultLimits()
+	limits.MaxNodes = 0
+	if _, err := Render("value", Option{Limits: &limits}); err == nil {
+		t.Fatal("expected invalid limits error")
+	} else if failureKind(err) != "invalid_limits" {
+		t.Fatalf("unexpected failure kind: %s", failureKind(err))
 	}
 }

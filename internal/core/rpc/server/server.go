@@ -38,18 +38,16 @@ type Server struct {
 }
 
 func New(opt Option) *Server {
-	logger.FreezePayloadPolicies()
 	server := &Server{
 		opt:      &opt,
 		executor: opt.Executor,
+		infraLog: logger.New("vine:core:rpc"),
 	}
 	vpre.CheckNotNil(opt.App, "Rpc server requires an App")
 	if opt.Logger != nil {
 		server.log = opt.Logger
-		server.infraLog = opt.Logger
 	} else {
 		server.log = logger.New("app", opt.App.Name(), "rpc", "server")
-		server.infraLog = logger.New("vine", "rpc", "server", "infra")
 	}
 	server.init()
 	return server

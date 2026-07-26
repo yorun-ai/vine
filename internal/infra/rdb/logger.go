@@ -15,6 +15,8 @@ type _GormLogKey struct{}
 
 type _GormLoggerAdapter struct{}
 
+var fallbackLogger = logger.New("vine:infra:rdb")
+
 func newLogger() gormLogger.Interface {
 	return _GormLoggerAdapter{}
 }
@@ -78,5 +80,5 @@ func getLogger(ctx context.Context) *logger.Logger {
 			return requestLogger
 		}
 	}
-	return logger.New("vine", "rdb")
+	return fallbackLogger
 }

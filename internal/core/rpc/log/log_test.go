@@ -2,6 +2,7 @@ package log
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,7 +19,13 @@ import (
 
 type rpcLifecycleArguments struct {
 	UserID string `json:"userId" arg:"0"`
-	Token  string `json:"token" arg:"1"`
+	Token  string `json:"token" arg:"1" skel:"sensitive"`
+}
+
+type rpcFailingMarshaler struct{}
+
+func (rpcFailingMarshaler) MarshalJSON() ([]byte, error) {
+	return nil, errors.New("secret must not be logged")
 }
 
 func rpcLogTestClientPing() {}
@@ -120,14 +127,33 @@ func TestRenderRpcPayloadUsesWholeSensitiveMetadata(t *testing.T) {
 		}},
 	}).Methods()[0]
 
-	for _, surface := range []logger.PayloadSurface{
-		logger.PayloadSurfaceRpcArguments,
-		logger.PayloadSurfaceRpcResult,
+	for name, payload := range map[string]_PayloadValue{
+		rpcArgumentsField: renderRpcArguments(method, map[string]string{"value": "secret"}),
+		rpcResultField:    renderRpcResult(method, map[string]string{"value": "secret"}),
 	} {
-		payload := renderRpcPayload(method, surface, map[string]string{"value": "secret"})
-		if !payload.Redacted || payload.JSON != `"<redacted>"` {
-			t.Fatalf("unexpected %s payload: %#v", surface, payload)
+		if payload.err != nil || !payload.result.Redacted || payload.result.JSON != `"<redacted>"` {
+			t.Fatalf("unexpected %s payload: %#v", name, payload)
 		}
+	}
+}
+
+func TestRenderRpcPayloadReportsTruncation(t *testing.T) {
+	result := renderPayload(strings.Repeat("x", 4097), false)
+	if result.err != nil || !result.result.Truncated || result.result.Redacted ||
+		result.result.JSON != `"<truncated:string bytes=4097>"` {
+		t.Fatalf("unexpected truncated Rpc payload: %#v", result)
+	}
+}
+
+func TestRpcRedactFailureOmitsPayload(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "rpc-redact-failure.jsonl")
+	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
+
+	StartServerHandle(log, nil, testRpcLogMethodInfo(), nil, nil, rpcFailingMarshaler{})
+
+	records := readRpcLogRecords(t, path)
+	if len(records) != 1 || records[0]["rpcArgumentsOmittedReason"] != "redact_failed" {
+		t.Fatalf("unexpected lifecycle log: %#v", records)
 	}
 }
 
@@ -374,7 +400,16 @@ func TestMutedFailureMarksArgumentsOmittedWhenDebugWasDisabledAtStart(t *testing
 	assertSpanField(t, span, "rpcArgumentsOmittedReason", "debug_disabled_at_start")
 }
 
-func TestDisabledDebugDoesNotInvokePayloadSanitizer(t *testing.T) {
+type _CountingMarshaler struct {
+	calls *int
+}
+
+func (m _CountingMarshaler) MarshalJSON() ([]byte, error) {
+	*m.calls++
+	return []byte(`"value"`), nil
+}
+
+func TestDisabledDebugDoesNotRenderPayload(t *testing.T) {
 	method := spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
 		Name:     "LazyPayloadService",
 		SkelName: "rpc.log.test.lazy.payload",
@@ -385,25 +420,14 @@ func TestDisabledDebugDoesNotInvokePayloadSanitizer(t *testing.T) {
 			ResultType:    reflect.TypeFor[string](),
 		}},
 	}).Methods()[0]
-	sanitizerCalls := 0
-	logger.RegisterRpcPayloadPolicy(method.Service().SkelName(), method.SkelName(), logger.PayloadSurfaceRpcArguments, logger.PayloadPolicy{
-		Sanitizer: func(logger.PayloadDescriptor, any) (any, error) {
-			sanitizerCalls++
-			return map[string]string{"value": "safe"}, nil
-		},
-	})
-	logger.RegisterRpcPayloadPolicy(method.Service().SkelName(), method.SkelName(), logger.PayloadSurfaceRpcResult, logger.PayloadPolicy{
-		Sanitizer: func(logger.PayloadDescriptor, any) (any, error) {
-			sanitizerCalls++
-			return "safe", nil
-		},
-	})
+	renderCalls := 0
+	value := _CountingMarshaler{calls: &renderCalls}
 	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatText, Level: logger.LevelInfo})
 
-	span := StartServerHandle(log, nil, method, nil, nil, &rpcLifecycleArguments{})
-	span.FinishServer(nil, "result")
-	if sanitizerCalls != 0 {
-		t.Fatalf("payload sanitizer ran while Debug was disabled: %d", sanitizerCalls)
+	span := StartServerHandle(log, nil, method, nil, nil, value)
+	span.FinishServer(nil, value)
+	if renderCalls != 0 {
+		t.Fatalf("payload rendered while Debug was disabled: %d", renderCalls)
 	}
 }
 
@@ -418,10 +442,6 @@ func TestInternalTaskEventTransportNeverLogsRpcPayload(t *testing.T) {
 			ResultType:    reflect.TypeFor[string](),
 		}},
 	})).Methods()[0]
-	logger.RegisterRpcPayloadPolicy(method.Service().SkelName(), method.SkelName(), logger.PayloadSurfaceRpcArguments,
-		logger.PayloadPolicy{Mode: logger.PayloadModeUnsafeFull})
-	logger.RegisterRpcPayloadPolicy(method.Service().SkelName(), method.SkelName(), logger.PayloadSurfaceRpcResult,
-		logger.PayloadPolicy{Mode: logger.PayloadModeUnsafeFull})
 	path := filepath.Join(t.TempDir(), "rpc-internal-envelope.jsonl")
 	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
 

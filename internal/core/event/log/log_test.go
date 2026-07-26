@@ -2,6 +2,7 @@ package log
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -15,6 +16,17 @@ import (
 )
 
 type eventLogTestInfo struct{}
+
+type eventFailingMarshaler struct{}
+
+func (eventFailingMarshaler) MarshalJSON() ([]byte, error) {
+	return nil, errors.New("secret must not be logged")
+}
+
+type eventLogPayload struct {
+	UserID string `json:"userId"`
+	Cookie string `json:"cookie" skel:"sensitive"`
+}
 
 func (eventLogTestInfo) Name() string                        { return "Created" }
 func (eventLogTestInfo) SkelName() string                    { return "test.event.Created" }
@@ -36,9 +48,9 @@ var _ spec.EventInfo = eventLogTestInfo{}
 func TestListenerStartedLogsSafePayloadOnlyOnce(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "event.jsonl")
 	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
-	span := StartListenerHandle(log, meta.InitialTrace(), eventLogTestInfo{}, nil, nil, map[string]any{
-		"userId": "u-1",
-		"cookie": "private-cookie",
+	span := StartListenerHandle(log, meta.InitialTrace(), eventLogTestInfo{}, nil, nil, eventLogPayload{
+		UserID: "u-1",
+		Cookie: "private-cookie",
 	})
 	span.Finish(nil)
 
@@ -57,6 +69,26 @@ func TestListenerStartedLogsSafePayloadOnlyOnce(t *testing.T) {
 	}
 	if _, exists := finished["eventPayload"]; exists {
 		t.Fatalf("finished must not repeat Event payload: %#v", finished)
+	}
+}
+
+func TestRenderEventPayloadReportsTruncation(t *testing.T) {
+	result := renderEventPayload(strings.Repeat("x", 4097))
+	if result.err != nil || !result.result.Truncated || result.result.Redacted ||
+		result.result.JSON != `"<truncated:string bytes=4097>"` {
+		t.Fatalf("unexpected truncated Event payload: %#v", result)
+	}
+}
+
+func TestEventRedactFailureOmitsPayload(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "event-redact-failure.jsonl")
+	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
+
+	StartListenerHandle(log, nil, eventLogTestInfo{}, nil, nil, eventFailingMarshaler{})
+
+	records := readEventLogRecords(t, path)
+	if len(records) != 1 || records[0]["eventPayloadOmittedReason"] != "redact_failed" {
+		t.Fatalf("unexpected lifecycle log: %#v", records)
 	}
 }
 
