@@ -54,6 +54,7 @@ jobs:
           set -euo pipefail
 
           version="${RELEASE_TAG#v}"
+          ldflags="-s -w -X go.yorun.ai/vine/buildinfo.ldModuleVersion=$RELEASE_TAG"
           mkdir -p dist
 
           for target in \
@@ -66,23 +67,22 @@ jobs:
             goarch="${target#*/}"
             archive="vine_${version}_${goos}_${goarch}"
             stage="dist/$archive"
-            install_root="$RUNNER_TEMP/vine_${goos}_${goarch}"
 
             mkdir -p "$stage"
             GOOS="$goos" GOARCH="$goarch" CGO_ENABLED=0 \
-              GOPATH="$install_root" GOMODCACHE="$RUNNER_TEMP/go-mod" \
-              go install -trimpath -ldflags "-s -w" \
-                "go.yorun.ai/vine/cmd/vine@$RELEASE_TAG"
-            installed="$(find "$install_root/bin" -type f -name vine -print -quit)"
-            test -n "$installed"
-            cp "$installed" "$stage/vine"
-            go version -m "$stage/vine" | awk -v version="$RELEASE_TAG" '
-              $1 == "mod" && $2 == "go.yorun.ai/vine" && $3 == version { found = 1 }
+              GOMODCACHE="$RUNNER_TEMP/go-mod" \
+              go build -trimpath -ldflags "$ldflags" \
+                -o "$stage/vine" ./cmd/vine
+            go version -m "$stage/vine" | awk '
+              $1 == "mod" && $2 == "go.yorun.ai/vine" { found = 1 }
               END { exit !found }
             '
             cp LICENSE README.md THIRD_PARTY_LICENSES.txt "$stage/"
             tar -C dist -czf "dist/$archive.tar.gz" "$archive"
           done
+
+          dist/vine_${version}_linux_amd64/vine version --json |
+            grep -F "\"version\":\"$RELEASE_TAG\""
 
       - name: Create checksums
         run: |

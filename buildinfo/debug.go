@@ -19,7 +19,10 @@ func IsDevVersion(version string) bool {
 	return version == DevVersion
 }
 
-var readBuildInfo = debug.ReadBuildInfo
+var (
+	readBuildInfo   = debug.ReadBuildInfo
+	ldModuleVersion string
+)
 
 // DebugBuildInfo contains module and Go toolchain metadata for diagnostic output.
 type DebugBuildInfo struct {
@@ -35,8 +38,12 @@ type DebugBuildInfo struct {
 func MustDebugBuildInfo() DebugBuildInfo {
 	readInfo, ok := readBuildInfo()
 	vpre.Check(ok, "read Go build info failed")
+	rawVersion := readInfo.Main.Version
+	if ldModuleVersion != "" {
+		rawVersion = ldModuleVersion
+	}
 	return DebugBuildInfo{
-		Version:   moduleVersion(readInfo.Main.Version),
+		Version:   moduleVersion(rawVersion),
 		Platform:  runtime.GOOS + "/" + runtime.GOARCH,
 		GoVersion: readInfo.GoVersion,
 	}
