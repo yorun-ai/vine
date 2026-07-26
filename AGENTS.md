@@ -65,13 +65,13 @@
 
 ## Documentation
 
-- Public Vine documentation is maintained in `yorun-ai/vine-doc`
-  repository under `content/vine`, with English translations under
-  `i18n/en/docusaurus-plugin-content-docs-vine/current`.
+- Public Vine documentation is maintained in the `yorun-ai/vine-site`
+  repository. English source documents live under `docs`, and Simplified
+  Chinese translations live under
+  `i18n/zh-CN/docusaurus-plugin-content-docs/current`.
 - When changing public behavior, update the corresponding current documentation
-  in `vine-doc` in the same delivery and keep both locales synchronized.
-- Vine and skelc have independent documentation versions. Do not manually edit
-  versioned documentation snapshots in `vine-doc`.
+  in `vine-site` in the same delivery and keep both locales synchronized.
+- Do not manually edit versioned documentation snapshots in `vine-site`.
 
 ## Tests
 
@@ -98,6 +98,6 @@
   replace published module dependencies.
 - Run `go vet ./...` after changing public APIs, concurrency, reflection, or
   runtime wiring.
-- Run `pnpm build` in `vine-doc` after changing Vine public documentation there.
+- Run `pnpm build` in `vine-site` after changing Vine public documentation there.
 - After regenerating Skel code, inspect the generated diff and run all affected
   Go and frontend checks.

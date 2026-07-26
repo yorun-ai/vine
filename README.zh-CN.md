@@ -101,20 +101,20 @@ go run .
 
 ## 文档
 
-- [开始使用](https://yorun.ai/vine/getting-started)
-- [首个应用教程](https://yorun.ai/vine/tutorial-first-app)
-- [运行模式](https://yorun.ai/vine/deployment-modes)
-- [框架包索引](https://yorun.ai/vine/core-packages)
+- [开始使用](https://vine.yorun.ai/zh-CN/docs/getting-started)
+- [首个应用教程](https://vine.yorun.ai/zh-CN/docs/tutorial-first-app)
+- [运行模式](https://vine.yorun.ai/zh-CN/docs/deployment-modes)
+- [框架包索引](https://vine.yorun.ai/zh-CN/docs/core-packages)
 - [Go API 参考](https://pkg.go.dev/go.yorun.ai/vine)
-- [English documentation](https://yorun.ai/en/vine/)
+- [English documentation](https://vine.yorun.ai/docs/)
 
-文档站源码在 [`yorun-ai/vine-doc`](https://github.com/yorun-ai/vine-doc)
-中维护。在 `vine-doc` checkout 中本地预览：
+文档站源码在 [`yorun-ai/vine-site`](https://github.com/yorun-ai/vine-site)
+中维护。在 `vine-site` checkout 中本地预览：
 
 ```bash
-cd vine-doc
+cd vine-site
 pnpm install
-pnpm start
+pnpm dev:zh
 ```
 
 ## 安全状态
