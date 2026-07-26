@@ -106,15 +106,16 @@ and run all affected Go and frontend checks.
 
 ## Documentation
 
-Public documentation is maintained in
-[`yorun-ai/vine-doc`](https://github.com/yorun-ai/vine-doc) repository. Keep its
-Chinese and English Vine documentation trees synchronized:
+Public documentation is maintained in the
+[`yorun-ai/vine-site`](https://github.com/yorun-ai/vine-site) repository. Keep
+its English and Simplified Chinese documentation trees synchronized:
 
-- Chinese: `content/vine`
-- English: `i18n/en/docusaurus-plugin-content-docs-vine/current`
+- English: `docs`
+- Simplified Chinese:
+  `i18n/zh-CN/docusaurus-plugin-content-docs/current`
 
 Do not manually modify versioned documentation snapshots. After changing files
-in `vine-doc`, build both locales from that repository:
+in `vine-site`, build both locales from that repository:
 
 ```bash
 pnpm install

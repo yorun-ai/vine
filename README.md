@@ -101,21 +101,21 @@ When `hello from Vine` appears in the log, the complete standalone runtime and b
 
 ## Documentation
 
-- [Getting started](https://yorun.ai/en/vine/getting-started)
-- [Build your first application](https://yorun.ai/en/vine/tutorial-first-app)
-- [Deployment modes](https://yorun.ai/en/vine/deployment-modes)
-- [Framework package index](https://yorun.ai/en/vine/core-packages)
+- [Getting started](https://vine.yorun.ai/docs/getting-started)
+- [Build your first application](https://vine.yorun.ai/docs/tutorial-first-app)
+- [Deployment modes](https://vine.yorun.ai/docs/deployment-modes)
+- [Framework package index](https://vine.yorun.ai/docs/core-packages)
 - [Go API reference](https://pkg.go.dev/go.yorun.ai/vine)
-- [Documentation (Chinese)](https://yorun.ai/vine/)
+- [Documentation (Chinese)](https://vine.yorun.ai/zh-CN/docs/)
 
 The documentation site source is maintained in
-[`yorun-ai/vine-doc`](https://github.com/yorun-ai/vine-doc). Preview the site from
-a `vine-doc` checkout with:
+[`yorun-ai/vine-site`](https://github.com/yorun-ai/vine-site). Preview the site
+from a `vine-site` checkout with:
 
 ```bash
-cd vine-doc
+cd vine-site
 pnpm install
-pnpm start
+pnpm dev
 ```
 
 ## Security Status
