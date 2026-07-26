@@ -81,6 +81,18 @@ func TestInvokeServicePropagatesTimeoutAsRpcOptions(t *testing.T) {
 	}
 }
 
+func TestToDebugSkeletonFieldsIncludesSensitive(t *testing.T) {
+	fields := toDebugSkeletonFields([]*skel.MemberSchema{{
+		Name:      "token",
+		Sensitive: true,
+		Type:      &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString},
+	}})
+
+	if len(fields) != 1 || !fields[0].Sensitive {
+		t.Fatalf("fields = %#v, want one sensitive field", fields)
+	}
+}
+
 func mustDecodeDebugRpcOptions(t *testing.T, value string) *rpchttp.Options {
 	t.Helper()
 

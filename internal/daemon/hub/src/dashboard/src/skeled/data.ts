@@ -1190,6 +1190,10 @@ export type SkeletonConfigItem = {
    */
   pub:              boolean;
   /**
+   * Whether the config value is sensitive。
+   */
+  sensitive:        boolean;
+  /**
    * Config lifecycle。
    */
   lifecycle:        string;
@@ -1242,6 +1246,10 @@ export type SkeletonData = {
    * Whether it is Enum。
    */
   enum:             boolean;
+  /**
+   * Whether the data is sensitive。
+   */
+  sensitive:        boolean;
   /**
    * Type parameter list。
    */
@@ -1374,6 +1382,10 @@ export type SkeletonEventItem = {
    */
   pub:              boolean;
   /**
+   * Whether the event payload is sensitive。
+   */
+  sensitive:        boolean;
+  /**
    * Field list。
    */
   fields:           Array<SkeletonField>;
@@ -1398,6 +1410,10 @@ export type SkeletonField = {
    * Field example。
    */
   example:     string | null;
+  /**
+   * Whether the field is sensitive。
+   */
+  sensitive:   boolean;
 }
 /**
  * Skeleton method。
@@ -1406,47 +1422,55 @@ export type SkeletonMethod = {
   /**
    * Method name。
    */
-  name:              string;
+  name:               string;
   /**
    * Method Skel name。
    */
-  skelName:          string;
+  skelName:           string;
   /**
    * Method description。
    */
-  description:       string | null;
+  description:        string | null;
   /**
    * Input description。
    */
-  inputDescription:  string | null;
+  inputDescription:   string | null;
   /**
    * Output description。
    */
-  outputDescription: string | null;
+  outputDescription:  string | null;
   /**
    * Input example。
    */
-  example:           string | null;
+  example:            string | null;
   /**
    * Authentication mode。
    */
-  authMode:          string;
+  authMode:           string;
   /**
    * Permission requirements。
    */
-  require:           SkeletonPermExpr | null;
+  require:            SkeletonPermExpr | null;
   /**
    * Output example。
    */
-  outputExample:     string | null;
+  outputExample:      string | null;
   /**
    * Parameter list。
    */
-  arguments:         Array<SkeletonField>;
+  arguments:          Array<SkeletonField>;
+  /**
+   * Whether all input arguments are sensitive。
+   */
+  argumentsSensitive: boolean;
   /**
    * Return type。
    */
-  resultType:        string;
+  resultType:         string;
+  /**
+   * Whether the result is sensitive。
+   */
+  resultSensitive:    boolean;
 }
 /**
  * Skeleton permission verification call。
@@ -1543,19 +1567,23 @@ export type SkeletonResourceCheck = {
   /**
    * Check name。
    */
-  name:           string;
+  name:               string;
   /**
    * Check method name。
    */
-  methodName:     string;
+  methodName:         string;
   /**
    * Check method Skel name。
    */
-  methodSkelName: string;
+  methodSkelName:     string;
   /**
    * Parameter list。
    */
-  arguments:      Array<SkeletonField>;
+  arguments:          Array<SkeletonField>;
+  /**
+   * Whether all input arguments are sensitive。
+   */
+  argumentsSensitive: boolean;
 }
 /**
  * Skeleton Resource item。
@@ -1723,27 +1751,31 @@ export type SkeletonTrigger = {
   /**
    * Trigger name。
    */
-  name:             string;
+  name:               string;
   /**
    * Trigger Skel name。
    */
-  skelName:         string;
+  skelName:           string;
   /**
    * Trigger description。
    */
-  description:      string | null;
+  description:        string | null;
   /**
    * Input description。
    */
-  inputDescription: string | null;
+  inputDescription:   string | null;
   /**
    * Input example。
    */
-  example:          string | null;
+  example:            string | null;
   /**
    * Parameter list。
    */
-  arguments:        Array<SkeletonField>;
+  arguments:          Array<SkeletonField>;
+  /**
+   * Whether all input arguments are sensitive。
+   */
+  argumentsSensitive: boolean;
 }
 /**
  * Skeleton web page。

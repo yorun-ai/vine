@@ -462,6 +462,7 @@ func toServerSkeletonConfigItem(version _SkeletonVersionFields, schema *skel.Con
 		SkelName:         schema.SkelName,
 		Description:      optionalString(schema.Description),
 		Pub:              schema.Pub,
+		Sensitive:        schema.Sensitive,
 		Lifecycle:        schema.Lifecycle,
 		Fields:           toServerSkeletonFields(schema.Members),
 	}
@@ -486,11 +487,12 @@ func toServerSkeletonTask(version _SkeletonVersionFields, schema *skel.TaskSchem
 	triggers := make([]skeled.SkeletonTrigger, 0, len(schema.Triggers))
 	for _, trigger := range schema.Triggers {
 		triggers = append(triggers, skeled.SkeletonTrigger{
-			Name:             trigger.Name,
-			SkelName:         trigger.SkelName,
-			Description:      optionalString(trigger.Description),
-			InputDescription: optionalString(trigger.InputDescription),
-			Arguments:        toServerSkeletonFields(trigger.Arguments),
+			Name:               trigger.Name,
+			SkelName:           trigger.SkelName,
+			Description:        optionalString(trigger.Description),
+			InputDescription:   optionalString(trigger.InputDescription),
+			Arguments:          toServerSkeletonFields(trigger.Arguments),
+			ArgumentsSensitive: trigger.ArgumentsSensitive,
 		})
 	}
 	return skeled.SkeletonTask{
@@ -519,6 +521,7 @@ func toServerSkeletonEventItem(version _SkeletonVersionFields, schema *skel.Even
 		SkelName:         schema.SkelName,
 		Description:      optionalString(schema.Description),
 		Pub:              schema.Pub,
+		Sensitive:        schema.Sensitive,
 		Fields:           toServerSkeletonFields(schema.Members),
 	}
 }
@@ -535,6 +538,7 @@ func toServerSkeletonData(version _SkeletonVersionFields, schema *skel.DataSchem
 		SkelName:         schema.SkelName,
 		Description:      optionalString(schema.Description),
 		Enum:             false,
+		Sensitive:        schema.Sensitive,
 		TypeParameters:   append([]string{}, schema.TypeParameters...),
 		Fields:           toServerSkeletonFields(schema.Members),
 		EnumItems:        []skeled.SkeletonEnumItem{},
@@ -592,17 +596,19 @@ func toServerSkeletonMethods(schemas []*skel.MethodSchema) []skeled.SkeletonMeth
 
 func toServerSkeletonMethod(schema *skel.MethodSchema) skeled.SkeletonMethod {
 	return skeled.SkeletonMethod{
-		Name:              schema.Name,
-		SkelName:          schema.SkelName,
-		Description:       optionalString(schema.Description),
-		InputDescription:  optionalString(schema.InputDescription),
-		OutputDescription: optionalString(schema.OutputDescription),
-		Example:           optionalString(schema.Example),
-		AuthMode:          string(schema.AuthMode),
-		Require:           toServerSkeletonPermExpr(schema.Require),
-		OutputExample:     optionalString(schema.OutputExample),
-		Arguments:         toServerSkeletonFields(schema.Arguments),
-		ResultType:        formatSkeletonType(schema.ResultType),
+		Name:               schema.Name,
+		SkelName:           schema.SkelName,
+		Description:        optionalString(schema.Description),
+		InputDescription:   optionalString(schema.InputDescription),
+		OutputDescription:  optionalString(schema.OutputDescription),
+		Example:            optionalString(schema.Example),
+		AuthMode:           string(schema.AuthMode),
+		Require:            toServerSkeletonPermExpr(schema.Require),
+		OutputExample:      optionalString(schema.OutputExample),
+		Arguments:          toServerSkeletonFields(schema.Arguments),
+		ArgumentsSensitive: schema.ArgumentsSensitive,
+		ResultType:         formatSkeletonType(schema.ResultType),
+		ResultSensitive:    schema.ResultSensitive,
 	}
 }
 
@@ -676,10 +682,11 @@ func toServerSkeletonResourceChecks(schemas []*skel.ResourceCheckSchema) []skele
 	ret := make([]skeled.SkeletonResourceCheck, 0, len(schemas))
 	for _, schema := range schemas {
 		ret = append(ret, skeled.SkeletonResourceCheck{
-			Name:           schema.Name,
-			MethodName:     schema.Method.Name,
-			MethodSkelName: schema.Method.SkelName,
-			Arguments:      toServerSkeletonFields(schema.Arguments),
+			Name:               schema.Name,
+			MethodName:         schema.Method.Name,
+			MethodSkelName:     schema.Method.SkelName,
+			Arguments:          toServerSkeletonFields(schema.Arguments),
+			ArgumentsSensitive: schema.Method.ArgumentsSensitive,
 		})
 	}
 	return ret
@@ -693,6 +700,7 @@ func toServerSkeletonFields(schemas []*skel.MemberSchema) []skeled.SkeletonField
 			Type:        formatSkeletonType(schema.Type),
 			Description: optionalString(schema.Description),
 			Example:     optionalString(schema.Example),
+			Sensitive:   schema.Sensitive,
 		})
 	}
 	return ret

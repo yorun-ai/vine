@@ -1,6 +1,7 @@
 import * as React from 'react'
 import {
   Braces,
+  EyeOff,
   Globe2,
   KeyRound,
   Server,
@@ -160,6 +161,15 @@ function textBadges(values: Array<string>, noneText: string) {
   )
 }
 
+function SensitiveBadge({ label }: { label: string }) {
+  return (
+    <Badge variant="outline" className="border-amber-300 text-amber-700">
+      <EyeOff data-icon="inline-start" />
+      {label}
+    </Badge>
+  )
+}
+
 function FunctionSignature({
   name,
   fields,
@@ -250,6 +260,9 @@ function FieldList({
                 onTypeClick={onTypeClick}
               />
             </Badge>
+            {field.sensitive ? (
+              <SensitiveBadge label={t('skeleton.sensitive')} />
+            ) : null}
           </div>
           {field.description ? (
             <div className="text-xs text-muted-foreground">
@@ -512,6 +525,12 @@ function MethodList({
                 {method.authMode}
               </Badge>
             ) : null}
+            {method.argumentsSensitive ? (
+              <SensitiveBadge label={t('skeleton.sensitiveInput')} />
+            ) : null}
+            {method.resultSensitive ? (
+              <SensitiveBadge label={t('skeleton.sensitiveOutput')} />
+            ) : null}
             <PermBadgeSummary expr={method.require} />
           </div>
           <code className="text-xs text-muted-foreground">
@@ -555,6 +574,7 @@ function ResourceCheckList({
   onTypeClick: (item: SkeletonItem) => void
 }) {
   const values = Array.isArray(checks) ? checks : []
+  const { t } = useLocale()
 
   if (values.length === 0) {
     return <div className="text-sm text-muted-foreground">{emptyText}</div>
@@ -564,15 +584,20 @@ function ResourceCheckList({
     <div className="grid gap-1.5">
       {values.map((check) => (
         <div key={check.name} className="grid gap-2 rounded-md border p-3">
-          <code className="font-mono text-sm font-medium">
-            <FunctionSignature
-              name={check.methodName}
-              fields={check.arguments}
-              typeIndex={typeIndex}
-              domainSchemaHash={domainSchemaHash}
-              onTypeClick={onTypeClick}
-            />
-          </code>
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <code className="font-mono text-sm font-medium">
+              <FunctionSignature
+                name={check.methodName}
+                fields={check.arguments}
+                typeIndex={typeIndex}
+                domainSchemaHash={domainSchemaHash}
+                onTypeClick={onTypeClick}
+              />
+            </code>
+            {check.argumentsSensitive ? (
+              <SensitiveBadge label={t('skeleton.sensitiveInput')} />
+            ) : null}
+          </div>
           <code className="text-xs text-muted-foreground">
             {check.methodSkelName}
           </code>
@@ -668,15 +693,20 @@ function TriggerList({
           key={trigger.skelName}
           className="grid gap-2 rounded-md border p-3"
         >
-          <code className="font-mono text-sm font-medium">
-            <FunctionSignature
-              name={trigger.name}
-              fields={trigger.arguments}
-              typeIndex={typeIndex}
-              domainSchemaHash={domainSchemaHash}
-              onTypeClick={onTypeClick}
-            />
-          </code>
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <code className="font-mono text-sm font-medium">
+              <FunctionSignature
+                name={trigger.name}
+                fields={trigger.arguments}
+                typeIndex={typeIndex}
+                domainSchemaHash={domainSchemaHash}
+                onTypeClick={onTypeClick}
+              />
+            </code>
+            {trigger.argumentsSensitive ? (
+              <SensitiveBadge label={t('skeleton.sensitiveInput')} />
+            ) : null}
+          </div>
           <code className="text-xs text-muted-foreground">
             {trigger.skelName}
           </code>
@@ -821,6 +851,9 @@ export function SkeletonItemBadges({
 
   return (
     <div className="flex flex-wrap justify-end gap-1">
+      {'sensitive' in item && item.sensitive ? (
+        <SensitiveBadge label={t('skeleton.sensitive')} />
+      ) : null}
       {'pub' in item && item.pub ? (
         <Badge variant="outline">public</Badge>
       ) : null}
