@@ -1002,6 +1002,8 @@ type SkeletonConfigItem struct {
 	Description *string `json:"description"`
 	// Pub Whether the item is public
 	Pub bool `json:"pub"`
+	// Sensitive Whether the config value is sensitive
+	Sensitive bool `json:"sensitive"`
 	// Lifecycle Config lifecycle
 	Lifecycle string `json:"lifecycle"`
 	// Fields Field list
@@ -1040,6 +1042,8 @@ type SkeletonData struct {
 	Description *string `json:"description"`
 	// Enum Whether it is Enum
 	Enum bool `json:"enum"`
+	// Sensitive Whether the data is sensitive
+	Sensitive bool `json:"sensitive"`
 	// TypeParameters Type parameter list
 	TypeParameters []string `json:"typeParameters"`
 	// Fields Field list
@@ -1197,6 +1201,8 @@ type SkeletonEventItem struct {
 	Description *string `json:"description"`
 	// Pub Whether the item is public
 	Pub bool `json:"pub"`
+	// Sensitive Whether the event payload is sensitive
+	Sensitive bool `json:"sensitive"`
 	// Fields Field list
 	Fields []SkeletonField `json:"fields"`
 }
@@ -1221,6 +1227,8 @@ type SkeletonField struct {
 	Description *string `json:"description"`
 	// Example Field example
 	Example *string `json:"example"`
+	// Sensitive Whether the field is sensitive
+	Sensitive bool `json:"sensitive"`
 }
 
 // SkeletonMethod Skeleton method
@@ -1245,8 +1253,12 @@ type SkeletonMethod struct {
 	OutputExample *string `json:"outputExample"`
 	// Arguments Parameter list
 	Arguments []SkeletonField `json:"arguments"`
+	// ArgumentsSensitive Whether all input arguments are sensitive
+	ArgumentsSensitive bool `json:"argumentsSensitive"`
 	// ResultType Return type
 	ResultType string `json:"resultType"`
+	// ResultSensitive Whether the result is sensitive
+	ResultSensitive bool `json:"resultSensitive"`
 }
 
 func (v *SkeletonMethod) Validate(path string) error {
@@ -1369,6 +1381,8 @@ type SkeletonResourceCheck struct {
 	MethodSkelName string `json:"methodSkelName"`
 	// Arguments Parameter list
 	Arguments []SkeletonField `json:"arguments"`
+	// ArgumentsSensitive Whether all input arguments are sensitive
+	ArgumentsSensitive bool `json:"argumentsSensitive"`
 }
 
 func (v *SkeletonResourceCheck) Validate(path string) error {
@@ -1545,6 +1559,8 @@ type SkeletonTrigger struct {
 	Example *string `json:"example"`
 	// Arguments Parameter list
 	Arguments []SkeletonField `json:"arguments"`
+	// ArgumentsSensitive Whether all input arguments are sensitive
+	ArgumentsSensitive bool `json:"argumentsSensitive"`
 }
 
 func (v *SkeletonTrigger) Validate(path string) error {

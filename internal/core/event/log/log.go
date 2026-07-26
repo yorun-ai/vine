@@ -7,6 +7,7 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
+	"go.yorun.ai/vine/internal/core/redact"
 )
 
 type Span struct {
@@ -14,6 +15,11 @@ type Span struct {
 	finishMsg string
 	startedAt time.Time
 	fields    []any
+}
+
+type _PayloadValue struct {
+	result redact.Result
+	err    error
 }
 
 func Noop() *Span {
@@ -37,15 +43,17 @@ func StartListenerHandle(log *logger.Logger, trace meta.Trace, event spec.EventI
 	span := Start(log, "event listener handle started", "event listener handle finished", trace, event, emitter)
 	span.AddApp("listener", listener)
 	if len(payload) > 0 && log != nil && log.Enabled(logger.LevelDebug) {
-		value := logger.RenderPayload(logger.PayloadDescriptor{
-			Surface:       logger.PayloadSurfaceEvent,
-			EventSkelName: event.SkelName(),
-		}, payload[0])
+		value := renderEventPayload(payload[0])
 		span.fields = appendPayloadFields(span.fields, value)
 		log.Debug("event listener handle started", span.fields...)
 		span.fields = removePayloadFields(span.fields)
 	}
 	return span
+}
+
+func renderEventPayload(value any) _PayloadValue {
+	result, err := redact.Render(value)
+	return _PayloadValue{result: result, err: err}
 }
 
 func Start(log *logger.Logger, startMsg string, finishMsg string, trace meta.Trace, event spec.EventInfo, emitter meta.App) *Span {
@@ -118,15 +126,18 @@ func ListenerRejected(log *logger.Logger, startedAt time.Time, trace meta.Trace,
 	logLifecycle(log, "event listener handle rejected", err, fields...)
 }
 
-func appendPayloadFields(fields []any, payload logger.PayloadValue) []any {
-	if payload.JSON != "" {
-		fields = append(fields, "eventPayload", payload.JSON)
+func appendPayloadFields(fields []any, payload _PayloadValue) []any {
+	if payload.err != nil {
+		return append(fields, "eventPayloadOmittedReason", "redact_failed")
 	}
-	if payload.Redacted {
+	if payload.result.JSON != "" {
+		fields = append(fields, "eventPayload", payload.result.JSON)
+	}
+	if payload.result.Redacted {
 		fields = append(fields, "eventPayloadRedacted", true)
 	}
-	if payload.OmittedReason != "" && payload.OmittedReason != "policy_off" {
-		fields = append(fields, "eventPayloadOmittedReason", payload.OmittedReason)
+	if payload.result.Truncated {
+		fields = append(fields, "eventPayloadTruncated", true)
 	}
 	return fields
 }
@@ -135,7 +146,8 @@ func removePayloadFields(fields []any) []any {
 	result := fields[:0]
 	for index := 0; index+1 < len(fields); index += 2 {
 		key, _ := fields[index].(string)
-		if key == "eventPayload" || key == "eventPayloadRedacted" || key == "eventPayloadOmittedReason" {
+		if key == "eventPayload" || key == "eventPayloadRedacted" ||
+			key == "eventPayloadTruncated" || key == "eventPayloadOmittedReason" {
 			continue
 		}
 		result = append(result, fields[index], fields[index+1])

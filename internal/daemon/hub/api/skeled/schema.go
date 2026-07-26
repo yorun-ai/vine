@@ -9,11 +9,12 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub",
 	Description: "Internal API for vine framework",
-	Hash:        "1e590da9",
+	Hash:        "77ec2338",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
-		CompilerVersion: "v0.9.0",
+		CompilerVersion: "v0.0.0-dev",
 	},
+
 	Enums: []*skel.EnumSchema{
 		{
 			Name:        "PortalCorsMode",
@@ -52,6 +53,7 @@ var _DomainSchema = &skel.DomainSchema{
 			},
 		},
 	},
+
 	Data: []*skel.DataSchema{
 		{
 			Name:        "AppConfigCreation",
@@ -573,7 +575,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "EventDebugEventItem",
 			SkelName:    "vine.hub.EventDebugEventItem",
 			Description: "Event called by Event Debug",
-			Hash:        "e89b5f2b",
+			Hash:        "a3200f92",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -2035,7 +2037,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "ServiceDebugMethodItem",
 			SkelName:    "vine.hub.ServiceDebugMethodItem",
 			Description: "Method called by Service Debug",
-			Hash:        "013da93b",
+			Hash:        "8f5a7cbb",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -2180,7 +2182,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonActorItem",
 			SkelName:    "vine.hub.SkeletonActorItem",
 			Description: "SkeletonActor",
-			Hash:        "2f7c7bec",
+			Hash:        "5b1c7628",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -2395,7 +2397,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonConfigItem",
 			SkelName:    "vine.hub.SkeletonConfigItem",
 			Description: "SkeletonConfig",
-			Hash:        "28cedd90",
+			Hash:        "454796f7",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -2479,6 +2481,14 @@ var _DomainSchema = &skel.DomainSchema{
 					},
 				},
 				{
+					Name:        "sensitive",
+					Description: "Whether the config value is sensitive",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarBool,
+					},
+				},
+				{
 					Name:        "lifecycle",
 					Description: "Config lifecycle",
 					Type: &skel.TypeSchema{
@@ -2504,7 +2514,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonData",
 			SkelName:    "vine.hub.SkeletonData",
 			Description: "SkeletonData",
-			Hash:        "011bd126",
+			Hash:        "70ce1fb3",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -2588,6 +2598,14 @@ var _DomainSchema = &skel.DomainSchema{
 					},
 				},
 				{
+					Name:        "sensitive",
+					Description: "Whether the data is sensitive",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarBool,
+					},
+				},
+				{
 					Name:        "typeParameters",
 					Description: "Type parameter list",
 					Type: &skel.TypeSchema{
@@ -2628,7 +2646,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonDomain",
 			SkelName:    "vine.hub.SkeletonDomain",
 			Description: "Domain skeleton version",
-			Hash:        "3aa935dc",
+			Hash:        "dd24f98c",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -2805,7 +2823,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonEventItem",
 			SkelName:    "vine.hub.SkeletonEventItem",
 			Description: "Skeleton event",
-			Hash:        "0516d997",
+			Hash:        "d017794a",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -2889,6 +2907,14 @@ var _DomainSchema = &skel.DomainSchema{
 					},
 				},
 				{
+					Name:        "sensitive",
+					Description: "Whether the event payload is sensitive",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarBool,
+					},
+				},
+				{
 					Name:        "fields",
 					Description: "Field list",
 					Type: &skel.TypeSchema{
@@ -2906,7 +2932,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonField",
 			SkelName:    "vine.hub.SkeletonField",
 			Description: "Skeleton field",
-			Hash:        "fa5a1007",
+			Hash:        "fdac445a",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -2942,13 +2968,21 @@ var _DomainSchema = &skel.DomainSchema{
 						Nullable: true,
 					},
 				},
+				{
+					Name:        "sensitive",
+					Description: "Whether the field is sensitive",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarBool,
+					},
+				},
 			},
 		},
 		{
 			Name:        "SkeletonMethod",
 			SkelName:    "vine.hub.SkeletonMethod",
 			Description: "Skeleton method",
-			Hash:        "3fa42b8d",
+			Hash:        "3fba79cd",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -3042,11 +3076,27 @@ var _DomainSchema = &skel.DomainSchema{
 					},
 				},
 				{
+					Name:        "argumentsSensitive",
+					Description: "Whether all input arguments are sensitive",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarBool,
+					},
+				},
+				{
 					Name:        "resultType",
 					Description: "Return type",
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
+					},
+				},
+				{
+					Name:        "resultSensitive",
+					Description: "Whether the result is sensitive",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarBool,
 					},
 				},
 			},
@@ -3194,7 +3244,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonResourceAction",
 			SkelName:    "vine.hub.SkeletonResourceAction",
 			Description: "SkeletonResource Action",
-			Hash:        "cb8b88ba",
+			Hash:        "80cd70aa",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -3239,7 +3289,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonResourceCheck",
 			SkelName:    "vine.hub.SkeletonResourceCheck",
 			Description: "SkeletonResource Check",
-			Hash:        "3401669b",
+			Hash:        "e3082e14",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -3277,13 +3327,21 @@ var _DomainSchema = &skel.DomainSchema{
 						},
 					},
 				},
+				{
+					Name:        "argumentsSensitive",
+					Description: "Whether all input arguments are sensitive",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarBool,
+					},
+				},
 			},
 		},
 		{
 			Name:        "SkeletonResourceItem",
 			SkelName:    "vine.hub.SkeletonResourceItem",
 			Description: "Skeleton Resource item",
-			Hash:        "5dd2767c",
+			Hash:        "88bda8e7",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -3398,7 +3456,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonServiceItem",
 			SkelName:    "vine.hub.SkeletonServiceItem",
 			Description: "Skeleton service items",
-			Hash:        "a2c05661",
+			Hash:        "7684cde3",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -3529,7 +3587,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonTask",
 			SkelName:    "vine.hub.SkeletonTask",
 			Description: "Skeleton task",
-			Hash:        "32a7ae30",
+			Hash:        "10164ad8",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -3622,7 +3680,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonTrigger",
 			SkelName:    "vine.hub.SkeletonTrigger",
 			Description: "Skeleton task trigger",
-			Hash:        "90abe45a",
+			Hash:        "92876782",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -3677,6 +3735,14 @@ var _DomainSchema = &skel.DomainSchema{
 							Name:     "SkeletonField",
 							SkelName: "vine.hub.SkeletonField",
 						},
+					},
+				},
+				{
+					Name:        "argumentsSensitive",
+					Description: "Whether all input arguments are sensitive",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarBool,
 					},
 				},
 			},
@@ -3909,7 +3975,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "TaskDebugTriggerItem",
 			SkelName:    "vine.hub.TaskDebugTriggerItem",
 			Description: "Trigger called by Task Debug",
-			Hash:        "1b3a76ef",
+			Hash:        "ffc46457",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -4085,6 +4151,7 @@ var _DomainSchema = &skel.DomainSchema{
 			},
 		},
 	},
+
 	Webs: []*skel.WebSchema{
 		{
 			Name:        "DashboardWeb",
@@ -4096,6 +4163,7 @@ var _DomainSchema = &skel.DomainSchema{
 			},
 		},
 	},
+
 	Actors: []*skel.ActorSchema{
 		{
 			Name:     "AdminActor",
@@ -4108,6 +4176,7 @@ var _DomainSchema = &skel.DomainSchema{
 			PermEnabled: false,
 		},
 	},
+
 	Services: []*skel.ServiceSchema{
 		{
 			Name:        "AppConfigService",
@@ -4271,7 +4340,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "EventDebugService",
 			SkelName:    "vine.hub.EventDebugService",
 			Description: "Hub Dashboard Event Debugging Service",
-			Hash:        "7ca4a329",
+			Hash:        "0ecb61f5",
 			Pub:         false,
 			AuthMode:    skel.AuthModeNoAuth,
 			Audiences: []*skel.ActorAudienceSchema{
@@ -4282,7 +4351,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "listEvents",
 					SkelName:    "listEvents",
 					Description: "List the events monitored by the application instance",
-					Hash:        "a02ce785",
+					Hash:        "b375f815",
 					AuthMode:    skel.AuthModeUnset,
 					ResultType: &skel.TypeSchema{
 						Kind: skel.TypeKindList,
@@ -5045,7 +5114,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "ServiceDebugService",
 			SkelName:    "vine.hub.ServiceDebugService",
 			Description: "Hub Dashboard Service debugging service",
-			Hash:        "fc747d85",
+			Hash:        "1f53749c",
 			Pub:         false,
 			AuthMode:    skel.AuthModeNoAuth,
 			Audiences: []*skel.ActorAudienceSchema{
@@ -5119,7 +5188,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "listMethods",
 					SkelName:    "listMethods",
 					Description: "List Service methods",
-					Hash:        "0bc9fc82",
+					Hash:        "347531ed",
 					AuthMode:    skel.AuthModeUnset,
 					Arguments: []*skel.MemberSchema{
 						{
@@ -5215,7 +5284,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonService",
 			SkelName:    "vine.hub.SkeletonService",
 			Description: "Hub's skeleton service, called by the Portal management client",
-			Hash:        "6d2dd869",
+			Hash:        "cbbcea81",
 			Pub:         false,
 			AuthMode:    skel.AuthModeNoAuth,
 			Audiences: []*skel.ActorAudienceSchema{
@@ -5226,7 +5295,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listDomains",
 					SkelName:          "listDomains",
 					Description:       "List Domain skeleton",
-					Hash:              "cab1fd4a",
+					Hash:              "f8888d1b",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Domain skeleton list",
 					ResultType: &skel.TypeSchema{
@@ -5242,7 +5311,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listActors",
 					SkelName:          "listActors",
 					Description:       "List Actor Skeleton",
-					Hash:              "ea3e3980",
+					Hash:              "991e7d2c",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Actor skeleton list",
 					ResultType: &skel.TypeSchema{
@@ -5258,7 +5327,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listServices",
 					SkelName:          "listServices",
 					Description:       "List Service skeleton",
-					Hash:              "433b6284",
+					Hash:              "79570d9b",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Service skeleton list",
 					ResultType: &skel.TypeSchema{
@@ -5274,7 +5343,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listResources",
 					SkelName:          "listResources",
 					Description:       "List Resource skeleton",
-					Hash:              "bccf567d",
+					Hash:              "cb32c3a2",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Resource skeleton list",
 					ResultType: &skel.TypeSchema{
@@ -5306,7 +5375,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listTasks",
 					SkelName:          "listTasks",
 					Description:       "List Task skeleton",
-					Hash:              "8598497d",
+					Hash:              "71528177",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Task skeleton list",
 					ResultType: &skel.TypeSchema{
@@ -5322,7 +5391,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listEvents",
 					SkelName:          "listEvents",
 					Description:       "List Event skeletons",
-					Hash:              "9f2d9673",
+					Hash:              "7c605390",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Event skeleton list",
 					ResultType: &skel.TypeSchema{
@@ -5338,7 +5407,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listData",
 					SkelName:          "listData",
 					Description:       "List Data skeleton",
-					Hash:              "ef387f2a",
+					Hash:              "0f854359",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Data skeleton list, including Enum",
 					ResultType: &skel.TypeSchema{
@@ -5354,7 +5423,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listConfigs",
 					SkelName:          "listConfigs",
 					Description:       "List Config skeleton",
-					Hash:              "c7afc1fa",
+					Hash:              "9c6b340c",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Config skeleton list",
 					ResultType: &skel.TypeSchema{
@@ -5372,7 +5441,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "TaskDebugService",
 			SkelName:    "vine.hub.TaskDebugService",
 			Description: "Hub Dashboard Task Debugging Service",
-			Hash:        "230a17bd",
+			Hash:        "279c2273",
 			Pub:         false,
 			AuthMode:    skel.AuthModeNoAuth,
 			Audiences: []*skel.ActorAudienceSchema{
@@ -5398,7 +5467,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "listTriggers",
 					SkelName:    "listTriggers",
 					Description: "List Task triggers",
-					Hash:        "5360f9a4",
+					Hash:        "95b7f98f",
 					AuthMode:    skel.AuthModeUnset,
 					Arguments: []*skel.MemberSchema{
 						{

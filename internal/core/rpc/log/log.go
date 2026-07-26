@@ -6,6 +6,7 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
+	"go.yorun.ai/vine/internal/core/redact"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 )
 
@@ -17,7 +18,17 @@ type Span struct {
 	method              spec.MethodInfo
 	muteSuccess         bool
 	debugEnabledAtStart bool
-	arguments           logger.PayloadValue
+	arguments           _PayloadValue
+}
+
+const (
+	rpcArgumentsField = "rpcArguments"
+	rpcResultField    = "rpcResult"
+)
+
+type _PayloadValue struct {
+	result redact.Result
+	err    error
 }
 
 func Noop() *Span {
@@ -39,16 +50,16 @@ func StartServerHandle(log *logger.Logger, trace meta.Trace, method spec.MethodI
 		return span
 	}
 	if len(arguments) > 0 && !isInternalTransport(method) {
-		span.arguments = renderRpcPayload(method, logger.PayloadSurfaceRpcArguments, arguments[0])
+		span.arguments = renderRpcArguments(method, arguments[0])
 	}
 	if span.muteSuccess {
 		return span
 	}
 	if len(arguments) > 0 && !isInternalTransport(method) {
-		span.fields = appendPayloadFields(span.fields, logger.PayloadSurfaceRpcArguments, span.arguments)
+		span.fields = appendPayloadFields(span.fields, rpcArgumentsField, span.arguments)
 	}
 	log.Debug("rpc server handle started", span.fields...)
-	span.fields = removePayloadFields(span.fields, logger.PayloadSurfaceRpcArguments)
+	span.fields = removePayloadFields(span.fields, rpcArgumentsField)
 	return span
 }
 
@@ -130,14 +141,14 @@ func (s *Span) finish(err ex.Error, result any, server bool) {
 		}
 		if server && s.muteSuccess {
 			if s.debugEnabledAtStart {
-				s.fields = appendPayloadFields(s.fields, logger.PayloadSurfaceRpcArguments, s.arguments)
+				s.fields = appendPayloadFields(s.fields, rpcArgumentsField, s.arguments)
 			} else {
 				s.fields = append(s.fields, "rpcArgumentsOmittedReason", "debug_disabled_at_start")
 			}
 		}
 	} else if server && s.logger.Enabled(logger.LevelDebug) && !isInternalTransport(s.method) {
-		payload := renderRpcPayload(s.method, logger.PayloadSurfaceRpcResult, result)
-		s.fields = appendPayloadFields(s.fields, logger.PayloadSurfaceRpcResult, payload)
+		payload := renderRpcResult(s.method, result)
+		s.fields = appendPayloadFields(s.fields, rpcResultField, payload)
 	}
 	s.fields = append(s.fields,
 		"code", string(code),
@@ -187,8 +198,8 @@ func ClientRejected(log *logger.Logger, startedAt time.Time, trace meta.Trace, m
 	fields = appendMethodFields(fields, method)
 	fields = append(fields, "serverEndpoint", serverEndpoint)
 	if log.Enabled(logger.LevelDebug) && !isInternalTransport(method) {
-		fields = appendPayloadFields(fields, logger.PayloadSurfaceRpcArguments,
-			renderRpcPayload(method, logger.PayloadSurfaceRpcArguments, arguments))
+		payload := renderRpcArguments(method, arguments)
+		fields = appendPayloadFields(fields, rpcArgumentsField, payload)
 	}
 	fields = appendErrorFields(fields, err)
 	fields = append(fields, "duration", time.Since(startedAt))
@@ -234,37 +245,40 @@ func logLifecycle(log *logger.Logger, msg string, err ex.Error, fields ...any) {
 	}
 }
 
-func renderRpcPayload(method spec.MethodInfo, surface logger.PayloadSurface, value any) logger.PayloadValue {
-	descriptor := logger.PayloadDescriptor{Surface: surface}
-	if method != nil {
-		descriptor.RpcMethodSkelName = method.SkelName()
-		if method.Service() != nil {
-			descriptor.RpcServiceSkelName = method.Service().SkelName()
-		}
-	}
-	return logger.RenderPayload(descriptor, value)
+func renderRpcArguments(method spec.MethodInfo, value any) _PayloadValue {
+	return renderPayload(value, method != nil && method.ArgumentsSensitive())
 }
 
-func appendPayloadFields(fields []any, surface logger.PayloadSurface, payload logger.PayloadValue) []any {
-	name := string(surface)
-	if payload.JSON != "" {
-		fields = append(fields, name, payload.JSON)
+func renderRpcResult(method spec.MethodInfo, value any) _PayloadValue {
+	return renderPayload(value, method != nil && method.ResultSensitive())
+}
+
+func renderPayload(value any, sensitive bool) _PayloadValue {
+	result, err := redact.Render(value, redact.Option{RootSensitive: sensitive})
+	return _PayloadValue{result: result, err: err}
+}
+
+func appendPayloadFields(fields []any, name string, payload _PayloadValue) []any {
+	if payload.err != nil {
+		return append(fields, name+"OmittedReason", "redact_failed")
 	}
-	if payload.Redacted {
+	if payload.result.JSON != "" {
+		fields = append(fields, name, payload.result.JSON)
+	}
+	if payload.result.Redacted {
 		fields = append(fields, name+"Redacted", true)
 	}
-	if payload.OmittedReason != "" && payload.OmittedReason != "policy_off" {
-		fields = append(fields, name+"OmittedReason", payload.OmittedReason)
+	if payload.result.Truncated {
+		fields = append(fields, name+"Truncated", true)
 	}
 	return fields
 }
 
-func removePayloadFields(fields []any, surface logger.PayloadSurface) []any {
-	name := string(surface)
+func removePayloadFields(fields []any, name string) []any {
 	result := fields[:0]
 	for index := 0; index+1 < len(fields); index += 2 {
 		key, _ := fields[index].(string)
-		if key == name || key == name+"Redacted" || key == name+"OmittedReason" {
+		if key == name || key == name+"Redacted" || key == name+"Truncated" || key == name+"OmittedReason" {
 			continue
 		}
 		result = append(result, fields[index], fields[index+1])

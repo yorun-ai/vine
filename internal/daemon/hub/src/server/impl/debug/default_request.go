@@ -38,9 +38,6 @@ func (b _DebugDefaultBuilder) defaultParamsJson(method *skel.MethodSchema) skel.
 }
 
 func (b _DebugDefaultBuilder) defaultArgumentsJson(trigger *skel.TriggerSchema) skel.JSON {
-	if strings.TrimSpace(trigger.Example) != "" {
-		return skel.JSON(debugPrettyJson(debugParseJson(trigger.Example)))
-	}
 	args := map[string]any{}
 	for _, argument := range trigger.Arguments {
 		args[argument.Name] = b.defaultMemberValue(argument)

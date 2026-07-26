@@ -45,6 +45,7 @@ func initTaskInfo(taskSpec *TaskSpec) *_TaskInfo {
 			launcherMethodName: triggerSpec.LauncherMethodName,
 			runnerMethodName:   triggerSpec.RunnerMethodName,
 			argumentsType:      triggerSpec.ArgumentsType,
+			argumentsSensitive: triggerSpec.ArgumentsSensitive,
 		}
 		if triggerSpec.ArgumentsType != nil {
 			triggerInfo.argumentFieldInfos = buildArgumentFieldInfos(triggerSpec.ArgumentsType)

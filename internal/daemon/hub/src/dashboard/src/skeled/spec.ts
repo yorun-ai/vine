@@ -8,12 +8,14 @@ export const AppConfigServiceSpec = {
     remove: 'remove',
   },
 } as const;
+
 export const AppStatusServiceSpec = {
   serviceName: 'vine.hub.AppStatusService',
   methods: {
     list: 'list',
   },
 } as const;
+
 export const EventDebugServiceSpec = {
   serviceName: 'vine.hub.EventDebugService',
   methods: {
@@ -22,6 +24,7 @@ export const EventDebugServiceSpec = {
     emitEvent: 'emitEvent',
   },
 } as const;
+
 export const MaintenanceServiceSpec = {
   serviceName: 'vine.hub.MaintenanceService',
   methods: {
@@ -29,6 +32,7 @@ export const MaintenanceServiceSpec = {
     applySeedYaml: 'applySeedYaml',
   },
 } as const;
+
 export const PortalCertServiceSpec = {
   serviceName: 'vine.hub.PortalCertService',
   methods: {
@@ -39,6 +43,7 @@ export const PortalCertServiceSpec = {
     remove: 'remove',
   },
 } as const;
+
 export const PortalEntryServiceSpec = {
   serviceName: 'vine.hub.PortalEntryService',
   methods: {
@@ -46,6 +51,7 @@ export const PortalEntryServiceSpec = {
     updateAccess: 'updateAccess',
   },
 } as const;
+
 export const PortalRuleServiceSpec = {
   serviceName: 'vine.hub.PortalRuleService',
   methods: {
@@ -58,6 +64,7 @@ export const PortalRuleServiceSpec = {
     updateDashboardAccess: 'updateDashboardAccess',
   },
 } as const;
+
 export const PortalSiteServiceSpec = {
   serviceName: 'vine.hub.PortalSiteService',
   methods: {
@@ -69,6 +76,7 @@ export const PortalSiteServiceSpec = {
     remove: 'remove',
   },
 } as const;
+
 export const ServiceDebugServiceSpec = {
   serviceName: 'vine.hub.ServiceDebugService',
   methods: {
@@ -80,6 +88,7 @@ export const ServiceDebugServiceSpec = {
     invokeService: 'invokeService',
   },
 } as const;
+
 export const SkeletonServiceSpec = {
   serviceName: 'vine.hub.SkeletonService',
   methods: {
@@ -94,6 +103,7 @@ export const SkeletonServiceSpec = {
     listConfigs: 'listConfigs',
   },
 } as const;
+
 export const TaskDebugServiceSpec = {
   serviceName: 'vine.hub.TaskDebugService',
   methods: {

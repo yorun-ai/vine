@@ -280,7 +280,6 @@ func checkComponentTypes(componentTypes []reflect.Type) {
 }
 
 func (a *_AppImpl) initServers() {
-	logger.FreezePayloadPolicies()
 	if a.shouldEnableConsole() {
 		a.consoleServer = server.New(server.Option{
 			App:            a.info,

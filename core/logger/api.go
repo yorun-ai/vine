@@ -49,41 +49,6 @@ func IsValidLevel(level Level) bool {
 	return internallogger.IsValidLevel(level)
 }
 
-// PayloadSurface identifies a lifecycle payload field.
-type PayloadSurface = internallogger.PayloadSurface
-
-const (
-	// PayloadSurfaceRpcArguments identifies Rpc argument payloads.
-	PayloadSurfaceRpcArguments = internallogger.PayloadSurfaceRpcArguments
-	// PayloadSurfaceRpcResult identifies Rpc result payloads.
-	PayloadSurfaceRpcResult = internallogger.PayloadSurfaceRpcResult
-	// PayloadSurfaceEvent identifies Event listener payloads.
-	PayloadSurfaceEvent = internallogger.PayloadSurfaceEvent
-)
-
-// PayloadMode controls whether and how a lifecycle payload is redacted.
-type PayloadMode = internallogger.PayloadMode
-
-const (
-	// PayloadModeSafe applies built-in sensitive-key redaction.
-	PayloadModeSafe = internallogger.PayloadModeSafe
-	// PayloadModeOff disables payload logging for a selector.
-	PayloadModeOff = internallogger.PayloadModeOff
-	// PayloadModeUnsafeFull skips sensitive-key redaction for an exact selector.
-	PayloadModeUnsafeFull = internallogger.PayloadModeUnsafeFull
-)
-
-// PayloadDescriptor describes the contract location of one payload.
-type PayloadDescriptor = internallogger.PayloadDescriptor
-
-// PayloadSanitizer converts a contract payload into a safe projection before logging.
-// A sanitizer must be side-effect free and must not mutate the supplied payload.
-type PayloadSanitizer = internallogger.PayloadSanitizer
-
-// PayloadPolicy configures redaction and optional sanitization for a payload selector.
-// Payload size and traversal budgets are not part of the current API.
-type PayloadPolicy = internallogger.PayloadPolicy
-
 // SetGlobalFormat changes the format used by loggers that inherit the global
 // output format, including existing loggers.
 func SetGlobalFormat(format Format) {
@@ -131,22 +96,6 @@ func ClearLevel(pattern string) {
 // Levels returns a copy of the current pattern-to-level configuration.
 func Levels() map[string]Level {
 	return internallogger.Levels()
-}
-
-// RegisterRpcPayloadPolicy registers a policy for one Rpc payload surface before an App or server starts.
-func RegisterRpcPayloadPolicy(serviceSkelName string, methodSkelName string, surface PayloadSurface, policy PayloadPolicy) {
-	internallogger.RegisterRpcPayloadPolicy(serviceSkelName, methodSkelName, surface, policy)
-}
-
-// RegisterEventPayloadPolicy registers a policy for one Event payload before an App or server starts.
-func RegisterEventPayloadPolicy(eventSkelName string, policy PayloadPolicy) {
-	internallogger.RegisterEventPayloadPolicy(eventSkelName, policy)
-}
-
-// RegisterPayloadSurfacePolicy registers a default for one payload surface before an App or server starts.
-// Unsafe-full mode requires an exact Rpc method or Event selector and is rejected here.
-func RegisterPayloadSurfacePolicy(surface PayloadSurface, policy PayloadPolicy) {
-	internallogger.RegisterPayloadSurfacePolicy(surface, policy)
 }
 
 // SetDefault replaces the package-level logger used by Debug, Info, Warn, and Error.

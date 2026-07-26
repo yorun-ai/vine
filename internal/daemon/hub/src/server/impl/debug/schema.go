@@ -85,6 +85,7 @@ func toDebugSkeletonFields(schemas []*skel.MemberSchema) []skeled.SkeletonField 
 			Type:        formatSkeletonType(schema.Type),
 			Description: optionalString(schema.Description),
 			Example:     optionalString(schema.Example),
+			Sensitive:   schema.Sensitive,
 		})
 	}
 	return ret

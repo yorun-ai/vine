@@ -2,8 +2,10 @@ package log
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -32,6 +34,66 @@ func TestRunnerFinishedUsesDebugAndOmitsOKError(t *testing.T) {
 	}
 	if _, exists := finished["duration"]; !exists {
 		t.Fatalf("finished record must contain duration: %#v", finished)
+	}
+}
+
+type taskLogArguments struct {
+	Value string `json:"value"`
+}
+
+type taskFailingMarshaler struct{}
+
+func (taskFailingMarshaler) MarshalJSON() ([]byte, error) {
+	return nil, errors.New("secret must not be logged")
+}
+
+func TestRunnerStartedLogsRedactedArgumentsOnlyOnce(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "task-arguments.jsonl")
+	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
+	taskInfo := spec.ConvertSpecToInfoForTest(new(spec.TaskSpec{
+		Name:     "SecretTask",
+		SkelName: "test.task.Secret",
+		Triggers: []*spec.TriggerSpec{{
+			Name:               "Run",
+			SkelName:           "run",
+			LauncherMethodName: "LaunchRun",
+			RunnerMethodName:   "Run",
+			ArgumentsType:      reflect.TypeFor[taskLogArguments](),
+			ArgumentsSensitive: true,
+		}},
+	}))
+	span := StartRunnerHandle(
+		log,
+		meta.InitialTrace(),
+		taskInfo.Triggers()[0],
+		nil,
+		nil,
+		&taskLogArguments{Value: "secret"},
+	)
+	span.Finish(nil)
+
+	records := readTaskLogRecords(t, path)
+	if len(records) != 2 {
+		t.Fatalf("expected started and finished, got %#v", records)
+	}
+	if records[0]["taskArguments"] != `"<redacted>"` ||
+		records[0]["taskArgumentsRedacted"] != true {
+		t.Fatalf("unexpected started arguments: %#v", records[0])
+	}
+	if _, exists := records[1]["taskArguments"]; exists {
+		t.Fatalf("finished must not repeat Task arguments: %#v", records[1])
+	}
+}
+
+func TestTaskRedactFailureOmitsPayload(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "task-redact-failure.jsonl")
+	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
+
+	StartRunnerHandle(log, nil, nil, nil, nil, taskFailingMarshaler{})
+
+	records := readTaskLogRecords(t, path)
+	if len(records) != 1 || records[0]["taskArgumentsOmittedReason"] != "redact_failed" {
+		t.Fatalf("unexpected lifecycle log: %#v", records)
 	}
 }
 

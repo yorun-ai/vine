@@ -85,6 +85,9 @@ data SkeletonField {
 
     @desc("Field example")
     example: string?
+
+    @desc("Whether the field is sensitive")
+    sensitive: bool
 }
 
 @desc("Skeleton method")
@@ -119,8 +122,14 @@ data SkeletonMethod {
     @desc("Parameter list")
     arguments: list<SkeletonField>
 
+    @desc("Whether all input arguments are sensitive")
+    argumentsSensitive: bool
+
     @desc("Return type")
     resultType: string
+
+    @desc("Whether the result is sensitive")
+    resultSensitive: bool
 }
 
 @desc("Skeleton service items")
@@ -229,6 +238,9 @@ data SkeletonResourceCheck {
 
     @desc("Parameter list")
     arguments: list<SkeletonField>
+
+    @desc("Whether all input arguments are sensitive")
+    argumentsSensitive: bool
 }
 
 @desc("SkeletonResource Action")
@@ -337,6 +349,9 @@ data SkeletonTrigger {
 
     @desc("Parameter list")
     arguments: list<SkeletonField>
+
+    @desc("Whether all input arguments are sensitive")
+    argumentsSensitive: bool
 }
 
 @desc("Skeleton task")
@@ -404,6 +419,9 @@ data SkeletonEventItem {
     @desc("Whether the item is public")
     pub: bool
 
+    @desc("Whether the event payload is sensitive")
+    sensitive: bool
+
     @desc("Field list")
     fields: list<SkeletonField>
 }
@@ -449,6 +467,9 @@ data SkeletonData {
     @desc("Whether it is Enum")
     enum: bool
 
+    @desc("Whether the data is sensitive")
+    sensitive: bool
+
     @desc("Type parameter list")
     typeParameters: list<string>
 
@@ -490,6 +511,9 @@ data SkeletonConfigItem {
 
     @desc("Whether the item is public")
     pub: bool
+
+    @desc("Whether the config value is sensitive")
+    sensitive: bool
 
     @desc("Config lifecycle")
     lifecycle: string

@@ -55,6 +55,8 @@ type MethodSpec struct {
 	ValidateArguments           func(any) error
 	ResultType                  reflect.Type
 	ValidateResult              func(any) error
+	ArgumentsSensitive          bool
+	ResultSensitive             bool
 	ArgumentsContainsBinaryType bool
 	ResultContainsBinaryType    bool
 	MethodFuncs                 []any

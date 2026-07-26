@@ -311,11 +311,13 @@ func TestSkeletonServiceListServices(t *testing.T) {
 							{Name: "UserActor", SkelName: "demo.user.UserActor"},
 						},
 						Methods: []*skel.MethodSchema{{
-							Name:              "listUsers",
-							SkelName:          "listUsers",
-							Description:       "分页查询用户",
-							InputDescription:  "分页参数",
-							OutputDescription: "分页结果",
+							Name:               "listUsers",
+							SkelName:           "listUsers",
+							Description:        "分页查询用户",
+							InputDescription:   "分页参数",
+							OutputDescription:  "分页结果",
+							ArgumentsSensitive: true,
+							ResultSensitive:    true,
 							Require: &skel.PermRequire{
 								Expr: &skel.PermExpr{
 									Mode: skel.PermRequireModeAny,
@@ -342,6 +344,7 @@ func TestSkeletonServiceListServices(t *testing.T) {
 							Arguments: []*skel.MemberSchema{{
 								Name:        "status",
 								Description: "状态",
+								Sensitive:   true,
 								Type: &skel.TypeSchema{
 									Kind:     skel.TypeKindEnum,
 									Name:     "UserStatus",
@@ -385,14 +388,18 @@ func TestSkeletonServiceListServices(t *testing.T) {
 	assert.Equal(t, "checkByTenant", services[0].Methods[0].Require.Children[1].Check.MethodSkelName)
 	assert.Equal(t, "params.tenantId", services[0].Methods[0].Require.Children[1].Check.Arguments[0].JsonPath)
 	assert.Equal(t, "demo.user.Page<demo.user.User>", services[0].Methods[0].ResultType)
+	assert.True(t, services[0].Methods[0].ArgumentsSensitive)
+	assert.True(t, services[0].Methods[0].ResultSensitive)
 	require.Len(t, services[0].Methods[0].Arguments, 1)
 	assert.Equal(t, "demo.user.UserStatus?", services[0].Methods[0].Arguments[0].Type)
+	assert.True(t, services[0].Methods[0].Arguments[0].Sensitive)
 }
 
 func TestSkeletonServiceListResources(t *testing.T) {
 	checkMethod := &skel.MethodSchema{
-		Name:     "CheckByTenant",
-		SkelName: "checkByTenant",
+		Name:               "CheckByTenant",
+		SkelName:           "checkByTenant",
+		ArgumentsSensitive: true,
 		Arguments: []*skel.MemberSchema{{
 			Name: "tenantId",
 			Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString},
@@ -451,6 +458,7 @@ func TestSkeletonServiceListResources(t *testing.T) {
 	assert.Equal(t, "byTenant", resources[0].Checks[0].Name)
 	assert.Equal(t, "checkByTenant", resources[0].Checks[0].MethodSkelName)
 	assert.Equal(t, "string", resources[0].Checks[0].Arguments[0].Type)
+	assert.True(t, resources[0].Checks[0].ArgumentsSensitive)
 	require.Len(t, resources[0].Actions, 2)
 	assert.Equal(t, "demo.user.User:read", resources[0].Actions[0].PermissionCode)
 	require.Len(t, resources[0].Actions[1].Checks, 1)
@@ -776,10 +784,12 @@ func TestSkeletonServiceListConfigs(t *testing.T) {
 					Name:      "UserConfig",
 					SkelName:  "demo.user.UserConfig",
 					Pub:       true,
+					Sensitive: true,
 					Lifecycle: "ETERNAL",
 					Members: []*skel.MemberSchema{{
-						Name: "enabled",
-						Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool},
+						Name:      "enabled",
+						Sensitive: true,
+						Type:      &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool},
 					}},
 				}},
 			}},
@@ -792,9 +802,11 @@ func TestSkeletonServiceListConfigs(t *testing.T) {
 	assert.Equal(t, "demo.user", configs[0].Domain)
 	assert.Equal(t, "demo.user.UserConfig", configs[0].SkelName)
 	assert.True(t, configs[0].Pub)
+	assert.True(t, configs[0].Sensitive)
 	assert.Equal(t, "ETERNAL", configs[0].Lifecycle)
 	require.Len(t, configs[0].Fields, 1)
 	assert.Equal(t, "bool", configs[0].Fields[0].Type)
+	assert.True(t, configs[0].Fields[0].Sensitive)
 }
 
 func TestSkeletonServiceListTasksAndEvents(t *testing.T) {
@@ -806,21 +818,25 @@ func TestSkeletonServiceListTasksAndEvents(t *testing.T) {
 					Name:     "SyncTask",
 					SkelName: "demo.user.SyncTask",
 					Triggers: []*skel.TriggerSchema{{
-						Name:     "run",
-						SkelName: "run",
+						Name:               "run",
+						SkelName:           "run",
+						ArgumentsSensitive: true,
 						Arguments: []*skel.MemberSchema{{
-							Name: "limit",
-							Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt},
+							Name:      "limit",
+							Sensitive: true,
+							Type:      &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt},
 						}},
 					}},
 				}},
 				Events: []*skel.EventSchema{{
-					Name:     "UserCreatedEvent",
-					SkelName: "demo.user.UserCreatedEvent",
-					Pub:      true,
+					Name:      "UserCreatedEvent",
+					SkelName:  "demo.user.UserCreatedEvent",
+					Pub:       true,
+					Sensitive: true,
 					Members: []*skel.MemberSchema{{
-						Name: "userId",
-						Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt},
+						Name:      "userId",
+						Sensitive: true,
+						Type:      &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt},
 					}},
 				}},
 			}},
@@ -833,11 +849,15 @@ func TestSkeletonServiceListTasksAndEvents(t *testing.T) {
 	require.Len(t, tasks, 1)
 	assert.Equal(t, "demo.user", tasks[0].Domain)
 	require.Len(t, tasks[0].Triggers, 1)
+	assert.True(t, tasks[0].Triggers[0].ArgumentsSensitive)
 	assert.Equal(t, "int", tasks[0].Triggers[0].Arguments[0].Type)
+	assert.True(t, tasks[0].Triggers[0].Arguments[0].Sensitive)
 	require.Len(t, events, 1)
 	assert.Equal(t, "demo.user", events[0].Domain)
 	assert.True(t, events[0].Pub)
+	assert.True(t, events[0].Sensitive)
 	assert.Equal(t, "int", events[0].Fields[0].Type)
+	assert.True(t, events[0].Fields[0].Sensitive)
 }
 
 func TestSkeletonServiceListDataIncludesEnums(t *testing.T) {
@@ -851,10 +871,12 @@ func TestSkeletonServiceListDataIncludesEnums(t *testing.T) {
 						Name:           "Page",
 						SkelName:       "demo.user.Page",
 						Description:    "分页数据",
+						Sensitive:      true,
 						TypeParameters: []string{"T"},
 						Members: []*skel.MemberSchema{{
-							Name: "items",
-							Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindTypeParameter, Name: "T"}},
+							Name:      "items",
+							Sensitive: true,
+							Type:      &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindTypeParameter, Name: "T"}},
 						}},
 					},
 				},
@@ -878,8 +900,10 @@ func TestSkeletonServiceListDataIncludesEnums(t *testing.T) {
 	assert.Equal(t, "demo.user", data[0].Domain)
 	assert.Equal(t, "demo.user.Page", data[0].SkelName)
 	assert.False(t, data[0].Enum)
+	assert.True(t, data[0].Sensitive)
 	assert.Equal(t, []string{"T"}, data[0].TypeParameters)
 	assert.Equal(t, "list<T>", data[0].Fields[0].Type)
+	assert.True(t, data[0].Fields[0].Sensitive)
 	assert.Equal(t, "demo.user.UserStatus", data[1].SkelName)
 	assert.Equal(t, "demo.user", data[1].Domain)
 	assert.True(t, data[1].Enum)

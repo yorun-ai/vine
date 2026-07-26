@@ -33,7 +33,6 @@ type Server struct {
 }
 
 func NewServer(opt Option) *Server {
-	logger.FreezePayloadPolicies()
 	server := &Server{
 		opt:      &opt,
 		executor: opt.Executor,

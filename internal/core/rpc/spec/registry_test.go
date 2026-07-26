@@ -301,6 +301,20 @@ func TestRegisterInitializesMethodBinaryFlags(t *testing.T) {
 	}
 }
 
+func TestRegisterInitializesMethodSensitiveFlags(t *testing.T) {
+	resetRegistryForTest(t)
+
+	serviceInfo := newRegistryTestServiceInfo("test.registry.sensitive")
+	serviceInfo.Methods[0].ArgumentsSensitive = true
+	serviceInfo.Methods[0].ResultSensitive = true
+	Register(serviceInfo)
+
+	method := serviceInfoBySkelName[serviceInfo.SkelName].Methods()[0]
+	if !method.ArgumentsSensitive() || !method.ResultSensitive() {
+		t.Fatal("expected method sensitive flags to be initialized")
+	}
+}
+
 func TestRegisterMergesPartialClientAndServerInfo(t *testing.T) {
 	resetRegistryForTest(t)
 
