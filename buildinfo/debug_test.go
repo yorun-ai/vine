@@ -69,6 +69,25 @@ func TestMustDebugBuildInfoWithDevelVersion(t *testing.T) {
 	}
 }
 
+func TestMustDebugBuildInfoUsesLinkerVersion(t *testing.T) {
+	original := ldModuleVersion
+	t.Cleanup(func() {
+		ldModuleVersion = original
+	})
+	ldModuleVersion = "v1.2.3"
+	setReadBuildInfoForTest(t, func() (*debug.BuildInfo, bool) {
+		return &debug.BuildInfo{
+			GoVersion: "go1.26.0",
+			Main:      debug.Module{Version: "(devel)"},
+		}, true
+	})
+
+	info := MustDebugBuildInfo()
+	if info.Version != "v1.2.3" {
+		t.Fatalf("unexpected version: %q", info.Version)
+	}
+}
+
 func TestMustDebugBuildInfoRejectsMissingBuildInfo(t *testing.T) {
 	setReadBuildInfoForTest(t, func() (*debug.BuildInfo, bool) {
 		return nil, false
