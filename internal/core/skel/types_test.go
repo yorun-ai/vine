@@ -108,6 +108,51 @@ func TestUUIDCBORRoundTrip(t *testing.T) {
 	}
 }
 
+func TestUUIDMapKeyJSONRoundTrip(t *testing.T) {
+	type payload struct {
+		Values map[UUID]string `json:"values"`
+	}
+
+	id := NewUUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"))
+	input := payload{Values: map[UUID]string{id: "value"}}
+	data, err := json.Marshal(input)
+	if err != nil {
+		t.Fatalf("Marshal() error = %v", err)
+	}
+	if got := string(data); got != `{"values":{"550e8400-e29b-41d4-a716-446655440000":"value"}}` {
+		t.Fatalf("unexpected json: %s", got)
+	}
+
+	var decoded payload
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+	if got := decoded.Values[id]; got != "value" {
+		t.Fatalf("unexpected map value: %q", got)
+	}
+}
+
+func TestUUIDMapKeyCBORRoundTrip(t *testing.T) {
+	type payload struct {
+		Values map[UUID]string `cbor:"values"`
+	}
+
+	id := NewUUID(uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"))
+	input := payload{Values: map[UUID]string{id: "value"}}
+	data, err := vcode.MarshalCbor(input)
+	if err != nil {
+		t.Fatalf("MarshalCbor() error = %v", err)
+	}
+
+	decoded, err := vcode.UnmarshalCbor[payload](data)
+	if err != nil {
+		t.Fatalf("UnmarshalCbor() error = %v", err)
+	}
+	if got := decoded.Values[id]; got != "value" {
+		t.Fatalf("unexpected map value: %q", got)
+	}
+}
+
 func TestJSONJSONRoundTrip(t *testing.T) {
 	type payload struct {
 		Value JSON `json:"value"`
