@@ -48,10 +48,12 @@ func (s *TaskDebugServiceServerImpl) ListTasks() []skeled.TaskDebugTaskItem {
 			seen[key] = struct{}{}
 			taskSchema := s.findTaskSchema(runner.TaskSkelName, runner.SchemaHash)
 			ret = append(ret, skeled.TaskDebugTaskItem{
-				Name:         taskSchema.Name,
-				TaskSkelName: taskSchema.SkelName,
-				SchemaHash:   runner.SchemaHash,
-				Description:  optionalString(taskSchema.Description),
+				Name:             taskSchema.Name,
+				TaskSkelName:     taskSchema.SkelName,
+				SchemaHash:       runner.SchemaHash,
+				Description:      optionalString(taskSchema.Description),
+				Deprecated:       taskSchema.Deprecated,
+				DeprecatedReason: optionalString(taskSchema.DeprecatedReason),
 			})
 		}
 	}
@@ -141,6 +143,8 @@ func toTaskDebugTriggerItem(trigger *skel.TriggerSchema) skeled.TaskDebugTrigger
 		Name:             trigger.Name,
 		SkelName:         trigger.SkelName,
 		Description:      optionalString(trigger.Description),
+		Deprecated:       trigger.Deprecated,
+		DeprecatedReason: optionalString(trigger.DeprecatedReason),
 		InputDescription: optionalString(trigger.InputDescription),
 		Arguments:        toDebugSkeletonFields(trigger.Arguments),
 	}

@@ -273,6 +273,8 @@ func toServerSkeletonActorItem(version _SkeletonVersionFields, schema *skel.Acto
 		Name:             schema.Name,
 		SkelName:         schema.SkelName,
 		Description:      optionalString(schema.Description),
+		Deprecated:       schema.Deprecated,
+		DeprecatedReason: optionalString(schema.DeprecatedReason),
 		ActorVias:        vias,
 		AuthEnabled:      schema.AuthEnabled,
 		Credential:       toServerSkeletonActorData(version, schema.AuthCredential),
@@ -417,6 +419,8 @@ func toServerSkeletonServiceItem(version _SkeletonVersionFields, schema *skel.Se
 		Name:             schema.Name,
 		SkelName:         schema.SkelName,
 		Description:      optionalString(schema.Description),
+		Deprecated:       schema.Deprecated,
+		DeprecatedReason: optionalString(schema.DeprecatedReason),
 		Pub:              schema.Pub,
 		AuthMode:         string(schema.AuthMode),
 		Require:          toServerSkeletonPermExpr(schema.Require),
@@ -436,6 +440,8 @@ func toServerSkeletonResourceItem(version _SkeletonVersionFields, schema *skel.R
 		Name:             schema.Name,
 		SkelName:         schema.SkelName,
 		Description:      optionalString(schema.Description),
+		Deprecated:       schema.Deprecated,
+		DeprecatedReason: optionalString(schema.DeprecatedReason),
 		Checks:           toServerSkeletonResourceChecks(schema.Checks),
 		Actions:          toServerSkeletonResourceActions(schema.Actions),
 		CheckService:     toServerSkeletonResourceCheckService(version, schema.CheckService),
@@ -461,6 +467,8 @@ func toServerSkeletonConfigItem(version _SkeletonVersionFields, schema *skel.Con
 		Name:             schema.Name,
 		SkelName:         schema.SkelName,
 		Description:      optionalString(schema.Description),
+		Deprecated:       schema.Deprecated,
+		DeprecatedReason: optionalString(schema.DeprecatedReason),
 		Pub:              schema.Pub,
 		Sensitive:        schema.Sensitive,
 		Lifecycle:        schema.Lifecycle,
@@ -479,6 +487,8 @@ func toServerSkeletonWebItem(version _SkeletonVersionFields, schema *skel.WebSch
 		Name:             schema.Name,
 		SkelName:         schema.SkelName,
 		Description:      optionalString(schema.Description),
+		Deprecated:       schema.Deprecated,
+		DeprecatedReason: optionalString(schema.DeprecatedReason),
 		Actors:           toServerSkeletonActorRefs(schema.Audiences),
 	}
 }
@@ -490,6 +500,8 @@ func toServerSkeletonTask(version _SkeletonVersionFields, schema *skel.TaskSchem
 			Name:               trigger.Name,
 			SkelName:           trigger.SkelName,
 			Description:        optionalString(trigger.Description),
+			Deprecated:         trigger.Deprecated,
+			DeprecatedReason:   optionalString(trigger.DeprecatedReason),
 			InputDescription:   optionalString(trigger.InputDescription),
 			Arguments:          toServerSkeletonFields(trigger.Arguments),
 			ArgumentsSensitive: trigger.ArgumentsSensitive,
@@ -505,6 +517,8 @@ func toServerSkeletonTask(version _SkeletonVersionFields, schema *skel.TaskSchem
 		Name:             schema.Name,
 		SkelName:         schema.SkelName,
 		Description:      optionalString(schema.Description),
+		Deprecated:       schema.Deprecated,
+		DeprecatedReason: optionalString(schema.DeprecatedReason),
 		Triggers:         triggers,
 	}
 }
@@ -520,6 +534,8 @@ func toServerSkeletonEventItem(version _SkeletonVersionFields, schema *skel.Even
 		Name:             schema.Name,
 		SkelName:         schema.SkelName,
 		Description:      optionalString(schema.Description),
+		Deprecated:       schema.Deprecated,
+		DeprecatedReason: optionalString(schema.DeprecatedReason),
 		Pub:              schema.Pub,
 		Sensitive:        schema.Sensitive,
 		Fields:           toServerSkeletonFields(schema.Members),
@@ -537,6 +553,8 @@ func toServerSkeletonData(version _SkeletonVersionFields, schema *skel.DataSchem
 		Name:             schema.Name,
 		SkelName:         schema.SkelName,
 		Description:      optionalString(schema.Description),
+		Deprecated:       schema.Deprecated,
+		DeprecatedReason: optionalString(schema.DeprecatedReason),
 		Enum:             false,
 		Sensitive:        schema.Sensitive,
 		TypeParameters:   append([]string{}, schema.TypeParameters...),
@@ -556,6 +574,8 @@ func toServerSkeletonEnumData(version _SkeletonVersionFields, schema *skel.EnumS
 		Name:             schema.Name,
 		SkelName:         schema.SkelName,
 		Description:      optionalString(schema.Description),
+		Deprecated:       schema.Deprecated,
+		DeprecatedReason: optionalString(schema.DeprecatedReason),
 		Enum:             true,
 		TypeParameters:   []string{},
 		Fields:           []skeled.SkeletonField{},
@@ -567,8 +587,10 @@ func toServerSkeletonEnumItems(schemas []*skel.EnumItemSchema) []skeled.Skeleton
 	ret := make([]skeled.SkeletonEnumItem, 0, len(schemas))
 	for _, schema := range schemas {
 		ret = append(ret, skeled.SkeletonEnumItem{
-			Name:        schema.Name,
-			Description: optionalString(schema.Description),
+			Name:             schema.Name,
+			Description:      optionalString(schema.Description),
+			Deprecated:       schema.Deprecated,
+			DeprecatedReason: optionalString(schema.DeprecatedReason),
 		})
 	}
 	return ret
@@ -599,6 +621,8 @@ func toServerSkeletonMethod(schema *skel.MethodSchema) skeled.SkeletonMethod {
 		Name:               schema.Name,
 		SkelName:           schema.SkelName,
 		Description:        optionalString(schema.Description),
+		Deprecated:         schema.Deprecated,
+		DeprecatedReason:   optionalString(schema.DeprecatedReason),
 		InputDescription:   optionalString(schema.InputDescription),
 		OutputDescription:  optionalString(schema.OutputDescription),
 		Example:            optionalString(schema.Example),
@@ -669,10 +693,12 @@ func toServerSkeletonResourceActions(schemas []*skel.ResourceActionSchema) []ske
 	ret := make([]skeled.SkeletonResourceAction, 0, len(schemas))
 	for _, schema := range schemas {
 		ret = append(ret, skeled.SkeletonResourceAction{
-			Name:           schema.Name,
-			PermissionCode: schema.PermissionCode,
-			Description:    optionalString(schema.Description),
-			Checks:         toServerSkeletonResourceChecks(schema.Checks),
+			Name:             schema.Name,
+			PermissionCode:   schema.PermissionCode,
+			Description:      optionalString(schema.Description),
+			Deprecated:       schema.Deprecated,
+			DeprecatedReason: optionalString(schema.DeprecatedReason),
+			Checks:           toServerSkeletonResourceChecks(schema.Checks),
 		})
 	}
 	return ret
@@ -683,6 +709,8 @@ func toServerSkeletonResourceChecks(schemas []*skel.ResourceCheckSchema) []skele
 	for _, schema := range schemas {
 		ret = append(ret, skeled.SkeletonResourceCheck{
 			Name:               schema.Name,
+			Deprecated:         schema.Deprecated,
+			DeprecatedReason:   optionalString(schema.DeprecatedReason),
 			MethodName:         schema.Method.Name,
 			MethodSkelName:     schema.Method.SkelName,
 			Arguments:          toServerSkeletonFields(schema.Arguments),
@@ -696,11 +724,13 @@ func toServerSkeletonFields(schemas []*skel.MemberSchema) []skeled.SkeletonField
 	ret := make([]skeled.SkeletonField, 0, len(schemas))
 	for _, schema := range schemas {
 		ret = append(ret, skeled.SkeletonField{
-			Name:        schema.Name,
-			Type:        formatSkeletonType(schema.Type),
-			Description: optionalString(schema.Description),
-			Example:     optionalString(schema.Example),
-			Sensitive:   schema.Sensitive,
+			Name:             schema.Name,
+			Type:             formatSkeletonType(schema.Type),
+			Description:      optionalString(schema.Description),
+			Deprecated:       schema.Deprecated,
+			DeprecatedReason: optionalString(schema.DeprecatedReason),
+			Example:          optionalString(schema.Example),
+			Sensitive:        schema.Sensitive,
 		})
 	}
 	return ret

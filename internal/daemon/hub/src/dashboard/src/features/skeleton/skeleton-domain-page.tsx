@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { DeprecatedBadge } from '@/components/deprecated'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -708,8 +709,13 @@ export function SkeletonDomainPage() {
                               }}
                               className="grid gap-1 rounded-md border px-3 py-2.5 text-left transition-colors hover:border-primary/30 hover:bg-primary/[0.04]"
                             >
-                              <span className="truncate text-sm font-medium">
-                                {displayItemName(item)}
+                              <span className="flex min-w-0 items-center gap-2">
+                                <span className="truncate text-sm font-medium">
+                                  {displayItemName(item)}
+                                </span>
+                                <DeprecatedBadge
+                                  deprecated={item.deprecated}
+                                />
                               </span>
                               <span className="truncate font-mono text-xs text-muted-foreground">
                                 {item.skelName}

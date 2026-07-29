@@ -1,1979 +1,2155 @@
 /**
- * Portal site CORS mode。
+ * Portal site CORS mode.
  */
 export type PortalCorsMode =
   | "UNSPECIFIED"
-  | "DISABLED"    // Disable CORS。
-  | "SAME_DOMAIN" // Allow origins in the same domain as the entry rule。
-  | "STRICT"      // Only allow Origins in the configuration list。
+  | "DISABLED"    // Disable CORS.
+  | "SAME_DOMAIN" // Allow origins in the same domain as the entry rule.
+  | "STRICT"      // Only allow Origins in the configuration list.
 ;
 /**
- * Portal target site type。
+ * Portal target site type.
  */
 export type PortalSiteType =
   | "UNSPECIFIED"
-  | "RPCGW"       // Rpc gateway。
-  | "WEBGW"       // Web gateway。
+  | "RPCGW"       // Rpc gateway.
+  | "WEBGW"       // Web gateway.
 ;
 /**
- * Configuration creation parameters。
+ * Configuration creation parameters.
  */
 export type AppConfigCreation = {
   /**
-   * Configuration Skel name。
+   * Configuration Skel name.
    */
   skelName: string;
   /**
-   * Configuration JSON。
+   * Configuration JSON.
    */
   value:    string;
 }
 /**
- * Configuration items。
+ * Configuration items.
  */
 export type AppConfigItem = {
   /**
-   * Configuration ID。
+   * Configuration ID.
    */
   id:        number;
   /**
-   * Configuration key。
+   * Configuration key.
    */
   key:       string;
   /**
-   * Configuration status。
+   * Configuration status.
    */
   status:    string;
   /**
-   * Configuration lifecycle。
+   * Configuration lifecycle.
    */
   lifecycle: string;
   /**
-   * Configuration JSON。
+   * Configuration JSON.
    */
   value:     string;
   /**
-   * Configuration schema。
+   * Configuration schema.
    */
   schema:    AppConfigSchema | null;
 }
 /**
- * Configuration schema items。
+ * Configuration schema items.
  */
 export type AppConfigSchema = {
   /**
-   * Configuration Skel name。
+   * Configuration Skel name.
    */
-  skelName:    string;
+  skelName:         string;
   /**
-   * Configuration name。
+   * Configuration name.
    */
-  name:        string;
+  name:             string;
   /**
-   * Configuration description。
+   * Configuration description.
    */
-  description: string | null;
+  description:      string | null;
   /**
-   * Configuration lifecycle。
+   * Whether the configuration is deprecated.
    */
-  lifecycle:   string;
+  deprecated:       boolean;
   /**
-   * Configuration field list。
+   * Configuration deprecation reason.
    */
-  fields:      Array<AppConfigSchemaField>;
+  deprecatedReason: string | null;
+  /**
+   * Configuration lifecycle.
+   */
+  lifecycle:        string;
+  /**
+   * Configuration field list.
+   */
+  fields:           Array<AppConfigSchemaField>;
 }
 /**
- * Configuration schema enumeration options。
+ * Configuration schema enumeration options.
  */
 export type AppConfigSchemaEnumItem = {
   /**
-   * Enum option name。
+   * Enum option name.
    */
-  name:        string;
+  name:             string;
   /**
-   * Enumeration options description。
+   * Enumeration options description.
    */
-  description: string | null;
+  description:      string | null;
+  /**
+   * Whether the enumeration option is deprecated.
+   */
+  deprecated:       boolean;
+  /**
+   * Enumeration option deprecation reason.
+   */
+  deprecatedReason: string | null;
 }
 /**
- * Configuration schema fields。
+ * Configuration schema fields.
  */
 export type AppConfigSchemaField = {
   /**
-   * Field name。
+   * Field name.
    */
-  name:        string;
+  name:             string;
   /**
-   * Field type。
+   * Field type.
    */
-  type:        string;
+  type:             string;
   /**
-   * Field description。
+   * Field description.
    */
-  description: string | null;
+  description:      string | null;
   /**
-   * Enumeration options list。
+   * Whether the field is deprecated.
    */
-  enumItems:   Array<AppConfigSchemaEnumItem>;
+  deprecated:       boolean;
+  /**
+   * Field deprecation reason.
+   */
+  deprecatedReason: string | null;
+  /**
+   * Enumeration options list.
+   */
+  enumItems:        Array<AppConfigSchemaEnumItem>;
 }
 /**
- * Configuration update parameters。
+ * Configuration update parameters.
  */
 export type AppConfigUpdate = {
   /**
-   * Configuration JSON。
+   * Configuration JSON.
    */
   value: string | null;
 }
 /**
- * Link application instance information registered with Hub。
+ * Link application instance information registered with Hub.
  */
 export type AppRegistration = {
   /**
-   * Application name。
+   * Application name.
    */
   name:            string;
   /**
-   * Application instance ID。
+   * Application instance ID.
    */
   instanceId:      string;
   /**
-   * Application version。
+   * Application version.
    */
   version:         string;
   /**
-   * Application access address (e.g. "http://10.1.2.3:23001")。
+   * Application access address (e.g. "http://10.1.2.3:23001").
    */
   endpoint:        string;
   /**
-   * List of Rpc service processing capabilities provided by the application。
+   * List of Rpc service processing capabilities provided by the application.
    */
   serviceHandlers: Array<ServiceHandlerRegistration>;
   /**
-   * List of web processing capabilities provided by the application。
+   * List of web processing capabilities provided by the application.
    */
   webHandlers:     Array<WebHandlerRegistration>;
   /**
-   * List of event listening capabilities provided by the application。
+   * List of event listening capabilities provided by the application.
    */
   eventListeners:  Array<EventListenerRegistration>;
   /**
-   * List of task execution capabilities provided by the application。
+   * List of task execution capabilities provided by the application.
    */
   taskRunners:     Array<TaskRunnerRegistration>;
   /**
-   * List of all DomainSchemas registered by the application。
+   * List of all DomainSchemas registered by the application.
    */
   domainSchemas:   Array<string>;
 }
 /**
- * Application instance status information, used for heartbeat refresh。
+ * Application instance status information, used for heartbeat refresh.
  */
 export type AppStatus = {
   /**
-   * Application name。
+   * Application name.
    */
   name:       string;
   /**
-   * Application instance ID。
+   * Application instance ID.
    */
   instanceId: string;
 }
 /**
- * Application instance status view for Dashboard display。
+ * Application instance status view for Dashboard display.
  */
 export type AppStatusView = {
   /**
-   * Application name。
+   * Application name.
    */
   name:            string;
   /**
-   * Application instance ID。
+   * Application instance ID.
    */
   instanceId:      string;
   /**
-   * Application version。
+   * Application version.
    */
   version:         string;
   /**
-   * Application access address。
+   * Application access address.
    */
   endpoint:        string;
   /**
-   * List of Rpc service processing capabilities provided by the application。
+   * List of Rpc service processing capabilities provided by the application.
    */
   serviceHandlers: Array<ServiceHandlerRegistration>;
   /**
-   * List of web processing capabilities provided by the application。
+   * List of web processing capabilities provided by the application.
    */
   webHandlers:     Array<WebHandlerRegistration>;
   /**
-   * List of event listening capabilities provided by the application。
+   * List of event listening capabilities provided by the application.
    */
   eventListeners:  Array<EventListenerRegistration>;
   /**
-   * List of task execution capabilities provided by the application。
+   * List of task execution capabilities provided by the application.
    */
   taskRunners:     Array<TaskRunnerRegistration>;
 }
 /**
- * Default Event Debug send request。
+ * Default Event Debug send request.
  */
 export type EventDebugDefaultEmitRequest = {
   /**
-   * Trace ID。
+   * Trace ID.
    */
   traceId:   string;
   /**
-   * Span ID。
+   * Span ID.
    */
   spanId:    string;
   /**
-   * Default event JSON。
+   * Default event JSON.
    */
   eventJson: string;
 }
 /**
- * Event Debug send request。
+ * Event Debug send request.
  */
 export type EventDebugEmitRequest = {
   /**
-   * Event Skel name。
+   * Event Skel name.
    */
   eventSkelName: string;
   /**
-   * Event schema hash。
+   * Event schema hash.
    */
   schemaHash:    string;
   /**
-   * Event JSON。
+   * Event JSON.
    */
   eventJson:     string;
   /**
-   * Trace ID。
+   * Trace ID.
    */
   traceId:       string | null;
   /**
-   * Span ID。
+   * Span ID.
    */
   spanId:        string | null;
 }
 /**
- * Event called by Event Debug。
+ * Event called by Event Debug.
  */
 export type EventDebugEventItem = {
   /**
-   * Event name。
+   * Event name.
    */
-  name:          string;
+  name:             string;
   /**
-   * Event Skel name。
+   * Event Skel name.
    */
-  eventSkelName: string;
+  eventSkelName:    string;
   /**
-   * Event schema hash。
+   * Event schema hash.
    */
-  schemaHash:    string;
+  schemaHash:       string;
   /**
-   * Event description。
+   * Event description.
    */
-  description:   string | null;
+  description:      string | null;
   /**
-   * Field list。
+   * Whether the Event is deprecated.
    */
-  fields:        Array<SkeletonField>;
+  deprecated:       boolean;
+  /**
+   * Event deprecation reason.
+   */
+  deprecatedReason: string | null;
+  /**
+   * Field list.
+   */
+  fields:           Array<SkeletonField>;
 }
 /**
- * Event listening capability registration information provided by the application。
+ * Event listening capability registration information provided by the application.
  */
 export type EventListenerRegistration = {
   /**
-   * Event Skel name。
+   * Event Skel name.
    */
   eventSkelName: string;
   /**
-   * Event schema hash。
+   * Event schema hash.
    */
   schemaHash:    string;
   /**
-   * Execution timeout, in milliseconds。
+   * Execution timeout, in milliseconds.
    */
   timeoutMs:     number;
   /**
-   * Maximum concurrency。
+   * Maximum concurrency.
    */
   concurrency:   number;
   /**
-   * Whether to disallow retrying after failure。
+   * Whether to disallow retrying after failure.
    */
   noRetry:       boolean;
 }
 /**
- * Hub information。
+ * Hub information.
  */
 export type Info = {
   /**
-   * API service port。
+   * API service port.
    */
   apiPort:    number;
   /**
-   * Redis service port。
+   * Redis service port.
    */
   redisPort:  number;
   /**
-   * NATS service port。
+   * NATS service port.
    */
   natsPort:   number;
   /**
-   * Standalone MQ service address。
+   * Standalone MQ service address.
    */
   mqEndpoint: string;
 }
 /**
- * Portal site certificate。
+ * Portal site certificate.
  */
 export type PortalCert = {
   /**
-   * Certificate ID。
+   * Certificate ID.
    */
   id:                   number;
   /**
-   * Certificate name。
+   * Certificate name.
    */
   name:                 string;
   /**
-   * Certificate issuer。
+   * Certificate issuer.
    */
   issuer:               string;
   /**
-   * Certificate domain name。
+   * Certificate domain name.
    */
   domains:              Array<string>;
   /**
-   * Certificate Base64。
+   * Certificate Base64.
    */
   publicKeyBase64:      string;
   /**
-   * Whether the private key has been configured。
+   * Whether the private key has been configured.
    */
   privateKeyConfigured: boolean;
   /**
-   * Validity start time。
+   * Validity start time.
    */
   validFrom:            string;
   /**
-   * Validity end time。
+   * Validity end time.
    */
   validTo:              string;
 }
 /**
- * Portal site certificate creation parameters。
+ * Portal site certificate creation parameters.
  */
 export type PortalCertCreation = {
   /**
-   * Certificate name。
+   * Certificate name.
    */
   name:             string;
   /**
-   * Certificate Base64。
+   * Certificate Base64.
    */
   publicKeyBase64:  string;
   /**
-   * Private key Base64。
+   * Private key Base64.
    */
   privateKeyBase64: string;
 }
 /**
- * Portal site certificate update parameters。
+ * Portal site certificate update parameters.
  */
 export type PortalCertUpdate = {
   /**
-   * Certificate name。
+   * Certificate name.
    */
   name:             string | null;
   /**
-   * Certificate Base64。
+   * Certificate Base64.
    */
   publicKeyBase64:  string | null;
   /**
-   * Private key Base64。
+   * Private key Base64.
    */
   privateKeyBase64: string | null;
 }
 /**
- * Portal site CORS configuration。
+ * Portal site CORS configuration.
  */
 export type PortalCors = {
   /**
-   * CORS mode: DISABLED/SAME_DOMAIN/STRICT。
+   * CORS mode: DISABLED/SAME_DOMAIN/STRICT.
    */
   mode:           PortalCorsMode;
   /**
-   * List of origins allowed in strict mode。
+   * List of origins allowed in strict mode.
    */
   allowedOrigins: Array<string>;
 }
 /**
- * Hub Dashboard access entry。
+ * Hub Dashboard access entry.
  */
 export type PortalDashboardAccess = {
   /**
-   * Entry protocol。
+   * Entry protocol.
    */
   scheme:     string;
   /**
-   * Match Host, empty string means no restriction。
+   * Match Host, empty string means no restriction.
    */
   host:       string;
   /**
-   * Entry port。
+   * Entry port.
    */
   port:       number;
   /**
-   * Match path prefix。
+   * Match path prefix.
    */
   pathPrefix: string;
   /**
-   * Whether to allow modification of Dashboard access entry。
+   * Whether to allow modification of Dashboard access entry.
    */
   canUpdate:  boolean;
 }
 /**
- * Portal access entry。
+ * Portal access entry.
  */
 export type PortalEntry = {
   /**
-   * Entry name。
+   * Entry name.
    */
   name:   string;
   /**
-   * Entry protocol。
+   * Entry protocol.
    */
   scheme: string;
   /**
-   * Match Host, empty string means no restriction。
+   * Match Host, empty string means no restriction.
    */
   host:   string;
   /**
-   * Entry port。
+   * Entry port.
    */
   port:   number;
   /**
-   * Entry rule list。
+   * Entry rule list.
    */
   rules:  Array<PortalEntryRule>;
 }
 /**
- * Portal access entry configuration update parameters。
+ * Portal access entry configuration update parameters.
  */
 export type PortalEntryAccessUpdate = {
   /**
-   * Entry protocol。
+   * Entry protocol.
    */
   scheme: string;
   /**
-   * Match Host, empty string means no restriction。
+   * Match Host, empty string means no restriction.
    */
   host:   string;
   /**
-   * Entry port。
+   * Entry port.
    */
   port:   number;
 }
 /**
- * Portal access entry rules。
+ * Portal access entry rules.
  */
 export type PortalEntryRule = {
   /**
-   * Entry rules。
+   * Entry rules.
    */
   rule: PortalRule;
   /**
-   * Target site。
+   * Target site.
    */
   site: PortalSite | null;
 }
 /**
- * Portal entry rules。
+ * Portal entry rules.
  */
 export type PortalRule = {
   /**
-   * Rule ID。
+   * Rule ID.
    */
   id:                 number;
   /**
-   * Rule name。
+   * Rule name.
    */
   name:               string;
   /**
-   * Matching protocol。
+   * Matching protocol.
    */
   scheme:             string;
   /**
-   * Match Host, empty string means no restriction。
+   * Match Host, empty string means no restriction.
    */
   host:               string;
   /**
-   * Match port, 0 means no restriction。
+   * Match port, 0 means no restriction.
    */
   port:               number;
   /**
-   * Match path prefix, empty string means match all paths。
+   * Match path prefix, empty string means match all paths.
    */
   pathPrefix:         string;
   /**
-   * Target type。
+   * Target type.
    */
   targetType:         string;
   /**
-   * Site name。
+   * Site name.
    */
   siteName:           string;
   /**
-   * Redirect Pattern。
+   * Redirect Pattern.
    */
   redirectionPattern: string;
 }
 /**
- * Portal entry rule creation parameters。
+ * Portal entry rule creation parameters.
  */
 export type PortalRuleCreation = {
   /**
-   * Rule name。
+   * Rule name.
    */
   name:               string;
   /**
-   * Matching protocol。
+   * Matching protocol.
    */
   scheme:             string;
   /**
-   * Match Host, empty string means no restriction。
+   * Match Host, empty string means no restriction.
    */
   host:               string;
   /**
-   * Match port, 0 means no restriction。
+   * Match port, 0 means no restriction.
    */
   port:               number;
   /**
-   * Match path prefix, empty string means match all paths。
+   * Match path prefix, empty string means match all paths.
    */
   pathPrefix:         string;
   /**
-   * Target type。
+   * Target type.
    */
   targetType:         string;
   /**
-   * Site name。
+   * Site name.
    */
   siteName:           string;
   /**
-   * Redirect Pattern。
+   * Redirect Pattern.
    */
   redirectionPattern: string;
 }
 /**
- * Portal entry rule update parameters。
+ * Portal entry rule update parameters.
  */
 export type PortalRuleUpdate = {
   /**
-   * Rule name。
+   * Rule name.
    */
   name:               string | null;
   /**
-   * Matching protocol。
+   * Matching protocol.
    */
   scheme:             string | null;
   /**
-   * Match Host, empty string means no restriction。
+   * Match Host, empty string means no restriction.
    */
   host:               string | null;
   /**
-   * Match port, 0 means no restriction。
+   * Match port, 0 means no restriction.
    */
   port:               number | null;
   /**
-   * Match path prefix, empty string means match all paths。
+   * Match path prefix, empty string means match all paths.
    */
   pathPrefix:         string | null;
   /**
-   * Target type。
+   * Target type.
    */
   targetType:         string | null;
   /**
-   * Site name。
+   * Site name.
    */
   siteName:           string | null;
   /**
-   * Redirect Pattern。
+   * Redirect Pattern.
    */
   redirectionPattern: string | null;
 }
 /**
- * Portal target site。
+ * Portal target site.
  */
 export type PortalSite = {
   /**
-   * Target site id。
+   * Target site id.
    */
   id:            number;
   /**
-   * Target site name。
+   * Target site name.
    */
   name:          string;
   /**
-   * Target site type。
+   * Target site type.
    */
   type:          PortalSiteType;
   /**
-   * Actor Skel name。
+   * Actor Skel name.
    */
   actorSkelName: string;
   /**
-   * Actor access method。
+   * Actor access method.
    */
   actorVia:      string;
   /**
-   * Rpc gateway service Skel name list。
+   * Rpc gateway service Skel name list.
    */
   rpcgwServices: Array<string>;
   /**
-   * CORS configuration。
+   * CORS configuration.
    */
   cors:          PortalCors | null;
   /**
-   * Web name。
+   * Web name.
    */
   webName:       string;
 }
 /**
- * Portal target site Actor options。
+ * Portal target site Actor options.
  */
 export type PortalSiteActorOption = {
   /**
-   * Actor name。
+   * Actor name.
    */
   name:      string;
   /**
-   * Actor Skel name。
+   * Actor Skel name.
    */
   skelName:  string;
   /**
-   * Actor access method list。
+   * Actor access method list.
    */
   actorVias: Array<string>;
 }
 /**
- * Portal target site creation parameters。
+ * Portal target site creation parameters.
  */
 export type PortalSiteCreation = {
   /**
-   * Target site name。
+   * Target site name.
    */
   name:          string;
   /**
-   * Target site type。
+   * Target site type.
    */
   type:          PortalSiteType;
   /**
-   * Actor Skel name。
+   * Actor Skel name.
    */
   actorSkelName: string;
   /**
-   * Actor access method。
+   * Actor access method.
    */
   actorVia:      string;
   /**
-   * CORS configuration。
+   * CORS configuration.
    */
   cors:          PortalCors | null;
   /**
-   * Web name。
+   * Web name.
    */
   webName:       string;
 }
 /**
- * Portal target site form options。
+ * Portal target site form options.
  */
 export type PortalSiteOptions = {
   /**
-   * Actor options。
+   * Actor options.
    */
   actors:   Array<PortalSiteActorOption>;
   /**
-   * Rpc service options。
+   * Rpc service options.
    */
   services: Array<PortalSiteServiceOption>;
   /**
-   * Web options。
+   * Web options.
    */
   webs:     Array<PortalSiteWebOption>;
 }
 /**
- * Portal target site service options。
+ * Portal target site service options.
  */
 export type PortalSiteServiceOption = {
   /**
-   * Service name。
+   * Service name.
    */
   name:           string;
   /**
-   * Service Skel name。
+   * Service Skel name.
    */
   skelName:       string;
   /**
-   * Actor Skel name list。
+   * Actor Skel name list.
    */
   actorSkelNames: Array<string>;
 }
 /**
- * Portal target site update parameters。
+ * Portal target site update parameters.
  */
 export type PortalSiteUpdate = {
   /**
-   * Target site name。
+   * Target site name.
    */
   name:          string | null;
   /**
-   * Target site type。
+   * Target site type.
    */
   type:          PortalSiteType | null;
   /**
-   * Actor Skel name。
+   * Actor Skel name.
    */
   actorSkelName: string | null;
   /**
-   * Actor access method。
+   * Actor access method.
    */
   actorVia:      string | null;
   /**
-   * CORS configuration。
+   * CORS configuration.
    */
   cors:          PortalCors | null;
   /**
-   * Web name。
+   * Web name.
    */
   webName:       string | null;
 }
 /**
- * Portal target site web options。
+ * Portal target site web options.
  */
 export type PortalSiteWebOption = {
   /**
-   * Web name。
+   * Web name.
    */
   name:           string;
   /**
-   * Web Skel name。
+   * Web Skel name.
    */
   skelName:       string;
   /**
-   * Actor Skel name list。
+   * Actor Skel name list.
    */
   actorSkelNames: Array<string>;
 }
 /**
- * Seed entity differences。
+ * Seed entity differences.
  */
 export type SeedEntityDiff = {
   /**
-   * Entity type。
+   * Entity type.
    */
   kind:   string;
   /**
-   * Entity name。
+   * Entity name.
    */
   name:   string;
   /**
-   * Whether the entity currently exists。
+   * Whether the entity currently exists.
    */
   exists: boolean;
   /**
-   * Field differences。
+   * Field differences.
    */
   fields: Array<SeedFieldDiff>;
 }
 /**
- * Seed field differences。
+ * Seed field differences.
  */
 export type SeedFieldDiff = {
   /**
-   * Field name。
+   * Field name.
    */
   name:         string;
   /**
-   * Current value。
+   * Current value.
    */
   currentValue: string;
   /**
-   * Seed value。
+   * Seed value.
    */
   seedValue:    string;
   /**
-   * Whether the values differ。
+   * Whether the values differ.
    */
   changed:      boolean;
 }
 /**
- * Seed entity selection。
+ * Seed entity selection.
  */
 export type SeedItemSelection = {
   /**
-   * Entity type。
+   * Entity type.
    */
   kind: string;
   /**
-   * Entity name。
+   * Entity name.
    */
   name: string;
 }
 /**
- * Seed preview。
+ * Seed preview.
  */
 export type SeedPreview = {
   /**
-   * Entity differences。
+   * Entity differences.
    */
   items: Array<SeedEntityDiff>;
 }
 /**
- * Service Debug Actor options。
+ * Service Debug Actor options.
  */
 export type ServiceDebugActorItem = {
   /**
-   * Actor name。
+   * Actor name.
    */
   name:          string;
   /**
-   * Actor Skel name。
+   * Actor Skel name.
    */
   skelName:      string;
   /**
-   * Actor Info Skel name。
+   * Actor Info Skel name.
    */
   infoSkelName:  string;
   /**
-   * Default Actor Info JSON。
+   * Default Actor Info JSON.
    */
   actorInfoJson: string;
 }
 /**
- * Application instance called by Service Debug。
+ * Application instance called by Service Debug.
  */
 export type ServiceDebugAppInstance = {
   /**
-   * Application name。
+   * Application name.
    */
   appName:       string;
   /**
-   * Application instance ID。
+   * Application instance ID.
    */
   appInstanceId: string;
   /**
-   * Application version。
+   * Application version.
    */
   appVersion:    string;
   /**
-   * Application access address。
+   * Application access address.
    */
   endpoint:      string;
 }
 /**
- * Service Debug default call request。
+ * Service Debug default call request.
  */
 export type ServiceDebugDefaultInvokeRequest = {
   /**
-   * Trace ID。
+   * Trace ID.
    */
   traceId:       string;
   /**
-   * Span ID。
+   * Span ID.
    */
   spanId:        string;
   /**
-   * Actor options。
+   * Actor options.
    */
   actors:        Array<ServiceDebugActorItem>;
   /**
-   * Default Actor Skel name。
+   * Default Actor Skel name.
    */
   actorSkelName: string | null;
   /**
-   * Default Actor Info JSON。
+   * Default Actor Info JSON.
    */
   actorInfoJson: string;
   /**
-   * Default request parameters JSON。
+   * Default request parameters JSON.
    */
   paramsJson:    string;
 }
 /**
- * Service Debug call request。
+ * Service Debug call request.
  */
 export type ServiceDebugInvokeRequest = {
   /**
-   * Application name。
+   * Application name.
    */
   appName:         string | null;
   /**
-   * Application instance ID。
+   * Application instance ID.
    */
   appInstanceId:   string | null;
   /**
-   * Service Skel name。
+   * Service Skel name.
    */
   serviceSkelName: string;
   /**
-   * Service schema hash。
+   * Service schema hash.
    */
   schemaHash:      string;
   /**
-   * Method Skel name。
+   * Method Skel name.
    */
   methodSkelName:  string;
   /**
-   * Request parameters JSON。
+   * Request parameters JSON.
    */
   paramsJson:      string;
   /**
-   * Call timeout, in seconds。
+   * Call timeout, in seconds.
    */
   timeoutSeconds:  number;
   /**
-   * Trace ID。
+   * Trace ID.
    */
   traceId:         string | null;
   /**
-   * Span ID。
+   * Span ID.
    */
   spanId:          string | null;
   /**
-   * Actor Skel name。
+   * Actor Skel name.
    */
   actorSkelName:   string | null;
   /**
-   * Actor Info JSON。
+   * Actor Info JSON.
    */
   actorInfoJson:   string;
 }
 /**
- * Service Debug call response。
+ * Service Debug call response.
  */
 export type ServiceDebugInvokeResponse = {
   /**
-   * HTTP status code。
+   * HTTP status code.
    */
   httpStatus:  number;
   /**
-   * Rpc status code。
+   * Rpc status code.
    */
   rpcStatus:   string;
   /**
-   * Response header JSON。
+   * Response header JSON.
    */
   headersJson: string;
   /**
-   * Response body JSON。
+   * Response body JSON.
    */
   bodyJson:    string;
 }
 /**
- * Method called by Service Debug。
+ * Method called by Service Debug.
  */
 export type ServiceDebugMethodItem = {
   /**
-   * Method name。
+   * Method name.
    */
   name:              string;
   /**
-   * Method Skel name。
+   * Method Skel name.
    */
   skelName:          string;
   /**
-   * Method description。
+   * Method description.
    */
   description:       string | null;
   /**
-   * Input description。
+   * Whether the method is deprecated.
+   */
+  deprecated:        boolean;
+  /**
+   * Method deprecation reason.
+   */
+  deprecatedReason:  string | null;
+  /**
+   * Input description.
    */
   inputDescription:  string | null;
   /**
-   * Output description。
+   * Output description.
    */
   outputDescription: string | null;
   /**
-   * Input example。
+   * Input example.
    */
   example:           string | null;
   /**
-   * Output example。
+   * Output example.
    */
   outputExample:     string | null;
   /**
-   * Parameter list。
+   * Parameter list.
    */
   arguments:         Array<SkeletonField>;
   /**
-   * Return type。
+   * Return type.
    */
   resultType:        string;
 }
 /**
- * Service called by Service Debug。
+ * Service called by Service Debug.
  */
 export type ServiceDebugServiceItem = {
   /**
-   * Service Skel name。
+   * Service Skel name.
    */
-  serviceSkelName: string;
+  serviceSkelName:  string;
   /**
-   * Service schema hash。
+   * Service schema hash.
    */
-  schemaHash:      string;
+  schemaHash:       string;
+  /**
+   * Whether the Service is deprecated.
+   */
+  deprecated:       boolean;
+  /**
+   * Service deprecation reason.
+   */
+  deprecatedReason: string | null;
 }
 /**
- * Rpc service processing capability registration information provided by the application。
+ * Rpc service processing capability registration information provided by the application.
  */
 export type ServiceHandlerRegistration = {
   /**
-   * Service Skel name。
+   * Service Skel name.
    */
   serviceSkelName: string;
   /**
-   * Service schema hash。
+   * Service schema hash.
    */
   schemaHash:      string;
   /**
-   * Service agent access address。
+   * Service agent access address.
    */
   endpoint:        string;
 }
 /**
- * SkeletonActor。
+ * SkeletonActor.
  */
 export type SkeletonActorItem = {
   /**
-   * Domain。
+   * Domain.
    */
   domain:           string;
   /**
-   * Skeleton item hash。
+   * Skeleton item hash.
    */
   schemaHash:       string;
   /**
-   * Primary skeleton item hash。
+   * Primary skeleton item hash.
    */
   mainSchemaHash:   string;
   /**
-   * Whether there are multiple valid versions of the skeleton item。
+   * Whether there are multiple valid versions of the skeleton item.
    */
   isMultiVersion:   boolean;
   /**
-   * Whether it is the main version of the skeleton item。
+   * Whether it is the main version of the skeleton item.
    */
   isMain:           boolean;
   /**
-   * Owning DomainSchema hash。
+   * Owning DomainSchema hash.
    */
   domainSchemaHash: string;
   /**
-   * Actor name。
+   * Actor name.
    */
   name:             string;
   /**
-   * Actor Skel name。
+   * Actor Skel name.
    */
   skelName:         string;
   /**
-   * Actor description。
+   * Actor description.
    */
   description:      string | null;
   /**
-   * Actor access method list。
+   * Whether the Actor is deprecated.
+   */
+  deprecated:       boolean;
+  /**
+   * Actor deprecation reason.
+   */
+  deprecatedReason: string | null;
+  /**
+   * Actor access method list.
    */
   actorVias:        Array<string>;
   /**
-   * Whether to enable authentication。
+   * Whether to enable authentication.
    */
   authEnabled:      boolean;
   /**
-   * Authentication credentials。
+   * Authentication credentials.
    */
   credential:       SkeletonData | null;
   /**
-   * Authentication information。
+   * Authentication information.
    */
   info:             SkeletonData | null;
   /**
-   * Authentication services。
+   * Authentication services.
    */
   authService:      SkeletonServiceItem | null;
   /**
-   * Whether to enable permissions。
+   * Whether to enable permissions.
    */
   permEnabled:      boolean;
   /**
-   * Permission service。
+   * Permission service.
    */
   permService:      SkeletonServiceItem | null;
   /**
-   * Permission method。
+   * Permission method.
    */
   permMethod:       SkeletonMethod | null;
   /**
-   * Accessible Service List。
+   * Accessible Service List.
    */
   services:         Array<SkeletonServiceItem>;
   /**
-   * Accessible web list。
+   * Accessible web list.
    */
   webs:             Array<SkeletonWebItem>;
 }
 /**
- * Skeleton Actor Reference。
+ * Skeleton Actor Reference.
  */
 export type SkeletonActorRef = {
   /**
-   * Actor name。
+   * Actor name.
    */
   name:     string;
   /**
-   * Actor Skel name。
+   * Actor Skel name.
    */
   skelName: string;
   /**
-   * Access method。
+   * Access method.
    */
   via:      string | null;
 }
 /**
- * SkeletonConfig。
+ * SkeletonConfig.
  */
 export type SkeletonConfigItem = {
   /**
-   * Domain。
+   * Domain.
    */
   domain:           string;
   /**
-   * Skeleton item hash。
+   * Skeleton item hash.
    */
   schemaHash:       string;
   /**
-   * Primary skeleton item hash。
+   * Primary skeleton item hash.
    */
   mainSchemaHash:   string;
   /**
-   * Whether there are multiple valid versions of the skeleton item。
+   * Whether there are multiple valid versions of the skeleton item.
    */
   isMultiVersion:   boolean;
   /**
-   * Whether it is the main version of the skeleton item。
+   * Whether it is the main version of the skeleton item.
    */
   isMain:           boolean;
   /**
-   * Owning DomainSchema hash。
+   * Owning DomainSchema hash.
    */
   domainSchemaHash: string;
   /**
-   * Config name。
+   * Config name.
    */
   name:             string;
   /**
-   * Config Skel name。
+   * Config Skel name.
    */
   skelName:         string;
   /**
-   * Config description。
+   * Config description.
    */
   description:      string | null;
   /**
-   * Whether the item is public。
+   * Whether the Config is deprecated.
+   */
+  deprecated:       boolean;
+  /**
+   * Config deprecation reason.
+   */
+  deprecatedReason: string | null;
+  /**
+   * Whether the item is public.
    */
   pub:              boolean;
   /**
-   * Whether the config value is sensitive。
+   * Whether the config value is sensitive.
    */
   sensitive:        boolean;
   /**
-   * Config lifecycle。
+   * Config lifecycle.
    */
   lifecycle:        string;
   /**
-   * Field list。
+   * Field list.
    */
   fields:           Array<SkeletonField>;
 }
 /**
- * SkeletonData。
+ * SkeletonData.
  */
 export type SkeletonData = {
   /**
-   * Domain。
+   * Domain.
    */
   domain:           string;
   /**
-   * Skeleton item hash。
+   * Skeleton item hash.
    */
   schemaHash:       string;
   /**
-   * Primary skeleton item hash。
+   * Primary skeleton item hash.
    */
   mainSchemaHash:   string;
   /**
-   * Whether there are multiple valid versions of the skeleton item。
+   * Whether there are multiple valid versions of the skeleton item.
    */
   isMultiVersion:   boolean;
   /**
-   * Whether it is the main version of the skeleton item。
+   * Whether it is the main version of the skeleton item.
    */
   isMain:           boolean;
   /**
-   * Owning DomainSchema hash。
+   * Owning DomainSchema hash.
    */
   domainSchemaHash: string;
   /**
-   * Data name。
+   * Data name.
    */
   name:             string;
   /**
-   * Data Skel name。
+   * Data Skel name.
    */
   skelName:         string;
   /**
-   * Data description。
+   * Data description.
    */
   description:      string | null;
   /**
-   * Whether it is Enum。
+   * Whether the Data or Enum is deprecated.
+   */
+  deprecated:       boolean;
+  /**
+   * Data or Enum deprecation reason.
+   */
+  deprecatedReason: string | null;
+  /**
+   * Whether it is Enum.
    */
   enum:             boolean;
   /**
-   * Whether the data is sensitive。
+   * Whether the data is sensitive.
    */
   sensitive:        boolean;
   /**
-   * Type parameter list。
+   * Type parameter list.
    */
   typeParameters:   Array<string>;
   /**
-   * Field list。
+   * Field list.
    */
   fields:           Array<SkeletonField>;
   /**
-   * List of enumeration items。
+   * List of enumeration items.
    */
   enumItems:        Array<SkeletonEnumItem>;
 }
 /**
- * Domain skeleton version。
+ * Domain skeleton version.
  */
 export type SkeletonDomain = {
   /**
-   * Domain name。
+   * Domain name.
    */
   domain:         string;
   /**
-   * DomainSchema hash。
+   * DomainSchema hash.
    */
   schemaHash:     string;
   /**
-   * Primary DomainSchema hash。
+   * Primary DomainSchema hash.
    */
   mainSchemaHash: string;
   /**
-   * Whether multiple active versions exist。
+   * Whether multiple active versions exist.
    */
   isMultiVersion: boolean;
   /**
-   * Whether this is the primary version。
+   * Whether this is the primary version.
    */
   isMain:         boolean;
   /**
-   * Total number of skeleton items。
+   * Total number of skeleton items.
    */
   total:          number;
   /**
-   * Actor list。
+   * Actor list.
    */
   actors:         Array<SkeletonActorItem>;
   /**
-   * Service list。
+   * Service list.
    */
   services:       Array<SkeletonServiceItem>;
   /**
-   * Resource list。
+   * Resource list.
    */
   resources:      Array<SkeletonResourceItem>;
   /**
-   * Data list。
+   * Data list.
    */
   data:           Array<SkeletonData>;
   /**
-   * Config list。
+   * Config list.
    */
   configs:        Array<SkeletonConfigItem>;
   /**
-   * Web list。
+   * Web list.
    */
   webs:           Array<SkeletonWebItem>;
   /**
-   * Task list。
+   * Task list.
    */
   tasks:          Array<SkeletonTask>;
   /**
-   * Event list。
+   * Event list.
    */
   events:         Array<SkeletonEventItem>;
 }
 /**
- * Skeleton enumeration items。
+ * Skeleton enumeration items.
  */
 export type SkeletonEnumItem = {
   /**
-   * Enumeration item name。
-   */
-  name:        string;
-  /**
-   * Enumeration item description。
-   */
-  description: string | null;
-}
-/**
- * Skeleton event。
- */
-export type SkeletonEventItem = {
-  /**
-   * Domain。
-   */
-  domain:           string;
-  /**
-   * Skeleton item hash。
-   */
-  schemaHash:       string;
-  /**
-   * Primary skeleton item hash。
-   */
-  mainSchemaHash:   string;
-  /**
-   * Whether there are multiple valid versions of the skeleton item。
-   */
-  isMultiVersion:   boolean;
-  /**
-   * Whether it is the main version of the skeleton item。
-   */
-  isMain:           boolean;
-  /**
-   * Owning DomainSchema hash。
-   */
-  domainSchemaHash: string;
-  /**
-   * Event name。
+   * Enumeration item name.
    */
   name:             string;
   /**
-   * Event Skel name。
-   */
-  skelName:         string;
-  /**
-   * Event description。
+   * Enumeration item description.
    */
   description:      string | null;
   /**
-   * Whether the item is public。
+   * Whether the enumeration item is deprecated.
+   */
+  deprecated:       boolean;
+  /**
+   * Enumeration item deprecation reason.
+   */
+  deprecatedReason: string | null;
+}
+/**
+ * Skeleton event.
+ */
+export type SkeletonEventItem = {
+  /**
+   * Domain.
+   */
+  domain:           string;
+  /**
+   * Skeleton item hash.
+   */
+  schemaHash:       string;
+  /**
+   * Primary skeleton item hash.
+   */
+  mainSchemaHash:   string;
+  /**
+   * Whether there are multiple valid versions of the skeleton item.
+   */
+  isMultiVersion:   boolean;
+  /**
+   * Whether it is the main version of the skeleton item.
+   */
+  isMain:           boolean;
+  /**
+   * Owning DomainSchema hash.
+   */
+  domainSchemaHash: string;
+  /**
+   * Event name.
+   */
+  name:             string;
+  /**
+   * Event Skel name.
+   */
+  skelName:         string;
+  /**
+   * Event description.
+   */
+  description:      string | null;
+  /**
+   * Whether the Event is deprecated.
+   */
+  deprecated:       boolean;
+  /**
+   * Event deprecation reason.
+   */
+  deprecatedReason: string | null;
+  /**
+   * Whether the item is public.
    */
   pub:              boolean;
   /**
-   * Whether the event payload is sensitive。
+   * Whether the event payload is sensitive.
    */
   sensitive:        boolean;
   /**
-   * Field list。
+   * Field list.
    */
   fields:           Array<SkeletonField>;
 }
 /**
- * Skeleton field。
+ * Skeleton field.
  */
 export type SkeletonField = {
   /**
-   * Field name。
+   * Field name.
    */
-  name:        string;
+  name:             string;
   /**
-   * Field type。
+   * Field type.
    */
-  type:        string;
+  type:             string;
   /**
-   * Field description。
+   * Field description.
    */
-  description: string | null;
+  description:      string | null;
   /**
-   * Field example。
+   * Whether the field is deprecated.
    */
-  example:     string | null;
+  deprecated:       boolean;
   /**
-   * Whether the field is sensitive。
+   * Field deprecation reason.
    */
-  sensitive:   boolean;
+  deprecatedReason: string | null;
+  /**
+   * Field example.
+   */
+  example:          string | null;
+  /**
+   * Whether the field is sensitive.
+   */
+  sensitive:        boolean;
 }
 /**
- * Skeleton method。
+ * Skeleton method.
  */
 export type SkeletonMethod = {
   /**
-   * Method name。
+   * Method name.
    */
   name:               string;
   /**
-   * Method Skel name。
+   * Method Skel name.
    */
   skelName:           string;
   /**
-   * Method description。
+   * Method description.
    */
   description:        string | null;
   /**
-   * Input description。
+   * Whether the method is deprecated.
+   */
+  deprecated:         boolean;
+  /**
+   * Method deprecation reason.
+   */
+  deprecatedReason:   string | null;
+  /**
+   * Input description.
    */
   inputDescription:   string | null;
   /**
-   * Output description。
+   * Output description.
    */
   outputDescription:  string | null;
   /**
-   * Input example。
+   * Input example.
    */
   example:            string | null;
   /**
-   * Authentication mode。
+   * Authentication mode.
    */
   authMode:           string;
   /**
-   * Permission requirements。
+   * Permission requirements.
    */
   require:            SkeletonPermExpr | null;
   /**
-   * Output example。
+   * Output example.
    */
   outputExample:      string | null;
   /**
-   * Parameter list。
+   * Parameter list.
    */
   arguments:          Array<SkeletonField>;
   /**
-   * Whether all input arguments are sensitive。
+   * Whether all input arguments are sensitive.
    */
   argumentsSensitive: boolean;
   /**
-   * Return type。
+   * Return type.
    */
   resultType:         string;
   /**
-   * Whether the result is sensitive。
+   * Whether the result is sensitive.
    */
   resultSensitive:    boolean;
 }
 /**
- * Skeleton permission verification call。
+ * Skeleton permission verification call.
  */
 export type SkeletonPermCheck = {
   /**
-   * Resource Skel name。
+   * Resource Skel name.
    */
   resourceSkelName: string;
   /**
-   * Action name。
+   * Action name.
    */
   actionName:       string;
   /**
-   * Check name。
+   * Check name.
    */
   checkName:        string;
   /**
-   * Check Service Skel name。
+   * Check Service Skel name.
    */
   serviceSkelName:  string;
   /**
-   * Check Method Skel name。
+   * Check Method Skel name.
    */
   methodSkelName:   string;
   /**
-   * Parameter list。
+   * Parameter list.
    */
   arguments:        Array<SkeletonPermCheckArgument>;
 }
 /**
- * Skeleton permission verification parameters。
+ * Skeleton permission verification parameters.
  */
 export type SkeletonPermCheckArgument = {
   /**
-   * Parameter name。
+   * Parameter name.
    */
   name:     string;
   /**
-   * Parameter JSON path。
+   * Parameter JSON path.
    */
   jsonPath: string;
   /**
-   * Parameter type。
+   * Parameter type.
    */
   type:     string;
 }
 /**
- * Skeleton permission expression。
+ * Skeleton permission expression.
  */
 export type SkeletonPermExpr = {
   /**
-   * Permission expression pattern。
+   * Permission expression pattern.
    */
   mode:     string;
   /**
-   * Permission code。
+   * Permission code.
    */
   code:     string | null;
   /**
-   * Permission verification call。
+   * Permission verification call.
    */
   check:    SkeletonPermCheck | null;
   /**
-   * Subexpression。
+   * Subexpression.
    */
   children: Array<SkeletonPermExpr>;
 }
 /**
- * SkeletonResource Action。
+ * SkeletonResource Action.
  */
 export type SkeletonResourceAction = {
   /**
-   * Action name。
+   * Action name.
    */
-  name:           string;
+  name:             string;
   /**
-   * Permission code。
+   * Permission code.
    */
-  permissionCode: string;
+  permissionCode:   string;
   /**
-   * Action description。
+   * Action description.
    */
-  description:    string | null;
+  description:      string | null;
   /**
-   * Check list。
+   * Whether the Action is deprecated.
    */
-  checks:         Array<SkeletonResourceCheck>;
+  deprecated:       boolean;
+  /**
+   * Action deprecation reason.
+   */
+  deprecatedReason: string | null;
+  /**
+   * Check list.
+   */
+  checks:           Array<SkeletonResourceCheck>;
 }
 /**
- * SkeletonResource Check。
+ * SkeletonResource Check.
  */
 export type SkeletonResourceCheck = {
   /**
-   * Check name。
+   * Check name.
    */
   name:               string;
   /**
-   * Check method name。
+   * Whether the Check is deprecated.
+   */
+  deprecated:         boolean;
+  /**
+   * Check deprecation reason.
+   */
+  deprecatedReason:   string | null;
+  /**
+   * Check method name.
    */
   methodName:         string;
   /**
-   * Check method Skel name。
+   * Check method Skel name.
    */
   methodSkelName:     string;
   /**
-   * Parameter list。
+   * Parameter list.
    */
   arguments:          Array<SkeletonField>;
   /**
-   * Whether all input arguments are sensitive。
+   * Whether all input arguments are sensitive.
    */
   argumentsSensitive: boolean;
 }
 /**
- * Skeleton Resource item。
+ * Skeleton Resource item.
  */
 export type SkeletonResourceItem = {
   /**
-   * Domain。
+   * Domain.
    */
   domain:           string;
   /**
-   * Skeleton item hash。
+   * Skeleton item hash.
    */
   schemaHash:       string;
   /**
-   * Primary skeleton item hash。
+   * Primary skeleton item hash.
    */
   mainSchemaHash:   string;
   /**
-   * Whether there are multiple valid versions of the skeleton item。
+   * Whether there are multiple valid versions of the skeleton item.
    */
   isMultiVersion:   boolean;
   /**
-   * Whether it is the main version of the skeleton item。
+   * Whether it is the main version of the skeleton item.
    */
   isMain:           boolean;
   /**
-   * Owning DomainSchema hash。
+   * Owning DomainSchema hash.
    */
   domainSchemaHash: string;
   /**
-   * Resource name。
+   * Resource name.
    */
   name:             string;
   /**
-   * Resource Skel name。
+   * Resource Skel name.
    */
   skelName:         string;
   /**
-   * Resource description。
+   * Resource description.
    */
   description:      string | null;
   /**
-   * Resource level Check list。
+   * Whether the Resource is deprecated.
+   */
+  deprecated:       boolean;
+  /**
+   * Resource deprecation reason.
+   */
+  deprecatedReason: string | null;
+  /**
+   * Resource level Check list.
    */
   checks:           Array<SkeletonResourceCheck>;
   /**
-   * Action list。
+   * Action list.
    */
   actions:          Array<SkeletonResourceAction>;
   /**
-   * Check service。
+   * Check service.
    */
   checkService:     SkeletonServiceItem | null;
 }
 /**
- * Skeleton service items。
+ * Skeleton service items.
  */
 export type SkeletonServiceItem = {
   /**
-   * Domain。
+   * Domain.
    */
   domain:           string;
   /**
-   * Skeleton item hash。
+   * Skeleton item hash.
    */
   schemaHash:       string;
   /**
-   * Primary skeleton item hash。
+   * Primary skeleton item hash.
    */
   mainSchemaHash:   string;
   /**
-   * Whether there are multiple valid versions of the skeleton item。
+   * Whether there are multiple valid versions of the skeleton item.
    */
   isMultiVersion:   boolean;
   /**
-   * Whether it is the main version of the skeleton item。
+   * Whether it is the main version of the skeleton item.
    */
   isMain:           boolean;
   /**
-   * Owning DomainSchema hash。
+   * Owning DomainSchema hash.
    */
   domainSchemaHash: string;
   /**
-   * Service name。
+   * Service name.
    */
   name:             string;
   /**
-   * Service Skel name。
+   * Service Skel name.
    */
   skelName:         string;
   /**
-   * Service Description。
+   * Service Description.
    */
   description:      string | null;
   /**
-   * Whether the item is public。
+   * Whether the Service is deprecated.
+   */
+  deprecated:       boolean;
+  /**
+   * Service deprecation reason.
+   */
+  deprecatedReason: string | null;
+  /**
+   * Whether the item is public.
    */
   pub:              boolean;
   /**
-   * Authentication mode。
+   * Authentication mode.
    */
   authMode:         string;
   /**
-   * Permission requirements。
+   * Permission requirements.
    */
   require:          SkeletonPermExpr | null;
   /**
-   * Accessible Actor List。
+   * Accessible Actor List.
    */
   actors:           Array<SkeletonActorRef>;
   /**
-   * Method list。
+   * Method list.
    */
   methods:          Array<SkeletonMethod>;
 }
 /**
- * Skeleton task。
+ * Skeleton task.
  */
 export type SkeletonTask = {
   /**
-   * Domain。
+   * Domain.
    */
   domain:           string;
   /**
-   * Skeleton item hash。
+   * Skeleton item hash.
    */
   schemaHash:       string;
   /**
-   * Primary skeleton item hash。
+   * Primary skeleton item hash.
    */
   mainSchemaHash:   string;
   /**
-   * Whether there are multiple valid versions of the skeleton item。
+   * Whether there are multiple valid versions of the skeleton item.
    */
   isMultiVersion:   boolean;
   /**
-   * Whether it is the main version of the skeleton item。
+   * Whether it is the main version of the skeleton item.
    */
   isMain:           boolean;
   /**
-   * Owning DomainSchema hash。
+   * Owning DomainSchema hash.
    */
   domainSchemaHash: string;
   /**
-   * Task name。
+   * Task name.
    */
   name:             string;
   /**
-   * Task Skel name。
+   * Task Skel name.
    */
   skelName:         string;
   /**
-   * Task description。
+   * Task description.
    */
   description:      string | null;
   /**
-   * Trigger list。
+   * Whether the Task is deprecated.
+   */
+  deprecated:       boolean;
+  /**
+   * Task deprecation reason.
+   */
+  deprecatedReason: string | null;
+  /**
+   * Trigger list.
    */
   triggers:         Array<SkeletonTrigger>;
 }
 /**
- * Skeleton task trigger。
+ * Skeleton task trigger.
  */
 export type SkeletonTrigger = {
   /**
-   * Trigger name。
+   * Trigger name.
    */
   name:               string;
   /**
-   * Trigger Skel name。
+   * Trigger Skel name.
    */
   skelName:           string;
   /**
-   * Trigger description。
+   * Trigger description.
    */
   description:        string | null;
   /**
-   * Input description。
+   * Whether the Trigger is deprecated.
+   */
+  deprecated:         boolean;
+  /**
+   * Trigger deprecation reason.
+   */
+  deprecatedReason:   string | null;
+  /**
+   * Input description.
    */
   inputDescription:   string | null;
   /**
-   * Input example。
+   * Input example.
    */
   example:            string | null;
   /**
-   * Parameter list。
+   * Parameter list.
    */
   arguments:          Array<SkeletonField>;
   /**
-   * Whether all input arguments are sensitive。
+   * Whether all input arguments are sensitive.
    */
   argumentsSensitive: boolean;
 }
 /**
- * Skeleton web page。
+ * Skeleton web page.
  */
 export type SkeletonWebItem = {
   /**
-   * Domain。
+   * Domain.
    */
   domain:           string;
   /**
-   * Skeleton item hash。
+   * Skeleton item hash.
    */
   schemaHash:       string;
   /**
-   * Primary skeleton item hash。
+   * Primary skeleton item hash.
    */
   mainSchemaHash:   string;
   /**
-   * Whether there are multiple valid versions of the skeleton item。
+   * Whether there are multiple valid versions of the skeleton item.
    */
   isMultiVersion:   boolean;
   /**
-   * Whether it is the main version of the skeleton item。
+   * Whether it is the main version of the skeleton item.
    */
   isMain:           boolean;
   /**
-   * Owning DomainSchema hash。
+   * Owning DomainSchema hash.
    */
   domainSchemaHash: string;
   /**
-   * Web page name。
+   * Web page name.
    */
   name:             string;
   /**
-   * Web Skel name。
+   * Web Skel name.
    */
   skelName:         string;
   /**
-   * Web page description。
+   * Web page description.
    */
   description:      string | null;
   /**
-   * Accessible Actor List。
+   * Whether the Web is deprecated.
+   */
+  deprecated:       boolean;
+  /**
+   * Web deprecation reason.
+   */
+  deprecatedReason: string | null;
+  /**
+   * Accessible Actor List.
    */
   actors:           Array<SkeletonActorRef>;
 }
 /**
- * Task Debug initiates a request by default。
+ * Task Debug initiates a request by default.
  */
 export type TaskDebugDefaultLaunchRequest = {
   /**
-   * Trace ID。
+   * Trace ID.
    */
   traceId:       string;
   /**
-   * Span ID。
+   * Span ID.
    */
   spanId:        string;
   /**
-   * Default task parameters JSON。
+   * Default task parameters JSON.
    */
   argumentsJson: string;
 }
 /**
- * Task Debug initiates a request。
+ * Task Debug initiates a request.
  */
 export type TaskDebugLaunchRequest = {
   /**
-   * Task Skel name。
+   * Task Skel name.
    */
   taskSkelName:    string;
   /**
-   * Task schema hash。
+   * Task schema hash.
    */
   schemaHash:      string;
   /**
-   * Trigger Skel name。
+   * Trigger Skel name.
    */
   triggerSkelName: string;
   /**
-   * Task parameters JSON。
+   * Task parameters JSON.
    */
   argumentsJson:   string;
   /**
-   * Trace ID。
+   * Trace ID.
    */
   traceId:         string | null;
   /**
-   * Span ID。
+   * Span ID.
    */
   spanId:          string | null;
 }
 /**
- * Task called by Task Debug。
+ * Task called by Task Debug.
  */
 export type TaskDebugTaskItem = {
   /**
-   * Task name。
-   */
-  name:         string;
-  /**
-   * Task Skel name。
-   */
-  taskSkelName: string;
-  /**
-   * Task schema hash。
-   */
-  schemaHash:   string;
-  /**
-   * Task description。
-   */
-  description:  string | null;
-}
-/**
- * Trigger called by Task Debug。
- */
-export type TaskDebugTriggerItem = {
-  /**
-   * Trigger name。
+   * Task name.
    */
   name:             string;
   /**
-   * Trigger Skel name。
+   * Task Skel name.
    */
-  skelName:         string;
+  taskSkelName:     string;
   /**
-   * Trigger description。
+   * Task schema hash.
+   */
+  schemaHash:       string;
+  /**
+   * Task description.
    */
   description:      string | null;
   /**
-   * Input description。
+   * Whether the Task is deprecated.
+   */
+  deprecated:       boolean;
+  /**
+   * Task deprecation reason.
+   */
+  deprecatedReason: string | null;
+}
+/**
+ * Trigger called by Task Debug.
+ */
+export type TaskDebugTriggerItem = {
+  /**
+   * Trigger name.
+   */
+  name:             string;
+  /**
+   * Trigger Skel name.
+   */
+  skelName:         string;
+  /**
+   * Trigger description.
+   */
+  description:      string | null;
+  /**
+   * Whether the Trigger is deprecated.
+   */
+  deprecated:       boolean;
+  /**
+   * Trigger deprecation reason.
+   */
+  deprecatedReason: string | null;
+  /**
+   * Input description.
    */
   inputDescription: string | null;
   /**
-   * Input example。
+   * Input example.
    */
   example:          string | null;
   /**
-   * Parameter list。
+   * Parameter list.
    */
   arguments:        Array<SkeletonField>;
 }
 /**
- * Task execution Cron schedule。
+ * Task execution Cron schedule.
  */
 export type TaskRunnerCronScheduler = {
   /**
-   * Trigger Skel name。
+   * Trigger Skel name.
    */
   triggerSkelName: string;
   /**
-   * Cron expression。
+   * Cron expression.
    */
   cronExpr:        string;
 }
 /**
- * Task execution capability registration information provided by the application。
+ * Task execution capability registration information provided by the application.
  */
 export type TaskRunnerRegistration = {
   /**
-   * Task Skel name。
+   * Task Skel name.
    */
   taskSkelName:   string;
   /**
-   * Task schema hash。
+   * Task schema hash.
    */
   schemaHash:     string;
   /**
-   * Execution timeout, in milliseconds。
+   * Execution timeout, in milliseconds.
    */
   timeoutMs:      number;
   /**
-   * Maximum concurrency。
+   * Maximum concurrency.
    */
   concurrency:    number;
   /**
-   * Whether to disallow retrying after failure。
+   * Whether to disallow retrying after failure.
    */
   noRetry:        boolean;
   /**
-   * Cron schedule list。
+   * Cron schedule list.
    */
   cronSchedulers: Array<TaskRunnerCronScheduler>;
 }
 /**
- * Web processing capability registration information provided by the application。
+ * Web processing capability registration information provided by the application.
  */
 export type WebHandlerRegistration = {
   /**
-   * Web Skel name。
+   * Web Skel name.
    */
   webSkelName: string;
   /**
-   * Web schema hash。
+   * Web schema hash.
    */
   schemaHash:  string;
   /**
-   * Web proxy access address。
+   * Web proxy access address.
    */
   endpoint:    string;
 }

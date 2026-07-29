@@ -65,15 +65,19 @@ func (s *ServiceDebugServiceServerImpl) serviceDebugActors(serviceSchema *skel.S
 
 func toServiceDebugMethodItem(method *skel.MethodSchema) skeled.ServiceDebugMethodItem {
 	return skeled.ServiceDebugMethodItem{
-		Name:              method.Name,
-		SkelName:          method.SkelName,
-		Description:       optionalString(method.Description),
-		InputDescription:  optionalString(method.InputDescription),
-		OutputDescription: optionalString(method.OutputDescription),
-		Example:           optionalString(method.Example),
-		OutputExample:     optionalString(method.OutputExample),
-		Arguments:         toDebugSkeletonFields(method.Arguments),
-		ResultType:        formatSkeletonType(method.ResultType),
+		Name:             method.Name,
+		SkelName:         method.SkelName,
+		Description:      optionalString(method.Description),
+		Deprecated:       method.Deprecated,
+		DeprecatedReason: optionalString(method.DeprecatedReason),
+		InputDescription: optionalString(method.InputDescription),
+		OutputDescription: optionalString(
+			method.OutputDescription,
+		),
+		Example:       optionalString(method.Example),
+		OutputExample: optionalString(method.OutputExample),
+		Arguments:     toDebugSkeletonFields(method.Arguments),
+		ResultType:    formatSkeletonType(method.ResultType),
 	}
 }
 
@@ -81,11 +85,13 @@ func toDebugSkeletonFields(schemas []*skel.MemberSchema) []skeled.SkeletonField 
 	ret := make([]skeled.SkeletonField, 0, len(schemas))
 	for _, schema := range schemas {
 		ret = append(ret, skeled.SkeletonField{
-			Name:        schema.Name,
-			Type:        formatSkeletonType(schema.Type),
-			Description: optionalString(schema.Description),
-			Example:     optionalString(schema.Example),
-			Sensitive:   schema.Sensitive,
+			Name:             schema.Name,
+			Type:             formatSkeletonType(schema.Type),
+			Description:      optionalString(schema.Description),
+			Deprecated:       schema.Deprecated,
+			DeprecatedReason: optionalString(schema.DeprecatedReason),
+			Example:          optionalString(schema.Example),
+			Sensitive:        schema.Sensitive,
 		})
 	}
 	return ret

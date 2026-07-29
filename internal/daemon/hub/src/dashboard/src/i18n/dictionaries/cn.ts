@@ -42,6 +42,7 @@ export const cn = {
   'portalEntry.updateSuccess': '访问入口已更新',
   'common.none': '无',
   'common.noVersion': '无版本',
+  'common.deprecated': '已废弃',
   'statusApp.searchPlaceholder': '搜索应用名',
   'statusApp.itemCount': '共 {count} 个应用实例',
   'statusApp.empty': '暂无应用状态',

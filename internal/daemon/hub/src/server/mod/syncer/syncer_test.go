@@ -1,6 +1,7 @@
 package syncer
 
 import (
+	"encoding/json"
 	"strconv"
 	"testing"
 
@@ -306,10 +307,19 @@ func TestSyncerSyncSchemasOnlyWritesChangedHashes(t *testing.T) {
 	assert.Equal(t, firstRevision, secondRevision)
 
 	view[0].Services[0].Schema.Hash = "service-next"
+	view[0].Services[0].Schema.Deprecated = true
+	view[0].Services[0].Schema.DeprecatedReason = "Use demo.user.NextService instead."
 	view[0].Services[0].SchemaHash = "service-next"
 	target.SyncSchemas(view)
 	thirdRevision := testRedisRevision(t, redisServer)
 	assert.Equal(t, secondRevision+1, thirdRevision)
+
+	value, ok := redisServer.Get(redised.FormatSchemaServiceKey("demo.user.UserService"))
+	require.True(t, ok)
+	var service redised.SchemaService
+	require.NoError(t, json.Unmarshal([]byte(value), &service))
+	assert.True(t, service.Deprecated)
+	assert.Equal(t, "Use demo.user.NextService instead.", service.DeprecatedReason)
 }
 
 func testRedisRevision(t *testing.T, redisServer *redisserver.Server) uint64 {

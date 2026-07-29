@@ -16,6 +16,11 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
+import {
+  DeprecatedBadge,
+  DeprecatedNotice,
+  DeprecatedReason,
+} from '@/components/deprecated'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -2019,6 +2024,9 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                           {selectedAppConfig.lifecycle}
                         </Badge>
                       )}
+                      <DeprecatedBadge
+                        deprecated={Boolean(selectedSchema?.deprecated)}
+                      />
                     </div>
                     <p className="mt-2 truncate font-mono text-xs text-muted-foreground">
                       {(() => {
@@ -2065,6 +2073,11 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                         {selectedSchema.description}
                       </p>
                     ) : null}
+                    <DeprecatedNotice
+                      deprecated={Boolean(selectedSchema?.deprecated)}
+                      deprecatedReason={selectedSchema?.deprecatedReason}
+                      className="mt-3"
+                    />
                   </div>
 
                   <div className="flex flex-wrap items-start justify-end gap-2">
@@ -2255,8 +2268,13 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                                   )}
                                 >
                                   <div className="min-w-0 text-left">
-                                    <div className="truncate text-sm font-medium text-foreground">
-                                      {field.name}
+                                    <div className="flex min-w-0 items-center gap-2">
+                                      <span className="truncate text-sm font-medium text-foreground">
+                                        {field.name}
+                                      </span>
+                                      <DeprecatedBadge
+                                        deprecated={field.deprecated}
+                                      />
                                     </div>
                                     <div className="mt-1 flex min-w-0 items-center gap-2 text-xs leading-5 text-muted-foreground">
                                       {field.type ? (
@@ -2275,6 +2293,13 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                                           t('appConfig.noFieldDescription')}
                                       </span>
                                     </div>
+                                    <DeprecatedReason
+                                      deprecated={field.deprecated}
+                                      deprecatedReason={
+                                        field.deprecatedReason
+                                      }
+                                      className="mt-1"
+                                    />
                                   </div>
 
                                   {enumItems.length > 0 &&
@@ -2305,8 +2330,15 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                                               <span className="truncate">
                                                 {item.name}
                                               </span>
-                                              <span className="truncate text-xs text-muted-foreground">
-                                                {item.description ?? ''}
+                                              <span className="flex min-w-0 items-center gap-1.5">
+                                                <span className="truncate text-xs text-muted-foreground">
+                                                  {item.deprecatedReason ??
+                                                    item.description ??
+                                                    ''}
+                                                </span>
+                                                <DeprecatedBadge
+                                                  deprecated={item.deprecated}
+                                                />
                                               </span>
                                             </span>
                                           </SelectItem>

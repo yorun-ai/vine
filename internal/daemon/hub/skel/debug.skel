@@ -22,6 +22,12 @@ data ServiceDebugServiceItem {
 
     @desc("Service schema hash")
     schemaHash: string
+
+    @desc("Whether the Service is deprecated")
+    deprecated: bool
+
+    @desc("Service deprecation reason")
+    deprecatedReason: string?
 }
 
 @desc("Method called by Service Debug")
@@ -34,6 +40,12 @@ data ServiceDebugMethodItem {
 
     @desc("Method description")
     description: string?
+
+    @desc("Whether the method is deprecated")
+    deprecated: bool
+
+    @desc("Method deprecation reason")
+    deprecatedReason: string?
 
     @desc("Input description")
     inputDescription: string?
@@ -154,6 +166,12 @@ data TaskDebugTaskItem {
 
     @desc("Task description")
     description: string?
+
+    @desc("Whether the Task is deprecated")
+    deprecated: bool
+
+    @desc("Task deprecation reason")
+    deprecatedReason: string?
 }
 
 @desc("Trigger called by Task Debug")
@@ -166,6 +184,12 @@ data TaskDebugTriggerItem {
 
     @desc("Trigger description")
     description: string?
+
+    @desc("Whether the Trigger is deprecated")
+    deprecated: bool
+
+    @desc("Trigger deprecation reason")
+    deprecatedReason: string?
 
     @desc("Input description")
     inputDescription: string?
@@ -223,6 +247,12 @@ data EventDebugEventItem {
 
     @desc("Event description")
     description: string?
+
+    @desc("Whether the Event is deprecated")
+    deprecated: bool
+
+    @desc("Event deprecation reason")
+    deprecatedReason: string?
 
     @desc("Field list")
     fields: list<SkeletonField>

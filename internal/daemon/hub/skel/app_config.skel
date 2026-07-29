@@ -32,6 +32,12 @@ data AppConfigSchemaField {
     @desc("Field description")
     description: string?
 
+    @desc("Whether the field is deprecated")
+    deprecated: bool
+
+    @desc("Field deprecation reason")
+    deprecatedReason: string?
+
     @desc("Enumeration options list")
     enumItems: list<AppConfigSchemaEnumItem>
 }
@@ -43,6 +49,12 @@ data AppConfigSchemaEnumItem {
 
     @desc("Enumeration options description")
     description: string?
+
+    @desc("Whether the enumeration option is deprecated")
+    deprecated: bool
+
+    @desc("Enumeration option deprecation reason")
+    deprecatedReason: string?
 }
 
 @desc("Configuration schema items")
@@ -55,6 +67,12 @@ data AppConfigSchema {
 
     @desc("Configuration description")
     description: string?
+
+    @desc("Whether the configuration is deprecated")
+    deprecated: bool
+
+    @desc("Configuration deprecation reason")
+    deprecatedReason: string?
 
     @desc("Configuration lifecycle")
     lifecycle: string

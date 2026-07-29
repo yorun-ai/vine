@@ -64,7 +64,7 @@ import type {
 export function createAppConfigService(client: VrpcClient) {
   return {
     /**
-     * List configuration items。
+     * List configuration items.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<AppConfigItem> - Configuration item list
@@ -81,7 +81,7 @@ export function createAppConfigService(client: VrpcClient) {
       });
     },
     /**
-     * Read configuration。
+     * Read configuration.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns AppConfigItem - Configuration items
@@ -100,7 +100,7 @@ export function createAppConfigService(client: VrpcClient) {
       });
     },
     /**
-     * Modify configuration。
+     * Modify configuration.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns AppConfigItem - Configuration items
@@ -120,7 +120,7 @@ export function createAppConfigService(client: VrpcClient) {
       });
     },
     /**
-     * Create configuration。
+     * Create configuration.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns AppConfigItem - Configuration items
@@ -139,7 +139,7 @@ export function createAppConfigService(client: VrpcClient) {
       });
     },
     /**
-     * Delete unused configuration。
+     * Delete unused configuration.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns boolean - Whether deletion succeeded
@@ -165,7 +165,7 @@ export function createAppConfigService(client: VrpcClient) {
 export function createAppStatusService(client: VrpcClient) {
   return {
     /**
-     * List application instance statuses currently stored in Redis。
+     * List application instance statuses currently stored in Redis.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<AppStatusView> -
@@ -189,7 +189,7 @@ export function createAppStatusService(client: VrpcClient) {
 export function createEventDebugService(client: VrpcClient) {
   return {
     /**
-     * List the events monitored by the application instance。
+     * List the events monitored by the application instance.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<EventDebugEventItem> -
@@ -206,7 +206,7 @@ export function createEventDebugService(client: VrpcClient) {
       });
     },
     /**
-     * Generate a default Event send request。
+     * Generate a default Event send request.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns EventDebugDefaultEmitRequest -
@@ -226,7 +226,7 @@ export function createEventDebugService(client: VrpcClient) {
       });
     },
     /**
-     * Send Event。
+     * Send Event.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      */
@@ -251,7 +251,7 @@ export function createEventDebugService(client: VrpcClient) {
 export function createMaintenanceService(client: VrpcClient) {
   return {
     /**
-     * Preview Seed YAML differences。
+     * Preview Seed YAML differences.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns SeedPreview - Seed preview
@@ -270,7 +270,7 @@ export function createMaintenanceService(client: VrpcClient) {
       });
     },
     /**
-     * Apply Seed YAML entity updates。
+     * Apply Seed YAML entity updates.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns SeedPreview - Updated Seed preview
@@ -297,7 +297,7 @@ export function createMaintenanceService(client: VrpcClient) {
 export function createPortalCertService(client: VrpcClient) {
   return {
     /**
-     * List Portal site certificates。
+     * List Portal site certificates.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<PortalCert> - Portal site certificate list
@@ -314,7 +314,7 @@ export function createPortalCertService(client: VrpcClient) {
       });
     },
     /**
-     * Read the Portal site certificate。
+     * Read the Portal site certificate.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns PortalCert - Portal site certificate
@@ -333,7 +333,7 @@ export function createPortalCertService(client: VrpcClient) {
       });
     },
     /**
-     * Create Portal site certificate。
+     * Create Portal site certificate.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns PortalCert - Portal site certificate
@@ -352,7 +352,7 @@ export function createPortalCertService(client: VrpcClient) {
       });
     },
     /**
-     * Modify Portal site certificate。
+     * Modify Portal site certificate.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns PortalCert - Portal site certificate
@@ -372,7 +372,7 @@ export function createPortalCertService(client: VrpcClient) {
       });
     },
     /**
-     * Delete Portal site certificate。
+     * Delete Portal site certificate.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      */
@@ -397,7 +397,7 @@ export function createPortalCertService(client: VrpcClient) {
 export function createPortalEntryService(client: VrpcClient) {
   return {
     /**
-     * List Portal access entries。
+     * List Portal access entries.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<PortalEntry> - Portal access entry list
@@ -414,7 +414,7 @@ export function createPortalEntryService(client: VrpcClient) {
       });
     },
     /**
-     * Modify Portal access configuration。
+     * Modify Portal access configuration.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns PortalEntry - Portal access entry
@@ -443,7 +443,7 @@ export function createPortalEntryService(client: VrpcClient) {
 export function createPortalRuleService(client: VrpcClient) {
   return {
     /**
-     * List Portal entry rules。
+     * List Portal entry rules.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<PortalRule> - Portal entry rule list
@@ -460,7 +460,7 @@ export function createPortalRuleService(client: VrpcClient) {
       });
     },
     /**
-     * Read Portal entry rules。
+     * Read Portal entry rules.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns PortalRule - Portal entry rules
@@ -479,7 +479,7 @@ export function createPortalRuleService(client: VrpcClient) {
       });
     },
     /**
-     * Create Portal entry rules。
+     * Create Portal entry rules.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns PortalRule - Portal entry rules
@@ -498,7 +498,7 @@ export function createPortalRuleService(client: VrpcClient) {
       });
     },
     /**
-     * Modify Portal entry rules。
+     * Modify Portal entry rules.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns PortalRule - Portal entry rules
@@ -518,7 +518,7 @@ export function createPortalRuleService(client: VrpcClient) {
       });
     },
     /**
-     * Delete Portal entry rules。
+     * Delete Portal entry rules.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      */
@@ -536,7 +536,7 @@ export function createPortalRuleService(client: VrpcClient) {
       });
     },
     /**
-     * Get the Hub Dashboard access entry。
+     * Get the Hub Dashboard access entry.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns PortalDashboardAccess - Hub Dashboard access entry
@@ -553,7 +553,7 @@ export function createPortalRuleService(client: VrpcClient) {
       });
     },
     /**
-     * Modify Hub Dashboard access entry。
+     * Modify Hub Dashboard access entry.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<PortalRule> - Hub Dashboard entry rules
@@ -582,7 +582,7 @@ export function createPortalRuleService(client: VrpcClient) {
 export function createPortalSiteService(client: VrpcClient) {
   return {
     /**
-     * List Portal target sites。
+     * List Portal target sites.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<PortalSite> - Portal target site list
@@ -599,7 +599,7 @@ export function createPortalSiteService(client: VrpcClient) {
       });
     },
     /**
-     * List Portal target site form options。
+     * List Portal target site form options.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns PortalSiteOptions - Portal target site form options
@@ -616,7 +616,7 @@ export function createPortalSiteService(client: VrpcClient) {
       });
     },
     /**
-     * Read the Portal target site。
+     * Read the Portal target site.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns PortalSite - Portal target site
@@ -635,7 +635,7 @@ export function createPortalSiteService(client: VrpcClient) {
       });
     },
     /**
-     * Create Portal target site。
+     * Create Portal target site.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns PortalSite - Portal target site
@@ -654,7 +654,7 @@ export function createPortalSiteService(client: VrpcClient) {
       });
     },
     /**
-     * Modify Portal target site。
+     * Modify Portal target site.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns PortalSite - Portal target site
@@ -674,7 +674,7 @@ export function createPortalSiteService(client: VrpcClient) {
       });
     },
     /**
-     * Delete Portal target site。
+     * Delete Portal target site.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      */
@@ -699,7 +699,7 @@ export function createPortalSiteService(client: VrpcClient) {
 export function createServiceDebugService(client: VrpcClient) {
   return {
     /**
-     * List application instances。
+     * List application instances.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<ServiceDebugAppInstance> -
@@ -716,7 +716,7 @@ export function createServiceDebugService(client: VrpcClient) {
       });
     },
     /**
-     * List the services provided by the application instance。
+     * List the services provided by the application instance.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<ServiceDebugServiceItem> -
@@ -733,7 +733,7 @@ export function createServiceDebugService(client: VrpcClient) {
       });
     },
     /**
-     * List application instances that provide the specified service。
+     * List application instances that provide the specified service.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<ServiceDebugAppInstance> -
@@ -753,7 +753,7 @@ export function createServiceDebugService(client: VrpcClient) {
       });
     },
     /**
-     * List Service methods。
+     * List Service methods.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<ServiceDebugMethodItem> -
@@ -773,7 +773,7 @@ export function createServiceDebugService(client: VrpcClient) {
       });
     },
     /**
-     * Generate default Service call request。
+     * Generate default Service call request.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns ServiceDebugDefaultInvokeRequest -
@@ -794,7 +794,7 @@ export function createServiceDebugService(client: VrpcClient) {
       });
     },
     /**
-     * Call Service method。
+     * Call Service method.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns ServiceDebugInvokeResponse -
@@ -820,7 +820,7 @@ export function createServiceDebugService(client: VrpcClient) {
 export function createSkeletonService(client: VrpcClient) {
   return {
     /**
-     * List Domain skeleton。
+     * List Domain skeleton.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<SkeletonDomain> - Domain skeleton list
@@ -837,7 +837,7 @@ export function createSkeletonService(client: VrpcClient) {
       });
     },
     /**
-     * List Actor Skeleton。
+     * List Actor Skeleton.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<SkeletonActorItem> - Actor skeleton list
@@ -854,7 +854,7 @@ export function createSkeletonService(client: VrpcClient) {
       });
     },
     /**
-     * List Service skeleton。
+     * List Service skeleton.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<SkeletonServiceItem> - Service skeleton list
@@ -871,7 +871,7 @@ export function createSkeletonService(client: VrpcClient) {
       });
     },
     /**
-     * List Resource skeleton。
+     * List Resource skeleton.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<SkeletonResourceItem> - Resource skeleton list
@@ -888,7 +888,7 @@ export function createSkeletonService(client: VrpcClient) {
       });
     },
     /**
-     * List Web Skeletons。
+     * List Web Skeletons.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<SkeletonWebItem> - Web skeleton list
@@ -905,7 +905,7 @@ export function createSkeletonService(client: VrpcClient) {
       });
     },
     /**
-     * List Task skeleton。
+     * List Task skeleton.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<SkeletonTask> - Task skeleton list
@@ -922,7 +922,7 @@ export function createSkeletonService(client: VrpcClient) {
       });
     },
     /**
-     * List Event skeletons。
+     * List Event skeletons.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<SkeletonEventItem> - Event skeleton list
@@ -939,7 +939,7 @@ export function createSkeletonService(client: VrpcClient) {
       });
     },
     /**
-     * List Data skeleton。
+     * List Data skeleton.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<SkeletonData> - Data skeleton list, including Enum
@@ -956,7 +956,7 @@ export function createSkeletonService(client: VrpcClient) {
       });
     },
     /**
-     * List Config skeleton。
+     * List Config skeleton.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<SkeletonConfigItem> - Config skeleton list
@@ -980,7 +980,7 @@ export function createSkeletonService(client: VrpcClient) {
 export function createTaskDebugService(client: VrpcClient) {
   return {
     /**
-     * List the tasks provided by the application instance。
+     * List the tasks provided by the application instance.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<TaskDebugTaskItem> -
@@ -997,7 +997,7 @@ export function createTaskDebugService(client: VrpcClient) {
       });
     },
     /**
-     * List Task triggers。
+     * List Task triggers.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<TaskDebugTriggerItem> -
@@ -1017,7 +1017,7 @@ export function createTaskDebugService(client: VrpcClient) {
       });
     },
     /**
-     * Generate a default Task launch request。
+     * Generate a default Task launch request.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns TaskDebugDefaultLaunchRequest -
@@ -1038,7 +1038,7 @@ export function createTaskDebugService(client: VrpcClient) {
       });
     },
     /**
-     * Initiate Task。
+     * Initiate Task.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      */

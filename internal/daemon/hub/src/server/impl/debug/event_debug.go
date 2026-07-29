@@ -110,11 +110,13 @@ func (s *EventDebugServiceServerImpl) findEventSchema(eventSkelName string, sche
 
 func toEventDebugEventItem(event *skel.EventSchema, schemaHash string) skeled.EventDebugEventItem {
 	return skeled.EventDebugEventItem{
-		Name:          event.Name,
-		EventSkelName: event.SkelName,
-		SchemaHash:    schemaHash,
-		Description:   optionalString(event.Description),
-		Fields:        toDebugSkeletonFields(event.Members),
+		Name:             event.Name,
+		EventSkelName:    event.SkelName,
+		SchemaHash:       schemaHash,
+		Description:      optionalString(event.Description),
+		Deprecated:       event.Deprecated,
+		DeprecatedReason: optionalString(event.DeprecatedReason),
+		Fields:           toDebugSkeletonFields(event.Members),
 	}
 }
 
