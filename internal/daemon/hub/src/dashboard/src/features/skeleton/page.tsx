@@ -4,6 +4,10 @@ import { ChevronDown, Loader2, RefreshCw, Search } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
+import {
+  DeprecatedBadge,
+  DeprecatedNotice,
+} from '@/components/deprecated'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -546,6 +550,7 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
                                 {listBadge}
                               </Badge>
                             ) : null}
+                            <DeprecatedBadge deprecated={item.deprecated} />
                           </span>
                           <span className="truncate text-xs text-muted-foreground">
                             {item.skelName}
@@ -611,6 +616,9 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
                                         {versionBadge}
                                       </Badge>
                                     ) : null}
+                                    <DeprecatedBadge
+                                      deprecated={version.deprecated}
+                                    />
                                   </div>
                                   <Badge
                                     variant="outline"
@@ -767,6 +775,11 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
                     {selectedItem.description}
                   </p>
                 ) : null}
+                <DeprecatedNotice
+                  deprecated={selectedItem.deprecated}
+                  deprecatedReason={selectedItem.deprecatedReason}
+                  className="mt-3"
+                />
               </div>
 
               <div

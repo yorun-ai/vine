@@ -348,11 +348,13 @@ func toServerAppConfigSchema(schema *skel.ConfigSchema, enumSchemas []*skel.Enum
 		return nil
 	}
 	return &skeled.AppConfigSchema{
-		SkelName:    schema.SkelName,
-		Name:        schema.Name,
-		Description: optionalString(schema.Description),
-		Lifecycle:   schema.Lifecycle,
-		Fields:      toServerAppConfigSchemaFields(schema.Members, enumSchemas),
+		SkelName:         schema.SkelName,
+		Name:             schema.Name,
+		Description:      optionalString(schema.Description),
+		Deprecated:       schema.Deprecated,
+		DeprecatedReason: optionalString(schema.DeprecatedReason),
+		Lifecycle:        schema.Lifecycle,
+		Fields:           toServerAppConfigSchemaFields(schema.Members, enumSchemas),
 	}
 }
 
@@ -369,10 +371,12 @@ func toServerAppConfigSchemaFields(members []*skel.MemberSchema, enumSchemas []*
 	fields := make([]skeled.AppConfigSchemaField, 0, len(members))
 	for _, member := range members {
 		fields = append(fields, skeled.AppConfigSchemaField{
-			Name:        member.Name,
-			Type:        formatAppConfigSchemaFieldType(member.Type),
-			Description: optionalString(member.Description),
-			EnumItems:   toServerAppConfigSchemaEnumItems(findEnumSchema(member.Type, enumSchemas)),
+			Name:             member.Name,
+			Type:             formatAppConfigSchemaFieldType(member.Type),
+			Description:      optionalString(member.Description),
+			Deprecated:       member.Deprecated,
+			DeprecatedReason: optionalString(member.DeprecatedReason),
+			EnumItems:        toServerAppConfigSchemaEnumItems(findEnumSchema(member.Type, enumSchemas)),
 		})
 	}
 	return fields
@@ -436,8 +440,10 @@ func toServerAppConfigSchemaEnumItems(enumSchema *skel.EnumSchema) []skeled.AppC
 	items := make([]skeled.AppConfigSchemaEnumItem, 0, len(enumSchema.Items))
 	for _, item := range enumSchema.Items {
 		items = append(items, skeled.AppConfigSchemaEnumItem{
-			Name:        item.Name,
-			Description: optionalString(item.Description),
+			Name:             item.Name,
+			Description:      optionalString(item.Description),
+			Deprecated:       item.Deprecated,
+			DeprecatedReason: optionalString(item.DeprecatedReason),
 		})
 	}
 	return items

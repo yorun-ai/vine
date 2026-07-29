@@ -297,10 +297,12 @@ func TestSkeletonServiceListServices(t *testing.T) {
 						SkelName: "vine.hub.AppConfigService",
 					},
 					{
-						Name:        "UserService",
-						SkelName:    "demo.user.UserService",
-						Description: "用户服务",
-						Pub:         true,
+						Name:             "UserService",
+						SkelName:         "demo.user.UserService",
+						Description:      "用户服务",
+						Deprecated:       true,
+						DeprecatedReason: "Use UserServiceV2",
+						Pub:              true,
 						Require: &skel.PermRequire{
 							Expr: &skel.PermExpr{
 								Mode: skel.PermRequireModeCode,
@@ -314,6 +316,8 @@ func TestSkeletonServiceListServices(t *testing.T) {
 							Name:               "listUsers",
 							SkelName:           "listUsers",
 							Description:        "分页查询用户",
+							Deprecated:         true,
+							DeprecatedReason:   "Use listUsersV2",
 							InputDescription:   "分页参数",
 							OutputDescription:  "分页结果",
 							ArgumentsSensitive: true,
@@ -342,9 +346,11 @@ func TestSkeletonServiceListServices(t *testing.T) {
 								},
 							},
 							Arguments: []*skel.MemberSchema{{
-								Name:        "status",
-								Description: "状态",
-								Sensitive:   true,
+								Name:             "status",
+								Description:      "状态",
+								Deprecated:       true,
+								DeprecatedReason: "Use statuses",
+								Sensitive:        true,
 								Type: &skel.TypeSchema{
 									Kind:     skel.TypeKindEnum,
 									Name:     "UserStatus",
@@ -374,12 +380,16 @@ func TestSkeletonServiceListServices(t *testing.T) {
 	require.Len(t, services, 1)
 	assert.Equal(t, "demo.user", services[0].Domain)
 	assert.Equal(t, "demo.user.UserService", services[0].SkelName)
+	assert.True(t, services[0].Deprecated)
+	assert.Equal(t, "Use UserServiceV2", *services[0].DeprecatedReason)
 	assert.True(t, services[0].Pub)
 	require.NotNil(t, services[0].Require)
 	assert.Equal(t, "demo.user.User:read", *services[0].Require.Code)
 	require.Len(t, services[0].Actors, 1)
 	assert.Equal(t, "demo.user.UserActor", services[0].Actors[0].SkelName)
 	require.Len(t, services[0].Methods, 1)
+	assert.True(t, services[0].Methods[0].Deprecated)
+	assert.Equal(t, "Use listUsersV2", *services[0].Methods[0].DeprecatedReason)
 	require.NotNil(t, services[0].Methods[0].Require)
 	assert.Equal(t, "any", services[0].Methods[0].Require.Mode)
 	require.Len(t, services[0].Methods[0].Require.Children, 2)
@@ -393,6 +403,8 @@ func TestSkeletonServiceListServices(t *testing.T) {
 	require.Len(t, services[0].Methods[0].Arguments, 1)
 	assert.Equal(t, "demo.user.UserStatus?", services[0].Methods[0].Arguments[0].Type)
 	assert.True(t, services[0].Methods[0].Arguments[0].Sensitive)
+	assert.True(t, services[0].Methods[0].Arguments[0].Deprecated)
+	assert.Equal(t, "Use statuses", *services[0].Methods[0].Arguments[0].DeprecatedReason)
 }
 
 func TestSkeletonServiceListResources(t *testing.T) {
@@ -411,19 +423,25 @@ func TestSkeletonServiceListResources(t *testing.T) {
 				Domain: "demo.user",
 				Hash:   "domain-hash",
 				Resources: []*skel.ResourceSchema{{
-					Name:        "User",
-					SkelName:    "demo.user.User",
-					Hash:        "user-resource",
-					Description: "用户资源",
+					Name:             "User",
+					SkelName:         "demo.user.User",
+					Hash:             "user-resource",
+					Description:      "用户资源",
+					Deprecated:       true,
+					DeprecatedReason: "Use Account",
 					Checks: []*skel.ResourceCheckSchema{{
-						Name:      "byTenant",
-						Method:    checkMethod,
-						Arguments: checkMethod.Arguments,
+						Name:             "byTenant",
+						Deprecated:       true,
+						DeprecatedReason: "Use byOrganization",
+						Method:           checkMethod,
+						Arguments:        checkMethod.Arguments,
 					}},
 					Actions: []*skel.ResourceActionSchema{{
-						Name:           "read",
-						PermissionCode: "demo.user.User:read",
-						Description:    "读取用户",
+						Name:             "read",
+						PermissionCode:   "demo.user.User:read",
+						Description:      "读取用户",
+						Deprecated:       true,
+						DeprecatedReason: "Use view",
 					}, {
 						Name:           "update",
 						PermissionCode: "demo.user.User:update",
@@ -454,13 +472,19 @@ func TestSkeletonServiceListResources(t *testing.T) {
 	assert.Equal(t, "demo.user", resources[0].Domain)
 	assert.Equal(t, "demo.user.User", resources[0].SkelName)
 	assert.Equal(t, "用户资源", *resources[0].Description)
+	assert.True(t, resources[0].Deprecated)
+	assert.Equal(t, "Use Account", *resources[0].DeprecatedReason)
 	require.Len(t, resources[0].Checks, 1)
 	assert.Equal(t, "byTenant", resources[0].Checks[0].Name)
 	assert.Equal(t, "checkByTenant", resources[0].Checks[0].MethodSkelName)
 	assert.Equal(t, "string", resources[0].Checks[0].Arguments[0].Type)
 	assert.True(t, resources[0].Checks[0].ArgumentsSensitive)
+	assert.True(t, resources[0].Checks[0].Deprecated)
+	assert.Equal(t, "Use byOrganization", *resources[0].Checks[0].DeprecatedReason)
 	require.Len(t, resources[0].Actions, 2)
 	assert.Equal(t, "demo.user.User:read", resources[0].Actions[0].PermissionCode)
+	assert.True(t, resources[0].Actions[0].Deprecated)
+	assert.Equal(t, "Use view", *resources[0].Actions[0].DeprecatedReason)
 	require.Len(t, resources[0].Actions[1].Checks, 1)
 	require.NotNil(t, resources[0].CheckService)
 	assert.Equal(t, "demo.user.UserCheckService", resources[0].CheckService.SkelName)
@@ -781,15 +805,19 @@ func TestSkeletonServiceListConfigs(t *testing.T) {
 			domainSchemas: []*skel.DomainSchema{{
 				Domain: "demo.user",
 				Configs: []*skel.ConfigSchema{{
-					Name:      "UserConfig",
-					SkelName:  "demo.user.UserConfig",
-					Pub:       true,
-					Sensitive: true,
-					Lifecycle: "ETERNAL",
+					Name:             "UserConfig",
+					SkelName:         "demo.user.UserConfig",
+					Deprecated:       true,
+					DeprecatedReason: "Use SiteConfig",
+					Pub:              true,
+					Sensitive:        true,
+					Lifecycle:        "ETERNAL",
 					Members: []*skel.MemberSchema{{
-						Name:      "enabled",
-						Sensitive: true,
-						Type:      &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool},
+						Name:             "enabled",
+						Deprecated:       true,
+						DeprecatedReason: "Use active",
+						Sensitive:        true,
+						Type:             &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool},
 					}},
 				}},
 			}},
@@ -801,12 +829,16 @@ func TestSkeletonServiceListConfigs(t *testing.T) {
 	require.Len(t, configs, 1)
 	assert.Equal(t, "demo.user", configs[0].Domain)
 	assert.Equal(t, "demo.user.UserConfig", configs[0].SkelName)
+	assert.True(t, configs[0].Deprecated)
+	assert.Equal(t, "Use SiteConfig", *configs[0].DeprecatedReason)
 	assert.True(t, configs[0].Pub)
 	assert.True(t, configs[0].Sensitive)
 	assert.Equal(t, "ETERNAL", configs[0].Lifecycle)
 	require.Len(t, configs[0].Fields, 1)
 	assert.Equal(t, "bool", configs[0].Fields[0].Type)
 	assert.True(t, configs[0].Fields[0].Sensitive)
+	assert.True(t, configs[0].Fields[0].Deprecated)
+	assert.Equal(t, "Use active", *configs[0].Fields[0].DeprecatedReason)
 }
 
 func TestSkeletonServiceListTasksAndEvents(t *testing.T) {
@@ -815,11 +847,15 @@ func TestSkeletonServiceListTasksAndEvents(t *testing.T) {
 			domainSchemas: []*skel.DomainSchema{{
 				Domain: "demo.user",
 				Tasks: []*skel.TaskSchema{{
-					Name:     "SyncTask",
-					SkelName: "demo.user.SyncTask",
+					Name:             "SyncTask",
+					SkelName:         "demo.user.SyncTask",
+					Deprecated:       true,
+					DeprecatedReason: "Use ReconcileTask",
 					Triggers: []*skel.TriggerSchema{{
 						Name:               "run",
 						SkelName:           "run",
+						Deprecated:         true,
+						DeprecatedReason:   "Use scheduled",
 						ArgumentsSensitive: true,
 						Arguments: []*skel.MemberSchema{{
 							Name:      "limit",
@@ -829,10 +865,12 @@ func TestSkeletonServiceListTasksAndEvents(t *testing.T) {
 					}},
 				}},
 				Events: []*skel.EventSchema{{
-					Name:      "UserCreatedEvent",
-					SkelName:  "demo.user.UserCreatedEvent",
-					Pub:       true,
-					Sensitive: true,
+					Name:             "UserCreatedEvent",
+					SkelName:         "demo.user.UserCreatedEvent",
+					Deprecated:       true,
+					DeprecatedReason: "Use AccountCreatedEvent",
+					Pub:              true,
+					Sensitive:        true,
 					Members: []*skel.MemberSchema{{
 						Name:      "userId",
 						Sensitive: true,
@@ -847,14 +885,20 @@ func TestSkeletonServiceListTasksAndEvents(t *testing.T) {
 	events := service.ListEvents()
 
 	require.Len(t, tasks, 1)
+	assert.True(t, tasks[0].Deprecated)
+	assert.Equal(t, "Use ReconcileTask", *tasks[0].DeprecatedReason)
 	assert.Equal(t, "demo.user", tasks[0].Domain)
 	require.Len(t, tasks[0].Triggers, 1)
 	assert.True(t, tasks[0].Triggers[0].ArgumentsSensitive)
+	assert.True(t, tasks[0].Triggers[0].Deprecated)
+	assert.Equal(t, "Use scheduled", *tasks[0].Triggers[0].DeprecatedReason)
 	assert.Equal(t, "int", tasks[0].Triggers[0].Arguments[0].Type)
 	assert.True(t, tasks[0].Triggers[0].Arguments[0].Sensitive)
 	require.Len(t, events, 1)
 	assert.Equal(t, "demo.user", events[0].Domain)
 	assert.True(t, events[0].Pub)
+	assert.True(t, events[0].Deprecated)
+	assert.Equal(t, "Use AccountCreatedEvent", *events[0].DeprecatedReason)
 	assert.True(t, events[0].Sensitive)
 	assert.Equal(t, "int", events[0].Fields[0].Type)
 	assert.True(t, events[0].Fields[0].Sensitive)
@@ -868,11 +912,13 @@ func TestSkeletonServiceListDataIncludesEnums(t *testing.T) {
 				Data: []*skel.DataSchema{
 					{Name: "InternalData", SkelName: "vine.hub.InternalData"},
 					{
-						Name:           "Page",
-						SkelName:       "demo.user.Page",
-						Description:    "分页数据",
-						Sensitive:      true,
-						TypeParameters: []string{"T"},
+						Name:             "Page",
+						SkelName:         "demo.user.Page",
+						Description:      "分页数据",
+						Deprecated:       true,
+						DeprecatedReason: "Use CursorPage",
+						Sensitive:        true,
+						TypeParameters:   []string{"T"},
 						Members: []*skel.MemberSchema{{
 							Name:      "items",
 							Sensitive: true,
@@ -883,10 +929,12 @@ func TestSkeletonServiceListDataIncludesEnums(t *testing.T) {
 				Enums: []*skel.EnumSchema{
 					{Name: "InternalStatus", SkelName: "vine.hub.InternalStatus"},
 					{
-						Name:     "UserStatus",
-						SkelName: "demo.user.UserStatus",
+						Name:             "UserStatus",
+						SkelName:         "demo.user.UserStatus",
+						Deprecated:       true,
+						DeprecatedReason: "Use AccountStatus",
 						Items: []*skel.EnumItemSchema{
-							{Name: "ACTIVE", Description: "启用"},
+							{Name: "ACTIVE", Description: "启用", Deprecated: true, DeprecatedReason: "Use ENABLED"},
 						},
 					},
 				},
@@ -900,6 +948,8 @@ func TestSkeletonServiceListDataIncludesEnums(t *testing.T) {
 	assert.Equal(t, "demo.user", data[0].Domain)
 	assert.Equal(t, "demo.user.Page", data[0].SkelName)
 	assert.False(t, data[0].Enum)
+	assert.True(t, data[0].Deprecated)
+	assert.Equal(t, "Use CursorPage", *data[0].DeprecatedReason)
 	assert.True(t, data[0].Sensitive)
 	assert.Equal(t, []string{"T"}, data[0].TypeParameters)
 	assert.Equal(t, "list<T>", data[0].Fields[0].Type)
@@ -907,7 +957,11 @@ func TestSkeletonServiceListDataIncludesEnums(t *testing.T) {
 	assert.Equal(t, "demo.user.UserStatus", data[1].SkelName)
 	assert.Equal(t, "demo.user", data[1].Domain)
 	assert.True(t, data[1].Enum)
+	assert.True(t, data[1].Deprecated)
+	assert.Equal(t, "Use AccountStatus", *data[1].DeprecatedReason)
 	assert.Equal(t, "ACTIVE", data[1].EnumItems[0].Name)
+	assert.True(t, data[1].EnumItems[0].Deprecated)
+	assert.Equal(t, "Use ENABLED", *data[1].EnumItems[0].DeprecatedReason)
 }
 
 func TestSkeletonServiceMergesItemVersionsOnServer(t *testing.T) {

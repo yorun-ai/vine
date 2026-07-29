@@ -164,20 +164,24 @@ func TestAppConfigServiceListReturnsConfigSchemaDescriptionsAndFields(t *testing
 					Name:     "UserStatus",
 					SkelName: "demo.user.UserStatus",
 					Items: []*skel.EnumItemSchema{
-						{Name: "ACTIVE", Description: "启用"},
+						{Name: "ACTIVE", Description: "启用", Deprecated: true, DeprecatedReason: "Use ENABLED"},
 						{Name: "PENDING", Description: "待审核"},
 					},
 				},
 			},
 			configSchemas: []*skel.ConfigSchema{{
-				Name:        "SiteConfig",
-				SkelName:    "demo.user.SiteConfig",
-				Description: "站点配置",
-				Lifecycle:   "ETERNAL",
+				Name:             "SiteConfig",
+				SkelName:         "demo.user.SiteConfig",
+				Description:      "站点配置",
+				Deprecated:       true,
+				DeprecatedReason: "Use AppConfig",
+				Lifecycle:        "ETERNAL",
 				Members: []*skel.MemberSchema{
 					{
-						Name:        "title",
-						Description: "页面标题",
+						Name:             "title",
+						Description:      "页面标题",
+						Deprecated:       true,
+						DeprecatedReason: "Use displayTitle",
 						Type: &skel.TypeSchema{
 							Kind:   skel.TypeKindScalar,
 							Scalar: skel.ScalarString,
@@ -221,12 +225,16 @@ func TestAppConfigServiceListReturnsConfigSchemaDescriptionsAndFields(t *testing
 	assert.Equal(t, "SiteConfig", items[0].Schema.Name)
 	require.NotNil(t, items[0].Schema.Description)
 	assert.Equal(t, "站点配置", *items[0].Schema.Description)
+	assert.True(t, items[0].Schema.Deprecated)
+	assert.Equal(t, "Use AppConfig", *items[0].Schema.DeprecatedReason)
 	assert.Equal(t, "ETERNAL", items[0].Schema.Lifecycle)
 	require.Len(t, items[0].Schema.Fields, 3)
 	assert.Equal(t, "title", items[0].Schema.Fields[0].Name)
 	assert.Equal(t, "string", items[0].Schema.Fields[0].Type)
 	require.NotNil(t, items[0].Schema.Fields[0].Description)
 	assert.Equal(t, "页面标题", *items[0].Schema.Fields[0].Description)
+	assert.True(t, items[0].Schema.Fields[0].Deprecated)
+	assert.Equal(t, "Use displayTitle", *items[0].Schema.Fields[0].DeprecatedReason)
 	assert.Equal(t, "defaultStatus", items[0].Schema.Fields[1].Name)
 	assert.Equal(t, "demo.user.UserStatus", items[0].Schema.Fields[1].Type)
 	assert.Nil(t, items[0].Schema.Fields[1].Description)
@@ -234,6 +242,8 @@ func TestAppConfigServiceListReturnsConfigSchemaDescriptionsAndFields(t *testing
 	assert.Equal(t, "ACTIVE", items[0].Schema.Fields[1].EnumItems[0].Name)
 	require.NotNil(t, items[0].Schema.Fields[1].EnumItems[0].Description)
 	assert.Equal(t, "启用", *items[0].Schema.Fields[1].EnumItems[0].Description)
+	assert.True(t, items[0].Schema.Fields[1].EnumItems[0].Deprecated)
+	assert.Equal(t, "Use ENABLED", *items[0].Schema.Fields[1].EnumItems[0].DeprecatedReason)
 	assert.Equal(t, "statusMessages", items[0].Schema.Fields[2].Name)
 	assert.Equal(t, "map<demo.user.UserStatus, string>", items[0].Schema.Fields[2].Type)
 	require.Len(t, items[0].Schema.Fields[2].EnumItems, 2)

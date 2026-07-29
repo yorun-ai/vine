@@ -29,6 +29,12 @@ data SkeletonActorItem {
     @desc("Actor description")
     description: string?
 
+    @desc("Whether the Actor is deprecated")
+    deprecated: bool
+
+    @desc("Actor deprecation reason")
+    deprecatedReason: string?
+
     @desc("Actor access method list")
     actorVias: list<string>
 
@@ -83,6 +89,12 @@ data SkeletonField {
     @desc("Field description")
     description: string?
 
+    @desc("Whether the field is deprecated")
+    deprecated: bool
+
+    @desc("Field deprecation reason")
+    deprecatedReason: string?
+
     @desc("Field example")
     example: string?
 
@@ -100,6 +112,12 @@ data SkeletonMethod {
 
     @desc("Method description")
     description: string?
+
+    @desc("Whether the method is deprecated")
+    deprecated: bool
+
+    @desc("Method deprecation reason")
+    deprecatedReason: string?
 
     @desc("Input description")
     inputDescription: string?
@@ -160,6 +178,12 @@ data SkeletonServiceItem {
 
     @desc("Service Description")
     description: string?
+
+    @desc("Whether the Service is deprecated")
+    deprecated: bool
+
+    @desc("Service deprecation reason")
+    deprecatedReason: string?
 
     @desc("Whether the item is public")
     pub: bool
@@ -230,6 +254,12 @@ data SkeletonResourceCheck {
     @desc("Check name")
     name: string
 
+    @desc("Whether the Check is deprecated")
+    deprecated: bool
+
+    @desc("Check deprecation reason")
+    deprecatedReason: string?
+
     @desc("Check method name")
     methodName: string
 
@@ -253,6 +283,12 @@ data SkeletonResourceAction {
 
     @desc("Action description")
     description: string?
+
+    @desc("Whether the Action is deprecated")
+    deprecated: bool
+
+    @desc("Action deprecation reason")
+    deprecatedReason: string?
 
     @desc("Check list")
     checks: list<SkeletonResourceCheck>
@@ -286,6 +322,12 @@ data SkeletonResourceItem {
 
     @desc("Resource description")
     description: string?
+
+    @desc("Whether the Resource is deprecated")
+    deprecated: bool
+
+    @desc("Resource deprecation reason")
+    deprecatedReason: string?
 
     @desc("Resource level Check list")
     checks: list<SkeletonResourceCheck>
@@ -326,6 +368,12 @@ data SkeletonWebItem {
     @desc("Web page description")
     description: string?
 
+    @desc("Whether the Web is deprecated")
+    deprecated: bool
+
+    @desc("Web deprecation reason")
+    deprecatedReason: string?
+
     @desc("Accessible Actor List")
     actors: list<SkeletonActorRef>
 }
@@ -340,6 +388,12 @@ data SkeletonTrigger {
 
     @desc("Trigger description")
     description: string?
+
+    @desc("Whether the Trigger is deprecated")
+    deprecated: bool
+
+    @desc("Trigger deprecation reason")
+    deprecatedReason: string?
 
     @desc("Input description")
     inputDescription: string?
@@ -383,6 +437,12 @@ data SkeletonTask {
     @desc("Task description")
     description: string?
 
+    @desc("Whether the Task is deprecated")
+    deprecated: bool
+
+    @desc("Task deprecation reason")
+    deprecatedReason: string?
+
     @desc("Trigger list")
     triggers: list<SkeletonTrigger>
 }
@@ -416,6 +476,12 @@ data SkeletonEventItem {
     @desc("Event description")
     description: string?
 
+    @desc("Whether the Event is deprecated")
+    deprecated: bool
+
+    @desc("Event deprecation reason")
+    deprecatedReason: string?
+
     @desc("Whether the item is public")
     pub: bool
 
@@ -433,6 +499,12 @@ data SkeletonEnumItem {
 
     @desc("Enumeration item description")
     description: string?
+
+    @desc("Whether the enumeration item is deprecated")
+    deprecated: bool
+
+    @desc("Enumeration item deprecation reason")
+    deprecatedReason: string?
 }
 
 @desc("SkeletonData")
@@ -463,6 +535,12 @@ data SkeletonData {
 
     @desc("Data description")
     description: string?
+
+    @desc("Whether the Data or Enum is deprecated")
+    deprecated: bool
+
+    @desc("Data or Enum deprecation reason")
+    deprecatedReason: string?
 
     @desc("Whether it is Enum")
     enum: bool
@@ -508,6 +586,12 @@ data SkeletonConfigItem {
 
     @desc("Config description")
     description: string?
+
+    @desc("Whether the Config is deprecated")
+    deprecated: bool
+
+    @desc("Config deprecation reason")
+    deprecatedReason: string?
 
     @desc("Whether the item is public")
     pub: bool

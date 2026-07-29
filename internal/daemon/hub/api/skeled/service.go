@@ -34,7 +34,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeBoth,
 		Name:              "AppConfigService",
 		SkelName:          "vine.hub.AppConfigService",
-		Hash:              "358424b9",
+		Hash:              "d1e6f6db",
 		ServerType:        reflect.TypeFor[AppConfigServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultAppConfigServiceServer](),
 		ClientType:        reflect.TypeFor[AppConfigServiceClient](),
@@ -71,6 +71,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -93,6 +95,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -115,6 +119,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -137,6 +143,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -153,6 +161,8 @@ var (
 		ValidateArguments:           nil,
 		ResultType:                  reflect.TypeFor[bool](),
 		ValidateResult:              nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -186,23 +196,23 @@ type _AppConfigServiceRemoveArguments struct {
 // AppConfigService / Server
 
 type AppConfigServiceServer interface {
-	// List List configuration items。
+	// List List configuration items.
 	//   @returns []AppConfigItem - Configuration item list
 	List() []AppConfigItem
-	// Get Read configuration。
+	// Get Read configuration.
 	//   @param id - Configuration ID
 	//   @returns AppConfigItem - Configuration items
 	Get(id int) AppConfigItem
-	// Update Modify configuration。
+	// Update Modify configuration.
 	//   @param id - Configuration ID
 	//   @param update - Configuration update parameters
 	//   @returns AppConfigItem - Configuration items
 	Update(id int, update AppConfigUpdate) AppConfigItem
-	// Create Create configuration。
+	// Create Create configuration.
 	//   @param creation - Configuration creation parameters
 	//   @returns AppConfigItem - Configuration items
 	Create(creation AppConfigCreation) AppConfigItem
-	// Remove Delete unused configuration。
+	// Remove Delete unused configuration.
 	//   @param id - Configuration ID
 	//   @returns bool - Whether deletion succeeded
 	Remove(id int) bool
@@ -314,23 +324,23 @@ type DefaultAppConfigServiceServerER struct {
 // AppConfigService / Client
 
 type AppConfigServiceClient interface {
-	// List List configuration items。
+	// List List configuration items.
 	//   @returns []AppConfigItem - Configuration item list
 	List(_ivOpts ...rpcclient.InvokeOption) []AppConfigItem
-	// Get Read configuration。
+	// Get Read configuration.
 	//   @param id - Configuration ID
 	//   @returns AppConfigItem - Configuration items
 	Get(id int, _ivOpts ...rpcclient.InvokeOption) AppConfigItem
-	// Update Modify configuration。
+	// Update Modify configuration.
 	//   @param id - Configuration ID
 	//   @param update - Configuration update parameters
 	//   @returns AppConfigItem - Configuration items
 	Update(id int, update AppConfigUpdate, _ivOpts ...rpcclient.InvokeOption) AppConfigItem
-	// Create Create configuration。
+	// Create Create configuration.
 	//   @param creation - Configuration creation parameters
 	//   @returns AppConfigItem - Configuration items
 	Create(creation AppConfigCreation, _ivOpts ...rpcclient.InvokeOption) AppConfigItem
-	// Remove Delete unused configuration。
+	// Remove Delete unused configuration.
 	//   @param id - Configuration ID
 	//   @returns bool - Whether deletion succeeded
 	Remove(id int, _ivOpts ...rpcclient.InvokeOption) bool
@@ -377,23 +387,23 @@ func (client *_AppConfigServiceClient) Remove(id int, _ivOpts ...rpcclient.Invok
 // AppConfigService / ERClient
 
 type AppConfigServiceClientER interface {
-	// List List configuration items。
+	// List List configuration items.
 	//   @returns []AppConfigItem - Configuration item list
 	List(_ivOpts ...rpcclient.InvokeOption) ([]AppConfigItem, ex.Error)
-	// Get Read configuration。
+	// Get Read configuration.
 	//   @param id - Configuration ID
 	//   @returns AppConfigItem - Configuration items
 	Get(id int, _ivOpts ...rpcclient.InvokeOption) (AppConfigItem, ex.Error)
-	// Update Modify configuration。
+	// Update Modify configuration.
 	//   @param id - Configuration ID
 	//   @param update - Configuration update parameters
 	//   @returns AppConfigItem - Configuration items
 	Update(id int, update AppConfigUpdate, _ivOpts ...rpcclient.InvokeOption) (AppConfigItem, ex.Error)
-	// Create Create configuration。
+	// Create Create configuration.
 	//   @param creation - Configuration creation parameters
 	//   @returns AppConfigItem - Configuration items
 	Create(creation AppConfigCreation, _ivOpts ...rpcclient.InvokeOption) (AppConfigItem, ex.Error)
-	// Remove Delete unused configuration。
+	// Remove Delete unused configuration.
 	//   @param id - Configuration ID
 	//   @returns bool - Whether deletion succeeded
 	Remove(id int, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error)
@@ -495,6 +505,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -509,7 +521,7 @@ var (
 // AppStatusService / Server
 
 type AppStatusServiceServer interface {
-	// List List application instance statuses currently stored in Redis。
+	// List List application instance statuses currently stored in Redis.
 	List() []AppStatusView
 
 	mustBeAppStatusServiceServer()
@@ -571,7 +583,7 @@ type DefaultAppStatusServiceServerER struct {
 // AppStatusService / Client
 
 type AppStatusServiceClient interface {
-	// List List application instance statuses currently stored in Redis。
+	// List List application instance statuses currently stored in Redis.
 	List(_ivOpts ...rpcclient.InvokeOption) []AppStatusView
 }
 
@@ -592,7 +604,7 @@ func (client *_AppStatusServiceClient) List(_ivOpts ...rpcclient.InvokeOption) [
 // AppStatusService / ERClient
 
 type AppStatusServiceClientER interface {
-	// List List application instance statuses currently stored in Redis。
+	// List List application instance statuses currently stored in Redis.
 	List(_ivOpts ...rpcclient.InvokeOption) ([]AppStatusView, ex.Error)
 }
 
@@ -622,7 +634,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeBoth,
 		Name:              "EventDebugService",
 		SkelName:          "vine.hub.EventDebugService",
-		Hash:              "0ecb61f5",
+		Hash:              "73e00401",
 		ServerType:        reflect.TypeFor[EventDebugServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultEventDebugServiceServer](),
 		ClientType:        reflect.TypeFor[EventDebugServiceClient](),
@@ -657,6 +669,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -673,6 +687,8 @@ var (
 		ValidateArguments:           nil,
 		ResultType:                  reflect.TypeFor[EventDebugDefaultEmitRequest](),
 		ValidateResult:              nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -689,6 +705,8 @@ var (
 		ValidateArguments:           nil,
 		ResultType:                  nil,
 		ValidateResult:              nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -714,13 +732,13 @@ type _EventDebugServiceEmitEventArguments struct {
 // EventDebugService / Server
 
 type EventDebugServiceServer interface {
-	// ListEvents List the events monitored by the application instance。
+	// ListEvents List the events monitored by the application instance.
 	ListEvents() []EventDebugEventItem
-	// BuildDefaultEmitRequest Generate a default Event send request。
+	// BuildDefaultEmitRequest Generate a default Event send request.
 	//   @param eventSkelName - Event Skel name
 	//   @param schemaHash - Event schema hash
 	BuildDefaultEmitRequest(eventSkelName string, schemaHash string) EventDebugDefaultEmitRequest
-	// EmitEvent Send Event。
+	// EmitEvent Send Event.
 	//   @param request - Debug send request
 	EmitEvent(request EventDebugEmitRequest)
 
@@ -806,13 +824,13 @@ type DefaultEventDebugServiceServerER struct {
 // EventDebugService / Client
 
 type EventDebugServiceClient interface {
-	// ListEvents List the events monitored by the application instance。
+	// ListEvents List the events monitored by the application instance.
 	ListEvents(_ivOpts ...rpcclient.InvokeOption) []EventDebugEventItem
-	// BuildDefaultEmitRequest Generate a default Event send request。
+	// BuildDefaultEmitRequest Generate a default Event send request.
 	//   @param eventSkelName - Event Skel name
 	//   @param schemaHash - Event schema hash
 	BuildDefaultEmitRequest(eventSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) EventDebugDefaultEmitRequest
-	// EmitEvent Send Event。
+	// EmitEvent Send Event.
 	//   @param request - Debug send request
 	EmitEvent(request EventDebugEmitRequest, _ivOpts ...rpcclient.InvokeOption)
 }
@@ -845,13 +863,13 @@ func (client *_EventDebugServiceClient) EmitEvent(request EventDebugEmitRequest,
 // EventDebugService / ERClient
 
 type EventDebugServiceClientER interface {
-	// ListEvents List the events monitored by the application instance。
+	// ListEvents List the events monitored by the application instance.
 	ListEvents(_ivOpts ...rpcclient.InvokeOption) ([]EventDebugEventItem, ex.Error)
-	// BuildDefaultEmitRequest Generate a default Event send request。
+	// BuildDefaultEmitRequest Generate a default Event send request.
 	//   @param eventSkelName - Event Skel name
 	//   @param schemaHash - Event schema hash
 	BuildDefaultEmitRequest(eventSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) (EventDebugDefaultEmitRequest, ex.Error)
-	// EmitEvent Send Event。
+	// EmitEvent Send Event.
 	//   @param request - Debug send request
 	EmitEvent(request EventDebugEmitRequest, _ivOpts ...rpcclient.InvokeOption) ex.Error
 }
@@ -922,6 +940,8 @@ var (
 		ValidateArguments:           nil,
 		ResultType:                  reflect.TypeFor[Info](),
 		ValidateResult:              nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -936,7 +956,7 @@ var (
 // InfoService / Server
 
 type InfoServiceServer interface {
-	// GetInfo Read Hub information。
+	// GetInfo Read Hub information.
 	//   @returns Info - Hub information
 	GetInfo() Info
 
@@ -999,7 +1019,7 @@ type DefaultInfoServiceServerER struct {
 // InfoService / Client
 
 type InfoServiceClient interface {
-	// GetInfo Read Hub information。
+	// GetInfo Read Hub information.
 	//   @returns Info - Hub information
 	GetInfo(_ivOpts ...rpcclient.InvokeOption) Info
 }
@@ -1021,7 +1041,7 @@ func (client *_InfoServiceClient) GetInfo(_ivOpts ...rpcclient.InvokeOption) Inf
 // InfoService / ERClient
 
 type InfoServiceClientER interface {
-	// GetInfo Read Hub information。
+	// GetInfo Read Hub information.
 	//   @returns Info - Hub information
 	GetInfo(_ivOpts ...rpcclient.InvokeOption) (Info, ex.Error)
 }
@@ -1081,6 +1101,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -1109,6 +1131,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -1134,11 +1158,11 @@ type _MaintenanceServiceApplySeedYamlArguments struct {
 // MaintenanceService / Server
 
 type MaintenanceServiceServer interface {
-	// PreviewSeedYaml Preview Seed YAML differences。
+	// PreviewSeedYaml Preview Seed YAML differences.
 	//   @param content - Seed YAML content
 	//   @returns SeedPreview - Seed preview
 	PreviewSeedYaml(content string) SeedPreview
-	// ApplySeedYaml Apply Seed YAML entity updates。
+	// ApplySeedYaml Apply Seed YAML entity updates.
 	//   @param content - Seed YAML content
 	//   @param selections - Entity to update
 	//   @returns SeedPreview - Updated Seed preview
@@ -1215,11 +1239,11 @@ type DefaultMaintenanceServiceServerER struct {
 // MaintenanceService / Client
 
 type MaintenanceServiceClient interface {
-	// PreviewSeedYaml Preview Seed YAML differences。
+	// PreviewSeedYaml Preview Seed YAML differences.
 	//   @param content - Seed YAML content
 	//   @returns SeedPreview - Seed preview
 	PreviewSeedYaml(content string, _ivOpts ...rpcclient.InvokeOption) SeedPreview
-	// ApplySeedYaml Apply Seed YAML entity updates。
+	// ApplySeedYaml Apply Seed YAML entity updates.
 	//   @param content - Seed YAML content
 	//   @param selections - Entity to update
 	//   @returns SeedPreview - Updated Seed preview
@@ -1249,11 +1273,11 @@ func (client *_MaintenanceServiceClient) ApplySeedYaml(content string, selection
 // MaintenanceService / ERClient
 
 type MaintenanceServiceClientER interface {
-	// PreviewSeedYaml Preview Seed YAML differences。
+	// PreviewSeedYaml Preview Seed YAML differences.
 	//   @param content - Seed YAML content
 	//   @returns SeedPreview - Seed preview
 	PreviewSeedYaml(content string, _ivOpts ...rpcclient.InvokeOption) (SeedPreview, ex.Error)
-	// ApplySeedYaml Apply Seed YAML entity updates。
+	// ApplySeedYaml Apply Seed YAML entity updates.
 	//   @param content - Seed YAML content
 	//   @param selections - Entity to update
 	//   @returns SeedPreview - Updated Seed preview
@@ -1335,6 +1359,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -1357,6 +1383,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -1379,6 +1407,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -1401,6 +1431,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -1417,6 +1449,8 @@ var (
 		ValidateArguments:           nil,
 		ResultType:                  nil,
 		ValidateResult:              nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -1450,23 +1484,23 @@ type _PortalCertServiceRemoveArguments struct {
 // PortalCertService / Server
 
 type PortalCertServiceServer interface {
-	// List List Portal site certificates。
+	// List List Portal site certificates.
 	//   @returns []PortalCert - Portal site certificate list
 	List() []PortalCert
-	// Get Read the Portal site certificate。
+	// Get Read the Portal site certificate.
 	//   @param id - Certificate ID
 	//   @returns PortalCert - Portal site certificate
 	Get(id int) PortalCert
-	// Create Create Portal site certificate。
+	// Create Create Portal site certificate.
 	//   @param creation - Portal site certificate creation parameters
 	//   @returns PortalCert - Portal site certificate
 	Create(creation PortalCertCreation) PortalCert
-	// Update Modify Portal site certificate。
+	// Update Modify Portal site certificate.
 	//   @param id - Certificate ID
 	//   @param update - Portal site certificate update parameters
 	//   @returns PortalCert - Portal site certificate
 	Update(id int, update PortalCertUpdate) PortalCert
-	// Remove Delete Portal site certificate。
+	// Remove Delete Portal site certificate.
 	//   @param id - Certificate ID
 	Remove(id int)
 
@@ -1576,23 +1610,23 @@ type DefaultPortalCertServiceServerER struct {
 // PortalCertService / Client
 
 type PortalCertServiceClient interface {
-	// List List Portal site certificates。
+	// List List Portal site certificates.
 	//   @returns []PortalCert - Portal site certificate list
 	List(_ivOpts ...rpcclient.InvokeOption) []PortalCert
-	// Get Read the Portal site certificate。
+	// Get Read the Portal site certificate.
 	//   @param id - Certificate ID
 	//   @returns PortalCert - Portal site certificate
 	Get(id int, _ivOpts ...rpcclient.InvokeOption) PortalCert
-	// Create Create Portal site certificate。
+	// Create Create Portal site certificate.
 	//   @param creation - Portal site certificate creation parameters
 	//   @returns PortalCert - Portal site certificate
 	Create(creation PortalCertCreation, _ivOpts ...rpcclient.InvokeOption) PortalCert
-	// Update Modify Portal site certificate。
+	// Update Modify Portal site certificate.
 	//   @param id - Certificate ID
 	//   @param update - Portal site certificate update parameters
 	//   @returns PortalCert - Portal site certificate
 	Update(id int, update PortalCertUpdate, _ivOpts ...rpcclient.InvokeOption) PortalCert
-	// Remove Delete Portal site certificate。
+	// Remove Delete Portal site certificate.
 	//   @param id - Certificate ID
 	Remove(id int, _ivOpts ...rpcclient.InvokeOption)
 }
@@ -1637,23 +1671,23 @@ func (client *_PortalCertServiceClient) Remove(id int, _ivOpts ...rpcclient.Invo
 // PortalCertService / ERClient
 
 type PortalCertServiceClientER interface {
-	// List List Portal site certificates。
+	// List List Portal site certificates.
 	//   @returns []PortalCert - Portal site certificate list
 	List(_ivOpts ...rpcclient.InvokeOption) ([]PortalCert, ex.Error)
-	// Get Read the Portal site certificate。
+	// Get Read the Portal site certificate.
 	//   @param id - Certificate ID
 	//   @returns PortalCert - Portal site certificate
 	Get(id int, _ivOpts ...rpcclient.InvokeOption) (PortalCert, ex.Error)
-	// Create Create Portal site certificate。
+	// Create Create Portal site certificate.
 	//   @param creation - Portal site certificate creation parameters
 	//   @returns PortalCert - Portal site certificate
 	Create(creation PortalCertCreation, _ivOpts ...rpcclient.InvokeOption) (PortalCert, ex.Error)
-	// Update Modify Portal site certificate。
+	// Update Modify Portal site certificate.
 	//   @param id - Certificate ID
 	//   @param update - Portal site certificate update parameters
 	//   @returns PortalCert - Portal site certificate
 	Update(id int, update PortalCertUpdate, _ivOpts ...rpcclient.InvokeOption) (PortalCert, ex.Error)
-	// Remove Delete Portal site certificate。
+	// Remove Delete Portal site certificate.
 	//   @param id - Certificate ID
 	Remove(id int, _ivOpts ...rpcclient.InvokeOption) ex.Error
 }
@@ -1754,6 +1788,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -1776,6 +1812,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -1799,10 +1837,10 @@ type _PortalEntryServiceUpdateAccessArguments struct {
 // PortalEntryService / Server
 
 type PortalEntryServiceServer interface {
-	// List List Portal access entries。
+	// List List Portal access entries.
 	//   @returns []PortalEntry - Portal access entry list
 	List() []PortalEntry
-	// UpdateAccess Modify Portal access configuration。
+	// UpdateAccess Modify Portal access configuration.
 	//   @param scheme - Entry protocol
 	//   @param host - Match Host, empty string means no restriction
 	//   @param port - Entry port
@@ -1881,10 +1919,10 @@ type DefaultPortalEntryServiceServerER struct {
 // PortalEntryService / Client
 
 type PortalEntryServiceClient interface {
-	// List List Portal access entries。
+	// List List Portal access entries.
 	//   @returns []PortalEntry - Portal access entry list
 	List(_ivOpts ...rpcclient.InvokeOption) []PortalEntry
-	// UpdateAccess Modify Portal access configuration。
+	// UpdateAccess Modify Portal access configuration.
 	//   @param scheme - Entry protocol
 	//   @param host - Match Host, empty string means no restriction
 	//   @param port - Entry port
@@ -1916,10 +1954,10 @@ func (client *_PortalEntryServiceClient) UpdateAccess(scheme string, host string
 // PortalEntryService / ERClient
 
 type PortalEntryServiceClientER interface {
-	// List List Portal access entries。
+	// List List Portal access entries.
 	//   @returns []PortalEntry - Portal access entry list
 	List(_ivOpts ...rpcclient.InvokeOption) ([]PortalEntry, ex.Error)
-	// UpdateAccess Modify Portal access configuration。
+	// UpdateAccess Modify Portal access configuration.
 	//   @param scheme - Entry protocol
 	//   @param host - Match Host, empty string means no restriction
 	//   @param port - Entry port
@@ -2000,6 +2038,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -2016,6 +2056,8 @@ var (
 		ValidateArguments:           nil,
 		ResultType:                  reflect.TypeFor[PortalRule](),
 		ValidateResult:              nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -2032,6 +2074,8 @@ var (
 		ValidateArguments:           nil,
 		ResultType:                  reflect.TypeFor[PortalRule](),
 		ValidateResult:              nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -2048,6 +2092,8 @@ var (
 		ValidateArguments:           nil,
 		ResultType:                  reflect.TypeFor[PortalRule](),
 		ValidateResult:              nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -2064,6 +2110,8 @@ var (
 		ValidateArguments:           nil,
 		ResultType:                  nil,
 		ValidateResult:              nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -2080,6 +2128,8 @@ var (
 		ValidateArguments:           nil,
 		ResultType:                  reflect.TypeFor[PortalDashboardAccess](),
 		ValidateResult:              nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -2102,6 +2152,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -2142,29 +2194,29 @@ type _PortalRuleServiceUpdateDashboardAccessArguments struct {
 // PortalRuleService / Server
 
 type PortalRuleServiceServer interface {
-	// List List Portal entry rules。
+	// List List Portal entry rules.
 	//   @returns []PortalRule - Portal entry rule list
 	List() []PortalRule
-	// Get Read Portal entry rules。
+	// Get Read Portal entry rules.
 	//   @param id - Rule ID
 	//   @returns PortalRule - Portal entry rules
 	Get(id int) PortalRule
-	// Create Create Portal entry rules。
+	// Create Create Portal entry rules.
 	//   @param creation - Portal entry rule creation parameters
 	//   @returns PortalRule - Portal entry rules
 	Create(creation PortalRuleCreation) PortalRule
-	// Update Modify Portal entry rules。
+	// Update Modify Portal entry rules.
 	//   @param id - Rule ID
 	//   @param update - Portal entry rule update parameters
 	//   @returns PortalRule - Portal entry rules
 	Update(id int, update PortalRuleUpdate) PortalRule
-	// Remove Delete Portal entry rules。
+	// Remove Delete Portal entry rules.
 	//   @param id - Rule ID
 	Remove(id int)
-	// GetDashboardAccess Get the Hub Dashboard access entry。
+	// GetDashboardAccess Get the Hub Dashboard access entry.
 	//   @returns PortalDashboardAccess - Hub Dashboard access entry
 	GetDashboardAccess() PortalDashboardAccess
-	// UpdateDashboardAccess Modify Hub Dashboard access entry。
+	// UpdateDashboardAccess Modify Hub Dashboard access entry.
 	//   @param scheme - Hub Dashboard entry protocol
 	//   @param host - Hub Dashboard entry host
 	//   @param port - Hub Dashboard entry port
@@ -2302,29 +2354,29 @@ type DefaultPortalRuleServiceServerER struct {
 // PortalRuleService / Client
 
 type PortalRuleServiceClient interface {
-	// List List Portal entry rules。
+	// List List Portal entry rules.
 	//   @returns []PortalRule - Portal entry rule list
 	List(_ivOpts ...rpcclient.InvokeOption) []PortalRule
-	// Get Read Portal entry rules。
+	// Get Read Portal entry rules.
 	//   @param id - Rule ID
 	//   @returns PortalRule - Portal entry rules
 	Get(id int, _ivOpts ...rpcclient.InvokeOption) PortalRule
-	// Create Create Portal entry rules。
+	// Create Create Portal entry rules.
 	//   @param creation - Portal entry rule creation parameters
 	//   @returns PortalRule - Portal entry rules
 	Create(creation PortalRuleCreation, _ivOpts ...rpcclient.InvokeOption) PortalRule
-	// Update Modify Portal entry rules。
+	// Update Modify Portal entry rules.
 	//   @param id - Rule ID
 	//   @param update - Portal entry rule update parameters
 	//   @returns PortalRule - Portal entry rules
 	Update(id int, update PortalRuleUpdate, _ivOpts ...rpcclient.InvokeOption) PortalRule
-	// Remove Delete Portal entry rules。
+	// Remove Delete Portal entry rules.
 	//   @param id - Rule ID
 	Remove(id int, _ivOpts ...rpcclient.InvokeOption)
-	// GetDashboardAccess Get the Hub Dashboard access entry。
+	// GetDashboardAccess Get the Hub Dashboard access entry.
 	//   @returns PortalDashboardAccess - Hub Dashboard access entry
 	GetDashboardAccess(_ivOpts ...rpcclient.InvokeOption) PortalDashboardAccess
-	// UpdateDashboardAccess Modify Hub Dashboard access entry。
+	// UpdateDashboardAccess Modify Hub Dashboard access entry.
 	//   @param scheme - Hub Dashboard entry protocol
 	//   @param host - Hub Dashboard entry host
 	//   @param port - Hub Dashboard entry port
@@ -2385,29 +2437,29 @@ func (client *_PortalRuleServiceClient) UpdateDashboardAccess(scheme string, hos
 // PortalRuleService / ERClient
 
 type PortalRuleServiceClientER interface {
-	// List List Portal entry rules。
+	// List List Portal entry rules.
 	//   @returns []PortalRule - Portal entry rule list
 	List(_ivOpts ...rpcclient.InvokeOption) ([]PortalRule, ex.Error)
-	// Get Read Portal entry rules。
+	// Get Read Portal entry rules.
 	//   @param id - Rule ID
 	//   @returns PortalRule - Portal entry rules
 	Get(id int, _ivOpts ...rpcclient.InvokeOption) (PortalRule, ex.Error)
-	// Create Create Portal entry rules。
+	// Create Create Portal entry rules.
 	//   @param creation - Portal entry rule creation parameters
 	//   @returns PortalRule - Portal entry rules
 	Create(creation PortalRuleCreation, _ivOpts ...rpcclient.InvokeOption) (PortalRule, ex.Error)
-	// Update Modify Portal entry rules。
+	// Update Modify Portal entry rules.
 	//   @param id - Rule ID
 	//   @param update - Portal entry rule update parameters
 	//   @returns PortalRule - Portal entry rules
 	Update(id int, update PortalRuleUpdate, _ivOpts ...rpcclient.InvokeOption) (PortalRule, ex.Error)
-	// Remove Delete Portal entry rules。
+	// Remove Delete Portal entry rules.
 	//   @param id - Rule ID
 	Remove(id int, _ivOpts ...rpcclient.InvokeOption) ex.Error
-	// GetDashboardAccess Get the Hub Dashboard access entry。
+	// GetDashboardAccess Get the Hub Dashboard access entry.
 	//   @returns PortalDashboardAccess - Hub Dashboard access entry
 	GetDashboardAccess(_ivOpts ...rpcclient.InvokeOption) (PortalDashboardAccess, ex.Error)
-	// UpdateDashboardAccess Modify Hub Dashboard access entry。
+	// UpdateDashboardAccess Modify Hub Dashboard access entry.
 	//   @param scheme - Hub Dashboard entry protocol
 	//   @param host - Hub Dashboard entry host
 	//   @param port - Hub Dashboard entry port
@@ -2535,6 +2587,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -2557,6 +2611,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -2579,6 +2635,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -2607,6 +2665,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -2635,6 +2695,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -2651,6 +2713,8 @@ var (
 		ValidateArguments:           nil,
 		ResultType:                  nil,
 		ValidateResult:              nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -2684,26 +2748,26 @@ type _PortalSiteServiceRemoveArguments struct {
 // PortalSiteService / Server
 
 type PortalSiteServiceServer interface {
-	// List List Portal target sites。
+	// List List Portal target sites.
 	//   @returns []PortalSite - Portal target site list
 	List() []PortalSite
-	// ListOptions List Portal target site form options。
+	// ListOptions List Portal target site form options.
 	//   @returns PortalSiteOptions - Portal target site form options
 	ListOptions() PortalSiteOptions
-	// Get Read the Portal target site。
+	// Get Read the Portal target site.
 	//   @param id - Target site id
 	//   @returns PortalSite - Portal target site
 	Get(id int) PortalSite
-	// Create Create Portal target site。
+	// Create Create Portal target site.
 	//   @param creation - Portal target site creation parameters
 	//   @returns PortalSite - Portal target site
 	Create(creation PortalSiteCreation) PortalSite
-	// Update Modify Portal target site。
+	// Update Modify Portal target site.
 	//   @param id - Target site id
 	//   @param update - Portal target site update parameters
 	//   @returns PortalSite - Portal target site
 	Update(id int, update PortalSiteUpdate) PortalSite
-	// Remove Delete Portal target site。
+	// Remove Delete Portal target site.
 	//   @param id - Target site id
 	Remove(id int)
 
@@ -2825,26 +2889,26 @@ type DefaultPortalSiteServiceServerER struct {
 // PortalSiteService / Client
 
 type PortalSiteServiceClient interface {
-	// List List Portal target sites。
+	// List List Portal target sites.
 	//   @returns []PortalSite - Portal target site list
 	List(_ivOpts ...rpcclient.InvokeOption) []PortalSite
-	// ListOptions List Portal target site form options。
+	// ListOptions List Portal target site form options.
 	//   @returns PortalSiteOptions - Portal target site form options
 	ListOptions(_ivOpts ...rpcclient.InvokeOption) PortalSiteOptions
-	// Get Read the Portal target site。
+	// Get Read the Portal target site.
 	//   @param id - Target site id
 	//   @returns PortalSite - Portal target site
 	Get(id int, _ivOpts ...rpcclient.InvokeOption) PortalSite
-	// Create Create Portal target site。
+	// Create Create Portal target site.
 	//   @param creation - Portal target site creation parameters
 	//   @returns PortalSite - Portal target site
 	Create(creation PortalSiteCreation, _ivOpts ...rpcclient.InvokeOption) PortalSite
-	// Update Modify Portal target site。
+	// Update Modify Portal target site.
 	//   @param id - Target site id
 	//   @param update - Portal target site update parameters
 	//   @returns PortalSite - Portal target site
 	Update(id int, update PortalSiteUpdate, _ivOpts ...rpcclient.InvokeOption) PortalSite
-	// Remove Delete Portal target site。
+	// Remove Delete Portal target site.
 	//   @param id - Target site id
 	Remove(id int, _ivOpts ...rpcclient.InvokeOption)
 }
@@ -2895,26 +2959,26 @@ func (client *_PortalSiteServiceClient) Remove(id int, _ivOpts ...rpcclient.Invo
 // PortalSiteService / ERClient
 
 type PortalSiteServiceClientER interface {
-	// List List Portal target sites。
+	// List List Portal target sites.
 	//   @returns []PortalSite - Portal target site list
 	List(_ivOpts ...rpcclient.InvokeOption) ([]PortalSite, ex.Error)
-	// ListOptions List Portal target site form options。
+	// ListOptions List Portal target site form options.
 	//   @returns PortalSiteOptions - Portal target site form options
 	ListOptions(_ivOpts ...rpcclient.InvokeOption) (PortalSiteOptions, ex.Error)
-	// Get Read the Portal target site。
+	// Get Read the Portal target site.
 	//   @param id - Target site id
 	//   @returns PortalSite - Portal target site
 	Get(id int, _ivOpts ...rpcclient.InvokeOption) (PortalSite, ex.Error)
-	// Create Create Portal target site。
+	// Create Create Portal target site.
 	//   @param creation - Portal target site creation parameters
 	//   @returns PortalSite - Portal target site
 	Create(creation PortalSiteCreation, _ivOpts ...rpcclient.InvokeOption) (PortalSite, ex.Error)
-	// Update Modify Portal target site。
+	// Update Modify Portal target site.
 	//   @param id - Target site id
 	//   @param update - Portal target site update parameters
 	//   @returns PortalSite - Portal target site
 	Update(id int, update PortalSiteUpdate, _ivOpts ...rpcclient.InvokeOption) (PortalSite, ex.Error)
-	// Remove Delete Portal target site。
+	// Remove Delete Portal target site.
 	//   @param id - Target site id
 	Remove(id int, _ivOpts ...rpcclient.InvokeOption) ex.Error
 }
@@ -3018,6 +3082,8 @@ var (
 		},
 		ResultType:                  nil,
 		ValidateResult:              nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -3034,6 +3100,8 @@ var (
 		ValidateArguments:           nil,
 		ResultType:                  nil,
 		ValidateResult:              nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -3050,6 +3118,8 @@ var (
 		ValidateArguments:           nil,
 		ResultType:                  reflect.TypeFor[bool](),
 		ValidateResult:              nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -3079,14 +3149,14 @@ type _RegistryServiceHeartbeatArguments struct {
 // RegistryService / Server
 
 type RegistryServiceServer interface {
-	// Register Register application instance。
+	// Register Register application instance.
 	//   @param registration - Application instance registration information
 	Register(registration AppRegistration)
-	// Unregister Unregister an application instance。
+	// Unregister Unregister an application instance.
 	//   @param name - Application name
 	//   @param instanceId - Application instance ID
 	Unregister(name string, instanceId skel.UUID)
-	// Heartbeat Application instance heartbeat。
+	// Heartbeat Application instance heartbeat.
 	//   @param status - Application instance ID
 	//   @returns bool - Whether the current instance is still registered in the Hub
 	Heartbeat(status AppStatus) bool
@@ -3172,14 +3242,14 @@ type DefaultRegistryServiceServerER struct {
 // RegistryService / Client
 
 type RegistryServiceClient interface {
-	// Register Register application instance。
+	// Register Register application instance.
 	//   @param registration - Application instance registration information
 	Register(registration AppRegistration, _ivOpts ...rpcclient.InvokeOption)
-	// Unregister Unregister an application instance。
+	// Unregister Unregister an application instance.
 	//   @param name - Application name
 	//   @param instanceId - Application instance ID
 	Unregister(name string, instanceId skel.UUID, _ivOpts ...rpcclient.InvokeOption)
-	// Heartbeat Application instance heartbeat。
+	// Heartbeat Application instance heartbeat.
 	//   @param status - Application instance ID
 	//   @returns bool - Whether the current instance is still registered in the Hub
 	Heartbeat(status AppStatus, _ivOpts ...rpcclient.InvokeOption) bool
@@ -3212,14 +3282,14 @@ func (client *_RegistryServiceClient) Heartbeat(status AppStatus, _ivOpts ...rpc
 // RegistryService / ERClient
 
 type RegistryServiceClientER interface {
-	// Register Register application instance。
+	// Register Register application instance.
 	//   @param registration - Application instance registration information
 	Register(registration AppRegistration, _ivOpts ...rpcclient.InvokeOption) ex.Error
-	// Unregister Unregister an application instance。
+	// Unregister Unregister an application instance.
 	//   @param name - Application name
 	//   @param instanceId - Application instance ID
 	Unregister(name string, instanceId skel.UUID, _ivOpts ...rpcclient.InvokeOption) ex.Error
-	// Heartbeat Application instance heartbeat。
+	// Heartbeat Application instance heartbeat.
 	//   @param status - Application instance ID
 	//   @returns bool - Whether the current instance is still registered in the Hub
 	Heartbeat(status AppStatus, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error)
@@ -3270,7 +3340,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeBoth,
 		Name:              "ServiceDebugService",
 		SkelName:          "vine.hub.ServiceDebugService",
-		Hash:              "1f53749c",
+		Hash:              "d6cbacb8",
 		ServerType:        reflect.TypeFor[ServiceDebugServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultServiceDebugServiceServer](),
 		ClientType:        reflect.TypeFor[ServiceDebugServiceClient](),
@@ -3303,6 +3373,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -3325,6 +3397,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -3347,6 +3421,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -3374,6 +3450,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -3396,6 +3474,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -3412,6 +3492,8 @@ var (
 		ValidateArguments:           nil,
 		ResultType:                  reflect.TypeFor[ServiceDebugInvokeResponse](),
 		ValidateResult:              nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -3448,24 +3530,24 @@ type _ServiceDebugServiceInvokeServiceArguments struct {
 // ServiceDebugService / Server
 
 type ServiceDebugServiceServer interface {
-	// ListAppInstances List application instances。
+	// ListAppInstances List application instances.
 	ListAppInstances() []ServiceDebugAppInstance
-	// ListServices List the services provided by the application instance。
+	// ListServices List the services provided by the application instance.
 	ListServices() []ServiceDebugServiceItem
-	// ListServiceAppInstances List application instances that provide the specified service。
+	// ListServiceAppInstances List application instances that provide the specified service.
 	//   @param serviceSkelName - Service Skel name
 	//   @param schemaHash - Service schema hash
 	ListServiceAppInstances(serviceSkelName string, schemaHash string) []ServiceDebugAppInstance
-	// ListMethods List Service methods。
+	// ListMethods List Service methods.
 	//   @param serviceSkelName - Service Skel name
 	//   @param schemaHash - Service schema hash
 	ListMethods(serviceSkelName string, schemaHash string) []ServiceDebugMethodItem
-	// BuildDefaultInvokeRequest Generate default Service call request。
+	// BuildDefaultInvokeRequest Generate default Service call request.
 	//   @param serviceSkelName - Service Skel name
 	//   @param schemaHash - Service schema hash
 	//   @param methodSkelName - Method Skel name
 	BuildDefaultInvokeRequest(serviceSkelName string, schemaHash string, methodSkelName string) ServiceDebugDefaultInvokeRequest
-	// InvokeService Call Service method。
+	// InvokeService Call Service method.
 	//   @param request - Debug call request
 	InvokeService(request ServiceDebugInvokeRequest) ServiceDebugInvokeResponse
 
@@ -3588,24 +3670,24 @@ type DefaultServiceDebugServiceServerER struct {
 // ServiceDebugService / Client
 
 type ServiceDebugServiceClient interface {
-	// ListAppInstances List application instances。
+	// ListAppInstances List application instances.
 	ListAppInstances(_ivOpts ...rpcclient.InvokeOption) []ServiceDebugAppInstance
-	// ListServices List the services provided by the application instance。
+	// ListServices List the services provided by the application instance.
 	ListServices(_ivOpts ...rpcclient.InvokeOption) []ServiceDebugServiceItem
-	// ListServiceAppInstances List application instances that provide the specified service。
+	// ListServiceAppInstances List application instances that provide the specified service.
 	//   @param serviceSkelName - Service Skel name
 	//   @param schemaHash - Service schema hash
 	ListServiceAppInstances(serviceSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) []ServiceDebugAppInstance
-	// ListMethods List Service methods。
+	// ListMethods List Service methods.
 	//   @param serviceSkelName - Service Skel name
 	//   @param schemaHash - Service schema hash
 	ListMethods(serviceSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) []ServiceDebugMethodItem
-	// BuildDefaultInvokeRequest Generate default Service call request。
+	// BuildDefaultInvokeRequest Generate default Service call request.
 	//   @param serviceSkelName - Service Skel name
 	//   @param schemaHash - Service schema hash
 	//   @param methodSkelName - Method Skel name
 	BuildDefaultInvokeRequest(serviceSkelName string, schemaHash string, methodSkelName string, _ivOpts ...rpcclient.InvokeOption) ServiceDebugDefaultInvokeRequest
-	// InvokeService Call Service method。
+	// InvokeService Call Service method.
 	//   @param request - Debug call request
 	InvokeService(request ServiceDebugInvokeRequest, _ivOpts ...rpcclient.InvokeOption) ServiceDebugInvokeResponse
 }
@@ -3657,24 +3739,24 @@ func (client *_ServiceDebugServiceClient) InvokeService(request ServiceDebugInvo
 // ServiceDebugService / ERClient
 
 type ServiceDebugServiceClientER interface {
-	// ListAppInstances List application instances。
+	// ListAppInstances List application instances.
 	ListAppInstances(_ivOpts ...rpcclient.InvokeOption) ([]ServiceDebugAppInstance, ex.Error)
-	// ListServices List the services provided by the application instance。
+	// ListServices List the services provided by the application instance.
 	ListServices(_ivOpts ...rpcclient.InvokeOption) ([]ServiceDebugServiceItem, ex.Error)
-	// ListServiceAppInstances List application instances that provide the specified service。
+	// ListServiceAppInstances List application instances that provide the specified service.
 	//   @param serviceSkelName - Service Skel name
 	//   @param schemaHash - Service schema hash
 	ListServiceAppInstances(serviceSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) ([]ServiceDebugAppInstance, ex.Error)
-	// ListMethods List Service methods。
+	// ListMethods List Service methods.
 	//   @param serviceSkelName - Service Skel name
 	//   @param schemaHash - Service schema hash
 	ListMethods(serviceSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) ([]ServiceDebugMethodItem, ex.Error)
-	// BuildDefaultInvokeRequest Generate default Service call request。
+	// BuildDefaultInvokeRequest Generate default Service call request.
 	//   @param serviceSkelName - Service Skel name
 	//   @param schemaHash - Service schema hash
 	//   @param methodSkelName - Method Skel name
 	BuildDefaultInvokeRequest(serviceSkelName string, schemaHash string, methodSkelName string, _ivOpts ...rpcclient.InvokeOption) (ServiceDebugDefaultInvokeRequest, ex.Error)
-	// InvokeService Call Service method。
+	// InvokeService Call Service method.
 	//   @param request - Debug call request
 	InvokeService(request ServiceDebugInvokeRequest, _ivOpts ...rpcclient.InvokeOption) (ServiceDebugInvokeResponse, ex.Error)
 }
@@ -3752,7 +3834,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeBoth,
 		Name:              "SkeletonService",
 		SkelName:          "vine.hub.SkeletonService",
-		Hash:              "cbbcea81",
+		Hash:              "edb978a1",
 		ServerType:        reflect.TypeFor[SkeletonServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultSkeletonServiceServer](),
 		ClientType:        reflect.TypeFor[SkeletonServiceClient](),
@@ -3793,6 +3875,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -3820,6 +3904,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -3847,6 +3933,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -3874,6 +3962,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -3901,6 +3991,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -3928,6 +4020,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -3955,6 +4049,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -3982,6 +4078,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -4009,6 +4107,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -4023,31 +4123,31 @@ var (
 // SkeletonService / Server
 
 type SkeletonServiceServer interface {
-	// ListDomains List Domain skeleton。
+	// ListDomains List Domain skeleton.
 	//   @returns []SkeletonDomain - Domain skeleton list
 	ListDomains() []SkeletonDomain
-	// ListActors List Actor Skeleton。
+	// ListActors List Actor Skeleton.
 	//   @returns []SkeletonActorItem - Actor skeleton list
 	ListActors() []SkeletonActorItem
-	// ListServices List Service skeleton。
+	// ListServices List Service skeleton.
 	//   @returns []SkeletonServiceItem - Service skeleton list
 	ListServices() []SkeletonServiceItem
-	// ListResources List Resource skeleton。
+	// ListResources List Resource skeleton.
 	//   @returns []SkeletonResourceItem - Resource skeleton list
 	ListResources() []SkeletonResourceItem
-	// ListWebs List Web Skeletons。
+	// ListWebs List Web Skeletons.
 	//   @returns []SkeletonWebItem - Web skeleton list
 	ListWebs() []SkeletonWebItem
-	// ListTasks List Task skeleton。
+	// ListTasks List Task skeleton.
 	//   @returns []SkeletonTask - Task skeleton list
 	ListTasks() []SkeletonTask
-	// ListEvents List Event skeletons。
+	// ListEvents List Event skeletons.
 	//   @returns []SkeletonEventItem - Event skeleton list
 	ListEvents() []SkeletonEventItem
-	// ListData List Data skeleton。
+	// ListData List Data skeleton.
 	//   @returns []SkeletonData - Data skeleton list, including Enum
 	ListData() []SkeletonData
-	// ListConfigs List Config skeleton。
+	// ListConfigs List Config skeleton.
 	//   @returns []SkeletonConfigItem - Config skeleton list
 	ListConfigs() []SkeletonConfigItem
 
@@ -4206,31 +4306,31 @@ type DefaultSkeletonServiceServerER struct {
 // SkeletonService / Client
 
 type SkeletonServiceClient interface {
-	// ListDomains List Domain skeleton。
+	// ListDomains List Domain skeleton.
 	//   @returns []SkeletonDomain - Domain skeleton list
 	ListDomains(_ivOpts ...rpcclient.InvokeOption) []SkeletonDomain
-	// ListActors List Actor Skeleton。
+	// ListActors List Actor Skeleton.
 	//   @returns []SkeletonActorItem - Actor skeleton list
 	ListActors(_ivOpts ...rpcclient.InvokeOption) []SkeletonActorItem
-	// ListServices List Service skeleton。
+	// ListServices List Service skeleton.
 	//   @returns []SkeletonServiceItem - Service skeleton list
 	ListServices(_ivOpts ...rpcclient.InvokeOption) []SkeletonServiceItem
-	// ListResources List Resource skeleton。
+	// ListResources List Resource skeleton.
 	//   @returns []SkeletonResourceItem - Resource skeleton list
 	ListResources(_ivOpts ...rpcclient.InvokeOption) []SkeletonResourceItem
-	// ListWebs List Web Skeletons。
+	// ListWebs List Web Skeletons.
 	//   @returns []SkeletonWebItem - Web skeleton list
 	ListWebs(_ivOpts ...rpcclient.InvokeOption) []SkeletonWebItem
-	// ListTasks List Task skeleton。
+	// ListTasks List Task skeleton.
 	//   @returns []SkeletonTask - Task skeleton list
 	ListTasks(_ivOpts ...rpcclient.InvokeOption) []SkeletonTask
-	// ListEvents List Event skeletons。
+	// ListEvents List Event skeletons.
 	//   @returns []SkeletonEventItem - Event skeleton list
 	ListEvents(_ivOpts ...rpcclient.InvokeOption) []SkeletonEventItem
-	// ListData List Data skeleton。
+	// ListData List Data skeleton.
 	//   @returns []SkeletonData - Data skeleton list, including Enum
 	ListData(_ivOpts ...rpcclient.InvokeOption) []SkeletonData
-	// ListConfigs List Config skeleton。
+	// ListConfigs List Config skeleton.
 	//   @returns []SkeletonConfigItem - Config skeleton list
 	ListConfigs(_ivOpts ...rpcclient.InvokeOption) []SkeletonConfigItem
 }
@@ -4300,31 +4400,31 @@ func (client *_SkeletonServiceClient) ListConfigs(_ivOpts ...rpcclient.InvokeOpt
 // SkeletonService / ERClient
 
 type SkeletonServiceClientER interface {
-	// ListDomains List Domain skeleton。
+	// ListDomains List Domain skeleton.
 	//   @returns []SkeletonDomain - Domain skeleton list
 	ListDomains(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonDomain, ex.Error)
-	// ListActors List Actor Skeleton。
+	// ListActors List Actor Skeleton.
 	//   @returns []SkeletonActorItem - Actor skeleton list
 	ListActors(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonActorItem, ex.Error)
-	// ListServices List Service skeleton。
+	// ListServices List Service skeleton.
 	//   @returns []SkeletonServiceItem - Service skeleton list
 	ListServices(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonServiceItem, ex.Error)
-	// ListResources List Resource skeleton。
+	// ListResources List Resource skeleton.
 	//   @returns []SkeletonResourceItem - Resource skeleton list
 	ListResources(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonResourceItem, ex.Error)
-	// ListWebs List Web Skeletons。
+	// ListWebs List Web Skeletons.
 	//   @returns []SkeletonWebItem - Web skeleton list
 	ListWebs(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonWebItem, ex.Error)
-	// ListTasks List Task skeleton。
+	// ListTasks List Task skeleton.
 	//   @returns []SkeletonTask - Task skeleton list
 	ListTasks(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonTask, ex.Error)
-	// ListEvents List Event skeletons。
+	// ListEvents List Event skeletons.
 	//   @returns []SkeletonEventItem - Event skeleton list
 	ListEvents(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonEventItem, ex.Error)
-	// ListData List Data skeleton。
+	// ListData List Data skeleton.
 	//   @returns []SkeletonData - Data skeleton list, including Enum
 	ListData(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonData, ex.Error)
-	// ListConfigs List Config skeleton。
+	// ListConfigs List Config skeleton.
 	//   @returns []SkeletonConfigItem - Config skeleton list
 	ListConfigs(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonConfigItem, ex.Error)
 }
@@ -4411,7 +4511,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeBoth,
 		Name:              "TaskDebugService",
 		SkelName:          "vine.hub.TaskDebugService",
-		Hash:              "279c2273",
+		Hash:              "0b86d652",
 		ServerType:        reflect.TypeFor[TaskDebugServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultTaskDebugServiceServer](),
 		ClientType:        reflect.TypeFor[TaskDebugServiceClient](),
@@ -4442,6 +4542,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -4469,6 +4571,8 @@ var (
 			}
 			return nil
 		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -4485,6 +4589,8 @@ var (
 		ValidateArguments:           nil,
 		ResultType:                  reflect.TypeFor[TaskDebugDefaultLaunchRequest](),
 		ValidateResult:              nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -4501,6 +4607,8 @@ var (
 		ValidateArguments:           nil,
 		ResultType:                  nil,
 		ValidateResult:              nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
@@ -4532,18 +4640,18 @@ type _TaskDebugServiceLaunchTaskArguments struct {
 // TaskDebugService / Server
 
 type TaskDebugServiceServer interface {
-	// ListTasks List the tasks provided by the application instance。
+	// ListTasks List the tasks provided by the application instance.
 	ListTasks() []TaskDebugTaskItem
-	// ListTriggers List Task triggers。
+	// ListTriggers List Task triggers.
 	//   @param taskSkelName - Task Skel name
 	//   @param schemaHash - Task schema hash
 	ListTriggers(taskSkelName string, schemaHash string) []TaskDebugTriggerItem
-	// BuildDefaultLaunchRequest Generate a default Task launch request。
+	// BuildDefaultLaunchRequest Generate a default Task launch request.
 	//   @param taskSkelName - Task Skel name
 	//   @param schemaHash - Task schema hash
 	//   @param triggerSkelName - Trigger Skel name
 	BuildDefaultLaunchRequest(taskSkelName string, schemaHash string, triggerSkelName string) TaskDebugDefaultLaunchRequest
-	// LaunchTask Initiate Task。
+	// LaunchTask Initiate Task.
 	//   @param request - Debug launch request
 	LaunchTask(request TaskDebugLaunchRequest)
 
@@ -4641,18 +4749,18 @@ type DefaultTaskDebugServiceServerER struct {
 // TaskDebugService / Client
 
 type TaskDebugServiceClient interface {
-	// ListTasks List the tasks provided by the application instance。
+	// ListTasks List the tasks provided by the application instance.
 	ListTasks(_ivOpts ...rpcclient.InvokeOption) []TaskDebugTaskItem
-	// ListTriggers List Task triggers。
+	// ListTriggers List Task triggers.
 	//   @param taskSkelName - Task Skel name
 	//   @param schemaHash - Task schema hash
 	ListTriggers(taskSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) []TaskDebugTriggerItem
-	// BuildDefaultLaunchRequest Generate a default Task launch request。
+	// BuildDefaultLaunchRequest Generate a default Task launch request.
 	//   @param taskSkelName - Task Skel name
 	//   @param schemaHash - Task schema hash
 	//   @param triggerSkelName - Trigger Skel name
 	BuildDefaultLaunchRequest(taskSkelName string, schemaHash string, triggerSkelName string, _ivOpts ...rpcclient.InvokeOption) TaskDebugDefaultLaunchRequest
-	// LaunchTask Initiate Task。
+	// LaunchTask Initiate Task.
 	//   @param request - Debug launch request
 	LaunchTask(request TaskDebugLaunchRequest, _ivOpts ...rpcclient.InvokeOption)
 }
@@ -4691,18 +4799,18 @@ func (client *_TaskDebugServiceClient) LaunchTask(request TaskDebugLaunchRequest
 // TaskDebugService / ERClient
 
 type TaskDebugServiceClientER interface {
-	// ListTasks List the tasks provided by the application instance。
+	// ListTasks List the tasks provided by the application instance.
 	ListTasks(_ivOpts ...rpcclient.InvokeOption) ([]TaskDebugTaskItem, ex.Error)
-	// ListTriggers List Task triggers。
+	// ListTriggers List Task triggers.
 	//   @param taskSkelName - Task Skel name
 	//   @param schemaHash - Task schema hash
 	ListTriggers(taskSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) ([]TaskDebugTriggerItem, ex.Error)
-	// BuildDefaultLaunchRequest Generate a default Task launch request。
+	// BuildDefaultLaunchRequest Generate a default Task launch request.
 	//   @param taskSkelName - Task Skel name
 	//   @param schemaHash - Task schema hash
 	//   @param triggerSkelName - Trigger Skel name
 	BuildDefaultLaunchRequest(taskSkelName string, schemaHash string, triggerSkelName string, _ivOpts ...rpcclient.InvokeOption) (TaskDebugDefaultLaunchRequest, ex.Error)
-	// LaunchTask Initiate Task。
+	// LaunchTask Initiate Task.
 	//   @param request - Debug launch request
 	LaunchTask(request TaskDebugLaunchRequest, _ivOpts ...rpcclient.InvokeOption) ex.Error
 }

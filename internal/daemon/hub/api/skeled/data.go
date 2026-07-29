@@ -49,6 +49,10 @@ type AppConfigSchema struct {
 	Name string `json:"name"`
 	// Description Configuration description
 	Description *string `json:"description"`
+	// Deprecated Whether the configuration is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Configuration deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 	// Lifecycle Configuration lifecycle
 	Lifecycle string `json:"lifecycle"`
 	// Fields Configuration field list
@@ -76,6 +80,10 @@ type AppConfigSchemaEnumItem struct {
 	Name string `json:"name"`
 	// Description Enumeration options description
 	Description *string `json:"description"`
+	// Deprecated Whether the enumeration option is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Enumeration option deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 }
 
 // AppConfigSchemaField Configuration schema fields
@@ -86,6 +94,10 @@ type AppConfigSchemaField struct {
 	Type string `json:"type"`
 	// Description Field description
 	Description *string `json:"description"`
+	// Deprecated Whether the field is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Field deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 	// EnumItems Enumeration options list
 	EnumItems []AppConfigSchemaEnumItem `json:"enumItems"`
 }
@@ -241,6 +253,10 @@ type EventDebugEventItem struct {
 	SchemaHash string `json:"schemaHash"`
 	// Description Event description
 	Description *string `json:"description"`
+	// Deprecated Whether the Event is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Event deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 	// Fields Field list
 	Fields []SkeletonField `json:"fields"`
 }
@@ -835,6 +851,10 @@ type ServiceDebugMethodItem struct {
 	SkelName string `json:"skelName"`
 	// Description Method description
 	Description *string `json:"description"`
+	// Deprecated Whether the method is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Method deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 	// InputDescription Input description
 	InputDescription *string `json:"inputDescription"`
 	// OutputDescription Output description
@@ -865,6 +885,10 @@ type ServiceDebugServiceItem struct {
 	ServiceSkelName string `json:"serviceSkelName"`
 	// SchemaHash Service schema hash
 	SchemaHash string `json:"schemaHash"`
+	// Deprecated Whether the Service is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Service deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 }
 
 // ServiceHandlerRegistration Rpc service processing capability registration information provided by the application
@@ -897,6 +921,10 @@ type SkeletonActorItem struct {
 	SkelName string `json:"skelName"`
 	// Description Actor description
 	Description *string `json:"description"`
+	// Deprecated Whether the Actor is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Actor deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 	// ActorVias Actor access method list
 	ActorVias []string `json:"actorVias"`
 	// AuthEnabled Whether to enable authentication
@@ -1000,6 +1028,10 @@ type SkeletonConfigItem struct {
 	SkelName string `json:"skelName"`
 	// Description Config description
 	Description *string `json:"description"`
+	// Deprecated Whether the Config is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Config deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 	// Pub Whether the item is public
 	Pub bool `json:"pub"`
 	// Sensitive Whether the config value is sensitive
@@ -1040,6 +1072,10 @@ type SkeletonData struct {
 	SkelName string `json:"skelName"`
 	// Description Data description
 	Description *string `json:"description"`
+	// Deprecated Whether the Data or Enum is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Data or Enum deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 	// Enum Whether it is Enum
 	Enum bool `json:"enum"`
 	// Sensitive Whether the data is sensitive
@@ -1177,6 +1213,10 @@ type SkeletonEnumItem struct {
 	Name string `json:"name"`
 	// Description Enumeration item description
 	Description *string `json:"description"`
+	// Deprecated Whether the enumeration item is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Enumeration item deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 }
 
 // SkeletonEventItem Skeleton event
@@ -1199,6 +1239,10 @@ type SkeletonEventItem struct {
 	SkelName string `json:"skelName"`
 	// Description Event description
 	Description *string `json:"description"`
+	// Deprecated Whether the Event is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Event deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 	// Pub Whether the item is public
 	Pub bool `json:"pub"`
 	// Sensitive Whether the event payload is sensitive
@@ -1225,6 +1269,10 @@ type SkeletonField struct {
 	Type string `json:"type"`
 	// Description Field description
 	Description *string `json:"description"`
+	// Deprecated Whether the field is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Field deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 	// Example Field example
 	Example *string `json:"example"`
 	// Sensitive Whether the field is sensitive
@@ -1239,6 +1287,10 @@ type SkeletonMethod struct {
 	SkelName string `json:"skelName"`
 	// Description Method description
 	Description *string `json:"description"`
+	// Deprecated Whether the method is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Method deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 	// InputDescription Input description
 	InputDescription *string `json:"inputDescription"`
 	// OutputDescription Output description
@@ -1352,6 +1404,10 @@ type SkeletonResourceAction struct {
 	PermissionCode string `json:"permissionCode"`
 	// Description Action description
 	Description *string `json:"description"`
+	// Deprecated Whether the Action is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Action deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 	// Checks Check list
 	Checks []SkeletonResourceCheck `json:"checks"`
 }
@@ -1375,6 +1431,10 @@ func (v *SkeletonResourceAction) Validate(path string) error {
 type SkeletonResourceCheck struct {
 	// Name Check name
 	Name string `json:"name"`
+	// Deprecated Whether the Check is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Check deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 	// MethodName Check method name
 	MethodName string `json:"methodName"`
 	// MethodSkelName Check method Skel name
@@ -1415,6 +1475,10 @@ type SkeletonResourceItem struct {
 	SkelName string `json:"skelName"`
 	// Description Resource description
 	Description *string `json:"description"`
+	// Deprecated Whether the Resource is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Resource deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 	// Checks Resource level Check list
 	Checks []SkeletonResourceCheck `json:"checks"`
 	// Actions Action list
@@ -1471,6 +1535,10 @@ type SkeletonServiceItem struct {
 	SkelName string `json:"skelName"`
 	// Description Service Description
 	Description *string `json:"description"`
+	// Deprecated Whether the Service is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Service deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 	// Pub Whether the item is public
 	Pub bool `json:"pub"`
 	// AuthMode Authentication mode
@@ -1526,6 +1594,10 @@ type SkeletonTask struct {
 	SkelName string `json:"skelName"`
 	// Description Task description
 	Description *string `json:"description"`
+	// Deprecated Whether the Task is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Task deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 	// Triggers Trigger list
 	Triggers []SkeletonTrigger `json:"triggers"`
 }
@@ -1553,6 +1625,10 @@ type SkeletonTrigger struct {
 	SkelName string `json:"skelName"`
 	// Description Trigger description
 	Description *string `json:"description"`
+	// Deprecated Whether the Trigger is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Trigger deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 	// InputDescription Input description
 	InputDescription *string `json:"inputDescription"`
 	// Example Input example
@@ -1593,6 +1669,10 @@ type SkeletonWebItem struct {
 	SkelName string `json:"skelName"`
 	// Description Web page description
 	Description *string `json:"description"`
+	// Deprecated Whether the Web is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Web deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 	// Actors Accessible Actor List
 	Actors []SkeletonActorRef `json:"actors"`
 }
@@ -1643,6 +1723,10 @@ type TaskDebugTaskItem struct {
 	SchemaHash string `json:"schemaHash"`
 	// Description Task description
 	Description *string `json:"description"`
+	// Deprecated Whether the Task is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Task deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 }
 
 // TaskDebugTriggerItem Trigger called by Task Debug
@@ -1653,6 +1737,10 @@ type TaskDebugTriggerItem struct {
 	SkelName string `json:"skelName"`
 	// Description Trigger description
 	Description *string `json:"description"`
+	// Deprecated Whether the Trigger is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Trigger deprecation reason
+	DeprecatedReason *string `json:"deprecatedReason"`
 	// InputDescription Input description
 	InputDescription *string `json:"inputDescription"`
 	// Example Input example

@@ -9,6 +9,10 @@ import {
 } from 'lucide-react'
 
 import { Badge, badgeVariants } from '@/components/ui/badge'
+import {
+  DeprecatedBadge,
+  DeprecatedReason,
+} from '@/components/deprecated'
 import { useLocale } from '@/i18n'
 import { cn } from '@/lib/utils'
 import type {
@@ -263,12 +267,17 @@ function FieldList({
             {field.sensitive ? (
               <SensitiveBadge label={t('skeleton.sensitive')} />
             ) : null}
+            <DeprecatedBadge deprecated={field.deprecated} />
           </div>
           {field.description ? (
             <div className="text-xs text-muted-foreground">
               {field.description}
             </div>
           ) : null}
+          <DeprecatedReason
+            deprecated={field.deprecated}
+            deprecatedReason={field.deprecatedReason}
+          />
           {field.example ? (
             <code className="text-xs text-muted-foreground">
               example: {field.example}
@@ -469,12 +478,19 @@ function EnumItemList({ items }: { items: Array<SkeletonEnumItem> }) {
           key={item.name}
           className="grid gap-1 rounded-md border px-2.5 py-2"
         >
-          <code className="text-xs font-medium">{item.name}</code>
+          <div className="flex flex-wrap items-center gap-2">
+            <code className="text-xs font-medium">{item.name}</code>
+            <DeprecatedBadge deprecated={item.deprecated} />
+          </div>
           {item.description ? (
             <div className="text-xs text-muted-foreground">
               {item.description}
             </div>
           ) : null}
+          <DeprecatedReason
+            deprecated={item.deprecated}
+            deprecatedReason={item.deprecatedReason}
+          />
         </div>
       ))}
     </div>
@@ -525,6 +541,7 @@ function MethodList({
                 {method.authMode}
               </Badge>
             ) : null}
+            <DeprecatedBadge deprecated={method.deprecated} />
             {method.argumentsSensitive ? (
               <SensitiveBadge label={t('skeleton.sensitiveInput')} />
             ) : null}
@@ -541,6 +558,10 @@ function MethodList({
               {method.description}
             </div>
           ) : null}
+          <DeprecatedReason
+            deprecated={method.deprecated}
+            deprecatedReason={method.deprecatedReason}
+          />
           <PermRequireBlock expr={method.require} />
           <FieldList
             fields={method.arguments}
@@ -597,10 +618,15 @@ function ResourceCheckList({
             {check.argumentsSensitive ? (
               <SensitiveBadge label={t('skeleton.sensitiveInput')} />
             ) : null}
+            <DeprecatedBadge deprecated={check.deprecated} />
           </div>
           <code className="text-xs text-muted-foreground">
             {check.methodSkelName}
           </code>
+          <DeprecatedReason
+            deprecated={check.deprecated}
+            deprecatedReason={check.deprecatedReason}
+          />
         </div>
       ))}
     </div>
@@ -638,12 +664,17 @@ function ResourceActionList({
               {action.name}
             </code>
             <Badge variant="secondary">{action.permissionCode}</Badge>
+            <DeprecatedBadge deprecated={action.deprecated} />
           </div>
           {action.description ? (
             <div className="text-sm text-muted-foreground">
               {action.description}
             </div>
           ) : null}
+          <DeprecatedReason
+            deprecated={action.deprecated}
+            deprecatedReason={action.deprecatedReason}
+          />
           {action.checks.length > 0 ? (
             <div className="grid gap-1.5">
               <div className="text-xs font-medium text-muted-foreground">
@@ -706,6 +737,7 @@ function TriggerList({
             {trigger.argumentsSensitive ? (
               <SensitiveBadge label={t('skeleton.sensitiveInput')} />
             ) : null}
+            <DeprecatedBadge deprecated={trigger.deprecated} />
           </div>
           <code className="text-xs text-muted-foreground">
             {trigger.skelName}
@@ -715,6 +747,10 @@ function TriggerList({
               {trigger.description}
             </div>
           ) : null}
+          <DeprecatedReason
+            deprecated={trigger.deprecated}
+            deprecatedReason={trigger.deprecatedReason}
+          />
           <FieldList
             fields={trigger.arguments}
             typeIndex={typeIndex}
@@ -727,7 +763,9 @@ function TriggerList({
   )
 }
 
-function RelatedSkeletonList<T extends { name: string; skelName: string }>({
+function RelatedSkeletonList<
+  T extends { name: string; skelName: string; deprecated?: boolean },
+>({
   items,
   emptyText,
   onItemClick,
@@ -757,7 +795,10 @@ function RelatedSkeletonList<T extends { name: string; skelName: string }>({
           }}
           className="grid gap-1 rounded-md border px-3 py-2.5 text-left transition-colors hover:border-primary/30 hover:bg-primary/[0.04]"
         >
-          <span className="truncate text-sm font-medium">{item.name}</span>
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate text-sm font-medium">{item.name}</span>
+            <DeprecatedBadge deprecated={Boolean(item.deprecated)} />
+          </span>
           <span className="truncate font-mono text-xs text-muted-foreground">
             {item.skelName}
           </span>
@@ -787,7 +828,9 @@ function DetailSection({
   )
 }
 
-function ActorSchemaLink<T extends { name: string; skelName: string }>({
+function ActorSchemaLink<
+  T extends { name: string; skelName: string; deprecated?: boolean },
+>({
   icon: Icon,
   title,
   hideTitle = false,
@@ -824,7 +867,10 @@ function ActorSchemaLink<T extends { name: string; skelName: string }>({
           }}
           className="grid min-w-0 gap-1 rounded-md border px-3 py-2.5 text-left transition-colors hover:border-primary/30 hover:bg-primary/[0.04]"
         >
-          <span className="truncate text-sm font-medium">{item.name}</span>
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate text-sm font-medium">{item.name}</span>
+            <DeprecatedBadge deprecated={Boolean(item.deprecated)} />
+          </span>
           <span className="truncate font-mono text-xs text-muted-foreground">
             {item.skelName}
           </span>
@@ -851,6 +897,7 @@ export function SkeletonItemBadges({
 
   return (
     <div className="flex flex-wrap justify-end gap-1">
+      <DeprecatedBadge deprecated={item.deprecated} />
       {'sensitive' in item && item.sensitive ? (
         <SensitiveBadge label={t('skeleton.sensitive')} />
       ) : null}

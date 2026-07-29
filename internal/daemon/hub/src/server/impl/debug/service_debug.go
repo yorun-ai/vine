@@ -66,9 +66,14 @@ func (s *ServiceDebugServiceServerImpl) ListServices() []skeled.ServiceDebugServ
 				continue
 			}
 			seen[key] = struct{}{}
+			serviceSchema := s.findServiceSchema(handler.ServiceSkelName, handler.SchemaHash)
 			ret = append(ret, skeled.ServiceDebugServiceItem{
 				ServiceSkelName: handler.ServiceSkelName,
 				SchemaHash:      handler.SchemaHash,
+				Deprecated:      serviceSchema.Deprecated,
+				DeprecatedReason: optionalString(
+					serviceSchema.DeprecatedReason,
+				),
 			})
 		}
 	}

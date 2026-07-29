@@ -48,6 +48,7 @@ export const en: Record<TranslationKey, string> = {
   'portalEntry.updateSuccess': 'Portal entry updated',
   'common.none': 'None',
   'common.noVersion': 'No version',
+  'common.deprecated': 'Deprecated',
   'statusApp.searchPlaceholder': 'Search app name',
   'statusApp.itemCount': '{count} instances',
   'statusApp.empty': 'No app status',

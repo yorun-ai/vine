@@ -5,6 +5,7 @@ import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { Copy, Loader2, RotateCcw, Search, Send } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { DeprecatedBadge } from '@/components/deprecated'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -79,12 +80,14 @@ function selectedPathParts(pathname: string) {
 }
 
 interface SelectCardTextProps {
+  deprecated?: boolean
   description?: string
   placeholder?: string
   title?: string
 }
 
 function SelectCardText({
+  deprecated = false,
   description,
   placeholder,
   title,
@@ -96,13 +99,16 @@ function SelectCardText({
         title && 'gap-0.5',
       )}
     >
-      <span
-        className={cn(
-          'truncate text-sm font-semibold',
-          title ? 'text-foreground' : 'text-muted-foreground',
-        )}
-      >
-        {title || placeholder}
+      <span className="flex min-w-0 items-center gap-2">
+        <span
+          className={cn(
+            'truncate text-sm font-semibold',
+            title ? 'text-foreground' : 'text-muted-foreground',
+          )}
+        >
+          {title || placeholder}
+        </span>
+        <DeprecatedBadge deprecated={deprecated} />
       </span>
       {title ? (
         <span
@@ -119,13 +125,18 @@ function SelectCardText({
 }
 
 function SelectCardItem({
+  deprecated = false,
   description,
   title,
-}: Required<Pick<SelectCardTextProps, 'description' | 'title'>>) {
+}: Required<Pick<SelectCardTextProps, 'description' | 'title'>> &
+  Pick<SelectCardTextProps, 'deprecated'>) {
   return (
     <span className="grid min-w-0 flex-1 gap-0.5">
-      <span className="truncate text-sm font-semibold text-foreground">
-        {title}
+      <span className="flex min-w-0 items-center gap-2">
+        <span className="truncate text-sm font-semibold text-foreground">
+          {title}
+        </span>
+        <DeprecatedBadge deprecated={deprecated} />
       </span>
       <span className="truncate font-mono text-xs text-muted-foreground">
         {description}
@@ -355,7 +366,11 @@ export function EventEmitterPage() {
               <SelectTrigger className="h-auto w-full rounded-lg border-transparent bg-primary/[0.05] px-3 py-2.5 hover:bg-primary/[0.07] focus-visible:border-primary/30">
                 <SelectCardText
                   title={selectedEvent?.eventSkelName}
-                  description={selectedEvent?.schemaHash}
+                  description={
+                    selectedEvent?.deprecatedReason ??
+                    selectedEvent?.schemaHash
+                  }
+                  deprecated={selectedEvent?.deprecated}
                   placeholder={loadingEvents ? 'Loading events' : 'Select event'}
                 />
               </SelectTrigger>
@@ -400,7 +415,8 @@ export function EventEmitterPage() {
                     >
                       <SelectCardItem
                         title={item.eventSkelName}
-                        description={item.schemaHash}
+                        description={item.deprecatedReason ?? item.schemaHash}
+                        deprecated={item.deprecated}
                       />
                     </SelectItem>
                   ))
