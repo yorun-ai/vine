@@ -128,7 +128,7 @@ jobs:
         run: pnpm audit --audit-level=low --registry=https://registry.npmjs.org/
 
   ci-checks:
-    name: CI / Checks
+    name: CI / Required Checks
     if: ${{ always() }}
     needs: [go-test, go-race, security, dashboard]
     runs-on: ubuntu-latest
