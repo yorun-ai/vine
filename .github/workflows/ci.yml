@@ -126,3 +126,14 @@ jobs:
 
       - name: Audit dependencies
         run: pnpm audit --audit-level=low --registry=https://registry.npmjs.org/
+
+  ci-checks:
+    name: CI / Required Checks
+    if: ${{ always() }}
+    needs: [go-test, go-race, security, dashboard]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify CI results
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: echo "$NEEDS" | jq --exit-status 'all(.[]; .result == "success")'
