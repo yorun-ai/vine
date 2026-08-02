@@ -31,7 +31,7 @@ type Store struct {
 	listener net.Listener
 	endpoint string
 
-	serverPassword string
+	hubPassword string
 }
 
 type _Item struct {
@@ -39,15 +39,15 @@ type _Item struct {
 	expireAt time.Time
 }
 
-func NewStore(listen string, inproc bool, serverPassword string) *Store {
-	vpre.CheckNotEmpty(serverPassword, "redis server password is empty")
+func NewStore(listen string, inproc bool, hubPassword string) *Store {
+	vpre.CheckNotEmpty(hubPassword, "redis hub password is empty")
 	return &Store{
-		listen:         listen,
-		inproc:         inproc,
-		items:          map[string]_Item{},
-		zsets:          map[string]map[string]float64{},
-		scans:          map[uint64]_ScanCursor{},
-		serverPassword: serverPassword,
+		listen:      listen,
+		inproc:      inproc,
+		items:       map[string]_Item{},
+		zsets:       map[string]map[string]float64{},
+		scans:       map[uint64]_ScanCursor{},
+		hubPassword: hubPassword,
 	}
 }
 

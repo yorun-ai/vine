@@ -14,6 +14,8 @@ import (
 type Option struct {
 	InprocMode bool
 	Endpoint   string
+	Username   string
+	Password   string
 }
 
 type ClientSpec interface {

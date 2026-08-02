@@ -27,8 +27,9 @@ func TestBuildsRedisClientFromRedisEndpoint(t *testing.T) {
 
 	assert.NotNil(t, options)
 	assert.Equal(t, "demo.local:7093", options.Addr)
-	assert.Empty(t, options.Username)
-	assert.Empty(t, options.Password)
+	assert.Equal(t, LinkUsername, options.Username)
+	assert.Equal(t, LinkPassword, options.Password)
+	assert.NotNil(t, options.OnConnect)
 }
 
 type _RedisTestClient struct {
@@ -37,6 +38,8 @@ type _RedisTestClient struct {
 
 func (*_RedisTestClient) InitOption(option *Option) {
 	option.Endpoint = "redis://demo.local:7093"
+	option.Username = LinkUsername
+	option.Password = LinkPassword
 }
 
 func initTestClient(component app.FrameworkComponent) *ClientMinder {

@@ -17,9 +17,9 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 )
 
-func TestNewServerPasswordUsesRandom256BitValue(t *testing.T) {
-	first := newServerPassword()
-	second := newServerPassword()
+func TestNewHubPasswordUsesRandom256BitValue(t *testing.T) {
+	first := newHubPassword()
+	second := newHubPassword()
 
 	assert.Len(t, first, 43)
 	assert.Len(t, second, 43)
@@ -43,8 +43,8 @@ func newNetworkTestServer(t *testing.T) (*Server, *redis.Client) {
 		Addr:            RedisListenAddrForTest(t, server),
 		Protocol:        2,
 		DisableIdentity: true,
-		Username:        "hubserver",
-		Password:        server.serverPassword,
+		Username:        hubredis.HubUsername,
+		Password:        server.hubPassword,
 	})
 	t.Cleanup(func() {
 		_ = client.Close()
@@ -78,18 +78,49 @@ func newInprocTestClient(server *Server) *redis.Client {
 		Dialer:          hubredis.DialInproc,
 		Protocol:        2,
 		DisableIdentity: true,
-		Username:        "hubserver",
-		Password:        server.serverPassword,
+		Username:        hubredis.HubUsername,
+		Password:        server.hubPassword,
 	})
 }
 
-func newInprocReadOnlyClient() *redis.Client {
-	return redis.NewClient(&redis.Options{
+func newInprocRoleTestClient(username string, password string) *redis.Client {
+	options := &redis.Options{
 		Addr:            hubredis.RedisInprocEndpoint,
 		Dialer:          hubredis.DialInproc,
 		Protocol:        2,
 		DisableIdentity: true,
+		Username:        username,
+		Password:        password,
+	}
+	setEmptyPasswordAuthentication(options)
+	return redis.NewClient(options)
+}
+
+func newNetworkRoleTestClient(t *testing.T, server *Server, username string, password string) *redis.Client {
+	t.Helper()
+	options := &redis.Options{
+		Addr:            RedisListenAddrForTest(t, server),
+		Protocol:        2,
+		DisableIdentity: true,
+		Username:        username,
+		Password:        password,
+	}
+	setEmptyPasswordAuthentication(options)
+	client := redis.NewClient(options)
+	t.Cleanup(func() {
+		_ = client.Close()
 	})
+	return client
+}
+
+func setEmptyPasswordAuthentication(options *redis.Options) {
+	if options.Username == "" || options.Password != "" {
+		return
+	}
+	username := options.Username
+	options.OnConnect = func(ctx context.Context, conn *redis.Conn) error {
+		return conn.AuthACL(ctx, username, "").Err()
+	}
 }
 
 func TestRedisInprocClientCommands(t *testing.T) {
@@ -170,8 +201,9 @@ func TestRedisInprocClientACL(t *testing.T) {
 	server, serverClient := newInprocTestServer(t)
 	ctx := context.Background()
 	require.NoError(t, serverClient.Set(ctx, "config:feature-a", "a", 0).Err())
+	require.NoError(t, serverClient.Set(ctx, "portal:cert:private", "secret", 0).Err())
 
-	client := newInprocReadOnlyClient()
+	client := newInprocRoleTestClient(hubredis.LinkUsername, hubredis.LinkPassword)
 	t.Cleanup(func() {
 		_ = client.Close()
 	})
@@ -180,9 +212,18 @@ func TestRedisInprocClientACL(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "a", value)
 
+	_, err = client.Get(ctx, "portal:cert:private").Result()
+	assert.ErrorContains(t, err, "NOPERM")
+
 	_, err = client.Del(ctx, "config:feature-a").Result()
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "NOPERM")
+	assert.ErrorContains(t, err, "NOPERM")
+
+	anonymous := newInprocRoleTestClient("", "")
+	t.Cleanup(func() {
+		_ = anonymous.Close()
+	})
+	_, err = anonymous.Get(ctx, "config:feature-a").Result()
+	assert.ErrorContains(t, err, "NOAUTH")
 
 	assert.Equal(t, server, hubredis.InprocServer())
 }
@@ -277,52 +318,77 @@ func TestRedisInprocDialFailsForRemoteServer(t *testing.T) {
 }
 
 func TestRedisServerACL(t *testing.T) {
-	server, serverClient := newNetworkTestServer(t)
+	server, hubClient := newNetworkTestServer(t)
 	ctx := context.Background()
-	require.NoError(t, serverClient.Set(ctx, "config:feature-a", "a", 0).Err())
-
-	client := redis.NewClient(&redis.Options{
-		Addr:            RedisListenAddrForTest(t, server),
-		Protocol:        2,
-		DisableIdentity: true,
-	})
-	t.Cleanup(func() {
-		_ = client.Close()
-	})
-
-	value, err := client.Get(ctx, "config:feature-a").Result()
-	require.NoError(t, err)
-	assert.Equal(t, "a", value)
-
-	for _, run := range []struct {
-		name string
-		run  func() error
-	}{
-		{"set", func() error { return client.Set(ctx, "config:feature-b", "b", 0).Err() }},
-		{"incr", func() error { return client.Incr(ctx, "counter").Err() }},
-		{"del", func() error { return client.Del(ctx, "config:feature-a").Err() }},
-		{"publish", func() error { return client.Publish(ctx, "config:feature-a", "payload").Err() }},
-		{"expire", func() error { return client.Expire(ctx, "config:feature-a", time.Second).Err() }},
+	for key, value := range map[string]string{
+		"config:feature-a": "config",
+		"rpc:demo.Service:endpoint:demo.app:instance":   "rpc",
+		"web:admin@demo.app:endpoint:demo.app:instance": "web",
+		"portal:cert:private":                           "certificate",
+		"schema:service:demo.Service":                   "schema",
+		"app:demo:status:instance":                      "status",
 	} {
-		t.Run("read-only client rejects "+run.name, func(t *testing.T) {
-			err := run.run()
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), "NOPERM")
+		require.NoError(t, hubClient.Set(ctx, key, value, 0).Err())
+	}
+
+	anonymous := newNetworkRoleTestClient(t, server, "", "")
+	_, err := anonymous.Get(ctx, "config:feature-a").Result()
+	assert.ErrorContains(t, err, "NOAUTH")
+	assert.ErrorContains(t, anonymous.Ping(ctx).Err(), "NOAUTH")
+
+	linkClient := newNetworkRoleTestClient(t, server, hubredis.LinkUsername, hubredis.LinkPassword)
+	assertRedisValue(t, ctx, linkClient, "config:feature-a", "config")
+	assertRedisValue(t, ctx, linkClient, "rpc:demo.Service:endpoint:demo.app:instance", "rpc")
+	assertRedisValue(t, ctx, linkClient, hubredis.RevisionKey, mustGet(t, server, hubredis.RevisionKey))
+	for _, key := range []string{
+		"portal:cert:private",
+		"schema:service:demo.Service",
+		"web:admin@demo.app:endpoint:demo.app:instance",
+		"app:demo:status:instance",
+	} {
+		assert.ErrorContains(t, linkClient.Get(ctx, key).Err(), "NOPERM", key)
+	}
+
+	portalClient := newNetworkRoleTestClient(t, server, hubredis.PortalUsername, hubredis.PortalPassword)
+	assertRedisValue(t, ctx, portalClient, "portal:cert:private", "certificate")
+	assertRedisValue(t, ctx, portalClient, "schema:service:demo.Service", "schema")
+	assertRedisValue(t, ctx, portalClient, "rpc:demo.Service:endpoint:demo.app:instance", "rpc")
+	assertRedisValue(t, ctx, portalClient, "web:admin@demo.app:endpoint:demo.app:instance", "web")
+	assert.ErrorContains(t, portalClient.Get(ctx, "config:feature-a").Err(), "NOPERM")
+	assert.ErrorContains(t, portalClient.Get(ctx, "app:demo:status:instance").Err(), "NOPERM")
+
+	for name, client := range map[string]*redis.Client{
+		"link":   linkClient,
+		"portal": portalClient,
+	} {
+		t.Run(name+" rejects writes", func(t *testing.T) {
+			for _, run := range []struct {
+				name string
+				run  func() error
+			}{
+				{"set", func() error { return client.Set(ctx, "config:feature-b", "b", 0).Err() }},
+				{"incr", func() error { return client.Incr(ctx, "counter").Err() }},
+				{"del", func() error { return client.Del(ctx, "config:feature-a").Err() }},
+				{"publish", func() error { return client.Publish(ctx, "config:feature-a", "payload").Err() }},
+				{"expire", func() error { return client.Expire(ctx, "config:feature-a", time.Second).Err() }},
+			} {
+				t.Run(run.name, func(t *testing.T) {
+					assert.ErrorContains(t, run.run(), "NOPERM")
+				})
+			}
 		})
 	}
 
-	badPassword := redis.NewClient(&redis.Options{
-		Addr:            RedisListenAddrForTest(t, server),
-		Protocol:        2,
-		DisableIdentity: true,
-		Username:        "hubserver",
-		Password:        "wrong",
-	})
-	t.Cleanup(func() {
-		_ = badPassword.Close()
-	})
-	_, err = badPassword.Get(ctx, "config:feature-a").Result()
-	assert.Error(t, err)
+	for name, credentials := range map[string][2]string{
+		"wrong hub password":     {hubredis.HubUsername, "wrong"},
+		"nonempty link password": {hubredis.LinkUsername, "wrong"},
+		"unknown user":           {"unknown", ""},
+	} {
+		t.Run(name, func(t *testing.T) {
+			client := newNetworkRoleTestClient(t, server, credentials[0], credentials[1])
+			assert.ErrorContains(t, client.Ping(ctx).Err(), "WRONGPASS")
+		})
+	}
 }
 
 func TestRedisServerCommands(t *testing.T) {
@@ -731,6 +797,14 @@ func mustGet(t *testing.T, server *Server, key string) string {
 	value, ok := server.Get(key)
 	require.True(t, ok)
 	return value
+}
+
+func assertRedisValue(t *testing.T, ctx context.Context, client *redis.Client, key string, expected string) {
+	t.Helper()
+
+	value, err := client.Get(ctx, key).Result()
+	require.NoError(t, err)
+	assert.Equal(t, expected, value)
 }
 
 func requireSubscription(t *testing.T, value any, kind string, channel string, count int) {

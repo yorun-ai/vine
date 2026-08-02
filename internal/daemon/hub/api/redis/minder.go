@@ -29,6 +29,18 @@ func (m *ClientMinder) InitComponent(component app.FrameworkComponent) {
 	redisOptions := &redis.Options{
 		Protocol:        2,
 		DisableIdentity: true,
+		Username:        m.option.Username,
+		Password:        m.option.Password,
+	}
+	if m.option.Username != "" && m.option.Password == "" {
+		// go-redis omits HELLO AUTH when the password is empty. Link and Portal
+		// temporarily use empty passwords, so authenticate each newly opened
+		// connection explicitly. OnConnect is also used for PubSub and replacement
+		// pool connections, preventing reconnects from silently becoming anonymous.
+		username := m.option.Username
+		redisOptions.OnConnect = func(ctx context.Context, conn *redis.Conn) error {
+			return conn.AuthACL(ctx, username, "").Err()
+		}
 	}
 	if m.option.InprocMode {
 		vpre.CheckNotNil(InprocServer(), "inproc redis server missing")

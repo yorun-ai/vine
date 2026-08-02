@@ -75,6 +75,14 @@ Hub has three primary responsibilities:
 3. Redis distribution layer
    `redisserver` maintains an in-memory Redis dataset. Configuration, application state, Rpc/Web endpoints, and schemas are synchronized into it. Link and Portal read snapshots and subscribe to change events through Redis.
 
+   The embedded Redis protocol requires authentication before any data command. It defines three users with resource-level ACLs:
+
+   - `vine.hub` has full command and key access. Its password is generated randomly for the current process.
+   - `vine.link` can read configuration, Rpc endpoint registrations, and the revision key; it can subscribe only to configuration channels and Rpc registration patterns.
+   - `vine.portal` can read Portal rules, sites, certificates, actor/service/resource schemas, Rpc/Web endpoint registrations, and the revision key; it can subscribe only to the corresponding list patterns.
+
+   Link and Portal currently send empty passwords as a temporary migration step. Their usernames select distinct least-privilege roles, but do not yet authenticate the caller. Keep the Redis endpoint on a trusted network until deployment-provided credentials and encrypted transport are available.
+
 ## Configuration and Registration Sources
 
 Hub currently supports two database backends:

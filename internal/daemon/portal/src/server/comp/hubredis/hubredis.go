@@ -14,6 +14,8 @@ type Client struct {
 }
 
 func (c *Client) InitOption(option *hubapiredis.Option) {
+	option.Username = hubapiredis.PortalUsername
+	option.Password = hubapiredis.PortalPassword
 	option.InprocMode = c.Flag.HubInprocMode
 	if option.InprocMode {
 		return

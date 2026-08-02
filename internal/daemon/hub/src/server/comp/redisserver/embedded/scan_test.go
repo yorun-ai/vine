@@ -46,3 +46,18 @@ func TestScanCursorExpiresAndIsCleaned(t *testing.T) {
 	assert.EqualError(t, err, "invalid scan cursor")
 	assert.Empty(t, store.scans)
 }
+
+func TestScanCursorRejectsDifferentMatchPattern(t *testing.T) {
+	store := NewStore("", false, "test-server-password")
+
+	store.Set("portal:cert:production", "secret")
+	store.Set("rpc:demo.Service:endpoint:demo.app:instance-1", "endpoint-1")
+	store.Set("rpc:demo.Service:endpoint:demo.app:instance-2", "endpoint-2")
+
+	_, cursor, err := store.ScanKeys(0, "*", 1)
+	require.NoError(t, err)
+	require.NotZero(t, cursor)
+
+	_, _, err = store.ScanKeys(cursor, "rpc:demo.Service:endpoint:*", 1000)
+	assert.EqualError(t, err, "invalid scan cursor")
+}
