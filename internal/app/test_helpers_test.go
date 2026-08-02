@@ -91,10 +91,9 @@ func newTestAppImpl() *_AppImpl {
 			version:    "1.2.3",
 			instanceID: "00000000-0000-0000-0000-000000000123",
 		},
-		ctx:        context.Background(),
-		cancel:     func() {},
-		doneSignal: make(chan struct{}),
-		flags:      flags,
+		ctx:    context.Background(),
+		cancel: func() {},
+		flags:  flags,
 	}
 	app.inprocFlag = app.flags.InprocFlag()
 	app.linker = link.NewRedirectedInternalLinker(app.info, "http://test.local:7071")

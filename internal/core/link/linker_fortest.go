@@ -1,6 +1,7 @@
 package link
 
 import (
+	"go.yorun.ai/vine/internal/core/ex"
 	linkskeled "go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
@@ -25,6 +26,7 @@ type TestLinker struct {
 	RegisterTaskRunners       []linkskeled.TaskRunnerRegistration
 	RegisterDomainSchemas     []skel.JSON
 	UnregisterCalls           int
+	UnregisterError           ex.Error
 
 	EternalConfigByKey map[string]string
 	InstantConfigByKey map[string]string
@@ -56,6 +58,10 @@ func (l *TestLinker) CheckLoopback() (string, bool) {
 
 func (l *TestLinker) RegistryClient() linkskeled.RegistryServiceClient {
 	return &_TestLinkRegistryClient{linker: l}
+}
+
+func (l *TestLinker) RegistryClientER() linkskeled.RegistryServiceClientER {
+	return &_TestLinkRegistryClientER{linker: l}
 }
 
 func (l *TestLinker) ConfigClient() linkskeled.ConfigServiceClient {
@@ -90,6 +96,20 @@ func (c *_TestLinkRegistryClient) Register(registration linkskeled.AppRegistrati
 
 func (c *_TestLinkRegistryClient) Unregister(_ivOpts ...rpcclient.InvokeOption) {
 	c.linker.UnregisterCalls++
+}
+
+type _TestLinkRegistryClientER struct {
+	linker *TestLinker
+}
+
+func (c *_TestLinkRegistryClientER) Register(registration linkskeled.AppRegistration, _ivOpts ...rpcclient.InvokeOption) ex.Error {
+	c.linker.RegistryClient().Register(registration, _ivOpts...)
+	return nil
+}
+
+func (c *_TestLinkRegistryClientER) Unregister(_ivOpts ...rpcclient.InvokeOption) ex.Error {
+	c.linker.UnregisterCalls++
+	return c.linker.UnregisterError
 }
 
 type _TestLinkConfigClient struct {

@@ -42,6 +42,11 @@ func (*_InternalLinker) RegistryClient() linkskeled.RegistryServiceClient {
 	return nil
 }
 
+func (*_InternalLinker) RegistryClientER() linkskeled.RegistryServiceClientER {
+	vpre.MustNotReach()
+	return nil
+}
+
 func (*_InternalLinker) ConfigClient() linkskeled.ConfigServiceClient {
 	vpre.MustNotReach()
 	return nil

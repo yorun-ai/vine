@@ -26,6 +26,9 @@ type Linker interface {
 	SkipDomainSchemas() bool
 	RpcProxyEndpoint() string
 	RegistryClient() linkskeled.RegistryServiceClient
+	// RegistryClientER returns the error-reporting registry client for lifecycle
+	// operations that must handle Link failures without panicking.
+	RegistryClientER() linkskeled.RegistryServiceClientER
 	ConfigClient() linkskeled.ConfigServiceClient
 	EventClient() linkskeled.EventServiceClient
 	TaskClient() linkskeled.TaskServiceClient
@@ -37,12 +40,13 @@ type _Linker struct {
 	app              meta.App
 	linkBaseEndpoint string
 
-	bootInfo       linkskeled.BootInfo
-	bootClient     linkskeled.BootServiceClient
-	registryClient linkskeled.RegistryServiceClient
-	configClient   linkskeled.ConfigServiceClient
-	eventClient    linkskeled.EventServiceClient
-	taskClient     linkskeled.TaskServiceClient
+	bootInfo         linkskeled.BootInfo
+	bootClient       linkskeled.BootServiceClient
+	registryClient   linkskeled.RegistryServiceClient
+	registryClientER linkskeled.RegistryServiceClientER
+	configClient     linkskeled.ConfigServiceClient
+	eventClient      linkskeled.EventServiceClient
+	taskClient       linkskeled.TaskServiceClient
 }
 
 // newLinker is replaceable in tests so app startup can observe linker calls
@@ -74,7 +78,8 @@ func (l *_Linker) init() {
 		ServerEndpoint: l.linkBaseEndpoint + coreapp.PathRpcInvoke,
 	})
 	l.bootClient = linkskeled.NewBootServiceClient(linkskeled.NewBootServiceClientER(rpcClient))
-	l.registryClient = linkskeled.NewRegistryServiceClient(linkskeled.NewRegistryServiceClientER(rpcClient))
+	l.registryClientER = linkskeled.NewRegistryServiceClientER(rpcClient)
+	l.registryClient = linkskeled.NewRegistryServiceClient(l.registryClientER)
 	l.configClient = linkskeled.NewConfigServiceClient(linkskeled.NewConfigServiceClientER(rpcClient))
 	l.eventClient = linkskeled.NewEventServiceClient(linkskeled.NewEventServiceClientER(rpcClient))
 	l.taskClient = linkskeled.NewTaskServiceClient(linkskeled.NewTaskServiceClientER(rpcClient))
@@ -114,6 +119,10 @@ func (l *_Linker) CheckLoopback() (string, bool) {
 
 func (l *_Linker) RegistryClient() linkskeled.RegistryServiceClient {
 	return l.registryClient
+}
+
+func (l *_Linker) RegistryClientER() linkskeled.RegistryServiceClientER {
+	return l.registryClientER
 }
 
 func (l *_Linker) ConfigClient() linkskeled.ConfigServiceClient {

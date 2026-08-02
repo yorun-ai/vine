@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	coreapp "go.yorun.ai/vine/internal/core/app"
+	"go.yorun.ai/vine/internal/core/ex"
 	linkskeled "go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -142,7 +143,8 @@ func TestNewLinkerBuildsRPCClients(t *testing.T) {
 			ServerEndpoint: linker.linkBaseEndpoint + coreapp.PathRpcInvoke,
 		})
 		linker.bootClient = linkskeled.NewBootServiceClient(linkskeled.NewBootServiceClientER(rpcClient))
-		linker.registryClient = linkskeled.NewRegistryServiceClient(linkskeled.NewRegistryServiceClientER(rpcClient))
+		linker.registryClientER = linkskeled.NewRegistryServiceClientER(rpcClient)
+		linker.registryClient = linkskeled.NewRegistryServiceClient(linker.registryClientER)
 		linker.configClient = linkskeled.NewConfigServiceClient(linkskeled.NewConfigServiceClientER(rpcClient))
 		linker.eventClient = linkskeled.NewEventServiceClient(linkskeled.NewEventServiceClientER(rpcClient))
 		linker.taskClient = linkskeled.NewTaskServiceClient(linkskeled.NewTaskServiceClientER(rpcClient))
@@ -157,6 +159,7 @@ func TestNewLinkerBuildsRPCClients(t *testing.T) {
 
 	assert.NotNil(t, linker.bootClient)
 	assert.NotNil(t, linker.registryClient)
+	assert.NotNil(t, linker.registryClientER)
 	assert.NotNil(t, linker.configClient)
 	assert.NotNil(t, linker.eventClient)
 	assert.NotNil(t, linker.taskClient)
@@ -229,6 +232,16 @@ func TestLinkerRegistryClientSupportsUnregister(t *testing.T) {
 
 	client.RegistryClient().Unregister()
 
+	assert.Equal(t, 1, client.UnregisterCalls)
+}
+
+func TestLinkerRegistryClientERReturnsUnregisterError(t *testing.T) {
+	unregisterError := ex.New(ex.InvocationTimeout, "unregister timed out")
+	client := &TestLinker{UnregisterError: unregisterError}
+
+	err := client.RegistryClientER().Unregister()
+
+	assert.Same(t, unregisterError, err)
 	assert.Equal(t, 1, client.UnregisterCalls)
 }
 
