@@ -17,7 +17,8 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/impl"
+	adminimpl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin"
+	controlimpl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/control"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/controlapi"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/initializer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/scheduler"
@@ -95,10 +96,10 @@ func TestHubAppDIInitNormalizesFlagAndSetsRunFlag(t *testing.T) {
 
 	spec.DIInit()
 
-	assert.Equal(t, flag.HubDefaultManagementListen, spec.AppFlag.ListenAddr)
+	assert.Equal(t, flag.HubDefaultAdminListen, spec.AppFlag.ListenAddr)
 	assert.Equal(t, flag.SourceSQLite, spec.Flag.SourceType)
 	assert.Equal(t, flag.HubDefaultControlListen, spec.Flag.ControlListen)
-	assert.Equal(t, flag.HubDefaultManagementListen, spec.Flag.ManagementListen)
+	assert.Equal(t, flag.HubDefaultAdminListen, spec.Flag.AdminListen)
 	assert.Equal(t, flag.HubDefaultRedisListen, spec.Flag.RedisListen)
 	assert.Equal(t, "/tmp/hub.sqlite", spec.Flag.DBSQLiteFile)
 	assert.Equal(t, "nats://127.0.0.1:4222", spec.Flag.MQExternalNatsURL)
@@ -126,7 +127,7 @@ func TestHubAppDIInitKeepsPGConnUrl(t *testing.T) {
 	assert.Equal(t, "postgres://demo:demo@127.0.0.1:5432/hub", spec.Flag.DBPostgresURL)
 	assert.Equal(t, "nats://127.0.0.1:4222", spec.Flag.MQExternalNatsURL)
 	assert.False(t, spec.Flag.MQEmbeddedNats)
-	assert.Equal(t, flag.HubDefaultManagementListen, spec.AppFlag.ListenAddr)
+	assert.Equal(t, flag.HubDefaultAdminListen, spec.AppFlag.ListenAddr)
 }
 
 func TestHubAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
@@ -148,10 +149,10 @@ func TestHubAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 
 	assert.Equal(t, "vine.hub", spec.Name())
 	assert.Equal(t, "vine.hub", spec.InternalAttrs.Info.Name())
-	assert.Equal(t, "vine/hub/management", spec.InternalAttrs.InprocHostPath)
+	assert.Equal(t, "vine/hub/admin", spec.InternalAttrs.InprocHostPath)
 	assert.Empty(t, spec.AppFlag.ListenAddr)
 	assert.Empty(t, spec.Flag.ControlListen)
-	assert.Empty(t, spec.Flag.ManagementListen)
+	assert.Empty(t, spec.Flag.AdminListen)
 	assert.Empty(t, spec.Flag.RedisListen)
 	assert.True(t, spec.Flag.MQEmbeddedNats)
 }
@@ -159,9 +160,9 @@ func TestHubAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 func TestHubAppMainServicerExcludesControlAPIHandlers(t *testing.T) {
 	handlerTypes := collectServicerHandlerTypes(new(HubApp))
 
-	assert.NotContains(t, handlerTypes, internalapp.T[*impl.InfoServiceServerImpl]())
-	assert.NotContains(t, handlerTypes, internalapp.T[*impl.RegistryServiceServerImpl]())
-	assert.Contains(t, handlerTypes, internalapp.T[*impl.AppConfigServiceServerImpl]())
+	assert.NotContains(t, handlerTypes, internalapp.T[*controlimpl.InfoServiceServerImpl]())
+	assert.NotContains(t, handlerTypes, internalapp.T[*controlimpl.RegistryServiceServerImpl]())
+	assert.Contains(t, handlerTypes, internalapp.T[*adminimpl.AppConfigServiceServerImpl]())
 }
 
 func TestHubAppDIInitKeepsEnableNatsOutsideInproc(t *testing.T) {
@@ -364,11 +365,11 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForInitializerWithSQLite(t *test
 	spec := &HubApp{
 		InprocFlag: &internalapp.InternalInprocFlag{},
 		Flag: &flag.Flag{
-			SourceType:       flag.SourceSQLite,
-			ManagementListen: flag.HubDefaultManagementListen,
-			DashboardURL:     testDashboardURL(),
-			DBSQLiteFile:     sharedTestSQLitePath(t),
-			RedisListen:      flag.HubDefaultRedisListen,
+			SourceType:   flag.SourceSQLite,
+			AdminListen:  flag.HubDefaultAdminListen,
+			DashboardURL: testDashboardURL(),
+			DBSQLiteFile: sharedTestSQLitePath(t),
+			RedisListen:  flag.HubDefaultRedisListen,
 		},
 	}
 

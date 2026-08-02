@@ -1,0 +1,2 @@
+@desc("Internal control API for Link and Portal")
+domain vine.hub.control

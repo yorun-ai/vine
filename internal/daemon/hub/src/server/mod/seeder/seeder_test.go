@@ -282,7 +282,7 @@ func TestSeederRejectsSeedYAMLConflictingWithBuiltInItems(t *testing.T) {
 	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
 	require.NoError(t, vfile.WriteString(seedPath, `
 portalSites:
-  - name: vine.hub.AdminActor-client-rpc
+  - name: vine.hub.admin.AdminActor-client-rpc
     type: WEBGW
 portalRules:
   - name: vine.hub.admin-api

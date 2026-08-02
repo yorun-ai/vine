@@ -23,7 +23,7 @@ import (
 	rpcinproc "go.yorun.ai/vine/internal/core/rpc/transport/inproc"
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled"
+	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubredis"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"

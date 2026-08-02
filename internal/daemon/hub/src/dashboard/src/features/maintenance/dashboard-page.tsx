@@ -18,8 +18,8 @@ import { useLocale } from '@/i18n'
 import {
   createPortalCertService,
   createPortalRuleService,
-} from '@/skeled'
-import type { PortalCert } from '@/skeled'
+} from '@/skeled/admin'
+import type { PortalCert } from '@/skeled/admin'
 
 const portalRuleService = createPortalRuleService(vrpcClient)
 const portalCertService = createPortalCertService(vrpcClient)

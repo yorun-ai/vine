@@ -11,9 +11,9 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/impl"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/impl/dashboard"
-	debugimpl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/debug"
+	impl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin/dashboard"
+	debugimpl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin/debug"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/controlapi"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/initializer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/scheduler"
@@ -46,10 +46,10 @@ func (a *HubApp) DIInit() {
 		Info:           appInfo,
 		Linker:         link.NewInternalLinker(appInfo),
 		DisableConsole: true,
-		InprocHostPath: hubapp.HubManagementInprocHostPath,
+		InprocHostPath: hubapp.HubAdminInprocHostPath,
 	}
 
-	a.AppFlag.ListenAddr = a.Flag.ManagementListen
+	a.AppFlag.ListenAddr = a.Flag.AdminListen
 }
 
 func (a *HubApp) InitComponents(addComponent app.TypeAdder) {

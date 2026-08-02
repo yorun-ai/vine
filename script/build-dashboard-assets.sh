@@ -5,7 +5,7 @@ set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 repo_dir="$(cd -- "${script_dir}/.." && pwd -P)"
 dashboard_dir="${repo_dir}/internal/daemon/hub/src/dashboard"
-assets_dir="${repo_dir}/internal/daemon/hub/src/server/impl/dashboard/assets"
+assets_dir="${repo_dir}/internal/daemon/hub/src/server/impl/admin/dashboard/assets"
 dashboard_tar_zst_file="${assets_dir}/dashboard.tar.zst"
 dashboard_license_file="${dashboard_dir}/dist/THIRD_PARTY_LICENSES.md"
 font_license_file="${dashboard_dir}/node_modules/@fontsource-variable/geist/LICENSE"

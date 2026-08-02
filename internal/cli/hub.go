@@ -15,7 +15,7 @@ const (
 	commandHubServe = "serve"
 
 	FlagHubControlListen     = "control-listen"
-	FlagHubManagementListen  = "management-listen"
+	FlagHubAdminListen       = "admin-listen"
 	FlagHubRedisListen       = "redis-listen"
 	FlagHubMQExternalNatsURL = "mq-external-nats-url"
 	FlagHubMQEmbeddedNats    = "mq-embedded-nats"
@@ -25,7 +25,7 @@ const (
 	FlagHubDBPostgresURL     = "db-postgres-url"
 
 	EnvHubControlListen     = "VINE_CONTROL_LISTEN"
-	EnvHubManagementListen  = "VINE_MANAGEMENT_LISTEN"
+	EnvHubAdminListen       = "VINE_ADMIN_LISTEN"
 	EnvHubRedisListen       = "VINE_REDIS_LISTEN"
 	EnvHubMQExternalNatsURL = "VINE_MQ_EXTERNAL_NATS_URL"
 	EnvHubMQEmbeddedNats    = "VINE_MQ_EMBEDDED_NATS"
@@ -57,7 +57,7 @@ func newHubCommand() *ucli.Command {
 func newHubServeFlags() []ucli.Flag {
 	return []ucli.Flag{
 		&ucli.StringFlag{Name: FlagHubControlListen, Sources: ucli.EnvVars(EnvHubControlListen), Value: hubflag.HubDefaultControlListen, Usage: "hub Control API listen address used by Link and Portal"},
-		&ucli.StringFlag{Name: FlagHubManagementListen, Sources: ucli.EnvVars(EnvHubManagementListen), Value: hubflag.HubDefaultManagementListen, Usage: "hub management API and Dashboard Web listen address"},
+		&ucli.StringFlag{Name: FlagHubAdminListen, Sources: ucli.EnvVars(EnvHubAdminListen), Value: hubflag.HubDefaultAdminListen, Usage: "hub admin API and Dashboard Web listen address"},
 		&ucli.StringFlag{Name: FlagHubRedisListen, Sources: ucli.EnvVars(EnvHubRedisListen), Value: hubflag.HubDefaultRedisListen, Usage: "hub redis listen address"},
 		&ucli.StringFlag{Name: FlagHubDBSQLiteFile, Sources: ucli.EnvVars(EnvHubDBSQLiteFile), Usage: "hub SQLite database file"},
 		&ucli.StringFlag{Name: FlagHubDBPostgresURL, Sources: ucli.EnvVars(EnvHubDBPostgresURL), Usage: "hub PostgreSQL database URL"},
@@ -80,7 +80,7 @@ func newHubServeCommand() *ucli.Command {
 
 			flags := hubflag.Flag{
 				ControlListen:     cmd.String(FlagHubControlListen),
-				ManagementListen:  cmd.String(FlagHubManagementListen),
+				AdminListen:       cmd.String(FlagHubAdminListen),
 				RedisListen:       cmd.String(FlagHubRedisListen),
 				MQExternalNatsURL: cmd.String(FlagHubMQExternalNatsURL),
 				MQEmbeddedNats:    cmd.Bool(FlagHubMQEmbeddedNats),

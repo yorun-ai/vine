@@ -8,9 +8,9 @@ const (
 	HubControlInprocHostPath = "vine/hub"
 	HubControlInprocEndpoint = rpcinproc.EndpointScheme + HubControlInprocHostPath
 
-	// HubManagementInprocHostPath isolates Dashboard management Rpc and Web
+	// HubAdminInprocHostPath isolates Dashboard admin Rpc and Web
 	// handlers from the component-facing Control API inside standalone mode.
-	HubManagementInprocHostPath = "vine/hub/management"
+	HubAdminInprocHostPath = "vine/hub/admin"
 
 	// HubInprocHostPath and HubInprocEndpoint retain their existing names for
 	// callers that treat the Hub endpoint as the Control API endpoint.

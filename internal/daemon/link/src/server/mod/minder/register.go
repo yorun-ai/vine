@@ -5,7 +5,7 @@ import (
 
 	"go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/skel"
-	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled"
+	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/util/vslice"
 )
 

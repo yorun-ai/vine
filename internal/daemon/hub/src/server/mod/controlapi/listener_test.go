@@ -17,7 +17,7 @@ import (
 	rpcinproc "go.yorun.ai/vine/internal/core/rpc/transport/inproc"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/impl"
+	impl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/control"
 )
 
 type _TestInternalRuntime struct {
@@ -54,11 +54,11 @@ func TestListenerServesOnlyControlRpcRoute(t *testing.T) {
 		app.T[*impl.RegistryServiceServerImpl](),
 	}, runtime.handlerTypes)
 
-	response, err := http.Get("http://" + listener.server.Addr + coreapp.PathRpcInvoke + "/vine.hub.InfoService/getInfo")
+	response, err := http.Get("http://" + listener.server.Addr + coreapp.PathRpcInvoke + "/vine.hub.control.InfoService/getInfo")
 	require.NoError(t, err)
 	require.NoError(t, response.Body.Close())
 	assert.Equal(t, http.StatusNoContent, response.StatusCode)
-	assert.Equal(t, "/vine.hub.InfoService/getInfo", requestPath)
+	assert.Equal(t, "/vine.hub.control.InfoService/getInfo", requestPath)
 
 	response, err = http.Get("http://" + listener.server.Addr + coreapp.PathWebAccess)
 	require.NoError(t, err)

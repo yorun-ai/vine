@@ -17,8 +17,8 @@ func TestRunHubServe(t *testing.T) {
 		if flags.ControlListen != ":9090" {
 			t.Fatalf("unexpected control listen: %q", flags.ControlListen)
 		}
-		if flags.ManagementListen != ":9092" {
-			t.Fatalf("unexpected management listen: %q", flags.ManagementListen)
+		if flags.AdminListen != ":9092" {
+			t.Fatalf("unexpected admin listen: %q", flags.AdminListen)
 		}
 		if flags.RedisListen != "127.0.0.1:9091" {
 			t.Fatalf("unexpected redis listen: %q", flags.RedisListen)
@@ -46,7 +46,7 @@ func TestRunHubServe(t *testing.T) {
 		}
 	}
 
-	result := run([]string{"hub", "serve", "--control-listen", ":9090", "--management-listen", ":9092", "--redis-listen", "127.0.0.1:9091", "--mq-external-nats-url", "nats://127.0.0.1:4222", "--seed-yaml-file", "/tmp/hub.yaml", "--dashboard-url", "https://hub.example.com:8443/admin", "--db-sqlite-file", "/tmp/hub.sqlite"})
+	result := run([]string{"hub", "serve", "--control-listen", ":9090", "--admin-listen", ":9092", "--redis-listen", "127.0.0.1:9091", "--mq-external-nats-url", "nats://127.0.0.1:4222", "--seed-yaml-file", "/tmp/hub.yaml", "--dashboard-url", "https://hub.example.com:8443/admin", "--db-sqlite-file", "/tmp/hub.sqlite"})
 
 	if result.exitCode != exitCodeSuccess {
 		t.Fatalf("unexpected exit code: %d, stderr=%q", result.exitCode, result.stderr)
@@ -91,8 +91,8 @@ func TestRunHubServePG(t *testing.T) {
 		if flags.ControlListen != ":7090" {
 			t.Fatalf("unexpected control listen: %q", flags.ControlListen)
 		}
-		if flags.ManagementListen != hubconf.HubDefaultManagementListen {
-			t.Fatalf("unexpected management listen: %q", flags.ManagementListen)
+		if flags.AdminListen != hubconf.HubDefaultAdminListen {
+			t.Fatalf("unexpected admin listen: %q", flags.AdminListen)
 		}
 		if flags.DBPostgresURL != "postgres://demo:demo@127.0.0.1:5432/hub" {
 			t.Fatalf("unexpected pgConnUrl: %q", flags.DBPostgresURL)
@@ -130,7 +130,7 @@ func TestRunHubHelpShowsServeOptions(t *testing.T) {
 	if !strings.Contains(result.stdout, "--control-listen") {
 		t.Fatalf("unexpected stdout: %q", result.stdout)
 	}
-	if !strings.Contains(result.stdout, "--management-listen") {
+	if !strings.Contains(result.stdout, "--admin-listen") {
 		t.Fatalf("unexpected stdout: %q", result.stdout)
 	}
 	if !strings.Contains(result.stdout, "--mq-external-nats-url") {
@@ -158,7 +158,7 @@ func TestRunHubServeFromEnv(t *testing.T) {
 	defer func() { startHubApp = originalStart }()
 
 	t.Setenv(EnvHubControlListen, ":10090")
-	t.Setenv(EnvHubManagementListen, ":10092")
+	t.Setenv(EnvHubAdminListen, ":10092")
 	t.Setenv(EnvHubRedisListen, "127.0.0.1:10091")
 	t.Setenv(EnvHubMQExternalNatsURL, "nats://127.0.0.1:4222")
 	t.Setenv(EnvHubSeedYAMLFile, "/tmp/env-hub.yaml")
@@ -171,8 +171,8 @@ func TestRunHubServeFromEnv(t *testing.T) {
 		if flags.ControlListen != ":10090" {
 			t.Fatalf("unexpected control listen: %q", flags.ControlListen)
 		}
-		if flags.ManagementListen != ":10092" {
-			t.Fatalf("unexpected management listen: %q", flags.ManagementListen)
+		if flags.AdminListen != ":10092" {
+			t.Fatalf("unexpected admin listen: %q", flags.AdminListen)
 		}
 		if flags.RedisListen != "127.0.0.1:10091" {
 			t.Fatalf("unexpected redis listen: %q", flags.RedisListen)

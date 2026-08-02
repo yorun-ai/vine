@@ -1,6 +1,0 @@
-domain vine.hub
-
-@desc("Hub Dashboard Web")
-web DashboardWeb {
-    for AdminActor
-}

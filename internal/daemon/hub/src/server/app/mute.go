@@ -2,7 +2,7 @@ package app
 
 import (
 	rpclog "go.yorun.ai/vine/internal/core/rpc/log"
-	"go.yorun.ai/vine/internal/daemon/hub/api/skeled"
+	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 )
 
 func init() {

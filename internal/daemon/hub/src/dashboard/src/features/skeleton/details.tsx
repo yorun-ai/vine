@@ -27,7 +27,7 @@ import type {
   SkeletonServiceItem,
   SkeletonTrigger,
   SkeletonWebItem,
-} from '@/skeled'
+} from '@/skeled/admin'
 
 import type { SkeletonItem, SkeletonKind, TypeDefinitionIndex } from './model'
 import {

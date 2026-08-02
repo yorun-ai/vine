@@ -4,7 +4,7 @@ import (
 	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 	linkskeled "go.yorun.ai/vine/internal/core/link/skeled"
 	rpclog "go.yorun.ai/vine/internal/core/rpc/log"
-	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled"
+	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 )
 
 func init() {

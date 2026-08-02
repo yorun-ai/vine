@@ -13,8 +13,8 @@ internal/daemon/hub/
 │   ├── nats/             Hub NATS inproc access
 │   ├── redis/            Hub Redis client, events, and inproc access
 │   ├── redised/          Redis value structures and key formatting
-│   └── skeled/           Generated Hub types, clients, and schemas
-├── skel/                 Hub skeleton definitions
+│   └── skeled/           Generated control/admin Go packages
+├── skel/                 Control and admin skeleton definitions
 └── src/
     ├── dashboard/        Dashboard frontend source
     └── server/           Hub server runtime
@@ -22,7 +22,9 @@ internal/daemon/hub/
         ├── comp/         Shared runtime components such as Redis and NATS servers
         ├── core/         Domain state and Core/Repo interfaces
         ├── flag/         Hub flags and default normalization
-        ├── impl/         Implementations of externally exposed Hub services
+        ├── impl/         Implementations split by exposed API boundary
+        │   ├── control/  Link/Portal-facing Control API services
+        │   └── admin/    Dashboard admin Rpc and Web services
         ├── mod/          Runtime modules such as controlapi, initializer, seeder, and syncer
         └── repo/         Infrastructure adapters implementing Core Repo interfaces
 ```
@@ -34,7 +36,7 @@ internal/daemon/hub/
 - Do not update the embedded `dashboard.tar.zst` during ordinary development. Rebuild it only when the task explicitly includes updating release assets.
 - Keep user-facing text synchronized between `src/i18n/dictionaries/cn.ts` and `en.ts`.
 
-The Dashboard source lives in `src/dashboard`. At runtime, Hub serves the build embedded in `src/server/impl/dashboard/assets/dashboard.tar.zst`.
+The Dashboard source lives in `src/dashboard`. At runtime, Hub serves the build embedded in `src/server/impl/admin/dashboard/assets/dashboard.tar.zst`.
 
 When updating release assets, always run:
 
@@ -50,7 +52,9 @@ Keep Hub's layer responsibilities distinct:
 
 - `core` defines domain state and Repo interfaces without depending on concrete database or Redis implementations.
 - `repo` implements persistence and Redis synchronization without owning external service orchestration.
-- `impl` implements Hub services through `core` and `repo`.
+- `impl/control` implements only the Link/Portal-facing Control API services,
+  while `impl/admin` and its `debug` and `dashboard` subpackages implement
+  the Dashboard admin surface through `core` and `repo`.
 - `mod` contains runtime flows such as the Control API listener, initializer,
   seeder, syncer, scheduler, and sweeper.
 - `comp` provides shared runtime components such as Redis and NATS.
@@ -85,10 +89,12 @@ Hub has four primary responsibilities:
    Link and Portal currently send empty passwords as a temporary migration step. Their usernames select distinct least-privilege roles, but do not yet authenticate the caller. Keep the Redis endpoint on a trusted network until deployment-provided credentials and encrypted transport are available.
 
 4. Separated API listeners
-   The Control API listener exposes only `InfoService` and `RegistryService` to
-   Link and Portal. The main Hub listener exposes Dashboard management Rpc
-   services and `DashboardWeb`. This keeps component traffic separate from the
-   privileged management surface without splitting Hub's process or state.
+   The Control API listener exposes the `vine.hub.control` domain, containing
+   only `InfoService` and `RegistryService`, to Link and Portal. The main Hub
+   listener exposes the `vine.hub.admin` domain containing Dashboard
+   admin Rpc services and `DashboardWeb`. This keeps component traffic
+   separate from the privileged admin surface without splitting Hub's
+   process or state.
 
 ## Configuration and Registration Sources
 
@@ -101,22 +107,28 @@ At startup, `--seed-yaml-file` can import initial configuration, site rules, and
 
 ## Skeleton Generation
 
-Hub Go code is generated into `api/skeled`, and Dashboard TypeScript code is generated into `src/dashboard/src/skeled`. Use the top-level script:
+Hub maintains independent Skel source directories at `skel/control` and
+`skel/admin`. Go code is generated into the matching
+`api/skeled/control` and `api/skeled/admin` packages; TypeScript code is
+generated into matching directories under `src/dashboard/src/skeled`. Use the
+top-level script:
 
 ```bash
 bash script/gen-skel.sh hub
 ```
 
-Do not edit `api/skeled` or `src/dashboard/src/skeled` directly. Modify contracts under `skel/`, regenerate both Go and TypeScript code with the script, and verify that callers on both sides remain consistent.
+Do not edit generated files directly. Modify the corresponding contracts under
+`skel/control` or `skel/admin`, regenerate both Go and TypeScript code
+with the script, and verify that callers on both sides remain consistent.
 
 ## Inproc Mode
 
 Hub can run as a component in a single-process runtime:
 
 - The Hub Control API registers at `rpc+inproc://vine/hub`, while Dashboard
-  management Rpc and Web handlers register below
-  `rpc+inproc://vine/hub/management` and
-  `web+inproc://vine/hub/management` instead of being exposed over HTTP.
+  admin Rpc and Web handlers register below
+  `rpc+inproc://vine/hub/admin` and
+  `web+inproc://vine/hub/admin` instead of being exposed over HTTP.
 - `redisserver` does not open an external TCP port and retains only the in-process Redis server.
 - `vined` keeps a pointer to that in-process Redis server so an inproc `RedisClient` can access it directly.
 

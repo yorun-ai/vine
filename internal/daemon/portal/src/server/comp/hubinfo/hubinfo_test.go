@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
-	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled"
+	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/flag"
 )
 

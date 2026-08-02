@@ -1,0 +1,5 @@
+domain vine.hub.admin
+
+pub actor AdminActor {
+    via client {}
+}

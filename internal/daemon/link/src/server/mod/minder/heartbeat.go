@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"go.yorun.ai/vine/internal/core/skel"
-	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled"
+	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/util/goutil"
 )
 

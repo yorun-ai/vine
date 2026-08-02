@@ -20,7 +20,7 @@ import (
 	rpcinproc "go.yorun.ai/vine/internal/core/rpc/transport/inproc"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/impl"
+	impl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/control"
 )
 
 const shutdownTimeout = 10 * time.Second
@@ -31,7 +31,7 @@ var (
 )
 
 // Listener exposes only the Hub Control API used by Link and Portal. Hub's
-// management Rpc services and Dashboard Web handler remain on the main Hub
+// admin Rpc services and Dashboard Web handler remain on the main Hub
 // application listener and are deliberately absent from this server.
 type Listener struct {
 	app.BaseModule

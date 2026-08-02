@@ -159,3 +159,7 @@ func memoryIsVineSchemaRef(skelName string) bool {
 func memoryIsVineHubSchemaRef(skelName string) bool {
 	return strings.HasPrefix(skelName, "vine.hub.")
 }
+
+func memoryIsVineHubDomain(domain string) bool {
+	return domain == "vine.hub" || strings.HasPrefix(domain, "vine.hub.")
+}

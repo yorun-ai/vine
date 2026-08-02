@@ -2,7 +2,7 @@ package seeder
 
 import (
 	"go.yorun.ai/vine/internal/core/skel"
-	"go.yorun.ai/vine/internal/daemon/hub/api/skeled"
+	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vslice"
 )
@@ -10,7 +10,7 @@ import (
 var DashboardRpcServices = deriveDashboardRpcServiceNames()
 
 var DashboardRpcCoreEntry = core.PortalSite{
-	Name:          "vine.hub.AdminActor-client-rpc",
+	Name:          "vine.hub.admin.AdminActor-client-rpc",
 	Type:          core.PortalSiteTypeRPCGW,
 	ActorSkelName: skeled.AdminActor{}.SkelName(),
 	ActorVia:      string(skel.ActorViaClient),
@@ -18,11 +18,11 @@ var DashboardRpcCoreEntry = core.PortalSite{
 }
 
 var DashboardWebCoreEntry = core.PortalSite{
-	Name:          "vine.hub.DashboardWeb-web",
+	Name:          "vine.hub.admin.DashboardWeb-web",
 	Type:          core.PortalSiteTypeWEBGW,
 	ActorSkelName: skeled.AdminActor{}.SkelName(),
 	ActorVia:      string(skel.ActorViaClient),
-	WebName:       "vine.hub.DashboardWeb",
+	WebName:       "vine.hub.admin.DashboardWeb",
 	BuiltIn:       true,
 }
 
@@ -87,7 +87,7 @@ func deriveDashboardRpcServiceNames() []string {
 	var names []string
 	adminActorSkelName := skeled.AdminActor{}.SkelName()
 	for _, domainSchema := range skel.RegisteredDomainSchemas() {
-		if domainSchema.Domain != "vine.hub" {
+		if domainSchema.Domain != "vine.hub.admin" {
 			continue
 		}
 		for _, service := range domainSchema.Services {

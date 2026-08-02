@@ -20,7 +20,7 @@ import {
   createTaskDebugService,
   type TaskDebugTaskItem,
   type TaskDebugTriggerItem,
-} from '@/skeled'
+} from '@/skeled/admin'
 
 const taskDebugService = createTaskDebugService(vrpcClient)
 const jsonExtensions = [json()]
