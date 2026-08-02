@@ -38,6 +38,8 @@ Portal 的职责可以拆成四条主线：
 4. Auth、Permission 与证书
    `access` 从 `schema:actor:*`、`schema:service:*`、`schema:resource:*` 读取并监听准入相关 schema。RpcGW 在转发前调用 `access`，由它按需调用后端 auth service、actor permission service 和 resource check service。`vault` 从 Redis 读取并监听证书，用于 HTTPS SNI 匹配。
 
+   Hub Redis client 使用 `vine.portal` 用户，其 ACL 仅允许读取 Portal rule、site、证书、schema、Rpc/Web endpoint、共享 revision key 以及所需的订阅。Redis 密码为空，用于进程内模式和分离部署调试。启用后端 mTLS 时，Portal 证书会认证客户端，并把其 SPIFFE 身份绑定到 `vine.portal` 用户。未启用 mTLS 时，用户名只能选择 ACL 角色；由于该角色可以读取 TLS 私钥，Redis endpoint 必须限制在受信网络中。
+
 ## 依赖关系
 
 Portal 内部主要依赖关系是：

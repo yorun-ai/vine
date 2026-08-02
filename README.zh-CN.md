@@ -118,13 +118,39 @@ pnpm install
 pnpm dev:zh
 ```
 
-## 安全状态
+## 后端 mTLS
 
-> **TODO：**为 Hub、Link、Portal 与应用进程之间的通信增加身份认证和传输加密。
+`vine hub serve`、`vine link serve` 和 `vine portal serve` 支持
+`--mtls-ca-file`、`--mtls-cert-file` 与 `--mtls-key-file` 参数（也可以使用对应的
+`VINE_MTLS_*` 环境变量），三项必须同时配置。每个证书必须是仅包含一个 SPIFFE URI
+SAN 的 X.509-SVID。Hub、Link 与 Portal 分别使用
+`spiffe://<trust-domain>/vine/daemon/vine.hub`、
+`spiffe://<trust-domain>/vine/daemon/vine.link` 和
+`spiffe://<trust-domain>/vine/daemon/vine.portal`。互相通信的组件必须属于同一个
+trust domain，证书也必须同时允许 TLS 服务端与客户端认证。证书中的 DNS SAN
+不会参与组件身份授权。
 
-Hub 内嵌 Redis 当前允许客户端免密码只读连接，其中分发的运行时配置包含 Portal
-TLS 私钥。在组件认证和传输加密完成前，Vine 内部 endpoint 只能绑定到回环地址或
-受信私有网络，并应使用防火墙限制访问，禁止暴露到不可信网络。
+配置后，Vine 会在 Hub Control API、Admin API、内嵌 Redis、内嵌 NATS 和 Link
+ingress 上强制使用 mTLS。Link 与 Portal 使用同一份组件证书作为客户端凭证；服务
+发现得到的 HTTP endpoint 不允许降级为明文；Hub Redis 也会把 Redis ACL 用户名与
+mTLS 客户端身份绑定。Portal 的公网 listener 仍由既有的 Portal certificate vault
+管理。启用 mTLS 后，如果 HTTPS entry 没有配置公网证书，Portal 可以按请求的 SNI
+host 生成进程内短期自签名 Web 证书。显式配置的 Portal 证书始终优先；临时证书仅
+为启动阶段提供加密，不受浏览器信任。App 到 Link 的通信通常位于本机，因此仍使用
+h2c。
+
+证书签发、轮换与吊销仍由部署系统负责。外部 PostgreSQL 与 NATS 连接使用各自服务
+的安全配置。如果 App 到 Link 的通信跨越主机或信任边界，在 Vine 支持非本机安全
+App transport 前，应在部署网络层保护这条链路。
+
+Hub 内嵌 Redis 拒绝匿名数据访问，并分别定义 `vine.hub`、`vine.link` 与
+`vine.portal` 用户。进程内使用的 `vine.hub` 用户拥有随机密码与完整权限；
+`vine.link` 和 `vine.portal` 用户分别具有最小化的 key 与订阅 ACL。
+
+Link 与 Portal 的 Redis 密码目前仍为空，用于 inproc 模式和分离部署调试。启用后端
+mTLS 时，证书身份会认证客户端并将其绑定到对应角色。未启用 mTLS 时，用户名只能
+选择 ACL 角色，不能认证调用方，因此内部 endpoint 必须位于回环地址或受信私有网络，
+并通过防火墙限制访问。
 
 ## 版本与兼容性
 

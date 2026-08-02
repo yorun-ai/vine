@@ -43,6 +43,8 @@ Link 的职责可以拆成四条主线：
 2. 配置与发现
    `config.Reader` 会从 Hub 对应的 Redis 中拉取配置并持续监听变更；`rpcproxy` 和 `webproxy` 分别维护 Rpc 与 Web 的发现状态。
 
+   Hub Redis client 使用 `vine.link` 用户，其 ACL 仅允许读取配置、Rpc endpoint、共享 revision key 以及所需的订阅。Redis 密码为空，用于进程内模式和分离部署调试。启用后端 mTLS 时，Link 证书会认证客户端，并把其 SPIFFE 身份绑定到 `vine.link` 用户。未启用 mTLS 时，用户名只能选择 ACL 角色，因此 Redis endpoint 仍需进行网络隔离。
+
 3. 异步事件与任务
    `event` 和 `task` 订阅 `minder` 中本地应用声明的监听能力与运行能力，负责把 NATS 中的消息投递到对应本地应用。
 

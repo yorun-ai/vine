@@ -80,6 +80,14 @@ Hub 的职责可以拆成四条主线：
 3. Redis 分发层
    `redisserver` 维护一份内存 Redis 数据。配置、应用状态、Rpc/Web endpoint 和 schema 都会同步写入其中，Link 与 Portal 通过 Redis 读取快照并监听变更事件。
 
+   内嵌 Redis 协议要求客户端在执行数据命令前完成认证，并为三个用户分别配置资源级 ACL：
+
+   - `vine.hub` 拥有完整的命令与 key 权限，密码在当前进程中随机生成。
+   - `vine.link` 可以读取配置、Rpc endpoint 注册与 revision key，并且只能订阅配置 channel 和 Rpc 注册 pattern。
+   - `vine.portal` 可以读取 Portal rule、site、证书、actor/service/resource schema、Rpc/Web endpoint 注册与 revision key，并且只能订阅对应的列表 pattern。
+
+   Link 与 Portal 的 Redis 密码为空，用于进程内模式和分离部署调试。启用后端 mTLS 时，客户端证书会认证调用方，并把其 SPIFFE 身份绑定到对应的 Redis 用户名。未启用 mTLS 时，用户名只能选择最小权限角色，不能认证调用方，因此 Redis endpoint 必须位于回环地址或受信私有网络，并通过防火墙限制访问。
+
 4. 分离的 API listener
    Control API listener 向 Link 和 Portal 暴露 `vine.hub.control` 域，其中
    只包含 `InfoService` 与 `RegistryService`。Hub 主 listener 暴露

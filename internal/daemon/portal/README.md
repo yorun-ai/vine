@@ -38,7 +38,7 @@ Portal has four primary responsibilities:
 4. Authentication, permission, and certificates
    `access` reads and watches `schema:actor:*`, `schema:service:*`, and `schema:resource:*` state. Before forwarding, RpcGW asks `access` to perform authentication and permission admission, which may invoke backend auth services, actor permission services, and resource check services. `vault` reads and watches certificates from Redis for HTTPS SNI matching.
 
-   The Hub Redis client authenticates as the `vine.portal` user. Its ACL is limited to Portal rules, sites, certificates, schemas, Rpc/Web endpoint discovery, the shared revision key, and their required subscriptions. The Portal password is temporarily empty; because this role can read TLS private keys, the Redis endpoint must remain restricted to a trusted network.
+   The Hub Redis client uses the `vine.portal` user. Its ACL is limited to Portal rules, sites, certificates, schemas, Rpc/Web endpoint discovery, the shared revision key, and their required subscriptions. The Redis password is empty for in-process mode and separated-deployment debugging. With backend mTLS enabled, the Portal certificate authenticates the client and binds its SPIFFE identity to the `vine.portal` user. Without mTLS, the username only selects an ACL role; because that role can read TLS private keys, the Redis endpoint must remain restricted to a trusted network.
 
 ## Dependencies
 
