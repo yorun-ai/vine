@@ -18,7 +18,7 @@ func (p *RpcProxy) roundTrip(endpoint string, rpcRequest spec.Request) (spec.Res
 	if rpcinproc.IsEndpoint(endpoint) {
 		return rpcinproc.RoundTrip(endpoint, rpcRequest)
 	}
-	return rpchttp.RoundTrip(endpoint, rpcRequest)
+	return rpchttp.RoundTripWithTransport(endpoint, rpcRequest, p.transport)
 }
 
 func (p *RpcProxy) forward(reqCtx context.Context, req *http.Request) (*http.Response, []byte, ex.Error) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"net/http"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
@@ -17,6 +18,22 @@ func RoundTrip(endpoint string, rpcRequest spec.Request) (spec.Response, ex.Erro
 }
 
 func RoundTripWithPrepared(endpoint string, rpcRequest spec.Request, prepared func()) (spec.Response, ex.Error) {
+	return roundTrip(endpoint, rpcRequest, prepared, defaultHTTPClient.Do)
+}
+
+// RoundTripWithTransport sends an Rpc request through the provided HTTP
+// transport. It allows proxy layers to use the same transport configuration
+// for both decoded HTTP requests and Rpc requests received through inproc.
+func RoundTripWithTransport(endpoint string, rpcRequest spec.Request, transport http.RoundTripper) (spec.Response, ex.Error) {
+	return roundTrip(endpoint, rpcRequest, nil, transport.RoundTrip)
+}
+
+func roundTrip(
+	endpoint string,
+	rpcRequest spec.Request,
+	prepared func(),
+	do func(*http.Request) (*http.Response, error),
+) (spec.Response, ex.Error) {
 	httpRequest, err := encodeRequest(endpoint, rpcRequest)
 	if err != nil {
 		return nil, ex.New(ex.InvocationFailed, err.Error())
@@ -25,7 +42,7 @@ func RoundTripWithPrepared(endpoint string, rpcRequest spec.Request, prepared fu
 		prepared()
 	}
 
-	httpResponse, err := defaultHTTPClient.Do(httpRequest)
+	httpResponse, err := do(httpRequest)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			return nil, ex.New(ex.InvocationCancelled, err.Error())
