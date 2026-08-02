@@ -5,7 +5,9 @@ import (
 	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/internal/core/link"
 	"go.yorun.ai/vine/internal/core/meta"
+	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/runtime"
+	"go.yorun.ai/vine/internal/daemon"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
@@ -35,18 +37,22 @@ type HubApp struct {
 }
 
 func (a *HubApp) Name() string {
-	return "vine.hub"
+	return daemon.HubIdentity.String()
 }
 
 func (a *HubApp) DIInit() {
 	a.Flag.Normalize(a.InprocFlag.Enabled)
+	identity := mtls.MustLoad(daemon.HubIdentity.SPIFFEPath(), a.Flag.MTLS)
 
 	appInfo := meta.MustNewAppWithRandomId(a.Name(), runtime.Application().Version())
 	a.InternalAttrs = app.InternalAttributes{
-		Info:           appInfo,
-		Linker:         link.NewInternalLinker(appInfo),
-		DisableConsole: true,
-		InprocHostPath: hubapp.HubAdminInprocHostPath,
+		Info:              appInfo,
+		Linker:            link.NewInternalLinker(appInfo),
+		BackendIdentity:   identity,
+		DisableConsole:    true,
+		ProtectHTTPServer: true,
+		HTTPServerClients: []mtls.SPIFFEPath{daemon.PortalIdentity.SPIFFEPath()},
+		InprocHostPath:    hubapp.HubAdminInprocHostPath,
 	}
 
 	a.AppFlag.ListenAddr = a.Flag.AdminListen

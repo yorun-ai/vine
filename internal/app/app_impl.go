@@ -18,6 +18,7 @@ import (
 	linkskeled "go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
+	"go.yorun.ai/vine/internal/core/mtls"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
 	"go.yorun.ai/vine/internal/core/rpc/server"
 	rpcinproc "go.yorun.ai/vine/internal/core/rpc/transport/inproc"
@@ -41,9 +42,13 @@ type _AppImpl struct {
 	cancel context.CancelFunc
 	flags  _Flags
 
-	listenAddr string
-	linker     link.Linker
-	reader     conf.Reader
+	listenAddr        string
+	linker            link.Linker
+	reader            conf.Reader
+	identity          *mtls.Identity
+	rpcTransport      http.RoundTripper
+	protectHTTPServer bool
+	httpServerClients []mtls.SPIFFEPath
 
 	inprocFlag *InternalInprocFlag
 
@@ -120,6 +125,13 @@ func (a *_AppImpl) initByInternalAttrs() bool {
 	vpre.CheckNotNil(internalAttrs.Linker, "internal application linker must not be nil")
 	a.info = internalAttrs.Info
 	a.linker = internalAttrs.Linker
+	a.identity = internalAttrs.BackendIdentity
+	if a.identity == nil {
+		a.identity = mtls.DisabledIdentity()
+	}
+	a.rpcTransport = internalAttrs.RPCTransport
+	a.protectHTTPServer = internalAttrs.ProtectHTTPServer
+	a.httpServerClients = append([]mtls.SPIFFEPath(nil), internalAttrs.HTTPServerClients...)
 	a.inprocFlag.HostPath = internalAttrs.InprocHostPath
 
 	return true
@@ -224,6 +236,10 @@ func (a *_AppImpl) shouldEnableHTTPServer() bool {
 		return true
 	}
 	return !a.spec.(InternalApplicationSpec).internalAttrs().DisableHTTPServer
+}
+
+func (a *_AppImpl) shouldProtectHTTPServer() bool {
+	return a.protectHTTPServer && a.identity.Enabled()
 }
 
 func (a *_AppImpl) shouldRegisterApp() bool {
@@ -369,7 +385,11 @@ func (a *_AppImpl) webEndpoint(path string) string {
 }
 
 func (a *_AppImpl) httpEndpoint(paths ...string) string {
-	endpoint := fmt.Sprintf("http://%s:%d", a.endpointHost(), a.httpPort)
+	scheme := "http"
+	if a.shouldProtectHTTPServer() {
+		scheme = "https"
+	}
+	endpoint := fmt.Sprintf("%s://%s:%d", scheme, a.endpointHost(), a.httpPort)
 	for _, path := range paths {
 		endpoint += path
 	}

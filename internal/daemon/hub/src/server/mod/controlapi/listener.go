@@ -16,8 +16,10 @@ import (
 	"go.yorun.ai/vine/internal/app"
 	coreapp "go.yorun.ai/vine/internal/core/app"
 	"go.yorun.ai/vine/internal/core/logger"
+	"go.yorun.ai/vine/internal/core/mtls"
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
 	rpcinproc "go.yorun.ai/vine/internal/core/rpc/transport/inproc"
+	"go.yorun.ai/vine/internal/daemon"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	impl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/control"
@@ -40,6 +42,7 @@ type Listener struct {
 	Flag            *flag.Flag              `inject:""`
 	InprocFlag      *app.InternalInprocFlag `inject:""`
 	InternalRuntime app.InternalRuntime     `inject:""`
+	Identity        *mtls.Identity          `inject:""`
 
 	rpcHTTPHandler http.Handler
 	rpcHandler     rpcspec.RpcHandler
@@ -94,8 +97,19 @@ func (l *Listener) startHTTP() error {
 		return fmt.Errorf("hub control API listen failed: %w", err)
 	}
 	server := &http.Server{
-		Addr:    listener.Addr().String(),
-		Handler: h2c.NewHandler(l, &http2.Server{}),
+		Addr: listener.Addr().String(),
+	}
+	serve := server.Serve
+	if l.Identity.Enabled() {
+		server.Handler = l
+		server.TLSConfig = l.Identity.ServerConfig(daemon.LinkIdentity.SPIFFEPath(), daemon.PortalIdentity.SPIFFEPath())
+		if err := http2.ConfigureServer(server, &http2.Server{}); err != nil {
+			_ = listener.Close()
+			return fmt.Errorf("hub control API HTTP/2 configure failed: %w", err)
+		}
+		serve = func(listener net.Listener) error { return server.ServeTLS(listener, "", "") }
+	} else {
+		server.Handler = h2c.NewHandler(l, &http2.Server{})
 	}
 	l.server = server
 
@@ -104,7 +118,7 @@ func (l *Listener) startHTTP() error {
 		defer l.wg.Done()
 
 		controlLogger.Info("hub control API listener started", "addr", server.Addr)
-		err := server.Serve(listener)
+		err := serve(listener)
 		if errors.Is(err, http.ErrServerClosed) {
 			controlLogger.Debug("hub control API listener stopped", "addr", server.Addr)
 			return

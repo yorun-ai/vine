@@ -6,22 +6,29 @@ import (
 	"net/http"
 
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
+	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/computil"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/gwutil"
 	"go.yorun.ai/vine/internal/util/httputil"
 )
 
-func (g *WebGateway) forward(ctx *spec.Context, request *http.Request, endpoint string, traceId string) {
+func (g *WebGateway) forward(ctx *spec.Context, request *http.Request, registration *redised.WebRegistration, traceId string) {
+	endpoint := registration.Endpoint
 	encodeWebOptionsToHeader(request)
 	encodeWebForwardTrace(request.Header)
-	if handled, err := gwutil.ForwardUpgrade(ctx.ResponseWriter, request, endpoint); handled {
+	transport, err := g.access.Identity.BackendTransport(registration.ServerIdentity.SPIFFEPath(), endpoint)
+	if err != nil {
+		http.Error(ctx.ResponseWriter, "webgw endpoint is insecure: "+err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+	if handled, err := gwutil.ForwardUpgradeWithTransport(ctx.ResponseWriter, request, endpoint, transport); handled {
 		if err != nil {
 			http.Error(ctx.ResponseWriter, "webgw websocket forward failed: "+err.Error(), http.StatusServiceUnavailable)
 		}
 		return
 	}
-	response, err := gwutil.ForwardRequest(request, endpoint)
+	response, err := gwutil.ForwardRequestWithTransport(request, endpoint, transport)
 	if err != nil {
 		statusCode := http.StatusServiceUnavailable
 		if errors.Is(err, context.DeadlineExceeded) {

@@ -1,10 +1,54 @@
 package rpcproxy
 
 import (
+	"errors"
+	"net/http"
+	"strings"
 	"testing"
 
 	"go.yorun.ai/vine/internal/core/ex"
+	"go.yorun.ai/vine/internal/core/meta"
+	"go.yorun.ai/vine/internal/core/rpc/spec"
 )
+
+type _RpcRoundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f _RpcRoundTripperFunc) RoundTrip(request *http.Request) (*http.Response, error) {
+	return f(request)
+}
+
+func TestRoundTripUsesConfiguredTransport(t *testing.T) {
+	proxy := newTestRpcProxy(t, nil)
+	clientApp := mustMetaApp(t, "client.app", "11111111-1111-1111-1111-111111111111")
+	methodInfo := ensureTestInboundMethodInfo()
+	trace := meta.InitialTrace()
+	rpcRequest := &spec.RequestImpl{
+		ContextValue:    t.Context(),
+		TraceValue:      trace,
+		ActorValue:      meta.NewAbsentActor(),
+		ClientValue:     clientApp,
+		MethodInfoValue: methodInfo,
+	}
+
+	expectedErr := errors.New("configured transport called")
+	transportCalled := false
+	proxy.transport = _RpcRoundTripperFunc(func(request *http.Request) (*http.Response, error) {
+		transportCalled = true
+		if !strings.HasSuffix(request.URL.Path, methodInfo.FullURLPath()) {
+			t.Fatalf("unexpected Rpc request path: %s", request.URL.Path)
+		}
+		return nil, expectedErr
+	})
+
+	_, exErr := proxy.roundTrip("http://target.test/rpc/invoke", rpcRequest)
+
+	if !transportCalled {
+		t.Fatal("expected configured transport to be called")
+	}
+	if exErr == nil || !strings.Contains(exErr.Message(), expectedErr.Error()) {
+		t.Fatalf("unexpected Rpc error: %v", exErr)
+	}
+}
 
 func TestMapGatewayResponseErrorMapsUnresponsiveCodes(t *testing.T) {
 	tests := []struct {

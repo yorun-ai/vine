@@ -44,9 +44,12 @@ func TestRunHubServe(t *testing.T) {
 		if flags.MQEmbeddedNats {
 			t.Fatal("unexpected mq-embedded-nats")
 		}
+		if flags.MTLS.CAFile != "/tmp/ca.pem" || flags.MTLS.CertFile != "/tmp/hub.pem" || flags.MTLS.KeyFile != "/tmp/hub-key.pem" {
+			t.Fatalf("unexpected mTLS files: %#v", flags.MTLS)
+		}
 	}
 
-	result := run([]string{"hub", "serve", "--control-listen", ":9090", "--admin-listen", ":9092", "--redis-listen", "127.0.0.1:9091", "--mq-external-nats-url", "nats://127.0.0.1:4222", "--seed-yaml-file", "/tmp/hub.yaml", "--dashboard-url", "https://hub.example.com:8443/admin", "--db-sqlite-file", "/tmp/hub.sqlite"})
+	result := run([]string{"hub", "serve", "--control-listen", ":9090", "--admin-listen", ":9092", "--redis-listen", "127.0.0.1:9091", "--mq-external-nats-url", "nats://127.0.0.1:4222", "--seed-yaml-file", "/tmp/hub.yaml", "--dashboard-url", "https://hub.example.com:8443/admin", "--db-sqlite-file", "/tmp/hub.sqlite", "--mtls-ca-file", "/tmp/ca.pem", "--mtls-cert-file", "/tmp/hub.pem", "--mtls-key-file", "/tmp/hub-key.pem"})
 
 	if result.exitCode != exitCodeSuccess {
 		t.Fatalf("unexpected exit code: %d, stderr=%q", result.exitCode, result.stderr)

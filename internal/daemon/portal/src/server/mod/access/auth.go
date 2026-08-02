@@ -8,6 +8,7 @@ import (
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
+	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/util/vpre"
@@ -27,6 +28,7 @@ type Auther struct {
 
 	endpointManager *epmgr.Manager
 	actorSchema     *skel.ActorSchema
+	identity        *mtls.Identity
 
 	actor      meta.Actor
 	credential map[string]string

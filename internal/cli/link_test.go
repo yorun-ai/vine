@@ -16,7 +16,7 @@ func TestRunLinkServe(t *testing.T) {
 		startLinkApp = oldStartLinkApp
 	}()
 
-	result := run([]string{"link", "serve", "--api-listen", ":7088", "--ingress-listen", "127.0.0.1:7087", "--hub-endpoint", "http://demo.local:7091"})
+	result := run([]string{"link", "serve", "--api-listen", ":7088", "--ingress-listen", "127.0.0.1:7087", "--hub-endpoint", "https://demo.local:7091", "--mtls-ca-file", "/tmp/ca.pem", "--mtls-cert-file", "/tmp/link.pem", "--mtls-key-file", "/tmp/link-key.pem"})
 
 	if result.exitCode != exitCodeSuccess {
 		t.Fatalf("unexpected exit code: %d, stderr=%q", result.exitCode, result.stderr)
@@ -33,8 +33,11 @@ func TestRunLinkServe(t *testing.T) {
 	if gotFlags.IngressListen != "127.0.0.1:7087" {
 		t.Fatalf("unexpected ingress listen: %q", gotFlags.IngressListen)
 	}
-	if gotFlags.HubEndpoint != "http://demo.local:7091" {
+	if gotFlags.HubEndpoint != "https://demo.local:7091" {
 		t.Fatalf("unexpected hub endpoint: %q", gotFlags.HubEndpoint)
+	}
+	if gotFlags.MTLS.CAFile != "/tmp/ca.pem" || gotFlags.MTLS.CertFile != "/tmp/link.pem" || gotFlags.MTLS.KeyFile != "/tmp/link-key.pem" {
+		t.Fatalf("unexpected mTLS files: %#v", gotFlags.MTLS)
 	}
 }
 

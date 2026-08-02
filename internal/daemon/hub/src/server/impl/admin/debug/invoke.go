@@ -13,9 +13,7 @@ import (
 	"go.yorun.ai/vine/internal/util/httputil"
 )
 
-var serviceDebugHTTPClient = httputil.NewH2CClient()
-
-func doServiceDebugInvokeRequest(request *http.Request) (*http.Response, error) {
+func doServiceDebugInvokeRequest(request *http.Request, transport http.RoundTripper) (*http.Response, error) {
 	ctx, cancel := httputil.ContextWithForwardTimeout(request)
 	defer cancel()
 
@@ -27,7 +25,7 @@ func doServiceDebugInvokeRequest(request *http.Request) (*http.Response, error) 
 	if ingressinproc.IsEndpoint(request.URL.String()) {
 		response, err = ingressinproc.RoundTrip(request.URL.String(), forwardRequest)
 	} else {
-		response, err = serviceDebugHTTPClient.Do(forwardRequest)
+		response, err = transport.RoundTrip(forwardRequest)
 	}
 	if err != nil {
 		return nil, normalizeServiceDebugForwardError(ctx, err)

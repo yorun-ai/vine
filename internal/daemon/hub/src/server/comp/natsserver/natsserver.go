@@ -7,8 +7,11 @@ import (
 	"time"
 
 	natsserver "github.com/nats-io/nats-server/v2/server"
+	gonats "github.com/nats-io/nats.go"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/logger"
+	"go.yorun.ai/vine/internal/core/mtls"
+	"go.yorun.ai/vine/internal/daemon"
 	hubnats "go.yorun.ai/vine/internal/daemon/hub/api/nats"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	"go.yorun.ai/vine/util/vnet"
@@ -28,6 +31,7 @@ type NATSServer struct {
 
 	InprocFlag *app.InternalInprocFlag `inject:""`
 	Flag       *flag.Flag              `inject:""`
+	Identity   *mtls.Identity          `inject:""`
 
 	server   *natsserver.Server
 	storeDir string
@@ -51,6 +55,9 @@ func (s *NATSServer) DIInit() {
 	addr, ok := s.server.Addr().(*net.TCPAddr)
 	vpre.Check(ok, "nats server addr is not tcp")
 	s.endpoint = fmt.Sprintf("nats://%s:%d", detectHostForMQEndpoint(), addr.Port)
+	if s.Identity.Enabled() {
+		s.endpoint = fmt.Sprintf("tls://%s:%d", detectHostForMQEndpoint(), addr.Port)
+	}
 	natsServerLogger.Info("vine.hub nats server started", "mode", "remote", "addr", addr.String(), "endpoint", s.endpoint)
 }
 
@@ -62,6 +69,21 @@ func (s *NATSServer) Port() int {
 	addr, ok := s.server.Addr().(*net.TCPAddr)
 	vpre.Check(ok, "nats server addr is not tcp")
 	return addr.Port
+}
+
+// ConnectAsHub connects to this embedded listener using the Hub component's
+// SPIFFE identity when backend mTLS is enabled. External NATS connections do
+// not use this method and retain their own deployment-provided security model.
+func (s *NATSServer) ConnectAsHub() (*gonats.Conn, error) {
+	options := []gonats.Option{}
+	if s.Identity.Enabled() {
+		options = append(
+			options,
+			gonats.Secure(s.Identity.ClientConfig(daemon.HubIdentity.SPIFFEPath())),
+			gonats.TLSHandshakeFirst(),
+		)
+	}
+	return gonats.Connect(s.Endpoint(), options...)
 }
 
 func (s *NATSServer) AfterAppStop() {
@@ -88,6 +110,12 @@ func (s *NATSServer) serverOptions(isInproc bool) *natsserver.Options {
 		return options
 	}
 	options.Port = natsserver.RANDOM_PORT
+	if s.Identity.Enabled() {
+		options.TLS = true
+		options.TLSVerify = true
+		options.TLSHandshakeFirst = true
+		options.TLSConfig = s.Identity.ServerConfig(daemon.HubIdentity.SPIFFEPath(), daemon.LinkIdentity.SPIFFEPath())
+	}
 	return options
 }
 

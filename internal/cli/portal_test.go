@@ -13,12 +13,15 @@ func TestRunPortalServe(t *testing.T) {
 	called := false
 	startPortalApp = func(flags portalflag.Flag) {
 		called = true
-		if flags.HubEndpoint != "http://demo.local:7071" {
+		if flags.HubEndpoint != "https://demo.local:7071" {
 			t.Fatalf("unexpected hub endpoint: %s", flags.HubEndpoint)
+		}
+		if flags.MTLS.CAFile != "/tmp/ca.pem" || flags.MTLS.CertFile != "/tmp/portal.pem" || flags.MTLS.KeyFile != "/tmp/portal-key.pem" {
+			t.Fatalf("unexpected mTLS files: %#v", flags.MTLS)
 		}
 	}
 
-	result := run([]string{"portal", "serve", "--hub-endpoint", "http://demo.local:7071"})
+	result := run([]string{"portal", "serve", "--hub-endpoint", "https://demo.local:7071", "--mtls-ca-file", "/tmp/ca.pem", "--mtls-cert-file", "/tmp/portal.pem", "--mtls-key-file", "/tmp/portal-key.pem"})
 
 	if result.exitCode != exitCodeSuccess {
 		t.Fatalf("unexpected exit code: %d, stderr=%q", result.exitCode, result.stderr)

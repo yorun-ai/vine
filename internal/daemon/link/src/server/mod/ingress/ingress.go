@@ -17,6 +17,8 @@ import (
 	corelink "go.yorun.ai/vine/internal/core/link"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/core/logger"
+	"go.yorun.ai/vine/internal/core/mtls"
+	"go.yorun.ai/vine/internal/daemon"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/rpcproxy"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/webproxy"
@@ -40,6 +42,7 @@ type Ingress struct {
 	Flag     *flag.Flag         `inject:""`
 	RpcProxy *rpcproxy.RpcProxy `inject:""`
 	WebProxy *webproxy.WebProxy `inject:""`
+	Identity *mtls.Identity     `inject:""`
 
 	httpServer *http.Server
 	httpWG     sync.WaitGroup
@@ -83,20 +86,35 @@ func (g *Ingress) startHTTPServer() {
 
 	port := listener.Addr().(*net.TCPAddr).Port
 	server := &http.Server{
-		Addr:    listener.Addr().String(),
-		Handler: h2c.NewHandler(g.httpHandler(), &http2.Server{}),
+		Addr: listener.Addr().String(),
+	}
+	serve := server.Serve
+	if g.Identity.Enabled() {
+		server.Handler = g.httpHandler()
+		server.TLSConfig = g.Identity.ServerConfig(
+			daemon.HubIdentity.SPIFFEPath(),
+			daemon.LinkIdentity.SPIFFEPath(),
+			daemon.PortalIdentity.SPIFFEPath(),
+		)
+		vpre.CheckNilError(http2.ConfigureServer(server, &http2.Server{}), "link ingress HTTP/2 configure failed")
+		serve = func(listener net.Listener) error { return server.ServeTLS(listener, "", "") }
+	} else {
+		server.Handler = h2c.NewHandler(g.httpHandler(), &http2.Server{})
 	}
 	host := g.mustDetectHost()
 
 	g.httpServer = server
 	g.endpoint = endpointOfHostPort(host, port)
+	if g.Identity.Enabled() {
+		g.endpoint = "https" + strings.TrimPrefix(g.endpoint, "http")
+	}
 
 	g.httpWG.Add(1)
 	go func() {
 		defer g.httpWG.Done()
 
 		ingressLogger.Info("link ingress server started", "addr", server.Addr)
-		err := server.Serve(listener)
+		err := serve(listener)
 		if errors.Is(err, http.ErrServerClosed) {
 			ingressLogger.Debug("link ingress server stopped", "addr", server.Addr)
 			return

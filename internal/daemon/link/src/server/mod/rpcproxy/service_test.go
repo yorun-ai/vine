@@ -3,9 +3,37 @@ package rpcproxy
 import (
 	"testing"
 
+	"go.yorun.ai/vine/internal/core/ex"
+	"go.yorun.ai/vine/internal/core/mtls/mtlstest"
+	"go.yorun.ai/vine/internal/daemon"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 )
+
+func TestResolveOutboundEndpointRejectsPlaintextWithMTLS(t *testing.T) {
+	callerApp := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")
+	remoteApp := mustMetaApp(t, "remote.app", "22222222-2222-2222-2222-222222222222")
+	proxy := newTestRpcProxy(t, newTestHubRedisClient(map[string][]redised.RpcServiceRegistration{
+		"demo.service.UserService": {{
+			ServiceName:    "demo.service.UserService",
+			Endpoint:       "http://remote.invalid/rpc/proxy/in/" + remoteApp.InstanceId(),
+			ServerIdentity: daemon.LinkIdentity,
+			AppName:        remoteApp.Name(),
+			AppVersion:     remoteApp.Version(),
+			AppInstanceId:  remoteApp.InstanceId(),
+		}},
+	}))
+	proxy.Identity = mtlstest.NewCA(t).Identity(t, daemon.LinkIdentity.SPIFFEPath())
+	registerLocalApp(proxy, callerApp, "http://127.0.0.1:8080"+testPathRpcInvoke, "http://127.0.0.1:8080", []string{"demo.service.CallerService"})
+
+	_, exErr := proxy.resolveOutboundEndpoint("demo.service.UserService", callerApp)
+	if exErr == nil {
+		t.Fatal("expected plaintext registration to be rejected")
+	}
+	if exErr.Code() != ex.ServiceUnavailable {
+		t.Fatalf("unexpected error code: %s", exErr.Code())
+	}
+}
 
 func TestResolveOutboundEndpointRoundRobin(t *testing.T) {
 	callerApp := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")

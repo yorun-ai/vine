@@ -36,6 +36,7 @@ func (s *Seeder) seedDashboard() {
 	s.saveDashboardSite(DashboardWebCoreEntry)
 
 	url := s.Flag.DashboardURL
+	refreshAccess := s.Flag.DashboardURLSet || s.canMigrateLegacyDashboardAccess()
 
 	s.saveDashboardRule(core.PortalRule{
 		Name:       dashboardApiRuleName,
@@ -46,7 +47,7 @@ func (s *Seeder) seedDashboard() {
 		TargetType: "SITE",
 		SiteName:   DashboardRpcCoreEntry.Name,
 		BuiltIn:    true,
-	})
+	}, refreshAccess)
 	s.saveDashboardRule(core.PortalRule{
 		Name:       dashboardWebRuleName,
 		Scheme:     url.Scheme,
@@ -56,7 +57,7 @@ func (s *Seeder) seedDashboard() {
 		TargetType: "SITE",
 		SiteName:   DashboardWebCoreEntry.Name,
 		BuiltIn:    true,
-	})
+	}, refreshAccess)
 }
 
 // saveDashboardSite keeps the stable database id and refreshes built-in
@@ -68,12 +69,13 @@ func (s *Seeder) saveDashboardSite(site core.PortalSite) {
 	s.EntryRepo.SaveEntry(&site)
 }
 
-// saveDashboardRule refreshes built-in rule fields on every startup.
-// Access fields are refreshed only when dashboard-url is explicit.
-func (s *Seeder) saveDashboardRule(rule core.PortalRule) {
+// saveDashboardRule refreshes built-in rule fields on every startup. Access
+// fields are refreshed only for an explicit dashboard-url or when safely
+// migrating the legacy built-in HTTP defaults to the mTLS HTTPS defaults.
+func (s *Seeder) saveDashboardRule(rule core.PortalRule, refreshAccess bool) {
 	if oldRule, ok := s.RuleRepo.GetRuleByName(rule.Name); ok {
 		rule.Id = oldRule.Id
-		if !s.Flag.DashboardURLSet {
+		if !refreshAccess {
 			rule.Scheme = oldRule.Scheme
 			rule.Host = oldRule.Host
 			rule.Port = oldRule.Port
@@ -81,6 +83,29 @@ func (s *Seeder) saveDashboardRule(rule core.PortalRule) {
 		}
 	}
 	s.RuleRepo.SaveRule(&rule)
+}
+
+func (s *Seeder) canMigrateLegacyDashboardAccess() bool {
+	if !s.Flag.DashboardURLMTLSDefault {
+		return false
+	}
+	legacyRules := []struct {
+		name       string
+		pathPrefix string
+	}{
+		{name: dashboardApiRuleName, pathPrefix: "/api"},
+		{name: dashboardWebRuleName, pathPrefix: "/"},
+	}
+	for _, legacy := range legacyRules {
+		rule, ok := s.RuleRepo.GetRuleByName(legacy.name)
+		if !ok {
+			continue
+		}
+		if rule.Scheme != "http" || rule.Host != "" || rule.Port != 7099 || rule.PathPrefix != legacy.pathPrefix {
+			return false
+		}
+	}
+	return true
 }
 
 func deriveDashboardRpcServiceNames() []string {

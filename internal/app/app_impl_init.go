@@ -28,6 +28,7 @@ func (a *_AppImpl) bindRuntime(b *di.Binder) {
 	b.Bind(T[runtime.App]()).ToInstance(a.info)
 	if a.isInternalApplication() {
 		b.Bind(T[InternalRuntime]()).ToInstance(a)
+		b.BindInstance(a.identity)
 	}
 
 	for flagType, flag := range a.flags {
@@ -66,6 +67,7 @@ func (a *_AppImpl) bindClients(b *di.Binder) {
 			ClientApp:      a.info,
 			Logger:         newAppLogger(a.info.Name(), "rpc", "client"),
 			ServerEndpoint: a.linker.RpcProxyEndpoint(),
+			Transport:      a.rpcTransport,
 		})
 	})
 	for _, factory := range rpcspec.RegisteredClientFactories() {

@@ -42,7 +42,11 @@ func (o *Auther) forwardInvokeRequest(request *http.Request, serviceSkelName str
 		return nil, ex.ServiceUnavailable, serviceLabel + " is unavailable: " + serviceSkelName, false
 	}
 
-	response, err := gwutil.ForwardRequest(request, registration.Endpoint)
+	transport, err := o.identity.BackendTransport(registration.ServerIdentity.SPIFFEPath(), registration.Endpoint)
+	if err != nil {
+		return nil, ex.ServiceUnavailable, serviceLabel + " endpoint is insecure: " + err.Error(), false
+	}
+	response, err := gwutil.ForwardRequestWithTransport(request, registration.Endpoint, transport)
 	if err != nil {
 		code := ex.ServiceUnavailable
 		if errors.Is(err, context.DeadlineExceeded) {

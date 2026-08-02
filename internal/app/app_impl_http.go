@@ -38,8 +38,18 @@ func (a *_AppImpl) startHTTPServer() {
 	a.httpHost = tcpAddr.IP.String()
 	a.httpPort = tcpAddr.Port
 	a.httpServer = &http.Server{
-		Addr:    net.JoinHostPort(a.httpHost, strconv.Itoa(a.httpPort)),
-		Handler: h2c.NewHandler(a.httpHandler(), &http2.Server{}),
+		Addr: net.JoinHostPort(a.httpHost, strconv.Itoa(a.httpPort)),
+	}
+	serve := a.httpServer.Serve
+	if a.shouldProtectHTTPServer() {
+		a.httpServer.Handler = a.httpHandler()
+		a.httpServer.TLSConfig = a.identity.ServerConfig(a.httpServerClients...)
+		vpre.CheckNilError(http2.ConfigureServer(a.httpServer, &http2.Server{}), "%s http/2 server configure failed", serverName)
+		serve = func(listener net.Listener) error {
+			return a.httpServer.ServeTLS(listener, "", "")
+		}
+	} else {
+		a.httpServer.Handler = h2c.NewHandler(a.httpHandler(), &http2.Server{})
 	}
 
 	a.httpWG.Add(1)
@@ -47,7 +57,7 @@ func (a *_AppImpl) startHTTPServer() {
 		defer a.httpWG.Done()
 
 		logger.Info(serverName+" http server started", "addr", a.httpServer.Addr)
-		err := a.httpServer.Serve(listener)
+		err := serve(listener)
 		if errors.Is(err, http.ErrServerClosed) {
 			logger.Debug(serverName+" http server stopped", "addr", a.httpServer.Addr)
 			return
@@ -63,9 +73,9 @@ func (a *_AppImpl) httpHandler() http.Handler {
 }
 
 func (a *_AppImpl) serveHTTP(w http.ResponseWriter, r *http.Request) {
-	// RPC clients and gateways are expected to use h2c prior knowledge. If this log appears,
-	// inspect the client or gateway implementation first, unless the request is an intentional browser access.
-	if r.ProtoMajor == 1 || strings.EqualFold(r.Header.Get("Upgrade"), "h2c") {
+	// Plaintext Rpc clients and gateways are expected to use h2c prior knowledge.
+	// TLS listeners also support HTTP/1.1 for WebSocket upgrades.
+	if !a.shouldProtectHTTPServer() && (r.ProtoMajor == 1 || strings.EqualFold(r.Header.Get("Upgrade"), "h2c")) {
 		logger.Info("application received non-prior-h2c request",
 			"method", r.Method,
 			"path", r.URL.Path,

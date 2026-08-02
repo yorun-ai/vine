@@ -5,15 +5,17 @@ import (
 	"net/url"
 
 	"go.yorun.ai/vine/internal/app"
+	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/util/vnet"
 	"go.yorun.ai/vine/util/vpre"
 )
 
 const (
-	HubDefaultControlListen = "127.0.0.1:7071"
-	HubDefaultRedisListen   = "127.0.0.1:7072"
-	HubDefaultAdminListen   = "127.0.0.1:7075"
-	HubDefaultDashboardURL  = "http://:7099/"
+	HubDefaultControlListen    = "127.0.0.1:7071"
+	HubDefaultRedisListen      = "127.0.0.1:7072"
+	HubDefaultAdminListen      = "127.0.0.1:7075"
+	HubDefaultDashboardURL     = "http://:7099/"
+	HubMTLSDefaultDashboardURL = "https://:7099/"
 
 	SourceSQLite     = "sqlite"
 	SourcePostgreSQL = "postgres"
@@ -21,6 +23,8 @@ const (
 
 type Flag struct {
 	app.FlagModel
+	MTLS mtls.Files
+
 	ControlListen string
 	AdminListen   string
 	RedisListen   string
@@ -33,12 +37,14 @@ type Flag struct {
 	DBSQLiteFile  string
 	DBPostgresURL string
 
-	DashboardURLRaw string
-	DashboardURLSet bool
-	DashboardURL    *vnet.HttpURL
+	DashboardURLRaw         string
+	DashboardURLSet         bool
+	DashboardURLMTLSDefault bool
+	DashboardURL            *vnet.HttpURL
 }
 
 func (f *Flag) Normalize(inproc bool) {
+	vpre.CheckNilError(f.MTLS.Validate(), "hub flag normalize failed")
 	f.normalizeSource()
 	f.normalizeDashboardURL()
 
@@ -114,7 +120,12 @@ func (f *Flag) RedisPort() int {
 func (f *Flag) normalizeDashboardURL() {
 	rawURL := f.DashboardURLRaw
 	if rawURL == "" {
-		rawURL = HubDefaultDashboardURL
+		if f.MTLS.Enabled() {
+			rawURL = HubMTLSDefaultDashboardURL
+			f.DashboardURLMTLSDefault = true
+		} else {
+			rawURL = HubDefaultDashboardURL
+		}
 	} else {
 		f.DashboardURLSet = true
 	}

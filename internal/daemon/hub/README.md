@@ -86,7 +86,7 @@ Hub has four primary responsibilities:
    - `vine.link` can read configuration, Rpc endpoint registrations, and the revision key; it can subscribe only to configuration channels and Rpc registration patterns.
    - `vine.portal` can read Portal rules, sites, certificates, actor/service/resource schemas, Rpc/Web endpoint registrations, and the revision key; it can subscribe only to the corresponding list patterns.
 
-   Link and Portal currently send empty passwords as a temporary migration step. Their usernames select distinct least-privilege roles, but do not yet authenticate the caller. Keep the Redis endpoint on a trusted network until deployment-provided credentials and encrypted transport are available.
+   Link and Portal use empty Redis passwords for in-process mode and separated-deployment debugging. With backend mTLS enabled, the client certificate authenticates the caller and binds its SPIFFE identity to the matching Redis username. Without mTLS, the usernames only select least-privilege roles and do not authenticate the caller, so the Redis endpoint must remain on loopback or a trusted private network protected by a firewall.
 
 4. Separated API listeners
    The Control API listener exposes the `vine.hub.control` domain, containing

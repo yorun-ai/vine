@@ -31,6 +31,7 @@ func (m *ClientMinder) InitComponent(component app.FrameworkComponent) {
 		DisableIdentity: true,
 		Username:        m.option.Username,
 		Password:        m.option.Password,
+		TLSConfig:       m.option.TLSConfig,
 	}
 	if m.option.Username != "" && m.option.Password == "" {
 		// go-redis omits HELLO AUTH when the password is empty. Link and Portal

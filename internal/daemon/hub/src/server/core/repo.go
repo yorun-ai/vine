@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"go.yorun.ai/vine/internal/core/skel"
+	"go.yorun.ai/vine/internal/daemon"
 )
 
 type ServiceHandlerRegistration struct {
@@ -101,19 +102,21 @@ type DomainSchemaView struct {
 }
 
 type RpcServiceRegistration struct {
-	Endpoint      string
-	ServiceName   string
-	AppName       string
-	AppVersion    string
-	AppInstanceId string
+	Endpoint       string
+	ServerIdentity daemon.Identity
+	ServiceName    string
+	AppName        string
+	AppVersion     string
+	AppInstanceId  string
 }
 
 type WebRegistration struct {
-	Endpoint      string
-	WebSkelName   string
-	AppName       string
-	AppVersion    string
-	AppInstanceId string
+	Endpoint       string
+	ServerIdentity daemon.Identity
+	WebSkelName    string
+	AppName        string
+	AppVersion     string
+	AppInstanceId  string
 }
 
 type RegistryRepo interface {

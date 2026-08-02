@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go.yorun.ai/vine/internal/app"
+	"go.yorun.ai/vine/internal/core/mtls"
 	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver/embedded"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
@@ -21,6 +22,7 @@ type Server struct {
 	Context    context.Context         `inject:""`
 	Option     *flag.Flag              `inject:""`
 	InprocFlag *app.InternalInprocFlag `inject:""`
+	Identity   *mtls.Identity          `inject:""`
 
 	store       _RedisStore
 	hubPassword string
@@ -28,7 +30,7 @@ type Server struct {
 
 func (s *Server) DIInit() {
 	s.hubPassword = newHubPassword()
-	s.store = embedded.NewStore(s.Option.RedisListen, s.InprocFlag.Enabled, s.hubPassword)
+	s.store = embedded.NewStore(s.Option.RedisListen, s.InprocFlag.Enabled, s.hubPassword, s.Identity)
 	s.store.Start()
 	s.store.InitRevision()
 	if s.InprocFlag.Enabled {

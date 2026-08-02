@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"strconv"
 	"strings"
@@ -16,6 +17,7 @@ type Option struct {
 	Endpoint   string
 	Username   string
 	Password   string
+	TLSConfig  *tls.Config
 }
 
 type ClientSpec interface {

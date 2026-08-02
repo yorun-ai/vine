@@ -1,11 +1,13 @@
 package embedded
 
 import (
+	"crypto/tls"
 	"errors"
 	"strconv"
 	"strings"
 
 	"github.com/tidwall/redcon"
+	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
 )
 
 func (s *Store) handleCommand(conn redcon.Conn, cmd redcon.Command) {
@@ -74,6 +76,10 @@ func (s *Store) handleAuth(conn redcon.Conn, cmd redcon.Command) {
 		conn.WriteError("WRONGPASS invalid username-password pair or user is disabled.")
 		return
 	}
+	if !s.redisIdentityMatches(conn, string(cmd.Args[1])) {
+		conn.WriteError("WRONGPASS Redis username does not match mTLS client identity.")
+		return
+	}
 	conn.SetContext(&_ConnContext{role: role})
 	conn.WriteString("OK")
 }
@@ -101,8 +107,25 @@ func (s *Store) handleHello(conn redcon.Conn, cmd redcon.Command) {
 		conn.WriteError("WRONGPASS invalid username-password pair or user is disabled.")
 		return
 	}
+	if !s.redisIdentityMatches(conn, string(cmd.Args[3])) {
+		conn.WriteError("WRONGPASS Redis username does not match mTLS client identity.")
+		return
+	}
 	conn.SetContext(&_ConnContext{role: role})
 	s.writeHello(conn)
+}
+
+func (s *Store) redisIdentityMatches(conn redcon.Conn, username string) bool {
+	if s.inproc || !s.identity.Enabled() {
+		return true
+	}
+	tlsConn, ok := conn.NetConn().(*tls.Conn)
+	if !ok {
+		return false
+	}
+	state := tlsConn.ConnectionState()
+	identityPath, ok := hubredis.SPIFFEPathForUsername(username)
+	return ok && s.identity.ConnectionHasIdentity(state, identityPath)
 }
 
 func (s *Store) writeHello(conn redcon.Conn) {

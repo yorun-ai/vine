@@ -15,14 +15,22 @@ import (
 )
 
 func (p *RpcProxy) roundTrip(endpoint string, rpcRequest spec.Request) (spec.Response, ex.Error) {
+	return p.roundTripWithTransport(endpoint, rpcRequest, p.transport)
+}
+
+func (p *RpcProxy) roundTripWithTransport(endpoint string, rpcRequest spec.Request, transport http.RoundTripper) (spec.Response, ex.Error) {
 	if rpcinproc.IsEndpoint(endpoint) {
 		return rpcinproc.RoundTrip(endpoint, rpcRequest)
 	}
-	return rpchttp.RoundTrip(endpoint, rpcRequest)
+	return rpchttp.RoundTripWithTransport(endpoint, rpcRequest, transport)
 }
 
 func (p *RpcProxy) forward(reqCtx context.Context, req *http.Request) (*http.Response, []byte, ex.Error) {
-	resp, err := p.transport.RoundTrip(req)
+	return p.forwardWithTransport(reqCtx, req, p.transport)
+}
+
+func (p *RpcProxy) forwardWithTransport(reqCtx context.Context, req *http.Request, transport http.RoundTripper) (*http.Response, []byte, ex.Error) {
+	resp, err := transport.RoundTrip(req)
 	if err != nil {
 		if errors.Is(reqCtx.Err(), context.DeadlineExceeded) {
 			return nil, nil, ex.New(ex.GatewayTimeout, "proxy request timed out")

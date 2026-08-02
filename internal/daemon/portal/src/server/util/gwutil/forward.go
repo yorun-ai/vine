@@ -25,6 +25,10 @@ var do = func(req *http.Request) (*http.Response, error) {
 // ForwardRequest forwards portal requests to Vine endpoints. HTTP endpoints are
 // expected to support h2c; inproc endpoints are dispatched directly.
 func ForwardRequest(r *http.Request, endpoint string) (*http.Response, error) {
+	return ForwardRequestWithTransport(r, endpoint, nil)
+}
+
+func ForwardRequestWithTransport(r *http.Request, endpoint string, transport http.RoundTripper) (*http.Response, error) {
 	ctx, cancel := httputil.ContextWithForwardTimeout(r)
 
 	var response *http.Response
@@ -36,7 +40,7 @@ func ForwardRequest(r *http.Request, endpoint string) (*http.Response, error) {
 	} else if webinproc.IsEndpoint(endpoint) {
 		response, err = forwardWebInprocRequest(ctx, r, endpoint)
 	} else {
-		response, err = forwardHTTPRequest(ctx, r, endpoint)
+		response, err = forwardHTTPRequest(ctx, r, endpoint, transport)
 	}
 
 	if err != nil {
@@ -48,6 +52,10 @@ func ForwardRequest(r *http.Request, endpoint string) (*http.Response, error) {
 }
 
 func ForwardUpgrade(w http.ResponseWriter, r *http.Request, endpoint string) (bool, error) {
+	return ForwardUpgradeWithTransport(w, r, endpoint, nil)
+}
+
+func ForwardUpgradeWithTransport(w http.ResponseWriter, r *http.Request, endpoint string, transport http.RoundTripper) (bool, error) {
 	if !httputil.IsUpgradeRequest(r) {
 		return false, nil
 	}
@@ -57,7 +65,7 @@ func ForwardUpgrade(w http.ResponseWriter, r *http.Request, endpoint string) (bo
 	if !isHTTPEndpoint(endpoint) {
 		return false, nil
 	}
-	return true, httputil.ForwardUpgrade(w, r, endpoint+r.URL.RequestURI(), nil)
+	return true, httputil.ForwardUpgrade(w, r, endpoint+r.URL.RequestURI(), transport)
 }
 
 func forwardIngressInprocRequest(ctx context.Context, r *http.Request, endpoint string) (*http.Response, error) {
@@ -102,14 +110,19 @@ func forwardWebInprocRequest(ctx context.Context, r *http.Request, endpoint stri
 	return response, nil
 }
 
-func forwardHTTPRequest(ctx context.Context, r *http.Request, endpoint string) (*http.Response, error) {
+func forwardHTTPRequest(ctx context.Context, r *http.Request, endpoint string, transport http.RoundTripper) (*http.Response, error) {
 	request, err := http.NewRequestWithContext(ctx, r.Method, endpoint+r.URL.RequestURI(), r.Body)
 	if err != nil {
 		return nil, err
 	}
 	request.Header = r.Header.Clone()
 
-	response, err := do(request)
+	var response *http.Response
+	if transport == nil {
+		response, err = do(request)
+	} else {
+		response, err = transport.RoundTrip(request)
+	}
 	if err != nil {
 		return nil, normalizeForwardError(ctx, err)
 	}

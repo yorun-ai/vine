@@ -4,8 +4,19 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.yorun.ai/vine/internal/core/mtls"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
 )
+
+func TestNormalizeRequiresHTTPSHubEndpointWithMTLS(t *testing.T) {
+	flags := Flag{
+		HubEndpoint: "http://demo.local:7071",
+		MTLS:        mtls.Files{CAFile: "ca.pem", CertFile: "cert.pem", KeyFile: "key.pem"},
+	}
+	assert.PanicsWithError(t, "hub-endpoint must use https when mTLS is enabled", func() {
+		flags.Normalize(false)
+	})
+}
 
 func TestNormalizeUsesDefaults(t *testing.T) {
 	flags := Flag{HubEndpoint: "http://demo.local:7071"}
