@@ -23,7 +23,7 @@ func (s *InfoServiceServerImpl) GetInfo() skeled.Info {
 		mqEndpoint = ""
 	}
 	return skeled.Info{
-		ApiPort:    s.Flag.APIPort(),
+		ApiPort:    s.Flag.ControlPort(),
 		RedisPort:  s.Flag.RedisPort(),
 		NatsPort:   natsPort,
 		MqEndpoint: mqEndpoint,

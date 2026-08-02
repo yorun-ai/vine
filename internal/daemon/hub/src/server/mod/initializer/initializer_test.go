@@ -233,7 +233,7 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 		},
 		SchemaRepo: &schema.MemorySchemaRepo{},
 		InprocFlag: &appcore.InternalInprocFlag{},
-		Flag:       &hubflag.Flag{APIListen: "127.0.0.1:7071"},
+		Flag:       &hubflag.Flag{ManagementListen: "127.0.0.1:7072"},
 	}
 
 	p.DIInit()
@@ -371,7 +371,7 @@ func TestInitializerDIInitWritesDashboardEntriesAndRulesFromRepo(t *testing.T) {
 		EntryRepo:     entryRepo,
 		SchemaRepo:    &schema.MemorySchemaRepo{},
 		InprocFlag:    &appcore.InternalInprocFlag{},
-		Flag:          &hubflag.Flag{APIListen: "127.0.0.1:7071"},
+		Flag:          &hubflag.Flag{ManagementListen: "127.0.0.1:7072"},
 	}
 
 	p.DIInit()
@@ -424,37 +424,37 @@ func marshalTestConfigValue(name string, value string) string {
 func TestDashboardRpcEndpointUsesInprocWhenEnabled(t *testing.T) {
 	initializer := &Initializer{
 		InprocFlag: &appcore.InternalInprocFlag{Enabled: true},
-		Flag:       &hubflag.Flag{APIListen: "127.0.0.1:7071"},
+		Flag:       &hubflag.Flag{ManagementListen: "127.0.0.1:7072"},
 	}
 
-	assert.Equal(t, "rpc+inproc://vine/hub/rpc/invoke", initializer.dashboardRpcEndpoint())
+	assert.Equal(t, "rpc+inproc://vine/hub/management/rpc/invoke", initializer.dashboardRpcEndpoint())
 }
 
 func TestDashboardWebEndpointUsesInprocWhenEnabled(t *testing.T) {
 	initializer := &Initializer{
 		InprocFlag: &appcore.InternalInprocFlag{Enabled: true},
-		Flag:       &hubflag.Flag{APIListen: "127.0.0.1:7071"},
+		Flag:       &hubflag.Flag{ManagementListen: "127.0.0.1:7072"},
 	}
 
-	assert.Equal(t, "web+inproc://vine/hub/web/access/vine.hub.DashboardWeb", initializer.dashboardWebEndpoint())
+	assert.Equal(t, "web+inproc://vine/hub/management/web/access/vine.hub.DashboardWeb", initializer.dashboardWebEndpoint())
 }
 
 func TestDashboardRpcEndpointUsesHTTPListenOutsideInproc(t *testing.T) {
 	initializer := &Initializer{
 		InprocFlag: &appcore.InternalInprocFlag{},
-		Flag:       &hubflag.Flag{APIListen: "127.0.0.1:7071"},
+		Flag:       &hubflag.Flag{ManagementListen: "127.0.0.1:7072"},
 	}
 
-	assert.Equal(t, "http://127.0.0.1:7071/rpc/invoke", initializer.dashboardRpcEndpoint())
+	assert.Equal(t, "http://127.0.0.1:7072/rpc/invoke", initializer.dashboardRpcEndpoint())
 }
 
 func TestDashboardWebEndpointUsesHTTPListenOutsideInproc(t *testing.T) {
 	initializer := &Initializer{
 		InprocFlag: &appcore.InternalInprocFlag{},
-		Flag:       &hubflag.Flag{APIListen: "127.0.0.1:7071"},
+		Flag:       &hubflag.Flag{ManagementListen: "127.0.0.1:7072"},
 	}
 
-	assert.Equal(t, "http://127.0.0.1:7071/web/access/vine.hub.DashboardWeb", initializer.dashboardWebEndpoint())
+	assert.Equal(t, "http://127.0.0.1:7072/web/access/vine.hub.DashboardWeb", initializer.dashboardWebEndpoint())
 }
 
 func TestInitializerDIInitLoadsRegisteredSchemasIntoMemoryRepoInInprocMode(t *testing.T) {
@@ -477,7 +477,7 @@ func TestInitializerDIInitLoadsRegisteredSchemasIntoMemoryRepoInInprocMode(t *te
 		EntryRepo:     &testPortalSiteRepo{},
 		SchemaRepo:    schemaRepo,
 		InprocFlag:    &appcore.InternalInprocFlag{Enabled: true},
-		Flag:          &hubflag.Flag{APIListen: "127.0.0.1:7071"},
+		Flag:          &hubflag.Flag{ManagementListen: "127.0.0.1:7072"},
 	}
 
 	p.DIInit()
@@ -511,7 +511,7 @@ func TestInitializerDIInitLoadsHubSchemaIntoMemoryRepoInNormalMode(t *testing.T)
 		EntryRepo:     &testPortalSiteRepo{},
 		SchemaRepo:    schemaRepo,
 		InprocFlag:    &appcore.InternalInprocFlag{},
-		Flag:          &hubflag.Flag{APIListen: "127.0.0.1:7071"},
+		Flag:          &hubflag.Flag{ManagementListen: "127.0.0.1:7072"},
 	}
 
 	p.DIInit()

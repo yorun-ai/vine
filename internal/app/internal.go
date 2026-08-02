@@ -1,7 +1,11 @@
 package app
 
 import (
+	"net/http"
+	"reflect"
+
 	"go.yorun.ai/vine/internal/core/link"
+	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
 	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/util/vpre"
 )
@@ -31,6 +35,8 @@ func (a *InternalApplication) internalAttrs() *InternalAttributes {
 	return &a.InternalAttrs
 }
 
+// InternalInproc
+
 type InternalInprocFlag struct {
 	FlagModel
 
@@ -51,4 +57,26 @@ func (f _Flags) InprocFlag() *InternalInprocFlag {
 	flag, ok := f[T[*InternalInprocFlag]()].(*InternalInprocFlag)
 	vpre.Check(ok, "inproc flag missing")
 	return flag
+}
+
+// InternalRuntime
+
+// InternalRuntime exposes runtime-only capabilities to modules belonging to an
+// internal Vine application. It is not bound for ordinary applications.
+type InternalRuntime interface {
+	// AdditionalServicer creates Rpc transport handlers that reuse the owning
+	// application's runtime dependency graph and serve only the requested
+	// handler types. It must only be called after module construction, such as
+	// from BeforeAppStart; DIInit runs before all modules have been assembled.
+	AdditionalServicer(handlerTypes ...reflect.Type) (http.Handler, rpcspec.RpcHandler)
+}
+
+func (a *_AppImpl) AdditionalServicer(handlerTypes ...reflect.Type) (http.Handler, rpcspec.RpcHandler) {
+	servicer := &_Servicer{
+		appInfo:      a.info,
+		handlerTypes: append([]reflect.Type(nil), handlerTypes...),
+		bindAppDeps:  a.bindAppDeps,
+	}
+	servicer.init()
+	return servicer.httpHandler(), servicer.rpcHandler()
 }

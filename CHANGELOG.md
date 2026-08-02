@@ -8,6 +8,14 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Changed
+
+- Hub now isolates the Link/Portal Control API from Dashboard management Rpc
+  and Web handlers on separate listeners; `--control-listen` defaults to the
+  existing `127.0.0.1:7071`, while `--management-listen` defaults to
+  `127.0.0.1:7072`; the former Hub `--api-listen` flag and
+  `VINE_API_LISTEN` environment variable have been removed
+
 ## [0.11.0] - 2026-08-02
 
 ### Added

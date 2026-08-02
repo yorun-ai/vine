@@ -25,7 +25,7 @@ func TestHubInfoServiceReturnsPortsFromFlag(t *testing.T) {
 	service := &InfoServiceServerImpl{
 		InprocFlag: &app.InternalInprocFlag{},
 		Flag: &flag.Flag{
-			APIListen:         ":7071",
+			ControlListen:     ":7071",
 			RedisListen:       ":7073",
 			MQExternalNatsURL: "nats://127.0.0.1:4222",
 		},
@@ -46,7 +46,7 @@ func TestHubInfoServiceReturnsNATSServerPortWhenEnabled(t *testing.T) {
 	service := &InfoServiceServerImpl{
 		InprocFlag: &app.InternalInprocFlag{},
 		Flag: &flag.Flag{
-			APIListen:      ":7071",
+			ControlListen:  ":7071",
 			RedisListen:    ":7073",
 			MQEmbeddedNats: true,
 		},

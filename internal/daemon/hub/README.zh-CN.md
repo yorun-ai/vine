@@ -23,7 +23,7 @@ internal/daemon/hub/
         ├── core/         领域层，定义状态对象、Core 与 Repo 接口
         ├── flag/         Hub 启动参数与默认值规范化
         ├── impl/         接口实现层，承载 Hub 对外暴露的服务实现
-        ├── mod/          运行时模块层，如 initializer、seeder、syncer
+        ├── mod/          运行时模块层，如 controlapi、initializer、seeder、syncer
         └── repo/         基础设施适配层，实现 core 中定义的 Repo 接口
 ```
 
@@ -51,7 +51,8 @@ Hub 的层次职责必须保持清晰：
 - `core` 定义领域状态与 Repo 接口，不依赖具体数据库或 Redis 实现。
 - `repo` 实现持久化和 Redis 同步，不承载对外服务编排。
 - `impl` 实现 Hub 对外服务，通过 `core` 和 `repo` 完成业务操作。
-- `mod` 承载 initializer、seeder、syncer、scheduler、sweeper 等运行时流程。
+- `mod` 承载 Control API listener、initializer、seeder、syncer、scheduler、
+  sweeper 等运行时流程。
 - `comp` 提供 Redis、NATS 等共享运行时组件。
 - `app` 只负责装配 component、module 和 servicer。
 
@@ -64,7 +65,7 @@ Hub 的层次职责必须保持清晰：
 
 ## 运行机制
 
-Hub 的职责可以拆成三条主线：
+Hub 的职责可以拆成四条主线：
 
 1. 配置中心
    Hub 从数据库读取配置，并通过 `AppConfigRepo` 对外提供配置读取能力。启动时 `initializer` 会把配置装入 Redis，供 Link 侧读取和订阅。
@@ -74,6 +75,11 @@ Hub 的职责可以拆成三条主线：
 
 3. Redis 分发层
    `redisserver` 维护一份内存 Redis 数据。配置、应用状态、Rpc/Web endpoint 和 schema 都会同步写入其中，Link 与 Portal 通过 Redis 读取快照并监听变更事件。
+
+4. 分离的 API listener
+   Control API listener 只向 Link 和 Portal 暴露 `InfoService` 与
+   `RegistryService`。Hub 主 listener 负责 Dashboard 管理 Rpc 服务和
+   `DashboardWeb`。二者共享同一个 Hub 进程和状态，但组件流量无法直接进入管理面。
 
 ## 配置与注册来源
 
@@ -98,7 +104,9 @@ bash script/gen-skel.sh hub
 
 Hub 支持作为单进程内组件运行：
 
-- Hub Rpc 服务不再暴露为 HTTP，而是注册到 `inproc` transport。
+- Hub Control API 注册在 `rpc+inproc://vine/hub`；Dashboard 管理 Rpc 和 Web
+  handler 分别注册在 `rpc+inproc://vine/hub/management` 与
+  `web+inproc://vine/hub/management` 下，不再通过 HTTP 暴露。
 - `redisserver` 不再启动对外 TCP 端口，只保留进程内 Redis server。
 - `vined` 中会保存这份进程内 Redis server 指针，供 inproc 模式下的 `RedisClient` 直接使用。
 

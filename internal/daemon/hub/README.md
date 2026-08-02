@@ -23,7 +23,7 @@ internal/daemon/hub/
         ├── core/         Domain state and Core/Repo interfaces
         ├── flag/         Hub flags and default normalization
         ├── impl/         Implementations of externally exposed Hub services
-        ├── mod/          Runtime modules such as initializer, seeder, and syncer
+        ├── mod/          Runtime modules such as controlapi, initializer, seeder, and syncer
         └── repo/         Infrastructure adapters implementing Core Repo interfaces
 ```
 
@@ -51,7 +51,8 @@ Keep Hub's layer responsibilities distinct:
 - `core` defines domain state and Repo interfaces without depending on concrete database or Redis implementations.
 - `repo` implements persistence and Redis synchronization without owning external service orchestration.
 - `impl` implements Hub services through `core` and `repo`.
-- `mod` contains runtime flows such as initializer, seeder, syncer, scheduler, and sweeper.
+- `mod` contains runtime flows such as the Control API listener, initializer,
+  seeder, syncer, scheduler, and sweeper.
 - `comp` provides shared runtime components such as Redis and NATS.
 - `app` only assembles components, modules, and servicers.
 
@@ -64,7 +65,7 @@ Additional constraints for Hub changes:
 
 ## Runtime Model
 
-Hub has three primary responsibilities:
+Hub has four primary responsibilities:
 
 1. Configuration center
    Hub reads configuration from the database and exposes it through `AppConfigRepo`. During startup, `initializer` loads configuration into Redis for Link to read and subscribe to.
@@ -82,6 +83,12 @@ Hub has three primary responsibilities:
    - `vine.portal` can read Portal rules, sites, certificates, actor/service/resource schemas, Rpc/Web endpoint registrations, and the revision key; it can subscribe only to the corresponding list patterns.
 
    Link and Portal currently send empty passwords as a temporary migration step. Their usernames select distinct least-privilege roles, but do not yet authenticate the caller. Keep the Redis endpoint on a trusted network until deployment-provided credentials and encrypted transport are available.
+
+4. Separated API listeners
+   The Control API listener exposes only `InfoService` and `RegistryService` to
+   Link and Portal. The main Hub listener exposes Dashboard management Rpc
+   services and `DashboardWeb`. This keeps component traffic separate from the
+   privileged management surface without splitting Hub's process or state.
 
 ## Configuration and Registration Sources
 
@@ -106,7 +113,10 @@ Do not edit `api/skeled` or `src/dashboard/src/skeled` directly. Modify contract
 
 Hub can run as a component in a single-process runtime:
 
-- Hub Rpc services register with the `inproc` transport instead of being exposed over HTTP.
+- The Hub Control API registers at `rpc+inproc://vine/hub`, while Dashboard
+  management Rpc and Web handlers register below
+  `rpc+inproc://vine/hub/management` and
+  `web+inproc://vine/hub/management` instead of being exposed over HTTP.
 - `redisserver` does not open an external TCP port and retains only the in-process Redis server.
 - `vined` keeps a pointer to that in-process Redis server so an inproc `RedisClient` can access it directly.
 

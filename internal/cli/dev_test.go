@@ -171,10 +171,17 @@ func TestDevRuntimeAcceptsNetworkAppRegistration(t *testing.T) {
 	})
 
 	hubRPCClient := newDevTestRPCClient(
-		inproc.Endpoint(hubapp.HubInprocHostPath, coreapp.PathRpcInvoke),
+		inproc.Endpoint(hubapp.HubManagementInprocHostPath, coreapp.PathRpcInvoke),
 		externalApp,
 	)
 	skeletonClient := hubskeled.NewSkeletonServiceClientER(hubRPCClient)
+	controlRPCClient := newDevTestRPCClient(
+		inproc.Endpoint(hubapp.HubControlInprocHostPath, coreapp.PathRpcInvoke),
+		externalApp,
+	)
+	if _, err := hubskeled.NewSkeletonServiceClientER(controlRPCClient).ListData(); err == nil {
+		t.Fatal("expected Hub Control API to reject management service")
+	}
 	items, listErr := skeletonClient.ListData()
 	if listErr != nil {
 		t.Fatalf("list Hub data schemas: %v", listErr)

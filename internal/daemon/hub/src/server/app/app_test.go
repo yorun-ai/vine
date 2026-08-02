@@ -17,6 +17,8 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/impl"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/controlapi"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/initializer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/scheduler"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/seeder"
@@ -49,6 +51,14 @@ func collectModuleTypes(spec *HubApp) []reflect.Type {
 		moduleTypes = append(moduleTypes, moduleType)
 	})
 	return moduleTypes
+}
+
+func collectServicerHandlerTypes(spec *HubApp) []reflect.Type {
+	var handlerTypes []reflect.Type
+	spec.ServicerInitHandlers(func(handlerType reflect.Type) {
+		handlerTypes = append(handlerTypes, handlerType)
+	})
+	return handlerTypes
 }
 
 func initTestConfigDatabase(component *repodb.HubDatabase) *rdb.DatabaseMinder {
@@ -85,9 +95,10 @@ func TestHubAppDIInitNormalizesFlagAndSetsRunFlag(t *testing.T) {
 
 	spec.DIInit()
 
-	assert.Equal(t, flag.HubDefaultAPIListen, spec.AppFlag.ListenAddr)
+	assert.Equal(t, flag.HubDefaultManagementListen, spec.AppFlag.ListenAddr)
 	assert.Equal(t, flag.SourceSQLite, spec.Flag.SourceType)
-	assert.Equal(t, flag.HubDefaultAPIListen, spec.Flag.APIListen)
+	assert.Equal(t, flag.HubDefaultControlListen, spec.Flag.ControlListen)
+	assert.Equal(t, flag.HubDefaultManagementListen, spec.Flag.ManagementListen)
 	assert.Equal(t, flag.HubDefaultRedisListen, spec.Flag.RedisListen)
 	assert.Equal(t, "/tmp/hub.sqlite", spec.Flag.DBSQLiteFile)
 	assert.Equal(t, "nats://127.0.0.1:4222", spec.Flag.MQExternalNatsURL)
@@ -115,7 +126,7 @@ func TestHubAppDIInitKeepsPGConnUrl(t *testing.T) {
 	assert.Equal(t, "postgres://demo:demo@127.0.0.1:5432/hub", spec.Flag.DBPostgresURL)
 	assert.Equal(t, "nats://127.0.0.1:4222", spec.Flag.MQExternalNatsURL)
 	assert.False(t, spec.Flag.MQEmbeddedNats)
-	assert.Equal(t, flag.HubDefaultAPIListen, spec.AppFlag.ListenAddr)
+	assert.Equal(t, flag.HubDefaultManagementListen, spec.AppFlag.ListenAddr)
 }
 
 func TestHubAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
@@ -137,10 +148,20 @@ func TestHubAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 
 	assert.Equal(t, "vine.hub", spec.Name())
 	assert.Equal(t, "vine.hub", spec.InternalAttrs.Info.Name())
+	assert.Equal(t, "vine/hub/management", spec.InternalAttrs.InprocHostPath)
 	assert.Empty(t, spec.AppFlag.ListenAddr)
-	assert.Empty(t, spec.Flag.APIListen)
+	assert.Empty(t, spec.Flag.ControlListen)
+	assert.Empty(t, spec.Flag.ManagementListen)
 	assert.Empty(t, spec.Flag.RedisListen)
 	assert.True(t, spec.Flag.MQEmbeddedNats)
+}
+
+func TestHubAppMainServicerExcludesControlAPIHandlers(t *testing.T) {
+	handlerTypes := collectServicerHandlerTypes(new(HubApp))
+
+	assert.NotContains(t, handlerTypes, internalapp.T[*impl.InfoServiceServerImpl]())
+	assert.NotContains(t, handlerTypes, internalapp.T[*impl.RegistryServiceServerImpl]())
+	assert.Contains(t, handlerTypes, internalapp.T[*impl.AppConfigServiceServerImpl]())
 }
 
 func TestHubAppDIInitKeepsEnableNatsOutsideInproc(t *testing.T) {
@@ -175,6 +196,7 @@ func TestHubAppModuleTypesIncludesRuntimeModulesInInprocMode(t *testing.T) {
 		internalapp.T[*initializer.Initializer](),
 		internalapp.T[*scheduler.Scheduler](),
 		internalapp.T[*sweeper.Sweeper](),
+		internalapp.T[*controlapi.Listener](),
 	}, collectModuleTypes(spec))
 }
 
@@ -190,6 +212,7 @@ func TestHubAppModuleTypesIncludesRuntimeModulesInNormalMode(t *testing.T) {
 		internalapp.T[*initializer.Initializer](),
 		internalapp.T[*scheduler.Scheduler](),
 		internalapp.T[*sweeper.Sweeper](),
+		internalapp.T[*controlapi.Listener](),
 	}, collectModuleTypes(spec))
 }
 
@@ -205,6 +228,7 @@ func TestHubAppModuleTypesIncludesRuntimeModulesWhenEnableNats(t *testing.T) {
 		internalapp.T[*initializer.Initializer](),
 		internalapp.T[*scheduler.Scheduler](),
 		internalapp.T[*sweeper.Sweeper](),
+		internalapp.T[*controlapi.Listener](),
 	}, collectModuleTypes(spec))
 }
 
@@ -340,11 +364,11 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForInitializerWithSQLite(t *test
 	spec := &HubApp{
 		InprocFlag: &internalapp.InternalInprocFlag{},
 		Flag: &flag.Flag{
-			SourceType:   flag.SourceSQLite,
-			APIListen:    flag.HubDefaultAPIListen,
-			DashboardURL: testDashboardURL(),
-			DBSQLiteFile: sharedTestSQLitePath(t),
-			RedisListen:  flag.HubDefaultRedisListen,
+			SourceType:       flag.SourceSQLite,
+			ManagementListen: flag.HubDefaultManagementListen,
+			DashboardURL:     testDashboardURL(),
+			DBSQLiteFile:     sharedTestSQLitePath(t),
+			RedisListen:      flag.HubDefaultRedisListen,
 		},
 	}
 
