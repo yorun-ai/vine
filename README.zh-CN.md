@@ -50,7 +50,7 @@ flowchart LR
 mkdir vine-hello
 cd vine-hello
 go mod init example.com/vine-hello
-go get go.yorun.ai/vine@v0.9.0
+go get go.yorun.ai/vine@v0.11.0
 ```
 
 创建 `main.go`：
@@ -106,6 +106,7 @@ go run .
 - [运行模式](https://vine.yorun.ai/zh-CN/docs/deployment-modes)
 - [框架包索引](https://vine.yorun.ai/zh-CN/docs/core-packages)
 - [Go API 参考](https://pkg.go.dev/go.yorun.ai/vine)
+- [更新日志](./CHANGELOG.md)
 - [English documentation](https://vine.yorun.ai/docs/)
 
 文档站源码在 [`yorun-ai/vine-site`](https://github.com/yorun-ai/vine-site)

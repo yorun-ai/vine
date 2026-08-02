@@ -50,7 +50,7 @@ Prerequisite: Go 1.26.5 or later.
 mkdir vine-hello
 cd vine-hello
 go mod init example.com/vine-hello
-go get go.yorun.ai/vine@v0.9.0
+go get go.yorun.ai/vine@v0.11.0
 ```
 
 Create `main.go`:
@@ -106,6 +106,7 @@ When `hello from Vine` appears in the log, the complete standalone runtime and b
 - [Deployment modes](https://vine.yorun.ai/docs/deployment-modes)
 - [Framework package index](https://vine.yorun.ai/docs/core-packages)
 - [Go API reference](https://pkg.go.dev/go.yorun.ai/vine)
+- [Changelog](./CHANGELOG.md)
 - [Documentation (Chinese)](https://vine.yorun.ai/zh-CN/docs/)
 
 The documentation site source is maintained in
