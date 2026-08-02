@@ -28,7 +28,7 @@ func TestClientInitOptionUsesHubInfoRedisEndpoint(t *testing.T) {
 		Flag: flags,
 		InfoServiceClient: &_TestInfoServiceClient{
 			info: hubskeled.Info{
-				RedisPort: 7073,
+				RedisPort: 7072,
 			},
 		},
 	}
@@ -43,7 +43,7 @@ func TestClientInitOptionUsesHubInfoRedisEndpoint(t *testing.T) {
 	client.InitOption(option)
 
 	assert.False(t, option.InprocMode)
-	assert.Equal(t, "127.0.0.1:7073", option.Endpoint)
+	assert.Equal(t, "127.0.0.1:7072", option.Endpoint)
 	assert.Equal(t, hubapiredis.LinkUsername, option.Username)
 	assert.Equal(t, hubapiredis.LinkPassword, option.Password)
 }

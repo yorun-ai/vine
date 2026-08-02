@@ -26,7 +26,7 @@ func TestHubInfoServiceReturnsPortsFromFlag(t *testing.T) {
 		InprocFlag: &app.InternalInprocFlag{},
 		Flag: &flag.Flag{
 			ControlListen:     ":7071",
-			RedisListen:       ":7073",
+			RedisListen:       ":7072",
 			MQExternalNatsURL: "nats://127.0.0.1:4222",
 		},
 		NATSServer: &natsserver.NATSServer{},
@@ -36,7 +36,7 @@ func TestHubInfoServiceReturnsPortsFromFlag(t *testing.T) {
 
 	assert.Equal(t, skeled.Info{
 		ApiPort:    7071,
-		RedisPort:  7073,
+		RedisPort:  7072,
 		NatsPort:   0,
 		MqEndpoint: "nats://127.0.0.1:4222",
 	}, info)
@@ -47,7 +47,7 @@ func TestHubInfoServiceReturnsNATSServerPortWhenEnabled(t *testing.T) {
 		InprocFlag: &app.InternalInprocFlag{},
 		Flag: &flag.Flag{
 			ControlListen:  ":7071",
-			RedisListen:    ":7073",
+			RedisListen:    ":7072",
 			MQEmbeddedNats: true,
 		},
 		NATSServer: &natsserver.NATSServer{
@@ -62,7 +62,7 @@ func TestHubInfoServiceReturnsNATSServerPortWhenEnabled(t *testing.T) {
 	info := service.GetInfo()
 
 	assert.Equal(t, 7071, info.ApiPort)
-	assert.Equal(t, 7073, info.RedisPort)
+	assert.Equal(t, 7072, info.RedisPort)
 	assert.Equal(t, service.NATSServer.Port(), info.NatsPort)
 	assert.Empty(t, info.MqEndpoint)
 }

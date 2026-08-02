@@ -11,8 +11,8 @@ import (
 
 const (
 	HubDefaultControlListen = "127.0.0.1:7071"
-	HubDefaultAdminListen   = "127.0.0.1:7072"
-	HubDefaultRedisListen   = "127.0.0.1:7073"
+	HubDefaultRedisListen   = "127.0.0.1:7072"
+	HubDefaultAdminListen   = "127.0.0.1:7075"
 	HubDefaultDashboardURL  = "http://:7099/"
 
 	SourceSQLite     = "sqlite"

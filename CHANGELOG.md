@@ -13,7 +13,8 @@ are not part of the public compatibility commitment.
 - Hub now isolates the Link/Portal Control API from Dashboard admin Rpc
   and Web handlers on separate listeners; `--control-listen` defaults to the
   existing `127.0.0.1:7071`, while `--admin-listen` defaults to
-  `127.0.0.1:7072`; the former Hub `--api-listen` flag and
+  `127.0.0.1:7075`; Hub Redis remains on `127.0.0.1:7072`; the former Hub
+  `--api-listen` flag and
   `VINE_API_LISTEN` environment variable have been removed
 - Hub Skel contracts are split into the `vine.hub.control` domain for
   Link/Portal traffic and the `vine.hub.admin` domain for Dashboard

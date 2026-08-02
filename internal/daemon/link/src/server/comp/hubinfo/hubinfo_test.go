@@ -22,7 +22,7 @@ func (c *_TestInfoServiceClient) GetInfo(_ ...rpcclient.InvokeOption) hubskeled.
 func TestHubInfoDIInitLoadsHubInfo(t *testing.T) {
 	client := &_TestInfoServiceClient{
 		info: hubskeled.Info{
-			RedisPort: 7073,
+			RedisPort: 7072,
 			NatsPort:  4222,
 		},
 	}
@@ -37,7 +37,7 @@ func TestHubInfoDIInitLoadsHubInfo(t *testing.T) {
 
 	component.DIInit()
 	assert.Equal(t, 1, client.getInfoCall)
-	assert.Equal(t, "127.0.0.1:7073", component.RedisEndpoint())
+	assert.Equal(t, "127.0.0.1:7072", component.RedisEndpoint())
 	assert.Equal(t, "nats://127.0.0.1:4222", component.MQEndpoint())
 }
 
