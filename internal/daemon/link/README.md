@@ -43,6 +43,8 @@ Link has four primary responsibilities:
 2. Configuration and discovery
    `config.Reader` loads configuration from Hub Redis and continuously watches for changes. `rpcproxy` and `webproxy` maintain Rpc and Web discovery state respectively.
 
+   The Hub Redis client authenticates as the `vine.link` user. Its ACL is limited to configuration, Rpc endpoint discovery, the shared revision key, and their required subscriptions. The Link password is temporarily empty, so this role separation is not yet a substitute for network isolation.
+
 3. Asynchronous events and tasks
    `event` and `task` subscribe to the listener and runner capabilities declared by local instances in `minder`, then deliver messages received through NATS.
 

@@ -44,6 +44,8 @@ func TestClientInitOptionUsesHubInfoRedisEndpoint(t *testing.T) {
 
 	assert.False(t, option.InprocMode)
 	assert.Equal(t, "127.0.0.1:7073", option.Endpoint)
+	assert.Equal(t, hubapiredis.LinkUsername, option.Username)
+	assert.Equal(t, hubapiredis.LinkPassword, option.Password)
 }
 
 func TestClientInitOptionSkipsHubInfoInInprocMode(t *testing.T) {
@@ -62,4 +64,6 @@ func TestClientInitOptionSkipsHubInfoInInprocMode(t *testing.T) {
 
 	assert.True(t, option.InprocMode)
 	assert.Empty(t, option.Endpoint)
+	assert.Equal(t, hubapiredis.LinkUsername, option.Username)
+	assert.Equal(t, hubapiredis.LinkPassword, option.Password)
 }

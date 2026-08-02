@@ -10,6 +10,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	internalapp "go.yorun.ai/vine/internal/app"
 	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
@@ -383,6 +384,11 @@ func TestRegistryRepoInprocSaveWebRegistrationNotifiesSubscribers(t *testing.T) 
 		Dialer: func(ctx context.Context, network string, addr string) (net.Conn, error) {
 			return redisServer.DialInproc(ctx)
 		},
+		Username: hubredis.PortalUsername,
+		Password: hubredis.PortalPassword,
+		OnConnect: func(ctx context.Context, conn *redis.Conn) error {
+			return conn.AuthACL(ctx, hubredis.PortalUsername, hubredis.PortalPassword).Err()
+		},
 		Protocol:        2,
 		DisableIdentity: true,
 	})
@@ -390,7 +396,7 @@ func TestRegistryRepoInprocSaveWebRegistrationNotifiesSubscribers(t *testing.T) 
 	pubsub := client.PSubscribe(t.Context(), pattern)
 	defer pubsub.Close()
 	read, err := pubsub.Receive(t.Context())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, &redis.Subscription{Kind: "psubscribe", Channel: pattern, Count: 1}, read)
 
 	registration := &core.WebRegistration{
@@ -403,7 +409,7 @@ func TestRegistryRepoInprocSaveWebRegistrationNotifiesSubscribers(t *testing.T) 
 	repo.SaveWebRegistration(registration)
 
 	message, err := pubsub.ReceiveMessage(t.Context())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	var event hubredis.Event
 	assert.NoError(t, json.Unmarshal([]byte(message.Payload), &event))
 	assert.Equal(t, hubredis.EventKindUpsert, event.Kind)

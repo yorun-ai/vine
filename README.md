@@ -120,15 +120,21 @@ pnpm dev
 
 ## Security Status
 
-> **TODO:** Add authentication and encrypted communication between Hub, Link,
-> Portal, and application processes.
+> **TODO:** Complete credential management and encrypted communication between
+> Hub, Link, Portal, and application processes.
 
-The embedded Hub Redis server currently allows password-free, read-only client
-connections. It distributes runtime configuration, including Portal TLS private
-key material. Until component authentication and transport encryption are
-implemented, bind Vine's internal endpoints only to loopback or trusted private
-networks, restrict them with a firewall, and never expose them to an untrusted
-network.
+The embedded Hub Redis server rejects anonymous data access and uses separate
+`vine.hub`, `vine.link`, and `vine.portal` users. The process-local `vine.hub`
+user has a random password and full access; the `vine.link` and `vine.portal` users have distinct
+least-privilege key and subscription ACLs.
+
+The Link and Portal passwords are temporarily empty, so the usernames currently
+select an ACL role but do not prove the caller's identity. A client that can
+reach the Redis endpoint can still impersonate either role, and the Portal role
+can read Portal TLS private key material. Until deployment-managed secrets and
+transport encryption are implemented, bind Vine's internal endpoints only to
+loopback or trusted private networks, restrict them with a firewall, and never
+expose them to an untrusted network.
 
 ## Versioning and Compatibility
 

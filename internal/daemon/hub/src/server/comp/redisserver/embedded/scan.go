@@ -19,6 +19,7 @@ type _ScanOption struct {
 
 type _ScanCursor struct {
 	keys     []string
+	match    string
 	index    int
 	expireAt time.Time
 }
@@ -49,7 +50,7 @@ func (s *Store) scanKeys(option _ScanOption) ([]string, uint64, error) {
 		return keys, 0, nil
 	}
 
-	cursor := s.newScanCursorLocked(keys[option.count:], now)
+	cursor := s.newScanCursorLocked(keys[option.count:], option.match, now)
 	return keys[:option.count], cursor, nil
 }
 
@@ -83,7 +84,7 @@ func (s *Store) scanAllKeysLocked(option _ScanOption, now time.Time) ([]string, 
 
 func (s *Store) scanCursorKeysLocked(option _ScanOption, now time.Time) ([]string, uint64, error) {
 	cursor, ok := s.scans[option.cursor]
-	if !ok {
+	if !ok || cursor.match != option.match {
 		return nil, 0, errors.New("invalid scan cursor")
 	}
 
@@ -104,7 +105,7 @@ func (s *Store) scanCursorKeysLocked(option _ScanOption, now time.Time) ([]strin
 	return keys, option.cursor, nil
 }
 
-func (s *Store) newScanCursorLocked(keys []string, now time.Time) uint64 {
+func (s *Store) newScanCursorLocked(keys []string, match string, now time.Time) uint64 {
 	s.nextScan++
 	if s.nextScan == 0 {
 		s.nextScan++
@@ -112,6 +113,7 @@ func (s *Store) newScanCursorLocked(keys []string, now time.Time) uint64 {
 	cursor := s.nextScan
 	s.scans[cursor] = _ScanCursor{
 		keys:     vslice.Clone(keys),
+		match:    match,
 		expireAt: now.Add(scanCursorTTL),
 	}
 	return cursor

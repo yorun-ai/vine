@@ -14,7 +14,7 @@ func (s *Store) handleCommand(conn redcon.Conn, cmd redcon.Command) {
 		return
 	}
 	command := strings.ToUpper(string(cmd.Args[0]))
-	if command != "HELLO" && !canRunCommand(connContext(conn).role, command) {
+	if command != "HELLO" && command != "AUTH" && !canRunCommand(connContext(conn).role, command, cmd.Args) {
 		if connContext(conn).role == userRoleNone {
 			conn.WriteError("NOAUTH Authentication required.")
 			return
@@ -25,6 +25,8 @@ func (s *Store) handleCommand(conn redcon.Conn, cmd redcon.Command) {
 	switch command {
 	case "HELLO":
 		s.handleHello(conn, cmd)
+	case "AUTH":
+		s.handleAuth(conn, cmd)
 	case "PING":
 		s.handlePing(conn, cmd)
 	case "GET":
@@ -60,6 +62,20 @@ func (s *Store) handleCommand(conn redcon.Conn, cmd redcon.Command) {
 	default:
 		conn.WriteError("ERR unknown command '" + string(cmd.Args[0]) + "'")
 	}
+}
+
+func (s *Store) handleAuth(conn redcon.Conn, cmd redcon.Command) {
+	if len(cmd.Args) != 3 {
+		conn.WriteError("ERR wrong number of arguments for 'auth' command")
+		return
+	}
+	role, ok := s.authenticate(string(cmd.Args[1]), string(cmd.Args[2]))
+	if !ok {
+		conn.WriteError("WRONGPASS invalid username-password pair or user is disabled.")
+		return
+	}
+	conn.SetContext(&_ConnContext{role: role})
+	conn.WriteString("OK")
 }
 
 func (s *Store) handleHello(conn redcon.Conn, cmd redcon.Command) {

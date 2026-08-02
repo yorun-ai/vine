@@ -16,8 +16,8 @@ func NewServerForTest() *Server {
 		Option:     &flag.Flag{},
 		InprocFlag: &app.InternalInprocFlag{},
 	}
-	server.serverPassword = newServerPassword()
-	server.store = embedded.NewStore(server.Option.RedisListen, server.InprocFlag.Enabled, server.serverPassword)
+	server.hubPassword = newHubPassword()
+	server.store = embedded.NewStore(server.Option.RedisListen, server.InprocFlag.Enabled, server.hubPassword)
 	server.store.InitRevision()
 	return server
 }

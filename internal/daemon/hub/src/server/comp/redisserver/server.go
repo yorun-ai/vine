@@ -22,13 +22,13 @@ type Server struct {
 	Option     *flag.Flag              `inject:""`
 	InprocFlag *app.InternalInprocFlag `inject:""`
 
-	store          _RedisStore
-	serverPassword string
+	store       _RedisStore
+	hubPassword string
 }
 
 func (s *Server) DIInit() {
-	s.serverPassword = newServerPassword()
-	s.store = embedded.NewStore(s.Option.RedisListen, s.InprocFlag.Enabled, s.serverPassword)
+	s.hubPassword = newHubPassword()
+	s.store = embedded.NewStore(s.Option.RedisListen, s.InprocFlag.Enabled, s.hubPassword)
 	s.store.Start()
 	s.store.InitRevision()
 	if s.InprocFlag.Enabled {
@@ -41,10 +41,14 @@ func (s *Server) AfterAppStop() {
 		hubredis.SetInprocServer(nil)
 	}
 	s.store.Stop()
-	s.serverPassword = ""
+	s.hubPassword = ""
 }
 
-func newServerPassword() string {
+// newHubPassword creates a process-local credential for the privileged Hub
+// Redis user. Generating it at startup is temporary: once Redis credentials are
+// supplied by deployment configuration, Hub should use that configured secret
+// so credentials can be rotated and managed consistently across processes.
+func newHubPassword() string {
 	random := make([]byte, 32)
 	_, err := rand.Read(random)
 	vpre.CheckNilError(err, "generate redis server password failed")
