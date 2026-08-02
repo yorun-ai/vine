@@ -142,14 +142,14 @@ serve an HTTPS entry without a configured public certificate by generating a
 short-lived, process-local self-signed Web certificate for the requested SNI
 host. A configured Portal certificate always takes precedence; the temporary
 certificate only encrypts bootstrap traffic and is not browser-trusted.
-Application-to-Link traffic remains h2c because that connection is expected to
-stay local.
+Application-to-Link traffic remains h2c because Link is the application's
+sidecar: both must run on the same host and within the same deployment trust
+boundary. Placing an application and its Link on different hosts is not a
+supported Vine topology.
 
 Certificate issuance, rotation, and revocation remain deployment concerns.
 External PostgreSQL and NATS connections use those services' own security
-configuration. If application-to-Link traffic crosses a host or trust boundary,
-protect that path at the deployment network layer until Vine supports a
-non-local secure application transport.
+configuration.
 
 The embedded Hub Redis server rejects anonymous data access and uses separate
 `vine.hub`, `vine.link`, and `vine.portal` users. The process-local `vine.hub`

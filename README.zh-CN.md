@@ -136,12 +136,12 @@ ingress 上强制使用 mTLS。Link 与 Portal 使用同一份组件证书作为
 mTLS 客户端身份绑定。Portal 的公网 listener 仍由既有的 Portal certificate vault
 管理。启用 mTLS 后，如果 HTTPS entry 没有配置公网证书，Portal 可以按请求的 SNI
 host 生成进程内短期自签名 Web 证书。显式配置的 Portal 证书始终优先；临时证书仅
-为启动阶段提供加密，不受浏览器信任。App 到 Link 的通信通常位于本机，因此仍使用
-h2c。
+为启动阶段提供加密，不受浏览器信任。Link 是 App 的 sidecar，两者必须位于同一
+主机和部署信任边界内，因此 App 到 Link 的通信仍使用 h2c。将 App 与其 Link
+部署到不同主机不属于 Vine 支持的拓扑。
 
 证书签发、轮换与吊销仍由部署系统负责。外部 PostgreSQL 与 NATS 连接使用各自服务
-的安全配置。如果 App 到 Link 的通信跨越主机或信任边界，在 Vine 支持非本机安全
-App transport 前，应在部署网络层保护这条链路。
+的安全配置。
 
 Hub 内嵌 Redis 拒绝匿名数据访问，并分别定义 `vine.hub`、`vine.link` 与
 `vine.portal` 用户。进程内使用的 `vine.hub` 用户拥有随机密码与完整权限；

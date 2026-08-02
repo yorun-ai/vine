@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-Link is the application-side access layer. It registers local applications with Hub, synchronizes configuration and service-discovery state, and provides a unified Rpc forwarding entry point between local and remote applications.
+Link is the application-side access layer. It registers local applications with Hub, synchronizes configuration and service-discovery state, and provides a unified Rpc forwarding entry point between local and remote applications. Link is deployed as the application's sidecar: it may share the application process or run as another process or container on the same host, but both remain in one deployment trust boundary. Different-host placement is unsupported.
 
 ## Directory Structure
 
