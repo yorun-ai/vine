@@ -2,6 +2,7 @@ package natsserver
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"go.yorun.ai/vine/internal/app"
@@ -51,6 +52,11 @@ func TestNATSServerDIInitSkipsWhenNotInproc(t *testing.T) {
 }
 
 func TestNATSServerAfterAppStopRemovesStoreDir(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Setenv("TMPDIR", tempDir)
+	t.Setenv("TMP", tempDir)
+	t.Setenv("TEMP", tempDir)
+
 	server := &NATSServer{
 		InprocFlag: &app.InternalInprocFlag{},
 		Flag:       &flag.Flag{MQEmbeddedNats: true},
@@ -60,6 +66,9 @@ func TestNATSServerAfterAppStopRemovesStoreDir(t *testing.T) {
 	storeDir := server.storeDir
 	if _, err := os.Stat(storeDir); err != nil {
 		t.Fatalf("expected nats store dir before stop: %v", err)
+	}
+	if filepath.Dir(storeDir) != tempDir {
+		t.Fatalf("expected nats store dir under system temp dir %q, got %q", tempDir, storeDir)
 	}
 
 	server.AfterAppStop()
