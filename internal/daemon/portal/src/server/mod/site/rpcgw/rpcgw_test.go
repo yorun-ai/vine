@@ -16,6 +16,7 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/core/meta"
+	"go.yorun.ai/vine/internal/core/mtls"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
@@ -24,8 +25,34 @@ import (
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/computil"
+	"go.yorun.ai/vine/internal/testutil/mtlstest"
 	"go.yorun.ai/vine/util/vcode"
 )
+
+func TestRpcGatewayRejectsPlaintextRegistrationWithMTLS(t *testing.T) {
+	target := newTestRpcGateway(map[string]string{
+		redised.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+			Endpoint:       "http://link.local/rpc/proxy/in/instance-1",
+			ServerIdentity: mtls.LinkIdentity,
+			ServiceName:    "demo.UserService",
+			AppName:        "demo.app",
+			AppInstanceId:  "instance-1",
+		}),
+	})
+	target.access.Identity = mtlstest.NewCA(t).Identity(t, mtls.PortalIdentity)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "http://api.example.com/invoke/demo.UserService/Get", strings.NewReader("request"))
+	setTestAuthHeaders(request)
+
+	target.Serve(testContextWithEntryOrigin(recorder, request, "api.example.com"))
+
+	if recorder.Code != http.StatusServiceUnavailable {
+		t.Fatalf("unexpected status code: %d body=%s", recorder.Code, recorder.Body.String())
+	}
+	if !strings.Contains(recorder.Body.String(), "endpoint is insecure") {
+		t.Fatalf("unexpected response body: %s", recorder.Body.String())
+	}
+}
 
 func TestRpcGatewayForwardsConfiguredServiceToRegistrationEndpoint(t *testing.T) {
 	ingressEndpoint := "link+inproc://vine/portal-rpcgw-test"

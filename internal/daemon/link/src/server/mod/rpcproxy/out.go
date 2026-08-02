@@ -28,18 +28,22 @@ func (p *RpcProxy) handleOut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	targetEndpoint, exErr := p.resolveOutboundEndpoint(serviceName, clientApp)
+	target, exErr := p.resolveOutboundTarget(serviceName, clientApp)
 	if exErr != nil {
 		p.writeGatewayError(w, r, exErr)
 		return
 	}
 
-	targetURL := targetEndpoint + r.URL.Path
-	p.forwardOutbound(w, r, targetURL)
+	targetURL := target.endpoint + r.URL.Path
+	p.forwardOutboundWithTransport(w, r, targetURL, target.transport)
 }
 
 func (p *RpcProxy) forwardOutbound(w http.ResponseWriter, r *http.Request, targetURL string) {
-	resp, body, exErr := p.forwardOutboundRequest(r, targetURL)
+	p.forwardOutboundWithTransport(w, r, targetURL, p.transport)
+}
+
+func (p *RpcProxy) forwardOutboundWithTransport(w http.ResponseWriter, r *http.Request, targetURL string, transport http.RoundTripper) {
+	resp, body, exErr := p.forwardOutboundRequestWithTransport(r, targetURL, transport)
 	if exErr != nil {
 		p.writeGatewayError(w, r, exErr)
 		return
@@ -53,18 +57,22 @@ func (p *RpcProxy) forwardOutbound(w http.ResponseWriter, r *http.Request, targe
 }
 
 func (p *RpcProxy) forwardOutboundRequest(r *http.Request, targetURL string) (*http.Response, []byte, ex.Error) {
+	return p.forwardOutboundRequestWithTransport(r, targetURL, p.transport)
+}
+
+func (p *RpcProxy) forwardOutboundRequestWithTransport(r *http.Request, targetURL string, transport http.RoundTripper) (*http.Response, []byte, ex.Error) {
 	req, err := http.NewRequestWithContext(r.Context(), r.Method, targetURL, r.Body)
 	if err != nil {
 		return nil, nil, ex.New(ex.Internal, "failed to create proxy request", ex.WithDetail(err.Error()))
 	}
 
 	req.Header = r.Header.Clone()
-	return p.forward(r.Context(), req)
+	return p.forwardWithTransport(r.Context(), req, transport)
 }
 
 func (p *RpcProxy) serveRpcOut(rpcRequest spec.Request) spec.Response {
 	serviceName := rpcRequest.MethodInfo().Service().SkelName()
-	targetEndpoint, exErr := p.resolveOutboundEndpoint(serviceName, rpcRequest.Client())
+	target, exErr := p.resolveOutboundTarget(serviceName, rpcRequest.Client())
 	if exErr != nil {
 		return &spec.ResponseImpl{
 			ServerValue: p.App,
@@ -73,7 +81,7 @@ func (p *RpcProxy) serveRpcOut(rpcRequest spec.Request) spec.Response {
 		}
 	}
 
-	rpcResponse, exErr := p.roundTrip(targetEndpoint, rpcRequest)
+	rpcResponse, exErr := p.roundTripWithTransport(target.endpoint, rpcRequest, target.transport)
 	if exErr != nil {
 		return &spec.ResponseImpl{
 			ServerValue: p.App,
@@ -86,30 +94,39 @@ func (p *RpcProxy) serveRpcOut(rpcRequest spec.Request) spec.Response {
 }
 
 func (p *RpcProxy) resolveOutboundEndpoint(serviceName string, clientApp meta.App) (string, ex.Error) {
+	target, exErr := p.resolveOutboundTarget(serviceName, clientApp)
+	return target.endpoint, exErr
+}
+
+func (p *RpcProxy) resolveOutboundTarget(serviceName string, clientApp meta.App) (_OutboundTarget, ex.Error) {
 	appState, ok := p.getAppStateByInstanceID(clientApp.InstanceId())
 	if !ok {
-		return "", ex.New(ex.ServiceUnavailable, "rpc proxy outbound source unavailable")
+		return _OutboundTarget{}, ex.New(ex.ServiceUnavailable, "rpc proxy outbound source unavailable")
 	}
 
 	if !meta.IsSame(appState.appInfo, clientApp) {
-		return "", ex.New(ex.ClientForbidden, "client app mismatch")
+		return _OutboundTarget{}, ex.New(ex.ClientForbidden, "client app mismatch")
 	}
 
 	p.retainService(serviceName, clientApp.InstanceId())
 	registration, ok := p.nextServiceEndpoint(serviceName)
 	if !ok {
-		return "", ex.New(ex.ServiceUnavailable, "rpc proxy outbound target unavailable")
+		return _OutboundTarget{}, ex.New(ex.ServiceUnavailable, "rpc proxy outbound target unavailable")
 	}
 
 	if targetAppState, ok := p.getAppStateByInstanceID(registration.AppInstanceId); ok {
 		if !targetAppState.hasService(serviceName) {
-			return "", ex.New(ex.ServiceUnavailable, "rpc proxy outbound local target unavailable")
+			return _OutboundTarget{}, ex.New(ex.ServiceUnavailable, "rpc proxy outbound local target unavailable")
 		}
 		if targetAppState.draining && targetAppState.appInfo.InstanceId() != clientApp.InstanceId() {
-			return "", ex.New(ex.ServiceUnavailable, "rpc proxy outbound local target unavailable")
+			return _OutboundTarget{}, ex.New(ex.ServiceUnavailable, "rpc proxy outbound local target unavailable")
 		}
-		return targetAppState.serviceEndpoint, nil
+		return _OutboundTarget{endpoint: targetAppState.serviceEndpoint, transport: p.transport}, nil
 	}
 
-	return registration.Endpoint, nil
+	transport, err := p.Identity.BackendTransport(registration.ServerIdentity, registration.Endpoint)
+	if err != nil {
+		return _OutboundTarget{}, ex.New(ex.ServiceUnavailable, "rpc proxy outbound target is insecure", ex.WithDetail(err.Error()))
+	}
+	return _OutboundTarget{endpoint: registration.Endpoint, transport: transport}, nil
 }

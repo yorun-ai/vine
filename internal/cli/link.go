@@ -43,11 +43,11 @@ func newLinkCommand() *ucli.Command {
 }
 
 func newLinkServeFlags() []ucli.Flag {
-	return []ucli.Flag{
+	return append([]ucli.Flag{
 		&ucli.StringFlag{Name: FlagLinkAPIListen, Sources: ucli.EnvVars(EnvLinkAPIListen), Value: linkflag.LinkDefaultAPIListen, Usage: "link API listen address"},
 		&ucli.StringFlag{Name: FlagLinkIngressListen, Sources: ucli.EnvVars(EnvLinkIngressListen), Value: linkflag.LinkDefaultIngressListen, Usage: "link ingress listen address"},
 		&ucli.StringFlag{Name: FlagLinkHubEndpoint, Sources: ucli.EnvVars(EnvLinkHubEndpoint), Usage: "hub API endpoint"},
-	}
+	}, mtlsFlags()...)
 }
 
 func newLinkServeCommand() *ucli.Command {
@@ -64,6 +64,7 @@ func newLinkServeCommand() *ucli.Command {
 				APIListen:     cmd.String(FlagLinkAPIListen),
 				IngressListen: cmd.String(FlagLinkIngressListen),
 				HubEndpoint:   cmd.String(FlagLinkHubEndpoint),
+				MTLS:          mtlsFiles(cmd),
 			}
 			startLinkApp(flags)
 			return nil

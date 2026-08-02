@@ -1,5 +1,7 @@
 package core
 
+import "go.yorun.ai/vine/internal/core/mtls"
+
 type RegistryCore struct {
 	RegistryRepo RegistryRepo `inject:""`
 	SchemaRepo   SchemaRepo   `inject:""`
@@ -18,20 +20,22 @@ func (m *RegistryCore) Register(reg AppRegistration) {
 	})
 	for _, serviceHandler := range reg.ServiceHandlers {
 		m.RegistryRepo.SaveRpcServiceRegistration(&RpcServiceRegistration{
-			Endpoint:      serviceHandler.Endpoint,
-			ServiceName:   serviceHandler.ServiceSkelName,
-			AppName:       reg.Name,
-			AppVersion:    reg.Version,
-			AppInstanceId: reg.InstanceId,
+			Endpoint:       serviceHandler.Endpoint,
+			ServerIdentity: mtls.LinkIdentity,
+			ServiceName:    serviceHandler.ServiceSkelName,
+			AppName:        reg.Name,
+			AppVersion:     reg.Version,
+			AppInstanceId:  reg.InstanceId,
 		})
 	}
 	for _, webHandler := range reg.WebHandlers {
 		m.RegistryRepo.SaveWebRegistration(&WebRegistration{
-			Endpoint:      webHandler.Endpoint,
-			WebSkelName:   webHandler.WebSkelName,
-			AppName:       reg.Name,
-			AppVersion:    reg.Version,
-			AppInstanceId: reg.InstanceId,
+			Endpoint:       webHandler.Endpoint,
+			ServerIdentity: mtls.LinkIdentity,
+			WebSkelName:    webHandler.WebSkelName,
+			AppName:        reg.Name,
+			AppVersion:     reg.Version,
+			AppInstanceId:  reg.InstanceId,
 		})
 	}
 	m.SchemaRepo.SaveDomainSchemasJSON(reg.Name, reg.InstanceId, reg.DomainSchemas)

@@ -83,7 +83,7 @@ func (g *WebGateway) Serve(ctx *spec.Context) {
 		return
 	}
 
-	g.forward(ctx, request, registration.Endpoint, trace.Id())
+	g.forward(ctx, request, registration, trace.Id())
 }
 
 func ensureWebTrace(request *http.Request) (meta.Trace, error) {

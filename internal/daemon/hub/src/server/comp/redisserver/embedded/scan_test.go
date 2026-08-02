@@ -9,7 +9,7 @@ import (
 )
 
 func TestScanCursorReturnsNextBatchAndCleansWhenDone(t *testing.T) {
-	store := NewStore("", false, "test-server-password")
+	store := NewStore("", false, "test-server-password", nil)
 
 	store.Set("config:feature-a", "a")
 	store.Set("config:feature-b", "b")
@@ -32,7 +32,7 @@ func TestScanCursorExpiresAndIsCleaned(t *testing.T) {
 	SetTimeNowForTest(t, func() time.Time {
 		return now
 	})
-	store := NewStore("", false, "test-server-password")
+	store := NewStore("", false, "test-server-password", nil)
 
 	store.Set("config:feature-a", "a")
 	store.Set("config:feature-b", "b")
@@ -48,7 +48,7 @@ func TestScanCursorExpiresAndIsCleaned(t *testing.T) {
 }
 
 func TestScanCursorRejectsDifferentMatchPattern(t *testing.T) {
-	store := NewStore("", false, "test-server-password")
+	store := NewStore("", false, "test-server-password", nil)
 
 	store.Set("portal:cert:production", "secret")
 	store.Set("rpc:demo.Service:endpoint:demo.app:instance-1", "endpoint-1")

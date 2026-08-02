@@ -241,40 +241,44 @@ func toCoreAppStatus(status *_AppStatus) *core.AppStatus {
 
 func toRpcServiceRegistration(registration *core.RpcServiceRegistration) *redised.RpcServiceRegistration {
 	return &redised.RpcServiceRegistration{
-		Endpoint:      registration.Endpoint,
-		ServiceName:   registration.ServiceName,
-		AppName:       registration.AppName,
-		AppVersion:    registration.AppVersion,
-		AppInstanceId: registration.AppInstanceId,
+		Endpoint:       registration.Endpoint,
+		ServerIdentity: registration.ServerIdentity,
+		ServiceName:    registration.ServiceName,
+		AppName:        registration.AppName,
+		AppVersion:     registration.AppVersion,
+		AppInstanceId:  registration.AppInstanceId,
 	}
 }
 
 func toCoreRpcServiceRegistration(registration *redised.RpcServiceRegistration) *core.RpcServiceRegistration {
 	return &core.RpcServiceRegistration{
-		Endpoint:      registration.Endpoint,
-		ServiceName:   registration.ServiceName,
-		AppName:       registration.AppName,
-		AppVersion:    registration.AppVersion,
-		AppInstanceId: registration.AppInstanceId,
+		Endpoint:       registration.Endpoint,
+		ServerIdentity: registration.ServerIdentity,
+		ServiceName:    registration.ServiceName,
+		AppName:        registration.AppName,
+		AppVersion:     registration.AppVersion,
+		AppInstanceId:  registration.AppInstanceId,
 	}
 }
 
 func toWebRegistration(registration *core.WebRegistration) *redised.WebRegistration {
 	return &redised.WebRegistration{
-		Endpoint:      registration.Endpoint,
-		WebSkelName:   registration.WebSkelName,
-		AppName:       registration.AppName,
-		AppVersion:    registration.AppVersion,
-		AppInstanceId: registration.AppInstanceId,
+		Endpoint:       registration.Endpoint,
+		ServerIdentity: registration.ServerIdentity,
+		WebSkelName:    registration.WebSkelName,
+		AppName:        registration.AppName,
+		AppVersion:     registration.AppVersion,
+		AppInstanceId:  registration.AppInstanceId,
 	}
 }
 
 func toCoreWebRegistration(registration *redised.WebRegistration) *core.WebRegistration {
 	return &core.WebRegistration{
-		Endpoint:      registration.Endpoint,
-		WebSkelName:   registration.WebSkelName,
-		AppName:       registration.AppName,
-		AppVersion:    registration.AppVersion,
-		AppInstanceId: registration.AppInstanceId,
+		Endpoint:       registration.Endpoint,
+		ServerIdentity: registration.ServerIdentity,
+		WebSkelName:    registration.WebSkelName,
+		AppName:        registration.AppName,
+		AppVersion:     registration.AppVersion,
+		AppInstanceId:  registration.AppInstanceId,
 	}
 }

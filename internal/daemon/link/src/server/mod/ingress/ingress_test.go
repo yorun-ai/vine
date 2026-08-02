@@ -15,6 +15,7 @@ import (
 	"go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
+	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/rpc/client"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
@@ -25,6 +26,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/rpcproxy"
+	"go.yorun.ai/vine/internal/testutil/mtlstest"
 )
 
 const (
@@ -54,6 +56,40 @@ func useTestIngressHost(t *testing.T, host string) {
 	t.Cleanup(func() {
 		detectHostIP = prev
 	})
+}
+
+func TestIngressUsesMutualTLS(t *testing.T) {
+	ca := mtlstest.NewCA(t)
+	linkIdentity := ca.Identity(t, mtls.LinkIdentity)
+	portalIdentity := ca.Identity(t, mtls.PortalIdentity)
+	useTestIngressHost(t, "127.0.0.1")
+
+	ing := &Ingress{
+		Context:  context.Background(),
+		Flag:     &flag.Flag{IngressListen: "127.0.0.1:0"},
+		Identity: linkIdentity,
+		routes: []_IngressRoute{{
+			prefix: "/ready",
+			handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusNoContent)
+			}),
+		}},
+	}
+	ing.startHTTPServer()
+	t.Cleanup(ing.stopHTTPServer)
+
+	if got := ing.Endpoint(); len(got) < len("https://") || got[:len("https://")] != "https://" {
+		t.Fatalf("expected https ingress endpoint, got %q", got)
+	}
+	client := &http.Client{Transport: portalIdentity.HTTPTransport(mtls.LinkIdentity)}
+	response, err := client.Get(ing.Endpoint() + "/ready")
+	if err != nil {
+		t.Fatalf("mTLS ingress request failed: %v", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusNoContent {
+		t.Fatalf("unexpected status: %d", response.StatusCode)
+	}
 }
 
 func TestIngressServesRpcProxyIn(t *testing.T) {

@@ -1,17 +1,20 @@
 package embedded
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"net"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/tidwall/redcon"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/logger"
+	"go.yorun.ai/vine/internal/core/mtls"
 	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
 	"go.yorun.ai/vine/util/vpre"
 )
@@ -32,6 +35,7 @@ type Store struct {
 	endpoint string
 
 	hubPassword string
+	identity    *mtls.Identity
 }
 
 type _Item struct {
@@ -39,8 +43,11 @@ type _Item struct {
 	expireAt time.Time
 }
 
-func NewStore(listen string, inproc bool, hubPassword string) *Store {
+func NewStore(listen string, inproc bool, hubPassword string, identity *mtls.Identity) *Store {
 	vpre.CheckNotEmpty(hubPassword, "redis hub password is empty")
+	if identity == nil {
+		identity = mtls.DisabledIdentity()
+	}
 	return &Store{
 		listen:      listen,
 		inproc:      inproc,
@@ -48,6 +55,7 @@ func NewStore(listen string, inproc bool, hubPassword string) *Store {
 		zsets:       map[string]map[string]float64{},
 		scans:       map[uint64]_ScanCursor{},
 		hubPassword: hubPassword,
+		identity:    identity,
 	}
 }
 
@@ -64,14 +72,22 @@ func (s *Store) Start() {
 
 	listener, err := net.Listen("tcp", s.listen)
 	vpre.CheckNilError(err, "start redis listener failed")
+	readyTLSConfig := (*tls.Config)(nil)
+	if s.identity.Enabled() {
+		listener = tls.NewListener(listener, s.identity.ServerConfig(mtls.HubIdentity, mtls.LinkIdentity, mtls.PortalIdentity))
+		readyTLSConfig = s.identity.ClientConfig(mtls.HubIdentity)
+	}
 	s.listener = listener
 	s.server = redcon.NewServer(listener.Addr().String(), s.handleCommand, nil, nil)
 	go s.serve(listener)
-	if err := waitRedisReady(listener.Addr().String(), 2*time.Second); err != nil {
+	if err := waitRedisReady(listener.Addr().String(), 2*time.Second, readyTLSConfig); err != nil {
 		s.Stop()
 		vpre.CheckNilError(err, "redis server start failed")
 	}
 	s.endpoint = redisEndpoint(listener.Addr().String())
+	if s.identity.Enabled() {
+		s.endpoint = "rediss" + strings.TrimPrefix(s.endpoint, "redis")
+	}
 	embeddedRedisServerLogger.Info("vine.hub embedded redis server started", "addr", listener.Addr().String(), "endpoint", s.endpoint)
 }
 

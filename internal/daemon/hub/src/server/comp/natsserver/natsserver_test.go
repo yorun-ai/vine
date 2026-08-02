@@ -4,10 +4,15 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
+	gonats "github.com/nats-io/nats.go"
+	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/app"
+	"go.yorun.ai/vine/internal/core/mtls"
 	hubnats "go.yorun.ai/vine/internal/daemon/hub/api/nats"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
+	"go.yorun.ai/vine/internal/testutil/mtlstest"
 )
 
 func runTestNATSServerDIInit(t *testing.T, server *NATSServer) {
@@ -101,4 +106,48 @@ func TestNATSServerDIInitPublishesMQEndpointWhenEnableNats(t *testing.T) {
 	if hubnats.InprocServer() != nil {
 		t.Fatalf("unexpected inproc nats server")
 	}
+}
+
+func TestNATSServerUsesMutualTLS(t *testing.T) {
+	ca := mtlstest.NewCA(t)
+	hubIdentity := ca.Identity(t, mtls.HubIdentity)
+	linkIdentity := ca.Identity(t, mtls.LinkIdentity)
+	portalIdentity := ca.Identity(t, mtls.PortalIdentity)
+	server := &NATSServer{
+		InprocFlag: &app.InternalInprocFlag{},
+		Flag:       &flag.Flag{MQEmbeddedNats: true},
+		Identity:   hubIdentity,
+	}
+
+	prev := detectHostForMQEndpoint
+	detectHostForMQEndpoint = func() string { return "127.0.0.1" }
+	t.Cleanup(func() {
+		detectHostForMQEndpoint = prev
+		server.AfterAppStop()
+	})
+	runTestNATSServerDIInit(t, server)
+
+	hubConn, err := server.ConnectAsHub()
+	require.NoError(t, err)
+	hubConn.Close()
+
+	linkConn, err := gonats.Connect(
+		server.Endpoint(),
+		gonats.Secure(linkIdentity.ClientConfig(mtls.HubIdentity)),
+		gonats.TLSHandshakeFirst(),
+		gonats.Timeout(time.Second),
+	)
+	require.NoError(t, err)
+	linkConn.Close()
+
+	portalConn, err := gonats.Connect(
+		server.Endpoint(),
+		gonats.Secure(portalIdentity.ClientConfig(mtls.HubIdentity)),
+		gonats.TLSHandshakeFirst(),
+		gonats.Timeout(time.Second),
+	)
+	if portalConn != nil {
+		portalConn.Close()
+	}
+	require.Error(t, err)
 }

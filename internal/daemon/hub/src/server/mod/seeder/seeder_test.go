@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/logger"
+	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
@@ -115,6 +116,20 @@ func newTestSeederFlag(seedYAMLPath string) *flag.Flag {
 	return flags
 }
 
+func newTestSeederMTLSFlag() *flag.Flag {
+	flags := &flag.Flag{
+		MTLS: mtls.Files{
+			CAFile:   "ca.pem",
+			CertFile: "cert.pem",
+			KeyFile:  "key.pem",
+		},
+		SourceType:   flag.SourceSQLite,
+		DBSQLiteFile: "/tmp/hub.sqlite",
+	}
+	flags.Normalize(true)
+	return flags
+}
+
 func TestSeederMarksSeededWhenSeedYAMLPathIsEmpty(t *testing.T) {
 	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
 
@@ -143,6 +158,121 @@ func TestSeederMarksSeededWhenSeedYAMLPathIsEmpty(t *testing.T) {
 	entry, ok := entryRepo.GetEntryByName(DashboardRpcCoreEntry.Name)
 	require.True(t, ok)
 	assert.Equal(t, DashboardRpcCoreEntry.ActorSkelName, entry.ActorSkelName)
+}
+
+func TestSeederUsesHTTPSForDefaultDashboardWithMTLS(t *testing.T) {
+	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
+	seeder := &Seeder{
+		Flag:          newTestSeederMTLSFlag(),
+		AppConfigRepo: configRepo,
+		MetadataRepo:  metadataRepo,
+		Logger:        logger.New("vine:test"),
+		RuleRepo:      ruleRepo,
+		CertRepo:      certRepo,
+		EntryRepo:     entryRepo,
+	}
+
+	seeder.DIInit()
+
+	apiRule, ok := ruleRepo.GetRuleByName(dashboardApiRuleName)
+	require.True(t, ok)
+	assert.Equal(t, "https", apiRule.Scheme)
+	assert.Equal(t, 7099, apiRule.Port)
+	webRule, ok := ruleRepo.GetRuleByName(dashboardWebRuleName)
+	require.True(t, ok)
+	assert.Equal(t, "https", webRule.Scheme)
+	assert.Equal(t, 7099, webRule.Port)
+}
+
+func TestSeederMigratesLegacyDashboardDefaultsToHTTPSWithMTLS(t *testing.T) {
+	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
+	ruleRepo.SaveRule(&core.PortalRule{
+		Name:       dashboardApiRuleName,
+		Scheme:     "http",
+		Port:       7099,
+		PathPrefix: "/api",
+		TargetType: "SITE",
+		SiteName:   DashboardRpcCoreEntry.Name,
+		BuiltIn:    true,
+	})
+	ruleRepo.SaveRule(&core.PortalRule{
+		Name:       dashboardWebRuleName,
+		Scheme:     "http",
+		Port:       7099,
+		PathPrefix: "/",
+		TargetType: "SITE",
+		SiteName:   DashboardWebCoreEntry.Name,
+		BuiltIn:    true,
+	})
+	metadataRepo.MarkSeeded()
+	seeder := &Seeder{
+		Flag:          newTestSeederMTLSFlag(),
+		AppConfigRepo: configRepo,
+		MetadataRepo:  metadataRepo,
+		Logger:        logger.New("vine:test"),
+		RuleRepo:      ruleRepo,
+		CertRepo:      certRepo,
+		EntryRepo:     entryRepo,
+	}
+
+	seeder.DIInit()
+
+	apiRule, ok := ruleRepo.GetRuleByName(dashboardApiRuleName)
+	require.True(t, ok)
+	assert.Equal(t, "https", apiRule.Scheme)
+	webRule, ok := ruleRepo.GetRuleByName(dashboardWebRuleName)
+	require.True(t, ok)
+	assert.Equal(t, "https", webRule.Scheme)
+}
+
+func TestSeederPreservesCustomDashboardAccessWithMTLSDefault(t *testing.T) {
+	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
+	for _, rule := range []*core.PortalRule{
+		{
+			Name:       dashboardApiRuleName,
+			Scheme:     "https",
+			Host:       "hub.example.com",
+			Port:       8443,
+			PathPrefix: "/custom-api",
+			TargetType: "SITE",
+			SiteName:   DashboardRpcCoreEntry.Name,
+			BuiltIn:    true,
+		},
+		{
+			Name:       dashboardWebRuleName,
+			Scheme:     "https",
+			Host:       "hub.example.com",
+			Port:       8443,
+			PathPrefix: "/custom",
+			TargetType: "SITE",
+			SiteName:   DashboardWebCoreEntry.Name,
+			BuiltIn:    true,
+		},
+	} {
+		ruleRepo.SaveRule(rule)
+	}
+	metadataRepo.MarkSeeded()
+	seeder := &Seeder{
+		Flag:          newTestSeederMTLSFlag(),
+		AppConfigRepo: configRepo,
+		MetadataRepo:  metadataRepo,
+		Logger:        logger.New("vine:test"),
+		RuleRepo:      ruleRepo,
+		CertRepo:      certRepo,
+		EntryRepo:     entryRepo,
+	}
+
+	seeder.DIInit()
+
+	apiRule, ok := ruleRepo.GetRuleByName(dashboardApiRuleName)
+	require.True(t, ok)
+	assert.Equal(t, "https", apiRule.Scheme)
+	assert.Equal(t, "hub.example.com", apiRule.Host)
+	assert.Equal(t, 8443, apiRule.Port)
+	assert.Equal(t, "/custom-api", apiRule.PathPrefix)
+	webRule, ok := ruleRepo.GetRuleByName(dashboardWebRuleName)
+	require.True(t, ok)
+	assert.Equal(t, "/custom", webRule.PathPrefix)
 }
 
 func TestSeederSkipsEmptySeedYAMLPathWhenApplied(t *testing.T) {

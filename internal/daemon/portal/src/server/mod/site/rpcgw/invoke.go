@@ -10,6 +10,7 @@ import (
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
+	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/computil"
@@ -90,12 +91,19 @@ func (g *RpcGateway) serveInvoke(ctx *spec.Context) {
 		Request:        invokeRequest,
 		ResponseWriter: ctx.ResponseWriter,
 		RemoteAddr:     ctx.RemoteAddr,
-	}, registration.Endpoint)
+	}, registration)
 }
 
-func (g *RpcGateway) forwardInvoke(ctx *spec.Context, endpoint string) {
+func (g *RpcGateway) forwardInvoke(ctx *spec.Context, registration *redised.RpcServiceRegistration) {
+	endpoint := registration.Endpoint
 	acceptEncoding, forwardRequest := prepareForwardRequest(ctx.Request)
-	response, err := gwutil.ForwardRequest(forwardRequest, endpoint)
+	transport, err := g.access.Identity.BackendTransport(registration.ServerIdentity, endpoint)
+	if err != nil {
+		rpcGatewayLogger.Warn("vine.portal rpcgw endpoint is insecure", "endpoint", endpoint, "path", ctx.Request.URL.Path, "error", err)
+		g.writeError(ctx.ResponseWriter, ctx.Request, ex.ServiceUnavailable, "rpcgw endpoint is insecure: "+err.Error())
+		return
+	}
+	response, err := gwutil.ForwardRequestWithTransport(forwardRequest, endpoint, transport)
 	if err != nil {
 		statusCode := ex.ServiceUnavailable
 		if errors.Is(err, context.DeadlineExceeded) {

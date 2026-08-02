@@ -5,6 +5,7 @@ import (
 	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/internal/core/link"
 	"go.yorun.ai/vine/internal/core/meta"
+	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/runtime"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
@@ -40,13 +41,17 @@ func (a *HubApp) Name() string {
 
 func (a *HubApp) DIInit() {
 	a.Flag.Normalize(a.InprocFlag.Enabled)
+	identity := mtls.MustLoad(mtls.HubIdentity, a.Flag.MTLS)
 
 	appInfo := meta.MustNewAppWithRandomId(a.Name(), runtime.Application().Version())
 	a.InternalAttrs = app.InternalAttributes{
-		Info:           appInfo,
-		Linker:         link.NewInternalLinker(appInfo),
-		DisableConsole: true,
-		InprocHostPath: hubapp.HubAdminInprocHostPath,
+		Info:              appInfo,
+		Linker:            link.NewInternalLinker(appInfo),
+		BackendIdentity:   identity,
+		DisableConsole:    true,
+		ProtectHTTPServer: true,
+		HTTPServerClients: []string{mtls.PortalIdentity},
+		InprocHostPath:    hubapp.HubAdminInprocHostPath,
 	}
 
 	a.AppFlag.ListenAddr = a.Flag.AdminListen

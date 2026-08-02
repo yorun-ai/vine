@@ -25,7 +25,11 @@ func RoundTripWithPrepared(endpoint string, rpcRequest spec.Request, prepared fu
 // transport. It allows proxy layers to use the same transport configuration
 // for both decoded HTTP requests and Rpc requests received through inproc.
 func RoundTripWithTransport(endpoint string, rpcRequest spec.Request, transport http.RoundTripper) (spec.Response, ex.Error) {
-	return roundTrip(endpoint, rpcRequest, nil, transport.RoundTrip)
+	return RoundTripWithTransportAndPrepared(endpoint, rpcRequest, transport, nil)
+}
+
+func RoundTripWithTransportAndPrepared(endpoint string, rpcRequest spec.Request, transport http.RoundTripper, prepared func()) (spec.Response, ex.Error) {
+	return roundTrip(endpoint, rpcRequest, prepared, transport.RoundTrip)
 }
 
 func roundTrip(

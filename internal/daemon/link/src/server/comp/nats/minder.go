@@ -51,14 +51,17 @@ func (m *_ClientMinder) InitComponent(component app.FrameworkComponent) {
 	}
 
 	vpre.CheckNotEmpty(m.option.Endpoint, "nats endpoint is empty")
-	conn, err := newNATSConnect(
-		m.option.Endpoint,
+	connectOptions := []gonats.Option{
 		gonats.MaxReconnects(maxReconnects),
 		gonats.ReconnectWait(reconnectWait),
 		gonats.ReconnectHandler(func(conn *gonats.Conn) {
 			clientOps.onReconnect(m.Context, conn)
 		}),
-	)
+	}
+	if m.option.TLSConfig != nil {
+		connectOptions = append(connectOptions, gonats.Secure(m.option.TLSConfig), gonats.TLSHandshakeFirst())
+	}
+	conn, err := newNATSConnect(m.option.Endpoint, connectOptions...)
 	vpre.CheckNilError(err, "connect nats failed")
 	m.conn = conn
 	clientOps.setConn(m.conn)

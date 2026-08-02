@@ -33,7 +33,15 @@ func (c *HubInfo) RedisEndpoint() string {
 
 func (c *HubInfo) MQEndpoint() string {
 	if c.info.NatsPort != 0 {
-		return fmt.Sprintf("nats://%s:%d", c.host, c.info.NatsPort)
+		scheme := "nats"
+		if c.Flag.MTLS.Enabled() {
+			scheme = "tls"
+		}
+		return fmt.Sprintf("%s://%s:%d", scheme, c.host, c.info.NatsPort)
 	}
 	return c.info.MqEndpoint
+}
+
+func (c *HubInfo) UsesEmbeddedNATS() bool {
+	return c.info.NatsPort != 0
 }

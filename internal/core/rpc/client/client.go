@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"go.yorun.ai/vine/internal/core/ex"
@@ -18,6 +19,7 @@ type Option struct {
 	Logger              *logger.Logger
 	ReturnIfSystemError bool
 	ServerEndpoint      string
+	Transport           http.RoundTripper
 }
 
 type Client struct {
@@ -26,6 +28,7 @@ type Client struct {
 	logger              *logger.Logger
 	returnIfSystemError bool
 	serverEndpoint      string
+	transport           http.RoundTripper
 }
 
 func New(option Option) *Client {
@@ -36,6 +39,7 @@ func New(option Option) *Client {
 		clientApp:           option.ClientApp,
 		logger:              option.Logger,
 		serverEndpoint:      option.ServerEndpoint,
+		transport:           option.Transport,
 		returnIfSystemError: option.ReturnIfSystemError,
 	}
 }

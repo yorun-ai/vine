@@ -13,11 +13,13 @@ import (
 
 	"go.yorun.ai/vine/internal/app"
 	coreapp "go.yorun.ai/vine/internal/core/app"
+	"go.yorun.ai/vine/internal/core/mtls"
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
 	rpcinproc "go.yorun.ai/vine/internal/core/rpc/transport/inproc"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	impl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/control"
+	"go.yorun.ai/vine/internal/testutil/mtlstest"
 )
 
 type _TestInternalRuntime struct {
@@ -64,6 +66,38 @@ func TestListenerServesOnlyControlRpcRoute(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, response.Body.Close())
 	assert.Equal(t, http.StatusNotFound, response.StatusCode)
+}
+
+func TestListenerUsesMutualTLS(t *testing.T) {
+	ca := mtlstest.NewCA(t)
+	hubIdentity := ca.Identity(t, mtls.HubIdentity)
+	linkIdentity := ca.Identity(t, mtls.LinkIdentity)
+	runtime := &_TestInternalRuntime{
+		httpHandler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}),
+		rpcHandler: testRpcHandler(),
+	}
+	listener := &Listener{
+		Context:         context.Background(),
+		Flag:            &flag.Flag{ControlListen: "127.0.0.1:0"},
+		InprocFlag:      &app.InternalInprocFlag{},
+		InternalRuntime: runtime,
+		Identity:        hubIdentity,
+	}
+	require.NoError(t, listener.BeforeAppStart())
+	t.Cleanup(listener.BeforeAppStop)
+
+	client := &http.Client{Transport: linkIdentity.HTTPTransport(mtls.HubIdentity)}
+	response, err := client.Get("https://" + listener.server.Addr + coreapp.PathRpcInvoke + "/vine.hub.control.InfoService/getInfo")
+	require.NoError(t, err)
+	require.NoError(t, response.Body.Close())
+	assert.Equal(t, http.StatusNoContent, response.StatusCode)
+
+	plainResponse, err := http.Get("http://" + listener.server.Addr + coreapp.PathRpcInvoke)
+	require.NoError(t, err)
+	require.NoError(t, plainResponse.Body.Close())
+	assert.Equal(t, http.StatusBadRequest, plainResponse.StatusCode)
 }
 
 func TestListenerRegistersDedicatedControlInprocEndpoint(t *testing.T) {

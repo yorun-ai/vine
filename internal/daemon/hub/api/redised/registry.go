@@ -8,11 +8,12 @@ const (
 )
 
 type RpcServiceRegistration struct {
-	Endpoint      string `json:"endpoint"`
-	ServiceName   string `json:"serviceName"`
-	AppName       string `json:"appName"`
-	AppVersion    string `json:"appVersion"`
-	AppInstanceId string `json:"appInstanceId"`
+	Endpoint       string `json:"endpoint"`
+	ServerIdentity string `json:"serverIdentity,omitempty"`
+	ServiceName    string `json:"serviceName"`
+	AppName        string `json:"appName"`
+	AppVersion     string `json:"appVersion"`
+	AppInstanceId  string `json:"appInstanceId"`
 }
 
 func FormatRpcServiceRegistrationKey(serviceName string, appName string, instanceId string) string {

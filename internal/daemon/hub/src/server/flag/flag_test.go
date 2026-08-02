@@ -5,7 +5,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.yorun.ai/vine/internal/core/mtls"
 )
+
+func TestNormalizeRejectsPartialMTLSFiles(t *testing.T) {
+	flags := Flag{MTLS: mtls.Files{CAFile: "ca.pem"}}
+	require.PanicsWithError(t, "hub flag normalize failed: mtls-ca-file, mtls-cert-file, and mtls-key-file must be configured together", func() {
+		flags.Normalize(false)
+	})
+}
 
 func TestFlagNormalizeRequiresSource(t *testing.T) {
 	flags := &Flag{}
@@ -80,6 +88,45 @@ func TestFlagNormalizeNormalizesDashboardURL(t *testing.T) {
 
 	assert.Equal(t, HubDefaultDashboardURL, flags.DashboardURL.String())
 	assert.True(t, flags.DashboardURLSet)
+}
+
+func TestFlagNormalizeUsesHTTPSDashboardDefaultWithMTLS(t *testing.T) {
+	flags := &Flag{
+		MTLS: mtls.Files{
+			CAFile:   "ca.pem",
+			CertFile: "cert.pem",
+			KeyFile:  "key.pem",
+		},
+		SourceType:     SourceSQLite,
+		DBSQLiteFile:   "/tmp/hub.sqlite",
+		MQEmbeddedNats: true,
+	}
+
+	flags.Normalize(false)
+
+	assert.Equal(t, HubMTLSDefaultDashboardURL, flags.DashboardURL.String())
+	assert.False(t, flags.DashboardURLSet)
+	assert.True(t, flags.DashboardURLMTLSDefault)
+}
+
+func TestFlagNormalizeKeepsExplicitHTTPDashboardURLWithMTLS(t *testing.T) {
+	flags := &Flag{
+		MTLS: mtls.Files{
+			CAFile:   "ca.pem",
+			CertFile: "cert.pem",
+			KeyFile:  "key.pem",
+		},
+		SourceType:      SourceSQLite,
+		DBSQLiteFile:    "/tmp/hub.sqlite",
+		MQEmbeddedNats:  true,
+		DashboardURLRaw: "http://:7099/",
+	}
+
+	flags.Normalize(false)
+
+	assert.Equal(t, HubDefaultDashboardURL, flags.DashboardURL.String())
+	assert.True(t, flags.DashboardURLSet)
+	assert.False(t, flags.DashboardURLMTLSDefault)
 }
 
 func TestFlagNormalizeAddsDashboardURLPath(t *testing.T) {

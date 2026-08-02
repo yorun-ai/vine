@@ -7,6 +7,7 @@ import (
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
+	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubredis"
@@ -16,9 +17,10 @@ import (
 type Access struct {
 	app.BaseModule
 
-	Context context.Context  `inject:""`
-	Redis   *hubredis.Client `inject:""`
-	Epmgr   *epmgr.Manager   `inject:""`
+	Context  context.Context  `inject:""`
+	Redis    *hubredis.Client `inject:""`
+	Epmgr    *epmgr.Manager   `inject:""`
+	Identity *mtls.Identity   `inject:""`
 
 	mutex                             sync.RWMutex
 	actorNamesByKey                   map[string]string
@@ -49,6 +51,7 @@ func (a *Access) DIInit() {
 
 func (a *Access) AllowRpc(operation *RpcOperation) bool {
 	operation.endpointManager = a.Epmgr
+	operation.identity = a.Identity
 
 	actorSchema, ok := a.actorSchema(operation.ActorVia.ActorSkelName)
 	if !ok {
@@ -79,6 +82,7 @@ func (a *Access) AllowRpc(operation *RpcOperation) bool {
 
 func (a *Access) AuthWeb(operation *WebOperation) bool {
 	operation.endpointManager = a.Epmgr
+	operation.identity = a.Identity
 
 	if operation.Request.Header.Get(headerAuthorization) == "" {
 		operation.setActor(meta.NewAnonymousActor())

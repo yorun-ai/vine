@@ -1,6 +1,21 @@
 package flag
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"go.yorun.ai/vine/internal/core/mtls"
+)
+
+func TestNormalizeRequiresHTTPSHubEndpointWithMTLS(t *testing.T) {
+	flags := Flag{
+		HubEndpoint: "http://demo.local:7071",
+		MTLS:        mtls.Files{CAFile: "ca.pem", CertFile: "cert.pem", KeyFile: "key.pem"},
+	}
+	require.PanicsWithError(t, "hub-endpoint must use https when mTLS is enabled", func() {
+		flags.Normalize()
+	})
+}
 
 func TestNormalizeRequiresHubEndpoint(t *testing.T) {
 	flags := Flag{}

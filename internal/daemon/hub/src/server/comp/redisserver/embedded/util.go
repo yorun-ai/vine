@@ -2,6 +2,8 @@ package embedded
 
 import (
 	"bufio"
+	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"strconv"
@@ -13,7 +15,7 @@ import (
 
 const randomLocalRedisListen = "127.0.0.1:0"
 
-func waitRedisReady(listenAddr string, timeout time.Duration) error {
+func waitRedisReady(listenAddr string, timeout time.Duration, tlsConfig *tls.Config) error {
 	targetAddr, err := redisDialAddr(listenAddr)
 	if err != nil {
 		return err
@@ -21,7 +23,7 @@ func waitRedisReady(listenAddr string, timeout time.Duration) error {
 
 	deadline := time.Now().Add(timeout)
 	for {
-		err = redisHello(targetAddr, 100*time.Millisecond)
+		err = redisHello(targetAddr, 100*time.Millisecond, tlsConfig)
 		if err == nil {
 			return nil
 		}
@@ -32,8 +34,15 @@ func waitRedisReady(listenAddr string, timeout time.Duration) error {
 	}
 }
 
-func redisHello(targetAddr string, timeout time.Duration) error {
-	conn, err := net.DialTimeout("tcp", targetAddr, timeout)
+func redisHello(targetAddr string, timeout time.Duration, tlsConfig *tls.Config) error {
+	dialer := &net.Dialer{Timeout: timeout}
+	var conn net.Conn
+	var err error
+	if tlsConfig != nil {
+		conn, err = (&tls.Dialer{NetDialer: dialer, Config: tlsConfig}).DialContext(context.Background(), "tcp", targetAddr)
+	} else {
+		conn, err = dialer.Dial("tcp", targetAddr)
+	}
 	if err != nil {
 		return err
 	}

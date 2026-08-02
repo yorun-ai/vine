@@ -9,6 +9,7 @@ import (
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
+	"go.yorun.ai/vine/internal/core/mtls"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	"go.yorun.ai/vine/internal/core/skel"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
@@ -22,6 +23,7 @@ type ServiceDebugServiceServerImpl struct {
 
 	RegistryRepo core.RegistryRepo `inject:""`
 	SchemaRepo   core.SchemaRepo   `inject:""`
+	Identity     *mtls.Identity    `inject:""`
 }
 
 func (s *ServiceDebugServiceServerImpl) defaultBuilder() _DebugDefaultBuilder {
@@ -151,7 +153,9 @@ func (s *ServiceDebugServiceServerImpl) InvokeService(request skeled.ServiceDebu
 		Actor:           actor,
 	})
 
-	response, err := doServiceDebugInvokeRequest(httpRequest)
+	transport, err := s.Identity.BackendTransport(registration.ServerIdentity, registration.Endpoint)
+	ex.PanicNewIfError(err, ex.ServiceUnavailable)
+	response, err := doServiceDebugInvokeRequest(httpRequest, transport)
 	ex.PanicNewIfError(err, ex.ServiceUnavailable)
 	defer response.Body.Close()
 

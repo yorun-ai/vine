@@ -4,6 +4,7 @@ import (
 	"net/url"
 
 	"go.yorun.ai/vine/internal/app"
+	"go.yorun.ai/vine/internal/core/mtls"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
 	"go.yorun.ai/vine/util/vpre"
 )
@@ -15,6 +16,7 @@ const (
 
 type Flag struct {
 	app.FlagModel
+	MTLS           mtls.Files
 	APIListen      string
 	IngressListen  string
 	HubInprocMode  bool
@@ -23,6 +25,7 @@ type Flag struct {
 }
 
 func (f *Flag) Normalize(linkInproc bool) {
+	vpre.CheckNilError(f.MTLS.Validate(), "link flag normalize failed")
 	f.normalizeHubEndpoint()
 	f.normalizeAPIListen(linkInproc)
 	f.normalizeIngressListen()
@@ -38,6 +41,9 @@ func (f *Flag) normalizeHubEndpoint() {
 	parsed, err := url.Parse(f.HubEndpoint)
 	vpre.CheckNilError(err, "hub-endpoint is invalid")
 	vpre.Check(parsed.Hostname() != "", "hub-endpoint host is empty")
+	if f.MTLS.Enabled() {
+		vpre.Check(parsed.Scheme == "https", "hub-endpoint must use https when mTLS is enabled")
+	}
 	f.HubEndpointURL = parsed
 }
 

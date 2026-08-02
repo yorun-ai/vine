@@ -1,6 +1,7 @@
 package hubredis
 
 import (
+	"go.yorun.ai/vine/internal/core/mtls"
 	hubapiredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubinfo"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
@@ -9,8 +10,9 @@ import (
 type Client struct {
 	hubapiredis.Client
 
-	Flag    *flag.Flag       `inject:""`
-	HubInfo *hubinfo.HubInfo `inject:""`
+	Flag     *flag.Flag       `inject:""`
+	HubInfo  *hubinfo.HubInfo `inject:""`
+	Identity *mtls.Identity   `inject:""`
 }
 
 func (c *Client) InitOption(option *hubapiredis.Option) {
@@ -22,4 +24,7 @@ func (c *Client) InitOption(option *hubapiredis.Option) {
 	}
 
 	option.Endpoint = c.HubInfo.RedisEndpoint()
+	if c.Identity.Enabled() {
+		option.TLSConfig = c.Identity.ClientConfig(mtls.HubIdentity)
+	}
 }

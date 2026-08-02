@@ -4,6 +4,7 @@ import (
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/link"
 	"go.yorun.ai/vine/internal/core/meta"
+	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubinfo"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubredis"
@@ -33,14 +34,17 @@ func (a *LinkApp) Name() string {
 
 func (a *LinkApp) DIInit() {
 	a.Flag.Normalize(a.InprocFlag.Enabled)
+	identity := mtls.MustLoad(mtls.LinkIdentity, a.Flag.MTLS)
 	a.AppFlag.ListenAddr = a.Flag.APIListen
 
 	appInfo := meta.MustNewAppWithRandomId(a.Name(), runtime.Application().Version())
 	a.InternalAttrs = app.InternalAttributes{
-		Info:           appInfo,
-		Linker:         link.NewRedirectedInternalLinker(appInfo, a.Flag.HubEndpoint),
-		DisableConsole: true,
-		InprocHostPath: link.InprocHostPath,
+		Info:            appInfo,
+		Linker:          link.NewRedirectedInternalLinker(appInfo, a.Flag.HubEndpoint),
+		BackendIdentity: identity,
+		RPCTransport:    identity.HTTPTransport(mtls.HubIdentity),
+		DisableConsole:  true,
+		InprocHostPath:  link.InprocHostPath,
 	}
 }
 

@@ -11,6 +11,7 @@ import (
 
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/logger"
+	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
@@ -31,6 +32,7 @@ type RpcProxy struct {
 	App         runtime.App       `inject:""`
 	Logger      *logger.Logger    `inject:""`
 	AppMinder   *minder.AppMinder `inject:""`
+	Identity    *mtls.Identity    `inject:""`
 
 	transport http.RoundTripper
 
@@ -55,6 +57,11 @@ type _ServiceState struct {
 	endpoints           []redised.RpcServiceRegistration
 	nextIndex           int
 	cancel              context.CancelFunc
+}
+
+type _OutboundTarget struct {
+	endpoint  string
+	transport http.RoundTripper
 }
 
 func (p *RpcProxy) DIInit() {

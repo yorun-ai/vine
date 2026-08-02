@@ -55,7 +55,7 @@ func newHubCommand() *ucli.Command {
 }
 
 func newHubServeFlags() []ucli.Flag {
-	return []ucli.Flag{
+	return append([]ucli.Flag{
 		&ucli.StringFlag{Name: FlagHubControlListen, Sources: ucli.EnvVars(EnvHubControlListen), Value: hubflag.HubDefaultControlListen, Usage: "hub Control API listen address used by Link and Portal"},
 		&ucli.StringFlag{Name: FlagHubAdminListen, Sources: ucli.EnvVars(EnvHubAdminListen), Value: hubflag.HubDefaultAdminListen, Usage: "hub admin API and Dashboard Web listen address"},
 		&ucli.StringFlag{Name: FlagHubRedisListen, Sources: ucli.EnvVars(EnvHubRedisListen), Value: hubflag.HubDefaultRedisListen, Usage: "hub redis listen address"},
@@ -65,7 +65,7 @@ func newHubServeFlags() []ucli.Flag {
 		&ucli.BoolFlag{Name: FlagHubMQEmbeddedNats, Sources: ucli.EnvVars(EnvHubMQEmbeddedNats), Usage: "start an embedded NATS server"},
 		&ucli.StringFlag{Name: FlagHubSeedYAMLFile, Sources: ucli.EnvVars(EnvHubSeedYAMLFile), Usage: "hub seed YAML file"},
 		&ucli.StringFlag{Name: FlagHubDashboardURL, Sources: ucli.EnvVars(EnvHubDashboardURL), Usage: "hub dashboard URL"},
-	}
+	}, mtlsFlags()...)
 }
 
 func newHubServeCommand() *ucli.Command {
@@ -88,6 +88,7 @@ func newHubServeCommand() *ucli.Command {
 				DashboardURLRaw:   cmd.String(FlagHubDashboardURL),
 				DBSQLiteFile:      cmd.String(FlagHubDBSQLiteFile),
 				DBPostgresURL:     cmd.String(FlagHubDBPostgresURL),
+				MTLS:              mtlsFiles(cmd),
 			}
 			startHubApp(flags)
 			return nil

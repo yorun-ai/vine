@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	stdhttp "net/http"
 	"time"
 
 	"go.yorun.ai/vine/internal/core/ex"
@@ -20,6 +21,7 @@ type _Invoker struct {
 	logger              *logger.Logger
 	serverEndpoint      string
 	returnIfSystemError bool
+	transport           stdhttp.RoundTripper
 
 	methodInfo spec.MethodInfo
 	arguments  any
@@ -35,6 +37,7 @@ func (c *Client) newInvoker(methodInfo spec.MethodInfo, arguments any, options [
 		logger:              c.logger,
 		serverEndpoint:      c.serverEndpoint,
 		returnIfSystemError: c.returnIfSystemError,
+		transport:           c.transport,
 		methodInfo:          methodInfo,
 		arguments:           arguments,
 		options:             newInvokeOptions(),
@@ -110,6 +113,9 @@ func (i *_Invoker) roundTrip(rpcRequest spec.Request, prepared func()) (spec.Res
 	if inproc.IsEndpoint(i.serverEndpoint) {
 		prepared()
 		return inproc.RoundTrip(i.serverEndpoint, rpcRequest)
+	}
+	if i.transport != nil {
+		return http.RoundTripWithTransportAndPrepared(i.serverEndpoint, rpcRequest, i.transport, prepared)
 	}
 	return http.RoundTripWithPrepared(i.serverEndpoint, rpcRequest, prepared)
 }

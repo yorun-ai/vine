@@ -215,8 +215,10 @@ func TestRegistryCoreRegister(t *testing.T) {
 	}, repo.calls)
 	assert.Len(t, repo.rpcRegistrations, 2)
 	assert.Equal(t, "http://127.0.0.1:23001/rpc/proxy/in", repo.rpcRegistrations[0].Endpoint)
+	assert.Equal(t, "vine.link", repo.rpcRegistrations[0].ServerIdentity)
 	assert.Len(t, repo.webRegistrations, 1)
 	assert.Equal(t, "http://127.0.0.1:23001/web/proxy/in/instance-1/default@demo.app", repo.webRegistrations[0].Endpoint)
+	assert.Equal(t, "vine.link", repo.webRegistrations[0].ServerIdentity)
 	assert.Empty(t, schemaRepo.domainSchemas)
 }
 

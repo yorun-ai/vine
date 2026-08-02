@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	coreapp "go.yorun.ai/vine/internal/core/app"
+	"go.yorun.ai/vine/internal/core/mtls"
 	rpcinproc "go.yorun.ai/vine/internal/core/rpc/transport/inproc"
 	webinproc "go.yorun.ai/vine/internal/core/web/inproc"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
@@ -48,7 +49,11 @@ func (i *Initializer) dashboardHttpEndpoint(path string) string {
 	if host == "" || host == "0.0.0.0" || host == "::" {
 		host = vnet.DetectHostIP()
 	}
-	return fmt.Sprintf("http://%s%s", net.JoinHostPort(host, strconv.Itoa(i.Flag.AdminPort())), path)
+	scheme := "http"
+	if i.Identity.Enabled() {
+		scheme = "https"
+	}
+	return fmt.Sprintf("%s://%s%s", scheme, net.JoinHostPort(host, strconv.Itoa(i.Flag.AdminPort())), path)
 }
 
 // Default dashboard configurations
@@ -64,10 +69,11 @@ var (
 
 	dashboardRpcRegistrations = newDashboardRpcRegistrations()
 	dashboardWebRegistration  = redised.WebRegistration{
-		WebSkelName:   seeder.DashboardWebCoreEntry.WebName,
-		AppName:       dashboardAppName,
-		AppVersion:    dashboardAppVersion,
-		AppInstanceId: dashboardAppInstanceId,
+		ServerIdentity: mtls.HubIdentity,
+		WebSkelName:    seeder.DashboardWebCoreEntry.WebName,
+		AppName:        dashboardAppName,
+		AppVersion:     dashboardAppVersion,
+		AppInstanceId:  dashboardAppInstanceId,
 	}
 )
 
@@ -75,10 +81,11 @@ func newDashboardRpcRegistrations() map[string]redised.RpcServiceRegistration {
 	registrations := make(map[string]redised.RpcServiceRegistration, len(seeder.DashboardRpcServices))
 	for _, serviceName := range seeder.DashboardRpcServices {
 		registrations[serviceName] = redised.RpcServiceRegistration{
-			ServiceName:   serviceName,
-			AppName:       dashboardAppName,
-			AppVersion:    dashboardAppVersion,
-			AppInstanceId: dashboardAppInstanceId,
+			ServerIdentity: mtls.HubIdentity,
+			ServiceName:    serviceName,
+			AppName:        dashboardAppName,
+			AppVersion:     dashboardAppVersion,
+			AppInstanceId:  dashboardAppInstanceId,
 		}
 	}
 	return registrations

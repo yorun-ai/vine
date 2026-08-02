@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"go.yorun.ai/vine/internal/core/link"
+	"go.yorun.ai/vine/internal/core/mtls"
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
 	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/util/vpre"
@@ -25,8 +26,12 @@ type InternalApplication struct {
 type InternalAttributes struct {
 	Info              runtime.App
 	Linker            link.Linker
+	BackendIdentity   *mtls.Identity
+	RPCTransport      http.RoundTripper
 	DisableConsole    bool
 	DisableHTTPServer bool
+	ProtectHTTPServer bool
+	HTTPServerClients []string
 
 	InprocHostPath string
 }

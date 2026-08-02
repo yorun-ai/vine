@@ -101,19 +101,21 @@ type DomainSchemaView struct {
 }
 
 type RpcServiceRegistration struct {
-	Endpoint      string
-	ServiceName   string
-	AppName       string
-	AppVersion    string
-	AppInstanceId string
+	Endpoint       string
+	ServerIdentity string
+	ServiceName    string
+	AppName        string
+	AppVersion     string
+	AppInstanceId  string
 }
 
 type WebRegistration struct {
-	Endpoint      string
-	WebSkelName   string
-	AppName       string
-	AppVersion    string
-	AppInstanceId string
+	Endpoint       string
+	ServerIdentity string
+	WebSkelName    string
+	AppName        string
+	AppVersion     string
+	AppInstanceId  string
 }
 
 type RegistryRepo interface {

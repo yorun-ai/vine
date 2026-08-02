@@ -2,6 +2,7 @@ package initializer
 
 import (
 	"go.yorun.ai/vine/internal/app"
+	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	hubflag "go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
@@ -21,6 +22,7 @@ type Initializer struct {
 	Syncer        *syncer.Syncer          `inject:""`
 	InprocFlag    *app.InternalInprocFlag `inject:""`
 	Flag          *hubflag.Flag           `inject:""`
+	Identity      *mtls.Identity          `inject:""`
 }
 
 const (

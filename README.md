@@ -119,23 +119,48 @@ pnpm install
 pnpm dev
 ```
 
-## Security Status
+## Backend mTLS
 
-> **TODO:** Complete credential management and encrypted communication between
-> Hub, Link, Portal, and application processes.
+`vine hub serve`, `vine link serve`, and `vine portal serve` accept
+`--mtls-ca-file`, `--mtls-cert-file`, and `--mtls-key-file` (or the matching
+`VINE_MTLS_*` environment variables). Configure all three together. Each
+certificate must be an X.509-SVID with exactly one SPIFFE URI SAN. Hub, Link,
+and Portal use `spiffe://<trust-domain>/vine/daemon/vine.hub`,
+`spiffe://<trust-domain>/vine/daemon/vine.link`, and
+`spiffe://<trust-domain>/vine/daemon/vine.portal` respectively. All communicating
+components must share the same trust domain, and every certificate must be
+valid for both TLS server and client authentication. DNS SANs, when present,
+are not used for component authorization.
+
+When configured, Vine requires mTLS on the Hub Control and Admin APIs, embedded
+Hub Redis and NATS, and Link ingress. Link and Portal use the same component
+certificate as their client credential, discovered HTTP endpoints cannot
+downgrade to plaintext, and Hub Redis binds its Redis ACL username to the mTLS
+client identity. Portal's public listeners remain under the existing Portal
+certificate-vault configuration. When mTLS is enabled, Portal can temporarily
+serve an HTTPS entry without a configured public certificate by generating a
+short-lived, process-local self-signed Web certificate for the requested SNI
+host. A configured Portal certificate always takes precedence; the temporary
+certificate only encrypts bootstrap traffic and is not browser-trusted.
+Application-to-Link traffic remains h2c because that connection is expected to
+stay local.
+
+Certificate issuance, rotation, and revocation remain deployment concerns.
+External PostgreSQL and NATS connections use those services' own security
+configuration. If application-to-Link traffic crosses a host or trust boundary,
+protect that path at the deployment network layer until Vine supports a
+non-local secure application transport.
 
 The embedded Hub Redis server rejects anonymous data access and uses separate
 `vine.hub`, `vine.link`, and `vine.portal` users. The process-local `vine.hub`
-user has a random password and full access; the `vine.link` and `vine.portal` users have distinct
-least-privilege key and subscription ACLs.
+user has a random password and full access; the `vine.link` and `vine.portal`
+users have distinct least-privilege key and subscription ACLs.
 
-The Link and Portal passwords are temporarily empty, so the usernames currently
-select an ACL role but do not prove the caller's identity. A client that can
-reach the Redis endpoint can still impersonate either role, and the Portal role
-can read Portal TLS private key material. Until deployment-managed secrets and
-transport encryption are implemented, bind Vine's internal endpoints only to
-loopback or trusted private networks, restrict them with a firewall, and never
-expose them to an untrusted network.
+The Link and Portal Redis passwords remain empty for inproc mode and separated
+deployment debugging. With backend mTLS enabled, the certificate identity
+authenticates and binds those users to their roles. Without mTLS, the usernames
+only select an ACL role, so internal endpoints must remain on loopback or a
+trusted private network and be restricted with a firewall.
 
 ## Versioning and Compatibility
 
