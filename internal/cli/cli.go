@@ -75,6 +75,7 @@ func newVineCommand() *ucli.Command {
 		HideHelpCommand: true,
 		Commands: []*ucli.Command{
 			newVersionCommand(),
+			newDevCommand(),
 			newHubCommand(),
 			newLinkCommand(),
 			newPortalCommand(),
