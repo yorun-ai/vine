@@ -17,8 +17,6 @@ import (
 
 const natsServerReadyTimeout = 5 * time.Second
 
-const natsStoreDir = "/tmp"
-
 var detectHostForMQEndpoint = func() string {
 	return vnet.DetectHostIP()
 }
@@ -94,7 +92,7 @@ func (s *NATSServer) serverOptions(isInproc bool) *natsserver.Options {
 }
 
 func (s *NATSServer) newServer(options *natsserver.Options) (*natsserver.Server, string) {
-	storeDir, err := os.MkdirTemp(natsStoreDir, "vine-nats-jetstream-*")
+	storeDir, err := os.MkdirTemp("", "vine-nats-jetstream-*")
 	vpre.CheckNilError(err, "create nats jetstream dir failed")
 	options.StoreDir = storeDir
 	server, err := natsserver.NewServer(options)
