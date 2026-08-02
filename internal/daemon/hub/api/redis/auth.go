@@ -1,5 +1,10 @@
 package redis
 
+import (
+	"go.yorun.ai/vine/internal/core/mtls"
+	"go.yorun.ai/vine/internal/daemon"
+)
+
 const (
 	HubUsername    = "vine.hub"
 	LinkUsername   = "vine.link"
@@ -13,3 +18,18 @@ const (
 	LinkPassword   = ""
 	PortalPassword = ""
 )
+
+// SPIFFEPathForUsername returns the daemon identity bound to a Hub Redis ACL
+// username.
+func SPIFFEPathForUsername(username string) (mtls.SPIFFEPath, bool) {
+	switch username {
+	case HubUsername:
+		return daemon.HubIdentity.SPIFFEPath(), true
+	case LinkUsername:
+		return daemon.LinkIdentity.SPIFFEPath(), true
+	case PortalUsername:
+		return daemon.PortalIdentity.SPIFFEPath(), true
+	default:
+		return "", false
+	}
+}

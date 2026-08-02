@@ -19,6 +19,7 @@ import (
 	"go.yorun.ai/vine/internal/core/mtls"
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
 	rpcinproc "go.yorun.ai/vine/internal/core/rpc/transport/inproc"
+	"go.yorun.ai/vine/internal/daemon"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	impl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/control"
@@ -101,7 +102,7 @@ func (l *Listener) startHTTP() error {
 	serve := server.Serve
 	if l.Identity.Enabled() {
 		server.Handler = l
-		server.TLSConfig = l.Identity.ServerConfig(mtls.LinkIdentity, mtls.PortalIdentity)
+		server.TLSConfig = l.Identity.ServerConfig(daemon.LinkIdentity.SPIFFEPath(), daemon.PortalIdentity.SPIFFEPath())
 		if err := http2.ConfigureServer(server, &http2.Server{}); err != nil {
 			_ = listener.Close()
 			return fmt.Errorf("hub control API HTTP/2 configure failed: %w", err)

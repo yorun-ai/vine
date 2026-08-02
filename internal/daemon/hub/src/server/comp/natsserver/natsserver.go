@@ -11,6 +11,7 @@ import (
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/mtls"
+	"go.yorun.ai/vine/internal/daemon"
 	hubnats "go.yorun.ai/vine/internal/daemon/hub/api/nats"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	"go.yorun.ai/vine/util/vnet"
@@ -78,7 +79,7 @@ func (s *NATSServer) ConnectAsHub() (*gonats.Conn, error) {
 	if s.Identity.Enabled() {
 		options = append(
 			options,
-			gonats.Secure(s.Identity.ClientConfig(mtls.HubIdentity)),
+			gonats.Secure(s.Identity.ClientConfig(daemon.HubIdentity.SPIFFEPath())),
 			gonats.TLSHandshakeFirst(),
 		)
 	}
@@ -113,7 +114,7 @@ func (s *NATSServer) serverOptions(isInproc bool) *natsserver.Options {
 		options.TLS = true
 		options.TLSVerify = true
 		options.TLSHandshakeFirst = true
-		options.TLSConfig = s.Identity.ServerConfig(mtls.HubIdentity, mtls.LinkIdentity)
+		options.TLSConfig = s.Identity.ServerConfig(daemon.HubIdentity.SPIFFEPath(), daemon.LinkIdentity.SPIFFEPath())
 	}
 	return options
 }

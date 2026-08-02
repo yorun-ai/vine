@@ -42,7 +42,7 @@ func (o *Auther) forwardInvokeRequest(request *http.Request, serviceSkelName str
 		return nil, ex.ServiceUnavailable, serviceLabel + " is unavailable: " + serviceSkelName, false
 	}
 
-	transport, err := o.identity.BackendTransport(registration.ServerIdentity, registration.Endpoint)
+	transport, err := o.identity.BackendTransport(registration.ServerIdentity.SPIFFEPath(), registration.Endpoint)
 	if err != nil {
 		return nil, ex.ServiceUnavailable, serviceLabel + " endpoint is insecure: " + err.Error(), false
 	}

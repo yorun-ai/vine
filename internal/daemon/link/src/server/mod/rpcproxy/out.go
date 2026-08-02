@@ -124,7 +124,7 @@ func (p *RpcProxy) resolveOutboundTarget(serviceName string, clientApp meta.App)
 		return _OutboundTarget{endpoint: targetAppState.serviceEndpoint, transport: p.transport}, nil
 	}
 
-	transport, err := p.Identity.BackendTransport(registration.ServerIdentity, registration.Endpoint)
+	transport, err := p.Identity.BackendTransport(registration.ServerIdentity.SPIFFEPath(), registration.Endpoint)
 	if err != nil {
 		return _OutboundTarget{}, ex.New(ex.ServiceUnavailable, "rpc proxy outbound target is insecure", ex.WithDetail(err.Error()))
 	}

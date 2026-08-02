@@ -31,7 +31,7 @@ type InternalAttributes struct {
 	DisableConsole    bool
 	DisableHTTPServer bool
 	ProtectHTTPServer bool
-	HTTPServerClients []string
+	HTTPServerClients []mtls.SPIFFEPath
 
 	InprocHostPath string
 }

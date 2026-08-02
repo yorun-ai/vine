@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/tidwall/redcon"
+	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
 )
 
 func (s *Store) handleCommand(conn redcon.Conn, cmd redcon.Command) {
@@ -123,7 +124,8 @@ func (s *Store) redisIdentityMatches(conn redcon.Conn, username string) bool {
 		return false
 	}
 	state := tlsConn.ConnectionState()
-	return s.identity.ConnectionHasIdentity(state, username)
+	identityPath, ok := hubredis.SPIFFEPathForUsername(username)
+	return ok && s.identity.ConnectionHasIdentity(state, identityPath)
 }
 
 func (s *Store) writeHello(conn redcon.Conn) {

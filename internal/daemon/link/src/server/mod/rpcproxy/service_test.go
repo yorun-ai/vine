@@ -4,10 +4,10 @@ import (
 	"testing"
 
 	"go.yorun.ai/vine/internal/core/ex"
-	"go.yorun.ai/vine/internal/core/mtls"
+	"go.yorun.ai/vine/internal/core/mtls/mtlstest"
+	"go.yorun.ai/vine/internal/daemon"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
-	"go.yorun.ai/vine/internal/testutil/mtlstest"
 )
 
 func TestResolveOutboundEndpointRejectsPlaintextWithMTLS(t *testing.T) {
@@ -17,13 +17,13 @@ func TestResolveOutboundEndpointRejectsPlaintextWithMTLS(t *testing.T) {
 		"demo.service.UserService": {{
 			ServiceName:    "demo.service.UserService",
 			Endpoint:       "http://remote.invalid/rpc/proxy/in/" + remoteApp.InstanceId(),
-			ServerIdentity: mtls.LinkIdentity,
+			ServerIdentity: daemon.LinkIdentity,
 			AppName:        remoteApp.Name(),
 			AppVersion:     remoteApp.Version(),
 			AppInstanceId:  remoteApp.InstanceId(),
 		}},
 	}))
-	proxy.Identity = mtlstest.NewCA(t).Identity(t, mtls.LinkIdentity)
+	proxy.Identity = mtlstest.NewCA(t).Identity(t, daemon.LinkIdentity.SPIFFEPath())
 	registerLocalApp(proxy, callerApp, "http://127.0.0.1:8080"+testPathRpcInvoke, "http://127.0.0.1:8080", []string{"demo.service.CallerService"})
 
 	_, exErr := proxy.resolveOutboundEndpoint("demo.service.UserService", callerApp)

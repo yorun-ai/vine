@@ -6,6 +6,7 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/runtime"
+	"go.yorun.ai/vine/internal/daemon"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubinfo"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubredis"
 	linknats "go.yorun.ai/vine/internal/daemon/link/src/server/comp/nats"
@@ -29,12 +30,12 @@ type LinkApp struct {
 }
 
 func (a *LinkApp) Name() string {
-	return "vine.link"
+	return daemon.LinkIdentity.String()
 }
 
 func (a *LinkApp) DIInit() {
 	a.Flag.Normalize(a.InprocFlag.Enabled)
-	identity := mtls.MustLoad(mtls.LinkIdentity, a.Flag.MTLS)
+	identity := mtls.MustLoad(daemon.LinkIdentity.SPIFFEPath(), a.Flag.MTLS)
 	a.AppFlag.ListenAddr = a.Flag.APIListen
 
 	appInfo := meta.MustNewAppWithRandomId(a.Name(), runtime.Application().Version())
@@ -42,7 +43,7 @@ func (a *LinkApp) DIInit() {
 		Info:            appInfo,
 		Linker:          link.NewRedirectedInternalLinker(appInfo, a.Flag.HubEndpoint),
 		BackendIdentity: identity,
-		RPCTransport:    identity.HTTPTransport(mtls.HubIdentity),
+		RPCTransport:    identity.HTTPTransport(daemon.HubIdentity.SPIFFEPath()),
 		DisableConsole:  true,
 		InprocHostPath:  link.InprocHostPath,
 	}

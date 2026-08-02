@@ -17,14 +17,17 @@ import (
 	"go.yorun.ai/vine/internal/core/mtls"
 )
 
+// TrustDomain is the SPIFFE trust domain used by generated test identities.
 const TrustDomain = "test.vine.local"
 
+// CA issues temporary X.509-SVIDs for tests.
 type CA struct {
 	cert *x509.Certificate
 	key  *ecdsa.PrivateKey
 	pem  []byte
 }
 
+// NewCA creates a temporary test certificate authority.
 func NewCA(t testing.TB) *CA {
 	t.Helper()
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -52,9 +55,10 @@ func NewCA(t testing.TB) *CA {
 	return &CA{cert: cert, key: key, pem: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})}
 }
 
-func (ca *CA) Files(t testing.TB, identityName string) mtls.Files {
+// Files writes a temporary X.509-SVID and returns its mTLS file paths.
+func (ca *CA) Files(t testing.TB, identityPath mtls.SPIFFEPath) mtls.Files {
 	t.Helper()
-	spiffeID, err := url.Parse("spiffe://" + TrustDomain + componentPath(t, identityName))
+	spiffeID, err := url.Parse("spiffe://" + TrustDomain + identityPath.String())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +68,7 @@ func (ca *CA) Files(t testing.TB, identityName string) mtls.Files {
 	}
 	template := &x509.Certificate{
 		SerialNumber: big.NewInt(time.Now().UnixNano()),
-		Subject:      pkix.Name{CommonName: identityName},
+		Subject:      pkix.Name{CommonName: identityPath.String()},
 		URIs:         []*url.URL{spiffeID},
 		NotBefore:    time.Now().Add(-time.Hour),
 		NotAfter:     time.Now().Add(time.Hour),
@@ -90,20 +94,10 @@ func (ca *CA) Files(t testing.TB, identityName string) mtls.Files {
 	return mtls.Files{CAFile: caFile, CertFile: certFile, KeyFile: keyFile}
 }
 
-func componentPath(t testing.TB, identityName string) string {
+// Identity loads a temporary X.509-SVID through the production mTLS loader.
+func (ca *CA) Identity(t testing.TB, identityPath mtls.SPIFFEPath) *mtls.Identity {
 	t.Helper()
-	switch identityName {
-	case mtls.HubIdentity, mtls.LinkIdentity, mtls.PortalIdentity:
-		return "/vine/daemon/" + identityName
-	default:
-		t.Fatalf("unknown test mTLS identity %q", identityName)
-		return ""
-	}
-}
-
-func (ca *CA) Identity(t testing.TB, identityName string) *mtls.Identity {
-	t.Helper()
-	identity, err := mtls.Load(identityName, ca.Files(t, identityName))
+	identity, err := mtls.Load(identityPath, ca.Files(t, identityPath))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -10,6 +10,7 @@ import (
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/mtls"
+	"go.yorun.ai/vine/internal/daemon"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubinfo"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 	"go.yorun.ai/vine/util/vpre"
@@ -47,7 +48,7 @@ func (c *Client) InitOption(option *_Option) {
 
 	option.Endpoint = c.HubInfo.MQEndpoint()
 	if c.Identity.Enabled() && c.HubInfo.UsesEmbeddedNATS() {
-		option.TLSConfig = c.Identity.ClientConfig(mtls.HubIdentity)
+		option.TLSConfig = c.Identity.ClientConfig(daemon.HubIdentity.SPIFFEPath())
 	}
 }
 

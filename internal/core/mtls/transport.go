@@ -24,8 +24,8 @@ func newH2CTransport() http.RoundTripper {
 }
 
 // BackendTransport validates a discovered endpoint before creating a client
-// transport for the component identity recorded with that endpoint.
-func (i *Identity) BackendTransport(serverIdentity string, endpoint string) (http.RoundTripper, error) {
+// transport for the workload identity recorded with that endpoint.
+func (i *Identity) BackendTransport(serverIdentity SPIFFEPath, endpoint string) (http.RoundTripper, error) {
 	if !i.Enabled() {
 		return i.HTTPTransport(serverIdentity), nil
 	}

@@ -7,6 +7,7 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/runtime"
+	"go.yorun.ai/vine/internal/daemon"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
@@ -36,12 +37,12 @@ type HubApp struct {
 }
 
 func (a *HubApp) Name() string {
-	return "vine.hub"
+	return daemon.HubIdentity.String()
 }
 
 func (a *HubApp) DIInit() {
 	a.Flag.Normalize(a.InprocFlag.Enabled)
-	identity := mtls.MustLoad(mtls.HubIdentity, a.Flag.MTLS)
+	identity := mtls.MustLoad(daemon.HubIdentity.SPIFFEPath(), a.Flag.MTLS)
 
 	appInfo := meta.MustNewAppWithRandomId(a.Name(), runtime.Application().Version())
 	a.InternalAttrs = app.InternalAttributes{
@@ -50,7 +51,7 @@ func (a *HubApp) DIInit() {
 		BackendIdentity:   identity,
 		DisableConsole:    true,
 		ProtectHTTPServer: true,
-		HTTPServerClients: []string{mtls.PortalIdentity},
+		HTTPServerClients: []mtls.SPIFFEPath{daemon.PortalIdentity.SPIFFEPath()},
 		InprocHostPath:    hubapp.HubAdminInprocHostPath,
 	}
 

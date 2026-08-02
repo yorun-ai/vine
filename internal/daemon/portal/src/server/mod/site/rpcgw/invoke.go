@@ -97,7 +97,7 @@ func (g *RpcGateway) serveInvoke(ctx *spec.Context) {
 func (g *RpcGateway) forwardInvoke(ctx *spec.Context, registration *redised.RpcServiceRegistration) {
 	endpoint := registration.Endpoint
 	acceptEncoding, forwardRequest := prepareForwardRequest(ctx.Request)
-	transport, err := g.access.Identity.BackendTransport(registration.ServerIdentity, endpoint)
+	transport, err := g.access.Identity.BackendTransport(registration.ServerIdentity.SPIFFEPath(), endpoint)
 	if err != nil {
 		rpcGatewayLogger.Warn("vine.portal rpcgw endpoint is insecure", "endpoint", endpoint, "path", ctx.Request.URL.Path, "error", err)
 		g.writeError(ctx.ResponseWriter, ctx.Request, ex.ServiceUnavailable, "rpcgw endpoint is insecure: "+err.Error())

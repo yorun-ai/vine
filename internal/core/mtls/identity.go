@@ -15,14 +15,17 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-const (
-	HubIdentity    = "vine.hub"
-	LinkIdentity   = "vine.link"
-	PortalIdentity = "vine.portal"
-)
+// SPIFFEPath is the path component of a workload's SPIFFE ID. The trust domain
+// is taken from the loaded X.509-SVID and is never supplied by callers.
+type SPIFFEPath string
 
-// Files identifies the certificate material shared by a Vine component's
-// backend servers and clients. All three paths must be configured together.
+// String returns the SPIFFE workload path.
+func (p SPIFFEPath) String() string {
+	return string(p)
+}
+
+// Files identifies the certificate material shared by a workload's servers
+// and clients. All three paths must be configured together.
 type Files struct {
 	CAFile   string
 	CertFile string
@@ -43,25 +46,24 @@ func (f Files) Validate() error {
 	return nil
 }
 
-// Identity owns one component certificate and the CA used to authenticate
-// other Vine backend components. A disabled identity preserves inproc and
-// local-development behavior when no certificate paths are configured.
+// Identity owns one workload certificate and the CA used to authenticate its
+// peers. A disabled identity preserves local-development behavior when no
+// certificate paths are configured.
 type Identity struct {
-	name        string
 	spiffeID    spiffeid.ID
 	certificate tls.Certificate
 	roots       *x509.CertPool
 	bundle      *x509bundle.Bundle
 	enabled     bool
 	transportMu sync.Mutex
-	transports  map[string]http.RoundTripper
+	transports  map[SPIFFEPath]http.RoundTripper
 }
 
 func DisabledIdentity() *Identity {
-	return &Identity{transports: map[string]http.RoundTripper{}}
+	return &Identity{transports: map[SPIFFEPath]http.RoundTripper{}}
 }
 
-func Load(identityName string, files Files) (*Identity, error) {
+func Load(identityPath SPIFFEPath, files Files) (*Identity, error) {
 	if err := files.Validate(); err != nil {
 		return nil, err
 	}
@@ -89,14 +91,14 @@ func Load(identityName string, files Files) (*Identity, error) {
 	certificate.Leaf = leaf
 	identityID, err := x509svid.IDFromCert(leaf)
 	if err != nil {
-		return nil, fmt.Errorf("load %s mTLS SPIFFE identity: %w", identityName, err)
+		return nil, fmt.Errorf("load mTLS SPIFFE identity %q: %w", identityPath, err)
 	}
-	expectedPath, err := componentSPIFFEPath(identityName)
+	expectedID, err := spiffeid.FromPath(identityID.TrustDomain(), identityPath.String())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("build expected mTLS SPIFFE ID from path %q: %w", identityPath, err)
 	}
-	if identityID.Path() != expectedPath {
-		return nil, fmt.Errorf("mTLS certificate SPIFFE ID %q does not identify %s; expected path %q", identityID, identityName, expectedPath)
+	if identityID != expectedID {
+		return nil, fmt.Errorf("mTLS certificate SPIFFE ID %q does not match expected ID %q", identityID, expectedID)
 	}
 
 	bundle, err := x509bundle.Parse(identityID.TrustDomain(), caPEM)
@@ -106,29 +108,28 @@ func Load(identityName string, files Files) (*Identity, error) {
 	if bundle.Empty() {
 		return nil, errors.New("mTLS CA file contains no certificates")
 	}
-	if err := verifyOwnCertificate(identityName, identityID, certificate, roots, bundle); err != nil {
+	if err := verifyOwnCertificate(identityPath, identityID, certificate, roots, bundle); err != nil {
 		return nil, err
 	}
 
 	return &Identity{
-		name:        identityName,
 		spiffeID:    identityID,
 		certificate: certificate,
 		roots:       roots,
 		bundle:      bundle,
 		enabled:     true,
-		transports:  map[string]http.RoundTripper{},
+		transports:  map[SPIFFEPath]http.RoundTripper{},
 	}, nil
 }
 
-func MustLoad(identityName string, files Files) *Identity {
-	identity, err := Load(identityName, files)
-	vpre.CheckNilError(err, "load %s mTLS identity failed", identityName)
+func MustLoad(identityPath SPIFFEPath, files Files) *Identity {
+	identity, err := Load(identityPath, files)
+	vpre.CheckNilError(err, "load mTLS identity %q failed", identityPath)
 	return identity
 }
 
 func verifyOwnCertificate(
-	identityName string,
+	identityPath SPIFFEPath,
 	identityID spiffeid.ID,
 	certificate tls.Certificate,
 	roots *x509.CertPool,
@@ -141,7 +142,7 @@ func verifyOwnCertificate(
 	}
 	verifiedID, _, err := x509svid.Verify(certificates, bundle)
 	if err != nil {
-		return fmt.Errorf("verify %s mTLS X.509-SVID: %w", identityName, err)
+		return fmt.Errorf("verify mTLS X.509-SVID %q: %w", identityPath, err)
 	}
 	if verifiedID != identityID {
 		return fmt.Errorf("verified mTLS SPIFFE ID %q does not match certificate identity %q", verifiedID, identityID)
@@ -157,7 +158,7 @@ func verifyOwnCertificate(
 			Intermediates: intermediates,
 			KeyUsages:     []x509.ExtKeyUsage{usage},
 		}); err != nil {
-			return fmt.Errorf("mTLS certificate for %s is not valid for %s: %w", identityName, usageName(usage), err)
+			return fmt.Errorf("mTLS certificate for %q is not valid for %s: %w", identityPath, usageName(usage), err)
 		}
 	}
 	return nil
@@ -174,14 +175,7 @@ func (i *Identity) Enabled() bool {
 	return i != nil && i.enabled
 }
 
-func (i *Identity) Name() string {
-	if i == nil {
-		return ""
-	}
-	return i.name
-}
-
-// SPIFFEID returns the exact X.509-SVID identity loaded for this component.
+// SPIFFEID returns the exact X.509-SVID identity loaded for this workload.
 // Disabled identities return an empty string.
 func (i *Identity) SPIFFEID() string {
 	if !i.Enabled() {
@@ -192,12 +186,12 @@ func (i *Identity) SPIFFEID() string {
 
 // ServerConfig requires a client certificate signed by the configured CA and,
 // when identities are provided, restricts callers to their exact SPIFFE IDs in
-// this component's trust domain.
-func (i *Identity) ServerConfig(allowedClientIdentities ...string) *tls.Config {
+// this workload's trust domain.
+func (i *Identity) ServerConfig(allowedClientPaths ...SPIFFEPath) *tls.Config {
 	vpre.Check(i.Enabled(), "mTLS identity is disabled")
-	allowed := make([]spiffeid.ID, 0, len(allowedClientIdentities))
-	for _, identityName := range allowedClientIdentities {
-		allowed = append(allowed, i.mustComponentSPIFFEID(identityName))
+	allowed := make([]spiffeid.ID, 0, len(allowedClientPaths))
+	for _, identityPath := range allowedClientPaths {
+		allowed = append(allowed, i.mustSPIFFEID(identityPath))
 	}
 	config := &tls.Config{
 		MinVersion:   tls.VersionTLS13,
@@ -223,9 +217,9 @@ func (i *Identity) ServerConfig(allowedClientIdentities ...string) *tls.Config {
 	return config
 }
 
-func (i *Identity) ClientConfig(serverIdentity string) *tls.Config {
+func (i *Identity) ClientConfig(serverIdentity SPIFFEPath) *tls.Config {
 	vpre.Check(i.Enabled(), "mTLS identity is disabled")
-	expectedID := i.mustComponentSPIFFEID(serverIdentity)
+	expectedID := i.mustSPIFFEID(serverIdentity)
 	return &tls.Config{
 		MinVersion:         tls.VersionTLS13,
 		Certificates:       []tls.Certificate{i.certificate},
@@ -244,8 +238,8 @@ func (i *Identity) ClientConfig(serverIdentity string) *tls.Config {
 }
 
 // ConnectionHasIdentity reports whether a verified TLS peer presents the
-// exact SPIFFE ID for the requested component in this identity's trust domain.
-func (i *Identity) ConnectionHasIdentity(state tls.ConnectionState, identityName string) bool {
+// exact requested SPIFFE ID in this identity's trust domain.
+func (i *Identity) ConnectionHasIdentity(state tls.ConnectionState, identityPath SPIFFEPath) bool {
 	if !i.Enabled() {
 		return false
 	}
@@ -253,7 +247,7 @@ func (i *Identity) ConnectionHasIdentity(state tls.ConnectionState, identityName
 	if err != nil {
 		return false
 	}
-	expectedID, err := i.componentSPIFFEID(identityName)
+	expectedID, err := i.spiffeIDFromPath(identityPath)
 	return err == nil && peerID == expectedID
 }
 
@@ -279,27 +273,14 @@ func (i *Identity) verifyPeer(certificates []*x509.Certificate, usage x509.ExtKe
 	return peerID, nil
 }
 
-func (i *Identity) mustComponentSPIFFEID(identityName string) spiffeid.ID {
-	id, err := i.componentSPIFFEID(identityName)
-	vpre.CheckNilError(err, "build %s SPIFFE ID failed", identityName)
+func (i *Identity) mustSPIFFEID(identityPath SPIFFEPath) spiffeid.ID {
+	id, err := i.spiffeIDFromPath(identityPath)
+	vpre.CheckNilError(err, "build SPIFFE ID from path %q failed", identityPath)
 	return id
 }
 
-func (i *Identity) componentSPIFFEID(identityName string) (spiffeid.ID, error) {
-	path, err := componentSPIFFEPath(identityName)
-	if err != nil {
-		return spiffeid.ID{}, err
-	}
-	return spiffeid.FromPath(i.spiffeID.TrustDomain(), path)
-}
-
-func componentSPIFFEPath(identityName string) (string, error) {
-	switch identityName {
-	case HubIdentity, LinkIdentity, PortalIdentity:
-		return "/vine/daemon/" + identityName, nil
-	default:
-		return "", fmt.Errorf("unknown Vine component identity %q", identityName)
-	}
+func (i *Identity) spiffeIDFromPath(identityPath SPIFFEPath) (spiffeid.ID, error) {
+	return spiffeid.FromPath(i.spiffeID.TrustDomain(), identityPath.String())
 }
 
 func parseCertificateChain(rawCertificates [][]byte) ([]*x509.Certificate, error) {
@@ -317,7 +298,7 @@ func parseCertificateChain(rawCertificates [][]byte) ([]*x509.Certificate, error
 // HTTPTransport creates a transport for one expected backend identity. When
 // mTLS is enabled, plaintext HTTP is rejected instead of silently downgrading.
 // Disabled identities retain the existing h2c transport for development.
-func (i *Identity) HTTPTransport(serverIdentity string) http.RoundTripper {
+func (i *Identity) HTTPTransport(serverIdentity SPIFFEPath) http.RoundTripper {
 	if i == nil {
 		return newH2CTransport()
 	}

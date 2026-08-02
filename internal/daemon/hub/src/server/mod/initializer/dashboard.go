@@ -6,9 +6,9 @@ import (
 	"strconv"
 
 	coreapp "go.yorun.ai/vine/internal/core/app"
-	"go.yorun.ai/vine/internal/core/mtls"
 	rpcinproc "go.yorun.ai/vine/internal/core/rpc/transport/inproc"
 	webinproc "go.yorun.ai/vine/internal/core/web/inproc"
+	"go.yorun.ai/vine/internal/daemon"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/seeder"
@@ -69,7 +69,7 @@ var (
 
 	dashboardRpcRegistrations = newDashboardRpcRegistrations()
 	dashboardWebRegistration  = redised.WebRegistration{
-		ServerIdentity: mtls.HubIdentity,
+		ServerIdentity: daemon.HubIdentity,
 		WebSkelName:    seeder.DashboardWebCoreEntry.WebName,
 		AppName:        dashboardAppName,
 		AppVersion:     dashboardAppVersion,
@@ -81,7 +81,7 @@ func newDashboardRpcRegistrations() map[string]redised.RpcServiceRegistration {
 	registrations := make(map[string]redised.RpcServiceRegistration, len(seeder.DashboardRpcServices))
 	for _, serviceName := range seeder.DashboardRpcServices {
 		registrations[serviceName] = redised.RpcServiceRegistration{
-			ServerIdentity: mtls.HubIdentity,
+			ServerIdentity: daemon.HubIdentity,
 			ServiceName:    serviceName,
 			AppName:        dashboardAppName,
 			AppVersion:     dashboardAppVersion,

@@ -8,7 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/mtls"
-	"go.yorun.ai/vine/internal/testutil/mtlstest"
+	"go.yorun.ai/vine/internal/core/mtls/mtlstest"
+	"go.yorun.ai/vine/internal/daemon"
 )
 
 func TestVaultGetCertificateMatchesHost(t *testing.T) {
@@ -212,7 +213,7 @@ func newTemporaryWebCertVault(t *testing.T, certs map[string]*_Certificate) *Vau
 		certs = map[string]*_Certificate{}
 	}
 	vault := &Vault{
-		Identity: mtlstest.NewCA(t).Identity(t, mtls.PortalIdentity),
+		Identity: mtlstest.NewCA(t).Identity(t, daemon.PortalIdentity.SPIFFEPath()),
 		certs:    certs,
 	}
 	vault.initTemporaryWebCerts()

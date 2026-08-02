@@ -17,7 +17,7 @@ func (g *WebGateway) forward(ctx *spec.Context, request *http.Request, registrat
 	endpoint := registration.Endpoint
 	encodeWebOptionsToHeader(request)
 	encodeWebForwardTrace(request.Header)
-	transport, err := g.access.Identity.BackendTransport(registration.ServerIdentity, endpoint)
+	transport, err := g.access.Identity.BackendTransport(registration.ServerIdentity.SPIFFEPath(), endpoint)
 	if err != nil {
 		http.Error(ctx.ResponseWriter, "webgw endpoint is insecure: "+err.Error(), http.StatusServiceUnavailable)
 		return

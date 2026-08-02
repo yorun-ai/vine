@@ -15,6 +15,7 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/mtls"
+	"go.yorun.ai/vine/internal/daemon"
 	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
 	"go.yorun.ai/vine/util/vpre"
 )
@@ -74,8 +75,12 @@ func (s *Store) Start() {
 	vpre.CheckNilError(err, "start redis listener failed")
 	readyTLSConfig := (*tls.Config)(nil)
 	if s.identity.Enabled() {
-		listener = tls.NewListener(listener, s.identity.ServerConfig(mtls.HubIdentity, mtls.LinkIdentity, mtls.PortalIdentity))
-		readyTLSConfig = s.identity.ClientConfig(mtls.HubIdentity)
+		listener = tls.NewListener(listener, s.identity.ServerConfig(
+			daemon.HubIdentity.SPIFFEPath(),
+			daemon.LinkIdentity.SPIFFEPath(),
+			daemon.PortalIdentity.SPIFFEPath(),
+		))
+		readyTLSConfig = s.identity.ClientConfig(daemon.HubIdentity.SPIFFEPath())
 	}
 	s.listener = listener
 	s.server = redcon.NewServer(listener.Addr().String(), s.handleCommand, nil, nil)

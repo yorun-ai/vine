@@ -19,7 +19,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const testTrustDomain = "test.vine.local"
+const (
+	testTrustDomain    = "test.vine.local"
+	testServerIdentity = SPIFFEPath("/test/server")
+	testClientIdentity = SPIFFEPath("/test/client")
+	testOtherIdentity  = SPIFFEPath("/test/other")
+)
 
 type testCA struct {
 	cert *x509.Certificate
@@ -48,11 +53,9 @@ func newTestCA(t *testing.T) testCA {
 	return testCA{cert: cert, key: key, pem: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})}
 }
 
-func (ca testCA) files(t *testing.T, identityName string, usages ...x509.ExtKeyUsage) Files {
+func (ca testCA) files(t *testing.T, identityPath SPIFFEPath, usages ...x509.ExtKeyUsage) Files {
 	t.Helper()
-	path, err := componentSPIFFEPath(identityName)
-	require.NoError(t, err)
-	return ca.filesWithURIs(t, identityName, []string{"spiffe://" + testTrustDomain + path}, usages...)
+	return ca.filesWithURIs(t, identityPath.String(), []string{"spiffe://" + testTrustDomain + identityPath.String()}, usages...)
 }
 
 func (ca testCA) filesWithURIs(t *testing.T, commonName string, uriStrings []string, usages ...x509.ExtKeyUsage) Files {
@@ -91,73 +94,73 @@ func (ca testCA) filesWithURIs(t *testing.T, commonName string, uriStrings []str
 }
 
 func TestLoadDisabledIdentity(t *testing.T) {
-	identity, err := Load(HubIdentity, Files{})
+	identity, err := Load(testServerIdentity, Files{})
 	require.NoError(t, err)
 	assert.False(t, identity.Enabled())
 }
 
 func TestLoadRequiresAllFiles(t *testing.T) {
-	_, err := Load(HubIdentity, Files{CAFile: "ca.pem"})
+	_, err := Load(testServerIdentity, Files{CAFile: "ca.pem"})
 	assert.EqualError(t, err, "mtls-ca-file, mtls-cert-file, and mtls-key-file must be configured together")
 }
 
 func TestLoadValidatesIdentityAndBothUsages(t *testing.T) {
 	ca := newTestCA(t)
 
-	_, err := Load(HubIdentity, ca.files(t, LinkIdentity))
+	_, err := Load(testServerIdentity, ca.files(t, testClientIdentity))
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "does not identify vine.hub")
+	assert.Contains(t, err.Error(), "does not match expected ID")
 
-	_, err = Load(HubIdentity, ca.filesWithURIs(t, HubIdentity, []string{
-		"spiffe://" + testTrustDomain + "/vine/daemon/vine.hub",
-		"spiffe://" + testTrustDomain + "/vine/daemon/vine.link",
+	_, err = Load(testServerIdentity, ca.filesWithURIs(t, testServerIdentity.String(), []string{
+		"spiffe://" + testTrustDomain + testServerIdentity.String(),
+		"spiffe://" + testTrustDomain + testClientIdentity.String(),
 	}))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "more than one URI SAN")
 
-	_, err = Load(HubIdentity, ca.filesWithURIs(t, HubIdentity, nil))
+	_, err = Load(testServerIdentity, ca.filesWithURIs(t, testServerIdentity.String(), nil))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no URI SAN")
 
-	_, err = Load(HubIdentity, ca.files(t, HubIdentity, x509.ExtKeyUsageServerAuth))
+	_, err = Load(testServerIdentity, ca.files(t, testServerIdentity, x509.ExtKeyUsageServerAuth))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "client authentication")
 }
 
 func TestLoadExposesExactSPIFFEID(t *testing.T) {
 	ca := newTestCA(t)
-	hub, err := Load(HubIdentity, ca.files(t, HubIdentity))
+	server, err := Load(testServerIdentity, ca.files(t, testServerIdentity))
 	require.NoError(t, err)
 
-	assert.Equal(t, "spiffe://"+testTrustDomain+"/vine/daemon/vine.hub", hub.SPIFFEID())
+	assert.Equal(t, "spiffe://"+testTrustDomain+testServerIdentity.String(), server.SPIFFEID())
 	assert.Empty(t, DisabledIdentity().SPIFFEID())
 }
 
 func TestIdentityRejectsPeerFromDifferentTrustDomain(t *testing.T) {
 	ca := newTestCA(t)
-	hub, err := Load(HubIdentity, ca.files(t, HubIdentity))
+	server, err := Load(testServerIdentity, ca.files(t, testServerIdentity))
 	require.NoError(t, err)
-	link, err := Load(LinkIdentity, ca.filesWithURIs(t, LinkIdentity, []string{
-		"spiffe://other.vine.local/vine/daemon/vine.link",
+	client, err := Load(testClientIdentity, ca.filesWithURIs(t, testClientIdentity.String(), []string{
+		"spiffe://other.vine.local" + testClientIdentity.String(),
 	}))
 	require.NoError(t, err)
 
-	_, err = hub.verifyPeer([]*x509.Certificate{link.certificate.Leaf}, x509.ExtKeyUsageClientAuth)
+	_, err = server.verifyPeer([]*x509.Certificate{client.certificate.Leaf}, x509.ExtKeyUsageClientAuth)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no X.509 bundle found for trust domain")
 }
 
 func TestIdentityMutualTLSHandshake(t *testing.T) {
 	ca := newTestCA(t)
-	hub, err := Load(HubIdentity, ca.files(t, HubIdentity))
+	server, err := Load(testServerIdentity, ca.files(t, testServerIdentity))
 	require.NoError(t, err)
-	link, err := Load(LinkIdentity, ca.files(t, LinkIdentity))
+	client, err := Load(testClientIdentity, ca.files(t, testClientIdentity))
 	require.NoError(t, err)
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	defer listener.Close()
-	tlsListener := tls.NewListener(listener, hub.ServerConfig(LinkIdentity))
+	tlsListener := tls.NewListener(listener, server.ServerConfig(testClientIdentity))
 	serverErr := make(chan error, 1)
 	go func() {
 		conn, acceptErr := tlsListener.Accept()
@@ -169,7 +172,7 @@ func TestIdentityMutualTLSHandshake(t *testing.T) {
 		serverErr <- conn.(*tls.Conn).Handshake()
 	}()
 
-	conn, err := tls.Dial("tcp", listener.Addr().String(), link.ClientConfig(HubIdentity))
+	conn, err := tls.Dial("tcp", listener.Addr().String(), client.ClientConfig(testServerIdentity))
 	require.NoError(t, err)
 	require.NoError(t, conn.Close())
 	require.NoError(t, <-serverErr)
@@ -177,15 +180,15 @@ func TestIdentityMutualTLSHandshake(t *testing.T) {
 
 func TestServerRejectsWrongClientIdentity(t *testing.T) {
 	ca := newTestCA(t)
-	hub, err := Load(HubIdentity, ca.files(t, HubIdentity))
+	server, err := Load(testServerIdentity, ca.files(t, testServerIdentity))
 	require.NoError(t, err)
-	portal, err := Load(PortalIdentity, ca.files(t, PortalIdentity))
+	other, err := Load(testOtherIdentity, ca.files(t, testOtherIdentity))
 	require.NoError(t, err)
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	defer listener.Close()
-	tlsListener := tls.NewListener(listener, hub.ServerConfig(LinkIdentity))
+	tlsListener := tls.NewListener(listener, server.ServerConfig(testClientIdentity))
 	serverErr := make(chan error, 1)
 	go func() {
 		conn, acceptErr := tlsListener.Accept()
@@ -197,7 +200,7 @@ func TestServerRejectsWrongClientIdentity(t *testing.T) {
 		serverErr <- conn.(*tls.Conn).Handshake()
 	}()
 
-	conn, err := tls.Dial("tcp", listener.Addr().String(), portal.ClientConfig(HubIdentity))
+	conn, err := tls.Dial("tcp", listener.Addr().String(), other.ClientConfig(testServerIdentity))
 	if err == nil {
 		_ = conn.Close()
 	}
@@ -208,15 +211,15 @@ func TestServerRejectsWrongClientIdentity(t *testing.T) {
 
 func TestClientRejectsWrongServerIdentity(t *testing.T) {
 	ca := newTestCA(t)
-	portal, err := Load(PortalIdentity, ca.files(t, PortalIdentity))
+	otherServer, err := Load(testOtherIdentity, ca.files(t, testOtherIdentity))
 	require.NoError(t, err)
-	link, err := Load(LinkIdentity, ca.files(t, LinkIdentity))
+	client, err := Load(testClientIdentity, ca.files(t, testClientIdentity))
 	require.NoError(t, err)
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	defer listener.Close()
-	tlsListener := tls.NewListener(listener, portal.ServerConfig(LinkIdentity))
+	tlsListener := tls.NewListener(listener, otherServer.ServerConfig(testClientIdentity))
 	serverErr := make(chan error, 1)
 	go func() {
 		conn, acceptErr := tlsListener.Accept()
@@ -228,7 +231,7 @@ func TestClientRejectsWrongServerIdentity(t *testing.T) {
 		serverErr <- conn.(*tls.Conn).Handshake()
 	}()
 
-	conn, err := tls.Dial("tcp", listener.Addr().String(), link.ClientConfig(HubIdentity))
+	conn, err := tls.Dial("tcp", listener.Addr().String(), client.ClientConfig(testServerIdentity))
 	if err == nil {
 		_ = conn.Close()
 	}
@@ -239,13 +242,13 @@ func TestClientRejectsWrongServerIdentity(t *testing.T) {
 
 func TestBackendTransportRejectsDowngradeAndMissingIdentity(t *testing.T) {
 	ca := newTestCA(t)
-	portal, err := Load(PortalIdentity, ca.files(t, PortalIdentity))
+	client, err := Load(testOtherIdentity, ca.files(t, testOtherIdentity))
 	require.NoError(t, err)
 
-	_, err = portal.BackendTransport(LinkIdentity, "http://link.local:7070")
+	_, err = client.BackendTransport(testClientIdentity, "http://service.local:7070")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "must use https")
 
-	_, err = portal.BackendTransport("", "https://link.local:7070")
+	_, err = client.BackendTransport("", "https://service.local:7070")
 	assert.EqualError(t, err, "mTLS backend server identity is missing")
 }

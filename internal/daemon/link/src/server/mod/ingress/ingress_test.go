@@ -15,18 +15,18 @@ import (
 	"go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/mtls"
+	"go.yorun.ai/vine/internal/core/mtls/mtlstest"
 	"go.yorun.ai/vine/internal/core/rpc/client"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	rpcinproc "go.yorun.ai/vine/internal/core/rpc/transport/inproc"
 	"go.yorun.ai/vine/internal/core/skel"
 	webinproc "go.yorun.ai/vine/internal/core/web/inproc"
+	"go.yorun.ai/vine/internal/daemon"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/rpcproxy"
-	"go.yorun.ai/vine/internal/testutil/mtlstest"
 )
 
 const (
@@ -60,8 +60,8 @@ func useTestIngressHost(t *testing.T, host string) {
 
 func TestIngressUsesMutualTLS(t *testing.T) {
 	ca := mtlstest.NewCA(t)
-	linkIdentity := ca.Identity(t, mtls.LinkIdentity)
-	portalIdentity := ca.Identity(t, mtls.PortalIdentity)
+	linkIdentity := ca.Identity(t, daemon.LinkIdentity.SPIFFEPath())
+	portalIdentity := ca.Identity(t, daemon.PortalIdentity.SPIFFEPath())
 	useTestIngressHost(t, "127.0.0.1")
 
 	ing := &Ingress{
@@ -81,7 +81,7 @@ func TestIngressUsesMutualTLS(t *testing.T) {
 	if got := ing.Endpoint(); len(got) < len("https://") || got[:len("https://")] != "https://" {
 		t.Fatalf("expected https ingress endpoint, got %q", got)
 	}
-	client := &http.Client{Transport: portalIdentity.HTTPTransport(mtls.LinkIdentity)}
+	client := &http.Client{Transport: portalIdentity.HTTPTransport(daemon.LinkIdentity.SPIFFEPath())}
 	response, err := client.Get(ing.Endpoint() + "/ready")
 	if err != nil {
 		t.Fatalf("mTLS ingress request failed: %v", err)

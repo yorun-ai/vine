@@ -1,6 +1,6 @@
 package core
 
-import "go.yorun.ai/vine/internal/core/mtls"
+import "go.yorun.ai/vine/internal/daemon"
 
 type RegistryCore struct {
 	RegistryRepo RegistryRepo `inject:""`
@@ -21,7 +21,7 @@ func (m *RegistryCore) Register(reg AppRegistration) {
 	for _, serviceHandler := range reg.ServiceHandlers {
 		m.RegistryRepo.SaveRpcServiceRegistration(&RpcServiceRegistration{
 			Endpoint:       serviceHandler.Endpoint,
-			ServerIdentity: mtls.LinkIdentity,
+			ServerIdentity: daemon.LinkIdentity,
 			ServiceName:    serviceHandler.ServiceSkelName,
 			AppName:        reg.Name,
 			AppVersion:     reg.Version,
@@ -31,7 +31,7 @@ func (m *RegistryCore) Register(reg AppRegistration) {
 	for _, webHandler := range reg.WebHandlers {
 		m.RegistryRepo.SaveWebRegistration(&WebRegistration{
 			Endpoint:       webHandler.Endpoint,
-			ServerIdentity: mtls.LinkIdentity,
+			ServerIdentity: daemon.LinkIdentity,
 			WebSkelName:    webHandler.WebSkelName,
 			AppName:        reg.Name,
 			AppVersion:     reg.Version,

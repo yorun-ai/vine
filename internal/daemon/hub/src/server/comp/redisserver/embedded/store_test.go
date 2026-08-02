@@ -8,28 +8,28 @@ import (
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/core/mtls"
+	"go.yorun.ai/vine/internal/core/mtls/mtlstest"
+	"go.yorun.ai/vine/internal/daemon"
 	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
-	"go.yorun.ai/vine/internal/testutil/mtlstest"
 )
 
 func TestStoreUsesMTLSIdentityForRedisRole(t *testing.T) {
 	ca := mtlstest.NewCA(t)
-	hubIdentity := ca.Identity(t, mtls.HubIdentity)
-	linkIdentity := ca.Identity(t, mtls.LinkIdentity)
-	portalIdentity := ca.Identity(t, mtls.PortalIdentity)
+	hubIdentity := ca.Identity(t, daemon.HubIdentity.SPIFFEPath())
+	linkIdentity := ca.Identity(t, daemon.LinkIdentity.SPIFFEPath())
+	portalIdentity := ca.Identity(t, daemon.PortalIdentity.SPIFFEPath())
 	store := NewStore("127.0.0.1:0", false, "test-server-password", hubIdentity)
 	store.Start()
 	t.Cleanup(store.Stop)
 	store.Set(hubredis.RevisionKey, "42")
 
-	linkClient := newMTLSRedisClient(store.ListenAddr(), hubredis.LinkUsername, linkIdentity.ClientConfig(mtls.HubIdentity))
+	linkClient := newMTLSRedisClient(store.ListenAddr(), hubredis.LinkUsername, linkIdentity.ClientConfig(daemon.HubIdentity.SPIFFEPath()))
 	t.Cleanup(func() { _ = linkClient.Close() })
 	value, err := linkClient.Get(context.Background(), hubredis.RevisionKey).Result()
 	require.NoError(t, err)
 	assert.Equal(t, "42", value)
 
-	impersonatingClient := newMTLSRedisClient(store.ListenAddr(), hubredis.LinkUsername, portalIdentity.ClientConfig(mtls.HubIdentity))
+	impersonatingClient := newMTLSRedisClient(store.ListenAddr(), hubredis.LinkUsername, portalIdentity.ClientConfig(daemon.HubIdentity.SPIFFEPath()))
 	t.Cleanup(func() { _ = impersonatingClient.Close() })
 	_, err = impersonatingClient.Get(context.Background(), hubredis.RevisionKey).Result()
 	require.Error(t, err)

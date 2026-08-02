@@ -48,7 +48,7 @@ type _AppImpl struct {
 	identity          *mtls.Identity
 	rpcTransport      http.RoundTripper
 	protectHTTPServer bool
-	httpServerClients []string
+	httpServerClients []mtls.SPIFFEPath
 
 	inprocFlag *InternalInprocFlag
 
@@ -131,7 +131,7 @@ func (a *_AppImpl) initByInternalAttrs() bool {
 	}
 	a.rpcTransport = internalAttrs.RPCTransport
 	a.protectHTTPServer = internalAttrs.ProtectHTTPServer
-	a.httpServerClients = append([]string(nil), internalAttrs.HTTPServerClients...)
+	a.httpServerClients = append([]mtls.SPIFFEPath(nil), internalAttrs.HTTPServerClients...)
 	a.inprocFlag.HostPath = internalAttrs.InprocHostPath
 
 	return true

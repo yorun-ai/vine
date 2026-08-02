@@ -18,6 +18,7 @@ import (
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/mtls"
+	"go.yorun.ai/vine/internal/daemon"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/rpcproxy"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/webproxy"
@@ -90,7 +91,11 @@ func (g *Ingress) startHTTPServer() {
 	serve := server.Serve
 	if g.Identity.Enabled() {
 		server.Handler = g.httpHandler()
-		server.TLSConfig = g.Identity.ServerConfig(mtls.HubIdentity, mtls.LinkIdentity, mtls.PortalIdentity)
+		server.TLSConfig = g.Identity.ServerConfig(
+			daemon.HubIdentity.SPIFFEPath(),
+			daemon.LinkIdentity.SPIFFEPath(),
+			daemon.PortalIdentity.SPIFFEPath(),
+		)
 		vpre.CheckNilError(http2.ConfigureServer(server, &http2.Server{}), "link ingress HTTP/2 configure failed")
 		serve = func(listener net.Listener) error { return server.ServeTLS(listener, "", "") }
 	} else {

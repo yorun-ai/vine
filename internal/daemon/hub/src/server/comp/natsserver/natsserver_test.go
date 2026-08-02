@@ -9,10 +9,10 @@ import (
 	gonats "github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/app"
-	"go.yorun.ai/vine/internal/core/mtls"
+	"go.yorun.ai/vine/internal/core/mtls/mtlstest"
+	"go.yorun.ai/vine/internal/daemon"
 	hubnats "go.yorun.ai/vine/internal/daemon/hub/api/nats"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
-	"go.yorun.ai/vine/internal/testutil/mtlstest"
 )
 
 func runTestNATSServerDIInit(t *testing.T, server *NATSServer) {
@@ -110,9 +110,9 @@ func TestNATSServerDIInitPublishesMQEndpointWhenEnableNats(t *testing.T) {
 
 func TestNATSServerUsesMutualTLS(t *testing.T) {
 	ca := mtlstest.NewCA(t)
-	hubIdentity := ca.Identity(t, mtls.HubIdentity)
-	linkIdentity := ca.Identity(t, mtls.LinkIdentity)
-	portalIdentity := ca.Identity(t, mtls.PortalIdentity)
+	hubIdentity := ca.Identity(t, daemon.HubIdentity.SPIFFEPath())
+	linkIdentity := ca.Identity(t, daemon.LinkIdentity.SPIFFEPath())
+	portalIdentity := ca.Identity(t, daemon.PortalIdentity.SPIFFEPath())
 	server := &NATSServer{
 		InprocFlag: &app.InternalInprocFlag{},
 		Flag:       &flag.Flag{MQEmbeddedNats: true},
@@ -133,7 +133,7 @@ func TestNATSServerUsesMutualTLS(t *testing.T) {
 
 	linkConn, err := gonats.Connect(
 		server.Endpoint(),
-		gonats.Secure(linkIdentity.ClientConfig(mtls.HubIdentity)),
+		gonats.Secure(linkIdentity.ClientConfig(daemon.HubIdentity.SPIFFEPath())),
 		gonats.TLSHandshakeFirst(),
 		gonats.Timeout(time.Second),
 	)
@@ -142,7 +142,7 @@ func TestNATSServerUsesMutualTLS(t *testing.T) {
 
 	portalConn, err := gonats.Connect(
 		server.Endpoint(),
-		gonats.Secure(portalIdentity.ClientConfig(mtls.HubIdentity)),
+		gonats.Secure(portalIdentity.ClientConfig(daemon.HubIdentity.SPIFFEPath())),
 		gonats.TLSHandshakeFirst(),
 		gonats.Timeout(time.Second),
 	)

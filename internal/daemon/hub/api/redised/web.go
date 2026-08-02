@@ -1,6 +1,10 @@
 package redised
 
-import "fmt"
+import (
+	"fmt"
+
+	"go.yorun.ai/vine/internal/daemon"
+)
 
 const (
 	webRegistrationPrefixFormat = "web:%s:endpoint"
@@ -8,12 +12,12 @@ const (
 )
 
 type WebRegistration struct {
-	Endpoint       string `json:"endpoint"`
-	ServerIdentity string `json:"serverIdentity,omitempty"`
-	WebSkelName    string `json:"webSkelName"`
-	AppName        string `json:"appName"`
-	AppVersion     string `json:"appVersion"`
-	AppInstanceId  string `json:"appInstanceId"`
+	Endpoint       string          `json:"endpoint"`
+	ServerIdentity daemon.Identity `json:"serverIdentity,omitempty"`
+	WebSkelName    string          `json:"webSkelName"`
+	AppName        string          `json:"appName"`
+	AppVersion     string          `json:"appVersion"`
+	AppInstanceId  string          `json:"appInstanceId"`
 }
 
 func FormatWebRegistrationKey(webSkelName string, appName string, instanceId string) string {

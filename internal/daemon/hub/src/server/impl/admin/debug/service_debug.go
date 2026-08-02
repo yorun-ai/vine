@@ -153,7 +153,7 @@ func (s *ServiceDebugServiceServerImpl) InvokeService(request skeled.ServiceDebu
 		Actor:           actor,
 	})
 
-	transport, err := s.Identity.BackendTransport(registration.ServerIdentity, registration.Endpoint)
+	transport, err := s.Identity.BackendTransport(registration.ServerIdentity.SPIFFEPath(), registration.Endpoint)
 	ex.PanicNewIfError(err, ex.ServiceUnavailable)
 	response, err := doServiceDebugInvokeRequest(httpRequest, transport)
 	ex.PanicNewIfError(err, ex.ServiceUnavailable)
