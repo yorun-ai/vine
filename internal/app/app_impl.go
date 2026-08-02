@@ -16,6 +16,7 @@ import (
 	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/internal/core/link"
 	linkskeled "go.yorun.ai/vine/internal/core/link/skeled"
+	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
 	"go.yorun.ai/vine/internal/core/rpc/server"
@@ -56,7 +57,6 @@ type _AppImpl struct {
 	httpWG     sync.WaitGroup
 	httpHost   string
 	httpPort   int
-	doneSignal chan struct{}
 
 	lifecycleState _AppLifecycleState
 
@@ -103,7 +103,6 @@ func (a *_AppImpl) init() {
 	}
 
 	a.listenAddr = a.flags.ListenAddr()
-	a.doneSignal = make(chan struct{})
 }
 
 func (a *_AppImpl) isInternalApplication() bool {
@@ -179,15 +178,14 @@ func (a *_AppImpl) StopGracefully() {
 	vpre.Check(a.lifecycleState == appLifecycleStateStarted, "application already stopped")
 	a.lifecycleState = appLifecycleStateStopping
 
-	go func() {
-		a.beforeAppStop()
-		a.unregisterApp()
-		a.stopServers()
-		a.cancel()
-		a.afterAppStop()
-		close(a.doneSignal)
-	}()
-	<-a.doneSignal
+	// Keep shutdown on the caller's goroutine. Lifecycle hooks are user code and
+	// may panic; synchronous execution lets the lifecycle owner recover that panic
+	// at its own boundary instead of turning it into an unrecoverable goroutine panic.
+	a.beforeAppStop()
+	a.unregisterApp()
+	a.stopServers()
+	a.cancel()
+	a.afterAppStop()
 
 	a.lifecycleState = appLifecycleStateStopped
 }
@@ -323,7 +321,15 @@ func (a *_AppImpl) unregisterApp() {
 	if !a.shouldRegisterApp() {
 		return
 	}
-	a.linker.RegistryClient().Unregister(rpcclient.WithTimeout(unregisterTimeout))
+	err := a.linker.RegistryClientER().Unregister(rpcclient.WithTimeout(unregisterTimeout))
+	if err != nil {
+		// Link unregistration is remote, best-effort cleanup. A failure here must
+		// not strand local servers, the application context, or shutdown hooks.
+		logger.Error(a.spec.Name()+" application unregister failed",
+			"instanceId", a.info.InstanceId(),
+			"error", err,
+		)
+	}
 }
 
 func (a *_AppImpl) webHandlerRegistrations() []linkskeled.WebHandlerRegistration {

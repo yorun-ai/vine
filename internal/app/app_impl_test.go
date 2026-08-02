@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net"
@@ -15,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	coreapp "go.yorun.ai/vine/internal/core/app"
 	"go.yorun.ai/vine/internal/core/di"
+	"go.yorun.ai/vine/internal/core/ex"
 	linkskeled "go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/logger"
 	web "go.yorun.ai/vine/internal/core/web/spec"
@@ -253,6 +255,14 @@ type testHookErrorModule struct {
 
 func (p *testHookErrorModule) BeforeAppStart() error {
 	return p.State.Err
+}
+
+type testHookStopPanicModule struct {
+	BaseModule
+}
+
+func (*testHookStopPanicModule) BeforeAppStop() {
+	panic(errors.New("stop hook failed"))
 }
 
 type testHTTPRouteModule struct {
@@ -677,6 +687,39 @@ func TestAppImplStopGracefullyPanicsWhenAlreadyStopped(t *testing.T) {
 	assert.PanicsWithError(t, "application already stopped", func() {
 		app.StopGracefully()
 	})
+}
+
+func TestAppImplStopGracefullyPropagatesHookPanicToCaller(t *testing.T) {
+	app := newTestAppImpl()
+	app.lifecycleState = appLifecycleStateStarted
+	app.modules = []Module{&testHookStopPanicModule{}}
+
+	assert.PanicsWithError(t, "stop hook failed", func() {
+		app.StopGracefully()
+	})
+	assert.Equal(t, appLifecycleStateStopping, app.lifecycleState)
+}
+
+func TestAppImplStopGracefullyContinuesAfterUnregisterFailure(t *testing.T) {
+	events := []string{}
+	linker := &testLinker{
+		UnregisterError: ex.New(ex.InvocationTimeout, "unregister timed out"),
+	}
+	app := newTestAppImpl()
+	app.ctx, app.cancel = context.WithCancel(context.Background())
+	app.linker = linker
+	app.servicer = &_Servicer{}
+	app.modules = []Module{&testHookModule{Log: &testLifecycleLog{Events: &events}}}
+	app.lifecycleState = appLifecycleStateStarted
+
+	assert.NotPanics(t, func() {
+		app.StopGracefully()
+	})
+
+	assert.Equal(t, 1, linker.UnregisterCalls)
+	assert.ErrorIs(t, app.ctx.Err(), context.Canceled)
+	assert.Equal(t, []string{"before-stop", "after-stop"}, events)
+	assert.Equal(t, appLifecycleStateStopped, app.lifecycleState)
 }
 
 func TestAppImplStartPanicsAfterStopped(t *testing.T) {
