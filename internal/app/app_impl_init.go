@@ -26,6 +26,9 @@ import (
 
 func (a *_AppImpl) bindRuntime(b *di.Binder) {
 	b.Bind(T[runtime.App]()).ToInstance(a.info)
+	if a.isInternalApplication() {
+		b.Bind(T[InternalRuntime]()).ToInstance(a)
+	}
 
 	for flagType, flag := range a.flags {
 		b.Bind(flagType).ToFactory(func() any {

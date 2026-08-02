@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils'
 import {
   createEventDebugService,
   type EventDebugEventItem,
-} from '@/skeled'
+} from '@/skeled/admin'
 
 const eventDebugService = createEventDebugService(vrpcClient)
 const jsonExtensions = [json()]

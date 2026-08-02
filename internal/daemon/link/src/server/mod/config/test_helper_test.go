@@ -9,7 +9,7 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
 	"go.yorun.ai/vine/internal/core/skel"
-	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled"
+	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubredis"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"

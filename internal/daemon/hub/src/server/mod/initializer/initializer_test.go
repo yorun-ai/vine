@@ -9,7 +9,8 @@ import (
 	appcore "go.yorun.ai/vine/internal/app"
 	coreskel "go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	_ "go.yorun.ai/vine/internal/daemon/hub/api/skeled"
+	_ "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
+	_ "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	hubflag "go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
@@ -233,7 +234,7 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 		},
 		SchemaRepo: &schema.MemorySchemaRepo{},
 		InprocFlag: &appcore.InternalInprocFlag{},
-		Flag:       &hubflag.Flag{APIListen: "127.0.0.1:7071"},
+		Flag:       &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
 
 	p.DIInit()
@@ -261,17 +262,17 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 
 	defaultSiteValue, err := db.Get(redised.FormatPortalSiteKey(seeder.DashboardRpcCoreEntry.Name))
 	assert.NoError(t, err)
-	assert.Contains(t, defaultSiteValue, `"name":"vine.hub.AdminActor-client-rpc"`)
+	assert.Contains(t, defaultSiteValue, `"name":"vine.hub.admin.AdminActor-client-rpc"`)
 
 	defaultWebSiteValue, err := db.Get(redised.FormatPortalSiteKey(seeder.DashboardWebCoreEntry.Name))
 	assert.NoError(t, err)
-	assert.Contains(t, defaultWebSiteValue, `"name":"vine.hub.DashboardWeb-web"`)
+	assert.Contains(t, defaultWebSiteValue, `"name":"vine.hub.admin.DashboardWeb-web"`)
 
-	adminActorValue, err := db.Get(redised.FormatSchemaActorKey("vine.hub.AdminActor"))
+	adminActorValue, err := db.Get(redised.FormatSchemaActorKey("vine.hub.admin.AdminActor"))
 	assert.NoError(t, err)
-	assert.Contains(t, adminActorValue, `"skelName":"vine.hub.AdminActor"`)
+	assert.Contains(t, adminActorValue, `"skelName":"vine.hub.admin.AdminActor"`)
 
-	skeletonServiceValue, err := db.Get(redised.FormatSchemaServiceKey("vine.hub.SkeletonService"))
+	skeletonServiceValue, err := db.Get(redised.FormatSchemaServiceKey("vine.hub.admin.SkeletonService"))
 	assert.NoError(t, err)
 	assert.Contains(t, skeletonServiceValue, `"authMode":"noauth"`)
 
@@ -371,7 +372,7 @@ func TestInitializerDIInitWritesDashboardEntriesAndRulesFromRepo(t *testing.T) {
 		EntryRepo:     entryRepo,
 		SchemaRepo:    &schema.MemorySchemaRepo{},
 		InprocFlag:    &appcore.InternalInprocFlag{},
-		Flag:          &hubflag.Flag{APIListen: "127.0.0.1:7071"},
+		Flag:          &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
 
 	p.DIInit()
@@ -400,17 +401,17 @@ func TestInitializerDIInitWritesDashboardEntriesAndRulesFromRepo(t *testing.T) {
 
 func TestDashboardRpcServicesDerivedFromRegisteredSchema(t *testing.T) {
 	assert.Equal(t, []string{
-		"vine.hub.AppConfigService",
-		"vine.hub.AppStatusService",
-		"vine.hub.EventDebugService",
-		"vine.hub.MaintenanceService",
-		"vine.hub.PortalCertService",
-		"vine.hub.PortalEntryService",
-		"vine.hub.PortalRuleService",
-		"vine.hub.PortalSiteService",
-		"vine.hub.ServiceDebugService",
-		"vine.hub.SkeletonService",
-		"vine.hub.TaskDebugService",
+		"vine.hub.admin.AppConfigService",
+		"vine.hub.admin.AppStatusService",
+		"vine.hub.admin.EventDebugService",
+		"vine.hub.admin.MaintenanceService",
+		"vine.hub.admin.PortalCertService",
+		"vine.hub.admin.PortalEntryService",
+		"vine.hub.admin.PortalRuleService",
+		"vine.hub.admin.PortalSiteService",
+		"vine.hub.admin.ServiceDebugService",
+		"vine.hub.admin.SkeletonService",
+		"vine.hub.admin.TaskDebugService",
 	}, seeder.DashboardRpcServices)
 }
 
@@ -424,37 +425,37 @@ func marshalTestConfigValue(name string, value string) string {
 func TestDashboardRpcEndpointUsesInprocWhenEnabled(t *testing.T) {
 	initializer := &Initializer{
 		InprocFlag: &appcore.InternalInprocFlag{Enabled: true},
-		Flag:       &hubflag.Flag{APIListen: "127.0.0.1:7071"},
+		Flag:       &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
 
-	assert.Equal(t, "rpc+inproc://vine/hub/rpc/invoke", initializer.dashboardRpcEndpoint())
+	assert.Equal(t, "rpc+inproc://vine/hub/admin/rpc/invoke", initializer.dashboardRpcEndpoint())
 }
 
 func TestDashboardWebEndpointUsesInprocWhenEnabled(t *testing.T) {
 	initializer := &Initializer{
 		InprocFlag: &appcore.InternalInprocFlag{Enabled: true},
-		Flag:       &hubflag.Flag{APIListen: "127.0.0.1:7071"},
+		Flag:       &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
 
-	assert.Equal(t, "web+inproc://vine/hub/web/access/vine.hub.DashboardWeb", initializer.dashboardWebEndpoint())
+	assert.Equal(t, "web+inproc://vine/hub/admin/web/access/vine.hub.admin.DashboardWeb", initializer.dashboardWebEndpoint())
 }
 
 func TestDashboardRpcEndpointUsesHTTPListenOutsideInproc(t *testing.T) {
 	initializer := &Initializer{
 		InprocFlag: &appcore.InternalInprocFlag{},
-		Flag:       &hubflag.Flag{APIListen: "127.0.0.1:7071"},
+		Flag:       &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
 
-	assert.Equal(t, "http://127.0.0.1:7071/rpc/invoke", initializer.dashboardRpcEndpoint())
+	assert.Equal(t, "http://127.0.0.1:7075/rpc/invoke", initializer.dashboardRpcEndpoint())
 }
 
 func TestDashboardWebEndpointUsesHTTPListenOutsideInproc(t *testing.T) {
 	initializer := &Initializer{
 		InprocFlag: &appcore.InternalInprocFlag{},
-		Flag:       &hubflag.Flag{APIListen: "127.0.0.1:7071"},
+		Flag:       &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
 
-	assert.Equal(t, "http://127.0.0.1:7071/web/access/vine.hub.DashboardWeb", initializer.dashboardWebEndpoint())
+	assert.Equal(t, "http://127.0.0.1:7075/web/access/vine.hub.admin.DashboardWeb", initializer.dashboardWebEndpoint())
 }
 
 func TestInitializerDIInitLoadsRegisteredSchemasIntoMemoryRepoInInprocMode(t *testing.T) {
@@ -477,7 +478,7 @@ func TestInitializerDIInitLoadsRegisteredSchemasIntoMemoryRepoInInprocMode(t *te
 		EntryRepo:     &testPortalSiteRepo{},
 		SchemaRepo:    schemaRepo,
 		InprocFlag:    &appcore.InternalInprocFlag{Enabled: true},
-		Flag:          &hubflag.Flag{APIListen: "127.0.0.1:7071"},
+		Flag:          &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
 
 	p.DIInit()
@@ -487,19 +488,19 @@ func TestInitializerDIInitLoadsRegisteredSchemasIntoMemoryRepoInInprocMode(t *te
 	assert.Same(t, domainSchema, got)
 }
 
-func TestInitializerDIInitLoadsHubSchemaIntoMemoryRepoInNormalMode(t *testing.T) {
+func TestInitializerDIInitLoadsHubSchemasIntoMemoryRepoInNormalMode(t *testing.T) {
 	redisServer := redisserver.NewServerForTest()
 	defer redisServer.AfterAppStop()
 
-	var hubSchema *coreskel.DomainSchema
+	hubSchemas := make(map[string]*coreskel.DomainSchema)
 	for _, schema := range coreskel.RegisteredDomainSchemas() {
-		if schema.Domain == "vine.hub" {
-			hubSchema = schema
-			break
+		switch schema.Domain {
+		case "vine.hub.control", "vine.hub.admin":
+			hubSchemas[schema.Domain] = schema
 		}
 	}
-	if hubSchema == nil {
-		t.Fatal("expected hub domain schema")
+	if len(hubSchemas) != 2 {
+		t.Fatalf("expected both Hub domain schemas, got %v", hubSchemas)
 	}
 
 	schemaRepo := new(schema.MemorySchemaRepo)
@@ -511,14 +512,17 @@ func TestInitializerDIInitLoadsHubSchemaIntoMemoryRepoInNormalMode(t *testing.T)
 		EntryRepo:     &testPortalSiteRepo{},
 		SchemaRepo:    schemaRepo,
 		InprocFlag:    &appcore.InternalInprocFlag{},
-		Flag:          &hubflag.Flag{APIListen: "127.0.0.1:7071"},
+		Flag:          &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
 
 	p.DIInit()
 
-	got, ok := findDomainSchemaByHash(schemaRepo.ListDomainSchemaViews(), hubSchema.Hash)
-	assert.True(t, ok)
-	assert.Same(t, hubSchema, got)
+	views := schemaRepo.ListDomainSchemaViews()
+	for domain, hubSchema := range hubSchemas {
+		got, ok := findDomainSchemaByHash(views, hubSchema.Hash)
+		assert.True(t, ok, domain)
+		assert.Same(t, hubSchema, got, domain)
+	}
 }
 
 func findDomainSchemaByHash(views []core.DomainSchemaView, hash string) (*coreskel.DomainSchema, bool) {

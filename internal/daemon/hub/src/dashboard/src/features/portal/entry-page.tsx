@@ -47,13 +47,13 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { vrpcClient } from '@/config/vrpc-client'
 import { useLocale } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { createPortalEntryService } from '@/skeled'
+import { createPortalEntryService } from '@/skeled/admin'
 import type {
   PortalEntry,
   PortalEntryAccessUpdate,
   PortalEntryRule,
   PortalRule,
-} from '@/skeled'
+} from '@/skeled/admin'
 
 const portalEntryService = createPortalEntryService(vrpcClient)
 const PORTAL_ENTRY_LIST_DEFAULT_WIDTH = 352

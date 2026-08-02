@@ -164,41 +164,41 @@ func TestSyncerWriteSchemasWritesMainActorAndServiceSchemas(t *testing.T) {
 	target.WriteSchemas([]core.DomainSchemaView{{
 		Actors: []core.SchemaVersion[*skel.ActorSchema]{{
 			Schema: &skel.ActorSchema{
-				SkelName: "vine.hub.AdminActor",
+				SkelName: "vine.hub.admin.AdminActor",
 				Hash:     "admin-actor-main",
 			},
-			SkelName:   "vine.hub.AdminActor",
+			SkelName:   "vine.hub.admin.AdminActor",
 			SchemaHash: "admin-actor-main",
 			Main:       true,
 		}},
 		Services: []core.SchemaVersion[*skel.ServiceSchema]{{
 			Schema: &skel.ServiceSchema{
-				SkelName: "vine.hub.SkeletonService",
+				SkelName: "vine.hub.admin.SkeletonService",
 				Hash:     "skeleton-service-main",
 				AuthMode: skel.AuthModeNoAuth,
 			},
-			SkelName:   "vine.hub.SkeletonService",
+			SkelName:   "vine.hub.admin.SkeletonService",
 			SchemaHash: "skeleton-service-main",
 			Main:       true,
 		}},
 	}})
 
-	value, ok := redisServer.Get(redised.FormatSchemaActorKey("vine.hub.AdminActor"))
+	value, ok := redisServer.Get(redised.FormatSchemaActorKey("vine.hub.admin.AdminActor"))
 	require.True(t, ok)
 	assert.JSONEq(t, `{
 		"name": "",
-		"skelName": "vine.hub.AdminActor",
+		"skelName": "vine.hub.admin.AdminActor",
 		"hash": "admin-actor-main",
 		"authEnabled": false,
 		"permEnabled": false,
 		"vias": null
 	}`, value)
 
-	value, ok = redisServer.Get(redised.FormatSchemaServiceKey("vine.hub.SkeletonService"))
+	value, ok = redisServer.Get(redised.FormatSchemaServiceKey("vine.hub.admin.SkeletonService"))
 	require.True(t, ok)
 	assert.JSONEq(t, `{
 		"name": "",
-		"skelName": "vine.hub.SkeletonService",
+		"skelName": "vine.hub.admin.SkeletonService",
 		"hash": "skeleton-service-main",
 		"pub": false,
 		"authMode": "noauth",
@@ -213,14 +213,14 @@ func TestSyncerSyncSchemasDoesNotDeleteVineHubSchemas(t *testing.T) {
 
 	target.WriteSchemas([]core.DomainSchemaView{{
 		Actors: []core.SchemaVersion[*skel.ActorSchema]{{
-			Schema:     &skel.ActorSchema{SkelName: "vine.hub.AdminActor", Hash: "admin-actor-main"},
-			SkelName:   "vine.hub.AdminActor",
+			Schema:     &skel.ActorSchema{SkelName: "vine.hub.admin.AdminActor", Hash: "admin-actor-main"},
+			SkelName:   "vine.hub.admin.AdminActor",
 			SchemaHash: "admin-actor-main",
 			Main:       true,
 		}},
 		Services: []core.SchemaVersion[*skel.ServiceSchema]{{
-			Schema:     &skel.ServiceSchema{SkelName: "vine.hub.SkeletonService", Hash: "skeleton-service-main"},
-			SkelName:   "vine.hub.SkeletonService",
+			Schema:     &skel.ServiceSchema{SkelName: "vine.hub.admin.SkeletonService", Hash: "skeleton-service-main"},
+			SkelName:   "vine.hub.admin.SkeletonService",
 			SchemaHash: "skeleton-service-main",
 			Main:       true,
 		}},
@@ -228,9 +228,9 @@ func TestSyncerSyncSchemasDoesNotDeleteVineHubSchemas(t *testing.T) {
 
 	target.SyncSchemas([]core.DomainSchemaView{})
 
-	_, ok := redisServer.Get(redised.FormatSchemaActorKey("vine.hub.AdminActor"))
+	_, ok := redisServer.Get(redised.FormatSchemaActorKey("vine.hub.admin.AdminActor"))
 	assert.True(t, ok)
-	_, ok = redisServer.Get(redised.FormatSchemaServiceKey("vine.hub.SkeletonService"))
+	_, ok = redisServer.Get(redised.FormatSchemaServiceKey("vine.hub.admin.SkeletonService"))
 	assert.True(t, ok)
 }
 

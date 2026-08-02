@@ -13,8 +13,8 @@ internal/daemon/hub/
 │   ├── nats/             Hub NATS inproc 访问入口
 │   ├── redis/            Hub Redis client、事件与 inproc 访问入口
 │   ├── redised/          写入 Redis 的结构与 key 格式
-│   └── skeled/           Hub skel 生成的公共类型、client 与 schema
-├── skel/                 Hub 自身的 skeleton 定义
+│   └── skeled/           生成的 control/admin Go package
+├── skel/                 Control 与 Admin skeleton 定义
 └── src/
     ├── dashboard/        Dashboard 前端源码
     └── server/           Hub 服务端运行目录
@@ -22,8 +22,10 @@ internal/daemon/hub/
         ├── comp/         运行时共享组件，如 `redisserver`、`natsserver`
         ├── core/         领域层，定义状态对象、Core 与 Repo 接口
         ├── flag/         Hub 启动参数与默认值规范化
-        ├── impl/         接口实现层，承载 Hub 对外暴露的服务实现
-        ├── mod/          运行时模块层，如 initializer、seeder、syncer
+        ├── impl/         按对外 API 边界拆分的接口实现层
+        │   ├── control/  面向 Link/Portal 的 Control API 服务
+        │   └── admin/    Dashboard Admin Rpc 与 Web 服务
+        ├── mod/          运行时模块层，如 controlapi、initializer、seeder、syncer
         └── repo/         基础设施适配层，实现 core 中定义的 Repo 接口
 ```
 
@@ -34,7 +36,7 @@ internal/daemon/hub/
 - 普通开发任务不要更新嵌入的 `dashboard.tar.zst`；只有任务明确要求更新发布资源时才重新打包。
 - 面向用户的文案需要同步更新 `src/i18n/dictionaries/cn.ts` 和 `en.ts`。
 
-Dashboard 前端源码位于 `src/dashboard`，Hub 运行时读取的是嵌入在 `src/server/impl/dashboard/assets/dashboard.tar.zst` 中的构建产物。
+Dashboard 前端源码位于 `src/dashboard`，Hub 运行时读取的是嵌入在 `src/server/impl/admin/dashboard/assets/dashboard.tar.zst` 中的构建产物。
 
 发布时更新打包产物必须运行：
 
@@ -50,8 +52,11 @@ Hub 的层次职责必须保持清晰：
 
 - `core` 定义领域状态与 Repo 接口，不依赖具体数据库或 Redis 实现。
 - `repo` 实现持久化和 Redis 同步，不承载对外服务编排。
-- `impl` 实现 Hub 对外服务，通过 `core` 和 `repo` 完成业务操作。
-- `mod` 承载 initializer、seeder、syncer、scheduler、sweeper 等运行时流程。
+- `impl/control` 只实现面向 Link/Portal 的 Control API；`impl/admin`
+  及其 `debug`、`dashboard` 子包通过 `core` 和 `repo` 实现 Dashboard
+  Admin API 能力。
+- `mod` 承载 Control API listener、initializer、seeder、syncer、scheduler、
+  sweeper 等运行时流程。
 - `comp` 提供 Redis、NATS 等共享运行时组件。
 - `app` 只负责装配 component、module 和 servicer。
 
@@ -64,7 +69,7 @@ Hub 的层次职责必须保持清晰：
 
 ## 运行机制
 
-Hub 的职责可以拆成三条主线：
+Hub 的职责可以拆成四条主线：
 
 1. 配置中心
    Hub 从数据库读取配置，并通过 `AppConfigRepo` 对外提供配置读取能力。启动时 `initializer` 会把配置装入 Redis，供 Link 侧读取和订阅。
@@ -74,6 +79,12 @@ Hub 的职责可以拆成三条主线：
 
 3. Redis 分发层
    `redisserver` 维护一份内存 Redis 数据。配置、应用状态、Rpc/Web endpoint 和 schema 都会同步写入其中，Link 与 Portal 通过 Redis 读取快照并监听变更事件。
+
+4. 分离的 API listener
+   Control API listener 向 Link 和 Portal 暴露 `vine.hub.control` 域，其中
+   只包含 `InfoService` 与 `RegistryService`。Hub 主 listener 暴露
+   `vine.hub.admin` 域，其中包含 Dashboard Admin Rpc 服务和
+   `DashboardWeb`。二者共享同一个 Hub 进程和状态，但组件流量无法直接进入管理面。
 
 ## 配置与注册来源
 
@@ -86,19 +97,24 @@ Hub 当前支持两类数据库配置来源：
 
 ## Skeleton 生成
 
-Hub 的 Go 公共代码生成到 `api/skeled`，Dashboard 使用的 TypeScript 代码生成到 `src/dashboard/src/skeled`。统一使用顶层脚本：
+Hub 在 `skel/control` 与 `skel/admin` 中分别维护两套契约。Go 代码生成到
+对应的 `api/skeled/control` 与 `api/skeled/admin` package，TypeScript
+代码生成到 `src/dashboard/src/skeled` 下的对应目录。统一使用顶层脚本：
 
 ```bash
 bash script/gen-skel.sh hub
 ```
 
-不要直接修改 `api/skeled` 或 `src/dashboard/src/skeled`。应修改 `skel/` 中的契约，再通过上述脚本同时生成 Go 和 TypeScript 代码，并检查两端调用是否仍然一致。
+不要直接修改生成文件。应修改 `skel/control` 或 `skel/admin` 中对应的
+契约，再通过上述脚本同时生成 Go 和 TypeScript 代码，并检查两端调用是否仍然一致。
 
 ## Inproc 模式
 
 Hub 支持作为单进程内组件运行：
 
-- Hub Rpc 服务不再暴露为 HTTP，而是注册到 `inproc` transport。
+- Hub Control API 注册在 `rpc+inproc://vine/hub`；Dashboard Admin Rpc 和 Web
+  handler 分别注册在 `rpc+inproc://vine/hub/admin` 与
+  `web+inproc://vine/hub/admin` 下，不再通过 HTTP 暴露。
 - `redisserver` 不再启动对外 TCP 端口，只保留进程内 Redis server。
 - `vined` 中会保存这份进程内 Redis server 指针，供 inproc 模式下的 `RedisClient` 直接使用。
 

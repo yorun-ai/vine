@@ -55,14 +55,14 @@ import {
 import { vrpcClient } from '@/config/vrpc-client'
 import { useLocale } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { createPortalSiteService } from '@/skeled'
+import { createPortalSiteService } from '@/skeled/admin'
 import type {
   PortalSite,
   PortalSiteCreation,
   PortalCorsMode,
   PortalSiteOptions,
   PortalSiteUpdate,
-} from '@/skeled'
+} from '@/skeled/admin'
 
 import {
   skeletonActorHref,
@@ -629,7 +629,7 @@ function PortalSiteDialog({
               <Input
                 aria-invalid={Boolean(fieldErrors.name)}
                 value={formValue.name}
-                placeholder="vine.hub.DashboardWeb-web"
+                placeholder="vine.hub.admin.DashboardWeb-web"
                 onChange={(event) => setField('name', event.target.value)}
               />
             </Field>
@@ -1120,7 +1120,7 @@ function PortalSiteInlineEditor({
           <Input
             aria-invalid={Boolean(fieldErrors.name)}
             value={formValue.name}
-            placeholder="vine.hub.DashboardWeb-web"
+            placeholder="vine.hub.admin.DashboardWeb-web"
             onChange={(event) => setField('name', event.target.value)}
           />
         </Field>

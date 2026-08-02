@@ -19,7 +19,7 @@ import (
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
 	"go.yorun.ai/vine/internal/core/skel"
 	hubnats "go.yorun.ai/vine/internal/daemon/hub/api/nats"
-	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled"
+	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	hubnatsserver "go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
 	hubflag "go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	linknats "go.yorun.ai/vine/internal/daemon/link/src/server/comp/nats"

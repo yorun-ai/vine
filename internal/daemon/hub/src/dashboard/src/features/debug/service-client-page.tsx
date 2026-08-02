@@ -22,7 +22,7 @@ import {
   type ServiceDebugInvokeResponse,
   type ServiceDebugMethodItem,
   type ServiceDebugServiceItem,
-} from '@/skeled'
+} from '@/skeled/admin'
 import { cn } from '@/lib/utils'
 
 const serviceDebugService = createServiceDebugService(vrpcClient)

@@ -68,7 +68,7 @@ func (s *portalSiteRepoSpy) RemoveEntry(id int) bool {
 func TestPortalSiteCoreUpdateBuiltInSite(t *testing.T) {
 	repo := &portalSiteRepoSpy{
 		entries: map[int]*PortalSite{
-			1: {Id: 1, Name: "vine.hub.DashboardWeb-web", BuiltIn: true},
+			1: {Id: 1, Name: "vine.hub.admin.DashboardWeb-web", BuiltIn: true},
 		},
 	}
 	core := &PortalSiteCore{PortalSiteRepo: repo}
@@ -86,7 +86,7 @@ func TestPortalSiteCoreUpdateBuiltInSite(t *testing.T) {
 func TestPortalSiteCoreListSkipsBuiltInSites(t *testing.T) {
 	repo := &portalSiteRepoSpy{
 		entries: map[int]*PortalSite{
-			1: {Id: 1, Name: "vine.hub.DashboardWeb-web", BuiltIn: true},
+			1: {Id: 1, Name: "vine.hub.admin.DashboardWeb-web", BuiltIn: true},
 			2: {Id: 2, Name: "demo-booker"},
 		},
 	}
@@ -102,7 +102,7 @@ func TestPortalSiteCoreListSkipsBuiltInSites(t *testing.T) {
 func TestPortalSiteCoreRemoveBuiltInSite(t *testing.T) {
 	repo := &portalSiteRepoSpy{
 		entries: map[int]*PortalSite{
-			1: {Id: 1, Name: "vine.hub.DashboardWeb-web", BuiltIn: true},
+			1: {Id: 1, Name: "vine.hub.admin.DashboardWeb-web", BuiltIn: true},
 		},
 	}
 	core := &PortalSiteCore{PortalSiteRepo: repo}
@@ -120,7 +120,7 @@ func TestPortalSiteCoreRemoveBuiltInSite(t *testing.T) {
 func TestMatchPortalSiteRpcgwServicesInDomainViewsIncludesVineSchemas(t *testing.T) {
 	site := PortalSite{
 		Type:          PortalSiteTypeRPCGW,
-		ActorSkelName: "vine.hub.AdminActor",
+		ActorSkelName: "vine.hub.admin.AdminActor",
 		ActorVia:      "client",
 	}
 	views := []DomainSchemaView{{
@@ -129,9 +129,9 @@ func TestMatchPortalSiteRpcgwServicesInDomainViewsIncludesVineSchemas(t *testing
 			Schema: &skel.DomainSchema{
 				Services: []*skel.ServiceSchema{
 					{
-						SkelName: "vine.hub.PortalSiteService",
+						SkelName: "vine.hub.admin.PortalSiteService",
 						Audiences: []*skel.ActorAudienceSchema{
-							{SkelName: "vine.hub.AdminActor"},
+							{SkelName: "vine.hub.admin.AdminActor"},
 						},
 					},
 					{
@@ -147,7 +147,7 @@ func TestMatchPortalSiteRpcgwServicesInDomainViewsIncludesVineSchemas(t *testing
 
 	services := MatchPortalSiteRpcgwServicesInDomainViews(site, views)
 
-	assert.Equal(t, []string{"vine.hub.PortalSiteService"}, services)
+	assert.Equal(t, []string{"vine.hub.admin.PortalSiteService"}, services)
 }
 
 func TestMatchPortalSiteRpcgwServicesInDomainViewsMatchesActorVia(t *testing.T) {

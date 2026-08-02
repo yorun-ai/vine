@@ -27,18 +27,30 @@ func (*ServicerEnabled) ServicerInitHandlers(addHandler TypeAdder) {}
 func (*ServicerEnabled) ServicerInitFilters(addFilter TypeAdder)   {}
 
 type _Servicer struct {
-	spec        ServicerSpec
-	appInfo     runtime.App
-	bindAppDeps di.BindApplier
+	appInfo          runtime.App
+	handlerTypes     []reflect.Type
+	filterTypes      []reflect.Type
+	bindAppDeps      di.BindApplier
+	bindServicerDeps di.BindApplier
 
 	server *rpcserver.Server
 }
 
 func newServicer(spec ServicerSpec, info runtime.App, deps di.BindApplier) *_Servicer {
+	var handlerTypes []reflect.Type
+	spec.ServicerInitHandlers(func(handlerType reflect.Type) {
+		handlerTypes = append(handlerTypes, handlerType)
+	})
+	var filterTypes []reflect.Type
+	spec.ServicerInitFilters(func(filterType reflect.Type) {
+		filterTypes = append(filterTypes, filterType)
+	})
 	servicer := &_Servicer{
-		spec:        spec,
-		appInfo:     info,
-		bindAppDeps: deps,
+		appInfo:          info,
+		handlerTypes:     handlerTypes,
+		filterTypes:      filterTypes,
+		bindAppDeps:      deps,
+		bindServicerDeps: spec.ServicerBind,
 	}
 	servicer.init()
 	return servicer
@@ -49,30 +61,16 @@ func (s *_Servicer) init() {
 		s.bindAppDeps,
 		s.bindContext,
 		s.bindLogger,
-		s.spec.ServicerBind,
+	}
+	if s.bindServicerDeps != nil {
+		bindAppliers = append(bindAppliers, s.bindServicerDeps)
 	}
 
 	s.server = rpcserver.New(rpcserver.Option{
 		App:          s.appInfo,
-		HandlerTypes: s.handlerTypes(),
-		Executor:     rpcserver.NewContainerExecutor(s.filterTypes(), bindAppliers),
+		HandlerTypes: s.handlerTypes,
+		Executor:     rpcserver.NewContainerExecutor(s.filterTypes, bindAppliers),
 	})
-}
-
-func (s *_Servicer) handlerTypes() []reflect.Type {
-	var handlerTypes []reflect.Type
-	s.spec.ServicerInitHandlers(func(handlerType reflect.Type) {
-		handlerTypes = append(handlerTypes, handlerType)
-	})
-	return handlerTypes
-}
-
-func (s *_Servicer) filterTypes() []reflect.Type {
-	var filterTypes []reflect.Type
-	s.spec.ServicerInitFilters(func(filterType reflect.Type) {
-		filterTypes = append(filterTypes, filterType)
-	})
-	return filterTypes
 }
 
 func (*_Servicer) bindContext(b *di.Binder) {

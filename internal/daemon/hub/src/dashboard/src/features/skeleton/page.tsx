@@ -27,7 +27,7 @@ import type {
   SkeletonData,
   SkeletonServiceItem,
   SkeletonWebItem,
-} from '@/skeled'
+} from '@/skeled/admin'
 
 import { SkeletonItemBadges, SkeletonItemDetails } from './details'
 import {

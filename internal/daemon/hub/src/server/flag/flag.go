@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	HubDefaultAPIListen    = "127.0.0.1:7071"
-	HubDefaultRedisListen  = "127.0.0.1:7073"
-	HubDefaultDashboardURL = "http://:7099/"
+	HubDefaultControlListen = "127.0.0.1:7071"
+	HubDefaultRedisListen   = "127.0.0.1:7072"
+	HubDefaultAdminListen   = "127.0.0.1:7075"
+	HubDefaultDashboardURL  = "http://:7099/"
 
 	SourceSQLite     = "sqlite"
 	SourcePostgreSQL = "postgres"
@@ -20,8 +21,9 @@ const (
 
 type Flag struct {
 	app.FlagModel
-	APIListen   string
-	RedisListen string
+	ControlListen string
+	AdminListen   string
+	RedisListen   string
 
 	MQExternalNatsURL string
 	MQEmbeddedNats    bool
@@ -43,7 +45,8 @@ func (f *Flag) Normalize(inproc bool) {
 	if inproc {
 		// Inproc hub is reached through rpc+inproc and uses in-process NATS,
 		// so external listen addresses and MQ endpoint must not leak into runtime info.
-		f.APIListen = ""
+		f.ControlListen = ""
+		f.AdminListen = ""
 		f.RedisListen = ""
 		f.MQExternalNatsURL = ""
 		f.MQEmbeddedNats = true
@@ -55,8 +58,11 @@ func (f *Flag) Normalize(inproc bool) {
 }
 
 func (f *Flag) normalizeListen() {
-	if f.APIListen == "" {
-		f.APIListen = HubDefaultAPIListen
+	if f.ControlListen == "" {
+		f.ControlListen = HubDefaultControlListen
+	}
+	if f.AdminListen == "" {
+		f.AdminListen = HubDefaultAdminListen
 	}
 	if f.RedisListen == "" {
 		f.RedisListen = HubDefaultRedisListen
@@ -91,8 +97,14 @@ func (f *Flag) normalizeMQ() {
 	}
 }
 
-func (f *Flag) APIPort() int {
-	return vnet.MustParsePort(f.APIListen)
+// ControlPort returns the component-facing Control API port.
+func (f *Flag) ControlPort() int {
+	return vnet.MustParsePort(f.ControlListen)
+}
+
+// AdminPort returns the Dashboard admin API and Web port.
+func (f *Flag) AdminPort() int {
+	return vnet.MustParsePort(f.AdminListen)
 }
 
 func (f *Flag) RedisPort() int {

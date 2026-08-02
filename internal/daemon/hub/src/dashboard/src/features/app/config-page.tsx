@@ -60,12 +60,12 @@ import { cn } from '@/lib/utils'
 import {
   createAppConfigService,
   createSkeletonService,
-} from '@/skeled'
+} from '@/skeled/admin'
 import type {
   AppConfigItem,
   AppConfigSchema,
   SkeletonData,
-} from '@/skeled'
+} from '@/skeled/admin'
 
 const appConfigService = createAppConfigService(vrpcClient)
 const skeletonService = createSkeletonService(vrpcClient)

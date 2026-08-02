@@ -207,6 +207,10 @@ type testConfigConsumer struct {
 	Config *testConfigValue `inject:""`
 }
 
+type testInternalRuntimeConsumer struct {
+	Runtime InternalRuntime `inject:""`
+}
+
 type testDepsAppSpec struct {
 	Application
 	ServicerEnabled
@@ -474,6 +478,24 @@ func TestBindRuntimeProvidesConfigViaLinker(t *testing.T) {
 	consumer := injector.Get(T[*testConfigConsumer]()).Interface().(*testConfigConsumer)
 	assert.NotNil(t, consumer.Config)
 	assert.Equal(t, "from-link", consumer.Config.Name)
+}
+
+func TestBindRuntimeProvidesInternalRuntimeOnlyForInternalApplications(t *testing.T) {
+	bindConsumer := func(b *di.Binder) {
+		b.Bind(T[*testInternalRuntimeConsumer]()).In(di.TransientScope)
+	}
+
+	ordinaryApp := newTestAppImpl()
+	assert.Panics(t, func() {
+		di.NewInjector(ordinaryApp.bindRuntime, bindConsumer)
+	})
+
+	internalApp := newTestAppImpl()
+	internalApp.spec = &testInternalOnlyAppSpec{}
+	internalInjector := di.NewInjector(internalApp.bindRuntime, bindConsumer)
+	consumer := internalInjector.Get(T[*testInternalRuntimeConsumer]()).Interface().(*testInternalRuntimeConsumer)
+
+	assert.Same(t, internalApp, consumer.Runtime)
 }
 
 func TestInitModulesProvidesDomainBindings(t *testing.T) {

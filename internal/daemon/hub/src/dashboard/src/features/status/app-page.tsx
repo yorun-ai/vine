@@ -30,7 +30,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { vrpcClient } from '@/config/vrpc-client'
 import { cn } from '@/lib/utils'
-import { createAppStatusService } from '@/skeled'
+import { createAppStatusService } from '@/skeled/admin'
 import { useLocale } from '@/i18n'
 import type {
   AppStatusView,
@@ -38,7 +38,7 @@ import type {
   ServiceHandlerRegistration,
   TaskRunnerRegistration,
   WebHandlerRegistration,
-} from '@/skeled'
+} from '@/skeled/admin'
 
 import {
   skeletonEventHref,

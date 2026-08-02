@@ -88,30 +88,53 @@ func TestMemorySchemaRepoListServiceSchemaVersions(t *testing.T) {
 func TestMemorySchemaRepoListsVineHubSchemaViews(t *testing.T) {
 	resetMemorySchemaRepoForTest()
 	repo := new(MemorySchemaRepo)
-	domainSchema := &skel.DomainSchema{
-		Domain: "vine.hub",
-		Hash:   "hub-domain-hash",
+	adminSchema := &skel.DomainSchema{
+		Domain: "vine.hub.admin",
+		Hash:   "hub-admin-domain-hash",
 		Actors: []*skel.ActorSchema{{
 			Name:     "AdminActor",
-			SkelName: "vine.hub.AdminActor",
+			SkelName: "vine.hub.admin.AdminActor",
 			Hash:     "admin-actor-hash",
 		}},
 		Services: []*skel.ServiceSchema{{
 			Name:     "SkeletonService",
-			SkelName: "vine.hub.SkeletonService",
+			SkelName: "vine.hub.admin.SkeletonService",
 			Hash:     "skeleton-service-hash",
 		}},
 	}
+	controlSchema := &skel.DomainSchema{
+		Domain: "vine.hub.control",
+		Hash:   "hub-control-domain-hash",
+		Services: []*skel.ServiceSchema{{
+			Name:     "InfoService",
+			SkelName: "vine.hub.control.InfoService",
+			Hash:     "info-service-hash",
+		}},
+	}
 
-	repo.SaveDomainSchemas("vine.hub.inproc", "registered", []*skel.DomainSchema{domainSchema})
+	repo.SaveDomainSchemas("vine.hub.inproc", "registered", []*skel.DomainSchema{controlSchema, adminSchema})
 
 	assert.Empty(t, repo.ListActorSchemaVersions())
 	assert.Empty(t, repo.ListServiceSchemaVersions())
 
 	views := repo.ListVineHubSchemaViews()
-	require.Len(t, views, 1)
-	require.Len(t, views[0].Actors, 1)
-	assert.Equal(t, "vine.hub.AdminActor", views[0].Actors[0].SkelName)
-	require.Len(t, views[0].Services, 1)
-	assert.Equal(t, "vine.hub.SkeletonService", views[0].Services[0].SkelName)
+	require.Len(t, views, 2)
+	foundControl := false
+	foundAdmin := false
+	for _, view := range views {
+		switch view.DomainVersion.Schema.Domain {
+		case "vine.hub.control":
+			foundControl = true
+			require.Len(t, view.Services, 1)
+			assert.Equal(t, "vine.hub.control.InfoService", view.Services[0].SkelName)
+		case "vine.hub.admin":
+			foundAdmin = true
+			require.Len(t, view.Actors, 1)
+			assert.Equal(t, "vine.hub.admin.AdminActor", view.Actors[0].SkelName)
+			require.Len(t, view.Services, 1)
+			assert.Equal(t, "vine.hub.admin.SkeletonService", view.Services[0].SkelName)
+		}
+	}
+	assert.True(t, foundControl)
+	assert.True(t, foundAdmin)
 }

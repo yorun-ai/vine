@@ -29,7 +29,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { vrpcClient } from '@/config/vrpc-client'
 import { useLocale } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { createSkeletonService } from '@/skeled'
+import { createSkeletonService } from '@/skeled/admin'
 import type {
   SkeletonActorItem,
   SkeletonConfigItem,
@@ -40,7 +40,7 @@ import type {
   SkeletonServiceItem,
   SkeletonTask,
   SkeletonWebItem,
-} from '@/skeled'
+} from '@/skeled/admin'
 
 import { skeletonItemHref } from './model'
 

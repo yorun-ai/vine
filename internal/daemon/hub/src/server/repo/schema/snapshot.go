@@ -92,7 +92,7 @@ func memoryBuildVineHubDomainSchemaViews(
 	views := memoryBuildDomainSchemaViewsWithFilter(domainVersions, memoryIsVineHubSchemaRef)
 	ret := make([]core.DomainSchemaView, 0, len(views))
 	for _, view := range views {
-		if view.DomainVersion.Schema.Domain == "vine.hub" {
+		if memoryIsVineHubDomain(view.DomainVersion.Schema.Domain) {
 			ret = append(ret, view)
 		}
 	}

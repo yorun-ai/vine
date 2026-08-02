@@ -58,13 +58,13 @@ import { cn } from '@/lib/utils'
 import {
   createPortalRuleService,
   createPortalSiteService,
-} from '@/skeled'
+} from '@/skeled/admin'
 import type {
   PortalRule,
   PortalRuleCreation,
   PortalRuleUpdate,
   PortalSite,
-} from '@/skeled'
+} from '@/skeled/admin'
 
 const portalRuleService = createPortalRuleService(vrpcClient)
 const portalSiteService = createPortalSiteService(vrpcClient)

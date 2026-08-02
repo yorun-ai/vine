@@ -61,8 +61,9 @@ func TestFlagNormalizeKeepsExplicitSourceType(t *testing.T) {
 
 	assert.Equal(t, SourceSQLite, flags.SourceType)
 	assert.Equal(t, "/tmp/hub.sqlite", flags.DBSQLiteFile)
-	assert.Equal(t, "127.0.0.1:7071", flags.APIListen)
-	assert.Equal(t, "127.0.0.1:7073", flags.RedisListen)
+	assert.Equal(t, HubDefaultControlListen, flags.ControlListen)
+	assert.Equal(t, HubDefaultAdminListen, flags.AdminListen)
+	assert.Equal(t, "127.0.0.1:7072", flags.RedisListen)
 	assert.Equal(t, HubDefaultDashboardURL, flags.DashboardURL.String())
 	assert.False(t, flags.DashboardURLSet)
 }
@@ -172,8 +173,9 @@ func TestFlagNormalizeInprocClearsListenAndMQ(t *testing.T) {
 	flags := &Flag{
 		SourceType:        SourceSQLite,
 		DBSQLiteFile:      "/tmp/hub.sqlite",
-		APIListen:         "127.0.0.1:7071",
-		RedisListen:       "127.0.0.1:7073",
+		ControlListen:     "127.0.0.1:7071",
+		AdminListen:       "127.0.0.1:7075",
+		RedisListen:       "127.0.0.1:7072",
 		MQExternalNatsURL: "nats://127.0.0.1:4222",
 		DBPostgresURL:     "",
 	}
@@ -182,7 +184,8 @@ func TestFlagNormalizeInprocClearsListenAndMQ(t *testing.T) {
 
 	assert.Equal(t, SourceSQLite, flags.SourceType)
 	assert.Equal(t, "/tmp/hub.sqlite", flags.DBSQLiteFile)
-	assert.Empty(t, flags.APIListen)
+	assert.Empty(t, flags.ControlListen)
+	assert.Empty(t, flags.AdminListen)
 	assert.Empty(t, flags.RedisListen)
 	assert.Empty(t, flags.MQExternalNatsURL)
 	assert.True(t, flags.MQEmbeddedNats)

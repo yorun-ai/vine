@@ -8,6 +8,7 @@ import (
 	coreapp "go.yorun.ai/vine/internal/core/app"
 	rpcinproc "go.yorun.ai/vine/internal/core/rpc/transport/inproc"
 	webinproc "go.yorun.ai/vine/internal/core/web/inproc"
+	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/seeder"
 	"go.yorun.ai/vine/util/vnet"
@@ -43,11 +44,11 @@ func (i *Initializer) dashboardWebEndpoint() string {
 }
 
 func (i *Initializer) dashboardHttpEndpoint(path string) string {
-	host := vnet.MustParseHost(i.Flag.APIListen)
+	host := vnet.MustParseHost(i.Flag.AdminListen)
 	if host == "" || host == "0.0.0.0" || host == "::" {
 		host = vnet.DetectHostIP()
 	}
-	return fmt.Sprintf("http://%s%s", net.JoinHostPort(host, strconv.Itoa(i.Flag.APIPort())), path)
+	return fmt.Sprintf("http://%s%s", net.JoinHostPort(host, strconv.Itoa(i.Flag.AdminPort())), path)
 }
 
 // Default dashboard configurations
@@ -58,8 +59,8 @@ var (
 	dashboardAppInstanceId = "00000000-0000-0000-0000-000000000001"
 
 	dashboardRpcHttpPath = coreapp.PathRpcInvoke
-	dashboardWebHttpPath = coreapp.PathWebAccess + "/vine.hub.DashboardWeb"
-	dashboardInprocPath  = "vine/hub"
+	dashboardWebHttpPath = coreapp.PathWebAccess + "/vine.hub.admin.DashboardWeb"
+	dashboardInprocPath  = hubapp.HubAdminInprocHostPath
 
 	dashboardRpcRegistrations = newDashboardRpcRegistrations()
 	dashboardWebRegistration  = redised.WebRegistration{

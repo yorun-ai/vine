@@ -11,9 +11,10 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/impl"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/impl/dashboard"
-	debugimpl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/debug"
+	impl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin/dashboard"
+	debugimpl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin/debug"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/controlapi"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/initializer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/scheduler"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/seeder"
@@ -45,10 +46,10 @@ func (a *HubApp) DIInit() {
 		Info:           appInfo,
 		Linker:         link.NewInternalLinker(appInfo),
 		DisableConsole: true,
-		InprocHostPath: hubapp.HubInprocHostPath,
+		InprocHostPath: hubapp.HubAdminInprocHostPath,
 	}
 
-	a.AppFlag.ListenAddr = a.Flag.APIListen
+	a.AppFlag.ListenAddr = a.Flag.AdminListen
 }
 
 func (a *HubApp) InitComponents(addComponent app.TypeAdder) {
@@ -63,6 +64,9 @@ func (a *HubApp) InitModules(addModule app.TypeAdder) {
 	addModule(app.T[*initializer.Initializer]())
 	addModule(app.T[*scheduler.Scheduler]())
 	addModule(app.T[*sweeper.Sweeper]())
+	// Keep Control API last so reverse lifecycle shutdown stops accepting Link
+	// and Portal requests before the rest of Hub begins to tear down.
+	addModule(app.T[*controlapi.Listener]())
 }
 
 func (a *HubApp) BindCommon(b *di.Binder) {
@@ -77,7 +81,6 @@ func (a *HubApp) BindCommon(b *di.Binder) {
 }
 
 func (*HubApp) ServicerInitHandlers(addHandler app.TypeAdder) {
-	addHandler(app.T[*impl.InfoServiceServerImpl]())
 	addHandler(app.T[*debugimpl.ServiceDebugServiceServerImpl]())
 	addHandler(app.T[*debugimpl.TaskDebugServiceServerImpl]())
 	addHandler(app.T[*debugimpl.EventDebugServiceServerImpl]())
@@ -89,7 +92,6 @@ func (*HubApp) ServicerInitHandlers(addHandler app.TypeAdder) {
 	addHandler(app.T[*impl.PortalRuleServiceServerImpl]())
 	addHandler(app.T[*impl.MaintenanceServiceServerImpl]())
 	addHandler(app.T[*impl.PortalSiteServiceServerImpl]())
-	addHandler(app.T[*impl.RegistryServiceServerImpl]())
 }
 
 func (*HubApp) WebberInitHandlers(addHandler app.TypeAdder) {
