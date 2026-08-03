@@ -8,6 +8,17 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Added
+
+- Backend mTLS for Hub, Link, and Portal using exact SPIFFE X.509-SVID
+  identities, including protected Hub Control/Admin APIs, embedded Redis and
+  NATS, Link ingress, authenticated Redis role binding, and plaintext downgrade
+  rejection for discovered backend endpoints
+- `app.NewBundled(...)` for running multiple applications in one lifecycle
+  while they connect to an external Link
+- `app/linked.Option` certificate fields and matching `--mtls-*-file` flags for
+  authenticating an in-process Link to an mTLS-enabled external Hub
+
 ### Changed
 
 - Hub now isolates the Link/Portal Control API from Dashboard admin Rpc
@@ -21,12 +32,24 @@ are not part of the public compatibility commitment.
   administration; generated Go and TypeScript packages now use matching
   `skeled/control` and `skeled/admin` directories, and Hub Rpc service
   implementations are separated under `impl/control` and `impl/admin`
+- Link continues to allow a non-loopback App API listener for unusual
+  deployments, but now logs a warning because cross-host App-to-Link traffic is
+  unauthenticated h2c and is not the expected sidecar topology
+
+### Fixed
+
+- HTTP servers now force-close active connections after graceful shutdown times
+  out, and failed embedded NATS startup removes its temporary JetStream store
+  and shuts down any partially started server
 
 ### Upgrade notes
 
 - Hub Skel names have moved from `vine.hub.*` to either
   `vine.hub.control.*` or `vine.hub.admin.*`. Clients using generated Hub
   contracts must regenerate or update their imports and service paths.
+- Linked applications that connect to an mTLS-enabled Hub must configure the
+  Link identity through `linked.Option.MTLSCAFile`, `MTLSCertFile`, and
+  `MTLSKeyFile`, or through the matching CLI flags and environment variables.
 
 ## [0.11.0] - 2026-08-02
 

@@ -122,11 +122,25 @@ func (s *NATSServer) serverOptions(isInproc bool) *natsserver.Options {
 func (s *NATSServer) newServer(options *natsserver.Options) (*natsserver.Server, string) {
 	storeDir, err := os.MkdirTemp("", "vine-nats-jetstream-*")
 	vpre.CheckNilError(err, "create nats jetstream dir failed")
+	completed := false
+	var server *natsserver.Server
+	defer func() {
+		if completed {
+			return
+		}
+		if server != nil {
+			server.Shutdown()
+			server.WaitForShutdown()
+		}
+		_ = os.RemoveAll(storeDir)
+	}()
+
 	options.StoreDir = storeDir
-	server, err := natsserver.NewServer(options)
+	server, err = natsserver.NewServer(options)
 	vpre.CheckNilError(err, "create nats server failed")
 
 	go server.Start()
 	vpre.Check(server.ReadyForConnections(natsServerReadyTimeout), "nats server start failed")
+	completed = true
 	return server, storeDir
 }

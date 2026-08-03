@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.yorun.ai/vine/app"
 	"go.yorun.ai/vine/internal/appcli"
+	"go.yorun.ai/vine/internal/core/mtls"
 	linkflag "go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 )
 
@@ -40,27 +41,46 @@ func TestApplyOptionOverridesFlag(t *testing.T) {
 	flag := &linkflag.Flag{
 		HubEndpoint:   "http://cli-hub.local:7071",
 		IngressListen: "127.0.0.1:8080",
+		MTLS: mtls.Files{
+			CAFile:   "/tmp/cli-ca.pem",
+			CertFile: "/tmp/cli-link.pem",
+			KeyFile:  "/tmp/cli-link-key.pem",
+		},
 	}
 
 	applyOption(flag, Option{
 		HubEndpoint:   "http://option-hub.local:7071",
 		IngressListen: "127.0.0.1:9090",
+		MTLSCAFile:    "/tmp/option-ca.pem",
+		MTLSCertFile:  "/tmp/option-link.pem",
+		MTLSKeyFile:   "/tmp/option-link-key.pem",
 	})
 
 	assert.Equal(t, "http://option-hub.local:7071", flag.HubEndpoint)
 	assert.Equal(t, "127.0.0.1:9090", flag.IngressListen)
+	assert.Equal(t, "/tmp/option-ca.pem", flag.MTLS.CAFile)
+	assert.Equal(t, "/tmp/option-link.pem", flag.MTLS.CertFile)
+	assert.Equal(t, "/tmp/option-link-key.pem", flag.MTLS.KeyFile)
 }
 
 func TestApplyOptionKeepsUnsetFlagValues(t *testing.T) {
 	flag := &linkflag.Flag{
 		HubEndpoint:   "http://cli-hub.local:7071",
 		IngressListen: "127.0.0.1:8080",
+		MTLS: mtls.Files{
+			CAFile:   "/tmp/cli-ca.pem",
+			CertFile: "/tmp/cli-link.pem",
+			KeyFile:  "/tmp/cli-link-key.pem",
+		},
 	}
 
 	applyOption(flag, Option{})
 
 	assert.Equal(t, "http://cli-hub.local:7071", flag.HubEndpoint)
 	assert.Equal(t, "127.0.0.1:8080", flag.IngressListen)
+	assert.Equal(t, "/tmp/cli-ca.pem", flag.MTLS.CAFile)
+	assert.Equal(t, "/tmp/cli-link.pem", flag.MTLS.CertFile)
+	assert.Equal(t, "/tmp/cli-link-key.pem", flag.MTLS.KeyFile)
 }
 
 func TestFlagsParseHubEndpointAndIngressListen(t *testing.T) {
@@ -70,6 +90,9 @@ func TestFlagsParseHubEndpointAndIngressListen(t *testing.T) {
 		"/tmp/vine",
 		"--hub-endpoint", "http://10.0.0.8:7071",
 		"--ingress-listen", "127.0.0.1:8080",
+		"--mtls-ca-file", "/tmp/ca.pem",
+		"--mtls-cert-file", "/tmp/link.pem",
+		"--mtls-key-file", "/tmp/link-key.pem",
 	}
 
 	flag := &linkflag.Flag{}
@@ -77,6 +100,9 @@ func TestFlagsParseHubEndpointAndIngressListen(t *testing.T) {
 
 	assert.Equal(t, "http://10.0.0.8:7071", flag.HubEndpoint)
 	assert.Equal(t, "127.0.0.1:8080", flag.IngressListen)
+	assert.Equal(t, "/tmp/ca.pem", flag.MTLS.CAFile)
+	assert.Equal(t, "/tmp/link.pem", flag.MTLS.CertFile)
+	assert.Equal(t, "/tmp/link-key.pem", flag.MTLS.KeyFile)
 }
 
 func TestFlagsParseHubEndpointAndIngressListenFromEnv(t *testing.T) {
@@ -85,12 +111,18 @@ func TestFlagsParseHubEndpointAndIngressListenFromEnv(t *testing.T) {
 	os.Args = []string{"/tmp/vine"}
 	t.Setenv(envHubEndpoint, "http://10.0.0.9:7071")
 	t.Setenv(envIngressListen, "127.0.0.1:9090")
+	t.Setenv(envMTLSCAFile, "/tmp/env-ca.pem")
+	t.Setenv(envMTLSCertFile, "/tmp/env-link.pem")
+	t.Setenv(envMTLSKeyFile, "/tmp/env-link-key.pem")
 
 	flag := &linkflag.Flag{}
 	appcli.Handle(flags(flag)...)
 
 	assert.Equal(t, "http://10.0.0.9:7071", flag.HubEndpoint)
 	assert.Equal(t, "127.0.0.1:9090", flag.IngressListen)
+	assert.Equal(t, "/tmp/env-ca.pem", flag.MTLS.CAFile)
+	assert.Equal(t, "/tmp/env-link.pem", flag.MTLS.CertFile)
+	assert.Equal(t, "/tmp/env-link-key.pem", flag.MTLS.KeyFile)
 }
 
 type _RecordingApp struct {

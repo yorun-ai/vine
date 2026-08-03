@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.yorun.ai/vine/internal/core/logger"
+	"go.yorun.ai/vine/internal/util/httputil"
 	"go.yorun.ai/vine/util/vpre"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -117,8 +118,8 @@ func (a *_AppImpl) stopHTTPServer() {
 
 	timeoutCtx, cancel := context.WithTimeout(a.ctx, httpShutdownTimeout)
 	defer cancel()
-	if err := a.httpServer.Shutdown(timeoutCtx); err != nil {
-		logger.Error(a.spec.Name()+" http server shutdown failed", "addr", a.httpServer.Addr, "error", err)
+	if err := httputil.ShutdownServer(a.httpServer, timeoutCtx); err != nil {
+		logger.Error(a.spec.Name()+" http server graceful shutdown failed, force closed", "addr", a.httpServer.Addr, "error", err)
 	}
 	a.httpWG.Wait()
 }

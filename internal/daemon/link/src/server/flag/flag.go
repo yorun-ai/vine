@@ -1,13 +1,18 @@
 package flag
 
 import (
+	"net"
 	"net/url"
+	"strings"
 
 	"go.yorun.ai/vine/internal/app"
+	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/mtls"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
 	"go.yorun.ai/vine/util/vpre"
 )
+
+var linkFlagLogger = logger.New("daemon:link:flag")
 
 const (
 	LinkDefaultAPIListen     = "127.0.0.1:7079"
@@ -58,6 +63,24 @@ func (f *Flag) normalizeAPIListen(linkInproc bool) {
 	if f.APIListen == "" {
 		f.APIListen = LinkDefaultAPIListen
 	}
+	if !isExpectedAppAPIListen(f.APIListen) {
+		linkFlagLogger.Warn(
+			"link API listens outside loopback; cross-host App-to-Link traffic is allowed but is not the expected sidecar topology and remains unauthenticated h2c",
+			"listen", f.APIListen,
+		)
+	}
+}
+
+func isExpectedAppAPIListen(listen string) bool {
+	host, _, err := net.SplitHostPort(listen)
+	if err != nil || host == "" {
+		return false
+	}
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 func (f *Flag) normalizeIngressListen() {

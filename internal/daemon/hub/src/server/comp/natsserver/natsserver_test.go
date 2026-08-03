@@ -6,7 +6,9 @@ import (
 	"testing"
 	"time"
 
+	natsserver "github.com/nats-io/nats-server/v2/server"
 	gonats "github.com/nats-io/nats.go"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/mtls/mtlstest"
@@ -81,6 +83,25 @@ func TestNATSServerAfterAppStopRemovesStoreDir(t *testing.T) {
 	if _, err := os.Stat(storeDir); !os.IsNotExist(err) {
 		t.Fatalf("expected nats store dir removed, got %v", err)
 	}
+}
+
+func TestNATSServerRemovesStoreDirWhenCreationFails(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Setenv("TMPDIR", tempDir)
+	t.Setenv("TMP", tempDir)
+	t.Setenv("TEMP", tempDir)
+
+	server := &NATSServer{}
+	assert.Panics(t, func() {
+		server.newServer(&natsserver.Options{
+			JetStream:  true,
+			ServerName: "invalid server name",
+		})
+	})
+
+	entries, err := os.ReadDir(tempDir)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
 }
 
 func TestNATSServerDIInitPublishesMQEndpointWhenEnableNats(t *testing.T) {

@@ -132,6 +132,11 @@ components must share the same trust domain, and every certificate must be
 valid for both TLS server and client authentication. DNS SANs, when present,
 are not used for component authorization.
 
+Applications using `app/linked` can configure the in-process Link with the same
+flags and environment variables, or with `linked.Option.MTLSCAFile`,
+`MTLSCertFile`, and `MTLSKeyFile`. These files identify the embedded
+`vine.link` workload, not the business application.
+
 When configured, Vine requires mTLS on the Hub Control and Admin APIs, embedded
 Hub Redis and NATS, and Link ingress. Link and Portal use the same component
 certificate as their client credential, discovered HTTP endpoints cannot
@@ -143,9 +148,11 @@ short-lived, process-local self-signed Web certificate for the requested SNI
 host. A configured Portal certificate always takes precedence; the temporary
 certificate only encrypts bootstrap traffic and is not browser-trusted.
 Application-to-Link traffic remains h2c because Link is the application's
-sidecar: both must run on the same host and within the same deployment trust
-boundary. Placing an application and its Link on different hosts is not a
-supported Vine topology.
+sidecar: both normally run on the same host and within the same deployment
+trust boundary. Vine still allows an explicitly configured non-loopback Link
+API for unusual deployments, but logs a warning and does not add transport
+authentication; operators are responsible for protecting that cross-host
+traffic.
 
 Certificate issuance, rotation, and revocation remain deployment concerns.
 External PostgreSQL and NATS connections use those services' own security
