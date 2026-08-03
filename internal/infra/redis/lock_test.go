@@ -269,6 +269,82 @@ func TestLockerLockWithTimeoutDisablesRefreshAndBreaksAfterTimeout(t *testing.T)
 	}, time.Second, 10*time.Millisecond)
 }
 
+func TestWithTimeoutRejectsNonPositiveTimeout(t *testing.T) {
+	for _, timeout := range []time.Duration{0, -time.Second} {
+		assert.Panics(t, func() {
+			WithTimeout(timeout)
+		})
+	}
+}
+
+func TestLockRefreshOwnershipMismatchBreaksImmediately(t *testing.T) {
+	cmdable := newTestLockCmdable()
+	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+		return goredis.NewCmdResult(int64(0), nil)
+	}
+	lock := newHeldTestLock(cmdable, lockDefaultTimeout)
+
+	assert.False(t, lock.refreshWithRetry())
+
+	assert.True(t, lock.IsBroken())
+	assert.ErrorIs(t, lock.Context().Err(), context.Canceled)
+	require.Len(t, cmdable.evalCalls, 1)
+	assert.Equal(t, refreshScript, cmdable.evalCalls[0].script)
+}
+
+func TestLockRefreshUsesBoundedDeadlineAndExtendsLease(t *testing.T) {
+	cmdable := newTestLockCmdable()
+	var commandDeadline time.Time
+	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+		commandDeadline, _ = ctx.Deadline()
+		return goredis.NewCmdResult(int64(1), nil)
+	}
+	lock := newHeldTestLock(cmdable, lockDefaultTimeout)
+	originalDeadline := lock.leaseDeadline
+	startedAt := time.Now()
+
+	require.True(t, lock.refreshWithRetry())
+
+	assert.WithinDuration(t, startedAt.Add(lockRefreshCommandTimeout), commandDeadline, 100*time.Millisecond)
+	assert.True(t, lock.leaseDeadline.After(originalDeadline))
+}
+
+func TestLocalLeaseDeadlineKeepsSafetyMargin(t *testing.T) {
+	startedAt := time.Unix(1_700_000_000, 0)
+
+	assert.Equal(t, startedAt.Add(29*time.Second), localLeaseDeadline(startedAt, 30*time.Second))
+	assert.Equal(t, startedAt.Add(4500*time.Millisecond), localLeaseDeadline(startedAt, 5*time.Second))
+}
+
+func TestLockRefreshStopsWhenRetryWouldExceedLease(t *testing.T) {
+	cmdable := newTestLockCmdable()
+	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+		return goredis.NewCmdResult(nil, errors.New("refresh failed"))
+	}
+	lock := newHeldTestLock(cmdable, 100*time.Millisecond)
+	startedAt := time.Now()
+
+	assert.False(t, lock.refreshWithRetry())
+
+	assert.Less(t, time.Since(startedAt), time.Second)
+	require.Len(t, cmdable.evalCalls, 1)
+}
+
+func TestLockRefreshCommandCannotRunPastLease(t *testing.T) {
+	cmdable := newTestLockCmdable()
+	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+		<-ctx.Done()
+		return goredis.NewCmdResult(nil, ctx.Err())
+	}
+	lock := newHeldTestLock(cmdable, 30*time.Millisecond)
+	startedAt := time.Now()
+
+	assert.False(t, lock.refreshWithRetry())
+
+	assert.Less(t, time.Since(startedAt), time.Second)
+	require.Len(t, cmdable.evalCalls, 1)
+}
+
 func TestLockUnlockCancelsContextAndLogsReleaseFailure(t *testing.T) {
 	cmdable := newTestLockCmdable()
 	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
@@ -321,4 +397,18 @@ func TestLockContextRequiresHeldLock(t *testing.T) {
 	assert.Panics(t, func() {
 		lock.Context()
 	})
+}
+
+func newHeldTestLock(cmdable goredis.Cmdable, timeout time.Duration) *Lock {
+	ctx := context.Background()
+	lock := &Lock{
+		ctx:           ctx,
+		cmdable:       cmdable,
+		key:           "vine:lock:lock:user:123",
+		option:        &_LockOption{timeout: timeout, refresh: true},
+		token:         "held-token",
+		leaseDeadline: localLeaseDeadline(time.Now(), timeout),
+	}
+	lock.lockCtx, lock.lockCancel = context.WithCancel(ctx)
+	return lock
 }
