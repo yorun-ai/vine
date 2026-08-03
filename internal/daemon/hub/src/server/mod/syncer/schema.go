@@ -7,6 +7,9 @@ import (
 )
 
 func (s *Syncer) SyncSchemas(domainViews []core.DomainSchemaView) {
+	s.schemaMutex.Lock()
+	defer s.schemaMutex.Unlock()
+
 	batch := s.RedisServer.NotifyBatch()
 	nextActorHashes := map[string]string{}
 	nextResourceHashes := map[string]string{}
@@ -66,6 +69,9 @@ func (s *Syncer) SyncSchemas(domainViews []core.DomainSchemaView) {
 
 // WriteSchemas only writes schema keys and does not join the diff/delete lifecycle.
 func (s *Syncer) WriteSchemas(domainViews []core.DomainSchemaView) {
+	s.schemaMutex.Lock()
+	defer s.schemaMutex.Unlock()
+
 	for _, view := range domainViews {
 		for _, actorVersion := range view.Actors {
 			if !actorVersion.Main {

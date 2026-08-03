@@ -43,6 +43,7 @@ type RpcProxy struct {
 	serviceStatesByName map[string]*_ServiceState
 }
 
+// _AppState is immutable after it is published in appStateByInstanceID.
 type _AppState struct {
 	instance        *minder.AppInstance
 	appInfo         runtime.App
@@ -87,24 +88,23 @@ func (p *RpcProxy) OnSetup(instance *minder.AppInstance) {
 	for _, serviceHandler := range instance.ServiceHandlers {
 		serviceNames[serviceHandler.ServiceSkelName] = struct{}{}
 	}
-	p.appStateMutex.Lock()
-	state := p.appStateByInstanceID[appInstanceID]
-	if state == nil {
-		state = &_AppState{}
-		p.appStateByInstanceID[appInstanceID] = state
+	state := &_AppState{
+		instance:        instance,
+		appInfo:         instance.AppInfo,
+		serviceEndpoint: instance.ServiceEndpoint,
+		serviceNames:    serviceNames,
 	}
-	state.instance = instance
-	state.appInfo = instance.AppInfo
-	state.serviceEndpoint = instance.ServiceEndpoint
-	state.serviceNames = serviceNames
-	state.draining = false
+	p.appStateMutex.Lock()
+	p.appStateByInstanceID[appInstanceID] = state
 	p.appStateMutex.Unlock()
 }
 
 func (p *RpcProxy) OnDrain(instance *minder.AppInstance) {
 	p.appStateMutex.Lock()
 	if state := p.appStateByInstanceID[instance.AppInfo.InstanceId()]; state != nil {
-		state.draining = true
+		next := *state
+		next.draining = true
+		p.appStateByInstanceID[instance.AppInfo.InstanceId()] = &next
 	}
 	p.appStateMutex.Unlock()
 }
