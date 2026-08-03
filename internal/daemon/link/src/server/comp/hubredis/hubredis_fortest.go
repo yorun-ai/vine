@@ -34,14 +34,14 @@ func (c *Client) Load(key string) (string, bool) {
 	return c.Client.Load(key)
 }
 
-func (c *Client) LoadAndSubscribe(ctx context.Context, key string, handle func(event hubapiredis.Event)) (string, bool) {
+func (c *Client) LoadAndSubscribe(ctx context.Context, key string, handle func(event hubapiredis.Event)) (string, bool, hubapiredis.Subscription) {
 	if testClient, ok := testClientByClient.Load(c); ok {
 		return testClient.(*_TestClient).LoadAndSubscribe(ctx, key, handle)
 	}
 	return c.Client.LoadAndSubscribe(ctx, key, handle)
 }
 
-func (c *Client) LoadListAndSubscribe(ctx context.Context, prefix string, handle func(event hubapiredis.Event)) map[string]string {
+func (c *Client) LoadListAndSubscribe(ctx context.Context, prefix string, handle func(event hubapiredis.Event)) (map[string]string, hubapiredis.Subscription) {
 	if testClient, ok := testClientByClient.Load(c); ok {
 		return testClient.(*_TestClient).LoadListAndSubscribe(ctx, prefix, handle)
 	}
@@ -79,10 +79,15 @@ func (c *_TestClient) SetValue(key string, value string) {
 	c.valuesByKey[key] = value
 }
 
-func (c *_TestClient) LoadAndSubscribe(_ context.Context, key string, _ func(hubapiredis.Event)) (string, bool) {
-	return c.Load(key)
+func (c *_TestClient) LoadAndSubscribe(_ context.Context, key string, _ func(hubapiredis.Event)) (string, bool, hubapiredis.Subscription) {
+	value, ok := c.Load(key)
+	return value, ok, _TestSubscription{}
 }
 
-func (c *_TestClient) LoadListAndSubscribe(_ context.Context, prefix string, _ func(hubapiredis.Event)) map[string]string {
-	return c.loadScanKeyValues(prefix)
+func (c *_TestClient) LoadListAndSubscribe(_ context.Context, prefix string, _ func(hubapiredis.Event)) (map[string]string, hubapiredis.Subscription) {
+	return c.loadScanKeyValues(prefix), _TestSubscription{}
 }
+
+type _TestSubscription struct{}
+
+func (_TestSubscription) Start() {}

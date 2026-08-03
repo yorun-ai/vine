@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 
+	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
 )
 
@@ -38,12 +39,16 @@ func (c *Reader) retainInstantConfig(appInstanceID string, key string) string {
 	redisKey := redised.FormatConfigKey(key)
 	c.mutex.Lock()
 	state, exists := c.instantConfigStatesByKey[redisKey]
+	var subscription hubredis.Subscription
 	if !exists {
-		state = c.newInstantConfigState(redisKey)
+		state, subscription = c.newInstantConfigState(redisKey)
 		c.instantConfigStatesByKey[redisKey] = state
 	}
 	state.refsByAppInstanceID[appInstanceID] = struct{}{}
 	c.setConfigValueSnapshot(appInstanceID, redisKey, state.value)
+	if subscription != nil {
+		subscription.Start()
+	}
 	c.mutex.Unlock()
 	return state.value
 }

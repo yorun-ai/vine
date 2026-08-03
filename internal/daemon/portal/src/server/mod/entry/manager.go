@@ -64,7 +64,7 @@ func (e *Manager) AfterAppStop() {
 }
 
 func (e *Manager) loadPortalRules() {
-	valuesByKey := e.Redis.LoadListAndSubscribe(e.Context, redised.FormatPortalRulePrefix(), e.handlePortalRuleEvent)
+	valuesByKey, subscription := e.Redis.LoadListAndSubscribe(e.Context, redised.FormatPortalRulePrefix(), e.handlePortalRuleEvent)
 
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -74,6 +74,7 @@ func (e *Manager) loadPortalRules() {
 		e.entryRulesByName[key] = *rule
 	}
 	e.reconcileEntriesLocked()
+	subscription.Start()
 }
 
 func (e *Manager) handlePortalRuleEvent(event hubapiredis.Event) {

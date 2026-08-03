@@ -7,33 +7,33 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
 )
 
-func (c *Reader) newInstantConfigState(redisKey string) *_InstantConfigState {
+func (c *Reader) newInstantConfigState(redisKey string) (*_InstantConfigState, hubredis.Subscription) {
 	watchCtx, cancel := context.WithCancel(c.Context)
 	state := &_InstantConfigState{
 		refsByAppInstanceID: map[string]struct{}{},
 		cancel:              cancel,
 	}
-	loadedConfigValue, loadedOk := c.loadAndWatchInstantConfigValue(redisKey, watchCtx)
+	loadedConfigValue, loadedOk, subscription := c.loadAndWatchInstantConfigValue(redisKey, watchCtx)
 	if !loadedOk {
-		return state
+		return state, subscription
 	}
 
 	state.value = string(loadedConfigValue.Value)
-	return state
+	return state, subscription
 }
 
-func (c *Reader) loadAndWatchInstantConfigValue(redisKey string, ctx context.Context) (redised.ConfigValue, bool) {
-	value, ok := c.Client.LoadAndSubscribe(ctx, redisKey, func(event hubredis.Event) {
+func (c *Reader) loadAndWatchInstantConfigValue(redisKey string, ctx context.Context) (redised.ConfigValue, bool, hubredis.Subscription) {
+	value, ok, subscription := c.Client.LoadAndSubscribe(ctx, redisKey, func(event hubredis.Event) {
 		c.handleInstantConfigEvent(redisKey, event)
 	})
 	if !ok {
-		return redised.ConfigValue{}, false
+		return redised.ConfigValue{}, false, subscription
 	}
 	configValue, err := unmarshalConfigValue(value)
 	if err != nil {
-		return redised.ConfigValue{}, false
+		return redised.ConfigValue{}, false, subscription
 	}
-	return configValue, true
+	return configValue, true, subscription
 }
 
 func (c *Reader) handleInstantConfigEvent(redisKey string, event hubredis.Event) {

@@ -48,8 +48,8 @@ func (v *Vault) DIInit() {
 	v.certs = map[string]*_Certificate{}
 	v.namesByKey = map[string]string{}
 	v.rebuildIndexLocked()
-	valuesByKey := v.Redis.LoadListAndSubscribe(v.Context, redised.FormatPortalCertPrefix(), v.handleCertEvent)
-	v.loadCerts(valuesByKey)
+	valuesByKey, subscription := v.Redis.LoadListAndSubscribe(v.Context, redised.FormatPortalCertPrefix(), v.handleCertEvent)
+	v.loadCerts(valuesByKey, subscription)
 }
 
 func (v *Vault) initTemporaryWebCerts() {
@@ -96,7 +96,7 @@ func (v *Vault) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, er
 	return temporaryWebCerts.Certificate(host)
 }
 
-func (v *Vault) loadCerts(valuesByKey map[string]string) {
+func (v *Vault) loadCerts(valuesByKey map[string]string, subscription hubapiredis.Subscription) {
 	v.mutex.Lock()
 	defer v.mutex.Unlock()
 
@@ -106,6 +106,7 @@ func (v *Vault) loadCerts(valuesByKey map[string]string) {
 		v.namesByKey[key] = cert.Name
 	}
 	v.rebuildIndexLocked()
+	subscription.Start()
 }
 
 func (v *Vault) handleCertEvent(event hubapiredis.Event) {

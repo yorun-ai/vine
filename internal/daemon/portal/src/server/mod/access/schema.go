@@ -17,7 +17,7 @@ func (a *Access) actorSchema(actorSkelName string) (*redised.SchemaActor, bool) 
 }
 
 func (a *Access) loadActors() {
-	valuesByKey := a.Redis.LoadListAndSubscribe(a.Context, redised.FormatSchemaActorPrefix(), a.handleActorEvent)
+	valuesByKey, subscription := a.Redis.LoadListAndSubscribe(a.Context, redised.FormatSchemaActorPrefix(), a.handleActorEvent)
 
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -26,6 +26,7 @@ func (a *Access) loadActors() {
 		actor := decodeActor(value)
 		a.setActorLocked(key, actor)
 	}
+	subscription.Start()
 }
 
 func (a *Access) handleActorEvent(event hubredis.Event) {
@@ -103,7 +104,7 @@ func (a *Access) serviceSchema(serviceSkelName string) (*redised.SchemaService, 
 }
 
 func (a *Access) loadServices() {
-	valuesByKey := a.Redis.LoadListAndSubscribe(a.Context, redised.FormatSchemaServicePrefix(), a.handleServiceEvent)
+	valuesByKey, subscription := a.Redis.LoadListAndSubscribe(a.Context, redised.FormatSchemaServicePrefix(), a.handleServiceEvent)
 
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -111,6 +112,7 @@ func (a *Access) loadServices() {
 	for key, value := range valuesByKey {
 		a.setServiceLocked(key, decodeService(value))
 	}
+	subscription.Start()
 }
 
 func (a *Access) handleServiceEvent(event hubredis.Event) {
@@ -144,7 +146,7 @@ func decodeService(value string) *redised.SchemaService {
 // Resource
 
 func (a *Access) loadResources() {
-	valuesByKey := a.Redis.LoadListAndSubscribe(a.Context, redised.FormatSchemaResourcePrefix(), a.handleResourceEvent)
+	valuesByKey, subscription := a.Redis.LoadListAndSubscribe(a.Context, redised.FormatSchemaResourcePrefix(), a.handleResourceEvent)
 
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -152,6 +154,7 @@ func (a *Access) loadResources() {
 	for key, value := range valuesByKey {
 		a.setResourceLocked(key, decodeResource(value))
 	}
+	subscription.Start()
 }
 
 func (a *Access) handleResourceEvent(event hubredis.Event) {
