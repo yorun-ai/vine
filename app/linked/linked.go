@@ -25,10 +25,20 @@ type Option struct {
 	HubEndpoint string
 	// IngressListen is the address on which the in-process Link accepts application traffic.
 	IngressListen string
+	// MTLSCAFile is the CA certificate used to authenticate Vine backend components.
+	MTLSCAFile string
+	// MTLSCertFile is the in-process Link's X.509-SVID certificate.
+	MTLSCertFile string
+	// MTLSKeyFile is the private key for the in-process Link's certificate.
+	MTLSKeyFile string
 }
 
 func (o Option) isZero() bool {
-	return o.HubEndpoint == "" && o.IngressListen == ""
+	return o.HubEndpoint == "" &&
+		o.IngressListen == "" &&
+		o.MTLSCAFile == "" &&
+		o.MTLSCertFile == "" &&
+		o.MTLSKeyFile == ""
 }
 
 // New constructs an application and an in-process Link connected to an external Hub.
@@ -94,8 +104,14 @@ func (a *_App) StartAndWait() {
 const (
 	flagHubEndpoint   = vinecli.FlagLinkHubEndpoint
 	flagIngressListen = vinecli.FlagLinkIngressListen
+	flagMTLSCAFile    = vinecli.FlagMTLSCAFile
+	flagMTLSCertFile  = vinecli.FlagMTLSCertFile
+	flagMTLSKeyFile   = vinecli.FlagMTLSKeyFile
 	envHubEndpoint    = vinecli.EnvLinkHubEndpoint
 	envIngressListen  = vinecli.EnvLinkIngressListen
+	envMTLSCAFile     = vinecli.EnvMTLSCAFile
+	envMTLSCertFile   = vinecli.EnvMTLSCertFile
+	envMTLSKeyFile    = vinecli.EnvMTLSKeyFile
 )
 
 func startLink(option Option) app.App {
@@ -122,6 +138,24 @@ func flags(flag *linkflag.Flag) []ucli.Flag {
 			Usage:       "link ingress listen address",
 			Destination: &flag.IngressListen,
 		},
+		&ucli.StringFlag{
+			Name:        flagMTLSCAFile,
+			Sources:     ucli.EnvVars(envMTLSCAFile),
+			Usage:       "Vine backend mTLS CA certificate file",
+			Destination: &flag.MTLS.CAFile,
+		},
+		&ucli.StringFlag{
+			Name:        flagMTLSCertFile,
+			Sources:     ucli.EnvVars(envMTLSCertFile),
+			Usage:       "the in-process Link's mTLS certificate file",
+			Destination: &flag.MTLS.CertFile,
+		},
+		&ucli.StringFlag{
+			Name:        flagMTLSKeyFile,
+			Sources:     ucli.EnvVars(envMTLSKeyFile),
+			Usage:       "the in-process Link's mTLS private key file",
+			Destination: &flag.MTLS.KeyFile,
+		},
 	}
 }
 
@@ -131,5 +165,14 @@ func applyOption(flag *linkflag.Flag, option Option) {
 	}
 	if option.IngressListen != "" {
 		flag.IngressListen = option.IngressListen
+	}
+	if option.MTLSCAFile != "" {
+		flag.MTLS.CAFile = option.MTLSCAFile
+	}
+	if option.MTLSCertFile != "" {
+		flag.MTLS.CertFile = option.MTLSCertFile
+	}
+	if option.MTLSKeyFile != "" {
+		flag.MTLS.KeyFile = option.MTLSKeyFile
 	}
 }

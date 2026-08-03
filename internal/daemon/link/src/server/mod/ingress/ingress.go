@@ -22,6 +22,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/rpcproxy"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/webproxy"
+	"go.yorun.ai/vine/internal/util/httputil"
 	"go.yorun.ai/vine/util/vnet"
 	"go.yorun.ai/vine/util/vpre"
 )
@@ -173,8 +174,8 @@ func (g *Ingress) stopHTTPServer() {
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), ingressShutdownTimeout)
 	defer cancel()
-	if err := server.Shutdown(timeoutCtx); err != nil {
-		ingressLogger.Error("link ingress server shutdown failed", "addr", server.Addr, "error", err)
+	if err := httputil.ShutdownServer(server, timeoutCtx); err != nil {
+		ingressLogger.Error("link ingress server graceful shutdown failed, force closed", "addr", server.Addr, "error", err)
 	}
 	g.httpWG.Wait()
 

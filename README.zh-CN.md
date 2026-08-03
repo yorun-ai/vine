@@ -130,15 +130,20 @@ SAN 的 X.509-SVID。Hub、Link 与 Portal 分别使用
 trust domain，证书也必须同时允许 TLS 服务端与客户端认证。证书中的 DNS SAN
 不会参与组件身份授权。
 
+使用 `app/linked` 的应用可以通过相同的参数和环境变量配置进程内 Link，也可以设置
+`linked.Option.MTLSCAFile`、`MTLSCertFile` 与 `MTLSKeyFile`。这些文件标识的是
+内嵌的 `vine.link` workload，而不是业务应用。
+
 配置后，Vine 会在 Hub Control API、Admin API、内嵌 Redis、内嵌 NATS 和 Link
 ingress 上强制使用 mTLS。Link 与 Portal 使用同一份组件证书作为客户端凭证；服务
 发现得到的 HTTP endpoint 不允许降级为明文；Hub Redis 也会把 Redis ACL 用户名与
 mTLS 客户端身份绑定。Portal 的公网 listener 仍由既有的 Portal certificate vault
 管理。启用 mTLS 后，如果 HTTPS entry 没有配置公网证书，Portal 可以按请求的 SNI
 host 生成进程内短期自签名 Web 证书。显式配置的 Portal 证书始终优先；临时证书仅
-为启动阶段提供加密，不受浏览器信任。Link 是 App 的 sidecar，两者必须位于同一
-主机和部署信任边界内，因此 App 到 Link 的通信仍使用 h2c。将 App 与其 Link
-部署到不同主机不属于 Vine 支持的拓扑。
+为启动阶段提供加密，不受浏览器信任。Link 是 App 的 sidecar，预期情况下两者位于
+同一主机和部署信任边界内，因此 App 到 Link 的通信仍使用 h2c。Vine 仍允许显式配置
+非 loopback 的 Link API 来适配特殊部署，但会输出警告，也不会额外增加传输认证；
+跨主机流量需要由部署方自行保护。
 
 证书签发、轮换与吊销仍由部署系统负责。外部 PostgreSQL 与 NATS 连接使用各自服务
 的安全配置。

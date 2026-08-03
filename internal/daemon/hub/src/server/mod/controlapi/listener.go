@@ -23,6 +23,7 @@ import (
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	impl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/control"
+	"go.yorun.ai/vine/internal/util/httputil"
 )
 
 const shutdownTimeout = 10 * time.Second
@@ -137,8 +138,8 @@ func (l *Listener) stopHTTP() {
 
 	ctx, cancel := context.WithTimeout(l.Context, shutdownTimeout)
 	defer cancel()
-	if err := l.server.Shutdown(ctx); err != nil {
-		controlLogger.Error("hub control API listener shutdown failed", "addr", l.server.Addr, "error", err)
+	if err := httputil.ShutdownServer(l.server, ctx); err != nil {
+		controlLogger.Error("hub control API listener graceful shutdown failed, force closed", "addr", l.server.Addr, "error", err)
 	}
 	l.wg.Wait()
 	l.server = nil

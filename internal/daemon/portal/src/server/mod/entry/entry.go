@@ -13,6 +13,7 @@ import (
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/vault"
+	"go.yorun.ai/vine/internal/util/httputil"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -155,12 +156,11 @@ func (e *_Entry) Stop() {
 
 	e.started = false
 	e.server = nil
-	err := server.Shutdown(ctx)
+	err := httputil.ShutdownServer(server, ctx)
 	if errors.Is(err, http.ErrServerClosed) {
 		return
 	}
 	if err != nil {
-		_ = server.Close()
 		entryLogger.Error("vine.portal entry shutdown failed, force closed", "addr", addr, "error", err)
 	}
 }

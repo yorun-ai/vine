@@ -78,3 +78,21 @@ func TestNormalizeRejectsHubEndpointWithoutHost(t *testing.T) {
 		flags.Normalize(false)
 	})
 }
+
+func TestExpectedAppAPIListen(t *testing.T) {
+	tests := []struct {
+		listen   string
+		expected bool
+	}{
+		{listen: "127.0.0.1:7079", expected: true},
+		{listen: "[::1]:7079", expected: true},
+		{listen: "localhost:7079", expected: true},
+		{listen: "0.0.0.0:7079", expected: false},
+		{listen: ":7079", expected: false},
+		{listen: "10.0.0.8:7079", expected: false},
+		{listen: "link.internal:7079", expected: false},
+	}
+	for _, test := range tests {
+		assert.Equal(t, test.expected, isExpectedAppAPIListen(test.listen), test.listen)
+	}
+}
