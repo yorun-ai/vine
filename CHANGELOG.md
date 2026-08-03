@@ -8,12 +8,17 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-08-03
+
 ### Added
 
 - Backend mTLS for Hub, Link, and Portal using exact SPIFFE X.509-SVID
   identities, including protected Hub Control/Admin APIs, embedded Redis and
   NATS, Link ingress, authenticated Redis role binding, and plaintext downgrade
   rejection for discovered backend endpoints
+- Process-local temporary self-signed HTTPS certificates for Portal entries
+  without a configured public certificate when backend mTLS is enabled, while
+  preserving configured certificate precedence
 - `app.NewBundled(...)` for running multiple applications in one lifecycle
   while they connect to an external Link
 - `app/linked.Option` certificate fields and matching `--mtls-*-file` flags for
@@ -35,9 +40,26 @@ are not part of the public compatibility commitment.
 - Link continues to allow a non-loopback App API listener for unusual
   deployments, but now logs a warning because cross-host App-to-Link traffic is
   unauthenticated h2c and is not the expected sidecar topology
+- The English and Simplified Chinese READMEs now provide a complete runtime
+  architecture, deployment-mode comparison, CLI guide, public package map,
+  ecosystem overview, and production boundary summary
+- Release builds now require a dated `CHANGELOG.md` heading matching the
+  release tag before producing or uploading binaries
 
 ### Fixed
 
+- Redis locks now reject non-positive timeouts, bound refresh commands
+  and retries to the remaining lease, and stop immediately after ownership is
+  lost
+- Redis snapshot subscriptions now hold events behind a publication barrier
+  until Link and Portal install the corresponding snapshot, preventing stale
+  local state from surviving the initialization window
+- Link configuration and RpcProxy state, together with Hub Syncer caches, now
+  remain protected from concurrent map access and mutable state escaping its
+  lock
+- Hub Scheduler jobs now contain background panics and transient NATS errors,
+  preserve the last valid schedule after an invalid refresh, and wait for the
+  refresh loop and in-flight jobs during shutdown
 - HTTP servers now force-close active connections after graceful shutdown times
   out, and failed embedded NATS startup removes its temporary JetStream store
   and shuts down any partially started server
@@ -47,9 +69,13 @@ are not part of the public compatibility commitment.
 - Hub Skel names have moved from `vine.hub.*` to either
   `vine.hub.control.*` or `vine.hub.admin.*`. Clients using generated Hub
   contracts must regenerate or update their imports and service paths.
+- Deployments using the former Hub `--api-listen` flag or `VINE_API_LISTEN`
+  variable must configure the Control and Admin listeners separately.
 - Linked applications that connect to an mTLS-enabled Hub must configure the
   Link identity through `linked.Option.MTLSCAFile`, `MTLSCertFile`, and
   `MTLSKeyFile`, or through the matching CLI flags and environment variables.
+- Applications creating fixed Redis locks must provide a positive timeout;
+  zero and negative values are rejected so every lock key has a lease.
 
 ## [0.11.0] - 2026-08-02
 
