@@ -17,7 +17,7 @@ func (p *RpcProxy) retainService(serviceName string, appInstanceID string) {
 	}
 	p.serviceStateMutex.Unlock()
 
-	state := p.newServiceState(serviceName)
+	state, subscription := p.newServiceState(serviceName)
 	state.refsByAppInstanceID[appInstanceID] = struct{}{}
 
 	p.serviceStateMutex.Lock()
@@ -30,6 +30,7 @@ func (p *RpcProxy) retainService(serviceName string, appInstanceID string) {
 		return
 	}
 	p.serviceStatesByName[serviceName] = state
+	subscription.Start()
 	p.serviceStateMutex.Unlock()
 }
 
@@ -67,27 +68,27 @@ func (p *RpcProxy) nextServiceEndpoint(serviceName string) (redised.RpcServiceRe
 	return registration, true
 }
 
-func (p *RpcProxy) newServiceState(serviceName string) *_ServiceState {
+func (p *RpcProxy) newServiceState(serviceName string) (*_ServiceState, hubredis.Subscription) {
 	watchCtx, cancel := context.WithCancel(p.Context)
-	registrationsByKey := p.loadAndWatchServiceRegistrations(serviceName, watchCtx)
+	registrationsByKey, subscription := p.loadAndWatchServiceRegistrations(serviceName, watchCtx)
 	state := &_ServiceState{
 		refsByAppInstanceID: map[string]struct{}{},
 		registrationsByKey:  registrationsByKey,
 		cancel:              cancel,
 	}
 	p.rebuildServiceEndpointsLocked(state)
-	return state
+	return state, subscription
 }
 
-func (p *RpcProxy) loadAndWatchServiceRegistrations(serviceName string, ctx context.Context) map[string]redised.RpcServiceRegistration {
-	valuesByKey := p.RedisClient.LoadListAndSubscribe(
+func (p *RpcProxy) loadAndWatchServiceRegistrations(serviceName string, ctx context.Context) (map[string]redised.RpcServiceRegistration, hubredis.Subscription) {
+	valuesByKey, subscription := p.RedisClient.LoadListAndSubscribe(
 		ctx,
 		redised.FormatRpcServiceRegistrationPrefix(serviceName),
 		func(event hubredis.Event) {
 			p.handleServiceRegistrationEvent(serviceName, event)
 		},
 	)
-	return parseServiceRegistrations(valuesByKey)
+	return parseServiceRegistrations(valuesByKey), subscription
 }
 
 func parseServiceRegistrations(valuesByKey map[string]string) map[string]redised.RpcServiceRegistration {

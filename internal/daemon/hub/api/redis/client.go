@@ -26,10 +26,16 @@ type ClientSpec interface {
 	mustBeClient()
 }
 
+// Subscription delays event delivery until Start releases events buffered while
+// the caller publishes the loaded snapshot.
+type Subscription interface {
+	Start()
+}
+
 type ClientOps interface {
 	Load(key string) (string, bool)
-	LoadAndSubscribe(ctx context.Context, key string, handle func(event Event)) (string, bool)
-	LoadListAndSubscribe(ctx context.Context, prefix string, handle func(event Event)) map[string]string
+	LoadAndSubscribe(ctx context.Context, key string, handle func(event Event)) (string, bool, Subscription)
+	LoadListAndSubscribe(ctx context.Context, prefix string, handle func(event Event)) (map[string]string, Subscription)
 }
 
 type _RedisClientSetter interface {

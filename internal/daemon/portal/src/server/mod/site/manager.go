@@ -51,7 +51,7 @@ func (m *Manager) Site(siteName string) (spec.Site, bool) {
 }
 
 func (m *Manager) loadSites() {
-	valuesByKey := m.Redis.LoadListAndSubscribe(m.Context, redised.FormatPortalSitePrefix(), m.handleSiteEvent)
+	valuesByKey, subscription := m.Redis.LoadListAndSubscribe(m.Context, redised.FormatPortalSitePrefix(), m.handleSiteEvent)
 
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
@@ -61,6 +61,7 @@ func (m *Manager) loadSites() {
 		m.sitesByKey[key] = site
 		m.sitesByName[site.Name()] = site
 	}
+	subscription.Start()
 }
 
 func (m *Manager) handleSiteEvent(event hubapiredis.Event) {

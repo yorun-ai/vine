@@ -46,7 +46,7 @@ func (m *Manager) watch(prefix string, registrationType reflect.Type) *Watcher {
 	m.mutex.Unlock()
 
 	watchCtx, cancel := context.WithCancel(m.Context)
-	valuesByKey := m.Redis.LoadListAndSubscribe(watchCtx, prefix, func(event hubredis.Event) {
+	valuesByKey, subscription := m.Redis.LoadListAndSubscribe(watchCtx, prefix, func(event hubredis.Event) {
 		m.handleRegistrationEvent(prefix, event)
 	})
 	route = &_Route{
@@ -59,19 +59,22 @@ func (m *Manager) watch(prefix string, registrationType reflect.Type) *Watcher {
 	route.rebuildEndpoints()
 
 	m.mutex.Lock()
-	defer m.mutex.Unlock()
 
 	existing := m.routesByPrefix[prefix]
 	if existing != nil {
 		if existing.registrationType != registrationType {
+			m.mutex.Unlock()
 			cancel()
 			panic(fmt.Sprintf("endpoint route %s registration type mismatch: got %s want %s", prefix, registrationType, existing.registrationType))
 		}
 		existing.refCount++
+		m.mutex.Unlock()
 		cancel()
 		return m.newWatcher(prefix)
 	}
 	m.routesByPrefix[prefix] = route
+	subscription.Start()
+	m.mutex.Unlock()
 	return m.newWatcher(prefix)
 }
 
