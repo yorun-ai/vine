@@ -8,41 +8,57 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-Vine is a runtime framework for Go applications. It brings application lifecycle, dependency injection, configuration, Rpc, Web, Event, Task, and infrastructure components into a unified application model. Hub, Link, and Portal let the same application move smoothly from single-process development to multi-process deployment.
+Vine is a runtime framework for contract-first Go applications. It unifies
+application lifecycle, dependency injection, configuration, Rpc, Web, Event,
+Task, Redis, and relational databases, then carries the same application model
+from a one-process development runtime to a separated deployment with Hub,
+Link, and Portal.
 
-> Vine is currently stabilizing its public API before 1.0. Minor releases may contain breaking changes, while patch releases remain backward-compatible within the same minor release line. The first public release starts at `v0.9.0`; historical internal versions are outside the public compatibility commitment.
+Use Vine when the application needs more than an HTTP router: typed
+cross-application contracts, runtime discovery, asynchronous delivery,
+configuration updates, external gateways, and predictable startup and graceful
+shutdown boundaries.
 
-## Features
+> Vine is stabilizing its public API before `v1.0.0`. Patch releases remain
+> backward-compatible within one minor release line; minor releases may contain
+> documented breaking changes. The public compatibility history starts at
+> `v0.9.0`.
 
-- Unified application, component, and module lifecycles
-- Go type-based dependency injection and execution scopes
-- Type-safe Rpc, Web, Event, and Task contracts
-- Integrated configuration, logging, Redis, and relational databases
-- Standalone, linked, and separated deployment modes
-- Service registration, discovery, and external gateways through Hub, Link, and Portal
-- Go and TypeScript contract generation powered by skelc
-- English and Chinese documentation
+## At a Glance
 
-## Architecture
+| Area | What Vine provides |
+| --- | --- |
+| Application model | Ordered component and module lifecycle, type-based dependency injection, execution scopes, and graceful shutdown |
+| Typed capabilities | Rpc request/response, Web routes, Event fan-out, Task competing consumers, and managed configuration |
+| Runtime services | Hub configuration and registry, Link discovery and forwarding, and optional Portal HTTP/HTTPS gateways |
+| Infrastructure | Structured logging, trace and identity propagation, Redis clients/caches/locks, and SQLite or PostgreSQL-backed RDB access |
+| Tooling | `vine` runtime CLI, `app/testkit`, Go API facades, and Skel-generated Go and TypeScript contracts |
+| Deployment | Standalone, local `vine dev`, linked, and fully separated topologies without rewriting business modules |
+
+## Runtime Architecture
 
 ```mermaid
 flowchart LR
-    Client["Client"] --> Portal["Portal<br/>HTTP / HTTPS gateway"]
-    Portal --> Link["Link<br/>discovery and routing"]
-    Link --> App["Vine App<br/>Rpc / Web / Event / Task"]
-    App --> Infra["Redis / RDB"]
-    Hub["Hub<br/>configuration and registry"] --> Portal
-    Hub --> Link
+    Client["External client"] --> Portal["Portal<br/>HTTP / HTTPS gateway"]
+    Portal --> Link["Link<br/>discovery and forwarding"]
+    App["Vine App<br/>Rpc / Web / Event / Task"] <--> Link
+    Hub["Hub<br/>configuration and registry"] -.-> Link
+    Hub -.-> Portal
+    Hub --> Infra["SQLite / PostgreSQL<br/>Redis / NATS"]
 ```
 
-- **App** hosts business components, modules, and exposed capabilities.
-- **Hub** manages configuration, service registration, and runtime state.
-- **Link** connects applications to Hub and provides service discovery and request forwarding.
-- **Portal** provides external HTTP, HTTPS, Rpc, and Web entry points.
+| Role | Responsibility |
+| --- | --- |
+| **App** | Owns business modules, handlers, configuration schemas, and infrastructure dependencies. |
+| **Link** | Registers local applications, watches discovery/configuration state, selects instances, forwards Rpc/Web traffic, and delivers Event/Task messages. |
+| **Hub** | Owns configuration, schemas, registrations, leases, Portal configuration, management APIs, and the Dashboard. |
+| **Portal** | Provides optional external HTTP/HTTPS entry points, routing, admission, and public TLS certificate selection. |
 
-For local development, standalone mode starts the complete runtime in one process. Deployments can separate Hub, Link, Portal, and business applications as needed.
+Internal application-to-application calls use Link and do not pass through
+Portal. Standalone mode keeps the same responsibilities but replaces the
+network boundaries with in-process transports.
 
-## Get Started in 5 Minutes
+## Quick Start
 
 Prerequisite: Go 1.26.5 or later.
 
@@ -50,8 +66,12 @@ Prerequisite: Go 1.26.5 or later.
 mkdir vine-hello
 cd vine-hello
 go mod init example.com/vine-hello
-go get go.yorun.ai/vine@v0.11.0
+go get go.yorun.ai/vine@latest
 ```
+
+Go records the resolved release in `go.mod`. Review and commit `go.mod` and
+`go.sum`; use an explicit Vine tag in bootstrap scripts that must be
+reproducible.
 
 Create `main.go`:
 
@@ -91,99 +111,190 @@ func main() {
 }
 ```
 
-Run the application:
+Run it:
 
 ```bash
 go run .
 ```
 
-When `hello from Vine` appears in the log, the complete standalone runtime and business application are running. Press `Ctrl+C` for graceful shutdown.
+When `hello from Vine` appears, Hub, Portal, Link, and the business application
+are running in one process. Press `Ctrl+C` to stop them in reverse lifecycle
+order. Continue with the
+[first application tutorial](https://vine.yorun.ai/docs/getting-started/tutorial-first-app)
+or define a typed API in the
+[first Skel contract](https://vine.yorun.ai/docs/getting-started/first-contract).
+
+## Choose a Runtime Mode
+
+| Mode | Runtime placement | Start with | Best for |
+| --- | --- | --- | --- |
+| **Standalone** | Hub, Portal, Link, and App share one process | `app/standalone` | First applications, package tests, and local monoliths |
+| **`vine dev`** | Hub, Portal, and Link share the CLI process; App runs separately | `vine dev` + `app.New` | Debugging a real App-to-Link network boundary with temporary local infrastructure |
+| **Linked** | Hub and Portal are separate; Link runs inside the App process | `app/linked` | Shared runtime services without a separate Link sidecar |
+| **Separated** | Hub, Portal, Link, and App run as independent processes | `vine ... serve` + `app.New` | Container deployment, independent scaling, leases, and failure testing |
+
+The same `ApplicationSpec`, modules, and Rpc/Web/Event/Task implementations work
+in every mode. Only the startup assembly and endpoint configuration change. See
+[Deployment modes](https://vine.yorun.ai/docs/deployment-modes) for diagrams,
+commands, lifecycle differences, and production tradeoffs.
+
+## Vine CLI
+
+Install the released CLI and inspect its commands:
+
+```bash
+go install go.yorun.ai/vine/cmd/vine@latest
+vine version
+vine --help
+```
+
+Use an exact release tag instead of `@latest` in deployment build scripts.
+
+Common entry points:
+
+```bash
+# Local Hub + Portal + Link; uses temporary SQLite when no DB is supplied.
+vine dev
+
+# Independently operated runtime services; run each in its own process.
+vine hub serve --mq-embedded-nats --db-sqlite-file ./hub.sqlite
+vine portal serve --hub-endpoint http://127.0.0.1:7071
+vine link serve \
+  --api-listen 127.0.0.1:7079 \
+  --ingress-listen 127.0.0.1:7082 \
+  --hub-endpoint http://127.0.0.1:7071
+```
+
+Read the [CLI guide](https://vine.yorun.ai/docs/getting-started/cli) before
+operating the separated services; it documents persistence, NATS, listener,
+seed, Dashboard, environment-variable, and backend mTLS options.
+
+## Public Package Map
+
+Vine keeps its public API in a small set of facade packages. Packages under
+`internal` are implementation details and are not application APIs.
+
+| Packages | Purpose |
+| --- | --- |
+| [`app`](app), [`app/standalone`](app/standalone), [`app/linked`](app/linked) | Application construction, lifecycle, bundling, and runtime topology |
+| [`app/testkit`](app/testkit) | Standalone runtime setup, configuration overrides, and execution helpers for tests |
+| [`core/di`](core/di), [`core/ctr`](core/ctr) | Dependency injection and container access |
+| [`core/rpc`](core/rpc), [`core/web`](core/web) | Synchronous service contracts and Web handling |
+| [`core/event`](core/event), [`core/task`](core/task) | Asynchronous fan-out and competing-consumer work |
+| [`core/conf`](core/conf) | Eternal configuration snapshots and instant configuration updates |
+| [`core/meta`](core/meta), [`core/logger`](core/logger), [`core/ex`](core/ex), [`core/redact`](core/redact) | Request metadata, structured logging, system errors, and sensitive-data redaction |
+| [`infra/redis`](infra/redis), [`infra/rdb`](infra/rdb) | Managed Redis and relational database integration |
+| [`util`](util) | Reusable encoding, file, collection, math, network, validation, and string helpers |
+
+Use the [framework package index](https://vine.yorun.ai/docs/framework/core-packages)
+for a guided map and [pkg.go.dev](https://pkg.go.dev/go.yorun.ai/vine) for exact
+API signatures.
+
+## Contracts and Ecosystem
+
+Vine uses [Skel](https://skel.yorun.ai/docs/) contracts for Rpc, Web, Event,
+Task, configuration, actor, and resource definitions. `skelc` validates those
+contracts and generates the Go/TypeScript boundary code; business behavior stays
+in your Vine modules and handlers.
+
+| Project | Role |
+| --- | --- |
+| [`yorun-ai/skelc`](https://github.com/yorun-ai/skelc) | Skel parser, validator, formatter, LSP, and code generator |
+| [Skel documentation](https://skel.yorun.ai/docs/) | Language, CLI, generation, and compatibility reference |
+| [`@yorun-ai/vrpc`](https://www.npmjs.com/package/@yorun-ai/vrpc) | TypeScript vRPC and HTTP client runtime |
+| [`yorun-ai/skel-editor-support`](https://github.com/yorun-ai/skel-editor-support) | Syntax highlighting and VS Code integration |
+| [`yorun-ai/vine-site`](https://github.com/yorun-ai/vine-site) | Source for the public Vine documentation site |
 
 ## Documentation
 
-- [Getting started](https://vine.yorun.ai/docs/getting-started)
-- [Build your first application](https://vine.yorun.ai/docs/tutorial-first-app)
+- [Start with Vine](https://vine.yorun.ai/docs/getting-started)
+- [Build your first application](https://vine.yorun.ai/docs/getting-started/tutorial-first-app)
+- [Write your first Skel contract](https://vine.yorun.ai/docs/getting-started/first-contract)
+- [Application lifecycle](https://vine.yorun.ai/docs/runtime/application-lifecycle)
+- [Request routing and readiness](https://vine.yorun.ai/docs/runtime/request-routing)
 - [Deployment modes](https://vine.yorun.ai/docs/deployment-modes)
-- [Framework package index](https://vine.yorun.ai/docs/core-packages)
+- [Production readiness](https://vine.yorun.ai/docs/production-readiness)
 - [Go API reference](https://pkg.go.dev/go.yorun.ai/vine)
-- [Changelog](./CHANGELOG.md)
-- [Documentation (Chinese)](https://vine.yorun.ai/zh-CN/docs/)
+- [Changelog](CHANGELOG.md)
+- [Simplified Chinese documentation](https://vine.yorun.ai/zh-CN/docs/getting-started)
 
-The documentation site source is maintained in
-[`yorun-ai/vine-site`](https://github.com/yorun-ai/vine-site). Preview the site
-from a `vine-site` checkout with:
+The documentation site tracks current source and may be ahead of the latest
+release. For deployed systems, pin Vine and skelc, then read the compatibility
+page and release notes for those exact versions.
 
-```bash
-cd vine-site
-pnpm install
-pnpm dev
+## Security and Production Boundaries
+
+Vine can require deployment-provided backend mTLS identities for Hub, Link, and
+Portal. The three components use exact X.509-SVID URI SANs under one trust
+domain:
+
+```text
+spiffe://<trust-domain>/vine/daemon/vine.hub
+spiffe://<trust-domain>/vine/daemon/vine.link
+spiffe://<trust-domain>/vine/daemon/vine.portal
 ```
 
-## Backend mTLS
+Configure `--mtls-ca-file`, `--mtls-cert-file`, and `--mtls-key-file` together.
+Backend mTLS protects Hub Control/Admin APIs, embedded Hub Redis and NATS, Link
+ingress, and component proxy clients. Portal's public HTTPS certificates are a
+separate configuration boundary. Application-to-Link traffic remains h2c under
+the sidecar/co-location trust model, so keep it on loopback or protect any
+unusual cross-host path at the deployment layer.
 
-`vine hub serve`, `vine link serve`, and `vine portal serve` accept
-`--mtls-ca-file`, `--mtls-cert-file`, and `--mtls-key-file` (or the matching
-`VINE_MTLS_*` environment variables). Configure all three together. Each
-certificate must be an X.509-SVID with exactly one SPIFFE URI SAN. Hub, Link,
-and Portal use `spiffe://<trust-domain>/vine/daemon/vine.hub`,
-`spiffe://<trust-domain>/vine/daemon/vine.link`, and
-`spiffe://<trust-domain>/vine/daemon/vine.portal` respectively. All communicating
-components must share the same trust domain, and every certificate must be
-valid for both TLS server and client authentication. DNS SANs, when present,
-are not used for component authorization.
+The embedded Redis ACL separates Hub, Link, and Portal roles. External
+PostgreSQL and NATS services retain their own authentication, encryption,
+durability, and operational requirements. Before production, review the
+[production readiness checklist](https://vine.yorun.ai/docs/production-readiness)
+for listener exposure, mTLS, persistence, delivery, leases, shutdown, scaling,
+and observability constraints.
 
-Applications using `app/linked` can configure the in-process Link with the same
-flags and environment variables, or with `linked.Option.MTLSCAFile`,
-`MTLSCertFile`, and `MTLSKeyFile`. These files identify the embedded
-`vine.link` workload, not the business application.
+## Repository Layout and Development
 
-When configured, Vine requires mTLS on the Hub Control and Admin APIs, embedded
-Hub Redis and NATS, and Link ingress. Link and Portal use the same component
-certificate as their client credential, discovered HTTP endpoints cannot
-downgrade to plaintext, and Hub Redis binds its Redis ACL username to the mTLS
-client identity. Portal's public listeners remain under the existing Portal
-certificate-vault configuration. When mTLS is enabled, Portal can temporarily
-serve an HTTPS entry without a configured public certificate by generating a
-short-lived, process-local self-signed Web certificate for the requested SNI
-host. A configured Portal certificate always takes precedence; the temporary
-certificate only encrypts bootstrap traffic and is not browser-trusted.
-Application-to-Link traffic remains h2c because Link is the application's
-sidecar: both normally run on the same host and within the same deployment
-trust boundary. Vine still allows an explicitly configured non-loopback Link
-API for unusual deployments, but logs a warning and does not add transport
-authentication; operators are responsible for protecting that cross-host
-traffic.
+```text
+vine/
+├── app/       # application construction, runtime modes, and testkit
+├── core/      # public framework APIs
+├── infra/     # public Redis and RDB integrations
+├── util/      # public reusable helpers
+├── cmd/vine/  # runtime CLI
+├── internal/  # framework and Hub/Link/Portal implementations
+├── script/    # generation and release-support scripts
+└── test/      # repository-wide test and race entry points
+```
 
-Certificate issuance, rotation, and revocation remain deployment concerns.
-External PostgreSQL and NATS connections use those services' own security
-configuration.
+Start with [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md). The
+baseline repository checks are:
 
-The embedded Hub Redis server rejects anonymous data access and uses separate
-`vine.hub`, `vine.link`, and `vine.portal` users. The process-local `vine.hub`
-user has a random password and full access; the `vine.link` and `vine.portal`
-users have distinct least-privilege key and subscription ACLs.
+```bash
+go mod download
+bash test/test.sh
+bash test/race.sh
+GOWORK=off go vet ./...
+```
 
-The Link and Portal Redis passwords remain empty for inproc mode and separated
-deployment debugging. With backend mTLS enabled, the certificate identity
-authenticates and binds those users to their roles. Without mTLS, the usernames
-only select an ACL role, so internal endpoints must remain on loopback or a
-trusted private network and be restricted with a firewall.
+Generated Skel code, the Hub Dashboard, and public documentation have additional
+workflows documented in the contribution guide. Public documentation changes
+belong in `yorun-ai/vine-site`; keep English and Simplified Chinese content in
+sync.
 
 ## Versioning and Compatibility
 
 Vine follows [Semantic Versioning](https://semver.org/). Before `v1.0.0`:
 
-- Patch releases, such as `v0.9.1`, remain backward-compatible within the same minor release line.
-- Minor releases, such as `v0.10.0`, may change public APIs, CLI behavior, configuration, Skel, or protocols.
-- Breaking changes are documented in release notes and migration guides.
+- Patch releases, such as `v0.11.1`, remain backward-compatible within the same
+  minor release line.
+- Minor releases may change public APIs, CLI behavior, configuration, Skel, or
+  protocols.
+- Breaking changes are documented in release notes and migration guidance.
 
-`v1.0.0` will mark the stable public API and begin Vine's formal compatibility commitment.
+`v1.0.0` will mark the stable public API and begin Vine's formal compatibility
+commitment.
 
 ## License
 
-Vine is open source under the [Apache License 2.0](./LICENSE).
-Binary distributions must include both `LICENSE` and
-[`THIRD_PARTY_LICENSES.txt`](./THIRD_PARTY_LICENSES.txt). Regenerate the
+Vine is open source under the [Apache License 2.0](LICENSE). Binary
+distributions must include both `LICENSE` and
+[`THIRD_PARTY_LICENSES.txt`](THIRD_PARTY_LICENSES.txt). Regenerate the
 third-party file after dependency changes with:
 
 ```bash
