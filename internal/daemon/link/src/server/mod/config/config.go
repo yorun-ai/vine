@@ -23,7 +23,7 @@ func (c *Reader) retainEternalConfig(appInstanceID string, key string) string {
 
 	value := string(configValue.Value)
 	c.mutex.Lock()
-	c.setConfigValueSnapshot(appInstanceID, redisKey, value)
+	c.setConfigValueSnapshotLocked(appInstanceID, redisKey, value)
 	c.mutex.Unlock()
 	return value
 }
@@ -44,13 +44,14 @@ func (c *Reader) retainInstantConfig(appInstanceID string, key string) string {
 		state, subscription = c.newInstantConfigState(redisKey)
 		c.instantConfigStatesByKey[redisKey] = state
 	}
+	value := state.value
 	state.refsByAppInstanceID[appInstanceID] = struct{}{}
-	c.setConfigValueSnapshot(appInstanceID, redisKey, state.value)
+	c.setConfigValueSnapshotLocked(appInstanceID, redisKey, value)
 	if subscription != nil {
 		subscription.Start()
 	}
 	c.mutex.Unlock()
-	return state.value
+	return value
 }
 
 func (c *Reader) loadConfigValue(redisKey string) (redised.ConfigValue, bool) {
@@ -75,8 +76,9 @@ func (c *Reader) findConfigValueSnapshot(appInstanceID string, key string) (stri
 	redisKey := redised.FormatConfigKey(key)
 
 	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
 	valuesByKey, ok := c.configValuesByAppInstanceID[appInstanceID]
-	c.mutex.RUnlock()
 	if !ok {
 		return "", false
 	}
@@ -85,7 +87,7 @@ func (c *Reader) findConfigValueSnapshot(appInstanceID string, key string) (stri
 	return value, ok
 }
 
-func (c *Reader) setConfigValueSnapshot(appInstanceID string, redisKey string, value string) {
+func (c *Reader) setConfigValueSnapshotLocked(appInstanceID string, redisKey string, value string) {
 	valuesByKey, ok := c.configValuesByAppInstanceID[appInstanceID]
 	if !ok {
 		return

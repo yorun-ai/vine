@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"encoding/json"
+	"sync"
 
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
@@ -15,6 +16,8 @@ type Syncer struct {
 
 	RedisServer *redisserver.Server `inject:""`
 
+	namesMutex           sync.Mutex
+	schemaMutex          sync.Mutex
 	appConfigNamesById   map[int]string
 	portalSiteNamesById  map[int]string
 	portalRuleNamesById  map[int]string
@@ -35,12 +38,18 @@ func (s *Syncer) DIInit() {
 }
 
 func (s *Syncer) SyncAppConfig(item *core.AppConfig) {
-	s.removeRenamedKey(s.appConfigNamesById, item.Id, item.Name, redised.FormatConfigKey)
+	s.namesMutex.Lock()
+	defer s.namesMutex.Unlock()
+
+	s.removeRenamedKeyLocked(s.appConfigNamesById, item.Id, item.Name, redised.FormatConfigKey)
 	s.RedisServer.SetAndNotify(redised.FormatConfigKey(item.Name), vcode.MustMarshalJsonS(ToRedisedAppConfig(item)))
-	s.saveNameById(s.appConfigNamesById, item.Id, item.Name)
+	s.saveNameByIdLocked(s.appConfigNamesById, item.Id, item.Name)
 }
 
 func (s *Syncer) RemoveAppConfig(item *core.AppConfig) {
+	s.namesMutex.Lock()
+	defer s.namesMutex.Unlock()
+
 	s.RedisServer.DeleteAndNotify(redised.FormatConfigKey(item.Name))
 	delete(s.appConfigNamesById, item.Id)
 }
@@ -59,13 +68,13 @@ func (s *Syncer) SyncWebRegistration(webName string, reg redised.WebRegistration
 	)
 }
 
-func (s *Syncer) removeRenamedKey(namesById map[int]string, id int, name string, formatKey func(string) string) {
+func (s *Syncer) removeRenamedKeyLocked(namesById map[int]string, id int, name string, formatKey func(string) string) {
 	if oldName, ok := namesById[id]; ok && oldName != name {
 		s.RedisServer.DeleteAndNotify(formatKey(oldName))
 	}
 }
 
-func (s *Syncer) saveNameById(namesById map[int]string, id int, name string) {
+func (s *Syncer) saveNameByIdLocked(namesById map[int]string, id int, name string) {
 	namesById[id] = name
 }
 

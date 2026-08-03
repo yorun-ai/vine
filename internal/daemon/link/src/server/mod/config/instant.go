@@ -49,7 +49,7 @@ func (c *Reader) handleInstantConfigEvent(redisKey string, event hubredis.Event)
 	case hubredis.EventKindDelete:
 		state.value = ""
 		for appInstanceID := range state.refsByAppInstanceID {
-			c.setConfigValueSnapshot(appInstanceID, redisKey, "")
+			c.setConfigValueSnapshotLocked(appInstanceID, redisKey, "")
 		}
 	default:
 		configValue, err := unmarshalConfigValue(event.Value)
@@ -59,7 +59,7 @@ func (c *Reader) handleInstantConfigEvent(redisKey string, event hubredis.Event)
 		value := string(configValue.Value)
 		state.value = value
 		for appInstanceID := range state.refsByAppInstanceID {
-			c.setConfigValueSnapshot(appInstanceID, redisKey, value)
+			c.setConfigValueSnapshotLocked(appInstanceID, redisKey, value)
 		}
 	}
 }

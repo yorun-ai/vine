@@ -7,34 +7,52 @@ import (
 )
 
 func (s *Syncer) SyncPortalSiteWithRpcgwServices(site *core.PortalSite, rpcgwServices []string) {
-	s.removeRenamedKey(s.portalSiteNamesById, site.Id, site.Name, redised.FormatPortalSiteKey)
+	s.namesMutex.Lock()
+	defer s.namesMutex.Unlock()
+
+	s.removeRenamedKeyLocked(s.portalSiteNamesById, site.Id, site.Name, redised.FormatPortalSiteKey)
 	s.RedisServer.SetAndNotify(redised.FormatPortalSiteKey(site.Name), vcode.MustMarshalJsonS(toRedisedPortalSite(site, rpcgwServices)))
-	s.saveNameById(s.portalSiteNamesById, site.Id, site.Name)
+	s.saveNameByIdLocked(s.portalSiteNamesById, site.Id, site.Name)
 }
 
 func (s *Syncer) RemovePortalSite(site *core.PortalSite) {
+	s.namesMutex.Lock()
+	defer s.namesMutex.Unlock()
+
 	s.RedisServer.DeleteAndNotify(redised.FormatPortalSiteKey(site.Name))
 	delete(s.portalSiteNamesById, site.Id)
 }
 
 func (s *Syncer) SyncPortalRule(rule *core.PortalRule) {
-	s.removeRenamedKey(s.portalRuleNamesById, rule.Id, rule.Name, redised.FormatPortalRuleKey)
+	s.namesMutex.Lock()
+	defer s.namesMutex.Unlock()
+
+	s.removeRenamedKeyLocked(s.portalRuleNamesById, rule.Id, rule.Name, redised.FormatPortalRuleKey)
 	s.RedisServer.SetAndNotify(redised.FormatPortalRuleKey(rule.Name), vcode.MustMarshalJsonS(ToRedisedPortalRule(rule)))
-	s.saveNameById(s.portalRuleNamesById, rule.Id, rule.Name)
+	s.saveNameByIdLocked(s.portalRuleNamesById, rule.Id, rule.Name)
 }
 
 func (s *Syncer) RemovePortalRule(rule *core.PortalRule) {
+	s.namesMutex.Lock()
+	defer s.namesMutex.Unlock()
+
 	s.RedisServer.DeleteAndNotify(redised.FormatPortalRuleKey(rule.Name))
 	delete(s.portalRuleNamesById, rule.Id)
 }
 
 func (s *Syncer) SyncPortalCert(cert *core.PortalCert) {
-	s.removeRenamedKey(s.portalCertNamesById, cert.Id, cert.Name, redised.FormatPortalCertKey)
+	s.namesMutex.Lock()
+	defer s.namesMutex.Unlock()
+
+	s.removeRenamedKeyLocked(s.portalCertNamesById, cert.Id, cert.Name, redised.FormatPortalCertKey)
 	s.RedisServer.SetAndNotify(redised.FormatPortalCertKey(cert.Name), vcode.MustMarshalJsonS(ToRedisedPortalCert(cert)))
-	s.saveNameById(s.portalCertNamesById, cert.Id, cert.Name)
+	s.saveNameByIdLocked(s.portalCertNamesById, cert.Id, cert.Name)
 }
 
 func (s *Syncer) RemovePortalCert(cert *core.PortalCert) {
+	s.namesMutex.Lock()
+	defer s.namesMutex.Unlock()
+
 	s.RedisServer.DeleteAndNotify(redised.FormatPortalCertKey(cert.Name))
 	delete(s.portalCertNamesById, cert.Id)
 }
