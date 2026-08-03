@@ -22,6 +22,7 @@ type _LockOption struct {
 type LockOptionFunc func(*_LockOption)
 
 func WithTimeout(timeout time.Duration) LockOptionFunc {
+	vpre.Check(timeout > 0, "redis lock timeout must be positive")
 	return func(option *_LockOption) {
 		option.timeout = timeout
 		option.refresh = false
@@ -39,12 +40,14 @@ const (
 	lockKeyPrefixGlobal = "vine:lock:"
 	// lockerKeyPrefixSentinel marks lockers that still use the base
 	// Locker.KeyPrefix implementation, so we can derive a type-based prefix.
-	lockerKeyPrefixSentinel  = "\x00"
-	lockDefaultTimeout       = 30 * time.Second
-	lockRefreshInterval      = 10 * time.Second
-	lockRefreshRetryInterval = 3 * time.Second
-	lockRefreshMaxRetry      = 7
-	unlockScript             = `
+	lockerKeyPrefixSentinel   = "\x00"
+	lockDefaultTimeout        = 30 * time.Second
+	lockRefreshInterval       = 10 * time.Second
+	lockRefreshRetryInterval  = 3 * time.Second
+	lockRefreshMaxRetry       = 7
+	lockRefreshCommandTimeout = 2 * time.Second
+	lockLeaseSafetyMarginMax  = time.Second
+	unlockScript              = `
 if redis.call("get", KEYS[1]) == ARGV[1] then
 	return redis.call("del", KEYS[1])
 end
@@ -128,10 +131,11 @@ type Lock struct {
 	mutex  sync.Mutex
 	broken bool
 
-	option     *_LockOption
-	token      string
-	lockCtx    context.Context
-	lockCancel context.CancelFunc
+	option        *_LockOption
+	token         string
+	lockCtx       context.Context
+	lockCancel    context.CancelFunc
+	leaseDeadline time.Time
 }
 
 func (l *Locker) Lock(key string, options ...LockOptionFunc) (*Lock, bool) {
@@ -176,6 +180,7 @@ func (l *Lock) lock() bool {
 
 func (l *Lock) doLock() bool {
 	token := uuid.Must(uuid.NewV7()).String()
+	startedAt := time.Now()
 	ok, err := l.cmdable.SetNX(l.ctx, l.key, token, l.option.timeout).Result()
 	vpre.CheckNilError(err, "acquire redis lock failed")
 	if !ok {
@@ -184,11 +189,17 @@ func (l *Lock) doLock() bool {
 
 	l.token = token
 	l.lockCtx, l.lockCancel = context.WithCancel(l.ctx)
+	l.leaseDeadline = localLeaseDeadline(startedAt, l.option.timeout)
 	return true
 }
 
 func (l *Lock) waitTimeout() {
-	timer := time.NewTimer(l.option.timeout)
+	wait := time.Until(l.currentLeaseDeadline())
+	if wait <= 0 {
+		l.markBroken()
+		return
+	}
+	timer := time.NewTimer(wait)
 	defer timer.Stop()
 
 	select {
@@ -217,23 +228,66 @@ func (l *Lock) refreshLoop() {
 }
 
 func (l *Lock) refreshWithRetry() bool {
-	retryTicker := time.NewTicker(lockRefreshRetryInterval)
-	defer retryTicker.Stop()
-
-	for range lockRefreshMaxRetry {
-		result, err := l.cmdable.Eval(l.lockCtx, refreshScript, []string{l.key}, l.token, l.option.timeout.Milliseconds()).Int64()
-		if err == nil && result == 1 {
-			return true
+	for attempt := range lockRefreshMaxRetry {
+		startedAt := time.Now()
+		deadline := l.currentLeaseDeadline()
+		if !startedAt.Before(deadline) {
+			return false
 		}
 
+		commandDeadline := deadline
+		if timeoutDeadline := startedAt.Add(lockRefreshCommandTimeout); timeoutDeadline.Before(commandDeadline) {
+			commandDeadline = timeoutDeadline
+		}
+		commandCtx, cancel := context.WithDeadline(l.lockCtx, commandDeadline)
+		result, err := l.cmdable.Eval(commandCtx, refreshScript, []string{l.key}, l.token, l.option.timeout.Milliseconds()).Int64()
+		cancel()
+		if err == nil {
+			if result != 1 {
+				l.markBroken()
+				return false
+			}
+			return l.extendLease(startedAt)
+		}
+
+		if attempt == lockRefreshMaxRetry-1 {
+			return false
+		}
+
+		if !time.Now().Add(lockRefreshRetryInterval).Before(deadline) {
+			return false
+		}
+		retryTimer := time.NewTimer(lockRefreshRetryInterval)
 		select {
 		case <-l.lockCtx.Done():
+			retryTimer.Stop()
 			return false
-		case <-retryTicker.C:
+		case <-retryTimer.C:
 		}
 	}
 
 	return false
+}
+
+func (l *Lock) currentLeaseDeadline() time.Time {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+	return l.leaseDeadline
+}
+
+func (l *Lock) extendLease(startedAt time.Time) bool {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+	if l.lockCtx.Err() != nil {
+		return false
+	}
+	l.leaseDeadline = localLeaseDeadline(startedAt, l.option.timeout)
+	return true
+}
+
+func localLeaseDeadline(startedAt time.Time, timeout time.Duration) time.Time {
+	safetyMargin := min(timeout/10, lockLeaseSafetyMarginMax)
+	return startedAt.Add(timeout - safetyMargin)
 }
 
 func (l *Lock) markBroken() {
