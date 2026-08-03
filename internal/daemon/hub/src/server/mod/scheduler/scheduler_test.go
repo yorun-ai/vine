@@ -1,7 +1,10 @@
 package scheduler
 
 import (
+	"errors"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,6 +17,36 @@ type _SchedulerRegistryRepo struct {
 	core.RegistryRepo
 
 	statuses []*core.AppStatus
+}
+
+type _PanickingSchedulerRegistryRepo struct {
+	core.RegistryRepo
+}
+
+func (*_PanickingSchedulerRegistryRepo) ListAppStatuses() []*core.AppStatus {
+	panic("registry unavailable")
+}
+
+type _BlockingSchedulerRegistryRepo struct {
+	core.RegistryRepo
+
+	mutex   sync.Mutex
+	calls   int
+	started chan struct{}
+	release chan struct{}
+	once    sync.Once
+}
+
+func (r *_BlockingSchedulerRegistryRepo) ListAppStatuses() []*core.AppStatus {
+	r.mutex.Lock()
+	r.calls++
+	call := r.calls
+	r.mutex.Unlock()
+	if call > 1 {
+		r.once.Do(func() { close(r.started) })
+		<-r.release
+	}
+	return nil
 }
 
 func (r *_SchedulerRegistryRepo) ListAppStatuses() []*core.AppStatus {
@@ -31,11 +64,16 @@ func (r *_SchedulerSchemaRepo) ListTaskSchemaVersions() []core.SchemaVersion[*sk
 }
 
 type _SchedulerTaskPublisher struct {
+	mutex    sync.Mutex
 	messages []taskspec.NATSMessage
+	err      error
 }
 
-func (p *_SchedulerTaskPublisher) PublishTask(message taskspec.NATSMessage) {
+func (p *_SchedulerTaskPublisher) PublishTask(message taskspec.NATSMessage) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 	p.messages = append(p.messages, message)
+	return p.err
 }
 
 func TestSchedulerRefreshSchedulesDeduplicatesAppInstances(t *testing.T) {
@@ -45,7 +83,7 @@ func TestSchedulerRefreshSchedulesDeduplicatesAppInstances(t *testing.T) {
 		newTestScheduledAppStatus("instance-2"),
 	}, publisher)
 
-	target.refreshSchedules()
+	require.NoError(t, target.refreshSchedules())
 
 	assert.Len(t, target.jobs, 1)
 }
@@ -59,7 +97,7 @@ func TestSchedulerRefreshSchedulesAddsMultipleCronSchedulers(t *testing.T) {
 	})
 	target := newTestScheduler([]*core.AppStatus{status}, publisher)
 
-	target.refreshSchedules()
+	require.NoError(t, target.refreshSchedules())
 
 	assert.Len(t, target.jobs, 2)
 }
@@ -69,9 +107,9 @@ func TestSchedulerRefreshSchedulesRemovesMissingRegistrations(t *testing.T) {
 	registryRepo := &_SchedulerRegistryRepo{statuses: []*core.AppStatus{newTestScheduledAppStatus("instance-1")}}
 	target := newTestSchedulerWithRegistry(registryRepo, publisher)
 
-	target.refreshSchedules()
+	require.NoError(t, target.refreshSchedules())
 	registryRepo.statuses = []*core.AppStatus{}
-	target.refreshSchedules()
+	require.NoError(t, target.refreshSchedules())
 
 	assert.Empty(t, target.jobs)
 }
@@ -98,6 +136,16 @@ func TestSchedulerPublishScheduleSkipsInactiveRunner(t *testing.T) {
 	assert.Empty(t, publisher.messages)
 }
 
+func TestSchedulerPublishScheduleHandlesPublisherError(t *testing.T) {
+	publisher := &_SchedulerTaskPublisher{err: errors.New("nats unavailable")}
+	target := newTestScheduler([]*core.AppStatus{newTestScheduledAppStatus("instance-1")}, publisher)
+
+	assert.NotPanics(t, func() {
+		target.publishSchedule(newTestScheduleConfig())
+	})
+	assert.Len(t, publisher.messages, 1)
+}
+
 func TestSchedulerRejectsCronSchedulerTriggerWithArguments(t *testing.T) {
 	publisher := &_SchedulerTaskPublisher{}
 	target := newTestScheduler([]*core.AppStatus{newTestScheduledAppStatus("instance-1")}, publisher)
@@ -115,9 +163,97 @@ func TestSchedulerRejectsCronSchedulerTriggerWithArguments(t *testing.T) {
 		},
 	}}}
 
-	assert.Panics(t, func() {
-		target.refreshSchedules()
+	err := target.refreshSchedules()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "must have no arguments")
+	assert.Empty(t, target.jobs)
+}
+
+func TestSchedulerRejectsInvalidCronWithoutChangingExistingJobs(t *testing.T) {
+	publisher := &_SchedulerTaskPublisher{}
+	registryRepo := &_SchedulerRegistryRepo{statuses: []*core.AppStatus{newTestScheduledAppStatus("instance-1")}}
+	target := newTestSchedulerWithRegistry(registryRepo, publisher)
+	require.NoError(t, target.refreshSchedules())
+	require.Len(t, target.jobs, 1)
+
+	registryRepo.statuses[0].TaskRunners[0].CronSchedulers[0].CronExpr = "not-a-cron"
+	err := target.refreshSchedules()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cron expression")
+	assert.Len(t, target.jobs, 1)
+}
+
+func TestSchedulerRefreshRecoveryContainsUnexpectedPanic(t *testing.T) {
+	target := &Scheduler{
+		RegistryRepo: &_PanickingSchedulerRegistryRepo{},
+		SchemaRepo:   &_SchedulerSchemaRepo{},
+		publisher:    &_SchedulerTaskPublisher{},
+	}
+	target.DIInit()
+
+	assert.NotPanics(t, target.refreshSchedulesSafely)
+}
+
+func TestSchedulerCronRecoversJobPanic(t *testing.T) {
+	target := newTestScheduler(nil, &_SchedulerTaskPublisher{})
+	started := make(chan struct{})
+	var once sync.Once
+	_, err := target.cron.AddFunc("@every 1ms", func() {
+		once.Do(func() { close(started) })
+		panic("job failed")
 	})
+	require.NoError(t, err)
+	target.cron.Start()
+	requireSchedulerSignal(t, started, "cron job did not start")
+	<-target.cron.Stop().Done()
+}
+
+func TestSchedulerBeforeAppStopWaitsForRefreshLoop(t *testing.T) {
+	registryRepo := &_BlockingSchedulerRegistryRepo{
+		started: make(chan struct{}),
+		release: make(chan struct{}),
+	}
+	target := &Scheduler{
+		RegistryRepo:    registryRepo,
+		SchemaRepo:      &_SchedulerSchemaRepo{},
+		publisher:       &_SchedulerTaskPublisher{},
+		refreshInterval: time.Millisecond,
+	}
+	target.DIInit()
+	target.AfterAppStart()
+	requireSchedulerSignal(t, registryRepo.started, "refresh loop did not start")
+
+	stopped := make(chan struct{})
+	go func() {
+		target.BeforeAppStop()
+		close(stopped)
+	}()
+	requireSchedulerBlocked(t, stopped, "scheduler stopped before refresh completed")
+	close(registryRepo.release)
+	requireSchedulerSignal(t, stopped, "scheduler did not stop after refresh completed")
+}
+
+func TestSchedulerBeforeAppStopWaitsForRunningCronJob(t *testing.T) {
+	target := newTestScheduler(nil, &_SchedulerTaskPublisher{})
+	started := make(chan struct{})
+	release := make(chan struct{})
+	var once sync.Once
+	_, err := target.cron.AddFunc("@every 1ms", func() {
+		once.Do(func() { close(started) })
+		<-release
+	})
+	require.NoError(t, err)
+	target.cron.Start()
+	requireSchedulerSignal(t, started, "cron job did not start")
+
+	stopped := make(chan struct{})
+	go func() {
+		target.BeforeAppStop()
+		close(stopped)
+	}()
+	requireSchedulerBlocked(t, stopped, "scheduler stopped before cron job completed")
+	close(release)
+	requireSchedulerSignal(t, stopped, "scheduler did not stop after cron job completed")
 }
 
 func newTestScheduler(statuses []*core.AppStatus, publisher *_SchedulerTaskPublisher) *Scheduler {
@@ -164,5 +300,23 @@ func newTestScheduleConfig() _ScheduleConfig {
 		SchemaHash:      "task-hash",
 		TriggerSkelName: "rebuild",
 		CronExpr:        "0 * * * *",
+	}
+}
+
+func requireSchedulerSignal(t *testing.T, signal <-chan struct{}, message string) {
+	t.Helper()
+	select {
+	case <-signal:
+	case <-time.After(time.Second):
+		t.Fatal(message)
+	}
+}
+
+func requireSchedulerBlocked(t *testing.T, signal <-chan struct{}, message string) {
+	t.Helper()
+	select {
+	case <-signal:
+		t.Fatal(message)
+	case <-time.After(20 * time.Millisecond):
 	}
 }

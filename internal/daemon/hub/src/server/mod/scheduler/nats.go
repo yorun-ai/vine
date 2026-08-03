@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	gonats "github.com/nats-io/nats.go"
@@ -11,7 +12,6 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
 	hubflag "go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	"go.yorun.ai/vine/util/vcode"
-	"go.yorun.ai/vine/util/vpre"
 )
 
 const schedulerNatsReadyTimeout = time.Second
@@ -21,34 +21,60 @@ type _NATSTaskPublisher struct {
 	Flag       *hubflag.Flag          `inject:""`
 }
 
-func (p *_NATSTaskPublisher) PublishTask(message taskspec.NATSMessage) {
-	conn := p.connect()
+func (p *_NATSTaskPublisher) PublishTask(message taskspec.NATSMessage) error {
+	conn, err := p.connect()
+	if err != nil {
+		return err
+	}
 	defer conn.Close()
 
 	js, err := jetstream.New(conn)
-	vpre.CheckNilError(err, "create nats jetstream context failed")
+	if err != nil {
+		return fmt.Errorf("create nats jetstream context: %w", err)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), schedulerNatsReadyTimeout)
 	defer cancel()
 	_, err = js.CreateOrUpdateStream(ctx, taskStreamConfig())
-	vpre.CheckNilError(err, "create task nats jetstream stream failed")
-	_, err = js.Publish(ctx, taskspec.NATSSubject(message.TaskSkelName), vcode.MustMarshalJson(message))
-	vpre.CheckNilError(err, "publish task nats jetstream message failed")
+	if err != nil {
+		return fmt.Errorf("create task nats jetstream stream: %w", err)
+	}
+	payload, err := vcode.MarshalJson(message)
+	if err != nil {
+		return fmt.Errorf("marshal task nats jetstream message: %w", err)
+	}
+	if _, err = js.Publish(ctx, taskspec.NATSSubject(message.TaskSkelName), payload); err != nil {
+		return fmt.Errorf("publish task nats jetstream message: %w", err)
+	}
+	return nil
 }
 
-func (p *_NATSTaskPublisher) connect() *gonats.Conn {
-	if hubnats.InprocServer() != nil {
-		return hubnats.ConnectInproc()
+func (p *_NATSTaskPublisher) connect() (*gonats.Conn, error) {
+	if server := hubnats.InprocServer(); server != nil {
+		conn, err := gonats.Connect("", gonats.InProcessServer(server), gonats.Timeout(schedulerNatsReadyTimeout))
+		if err != nil {
+			return nil, fmt.Errorf("connect inproc nats: %w", err)
+		}
+		return conn, nil
+	}
+	if p.Flag == nil {
+		return nil, fmt.Errorf("scheduler nats flag is nil")
 	}
 	if p.Flag.MQExternalNatsURL == "" {
-		vpre.CheckNotNil(p.NATSServer, "embedded nats server is nil")
+		if p.NATSServer == nil {
+			return nil, fmt.Errorf("embedded nats server is nil")
+		}
 		conn, err := p.NATSServer.ConnectAsHub()
-		vpre.CheckNilError(err, "connect embedded nats as hub failed")
-		return conn
+		if err != nil {
+			return nil, fmt.Errorf("connect embedded nats as hub: %w", err)
+		}
+		return conn, nil
 	}
-	conn, err := gonats.Connect(p.Flag.MQExternalNatsURL)
-	vpre.CheckNilError(err, "connect external nats failed")
-	return conn
+	conn, err := gonats.Connect(p.Flag.MQExternalNatsURL, gonats.Timeout(schedulerNatsReadyTimeout))
+	if err != nil {
+		return nil, fmt.Errorf("connect external nats: %w", err)
+	}
+	return conn, nil
 }
 
 func taskStreamConfig() jetstream.StreamConfig {
