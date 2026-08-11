@@ -591,20 +591,13 @@ function SeedDiffList({
         className={cn(
           'overflow-hidden rounded-lg border bg-card transition-colors',
           selected
-            ? 'bg-primary/[0.03] shadow-[inset_3px_0_0_#0f766e,0_0_0_1px_#0f766e]'
+            ? 'border-primary bg-primary/[0.03] shadow-[inset_3px_0_0_var(--primary),0_0_0_1px_var(--primary)]'
             : 'border-border',
           selectable &&
             (selected
               ? 'cursor-pointer hover:bg-primary/[0.05]'
               : 'cursor-pointer hover:border-primary/50 hover:bg-primary/[0.02]'),
         )}
-        style={
-          selected
-            ? {
-                borderColor: '#0f766e',
-              }
-            : undefined
-        }
         onClick={() => {
           if (selectable) {
             onToggleItem(item.kind, item.name, changed)
@@ -620,15 +613,10 @@ function SeedDiffList({
         <div
           className={cn(
             'flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3',
-            selected ? 'border-[#0f766e]' : 'bg-muted/20',
-          )}
-          style={
             selected
-              ? {
-                  backgroundColor: '#dff3ef',
-                }
-              : undefined
-          }
+              ? 'border-primary bg-primary/[0.09]'
+              : 'bg-muted/20',
+          )}
         >
           <div className="flex min-w-0 items-center gap-2">
             <Checkbox

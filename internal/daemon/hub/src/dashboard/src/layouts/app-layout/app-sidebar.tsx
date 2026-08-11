@@ -257,7 +257,7 @@ export function AppSidebar({
 
       <aside
         className={cn(
-          'relative z-40 flex h-dvh shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-10 after:w-3 after:bg-[linear-gradient(to_left,rgba(15,23,42,0.05),rgba(15,23,42,0.02),transparent)] transition-[width,transform] duration-200 ease-linear',
+          'relative z-40 flex h-dvh shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-10 after:w-3 after:bg-[linear-gradient(to_left,rgba(124,72,253,0.045),rgba(124,72,253,0.015),transparent)] transition-[width,transform] duration-200 ease-linear',
           isResizing && 'transition-none',
           isMobile
             ? cn(
@@ -279,19 +279,16 @@ export function AppSidebar({
               isLogoExpanded ? 'w-full px-3' : 'w-[3.4rem] justify-center',
             )}
           >
+            <img
+              src="/brand/vine.svg"
+              alt=""
+              className="size-8 shrink-0 object-contain"
+            />
             {isLogoExpanded ? (
-              <img
-                src="/brand/vinehub-full.png"
-                alt="Vine Hub"
-                className="h-8 w-auto shrink-0 object-contain"
-              />
-            ) : (
-              <img
-                src="/brand/vinehub.png"
-                alt="Vine Hub"
-                className="h-8 w-auto shrink-0 object-contain"
-              />
-            )}
+              <span className="ml-2.5 min-w-0 truncate text-[17px] font-semibold tracking-[-0.02em] text-foreground">
+                Vine Hub
+              </span>
+            ) : null}
           </div>
         </div>
 
@@ -313,7 +310,7 @@ export function AppSidebar({
                   'mx-auto flex size-10 items-stretch justify-center p-0',
                 isCollapsedCompact &&
                   (isScenePanelOpen
-                    ? '!border-[#8fd9d2] !bg-[#eefbf9] !text-[#109c95] hover:!bg-[#e7f8f6]'
+                    ? '!border-primary/35 !bg-accent !text-primary hover:!bg-sidebar-accent'
                     : '!border-primary/60 !bg-primary/80 !text-primary-foreground hover:!bg-primary/70'),
                 isCollapsed &&
                   !isNavCompact &&
@@ -335,7 +332,7 @@ export function AppSidebar({
                       'size-full rounded-[inherit] bg-transparent',
                     isCollapsedCompact
                       ? isScenePanelOpen
-                        ? 'text-[#109c95]'
+                        ? 'text-primary'
                         : 'text-primary-foreground'
                       : 'text-primary',
                   )}

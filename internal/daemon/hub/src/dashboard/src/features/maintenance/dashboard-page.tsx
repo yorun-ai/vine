@@ -25,7 +25,7 @@ const portalRuleService = createPortalRuleService(vrpcClient)
 const portalCertService = createPortalCertService(vrpcClient)
 const dashboardRedirectSeconds = 3
 const dashboardReadyProbeMaxAttempts = 10
-const dashboardReadyProbeAsset = '/brand/vinehub.png'
+const dashboardReadyProbeAsset = '/brand/vine.svg'
 
 type DashboardScheme = 'http' | 'https'
 
