@@ -39,9 +39,9 @@ export function AccountPopover() {
         className="w-[280px] rounded-[12px] border border-border/70 p-0 shadow-[0_16px_40px_rgba(15,23,42,0.12)]"
       >
         <div className="p-2.5">
-          <div className="rounded-[10px] bg-[#f7fbfc] px-3 py-2.5">
+          <div className="rounded-[10px] bg-muted/70 px-3 py-2.5">
             <div className="flex items-start gap-3">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-full border border-[#dce9ef] bg-white text-primary">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-full border border-primary/15 bg-background text-primary">
                 <UserRound className="size-5" />
               </span>
               <div className="min-w-0 flex-1">

@@ -119,7 +119,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   )
 
   return (
-    <div className="h-dvh overflow-hidden bg-white text-[#0f172a]">
+    <div className="h-dvh overflow-hidden bg-background text-foreground">
       <div className="flex h-full min-h-0 w-full">
         <AppSidebar
           activeItem={activeItem}
@@ -142,7 +142,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             onToggleSidebar={toggleSidebar}
           />
 
-          <main className="flex min-h-0 flex-1 flex-col overflow-auto bg-white">
+          <main className="flex min-h-0 flex-1 flex-col overflow-auto bg-background">
             {children}
           </main>
         </div>
