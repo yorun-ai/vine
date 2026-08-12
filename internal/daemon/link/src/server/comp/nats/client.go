@@ -135,18 +135,6 @@ func (c *_Client) ensureJetStream(streamConfig jetstream.StreamConfig) {
 	}
 
 	_, err := c.jetStream.Stream(context.Background(), streamConfig.Name)
-	if err == nil {
-		c.ensuredStream[streamConfig.Name] = struct{}{}
-		return
-	}
-	if err != jetstream.ErrStreamNotFound {
-		vpre.CheckNilError(err, "read nats jetstream info failed")
-	}
-
-	_, err = c.jetStream.CreateOrUpdateStream(context.Background(), streamConfig)
-	if err != nil {
-		_, infoErr := c.jetStream.Stream(context.Background(), streamConfig.Name)
-		vpre.CheckNilError(infoErr, "create nats jetstream stream failed")
-	}
+	vpre.CheckNilError(err, "read nats jetstream stream failed")
 	c.ensuredStream[streamConfig.Name] = struct{}{}
 }

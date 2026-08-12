@@ -34,7 +34,6 @@ func (c *_Client) consumeJetStream(streamConfig jetstream.StreamConfig, subject 
 		AckPolicy:     jetstream.AckExplicitPolicy,
 		MaxDeliver:    -1,
 		FilterSubject: subject,
-		MemoryStorage: true,
 	})
 	vpre.CheckNilError(err, "create nats jetstream pull consumer failed")
 

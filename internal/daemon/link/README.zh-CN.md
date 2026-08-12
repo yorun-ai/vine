@@ -48,6 +48,10 @@ Link 的职责可以拆成四条主线：
 3. 异步事件与任务
    `event` 和 `task` 订阅 `minder` 中本地应用声明的监听能力与运行能力，负责把 NATS 中的消息投递到对应本地应用。
 
+   Link 不创建 JetStream stream，也不选择 stream 或 consumer 的存储类型。
+   内嵌 Hub NATS 会预创建所需 stream；外部 NATS 部署必须在 Link 启动前创建它们，
+   并负责决定存储策略。
+
 4. Rpc 转发
    本地应用发起 Rpc 时，先进入 `rpcproxy out`。Link 基于服务发现结果决定请求应该发往本地实例还是远端实例；若请求从外部 HTTP 入口进入，则先经过 `ingress`，再由 `rpcproxy in` 转发到本地应用。
 

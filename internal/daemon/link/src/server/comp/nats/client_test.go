@@ -141,7 +141,7 @@ func TestClientPublishConsumeUsesQueueStream(t *testing.T) {
 	assertPayload(t, ch, "ok")
 }
 
-func TestClientCreatesExpectedStreams(t *testing.T) {
+func TestClientUsesServerProvisionedStreams(t *testing.T) {
 	server := newTestNATSServer(t)
 
 	client := new(_Client)
@@ -170,6 +170,9 @@ func TestClientCreatesExpectedStreams(t *testing.T) {
 	if eventInfo.Config.Retention != jetstream.InterestPolicy {
 		t.Fatalf("unexpected event retention: %v", eventInfo.Config.Retention)
 	}
+	if eventInfo.Config.Storage != jetstream.FileStorage {
+		t.Fatalf("unexpected server-provisioned event storage: %v", eventInfo.Config.Storage)
+	}
 
 	taskStream, err := jsCtx.Stream(context.Background(), testQueueStreamName)
 	if err != nil {
@@ -181,6 +184,9 @@ func TestClientCreatesExpectedStreams(t *testing.T) {
 	}
 	if taskInfo.Config.Retention != jetstream.WorkQueuePolicy {
 		t.Fatalf("unexpected task retention: %v", taskInfo.Config.Retention)
+	}
+	if taskInfo.Config.Storage != jetstream.FileStorage {
+		t.Fatalf("unexpected server-provisioned task storage: %v", taskInfo.Config.Storage)
 	}
 }
 
@@ -202,6 +208,24 @@ func newTestNATSServer(t *testing.T) *natsserver.Server {
 		t.Fatalf("nats server not ready")
 	}
 	t.Cleanup(server.Shutdown)
+
+	conn, err := gonats.Connect("", gonats.InProcessServer(server))
+	if err != nil {
+		t.Fatalf("connect in-process nats failed: %v", err)
+	}
+	t.Cleanup(conn.Close)
+	js, err := jetstream.New(conn)
+	if err != nil {
+		t.Fatalf("create jetstream context failed: %v", err)
+	}
+	for _, config := range []jetstream.StreamConfig{
+		broadcastStreamConfigForTest(),
+		queueStreamConfigForTest(),
+	} {
+		if _, err = js.CreateStream(context.Background(), config); err != nil {
+			t.Fatalf("create test stream failed: %v", err)
+		}
+	}
 	return server
 }
 
@@ -233,7 +257,6 @@ func broadcastStreamConfigForTest() jetstream.StreamConfig {
 		Name:      testBroadcastStreamName,
 		Subjects:  []string{formatTestBroadcastSubject(">")},
 		Retention: jetstream.InterestPolicy,
-		Storage:   jetstream.MemoryStorage,
 	}
 }
 
@@ -242,7 +265,6 @@ func queueStreamConfigForTest() jetstream.StreamConfig {
 		Name:      testQueueStreamName,
 		Subjects:  []string{formatTestQueueSubject(">")},
 		Retention: jetstream.WorkQueuePolicy,
-		Storage:   jetstream.MemoryStorage,
 	}
 }
 

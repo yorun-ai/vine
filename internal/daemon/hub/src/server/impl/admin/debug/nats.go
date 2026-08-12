@@ -31,8 +31,8 @@ func (p *_DebugNATSPublisher) publish(stream jetstream.StreamConfig, subject str
 	vpre.CheckNilError(err, "create nats jetstream context failed")
 	ctx, cancel := context.WithTimeout(context.Background(), debugNatsReadyTimeout)
 	defer cancel()
-	_, err = js.CreateOrUpdateStream(ctx, stream)
-	vpre.CheckNilError(err, "create nats jetstream stream failed")
+	_, err = js.Stream(ctx, stream.Name)
+	vpre.CheckNilError(err, "read nats jetstream stream failed")
 	_, err = js.Publish(ctx, subject, payload)
 	vpre.CheckNilError(err, "publish nats jetstream message failed")
 }
@@ -57,7 +57,6 @@ func debugTaskStreamConfig() jetstream.StreamConfig {
 		Name:      taskspec.NATSStreamName,
 		Subjects:  []string{taskspec.NATSSubject(">")},
 		Retention: jetstream.WorkQueuePolicy,
-		Storage:   jetstream.MemoryStorage,
 	}
 }
 
@@ -66,7 +65,6 @@ func debugEventStreamConfig() jetstream.StreamConfig {
 		Name:      eventspec.NATSStreamName,
 		Subjects:  []string{eventspec.NATSSubject(">")},
 		Retention: jetstream.InterestPolicy,
-		Storage:   jetstream.MemoryStorage,
 	}
 }
 

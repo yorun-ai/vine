@@ -29,6 +29,5 @@ func eventStreamConfig() jetstream.StreamConfig {
 		Name:      eventspec.NATSStreamName,
 		Subjects:  []string{eventspec.NATSSubject(">")},
 		Retention: jetstream.InterestPolicy,
-		Storage:   jetstream.MemoryStorage,
 	}
 }
