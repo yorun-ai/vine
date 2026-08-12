@@ -8,8 +8,12 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-08-13
+
 ### Changed
 
+- The embedded Hub Dashboard now uses the current Vine branding and visual
+  palette, with refreshed audited frontend dependencies
 - Embedded NATS now provisions the Event and Task JetStream streams with memory
   storage, while Vine clients no longer select stream or consumer storage and
   require external NATS deployments to pre-provision both streams
