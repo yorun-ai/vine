@@ -1,6 +1,7 @@
 package natsserver
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -8,9 +9,12 @@ import (
 
 	natsserver "github.com/nats-io/nats-server/v2/server"
 	gonats "github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"go.yorun.ai/vine/internal/app"
+	eventspec "go.yorun.ai/vine/internal/core/event/spec"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/mtls"
+	taskspec "go.yorun.ai/vine/internal/core/task/spec"
 	"go.yorun.ai/vine/internal/daemon"
 	hubnats "go.yorun.ai/vine/internal/daemon/hub/api/nats"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
@@ -141,6 +145,35 @@ func (s *NATSServer) newServer(options *natsserver.Options) (*natsserver.Server,
 
 	go server.Start()
 	vpre.Check(server.ReadyForConnections(natsServerReadyTimeout), "nats server start failed")
+	s.createStreams(server)
 	completed = true
 	return server, storeDir
+}
+
+func (s *NATSServer) createStreams(server *natsserver.Server) {
+	conn, err := gonats.Connect("", gonats.InProcessServer(server))
+	vpre.CheckNilError(err, "connect embedded nats in-process failed")
+	defer conn.Close()
+
+	js, err := jetstream.New(conn)
+	vpre.CheckNilError(err, "create embedded nats jetstream context failed")
+	ctx, cancel := context.WithTimeout(context.Background(), natsServerReadyTimeout)
+	defer cancel()
+	for _, config := range []jetstream.StreamConfig{
+		{
+			Name:      eventspec.NATSStreamName,
+			Subjects:  []string{eventspec.NATSSubject(">")},
+			Retention: jetstream.InterestPolicy,
+			Storage:   jetstream.MemoryStorage,
+		},
+		{
+			Name:      taskspec.NATSStreamName,
+			Subjects:  []string{taskspec.NATSSubject(">")},
+			Retention: jetstream.WorkQueuePolicy,
+			Storage:   jetstream.MemoryStorage,
+		},
+	} {
+		_, err = js.CreateStream(ctx, config)
+		vpre.CheckNilError(err, "create embedded nats jetstream stream failed")
+	}
 }

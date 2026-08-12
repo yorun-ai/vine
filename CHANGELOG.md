@@ -8,6 +8,18 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Changed
+
+- Embedded NATS now provisions the Event and Task JetStream streams with memory
+  storage, while Vine clients no longer select stream or consumer storage and
+  require external NATS deployments to pre-provision both streams
+
+### Upgrade notes
+
+- External NATS deployments must create `VINE_EVENTS` for `event.>` with
+  interest retention and `VINE_TASKS` for `task.>` with work-queue retention
+  before starting Hub or Link; the deployment owns each stream's storage policy
+
 ## [0.12.0] - 2026-08-03
 
 ### Added

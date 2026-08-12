@@ -30,6 +30,5 @@ func taskStreamConfig() jetstream.StreamConfig {
 		Name:      taskspec.NATSStreamName,
 		Subjects:  []string{taskspec.NATSSubject(">")},
 		Retention: jetstream.WorkQueuePolicy,
-		Storage:   jetstream.MemoryStorage,
 	}
 }

@@ -48,6 +48,10 @@ Link has four primary responsibilities:
 3. Asynchronous events and tasks
    `event` and `task` subscribe to the listener and runner capabilities declared by local instances in `minder`, then deliver messages received through NATS.
 
+   Link does not create JetStream streams or select stream/consumer storage.
+   Embedded Hub NATS provisions the required streams; external NATS deployments
+   must provision them before Link starts and own their storage policy.
+
 4. Rpc forwarding
    Local application Rpc calls first enter `rpcproxy out`. Link selects a local or remote target from service-discovery state. Requests arriving through the external HTTP entry point pass through `ingress` and then `rpcproxy in` before reaching a local application.
 

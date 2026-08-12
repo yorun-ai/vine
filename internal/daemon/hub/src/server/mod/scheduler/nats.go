@@ -35,9 +35,9 @@ func (p *_NATSTaskPublisher) PublishTask(message taskspec.NATSMessage) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), schedulerNatsReadyTimeout)
 	defer cancel()
-	_, err = js.CreateOrUpdateStream(ctx, taskStreamConfig())
+	_, err = js.Stream(ctx, taskspec.NATSStreamName)
 	if err != nil {
-		return fmt.Errorf("create task nats jetstream stream: %w", err)
+		return fmt.Errorf("read task nats jetstream stream: %w", err)
 	}
 	payload, err := vcode.MarshalJson(message)
 	if err != nil {
@@ -75,13 +75,4 @@ func (p *_NATSTaskPublisher) connect() (*gonats.Conn, error) {
 		return nil, fmt.Errorf("connect external nats: %w", err)
 	}
 	return conn, nil
-}
-
-func taskStreamConfig() jetstream.StreamConfig {
-	return jetstream.StreamConfig{
-		Name:      taskspec.NATSStreamName,
-		Subjects:  []string{taskspec.NATSSubject(">")},
-		Retention: jetstream.WorkQueuePolicy,
-		Storage:   jetstream.MemoryStorage,
-	}
 }

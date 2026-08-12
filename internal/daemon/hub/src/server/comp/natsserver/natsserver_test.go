@@ -1,6 +1,7 @@
 package natsserver
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -8,10 +9,13 @@ import (
 
 	natsserver "github.com/nats-io/nats-server/v2/server"
 	gonats "github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/app"
+	eventspec "go.yorun.ai/vine/internal/core/event/spec"
 	"go.yorun.ai/vine/internal/core/mtls/mtlstest"
+	taskspec "go.yorun.ai/vine/internal/core/task/spec"
 	"go.yorun.ai/vine/internal/daemon"
 	hubnats "go.yorun.ai/vine/internal/daemon/hub/api/nats"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
@@ -42,6 +46,28 @@ func TestNATSServerDIInitRegistersInprocServer(t *testing.T) {
 	}
 	if server.server != nil && server.server.Addr() != nil {
 		t.Fatalf("unexpected inproc nats listener: %v", server.server.Addr())
+	}
+}
+
+func TestNATSServerCreatesMemoryStreams(t *testing.T) {
+	server := &NATSServer{
+		InprocFlag: &app.InternalInprocFlag{Enabled: true},
+		Flag:       &flag.Flag{MQEmbeddedNats: true},
+	}
+
+	runTestNATSServerDIInit(t, server)
+	t.Cleanup(server.AfterAppStop)
+
+	conn := hubnats.ConnectInproc()
+	defer conn.Close()
+	js, err := jetstream.New(conn)
+	require.NoError(t, err)
+	for _, streamName := range []string{eventspec.NATSStreamName, taskspec.NATSStreamName} {
+		stream, err := js.Stream(context.Background(), streamName)
+		require.NoError(t, err)
+		info, err := stream.Info(context.Background())
+		require.NoError(t, err)
+		assert.Equal(t, jetstream.MemoryStorage, info.Config.Storage)
 	}
 }
 

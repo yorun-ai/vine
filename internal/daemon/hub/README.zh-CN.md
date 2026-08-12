@@ -94,6 +94,10 @@ Hub 的职责可以拆成四条主线：
    `vine.hub.admin` 域，其中包含 Dashboard Admin Rpc 服务和
    `DashboardWeb`。二者共享同一个 Hub 进程和状态，但组件流量无法直接进入管理面。
 
+启用内嵌 NATS 时，server component 会使用内存存储预创建 `VINE_EVENTS` 和
+`VINE_TASKS` JetStream stream。外部 NATS 部署负责创建 stream 并决定存储策略；
+Hub publisher 只使用已经存在的 stream。
+
 ## 配置与注册来源
 
 Hub 当前支持两类数据库配置来源：

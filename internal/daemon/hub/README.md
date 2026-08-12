@@ -96,6 +96,11 @@ Hub has four primary responsibilities:
    separate from the privileged admin surface without splitting Hub's
    process or state.
 
+When embedded NATS is enabled, its server component provisions the
+`VINE_EVENTS` and `VINE_TASKS` JetStream streams with memory storage. External
+NATS deployments own stream provisioning and storage policy; Hub publishers
+only use the existing streams.
+
 ## Configuration and Registration Sources
 
 Hub currently supports two database backends:

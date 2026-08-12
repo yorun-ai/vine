@@ -41,7 +41,7 @@ func TestNATSTaskPublisherReturnsJetStreamError(t *testing.T) {
 	err = publisher.PublishTask(newTestTaskMessage())
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "create task nats jetstream stream")
+	assert.Contains(t, err.Error(), "read task nats jetstream stream")
 }
 
 func newTestTaskMessage() taskspec.NATSMessage {
