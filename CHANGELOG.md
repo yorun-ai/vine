@@ -8,6 +8,15 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-08-14
+
+### Changed
+
+- Reduced successful in-process Rpc allocation and latency overhead by lazily
+  building server log metadata and reusing the immutable OK error value
+- Added optional generated request and result clone hooks for in-process Rpc,
+  while retaining serialization-based cloning for older generated service specs
+
 ## [0.13.0] - 2026-08-13
 
 ### Changed
