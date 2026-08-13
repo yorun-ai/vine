@@ -347,6 +347,53 @@ func TestFailureLevelsRemainVisibleWithoutDebug(t *testing.T) {
 	}
 }
 
+func TestServerSpanBuildsLifecycleFieldsLazilyWithoutDebug(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "rpc-lazy-fields.jsonl")
+	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelInfo, OutputPath: path})
+	method := testRpcLogMethodInfo()
+	trace := meta.InitialTrace()
+	client := meta.MustNewApp("client", "1.0.0", "123e4567-e89b-12d3-a456-426614174001")
+	server := meta.MustNewApp("server", "1.0.0", "123e4567-e89b-12d3-a456-426614174002")
+
+	successSpan := StartServerHandle(log, trace, method, client, server, &spec.EmptyArguments{})
+	if successSpan.fieldsInitialized || successSpan.fields != nil {
+		t.Fatalf("server lifecycle fields initialized while Debug was disabled: %#v", successSpan.fields)
+	}
+	successSpan.FinishServer(nil, nil)
+	if successSpan.fieldsInitialized || successSpan.fields != nil {
+		t.Fatalf("successful server lifecycle fields initialized while Debug stayed disabled: %#v", successSpan.fields)
+	}
+
+	failureSpan := StartServerHandle(log, trace, method, client, server, &spec.EmptyArguments{})
+	failureSpan.FinishServer(ex.New(ex.OperationFailed, "boom"), nil)
+	if !failureSpan.fieldsInitialized {
+		t.Fatal("failure did not initialize server lifecycle fields")
+	}
+	assertSpanField(t, failureSpan, "vrpcId", trace.Id())
+	assertSpanField(t, failureSpan, "clientName", client.Name())
+	assertSpanField(t, failureSpan, "serverName", server.Name())
+
+	records := readRpcLogRecords(t, path)
+	if len(records) != 1 || records[0]["rpcMethod"] != method.Name() || records[0]["clientName"] != client.Name() || records[0]["serverName"] != server.Name() {
+		t.Fatalf("lazy failure lifecycle fields were not logged: %#v", records)
+	}
+}
+
+func TestServerSpanBuildsLifecycleFieldsWhenDebugEnablesBeforeFinish(t *testing.T) {
+	t.Cleanup(func() { logger.SetGlobalLevel(logger.LevelInfo) })
+	logger.SetGlobalLevel(logger.LevelInfo)
+	span := StartServerHandle(logger.New("vine:test"), meta.InitialTrace(), testRpcLogMethodInfo(), nil, nil, &spec.EmptyArguments{})
+	if span.fieldsInitialized {
+		t.Fatal("server lifecycle fields initialized while Debug was disabled")
+	}
+
+	logger.SetGlobalLevel(logger.LevelDebug)
+	span.FinishServer(nil, nil)
+	if !span.fieldsInitialized {
+		t.Fatal("server lifecycle fields were not initialized after Debug was enabled")
+	}
+}
+
 func TestMutedMethodLogsOnlyFailureFinishedWithStartSnapshot(t *testing.T) {
 	resetMuteForTest(t)
 	serviceSpec := &spec.ServiceSpec{

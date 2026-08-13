@@ -15,7 +15,11 @@ type Span struct {
 	finishMsg           string
 	startedAt           time.Time
 	fields              []any
+	fieldsInitialized   bool
+	trace               meta.Trace
 	method              spec.MethodInfo
+	client              meta.App
+	server              meta.App
 	muteSuccess         bool
 	debugEnabledAtStart bool
 	arguments           _PayloadValue
@@ -45,10 +49,21 @@ func StartClientInvoke(log *logger.Logger, trace meta.Trace, method spec.MethodI
 }
 
 func StartServerHandle(log *logger.Logger, trace meta.Trace, method spec.MethodInfo, client meta.App, server meta.App, arguments ...any) *Span {
-	span := Start(log, "rpc server handle started", "rpc server handle finished", trace, method, client, server)
+	span := &Span{
+		logger:              log,
+		finishMsg:           "rpc server handle finished",
+		startedAt:           time.Now(),
+		trace:               trace,
+		method:              method,
+		client:              client,
+		server:              server,
+		muteSuccess:         IsSuccessLogMuted(method),
+		debugEnabledAtStart: log.Enabled(logger.LevelDebug),
+	}
 	if !span.debugEnabledAtStart {
 		return span
 	}
+	span.initFields()
 	if len(arguments) > 0 && !isInternalTransport(method) {
 		span.arguments = renderRpcArguments(method, arguments[0])
 	}
@@ -83,6 +98,7 @@ func Start(
 		finishMsg:           finishMsg,
 		startedAt:           time.Now(),
 		fields:              fields,
+		fieldsInitialized:   true,
 		method:              method,
 		muteSuccess:         IsSuccessLogMuted(method),
 		debugEnabledAtStart: log.Enabled(logger.LevelDebug),
@@ -131,6 +147,12 @@ func (s *Span) finish(err ex.Error, result any, server bool) {
 	if code == ex.OK && s.muteSuccess {
 		return
 	}
+	if server && code == ex.OK && !s.logger.Enabled(logger.LevelDebug) {
+		return
+	}
+	if server {
+		s.initFields()
+	}
 	if code != ex.OK && err != nil {
 		s.fields = append(s.fields, "error", err.Error())
 		if panicValue, panicked := ex.PanicValue(err); panicked {
@@ -155,6 +177,20 @@ func (s *Span) finish(err ex.Error, result any, server bool) {
 		"duration", time.Since(s.startedAt),
 	)
 	logLifecycle(s.logger, s.finishMsg, err, s.fields...)
+}
+
+func (s *Span) initFields() {
+	if s.fieldsInitialized {
+		return
+	}
+
+	fields := make([]any, 0, 20)
+	fields = appendTraceFields(fields, s.trace)
+	fields = appendMethodFields(fields, s.method)
+	fields = appendAppFields(fields, "client", s.client)
+	fields = appendAppFields(fields, "server", s.server)
+	s.fields = fields
+	s.fieldsInitialized = true
 }
 
 func (s *Span) FinishWithResponse(err ex.Error, response spec.Response) {
