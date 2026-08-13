@@ -135,8 +135,10 @@ func New(code Code, message string, opts ...ErrorOption) Error {
 	return err
 }
 
+var okError = new(_Error{CodeValue: OK})
+
 func NewOK() Error {
-	return New(OK, "")
+	return okError
 }
 
 func NewInternal() Error {

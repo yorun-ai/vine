@@ -25,6 +25,32 @@ func TestNewInternalUsesCodeDefaultMessage(t *testing.T) {
 	}
 }
 
+func TestNewOKReusesImmutableError(t *testing.T) {
+	first := NewOK()
+	second := NewOK()
+
+	if first != second {
+		t.Fatal("NewOK did not reuse the package-level success error")
+	}
+	if first.Code() != OK || first.Type() != NoError || first.Message() != "" || first.Reason() != "" || first.Detail() != "" {
+		t.Fatalf("unexpected OK error: %#v", first)
+	}
+	if Stack(first) != "" {
+		t.Fatalf("OK error must not contain a diagnostic stack: %s", Stack(first))
+	}
+
+	recovered := RecoverExecution(first)
+	if recovered == first || recovered.Code() != Internal {
+		t.Fatalf("panicked OK error was not normalized through an independent error: %#v", recovered)
+	}
+	if NewOK() != first {
+		t.Fatal("panic normalization replaced the shared OK error")
+	}
+	if _, panicked := PanicValue(first); panicked {
+		t.Fatal("panic normalization mutated the shared OK error")
+	}
+}
+
 func TestFFormatsMessage(t *testing.T) {
 	got := F("field %s is invalid", "email")
 
