@@ -1,10 +1,13 @@
 package spec
 
 import (
+	"encoding/json"
 	"reflect"
 	"strconv"
 	"strings"
 
+	"github.com/fxamacker/cbor/v2"
+	"go.yorun.ai/vine/util/vcode"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -115,6 +118,7 @@ type MethodInfo interface {
 	ArgumentsContainsBinaryType() bool
 	PositionArguments(arguments any) []any
 	ValidateArguments(any) error
+	CloneArguments(any) any
 
 	HasResult() bool
 	NewResult() any
@@ -122,6 +126,7 @@ type MethodInfo interface {
 	ResultSensitive() bool
 	ResultContainsBinaryType() bool
 	ValidateResult(any) error
+	CloneResult(any) any
 }
 
 type _MethodInfo struct {
@@ -136,11 +141,13 @@ type _MethodInfo struct {
 	argumentsContainsBinaryType bool
 	argumentFieldInfos          []_ArgumentFieldInfo
 	validateArguments           func(any) error
+	cloneArguments              func(any) any
 
 	resultType               reflect.Type
 	resultSensitive          bool
 	resultContainsBinaryType bool
 	validateResult           func(any) error
+	cloneResult              func(any) any
 }
 
 func (mi *_MethodInfo) Name() string {
@@ -196,6 +203,15 @@ func (mi *_MethodInfo) ValidateArguments(arguments any) error {
 	return mi.validateArguments(arguments)
 }
 
+func (mi *_MethodInfo) CloneArguments(arguments any) any {
+	if mi.cloneArguments != nil {
+		return mi.cloneArguments(arguments)
+	}
+	target := mi.NewArguments()
+	cloneValueByMarshaling(arguments, target, mi.ArgumentsContainsBinaryType())
+	return target
+}
+
 func (mi *_MethodInfo) HasResult() bool {
 	return mi.resultType != nil
 }
@@ -218,6 +234,23 @@ func (mi *_MethodInfo) ResultContainsBinaryType() bool {
 
 func (mi *_MethodInfo) ValidateResult(result any) error {
 	return mi.validateResult(result)
+}
+
+func (mi *_MethodInfo) CloneResult(result any) any {
+	if mi.cloneResult != nil {
+		return mi.cloneResult(result)
+	}
+	target := mi.NewResult()
+	cloneValueByMarshaling(result, target, mi.ResultContainsBinaryType())
+	return reflect.ValueOf(target).Elem().Interface()
+}
+
+func cloneValueByMarshaling(source any, target any, containsBinaryType bool) {
+	if containsBinaryType {
+		vpre.MustNil(cbor.Unmarshal(vcode.MustMarshalCbor(source), target))
+		return
+	}
+	vpre.MustNil(json.Unmarshal(vcode.MustMarshalJson(source), target))
 }
 
 type EmptyArguments struct{}
