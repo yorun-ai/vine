@@ -155,6 +155,8 @@ func initMethodInfos(serviceSpec *ServiceSpec, serviceInfo *_ServiceInfo) []Meth
 			validateResult:              validateResult,
 			argumentsContainsBinaryType: methodSpec.ArgumentsContainsBinaryType,
 			resultContainsBinaryType:    methodSpec.ResultContainsBinaryType,
+			cloneArguments:              methodSpec.CloneArguments,
+			cloneResult:                 methodSpec.CloneResult,
 		}
 		if methodInfo.HasArguments() {
 			methodInfo.argumentFieldInfos = buildArgumentFieldInfos(methodInfo.argumentsType)

@@ -51,10 +51,16 @@ type MethodSpec struct {
 	Name     string
 	SkelName string
 
-	ArgumentsType               reflect.Type
-	ValidateArguments           func(any) error
-	ResultType                  reflect.Type
-	ValidateResult              func(any) error
+	ArgumentsType     reflect.Type
+	ValidateArguments func(any) error
+	// CloneArguments deep-copies generated arguments for in-process Rpc
+	// isolation. When nil, Vine falls back to transport serialization.
+	CloneArguments func(any) any
+	ResultType     reflect.Type
+	ValidateResult func(any) error
+	// CloneResult deep-copies a generated result for in-process Rpc isolation.
+	// When nil, Vine falls back to transport serialization.
+	CloneResult                 func(any) any
 	ArgumentsSensitive          bool
 	ResultSensitive             bool
 	ArgumentsContainsBinaryType bool

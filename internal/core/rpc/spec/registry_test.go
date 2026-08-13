@@ -65,6 +65,10 @@ type embeddedTypesHolder struct {
 	Alias embeddedTypeA
 }
 
+type testRegistryCloneArguments struct {
+	Value string `arg:"0"`
+}
+
 func resetRegistryForTest(t *testing.T) {
 	t.Helper()
 
@@ -312,6 +316,40 @@ func TestRegisterInitializesMethodSensitiveFlags(t *testing.T) {
 	method := serviceInfoBySkelName[serviceInfo.SkelName].Methods()[0]
 	if !method.ArgumentsSensitive() || !method.ResultSensitive() {
 		t.Fatal("expected method sensitive flags to be initialized")
+	}
+}
+
+func TestRegisterKeepsFirstMethodCloneFuncs(t *testing.T) {
+	resetRegistryForTest(t)
+
+	clientInfo := newRegistryTestServiceInfo("test.registry.clone.first")
+	clientInfo.Type = ServiceSpecTypeClient
+	clientInfo.ServerType = nil
+	clientInfo.DefaultServerType = nil
+	clientInfo.ERServerType = nil
+	clientInfo.DefaultERServerType = nil
+	clientInfo.Methods[0].ArgumentsType = reflect.TypeFor[testRegistryCloneArguments]()
+	clientInfo.Methods[0].ResultType = reflect.TypeFor[string]()
+	clientInfo.Methods[0].CloneArguments = func(any) any { return "first arguments" }
+	clientInfo.Methods[0].CloneResult = func(any) any { return "first result" }
+	Register(clientInfo)
+	methodInfo := clientInfo.Methods[0].Info().(*_MethodInfo)
+
+	serverInfo := newRegistryTestServiceInfo("test.registry.clone.first")
+	serverInfo.Type = ServiceSpecTypeServer
+	serverInfo.ClientType = nil
+	serverInfo.ClientCtor = nil
+	serverInfo.ERClientType = nil
+	serverInfo.ERClientCtor = nil
+	serverInfo.Methods[0].CloneArguments = func(any) any { return "second arguments" }
+	serverInfo.Methods[0].CloneResult = func(any) any { return "second result" }
+	Register(serverInfo)
+
+	if cloned := methodInfo.CloneArguments(&testRegistryCloneArguments{}); cloned != "first arguments" {
+		t.Fatalf("CloneArguments() = %#v; want first registration", cloned)
+	}
+	if cloned := methodInfo.CloneResult(""); cloned != "first result" {
+		t.Fatalf("CloneResult() = %#v; want first registration", cloned)
 	}
 }
 
