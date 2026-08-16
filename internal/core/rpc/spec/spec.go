@@ -53,13 +53,17 @@ type MethodSpec struct {
 
 	ArgumentsType     reflect.Type
 	ValidateArguments func(any) error
-	// CloneArguments deep-copies generated arguments for in-process Rpc
-	// isolation. When nil, Vine falls back to transport serialization.
+	// CloneArguments returns a value-isolated copy of generated arguments for
+	// in-process Rpc. It need not reproduce transport encoding, normalization,
+	// or custom marshaling behavior. When nil, Vine uses serialization as a
+	// compatibility fallback.
 	CloneArguments func(any) any
 	ResultType     reflect.Type
 	ValidateResult func(any) error
-	// CloneResult deep-copies a generated result for in-process Rpc isolation.
-	// When nil, Vine falls back to transport serialization.
+	// CloneResult returns a value-isolated copy of a generated result for
+	// in-process Rpc. It need not reproduce transport encoding, normalization,
+	// or custom marshaling behavior. When nil, Vine uses serialization as a
+	// compatibility fallback.
 	CloneResult                 func(any) any
 	ArgumentsSensitive          bool
 	ResultSensitive             bool
