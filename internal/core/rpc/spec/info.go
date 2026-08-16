@@ -245,6 +245,9 @@ func (mi *_MethodInfo) CloneResult(result any) any {
 	return reflect.ValueOf(target).Elem().Interface()
 }
 
+// cloneValueByMarshaling supports service specs generated before typed clone
+// hooks. Its codec round trip is a compatibility fallback, not part of the
+// in-process value-isolation contract.
 func cloneValueByMarshaling(source any, target any, containsBinaryType bool) {
 	if containsBinaryType {
 		vpre.MustNil(cbor.Unmarshal(vcode.MustMarshalCbor(source), target))
