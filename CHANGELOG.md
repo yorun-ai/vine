@@ -13,6 +13,8 @@ are not part of the public compatibility commitment.
 - Clarified that in-process Rpc guarantees request and result value isolation,
   not JSON/CBOR encoding, normalization, custom marshaling, or codec failure
   equivalence with network transports
+- Raised the minimum Go toolchain to 1.26.6 to include the latest standard
+  library security fixes
 
 ## [0.13.1] - 2026-08-14
 
