@@ -2,6 +2,7 @@ package rpcproxy
 
 import (
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -15,6 +16,16 @@ type _RpcRoundTripperFunc func(*http.Request) (*http.Response, error)
 
 func (f _RpcRoundTripperFunc) RoundTrip(request *http.Request) (*http.Response, error) {
 	return f(request)
+}
+
+type closeTrackingBody struct {
+	io.Reader
+	closed bool
+}
+
+func (b *closeTrackingBody) Close() error {
+	b.closed = true
+	return nil
 }
 
 func TestRoundTripUsesConfiguredTransport(t *testing.T) {
@@ -47,6 +58,41 @@ func TestRoundTripUsesConfiguredTransport(t *testing.T) {
 	}
 	if exErr == nil || !strings.Contains(exErr.Message(), expectedErr.Error()) {
 		t.Fatalf("unexpected Rpc error: %v", exErr)
+	}
+}
+
+func TestForwardWithTransportPreservesOriginalResponseBody(t *testing.T) {
+	originalBody := &closeTrackingBody{Reader: strings.NewReader("ok")}
+	transport := _RpcRoundTripperFunc(func(*http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     http.Header{},
+			Body:       originalBody,
+		}, nil
+	})
+	request, err := http.NewRequest(http.MethodPost, "http://target.local/demo.Service/Invoke", nil)
+	if err != nil {
+		t.Fatalf("http.NewRequest() error = %v", err)
+	}
+
+	response, body, exErr := new(RpcProxy).forwardWithTransport(request.Context(), request, transport)
+	if exErr != nil {
+		t.Fatalf("forwardWithTransport() error = %v", exErr)
+	}
+	if string(body) != "ok" {
+		t.Fatalf("body = %q, want %q", body, "ok")
+	}
+	if response.Body != originalBody {
+		t.Fatal("response body was replaced")
+	}
+	if originalBody.closed {
+		t.Fatal("response body closed before ownership was returned to caller")
+	}
+	if err := response.Body.Close(); err != nil {
+		t.Fatalf("response Body.Close() error = %v", err)
+	}
+	if !originalBody.closed {
+		t.Fatal("original response body was not closed by caller")
 	}
 }
 

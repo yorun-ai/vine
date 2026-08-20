@@ -149,6 +149,18 @@ func TestEntryServesRedirectRuleWithoutTrimmedPathPrefix(t *testing.T) {
 	assert.Equal(t, "https://demo.local/old/page", recorder.Header().Get("Location"))
 }
 
+func TestNewEntryHTTPServerAppliesConnectionLimits(t *testing.T) {
+	entry := newEntry(spec.SchemeHTTP, 8080, nil)
+
+	server := newEntryHTTPServer("0.0.0.0:8080", entry)
+
+	assert.Equal(t, entryReadHeaderTimeout, server.ReadHeaderTimeout)
+	assert.Equal(t, entryIdleTimeout, server.IdleTimeout)
+	assert.Equal(t, entryMaxHeaderBytes, server.MaxHeaderBytes)
+	assert.Zero(t, server.ReadTimeout)
+	assert.Zero(t, server.WriteTimeout)
+}
+
 func TestRuleTrimsPathPrefix(t *testing.T) {
 	rule := _Rule{pathPrefix: "/admin"}
 	request := httptest.NewRequest(http.MethodGet, "https://demo.local:8443/admin/users", nil)
