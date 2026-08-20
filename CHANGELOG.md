@@ -8,6 +8,8 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.13.2] - 2026-08-20
+
 ### Changed
 
 - Clarified that in-process Rpc guarantees request and result value isolation,
@@ -15,6 +17,17 @@ are not part of the public compatibility commitment.
   equivalence with network transports
 - Raised the minimum Go toolchain to 1.26.6 to include the latest standard
   library security fixes
+
+### Fixed
+
+- Hub Service Debug now keeps the forwarding context alive until a remote Link
+  response body is consumed, preventing independently linked H2C calls from
+  failing with `context canceled`
+- Link Rpc proxy forwarding now preserves the original response body so callers
+  close the network body after buffering its contents
+- Portal public entries now bound request-header processing, idle connections,
+  and header size without imposing global read or write timeouts on streaming
+  Web traffic
 
 ## [0.13.1] - 2026-08-14
 
