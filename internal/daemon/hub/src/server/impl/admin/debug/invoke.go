@@ -3,8 +3,10 @@ package debug
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
+	"sync"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
@@ -15,7 +17,6 @@ import (
 
 func doServiceDebugInvokeRequest(request *http.Request, transport http.RoundTripper) (*http.Response, error) {
 	ctx, cancel := httputil.ContextWithForwardTimeout(request)
-	defer cancel()
 
 	forwardRequest := request.Clone(ctx)
 	forwardRequest.Header = request.Header.Clone()
@@ -28,9 +29,42 @@ func doServiceDebugInvokeRequest(request *http.Request, transport http.RoundTrip
 		response, err = transport.RoundTrip(forwardRequest)
 	}
 	if err != nil {
+		cancel()
 		return nil, normalizeServiceDebugForwardError(ctx, err)
 	}
+	response.Body = newServiceDebugResponseBody(response.Body, cancel)
 	return response, nil
+}
+
+type _ServiceDebugResponseBody struct {
+	io.ReadCloser
+	cancel     context.CancelFunc
+	cancelOnce sync.Once
+}
+
+func newServiceDebugResponseBody(body io.ReadCloser, cancel context.CancelFunc) *_ServiceDebugResponseBody {
+	return &_ServiceDebugResponseBody{
+		ReadCloser: body,
+		cancel:     cancel,
+	}
+}
+
+func (b *_ServiceDebugResponseBody) Read(p []byte) (int, error) {
+	n, err := b.ReadCloser.Read(p)
+	if err != nil {
+		b.cancelContext()
+	}
+	return n, err
+}
+
+func (b *_ServiceDebugResponseBody) Close() error {
+	err := b.ReadCloser.Close()
+	b.cancelContext()
+	return err
+}
+
+func (b *_ServiceDebugResponseBody) cancelContext() {
+	b.cancelOnce.Do(b.cancel)
 }
 
 func normalizeServiceDebugForwardError(ctx context.Context, err error) error {
