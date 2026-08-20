@@ -1,7 +1,6 @@
 package rpcproxy
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -42,7 +41,6 @@ func (p *RpcProxy) forwardWithTransport(reqCtx context.Context, req *http.Reques
 		_ = resp.Body.Close()
 		return nil, nil, ex.New(ex.ServiceUnavailable, "proxy response body cannot be read", ex.WithDetail(readErr.Error()))
 	}
-	resp.Body = io.NopCloser(bytes.NewReader(body))
 	return resp, body, nil
 }
 

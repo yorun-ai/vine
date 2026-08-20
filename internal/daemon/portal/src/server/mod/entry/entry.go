@@ -9,12 +9,19 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"time"
 
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/vault"
 	"go.yorun.ai/vine/internal/util/httputil"
 	"go.yorun.ai/vine/util/vpre"
+)
+
+const (
+	entryReadHeaderTimeout = 10 * time.Second
+	entryIdleTimeout       = 2 * time.Minute
+	entryMaxHeaderBytes    = 128 << 10
 )
 
 var (
@@ -105,10 +112,7 @@ func (e *_Entry) Start() {
 	}
 
 	listenAddr := net.JoinHostPort("0.0.0.0", strconv.Itoa(e.port))
-	server := &http.Server{
-		Addr:    listenAddr,
-		Handler: e,
-	}
+	server := newEntryHTTPServer(listenAddr, e)
 	if e.scheme == spec.SchemeHTTPS {
 		server.TLSConfig = &tls.Config{
 			GetCertificate: e.getCertificate,
@@ -131,6 +135,16 @@ func (e *_Entry) Start() {
 			entryLogger.Error("vine.portal entry failed", "addr", e.addr, "error", err)
 		}
 	}()
+}
+
+func newEntryHTTPServer(addr string, handler http.Handler) *http.Server {
+	return &http.Server{
+		Addr:              addr,
+		Handler:           handler,
+		ReadHeaderTimeout: entryReadHeaderTimeout,
+		IdleTimeout:       entryIdleTimeout,
+		MaxHeaderBytes:    entryMaxHeaderBytes,
+	}
 }
 
 func (e *_Entry) serve(server *http.Server, listener net.Listener) error {
