@@ -15,6 +15,7 @@ import {
   SelectTrigger,
 } from '@/components/ui/select'
 import { vrpcClient } from '@/config/vrpc-client'
+import { copyTextToClipboard } from '@/lib/clipboard'
 import { cn } from '@/lib/utils'
 import {
   createTaskDebugService,
@@ -424,7 +425,7 @@ export function TaskLauncherPage() {
 
   const copyText = React.useCallback(async (value: string, message: string) => {
     try {
-      await navigator.clipboard.writeText(value)
+      await copyTextToClipboard(value)
       toast.success(message)
     } catch (error) {
       toast.error(getErrorMessage(error))

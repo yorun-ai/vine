@@ -23,6 +23,7 @@ import {
   type ServiceDebugMethodItem,
   type ServiceDebugServiceItem,
 } from '@/skeled/admin'
+import { copyTextToClipboard } from '@/lib/clipboard'
 import { cn } from '@/lib/utils'
 
 const serviceDebugService = createServiceDebugService(vrpcClient)
@@ -618,7 +619,7 @@ export function ServiceClientPage() {
 
   const copyText = React.useCallback(async (value: string, message: string) => {
     try {
-      await navigator.clipboard.writeText(value)
+      await copyTextToClipboard(value)
       toast.success(message)
     } catch (error) {
       toast.error(getErrorMessage(error))
