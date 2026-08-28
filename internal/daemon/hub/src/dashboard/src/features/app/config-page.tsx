@@ -55,6 +55,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { vrpcClient } from '@/config/vrpc-client'
+import { copyTextToClipboard } from '@/lib/clipboard'
 import { useLocale } from '@/i18n'
 import { cn } from '@/lib/utils'
 import {
@@ -1610,7 +1611,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
 
   async function handleCopyConfigJson() {
     try {
-      await navigator.clipboard.writeText(value)
+      await copyTextToClipboard(value)
       toast.success(t('appConfig.jsonCopied'))
     } catch (error) {
       toast.error(getErrorMessage(error))
