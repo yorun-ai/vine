@@ -267,6 +267,7 @@ func TestLockerLockWithTimeoutDisablesRefreshAndBreaksAfterTimeout(t *testing.T)
 	assert.Eventually(t, func() bool {
 		return errors.Is(lock.Context().Err(), context.Canceled)
 	}, time.Second, 10*time.Millisecond)
+	assert.ErrorIs(t, context.Cause(lock.Context()), errLockLeaseExpired)
 }
 
 func TestWithTimeoutRejectsNonPositiveTimeout(t *testing.T) {
@@ -277,17 +278,18 @@ func TestWithTimeoutRejectsNonPositiveTimeout(t *testing.T) {
 	}
 }
 
-func TestLockRefreshOwnershipMismatchBreaksImmediately(t *testing.T) {
+func TestLockRefreshOwnershipMismatchBreaksWithCause(t *testing.T) {
 	cmdable := newTestLockCmdable()
 	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
 		return goredis.NewCmdResult(int64(0), nil)
 	}
 	lock := newHeldTestLock(cmdable, lockDefaultTimeout)
 
-	assert.False(t, lock.refreshWithRetry())
+	assert.False(t, lock.refresh())
 
 	assert.True(t, lock.IsBroken())
 	assert.ErrorIs(t, lock.Context().Err(), context.Canceled)
+	assert.ErrorIs(t, context.Cause(lock.Context()), errLockOwnershipLost)
 	require.Len(t, cmdable.evalCalls, 1)
 	assert.Equal(t, refreshScript, cmdable.evalCalls[0].script)
 }
@@ -303,7 +305,7 @@ func TestLockRefreshUsesBoundedDeadlineAndExtendsLease(t *testing.T) {
 	originalDeadline := lock.leaseDeadline
 	startedAt := time.Now()
 
-	require.True(t, lock.refreshWithRetry())
+	require.NoError(t, lock.refreshWithRetry())
 
 	assert.WithinDuration(t, startedAt.Add(lockRefreshCommandTimeout), commandDeadline, 100*time.Millisecond)
 	assert.True(t, lock.leaseDeadline.After(originalDeadline))
@@ -324,8 +326,13 @@ func TestLockRefreshStopsWhenRetryWouldExceedLease(t *testing.T) {
 	lock := newHeldTestLock(cmdable, 100*time.Millisecond)
 	startedAt := time.Now()
 
-	assert.False(t, lock.refreshWithRetry())
+	assert.False(t, lock.refresh())
 
+	assert.True(t, lock.IsBroken())
+	cause := context.Cause(lock.Context())
+	require.Error(t, cause)
+	assert.ErrorContains(t, cause, "refresh redis lock failed before lease deadline")
+	assert.ErrorContains(t, cause, "refresh failed")
 	assert.Less(t, time.Since(startedAt), time.Second)
 	require.Len(t, cmdable.evalCalls, 1)
 }
@@ -339,13 +346,14 @@ func TestLockRefreshCommandCannotRunPastLease(t *testing.T) {
 	lock := newHeldTestLock(cmdable, 30*time.Millisecond)
 	startedAt := time.Now()
 
-	assert.False(t, lock.refreshWithRetry())
+	err := lock.refreshWithRetry()
 
+	require.Error(t, err)
 	assert.Less(t, time.Since(startedAt), time.Second)
 	require.Len(t, cmdable.evalCalls, 1)
 }
 
-func TestLockUnlockCancelsContextAndLogsReleaseFailure(t *testing.T) {
+func TestLockUnlockPanicsAndBreaksOnReleaseFailure(t *testing.T) {
 	cmdable := newTestLockCmdable()
 	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
 		return goredis.NewCmdResult(nil, errors.New("release failed"))
@@ -357,20 +365,127 @@ func TestLockUnlockCancelsContextAndLogsReleaseFailure(t *testing.T) {
 		option:  defaultLockOption(),
 		token:   "held-token",
 	}
-	lock.lockCtx, lock.lockCancel = context.WithCancel(lock.ctx)
+	lock.lockCtx, lock.lockCancel = context.WithCancelCause(lock.ctx)
 
-	lock.Unlock()
+	assert.PanicsWithError(t, "release redis lock failed: release failed", func() {
+		lock.Unlock()
+	})
 
+	assert.True(t, lock.IsBroken())
 	assert.ErrorIs(t, lock.Context().Err(), context.Canceled)
+	assert.EqualError(t, context.Cause(lock.Context()), "release redis lock failed: release failed")
 	require.Len(t, cmdable.evalCalls, 1)
 	assert.Equal(t, unlockScript, cmdable.evalCalls[0].script)
 	assert.Equal(t, []string{"vine:lock:lock:user:123"}, cmdable.evalCalls[0].keys)
 	assert.Equal(t, []interface{}{"held-token"}, cmdable.evalCalls[0].args)
 }
 
+func TestLockUnlockPanicsAndBreaksWhenOwnershipIsLost(t *testing.T) {
+	cmdable := newTestLockCmdable()
+	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+		return goredis.NewCmdResult(int64(0), nil)
+	}
+	lock := newHeldTestLock(cmdable, time.Second)
+
+	assert.PanicsWithError(t, errLockOwnershipLost.Error(), func() {
+		lock.Unlock()
+	})
+
+	assert.True(t, lock.IsBroken())
+	assert.ErrorIs(t, context.Cause(lock.Context()), errLockOwnershipLost)
+}
+
+func TestLockUnlockCancelsContextAfterRelease(t *testing.T) {
+	lock := newHeldTestLock(newTestLockCmdable(), time.Second)
+
+	lock.Unlock()
+
+	assert.False(t, lock.IsBroken())
+	assert.ErrorIs(t, lock.Context().Err(), context.Canceled)
+	assert.ErrorIs(t, context.Cause(lock.Context()), context.Canceled)
+}
+
+func TestLockTryUnlockReleasesHeldLock(t *testing.T) {
+	lock := newHeldTestLock(newTestLockCmdable(), time.Second)
+
+	assert.True(t, lock.TryUnlock())
+
+	assert.False(t, lock.IsBroken())
+	assert.ErrorIs(t, context.Cause(lock.Context()), context.Canceled)
+	assert.False(t, lock.TryUnlock())
+}
+
+func TestLockTryUnlockReturnsFalseWhenUnavailable(t *testing.T) {
+	assert.False(t, new(Lock).TryUnlock())
+
+	lock := newHeldTestLock(newTestLockCmdable(), time.Second)
+	lock.markBroken(errLockLeaseExpired)
+
+	assert.False(t, lock.TryUnlock())
+}
+
+func TestLockTryUnlockReturnsFalseAndBreaksWhenOwnershipIsLost(t *testing.T) {
+	cmdable := newTestLockCmdable()
+	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+		return goredis.NewCmdResult(int64(0), nil)
+	}
+	lock := newHeldTestLock(cmdable, time.Second)
+
+	assert.False(t, lock.TryUnlock())
+
+	assert.True(t, lock.IsBroken())
+	assert.ErrorIs(t, context.Cause(lock.Context()), errLockOwnershipLost)
+}
+
+func TestLockTryUnlockPanicsAndBreaksOnReleaseFailure(t *testing.T) {
+	cmdable := newTestLockCmdable()
+	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+		return goredis.NewCmdResult(nil, errors.New("release failed"))
+	}
+	lock := newHeldTestLock(cmdable, time.Second)
+
+	assert.PanicsWithError(t, "release redis lock failed: release failed", func() {
+		lock.TryUnlock()
+	})
+
+	assert.True(t, lock.IsBroken())
+	assert.EqualError(t, context.Cause(lock.Context()), "release redis lock failed: release failed")
+}
+
+func TestLockTryUnlockIsAtomicWithMarkBroken(t *testing.T) {
+	cmdable := newTestLockCmdable()
+	evalStarted := make(chan struct{})
+	evalContinue := make(chan struct{})
+	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+		close(evalStarted)
+		<-evalContinue
+		return goredis.NewCmdResult(int64(1), nil)
+	}
+	lock := newHeldTestLock(cmdable, time.Second)
+	tryUnlockResult := make(chan bool, 1)
+	go func() {
+		tryUnlockResult <- lock.TryUnlock()
+	}()
+	<-evalStarted
+
+	markBrokenDone := make(chan struct{})
+	go func() {
+		lock.markBroken(errLockLeaseExpired)
+		close(markBrokenDone)
+	}()
+	close(evalContinue)
+
+	assert.True(t, <-tryUnlockResult)
+	<-markBrokenDone
+	assert.False(t, lock.IsBroken())
+	assert.ErrorIs(t, context.Cause(lock.Context()), context.Canceled)
+}
+
 func TestLockMarkBrokenPreventsUnlock(t *testing.T) {
-	lockCtx, lockCancel := context.WithCancel(context.Background())
-	t.Cleanup(lockCancel)
+	lockCtx, lockCancel := context.WithCancelCause(context.Background())
+	t.Cleanup(func() {
+		lockCancel(nil)
+	})
 	lock := &Lock{
 		token:      "held-token",
 		option:     &_LockOption{timeout: time.Second},
@@ -378,10 +493,11 @@ func TestLockMarkBrokenPreventsUnlock(t *testing.T) {
 		lockCancel: lockCancel,
 	}
 
-	lock.markBroken()
+	lock.markBroken(errLockLeaseExpired)
 
 	assert.True(t, lock.IsBroken())
 	assert.ErrorIs(t, lock.Context().Err(), context.Canceled)
+	assert.ErrorIs(t, context.Cause(lock.Context()), errLockLeaseExpired)
 	assert.Panics(t, func() {
 		lock.Unlock()
 	})
@@ -409,6 +525,6 @@ func newHeldTestLock(cmdable goredis.Cmdable, timeout time.Duration) *Lock {
 		token:         "held-token",
 		leaseDeadline: localLeaseDeadline(time.Now(), timeout),
 	}
-	lock.lockCtx, lock.lockCancel = context.WithCancel(ctx)
+	lock.lockCtx, lock.lockCancel = context.WithCancelCause(ctx)
 	return lock
 }

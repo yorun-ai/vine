@@ -8,6 +8,19 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Added
+
+- `redis.Lock.TryUnlock()` for atomically checking local lock availability and
+  attempting a token-checked Redis release, returning `false` for an unavailable
+  or no-longer-owned lock while retaining fail-fast Redis command errors
+
+### Fixed
+
+- Redis locks now apply the existing infrastructure fail-fast policy when
+  `Unlock()` cannot execute its Redis command or finds that its token no longer
+  owns the lock; background refresh failures retain their causes on the lock
+  context and mark the lock broken without panicking from the refresh goroutine
+
 ## [0.13.2] - 2026-08-20
 
 ### Changed
