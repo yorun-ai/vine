@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
-	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -59,6 +59,11 @@ if redis.call("get", KEYS[1]) == ARGV[1] then
 end
 return 0
 `
+)
+
+var (
+	errLockLeaseExpired  = errors.New("redis lock lease expired")
+	errLockOwnershipLost = errors.New("redis lock ownership lost")
 )
 
 type _LockerSpec interface {
@@ -134,7 +139,7 @@ type Lock struct {
 	option        *_LockOption
 	token         string
 	lockCtx       context.Context
-	lockCancel    context.CancelFunc
+	lockCancel    context.CancelCauseFunc
 	leaseDeadline time.Time
 }
 
@@ -188,7 +193,7 @@ func (l *Lock) doLock() bool {
 	}
 
 	l.token = token
-	l.lockCtx, l.lockCancel = context.WithCancel(l.ctx)
+	l.lockCtx, l.lockCancel = context.WithCancelCause(l.ctx)
 	l.leaseDeadline = localLeaseDeadline(startedAt, l.option.timeout)
 	return true
 }
@@ -196,7 +201,7 @@ func (l *Lock) doLock() bool {
 func (l *Lock) waitTimeout() {
 	wait := time.Until(l.currentLeaseDeadline())
 	if wait <= 0 {
-		l.markBroken()
+		l.markBroken(errLockLeaseExpired)
 		return
 	}
 	timer := time.NewTimer(wait)
@@ -206,7 +211,7 @@ func (l *Lock) waitTimeout() {
 	case <-l.lockCtx.Done():
 		return
 	case <-timer.C:
-		l.markBroken()
+		l.markBroken(errLockLeaseExpired)
 	}
 }
 
@@ -219,20 +224,35 @@ func (l *Lock) refreshLoop() {
 		case <-l.lockCtx.Done():
 			return
 		case <-ticker.C:
-			if !l.refreshWithRetry() {
-				l.markBroken()
+			if !l.refresh() {
 				return
 			}
 		}
 	}
 }
 
-func (l *Lock) refreshWithRetry() bool {
+func (l *Lock) refresh() bool {
+	err := l.refreshWithRetry()
+	if err == nil {
+		return true
+	}
+	if l.lockCtx.Err() != nil {
+		return false
+	}
+	l.markBroken(err)
+	return false
+}
+
+func (l *Lock) refreshWithRetry() error {
+	var lastErr error
 	for attempt := range lockRefreshMaxRetry {
 		startedAt := time.Now()
 		deadline := l.currentLeaseDeadline()
 		if !startedAt.Before(deadline) {
-			return false
+			if lastErr != nil {
+				return fmt.Errorf("refresh redis lock failed before lease deadline: %w", lastErr)
+			}
+			return errLockLeaseExpired
 		}
 
 		commandDeadline := deadline
@@ -244,29 +264,32 @@ func (l *Lock) refreshWithRetry() bool {
 		cancel()
 		if err == nil {
 			if result != 1 {
-				l.markBroken()
-				return false
+				return errLockOwnershipLost
 			}
-			return l.extendLease(startedAt)
+			if !l.extendLease(startedAt) {
+				return context.Cause(l.lockCtx)
+			}
+			return nil
 		}
+		lastErr = err
 
 		if attempt == lockRefreshMaxRetry-1 {
-			return false
+			return fmt.Errorf("refresh redis lock failed after %d attempts: %w", lockRefreshMaxRetry, err)
 		}
 
 		if !time.Now().Add(lockRefreshRetryInterval).Before(deadline) {
-			return false
+			return fmt.Errorf("refresh redis lock failed before lease deadline: %w", err)
 		}
 		retryTimer := time.NewTimer(lockRefreshRetryInterval)
 		select {
 		case <-l.lockCtx.Done():
 			retryTimer.Stop()
-			return false
+			return context.Cause(l.lockCtx)
 		case <-retryTimer.C:
 		}
 	}
 
-	return false
+	return fmt.Errorf("refresh redis lock failed: %w", lastErr)
 }
 
 func (l *Lock) currentLeaseDeadline() time.Time {
@@ -290,26 +313,60 @@ func localLeaseDeadline(startedAt time.Time, timeout time.Duration) time.Time {
 	return startedAt.Add(timeout - safetyMargin)
 }
 
-func (l *Lock) markBroken() {
+func (l *Lock) markBroken(cause error) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
+	l.markBrokenLocked(cause)
+}
 
+func (l *Lock) markBrokenLocked(cause error) {
+	if l.lockCtx.Err() != nil {
+		return
+	}
 	l.broken = true
-	l.lockCancel()
+	l.lockCancel(cause)
 }
 
 func (l *Lock) Unlock() {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
-	vpre.Check(!l.broken, "redis lock is broken")
-	vpre.CheckNil(l.lockCtx.Err(), "lock is released")
-
-	err := l.cmdable.Eval(l.ctx, unlockScript, []string{l.key}, l.token).Err()
-	if err != nil {
-		logger.Error("release redis lock failed", "key", l.key, "error", err)
+	if l.broken {
+		vpre.Panic(fmt.Errorf("redis lock is broken: %w", context.Cause(l.lockCtx)))
 	}
-	l.lockCancel()
+	vpre.CheckNil(l.lockCtx.Err(), "lock is released")
+	if !l.unlockLocked() {
+		vpre.Panic(context.Cause(l.lockCtx))
+	}
+}
+
+// TryUnlock atomically checks the local lock state and attempts a token-checked
+// Redis release. It returns false when the lock was not acquired, was already
+// released or broken, or is no longer owned by this token. Redis command errors
+// panic according to the infrastructure fail-fast policy.
+func (l *Lock) TryUnlock() bool {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	if l.lockCtx == nil || l.broken || l.lockCtx.Err() != nil {
+		return false
+	}
+	return l.unlockLocked()
+}
+
+func (l *Lock) unlockLocked() bool {
+	result, err := l.cmdable.Eval(l.ctx, unlockScript, []string{l.key}, l.token).Int64()
+	if err != nil {
+		cause := fmt.Errorf("release redis lock failed: %w", err)
+		l.markBrokenLocked(cause)
+		vpre.Panic(cause)
+	}
+	if result != 1 {
+		l.markBrokenLocked(errLockOwnershipLost)
+		return false
+	}
+	l.lockCancel(nil)
+	return true
 }
 
 func (l *Lock) Context() context.Context {
