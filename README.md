@@ -169,6 +169,106 @@ Read the [CLI guide](https://vine.yorun.ai/docs/getting-started/cli) before
 operating the separated services; it documents persistence, NATS, listener,
 seed, Dashboard, environment-variable, and backend mTLS options.
 
+## Docker Images
+
+The Container images workflow publishes the three separated runtime services
+to GitHub Container Registry. Pull the published images directly when the
+packages are public:
+
+```bash
+docker pull ghcr.io/yorun-ai/vine/vine-hub:latest
+docker pull ghcr.io/yorun-ai/vine/vine-link:latest
+docker pull ghcr.io/yorun-ai/vine/vine-portal:latest
+```
+
+The root `Dockerfile` is also a multi-target build for local development or
+air-gapped registries. Build each image with the corresponding target:
+
+```bash
+docker build --target hub -t vine-hub:local .
+docker build --target portal -t vine-portal:local .
+docker build --target link -t vine-link:local .
+```
+
+The startup example below uses the GHCR images. Replace the image names with
+the `:local` names above when running locally built images.
+
+The images run as the non-root `vine` user. Hub stores its default SQLite file
+at `/data/hub.sqlite` and starts embedded NATS; mount `/data` for persistence.
+Portal and Link use `http://hub:7071` as their default Hub endpoint, so put the
+containers on the same Docker network and give the Hub container the name
+`hub`, or override `VINE_HUB_ENDPOINT`. Portal exposes the Hub-seeded Dashboard
+entry on port `7099`; application Portal rules may add listeners on ports `80`,
+`443`, or other configured ports.
+Override the `VINE_*` environment variables for PostgreSQL, external NATS,
+listeners, or backend mTLS in separated deployments.
+
+### Start the three containers
+
+The following example runs all three services on one Docker network and keeps
+Hub's SQLite database in a named volume:
+
+```bash
+docker network create vine-net
+docker volume create vine-hub-data
+
+docker run -d \
+  --name hub \
+  --network vine-net \
+  -v vine-hub-data:/data \
+  -p 7071:7071 \
+  -p 7075:7075 \
+  ghcr.io/yorun-ai/vine/vine-hub:latest
+```
+
+Wait until Hub logs `vine.hub http server started`, then start Link and Portal:
+
+```bash
+docker run -d \
+  --name link \
+  --network vine-net \
+  -p 7079:7079 \
+  -p 7082:7082 \
+  ghcr.io/yorun-ai/vine/vine-link:latest
+
+docker run -d \
+  --name portal \
+  --network vine-net \
+  -p 7099:7099 \
+  -p 80:80 \
+  -p 443:443 \
+  ghcr.io/yorun-ai/vine/vine-portal:latest
+```
+
+The `hub` container name is resolved by Link and Portal as `http://hub:7071`.
+Port `7075` serves the Hub Dashboard, port `7099` serves the default Portal
+Dashboard entry, and ports `80`/`443` are available when application Portal
+rules configure listeners there. Remove any host port mapping that is not
+needed or is already in use. Check the services with `docker ps` and inspect
+startup failures with `docker logs hub`, `docker logs link`, or `docker logs portal`.
+
+To stop the example without deleting the database volume:
+
+```bash
+docker rm -f portal link hub
+docker network rm vine-net
+```
+
+For independent Kubernetes deployment, see the [Kubernetes deployment guide](deploy/k8s/README.md).
+
+The [Container images workflow](.github/workflows/container.yml) builds all
+three targets for pull requests. Pushes to `main` publish `latest`, `main`, and
+commit-SHA tags; version tags matching `v*.*.*` publish the matching release
+tag. Images are published to GitHub Container Registry as
+`ghcr.io/yorun-ai/vine/vine-hub`, `ghcr.io/yorun-ai/vine/vine-link`, and
+`ghcr.io/yorun-ai/vine/vine-portal`.
+
+The first publish creates the GHCR packages. To allow unauthenticated
+`docker pull` and Kubernetes pulls, set each package (`vine-hub`, `vine-link`,
+and `vine-portal`) to **Public** in GitHub Package settings. If the packages
+remain private, authenticate Docker with `docker login ghcr.io` and configure
+an `imagePullSecret` in Kubernetes.
+
 ## Public Package Map
 
 Vine keeps its public API in a small set of facade packages. Packages under

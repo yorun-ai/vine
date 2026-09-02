@@ -1,0 +1,30 @@
+.git
+.claude
+.DS_Store
+
+# Local build and test output
+bin
+cmd/vine/vine
+dist
+build
+coverage*
+tmp
+temp
+*.test
+*.out
+*.prof
+
+# Frontend and package-manager caches
+node_modules
+.pnpm-store
+.cache
+.vite
+.turbo
+.next
+.nuxt
+
+# Local runtime data
+*.sqlite
+*.sqlite3
+*.db
+*.log

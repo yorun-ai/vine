@@ -158,6 +158,100 @@ vine link serve \
 运行分离式服务前，请阅读 [CLI 指南](https://vine.yorun.ai/zh-CN/docs/getting-started/cli)；
 其中说明了持久化、NATS、listener、seed、Dashboard、环境变量与后端 mTLS 选项。
 
+## Docker 镜像
+
+容器镜像工作流会将三个分离式运行时服务发布到 GitHub Container Registry。
+当这些包已设置为公开时，可以直接拉取远程镜像：
+
+```bash
+docker pull ghcr.io/yorun-ai/vine/vine-hub:latest
+docker pull ghcr.io/yorun-ai/vine/vine-link:latest
+docker pull ghcr.io/yorun-ai/vine/vine-portal:latest
+```
+
+根目录的 `Dockerfile` 也使用多阶段构建，适合本地开发或内网镜像仓库，分别为三个
+分离式运行时服务生成镜像：
+
+```bash
+docker build --target hub -t vine-hub:local .
+docker build --target portal -t vine-portal:local .
+docker build --target link -t vine-link:local .
+```
+
+下面的启动示例默认使用 GHCR 远程镜像；如果使用本地构建的镜像，请将镜像名替换为
+上面的 `:local` 标签。
+
+镜像默认使用非 root 的 `vine` 用户运行。Hub 默认将 SQLite 文件保存到
+`/data/hub.sqlite` 并启动内置 NATS，请为 `/data` 挂载持久化卷。Portal 和 Link
+默认使用 `http://hub:7071` 作为 Hub 地址，因此应将容器加入同一个 Docker 网络，
+并将 Hub 容器命名为 `hub`，或覆盖 `VINE_HUB_ENDPOINT`。Portal 默认在 `7099` 端口
+暴露 Hub 自动创建的 Dashboard 入口；业务 Portal 规则还可以使用 `80`、`443` 或
+其他配置的监听端口。在分离部署中，可通过 `VINE_*` 环境变量覆盖 PostgreSQL、
+外部 NATS、监听地址和后端 mTLS 配置。
+
+### 启动三个容器
+
+下面的示例将三个服务加入同一个 Docker 网络，并使用命名卷保存 Hub 的 SQLite
+数据库：
+
+```bash
+docker network create vine-net
+docker volume create vine-hub-data
+
+docker run -d \
+  --name hub \
+  --network vine-net \
+  -v vine-hub-data:/data \
+  -p 7071:7071 \
+  -p 7075:7075 \
+  ghcr.io/yorun-ai/vine/vine-hub:latest
+```
+
+等待 Hub 日志出现 `vine.hub http server started` 后，再启动 Link 和 Portal：
+
+```bash
+docker run -d \
+  --name link \
+  --network vine-net \
+  -p 7079:7079 \
+  -p 7082:7082 \
+  ghcr.io/yorun-ai/vine/vine-link:latest
+
+docker run -d \
+  --name portal \
+  --network vine-net \
+  -p 7099:7099 \
+  -p 80:80 \
+  -p 443:443 \
+  ghcr.io/yorun-ai/vine/vine-portal:latest
+```
+
+Link 和 Portal 会将名为 `hub` 的容器解析为 `http://hub:7071`。`7075` 是 Hub
+Dashboard，`7099` 是默认 Portal Dashboard 入口；当业务 Portal 规则配置了相应
+监听器时，`80`/`443` 也可用于业务流量。如果宿主机端口已被占用或不需要某个入口，
+可以删除对应的端口映射。可通过 `docker ps` 检查服务状态，并使用
+`docker logs hub`、`docker logs link` 或 `docker logs portal` 查看启动失败原因。
+
+停止示例但保留数据库卷：
+
+```bash
+docker rm -f portal link hub
+docker network rm vine-net
+```
+
+如需在 Kubernetes 中独立部署三个服务，请参阅 [Kubernetes 部署指南](deploy/k8s/README.md)。
+
+[容器镜像工作流](.github/workflows/container.yml) 会在 Pull Request 中构建三个镜像，
+在推送到 `main` 时发布 `latest`、`main` 和提交 SHA 标签；匹配 `v*.*.*` 的版本标签会
+发布对应的版本镜像。镜像发布到 GitHub Container Registry，名称分别为
+`ghcr.io/yorun-ai/vine/vine-hub`、`ghcr.io/yorun-ai/vine/vine-link` 和
+`ghcr.io/yorun-ai/vine/vine-portal`。
+
+首次发布会创建 GHCR 包。若希望无需认证即可使用 `docker pull` 和 Kubernetes 拉取，
+请在 GitHub 的 Package settings 中将 `vine-hub`、`vine-link` 和 `vine-portal` 均设置为
+**Public**。如果包保持私有，请先执行 `docker login ghcr.io`，并在 Kubernetes 中配置
+`imagePullSecret`。
+
 ## 公开包索引
 
 Vine 将公开 API 保持在少量 facade 包中。`internal` 下的包属于实现细节，不是应用 API。
