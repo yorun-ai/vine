@@ -172,13 +172,13 @@ seed, Dashboard, environment-variable, and backend mTLS options.
 ## Docker Images
 
 The Container images workflow publishes the three separated runtime services
-to GitHub Container Registry. Pull the published images directly when the
-packages are public:
+to Docker Hub. Pull the published images directly when the repositories are
+public:
 
 ```bash
-docker pull ghcr.io/yorun-ai/vine/vine-hub:latest
-docker pull ghcr.io/yorun-ai/vine/vine-link:latest
-docker pull ghcr.io/yorun-ai/vine/vine-portal:latest
+docker pull docker.io/yorunai/vine-hub:latest
+docker pull docker.io/yorunai/vine-link:latest
+docker pull docker.io/yorunai/vine-portal:latest
 ```
 
 The root `Dockerfile` is also a multi-target build for local development or
@@ -190,7 +190,7 @@ docker build --target portal -t vine-portal:local .
 docker build --target link -t vine-link:local .
 ```
 
-The startup example below uses the GHCR images. Replace the image names with
+The startup example below uses the Docker Hub images. Replace the image names with
 the `:local` names above when running locally built images.
 
 The images run as the non-root `vine` user. Hub stores its default SQLite file
@@ -218,7 +218,7 @@ docker run -d \
   -v vine-hub-data:/data \
   -p 7071:7071 \
   -p 7075:7075 \
-  ghcr.io/yorun-ai/vine/vine-hub:latest
+  docker.io/yorunai/vine-hub:latest
 ```
 
 Wait until Hub logs `vine.hub http server started`, then start Link and Portal:
@@ -229,7 +229,7 @@ docker run -d \
   --network vine-net \
   -p 7079:7079 \
   -p 7082:7082 \
-  ghcr.io/yorun-ai/vine/vine-link:latest
+  docker.io/yorunai/vine-link:latest
 
 docker run -d \
   --name portal \
@@ -237,7 +237,7 @@ docker run -d \
   -p 7099:7099 \
   -p 80:80 \
   -p 443:443 \
-  ghcr.io/yorun-ai/vine/vine-portal:latest
+  docker.io/yorunai/vine-portal:latest
 ```
 
 The `hub` container name is resolved by Link and Portal as `http://hub:7071`.
@@ -259,15 +259,15 @@ For the independently deployable Kubernetes examples, see the [Kubernetes deploy
 The [Container images workflow](.github/workflows/container.yml) builds all
 three targets for pull requests. Pushes to `main` publish `latest`, `main`, and
 commit-SHA tags; version tags matching `v*.*.*` publish the matching release
-tag. Images are published to GitHub Container Registry as
-`ghcr.io/yorun-ai/vine/vine-hub`, `ghcr.io/yorun-ai/vine/vine-link`, and
-`ghcr.io/yorun-ai/vine/vine-portal`.
+tag. Images are published to Docker Hub as
+`docker.io/yorunai/vine-hub`, `docker.io/yorunai/vine-link`, and
+`docker.io/yorunai/vine-portal`.
 
-The first publish creates the GHCR packages. To allow unauthenticated
-`docker pull` and Kubernetes pulls, set each package (`vine-hub`, `vine-link`,
-and `vine-portal`) to **Public** in GitHub Package settings. If the packages
-remain private, authenticate Docker with `docker login ghcr.io` and configure
-an `imagePullSecret` in Kubernetes.
+The first publish creates the Docker Hub repositories. To allow unauthenticated
+`docker pull` and Kubernetes pulls, set `vine-hub`, `vine-link`, and
+`vine-portal` to **Public** in Docker Hub repository settings. If the
+repositories remain private, authenticate Docker with `docker login` and
+configure an `imagePullSecret` in Kubernetes.
 
 ## Public Package Map
 

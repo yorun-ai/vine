@@ -6,15 +6,15 @@ and Portal. It is a Kustomize base and can be applied directly with
 
 ## Direct image pulls
 
-The manifests already reference the published GHCR images and use
+The manifests already reference the published Docker Hub images and use
 `imagePullPolicy: Always`. After the Container images workflow has published
-the packages and they are public, deploy directly without building anything
-locally:
+the repositories and they are public, deploy directly without building
+anything locally:
 
 ```bash
-docker pull ghcr.io/yorun-ai/vine/vine-hub:latest
-docker pull ghcr.io/yorun-ai/vine/vine-link:latest
-docker pull ghcr.io/yorun-ai/vine/vine-portal:latest
+docker pull docker.io/yorunai/vine-hub:latest
+docker pull docker.io/yorunai/vine-link:latest
+docker pull docker.io/yorunai/vine-portal:latest
 kubectl apply -k examples/k8s
 ```
 
@@ -46,17 +46,17 @@ docker push registry.example.com/vine/portal:v0.1.0
 ```
 
 The repository's Container images workflow publishes release images to
-`ghcr.io/yorun-ai/vine/vine-hub`, `ghcr.io/yorun-ai/vine/vine-link`, and
-`ghcr.io/yorun-ai/vine/vine-portal`; the base manifests already use these
-names. Do not use `:local` in a remote cluster manifest.
+`docker.io/yorunai/vine-hub`, `docker.io/yorunai/vine-link`, and
+`docker.io/yorunai/vine-portal`; the base manifests already use these names.
+Do not use `:local` in a remote cluster manifest.
 
 For kind or minikube, load the locally built images into the cluster instead of
 pushing them:
 
 ```bash
-kind load docker-image ghcr.io/yorun-ai/vine/vine-hub:latest
-kind load docker-image ghcr.io/yorun-ai/vine/vine-link:latest
-kind load docker-image ghcr.io/yorun-ai/vine/vine-portal:latest
+kind load docker-image docker.io/yorunai/vine-hub:latest
+kind load docker-image docker.io/yorunai/vine-link:latest
+kind load docker-image docker.io/yorunai/vine-portal:latest
 ```
 
 After the first successful CI publish, change each package's visibility to

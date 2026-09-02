@@ -160,13 +160,13 @@ vine link serve \
 
 ## Docker 镜像
 
-容器镜像工作流会将三个分离式运行时服务发布到 GitHub Container Registry。
-当这些包已设置为公开时，可以直接拉取远程镜像：
+容器镜像工作流会将三个分离式运行时服务发布到 Docker Hub。
+当这些仓库已设置为公开时，可以直接拉取远程镜像：
 
 ```bash
-docker pull ghcr.io/yorun-ai/vine/vine-hub:latest
-docker pull ghcr.io/yorun-ai/vine/vine-link:latest
-docker pull ghcr.io/yorun-ai/vine/vine-portal:latest
+docker pull docker.io/yorunai/vine-hub:latest
+docker pull docker.io/yorunai/vine-link:latest
+docker pull docker.io/yorunai/vine-portal:latest
 ```
 
 根目录的 `Dockerfile` 也使用多阶段构建，适合本地开发或内网镜像仓库，分别为三个
@@ -178,7 +178,7 @@ docker build --target portal -t vine-portal:local .
 docker build --target link -t vine-link:local .
 ```
 
-下面的启动示例默认使用 GHCR 远程镜像；如果使用本地构建的镜像，请将镜像名替换为
+下面的启动示例默认使用 Docker Hub 远程镜像；如果使用本地构建的镜像，请将镜像名替换为
 上面的 `:local` 标签。
 
 镜像默认使用非 root 的 `vine` 用户运行。Hub 默认将 SQLite 文件保存到
@@ -204,7 +204,7 @@ docker run -d \
   -v vine-hub-data:/data \
   -p 7071:7071 \
   -p 7075:7075 \
-  ghcr.io/yorun-ai/vine/vine-hub:latest
+  docker.io/yorunai/vine-hub:latest
 ```
 
 等待 Hub 日志出现 `vine.hub http server started` 后，再启动 Link 和 Portal：
@@ -215,7 +215,7 @@ docker run -d \
   --network vine-net \
   -p 7079:7079 \
   -p 7082:7082 \
-  ghcr.io/yorun-ai/vine/vine-link:latest
+  docker.io/yorunai/vine-link:latest
 
 docker run -d \
   --name portal \
@@ -223,7 +223,7 @@ docker run -d \
   -p 7099:7099 \
   -p 80:80 \
   -p 443:443 \
-  ghcr.io/yorun-ai/vine/vine-portal:latest
+  docker.io/yorunai/vine-portal:latest
 ```
 
 Link 和 Portal 会将名为 `hub` 的容器解析为 `http://hub:7071`。`7075` 是 Hub
@@ -243,13 +243,13 @@ docker network rm vine-net
 
 [容器镜像工作流](.github/workflows/container.yml) 会在 Pull Request 中构建三个镜像，
 在推送到 `main` 时发布 `latest`、`main` 和提交 SHA 标签；匹配 `v*.*.*` 的版本标签会
-发布对应的版本镜像。镜像发布到 GitHub Container Registry，名称分别为
-`ghcr.io/yorun-ai/vine/vine-hub`、`ghcr.io/yorun-ai/vine/vine-link` 和
-`ghcr.io/yorun-ai/vine/vine-portal`。
+发布对应的版本镜像。镜像发布到 Docker Hub，名称分别为
+`docker.io/yorunai/vine-hub`、`docker.io/yorunai/vine-link` 和
+`docker.io/yorunai/vine-portal`。
 
-首次发布会创建 GHCR 包。若希望无需认证即可使用 `docker pull` 和 Kubernetes 拉取，
-请在 GitHub 的 Package settings 中将 `vine-hub`、`vine-link` 和 `vine-portal` 均设置为
-**Public**。如果包保持私有，请先执行 `docker login ghcr.io`，并在 Kubernetes 中配置
+首次发布会创建 Docker Hub 仓库。若希望无需认证即可使用 `docker pull` 和 Kubernetes
+拉取，请在 Docker Hub 仓库设置中将 `vine-hub`、`vine-link` 和 `vine-portal` 均设置为
+**Public**。如果仓库保持私有，请先执行 `docker login`，并在 Kubernetes 中配置
 `imagePullSecret`。
 
 ## 公开包索引
