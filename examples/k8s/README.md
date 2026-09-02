@@ -1,8 +1,8 @@
-# Vine Kubernetes deployment
+# Vine Kubernetes deployment examples
 
-This directory contains a minimal separated deployment for Hub, Link, and
-Portal. It is a Kustomize base and can be applied directly with
-`kubectl apply -k`.
+This directory contains a minimal separated deployment example for Hub, Link,
+and Portal. It is a Kustomize base and can be applied directly with
+`kubectl apply -k examples/k8s`.
 
 ## Direct image pulls
 
@@ -15,7 +15,7 @@ locally:
 docker pull ghcr.io/yorun-ai/vine/vine-hub:latest
 docker pull ghcr.io/yorun-ai/vine/vine-link:latest
 docker pull ghcr.io/yorun-ai/vine/vine-portal:latest
-kubectl apply -k deploy/k8s
+kubectl apply -k examples/k8s
 ```
 
 For a stable deployment, replace `:latest` with an immutable `:vX.Y.Z` tag
@@ -68,7 +68,7 @@ an `imagePullSecret` in Kubernetes.
 ## Apply
 
 ```bash
-kubectl apply -k deploy/k8s
+kubectl apply -k examples/k8s
 kubectl -n vine get pods,svc,pvc
 kubectl -n vine logs statefulset/hub
 ```

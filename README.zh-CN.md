@@ -239,7 +239,7 @@ docker rm -f portal link hub
 docker network rm vine-net
 ```
 
-如需在 Kubernetes 中独立部署三个服务，请参阅 [Kubernetes 部署指南](deploy/k8s/README.md)。
+如需查看三个服务的 Kubernetes 独立部署示例，请参阅 [Kubernetes 部署指南](examples/k8s/README.md)。
 
 [容器镜像工作流](.github/workflows/container.yml) 会在 Pull Request 中构建三个镜像，
 在推送到 `main` 时发布 `latest`、`main` 和提交 SHA 标签；匹配 `v*.*.*` 的版本标签会

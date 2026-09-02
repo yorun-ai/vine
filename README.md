@@ -254,7 +254,7 @@ docker rm -f portal link hub
 docker network rm vine-net
 ```
 
-For independent Kubernetes deployment, see the [Kubernetes deployment guide](deploy/k8s/README.md).
+For the independently deployable Kubernetes examples, see the [Kubernetes deployment guide](examples/k8s/README.md).
 
 The [Container images workflow](.github/workflows/container.yml) builds all
 three targets for pull requests. Pushes to `main` publish `latest`, `main`, and
