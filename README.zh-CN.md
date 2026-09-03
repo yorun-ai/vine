@@ -160,8 +160,7 @@ vine link serve \
 
 ## Docker 镜像
 
-容器镜像工作流会将三个分离式运行时服务发布到 Docker Hub。
-当这些仓库已设置为公开时，可以直接拉取远程镜像：
+根目录的 `Dockerfile` 分别构建 Hub、Link 和 Portal 镜像：
 
 ```bash
 docker pull docker.io/yorunai/vine-hub:latest
@@ -169,8 +168,7 @@ docker pull docker.io/yorunai/vine-link:latest
 docker pull docker.io/yorunai/vine-portal:latest
 ```
 
-根目录的 `Dockerfile` 也使用多阶段构建，适合本地开发或内网镜像仓库，分别为三个
-分离式运行时服务生成镜像：
+需要本地构建时：
 
 ```bash
 docker build --target hub -t vine-hub:local .
@@ -178,79 +176,10 @@ docker build --target portal -t vine-portal:local .
 docker build --target link -t vine-link:local .
 ```
 
-下面的启动示例默认使用 Docker Hub 远程镜像；如果使用本地构建的镜像，请将镜像名替换为
-上面的 `:local` 标签。
-
-镜像默认使用非 root 的 `vine` 用户运行。Hub 默认将 SQLite 文件保存到
-`/data/hub.sqlite` 并启动内置 NATS，请为 `/data` 挂载持久化卷。Portal 和 Link
-默认使用 `http://hub:7071` 作为 Hub 地址，因此应将容器加入同一个 Docker 网络，
-并将 Hub 容器命名为 `hub`，或覆盖 `VINE_HUB_ENDPOINT`。Portal 默认在 `7099` 端口
-暴露 Hub 自动创建的 Dashboard 入口；业务 Portal 规则还可以使用 `80`、`443` 或
-其他配置的监听端口。在分离部署中，可通过 `VINE_*` 环境变量覆盖 PostgreSQL、
-外部 NATS、监听地址和后端 mTLS 配置。
-
-### 启动三个容器
-
-下面的示例将三个服务加入同一个 Docker 网络，并使用命名卷保存 Hub 的 SQLite
-数据库：
-
-```bash
-docker network create vine-net
-docker volume create vine-hub-data
-
-docker run -d \
-  --name hub \
-  --network vine-net \
-  -v vine-hub-data:/data \
-  -p 7071:7071 \
-  -p 7075:7075 \
-  docker.io/yorunai/vine-hub:latest
-```
-
-等待 Hub 日志出现 `vine.hub http server started` 后，再启动 Link 和 Portal：
-
-```bash
-docker run -d \
-  --name link \
-  --network vine-net \
-  -p 7079:7079 \
-  -p 7082:7082 \
-  docker.io/yorunai/vine-link:latest
-
-docker run -d \
-  --name portal \
-  --network vine-net \
-  -p 7099:7099 \
-  -p 80:80 \
-  -p 443:443 \
-  docker.io/yorunai/vine-portal:latest
-```
-
-Link 和 Portal 会将名为 `hub` 的容器解析为 `http://hub:7071`。`7075` 是 Hub
-Dashboard，`7099` 是默认 Portal Dashboard 入口；当业务 Portal 规则配置了相应
-监听器时，`80`/`443` 也可用于业务流量。如果宿主机端口已被占用或不需要某个入口，
-可以删除对应的端口映射。可通过 `docker ps` 检查服务状态，并使用
-`docker logs hub`、`docker logs link` 或 `docker logs portal` 查看启动失败原因。
-
-停止示例但保留数据库卷：
-
-```bash
-docker rm -f portal link hub
-docker network rm vine-net
-```
-
-如需查看三个服务的 Kubernetes 独立部署示例，请参阅 [Kubernetes 部署指南](examples/k8s/README.md)。
-
-[容器镜像工作流](.github/workflows/container.yml) 会在 Pull Request 中构建三个镜像，
-在推送到 `main` 时发布 `latest`、`main` 和提交 SHA 标签；匹配 `v*.*.*` 的版本标签会
-发布对应的版本镜像。镜像发布到 Docker Hub，名称分别为
-`docker.io/yorunai/vine-hub`、`docker.io/yorunai/vine-link` 和
-`docker.io/yorunai/vine-portal`。
-
-首次发布会创建 Docker Hub 仓库。若希望无需认证即可使用 `docker pull` 和 Kubernetes
-拉取，请在 Docker Hub 仓库设置中将 `vine-hub`、`vine-link` 和 `vine-portal` 均设置为
-**Public**。如果仓库保持私有，请先执行 `docker login`，并在 Kubernetes 中配置
-`imagePullSecret`。
+镜像会执行对应的 `vine ... serve` 命令，并支持 CLI 定义的 `VINE_*` 环境变量，包括后端
+mTLS。证书文件在运行时挂载，不会打包进镜像。服务配置、环境变量和 mTLS 方式请参阅
+[Vine CLI 指南](https://vine.yorun.ai/zh-CN/docs/getting-started/cli)。Kubernetes 独立部署
+示例请参阅 [Kubernetes 部署指南](examples/k8s/README.md)，其中包含 `overlays/mtls` 配置。
 
 ## 公开包索引
 
