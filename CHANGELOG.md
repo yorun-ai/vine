@@ -27,6 +27,8 @@ are not part of the public compatibility commitment.
 - Added independently instantiable registries for domain schemas, configuration,
   actors, Rpc, events, tasks, and Web contracts while retaining the existing
   process-wide registration functions as default-registry facades
+- Encapsulated the permanent process-wide application type and name creation
+  guards with concurrent creation protection and failed-construction rollback
 
 ### Fixed
 

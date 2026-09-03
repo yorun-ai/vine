@@ -7,11 +7,6 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-var (
-	appsByType = map[reflect.Type]App{}
-	appsByName = map[string]struct{}{}
-)
-
 type App interface {
 	Name() string
 	Start()
@@ -51,20 +46,19 @@ func newInternalByType(specType reflect.Type, enableInproc bool, opts ...FlagApp
 }
 
 func newValidatedByType(specType reflect.Type, enableInproc bool, opts ...FlagApplier) App {
-	vpre.CheckNotOK(appsByType, specType, "application %s already created", specType)
-
 	flags := _Flags{}
-	flags.Apply(opts...)
-	flags.EnsureRunFlag()
-	flags.InitInprocFlag(enableInproc)
-
-	spec := newSpec(specType, flags)
-	_, exists := appsByName[spec.Name()]
-	vpre.Check(!exists, "application name %s already created", spec.Name())
-	app := newApp(spec, flags)
-	appsByType[specType] = app
-	appsByName[spec.Name()] = struct{}{}
-	return app
+	return defaultGuard.create(
+		specType,
+		func() ApplicationSpec {
+			flags.Apply(opts...)
+			flags.EnsureRunFlag()
+			flags.InitInprocFlag(enableInproc)
+			return newSpec(specType, flags)
+		},
+		func(spec ApplicationSpec) App {
+			return newApp(spec, flags)
+		},
+	)
 }
 
 func newSpec(specType reflect.Type, flags _Flags) ApplicationSpec {

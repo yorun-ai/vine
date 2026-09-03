@@ -86,8 +86,7 @@ func TestNewPanicsWhenAppAlreadyCreated(t *testing.T) {
 	restoreAppRegistry(t)
 
 	specType := T[*testAppSpec]()
-	cached := &stubApp{}
-	appsByType[specType] = cached
+	defaultGuard.types[specType] = new(_GuardEntry)
 
 	assert.PanicsWithError(t, "application *app.testAppSpec already created", func() {
 		New[*testAppSpec]()

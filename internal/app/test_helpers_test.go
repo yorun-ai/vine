@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"os"
-	"reflect"
 	"testing"
 
 	"go.yorun.ai/vine/internal/core/link"
@@ -68,15 +67,11 @@ func useTestLinker(t *testing.T, linker link.Linker) {
 func restoreAppRegistry(t *testing.T) {
 	t.Helper()
 
-	prevApps := appsByType
-	prevNames := appsByName
-
-	appsByType = map[reflect.Type]App{}
-	appsByName = map[string]struct{}{}
+	previous := defaultGuard
+	defaultGuard = newGuard()
 
 	t.Cleanup(func() {
-		appsByType = prevApps
-		appsByName = prevNames
+		defaultGuard = previous
 	})
 }
 
