@@ -96,8 +96,12 @@
 - Do not make the Hub image silently select a database or messaging mode.
   Deployments must explicitly choose exactly one of SQLite or PostgreSQL and
   exactly one of embedded or external NATS.
-- Pull requests and `main` builds smoke-test the Hub image only. Release tags
-  build and publish Hub, Link, and Portal for every supported architecture.
+- Pull requests and `main` builds smoke-test the Hub image only and never push
+  images. The Release workflow publishes Hub, Link, and Portal to GHCR for every
+  supported architecture after the release binaries succeed. It runs on Release
+  publication or a manual rebuild of an existing published release, not tag
+  pushes. Use the release commit for image metadata, and update `latest` only
+  for GitHub's latest non-prerelease.
 
 ## Release Preparation
 

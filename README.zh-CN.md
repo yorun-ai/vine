@@ -160,7 +160,9 @@ vine link serve \
 
 ## Docker 镜像
 
-根目录的 `Dockerfile` 分别构建 Hub、Link 和 Portal 镜像。镜像名称、运行配置、
+Release workflow 将 Hub、Link 和 Portal 镜像发布到
+`ghcr.io/yorun-ai/vine-hub`、`ghcr.io/yorun-ai/vine-link` 和
+`ghcr.io/yorun-ai/vine-portal`，三个镜像共用根目录的多阶段 `Dockerfile`。镜像名称、运行配置、
 Kubernetes manifests 和后台 mTLS 参阅
 [容器与 Kubernetes 部署指南](https://vine.yorun.ai/zh-CN/docs/container-deployment)。
 

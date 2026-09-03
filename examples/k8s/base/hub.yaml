@@ -56,7 +56,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: hub
-          image: docker.io/yorunai/vine-hub:latest
+          image: ghcr.io/yorun-ai/vine-hub:latest
           imagePullPolicy: Always
           env:
             - name: VINE_CONTROL_LISTEN

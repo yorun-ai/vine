@@ -171,7 +171,10 @@ seed, Dashboard, environment-variable, and backend mTLS options.
 
 ## Docker Images
 
-The root `Dockerfile` builds separate Hub, Link, and Portal images. See the
+The Release workflow publishes Hub, Link, and Portal images to
+`ghcr.io/yorun-ai/vine-hub`, `ghcr.io/yorun-ai/vine-link`, and
+`ghcr.io/yorun-ai/vine-portal`. They share the root multi-stage `Dockerfile`.
+See the
 [container and Kubernetes deployment guide](https://vine.yorun.ai/docs/container-deployment)
 for image names, runtime configuration, Kubernetes manifests, and backend mTLS.
 
