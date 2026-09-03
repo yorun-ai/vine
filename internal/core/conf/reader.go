@@ -1,7 +1,7 @@
 package conf
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"reflect"
 
 	"go.yorun.ai/vine/internal/core/link"

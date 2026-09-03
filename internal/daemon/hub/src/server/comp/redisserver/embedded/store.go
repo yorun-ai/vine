@@ -2,7 +2,6 @@ package embedded
 
 import (
 	"crypto/tls"
-	"encoding/json"
 	"errors"
 	"net"
 	"sort"
@@ -17,6 +16,7 @@ import (
 	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/daemon"
 	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
+	"go.yorun.ai/vine/util/vcode"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -402,7 +402,7 @@ func (s *Store) ZRem(key string, member string) bool {
 }
 
 func (s *Store) publish(key string, event hubredis.Event) {
-	payload, err := json.Marshal(event)
+	payload, err := vcode.MarshalJson(event)
 	ex.PanicIfError(err)
 	s.Publish(key, string(payload))
 }

@@ -2,7 +2,7 @@ package http
 
 import (
 	"bytes"
-	"encoding/json"
+	"encoding/json/v2"
 	"io"
 	"net/http/httptest"
 	"reflect"
@@ -184,7 +184,7 @@ func TestClearResponseErrorDetailClearsJsonDetail(t *testing.T) {
 	if got, ok := errorPayload["detail"]; !ok || got != "" {
 		t.Fatalf("expected empty detail field, got %#v", errorPayload)
 	}
-	gotErr, err := ex.DecodeError(responsePayload.Error, json.Unmarshal)
+	gotErr, err := ex.DecodeError(responsePayload.Error, unmarshalJson)
 	if err != nil {
 		t.Fatalf("DecodeError() error = %v", err)
 	}

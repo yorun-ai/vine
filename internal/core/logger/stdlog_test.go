@@ -1,7 +1,7 @@
 package logger_test
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"log"
 	"os"
 	"path/filepath"

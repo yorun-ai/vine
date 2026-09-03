@@ -2,7 +2,7 @@ package debug
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"io"
 	"strings"
 	"time"

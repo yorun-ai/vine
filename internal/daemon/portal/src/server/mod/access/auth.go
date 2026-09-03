@@ -2,7 +2,7 @@ package access
 
 import (
 	"bytes"
-	"encoding/json"
+	"encoding/json/jsontext"
 	"net/http"
 	"strings"
 
@@ -107,7 +107,7 @@ func parseCredential(schema *skel.DataSchema, authorization string) (map[string]
 
 func (o *Auther) executeAuthRequest(authRequest *http.Request, writeError _AuthErrorWriter, setActor _AuthActorSetter) bool {
 	skelServiceName := o.actorSchema.AuthService.SkelName
-	info, code, message, ok := o.invoke[json.RawMessage](authRequest, skelServiceName, "auth", "auth failed")
+	info, code, message, ok := o.invoke[jsontext.Value](authRequest, skelServiceName, "auth", "auth failed")
 	if !ok {
 		writeError(code, message)
 		return false

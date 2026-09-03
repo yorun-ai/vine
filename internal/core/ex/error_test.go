@@ -1,13 +1,17 @@
 package ex
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"strings"
 	"testing"
 
 	"go.yorun.ai/vine/util/vcode"
 )
+
+func unmarshalJson(data []byte, target any) error {
+	return json.Unmarshal(data, target)
+}
 
 func TestErrorTypeDerivedFromCode(t *testing.T) {
 	err := New(NotFound, "missing user")
@@ -96,7 +100,7 @@ func TestErrorJsonRoundTrip(t *testing.T) {
 	err := New(OperationFailed, "write failed", WithReason("quota-exceeded"), WithDetail("disk offline"))
 
 	payload := EncodeError(err, vcode.MustMarshalJson)
-	got, decodeErr := DecodeError(payload, json.Unmarshal)
+	got, decodeErr := DecodeError(payload, unmarshalJson)
 	if decodeErr != nil {
 		t.Fatalf("DecodeError() error = %v", decodeErr)
 	}
@@ -108,11 +112,11 @@ func TestErrorJsonRoundTrip(t *testing.T) {
 func TestClearErrorDetail(t *testing.T) {
 	err := New(OperationFailed, "write failed", WithReason("quota-exceeded"), WithDetail("disk offline"))
 
-	payload, decodeErr := ClearErrorDetail(EncodeError(err, vcode.MustMarshalJson), json.Unmarshal, vcode.MustMarshalJson)
+	payload, decodeErr := ClearErrorDetail(EncodeError(err, vcode.MustMarshalJson), unmarshalJson, vcode.MustMarshalJson)
 	if decodeErr != nil {
 		t.Fatalf("ClearErrorDetail() error = %v", decodeErr)
 	}
-	got, decodeErr := DecodeError(payload, json.Unmarshal)
+	got, decodeErr := DecodeError(payload, unmarshalJson)
 	if decodeErr != nil {
 		t.Fatalf("DecodeError() error = %v", decodeErr)
 	}
@@ -122,7 +126,7 @@ func TestClearErrorDetail(t *testing.T) {
 }
 
 func TestDecodeErrorRejectsUnknownCode(t *testing.T) {
-	got, decodeErr := DecodeError([]byte(`{"code":"BAD","message":"boom","detail":"detail"}`), json.Unmarshal)
+	got, decodeErr := DecodeError([]byte(`{"code":"BAD","message":"boom","detail":"detail"}`), unmarshalJson)
 	if got != nil {
 		t.Fatalf("expected nil decoded error, got %#v", got)
 	}
@@ -132,7 +136,7 @@ func TestDecodeErrorRejectsUnknownCode(t *testing.T) {
 }
 
 func TestDecodeErrorReturnsDecodeError(t *testing.T) {
-	got, decodeErr := DecodeError([]byte(`{`), json.Unmarshal)
+	got, decodeErr := DecodeError([]byte(`{`), unmarshalJson)
 	if got != nil {
 		t.Fatalf("expected nil decoded error, got %#v", got)
 	}
@@ -289,7 +293,7 @@ func TestNewCapturesLocalStackWithoutSerializingIt(t *testing.T) {
 		t.Fatalf("local stack leaked into wire payload: %s", payload)
 	}
 
-	decoded, decodeErr := DecodeError(payload, json.Unmarshal)
+	decoded, decodeErr := DecodeError(payload, unmarshalJson)
 	if decodeErr != nil {
 		t.Fatalf("DecodeError() error = %v", decodeErr)
 	}

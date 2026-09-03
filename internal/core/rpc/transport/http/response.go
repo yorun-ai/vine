@@ -1,7 +1,8 @@
 package http
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,8 +25,8 @@ type _ResponseDecoder struct {
 }
 
 type _ResponsePayloadJson struct {
-	Result json.RawMessage `json:"result"`
-	Error  json.RawMessage `json:"error"`
+	Result jsontext.Value `json:"result"`
+	Error  jsontext.Value `json:"error"`
 }
 
 type _ResponsePayloadCbor struct {
@@ -136,7 +137,7 @@ func (d *_ResponseDecoder) decodeBodyPayload(bodyBytes []byte) (*_DecodedRespons
 		return &_DecodedResponseBody{
 			ResultBytes: responsePayload.Result,
 			ErrorBytes:  responsePayload.Error,
-			Unmarshal:   json.Unmarshal,
+			Unmarshal:   unmarshalJson,
 		}, nil
 	case ContentTypeCbor:
 		responsePayload := &_ResponsePayloadCbor{}
@@ -221,7 +222,7 @@ func ClearResponseErrorDetail(bodyBytes []byte, contentType string) ([]byte, err
 		if isEmptyErrorPayload(responsePayload.Error) {
 			return bodyBytes, nil
 		}
-		errorBytes, err := ex.ClearErrorDetail(responsePayload.Error, json.Unmarshal, vcode.MustMarshalJson)
+		errorBytes, err := ex.ClearErrorDetail(responsePayload.Error, unmarshalJson, vcode.MustMarshalJson)
 		if err != nil {
 			return nil, err
 		}

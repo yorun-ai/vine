@@ -108,7 +108,7 @@ func TestReaderGetByTypePanicsWhenConfigJSONIsInvalid(t *testing.T) {
 		},
 	}, registry)
 
-	require.PanicsWithError(t, "unmarshal config demo.user.ReaderTestConfig failed: unexpected end of JSON input", func() {
+	require.PanicsWithError(t, `unmarshal config demo.user.ReaderTestConfig failed: jsontext: unexpected EOF within "/name" after offset 8`, func() {
 		reader.GetByType(reflect.TypeFor[*readerTestConfig]())
 	})
 }

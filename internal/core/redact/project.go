@@ -1,7 +1,7 @@
 package redact
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
 	"fmt"
 	"maps"
 	"math"
@@ -78,6 +78,9 @@ func (s *_ProjectionState) project(value reflect.Value, depth int) (any, error) 
 			return s.projectList(value, depth)
 		}
 	}
+	if raw, ok := value.Interface().(jsontext.Value); ok && raw.Kind() == jsontext.KindNumber {
+		return raw, nil
+	}
 	if isBinary(value) {
 		s.redacted = true
 		return binarySummary(value), nil
@@ -91,12 +94,6 @@ func (s *_ProjectionState) project(value reflect.Value, depth int) (any, error) 
 		}
 		return s.project(reflect.ValueOf(marshaled), depth+1)
 	}
-	if value.CanInterface() {
-		if number, ok := value.Interface().(json.Number); ok {
-			return number, nil
-		}
-	}
-
 	switch value.Kind() {
 	case reflect.Bool:
 		return value.Bool(), nil

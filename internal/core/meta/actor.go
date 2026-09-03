@@ -1,10 +1,12 @@
 package meta
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"reflect"
 
+	"go.yorun.ai/vine/util/vcode"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -34,7 +36,7 @@ type _Actor struct {
 	kind      ActorType
 	actorInfo *_ActorInfo
 
-	rawAuthInfo json.RawMessage
+	rawAuthInfo jsontext.Value
 }
 
 func (a *_Actor) Type() ActorType {
@@ -76,7 +78,7 @@ func NewAuthenticatedActor[I any](info I) Actor {
 	actorInfo := defaultRegistry.infoByInfoType[infoType]
 	vpre.CheckNotNil(actorInfo, "actor info type %s is not registered", infoType)
 
-	rawAuthInfo, err := json.Marshal(info)
+	rawAuthInfo, err := vcode.MarshalJson(info)
 	vpre.CheckNilError(err, "marshal actor info %s failed", actorInfo.InfoSkelName)
 	return &_Actor{
 		kind:        ActorTypeAuthenticated,
@@ -85,7 +87,7 @@ func NewAuthenticatedActor[I any](info I) Actor {
 	}
 }
 
-func NewAuthenticatedActorWithRawInfo(infoSkelName string, info json.RawMessage) Actor {
+func NewAuthenticatedActorWithRawInfo(infoSkelName string, info jsontext.Value) Actor {
 	return &_Actor{
 		kind: ActorTypeAuthenticated,
 		actorInfo: &_ActorInfo{
@@ -132,9 +134,9 @@ func MustGetActorInfoByType(metaActor Actor, kind reflect.Type) any {
 // Actor Payload
 
 type _ActorPayload struct {
-	Type         ActorType       `json:"type"`
-	InfoSkelName string          `json:"infoSkelName,omitempty"`
-	Info         json.RawMessage `json:"info,omitempty"`
+	Type         ActorType      `json:"type"`
+	InfoSkelName string         `json:"infoSkelName,omitempty"`
+	Info         jsontext.Value `json:"info,omitempty"`
 }
 
 func DecodeActorFromBase64(value string) (Actor, error) {
