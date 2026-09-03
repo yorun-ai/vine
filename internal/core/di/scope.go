@@ -53,8 +53,7 @@ func doScanDeclaredScope(structType reflect.Type, scanningTypes map[reflect.Type
 	selfScope := noScope
 	embeddedStructTypes := []reflect.Type{}
 
-	for index := 0; index < structType.NumField(); index++ {
-		field := structType.Field(index)
+	for field := range structType.Fields() {
 		if !field.Anonymous {
 			continue
 		}
@@ -65,7 +64,7 @@ func doScanDeclaredScope(structType reflect.Type, scanningTypes map[reflect.Type
 			continue
 		}
 
-		if field.Type.Kind() == reflect.Ptr {
+		if field.Type.Kind() == reflect.Pointer {
 			if _, ok := scopedTypeToScope[field.Type.Elem()]; ok {
 				vpre.Panicf("pointer scoped marker %s is not allowed in embed field of %s, use %s instead", field.Type, structType, field.Type.Elem())
 			}

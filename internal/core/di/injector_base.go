@@ -90,8 +90,8 @@ func (i *_BaseInjector) Invoke(method any) []reflect.Value {
 	vpre.Check(reflectutil.IsFuncType(mtdType), "%s must be function", mtdType)
 
 	var args []reflect.Value
-	for idx := 0; idx < mtdType.NumIn(); idx++ {
-		args = append(args, i.Get(mtdType.In(idx)))
+	for in := range mtdType.Ins() {
+		args = append(args, i.Get(in))
 	}
 
 	mtdValue := reflect.ValueOf(method)

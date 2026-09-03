@@ -24,9 +24,7 @@ func TestGlobalSettingsConcurrentAccess(t *testing.T) {
 
 	var wg sync.WaitGroup
 	for range 20 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			SetGlobalFormat(FormatJSON)
 			SetGlobalLevel(LevelDebug)
 			_ = currentGlobalFormat()
@@ -34,7 +32,7 @@ func TestGlobalSettingsConcurrentAccess(t *testing.T) {
 			_ = globalWriter.OutputPath()
 			SetGlobalFormat(FormatText)
 			SetGlobalLevel(LevelInfo)
-		}()
+		})
 	}
 	wg.Wait()
 }

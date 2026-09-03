@@ -20,7 +20,7 @@ func TestExecutionSupportsAdditionalSeedAppliers(t *testing.T) {
 		},
 	)
 
-	execution := container.NewExecution(reflect.TypeOf(&ctrTestTarget{}), getMethodByName(reflect.TypeOf(&ctrTestTarget{}), "Sum"))
+	execution := container.NewExecution(reflect.TypeFor[*ctrTestTarget](), getMethodByName(reflect.TypeFor[*ctrTestTarget](), "Sum"))
 	execution.Execute([]any{2, 7}, func(s *di.Seeder) {
 		s.SeedInstance(&ctrSeededMessage{Value: "hello"})
 	})
@@ -39,7 +39,7 @@ func TestExecutionReleasesExecutionScopedFiltersOnPanic(t *testing.T) {
 		},
 	)
 
-	execution := container.NewExecution(reflect.TypeOf(&ctrPanicTarget{}), getMethodByName(reflect.TypeOf(&ctrPanicTarget{}), "Boom"))
+	execution := container.NewExecution(reflect.TypeFor[*ctrPanicTarget](), getMethodByName(reflect.TypeFor[*ctrPanicTarget](), "Boom"))
 
 	assert.PanicsWithValue(t, "boom", func() {
 		execution.Execute(nil)
@@ -55,6 +55,6 @@ func TestNewExecutionPanicsWhenTargetMethodIsZeroValue(t *testing.T) {
 	})
 
 	assert.Panics(t, func() {
-		_ = container.NewExecution(reflect.TypeOf(&ctrTestTarget{}), reflect.Method{})
+		_ = container.NewExecution(reflect.TypeFor[*ctrTestTarget](), reflect.Method{})
 	})
 }

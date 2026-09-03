@@ -11,7 +11,7 @@ type testPositionalArgumentsInput struct {
 }
 
 func TestRequestImplPositionalArgumentsUsesMethodArgumentOrder(t *testing.T) {
-	method := newInitializedMethodInfo(reflect.TypeOf(testPositionalArgumentsInput{}), nil, false, false)
+	method := newInitializedMethodInfo(reflect.TypeFor[testPositionalArgumentsInput](), nil, false, false)
 	method.name = "CreateUser"
 	req := &RequestImpl{
 		MethodInfoValue: method,

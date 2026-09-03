@@ -14,7 +14,7 @@ type inprocCloneArguments struct {
 }
 
 func TestCloneInprocRequestArgumentsFallsBackToSerialization(t *testing.T) {
-	methodInfo := newInitializedMethodInfo(reflect.TypeOf(inprocCloneArguments{}), nil, false, false)
+	methodInfo := newInitializedMethodInfo(reflect.TypeFor[inprocCloneArguments](), nil, false, false)
 	arguments := &inprocCloneArguments{
 		Payload: inprocClonePayload{Names: []string{"vine"}},
 	}
@@ -32,7 +32,7 @@ func TestCloneInprocRequestArgumentsFallsBackToSerialization(t *testing.T) {
 }
 
 func TestCloneInprocResponseResultFallsBackToSerialization(t *testing.T) {
-	methodInfo := newInitializedMethodInfo(nil, reflect.TypeOf(inprocClonePayload{}), false, false)
+	methodInfo := newInitializedMethodInfo(nil, reflect.TypeFor[inprocClonePayload](), false, false)
 	result := inprocClonePayload{Names: []string{"vine"}}
 
 	cloned := CloneInprocResponseResult(result, methodInfo)

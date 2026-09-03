@@ -375,12 +375,12 @@ func ensureTestComponentTaskRegistered() {
 		taskspec.Register(&taskspec.TaskSpec{
 			Name:                "TestComponentTask",
 			SkelName:            "test.component.TestComponentTask",
-			RunnerType:          reflect.TypeOf((*testComponentTaskRunner)(nil)).Elem(),
-			DefaultRunnerType:   reflect.TypeOf(&defaultTestComponentTaskRunner{}),
-			ERRunnerType:        reflect.TypeOf((*testComponentTaskRunnerER)(nil)).Elem(),
+			RunnerType:          reflect.TypeFor[testComponentTaskRunner](),
+			DefaultRunnerType:   reflect.TypeFor[*defaultTestComponentTaskRunner](),
+			ERRunnerType:        reflect.TypeFor[testComponentTaskRunnerER](),
 			WrapperERRunnerCtor: newWrapperTestComponentTaskRunnerER,
-			DefaultERRunnerType: reflect.TypeOf(&defaultTestComponentTaskRunnerER{}),
-			LauncherType:        reflect.TypeOf((*testComponentTaskLauncher)(nil)).Elem(),
+			DefaultERRunnerType: reflect.TypeFor[*defaultTestComponentTaskRunnerER](),
+			LauncherType:        reflect.TypeFor[testComponentTaskLauncher](),
 			LauncherCtor:        func(*taskcore.Launcher) testComponentTaskLauncher { return &defaultTestComponentTaskLauncher{} },
 			Triggers: []*taskspec.TriggerSpec{{
 				Name:     "Full",

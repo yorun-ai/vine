@@ -1,6 +1,7 @@
 package access
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/fxamacker/cbor/v2"
@@ -61,8 +62,8 @@ func parseJsonPath(path string) ([]_JsonPathPart, bool) {
 			return nil, false
 		}
 		part := _JsonPathPart{name: rawPart}
-		if strings.HasSuffix(rawPart, "[*]") {
-			part.name = strings.TrimSuffix(rawPart, "[*]")
+		if before, ok := strings.CutSuffix(rawPart, "[*]"); ok {
+			part.name = before
 			part.wildcard = true
 			wildcardCount++
 		}
@@ -96,7 +97,7 @@ func cborSelectPathField(value any, part string) (any, bool) {
 	case map[string]any:
 		value, ok := node[part]
 		return value, ok
-	case map[interface{}]interface{}:
+	case map[any]any:
 		value, ok := node[part]
 		return value, ok
 	default:
@@ -221,12 +222,7 @@ func hasPermissionChecks(expr *skel.PermExpr) bool {
 		return true
 	}
 
-	for _, child := range expr.Children {
-		if hasPermissionChecks(child) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(expr.Children, hasPermissionChecks)
 }
 
 func evalPermExpr(expr *skel.PermExpr, codeResults map[string]bool, checkFunc func(*skel.PermCheckInvocation) (bool, ex.Code, string)) (bool, ex.Code, string) {

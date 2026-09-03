@@ -10,9 +10,11 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime/pprof"
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -94,9 +96,10 @@ func (*serverCloneServiceImpl) Mutate(names []string) {
 }
 
 type _ServerTestExecutor struct {
-	result any
-	err    ex.Error
-	panicV any
+	result        any
+	err           ex.Error
+	panicV        any
+	profileLabels map[string]string
 }
 
 type serverNestedInvokeInnerExecutor struct {
@@ -116,10 +119,10 @@ var (
 		Type:                spec.ServiceSpecTypeServer,
 		Name:                "TestService",
 		SkelName:            "test.service.server",
-		ServerType:          reflect.TypeOf((*testServerServiceServer)(nil)).Elem(),
-		DefaultServerType:   reflect.TypeOf(&defaultTestServerServiceServer{}),
-		ERServerType:        reflect.TypeOf((*testServerServiceServerER)(nil)).Elem(),
-		DefaultERServerType: reflect.TypeOf(&defaultTestServerServiceServerER{}),
+		ServerType:          reflect.TypeFor[testServerServiceServer](),
+		DefaultServerType:   reflect.TypeFor[*defaultTestServerServiceServer](),
+		ERServerType:        reflect.TypeFor[testServerServiceServerER](),
+		DefaultERServerType: reflect.TypeFor[*defaultTestServerServiceServerER](),
 		Methods: []*spec.MethodSpec{{
 			Name:     "Ping",
 			SkelName: "ping",
@@ -130,23 +133,30 @@ var (
 		Type:                spec.ServiceSpecTypeServer,
 		Name:                "CloneService",
 		SkelName:            "test.service.server.clone",
-		ServerType:          reflect.TypeOf((*serverCloneServiceServer)(nil)).Elem(),
-		DefaultServerType:   reflect.TypeOf(&defaultServerCloneServiceServer{}),
-		ERServerType:        reflect.TypeOf((*serverCloneServiceServerER)(nil)).Elem(),
-		DefaultERServerType: reflect.TypeOf(&defaultServerCloneServiceServerER{}),
+		ServerType:          reflect.TypeFor[serverCloneServiceServer](),
+		DefaultServerType:   reflect.TypeFor[*defaultServerCloneServiceServer](),
+		ERServerType:        reflect.TypeFor[serverCloneServiceServerER](),
+		DefaultERServerType: reflect.TypeFor[*defaultServerCloneServiceServerER](),
 		Methods: []*spec.MethodSpec{{
 			Name:          "Mutate",
 			SkelName:      "mutate",
-			ArgumentsType: reflect.TypeOf(serverCloneArguments{}),
+			ArgumentsType: reflect.TypeFor[serverCloneArguments](),
 		}},
 	}
 )
 
 func (*_ServerTestExecutor) Init(spec.ImplDict) {}
 
-func (e *_ServerTestExecutor) Execute(spec.Context, spec.MethodImpl, []any) (any, ex.Error) {
+func (e *_ServerTestExecutor) Execute(ctx spec.Context, _ spec.MethodImpl, _ []any) (any, ex.Error) {
 	if e.panicV != nil {
 		panic(e.panicV)
+	}
+	if e.profileLabels != nil {
+		for _, key := range []string{"vine.app", "vine.protocol", "vine.service", "vine.method"} {
+			if value, ok := pprof.Label(ctx, key); ok {
+				e.profileLabels[key] = value
+			}
+		}
 	}
 	return e.result, e.err
 }
@@ -173,7 +183,7 @@ func TestServerHandleWithoutArgumentsReturnsNoErrorResponse(t *testing.T) {
 	}
 
 	handlerDict := spec.NewImplDict()
-	handlerDict.Add(reflect.TypeOf(&serverTestServiceImpl{}))
+	handlerDict.Add(reflect.TypeFor[*serverTestServiceImpl]())
 	serverTestMethodInfo := serverTestServiceInfo.Methods[0].Info()
 	methodImpl, err := handlerDict.GetMethodImpl(serverTestServiceInfo.SkelName, serverTestMethodInfo.SkelName())
 	if err != nil {
@@ -204,6 +214,32 @@ func TestServerHandleWithoutArgumentsReturnsNoErrorResponse(t *testing.T) {
 	if response.Error() == nil || response.Error().Type() != ex.NoError {
 		t.Fatalf("expected no error response, got %#v", response.Error())
 	}
+}
+
+func TestServerHandleAddsProfileLabels(t *testing.T) {
+	method := spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
+		Name:     "ProfileService",
+		SkelName: "test.service.profile",
+		Methods:  []*spec.MethodSpec{{Name: "Ping", SkelName: "ping"}},
+	}).Methods()[0]
+	executor := &_ServerTestExecutor{profileLabels: map[string]string{}}
+	server := &Server{
+		opt:      &Option{App: testServerApp()},
+		executor: executor,
+	}
+
+	server.handle(&spec.RequestImpl{
+		ContextValue:    context.Background(),
+		TraceValue:      meta.InitialTrace(),
+		MethodInfoValue: method,
+	})
+
+	assert.Equal(t, map[string]string{
+		"vine.app":      "test.app",
+		"vine.protocol": "rpc",
+		"vine.service":  "test.service.profile",
+		"vine.method":   "ping",
+	}, executor.profileLabels)
 }
 
 func TestServerRpcHandlerClonesArguments(t *testing.T) {
@@ -247,7 +283,7 @@ func TestServerHandlePreservesExecutorError(t *testing.T) {
 	}).Methods()[0]
 	wantErr := ex.New(ex.OperationFailed, "boom")
 	response := (&Server{
-		opt: &Option{},
+		opt: &Option{App: testServerApp()},
 		executor: &_ServerTestExecutor{
 			err: wantErr,
 		},

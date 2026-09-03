@@ -301,7 +301,7 @@ func TestParseResponseReturnsResponseResultAsIs(t *testing.T) {
 	invoker := New(Option{
 		Context: testClientContext(),
 		Logger:  testClientLogger(),
-	}).newInvoker(newInvokerTestMethodInfo("Ping", "ping", nil, reflect.TypeOf(invokerClientResult{}), nil), nil, nil)
+	}).newInvoker(newInvokerTestMethodInfo("Ping", "ping", nil, reflect.TypeFor[invokerClientResult](), nil), nil, nil)
 
 	result, err := invoker.parseResponse(&spec.ResponseImpl{
 		ResultValue: invokerServerResult{Name: "vine"},

@@ -60,7 +60,7 @@ func newInitializedMethodInfoWithValidateResult(validateResult func(any) error) 
 
 func TestMethodInfoValidateArgumentsAcceptsDefaultGeneratedNoop(t *testing.T) {
 	name := "vine"
-	method := newInitializedMethodInfo(reflect.TypeOf(testValidateArgumentsInput{}), nil, false, false)
+	method := newInitializedMethodInfo(reflect.TypeFor[testValidateArgumentsInput](), nil, false, false)
 
 	if err := method.ValidateArguments(&testValidateArgumentsInput{Name: &name, Age: 7}); err != nil {
 		t.Fatalf("ValidateArguments() error = %v", err)
@@ -68,7 +68,7 @@ func TestMethodInfoValidateArgumentsAcceptsDefaultGeneratedNoop(t *testing.T) {
 }
 
 func TestMethodInfoNewArgumentsAndNewResult(t *testing.T) {
-	method := newInitializedMethodInfo(reflect.TypeOf(testValidateArgumentsInput{}), reflect.TypeOf(""), false, false)
+	method := newInitializedMethodInfo(reflect.TypeFor[testValidateArgumentsInput](), reflect.TypeFor[string](), false, false)
 
 	if !method.HasArguments() {
 		t.Fatalf("expected method to have arguments")
@@ -94,7 +94,7 @@ func TestMethodInfoValidateArgumentsWithoutArgumentsIsNoop(t *testing.T) {
 }
 
 func TestMethodInfoPositionArgumentsRequiresPointer(t *testing.T) {
-	method := newInitializedMethodInfo(reflect.TypeOf(testValidateArgumentsInput{}), nil, false, false)
+	method := newInitializedMethodInfo(reflect.TypeFor[testValidateArgumentsInput](), nil, false, false)
 
 	defer func() {
 		if recover() == nil {
@@ -106,7 +106,7 @@ func TestMethodInfoPositionArgumentsRequiresPointer(t *testing.T) {
 }
 
 func TestServiceInfoInitBuildsArgumentFieldInfos(t *testing.T) {
-	method := newInitializedMethodInfo(reflect.TypeOf(testValidateArgumentsInput{}), nil, false, false)
+	method := newInitializedMethodInfo(reflect.TypeFor[testValidateArgumentsInput](), nil, false, false)
 
 	if len(method.argumentFieldInfos) != 2 {
 		t.Fatalf("unexpected argument field info count: got %d", len(method.argumentFieldInfos))
@@ -186,7 +186,7 @@ func TestServiceInfoInitRejectsDuplicateArgumentIndexes(t *testing.T) {
 		}
 	}()
 
-	_ = newInitializedMethodInfo(reflect.TypeOf(testDuplicateArgumentIndexInput{}), nil, false, false)
+	_ = newInitializedMethodInfo(reflect.TypeFor[testDuplicateArgumentIndexInput](), nil, false, false)
 }
 
 func TestServiceInfoInitRejectsArgumentIndexGaps(t *testing.T) {
@@ -196,5 +196,5 @@ func TestServiceInfoInitRejectsArgumentIndexGaps(t *testing.T) {
 		}
 	}()
 
-	_ = newInitializedMethodInfo(reflect.TypeOf(testGapArgumentIndexInput{}), nil, false, false)
+	_ = newInitializedMethodInfo(reflect.TypeFor[testGapArgumentIndexInput](), nil, false, false)
 }

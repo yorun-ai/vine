@@ -55,17 +55,15 @@ func TestRegistrySupportsConcurrentRegistrationsAndLookups(t *testing.T) {
 	handler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 	results := make(chan bool, count)
 	var wg sync.WaitGroup
-	for i := 0; i < count; i++ {
+	for i := range count {
 		endpoint := fmt.Sprintf("link+inproc://concurrent-%d", i)
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			cleanup := Register(endpoint, handler)
 			_, _, registered := getHandler(endpoint + "/route")
 			cleanup()
 			_, _, remains := getHandler(endpoint + "/route")
 			results <- registered && !remains
-		}()
+		})
 	}
 	wg.Wait()
 	close(results)

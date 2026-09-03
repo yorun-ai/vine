@@ -114,10 +114,7 @@ func (l *Listener) startHTTP() error {
 	}
 	l.server = server
 
-	l.wg.Add(1)
-	go func() {
-		defer l.wg.Done()
-
+	l.wg.Go(func() {
 		controlLogger.Info("hub control API listener started", "addr", server.Addr)
 		err := serve(listener)
 		if errors.Is(err, http.ErrServerClosed) {
@@ -127,7 +124,7 @@ func (l *Listener) startHTTP() error {
 		if err != nil {
 			controlLogger.Error("hub control API listener failed", "addr", server.Addr, "error", err)
 		}
-	}()
+	})
 	return nil
 }
 

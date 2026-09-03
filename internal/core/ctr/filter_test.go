@@ -22,7 +22,7 @@ func TestTargetInvocationFilterInvokesTargetAndStoresResults(t *testing.T) {
 		},
 	)
 
-	execution := container.NewExecution(reflect.TypeOf(&ctrTestTarget{}), getMethodByName(reflect.TypeOf(&ctrTestTarget{}), "Combine"))
+	execution := container.NewExecution(reflect.TypeFor[*ctrTestTarget](), getMethodByName(reflect.TypeFor[*ctrTestTarget](), "Combine"))
 	execution.Execute([]any{3, "alice"})
 
 	assert.Equal(t, []string{

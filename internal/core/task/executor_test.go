@@ -103,17 +103,17 @@ func ensureContainerExecutorTaskRegistered() {
 		spec.Register(&spec.TaskSpec{
 			Name:                "ContainerExecutorTask",
 			SkelName:            "container.executor.task",
-			RunnerType:          reflect.TypeOf((*testContainerExecutorRunner)(nil)).Elem(),
-			DefaultRunnerType:   reflect.TypeOf(&defaultTestContainerExecutorRunner{}),
-			ERRunnerType:        reflect.TypeOf((*testContainerExecutorRunnerER)(nil)).Elem(),
+			RunnerType:          reflect.TypeFor[testContainerExecutorRunner](),
+			DefaultRunnerType:   reflect.TypeFor[*defaultTestContainerExecutorRunner](),
+			ERRunnerType:        reflect.TypeFor[testContainerExecutorRunnerER](),
 			WrapperERRunnerCtor: newWrapperTestContainerExecutorRunnerER,
-			DefaultERRunnerType: reflect.TypeOf(&defaultTestContainerExecutorRunnerER{}),
+			DefaultERRunnerType: reflect.TypeFor[*defaultTestContainerExecutorRunnerER](),
 			Triggers: []*spec.TriggerSpec{{
 				Name:               "ForGroup",
 				SkelName:           "forGroup",
 				LauncherMethodName: "LaunchForGroup",
 				RunnerMethodName:   "RunForGroup",
-				ArgumentsType:      reflect.TypeOf(testContainerExecutorArguments{}),
+				ArgumentsType:      reflect.TypeFor[testContainerExecutorArguments](),
 			}},
 		})
 	})
@@ -140,14 +140,14 @@ func TestExecutorSeedsContextAndTriggerInfo(t *testing.T) {
 		},
 	})
 	implDict := spec.NewImplDict()
-	implDict.Add(reflect.TypeOf(&testContainerExecutorImplWithSeed{}))
+	implDict.Add(reflect.TypeFor[*testContainerExecutorImplWithSeed]())
 	executor.Init(*implDict)
 
 	taskCtx := &spec.ContextImpl{
 		Context:    context.Background(),
 		TraceValue: meta.InitialTrace(),
 	}
-	triggerImpl := testContainerExecutorTriggerImpl(t, reflect.TypeOf(&testContainerExecutorImplWithSeed{}))
+	triggerImpl := testContainerExecutorTriggerImpl(t, reflect.TypeFor[*testContainerExecutorImplWithSeed]())
 	err := executor.Execute(taskCtx, triggerImpl, []any{testContainerExecutorArguments{GroupId: 7}})
 	if err != nil {
 		t.Fatalf("Execute() error = %v", err)
@@ -169,10 +169,10 @@ func TestExecutorRunsERImplementation(t *testing.T) {
 		},
 	})
 	implDict := spec.NewImplDict()
-	implDict.Add(reflect.TypeOf(&testContainerExecutorERImpl{}))
+	implDict.Add(reflect.TypeFor[*testContainerExecutorERImpl]())
 	executor.Init(*implDict)
 
-	triggerImpl := testContainerExecutorTriggerImpl(t, reflect.TypeOf(&testContainerExecutorERImpl{}))
+	triggerImpl := testContainerExecutorTriggerImpl(t, reflect.TypeFor[*testContainerExecutorERImpl]())
 	err := executor.Execute(&spec.ContextImpl{}, triggerImpl, []any{testContainerExecutorArguments{GroupId: 7}})
 	if err != nil {
 		t.Fatalf("Execute() error = %v", err)

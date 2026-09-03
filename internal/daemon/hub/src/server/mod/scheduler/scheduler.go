@@ -3,6 +3,7 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"maps"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -77,11 +78,9 @@ func (s *Scheduler) AfterAppStart() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	s.stop = cancel
-	s.refreshWG.Add(1)
-	go func() {
-		defer s.refreshWG.Done()
+	s.refreshWG.Go(func() {
 		s.refreshLoop(ctx)
-	}()
+	})
 }
 
 func (s *Scheduler) BeforeAppStop() {
@@ -151,9 +150,7 @@ func (s *Scheduler) refreshSchedules() error {
 		}
 		addedJobs[key] = entryId
 	}
-	for key, entryId := range addedJobs {
-		s.jobs[key] = entryId
-	}
+	maps.Copy(s.jobs, addedJobs)
 
 	for key, entryId := range s.jobs {
 		if _, exists := nextKeys[key]; exists {

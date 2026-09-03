@@ -2,6 +2,7 @@ package di
 
 import (
 	"reflect"
+	"slices"
 	"strings"
 )
 
@@ -12,12 +13,7 @@ func (s _BuildStack) push(t reflect.Type) _BuildStack {
 }
 
 func (s _BuildStack) contains(t reflect.Type) bool {
-	for _, item := range s {
-		if item == t {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(s, t)
 }
 
 func (s _BuildStack) String() string {

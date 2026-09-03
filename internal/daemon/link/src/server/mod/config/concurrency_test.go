@@ -34,22 +34,19 @@ func TestGetInstantConcurrentWithEventUpdate(t *testing.T) {
 	start := make(chan struct{})
 	invalidValues := make(chan string, 1)
 	var waitGroup sync.WaitGroup
-	waitGroup.Add(2)
-	go func() {
-		defer waitGroup.Done()
+	waitGroup.Go(func() {
 		<-start
-		for idx := 0; idx < 1000; idx++ {
+		for idx := range 1000 {
 			reader.handleInstantConfigEvent(redisKey, hubredis.Event{
 				Kind:  hubredis.EventKindUpsert,
 				Key:   redisKey,
 				Value: eventValues[idx%len(eventValues)],
 			})
 		}
-	}()
-	go func() {
-		defer waitGroup.Done()
+	})
+	waitGroup.Go(func() {
 		<-start
-		for idx := 0; idx < 1000; idx++ {
+		for idx := range 1000 {
 			value := reader.GetInstant(appInstanceID, configName)
 			if idx%2 != 0 {
 				value = reader.retainInstantConfig(appInstanceID, configName)
@@ -63,7 +60,7 @@ func TestGetInstantConcurrentWithEventUpdate(t *testing.T) {
 			}
 			return
 		}
-	}()
+	})
 	close(start)
 	waitGroup.Wait()
 	close(invalidValues)

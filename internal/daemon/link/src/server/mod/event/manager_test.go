@@ -54,6 +54,8 @@ type _ManagerDispatchHooks struct {
 	events      []appskeled.EventOn
 	timeout     time.Duration
 	callCount   int
+	active      int
+	maxActive   int
 	startedChan chan struct{}
 	completed   chan struct{}
 	releaseChan chan struct{}
@@ -70,7 +72,7 @@ func newTestManagers(t *testing.T, count int) ([]*Manager, func()) {
 
 	managers := make([]*Manager, 0, count)
 	conns := make([]*gonats.Conn, 0, count)
-	for index := 0; index < count; index++ {
+	for index := range count {
 		natsClient, conn := newTestNATSClient(t)
 		conns = append(conns, conn)
 

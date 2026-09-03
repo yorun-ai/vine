@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"slices"
 	"sync"
 
 	"github.com/spiffe/go-spiffe/v2/bundle/x509bundle"
@@ -207,10 +208,8 @@ func (i *Identity) ServerConfig(allowedClientPaths ...SPIFFEPath) *tls.Config {
 		if len(allowed) == 0 {
 			return nil
 		}
-		for _, allowedID := range allowed {
-			if peerID == allowedID {
-				return nil
-			}
+		if slices.Contains(allowed, peerID) {
+			return nil
 		}
 		return fmt.Errorf("mTLS client SPIFFE ID %q is not allowed; expected one of %v", peerID, allowed)
 	}

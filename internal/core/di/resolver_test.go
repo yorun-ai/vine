@@ -153,12 +153,10 @@ func TestPersistedResolverStorageSupportsConcurrentSingletonFirstResolution(t *t
 	var wg sync.WaitGroup
 	start := make(chan struct{})
 	for _, resolve := range resolveFuncs {
-		wg.Add(1)
-		go func(resolve func()) {
-			defer wg.Done()
+		wg.Go(func() {
 			<-start
 			resolve()
-		}(resolve)
+		})
 	}
 	close(start)
 	wg.Wait()

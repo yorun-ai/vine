@@ -6,6 +6,7 @@ import (
 	"mime"
 	"net/http"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
@@ -130,7 +131,7 @@ func (s *Server) writeResponse() {
 
 func acceptAssetEncodings(header string) []_Encoding {
 	encodings := []_Encoding{}
-	for _, item := range strings.Split(header, ",") {
+	for item := range strings.SplitSeq(header, ",") {
 		encoding, params, err := mime.ParseMediaType(strings.TrimSpace(item))
 		if err != nil || params["q"] == "0" {
 			continue
@@ -147,12 +148,7 @@ func acceptAssetEncodings(header string) []_Encoding {
 }
 
 func acceptsEncoding(encodings []_Encoding, encoding _Encoding) bool {
-	for _, item := range encodings {
-		if item == encoding {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(encodings, encoding)
 }
 
 func (s *Server) encodeResponse() {

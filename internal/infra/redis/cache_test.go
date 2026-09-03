@@ -63,7 +63,7 @@ type _TestCacheCmdable struct {
 	setCalls []_TestSetCall
 	delCalls []_TestDelCall
 	getFunc  func(ctx context.Context, key string) *goredis.StringCmd
-	setFunc  func(ctx context.Context, key string, value interface{}, expiration time.Duration) *goredis.StatusCmd
+	setFunc  func(ctx context.Context, key string, value any, expiration time.Duration) *goredis.StatusCmd
 	delFunc  func(ctx context.Context, keys ...string) *goredis.IntCmd
 }
 
@@ -81,7 +81,7 @@ func (c *benchmarkCacheCmdable) Get(context.Context, string) *goredis.StringCmd 
 	return goredis.NewStringResult(c.value, nil)
 }
 
-func (*benchmarkCacheCmdable) Set(context.Context, string, interface{}, time.Duration) *goredis.StatusCmd {
+func (*benchmarkCacheCmdable) Set(context.Context, string, any, time.Duration) *goredis.StatusCmd {
 	return goredis.NewStatusResult("OK", nil)
 }
 
@@ -95,7 +95,7 @@ type benchmarkCacheValue struct {
 type _TestSetCall struct {
 	ctx        context.Context
 	key        string
-	value      interface{}
+	value      any
 	expiration time.Duration
 }
 
@@ -109,7 +109,7 @@ func newTestCacheCmdable() *_TestCacheCmdable {
 		getFunc: func(ctx context.Context, key string) *goredis.StringCmd {
 			return goredis.NewStringResult("", goredis.Nil)
 		},
-		setFunc: func(ctx context.Context, key string, value interface{}, expiration time.Duration) *goredis.StatusCmd {
+		setFunc: func(ctx context.Context, key string, value any, expiration time.Duration) *goredis.StatusCmd {
 			return goredis.NewStatusResult("OK", nil)
 		},
 		delFunc: func(ctx context.Context, keys ...string) *goredis.IntCmd {
@@ -125,7 +125,7 @@ func (c *_TestCacheCmdable) Get(ctx context.Context, key string) *goredis.String
 	return c.getFunc(ctx, key)
 }
 
-func (c *_TestCacheCmdable) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) *goredis.StatusCmd {
+func (c *_TestCacheCmdable) Set(ctx context.Context, key string, value any, expiration time.Duration) *goredis.StatusCmd {
 	c.mutex.Lock()
 	c.setCalls = append(c.setCalls, _TestSetCall{ctx: ctx, key: key, value: value, expiration: expiration})
 	c.mutex.Unlock()

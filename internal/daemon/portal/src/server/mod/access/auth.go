@@ -79,7 +79,7 @@ func parseCredential(schema *skel.DataSchema, authorization string) (map[string]
 
 	credential := map[string]string{}
 	hasValue := false
-	for _, part := range strings.Split(authorization, ",") {
+	for part := range strings.SplitSeq(authorization, ",") {
 		part = strings.TrimSpace(part)
 		if part == "" {
 			continue

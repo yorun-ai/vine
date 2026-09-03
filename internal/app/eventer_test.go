@@ -127,14 +127,14 @@ var registerEventerEventOnce = func() func() {
 			Name:                  "TestEventerEvent",
 			SkelName:              "test.eventer.TestEventerEvent",
 			ListenerMethodName:    "OnTestEventer",
-			PayloadType:           reflect.TypeOf(testEventerEvent{}),
-			EmitterType:           reflect.TypeOf((*testEventerEmitter)(nil)).Elem(),
+			PayloadType:           reflect.TypeFor[testEventerEvent](),
+			EmitterType:           reflect.TypeFor[testEventerEmitter](),
 			EmitterCtor:           func(*event.Emitter) testEventerEmitter { return &defaultTestEventerEmitter{} },
-			ListenerType:          reflect.TypeOf((*testEventerListener)(nil)).Elem(),
-			DefaultListenerType:   reflect.TypeOf(&defaultTestEventerListener{}),
-			ERListenerType:        reflect.TypeOf((*testEventerListenerER)(nil)).Elem(),
+			ListenerType:          reflect.TypeFor[testEventerListener](),
+			DefaultListenerType:   reflect.TypeFor[*defaultTestEventerListener](),
+			ERListenerType:        reflect.TypeFor[testEventerListenerER](),
 			WrapperERListenerCtor: newWrapperTestEventerListenerER,
-			DefaultERListenerType: reflect.TypeOf(&defaultTestEventerListenerER{}),
+			DefaultERListenerType: reflect.TypeFor[*defaultTestEventerListenerER](),
 		})
 	}
 }()

@@ -7,11 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPointerHelpers(t *testing.T) {
-	pointed := PointerTo(7)
-	assert.Equal(t, 7, *pointed)
-}
-
 func TestStructHelpers(t *testing.T) {
 	item := holder{
 		A:       1,
@@ -35,12 +30,12 @@ func TestStructHelpers(t *testing.T) {
 	assert.Equal(t, "three", fields[2].Interface())
 
 	embeddedTypes := EmbeddedStructTypes(reflect.TypeOf(exported))
-	assert.Equal(t, []reflect.Type{reflect.TypeOf(EmbeddedA{}), reflect.TypeOf(EmbeddedB{})}, embeddedTypes)
+	assert.Equal(t, []reflect.Type{reflect.TypeFor[EmbeddedA](), reflect.TypeFor[EmbeddedB]()}, embeddedTypes)
 
 	embeddedFields := EmbeddedStructFields(reflect.ValueOf(exported))
 	assert.Len(t, embeddedFields, 2)
-	assert.Equal(t, reflect.TypeOf(EmbeddedA{}), embeddedFields[0].Type())
-	assert.Equal(t, reflect.TypeOf(EmbeddedB{}), embeddedFields[1].Type())
+	assert.Equal(t, reflect.TypeFor[EmbeddedA](), embeddedFields[0].Type())
+	assert.Equal(t, reflect.TypeFor[EmbeddedB](), embeddedFields[1].Type())
 }
 
 func TestUnsafeFiled(t *testing.T) {

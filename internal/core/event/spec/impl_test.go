@@ -91,13 +91,13 @@ var _implTestEventSpec = &EventSpec{
 	EmitterMethodName:     "EmitImplTestEvent",
 	ListenerMethodName:    "OnImplTestEvent",
 	PayloadType:           reflect.TypeFor[*_ImplTestEvent](),
-	EmitterType:           reflect.TypeOf((*_ImplTestEmitter)(nil)).Elem(),
+	EmitterType:           reflect.TypeFor[_ImplTestEmitter](),
 	EmitterCtor:           func() _ImplTestEmitter { return &_ImplTestEmitterImpl{} },
-	ListenerType:          reflect.TypeOf((*_ImplTestListener)(nil)).Elem(),
-	DefaultListenerType:   reflect.TypeOf(&_DefaultImplTestListener{}),
-	ERListenerType:        reflect.TypeOf((*_ImplTestListenerER)(nil)).Elem(),
+	ListenerType:          reflect.TypeFor[_ImplTestListener](),
+	DefaultListenerType:   reflect.TypeFor[*_DefaultImplTestListener](),
+	ERListenerType:        reflect.TypeFor[_ImplTestListenerER](),
 	WrapperERListenerCtor: newWrapperImplTestListenerER,
-	DefaultERListenerType: reflect.TypeOf(&_DefaultImplTestListenerER{}),
+	DefaultERListenerType: reflect.TypeFor[*_DefaultImplTestListenerER](),
 }
 
 func init() {
@@ -107,7 +107,7 @@ func init() {
 func TestImplDictAddRegistersEvent(t *testing.T) {
 	dict := NewListenerImplDict()
 
-	dict.Add(reflect.TypeOf(&_ImplTestEventListener{}))
+	dict.Add(reflect.TypeFor[*_ImplTestEventListener]())
 
 	listenerImpl, err := dict.GetListenerImpl(_implTestEventSpec.SkelName)
 	if err != nil {
@@ -116,7 +116,7 @@ func TestImplDictAddRegistersEvent(t *testing.T) {
 	if listenerImpl.Info().SkelName() != _implTestEventSpec.SkelName {
 		t.Fatalf("unexpected event info: %#v", listenerImpl.Info())
 	}
-	if listenerImpl.Type() != reflect.TypeOf(&_ImplTestEventListener{}) {
+	if listenerImpl.Type() != reflect.TypeFor[*_ImplTestEventListener]() {
 		t.Fatalf("unexpected impl type: %v", listenerImpl.Type())
 	}
 	if listenerImpl.IsERType() {
@@ -127,7 +127,7 @@ func TestImplDictAddRegistersEvent(t *testing.T) {
 func TestImplDictAddRegistersEREvent(t *testing.T) {
 	dict := NewListenerImplDict()
 
-	dict.Add(reflect.TypeOf(&_ImplTestEventListenerER{}))
+	dict.Add(reflect.TypeFor[*_ImplTestEventListenerER]())
 
 	listenerImpl, err := dict.GetListenerImpl(_implTestEventSpec.SkelName)
 	if err != nil {
@@ -151,5 +151,5 @@ func TestImplDictAddRejectsNonPointerStruct(t *testing.T) {
 		}
 	}()
 
-	dict.Add(reflect.TypeOf(_InvalidImplTestEventListenerValueType{}))
+	dict.Add(reflect.TypeFor[_InvalidImplTestEventListenerValueType]())
 }

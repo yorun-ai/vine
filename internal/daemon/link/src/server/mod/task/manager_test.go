@@ -53,6 +53,8 @@ type _ManagerDispatchHooks struct {
 	runs        []appskeled.TaskRun
 	timeout     time.Duration
 	callCount   int
+	active      int
+	maxActive   int
 	startedChan chan struct{}
 	completed   chan struct{}
 	releaseChan chan struct{}

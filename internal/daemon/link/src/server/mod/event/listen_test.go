@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
@@ -91,9 +92,6 @@ func TestManagerRegistersListenerAndDispatchesEvent(t *testing.T) {
 }
 
 func TestManagerLimitsDispatchConcurrency(t *testing.T) {
-	manager, cleanup := newTestManager(t)
-	defer cleanup()
-
 	oldFactory := newAppEventServiceClient
 	oldRun := runAppEvent
 	defer func() {
@@ -101,82 +99,78 @@ func TestManagerLimitsDispatchConcurrency(t *testing.T) {
 		runAppEvent = oldRun
 	}()
 
-	hooks := &_ManagerDispatchHooks{
-		startedChan: make(chan struct{}, 2),
-		releaseChan: make(chan struct{}),
-	}
-	newAppEventServiceClient = func(context.Context, runtime.App, string, eventspec.NATSMessage) appskeled.EventServiceClientER {
-		return &_ManagerAppEventClient{
-			onEvent: func(on appskeled.EventOn) error {
-				hooks.mutex.Lock()
-				hooks.events = append(hooks.events, on)
-				hooks.mutex.Unlock()
-				hooks.startedChan <- struct{}{}
-				<-hooks.releaseChan
-				return nil
-			},
+	synctest.Test(t, func(t *testing.T) {
+		hooks := &_ManagerDispatchHooks{
+			startedChan: make(chan struct{}, 2),
+			releaseChan: make(chan struct{}),
 		}
-	}
-	runAppEvent = func(client appskeled.EventServiceClientER, on appskeled.EventOn, timeout time.Duration) ex.Error {
-		return client.OnEvent(on)
-	}
+		newAppEventServiceClient = func(context.Context, runtime.App, string, eventspec.NATSMessage) appskeled.EventServiceClientER {
+			return &_ManagerAppEventClient{
+				onEvent: func(on appskeled.EventOn) error {
+					hooks.mutex.Lock()
+					hooks.events = append(hooks.events, on)
+					hooks.active++
+					hooks.maxActive = max(hooks.maxActive, hooks.active)
+					hooks.mutex.Unlock()
+					hooks.startedChan <- struct{}{}
+					<-hooks.releaseChan
+					hooks.mutex.Lock()
+					hooks.active--
+					hooks.mutex.Unlock()
+					return nil
+				},
+			}
+		}
+		runAppEvent = func(client appskeled.EventServiceClientER, on appskeled.EventOn, _ time.Duration) ex.Error {
+			return client.OnEvent(on)
+		}
 
-	appInfo, err := meta.NewApp("demo.app", "1.0.0", "11111111-1111-1111-1111-111111111111")
-	require.NoError(t, err)
-	endpoint := testLocalAppEndpoint(8080)
-	manager.AppMinder.RegisterInstance(minder.AppRegistration{
-		AppInfo:       appInfo,
-		EventEndpoint: endpoint + testPathEvent,
-		EventListeners: []skeled.EventListenerRegistration{{
+		manager := &Manager{
+			Context: context.Background(),
+			App:     meta.MustNewApp("vine.link", "1.0.0", "22222222-2222-2222-2222-222222222222"),
+		}
+		listener := &_EventListenerState{
+			eventEndpoint: testLocalAppEndpoint(8080) + testPathEvent,
+			registration: skeled.EventListenerRegistration{
+				TimeoutMs:   1000,
+				Concurrency: 1,
+			},
+			semaphore: make(chan struct{}, 1),
+		}
+		message := eventspec.NATSMessage{
+			Metadata: eventspec.NATSMessageMeta{
+				TraceId:       "trace-1",
+				TraceSpan:     "0123456789abcdef",
+				AppName:       "launcher.app",
+				AppVersion:    "2.0.0",
+				AppInstanceId: skel.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
+			},
 			EventSkelName: "demo.user.UserCreatedEvent",
-			TimeoutMs:     1000,
-			Concurrency:   1,
-		}},
+			EventJson:     `{"userId":"u1"}`,
+		}
+		done := make(chan ex.Error, 2)
+		go func() { done <- manager.runEvent(listener, message) }()
+		go func() { done <- manager.runEvent(listener, message) }()
+
+		synctest.Wait()
+		<-hooks.startedChan
+		hooks.mutex.Lock()
+		assert.Equal(t, 1, hooks.active)
+		hooks.mutex.Unlock()
+
+		hooks.releaseChan <- struct{}{}
+		synctest.Wait()
+		<-hooks.startedChan
+		hooks.releaseChan <- struct{}{}
+		synctest.Wait()
+
+		assert.Nil(t, <-done)
+		assert.Nil(t, <-done)
+		hooks.mutex.Lock()
+		defer hooks.mutex.Unlock()
+		assert.Len(t, hooks.events, 2)
+		assert.Equal(t, 1, hooks.maxActive)
 	})
-
-	firstEmission := skeled.EventEmission{
-		Metadata: skeled.EventEmissionMeta{
-			TraceId:       "trace-1",
-			TraceSpan:     "0123456789abcdef",
-			AppName:       "launcher.app",
-			AppVersion:    "2.0.0",
-			AppInstanceId: skel.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
-		},
-		EventSkelName: "demo.user.UserCreatedEvent",
-		EventJson:     `{"userId":"u1"}`,
-	}
-	secondEmission := firstEmission
-	secondEmission.Metadata.TraceId = "trace-2"
-	secondEmission.EventJson = `{"userId":"u2"}`
-
-	manager.EmitEvent(firstEmission)
-	manager.EmitEvent(secondEmission)
-
-	select {
-	case <-hooks.startedChan:
-	case <-time.After(2 * time.Second):
-		t.Fatal("first event dispatch timeout")
-	}
-
-	select {
-	case <-hooks.startedChan:
-		t.Fatal("second event started before first event finished")
-	case <-time.After(100 * time.Millisecond):
-	}
-
-	hooks.releaseChan <- struct{}{}
-
-	select {
-	case <-hooks.startedChan:
-	case <-time.After(2 * time.Second):
-		t.Fatal("second event dispatch timeout")
-	}
-
-	hooks.releaseChan <- struct{}{}
-
-	hooks.mutex.Lock()
-	defer hooks.mutex.Unlock()
-	assert.Len(t, hooks.events, 2)
 }
 
 func TestManagerFansOutByAppName(t *testing.T) {

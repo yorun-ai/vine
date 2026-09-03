@@ -16,7 +16,7 @@ func TestNewImplDictResolvesTaskImplFromEmbeddedDefaultRunner(t *testing.T) {
 	ensureInfoTaskRegistered()
 
 	dict := NewImplDict()
-	dict.Add(reflect.TypeOf(&testInfoTaskImpl{}))
+	dict.Add(reflect.TypeFor[*testInfoTaskImpl]())
 
 	triggerImpl, err := dict.GetTriggerImpl("test.info.task", "forGroup")
 	if err != nil {
@@ -34,7 +34,7 @@ func TestNewImplDictReturnsErrorWhenTriggerMissing(t *testing.T) {
 	ensureInfoTaskRegistered()
 
 	dict := NewImplDict()
-	dict.Add(reflect.TypeOf(&testInfoTaskImpl{}))
+	dict.Add(reflect.TypeFor[*testInfoTaskImpl]())
 
 	_, err := dict.GetTriggerImpl("test.info.task", "missing")
 	if err == nil {

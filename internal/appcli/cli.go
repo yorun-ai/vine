@@ -175,7 +175,7 @@ func isValidRulePattern(pattern string) bool {
 	if pattern == "" || pattern == "*" || pattern == "**" {
 		return false
 	}
-	for _, segment := range strings.Split(pattern, ":") {
+	for segment := range strings.SplitSeq(pattern, ":") {
 		if segment == "" || (strings.Contains(segment, "*") && segment != "*" && segment != "**") {
 			return false
 		}

@@ -192,16 +192,16 @@ var _CTRTraceServiceSpec = &spec.ServiceSpec{
 	Name:     "CTRTraceService",
 	SkelName: "server.ctr.trace",
 
-	ServerType:        reflect.TypeOf((*testCTRServiceServer)(nil)).Elem(),
-	DefaultServerType: reflect.TypeOf(&_DefaultTestCTRServiceServer{}),
+	ServerType:        reflect.TypeFor[testCTRServiceServer](),
+	DefaultServerType: reflect.TypeFor[*_DefaultTestCTRServiceServer](),
 
-	ERServerType:        reflect.TypeOf((*testCTRServiceServerER)(nil)).Elem(),
-	DefaultERServerType: reflect.TypeOf(&_DefaultTestCTRServiceServerER{}),
+	ERServerType:        reflect.TypeFor[testCTRServiceServerER](),
+	DefaultERServerType: reflect.TypeFor[*_DefaultTestCTRServiceServerER](),
 
 	Methods: []*spec.MethodSpec{{
 		Name:       "TraceSpan",
 		SkelName:   "traceSpan",
-		ResultType: reflect.TypeOf(""),
+		ResultType: reflect.TypeFor[string](),
 	}},
 }
 
@@ -210,11 +210,11 @@ var _CTRNoResultServiceSpec = &spec.ServiceSpec{
 	Name:     "CTRNoResultService",
 	SkelName: "server.ctr.noResult",
 
-	ServerType:        reflect.TypeOf((*testCTRNoResultServiceServer)(nil)).Elem(),
-	DefaultServerType: reflect.TypeOf(&_DefaultTestCTRNoResultServiceServer{}),
+	ServerType:        reflect.TypeFor[testCTRNoResultServiceServer](),
+	DefaultServerType: reflect.TypeFor[*_DefaultTestCTRNoResultServiceServer](),
 
-	ERServerType:        reflect.TypeOf((*testCTRNoResultServiceServerER)(nil)).Elem(),
-	DefaultERServerType: reflect.TypeOf(&_DefaultTestCTRNoResultServiceServerER{}),
+	ERServerType:        reflect.TypeFor[testCTRNoResultServiceServerER](),
+	DefaultERServerType: reflect.TypeFor[*_DefaultTestCTRNoResultServiceServerER](),
 
 	Methods: []*spec.MethodSpec{{
 		Name:     "Ping",
@@ -227,15 +227,15 @@ var _CTRWrappedServiceSpec = &spec.ServiceSpec{
 	Name:     "CTRWrappedService",
 	SkelName: "server.ctr.wrapped",
 
-	ServerType:          reflect.TypeOf((*testCTRWrappedServiceServer)(nil)).Elem(),
-	DefaultServerType:   reflect.TypeOf(&_DefaultTestCTRWrappedServiceServer{}),
-	ERServerType:        reflect.TypeOf((*testCTRWrappedServiceServerER)(nil)).Elem(),
+	ServerType:          reflect.TypeFor[testCTRWrappedServiceServer](),
+	DefaultServerType:   reflect.TypeFor[*_DefaultTestCTRWrappedServiceServer](),
+	ERServerType:        reflect.TypeFor[testCTRWrappedServiceServerER](),
 	WrapperERServerCtor: newCTRWrappedServiceServerERWrapper,
-	DefaultERServerType: reflect.TypeOf(&_DefaultTestCTRWrappedServiceServerER{}),
+	DefaultERServerType: reflect.TypeFor[*_DefaultTestCTRWrappedServiceServerER](),
 	Methods: []*spec.MethodSpec{{
 		Name:       "Preview",
 		SkelName:   "preview",
-		ResultType: reflect.TypeOf(_CTRWrappedResult{}),
+		ResultType: reflect.TypeFor[_CTRWrappedResult](),
 		ValidateResult: func(value any) error {
 			result := value.(_CTRWrappedResult)
 			if result.Items == nil {
@@ -270,7 +270,7 @@ func TestExecutorUsesCTRInjectionAndExecutionScoping(t *testing.T) {
 		ContextValue:    context.Background(),
 		TraceValue:      meta.InitialTrace(),
 		MethodInfoValue: traceMethod,
-		MethodImplValue: mustContainerMethodImpl(t, reflect.TypeOf(&_CTRTraceServiceImpl{}), traceMethod),
+		MethodImplValue: mustContainerMethodImpl(t, reflect.TypeFor[*_CTRTraceServiceImpl](), traceMethod),
 	})
 
 	if rpcResponse.Error() == nil || rpcResponse.Error().Code() != ex.OK {
@@ -372,7 +372,7 @@ func TestContainerExecutorUsesResolvedMethodImplInsteadOfMethodInfoName(t *testi
 	})
 
 	method := _CTRTraceServiceSpec.Methods[0].Info()
-	methodImpl := mustContainerMethodImpl(t, reflect.TypeOf(&_CTRTraceServiceImpl{}), method)
+	methodImpl := mustContainerMethodImpl(t, reflect.TypeFor[*_CTRTraceServiceImpl](), method)
 	stubMethodInfo := containerExecutorMethodInfoStub{
 		MethodInfo: method,
 		name:       "MissingMethodName",

@@ -43,19 +43,16 @@ func TestAppStateConcurrentReadAndLifecycleUpdates(t *testing.T) {
 
 	start := make(chan struct{})
 	var waitGroup sync.WaitGroup
-	waitGroup.Add(2)
-	go func() {
-		defer waitGroup.Done()
+	waitGroup.Go(func() {
 		<-start
-		for idx := 0; idx < 1000; idx++ {
+		for range 1000 {
 			proxy.OnSetup(instance)
 			proxy.OnDrain(instance)
 		}
-	}()
-	go func() {
-		defer waitGroup.Done()
+	})
+	waitGroup.Go(func() {
 		<-start
-		for idx := 0; idx < 1000; idx++ {
+		for range 1000 {
 			current, exists := proxy.getAppStateByInstanceID(localApp.InstanceId())
 			if !exists {
 				continue
@@ -66,7 +63,7 @@ func TestAppStateConcurrentReadAndLifecycleUpdates(t *testing.T) {
 			_ = current.draining
 			_ = current.hasService("demo.service.UserService")
 		}
-	}()
+	})
 	close(start)
 	waitGroup.Wait()
 }

@@ -5,6 +5,7 @@ import (
 	"mime"
 	"net/http"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -64,16 +65,11 @@ func MediaTypeOf(value string) string {
 
 func IsValidContentType(value string) bool {
 	value = MediaTypeOf(value)
-	for _, contentType := range supportedContentTypes {
-		if value == contentType {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(supportedContentTypes, value)
 }
 
 func AcceptsValidContentType(value string) bool {
-	for _, accepted := range strings.Split(value, ",") {
+	for accepted := range strings.SplitSeq(value, ",") {
 		if IsValidContentType(accepted) {
 			return true
 		}
@@ -82,7 +78,7 @@ func AcceptsValidContentType(value string) bool {
 }
 
 func AcceptsContentType(value string, contentType string) bool {
-	for _, accepted := range strings.Split(value, ",") {
+	for accepted := range strings.SplitSeq(value, ",") {
 		if MediaTypeOf(accepted) == contentType {
 			return true
 		}

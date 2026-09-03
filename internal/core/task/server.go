@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"reflect"
+	"runtime/pprof"
 	"time"
 
 	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
@@ -99,17 +100,31 @@ func (s *Server) RunTask(ctx context.Context, run appskeled.TaskRun) ex.Error {
 		return rejectedErr
 	}
 
-	return s.runTask(&spec.RunImpl{
-		ContextValue: &spec.ContextImpl{
-			Context:         ctx,
-			TraceValue:      trace.NewChildTrace(),
-			LauncherValue:   client,
-			LaunchedAtValue: run.Metadata.LaunchedAt.Time,
-		},
+	taskContext := &spec.ContextImpl{
+		Context:         ctx,
+		TraceValue:      trace.NewChildTrace(),
+		LauncherValue:   client,
+		LaunchedAtValue: run.Metadata.LaunchedAt.Time,
+	}
+	taskRun := &spec.RunImpl{
+		ContextValue:     taskContext,
 		TriggerImplValue: triggerImpl,
 		TriggerInfoValue: triggerInfo,
 		ArgumentsValue:   arguments,
+	}
+	var responseErr ex.Error
+	baseContext := taskContext.Context
+	labels := pprof.Labels(
+		"vine.app", s.opt.App.Name(),
+		"vine.protocol", "task",
+		"vine.task", triggerInfo.Task().SkelName(),
+		"vine.trigger", triggerInfo.SkelName(),
+	)
+	pprof.Do(baseContext, labels, func(ctx context.Context) {
+		taskContext.Context = ctx
+		responseErr = s.runTask(taskRun)
 	})
+	return responseErr
 }
 
 func (s *Server) runTask(taskRun spec.Run) (responseErr ex.Error) {

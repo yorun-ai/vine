@@ -241,7 +241,7 @@ func buildArgumentFieldInfos(argumentsType reflect.Type) []_ArgumentFieldInfo {
 			Name:        field.Name,
 			FieldIndex:  fieldIndex,
 			ArgIndex:    fieldIndex,
-			CheckNotNil: field.Type.Kind() == reflect.Ptr,
+			CheckNotNil: field.Type.Kind() == reflect.Pointer,
 		})
 	}
 	return infos

@@ -354,7 +354,7 @@ func init() {
 	web.Register(&web.WebSpec{
 		Name:              "TestUniqueWebberRegisterWeb",
 		SkelName:          "demo.user.TestUniqueWebberRegisterWeb",
-		ServerType:        reflect.TypeOf((*testUniqueWebberRegisterWebServer)(nil)).Elem(),
+		ServerType:        reflect.TypeFor[testUniqueWebberRegisterWebServer](),
 		DefaultServerType: reflect.TypeFor[*defaultTestUniqueWebberRegisterWebServer](),
 	})
 }

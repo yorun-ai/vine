@@ -54,8 +54,8 @@ var registerEmitterEventOnce = func() func() {
 				SkelName:           "test.event.TestEmitterEvent",
 				EmitterMethodName:  "EmitTestEmitter",
 				ListenerMethodName: "OnTestEmitter",
-				PayloadType:        reflect.TypeOf(testEmitterEvent{}),
-				EmitterType:        reflect.TypeOf((*struct{ mustBe bool })(nil)).Elem(),
+				PayloadType:        reflect.TypeFor[testEmitterEvent](),
+				EmitterType:        reflect.TypeFor[struct{ mustBe bool }](),
 				EmitterCtor:        func(*Emitter) struct{ mustBe bool } { return struct{ mustBe bool }{} },
 			})
 		})

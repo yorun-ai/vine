@@ -117,7 +117,7 @@ func (s *_Subscription) dispatch() {
 
 func (c *Client) consumePatternMessages(
 	ctx context.Context,
-	messageCh <-chan interface{},
+	messageCh <-chan any,
 	revision uint64,
 	handleSubscription func(handle func(event Event)) uint64,
 	handleEvent func(event Event),

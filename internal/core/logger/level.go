@@ -3,6 +3,7 @@ package logger
 import (
 	"fmt"
 	"log/slog"
+	"maps"
 	"sort"
 	"strings"
 	"sync/atomic"
@@ -244,9 +245,7 @@ func ClearLevel(pattern string) {
 func Levels() map[string]Level {
 	current := rules.Load()
 	levels := make(map[string]Level, len(current.byPattern))
-	for pattern, level := range current.byPattern {
-		levels[pattern] = level
-	}
+	maps.Copy(levels, current.byPattern)
 	return levels
 }
 
@@ -254,9 +253,7 @@ func updateRule(pattern string, level *Level) {
 	for {
 		current := rules.Load()
 		byPattern := make(map[string]Level, len(current.byPattern)+1)
-		for existingPattern, existingLevel := range current.byPattern {
-			byPattern[existingPattern] = existingLevel
-		}
+		maps.Copy(byPattern, current.byPattern)
 		if level == nil {
 			delete(byPattern, pattern)
 		} else {

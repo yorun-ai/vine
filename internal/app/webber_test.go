@@ -195,25 +195,25 @@ func init() {
 	web.Register(&web.WebSpec{
 		Name:              "TestWebberContextWeb",
 		SkelName:          "demo.user.TestWebberContextWeb",
-		ServerType:        reflect.TypeOf((*testWebberContextWebServer)(nil)).Elem(),
+		ServerType:        reflect.TypeFor[testWebberContextWebServer](),
 		DefaultServerType: reflect.TypeFor[*defaultTestWebberContextWebServer](),
 	})
 	web.Register(&web.WebSpec{
 		Name:              "TestUniqueRouteWeb",
 		SkelName:          "demo.user.TestUniqueRouteWeb",
-		ServerType:        reflect.TypeOf((*testUniqueRouteWebServer)(nil)).Elem(),
+		ServerType:        reflect.TypeFor[testUniqueRouteWebServer](),
 		DefaultServerType: reflect.TypeFor[*defaultTestUniqueRouteWebServer](),
 	})
 	web.Register(&web.WebSpec{
 		Name:              "TestAdminWeb",
 		SkelName:          "demo.user.TestAdminWeb",
-		ServerType:        reflect.TypeOf((*testAdminWebServer)(nil)).Elem(),
+		ServerType:        reflect.TypeFor[testAdminWebServer](),
 		DefaultServerType: reflect.TypeFor[*defaultTestAdminWebServer](),
 	})
 	web.Register(&web.WebSpec{
 		Name:              "TestOpenWeb",
 		SkelName:          "demo.user.TestOpenWeb",
-		ServerType:        reflect.TypeOf((*testOpenWebServer)(nil)).Elem(),
+		ServerType:        reflect.TypeFor[testOpenWebServer](),
 		DefaultServerType: reflect.TypeFor[*defaultTestOpenWebServer](),
 	})
 }

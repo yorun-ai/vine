@@ -569,7 +569,7 @@ func mustDecodeZstd(t *testing.T, body []byte) []byte {
 
 func headerValuesContain(values []string, target string) bool {
 	for _, value := range values {
-		for _, item := range strings.Split(value, ",") {
+		for item := range strings.SplitSeq(value, ",") {
 			if strings.EqualFold(strings.TrimSpace(item), target) {
 				return true
 			}

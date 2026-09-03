@@ -78,7 +78,7 @@ func RepeatBy[E any](count int, predicate func() E) []E {
 // RepeatByI do RepeatBy with index
 func RepeatByI[E any](count int, predicate func(int) E) []E {
 	result := make([]E, 0, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		result = append(result, predicate(i))
 	}
 	return result

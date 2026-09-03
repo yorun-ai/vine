@@ -381,10 +381,8 @@ func TestInjectorFallbackFactorySupportsConcurrentFirstResolution(t *testing.T) 
 	var wg sync.WaitGroup
 	start := make(chan struct{})
 	missing := make(chan reflect.Type, 32)
-	for index := 0; index < 32; index++ {
-		wg.Add(1)
-		go func(index int) {
-			defer wg.Done()
+	for index := range 32 {
+		wg.Go(func() {
 			<-start
 			if index%2 == 0 {
 				var resolved *abstractConfigA
@@ -399,7 +397,7 @@ func TestInjectorFallbackFactorySupportsConcurrentFirstResolution(t *testing.T) 
 			if resolved == nil {
 				missing <- T[*abstractConfigB]()
 			}
-		}(index)
+		})
 	}
 	close(start)
 	wg.Wait()
@@ -755,9 +753,9 @@ func TestSeedPanicsAfterExecutionScopedInstanceResolved(t *testing.T) {
 }
 
 func TestSeedRejectsIncompatibleConcreteInstanceWithFriendlyError(t *testing.T) {
-	targetType := reflect.TypeOf(&struct {
+	targetType := reflect.TypeFor[*struct {
 		ExecutionScoped
-	}{})
+	}]()
 
 	injector := NewInjector(func(b *Binder) {
 		b.Bind(targetType)

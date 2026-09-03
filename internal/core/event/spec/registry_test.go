@@ -69,7 +69,7 @@ func TestRegisterCombinesEmitterAndListenerBlocks(t *testing.T) {
 		EmitterMethodName:  "EmitRegistryTestEvent",
 		ListenerMethodName: "OnRegistryTestEvent",
 		PayloadType:        reflect.TypeFor[*_RegistryTestEvent](),
-		EmitterType:        reflect.TypeOf((*_RegistryTestEmitter)(nil)).Elem(),
+		EmitterType:        reflect.TypeFor[_RegistryTestEmitter](),
 		EmitterCtor:        func() _RegistryTestEmitter { return nil },
 	}
 	listenerSpec := &EventSpec{
@@ -79,11 +79,11 @@ func TestRegisterCombinesEmitterAndListenerBlocks(t *testing.T) {
 		EmitterMethodName:     "EmitRegistryTestEvent",
 		ListenerMethodName:    "OnRegistryTestEvent",
 		PayloadType:           reflect.TypeFor[*_RegistryTestEvent](),
-		ListenerType:          reflect.TypeOf((*_RegistryTestListener)(nil)).Elem(),
-		DefaultListenerType:   reflect.TypeOf(&_DefaultRegistryTestListener{}),
-		ERListenerType:        reflect.TypeOf((*_RegistryTestListenerER)(nil)).Elem(),
+		ListenerType:          reflect.TypeFor[_RegistryTestListener](),
+		DefaultListenerType:   reflect.TypeFor[*_DefaultRegistryTestListener](),
+		ERListenerType:        reflect.TypeFor[_RegistryTestListenerER](),
 		WrapperERListenerCtor: newWrapperRegistryTestListenerER,
-		DefaultERListenerType: reflect.TypeOf(&_DefaultRegistryTestListenerER{}),
+		DefaultERListenerType: reflect.TypeFor[*_DefaultRegistryTestListenerER](),
 	}
 
 	registry.Register(emitterSpec)
@@ -96,13 +96,13 @@ func TestRegisterCombinesEmitterAndListenerBlocks(t *testing.T) {
 	if emitterSpec.Info() != eventInfo || listenerSpec.Info() != eventInfo {
 		t.Fatal("split specs should point to the same event info")
 	}
-	if eventInfo.EmitterType() != reflect.TypeOf((*_RegistryTestEmitter)(nil)).Elem() {
+	if eventInfo.EmitterType() != reflect.TypeFor[_RegistryTestEmitter]() {
 		t.Fatalf("unexpected emitter type: %v", eventInfo.EmitterType())
 	}
-	if eventInfo.ListenerType() != reflect.TypeOf((*_RegistryTestListener)(nil)).Elem() {
+	if eventInfo.ListenerType() != reflect.TypeFor[_RegistryTestListener]() {
 		t.Fatalf("unexpected listener type: %v", eventInfo.ListenerType())
 	}
-	if eventInfo.ERListenerType() != reflect.TypeOf((*_RegistryTestListenerER)(nil)).Elem() {
+	if eventInfo.ERListenerType() != reflect.TypeFor[_RegistryTestListenerER]() {
 		t.Fatalf("unexpected er listener type: %v", eventInfo.ERListenerType())
 	}
 }
@@ -117,7 +117,7 @@ func TestRegisterRejectsDuplicateEmitterBlock(t *testing.T) {
 			EmitterMethodName:  "EmitRegistryTestEvent",
 			ListenerMethodName: "OnRegistryTestEvent",
 			PayloadType:        reflect.TypeFor[*_RegistryTestEvent](),
-			EmitterType:        reflect.TypeOf((*_RegistryTestEmitter)(nil)).Elem(),
+			EmitterType:        reflect.TypeFor[_RegistryTestEmitter](),
 			EmitterCtor:        func() _RegistryTestEmitter { return nil },
 		})
 	}

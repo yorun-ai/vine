@@ -139,7 +139,7 @@ func TestNewContainerRegistersFiltersAndContext(t *testing.T) {
 		},
 	)
 
-	execution := container.NewExecution(reflect.TypeOf(&ctrTestTarget{}), getMethodByName(reflect.TypeOf(&ctrTestTarget{}), "Sum"))
+	execution := container.NewExecution(reflect.TypeFor[*ctrTestTarget](), getMethodByName(reflect.TypeFor[*ctrTestTarget](), "Sum"))
 	execution.Execute([]any{1, 2})
 
 	assert.Equal(t, []string{"trace:before", "trace:after"}, events)
@@ -165,7 +165,7 @@ func TestNewContainerResolvesUnsetBindingsWithExecutionFallback(t *testing.T) {
 		},
 	)
 
-	execution := container.NewExecution(reflect.TypeOf(&ctrTestTarget{}), getMethodByName(reflect.TypeOf(&ctrTestTarget{}), "Sum"))
+	execution := container.NewExecution(reflect.TypeFor[*ctrTestTarget](), getMethodByName(reflect.TypeFor[*ctrTestTarget](), "Sum"))
 	execution.Execute([]any{3, 4})
 
 	assert.Equal(t, []string{"fallback:before", "fallback:after", "dispose:fallback"}, events)
