@@ -179,7 +179,7 @@ docker build --target link -t vine-link:local .
 镜像会执行对应的 `vine ... serve` 命令，并支持 CLI 定义的 `VINE_*` 环境变量，包括后端
 mTLS。证书文件在运行时挂载，不会打包进镜像。服务配置、环境变量和 mTLS 方式请参阅
 [Vine CLI 指南](https://vine.yorun.ai/zh-CN/docs/getting-started/cli)。Kubernetes 独立部署
-示例请参阅 [Kubernetes 部署指南](examples/k8s/README.md)，其中包含 `overlays/mtls` 配置。
+示例请参阅 [Kubernetes 部署指南](examples/k8s/README.zh-CN.md)，其中包含 `overlays/mtls` 配置。
 
 ## 公开包索引
 
