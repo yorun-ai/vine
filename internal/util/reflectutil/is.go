@@ -21,7 +21,7 @@ func IsInterface(val any) bool {
 }
 
 func IsPointerType(kind reflect.Type) bool {
-	return kind != nil && kind.Kind() == reflect.Ptr
+	return kind != nil && kind.Kind() == reflect.Pointer
 }
 
 func IsPointer(val any) bool {
@@ -29,7 +29,7 @@ func IsPointer(val any) bool {
 }
 
 func IsStructPointerType(kind reflect.Type) bool {
-	return kind != nil && kind.Kind() == reflect.Ptr && kind.Elem().Kind() == reflect.Struct
+	return kind != nil && kind.Kind() == reflect.Pointer && kind.Elem().Kind() == reflect.Struct
 }
 
 func IsStructPointer(val any) bool {

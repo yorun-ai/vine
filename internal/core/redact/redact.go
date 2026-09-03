@@ -82,16 +82,14 @@ func (e *_Failure) Unwrap() error {
 }
 
 func newFailure(kind string, cause error) error {
-	var failure *_Failure
-	if errors.As(cause, &failure) {
+	if _, ok := errors.AsType[*_Failure](cause); ok {
 		return cause
 	}
 	return &_Failure{kind: kind, cause: cause}
 }
 
 func failureKind(err error) string {
-	var failure *_Failure
-	if errors.As(err, &failure) {
+	if failure, ok := errors.AsType[*_Failure](err); ok {
 		return failure.kind
 	}
 	return "unknown"

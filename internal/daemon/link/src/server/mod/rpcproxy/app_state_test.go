@@ -45,14 +45,14 @@ func TestAppStateConcurrentReadAndLifecycleUpdates(t *testing.T) {
 	var waitGroup sync.WaitGroup
 	waitGroup.Go(func() {
 		<-start
-		for idx := 0; idx < 1000; idx++ {
+		for range 1000 {
 			proxy.OnSetup(instance)
 			proxy.OnDrain(instance)
 		}
 	})
 	waitGroup.Go(func() {
 		<-start
-		for idx := 0; idx < 1000; idx++ {
+		for range 1000 {
 			current, exists := proxy.getAppStateByInstanceID(localApp.InstanceId())
 			if !exists {
 				continue

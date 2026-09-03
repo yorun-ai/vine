@@ -31,10 +31,13 @@ are not part of the public compatibility commitment.
   `http.Server.MaxHeaderValueCount`
 - Adopted standard-library helpers available under the Go 1.27 baseline,
   including `strings.CutLast`, `strings.SplitSeq`, typed atomics,
-  `sync.WaitGroup.Go`, `slices.Contains`, and `slices.Backward`, where they
-  simplify parsing, concurrency lifecycles, membership checks, test counters,
-  and reverse-order cleanup; tests now express static reflection types with
-  `reflect.TypeFor`, and remaining `interface{}` spellings now use `any`
+  `sync.WaitGroup.Go`, `maps.Copy`, `min`, `slices.Contains`,
+  `slices.Backward`, and `errors.AsType`, where they simplify parsing,
+  concurrency lifecycles, collection operations, bounds, error inspection,
+  test counters, and reverse-order cleanup;
+  reflection code now uses type iterators, `reflect.Pointer`, and
+  `reflect.TypeFor` where the type is static, and remaining `interface{}`
+  spellings now use `any`; removed the redundant internal `PointerTo` helper
 - Adopted Go 1.27 promoted-field composite literals, replaced the remaining
   `golang.org/x/exp/constraints` usage with standard-library `cmp.Ordered`, and
   removed redundant URL copies after `http.Request.Clone`

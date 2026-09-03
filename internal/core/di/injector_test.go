@@ -381,7 +381,7 @@ func TestInjectorFallbackFactorySupportsConcurrentFirstResolution(t *testing.T) 
 	var wg sync.WaitGroup
 	start := make(chan struct{})
 	missing := make(chan reflect.Type, 32)
-	for index := 0; index < 32; index++ {
+	for index := range 32 {
 		wg.Go(func() {
 			<-start
 			if index%2 == 0 {

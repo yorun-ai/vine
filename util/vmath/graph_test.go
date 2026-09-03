@@ -14,11 +14,8 @@ func normalizeCycles[N cmpOrdered](cycles [][]N) [][]N {
 		result = append(result, vslice.Sort(cycle))
 	}
 	return vslice.SortBy(result, func(left []N, right []N) bool {
-		minLen := len(left)
-		if len(right) < minLen {
-			minLen = len(right)
-		}
-		for i := 0; i < minLen; i++ {
+		minLen := min(len(right), len(left))
+		for i := range minLen {
 			if left[i] != right[i] {
 				return left[i] < right[i]
 			}
@@ -134,13 +131,10 @@ func FuzzGraphPaths(f *testing.F) {
 		}
 		nodeCount := int(data[0]%12) + 1
 		graph := NewGraph[int]()
-		for node := 0; node < nodeCount; node++ {
+		for node := range nodeCount {
 			graph.AddNode(node)
 		}
-		limit := len(data)
-		if limit > 257 {
-			limit = 257
-		}
+		limit := min(len(data), 257)
 		for index := 1; index+1 < limit; index += 2 {
 			from := int(data[index]) % nodeCount
 			to := int(data[index+1]) % nodeCount

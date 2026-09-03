@@ -17,10 +17,10 @@ func TestSyncerSupportsConcurrentStateUpdates(t *testing.T) {
 
 	start := make(chan struct{})
 	var waitGroup sync.WaitGroup
-	for worker := 0; worker < 4; worker++ {
+	for worker := range 4 {
 		waitGroup.Go(func() {
 			<-start
-			for iteration := 0; iteration < 20; iteration++ {
+			for iteration := range 20 {
 				id := iteration % 3
 				name := fmt.Sprintf("demo.%d.%d", worker, iteration)
 				target.SyncAppConfig(&core.AppConfig{Id: id, Name: name, Value: `{}`})

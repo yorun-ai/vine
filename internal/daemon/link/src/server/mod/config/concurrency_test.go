@@ -36,7 +36,7 @@ func TestGetInstantConcurrentWithEventUpdate(t *testing.T) {
 	var waitGroup sync.WaitGroup
 	waitGroup.Go(func() {
 		<-start
-		for idx := 0; idx < 1000; idx++ {
+		for idx := range 1000 {
 			reader.handleInstantConfigEvent(redisKey, hubredis.Event{
 				Kind:  hubredis.EventKindUpsert,
 				Key:   redisKey,
@@ -46,7 +46,7 @@ func TestGetInstantConcurrentWithEventUpdate(t *testing.T) {
 	})
 	waitGroup.Go(func() {
 		<-start
-		for idx := 0; idx < 1000; idx++ {
+		for idx := range 1000 {
 			value := reader.GetInstant(appInstanceID, configName)
 			if idx%2 != 0 {
 				value = reader.retainInstantConfig(appInstanceID, configName)

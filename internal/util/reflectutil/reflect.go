@@ -9,16 +9,12 @@ import (
 
 func GetPrivateField(item any, fieldName string) any {
 	v := reflect.ValueOf(item)
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 	f := v.FieldByName(fieldName)
 	f = reflect.NewAt(f.Type(), unsafe.Pointer(f.UnsafeAddr())).Elem()
 	return f.Interface()
-}
-
-func PointerTo[T any](val T) *T {
-	return &val
 }
 
 func TargetOf(val any) any {
@@ -50,7 +46,7 @@ func EmbeddedStructTypes(kind reflect.Type) []reflect.Type {
 	if kind == nil {
 		return nil
 	}
-	if kind.Kind() == reflect.Ptr {
+	if kind.Kind() == reflect.Pointer {
 		kind = kind.Elem()
 	}
 	if kind.Kind() != reflect.Struct {
@@ -58,8 +54,7 @@ func EmbeddedStructTypes(kind reflect.Type) []reflect.Type {
 	}
 
 	var embeddedTypes []reflect.Type
-	for i := 0; i < kind.NumField(); i++ {
-		field := kind.Field(i)
+	for field := range kind.Fields() {
 		if field.Anonymous && field.Type.Kind() == reflect.Struct {
 			embeddedTypes = append(embeddedTypes, field.Type)
 		}
@@ -71,7 +66,7 @@ func EmbeddedStructFields(value reflect.Value) []reflect.Value {
 	if !value.IsValid() {
 		return nil
 	}
-	if value.Kind() == reflect.Ptr {
+	if value.Kind() == reflect.Pointer {
 		if value.IsNil() {
 			return nil
 		}

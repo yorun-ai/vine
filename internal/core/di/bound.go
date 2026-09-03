@@ -63,8 +63,8 @@ func (b *_Bound) analyzeFactory() {
 		return
 	}
 
-	for index := 0; index < factoryType.NumIn(); index++ {
-		b.factoryDependencies = append(b.factoryDependencies, factoryType.In(index))
+	for in := range factoryType.Ins() {
+		b.factoryDependencies = append(b.factoryDependencies, in)
 	}
 }
 

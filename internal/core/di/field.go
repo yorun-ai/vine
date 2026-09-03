@@ -65,7 +65,7 @@ func scanEmbeddedInjectedFields(parentType reflect.Type, fieldIndex int, field r
 		injectedField.name = fmt.Sprintf("%s.%s", field.Name, injectedField.name)
 		injectedFields = append(injectedFields, injectedField)
 	}
-	vpre.Check(field.Type.Kind() != reflect.Ptr || len(injectedFields) == 0,
+	vpre.Check(field.Type.Kind() != reflect.Pointer || len(injectedFields) == 0,
 		"embedded pointer struct %s of %s contains injected fields, use value embedding instead",
 		field.Name, parentType.Name())
 	return injectedFields

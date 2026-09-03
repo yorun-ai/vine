@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"maps"
 	"sync"
 	"testing"
 	"testing/synctest"
@@ -23,9 +24,7 @@ func TestSubscriptionReplaysDeleteAfterSnapshotPublication(t *testing.T) {
 		// loaded snapshot. It must remain buffered until Start.
 		subscription.enqueue(Event{Revision: 2, Kind: EventKindDelete, Key: key})
 		assert.Empty(t, handled)
-		for snapshotKey, value := range loadedSnapshot {
-			published[snapshotKey] = value
-		}
+		maps.Copy(published, loadedSnapshot)
 		subscription.Start()
 		synctest.Wait()
 
@@ -49,9 +48,7 @@ func TestSubscriptionReplaysUpsertAfterSnapshotPublication(t *testing.T) {
 		// The upsert arrives after the scan but before snapshot publication.
 		subscription.enqueue(Event{Revision: 2, Kind: EventKindUpsert, Key: key, Value: "new"})
 		assert.Empty(t, handled)
-		for snapshotKey, value := range loadedSnapshot {
-			published[snapshotKey] = value
-		}
+		maps.Copy(published, loadedSnapshot)
 		subscription.Start()
 		synctest.Wait()
 

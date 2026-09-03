@@ -180,7 +180,7 @@ func TestRegistrySupportsConcurrentRegistrationsAndLookups(t *testing.T) {
 	const count = 64
 	results := make(chan bool, count)
 	var wg sync.WaitGroup
-	for i := 0; i < count; i++ {
+	for i := range count {
 		endpoint := fmt.Sprintf("rpc+inproc://concurrent-%d", i)
 		wg.Go(func() {
 			cleanup := Register(endpoint, registryTestHandler{})

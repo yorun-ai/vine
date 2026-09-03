@@ -7,11 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPointerHelpers(t *testing.T) {
-	pointed := PointerTo(7)
-	assert.Equal(t, 7, *pointed)
-}
-
 func TestStructHelpers(t *testing.T) {
 	item := holder{
 		A:       1,

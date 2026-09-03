@@ -3,6 +3,7 @@ package redact
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"math"
 	"reflect"
 	"sort"
@@ -162,8 +163,7 @@ func typeHasSensitiveMetadata(valueType reflect.Type, visiting map[reflect.Type]
 		// an outer custom marshaler.
 		return true
 	case reflect.Struct:
-		for index := range valueType.NumField() {
-			field := valueType.Field(index)
+		for field := range valueType.Fields() {
 			if field.PkgPath != "" || field.Tag.Get("json") == "-" {
 				continue
 			}
@@ -204,9 +204,7 @@ func (s *_ProjectionState) projectStruct(value reflect.Value, depth int) (any, e
 				return nil, err
 			}
 			if object, ok := projected.(map[string]any); ok {
-				for embeddedName, embeddedValue := range object {
-					result[embeddedName] = embeddedValue
-				}
+				maps.Copy(result, object)
 			}
 			continue
 		}

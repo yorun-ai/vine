@@ -62,8 +62,8 @@ func parseJsonPath(path string) ([]_JsonPathPart, bool) {
 			return nil, false
 		}
 		part := _JsonPathPart{name: rawPart}
-		if strings.HasSuffix(rawPart, "[*]") {
-			part.name = strings.TrimSuffix(rawPart, "[*]")
+		if before, ok := strings.CutSuffix(rawPart, "[*]"); ok {
+			part.name = before
 			part.wildcard = true
 			wildcardCount++
 		}

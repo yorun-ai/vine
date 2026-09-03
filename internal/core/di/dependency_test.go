@@ -102,10 +102,7 @@ func FuzzDependencyGraphScopePaths(f *testing.F) {
 			bounds[index] = &_Bound{binding: binding}
 		}
 
-		limit := len(data)
-		if limit > len(dependencyFuzzTypes)+128 {
-			limit = len(dependencyFuzzTypes) + 128
-		}
+		limit := min(len(data), len(dependencyFuzzTypes)+128)
 		for index := len(dependencyFuzzTypes); index+1 < limit; index += 2 {
 			from := int(data[index]) % len(dependencyFuzzTypes)
 			to := int(data[index+1]) % len(dependencyFuzzTypes)

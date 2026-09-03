@@ -2,6 +2,7 @@ package hubredis
 
 import (
 	"context"
+	"maps"
 	"strings"
 	"sync"
 
@@ -18,9 +19,7 @@ type _TestClient struct {
 func NewTestClient(valuesByKey map[string]string) *Client {
 	client := new(Client)
 	copied := map[string]string{}
-	for key, value := range valuesByKey {
-		copied[key] = value
-	}
+	maps.Copy(copied, valuesByKey)
 	testClientByClient.Store(client, &_TestClient{
 		valuesByKey: copied,
 	})

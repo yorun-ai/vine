@@ -88,10 +88,7 @@ func (s *Store) scanCursorKeysLocked(option _ScanOption, now time.Time) ([]strin
 		return nil, 0, errors.New("invalid scan cursor")
 	}
 
-	end := option.count
-	if end > len(cursor.keys) {
-		end = len(cursor.keys)
-	}
+	end := min(option.count, len(cursor.keys))
 	keys := vslice.Clone(cursor.keys[:end])
 	cursor.keys = cursor.keys[end:]
 	if len(cursor.keys) == 0 {

@@ -3,6 +3,7 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"maps"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -149,9 +150,7 @@ func (s *Scheduler) refreshSchedules() error {
 		}
 		addedJobs[key] = entryId
 	}
-	for key, entryId := range addedJobs {
-		s.jobs[key] = entryId
-	}
+	maps.Copy(s.jobs, addedJobs)
 
 	for key, entryId := range s.jobs {
 		if _, exists := nextKeys[key]; exists {

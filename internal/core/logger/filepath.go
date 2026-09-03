@@ -35,10 +35,10 @@ func trimFunctionPackage(function string) string {
 		return ""
 	}
 
-	dotIndex := strings.Index(packageFunction, ".")
-	if dotIndex < 0 {
+	before, _, ok := strings.Cut(packageFunction, ".")
+	if !ok {
 		return ""
 	}
 
-	return pathPrefix + "/" + packageFunction[:dotIndex]
+	return pathPrefix + "/" + before
 }
