@@ -2,6 +2,12 @@ name: Container images
 
 on:
   pull_request:
+    paths:
+      - '.dockerignore'
+      - '.github/workflows/container.yml'
+      - 'Dockerfile'
+      - 'go.mod'
+      - 'go.sum'
   push:
     branches:
       - main
@@ -69,7 +75,7 @@ jobs:
           context: .
           file: ./Dockerfile
           target: ${{ matrix.target }}
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
