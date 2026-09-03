@@ -131,33 +131,12 @@ func (o *RpcOperation) extractCheckArgument(jsonPath string) (any, bool) {
 }
 
 func (o *RpcOperation) tryForwardCheckRequest(request *http.Request, serviceSkelName string, defaultMessage string) (bool, ex.Code, string) {
-	response, code, message, ok := o.forwardInvokeRequest(request, serviceSkelName, "permission service")
-	if !ok {
-		return false, code, message
-	}
-	defer func() { _ = response.Body.Close() }()
-
-	return o.checkResponse(response, defaultMessage)
-}
-
-func (o *RpcOperation) forwardCheckCodesRequest(request *http.Request, serviceSkelName string) bool {
-	response, code, message, ok := o.forwardInvokeRequest(request, serviceSkelName, "permission service")
-	if !ok {
-		o.writeError(code, message)
-		return false
-	}
-	defer func() { _ = response.Body.Close() }()
-
-	return o.checkCodesResponse(response)
-}
-
-func (o *RpcOperation) checkResponse(response *http.Response, defaultMessage string) (bool, ex.Code, string) {
-	_, code, message, ok := readInvokeResponse[any](response, "permission", "bad permission response", defaultMessage)
+	_, code, message, ok := o.invoke[any](request, serviceSkelName, "permission", defaultMessage)
 	return ok, code, message
 }
 
-func (o *RpcOperation) checkCodesResponse(response *http.Response) bool {
-	results, code, message, ok := readInvokeResponse[map[string]bool](response, "permission", "bad permission response", "permission check failed")
+func (o *RpcOperation) forwardCheckCodesRequest(request *http.Request, serviceSkelName string) bool {
+	results, code, message, ok := o.invoke[map[string]bool](request, serviceSkelName, "permission", "permission check failed")
 	if !ok {
 		o.writeError(code, message)
 		return false

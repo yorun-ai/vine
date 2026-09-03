@@ -107,33 +107,17 @@ func parseCredential(schema *skel.DataSchema, authorization string) (map[string]
 
 func (o *Auther) executeAuthRequest(authRequest *http.Request, writeError _AuthErrorWriter, setActor _AuthActorSetter) bool {
 	skelServiceName := o.actorSchema.AuthService.SkelName
-	response, code, message, ok := o.forwardInvokeRequest(authRequest, skelServiceName, "auth service")
+	info, code, message, ok := o.invoke[json.RawMessage](authRequest, skelServiceName, "auth", "auth failed")
 	if !ok {
 		writeError(code, message)
 		return false
 	}
 
-	defer func() { _ = response.Body.Close() }()
-	info, ok := o.parseAuthResponse(response, writeError)
-	if !ok {
+	if len(info) == 0 || bytes.Equal(info, []byte("null")) {
+		writeError(ex.ServiceUnavailable, "bad auth response")
 		return false
 	}
 
 	setActor(meta.NewAuthenticatedActorWithRawInfo(o.actorSchema.AuthInfo.SkelName, info))
 	return true
-}
-
-func (o *Auther) parseAuthResponse(response *http.Response, writeError _AuthErrorWriter) (json.RawMessage, bool) {
-	info, code, message, ok := readInvokeResponse[json.RawMessage](response, "auth", "bad auth response", "auth failed")
-	if !ok {
-		writeError(code, message)
-		return nil, false
-	}
-
-	if len(info) == 0 || bytes.Equal(info, []byte("null")) {
-		writeError(ex.ServiceUnavailable, "bad auth response")
-		return nil, false
-	}
-
-	return info, true
 }

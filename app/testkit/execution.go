@@ -55,8 +55,8 @@ func (r *Runtime) NewExecution(option ExecutionOption) *Execution {
 	}
 }
 
-// NewClient constructs a generated ordinary Rpc client bound to execution.
-func NewClient[C any](execution *Execution) C {
+// NewClient constructs a generated ordinary Rpc client bound to the execution.
+func (e *Execution) NewClient[C any]() C {
 	clientType := reflect.TypeFor[C]()
 	serviceInfo, ok := rpcspec.GetServiceInfoByClientType(clientType)
 	vpre.Check(ok, "rpc service client %s is not registered", clientType)
@@ -64,21 +64,21 @@ func NewClient[C any](execution *Execution) C {
 	vpre.CheckNotNil(serviceInfo.ERClientCtor(), "rpc service er client ctor is not registered")
 
 	erClient := reflect.ValueOf(serviceInfo.ERClientCtor()).Call([]reflect.Value{
-		reflect.ValueOf(execution.newClient()),
+		reflect.ValueOf(e.newClient()),
 	})[0]
 	client := reflect.ValueOf(serviceInfo.ClientCtor()).Call([]reflect.Value{erClient})[0]
 	return client.Interface().(C)
 }
 
-// NewClientER constructs a generated error-returning Rpc client bound to execution.
-func NewClientER[C any](execution *Execution) C {
+// NewClientER constructs a generated error-returning Rpc client bound to the execution.
+func (e *Execution) NewClientER[C any]() C {
 	clientType := reflect.TypeFor[C]()
 	serviceInfo, ok := rpcspec.GetServiceInfoByERClientType(clientType)
 	vpre.Check(ok, "rpc service er client %s is not registered", clientType)
 	vpre.CheckNotNil(serviceInfo.ERClientCtor(), "rpc service er client ctor is not registered")
 
 	erClient := reflect.ValueOf(serviceInfo.ERClientCtor()).Call([]reflect.Value{
-		reflect.ValueOf(execution.newClient()),
+		reflect.ValueOf(e.newClient()),
 	})[0]
 	return erClient.Interface().(C)
 }

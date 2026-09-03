@@ -27,7 +27,11 @@ func newGuard() *_Guard {
 
 var defaultGuard = newGuard()
 
-func (g *_Guard) create(specType reflect.Type, createSpec func() ApplicationSpec, createApp func(ApplicationSpec) App) App {
+func (g *_Guard) create[S ApplicationSpec](enableInproc bool, opts ...FlagApplier) App {
+	return g.createByType(T[S](), enableInproc, opts...)
+}
+
+func (g *_Guard) createByType(specType reflect.Type, enableInproc bool, opts ...FlagApplier) App {
 	entry := new(_GuardEntry)
 	g.reserveType(specType, entry)
 
@@ -39,10 +43,14 @@ func (g *_Guard) create(specType reflect.Type, createSpec func() ApplicationSpec
 		}
 	}()
 
-	spec := createSpec()
+	flags := _Flags{}
+	flags.Apply(opts...)
+	flags.EnsureRunFlag()
+	flags.InitInprocFlag(enableInproc)
+	spec := newSpec(specType, flags)
 	name = spec.Name()
 	g.reserveName(name, entry)
-	app := createApp(spec)
+	app := newApp(spec, flags)
 	succeeded = true
 	return app
 }

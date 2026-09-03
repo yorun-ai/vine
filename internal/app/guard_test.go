@@ -1,34 +1,24 @@
 package app
 
-import (
-	"reflect"
-	"testing"
-)
+import "testing"
 
 type _GuardTestSpec struct {
 	Application
-	name string
 }
 
-func (s *_GuardTestSpec) Name() string {
-	return s.name
+func (*_GuardTestSpec) Name() string {
+	return "test.guard"
 }
 
 func TestGuardInstancesAreIsolated(t *testing.T) {
-	specType := reflect.TypeFor[*_GuardTestSpec]()
-	createSpec := func() ApplicationSpec { return &_GuardTestSpec{name: "test.guard"} }
-	createApp := func(ApplicationSpec) App { return &stubApp{} }
-
 	first := newGuard()
 	second := newGuard()
-	first.create(specType, createSpec, createApp)
-	second.create(specType, createSpec, createApp)
+	first.create[*_GuardTestSpec](false)
+	second.create[*_GuardTestSpec](false)
 }
 
 func TestGuardRollsBackFailedCreation(t *testing.T) {
 	guard := newGuard()
-	specType := reflect.TypeFor[*_GuardTestSpec]()
-	createSpec := func() ApplicationSpec { return &_GuardTestSpec{name: "test.guard.rollback"} }
 
 	func() {
 		defer func() {
@@ -36,17 +26,16 @@ func TestGuardRollsBackFailedCreation(t *testing.T) {
 				t.Fatal("expected app creation panic")
 			}
 		}()
-		guard.create(specType, createSpec, func(ApplicationSpec) App {
+		guard.create[*_GuardTestSpec](false, func(_Flags) {
 			panic("creation failed")
 		})
 	}()
 
-	guard.create(specType, createSpec, func(ApplicationSpec) App { return &stubApp{} })
+	guard.create[*_GuardTestSpec](false)
 }
 
 func TestGuardAllowsOnlyOneConcurrentCreation(t *testing.T) {
 	guard := newGuard()
-	specType := reflect.TypeFor[*_GuardTestSpec]()
 	results := make(chan bool, 32)
 
 	for range cap(results) {
@@ -56,11 +45,7 @@ func TestGuardAllowsOnlyOneConcurrentCreation(t *testing.T) {
 				_ = recover()
 				results <- created
 			}()
-			guard.create(
-				specType,
-				func() ApplicationSpec { return &_GuardTestSpec{name: "test.guard.concurrent"} },
-				func(ApplicationSpec) App { return &stubApp{} },
-			)
+			guard.create[*_GuardTestSpec](false)
 			created = true
 		}()
 	}

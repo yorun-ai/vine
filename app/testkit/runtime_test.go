@@ -32,9 +32,9 @@ func TestStartStandaloneStartsRuntime(t *testing.T) {
 	assert.Equal(t, trace, execution.trace)
 	assert.Equal(t, actor, execution.actor)
 
-	serviceClient := NewClient[_TestServiceClient](execution)
+	serviceClient := execution.NewClient[_TestServiceClient]()
 	require.NotNil(t, serviceClient)
 
-	erServiceClient := NewClientER[_TestServiceClientER](execution)
+	erServiceClient := execution.NewClientER[_TestServiceClientER]()
 	require.NotNil(t, erServiceClient)
 }

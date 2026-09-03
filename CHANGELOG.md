@@ -31,6 +31,10 @@ are not part of the public compatibility commitment.
   they directly simplify parsing, test counters, and reverse-order cleanup
 - Added isolated Go 1.27 `goroutineleak` profile checks for application HTTP,
   in-process Rpc, scheduler, and Redis lock lifecycle tests
+- Replaced the package-level `testkit.NewClient`, `testkit.NewClientER`, and
+  `redis.NewCache` functions with the generic methods `Execution.NewClient`,
+  `Execution.NewClientER`, and `Redis.NewCache`, and simplified application
+  construction through the generic process guard
 - Reworked timer-, cancellation-, scheduler-, lock-, and in-process transport
   tests around Go 1.27 `testing/synctest`, replacing wall-clock polling with
   deterministic synchronization, randomized test ordering, and tighter global
