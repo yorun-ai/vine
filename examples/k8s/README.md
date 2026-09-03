@@ -151,8 +151,9 @@ controller or use `kubectl port-forward` for development.
 
 ## Production configuration
 
-The base manifests use HTTP between components and Hub's embedded NATS with
-SQLite for a small single-replica deployment. The `overlays/mtls` example
+The Hub image itself does not select a database or NATS mode. The base manifests
+explicitly select SQLite and embedded NATS for a small single-replica deployment,
+and use HTTP between components. The `overlays/mtls` example
 shows how to provide separate Secrets for each component's backend mTLS files,
 mount them under a read-only path, set `VINE_MTLS_CA_FILE`,
 `VINE_MTLS_CERT_FILE`, and `VINE_MTLS_KEY_FILE`, and change

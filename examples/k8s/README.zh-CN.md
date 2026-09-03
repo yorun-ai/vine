@@ -140,9 +140,9 @@ Portal 默认使用 `LoadBalancer` Service。在没有云负载均衡器的集�
 
 ## 生产配置
 
-基础清单在组件之间使用 HTTP，并使用 Hub 内嵌 NATS 和 SQLite，适用于小规模的
-单副本部署。`overlays/mtls` 示例展示了如何为每个组件提供独立的后端 mTLS
-文件 Secret，以只读方式挂载，设置 `VINE_MTLS_CA_FILE`、
+Hub 镜像本身默认不选择数据库或 NATS 模式。基础清单显式选择内嵌 NATS 和 SQLite，
+适用于小规模的单副本部署，并在组件之间使用 HTTP。`overlays/mtls` 示例展示了如何为
+每个组件提供独立的后端 mTLS 文件 Secret，以只读方式挂载，设置 `VINE_MTLS_CA_FILE`、
 `VINE_MTLS_CERT_FILE` 和 `VINE_MTLS_KEY_FILE`，并将 `VINE_HUB_ENDPOINT`
 改为 HTTPS 地址。需要独立扩缩容和持久化基础设施时，请使用托管 PostgreSQL
 数据库和外部 NATS。

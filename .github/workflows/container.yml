@@ -11,6 +11,9 @@ on:
 permissions:
   contents: read
 
+env:
+  GO_VERSION: '1.27.1'
+
 concurrency:
   group: containers-${{ github.ref }}
   cancel-in-progress: true
@@ -71,6 +74,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
+            GO_VERSION=${{ env.GO_VERSION }}
             VERSION=${{ github.ref_type == 'tag' && github.ref_name || 'v0.0.0-dev' }}
           cache-from: type=gha,scope=vine-${{ matrix.target }}
           cache-to: type=gha,mode=max,scope=vine-${{ matrix.target }}

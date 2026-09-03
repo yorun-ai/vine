@@ -189,7 +189,10 @@ docker build --target link -t vine-link:local .
 
 The images run the corresponding `vine ... serve` command and accept the CLI's
 `VINE_*` environment variables, including backend mTLS. Certificate files are
-mounted at runtime and are not included in the image. See the [Vine CLI
+mounted at runtime and are not included in the image. The Hub image does not
+select a database or NATS mode by default: set exactly one of
+`VINE_DB_SQLITE_FILE` and `VINE_DB_POSTGRES_URL`, and select exactly one of
+`VINE_MQ_EMBEDDED_NATS=true` and `VINE_MQ_EXTERNAL_NATS_URL`. See the [Vine CLI
 guide](https://vine.yorun.ai/docs/getting-started/cli) for service configuration,
 environment variables, and mTLS setup. For a runnable Kubernetes example, see
 the [Kubernetes deployment guide](examples/k8s/README.md), including its
