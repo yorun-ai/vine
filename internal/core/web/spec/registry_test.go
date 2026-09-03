@@ -21,7 +21,7 @@ func (*_DefaultRegistryTestWebServer) Routes(*Router) {
 func (*_DefaultRegistryTestWebServer) mustBeRegistryTestWebServer() {}
 
 func TestRegisterStoresWebInfo(t *testing.T) {
-	ResetRegistryForTest()
+	registry := NewRegistry()
 
 	spec := &WebSpec{
 		Name:              "RegistryTestWeb",
@@ -30,9 +30,9 @@ func TestRegisterStoresWebInfo(t *testing.T) {
 		DefaultServerType: reflect.TypeFor[*_DefaultRegistryTestWebServer](),
 	}
 
-	Register(spec)
+	registry.Register(spec)
 
-	infos := RegisteredWebInfos()
+	infos := registry.RegisteredWebInfos()
 	if len(infos) != 1 {
 		t.Fatalf("unexpected web info count: %d", len(infos))
 	}

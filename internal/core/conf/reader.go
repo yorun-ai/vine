@@ -13,15 +13,20 @@ type Reader interface {
 }
 
 type _Reader struct {
-	linker link.Linker
+	linker   link.Linker
+	registry *Registry
 }
 
 func NewReader(linker link.Linker) Reader {
-	return &_Reader{linker: linker}
+	return newReader(linker, defaultRegistry)
+}
+
+func newReader(linker link.Linker, registry *Registry) Reader {
+	return &_Reader{linker: linker, registry: registry}
 }
 
 func (r *_Reader) GetByType(kind reflect.Type) any {
-	info := lookupByType(kind)
+	info := r.registry.lookupByType(kind)
 	text := r.getRaw(info)
 	vpre.Check(text != "", "config %s json is empty", info.SkelName)
 

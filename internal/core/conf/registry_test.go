@@ -14,16 +14,16 @@ type regTestConfigContract interface {
 }
 
 func TestRegisterEternal(t *testing.T) {
-	resetRegistryForTest()
+	registry := NewRegistry()
 
-	Register(ConfigSpec{
+	registry.Register(ConfigSpec{
 		Name:      "RegTestConfig",
 		SkelName:  "demo.user.RegTestConfig",
 		Lifecycle: LifecycleEternal,
 		Type:      reflect.TypeFor[regTestConfig](),
 	})
 
-	reg, ok := infoBySkelName["demo.user.RegTestConfig"]
+	reg, ok := registry.infoBySkelName["demo.user.RegTestConfig"]
 	if !ok {
 		t.Fatal("expected registration")
 	}
@@ -39,7 +39,7 @@ func TestRegisterEternal(t *testing.T) {
 	if reg.SkelName != "demo.user.RegTestConfig" {
 		t.Fatalf("unexpected skelName: %s", reg.SkelName)
 	}
-	types := RegisteredTypes()
+	types := registry.RegisteredTypes()
 	if len(types) != 1 {
 		t.Fatalf("unexpected registered types count: %d", len(types))
 	}
@@ -49,16 +49,16 @@ func TestRegisterEternal(t *testing.T) {
 }
 
 func TestRegisterInstant(t *testing.T) {
-	resetRegistryForTest()
+	registry := NewRegistry()
 
-	Register(ConfigSpec{
+	registry.Register(ConfigSpec{
 		Name:      "RegTestConfig",
 		SkelName:  "demo.user.RegTestConfig",
 		Lifecycle: LifecycleInstant,
 		Type:      reflect.TypeFor[regTestConfig](),
 	})
 
-	reg, ok := infoBySkelName["demo.user.RegTestConfig"]
+	reg, ok := registry.infoBySkelName["demo.user.RegTestConfig"]
 	if !ok {
 		t.Fatal("expected registration")
 	}
@@ -68,16 +68,16 @@ func TestRegisterInstant(t *testing.T) {
 }
 
 func TestRegisterInterfaceWithConstructor(t *testing.T) {
-	resetRegistryForTest()
+	registry := NewRegistry()
 
-	Register(ConfigSpec{
+	registry.Register(ConfigSpec{
 		Name:      "RegTestConfigContract",
 		SkelName:  "demo.user.RegTestConfigContract",
 		Lifecycle: LifecycleInstant,
 		Type:      reflect.TypeFor[regTestConfigContract](),
 	})
 
-	reg, ok := infoBySkelName["demo.user.RegTestConfigContract"]
+	reg, ok := registry.infoBySkelName["demo.user.RegTestConfigContract"]
 	if !ok {
 		t.Fatal("expected registration")
 	}
@@ -87,9 +87,9 @@ func TestRegisterInterfaceWithConstructor(t *testing.T) {
 }
 
 func TestRegisterRejectsDuplicateSkelName(t *testing.T) {
-	resetRegistryForTest()
+	registry := NewRegistry()
 
-	Register(ConfigSpec{
+	registry.Register(ConfigSpec{
 		Name:      "RegTestConfig",
 		SkelName:  "demo.user.RegTestConfig",
 		Lifecycle: LifecycleInstant,
@@ -103,15 +103,10 @@ func TestRegisterRejectsDuplicateSkelName(t *testing.T) {
 		}
 	}()
 
-	Register(ConfigSpec{
+	registry.Register(ConfigSpec{
 		Name:      "RegTestConfig",
 		SkelName:  "demo.user.RegTestConfig",
 		Lifecycle: LifecycleInstant,
 		Type:      reflect.TypeFor[*regTestConfig](),
 	})
-}
-
-func resetRegistryForTest() {
-	infoBySkelName = map[string]*_ConfigInfo{}
-	infoByType = map[reflect.Type]*_ConfigInfo{}
 }

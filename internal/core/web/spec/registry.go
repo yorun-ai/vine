@@ -8,26 +8,49 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-var webInfoBySkelName = map[string]WebInfo{}
-var webInfoByDefaultEmbeddedType = map[reflect.Type]WebInfo{}
+type Registry struct {
+	webInfoBySkelName            map[string]WebInfo
+	webInfoByDefaultEmbeddedType map[reflect.Type]WebInfo
+}
+
+func NewRegistry() *Registry {
+	return &Registry{
+		webInfoBySkelName:            map[string]WebInfo{},
+		webInfoByDefaultEmbeddedType: map[reflect.Type]WebInfo{},
+	}
+}
+
+var defaultRegistry = NewRegistry()
 
 func Register(webSpec *WebSpec) {
-	webInfo := initWebInfo(webSpec)
-	vpre.CheckNil(webInfoBySkelName[webInfo.SkelName()], "web %s already registered", webInfo.SkelName())
-	vpre.CheckNil(webInfoByDefaultEmbeddedType[webInfo.DefaultServerType().Elem()], "default web server type %s already registered", webInfo.DefaultServerType())
+	defaultRegistry.Register(webSpec)
+}
 
-	webInfoBySkelName[webInfo.SkelName()] = webInfo
-	webInfoByDefaultEmbeddedType[webInfo.DefaultServerType().Elem()] = webInfo
+func (r *Registry) Register(webSpec *WebSpec) {
+	webInfo := initWebInfo(webSpec)
+	vpre.CheckNil(r.webInfoBySkelName[webInfo.SkelName()], "web %s already registered", webInfo.SkelName())
+	vpre.CheckNil(r.webInfoByDefaultEmbeddedType[webInfo.DefaultServerType().Elem()], "default web server type %s already registered", webInfo.DefaultServerType())
+
+	r.webInfoBySkelName[webInfo.SkelName()] = webInfo
+	r.webInfoByDefaultEmbeddedType[webInfo.DefaultServerType().Elem()] = webInfo
 }
 
 func RegisteredWebInfos() []WebInfo {
-	return vmap.Values(webInfoBySkelName)
+	return defaultRegistry.RegisteredWebInfos()
+}
+
+func (r *Registry) RegisteredWebInfos() []WebInfo {
+	return vmap.Values(r.webInfoBySkelName)
 }
 
 func GetWebInfo(handlerType reflect.Type) WebInfo {
+	return defaultRegistry.GetWebInfo(handlerType)
+}
+
+func (r *Registry) GetWebInfo(handlerType reflect.Type) WebInfo {
 	var webInfo WebInfo
 	for _, embeddedType := range reflectutil.EmbeddedStructTypes(handlerType) {
-		info := webInfoByDefaultEmbeddedType[embeddedType]
+		info := r.webInfoByDefaultEmbeddedType[embeddedType]
 		if info == nil {
 			continue
 		}

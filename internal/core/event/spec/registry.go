@@ -7,19 +7,39 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-var eventInfoBySkelName = map[string]*_EventInfo{}
-var eventInfoByDefaultEmbeddedType = map[reflect.Type]*_EventInfo{}
-var erDefaultEmbeddedTypes = map[reflect.Type]struct{}{}
+type Registry struct {
+	eventInfoBySkelName            map[string]*_EventInfo
+	eventInfoByDefaultEmbeddedType map[reflect.Type]*_EventInfo
+	erDefaultEmbeddedTypes         map[reflect.Type]struct{}
+}
+
+func NewRegistry() *Registry {
+	return &Registry{
+		eventInfoBySkelName:            map[string]*_EventInfo{},
+		eventInfoByDefaultEmbeddedType: map[reflect.Type]*_EventInfo{},
+		erDefaultEmbeddedTypes:         map[reflect.Type]struct{}{},
+	}
+}
+
+var defaultRegistry = NewRegistry()
 
 func GetEventInfo(eventSkelName string) (EventInfo, bool) {
-	eventInfo := eventInfoBySkelName[eventSkelName]
+	return defaultRegistry.GetEventInfo(eventSkelName)
+}
+
+func (r *Registry) GetEventInfo(eventSkelName string) (EventInfo, bool) {
+	eventInfo := r.eventInfoBySkelName[eventSkelName]
 	return eventInfo, eventInfo != nil
 }
 
 func Register(eventSpec *EventSpec) {
+	defaultRegistry.Register(eventSpec)
+}
+
+func (r *Registry) Register(eventSpec *EventSpec) {
 	vpre.Check(isValidEventSpecType(eventSpec.Type), "invalid event spec type")
 
-	eventInfo, ok := eventInfoBySkelName[eventSpec.SkelName]
+	eventInfo, ok := r.eventInfoBySkelName[eventSpec.SkelName]
 	if !ok {
 		eventInfo = &_EventInfo{
 			name:               eventSpec.Name,
@@ -29,7 +49,7 @@ func Register(eventSpec *EventSpec) {
 			emitterMethodName:  eventSpec.EmitterMethodName,
 			listenerMethodName: eventSpec.ListenerMethodName,
 		}
-		eventInfoBySkelName[eventSpec.SkelName] = eventInfo
+		r.eventInfoBySkelName[eventSpec.SkelName] = eventInfo
 	}
 	eventSpec.info = eventInfo
 
@@ -48,38 +68,46 @@ func Register(eventSpec *EventSpec) {
 		eventInfo.erListenerType = eventSpec.ERListenerType
 		eventInfo.wrapperERListenerCtor = eventSpec.WrapperERListenerCtor
 		eventInfo.defaultERListenerType = eventSpec.DefaultERListenerType
-		registerDefaultEmbeddedTypes(eventInfo.DefaultListenerType(), eventInfo, false)
-		registerDefaultEmbeddedTypes(eventInfo.DefaultERListenerType(), eventInfo, true)
+		r.registerDefaultEmbeddedTypes(eventInfo.DefaultListenerType(), eventInfo, false)
+		r.registerDefaultEmbeddedTypes(eventInfo.DefaultERListenerType(), eventInfo, true)
 	}
 }
 
-func registerDefaultEmbeddedTypes(defaultListenerType reflect.Type, eventInfo *_EventInfo, isERType bool) {
+func (r *Registry) registerDefaultEmbeddedTypes(defaultListenerType reflect.Type, eventInfo *_EventInfo, isERType bool) {
 	embeddedType := defaultListenerType.Elem()
-	eventInfoByDefaultEmbeddedType[embeddedType] = eventInfo
+	r.eventInfoByDefaultEmbeddedType[embeddedType] = eventInfo
 	if isERType {
-		erDefaultEmbeddedTypes[embeddedType] = struct{}{}
+		r.erDefaultEmbeddedTypes[embeddedType] = struct{}{}
 	}
 }
 
 func getEventInfo(implType reflect.Type) (EventInfo, bool) {
+	return defaultRegistry.getEventInfo(implType)
+}
+
+func (r *Registry) getEventInfo(implType reflect.Type) (EventInfo, bool) {
 	var eventInfo EventInfo
 	isERType := false
 	for _, embeddedType := range reflectutil.EmbeddedStructTypes(implType) {
-		info := eventInfoByDefaultEmbeddedType[embeddedType]
+		info := r.eventInfoByDefaultEmbeddedType[embeddedType]
 		if info == nil {
 			continue
 		}
 		vpre.CheckNil(eventInfo, "multiple embedded default listener type found on %s.%s", implType.PkgPath(), implType.Name())
 		eventInfo = info
-		_, isERType = erDefaultEmbeddedTypes[embeddedType]
+		_, isERType = r.erDefaultEmbeddedTypes[embeddedType]
 	}
 	vpre.CheckNotNil(eventInfo, "no embedded default listener type found on %s.%s", implType.PkgPath(), implType.Name())
 	return eventInfo, isERType
 }
 
 func RegisteredEventEmitterFactories() []any {
+	return defaultRegistry.RegisteredEventEmitterFactories()
+}
+
+func (r *Registry) RegisteredEventEmitterFactories() []any {
 	var factories []any
-	for _, eventInfo := range eventInfoBySkelName {
+	for _, eventInfo := range r.eventInfoBySkelName {
 		factories = append(factories, eventInfo.EmitterCtor())
 	}
 	return factories

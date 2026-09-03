@@ -67,32 +67,37 @@ var testInfoTaskRegisterOnce sync.Once
 
 func ensureInfoTaskRegistered() {
 	testInfoTaskRegisterOnce.Do(func() {
-		Register(&TaskSpec{
-			Name:                "TestInfoTask",
-			SkelName:            "test.info.task",
-			RunnerType:          reflect.TypeOf((*testInfoTaskRunner)(nil)).Elem(),
-			DefaultRunnerType:   reflect.TypeOf(&defaultTestInfoTaskRunner{}),
-			ERRunnerType:        reflect.TypeOf((*testInfoTaskRunnerER)(nil)).Elem(),
-			WrapperERRunnerCtor: newWrapperTestInfoTaskRunnerER,
-			DefaultERRunnerType: reflect.TypeOf(&defaultTestInfoTaskRunnerER{}),
-			LauncherType:        reflect.TypeOf((*testInfoTaskLauncher)(nil)).Elem(),
-			LauncherCtor:        func(*struct{}) testInfoTaskLauncher { return &defaultTestInfoTaskLauncher{} },
-			Triggers: []*TriggerSpec{{
-				Name:               "ForGroup",
-				SkelName:           "forGroup",
-				LauncherMethodName: "LaunchForGroup",
-				RunnerMethodName:   "RunForGroup",
-				ArgumentsType:      reflect.TypeOf(testInfoTaskArguments{}),
-				ArgumentsSensitive: true,
-			}},
-		})
+		Register(newTestInfoTaskSpec())
 	})
 }
 
-func TestGetTriggerInfoReturnsRegisteredTrigger(t *testing.T) {
-	ensureInfoTaskRegistered()
+func newTestInfoTaskSpec() *TaskSpec {
+	return &TaskSpec{
+		Name:                "TestInfoTask",
+		SkelName:            "test.info.task",
+		RunnerType:          reflect.TypeOf((*testInfoTaskRunner)(nil)).Elem(),
+		DefaultRunnerType:   reflect.TypeOf(&defaultTestInfoTaskRunner{}),
+		ERRunnerType:        reflect.TypeOf((*testInfoTaskRunnerER)(nil)).Elem(),
+		WrapperERRunnerCtor: newWrapperTestInfoTaskRunnerER,
+		DefaultERRunnerType: reflect.TypeOf(&defaultTestInfoTaskRunnerER{}),
+		LauncherType:        reflect.TypeOf((*testInfoTaskLauncher)(nil)).Elem(),
+		LauncherCtor:        func(*struct{}) testInfoTaskLauncher { return &defaultTestInfoTaskLauncher{} },
+		Triggers: []*TriggerSpec{{
+			Name:               "ForGroup",
+			SkelName:           "forGroup",
+			LauncherMethodName: "LaunchForGroup",
+			RunnerMethodName:   "RunForGroup",
+			ArgumentsType:      reflect.TypeOf(testInfoTaskArguments{}),
+			ArgumentsSensitive: true,
+		}},
+	}
+}
 
-	triggerInfo, ok := GetTriggerInfo("test.info.task", "forGroup")
+func TestGetTriggerInfoReturnsRegisteredTrigger(t *testing.T) {
+	registry := NewRegistry()
+	registry.Register(newTestInfoTaskSpec())
+
+	triggerInfo, ok := registry.GetTriggerInfo("test.info.task", "forGroup")
 	if !ok {
 		t.Fatal("expected trigger info")
 	}

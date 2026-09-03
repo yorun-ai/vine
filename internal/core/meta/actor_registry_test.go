@@ -10,7 +10,7 @@ type _RegistryTestActorInfo struct {
 }
 
 func TestRegisterActorStoresActorSpec(t *testing.T) {
-	resetActorRegistryForTest()
+	registry := NewRegistry()
 
 	spec := ActorSpec{
 		Name:         "RegistryTestActor",
@@ -20,20 +20,20 @@ func TestRegisterActorStoresActorSpec(t *testing.T) {
 		InfoType:     reflect.TypeFor[*_RegistryTestActorInfo](),
 	}
 
-	RegisterActor(spec)
+	registry.RegisterActor(spec)
 
-	got, ok := infoBySkelName[spec.SkelName]
+	got, ok := registry.infoBySkelName[spec.SkelName]
 	if !ok {
 		t.Fatalf("expected actor info")
 	}
 	assertActorInfo(t, got, spec)
 
-	infoByData, ok := infoByInfoSkelName[spec.InfoSkelName]
+	infoByData, ok := registry.infoByInfoSkelName[spec.InfoSkelName]
 	if !ok {
 		t.Fatalf("expected actor info by data skel name")
 	}
 	assertActorInfo(t, infoByData, spec)
-	infoByType, ok := infoByInfoType[spec.InfoType]
+	infoByType, ok := registry.infoByInfoType[spec.InfoType]
 	if !ok {
 		t.Fatalf("expected actor info by info type")
 	}
@@ -41,7 +41,7 @@ func TestRegisterActorStoresActorSpec(t *testing.T) {
 }
 
 func TestRegisterActorAllowsActorWithoutInfo(t *testing.T) {
-	resetActorRegistryForTest()
+	registry := NewRegistry()
 
 	spec := ActorSpec{
 		Name:     "RegistryNoInfoActor",
@@ -49,9 +49,9 @@ func TestRegisterActorAllowsActorWithoutInfo(t *testing.T) {
 		Hash:     "hash-registry-no-info",
 	}
 
-	RegisterActor(spec)
+	registry.RegisterActor(spec)
 
-	got, ok := infoBySkelName[spec.SkelName]
+	got, ok := registry.infoBySkelName[spec.SkelName]
 	if !ok {
 		t.Fatalf("expected actor info")
 	}
@@ -61,24 +61,24 @@ func TestRegisterActorAllowsActorWithoutInfo(t *testing.T) {
 }
 
 func TestRegisterActorPanicsOnDuplicateActorSkelName(t *testing.T) {
-	resetActorRegistryForTest()
+	registry := NewRegistry()
 
 	spec := ActorSpec{
 		Name:     "RegistryDuplicateActor",
 		SkelName: "test.registry.RegistryDuplicateActor",
 	}
-	RegisterActor(spec)
+	registry.RegisterActor(spec)
 
 	assertPanics(t, func() {
-		RegisterActor(spec)
+		registry.RegisterActor(spec)
 	})
 }
 
 func TestRegisterActorPanicsOnInvalidInfoType(t *testing.T) {
-	resetActorRegistryForTest()
+	registry := NewRegistry()
 
 	assertPanics(t, func() {
-		RegisterActor(ActorSpec{
+		registry.RegisterActor(ActorSpec{
 			Name:         "RegistryInvalidInfoActor",
 			SkelName:     "test.registry.RegistryInvalidInfoActor",
 			InfoSkelName: "test.registry.RegistryInvalidInfoActorInfo",
@@ -88,9 +88,7 @@ func TestRegisterActorPanicsOnInvalidInfoType(t *testing.T) {
 }
 
 func resetActorRegistryForTest() {
-	infoBySkelName = map[string]*_ActorInfo{}
-	infoByInfoSkelName = map[string]*_ActorInfo{}
-	infoByInfoType = map[reflect.Type]*_ActorInfo{}
+	defaultRegistry = NewRegistry()
 }
 
 func assertActorInfo(t *testing.T, info *_ActorInfo, spec ActorSpec) {

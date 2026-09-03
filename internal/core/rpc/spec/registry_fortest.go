@@ -1,6 +1,10 @@
 package spec
 
 func ConvertSpecToInfoForTest(serviceSpec *ServiceSpec) ServiceInfo {
+	return NewRegistry().ConvertSpecToInfoForTest(serviceSpec)
+}
+
+func (r *Registry) ConvertSpecToInfoForTest(serviceSpec *ServiceSpec) ServiceInfo {
 	serviceInfo := &_ServiceInfo{
 		name:     serviceSpec.Name,
 		skelName: serviceSpec.SkelName,
@@ -17,6 +21,6 @@ func ConvertSpecToInfoForTest(serviceSpec *ServiceSpec) ServiceInfo {
 		erClientType:        serviceSpec.ERClientType,
 		erClientCtor:        serviceSpec.ERClientCtor,
 	}
-	serviceInfo.methods = initMethodInfos(serviceSpec, serviceInfo)
+	serviceInfo.methods = r.initMethodInfos(serviceSpec, serviceInfo)
 	return serviceInfo
 }

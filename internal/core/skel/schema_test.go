@@ -118,9 +118,9 @@ func TestSchemaDeprecatedMetadataJSON(t *testing.T) {
 }
 
 func TestRegisterDomainSchemaPanicsOnDuplicatePartialDomain(t *testing.T) {
-	schemasByDomain = map[string]*DomainSchema{}
+	registry := NewRegistry()
 
-	RegisterDomainSchema(&DomainSchema{
+	registry.RegisterDomainSchema(&DomainSchema{
 		Domain:    "demo.user",
 		Hash:      "first-partial-hash",
 		Generated: validGeneratedInfoForTest(),
@@ -134,7 +134,7 @@ func TestRegisterDomainSchemaPanicsOnDuplicatePartialDomain(t *testing.T) {
 			t.Fatal("expected duplicate partial domain to panic")
 		}
 	}()
-	RegisterDomainSchema(&DomainSchema{
+	registry.RegisterDomainSchema(&DomainSchema{
 		Domain:    "demo.user",
 		Hash:      "next-partial-hash",
 		Generated: validGeneratedInfoForTest(),
@@ -145,9 +145,9 @@ func TestRegisterDomainSchemaPanicsOnDuplicatePartialDomain(t *testing.T) {
 }
 
 func TestRegisterDomainSchemaFullOverridesRegisteredDomain(t *testing.T) {
-	schemasByDomain = map[string]*DomainSchema{}
+	registry := NewRegistry()
 
-	RegisterDomainSchema(&DomainSchema{
+	registry.RegisterDomainSchema(&DomainSchema{
 		Domain:    "demo.user",
 		Hash:      "pub-hash",
 		Generated: validGeneratedInfoForTest(),
@@ -155,7 +155,7 @@ func TestRegisterDomainSchemaFullOverridesRegisteredDomain(t *testing.T) {
 			{SkelName: "demo.user.PublicService"},
 		},
 	})
-	RegisterDomainSchema(&DomainSchema{
+	registry.RegisterDomainSchema(&DomainSchema{
 		Domain:    "demo.user",
 		Hash:      "full-hash",
 		Full:      true,
@@ -165,32 +165,32 @@ func TestRegisterDomainSchemaFullOverridesRegisteredDomain(t *testing.T) {
 		},
 	})
 
-	schemas := RegisteredDomainSchemas()
+	schemas := registry.RegisteredDomainSchemas()
 	if len(schemas) != 1 || schemas[0].Hash != "full-hash" {
 		t.Fatalf("expected full schema to override partial schema, got %+v", schemas)
 	}
 }
 
 func TestRegisteredDomainSchemasReturnsDomainSortedSchemas(t *testing.T) {
-	schemasByDomain = map[string]*DomainSchema{}
+	registry := NewRegistry()
 
-	RegisterDomainSchema(&DomainSchema{
+	registry.RegisterDomainSchema(&DomainSchema{
 		Domain:    "demo.user",
 		Hash:      "user-hash",
 		Generated: validGeneratedInfoForTest(),
 	})
-	RegisterDomainSchema(&DomainSchema{
+	registry.RegisterDomainSchema(&DomainSchema{
 		Domain:    "demo.booker",
 		Hash:      "booker-hash",
 		Generated: validGeneratedInfoForTest(),
 	})
-	RegisterDomainSchema(&DomainSchema{
+	registry.RegisterDomainSchema(&DomainSchema{
 		Domain:    "demo.base",
 		Hash:      "base-hash",
 		Generated: validGeneratedInfoForTest(),
 	})
 
-	schemas := RegisteredDomainSchemas()
+	schemas := registry.RegisteredDomainSchemas()
 	if len(schemas) != 3 {
 		t.Fatalf("unexpected registered schemas count: %d", len(schemas))
 	}
@@ -220,9 +220,9 @@ func TestServiceSchemaHasAudienceMatchesActorVia(t *testing.T) {
 }
 
 func TestRegisterDomainSchemaPanicsOnDuplicateFullDomain(t *testing.T) {
-	schemasByDomain = map[string]*DomainSchema{}
+	registry := NewRegistry()
 
-	RegisterDomainSchema(&DomainSchema{
+	registry.RegisterDomainSchema(&DomainSchema{
 		Domain:    "demo.user",
 		Hash:      "full-hash",
 		Full:      true,
@@ -234,7 +234,7 @@ func TestRegisterDomainSchemaPanicsOnDuplicateFullDomain(t *testing.T) {
 			t.Fatal("expected duplicate full domain to panic")
 		}
 	}()
-	RegisterDomainSchema(&DomainSchema{
+	registry.RegisterDomainSchema(&DomainSchema{
 		Domain:    "demo.user",
 		Hash:      "next-full-hash",
 		Full:      true,
@@ -247,7 +247,7 @@ func validGeneratedInfoForTest() *GeneratedInfo {
 }
 
 func TestRegisterDomainSchemaPanicsOnLowCompilerVersion(t *testing.T) {
-	schemasByDomain = map[string]*DomainSchema{}
+	registry := NewRegistry()
 
 	defer func() {
 		value := recover()
@@ -258,7 +258,7 @@ func TestRegisterDomainSchemaPanicsOnLowCompilerVersion(t *testing.T) {
 			t.Fatalf("unexpected panic: %v", value)
 		}
 	}()
-	RegisterDomainSchema(&DomainSchema{
+	registry.RegisterDomainSchema(&DomainSchema{
 		Domain: "demo.user",
 		Hash:   "full-hash",
 		Generated: &GeneratedInfo{
@@ -268,7 +268,7 @@ func TestRegisterDomainSchemaPanicsOnLowCompilerVersion(t *testing.T) {
 }
 
 func TestRegisterDomainSchemaPanicsOnMissingCompilerVersion(t *testing.T) {
-	schemasByDomain = map[string]*DomainSchema{}
+	registry := NewRegistry()
 
 	defer func() {
 		value := recover()
@@ -279,7 +279,7 @@ func TestRegisterDomainSchemaPanicsOnMissingCompilerVersion(t *testing.T) {
 			t.Fatalf("unexpected panic: %v", value)
 		}
 	}()
-	RegisterDomainSchema(&DomainSchema{
+	registry.RegisterDomainSchema(&DomainSchema{
 		Domain: "demo.user",
 		Hash:   "full-hash",
 	})

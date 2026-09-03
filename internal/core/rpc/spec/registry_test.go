@@ -69,27 +69,6 @@ type testRegistryCloneArguments struct {
 	Value string `arg:"0"`
 }
 
-func resetRegistryForTest(t *testing.T) {
-	t.Helper()
-
-	prevBySkelName := serviceInfoBySkelName
-	prevByDefaultEmbeddedType := serviceInfoByDefaultEmbeddedType
-	prevERDefaultEmbeddedTypes := erDefaultEmbeddedTypes
-	prevMethodSkelNamesByPointer := methodSkelNamesByPointer
-
-	serviceInfoBySkelName = map[string]*_ServiceInfo{}
-	serviceInfoByDefaultEmbeddedType = map[reflect.Type]*_ServiceInfo{}
-	erDefaultEmbeddedTypes = map[reflect.Type]struct{}{}
-	methodSkelNamesByPointer = map[uintptr]_MethodKey{}
-
-	t.Cleanup(func() {
-		serviceInfoBySkelName = prevBySkelName
-		serviceInfoByDefaultEmbeddedType = prevByDefaultEmbeddedType
-		erDefaultEmbeddedTypes = prevERDefaultEmbeddedTypes
-		methodSkelNamesByPointer = prevMethodSkelNamesByPointer
-	})
-}
-
 func newRegistryTestServiceInfo(skelName string) *ServiceSpec {
 	return &ServiceSpec{
 		Type:                ServiceSpecTypeBoth,
@@ -121,12 +100,12 @@ func containsFactory(factories []any, wantFactory any) bool {
 }
 
 func TestRegisterAddsServiceInfoAndInitializesMethods(t *testing.T) {
-	resetRegistryForTest(t)
+	registry := NewRegistry()
 
 	serviceInfo := newRegistryTestServiceInfo("test.registry")
-	Register(serviceInfo)
+	registry.Register(serviceInfo)
 
-	gotInfo := serviceInfoBySkelName[serviceInfo.SkelName]
+	gotInfo := registry.serviceInfoBySkelName[serviceInfo.SkelName]
 	if gotInfo.SkelName() != serviceInfo.SkelName {
 		t.Fatalf("unexpected registered service: got %s want %s", gotInfo.SkelName(), serviceInfo.SkelName)
 	}
@@ -139,17 +118,17 @@ func TestRegisterAddsServiceInfoAndInitializesMethods(t *testing.T) {
 }
 
 func TestRegisterMapsMethodPointerToSkelNames(t *testing.T) {
-	resetRegistryForTest(t)
+	registry := NewRegistry()
 
 	serviceInfo := newRegistryTestServiceInfo("test.registry.methodPointer")
 	serviceInfo.Methods[0].MethodFuncs = []any{
 		testRegistryServer.Ping,
 		testRegistryServerER.Ping,
 	}
-	Register(serviceInfo)
+	registry.Register(serviceInfo)
 
 	methodPointer := reflect.ValueOf(testRegistryServerER.Ping).Pointer()
-	serviceSkelName, methodSkelName, ok := GetMethodSkelNamesByPointer(methodPointer)
+	serviceSkelName, methodSkelName, ok := registry.GetMethodSkelNamesByPointer(methodPointer)
 	if !ok {
 		t.Fatal("expected method pointer skel names")
 	}
@@ -159,7 +138,7 @@ func TestRegisterMapsMethodPointerToSkelNames(t *testing.T) {
 }
 
 func TestRegisterReusesPubMethodInfoWhenProtocolTypesMatch(t *testing.T) {
-	resetRegistryForTest(t)
+	registry := NewRegistry()
 
 	pubServiceInfo := newRegistryTestServiceInfo("test.registry.set.pubMethod")
 	pubServiceInfo.Type = ServiceSpecTypeClient
@@ -167,7 +146,7 @@ func TestRegisterReusesPubMethodInfoWhenProtocolTypesMatch(t *testing.T) {
 	pubServiceInfo.DefaultServerType = nil
 	pubServiceInfo.ERServerType = nil
 	pubServiceInfo.DefaultERServerType = nil
-	Register(pubServiceInfo)
+	registry.Register(pubServiceInfo)
 	pubMethodInfo := pubServiceInfo.Methods[0].Info()
 
 	serverServiceInfo := newRegistryTestServiceInfo("test.registry.set.pubMethod")
@@ -176,15 +155,15 @@ func TestRegisterReusesPubMethodInfoWhenProtocolTypesMatch(t *testing.T) {
 	serverServiceInfo.ClientCtor = nil
 	serverServiceInfo.ERClientType = nil
 	serverServiceInfo.ERClientCtor = nil
-	Register(serverServiceInfo)
+	registry.Register(serverServiceInfo)
 
-	if serviceInfoBySkelName[serverServiceInfo.SkelName].Methods()[0] != pubMethodInfo {
+	if registry.serviceInfoBySkelName[serverServiceInfo.SkelName].Methods()[0] != pubMethodInfo {
 		t.Fatal("expected register to reuse pub method info")
 	}
 }
 
 func TestRegisterAllowsServerMethodInfoAndClientBlock(t *testing.T) {
-	resetRegistryForTest(t)
+	registry := NewRegistry()
 
 	serverServiceInfo := newRegistryTestServiceInfo("test.registry.serverMethod")
 	serverServiceInfo.Type = ServiceSpecTypeServer
@@ -192,7 +171,7 @@ func TestRegisterAllowsServerMethodInfoAndClientBlock(t *testing.T) {
 	serverServiceInfo.ClientCtor = nil
 	serverServiceInfo.ERClientType = nil
 	serverServiceInfo.ERClientCtor = nil
-	Register(serverServiceInfo)
+	registry.Register(serverServiceInfo)
 	serverMethodInfo := serverServiceInfo.Methods[0].Info()
 
 	clientServiceInfo := newRegistryTestServiceInfo("test.registry.serverMethod")
@@ -201,18 +180,18 @@ func TestRegisterAllowsServerMethodInfoAndClientBlock(t *testing.T) {
 	clientServiceInfo.DefaultServerType = nil
 	clientServiceInfo.ERServerType = nil
 	clientServiceInfo.DefaultERServerType = nil
-	Register(clientServiceInfo)
+	registry.Register(clientServiceInfo)
 
-	if serviceInfoBySkelName[clientServiceInfo.SkelName].Methods()[0] != serverMethodInfo {
+	if registry.serviceInfoBySkelName[clientServiceInfo.SkelName].Methods()[0] != serverMethodInfo {
 		t.Fatal("expected service methods to keep server method info")
 	}
-	if serviceInfoBySkelName[clientServiceInfo.SkelName].ClientType() != clientServiceInfo.ClientType {
+	if registry.serviceInfoBySkelName[clientServiceInfo.SkelName].ClientType() != clientServiceInfo.ClientType {
 		t.Fatal("expected client spec type to register client info")
 	}
 }
 
 func TestRegisterAllowsDuplicateMethodInfoBySkelName(t *testing.T) {
-	resetRegistryForTest(t)
+	registry := NewRegistry()
 
 	clientInfo := newRegistryTestServiceInfo("test.registry.equivalentMethod")
 	clientInfo.Type = ServiceSpecTypeClient
@@ -224,7 +203,7 @@ func TestRegisterAllowsDuplicateMethodInfoBySkelName(t *testing.T) {
 		Name:     "Pong",
 		SkelName: "pong",
 	})
-	Register(clientInfo)
+	registry.Register(clientInfo)
 	clientPingMethodInfo := clientInfo.Methods[0].Info()
 	clientPongMethodInfo := clientInfo.Methods[1].Info()
 
@@ -242,7 +221,7 @@ func TestRegisterAllowsDuplicateMethodInfoBySkelName(t *testing.T) {
 		SkelName:    "ping",
 		MethodFuncs: []any{testRegistryServer.Ping},
 	}}
-	Register(serverInfo)
+	registry.Register(serverInfo)
 
 	if serverInfo.Methods[0].Info() != clientPongMethodInfo {
 		t.Fatal("expected server pong method spec to reuse client method info")
@@ -251,14 +230,14 @@ func TestRegisterAllowsDuplicateMethodInfoBySkelName(t *testing.T) {
 		t.Fatal("expected server ping method spec to reuse client method info")
 	}
 	methodPointer := reflect.ValueOf(testRegistryServer.Ping).Pointer()
-	serviceSkelName, methodSkelName, ok := GetMethodSkelNamesByPointer(methodPointer)
+	serviceSkelName, methodSkelName, ok := registry.GetMethodSkelNamesByPointer(methodPointer)
 	if !ok || serviceSkelName != serverInfo.SkelName || methodSkelName != "ping" {
 		t.Fatalf("unexpected server method pointer mapping: %s %s %v", serviceSkelName, methodSkelName, ok)
 	}
 }
 
 func TestRegisterRejectsDuplicateMethodInfo(t *testing.T) {
-	resetRegistryForTest(t)
+	registry := NewRegistry()
 
 	pubServiceInfo := newRegistryTestServiceInfo("test.registry.set.differentMethod")
 	pubServiceInfo.Type = ServiceSpecTypeClient
@@ -266,7 +245,7 @@ func TestRegisterRejectsDuplicateMethodInfo(t *testing.T) {
 	pubServiceInfo.DefaultServerType = nil
 	pubServiceInfo.ERServerType = nil
 	pubServiceInfo.DefaultERServerType = nil
-	Register(pubServiceInfo)
+	registry.Register(pubServiceInfo)
 
 	serverServiceInfo := newRegistryTestServiceInfo("test.registry.set.differentMethod")
 	serverServiceInfo.Type = ServiceSpecTypeServer
@@ -286,41 +265,41 @@ func TestRegisterRejectsDuplicateMethodInfo(t *testing.T) {
 		}
 	}()
 
-	Register(serverServiceInfo)
+	registry.Register(serverServiceInfo)
 }
 
 func TestRegisterInitializesMethodBinaryFlags(t *testing.T) {
-	resetRegistryForTest(t)
+	registry := NewRegistry()
 
 	serviceInfo := newRegistryTestServiceInfo("test.registry.binary")
 	serviceInfo.Methods[0].ArgumentsContainsBinaryType = true
 	serviceInfo.Methods[0].ResultContainsBinaryType = true
-	Register(serviceInfo)
+	registry.Register(serviceInfo)
 
-	if !serviceInfoBySkelName[serviceInfo.SkelName].Methods()[0].ArgumentsContainsBinaryType() {
+	if !registry.serviceInfoBySkelName[serviceInfo.SkelName].Methods()[0].ArgumentsContainsBinaryType() {
 		t.Fatal("expected method argumentsContainsBinaryType to be initialized")
 	}
-	if !serviceInfoBySkelName[serviceInfo.SkelName].Methods()[0].ResultContainsBinaryType() {
+	if !registry.serviceInfoBySkelName[serviceInfo.SkelName].Methods()[0].ResultContainsBinaryType() {
 		t.Fatal("expected method resultContainsBinaryType to be initialized")
 	}
 }
 
 func TestRegisterInitializesMethodSensitiveFlags(t *testing.T) {
-	resetRegistryForTest(t)
+	registry := NewRegistry()
 
 	serviceInfo := newRegistryTestServiceInfo("test.registry.sensitive")
 	serviceInfo.Methods[0].ArgumentsSensitive = true
 	serviceInfo.Methods[0].ResultSensitive = true
-	Register(serviceInfo)
+	registry.Register(serviceInfo)
 
-	method := serviceInfoBySkelName[serviceInfo.SkelName].Methods()[0]
+	method := registry.serviceInfoBySkelName[serviceInfo.SkelName].Methods()[0]
 	if !method.ArgumentsSensitive() || !method.ResultSensitive() {
 		t.Fatal("expected method sensitive flags to be initialized")
 	}
 }
 
 func TestRegisterKeepsFirstMethodCloneFuncs(t *testing.T) {
-	resetRegistryForTest(t)
+	registry := NewRegistry()
 
 	clientInfo := newRegistryTestServiceInfo("test.registry.clone.first")
 	clientInfo.Type = ServiceSpecTypeClient
@@ -332,7 +311,7 @@ func TestRegisterKeepsFirstMethodCloneFuncs(t *testing.T) {
 	clientInfo.Methods[0].ResultType = reflect.TypeFor[string]()
 	clientInfo.Methods[0].CloneArguments = func(any) any { return "first arguments" }
 	clientInfo.Methods[0].CloneResult = func(any) any { return "first result" }
-	Register(clientInfo)
+	registry.Register(clientInfo)
 	methodInfo := clientInfo.Methods[0].Info().(*_MethodInfo)
 
 	serverInfo := newRegistryTestServiceInfo("test.registry.clone.first")
@@ -343,7 +322,7 @@ func TestRegisterKeepsFirstMethodCloneFuncs(t *testing.T) {
 	serverInfo.ERClientCtor = nil
 	serverInfo.Methods[0].CloneArguments = func(any) any { return "second arguments" }
 	serverInfo.Methods[0].CloneResult = func(any) any { return "second result" }
-	Register(serverInfo)
+	registry.Register(serverInfo)
 
 	if cloned := methodInfo.CloneArguments(&testRegistryCloneArguments{}); cloned != "first arguments" {
 		t.Fatalf("CloneArguments() = %#v; want first registration", cloned)
@@ -354,7 +333,7 @@ func TestRegisterKeepsFirstMethodCloneFuncs(t *testing.T) {
 }
 
 func TestRegisterMergesPartialClientAndServerInfo(t *testing.T) {
-	resetRegistryForTest(t)
+	registry := NewRegistry()
 
 	clientCtor := func() {}
 	erClientCtor := func() {}
@@ -367,7 +346,7 @@ func TestRegisterMergesPartialClientAndServerInfo(t *testing.T) {
 	clientInfo.DefaultERServerType = nil
 	clientInfo.ClientCtor = clientCtor
 	clientInfo.ERClientCtor = erClientCtor
-	Register(clientInfo)
+	registry.Register(clientInfo)
 
 	serverInfo := newRegistryTestServiceInfo("test.registry.factories")
 	serverInfo.Type = ServiceSpecTypeServer
@@ -375,9 +354,9 @@ func TestRegisterMergesPartialClientAndServerInfo(t *testing.T) {
 	serverInfo.ClientCtor = nil
 	serverInfo.ERClientType = nil
 	serverInfo.ERClientCtor = nil
-	Register(serverInfo)
+	registry.Register(serverInfo)
 
-	gotFactories := RegisteredClientFactories()
+	gotFactories := registry.RegisteredClientFactories()
 	wantFactories := []any{
 		clientCtor,
 		erClientCtor,
@@ -388,7 +367,7 @@ func TestRegisterMergesPartialClientAndServerInfo(t *testing.T) {
 		}
 	}
 
-	got, isERType := getServiceInfoByImplType(reflect.TypeOf(&testRegistryServerImpl{}))
+	got, isERType := registry.getServiceInfoByImplType(reflect.TypeOf(&testRegistryServerImpl{}))
 	if got.ServerType() != serverInfo.ServerType {
 		t.Fatalf("unexpected runtime service info: %#v", got)
 	}
@@ -398,34 +377,34 @@ func TestRegisterMergesPartialClientAndServerInfo(t *testing.T) {
 }
 
 func TestRegisterUsesServiceSpecTypeToSelectRegisteredSide(t *testing.T) {
-	resetRegistryForTest(t)
+	registry := NewRegistry()
 
 	clientInfo := newRegistryTestServiceInfo("test.registry.type")
 	clientInfo.Type = ServiceSpecTypeClient
-	Register(clientInfo)
+	registry.Register(clientInfo)
 
-	if serviceInfoBySkelName[clientInfo.SkelName].ServerType() != nil {
+	if registry.serviceInfoBySkelName[clientInfo.SkelName].ServerType() != nil {
 		t.Fatal("expected client spec type to ignore server info")
 	}
 
 	serverInfo := newRegistryTestServiceInfo("test.registry.type")
 	serverInfo.Type = ServiceSpecTypeServer
-	Register(serverInfo)
+	registry.Register(serverInfo)
 
-	if reflect.ValueOf(serviceInfoBySkelName[serverInfo.SkelName].ClientCtor()).Pointer() != reflect.ValueOf(clientInfo.ClientCtor).Pointer() {
+	if reflect.ValueOf(registry.serviceInfoBySkelName[serverInfo.SkelName].ClientCtor()).Pointer() != reflect.ValueOf(clientInfo.ClientCtor).Pointer() {
 		t.Fatal("expected server spec type to keep existing client info")
 	}
-	if serviceInfoBySkelName[serverInfo.SkelName].ServerType() != serverInfo.ServerType {
+	if registry.serviceInfoBySkelName[serverInfo.SkelName].ServerType() != serverInfo.ServerType {
 		t.Fatal("expected server spec type to register server info")
 	}
 }
 
 func TestRegisterRejectsDuplicateClientInfo(t *testing.T) {
-	resetRegistryForTest(t)
+	registry := NewRegistry()
 
 	clientInfo := newRegistryTestServiceInfo("test.registry.duplicateClient")
 	clientInfo.Type = ServiceSpecTypeClient
-	Register(clientInfo)
+	registry.Register(clientInfo)
 
 	defer func() {
 		recovered := recover()
@@ -439,14 +418,14 @@ func TestRegisterRejectsDuplicateClientInfo(t *testing.T) {
 
 	duplicateClientInfo := newRegistryTestServiceInfo("test.registry.duplicateClient")
 	duplicateClientInfo.Type = ServiceSpecTypeClient
-	Register(duplicateClientInfo)
+	registry.Register(duplicateClientInfo)
 }
 
 func TestRegisterRejectsDuplicateServerInfo(t *testing.T) {
-	resetRegistryForTest(t)
+	registry := NewRegistry()
 
 	serverServiceInfo := newRegistryTestServiceInfo("test.registry.duplicateServer")
-	Register(serverServiceInfo)
+	registry.Register(serverServiceInfo)
 
 	defer func() {
 		recovered := recover()
@@ -464,11 +443,11 @@ func TestRegisterRejectsDuplicateServerInfo(t *testing.T) {
 	duplicateServerInfo.ClientCtor = nil
 	duplicateServerInfo.ERClientType = nil
 	duplicateServerInfo.ERClientCtor = nil
-	Register(duplicateServerInfo)
+	registry.Register(duplicateServerInfo)
 }
 
 func TestRegisterRejectsMismatchedDefaultServerTypes(t *testing.T) {
-	resetRegistryForTest(t)
+	registry := NewRegistry()
 
 	defer func() {
 		recovered := recover()
@@ -480,7 +459,7 @@ func TestRegisterRejectsMismatchedDefaultServerTypes(t *testing.T) {
 		}
 	}()
 
-	Register(&ServiceSpec{
+	registry.Register(&ServiceSpec{
 		Type:              ServiceSpecTypeServer,
 		Name:              "BrokenService",
 		SkelName:          "test.registry.broken",
@@ -493,12 +472,12 @@ func TestRegisterRejectsMismatchedDefaultServerTypes(t *testing.T) {
 }
 
 func TestGetServiceInfoReturnsServiceInfoForDefaultServerAndERServer(t *testing.T) {
-	resetRegistryForTest(t)
+	registry := NewRegistry()
 
 	serviceInfo := newRegistryTestServiceInfo("test.registry")
-	Register(serviceInfo)
+	registry.Register(serviceInfo)
 
-	got, isERType := getServiceInfoByImplType(reflect.TypeOf(&testRegistryServerImpl{}))
+	got, isERType := registry.getServiceInfoByImplType(reflect.TypeOf(&testRegistryServerImpl{}))
 	if got.SkelName() != serviceInfo.SkelName {
 		t.Fatalf("unexpected service info for server impl: got %s want %s", got.SkelName(), serviceInfo.SkelName)
 	}
@@ -506,7 +485,7 @@ func TestGetServiceInfoReturnsServiceInfoForDefaultServerAndERServer(t *testing.
 		t.Fatalf("expected non-er server impl")
 	}
 
-	got, isERType = getServiceInfoByImplType(reflect.TypeOf(&testRegistryServerERImpl{}))
+	got, isERType = registry.getServiceInfoByImplType(reflect.TypeOf(&testRegistryServerERImpl{}))
 	if got.SkelName() != serviceInfo.SkelName {
 		t.Fatalf("unexpected service info for er server impl: got %s want %s", got.SkelName(), serviceInfo.SkelName)
 	}
@@ -530,9 +509,9 @@ func TestGetEmbeddedTypesReturnsOnlyAnonymousStructFields(t *testing.T) {
 }
 
 func TestRegisterRejectsDuplicateSkelName(t *testing.T) {
-	resetRegistryForTest(t)
+	registry := NewRegistry()
 
-	Register(newRegistryTestServiceInfo("test.registry"))
+	registry.Register(newRegistryTestServiceInfo("test.registry"))
 
 	defer func() {
 		recovered := recover()
@@ -547,5 +526,5 @@ func TestRegisterRejectsDuplicateSkelName(t *testing.T) {
 	serviceInfo := newRegistryTestServiceInfo("test.registry")
 	serviceInfo.DefaultServerType = reflect.TypeOf(&struct{ defaultTestRegistryServer }{})
 	serviceInfo.DefaultERServerType = reflect.TypeOf(&struct{ defaultTestRegistryServerER }{})
-	Register(serviceInfo)
+	registry.Register(serviceInfo)
 }

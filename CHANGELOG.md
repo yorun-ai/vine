@@ -24,6 +24,9 @@ are not part of the public compatibility commitment.
   state and in-process endpoint cleanup
 - Made Rpc, Web, and Link ingress in-process endpoint registries concurrency
   safe and lifecycle-owned through idempotent registration cleanup functions
+- Added independently instantiable registries for domain schemas, configuration,
+  actors, Rpc, events, tasks, and Web contracts while retaining the existing
+  process-wide registration functions as default-registry facades
 
 ### Fixed
 

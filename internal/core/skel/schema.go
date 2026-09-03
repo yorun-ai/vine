@@ -310,14 +310,26 @@ type TypeSchema struct {
 	Value         *TypeSchema   `json:"value,omitempty"`
 }
 
-var schemasByDomain = map[string]*DomainSchema{}
+type Registry struct {
+	schemasByDomain map[string]*DomainSchema
+}
+
+func NewRegistry() *Registry {
+	return &Registry{schemasByDomain: map[string]*DomainSchema{}}
+}
+
+var defaultRegistry = NewRegistry()
 
 func RegisterDomainSchema(schema *DomainSchema) {
+	defaultRegistry.RegisterDomainSchema(schema)
+}
+
+func (r *Registry) RegisterDomainSchema(schema *DomainSchema) {
 	schema.checkCompilerVersion()
 
-	registered, ok := schemasByDomain[schema.Domain]
+	registered, ok := r.schemasByDomain[schema.Domain]
 	if !ok {
-		schemasByDomain[schema.Domain] = schema
+		r.schemasByDomain[schema.Domain] = schema
 		return
 	}
 
@@ -325,7 +337,7 @@ func RegisterDomainSchema(schema *DomainSchema) {
 	// package import chain. The later regular full schema is the only duplicate
 	// registration that should replace an existing schema for the same domain.
 	if !registered.Full && schema.Full {
-		schemasByDomain[schema.Domain] = schema
+		r.schemasByDomain[schema.Domain] = schema
 		return
 	}
 	panic("domain schema already registered: " + schema.Domain)
@@ -350,5 +362,9 @@ func (s *DomainSchema) checkCompilerVersion() {
 }
 
 func RegisteredDomainSchemas() []*DomainSchema {
-	return vmap.SortedValues(schemasByDomain)
+	return defaultRegistry.RegisteredDomainSchemas()
+}
+
+func (r *Registry) RegisteredDomainSchemas() []*DomainSchema {
+	return vmap.SortedValues(r.schemasByDomain)
 }

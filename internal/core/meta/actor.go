@@ -73,7 +73,7 @@ func NewAuthenticatingActor() Actor {
 
 func NewAuthenticatedActor[I any](info I) Actor {
 	infoType := reflect.TypeFor[I]()
-	actorInfo := infoByInfoType[infoType]
+	actorInfo := defaultRegistry.infoByInfoType[infoType]
 	vpre.CheckNotNil(actorInfo, "actor info type %s is not registered", infoType)
 
 	rawAuthInfo, err := json.Marshal(info)
@@ -158,7 +158,7 @@ func DecodeActorFromBase64(value string) (Actor, error) {
 		return nil, fmt.Errorf("invalid payload %q", value)
 	}
 
-	actorInfo := infoByInfoSkelName[payload.InfoSkelName]
+	actorInfo := defaultRegistry.infoByInfoSkelName[payload.InfoSkelName]
 	vpre.Check(actorInfo != nil, "actor info %s is not registered", payload.InfoSkelName)
 
 	return &_Actor{

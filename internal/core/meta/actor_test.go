@@ -173,7 +173,7 @@ func TestActorBase64RoundTripWithInfo(t *testing.T) {
 
 	actor := &_Actor{
 		kind:        ActorTypeAuthenticated,
-		actorInfo:   infoByInfoType[spec.InfoType],
+		actorInfo:   defaultRegistry.infoByInfoType[spec.InfoType],
 		rawAuthInfo: []byte(`{"Name":"demo"}`),
 	}
 	got, err := DecodeActorFromBase64(EncodeActorToBase64(actor))
