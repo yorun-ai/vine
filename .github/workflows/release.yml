@@ -7,10 +7,11 @@ on:
         description: Existing published release tag to build and publish
         required: true
         type: string
-      images-only:
-        description: Publish only images, preserving existing release assets
-        type: boolean
-        default: false
+      artifacts:
+        description: Artifacts to publish (existing binary assets are never overwritten)
+        type: choice
+        options: [all, binaries, images]
+        default: all
   release:
     types: [published]
 
@@ -20,6 +21,7 @@ permissions:
 env:
   GO_VERSION: '1.27.1'
   RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+  ARTIFACTS: ${{ inputs.artifacts || 'all' }}
 
 concurrency:
   group: release-${{ github.event.release.tag_name || inputs.tag }}
@@ -30,77 +32,62 @@ jobs:
     name: Validate release
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    defaults:
+      run:
+        working-directory: source
     outputs:
       commit: ${{ steps.release.outputs.commit }}
-      publish-latest: ${{ steps.release.outputs.publish-latest }}
+      binaries: ${{ steps.release.outputs.binaries }}
+      images: ${{ steps.release.outputs.images }}
     steps:
+      - name: Check out workflow implementation
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          path: automation
       - name: Check out release
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
           ref: refs/tags/${{ env.RELEASE_TAG }}
+          path: source
 
-      - name: Validate release tag
+      - name: Validate release and exact main CI commit
         id: release
-        run: |
-          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
-            echo "Release tag must use the v<major>.<minor>.<patch> format"
-            exit 1
-          fi
-
-          git tag --points-at HEAD --list "$RELEASE_TAG" | grep -Fx "$RELEASE_TAG"
-          release="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
-            --json isDraft,isPrerelease)"
-          if [[ "$(jq -r .isDraft <<< "$release")" == true ]]; then
-            echo "Release must be published before building its assets"
-            exit 1
-          fi
-
-          # Rebuilding an older release or a prerelease must not replace latest.
-          publish_latest=false
-          if [[ "$(jq -r .isPrerelease <<< "$release")" == false ]]; then
-            latest_tag="$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name)"
-            if [[ "$RELEASE_TAG" == "$latest_tag" ]]; then
-              publish_latest=true
-            fi
-          fi
-
-          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          echo "publish-latest=$publish_latest" >> "$GITHUB_OUTPUT"
+        run: bash ../automation/.github/scripts/release.sh validate
         env:
           GH_TOKEN: ${{ github.token }}
-
-      - name: Validate changelog release
-        run: |
-          version="${RELEASE_TAG#v}"
-          prefix="## [$version] - "
-          release_heading="$(grep -F "$prefix" CHANGELOG.md || true)"
-          release_date="${release_heading#"$prefix"}"
-          if [[ "$release_heading" != "$prefix$release_date" ||
-                ! "$release_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
-            echo "CHANGELOG.md must contain a dated [$version] release heading"
-            exit 1
-          fi
 
   binaries:
     name: Release binaries
     needs: validate
-    if: ${{ !inputs.images-only }}
+    if: needs.validate.outputs.binaries == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: write
+    defaults:
+      run:
+        working-directory: source
     steps:
+      - name: Check out workflow implementation
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          path: automation
       - name: Check out release
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ needs.validate.outputs.commit }}
+          path: source
 
       - name: Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
+          cache-dependency-path: source/go.sum
 
       - name: Build archives
         run: |
@@ -134,7 +121,7 @@ jobs:
             tar -C dist -czf "dist/$archive.tar.gz" "$archive"
           done
 
-          dist/vine_${version}_linux_amd64/vine version --json |
+          "dist/vine_${version}_linux_amd64/vine" version --json |
             grep -F "\"version\":\"$RELEASE_TAG\""
 
       - name: Create checksums
@@ -146,15 +133,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          bash ../automation/.github/scripts/release.sh preflight-binaries
           gh release upload "$RELEASE_TAG" \
             dist/vine_*.tar.gz \
             dist/checksums.txt \
-            --clobber \
             --repo "$GITHUB_REPOSITORY"
 
   images:
     name: Publish ${{ matrix.target }} image
     needs: validate
+    if: needs.validate.outputs.images == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -173,7 +161,7 @@ jobs:
           ref: ${{ needs.validate.outputs.commit }}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
@@ -195,7 +183,6 @@ jobs:
           flavor: latest=false
           tags: |
             type=raw,value=${{ env.RELEASE_TAG }}
-            type=raw,value=latest,enable=${{ needs.validate.outputs.publish-latest == 'true' }}
             type=sha,prefix=sha-
 
       - name: Build and publish image
@@ -213,3 +200,77 @@ jobs:
             VERSION=${{ env.RELEASE_TAG }}
           cache-from: type=gha,scope=vine-${{ matrix.target }}
           cache-to: type=gha,mode=max,scope=vine-${{ matrix.target }}
+
+  complete:
+    name: Verify release
+    if: ${{ always() }}
+    needs: [validate, binaries, images]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      publish-latest: ${{ steps.verify.outputs.publish-latest }}
+    env:
+      RELEASE_COMMIT: ${{ needs.validate.outputs.commit }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out workflow implementation
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Verify jobs, binary checksums and public multi-platform images
+        id: verify
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: bash .github/scripts/release.sh verify
+
+  promote-latest:
+    name: Promote latest images
+    needs: [validate, complete]
+    if: ${{ !cancelled() && needs.complete.result == 'success' && needs.complete.outputs.publish-latest == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      # All versions share this lock; image builds remain parallel.
+      group: release-promote-latest
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: write
+    env:
+      RELEASE_COMMIT: ${{ needs.validate.outputs.commit }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out workflow implementation
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Recheck latest release after acquiring the lock
+        id: eligible
+        run: bash .github/scripts/release.sh latest-eligible
+      - name: Set up Docker Buildx
+        if: steps.eligible.outputs.publish-latest == 'true'
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+      - name: Log in to GHCR
+        if: steps.eligible.outputs.publish-latest == 'true'
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Promote verified images to latest
+        if: steps.eligible.outputs.publish-latest == 'true'
+        id: promote
+        run: |
+          # Recheck immediately before promotion; another release may have appeared.
+          latest_tag="$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name)"
+          if [[ "$latest_tag" != "$RELEASE_TAG" ]]; then
+            echo "A newer release is latest; leaving latest image tags unchanged"
+            exit 0
+          fi
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          for target in hub link portal; do
+            image="ghcr.io/$owner/vine-$target"
+            docker buildx imagetools create --tag "$image:latest" "$image:$RELEASE_TAG"
+          done
+          echo "promoted=true" >> "$GITHUB_OUTPUT"
+      - name: Verify latest tags
+        if: steps.promote.outputs.promoted == 'true'
+        run: bash .github/scripts/release.sh verify-latest
