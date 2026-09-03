@@ -1,6 +1,8 @@
 package computil
 
 import (
+	"bytes"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -20,6 +22,25 @@ func TestCompressResponseBodySkipsSmallBody(t *testing.T) {
 	}
 	if string(compressed) != string(body) {
 		t.Fatalf("unexpected body")
+	}
+}
+
+func BenchmarkCompressResponseBody(b *testing.B) {
+	for _, size := range []int{8 << 10, 64 << 10} {
+		body := bytes.Repeat([]byte(`{"id":"123e4567-e89b-12d3-a456-426614174000","message":"vine benchmark"}`), size/72+1)
+		body = body[:size]
+		for _, encoding := range []string{EncodingGzip, EncodingZstd} {
+			b.Run(fmt.Sprintf("%s/%dKiB", encoding, size>>10), func(b *testing.B) {
+				b.ReportAllocs()
+				b.SetBytes(int64(len(body)))
+				for b.Loop() {
+					compressed, gotEncoding := CompressResponseBody(body, encoding)
+					if gotEncoding != encoding || len(compressed) == 0 {
+						b.Fatalf("CompressResponseBody() encoding = %q, bytes = %d", gotEncoding, len(compressed))
+					}
+				}
+			})
+		}
 	}
 }
 

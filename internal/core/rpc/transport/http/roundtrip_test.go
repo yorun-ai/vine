@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"fmt"
+	nethttp "net/http"
 	"net/http/httptest"
 	"reflect"
 	"sync"
@@ -225,6 +226,96 @@ func TestWriteResponseDecodeResponseRoundTrip(t *testing.T) {
 	}
 	if got := httpResp.Header.Get(HeaderRpcTrace); got != "" {
 		t.Fatalf("unexpected response trace header: %s", got)
+	}
+}
+
+func BenchmarkRequestEncodeDecodeRoundTrip(b *testing.B) {
+	method := testServiceInfo().Methods()[0]
+	rpcCtx := testContext()
+	msg := &spec.RequestImpl{
+		ContextValue:    rpcCtx,
+		TraceValue:      rpcCtx.Trace(),
+		ActorValue:      rpcCtx.Actor(),
+		InitiatorValue:  rpcCtx.Initiator(),
+		ClientValue:     rpcCtx.Client(),
+		MethodInfoValue: method,
+		ArgumentsValue:  &pingArguments{Name: "vine"},
+	}
+
+	b.ReportAllocs()
+	for b.Loop() {
+		req, err := encodeRequest("http://localhost:8080", msg)
+		if err != nil {
+			b.Fatal(err)
+		}
+		decoded, err := DecodeRequest(req)
+		if err != nil {
+			b.Fatal(err)
+		}
+		decoded.Cancel()
+	}
+}
+
+func BenchmarkResponseEncodeDecodeRoundTrip(b *testing.B) {
+	method := testServiceInfo().Methods()[0]
+	msg := &spec.ResponseImpl{
+		ServerValue: testServerApp(),
+		MethodValue: method,
+		ResultValue: "pong",
+		ErrorValue:  ex.NewOK(),
+	}
+
+	b.ReportAllocs()
+	for b.Loop() {
+		recorder := httptest.NewRecorder()
+		if err := WriteResponse(recorder, nil, msg); err != nil {
+			b.Fatal(err)
+		}
+		response := recorder.Result()
+		if _, err := decodeResponse(response, method); err != nil {
+			b.Fatal(err)
+		}
+		_ = response.Body.Close()
+	}
+}
+
+func BenchmarkRPCProtocolRoundTrip(b *testing.B) {
+	method := testServiceInfo().Methods()[0]
+	rpcCtx := testContext()
+	msg := &spec.RequestImpl{
+		ContextValue:    rpcCtx,
+		TraceValue:      rpcCtx.Trace(),
+		ActorValue:      rpcCtx.Actor(),
+		InitiatorValue:  rpcCtx.Initiator(),
+		ClientValue:     rpcCtx.Client(),
+		MethodInfoValue: method,
+		ArgumentsValue:  &pingArguments{Name: "vine"},
+	}
+	do := func(request *nethttp.Request) (*nethttp.Response, error) {
+		decoded, err := DecodeRequest(request)
+		if err != nil {
+			return nil, err
+		}
+		defer decoded.Cancel()
+
+		recorder := httptest.NewRecorder()
+		response := &spec.ResponseImpl{
+			ServerValue: testServerApp(),
+			MethodValue: decoded.MethodInfo(),
+			ResultValue: "pong",
+			ErrorValue:  ex.NewOK(),
+		}
+		if err := WriteResponse(recorder, request, response); err != nil {
+			return nil, err
+		}
+		return recorder.Result(), nil
+	}
+
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := roundTrip("http://localhost:8080", msg, nil, do); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 

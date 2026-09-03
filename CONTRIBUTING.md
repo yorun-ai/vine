@@ -82,6 +82,20 @@ go test ./...
 Also run `go vet ./...` after changes involving public APIs, concurrency,
 reflection, or runtime wiring.
 
+Run the focused performance benchmarks with:
+
+```bash
+bash test/benchmark.sh
+```
+
+The script reports allocation data and defaults to five one-second samples.
+Set `GOTOOLCHAIN` to compare Go releases, or use `VINE_BENCH_PATTERN`,
+`VINE_BENCH_TIME`, and `VINE_BENCH_COUNT` to narrow or tune a run. For example:
+
+```bash
+GOTOOLCHAIN=go1.27.1 VINE_BENCH_PATTERN=RPC bash test/benchmark.sh
+```
+
 ## Generated Skel Code
 
 Do not manually edit generated files under:

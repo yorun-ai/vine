@@ -86,6 +86,48 @@ type testRunnerImpl struct {
 
 func (*testRunnerImpl) RunForGroup(testRunnerArguments) {}
 
+type benchmarkTaskRunner interface {
+	RunForGroup(groupId int)
+	mustBeBenchmarkTaskRunner()
+}
+
+type defaultBenchmarkTaskRunner struct{}
+
+func (*defaultBenchmarkTaskRunner) RunForGroup(int)            {}
+func (*defaultBenchmarkTaskRunner) mustBeBenchmarkTaskRunner() {}
+
+type benchmarkTaskRunnerER interface {
+	RunForGroup(groupId int) ex.Error
+	mustBeBenchmarkTaskRunnerER()
+}
+
+type wrapperBenchmarkTaskRunnerER struct {
+	defaultBenchmarkTaskRunner
+	runnerImpl benchmarkTaskRunner
+}
+
+func newWrapperBenchmarkTaskRunnerER(runnerImpl benchmarkTaskRunner) benchmarkTaskRunnerER {
+	return &wrapperBenchmarkTaskRunnerER{runnerImpl: runnerImpl}
+}
+
+func (r *wrapperBenchmarkTaskRunnerER) RunForGroup(groupId int) (err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	r.runnerImpl.RunForGroup(groupId)
+	return
+}
+
+func (*wrapperBenchmarkTaskRunnerER) mustBeBenchmarkTaskRunnerER() {}
+
+type defaultBenchmarkTaskRunnerER struct {
+	wrapperBenchmarkTaskRunnerER
+}
+
+type benchmarkTaskRunnerImpl struct {
+	defaultBenchmarkTaskRunner
+}
+
+func (*benchmarkTaskRunnerImpl) RunForGroup(int) {}
+
 type _RunnerRecorderExecutor struct {
 	taskContext spec.Context
 	triggerImpl spec.TriggerImpl
@@ -108,6 +150,8 @@ func (e *_RunnerRecorderExecutor) Execute(taskContext spec.Context, triggerImpl 
 
 var testRunnerRegisterOnce sync.Once
 
+var benchmarkTaskRegisterOnce sync.Once
+
 func ensureRunnerTaskRegistered() {
 	testRunnerRegisterOnce.Do(func() {
 		spec.Register(&spec.TaskSpec{
@@ -118,6 +162,27 @@ func ensureRunnerTaskRegistered() {
 			ERRunnerType:        reflect.TypeOf((*testRunnerTaskRunnerER)(nil)).Elem(),
 			WrapperERRunnerCtor: newWrapperTestRunnerTaskRunnerER,
 			DefaultERRunnerType: reflect.TypeOf(&defaultTestRunnerTaskRunnerER{}),
+			Triggers: []*spec.TriggerSpec{{
+				Name:               "ForGroup",
+				SkelName:           "forGroup",
+				LauncherMethodName: "LaunchForGroup",
+				RunnerMethodName:   "RunForGroup",
+				ArgumentsType:      reflect.TypeOf(testRunnerArguments{}),
+			}},
+		})
+	})
+}
+
+func ensureBenchmarkTaskRegistered() {
+	benchmarkTaskRegisterOnce.Do(func() {
+		spec.Register(&spec.TaskSpec{
+			Name:                "BenchmarkTask",
+			SkelName:            "benchmark.task",
+			RunnerType:          reflect.TypeOf((*benchmarkTaskRunner)(nil)).Elem(),
+			DefaultRunnerType:   reflect.TypeOf(&defaultBenchmarkTaskRunner{}),
+			ERRunnerType:        reflect.TypeOf((*benchmarkTaskRunnerER)(nil)).Elem(),
+			WrapperERRunnerCtor: newWrapperBenchmarkTaskRunnerER,
+			DefaultERRunnerType: reflect.TypeOf(&defaultBenchmarkTaskRunnerER{}),
 			Triggers: []*spec.TriggerSpec{{
 				Name:               "ForGroup",
 				SkelName:           "forGroup",
@@ -290,5 +355,37 @@ func TestServerRunTaskResolvesAndRunsTrigger(t *testing.T) {
 	}
 	if got := executor.args[0].(int); got != 11 {
 		t.Fatalf("unexpected group id: got=%d want=%d", got, 11)
+	}
+}
+
+func BenchmarkServerRunTask(b *testing.B) {
+	ensureBenchmarkTaskRegistered()
+	trace := meta.InitialTrace()
+	server := NewServer(Option{
+		App:       testTaskServerApp(),
+		ImplTypes: []reflect.Type{reflect.TypeOf(&benchmarkTaskRunnerImpl{})},
+		Executor:  NewContainerExecutor(nil, nil),
+		Logger: logger.New("vine:benchmark", logger.WithOption{
+			Level: logger.LevelError,
+		}),
+	})
+	run := appskeled.TaskRun{
+		Metadata: appskeled.TaskRunMeta{
+			TraceId:       trace.Id(),
+			TraceSpan:     trace.Span(),
+			AppName:       "remote.app",
+			AppVersion:    "1.0.0",
+			AppInstanceId: skel.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
+		},
+		TaskSkelName:    "benchmark.task",
+		TriggerSkelName: "forGroup",
+		ArgumentsJson:   `{"groupId":11}`,
+	}
+
+	b.ReportAllocs()
+	for b.Loop() {
+		if err := server.RunTask(context.Background(), run); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

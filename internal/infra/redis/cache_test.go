@@ -72,6 +72,26 @@ type _TestGetCall struct {
 	key string
 }
 
+type benchmarkCacheCmdable struct {
+	goredis.Cmdable
+	value string
+}
+
+func (c *benchmarkCacheCmdable) Get(context.Context, string) *goredis.StringCmd {
+	return goredis.NewStringResult(c.value, nil)
+}
+
+func (*benchmarkCacheCmdable) Set(context.Context, string, interface{}, time.Duration) *goredis.StatusCmd {
+	return goredis.NewStatusResult("OK", nil)
+}
+
+type benchmarkCacheValue struct {
+	ID       string            `json:"id"`
+	Name     string            `json:"name"`
+	Tags     []string          `json:"tags"`
+	Metadata map[string]string `json:"metadata"`
+}
+
 type _TestSetCall struct {
 	ctx        context.Context
 	key        string
@@ -262,6 +282,46 @@ func TestCacheSetMarshalsValue(t *testing.T) {
 	assert.Equal(t, "vine:cache:user:1", cmdable.setCalls[0].key)
 	assert.Equal(t, time.Minute, cmdable.setCalls[0].expiration)
 	assert.JSONEq(t, `{"id":"1","name":"demo"}`, string(cmdable.setCalls[0].value.([]byte)))
+}
+
+func BenchmarkCacheGet(b *testing.B) {
+	cmdable := &benchmarkCacheCmdable{
+		value: `{"id":"123e4567-e89b-12d3-a456-426614174000","name":"vine benchmark","tags":["rpc","event","task"],"metadata":{"region":"local","version":"1.0.0"}}`,
+	}
+	cache := &Cache[*benchmarkCacheValue]{
+		ctx:       context.Background(),
+		cmdable:   cmdable,
+		keyPrefix: "benchmark",
+	}
+
+	b.ReportAllocs()
+	b.SetBytes(int64(len(cmdable.value)))
+	for b.Loop() {
+		value, ok := cache.Get("1")
+		if !ok || value.Name != "vine benchmark" {
+			b.Fatal("Cache.Get() returned an unexpected value")
+		}
+	}
+}
+
+func BenchmarkCacheSet(b *testing.B) {
+	cmdable := new(benchmarkCacheCmdable)
+	cache := &Cache[*benchmarkCacheValue]{
+		ctx:       context.Background(),
+		cmdable:   cmdable,
+		keyPrefix: "benchmark",
+	}
+	value := &benchmarkCacheValue{
+		ID:       "123e4567-e89b-12d3-a456-426614174000",
+		Name:     "vine benchmark",
+		Tags:     []string{"rpc", "event", "task"},
+		Metadata: map[string]string{"region": "local", "version": "1.0.0"},
+	}
+
+	b.ReportAllocs()
+	for b.Loop() {
+		cache.Set("1", value, time.Minute)
+	}
 }
 
 func TestCacheDeleteUsesNamespacedKey(t *testing.T) {
