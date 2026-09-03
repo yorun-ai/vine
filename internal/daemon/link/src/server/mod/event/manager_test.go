@@ -55,6 +55,7 @@ type _ManagerDispatchHooks struct {
 	timeout     time.Duration
 	callCount   int
 	startedChan chan struct{}
+	completed   chan struct{}
 	releaseChan chan struct{}
 }
 

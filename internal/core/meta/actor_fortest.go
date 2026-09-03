@@ -8,7 +8,7 @@ type _AuthenticatedActorInfoForTest struct {
 
 func NewAuthenticatedActorForTest() Actor {
 	infoType := reflect.TypeFor[*_AuthenticatedActorInfoForTest]()
-	actorInfo := infoByInfoType[infoType]
+	actorInfo := defaultRegistry.infoByInfoType[infoType]
 	if actorInfo == nil {
 		RegisterActor(ActorSpec{
 			Name:         "AuthenticatedActorForTest",
@@ -16,7 +16,7 @@ func NewAuthenticatedActorForTest() Actor {
 			InfoSkelName: "test.meta.AuthenticatedActorInfoForTest",
 			InfoType:     infoType,
 		})
-		actorInfo = infoByInfoType[infoType]
+		actorInfo = defaultRegistry.infoByInfoType[infoType]
 	}
 	return &_Actor{
 		kind:        ActorTypeAuthenticated,

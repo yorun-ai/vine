@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	goredis "github.com/redis/go-redis/v9"
@@ -249,25 +250,27 @@ func TestLockerLockReturnsFalseWhenContended(t *testing.T) {
 }
 
 func TestLockerLockWithTimeoutDisablesRefreshAndBreaksAfterTimeout(t *testing.T) {
-	cmdable := newTestLockCmdable()
-	locker := &Locker{
-		ctx:       context.Background(),
-		cmdable:   cmdable,
-		keyPrefix: "lock:user",
-	}
+	synctest.Test(t, func(t *testing.T) {
+		cmdable := newTestLockCmdable()
+		locker := &Locker{
+			ctx:       t.Context(),
+			cmdable:   cmdable,
+			keyPrefix: "lock:user",
+		}
 
-	lock, ok := locker.Lock("123", WithTimeout(20*time.Millisecond))
+		lock, ok := locker.Lock("123", WithTimeout(20*time.Millisecond))
 
-	require.True(t, ok)
-	require.NotNil(t, lock)
-	assert.False(t, lock.option.refresh)
-	assert.Eventually(t, func() bool {
-		return lock.IsBroken()
-	}, time.Second, 10*time.Millisecond)
-	assert.Eventually(t, func() bool {
-		return errors.Is(lock.Context().Err(), context.Canceled)
-	}, time.Second, 10*time.Millisecond)
-	assert.ErrorIs(t, context.Cause(lock.Context()), errLockLeaseExpired)
+		require.True(t, ok)
+		require.NotNil(t, lock)
+		assert.False(t, lock.option.refresh)
+		assert.False(t, lock.IsBroken())
+
+		synctest.Sleep(time.Until(lock.currentLeaseDeadline()))
+
+		assert.True(t, lock.IsBroken())
+		assert.ErrorIs(t, lock.Context().Err(), context.Canceled)
+		assert.ErrorIs(t, context.Cause(lock.Context()), errLockLeaseExpired)
+	})
 }
 
 func TestWithTimeoutRejectsNonPositiveTimeout(t *testing.T) {
@@ -338,19 +341,21 @@ func TestLockRefreshStopsWhenRetryWouldExceedLease(t *testing.T) {
 }
 
 func TestLockRefreshCommandCannotRunPastLease(t *testing.T) {
-	cmdable := newTestLockCmdable()
-	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
-		<-ctx.Done()
-		return goredis.NewCmdResult(nil, ctx.Err())
-	}
-	lock := newHeldTestLock(cmdable, 30*time.Millisecond)
-	startedAt := time.Now()
+	synctest.Test(t, func(t *testing.T) {
+		cmdable := newTestLockCmdable()
+		cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+			<-ctx.Done()
+			return goredis.NewCmdResult(nil, ctx.Err())
+		}
+		lock := newHeldTestLock(cmdable, 30*time.Millisecond)
+		startedAt := time.Now()
 
-	err := lock.refreshWithRetry()
+		err := lock.refreshWithRetry()
 
-	require.Error(t, err)
-	assert.Less(t, time.Since(startedAt), time.Second)
-	require.Len(t, cmdable.evalCalls, 1)
+		require.Error(t, err)
+		assert.Equal(t, 27*time.Millisecond, time.Since(startedAt))
+		require.Len(t, cmdable.evalCalls, 1)
+	})
 }
 
 func TestLockUnlockPanicsAndBreaksOnReleaseFailure(t *testing.T) {

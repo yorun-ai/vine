@@ -33,13 +33,14 @@ func TestManagerRegistersListenerAndDispatchesEvent(t *testing.T) {
 		runAppEvent = oldRun
 	}()
 
-	hooks := &_ManagerDispatchHooks{}
+	hooks := &_ManagerDispatchHooks{completed: make(chan struct{}, 1)}
 	newAppEventServiceClient = func(context.Context, runtime.App, string, eventspec.NATSMessage) appskeled.EventServiceClientER {
 		return &_ManagerAppEventClient{
 			onEvent: func(on appskeled.EventOn) error {
 				hooks.mutex.Lock()
 				hooks.events = append(hooks.events, on)
 				hooks.mutex.Unlock()
+				hooks.completed <- struct{}{}
 				return nil
 			},
 		}
@@ -77,11 +78,7 @@ func TestManagerRegistersListenerAndDispatchesEvent(t *testing.T) {
 		EventJson:     `{"userId":"u1"}`,
 	})
 
-	require.Eventually(t, func() bool {
-		hooks.mutex.Lock()
-		defer hooks.mutex.Unlock()
-		return len(hooks.events) == 1
-	}, 2*time.Second, 10*time.Millisecond)
+	requireDispatchSignal(t, hooks.completed, "event dispatch timeout")
 
 	hooks.mutex.Lock()
 	defer hooks.mutex.Unlock()
@@ -176,11 +173,9 @@ func TestManagerLimitsDispatchConcurrency(t *testing.T) {
 
 	hooks.releaseChan <- struct{}{}
 
-	require.Eventually(t, func() bool {
-		hooks.mutex.Lock()
-		defer hooks.mutex.Unlock()
-		return len(hooks.events) == 2
-	}, 2*time.Second, 10*time.Millisecond)
+	hooks.mutex.Lock()
+	defer hooks.mutex.Unlock()
+	assert.Len(t, hooks.events, 2)
 }
 
 func TestManagerFansOutByAppName(t *testing.T) {
@@ -194,8 +189,8 @@ func TestManagerFansOutByAppName(t *testing.T) {
 		runAppEvent = oldRun
 	}()
 
-	firstHooks := &_ManagerDispatchHooks{}
-	secondHooks := &_ManagerDispatchHooks{}
+	firstHooks := &_ManagerDispatchHooks{completed: make(chan struct{}, 1)}
+	secondHooks := &_ManagerDispatchHooks{completed: make(chan struct{}, 1)}
 	newAppEventServiceClient = func(_ context.Context, _ runtime.App, endpoint string, _ eventspec.NATSMessage) appskeled.EventServiceClientER {
 		targetHooks := secondHooks
 		if strings.Contains(endpoint, ":8080") {
@@ -207,6 +202,7 @@ func TestManagerFansOutByAppName(t *testing.T) {
 				targetHooks.events = append(targetHooks.events, on)
 				targetHooks.callCount++
 				targetHooks.mutex.Unlock()
+				targetHooks.completed <- struct{}{}
 				return nil
 			},
 		}
@@ -253,15 +249,8 @@ func TestManagerFansOutByAppName(t *testing.T) {
 		EventJson:     `{"userId":"u1"}`,
 	})
 
-	require.Eventually(t, func() bool {
-		firstHooks.mutex.Lock()
-		firstCount := firstHooks.callCount
-		firstHooks.mutex.Unlock()
-		secondHooks.mutex.Lock()
-		secondCount := secondHooks.callCount
-		secondHooks.mutex.Unlock()
-		return firstCount == 1 && secondCount == 1
-	}, 2*time.Second, 10*time.Millisecond)
+	requireDispatchSignal(t, firstHooks.completed, "first app event dispatch timeout")
+	requireDispatchSignal(t, secondHooks.completed, "second app event dispatch timeout")
 }
 
 func TestManagerCompetesAcrossSameAppNameInstances(t *testing.T) {
@@ -275,8 +264,8 @@ func TestManagerCompetesAcrossSameAppNameInstances(t *testing.T) {
 		runAppEvent = oldRun
 	}()
 
-	firstHooks := &_ManagerDispatchHooks{}
-	secondHooks := &_ManagerDispatchHooks{}
+	firstHooks := &_ManagerDispatchHooks{completed: make(chan struct{}, 1)}
+	secondHooks := &_ManagerDispatchHooks{completed: make(chan struct{}, 1)}
 	newAppEventServiceClient = func(_ context.Context, _ runtime.App, endpoint string, _ eventspec.NATSMessage) appskeled.EventServiceClientER {
 		targetHooks := secondHooks
 		if strings.Contains(endpoint, ":8080") {
@@ -288,6 +277,7 @@ func TestManagerCompetesAcrossSameAppNameInstances(t *testing.T) {
 				targetHooks.events = append(targetHooks.events, on)
 				targetHooks.callCount++
 				targetHooks.mutex.Unlock()
+				targetHooks.completed <- struct{}{}
 				return nil
 			},
 		}
@@ -334,15 +324,12 @@ func TestManagerCompetesAcrossSameAppNameInstances(t *testing.T) {
 		EventJson:     `{"userId":"u1"}`,
 	})
 
-	require.Eventually(t, func() bool {
-		firstHooks.mutex.Lock()
-		firstCount := firstHooks.callCount
-		firstHooks.mutex.Unlock()
-		secondHooks.mutex.Lock()
-		secondCount := secondHooks.callCount
-		secondHooks.mutex.Unlock()
-		return firstCount+secondCount == 1
-	}, 2*time.Second, 10*time.Millisecond)
+	select {
+	case <-firstHooks.completed:
+	case <-secondHooks.completed:
+	case <-time.After(2 * time.Second):
+		t.Fatal("competing event dispatch timeout")
+	}
 
 	firstHooks.mutex.Lock()
 	firstCount := firstHooks.callCount
@@ -351,6 +338,15 @@ func TestManagerCompetesAcrossSameAppNameInstances(t *testing.T) {
 	secondCount := secondHooks.callCount
 	secondHooks.mutex.Unlock()
 	assert.Equal(t, 1, firstCount+secondCount)
+}
+
+func requireDispatchSignal(t *testing.T, signal <-chan struct{}, message string) {
+	t.Helper()
+	select {
+	case <-signal:
+	case <-time.After(2 * time.Second):
+		t.Fatal(message)
+	}
 }
 
 func testLocalAppEndpoint(port int) string {

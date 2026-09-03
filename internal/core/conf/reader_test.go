@@ -19,20 +19,20 @@ type readerTestInstantConfig struct {
 }
 
 func TestReaderGetByTypeDecodesLinkConfig(t *testing.T) {
-	resetRegistryForTest()
+	registry := NewRegistry()
 
-	Register(ConfigSpec{
+	registry.Register(ConfigSpec{
 		Name:      "ReaderTestConfig",
 		SkelName:  "demo.user.ReaderTestConfig",
 		Lifecycle: LifecycleEternal,
 		Type:      reflect.TypeFor[*readerTestConfig](),
 	})
 
-	reader := NewReader(&corelink.TestLinker{
+	reader := newReader(&corelink.TestLinker{
 		EternalConfigByKey: map[string]string{
 			"demo.user.ReaderTestConfig": `{"name":"demo"}`,
 		},
-	})
+	}, registry)
 
 	value, ok := reader.GetByType(reflect.TypeFor[*readerTestConfig]()).(*readerTestConfig)
 	if !ok {
@@ -44,23 +44,23 @@ func TestReaderGetByTypeDecodesLinkConfig(t *testing.T) {
 }
 
 func TestReaderGetByTypeUsesLocalLifecycle(t *testing.T) {
-	resetRegistryForTest()
+	registry := NewRegistry()
 
-	Register(ConfigSpec{
+	registry.Register(ConfigSpec{
 		Name:      "ReaderTestInstantConfig",
 		SkelName:  "demo.user.ReaderTestInstantConfig",
 		Lifecycle: LifecycleInstant,
 		Type:      reflect.TypeFor[*readerTestInstantConfig](),
 	})
 
-	reader := NewReader(&corelink.TestLinker{
+	reader := newReader(&corelink.TestLinker{
 		EternalConfigByKey: map[string]string{
 			"demo.user.ReaderTestInstantConfig": `{"name":"eternal"}`,
 		},
 		InstantConfigByKey: map[string]string{
 			"demo.user.ReaderTestInstantConfig": `{"name":"instant"}`,
 		},
-	})
+	}, registry)
 
 	value, ok := reader.GetByType(reflect.TypeFor[*readerTestInstantConfig]()).(*readerTestInstantConfig)
 	if !ok {
@@ -72,20 +72,20 @@ func TestReaderGetByTypeUsesLocalLifecycle(t *testing.T) {
 }
 
 func TestReaderGetByTypePanicsWhenConfigJSONIsEmpty(t *testing.T) {
-	resetRegistryForTest()
+	registry := NewRegistry()
 
-	Register(ConfigSpec{
+	registry.Register(ConfigSpec{
 		Name:      "ReaderTestConfig",
 		SkelName:  "demo.user.ReaderTestConfig",
 		Lifecycle: LifecycleEternal,
 		Type:      reflect.TypeFor[*readerTestConfig](),
 	})
 
-	reader := NewReader(&corelink.TestLinker{
+	reader := newReader(&corelink.TestLinker{
 		EternalConfigByKey: map[string]string{
 			"demo.user.ReaderTestConfig": "",
 		},
-	})
+	}, registry)
 
 	require.PanicsWithError(t, "config demo.user.ReaderTestConfig json is empty", func() {
 		reader.GetByType(reflect.TypeFor[*readerTestConfig]())
@@ -93,20 +93,20 @@ func TestReaderGetByTypePanicsWhenConfigJSONIsEmpty(t *testing.T) {
 }
 
 func TestReaderGetByTypePanicsWhenConfigJSONIsInvalid(t *testing.T) {
-	resetRegistryForTest()
+	registry := NewRegistry()
 
-	Register(ConfigSpec{
+	registry.Register(ConfigSpec{
 		Name:      "ReaderTestConfig",
 		SkelName:  "demo.user.ReaderTestConfig",
 		Lifecycle: LifecycleEternal,
 		Type:      reflect.TypeFor[*readerTestConfig](),
 	})
 
-	reader := NewReader(&corelink.TestLinker{
+	reader := newReader(&corelink.TestLinker{
 		EternalConfigByKey: map[string]string{
 			"demo.user.ReaderTestConfig": `{"name":`,
 		},
-	})
+	}, registry)
 
 	require.PanicsWithError(t, "unmarshal config demo.user.ReaderTestConfig failed: unexpected end of JSON input", func() {
 		reader.GetByType(reflect.TypeFor[*readerTestConfig]())

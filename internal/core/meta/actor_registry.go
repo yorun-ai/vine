@@ -30,12 +30,28 @@ type _ActorInfo struct {
 
 // Registry
 
-var infoBySkelName = map[string]*_ActorInfo{}
-var infoByInfoSkelName = map[string]*_ActorInfo{}
-var infoByInfoType = map[reflect.Type]*_ActorInfo{}
+type Registry struct {
+	infoBySkelName     map[string]*_ActorInfo
+	infoByInfoSkelName map[string]*_ActorInfo
+	infoByInfoType     map[reflect.Type]*_ActorInfo
+}
+
+func NewRegistry() *Registry {
+	return &Registry{
+		infoBySkelName:     map[string]*_ActorInfo{},
+		infoByInfoSkelName: map[string]*_ActorInfo{},
+		infoByInfoType:     map[reflect.Type]*_ActorInfo{},
+	}
+}
+
+var defaultRegistry = NewRegistry()
 
 func RegisterActor(spec ActorSpec) {
-	vpre.CheckNil(infoBySkelName[spec.SkelName], "actor %s already registered", spec.SkelName)
+	defaultRegistry.RegisterActor(spec)
+}
+
+func (r *Registry) RegisterActor(spec ActorSpec) {
+	vpre.CheckNil(r.infoBySkelName[spec.SkelName], "actor %s already registered", spec.SkelName)
 
 	info := &_ActorInfo{
 		Name:         spec.Name,
@@ -48,13 +64,17 @@ func RegisterActor(spec ActorSpec) {
 	if spec.InfoType != nil {
 		vpre.Check(reflectutil.IsStructPointerType(spec.InfoType),
 			"actor %s info type %s must be pointer to struct", spec.SkelName, spec.InfoType)
-		infoByInfoSkelName[info.InfoSkelName] = info
-		infoByInfoType[spec.InfoType] = info
+		r.infoByInfoSkelName[info.InfoSkelName] = info
+		r.infoByInfoType[spec.InfoType] = info
 	}
 
-	infoBySkelName[info.SkelName] = info
+	r.infoBySkelName[info.SkelName] = info
 }
 
 func RegisteredActorInfoTypes() []reflect.Type {
-	return vmap.Keys(infoByInfoType)
+	return defaultRegistry.RegisteredActorInfoTypes()
+}
+
+func (r *Registry) RegisteredActorInfoTypes() []reflect.Type {
+	return vmap.Keys(r.infoByInfoType)
 }

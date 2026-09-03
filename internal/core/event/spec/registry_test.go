@@ -61,6 +61,7 @@ type _DefaultRegistryTestListenerER struct {
 }
 
 func TestRegisterCombinesEmitterAndListenerBlocks(t *testing.T) {
+	registry := NewRegistry()
 	emitterSpec := &EventSpec{
 		Type:               EventSpecTypeEmitter,
 		Name:               "RegistryTestEvent",
@@ -85,10 +86,10 @@ func TestRegisterCombinesEmitterAndListenerBlocks(t *testing.T) {
 		DefaultERListenerType: reflect.TypeOf(&_DefaultRegistryTestListenerER{}),
 	}
 
-	Register(emitterSpec)
-	Register(listenerSpec)
+	registry.Register(emitterSpec)
+	registry.Register(listenerSpec)
 
-	eventInfo, ok := GetEventInfo("event.spec.registryTestEvent")
+	eventInfo, ok := registry.GetEventInfo("event.spec.registryTestEvent")
 	if !ok {
 		t.Fatal("event info not registered")
 	}
@@ -107,8 +108,9 @@ func TestRegisterCombinesEmitterAndListenerBlocks(t *testing.T) {
 }
 
 func TestRegisterRejectsDuplicateEmitterBlock(t *testing.T) {
+	registry := NewRegistry()
 	register := func() {
-		Register(&EventSpec{
+		registry.Register(&EventSpec{
 			Type:               EventSpecTypeEmitter,
 			Name:               "RegistryDuplicateEmitterEvent",
 			SkelName:           "event.spec.registryDuplicateEmitterEvent",

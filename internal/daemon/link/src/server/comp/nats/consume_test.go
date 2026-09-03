@@ -3,7 +3,6 @@ package nats
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -50,7 +49,7 @@ func TestConsumeStopIsIdempotent(t *testing.T) {
 	}
 }
 
-func TestConsumeRestartsManagedConsumersOnReconnect(t *testing.T) {
+func TestConsumeRestartsManagedConsumersDuringRecovery(t *testing.T) {
 	server := newTestNATSServer(t)
 
 	client := new(_Client)
@@ -69,18 +68,17 @@ func TestConsumeRestartsManagedConsumersOnReconnect(t *testing.T) {
 	managedCtx := consumeCtx.(*_ConsumeContext)
 	firstRawCtx := managedCtx.consumeContext
 
-	client.onReconnect(context.Background(), client.conn)
+	client.recoverJetStream(context.Background())
 
-	waitUntil(t, func() bool {
-		managedCtx.mutex.Lock()
-		restarted := managedCtx.consumeContext != firstRawCtx
-		managedCtx.mutex.Unlock()
-
-		client.mutex.Lock()
-		streamCount := len(client.ensuredStream)
-		client.mutex.Unlock()
-		return restarted && streamCount == 1
-	})
+	managedCtx.mutex.Lock()
+	restarted := managedCtx.consumeContext != firstRawCtx
+	managedCtx.mutex.Unlock()
+	client.mutex.Lock()
+	streamCount := len(client.ensuredStream)
+	client.mutex.Unlock()
+	if !restarted || streamCount != 1 {
+		t.Fatalf("consumer recovery incomplete: restarted=%t streamCount=%d", restarted, streamCount)
+	}
 
 	client.Publish(broadcastStreamConfigForTest(), formatTestBroadcastSubject("alpha.created"), []byte("ok"))
 
@@ -98,18 +96,17 @@ func TestConsumeStoppedManagedConsumerIsRemoved(t *testing.T) {
 	managedCtx := consumeCtx.(*_ConsumeContext)
 
 	consumeCtx.Stop()
-	client.onReconnect(context.Background(), client.conn)
+	client.recoverJetStream(context.Background())
 
-	waitUntil(t, func() bool {
-		client.mutex.Lock()
-		consumerCount := len(client.consumers)
-		client.mutex.Unlock()
-
-		managedCtx.mutex.Lock()
-		consumeContext := managedCtx.consumeContext
-		managedCtx.mutex.Unlock()
-		return consumerCount == 0 && consumeContext == nil
-	})
+	client.mutex.Lock()
+	consumerCount := len(client.consumers)
+	client.mutex.Unlock()
+	managedCtx.mutex.Lock()
+	consumeContext := managedCtx.consumeContext
+	managedCtx.mutex.Unlock()
+	if consumerCount != 0 || consumeContext != nil {
+		t.Fatalf("stopped consumer recovered: count=%d context=%v", consumerCount, consumeContext)
+	}
 }
 
 func TestSanitizeNATSResourceNamePreservesAllowedChars(t *testing.T) {
@@ -137,23 +134,5 @@ func TestSanitizeNATSResourceNameReplacesOnlyUnsupportedChars(t *testing.T) {
 	got := sanitizeNATSResourceName("...")
 	if got != "___" {
 		t.Fatalf("unexpected sanitized value: %s", got)
-	}
-}
-
-func waitUntil(t *testing.T, ready func() bool) {
-	t.Helper()
-
-	deadline := time.After(2 * time.Second)
-	tick := time.NewTicker(10 * time.Millisecond)
-	defer tick.Stop()
-	for {
-		select {
-		case <-deadline:
-			t.Fatalf("condition timeout")
-		case <-tick.C:
-			if ready() {
-				return
-			}
-		}
 	}
 }

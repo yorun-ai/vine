@@ -22,7 +22,7 @@ The runtime-specific guides are:
 
 ## Prerequisites
 
-The Go module targets Go 1.26. Depending on the area being changed, development
+The Go module targets Go 1.27. Depending on the area being changed, development
 may also require:
 
 - Node.js 20 or later and pnpm for the documentation site and Hub Dashboard
@@ -33,7 +33,7 @@ Download Go dependencies and run the baseline test suite with:
 
 ```bash
 go mod download
-go test ./...
+bash test/test.sh
 ```
 
 ## Repository Boundaries
@@ -62,6 +62,12 @@ should also include facade tests and user documentation where applicable.
   live in `test_helper_test.go`.
 - Use `t.Cleanup` to restore globals, registries, environment variables, inproc
   endpoints, and background resources.
+- Use `testing/synctest` for tests whose correctness depends on goroutine
+  scheduling, timers, tickers, cancellation, or deadlines. Prefer
+  `synctest.Wait` and `synctest.Sleep` over wall-clock polling and arbitrary
+  sleeps. Keep bounded real-time guards only around external processes and
+  actual network or storage I/O, which cannot run deterministically in a
+  synctest bubble.
 - Do not enable `t.Parallel()` where tests share global registries, application
   singletons, logger settings, or inproc endpoint registries.
 - A package using `app/testkit` should start one standalone runtime and share it
@@ -76,11 +82,28 @@ go test ./path/to/package
 Before submitting a repository-wide Go change, run:
 
 ```bash
-go test ./...
+bash test/test.sh
 ```
+
+The repository test script randomizes test execution order and prints the seed,
+so order-dependent failures can be reproduced with `go test -shuffle=<seed>`.
 
 Also run `go vet ./...` after changes involving public APIs, concurrency,
 reflection, or runtime wiring.
+
+Run the focused performance benchmarks with:
+
+```bash
+bash test/benchmark.sh
+```
+
+The script reports allocation data and defaults to five one-second samples.
+Set `GOTOOLCHAIN` to compare Go releases, or use `VINE_BENCH_PATTERN`,
+`VINE_BENCH_TIME`, and `VINE_BENCH_COUNT` to narrow or tune a run. For example:
+
+```bash
+GOTOOLCHAIN=go1.27.1 VINE_BENCH_PATTERN=RPC bash test/benchmark.sh
+```
 
 ## Generated Skel Code
 

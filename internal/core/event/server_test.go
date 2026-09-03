@@ -176,6 +176,37 @@ func TestServerOnEventForwardsToListener(t *testing.T) {
 	assert.False(t, repeatsPayload)
 }
 
+func BenchmarkServerOnEvent(b *testing.B) {
+	ensureServerEventRegistered()
+	trace := meta.InitialTrace()
+	server := NewServer(Option{
+		App:               testEventServerApp(),
+		ListenerImplTypes: []reflect.Type{reflect.TypeOf(&testServerListenerImpl{})},
+		Executor:          NewContainerExecutor(nil, nil),
+		Logger: logger.New("vine:benchmark", logger.WithOption{
+			Level: logger.LevelError,
+		}),
+	})
+	on := appskeled.EventOn{
+		Metadata: appskeled.EventOnMeta{
+			TraceId:       trace.Id(),
+			TraceSpan:     trace.Span(),
+			AppName:       "remote.app",
+			AppVersion:    "1.0.0",
+			AppInstanceId: skel.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
+		},
+		EventSkelName: "test.event.TestServerEvent",
+		EventJson:     `{"groupId":9}`,
+	}
+
+	b.ReportAllocs()
+	for b.Loop() {
+		if err := server.OnEvent(context.Background(), on); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func TestServerRejectedUsesMainEventFieldNames(t *testing.T) {
 	ensureServerEventRegistered()
 	logPath := filepath.Join(t.TempDir(), "event-rejected.jsonl")

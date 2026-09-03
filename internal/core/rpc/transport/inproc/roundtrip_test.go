@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync/atomic"
 	"testing"
-	"time"
+	"testing/synctest"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -102,37 +102,38 @@ func TestRoundTripRejectsInvalidInput(t *testing.T) {
 }
 
 func TestRoundTripInvokesHandlerInAnotherGoroutine(t *testing.T) {
-	resetRegistryForTest(t)
+	synctest.Test(t, func(t *testing.T) {
+		resetRegistryForTest(t)
 
-	req := testRequest(t)
-	waitCh := make(chan struct{})
-	calledCh := make(chan struct{})
+		req := testRequest(t)
+		waitCh := make(chan struct{})
+		calledCh := make(chan struct{})
+		doneCh := make(chan struct{})
+		Register("rpc+inproc://async", testHandler{
+			response: testResponse(t),
+			calledCh: calledCh,
+			waitCh:   waitCh,
+		})
+		go func() {
+			defer close(doneCh)
+			_, _ = RoundTrip("rpc+inproc://async", req)
+		}()
+		synctest.Wait()
 
-	doneCh := make(chan struct{})
-	Register("rpc+inproc://async", testHandler{
-		response: testResponse(t),
-		calledCh: calledCh,
-		waitCh:   waitCh,
+		select {
+		case <-calledCh:
+		default:
+			t.Fatal("expected handler to be invoked asynchronously")
+		}
+		select {
+		case <-doneCh:
+			t.Fatal("expected round trip to wait for handler response")
+		default:
+		}
+
+		close(waitCh)
+		<-doneCh
 	})
-	go func() {
-		defer close(doneCh)
-		_, _ = RoundTrip("rpc+inproc://async", req)
-	}()
-
-	select {
-	case <-calledCh:
-	case <-time.After(time.Second):
-		t.Fatal("expected handler to be invoked asynchronously")
-	}
-
-	select {
-	case <-doneCh:
-		t.Fatal("expected round trip to wait for handler response")
-	default:
-	}
-
-	close(waitCh)
-	<-doneCh
 }
 
 func TestRoundTripReturnsContextError(t *testing.T) {
@@ -165,43 +166,46 @@ func TestRoundTripReturnsContextError(t *testing.T) {
 }
 
 func TestRoundTripDoesNotWaitForHandlerAfterContextCanceled(t *testing.T) {
-	resetRegistryForTest(t)
+	synctest.Test(t, func(t *testing.T) {
+		resetRegistryForTest(t)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	req := testRequest(t).(*spec.RequestImpl)
-	req.ContextValue = ctx
+		ctx, cancel := context.WithCancel(t.Context())
+		req := testRequest(t).(*spec.RequestImpl)
+		req.ContextValue = ctx
 
-	waitCh := make(chan struct{})
-	calledCh := make(chan struct{})
-	Register("rpc+inproc://cancel-running", testHandler{
-		response: testResponse(t),
-		calledCh: calledCh,
-		waitCh:   waitCh,
-	})
+		waitCh := make(chan struct{})
+		calledCh := make(chan struct{})
+		Register("rpc+inproc://cancel-running", testHandler{
+			response: testResponse(t),
+			calledCh: calledCh,
+			waitCh:   waitCh,
+		})
 
-	doneCh := make(chan ex.Error, 1)
-	go func() {
-		_, err := RoundTrip("rpc+inproc://cancel-running", req)
-		doneCh <- err
-	}()
-
-	select {
-	case <-calledCh:
-	case <-time.After(time.Second):
-		t.Fatal("expected handler to be called")
-	}
-
-	cancel()
-	select {
-	case err := <-doneCh:
-		if err == nil || err.Code() != ex.InvocationCancelled {
-			t.Fatalf("expected InvocationCancelled, got %#v", err)
+		doneCh := make(chan ex.Error, 1)
+		go func() {
+			_, err := RoundTrip("rpc+inproc://cancel-running", req)
+			doneCh <- err
+		}()
+		synctest.Wait()
+		select {
+		case <-calledCh:
+		default:
+			t.Fatal("expected handler to be called")
 		}
-	case <-time.After(time.Second):
-		t.Fatal("expected round trip to return without waiting for handler")
-	}
 
-	close(waitCh)
+		cancel()
+		synctest.Wait()
+		select {
+		case err := <-doneCh:
+			if err == nil || err.Code() != ex.InvocationCancelled {
+				t.Fatalf("expected InvocationCancelled, got %#v", err)
+			}
+		default:
+			t.Fatal("expected round trip to return without waiting for handler")
+		}
+
+		close(waitCh)
+	})
 }
 
 func TestRoundTripDoesNotInvokeHandlerWhenContextAlreadyCanceled(t *testing.T) {

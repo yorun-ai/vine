@@ -2,22 +2,78 @@ package inproc
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
-	"time"
+	"testing/synctest"
 )
 
 func resetRegistryForTest(t *testing.T) {
 	t.Helper()
 
+	registryMutex.Lock()
 	prev := handlerByEndpoint
-	handlerByEndpoint = map[string]http.Handler{}
+	handlerByEndpoint = map[string]*_Registration{}
+	registryMutex.Unlock()
 	t.Cleanup(func() {
+		registryMutex.Lock()
+		defer registryMutex.Unlock()
 		handlerByEndpoint = prev
 	})
+}
+
+func TestRegistrationCleanupIsIdempotentAndDoesNotRemoveReplacement(t *testing.T) {
+	resetRegistryForTest(t)
+
+	endpoint := "web+inproc://app/demo/web/access/default@demo.app"
+	handler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+	cleanupFirst := Register(endpoint, handler)
+	Unregister(endpoint)
+	cleanupSecond := Register(endpoint, handler)
+
+	cleanupFirst()
+	cleanupFirst()
+	if _, ok := getHandler(endpoint); !ok {
+		t.Fatal("stale cleanup removed replacement handler")
+	}
+
+	cleanupSecond()
+	cleanupSecond()
+	if registered, ok := getHandler(endpoint); ok {
+		t.Fatalf("cleanup did not remove handler: %#v", registered)
+	}
+}
+
+func TestRegistrySupportsConcurrentRegistrationsAndLookups(t *testing.T) {
+	resetRegistryForTest(t)
+
+	const count = 64
+	handler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+	results := make(chan bool, count)
+	var wg sync.WaitGroup
+	for i := 0; i < count; i++ {
+		endpoint := fmt.Sprintf("web+inproc://concurrent-%d", i)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			cleanup := Register(endpoint, handler)
+			_, registered := getHandler(endpoint)
+			cleanup()
+			_, remains := getHandler(endpoint)
+			results <- registered && !remains
+		}()
+	}
+	wg.Wait()
+	close(results)
+	for result := range results {
+		if !result {
+			t.Fatal("concurrent registration lifecycle failed")
+		}
+	}
 }
 
 func TestRegisterAndRoundTrip(t *testing.T) {
@@ -60,60 +116,54 @@ func TestRoundTripReturnsErrorForMissingEndpoint(t *testing.T) {
 }
 
 func TestRoundTripRespectsRequestContext(t *testing.T) {
-	resetRegistryForTest(t)
+	synctest.Test(t, func(t *testing.T) {
+		resetRegistryForTest(t)
 
-	endpoint := "web+inproc://app/demo/web/access/default@demo.app"
-	Register(endpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(50 * time.Millisecond)
-		w.WriteHeader(http.StatusOK)
-	}))
+		endpoint := "web+inproc://app/demo/web/access/default@demo.app"
+		Register(endpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			<-r.Context().Done()
+		}))
 
-	ctx, cancel := context.WithCancel(context.Background())
-	req := httptest.NewRequest(http.MethodGet, "/", nil).WithContext(ctx)
-	cancel()
+		ctx, cancel := context.WithCancel(t.Context())
+		req := httptest.NewRequest(http.MethodGet, "/", nil).WithContext(ctx)
+		cancel()
 
-	_, err := RoundTrip(endpoint, req)
-	if err == nil || !strings.Contains(err.Error(), "canceled") {
-		t.Fatalf("unexpected error: %v", err)
-	}
+		_, err := RoundTrip(endpoint, req)
+		if err == nil || !strings.Contains(err.Error(), "canceled") {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
 }
 
 func TestRoundTripStreamsResponseBeforeHandlerReturns(t *testing.T) {
-	resetRegistryForTest(t)
+	synctest.Test(t, func(t *testing.T) {
+		resetRegistryForTest(t)
 
-	endpoint := "web+inproc://app/demo/web/access/stream@demo.app"
-	handlerDone := make(chan struct{})
-	Register(endpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("content-type", "text/event-stream")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("data: ready\n\n"))
-		w.(http.Flusher).Flush()
-		<-handlerDone
-	}))
-	t.Cleanup(func() {
-		close(handlerDone)
-	})
+		endpoint := "web+inproc://app/demo/web/access/stream@demo.app"
+		handlerDone := make(chan struct{})
+		Register(endpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("content-type", "text/event-stream")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("data: ready\n\n"))
+			w.(http.Flusher).Flush()
+			<-handlerDone
+		}))
+		t.Cleanup(func() {
+			close(handlerDone)
+		})
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	resp, err := RoundTrip(endpoint, req)
-	if err != nil {
-		t.Fatalf("RoundTrip() error = %v", err)
-	}
-	defer resp.Body.Close()
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		resp, err := RoundTrip(endpoint, req)
+		if err != nil {
+			t.Fatalf("RoundTrip() error = %v", err)
+		}
+		defer resp.Body.Close()
 
-	bodyCh := make(chan string, 1)
-	go func() {
 		buffer := make([]byte, len("data: ready\n\n"))
 		_, _ = io.ReadFull(resp.Body, buffer)
-		bodyCh <- string(buffer)
-	}()
-
-	select {
-	case body := <-bodyCh:
+		body := string(buffer)
 		if body != "data: ready\n\n" {
 			t.Fatalf("unexpected body: %s", body)
 		}
-	case <-time.After(time.Second):
-		t.Fatal("stream response was not available before handler returned")
-	}
+	})
 }

@@ -7,12 +7,28 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-var taskInfoBySkelName = map[string]TaskInfo{}
-var taskInfoByDefaultEmbeddedType = map[reflect.Type]TaskInfo{}
-var erDefaultEmbeddedTypes = map[reflect.Type]struct{}{}
+type Registry struct {
+	taskInfoBySkelName            map[string]TaskInfo
+	taskInfoByDefaultEmbeddedType map[reflect.Type]TaskInfo
+	erDefaultEmbeddedTypes        map[reflect.Type]struct{}
+}
+
+func NewRegistry() *Registry {
+	return &Registry{
+		taskInfoBySkelName:            map[string]TaskInfo{},
+		taskInfoByDefaultEmbeddedType: map[reflect.Type]TaskInfo{},
+		erDefaultEmbeddedTypes:        map[reflect.Type]struct{}{},
+	}
+}
+
+var defaultRegistry = NewRegistry()
 
 func GetTriggerInfo(taskSkelName string, triggerSkelName string) (TriggerInfo, bool) {
-	taskInfo := taskInfoBySkelName[taskSkelName]
+	return defaultRegistry.GetTriggerInfo(taskSkelName, triggerSkelName)
+}
+
+func (r *Registry) GetTriggerInfo(taskSkelName string, triggerSkelName string) (TriggerInfo, bool) {
+	taskInfo := r.taskInfoBySkelName[taskSkelName]
 	if taskInfo == nil {
 		return nil, false
 	}
@@ -25,18 +41,22 @@ func GetTriggerInfo(taskSkelName string, triggerSkelName string) (TriggerInfo, b
 }
 
 func Register(taskSpec *TaskSpec) {
-	taskInfo := initTaskInfo(taskSpec)
-
-	vpre.CheckNil(taskInfoBySkelName[taskInfo.SkelName()], "task %s already registered", taskInfo.SkelName())
-	vpre.CheckNil(taskInfoByDefaultEmbeddedType[taskInfo.DefaultRunnerType().Elem()], "default runner type %s already registered", taskInfo.DefaultRunnerType())
-	vpre.CheckNil(taskInfoByDefaultEmbeddedType[taskInfo.DefaultERRunnerType().Elem()], "default er runner type %s already registered", taskInfo.DefaultERRunnerType())
-
-	taskInfoBySkelName[taskInfo.SkelName()] = taskInfo
-	registerDefaultEmbeddedTypes(taskInfo.DefaultRunnerType(), taskInfo, false)
-	registerDefaultEmbeddedTypes(taskInfo.DefaultERRunnerType(), taskInfo, true)
+	defaultRegistry.Register(taskSpec)
 }
 
-func initTaskInfo(taskSpec *TaskSpec) *_TaskInfo {
+func (r *Registry) Register(taskSpec *TaskSpec) {
+	taskInfo := r.initTaskInfo(taskSpec)
+
+	vpre.CheckNil(r.taskInfoBySkelName[taskInfo.SkelName()], "task %s already registered", taskInfo.SkelName())
+	vpre.CheckNil(r.taskInfoByDefaultEmbeddedType[taskInfo.DefaultRunnerType().Elem()], "default runner type %s already registered", taskInfo.DefaultRunnerType())
+	vpre.CheckNil(r.taskInfoByDefaultEmbeddedType[taskInfo.DefaultERRunnerType().Elem()], "default er runner type %s already registered", taskInfo.DefaultERRunnerType())
+
+	r.taskInfoBySkelName[taskInfo.SkelName()] = taskInfo
+	r.registerDefaultEmbeddedTypes(taskInfo.DefaultRunnerType(), taskInfo, false)
+	r.registerDefaultEmbeddedTypes(taskInfo.DefaultERRunnerType(), taskInfo, true)
+}
+
+func (r *Registry) initTaskInfo(taskSpec *TaskSpec) *_TaskInfo {
 	triggers := make([]TriggerInfo, 0, len(taskSpec.Triggers))
 	for _, triggerSpec := range taskSpec.Triggers {
 		triggerInfo := &_TriggerInfo{
@@ -72,33 +92,41 @@ func initTaskInfo(taskSpec *TaskSpec) *_TaskInfo {
 	return taskInfo
 }
 
-func registerDefaultEmbeddedTypes(defaultRunnerType reflect.Type, taskInfo TaskInfo, isERType bool) {
+func (r *Registry) registerDefaultEmbeddedTypes(defaultRunnerType reflect.Type, taskInfo TaskInfo, isERType bool) {
 	embeddedType := defaultRunnerType.Elem()
-	taskInfoByDefaultEmbeddedType[embeddedType] = taskInfo
+	r.taskInfoByDefaultEmbeddedType[embeddedType] = taskInfo
 	if isERType {
-		erDefaultEmbeddedTypes[embeddedType] = struct{}{}
+		r.erDefaultEmbeddedTypes[embeddedType] = struct{}{}
 	}
 }
 
 func getTaskInfo(implType reflect.Type) (TaskInfo, bool) {
+	return defaultRegistry.getTaskInfo(implType)
+}
+
+func (r *Registry) getTaskInfo(implType reflect.Type) (TaskInfo, bool) {
 	var taskInfo TaskInfo
 	isERType := false
 	for _, embeddedType := range reflectutil.EmbeddedStructTypes(implType) {
-		info := taskInfoByDefaultEmbeddedType[embeddedType]
+		info := r.taskInfoByDefaultEmbeddedType[embeddedType]
 		if info == nil {
 			continue
 		}
 		vpre.CheckNil(taskInfo, "multiple embedded default runner type found on %s.%s", implType.PkgPath(), implType.Name())
 		taskInfo = info
-		_, isERType = erDefaultEmbeddedTypes[embeddedType]
+		_, isERType = r.erDefaultEmbeddedTypes[embeddedType]
 	}
 	vpre.CheckNotNil(taskInfo, "no embedded default runner type found on %s.%s", implType.PkgPath(), implType.Name())
 	return taskInfo, isERType
 }
 
 func RegisteredTaskLauncherFactories() []any {
+	return defaultRegistry.RegisteredTaskLauncherFactories()
+}
+
+func (r *Registry) RegisteredTaskLauncherFactories() []any {
 	var factories []any
-	for _, taskInfo := range taskInfoBySkelName {
+	for _, taskInfo := range r.taskInfoBySkelName {
 		factories = append(factories, taskInfo.LauncherCtor())
 	}
 	return factories

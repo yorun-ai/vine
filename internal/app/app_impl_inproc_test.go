@@ -46,6 +46,32 @@ func TestAppImplStartInprocServerAllowsEmptyEndpointWithoutInprocRoutes(t *testi
 	app.stopInprocServer()
 }
 
+func TestAppImplStartInprocServerRollsBackPartialRegistration(t *testing.T) {
+	hostPath := "app/start-rollback"
+	prefix := coreapp.PathWebAccess + "/rollback"
+	handler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+	target := &_AppImpl{
+		inprocFlag: &InternalInprocFlag{Enabled: true, HostPath: hostPath},
+		routes: []_ServerRoute{
+			{Prefix: prefix, HttpHandler: handler},
+			{Prefix: prefix, HttpHandler: handler},
+		},
+	}
+
+	func() {
+		defer func() {
+			if recover() == nil {
+				t.Fatal("expected duplicate endpoint panic")
+			}
+		}()
+		target.startInprocServer()
+	}()
+
+	endpoint := webinproc.Endpoint(hostPath, prefix)
+	cleanup := webinproc.Register(endpoint, handler)
+	cleanup()
+}
+
 func TestAppImplStartRegistersWebberInprocRoutes(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()

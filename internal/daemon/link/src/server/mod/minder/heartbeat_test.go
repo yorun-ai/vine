@@ -3,10 +3,12 @@ package minder
 import (
 	"context"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/link/skeled"
@@ -27,34 +29,34 @@ func newTestMinderWithHubClient(client *_RegistryServiceClient) *AppMinder {
 }
 
 func TestStartHeartbeatReRegistersWhenHubLosesRegistration(t *testing.T) {
-	appInfo := mustTestMetaApp()
-	client := &_RegistryServiceClient{registered: false}
-	minder := newTestMinderWithHubClient(client)
-	instance := minder.newAppInstance(AppRegistration{
-		AppInfo:         appInfo,
-		ConsoleEndpoint: "http://127.0.0.1:8080/console",
-		IngressEndpoint: "http://127.0.0.1:8081",
-		ServiceHandlers: []skeled.ServiceHandlerRegistration{{ServiceSkelName: "demo.service.UserService"}},
-		WebHandlers:     []skeled.WebHandlerRegistration{{WebSkelName: "default@demo.app"}},
-	})
-	prev := heartbeatInterval
-	heartbeatInterval = 10 * time.Millisecond
-	defer func() {
-		heartbeatInterval = prev
-	}()
+	synctest.Test(t, func(t *testing.T) {
+		appInfo := mustTestMetaApp()
+		client := &_RegistryServiceClient{registered: false}
+		minder := newTestMinderWithHubClient(client)
+		minder.Context = t.Context()
+		instance := minder.newAppInstance(AppRegistration{
+			AppInfo:         appInfo,
+			ConsoleEndpoint: "http://127.0.0.1:8080/console",
+			IngressEndpoint: "http://127.0.0.1:8081",
+			ServiceHandlers: []skeled.ServiceHandlerRegistration{{ServiceSkelName: "demo.service.UserService"}},
+			WebHandlers:     []skeled.WebHandlerRegistration{{WebSkelName: "default@demo.app"}},
+		})
+		prev := heartbeatInterval
+		heartbeatInterval = 10 * time.Millisecond
+		defer func() {
+			heartbeatInterval = prev
+		}()
 
-	instance.startHeartbeat()
-	defer instance.stopHeartbeat()
+		instance.startHeartbeat()
+		defer instance.stopHeartbeat()
+		synctest.Sleep(10 * time.Millisecond)
 
-	assert.Eventually(t, func() bool {
 		client.mutex.Lock()
 		defer client.mutex.Unlock()
-		return len(client.heartbeats) > 0 && len(client.registrations) > 0
-	}, time.Second, 10*time.Millisecond)
-
-	client.mutex.Lock()
-	defer client.mutex.Unlock()
-	assert.Equal(t, skel.NewUUID(uuid.MustParse(appInfo.InstanceId())), client.registrations[0].InstanceId)
+		assert.NotEmpty(t, client.heartbeats)
+		require.NotEmpty(t, client.registrations)
+		assert.Equal(t, skel.NewUUID(uuid.MustParse(appInfo.InstanceId())), client.registrations[0].InstanceId)
+	})
 }
 
 func TestStartHeartbeatSkipsWhenHubInprocModeEnabled(t *testing.T) {

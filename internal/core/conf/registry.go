@@ -29,11 +29,26 @@ type _ConfigInfo struct {
 
 // Registry
 
-var infoBySkelName = map[string]*_ConfigInfo{}
-var infoByType = map[reflect.Type]*_ConfigInfo{}
+type Registry struct {
+	infoBySkelName map[string]*_ConfigInfo
+	infoByType     map[reflect.Type]*_ConfigInfo
+}
+
+func NewRegistry() *Registry {
+	return &Registry{
+		infoBySkelName: map[string]*_ConfigInfo{},
+		infoByType:     map[reflect.Type]*_ConfigInfo{},
+	}
+}
+
+var defaultRegistry = NewRegistry()
 
 func Register(spec ConfigSpec) {
-	vpre.CheckNil(infoBySkelName[spec.SkelName], "config %s already registered", spec.SkelName)
+	defaultRegistry.Register(spec)
+}
+
+func (r *Registry) Register(spec ConfigSpec) {
+	vpre.CheckNil(r.infoBySkelName[spec.SkelName], "config %s already registered", spec.SkelName)
 
 	info := &_ConfigInfo{
 		Name:      spec.Name,
@@ -42,20 +57,28 @@ func Register(spec ConfigSpec) {
 		Lifecycle: spec.Lifecycle,
 		Type:      spec.Type,
 	}
-	infoBySkelName[info.SkelName] = info
-	infoByType[spec.Type] = info
+	r.infoBySkelName[info.SkelName] = info
+	r.infoByType[spec.Type] = info
 }
 
 func RegisteredTypes() []reflect.Type {
-	return vmap.Keys(infoByType)
+	return defaultRegistry.RegisteredTypes()
+}
+
+func (r *Registry) RegisteredTypes() []reflect.Type {
+	return vmap.Keys(r.infoByType)
 }
 
 func SkelNameByType(kind reflect.Type) string {
-	return lookupByType(kind).SkelName
+	return defaultRegistry.SkelNameByType(kind)
 }
 
-func lookupByType(kind reflect.Type) *_ConfigInfo {
-	info := infoByType[kind]
+func (r *Registry) SkelNameByType(kind reflect.Type) string {
+	return r.lookupByType(kind).SkelName
+}
+
+func (r *Registry) lookupByType(kind reflect.Type) *_ConfigInfo {
+	info := r.infoByType[kind]
 	vpre.CheckNotNil(info, "config type %s is not registered", kind)
 	return info
 }

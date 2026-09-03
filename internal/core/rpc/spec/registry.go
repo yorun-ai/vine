@@ -7,12 +7,30 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-var serviceInfoBySkelName = map[string]*_ServiceInfo{}
-var serviceInfoByDefaultEmbeddedType = map[reflect.Type]*_ServiceInfo{}
-var erDefaultEmbeddedTypes = map[reflect.Type]struct{}{}
+type Registry struct {
+	serviceInfoBySkelName            map[string]*_ServiceInfo
+	serviceInfoByDefaultEmbeddedType map[reflect.Type]*_ServiceInfo
+	erDefaultEmbeddedTypes           map[reflect.Type]struct{}
+	methodSkelNamesByPointer         map[uintptr]_MethodKey
+}
+
+func NewRegistry() *Registry {
+	return &Registry{
+		serviceInfoBySkelName:            map[string]*_ServiceInfo{},
+		serviceInfoByDefaultEmbeddedType: map[reflect.Type]*_ServiceInfo{},
+		erDefaultEmbeddedTypes:           map[reflect.Type]struct{}{},
+		methodSkelNamesByPointer:         map[uintptr]_MethodKey{},
+	}
+}
+
+var defaultRegistry = NewRegistry()
 
 func GetMethodInfo(serviceSkelName string, methodSkelName string) (MethodInfo, bool) {
-	serviceInfo := serviceInfoBySkelName[serviceSkelName]
+	return defaultRegistry.GetMethodInfo(serviceSkelName, methodSkelName)
+}
+
+func (r *Registry) GetMethodInfo(serviceSkelName string, methodSkelName string) (MethodInfo, bool) {
+	serviceInfo := r.serviceInfoBySkelName[serviceSkelName]
 	if serviceInfo == nil || !serviceInfo.serverRegistered {
 		return nil, false
 	}
@@ -25,8 +43,12 @@ func GetMethodInfo(serviceSkelName string, methodSkelName string) (MethodInfo, b
 }
 
 func RegisteredClientFactories() []any {
+	return defaultRegistry.RegisteredClientFactories()
+}
+
+func (r *Registry) RegisteredClientFactories() []any {
 	var factories []any
-	for _, serviceInfo := range serviceInfoBySkelName {
+	for _, serviceInfo := range r.serviceInfoBySkelName {
 		if serviceInfo.ClientCtor() != nil {
 			factories = append(factories, serviceInfo.ClientCtor())
 		}
@@ -38,7 +60,11 @@ func RegisteredClientFactories() []any {
 }
 
 func GetServiceInfoByClientType(clientType reflect.Type) (ServiceInfo, bool) {
-	for _, serviceInfo := range serviceInfoBySkelName {
+	return defaultRegistry.GetServiceInfoByClientType(clientType)
+}
+
+func (r *Registry) GetServiceInfoByClientType(clientType reflect.Type) (ServiceInfo, bool) {
+	for _, serviceInfo := range r.serviceInfoBySkelName {
 		if serviceInfo.ClientType() == clientType {
 			return serviceInfo, true
 		}
@@ -47,7 +73,11 @@ func GetServiceInfoByClientType(clientType reflect.Type) (ServiceInfo, bool) {
 }
 
 func GetServiceInfoByERClientType(erClientType reflect.Type) (ServiceInfo, bool) {
-	for _, serviceInfo := range serviceInfoBySkelName {
+	return defaultRegistry.GetServiceInfoByERClientType(erClientType)
+}
+
+func (r *Registry) GetServiceInfoByERClientType(erClientType reflect.Type) (ServiceInfo, bool) {
+	for _, serviceInfo := range r.serviceInfoBySkelName {
 		if serviceInfo.ERClientType() == erClientType {
 			return serviceInfo, true
 		}
@@ -56,16 +86,20 @@ func GetServiceInfoByERClientType(erClientType reflect.Type) (ServiceInfo, bool)
 }
 
 func Register(spec *ServiceSpec) {
+	defaultRegistry.Register(spec)
+}
+
+func (r *Registry) Register(spec *ServiceSpec) {
 	vpre.Check(isValidServiceSpecType(spec.Type), "invalid service spec type")
 
-	serviceInfo, ok := serviceInfoBySkelName[spec.SkelName]
+	serviceInfo, ok := r.serviceInfoBySkelName[spec.SkelName]
 	if !ok {
 		serviceInfo = &_ServiceInfo{
 			name:     spec.Name,
 			skelName: spec.SkelName,
 			hash:     spec.Hash,
 		}
-		serviceInfoBySkelName[spec.SkelName] = serviceInfo
+		r.serviceInfoBySkelName[spec.SkelName] = serviceInfo
 	}
 
 	if spec.Type.setServer() {
@@ -80,8 +114,8 @@ func Register(spec *ServiceSpec) {
 		serviceInfo.wrapperERServerCtor = spec.WrapperERServerCtor
 		serviceInfo.defaultERServerType = spec.DefaultERServerType
 		if spec.DefaultServerType != nil {
-			registerDefaultEmbeddedTypes(spec.DefaultServerType, serviceInfo, false)
-			registerDefaultEmbeddedTypes(spec.DefaultERServerType, serviceInfo, true)
+			r.registerDefaultEmbeddedTypes(spec.DefaultServerType, serviceInfo, false)
+			r.registerDefaultEmbeddedTypes(spec.DefaultERServerType, serviceInfo, true)
 		}
 	}
 
@@ -95,13 +129,13 @@ func Register(spec *ServiceSpec) {
 		serviceInfo.erClientCtor = spec.ERClientCtor
 	}
 
-	registerMethodInfos(spec, serviceInfo)
+	r.registerMethodInfos(spec, serviceInfo)
 }
 
-func registerMethodInfos(serviceSpec *ServiceSpec, serviceInfo *_ServiceInfo) {
+func (r *Registry) registerMethodInfos(serviceSpec *ServiceSpec, serviceInfo *_ServiceInfo) {
 	if !serviceInfo.methodRegistered {
 		serviceInfo.methodRegistered = true
-		serviceInfo.methods = initMethodInfos(serviceSpec, serviceInfo)
+		serviceInfo.methods = r.initMethodInfos(serviceSpec, serviceInfo)
 		return
 	}
 
@@ -119,19 +153,19 @@ func registerMethodInfos(serviceSpec *ServiceSpec, serviceInfo *_ServiceInfo) {
 		methodInfo := methodInfosBySkelName[methodSpec.SkelName]
 		vpre.CheckNotNil(methodInfo, "service %s method already registered", serviceSpec.SkelName)
 		methodSpec.info = methodInfo.(*_MethodInfo)
-		registerMethodPointer(serviceSpec, methodSpec)
+		r.registerMethodPointer(serviceSpec, methodSpec)
 	}
 }
 
-func registerDefaultEmbeddedTypes(defaultServerType reflect.Type, serviceInfo *_ServiceInfo, isERType bool) {
+func (r *Registry) registerDefaultEmbeddedTypes(defaultServerType reflect.Type, serviceInfo *_ServiceInfo, isERType bool) {
 	embeddedType := defaultServerType.Elem()
-	serviceInfoByDefaultEmbeddedType[embeddedType] = serviceInfo
+	r.serviceInfoByDefaultEmbeddedType[embeddedType] = serviceInfo
 	if isERType {
-		erDefaultEmbeddedTypes[embeddedType] = struct{}{}
+		r.erDefaultEmbeddedTypes[embeddedType] = struct{}{}
 	}
 }
 
-func initMethodInfos(serviceSpec *ServiceSpec, serviceInfo *_ServiceInfo) []MethodInfo {
+func (r *Registry) initMethodInfos(serviceSpec *ServiceSpec, serviceInfo *_ServiceInfo) []MethodInfo {
 	methodInfos := make([]MethodInfo, 0, len(serviceSpec.Methods))
 	for _, methodSpec := range serviceSpec.Methods {
 		validateArguments := methodSpec.ValidateArguments
@@ -162,20 +196,24 @@ func initMethodInfos(serviceSpec *ServiceSpec, serviceInfo *_ServiceInfo) []Meth
 			methodInfo.argumentFieldInfos = buildArgumentFieldInfos(methodInfo.argumentsType)
 		}
 		methodSpec.info = methodInfo
-		registerMethodPointer(serviceSpec, methodSpec)
+		r.registerMethodPointer(serviceSpec, methodSpec)
 		methodInfos = append(methodInfos, methodInfo)
 	}
 	return methodInfos
 }
 
 func getServiceInfoByImplType(implType reflect.Type) (*_ServiceInfo, bool) {
+	return defaultRegistry.getServiceInfoByImplType(implType)
+}
+
+func (r *Registry) getServiceInfoByImplType(implType reflect.Type) (*_ServiceInfo, bool) {
 	var serviceInfo *_ServiceInfo
 	isERType := false
 	for _, embeddedType := range reflectutil.EmbeddedStructTypes(implType) {
-		if info := serviceInfoByDefaultEmbeddedType[embeddedType]; info != nil {
+		if info := r.serviceInfoByDefaultEmbeddedType[embeddedType]; info != nil {
 			vpre.CheckNil(serviceInfo, "multiple embedded default server type found on %s", implType)
 			serviceInfo = info
-			_, isERType = erDefaultEmbeddedTypes[embeddedType]
+			_, isERType = r.erDefaultEmbeddedTypes[embeddedType]
 		}
 	}
 	vpre.CheckNotNil(serviceInfo, "no embedded default server type found on %s", implType)

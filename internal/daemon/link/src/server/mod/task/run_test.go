@@ -34,13 +34,14 @@ func TestManagerRegistersListenerAndDispatchesRun(t *testing.T) {
 		runAppTask = oldRun
 	}()
 
-	hooks := &_ManagerDispatchHooks{}
+	hooks := &_ManagerDispatchHooks{completed: make(chan struct{}, 1)}
 	newAppTaskServiceClient = func(context.Context, runtime.App, string, taskspec.NATSMessage) appskeled.TaskServiceClientER {
 		return &_ManagerAppTaskClient{
 			runTask: func(run appskeled.TaskRun) error {
 				hooks.mutex.Lock()
 				hooks.runs = append(hooks.runs, run)
 				hooks.mutex.Unlock()
+				hooks.completed <- struct{}{}
 				return nil
 			},
 		}
@@ -79,11 +80,7 @@ func TestManagerRegistersListenerAndDispatchesRun(t *testing.T) {
 		ArgumentsJson:   `{"userId":"u1"}`,
 	})
 
-	require.Eventually(t, func() bool {
-		hooks.mutex.Lock()
-		defer hooks.mutex.Unlock()
-		return len(hooks.runs) == 1
-	}, 2*time.Second, 10*time.Millisecond)
+	requireDispatchSignal(t, hooks.completed, "task dispatch timeout")
 
 	hooks.mutex.Lock()
 	defer hooks.mutex.Unlock()
@@ -180,11 +177,9 @@ func TestManagerLimitsDispatchConcurrency(t *testing.T) {
 
 	hooks.releaseChan <- struct{}{}
 
-	require.Eventually(t, func() bool {
-		hooks.mutex.Lock()
-		defer hooks.mutex.Unlock()
-		return len(hooks.runs) == 2
-	}, 2*time.Second, 10*time.Millisecond)
+	hooks.mutex.Lock()
+	defer hooks.mutex.Unlock()
+	assert.Len(t, hooks.runs, 2)
 }
 
 func TestManagerCompetesGloballyForTaskMessages(t *testing.T) {
@@ -200,8 +195,8 @@ func TestManagerCompetesGloballyForTaskMessages(t *testing.T) {
 		runAppTask = oldRun
 	}()
 
-	firstHooks := &_ManagerDispatchHooks{}
-	secondHooks := &_ManagerDispatchHooks{}
+	firstHooks := &_ManagerDispatchHooks{completed: make(chan struct{}, 1)}
+	secondHooks := &_ManagerDispatchHooks{completed: make(chan struct{}, 1)}
 	newAppTaskServiceClient = func(_ context.Context, _ runtime.App, endpoint string, _ taskspec.NATSMessage) appskeled.TaskServiceClientER {
 		targetHooks := secondHooks
 		if strings.Contains(endpoint, ":8080") {
@@ -213,6 +208,7 @@ func TestManagerCompetesGloballyForTaskMessages(t *testing.T) {
 				targetHooks.runs = append(targetHooks.runs, run)
 				targetHooks.callCount++
 				targetHooks.mutex.Unlock()
+				targetHooks.completed <- struct{}{}
 				return nil
 			},
 		}
@@ -260,15 +256,12 @@ func TestManagerCompetesGloballyForTaskMessages(t *testing.T) {
 		ArgumentsJson:   `{"userId":"u1"}`,
 	})
 
-	require.Eventually(t, func() bool {
-		firstHooks.mutex.Lock()
-		firstCount := firstHooks.callCount
-		firstHooks.mutex.Unlock()
-		secondHooks.mutex.Lock()
-		secondCount := secondHooks.callCount
-		secondHooks.mutex.Unlock()
-		return firstCount+secondCount == 1
-	}, 2*time.Second, 10*time.Millisecond)
+	select {
+	case <-firstHooks.completed:
+	case <-secondHooks.completed:
+	case <-time.After(2 * time.Second):
+		t.Fatal("competing task dispatch timeout")
+	}
 
 	firstHooks.mutex.Lock()
 	firstCount := firstHooks.callCount
@@ -290,8 +283,8 @@ func TestManagerDispatchesTaskToSingleRunner(t *testing.T) {
 		runAppTask = oldRun
 	}()
 
-	firstHooks := &_ManagerDispatchHooks{}
-	secondHooks := &_ManagerDispatchHooks{}
+	firstHooks := &_ManagerDispatchHooks{completed: make(chan struct{}, 1)}
+	secondHooks := &_ManagerDispatchHooks{completed: make(chan struct{}, 1)}
 	newAppTaskServiceClient = func(_ context.Context, _ runtime.App, endpoint string, _ taskspec.NATSMessage) appskeled.TaskServiceClientER {
 		targetHooks := secondHooks
 		if strings.Contains(endpoint, ":8080") {
@@ -303,6 +296,7 @@ func TestManagerDispatchesTaskToSingleRunner(t *testing.T) {
 				targetHooks.runs = append(targetHooks.runs, run)
 				targetHooks.callCount++
 				targetHooks.mutex.Unlock()
+				targetHooks.completed <- struct{}{}
 				return nil
 			},
 		}
@@ -348,15 +342,12 @@ func TestManagerDispatchesTaskToSingleRunner(t *testing.T) {
 		ArgumentsJson:   `{"userId":"u1"}`,
 	})
 
-	require.Eventually(t, func() bool {
-		firstHooks.mutex.Lock()
-		firstCount := firstHooks.callCount
-		firstHooks.mutex.Unlock()
-		secondHooks.mutex.Lock()
-		secondCount := secondHooks.callCount
-		secondHooks.mutex.Unlock()
-		return firstCount+secondCount == 1
-	}, 2*time.Second, 10*time.Millisecond)
+	select {
+	case <-firstHooks.completed:
+	case <-secondHooks.completed:
+	case <-time.After(2 * time.Second):
+		t.Fatal("single-runner task dispatch timeout")
+	}
 
 	firstHooks.mutex.Lock()
 	firstCount := firstHooks.callCount
@@ -365,6 +356,15 @@ func TestManagerDispatchesTaskToSingleRunner(t *testing.T) {
 	secondCount := secondHooks.callCount
 	secondHooks.mutex.Unlock()
 	assert.Equal(t, 1, firstCount+secondCount)
+}
+
+func requireDispatchSignal(t *testing.T, signal <-chan struct{}, message string) {
+	t.Helper()
+	select {
+	case <-signal:
+	case <-time.After(2 * time.Second):
+		t.Fatal(message)
+	}
 }
 
 func testLocalAppEndpoint(port int) string {

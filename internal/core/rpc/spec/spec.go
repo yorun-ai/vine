@@ -85,9 +85,7 @@ type _MethodKey struct {
 	methodSkelName  string
 }
 
-var methodSkelNamesByPointer = map[uintptr]_MethodKey{}
-
-func registerMethodPointer(serviceSpec *ServiceSpec, methodSpec *MethodSpec) {
+func (r *Registry) registerMethodPointer(serviceSpec *ServiceSpec, methodSpec *MethodSpec) {
 	methodKey := _MethodKey{
 		serviceSkelName: serviceSpec.SkelName,
 		methodSkelName:  methodSpec.SkelName,
@@ -97,11 +95,15 @@ func registerMethodPointer(serviceSpec *ServiceSpec, methodSpec *MethodSpec) {
 		if methodPointer == 0 {
 			continue
 		}
-		methodSkelNamesByPointer[methodPointer] = methodKey
+		r.methodSkelNamesByPointer[methodPointer] = methodKey
 	}
 }
 
 func GetMethodSkelNamesByPointer(methodPointer uintptr) (serviceSkelName string, methodSkelName string, ok bool) {
-	methodKey, ok := methodSkelNamesByPointer[methodPointer]
+	return defaultRegistry.GetMethodSkelNamesByPointer(methodPointer)
+}
+
+func (r *Registry) GetMethodSkelNamesByPointer(methodPointer uintptr) (serviceSkelName string, methodSkelName string, ok bool) {
+	methodKey, ok := r.methodSkelNamesByPointer[methodPointer]
 	return methodKey.serviceSkelName, methodKey.methodSkelName, ok
 }

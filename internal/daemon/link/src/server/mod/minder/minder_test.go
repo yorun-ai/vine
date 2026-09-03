@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/google/uuid"
@@ -137,34 +138,37 @@ func TestUnregisterInstanceRemovesCatalogState(t *testing.T) {
 }
 
 func TestRegisterInstanceStartsRuntimeLifecycle(t *testing.T) {
-	appInfo := mustTestMetaApp()
-	client := &_RegistryServiceClient{registered: true}
-	minder := newTestMinder(&flag.Flag{}, &app.InternalInprocFlag{}, client)
-	prevHeartbeatInterval := heartbeatInterval
-	prevHealthcheckInterval := healthcheckInterval
-	heartbeatInterval = 10 * time.Millisecond
-	healthcheckInterval = 10 * time.Millisecond
-	defer func() {
-		heartbeatInterval = prevHeartbeatInterval
-		healthcheckInterval = prevHealthcheckInterval
-	}()
+	synctest.Test(t, func(t *testing.T) {
+		appInfo := mustTestMetaApp()
+		client := &_RegistryServiceClient{registered: true}
+		minder := newTestMinder(&flag.Flag{}, &app.InternalInprocFlag{}, client)
+		minder.Context = t.Context()
+		prevHeartbeatInterval := heartbeatInterval
+		prevHealthcheckInterval := healthcheckInterval
+		heartbeatInterval = 10 * time.Millisecond
+		healthcheckInterval = 10 * time.Millisecond
+		defer func() {
+			heartbeatInterval = prevHeartbeatInterval
+			healthcheckInterval = prevHealthcheckInterval
+		}()
 
-	minder.RegisterInstance(AppRegistration{
-		AppInfo:         appInfo,
-		ConsoleEndpoint: "http://127.0.0.1:8080/console",
-		IngressEndpoint: "http://127.0.0.1:8081",
-	})
-	defer minder.AfterAppStop()
+		minder.RegisterInstance(AppRegistration{
+			AppInfo:         appInfo,
+			ConsoleEndpoint: "http://127.0.0.1:8080/console",
+			IngressEndpoint: "http://127.0.0.1:8081",
+		})
+		defer minder.AfterAppStop()
 
-	instance, ok := minder.appInstance(appInfo.InstanceId())
-	assert.True(t, ok)
-	assert.NotNil(t, instance.heartbeatCancel)
-	assert.NotNil(t, instance.healthcheckCancel)
-	assert.Eventually(t, func() bool {
+		instance, ok := minder.appInstance(appInfo.InstanceId())
+		assert.True(t, ok)
+		assert.NotNil(t, instance.heartbeatCancel)
+		assert.NotNil(t, instance.healthcheckCancel)
+		synctest.Sleep(10 * time.Millisecond)
+
 		client.mutex.Lock()
 		defer client.mutex.Unlock()
-		return len(client.heartbeats) > 0
-	}, time.Second, 10*time.Millisecond)
+		assert.NotEmpty(t, client.heartbeats)
+	})
 }
 
 func TestRegisterInstanceStartsLifecycleBeforeHubRegistration(t *testing.T) {
@@ -187,9 +191,11 @@ func TestRegisterInstanceStartsLifecycleBeforeHubRegistration(t *testing.T) {
 	})
 	defer minder.AfterAppStop()
 
-	assert.Eventually(t, func() bool {
-		return len(registerObserved) > 0
-	}, time.Second, 10*time.Millisecond)
+	select {
+	case <-registerObserved:
+	default:
+		t.Fatal("hub registration did not observe started lifecycle")
+	}
 }
 
 func TestAfterAppStopStopsInstanceLifecycles(t *testing.T) {

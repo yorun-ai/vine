@@ -14,6 +14,22 @@ are not part of the public compatibility commitment.
   attempting a token-checked Redis release, returning `false` for an unavailable
   or no-longer-owned lock while retaining fail-fast Redis command errors
 
+### Changed
+
+- Raised the minimum Go version to 1.27.0, configured CI checks to follow the
+  latest Go 1.27 patch, and pinned release binaries to Go 1.27.1
+- Reworked timer-, cancellation-, scheduler-, lock-, and in-process transport
+  tests around Go 1.27 `testing/synctest`, replacing wall-clock polling with
+  deterministic synchronization, randomized test ordering, and tighter global
+  state and in-process endpoint cleanup
+- Made Rpc, Web, and Link ingress in-process endpoint registries concurrency
+  safe and lifecycle-owned through idempotent registration cleanup functions
+- Added independently instantiable registries for domain schemas, configuration,
+  actors, Rpc, events, tasks, and Web contracts while retaining the existing
+  process-wide registration functions as default-registry facades
+- Encapsulated the permanent process-wide application type and name creation
+  guards with concurrent creation protection and failed-construction rollback
+
 ### Fixed
 
 - Redis locks now apply the existing infrastructure fail-fast policy when
