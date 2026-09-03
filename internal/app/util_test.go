@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"reflect"
+	"sync"
 	"testing"
 
 	"go.yorun.ai/vine/internal/core/di"
@@ -22,19 +23,27 @@ type _UtilTestActorInfoConsumer struct {
 	B *_UtilTestActorInfoB `inject:""`
 }
 
+var utilTestActorsOnce sync.Once
+
+func ensureUtilTestActorsRegistered() {
+	utilTestActorsOnce.Do(func() {
+		meta.RegisterActor(meta.ActorSpec{
+			Name:         "UtilTestActorA",
+			SkelName:     "test.app.UtilTestActorA",
+			InfoSkelName: "test.app.UtilTestActorAInfo",
+			InfoType:     reflect.TypeFor[*_UtilTestActorInfoA](),
+		})
+		meta.RegisterActor(meta.ActorSpec{
+			Name:         "UtilTestActorB",
+			SkelName:     "test.app.UtilTestActorB",
+			InfoSkelName: "test.app.UtilTestActorBInfo",
+			InfoType:     reflect.TypeFor[*_UtilTestActorInfoB](),
+		})
+	})
+}
+
 func TestBindActorAllowsNullableUnmatchedActorInfos(t *testing.T) {
-	meta.RegisterActor(meta.ActorSpec{
-		Name:         "UtilTestActorA",
-		SkelName:     "test.app.UtilTestActorA",
-		InfoSkelName: "test.app.UtilTestActorAInfo",
-		InfoType:     reflect.TypeFor[*_UtilTestActorInfoA](),
-	})
-	meta.RegisterActor(meta.ActorSpec{
-		Name:         "UtilTestActorB",
-		SkelName:     "test.app.UtilTestActorB",
-		InfoSkelName: "test.app.UtilTestActorBInfo",
-		InfoType:     reflect.TypeFor[*_UtilTestActorInfoB](),
-	})
+	ensureUtilTestActorsRegistered()
 
 	actor, err := meta.DecodeActorFromBase64(meta.EncodeActorToBase64(meta.NewAuthenticatedActorWithRawInfo(
 		"test.app.UtilTestActorAInfo",
