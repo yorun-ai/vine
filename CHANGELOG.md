@@ -12,6 +12,11 @@ are not part of the public compatibility commitment.
 
 - Build and publish release binaries and container images in parallel after
   shared release validation
+- Consolidated PR and main checks into one required CI gate, with path-selected
+  Dashboard, Hub image, and workflow checks; main retains full race/shuffle checks
+- Require successful main CI for the exact release commit, verify release
+  archives and public multi-platform images before promoting `latest`, and
+  support independent binary/image recovery without overwriting binary assets
 
 ### Fixed
 

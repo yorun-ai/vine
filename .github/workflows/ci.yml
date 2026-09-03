@@ -2,6 +2,7 @@ name: CI
 
 on:
   pull_request:
+    branches: [main]
   push:
     branches:
       - main
@@ -15,8 +16,27 @@ permissions:
 
 env:
   GO_VERSION: '1.27.x'
+  BUILD_GO_VERSION: '1.27.1'
 
 jobs:
+  changes:
+    name: Classify changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      dashboard: ${{ steps.changes.outputs.dashboard }}
+      container: ${{ steps.changes.outputs.container }}
+      workflow: ${{ steps.changes.outputs.workflow }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+      - id: changes
+        env:
+          CHANGE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          CHANGE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash .github/scripts/ci.sh changes
+
   go-test:
     name: Go test
     runs-on: ubuntu-latest
@@ -144,6 +164,8 @@ jobs:
 
   dashboard:
     name: Dashboard
+    needs: changes
+    if: needs.changes.outputs.dashboard == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -177,13 +199,76 @@ jobs:
       - name: Audit dependencies
         run: pnpm audit --audit-level=low --registry=https://registry.npmjs.org/
 
+  container:
+    name: Build hub image
+    needs: changes
+    if: needs.changes.outputs.container == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+      - name: Build without publishing
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: ./Dockerfile
+          target: hub
+          platforms: linux/amd64
+          push: false
+          build-args: |
+            GO_VERSION=${{ env.BUILD_GO_VERSION }}
+            VERSION=v0.0.0-dev
+          cache-from: type=gha,scope=vine-hub
+          cache-to: type=gha,mode=max,scope=vine-hub
+
+  workflow:
+    name: Workflow checks
+    needs: changes
+    if: needs.changes.outputs.workflow == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          check-latest: true
+      - name: Lint workflows
+        run: GOWORK=off go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+      - name: Test CI and release policy
+        run: |
+          shellcheck .github/scripts/*.sh
+          bash .github/scripts/ci_test.sh
+          bash .github/scripts/release_test.sh
+      - name: Prepare detached release metadata fixture
+        run: |
+          git checkout --detach HEAD
+          git tag "ci-metadata-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+      - name: Exercise release metadata action without publishing
+        id: metadata
+        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
+        with:
+          context: git
+          images: ghcr.io/${{ github.repository_owner }}/vine-hub
+          flavor: latest=false
+          tags: type=raw,value=ci-check
+      - name: Verify metadata revision
+        env:
+          METADATA: ${{ steps.metadata.outputs.json }}
+        run: |
+          echo "$METADATA" | jq -e --arg sha "$(git rev-parse HEAD)" '.labels["org.opencontainers.image.revision"] == $sha'
+
   ci-checks:
     name: CI / Required Checks
     if: ${{ always() }}
-    needs: [go-test, go-lifecycle, go-static, go-race, security, dashboard]
+    needs: [changes, go-test, go-lifecycle, go-static, go-race, security, dashboard, container, workflow]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Verify CI results
         env:
           NEEDS: ${{ toJSON(needs) }}
-        run: echo "$NEEDS" | jq --exit-status 'all(.[]; .result == "success")'
+        run: bash .github/scripts/ci.sh verify

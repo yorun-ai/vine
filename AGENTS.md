@@ -97,15 +97,25 @@
   Deployments must explicitly choose exactly one of SQLite or PostgreSQL and
   exactly one of embedded or external NATS.
 - Pull requests and `main` builds smoke-test the Hub image only and never push
-  images. The Release workflow publishes Hub, Link, and Portal to GHCR for every
+  images. Optional Dashboard, container, and workflow jobs are selected by
+  changed paths inside `ci.yml` and included in `CI / Required Checks`; only
+  explicitly unselected jobs may be skipped. Tag pushes do not trigger CI.
+  The Release workflow publishes Hub, Link, and Portal to GHCR for every
   supported architecture. Binaries and images run independently in parallel
   after shared release validation. The workflow runs on Release publication or
   a manual rebuild of an existing published release, not tag pushes. Use the
   release commit for image metadata, and update `latest` only for GitHub's
   latest non-prerelease.
-- Manual image-only publication must skip the binary job without rebuilding or
-  overwriting release assets. Fetch tag refs when extracting Git-context image
-  metadata from the validated release commit.
+- Release validation requires the exact tag commit to belong to `main` and
+  have a successful latest main-push CI run. Fetch tag refs when extracting
+  Git-context image metadata from that commit.
+- Manual publication selects `artifacts: all | binaries | images`; unselected
+  jobs are skipped. Existing binary assets must never be overwritten. Scripts
+  come from the workflow revision, while builds use the validated tag commit.
+- Verify all binary checksums and anonymous access to all three AMD64/ARM64
+  images before updating `latest`. Partial recovery may publish one artifact
+  family, but release completion still requires both families to be valid.
+- See `.github/README.md` for triggers, recovery, and workflow tests.
 
 ## Release Preparation
 
