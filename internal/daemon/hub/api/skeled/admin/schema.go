@@ -14,7 +14,7 @@ var _DomainSchema = &skel.DomainSchema{
 	Hash:        "19eed676",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
-		CompilerVersion: "v0.11.1",
+		CompilerVersion: "v0.14.0",
 	},
 
 	Enums: []*skel.EnumSchema{

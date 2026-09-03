@@ -56,12 +56,62 @@ func (v *AppRegistration) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v AppRegistration) Clone() AppRegistration {
+	cloned := v
+	if v.ServiceHandlers == nil {
+		cloned.ServiceHandlers = nil
+	} else {
+		cloned.ServiceHandlers = make([]ServiceHandlerRegistration, len(v.ServiceHandlers))
+		for index0 := range v.ServiceHandlers {
+			cloned.ServiceHandlers[index0] = v.ServiceHandlers[index0].Clone()
+		}
+	}
+	if v.WebHandlers == nil {
+		cloned.WebHandlers = nil
+	} else {
+		cloned.WebHandlers = make([]WebHandlerRegistration, len(v.WebHandlers))
+		for index1 := range v.WebHandlers {
+			cloned.WebHandlers[index1] = v.WebHandlers[index1].Clone()
+		}
+	}
+	if v.EventListeners == nil {
+		cloned.EventListeners = nil
+	} else {
+		cloned.EventListeners = make([]EventListenerRegistration, len(v.EventListeners))
+		for index2 := range v.EventListeners {
+			cloned.EventListeners[index2] = v.EventListeners[index2].Clone()
+		}
+	}
+	if v.TaskRunners == nil {
+		cloned.TaskRunners = nil
+	} else {
+		cloned.TaskRunners = make([]TaskRunnerRegistration, len(v.TaskRunners))
+		for index3 := range v.TaskRunners {
+			cloned.TaskRunners[index3] = v.TaskRunners[index3].Clone()
+		}
+	}
+	if v.DomainSchemas == nil {
+		cloned.DomainSchemas = nil
+	} else {
+		cloned.DomainSchemas = make([]skel.JSON, len(v.DomainSchemas))
+		copy(cloned.DomainSchemas, v.DomainSchemas)
+	}
+	return cloned
+}
+
 // AppStatus Application instance status information, used for heartbeat refresh
 type AppStatus struct {
 	// Name Application name
 	Name string `json:"name"`
 	// InstanceId Application instance ID
 	InstanceId skel.UUID `json:"instanceId"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v AppStatus) Clone() AppStatus {
+	cloned := v
+	return cloned
 }
 
 // EventListenerRegistration Event listening capability registration information provided by the application
@@ -78,6 +128,12 @@ type EventListenerRegistration struct {
 	NoRetry bool `json:"noRetry"`
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v EventListenerRegistration) Clone() EventListenerRegistration {
+	cloned := v
+	return cloned
+}
+
 // Info Hub information
 type Info struct {
 	// ApiPort Control API service port
@@ -90,6 +146,12 @@ type Info struct {
 	MqEndpoint string `json:"mqEndpoint"`
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v Info) Clone() Info {
+	cloned := v
+	return cloned
+}
+
 // ServiceHandlerRegistration Rpc service processing capability registration information provided by the application
 type ServiceHandlerRegistration struct {
 	// ServiceSkelName Service Skel name
@@ -100,12 +162,24 @@ type ServiceHandlerRegistration struct {
 	Endpoint string `json:"endpoint"`
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v ServiceHandlerRegistration) Clone() ServiceHandlerRegistration {
+	cloned := v
+	return cloned
+}
+
 // TaskRunnerCronScheduler Task execution Cron schedule
 type TaskRunnerCronScheduler struct {
 	// TriggerSkelName Trigger Skel name
 	TriggerSkelName string `json:"triggerSkelName"`
 	// CronExpr Cron expression
 	CronExpr string `json:"cronExpr"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v TaskRunnerCronScheduler) Clone() TaskRunnerCronScheduler {
+	cloned := v
+	return cloned
 }
 
 // TaskRunnerRegistration Task execution capability registration information provided by the application
@@ -134,6 +208,20 @@ func (v *TaskRunnerRegistration) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v TaskRunnerRegistration) Clone() TaskRunnerRegistration {
+	cloned := v
+	if v.CronSchedulers == nil {
+		cloned.CronSchedulers = nil
+	} else {
+		cloned.CronSchedulers = make([]TaskRunnerCronScheduler, len(v.CronSchedulers))
+		for index0 := range v.CronSchedulers {
+			cloned.CronSchedulers[index0] = v.CronSchedulers[index0].Clone()
+		}
+	}
+	return cloned
+}
+
 // WebHandlerRegistration Web processing capability registration information provided by the application
 type WebHandlerRegistration struct {
 	// WebSkelName Web Skel name
@@ -142,4 +230,10 @@ type WebHandlerRegistration struct {
 	SchemaHash string `json:"schemaHash"`
 	// Endpoint Web proxy access address
 	Endpoint string `json:"endpoint"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v WebHandlerRegistration) Clone() WebHandlerRegistration {
+	cloned := v
+	return cloned
 }

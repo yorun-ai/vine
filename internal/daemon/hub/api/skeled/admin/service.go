@@ -57,6 +57,7 @@ var (
 		SkelName:          "list",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]AppConfigItem](),
 		ValidateResult: func(value any) error {
 			ret := value.([]AppConfigItem)
@@ -69,6 +70,19 @@ var (
 				}
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]AppConfigItem)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]AppConfigItem, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -86,13 +100,24 @@ var (
 		SkelName:          "get",
 		ArgumentsType:     reflect.TypeFor[_AppConfigServiceGetArguments](),
 		ValidateArguments: nil,
-		ResultType:        reflect.TypeFor[AppConfigItem](),
+		CloneArguments: func(value any) any {
+			source := value.(*_AppConfigServiceGetArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[AppConfigItem](),
 		ValidateResult: func(value any) error {
 			ret := value.(AppConfigItem)
 			if err := (&ret).Validate("result"); err != nil {
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.(AppConfigItem)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -110,13 +135,25 @@ var (
 		SkelName:          "update",
 		ArgumentsType:     reflect.TypeFor[_AppConfigServiceUpdateArguments](),
 		ValidateArguments: nil,
-		ResultType:        reflect.TypeFor[AppConfigItem](),
+		CloneArguments: func(value any) any {
+			source := value.(*_AppConfigServiceUpdateArguments)
+			cloned := *source
+			cloned.Update = source.Update.Clone()
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[AppConfigItem](),
 		ValidateResult: func(value any) error {
 			ret := value.(AppConfigItem)
 			if err := (&ret).Validate("result"); err != nil {
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.(AppConfigItem)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -134,13 +171,25 @@ var (
 		SkelName:          "create",
 		ArgumentsType:     reflect.TypeFor[_AppConfigServiceCreateArguments](),
 		ValidateArguments: nil,
-		ResultType:        reflect.TypeFor[AppConfigItem](),
+		CloneArguments: func(value any) any {
+			source := value.(*_AppConfigServiceCreateArguments)
+			cloned := *source
+			cloned.Creation = source.Creation.Clone()
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[AppConfigItem](),
 		ValidateResult: func(value any) error {
 			ret := value.(AppConfigItem)
 			if err := (&ret).Validate("result"); err != nil {
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.(AppConfigItem)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -154,12 +203,22 @@ var (
 		},
 	}
 	_AppConfigServiceRemoveSpec = &rpcspec.MethodSpec{
-		Name:                        "Remove",
-		SkelName:                    "remove",
-		ArgumentsType:               reflect.TypeFor[_AppConfigServiceRemoveArguments](),
-		ValidateArguments:           nil,
-		ResultType:                  reflect.TypeFor[bool](),
-		ValidateResult:              nil,
+		Name:              "Remove",
+		SkelName:          "remove",
+		ArgumentsType:     reflect.TypeFor[_AppConfigServiceRemoveArguments](),
+		ValidateArguments: nil,
+		CloneArguments: func(value any) any {
+			source := value.(*_AppConfigServiceRemoveArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType:     reflect.TypeFor[bool](),
+		ValidateResult: nil,
+		CloneResult: func(value any) any {
+			source := value.(bool)
+			cloned := source
+			return cloned
+		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -491,6 +550,7 @@ var (
 		SkelName:          "list",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]AppStatusView](),
 		ValidateResult: func(value any) error {
 			ret := value.([]AppStatusView)
@@ -503,6 +563,19 @@ var (
 				}
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]AppStatusView)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]AppStatusView, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -655,6 +728,7 @@ var (
 		SkelName:          "listEvents",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]EventDebugEventItem](),
 		ValidateResult: func(value any) error {
 			ret := value.([]EventDebugEventItem)
@@ -668,6 +742,19 @@ var (
 			}
 			return nil
 		},
+		CloneResult: func(value any) any {
+			source := value.([]EventDebugEventItem)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]EventDebugEventItem, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
+		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -680,12 +767,23 @@ var (
 		},
 	}
 	_EventDebugServiceBuildDefaultEmitRequestSpec = &rpcspec.MethodSpec{
-		Name:                        "BuildDefaultEmitRequest",
-		SkelName:                    "buildDefaultEmitRequest",
-		ArgumentsType:               reflect.TypeFor[_EventDebugServiceBuildDefaultEmitRequestArguments](),
-		ValidateArguments:           nil,
-		ResultType:                  reflect.TypeFor[EventDebugDefaultEmitRequest](),
-		ValidateResult:              nil,
+		Name:              "BuildDefaultEmitRequest",
+		SkelName:          "buildDefaultEmitRequest",
+		ArgumentsType:     reflect.TypeFor[_EventDebugServiceBuildDefaultEmitRequestArguments](),
+		ValidateArguments: nil,
+		CloneArguments: func(value any) any {
+			source := value.(*_EventDebugServiceBuildDefaultEmitRequestArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType:     reflect.TypeFor[EventDebugDefaultEmitRequest](),
+		ValidateResult: nil,
+		CloneResult: func(value any) any {
+			source := value.(EventDebugDefaultEmitRequest)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
+		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -698,12 +796,19 @@ var (
 		},
 	}
 	_EventDebugServiceEmitEventSpec = &rpcspec.MethodSpec{
-		Name:                        "EmitEvent",
-		SkelName:                    "emitEvent",
-		ArgumentsType:               reflect.TypeFor[_EventDebugServiceEmitEventArguments](),
-		ValidateArguments:           nil,
+		Name:              "EmitEvent",
+		SkelName:          "emitEvent",
+		ArgumentsType:     reflect.TypeFor[_EventDebugServiceEmitEventArguments](),
+		ValidateArguments: nil,
+		CloneArguments: func(value any) any {
+			source := value.(*_EventDebugServiceEmitEventArguments)
+			cloned := *source
+			cloned.Request = source.Request.Clone()
+			return &cloned
+		},
 		ResultType:                  nil,
 		ValidateResult:              nil,
+		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -938,13 +1043,24 @@ var (
 		SkelName:          "previewSeedYaml",
 		ArgumentsType:     reflect.TypeFor[_MaintenanceServicePreviewSeedYamlArguments](),
 		ValidateArguments: nil,
-		ResultType:        reflect.TypeFor[SeedPreview](),
+		CloneArguments: func(value any) any {
+			source := value.(*_MaintenanceServicePreviewSeedYamlArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[SeedPreview](),
 		ValidateResult: func(value any) error {
 			ret := value.(SeedPreview)
 			if err := (&ret).Validate("result"); err != nil {
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.(SeedPreview)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -968,6 +1084,19 @@ var (
 			}
 			return nil
 		},
+		CloneArguments: func(value any) any {
+			source := value.(*_MaintenanceServiceApplySeedYamlArguments)
+			cloned := *source
+			if source.Selections == nil {
+				cloned.Selections = nil
+			} else {
+				cloned.Selections = make([]SeedItemSelection, len(source.Selections))
+				for index0 := range source.Selections {
+					cloned.Selections[index0] = source.Selections[index0].Clone()
+				}
+			}
+			return &cloned
+		},
 		ResultType: reflect.TypeFor[SeedPreview](),
 		ValidateResult: func(value any) error {
 			ret := value.(SeedPreview)
@@ -975,6 +1104,12 @@ var (
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.(SeedPreview)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -1191,6 +1326,7 @@ var (
 		SkelName:          "list",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]PortalCert](),
 		ValidateResult: func(value any) error {
 			ret := value.([]PortalCert)
@@ -1203,6 +1339,19 @@ var (
 				}
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]PortalCert)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]PortalCert, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -1220,13 +1369,24 @@ var (
 		SkelName:          "get",
 		ArgumentsType:     reflect.TypeFor[_PortalCertServiceGetArguments](),
 		ValidateArguments: nil,
-		ResultType:        reflect.TypeFor[PortalCert](),
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalCertServiceGetArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[PortalCert](),
 		ValidateResult: func(value any) error {
 			ret := value.(PortalCert)
 			if err := (&ret).Validate("result"); err != nil {
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.(PortalCert)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -1244,13 +1404,25 @@ var (
 		SkelName:          "create",
 		ArgumentsType:     reflect.TypeFor[_PortalCertServiceCreateArguments](),
 		ValidateArguments: nil,
-		ResultType:        reflect.TypeFor[PortalCert](),
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalCertServiceCreateArguments)
+			cloned := *source
+			cloned.Creation = source.Creation.Clone()
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[PortalCert](),
 		ValidateResult: func(value any) error {
 			ret := value.(PortalCert)
 			if err := (&ret).Validate("result"); err != nil {
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.(PortalCert)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -1268,13 +1440,25 @@ var (
 		SkelName:          "update",
 		ArgumentsType:     reflect.TypeFor[_PortalCertServiceUpdateArguments](),
 		ValidateArguments: nil,
-		ResultType:        reflect.TypeFor[PortalCert](),
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalCertServiceUpdateArguments)
+			cloned := *source
+			cloned.Update = source.Update.Clone()
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[PortalCert](),
 		ValidateResult: func(value any) error {
 			ret := value.(PortalCert)
 			if err := (&ret).Validate("result"); err != nil {
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.(PortalCert)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -1288,12 +1472,18 @@ var (
 		},
 	}
 	_PortalCertServiceRemoveSpec = &rpcspec.MethodSpec{
-		Name:                        "Remove",
-		SkelName:                    "remove",
-		ArgumentsType:               reflect.TypeFor[_PortalCertServiceRemoveArguments](),
-		ValidateArguments:           nil,
+		Name:              "Remove",
+		SkelName:          "remove",
+		ArgumentsType:     reflect.TypeFor[_PortalCertServiceRemoveArguments](),
+		ValidateArguments: nil,
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalCertServiceRemoveArguments)
+			cloned := *source
+			return &cloned
+		},
 		ResultType:                  nil,
 		ValidateResult:              nil,
+		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1620,6 +1810,7 @@ var (
 		SkelName:          "list",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]PortalEntry](),
 		ValidateResult: func(value any) error {
 			ret := value.([]PortalEntry)
@@ -1632,6 +1823,19 @@ var (
 				}
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]PortalEntry)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]PortalEntry, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -1649,13 +1853,25 @@ var (
 		SkelName:          "updateAccess",
 		ArgumentsType:     reflect.TypeFor[_PortalEntryServiceUpdateAccessArguments](),
 		ValidateArguments: nil,
-		ResultType:        reflect.TypeFor[PortalEntry](),
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalEntryServiceUpdateAccessArguments)
+			cloned := *source
+			cloned.Update = source.Update.Clone()
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[PortalEntry](),
 		ValidateResult: func(value any) error {
 			ret := value.(PortalEntry)
 			if err := (&ret).Validate("result"); err != nil {
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.(PortalEntry)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -1875,6 +2091,7 @@ var (
 		SkelName:          "list",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]PortalRule](),
 		ValidateResult: func(value any) error {
 			ret := value.([]PortalRule)
@@ -1882,6 +2099,19 @@ var (
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]PortalRule)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]PortalRule, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -1895,12 +2125,23 @@ var (
 		},
 	}
 	_PortalRuleServiceGetSpec = &rpcspec.MethodSpec{
-		Name:                        "Get",
-		SkelName:                    "get",
-		ArgumentsType:               reflect.TypeFor[_PortalRuleServiceGetArguments](),
-		ValidateArguments:           nil,
-		ResultType:                  reflect.TypeFor[PortalRule](),
-		ValidateResult:              nil,
+		Name:              "Get",
+		SkelName:          "get",
+		ArgumentsType:     reflect.TypeFor[_PortalRuleServiceGetArguments](),
+		ValidateArguments: nil,
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalRuleServiceGetArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType:     reflect.TypeFor[PortalRule](),
+		ValidateResult: nil,
+		CloneResult: func(value any) any {
+			source := value.(PortalRule)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
+		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1913,12 +2154,24 @@ var (
 		},
 	}
 	_PortalRuleServiceCreateSpec = &rpcspec.MethodSpec{
-		Name:                        "Create",
-		SkelName:                    "create",
-		ArgumentsType:               reflect.TypeFor[_PortalRuleServiceCreateArguments](),
-		ValidateArguments:           nil,
-		ResultType:                  reflect.TypeFor[PortalRule](),
-		ValidateResult:              nil,
+		Name:              "Create",
+		SkelName:          "create",
+		ArgumentsType:     reflect.TypeFor[_PortalRuleServiceCreateArguments](),
+		ValidateArguments: nil,
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalRuleServiceCreateArguments)
+			cloned := *source
+			cloned.Creation = source.Creation.Clone()
+			return &cloned
+		},
+		ResultType:     reflect.TypeFor[PortalRule](),
+		ValidateResult: nil,
+		CloneResult: func(value any) any {
+			source := value.(PortalRule)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
+		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1931,12 +2184,24 @@ var (
 		},
 	}
 	_PortalRuleServiceUpdateSpec = &rpcspec.MethodSpec{
-		Name:                        "Update",
-		SkelName:                    "update",
-		ArgumentsType:               reflect.TypeFor[_PortalRuleServiceUpdateArguments](),
-		ValidateArguments:           nil,
-		ResultType:                  reflect.TypeFor[PortalRule](),
-		ValidateResult:              nil,
+		Name:              "Update",
+		SkelName:          "update",
+		ArgumentsType:     reflect.TypeFor[_PortalRuleServiceUpdateArguments](),
+		ValidateArguments: nil,
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalRuleServiceUpdateArguments)
+			cloned := *source
+			cloned.Update = source.Update.Clone()
+			return &cloned
+		},
+		ResultType:     reflect.TypeFor[PortalRule](),
+		ValidateResult: nil,
+		CloneResult: func(value any) any {
+			source := value.(PortalRule)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
+		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1949,12 +2214,18 @@ var (
 		},
 	}
 	_PortalRuleServiceRemoveSpec = &rpcspec.MethodSpec{
-		Name:                        "Remove",
-		SkelName:                    "remove",
-		ArgumentsType:               reflect.TypeFor[_PortalRuleServiceRemoveArguments](),
-		ValidateArguments:           nil,
+		Name:              "Remove",
+		SkelName:          "remove",
+		ArgumentsType:     reflect.TypeFor[_PortalRuleServiceRemoveArguments](),
+		ValidateArguments: nil,
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalRuleServiceRemoveArguments)
+			cloned := *source
+			return &cloned
+		},
 		ResultType:                  nil,
 		ValidateResult:              nil,
+		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1967,12 +2238,19 @@ var (
 		},
 	}
 	_PortalRuleServiceGetDashboardAccessSpec = &rpcspec.MethodSpec{
-		Name:                        "GetDashboardAccess",
-		SkelName:                    "getDashboardAccess",
-		ArgumentsType:               nil,
-		ValidateArguments:           nil,
-		ResultType:                  reflect.TypeFor[PortalDashboardAccess](),
-		ValidateResult:              nil,
+		Name:              "GetDashboardAccess",
+		SkelName:          "getDashboardAccess",
+		ArgumentsType:     nil,
+		ValidateArguments: nil,
+		CloneArguments:    nil,
+		ResultType:        reflect.TypeFor[PortalDashboardAccess](),
+		ValidateResult:    nil,
+		CloneResult: func(value any) any {
+			source := value.(PortalDashboardAccess)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
+		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1989,13 +2267,31 @@ var (
 		SkelName:          "updateDashboardAccess",
 		ArgumentsType:     reflect.TypeFor[_PortalRuleServiceUpdateDashboardAccessArguments](),
 		ValidateArguments: nil,
-		ResultType:        reflect.TypeFor[[]PortalRule](),
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalRuleServiceUpdateDashboardAccessArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[[]PortalRule](),
 		ValidateResult: func(value any) error {
 			ret := value.([]PortalRule)
 			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]PortalRule)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]PortalRule, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -2419,6 +2715,7 @@ var (
 		SkelName:          "list",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]PortalSite](),
 		ValidateResult: func(value any) error {
 			ret := value.([]PortalSite)
@@ -2431,6 +2728,19 @@ var (
 				}
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]PortalSite)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]PortalSite, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -2448,6 +2758,7 @@ var (
 		SkelName:          "listOptions",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[PortalSiteOptions](),
 		ValidateResult: func(value any) error {
 			ret := value.(PortalSiteOptions)
@@ -2455,6 +2766,12 @@ var (
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.(PortalSiteOptions)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -2472,13 +2789,24 @@ var (
 		SkelName:          "get",
 		ArgumentsType:     reflect.TypeFor[_PortalSiteServiceGetArguments](),
 		ValidateArguments: nil,
-		ResultType:        reflect.TypeFor[PortalSite](),
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalSiteServiceGetArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[PortalSite](),
 		ValidateResult: func(value any) error {
 			ret := value.(PortalSite)
 			if err := (&ret).Validate("result"); err != nil {
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.(PortalSite)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -2502,6 +2830,12 @@ var (
 			}
 			return nil
 		},
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalSiteServiceCreateArguments)
+			cloned := *source
+			cloned.Creation = source.Creation.Clone()
+			return &cloned
+		},
 		ResultType: reflect.TypeFor[PortalSite](),
 		ValidateResult: func(value any) error {
 			ret := value.(PortalSite)
@@ -2509,6 +2843,12 @@ var (
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.(PortalSite)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -2532,6 +2872,12 @@ var (
 			}
 			return nil
 		},
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalSiteServiceUpdateArguments)
+			cloned := *source
+			cloned.Update = source.Update.Clone()
+			return &cloned
+		},
 		ResultType: reflect.TypeFor[PortalSite](),
 		ValidateResult: func(value any) error {
 			ret := value.(PortalSite)
@@ -2539,6 +2885,12 @@ var (
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.(PortalSite)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -2552,12 +2904,18 @@ var (
 		},
 	}
 	_PortalSiteServiceRemoveSpec = &rpcspec.MethodSpec{
-		Name:                        "Remove",
-		SkelName:                    "remove",
-		ArgumentsType:               reflect.TypeFor[_PortalSiteServiceRemoveArguments](),
-		ValidateArguments:           nil,
+		Name:              "Remove",
+		SkelName:          "remove",
+		ArgumentsType:     reflect.TypeFor[_PortalSiteServiceRemoveArguments](),
+		ValidateArguments: nil,
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalSiteServiceRemoveArguments)
+			cloned := *source
+			return &cloned
+		},
 		ResultType:                  nil,
 		ValidateResult:              nil,
+		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2922,6 +3280,7 @@ var (
 		SkelName:          "listAppInstances",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]ServiceDebugAppInstance](),
 		ValidateResult: func(value any) error {
 			ret := value.([]ServiceDebugAppInstance)
@@ -2929,6 +3288,19 @@ var (
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]ServiceDebugAppInstance)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]ServiceDebugAppInstance, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -2946,6 +3318,7 @@ var (
 		SkelName:          "listServices",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]ServiceDebugServiceItem](),
 		ValidateResult: func(value any) error {
 			ret := value.([]ServiceDebugServiceItem)
@@ -2953,6 +3326,19 @@ var (
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]ServiceDebugServiceItem)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]ServiceDebugServiceItem, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -2970,13 +3356,31 @@ var (
 		SkelName:          "listServiceAppInstances",
 		ArgumentsType:     reflect.TypeFor[_ServiceDebugServiceListServiceAppInstancesArguments](),
 		ValidateArguments: nil,
-		ResultType:        reflect.TypeFor[[]ServiceDebugAppInstance](),
+		CloneArguments: func(value any) any {
+			source := value.(*_ServiceDebugServiceListServiceAppInstancesArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[[]ServiceDebugAppInstance](),
 		ValidateResult: func(value any) error {
 			ret := value.([]ServiceDebugAppInstance)
 			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]ServiceDebugAppInstance)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]ServiceDebugAppInstance, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -2994,7 +3398,12 @@ var (
 		SkelName:          "listMethods",
 		ArgumentsType:     reflect.TypeFor[_ServiceDebugServiceListMethodsArguments](),
 		ValidateArguments: nil,
-		ResultType:        reflect.TypeFor[[]ServiceDebugMethodItem](),
+		CloneArguments: func(value any) any {
+			source := value.(*_ServiceDebugServiceListMethodsArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[[]ServiceDebugMethodItem](),
 		ValidateResult: func(value any) error {
 			ret := value.([]ServiceDebugMethodItem)
 			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
@@ -3006,6 +3415,19 @@ var (
 				}
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]ServiceDebugMethodItem)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]ServiceDebugMethodItem, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -3023,13 +3445,24 @@ var (
 		SkelName:          "buildDefaultInvokeRequest",
 		ArgumentsType:     reflect.TypeFor[_ServiceDebugServiceBuildDefaultInvokeRequestArguments](),
 		ValidateArguments: nil,
-		ResultType:        reflect.TypeFor[ServiceDebugDefaultInvokeRequest](),
+		CloneArguments: func(value any) any {
+			source := value.(*_ServiceDebugServiceBuildDefaultInvokeRequestArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[ServiceDebugDefaultInvokeRequest](),
 		ValidateResult: func(value any) error {
 			ret := value.(ServiceDebugDefaultInvokeRequest)
 			if err := (&ret).Validate("result"); err != nil {
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.(ServiceDebugDefaultInvokeRequest)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -3043,12 +3476,24 @@ var (
 		},
 	}
 	_ServiceDebugServiceInvokeServiceSpec = &rpcspec.MethodSpec{
-		Name:                        "InvokeService",
-		SkelName:                    "invokeService",
-		ArgumentsType:               reflect.TypeFor[_ServiceDebugServiceInvokeServiceArguments](),
-		ValidateArguments:           nil,
-		ResultType:                  reflect.TypeFor[ServiceDebugInvokeResponse](),
-		ValidateResult:              nil,
+		Name:              "InvokeService",
+		SkelName:          "invokeService",
+		ArgumentsType:     reflect.TypeFor[_ServiceDebugServiceInvokeServiceArguments](),
+		ValidateArguments: nil,
+		CloneArguments: func(value any) any {
+			source := value.(*_ServiceDebugServiceInvokeServiceArguments)
+			cloned := *source
+			cloned.Request = source.Request.Clone()
+			return &cloned
+		},
+		ResultType:     reflect.TypeFor[ServiceDebugInvokeResponse](),
+		ValidateResult: nil,
+		CloneResult: func(value any) any {
+			source := value.(ServiceDebugInvokeResponse)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
+		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -3419,6 +3864,7 @@ var (
 		SkelName:          "listDomains",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]SkeletonDomain](),
 		ValidateResult: func(value any) error {
 			ret := value.([]SkeletonDomain)
@@ -3431,6 +3877,19 @@ var (
 				}
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]SkeletonDomain)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]SkeletonDomain, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -3448,6 +3907,7 @@ var (
 		SkelName:          "listActors",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]SkeletonActorItem](),
 		ValidateResult: func(value any) error {
 			ret := value.([]SkeletonActorItem)
@@ -3460,6 +3920,19 @@ var (
 				}
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]SkeletonActorItem)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]SkeletonActorItem, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -3477,6 +3950,7 @@ var (
 		SkelName:          "listServices",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]SkeletonServiceItem](),
 		ValidateResult: func(value any) error {
 			ret := value.([]SkeletonServiceItem)
@@ -3489,6 +3963,19 @@ var (
 				}
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]SkeletonServiceItem)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]SkeletonServiceItem, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -3506,6 +3993,7 @@ var (
 		SkelName:          "listResources",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]SkeletonResourceItem](),
 		ValidateResult: func(value any) error {
 			ret := value.([]SkeletonResourceItem)
@@ -3518,6 +4006,19 @@ var (
 				}
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]SkeletonResourceItem)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]SkeletonResourceItem, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -3535,6 +4036,7 @@ var (
 		SkelName:          "listWebs",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]SkeletonWebItem](),
 		ValidateResult: func(value any) error {
 			ret := value.([]SkeletonWebItem)
@@ -3547,6 +4049,19 @@ var (
 				}
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]SkeletonWebItem)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]SkeletonWebItem, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -3564,6 +4079,7 @@ var (
 		SkelName:          "listTasks",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]SkeletonTask](),
 		ValidateResult: func(value any) error {
 			ret := value.([]SkeletonTask)
@@ -3576,6 +4092,19 @@ var (
 				}
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]SkeletonTask)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]SkeletonTask, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -3593,6 +4122,7 @@ var (
 		SkelName:          "listEvents",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]SkeletonEventItem](),
 		ValidateResult: func(value any) error {
 			ret := value.([]SkeletonEventItem)
@@ -3605,6 +4135,19 @@ var (
 				}
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]SkeletonEventItem)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]SkeletonEventItem, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -3622,6 +4165,7 @@ var (
 		SkelName:          "listData",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]SkeletonData](),
 		ValidateResult: func(value any) error {
 			ret := value.([]SkeletonData)
@@ -3634,6 +4178,19 @@ var (
 				}
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]SkeletonData)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]SkeletonData, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -3651,6 +4208,7 @@ var (
 		SkelName:          "listConfigs",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]SkeletonConfigItem](),
 		ValidateResult: func(value any) error {
 			ret := value.([]SkeletonConfigItem)
@@ -3663,6 +4221,19 @@ var (
 				}
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]SkeletonConfigItem)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]SkeletonConfigItem, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -4091,6 +4662,7 @@ var (
 		SkelName:          "listTasks",
 		ArgumentsType:     nil,
 		ValidateArguments: nil,
+		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]TaskDebugTaskItem](),
 		ValidateResult: func(value any) error {
 			ret := value.([]TaskDebugTaskItem)
@@ -4098,6 +4670,19 @@ var (
 				return err
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]TaskDebugTaskItem)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]TaskDebugTaskItem, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -4115,7 +4700,12 @@ var (
 		SkelName:          "listTriggers",
 		ArgumentsType:     reflect.TypeFor[_TaskDebugServiceListTriggersArguments](),
 		ValidateArguments: nil,
-		ResultType:        reflect.TypeFor[[]TaskDebugTriggerItem](),
+		CloneArguments: func(value any) any {
+			source := value.(*_TaskDebugServiceListTriggersArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[[]TaskDebugTriggerItem](),
 		ValidateResult: func(value any) error {
 			ret := value.([]TaskDebugTriggerItem)
 			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
@@ -4127,6 +4717,19 @@ var (
 				}
 			}
 			return nil
+		},
+		CloneResult: func(value any) any {
+			source := value.([]TaskDebugTriggerItem)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]TaskDebugTriggerItem, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
 		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -4140,12 +4743,23 @@ var (
 		},
 	}
 	_TaskDebugServiceBuildDefaultLaunchRequestSpec = &rpcspec.MethodSpec{
-		Name:                        "BuildDefaultLaunchRequest",
-		SkelName:                    "buildDefaultLaunchRequest",
-		ArgumentsType:               reflect.TypeFor[_TaskDebugServiceBuildDefaultLaunchRequestArguments](),
-		ValidateArguments:           nil,
-		ResultType:                  reflect.TypeFor[TaskDebugDefaultLaunchRequest](),
-		ValidateResult:              nil,
+		Name:              "BuildDefaultLaunchRequest",
+		SkelName:          "buildDefaultLaunchRequest",
+		ArgumentsType:     reflect.TypeFor[_TaskDebugServiceBuildDefaultLaunchRequestArguments](),
+		ValidateArguments: nil,
+		CloneArguments: func(value any) any {
+			source := value.(*_TaskDebugServiceBuildDefaultLaunchRequestArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType:     reflect.TypeFor[TaskDebugDefaultLaunchRequest](),
+		ValidateResult: nil,
+		CloneResult: func(value any) any {
+			source := value.(TaskDebugDefaultLaunchRequest)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
+		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -4158,12 +4772,19 @@ var (
 		},
 	}
 	_TaskDebugServiceLaunchTaskSpec = &rpcspec.MethodSpec{
-		Name:                        "LaunchTask",
-		SkelName:                    "launchTask",
-		ArgumentsType:               reflect.TypeFor[_TaskDebugServiceLaunchTaskArguments](),
-		ValidateArguments:           nil,
+		Name:              "LaunchTask",
+		SkelName:          "launchTask",
+		ArgumentsType:     reflect.TypeFor[_TaskDebugServiceLaunchTaskArguments](),
+		ValidateArguments: nil,
+		CloneArguments: func(value any) any {
+			source := value.(*_TaskDebugServiceLaunchTaskArguments)
+			cloned := *source
+			cloned.Request = source.Request.Clone()
+			return &cloned
+		},
 		ResultType:                  nil,
 		ValidateResult:              nil,
+		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
