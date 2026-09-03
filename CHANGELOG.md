@@ -8,11 +8,18 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-09-04
+
 ### Added
 
 - `redis.Lock.TryUnlock()` for atomically checking local lock availability and
   attempting a token-checked Redis release, returning `false` for an unavailable
   or no-longer-owned lock while retaining fail-fast Redis command errors
+- Added multi-stage Hub, Link, and Portal container image builds together with
+  Kubernetes base manifests and an optional mTLS overlay; release tags publish
+  all three images for Linux AMD64 and ARM64; Hub deployments must explicitly
+  select exactly one of SQLite or PostgreSQL and one of embedded or external
+  NATS
 
 ### Changed
 
@@ -20,6 +27,16 @@ are not part of the public compatibility commitment.
   latest Go 1.27 patch, and pinned release binaries to Go 1.27.1
 - Darwin release binaries now require macOS 13 or later, following Go 1.27's
   raised minimum deployment target for macOS
+- Migrated Vine's JSON encoding, decoding, validation, formatting, and redaction
+  to Go 1.27's stable `encoding/json/v2` and `encoding/json/jsontext` APIs,
+  including their stricter handling of malformed and ambiguous JSON
+- Changed the default `vcode` JSON and CBOR profiles to encode nil slices and
+  maps as empty arrays and maps; supported schemas generated with skelc v0.14.x
+  automatically retain the legacy `null` representation, while schemas
+  generated with skelc v0.15.0 or later use the current behavior consistently
+  across Rpc, Event, and Task
+- Raised the minimum supported skelc version from v0.9.0 to v0.14.0 and
+  regenerated Vine's built-in contracts with skelc v0.14.1
 - Replaced Vine's direct use of `github.com/google/uuid` with Go 1.27's
   standard-library `uuid` package; `skel.NewUUID` now accepts the
   standard-library UUID type
@@ -78,6 +95,11 @@ are not part of the public compatibility commitment.
 - In-process Web round trips now reject already-canceled requests before
   invoking handlers and prefer cancellation when a response becomes ready at
   the same time
+- Hub Dashboard copy actions now fall back to a temporary text area when the
+  Clipboard API is unavailable or denied, including when serving the Dashboard
+  over plain HTTP
+- Removed the duplicate source field from standard-library JSON log records
+  exposed by strict JSON v2 decoding
 - Bounded encoded Rpc request bodies to 32 MiB and Rpc response bodies to
   128 MiB across application decoding, Link and Portal forwarding, Portal
   access-service calls, and Hub Service Debug, preventing unbounded buffering
@@ -86,6 +108,30 @@ are not part of the public compatibility commitment.
   `Unlock()` cannot execute its Redis command or finds that its token no longer
   owns the lock; background refresh failures retain their causes on the lock
   context and mark the lock broken without panicking from the refresh goroutine
+
+### Upgrade Notes
+
+- Upgrade the build toolchain to Go 1.27.0 or later. Prebuilt Darwin binaries
+  require macOS 13 or later.
+- Replace `github.com/google/uuid.UUID` values passed to `skel.NewUUID` with Go's
+  standard-library `uuid.UUID` type.
+- Replace the removed package-level `testkit.NewClient`, `testkit.NewClientER`,
+  and `redis.NewCache` calls with `Execution.NewClient`, `Execution.NewClientER`,
+  and `Redis.NewCache` respectively.
+- Regenerate Rpc contracts with skelc v0.14.0 or later so methods with arguments
+  or results provide the required in-process clone hooks. Manually constructed
+  `MethodSpec` values must set `CloneArguments` and `CloneResult` when their
+  corresponding types are present.
+- Use skelc v0.14.0 or later when regenerating contracts. Existing contracts
+  generated with skelc v0.14.x remain wire-compatible through Vine's temporary
+  schema-aware JSON and CBOR compatibility profile; regenerate contracts made
+  by older skelc versions before upgrading Vine.
+- JSON inputs containing duplicate object member names or invalid UTF-8 are now
+  rejected by the stricter JSON v2 decoder; update producers that emit either
+  form before upgrading.
+- Direct users of `vcode` that depend on nil slices or maps encoding as `null`
+  must select that behavior explicitly; the default representation is now
+  `[]` or `{}`.
 
 ## [0.13.2] - 2026-08-20
 
