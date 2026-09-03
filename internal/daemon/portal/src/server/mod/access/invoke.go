@@ -57,6 +57,17 @@ func (o *Auther) forwardInvokeRequest(request *http.Request, serviceSkelName str
 	return response, ex.OK, "", true
 }
 
+func (o *Auther) invoke[T any](request *http.Request, serviceSkelName string, serviceLabel string, defaultErrorMessage string) (T, ex.Code, string, bool) {
+	var zero T
+	response, code, message, ok := o.forwardInvokeRequest(request, serviceSkelName, serviceLabel+" service")
+	if !ok {
+		return zero, code, message, false
+	}
+	defer func() { _ = response.Body.Close() }()
+
+	return readInvokeResponse[T](response, serviceLabel, "bad "+serviceLabel+" response", defaultErrorMessage)
+}
+
 func readInvokeResponse[T any](response *http.Response, serviceLabel string, badResponseMessage string, defaultErrorMessage string) (T, ex.Code, string, bool) {
 	var zero T
 	body, err := httputil.ReadResponseBody(response)
