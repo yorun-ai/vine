@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"sync"
 
 	"go.yorun.ai/vine/internal/util/httputil"
 	"go.yorun.ai/vine/util/vpre"
@@ -11,20 +12,43 @@ import (
 
 const EndpointScheme = "link+inproc://"
 
-// handlerByEndpoint is the single process-wide inproc registry. It is mutated
-// only during app startup/shutdown and is read-only while serving requests.
-var handlerByEndpoint = map[string]http.Handler{}
+type _Registration struct {
+	handler http.Handler
+}
 
-func Register(endpoint string, handler http.Handler) {
+// handlerByEndpoint is the concurrency-safe process-wide inproc registry.
+var (
+	registryMutex     sync.RWMutex
+	handlerByEndpoint = map[string]*_Registration{}
+)
+
+// Register adds handler and returns an idempotent cleanup bound to this registration.
+func Register(endpoint string, handler http.Handler) func() {
 	vpre.Check(IsEndpoint(endpoint), "link ingress inproc endpoint %s must start with %s", endpoint, EndpointScheme)
 	vpre.Check(len(endpoint) > len(EndpointScheme), "link ingress inproc endpoint host is empty")
 	vpre.CheckNotNil(handler, "link ingress inproc handler cannot be nil")
-	vpre.CheckNil(handlerByEndpoint[endpoint], "link ingress inproc endpoint %s already registered", endpoint)
 
-	handlerByEndpoint[endpoint] = handler
+	registration := &_Registration{handler: handler}
+	registryMutex.Lock()
+	defer registryMutex.Unlock()
+	vpre.CheckNil(handlerByEndpoint[endpoint], "link ingress inproc endpoint %s already registered", endpoint)
+	handlerByEndpoint[endpoint] = registration
+
+	var once sync.Once
+	return func() {
+		once.Do(func() {
+			registryMutex.Lock()
+			defer registryMutex.Unlock()
+			if handlerByEndpoint[endpoint] == registration {
+				delete(handlerByEndpoint, endpoint)
+			}
+		})
+	}
 }
 
 func Unregister(endpoint string) {
+	registryMutex.Lock()
+	defer registryMutex.Unlock()
 	delete(handlerByEndpoint, endpoint)
 }
 
@@ -64,15 +88,17 @@ func ServeUpgrade(endpoint string, w http.ResponseWriter, req *http.Request) err
 }
 
 func getHandler(endpoint string) (http.Handler, string, bool) {
+	registryMutex.RLock()
+	defer registryMutex.RUnlock()
 	matchedEndpoint := ""
 	var matchedHandler http.Handler
-	for registeredEndpoint, handler := range handlerByEndpoint {
+	for registeredEndpoint, registration := range handlerByEndpoint {
 		if !matchEndpoint(registeredEndpoint, endpoint) {
 			continue
 		}
 		if len(registeredEndpoint) > len(matchedEndpoint) {
 			matchedEndpoint = registeredEndpoint
-			matchedHandler = handler
+			matchedHandler = registration.handler
 		}
 	}
 	if matchedHandler == nil {

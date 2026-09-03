@@ -22,6 +22,8 @@ are not part of the public compatibility commitment.
   tests around Go 1.27 `testing/synctest`, replacing wall-clock polling with
   deterministic synchronization, randomized test ordering, and tighter global
   state and in-process endpoint cleanup
+- Made Rpc, Web, and Link ingress in-process endpoint registries concurrency
+  safe and lifecycle-owned through idempotent registration cleanup functions
 
 ### Fixed
 

@@ -2,10 +2,12 @@ package ingressinproc
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"testing/synctest"
 )
@@ -13,11 +15,65 @@ import (
 func resetRegistryForTest(t *testing.T) {
 	t.Helper()
 
+	registryMutex.Lock()
 	prev := handlerByEndpoint
-	handlerByEndpoint = map[string]http.Handler{}
+	handlerByEndpoint = map[string]*_Registration{}
+	registryMutex.Unlock()
 	t.Cleanup(func() {
+		registryMutex.Lock()
+		defer registryMutex.Unlock()
 		handlerByEndpoint = prev
 	})
+}
+
+func TestRegistrationCleanupIsIdempotentAndDoesNotRemoveReplacement(t *testing.T) {
+	resetRegistryForTest(t)
+
+	endpoint := "link+inproc://vine/link"
+	handler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+	cleanupFirst := Register(endpoint, handler)
+	Unregister(endpoint)
+	cleanupSecond := Register(endpoint, handler)
+
+	cleanupFirst()
+	cleanupFirst()
+	if _, _, ok := getHandler(endpoint); !ok {
+		t.Fatal("stale cleanup removed replacement handler")
+	}
+
+	cleanupSecond()
+	cleanupSecond()
+	if registered, _, ok := getHandler(endpoint); ok {
+		t.Fatalf("cleanup did not remove handler: %#v", registered)
+	}
+}
+
+func TestRegistrySupportsConcurrentRegistrationsAndLookups(t *testing.T) {
+	resetRegistryForTest(t)
+
+	const count = 64
+	handler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+	results := make(chan bool, count)
+	var wg sync.WaitGroup
+	for i := 0; i < count; i++ {
+		endpoint := fmt.Sprintf("link+inproc://concurrent-%d", i)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			cleanup := Register(endpoint, handler)
+			_, _, registered := getHandler(endpoint + "/route")
+			cleanup()
+			_, _, remains := getHandler(endpoint + "/route")
+			results <- registered && !remains
+		}()
+	}
+	wg.Wait()
+	close(results)
+	for result := range results {
+		if !result {
+			t.Fatal("concurrent registration lifecycle failed")
+		}
+	}
 }
 
 func TestRegisterAndRoundTrip(t *testing.T) {

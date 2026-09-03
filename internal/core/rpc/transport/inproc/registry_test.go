@@ -2,7 +2,9 @@ package inproc
 
 import (
 	"context"
+	"fmt"
 	"strings"
+	"sync"
 	"testing"
 
 	"go.yorun.ai/vine/internal/core/ex"
@@ -22,9 +24,13 @@ func (registryTestHandler) ServeRpc(rpcRequest spec.Request) spec.Response {
 func resetRegistryForTest(t *testing.T) {
 	t.Helper()
 
+	registryMutex.Lock()
 	prev := handlerByEndpoint
-	handlerByEndpoint = map[string]spec.RpcHandler{}
+	handlerByEndpoint = map[string]*_Registration{}
+	registryMutex.Unlock()
 	t.Cleanup(func() {
+		registryMutex.Lock()
+		defer registryMutex.Unlock()
 		handlerByEndpoint = prev
 	})
 }
@@ -144,5 +150,53 @@ func TestUnregisterRemovesHandler(t *testing.T) {
 	got, ok := getHandler("rpc+inproc://hub.api")
 	if ok {
 		t.Fatalf("expected handler to be removed, got %#v", got)
+	}
+}
+
+func TestRegistrationCleanupIsIdempotentAndDoesNotRemoveReplacement(t *testing.T) {
+	resetRegistryForTest(t)
+
+	endpoint := "rpc+inproc://hub.api"
+	cleanupFirst := Register(endpoint, registryTestHandler{})
+	Unregister(endpoint)
+	cleanupSecond := Register(endpoint, registryTestHandler{})
+
+	cleanupFirst()
+	cleanupFirst()
+	if _, ok := getHandler(endpoint); !ok {
+		t.Fatal("stale cleanup removed replacement handler")
+	}
+
+	cleanupSecond()
+	cleanupSecond()
+	if handler, ok := getHandler(endpoint); ok {
+		t.Fatalf("cleanup did not remove handler: %#v", handler)
+	}
+}
+
+func TestRegistrySupportsConcurrentRegistrationsAndLookups(t *testing.T) {
+	resetRegistryForTest(t)
+
+	const count = 64
+	results := make(chan bool, count)
+	var wg sync.WaitGroup
+	for i := 0; i < count; i++ {
+		endpoint := fmt.Sprintf("rpc+inproc://concurrent-%d", i)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			cleanup := Register(endpoint, registryTestHandler{})
+			_, registered := getHandler(endpoint)
+			cleanup()
+			_, remains := getHandler(endpoint)
+			results <- registered && !remains
+		}()
+	}
+	wg.Wait()
+	close(results)
+	for result := range results {
+		if !result {
+			t.Fatal("concurrent registration lifecycle failed")
+		}
 	}
 }

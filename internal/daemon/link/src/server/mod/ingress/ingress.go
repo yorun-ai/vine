@@ -45,10 +45,11 @@ type Ingress struct {
 	WebProxy *webproxy.WebProxy `inject:""`
 	Identity *mtls.Identity     `inject:""`
 
-	httpServer *http.Server
-	httpWG     sync.WaitGroup
-	routes     []_IngressRoute
-	endpoint   string
+	httpServer    *http.Server
+	httpWG        sync.WaitGroup
+	routes        []_IngressRoute
+	endpoint      string
+	inprocCleanup func()
 }
 
 type _IngressRoute struct {
@@ -128,7 +129,7 @@ func (g *Ingress) startHTTPServer() {
 
 func (g *Ingress) startInprocServer() {
 	g.endpoint = ingressinproc.Endpoint(corelink.InprocHostPath)
-	ingressinproc.Register(g.endpoint, g.httpHandler())
+	g.inprocCleanup = ingressinproc.Register(g.endpoint, g.httpHandler())
 }
 
 func (g *Ingress) mustDetectHost() string {
@@ -184,7 +185,10 @@ func (g *Ingress) stopHTTPServer() {
 }
 
 func (g *Ingress) stopInprocServer() {
-	ingressinproc.Unregister(g.endpoint)
+	if g.inprocCleanup != nil {
+		g.inprocCleanup()
+		g.inprocCleanup = nil
+	}
 	g.endpoint = ""
 }
 

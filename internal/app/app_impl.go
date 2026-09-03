@@ -70,8 +70,9 @@ type _AppImpl struct {
 	eventer  *_Eventer
 	tasker   *_Tasker
 
-	consoleServer *server.Server
-	routes        []_ServerRoute
+	consoleServer  *server.Server
+	routes         []_ServerRoute
+	inprocCleanups []func()
 }
 
 type _AppLifecycleState int

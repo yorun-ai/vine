@@ -15,30 +15,41 @@ func (a *_AppImpl) startInprocServer() {
 		return
 	}
 	vpre.CheckNotEmpty(a.inprocFlag.HostPath, "application inproc host path is empty")
+	cleanups := []func(){}
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			for i := len(cleanups) - 1; i >= 0; i-- {
+				cleanups[i]()
+			}
+			panic(recovered)
+		}
+	}()
 	for _, route := range a.routes {
 		if route.RpcHandler == nil {
 			if route.HttpHandler != nil && isWebAccessRoute(route.Prefix) {
-				webinproc.Register(webinproc.Endpoint(a.inprocFlag.HostPath, route.Prefix), http.HandlerFunc(route.serveHTTP))
+				cleanups = append(cleanups, webinproc.Register(
+					webinproc.Endpoint(a.inprocFlag.HostPath, route.Prefix),
+					http.HandlerFunc(route.serveHTTP),
+				))
 			}
 			continue
 		}
-		rpcinproc.Register(rpcinproc.Endpoint(a.inprocFlag.HostPath, route.Prefix), route.RpcHandler)
+		cleanups = append(cleanups, rpcinproc.Register(
+			rpcinproc.Endpoint(a.inprocFlag.HostPath, route.Prefix),
+			route.RpcHandler,
+		))
 	}
+	a.inprocCleanups = cleanups
 }
 
 func (a *_AppImpl) stopInprocServer() {
 	if !a.hasInprocRoutes() {
 		return
 	}
-	for _, route := range a.routes {
-		if route.RpcHandler == nil {
-			if route.HttpHandler != nil && isWebAccessRoute(route.Prefix) {
-				webinproc.Unregister(webinproc.Endpoint(a.inprocFlag.HostPath, route.Prefix))
-			}
-			continue
-		}
-		rpcinproc.Unregister(rpcinproc.Endpoint(a.inprocFlag.HostPath, route.Prefix))
+	for i := len(a.inprocCleanups) - 1; i >= 0; i-- {
+		a.inprocCleanups[i]()
 	}
+	a.inprocCleanups = nil
 }
 
 func (a *_AppImpl) hasInprocRoutes() bool {

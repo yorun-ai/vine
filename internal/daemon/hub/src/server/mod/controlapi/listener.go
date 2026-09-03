@@ -48,6 +48,7 @@ type Listener struct {
 	rpcHTTPHandler http.Handler
 	rpcHandler     rpcspec.RpcHandler
 	inprocEndpoint string
+	inprocCleanup  func()
 	server         *http.Server
 	wg             sync.WaitGroup
 }
@@ -77,7 +78,7 @@ func (l *Listener) BeforeAppStop() {
 
 func (l *Listener) startInproc() {
 	l.inprocEndpoint = rpcinproc.Endpoint(hubapp.HubControlInprocHostPath, coreapp.PathRpcInvoke)
-	rpcinproc.Register(l.inprocEndpoint, l.rpcHandler)
+	l.inprocCleanup = rpcinproc.Register(l.inprocEndpoint, l.rpcHandler)
 	controlLogger.Info("hub control API listener started", "endpoint", l.inprocEndpoint)
 }
 
@@ -85,9 +86,10 @@ func (l *Listener) stopInproc() {
 	if l.inprocEndpoint == "" {
 		return
 	}
-	rpcinproc.Unregister(l.inprocEndpoint)
+	l.inprocCleanup()
 	controlLogger.Debug("hub control API listener stopped", "endpoint", l.inprocEndpoint)
 	l.inprocEndpoint = ""
+	l.inprocCleanup = nil
 }
 
 func (l *Listener) startHTTP() error {
