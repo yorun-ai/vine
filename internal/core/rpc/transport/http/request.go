@@ -6,7 +6,6 @@ import (
 	"encoding/json/jsontext"
 	"encoding/json/v2"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
@@ -23,6 +22,7 @@ type _RequestDecoder struct {
 	rpcRequest      *spec.RequestImpl
 	serviceSkelName string
 	methodSkelName  string
+	bodyBytes       []byte
 }
 
 type _RequestPayloadJson struct {
@@ -68,6 +68,7 @@ func (d *_RequestDecoder) decode() (spec.Request, *RejectionDiagnostic, error) {
 		d.decodeInitiator,
 		d.decodeActor,
 		d.decodeMethod,
+		d.readBody,
 		d.decodeArguments,
 	}
 	for _, decode := range decodes {
@@ -145,26 +146,30 @@ func (d *_RequestDecoder) decodeMethod() error {
 	return fmt.Errorf("method %s/%s not found", serviceSkelName, methodSkelName)
 }
 
+func (d *_RequestDecoder) readBody() (err error) {
+	d.bodyBytes, err = ReadRequestBody(d.httpRequest)
+	if err != nil {
+		return fmt.Errorf("request body cannot be read: %w", err)
+	}
+	return err
+}
+
 func (d *_RequestDecoder) decodeArguments() error {
 	methodInfo := d.rpcRequest.MethodInfo()
 	if !methodInfo.HasArguments() {
 		return nil
 	}
 
-	bodyBytes, err := io.ReadAll(d.httpRequest.Body)
-	if err != nil {
-		return fmt.Errorf("request body cannot be read")
-	}
-	if len(bodyBytes) == 0 {
+	if len(d.bodyBytes) == 0 {
 		return fmt.Errorf("missing request body")
 	}
 
 	arguments := methodInfo.NewArguments()
-	if err = d.decodeArgumentsBytes(bodyBytes, arguments); err != nil {
+	if err := d.decodeArgumentsBytes(d.bodyBytes, arguments); err != nil {
 		return err
 	}
 
-	err = methodInfo.ValidateArguments(arguments)
+	err := methodInfo.ValidateArguments(arguments)
 	if err != nil {
 		return err
 	}

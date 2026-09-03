@@ -115,7 +115,7 @@ func (g *RpcGateway) forwardInvoke(ctx *spec.Context, registration *redised.RpcS
 	}
 
 	defer func() { _ = response.Body.Close() }()
-	body, err := httputil.ReadResponseBody(response)
+	body, err := rpchttp.ReadResponseBody(response)
 	if err != nil {
 		rpcGatewayLogger.Warn("vine.portal rpcgw response body cannot be read", "endpoint", endpoint, "path", ctx.Request.URL.Path, "error", err)
 		g.writeError(ctx.ResponseWriter, ctx.Request, ex.ServiceUnavailable, "rpcgw response body cannot be read: "+err.Error())

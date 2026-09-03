@@ -64,6 +64,10 @@ are not part of the public compatibility commitment.
 
 ### Fixed
 
+- Bounded encoded Rpc request bodies to 32 MiB and Rpc response bodies to
+  128 MiB across application decoding, Link and Portal forwarding, Portal
+  access-service calls, and Hub Service Debug, preventing unbounded buffering
+  without affecting generic Web, SSE, or WebSocket streaming
 - Redis locks now apply the existing infrastructure fail-fast policy when
   `Unlock()` cannot execute its Redis command or finds that its token no longer
   owns the lock; background refresh failures retain their causes on the lock

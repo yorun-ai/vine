@@ -9,7 +9,6 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/gwutil"
-	"go.yorun.ai/vine/internal/util/httputil"
 )
 
 type _InvokeResponseBody[T any] struct {
@@ -70,7 +69,7 @@ func (o *Auther) invoke[T any](request *http.Request, serviceSkelName string, se
 
 func readInvokeResponse[T any](response *http.Response, serviceLabel string, badResponseMessage string, defaultErrorMessage string) (T, ex.Code, string, bool) {
 	var zero T
-	body, err := httputil.ReadResponseBody(response)
+	body, err := rpchttp.ReadResponseBody(response)
 	if err != nil {
 		return zero, ex.ServiceUnavailable, serviceLabel + " response body cannot be read", false
 	}

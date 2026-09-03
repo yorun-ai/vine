@@ -3,7 +3,6 @@ package rpcproxy
 import (
 	"context"
 	"errors"
-	"io"
 	"net/http"
 
 	"go.yorun.ai/vine/internal/core/ex"
@@ -36,7 +35,7 @@ func (p *RpcProxy) forwardWithTransport(reqCtx context.Context, req *http.Reques
 		}
 		return nil, nil, ex.New(ex.ServiceUnavailable, "proxy request failed", ex.WithDetail(err.Error()))
 	}
-	body, readErr := io.ReadAll(resp.Body)
+	body, readErr := rpchttp.ReadResponseBody(resp)
 	if readErr != nil {
 		_ = resp.Body.Close()
 		return nil, nil, ex.New(ex.ServiceUnavailable, "proxy response body cannot be read", ex.WithDetail(readErr.Error()))

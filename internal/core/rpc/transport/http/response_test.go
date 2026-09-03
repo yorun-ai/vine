@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json/v2"
 	"io"
+	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/fxamacker/cbor/v2"
@@ -59,6 +61,25 @@ func TestDecodeResponseRejectsMissingBody(t *testing.T) {
 	_, err := decodeResponse(httpResp, method)
 	if err == nil || err.Error() != "missing response body" {
 		t.Fatalf("expected missing response body error, got %v", err)
+	}
+}
+
+func TestDecodeResponseRejectsOversizedDeclaredBody(t *testing.T) {
+	method := testServiceInfo().Methods()[0]
+	for _, contentType := range []string{ContentTypeJson, ContentTypeCbor} {
+		response := &http.Response{
+			Header:        http.Header{},
+			Body:          http.NoBody,
+			ContentLength: MaxResponseBodyBytes + 1,
+		}
+		EncodeContentTypeHeadersToHeader(response.Header, contentType)
+		EncodeStatusCodeToHeader(response.Header, ex.OK)
+		EncodeServerToHeader(response.Header, testServerApp())
+
+		_, err := decodeResponse(response, method)
+		if err == nil || !strings.Contains(err.Error(), "rpc response body exceeds") {
+			t.Fatalf("decodeResponse() content type %q error = %v", contentType, err)
+		}
 	}
 }
 

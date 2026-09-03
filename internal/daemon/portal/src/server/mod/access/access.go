@@ -52,6 +52,9 @@ func (a *Access) DIInit() {
 func (a *Access) AllowRpc(operation *RpcOperation) bool {
 	operation.endpointManager = a.Epmgr
 	operation.identity = a.Identity
+	if !operation.readRequestBody() {
+		return false
+	}
 
 	actorSchema, ok := a.actorSchema(operation.ActorVia.ActorSkelName)
 	if !ok {

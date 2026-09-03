@@ -47,6 +47,55 @@ func TestAccessAllowRpcParsesTargetRpc(t *testing.T) {
 	assert.JSONEq(t, `{"userId":"u1"}`, actor.RawInfo())
 }
 
+func TestAccessAllowRpcRejectsOversizedRequestBody(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
+	setTestRequestHeaders(t, request)
+	request.ContentLength = rpchttp.MaxRequestBodyBytes + 1
+
+	ok := new(Access).AllowRpc(&RpcOperation{
+		Auther: authOperationForTest(t, request, recorder),
+		Server: testServerApp(),
+	})
+
+	assert.False(t, ok)
+	assertRpcAuthError(t, recorder, ex.InvalidRequest, "rpc request body exceeds")
+}
+
+func TestRpcOperationReadRequestBodyClosesAndResetsBody(t *testing.T) {
+	originalBody := &requestCloseTrackingBody{Reader: strings.NewReader("request body")}
+	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
+	request.Body = originalBody
+	request.ContentLength = -1
+	operation := &RpcOperation{
+		Auther: Auther{
+			Request:  request,
+			Response: httptest.NewRecorder(),
+		},
+		Server: testServerApp(),
+	}
+
+	if !operation.readRequestBody() {
+		t.Fatal("readRequestBody() = false")
+	}
+	if !originalBody.closed {
+		t.Fatal("original request body was not closed")
+	}
+	body, err := io.ReadAll(request.Body)
+	require.NoError(t, err)
+	assert.Equal(t, "request body", string(body))
+}
+
+type requestCloseTrackingBody struct {
+	io.Reader
+	closed bool
+}
+
+func (b *requestCloseTrackingBody) Close() error {
+	b.closed = true
+	return nil
+}
+
 func TestAccessAllowRpcReturnsServiceUnavailableWhenAuthServiceHasNoEndpoint(t *testing.T) {
 	access := testManager(testAuthValues(""))
 	recorder := httptest.NewRecorder()
