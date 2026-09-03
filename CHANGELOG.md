@@ -54,6 +54,11 @@ are not part of the public compatibility commitment.
   `testing/synctest`, replacing wall-clock polling with deterministic
   synchronization, randomized test ordering, and tighter global state and
   in-process endpoint cleanup
+- Made the default repository-wide test suite cache-friendly, moved targeted
+  order randomization and goroutine lifecycle checks into a parallel CI job,
+  and split full vet and module checks into their own parallel static-analysis
+  job; added composable affected-area quick-test groups for local iteration,
+  while main-branch CI retains full-suite shuffled execution
 - Made Rpc, Web, and Link ingress in-process endpoint registries concurrency
   safe and lifecycle-owned through idempotent registration cleanup functions
 - Added independently instantiable registries for domain schemas, configuration,
