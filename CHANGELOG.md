@@ -67,6 +67,12 @@ are not part of the public compatibility commitment.
 - Encapsulated the permanent process-wide application type and name creation
   guards with concurrent creation protection and failed-construction rollback
 
+### Removed
+
+- Removed serialization-based in-process Rpc cloning for service specs without
+  generated clone hooks; methods with arguments or results must now provide the
+  corresponding clone hook
+
 ### Fixed
 
 - Bounded encoded Rpc request bodies to 32 MiB and Rpc response bodies to
