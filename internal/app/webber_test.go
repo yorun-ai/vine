@@ -303,7 +303,7 @@ func TestUniqueWebberMountsAtDefaultPath(t *testing.T) {
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
 	app := newApp(&testUniqueRouteAppSpec{
-		Application: Application{AppFlag: &RunFlag{}},
+		AppFlag: &RunFlag{},
 	}, flags)
 	app.initInjector()
 	app.initServers()
@@ -323,7 +323,7 @@ func TestSingleWebberMountsMultipleHandlers(t *testing.T) {
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
 	app := newApp(&testMultiHandlerWebberAppSpec{
-		Application: Application{AppFlag: &RunFlag{}},
+		AppFlag: &RunFlag{},
 	}, flags)
 	app.initInjector()
 	app.initServers()

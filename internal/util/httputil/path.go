@@ -25,9 +25,7 @@ func TrimPathPrefix(r *http.Request, prefix string) *http.Request {
 		nextPath = "/" + nextPath
 	}
 	next := r.Clone(r.Context())
-	url := *next.URL
-	url.Path = nextPath
-	url.RawPath = ""
-	next.URL = &url
+	next.URL.Path = nextPath
+	next.URL.RawPath = ""
 	return next
 }

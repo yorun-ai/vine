@@ -101,10 +101,8 @@ func (s *Server) RunTask(ctx context.Context, run appskeled.TaskRun) ex.Error {
 
 	return s.runTask(&spec.RunImpl{
 		ContextValue: &spec.ContextImpl{
-			ContextImpl: meta.ContextImpl{
-				Context:    ctx,
-				TraceValue: trace.NewChildTrace(),
-			},
+			Context:         ctx,
+			TraceValue:      trace.NewChildTrace(),
 			LauncherValue:   client,
 			LaunchedAtValue: run.Metadata.LaunchedAt.Time,
 		},

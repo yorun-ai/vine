@@ -95,10 +95,8 @@ func (s *Server) OnEvent(ctx context.Context, on appskeled.EventOn) ex.Error {
 
 	return s.onEvent(&spec.OnImpl{
 		ContextValue: &spec.ContextImpl{
-			ContextImpl: meta.ContextImpl{
-				Context:    ctx,
-				TraceValue: trace.NewChildTrace(),
-			},
+			Context:        ctx,
+			TraceValue:     trace.NewChildTrace(),
 			EmitterValue:   client,
 			EmittedAtValue: on.Metadata.EmittedAt.Time,
 		},

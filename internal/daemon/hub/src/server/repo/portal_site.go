@@ -4,7 +4,6 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
-	"go.yorun.ai/vine/internal/infra/rdb"
 	"go.yorun.ai/vine/util/vcode"
 )
 
@@ -77,7 +76,7 @@ func toCorePortalSite(row *model.PortalSite) *core.PortalSite {
 
 func toDBPortalSite(entry *core.PortalSite) *model.PortalSite {
 	return &model.PortalSite{
-		Model:         rdb.Model{Id: entry.Id},
+		Id:            entry.Id,
 		Name:          entry.Name,
 		Type:          string(entry.Type),
 		ActorSkelName: entry.ActorSkelName,

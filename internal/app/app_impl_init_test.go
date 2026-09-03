@@ -412,7 +412,7 @@ func (*testSpecDepsAppSpec) BindCommon(b *di.Binder) {
 }
 
 func TestAppDepsProvidesFlagComponentAndModuleBindings(t *testing.T) {
-	spec := &testDepsAppSpec{Application: Application{AppFlag: &RunFlag{}}}
+	spec := &testDepsAppSpec{AppFlag: &RunFlag{}}
 	flags := _Flags{}
 	flags.Apply(With(&testDepsFlag{Value: "flag"}))
 	flags.EnsureRunFlag()
@@ -499,7 +499,7 @@ func TestBindRuntimeProvidesInternalRuntimeOnlyForInternalApplications(t *testin
 }
 
 func TestInitModulesProvidesDomainBindings(t *testing.T) {
-	spec := &testSpecDepsAppSpec{Application: Application{AppFlag: &RunFlag{}}}
+	spec := &testSpecDepsAppSpec{AppFlag: &RunFlag{}}
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
@@ -520,7 +520,7 @@ func TestInitComponentsBindsComponentTypesAsSingletons(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
-	app := newApp(&testSingletonComponentAppSpec{Application: Application{AppFlag: &RunFlag{}}}, flags)
+	app := newApp(&testSingletonComponentAppSpec{AppFlag: &RunFlag{}}, flags)
 	app.initInjector()
 
 	app.initComponents()
@@ -544,7 +544,7 @@ func TestInitComponentsBindsSimpleComponentTypesAsSingletons(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
-	app := newApp(&testSimpleComponentAppSpec{Application: Application{AppFlag: &RunFlag{}}}, flags)
+	app := newApp(&testSimpleComponentAppSpec{AppFlag: &RunFlag{}}, flags)
 	app.initInjector()
 
 	app.initComponents()
@@ -566,7 +566,7 @@ func TestInitComponentsProvidesRpcClient(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
-	app := newApp(&testComponentClientAppSpec{Application: Application{AppFlag: &RunFlag{}}}, flags)
+	app := newApp(&testComponentClientAppSpec{AppFlag: &RunFlag{}}, flags)
 	attachTestLinker(app)
 	app.initInjector()
 
@@ -586,7 +586,7 @@ func TestInitComponentsProvidesTaskLauncher(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
-	app := newApp(&testComponentTaskLauncherAppSpec{Application: Application{AppFlag: &RunFlag{}}}, flags)
+	app := newApp(&testComponentTaskLauncherAppSpec{AppFlag: &RunFlag{}}, flags)
 	attachTestLinker(app)
 	app.initInjector()
 
@@ -606,7 +606,7 @@ func TestInitComponentsProvidesEmitter(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
-	app := newApp(&testComponentEmitterAppSpec{Application: Application{AppFlag: &RunFlag{}}}, flags)
+	app := newApp(&testComponentEmitterAppSpec{AppFlag: &RunFlag{}}, flags)
 	attachTestLinker(app)
 	app.initInjector()
 
@@ -626,7 +626,7 @@ func TestBindComponentsExposesUserComponentType(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
-	app := newApp(&testUserComponentBindingAppSpec{Application: Application{AppFlag: &RunFlag{}}}, flags)
+	app := newApp(&testUserComponentBindingAppSpec{AppFlag: &RunFlag{}}, flags)
 	attachTestLinker(app)
 	app.initInjector()
 	app.initComponents()
@@ -643,7 +643,7 @@ func TestBindComponentsExposesSimpleComponentBindings(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
-	app := newApp(&testDepsAppSpec{Application: Application{AppFlag: &RunFlag{}}}, flags)
+	app := newApp(&testDepsAppSpec{AppFlag: &RunFlag{}}, flags)
 	attachTestLinker(app)
 	app.initInjector()
 	app.initComponents()
@@ -658,7 +658,7 @@ func TestInitComponentsBindsFrameworkComponentMinderTypes(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
-	app := newApp(&testUserComponentBindingAppSpec{Application: Application{AppFlag: &RunFlag{}}}, flags)
+	app := newApp(&testUserComponentBindingAppSpec{AppFlag: &RunFlag{}}, flags)
 	app.initInjector()
 
 	app.initComponents()
@@ -680,7 +680,7 @@ func TestInitModulesBindsModuleTypesAsSingletons(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
-	app := newApp(&testSingletonModuleAppSpec{Application: Application{AppFlag: &RunFlag{}}}, flags)
+	app := newApp(&testSingletonModuleAppSpec{AppFlag: &RunFlag{}}, flags)
 	app.initInjector()
 
 	app.initModules()

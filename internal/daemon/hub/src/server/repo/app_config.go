@@ -4,7 +4,6 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
-	"go.yorun.ai/vine/internal/infra/rdb"
 )
 
 // DB Repo
@@ -39,7 +38,7 @@ func (s *DBAppConfigRepo) GetItemByName(name string) (*core.AppConfig, bool) {
 
 func (s *DBAppConfigRepo) SaveItem(item *core.AppConfig) {
 	row := s.Dao.Save(&model.AppConfig{
-		Model:   rdb.Model{Id: item.Id},
+		Id:      item.Id,
 		Name:    item.Name,
 		Value:   item.Value,
 		Version: item.Version,

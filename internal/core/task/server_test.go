@@ -219,10 +219,8 @@ func TestServerResolvesTriggerImplByInfo(t *testing.T) {
 
 	err = server.runTask(&spec.RunImpl{
 		ContextValue: &spec.ContextImpl{
-			ContextImpl: meta.ContextImpl{
-				Context:    context.Background(),
-				TraceValue: baseTrace,
-			},
+			Context:    context.Background(),
+			TraceValue: baseTrace,
 		},
 		TriggerImplValue: triggerImpl,
 		TriggerInfoValue: testRunnerTriggerInfo(),
@@ -304,10 +302,8 @@ func TestServerConvertsRecoveredPanicToInternalError(t *testing.T) {
 
 	err := server.runTask(&spec.RunImpl{
 		ContextValue: &spec.ContextImpl{
-			ContextImpl: meta.ContextImpl{
-				Context:    context.Background(),
-				TraceValue: meta.InitialTrace(),
-			},
+			Context:    context.Background(),
+			TraceValue: meta.InitialTrace(),
 		},
 		TriggerImplValue: triggerImpl,
 		TriggerInfoValue: testRunnerTriggerInfo(),

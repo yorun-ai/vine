@@ -25,17 +25,15 @@ func TestAppImplStartInprocServerAllowsEmptyEndpointWithoutInprocRoutes(t *testi
 	flags.InitInprocFlag(true)
 
 	app := newApp(&testInternalAppSpec{
-		InternalApplication: InternalApplication{
-			Application: Application{AppFlag: &RunFlag{}},
-			InternalAttrs: InternalAttributes{
-				Info: testRuntimeApp{
-					name:       "test.portal",
-					version:    "1.2.3",
-					instanceID: "00000000-0000-0000-0000-000000000123",
-				},
-				Linker:         &testLinker{},
-				DisableConsole: true,
+		AppFlag: &RunFlag{},
+		InternalAttrs: InternalAttributes{
+			Info: testRuntimeApp{
+				name:       "test.portal",
+				version:    "1.2.3",
+				instanceID: "00000000-0000-0000-0000-000000000123",
 			},
+			Linker:         &testLinker{},
+			DisableConsole: true,
 		},
 	}, flags)
 	app.initInjector()
@@ -78,7 +76,7 @@ func TestAppImplStartRegistersWebberInprocRoutes(t *testing.T) {
 	flags.InitInprocFlag(true)
 
 	app := newApp(&testUniqueRouteAppSpec{
-		Application: Application{AppFlag: &RunFlag{}},
+		AppFlag: &RunFlag{},
 	}, flags)
 	app.initInjector()
 	app.initServers()
@@ -110,7 +108,7 @@ func TestAppImplStopUnregistersWebberInprocRoutes(t *testing.T) {
 	flags.InitInprocFlag(true)
 
 	app := newApp(&testUniqueRouteAppSpec{
-		Application: Application{AppFlag: &RunFlag{}},
+		AppFlag: &RunFlag{},
 	}, flags)
 	app.initInjector()
 	app.initServers()
@@ -130,7 +128,7 @@ func TestAppImplStartInprocServerRegistersConsoleInprocRoute(t *testing.T) {
 	flags.InitInprocFlag(true)
 
 	app := newApp(&testHelperAppSpec{
-		Application: Application{AppFlag: &RunFlag{}},
+		AppFlag: &RunFlag{},
 	}, flags)
 	app.initInjector()
 	app.initServers()
@@ -155,7 +153,7 @@ func TestAppImplStartInprocServerRegistersEventerInprocRoute(t *testing.T) {
 	flags.InitInprocFlag(true)
 
 	app := newApp(&testEventerSpec{
-		Application: Application{AppFlag: &RunFlag{}},
+		AppFlag: &RunFlag{},
 	}, flags)
 	app.initInjector()
 	app.initServers()
@@ -194,7 +192,7 @@ func TestAppImplStartInprocServerRegistersTaskerInprocRoute(t *testing.T) {
 	flags.InitInprocFlag(true)
 
 	app := newApp(&testTaskerRunnerSpec{
-		Application: Application{AppFlag: &RunFlag{}},
+		AppFlag: &RunFlag{},
 	}, flags)
 	app.initInjector()
 	app.initServers()

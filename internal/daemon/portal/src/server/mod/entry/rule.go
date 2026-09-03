@@ -146,10 +146,8 @@ func (r _Rule) trimPathPrefix(request *http.Request) *http.Request {
 		nextPath = "/" + nextPath
 	}
 	next := request.Clone(request.Context())
-	url := *next.URL
-	url.Path = nextPath
-	url.RawPath = ""
-	next.URL = &url
+	next.URL.Path = nextPath
+	next.URL.RawPath = ""
 	return next
 }
 

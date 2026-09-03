@@ -117,12 +117,10 @@ func testWebAuthContext(t *testing.T, actorVia redised.PortalActorVia, request *
 	initiator, err := meta.DecodeInitiatorFromBase64(request.Header.Get(webspec.HeaderWebInitiator))
 	require.NoError(t, err)
 	return &WebOperation{
-		Auther: Auther{
-			Request:   request,
-			Response:  response,
-			Trace:     trace,
-			Initiator: initiator,
-		},
-		ActorVia: actorVia,
+		Request:   request,
+		Response:  response,
+		Trace:     trace,
+		Initiator: initiator,
+		ActorVia:  actorVia,
 	}
 }

@@ -60,12 +60,10 @@ func (g *RpcGateway) serveInvoke(ctx *spec.Context) {
 	}
 
 	operation := &access.RpcOperation{
-		Auther: access.Auther{
-			Request:   invokeRequest,
-			Response:  ctx.ResponseWriter,
-			Trace:     trace,
-			Initiator: initiator,
-		},
+		Request:     invokeRequest,
+		Response:    ctx.ResponseWriter,
+		Trace:       trace,
+		Initiator:   initiator,
 		Server:      g.app,
 		ActorVia:    g.actorVia,
 		ServiceName: serviceName,

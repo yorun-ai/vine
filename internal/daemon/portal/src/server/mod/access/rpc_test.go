@@ -444,14 +444,12 @@ func TestRpcAccessOperationParseCredentialWritesUnauthorized(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			response := httptest.NewRecorder()
 			ctx := &RpcOperation{
-				Auther: Auther{
-					actorSchema: &skel.ActorSchema{
-						AuthCredential: testCredentialSchema(),
-					},
-					Request:  httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil),
-					Response: response,
+				actorSchema: &skel.ActorSchema{
+					AuthCredential: testCredentialSchema(),
 				},
-				Server: testServerApp(),
+				Request:  httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil),
+				Response: response,
+				Server:   testServerApp(),
 			}
 			if authorization != "" {
 				ctx.Request.Header.Set(headerAuthorization, authorization)

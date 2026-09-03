@@ -81,11 +81,7 @@ func sharedTestSQLitePath(t *testing.T) string {
 
 func TestHubAppDIInitNormalizesFlagAndSetsRunFlag(t *testing.T) {
 	spec := &HubApp{
-		InternalApplication: internalapp.InternalApplication{
-			Application: internalapp.Application{
-				AppFlag: &internalapp.RunFlag{},
-			},
-		},
+		AppFlag:    &internalapp.RunFlag{},
 		InprocFlag: &internalapp.InternalInprocFlag{},
 		Flag: &flag.Flag{
 			SourceType:        flag.SourceSQLite,
@@ -108,11 +104,7 @@ func TestHubAppDIInitNormalizesFlagAndSetsRunFlag(t *testing.T) {
 
 func TestHubAppDIInitKeepsPGConnUrl(t *testing.T) {
 	spec := &HubApp{
-		InternalApplication: internalapp.InternalApplication{
-			Application: internalapp.Application{
-				AppFlag: &internalapp.RunFlag{},
-			},
-		},
+		AppFlag:    &internalapp.RunFlag{},
 		InprocFlag: &internalapp.InternalInprocFlag{},
 		Flag: &flag.Flag{
 			SourceType:        flag.SourcePostgreSQL,
@@ -132,11 +124,7 @@ func TestHubAppDIInitKeepsPGConnUrl(t *testing.T) {
 
 func TestHubAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 	spec := &HubApp{
-		InternalApplication: internalapp.InternalApplication{
-			Application: internalapp.Application{
-				AppFlag: &internalapp.RunFlag{},
-			},
-		},
+		AppFlag:    &internalapp.RunFlag{},
 		InprocFlag: &internalapp.InternalInprocFlag{Enabled: true},
 		Flag: &flag.Flag{
 			SourceType:     flag.SourceSQLite,
@@ -167,11 +155,7 @@ func TestHubAppMainServicerExcludesControlAPIHandlers(t *testing.T) {
 
 func TestHubAppDIInitKeepsEnableNatsOutsideInproc(t *testing.T) {
 	spec := &HubApp{
-		InternalApplication: internalapp.InternalApplication{
-			Application: internalapp.Application{
-				AppFlag: &internalapp.RunFlag{},
-			},
-		},
+		AppFlag:    &internalapp.RunFlag{},
 		InprocFlag: &internalapp.InternalInprocFlag{},
 		Flag: &flag.Flag{
 			SourceType:     flag.SourceSQLite,

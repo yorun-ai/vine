@@ -108,11 +108,9 @@ func testContext() spec.Context {
 	}
 	actor := meta.NewAnonymousActor()
 	ctx := &spec.ContextImpl{
-		ContextImpl: meta.ContextImpl{
-			Context:    context.Background(),
-			TraceValue: trace,
-			ActorValue: actor,
-		},
+		Context:     context.Background(),
+		TraceValue:  trace,
+		ActorValue:  actor,
 		ClientValue: client,
 	}
 	return ctx
@@ -164,13 +162,11 @@ func TestEncodeRequestDecodeRequestRoundTrip(t *testing.T) {
 		t.Fatalf("unexpected method name: got %s want %s", got.MethodInfo().Name(), method.Name())
 	}
 	gotRPCCtx := &spec.ContextImpl{
-		ContextImpl: meta.ContextImpl{
-			Context:        gotCtx,
-			TraceValue:     got.Trace(),
-			InitiatorValue: got.Initiator(),
-			ActorValue:     got.Actor(),
-		},
-		ClientValue: got.Client(),
+		Context:        gotCtx,
+		TraceValue:     got.Trace(),
+		InitiatorValue: got.Initiator(),
+		ActorValue:     got.Actor(),
+		ClientValue:    got.Client(),
 	}
 	if gotRPCCtx.Trace().Id() != rpcCtx.Trace().Id() {
 		t.Fatalf("unexpected id: got %s want %s", gotRPCCtx.Trace().Id(), rpcCtx.Trace().Id())

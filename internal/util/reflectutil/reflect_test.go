@@ -14,18 +14,18 @@ func TestPointerHelpers(t *testing.T) {
 
 func TestStructHelpers(t *testing.T) {
 	item := holder{
-		EmbeddedA: EmbeddedA{A: 1},
-		EmbeddedB: EmbeddedB{B: "two"},
-		Visible:   "three",
-		hidden:    4,
+		A:       1,
+		B:       "two",
+		Visible: "three",
+		hidden:  4,
 	}
 
 	assert.Equal(t, 4, GetPrivateField(&item, "hidden"))
 
 	exported := exportedHolder{
-		EmbeddedA: EmbeddedA{A: 1},
-		EmbeddedB: EmbeddedB{B: "two"},
-		Visible:   "three",
+		A:       1,
+		B:       "two",
+		Visible: "three",
 	}
 
 	fields := FlattenFields(exported)
@@ -54,9 +54,9 @@ func TestUnsafeFiled(t *testing.T) {
 
 func TestCloneStructPointer(t *testing.T) {
 	source := &exportedHolder{
-		EmbeddedA: EmbeddedA{A: 1},
-		EmbeddedB: EmbeddedB{B: "two"},
-		Visible:   "three",
+		A:       1,
+		B:       "two",
+		Visible: "three",
 	}
 
 	cloned, ok := CloneStructPointer(source).(*exportedHolder)

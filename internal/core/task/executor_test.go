@@ -144,10 +144,8 @@ func TestExecutorSeedsContextAndTriggerInfo(t *testing.T) {
 	executor.Init(*implDict)
 
 	taskCtx := &spec.ContextImpl{
-		ContextImpl: meta.ContextImpl{
-			Context:    context.Background(),
-			TraceValue: meta.InitialTrace(),
-		},
+		Context:    context.Background(),
+		TraceValue: meta.InitialTrace(),
 	}
 	triggerImpl := testContainerExecutorTriggerImpl(t, reflect.TypeOf(&testContainerExecutorImplWithSeed{}))
 	err := executor.Execute(taskCtx, triggerImpl, []any{testContainerExecutorArguments{GroupId: 7}})

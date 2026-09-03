@@ -4,8 +4,6 @@ import (
 	"cmp"
 	"math/rand"
 	"slices"
-
-	"golang.org/x/exp/constraints"
 )
 
 // Clone returns a copy of slice.
@@ -132,7 +130,7 @@ func SortBy[E any](list []E, comparison func(E, E) bool) []E {
 
 // Sort returns sorted ascending slice
 // The method returns new slice rather than modify origin.
-func Sort[E constraints.Ordered](list []E) []E {
+func Sort[E cmp.Ordered](list []E) []E {
 	result := Clone(list)
 	slices.Sort(result)
 	return result
@@ -140,7 +138,7 @@ func Sort[E constraints.Ordered](list []E) []E {
 
 // SortDesc returns sorted descending slice
 // The method returns new slice rather than modify origin.
-func SortDesc[E constraints.Ordered](list []E) []E {
+func SortDesc[E cmp.Ordered](list []E) []E {
 	result := Clone(list)
 	slices.SortFunc(result, func(left E, right E) int {
 		return cmp.Compare(right, left)

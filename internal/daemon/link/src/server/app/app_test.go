@@ -11,11 +11,7 @@ import (
 
 func TestLinkAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 	spec := &LinkApp{
-		InternalApplication: internalapp.InternalApplication{
-			Application: internalapp.Application{
-				AppFlag: &internalapp.RunFlag{},
-			},
-		},
+		AppFlag:    &internalapp.RunFlag{},
 		InprocFlag: &internalapp.InternalInprocFlag{Enabled: true},
 		Flag: &flag.Flag{
 			HubInprocMode: true,

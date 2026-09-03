@@ -53,17 +53,15 @@ func TestCheckActorPermissionsRejectsMissingCodeResult(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	operation := &RpcOperation{
-		Auther: Auther{
-			Request:         request,
-			Response:        recorder,
-			Trace:           meta.InitialTrace(),
-			Initiator:       initiator,
-			endpointManager: manager,
-			actorSchema: &skel.ActorSchema{
-				PermEnabled: true,
-				PermService: &skel.ServiceSchema{SkelName: "app.UserActorPermissionService"},
-				PermMethod:  &skel.MethodSchema{SkelName: "checkCodes"},
-			},
+		Request:         request,
+		Response:        recorder,
+		Trace:           meta.InitialTrace(),
+		Initiator:       initiator,
+		endpointManager: manager,
+		actorSchema: &skel.ActorSchema{
+			PermEnabled: true,
+			PermService: &skel.ServiceSchema{SkelName: "app.UserActorPermissionService"},
+			PermMethod:  &skel.MethodSchema{SkelName: "checkCodes"},
 		},
 		Server: serverApp,
 	}
@@ -94,11 +92,9 @@ func TestExtractCheckParamsSupportsCborRequestBody(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/rpc/invoke/app.UserService/update", nil)
 	request.Header.Set(rpchttp.HeaderContentType, rpchttp.ContentTypeCbor)
 	operation := &RpcOperation{
-		Auther: Auther{
-			Request:  request,
-			Response: httptest.NewRecorder(),
-		},
-		Server: meta.MustNewApp("perm.test", "0.0.0", "123e4567-e89b-12d3-a456-426614174021"),
+		Request:  request,
+		Response: httptest.NewRecorder(),
+		Server:   meta.MustNewApp("perm.test", "0.0.0", "123e4567-e89b-12d3-a456-426614174021"),
 		requestBody: vcode.MustMarshalCbor(map[string]any{
 			"params": map[string]any{
 				"update": map[string]any{
@@ -139,11 +135,9 @@ func TestExtractCheckParamsSupportsJsonWildcardPath(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/rpc/invoke/app.UserService/update", nil)
 	request.Header.Set(rpchttp.HeaderContentType, rpchttp.ContentTypeJson)
 	operation := &RpcOperation{
-		Auther: Auther{
-			Request:  request,
-			Response: httptest.NewRecorder(),
-		},
-		Server: meta.MustNewApp("perm.test", "0.0.0", "123e4567-e89b-12d3-a456-426614174020"),
+		Request:  request,
+		Response: httptest.NewRecorder(),
+		Server:   meta.MustNewApp("perm.test", "0.0.0", "123e4567-e89b-12d3-a456-426614174020"),
 		requestBody: vcode.MustMarshalJson(map[string]any{
 			"params": map[string]any{
 				"items": []any{
@@ -174,11 +168,9 @@ func TestExtractCheckParamsRejectsTrailingWildcardPath(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/rpc/invoke/app.UserService/update", nil)
 	request.Header.Set(rpchttp.HeaderContentType, rpchttp.ContentTypeJson)
 	operation := &RpcOperation{
-		Auther: Auther{
-			Request:  request,
-			Response: httptest.NewRecorder(),
-		},
-		Server: meta.MustNewApp("perm.test", "0.0.0", "123e4567-e89b-12d3-a456-426614174022"),
+		Request:  request,
+		Response: httptest.NewRecorder(),
+		Server:   meta.MustNewApp("perm.test", "0.0.0", "123e4567-e89b-12d3-a456-426614174022"),
 		requestBody: vcode.MustMarshalJson(map[string]any{
 			"params": map[string]any{
 				"items": []any{

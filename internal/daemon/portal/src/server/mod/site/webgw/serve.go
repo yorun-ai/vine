@@ -71,13 +71,11 @@ func (g *WebGateway) Serve(ctx *spec.Context) {
 	}
 
 	operation := &access.WebOperation{
-		Auther: access.Auther{
-			Request:   request,
-			Response:  ctx.ResponseWriter,
-			Trace:     trace,
-			Initiator: initiator,
-		},
-		ActorVia: g.actorVia,
+		Request:   request,
+		Response:  ctx.ResponseWriter,
+		Trace:     trace,
+		Initiator: initiator,
+		ActorVia:  g.actorVia,
 	}
 	if !g.access.AuthWeb(operation) {
 		return
