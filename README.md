@@ -171,32 +171,9 @@ seed, Dashboard, environment-variable, and backend mTLS options.
 
 ## Docker Images
 
-The root `Dockerfile` builds separate Hub, Link, and Portal images:
-
-```bash
-docker pull docker.io/yorunai/vine-hub:latest
-docker pull docker.io/yorunai/vine-link:latest
-docker pull docker.io/yorunai/vine-portal:latest
-```
-
-Build locally when needed:
-
-```bash
-docker build --target hub -t vine-hub:local .
-docker build --target portal -t vine-portal:local .
-docker build --target link -t vine-link:local .
-```
-
-The images run the corresponding `vine ... serve` command and accept the CLI's
-`VINE_*` environment variables, including backend mTLS. Certificate files are
-mounted at runtime and are not included in the image. The Hub image does not
-select a database or NATS mode by default: set exactly one of
-`VINE_DB_SQLITE_FILE` and `VINE_DB_POSTGRES_URL`, and select exactly one of
-`VINE_MQ_EMBEDDED_NATS=true` and `VINE_MQ_EXTERNAL_NATS_URL`. See the [Vine CLI
-guide](https://vine.yorun.ai/docs/getting-started/cli) for service configuration,
-environment variables, and mTLS setup. For a runnable Kubernetes example, see
-the [Kubernetes deployment guide](examples/k8s/README.md), including its
-`overlays/mtls` configuration.
+The root `Dockerfile` builds separate Hub, Link, and Portal images. See the
+[container and Kubernetes deployment guide](https://vine.yorun.ai/docs/container-deployment)
+for image names, runtime configuration, Kubernetes manifests, and backend mTLS.
 
 ## Public Package Map
 

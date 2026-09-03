@@ -160,29 +160,9 @@ vine link serve \
 
 ## Docker 镜像
 
-根目录的 `Dockerfile` 分别构建 Hub、Link 和 Portal 镜像：
-
-```bash
-docker pull docker.io/yorunai/vine-hub:latest
-docker pull docker.io/yorunai/vine-link:latest
-docker pull docker.io/yorunai/vine-portal:latest
-```
-
-需要本地构建时：
-
-```bash
-docker build --target hub -t vine-hub:local .
-docker build --target portal -t vine-portal:local .
-docker build --target link -t vine-link:local .
-```
-
-镜像会执行对应的 `vine ... serve` 命令，并支持 CLI 定义的 `VINE_*` 环境变量，包括后端
-mTLS。证书文件在运行时挂载，不会打包进镜像。Hub 镜像默认不选择数据库或 NATS 模式：
-必须在 `VINE_DB_SQLITE_FILE` 和 `VINE_DB_POSTGRES_URL` 中设置一项，并在
-`VINE_MQ_EMBEDDED_NATS=true` 和 `VINE_MQ_EXTERNAL_NATS_URL` 中选择一项。
-服务配置、环境变量和 mTLS 方式请参阅
-[Vine CLI 指南](https://vine.yorun.ai/zh-CN/docs/getting-started/cli)。Kubernetes 独立部署
-示例请参阅 [Kubernetes 部署指南](examples/k8s/README.zh-CN.md)，其中包含 `overlays/mtls` 配置。
+根目录的 `Dockerfile` 分别构建 Hub、Link 和 Portal 镜像。镜像名称、运行配置、
+Kubernetes manifests 和后台 mTLS 请参阅
+[容器与 Kubernetes 部署指南](https://vine.yorun.ai/zh-CN/docs/container-deployment)。
 
 ## 公开包索引
 
