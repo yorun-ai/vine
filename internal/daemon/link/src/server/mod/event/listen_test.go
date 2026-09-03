@@ -3,12 +3,13 @@ package event
 import (
 	"context"
 	"fmt"
-	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
+	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
+	"uuid"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	eventspec "go.yorun.ai/vine/internal/core/event/spec"

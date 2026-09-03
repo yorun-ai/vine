@@ -3,8 +3,8 @@ package task
 import (
 	"testing"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"go.yorun.ai/vine/internal/core/link/skeled"

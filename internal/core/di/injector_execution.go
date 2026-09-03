@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"sync"
 
 	"go.yorun.ai/vine/util/vmap"
@@ -144,8 +145,8 @@ func (e *_ExecutionInjector) disposeExecutionInstances() {
 	e.disposeMutex.Unlock()
 
 	var recoveredValues []any
-	for index := len(disposeFuncs) - 1; index >= 0; index-- {
-		if recovered := runDispose(disposeFuncs[index]); recovered != nil {
+	for _, disposeFunc := range slices.Backward(disposeFuncs) {
+		if recovered := runDispose(disposeFunc); recovered != nil {
 			recoveredValues = append(recoveredValues, recovered)
 		}
 	}

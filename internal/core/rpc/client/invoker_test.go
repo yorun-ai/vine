@@ -14,7 +14,7 @@ import (
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 )
 
-var invokerTestMethodCounter uint64
+var invokerTestMethodCounter atomic.Uint64
 
 type invokerClientResult struct {
 	Name string `json:"name"`
@@ -31,7 +31,7 @@ func testMethodInfo() spec.MethodInfo {
 func newInvokerTestMethodInfo(name string, skelName string, argumentsType reflect.Type, resultType reflect.Type, validateResult func(any) error) spec.MethodInfo {
 	return spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
 		Name:     "InvokerTestService",
-		SkelName: fmt.Sprintf("invoker.test.service.%s.%d", skelName, atomic.AddUint64(&invokerTestMethodCounter, 1)),
+		SkelName: fmt.Sprintf("invoker.test.service.%s.%d", skelName, invokerTestMethodCounter.Add(1)),
 		Methods: []*spec.MethodSpec{{
 			Name:           name,
 			SkelName:       skelName,

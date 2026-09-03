@@ -1,7 +1,7 @@
 package minder
 
 import (
-	"github.com/google/uuid"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/skel"

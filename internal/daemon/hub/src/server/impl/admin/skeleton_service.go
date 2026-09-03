@@ -782,10 +782,8 @@ func formatSkeletonNamedType(typeSchema *skel.TypeSchema) string {
 }
 
 func shortSkelName(skelName string) string {
-	for i := len(skelName) - 1; i >= 0; i-- {
-		if skelName[i] == '.' {
-			return skelName[i+1:]
-		}
+	if _, shortName, ok := strings.CutLast(skelName, "."); ok {
+		return shortName
 	}
 	return skelName
 }

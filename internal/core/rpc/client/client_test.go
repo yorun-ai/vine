@@ -32,12 +32,12 @@ func testClientLogger() *logger.Logger {
 	return logger.New("vine:test")
 }
 
-var testClientMethodCounter uint64
+var testClientMethodCounter atomic.Uint64
 
 func testClientMethodInfo() spec.MethodInfo {
 	return spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
 		Name:     "ClientTestService",
-		SkelName: fmt.Sprintf("client.test.service.%d", atomic.AddUint64(&testClientMethodCounter, 1)),
+		SkelName: fmt.Sprintf("client.test.service.%d", testClientMethodCounter.Add(1)),
 		Methods: []*spec.MethodSpec{{
 			Name:     "Ping",
 			SkelName: "ping",

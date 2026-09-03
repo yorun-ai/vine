@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-var initializedMethodInfoCounter uint64
+var initializedMethodInfoCounter atomic.Uint64
 
 type testValidateArgumentsInput struct {
 	Name *string `arg:"0"`
@@ -27,7 +27,7 @@ type testGapArgumentIndexInput struct {
 func newInitializedMethodInfo(argumentsType reflect.Type, resultType reflect.Type, argumentsContainsBinaryType bool, resultContainsBinaryType bool) *_MethodInfo {
 	service := ConvertSpecToInfoForTest(&ServiceSpec{
 		Name:     "UserService",
-		SkelName: fmt.Sprintf("user.service.%d", atomic.AddUint64(&initializedMethodInfoCounter, 1)),
+		SkelName: fmt.Sprintf("user.service.%d", initializedMethodInfoCounter.Add(1)),
 		Methods: []*MethodSpec{{
 			Name:                        "CreateUser",
 			SkelName:                    "create_user",
@@ -43,7 +43,7 @@ func newInitializedMethodInfo(argumentsType reflect.Type, resultType reflect.Typ
 func newInitializedMethodInfoWithValidators(validateArguments func(any) error, validateResult func(any) error) *_MethodInfo {
 	service := ConvertSpecToInfoForTest(&ServiceSpec{
 		Name:     "UserService",
-		SkelName: fmt.Sprintf("user.service.%d", atomic.AddUint64(&initializedMethodInfoCounter, 1)),
+		SkelName: fmt.Sprintf("user.service.%d", initializedMethodInfoCounter.Add(1)),
 		Methods: []*MethodSpec{{
 			Name:              "CreateUser",
 			SkelName:          "create_user",

@@ -2,8 +2,8 @@ package runtime
 
 import (
 	"testing"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.yorun.ai/vine/internal/core/meta"
 )
@@ -35,10 +35,10 @@ func TestApplicationUsesSettersAndGeneratedInstanceID(t *testing.T) {
 	assert.Equal(t, "user.service", app.Name())
 	assert.Equal(t, "1.2.3", app.Version())
 	assert.NotEmpty(t, app.InstanceId())
-	assert.NoError(t, uuid.Validate(app.InstanceId()))
-	parsed := uuid.MustParse(app.InstanceId())
-	if parsed.Version() != 7 {
-		t.Fatalf("expected v7 uuid, got v%d", parsed.Version())
+	parsed, err := uuid.Parse(app.InstanceId())
+	assert.NoError(t, err)
+	if version := parsed[6] >> 4; version != 7 {
+		t.Fatalf("expected v7 uuid, got v%d", version)
 	}
 }
 

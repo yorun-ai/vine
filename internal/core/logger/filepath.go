@@ -30,15 +30,15 @@ func trimFunctionPackage(function string) string {
 		return ""
 	}
 
-	slashIndex := strings.LastIndex(function, "/")
-	if slashIndex < 0 {
+	pathPrefix, packageFunction, ok := strings.CutLast(function, "/")
+	if !ok {
 		return ""
 	}
 
-	dotIndex := strings.Index(function[slashIndex+1:], ".")
+	dotIndex := strings.Index(packageFunction, ".")
 	if dotIndex < 0 {
 		return ""
 	}
 
-	return function[:slashIndex+1+dotIndex]
+	return pathPrefix + "/" + packageFunction[:dotIndex]
 }

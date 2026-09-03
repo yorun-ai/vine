@@ -3,8 +3,8 @@ package minder
 import (
 	"context"
 	"testing"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
 	"go.yorun.ai/vine/internal/app"

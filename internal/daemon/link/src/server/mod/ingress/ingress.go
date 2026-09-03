@@ -87,9 +87,7 @@ func (g *Ingress) startHTTPServer() {
 	vpre.CheckNilError(err, "link ingress server listen failed")
 
 	port := listener.Addr().(*net.TCPAddr).Port
-	server := &http.Server{
-		Addr: listener.Addr().String(),
-	}
+	server := httputil.NewServer(listener.Addr().String(), nil)
 	serve := server.Serve
 	if g.Identity.Enabled() {
 		server.Handler = g.httpHandler()

@@ -18,6 +18,17 @@ are not part of the public compatibility commitment.
 
 - Raised the minimum Go version to 1.27.0, configured CI checks to follow the
   latest Go 1.27 patch, and pinned release binaries to Go 1.27.1
+- Replaced Vine's direct use of `github.com/google/uuid` with Go 1.27's
+  standard-library `uuid` package; `skel.NewUUID` now accepts the
+  standard-library UUID type
+- Migrated HTTP integration tests to Go 1.27's test-owned
+  `httptest.NewTestServer` lifecycle while retaining loopback networking where
+  reverse proxies, h2c transports, or connection upgrades require real sockets
+- Applied a shared limit of 128 header values to application, Hub control,
+  Link ingress, and Portal entry HTTP servers using Go 1.27's
+  `http.Server.MaxHeaderValueCount`
+- Adopted Go 1.27 `strings.CutLast`, typed atomics, and `slices.Backward` where
+  they directly simplify parsing, test counters, and reverse-order cleanup
 - Reworked timer-, cancellation-, scheduler-, lock-, and in-process transport
   tests around Go 1.27 `testing/synctest`, replacing wall-clock polling with
   deterministic synchronization, randomized test ordering, and tighter global

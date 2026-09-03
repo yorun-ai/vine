@@ -3,8 +3,8 @@ package redact_test
 import (
 	"strings"
 	"testing"
+	"uuid"
 
-	"github.com/google/uuid"
 	"go.yorun.ai/vine/core/redact"
 	"go.yorun.ai/vine/core/skel"
 )

@@ -38,9 +38,7 @@ func (a *_AppImpl) startHTTPServer() {
 	tcpAddr := listener.Addr().(*net.TCPAddr)
 	a.httpHost = tcpAddr.IP.String()
 	a.httpPort = tcpAddr.Port
-	a.httpServer = &http.Server{
-		Addr: net.JoinHostPort(a.httpHost, strconv.Itoa(a.httpPort)),
-	}
+	a.httpServer = httputil.NewServer(net.JoinHostPort(a.httpHost, strconv.Itoa(a.httpPort)), nil)
 	serve := a.httpServer.Serve
 	if a.shouldProtectHTTPServer() {
 		a.httpServer.Handler = a.httpHandler()

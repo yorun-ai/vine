@@ -9,6 +9,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
+	"go.yorun.ai/vine/internal/util/httputil"
 )
 
 type _TestSite struct {
@@ -157,6 +158,7 @@ func TestNewEntryHTTPServerAppliesConnectionLimits(t *testing.T) {
 	assert.Equal(t, entryReadHeaderTimeout, server.ReadHeaderTimeout)
 	assert.Equal(t, entryIdleTimeout, server.IdleTimeout)
 	assert.Equal(t, entryMaxHeaderBytes, server.MaxHeaderBytes)
+	assert.Equal(t, httputil.DefaultMaxHeaderValueCount, server.MaxHeaderValueCount)
 	assert.Zero(t, server.ReadTimeout)
 	assert.Zero(t, server.WriteTimeout)
 }

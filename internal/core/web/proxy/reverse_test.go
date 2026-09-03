@@ -15,12 +15,12 @@ func TestReverseProxyServeForwardsRequestPath(t *testing.T) {
 
 	var gotPath string
 	var gotQuery string
-	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	target := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		gotQuery = r.URL.RawQuery
 		_, _ = w.Write([]byte("proxied"))
 	}))
-	t.Cleanup(target.Close)
+	target.Start()
 
 	reverseProxy := NewReverseProxy(Option{
 		Target:            mustParseTestURL(t, target.URL),

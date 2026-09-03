@@ -27,7 +27,7 @@ func TestIsUpgradeRequest(t *testing.T) {
 func TestForwardUpgrade(t *testing.T) {
 	var gotPath string
 	var gotQuery string
-	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	target := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		gotQuery = r.URL.RawQuery
 		hijacker := w.(http.Hijacker)
@@ -49,15 +49,15 @@ func TestForwardUpgrade(t *testing.T) {
 		_, _ = fmt.Fprintf(rw, "echo:%s", line)
 		_ = rw.Flush()
 	}))
-	defer target.Close()
+	target.Start()
 
-	frontend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	frontend := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := ForwardUpgrade(w, r, target.URL+"/hmr?from=proxy", nil)
 		if err != nil {
 			t.Errorf("ForwardUpgrade() error = %v", err)
 		}
 	}))
-	defer frontend.Close()
+	frontend.Start()
 
 	conn, err := net.Dial("tcp", strings.TrimPrefix(frontend.URL, "http://"))
 	if err != nil {

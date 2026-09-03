@@ -9,8 +9,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"uuid"
 
-	"github.com/google/uuid"
 	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 
 	"github.com/stretchr/testify/assert"
