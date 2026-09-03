@@ -5,6 +5,7 @@ package redis
 import (
 	"context"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/stretchr/testify/require"
@@ -33,17 +34,16 @@ func TestGoroutineLeakRedisLockTimeoutLifecycle(t *testing.T) {
 }
 
 func runRedisLockTimeoutLifecycle(t *testing.T) {
-	locker := &Locker{
-		ctx:       context.Background(),
-		cmdable:   newTestLockCmdable(),
-		keyPrefix: "goroutineleak",
-	}
-	lock, ok := locker.Lock("timeout", WithTimeout(time.Millisecond))
-	require.True(t, ok)
+	synctest.Test(t, func(t *testing.T) {
+		locker := &Locker{
+			ctx:       context.Background(),
+			cmdable:   newTestLockCmdable(),
+			keyPrefix: "goroutineleak",
+		}
+		lock, ok := locker.Lock("timeout", WithTimeout(time.Millisecond))
+		require.True(t, ok)
 
-	select {
-	case <-lock.Context().Done():
-	case <-time.After(time.Second):
-		t.Fatal("redis lock timeout goroutine did not stop")
-	}
+		synctest.Sleep(time.Millisecond)
+		<-lock.Context().Done()
+	})
 }

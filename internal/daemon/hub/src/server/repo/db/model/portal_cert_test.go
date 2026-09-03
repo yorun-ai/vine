@@ -69,7 +69,7 @@ func TestPortalCertDaoSaveUpdatesExistingRow(t *testing.T) {
 		PrivateKeyBase64: "old-private",
 	})
 	dao.Save(&PortalCert{
-		Model:            rdb.Model{Id: cert.Id},
+		Id:               cert.Id,
 		Name:             "demo-cert",
 		Issuer:           "letsencrypt",
 		Domains:          `["demo.local"]`,

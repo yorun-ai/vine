@@ -50,11 +50,13 @@ func TestDaoCreateReturnsInsertedModel(t *testing.T) {
 
 func TestDaoUpdateReturnsUpdatedModel(t *testing.T) {
 	dao := openDaoTestDB(t)
+	now := time.Date(2026, time.January, 2, 3, 4, 5, 0, time.UTC)
+	dao.GormDB().Config.NowFunc = func() time.Time { return now }
 	model := dao.Create(&daoTestModel{
 		Name:  "alpha",
 		Value: "one",
 	})
-	time.Sleep(time.Millisecond)
+	now = now.Add(time.Second)
 
 	updated := dao.Update(model, Patch{
 		"value": "two",
@@ -64,6 +66,7 @@ func TestDaoUpdateReturnsUpdatedModel(t *testing.T) {
 	assert.Equal(t, model.Id, updated.Id)
 	assert.Equal(t, "alpha", updated.Name)
 	assert.Equal(t, "two", updated.Value)
+	assert.Equal(t, now, updated.UpdatedAt)
 	assert.True(t, updated.UpdatedAt.After(updated.CreatedAt))
 }
 

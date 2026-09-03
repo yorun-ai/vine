@@ -33,11 +33,7 @@ func collectModuleTypes(spec *PortalApp) []reflect.Type {
 
 func TestPortalAppDIInitSetsRunFlagListenAddr(t *testing.T) {
 	spec := &PortalApp{
-		InternalApplication: internalapp.InternalApplication{
-			Application: internalapp.Application{
-				AppFlag: &internalapp.RunFlag{},
-			},
-		},
+		AppFlag:    &internalapp.RunFlag{},
 		InprocFlag: &internalapp.InternalInprocFlag{},
 		Flag:       &flag.Flag{HubEndpoint: "http://demo.local:7071"},
 	}
@@ -66,11 +62,7 @@ func TestPortalAppDIInitSetsRunFlagListenAddr(t *testing.T) {
 
 func TestPortalAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 	spec := &PortalApp{
-		InternalApplication: internalapp.InternalApplication{
-			Application: internalapp.Application{
-				AppFlag: &internalapp.RunFlag{},
-			},
-		},
+		AppFlag:    &internalapp.RunFlag{},
 		InprocFlag: &internalapp.InternalInprocFlag{Enabled: true},
 		Flag:       &flag.Flag{HubInprocMode: true},
 	}

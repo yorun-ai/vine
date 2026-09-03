@@ -320,10 +320,8 @@ func newDefaultExecutorRequest(srv *Server, method spec.MethodInfo) spec.Request
 
 func newDefaultExecutorRPCContext() spec.Context {
 	return &spec.ContextImpl{
-		ContextImpl: meta.ContextImpl{
-			Context:    context.Background(),
-			TraceValue: meta.InitialTrace(),
-		},
+		Context:    context.Background(),
+		TraceValue: meta.InitialTrace(),
 	}
 }
 

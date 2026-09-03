@@ -1,9 +1,8 @@
 package vslice
 
 import (
+	"cmp"
 	"slices"
-
-	"golang.org/x/exp/constraints"
 )
 
 // All returns true if all elements meets prediction.
@@ -111,7 +110,7 @@ func MostBy[E any](list []E, comparison func(E, E) bool) (elem E) {
 }
 
 // Min returns minimal element, or 0 if list is empty.
-func Min[E constraints.Ordered](list []E) E {
+func Min[E cmp.Ordered](list []E) E {
 	if len(list) == 0 {
 		var zero E
 		return zero
@@ -120,7 +119,7 @@ func Min[E constraints.Ordered](list []E) E {
 }
 
 // Max returns maximal element, or 0 if list is empty.
-func Max[E constraints.Ordered](list []E) E {
+func Max[E cmp.Ordered](list []E) E {
 	if len(list) == 0 {
 		var zero E
 		return zero

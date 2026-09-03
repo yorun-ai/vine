@@ -4,7 +4,6 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
-	"go.yorun.ai/vine/internal/infra/rdb"
 	"go.yorun.ai/vine/util/vcode"
 )
 
@@ -68,7 +67,7 @@ func toCorePortalCert(row *model.PortalCert) *core.PortalCert {
 
 func toDBPortalCert(cert *core.PortalCert) *model.PortalCert {
 	return &model.PortalCert{
-		Model:            rdb.Model{Id: cert.Id},
+		Id:               cert.Id,
 		Name:             cert.Name,
 		Issuer:           cert.Issuer,
 		Domains:          vcode.MustMarshalJsonS(cert.Domains),

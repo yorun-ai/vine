@@ -526,17 +526,15 @@ func TestAppImplInitConsoleServerSkipsWhenDisabledByInternalAttrs(t *testing.T) 
 	flags.InitInprocFlag(false)
 
 	app := newApp(&testInternalOnlyAppSpec{
-		InternalApplication: InternalApplication{
-			Application: Application{AppFlag: &RunFlag{}},
-			InternalAttrs: InternalAttributes{
-				Info: testRuntimeApp{
-					name:       "test.app",
-					version:    "1.2.3",
-					instanceID: "00000000-0000-0000-0000-000000000123",
-				},
-				Linker:         &testLinker{},
-				DisableConsole: true,
+		AppFlag: &RunFlag{},
+		InternalAttrs: InternalAttributes{
+			Info: testRuntimeApp{
+				name:       "test.app",
+				version:    "1.2.3",
+				instanceID: "00000000-0000-0000-0000-000000000123",
 			},
+			Linker:         &testLinker{},
+			DisableConsole: true,
 		},
 	}, flags)
 	app.initInjector()
@@ -551,7 +549,7 @@ func TestAppImplInitConsoleServerCreatesHandlerWhenInprocEnabled(t *testing.T) {
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(true)
 
-	app := newApp(&testHelperAppSpec{Application: Application{AppFlag: &RunFlag{}}}, flags)
+	app := newApp(&testHelperAppSpec{AppFlag: &RunFlag{}}, flags)
 	app.initInjector()
 	app.initServers()
 
@@ -568,16 +566,14 @@ func TestNewAppPanicsWhenApplicationNameIsEmpty(t *testing.T) {
 
 	assert.PanicsWithError(t, `invalid application name: ""`, func() {
 		_ = newApp(&testEmptyNameInternalOnlyAppSpec{
-			InternalApplication: InternalApplication{
-				Application: Application{AppFlag: &RunFlag{}},
-				InternalAttrs: InternalAttributes{
-					Info: testRuntimeApp{
-						name:       "test.app",
-						version:    "1.2.3",
-						instanceID: "00000000-0000-0000-0000-000000000123",
-					},
-					Linker: &testLinker{},
+			AppFlag: &RunFlag{},
+			InternalAttrs: InternalAttributes{
+				Info: testRuntimeApp{
+					name:       "test.app",
+					version:    "1.2.3",
+					instanceID: "00000000-0000-0000-0000-000000000123",
 				},
+				Linker: &testLinker{},
 			},
 		}, flags)
 	})
@@ -590,7 +586,7 @@ func TestAppImplInitSpecInitializesEnabledModules(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
-	app := newApp(&testFullSpec{Application: Application{AppFlag: &RunFlag{}}}, flags)
+	app := newApp(&testFullSpec{AppFlag: &RunFlag{}}, flags)
 	app.initServers()
 
 	assert.NotNil(t, app.eventer)
@@ -602,7 +598,7 @@ func TestNewAppUsesRunFlagListenAddr(t *testing.T) {
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
 	flags[T[*RunFlag]()] = &RunFlag{ListenAddr: ":18089"}
-	app := newApp(&testListenAddrSpec{Application: Application{AppFlag: &RunFlag{}}}, flags)
+	app := newApp(&testListenAddrSpec{AppFlag: &RunFlag{}}, flags)
 
 	assert.Equal(t, ":18089", app.listenAddr)
 }
@@ -612,7 +608,7 @@ func TestNewAppDisablesInprocModeByDefault(t *testing.T) {
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
 
-	app := newApp(&testListenAddrSpec{Application: Application{AppFlag: &RunFlag{}}}, flags)
+	app := newApp(&testListenAddrSpec{AppFlag: &RunFlag{}}, flags)
 
 	assert.NotNil(t, app.inprocFlag)
 	assert.False(t, app.inprocFlag.Enabled)
@@ -623,7 +619,7 @@ func TestNewAppEnablesInprocModeWhenFlagProvided(t *testing.T) {
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(true)
 
-	app := newApp(&testListenAddrSpec{Application: Application{AppFlag: &RunFlag{}}}, flags)
+	app := newApp(&testListenAddrSpec{AppFlag: &RunFlag{}}, flags)
 
 	assert.NotNil(t, app.inprocFlag)
 	assert.True(t, app.inprocFlag.Enabled)
@@ -738,7 +734,7 @@ func TestAppImplStartPanicsAfterStopped(t *testing.T) {
 func TestAppImplStartAndStopInvokeLifecycleHooks(t *testing.T) {
 	events := []string{}
 	spec := &testHookSpec{
-		Application: Application{AppFlag: &RunFlag{}},
+		AppFlag: &RunFlag{},
 		moduleTypes: []reflect.Type{
 			T[*testHookModule](),
 		},
@@ -784,17 +780,15 @@ func TestAppImplStartDoesNotRegisterInternalApp(t *testing.T) {
 	flags.InitInprocFlag(false)
 	linker := &testLinker{}
 	app := newApp(&testInternalServicerSpec{
-		InternalApplication: InternalApplication{
-			Application: Application{AppFlag: &RunFlag{}},
-			InternalAttrs: InternalAttributes{
-				Info: testRuntimeApp{
-					name:       "test.app",
-					version:    "1.2.3",
-					instanceID: "00000000-0000-0000-0000-000000000123",
-				},
-				Linker:            linker,
-				DisableHTTPServer: true,
+		AppFlag: &RunFlag{},
+		InternalAttrs: InternalAttributes{
+			Info: testRuntimeApp{
+				name:       "test.app",
+				version:    "1.2.3",
+				instanceID: "00000000-0000-0000-0000-000000000123",
 			},
+			Linker:            linker,
+			DisableHTTPServer: true,
 		},
 	}, flags)
 
@@ -815,17 +809,15 @@ func TestAppImplStartInprocModeSkipsHTTPServerAndLinkerRegistration(t *testing.T
 	flags.InitInprocFlag(true)
 	linker := &testLinker{}
 	app := newApp(&testInternalServicerSpec{
-		InternalApplication: InternalApplication{
-			Application: Application{AppFlag: &RunFlag{}},
-			InternalAttrs: InternalAttributes{
-				Info: testRuntimeApp{
-					name:       "test.app",
-					version:    "1.2.3",
-					instanceID: "00000000-0000-0000-0000-000000000123",
-				},
-				Linker:         linker,
-				InprocHostPath: "app/test-start-inproc",
+		AppFlag: &RunFlag{},
+		InternalAttrs: InternalAttributes{
+			Info: testRuntimeApp{
+				name:       "test.app",
+				version:    "1.2.3",
+				instanceID: "00000000-0000-0000-0000-000000000123",
 			},
+			Linker:         linker,
+			InprocHostPath: "app/test-start-inproc",
 		},
 	}, flags)
 
@@ -849,17 +841,15 @@ func TestAppImplStartWithDisableHTTPServerDoesNotRegisterInternalApp(t *testing.
 	flags.InitInprocFlag(false)
 	linker := &testLinker{}
 	app := newApp(&testInternalServicerSpec{
-		InternalApplication: InternalApplication{
-			Application: Application{AppFlag: &RunFlag{}},
-			InternalAttrs: InternalAttributes{
-				Info: testRuntimeApp{
-					name:       "test.app",
-					version:    "1.2.3",
-					instanceID: "00000000-0000-0000-0000-000000000123",
-				},
-				Linker:            linker,
-				DisableHTTPServer: true,
+		AppFlag: &RunFlag{},
+		InternalAttrs: InternalAttributes{
+			Info: testRuntimeApp{
+				name:       "test.app",
+				version:    "1.2.3",
+				instanceID: "00000000-0000-0000-0000-000000000123",
 			},
+			Linker:            linker,
+			DisableHTTPServer: true,
 		},
 	}, flags)
 
@@ -883,18 +873,16 @@ func TestAppImplStartInprocModeStillUsesInprocServerWhenHTTPServerDisabled(t *te
 	flags.InitInprocFlag(true)
 	linker := &testLinker{}
 	app := newApp(&testInternalServicerSpec{
-		InternalApplication: InternalApplication{
-			Application: Application{AppFlag: &RunFlag{}},
-			InternalAttrs: InternalAttributes{
-				Info: testRuntimeApp{
-					name:       "test.app",
-					version:    "1.2.3",
-					instanceID: "00000000-0000-0000-0000-000000000123",
-				},
-				Linker:            linker,
-				DisableHTTPServer: true,
-				InprocHostPath:    "app/test-start-inproc-disable-http",
+		AppFlag: &RunFlag{},
+		InternalAttrs: InternalAttributes{
+			Info: testRuntimeApp{
+				name:       "test.app",
+				version:    "1.2.3",
+				instanceID: "00000000-0000-0000-0000-000000000123",
 			},
+			Linker:            linker,
+			DisableHTTPServer: true,
+			InprocHostPath:    "app/test-start-inproc-disable-http",
 		},
 	}, flags)
 
@@ -918,17 +906,15 @@ func TestAppImplStartDoesNotRegisterInternalUniqueWebberApp(t *testing.T) {
 	flags.InitInprocFlag(false)
 	linker := &testLinker{}
 	app := newApp(&testUniqueWebberRegisterSpec{
-		InternalApplication: InternalApplication{
-			Application: Application{AppFlag: &RunFlag{}},
-			InternalAttrs: InternalAttributes{
-				Info: testRuntimeApp{
-					name:       "test.app",
-					version:    "1.2.3",
-					instanceID: "00000000-0000-0000-0000-000000000123",
-				},
-				Linker:            linker,
-				DisableHTTPServer: true,
+		AppFlag: &RunFlag{},
+		InternalAttrs: InternalAttributes{
+			Info: testRuntimeApp{
+				name:       "test.app",
+				version:    "1.2.3",
+				instanceID: "00000000-0000-0000-0000-000000000123",
 			},
+			Linker:            linker,
+			DisableHTTPServer: true,
 		},
 	}, flags)
 
@@ -950,7 +936,7 @@ func TestAppImplStartRegistersWebberOnlyAppWithNonNilEmptyCapabilities(t *testin
 	linker := &testLinker{}
 	useTestLinker(t, linker)
 	app := newApp(&testWebberRegisterSpec{
-		Application:   Application{AppFlag: &RunFlag{}},
+		AppFlag:       &RunFlag{},
 		WebberEnabled: WebberEnabled{},
 	}, flags)
 	app.info = testRuntimeApp{
@@ -984,7 +970,7 @@ func TestAppImplStartRegistersEventerAndTasker(t *testing.T) {
 	linker := &testLinker{}
 	useTestLinker(t, linker)
 	app := newApp(&testFullSpec{
-		Application:    Application{AppFlag: &RunFlag{}},
+		AppFlag:        &RunFlag{},
 		EventerEnabled: EventerEnabled{},
 		TaskerEnabled:  TaskerEnabled{},
 	}, flags)
@@ -1027,7 +1013,7 @@ func TestAppImplStartSkipsDomainSchemasWhenSkipDomainSchemasEnabled(t *testing.T
 	linker := &testLinker{SkipDomainSchemasValue: true}
 	useTestLinker(t, linker)
 	app := newApp(&testFullSpec{
-		Application:    Application{AppFlag: &RunFlag{}},
+		AppFlag:        &RunFlag{},
 		EventerEnabled: EventerEnabled{},
 		TaskerEnabled:  TaskerEnabled{},
 	}, flags)
@@ -1049,17 +1035,15 @@ func TestAppImplStopGracefullyStopsInprocMode(t *testing.T) {
 		flags.EnsureRunFlag()
 		flags.InitInprocFlag(true)
 		app := newApp(&testInternalServicerSpec{
-			InternalApplication: InternalApplication{
-				Application: Application{AppFlag: &RunFlag{}},
-				InternalAttrs: InternalAttributes{
-					Info: testRuntimeApp{
-						name:       "test.app",
-						version:    "1.2.3",
-						instanceID: "00000000-0000-0000-0000-000000000123",
-					},
-					Linker:         &testLinker{},
-					InprocHostPath: "app/test-wait-inproc",
+			AppFlag: &RunFlag{},
+			InternalAttrs: InternalAttributes{
+				Info: testRuntimeApp{
+					name:       "test.app",
+					version:    "1.2.3",
+					instanceID: "00000000-0000-0000-0000-000000000123",
 				},
+				Linker:         &testLinker{},
+				InprocHostPath: "app/test-wait-inproc",
 			},
 		}, flags)
 
@@ -1086,17 +1070,15 @@ func TestAppImplStopUnregistersInprocRoutes(t *testing.T) {
 	flags.InitInprocFlag(true)
 	newInprocApp := func() *_AppImpl {
 		return newApp(&testInternalServicerSpec{
-			InternalApplication: InternalApplication{
-				Application: Application{AppFlag: &RunFlag{}},
-				InternalAttrs: InternalAttributes{
-					Info: testRuntimeApp{
-						name:       "test.app",
-						version:    "1.2.3",
-						instanceID: "00000000-0000-0000-0000-000000000123",
-					},
-					Linker:         &testLinker{},
-					InprocHostPath: "app/test-stop-inproc",
+			AppFlag: &RunFlag{},
+			InternalAttrs: InternalAttributes{
+				Info: testRuntimeApp{
+					name:       "test.app",
+					version:    "1.2.3",
+					instanceID: "00000000-0000-0000-0000-000000000123",
 				},
+				Linker:         &testLinker{},
+				InprocHostPath: "app/test-stop-inproc",
 			},
 		}, flags)
 	}
@@ -1113,7 +1095,7 @@ func TestAppImplStopUnregistersInprocRoutes(t *testing.T) {
 func TestAppImplStartAndStopInvokeComponentAndModuleLifecycleHooksInOrder(t *testing.T) {
 	events := []string{}
 	spec := &testHookSpec{
-		Application: Application{AppFlag: &RunFlag{}},
+		AppFlag: &RunFlag{},
 		componentTypes: []reflect.Type{
 			T[*testLifecycleComponent](),
 			T[*testLifecycleSimpleComponent](),
@@ -1151,7 +1133,7 @@ func TestAppImplStartAndStopInvokeComponentAndModuleLifecycleHooksInOrder(t *tes
 
 func TestAppImplStartPanicsWhenBeforeStartFails(t *testing.T) {
 	spec := &testHookErrorSpec{
-		Application: Application{AppFlag: &RunFlag{}},
+		AppFlag: &RunFlag{},
 		moduleTypes: []reflect.Type{
 			T[*testHookErrorModule](),
 		},
@@ -1168,7 +1150,7 @@ func TestAppImplStartPanicsWhenBeforeStartFails(t *testing.T) {
 }
 
 func TestInitModulesInjectsProvidedFlag(t *testing.T) {
-	spec := &testInjectedModuleSpec{Application: Application{AppFlag: &RunFlag{}}}
+	spec := &testInjectedModuleSpec{AppFlag: &RunFlag{}}
 	flags := _Flags{}
 	flags.Apply(With(&testInjectedModuleFlag{Value: "demo"}))
 	flags.EnsureRunFlag()
@@ -1188,7 +1170,7 @@ func TestInitModulesInjectsProvidedFlag(t *testing.T) {
 
 func TestStartModulesPanicsOnDuplicateModuleTypes(t *testing.T) {
 	spec := &testHookSpec{
-		Application: Application{AppFlag: &RunFlag{}},
+		AppFlag: &RunFlag{},
 		moduleTypes: []reflect.Type{
 			T[*testHookModule](),
 			T[*testHookModule](),
@@ -1224,7 +1206,7 @@ func TestAppImplMountsHTTPRouteModulePrefix(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
-	app := newApp(&testHTTPRouteModuleSpec{Application: Application{AppFlag: &RunFlag{}}}, flags)
+	app := newApp(&testHTTPRouteModuleSpec{AppFlag: &RunFlag{}}, flags)
 	app.initInjector()
 	app.initModules()
 	app.initServers()

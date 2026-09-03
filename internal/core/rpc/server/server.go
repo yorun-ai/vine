@@ -105,13 +105,11 @@ func (s *Server) handle(rpcRequest spec.Request) (response spec.Response) {
 
 	trace = rpcRequest.Trace().NewChildTrace()
 	rpcContext := &spec.ContextImpl{
-		ContextImpl: meta.ContextImpl{
-			Context:        rpcRequest.Context(),
-			TraceValue:     trace,
-			InitiatorValue: rpcRequest.Initiator(),
-			ActorValue:     rpcRequest.Actor(),
-		},
-		ClientValue: rpcRequest.Client(),
+		Context:        rpcRequest.Context(),
+		TraceValue:     trace,
+		InitiatorValue: rpcRequest.Initiator(),
+		ActorValue:     rpcRequest.Actor(),
+		ClientValue:    rpcRequest.Client(),
 	}
 	logArguments := rpcRequest.Arguments()
 	if !rpcRequest.MethodInfo().HasArguments() {

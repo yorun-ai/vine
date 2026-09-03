@@ -18,6 +18,8 @@ are not part of the public compatibility commitment.
 
 - Raised the minimum Go version to 1.27.0, configured CI checks to follow the
   latest Go 1.27 patch, and pinned release binaries to Go 1.27.1
+- Darwin release binaries now require macOS 13 or later, following Go 1.27's
+  raised minimum deployment target for macOS
 - Replaced Vine's direct use of `github.com/google/uuid` with Go 1.27's
   standard-library `uuid` package; `skel.NewUUID` now accepts the
   standard-library UUID type
@@ -29,16 +31,19 @@ are not part of the public compatibility commitment.
   `http.Server.MaxHeaderValueCount`
 - Adopted Go 1.27 `strings.CutLast`, typed atomics, and `slices.Backward` where
   they directly simplify parsing, test counters, and reverse-order cleanup
+- Adopted Go 1.27 promoted-field composite literals, replaced the remaining
+  `golang.org/x/exp/constraints` usage with standard-library `cmp.Ordered`, and
+  removed redundant URL copies after `http.Request.Clone`
 - Added isolated Go 1.27 `goroutineleak` profile checks for application HTTP,
-  in-process Rpc, scheduler, and Redis lock lifecycle tests
+  in-process Rpc and Web, scheduler, and Redis lock lifecycle tests
 - Replaced the package-level `testkit.NewClient`, `testkit.NewClientER`, and
   `redis.NewCache` functions with the generic methods `Execution.NewClient`,
   `Execution.NewClientER`, and `Redis.NewCache`, and simplified application
   construction through the generic process guard
-- Reworked timer-, cancellation-, scheduler-, lock-, and in-process transport
-  tests around Go 1.27 `testing/synctest`, replacing wall-clock polling with
-  deterministic synchronization, randomized test ordering, and tighter global
-  state and in-process endpoint cleanup
+- Reworked timer-, cancellation-, scheduler-, lock-, HTTP shutdown-, and
+  in-process transport tests around Go 1.27 `testing/synctest`, replacing
+  wall-clock polling with deterministic synchronization, randomized test
+  ordering, and tighter global state and in-process endpoint cleanup
 - Made Rpc, Web, and Link ingress in-process endpoint registries concurrency
   safe and lifecycle-owned through idempotent registration cleanup functions
 - Added independently instantiable registries for domain schemas, configuration,

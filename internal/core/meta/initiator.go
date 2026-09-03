@@ -27,13 +27,11 @@ func NewInitiator(name string, version string, instanceId string, dialer string,
 	}
 
 	return &_Initiator{
-		_App: _App{
-			name:       appInfo.Name(),
-			version:    appInfo.Version(),
-			instanceId: appInfo.InstanceId(),
-		},
-		ipAddr: ipAddr,
-		dialer: dialer,
+		name:       appInfo.Name(),
+		version:    appInfo.Version(),
+		instanceId: appInfo.InstanceId(),
+		ipAddr:     ipAddr,
+		dialer:     dialer,
 	}, nil
 }
 

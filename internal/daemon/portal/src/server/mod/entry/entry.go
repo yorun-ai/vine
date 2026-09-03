@@ -100,9 +100,7 @@ func (e *_Entry) route(r *http.Request) (*_Rule, bool) {
 
 func (e *_Entry) prepareRequest(r *http.Request) *http.Request {
 	request := r.Clone(r.Context())
-	url := *request.URL
-	url.Scheme = string(e.scheme)
-	request.URL = &url
+	request.URL.Scheme = string(e.scheme)
 	return request
 }
 

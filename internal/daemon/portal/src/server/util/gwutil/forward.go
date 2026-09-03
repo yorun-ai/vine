@@ -97,11 +97,9 @@ func forwardRpcInprocRequest(ctx context.Context, r *http.Request, endpoint stri
 func forwardWebInprocRequest(ctx context.Context, r *http.Request, endpoint string) (*http.Response, error) {
 	request := cloneForwardRequest(ctx, r)
 	registeredEndpoint, targetPath := splitWebInprocEndpoint(endpoint, r.URL.Path)
-	urlValue := *request.URL
-	urlValue.Path = targetPath
-	urlValue.RawPath = ""
-	request.URL = &urlValue
-	request.RequestURI = urlValue.RequestURI()
+	request.URL.Path = targetPath
+	request.URL.RawPath = ""
+	request.RequestURI = request.URL.RequestURI()
 
 	response, err := webinproc.RoundTrip(registeredEndpoint, request)
 	if err != nil {

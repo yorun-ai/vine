@@ -46,7 +46,7 @@ func TestInitComponentsPassesUserComponentToFrameworkComponent(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
-	app := newApp(&testComponentAppSpec{Application: Application{AppFlag: &RunFlag{}}}, flags)
+	app := newApp(&testComponentAppSpec{AppFlag: &RunFlag{}}, flags)
 	app.initInjector()
 
 	app.initComponents()

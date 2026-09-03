@@ -18,13 +18,11 @@ type ContextImpl struct {
 
 func NewContext(ctx context.Context, trace meta.Trace, client meta.App, initiator meta.Initiator, actor meta.Actor) Context {
 	return &ContextImpl{
-		ContextImpl: meta.ContextImpl{
-			Context:        ctx,
-			TraceValue:     trace,
-			InitiatorValue: initiator,
-			ActorValue:     actor,
-		},
-		ClientValue: client,
+		Context:        ctx,
+		TraceValue:     trace,
+		InitiatorValue: initiator,
+		ActorValue:     actor,
+		ClientValue:    client,
 	}
 }
 

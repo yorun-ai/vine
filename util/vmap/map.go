@@ -1,10 +1,9 @@
 package vmap
 
 import (
+	"cmp"
 	"maps"
 	"slices"
-
-	"golang.org/x/exp/constraints"
 )
 
 // Clone returns a copy of map.
@@ -32,7 +31,7 @@ func Keys[Map ~map[K]V, K comparable, V any](m Map) []K {
 }
 
 // SortedKeys returns the map keys in ascending order.
-func SortedKeys[Map ~map[K]V, K constraints.Ordered, V any](m Map) []K {
+func SortedKeys[Map ~map[K]V, K cmp.Ordered, V any](m Map) []K {
 	return slices.Sorted(maps.Keys(m))
 }
 
@@ -42,7 +41,7 @@ func Values[Map ~map[K]V, K comparable, V any](m Map) []V {
 }
 
 // SortedValues returns values ordered by their corresponding ascending keys.
-func SortedValues[Map ~map[K]V, K constraints.Ordered, V any](m Map) []V {
+func SortedValues[Map ~map[K]V, K cmp.Ordered, V any](m Map) []V {
 	keys := SortedKeys(m)
 	values := make([]V, 0, len(keys))
 	for _, key := range keys {

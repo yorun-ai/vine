@@ -4,7 +4,6 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
-	"go.yorun.ai/vine/internal/infra/rdb"
 )
 
 type DBPortalRuleRepo struct {
@@ -69,7 +68,7 @@ func toCorePortalRule(row *model.PortalRule) *core.PortalRule {
 
 func toDBPortalRule(rule *core.PortalRule) *model.PortalRule {
 	return &model.PortalRule{
-		Model:              rdb.Model{Id: rule.Id},
+		Id:                 rule.Id,
 		Name:               rule.Name,
 		Scheme:             rule.Scheme,
 		Host:               rule.Host,

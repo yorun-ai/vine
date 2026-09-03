@@ -9,6 +9,7 @@ packages=(
   ./internal/testutil/goroutineleak
   ./internal/app
   ./internal/core/rpc/transport/inproc
+  ./internal/core/web/inproc
   ./internal/daemon/hub/src/server/mod/scheduler
   ./internal/infra/redis
 )
