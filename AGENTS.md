@@ -29,6 +29,8 @@
   `internal/daemon/hub/src/dashboard/src/skeled`.
 - Modify the corresponding `.skel` source and regenerate code with
   `bash script/gen-skel.sh [app|hub|link]`.
+- Before regenerating, verify that `skelc version` satisfies the current minimum
+  in `internal/core/skel/version.go`. Do not regenerate with an older compiler.
 - Keep the import rewriting and formatting performed by `script/gen-skel.sh`.
   Generated runtime code intentionally imports internal packages.
 
@@ -62,6 +64,16 @@
   schemas, and generated contracts as cross-component protocol boundaries.
 - When changing one of these formats, update all producers, consumers, tests,
   documentation, and compatibility notes together.
+- Use Go's `encoding/json/v2` and `encoding/json/jsontext` APIs for Vine JSON;
+  do not reintroduce the v1 `encoding/json` implementation.
+- Encode Rpc, Event, and Task Skel payloads with the encoder selected for the
+  registered schema, such as `skel.EncoderForSkelName`, so compiler-version
+  collection compatibility is preserved. Do not bypass it with the default
+  `vcode` encoder.
+- Rpc methods must provide `CloneArguments` when they have arguments and
+  `CloneResult` when they have results. Generated code obtains these hooks from
+  a supported skelc; manually constructed `MethodSpec` values must supply them,
+  and the runtime must not restore serialization-based clone fallbacks.
 
 ## Documentation
 
@@ -72,6 +84,35 @@
 - When changing public behavior, update the corresponding current documentation
   in `vine-site` in the same delivery and keep both locales synchronized.
 - Do not manually edit versioned documentation snapshots in `vine-site`.
+
+## Container Images
+
+- Hub, Link, and Portal image targets must continue to use the same Vine binary
+  from the shared multi-stage `Dockerfile`; target-specific stages should only
+  define runtime configuration and entry commands.
+- Keep the default `GO_VERSION` build argument in `Dockerfile` aligned with the
+  Go version in `go.mod`. CI and release workflows may override it with the
+  approved patch version.
+- Do not make the Hub image silently select a database or messaging mode.
+  Deployments must explicitly choose exactly one of SQLite or PostgreSQL and
+  exactly one of embedded or external NATS.
+- Pull requests and `main` builds smoke-test the Hub image only. Release tags
+  build and publish Hub, Link, and Portal for every supported architecture.
+
+## Release Preparation
+
+- Compare all commits since the previous tag with `CHANGELOG.md`. Move the
+  completed entries from `[Unreleased]` under a dated release heading while
+  retaining an empty `[Unreleased]` section.
+- When Dashboard source changed since the previous embedded asset, run
+  `bash script/build-dashboard-assets.sh` and commit the resulting
+  `dashboard.tar.zst`; never assemble the archive manually.
+- After Go dependency changes, run `bash script/gen-third-party-licenses.sh`
+  and commit any resulting license inventory changes.
+- Regenerate all internal contracts with `bash script/gen-skel.sh all` and
+  confirm there is no unexpected generated drift.
+- Module versions come from release tags and build-time `ldflags`; do not add or
+  update a source-level version constant during release preparation.
 
 ## Tests
 
@@ -101,8 +142,14 @@
   `VINE_RACE_SCOPE=all bash test/race.sh` for the full release race suite.
   These scripts set `GOWORK=off` so the enclosing workspace cannot replace
   published module dependencies.
-- Run `go vet ./...` after changing public APIs, concurrency, reflection, or
-  runtime wiring.
+- Run `GOWORK=off go vet ./...` after changing public APIs, concurrency,
+  reflection, or runtime wiring.
+- For a release, run `bash test/test.sh`, full-scope shuffle and race checks,
+  and cross-build `cmd/vine` for Darwin and Linux on AMD64 and ARM64. Validate
+  that the dated changelog heading matches the intended release tag.
+- After changing container build inputs, validate the Hub target. Changes to
+  shared image stages or release publication must also validate all three image
+  targets.
 - Run `pnpm build` in `vine-site` after changing Vine public documentation there.
 - After regenerating Skel code, inspect the generated diff and run all affected
   Go and frontend checks.
