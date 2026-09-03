@@ -103,7 +103,7 @@ func TestSyncerSyncSchemasWritesMainActorAndServiceSchemas(t *testing.T) {
 		"hash": "actor-main",
 		"authEnabled": false,
 		"permEnabled": false,
-		"vias": null,
+		"vias": [],
 		"authCredential": {
 			"name": "",
 			"skelName": "demo.user.UserCredential",
@@ -120,7 +120,7 @@ func TestSyncerSyncSchemasWritesMainActorAndServiceSchemas(t *testing.T) {
 			"hash": "auth-service-main",
 			"pub": false,
 			"authMode": "",
-			"methods": null
+			"methods": []
 		}
 	}`, value)
 	value, ok = redisServer.Get(redised.FormatSchemaActorKey("demo.user.NoAuthActor"))
@@ -131,7 +131,7 @@ func TestSyncerSyncSchemasWritesMainActorAndServiceSchemas(t *testing.T) {
 		"hash": "actor-no-auth",
 		"authEnabled": false,
 		"permEnabled": false,
-		"vias": null
+		"vias": []
 	}`, value)
 	_, ok = redisServer.Get(redised.FormatSchemaActorKey("demo.user.OldActor"))
 	assert.False(t, ok)
@@ -191,7 +191,7 @@ func TestSyncerWriteSchemasWritesMainActorAndServiceSchemas(t *testing.T) {
 		"hash": "admin-actor-main",
 		"authEnabled": false,
 		"permEnabled": false,
-		"vias": null
+		"vias": []
 	}`, value)
 
 	value, ok = redisServer.Get(redised.FormatSchemaServiceKey("vine.hub.admin.SkeletonService"))
@@ -202,7 +202,7 @@ func TestSyncerWriteSchemasWritesMainActorAndServiceSchemas(t *testing.T) {
 		"hash": "skeleton-service-main",
 		"pub": false,
 		"authMode": "noauth",
-		"methods": null
+		"methods": []
 	}`, value)
 }
 

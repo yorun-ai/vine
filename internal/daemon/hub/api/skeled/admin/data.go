@@ -15,6 +15,12 @@ type AppConfigCreation struct {
 	Value string `json:"value"`
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v AppConfigCreation) Clone() AppConfigCreation {
+	cloned := v
+	return cloned
+}
+
 // AppConfigItem Configuration items
 type AppConfigItem struct {
 	// Id Configuration ID
@@ -41,6 +47,17 @@ func (v *AppConfigItem) Validate(path string) error {
 		}
 	}
 	return nil
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v AppConfigItem) Clone() AppConfigItem {
+	cloned := v
+	if v.Schema != nil {
+		clonedValue0 := *v.Schema
+		clonedValue0 = (*v.Schema).Clone()
+		cloned.Schema = &clonedValue0
+	}
+	return cloned
 }
 
 // AppConfigSchema Configuration schema items
@@ -76,6 +93,28 @@ func (v *AppConfigSchema) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v AppConfigSchema) Clone() AppConfigSchema {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	if v.Fields == nil {
+		cloned.Fields = nil
+	} else {
+		cloned.Fields = make([]AppConfigSchemaField, len(v.Fields))
+		for index2 := range v.Fields {
+			cloned.Fields[index2] = v.Fields[index2].Clone()
+		}
+	}
+	return cloned
+}
+
 // AppConfigSchemaEnumItem Configuration schema enumeration options
 type AppConfigSchemaEnumItem struct {
 	// Name Enum option name
@@ -86,6 +125,20 @@ type AppConfigSchemaEnumItem struct {
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Enumeration option deprecation reason
 	DeprecatedReason *string `json:"deprecatedReason"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v AppConfigSchemaEnumItem) Clone() AppConfigSchemaEnumItem {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	return cloned
 }
 
 // AppConfigSchemaField Configuration schema fields
@@ -114,10 +167,42 @@ func (v *AppConfigSchemaField) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v AppConfigSchemaField) Clone() AppConfigSchemaField {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	if v.EnumItems == nil {
+		cloned.EnumItems = nil
+	} else {
+		cloned.EnumItems = make([]AppConfigSchemaEnumItem, len(v.EnumItems))
+		for index2 := range v.EnumItems {
+			cloned.EnumItems[index2] = v.EnumItems[index2].Clone()
+		}
+	}
+	return cloned
+}
+
 // AppConfigUpdate Configuration update parameters
 type AppConfigUpdate struct {
 	// Value Configuration JSON
 	Value *string `json:"value"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v AppConfigUpdate) Clone() AppConfigUpdate {
+	cloned := v
+	if v.Value != nil {
+		clonedValue0 := *v.Value
+		cloned.Value = &clonedValue0
+	}
+	return cloned
 }
 
 // AppStatusView Application instance status view for Dashboard display
@@ -164,6 +249,44 @@ func (v *AppStatusView) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v AppStatusView) Clone() AppStatusView {
+	cloned := v
+	if v.ServiceHandlers == nil {
+		cloned.ServiceHandlers = nil
+	} else {
+		cloned.ServiceHandlers = make([]ServiceHandlerRegistration, len(v.ServiceHandlers))
+		for index0 := range v.ServiceHandlers {
+			cloned.ServiceHandlers[index0] = v.ServiceHandlers[index0].Clone()
+		}
+	}
+	if v.WebHandlers == nil {
+		cloned.WebHandlers = nil
+	} else {
+		cloned.WebHandlers = make([]WebHandlerRegistration, len(v.WebHandlers))
+		for index1 := range v.WebHandlers {
+			cloned.WebHandlers[index1] = v.WebHandlers[index1].Clone()
+		}
+	}
+	if v.EventListeners == nil {
+		cloned.EventListeners = nil
+	} else {
+		cloned.EventListeners = make([]EventListenerRegistration, len(v.EventListeners))
+		for index2 := range v.EventListeners {
+			cloned.EventListeners[index2] = v.EventListeners[index2].Clone()
+		}
+	}
+	if v.TaskRunners == nil {
+		cloned.TaskRunners = nil
+	} else {
+		cloned.TaskRunners = make([]TaskRunnerRegistration, len(v.TaskRunners))
+		for index3 := range v.TaskRunners {
+			cloned.TaskRunners[index3] = v.TaskRunners[index3].Clone()
+		}
+	}
+	return cloned
+}
+
 // EventDebugDefaultEmitRequest Default Event Debug send request
 type EventDebugDefaultEmitRequest struct {
 	// TraceId Trace ID
@@ -172,6 +295,12 @@ type EventDebugDefaultEmitRequest struct {
 	SpanId string `json:"spanId"`
 	// EventJson Default event JSON
 	EventJson skel.JSON `json:"eventJson"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v EventDebugDefaultEmitRequest) Clone() EventDebugDefaultEmitRequest {
+	cloned := v
+	return cloned
 }
 
 // EventDebugEmitRequest Event Debug send request
@@ -186,6 +315,20 @@ type EventDebugEmitRequest struct {
 	TraceId *string `json:"traceId"`
 	// SpanId Span ID
 	SpanId *string `json:"spanId"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v EventDebugEmitRequest) Clone() EventDebugEmitRequest {
+	cloned := v
+	if v.TraceId != nil {
+		clonedValue0 := *v.TraceId
+		cloned.TraceId = &clonedValue0
+	}
+	if v.SpanId != nil {
+		clonedValue1 := *v.SpanId
+		cloned.SpanId = &clonedValue1
+	}
+	return cloned
 }
 
 // EventDebugEventItem Event called by Event Debug
@@ -216,6 +359,28 @@ func (v *EventDebugEventItem) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v EventDebugEventItem) Clone() EventDebugEventItem {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	if v.Fields == nil {
+		cloned.Fields = nil
+	} else {
+		cloned.Fields = make([]SkeletonField, len(v.Fields))
+		for index2 := range v.Fields {
+			cloned.Fields[index2] = v.Fields[index2].Clone()
+		}
+	}
+	return cloned
+}
+
 // EventListenerRegistration Event listening capability registration information provided by the application
 type EventListenerRegistration struct {
 	// EventSkelName Event Skel name
@@ -228,6 +393,12 @@ type EventListenerRegistration struct {
 	Concurrency int `json:"concurrency"`
 	// NoRetry Whether to disallow retrying after failure
 	NoRetry bool `json:"noRetry"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v EventListenerRegistration) Clone() EventListenerRegistration {
+	cloned := v
+	return cloned
 }
 
 // PortalCert Portal site certificate
@@ -260,6 +431,18 @@ func (v *PortalCert) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalCert) Clone() PortalCert {
+	cloned := v
+	if v.Domains == nil {
+		cloned.Domains = nil
+	} else {
+		cloned.Domains = make([]string, len(v.Domains))
+		copy(cloned.Domains, v.Domains)
+	}
+	return cloned
+}
+
 // PortalCertCreation Portal site certificate creation parameters
 type PortalCertCreation struct {
 	// Name Certificate name
@@ -270,6 +453,12 @@ type PortalCertCreation struct {
 	PrivateKeyBase64 string `json:"privateKeyBase64"`
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalCertCreation) Clone() PortalCertCreation {
+	cloned := v
+	return cloned
+}
+
 // PortalCertUpdate Portal site certificate update parameters
 type PortalCertUpdate struct {
 	// Name Certificate name
@@ -278,6 +467,24 @@ type PortalCertUpdate struct {
 	PublicKeyBase64 *string `json:"publicKeyBase64"`
 	// PrivateKeyBase64 Private key Base64
 	PrivateKeyBase64 *string `json:"privateKeyBase64"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalCertUpdate) Clone() PortalCertUpdate {
+	cloned := v
+	if v.Name != nil {
+		clonedValue0 := *v.Name
+		cloned.Name = &clonedValue0
+	}
+	if v.PublicKeyBase64 != nil {
+		clonedValue1 := *v.PublicKeyBase64
+		cloned.PublicKeyBase64 = &clonedValue1
+	}
+	if v.PrivateKeyBase64 != nil {
+		clonedValue2 := *v.PrivateKeyBase64
+		cloned.PrivateKeyBase64 = &clonedValue2
+	}
+	return cloned
 }
 
 // PortalCors Portal site CORS configuration
@@ -298,6 +505,18 @@ func (v *PortalCors) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalCors) Clone() PortalCors {
+	cloned := v
+	if v.AllowedOrigins == nil {
+		cloned.AllowedOrigins = nil
+	} else {
+		cloned.AllowedOrigins = make([]string, len(v.AllowedOrigins))
+		copy(cloned.AllowedOrigins, v.AllowedOrigins)
+	}
+	return cloned
+}
+
 // PortalDashboardAccess Hub Dashboard access entry
 type PortalDashboardAccess struct {
 	// Scheme Entry protocol
@@ -310,6 +529,12 @@ type PortalDashboardAccess struct {
 	PathPrefix string `json:"pathPrefix"`
 	// CanUpdate Whether to allow modification of Dashboard access entry
 	CanUpdate bool `json:"canUpdate"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalDashboardAccess) Clone() PortalDashboardAccess {
+	cloned := v
+	return cloned
 }
 
 // PortalEntry Portal access entry
@@ -341,6 +566,20 @@ func (v *PortalEntry) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalEntry) Clone() PortalEntry {
+	cloned := v
+	if v.Rules == nil {
+		cloned.Rules = nil
+	} else {
+		cloned.Rules = make([]PortalEntryRule, len(v.Rules))
+		for index0 := range v.Rules {
+			cloned.Rules[index0] = v.Rules[index0].Clone()
+		}
+	}
+	return cloned
+}
+
 // PortalEntryAccessUpdate Portal access entry configuration update parameters
 type PortalEntryAccessUpdate struct {
 	// Scheme Entry protocol
@@ -349,6 +588,12 @@ type PortalEntryAccessUpdate struct {
 	Host string `json:"host"`
 	// Port Entry port
 	Port int `json:"port"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalEntryAccessUpdate) Clone() PortalEntryAccessUpdate {
+	cloned := v
+	return cloned
 }
 
 // PortalEntryRule Portal access entry rules
@@ -369,6 +614,18 @@ func (v *PortalEntryRule) Validate(path string) error {
 		}
 	}
 	return nil
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalEntryRule) Clone() PortalEntryRule {
+	cloned := v
+	cloned.Rule = v.Rule.Clone()
+	if v.Site != nil {
+		clonedValue0 := *v.Site
+		clonedValue0 = (*v.Site).Clone()
+		cloned.Site = &clonedValue0
+	}
+	return cloned
 }
 
 // PortalRule Portal entry rules
@@ -393,6 +650,12 @@ type PortalRule struct {
 	RedirectionPattern string `json:"redirectionPattern"`
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalRule) Clone() PortalRule {
+	cloned := v
+	return cloned
+}
+
 // PortalRuleCreation Portal entry rule creation parameters
 type PortalRuleCreation struct {
 	// Name Rule name
@@ -413,6 +676,12 @@ type PortalRuleCreation struct {
 	RedirectionPattern string `json:"redirectionPattern"`
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalRuleCreation) Clone() PortalRuleCreation {
+	cloned := v
+	return cloned
+}
+
 // PortalRuleUpdate Portal entry rule update parameters
 type PortalRuleUpdate struct {
 	// Name Rule name
@@ -431,6 +700,44 @@ type PortalRuleUpdate struct {
 	SiteName *string `json:"siteName"`
 	// RedirectionPattern Redirect Pattern
 	RedirectionPattern *string `json:"redirectionPattern"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalRuleUpdate) Clone() PortalRuleUpdate {
+	cloned := v
+	if v.Name != nil {
+		clonedValue0 := *v.Name
+		cloned.Name = &clonedValue0
+	}
+	if v.Scheme != nil {
+		clonedValue1 := *v.Scheme
+		cloned.Scheme = &clonedValue1
+	}
+	if v.Host != nil {
+		clonedValue2 := *v.Host
+		cloned.Host = &clonedValue2
+	}
+	if v.Port != nil {
+		clonedValue3 := *v.Port
+		cloned.Port = &clonedValue3
+	}
+	if v.PathPrefix != nil {
+		clonedValue4 := *v.PathPrefix
+		cloned.PathPrefix = &clonedValue4
+	}
+	if v.TargetType != nil {
+		clonedValue5 := *v.TargetType
+		cloned.TargetType = &clonedValue5
+	}
+	if v.SiteName != nil {
+		clonedValue6 := *v.SiteName
+		cloned.SiteName = &clonedValue6
+	}
+	if v.RedirectionPattern != nil {
+		clonedValue7 := *v.RedirectionPattern
+		cloned.RedirectionPattern = &clonedValue7
+	}
+	return cloned
 }
 
 // PortalSite Portal target site
@@ -468,6 +775,23 @@ func (v *PortalSite) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalSite) Clone() PortalSite {
+	cloned := v
+	if v.RpcgwServices == nil {
+		cloned.RpcgwServices = nil
+	} else {
+		cloned.RpcgwServices = make([]string, len(v.RpcgwServices))
+		copy(cloned.RpcgwServices, v.RpcgwServices)
+	}
+	if v.Cors != nil {
+		clonedValue1 := *v.Cors
+		clonedValue1 = (*v.Cors).Clone()
+		cloned.Cors = &clonedValue1
+	}
+	return cloned
+}
+
 // PortalSiteActorOption Portal target site Actor options
 type PortalSiteActorOption struct {
 	// Name Actor name
@@ -486,6 +810,18 @@ func (v *PortalSiteActorOption) Validate(path string) error {
 		return err
 	}
 	return nil
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalSiteActorOption) Clone() PortalSiteActorOption {
+	cloned := v
+	if v.ActorVias == nil {
+		cloned.ActorVias = nil
+	} else {
+		cloned.ActorVias = make([]string, len(v.ActorVias))
+		copy(cloned.ActorVias, v.ActorVias)
+	}
+	return cloned
 }
 
 // PortalSiteCreation Portal target site creation parameters
@@ -514,6 +850,17 @@ func (v *PortalSiteCreation) Validate(path string) error {
 		}
 	}
 	return nil
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalSiteCreation) Clone() PortalSiteCreation {
+	cloned := v
+	if v.Cors != nil {
+		clonedValue0 := *v.Cors
+		clonedValue0 = (*v.Cors).Clone()
+		cloned.Cors = &clonedValue0
+	}
+	return cloned
 }
 
 // PortalSiteOptions Portal target site form options
@@ -557,6 +904,36 @@ func (v *PortalSiteOptions) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalSiteOptions) Clone() PortalSiteOptions {
+	cloned := v
+	if v.Actors == nil {
+		cloned.Actors = nil
+	} else {
+		cloned.Actors = make([]PortalSiteActorOption, len(v.Actors))
+		for index0 := range v.Actors {
+			cloned.Actors[index0] = v.Actors[index0].Clone()
+		}
+	}
+	if v.Services == nil {
+		cloned.Services = nil
+	} else {
+		cloned.Services = make([]PortalSiteServiceOption, len(v.Services))
+		for index1 := range v.Services {
+			cloned.Services[index1] = v.Services[index1].Clone()
+		}
+	}
+	if v.Webs == nil {
+		cloned.Webs = nil
+	} else {
+		cloned.Webs = make([]PortalSiteWebOption, len(v.Webs))
+		for index2 := range v.Webs {
+			cloned.Webs[index2] = v.Webs[index2].Clone()
+		}
+	}
+	return cloned
+}
+
 // PortalSiteServiceOption Portal target site service options
 type PortalSiteServiceOption struct {
 	// Name Service name
@@ -575,6 +952,18 @@ func (v *PortalSiteServiceOption) Validate(path string) error {
 		return err
 	}
 	return nil
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalSiteServiceOption) Clone() PortalSiteServiceOption {
+	cloned := v
+	if v.ActorSkelNames == nil {
+		cloned.ActorSkelNames = nil
+	} else {
+		cloned.ActorSkelNames = make([]string, len(v.ActorSkelNames))
+		copy(cloned.ActorSkelNames, v.ActorSkelNames)
+	}
+	return cloned
 }
 
 // PortalSiteUpdate Portal target site update parameters
@@ -605,6 +994,37 @@ func (v *PortalSiteUpdate) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalSiteUpdate) Clone() PortalSiteUpdate {
+	cloned := v
+	if v.Name != nil {
+		clonedValue0 := *v.Name
+		cloned.Name = &clonedValue0
+	}
+	if v.Type != nil {
+		clonedValue1 := *v.Type
+		cloned.Type = &clonedValue1
+	}
+	if v.ActorSkelName != nil {
+		clonedValue2 := *v.ActorSkelName
+		cloned.ActorSkelName = &clonedValue2
+	}
+	if v.ActorVia != nil {
+		clonedValue3 := *v.ActorVia
+		cloned.ActorVia = &clonedValue3
+	}
+	if v.Cors != nil {
+		clonedValue4 := *v.Cors
+		clonedValue4 = (*v.Cors).Clone()
+		cloned.Cors = &clonedValue4
+	}
+	if v.WebName != nil {
+		clonedValue5 := *v.WebName
+		cloned.WebName = &clonedValue5
+	}
+	return cloned
+}
+
 // PortalSiteWebOption Portal target site web options
 type PortalSiteWebOption struct {
 	// Name Web name
@@ -623,6 +1043,18 @@ func (v *PortalSiteWebOption) Validate(path string) error {
 		return err
 	}
 	return nil
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalSiteWebOption) Clone() PortalSiteWebOption {
+	cloned := v
+	if v.ActorSkelNames == nil {
+		cloned.ActorSkelNames = nil
+	} else {
+		cloned.ActorSkelNames = make([]string, len(v.ActorSkelNames))
+		copy(cloned.ActorSkelNames, v.ActorSkelNames)
+	}
+	return cloned
 }
 
 // SeedEntityDiff Seed entity differences
@@ -647,6 +1079,20 @@ func (v *SeedEntityDiff) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v SeedEntityDiff) Clone() SeedEntityDiff {
+	cloned := v
+	if v.Fields == nil {
+		cloned.Fields = nil
+	} else {
+		cloned.Fields = make([]SeedFieldDiff, len(v.Fields))
+		for index0 := range v.Fields {
+			cloned.Fields[index0] = v.Fields[index0].Clone()
+		}
+	}
+	return cloned
+}
+
 // SeedFieldDiff Seed field differences
 type SeedFieldDiff struct {
 	// Name Field name
@@ -659,12 +1105,24 @@ type SeedFieldDiff struct {
 	Changed bool `json:"changed"`
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v SeedFieldDiff) Clone() SeedFieldDiff {
+	cloned := v
+	return cloned
+}
+
 // SeedItemSelection Seed entity selection
 type SeedItemSelection struct {
 	// Kind Entity type
 	Kind string `json:"kind"`
 	// Name Entity name
 	Name string `json:"name"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v SeedItemSelection) Clone() SeedItemSelection {
+	cloned := v
+	return cloned
 }
 
 // SeedPreview Seed preview
@@ -688,6 +1146,20 @@ func (v *SeedPreview) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v SeedPreview) Clone() SeedPreview {
+	cloned := v
+	if v.Items == nil {
+		cloned.Items = nil
+	} else {
+		cloned.Items = make([]SeedEntityDiff, len(v.Items))
+		for index0 := range v.Items {
+			cloned.Items[index0] = v.Items[index0].Clone()
+		}
+	}
+	return cloned
+}
+
 // ServiceDebugActorItem Service Debug Actor options
 type ServiceDebugActorItem struct {
 	// Name Actor name
@@ -700,6 +1172,12 @@ type ServiceDebugActorItem struct {
 	ActorInfoJson skel.JSON `json:"actorInfoJson"`
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v ServiceDebugActorItem) Clone() ServiceDebugActorItem {
+	cloned := v
+	return cloned
+}
+
 // ServiceDebugAppInstance Application instance called by Service Debug
 type ServiceDebugAppInstance struct {
 	// AppName Application name
@@ -710,6 +1188,12 @@ type ServiceDebugAppInstance struct {
 	AppVersion string `json:"appVersion"`
 	// Endpoint Application access address
 	Endpoint string `json:"endpoint"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v ServiceDebugAppInstance) Clone() ServiceDebugAppInstance {
+	cloned := v
+	return cloned
 }
 
 // ServiceDebugDefaultInvokeRequest Service Debug default call request
@@ -738,6 +1222,24 @@ func (v *ServiceDebugDefaultInvokeRequest) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v ServiceDebugDefaultInvokeRequest) Clone() ServiceDebugDefaultInvokeRequest {
+	cloned := v
+	if v.Actors == nil {
+		cloned.Actors = nil
+	} else {
+		cloned.Actors = make([]ServiceDebugActorItem, len(v.Actors))
+		for index0 := range v.Actors {
+			cloned.Actors[index0] = v.Actors[index0].Clone()
+		}
+	}
+	if v.ActorSkelName != nil {
+		clonedValue1 := *v.ActorSkelName
+		cloned.ActorSkelName = &clonedValue1
+	}
+	return cloned
+}
+
 // ServiceDebugInvokeRequest Service Debug call request
 type ServiceDebugInvokeRequest struct {
 	// AppName Application name
@@ -764,6 +1266,32 @@ type ServiceDebugInvokeRequest struct {
 	ActorInfoJson skel.JSON `json:"actorInfoJson"`
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v ServiceDebugInvokeRequest) Clone() ServiceDebugInvokeRequest {
+	cloned := v
+	if v.AppName != nil {
+		clonedValue0 := *v.AppName
+		cloned.AppName = &clonedValue0
+	}
+	if v.AppInstanceId != nil {
+		clonedValue1 := *v.AppInstanceId
+		cloned.AppInstanceId = &clonedValue1
+	}
+	if v.TraceId != nil {
+		clonedValue2 := *v.TraceId
+		cloned.TraceId = &clonedValue2
+	}
+	if v.SpanId != nil {
+		clonedValue3 := *v.SpanId
+		cloned.SpanId = &clonedValue3
+	}
+	if v.ActorSkelName != nil {
+		clonedValue4 := *v.ActorSkelName
+		cloned.ActorSkelName = &clonedValue4
+	}
+	return cloned
+}
+
 // ServiceDebugInvokeResponse Service Debug call response
 type ServiceDebugInvokeResponse struct {
 	// HttpStatus HTTP status code
@@ -774,6 +1302,12 @@ type ServiceDebugInvokeResponse struct {
 	HeadersJson skel.JSON `json:"headersJson"`
 	// BodyJson Response body JSON
 	BodyJson skel.JSON `json:"bodyJson"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v ServiceDebugInvokeResponse) Clone() ServiceDebugInvokeResponse {
+	cloned := v
+	return cloned
 }
 
 // ServiceDebugMethodItem Method called by Service Debug
@@ -812,6 +1346,44 @@ func (v *ServiceDebugMethodItem) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v ServiceDebugMethodItem) Clone() ServiceDebugMethodItem {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	if v.InputDescription != nil {
+		clonedValue2 := *v.InputDescription
+		cloned.InputDescription = &clonedValue2
+	}
+	if v.OutputDescription != nil {
+		clonedValue3 := *v.OutputDescription
+		cloned.OutputDescription = &clonedValue3
+	}
+	if v.Example != nil {
+		clonedValue4 := *v.Example
+		cloned.Example = &clonedValue4
+	}
+	if v.OutputExample != nil {
+		clonedValue5 := *v.OutputExample
+		cloned.OutputExample = &clonedValue5
+	}
+	if v.Arguments == nil {
+		cloned.Arguments = nil
+	} else {
+		cloned.Arguments = make([]SkeletonField, len(v.Arguments))
+		for index6 := range v.Arguments {
+			cloned.Arguments[index6] = v.Arguments[index6].Clone()
+		}
+	}
+	return cloned
+}
+
 // ServiceDebugServiceItem Service called by Service Debug
 type ServiceDebugServiceItem struct {
 	// ServiceSkelName Service Skel name
@@ -824,6 +1396,16 @@ type ServiceDebugServiceItem struct {
 	DeprecatedReason *string `json:"deprecatedReason"`
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v ServiceDebugServiceItem) Clone() ServiceDebugServiceItem {
+	cloned := v
+	if v.DeprecatedReason != nil {
+		clonedValue0 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue0
+	}
+	return cloned
+}
+
 // ServiceHandlerRegistration Rpc service processing capability registration information provided by the application
 type ServiceHandlerRegistration struct {
 	// ServiceSkelName Service Skel name
@@ -832,6 +1414,12 @@ type ServiceHandlerRegistration struct {
 	SchemaHash string `json:"schemaHash"`
 	// Endpoint Service agent access address
 	Endpoint string `json:"endpoint"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v ServiceHandlerRegistration) Clone() ServiceHandlerRegistration {
+	cloned := v
+	return cloned
 }
 
 // SkeletonActorItem SkeletonActor
@@ -931,6 +1519,67 @@ func (v *SkeletonActorItem) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonActorItem) Clone() SkeletonActorItem {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	if v.ActorVias == nil {
+		cloned.ActorVias = nil
+	} else {
+		cloned.ActorVias = make([]string, len(v.ActorVias))
+		copy(cloned.ActorVias, v.ActorVias)
+	}
+	if v.Credential != nil {
+		clonedValue3 := *v.Credential
+		clonedValue3 = (*v.Credential).Clone()
+		cloned.Credential = &clonedValue3
+	}
+	if v.Info != nil {
+		clonedValue4 := *v.Info
+		clonedValue4 = (*v.Info).Clone()
+		cloned.Info = &clonedValue4
+	}
+	if v.AuthService != nil {
+		clonedValue5 := *v.AuthService
+		clonedValue5 = (*v.AuthService).Clone()
+		cloned.AuthService = &clonedValue5
+	}
+	if v.PermService != nil {
+		clonedValue6 := *v.PermService
+		clonedValue6 = (*v.PermService).Clone()
+		cloned.PermService = &clonedValue6
+	}
+	if v.PermMethod != nil {
+		clonedValue7 := *v.PermMethod
+		clonedValue7 = (*v.PermMethod).Clone()
+		cloned.PermMethod = &clonedValue7
+	}
+	if v.Services == nil {
+		cloned.Services = nil
+	} else {
+		cloned.Services = make([]SkeletonServiceItem, len(v.Services))
+		for index8 := range v.Services {
+			cloned.Services[index8] = v.Services[index8].Clone()
+		}
+	}
+	if v.Webs == nil {
+		cloned.Webs = nil
+	} else {
+		cloned.Webs = make([]SkeletonWebItem, len(v.Webs))
+		for index9 := range v.Webs {
+			cloned.Webs[index9] = v.Webs[index9].Clone()
+		}
+	}
+	return cloned
+}
+
 // SkeletonActorRef Skeleton Actor Reference
 type SkeletonActorRef struct {
 	// Name Actor name
@@ -939,6 +1588,16 @@ type SkeletonActorRef struct {
 	SkelName string `json:"skelName"`
 	// Via Access method
 	Via *string `json:"via"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonActorRef) Clone() SkeletonActorRef {
+	cloned := v
+	if v.Via != nil {
+		clonedValue0 := *v.Via
+		cloned.Via = &clonedValue0
+	}
+	return cloned
 }
 
 // SkeletonConfigItem SkeletonConfig
@@ -983,6 +1642,28 @@ func (v *SkeletonConfigItem) Validate(path string) error {
 		return err
 	}
 	return nil
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonConfigItem) Clone() SkeletonConfigItem {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	if v.Fields == nil {
+		cloned.Fields = nil
+	} else {
+		cloned.Fields = make([]SkeletonField, len(v.Fields))
+		for index2 := range v.Fields {
+			cloned.Fields[index2] = v.Fields[index2].Clone()
+		}
+	}
+	return cloned
 }
 
 // SkeletonData SkeletonData
@@ -1035,6 +1716,42 @@ func (v *SkeletonData) Validate(path string) error {
 		return err
 	}
 	return nil
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonData) Clone() SkeletonData {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	if v.TypeParameters == nil {
+		cloned.TypeParameters = nil
+	} else {
+		cloned.TypeParameters = make([]string, len(v.TypeParameters))
+		copy(cloned.TypeParameters, v.TypeParameters)
+	}
+	if v.Fields == nil {
+		cloned.Fields = nil
+	} else {
+		cloned.Fields = make([]SkeletonField, len(v.Fields))
+		for index3 := range v.Fields {
+			cloned.Fields[index3] = v.Fields[index3].Clone()
+		}
+	}
+	if v.EnumItems == nil {
+		cloned.EnumItems = nil
+	} else {
+		cloned.EnumItems = make([]SkeletonEnumItem, len(v.EnumItems))
+		for index4 := range v.EnumItems {
+			cloned.EnumItems[index4] = v.EnumItems[index4].Clone()
+		}
+	}
+	return cloned
 }
 
 // SkeletonDomain Domain skeleton version
@@ -1140,6 +1857,76 @@ func (v *SkeletonDomain) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonDomain) Clone() SkeletonDomain {
+	cloned := v
+	if v.Actors == nil {
+		cloned.Actors = nil
+	} else {
+		cloned.Actors = make([]SkeletonActorItem, len(v.Actors))
+		for index0 := range v.Actors {
+			cloned.Actors[index0] = v.Actors[index0].Clone()
+		}
+	}
+	if v.Services == nil {
+		cloned.Services = nil
+	} else {
+		cloned.Services = make([]SkeletonServiceItem, len(v.Services))
+		for index1 := range v.Services {
+			cloned.Services[index1] = v.Services[index1].Clone()
+		}
+	}
+	if v.Resources == nil {
+		cloned.Resources = nil
+	} else {
+		cloned.Resources = make([]SkeletonResourceItem, len(v.Resources))
+		for index2 := range v.Resources {
+			cloned.Resources[index2] = v.Resources[index2].Clone()
+		}
+	}
+	if v.Data == nil {
+		cloned.Data = nil
+	} else {
+		cloned.Data = make([]SkeletonData, len(v.Data))
+		for index3 := range v.Data {
+			cloned.Data[index3] = v.Data[index3].Clone()
+		}
+	}
+	if v.Configs == nil {
+		cloned.Configs = nil
+	} else {
+		cloned.Configs = make([]SkeletonConfigItem, len(v.Configs))
+		for index4 := range v.Configs {
+			cloned.Configs[index4] = v.Configs[index4].Clone()
+		}
+	}
+	if v.Webs == nil {
+		cloned.Webs = nil
+	} else {
+		cloned.Webs = make([]SkeletonWebItem, len(v.Webs))
+		for index5 := range v.Webs {
+			cloned.Webs[index5] = v.Webs[index5].Clone()
+		}
+	}
+	if v.Tasks == nil {
+		cloned.Tasks = nil
+	} else {
+		cloned.Tasks = make([]SkeletonTask, len(v.Tasks))
+		for index6 := range v.Tasks {
+			cloned.Tasks[index6] = v.Tasks[index6].Clone()
+		}
+	}
+	if v.Events == nil {
+		cloned.Events = nil
+	} else {
+		cloned.Events = make([]SkeletonEventItem, len(v.Events))
+		for index7 := range v.Events {
+			cloned.Events[index7] = v.Events[index7].Clone()
+		}
+	}
+	return cloned
+}
+
 // SkeletonEnumItem Skeleton enumeration items
 type SkeletonEnumItem struct {
 	// Name Enumeration item name
@@ -1150,6 +1937,20 @@ type SkeletonEnumItem struct {
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Enumeration item deprecation reason
 	DeprecatedReason *string `json:"deprecatedReason"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonEnumItem) Clone() SkeletonEnumItem {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	return cloned
 }
 
 // SkeletonEventItem Skeleton event
@@ -1194,6 +1995,28 @@ func (v *SkeletonEventItem) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonEventItem) Clone() SkeletonEventItem {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	if v.Fields == nil {
+		cloned.Fields = nil
+	} else {
+		cloned.Fields = make([]SkeletonField, len(v.Fields))
+		for index2 := range v.Fields {
+			cloned.Fields[index2] = v.Fields[index2].Clone()
+		}
+	}
+	return cloned
+}
+
 // SkeletonField Skeleton field
 type SkeletonField struct {
 	// Name Field name
@@ -1210,6 +2033,24 @@ type SkeletonField struct {
 	Example *string `json:"example"`
 	// Sensitive Whether the field is sensitive
 	Sensitive bool `json:"sensitive"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonField) Clone() SkeletonField {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	if v.Example != nil {
+		clonedValue2 := *v.Example
+		cloned.Example = &clonedValue2
+	}
+	return cloned
 }
 
 // SkeletonMethod Skeleton method
@@ -1261,6 +2102,49 @@ func (v *SkeletonMethod) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonMethod) Clone() SkeletonMethod {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	if v.InputDescription != nil {
+		clonedValue2 := *v.InputDescription
+		cloned.InputDescription = &clonedValue2
+	}
+	if v.OutputDescription != nil {
+		clonedValue3 := *v.OutputDescription
+		cloned.OutputDescription = &clonedValue3
+	}
+	if v.Example != nil {
+		clonedValue4 := *v.Example
+		cloned.Example = &clonedValue4
+	}
+	if v.Require != nil {
+		clonedValue5 := *v.Require
+		clonedValue5 = (*v.Require).Clone()
+		cloned.Require = &clonedValue5
+	}
+	if v.OutputExample != nil {
+		clonedValue6 := *v.OutputExample
+		cloned.OutputExample = &clonedValue6
+	}
+	if v.Arguments == nil {
+		cloned.Arguments = nil
+	} else {
+		cloned.Arguments = make([]SkeletonField, len(v.Arguments))
+		for index7 := range v.Arguments {
+			cloned.Arguments[index7] = v.Arguments[index7].Clone()
+		}
+	}
+	return cloned
+}
+
 // SkeletonPermCheck Skeleton permission verification call
 type SkeletonPermCheck struct {
 	// ResourceSkelName Resource Skel name
@@ -1287,6 +2171,20 @@ func (v *SkeletonPermCheck) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonPermCheck) Clone() SkeletonPermCheck {
+	cloned := v
+	if v.Arguments == nil {
+		cloned.Arguments = nil
+	} else {
+		cloned.Arguments = make([]SkeletonPermCheckArgument, len(v.Arguments))
+		for index0 := range v.Arguments {
+			cloned.Arguments[index0] = v.Arguments[index0].Clone()
+		}
+	}
+	return cloned
+}
+
 // SkeletonPermCheckArgument Skeleton permission verification parameters
 type SkeletonPermCheckArgument struct {
 	// Name Parameter name
@@ -1295,6 +2193,12 @@ type SkeletonPermCheckArgument struct {
 	JsonPath string `json:"jsonPath"`
 	// Type Parameter type
 	Type string `json:"type"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonPermCheckArgument) Clone() SkeletonPermCheckArgument {
+	cloned := v
+	return cloned
 }
 
 // SkeletonPermExpr Skeleton permission expression
@@ -1329,6 +2233,29 @@ func (v *SkeletonPermExpr) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonPermExpr) Clone() SkeletonPermExpr {
+	cloned := v
+	if v.Code != nil {
+		clonedValue0 := *v.Code
+		cloned.Code = &clonedValue0
+	}
+	if v.Check != nil {
+		clonedValue1 := *v.Check
+		clonedValue1 = (*v.Check).Clone()
+		cloned.Check = &clonedValue1
+	}
+	if v.Children == nil {
+		cloned.Children = nil
+	} else {
+		cloned.Children = make([]SkeletonPermExpr, len(v.Children))
+		for index2 := range v.Children {
+			cloned.Children[index2] = v.Children[index2].Clone()
+		}
+	}
+	return cloned
+}
+
 // SkeletonResourceAction SkeletonResource Action
 type SkeletonResourceAction struct {
 	// Name Action name
@@ -1360,6 +2287,28 @@ func (v *SkeletonResourceAction) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonResourceAction) Clone() SkeletonResourceAction {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	if v.Checks == nil {
+		cloned.Checks = nil
+	} else {
+		cloned.Checks = make([]SkeletonResourceCheck, len(v.Checks))
+		for index2 := range v.Checks {
+			cloned.Checks[index2] = v.Checks[index2].Clone()
+		}
+	}
+	return cloned
+}
+
 // SkeletonResourceCheck SkeletonResource Check
 type SkeletonResourceCheck struct {
 	// Name Check name
@@ -1386,6 +2335,24 @@ func (v *SkeletonResourceCheck) Validate(path string) error {
 		return err
 	}
 	return nil
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonResourceCheck) Clone() SkeletonResourceCheck {
+	cloned := v
+	if v.DeprecatedReason != nil {
+		clonedValue0 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue0
+	}
+	if v.Arguments == nil {
+		cloned.Arguments = nil
+	} else {
+		cloned.Arguments = make([]SkeletonField, len(v.Arguments))
+		for index1 := range v.Arguments {
+			cloned.Arguments[index1] = v.Arguments[index1].Clone()
+		}
+	}
+	return cloned
 }
 
 // SkeletonResourceItem Skeleton Resource item
@@ -1448,6 +2415,41 @@ func (v *SkeletonResourceItem) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonResourceItem) Clone() SkeletonResourceItem {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	if v.Checks == nil {
+		cloned.Checks = nil
+	} else {
+		cloned.Checks = make([]SkeletonResourceCheck, len(v.Checks))
+		for index2 := range v.Checks {
+			cloned.Checks[index2] = v.Checks[index2].Clone()
+		}
+	}
+	if v.Actions == nil {
+		cloned.Actions = nil
+	} else {
+		cloned.Actions = make([]SkeletonResourceAction, len(v.Actions))
+		for index3 := range v.Actions {
+			cloned.Actions[index3] = v.Actions[index3].Clone()
+		}
+	}
+	if v.CheckService != nil {
+		clonedValue4 := *v.CheckService
+		clonedValue4 = (*v.CheckService).Clone()
+		cloned.CheckService = &clonedValue4
+	}
+	return cloned
+}
+
 // SkeletonServiceItem Skeleton service items
 type SkeletonServiceItem struct {
 	// Domain Domain
@@ -1507,6 +2509,41 @@ func (v *SkeletonServiceItem) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonServiceItem) Clone() SkeletonServiceItem {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	if v.Require != nil {
+		clonedValue2 := *v.Require
+		clonedValue2 = (*v.Require).Clone()
+		cloned.Require = &clonedValue2
+	}
+	if v.Actors == nil {
+		cloned.Actors = nil
+	} else {
+		cloned.Actors = make([]SkeletonActorRef, len(v.Actors))
+		for index3 := range v.Actors {
+			cloned.Actors[index3] = v.Actors[index3].Clone()
+		}
+	}
+	if v.Methods == nil {
+		cloned.Methods = nil
+	} else {
+		cloned.Methods = make([]SkeletonMethod, len(v.Methods))
+		for index4 := range v.Methods {
+			cloned.Methods[index4] = v.Methods[index4].Clone()
+		}
+	}
+	return cloned
+}
+
 // SkeletonTask Skeleton task
 type SkeletonTask struct {
 	// Domain Domain
@@ -1550,6 +2587,28 @@ func (v *SkeletonTask) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonTask) Clone() SkeletonTask {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	if v.Triggers == nil {
+		cloned.Triggers = nil
+	} else {
+		cloned.Triggers = make([]SkeletonTrigger, len(v.Triggers))
+		for index2 := range v.Triggers {
+			cloned.Triggers[index2] = v.Triggers[index2].Clone()
+		}
+	}
+	return cloned
+}
+
 // SkeletonTrigger Skeleton task trigger
 type SkeletonTrigger struct {
 	// Name Trigger name
@@ -1580,6 +2639,36 @@ func (v *SkeletonTrigger) Validate(path string) error {
 		return err
 	}
 	return nil
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonTrigger) Clone() SkeletonTrigger {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	if v.InputDescription != nil {
+		clonedValue2 := *v.InputDescription
+		cloned.InputDescription = &clonedValue2
+	}
+	if v.Example != nil {
+		clonedValue3 := *v.Example
+		cloned.Example = &clonedValue3
+	}
+	if v.Arguments == nil {
+		cloned.Arguments = nil
+	} else {
+		cloned.Arguments = make([]SkeletonField, len(v.Arguments))
+		for index4 := range v.Arguments {
+			cloned.Arguments[index4] = v.Arguments[index4].Clone()
+		}
+	}
+	return cloned
 }
 
 // SkeletonWebItem Skeleton web page
@@ -1620,6 +2709,28 @@ func (v *SkeletonWebItem) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v SkeletonWebItem) Clone() SkeletonWebItem {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	if v.Actors == nil {
+		cloned.Actors = nil
+	} else {
+		cloned.Actors = make([]SkeletonActorRef, len(v.Actors))
+		for index2 := range v.Actors {
+			cloned.Actors[index2] = v.Actors[index2].Clone()
+		}
+	}
+	return cloned
+}
+
 // TaskDebugDefaultLaunchRequest Task Debug initiates a request by default
 type TaskDebugDefaultLaunchRequest struct {
 	// TraceId Trace ID
@@ -1628,6 +2739,12 @@ type TaskDebugDefaultLaunchRequest struct {
 	SpanId string `json:"spanId"`
 	// ArgumentsJson Default task parameters JSON
 	ArgumentsJson skel.JSON `json:"argumentsJson"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v TaskDebugDefaultLaunchRequest) Clone() TaskDebugDefaultLaunchRequest {
+	cloned := v
+	return cloned
 }
 
 // TaskDebugLaunchRequest Task Debug initiates a request
@@ -1646,6 +2763,20 @@ type TaskDebugLaunchRequest struct {
 	SpanId *string `json:"spanId"`
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v TaskDebugLaunchRequest) Clone() TaskDebugLaunchRequest {
+	cloned := v
+	if v.TraceId != nil {
+		clonedValue0 := *v.TraceId
+		cloned.TraceId = &clonedValue0
+	}
+	if v.SpanId != nil {
+		clonedValue1 := *v.SpanId
+		cloned.SpanId = &clonedValue1
+	}
+	return cloned
+}
+
 // TaskDebugTaskItem Task called by Task Debug
 type TaskDebugTaskItem struct {
 	// Name Task name
@@ -1660,6 +2791,20 @@ type TaskDebugTaskItem struct {
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Task deprecation reason
 	DeprecatedReason *string `json:"deprecatedReason"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v TaskDebugTaskItem) Clone() TaskDebugTaskItem {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	return cloned
 }
 
 // TaskDebugTriggerItem Trigger called by Task Debug
@@ -1692,12 +2837,48 @@ func (v *TaskDebugTriggerItem) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v TaskDebugTriggerItem) Clone() TaskDebugTriggerItem {
+	cloned := v
+	if v.Description != nil {
+		clonedValue0 := *v.Description
+		cloned.Description = &clonedValue0
+	}
+	if v.DeprecatedReason != nil {
+		clonedValue1 := *v.DeprecatedReason
+		cloned.DeprecatedReason = &clonedValue1
+	}
+	if v.InputDescription != nil {
+		clonedValue2 := *v.InputDescription
+		cloned.InputDescription = &clonedValue2
+	}
+	if v.Example != nil {
+		clonedValue3 := *v.Example
+		cloned.Example = &clonedValue3
+	}
+	if v.Arguments == nil {
+		cloned.Arguments = nil
+	} else {
+		cloned.Arguments = make([]SkeletonField, len(v.Arguments))
+		for index4 := range v.Arguments {
+			cloned.Arguments[index4] = v.Arguments[index4].Clone()
+		}
+	}
+	return cloned
+}
+
 // TaskRunnerCronScheduler Task execution Cron schedule
 type TaskRunnerCronScheduler struct {
 	// TriggerSkelName Trigger Skel name
 	TriggerSkelName string `json:"triggerSkelName"`
 	// CronExpr Cron expression
 	CronExpr string `json:"cronExpr"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v TaskRunnerCronScheduler) Clone() TaskRunnerCronScheduler {
+	cloned := v
+	return cloned
 }
 
 // TaskRunnerRegistration Task execution capability registration information provided by the application
@@ -1726,6 +2907,20 @@ func (v *TaskRunnerRegistration) Validate(path string) error {
 	return nil
 }
 
+// Clone returns a value-isolated copy of the generated data.
+func (v TaskRunnerRegistration) Clone() TaskRunnerRegistration {
+	cloned := v
+	if v.CronSchedulers == nil {
+		cloned.CronSchedulers = nil
+	} else {
+		cloned.CronSchedulers = make([]TaskRunnerCronScheduler, len(v.CronSchedulers))
+		for index0 := range v.CronSchedulers {
+			cloned.CronSchedulers[index0] = v.CronSchedulers[index0].Clone()
+		}
+	}
+	return cloned
+}
+
 // WebHandlerRegistration Web processing capability registration information provided by the application
 type WebHandlerRegistration struct {
 	// WebSkelName Web Skel name
@@ -1734,4 +2929,10 @@ type WebHandlerRegistration struct {
 	SchemaHash string `json:"schemaHash"`
 	// Endpoint Web proxy access address
 	Endpoint string `json:"endpoint"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v WebHandlerRegistration) Clone() WebHandlerRegistration {
+	cloned := v
+	return cloned
 }

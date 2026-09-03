@@ -14,7 +14,7 @@ var _DomainSchema = &skel.DomainSchema{
 	Hash:        "55e23029",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
-		CompilerVersion: "v0.11.1",
+		CompilerVersion: "v0.14.1",
 	},
 
 	Data: []*skel.DataSchema{
@@ -22,13 +22,11 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "AppRegistration",
 			SkelName:    "vine.hub.control.AppRegistration",
 			Description: "Link application instance information registered with Hub",
-
-			Hash: "2569befb",
+			Hash:        "2569befb",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
 					Description: "Application name",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -37,7 +35,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "instanceId",
 					Description: "Application instance ID",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarUuid,
@@ -46,7 +43,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "version",
 					Description: "Application version",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -55,8 +51,7 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "endpoint",
 					Description: "Application access address",
-
-					Example: "\"http://10.1.2.3:23001\"",
+					Example:     "\"http://10.1.2.3:23001\"",
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -65,7 +60,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "serviceHandlers",
 					Description: "List of Rpc service processing capabilities provided by the application",
-
 					Type: &skel.TypeSchema{
 						Kind: skel.TypeKindList,
 						Element: &skel.TypeSchema{
@@ -78,7 +72,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "webHandlers",
 					Description: "List of web processing capabilities provided by the application",
-
 					Type: &skel.TypeSchema{
 						Kind: skel.TypeKindList,
 						Element: &skel.TypeSchema{
@@ -91,7 +84,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "eventListeners",
 					Description: "List of event listening capabilities provided by the application",
-
 					Type: &skel.TypeSchema{
 						Kind: skel.TypeKindList,
 						Element: &skel.TypeSchema{
@@ -104,7 +96,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "taskRunners",
 					Description: "List of task execution capabilities provided by the application",
-
 					Type: &skel.TypeSchema{
 						Kind: skel.TypeKindList,
 						Element: &skel.TypeSchema{
@@ -117,7 +108,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "domainSchemas",
 					Description: "List of all DomainSchemas registered by the application",
-
 					Type: &skel.TypeSchema{
 						Kind: skel.TypeKindList,
 						Element: &skel.TypeSchema{
@@ -132,13 +122,11 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "AppStatus",
 			SkelName:    "vine.hub.control.AppStatus",
 			Description: "Application instance status information, used for heartbeat refresh",
-
-			Hash: "72939602",
+			Hash:        "72939602",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
 					Description: "Application name",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -147,7 +135,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "instanceId",
 					Description: "Application instance ID",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarUuid,
@@ -159,13 +146,11 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "EventListenerRegistration",
 			SkelName:    "vine.hub.control.EventListenerRegistration",
 			Description: "Event listening capability registration information provided by the application",
-
-			Hash: "690c1407",
+			Hash:        "690c1407",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "eventSkelName",
 					Description: "Event Skel name",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -174,7 +159,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "schemaHash",
 					Description: "Event schema hash",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -183,7 +167,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "timeoutMs",
 					Description: "Execution timeout, in milliseconds",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarInt,
@@ -192,7 +175,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "concurrency",
 					Description: "Maximum concurrency",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarInt,
@@ -201,7 +183,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "noRetry",
 					Description: "Whether to disallow retrying after failure",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarBool,
@@ -213,13 +194,11 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "Info",
 			SkelName:    "vine.hub.control.Info",
 			Description: "Hub information",
-
-			Hash: "739bccb5",
+			Hash:        "739bccb5",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "apiPort",
 					Description: "Control API service port",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarInt,
@@ -228,7 +207,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "redisPort",
 					Description: "Redis service port",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarInt,
@@ -237,7 +215,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "natsPort",
 					Description: "NATS service port",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarInt,
@@ -246,7 +223,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "mqEndpoint",
 					Description: "Standalone MQ service address",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -258,13 +234,11 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "ServiceHandlerRegistration",
 			SkelName:    "vine.hub.control.ServiceHandlerRegistration",
 			Description: "Rpc service processing capability registration information provided by the application",
-
-			Hash: "3928d52a",
+			Hash:        "3928d52a",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "serviceSkelName",
 					Description: "Service Skel name",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -273,7 +247,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "schemaHash",
 					Description: "Service schema hash",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -282,7 +255,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "endpoint",
 					Description: "Service agent access address",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -294,13 +266,11 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "TaskRunnerCronScheduler",
 			SkelName:    "vine.hub.control.TaskRunnerCronScheduler",
 			Description: "Task execution Cron schedule",
-
-			Hash: "d39e62de",
+			Hash:        "d39e62de",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "triggerSkelName",
 					Description: "Trigger Skel name",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -309,7 +279,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "cronExpr",
 					Description: "Cron expression",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -321,13 +290,11 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "TaskRunnerRegistration",
 			SkelName:    "vine.hub.control.TaskRunnerRegistration",
 			Description: "Task execution capability registration information provided by the application",
-
-			Hash: "84566b62",
+			Hash:        "84566b62",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "taskSkelName",
 					Description: "Task Skel name",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -336,7 +303,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "schemaHash",
 					Description: "Task schema hash",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -345,7 +311,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "timeoutMs",
 					Description: "Execution timeout, in milliseconds",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarInt,
@@ -354,7 +319,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "concurrency",
 					Description: "Maximum concurrency",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarInt,
@@ -363,7 +327,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "noRetry",
 					Description: "Whether to disallow retrying after failure",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarBool,
@@ -372,7 +335,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "cronSchedulers",
 					Description: "Cron schedule list",
-
 					Type: &skel.TypeSchema{
 						Kind: skel.TypeKindList,
 						Element: &skel.TypeSchema{
@@ -388,13 +350,11 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "WebHandlerRegistration",
 			SkelName:    "vine.hub.control.WebHandlerRegistration",
 			Description: "Web processing capability registration information provided by the application",
-
-			Hash: "14bd9ab2",
+			Hash:        "14bd9ab2",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "webSkelName",
 					Description: "Web Skel name",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -403,7 +363,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "schemaHash",
 					Description: "Web schema hash",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -412,7 +371,6 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "endpoint",
 					Description: "Web proxy access address",
-
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -427,16 +385,14 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "InfoService",
 			SkelName:    "vine.hub.control.InfoService",
 			Description: "Hub's information service, called by Link",
-
-			Hash:     "0d4b717f",
-			Pub:      true,
-			AuthMode: skel.AuthModeUnset,
+			Hash:        "0d4b717f",
+			Pub:         true,
+			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
 				{
-					Name:        "getInfo",
-					SkelName:    "getInfo",
-					Description: "Read Hub information",
-
+					Name:              "getInfo",
+					SkelName:          "getInfo",
+					Description:       "Read Hub information",
 					Hash:              "3929d753",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Hub information",
@@ -452,23 +408,20 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "RegistryService",
 			SkelName:    "vine.hub.control.RegistryService",
 			Description: "Hub's application registration service, called by Link",
-
-			Hash:     "bde422d8",
-			Pub:      true,
-			AuthMode: skel.AuthModeUnset,
+			Hash:        "bde422d8",
+			Pub:         true,
+			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
 				{
 					Name:        "register",
 					SkelName:    "register",
 					Description: "Register application instance",
-
-					Hash:     "1f651461",
-					AuthMode: skel.AuthModeUnset,
+					Hash:        "1f651461",
+					AuthMode:    skel.AuthModeUnset,
 					Arguments: []*skel.MemberSchema{
 						{
 							Name:        "registration",
 							Description: "Application instance registration information",
-
 							Type: &skel.TypeSchema{
 								Kind:     skel.TypeKindData,
 								Name:     "AppRegistration",
@@ -481,14 +434,12 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "unregister",
 					SkelName:    "unregister",
 					Description: "Unregister an application instance",
-
-					Hash:     "252099ac",
-					AuthMode: skel.AuthModeUnset,
+					Hash:        "252099ac",
+					AuthMode:    skel.AuthModeUnset,
 					Arguments: []*skel.MemberSchema{
 						{
 							Name:        "name",
 							Description: "Application name",
-
 							Type: &skel.TypeSchema{
 								Kind:   skel.TypeKindScalar,
 								Scalar: skel.ScalarString,
@@ -497,7 +448,6 @@ var _DomainSchema = &skel.DomainSchema{
 						{
 							Name:        "instanceId",
 							Description: "Application instance ID",
-
 							Type: &skel.TypeSchema{
 								Kind:   skel.TypeKindScalar,
 								Scalar: skel.ScalarUuid,
@@ -506,10 +456,9 @@ var _DomainSchema = &skel.DomainSchema{
 					},
 				},
 				{
-					Name:        "heartbeat",
-					SkelName:    "heartbeat",
-					Description: "Application instance heartbeat",
-
+					Name:              "heartbeat",
+					SkelName:          "heartbeat",
+					Description:       "Application instance heartbeat",
 					Hash:              "1f40e708",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Whether the current instance is still registered in the Hub",
@@ -517,7 +466,6 @@ var _DomainSchema = &skel.DomainSchema{
 						{
 							Name:        "status",
 							Description: "Application instance ID",
-
 							Type: &skel.TypeSchema{
 								Kind:     skel.TypeKindData,
 								Name:     "AppStatus",

@@ -41,12 +41,19 @@ var (
 		},
 	}
 	_InfoServiceGetInfoSpec = &rpcspec.MethodSpec{
-		Name:                        "GetInfo",
-		SkelName:                    "getInfo",
-		ArgumentsType:               nil,
-		ValidateArguments:           nil,
-		ResultType:                  reflect.TypeFor[Info](),
-		ValidateResult:              nil,
+		Name:              "GetInfo",
+		SkelName:          "getInfo",
+		ArgumentsType:     nil,
+		ValidateArguments: nil,
+		CloneArguments:    nil,
+		ResultType:        reflect.TypeFor[Info](),
+		ValidateResult:    nil,
+		CloneResult: func(value any) any {
+			source := value.(Info)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
+		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -207,8 +214,15 @@ var (
 			}
 			return nil
 		},
+		CloneArguments: func(value any) any {
+			source := value.(*_RegistryServiceRegisterArguments)
+			cloned := *source
+			cloned.Registration = source.Registration.Clone()
+			return &cloned
+		},
 		ResultType:                  nil,
 		ValidateResult:              nil,
+		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -221,12 +235,18 @@ var (
 		},
 	}
 	_RegistryServiceUnregisterSpec = &rpcspec.MethodSpec{
-		Name:                        "Unregister",
-		SkelName:                    "unregister",
-		ArgumentsType:               reflect.TypeFor[_RegistryServiceUnregisterArguments](),
-		ValidateArguments:           nil,
+		Name:              "Unregister",
+		SkelName:          "unregister",
+		ArgumentsType:     reflect.TypeFor[_RegistryServiceUnregisterArguments](),
+		ValidateArguments: nil,
+		CloneArguments: func(value any) any {
+			source := value.(*_RegistryServiceUnregisterArguments)
+			cloned := *source
+			return &cloned
+		},
 		ResultType:                  nil,
 		ValidateResult:              nil,
+		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -239,12 +259,23 @@ var (
 		},
 	}
 	_RegistryServiceHeartbeatSpec = &rpcspec.MethodSpec{
-		Name:                        "Heartbeat",
-		SkelName:                    "heartbeat",
-		ArgumentsType:               reflect.TypeFor[_RegistryServiceHeartbeatArguments](),
-		ValidateArguments:           nil,
-		ResultType:                  reflect.TypeFor[bool](),
-		ValidateResult:              nil,
+		Name:              "Heartbeat",
+		SkelName:          "heartbeat",
+		ArgumentsType:     reflect.TypeFor[_RegistryServiceHeartbeatArguments](),
+		ValidateArguments: nil,
+		CloneArguments: func(value any) any {
+			source := value.(*_RegistryServiceHeartbeatArguments)
+			cloned := *source
+			cloned.Status = source.Status.Clone()
+			return &cloned
+		},
+		ResultType:     reflect.TypeFor[bool](),
+		ValidateResult: nil,
+		CloneResult: func(value any) any {
+			source := value.(bool)
+			cloned := source
+			return cloned
+		},
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,

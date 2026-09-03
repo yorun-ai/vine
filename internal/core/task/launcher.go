@@ -10,7 +10,6 @@ import (
 	"go.yorun.ai/vine/internal/core/skel"
 	tasklog "go.yorun.ai/vine/internal/core/task/log"
 	"go.yorun.ai/vine/internal/core/task/spec"
-	"go.yorun.ai/vine/util/vcode"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -75,6 +74,7 @@ func (l *Launcher) buildLaunch(triggerInfo spec.TriggerInfo, arguments any, opti
 	}
 	vpre.CheckNilError(triggerInfo.ValidateArguments(arguments), "arguments validation failed")
 
+	encoder := skel.EncoderForSkelName(triggerInfo.Task().SkelName())
 	return linkskeled.TaskLaunch{
 		Metadata: linkskeled.TaskLaunchMeta{
 			TraceId:       l.context.Trace().Id(),
@@ -85,6 +85,6 @@ func (l *Launcher) buildLaunch(triggerInfo spec.TriggerInfo, arguments any, opti
 		},
 		TaskSkelName:    triggerInfo.Task().SkelName(),
 		TriggerSkelName: triggerInfo.SkelName(),
-		ArgumentsJson:   vcode.MustMarshalJsonS(arguments),
+		ArgumentsJson:   encoder.MustMarshalJsonS(arguments),
 	}
 }

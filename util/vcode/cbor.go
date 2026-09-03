@@ -7,7 +7,7 @@ import (
 
 // MarshalCbor encodes data as CBOR.
 func MarshalCbor(data any) ([]byte, error) {
-	return cbor.Marshal(data)
+	return defaultEncoder.MarshalCbor(data)
 }
 
 // MustMarshalCbor is like MarshalCbor but panics on failure.

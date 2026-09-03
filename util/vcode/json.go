@@ -7,11 +7,6 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-var marshalJsonOptions = json.JoinOptions(
-	json.FormatNilSliceAsNull(true),
-	json.FormatNilMapAsNull(true),
-)
-
 // MarshalJson encodes data as JSON.
 func MarshalJson(data any) ([]byte, error) {
 	return MarshalJsonWithOptions(data)
@@ -19,7 +14,7 @@ func MarshalJson(data any) ([]byte, error) {
 
 // MarshalJsonWithOptions encodes data as JSON with additional options.
 func MarshalJsonWithOptions(data any, options ...json.Options) ([]byte, error) {
-	return json.Marshal(data, marshalJsonOptions, json.JoinOptions(options...))
+	return json.Marshal(data, json.JoinOptions(options...))
 }
 
 // MarshalJsonS encodes data as a JSON string.
