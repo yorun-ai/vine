@@ -12,6 +12,7 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
+	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/util/vcode"
 )
 
@@ -189,11 +190,15 @@ func writeResponseWithContentType(w http.ResponseWriter, rpcResponse spec.Respon
 }
 
 func encodeResponseToBytes(rpcResponse spec.Response, contentType string) []byte {
+	encoder := vcode.DefaultEncoder()
+	if method := rpcResponse.Method(); method != nil {
+		encoder = skel.EncoderForSkelName(method.Service().SkelName())
+	}
 	switch contentType {
 	case ContentTypeCbor:
 		responsePayload := &_ResponsePayloadCbor{}
 		if rpcResponse.Error().Type() == ex.NoError {
-			responsePayload.Result = vcode.MustMarshalCbor(rpcResponse.Result())
+			responsePayload.Result = encoder.MustMarshalCbor(rpcResponse.Result())
 			return vcode.MustMarshalCbor(responsePayload)
 		}
 		responsePayload.Result = vcode.MustMarshalCbor(nil)
@@ -203,7 +208,7 @@ func encodeResponseToBytes(rpcResponse spec.Response, contentType string) []byte
 		// Default to JSON as the transport fallback when CBOR is not selected.
 		responsePayload := &_ResponsePayloadJson{}
 		if rpcResponse.Error().Type() == ex.NoError {
-			responsePayload.Result = vcode.MustMarshalJson(rpcResponse.Result())
+			responsePayload.Result = encoder.MustMarshalJson(rpcResponse.Result())
 			return vcode.MustMarshalJson(responsePayload)
 		}
 		responsePayload.Result = vcode.MustMarshalJson(nil)

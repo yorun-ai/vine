@@ -4,6 +4,9 @@ import (
 	"encoding/json/v2"
 	"strings"
 	"testing"
+
+	"github.com/fxamacker/cbor/v2"
+	"go.yorun.ai/vine/buildinfo"
 )
 
 func TestSchemaSensitiveMetadataJSON(t *testing.T) {
@@ -244,6 +247,64 @@ func TestRegisterDomainSchemaPanicsOnDuplicateFullDomain(t *testing.T) {
 
 func validGeneratedInfoForTest() *GeneratedInfo {
 	return &GeneratedInfo{CompilerVersion: "v99.0.0"}
+}
+
+func TestRegistrySelectsEncodingByCompilerVersion(t *testing.T) {
+	registry := NewRegistry()
+	registry.RegisterDomainSchema(&DomainSchema{
+		Domain:    "demo.legacy",
+		Full:      true,
+		Generated: &GeneratedInfo{CompilerVersion: "v0.14.9"},
+		Services:  []*ServiceSchema{{SkelName: "demo.legacy.Service"}},
+	})
+	registry.RegisterDomainSchema(&DomainSchema{
+		Domain:    "demo.current",
+		Full:      true,
+		Generated: &GeneratedInfo{CompilerVersion: "v0.15.0"},
+		Services:  []*ServiceSchema{{SkelName: "demo.current.Service"}},
+	})
+	registry.RegisterDomainSchema(&DomainSchema{
+		Domain:    "demo.devel",
+		Full:      true,
+		Generated: &GeneratedInfo{CompilerVersion: buildinfo.DevVersion},
+		Services:  []*ServiceSchema{{SkelName: "demo.devel.Service"}},
+	})
+
+	payload := struct {
+		Items []string `json:"items"`
+	}{}
+	legacy := registry.EncoderForSkelName("demo.legacy.Service").MustMarshalJson(payload)
+	current := registry.EncoderForSkelName("demo.current.Service").MustMarshalJson(payload)
+	devel := registry.EncoderForSkelName("demo.devel.Service").MustMarshalJson(payload)
+
+	if got := string(legacy); got != `{"items":null}` {
+		t.Fatalf("legacy encoding = %s", got)
+	}
+	if got := string(current); got != `{"items":[]}` {
+		t.Fatalf("current encoding = %s", got)
+	}
+	if got := string(devel); got != `{"items":[]}` {
+		t.Fatalf("devel encoding = %s", got)
+	}
+
+	cborPayload := struct {
+		Items []string `cbor:"items"`
+	}{}
+	legacyCbor := registry.EncoderForSkelName("demo.legacy.Service").MustMarshalCbor(cborPayload)
+	currentCbor := registry.EncoderForSkelName("demo.current.Service").MustMarshalCbor(cborPayload)
+	var legacyValues, currentValues map[string]cbor.RawMessage
+	if err := cbor.Unmarshal(legacyCbor, &legacyValues); err != nil {
+		t.Fatal(err)
+	}
+	if err := cbor.Unmarshal(currentCbor, &currentValues); err != nil {
+		t.Fatal(err)
+	}
+	if got := legacyValues["items"]; string(got) != string(cbor.RawMessage{0xf6}) {
+		t.Fatalf("legacy CBOR encoding = %x", got)
+	}
+	if got := currentValues["items"]; string(got) != string(cbor.RawMessage{0x80}) {
+		t.Fatalf("current CBOR encoding = %x", got)
+	}
 }
 
 func TestRegisterDomainSchemaPanicsOnLowCompilerVersion(t *testing.T) {

@@ -67,7 +67,7 @@ func TestCompactAndPrettifyJson(t *testing.T) {
 	assert.Equal(t, string(prettified), PrettifyJsonS(string(compacted)))
 }
 
-func TestMarshalJsonPreservesNilCollections(t *testing.T) {
+func TestMarshalJsonFormatsNilCollectionsAsEmpty(t *testing.T) {
 	payload := struct {
 		Items  []string          `json:"items"`
 		Labels map[string]string `json:"labels"`
@@ -78,7 +78,7 @@ func TestMarshalJsonPreservesNilCollections(t *testing.T) {
 
 	data, err := MarshalJson(payload)
 	assert.NoError(t, err)
-	assert.JSONEq(t, `{"items":null,"labels":null}`, string(data))
+	assert.JSONEq(t, `{"items":[],"labels":{}}`, string(data))
 
 	payload.Items = []string{}
 	payload.Labels = map[string]string{}

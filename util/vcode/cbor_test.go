@@ -3,6 +3,7 @@ package vcode
 import (
 	"testing"
 
+	"github.com/fxamacker/cbor/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,8 +31,23 @@ func TestMarshalAndUnmarshalCbor(t *testing.T) {
 	assert.Equal(t, true, decoded.Flags["enabled"])
 }
 
+func TestMarshalCborFormatsNilContainersAsEmpty(t *testing.T) {
+	payload := struct {
+		Items  []string          `cbor:"items"`
+		Labels map[string]string `cbor:"labels"`
+	}{}
+
+	data, err := MarshalCbor(payload)
+	assert.NoError(t, err)
+
+	var encoded map[string]cbor.RawMessage
+	assert.NoError(t, cbor.Unmarshal(data, &encoded))
+	assert.Equal(t, cbor.RawMessage{0x80}, encoded["items"])
+	assert.Equal(t, cbor.RawMessage{0xa0}, encoded["labels"])
+}
+
 func TestMustMarshalAndUnmarshalCbor(t *testing.T) {
-	payload := cborPayload{Name: "must", Count: 7}
+	payload := cborPayload{Name: "must", Count: 7, Flags: map[string]any{}}
 
 	data := MustMarshalCbor(payload)
 	decoded := MustUnmarshalCbor[cborPayload](data)

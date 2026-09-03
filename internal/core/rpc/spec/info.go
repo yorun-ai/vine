@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/fxamacker/cbor/v2"
-	"go.yorun.ai/vine/util/vcode"
+	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -208,7 +208,7 @@ func (mi *_MethodInfo) CloneArguments(arguments any) any {
 		return mi.cloneArguments(arguments)
 	}
 	target := mi.NewArguments()
-	cloneValueByMarshaling(arguments, target, mi.ArgumentsContainsBinaryType())
+	cloneValueByMarshaling(arguments, target, mi.ArgumentsContainsBinaryType(), mi.Service().SkelName())
 	return target
 }
 
@@ -241,19 +241,20 @@ func (mi *_MethodInfo) CloneResult(result any) any {
 		return mi.cloneResult(result)
 	}
 	target := mi.NewResult()
-	cloneValueByMarshaling(result, target, mi.ResultContainsBinaryType())
+	cloneValueByMarshaling(result, target, mi.ResultContainsBinaryType(), mi.Service().SkelName())
 	return reflect.ValueOf(target).Elem().Interface()
 }
 
 // cloneValueByMarshaling supports service specs generated before typed clone
 // hooks. Its codec round trip is a compatibility fallback, not part of the
 // in-process value-isolation contract.
-func cloneValueByMarshaling(source any, target any, containsBinaryType bool) {
+func cloneValueByMarshaling(source any, target any, containsBinaryType bool, serviceSkelName string) {
+	encoder := skel.EncoderForSkelName(serviceSkelName)
 	if containsBinaryType {
-		vpre.MustNil(cbor.Unmarshal(vcode.MustMarshalCbor(source), target))
+		vpre.MustNil(cbor.Unmarshal(encoder.MustMarshalCbor(source), target))
 		return
 	}
-	vpre.MustNil(json.Unmarshal(vcode.MustMarshalJson(source), target))
+	vpre.MustNil(json.Unmarshal(encoder.MustMarshalJson(source), target))
 }
 
 type EmptyArguments struct{}

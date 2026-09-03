@@ -13,6 +13,7 @@ import (
 	"github.com/fxamacker/cbor/v2"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
+	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/util/vcode"
 	"go.yorun.ai/vine/util/vpre"
 )
@@ -260,6 +261,7 @@ func encodeArgumentsToBytes(rpcRequest spec.Request) (encoded []byte, err error)
 	}()
 
 	methodInfo := rpcRequest.MethodInfo()
+	encoder := skel.EncoderForSkelName(methodInfo.Service().SkelName())
 	contentType := requestBodyContentType(methodInfo)
 	var arguments any = &spec.EmptyArguments{}
 	if methodInfo.HasArguments() {
@@ -269,7 +271,7 @@ func encodeArgumentsToBytes(rpcRequest spec.Request) (encoded []byte, err error)
 
 	switch contentType {
 	case ContentTypeCbor:
-		encodedArguments, err := vcode.MarshalCbor(arguments)
+		encodedArguments, err := encoder.MarshalCbor(arguments)
 		if err != nil {
 			return nil, err
 		}
@@ -278,7 +280,7 @@ func encodeArgumentsToBytes(rpcRequest spec.Request) (encoded []byte, err error)
 		}
 		return vcode.MarshalCbor(requestPayload)
 	default:
-		encodedArguments, err := vcode.MarshalJson(arguments)
+		encodedArguments, err := encoder.MarshalJson(arguments)
 		if err != nil {
 			return nil, err
 		}

@@ -59,6 +59,8 @@ func TestRegistryRepoSaveAndGetAppStatus(t *testing.T) {
 		Endpoint:        "http://127.0.0.1:23001/rpc",
 		ServiceHandlers: []core.ServiceHandlerRegistration{{ServiceSkelName: "svc.alpha"}, {ServiceSkelName: "svc.beta"}},
 		WebHandlers:     []core.WebHandlerRegistration{{WebSkelName: "default@demo.app"}},
+		EventListeners:  []core.EventListenerRegistration{},
+		TaskRunners:     []core.TaskRunnerRegistration{},
 	}
 
 	repo.SaveAppStatus(status)
@@ -75,6 +77,8 @@ func TestRegistryRepoSaveAndGetAppStatus(t *testing.T) {
 		ExpiresAt:       now.Add(hubRegistryLeaseTTL),
 		ServiceHandlers: status.ServiceHandlers,
 		WebHandlers:     status.WebHandlers,
+		EventListeners:  []core.EventListenerRegistration{},
+		TaskRunners:     []core.TaskRunnerRegistration{},
 	}, gotRaw)
 
 	got, ok := repo.GetAppStatus(status.Name, status.InstanceId)
