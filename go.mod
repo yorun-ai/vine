@@ -1,6 +1,6 @@
 module go.yorun.ai/vine
 
-go 1.26.6
+go 1.27.0
 
 require (
 	cloud.google.com/go v0.123.0

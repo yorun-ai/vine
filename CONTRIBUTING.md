@@ -22,7 +22,7 @@ The runtime-specific guides are:
 
 ## Prerequisites
 
-The Go module targets Go 1.26. Depending on the area being changed, development
+The Go module targets Go 1.27. Depending on the area being changed, development
 may also require:
 
 - Node.js 20 or later and pnpm for the documentation site and Hub Dashboard

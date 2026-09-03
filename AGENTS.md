@@ -9,7 +9,7 @@
 
 ## Go Version and Syntax
 
-- Target Go 1.26 syntax. Prefer `new` with a composite literal when creating a
+- Target Go 1.27 syntax. Prefer `new` with a composite literal when creating a
   pointer, for example: `record := new(SomeStruct{Field: "value"})`.
 
 ## Naming

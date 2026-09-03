@@ -60,7 +60,7 @@ network boundaries with in-process transports.
 
 ## Quick Start
 
-Prerequisite: Go 1.26.6 or later.
+Prerequisite: Go 1.27.0 or later.
 
 ```bash
 mkdir vine-hello

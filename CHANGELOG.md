@@ -14,6 +14,11 @@ are not part of the public compatibility commitment.
   attempting a token-checked Redis release, returning `false` for an unavailable
   or no-longer-owned lock while retaining fail-fast Redis command errors
 
+### Changed
+
+- Raised the minimum Go version to 1.27.0 and pinned CI and release builds to
+  Go 1.27.1
+
 ### Fixed
 
 - Redis locks now apply the existing infrastructure fail-fast policy when
