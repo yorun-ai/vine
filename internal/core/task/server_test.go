@@ -167,17 +167,17 @@ func ensureRunnerTaskRegistered() {
 		spec.Register(&spec.TaskSpec{
 			Name:                "RunnerTask",
 			SkelName:            "runner.task",
-			RunnerType:          reflect.TypeOf((*testRunnerTaskRunner)(nil)).Elem(),
-			DefaultRunnerType:   reflect.TypeOf(&defaultTestRunnerTaskRunner{}),
-			ERRunnerType:        reflect.TypeOf((*testRunnerTaskRunnerER)(nil)).Elem(),
+			RunnerType:          reflect.TypeFor[testRunnerTaskRunner](),
+			DefaultRunnerType:   reflect.TypeFor[*defaultTestRunnerTaskRunner](),
+			ERRunnerType:        reflect.TypeFor[testRunnerTaskRunnerER](),
 			WrapperERRunnerCtor: newWrapperTestRunnerTaskRunnerER,
-			DefaultERRunnerType: reflect.TypeOf(&defaultTestRunnerTaskRunnerER{}),
+			DefaultERRunnerType: reflect.TypeFor[*defaultTestRunnerTaskRunnerER](),
 			Triggers: []*spec.TriggerSpec{{
 				Name:               "ForGroup",
 				SkelName:           "forGroup",
 				LauncherMethodName: "LaunchForGroup",
 				RunnerMethodName:   "RunForGroup",
-				ArgumentsType:      reflect.TypeOf(testRunnerArguments{}),
+				ArgumentsType:      reflect.TypeFor[testRunnerArguments](),
 			}},
 		})
 	})
@@ -188,17 +188,17 @@ func ensureBenchmarkTaskRegistered() {
 		spec.Register(&spec.TaskSpec{
 			Name:                "BenchmarkTask",
 			SkelName:            "benchmark.task",
-			RunnerType:          reflect.TypeOf((*benchmarkTaskRunner)(nil)).Elem(),
-			DefaultRunnerType:   reflect.TypeOf(&defaultBenchmarkTaskRunner{}),
-			ERRunnerType:        reflect.TypeOf((*benchmarkTaskRunnerER)(nil)).Elem(),
+			RunnerType:          reflect.TypeFor[benchmarkTaskRunner](),
+			DefaultRunnerType:   reflect.TypeFor[*defaultBenchmarkTaskRunner](),
+			ERRunnerType:        reflect.TypeFor[benchmarkTaskRunnerER](),
 			WrapperERRunnerCtor: newWrapperBenchmarkTaskRunnerER,
-			DefaultERRunnerType: reflect.TypeOf(&defaultBenchmarkTaskRunnerER{}),
+			DefaultERRunnerType: reflect.TypeFor[*defaultBenchmarkTaskRunnerER](),
 			Triggers: []*spec.TriggerSpec{{
 				Name:               "ForGroup",
 				SkelName:           "forGroup",
 				LauncherMethodName: "LaunchForGroup",
 				RunnerMethodName:   "RunForGroup",
-				ArgumentsType:      reflect.TypeOf(testRunnerArguments{}),
+				ArgumentsType:      reflect.TypeFor[testRunnerArguments](),
 			}},
 		})
 	})
@@ -218,7 +218,7 @@ func TestServerResolvesTriggerImplByInfo(t *testing.T) {
 	executor := &_RunnerRecorderExecutor{}
 	server := NewServer(Option{
 		App:       testTaskServerApp(),
-		ImplTypes: []reflect.Type{reflect.TypeOf(&testRunnerImpl{})},
+		ImplTypes: []reflect.Type{reflect.TypeFor[*testRunnerImpl]()},
 		Executor:  executor,
 	})
 	baseTrace := meta.InitialTrace()
@@ -284,7 +284,7 @@ func TestServerReturnsInvalidTaskWhenTriggerNotRegistered(t *testing.T) {
 	logPath := filepath.Join(t.TempDir(), "task-rejected.jsonl")
 	server := NewServer(Option{
 		App:       testTaskServerApp(),
-		ImplTypes: []reflect.Type{reflect.TypeOf(&testRunnerImpl{})},
+		ImplTypes: []reflect.Type{reflect.TypeFor[*testRunnerImpl]()},
 		Executor:  &_RunnerRecorderExecutor{},
 		Logger: logger.New("vine:test", logger.WithOption{
 			Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: logPath,
@@ -331,7 +331,7 @@ func TestServerConvertsRecoveredPanicToInternalError(t *testing.T) {
 
 	server := NewServer(Option{
 		App:       testTaskServerApp(),
-		ImplTypes: []reflect.Type{reflect.TypeOf(&testRunnerImpl{})},
+		ImplTypes: []reflect.Type{reflect.TypeFor[*testRunnerImpl]()},
 		Executor: &_RunnerRecorderExecutor{
 			panicV: "boom",
 		},
@@ -361,7 +361,7 @@ func TestServerRunTaskResolvesAndRunsTrigger(t *testing.T) {
 	executor := &_RunnerRecorderExecutor{}
 	server := NewServer(Option{
 		App:       testTaskServerApp(),
-		ImplTypes: []reflect.Type{reflect.TypeOf(&testRunnerImpl{})},
+		ImplTypes: []reflect.Type{reflect.TypeFor[*testRunnerImpl]()},
 		Executor:  executor,
 	})
 	baseTrace := meta.InitialTrace()
@@ -400,7 +400,7 @@ func BenchmarkServerRunTask(b *testing.B) {
 	trace := meta.InitialTrace()
 	server := NewServer(Option{
 		App:       testTaskServerApp(),
-		ImplTypes: []reflect.Type{reflect.TypeOf(&benchmarkTaskRunnerImpl{})},
+		ImplTypes: []reflect.Type{reflect.TypeFor[*benchmarkTaskRunnerImpl]()},
 		Executor:  NewContainerExecutor(nil, nil),
 		Logger: logger.New("vine:benchmark", logger.WithOption{
 			Level: logger.LevelError,

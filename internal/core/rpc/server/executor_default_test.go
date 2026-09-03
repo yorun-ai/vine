@@ -148,16 +148,16 @@ var _DefaultExecutorTraceServiceSpec = &spec.ServiceSpec{
 	Name:     "DefaultExecutorTraceService",
 	SkelName: "server.defaultExecutor.trace",
 
-	ServerType:        reflect.TypeOf((*testDefaultExecutorServiceServer)(nil)).Elem(),
-	DefaultServerType: reflect.TypeOf(&_DefaultExecutorTestServiceServer{}),
+	ServerType:        reflect.TypeFor[testDefaultExecutorServiceServer](),
+	DefaultServerType: reflect.TypeFor[*_DefaultExecutorTestServiceServer](),
 
-	ERServerType:        reflect.TypeOf((*testDefaultExecutorServiceServerER)(nil)).Elem(),
-	DefaultERServerType: reflect.TypeOf(&_DefaultExecutorTestServiceServerER{}),
+	ERServerType:        reflect.TypeFor[testDefaultExecutorServiceServerER](),
+	DefaultERServerType: reflect.TypeFor[*_DefaultExecutorTestServiceServerER](),
 
 	Methods: []*spec.MethodSpec{{
 		Name:       "TraceSpan",
 		SkelName:   "traceSpan",
-		ResultType: reflect.TypeOf(""),
+		ResultType: reflect.TypeFor[string](),
 	}},
 }
 
@@ -166,11 +166,11 @@ var _DefaultExecutorNoResultServiceSpec = &spec.ServiceSpec{
 	Name:     "DefaultExecutorNoResultService",
 	SkelName: "server.defaultExecutor.noResult",
 
-	ServerType:        reflect.TypeOf((*testDefaultExecutorNoResultServiceServer)(nil)).Elem(),
-	DefaultServerType: reflect.TypeOf(&_DefaultExecutorNoResultTestServiceServer{}),
+	ServerType:        reflect.TypeFor[testDefaultExecutorNoResultServiceServer](),
+	DefaultServerType: reflect.TypeFor[*_DefaultExecutorNoResultTestServiceServer](),
 
-	ERServerType:        reflect.TypeOf((*testDefaultExecutorNoResultServiceServerER)(nil)).Elem(),
-	DefaultERServerType: reflect.TypeOf(&_DefaultExecutorNoResultTestServiceServerER{}),
+	ERServerType:        reflect.TypeFor[testDefaultExecutorNoResultServiceServerER](),
+	DefaultERServerType: reflect.TypeFor[*_DefaultExecutorNoResultTestServiceServerER](),
 
 	Methods: []*spec.MethodSpec{{
 		Name:     "Ping",
@@ -266,7 +266,7 @@ func TestDefaultExecutorInjectsInstanceByAsType(t *testing.T) {
 		App:          testServerApp(),
 		HandlerTypes: []reflect.Type{reflect.TypeFor[*_DefaultExecutorInterfaceServiceImpl]()},
 		Executor: NewDefaultExecutor(
-			WithAs(reflect.TypeOf((*testDefaultExecutorDependency)(nil)).Elem(), &_DefaultExecutorInterfaceDependency{value: "iface"}),
+			WithAs(reflect.TypeFor[testDefaultExecutorDependency](), &_DefaultExecutorInterfaceDependency{value: "iface"}),
 		),
 	})
 
@@ -281,9 +281,9 @@ func TestDefaultExecutorInjectsInstanceByAsType(t *testing.T) {
 }
 
 func TestInjectContextSkipsWhenNoSpecContextFieldExists(t *testing.T) {
-	implValue := reflect.New(reflect.TypeOf(_DefaultExecutorNoContextFieldService{}))
+	implValue := reflect.New(reflect.TypeFor[_DefaultExecutorNoContextFieldService]())
 
-	executor := newInitializedDefaultExecutor(t, reflect.TypeOf(&_DefaultExecutorNoContextFieldService{}))
+	executor := newInitializedDefaultExecutor(t, reflect.TypeFor[*_DefaultExecutorNoContextFieldService]())
 	executor.inject(implValue, newDefaultExecutorRPCContext())
 }
 
@@ -293,7 +293,7 @@ func TestDefaultExecutorInitPanicsWhenMultipleSpecContextFieldsExist(t *testing.
 			t.Fatalf("expected panic")
 		}
 	}()
-	newInitializedDefaultExecutor(t, reflect.TypeOf(&_DefaultExecutorMultiContextService{}))
+	newInitializedDefaultExecutor(t, reflect.TypeFor[*_DefaultExecutorMultiContextService]())
 }
 
 func TestDefaultExecutorInitPanicsWhenSpecContextFieldCannotBeSet(t *testing.T) {
@@ -302,7 +302,7 @@ func TestDefaultExecutorInitPanicsWhenSpecContextFieldCannotBeSet(t *testing.T) 
 			t.Fatalf("expected panic")
 		}
 	}()
-	newInitializedDefaultExecutor(t, reflect.TypeOf(&_DefaultExecutorPrivateContextService{}))
+	newInitializedDefaultExecutor(t, reflect.TypeFor[*_DefaultExecutorPrivateContextService]())
 }
 
 func newDefaultExecutorRequest(srv *Server, method spec.MethodInfo) spec.Request {

@@ -26,12 +26,12 @@ func TestNewContainerFacadeRunsExecution(t *testing.T) {
 		},
 	})
 
-	method, ok := reflect.TypeOf(&ctrFacadeTarget{}).MethodByName("Sum")
+	method, ok := reflect.TypeFor[*ctrFacadeTarget]().MethodByName("Sum")
 	if !ok {
 		t.Fatal("expected Sum method")
 	}
 
-	execution := container.NewExecution(reflect.TypeOf(&ctrFacadeTarget{}), method)
+	execution := container.NewExecution(reflect.TypeFor[*ctrFacadeTarget](), method)
 	execution.Execute([]any{2, 5})
 
 	assert.Equal(t, []any{7}, execution.Results())

@@ -16,20 +16,20 @@ type typeTestInterface interface {
 func TestAnalyzeBindType(t *testing.T) {
 	assert.Equal(t, bindTypeInterface, analyzeBindType(T[typeTestInterface]()))
 	assert.Equal(t, bindTypeStructPointer, analyzeBindType(T[*typeTestStruct]()))
-	assert.Equal(t, bindTypeMap, analyzeBindType(reflect.TypeOf(map[string]int{})))
-	assert.Equal(t, bindTypeSlice, analyzeBindType(reflect.TypeOf([]string{})))
-	assert.Equal(t, bindTypeFunc, analyzeBindType(reflect.TypeOf(func() {})))
-	assert.Equal(t, bindTypeNone, analyzeBindType(reflect.TypeOf(typeTestStruct{})))
+	assert.Equal(t, bindTypeMap, analyzeBindType(reflect.TypeFor[map[string]int]()))
+	assert.Equal(t, bindTypeSlice, analyzeBindType(reflect.TypeFor[[]string]()))
+	assert.Equal(t, bindTypeFunc, analyzeBindType(reflect.TypeFor[func()]()))
+	assert.Equal(t, bindTypeNone, analyzeBindType(reflect.TypeFor[typeTestStruct]()))
 }
 
 func TestCheckBindType(t *testing.T) {
 	assert.NotPanics(t, func() { checkBindType(T[typeTestInterface]()) })
 	assert.NotPanics(t, func() { checkBindType(T[*typeTestStruct]()) })
-	assert.NotPanics(t, func() { checkBindType(reflect.TypeOf(map[string]int{})) })
-	assert.NotPanics(t, func() { checkBindType(reflect.TypeOf([]string{})) })
-	assert.NotPanics(t, func() { checkBindType(reflect.TypeOf(func() {})) })
+	assert.NotPanics(t, func() { checkBindType(reflect.TypeFor[map[string]int]()) })
+	assert.NotPanics(t, func() { checkBindType(reflect.TypeFor[[]string]()) })
+	assert.NotPanics(t, func() { checkBindType(reflect.TypeFor[func()]()) })
 
-	assert.Panics(t, func() { checkBindType(reflect.TypeOf(typeTestStruct{})) })
+	assert.Panics(t, func() { checkBindType(reflect.TypeFor[typeTestStruct]()) })
 }
 
 func TestParseResolveTargetType(t *testing.T) {

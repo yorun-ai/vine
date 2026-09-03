@@ -125,14 +125,14 @@ var registerServerEventOnce = func() func() {
 				SkelName:              "test.event.TestServerEvent",
 				EmitterMethodName:     "EmitTestServer",
 				ListenerMethodName:    "OnTestServer",
-				PayloadType:           reflect.TypeOf(testServerEvent{}),
-				EmitterType:           reflect.TypeOf((*testServerEmitter)(nil)).Elem(),
+				PayloadType:           reflect.TypeFor[testServerEvent](),
+				EmitterType:           reflect.TypeFor[testServerEmitter](),
 				EmitterCtor:           func(*Emitter) testServerEmitter { return &defaultTestServerEmitter{} },
-				ListenerType:          reflect.TypeOf((*testServerListener)(nil)).Elem(),
-				DefaultListenerType:   reflect.TypeOf(&defaultTestServerListener{}),
-				ERListenerType:        reflect.TypeOf((*testServerListenerER)(nil)).Elem(),
+				ListenerType:          reflect.TypeFor[testServerListener](),
+				DefaultListenerType:   reflect.TypeFor[*defaultTestServerListener](),
+				ERListenerType:        reflect.TypeFor[testServerListenerER](),
 				WrapperERListenerCtor: newWrapperTestServerListenerER,
-				DefaultERListenerType: reflect.TypeOf(&defaultTestServerListenerER{}),
+				DefaultERListenerType: reflect.TypeFor[*defaultTestServerListenerER](),
 			})
 		})
 	}
@@ -150,7 +150,7 @@ func TestServerOnEventForwardsToListener(t *testing.T) {
 	logPath := filepath.Join(t.TempDir(), "event-lifecycle.jsonl")
 	server := NewServer(Option{
 		App:               testEventServerApp(),
-		ListenerImplTypes: []reflect.Type{reflect.TypeOf(&testServerListenerImpl{})},
+		ListenerImplTypes: []reflect.Type{reflect.TypeFor[*testServerListenerImpl]()},
 		Executor:          NewContainerExecutor(nil, nil),
 		Logger: logger.New("vine:test", logger.WithOption{
 			Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: logPath,
@@ -227,7 +227,7 @@ func BenchmarkServerOnEvent(b *testing.B) {
 	trace := meta.InitialTrace()
 	server := NewServer(Option{
 		App:               testEventServerApp(),
-		ListenerImplTypes: []reflect.Type{reflect.TypeOf(&testServerListenerImpl{})},
+		ListenerImplTypes: []reflect.Type{reflect.TypeFor[*testServerListenerImpl]()},
 		Executor:          NewContainerExecutor(nil, nil),
 		Logger: logger.New("vine:benchmark", logger.WithOption{
 			Level: logger.LevelError,
@@ -258,7 +258,7 @@ func TestServerRejectedUsesMainEventFieldNames(t *testing.T) {
 	logPath := filepath.Join(t.TempDir(), "event-rejected.jsonl")
 	server := NewServer(Option{
 		App:               testEventServerApp(),
-		ListenerImplTypes: []reflect.Type{reflect.TypeOf(&testServerListenerImpl{})},
+		ListenerImplTypes: []reflect.Type{reflect.TypeFor[*testServerListenerImpl]()},
 		Executor:          NewContainerExecutor(nil, nil),
 		Logger: logger.New("vine:test", logger.WithOption{
 			Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: logPath,

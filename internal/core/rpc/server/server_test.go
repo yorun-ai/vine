@@ -119,10 +119,10 @@ var (
 		Type:                spec.ServiceSpecTypeServer,
 		Name:                "TestService",
 		SkelName:            "test.service.server",
-		ServerType:          reflect.TypeOf((*testServerServiceServer)(nil)).Elem(),
-		DefaultServerType:   reflect.TypeOf(&defaultTestServerServiceServer{}),
-		ERServerType:        reflect.TypeOf((*testServerServiceServerER)(nil)).Elem(),
-		DefaultERServerType: reflect.TypeOf(&defaultTestServerServiceServerER{}),
+		ServerType:          reflect.TypeFor[testServerServiceServer](),
+		DefaultServerType:   reflect.TypeFor[*defaultTestServerServiceServer](),
+		ERServerType:        reflect.TypeFor[testServerServiceServerER](),
+		DefaultERServerType: reflect.TypeFor[*defaultTestServerServiceServerER](),
 		Methods: []*spec.MethodSpec{{
 			Name:     "Ping",
 			SkelName: "ping",
@@ -133,14 +133,14 @@ var (
 		Type:                spec.ServiceSpecTypeServer,
 		Name:                "CloneService",
 		SkelName:            "test.service.server.clone",
-		ServerType:          reflect.TypeOf((*serverCloneServiceServer)(nil)).Elem(),
-		DefaultServerType:   reflect.TypeOf(&defaultServerCloneServiceServer{}),
-		ERServerType:        reflect.TypeOf((*serverCloneServiceServerER)(nil)).Elem(),
-		DefaultERServerType: reflect.TypeOf(&defaultServerCloneServiceServerER{}),
+		ServerType:          reflect.TypeFor[serverCloneServiceServer](),
+		DefaultServerType:   reflect.TypeFor[*defaultServerCloneServiceServer](),
+		ERServerType:        reflect.TypeFor[serverCloneServiceServerER](),
+		DefaultERServerType: reflect.TypeFor[*defaultServerCloneServiceServerER](),
 		Methods: []*spec.MethodSpec{{
 			Name:          "Mutate",
 			SkelName:      "mutate",
-			ArgumentsType: reflect.TypeOf(serverCloneArguments{}),
+			ArgumentsType: reflect.TypeFor[serverCloneArguments](),
 		}},
 	}
 )
@@ -183,7 +183,7 @@ func TestServerHandleWithoutArgumentsReturnsNoErrorResponse(t *testing.T) {
 	}
 
 	handlerDict := spec.NewImplDict()
-	handlerDict.Add(reflect.TypeOf(&serverTestServiceImpl{}))
+	handlerDict.Add(reflect.TypeFor[*serverTestServiceImpl]())
 	serverTestMethodInfo := serverTestServiceInfo.Methods[0].Info()
 	methodImpl, err := handlerDict.GetMethodImpl(serverTestServiceInfo.SkelName, serverTestMethodInfo.SkelName())
 	if err != nil {

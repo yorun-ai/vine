@@ -51,8 +51,8 @@ func testMethodInfo() *spec.MethodSpec {
 	return &spec.MethodSpec{
 		Name:          "Ping",
 		SkelName:      "ping",
-		ArgumentsType: reflect.TypeOf(pingArguments{}),
-		ResultType:    reflect.TypeOf(""),
+		ArgumentsType: reflect.TypeFor[pingArguments](),
+		ResultType:    reflect.TypeFor[string](),
 	}
 }
 
@@ -79,10 +79,10 @@ func testServiceInfo() spec.ServiceInfo {
 			Type:                spec.ServiceSpecTypeServer,
 			Name:                "TestService",
 			SkelName:            "test.TestService",
-			ServerType:          reflect.TypeOf((*testServiceServer)(nil)).Elem(),
-			DefaultServerType:   reflect.TypeOf(&defaultTestServiceServer{}),
-			ERServerType:        reflect.TypeOf((*testServiceServerER)(nil)).Elem(),
-			DefaultERServerType: reflect.TypeOf(&defaultTestServiceServerER{}),
+			ServerType:          reflect.TypeFor[testServiceServer](),
+			DefaultServerType:   reflect.TypeFor[*defaultTestServiceServer](),
+			ERServerType:        reflect.TypeFor[testServiceServerER](),
+			DefaultERServerType: reflect.TypeFor[*defaultTestServiceServerER](),
 			Methods:             []*spec.MethodSpec{method},
 		}
 		spec.Register(si)
@@ -95,7 +95,7 @@ func testHandlerDict() *spec.ImplDict {
 	testHandlerDictOnce.Do(func() {
 		testServiceInfo()
 		testHandlerDictInst = spec.NewImplDict()
-		testHandlerDictInst.Add(reflect.TypeOf(&testServiceImpl{}))
+		testHandlerDictInst.Add(reflect.TypeFor[*testServiceImpl]())
 	})
 	return testHandlerDictInst
 }

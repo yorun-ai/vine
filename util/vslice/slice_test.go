@@ -18,12 +18,12 @@ func TestCloneUniqueAndUniqueBy(t *testing.T) {
 		return len(elem)
 	}))
 	assert.Equal(t, []reflect.Type{
-		reflect.TypeOf(1),
-		reflect.TypeOf(""),
+		reflect.TypeFor[int](),
+		reflect.TypeFor[string](),
 	}, Unique([]reflect.Type{
-		reflect.TypeOf(1),
-		reflect.TypeOf(1),
-		reflect.TypeOf(""),
+		reflect.TypeFor[int](),
+		reflect.TypeFor[int](),
+		reflect.TypeFor[string](),
 	}))
 	assert.Equal(t, []int{1, 4}, Delete([]int{1, 2, 3, 4}, 1, 3))
 }

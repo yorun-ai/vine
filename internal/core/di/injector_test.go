@@ -753,9 +753,9 @@ func TestSeedPanicsAfterExecutionScopedInstanceResolved(t *testing.T) {
 }
 
 func TestSeedRejectsIncompatibleConcreteInstanceWithFriendlyError(t *testing.T) {
-	targetType := reflect.TypeOf(&struct {
+	targetType := reflect.TypeFor[*struct {
 		ExecutionScoped
-	}{})
+	}]()
 
 	injector := NewInjector(func(b *Binder) {
 		b.Bind(targetType)

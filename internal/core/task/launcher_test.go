@@ -88,17 +88,17 @@ func testLauncherTriggerInfo() spec.TriggerInfo {
 	return spec.ConvertSpecToInfoForTest(&spec.TaskSpec{
 		Name:                "LauncherTask",
 		SkelName:            "launcher.task",
-		RunnerType:          reflect.TypeOf((*testLauncherTaskRunner)(nil)).Elem(),
-		DefaultRunnerType:   reflect.TypeOf(&defaultTestLauncherTaskRunner{}),
-		ERRunnerType:        reflect.TypeOf((*testLauncherTaskRunnerER)(nil)).Elem(),
+		RunnerType:          reflect.TypeFor[testLauncherTaskRunner](),
+		DefaultRunnerType:   reflect.TypeFor[*defaultTestLauncherTaskRunner](),
+		ERRunnerType:        reflect.TypeFor[testLauncherTaskRunnerER](),
 		WrapperERRunnerCtor: newWrapperTestLauncherTaskRunnerER,
-		DefaultERRunnerType: reflect.TypeOf(&defaultTestLauncherTaskRunnerER{}),
+		DefaultERRunnerType: reflect.TypeFor[*defaultTestLauncherTaskRunnerER](),
 		Triggers: []*spec.TriggerSpec{{
 			Name:               "AtTime",
 			SkelName:           "atTime",
 			LauncherMethodName: "LaunchAtTime",
 			RunnerMethodName:   "RunAtTime",
-			ArgumentsType:      reflect.TypeOf(testLauncherTaskArguments{}),
+			ArgumentsType:      reflect.TypeFor[testLauncherTaskArguments](),
 		}},
 	}).Triggers()[0]
 }

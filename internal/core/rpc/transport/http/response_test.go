@@ -91,7 +91,7 @@ func TestWriteResponseWrapsSuccessResultAndError(t *testing.T) {
 }
 
 func TestWriteResponseForRequestUsesCborWhenAcceptedAndBinaryResultType(t *testing.T) {
-	method := newStandaloneMethodInfo(reflect.TypeOf(pingArguments{}), reflect.TypeOf(""), false, true)
+	method := newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, true)
 	msg := &spec.ResponseImpl{
 		ServerValue: testServerApp(),
 		MethodValue: method,
@@ -135,7 +135,7 @@ func TestWriteResponseForRequestUsesCborWhenAcceptedAndBinaryResultType(t *testi
 }
 
 func TestWriteResponseForRequestPrefersCborWhenAcceptIncludesJsonAndCbor(t *testing.T) {
-	method := newStandaloneMethodInfo(reflect.TypeOf(pingArguments{}), reflect.TypeOf(""), false, true)
+	method := newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, true)
 	msg := &spec.ResponseImpl{
 		ServerValue: testServerApp(),
 		MethodValue: method,
@@ -194,7 +194,7 @@ func TestClearResponseErrorDetailClearsJsonDetail(t *testing.T) {
 }
 
 func TestClearResponseErrorDetailClearsCborDetail(t *testing.T) {
-	method := newStandaloneMethodInfo(reflect.TypeOf(pingArguments{}), reflect.TypeOf(""), false, true)
+	method := newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, true)
 	msg := &spec.ResponseImpl{
 		ServerValue: testServerApp(),
 		MethodValue: method,

@@ -72,11 +72,11 @@ var (
 		Name:     "ImplService",
 		SkelName: "rpc.spec.implService",
 
-		ServerType:        reflect.TypeOf((*testImplServer)(nil)).Elem(),
-		DefaultServerType: reflect.TypeOf(&defaultTestImplServer{}),
+		ServerType:        reflect.TypeFor[testImplServer](),
+		DefaultServerType: reflect.TypeFor[*defaultTestImplServer](),
 
-		ERServerType:        reflect.TypeOf((*testImplServerER)(nil)).Elem(),
-		DefaultERServerType: reflect.TypeOf(&defaultTestImplServerER{}),
+		ERServerType:        reflect.TypeFor[testImplServerER](),
+		DefaultERServerType: reflect.TypeFor[*defaultTestImplServerER](),
 
 		Methods: []*MethodSpec{{
 			Name:     "Ping",
@@ -87,8 +87,8 @@ var (
 		Type:         ServiceSpecTypeClient,
 		Name:         "ImplServicePub",
 		SkelName:     _implServiceSpec.SkelName,
-		ClientType:   reflect.TypeOf((*testImplPubServer)(nil)).Elem(),
-		ERClientType: reflect.TypeOf((*testImplPubServerER)(nil)).Elem(),
+		ClientType:   reflect.TypeFor[testImplPubServer](),
+		ERClientType: reflect.TypeFor[testImplPubServerER](),
 		Methods: []*MethodSpec{{
 			Name:     "Ping",
 			SkelName: "ping",
@@ -104,7 +104,7 @@ func init() {
 func TestImplDictAddAddsServiceAndMethods(t *testing.T) {
 	dict := NewImplDict()
 
-	dict.Add(reflect.TypeOf(&implServerImpl{}))
+	dict.Add(reflect.TypeFor[*implServerImpl]())
 
 	var serviceImpl ServiceImpl
 	dict.IterateServiceImpl(func(info ServiceImpl) {
@@ -118,7 +118,7 @@ func TestImplDictAddAddsServiceAndMethods(t *testing.T) {
 	if serviceImpl.Info().SkelName() != _implServiceSpec.SkelName {
 		t.Fatalf("unexpected service info: %#v", serviceImpl.Info())
 	}
-	if serviceImpl.Type() != reflect.TypeOf(&implServerImpl{}) {
+	if serviceImpl.Type() != reflect.TypeFor[*implServerImpl]() {
 		t.Fatalf("unexpected impl type: %v", serviceImpl.Type())
 	}
 	methodImpl, err := serviceImpl.MethodImpl(_implServiceSpec.Methods[0].SkelName)
@@ -139,7 +139,7 @@ func TestImplDictAddAddsServiceAndMethods(t *testing.T) {
 func TestImplDictAddMarksERType(t *testing.T) {
 	dict := NewImplDict()
 
-	dict.Add(reflect.TypeOf(&implERServerImpl{}))
+	dict.Add(reflect.TypeFor[*implERServerImpl]())
 
 	methodImpl, err := dict.GetMethodImpl(_implServiceSpec.SkelName, _implServiceSpec.Methods[0].SkelName)
 	if err != nil {
@@ -162,7 +162,7 @@ func TestImplDictAddMarksERType(t *testing.T) {
 
 func TestImplDictGetMethodImpl(t *testing.T) {
 	dict := NewImplDict()
-	dict.Add(reflect.TypeOf(&implServerImpl{}))
+	dict.Add(reflect.TypeFor[*implServerImpl]())
 
 	methodImpl, err := dict.GetMethodImpl(_implServiceSpec.SkelName, _implServiceSpec.Methods[0].SkelName)
 	if err != nil {
@@ -175,7 +175,7 @@ func TestImplDictGetMethodImpl(t *testing.T) {
 
 func TestImplDictGetMethodImplByInfo(t *testing.T) {
 	dict := NewImplDict()
-	dict.Add(reflect.TypeOf(&implServerImpl{}))
+	dict.Add(reflect.TypeFor[*implServerImpl]())
 
 	methodImpl, err := dict.GetMethodImplByInfo(_implServiceSpec.Methods[0].Info())
 	if err != nil {
@@ -188,7 +188,7 @@ func TestImplDictGetMethodImplByInfo(t *testing.T) {
 
 func TestImplDictGetMethodImplReturnsErrors(t *testing.T) {
 	dict := NewImplDict()
-	dict.Add(reflect.TypeOf(&implServerImpl{}))
+	dict.Add(reflect.TypeFor[*implServerImpl]())
 
 	_, err := dict.GetMethodImpl("missing.service", _implServiceSpec.Methods[0].SkelName)
 	if err == nil || !strings.Contains(err.Error(), "service missing.service not found") {
@@ -220,7 +220,7 @@ func TestImplDictGetMethodImplReturnsErrors(t *testing.T) {
 
 func TestImplDictAddPanicsOnDuplicateService(t *testing.T) {
 	dict := NewImplDict()
-	dict.Add(reflect.TypeOf(&implServerImpl{}))
+	dict.Add(reflect.TypeFor[*implServerImpl]())
 
 	defer func() {
 		recovered := recover()
@@ -232,7 +232,7 @@ func TestImplDictAddPanicsOnDuplicateService(t *testing.T) {
 		}
 	}()
 
-	dict.Add(reflect.TypeOf(&implServerImpl{}))
+	dict.Add(reflect.TypeFor[*implServerImpl]())
 }
 
 func TestImplDictAddRejectsNonPointerStruct(t *testing.T) {
@@ -248,5 +248,5 @@ func TestImplDictAddRejectsNonPointerStruct(t *testing.T) {
 		}
 	}()
 
-	dict.Add(reflect.TypeOf(_InvalidImplValueType{}))
+	dict.Add(reflect.TypeFor[_InvalidImplValueType]())
 }

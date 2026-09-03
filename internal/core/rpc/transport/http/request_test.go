@@ -81,7 +81,7 @@ func TestDecodeRequestRejectsMissingBody(t *testing.T) {
 	if err != nil {
 		t.Fatalf("http.NewRequest() error = %v", err)
 	}
-	EncodeContentTypeHeadersToHeaderByMethod(req.Header, newStandaloneMethodInfo(reflect.TypeOf(pingArguments{}), reflect.TypeOf(""), false, false))
+	EncodeContentTypeHeadersToHeaderByMethod(req.Header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, false))
 	EncodeTraceToHeader(req.Header, testContext().Trace())
 	EncodeClientToHeader(req.Header, testContext().Client())
 
@@ -95,24 +95,24 @@ func TestDecodeRequestWithoutArgumentsSkipsBody(t *testing.T) {
 	service := &spec.ServiceSpec{
 		Name:                "Service",
 		SkelName:            "service",
-		ServerType:          reflect.TypeOf((*_PingNoArgsServiceServer)(nil)).Elem(),
-		DefaultServerType:   reflect.TypeOf(&_DefaultPingNoArgsServiceServer{}),
-		ERServerType:        reflect.TypeOf((*_PingNoArgsServiceServerER)(nil)).Elem(),
-		DefaultERServerType: reflect.TypeOf(&_DefaultPingNoArgsServiceServerER{}),
+		ServerType:          reflect.TypeFor[_PingNoArgsServiceServer](),
+		DefaultServerType:   reflect.TypeFor[*_DefaultPingNoArgsServiceServer](),
+		ERServerType:        reflect.TypeFor[_PingNoArgsServiceServerER](),
+		DefaultERServerType: reflect.TypeFor[*_DefaultPingNoArgsServiceServerER](),
 		Methods: []*spec.MethodSpec{{
 			Name:       "Ping",
 			SkelName:   "ping_no_args",
 			ResultType: testMethodInfo().ResultType,
 		}},
 	}
-	_newRequestTestHandlerDict(t, service, reflect.TypeOf(&_PingNoArgsServiceImpl{}))
+	_newRequestTestHandlerDict(t, service, reflect.TypeFor[*_PingNoArgsServiceImpl]())
 	method := service.Methods[0].Info()
 
 	req, err := http.NewRequest(RequestMethod, "http://localhost:8080/service/ping_no_args", bytes.NewReader(nil))
 	if err != nil {
 		t.Fatalf("http.NewRequest() error = %v", err)
 	}
-	EncodeContentTypeHeadersToHeaderByMethod(req.Header, newStandaloneMethodInfo(reflect.TypeOf(pingArguments{}), reflect.TypeOf(""), false, false))
+	EncodeContentTypeHeadersToHeaderByMethod(req.Header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, false))
 	EncodeTraceToHeader(req.Header, testContext().Trace())
 	EncodeClientToHeader(req.Header, testContext().Client())
 
@@ -136,7 +136,7 @@ func TestDecodeRequestRejectsInvalidJSONBody(t *testing.T) {
 	if err != nil {
 		t.Fatalf("http.NewRequest() error = %v", err)
 	}
-	EncodeContentTypeHeadersToHeaderByMethod(req.Header, newStandaloneMethodInfo(reflect.TypeOf(pingArguments{}), reflect.TypeOf(""), false, false))
+	EncodeContentTypeHeadersToHeaderByMethod(req.Header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, false))
 	EncodeTraceToHeader(req.Header, testContext().Trace())
 	EncodeClientToHeader(req.Header, testContext().Client())
 
@@ -150,24 +150,24 @@ func TestDecodeRequestRejectsInvalidGeneratedArguments(t *testing.T) {
 	service := &spec.ServiceSpec{
 		Name:                "Service",
 		SkelName:            "service.request_test",
-		ServerType:          reflect.TypeOf((*validateRequestServiceServer)(nil)).Elem(),
-		DefaultServerType:   reflect.TypeOf(&defaultValidateRequestServiceServer{}),
-		ERServerType:        reflect.TypeOf((*validateRequestServiceServerER)(nil)).Elem(),
-		DefaultERServerType: reflect.TypeOf(&defaultValidateRequestServiceServerER{}),
+		ServerType:          reflect.TypeFor[validateRequestServiceServer](),
+		DefaultServerType:   reflect.TypeFor[*defaultValidateRequestServiceServer](),
+		ERServerType:        reflect.TypeFor[validateRequestServiceServerER](),
+		DefaultERServerType: reflect.TypeFor[*defaultValidateRequestServiceServerER](),
 		Methods: []*spec.MethodSpec{{
 			Name:              "CreateUser",
 			SkelName:          "create_user",
-			ArgumentsType:     reflect.TypeOf(validateArgumentsInput{}),
+			ArgumentsType:     reflect.TypeFor[validateArgumentsInput](),
 			ValidateArguments: func(any) error { return io.ErrUnexpectedEOF },
 		}},
 	}
-	_newRequestTestHandlerDict(t, service, reflect.TypeOf(&_ValidateRequestServiceImpl{}))
+	_newRequestTestHandlerDict(t, service, reflect.TypeFor[*_ValidateRequestServiceImpl]())
 
 	req, err := http.NewRequest(RequestMethod, "http://localhost:8080/service.request_test/create_user", bytes.NewBufferString(`{"params":{"Name":null}}`))
 	if err != nil {
 		t.Fatalf("http.NewRequest() error = %v", err)
 	}
-	EncodeContentTypeHeadersToHeaderByMethod(req.Header, newStandaloneMethodInfo(reflect.TypeOf(pingArguments{}), reflect.TypeOf(""), false, false))
+	EncodeContentTypeHeadersToHeaderByMethod(req.Header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, false))
 	EncodeTraceToHeader(req.Header, testContext().Trace())
 	EncodeClientToHeader(req.Header, testContext().Client())
 
@@ -239,23 +239,23 @@ func TestDecodeRequestAppliesTimeoutOption(t *testing.T) {
 	service := &spec.ServiceSpec{
 		Name:                "Service",
 		SkelName:            "service.timeout",
-		ServerType:          reflect.TypeOf((*_PingNoArgsServiceServer)(nil)).Elem(),
-		DefaultServerType:   reflect.TypeOf(&_DefaultPingNoArgsServiceServer{}),
-		ERServerType:        reflect.TypeOf((*_PingNoArgsServiceServerER)(nil)).Elem(),
-		DefaultERServerType: reflect.TypeOf(&_DefaultPingNoArgsServiceServerER{}),
+		ServerType:          reflect.TypeFor[_PingNoArgsServiceServer](),
+		DefaultServerType:   reflect.TypeFor[*_DefaultPingNoArgsServiceServer](),
+		ERServerType:        reflect.TypeFor[_PingNoArgsServiceServerER](),
+		DefaultERServerType: reflect.TypeFor[*_DefaultPingNoArgsServiceServerER](),
 		Methods: []*spec.MethodSpec{{
 			Name:       "Ping",
 			SkelName:   "ping_timeout",
 			ResultType: testMethodInfo().ResultType,
 		}},
 	}
-	_newRequestTestHandlerDict(t, service, reflect.TypeOf(&_PingNoArgsServiceImpl{}))
+	_newRequestTestHandlerDict(t, service, reflect.TypeFor[*_PingNoArgsServiceImpl]())
 
 	req, err := http.NewRequest(RequestMethod, "http://localhost:8080/service.timeout/ping_timeout", bytes.NewReader(nil))
 	if err != nil {
 		t.Fatalf("http.NewRequest() error = %v", err)
 	}
-	EncodeContentTypeHeadersToHeaderByMethod(req.Header, newStandaloneMethodInfo(reflect.TypeOf(pingArguments{}), reflect.TypeOf(""), false, false))
+	EncodeContentTypeHeadersToHeaderByMethod(req.Header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, false))
 	EncodeOptionsToHeader(req.Header, &Options{Timeout: time.Second})
 	EncodeTraceToHeader(req.Header, testContext().Trace())
 	EncodeClientToHeader(req.Header, testContext().Client())
@@ -285,7 +285,7 @@ func TestDecodeRequestParsesCborBody(t *testing.T) {
 	if err != nil {
 		t.Fatalf("http.NewRequest() error = %v", err)
 	}
-	EncodeContentTypeHeadersToHeaderByMethod(req.Header, newStandaloneMethodInfo(reflect.TypeOf(pingArguments{}), reflect.TypeOf(""), true, false))
+	EncodeContentTypeHeadersToHeaderByMethod(req.Header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), true, false))
 	EncodeTraceToHeader(req.Header, testContext().Trace())
 	EncodeClientToHeader(req.Header, testContext().Client())
 
@@ -300,7 +300,7 @@ func TestDecodeRequestParsesCborBody(t *testing.T) {
 }
 
 func TestEncodeRequestUsesCborForBinaryArgumentsType(t *testing.T) {
-	method := newStandaloneMethodInfo(reflect.TypeOf(pingArguments{}), reflect.TypeOf(""), true, false)
+	method := newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), true, false)
 	rpcCtx := testContext()
 	msg := &spec.RequestImpl{
 		ContextValue:    rpcCtx,
@@ -337,7 +337,7 @@ func TestEncodeRequestUsesCborForBinaryArgumentsType(t *testing.T) {
 }
 
 func TestEncodeRequestUsesCborAcceptForBinaryResultType(t *testing.T) {
-	method := newStandaloneMethodInfo(reflect.TypeOf(pingArguments{}), reflect.TypeOf(""), false, true)
+	method := newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, true)
 	rpcCtx := testContext()
 	msg := &spec.RequestImpl{
 		ContextValue:    rpcCtx,

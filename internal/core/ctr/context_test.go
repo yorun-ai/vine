@@ -8,7 +8,7 @@ import (
 )
 
 func TestContextArgumentsReturnsClone(t *testing.T) {
-	context := newContext(reflect.TypeOf(&ctrTestTarget{}), "Sum")
+	context := newContext(reflect.TypeFor[*ctrTestTarget](), "Sum")
 	context.SetArguments([]any{1, "alice"})
 
 	arguments := context.Arguments()
@@ -18,11 +18,11 @@ func TestContextArgumentsReturnsClone(t *testing.T) {
 }
 
 func TestContextRejectsMutationAfterExecution(t *testing.T) {
-	context := newContext(reflect.TypeOf(&ctrTestTarget{}), "Sum")
+	context := newContext(reflect.TypeFor[*ctrTestTarget](), "Sum")
 	context.markFinished()
 
 	assert.Panics(t, func() {
-		context.SetTargetType(reflect.TypeOf(&ctrPanicTarget{}))
+		context.SetTargetType(reflect.TypeFor[*ctrPanicTarget]())
 	})
 	assert.Panics(t, func() {
 		context.SetTargetMethodName("Other")
@@ -33,7 +33,7 @@ func TestContextRejectsMutationAfterExecution(t *testing.T) {
 }
 
 func TestContextStoresResults(t *testing.T) {
-	context := newContext(reflect.TypeOf(&ctrTestTarget{}), "Sum")
+	context := newContext(reflect.TypeFor[*ctrTestTarget](), "Sum")
 	results := []any{3}
 	context.SetResults(results)
 	results[0] = 99
@@ -42,7 +42,7 @@ func TestContextStoresResults(t *testing.T) {
 }
 
 func TestContextResultsReturnsClone(t *testing.T) {
-	context := newContext(reflect.TypeOf(&ctrTestTarget{}), "Sum")
+	context := newContext(reflect.TypeFor[*ctrTestTarget](), "Sum")
 	context.SetResults([]any{3, "alice"})
 
 	results := context.Results()

@@ -25,7 +25,7 @@ func testProtoRequestHeaders(t *testing.T) http.Header {
 	}
 
 	header := http.Header{}
-	EncodeContentTypeHeadersToHeaderByMethod(header, newStandaloneMethodInfo(reflect.TypeOf(pingArguments{}), reflect.TypeOf(""), false, false))
+	EncodeContentTypeHeadersToHeaderByMethod(header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, false))
 	EncodeTraceToHeader(header, trace)
 	EncodeClientToHeader(header, client)
 	return header
@@ -128,7 +128,7 @@ func TestCheckResponseHeaders(t *testing.T) {
 
 func TestEncodeFixedRequestAndResponseHeaders(t *testing.T) {
 	requestHeader := http.Header{}
-	EncodeContentTypeHeadersToHeaderByMethod(requestHeader, newStandaloneMethodInfo(reflect.TypeOf(pingArguments{}), reflect.TypeOf(""), false, false))
+	EncodeContentTypeHeadersToHeaderByMethod(requestHeader, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, false))
 	if requestHeader.Get(HeaderAccept) != ContentTypeJson {
 		t.Fatalf("unexpected accept header: %s", requestHeader.Get(HeaderAccept))
 	}

@@ -74,13 +74,13 @@ func newRegistryTestServiceInfo(skelName string) *ServiceSpec {
 		Type:                ServiceSpecTypeBoth,
 		Name:                "TestRegistryService",
 		SkelName:            skelName,
-		ServerType:          reflect.TypeOf((*testRegistryServer)(nil)).Elem(),
-		DefaultServerType:   reflect.TypeOf(&defaultTestRegistryServer{}),
-		ClientType:          reflect.TypeOf((*testRegistryServer)(nil)).Elem(),
+		ServerType:          reflect.TypeFor[testRegistryServer](),
+		DefaultServerType:   reflect.TypeFor[*defaultTestRegistryServer](),
+		ClientType:          reflect.TypeFor[testRegistryServer](),
 		ClientCtor:          func() {},
-		ERServerType:        reflect.TypeOf((*testRegistryServerER)(nil)).Elem(),
-		DefaultERServerType: reflect.TypeOf(&defaultTestRegistryServerER{}),
-		ERClientType:        reflect.TypeOf((*testRegistryServerER)(nil)).Elem(),
+		ERServerType:        reflect.TypeFor[testRegistryServerER](),
+		DefaultERServerType: reflect.TypeFor[*defaultTestRegistryServerER](),
+		ERClientType:        reflect.TypeFor[testRegistryServerER](),
 		ERClientCtor:        func() {},
 		Methods: []*MethodSpec{{
 			Name:     "Ping",
@@ -367,7 +367,7 @@ func TestRegisterMergesPartialClientAndServerInfo(t *testing.T) {
 		}
 	}
 
-	got, isERType := registry.getServiceInfoByImplType(reflect.TypeOf(&testRegistryServerImpl{}))
+	got, isERType := registry.getServiceInfoByImplType(reflect.TypeFor[*testRegistryServerImpl]())
 	if got.ServerType() != serverInfo.ServerType {
 		t.Fatalf("unexpected runtime service info: %#v", got)
 	}
@@ -463,7 +463,7 @@ func TestRegisterRejectsMismatchedDefaultServerTypes(t *testing.T) {
 		Type:              ServiceSpecTypeServer,
 		Name:              "BrokenService",
 		SkelName:          "test.registry.broken",
-		DefaultServerType: reflect.TypeOf(&defaultTestRegistryServer{}),
+		DefaultServerType: reflect.TypeFor[*defaultTestRegistryServer](),
 		Methods: []*MethodSpec{{
 			Name:     "Ping",
 			SkelName: "ping",
@@ -477,7 +477,7 @@ func TestGetServiceInfoReturnsServiceInfoForDefaultServerAndERServer(t *testing.
 	serviceInfo := newRegistryTestServiceInfo("test.registry")
 	registry.Register(serviceInfo)
 
-	got, isERType := registry.getServiceInfoByImplType(reflect.TypeOf(&testRegistryServerImpl{}))
+	got, isERType := registry.getServiceInfoByImplType(reflect.TypeFor[*testRegistryServerImpl]())
 	if got.SkelName() != serviceInfo.SkelName {
 		t.Fatalf("unexpected service info for server impl: got %s want %s", got.SkelName(), serviceInfo.SkelName)
 	}
@@ -485,7 +485,7 @@ func TestGetServiceInfoReturnsServiceInfoForDefaultServerAndERServer(t *testing.
 		t.Fatalf("expected non-er server impl")
 	}
 
-	got, isERType = registry.getServiceInfoByImplType(reflect.TypeOf(&testRegistryServerERImpl{}))
+	got, isERType = registry.getServiceInfoByImplType(reflect.TypeFor[*testRegistryServerERImpl]())
 	if got.SkelName() != serviceInfo.SkelName {
 		t.Fatalf("unexpected service info for er server impl: got %s want %s", got.SkelName(), serviceInfo.SkelName)
 	}
@@ -495,15 +495,15 @@ func TestGetServiceInfoReturnsServiceInfoForDefaultServerAndERServer(t *testing.
 }
 
 func TestGetEmbeddedTypesReturnsOnlyAnonymousStructFields(t *testing.T) {
-	embeddedTypes := reflectutil.EmbeddedStructTypes(reflect.TypeOf(embeddedTypesHolder{}))
+	embeddedTypes := reflectutil.EmbeddedStructTypes(reflect.TypeFor[embeddedTypesHolder]())
 
 	if len(embeddedTypes) != 2 {
 		t.Fatalf("unexpected embedded type count: got %d", len(embeddedTypes))
 	}
-	if embeddedTypes[0] != reflect.TypeOf(embeddedTypeA{}) {
+	if embeddedTypes[0] != reflect.TypeFor[embeddedTypeA]() {
 		t.Fatalf("unexpected first embedded type: got %v", embeddedTypes[0])
 	}
-	if embeddedTypes[1] != reflect.TypeOf(embeddedTypeB{}) {
+	if embeddedTypes[1] != reflect.TypeFor[embeddedTypeB]() {
 		t.Fatalf("unexpected second embedded type: got %v", embeddedTypes[1])
 	}
 }
@@ -524,7 +524,7 @@ func TestRegisterRejectsDuplicateSkelName(t *testing.T) {
 	}()
 
 	serviceInfo := newRegistryTestServiceInfo("test.registry")
-	serviceInfo.DefaultServerType = reflect.TypeOf(&struct{ defaultTestRegistryServer }{})
-	serviceInfo.DefaultERServerType = reflect.TypeOf(&struct{ defaultTestRegistryServerER }{})
+	serviceInfo.DefaultServerType = reflect.TypeFor[*struct{ defaultTestRegistryServer }]()
+	serviceInfo.DefaultERServerType = reflect.TypeFor[*struct{ defaultTestRegistryServerER }]()
 	registry.Register(serviceInfo)
 }

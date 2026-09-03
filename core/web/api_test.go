@@ -38,7 +38,7 @@ func init() {
 	Register(&WebSpec{
 		Name:              "FacadeTestWeb",
 		SkelName:          "demo.user.FacadeTestWeb",
-		ServerType:        reflect.TypeOf((*facadeTestWebServer)(nil)).Elem(),
+		ServerType:        reflect.TypeFor[facadeTestWebServer](),
 		DefaultServerType: reflect.TypeFor[*defaultFacadeTestWebServer](),
 	})
 }

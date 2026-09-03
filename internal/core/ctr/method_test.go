@@ -18,7 +18,7 @@ func (e *methodTestEngine) Stop() {
 }
 
 func TestGetMethodByName(t *testing.T) {
-	engineType := reflect.TypeOf(&methodTestEngine{})
+	engineType := reflect.TypeFor[*methodTestEngine]()
 
 	method := getMethodByName(engineType, "Stop")
 	assert.Equal(t, "Stop", method.Name)
@@ -29,6 +29,6 @@ func TestGetMethodByName(t *testing.T) {
 
 func TestGetMethodByNamePanicsForMissingMethod(t *testing.T) {
 	assert.PanicsWithError(t, "method=Missing not found in type=", func() {
-		getMethodByName(reflect.TypeOf(&methodTestEngine{}), "Missing")
+		getMethodByName(reflect.TypeFor[*methodTestEngine](), "Missing")
 	})
 }
