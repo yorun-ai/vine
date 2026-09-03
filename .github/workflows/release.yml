@@ -7,6 +7,10 @@ on:
         description: Existing published release tag to build and publish
         required: true
         type: string
+      images-only:
+        description: Publish only images, preserving existing release assets
+        type: boolean
+        default: false
   release:
     types: [published]
 
@@ -22,12 +26,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  binaries:
-    name: Release binaries
+  validate:
+    name: Validate release
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: write
+    timeout-minutes: 5
     outputs:
       commit: ${{ steps.release.outputs.commit }}
       publish-latest: ${{ steps.release.outputs.publish-latest }}
@@ -37,12 +39,6 @@ jobs:
         with:
           fetch-depth: 0
           ref: refs/tags/${{ env.RELEASE_TAG }}
-
-      - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
 
       - name: Validate release tag
         id: release
@@ -85,6 +81,26 @@ jobs:
             echo "CHANGELOG.md must contain a dated [$version] release heading"
             exit 1
           fi
+
+  binaries:
+    name: Release binaries
+    needs: validate
+    if: ${{ !inputs.images-only }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Check out release
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.validate.outputs.commit }}
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
 
       - name: Build archives
         run: |
@@ -138,7 +154,7 @@ jobs:
 
   images:
     name: Publish ${{ matrix.target }} image
-    needs: binaries
+    needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -152,7 +168,9 @@ jobs:
       - name: Check out release
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ needs.binaries.outputs.commit }}
+          # Git-context metadata needs the tag refs, even when checking out a SHA.
+          fetch-depth: 0
+          ref: ${{ needs.validate.outputs.commit }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -177,7 +195,7 @@ jobs:
           flavor: latest=false
           tags: |
             type=raw,value=${{ env.RELEASE_TAG }}
-            type=raw,value=latest,enable=${{ needs.binaries.outputs.publish-latest == 'true' }}
+            type=raw,value=latest,enable=${{ needs.validate.outputs.publish-latest == 'true' }}
             type=sha,prefix=sha-
 
       - name: Build and publish image

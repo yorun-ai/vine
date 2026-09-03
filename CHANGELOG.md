@@ -8,6 +8,16 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Changed
+
+- Build and publish release binaries and container images in parallel after
+  shared release validation
+
+### Fixed
+
+- Fixed release image metadata extraction from a detached checkout and added
+  image-only publication for existing releases without overwriting binary assets
+
 ## [0.14.1] - 2026-09-04
 
 ### Changed
