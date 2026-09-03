@@ -29,7 +29,9 @@ verify_ci_results() {
 ci_main() {
   case "${1:-}" in
     changes)
-      [[ "$CHANGE_HEAD" =~ ^[0-9a-f]{40}$ && "$CHANGE_BASE" =~ ^[0-9a-f]{40}$ ]]
+      [[ "$CHANGE_HEAD" =~ ^[0-9a-f]{40}$ && "$CHANGE_BASE" =~ ^[0-9a-f]{40}$ ]] || {
+        echo "Invalid change range: base=$CHANGE_BASE head=$CHANGE_HEAD" >&2; return 1;
+      }
       local base="$CHANGE_BASE" flags
       if [[ "$base" =~ ^0+$ ]]; then
         flags=$(printf '.github/workflows/ci.yml\0' | classify_changes "$GITHUB_EVENT_NAME")

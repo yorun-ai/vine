@@ -27,6 +27,8 @@ Failed classification, cancellation, or an unexpected skipped job fails the gate
 - Go checks still cover the full repository rather than only changed packages.
 
 Tests use the latest Go `1.27.x`; container and release builds use Go `1.27.1`.
+PR updates cancel older runs for the same PR. Main CI uses per-commit concurrency
+groups, so a subsequent merge cannot cancel validation of a release candidate.
 The Hub check builds Linux AMD64 without publishing. All three image targets and
 both Linux architectures are published only by the Release workflow.
 
@@ -42,6 +44,11 @@ both Linux architectures are published only by the Release workflow.
 6. Completion verifies four archive checksums, anonymous access to all three
    images, Linux AMD64/ARM64, and release version/source/revision labels.
    Only then may the current non-prerelease update image `latest` tags.
+7. A separate promotion job shares one concurrency group across all versions.
+   It rechecks latest-release eligibility after acquiring the lock, and holds
+   the lock through promotion and verification. Builds remain parallel. Pending
+   promotion jobs may be superseded under GitHub's default concurrency policy;
+   rerun a cancelled job if its release is still the intended latest.
 
 Manual runs select `artifacts: all`, `binaries`, or `images`. Use `images` when
 binary assets already exist. The workflow rejects existing expected binary
@@ -68,6 +75,12 @@ Automation uses YAML, Bash, `gh`, and `jq`; anonymous GHCR verification uses
 `curl`, and archive verification uses `sha256sum`. These tools are available on
 the Ubuntu runner. No custom JavaScript helpers are required. Dashboard builds
 still use their own Node.js toolchain.
+
+Anonymous GHCR GETs retry up to three times for curl's transient HTTP errors and
+timeouts, with a 10-second connection timeout, a 30-second attempt limit, and a
+90-second retry window. Response bodies are buffered before JSON validation.
+Authentication errors, invalid JSON, checksum/label mismatches, and publication
+operations are not retried automatically. GitHub CLI failures still fail the job.
 
 ```bash
 shellcheck .github/scripts/*.sh

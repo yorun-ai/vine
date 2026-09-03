@@ -109,6 +109,11 @@
 - Release validation requires the exact tag commit to belong to `main` and
   have a successful latest main-push CI run. Fetch tag refs when extracting
   Git-context image metadata from that commit.
+- Cancel superseded PR runs, but isolate main CI concurrency by commit SHA.
+  Serialize `latest` promotion across release versions and recheck eligibility
+  inside that job's lock. Do not serialize binary/image builds behind promotion.
+- Retry only transient read-only network failures; never retry publication or
+  relax checksum, metadata, permission, or overwrite checks to hide failures.
 - Manual publication selects `artifacts: all | binaries | images`; unselected
   jobs are skipped. Existing binary assets must never be overwritten. Scripts
   come from the workflow revision, while builds use the validated tag commit.
