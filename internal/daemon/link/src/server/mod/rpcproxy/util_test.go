@@ -10,6 +10,7 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
+	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 )
 
 type _RpcRoundTripperFunc func(*http.Request) (*http.Response, error)
@@ -93,6 +94,30 @@ func TestForwardWithTransportPreservesOriginalResponseBody(t *testing.T) {
 	}
 	if !originalBody.closed {
 		t.Fatal("original response body was not closed by caller")
+	}
+}
+
+func TestForwardWithTransportRejectsOversizedResponseAndClosesBody(t *testing.T) {
+	originalBody := &closeTrackingBody{Reader: strings.NewReader("ignored")}
+	transport := _RpcRoundTripperFunc(func(*http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode:    http.StatusOK,
+			Header:        http.Header{},
+			Body:          originalBody,
+			ContentLength: rpchttp.MaxResponseBodyBytes + 1,
+		}, nil
+	})
+	request, err := http.NewRequest(http.MethodPost, "http://target.local/demo.Service/Invoke", nil)
+	if err != nil {
+		t.Fatalf("http.NewRequest() error = %v", err)
+	}
+
+	_, _, exErr := new(RpcProxy).forwardWithTransport(request.Context(), request, transport)
+	if exErr == nil || exErr.Code() != ex.ServiceUnavailable {
+		t.Fatalf("forwardWithTransport() error = %v", exErr)
+	}
+	if !originalBody.closed {
+		t.Fatal("oversized response body was not closed")
 	}
 }
 

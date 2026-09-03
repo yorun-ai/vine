@@ -263,6 +263,18 @@ func TestRpcGatewayRejectsRpcOptionsTimeoutOverMax(t *testing.T) {
 	assertRpcGatewayError(t, recorder, ex.InvalidRequest, rpchttp.HeaderRpcOptions)
 }
 
+func TestRpcGatewayRejectsOversizedRequestBodyAsInvalidRequest(t *testing.T) {
+	target := newTestRpcGateway(nil)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "http://demo.local/invoke/demo.UserService/Get", nil)
+	setTestAuthHeaders(request)
+	request.ContentLength = rpchttp.MaxRequestBodyBytes + 1
+
+	target.Serve(testContext(recorder, request))
+
+	assertRpcGatewayError(t, recorder, ex.InvalidRequest, "rpc request body exceeds")
+}
+
 func TestRpcGatewayGeneratesMissingRpcSpanBeforeForward(t *testing.T) {
 	ingressEndpoint := "link+inproc://vine/portal-rpcgw-missing-span-test"
 	registerTestIngress(t, ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

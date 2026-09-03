@@ -4,7 +4,6 @@ import (
 	"encoding/json/jsontext"
 	"encoding/json/v2"
 	"fmt"
-	"io"
 	"net/http"
 	"reflect"
 
@@ -85,9 +84,9 @@ func (d *_ResponseDecoder) decodeStatusCode() (err error) {
 }
 
 func (d *_ResponseDecoder) decodeBody() error {
-	bodyBytes, err := io.ReadAll(d.httpResponse.Body)
+	bodyBytes, err := ReadResponseBody(d.httpResponse)
 	if err != nil {
-		return fmt.Errorf("response body cannot be read")
+		return fmt.Errorf("response body cannot be read: %w", err)
 	}
 	if len(bodyBytes) == 0 {
 		return fmt.Errorf("missing response body")

@@ -1,7 +1,6 @@
 package rpcproxy
 
 import (
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -91,7 +90,7 @@ func (p *RpcProxy) forwardInboundInproc(w http.ResponseWriter, r *http.Request, 
 
 	resp := recorder.Result()
 	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
+	body, err := rpchttp.ReadResponseBody(resp)
 	if err != nil {
 		p.writeGatewayError(w, r, ex.New(ex.ServiceUnavailable, "inbound response body cannot be read", ex.WithDetail(err.Error())))
 		return

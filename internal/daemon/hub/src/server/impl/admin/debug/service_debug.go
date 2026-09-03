@@ -3,7 +3,6 @@ package debug
 import (
 	"context"
 	"encoding/json/v2"
-	"io"
 	"strings"
 	"time"
 
@@ -159,7 +158,7 @@ func (s *ServiceDebugServiceServerImpl) InvokeService(request skeled.ServiceDebu
 	ex.PanicNewIfError(err, ex.ServiceUnavailable)
 	defer response.Body.Close()
 
-	bodyBytes, err := io.ReadAll(response.Body)
+	bodyBytes, err := rpchttp.ReadResponseBody(response)
 	ex.PanicNewIfError(err, ex.ServiceUnavailable)
 
 	return skeled.ServiceDebugInvokeResponse{

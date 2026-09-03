@@ -66,7 +66,7 @@ func roundTrip(
 
 	rpcResponse, err := decodeResponse(httpResponse, rpcRequest.MethodInfo())
 	if err != nil {
-		return nil, ex.New(ex.InvocationFailed, err.Error())
+		return nil, ex.New(ex.UnexpectedResponse, err.Error())
 	}
 	return rpcResponse, nil
 }

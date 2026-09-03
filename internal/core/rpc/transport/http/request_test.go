@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -91,7 +92,7 @@ func TestDecodeRequestRejectsMissingBody(t *testing.T) {
 	}
 }
 
-func TestDecodeRequestWithoutArgumentsSkipsBody(t *testing.T) {
+func TestDecodeRequestWithoutArgumentsAcceptsEmptyBody(t *testing.T) {
 	service := &spec.ServiceSpec{
 		Name:                "Service",
 		SkelName:            "service",
@@ -125,6 +126,23 @@ func TestDecodeRequestWithoutArgumentsSkipsBody(t *testing.T) {
 	}
 	if got.Arguments() != nil {
 		t.Fatalf("expected nil arguments, got %#v", got.Arguments())
+	}
+
+	for _, contentType := range []string{ContentTypeJson, ContentTypeCbor} {
+		oversized, err := http.NewRequest(RequestMethod, "http://localhost:8080/service/ping_no_args", nil)
+		if err != nil {
+			t.Fatalf("http.NewRequest() error = %v", err)
+		}
+		oversized.Header.Set(HeaderAccept, contentType)
+		oversized.Header.Set(HeaderContentType, contentType)
+		EncodeTraceToHeader(oversized.Header, testContext().Trace())
+		EncodeClientToHeader(oversized.Header, testContext().Client())
+		oversized.ContentLength = MaxRequestBodyBytes + 1
+
+		_, err = DecodeRequest(oversized)
+		if err == nil || !strings.Contains(err.Error(), "rpc request body exceeds") {
+			t.Fatalf("DecodeRequest() content type %q error = %v", contentType, err)
+		}
 	}
 }
 

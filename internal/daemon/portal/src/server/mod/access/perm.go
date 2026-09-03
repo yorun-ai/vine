@@ -80,13 +80,25 @@ func (o *RpcOperation) checkActorPermissions(expr *skel.PermExpr) bool {
 }
 
 func (o *RpcOperation) readRequestBody() bool {
-	body, err := io.ReadAll(o.Request.Body)
+	if o.requestBody != nil {
+		return true
+	}
+
+	originalBody := o.Request.Body
+	body, err := rpchttp.ReadRequestBody(o.Request)
+	if originalBody != nil {
+		_ = originalBody.Close()
+	}
 	if err != nil {
-		o.writeError(ex.InvalidRequest, "rpc request body cannot be read")
+		o.writeError(ex.InvalidRequest, err.Error())
 		return false
 	}
 
-	o.Request.Body = io.NopCloser(bytes.NewReader(body))
+	o.Request.Body = http.NoBody
+	if len(body) > 0 {
+		o.Request.Body = io.NopCloser(bytes.NewReader(body))
+	}
+	o.Request.ContentLength = int64(len(body))
 	o.requestBody = body
 	return true
 }
