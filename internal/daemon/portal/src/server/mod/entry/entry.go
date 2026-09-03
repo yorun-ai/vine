@@ -138,13 +138,11 @@ func (e *_Entry) Start() {
 }
 
 func newEntryHTTPServer(addr string, handler http.Handler) *http.Server {
-	return &http.Server{
-		Addr:              addr,
-		Handler:           handler,
-		ReadHeaderTimeout: entryReadHeaderTimeout,
-		IdleTimeout:       entryIdleTimeout,
-		MaxHeaderBytes:    entryMaxHeaderBytes,
-	}
+	server := httputil.NewServer(addr, handler)
+	server.ReadHeaderTimeout = entryReadHeaderTimeout
+	server.IdleTimeout = entryIdleTimeout
+	server.MaxHeaderBytes = entryMaxHeaderBytes
+	return server
 }
 
 func (e *_Entry) serve(server *http.Server, listener net.Listener) error {

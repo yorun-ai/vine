@@ -12,6 +12,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestNewServerAppliesSharedRequestLimits(t *testing.T) {
+	handler := http.NewServeMux()
+
+	server := NewServer("127.0.0.1:8080", handler)
+
+	assert.Equal(t, "127.0.0.1:8080", server.Addr)
+	assert.Same(t, handler, server.Handler)
+	assert.Equal(t, DefaultMaxHeaderValueCount, server.MaxHeaderValueCount)
+}
+
 func TestShutdownServerForceClosesAfterGracefulTimeout(t *testing.T) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)

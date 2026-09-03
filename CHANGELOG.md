@@ -24,6 +24,9 @@ are not part of the public compatibility commitment.
 - Migrated HTTP integration tests to Go 1.27's test-owned
   `httptest.NewTestServer` lifecycle while retaining loopback networking where
   reverse proxies, h2c transports, or connection upgrades require real sockets
+- Applied a shared limit of 128 header values to application, Hub control,
+  Link ingress, and Portal entry HTTP servers using Go 1.27's
+  `http.Server.MaxHeaderValueCount`
 - Reworked timer-, cancellation-, scheduler-, lock-, and in-process transport
   tests around Go 1.27 `testing/synctest`, replacing wall-clock polling with
   deterministic synchronization, randomized test ordering, and tighter global

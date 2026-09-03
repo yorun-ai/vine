@@ -99,9 +99,7 @@ func (l *Listener) startHTTP() error {
 		l.rpcHandler = nil
 		return fmt.Errorf("hub control API listen failed: %w", err)
 	}
-	server := &http.Server{
-		Addr: listener.Addr().String(),
-	}
+	server := httputil.NewServer(listener.Addr().String(), nil)
 	serve := server.Serve
 	if l.Identity.Enabled() {
 		server.Handler = l
