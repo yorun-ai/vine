@@ -8,6 +8,10 @@ import (
 )
 
 func InprocRoundTrip(handler http.Handler, req *http.Request) (*http.Response, error) {
+	if err := req.Context().Err(); err != nil {
+		return nil, err
+	}
+
 	responseCh := make(chan *http.Response, 1)
 	reader, writer := io.Pipe()
 	responseWriter := newResponseWriter(reader, writer, responseCh)
@@ -21,6 +25,10 @@ func InprocRoundTrip(handler http.Handler, req *http.Request) (*http.Response, e
 		_ = writer.CloseWithError(req.Context().Err())
 		return nil, req.Context().Err()
 	case resp := <-responseCh:
+		if err := req.Context().Err(); err != nil {
+			_ = writer.CloseWithError(err)
+			return nil, err
+		}
 		if resp == nil {
 			return nil, errors.New("response is nil")
 		}

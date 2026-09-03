@@ -75,6 +75,9 @@ are not part of the public compatibility commitment.
 
 ### Fixed
 
+- In-process Web round trips now reject already-canceled requests before
+  invoking handlers and prefer cancellation when a response becomes ready at
+  the same time
 - Bounded encoded Rpc request bodies to 32 MiB and Rpc response bodies to
   128 MiB across application decoding, Link and Portal forwarding, Portal
   access-service calls, and Hub Service Debug, preventing unbounded buffering

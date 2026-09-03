@@ -113,24 +113,53 @@ func TestRoundTripReturnsErrorForMissingEndpoint(t *testing.T) {
 	}
 }
 
-func TestRoundTripRespectsRequestContext(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		resetRegistryForTest(t)
+func TestRoundTripRejectsCanceledRequestBeforeCallingHandler(t *testing.T) {
+	resetRegistryForTest(t)
 
-		endpoint := "web+inproc://app/demo/web/access/default@demo.app"
-		Register(endpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			<-r.Context().Done()
-		}))
+	endpoint := "web+inproc://app/demo/web/access/default@demo.app"
+	handlerCalled := make(chan struct{}, 1)
+	Register(endpoint, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		handlerCalled <- struct{}{}
+	}))
 
-		ctx, cancel := context.WithCancel(t.Context())
-		req := httptest.NewRequest(http.MethodGet, "/", nil).WithContext(ctx)
-		cancel()
+	ctx, cancel := context.WithCancel(t.Context())
+	req := httptest.NewRequest(http.MethodGet, "/", nil).WithContext(ctx)
+	cancel()
 
+	_, err := RoundTrip(endpoint, req)
+	if err == nil || !strings.Contains(err.Error(), "canceled") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	select {
+	case <-handlerCalled:
+		t.Fatal("handler was called for an already canceled request")
+	default:
+	}
+}
+
+func TestRoundTripPrefersCancellationOverConcurrentResponse(t *testing.T) {
+	resetRegistryForTest(t)
+
+	endpoint := "web+inproc://app/demo/web/access/default@demo.app"
+	handlerStarted := make(chan struct{})
+	Register(endpoint, http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
+		close(handlerStarted)
+		<-req.Context().Done()
+	}))
+
+	ctx, cancel := context.WithCancel(t.Context())
+	req := httptest.NewRequest(http.MethodGet, "/", nil).WithContext(ctx)
+	errCh := make(chan error, 1)
+	go func() {
 		_, err := RoundTrip(endpoint, req)
-		if err == nil || !strings.Contains(err.Error(), "canceled") {
-			t.Fatalf("unexpected error: %v", err)
-		}
-	})
+		errCh <- err
+	}()
+
+	<-handlerStarted
+	cancel()
+	if err := <-errCh; err == nil || !strings.Contains(err.Error(), "canceled") {
+		t.Fatalf("unexpected error: %v", err)
+	}
 }
 
 func TestRoundTripStreamsResponseBeforeHandlerReturns(t *testing.T) {
