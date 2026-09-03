@@ -141,6 +141,10 @@ var (
 			Name:          "Mutate",
 			SkelName:      "mutate",
 			ArgumentsType: reflect.TypeFor[serverCloneArguments](),
+			CloneArguments: func(value any) any {
+				source := value.(*serverCloneArguments)
+				return &serverCloneArguments{Names: append([]string(nil), source.Names...)}
+			},
 		}},
 	}
 )
