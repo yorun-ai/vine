@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hub
+  labels:
+    app.kubernetes.io/name: vine-hub
+    app.kubernetes.io/component: hub
+spec:
+  # Hub advertises the embedded NATS server's dynamically selected port through
+  # InfoService. A headless Service makes hub:7071 resolve directly to the Pod
+  # IP, so Link can reach that dynamic port without a fixed Service port.
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app.kubernetes.io/name: vine-hub
+  ports:
+    - name: control
+      port: 7071
+      targetPort: control
+    - name: redis
+      port: 7072
+      targetPort: redis
+    - name: admin
+      port: 7075
+      targetPort: admin
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: hub
+  labels:
+    app.kubernetes.io/name: vine-hub
+    app.kubernetes.io/component: hub
+spec:
+  serviceName: hub
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vine-hub
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vine-hub
+        app.kubernetes.io/component: hub
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 101
+        fsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: hub
+          image: docker.io/yorunai/vine-hub:latest
+          imagePullPolicy: Always
+          env:
+            - name: VINE_CONTROL_LISTEN
+              value: 0.0.0.0:7071
+            - name: VINE_ADMIN_LISTEN
+              value: 0.0.0.0:7075
+            - name: VINE_REDIS_LISTEN
+              value: 0.0.0.0:7072
+            - name: VINE_DB_SQLITE_FILE
+              value: /data/hub.sqlite
+            - name: VINE_MQ_EMBEDDED_NATS
+              value: "true"
+          ports:
+            - name: control
+              containerPort: 7071
+            - name: redis
+              containerPort: 7072
+            - name: admin
+              containerPort: 7075
+          startupProbe:
+            tcpSocket:
+              port: control
+            periodSeconds: 2
+            failureThreshold: 30
+          readinessProbe:
+            tcpSocket:
+              port: control
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: control
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi

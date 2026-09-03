@@ -169,6 +169,12 @@ Read the [CLI guide](https://vine.yorun.ai/docs/getting-started/cli) before
 operating the separated services; it documents persistence, NATS, listener,
 seed, Dashboard, environment-variable, and backend mTLS options.
 
+## Docker Images
+
+The root `Dockerfile` builds separate Hub, Link, and Portal images. See the
+[container and Kubernetes deployment guide](https://vine.yorun.ai/docs/container-deployment)
+for image names, runtime configuration, Kubernetes manifests, and backend mTLS.
+
 ## Public Package Map
 
 Vine keeps its public API in a small set of facade packages. Packages under

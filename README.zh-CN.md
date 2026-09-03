@@ -158,6 +158,12 @@ vine link serve \
 运行分离式服务前，请阅读 [CLI 指南](https://vine.yorun.ai/zh-CN/docs/getting-started/cli)；
 其中说明了持久化、NATS、listener、seed、Dashboard、环境变量与后端 mTLS 选项。
 
+## Docker 镜像
+
+根目录的 `Dockerfile` 分别构建 Hub、Link 和 Portal 镜像。镜像名称、运行配置、
+Kubernetes manifests 和后台 mTLS 请参阅
+[容器与 Kubernetes 部署指南](https://vine.yorun.ai/zh-CN/docs/container-deployment)。
+
 ## 公开包索引
 
 Vine 将公开 API 保持在少量 facade 包中。`internal` 下的包属于实现细节，不是应用 API。
