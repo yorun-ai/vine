@@ -3,7 +3,7 @@ package meta
 import (
 	"testing"
 
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func TestNewAppAcceptsValidValues(t *testing.T) {
@@ -58,12 +58,12 @@ func TestMustNewAppWithRandomIdGeneratesValidInstanceID(t *testing.T) {
 	if app.Name() != "demo.service" || app.Version() != "1.2.3" {
 		t.Fatalf("unexpected app content: %#v", app)
 	}
-	if err := uuid.Validate(app.InstanceId()); err != nil {
+	parsed, err := uuid.Parse(app.InstanceId())
+	if err != nil {
 		t.Fatalf("unexpected instance id: %v", err)
 	}
-	parsed := uuid.MustParse(app.InstanceId())
-	if parsed.Version() != 7 {
-		t.Fatalf("expected v7 uuid, got v%d", parsed.Version())
+	if version := parsed[6] >> 4; version != 7 {
+		t.Fatalf("expected v7 uuid, got v%d", version)
 	}
 }
 

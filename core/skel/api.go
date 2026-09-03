@@ -2,9 +2,9 @@ package skel
 
 import (
 	"time"
+	"uuid"
 
 	"cloud.google.com/go/civil"
-	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	internalskel "go.yorun.ai/vine/internal/core/skel"
 )

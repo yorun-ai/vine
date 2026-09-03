@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"go.yorun.ai/vine/util/vpre"
 )
@@ -184,7 +184,7 @@ func (l *Lock) lock() bool {
 }
 
 func (l *Lock) doLock() bool {
-	token := uuid.Must(uuid.NewV7()).String()
+	token := uuid.NewV7().String()
 	startedAt := time.Now()
 	ok, err := l.cmdable.SetNX(l.ctx, l.key, token, l.option.timeout).Result()
 	vpre.CheckNilError(err, "acquire redis lock failed")

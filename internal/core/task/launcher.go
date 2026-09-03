@@ -1,7 +1,8 @@
 package task
 
 import (
-	"github.com/google/uuid"
+	"uuid"
+
 	linkskeled "go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"

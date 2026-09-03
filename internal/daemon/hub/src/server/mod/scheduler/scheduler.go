@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/robfig/cron/v3"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/meta"

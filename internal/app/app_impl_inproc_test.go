@@ -9,8 +9,8 @@ import (
 
 	coreapp "go.yorun.ai/vine/internal/core/app"
 	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
+	"uuid"
 
-	"github.com/google/uuid"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"

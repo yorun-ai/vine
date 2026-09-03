@@ -3,9 +3,9 @@ package meta
 import (
 	"fmt"
 	"regexp"
+	"uuid"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/google/uuid"
 	"go.yorun.ai/vine/util/vstring"
 )
 
@@ -74,7 +74,7 @@ func MustNewApp(name string, version string, instanceId string) App {
 
 // MustNewInstanceId creates a process/app instance UUID using V7 for time-ordered IDs.
 func MustNewInstanceId() string {
-	return uuid.Must(uuid.NewV7()).String()
+	return uuid.NewV7().String()
 }
 
 func MustNewAppWithRandomId(name string, version string) App {

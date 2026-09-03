@@ -1,7 +1,7 @@
 package event
 
 import (
-	"github.com/google/uuid"
+	"uuid"
 
 	eventlog "go.yorun.ai/vine/internal/core/event/log"
 	"go.yorun.ai/vine/internal/core/event/spec"

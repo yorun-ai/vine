@@ -2,12 +2,13 @@ package app
 
 import (
 	"context"
-	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 	"reflect"
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
+	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
+	"uuid"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/ctr"

@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+	"uuid"
 
 	"cloud.google.com/go/civil"
 	"github.com/fxamacker/cbor/v2"
-	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"go.yorun.ai/vine/util/vcode"
 )

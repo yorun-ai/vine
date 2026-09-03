@@ -2,8 +2,8 @@ package debug
 
 import (
 	"strings"
+	"uuid"
 
-	"github.com/google/uuid"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/skel"

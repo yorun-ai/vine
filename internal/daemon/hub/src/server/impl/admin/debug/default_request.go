@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"strings"
 	"time"
+	"uuid"
 
 	"cloud.google.com/go/civil"
-	"github.com/google/uuid"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
@@ -75,7 +75,7 @@ func (b _DebugDefaultBuilder) defaultValue(typeSchema *skel.TypeSchema) any {
 		case skel.ScalarJson:
 			return map[string]any{}
 		case skel.ScalarUuid:
-			return uuid.Nil.String()
+			return uuid.Nil().String()
 		case skel.ScalarTimestamp:
 			return debugScalarJsonString(skel.NewTimestamp(debugDefaultTime))
 		case skel.ScalarDuration:

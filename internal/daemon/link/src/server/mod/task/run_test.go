@@ -8,8 +8,8 @@ import (
 	"time"
 
 	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/ex"

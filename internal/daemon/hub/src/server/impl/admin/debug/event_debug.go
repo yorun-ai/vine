@@ -2,8 +2,8 @@ package debug
 
 import (
 	"strings"
+	"uuid"
 
-	"github.com/google/uuid"
 	eventspec "go.yorun.ai/vine/internal/core/event/spec"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"

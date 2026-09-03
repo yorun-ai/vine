@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"go.yorun.ai/vine/internal/core/ex"
 	linkskeled "go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/logger"

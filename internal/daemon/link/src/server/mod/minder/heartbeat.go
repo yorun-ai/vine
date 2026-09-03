@@ -3,8 +3,7 @@ package minder
 import (
 	"context"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/core/skel"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"

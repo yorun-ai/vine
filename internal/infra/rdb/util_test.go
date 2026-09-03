@@ -3,16 +3,16 @@ package rdb
 import (
 	"testing"
 
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func TestNewUUIDV7String(t *testing.T) {
 	value := NewUUIDV7String()
-	if err := uuid.Validate(value); err != nil {
-		t.Fatalf("Validate() error = %v", err)
+	parsed, err := uuid.Parse(value)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
 	}
-	parsed := uuid.MustParse(value)
-	if parsed.Version() != 7 {
-		t.Fatalf("expected v7 uuid, got v%d", parsed.Version())
+	if version := parsed[6] >> 4; version != 7 {
+		t.Fatalf("expected v7 uuid, got v%d", version)
 	}
 }
