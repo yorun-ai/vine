@@ -92,6 +92,15 @@ func (m *Manager) newEventMessageHandler(listener *_EventListenerState) func(msg
 
 func (m *Manager) onEvent(listener *_EventListenerState, natsMsg jetstream.Msg, msg eventspec.NATSMessage) {
 	defer listener.instance.FinishWork()
+	err := m.runEvent(listener, msg)
+	if err != nil {
+		m.onEventDispatchError(natsMsg, listener.registration.NoRetry)
+		return
+	}
+	m.ackEventDispatch(natsMsg)
+}
+
+func (m *Manager) runEvent(listener *_EventListenerState, msg eventspec.NATSMessage) ex.Error {
 	listener.semaphore <- struct{}{}
 	defer func() {
 		<-listener.semaphore
@@ -119,10 +128,8 @@ func (m *Manager) onEvent(listener *_EventListenerState, natsMsg jetstream.Msg, 
 			"instanceId", listener.appInstanceID,
 			"error", err,
 		)
-		m.onEventDispatchError(natsMsg, listener.registration.NoRetry)
-		return
 	}
-	m.ackEventDispatch(natsMsg)
+	return err
 }
 
 func (*Manager) ackEventDispatch(natsMsg jetstream.Msg) {

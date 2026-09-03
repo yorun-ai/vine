@@ -1,8 +1,10 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"reflect"
+	"runtime/pprof"
 	"time"
 
 	"go.yorun.ai/vine/internal/core/ex"
@@ -119,7 +121,17 @@ func (s *Server) handle(rpcRequest spec.Request) (response spec.Response) {
 	arguments := rpcRequest.PositionalArguments()
 	methodImpl := rpcRequest.MethodImpl()
 
-	result, logErr = s.executor.Execute(rpcContext, methodImpl, arguments)
+	baseContext := rpcContext.Context
+	labels := pprof.Labels(
+		"vine.app", s.opt.App.Name(),
+		"vine.method", rpcRequest.MethodInfo().SkelName(),
+		"vine.protocol", "rpc",
+		"vine.service", rpcRequest.MethodInfo().Service().SkelName(),
+	)
+	pprof.Do(baseContext, labels, func(ctx context.Context) {
+		rpcContext.Context = ctx
+		result, logErr = s.executor.Execute(rpcContext, methodImpl, arguments)
+	})
 	return
 }
 

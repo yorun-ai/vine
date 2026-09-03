@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime/pprof"
 	"strings"
 	"sync"
 	"testing"
@@ -13,6 +14,7 @@ import (
 
 	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 
+	"github.com/stretchr/testify/assert"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -129,11 +131,12 @@ type benchmarkTaskRunnerImpl struct {
 func (*benchmarkTaskRunnerImpl) RunForGroup(int) {}
 
 type _RunnerRecorderExecutor struct {
-	taskContext spec.Context
-	triggerImpl spec.TriggerImpl
-	args        []any
-	err         ex.Error
-	panicV      any
+	taskContext   spec.Context
+	triggerImpl   spec.TriggerImpl
+	args          []any
+	err           ex.Error
+	panicV        any
+	profileLabels map[string]string
 }
 
 func (*_RunnerRecorderExecutor) Init(spec.ImplDict) {}
@@ -145,6 +148,13 @@ func (e *_RunnerRecorderExecutor) Execute(taskContext spec.Context, triggerImpl 
 	e.taskContext = taskContext
 	e.triggerImpl = triggerImpl
 	e.args = args
+	if e.profileLabels != nil {
+		for _, key := range []string{"vine.app", "vine.protocol", "vine.task", "vine.trigger"} {
+			if value, ok := pprof.Label(taskContext, key); ok {
+				e.profileLabels[key] = value
+			}
+		}
+	}
 	return e.err
 }
 
@@ -235,6 +245,37 @@ func TestServerResolvesTriggerImplByInfo(t *testing.T) {
 	if executor.taskContext.Trace().ParentSpan() != "" {
 		t.Fatalf("unexpected parent span: got=%s want empty", executor.taskContext.Trace().ParentSpan())
 	}
+}
+
+func TestServerRunTaskAddsProfileLabels(t *testing.T) {
+	ensureRunnerTaskRegistered()
+	executor := &_RunnerRecorderExecutor{profileLabels: map[string]string{}}
+	server := NewServer(Option{
+		App:       testTaskServerApp(),
+		ImplTypes: []reflect.Type{reflect.TypeFor[*testRunnerImpl]()},
+		Executor:  executor,
+	})
+	trace := meta.InitialTrace()
+	err := server.RunTask(context.Background(), appskeled.TaskRun{
+		Metadata: appskeled.TaskRunMeta{
+			TraceId:       trace.Id(),
+			TraceSpan:     trace.Span(),
+			AppName:       "remote.app",
+			AppVersion:    "1.0.0",
+			AppInstanceId: skel.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
+		},
+		TaskSkelName:    "runner.task",
+		TriggerSkelName: "forGroup",
+		ArgumentsJson:   `{"GroupId":9}`,
+	})
+
+	assert.Nil(t, err)
+	assert.Equal(t, map[string]string{
+		"vine.app":      "test.app",
+		"vine.protocol": "task",
+		"vine.task":     "runner.task",
+		"vine.trigger":  "forGroup",
+	}, executor.profileLabels)
 }
 
 func TestServerReturnsInvalidTaskWhenTriggerNotRegistered(t *testing.T) {

@@ -36,14 +36,17 @@ are not part of the public compatibility commitment.
   removed redundant URL copies after `http.Request.Clone`
 - Added isolated Go 1.27 `goroutineleak` profile checks for application HTTP,
   in-process Rpc and Web, scheduler, and Redis lock lifecycle tests
+- Added low-cardinality application and Skel labels to Rpc, Event, and Task
+  execution so Go 1.27 tracebacks and pprof profiles identify active handlers
 - Replaced the package-level `testkit.NewClient`, `testkit.NewClientER`, and
   `redis.NewCache` functions with the generic methods `Execution.NewClient`,
   `Execution.NewClientER`, and `Redis.NewCache`, and simplified application
   construction through the generic process guard
-- Reworked timer-, cancellation-, scheduler-, lock-, HTTP shutdown-, and
-  in-process transport tests around Go 1.27 `testing/synctest`, replacing
-  wall-clock polling with deterministic synchronization, randomized test
-  ordering, and tighter global state and in-process endpoint cleanup
+- Reworked timer-, cancellation-, scheduler-, lock-, HTTP shutdown-, Link
+  dispatch concurrency-, and in-process transport tests around Go 1.27
+  `testing/synctest`, replacing wall-clock polling with deterministic
+  synchronization, randomized test ordering, and tighter global state and
+  in-process endpoint cleanup
 - Made Rpc, Web, and Link ingress in-process endpoint registries concurrency
   safe and lifecycle-owned through idempotent registration cleanup functions
 - Added independently instantiable registries for domain schemas, configuration,

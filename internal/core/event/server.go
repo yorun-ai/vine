@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"reflect"
+	"runtime/pprof"
 	"time"
 
 	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
@@ -93,17 +94,30 @@ func (s *Server) OnEvent(ctx context.Context, on appskeled.EventOn) ex.Error {
 		return rejectedErr
 	}
 
-	return s.onEvent(&spec.OnImpl{
-		ContextValue: &spec.ContextImpl{
-			Context:        ctx,
-			TraceValue:     trace.NewChildTrace(),
-			EmitterValue:   client,
-			EmittedAtValue: on.Metadata.EmittedAt.Time,
-		},
+	eventContext := &spec.ContextImpl{
+		Context:        ctx,
+		TraceValue:     trace.NewChildTrace(),
+		EmitterValue:   client,
+		EmittedAtValue: on.Metadata.EmittedAt.Time,
+	}
+	eventOn := &spec.OnImpl{
+		ContextValue:      eventContext,
 		EventInfoValue:    eventInfo,
 		ListenerImplValue: listenerImpl,
 		EventPayloadValue: payload,
+	}
+	var responseErr ex.Error
+	baseContext := eventContext.Context
+	labels := pprof.Labels(
+		"vine.app", s.opt.App.Name(),
+		"vine.event", eventInfo.SkelName(),
+		"vine.protocol", "event",
+	)
+	pprof.Do(baseContext, labels, func(ctx context.Context) {
+		eventContext.Context = ctx
+		responseErr = s.onEvent(eventOn)
 	})
+	return responseErr
 }
 
 func (s *Server) onEvent(messageOn spec.On) (responseErr ex.Error) {

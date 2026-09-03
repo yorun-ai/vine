@@ -54,6 +54,8 @@ type _ManagerDispatchHooks struct {
 	events      []appskeled.EventOn
 	timeout     time.Duration
 	callCount   int
+	active      int
+	maxActive   int
 	startedChan chan struct{}
 	completed   chan struct{}
 	releaseChan chan struct{}

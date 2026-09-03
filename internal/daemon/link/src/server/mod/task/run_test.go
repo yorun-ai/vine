@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
@@ -93,9 +94,6 @@ func TestManagerRegistersListenerAndDispatchesRun(t *testing.T) {
 }
 
 func TestManagerLimitsDispatchConcurrency(t *testing.T) {
-	manager, cleanup := newTestManager(t)
-	defer cleanup()
-
 	oldFactory := newAppTaskServiceClient
 	oldRun := runAppTask
 	defer func() {
@@ -103,83 +101,79 @@ func TestManagerLimitsDispatchConcurrency(t *testing.T) {
 		runAppTask = oldRun
 	}()
 
-	hooks := &_ManagerDispatchHooks{
-		startedChan: make(chan struct{}, 2),
-		releaseChan: make(chan struct{}),
-	}
-	newAppTaskServiceClient = func(context.Context, runtime.App, string, taskspec.NATSMessage) appskeled.TaskServiceClientER {
-		return &_ManagerAppTaskClient{
-			runTask: func(run appskeled.TaskRun) error {
-				hooks.mutex.Lock()
-				hooks.runs = append(hooks.runs, run)
-				hooks.mutex.Unlock()
-				hooks.startedChan <- struct{}{}
-				<-hooks.releaseChan
-				return nil
-			},
+	synctest.Test(t, func(t *testing.T) {
+		hooks := &_ManagerDispatchHooks{
+			startedChan: make(chan struct{}, 2),
+			releaseChan: make(chan struct{}),
 		}
-	}
-	runAppTask = func(client appskeled.TaskServiceClientER, run appskeled.TaskRun, timeout time.Duration) ex.Error {
-		return client.RunTask(run)
-	}
+		newAppTaskServiceClient = func(context.Context, runtime.App, string, taskspec.NATSMessage) appskeled.TaskServiceClientER {
+			return &_ManagerAppTaskClient{
+				runTask: func(run appskeled.TaskRun) error {
+					hooks.mutex.Lock()
+					hooks.runs = append(hooks.runs, run)
+					hooks.active++
+					hooks.maxActive = max(hooks.maxActive, hooks.active)
+					hooks.mutex.Unlock()
+					hooks.startedChan <- struct{}{}
+					<-hooks.releaseChan
+					hooks.mutex.Lock()
+					hooks.active--
+					hooks.mutex.Unlock()
+					return nil
+				},
+			}
+		}
+		runAppTask = func(client appskeled.TaskServiceClientER, run appskeled.TaskRun, _ time.Duration) ex.Error {
+			return client.RunTask(run)
+		}
 
-	appInfo, err := meta.NewApp("demo.app", "1.0.0", "11111111-1111-1111-1111-111111111111")
-	require.NoError(t, err)
-	endpoint := testLocalAppEndpoint(8080)
-	manager.AppMinder.RegisterInstance(minder.AppRegistration{
-		AppInfo:      appInfo,
-		TaskEndpoint: endpoint + testPathTask,
-		TaskRunners: []skeled.TaskRunnerRegistration{{
-			TaskSkelName: "demo.user.SyncUserTask",
-			TimeoutMs:    1000,
-			Concurrency:  1,
-		}},
+		manager := &Manager{
+			Context: context.Background(),
+			App:     meta.MustNewApp("vine.link", "1.0.0", "22222222-2222-2222-2222-222222222222"),
+		}
+		runner := &_TaskRunnerState{
+			taskEndpoint: testLocalAppEndpoint(8080) + testPathTask,
+			registration: skeled.TaskRunnerRegistration{
+				TimeoutMs:   1000,
+				Concurrency: 1,
+			},
+			semaphore: make(chan struct{}, 1),
+		}
+		message := taskspec.NATSMessage{
+			Metadata: taskspec.NATSMessageMeta{
+				TraceId:       "trace-1",
+				TraceSpan:     "0123456789abcdef",
+				AppName:       "launcher.app",
+				AppVersion:    "2.0.0",
+				AppInstanceId: skel.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
+			},
+			TaskSkelName:    "demo.user.SyncUserTask",
+			TriggerSkelName: "demo.user.SyncUserTaskManualTrigger",
+			ArgumentsJson:   `{"userId":"u1"}`,
+		}
+		done := make(chan ex.Error, 2)
+		go func() { done <- manager.runTask(runner, message) }()
+		go func() { done <- manager.runTask(runner, message) }()
+
+		synctest.Wait()
+		<-hooks.startedChan
+		hooks.mutex.Lock()
+		assert.Equal(t, 1, hooks.active)
+		hooks.mutex.Unlock()
+
+		hooks.releaseChan <- struct{}{}
+		synctest.Wait()
+		<-hooks.startedChan
+		hooks.releaseChan <- struct{}{}
+		synctest.Wait()
+
+		assert.Nil(t, <-done)
+		assert.Nil(t, <-done)
+		hooks.mutex.Lock()
+		defer hooks.mutex.Unlock()
+		assert.Len(t, hooks.runs, 2)
+		assert.Equal(t, 1, hooks.maxActive)
 	})
-
-	firstLaunch := skeled.TaskLaunch{
-		Metadata: skeled.TaskLaunchMeta{
-			TraceId:       "trace-1",
-			TraceSpan:     "0123456789abcdef",
-			AppName:       "launcher.app",
-			AppVersion:    "2.0.0",
-			AppInstanceId: skel.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
-		},
-		TaskSkelName:    "demo.user.SyncUserTask",
-		TriggerSkelName: "demo.user.SyncUserTaskManualTrigger",
-		ArgumentsJson:   `{"userId":"u1"}`,
-	}
-	secondLaunch := firstLaunch
-	secondLaunch.Metadata.TraceId = "trace-2"
-	secondLaunch.ArgumentsJson = `{"userId":"u2"}`
-
-	manager.LaunchTask(firstLaunch)
-	manager.LaunchTask(secondLaunch)
-
-	select {
-	case <-hooks.startedChan:
-	case <-time.After(2 * time.Second):
-		t.Fatal("first task dispatch timeout")
-	}
-
-	select {
-	case <-hooks.startedChan:
-		t.Fatal("second task started before first task finished")
-	case <-time.After(100 * time.Millisecond):
-	}
-
-	hooks.releaseChan <- struct{}{}
-
-	select {
-	case <-hooks.startedChan:
-	case <-time.After(2 * time.Second):
-		t.Fatal("second task dispatch timeout")
-	}
-
-	hooks.releaseChan <- struct{}{}
-
-	hooks.mutex.Lock()
-	defer hooks.mutex.Unlock()
-	assert.Len(t, hooks.runs, 2)
 }
 
 func TestManagerCompetesGloballyForTaskMessages(t *testing.T) {
