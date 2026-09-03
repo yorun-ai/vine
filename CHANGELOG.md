@@ -29,6 +29,8 @@ are not part of the public compatibility commitment.
   `http.Server.MaxHeaderValueCount`
 - Adopted Go 1.27 `strings.CutLast`, typed atomics, and `slices.Backward` where
   they directly simplify parsing, test counters, and reverse-order cleanup
+- Added isolated Go 1.27 `goroutineleak` profile checks for application HTTP,
+  in-process Rpc, scheduler, and Redis lock lifecycle tests
 - Reworked timer-, cancellation-, scheduler-, lock-, and in-process transport
   tests around Go 1.27 `testing/synctest`, replacing wall-clock polling with
   deterministic synchronization, randomized test ordering, and tighter global
