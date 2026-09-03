@@ -67,6 +67,7 @@ func TestForwardRequest(t *testing.T) {
 			w.WriteHeader(http.StatusAccepted)
 			_, _ = w.Write([]byte("forwarded-inproc"))
 		}))
+		t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
 		request := httptest.NewRequest(http.MethodGet, "http://demo.local/ping?a=1", nil)
 		response, err := ForwardRequest(request, ingressEndpoint+"/web/proxy/in/instance-1/admin@demo.app")

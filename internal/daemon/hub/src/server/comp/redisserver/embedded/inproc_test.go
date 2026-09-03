@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -13,21 +14,20 @@ import (
 )
 
 func TestInprocListenerAcceptUnblocksOnClose(t *testing.T) {
-	listener := newInprocListener()
-	done := make(chan error, 1)
-	go func() {
-		_, err := listener.Accept()
-		done <- err
-	}()
+	synctest.Test(t, func(t *testing.T) {
+		listener := newInprocListener()
+		done := make(chan error, 1)
+		go func() {
+			_, err := listener.Accept()
+			done <- err
+		}()
+		synctest.Wait()
 
-	require.NoError(t, listener.Close())
+		require.NoError(t, listener.Close())
+		synctest.Wait()
 
-	select {
-	case err := <-done:
-		assert.ErrorIs(t, err, net.ErrClosed)
-	case <-time.After(time.Second):
-		t.Fatal("accept did not unblock")
-	}
+		assert.ErrorIs(t, <-done, net.ErrClosed)
+	})
 }
 
 func TestInprocListenerDialHonorsContextCancellation(t *testing.T) {
@@ -65,37 +65,40 @@ func TestInprocConnBuffersWrites(t *testing.T) {
 }
 
 func TestInprocConnReadDeadline(t *testing.T) {
-	serverConn, clientConn := newInprocConnPair()
-	defer serverConn.Close()
-	defer clientConn.Close()
+	synctest.Test(t, func(t *testing.T) {
+		serverConn, clientConn := newInprocConnPair()
+		defer serverConn.Close()
+		defer clientConn.Close()
+		startedAt := time.Now()
 
-	require.NoError(t, serverConn.SetReadDeadline(time.Now().Add(10*time.Millisecond)))
-	buf := make([]byte, 1)
-	_, err := serverConn.Read(buf)
+		require.NoError(t, serverConn.SetReadDeadline(startedAt.Add(10*time.Millisecond)))
+		buf := make([]byte, 1)
+		_, err := serverConn.Read(buf)
 
-	var netErr net.Error
-	require.ErrorAs(t, err, &netErr)
-	assert.True(t, netErr.Timeout())
+		var netErr net.Error
+		require.ErrorAs(t, err, &netErr)
+		assert.True(t, netErr.Timeout())
+		assert.Equal(t, 10*time.Millisecond, time.Since(startedAt))
+	})
 }
 
 func TestInprocConnCloseUnblocksReadAndRejectsWrite(t *testing.T) {
-	serverConn, clientConn := newInprocConnPair()
-	done := make(chan error, 1)
-	go func() {
-		buf := make([]byte, 1)
-		_, err := serverConn.Read(buf)
-		done <- err
-	}()
+	synctest.Test(t, func(t *testing.T) {
+		serverConn, clientConn := newInprocConnPair()
+		done := make(chan error, 1)
+		go func() {
+			buf := make([]byte, 1)
+			_, err := serverConn.Read(buf)
+			done <- err
+		}()
+		synctest.Wait()
 
-	require.NoError(t, clientConn.Close())
+		require.NoError(t, clientConn.Close())
+		synctest.Wait()
 
-	select {
-	case err := <-done:
+		err := <-done
 		assert.True(t, errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed))
-	case <-time.After(time.Second):
-		t.Fatal("read did not unblock")
-	}
-
-	_, err := serverConn.Write([]byte("x"))
-	assert.ErrorIs(t, err, net.ErrClosed)
+		_, err = serverConn.Write([]byte("x"))
+		assert.ErrorIs(t, err, net.ErrClosed)
+	})
 }

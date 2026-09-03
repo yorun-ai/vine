@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -195,65 +196,78 @@ func TestSchedulerRefreshRecoveryContainsUnexpectedPanic(t *testing.T) {
 }
 
 func TestSchedulerCronRecoversJobPanic(t *testing.T) {
-	target := newTestScheduler(nil, &_SchedulerTaskPublisher{})
-	started := make(chan struct{})
-	var once sync.Once
-	_, err := target.cron.AddFunc("@every 1ms", func() {
-		once.Do(func() { close(started) })
-		panic("job failed")
+	synctest.Test(t, func(t *testing.T) {
+		target := newTestScheduler(nil, &_SchedulerTaskPublisher{})
+		started := make(chan struct{})
+		var once sync.Once
+		_, err := target.cron.AddFunc("@every 1ms", func() {
+			once.Do(func() { close(started) })
+			panic("job failed")
+		})
+		require.NoError(t, err)
+		target.cron.Start()
+		synctest.Sleep(time.Second)
+		requireSignal(t, started, "cron job did not start")
+		<-target.cron.Stop().Done()
 	})
-	require.NoError(t, err)
-	target.cron.Start()
-	requireSchedulerSignal(t, started, "cron job did not start")
-	<-target.cron.Stop().Done()
 }
 
 func TestSchedulerBeforeAppStopWaitsForRefreshLoop(t *testing.T) {
-	registryRepo := &_BlockingSchedulerRegistryRepo{
-		started: make(chan struct{}),
-		release: make(chan struct{}),
-	}
-	target := &Scheduler{
-		RegistryRepo:    registryRepo,
-		SchemaRepo:      &_SchedulerSchemaRepo{},
-		publisher:       &_SchedulerTaskPublisher{},
-		refreshInterval: time.Millisecond,
-	}
-	target.DIInit()
-	target.AfterAppStart()
-	requireSchedulerSignal(t, registryRepo.started, "refresh loop did not start")
+	synctest.Test(t, func(t *testing.T) {
+		registryRepo := &_BlockingSchedulerRegistryRepo{
+			started: make(chan struct{}),
+			release: make(chan struct{}),
+		}
+		target := &Scheduler{
+			RegistryRepo:    registryRepo,
+			SchemaRepo:      &_SchedulerSchemaRepo{},
+			publisher:       &_SchedulerTaskPublisher{},
+			refreshInterval: time.Millisecond,
+		}
+		target.DIInit()
+		target.AfterAppStart()
+		synctest.Sleep(time.Millisecond)
+		requireSignal(t, registryRepo.started, "refresh loop did not start")
 
-	stopped := make(chan struct{})
-	go func() {
-		target.BeforeAppStop()
-		close(stopped)
-	}()
-	requireSchedulerBlocked(t, stopped, "scheduler stopped before refresh completed")
-	close(registryRepo.release)
-	requireSchedulerSignal(t, stopped, "scheduler did not stop after refresh completed")
+		stopped := make(chan struct{})
+		go func() {
+			target.BeforeAppStop()
+			close(stopped)
+		}()
+		synctest.Wait()
+		requireNoSignal(t, stopped, "scheduler stopped before refresh completed")
+		close(registryRepo.release)
+		synctest.Wait()
+		requireSignal(t, stopped, "scheduler did not stop after refresh completed")
+	})
 }
 
 func TestSchedulerBeforeAppStopWaitsForRunningCronJob(t *testing.T) {
-	target := newTestScheduler(nil, &_SchedulerTaskPublisher{})
-	started := make(chan struct{})
-	release := make(chan struct{})
-	var once sync.Once
-	_, err := target.cron.AddFunc("@every 1ms", func() {
-		once.Do(func() { close(started) })
-		<-release
-	})
-	require.NoError(t, err)
-	target.cron.Start()
-	requireSchedulerSignal(t, started, "cron job did not start")
+	synctest.Test(t, func(t *testing.T) {
+		target := newTestScheduler(nil, &_SchedulerTaskPublisher{})
+		started := make(chan struct{})
+		release := make(chan struct{})
+		var once sync.Once
+		_, err := target.cron.AddFunc("@every 1ms", func() {
+			once.Do(func() { close(started) })
+			<-release
+		})
+		require.NoError(t, err)
+		target.cron.Start()
+		synctest.Sleep(time.Second)
+		requireSignal(t, started, "cron job did not start")
 
-	stopped := make(chan struct{})
-	go func() {
-		target.BeforeAppStop()
-		close(stopped)
-	}()
-	requireSchedulerBlocked(t, stopped, "scheduler stopped before cron job completed")
-	close(release)
-	requireSchedulerSignal(t, stopped, "scheduler did not stop after cron job completed")
+		stopped := make(chan struct{})
+		go func() {
+			target.BeforeAppStop()
+			close(stopped)
+		}()
+		synctest.Wait()
+		requireNoSignal(t, stopped, "scheduler stopped before cron job completed")
+		close(release)
+		synctest.Wait()
+		requireSignal(t, stopped, "scheduler did not stop after cron job completed")
+	})
 }
 
 func newTestScheduler(statuses []*core.AppStatus, publisher *_SchedulerTaskPublisher) *Scheduler {
@@ -303,20 +317,20 @@ func newTestScheduleConfig() _ScheduleConfig {
 	}
 }
 
-func requireSchedulerSignal(t *testing.T, signal <-chan struct{}, message string) {
+func requireSignal(t *testing.T, signal <-chan struct{}, message string) {
 	t.Helper()
 	select {
 	case <-signal:
-	case <-time.After(time.Second):
+	default:
 		t.Fatal(message)
 	}
 }
 
-func requireSchedulerBlocked(t *testing.T, signal <-chan struct{}, message string) {
+func requireNoSignal(t *testing.T, signal <-chan struct{}, message string) {
 	t.Helper()
 	select {
 	case <-signal:
 		t.Fatal(message)
-	case <-time.After(20 * time.Millisecond):
+	default:
 	}
 }

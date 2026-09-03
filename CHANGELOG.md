@@ -18,6 +18,10 @@ are not part of the public compatibility commitment.
 
 - Raised the minimum Go version to 1.27.0 and pinned CI and release builds to
   Go 1.27.1
+- Reworked timer-, cancellation-, scheduler-, lock-, and in-process transport
+  tests around Go 1.27 `testing/synctest`, replacing wall-clock polling with
+  deterministic synchronization, randomized test ordering, and tighter global
+  state and in-process endpoint cleanup
 
 ### Fixed
 

@@ -56,7 +56,7 @@ func TestRpcGatewayRejectsPlaintextRegistrationWithMTLS(t *testing.T) {
 
 func TestRpcGatewayForwardsConfiguredServiceToRegistrationEndpoint(t *testing.T) {
 	ingressEndpoint := "link+inproc://vine/portal-rpcgw-test"
-	ingressinproc.Register(ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	registerTestIngress(t, ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Rpcgw-Test", "ok")
 		w.Header().Set("X-Rpcgw-Path", r.URL.Path)
 		w.Header().Set("X-Rpcgw-Trace", r.Header.Get(rpchttp.HeaderRpcTrace))
@@ -132,7 +132,7 @@ func TestRpcGatewayForwardsConfiguredServiceToRegistrationEndpoint(t *testing.T)
 
 func TestRpcGatewayClearsAcceptEncodingBeforeForward(t *testing.T) {
 	ingressEndpoint := "link+inproc://vine/portal-rpcgw-accept-encoding-test"
-	ingressinproc.Register(ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	registerTestIngress(t, ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Rpcgw-Accept-Encoding", r.Header.Get(rpchttp.HeaderAcceptEncoding))
 		_, _ = w.Write([]byte("forwarded"))
 	}))
@@ -159,7 +159,7 @@ func TestRpcGatewayClearsAcceptEncodingBeforeForward(t *testing.T) {
 
 func TestRpcGatewayAddsDefaultRpcOptionsTimeoutBeforeForward(t *testing.T) {
 	ingressEndpoint := "link+inproc://vine/portal-rpcgw-default-options-test"
-	ingressinproc.Register(ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	registerTestIngress(t, ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Rpcgw-Options", r.Header.Get(rpchttp.HeaderRpcOptions))
 		_, _ = w.Write([]byte("forwarded"))
 	}))
@@ -186,7 +186,7 @@ func TestRpcGatewayAddsDefaultRpcOptionsTimeoutBeforeForward(t *testing.T) {
 
 func TestRpcGatewayIgnoresClientCancelAfterRequestIsAccepted(t *testing.T) {
 	ingressEndpoint := "link+inproc://vine/portal-rpcgw-client-cancel-test"
-	ingressinproc.Register(ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	registerTestIngress(t, ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 		_, _ = w.Write([]byte("forwarded"))
 	}))
@@ -218,7 +218,7 @@ func TestRpcGatewayIgnoresClientCancelAfterRequestIsAccepted(t *testing.T) {
 
 func TestRpcGatewayForwardsRemainingRpcOptionsTimeout(t *testing.T) {
 	ingressEndpoint := "link+inproc://vine/portal-rpcgw-remaining-options-test"
-	ingressinproc.Register(ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	registerTestIngress(t, ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Rpcgw-Options", r.Header.Get(rpchttp.HeaderRpcOptions))
 		_, _ = w.Write([]byte("forwarded"))
 	}))
@@ -265,7 +265,7 @@ func TestRpcGatewayRejectsRpcOptionsTimeoutOverMax(t *testing.T) {
 
 func TestRpcGatewayGeneratesMissingRpcSpanBeforeForward(t *testing.T) {
 	ingressEndpoint := "link+inproc://vine/portal-rpcgw-missing-span-test"
-	ingressinproc.Register(ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	registerTestIngress(t, ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Rpcgw-Trace", r.Header.Get(rpchttp.HeaderRpcTrace))
 		_, _ = w.Write([]byte("forwarded"))
 	}))
@@ -301,7 +301,7 @@ func TestRpcGatewayGeneratesMissingRpcSpanBeforeForward(t *testing.T) {
 
 func TestRpcGatewayMapsForwardedRpcErrorToHTTPStatusCode(t *testing.T) {
 	ingressEndpoint := "link+inproc://vine/portal-rpcgw-error-status-test"
-	ingressinproc.Register(ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	registerTestIngress(t, ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := rpchttp.WriteRequestErrorResponse(w, r, testServerApp(), ex.New(ex.NotFound, "missing user")); err != nil {
 			t.Fatalf("WriteRequestErrorResponse() error = %v", err)
 		}
@@ -360,7 +360,7 @@ func TestRpcGatewayCompressesLargeResponseWithGzipFallback(t *testing.T) {
 
 func TestRpcGatewayCreatesForwardSpan(t *testing.T) {
 	ingressEndpoint := "link+inproc://vine/portal-rpcgw-span-test"
-	ingressinproc.Register(ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	registerTestIngress(t, ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Rpcgw-Trace", r.Header.Get(rpchttp.HeaderRpcTrace))
 		w.WriteHeader(http.StatusAccepted)
 	}))
@@ -395,7 +395,7 @@ func TestRpcGatewayCreatesForwardSpan(t *testing.T) {
 
 func TestRpcGatewayOverwritesExistingRpcInitiator(t *testing.T) {
 	ingressEndpoint := "link+inproc://vine/portal-rpcgw-initiator-test"
-	ingressinproc.Register(ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	registerTestIngress(t, ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Rpcgw-Initiator", r.Header.Get(rpchttp.HeaderRpcInitiator))
 		w.WriteHeader(http.StatusAccepted)
 	}))
@@ -508,7 +508,7 @@ func TestRpcGatewayRejectsInvalidRpcOptionsForInprocEndpoint(t *testing.T) {
 
 func TestRpcGatewayOverwritesExistingRpcActor(t *testing.T) {
 	ingressEndpoint := "link+inproc://vine/portal-rpcgw-actor-test"
-	ingressinproc.Register(ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	registerTestIngress(t, ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Rpcgw-Actor", r.Header.Get(rpchttp.HeaderRpcActor))
 		w.WriteHeader(http.StatusAccepted)
 	}))
@@ -825,11 +825,17 @@ func newTestSchemaRedis() *portalhubredis.Client {
 	return redisClient
 }
 
+func registerTestIngress(t *testing.T, endpoint string, handler http.Handler) {
+	t.Helper()
+	ingressinproc.Register(endpoint, handler)
+	t.Cleanup(func() { ingressinproc.Unregister(endpoint) })
+}
+
 func serveTestRpcGatewayCompressedResponse(t *testing.T, body string, acceptEncoding string) *httptest.ResponseRecorder {
 	t.Helper()
 
 	ingressEndpoint := "link+inproc://vine/portal-rpcgw-compression-test-" + meta.NewId()
-	ingressinproc.Register(ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	registerTestIngress(t, ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(body))
 	}))
 

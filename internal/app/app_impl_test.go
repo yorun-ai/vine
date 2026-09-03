@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
+	"testing/synctest"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -641,22 +641,24 @@ func TestNewAppUsesRunFlagListenAddrMutatedInDIInit(t *testing.T) {
 }
 
 func TestAppImplStartIsNonBlocking(t *testing.T) {
-	app := newTestAppImpl()
-	useTestHTTPListener(t, 18081)
+	synctest.Test(t, func(t *testing.T) {
+		app := newTestAppImpl()
+		useTestHTTPListener(t, 18081)
 
-	started := make(chan struct{})
-	go func() {
-		app.Start()
-		close(started)
-	}()
+		started := make(chan struct{})
+		go func() {
+			app.Start()
+			close(started)
+		}()
+		synctest.Wait()
 
-	select {
-	case <-started:
-	case <-time.After(time.Second):
-		t.Fatal("Start should return without blocking")
-	}
-
-	app.StopGracefully()
+		select {
+		case <-started:
+		default:
+			t.Fatal("Start should return without blocking")
+		}
+		app.StopGracefully()
+	})
 }
 
 func TestAppImplStartPanicsWhenAlreadyStarted(t *testing.T) {
@@ -1042,37 +1044,40 @@ func TestAppImplStartSkipsDomainSchemasWhenSkipDomainSchemasEnabled(t *testing.T
 }
 
 func TestAppImplStopGracefullyStopsInprocMode(t *testing.T) {
-	flags := _Flags{}
-	flags.EnsureRunFlag()
-	flags.InitInprocFlag(true)
-	app := newApp(&testInternalServicerSpec{
-		InternalApplication: InternalApplication{
-			Application: Application{AppFlag: &RunFlag{}},
-			InternalAttrs: InternalAttributes{
-				Info: testRuntimeApp{
-					name:       "test.app",
-					version:    "1.2.3",
-					instanceID: "00000000-0000-0000-0000-000000000123",
+	synctest.Test(t, func(t *testing.T) {
+		flags := _Flags{}
+		flags.EnsureRunFlag()
+		flags.InitInprocFlag(true)
+		app := newApp(&testInternalServicerSpec{
+			InternalApplication: InternalApplication{
+				Application: Application{AppFlag: &RunFlag{}},
+				InternalAttrs: InternalAttributes{
+					Info: testRuntimeApp{
+						name:       "test.app",
+						version:    "1.2.3",
+						instanceID: "00000000-0000-0000-0000-000000000123",
+					},
+					Linker:         &testLinker{},
+					InprocHostPath: "app/test-wait-inproc",
 				},
-				Linker:         &testLinker{},
-				InprocHostPath: "app/test-wait-inproc",
 			},
-		},
-	}, flags)
+		}, flags)
 
-	app.Start()
+		app.Start()
 
-	stopDone := make(chan struct{})
-	go func() {
-		app.StopGracefully()
-		close(stopDone)
-	}()
+		stopDone := make(chan struct{})
+		go func() {
+			app.StopGracefully()
+			close(stopDone)
+		}()
+		synctest.Wait()
 
-	select {
-	case <-stopDone:
-	case <-time.After(time.Second):
-		t.Fatal("StopGracefully should complete in inproc mode")
-	}
+		select {
+		case <-stopDone:
+		default:
+			t.Fatal("StopGracefully should complete in inproc mode")
+		}
+	})
 }
 
 func TestAppImplStopUnregistersInprocRoutes(t *testing.T) {

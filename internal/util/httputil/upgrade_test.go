@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 )
 
@@ -91,36 +92,44 @@ func TestForwardUpgrade(t *testing.T) {
 }
 
 func TestUpgradeIdleReadWriteCloserClosesIdleStream(t *testing.T) {
-	stream := newUpgradeStreamStub()
-	idleStream := newUpgradeIdleReadWriteCloser(stream, 10*time.Millisecond)
-	t.Cleanup(func() { _ = idleStream.Close() })
+	synctest.Test(t, func(t *testing.T) {
+		stream := newUpgradeStreamStub()
+		idleStream := newUpgradeIdleReadWriteCloser(stream, 10*time.Millisecond)
+		t.Cleanup(func() { _ = idleStream.Close() })
 
-	select {
-	case <-stream.closed:
-	case <-time.After(time.Second):
-		t.Fatal("idle upgrade stream was not closed")
-	}
+		synctest.Sleep(10 * time.Millisecond)
+		select {
+		case <-stream.closed:
+		default:
+			t.Fatal("idle upgrade stream was not closed")
+		}
+	})
 }
 
 func TestUpgradeIdleReadWriteCloserResetsOnTraffic(t *testing.T) {
-	stream := newUpgradeStreamStub()
-	idleStream := newUpgradeIdleReadWriteCloser(stream, 200*time.Millisecond)
-	t.Cleanup(func() { _ = idleStream.Close() })
+	synctest.Test(t, func(t *testing.T) {
+		stream := newUpgradeStreamStub()
+		idleStream := newUpgradeIdleReadWriteCloser(stream, 200*time.Millisecond)
+		t.Cleanup(func() { _ = idleStream.Close() })
 
-	time.Sleep(100 * time.Millisecond)
-	if _, err := idleStream.Write([]byte("ping")); err != nil {
-		t.Fatalf("Write() error = %v", err)
-	}
-	select {
-	case <-stream.closed:
-		t.Fatal("active upgrade stream was closed")
-	case <-time.After(150 * time.Millisecond):
-	}
-	select {
-	case <-stream.closed:
-	case <-time.After(time.Second):
-		t.Fatal("upgrade stream was not closed after becoming idle")
-	}
+		synctest.Sleep(100 * time.Millisecond)
+		if _, err := idleStream.Write([]byte("ping")); err != nil {
+			t.Fatalf("Write() error = %v", err)
+		}
+		synctest.Sleep(199 * time.Millisecond)
+		select {
+		case <-stream.closed:
+			t.Fatal("active upgrade stream was closed")
+		default:
+		}
+
+		synctest.Sleep(time.Millisecond)
+		select {
+		case <-stream.closed:
+		default:
+			t.Fatal("upgrade stream was not closed after becoming idle")
+		}
+	})
 }
 
 func TestUpgradeIdleTransportWrapsSwitchingProtocolStream(t *testing.T) {

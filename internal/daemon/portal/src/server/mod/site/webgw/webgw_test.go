@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/klauspost/compress/zstd"
@@ -31,6 +32,7 @@ func TestWebGatewayForwardsToRegistrationEndpoint(t *testing.T) {
 		w.WriteHeader(http.StatusAccepted)
 		_, _ = w.Write([]byte("forwarded"))
 	}))
+	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
 	target := newTestWebGateway(map[string]string{
 		redised.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.WebRegistration{
@@ -160,47 +162,47 @@ func TestWebGatewayAddsDefaultOptionsTimeoutBeforeForward(t *testing.T) {
 }
 
 func TestWebGatewayDoesNotAddDefaultTimeoutToUpgrade(t *testing.T) {
-	gatewayContext, stopGateway := context.WithCancel(context.Background())
-	requestContext, cancelRequest := context.WithCancel(context.Background())
-	request := httptest.NewRequest(http.MethodGet, "http://demo.local/hmr", nil).WithContext(requestContext)
-	request.Header.Set("Connection", "Upgrade")
-	request.Header.Set("Upgrade", "websocket")
+	synctest.Test(t, func(t *testing.T) {
+		gatewayContext, stopGateway := context.WithCancel(t.Context())
+		requestContext, cancelRequest := context.WithCancel(t.Context())
+		request := httptest.NewRequest(http.MethodGet, "http://demo.local/hmr", nil).WithContext(requestContext)
+		request.Header.Set("Connection", "Upgrade")
+		request.Header.Set("Upgrade", "websocket")
 
-	forwardRequest, cancel, err := requestWithWebOptionsTimeout(request, gatewayContext)
-	if err != nil {
-		t.Fatalf("requestWithWebOptionsTimeout() error = %v", err)
-	}
-	t.Cleanup(cancel)
+		forwardRequest, cancel, err := requestWithWebOptionsTimeout(request, gatewayContext)
+		if err != nil {
+			t.Fatalf("requestWithWebOptionsTimeout() error = %v", err)
+		}
+		t.Cleanup(cancel)
 
-	if deadline, ok := forwardRequest.Context().Deadline(); ok {
-		t.Fatalf("upgrade deadline = %s, want none", deadline)
-	}
-	encodeWebOptionsToHeader(forwardRequest)
-	if got := forwardRequest.Header.Get(webspec.HeaderWebOptions); got != "" {
-		t.Fatalf("forwarded options = %q, want empty", got)
-	}
+		if deadline, ok := forwardRequest.Context().Deadline(); ok {
+			t.Fatalf("upgrade deadline = %s, want none", deadline)
+		}
+		encodeWebOptionsToHeader(forwardRequest)
+		if got := forwardRequest.Header.Get(webspec.HeaderWebOptions); got != "" {
+			t.Fatalf("forwarded options = %q, want empty", got)
+		}
 
-	cancelRequest()
-	select {
-	case <-forwardRequest.Context().Done():
-	case <-time.After(time.Second):
-		t.Fatal("upgrade context was not canceled with request context")
-	}
+		cancelRequest()
+		synctest.Wait()
+		if err := forwardRequest.Context().Err(); err != context.Canceled {
+			t.Fatalf("upgrade context error = %v, want canceled request context", err)
+		}
 
-	request = httptest.NewRequest(http.MethodGet, "http://demo.local/hmr", nil)
-	request.Header.Set("Connection", "Upgrade")
-	request.Header.Set("Upgrade", "websocket")
-	forwardRequest, cancel, err = requestWithWebOptionsTimeout(request, gatewayContext)
-	if err != nil {
-		t.Fatalf("requestWithWebOptionsTimeout() error = %v", err)
-	}
-	defer cancel()
-	stopGateway()
-	select {
-	case <-forwardRequest.Context().Done():
-	case <-time.After(time.Second):
-		t.Fatal("upgrade context was not canceled with gateway context")
-	}
+		request = httptest.NewRequest(http.MethodGet, "http://demo.local/hmr", nil)
+		request.Header.Set("Connection", "Upgrade")
+		request.Header.Set("Upgrade", "websocket")
+		forwardRequest, cancel, err = requestWithWebOptionsTimeout(request, gatewayContext)
+		if err != nil {
+			t.Fatalf("requestWithWebOptionsTimeout() error = %v", err)
+		}
+		defer cancel()
+		stopGateway()
+		synctest.Wait()
+		if err := forwardRequest.Context().Err(); err != context.Canceled {
+			t.Fatalf("upgrade context error = %v, want canceled gateway context", err)
+		}
+	})
 }
 
 func TestWebGatewayDoesNotAddDefaultTimeoutToEventStream(t *testing.T) {
@@ -356,6 +358,7 @@ func TestWebGatewayCompressesLargeTextResponse(t *testing.T) {
 		w.Header().Set("Content-Type", "text/plain")
 		_, _ = w.Write([]byte(body))
 	}))
+	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
 	target := newTestWebGateway(map[string]string{
 		redised.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.WebRegistration{
