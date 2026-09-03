@@ -17,7 +17,7 @@ Link, and Portal.
 Use Vine when the application needs more than an HTTP router: typed
 cross-application contracts, runtime discovery, asynchronous delivery,
 configuration updates, external gateways, and predictable startup and graceful
-shutdown boundaries.
+shutdown.
 
 > Vine is stabilizing its public API before `v1.0.0`. Patch releases remain
 > backward-compatible within one minor release line; minor releases may contain

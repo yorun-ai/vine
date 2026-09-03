@@ -13,10 +13,10 @@ Rpc、Web、Event、Task、Redis 与关系型数据库，并让同一套应用�
 平滑演进到由 Hub、Link、Portal 组成的分离式部署。
 
 当应用需要的不只是 HTTP 路由器，而是类型安全的跨应用契约、运行时发现、异步投递、
-配置更新、外部网关，以及明确的启动与优雅关闭边界时，可以使用 Vine。
+配置更新、外部网关，以及可预期的启动与优雅关闭时，可以使用 Vine。
 
-> Vine 当前处于 `v1.0.0` 前的公开 API 稳定阶段。同一次版本内的补丁版本保持向后兼容；
-> 次版本可能包含有文档说明的不兼容调整。公开兼容性历史从 `v0.9.0` 开始。
+> Vine 会在 `v1.0.0` 之前持续稳定其公开 API。同一版本线内的补丁版本保持向后兼容；
+> 次版本可能包含有文档说明的破坏性变更。公开兼容性历史从 `v0.9.0` 开始。
 
 ## 一览
 
@@ -62,7 +62,7 @@ go mod init example.com/vine-hello
 go get go.yorun.ai/vine@latest
 ```
 
-Go 会把解析后的明确版本写入 `go.mod`。请审核并提交 `go.mod` 与 `go.sum`；需要可复现的
+Go 会把解析得到的发布版本写入 `go.mod`。审核并提交 `go.mod` 与 `go.sum`；需要可复现的
 初始化脚本应显式指定 Vine 发布 tag。
 
 创建 `main.go`：
@@ -109,8 +109,8 @@ func main() {
 go run .
 ```
 
-日志出现 `hello from Vine` 后，Hub、Portal、Link 和业务应用已经在同一个进程中运行。
-按 `Ctrl+C` 会按照生命周期的相反顺序停止它们。接下来可以继续阅读
+日志出现 `hello from Vine` 时，Hub、Portal、Link 和业务应用就已经在同一个进程中运行。
+按 `Ctrl+C` 会以相反的生命周期顺序停止它们。接下来可以继续阅读
 [首个应用教程](https://vine.yorun.ai/zh-CN/docs/getting-started/tutorial-first-app)，
 或者通过[首个 Skel 契约](https://vine.yorun.ai/zh-CN/docs/getting-started/first-contract)
 定义类型化 API。
@@ -155,13 +155,13 @@ vine link serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-运行分离式服务前，请阅读 [CLI 指南](https://vine.yorun.ai/zh-CN/docs/getting-started/cli)；
+运行分离式服务前，阅读 [CLI 指南](https://vine.yorun.ai/zh-CN/docs/getting-started/cli)；
 其中说明了持久化、NATS、listener、seed、Dashboard、环境变量与后端 mTLS 选项。
 
 ## Docker 镜像
 
 根目录的 `Dockerfile` 分别构建 Hub、Link 和 Portal 镜像。镜像名称、运行配置、
-Kubernetes manifests 和后台 mTLS 请参阅
+Kubernetes manifests 和后台 mTLS 参阅
 [容器与 Kubernetes 部署指南](https://vine.yorun.ai/zh-CN/docs/container-deployment)。
 
 ## 公开包索引
@@ -230,7 +230,7 @@ Portal 的公网 HTTPS 证书属于另一条配置边界。App-to-Link 流量在
 模型下仍使用 h2c，因此应保持在 loopback；特殊的跨主机路径需要由部署层额外保护。
 
 内嵌 Redis ACL 会隔离 Hub、Link 与 Portal 角色。外部 PostgreSQL 和 NATS 服务仍由
-各自的认证、加密、持久性和运维配置负责。生产部署前请完成
+各自的认证、加密、持久性和运维配置负责。生产部署前，核对
 [生产就绪检查](https://vine.yorun.ai/zh-CN/docs/production-readiness)，确认 listener 暴露、
 mTLS、持久化、投递、租约、关闭、扩缩容和可观测性边界。
 
@@ -248,7 +248,7 @@ vine/
 └── test/      # 仓库级测试与 race 入口
 ```
 
-请先阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 和 [AGENTS.md](AGENTS.md)。基础仓库检查为：
+先阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 和 [AGENTS.md](AGENTS.md)。基础仓库检查为：
 
 ```bash
 go mod download
@@ -264,11 +264,11 @@ GOWORK=off go vet ./...
 
 Vine 遵循[语义化版本](https://semver.org/lang/zh-CN/)。在 `v1.0.0` 之前：
 
-- 补丁版本（例如 `v0.11.1`）在同一次版本内保持向后兼容。
+- 补丁版本（例如 `v0.11.1`）在同一版本线内保持向后兼容。
 - 次版本可能调整公开 API、CLI、配置、Skel 或协议。
-- 不兼容变更会在发布说明和迁移指南中明确记录。
+- 破坏性变更会在发布说明和迁移指南中明确记录。
 
-`v1.0.0` 将标志公开 API 稳定，并开始提供正式兼容性承诺。
+`v1.0.0` 将标志着公开 API 进入稳定阶段，并开启正式的兼容性承诺。
 
 ## 许可证
 
