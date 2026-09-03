@@ -8,6 +8,8 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-09-04
+
 ### Changed
 
 - Moved Hub, Link, and Portal image publication to GHCR under `ghcr.io/yorun-ai`.
