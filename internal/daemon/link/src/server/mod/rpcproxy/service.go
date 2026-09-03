@@ -2,7 +2,7 @@ package rpcproxy
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 
 	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"

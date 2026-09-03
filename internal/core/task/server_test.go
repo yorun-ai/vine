@@ -2,7 +2,7 @@ package task
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -23,7 +23,7 @@ import (
 )
 
 type testRunnerArguments struct {
-	GroupId int
+	GroupId int `json:"groupId"`
 }
 
 func testTaskServerApp() meta.App {

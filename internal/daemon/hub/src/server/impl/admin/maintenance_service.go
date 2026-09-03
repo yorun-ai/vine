@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"encoding/json"
 	"strconv"
 	"time"
 
@@ -377,7 +376,7 @@ func jsonString(value []string) string {
 	if value == nil {
 		value = []string{}
 	}
-	bytes, err := json.Marshal(value)
+	bytes, err := vcode.MarshalJson(value)
 	ex.PanicIfError(err)
 	return string(bytes)
 }

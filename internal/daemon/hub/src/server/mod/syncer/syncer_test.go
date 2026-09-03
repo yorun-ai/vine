@@ -1,7 +1,7 @@
 package syncer
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"strconv"
 	"testing"
 

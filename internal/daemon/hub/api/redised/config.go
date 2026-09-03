@@ -1,7 +1,7 @@
 package redised
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
 	"fmt"
 	"time"
 )
@@ -11,9 +11,9 @@ const (
 )
 
 type ConfigValue struct {
-	Name        string          `json:"name"`
-	Value       json.RawMessage `json:"value"`
-	LastUpdated time.Time       `json:"lastUpdated"`
+	Name        string         `json:"name"`
+	Value       jsontext.Value `json:"value"`
+	LastUpdated time.Time      `json:"lastUpdated"`
 }
 
 func FormatConfigKey(configName string) string {

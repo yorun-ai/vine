@@ -1,7 +1,6 @@
 package http
 
 import (
-	"encoding/json"
 	"net/http"
 	"reflect"
 	"testing"
@@ -353,7 +352,7 @@ func TestErrorPayloadRoundTrip(t *testing.T) {
 	errPayload := ex.New(ex.InvalidRequest, "bad request", ex.WithDetail("detail"))
 
 	body := ex.EncodeError(errPayload, vcode.MustMarshalJson)
-	got, err := ex.DecodeError(body, json.Unmarshal)
+	got, err := ex.DecodeError(body, unmarshalJson)
 	if err != nil {
 		t.Fatalf("DecodeError() error = %v", err)
 	}

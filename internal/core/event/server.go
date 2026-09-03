@@ -2,7 +2,7 @@ package event
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"reflect"
 	"runtime/pprof"
 	"time"

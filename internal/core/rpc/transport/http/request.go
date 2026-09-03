@@ -3,7 +3,8 @@ package http
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,7 +25,7 @@ type _RequestDecoder struct {
 }
 
 type _RequestPayloadJson struct {
-	Params json.RawMessage `json:"params"`
+	Params jsontext.Value `json:"params"`
 }
 
 type _RequestPayloadCbor struct {
@@ -181,7 +182,7 @@ func (d *_RequestDecoder) decodeArgumentsBytes(bodyBytes []byte, arguments any) 
 			return fmt.Errorf("request body cannot be parsed")
 		}
 		rawMessage = requestPayload.Params
-		unmarshal = json.Unmarshal
+		unmarshal = unmarshalJson
 	case ContentTypeCbor:
 		requestPayload := &_RequestPayloadCbor{}
 		if err := cbor.Unmarshal(bodyBytes, requestPayload); err != nil {

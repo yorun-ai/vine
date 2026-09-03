@@ -2,7 +2,7 @@ package debug
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/jsontext"
 	"io"
 	"net/http"
 	"strings"
@@ -93,11 +93,11 @@ func (s *ServiceDebugServiceServerImpl) debugActor(actorSkelName *string, actorI
 	}
 	actor := s.findActorSchema(strings.TrimSpace(*actorSkelName))
 	ex.PanicNewIfNot(actor.AuthInfo != nil, ex.InvalidRequest, "actor auth info schema not found")
-	info := json.RawMessage(strings.TrimSpace(string(actorInfoJson)))
+	info := jsontext.Value(strings.TrimSpace(string(actorInfoJson)))
 	if len(info) == 0 {
-		info = json.RawMessage("{}")
+		info = jsontext.Value("{}")
 	}
-	if !json.Valid(info) {
+	if !info.IsValid() {
 		ex.PanicNew(ex.InvalidRequest, "invalid actor info json")
 	}
 	return meta.NewAuthenticatedActorWithRawInfo(actor.AuthInfo.SkelName, info)

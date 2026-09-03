@@ -28,7 +28,7 @@ type EnumSchema struct {
 	Name             string            `json:"name"`
 	SkelName         string            `json:"skelName"`
 	Description      string            `json:"description,omitempty"`
-	Deprecated       bool              `json:"deprecated,omitempty"`
+	Deprecated       bool              `json:"deprecated,omitempty,omitzero"`
 	DeprecatedReason string            `json:"deprecatedReason,omitempty"`
 	Hash             string            `json:"hash"`
 	Items            []*EnumItemSchema `json:"items"`
@@ -37,7 +37,7 @@ type EnumSchema struct {
 type EnumItemSchema struct {
 	Name             string `json:"name"`
 	Description      string `json:"description,omitempty"`
-	Deprecated       bool   `json:"deprecated,omitempty"`
+	Deprecated       bool   `json:"deprecated,omitempty,omitzero"`
 	DeprecatedReason string `json:"deprecatedReason,omitempty"`
 }
 
@@ -45,10 +45,10 @@ type DataSchema struct {
 	Name             string          `json:"name"`
 	SkelName         string          `json:"skelName"`
 	Description      string          `json:"description,omitempty"`
-	Deprecated       bool            `json:"deprecated,omitempty"`
+	Deprecated       bool            `json:"deprecated,omitempty,omitzero"`
 	DeprecatedReason string          `json:"deprecatedReason,omitempty"`
 	Hash             string          `json:"hash"`
-	Sensitive        bool            `json:"sensitive,omitempty"`
+	Sensitive        bool            `json:"sensitive,omitempty,omitzero"`
 	TypeParameters   []string        `json:"typeParameters,omitempty"`
 	Members          []*MemberSchema `json:"members,omitempty"`
 }
@@ -57,11 +57,11 @@ type ConfigSchema struct {
 	Name             string          `json:"name"`
 	SkelName         string          `json:"skelName"`
 	Description      string          `json:"description,omitempty"`
-	Deprecated       bool            `json:"deprecated,omitempty"`
+	Deprecated       bool            `json:"deprecated,omitempty,omitzero"`
 	DeprecatedReason string          `json:"deprecatedReason,omitempty"`
 	Hash             string          `json:"hash"`
 	Pub              bool            `json:"pub"`
-	Sensitive        bool            `json:"sensitive,omitempty"`
+	Sensitive        bool            `json:"sensitive,omitempty,omitzero"`
 	Lifecycle        string          `json:"lifecycle"`
 	Members          []*MemberSchema `json:"members,omitempty"`
 }
@@ -70,7 +70,7 @@ type WebSchema struct {
 	Name             string                 `json:"name"`
 	SkelName         string                 `json:"skelName"`
 	Description      string                 `json:"description,omitempty"`
-	Deprecated       bool                   `json:"deprecated,omitempty"`
+	Deprecated       bool                   `json:"deprecated,omitempty,omitzero"`
 	DeprecatedReason string                 `json:"deprecatedReason,omitempty"`
 	Hash             string                 `json:"hash"`
 	Audiences        []*ActorAudienceSchema `json:"audiences"`
@@ -80,11 +80,11 @@ type EventSchema struct {
 	Name             string          `json:"name"`
 	SkelName         string          `json:"skelName"`
 	Description      string          `json:"description,omitempty"`
-	Deprecated       bool            `json:"deprecated,omitempty"`
+	Deprecated       bool            `json:"deprecated,omitempty,omitzero"`
 	DeprecatedReason string          `json:"deprecatedReason,omitempty"`
 	Hash             string          `json:"hash"`
 	Pub              bool            `json:"pub"`
-	Sensitive        bool            `json:"sensitive,omitempty"`
+	Sensitive        bool            `json:"sensitive,omitempty,omitzero"`
 	Members          []*MemberSchema `json:"members,omitempty"`
 }
 
@@ -92,7 +92,7 @@ type ActorSchema struct {
 	Name             string         `json:"name"`
 	SkelName         string         `json:"skelName"`
 	Description      string         `json:"description,omitempty"`
-	Deprecated       bool           `json:"deprecated,omitempty"`
+	Deprecated       bool           `json:"deprecated,omitempty,omitzero"`
 	DeprecatedReason string         `json:"deprecatedReason,omitempty"`
 	Hash             string         `json:"hash"`
 	Vias             []ActorVia     `json:"vias"`
@@ -116,7 +116,7 @@ type ServiceSchema struct {
 	Name             string                 `json:"name"`
 	SkelName         string                 `json:"skelName"`
 	Description      string                 `json:"description,omitempty"`
-	Deprecated       bool                   `json:"deprecated,omitempty"`
+	Deprecated       bool                   `json:"deprecated,omitempty,omitzero"`
 	DeprecatedReason string                 `json:"deprecatedReason,omitempty"`
 	Hash             string                 `json:"hash"`
 	Pub              bool                   `json:"pub"`
@@ -152,17 +152,17 @@ type MethodSchema struct {
 	Name               string          `json:"name"`
 	SkelName           string          `json:"skelName"`
 	Description        string          `json:"description,omitempty"`
-	Deprecated         bool            `json:"deprecated,omitempty"`
+	Deprecated         bool            `json:"deprecated,omitempty,omitzero"`
 	DeprecatedReason   string          `json:"deprecatedReason,omitempty"`
 	Hash               string          `json:"hash"`
 	Example            string          `json:"example,omitempty"`
 	AuthMode           AuthMode        `json:"authMode"`
 	Require            *PermRequire    `json:"require,omitempty"`
 	InputDescription   string          `json:"inputDescription,omitempty"`
-	ArgumentsSensitive bool            `json:"argumentsSensitive,omitempty"`
+	ArgumentsSensitive bool            `json:"argumentsSensitive,omitempty,omitzero"`
 	OutputDescription  string          `json:"outputDescription,omitempty"`
 	OutputExample      string          `json:"outputExample,omitempty"`
-	ResultSensitive    bool            `json:"resultSensitive,omitempty"`
+	ResultSensitive    bool            `json:"resultSensitive,omitempty,omitzero"`
 	Arguments          []*MemberSchema `json:"arguments,omitempty"`
 	ResultType         *TypeSchema     `json:"resultType,omitempty"`
 }
@@ -171,7 +171,7 @@ type ResourceSchema struct {
 	Name             string                  `json:"name"`
 	SkelName         string                  `json:"skelName"`
 	Description      string                  `json:"description,omitempty"`
-	Deprecated       bool                    `json:"deprecated,omitempty"`
+	Deprecated       bool                    `json:"deprecated,omitempty,omitzero"`
 	DeprecatedReason string                  `json:"deprecatedReason,omitempty"`
 	Hash             string                  `json:"hash"`
 	Checks           []*ResourceCheckSchema  `json:"checks,omitempty"`
@@ -183,14 +183,14 @@ type ResourceActionSchema struct {
 	Name             string                 `json:"name"`
 	PermissionCode   string                 `json:"permissionCode"`
 	Description      string                 `json:"description,omitempty"`
-	Deprecated       bool                   `json:"deprecated,omitempty"`
+	Deprecated       bool                   `json:"deprecated,omitempty,omitzero"`
 	DeprecatedReason string                 `json:"deprecatedReason,omitempty"`
 	Checks           []*ResourceCheckSchema `json:"checks,omitempty"`
 }
 
 type ResourceCheckSchema struct {
 	Name             string          `json:"name"`
-	Deprecated       bool            `json:"deprecated,omitempty"`
+	Deprecated       bool            `json:"deprecated,omitempty,omitzero"`
 	DeprecatedReason string          `json:"deprecatedReason,omitempty"`
 	Method           *MethodSchema   `json:"method"`
 	Arguments        []*MemberSchema `json:"arguments,omitempty"`
@@ -235,7 +235,7 @@ type TaskSchema struct {
 	Name             string           `json:"name"`
 	SkelName         string           `json:"skelName"`
 	Description      string           `json:"description,omitempty"`
-	Deprecated       bool             `json:"deprecated,omitempty"`
+	Deprecated       bool             `json:"deprecated,omitempty,omitzero"`
 	DeprecatedReason string           `json:"deprecatedReason,omitempty"`
 	Hash             string           `json:"hash"`
 	Triggers         []*TriggerSchema `json:"triggers"`
@@ -245,21 +245,21 @@ type TriggerSchema struct {
 	Name               string          `json:"name"`
 	SkelName           string          `json:"skelName"`
 	Description        string          `json:"description,omitempty"`
-	Deprecated         bool            `json:"deprecated,omitempty"`
+	Deprecated         bool            `json:"deprecated,omitempty,omitzero"`
 	DeprecatedReason   string          `json:"deprecatedReason,omitempty"`
 	Hash               string          `json:"hash"`
 	InputDescription   string          `json:"inputDescription,omitempty"`
-	ArgumentsSensitive bool            `json:"argumentsSensitive,omitempty"`
+	ArgumentsSensitive bool            `json:"argumentsSensitive,omitempty,omitzero"`
 	Arguments          []*MemberSchema `json:"arguments,omitempty"`
 }
 
 type MemberSchema struct {
 	Name             string      `json:"name"`
 	Description      string      `json:"description,omitempty"`
-	Deprecated       bool        `json:"deprecated,omitempty"`
+	Deprecated       bool        `json:"deprecated,omitempty,omitzero"`
 	DeprecatedReason string      `json:"deprecatedReason,omitempty"`
 	Example          string      `json:"example,omitempty"`
-	Sensitive        bool        `json:"sensitive,omitempty"`
+	Sensitive        bool        `json:"sensitive,omitempty,omitzero"`
 	Type             *TypeSchema `json:"type"`
 }
 
@@ -300,7 +300,7 @@ const (
 
 type TypeSchema struct {
 	Kind          TypeKind      `json:"kind"`
-	Nullable      bool          `json:"nullable,omitempty"`
+	Nullable      bool          `json:"nullable,omitempty,omitzero"`
 	Scalar        Scalar        `json:"scalar,omitempty"`
 	Name          string        `json:"name,omitempty"`
 	SkelName      string        `json:"skelName,omitempty"`

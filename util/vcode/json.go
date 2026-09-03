@@ -1,15 +1,25 @@
 package vcode
 
 import (
-	"bytes"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 
 	"go.yorun.ai/vine/util/vpre"
 )
 
+var marshalJsonOptions = json.JoinOptions(
+	json.FormatNilSliceAsNull(true),
+	json.FormatNilMapAsNull(true),
+)
+
 // MarshalJson encodes data as JSON.
 func MarshalJson(data any) ([]byte, error) {
-	return json.Marshal(data)
+	return MarshalJsonWithOptions(data)
+}
+
+// MarshalJsonWithOptions encodes data as JSON with additional options.
+func MarshalJsonWithOptions(data any, options ...json.Options) ([]byte, error) {
+	return json.Marshal(data, marshalJsonOptions, json.JoinOptions(options...))
 }
 
 // MarshalJsonS encodes data as a JSON string.
@@ -58,10 +68,13 @@ func MustUnmarshalJsonS[T any](jsonStr string) T {
 
 // CompactJson removes insignificant whitespace from valid JSON and panics on invalid input.
 func CompactJson(raw []byte) []byte {
-	bf := bytes.NewBuffer(nil)
-	err := json.Compact(bf, raw)
+	value := jsontext.Value(raw).Clone()
+	err := value.Compact(
+		jsontext.AllowDuplicateNames(false),
+		jsontext.AllowInvalidUTF8(false),
+	)
 	vpre.MustNil(err)
-	return bf.Bytes()
+	return value
 }
 
 // CompactJsonS is the string form of CompactJson.
@@ -71,10 +84,14 @@ func CompactJsonS(raw string) string {
 
 // PrettifyJson indents valid JSON with four spaces and panics on invalid input.
 func PrettifyJson(raw []byte) []byte {
-	var indented bytes.Buffer
-	err := json.Indent(&indented, raw, "", "    ")
+	value := jsontext.Value(raw).Clone()
+	err := value.Indent(
+		jsontext.AllowDuplicateNames(false),
+		jsontext.AllowInvalidUTF8(false),
+		jsontext.WithIndent("    "),
+	)
 	vpre.MustNil(err)
-	return indented.Bytes()
+	return value
 }
 
 // PrettifyJsonS is the string form of PrettifyJson.

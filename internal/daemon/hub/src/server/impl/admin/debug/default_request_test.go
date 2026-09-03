@@ -1,7 +1,7 @@
 package debug
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"testing"
 
 	"go.yorun.ai/vine/internal/core/skel"

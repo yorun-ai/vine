@@ -2,7 +2,6 @@ package redis
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -104,7 +103,7 @@ func (c *Cache[T]) GetOrLoad(key string, ttl time.Duration, load func() T) T {
 }
 
 func (c *Cache[T]) Set(key string, value T, ttl time.Duration) {
-	data, err := json.Marshal(value)
+	data, err := vcode.MarshalJson(value)
 	vpre.CheckNilError(err, "marshal redis cache failed")
 	err = c.cmdable.Set(c.ctx, joinCacheKey(c.keyPrefix, key), data, ttl).Err()
 	vpre.CheckNilError(err, "set redis cache failed")

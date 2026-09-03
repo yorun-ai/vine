@@ -24,7 +24,7 @@ func init() {
 
 func newStandardLogger(logger *Logger) *slog.Logger {
 	leveler := newLeveler(logger.option.Level, splitNameSegments(standardLoggerName))
-	return newSlogLoggerWithWriter(logger.option, standardLoggerName, true, leveler, logger.writer)
+	return newSlogLoggerWithWriter(logger.option, standardLoggerName, false, leveler, logger.writer)
 }
 
 type _StandardLoggerWriter struct{}

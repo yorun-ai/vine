@@ -1,7 +1,7 @@
 package log
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"os"
 	"path/filepath"

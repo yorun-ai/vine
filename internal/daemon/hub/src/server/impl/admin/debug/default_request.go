@@ -1,7 +1,8 @@
 package debug
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"strings"
 	"time"
 	"uuid"
@@ -10,6 +11,7 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
+	"go.yorun.ai/vine/util/vcode"
 )
 
 var debugDefaultTime = time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
@@ -174,7 +176,7 @@ func debugParseJson(value string) any {
 }
 
 func debugPrettyJson(value any) string {
-	ret, err := json.MarshalIndent(value, "", "  ")
+	ret, err := vcode.MarshalJsonWithOptions(value, jsontext.WithIndent("  "))
 	ex.PanicNewIfError(err, ex.InvalidRequest)
 	return string(ret)
 }

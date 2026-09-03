@@ -2,7 +2,7 @@ package redis
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"sync"
 
 	"github.com/redis/go-redis/v9"

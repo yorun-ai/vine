@@ -2,12 +2,12 @@ package redact
 
 import (
 	"bytes"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
-	"strings"
 
 	"go.yorun.ai/vine/internal/core/logger"
 )
@@ -144,15 +144,18 @@ func Render(value any, options ...Option) (result Result, err error) {
 		return Result{}, newFailure("project", err)
 	}
 	encoded := &_LimitedBuffer{limit: limits.MaxOutputBytes}
-	encoder := json.NewEncoder(encoded)
-	encoder.SetEscapeHTML(false)
-	if err := encoder.Encode(projected); err != nil {
+	if err := json.MarshalWrite(
+		encoded,
+		projected,
+		json.Deterministic(true),
+		jsontext.EscapeForHTML(false),
+	); err != nil {
 		return Result{}, newFailure("encode", err)
 	}
-	rendered := strings.TrimSuffix(encoded.String(), "\n")
+	rendered := encoded.String()
 	if encoded.exceeded {
 		state.truncated = true
-		rendered = strconv.Quote(fmt.Sprintf("<truncated:json bytes=%d>", encoded.bytes-1))
+		rendered = strconv.Quote(fmt.Sprintf("<truncated:json bytes=%d>", encoded.bytes))
 	}
 	return Result{
 		JSON:      rendered,
@@ -189,7 +192,7 @@ type _LimitedBuffer struct {
 
 func (b *_LimitedBuffer) Write(value []byte) (int, error) {
 	b.bytes += len(value)
-	if !b.exceeded && b.buffer.Len()+len(value) <= b.limit+1 {
+	if !b.exceeded && b.buffer.Len()+len(value) <= b.limit {
 		_, _ = b.buffer.Write(value)
 	} else {
 		b.exceeded = true

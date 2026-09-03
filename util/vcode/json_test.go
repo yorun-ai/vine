@@ -66,3 +66,32 @@ func TestCompactAndPrettifyJson(t *testing.T) {
 	assert.Contains(t, string(prettified), `    "name"`)
 	assert.Equal(t, string(prettified), PrettifyJsonS(string(compacted)))
 }
+
+func TestMarshalJsonPreservesNilCollections(t *testing.T) {
+	payload := struct {
+		Items  []string          `json:"items"`
+		Labels map[string]string `json:"labels"`
+	}{
+		Items:  nil,
+		Labels: nil,
+	}
+
+	data, err := MarshalJson(payload)
+	assert.NoError(t, err)
+	assert.JSONEq(t, `{"items":null,"labels":null}`, string(data))
+
+	payload.Items = []string{}
+	payload.Labels = map[string]string{}
+	data, err = MarshalJson(payload)
+	assert.NoError(t, err)
+	assert.JSONEq(t, `{"items":[],"labels":{}}`, string(data))
+}
+
+func TestUnmarshalJsonUsesV2StrictSemantics(t *testing.T) {
+	_, err := UnmarshalJson[jsonPayload]([]byte(`{"name":"first","name":"second"}`))
+	assert.Error(t, err)
+
+	decoded, err := UnmarshalJson[jsonPayload]([]byte(`{"Name":"vine"}`))
+	assert.NoError(t, err)
+	assert.Empty(t, decoded.Name)
+}

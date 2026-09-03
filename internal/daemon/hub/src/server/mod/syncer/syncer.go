@@ -1,7 +1,7 @@
 package syncer
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
 	"sync"
 
 	"go.yorun.ai/vine/internal/app"
@@ -81,6 +81,6 @@ func (s *Syncer) saveNameByIdLocked(namesById map[int]string, id int, name strin
 func ToRedisedAppConfig(item *core.AppConfig) *redised.ConfigValue {
 	return &redised.ConfigValue{
 		Name:  item.Name,
-		Value: json.RawMessage(item.Value),
+		Value: jsontext.Value(item.Value),
 	}
 }

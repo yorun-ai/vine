@@ -3,10 +3,21 @@ package redact
 import (
 	"bytes"
 	"encoding"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
+	"errors"
 	"fmt"
 	"reflect"
 	"unicode/utf8"
+)
+
+var unmarshalRawNumbers = json.WithUnmarshalers(
+	json.UnmarshalFromFunc(func(decoder *jsontext.Decoder, value *any) error {
+		if decoder.PeekKind() == jsontext.KindNumber {
+			*value = jsontext.Value(nil)
+		}
+		return errors.ErrUnsupported
+	}),
 )
 
 func marshalValue(value reflect.Value, maxJSONBytes int) (any, int, bool, error) {
@@ -21,16 +32,14 @@ func marshalValue(value reflect.Value, maxJSONBytes int) (any, int, bool, error)
 		if len(encoded) > maxJSONBytes {
 			return nil, len(encoded), true, nil
 		}
-		if !json.Valid(encoded) {
+		if !jsontext.Value(encoded).IsValid() {
 			return nil, 0, true, newFailure(
 				"decode_json",
 				fmt.Errorf("custom JSON marshaler returned invalid JSON"),
 			)
 		}
-		decoder := json.NewDecoder(bytes.NewReader(encoded))
-		decoder.UseNumber()
 		var decoded any
-		if err := decoder.Decode(&decoded); err != nil {
+		if err := json.Unmarshal(encoded, &decoded, unmarshalRawNumbers); err != nil {
 			return nil, 0, true, newFailure("decode_json", err)
 		}
 		return decoded, 0, true, nil

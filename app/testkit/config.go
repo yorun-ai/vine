@@ -1,7 +1,6 @@
 package testkit
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -53,7 +52,7 @@ func mergeSeedConfigOverrides(t testing.TB, seedPath string, overrides []ConfigO
 
 	configs := seedAppConfigs(payload["appConfigs"])
 	for _, override := range overrides {
-		value, err := json.Marshal(override.Value)
+		value, err := vcode.MarshalJson(override.Value)
 		if err != nil {
 			return "", nil, fmt.Errorf("marshal config override %s: %w", override.Name, err)
 		}

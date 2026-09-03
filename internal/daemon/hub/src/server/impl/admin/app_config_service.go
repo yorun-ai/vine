@@ -2,7 +2,7 @@ package admin
 
 import (
 	"cmp"
-	"encoding/json"
+	"encoding/json/v2"
 	"math"
 	"strings"
 	"time"
