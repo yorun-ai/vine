@@ -18,12 +18,12 @@ func TestDashboardWebProxyForwardsRequestPath(t *testing.T) {
 
 	var gotPath string
 	var gotQuery string
-	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	target := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		gotQuery = r.URL.RawQuery
 		_, _ = w.Write([]byte("dashboard"))
 	}))
-	t.Cleanup(target.Close)
+	target.Start()
 
 	restoreDashboardProxy := setDashboardProxyForTest(t, target.URL)
 	t.Cleanup(restoreDashboardProxy)
@@ -54,10 +54,10 @@ func TestDashboardWebSkipsProxyWhenDevProxyDisabled(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	called := false
-	target := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+	target := httptest.NewTestServer(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
 		called = true
 	}))
-	t.Cleanup(target.Close)
+	target.Start()
 
 	restoreDashboardProxy := setDashboardProxyForTest(t, target.URL)
 	t.Cleanup(restoreDashboardProxy)

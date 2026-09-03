@@ -26,13 +26,13 @@ func TestDoServiceDebugInvokeRequestKeepsH2CContextUntilBodyRead(t *testing.T) {
 	var releaseBodyOnce sync.Once
 	release := func() { releaseBodyOnce.Do(func() { close(releaseBody) }) }
 	t.Cleanup(release)
-	server := httptest.NewServer(h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+	server := httptest.NewTestServer(t, h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.(http.Flusher).Flush()
 		<-releaseBody
 		_, _ = io.WriteString(w, `{"ok":true}`)
 	}), &http2.Server{}))
-	t.Cleanup(server.Close)
+	server.Start()
 
 	transport := &http2.Transport{
 		AllowHTTP: true,

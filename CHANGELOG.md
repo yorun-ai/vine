@@ -21,6 +21,9 @@ are not part of the public compatibility commitment.
 - Replaced Vine's direct use of `github.com/google/uuid` with Go 1.27's
   standard-library `uuid` package; `skel.NewUUID` now accepts the
   standard-library UUID type
+- Migrated HTTP integration tests to Go 1.27's test-owned
+  `httptest.NewTestServer` lifecycle while retaining loopback networking where
+  reverse proxies, h2c transports, or connection upgrades require real sockets
 - Reworked timer-, cancellation-, scheduler-, lock-, and in-process transport
   tests around Go 1.27 `testing/synctest`, replacing wall-clock polling with
   deterministic synchronization, randomized test ordering, and tighter global

@@ -19,7 +19,7 @@ import (
 
 func TestCheckActorPermissionsRejectsMissingCodeResult(t *testing.T) {
 	serverApp := meta.MustNewApp("perm.test", "0.0.0", "123e4567-e89b-12d3-a456-426614174000")
-	permissionServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	permissionServer := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := &spec.ResponseImpl{
 			ServerValue: serverApp,
 			ErrorValue:  ex.NewOK(),
@@ -31,7 +31,7 @@ func TestCheckActorPermissionsRejectsMissingCodeResult(t *testing.T) {
 			t.Fatalf("WriteResponse() error = %v", err)
 		}
 	}))
-	t.Cleanup(permissionServer.Close)
+	permissionServer.Start()
 
 	manager := newAccessTestEndpointManager("app.UserActorPermissionService", permissionServer.URL)
 	watcher := manager.WatchRpc("app.UserActorPermissionService")
