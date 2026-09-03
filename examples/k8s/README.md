@@ -4,6 +4,8 @@ This directory contains a minimal separated deployment example for Hub, Link,
 and Portal. It is a Kustomize base and can be applied directly with
 `kubectl apply -k examples/k8s`.
 
+[简体中文](README.zh-CN.md)
+
 ## Direct image pulls
 
 The manifests already reference the published Docker Hub images and use
@@ -21,6 +23,54 @@ kubectl apply -k examples/k8s
 For a stable deployment, replace `:latest` with an immutable `:vX.Y.Z` tag
 published by the workflow in all manifests.
 
+## Backend mTLS overlay
+
+The base manifests intentionally use HTTP so that the example can start
+without certificate material. For a deployment with backend mTLS, create one
+Kubernetes Secret per component and apply the mTLS overlay. The certificates
+must use the SPIFFE identities documented in the repository's security
+section:
+
+```text
+spiffe://<trust-domain>/vine/daemon/vine.hub
+spiffe://<trust-domain>/vine/daemon/vine.link
+spiffe://<trust-domain>/vine/daemon/vine.portal
+```
+
+Create the namespace and component-specific Secrets from files kept outside
+the repository:
+
+```bash
+kubectl apply -f examples/k8s/base/namespace.yaml
+
+kubectl -n vine create secret generic vine-hub-mtls \
+  --from-file=ca.pem=mtls/ca.pem \
+  --from-file=cert.pem=mtls/hub.pem \
+  --from-file=key.pem=mtls/hub-key.pem \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl -n vine create secret generic vine-link-mtls \
+  --from-file=ca.pem=mtls/ca.pem \
+  --from-file=cert.pem=mtls/link.pem \
+  --from-file=key.pem=mtls/link-key.pem \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl -n vine create secret generic vine-portal-mtls \
+  --from-file=ca.pem=mtls/ca.pem \
+  --from-file=cert.pem=mtls/portal.pem \
+  --from-file=key.pem=mtls/portal-key.pem \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl apply -k examples/k8s/overlays/mtls
+```
+
+The overlay mounts each Secret at `/run/vine/mtls`, sets all three
+`VINE_MTLS_*` variables, and changes Link/Portal's Hub endpoint to
+`https://hub:7071`. The Secret files are mounted read-only and are not stored
+in Git. To return to the non-mTLS example, apply the base with
+`kubectl apply -k examples/k8s` and remove the three Secrets when they are no
+longer needed.
+
 ## Build and publish images locally
 
 Build the three Linux images from the repository root when developing locally
@@ -33,8 +83,8 @@ docker build --target portal -t vine-portal:local .
 ```
 
 For a remote cluster using another registry, tag and push the images, then
-replace the `image:` values in `hub.yaml`, `link.yaml`, and `portal.yaml`
-(including the matching `wait-for-hub` init container image):
+replace the `image:` values in `base/hub.yaml`, `base/link.yaml`, and
+`base/portal.yaml` (including the matching `wait-for-hub` init container image):
 
 ```bash
 docker tag vine-hub:local registry.example.com/vine/hub:v0.1.0
@@ -59,11 +109,10 @@ kind load docker-image docker.io/yorunai/vine-link:latest
 kind load docker-image docker.io/yorunai/vine-portal:latest
 ```
 
-After the first successful CI publish, change each package's visibility to
-**Public** in GitHub: open the repository's **Packages** page, select the
-`vine-hub`, `vine-link`, and `vine-portal` packages, open **Package settings**,
-choose **Change visibility**, and select **Public**. Public packages do not need
-an `imagePullSecret` in Kubernetes.
+After the first successful CI publish, set each Docker Hub repository's
+visibility to **Public**. Public repositories do not need an
+`imagePullSecret` in Kubernetes; private repositories require a registry Secret
+and an `imagePullSecrets` entry in the workload Pod specs.
 
 ## Apply
 
@@ -103,9 +152,10 @@ controller or use `kubectl port-forward` for development.
 ## Production configuration
 
 The base manifests use HTTP between components and Hub's embedded NATS with
-SQLite for a small single-replica deployment. For production, provide separate
-Secrets for each component's backend mTLS files, mount them under a read-only
-path, set `VINE_MTLS_CA_FILE`, `VINE_MTLS_CERT_FILE`, and
-`VINE_MTLS_KEY_FILE`, and change `VINE_HUB_ENDPOINT` to an HTTPS endpoint.
-Use a managed PostgreSQL database and external NATS when you need independent
-scaling and durable infrastructure ownership.
+SQLite for a small single-replica deployment. The `overlays/mtls` example
+shows how to provide separate Secrets for each component's backend mTLS files,
+mount them under a read-only path, set `VINE_MTLS_CA_FILE`,
+`VINE_MTLS_CERT_FILE`, and `VINE_MTLS_KEY_FILE`, and change
+`VINE_HUB_ENDPOINT` to an HTTPS endpoint. Use a managed PostgreSQL database
+and external NATS when you need independent scaling and durable infrastructure
+ownership.

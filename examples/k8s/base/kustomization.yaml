@@ -4,4 +4,7 @@ kind: Kustomization
 namespace: vine
 
 resources:
-  - base
+  - namespace.yaml
+  - hub.yaml
+  - link.yaml
+  - portal.yaml

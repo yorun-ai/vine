@@ -38,6 +38,13 @@ WORKDIR /data
 USER vine:vine
 ENTRYPOINT ["/usr/local/bin/vine"]
 
+# Backend mTLS is enabled when all three file variables are supplied at
+# runtime. Certificate material stays outside the image and should be mounted
+# read-only by Docker or Kubernetes.
+ENV VINE_MTLS_CA_FILE="" \
+    VINE_MTLS_CERT_FILE="" \
+    VINE_MTLS_KEY_FILE=""
+
 # Build with --target hub to produce the Hub image.
 FROM runtime AS hub
 
@@ -45,7 +52,11 @@ ENV VINE_CONTROL_LISTEN=0.0.0.0:7071 \
     VINE_ADMIN_LISTEN=0.0.0.0:7075 \
     VINE_REDIS_LISTEN=0.0.0.0:7072 \
     VINE_DB_SQLITE_FILE=/data/hub.sqlite \
-    VINE_MQ_EMBEDDED_NATS=true
+    VINE_DB_POSTGRES_URL="" \
+    VINE_MQ_EXTERNAL_NATS_URL="" \
+    VINE_MQ_EMBEDDED_NATS=true \
+    VINE_SEED_YAML_FILE="" \
+    VINE_DASHBOARD_URL=""
 
 EXPOSE 7071 7072 7075
 CMD ["hub", "serve"]
