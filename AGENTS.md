@@ -91,11 +91,16 @@
 ## Validation
 
 - Run `gofmt` on changed Go files and run `git diff --check`.
-- Run targeted package tests while iterating, then run `bash test/test.sh` for
-  repository-wide Go changes. Run `bash test/race.sh` for the concurrency-focused
-  race suite and `VINE_RACE_SCOPE=all bash test/race.sh` for the full release
-  race suite. These scripts set `GOWORK=off` so the enclosing workspace cannot
-  replace published module dependencies.
+- Run `bash test/quick.sh <scope> [scope...]` for predefined affected-package
+  groups while iterating; available scopes are `app`, `cli`, `core`, `rpc`,
+  `web`, `event`, `task`, `infra`, `hub`, `link`, `portal`, and `all`. Then run
+  `bash test/test.sh` for cache-friendly repository-wide Go changes. Run `bash
+  test/shuffle.sh` for the targeted order-randomization suite and
+  `VINE_SHUFFLE_SCOPE=all bash test/shuffle.sh` for the full suite. Run `bash
+  test/race.sh` for the concurrency-focused race suite and
+  `VINE_RACE_SCOPE=all bash test/race.sh` for the full release race suite.
+  These scripts set `GOWORK=off` so the enclosing workspace cannot replace
+  published module dependencies.
 - Run `go vet ./...` after changing public APIs, concurrency, reflection, or
   runtime wiring.
 - Run `pnpm build` in `vine-site` after changing Vine public documentation there.

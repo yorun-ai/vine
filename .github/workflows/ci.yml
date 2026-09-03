@@ -36,8 +36,49 @@ jobs:
       - name: Test
         run: bash test/test.sh
 
+  go-lifecycle:
+    name: Go lifecycle
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          check-latest: true
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            test/shuffle.sh
+            test/goroutineleak.sh
+
+      - name: Test shuffled packages
+        env:
+          VINE_SHUFFLE_SCOPE: ${{ github.event_name == 'push' && 'all' || 'targeted' }}
+        run: bash test/shuffle.sh
+
       - name: Test goroutine lifecycles
         run: bash test/goroutineleak.sh
+
+  go-static:
+    name: Go static
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          check-latest: true
+          cache: true
 
       - name: Vet
         run: GOWORK=off go vet ./...
@@ -139,7 +180,7 @@ jobs:
   ci-checks:
     name: CI / Required Checks
     if: ${{ always() }}
-    needs: [go-test, go-race, security, dashboard]
+    needs: [go-test, go-lifecycle, go-static, go-race, security, dashboard]
     runs-on: ubuntu-latest
     steps:
       - name: Verify CI results
