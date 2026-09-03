@@ -36,6 +36,9 @@ jobs:
       - name: Test
         run: bash test/test.sh
 
+      - name: Test goroutine lifecycles
+        run: bash test/goroutineleak.sh
+
       - name: Vet
         run: GOWORK=off go vet ./...
 
