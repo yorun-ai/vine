@@ -121,7 +121,7 @@ jobs:
             tar -C dist -czf "dist/$archive.tar.gz" "$archive"
           done
 
-          dist/vine_${version}_linux_amd64/vine version --json |
+          "dist/vine_${version}_linux_amd64/vine" version --json |
             grep -F "\"version\":\"$RELEASE_TAG\""
 
       - name: Create checksums
