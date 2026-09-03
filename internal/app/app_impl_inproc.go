@@ -2,6 +2,7 @@ package app
 
 import (
 	"net/http"
+	"slices"
 	"strings"
 
 	coreapp "go.yorun.ai/vine/internal/core/app"
@@ -18,8 +19,8 @@ func (a *_AppImpl) startInprocServer() {
 	cleanups := []func(){}
 	defer func() {
 		if recovered := recover(); recovered != nil {
-			for i := len(cleanups) - 1; i >= 0; i-- {
-				cleanups[i]()
+			for _, cleanup := range slices.Backward(cleanups) {
+				cleanup()
 			}
 			panic(recovered)
 		}
@@ -46,8 +47,8 @@ func (a *_AppImpl) stopInprocServer() {
 	if !a.hasInprocRoutes() {
 		return
 	}
-	for i := len(a.inprocCleanups) - 1; i >= 0; i-- {
-		a.inprocCleanups[i]()
+	for _, cleanup := range slices.Backward(a.inprocCleanups) {
+		cleanup()
 	}
 	a.inprocCleanups = nil
 }

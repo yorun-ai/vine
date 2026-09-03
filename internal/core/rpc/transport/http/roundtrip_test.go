@@ -40,7 +40,7 @@ var (
 	testServiceInfoInst         spec.ServiceInfo
 	testHandlerDictOnce         sync.Once
 	testHandlerDictInst         *spec.ImplDict
-	standaloneMethodInfoCounter uint64
+	standaloneMethodInfoCounter atomic.Uint64
 )
 
 type testServiceImpl struct {
@@ -59,7 +59,7 @@ func testMethodInfo() *spec.MethodSpec {
 func newStandaloneMethodInfo(argumentsType reflect.Type, resultType reflect.Type, argumentsContainsBinaryType bool, resultContainsBinaryType bool) spec.MethodInfo {
 	serviceInfo := spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
 		Name:     "StandaloneService",
-		SkelName: fmt.Sprintf("test.standalone.%d", atomic.AddUint64(&standaloneMethodInfoCounter, 1)),
+		SkelName: fmt.Sprintf("test.standalone.%d", standaloneMethodInfoCounter.Add(1)),
 		Methods: []*spec.MethodSpec{{
 			Name:                        "Ping",
 			SkelName:                    "ping",

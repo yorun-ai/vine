@@ -160,12 +160,11 @@ func parseRules(rules []string) (map[string]logger.Level, bool, error) {
 }
 
 func parseRule(rule string) (string, logger.Level, error) {
-	separator := strings.LastIndexByte(rule, '=')
-	if separator <= 0 || separator == len(rule)-1 {
+	pattern, levelValue, ok := strings.CutLast(rule, "=")
+	if !ok || pattern == "" || levelValue == "" {
 		return "", "", fmt.Errorf("invalid log rule %q", rule)
 	}
-	pattern := rule[:separator]
-	level := logger.Level(rule[separator+1:])
+	level := logger.Level(levelValue)
 	if !isValidRulePattern(pattern) || !logger.IsValidLevel(level) {
 		return "", "", fmt.Errorf("invalid log rule %q", rule)
 	}

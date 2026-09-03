@@ -27,6 +27,8 @@ are not part of the public compatibility commitment.
 - Applied a shared limit of 128 header values to application, Hub control,
   Link ingress, and Portal entry HTTP servers using Go 1.27's
   `http.Server.MaxHeaderValueCount`
+- Adopted Go 1.27 `strings.CutLast`, typed atomics, and `slices.Backward` where
+  they directly simplify parsing, test counters, and reverse-order cleanup
 - Reworked timer-, cancellation-, scheduler-, lock-, and in-process transport
   tests around Go 1.27 `testing/synctest`, replacing wall-clock polling with
   deterministic synchronization, randomized test ordering, and tighter global

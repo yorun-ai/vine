@@ -19,7 +19,7 @@ type testHandler struct {
 	called   *atomic.Bool
 }
 
-var inprocTestRequestCounter uint64
+var inprocTestRequestCounter atomic.Uint64
 
 func (h testHandler) ServeRpc(rpcRequest spec.Request) spec.Response {
 	if h.called != nil {
@@ -49,7 +49,7 @@ func testRequest(t *testing.T) spec.Request {
 		ClientValue:  client,
 		MethodInfoValue: spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
 			Name:     "DemoService",
-			SkelName: fmt.Sprintf("demo.service.%d", atomic.AddUint64(&inprocTestRequestCounter, 1)),
+			SkelName: fmt.Sprintf("demo.service.%d", inprocTestRequestCounter.Add(1)),
 			Methods: []*spec.MethodSpec{{
 				Name:     "Ping",
 				SkelName: "ping",
@@ -147,7 +147,7 @@ func TestRoundTripReturnsContextError(t *testing.T) {
 		TraceValue:   meta.InitialTrace(),
 		MethodInfoValue: spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
 			Name:     "DemoService",
-			SkelName: fmt.Sprintf("demo.service.%d", atomic.AddUint64(&inprocTestRequestCounter, 1)),
+			SkelName: fmt.Sprintf("demo.service.%d", inprocTestRequestCounter.Add(1)),
 			Methods: []*spec.MethodSpec{{
 				Name:     "Ping",
 				SkelName: "ping",
