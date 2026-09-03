@@ -56,13 +56,13 @@ func (r *Redis) NewCacheByType(cacheType reflect.Type, ctx context.Context) any 
 	return cache
 }
 
-func NewCache[T any](redis *Redis, ctx context.Context, keyPrefix string) *Cache[T] {
-	vpre.CheckNotNil(redis, "redis is nil")
+func (r *Redis) NewCache[T any](ctx context.Context, keyPrefix string) *Cache[T] {
+	vpre.CheckNotNil(r, "redis is nil")
 	vpre.CheckNotNil(ctx, "redis cache context is nil")
 	vpre.CheckNotEmpty(keyPrefix, "redis cache key prefix is empty")
 	return &Cache[T]{
 		ctx:       ctx,
-		cmdable:   redis.Cmdable,
+		cmdable:   r.Cmdable,
 		keyPrefix: keyPrefix,
 	}
 }

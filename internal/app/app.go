@@ -15,50 +15,34 @@ type App interface {
 }
 
 func New[S ApplicationSpec](opts ...FlagApplier) App {
-	return newValidatedByType(T[S](), false, opts...)
+	return defaultGuard.create[S](false, opts...)
 }
 
 func NewInproc[S ApplicationSpec](opts ...FlagApplier) App {
-	return NewInprocByType(T[S](), opts...)
+	return defaultGuard.create[S](true, opts...)
 }
 
 func NewInprocByType(specType reflect.Type, opts ...FlagApplier) App {
-	return newValidatedByType(specType, true, opts...)
+	return defaultGuard.createByType(specType, true, opts...)
 }
 
 func NewInternal[S interface {
 	ApplicationSpec
 	InternalApplicationSpec
 }](opts ...FlagApplier) App {
-	return newInternalByType(T[S](), false, opts...)
+	return defaultGuard.create[S](false, opts...)
 }
 
 func NewInternalInproc[S interface {
 	ApplicationSpec
 	InternalApplicationSpec
 }](opts ...FlagApplier) App {
-	return newInternalByType(T[S](), true, opts...)
+	return defaultGuard.create[S](true, opts...)
 }
 
 func newInternalByType(specType reflect.Type, enableInproc bool, opts ...FlagApplier) App {
 	vpre.Check(specType.Implements(T[InternalApplicationSpec]()), "application spec %s is not internal", specType)
-	return newValidatedByType(specType, enableInproc, opts...)
-}
-
-func newValidatedByType(specType reflect.Type, enableInproc bool, opts ...FlagApplier) App {
-	flags := _Flags{}
-	return defaultGuard.create(
-		specType,
-		func() ApplicationSpec {
-			flags.Apply(opts...)
-			flags.EnsureRunFlag()
-			flags.InitInprocFlag(enableInproc)
-			return newSpec(specType, flags)
-		},
-		func(spec ApplicationSpec) App {
-			return newApp(spec, flags)
-		},
-	)
+	return defaultGuard.createByType(specType, enableInproc, opts...)
 }
 
 func newSpec(specType reflect.Type, flags _Flags) ApplicationSpec {

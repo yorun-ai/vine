@@ -139,7 +139,7 @@ func (c *_TestCacheCmdable) Del(ctx context.Context, keys ...string) *goredis.In
 	return c.delFunc(ctx, keys...)
 }
 
-func TestNewCacheReturnsHandle(t *testing.T) {
+func TestRedisNewCacheReturnsHandle(t *testing.T) {
 	cmdable := goredis.NewClient(&goredis.Options{Addr: "127.0.0.1:6379"})
 	t.Cleanup(func() {
 		_ = cmdable.Close()
@@ -147,7 +147,7 @@ func TestNewCacheReturnsHandle(t *testing.T) {
 	redis := &Redis{Cmdable: cmdable}
 	ctx := context.Background()
 
-	cache := NewCache[*_TestUser](redis, ctx, "user")
+	cache := redis.NewCache[*_TestUser](ctx, "user")
 
 	require.NotNil(t, cache)
 	assert.Equal(t, ctx, cache.ctx)
