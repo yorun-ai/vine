@@ -98,10 +98,14 @@
   exactly one of embedded or external NATS.
 - Pull requests and `main` builds smoke-test the Hub image only and never push
   images. The Release workflow publishes Hub, Link, and Portal to GHCR for every
-  supported architecture after the release binaries succeed. It runs on Release
-  publication or a manual rebuild of an existing published release, not tag
-  pushes. Use the release commit for image metadata, and update `latest` only
-  for GitHub's latest non-prerelease.
+  supported architecture. Binaries and images run independently in parallel
+  after shared release validation. The workflow runs on Release publication or
+  a manual rebuild of an existing published release, not tag pushes. Use the
+  release commit for image metadata, and update `latest` only for GitHub's
+  latest non-prerelease.
+- Manual image-only publication must skip the binary job without rebuilding or
+  overwriting release assets. Fetch tag refs when extracting Git-context image
+  metadata from the validated release commit.
 
 ## Release Preparation
 
