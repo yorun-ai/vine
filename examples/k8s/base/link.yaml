@@ -46,7 +46,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: wait-for-hub
-          image: docker.io/yorunai/vine-link:latest
+          image: ghcr.io/yorun-ai/vine-link:latest
           imagePullPolicy: Always
           command:
             - /bin/sh
@@ -58,7 +58,7 @@ spec:
               done
       containers:
         - name: link
-          image: docker.io/yorunai/vine-link:latest
+          image: ghcr.io/yorun-ai/vine-link:latest
           imagePullPolicy: Always
           env:
             - name: VINE_HUB_ENDPOINT

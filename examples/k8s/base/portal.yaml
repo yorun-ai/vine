@@ -50,7 +50,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: wait-for-hub
-          image: docker.io/yorunai/vine-portal:latest
+          image: ghcr.io/yorun-ai/vine-portal:latest
           imagePullPolicy: Always
           command:
             - /bin/sh
@@ -62,7 +62,7 @@ spec:
               done
       containers:
         - name: portal
-          image: docker.io/yorunai/vine-portal:latest
+          image: ghcr.io/yorun-ai/vine-portal:latest
           imagePullPolicy: Always
           env:
             - name: VINE_HUB_ENDPOINT

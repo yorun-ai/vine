@@ -8,6 +8,13 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Changed
+
+- Moved Hub, Link, and Portal image publication to GHCR under `ghcr.io/yorun-ai`.
+  Images are published by the Release workflow after release binaries succeed,
+  rather than on tag pushes; prereleases and older release rebuilds do not
+  replace the `latest` image tag
+
 ## [0.14.0] - 2026-09-04
 
 ### Added
