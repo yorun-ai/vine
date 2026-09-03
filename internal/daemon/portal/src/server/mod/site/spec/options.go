@@ -68,7 +68,7 @@ func ExposeHeader(header http.Header, key string) {
 		header.Set(HeaderAccessControlExposeHeaders, key)
 		return
 	}
-	for _, item := range strings.Split(value, ",") {
+	for item := range strings.SplitSeq(value, ",") {
 		if strings.EqualFold(strings.TrimSpace(item), key) {
 			return
 		}

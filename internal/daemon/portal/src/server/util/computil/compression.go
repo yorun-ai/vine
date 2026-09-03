@@ -73,7 +73,7 @@ func ShouldCompressWebResponse(request *http.Request, response *http.Response) b
 
 func acceptedEncodings(acceptEncoding string) map[string]bool {
 	accepted := map[string]bool{}
-	for _, item := range strings.Split(acceptEncoding, ",") {
+	for item := range strings.SplitSeq(acceptEncoding, ",") {
 		encoding, params, err := mime.ParseMediaType(strings.TrimSpace(item))
 		if err != nil || params["q"] == "0" {
 			continue
@@ -86,7 +86,7 @@ func acceptedEncodings(acceptEncoding string) map[string]bool {
 }
 
 func hasNoTransform(cacheControl string) bool {
-	for _, item := range strings.Split(cacheControl, ",") {
+	for item := range strings.SplitSeq(cacheControl, ",") {
 		if strings.EqualFold(strings.TrimSpace(item), "no-transform") {
 			return true
 		}

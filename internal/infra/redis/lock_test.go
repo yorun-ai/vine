@@ -57,14 +57,14 @@ type _TestLockCmdable struct {
 	mutex      sync.Mutex
 	setNXCalls []_TestSetNXCall
 	evalCalls  []_TestEvalCall
-	setNXFunc  func(ctx context.Context, key string, value interface{}, expiration time.Duration) *goredis.BoolCmd
-	evalFunc   func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd
+	setNXFunc  func(ctx context.Context, key string, value any, expiration time.Duration) *goredis.BoolCmd
+	evalFunc   func(ctx context.Context, script string, keys []string, args ...any) *goredis.Cmd
 }
 
 type _TestSetNXCall struct {
 	ctx        context.Context
 	key        string
-	value      interface{}
+	value      any
 	expiration time.Duration
 }
 
@@ -72,10 +72,10 @@ type _TestEvalCall struct {
 	ctx    context.Context
 	script string
 	keys   []string
-	args   []interface{}
+	args   []any
 }
 
-func (c *_TestLockCmdable) SetNX(ctx context.Context, key string, value interface{}, expiration time.Duration) *goredis.BoolCmd {
+func (c *_TestLockCmdable) SetNX(ctx context.Context, key string, value any, expiration time.Duration) *goredis.BoolCmd {
 	c.mutex.Lock()
 	c.setNXCalls = append(c.setNXCalls, _TestSetNXCall{
 		ctx:        ctx,
@@ -87,13 +87,13 @@ func (c *_TestLockCmdable) SetNX(ctx context.Context, key string, value interfac
 	return c.setNXFunc(ctx, key, value, expiration)
 }
 
-func (c *_TestLockCmdable) Eval(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+func (c *_TestLockCmdable) Eval(ctx context.Context, script string, keys []string, args ...any) *goredis.Cmd {
 	c.mutex.Lock()
 	c.evalCalls = append(c.evalCalls, _TestEvalCall{
 		ctx:    ctx,
 		script: script,
 		keys:   append([]string(nil), keys...),
-		args:   append([]interface{}(nil), args...),
+		args:   append([]any(nil), args...),
 	})
 	c.mutex.Unlock()
 	return c.evalFunc(ctx, script, keys, args...)
@@ -101,10 +101,10 @@ func (c *_TestLockCmdable) Eval(ctx context.Context, script string, keys []strin
 
 func newTestLockCmdable() *_TestLockCmdable {
 	return &_TestLockCmdable{
-		setNXFunc: func(ctx context.Context, key string, value interface{}, expiration time.Duration) *goredis.BoolCmd {
+		setNXFunc: func(ctx context.Context, key string, value any, expiration time.Duration) *goredis.BoolCmd {
 			return goredis.NewBoolResult(true, nil)
 		},
-		evalFunc: func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+		evalFunc: func(ctx context.Context, script string, keys []string, args ...any) *goredis.Cmd {
 			return goredis.NewCmdResult(int64(1), nil)
 		},
 	}
@@ -228,7 +228,7 @@ func TestLockerLockBuildsNamespacedKeyAndDefaultOption(t *testing.T) {
 
 func TestLockerLockReturnsFalseWhenContended(t *testing.T) {
 	cmdable := newTestLockCmdable()
-	cmdable.setNXFunc = func(ctx context.Context, key string, value interface{}, expiration time.Duration) *goredis.BoolCmd {
+	cmdable.setNXFunc = func(ctx context.Context, key string, value any, expiration time.Duration) *goredis.BoolCmd {
 		return goredis.NewBoolResult(false, nil)
 	}
 	locker := &Locker{
@@ -283,7 +283,7 @@ func TestWithTimeoutRejectsNonPositiveTimeout(t *testing.T) {
 
 func TestLockRefreshOwnershipMismatchBreaksWithCause(t *testing.T) {
 	cmdable := newTestLockCmdable()
-	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...any) *goredis.Cmd {
 		return goredis.NewCmdResult(int64(0), nil)
 	}
 	lock := newHeldTestLock(cmdable, lockDefaultTimeout)
@@ -300,7 +300,7 @@ func TestLockRefreshOwnershipMismatchBreaksWithCause(t *testing.T) {
 func TestLockRefreshUsesBoundedDeadlineAndExtendsLease(t *testing.T) {
 	cmdable := newTestLockCmdable()
 	var commandDeadline time.Time
-	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...any) *goredis.Cmd {
 		commandDeadline, _ = ctx.Deadline()
 		return goredis.NewCmdResult(int64(1), nil)
 	}
@@ -323,7 +323,7 @@ func TestLocalLeaseDeadlineKeepsSafetyMargin(t *testing.T) {
 
 func TestLockRefreshStopsWhenRetryWouldExceedLease(t *testing.T) {
 	cmdable := newTestLockCmdable()
-	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...any) *goredis.Cmd {
 		return goredis.NewCmdResult(nil, errors.New("refresh failed"))
 	}
 	lock := newHeldTestLock(cmdable, 100*time.Millisecond)
@@ -343,7 +343,7 @@ func TestLockRefreshStopsWhenRetryWouldExceedLease(t *testing.T) {
 func TestLockRefreshCommandCannotRunPastLease(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		cmdable := newTestLockCmdable()
-		cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+		cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...any) *goredis.Cmd {
 			<-ctx.Done()
 			return goredis.NewCmdResult(nil, ctx.Err())
 		}
@@ -360,7 +360,7 @@ func TestLockRefreshCommandCannotRunPastLease(t *testing.T) {
 
 func TestLockUnlockPanicsAndBreaksOnReleaseFailure(t *testing.T) {
 	cmdable := newTestLockCmdable()
-	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...any) *goredis.Cmd {
 		return goredis.NewCmdResult(nil, errors.New("release failed"))
 	}
 	lock := &Lock{
@@ -382,12 +382,12 @@ func TestLockUnlockPanicsAndBreaksOnReleaseFailure(t *testing.T) {
 	require.Len(t, cmdable.evalCalls, 1)
 	assert.Equal(t, unlockScript, cmdable.evalCalls[0].script)
 	assert.Equal(t, []string{"vine:lock:lock:user:123"}, cmdable.evalCalls[0].keys)
-	assert.Equal(t, []interface{}{"held-token"}, cmdable.evalCalls[0].args)
+	assert.Equal(t, []any{"held-token"}, cmdable.evalCalls[0].args)
 }
 
 func TestLockUnlockPanicsAndBreaksWhenOwnershipIsLost(t *testing.T) {
 	cmdable := newTestLockCmdable()
-	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...any) *goredis.Cmd {
 		return goredis.NewCmdResult(int64(0), nil)
 	}
 	lock := newHeldTestLock(cmdable, time.Second)
@@ -431,7 +431,7 @@ func TestLockTryUnlockReturnsFalseWhenUnavailable(t *testing.T) {
 
 func TestLockTryUnlockReturnsFalseAndBreaksWhenOwnershipIsLost(t *testing.T) {
 	cmdable := newTestLockCmdable()
-	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...any) *goredis.Cmd {
 		return goredis.NewCmdResult(int64(0), nil)
 	}
 	lock := newHeldTestLock(cmdable, time.Second)
@@ -444,7 +444,7 @@ func TestLockTryUnlockReturnsFalseAndBreaksWhenOwnershipIsLost(t *testing.T) {
 
 func TestLockTryUnlockPanicsAndBreaksOnReleaseFailure(t *testing.T) {
 	cmdable := newTestLockCmdable()
-	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...any) *goredis.Cmd {
 		return goredis.NewCmdResult(nil, errors.New("release failed"))
 	}
 	lock := newHeldTestLock(cmdable, time.Second)
@@ -461,7 +461,7 @@ func TestLockTryUnlockIsAtomicWithMarkBroken(t *testing.T) {
 	cmdable := newTestLockCmdable()
 	evalStarted := make(chan struct{})
 	evalContinue := make(chan struct{})
-	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...interface{}) *goredis.Cmd {
+	cmdable.evalFunc = func(ctx context.Context, script string, keys []string, args ...any) *goredis.Cmd {
 		close(evalStarted)
 		<-evalContinue
 		return goredis.NewCmdResult(int64(1), nil)

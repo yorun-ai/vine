@@ -56,9 +56,7 @@ func TestSetDefaultConcurrentLogging(t *testing.T) {
 	first := New("vine:test:first", WithOption{Format: FormatText, Level: LevelError})
 	second := New("vine:test:second", WithOption{Format: FormatText, Level: LevelError})
 	var wait sync.WaitGroup
-	wait.Add(3)
-	go func() {
-		defer wait.Done()
+	wait.Go(func() {
 		for index := range 100 {
 			if index%2 == 0 {
 				SetDefault(first)
@@ -66,9 +64,8 @@ func TestSetDefaultConcurrentLogging(t *testing.T) {
 				SetDefault(second)
 			}
 		}
-	}()
-	go func() {
-		defer wait.Done()
+	})
+	wait.Go(func() {
 		for index := range 100 {
 			if index%2 == 0 {
 				SetDefault(second)
@@ -76,14 +73,13 @@ func TestSetDefaultConcurrentLogging(t *testing.T) {
 				SetDefault(first)
 			}
 		}
-	}()
-	go func() {
-		defer wait.Done()
+	})
+	wait.Go(func() {
 		for range 100 {
 			Debug("concurrent-default-log")
 			stdLog.Print("concurrent-standard-log")
 		}
-	}()
+	})
 	wait.Wait()
 }
 

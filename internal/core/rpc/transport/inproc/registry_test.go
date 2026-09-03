@@ -182,15 +182,13 @@ func TestRegistrySupportsConcurrentRegistrationsAndLookups(t *testing.T) {
 	var wg sync.WaitGroup
 	for i := 0; i < count; i++ {
 		endpoint := fmt.Sprintf("rpc+inproc://concurrent-%d", i)
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			cleanup := Register(endpoint, registryTestHandler{})
 			_, registered := getHandler(endpoint)
 			cleanup()
 			_, remains := getHandler(endpoint)
 			results <- registered && !remains
-		}()
+		})
 	}
 	wg.Wait()
 	close(results)

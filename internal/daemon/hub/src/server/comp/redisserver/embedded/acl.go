@@ -73,7 +73,7 @@ var aclRuleByRole = map[_UserRole]_ACLRule{
 	},
 }
 
-func connContext(conn interface{ Context() interface{} }) *_ConnContext {
+func connContext(conn interface{ Context() any }) *_ConnContext {
 	ctx, ok := conn.Context().(*_ConnContext)
 	if !ok {
 		// A connection has no role until HELLO AUTH succeeds. In particular,

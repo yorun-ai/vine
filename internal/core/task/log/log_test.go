@@ -146,7 +146,7 @@ func readTaskLogRecords(t *testing.T, path string) []map[string]any {
 		t.Fatalf("read logs: %v", err)
 	}
 	var records []map[string]any
-	for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(string(data)), "\n") {
 		var record map[string]any
 		if err := json.Unmarshal([]byte(line), &record); err != nil {
 			t.Fatalf("decode log: %v", err)

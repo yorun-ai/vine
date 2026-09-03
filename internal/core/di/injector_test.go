@@ -382,9 +382,7 @@ func TestInjectorFallbackFactorySupportsConcurrentFirstResolution(t *testing.T) 
 	start := make(chan struct{})
 	missing := make(chan reflect.Type, 32)
 	for index := 0; index < 32; index++ {
-		wg.Add(1)
-		go func(index int) {
-			defer wg.Done()
+		wg.Go(func() {
 			<-start
 			if index%2 == 0 {
 				var resolved *abstractConfigA
@@ -399,7 +397,7 @@ func TestInjectorFallbackFactorySupportsConcurrentFirstResolution(t *testing.T) 
 			if resolved == nil {
 				missing <- T[*abstractConfigB]()
 			}
-		}(index)
+		})
 	}
 	close(start)
 	wg.Wait()

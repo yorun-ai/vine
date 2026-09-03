@@ -38,7 +38,7 @@ func EncodeDelimited(pairs ...string) string {
 // Field names must be unique and both names and values must be non-empty.
 func DecodeDelimited(value string) (map[string]string, error) {
 	fields := map[string]string{}
-	for _, part := range strings.Split(value, ",") {
+	for part := range strings.SplitSeq(value, ",") {
 		name, fieldValue, ok := strings.Cut(part, "=")
 		if !ok {
 			return nil, fmt.Errorf("missing value")

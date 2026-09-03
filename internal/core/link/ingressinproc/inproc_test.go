@@ -57,15 +57,13 @@ func TestRegistrySupportsConcurrentRegistrationsAndLookups(t *testing.T) {
 	var wg sync.WaitGroup
 	for i := 0; i < count; i++ {
 		endpoint := fmt.Sprintf("link+inproc://concurrent-%d", i)
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			cleanup := Register(endpoint, handler)
 			_, _, registered := getHandler(endpoint + "/route")
 			cleanup()
 			_, _, remains := getHandler(endpoint + "/route")
 			results <- registered && !remains
-		}()
+		})
 	}
 	wg.Wait()
 	close(results)

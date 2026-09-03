@@ -77,11 +77,9 @@ func (s *Scheduler) AfterAppStart() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	s.stop = cancel
-	s.refreshWG.Add(1)
-	go func() {
-		defer s.refreshWG.Done()
+	s.refreshWG.Go(func() {
 		s.refreshLoop(ctx)
-	}()
+	})
 }
 
 func (s *Scheduler) BeforeAppStop() {

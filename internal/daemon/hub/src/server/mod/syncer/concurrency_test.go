@@ -18,9 +18,7 @@ func TestSyncerSupportsConcurrentStateUpdates(t *testing.T) {
 	start := make(chan struct{})
 	var waitGroup sync.WaitGroup
 	for worker := 0; worker < 4; worker++ {
-		waitGroup.Add(1)
-		go func(worker int) {
-			defer waitGroup.Done()
+		waitGroup.Go(func() {
 			<-start
 			for iteration := 0; iteration < 20; iteration++ {
 				id := iteration % 3
@@ -37,7 +35,7 @@ func TestSyncerSupportsConcurrentStateUpdates(t *testing.T) {
 					target.WriteSchemas(views)
 				}
 			}
-		}(worker)
+		})
 	}
 	close(start)
 	waitGroup.Wait()

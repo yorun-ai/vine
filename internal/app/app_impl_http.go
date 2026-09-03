@@ -51,10 +51,7 @@ func (a *_AppImpl) startHTTPServer() {
 		a.httpServer.Handler = h2c.NewHandler(a.httpHandler(), &http2.Server{})
 	}
 
-	a.httpWG.Add(1)
-	go func() {
-		defer a.httpWG.Done()
-
+	a.httpWG.Go(func() {
 		logger.Info(serverName+" http server started", "addr", a.httpServer.Addr)
 		err := serve(listener)
 		if errors.Is(err, http.ErrServerClosed) {
@@ -64,7 +61,7 @@ func (a *_AppImpl) startHTTPServer() {
 		if err != nil {
 			logger.Error(serverName+" http server failed", "addr", a.httpServer.Addr, "error", err)
 		}
-	}()
+	})
 }
 
 func (a *_AppImpl) httpHandler() http.Handler {

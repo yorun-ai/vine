@@ -29,8 +29,11 @@ are not part of the public compatibility commitment.
 - Applied a shared limit of 128 header values to application, Hub control,
   Link ingress, and Portal entry HTTP servers using Go 1.27's
   `http.Server.MaxHeaderValueCount`
-- Adopted Go 1.27 `strings.CutLast`, typed atomics, and `slices.Backward` where
-  they directly simplify parsing, test counters, and reverse-order cleanup
+- Adopted standard-library helpers available under the Go 1.27 baseline,
+  including `strings.CutLast`, `strings.SplitSeq`, typed atomics,
+  `sync.WaitGroup.Go`, `slices.Contains`, and `slices.Backward`, where they
+  simplify parsing, concurrency lifecycles, membership checks, test counters,
+  and reverse-order cleanup; remaining `interface{}` spellings now use `any`
 - Adopted Go 1.27 promoted-field composite literals, replaced the remaining
   `golang.org/x/exp/constraints` usage with standard-library `cmp.Ordered`, and
   removed redundant URL copies after `http.Request.Clone`

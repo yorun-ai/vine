@@ -109,10 +109,7 @@ func (g *Ingress) startHTTPServer() {
 		g.endpoint = "https" + strings.TrimPrefix(g.endpoint, "http")
 	}
 
-	g.httpWG.Add(1)
-	go func() {
-		defer g.httpWG.Done()
-
+	g.httpWG.Go(func() {
 		ingressLogger.Info("link ingress server started", "addr", server.Addr)
 		err := serve(listener)
 		if errors.Is(err, http.ErrServerClosed) {
@@ -122,7 +119,7 @@ func (g *Ingress) startHTTPServer() {
 		if err != nil {
 			ingressLogger.Error("link ingress server failed", "addr", server.Addr, "error", err)
 		}
-	}()
+	})
 }
 
 func (g *Ingress) startInprocServer() {
