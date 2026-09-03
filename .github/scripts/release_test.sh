@@ -121,8 +121,9 @@ trap 'rm -rf -- "$directory"' EXIT
 # Eligibility is queried again in the serialized job, not trusted from verify.
 (
   # Exported to the child running release.sh.
-  # shellcheck disable=SC2329
+  # shellcheck disable=SC2317,SC2329
   gh() {
+    # shellcheck disable=SC2317
     case "$2" in
       */releases/latest) printf '%s\n' "$LATEST_TAG" ;;
       */releases/tags/*) printf '%s\n' "$RELEASE_JSON" ;;
