@@ -9,6 +9,7 @@ This directory owns repository automation, not public deployment documentation.
 | Tag push | None | Mark a version only; never publish artifacts |
 | Published Release | `release.yml` | Validate the tag and its main CI, then publish binaries and images in parallel |
 | Manual Release workflow | `release.yml` | Recover artifacts for an existing published release |
+| Daily at 02:17 UTC or manual dispatch | `audit.yml` | Audit existing Dashboard dependencies for newly disclosed vulnerabilities |
 
 ## Required CI Gate
 
@@ -18,11 +19,15 @@ and the final gate requires all unconditional jobs to succeed. Optional jobs
 must succeed when selected and must be skipped only when explicitly unselected.
 Failed classification, cancellation, or an unexpected skipped job fails the gate.
 
-- Dashboard source or its packaging script changes select Dashboard checks.
+- Dashboard source, its packaging script, or `ci.yml` changes select Dashboard
+  build checks. Release-only workflow changes do not select the Dashboard build.
+- Only Dashboard `package.json` or `pnpm-lock.yaml` changes select the separate
+  dependency audit on PR/main runs. Selected audits must pass the required gate.
+  Source-only changes and workflow edits do not call the npm audit service.
 - Dockerfile, Docker ignore rules, or Go module files select the Hub build on PRs.
 - Main also selects the Hub build for runtime source and embedded input changes,
   including SQL and the embedded Dashboard archive.
-- Workflow/helper changes select workflow tests and both build checks.
+- Workflow/helper changes select workflow tests and the Hub build check.
 - Pure README/changelog changes do not select these expensive optional jobs.
 - Go checks still cover the full repository rather than only changed packages.
 
@@ -31,6 +36,11 @@ PR updates cancel older runs for the same PR. Main CI uses per-commit concurrenc
 groups, so a subsequent merge cannot cancel validation of a release candidate.
 The Hub check builds Linux AMD64 without publishing. All three image targets and
 both Linux architectures are published only by the Release workflow.
+
+The dependency audit reuses `audit.yml`, which also runs daily and supports
+manual dispatch. It reads the committed lockfile without installing packages or
+building the Dashboard. Vulnerabilities and registry failures fail the audit;
+scheduled audit results are separate from PR/main CI.
 
 ## Release Sequence and Recovery
 

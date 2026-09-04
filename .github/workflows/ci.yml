@@ -25,6 +25,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       dashboard: ${{ steps.changes.outputs.dashboard }}
+      audit: ${{ steps.changes.outputs.audit }}
       container: ${{ steps.changes.outputs.container }}
       workflow: ${{ steps.changes.outputs.workflow }}
     steps:
@@ -196,8 +197,11 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Audit dependencies
-        run: pnpm audit --audit-level=low --registry=https://registry.npmjs.org/
+  audit:
+    name: Dashboard dependency audit
+    needs: changes
+    if: needs.changes.outputs.audit == 'true'
+    uses: ./.github/workflows/audit.yml
 
   container:
     name: Build hub image
@@ -264,7 +268,7 @@ jobs:
   ci-checks:
     name: CI / Required Checks
     if: ${{ always() }}
-    needs: [changes, go-test, go-lifecycle, go-static, go-race, security, dashboard, container, workflow]
+    needs: [changes, go-test, go-lifecycle, go-static, go-race, security, dashboard, audit, container, workflow]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6

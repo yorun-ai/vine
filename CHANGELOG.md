@@ -19,6 +19,8 @@ are not part of the public compatibility commitment.
   support independent binary/image recovery without overwriting binary assets
 - Isolate main CI runs by commit, serialize cross-version `latest` promotion,
   and add bounded transient retries and clearer release validation diagnostics
+- Run Dashboard dependency audits on dependency-file changes and a daily
+  schedule, independently of Dashboard build checks
 
 ### Fixed
 

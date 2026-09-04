@@ -7,10 +7,11 @@ classify_changes() {
     if $event != "push" and $event != "pull_request" then error("Unsupported event") else
       split("\u0000") | map(select(length > 0)) |
       any(.[]; startswith(".github/workflows/") or startswith(".github/scripts/")) as $workflow |
-      ($workflow or any(.[]; startswith("internal/daemon/hub/src/dashboard/") or . == "script/build-dashboard-assets.sh")) as $dashboard |
+      any(.[]; startswith("internal/daemon/hub/src/dashboard/") or . == "script/build-dashboard-assets.sh" or . == ".github/workflows/ci.yml") as $dashboard |
+      any(.[]; . == "internal/daemon/hub/src/dashboard/package.json" or . == "internal/daemon/hub/src/dashboard/pnpm-lock.yaml") as $audit |
       ($workflow or any(.[]; . == "Dockerfile" or . == ".dockerignore" or . == "go.mod" or . == "go.sum")) as $packaging |
       any(.[]; test("^(app|buildinfo|cmd|core|infra|internal|util)/") and (test("\\.(md|mdx)$") | not)) as $runtime |
-      {dashboard: $dashboard, container: ($packaging or ($event == "push" and $runtime)), workflow: $workflow}
+      {dashboard: $dashboard, audit: $audit, container: ($packaging or ($event == "push" and $runtime)), workflow: $workflow}
     end'
 }
 
@@ -19,7 +20,7 @@ verify_ci_results() {
     . as $needs |
     all(["changes", "go-test", "go-static", "go-race", "go-lifecycle", "security"][];
       . as $job | $needs[$job].result == "success") and
-    all(["dashboard", "container", "workflow"][];
+    all(["dashboard", "audit", "container", "workflow"][];
       . as $job | $needs.changes.outputs[$job] as $selected |
       ($selected == "true" and $needs[$job].result == "success") or
       ($selected == "false" and $needs[$job].result == "skipped"))
@@ -34,7 +35,7 @@ ci_main() {
       }
       local base="$CHANGE_BASE" flags
       if [[ "$base" =~ ^0+$ ]]; then
-        flags=$(printf '.github/workflows/ci.yml\0' | classify_changes "$GITHUB_EVENT_NAME")
+        flags=$(printf '%s\0' .github/workflows/ci.yml internal/daemon/hub/src/dashboard/pnpm-lock.yaml | classify_changes "$GITHUB_EVENT_NAME")
       else
         if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
           base=$(git merge-base "$base" "$CHANGE_HEAD")

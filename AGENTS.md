@@ -97,8 +97,8 @@
   Deployments must explicitly choose exactly one of SQLite or PostgreSQL and
   exactly one of embedded or external NATS.
 - Pull requests and `main` builds smoke-test the Hub image only and never push
-  images. Optional Dashboard, container, and workflow jobs are selected by
-  changed paths inside `ci.yml` and included in `CI / Required Checks`; only
+  images. Optional Dashboard, dependency audit, container, and workflow jobs are
+  selected by changed paths inside `ci.yml` and included in `CI / Required Checks`; only
   explicitly unselected jobs may be skipped. Tag pushes do not trigger CI.
   The Release workflow publishes Hub, Link, and Portal to GHCR for every
   supported architecture. Binaries and images run independently in parallel
@@ -121,6 +121,9 @@
   images before updating `latest`. Partial recovery may publish one artifact
   family, but release completion still requires both families to be valid.
 - See `.github/README.md` for triggers, recovery, and workflow tests.
+- Select the Dashboard dependency audit on PR/main only when its `package.json`
+  or `pnpm-lock.yaml` changes. Keep it separate from build checks and retain
+  daily/manual auditing in `audit.yml`; selected audits remain required.
 
 ## Release Preparation
 
