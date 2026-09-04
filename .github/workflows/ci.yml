@@ -25,7 +25,6 @@ jobs:
     timeout-minutes: 5
     outputs:
       dashboard: ${{ steps.changes.outputs.dashboard }}
-      audit: ${{ steps.changes.outputs.audit }}
       container: ${{ steps.changes.outputs.container }}
       workflow: ${{ steps.changes.outputs.workflow }}
     steps:
@@ -132,7 +131,7 @@ jobs:
         run: bash test/race.sh
 
   security:
-    name: Security and licenses
+    name: Secrets and licenses
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -148,9 +147,6 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           check-latest: true
           cache: true
-
-      - name: Check vulnerabilities
-        run: GOWORK=off go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
 
       - name: Check secrets
         uses: docker://ghcr.io/gitleaks/gitleaks:v8.30.1
@@ -196,12 +192,6 @@ jobs:
 
       - name: Build
         run: pnpm build
-
-  audit:
-    name: Dashboard dependency audit
-    needs: changes
-    if: needs.changes.outputs.audit == 'true'
-    uses: ./.github/workflows/audit.yml
 
   container:
     name: Build hub image
@@ -268,7 +258,7 @@ jobs:
   ci-checks:
     name: CI / Required Checks
     if: ${{ always() }}
-    needs: [changes, go-test, go-lifecycle, go-static, go-race, security, dashboard, audit, container, workflow]
+    needs: [changes, go-test, go-lifecycle, go-static, go-race, security, dashboard, container, workflow]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6

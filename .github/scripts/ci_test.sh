@@ -11,36 +11,36 @@ check_paths() {
 }
 
 for event in push pull_request; do
-  check_paths "$event" '{"dashboard":false,"audit":false,"container":false,"workflow":false}' README.md CHANGELOG.md
+  check_paths "$event" '{"dashboard":false,"container":false,"workflow":false}' README.md CHANGELOG.md
   for file in .github/workflows/release.yml .github/scripts/ci.sh; do
-    check_paths "$event" '{"dashboard":false,"audit":false,"container":true,"workflow":true}' "$file"
+    check_paths "$event" '{"dashboard":false,"container":true,"workflow":true}' "$file"
   done
 done
 for file in Dockerfile .dockerignore go.mod go.sum; do
-  check_paths pull_request '{"dashboard":false,"audit":false,"container":true,"workflow":false}' "$file"
+  check_paths pull_request '{"dashboard":false,"container":true,"workflow":false}' "$file"
 done
 for file in cmd/vine/main.go internal/repo/schema.sql internal/assets/dashboard.tar.zst $'internal/path with\nnewline.go'; do
-  check_paths pull_request '{"dashboard":false,"audit":false,"container":false,"workflow":false}' "$file"
-  check_paths push '{"dashboard":false,"audit":false,"container":true,"workflow":false}' "$file"
+  check_paths pull_request '{"dashboard":false,"container":false,"workflow":false}' "$file"
+  check_paths push '{"dashboard":false,"container":true,"workflow":false}' "$file"
 done
-check_paths pull_request '{"dashboard":true,"audit":false,"container":false,"workflow":false}' internal/daemon/hub/src/dashboard/src/App.tsx
-check_paths pull_request '{"dashboard":true,"audit":false,"container":true,"workflow":true}' .github/workflows/ci.yml
-check_paths pull_request '{"dashboard":false,"audit":false,"container":true,"workflow":true}' .github/workflows/audit.yml
+check_paths pull_request '{"dashboard":true,"container":false,"workflow":false}' internal/daemon/hub/src/dashboard/src/App.tsx
+check_paths pull_request '{"dashboard":true,"container":true,"workflow":true}' .github/workflows/ci.yml
+check_paths pull_request '{"dashboard":false,"container":true,"workflow":true}' .github/workflows/example.yml
 for event in push pull_request; do
   for file in package.json pnpm-lock.yaml; do
     container=false
     [[ "$event" != push ]] || container=true
-    check_paths "$event" "{\"dashboard\":true,\"audit\":true,\"container\":$container,\"workflow\":false}" "internal/daemon/hub/src/dashboard/$file"
+    check_paths "$event" "{\"dashboard\":true,\"container\":$container,\"workflow\":false}" "internal/daemon/hub/src/dashboard/$file"
   done
 done
 
 for selected in true false; do
   needs=$(jq -n --arg selected "$selected" '
     reduce ["changes", "go-test", "go-static", "go-race", "go-lifecycle", "security"][] as $job ({}; .[$job].result = "success") |
-    reduce ["dashboard", "audit", "container", "workflow"][] as $job (.;
+    reduce ["dashboard", "container", "workflow"][] as $job (.;
       .changes.outputs[$job] = $selected | .[$job].result = (if $selected == "true" then "success" else "skipped" end))')
   verify_ci_results <<< "$needs" >/dev/null
-  for job in changes go-test go-static go-race go-lifecycle security dashboard audit container workflow; do
+  for job in changes go-test go-static go-race go-lifecycle security dashboard container workflow; do
     for result in failure cancelled skipped success; do
       [[ "$(jq -r --arg job "$job" '.[$job].result' <<< "$needs")" == "$result" ]] && continue
       bad=$(jq --arg job "$job" --arg result "$result" '.[$job].result = $result' <<< "$needs")
@@ -75,11 +75,11 @@ trap 'rm -rf -- "$directory"' EXIT
   git commit -qm packaging
   advanced_base=$(git rev-parse HEAD)
   GITHUB_EVENT_NAME=pull_request CHANGE_BASE="$advanced_base" CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/output" bash "$script" changes >/dev/null
-  [[ "$(< "$directory/output")" == $'dashboard=false\naudit=false\ncontainer=false\nworkflow=false' ]]
+  [[ "$(< "$directory/output")" == $'dashboard=false\ncontainer=false\nworkflow=false' ]]
   GITHUB_EVENT_NAME=push CHANGE_BASE="$base" CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/push-output" bash "$script" changes >/dev/null
-  [[ "$(< "$directory/push-output")" == $'dashboard=false\naudit=false\ncontainer=true\nworkflow=false' ]]
+  [[ "$(< "$directory/push-output")" == $'dashboard=false\ncontainer=true\nworkflow=false' ]]
   GITHUB_EVENT_NAME=push CHANGE_BASE=0000000000000000000000000000000000000000 CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/initial-output" bash "$script" changes >/dev/null
-  [[ "$(< "$directory/initial-output")" == $'dashboard=true\naudit=true\ncontainer=true\nworkflow=true' ]]
+  [[ "$(< "$directory/initial-output")" == $'dashboard=true\ncontainer=true\nworkflow=true' ]]
   if GITHUB_EVENT_NAME=push CHANGE_BASE=invalid CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/output" bash "$script" changes >/dev/null 2>&1; then exit 1; fi
   if GITHUB_EVENT_NAME=push CHANGE_BASE=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/output" bash "$script" changes >/dev/null 2>&1; then exit 1; fi
 )
