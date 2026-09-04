@@ -4,4 +4,4 @@ kind: Kustomization
 namespace: vine
 
 resources:
-  - base
+  - overlays/stable

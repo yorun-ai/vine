@@ -1,43 +1,39 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: portal
+  name: link
   labels:
-    app.kubernetes.io/name: vine-portal
-    app.kubernetes.io/component: portal
+    app.kubernetes.io/name: vine-link
+    app.kubernetes.io/component: link
 spec:
-  # Change to ClusterIP when an Ingress controller terminates/exposes traffic.
-  type: LoadBalancer
+  type: ClusterIP
   selector:
-    app.kubernetes.io/name: vine-portal
+    app.kubernetes.io/name: vine-link
   ports:
-    - name: http
-      port: 80
-      targetPort: http
-    - name: https
-      port: 443
-      targetPort: https
-    - name: dashboard
-      port: 7099
-      targetPort: dashboard
+    - name: api
+      port: 7079
+      targetPort: api
+    - name: ingress
+      port: 7082
+      targetPort: ingress
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: portal
+  name: link
   labels:
-    app.kubernetes.io/name: vine-portal
-    app.kubernetes.io/component: portal
+    app.kubernetes.io/name: vine-link
+    app.kubernetes.io/component: link
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: vine-portal
+      app.kubernetes.io/name: vine-link
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: vine-portal
-        app.kubernetes.io/component: portal
+        app.kubernetes.io/name: vine-link
+        app.kubernetes.io/component: link
     spec:
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 30
@@ -50,8 +46,8 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: wait-for-hub
-          image: ghcr.io/yorun-ai/vine-portal:latest
-          imagePullPolicy: Always
+          image: ghcr.io/yorun-ai/vine-link
+          imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
             - -ec
@@ -61,39 +57,39 @@ spec:
                 sleep 2
               done
       containers:
-        - name: portal
-          image: ghcr.io/yorun-ai/vine-portal:latest
-          imagePullPolicy: Always
+        - name: link
+          image: ghcr.io/yorun-ai/vine-link
+          imagePullPolicy: IfNotPresent
           env:
             - name: VINE_HUB_ENDPOINT
               value: http://hub:7071
+            - name: VINE_API_LISTEN
+              value: 0.0.0.0:7079
+            - name: VINE_INGRESS_LISTEN
+              value: 0.0.0.0:7082
           ports:
-            - name: http
-              containerPort: 80
-            - name: https
-              containerPort: 443
-            - name: dashboard
-              containerPort: 7099
+            - name: api
+              containerPort: 7079
+            - name: ingress
+              containerPort: 7082
           startupProbe:
             tcpSocket:
-              port: dashboard
+              port: api
             periodSeconds: 2
             failureThreshold: 30
           readinessProbe:
             tcpSocket:
-              port: dashboard
+              port: api
             periodSeconds: 5
           livenessProbe:
             tcpSocket:
-              port: dashboard
+              port: api
             initialDelaySeconds: 10
             periodSeconds: 10
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:
-              add:
-                - NET_BIND_SERVICE
               drop:
                 - ALL
           volumeMounts:
