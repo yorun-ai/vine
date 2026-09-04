@@ -13,7 +13,7 @@ check_paths() {
 for event in push pull_request; do
   check_paths "$event" '{"dashboard":false,"container":false,"workflow":false}' README.md CHANGELOG.md
   for file in .github/workflows/release.yml .github/scripts/ci.sh; do
-    check_paths "$event" '{"dashboard":true,"container":true,"workflow":true}' "$file"
+    check_paths "$event" '{"dashboard":false,"container":true,"workflow":true}' "$file"
   done
 done
 for file in Dockerfile .dockerignore go.mod go.sum; do
@@ -23,7 +23,16 @@ for file in cmd/vine/main.go internal/repo/schema.sql internal/assets/dashboard.
   check_paths pull_request '{"dashboard":false,"container":false,"workflow":false}' "$file"
   check_paths push '{"dashboard":false,"container":true,"workflow":false}' "$file"
 done
-check_paths pull_request '{"dashboard":true,"container":false,"workflow":false}' internal/daemon/hub/src/dashboard/package.json
+check_paths pull_request '{"dashboard":true,"container":false,"workflow":false}' internal/daemon/hub/src/dashboard/src/App.tsx
+check_paths pull_request '{"dashboard":true,"container":true,"workflow":true}' .github/workflows/ci.yml
+check_paths pull_request '{"dashboard":false,"container":true,"workflow":true}' .github/workflows/example.yml
+for event in push pull_request; do
+  for file in package.json pnpm-lock.yaml; do
+    container=false
+    [[ "$event" != push ]] || container=true
+    check_paths "$event" "{\"dashboard\":true,\"container\":$container,\"workflow\":false}" "internal/daemon/hub/src/dashboard/$file"
+  done
+done
 
 for selected in true false; do
   needs=$(jq -n --arg selected "$selected" '

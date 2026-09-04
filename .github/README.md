@@ -4,7 +4,7 @@ This directory owns repository automation, not public deployment documentation.
 
 | Event | Workflow | Responsibility |
 | --- | --- | --- |
-| PR targeting main | `ci.yml` | Ordinary tests, static/security/license checks, targeted race/shuffle and lifecycle checks; optional jobs below |
+| PR targeting main | `ci.yml` | Ordinary tests, static/secret/license checks, targeted race/shuffle and lifecycle checks; optional jobs below |
 | Push to main | `ci.yml` | Test the actual integrated commit, using full race/shuffle; optional jobs below |
 | Tag push | None | Mark a version only; never publish artifacts |
 | Published Release | `release.yml` | Validate the tag and its main CI, then publish binaries and images in parallel |
@@ -18,11 +18,12 @@ and the final gate requires all unconditional jobs to succeed. Optional jobs
 must succeed when selected and must be skipped only when explicitly unselected.
 Failed classification, cancellation, or an unexpected skipped job fails the gate.
 
-- Dashboard source or its packaging script changes select Dashboard checks.
+- Dashboard source, its packaging script, or `ci.yml` changes select Dashboard
+  build checks. Release-only workflow changes do not select the Dashboard build.
 - Dockerfile, Docker ignore rules, or Go module files select the Hub build on PRs.
 - Main also selects the Hub build for runtime source and embedded input changes,
   including SQL and the embedded Dashboard archive.
-- Workflow/helper changes select workflow tests and both build checks.
+- Workflow/helper changes select workflow tests and the Hub build check.
 - Pure README/changelog changes do not select these expensive optional jobs.
 - Go checks still cover the full repository rather than only changed packages.
 
@@ -31,6 +32,20 @@ PR updates cancel older runs for the same PR. Main CI uses per-commit concurrenc
 groups, so a subsequent merge cannot cancel validation of a release candidate.
 The Hub check builds Linux AMD64 without publishing. All three image targets and
 both Linux architectures are published only by the Release workflow.
+
+## Dependency Security
+
+Dependabot owns dependency vulnerability alerts and automated security update
+PRs for Go and Dashboard dependencies. Keep the dependency graph, Dependabot
+alerts, and Dependabot security updates enabled in GitHub repository settings.
+Verify that the graph recognizes `go.mod` and
+`internal/daemon/hub/src/dashboard/pnpm-lock.yaml`.
+
+CI does not run `pnpm audit` or `govulncheck`, and there is no scheduled or
+manual audit workflow. Dependabot alerts monitor the default branch rather than
+acting as a PR merge gate. No scheduled version-update configuration is needed
+for security updates. Secret scanning and third-party license checks remain
+required CI jobs.
 
 ## Release Sequence and Recovery
 

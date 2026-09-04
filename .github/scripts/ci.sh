@@ -7,7 +7,7 @@ classify_changes() {
     if $event != "push" and $event != "pull_request" then error("Unsupported event") else
       split("\u0000") | map(select(length > 0)) |
       any(.[]; startswith(".github/workflows/") or startswith(".github/scripts/")) as $workflow |
-      ($workflow or any(.[]; startswith("internal/daemon/hub/src/dashboard/") or . == "script/build-dashboard-assets.sh")) as $dashboard |
+      any(.[]; startswith("internal/daemon/hub/src/dashboard/") or . == "script/build-dashboard-assets.sh" or . == ".github/workflows/ci.yml") as $dashboard |
       ($workflow or any(.[]; . == "Dockerfile" or . == ".dockerignore" or . == "go.mod" or . == "go.sum")) as $packaging |
       any(.[]; test("^(app|buildinfo|cmd|core|infra|internal|util)/") and (test("\\.(md|mdx)$") | not)) as $runtime |
       {dashboard: $dashboard, container: ($packaging or ($event == "push" and $runtime)), workflow: $workflow}
@@ -34,7 +34,7 @@ ci_main() {
       }
       local base="$CHANGE_BASE" flags
       if [[ "$base" =~ ^0+$ ]]; then
-        flags=$(printf '.github/workflows/ci.yml\0' | classify_changes "$GITHUB_EVENT_NAME")
+        flags=$(printf '%s\0' .github/workflows/ci.yml | classify_changes "$GITHUB_EVENT_NAME")
       else
         if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
           base=$(git merge-base "$base" "$CHANGE_HEAD")

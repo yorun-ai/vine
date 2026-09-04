@@ -131,7 +131,7 @@ jobs:
         run: bash test/race.sh
 
   security:
-    name: Security and licenses
+    name: Secrets and licenses
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -147,9 +147,6 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           check-latest: true
           cache: true
-
-      - name: Check vulnerabilities
-        run: GOWORK=off go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
 
       - name: Check secrets
         uses: docker://ghcr.io/gitleaks/gitleaks:v8.30.1
@@ -195,9 +192,6 @@ jobs:
 
       - name: Build
         run: pnpm build
-
-      - name: Audit dependencies
-        run: pnpm audit --audit-level=low --registry=https://registry.npmjs.org/
 
   container:
     name: Build hub image
@@ -249,7 +243,7 @@ jobs:
           git tag "ci-metadata-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
       - name: Exercise release metadata action without publishing
         id: metadata
-        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           context: git
           images: ghcr.io/${{ github.repository_owner }}/vine-hub

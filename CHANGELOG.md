@@ -19,6 +19,9 @@ are not part of the public compatibility commitment.
   support independent binary/image recovery without overwriting binary assets
 - Isolate main CI runs by commit, serialize cross-version `latest` promotion,
   and add bounded transient retries and clearer release validation diagnostics
+- Delegate dependency vulnerability monitoring and security updates to
+  Dependabot instead of running `pnpm audit` and `govulncheck` in CI;
+  retain secret scanning and third-party license checks
 
 ### Fixed
 
