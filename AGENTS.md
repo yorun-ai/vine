@@ -120,7 +120,7 @@
 - Verify all binary checksums and anonymous access to all three AMD64/ARM64
   images before updating `latest`. Partial recovery may publish one artifact
   family, but release completion still requires both families to be valid.
-- See `.github/README.md` for triggers, recovery, and workflow tests.
+- See `.github/CI.md` for triggers, recovery, and workflow tests.
 - Delegate dependency vulnerability detection and security update PRs to
   Dependabot. Keep dependency graph, Dependabot alerts, and security updates
   enabled in GitHub repository settings; do not run `pnpm audit` or
