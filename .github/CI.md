@@ -1,5 +1,8 @@
 # CI and Release Maintenance
 
+Keep this guide named `CI.md`: GitHub prioritizes `.github/README.md` over the
+root README when displaying the repository homepage.
+
 This directory owns repository automation, not public deployment documentation.
 
 | Event | Workflow | Responsibility |
