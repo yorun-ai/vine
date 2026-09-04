@@ -123,7 +123,7 @@
 - See `.github/README.md` for triggers, recovery, and workflow tests.
 - Select the Dashboard dependency audit on PR/main only when its `package.json`
   or `pnpm-lock.yaml` changes. Keep it separate from build checks and retain
-  daily/manual auditing in `audit.yml`; selected audits remain required.
+  manual auditing in `audit.yml`; selected audits remain required.
 
 ## Release Preparation
 

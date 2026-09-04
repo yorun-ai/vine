@@ -3,8 +3,6 @@ name: Dashboard dependency audit
 on:
   workflow_call:
   workflow_dispatch:
-  schedule:
-    - cron: '17 2 * * *'
 
 permissions:
   contents: read

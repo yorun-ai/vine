@@ -9,7 +9,7 @@ This directory owns repository automation, not public deployment documentation.
 | Tag push | None | Mark a version only; never publish artifacts |
 | Published Release | `release.yml` | Validate the tag and its main CI, then publish binaries and images in parallel |
 | Manual Release workflow | `release.yml` | Recover artifacts for an existing published release |
-| Daily at 02:17 UTC or manual dispatch | `audit.yml` | Audit existing Dashboard dependencies for newly disclosed vulnerabilities |
+| Manual dispatch | `audit.yml` | Audit existing Dashboard dependencies |
 
 ## Required CI Gate
 
@@ -37,10 +37,10 @@ groups, so a subsequent merge cannot cancel validation of a release candidate.
 The Hub check builds Linux AMD64 without publishing. All three image targets and
 both Linux architectures are published only by the Release workflow.
 
-The dependency audit reuses `audit.yml`, which also runs daily and supports
-manual dispatch. It reads the committed lockfile without installing packages or
+The dependency audit reuses `audit.yml`, which also supports manual dispatch.
+It reads the committed lockfile without installing packages or
 building the Dashboard. Vulnerabilities and registry failures fail the audit;
-scheduled audit results are separate from PR/main CI.
+manual audit results are separate from PR/main CI.
 
 ## Release Sequence and Recovery
 
