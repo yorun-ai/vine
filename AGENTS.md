@@ -128,6 +128,12 @@
 
 ## Release Preparation
 
+- Update the three image tags in `deploy/k8s/overlays/stable/kustomization.yaml`
+  to the release version. Run `bash test/k8s.sh vX.Y.Z` to validate the default,
+  stable, and stable-mTLS renders, including init-container image versions.
+- Keep Kubernetes resources in `deploy/k8s/base`, image versions in overlays,
+  and reusable mTLS patches in `deploy/k8s/components/mtls`. Do not duplicate
+  full resource manifests or add a directory for every release version.
 - Compare all commits since the previous tag with `CHANGELOG.md`. Move the
   completed entries from `[Unreleased]` under a dated release heading while
   retaining an empty `[Unreleased]` section.

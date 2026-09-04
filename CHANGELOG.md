@@ -10,6 +10,8 @@ are not part of the public compatibility commitment.
 
 ### Changed
 
+- Moved Kubernetes manifests from `examples/k8s` to `deploy/k8s`, with a
+  version-pinned stable default and composable backend mTLS configuration
 - Build and publish release binaries and container images in parallel after
   shared release validation
 - Consolidated PR and main checks into one required CI gate, with path-selected

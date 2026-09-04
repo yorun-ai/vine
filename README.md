@@ -267,6 +267,7 @@ vine/
 ├── util/      # public reusable helpers
 ├── cmd/vine/  # runtime CLI
 ├── internal/  # framework and Hub/Link/Portal implementations
+├── deploy/    # Kubernetes deployment resources and overlays
 ├── script/    # generation and release-support scripts
 └── test/      # repository-wide test and race entry points
 ```

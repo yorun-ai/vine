@@ -246,6 +246,7 @@ vine/
 ├── util/      # 公开可复用辅助包
 ├── cmd/vine/  # 运行时 CLI
 ├── internal/  # 框架及 Hub/Link/Portal 实现
+├── deploy/    # Kubernetes 部署资源与 overlay
 ├── script/    # 生成与发布辅助脚本
 └── test/      # 仓库级测试与 race 入口
 ```

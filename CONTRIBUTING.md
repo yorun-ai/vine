@@ -172,6 +172,25 @@ bash script/build-dashboard-assets.sh
 
 Do not assemble the archive manually.
 
+## Kubernetes Manifests
+
+Keep shared resources in `deploy/k8s/base`, release image tags in
+`deploy/k8s/overlays/stable/kustomization.yaml`, and reusable mTLS patches in
+`deploy/k8s/components/mtls`. The root deployment and the `stable-mtls` overlay
+both use the stable images.
+
+During release preparation, update all three stable image tags together and run:
+
+```bash
+bash test/k8s.sh vX.Y.Z
+```
+
+The script requires `jq` and mikefarah/yq v4. It uses `kustomize` or `kubectl`
+when available, otherwise a pinned Kustomize Go binary. It renders the manifests
+locally without contacting a cluster and checks all five container and
+init-container image references, pull policies, and mTLS configuration. Omit the
+version argument to validate changes outside release preparation.
+
 ## Compatibility
 
 Vine is stabilizing its public API before `v1.0.0`. Patch releases remain
