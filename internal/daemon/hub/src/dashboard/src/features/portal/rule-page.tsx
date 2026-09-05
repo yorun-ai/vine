@@ -1,3 +1,6 @@
+import { RulePathPreview } from './rule-path-preview'
+import { ListDetailFooter } from '@/components/ui/list-detail-layout'
+import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import {
@@ -6,7 +9,6 @@ import {
   Loader2,
   Plus,
   RefreshCw,
-  Search,
   ShieldCheck,
   Trash2,
 } from 'lucide-react'
@@ -69,8 +71,7 @@ import type {
 const portalRuleService = createPortalRuleService(vrpcClient)
 const portalSiteService = createPortalSiteService(vrpcClient)
 const PORTAL_RULE_LIST_DEFAULT_WIDTH = 352
-const PORTAL_RULE_LIST_WIDTH_STORAGE_KEY = 'vinehub_portal_rule_list_width'
-const targetTypes = [
+const routeTypes = [
   {
     value: 'SITE',
     label: 'Site',
@@ -88,29 +89,31 @@ const targetTypes = [
   },
 ] as const
 
-type PortalRuleTargetType = (typeof targetTypes)[number]['value']
+type PortalRuleRouteType = (typeof routeTypes)[number]['value']
 type PortalRuleFormErrors = Partial<Record<keyof PortalRuleFormValue, string>>
 
 interface PortalRuleFormValue {
   name: string
-  scheme: string
-  host: string
-  port: string
-  pathPrefix: string
-  targetType: PortalRuleTargetType
-  siteName: string
-  redirectionPattern: string
+  matchScheme: string
+  matchHost: string
+  matchPort: string
+  matchPathPrefix: string
+  routeType: PortalRuleRouteType
+  routeSiteName: string
+  routeRedirectionPattern: string
+  routePathPrefix: string
 }
 
 const emptyFormValue: PortalRuleFormValue = {
   name: '',
-  scheme: 'http',
-  host: '',
-  port: '',
-  pathPrefix: '',
-  targetType: 'SITE',
-  siteName: '',
-  redirectionPattern: '',
+  matchScheme: 'http',
+  matchHost: '',
+  matchPort: '',
+  matchPathPrefix: '',
+  routeType: 'SITE',
+  routeSiteName: '',
+  routeRedirectionPattern: '',
+  routePathPrefix: '',
 }
 
 const defaultPortsByScheme: Record<string, string> = {
@@ -125,19 +128,20 @@ function getErrorMessage(error: unknown) {
 function ruleToFormValue(rule: PortalRule): PortalRuleFormValue {
   return {
     name: rule.name,
-    scheme: rule.scheme,
-    host: rule.host,
-    port: rule.port === 0 ? '' : String(rule.port),
-    pathPrefix: rule.pathPrefix,
-    targetType: normalizeTargetType(rule.targetType),
-    siteName: rule.siteName,
-    redirectionPattern: rule.redirectionPattern,
+    matchScheme: rule.matchScheme,
+    matchHost: rule.matchHost,
+    matchPort: rule.matchPort === 0 ? '' : String(rule.matchPort),
+    matchPathPrefix: rule.matchPathPrefix,
+    routeType: normalizeTargetType(rule.routeType),
+    routeSiteName: rule.routeSiteName,
+    routeRedirectionPattern: rule.routeRedirectionPattern,
+    routePathPrefix: rule.routePathPrefix ?? '',
   }
 }
 
-function normalizeTargetType(value: string): PortalRuleTargetType {
-  return targetTypes.some((item) => item.value === value)
-    ? (value as PortalRuleTargetType)
+function normalizeTargetType(value: string): PortalRuleRouteType {
+  return routeTypes.some((item) => item.value === value)
+    ? (value as PortalRuleRouteType)
     : 'SITE'
 }
 
@@ -151,14 +155,14 @@ function normalizeRuleNamePart(value: string, fallback: string) {
 
 function derivePortalRuleName(value: PortalRuleFormValue) {
   const target =
-    value.targetType === 'SITE' ? value.siteName : value.redirectionPattern
+    value.routeType === 'SITE' ? value.routeSiteName : value.routeRedirectionPattern
 
   return [
-    normalizeRuleNamePart(value.scheme, 'http'),
-    normalizeRuleNamePart(value.host, 'all'),
-    normalizeRuleNamePart(value.port, 'auto'),
-    normalizeRuleNamePart(value.pathPrefix, 'root'),
-    normalizeRuleNamePart(target, value.targetType.toLowerCase()),
+    normalizeRuleNamePart(value.matchScheme, 'http'),
+    normalizeRuleNamePart(value.matchHost, 'all'),
+    normalizeRuleNamePart(value.matchPort, 'auto'),
+    normalizeRuleNamePart(value.matchPathPrefix, 'root'),
+    normalizeRuleNamePart(target, value.routeType.toLowerCase()),
   ].join('.')
 }
 
@@ -205,14 +209,15 @@ function updatePortalRuleField(
 function formValueToCreation(value: PortalRuleFormValue): PortalRuleCreation {
   return {
     name: value.name.trim() || derivePortalRuleName(value),
-    scheme: value.scheme,
-    host: value.host.trim(),
-    port: Number(value.port || 0),
-    pathPrefix: value.pathPrefix.trim(),
-    targetType: value.targetType,
-    siteName: value.targetType === 'SITE' ? value.siteName.trim() : '',
-    redirectionPattern:
-      value.targetType === 'SITE' ? '' : value.redirectionPattern.trim(),
+    matchScheme: value.matchScheme,
+    matchHost: value.matchHost.trim(),
+    matchPort: Number(value.matchPort || 0),
+    matchPathPrefix: value.matchPathPrefix.trim(),
+    routeType: value.routeType,
+    routeSiteName: value.routeType === 'SITE' ? value.routeSiteName.trim() : '',
+    routeRedirectionPattern:
+      value.routeType === 'SITE' ? '' : value.routeRedirectionPattern.trim(),
+    routePathPrefix: value.routeType === 'SITE' ? value.routePathPrefix.trim() : '',
   }
 }
 
@@ -221,33 +226,34 @@ function formValueToUpdate(value: PortalRuleFormValue): PortalRuleUpdate {
 
   return {
     name: creation.name,
-    scheme: creation.scheme,
-    host: creation.host,
-    port: creation.port,
-    pathPrefix: creation.pathPrefix,
-    targetType: creation.targetType,
-    siteName: creation.siteName,
-    redirectionPattern: creation.redirectionPattern,
+    matchScheme: creation.matchScheme,
+    matchHost: creation.matchHost,
+    matchPort: creation.matchPort,
+    matchPathPrefix: creation.matchPathPrefix,
+    routeType: creation.routeType,
+    routeSiteName: creation.routeSiteName,
+    routeRedirectionPattern: creation.routeRedirectionPattern,
+    routePathPrefix: creation.routePathPrefix,
   }
 }
 
 function formatMatch(rule: PortalRule) {
-  const port = rule.port === 0 ? '' : `:${rule.port}`
-  const host = rule.host || '*'
-  const pathPrefix = rule.pathPrefix || '/'
+  const matchPort = rule.matchPort === 0 ? '' : `:${rule.matchPort}`
+  const matchHost = rule.matchHost || '*'
+  const matchPathPrefix = rule.matchPathPrefix || '/'
 
-  return `${rule.scheme}://${host}${port}${pathPrefix}`
+  return `${rule.matchScheme}://${matchHost}${matchPort}${matchPathPrefix}`
 }
 
-function targetTypeLabel(targetType: string) {
+function routeTypeLabel(routeType: string) {
   return (
-    targetTypes.find((item) => item.value === targetType)?.label ?? targetType
+    routeTypes.find((item) => item.value === routeType)?.label ?? routeType
   )
 }
 
-function isRedirectTarget(targetType: string) {
+function isRedirectTarget(routeType: string) {
   return (
-    targetType === 'PERMANENT_REDIRECT' || targetType === 'TEMPORARY_REDIRECT'
+    routeType === 'PERMANENT_REDIRECT' || routeType === 'TEMPORARY_REDIRECT'
   )
 }
 
@@ -259,33 +265,51 @@ function validateFormValue(
   value: PortalRuleFormValue,
   t: ReturnType<typeof useLocale>['t'],
 ) {
-  const port = Number(value.port)
+  const matchPort = Number(value.matchPort)
   const errors: PortalRuleFormErrors = {}
 
   if (value.name.trim() === '') {
     errors.name = t('portalRule.nameRequired')
   }
 
-  if (value.scheme !== 'http' && value.scheme !== 'https') {
-    errors.scheme = t('portalRule.schemeInvalid')
+  if (value.matchScheme !== 'http' && value.matchScheme !== 'https') {
+    errors.matchScheme = t('portalRule.schemeInvalid')
   }
 
   if (
-    value.port.trim() !== '' &&
-    (!Number.isInteger(port) || port < 1 || port > 65535)
+    value.matchPort.trim() !== '' &&
+    (!Number.isInteger(matchPort) || matchPort < 1 || matchPort > 65535)
   ) {
-    errors.port = t('portalRule.portInvalid')
+    errors.matchPort = t('portalRule.portInvalid')
   }
 
-  if (value.targetType === 'SITE' && value.siteName.trim() === '') {
-    errors.siteName = t('portalRule.siteRequired')
+  if (value.routeType === 'SITE' && value.routePathPrefix.trim() !== '') {
+    const path = value.routePathPrefix.trim()
+    try {
+      const decoded = decodeURIComponent(path)
+      if (
+        !path.startsWith('/') ||
+        path.startsWith('//') ||
+        /[?#\s]/.test(path) ||
+        /[\\\x00-\x1f\x7f]/.test(decoded) ||
+        decoded.split('/').some((part) => part === '.' || part === '..')
+      ) {
+        errors.routePathPrefix = t('portalRule.routePathPrefixInvalid')
+      }
+    } catch {
+      errors.routePathPrefix = t('portalRule.routePathPrefixInvalid')
+    }
+  }
+
+  if (value.routeType === 'SITE' && value.routeSiteName.trim() === '') {
+    errors.routeSiteName = t('portalRule.siteRequired')
   }
 
   if (
-    isRedirectTarget(value.targetType) &&
-    value.redirectionPattern.trim() === ''
+    isRedirectTarget(value.routeType) &&
+    value.routeRedirectionPattern.trim() === ''
   ) {
-    errors.redirectionPattern = t('portalRule.redirectRequired')
+    errors.routeRedirectionPattern = t('portalRule.redirectRequired')
   }
 
   return errors
@@ -378,16 +402,16 @@ function RuleFlowSection({
 }
 
 function TargetTypeBadge({
-  targetType,
+  routeType,
   className,
 }: {
-  targetType: string
+  routeType: string
   className?: string
 }) {
   const { tText } = useLocale()
   return (
     <Badge variant="outline" className={className}>
-      {tText(targetTypeLabel(targetType))}
+      {tText(routeTypeLabel(routeType))}
     </Badge>
   )
 }
@@ -421,8 +445,8 @@ function PortalRuleDialog({
   )
   const entryOptions = React.useMemo(() => {
     if (
-      formValue.siteName === '' ||
-      selectableEntries.some((entry) => entry.name === formValue.siteName)
+      formValue.routeSiteName === '' ||
+      selectableEntries.some((entry) => entry.name === formValue.routeSiteName)
     ) {
       return selectableEntries
     }
@@ -431,7 +455,7 @@ function PortalRuleDialog({
       ...selectableEntries,
       {
         id: 0,
-        name: formValue.siteName,
+        name: formValue.routeSiteName,
         type: '',
         actorSkelName: '',
         actorVia: '',
@@ -439,7 +463,7 @@ function PortalRuleDialog({
         webName: '',
       },
     ]
-  }, [formValue.siteName, selectableEntries])
+  }, [formValue.routeSiteName, selectableEntries])
 
   React.useEffect(() => {
     if (!open) {
@@ -471,28 +495,28 @@ function PortalRuleDialog({
     [],
   )
 
-  const handleSchemeChange = React.useCallback((scheme: string) => {
+  const handleSchemeChange = React.useCallback((matchScheme: string) => {
     setFormError(null)
     setFieldErrors((current) => {
-      if (!current.scheme && !current.port) {
+      if (!current.matchScheme && !current.matchPort) {
         return current
       }
 
-      const { scheme: _scheme, port: _port, ...next } = current
+      const { matchScheme: _scheme, matchPort: _port, ...next } = current
       return next
     })
     setFormValue((current) => {
-      const currentDefaultPort = defaultPortsByScheme[current.scheme]
-      const nextDefaultPort = defaultPortsByScheme[scheme]
+      const currentDefaultPort = defaultPortsByScheme[current.matchScheme]
+      const nextDefaultPort = defaultPortsByScheme[matchScheme]
       const nextPort =
-        currentDefaultPort && current.port === currentDefaultPort
-          ? (nextDefaultPort ?? current.port)
-          : current.port
+        currentDefaultPort && current.matchPort === currentDefaultPort
+          ? (nextDefaultPort ?? current.matchPort)
+          : current.matchPort
 
       return syncDerivedName(current, {
         ...current,
-        scheme,
-        port: nextPort,
+        matchScheme,
+        matchPort: nextPort,
       })
     })
   }, [])
@@ -557,12 +581,12 @@ function PortalRuleDialog({
 
           <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_2.5rem_minmax(0,1fr)] md:items-start">
             <RuleFlowSection
-              title={t('portalRule.matchCondition')}
+              title={t('portalRule.match')}
               description={t('portalRule.matchDescription')}
             >
-              <Field label={t('portalRule.scheme')} error={fieldErrors.scheme}>
+              <Field label={t('portalRule.matchScheme')} error={fieldErrors.matchScheme}>
                 <Select
-                  value={formValue.scheme}
+                  value={formValue.matchScheme}
                   onValueChange={(value) => {
                     if (value) {
                       handleSchemeChange(value)
@@ -570,7 +594,7 @@ function PortalRuleDialog({
                   }}
                 >
                   <SelectTrigger
-                    aria-invalid={Boolean(fieldErrors.scheme)}
+                    aria-invalid={Boolean(fieldErrors.matchScheme)}
                     className="w-full"
                   >
                     <SelectValue placeholder={t('portalRule.selectScheme')} />
@@ -582,30 +606,30 @@ function PortalRuleDialog({
                 </Select>
               </Field>
 
-              <Field label={t('portalRule.port')} error={fieldErrors.port}>
+              <Field label={t('portalRule.matchHost')}>
                 <Input
-                  aria-invalid={Boolean(fieldErrors.port)}
-                  value={formValue.port}
+                  value={formValue.matchHost}
+                  placeholder={t('portalRule.hostPlaceholder')}
+                  onChange={(event) => setField('matchHost', event.target.value)}
+                />
+              </Field>
+
+              <Field label={t('portalRule.matchPort')} error={fieldErrors.matchPort}>
+                <Input
+                  aria-invalid={Boolean(fieldErrors.matchPort)}
+                  value={formValue.matchPort}
                   inputMode="numeric"
                   placeholder={t('portalRule.portPlaceholder')}
-                  onChange={(event) => setField('port', event.target.value)}
+                  onChange={(event) => setField('matchPort', event.target.value)}
                 />
               </Field>
 
-              <Field label={t('portalRule.host')}>
+              <Field label={t('portalRule.matchPathPrefix')}>
                 <Input
-                  value={formValue.host}
-                  placeholder={t('portalRule.hostPlaceholder')}
-                  onChange={(event) => setField('host', event.target.value)}
-                />
-              </Field>
-
-              <Field label={t('portalRule.pathPrefix')}>
-                <Input
-                  value={formValue.pathPrefix}
+                  value={formValue.matchPathPrefix}
                   placeholder={t('portalRule.pathPrefixPlaceholder')}
                   onChange={(event) =>
-                    setField('pathPrefix', event.target.value)
+                    setField('matchPathPrefix', event.target.value)
                   }
                 />
               </Field>
@@ -618,31 +642,31 @@ function PortalRuleDialog({
             </div>
 
             <RuleFlowSection
-              title={t('portalRule.target')}
-              description={t('portalRule.targetDescription')}
+              title={t('portalRule.route')}
+              description={t('portalRule.routeDescription')}
             >
               <Field
-                label={t('portalRule.targetType')}
-                error={fieldErrors.targetType}
+                label={t('portalRule.routeType')}
+                error={fieldErrors.routeType}
               >
                 <Select
-                  value={formValue.targetType}
+                  value={formValue.routeType}
                   onValueChange={(value) => {
                     if (value) {
-                      setField('targetType', normalizeTargetType(value))
+                      setField('routeType', normalizeTargetType(value))
                     }
                   }}
                 >
                   <SelectTrigger
-                    aria-invalid={Boolean(fieldErrors.targetType)}
+                    aria-invalid={Boolean(fieldErrors.routeType)}
                     className="w-full"
                   >
                     <SelectValue
-                      placeholder={t('portalRule.selectTargetType')}
+                      placeholder={t('portalRule.selectRouteType')}
                     />
                   </SelectTrigger>
                   <SelectContent align="start">
-                    {targetTypes.map((item) => (
+                    {routeTypes.map((item) => (
                       <SelectItem key={item.value} value={item.value}>
                         <span className="flex flex-col">
                           <span>{tText(item.label)}</span>
@@ -656,21 +680,21 @@ function PortalRuleDialog({
                 </Select>
               </Field>
 
-              {formValue.targetType === 'SITE' ? (
+              {formValue.routeType === 'SITE' ? (
                 <Field
-                  label={t('portalRule.site')}
-                  error={fieldErrors.siteName}
+                  label={t('portalRule.routeSiteName')}
+                  error={fieldErrors.routeSiteName}
                 >
                   <Select
-                    value={formValue.siteName}
+                    value={formValue.routeSiteName}
                     onValueChange={(value) => {
                       if (value) {
-                        setField('siteName', value)
+                        setField('routeSiteName', value)
                       }
                     }}
                   >
                     <SelectTrigger
-                      aria-invalid={Boolean(fieldErrors.siteName)}
+                      aria-invalid={Boolean(fieldErrors.routeSiteName)}
                       className="w-full"
                     >
                       <SelectValue placeholder={t('portalRule.selectSite')} />
@@ -701,20 +725,34 @@ function PortalRuleDialog({
               ) : (
                 <Field
                   label={t('portalRule.redirectPattern')}
-                  error={fieldErrors.redirectionPattern}
+                  error={fieldErrors.routeRedirectionPattern}
                 >
                   <Input
-                    aria-invalid={Boolean(fieldErrors.redirectionPattern)}
-                    value={formValue.redirectionPattern}
+                    aria-invalid={Boolean(fieldErrors.routeRedirectionPattern)}
+                    value={formValue.routeRedirectionPattern}
                     placeholder="https://example.com{uri}"
                     onChange={(event) =>
-                      setField('redirectionPattern', event.target.value)
+                      setField('routeRedirectionPattern', event.target.value)
                     }
                   />
                 </Field>
               )}
+              {formValue.routeType === 'SITE' ? (
+                <Field label={t('portalRule.routePathPrefix')} error={fieldErrors.routePathPrefix}>
+                  <Input
+                    value={formValue.routePathPrefix}
+                    placeholder="/internal"
+                    aria-invalid={Boolean(fieldErrors.routePathPrefix)}
+                    onChange={(event) => setField('routePathPrefix', event.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">{t('portalRule.routePathPrefixHelp')}</p>
+                </Field>
+              ) : null}
             </RuleFlowSection>
           </div>
+          {formValue.routeType === 'SITE' ? (
+            <RulePathPreview matchPathPrefix={formValue.matchPathPrefix.trim()} routePathPrefix={formValue.routePathPrefix.trim()} />
+          ) : null}
 
           <DialogFooter>
             <Button
@@ -849,8 +887,8 @@ function PortalRuleInlineEditor({
   )
   const entryOptions = React.useMemo(() => {
     if (
-      formValue.siteName === '' ||
-      selectableEntries.some((entry) => entry.name === formValue.siteName)
+      formValue.routeSiteName === '' ||
+      selectableEntries.some((entry) => entry.name === formValue.routeSiteName)
     ) {
       return selectableEntries
     }
@@ -859,7 +897,7 @@ function PortalRuleInlineEditor({
       ...selectableEntries,
       {
         id: 0,
-        name: formValue.siteName,
+        name: formValue.routeSiteName,
         type: '',
         actorSkelName: '',
         actorVia: '',
@@ -867,7 +905,7 @@ function PortalRuleInlineEditor({
         webName: '',
       },
     ]
-  }, [formValue.siteName, selectableEntries])
+  }, [formValue.routeSiteName, selectableEntries])
 
   React.useEffect(() => {
     const nextFormValue = rule ? ruleToFormValue(rule) : emptyFormValue
@@ -895,28 +933,28 @@ function PortalRuleInlineEditor({
     [],
   )
 
-  const handleSchemeChange = React.useCallback((scheme: string) => {
+  const handleSchemeChange = React.useCallback((matchScheme: string) => {
     setFormError(null)
     setFieldErrors((current) => {
-      if (!current.scheme && !current.port) {
+      if (!current.matchScheme && !current.matchPort) {
         return current
       }
 
-      const { scheme: _scheme, port: _port, ...next } = current
+      const { matchScheme: _scheme, matchPort: _port, ...next } = current
       return next
     })
     setFormValue((current) => {
-      const currentDefaultPort = defaultPortsByScheme[current.scheme]
-      const nextDefaultPort = defaultPortsByScheme[scheme]
+      const currentDefaultPort = defaultPortsByScheme[current.matchScheme]
+      const nextDefaultPort = defaultPortsByScheme[matchScheme]
       const nextPort =
-        currentDefaultPort && current.port === currentDefaultPort
-          ? (nextDefaultPort ?? current.port)
-          : current.port
+        currentDefaultPort && current.matchPort === currentDefaultPort
+          ? (nextDefaultPort ?? current.matchPort)
+          : current.matchPort
 
       return syncDerivedName(current, {
         ...current,
-        scheme,
-        port: nextPort,
+        matchScheme,
+        matchPort: nextPort,
       })
     })
   }, [])
@@ -968,12 +1006,12 @@ function PortalRuleInlineEditor({
 
       <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_2.5rem_minmax(0,1fr)] md:items-start">
         <RuleFlowSection
-          title={t('portalRule.matchCondition')}
+          title={t('portalRule.match')}
           description={t('portalRule.matchDescription')}
         >
-          <Field label={t('portalRule.scheme')} error={fieldErrors.scheme}>
+          <Field label={t('portalRule.matchScheme')} error={fieldErrors.matchScheme}>
             <Select
-              value={formValue.scheme}
+              value={formValue.matchScheme}
               onValueChange={(value) => {
                 if (value) {
                   handleSchemeChange(value)
@@ -981,7 +1019,7 @@ function PortalRuleInlineEditor({
               }}
             >
               <SelectTrigger
-                aria-invalid={Boolean(fieldErrors.scheme)}
+                aria-invalid={Boolean(fieldErrors.matchScheme)}
                 className="w-full"
               >
                 <SelectValue placeholder={t('portalRule.selectScheme')} />
@@ -993,29 +1031,29 @@ function PortalRuleInlineEditor({
             </Select>
           </Field>
 
-          <Field label={t('portalRule.port')} error={fieldErrors.port}>
+          <Field label={t('portalRule.matchHost')}>
             <Input
-              aria-invalid={Boolean(fieldErrors.port)}
-              value={formValue.port}
+              value={formValue.matchHost}
+              placeholder={t('portalRule.hostPlaceholder')}
+              onChange={(event) => setField('matchHost', event.target.value)}
+            />
+          </Field>
+
+          <Field label={t('portalRule.matchPort')} error={fieldErrors.matchPort}>
+            <Input
+              aria-invalid={Boolean(fieldErrors.matchPort)}
+              value={formValue.matchPort}
               inputMode="numeric"
               placeholder={t('portalRule.portPlaceholder')}
-              onChange={(event) => setField('port', event.target.value)}
+              onChange={(event) => setField('matchPort', event.target.value)}
             />
           </Field>
 
-          <Field label={t('portalRule.host')}>
+          <Field label={t('portalRule.matchPathPrefix')}>
             <Input
-              value={formValue.host}
-              placeholder={t('portalRule.hostPlaceholder')}
-              onChange={(event) => setField('host', event.target.value)}
-            />
-          </Field>
-
-          <Field label={t('portalRule.pathPrefix')}>
-            <Input
-              value={formValue.pathPrefix}
+              value={formValue.matchPathPrefix}
               placeholder={t('portalRule.pathPrefixPlaceholder')}
-              onChange={(event) => setField('pathPrefix', event.target.value)}
+              onChange={(event) => setField('matchPathPrefix', event.target.value)}
             />
           </Field>
         </RuleFlowSection>
@@ -1027,29 +1065,29 @@ function PortalRuleInlineEditor({
         </div>
 
         <RuleFlowSection
-          title={t('portalRule.target')}
-          description={t('portalRule.targetDescription')}
+          title={t('portalRule.route')}
+          description={t('portalRule.routeDescription')}
         >
           <Field
-            label={t('portalRule.targetType')}
-            error={fieldErrors.targetType}
+            label={t('portalRule.routeType')}
+            error={fieldErrors.routeType}
           >
             <Select
-              value={formValue.targetType}
+              value={formValue.routeType}
               onValueChange={(value) => {
                 if (value) {
-                  setField('targetType', normalizeTargetType(value))
+                  setField('routeType', normalizeTargetType(value))
                 }
               }}
             >
               <SelectTrigger
-                aria-invalid={Boolean(fieldErrors.targetType)}
+                aria-invalid={Boolean(fieldErrors.routeType)}
                 className="w-full"
               >
-                <SelectValue placeholder={t('portalRule.selectTargetType')} />
+                <SelectValue placeholder={t('portalRule.selectRouteType')} />
               </SelectTrigger>
               <SelectContent align="start">
-                {targetTypes.map((item) => (
+                {routeTypes.map((item) => (
                   <SelectItem key={item.value} value={item.value}>
                     <span className="flex flex-col">
                       <span>{tText(item.label)}</span>
@@ -1063,18 +1101,18 @@ function PortalRuleInlineEditor({
             </Select>
           </Field>
 
-          {formValue.targetType === 'SITE' ? (
-            <Field label={t('portalRule.site')} error={fieldErrors.siteName}>
+          {formValue.routeType === 'SITE' ? (
+            <Field label={t('portalRule.routeSiteName')} error={fieldErrors.routeSiteName}>
               <Select
-                value={formValue.siteName}
+                value={formValue.routeSiteName}
                 onValueChange={(value) => {
                   if (value) {
-                    setField('siteName', value)
+                    setField('routeSiteName', value)
                   }
                 }}
               >
                 <SelectTrigger
-                  aria-invalid={Boolean(fieldErrors.siteName)}
+                  aria-invalid={Boolean(fieldErrors.routeSiteName)}
                   className="w-full"
                 >
                   <SelectValue placeholder={t('portalRule.selectSite')} />
@@ -1105,20 +1143,34 @@ function PortalRuleInlineEditor({
           ) : (
             <Field
               label={t('portalRule.redirectPattern')}
-              error={fieldErrors.redirectionPattern}
+              error={fieldErrors.routeRedirectionPattern}
             >
               <Input
-                aria-invalid={Boolean(fieldErrors.redirectionPattern)}
-                value={formValue.redirectionPattern}
+                aria-invalid={Boolean(fieldErrors.routeRedirectionPattern)}
+                value={formValue.routeRedirectionPattern}
                 placeholder="https://example.com{uri}"
                 onChange={(event) =>
-                  setField('redirectionPattern', event.target.value)
+                  setField('routeRedirectionPattern', event.target.value)
                 }
               />
             </Field>
           )}
+          {formValue.routeType === 'SITE' ? (
+            <Field label={t('portalRule.routePathPrefix')} error={fieldErrors.routePathPrefix}>
+              <Input
+                value={formValue.routePathPrefix}
+                placeholder="/internal"
+                aria-invalid={Boolean(fieldErrors.routePathPrefix)}
+                onChange={(event) => setField('routePathPrefix', event.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">{t('portalRule.routePathPrefixHelp')}</p>
+            </Field>
+          ) : null}
         </RuleFlowSection>
       </div>
+      {formValue.routeType === 'SITE' ? (
+        <RulePathPreview matchPathPrefix={formValue.matchPathPrefix.trim()} routePathPrefix={formValue.routePathPrefix.trim()} />
+      ) : null}
 
       <div className="flex justify-end gap-2 border-t pt-4">
         <Button
@@ -1149,7 +1201,6 @@ export function PortalRulePage() {
   const [query, setQuery] = React.useState('')
   const listPanel = useResizableListPanel({
     defaultWidth: PORTAL_RULE_LIST_DEFAULT_WIDTH,
-    storageKey: PORTAL_RULE_LIST_WIDTH_STORAGE_KEY,
   })
   const handleListScroll = useReservedScrollbar()
   const [loading, setLoading] = React.useState(true)
@@ -1198,13 +1249,14 @@ export function PortalRulePage() {
     return visibleRules.filter((rule) => {
       const values = [
         rule.name,
-        rule.scheme,
-        rule.host,
-        String(rule.port),
-        rule.pathPrefix,
-        rule.targetType,
-        rule.siteName,
-        rule.redirectionPattern,
+        rule.matchScheme,
+        rule.matchHost,
+        String(rule.matchPort),
+        rule.matchPathPrefix,
+        rule.routeType,
+        rule.routeSiteName,
+        rule.routeRedirectionPattern,
+        rule.routePathPrefix,
       ]
 
       return values.some((value) => value.toLowerCase().includes(keyword))
@@ -1219,10 +1271,10 @@ export function PortalRulePage() {
     [filteredRules, selectedRuleId],
   )
   const selectedTargetSite = React.useMemo(() => {
-    if (!selectedRule || selectedRule.targetType !== 'SITE') {
+    if (!selectedRule || selectedRule.routeType !== 'SITE') {
       return null
     }
-    return entries.find((entry) => entry.name === selectedRule.siteName) ?? null
+    return entries.find((entry) => entry.name === selectedRule.routeSiteName) ?? null
   }, [entries, selectedRule])
 
   const selectRule = React.useCallback(
@@ -1346,21 +1398,13 @@ export function PortalRulePage() {
           <aside className="relative flex min-h-0 flex-col border-b border-border/70 lg:border-r lg:border-b-0">
             <div className="grid gap-4 border-b border-border/70 p-4">
               <div className="relative w-full md:max-w-sm">
-                <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
+                <SearchInput
                   value={query}
-                  className="pl-8"
                   placeholder={t('portalRule.searchPlaceholder')}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onValueChange={setQuery}
                 />
               </div>
-              <div className="flex items-center justify-between gap-2">
-                <div className="text-xs text-muted-foreground">
-                  {t('portalRule.itemCount').replace(
-                    '{count}',
-                    String(visibleRules.length),
-                  )}
-                </div>
+              <div className="flex items-center justify-end gap-2">
                 <div className="flex items-center gap-1">
                   <Button
                     type="button"
@@ -1424,7 +1468,7 @@ export function PortalRulePage() {
                       )}
                     >
                       <TargetTypeBadge
-                        targetType={rule.targetType}
+                        routeType={rule.routeType}
                         className="absolute top-2.5 right-3"
                       />
                       <div className="flex min-w-0 items-center gap-2">
@@ -1442,6 +1486,12 @@ export function PortalRulePage() {
                 </div>
               )}
             </div>
+            <ListDetailFooter>
+              {t('portalRule.itemCount').replace(
+                '{count}',
+                String(visibleRules.length),
+              )}
+            </ListDetailFooter>
             <ResizableListHandle
               defaultWidth={PORTAL_RULE_LIST_DEFAULT_WIDTH}
               label={t('portalRule.resizeList')}
@@ -1486,7 +1536,7 @@ export function PortalRulePage() {
                         <h2 className="min-w-0 truncate text-base font-semibold">
                           {selectedRule.name}
                         </h2>
-                        <TargetTypeBadge targetType={selectedRule.targetType} />
+                        <TargetTypeBadge routeType={selectedRule.routeType} />
                       </div>
                       <p className="mt-2 font-mono text-xs text-muted-foreground">
                         #{selectedRule.id}
@@ -1548,22 +1598,22 @@ export function PortalRulePage() {
                       </div>
                       <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_2.5rem_minmax(0,1fr)] md:items-start">
                         <RuleFlowSection
-                          title={t('portalRule.matchCondition')}
+                          title={t('portalRule.match')}
                           description={t('portalRule.matchDescription')}
                         >
-                          <ReadonlyField label={t('portalRule.scheme')}>
-                            {selectedRule.scheme}
+                          <ReadonlyField label={t('portalRule.matchScheme')}>
+                            {selectedRule.matchScheme}
                           </ReadonlyField>
-                          <ReadonlyField label={t('portalRule.port')}>
-                            {selectedRule.port === 0
+                          <ReadonlyField label={t('portalRule.matchHost')}>
+                            {selectedRule.matchHost || t('portalRule.anyHost')}
+                          </ReadonlyField>
+                          <ReadonlyField label={t('portalRule.matchPort')}>
+                            {selectedRule.matchPort === 0
                               ? t('portalRule.followScheme')
-                              : selectedRule.port}
+                              : selectedRule.matchPort}
                           </ReadonlyField>
-                          <ReadonlyField label={t('portalRule.host')}>
-                            {selectedRule.host || t('portalRule.anyHost')}
-                          </ReadonlyField>
-                          <ReadonlyField label={t('portalRule.pathPrefix')}>
-                            {selectedRule.pathPrefix || '/'}
+                          <ReadonlyField label={t('portalRule.matchPathPrefix')}>
+                            {selectedRule.matchPathPrefix || '/'}
                           </ReadonlyField>
                         </RuleFlowSection>
 
@@ -1572,22 +1622,22 @@ export function PortalRulePage() {
                         </div>
 
                         <RuleFlowSection
-                          title={t('portalRule.target')}
-                          description={t('portalRule.targetDescription')}
+                          title={t('portalRule.route')}
+                          description={t('portalRule.routeDescription')}
                         >
-                          <ReadonlyField label={t('portalRule.targetType')}>
+                          <ReadonlyField label={t('portalRule.routeType')}>
                             <TargetTypeBadge
-                              targetType={selectedRule.targetType}
+                              routeType={selectedRule.routeType}
                             />
                           </ReadonlyField>
                           <ReadonlyField
                             label={
-                              selectedRule.targetType === 'SITE'
-                                ? t('portalRule.site')
+                              selectedRule.routeType === 'SITE'
+                                ? t('portalRule.routeSiteName')
                                 : t('portalRule.redirectPattern')
                             }
                           >
-                            {selectedRule.targetType === 'SITE' &&
+                            {selectedRule.routeType === 'SITE' &&
                             selectedTargetSite ? (
                               <a
                                 href={portalSitePath(selectedTargetSite.id)}
@@ -1602,16 +1652,24 @@ export function PortalRulePage() {
                                   })
                                 }}
                               >
-                                {selectedRule.siteName}
+                                {selectedRule.routeSiteName}
                               </a>
-                            ) : selectedRule.targetType === 'SITE' ? (
-                              selectedRule.siteName
+                            ) : selectedRule.routeType === 'SITE' ? (
+                              selectedRule.routeSiteName
                             ) : (
-                              selectedRule.redirectionPattern
+                              selectedRule.routeRedirectionPattern
                             )}
                           </ReadonlyField>
+                          {selectedRule.routeType === 'SITE' ? (
+                            <ReadonlyField label={t('portalRule.routePathPrefix')}>
+                              {selectedRule.routePathPrefix || '/'}
+                            </ReadonlyField>
+                          ) : null}
                         </RuleFlowSection>
                       </div>
+                      {selectedRule.routeType === 'SITE' ? (
+                        <RulePathPreview key={selectedRule.id} matchPathPrefix={selectedRule.matchPathPrefix} routePathPrefix={selectedRule.routePathPrefix} />
+                      ) : null}
                     </div>
                   )}
                 </div>

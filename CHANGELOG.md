@@ -10,6 +10,19 @@ are not part of the public compatibility commitment.
 
 ### Changed
 
+- Portal rule writes now share Core validation across Admin API and YAML imports. Imports preflight rule constraints and reject built-in rule replacements before writing imported entities.
+
+- Portal rules use flat `match*` and `route*` fields across Go, Admin API, Redis, Dashboard, and YAML. Existing database columns are migrated. Legacy YAML fields remain supported with warnings; mixing legacy and new fields in one rule is rejected. Upgrade Hub and Portal together and regenerate Admin clients.
+
+### Added
+
+- Portal SITE entry rules support `routePathPrefix` to replace the matched path
+  prefix before forwarding. Empty values retain existing behavior; Hub migrates
+  existing rule tables automatically. Upgrade Portal before enabling non-empty
+  target paths.
+
+### Changed
+
 - Moved Kubernetes manifests from `examples/k8s` to `deploy/k8s`, with a
   version-pinned stable default and composable backend mTLS configuration
 - Build and publish release binaries and container images in parallel after

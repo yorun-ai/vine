@@ -209,3 +209,32 @@ func capturePanic(fn func()) (got any) {
 	fn()
 	return got
 }
+
+func TestAppConfigSaveOwnsIdentityAndVersion(t *testing.T) {
+	repo := &configRepoSpy{}
+	target := &AppConfigCore{AppConfigRepo: repo}
+	first := target.Save(AppConfig{Id: 99, Name: "demo", Value: "one", Version: 99})
+	require.Equal(t, 0, first.Id)
+	require.Equal(t, 1, first.Version)
+	require.False(t, first.CreatedAt.IsZero())
+	repo.items["demo"].Id = 7
+	same := target.Save(AppConfig{Name: "demo", Value: "one"})
+	require.Equal(t, 7, same.Id)
+	require.Equal(t, first.CreatedAt, same.CreatedAt)
+	require.Equal(t, 1, same.Version)
+	changed := target.Save(AppConfig{Name: "demo", Value: "two"})
+	require.Equal(t, 2, changed.Version)
+	require.Equal(t, 2, target.Update(7, AppConfigUpdate{Value: new("two")}).Version)
+	require.Equal(t, 2, target.Update(7, AppConfigUpdate{}).Version)
+	require.Equal(t, 3, target.Update(7, AppConfigUpdate{Value: new("three")}).Version)
+}
+
+func TestAppConfigValidateDoesNotAccessStorage(t *testing.T) {
+	target := &AppConfigCore{}
+	require.NotPanics(t, func() { target.Validate(AppConfig{Name: "demo"}) })
+	require.Panics(t, func() { target.Validate(AppConfig{Name: " "}) })
+	repo := &configRepoSpy{}
+	target.AppConfigRepo = repo
+	require.Panics(t, func() { target.Save(AppConfig{}) })
+	require.Empty(t, repo.calls)
+}

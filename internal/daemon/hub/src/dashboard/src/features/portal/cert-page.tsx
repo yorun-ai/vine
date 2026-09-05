@@ -1,3 +1,5 @@
+import { ListDetailFooter } from '@/components/ui/list-detail-layout'
+import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import {
@@ -7,7 +9,6 @@ import {
   Loader2,
   Plus,
   RefreshCw,
-  Search,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -58,7 +59,6 @@ import type {
 
 const portalCertService = createPortalCertService(vrpcClient)
 const PORTAL_CERT_LIST_DEFAULT_WIDTH = 352
-const PORTAL_CERT_LIST_WIDTH_STORAGE_KEY = 'vinehub_portal_cert_list_width'
 
 interface PortalCertFormValue {
   name: string
@@ -591,7 +591,6 @@ export function PortalCertPage() {
   const [loading, setLoading] = React.useState(true)
   const listPanel = useResizableListPanel({
     defaultWidth: PORTAL_CERT_LIST_DEFAULT_WIDTH,
-    storageKey: PORTAL_CERT_LIST_WIDTH_STORAGE_KEY,
   })
   const handleListScroll = useReservedScrollbar()
   const [saving, setSaving] = React.useState(false)
@@ -767,21 +766,13 @@ export function PortalCertPage() {
           <aside className="relative flex min-h-0 flex-col border-b border-border/70 lg:border-r lg:border-b-0">
             <div className="grid gap-4 border-b border-border/70 p-4">
               <div className="relative w-full md:max-w-sm">
-                <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
+                <SearchInput
                   value={query}
-                  className="pl-8"
                   placeholder={t('portalCert.searchPlaceholder')}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onValueChange={setQuery}
                 />
               </div>
-              <div className="flex items-center justify-between gap-2">
-                <div className="text-xs text-muted-foreground">
-                  {t('portalCert.itemCount').replace(
-                    '{count}',
-                    String(certs.length),
-                  )}
-                </div>
+              <div className="flex items-center justify-end gap-2">
                 <div className="flex items-center gap-1">
                   <Button
                     type="button"
@@ -855,6 +846,12 @@ export function PortalCertPage() {
                 </div>
               )}
             </div>
+            <ListDetailFooter>
+              {t('portalCert.itemCount').replace(
+                '{count}',
+                String(certs.length),
+              )}
+            </ListDetailFooter>
             <ResizableListHandle
               defaultWidth={PORTAL_CERT_LIST_DEFAULT_WIDTH}
               label={t('portalCert.resizeList')}

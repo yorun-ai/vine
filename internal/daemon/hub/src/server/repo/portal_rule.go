@@ -53,30 +53,32 @@ func (s *DBPortalRuleRepo) RemoveRule(id int) bool {
 
 func toCorePortalRule(row *model.PortalRule) *core.PortalRule {
 	return &core.PortalRule{
-		Id:                 row.Id,
-		Name:               row.Name,
-		Scheme:             row.Scheme,
-		Host:               row.Host,
-		Port:               row.Port,
-		PathPrefix:         row.PathPrefix,
-		TargetType:         row.TargetType,
-		SiteName:           row.SiteName,
-		RedirectionPattern: row.RedirectionPattern,
-		BuiltIn:            row.BuiltIn,
+		Id:                      row.Id,
+		Name:                    row.Name,
+		MatchScheme:             row.MatchScheme,
+		MatchHost:               row.MatchHost,
+		MatchPort:               row.MatchPort,
+		MatchPathPrefix:         row.MatchPathPrefix,
+		RouteType:               row.RouteType,
+		RouteSiteName:           row.RouteSiteName,
+		RouteRedirectionPattern: row.RouteRedirectionPattern,
+		RoutePathPrefix:         row.RoutePathPrefix,
+		BuiltIn:                 row.BuiltIn,
 	}
 }
 
 func toDBPortalRule(rule *core.PortalRule) *model.PortalRule {
 	return &model.PortalRule{
-		Id:                 rule.Id,
-		Name:               rule.Name,
-		Scheme:             rule.Scheme,
-		Host:               rule.Host,
-		Port:               rule.Port,
-		PathPrefix:         rule.PathPrefix,
-		TargetType:         rule.TargetType,
-		SiteName:           rule.SiteName,
-		RedirectionPattern: rule.RedirectionPattern,
-		BuiltIn:            rule.BuiltIn,
+		Id:                      rule.Id,
+		Name:                    rule.Name,
+		MatchScheme:             rule.MatchScheme,
+		MatchHost:               rule.MatchHost,
+		MatchPort:               rule.MatchPort,
+		MatchPathPrefix:         rule.MatchPathPrefix,
+		RouteType:               rule.RouteType,
+		RouteSiteName:           rule.RouteSiteName,
+		RouteRedirectionPattern: rule.RouteRedirectionPattern,
+		RoutePathPrefix:         rule.RoutePathPrefix,
+		BuiltIn:                 rule.BuiltIn,
 	}
 }

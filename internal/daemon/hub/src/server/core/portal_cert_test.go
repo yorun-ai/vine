@@ -144,3 +144,23 @@ func testPortalCertBase64(t *testing.T, issuer string, dnsNames []string, ipAddr
 	require.NoError(t, err)
 	return base64.StdEncoding.EncodeToString(der)
 }
+
+func TestPortalCertSaveDerivesMetadataAndPreservesIdentity(t *testing.T) {
+	repo := newTestPortalCertRepo()
+	target := &PortalCertCore{PortalCertRepo: repo}
+	from := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := from.AddDate(1, 0, 0)
+	cert := PortalCert{Id: 99, Name: "demo", Issuer: "forged", Domains: []string{"forged.local"}, PublicKeyBase64: testPortalCertBase64(t, "actual", []string{"demo.local"}, nil, from, to), PrivateKeyBase64: "pri"}
+	got := target.Save(cert)
+	require.NotEqual(t, 99, got.Id)
+	require.Equal(t, "actual", got.Issuer)
+	require.Equal(t, []string{"demo.local"}, got.Domains)
+	require.Equal(t, from, got.ValidFrom)
+	require.Equal(t, to, got.ValidTo)
+	require.Equal(t, got.Id, target.Save(cert).Id)
+	require.Len(t, repo.certs, 1)
+	cert.PublicKeyBase64 = "invalid"
+	require.Panics(t, func() { target.Save(cert) })
+	require.Equal(t, got.PublicKeyBase64, repo.certs[got.Id].PublicKeyBase64)
+	require.NotPanics(t, func() { (&PortalCertCore{}).Validate(got) })
+}

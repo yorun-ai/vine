@@ -45,14 +45,14 @@ func TestDBPortalRuleRepoSaveRuleUpdate(t *testing.T) {
 
 	rule := testPortalRule("admin")
 	repo.SaveRule(rule)
-	rule.PathPrefix = "/console"
-	rule.SiteName = "console@demo.app"
+	rule.MatchPathPrefix = "/console"
+	rule.RouteSiteName = "console@demo.app"
 	repo.SaveRule(rule)
 
 	got, ok := repo.GetRuleById(rule.Id)
 	require.True(t, ok)
-	assert.Equal(t, "/console", got.PathPrefix)
-	assert.Equal(t, "console@demo.app", got.SiteName)
+	assert.Equal(t, "/console", got.MatchPathPrefix)
+	assert.Equal(t, "console@demo.app", got.RouteSiteName)
 }
 
 func TestDBPortalRuleRepoSaveRuleBuiltIn(t *testing.T) {
@@ -142,13 +142,13 @@ func sharedTestPortalRuleRepoDB(t *testing.T) *gorm.DB {
 
 func testPortalRule(name string) *core.PortalRule {
 	return &core.PortalRule{
-		Name:               name,
-		Scheme:             "https",
-		Host:               "demo.local",
-		Port:               443,
-		PathPrefix:         "/admin",
-		TargetType:         "SITE",
-		SiteName:           "admin@demo.app",
-		RedirectionPattern: "",
+		Name:                    name,
+		MatchScheme:             "https",
+		MatchHost:               "demo.local",
+		MatchPort:               443,
+		MatchPathPrefix:         "/admin",
+		RouteType:               "SITE",
+		RouteSiteName:           "admin@demo.app",
+		RouteRedirectionPattern: "",
 	}
 }

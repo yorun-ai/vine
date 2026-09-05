@@ -14,9 +14,9 @@ const (
 )
 
 const (
-	PortalRuleTargetTypeSite              = "SITE"
-	PortalRuleTargetTypePermanentRedirect = "PERMANENT_REDIRECT"
-	PortalRuleTargetTypeTemporaryRedirect = "TEMPORARY_REDIRECT"
+	PortalRuleRouteTypeSite              = "SITE"
+	PortalRuleRouteTypePermanentRedirect = "PERMANENT_REDIRECT"
+	PortalRuleRouteTypeTemporaryRedirect = "TEMPORARY_REDIRECT"
 )
 
 type PortalEntry struct {
@@ -57,14 +57,14 @@ func (m *PortalEntryCore) List() []PortalEntry {
 		if rule.BuiltIn {
 			continue
 		}
-		if !isPortalEntryRuleTargetType(rule.TargetType) {
+		if !isPortalEntryRuleRouteType(rule.RouteType) {
 			continue
 		}
 
 		key := _PortalEntryKey{
-			Scheme: rule.Scheme,
-			Host:   rule.Host,
-			Port:   portalEntryRulePort(rule.Scheme, rule.Port),
+			Scheme: rule.MatchScheme,
+			Host:   rule.MatchHost,
+			Port:   portalEntryRulePort(rule.MatchScheme, rule.MatchPort),
 		}
 		entry, ok := entriesByKey[key]
 		if !ok {
@@ -106,23 +106,27 @@ func (m *PortalEntryCore) UpdateAccess(scheme string, host string, port int, upd
 	nextKey := normalizePortalEntryKey(update.Scheme, update.Host, update.Port)
 
 	rules := m.PortalRuleRepo.ListRules()
-	updated := false
+	updates := []PortalRule{}
 	for _, rule := range rules {
-		if rule.BuiltIn || !isPortalEntryRuleTargetType(rule.TargetType) {
+		if rule.BuiltIn || !isPortalEntryRuleRouteType(rule.RouteType) {
 			continue
 		}
 		if !portalEntryRuleMatchesKey(rule, currentKey) {
 			continue
 		}
 
-		rule.Scheme = nextKey.Scheme
-		rule.Host = nextKey.Host
-		rule.Port = nextKey.Port
-		m.PortalRuleRepo.SaveRule(&rule)
-		updated = true
+		rule.MatchScheme = nextKey.Scheme
+		rule.MatchHost = nextKey.Host
+		rule.MatchPort = nextKey.Port
+		rule.normalizeAndValidate()
+		updates = append(updates, rule)
 	}
 
-	ex.PanicNewIfNot(updated, ex.OperationFailed, ex.F("portal entry %s not found", portalEntryName(currentKey)))
+	ex.PanicNewIfNot(len(updates) > 0, ex.OperationFailed, ex.F("portal entry %s not found", portalEntryName(currentKey)))
+
+	for i := range updates {
+		m.PortalRuleRepo.SaveRule(&updates[i])
+	}
 
 	for _, entry := range m.List() {
 		if portalEntryMatchesKey(entry, nextKey) {
@@ -133,10 +137,10 @@ func (m *PortalEntryCore) UpdateAccess(scheme string, host string, port int, upd
 	return PortalEntry{}
 }
 
-func isPortalEntryRuleTargetType(value string) bool {
-	return value == PortalRuleTargetTypeSite ||
-		value == PortalRuleTargetTypePermanentRedirect ||
-		value == PortalRuleTargetTypeTemporaryRedirect
+func isPortalEntryRuleRouteType(value string) bool {
+	return value == PortalRuleRouteTypeSite ||
+		value == PortalRuleRouteTypePermanentRedirect ||
+		value == PortalRuleRouteTypeTemporaryRedirect
 }
 
 func portalEntryRulePort(scheme string, port int) int {
@@ -175,9 +179,9 @@ func normalizePortalEntryKey(scheme string, host string, port int) _PortalEntryK
 }
 
 func portalEntryRuleMatchesKey(rule PortalRule, key _PortalEntryKey) bool {
-	return rule.Scheme == key.Scheme &&
-		rule.Host == key.Host &&
-		portalEntryRulePort(rule.Scheme, rule.Port) == key.Port
+	return rule.MatchScheme == key.Scheme &&
+		rule.MatchHost == key.Host &&
+		portalEntryRulePort(rule.MatchScheme, rule.MatchPort) == key.Port
 }
 
 func portalEntryMatchesKey(entry PortalEntry, key _PortalEntryKey) bool {
@@ -185,10 +189,10 @@ func portalEntryMatchesKey(entry PortalEntry, key _PortalEntryKey) bool {
 }
 
 func (m *PortalEntryCore) portalRuleSite(rule PortalRule) *PortalSite {
-	if rule.TargetType != PortalRuleTargetTypeSite {
+	if rule.RouteType != PortalRuleRouteTypeSite {
 		return nil
 	}
-	site, ok := m.PortalSiteRepo.GetEntryByName(rule.SiteName)
+	site, ok := m.PortalSiteRepo.GetEntryByName(rule.RouteSiteName)
 	if !ok {
 		return nil
 	}
@@ -197,8 +201,8 @@ func (m *PortalEntryCore) portalRuleSite(rule PortalRule) *PortalSite {
 
 func sortedPortalEntryRules(rules []PortalEntryRule) []PortalEntryRule {
 	return vslice.SortBy(rules, func(a PortalEntryRule, b PortalEntryRule) bool {
-		if len(a.Rule.PathPrefix) != len(b.Rule.PathPrefix) {
-			return len(a.Rule.PathPrefix) > len(b.Rule.PathPrefix)
+		if len(a.Rule.MatchPathPrefix) != len(b.Rule.MatchPathPrefix) {
+			return len(a.Rule.MatchPathPrefix) > len(b.Rule.MatchPathPrefix)
 		}
 		return cmpString(a.Rule.Name, b.Rule.Name) < 0
 	})

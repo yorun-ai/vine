@@ -68,9 +68,9 @@ func TestManagerDoesNotLoadPortalRulesAsSites(t *testing.T) {
 			},
 		}),
 		redised.FormatPortalRuleKey("demo-web"): vcode.MustMarshalJsonS(redised.PortalRule{
-			Name:       "demo-web",
-			TargetType: "SITE",
-			SiteName:   "demo-web",
+			Name:          "demo-web",
+			RouteType:     "SITE",
+			RouteSiteName: "demo-web",
 		}),
 	})
 

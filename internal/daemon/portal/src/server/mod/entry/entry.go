@@ -61,8 +61,8 @@ func (e *_Entry) SetOrUpdateRules(rules []*_Rule) {
 	sort.SliceStable(rules, func(i int, j int) bool {
 		left := rules[i]
 		right := rules[j]
-		if len(left.pathPrefix) != len(right.pathPrefix) {
-			return len(left.pathPrefix) > len(right.pathPrefix)
+		if len(left.matchPathPrefix) != len(right.matchPathPrefix) {
+			return len(left.matchPathPrefix) > len(right.matchPathPrefix)
 		}
 		return left.name < right.name
 	})

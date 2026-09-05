@@ -634,20 +634,22 @@ type PortalRule struct {
 	Id int `json:"id"`
 	// Name Rule name
 	Name string `json:"name"`
-	// Scheme Matching protocol
-	Scheme string `json:"scheme"`
-	// Host Match Host, empty string means no restriction
-	Host string `json:"host"`
-	// Port Match port, 0 means no restriction
-	Port int `json:"port"`
-	// PathPrefix Match path prefix, empty string means match all paths
-	PathPrefix string `json:"pathPrefix"`
-	// TargetType Target type
-	TargetType string `json:"targetType"`
-	// SiteName Site name
-	SiteName string `json:"siteName"`
-	// RedirectionPattern Redirect Pattern
-	RedirectionPattern string `json:"redirectionPattern"`
+	// MatchScheme Matching protocol
+	MatchScheme string `json:"matchScheme"`
+	// MatchHost Match Host, empty string means no restriction
+	MatchHost string `json:"matchHost"`
+	// MatchPort Match matchPort, 0 means no restriction
+	MatchPort int `json:"matchPort"`
+	// MatchPathPrefix Match path prefix, empty string means match all paths
+	MatchPathPrefix string `json:"matchPathPrefix"`
+	// RouteType Target type
+	RouteType string `json:"routeType"`
+	// RouteSiteName Site name
+	RouteSiteName string `json:"routeSiteName"`
+	// RouteRedirectionPattern Redirect Pattern
+	RouteRedirectionPattern string `json:"routeRedirectionPattern"`
+	// RoutePathPrefix Target site path prefix; empty means strip the matching prefix only
+	RoutePathPrefix string `json:"routePathPrefix"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -660,25 +662,31 @@ func (v PortalRule) Clone() PortalRule {
 type PortalRuleCreation struct {
 	// Name Rule name
 	Name string `json:"name"`
-	// Scheme Matching protocol
-	Scheme string `json:"scheme"`
-	// Host Match Host, empty string means no restriction
-	Host string `json:"host"`
-	// Port Match port, 0 means no restriction
-	Port int `json:"port"`
-	// PathPrefix Match path prefix, empty string means match all paths
-	PathPrefix string `json:"pathPrefix"`
-	// TargetType Target type
-	TargetType string `json:"targetType"`
-	// SiteName Site name
-	SiteName string `json:"siteName"`
-	// RedirectionPattern Redirect Pattern
-	RedirectionPattern string `json:"redirectionPattern"`
+	// MatchScheme Matching protocol
+	MatchScheme string `json:"matchScheme"`
+	// MatchHost Match Host, empty string means no restriction
+	MatchHost string `json:"matchHost"`
+	// MatchPort Match matchPort, 0 means no restriction
+	MatchPort int `json:"matchPort"`
+	// MatchPathPrefix Match path prefix, empty string means match all paths
+	MatchPathPrefix string `json:"matchPathPrefix"`
+	// RouteType Target type
+	RouteType string `json:"routeType"`
+	// RouteSiteName Site name
+	RouteSiteName string `json:"routeSiteName"`
+	// RouteRedirectionPattern Redirect Pattern
+	RouteRedirectionPattern string `json:"routeRedirectionPattern"`
+	// RoutePathPrefix Target site path prefix; empty means strip the matching prefix only
+	RoutePathPrefix *string `json:"routePathPrefix"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
 func (v PortalRuleCreation) Clone() PortalRuleCreation {
 	cloned := v
+	if v.RoutePathPrefix != nil {
+		clonedValue0 := *v.RoutePathPrefix
+		cloned.RoutePathPrefix = &clonedValue0
+	}
 	return cloned
 }
 
@@ -686,20 +694,22 @@ func (v PortalRuleCreation) Clone() PortalRuleCreation {
 type PortalRuleUpdate struct {
 	// Name Rule name
 	Name *string `json:"name"`
-	// Scheme Matching protocol
-	Scheme *string `json:"scheme"`
-	// Host Match Host, empty string means no restriction
-	Host *string `json:"host"`
-	// Port Match port, 0 means no restriction
-	Port *int `json:"port"`
-	// PathPrefix Match path prefix, empty string means match all paths
-	PathPrefix *string `json:"pathPrefix"`
-	// TargetType Target type
-	TargetType *string `json:"targetType"`
-	// SiteName Site name
-	SiteName *string `json:"siteName"`
-	// RedirectionPattern Redirect Pattern
-	RedirectionPattern *string `json:"redirectionPattern"`
+	// MatchScheme Matching protocol
+	MatchScheme *string `json:"matchScheme"`
+	// MatchHost Match Host, empty string means no restriction
+	MatchHost *string `json:"matchHost"`
+	// MatchPort Match matchPort, 0 means no restriction
+	MatchPort *int `json:"matchPort"`
+	// MatchPathPrefix Match path prefix, empty string means match all paths
+	MatchPathPrefix *string `json:"matchPathPrefix"`
+	// RouteType Target type
+	RouteType *string `json:"routeType"`
+	// RouteSiteName Site name
+	RouteSiteName *string `json:"routeSiteName"`
+	// RouteRedirectionPattern Redirect Pattern
+	RouteRedirectionPattern *string `json:"routeRedirectionPattern"`
+	// RoutePathPrefix Target site path prefix; empty means strip the matching prefix only
+	RoutePathPrefix *string `json:"routePathPrefix"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -709,33 +719,37 @@ func (v PortalRuleUpdate) Clone() PortalRuleUpdate {
 		clonedValue0 := *v.Name
 		cloned.Name = &clonedValue0
 	}
-	if v.Scheme != nil {
-		clonedValue1 := *v.Scheme
-		cloned.Scheme = &clonedValue1
+	if v.MatchScheme != nil {
+		clonedValue1 := *v.MatchScheme
+		cloned.MatchScheme = &clonedValue1
 	}
-	if v.Host != nil {
-		clonedValue2 := *v.Host
-		cloned.Host = &clonedValue2
+	if v.MatchHost != nil {
+		clonedValue2 := *v.MatchHost
+		cloned.MatchHost = &clonedValue2
 	}
-	if v.Port != nil {
-		clonedValue3 := *v.Port
-		cloned.Port = &clonedValue3
+	if v.MatchPort != nil {
+		clonedValue3 := *v.MatchPort
+		cloned.MatchPort = &clonedValue3
 	}
-	if v.PathPrefix != nil {
-		clonedValue4 := *v.PathPrefix
-		cloned.PathPrefix = &clonedValue4
+	if v.MatchPathPrefix != nil {
+		clonedValue4 := *v.MatchPathPrefix
+		cloned.MatchPathPrefix = &clonedValue4
 	}
-	if v.TargetType != nil {
-		clonedValue5 := *v.TargetType
-		cloned.TargetType = &clonedValue5
+	if v.RouteType != nil {
+		clonedValue5 := *v.RouteType
+		cloned.RouteType = &clonedValue5
 	}
-	if v.SiteName != nil {
-		clonedValue6 := *v.SiteName
-		cloned.SiteName = &clonedValue6
+	if v.RouteSiteName != nil {
+		clonedValue6 := *v.RouteSiteName
+		cloned.RouteSiteName = &clonedValue6
 	}
-	if v.RedirectionPattern != nil {
-		clonedValue7 := *v.RedirectionPattern
-		cloned.RedirectionPattern = &clonedValue7
+	if v.RouteRedirectionPattern != nil {
+		clonedValue7 := *v.RouteRedirectionPattern
+		cloned.RouteRedirectionPattern = &clonedValue7
+	}
+	if v.RoutePathPrefix != nil {
+		clonedValue8 := *v.RoutePathPrefix
+		cloned.RoutePathPrefix = &clonedValue8
 	}
 	return cloned
 }

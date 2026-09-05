@@ -366,7 +366,7 @@ export function DashboardSettingsPage() {
             <div className="grid max-w-xl gap-5">
               <div className="grid gap-2">
                 <Label htmlFor="dashboard-scheme">
-                  {t('portalRule.scheme')}
+                  {t('portalRule.matchScheme')}
                 </Label>
                 <Select
                   value={schemeValue}
@@ -417,7 +417,7 @@ export function DashboardSettingsPage() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="dashboard-host">{t('portalRule.host')}</Label>
+                <Label htmlFor="dashboard-host">{t('portalRule.matchHost')}</Label>
                 <Input
                   id="dashboard-host"
                   value={hostValue}
@@ -437,7 +437,7 @@ export function DashboardSettingsPage() {
 
               <div className="grid gap-2">
                 <Label htmlFor="dashboard-path-prefix">
-                  {t('portalRule.pathPrefix')}
+                  {t('portalRule.matchPathPrefix')}
                 </Label>
                 <Input
                   id="dashboard-path-prefix"

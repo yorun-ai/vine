@@ -1,3 +1,5 @@
+import { ListDetailFooter } from '@/components/ui/list-detail-layout'
+import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import {
@@ -8,7 +10,6 @@ import {
   GitBranch,
   Loader2,
   RefreshCw,
-  Search,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -57,7 +58,6 @@ import type {
 
 const portalEntryService = createPortalEntryService(vrpcClient)
 const PORTAL_ENTRY_LIST_DEFAULT_WIDTH = 352
-const PORTAL_ENTRY_LIST_WIDTH_STORAGE_KEY = 'vinehub_portal_entry_list_width'
 const portalEntrySchemes = ['http', 'https'] as const
 
 interface PortalEntryAccessFormValue {
@@ -100,7 +100,7 @@ function isValidPort(value: string) {
 }
 
 function ruleTargetLabel(rule: PortalRule) {
-  switch (rule.targetType) {
+  switch (rule.routeType) {
     case 'SITE':
       return 'Site'
     case 'PERMANENT_REDIRECT':
@@ -108,21 +108,21 @@ function ruleTargetLabel(rule: PortalRule) {
     case 'TEMPORARY_REDIRECT':
       return 'Temporary Redirect'
     default:
-      return rule.targetType
+      return rule.routeType
   }
 }
 
 function ruleTargetValue(entryRule: PortalEntryRule) {
   const { rule, site } = entryRule
-  if (rule.targetType === 'SITE') {
-    return site?.name ?? rule.siteName
+  if (rule.routeType === 'SITE') {
+    return `${site?.name ?? rule.routeSiteName} ${rule.routePathPrefix || '/'}`
   }
-  return rule.redirectionPattern
+  return rule.routeRedirectionPattern
 }
 
 function formatRuleMatch(rule: PortalRule) {
-  const pathPrefix = rule.pathPrefix || '/'
-  return rule.host ? `${rule.host}${pathPrefix}` : pathPrefix
+  const pathPrefix = rule.matchPathPrefix || '/'
+  return rule.matchHost ? `${rule.matchHost}${pathPrefix}` : pathPrefix
 }
 
 function portalRuleHref(rule: PortalRule) {
@@ -322,7 +322,6 @@ export function PortalEntryPage() {
   )
   const listPanel = useResizableListPanel({
     defaultWidth: PORTAL_ENTRY_LIST_DEFAULT_WIDTH,
-    storageKey: PORTAL_ENTRY_LIST_WIDTH_STORAGE_KEY,
   })
   const handleListScroll = useReservedScrollbar()
   const [selectedEntryName, setSelectedEntryName] = React.useState<
@@ -373,11 +372,12 @@ export function PortalEntryPage() {
           ...((entryRule.site?.rpcgwServices as Array<string> | undefined) ??
             []),
           entryRule.rule.name,
-          entryRule.rule.host,
-          entryRule.rule.pathPrefix,
-          entryRule.rule.targetType,
-          entryRule.rule.siteName,
-          entryRule.rule.redirectionPattern,
+          entryRule.rule.matchHost,
+          entryRule.rule.matchPathPrefix,
+          entryRule.rule.routeType,
+          entryRule.rule.routeSiteName,
+          entryRule.rule.routeRedirectionPattern,
+          entryRule.rule.routePathPrefix,
         ]),
       ]
 
@@ -476,21 +476,13 @@ export function PortalEntryPage() {
         <aside className="relative flex min-h-0 flex-col border-b border-border/70 lg:border-r lg:border-b-0">
           <div className="grid gap-4 border-b border-border/70 p-4">
             <div className="relative w-full md:max-w-sm">
-              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
+              <SearchInput
                 value={query}
-                className="pl-8"
                 placeholder={t('portalEntry.searchPlaceholder')}
-                onChange={(event) => setQuery(event.target.value)}
+                onValueChange={setQuery}
               />
             </div>
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-xs text-muted-foreground">
-                {t('portalEntry.itemCount').replace(
-                  '{count}',
-                  String(visibleEntries.length),
-                )}
-              </div>
+            <div className="flex items-center justify-end gap-2">
               <div className="flex items-center gap-1">
                 <Button
                   type="button"
@@ -561,6 +553,12 @@ export function PortalEntryPage() {
               </div>
             )}
           </div>
+          <ListDetailFooter>
+            {t('portalEntry.itemCount').replace(
+              '{count}',
+              String(visibleEntries.length),
+            )}
+          </ListDetailFooter>
           <ResizableListHandle
             defaultWidth={PORTAL_ENTRY_LIST_DEFAULT_WIDTH}
             label={t('portalEntry.resizeList')}

@@ -1,3 +1,6 @@
+import { SkelName } from '@/components/skel-name'
+import { ListDetailFooter } from '@/components/ui/list-detail-layout'
+import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import {
@@ -6,7 +9,6 @@ import {
   Loader2,
   Plus,
   RefreshCw,
-  Search,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -72,7 +74,6 @@ import {
 
 const portalSiteService = createPortalSiteService(vrpcClient)
 const PORTAL_SITE_LIST_DEFAULT_WIDTH = 352
-const PORTAL_SITE_LIST_WIDTH_STORAGE_KEY = 'vinehub_portal_site_list_width'
 
 const portalSiteTypes = [
   { value: 'RPCGW', label: 'RPC Gateway', description: 'Forward to RPC services' },
@@ -684,7 +685,7 @@ function PortalSiteDialog({
                   {actorOptions.map((actor) => (
                     <SelectItem key={actor.skelName} value={actor.skelName}>
                       <span className="flex flex-col">
-                        <span>{actor.skelName}</span>
+                        <span><SkelName skelName={actor.skelName} /></span>
                         <span className="text-xs text-muted-foreground">
                           {actor.name}
                         </span>
@@ -746,7 +747,7 @@ function PortalSiteDialog({
                   <div className="flex flex-wrap gap-1">
                     {availableServices.map((service) => (
                       <Badge key={service.skelName} variant="outline">
-                        {service.skelName}
+                        <SkelName skelName={service.skelName} />
                       </Badge>
                     ))}
                   </div>
@@ -773,7 +774,7 @@ function PortalSiteDialog({
                   {webOptions.map((web) => (
                     <SelectItem key={web.skelName} value={web.skelName}>
                       <span className="flex flex-col">
-                        <span>{web.skelName}</span>
+                        <span><SkelName skelName={web.skelName} /></span>
                         <span className="text-xs text-muted-foreground">
                           {web.actorSkelNames.length === 0
                             ? t('portalSite.webNotFound')
@@ -1175,7 +1176,7 @@ function PortalSiteInlineEditor({
               {actorOptions.map((actor) => (
                 <SelectItem key={actor.skelName} value={actor.skelName}>
                   <span className="flex flex-col">
-                    <span>{actor.skelName}</span>
+                    <span><SkelName skelName={actor.skelName} /></span>
                     <span className="text-xs text-muted-foreground">
                       {actor.name}
                     </span>
@@ -1235,7 +1236,7 @@ function PortalSiteInlineEditor({
               <div className="flex flex-wrap gap-1">
                 {availableServices.map((service) => (
                   <Badge key={service.skelName} variant="outline">
-                    {service.skelName}
+                    <SkelName skelName={service.skelName} />
                   </Badge>
                 ))}
               </div>
@@ -1262,7 +1263,7 @@ function PortalSiteInlineEditor({
               {webOptions.map((web) => (
                 <SelectItem key={web.skelName} value={web.skelName}>
                   <span className="flex flex-col">
-                    <span>{web.skelName}</span>
+                    <span><SkelName skelName={web.skelName} /></span>
                     <span className="text-xs text-muted-foreground">
                       {web.actorSkelNames.length === 0
                         ? t('portalSite.webNotFound')
@@ -1312,7 +1313,6 @@ export function PortalSitePage() {
   const [query, setQuery] = React.useState('')
   const listPanel = useResizableListPanel({
     defaultWidth: PORTAL_SITE_LIST_DEFAULT_WIDTH,
-    storageKey: PORTAL_SITE_LIST_WIDTH_STORAGE_KEY,
   })
   const handleListScroll = useReservedScrollbar()
   const [loading, setLoading] = React.useState(true)
@@ -1506,21 +1506,13 @@ export function PortalSitePage() {
           <aside className="relative flex min-h-0 flex-col border-b border-border/70 lg:border-r lg:border-b-0">
             <div className="grid gap-4 border-b border-border/70 p-4">
               <div className="relative w-full md:max-w-sm">
-                <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
+                <SearchInput
                   value={query}
-                  className="pl-8"
                   placeholder={t('portalSite.searchPlaceholder')}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onValueChange={setQuery}
                 />
               </div>
-              <div className="flex items-center justify-between gap-2">
-                <div className="text-xs text-muted-foreground">
-                  {t('portalSite.itemCount').replace(
-                    '{count}',
-                    String(visibleEntries.length),
-                  )}
-                </div>
+              <div className="flex items-center justify-end gap-2">
                 <div className="flex items-center gap-1">
                   <Button
                     type="button"
@@ -1596,9 +1588,16 @@ export function PortalSitePage() {
                       </div>
                       <div className="flex min-w-0 items-center gap-2">
                         <span className="truncate font-mono text-xs text-muted-foreground">
-                          {entry.type === 'RPCGW'
-                            ? portalSiteRpcgwServices(entry).join(', ')
-                            : entry.webName}
+                          {entry.type === 'RPCGW' ? (
+                            portalSiteRpcgwServices(entry).map((serviceName, index) => (
+                              <React.Fragment key={serviceName}>
+                                {index > 0 ? ', ' : null}
+                                <SkelName skelName={serviceName} />
+                              </React.Fragment>
+                            ))
+                          ) : (
+                            <SkelName skelName={entry.webName} />
+                          )}
                         </span>
                       </div>
                     </a>
@@ -1606,6 +1605,12 @@ export function PortalSitePage() {
                 </div>
               )}
             </div>
+            <ListDetailFooter>
+              {t('portalSite.itemCount').replace(
+                '{count}',
+                String(visibleEntries.length),
+              )}
+            </ListDetailFooter>
             <ResizableListHandle
               defaultWidth={PORTAL_SITE_LIST_DEFAULT_WIDTH}
               label={t('portalSite.resizeList')}
@@ -1725,7 +1730,7 @@ export function PortalSitePage() {
                             )}
                             className="inline-flex rounded bg-muted px-1.5 py-0.5 text-xs font-mono text-foreground underline-offset-4 hover:text-primary hover:underline"
                         >
-                          {selectedEntry.actorSkelName}
+                          <SkelName skelName={selectedEntry.actorSkelName} />
                         </a>
                       </ReadonlyField>
                         <ReadonlyField label={t('portalSite.actorVia')}>
@@ -1779,7 +1784,7 @@ export function PortalSitePage() {
                                   href={skeletonServiceHref(serviceName)}
                                   className="inline-flex rounded bg-muted px-1.5 py-0.5 text-xs font-mono text-foreground underline-offset-4 hover:text-primary hover:underline"
                                 >
-                                  {serviceName}
+                                  <SkelName skelName={serviceName} />
                                 </a>
                               ),
                             )}
@@ -1789,7 +1794,7 @@ export function PortalSitePage() {
                             href={skeletonWebHref(selectedEntry.webName)}
                             className="inline-flex rounded bg-muted px-1.5 py-0.5 text-xs font-mono text-foreground underline-offset-4 hover:text-primary hover:underline"
                           >
-                            {selectedEntry.webName}
+                            <SkelName skelName={selectedEntry.webName} />
                           </a>
                         )}
                       </ReadonlyField>

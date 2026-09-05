@@ -1,8 +1,10 @@
 package admin
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vslice"
@@ -73,6 +75,7 @@ func TestMaintenanceServiceApplySeedYamlUpdatesSelectedItem(t *testing.T) {
 	}}
 	service := &MaintenanceServiceServerImpl{
 		AppConfigRepo: configRepo,
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 	}
 
 	service.ApplySeedYaml(`
@@ -106,20 +109,22 @@ func TestMaintenanceServiceSeedYamlDoesNotExposeVineField(t *testing.T) {
 		},
 	}}
 	ruleRepo := &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{
-		"admin": {
-			Id:         1,
-			Name:       "admin",
-			Scheme:     "http",
-			Port:       80,
-			PathPrefix: "/old",
-			TargetType: "SITE",
-			SiteName:   "old-site",
-			BuiltIn:    true,
+		core.DashboardWebRuleName: {
+			Id:              1,
+			Name:            core.DashboardWebRuleName,
+			MatchScheme:     "http",
+			MatchPort:       80,
+			MatchPathPrefix: "/old",
+			RouteType:       "SITE",
+			RouteSiteName:   "old-site",
+			BuiltIn:         true,
 		},
 	}}
 	service := &MaintenanceServiceServerImpl{
 		EntryRepo: entryRepo,
+		SiteCore:  &core.PortalSiteCore{PortalSiteRepo: entryRepo},
 		RuleRepo:  ruleRepo,
+		RuleCore:  &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
 	}
 	content := `
 portalSites:
@@ -130,7 +135,7 @@ portalSites:
     webName: demo.AdminWeb
     builtIn: false
 portalRules:
-  - name: admin
+  - name: vine.hub.dashboard-web
     scheme: https
     host: demo.local
     port: 443
@@ -141,7 +146,8 @@ portalRules:
     builtIn: false
 `
 
-	preview := service.PreviewSeedYaml(content)
+	preview := service.PreviewSeedYaml(strings.ReplaceAll(content, core.DashboardWebRuleName, "preview"))
+	require.Panics(t, func() { service.PreviewSeedYaml(content) })
 	for _, item := range preview.Items {
 		for _, field := range item.Fields {
 			if field.Name == "builtIn" {
@@ -150,10 +156,14 @@ portalRules:
 		}
 	}
 
-	service.ApplySeedYaml(content, []skeled.SeedItemSelection{
-		{Kind: seedKindPortalSite, Name: "admin@demo.app"},
-		{Kind: seedKindPortalRule, Name: "admin"},
+	require.Panics(t, func() {
+		service.ApplySeedYaml(content, []skeled.SeedItemSelection{
+			{Kind: seedKindPortalSite, Name: "admin@demo.app"},
+			{Kind: seedKindPortalRule, Name: core.DashboardWebRuleName},
+		})
 	})
+	require.Equal(t, "old.Web", entryRepo.items["admin@demo.app"].WebName, "preflight must reject before any writes")
+	require.Equal(t, "/old", ruleRepo.items[core.DashboardWebRuleName].MatchPathPrefix)
 
 	entry, ok := entryRepo.GetEntryByName("admin@demo.app")
 	if !ok {
@@ -162,7 +172,7 @@ portalRules:
 	if !entry.BuiltIn {
 		t.Fatal("expected existing portal site built-in flag to be preserved")
 	}
-	rule, ok := ruleRepo.GetRuleByName("admin")
+	rule, ok := ruleRepo.GetRuleByName(core.DashboardWebRuleName)
 	if !ok {
 		t.Fatal("expected portal rule")
 	}
@@ -265,4 +275,66 @@ func (r *_MaintenanceServicePortalRuleRepo) RemoveRule(id int) bool {
 		}
 	}
 	return false
+}
+
+func TestMaintenanceTargetPathSeedRoundTrip(t *testing.T) {
+	repo := &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{}}
+	service := &MaintenanceServiceServerImpl{RuleRepo: repo,
+		RuleCore: &core.PortalRuleCore{PortalRuleRepo: repo}}
+	payload := service.parseSeed("portalRules:\n  - name: mapped\n    scheme: http\n    targetType: SITE\n    siteName: web\n    pathPrefix: /api\n    targetPath: /internal/\n")
+	rule := payload.PortalRules[0]
+	if rule.RoutePathPrefix != "/internal" {
+		t.Fatalf("unexpected target path: %q", rule.RoutePathPrefix)
+	}
+	service.applyPortalRules(payload.PortalRules, map[_SeedSelectionKey]struct{}{{kind: seedKindPortalRule, name: "mapped"}: {}})
+	stored, ok := repo.GetRuleByName("mapped")
+	if !ok || stored.RoutePathPrefix != "/internal" {
+		t.Fatalf("target path not persisted: %+v", stored)
+	}
+	fields := currentPortalRuleFields(stored)
+	if fields["routePathPrefix"] != "/internal" {
+		t.Fatalf("target path not exported: %v", fields)
+	}
+}
+
+func TestMaintenanceRuleFieldNames(t *testing.T) {
+	service := &MaintenanceServiceServerImpl{}
+	payload := service.parseSeed("portalRules:\n  - name: example\n    matchScheme: http\n    routeType: SITE\n    routeSiteName: web\n    routePathPrefix: /internal")
+	require.Equal(t, "http", payload.PortalRules[0].MatchScheme)
+	require.Equal(t, "/internal", payload.PortalRules[0].RoutePathPrefix)
+	require.Panics(t, func() { service.parseSeed("portalRules:\n  - scheme: http\n    routeType: SITE") })
+}
+
+func TestMaintenanceUsesDomainValidationForBothYAMLVocabularies(t *testing.T) {
+	for _, legacy := range []bool{false, true} {
+		content := "portalRules:\n  - name: invalid\n    matchScheme: http\n    matchPort: -1\n    routeType: SITE\n    routeSiteName: web\n"
+		if legacy {
+			content = strings.NewReplacer("matchScheme:", "scheme:", "matchPort:", "port:", "routeType:", "targetType:", "routeSiteName:", "siteName:").Replace(content)
+		}
+		repo := &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{}}
+		service := &MaintenanceServiceServerImpl{RuleRepo: repo, RuleCore: &core.PortalRuleCore{PortalRuleRepo: repo}}
+		require.Panics(t, func() { service.PreviewSeedYaml(content) })
+		require.Panics(t, func() {
+			service.ApplySeedYaml(content, []skeled.SeedItemSelection{{Kind: seedKindPortalRule, Name: "invalid"}})
+		})
+		require.Empty(t, repo.items)
+	}
+}
+
+func TestMaintenancePreflightsSitesAndCertificatesBeforeWriting(t *testing.T) {
+	for name, invalid := range map[string]string{
+		"site":        "portalSites:\n  - name: invalid\n    type: WEBGW\n    actorSkelName: demo.Actor\n    actorVia: client\n",
+		"certificate": "portalCerts:\n  - name: invalid\n    publicKeyBase64: invalid\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			configs := &_MaintenanceServiceAppConfigRepo{items: map[string]*core.AppConfig{}}
+			target := &MaintenanceServiceServerImpl{AppConfigCore: &core.AppConfigCore{AppConfigRepo: configs}, SiteCore: &core.PortalSiteCore{}, CertCore: &core.PortalCertCore{}}
+			content := "appConfigs:\n  - name: pending\n    value: test\n" + invalid
+			require.Panics(t, func() { target.PreviewSeedYaml(content) })
+			require.Panics(t, func() {
+				target.ApplySeedYaml(content, []skeled.SeedItemSelection{{Kind: seedKindAppConfig, Name: "pending"}})
+			})
+			require.Empty(t, configs.items)
+		})
+	}
 }

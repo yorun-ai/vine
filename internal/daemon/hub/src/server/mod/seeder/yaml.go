@@ -5,6 +5,7 @@ import (
 
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vslice"
+	"gopkg.in/yaml.v3"
 )
 
 type _SettingsYAMLPayload struct {
@@ -46,55 +47,37 @@ type _AppConfig struct {
 	Override bool   `yaml:"override"`
 }
 
-func (i _AppConfig) ToCoreAppConfig(current *core.AppConfig) *core.AppConfig {
-	version := 1
-	if current != nil {
-		version = current.Version
-		if current.Value != i.Value {
-			version++
-		}
-	}
-	config := &core.AppConfig{
-		Name:    i.Name,
-		Value:   i.Value,
-		Version: version,
-	}
-	if current != nil {
-		config.Id = current.Id
-	}
-	return config
+func (i _AppConfig) ToCoreAppConfig() *core.AppConfig {
+	return &core.AppConfig{Name: i.Name, Value: i.Value}
 }
 
 // Portal rule
 
 type _PortalRule struct {
-	Name               string `yaml:"name"`
-	Scheme             string `yaml:"scheme"`
-	Host               string `yaml:"host"`
-	Port               int    `yaml:"port"`
-	PathPrefix         string `yaml:"pathPrefix"`
-	TargetType         string `yaml:"targetType"`
-	SiteName           string `yaml:"siteName"`
-	RedirectionPattern string `yaml:"redirectionPattern"`
-	Override           bool   `yaml:"override"`
+	Name                    string `yaml:"name"`
+	MatchScheme             string `yaml:"matchScheme"`
+	MatchHost               string `yaml:"matchHost"`
+	MatchPort               int    `yaml:"matchPort"`
+	MatchPathPrefix         string `yaml:"matchPathPrefix"`
+	RouteType               string `yaml:"routeType"`
+	RouteSiteName           string `yaml:"routeSiteName"`
+	RouteRedirectionPattern string `yaml:"routeRedirectionPattern"`
+	RoutePathPrefix         string `yaml:"routePathPrefix"`
+	Override                bool   `yaml:"override"`
 }
 
-func (r _PortalRule) ToCorePortalRule(current *core.PortalRule) *core.PortalRule {
-	rule := &core.PortalRule{
-		Name:               r.Name,
-		Scheme:             r.Scheme,
-		Host:               r.Host,
-		Port:               r.Port,
-		PathPrefix:         r.PathPrefix,
-		TargetType:         r.TargetType,
-		SiteName:           r.SiteName,
-		RedirectionPattern: r.RedirectionPattern,
+func (r _PortalRule) ToCorePortalRule() *core.PortalRule {
+	return &core.PortalRule{
+		Name:                    r.Name,
+		MatchScheme:             r.MatchScheme,
+		MatchHost:               r.MatchHost,
+		MatchPort:               r.MatchPort,
+		MatchPathPrefix:         r.MatchPathPrefix,
+		RouteType:               r.RouteType,
+		RouteSiteName:           r.RouteSiteName,
+		RouteRedirectionPattern: r.RouteRedirectionPattern,
+		RoutePathPrefix:         r.RoutePathPrefix,
 	}
-	if current != nil {
-		rule.Id = current.Id
-		rule.BuiltIn = current.BuiltIn
-	}
-	return rule
 }
 
 // Portal site
@@ -114,11 +97,11 @@ type _PortalCors struct {
 	AllowedOrigins []string `yaml:"allowedOrigins"`
 }
 
-func (s _PortalSite) ToCorePortalSite(current *core.PortalSite) *core.PortalSite {
-	cors := core.NormalizePortalCors(core.PortalCors{
+func (s _PortalSite) ToCorePortalSite() *core.PortalSite {
+	cors := core.PortalCors{
 		Mode:           core.PortalCorsMode(s.Cors.Mode),
 		AllowedOrigins: append([]string{}, s.Cors.AllowedOrigins...),
-	})
+	}
 	site := &core.PortalSite{
 		Name:          s.Name,
 		Type:          core.PortalSiteType(s.Type),
@@ -126,10 +109,6 @@ func (s _PortalSite) ToCorePortalSite(current *core.PortalSite) *core.PortalSite
 		ActorVia:      s.ActorVia,
 		Cors:          cors,
 		WebName:       s.WebName,
-	}
-	if current != nil {
-		site.Id = current.Id
-		site.BuiltIn = current.BuiltIn
 	}
 	return site
 }
@@ -147,18 +126,18 @@ type _PortalCert struct {
 	Override         bool      `yaml:"override"`
 }
 
-func (c _PortalCert) ToCorePortalCert(current *core.PortalCert) *core.PortalCert {
+func (c _PortalCert) ToCorePortalCert() *core.PortalCert {
 	cert := &core.PortalCert{
 		Name:             c.Name,
-		Issuer:           c.Issuer,
-		Domains:          append([]string(nil), c.Domains...),
 		PublicKeyBase64:  c.PublicKeyBase64,
 		PrivateKeyBase64: c.PrivateKeyBase64,
-		ValidFrom:        c.ValidFrom,
-		ValidTo:          c.ValidTo,
-	}
-	if current != nil {
-		cert.Id = current.Id
 	}
 	return cert
+}
+
+func (r *_PortalRule) UnmarshalYAML(node *yaml.Node) error {
+	// TODO: Remove legacy field decoding from startup seeds when old YAML support
+	// is retired, together with DecodePortalRule compatibility logic.
+	type plain _PortalRule
+	return DecodePortalRule(node, (*plain)(r))
 }

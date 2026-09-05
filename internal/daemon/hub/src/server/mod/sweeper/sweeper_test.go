@@ -72,7 +72,6 @@ func TestSweeperSkipsLiveLeaseStatus(t *testing.T) {
 	}
 	schemaRepo := &_SweeperSchemaRepo{}
 	target := &Sweeper{
-		RegistryRepo: registryRepo,
 		RegistryCore: &core.RegistryCore{
 			RegistryRepo: registryRepo,
 			SchemaRepo:   schemaRepo,
@@ -129,7 +128,6 @@ func TestSweeperUnregistersExpiredLeaseStatus(t *testing.T) {
 		ActorSkelName: "demo.Actor",
 	}}}
 	target := &Sweeper{
-		RegistryRepo:   registryRepo,
 		SchemaRepo:     schemaRepo,
 		PortalSiteRepo: portalSiteRepo,
 		Syncer:         syncerModule,

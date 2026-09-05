@@ -4,11 +4,16 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/util/vslice"
+	"net/url"
+	"strings"
 )
 
 type PortalSiteType string
 
 const (
+	DashboardRpcSiteName = "vine.hub.admin.AdminActor-client-rpc"
+	DashboardWebSiteName = "vine.hub.admin.DashboardWeb-web"
+
 	PortalSiteTypeRPCGW PortalSiteType = "RPCGW"
 	PortalSiteTypeWEBGW PortalSiteType = "WEBGW"
 )
@@ -146,6 +151,7 @@ func (m *PortalSiteCore) Create(creation PortalSiteCreation) PortalSite {
 		Cors:          creation.Cors,
 		WebName:       creation.WebName,
 	}
+	entry = m.Validate(entry)
 	m.PortalSiteRepo.SaveEntry(&entry)
 	return entry
 }
@@ -179,6 +185,7 @@ func (m *PortalSiteCore) Update(id int, update PortalSiteUpdate) PortalSite {
 		next.WebName = *update.WebName
 	}
 
+	next = m.Validate(next)
 	m.PortalSiteRepo.SaveEntry(&next)
 	return next
 }
@@ -278,4 +285,55 @@ func cmpString(a string, b string) int {
 		return 1
 	}
 	return 0
+}
+
+func (s *PortalSite) normalizeAndValidate() {
+	fail := func(ok bool, message string) {
+		ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal site %q: %s", s.Name, message))
+	}
+	fail(strings.TrimSpace(s.Name) != "", "name is required")
+	fail(s.Type == PortalSiteTypeRPCGW || s.Type == PortalSiteTypeWEBGW, "type must be RPCGW or WEBGW")
+	fail(strings.TrimSpace(s.ActorSkelName) != "", "actorSkelName is required")
+	fail(s.ActorVia == string(skel.ActorViaClient) || s.ActorVia == string(skel.ActorViaAgent) || s.ActorVia == string(skel.ActorViaOpenAPI), "actorVia must be client, agent or openapi")
+	if s.Type == PortalSiteTypeWEBGW {
+		fail(strings.TrimSpace(s.WebName) != "", "webName is required for WEBGW")
+	}
+	s.Cors = NormalizePortalCors(s.Cors)
+	fail(s.Cors.Mode == PortalCorsModeDisabled || s.Cors.Mode == PortalCorsModeSameDomain || s.Cors.Mode == PortalCorsModeStrict, "unsupported CORS mode")
+	for _, origin := range s.Cors.AllowedOrigins {
+		parsed, err := url.Parse(origin)
+		fail(err == nil && (parsed.Scheme == "http" || parsed.Scheme == "https") && parsed.Host != "" && parsed.User == nil && parsed.Path == "" && parsed.RawQuery == "" && !parsed.ForceQuery && parsed.Fragment == "", "CORS origins must be HTTP(S) origins without a path, query or fragment")
+	}
+}
+
+// Validate checks and normalizes a user site without accessing storage.
+func (*PortalSiteCore) Validate(site PortalSite) PortalSite {
+	ex.PanicNewIfNot(site.Name != DashboardRpcSiteName && site.Name != DashboardWebSiteName, ex.OperationFailed, ex.F("built-in portal site %q cannot be replaced", site.Name))
+	site.normalizeAndValidate()
+	return site
+}
+
+// Save creates or replaces a user site by name, preserving an existing ID.
+func (m *PortalSiteCore) Save(site PortalSite) PortalSite {
+	site = m.Validate(site)
+	site.Id = 0
+	site.BuiltIn = false
+	if current, ok := m.PortalSiteRepo.GetEntryByName(site.Name); ok {
+		ex.PanicNewIfNot(!current.BuiltIn, ex.OperationFailed, ex.F("built-in portal site %q cannot be replaced", site.Name))
+		site.Id = current.Id
+	}
+	m.PortalSiteRepo.SaveEntry(&site)
+	return site
+}
+
+// EnsureDashboardSite provisions an internal Dashboard site while keeping its ID.
+func (m *PortalSiteCore) EnsureDashboardSite(site PortalSite) {
+	ex.PanicNewIfNot(site.Name == DashboardRpcSiteName || site.Name == DashboardWebSiteName, ex.OperationFailed, "not a dashboard site")
+	site.normalizeAndValidate()
+	site.Id = 0
+	site.BuiltIn = true
+	if current, ok := m.PortalSiteRepo.GetEntryByName(site.Name); ok {
+		site.Id = current.Id
+	}
+	m.PortalSiteRepo.SaveEntry(&site)
 }

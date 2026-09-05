@@ -474,39 +474,43 @@ export type PortalRule = {
   /**
    * Rule ID.
    */
-  id:                 number;
+  id:                      number;
   /**
    * Rule name.
    */
-  name:               string;
+  name:                    string;
   /**
    * Matching protocol.
    */
-  scheme:             string;
+  matchScheme:             string;
   /**
    * Match Host, empty string means no restriction.
    */
-  host:               string;
+  matchHost:               string;
   /**
-   * Match port, 0 means no restriction.
+   * Match matchPort, 0 means no restriction.
    */
-  port:               number;
+  matchPort:               number;
   /**
    * Match path prefix, empty string means match all paths.
    */
-  pathPrefix:         string;
+  matchPathPrefix:         string;
   /**
    * Target type.
    */
-  targetType:         string;
+  routeType:               string;
   /**
    * Site name.
    */
-  siteName:           string;
+  routeSiteName:           string;
   /**
    * Redirect Pattern.
    */
-  redirectionPattern: string;
+  routeRedirectionPattern: string;
+  /**
+   * Target site path prefix; empty means strip the matching prefix only.
+   */
+  routePathPrefix:         string;
 }
 /**
  * Portal entry rule creation parameters.
@@ -515,35 +519,39 @@ export type PortalRuleCreation = {
   /**
    * Rule name.
    */
-  name:               string;
+  name:                    string;
   /**
    * Matching protocol.
    */
-  scheme:             string;
+  matchScheme:             string;
   /**
    * Match Host, empty string means no restriction.
    */
-  host:               string;
+  matchHost:               string;
   /**
-   * Match port, 0 means no restriction.
+   * Match matchPort, 0 means no restriction.
    */
-  port:               number;
+  matchPort:               number;
   /**
    * Match path prefix, empty string means match all paths.
    */
-  pathPrefix:         string;
+  matchPathPrefix:         string;
   /**
    * Target type.
    */
-  targetType:         string;
+  routeType:               string;
   /**
    * Site name.
    */
-  siteName:           string;
+  routeSiteName:           string;
   /**
    * Redirect Pattern.
    */
-  redirectionPattern: string;
+  routeRedirectionPattern: string;
+  /**
+   * Target site path prefix; empty means strip the matching prefix only.
+   */
+  routePathPrefix:         string | null;
 }
 /**
  * Portal entry rule update parameters.
@@ -552,35 +560,39 @@ export type PortalRuleUpdate = {
   /**
    * Rule name.
    */
-  name:               string | null;
+  name:                    string | null;
   /**
    * Matching protocol.
    */
-  scheme:             string | null;
+  matchScheme:             string | null;
   /**
    * Match Host, empty string means no restriction.
    */
-  host:               string | null;
+  matchHost:               string | null;
   /**
-   * Match port, 0 means no restriction.
+   * Match matchPort, 0 means no restriction.
    */
-  port:               number | null;
+  matchPort:               number | null;
   /**
    * Match path prefix, empty string means match all paths.
    */
-  pathPrefix:         string | null;
+  matchPathPrefix:         string | null;
   /**
    * Target type.
    */
-  targetType:         string | null;
+  routeType:               string | null;
   /**
    * Site name.
    */
-  siteName:           string | null;
+  routeSiteName:           string | null;
   /**
    * Redirect Pattern.
    */
-  redirectionPattern: string | null;
+  routeRedirectionPattern: string | null;
+  /**
+   * Target site path prefix; empty means strip the matching prefix only.
+   */
+  routePathPrefix:         string | null;
 }
 /**
  * Portal target site.

@@ -3,6 +3,7 @@ package entry
 import (
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
@@ -12,9 +13,9 @@ import (
 )
 
 const (
-	targetTypeSite              = "SITE"
-	targetTypePermanentRedirect = "PERMANENT_REDIRECT"
-	targetTypeTemporaryRedirect = "TEMPORARY_REDIRECT"
+	routeTypeSite              = "SITE"
+	routeTypePermanentRedirect = "PERMANENT_REDIRECT"
+	routeTypeTemporaryRedirect = "TEMPORARY_REDIRECT"
 )
 
 type _Key struct {
@@ -23,41 +24,43 @@ type _Key struct {
 }
 
 type _Rule struct {
-	name       string
-	scheme     spec.Scheme
-	host       string
-	port       int
-	pathPrefix string
+	name            string
+	matchScheme     spec.Scheme
+	matchHost       string
+	matchPort       int
+	matchPathPrefix string
+	routePathPrefix string
 
 	siteManager     *site.Manager
 	redirectionSite spec.Site
-	targetSiteName  string
+	routeSiteName   string
 }
 
 func newRule(rule redised.PortalRule, siteManager *site.Manager) (*_Rule, bool) {
-	isRedirection := rule.TargetType == targetTypePermanentRedirect || rule.TargetType == targetTypeTemporaryRedirect
-	isEntry := rule.TargetType == targetTypeSite
+	isRedirection := rule.RouteType == routeTypePermanentRedirect || rule.RouteType == routeTypeTemporaryRedirect
+	isEntry := rule.RouteType == routeTypeSite
 	if !isRedirection && !isEntry {
-		entryLogger.Warn("vine.portal entry rule target type is not supported", "rule", rule.Name, "targetType", rule.TargetType)
+		entryLogger.Warn("vine.portal entry rule target type is not supported", "rule", rule.Name, "routeType", rule.RouteType)
 		return nil, false
 	}
 
-	scheme := spec.Scheme(rule.Scheme)
+	scheme := spec.Scheme(rule.MatchScheme)
 	entryRule := &_Rule{
-		name:       rule.Name,
-		scheme:     scheme,
-		host:       entryRuleHost(rule.Host),
-		port:       entryRulePort(scheme, rule.Port),
-		pathPrefix: rule.PathPrefix,
+		name:            rule.Name,
+		matchScheme:     scheme,
+		matchHost:       entryRuleHost(rule.MatchHost),
+		matchPort:       entryRulePort(scheme, rule.MatchPort),
+		matchPathPrefix: rule.MatchPathPrefix,
+		routePathPrefix: strings.TrimRight(rule.RoutePathPrefix, "/"),
 	}
 
 	if isRedirection {
-		entryRule.redirectionSite = site.NewRedirectionSite(rule.TargetType == targetTypePermanentRedirect, rule.RedirectionPattern)
+		entryRule.redirectionSite = site.NewRedirectionSite(rule.RouteType == routeTypePermanentRedirect, rule.RouteRedirectionPattern)
 		return entryRule, true
 	}
 
 	entryRule.siteManager = siteManager
-	entryRule.targetSiteName = rule.SiteName
+	entryRule.routeSiteName = rule.RouteSiteName
 	return entryRule, true
 }
 
@@ -85,8 +88,8 @@ func entryRuleHost(host string) string {
 
 func (r _Rule) Key() _Key {
 	return _Key{
-		scheme: r.scheme,
-		port:   r.port,
+		scheme: r.matchScheme,
+		port:   r.matchPort,
 	}
 }
 
@@ -98,20 +101,20 @@ func (r _Rule) Matches(request *http.Request) bool {
 }
 
 func (r _Rule) matchesHost(host string) bool {
-	if r.host == "" {
+	if r.matchHost == "" {
 		return true
 	}
-	return r.host == host
+	return r.matchHost == host
 }
 
 func (r _Rule) matchesPathPrefix(path string) bool {
-	if r.pathPrefix == "" || r.pathPrefix == "/" {
+	if r.matchPathPrefix == "" || r.matchPathPrefix == "/" {
 		return true
 	}
-	if path == r.pathPrefix {
+	if path == r.matchPathPrefix {
 		return true
 	}
-	return strings.HasPrefix(path, r.pathPrefix+"/")
+	return strings.HasPrefix(path, r.matchPathPrefix+"/")
 }
 
 func (r _Rule) Serve(ctx *spec.Context) {
@@ -120,34 +123,47 @@ func (r _Rule) Serve(ctx *spec.Context) {
 		return
 	}
 
-	if targetSite, ok := r.siteManager.Site(r.targetSiteName); ok {
-		ctx.Request = r.trimPathPrefix(ctx.Request)
+	if targetSite, ok := r.siteManager.Site(r.routeSiteName); ok {
+		ctx.Request = r.rewritePath(ctx.Request)
 		ctx.EntryOrigin = spec.EntryOrigin{
-			Scheme: r.scheme,
-			Host:   r.host,
-			Port:   r.port,
+			Scheme: r.matchScheme,
+			Host:   r.matchHost,
+			Port:   r.matchPort,
 		}
 		targetSite.Serve(ctx)
 		return
 	}
 
-	http.Error(ctx.ResponseWriter, "portal entry is not found: "+r.targetSiteName, http.StatusServiceUnavailable)
+	http.Error(ctx.ResponseWriter, "portal entry is not found: "+r.routeSiteName, http.StatusServiceUnavailable)
 }
 
-func (r _Rule) trimPathPrefix(request *http.Request) *http.Request {
-	if r.pathPrefix == "" || r.pathPrefix == "/" {
+func (r _Rule) rewritePath(request *http.Request) *http.Request {
+	if r.routePathPrefix == "" && (r.matchPathPrefix == "" || r.matchPathPrefix == "/") {
 		return request
 	}
-	nextPath := strings.TrimPrefix(request.URL.Path, r.pathPrefix)
-	if nextPath == "" {
-		nextPath = "/"
+	suffix := request.URL.EscapedPath()
+	if r.matchPathPrefix != "" && r.matchPathPrefix != "/" {
+		// Match uses the decoded path. Consume the same number of decoded bytes
+		// without decoding the suffix, so escaped slashes retain their meaning.
+		offset := 0
+		for range len(r.matchPathPrefix) {
+			if suffix[offset] == '%' {
+				offset += 3
+			} else {
+				offset++
+			}
+		}
+		suffix = suffix[offset:]
 	}
-	if !strings.HasPrefix(nextPath, "/") {
-		nextPath = "/" + nextPath
+	nextEscapedPath := r.routePathPrefix + suffix
+	if nextEscapedPath == "" {
+		nextEscapedPath = "/"
 	}
+	nextPath, err := url.PathUnescape(nextEscapedPath)
+	vpre.CheckNilError(err, "decode portal target path")
 	next := request.Clone(request.Context())
 	next.URL.Path = nextPath
-	next.URL.RawPath = ""
+	next.URL.RawPath = nextEscapedPath
 	return next
 }
 

@@ -60,16 +60,11 @@ func (m *PortalCertCore) Create(creation PortalCertCreation) *PortalCert {
 	_, ok := m.PortalCertRepo.GetCertByName(creation.Name)
 	ex.PanicNewIfNot(!ok, ex.OperationFailed, ex.F("entry cert %q already exists", creation.Name))
 
-	metadata := parsePortalCertMetadata(creation.PublicKeyBase64)
-	cert := &PortalCert{
+	cert := new(m.Validate(PortalCert{
 		Name:             creation.Name,
-		Issuer:           metadata.Issuer,
-		Domains:          metadata.Domains,
 		PublicKeyBase64:  creation.PublicKeyBase64,
 		PrivateKeyBase64: creation.PrivateKeyBase64,
-		ValidFrom:        metadata.ValidFrom,
-		ValidTo:          metadata.ValidTo,
-	}
+	}))
 	m.PortalCertRepo.SaveCert(cert)
 	return cert
 }
@@ -97,16 +92,12 @@ func (m *PortalCertCore) Update(id int, update PortalCertUpdate) *PortalCert {
 	}
 	if update.PublicKeyBase64 != nil {
 		next.PublicKeyBase64 = *update.PublicKeyBase64
-		metadata := parsePortalCertMetadata(*update.PublicKeyBase64)
-		next.Issuer = metadata.Issuer
-		next.Domains = metadata.Domains
-		next.ValidFrom = metadata.ValidFrom
-		next.ValidTo = metadata.ValidTo
 	}
 	if update.PrivateKeyBase64 != nil {
 		next.PrivateKeyBase64 = *update.PrivateKeyBase64
 	}
 
+	*next = m.Validate(*next)
 	m.PortalCertRepo.SaveCert(next)
 	return next
 }
@@ -173,4 +164,26 @@ func parsePortalCert(publicKeyBase64 string) (*x509.Certificate, error) {
 		return x509.ParseCertificate(block.Bytes)
 	}
 	return x509.ParseCertificate(der)
+}
+
+// Validate parses the certificate and derives metadata without accessing storage.
+func (*PortalCertCore) Validate(cert PortalCert) PortalCert {
+	ex.PanicNewIfNot(strings.TrimSpace(cert.Name) != "", ex.OperationFailed, "certificate name is required")
+	metadata := parsePortalCertMetadata(cert.PublicKeyBase64)
+	cert.Issuer = metadata.Issuer
+	cert.Domains = metadata.Domains
+	cert.ValidFrom = metadata.ValidFrom
+	cert.ValidTo = metadata.ValidTo
+	return cert
+}
+
+// Save creates or replaces a certificate by name, preserving an existing ID.
+func (m *PortalCertCore) Save(cert PortalCert) PortalCert {
+	cert = m.Validate(cert)
+	cert.Id = 0
+	if current, ok := m.PortalCertRepo.GetCertByName(cert.Name); ok {
+		cert.Id = current.Id
+	}
+	m.PortalCertRepo.SaveCert(&cert)
+	return cert
 }

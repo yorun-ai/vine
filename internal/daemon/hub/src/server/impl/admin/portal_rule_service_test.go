@@ -48,8 +48,8 @@ func newTestPortalRuleService(dashboardURLSet bool) *PortalRuleServiceServerImpl
 		PortalRuleCore: &core.PortalRuleCore{
 			PortalRuleRepo: &_PortalRuleRepoSpy{
 				rules: map[int]*core.PortalRule{
-					1: {Id: 1, Name: core.DashboardAdminApiRuleName, Scheme: "http", Port: 7099, PathPrefix: "/api", BuiltIn: true},
-					2: {Id: 2, Name: core.DashboardWebRuleName, Scheme: "http", Port: 7099, PathPrefix: "/", BuiltIn: true},
+					1: {Id: 1, Name: core.DashboardAdminApiRuleName, MatchScheme: "http", MatchPort: 7099, MatchPathPrefix: "/api", BuiltIn: true},
+					2: {Id: 2, Name: core.DashboardWebRuleName, MatchScheme: "http", MatchPort: 7099, MatchPathPrefix: "/", BuiltIn: true},
 				},
 			},
 		},

@@ -18,6 +18,7 @@ type Initializer struct {
 	CertRepo      core.PortalCertRepo     `inject:""`
 	EntryRepo     core.PortalSiteRepo     `inject:""`
 	SchemaRepo    core.SchemaRepo         `inject:""`
+	RegistryCore  *core.RegistryCore      `inject:""`
 	Seeder        *seeder.Seeder          `inject:""`
 	Syncer        *syncer.Syncer          `inject:""`
 	InprocFlag    *app.InternalInprocFlag `inject:""`
@@ -31,7 +32,7 @@ const (
 )
 
 func (i *Initializer) DIInit() {
-	i.SchemaRepo.SaveDomainSchemas(inprocSchemaAppName, inprocSchemaInstanceId, skel.RegisteredDomainSchemas())
+	i.RegistryCore.RegisterSchemas(inprocSchemaAppName, inprocSchemaInstanceId, skel.RegisteredDomainSchemas())
 
 	i.initDashboard()
 

@@ -28,28 +28,34 @@ func (s *PortalRuleServiceServerImpl) Get(id int) skeled.PortalRule {
 }
 
 func (s *PortalRuleServiceServerImpl) Create(creation skeled.PortalRuleCreation) skeled.PortalRule {
+	var routePathPrefix string
+	if creation.RoutePathPrefix != nil {
+		routePathPrefix = *creation.RoutePathPrefix
+	}
 	return toServerPortalRule(s.PortalRuleCore.Create(core.PortalRuleCreation{
-		Name:               creation.Name,
-		Scheme:             creation.Scheme,
-		Host:               creation.Host,
-		Port:               creation.Port,
-		PathPrefix:         creation.PathPrefix,
-		TargetType:         creation.TargetType,
-		SiteName:           creation.SiteName,
-		RedirectionPattern: creation.RedirectionPattern,
+		Name:                    creation.Name,
+		MatchScheme:             creation.MatchScheme,
+		MatchHost:               creation.MatchHost,
+		MatchPort:               creation.MatchPort,
+		MatchPathPrefix:         creation.MatchPathPrefix,
+		RouteType:               creation.RouteType,
+		RouteSiteName:           creation.RouteSiteName,
+		RouteRedirectionPattern: creation.RouteRedirectionPattern,
+		RoutePathPrefix:         routePathPrefix,
 	}))
 }
 
 func (s *PortalRuleServiceServerImpl) Update(id int, update skeled.PortalRuleUpdate) skeled.PortalRule {
 	return toServerPortalRule(s.PortalRuleCore.Update(id, core.PortalRuleUpdate{
-		Name:               update.Name,
-		Scheme:             update.Scheme,
-		Host:               update.Host,
-		Port:               update.Port,
-		PathPrefix:         update.PathPrefix,
-		TargetType:         update.TargetType,
-		SiteName:           update.SiteName,
-		RedirectionPattern: update.RedirectionPattern,
+		Name:                    update.Name,
+		MatchScheme:             update.MatchScheme,
+		MatchHost:               update.MatchHost,
+		MatchPort:               update.MatchPort,
+		MatchPathPrefix:         update.MatchPathPrefix,
+		RouteType:               update.RouteType,
+		RouteSiteName:           update.RouteSiteName,
+		RouteRedirectionPattern: update.RouteRedirectionPattern,
+		RoutePathPrefix:         update.RoutePathPrefix,
 	}))
 }
 
@@ -80,14 +86,15 @@ func (s *PortalRuleServiceServerImpl) UpdateDashboardAccess(scheme string, host 
 
 func toServerPortalRule(rule core.PortalRule) skeled.PortalRule {
 	return skeled.PortalRule{
-		Id:                 rule.Id,
-		Name:               rule.Name,
-		Scheme:             rule.Scheme,
-		Host:               rule.Host,
-		Port:               rule.Port,
-		PathPrefix:         rule.PathPrefix,
-		TargetType:         rule.TargetType,
-		SiteName:           rule.SiteName,
-		RedirectionPattern: rule.RedirectionPattern,
+		Id:                      rule.Id,
+		Name:                    rule.Name,
+		MatchScheme:             rule.MatchScheme,
+		MatchHost:               rule.MatchHost,
+		MatchPort:               rule.MatchPort,
+		MatchPathPrefix:         rule.MatchPathPrefix,
+		RouteType:               rule.RouteType,
+		RouteSiteName:           rule.RouteSiteName,
+		RouteRedirectionPattern: rule.RouteRedirectionPattern,
+		RoutePathPrefix:         rule.RoutePathPrefix,
 	}
 }

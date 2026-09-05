@@ -13,14 +13,15 @@ const (
 )
 
 type PortalRule struct {
-	Name               string `json:"name"`
-	Scheme             string `json:"scheme"`
-	Host               string `json:"host"`
-	Port               int    `json:"port"`
-	PathPrefix         string `json:"pathPrefix"`
-	TargetType         string `json:"targetType"`
-	SiteName           string `json:"siteName"`
-	RedirectionPattern string `json:"redirectionPattern"`
+	Name                    string `json:"name"`
+	MatchScheme             string `json:"matchScheme"`
+	MatchHost               string `json:"matchHost"`
+	MatchPort               int    `json:"matchPort"`
+	MatchPathPrefix         string `json:"matchPathPrefix"`
+	RouteType               string `json:"routeType"`
+	RouteSiteName           string `json:"routeSiteName"`
+	RouteRedirectionPattern string `json:"routeRedirectionPattern"`
+	RoutePathPrefix         string `json:"routePathPrefix"`
 }
 
 func FormatPortalRuleKey(name string) string {

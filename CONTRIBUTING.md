@@ -150,6 +150,18 @@ versions and keep their language-switch links intact.
 
 ## Hub Dashboard
 
+To start the Dashboard development server from the repository root:
+
+```bash
+pnpm --dir internal/daemon/hub/src/dashboard install
+bash script/dev-hub-dashboard.sh
+```
+
+The script starts Vite on port 7098 and forwards additional arguments to Vite.
+It fails if the port is occupied so Hub's development proxy keeps targeting the
+correct server. Start Hub separately with `VINE_HUB_DASHBOARD_DEV_PROXY=1` and
+open its Dashboard URL to use the development frontend with Hub's admin APIs.
+
 For Dashboard source changes, run:
 
 ```bash

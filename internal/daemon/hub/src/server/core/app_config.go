@@ -1,6 +1,7 @@
 package core
 
 import (
+	"strings"
 	"time"
 
 	"go.yorun.ai/vine/internal/core/ex"
@@ -61,6 +62,7 @@ func (m *AppConfigCore) Create(creation AppConfigCreation) *AppConfig {
 		Version:   1,
 		CreatedAt: time.Now(),
 	}
+	*item = m.Validate(*item)
 	m.AppConfigRepo.SaveItem(item)
 	return item
 }
@@ -79,7 +81,10 @@ func (m *AppConfigCore) Update(id int, update AppConfigUpdate) *AppConfig {
 	if update.Value != nil {
 		next.Value = *update.Value
 	}
-	next.Version++
+	*next = m.Validate(*next)
+	if next.Value != item.Value {
+		next.Version++
+	}
 
 	m.AppConfigRepo.SaveItem(next)
 	return next
@@ -89,4 +94,28 @@ func (m *AppConfigCore) Remove(id int) bool {
 	item, ok := m.AppConfigRepo.GetItemById(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("config %d not found", id))
 	return m.AppConfigRepo.RemoveItem(item.Id)
+}
+
+// Validate checks configuration fields without accessing storage.
+func (*AppConfigCore) Validate(item AppConfig) AppConfig {
+	ex.PanicNewIfNot(strings.TrimSpace(item.Name) != "", ex.OperationFailed, "config name is required")
+	return item
+}
+
+// Save creates or replaces a configuration by name. Only value changes advance its version.
+func (m *AppConfigCore) Save(item AppConfig) AppConfig {
+	item = m.Validate(item)
+	item.Id = 0
+	item.Version = 1
+	item.CreatedAt = time.Now()
+	if current, ok := m.AppConfigRepo.GetItemByName(item.Name); ok {
+		item.Id = current.Id
+		item.CreatedAt = current.CreatedAt
+		item.Version = current.Version
+		if item.Value != current.Value {
+			item.Version++
+		}
+	}
+	m.AppConfigRepo.SaveItem(&item)
+	return item
 }
