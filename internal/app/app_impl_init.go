@@ -139,6 +139,7 @@ func (a *_AppImpl) initComponents() {
 	}
 
 	compMinderTypeMap := resolveFrameworkComponentMinderTypes(frameworkComponentTypes)
+	minders := make(map[reflect.Type]FrameworkComponentMinder, len(frameworkComponentTypes))
 	minderTypes := map[reflect.Type]struct{}{}
 	for _, minderType := range compMinderTypeMap {
 		minderTypes[minderType] = struct{}{}
@@ -149,7 +150,15 @@ func (a *_AppImpl) initComponents() {
 		a.bindLaunchers,
 		func(b *di.Binder) {
 			for _, componentType := range componentTypes {
-				b.Bind(componentType).In(di.SingletonScope)
+				binding := b.Bind(componentType).In(di.SingletonScope)
+				if minderType, managed := compMinderTypeMap[componentType]; managed {
+					binding.WithDependencies([]reflect.Type{minderType}, func(instance reflect.Value, dependencies []reflect.Value) {
+						component := instance.Interface().(FrameworkComponent)
+						minder := dependencies[0].Interface().(FrameworkComponentMinder)
+						minder.InitComponent(component)
+						minders[componentType] = minder
+					})
+				}
 			}
 			for minderType := range minderTypes {
 				b.Bind(minderType).In(di.TransientScope)
@@ -167,10 +176,10 @@ func (a *_AppImpl) initComponents() {
 			continue
 		}
 
-		component := injector.Get(componentType).Interface().(FrameworkComponent)
-		minderType := compMinderTypeMap[componentType]
-		minder := injector.Get(minderType).Interface().(FrameworkComponentMinder)
-		minder.InitComponent(component)
+		// Dependency resolution may initialize this component ahead of registration
+		// order. Keep lifecycle scheduling in registration order nonetheless.
+		injector.Get(componentType)
+		minder := minders[componentType]
 		a.frameworkComponentMinders = append(a.frameworkComponentMinders, minder)
 		a.componentLifecycles = append(a.componentLifecycles, minder)
 	}

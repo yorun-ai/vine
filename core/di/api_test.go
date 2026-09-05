@@ -1,6 +1,7 @@
 package di
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -48,4 +49,23 @@ func TestNewInjectorFacadeSupportsPlainAndExecutionInterfaces(t *testing.T) {
 		assert.Equal(t, "hello", service.Request.Value)
 		assert.NotNil(t, service.Reader)
 	}
+}
+
+func TestBindingWithDependenciesFacade(t *testing.T) {
+	calls := 0
+	injector := NewInjector(func(b *Binder) {
+		b.BindInstance(&diFacadeConfig{Name: "configured"})
+		b.Bind(T[*diFacadeRequest]()).WithDependencies(
+			[]reflect.Type{T[*diFacadeConfig]()},
+			func(value reflect.Value, dependencies []reflect.Value) {
+				value.Interface().(*diFacadeRequest).Value = dependencies[0].Interface().(*diFacadeConfig).Name
+				calls++
+			},
+		).In(SingletonScope)
+	})
+	first := injector.Get(T[*diFacadeRequest]()).Interface().(*diFacadeRequest)
+	second := injector.Get(T[*diFacadeRequest]()).Interface().(*diFacadeRequest)
+	assert.Equal(t, "configured", first.Value)
+	assert.Same(t, first, second)
+	assert.Equal(t, 1, calls)
 }

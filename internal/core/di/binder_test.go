@@ -199,6 +199,9 @@ func TestBindingRejectsChangesAfterInjectorInitialization(t *testing.T) {
 		binding *Binding
 		change  func()
 	}{
+		{name: "dependencies", binding: resourceBinding, change: func() {
+			resourceBinding.WithDependencies(nil, func(reflect.Value, []reflect.Value) {})
+		}},
 		{name: "scope", binding: resourceBinding, change: func() { resourceBinding.In(ExecutionScope) }},
 		{name: "nullable", binding: resourceBinding, change: func() { resourceBinding.AsNullable() }},
 		{name: "factory", binding: resourceBinding, change: func() {
@@ -227,4 +230,70 @@ func TestBindingRejectsChangesAfterInjectorInitialization(t *testing.T) {
 			)
 		})
 	}
+}
+
+type dependenciesResource struct{ initialized, ready bool }
+
+func (r *dependenciesResource) DIInit() { r.initialized = true }
+
+type dependenciesDependency struct{}
+type dependenciesConsumer struct {
+	Resource *dependenciesResource `inject:""`
+	ready    bool
+}
+
+func (c *dependenciesConsumer) DIInit() { c.ready = c.Resource.ready }
+
+func TestBindingDependenciesCompletesBeforePublishingSingleton(t *testing.T) {
+	for _, factory := range []bool{false, true} {
+		t.Run(map[bool]string{false: "struct", true: "factory"}[factory], func(t *testing.T) {
+			calls := 0
+			injector := NewInjector(func(b *Binder) {
+				binding := b.Bind(T[*dependenciesResource]()).In(SingletonScope)
+				if factory {
+					binding.ToFactory(func() *dependenciesResource { return new(dependenciesResource) })
+				}
+				binding.WithDependencies([]reflect.Type{T[*dependenciesDependency]()}, func(value reflect.Value, deps []reflect.Value) {
+					resource := value.Interface().(*dependenciesResource)
+					assert.True(t, resource.initialized)
+					assert.IsType(t, new(dependenciesDependency), deps[0].Interface())
+					calls++
+					resource.ready = true
+				})
+				b.Bind(T[*dependenciesConsumer]())
+			})
+			first := injector.Get(T[*dependenciesConsumer]()).Interface().(*dependenciesConsumer)
+			second := injector.Get(T[*dependenciesConsumer]()).Interface().(*dependenciesConsumer)
+			assert.True(t, first.ready)
+			assert.True(t, second.ready)
+			assert.Same(t, first.Resource, second.Resource)
+			assert.Equal(t, 1, calls)
+		})
+	}
+}
+
+func TestBindingDependenciesParticipateInScopeValidation(t *testing.T) {
+	assert.PanicsWithError(t, "singleton cannot depend on execution-scoped type: *di.dependenciesResource -> *di.dependenciesDependency", func() {
+		NewInjector(func(b *Binder) {
+			binding := b.Bind(T[*dependenciesResource]()).In(SingletonScope)
+			b.Bind(T[*dependenciesDependency]()).In(ExecutionScope)
+			binding.WithDependencies([]reflect.Type{T[*dependenciesDependency]()}, func(reflect.Value, []reflect.Value) {})
+		})
+	})
+}
+
+func TestBindingDependenciesRejectDuplicateConfiguration(t *testing.T) {
+	binding := newBinding(&_PlainInjector{}, T[*dependenciesResource](), false)
+	callback := func(reflect.Value, []reflect.Value) {}
+	assert.Same(t, binding, binding.WithDependencies(nil, callback))
+	assert.PanicsWithError(t, "dependencies of *di.dependenciesResource were already configured", func() {
+		binding.WithDependencies(nil, callback)
+	})
+}
+
+func TestBindingDependenciesRejectNilCallback(t *testing.T) {
+	binding := newBinding(&_PlainInjector{}, T[*dependenciesResource](), false)
+	assert.PanicsWithError(t, "dependency callback of *di.dependenciesResource must not be nil", func() {
+		binding.WithDependencies(nil, nil)
+	})
 }

@@ -8,6 +8,12 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Fixed
+
+- Complete framework component minder initialization before injecting the component
+  into consumers, including dependencies of other minders. Initialization no longer
+  requires dependency-first component registration; lifecycle hook order is unchanged.
+
 ### Changed
 
 - Configuration versions now advance only when values change. Certificate issuer,
@@ -20,6 +26,9 @@ are not part of the public compatibility commitment.
 - Portal rules use flat `match*` and `route*` fields across Go, Admin API, Redis, Dashboard, and YAML. Existing database columns are migrated. Legacy YAML fields remain supported with warnings; mixing legacy and new fields in one rule is rejected. Upgrade Hub and Portal together and regenerate Admin clients.
 
 ### Added
+
+- Public DI bindings support `WithDependencies` to declare additional dependencies
+  and run a callback before the constructed instance is returned to consumers.
 
 - Portal SITE entry rules support `routePathPrefix` to replace the matched path
   prefix before forwarding. Empty values retain existing behavior; Hub migrates

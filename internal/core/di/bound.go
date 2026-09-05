@@ -116,6 +116,7 @@ func (b *_Bound) Dependencies() []reflect.Type {
 		})
 	}
 	dependencies = append(dependencies, b.factoryDependencies...)
+	dependencies = append(dependencies, b.binding.extraDependencies...)
 	if b.binding.isAbstract {
 		dependencies = vslice.Filter(dependencies, func(dep reflect.Type) bool {
 			return dep != T[ResolveContext]()
@@ -130,6 +131,22 @@ func (b *_Bound) String() string {
 }
 
 func (b *_Bound) BuildInstantiateFunc(injector *_BaseInjector) _InstantiateFunc {
+	construct := b.buildInstantiateFunc(injector)
+	if b.binding.onDependenciesResolved == nil {
+		return construct
+	}
+	return func(stack _BuildStack, requestedType reflect.Type) reflect.Value {
+		instance := construct(stack, requestedType)
+		dependencies := make([]reflect.Value, len(b.binding.extraDependencies))
+		for i, kind := range b.binding.extraDependencies {
+			dependencies[i] = injector.get(kind, stack.push(kind))
+		}
+		b.binding.onDependenciesResolved(instance, dependencies)
+		return instance
+	}
+}
+
+func (b *_Bound) buildInstantiateFunc(injector *_BaseInjector) _InstantiateFunc {
 	if b.binding.factory == nil {
 		return b.buildDefaultInstantiateFunc(injector)
 	}

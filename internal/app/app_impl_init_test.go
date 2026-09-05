@@ -697,3 +697,172 @@ func TestInitModulesBindsModuleTypesAsSingletons(t *testing.T) {
 	assert.Same(t, dependency, consumer.Dependency)
 	assert.Equal(t, 1, *testSingletonModuleInitCount)
 }
+
+type managedReadyLog struct {
+	events          []string
+	initializations int
+}
+
+type ManagedReadyResource struct {
+	BaseFrameworkComponent[*managedReadyMinder]
+	Log        *managedReadyLog `inject:""`
+	configured bool
+	ready      bool
+}
+
+func (r *ManagedReadyResource) DIInit() { r.configured = true }
+
+type managedReadyOtherResource struct{ ManagedReadyResource }
+
+type managedReadyMinder struct {
+	BaseFrameworkComponentMinder
+	component FrameworkComponent
+}
+
+func (m *managedReadyMinder) InitComponent(component FrameworkComponent) {
+	m.component = component
+	var resource *ManagedReadyResource
+	switch c := component.(type) {
+	case *ManagedReadyResource:
+		resource = c
+	case *managedReadyOtherResource:
+		resource = &c.ManagedReadyResource
+	}
+	if !resource.configured {
+		panic("component DIInit must run before minder")
+	}
+	resource.ready = true
+	resource.Log.initializations++
+}
+func (m *managedReadyMinder) Component() FrameworkComponent { return m.component }
+func (m *managedReadyMinder) BeforeAppStart() error {
+	switch c := m.component.(type) {
+	case *ManagedReadyResource:
+		c.Log.events = append(c.Log.events, "resource.start")
+	case *managedReadyOtherResource:
+		c.Log.events = append(c.Log.events, "other.start")
+	}
+	return nil
+}
+func (m *managedReadyMinder) AfterAppStop() {
+	switch c := m.component.(type) {
+	case *ManagedReadyResource:
+		c.Log.events = append(c.Log.events, "resource.stop")
+	case *managedReadyOtherResource:
+		c.Log.events = append(c.Log.events, "other.stop")
+	}
+}
+
+type managedReadyConsumer struct {
+	BaseComponent
+	Resource *ManagedReadyResource      `inject:""`
+	Other    *managedReadyOtherResource `inject:""`
+}
+
+func (c *managedReadyConsumer) DIInit() {
+	if !c.Resource.ready || !c.Other.ready {
+		panic("resource minder has not initialized")
+	}
+}
+func (c *managedReadyConsumer) BeforeAppStart() error {
+	c.Resource.Log.events = append(c.Resource.Log.events, "consumer.start")
+	return nil
+}
+func (c *managedReadyConsumer) AfterAppStop() {
+	c.Resource.Log.events = append(c.Resource.Log.events, "consumer.stop")
+}
+
+type managedReadyAppSpec struct {
+	Application
+	componentTypes []reflect.Type
+}
+
+func (*managedReadyAppSpec) Name() string { return "test.managedready" }
+func (s *managedReadyAppSpec) InitComponents(add TypeAdder) {
+	for _, kind := range s.componentTypes {
+		add(kind)
+	}
+}
+
+func TestInitComponentsReadiesManagedDependenciesBeforeConsumer(t *testing.T) {
+	log := new(managedReadyLog)
+	flags := _Flags{}
+	flags.EnsureRunFlag()
+	flags.InitInprocFlag(false)
+	a := newApp(&managedReadyAppSpec{componentTypes: []reflect.Type{
+		T[*managedReadyConsumer](), T[*managedReadyOtherResource](), T[*ManagedReadyResource](),
+	}}, flags)
+	a.initInjector()
+	a.injector = a.injector.SubInjector(func(b *di.Binder) { b.BindInstance(log) })
+	a.initComponents()
+	assert.Equal(t, 2, log.initializations)
+	consumer := a.components[0].(*managedReadyConsumer)
+	assert.Same(t, consumer.Other, a.frameworkComponentMinders[0].Component())
+	assert.Same(t, consumer.Resource, a.frameworkComponentMinders[1].Component())
+	assert.NotSame(t, a.frameworkComponentMinders[0], a.frameworkComponentMinders[1])
+	child := a.injector.SubInjector(a.bindComponents)
+	assert.Same(t, consumer.Resource, child.Get(T[*ManagedReadyResource]()).Interface())
+	assert.Equal(t, 2, log.initializations)
+	assert.NoError(t, a.beforeAppStart())
+	a.afterAppStop()
+	assert.Equal(t, []string{"consumer.start", "other.start", "resource.start", "resource.stop", "other.stop", "consumer.stop"}, log.events)
+}
+
+type managedReadyViaMinder struct {
+	BaseFrameworkComponent[*managedReadyDependentMinder]
+	ready bool
+}
+
+type managedReadyDependentMinder struct {
+	BaseFrameworkComponentMinder
+	Resource  *ManagedReadyResource `inject:""`
+	component *managedReadyViaMinder
+}
+
+func (m *managedReadyDependentMinder) InitComponent(component FrameworkComponent) {
+	if !m.Resource.ready {
+		panic("minder dependency is not ready")
+	}
+	m.component = component.(*managedReadyViaMinder)
+	m.component.ready = true
+}
+func (m *managedReadyDependentMinder) Component() FrameworkComponent { return m.component }
+
+type managedReadyCycle struct {
+	BaseFrameworkComponent[*managedReadyCycleMinder]
+}
+type managedReadyCycleMinder struct {
+	BaseFrameworkComponentMinder
+	Consumer *managedReadyCycleConsumer `inject:""`
+}
+type managedReadyCycleConsumer struct {
+	BaseComponent
+	Resource *managedReadyCycle `inject:""`
+}
+
+func TestInitComponentsReadiesMinderDependencies(t *testing.T) {
+	flags := _Flags{}
+	flags.EnsureRunFlag()
+	flags.InitInprocFlag(false)
+	a := newApp(&managedReadyAppSpec{componentTypes: []reflect.Type{
+		T[*managedReadyViaMinder](), T[*ManagedReadyResource](),
+	}}, flags)
+	a.initInjector()
+	a.injector = a.injector.SubInjector(func(b *di.Binder) { b.BindInstance(new(managedReadyLog)) })
+	a.initComponents()
+	minder := a.frameworkComponentMinders[0].(*managedReadyDependentMinder)
+	assert.True(t, minder.component.ready)
+	assert.True(t, minder.Resource.ready)
+	assert.Same(t, minder.Resource, a.frameworkComponentMinders[1].Component())
+}
+
+func TestInitComponentsRejectsCyclesThroughMinder(t *testing.T) {
+	flags := _Flags{}
+	flags.EnsureRunFlag()
+	flags.InitInprocFlag(false)
+	a := newApp(&managedReadyAppSpec{componentTypes: []reflect.Type{
+		T[*managedReadyCycleConsumer](), T[*managedReadyCycle](),
+	}}, flags)
+	a.initInjector()
+	assert.PanicsWithError(t, "cycle dependency detected: *app.managedReadyCycle -> *app.managedReadyCycleMinder -> *app.managedReadyCycleConsumer -> *app.managedReadyCycle", a.initComponents)
+}

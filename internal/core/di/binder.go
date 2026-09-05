@@ -56,6 +56,8 @@ type Binding struct {
 	disposer          *reflect.Value
 	initFactoryResult bool
 
+	onDependenciesResolved        func(reflect.Value, []reflect.Value)
+	extraDependencies             []reflect.Type
 	factoryDependenciesOverridden []reflect.Type
 }
 
@@ -170,5 +172,27 @@ func (b *Binding) setDisposer(disposer any) {
 func (b *Binding) WithDisposer(dtorFunc any) *Binding {
 	b.ensureMutable()
 	b.setDisposer(dtorFunc)
+	return b
+}
+
+// WithDependencies supplements field or factory dependencies with dependencies
+// needed by onResolved. It may be configured only once, before the binding is
+// frozen, and onResolved must not be nil. The dependency list is copied.
+//
+// After ordinary construction (including DIInit when applicable), the dependencies
+// are resolved in the supplied order and onResolved receives the instance and
+// their values. The callback finishes before the instance is cached or returned.
+// These dependencies participate in cycle and scope checks. For ToInstance and
+// ToImplementation, the callback runs on resolution without repeating DIInit.
+// Execution-scoped instances supplied through Seeder bypass this callback.
+func (b *Binding) WithDependencies(dependencies []reflect.Type, onResolved func(reflect.Value, []reflect.Value)) *Binding {
+	b.ensureMutable()
+	vpre.Check(b.onDependenciesResolved == nil, "dependencies of %s were already configured", b.targetType)
+	vpre.Check(onResolved != nil, "dependency callback of %s must not be nil", b.targetType)
+	for _, kind := range dependencies {
+		checkBindType(kind)
+	}
+	b.extraDependencies = append([]reflect.Type(nil), dependencies...)
+	b.onDependenciesResolved = onResolved
 	return b
 }
