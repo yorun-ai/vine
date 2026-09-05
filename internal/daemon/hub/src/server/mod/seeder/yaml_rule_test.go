@@ -1,4 +1,4 @@
-package seedconfig
+package seeder
 
 import (
 	"os"

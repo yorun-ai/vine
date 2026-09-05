@@ -15,11 +15,12 @@ type Seeder struct {
 	Flag   *flag.Flag     `inject:""`
 	Logger *logger.Logger `inject:""`
 
-	AppConfigRepo core.AppConfigRepo  `inject:""`
-	MetadataRepo  core.MetadataRepo   `inject:""`
-	RuleRepo      core.PortalRuleRepo `inject:""`
-	CertRepo      core.PortalCertRepo `inject:""`
-	EntryRepo     core.PortalSiteRepo `inject:""`
+	AppConfigRepo core.AppConfigRepo   `inject:""`
+	MetadataRepo  core.MetadataRepo    `inject:""`
+	RuleRepo      core.PortalRuleRepo  `inject:""`
+	RuleCore      *core.PortalRuleCore `inject:""`
+	CertRepo      core.PortalCertRepo  `inject:""`
+	EntryRepo     core.PortalSiteRepo  `inject:""`
 
 	payload *_SettingsYAMLPayload
 }
@@ -60,10 +61,7 @@ func (s *Seeder) loadSeedYAML() {
 			ex.F("portal site %q conflicts with built-in site", site.Name))
 	}
 	for _, rule := range payload.PortalRules {
-		current, ok := s.RuleRepo.GetRuleByName(rule.Name)
-		ex.PanicNewIfNot(!ok || !current.BuiltIn,
-			ex.OperationFailed,
-			ex.F("portal rule %q conflicts with built-in rule", rule.Name))
+		s.RuleCore.Validate(*rule.ToCorePortalRule())
 	}
 
 	s.payload = payload
@@ -77,7 +75,7 @@ func (s *Seeder) applySeed() {
 		s.EntryRepo.SaveEntry(site.ToCorePortalSite(nil))
 	}
 	for _, rule := range s.payload.PortalRules {
-		s.RuleRepo.SaveRule(rule.ToCorePortalRule(nil))
+		s.RuleCore.Save(*rule.ToCorePortalRule())
 	}
 	for _, cert := range s.payload.PortalCerts {
 		s.CertRepo.SaveCert(cert.ToCorePortalCert(nil))
@@ -99,8 +97,7 @@ func (s *Seeder) applyOverrideSeed() bool {
 		s.EntryRepo.SaveEntry(site.ToCorePortalSite(current))
 	}
 	for _, rule := range payload.PortalRules {
-		current, _ := s.RuleRepo.GetRuleByName(rule.Name)
-		s.RuleRepo.SaveRule(rule.ToCorePortalRule(current))
+		s.RuleCore.Save(*rule.ToCorePortalRule())
 	}
 	for _, cert := range payload.PortalCerts {
 		current, _ := s.CertRepo.GetCertByName(cert.Name)

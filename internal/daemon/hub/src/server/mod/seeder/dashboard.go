@@ -73,16 +73,7 @@ func (s *Seeder) saveDashboardSite(site core.PortalSite) {
 // fields are refreshed only for an explicit dashboard-url or when safely
 // migrating the legacy built-in HTTP defaults to the mTLS HTTPS defaults.
 func (s *Seeder) saveDashboardRule(rule core.PortalRule, refreshAccess bool) {
-	if oldRule, ok := s.RuleRepo.GetRuleByName(rule.Name); ok {
-		rule.Id = oldRule.Id
-		if !refreshAccess {
-			rule.MatchScheme = oldRule.MatchScheme
-			rule.MatchHost = oldRule.MatchHost
-			rule.MatchPort = oldRule.MatchPort
-			rule.MatchPathPrefix = oldRule.MatchPathPrefix
-		}
-	}
-	s.RuleRepo.SaveRule(&rule)
+	s.RuleCore.EnsureDashboardRule(rule, refreshAccess)
 }
 
 func (s *Seeder) canMigrateLegacyDashboardAccess() bool {

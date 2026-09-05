@@ -5,20 +5,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vcode"
 )
 
-func TestPortalRuleSeedTargetPath(t *testing.T) {
+func TestPortalRuleSeedMapsWithoutDomainValidation(t *testing.T) {
 	seed := _PortalRule{Name: "mapped", RouteType: "SITE", RoutePathPrefix: "/internal/"}
-	rule := seed.ToCorePortalRule(&core.PortalRule{Id: 17})
-	assert.Equal(t, 17, rule.Id)
-	assert.Equal(t, "/internal", rule.RoutePathPrefix)
+	rule := seed.ToCorePortalRule()
+	assert.Zero(t, rule.Id)
+	assert.False(t, rule.BuiltIn)
+	assert.Equal(t, "/internal/", rule.RoutePathPrefix)
 	seed.RoutePathPrefix = ""
-	assert.Empty(t, seed.ToCorePortalRule(rule).RoutePathPrefix)
+	assert.Empty(t, seed.ToCorePortalRule().RoutePathPrefix)
 	seed.RouteType = "PERMANENT_REDIRECT"
 	seed.RoutePathPrefix = "/internal"
-	assert.Panics(t, func() { seed.ToCorePortalRule(nil) })
+	assert.NotPanics(t, func() { seed.ToCorePortalRule() })
 }
 
 func TestSeedPortalRuleFieldNames(t *testing.T) {
@@ -28,7 +28,7 @@ func TestSeedPortalRuleFieldNames(t *testing.T) {
 	} {
 		payload, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload](content)
 		require.NoError(t, err)
-		rule := payload.PortalRules[0].ToCorePortalRule(nil)
+		rule := payload.PortalRules[0].ToCorePortalRule()
 		assert.Equal(t, "http", rule.MatchScheme)
 		assert.Equal(t, "/internal", rule.RoutePathPrefix)
 	}

@@ -106,7 +106,7 @@ func (m *PortalEntryCore) UpdateAccess(scheme string, host string, port int, upd
 	nextKey := normalizePortalEntryKey(update.Scheme, update.Host, update.Port)
 
 	rules := m.PortalRuleRepo.ListRules()
-	updated := false
+	updates := []PortalRule{}
 	for _, rule := range rules {
 		if rule.BuiltIn || !isPortalEntryRuleRouteType(rule.RouteType) {
 			continue
@@ -118,11 +118,15 @@ func (m *PortalEntryCore) UpdateAccess(scheme string, host string, port int, upd
 		rule.MatchScheme = nextKey.Scheme
 		rule.MatchHost = nextKey.Host
 		rule.MatchPort = nextKey.Port
-		m.PortalRuleRepo.SaveRule(&rule)
-		updated = true
+		rule.normalizeAndValidate()
+		updates = append(updates, rule)
 	}
 
-	ex.PanicNewIfNot(updated, ex.OperationFailed, ex.F("portal entry %s not found", portalEntryName(currentKey)))
+	ex.PanicNewIfNot(len(updates) > 0, ex.OperationFailed, ex.F("portal entry %s not found", portalEntryName(currentKey)))
+
+	for i := range updates {
+		m.PortalRuleRepo.SaveRule(&updates[i])
+	}
 
 	for _, entry := range m.List() {
 		if portalEntryMatchesKey(entry, nextKey) {

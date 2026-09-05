@@ -7,7 +7,7 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/seedconfig"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/seeder"
 	"go.yorun.ai/vine/util/vcode"
 	"gopkg.in/yaml.v3"
 )
@@ -22,10 +22,11 @@ const (
 type MaintenanceServiceServerImpl struct {
 	skeled.DefaultMaintenanceServiceServer
 
-	AppConfigRepo core.AppConfigRepo  `inject:""`
-	EntryRepo     core.PortalSiteRepo `inject:""`
-	RuleRepo      core.PortalRuleRepo `inject:""`
-	CertRepo      core.PortalCertRepo `inject:""`
+	AppConfigRepo core.AppConfigRepo   `inject:""`
+	EntryRepo     core.PortalSiteRepo  `inject:""`
+	RuleRepo      core.PortalRuleRepo  `inject:""`
+	RuleCore      *core.PortalRuleCore `inject:""`
+	CertRepo      core.PortalCertRepo  `inject:""`
 }
 
 type _SeedYAMLPayload struct {
@@ -107,13 +108,14 @@ func (s *MaintenanceServiceServerImpl) ApplySeedYaml(content string, selections 
 	return s.preview(payload)
 }
 
-func (*MaintenanceServiceServerImpl) parseSeed(content string) *_SeedYAMLPayload {
+func (s *MaintenanceServiceServerImpl) parseSeed(content string) *_SeedYAMLPayload {
 	payload, err := vcode.UnmarshalYaml[*_SeedYAMLPayload]([]byte(content))
 	ex.PanicNewIfNot(err == nil, ex.OperationFailed, ex.F("parse seed yaml failed: %v", err))
 	if payload != nil {
 		for i := range payload.PortalRules {
 			rule := &payload.PortalRules[i]
-			rule.RoutePathPrefix = core.NormalizePortalRuleRoutePathPrefix(rule.RouteType, rule.RoutePathPrefix)
+			entity := s.RuleCore.Validate(rule.toCore())
+			rule.RoutePathPrefix = entity.RoutePathPrefix
 		}
 	}
 	return payload
@@ -269,32 +271,7 @@ func (s *MaintenanceServiceServerImpl) applyPortalRules(rules []_SeedPortalRule,
 		if !hasSelection(selected, seedKindPortalRule, rule.Name) {
 			continue
 		}
-		if current, ok := s.RuleRepo.GetRuleByName(rule.Name); ok {
-			next := *current
-			next.MatchScheme = rule.MatchScheme
-			next.MatchHost = rule.MatchHost
-			next.MatchPort = rule.MatchPort
-			next.MatchPathPrefix = rule.MatchPathPrefix
-			next.RoutePathPrefix = rule.RoutePathPrefix
-			next.RouteType = rule.RouteType
-			next.RouteSiteName = rule.RouteSiteName
-			next.RouteRedirectionPattern = rule.RouteRedirectionPattern
-			s.RuleRepo.SaveRule(&next)
-			continue
-		}
-
-		next := &core.PortalRule{
-			Name:                    rule.Name,
-			MatchScheme:             rule.MatchScheme,
-			MatchHost:               rule.MatchHost,
-			MatchPort:               rule.MatchPort,
-			MatchPathPrefix:         rule.MatchPathPrefix,
-			RoutePathPrefix:         rule.RoutePathPrefix,
-			RouteType:               rule.RouteType,
-			RouteSiteName:           rule.RouteSiteName,
-			RouteRedirectionPattern: rule.RouteRedirectionPattern,
-		}
-		s.RuleRepo.SaveRule(next)
+		s.RuleCore.Save(rule.toCore())
 	}
 }
 
@@ -407,7 +384,15 @@ func timeString(value time.Time) string {
 
 func (r *_SeedPortalRule) UnmarshalYAML(node *yaml.Node) error {
 	// TODO: Remove legacy field decoding from Dashboard imports when old YAML
-	// support is retired, together with seedconfig.DecodePortalRule compatibility logic.
+	// support is retired, together with seeder.DecodePortalRule compatibility logic.
 	type plain _SeedPortalRule
-	return seedconfig.DecodePortalRule(node, (*plain)(r))
+	return seeder.DecodePortalRule(node, (*plain)(r))
+}
+
+func (r _SeedPortalRule) toCore() core.PortalRule {
+	return core.PortalRule{
+		Name: r.Name, MatchScheme: r.MatchScheme, MatchHost: r.MatchHost, MatchPort: r.MatchPort,
+		MatchPathPrefix: r.MatchPathPrefix, RouteType: r.RouteType, RouteSiteName: r.RouteSiteName,
+		RoutePathPrefix: r.RoutePathPrefix, RouteRedirectionPattern: r.RouteRedirectionPattern,
+	}
 }

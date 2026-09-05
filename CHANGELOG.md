@@ -10,6 +10,8 @@ are not part of the public compatibility commitment.
 
 ### Changed
 
+- Portal rule writes now share Core validation across Admin API and YAML imports. Imports preflight rule constraints and reject built-in rule replacements before writing imported entities.
+
 - Portal rules use flat `match*` and `route*` fields across Go, Admin API, Redis, Dashboard, and YAML. Existing database columns are migrated. Legacy YAML fields remain supported with warnings; mixing legacy and new fields in one rule is rejected. Upgrade Hub and Portal together and regenerate Admin clients.
 
 ### Added

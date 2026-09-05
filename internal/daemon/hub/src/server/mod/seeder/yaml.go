@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/seedconfig"
 	"go.yorun.ai/vine/util/vslice"
 	"gopkg.in/yaml.v3"
 )
@@ -82,23 +81,18 @@ type _PortalRule struct {
 	Override                bool   `yaml:"override"`
 }
 
-func (r _PortalRule) ToCorePortalRule(current *core.PortalRule) *core.PortalRule {
-	rule := &core.PortalRule{
+func (r _PortalRule) ToCorePortalRule() *core.PortalRule {
+	return &core.PortalRule{
 		Name:                    r.Name,
 		MatchScheme:             r.MatchScheme,
 		MatchHost:               r.MatchHost,
 		MatchPort:               r.MatchPort,
 		MatchPathPrefix:         r.MatchPathPrefix,
-		RoutePathPrefix:         core.NormalizePortalRuleRoutePathPrefix(r.RouteType, r.RoutePathPrefix),
+		RoutePathPrefix:         r.RoutePathPrefix,
 		RouteType:               r.RouteType,
 		RouteSiteName:           r.RouteSiteName,
 		RouteRedirectionPattern: r.RouteRedirectionPattern,
 	}
-	if current != nil {
-		rule.Id = current.Id
-		rule.BuiltIn = current.BuiltIn
-	}
-	return rule
 }
 
 // Portal site
@@ -169,7 +163,7 @@ func (c _PortalCert) ToCorePortalCert(current *core.PortalCert) *core.PortalCert
 
 func (r *_PortalRule) UnmarshalYAML(node *yaml.Node) error {
 	// TODO: Remove legacy field decoding from startup seeds when old YAML support
-	// is retired, together with seedconfig.DecodePortalRule compatibility logic.
+	// is retired, together with DecodePortalRule compatibility logic.
 	type plain _PortalRule
-	return seedconfig.DecodePortalRule(node, (*plain)(r))
+	return DecodePortalRule(node, (*plain)(r))
 }

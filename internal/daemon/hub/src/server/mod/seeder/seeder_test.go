@@ -1,7 +1,9 @@
 package seeder
 
 import (
+	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -64,6 +66,7 @@ portalCerts:
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
+		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
 		CertRepo:      certRepo,
 		EntryRepo:     entryRepo,
 	}
@@ -139,6 +142,7 @@ func TestSeederMarksSeededWhenSeedYAMLPathIsEmpty(t *testing.T) {
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
+		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
 		CertRepo:      certRepo,
 		EntryRepo:     entryRepo,
 	}
@@ -168,6 +172,7 @@ func TestSeederUsesHTTPSForDefaultDashboardWithMTLS(t *testing.T) {
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
+		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
 		CertRepo:      certRepo,
 		EntryRepo:     entryRepo,
 	}
@@ -211,6 +216,7 @@ func TestSeederMigratesLegacyDashboardDefaultsToHTTPSWithMTLS(t *testing.T) {
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
+		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
 		CertRepo:      certRepo,
 		EntryRepo:     entryRepo,
 	}
@@ -258,6 +264,7 @@ func TestSeederPreservesCustomDashboardAccessWithMTLSDefault(t *testing.T) {
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
+		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
 		CertRepo:      certRepo,
 		EntryRepo:     entryRepo,
 	}
@@ -285,6 +292,7 @@ func TestSeederSkipsEmptySeedYAMLPathWhenApplied(t *testing.T) {
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
+		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
 		CertRepo:      certRepo,
 		EntryRepo:     entryRepo,
 	}
@@ -316,6 +324,7 @@ appConfigs:
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
+		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
 		CertRepo:      certRepo,
 		EntryRepo:     entryRepo,
 	}
@@ -379,6 +388,7 @@ portalCerts:
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
+		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
 		CertRepo:      certRepo,
 		EntryRepo:     entryRepo,
 	}
@@ -426,6 +436,7 @@ portalRules:
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
+		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
 		CertRepo:      certRepo,
 		EntryRepo:     entryRepo,
 	}
@@ -460,6 +471,7 @@ func TestSeederRefreshesDashboardWhenSeeded(t *testing.T) {
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
+		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
 		CertRepo:      certRepo,
 		EntryRepo:     entryRepo,
 	}
@@ -509,6 +521,7 @@ func TestSeederAppliesExplicitDashboardURLToExistingDashboardRules(t *testing.T)
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
+		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
 		CertRepo:      certRepo,
 		EntryRepo:     entryRepo,
 	}
@@ -555,4 +568,37 @@ func newTestSeederRepos(t *testing.T) (*repo.DBAppConfigRepo, *repo.DBPortalRule
 	}, &repo.DBMetadataRepo{
 		Dao: &model.MetadataDao{Dao: rdb.NewDao[*model.Metadata](gdb)},
 	}, redisServer
+}
+
+func TestSeederPreflightsAllRulesBeforeImporting(t *testing.T) {
+	for _, legacy := range []bool{false, true} {
+		t.Run(fmt.Sprint(legacy), func(t *testing.T) {
+			configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
+			content := `appConfigs:
+  - name: pending
+    value: test
+portalRules:
+  - name: valid
+    matchScheme: http
+    routeType: SITE
+    routeSiteName: web
+  - name: invalid
+    matchScheme: ftp
+    routeType: SITE
+    routeSiteName: web
+`
+			if legacy {
+				content = strings.NewReplacer("matchScheme:", "scheme:", "routeType:", "targetType:", "routeSiteName:", "siteName:").Replace(content)
+			}
+			path := filepath.Join(t.TempDir(), "hub.yaml")
+			require.NoError(t, vfile.WriteString(path, content))
+			seeder := &Seeder{Flag: newTestSeederFlag(path), Logger: logger.New("vine:test"), AppConfigRepo: configRepo, RuleRepo: ruleRepo, RuleCore: &core.PortalRuleCore{PortalRuleRepo: ruleRepo}, CertRepo: certRepo, EntryRepo: entryRepo, MetadataRepo: metadataRepo}
+			require.Panics(t, seeder.DIInit)
+			_, exists := configRepo.GetItemByName("pending")
+			require.False(t, exists)
+			_, exists = ruleRepo.GetRuleByName("valid")
+			require.False(t, exists)
+			require.False(t, metadataRepo.IsSeeded())
+		})
+	}
 }
