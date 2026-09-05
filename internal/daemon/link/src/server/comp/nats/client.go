@@ -55,7 +55,7 @@ func (c *Client) InitOption(option *_Option) {
 // _Client
 
 type _Client struct {
-	app.BaseFrameworkComponent[*_ClientMinder]
+	app.BaseManagedComponent[*_ClientManager]
 
 	conn          *gonats.Conn
 	jetStream     jetstream.JetStream

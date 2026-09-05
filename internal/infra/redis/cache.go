@@ -66,7 +66,7 @@ func (r *Redis) NewCache[T any](ctx context.Context, keyPrefix string) *Cache[T]
 	}
 }
 
-func (m *RedisMinder) instantiateCache(cacheType reflect.Type, ctx context.Context) any {
+func (m *RedisManager) instantiateCache(cacheType reflect.Type, ctx context.Context) any {
 	return m.component.(_RedisAccessor).embeddedRedis().NewCacheByType(cacheType, ctx)
 }
 

@@ -9,16 +9,17 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-type ClientMinder struct {
-	app.BaseFrameworkComponentMinder
+// ClientManager configures and closes a Hub Redis client.
+type ClientManager struct {
+	app.BaseComponentManager
 
 	Context context.Context `inject:""`
 
-	client app.FrameworkComponent
+	client app.ManagedComponent
 	option *Option
 }
 
-func (m *ClientMinder) InitComponent(component app.FrameworkComponent) {
+func (m *ClientManager) InitComponent(component app.ManagedComponent) {
 	m.client = component
 	m.option = &Option{}
 
@@ -56,11 +57,11 @@ func (m *ClientMinder) InitComponent(component app.FrameworkComponent) {
 	client.setRedisClient(m.Context, newRedisClient(redisOptions))
 }
 
-func (m *ClientMinder) Component() app.FrameworkComponent {
+func (m *ClientManager) Component() app.ManagedComponent {
 	return m.client
 }
 
-func (m *ClientMinder) AfterAppStop() {
+func (m *ClientManager) AfterAppStop() {
 	if client, ok := m.client.(interface{ closeRedisClient() }); ok {
 		client.closeRedisClient()
 	}

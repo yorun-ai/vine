@@ -23,7 +23,7 @@ type (
 	BindApplier = internaldi.BindApplier
 	// Binder declares type, instance, and factory bindings.
 	Binder = internaldi.Binder
-	// Binding configures the target and scope of one binding.
+	// Binding configures a target, scope, and optional WithDependencies callback.
 	Binding = internaldi.Binding
 	// Injector resolves dependencies by type.
 	Injector = internaldi.Injector

@@ -39,10 +39,10 @@ func (*databaseTestComponent) InitDao(addDao TypeAdder) {
 	addDao(T[*databaseTestDAO]())
 }
 
-func initTestDatabase(component app.FrameworkComponent) *DatabaseMinder {
-	minder := new(DatabaseMinder)
-	minder.InitComponent(component)
-	return minder
+func initTestDatabase(component app.ManagedComponent) *DatabaseManager {
+	manager := new(DatabaseManager)
+	manager.InitComponent(component)
+	return manager
 }
 
 type databaseTestConsumer struct {
@@ -55,14 +55,14 @@ func TestDatabaseInitComponentInitializesOptionAndDaoTypes(t *testing.T) {
 		connURL: connURL,
 	}
 
-	minder := initTestDatabase(component)
-	t.Cleanup(minder.AfterAppStop)
+	manager := initTestDatabase(component)
+	t.Cleanup(manager.AfterAppStop)
 
-	require.NotNil(t, minder.option)
-	assert.Equal(t, connURL, minder.option.ConnURL)
-	assert.Equal(t, 3, minder.option.MaxOpenConn)
-	assert.Equal(t, []reflect.Type{T[*databaseTestDAO]()}, minder.daoTypes)
-	assert.NotNil(t, minder.gormDB)
+	require.NotNil(t, manager.option)
+	assert.Equal(t, connURL, manager.option.ConnURL)
+	assert.Equal(t, 3, manager.option.MaxOpenConn)
+	assert.Equal(t, []reflect.Type{T[*databaseTestDAO]()}, manager.daoTypes)
+	assert.NotNil(t, manager.gormDB)
 
 	sharedGormDBsMu.Lock()
 	shared := sharedGormDBs[connURL]
@@ -76,16 +76,16 @@ func TestDatabaseBindProvidesExecutionScopedDao(t *testing.T) {
 	component := &databaseTestComponent{
 		connURL: connURL,
 	}
-	minder := initTestDatabase(component)
-	t.Cleanup(minder.AfterAppStop)
+	manager := initTestDatabase(component)
+	t.Cleanup(manager.AfterAppStop)
 
-	require.NoError(t, minder.gormDB.AutoMigrate(&databaseTestModel{}))
+	require.NoError(t, manager.gormDB.AutoMigrate(&databaseTestModel{}))
 
 	injector := di.NewInjector(
 		func(b *di.Binder) {
 			b.Bind(reflect.TypeFor[context.Context]()).ToInstance(context.Background())
 			b.BindInstance(logger.New("vine:test"))
-			minder.Bind(b)
+			manager.Bind(b)
 			b.Bind(T[*databaseTestConsumer]()).In(di.TransientScope)
 		},
 	)
@@ -107,8 +107,8 @@ func TestDatabaseAfterAppStopReleasesSharedConnection(t *testing.T) {
 		connURL: connURL,
 	}
 
-	minder := initTestDatabase(component)
-	minder.AfterAppStop()
+	manager := initTestDatabase(component)
+	manager.AfterAppStop()
 
 	sharedGormDBsMu.Lock()
 	_, ok := sharedGormDBs[connURL]

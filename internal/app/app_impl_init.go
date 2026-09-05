@@ -130,18 +130,19 @@ func (a *_AppImpl) initComponents() {
 		return
 	}
 
-	frameworkComponentTypes := []reflect.Type{}
+	managedComponentTypes := []reflect.Type{}
 	for _, componentType := range componentTypes {
 		if isComponentType(componentType) {
 			continue
 		}
-		frameworkComponentTypes = append(frameworkComponentTypes, componentType)
+		managedComponentTypes = append(managedComponentTypes, componentType)
 	}
 
-	compMinderTypeMap := resolveFrameworkComponentMinderTypes(frameworkComponentTypes)
-	minderTypes := map[reflect.Type]struct{}{}
-	for _, minderType := range compMinderTypeMap {
-		minderTypes[minderType] = struct{}{}
+	componentManagerTypes := resolveComponentManagerTypes(managedComponentTypes)
+	managers := make(map[reflect.Type]ComponentManager, len(managedComponentTypes))
+	managerTypes := map[reflect.Type]struct{}{}
+	for _, managerType := range componentManagerTypes {
+		managerTypes[managerType] = struct{}{}
 	}
 	injector := a.injector.SubInjector(
 		a.bindClients,
@@ -149,14 +150,22 @@ func (a *_AppImpl) initComponents() {
 		a.bindLaunchers,
 		func(b *di.Binder) {
 			for _, componentType := range componentTypes {
-				b.Bind(componentType).In(di.SingletonScope)
+				binding := b.Bind(componentType).In(di.SingletonScope)
+				if managerType, managed := componentManagerTypes[componentType]; managed {
+					binding.WithDependencies([]reflect.Type{managerType}, func(instance reflect.Value, dependencies []reflect.Value) {
+						component := instance.Interface().(ManagedComponent)
+						manager := dependencies[0].Interface().(ComponentManager)
+						manager.InitComponent(component)
+						managers[componentType] = manager
+					})
+				}
 			}
-			for minderType := range minderTypes {
-				b.Bind(minderType).In(di.TransientScope)
+			for managerType := range managerTypes {
+				b.Bind(managerType).In(di.TransientScope)
 			}
 		})
 
-	a.frameworkComponentMinders = make([]FrameworkComponentMinder, 0, len(componentTypes))
+	a.componentManagers = make([]ComponentManager, 0, len(componentTypes))
 	a.components = make([]Component, 0, len(componentTypes))
 	a.componentLifecycles = make([]ComponentLifecycle, 0, len(componentTypes))
 	for _, componentType := range componentTypes {
@@ -167,21 +176,21 @@ func (a *_AppImpl) initComponents() {
 			continue
 		}
 
-		component := injector.Get(componentType).Interface().(FrameworkComponent)
-		minderType := compMinderTypeMap[componentType]
-		minder := injector.Get(minderType).Interface().(FrameworkComponentMinder)
-		minder.InitComponent(component)
-		a.frameworkComponentMinders = append(a.frameworkComponentMinders, minder)
-		a.componentLifecycles = append(a.componentLifecycles, minder)
+		// Dependency resolution may initialize this component ahead of registration
+		// order. Keep lifecycle scheduling in registration order nonetheless.
+		injector.Get(componentType)
+		manager := managers[componentType]
+		a.componentManagers = append(a.componentManagers, manager)
+		a.componentLifecycles = append(a.componentLifecycles, manager)
 	}
 }
 
 func (a *_AppImpl) bindComponents(b *di.Binder) {
-	for _, componentMinder := range a.frameworkComponentMinders {
+	for _, componentManager := range a.componentManagers {
 		// Nested injectors should only see user-declared component types.
-		// Framework components stay internal and may only publish extra bindings.
-		b.BindInstance(componentMinder.Component())
-		componentMinder.Bind(b)
+		// Managers stay internal and may only publish extra bindings.
+		b.BindInstance(componentManager.Component())
+		componentManager.Bind(b)
 	}
 	for _, component := range a.components {
 		b.BindInstance(component)
@@ -279,8 +288,8 @@ func checkComponentTypes(componentTypes []reflect.Type) {
 		if isComponent {
 			continue
 		}
-		vpre.Check(componentType.Implements(T[FrameworkComponent]()),
-			"component type %s must implement %s or %s", componentType, T[Component](), T[FrameworkComponent]())
+		vpre.Check(componentType.Implements(T[ManagedComponent]()),
+			"component type %s must implement %s or %s", componentType, T[Component](), T[ManagedComponent]())
 	}
 }
 

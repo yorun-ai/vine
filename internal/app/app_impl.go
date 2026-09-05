@@ -52,11 +52,11 @@ type _AppImpl struct {
 
 	inprocFlag *InternalInprocFlag
 
-	injector                  di.PlainInjector
-	frameworkComponentMinders []FrameworkComponentMinder
-	components                []Component
-	componentLifecycles       []ComponentLifecycle
-	modules                   []Module
+	injector            di.PlainInjector
+	componentManagers   []ComponentManager
+	components          []Component
+	componentLifecycles []ComponentLifecycle
+	modules             []Module
 
 	httpServer *http.Server
 	httpWG     sync.WaitGroup

@@ -9,25 +9,25 @@ import (
 
 type testComponent struct {
 	BaseComponent
-	userComponent FrameworkComponent
+	userComponent ManagedComponent
 }
 
-type testFrameworkComponent struct {
-	BaseFrameworkComponent[*testFrameworkComponent]
-	BaseFrameworkComponentMinder
-	userComponent FrameworkComponent
+type testManagedComponent struct {
+	BaseManagedComponent[*testManagedComponent]
+	BaseComponentManager
+	userComponent ManagedComponent
 }
 
-func (c *testFrameworkComponent) InitComponent(userComponent FrameworkComponent) {
+func (c *testManagedComponent) InitComponent(userComponent ManagedComponent) {
 	c.userComponent = userComponent
 }
 
-func (c *testFrameworkComponent) Component() FrameworkComponent {
+func (c *testManagedComponent) Component() ManagedComponent {
 	return c.userComponent
 }
 
 type testUserComponent struct {
-	testFrameworkComponent
+	testManagedComponent
 }
 
 type testComponentAppSpec struct {
@@ -42,7 +42,7 @@ func (*testComponentAppSpec) InitComponents(addComponent TypeAdder) {
 	addComponent(T[*testUserComponent]())
 }
 
-func TestInitComponentsPassesUserComponentToFrameworkComponent(t *testing.T) {
+func TestInitComponentsPassesUserComponentToManagedComponent(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
@@ -51,8 +51,8 @@ func TestInitComponentsPassesUserComponentToFrameworkComponent(t *testing.T) {
 
 	app.initComponents()
 
-	require.Len(t, app.frameworkComponentMinders, 1)
-	fxComponent, ok := app.frameworkComponentMinders[0].(*testFrameworkComponent)
+	require.Len(t, app.componentManagers, 1)
+	fxComponent, ok := app.componentManagers[0].(*testManagedComponent)
 	require.True(t, ok)
 	assert.NotNil(t, fxComponent.userComponent)
 	_, ok = fxComponent.userComponent.(*testUserComponent)

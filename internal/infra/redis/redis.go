@@ -34,7 +34,7 @@ type _RedisAccessor interface {
 }
 
 type Redis struct {
-	app.BaseFrameworkComponent[*RedisMinder]
+	app.BaseManagedComponent[*RedisManager]
 	goredis.Cmdable
 }
 
@@ -54,17 +54,18 @@ func (r *Redis) embeddedRedis() *Redis {
 	return r
 }
 
-type RedisMinder struct {
-	app.BaseFrameworkComponentMinder
+// RedisManager owns the Redis client and cache and lock dependency bindings.
+type RedisManager struct {
+	app.BaseComponentManager
 
-	component   app.FrameworkComponent
+	component   app.ManagedComponent
 	option      *Option
 	client      *goredis.Client
 	lockerTypes []reflect.Type
 	cacheTypes  []reflect.Type
 }
 
-func (m *RedisMinder) InitComponent(component app.FrameworkComponent) {
+func (m *RedisManager) InitComponent(component app.ManagedComponent) {
 	m.component = component
 	m.option = defaultOption()
 	m.lockerTypes = []reflect.Type{}
@@ -85,11 +86,11 @@ func (m *RedisMinder) InitComponent(component app.FrameworkComponent) {
 	component.(_RedisAccessor).setCmdable(m.client)
 }
 
-func (m *RedisMinder) Component() app.FrameworkComponent {
+func (m *RedisManager) Component() app.ManagedComponent {
 	return m.component
 }
 
-func (m *RedisMinder) Bind(b *di.Binder) {
+func (m *RedisManager) Bind(b *di.Binder) {
 	for _, lockerType := range m.lockerTypes {
 		kind := lockerType
 		b.Bind(kind).ToFactory(func(ctx context.Context) any {
@@ -104,7 +105,7 @@ func (m *RedisMinder) Bind(b *di.Binder) {
 	}
 }
 
-func (m *RedisMinder) AfterAppStop() {
+func (m *RedisManager) AfterAppStop() {
 	_ = m.client.Close()
 }
 

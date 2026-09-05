@@ -154,7 +154,7 @@ func TestRedisNewLockerByTypeUsesDefaultTypePrefixWhenNotOverridden(t *testing.T
 	assert.Equal(t, "go.yorun.ai_vine_internal_infra_redis._TestDefaultLocker", locker.keyPrefix)
 }
 
-func TestRedisMinderBindProvidesLocker(t *testing.T) {
+func TestRedisManagerBindProvidesLocker(t *testing.T) {
 	original := newRedisClient
 	t.Cleanup(func() {
 		newRedisClient = original
@@ -165,13 +165,13 @@ func TestRedisMinderBindProvidesLocker(t *testing.T) {
 	}
 
 	component := new(_TestLockerRedis)
-	minder := new(RedisMinder)
-	minder.InitComponent(component)
-	t.Cleanup(minder.AfterAppStop)
+	manager := new(RedisManager)
+	manager.InitComponent(component)
+	t.Cleanup(manager.AfterAppStop)
 
 	injector := di.NewInjector(func(b *di.Binder) {
 		b.Bind(reflect.TypeFor[context.Context]()).ToInstance(context.Background())
-		minder.Bind(b)
+		manager.Bind(b)
 		b.Bind(reflect.TypeFor[*_TestLockerConsumer]()).In(di.TransientScope)
 	})
 
@@ -183,26 +183,26 @@ func TestRedisMinderBindProvidesLocker(t *testing.T) {
 }
 
 func TestInstantiateLockerUsesDefaultTypePrefixWhenNotOverridden(t *testing.T) {
-	minder := &RedisMinder{client: goredis.NewClient(&goredis.Options{Addr: "127.0.0.1:6379"})}
-	minder.component = &Redis{Cmdable: minder.client}
+	manager := &RedisManager{client: goredis.NewClient(&goredis.Options{Addr: "127.0.0.1:6379"})}
+	manager.component = &Redis{Cmdable: manager.client}
 	t.Cleanup(func() {
-		_ = minder.client.Close()
+		_ = manager.client.Close()
 	})
 
-	locker := minder.instantiateLocker(reflect.TypeFor[*_TestDefaultLocker](), context.Background()).(*_TestDefaultLocker)
+	locker := manager.instantiateLocker(reflect.TypeFor[*_TestDefaultLocker](), context.Background()).(*_TestDefaultLocker)
 
 	assert.Equal(t, "go.yorun.ai_vine_internal_infra_redis._TestDefaultLocker", locker.keyPrefix)
 }
 
 func TestInstantiateLockerRequiresNonEmptyOverriddenPrefix(t *testing.T) {
-	minder := &RedisMinder{client: goredis.NewClient(&goredis.Options{Addr: "127.0.0.1:6379"})}
-	minder.component = &Redis{Cmdable: minder.client}
+	manager := &RedisManager{client: goredis.NewClient(&goredis.Options{Addr: "127.0.0.1:6379"})}
+	manager.component = &Redis{Cmdable: manager.client}
 	t.Cleanup(func() {
-		_ = minder.client.Close()
+		_ = manager.client.Close()
 	})
 
 	assert.Panics(t, func() {
-		minder.instantiateLocker(reflect.TypeFor[*_TestEmptyPrefixLocker](), context.Background())
+		manager.instantiateLocker(reflect.TypeFor[*_TestEmptyPrefixLocker](), context.Background())
 	})
 }
 

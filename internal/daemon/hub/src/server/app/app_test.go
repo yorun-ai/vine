@@ -62,10 +62,10 @@ func collectServicerHandlerTypes(spec *HubApp) []reflect.Type {
 	return handlerTypes
 }
 
-func initTestConfigDatabase(component *repodb.HubDatabase) *rdb.DatabaseMinder {
-	minder := new(rdb.DatabaseMinder)
-	minder.InitComponent(component)
-	return minder
+func initTestConfigDatabase(component *repodb.HubDatabase) *rdb.DatabaseManager {
+	manager := new(rdb.DatabaseManager)
+	manager.InitComponent(component)
+	return manager
 }
 
 func sharedTestSQLitePath(t *testing.T) string {
@@ -341,8 +341,8 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForInitializerWithSQLite(t *test
 			DBSQLiteFile: sharedTestSQLitePath(t),
 		},
 	}
-	minder := initTestConfigDatabase(component)
-	t.Cleanup(minder.AfterAppStop)
+	manager := initTestConfigDatabase(component)
+	t.Cleanup(manager.AfterAppStop)
 	redisServer := redisserver.NewServerForTest()
 	t.Cleanup(redisServer.AfterAppStop)
 
@@ -361,7 +361,7 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForInitializerWithSQLite(t *test
 		func(b *di.Binder) {
 			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
 			b.BindInstance(logger.New("vine:test"))
-			minder.Bind(b)
+			manager.Bind(b)
 			b.BindInstance(redisServer)
 			b.Bind(di.T[*initializer.Initializer]()).In(di.SingletonScope)
 			b.Bind(di.T[*flag.Flag]()).ToInstance(spec.Flag)
@@ -384,14 +384,14 @@ func TestConfigDatabaseBindProvidesAppConfigRepoDAO(t *testing.T) {
 			DBSQLiteFile: sharedTestSQLitePath(t),
 		},
 	}
-	minder := initTestConfigDatabase(component)
-	t.Cleanup(minder.AfterAppStop)
+	manager := initTestConfigDatabase(component)
+	t.Cleanup(manager.AfterAppStop)
 
 	injector := di.NewInjector(
 		func(b *di.Binder) {
 			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
 			b.BindInstance(logger.New("vine:test"))
-			minder.Bind(b)
+			manager.Bind(b)
 			b.Bind(di.T[*repo.DBAppConfigRepo]()).In(di.TransientScope)
 		},
 	)
@@ -417,14 +417,14 @@ func newHubBoundAppConfigRepo(t *testing.T, spec *HubApp) core.AppConfigRepo {
 			DBSQLiteFile: sharedTestSQLitePath(t),
 		},
 	}
-	minder := initTestConfigDatabase(component)
-	t.Cleanup(minder.AfterAppStop)
+	manager := initTestConfigDatabase(component)
+	t.Cleanup(manager.AfterAppStop)
 
 	daoInjector := di.NewInjector(
 		func(b *di.Binder) {
 			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
 			b.BindInstance(logger.New("vine:test"))
-			minder.Bind(b)
+			manager.Bind(b)
 		},
 	)
 	daoExecution := daoInjector.StartExecution()

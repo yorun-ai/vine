@@ -111,7 +111,7 @@ func (r *Redis) NewLockerByType(lockerType reflect.Type, ctx context.Context) an
 	return locker
 }
 
-func (m *RedisMinder) instantiateLocker(lockerType reflect.Type, ctx context.Context) any {
+func (m *RedisManager) instantiateLocker(lockerType reflect.Type, ctx context.Context) any {
 	return m.component.(_RedisAccessor).embeddedRedis().NewLockerByType(lockerType, ctx)
 }
 

@@ -43,7 +43,7 @@ type _RedisClientSetter interface {
 }
 
 type Client struct {
-	app.BaseFrameworkComponent[*ClientMinder]
+	app.BaseManagedComponent[*ClientManager]
 
 	ctx         context.Context
 	redisClient *redis.Client

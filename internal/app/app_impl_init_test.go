@@ -42,27 +42,27 @@ type testSpecBoundDep struct {
 	Value string
 }
 
-type testDepsFrameworkComponent struct {
-	BaseFrameworkComponent[*testDepsFrameworkComponent]
-	BaseFrameworkComponentMinder
+type testDepsManagedComponent struct {
+	BaseManagedComponent[*testDepsManagedComponent]
+	BaseComponentManager
 
-	component FrameworkComponent
+	component ManagedComponent
 }
 
-func (*testDepsFrameworkComponent) Bind(b *di.Binder) {
+func (*testDepsManagedComponent) Bind(b *di.Binder) {
 	b.BindInstance(&testComponentBoundDep{Value: "component"})
 }
 
-func (c *testDepsFrameworkComponent) InitComponent(component FrameworkComponent) {
+func (c *testDepsManagedComponent) InitComponent(component ManagedComponent) {
 	c.component = component
 }
 
-func (c *testDepsFrameworkComponent) Component() FrameworkComponent {
+func (c *testDepsManagedComponent) Component() ManagedComponent {
 	return c.component
 }
 
 type testDepsComponent struct {
-	testDepsFrameworkComponent
+	testDepsManagedComponent
 }
 
 type testDepsModule struct {
@@ -95,7 +95,7 @@ type testDepsConsumer struct {
 }
 
 type testSingletonDepComponent struct {
-	testSingletonDepFrameworkComponent
+	testSingletonDepManagedComponent
 }
 
 func (c *testSingletonDepComponent) DIInit() {
@@ -103,67 +103,67 @@ func (c *testSingletonDepComponent) DIInit() {
 }
 
 type testClientComponent struct {
-	testClientFrameworkComponent
+	testClientManagedComponent
 
 	Client *rpcclient.Client `inject:""`
 }
 
 type testTaskLauncherComponent struct {
-	testTaskLauncherFrameworkComponent
+	testTaskLauncherManagedComponent
 
 	Launcher testComponentTaskLauncher `inject:""`
 }
 
 type testEmitterComponent struct {
-	testEmitterFrameworkComponent
+	testEmitterManagedComponent
 
 	Emitter testEventerEmitter `inject:""`
 }
 
 type testSingletonConsumerComponent struct {
-	testSingletonConsumerFrameworkComponent
+	testSingletonConsumerManagedComponent
 
 	Dependency *testSingletonDepComponent `inject:""`
 }
 
-type testSingletonDepFrameworkComponent struct {
-	testFrameworkComponent
+type testSingletonDepManagedComponent struct {
+	testManagedComponent
 }
 
-func (*testSingletonDepFrameworkComponent) minderType() reflect.Type {
-	return T[*testSingletonDepFrameworkComponent]()
+func (*testSingletonDepManagedComponent) managerType() reflect.Type {
+	return T[*testSingletonDepManagedComponent]()
 }
 
-type testSingletonConsumerFrameworkComponent struct {
-	testFrameworkComponent
+type testSingletonConsumerManagedComponent struct {
+	testManagedComponent
 }
 
-func (*testSingletonConsumerFrameworkComponent) minderType() reflect.Type {
-	return T[*testSingletonConsumerFrameworkComponent]()
+func (*testSingletonConsumerManagedComponent) managerType() reflect.Type {
+	return T[*testSingletonConsumerManagedComponent]()
 }
 
-type testClientFrameworkComponent struct {
-	testFrameworkComponent
+type testClientManagedComponent struct {
+	testManagedComponent
 }
 
-func (*testClientFrameworkComponent) minderType() reflect.Type {
-	return T[*testClientFrameworkComponent]()
+func (*testClientManagedComponent) managerType() reflect.Type {
+	return T[*testClientManagedComponent]()
 }
 
-type testTaskLauncherFrameworkComponent struct {
-	testFrameworkComponent
+type testTaskLauncherManagedComponent struct {
+	testManagedComponent
 }
 
-func (*testTaskLauncherFrameworkComponent) minderType() reflect.Type {
-	return T[*testTaskLauncherFrameworkComponent]()
+func (*testTaskLauncherManagedComponent) managerType() reflect.Type {
+	return T[*testTaskLauncherManagedComponent]()
 }
 
-type testEmitterFrameworkComponent struct {
-	testFrameworkComponent
+type testEmitterManagedComponent struct {
+	testManagedComponent
 }
 
-func (*testEmitterFrameworkComponent) minderType() reflect.Type {
-	return T[*testEmitterFrameworkComponent]()
+func (*testEmitterManagedComponent) managerType() reflect.Type {
+	return T[*testEmitterManagedComponent]()
 }
 
 type testSimpleSingletonDepComponent struct {
@@ -525,11 +525,11 @@ func TestInitComponentsBindsComponentTypesAsSingletons(t *testing.T) {
 
 	app.initComponents()
 
-	dependency, ok := app.frameworkComponentMinders[0].Component().(*testSingletonDepComponent)
+	dependency, ok := app.componentManagers[0].Component().(*testSingletonDepComponent)
 	if !assert.True(t, ok) {
 		return
 	}
-	consumer, ok := app.frameworkComponentMinders[1].Component().(*testSingletonConsumerComponent)
+	consumer, ok := app.componentManagers[1].Component().(*testSingletonConsumerComponent)
 	if !assert.True(t, ok) {
 		return
 	}
@@ -572,7 +572,7 @@ func TestInitComponentsProvidesRpcClient(t *testing.T) {
 
 	app.initComponents()
 
-	component, ok := app.frameworkComponentMinders[0].Component().(*testClientComponent)
+	component, ok := app.componentManagers[0].Component().(*testClientComponent)
 	if !assert.True(t, ok) {
 		return
 	}
@@ -592,7 +592,7 @@ func TestInitComponentsProvidesTaskLauncher(t *testing.T) {
 
 	app.initComponents()
 
-	component, ok := app.frameworkComponentMinders[0].Component().(*testTaskLauncherComponent)
+	component, ok := app.componentManagers[0].Component().(*testTaskLauncherComponent)
 	if !assert.True(t, ok) {
 		return
 	}
@@ -612,7 +612,7 @@ func TestInitComponentsProvidesEmitter(t *testing.T) {
 
 	app.initComponents()
 
-	component, ok := app.frameworkComponentMinders[0].Component().(*testEmitterComponent)
+	component, ok := app.componentManagers[0].Component().(*testEmitterComponent)
 	if !assert.True(t, ok) {
 		return
 	}
@@ -654,7 +654,7 @@ func TestBindComponentsExposesSimpleComponentBindings(t *testing.T) {
 	assert.Equal(t, "simple", simpleDep.Value)
 }
 
-func TestInitComponentsBindsFrameworkComponentMinderTypes(t *testing.T) {
+func TestInitComponentsBindsComponentManagerTypes(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
@@ -663,14 +663,14 @@ func TestInitComponentsBindsFrameworkComponentMinderTypes(t *testing.T) {
 
 	app.initComponents()
 
-	if len(app.frameworkComponentMinders) != 2 {
-		t.Fatalf("expected 2 component minders, got %d", len(app.frameworkComponentMinders))
+	if len(app.componentManagers) != 2 {
+		t.Fatalf("expected 2 component managers, got %d", len(app.componentManagers))
 	}
-	if _, ok := app.frameworkComponentMinders[0].(*testSingletonDepFrameworkComponent); !ok {
-		t.Fatalf("expected first component minder type *testSingletonDepFrameworkComponent, got %T", app.frameworkComponentMinders[0])
+	if _, ok := app.componentManagers[0].(*testSingletonDepManagedComponent); !ok {
+		t.Fatalf("expected first component manager type *testSingletonDepManagedComponent, got %T", app.componentManagers[0])
 	}
-	if _, ok := app.frameworkComponentMinders[1].(*testSingletonConsumerFrameworkComponent); !ok {
-		t.Fatalf("expected second component minder type *testSingletonConsumerFrameworkComponent, got %T", app.frameworkComponentMinders[1])
+	if _, ok := app.componentManagers[1].(*testSingletonConsumerManagedComponent); !ok {
+		t.Fatalf("expected second component manager type *testSingletonConsumerManagedComponent, got %T", app.componentManagers[1])
 	}
 }
 
@@ -696,4 +696,173 @@ func TestInitModulesBindsModuleTypesAsSingletons(t *testing.T) {
 
 	assert.Same(t, dependency, consumer.Dependency)
 	assert.Equal(t, 1, *testSingletonModuleInitCount)
+}
+
+type managedReadyLog struct {
+	events          []string
+	initializations int
+}
+
+type ManagedReadyResource struct {
+	BaseManagedComponent[*managedReadyManager]
+	Log        *managedReadyLog `inject:""`
+	configured bool
+	ready      bool
+}
+
+func (r *ManagedReadyResource) DIInit() { r.configured = true }
+
+type managedReadyOtherResource struct{ ManagedReadyResource }
+
+type managedReadyManager struct {
+	BaseComponentManager
+	component ManagedComponent
+}
+
+func (m *managedReadyManager) InitComponent(component ManagedComponent) {
+	m.component = component
+	var resource *ManagedReadyResource
+	switch c := component.(type) {
+	case *ManagedReadyResource:
+		resource = c
+	case *managedReadyOtherResource:
+		resource = &c.ManagedReadyResource
+	}
+	if !resource.configured {
+		panic("component DIInit must run before manager")
+	}
+	resource.ready = true
+	resource.Log.initializations++
+}
+func (m *managedReadyManager) Component() ManagedComponent { return m.component }
+func (m *managedReadyManager) BeforeAppStart() error {
+	switch c := m.component.(type) {
+	case *ManagedReadyResource:
+		c.Log.events = append(c.Log.events, "resource.start")
+	case *managedReadyOtherResource:
+		c.Log.events = append(c.Log.events, "other.start")
+	}
+	return nil
+}
+func (m *managedReadyManager) AfterAppStop() {
+	switch c := m.component.(type) {
+	case *ManagedReadyResource:
+		c.Log.events = append(c.Log.events, "resource.stop")
+	case *managedReadyOtherResource:
+		c.Log.events = append(c.Log.events, "other.stop")
+	}
+}
+
+type managedReadyConsumer struct {
+	BaseComponent
+	Resource *ManagedReadyResource      `inject:""`
+	Other    *managedReadyOtherResource `inject:""`
+}
+
+func (c *managedReadyConsumer) DIInit() {
+	if !c.Resource.ready || !c.Other.ready {
+		panic("resource manager has not initialized")
+	}
+}
+func (c *managedReadyConsumer) BeforeAppStart() error {
+	c.Resource.Log.events = append(c.Resource.Log.events, "consumer.start")
+	return nil
+}
+func (c *managedReadyConsumer) AfterAppStop() {
+	c.Resource.Log.events = append(c.Resource.Log.events, "consumer.stop")
+}
+
+type managedReadyAppSpec struct {
+	Application
+	componentTypes []reflect.Type
+}
+
+func (*managedReadyAppSpec) Name() string { return "test.managedready" }
+func (s *managedReadyAppSpec) InitComponents(add TypeAdder) {
+	for _, kind := range s.componentTypes {
+		add(kind)
+	}
+}
+
+func TestInitComponentsReadiesManagedDependenciesBeforeConsumer(t *testing.T) {
+	log := new(managedReadyLog)
+	flags := _Flags{}
+	flags.EnsureRunFlag()
+	flags.InitInprocFlag(false)
+	a := newApp(&managedReadyAppSpec{componentTypes: []reflect.Type{
+		T[*managedReadyConsumer](), T[*managedReadyOtherResource](), T[*ManagedReadyResource](),
+	}}, flags)
+	a.initInjector()
+	a.injector = a.injector.SubInjector(func(b *di.Binder) { b.BindInstance(log) })
+	a.initComponents()
+	assert.Equal(t, 2, log.initializations)
+	consumer := a.components[0].(*managedReadyConsumer)
+	assert.Same(t, consumer.Other, a.componentManagers[0].Component())
+	assert.Same(t, consumer.Resource, a.componentManagers[1].Component())
+	assert.NotSame(t, a.componentManagers[0], a.componentManagers[1])
+	child := a.injector.SubInjector(a.bindComponents)
+	assert.Same(t, consumer.Resource, child.Get(T[*ManagedReadyResource]()).Interface())
+	assert.Equal(t, 2, log.initializations)
+	assert.NoError(t, a.beforeAppStart())
+	a.afterAppStop()
+	assert.Equal(t, []string{"consumer.start", "other.start", "resource.start", "resource.stop", "other.stop", "consumer.stop"}, log.events)
+}
+
+type managedReadyViaManager struct {
+	BaseManagedComponent[*managedReadyDependentManager]
+	ready bool
+}
+
+type managedReadyDependentManager struct {
+	BaseComponentManager
+	Resource  *ManagedReadyResource `inject:""`
+	component *managedReadyViaManager
+}
+
+func (m *managedReadyDependentManager) InitComponent(component ManagedComponent) {
+	if !m.Resource.ready {
+		panic("manager dependency is not ready")
+	}
+	m.component = component.(*managedReadyViaManager)
+	m.component.ready = true
+}
+func (m *managedReadyDependentManager) Component() ManagedComponent { return m.component }
+
+type managedReadyCycle struct {
+	BaseManagedComponent[*managedReadyCycleManager]
+}
+type managedReadyCycleManager struct {
+	BaseComponentManager
+	Consumer *managedReadyCycleConsumer `inject:""`
+}
+type managedReadyCycleConsumer struct {
+	BaseComponent
+	Resource *managedReadyCycle `inject:""`
+}
+
+func TestInitComponentsReadiesManagerDependencies(t *testing.T) {
+	flags := _Flags{}
+	flags.EnsureRunFlag()
+	flags.InitInprocFlag(false)
+	a := newApp(&managedReadyAppSpec{componentTypes: []reflect.Type{
+		T[*managedReadyViaManager](), T[*ManagedReadyResource](),
+	}}, flags)
+	a.initInjector()
+	a.injector = a.injector.SubInjector(func(b *di.Binder) { b.BindInstance(new(managedReadyLog)) })
+	a.initComponents()
+	manager := a.componentManagers[0].(*managedReadyDependentManager)
+	assert.True(t, manager.component.ready)
+	assert.True(t, manager.Resource.ready)
+	assert.Same(t, manager.Resource, a.componentManagers[1].Component())
+}
+
+func TestInitComponentsRejectsCyclesThroughManager(t *testing.T) {
+	flags := _Flags{}
+	flags.EnsureRunFlag()
+	flags.InitInprocFlag(false)
+	a := newApp(&managedReadyAppSpec{componentTypes: []reflect.Type{
+		T[*managedReadyCycleConsumer](), T[*managedReadyCycle](),
+	}}, flags)
+	a.initInjector()
+	assert.PanicsWithError(t, "cycle dependency detected: *app.managedReadyCycle -> *app.managedReadyCycleManager -> *app.managedReadyCycleConsumer -> *app.managedReadyCycle", a.initComponents)
 }
