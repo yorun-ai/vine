@@ -10,7 +10,12 @@ are not part of the public compatibility commitment.
 
 ### Changed
 
-- Portal rule writes now share Core validation across Admin API and YAML imports. Imports preflight rule constraints and reject built-in rule replacements before writing imported entities.
+- Configuration versions now advance only when values change. Certificate issuer,
+  domains, and validity dates are derived from certificate content across the
+  Admin API, startup seeds, and Dashboard imports.
+- Configuration, site, rule, and certificate inputs are validated consistently
+  across the Admin API and YAML imports. Imports validate all supplied items
+  before writing and reject replacements of built-in Dashboard sites and rules.
 
 - Portal rules use flat `match*` and `route*` fields across Go, Admin API, Redis, Dashboard, and YAML. Existing database columns are migrated. Legacy YAML fields remain supported with warnings; mixing legacy and new fields in one rule is rejected. Upgrade Hub and Portal together and regenerate Admin clients.
 
