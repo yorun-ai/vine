@@ -75,6 +75,7 @@ func TestMaintenanceServiceApplySeedYamlUpdatesSelectedItem(t *testing.T) {
 	}}
 	service := &MaintenanceServiceServerImpl{
 		AppConfigRepo: configRepo,
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 	}
 
 	service.ApplySeedYaml(`
@@ -121,6 +122,7 @@ func TestMaintenanceServiceSeedYamlDoesNotExposeVineField(t *testing.T) {
 	}}
 	service := &MaintenanceServiceServerImpl{
 		EntryRepo: entryRepo,
+		SiteCore:  &core.PortalSiteCore{PortalSiteRepo: entryRepo},
 		RuleRepo:  ruleRepo,
 		RuleCore:  &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
 	}
@@ -316,5 +318,23 @@ func TestMaintenanceUsesDomainValidationForBothYAMLVocabularies(t *testing.T) {
 			service.ApplySeedYaml(content, []skeled.SeedItemSelection{{Kind: seedKindPortalRule, Name: "invalid"}})
 		})
 		require.Empty(t, repo.items)
+	}
+}
+
+func TestMaintenancePreflightsSitesAndCertificatesBeforeWriting(t *testing.T) {
+	for name, invalid := range map[string]string{
+		"site":        "portalSites:\n  - name: invalid\n    type: WEBGW\n    actorSkelName: demo.Actor\n    actorVia: client\n",
+		"certificate": "portalCerts:\n  - name: invalid\n    publicKeyBase64: invalid\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			configs := &_MaintenanceServiceAppConfigRepo{items: map[string]*core.AppConfig{}}
+			target := &MaintenanceServiceServerImpl{AppConfigCore: &core.AppConfigCore{AppConfigRepo: configs}, SiteCore: &core.PortalSiteCore{}, CertCore: &core.PortalCertCore{}}
+			content := "appConfigs:\n  - name: pending\n    value: test\n" + invalid
+			require.Panics(t, func() { target.PreviewSeedYaml(content) })
+			require.Panics(t, func() {
+				target.ApplySeedYaml(content, []skeled.SeedItemSelection{{Kind: seedKindAppConfig, Name: "pending"}})
+			})
+			require.Empty(t, configs.items)
+		})
 	}
 }

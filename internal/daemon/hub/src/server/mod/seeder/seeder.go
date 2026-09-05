@@ -15,12 +15,12 @@ type Seeder struct {
 	Flag   *flag.Flag     `inject:""`
 	Logger *logger.Logger `inject:""`
 
-	AppConfigRepo core.AppConfigRepo   `inject:""`
 	MetadataRepo  core.MetadataRepo    `inject:""`
 	RuleRepo      core.PortalRuleRepo  `inject:""`
 	RuleCore      *core.PortalRuleCore `inject:""`
-	CertRepo      core.PortalCertRepo  `inject:""`
-	EntryRepo     core.PortalSiteRepo  `inject:""`
+	AppConfigCore *core.AppConfigCore  `inject:""`
+	SiteCore      *core.PortalSiteCore `inject:""`
+	CertCore      *core.PortalCertCore `inject:""`
 
 	payload *_SettingsYAMLPayload
 }
@@ -54,14 +54,17 @@ func (s *Seeder) loadSeedYAML() {
 	payload, err := vfile.ReadAsYaml[*_SettingsYAMLPayload](s.Flag.SeedYAMLPath)
 	ex.PanicIfError(err)
 
+	for _, item := range payload.AppConfigs {
+		s.AppConfigCore.Validate(*item.ToCoreAppConfig())
+	}
 	for _, site := range payload.PortalEntries {
-		current, ok := s.EntryRepo.GetEntryByName(site.Name)
-		ex.PanicNewIfNot(!ok || !current.BuiltIn,
-			ex.OperationFailed,
-			ex.F("portal site %q conflicts with built-in site", site.Name))
+		s.SiteCore.Validate(*site.ToCorePortalSite())
 	}
 	for _, rule := range payload.PortalRules {
 		s.RuleCore.Validate(*rule.ToCorePortalRule())
+	}
+	for _, cert := range payload.PortalCerts {
+		s.CertCore.Validate(*cert.ToCorePortalCert())
 	}
 
 	s.payload = payload
@@ -69,16 +72,16 @@ func (s *Seeder) loadSeedYAML() {
 
 func (s *Seeder) applySeed() {
 	for _, item := range s.payload.AppConfigs {
-		s.AppConfigRepo.SaveItem(item.ToCoreAppConfig(nil))
+		s.AppConfigCore.Save(*item.ToCoreAppConfig())
 	}
 	for _, site := range s.payload.PortalEntries {
-		s.EntryRepo.SaveEntry(site.ToCorePortalSite(nil))
+		s.SiteCore.Save(*site.ToCorePortalSite())
 	}
 	for _, rule := range s.payload.PortalRules {
 		s.RuleCore.Save(*rule.ToCorePortalRule())
 	}
 	for _, cert := range s.payload.PortalCerts {
-		s.CertRepo.SaveCert(cert.ToCorePortalCert(nil))
+		s.CertCore.Save(*cert.ToCorePortalCert())
 	}
 }
 
@@ -89,19 +92,16 @@ func (s *Seeder) applyOverrideSeed() bool {
 	}
 
 	for _, item := range payload.AppConfigs {
-		current, _ := s.AppConfigRepo.GetItemByName(item.Name)
-		s.AppConfigRepo.SaveItem(item.ToCoreAppConfig(current))
+		s.AppConfigCore.Save(*item.ToCoreAppConfig())
 	}
 	for _, site := range payload.PortalEntries {
-		current, _ := s.EntryRepo.GetEntryByName(site.Name)
-		s.EntryRepo.SaveEntry(site.ToCorePortalSite(current))
+		s.SiteCore.Save(*site.ToCorePortalSite())
 	}
 	for _, rule := range payload.PortalRules {
 		s.RuleCore.Save(*rule.ToCorePortalRule())
 	}
 	for _, cert := range payload.PortalCerts {
-		current, _ := s.CertRepo.GetCertByName(cert.Name)
-		s.CertRepo.SaveCert(cert.ToCorePortalCert(current))
+		s.CertCore.Save(*cert.ToCorePortalCert())
 	}
 
 	return true

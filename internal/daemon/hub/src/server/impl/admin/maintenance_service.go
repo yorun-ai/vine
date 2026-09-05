@@ -26,6 +26,9 @@ type MaintenanceServiceServerImpl struct {
 	EntryRepo     core.PortalSiteRepo  `inject:""`
 	RuleRepo      core.PortalRuleRepo  `inject:""`
 	RuleCore      *core.PortalRuleCore `inject:""`
+	AppConfigCore *core.AppConfigCore  `inject:""`
+	SiteCore      *core.PortalSiteCore `inject:""`
+	CertCore      *core.PortalCertCore `inject:""`
 	CertRepo      core.PortalCertRepo  `inject:""`
 }
 
@@ -112,6 +115,20 @@ func (s *MaintenanceServiceServerImpl) parseSeed(content string) *_SeedYAMLPaylo
 	payload, err := vcode.UnmarshalYaml[*_SeedYAMLPayload]([]byte(content))
 	ex.PanicNewIfNot(err == nil, ex.OperationFailed, ex.F("parse seed yaml failed: %v", err))
 	if payload != nil {
+		for _, item := range payload.AppConfigs {
+			s.AppConfigCore.Validate(item.toCore())
+		}
+		for i := range payload.PortalEntries {
+			entity := s.SiteCore.Validate(payload.PortalEntries[i].toCore())
+			payload.PortalEntries[i].Cors = _SeedPortalCors{Mode: string(entity.Cors.Mode), AllowedOrigins: entity.Cors.AllowedOrigins}
+		}
+		for i := range payload.PortalCerts {
+			entity := s.CertCore.Validate(payload.PortalCerts[i].toCore())
+			payload.PortalCerts[i].Issuer = entity.Issuer
+			payload.PortalCerts[i].Domains = entity.Domains
+			payload.PortalCerts[i].ValidFrom = entity.ValidFrom
+			payload.PortalCerts[i].ValidTo = entity.ValidTo
+		}
 		for i := range payload.PortalRules {
 			rule := &payload.PortalRules[i]
 			entity := s.RuleCore.Validate(rule.toCore())
@@ -213,22 +230,7 @@ func (s *MaintenanceServiceServerImpl) applyAppConfigs(items []_SeedAppConfig, s
 		if !hasSelection(selected, seedKindAppConfig, item.Name) {
 			continue
 		}
-		if current, ok := s.AppConfigRepo.GetItemByName(item.Name); ok {
-			next := *current
-			next.Value = item.Value
-			if next.Value != current.Value {
-				next.Version++
-			}
-			s.AppConfigRepo.SaveItem(&next)
-			continue
-		}
-
-		next := &core.AppConfig{
-			Name:    item.Name,
-			Value:   item.Value,
-			Version: 1,
-		}
-		s.AppConfigRepo.SaveItem(next)
+		s.AppConfigCore.Save(item.toCore())
 	}
 }
 
@@ -237,32 +239,7 @@ func (s *MaintenanceServiceServerImpl) applyPortalEntries(entries []_SeedPortalS
 		if !hasSelection(selected, seedKindPortalSite, entry.Name) {
 			continue
 		}
-		if current, ok := s.EntryRepo.GetEntryByName(entry.Name); ok {
-			next := *current
-			next.Type = core.PortalSiteType(entry.Type)
-			next.ActorSkelName = entry.ActorSkelName
-			next.ActorVia = entry.ActorVia
-			next.Cors = core.NormalizePortalCors(core.PortalCors{
-				Mode:           core.PortalCorsMode(entry.Cors.Mode),
-				AllowedOrigins: append([]string{}, entry.Cors.AllowedOrigins...),
-			})
-			next.WebName = entry.WebName
-			s.EntryRepo.SaveEntry(&next)
-			continue
-		}
-
-		next := &core.PortalSite{
-			Name:          entry.Name,
-			Type:          core.PortalSiteType(entry.Type),
-			ActorSkelName: entry.ActorSkelName,
-			ActorVia:      entry.ActorVia,
-			Cors: core.NormalizePortalCors(core.PortalCors{
-				Mode:           core.PortalCorsMode(entry.Cors.Mode),
-				AllowedOrigins: append([]string{}, entry.Cors.AllowedOrigins...),
-			}),
-			WebName: entry.WebName,
-		}
-		s.EntryRepo.SaveEntry(next)
+		s.SiteCore.Save(entry.toCore())
 	}
 }
 
@@ -280,28 +257,7 @@ func (s *MaintenanceServiceServerImpl) applyPortalCerts(certs []_SeedPortalCert,
 		if !hasSelection(selected, seedKindPortalCert, cert.Name) {
 			continue
 		}
-		if current, ok := s.CertRepo.GetCertByName(cert.Name); ok {
-			next := *current
-			next.Issuer = cert.Issuer
-			next.Domains = append([]string(nil), cert.Domains...)
-			next.PublicKeyBase64 = cert.PublicKeyBase64
-			next.PrivateKeyBase64 = cert.PrivateKeyBase64
-			next.ValidFrom = cert.ValidFrom
-			next.ValidTo = cert.ValidTo
-			s.CertRepo.SaveCert(&next)
-			continue
-		}
-
-		next := &core.PortalCert{
-			Name:             cert.Name,
-			Issuer:           cert.Issuer,
-			Domains:          append([]string(nil), cert.Domains...),
-			PublicKeyBase64:  cert.PublicKeyBase64,
-			PrivateKeyBase64: cert.PrivateKeyBase64,
-			ValidFrom:        cert.ValidFrom,
-			ValidTo:          cert.ValidTo,
-		}
-		s.CertRepo.SaveCert(next)
+		s.CertCore.Save(cert.toCore())
 	}
 }
 
@@ -395,4 +351,24 @@ func (r _SeedPortalRule) toCore() core.PortalRule {
 		MatchPathPrefix: r.MatchPathPrefix, RouteType: r.RouteType, RouteSiteName: r.RouteSiteName,
 		RoutePathPrefix: r.RoutePathPrefix, RouteRedirectionPattern: r.RouteRedirectionPattern,
 	}
+}
+
+func (i _SeedAppConfig) toCore() core.AppConfig {
+	return core.AppConfig{Name: i.Name, Value: i.Value}
+}
+func (s _SeedPortalSite) toCore() core.PortalSite {
+	return core.PortalSite{
+		Name:          s.Name,
+		Type:          core.PortalSiteType(s.Type),
+		ActorSkelName: s.ActorSkelName,
+		ActorVia:      s.ActorVia,
+		WebName:       s.WebName,
+		Cors: core.PortalCors{
+			Mode:           core.PortalCorsMode(s.Cors.Mode),
+			AllowedOrigins: append([]string{}, s.Cors.AllowedOrigins...),
+		},
+	}
+}
+func (c _SeedPortalCert) toCore() core.PortalCert {
+	return core.PortalCert{Name: c.Name, PublicKeyBase64: c.PublicKeyBase64, PrivateKeyBase64: c.PrivateKeyBase64}
 }

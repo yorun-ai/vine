@@ -18,7 +18,6 @@ type Sweeper struct {
 	Context        context.Context         `inject:""`
 	InprocFlag     *app.InternalInprocFlag `inject:""`
 	RegistryCore   *core.RegistryCore      `inject:""`
-	RegistryRepo   core.RegistryRepo       `inject:""`
 	PortalSiteRepo core.PortalSiteRepo     `inject:""`
 	SchemaRepo     core.SchemaRepo         `inject:""`
 	Syncer         *syncer.Syncer          `inject:""`
@@ -45,22 +44,7 @@ func (s *Sweeper) AfterAppStop() {
 }
 
 func (s *Sweeper) sweepExpiredLeases() {
-	refreshed := false
-	for {
-		leases := s.RegistryRepo.PopExpiredAppLeases()
-		if len(leases) == 0 {
-			break
-		}
-		for _, lease := range leases {
-			status, ok := s.RegistryRepo.GetAppStatus(lease.Name, lease.InstanceId)
-			if !ok || time.Now().Before(status.ExpiresAt) {
-				continue
-			}
-			s.RegistryCore.Unregister(lease.Name, lease.InstanceId)
-			refreshed = true
-		}
-	}
-	if !refreshed {
+	if !s.RegistryCore.SweepExpiredLeases() {
 		return
 	}
 	s.refreshSchemas()

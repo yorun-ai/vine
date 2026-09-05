@@ -10,7 +10,7 @@ import (
 var DashboardRpcServices = deriveDashboardRpcServiceNames()
 
 var DashboardRpcCoreEntry = core.PortalSite{
-	Name:          "vine.hub.admin.AdminActor-client-rpc",
+	Name:          core.DashboardRpcSiteName,
 	Type:          core.PortalSiteTypeRPCGW,
 	ActorSkelName: skeled.AdminActor{}.SkelName(),
 	ActorVia:      string(skel.ActorViaClient),
@@ -18,7 +18,7 @@ var DashboardRpcCoreEntry = core.PortalSite{
 }
 
 var DashboardWebCoreEntry = core.PortalSite{
-	Name:          "vine.hub.admin.DashboardWeb-web",
+	Name:          core.DashboardWebSiteName,
 	Type:          core.PortalSiteTypeWEBGW,
 	ActorSkelName: skeled.AdminActor{}.SkelName(),
 	ActorVia:      string(skel.ActorViaClient),
@@ -63,10 +63,7 @@ func (s *Seeder) seedDashboard() {
 // saveDashboardSite keeps the stable database id and refreshes built-in
 // site fields on every startup.
 func (s *Seeder) saveDashboardSite(site core.PortalSite) {
-	if oldEntry, ok := s.EntryRepo.GetEntryByName(site.Name); ok {
-		site.Id = oldEntry.Id
-	}
-	s.EntryRepo.SaveEntry(&site)
+	s.SiteCore.EnsureDashboardSite(site)
 }
 
 // saveDashboardRule refreshes built-in rule fields on every startup. Access

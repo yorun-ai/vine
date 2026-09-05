@@ -47,23 +47,8 @@ type _AppConfig struct {
 	Override bool   `yaml:"override"`
 }
 
-func (i _AppConfig) ToCoreAppConfig(current *core.AppConfig) *core.AppConfig {
-	version := 1
-	if current != nil {
-		version = current.Version
-		if current.Value != i.Value {
-			version++
-		}
-	}
-	config := &core.AppConfig{
-		Name:    i.Name,
-		Value:   i.Value,
-		Version: version,
-	}
-	if current != nil {
-		config.Id = current.Id
-	}
-	return config
+func (i _AppConfig) ToCoreAppConfig() *core.AppConfig {
+	return &core.AppConfig{Name: i.Name, Value: i.Value}
 }
 
 // Portal rule
@@ -112,11 +97,11 @@ type _PortalCors struct {
 	AllowedOrigins []string `yaml:"allowedOrigins"`
 }
 
-func (s _PortalSite) ToCorePortalSite(current *core.PortalSite) *core.PortalSite {
-	cors := core.NormalizePortalCors(core.PortalCors{
+func (s _PortalSite) ToCorePortalSite() *core.PortalSite {
+	cors := core.PortalCors{
 		Mode:           core.PortalCorsMode(s.Cors.Mode),
 		AllowedOrigins: append([]string{}, s.Cors.AllowedOrigins...),
-	})
+	}
 	site := &core.PortalSite{
 		Name:          s.Name,
 		Type:          core.PortalSiteType(s.Type),
@@ -124,10 +109,6 @@ func (s _PortalSite) ToCorePortalSite(current *core.PortalSite) *core.PortalSite
 		ActorVia:      s.ActorVia,
 		Cors:          cors,
 		WebName:       s.WebName,
-	}
-	if current != nil {
-		site.Id = current.Id
-		site.BuiltIn = current.BuiltIn
 	}
 	return site
 }
@@ -145,18 +126,11 @@ type _PortalCert struct {
 	Override         bool      `yaml:"override"`
 }
 
-func (c _PortalCert) ToCorePortalCert(current *core.PortalCert) *core.PortalCert {
+func (c _PortalCert) ToCorePortalCert() *core.PortalCert {
 	cert := &core.PortalCert{
 		Name:             c.Name,
-		Issuer:           c.Issuer,
-		Domains:          append([]string(nil), c.Domains...),
 		PublicKeyBase64:  c.PublicKeyBase64,
 		PrivateKeyBase64: c.PrivateKeyBase64,
-		ValidFrom:        c.ValidFrom,
-		ValidTo:          c.ValidTo,
-	}
-	if current != nil {
-		cert.Id = current.Id
 	}
 	return cert
 }

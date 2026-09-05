@@ -186,3 +186,60 @@ func TestMatchPortalSiteRpcgwServicesInDomainViewsMatchesActorVia(t *testing.T) 
 
 	assert.Equal(t, []string{"demo.AllViaService", "demo.ClientService"}, services)
 }
+
+func testUserSite() PortalSite {
+	return PortalSite{Name: "demo-web", Type: PortalSiteTypeWEBGW, ActorSkelName: "demo.Actor", ActorVia: "client", WebName: "demo.Web"}
+}
+
+func TestPortalSiteValidateWithoutStorage(t *testing.T) {
+	target := &PortalSiteCore{}
+	got := target.Validate(testUserSite())
+	require.Equal(t, PortalCorsModeSameDomain, got.Cors.Mode)
+	for name, mutate := range map[string]func(*PortalSite){
+		"name":        func(s *PortalSite) { s.Name = " " },
+		"reserved":    func(s *PortalSite) { s.Name = DashboardWebSiteName },
+		"type":        func(s *PortalSite) { s.Type = "unknown" },
+		"actor":       func(s *PortalSite) { s.ActorSkelName = "" },
+		"via":         func(s *PortalSite) { s.ActorVia = "unknown" },
+		"web":         func(s *PortalSite) { s.WebName = "" },
+		"cors mode":   func(s *PortalSite) { s.Cors.Mode = "unknown" },
+		"cors origin": func(s *PortalSite) { s.Cors.AllowedOrigins = []string{"https://demo.local/path"} },
+	} {
+		t.Run(name, func(t *testing.T) {
+			site := testUserSite()
+			mutate(&site)
+			require.Panics(t, func() { target.Validate(site) })
+		})
+	}
+}
+
+func TestPortalSiteSaveAndUpdateProtectIdentityAndValidate(t *testing.T) {
+	site := testUserSite()
+	site.Id = 7
+	repo := &portalSiteRepoSpy{entries: map[int]*PortalSite{7: &site}}
+	target := &PortalSiteCore{PortalSiteRepo: repo}
+	incoming := testUserSite()
+	incoming.Id, incoming.BuiltIn = 99, true
+	got := target.Save(incoming)
+	require.Equal(t, 7, got.Id)
+	require.False(t, got.BuiltIn)
+	require.Panics(t, func() { target.Update(7, PortalSiteUpdate{WebName: new("")}) })
+	require.Equal(t, "demo.Web", repo.entries[7].WebName)
+	repo.entries[7].BuiltIn = true
+	require.Panics(t, func() { target.Save(incoming) })
+	require.True(t, repo.entries[7].BuiltIn)
+}
+
+func TestEnsureDashboardSitePreservesIdentity(t *testing.T) {
+	site := testUserSite()
+	site.Name, site.Id = DashboardWebSiteName, 7
+	repo := &portalSiteRepoSpy{entries: map[int]*PortalSite{7: &site}}
+	target := &PortalSiteCore{PortalSiteRepo: repo}
+	incoming := site
+	incoming.Id = 99
+	target.EnsureDashboardSite(incoming)
+	require.True(t, repo.entries[7].BuiltIn)
+	require.Len(t, repo.entries, 1)
+	require.Panics(t, func() { target.Save(site) })
+	require.Panics(t, func() { target.EnsureDashboardSite(testUserSite()) })
+}

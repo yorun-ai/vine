@@ -1,7 +1,14 @@
 package seeder
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/base64"
 	"fmt"
+	"math/big"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -51,10 +58,10 @@ portalRules:
     builtIn: true
 portalCerts:
   - name: admin-cert
-    issuer: manual
+    issuer: ignored
     domains:
-      - admin.local
-    publicKeyBase64: pub
+      - ignored.local
+    publicKeyBase64: `+testSeederCertificate(t)+`
     privateKeyBase64: pri
     validFrom: 2026-01-01T00:00:00Z
     validTo: 2027-01-01T00:00:00Z
@@ -62,13 +69,13 @@ portalCerts:
 
 	seeder := &Seeder{
 		Flag:          newTestSeederFlag(seedPath),
-		AppConfigRepo: configRepo,
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
 		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
-		CertRepo:      certRepo,
-		EntryRepo:     entryRepo,
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore:      &core.PortalSiteCore{PortalSiteRepo: entryRepo},
 	}
 	seeder.DIInit()
 
@@ -138,13 +145,13 @@ func TestSeederMarksSeededWhenSeedYAMLPathIsEmpty(t *testing.T) {
 
 	seeder := &Seeder{
 		Flag:          newTestSeederFlag(""),
-		AppConfigRepo: configRepo,
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
 		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
-		CertRepo:      certRepo,
-		EntryRepo:     entryRepo,
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore:      &core.PortalSiteCore{PortalSiteRepo: entryRepo},
 	}
 
 	seeder.DIInit()
@@ -168,13 +175,13 @@ func TestSeederUsesHTTPSForDefaultDashboardWithMTLS(t *testing.T) {
 	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
 	seeder := &Seeder{
 		Flag:          newTestSeederMTLSFlag(),
-		AppConfigRepo: configRepo,
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
 		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
-		CertRepo:      certRepo,
-		EntryRepo:     entryRepo,
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore:      &core.PortalSiteCore{PortalSiteRepo: entryRepo},
 	}
 
 	seeder.DIInit()
@@ -212,13 +219,13 @@ func TestSeederMigratesLegacyDashboardDefaultsToHTTPSWithMTLS(t *testing.T) {
 	metadataRepo.MarkSeeded()
 	seeder := &Seeder{
 		Flag:          newTestSeederMTLSFlag(),
-		AppConfigRepo: configRepo,
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
 		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
-		CertRepo:      certRepo,
-		EntryRepo:     entryRepo,
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore:      &core.PortalSiteCore{PortalSiteRepo: entryRepo},
 	}
 
 	seeder.DIInit()
@@ -260,13 +267,13 @@ func TestSeederPreservesCustomDashboardAccessWithMTLSDefault(t *testing.T) {
 	metadataRepo.MarkSeeded()
 	seeder := &Seeder{
 		Flag:          newTestSeederMTLSFlag(),
-		AppConfigRepo: configRepo,
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
 		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
-		CertRepo:      certRepo,
-		EntryRepo:     entryRepo,
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore:      &core.PortalSiteCore{PortalSiteRepo: entryRepo},
 	}
 
 	seeder.DIInit()
@@ -288,13 +295,13 @@ func TestSeederSkipsEmptySeedYAMLPathWhenApplied(t *testing.T) {
 
 	seeder := &Seeder{
 		Flag:          newTestSeederFlag(""),
-		AppConfigRepo: configRepo,
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
 		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
-		CertRepo:      certRepo,
-		EntryRepo:     entryRepo,
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore:      &core.PortalSiteCore{PortalSiteRepo: entryRepo},
 	}
 	seeder.DIInit()
 
@@ -320,13 +327,13 @@ appConfigs:
 
 	seeder := &Seeder{
 		Flag:          newTestSeederFlag(seedPath),
-		AppConfigRepo: configRepo,
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
 		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
-		CertRepo:      certRepo,
-		EntryRepo:     entryRepo,
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore:      &core.PortalSiteCore{PortalSiteRepo: entryRepo},
 	}
 	seeder.DIInit()
 
@@ -365,10 +372,10 @@ portalRules:
     override: true
 portalCerts:
   - name: admin-cert
-    issuer: manual
+    issuer: ignored
     domains:
-      - admin.local
-    publicKeyBase64: pub
+      - ignored.local
+    publicKeyBase64: `+testSeederCertificate(t)+`
     privateKeyBase64: pri
     validFrom: 2026-01-01T00:00:00Z
     validTo: 2027-01-01T00:00:00Z
@@ -384,13 +391,13 @@ portalCerts:
 
 	seeder := &Seeder{
 		Flag:          newTestSeederFlag(seedPath),
-		AppConfigRepo: configRepo,
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
 		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
-		CertRepo:      certRepo,
-		EntryRepo:     entryRepo,
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore:      &core.PortalSiteCore{PortalSiteRepo: entryRepo},
 	}
 	seeder.DIInit()
 
@@ -432,13 +439,13 @@ portalRules:
 
 	seeder := &Seeder{
 		Flag:          newTestSeederFlag(seedPath),
-		AppConfigRepo: configRepo,
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
 		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
-		CertRepo:      certRepo,
-		EntryRepo:     entryRepo,
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore:      &core.PortalSiteCore{PortalSiteRepo: entryRepo},
 	}
 
 	assert.Panics(t, seeder.DIInit)
@@ -467,13 +474,13 @@ func TestSeederRefreshesDashboardWhenSeeded(t *testing.T) {
 
 	seeder := &Seeder{
 		Flag:          newTestSeederFlag(""),
-		AppConfigRepo: configRepo,
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
 		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
-		CertRepo:      certRepo,
-		EntryRepo:     entryRepo,
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore:      &core.PortalSiteCore{PortalSiteRepo: entryRepo},
 	}
 	seeder.DIInit()
 
@@ -517,13 +524,13 @@ func TestSeederAppliesExplicitDashboardURLToExistingDashboardRules(t *testing.T)
 
 	seeder := &Seeder{
 		Flag:          flags,
-		AppConfigRepo: configRepo,
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
 		RuleRepo:      ruleRepo,
 		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
-		CertRepo:      certRepo,
-		EntryRepo:     entryRepo,
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore:      &core.PortalSiteCore{PortalSiteRepo: entryRepo},
 	}
 	seeder.DIInit()
 
@@ -592,13 +599,46 @@ portalRules:
 			}
 			path := filepath.Join(t.TempDir(), "hub.yaml")
 			require.NoError(t, vfile.WriteString(path, content))
-			seeder := &Seeder{Flag: newTestSeederFlag(path), Logger: logger.New("vine:test"), AppConfigRepo: configRepo, RuleRepo: ruleRepo, RuleCore: &core.PortalRuleCore{PortalRuleRepo: ruleRepo}, CertRepo: certRepo, EntryRepo: entryRepo, MetadataRepo: metadataRepo}
+			seeder := &Seeder{Flag: newTestSeederFlag(path), Logger: logger.New("vine:test"),
+				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo}, RuleRepo: ruleRepo, RuleCore: &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
+				CertCore: &core.PortalCertCore{PortalCertRepo: certRepo},
+				SiteCore: &core.PortalSiteCore{PortalSiteRepo: entryRepo}, MetadataRepo: metadataRepo}
 			require.Panics(t, seeder.DIInit)
 			_, exists := configRepo.GetItemByName("pending")
 			require.False(t, exists)
 			_, exists = ruleRepo.GetRuleByName("valid")
 			require.False(t, exists)
 			require.False(t, metadataRepo.IsSeeded())
+		})
+	}
+}
+
+func testSeederCertificate(t *testing.T) string {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	cert := &x509.Certificate{SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "manual"}, DNSNames: []string{"admin.local"}, NotBefore: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), NotAfter: time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC)}
+	der, err := x509.CreateCertificate(rand.Reader, cert, cert, &key.PublicKey, key)
+	require.NoError(t, err)
+	return base64.StdEncoding.EncodeToString(der)
+}
+
+func TestSeederPreflightsSitesAndCertificatesBeforeWriting(t *testing.T) {
+	for name, invalid := range map[string]string{
+		"site":        "portalSites:\n  - name: invalid\n    type: WEBGW\n    actorSkelName: demo.Actor\n    actorVia: client\n",
+		"certificate": "portalCerts:\n  - name: invalid\n    publicKeyBase64: invalid\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			configs, rules, certs, sites, metadata, _ := newTestSeederRepos(t)
+			path := filepath.Join(t.TempDir(), "hub.yaml")
+			require.NoError(t, vfile.WriteString(path, "appConfigs:\n  - name: pending\n    value: test\n"+invalid))
+			target := &Seeder{Flag: newTestSeederFlag(path), Logger: logger.New("vine:test"), MetadataRepo: metadata, RuleRepo: rules,
+				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configs}, RuleCore: &core.PortalRuleCore{PortalRuleRepo: rules},
+				CertCore: &core.PortalCertCore{PortalCertRepo: certs}, SiteCore: &core.PortalSiteCore{PortalSiteRepo: sites}}
+			require.Panics(t, target.DIInit)
+			_, exists := configs.GetItemByName("pending")
+			require.False(t, exists)
+			require.False(t, metadata.IsSeeded())
 		})
 	}
 }

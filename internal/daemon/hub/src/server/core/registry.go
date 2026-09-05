@@ -1,6 +1,10 @@
 package core
 
-import "go.yorun.ai/vine/internal/daemon"
+import (
+	"go.yorun.ai/vine/internal/core/skel"
+	"go.yorun.ai/vine/internal/daemon"
+	"time"
+)
 
 type RegistryCore struct {
 	RegistryRepo RegistryRepo `inject:""`
@@ -77,4 +81,28 @@ func (m *RegistryCore) Heartbeat(heartbeat AppHeartbeat) bool {
 		}
 	}
 	return true
+}
+
+// RegisterSchemas registers schema ownership without creating application endpoints.
+func (m *RegistryCore) RegisterSchemas(ownerName, ownerId string, schemas []*skel.DomainSchema) {
+	m.SchemaRepo.SaveDomainSchemas(ownerName, ownerId, schemas)
+}
+
+// SweepExpiredLeases unregisters expired instances, ignoring renewed or missing statuses.
+func (m *RegistryCore) SweepExpiredLeases() bool {
+	removed := false
+	for {
+		leases := m.RegistryRepo.PopExpiredAppLeases()
+		if len(leases) == 0 {
+			return removed
+		}
+		for _, lease := range leases {
+			status, ok := m.RegistryRepo.GetAppStatus(lease.Name, lease.InstanceId)
+			if !ok || time.Now().Before(status.ExpiresAt) {
+				continue
+			}
+			m.Unregister(lease.Name, lease.InstanceId)
+			removed = true
+		}
+	}
 }

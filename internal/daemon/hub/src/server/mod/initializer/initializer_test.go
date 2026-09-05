@@ -232,9 +232,10 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 				testPortalSiteWithId(3, seeder.DashboardWebCoreEntry),
 			},
 		},
-		SchemaRepo: &schema.MemorySchemaRepo{},
-		InprocFlag: &appcore.InternalInprocFlag{},
-		Flag:       &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
+		SchemaRepo:   &schema.MemorySchemaRepo{},
+		RegistryCore: &core.RegistryCore{SchemaRepo: &schema.MemorySchemaRepo{}},
+		InprocFlag:   &appcore.InternalInprocFlag{},
+		Flag:         &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
 
 	p.DIInit()
@@ -371,6 +372,7 @@ func TestInitializerDIInitWritesDashboardEntriesAndRulesFromRepo(t *testing.T) {
 		CertRepo:      &testPortalCertRepo{},
 		EntryRepo:     entryRepo,
 		SchemaRepo:    &schema.MemorySchemaRepo{},
+		RegistryCore:  &core.RegistryCore{SchemaRepo: &schema.MemorySchemaRepo{}},
 		InprocFlag:    &appcore.InternalInprocFlag{},
 		Flag:          &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
@@ -477,6 +479,7 @@ func TestInitializerDIInitLoadsRegisteredSchemasIntoMemoryRepoInInprocMode(t *te
 		CertRepo:      &testPortalCertRepo{},
 		EntryRepo:     &testPortalSiteRepo{},
 		SchemaRepo:    schemaRepo,
+		RegistryCore:  &core.RegistryCore{SchemaRepo: schemaRepo},
 		InprocFlag:    &appcore.InternalInprocFlag{Enabled: true},
 		Flag:          &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
@@ -511,6 +514,7 @@ func TestInitializerDIInitLoadsHubSchemasIntoMemoryRepoInNormalMode(t *testing.T
 		CertRepo:      &testPortalCertRepo{},
 		EntryRepo:     &testPortalSiteRepo{},
 		SchemaRepo:    schemaRepo,
+		RegistryCore:  &core.RegistryCore{SchemaRepo: schemaRepo},
 		InprocFlag:    &appcore.InternalInprocFlag{},
 		Flag:          &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
