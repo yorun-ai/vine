@@ -4,7 +4,9 @@ import (
 	"time"
 
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/seedconfig"
 	"go.yorun.ai/vine/util/vslice"
+	"gopkg.in/yaml.v3"
 )
 
 type _SettingsYAMLPayload struct {
@@ -68,27 +70,29 @@ func (i _AppConfig) ToCoreAppConfig(current *core.AppConfig) *core.AppConfig {
 // Portal rule
 
 type _PortalRule struct {
-	Name               string `yaml:"name"`
-	Scheme             string `yaml:"scheme"`
-	Host               string `yaml:"host"`
-	Port               int    `yaml:"port"`
-	PathPrefix         string `yaml:"pathPrefix"`
-	TargetType         string `yaml:"targetType"`
-	SiteName           string `yaml:"siteName"`
-	RedirectionPattern string `yaml:"redirectionPattern"`
-	Override           bool   `yaml:"override"`
+	Name                    string `yaml:"name"`
+	MatchScheme             string `yaml:"matchScheme"`
+	MatchHost               string `yaml:"matchHost"`
+	MatchPort               int    `yaml:"matchPort"`
+	MatchPathPrefix         string `yaml:"matchPathPrefix"`
+	RoutePathPrefix         string `yaml:"routePathPrefix"`
+	RouteType               string `yaml:"routeType"`
+	RouteSiteName           string `yaml:"routeSiteName"`
+	RouteRedirectionPattern string `yaml:"routeRedirectionPattern"`
+	Override                bool   `yaml:"override"`
 }
 
 func (r _PortalRule) ToCorePortalRule(current *core.PortalRule) *core.PortalRule {
 	rule := &core.PortalRule{
-		Name:               r.Name,
-		Scheme:             r.Scheme,
-		Host:               r.Host,
-		Port:               r.Port,
-		PathPrefix:         r.PathPrefix,
-		TargetType:         r.TargetType,
-		SiteName:           r.SiteName,
-		RedirectionPattern: r.RedirectionPattern,
+		Name:                    r.Name,
+		MatchScheme:             r.MatchScheme,
+		MatchHost:               r.MatchHost,
+		MatchPort:               r.MatchPort,
+		MatchPathPrefix:         r.MatchPathPrefix,
+		RoutePathPrefix:         core.NormalizePortalRuleRoutePathPrefix(r.RouteType, r.RoutePathPrefix),
+		RouteType:               r.RouteType,
+		RouteSiteName:           r.RouteSiteName,
+		RouteRedirectionPattern: r.RouteRedirectionPattern,
 	}
 	if current != nil {
 		rule.Id = current.Id
@@ -161,4 +165,11 @@ func (c _PortalCert) ToCorePortalCert(current *core.PortalCert) *core.PortalCert
 		cert.Id = current.Id
 	}
 	return cert
+}
+
+func (r *_PortalRule) UnmarshalYAML(node *yaml.Node) error {
+	// TODO: Remove legacy field decoding from startup seeds when old YAML support
+	// is retired, together with seedconfig.DecodePortalRule compatibility logic.
+	type plain _PortalRule
+	return seedconfig.DecodePortalRule(node, (*plain)(r))
 }

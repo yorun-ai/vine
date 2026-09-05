@@ -3,6 +3,7 @@ package ingressinproc
 import (
 	"errors"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 
@@ -59,8 +60,13 @@ func RoundTrip(endpoint string, req *http.Request) (*http.Response, error) {
 		return nil, errors.New("handler is not registered for link ingress inproc endpoint " + endpoint)
 	}
 
+	path, err := url.PathUnescape(suffix)
+	if err != nil {
+		return nil, err
+	}
 	next := req.Clone(req.Context())
-	next.URL.Path = suffix
+	next.URL.Path = path
+	next.URL.RawPath = suffix
 	next.RequestURI = suffix
 	if next.URL.RawQuery != "" {
 		next.RequestURI += "?" + next.URL.RawQuery
@@ -76,8 +82,13 @@ func ServeUpgrade(endpoint string, w http.ResponseWriter, req *http.Request) err
 		return errors.New("handler is not registered for link ingress inproc endpoint " + endpoint)
 	}
 
+	path, err := url.PathUnescape(suffix)
+	if err != nil {
+		return err
+	}
 	next := req.Clone(req.Context())
-	next.URL.Path = suffix
+	next.URL.Path = path
+	next.URL.RawPath = suffix
 	next.RequestURI = suffix
 	if next.URL.RawQuery != "" {
 		next.RequestURI += "?" + next.URL.RawQuery

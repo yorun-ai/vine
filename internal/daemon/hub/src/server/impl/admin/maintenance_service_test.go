@@ -3,6 +3,7 @@ package admin
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vslice"
@@ -107,14 +108,14 @@ func TestMaintenanceServiceSeedYamlDoesNotExposeVineField(t *testing.T) {
 	}}
 	ruleRepo := &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{
 		"admin": {
-			Id:         1,
-			Name:       "admin",
-			Scheme:     "http",
-			Port:       80,
-			PathPrefix: "/old",
-			TargetType: "SITE",
-			SiteName:   "old-site",
-			BuiltIn:    true,
+			Id:              1,
+			Name:            "admin",
+			MatchScheme:     "http",
+			MatchPort:       80,
+			MatchPathPrefix: "/old",
+			RouteType:       "SITE",
+			RouteSiteName:   "old-site",
+			BuiltIn:         true,
 		},
 	}}
 	service := &MaintenanceServiceServerImpl{
@@ -265,4 +266,31 @@ func (r *_MaintenanceServicePortalRuleRepo) RemoveRule(id int) bool {
 		}
 	}
 	return false
+}
+
+func TestMaintenanceTargetPathSeedRoundTrip(t *testing.T) {
+	repo := &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{}}
+	service := &MaintenanceServiceServerImpl{RuleRepo: repo}
+	payload := service.parseSeed("portalRules:\n  - name: mapped\n    targetType: SITE\n    siteName: web\n    pathPrefix: /api\n    targetPath: /internal/\n")
+	rule := payload.PortalRules[0]
+	if rule.RoutePathPrefix != "/internal" {
+		t.Fatalf("unexpected target path: %q", rule.RoutePathPrefix)
+	}
+	service.applyPortalRules(payload.PortalRules, map[_SeedSelectionKey]struct{}{{kind: seedKindPortalRule, name: "mapped"}: {}})
+	stored, ok := repo.GetRuleByName("mapped")
+	if !ok || stored.RoutePathPrefix != "/internal" {
+		t.Fatalf("target path not persisted: %+v", stored)
+	}
+	fields := currentPortalRuleFields(stored)
+	if fields["routePathPrefix"] != "/internal" {
+		t.Fatalf("target path not exported: %v", fields)
+	}
+}
+
+func TestMaintenanceRuleFieldNames(t *testing.T) {
+	service := &MaintenanceServiceServerImpl{}
+	payload := service.parseSeed("portalRules:\n  - name: example\n    matchScheme: http\n    routeType: SITE\n    routePathPrefix: /internal")
+	require.Equal(t, "http", payload.PortalRules[0].MatchScheme)
+	require.Equal(t, "/internal", payload.PortalRules[0].RoutePathPrefix)
+	require.Panics(t, func() { service.parseSeed("portalRules:\n  - scheme: http\n    routeType: SITE") })
 }

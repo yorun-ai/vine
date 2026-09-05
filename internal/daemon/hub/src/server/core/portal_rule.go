@@ -1,7 +1,9 @@
 package core
 
 import (
+	"net/url"
 	"strings"
+	"unicode"
 
 	"go.yorun.ai/vine/internal/core/ex"
 )
@@ -14,38 +16,41 @@ const (
 // Structs
 
 type PortalRule struct {
-	Id                 int
-	Name               string
-	Scheme             string
-	Host               string
-	Port               int
-	PathPrefix         string
-	TargetType         string
-	SiteName           string
-	RedirectionPattern string
-	BuiltIn            bool
+	Id                      int
+	Name                    string
+	MatchScheme             string
+	MatchHost               string
+	MatchPort               int
+	MatchPathPrefix         string
+	RoutePathPrefix         string
+	RouteType               string
+	RouteSiteName           string
+	RouteRedirectionPattern string
+	BuiltIn                 bool
 }
 
 type PortalRuleCreation struct {
-	Name               string
-	Scheme             string
-	Host               string
-	Port               int
-	PathPrefix         string
-	TargetType         string
-	SiteName           string
-	RedirectionPattern string
+	Name                    string
+	MatchScheme             string
+	MatchHost               string
+	MatchPort               int
+	MatchPathPrefix         string
+	RoutePathPrefix         string
+	RouteType               string
+	RouteSiteName           string
+	RouteRedirectionPattern string
 }
 
 type PortalRuleUpdate struct {
-	Name               *string
-	Scheme             *string
-	Host               *string
-	Port               *int
-	PathPrefix         *string
-	TargetType         *string
-	SiteName           *string
-	RedirectionPattern *string
+	Name                    *string
+	MatchScheme             *string
+	MatchHost               *string
+	MatchPort               *int
+	MatchPathPrefix         *string
+	RoutePathPrefix         *string
+	RouteType               *string
+	RouteSiteName           *string
+	RouteRedirectionPattern *string
 }
 
 type PortalDashboardAccess struct {
@@ -95,15 +100,17 @@ func (m *PortalRuleCore) Create(creation PortalRuleCreation) PortalRule {
 	ex.PanicNewIfNot(!ok, ex.OperationFailed, ex.F("entry rule %q already exists", creation.Name))
 
 	rule := PortalRule{
-		Name:               creation.Name,
-		Scheme:             creation.Scheme,
-		Host:               creation.Host,
-		Port:               creation.Port,
-		PathPrefix:         creation.PathPrefix,
-		TargetType:         creation.TargetType,
-		SiteName:           creation.SiteName,
-		RedirectionPattern: creation.RedirectionPattern,
+		Name:                    creation.Name,
+		MatchScheme:             creation.MatchScheme,
+		MatchHost:               creation.MatchHost,
+		MatchPort:               creation.MatchPort,
+		MatchPathPrefix:         creation.MatchPathPrefix,
+		RoutePathPrefix:         creation.RoutePathPrefix,
+		RouteType:               creation.RouteType,
+		RouteSiteName:           creation.RouteSiteName,
+		RouteRedirectionPattern: creation.RouteRedirectionPattern,
 	}
+	rule.RoutePathPrefix = NormalizePortalRuleRoutePathPrefix(rule.RouteType, rule.RoutePathPrefix)
 	m.PortalRuleRepo.SaveRule(&rule)
 	return rule
 }
@@ -121,30 +128,51 @@ func (m *PortalRuleCore) Update(id int, update PortalRuleUpdate) PortalRule {
 		}
 		next.Name = *update.Name
 	}
-	if update.Scheme != nil {
-		next.Scheme = *update.Scheme
+	if update.MatchScheme != nil {
+		next.MatchScheme = *update.MatchScheme
 	}
-	if update.Host != nil {
-		next.Host = *update.Host
+	if update.MatchHost != nil {
+		next.MatchHost = *update.MatchHost
 	}
-	if update.Port != nil {
-		next.Port = *update.Port
+	if update.MatchPort != nil {
+		next.MatchPort = *update.MatchPort
 	}
-	if update.PathPrefix != nil {
-		next.PathPrefix = *update.PathPrefix
+	if update.MatchPathPrefix != nil {
+		next.MatchPathPrefix = *update.MatchPathPrefix
 	}
-	if update.TargetType != nil {
-		next.TargetType = *update.TargetType
+	if update.RoutePathPrefix != nil {
+		next.RoutePathPrefix = *update.RoutePathPrefix
 	}
-	if update.SiteName != nil {
-		next.SiteName = *update.SiteName
+	if update.RouteType != nil {
+		next.RouteType = *update.RouteType
 	}
-	if update.RedirectionPattern != nil {
-		next.RedirectionPattern = *update.RedirectionPattern
+	if update.RouteSiteName != nil {
+		next.RouteSiteName = *update.RouteSiteName
+	}
+	if update.RouteRedirectionPattern != nil {
+		next.RouteRedirectionPattern = *update.RouteRedirectionPattern
 	}
 
+	next.RoutePathPrefix = NormalizePortalRuleRoutePathPrefix(next.RouteType, next.RoutePathPrefix)
 	m.PortalRuleRepo.SaveRule(&next)
 	return next
+}
+
+// NormalizePortalRuleRoutePathPrefix validates a site-relative escaped path prefix.
+// Empty and root prefixes preserve the legacy prefix-stripping behavior.
+func NormalizePortalRuleRoutePathPrefix(routeType, routePathPrefix string) string {
+	if routePathPrefix == "" {
+		return ""
+	}
+	ex.PanicNewIfNot(routeType == PortalRuleRouteTypeSite, ex.OperationFailed, "routePathPrefix is only supported for SITE rules")
+	u, err := url.ParseRequestURI(routePathPrefix)
+	ex.PanicNewIfNot(err == nil, ex.OperationFailed, "routePathPrefix must be a valid absolute path")
+	ex.PanicNewIfNot(strings.HasPrefix(routePathPrefix, "/") && !strings.HasPrefix(routePathPrefix, "//") && !strings.ContainsAny(routePathPrefix, "?#") && u.Scheme == "" && u.Host == "", ex.OperationFailed, "routePathPrefix must be a path without scheme, host, query or fragment")
+	ex.PanicNewIfNot(!strings.Contains(u.Path, "\\") && strings.IndexFunc(u.Path, unicode.IsControl) < 0 && strings.IndexFunc(routePathPrefix, unicode.IsSpace) < 0, ex.OperationFailed, "routePathPrefix contains unsupported characters")
+	for segment := range strings.SplitSeq(u.Path, "/") {
+		ex.PanicNewIfNot(segment != "." && segment != "..", ex.OperationFailed, "routePathPrefix must not contain dot segments")
+	}
+	return strings.TrimRight(u.EscapedPath(), "/")
 }
 
 func (m *PortalRuleCore) Remove(id int) {
@@ -171,13 +199,13 @@ func (m *PortalRuleCore) UpdateDashboardAccess(scheme string, host string, port 
 	adminRule := m.dashboardRule(DashboardAdminApiRuleName)
 	webRule := m.dashboardRule(DashboardWebRuleName)
 
-	adminRule.Scheme = scheme
-	adminRule.Host = host
-	adminRule.Port = port
-	webRule.Scheme = scheme
-	webRule.Host = host
-	webRule.Port = port
-	webRule.PathPrefix = pathPrefix
+	adminRule.MatchScheme = scheme
+	adminRule.MatchHost = host
+	adminRule.MatchPort = port
+	webRule.MatchScheme = scheme
+	webRule.MatchHost = host
+	webRule.MatchPort = port
+	webRule.MatchPathPrefix = pathPrefix
 
 	m.PortalRuleRepo.SaveRule(adminRule)
 	m.PortalRuleRepo.SaveRule(webRule)
@@ -192,10 +220,10 @@ func (m *PortalRuleCore) DashboardAccess() PortalDashboardAccess {
 	adminRule := m.dashboardRule(DashboardAdminApiRuleName)
 	webRule := m.dashboardRule(DashboardWebRuleName)
 	return PortalDashboardAccess{
-		Scheme:     adminRule.Scheme,
-		Host:       adminRule.Host,
-		Port:       adminRule.Port,
-		PathPrefix: webRule.PathPrefix,
+		Scheme:     adminRule.MatchScheme,
+		Host:       adminRule.MatchHost,
+		Port:       adminRule.MatchPort,
+		PathPrefix: webRule.MatchPathPrefix,
 	}
 }
 

@@ -3,6 +3,7 @@ package model
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
@@ -22,31 +23,31 @@ func TestPortalRuleDaoCreateAndQuery(t *testing.T) {
 	dao := newTestPortalRuleDao(t)
 
 	dao.Create(&PortalRule{
-		Name:               "admin",
-		Scheme:             "https",
-		Host:               "example.com",
-		Port:               443,
-		PathPrefix:         "/admin",
-		TargetType:         "SITE",
-		SiteName:           "admin@demo.app",
-		RedirectionPattern: "",
+		Name:                    "admin",
+		MatchScheme:             "https",
+		MatchHost:               "example.com",
+		MatchPort:               443,
+		MatchPathPrefix:         "/admin",
+		RouteType:               "SITE",
+		RouteSiteName:           "admin@demo.app",
+		RouteRedirectionPattern: "",
 	})
 
 	rule, ok := dao.ByName("admin")
 	require.True(t, ok)
-	assert.Equal(t, "https", rule.Scheme)
-	assert.Equal(t, "example.com", rule.Host)
-	assert.Equal(t, 443, rule.Port)
-	assert.Equal(t, "/admin", rule.PathPrefix)
-	assert.Equal(t, "SITE", rule.TargetType)
-	assert.Equal(t, "admin@demo.app", rule.SiteName)
+	assert.Equal(t, "https", rule.MatchScheme)
+	assert.Equal(t, "example.com", rule.MatchHost)
+	assert.Equal(t, 443, rule.MatchPort)
+	assert.Equal(t, "/admin", rule.MatchPathPrefix)
+	assert.Equal(t, "SITE", rule.RouteType)
+	assert.Equal(t, "admin@demo.app", rule.RouteSiteName)
 }
 
 func TestPortalRuleDaoListOrdered(t *testing.T) {
 	dao := newTestPortalRuleDao(t)
 
-	dao.Create(&PortalRule{Name: "z", Scheme: "https", Host: "", PathPrefix: "", TargetType: "SITE", SiteName: "z"})
-	dao.Create(&PortalRule{Name: "a", Scheme: "https", Host: "", PathPrefix: "/a", TargetType: "SITE", SiteName: "a"})
+	dao.Create(&PortalRule{Name: "z", MatchScheme: "https", MatchHost: "", MatchPathPrefix: "", RouteType: "SITE", RouteSiteName: "z"})
+	dao.Create(&PortalRule{Name: "a", MatchScheme: "https", MatchHost: "", MatchPathPrefix: "/a", RouteType: "SITE", RouteSiteName: "a"})
 
 	rules := dao.ListOrdered()
 	require.Len(t, rules, 2)
@@ -77,4 +78,79 @@ func sharedTestPortalRuleDB(t *testing.T) *gorm.DB {
 		testPortalRuleDB = db
 	})
 	return testPortalRuleDB
+}
+
+func TestPortalRuleTargetPathMigration(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "legacy.sqlite")), &gorm.Config{})
+	require.NoError(t, err)
+	connection, err := db.DB()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = connection.Close() })
+	legacySQL := strings.NewReplacer(
+		"match_scheme", "scheme", "match_host", "host", "match_port", "port",
+		"match_path_prefix", "path_prefix", "route_type", "target_type",
+		"route_site_name", "site_name", "route_path_prefix", "target_path",
+		"route_redirection_pattern", "redirection_pattern",
+	).Replace(createPortalRuleSQLiteSQL)
+	legacySQL = strings.ReplaceAll(legacySQL, "    target_path TEXT NOT NULL DEFAULT '',\n", "")
+	require.NoError(t, db.Exec(legacySQL).Error)
+	require.NoError(t, db.Exec("INSERT INTO portal_rule(name, scheme, host, port, path_prefix, target_type, site_name, redirection_pattern, built_in) VALUES ('legacy', 'http', '', 80, '/api', 'SITE', 'site', '', false)").Error)
+	dao := &PortalRuleDao{Dao: rdb.NewDao[*PortalRule](db)}
+	require.NoError(t, dao.migrateSchema())
+	require.NoError(t, dao.migrateSchema())
+	row, ok := dao.ByName("legacy")
+	require.True(t, ok)
+	assert.Empty(t, row.RoutePathPrefix)
+	row.RoutePathPrefix = "/internal"
+	dao.Save(row)
+	row, _ = dao.ByName("legacy")
+	assert.Equal(t, "/internal", row.RoutePathPrefix)
+	row.RoutePathPrefix = ""
+	dao.Save(row)
+	row, _ = dao.ByName("legacy")
+	assert.Empty(t, row.RoutePathPrefix)
+}
+
+func TestPortalRuleColumnRenamePreservesDataAndIndexes(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "legacy-with-target.sqlite")), &gorm.Config{})
+	require.NoError(t, err)
+	connection, err := db.DB()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = connection.Close() })
+	legacySQL := strings.NewReplacer(
+		"match_scheme", "scheme", "match_host", "host", "match_port", "port",
+		"match_path_prefix", "path_prefix", "route_type", "target_type",
+		"route_site_name", "site_name", "route_path_prefix", "target_path",
+		"route_redirection_pattern", "redirection_pattern",
+	).Replace(createPortalRuleSQLiteSQL)
+	require.NoError(t, db.Exec(legacySQL).Error)
+	require.NoError(t, db.Exec("INSERT INTO portal_rule(id, name, scheme, host, port, path_prefix, target_type, site_name, target_path, redirection_pattern, built_in) VALUES (17, 'legacy', 'https', 'example.com', 443, '/api', 'SITE', 'web', '/internal', '', true), (18, 'redirect', 'http', 'old.example.com', 80, '/', 'PERMANENT_REDIRECT', '', '', 'https://example.com', false)").Error)
+	dao := &PortalRuleDao{Dao: rdb.NewDao[*PortalRule](db)}
+	require.NoError(t, dao.migrateSchema())
+	require.NoError(t, dao.migrateSchema())
+	row, ok := dao.ByName("legacy")
+	require.True(t, ok)
+	assert.Equal(t, 17, row.Id)
+	assert.Equal(t, "https", row.MatchScheme)
+	assert.Equal(t, "example.com", row.MatchHost)
+	assert.Equal(t, 443, row.MatchPort)
+	assert.Equal(t, "/api", row.MatchPathPrefix)
+	assert.Equal(t, "SITE", row.RouteType)
+	assert.Equal(t, "web", row.RouteSiteName)
+	assert.Equal(t, "/internal", row.RoutePathPrefix)
+	assert.True(t, row.BuiltIn)
+	redirect, ok := dao.ByName("redirect")
+	require.True(t, ok)
+	assert.Equal(t, "PERMANENT_REDIRECT", redirect.RouteType)
+	assert.Equal(t, "https://example.com", redirect.RouteRedirectionPattern)
+	for _, old := range []string{"scheme", "host", "port", "path_prefix", "target_type", "site_name", "target_path", "redirection_pattern"} {
+		assert.False(t, db.Migrator().HasColumn("portal_rule", old), old)
+	}
+	duplicate := *row
+	duplicate.Id = 0
+	duplicate.Name = "different-name"
+	require.Error(t, db.Create(&duplicate).Error, "match uniqueness must survive migration")
+	duplicate.MatchHost = "different.example.com"
+	duplicate.Name = row.Name
+	require.Error(t, db.Create(&duplicate).Error, "name uniqueness must survive migration")
 }

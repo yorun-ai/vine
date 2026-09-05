@@ -103,8 +103,8 @@ func TestPortalRuleCoreRemoveBuiltInRule(t *testing.T) {
 func TestPortalRuleCoreUpdateDashboardAccess(t *testing.T) {
 	repo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
-			1: {Id: 1, Name: DashboardAdminApiRuleName, Port: 7099, PathPrefix: "/api", BuiltIn: true},
-			2: {Id: 2, Name: DashboardWebRuleName, Port: 7099, PathPrefix: "/", BuiltIn: true},
+			1: {Id: 1, Name: DashboardAdminApiRuleName, MatchPort: 7099, MatchPathPrefix: "/api", BuiltIn: true},
+			2: {Id: 2, Name: DashboardWebRuleName, MatchPort: 7099, MatchPathPrefix: "/", BuiltIn: true},
 		},
 	}
 	certRepo := newTestPortalCertRepo()
@@ -118,22 +118,22 @@ func TestPortalRuleCoreUpdateDashboardAccess(t *testing.T) {
 	rules := core.UpdateDashboardAccess("https", "hub.example.com", 8443, "/hub")
 
 	require.Len(t, rules, 2)
-	assert.Equal(t, "https", rules[0].Scheme)
-	assert.Equal(t, "https", rules[1].Scheme)
-	assert.Equal(t, "hub.example.com", rules[0].Host)
-	assert.Equal(t, "hub.example.com", rules[1].Host)
-	assert.Equal(t, 8443, rules[0].Port)
-	assert.Equal(t, 8443, rules[1].Port)
-	assert.Equal(t, "/api", rules[0].PathPrefix)
-	assert.Equal(t, "/hub", rules[1].PathPrefix)
-	assert.Equal(t, "https", repo.rules[1].Scheme)
-	assert.Equal(t, "https", repo.rules[2].Scheme)
-	assert.Equal(t, "hub.example.com", repo.rules[1].Host)
-	assert.Equal(t, "hub.example.com", repo.rules[2].Host)
-	assert.Equal(t, 8443, repo.rules[1].Port)
-	assert.Equal(t, 8443, repo.rules[2].Port)
-	assert.Equal(t, "/api", repo.rules[1].PathPrefix)
-	assert.Equal(t, "/hub", repo.rules[2].PathPrefix)
+	assert.Equal(t, "https", rules[0].MatchScheme)
+	assert.Equal(t, "https", rules[1].MatchScheme)
+	assert.Equal(t, "hub.example.com", rules[0].MatchHost)
+	assert.Equal(t, "hub.example.com", rules[1].MatchHost)
+	assert.Equal(t, 8443, rules[0].MatchPort)
+	assert.Equal(t, 8443, rules[1].MatchPort)
+	assert.Equal(t, "/api", rules[0].MatchPathPrefix)
+	assert.Equal(t, "/hub", rules[1].MatchPathPrefix)
+	assert.Equal(t, "https", repo.rules[1].MatchScheme)
+	assert.Equal(t, "https", repo.rules[2].MatchScheme)
+	assert.Equal(t, "hub.example.com", repo.rules[1].MatchHost)
+	assert.Equal(t, "hub.example.com", repo.rules[2].MatchHost)
+	assert.Equal(t, 8443, repo.rules[1].MatchPort)
+	assert.Equal(t, 8443, repo.rules[2].MatchPort)
+	assert.Equal(t, "/api", repo.rules[1].MatchPathPrefix)
+	assert.Equal(t, "/hub", repo.rules[2].MatchPathPrefix)
 	assert.Equal(t, []string{
 		"GetRuleByName:" + DashboardAdminApiRuleName,
 		"GetRuleByName:" + DashboardWebRuleName,
@@ -145,8 +145,8 @@ func TestPortalRuleCoreUpdateDashboardAccess(t *testing.T) {
 func TestPortalRuleCoreDashboardAccess(t *testing.T) {
 	repo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
-			1: {Id: 1, Name: DashboardAdminApiRuleName, Scheme: "https", Host: "hub.example.com", Port: 8443, PathPrefix: "/api", BuiltIn: true},
-			2: {Id: 2, Name: DashboardWebRuleName, Scheme: "https", Host: "hub.example.com", Port: 8443, PathPrefix: "/hub", BuiltIn: true},
+			1: {Id: 1, Name: DashboardAdminApiRuleName, MatchScheme: "https", MatchHost: "hub.example.com", MatchPort: 8443, MatchPathPrefix: "/api", BuiltIn: true},
+			2: {Id: 2, Name: DashboardWebRuleName, MatchScheme: "https", MatchHost: "hub.example.com", MatchPort: 8443, MatchPathPrefix: "/hub", BuiltIn: true},
 		},
 	}
 	core := &PortalRuleCore{PortalRuleRepo: repo}
@@ -183,8 +183,8 @@ func TestPortalRuleCoreListSkipsBuiltInRules(t *testing.T) {
 func TestPortalRuleCoreUpdateDashboardAccessRejectsNormalRule(t *testing.T) {
 	repo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
-			1: {Id: 1, Name: DashboardAdminApiRuleName, Port: 7099, BuiltIn: true},
-			2: {Id: 2, Name: DashboardWebRuleName, Port: 7099},
+			1: {Id: 1, Name: DashboardAdminApiRuleName, MatchPort: 7099, BuiltIn: true},
+			2: {Id: 2, Name: DashboardWebRuleName, MatchPort: 7099},
 		},
 	}
 	core := &PortalRuleCore{PortalRuleRepo: repo}
@@ -196,8 +196,8 @@ func TestPortalRuleCoreUpdateDashboardAccessRejectsNormalRule(t *testing.T) {
 	err, ok := panicValue.(ex.Error)
 	require.True(t, ok)
 	assert.Equal(t, ex.OperationFailed, err.Code())
-	assert.Equal(t, 7099, repo.rules[1].Port)
-	assert.Equal(t, 7099, repo.rules[2].Port)
+	assert.Equal(t, 7099, repo.rules[1].MatchPort)
+	assert.Equal(t, 7099, repo.rules[2].MatchPort)
 	assert.Equal(t, []string{
 		"GetRuleByName:" + DashboardAdminApiRuleName,
 		"GetRuleByName:" + DashboardWebRuleName,
@@ -219,8 +219,8 @@ func TestPortalRuleCoreUpdateDashboardAccessRejectsInvalidPort(t *testing.T) {
 func TestPortalRuleCoreUpdateDashboardAccessNormalizesInput(t *testing.T) {
 	repo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
-			1: {Id: 1, Name: DashboardAdminApiRuleName, PathPrefix: "/api", BuiltIn: true},
-			2: {Id: 2, Name: DashboardWebRuleName, PathPrefix: "/", BuiltIn: true},
+			1: {Id: 1, Name: DashboardAdminApiRuleName, MatchPathPrefix: "/api", BuiltIn: true},
+			2: {Id: 2, Name: DashboardWebRuleName, MatchPathPrefix: "/", BuiltIn: true},
 		},
 	}
 	core := &PortalRuleCore{PortalRuleRepo: repo, PortalCertRepo: newTestPortalCertRepo()}
@@ -228,12 +228,12 @@ func TestPortalRuleCoreUpdateDashboardAccessNormalizesInput(t *testing.T) {
 	rules := core.UpdateDashboardAccess(" HTTP ", " hub.example.com ", 8080, "hub")
 
 	require.Len(t, rules, 2)
-	assert.Equal(t, "http", rules[0].Scheme)
-	assert.Equal(t, "http", rules[1].Scheme)
-	assert.Equal(t, "hub.example.com", rules[0].Host)
-	assert.Equal(t, "hub.example.com", rules[1].Host)
-	assert.Equal(t, "/api", rules[0].PathPrefix)
-	assert.Equal(t, "/hub", rules[1].PathPrefix)
+	assert.Equal(t, "http", rules[0].MatchScheme)
+	assert.Equal(t, "http", rules[1].MatchScheme)
+	assert.Equal(t, "hub.example.com", rules[0].MatchHost)
+	assert.Equal(t, "hub.example.com", rules[1].MatchHost)
+	assert.Equal(t, "/api", rules[0].MatchPathPrefix)
+	assert.Equal(t, "/hub", rules[1].MatchPathPrefix)
 }
 
 func TestPortalRuleCoreUpdateDashboardAccessRejectsInvalidScheme(t *testing.T) {
@@ -283,4 +283,26 @@ func TestPortalCertDomainMatchesHost(t *testing.T) {
 	assert.True(t, portalCertDomainMatchesHost("*.example.com", "hub.example.com"))
 	assert.False(t, portalCertDomainMatchesHost("*.example.com", "deep.hub.example.com"))
 	assert.False(t, portalCertDomainMatchesHost("*.example.com", "example.com"))
+}
+
+func TestNormalizePortalRuleRoutePathPrefix(t *testing.T) {
+	for input, want := range map[string]string{"": "", "/": "", "/internal/": "/internal", "/a%20b": "/a%20b"} {
+		assert.Equal(t, want, NormalizePortalRuleRoutePathPrefix("SITE", input))
+	}
+	for _, input := range []string{"relative", "//host/path", "https://host/path", "/a?x=1", "/a#f", "/../a", "/a/%2e%2e/b", "/a\\b", "/a%00", "/bad%", "/a b"} {
+		t.Run(input, func(t *testing.T) { assert.Panics(t, func() { NormalizePortalRuleRoutePathPrefix("SITE", input) }) })
+	}
+	assert.Panics(t, func() { NormalizePortalRuleRoutePathPrefix("PERMANENT_REDIRECT", "/x") })
+}
+
+func TestPortalRuleTargetPathCreateUpdateClear(t *testing.T) {
+	repo := &entryRuleRepoSpy{}
+	service := &PortalRuleCore{PortalRuleRepo: repo}
+	created := service.Create(PortalRuleCreation{Name: "mapping", RouteType: "SITE", RoutePathPrefix: "/internal/"})
+	assert.Equal(t, "/internal", created.RoutePathPrefix)
+	updated := service.Update(created.Id, PortalRuleUpdate{RouteSiteName: new("next")})
+	assert.Equal(t, "/internal", updated.RoutePathPrefix)
+	assert.Panics(t, func() { service.Update(created.Id, PortalRuleUpdate{RouteType: new("TEMPORARY_REDIRECT")}) })
+	cleared := service.Update(created.Id, PortalRuleUpdate{RoutePathPrefix: new("")})
+	assert.Empty(t, cleared.RoutePathPrefix)
 }

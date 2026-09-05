@@ -169,3 +169,38 @@ func TestRoundTripStreamsResponseBeforeHandlerReturns(t *testing.T) {
 		}
 	})
 }
+
+func TestEscapedEndpointPaths(t *testing.T) {
+	endpoint := "link+inproc://vine/escaped-path-test"
+	t.Cleanup(Register(endpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Path", r.URL.Path)
+		w.Header().Set("X-Escaped-Path", r.URL.EscapedPath())
+		w.Header().Set("X-URI", r.RequestURI)
+	})))
+	for _, upgrade := range []bool{false, true} {
+		t.Run(fmt.Sprintf("upgrade=%t", upgrade), func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/ignored?q=%2F", nil)
+			var header http.Header
+			if upgrade {
+				recorder := httptest.NewRecorder()
+				if err := ServeUpgrade(endpoint+"/a%2Fb/%25", recorder, req); err != nil {
+					t.Fatal(err)
+				}
+				header = recorder.Header()
+			} else {
+				response, err := RoundTrip(endpoint+"/a%2Fb/%25", req)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer response.Body.Close()
+				header = response.Header
+			}
+			if header.Get("X-Path") != "/a/b/%" || header.Get("X-Escaped-Path") != "/a%2Fb/%25" || header.Get("X-URI") != "/a%2Fb/%25?q=%2F" {
+				t.Fatalf("incorrect path encoding: %v", header)
+			}
+			if req.URL.Path != "/ignored" {
+				t.Fatal("original request changed")
+			}
+		})
+	}
+}

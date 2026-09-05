@@ -39,24 +39,24 @@ func (s *Seeder) seedDashboard() {
 	refreshAccess := s.Flag.DashboardURLSet || s.canMigrateLegacyDashboardAccess()
 
 	s.saveDashboardRule(core.PortalRule{
-		Name:       dashboardApiRuleName,
-		Scheme:     url.Scheme,
-		Host:       url.Hostname(),
-		Port:       url.Port(),
-		PathPrefix: "/api",
-		TargetType: "SITE",
-		SiteName:   DashboardRpcCoreEntry.Name,
-		BuiltIn:    true,
+		Name:            dashboardApiRuleName,
+		MatchScheme:     url.Scheme,
+		MatchHost:       url.Hostname(),
+		MatchPort:       url.Port(),
+		MatchPathPrefix: "/api",
+		RouteType:       "SITE",
+		RouteSiteName:   DashboardRpcCoreEntry.Name,
+		BuiltIn:         true,
 	}, refreshAccess)
 	s.saveDashboardRule(core.PortalRule{
-		Name:       dashboardWebRuleName,
-		Scheme:     url.Scheme,
-		Host:       url.Hostname(),
-		Port:       url.Port(),
-		PathPrefix: url.EscapedPath(),
-		TargetType: "SITE",
-		SiteName:   DashboardWebCoreEntry.Name,
-		BuiltIn:    true,
+		Name:            dashboardWebRuleName,
+		MatchScheme:     url.Scheme,
+		MatchHost:       url.Hostname(),
+		MatchPort:       url.Port(),
+		MatchPathPrefix: url.EscapedPath(),
+		RouteType:       "SITE",
+		RouteSiteName:   DashboardWebCoreEntry.Name,
+		BuiltIn:         true,
 	}, refreshAccess)
 }
 
@@ -76,10 +76,10 @@ func (s *Seeder) saveDashboardRule(rule core.PortalRule, refreshAccess bool) {
 	if oldRule, ok := s.RuleRepo.GetRuleByName(rule.Name); ok {
 		rule.Id = oldRule.Id
 		if !refreshAccess {
-			rule.Scheme = oldRule.Scheme
-			rule.Host = oldRule.Host
-			rule.Port = oldRule.Port
-			rule.PathPrefix = oldRule.PathPrefix
+			rule.MatchScheme = oldRule.MatchScheme
+			rule.MatchHost = oldRule.MatchHost
+			rule.MatchPort = oldRule.MatchPort
+			rule.MatchPathPrefix = oldRule.MatchPathPrefix
 		}
 	}
 	s.RuleRepo.SaveRule(&rule)
@@ -101,7 +101,7 @@ func (s *Seeder) canMigrateLegacyDashboardAccess() bool {
 		if !ok {
 			continue
 		}
-		if rule.Scheme != "http" || rule.Host != "" || rule.Port != 7099 || rule.PathPrefix != legacy.pathPrefix {
+		if rule.MatchScheme != "http" || rule.MatchHost != "" || rule.MatchPort != 7099 || rule.MatchPathPrefix != legacy.pathPrefix {
 			return false
 		}
 	}

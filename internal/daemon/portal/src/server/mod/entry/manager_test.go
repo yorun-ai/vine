@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubredis"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
@@ -22,31 +23,31 @@ func TestManagerReconcileEntriesBindsPortAndRules(t *testing.T) {
 	}
 
 	manager.entryRulesByName["admin"] = redised.PortalRule{
-		Name:       "admin",
-		Scheme:     string(spec.SchemeHTTPS),
-		Host:       "demo.local",
-		Port:       8443,
-		PathPrefix: "/admin",
-		TargetType: "SITE",
-		SiteName:   "admin@demo.app",
+		Name:            "admin",
+		MatchScheme:     string(spec.SchemeHTTPS),
+		MatchHost:       "demo.local",
+		MatchPort:       8443,
+		MatchPathPrefix: "/admin",
+		RouteType:       "SITE",
+		RouteSiteName:   "admin@demo.app",
 	}
 	manager.entryRulesByName["home"] = redised.PortalRule{
-		Name:       "home",
-		Scheme:     string(spec.SchemeHTTPS),
-		Host:       "demo.local",
-		Port:       8443,
-		PathPrefix: "/",
-		TargetType: "SITE",
-		SiteName:   "home@demo.app",
+		Name:            "home",
+		MatchScheme:     string(spec.SchemeHTTPS),
+		MatchHost:       "demo.local",
+		MatchPort:       8443,
+		MatchPathPrefix: "/",
+		RouteType:       "SITE",
+		RouteSiteName:   "home@demo.app",
 	}
 	manager.entryRulesByName["redirect"] = redised.PortalRule{
-		Name:               "redirect",
-		Scheme:             string(spec.SchemeHTTP),
-		Host:               "demo.local",
-		Port:               8080,
-		PathPrefix:         "/old",
-		TargetType:         "PERMANENT_REDIRECT",
-		RedirectionPattern: "https://demo.local/new",
+		Name:                    "redirect",
+		MatchScheme:             string(spec.SchemeHTTP),
+		MatchHost:               "demo.local",
+		MatchPort:               8080,
+		MatchPathPrefix:         "/old",
+		RouteType:               "PERMANENT_REDIRECT",
+		RouteRedirectionPattern: "https://demo.local/new",
 	}
 
 	manager.reconcileEntriesLocked()
@@ -55,7 +56,7 @@ func TestManagerReconcileEntriesBindsPortAndRules(t *testing.T) {
 	httpKey := _Key{scheme: spec.SchemeHTTP, port: 8080}
 	assert.Len(t, manager.entriesByKey, 2)
 	assert.Len(t, manager.entriesByKey[httpsKey].rules, 2)
-	assert.Equal(t, "admin@demo.app", manager.entriesByKey[httpsKey].rules[0].targetSiteName)
+	assert.Equal(t, "admin@demo.app", manager.entriesByKey[httpsKey].rules[0].routeSiteName)
 	assert.Len(t, manager.entriesByKey[httpKey].rules, 1)
 	assert.Equal(t, "redirection", manager.entriesByKey[httpKey].rules[0].redirectionSite.Name())
 }
@@ -68,18 +69,18 @@ func TestManagerReconcileEntriesDeduplicatesBySchemeAndPort(t *testing.T) {
 	}
 
 	manager.entryRulesByName["admin"] = redised.PortalRule{
-		Name:       "admin",
-		Scheme:     string(spec.SchemeHTTPS),
-		Port:       8443,
-		TargetType: "SITE",
-		SiteName:   "admin@demo.app",
+		Name:          "admin",
+		MatchScheme:   string(spec.SchemeHTTPS),
+		MatchPort:     8443,
+		RouteType:     "SITE",
+		RouteSiteName: "admin@demo.app",
 	}
 	manager.entryRulesByName["home"] = redised.PortalRule{
-		Name:       "home",
-		Scheme:     string(spec.SchemeHTTP),
-		Port:       8443,
-		TargetType: "SITE",
-		SiteName:   "home@demo.app",
+		Name:          "home",
+		MatchScheme:   string(spec.SchemeHTTP),
+		MatchPort:     8443,
+		RouteType:     "SITE",
+		RouteSiteName: "home@demo.app",
 	}
 
 	manager.reconcileEntriesLocked()
@@ -103,11 +104,11 @@ func TestManagerReconcileEntriesUpdatesExistingPortalRules(t *testing.T) {
 	}
 
 	manager.entryRulesByName["admin"] = redised.PortalRule{
-		Name:       "admin",
-		Scheme:     string(spec.SchemeHTTPS),
-		Port:       8443,
-		TargetType: "SITE",
-		SiteName:   "admin@demo.app",
+		Name:          "admin",
+		MatchScheme:   string(spec.SchemeHTTPS),
+		MatchPort:     8443,
+		RouteType:     "SITE",
+		RouteSiteName: "admin@demo.app",
 	}
 
 	manager.reconcileEntriesLocked()
@@ -132,11 +133,11 @@ func TestManagerAfterAppStartStartsEntriesCreatedBeforeStart(t *testing.T) {
 	manager := &Manager{
 		entryRulesByName: map[string]redised.PortalRule{
 			"admin": {
-				Name:       "admin",
-				Scheme:     string(spec.SchemeHTTP),
-				Port:       8080,
-				TargetType: "SITE",
-				SiteName:   "admin@demo.app",
+				Name:          "admin",
+				MatchScheme:   string(spec.SchemeHTTP),
+				MatchPort:     8080,
+				RouteType:     "SITE",
+				RouteSiteName: "admin@demo.app",
 			},
 		},
 		entriesByKey: map[_Key]*_Entry{
@@ -168,6 +169,7 @@ func newTestSiteManager(names ...string) *site.Manager {
 	}
 	epmgrManager.DIInit()
 	manager := &site.Manager{
+		App:     meta.MustNewApp("vine.portal", "0.0.0", "123e4567-e89b-12d3-a456-426614174099"),
 		Context: context.Background(),
 		Redis:   hubredis.NewTestClient(valuesByKey),
 		Epmgr:   epmgrManager,

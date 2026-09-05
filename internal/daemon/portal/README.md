@@ -27,7 +27,7 @@ internal/daemon/portal/
 Portal has four primary responsibilities:
 
 1. Entry listeners
-   `entry` reads `portal:rule:*` configuration from Redis, maintains HTTP/HTTPS listeners by scheme and port, and dispatches requests to the corresponding site.
+   `entry` reads `portal:rule:*` configuration from Redis, maintains HTTP/HTTPS listeners by scheme and port, and dispatches requests to the corresponding site. For SITE rules, it replaces the matched `matchPathPrefix` with `routePathPrefix` before site dispatch; an empty target retains prefix stripping. Path rewriting preserves the escaped suffix and query string and is owned by `entry`, not the target gateway.
 
 2. Site routing
    `site` reads `portal:site:*` configuration from Redis and maintains RpcGW and WebGW instances by site type. Each gateway is responsible only for matching and forwarding requests within its site.

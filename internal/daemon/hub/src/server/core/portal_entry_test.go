@@ -11,11 +11,11 @@ import (
 func TestPortalEntryCoreListMergesRulesBySchemeHostAndPort(t *testing.T) {
 	repo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
-			1: {Id: 1, Name: "admin", Scheme: "https", PathPrefix: "/admin", TargetType: PortalRuleTargetTypeSite, SiteName: "admin-site", BuiltIn: true},
-			2: {Id: 2, Name: "home", Scheme: "https", PathPrefix: "/", TargetType: PortalRuleTargetTypeSite, SiteName: "home-site"},
-			3: {Id: 3, Name: "api", Scheme: "http", Port: 8080, PathPrefix: "/api", TargetType: PortalRuleTargetTypePermanentRedirect, RedirectionPattern: "https://demo.local"},
-			4: {Id: 4, Name: "ignored", Scheme: "http", Port: 8080, PathPrefix: "/", TargetType: "UNSUPPORTED"},
-			5: {Id: 5, Name: "hosted", Scheme: "http", Host: "demo.local", Port: 8080, PathPrefix: "/", TargetType: PortalRuleTargetTypeSite, SiteName: "home-site"},
+			1: {Id: 1, Name: "admin", MatchScheme: "https", MatchPathPrefix: "/admin", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "admin-site", BuiltIn: true},
+			2: {Id: 2, Name: "home", MatchScheme: "https", MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "home-site"},
+			3: {Id: 3, Name: "api", MatchScheme: "http", MatchPort: 8080, MatchPathPrefix: "/api", RouteType: PortalRuleRouteTypePermanentRedirect, RouteRedirectionPattern: "https://demo.local"},
+			4: {Id: 4, Name: "ignored", MatchScheme: "http", MatchPort: 8080, MatchPathPrefix: "/", RouteType: "UNSUPPORTED"},
+			5: {Id: 5, Name: "hosted", MatchScheme: "http", MatchHost: "demo.local", MatchPort: 8080, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "home-site"},
 		},
 	}
 	siteRepo := &portalSiteRepoSpy{
@@ -58,9 +58,9 @@ func TestPortalEntryCoreListMergesRulesBySchemeHostAndPort(t *testing.T) {
 func TestPortalEntryCoreListSkipsBuiltInRules(t *testing.T) {
 	repo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
-			1: {Id: 1, Name: DashboardAdminApiRuleName, Scheme: "http", Port: 7099, TargetType: PortalRuleTargetTypeSite, BuiltIn: true},
-			2: {Id: 2, Name: DashboardWebRuleName, Scheme: "http", Port: 7099, TargetType: PortalRuleTargetTypeSite, BuiltIn: true},
-			3: {Id: 3, Name: "demo", Scheme: "https", TargetType: PortalRuleTargetTypeSite},
+			1: {Id: 1, Name: DashboardAdminApiRuleName, MatchScheme: "http", MatchPort: 7099, RouteType: PortalRuleRouteTypeSite, BuiltIn: true},
+			2: {Id: 2, Name: DashboardWebRuleName, MatchScheme: "http", MatchPort: 7099, RouteType: PortalRuleRouteTypeSite, BuiltIn: true},
+			3: {Id: 3, Name: "demo", MatchScheme: "https", RouteType: PortalRuleRouteTypeSite},
 		},
 	}
 	core := &PortalEntryCore{PortalRuleRepo: repo, PortalSiteRepo: &portalSiteRepoSpy{}}
@@ -76,7 +76,7 @@ func TestPortalEntryCoreListSkipsBuiltInRules(t *testing.T) {
 func TestPortalEntryCoreListRejectsUnknownScheme(t *testing.T) {
 	repo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
-			1: {Id: 1, Name: "tcp", Scheme: "tcp", Port: 9000, TargetType: PortalRuleTargetTypeSite},
+			1: {Id: 1, Name: "tcp", MatchScheme: "tcp", MatchPort: 9000, RouteType: PortalRuleRouteTypeSite},
 		},
 	}
 	core := &PortalEntryCore{PortalRuleRepo: repo}
@@ -93,11 +93,11 @@ func TestPortalEntryCoreListRejectsUnknownScheme(t *testing.T) {
 func TestPortalEntryCoreUpdateAccessUpdatesGroupedRules(t *testing.T) {
 	repo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
-			1: {Id: 1, Name: "web", Scheme: "http", Port: 7088, PathPrefix: "/", TargetType: PortalRuleTargetTypeSite, SiteName: "web-site"},
-			2: {Id: 2, Name: "api", Scheme: "http", Port: 7088, PathPrefix: "/api", TargetType: PortalRuleTargetTypeSite, SiteName: "rpc-site"},
-			3: {Id: 3, Name: "other-host", Scheme: "http", Host: "demo.local", Port: 7088, PathPrefix: "/", TargetType: PortalRuleTargetTypeSite, SiteName: "web-site"},
-			4: {Id: 4, Name: "redirect", Scheme: "http", Port: 7088, PathPrefix: "/old", TargetType: PortalRuleTargetTypePermanentRedirect, RedirectionPattern: "https://demo.local"},
-			5: {Id: 5, Name: "vine", Scheme: "http", Port: 7088, PathPrefix: "/vine", TargetType: PortalRuleTargetTypeSite, BuiltIn: true},
+			1: {Id: 1, Name: "web", MatchScheme: "http", MatchPort: 7088, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+			2: {Id: 2, Name: "api", MatchScheme: "http", MatchPort: 7088, MatchPathPrefix: "/api", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "rpc-site"},
+			3: {Id: 3, Name: "other-host", MatchScheme: "http", MatchHost: "demo.local", MatchPort: 7088, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+			4: {Id: 4, Name: "redirect", MatchScheme: "http", MatchPort: 7088, MatchPathPrefix: "/old", RouteType: PortalRuleRouteTypePermanentRedirect, RouteRedirectionPattern: "https://demo.local"},
+			5: {Id: 5, Name: "vine", MatchScheme: "http", MatchPort: 7088, MatchPathPrefix: "/vine", RouteType: PortalRuleRouteTypeSite, BuiltIn: true},
 		},
 	}
 	core := &PortalEntryCore{PortalRuleRepo: repo, PortalSiteRepo: &portalSiteRepoSpy{}}
@@ -113,23 +113,23 @@ func TestPortalEntryCoreUpdateAccessUpdatesGroupedRules(t *testing.T) {
 	assert.Equal(t, "app.example.com", entry.Host)
 	assert.Equal(t, 8443, entry.Port)
 	require.Len(t, entry.Rules, 3)
-	assert.Equal(t, "https", repo.rules[1].Scheme)
-	assert.Equal(t, "app.example.com", repo.rules[1].Host)
-	assert.Equal(t, 8443, repo.rules[1].Port)
-	assert.Equal(t, "https", repo.rules[2].Scheme)
-	assert.Equal(t, "app.example.com", repo.rules[2].Host)
-	assert.Equal(t, 8443, repo.rules[2].Port)
-	assert.Equal(t, "http", repo.rules[3].Scheme)
-	assert.Equal(t, "demo.local", repo.rules[3].Host)
-	assert.Equal(t, "https", repo.rules[4].Scheme)
-	assert.Equal(t, "http", repo.rules[5].Scheme)
+	assert.Equal(t, "https", repo.rules[1].MatchScheme)
+	assert.Equal(t, "app.example.com", repo.rules[1].MatchHost)
+	assert.Equal(t, 8443, repo.rules[1].MatchPort)
+	assert.Equal(t, "https", repo.rules[2].MatchScheme)
+	assert.Equal(t, "app.example.com", repo.rules[2].MatchHost)
+	assert.Equal(t, 8443, repo.rules[2].MatchPort)
+	assert.Equal(t, "http", repo.rules[3].MatchScheme)
+	assert.Equal(t, "demo.local", repo.rules[3].MatchHost)
+	assert.Equal(t, "https", repo.rules[4].MatchScheme)
+	assert.Equal(t, "http", repo.rules[5].MatchScheme)
 	assert.Equal(t, []string{"ListRules", "SaveRule", "SaveRule", "SaveRule", "ListRules"}, repo.calls)
 }
 
 func TestPortalEntryCoreUpdateAccessRejectsMissingEntry(t *testing.T) {
 	repo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
-			1: {Id: 1, Name: "web", Scheme: "http", Port: 7088, PathPrefix: "/", TargetType: PortalRuleTargetTypeSite, SiteName: "web-site"},
+			1: {Id: 1, Name: "web", MatchScheme: "http", MatchPort: 7088, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
 		},
 	}
 	core := &PortalEntryCore{PortalRuleRepo: repo}

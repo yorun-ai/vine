@@ -85,14 +85,15 @@ func toRedisedPortalSite(site *core.PortalSite, rpcgwServices []string) *redised
 
 func ToRedisedPortalRule(rule *core.PortalRule) *redised.PortalRule {
 	return &redised.PortalRule{
-		Name:               rule.Name,
-		Scheme:             rule.Scheme,
-		Host:               rule.Host,
-		Port:               rule.Port,
-		PathPrefix:         rule.PathPrefix,
-		TargetType:         rule.TargetType,
-		SiteName:           rule.SiteName,
-		RedirectionPattern: rule.RedirectionPattern,
+		Name:                    rule.Name,
+		MatchScheme:             rule.MatchScheme,
+		MatchHost:               rule.MatchHost,
+		MatchPort:               rule.MatchPort,
+		MatchPathPrefix:         rule.MatchPathPrefix,
+		RoutePathPrefix:         rule.RoutePathPrefix,
+		RouteType:               rule.RouteType,
+		RouteSiteName:           rule.RouteSiteName,
+		RouteRedirectionPattern: rule.RouteRedirectionPattern,
 	}
 }
 

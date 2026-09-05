@@ -100,7 +100,7 @@ function isValidPort(value: string) {
 }
 
 function ruleTargetLabel(rule: PortalRule) {
-  switch (rule.targetType) {
+  switch (rule.routeType) {
     case 'SITE':
       return 'Site'
     case 'PERMANENT_REDIRECT':
@@ -108,21 +108,21 @@ function ruleTargetLabel(rule: PortalRule) {
     case 'TEMPORARY_REDIRECT':
       return 'Temporary Redirect'
     default:
-      return rule.targetType
+      return rule.routeType
   }
 }
 
 function ruleTargetValue(entryRule: PortalEntryRule) {
   const { rule, site } = entryRule
-  if (rule.targetType === 'SITE') {
-    return site?.name ?? rule.siteName
+  if (rule.routeType === 'SITE') {
+    return `${site?.name ?? rule.routeSiteName} ${rule.routePathPrefix || '/'}`
   }
-  return rule.redirectionPattern
+  return rule.routeRedirectionPattern
 }
 
 function formatRuleMatch(rule: PortalRule) {
-  const pathPrefix = rule.pathPrefix || '/'
-  return rule.host ? `${rule.host}${pathPrefix}` : pathPrefix
+  const pathPrefix = rule.matchPathPrefix || '/'
+  return rule.matchHost ? `${rule.matchHost}${pathPrefix}` : pathPrefix
 }
 
 function portalRuleHref(rule: PortalRule) {
@@ -372,11 +372,12 @@ export function PortalEntryPage() {
           ...((entryRule.site?.rpcgwServices as Array<string> | undefined) ??
             []),
           entryRule.rule.name,
-          entryRule.rule.host,
-          entryRule.rule.pathPrefix,
-          entryRule.rule.targetType,
-          entryRule.rule.siteName,
-          entryRule.rule.redirectionPattern,
+          entryRule.rule.matchHost,
+          entryRule.rule.matchPathPrefix,
+          entryRule.rule.routePathPrefix,
+          entryRule.rule.routeType,
+          entryRule.rule.routeSiteName,
+          entryRule.rule.routeRedirectionPattern,
         ]),
       ]
 

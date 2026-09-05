@@ -173,25 +173,25 @@ func testPortalRuleWithId(id int, rule core.PortalRule) core.PortalRule {
 
 func testDashboardApiRule() core.PortalRule {
 	return core.PortalRule{
-		Name:       core.DashboardAdminApiRuleName,
-		Scheme:     "http",
-		Port:       7099,
-		PathPrefix: "/api",
-		TargetType: "SITE",
-		SiteName:   seeder.DashboardRpcCoreEntry.Name,
-		BuiltIn:    true,
+		Name:            core.DashboardAdminApiRuleName,
+		MatchScheme:     "http",
+		MatchPort:       7099,
+		MatchPathPrefix: "/api",
+		RouteType:       "SITE",
+		RouteSiteName:   seeder.DashboardRpcCoreEntry.Name,
+		BuiltIn:         true,
 	}
 }
 
 func testDashboardWebRule() core.PortalRule {
 	return core.PortalRule{
-		Name:       core.DashboardWebRuleName,
-		Scheme:     "http",
-		Port:       7099,
-		PathPrefix: "/",
-		TargetType: "SITE",
-		SiteName:   seeder.DashboardWebCoreEntry.Name,
-		BuiltIn:    true,
+		Name:            core.DashboardWebRuleName,
+		MatchScheme:     "http",
+		MatchPort:       7099,
+		MatchPathPrefix: "/",
+		RouteType:       "SITE",
+		RouteSiteName:   seeder.DashboardWebCoreEntry.Name,
+		BuiltIn:         true,
 	}
 }
 
@@ -215,7 +215,7 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 		},
 		RuleRepo: &testPortalRuleRepo{
 			rules: []core.PortalRule{
-				{Id: 1, Name: "demo-entry", Scheme: "https", Host: "demo.local", PathPrefix: "/admin", TargetType: "SITE", SiteName: "admin@demo.app"},
+				{Id: 1, Name: "demo-entry", MatchScheme: "https", MatchHost: "demo.local", MatchPathPrefix: "/admin", RouteType: "SITE", RouteSiteName: "admin@demo.app"},
 				testPortalRuleWithId(2, testDashboardApiRule()),
 				testPortalRuleWithId(3, testDashboardWebRule()),
 			},
@@ -326,24 +326,24 @@ func TestInitializerDIInitWritesDashboardEntriesAndRulesFromRepo(t *testing.T) {
 	db := _RedisTestStore{redisServer}
 
 	existingApiRule := core.PortalRule{
-		Id:         1,
-		Name:       core.DashboardAdminApiRuleName,
-		Scheme:     "http",
-		Port:       8088,
-		PathPrefix: "/custom-api",
-		TargetType: "SITE",
-		SiteName:   "custom-admin-entry",
-		BuiltIn:    true,
+		Id:              1,
+		Name:            core.DashboardAdminApiRuleName,
+		MatchScheme:     "http",
+		MatchPort:       8088,
+		MatchPathPrefix: "/custom-api",
+		RouteType:       "SITE",
+		RouteSiteName:   "custom-admin-entry",
+		BuiltIn:         true,
 	}
 	existingWebRule := core.PortalRule{
-		Id:         2,
-		Name:       core.DashboardWebRuleName,
-		Scheme:     "http",
-		Port:       8088,
-		PathPrefix: "/custom-web",
-		TargetType: "SITE",
-		SiteName:   "custom-web-entry",
-		BuiltIn:    true,
+		Id:              2,
+		Name:            core.DashboardWebRuleName,
+		MatchScheme:     "http",
+		MatchPort:       8088,
+		MatchPathPrefix: "/custom-web",
+		RouteType:       "SITE",
+		RouteSiteName:   "custom-web-entry",
+		BuiltIn:         true,
 	}
 	existingRpcSite := core.PortalSite{
 		Id:            1,
@@ -382,7 +382,7 @@ func TestInitializerDIInitWritesDashboardEntriesAndRulesFromRepo(t *testing.T) {
 
 	value, err := db.Get(redised.FormatPortalRuleKey(core.DashboardAdminApiRuleName))
 	assert.NoError(t, err)
-	assert.Contains(t, value, `"port":8088`)
+	assert.Contains(t, value, `"matchPort":8088`)
 	assert.Contains(t, value, "/custom-api")
 
 	value, err = db.Get(redised.FormatPortalSiteKey(seeder.DashboardRpcCoreEntry.Name))
@@ -391,7 +391,7 @@ func TestInitializerDIInitWritesDashboardEntriesAndRulesFromRepo(t *testing.T) {
 
 	value, err = db.Get(redised.FormatPortalRuleKey(core.DashboardWebRuleName))
 	assert.NoError(t, err)
-	assert.Contains(t, value, `"port":8088`)
+	assert.Contains(t, value, `"matchPort":8088`)
 	assert.Contains(t, value, "/custom-web")
 
 	value, err = db.Get(redised.FormatPortalSiteKey(seeder.DashboardWebCoreEntry.Name))

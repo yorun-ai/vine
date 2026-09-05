@@ -76,8 +76,8 @@ portalCerts:
 
 	rule, ok := ruleRepo.GetRuleByName("admin")
 	require.True(t, ok)
-	assert.Equal(t, "/admin", rule.PathPrefix)
-	assert.Equal(t, "admin@demo.app", rule.SiteName)
+	assert.Equal(t, "/admin", rule.MatchPathPrefix)
+	assert.Equal(t, "admin@demo.app", rule.RouteSiteName)
 	assert.False(t, rule.BuiltIn)
 
 	entry, ok := entryRepo.GetEntryByName("admin@demo.app")
@@ -151,10 +151,10 @@ func TestSeederMarksSeededWhenSeedYAMLPathIsEmpty(t *testing.T) {
 
 	rule, ok := ruleRepo.GetRuleByName(dashboardApiRuleName)
 	require.True(t, ok)
-	assert.Equal(t, "http", rule.Scheme)
-	assert.Equal(t, "", rule.Host)
-	assert.Equal(t, 7099, rule.Port)
-	assert.Equal(t, "/api", rule.PathPrefix)
+	assert.Equal(t, "http", rule.MatchScheme)
+	assert.Equal(t, "", rule.MatchHost)
+	assert.Equal(t, 7099, rule.MatchPort)
+	assert.Equal(t, "/api", rule.MatchPathPrefix)
 	entry, ok := entryRepo.GetEntryByName(DashboardRpcCoreEntry.Name)
 	require.True(t, ok)
 	assert.Equal(t, DashboardRpcCoreEntry.ActorSkelName, entry.ActorSkelName)
@@ -176,33 +176,33 @@ func TestSeederUsesHTTPSForDefaultDashboardWithMTLS(t *testing.T) {
 
 	apiRule, ok := ruleRepo.GetRuleByName(dashboardApiRuleName)
 	require.True(t, ok)
-	assert.Equal(t, "https", apiRule.Scheme)
-	assert.Equal(t, 7099, apiRule.Port)
+	assert.Equal(t, "https", apiRule.MatchScheme)
+	assert.Equal(t, 7099, apiRule.MatchPort)
 	webRule, ok := ruleRepo.GetRuleByName(dashboardWebRuleName)
 	require.True(t, ok)
-	assert.Equal(t, "https", webRule.Scheme)
-	assert.Equal(t, 7099, webRule.Port)
+	assert.Equal(t, "https", webRule.MatchScheme)
+	assert.Equal(t, 7099, webRule.MatchPort)
 }
 
 func TestSeederMigratesLegacyDashboardDefaultsToHTTPSWithMTLS(t *testing.T) {
 	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
 	ruleRepo.SaveRule(&core.PortalRule{
-		Name:       dashboardApiRuleName,
-		Scheme:     "http",
-		Port:       7099,
-		PathPrefix: "/api",
-		TargetType: "SITE",
-		SiteName:   DashboardRpcCoreEntry.Name,
-		BuiltIn:    true,
+		Name:            dashboardApiRuleName,
+		MatchScheme:     "http",
+		MatchPort:       7099,
+		MatchPathPrefix: "/api",
+		RouteType:       "SITE",
+		RouteSiteName:   DashboardRpcCoreEntry.Name,
+		BuiltIn:         true,
 	})
 	ruleRepo.SaveRule(&core.PortalRule{
-		Name:       dashboardWebRuleName,
-		Scheme:     "http",
-		Port:       7099,
-		PathPrefix: "/",
-		TargetType: "SITE",
-		SiteName:   DashboardWebCoreEntry.Name,
-		BuiltIn:    true,
+		Name:            dashboardWebRuleName,
+		MatchScheme:     "http",
+		MatchPort:       7099,
+		MatchPathPrefix: "/",
+		RouteType:       "SITE",
+		RouteSiteName:   DashboardWebCoreEntry.Name,
+		BuiltIn:         true,
 	})
 	metadataRepo.MarkSeeded()
 	seeder := &Seeder{
@@ -219,34 +219,34 @@ func TestSeederMigratesLegacyDashboardDefaultsToHTTPSWithMTLS(t *testing.T) {
 
 	apiRule, ok := ruleRepo.GetRuleByName(dashboardApiRuleName)
 	require.True(t, ok)
-	assert.Equal(t, "https", apiRule.Scheme)
+	assert.Equal(t, "https", apiRule.MatchScheme)
 	webRule, ok := ruleRepo.GetRuleByName(dashboardWebRuleName)
 	require.True(t, ok)
-	assert.Equal(t, "https", webRule.Scheme)
+	assert.Equal(t, "https", webRule.MatchScheme)
 }
 
 func TestSeederPreservesCustomDashboardAccessWithMTLSDefault(t *testing.T) {
 	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
 	for _, rule := range []*core.PortalRule{
 		{
-			Name:       dashboardApiRuleName,
-			Scheme:     "https",
-			Host:       "hub.example.com",
-			Port:       8443,
-			PathPrefix: "/custom-api",
-			TargetType: "SITE",
-			SiteName:   DashboardRpcCoreEntry.Name,
-			BuiltIn:    true,
+			Name:            dashboardApiRuleName,
+			MatchScheme:     "https",
+			MatchHost:       "hub.example.com",
+			MatchPort:       8443,
+			MatchPathPrefix: "/custom-api",
+			RouteType:       "SITE",
+			RouteSiteName:   DashboardRpcCoreEntry.Name,
+			BuiltIn:         true,
 		},
 		{
-			Name:       dashboardWebRuleName,
-			Scheme:     "https",
-			Host:       "hub.example.com",
-			Port:       8443,
-			PathPrefix: "/custom",
-			TargetType: "SITE",
-			SiteName:   DashboardWebCoreEntry.Name,
-			BuiltIn:    true,
+			Name:            dashboardWebRuleName,
+			MatchScheme:     "https",
+			MatchHost:       "hub.example.com",
+			MatchPort:       8443,
+			MatchPathPrefix: "/custom",
+			RouteType:       "SITE",
+			RouteSiteName:   DashboardWebCoreEntry.Name,
+			BuiltIn:         true,
 		},
 	} {
 		ruleRepo.SaveRule(rule)
@@ -266,13 +266,13 @@ func TestSeederPreservesCustomDashboardAccessWithMTLSDefault(t *testing.T) {
 
 	apiRule, ok := ruleRepo.GetRuleByName(dashboardApiRuleName)
 	require.True(t, ok)
-	assert.Equal(t, "https", apiRule.Scheme)
-	assert.Equal(t, "hub.example.com", apiRule.Host)
-	assert.Equal(t, 8443, apiRule.Port)
-	assert.Equal(t, "/custom-api", apiRule.PathPrefix)
+	assert.Equal(t, "https", apiRule.MatchScheme)
+	assert.Equal(t, "hub.example.com", apiRule.MatchHost)
+	assert.Equal(t, 8443, apiRule.MatchPort)
+	assert.Equal(t, "/custom-api", apiRule.MatchPathPrefix)
 	webRule, ok := ruleRepo.GetRuleByName(dashboardWebRuleName)
 	require.True(t, ok)
-	assert.Equal(t, "/custom", webRule.PathPrefix)
+	assert.Equal(t, "/custom", webRule.MatchPathPrefix)
 }
 
 func TestSeederSkipsEmptySeedYAMLPathWhenApplied(t *testing.T) {
@@ -369,7 +369,7 @@ portalCerts:
 	configRepo.SaveItem(&core.AppConfig{Name: "feature.flag", Value: `{"enabled":true}`, Version: 7})
 	configRepo.SaveItem(&core.AppConfig{Name: "feature.keep", Value: `{"enabled":true}`, Version: 3})
 	entryRepo.SaveEntry(&core.PortalSite{Name: "admin@demo.app", Type: core.PortalSiteTypeWEBGW, ActorSkelName: "old.Actor", ActorVia: "client", WebName: "old.Web"})
-	ruleRepo.SaveRule(&core.PortalRule{Name: "admin", Scheme: "http", Port: 80, PathPrefix: "/old", TargetType: "SITE", SiteName: "old-site"})
+	ruleRepo.SaveRule(&core.PortalRule{Name: "admin", MatchScheme: "http", MatchPort: 80, MatchPathPrefix: "/old", RouteType: "SITE", RouteSiteName: "old-site"})
 	certRepo.SaveCert(&core.PortalCert{Name: "admin-cert", Issuer: "old", Domains: []string{"old.local"}, PublicKeyBase64: "old-pub", PrivateKeyBase64: "old-pri"})
 	metadataRepo.MarkSeeded()
 
@@ -399,8 +399,8 @@ portalCerts:
 	assert.Equal(t, "demo.AdminWeb", entry.WebName)
 	rule, ok := ruleRepo.GetRuleByName("admin")
 	require.True(t, ok)
-	assert.Equal(t, "https", rule.Scheme)
-	assert.Equal(t, "/admin", rule.PathPrefix)
+	assert.Equal(t, "https", rule.MatchScheme)
+	assert.Equal(t, "/admin", rule.MatchPathPrefix)
 	cert, ok := certRepo.GetCertByName("admin-cert")
 	require.True(t, ok)
 	assert.Equal(t, "manual", cert.Issuer)
@@ -436,14 +436,14 @@ portalRules:
 func TestSeederRefreshesDashboardWhenSeeded(t *testing.T) {
 	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
 	ruleRepo.SaveRule(&core.PortalRule{
-		Name:       dashboardApiRuleName,
-		Scheme:     "https",
-		Host:       "hub.example.com",
-		Port:       8088,
-		PathPrefix: "/old-api",
-		TargetType: "SITE",
-		SiteName:   "old-entry",
-		BuiltIn:    true,
+		Name:            dashboardApiRuleName,
+		MatchScheme:     "https",
+		MatchHost:       "hub.example.com",
+		MatchPort:       8088,
+		MatchPathPrefix: "/old-api",
+		RouteType:       "SITE",
+		RouteSiteName:   "old-entry",
+		BuiltIn:         true,
 	})
 	entryRepo.SaveEntry(&core.PortalSite{
 		Name:          DashboardRpcCoreEntry.Name,
@@ -467,11 +467,11 @@ func TestSeederRefreshesDashboardWhenSeeded(t *testing.T) {
 
 	rule, ok := ruleRepo.GetRuleByName(dashboardApiRuleName)
 	require.True(t, ok)
-	assert.Equal(t, "https", rule.Scheme)
-	assert.Equal(t, "hub.example.com", rule.Host)
-	assert.Equal(t, 8088, rule.Port)
-	assert.Equal(t, "/old-api", rule.PathPrefix)
-	assert.Equal(t, DashboardRpcCoreEntry.Name, rule.SiteName)
+	assert.Equal(t, "https", rule.MatchScheme)
+	assert.Equal(t, "hub.example.com", rule.MatchHost)
+	assert.Equal(t, 8088, rule.MatchPort)
+	assert.Equal(t, "/old-api", rule.MatchPathPrefix)
+	assert.Equal(t, DashboardRpcCoreEntry.Name, rule.RouteSiteName)
 
 	entry, ok := entryRepo.GetEntryByName(DashboardRpcCoreEntry.Name)
 	require.True(t, ok)
@@ -481,22 +481,22 @@ func TestSeederRefreshesDashboardWhenSeeded(t *testing.T) {
 func TestSeederAppliesExplicitDashboardURLToExistingDashboardRules(t *testing.T) {
 	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
 	ruleRepo.SaveRule(&core.PortalRule{
-		Name:       dashboardApiRuleName,
-		Scheme:     "http",
-		Port:       7099,
-		PathPrefix: "/api",
-		TargetType: "SITE",
-		SiteName:   DashboardRpcCoreEntry.Name,
-		BuiltIn:    true,
+		Name:            dashboardApiRuleName,
+		MatchScheme:     "http",
+		MatchPort:       7099,
+		MatchPathPrefix: "/api",
+		RouteType:       "SITE",
+		RouteSiteName:   DashboardRpcCoreEntry.Name,
+		BuiltIn:         true,
 	})
 	ruleRepo.SaveRule(&core.PortalRule{
-		Name:       dashboardWebRuleName,
-		Scheme:     "http",
-		Port:       7099,
-		PathPrefix: "/",
-		TargetType: "SITE",
-		SiteName:   DashboardWebCoreEntry.Name,
-		BuiltIn:    true,
+		Name:            dashboardWebRuleName,
+		MatchScheme:     "http",
+		MatchPort:       7099,
+		MatchPathPrefix: "/",
+		RouteType:       "SITE",
+		RouteSiteName:   DashboardWebCoreEntry.Name,
+		BuiltIn:         true,
 	})
 	metadataRepo.MarkSeeded()
 
@@ -516,17 +516,17 @@ func TestSeederAppliesExplicitDashboardURLToExistingDashboardRules(t *testing.T)
 
 	apiRule, ok := ruleRepo.GetRuleByName(dashboardApiRuleName)
 	require.True(t, ok)
-	assert.Equal(t, "https", apiRule.Scheme)
-	assert.Equal(t, "hub.example.com", apiRule.Host)
-	assert.Equal(t, 8443, apiRule.Port)
-	assert.Equal(t, "/api", apiRule.PathPrefix)
+	assert.Equal(t, "https", apiRule.MatchScheme)
+	assert.Equal(t, "hub.example.com", apiRule.MatchHost)
+	assert.Equal(t, 8443, apiRule.MatchPort)
+	assert.Equal(t, "/api", apiRule.MatchPathPrefix)
 
 	webRule, ok := ruleRepo.GetRuleByName(dashboardWebRuleName)
 	require.True(t, ok)
-	assert.Equal(t, "https", webRule.Scheme)
-	assert.Equal(t, "hub.example.com", webRule.Host)
-	assert.Equal(t, 8443, webRule.Port)
-	assert.Equal(t, "/admin", webRule.PathPrefix)
+	assert.Equal(t, "https", webRule.MatchScheme)
+	assert.Equal(t, "hub.example.com", webRule.MatchHost)
+	assert.Equal(t, 8443, webRule.MatchPort)
+	assert.Equal(t, "/admin", webRule.MatchPathPrefix)
 }
 
 func newTestSeederRepos(t *testing.T) (*repo.DBAppConfigRepo, *repo.DBPortalRuleRepo, *repo.DBPortalCertRepo, *repo.DBPortalSiteRepo, *repo.DBMetadataRepo, *redisserver.Server) {
@@ -540,19 +540,19 @@ func newTestSeederRepos(t *testing.T) (*repo.DBAppConfigRepo, *repo.DBPortalRule
 	t.Cleanup(redisServer.AfterAppStop)
 
 	return &repo.DBAppConfigRepo{
-			Dao:    &model.AppConfigDao{Dao: rdb.NewDao[*model.AppConfig](gdb)},
-			Syncer: testSyncer(redisServer),
-		}, &repo.DBPortalRuleRepo{
-			Dao:    &model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](gdb)},
-			Syncer: testSyncer(redisServer),
-		}, &repo.DBPortalCertRepo{
-			Dao:    &model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](gdb)},
-			Syncer: testSyncer(redisServer),
-		}, &repo.DBPortalSiteRepo{
-			Dao:        &model.PortalSiteDao{Dao: rdb.NewDao[*model.PortalSite](gdb)},
-			SchemaRepo: new(schema.MemorySchemaRepo),
-			Syncer:     testSyncer(redisServer),
-		}, &repo.DBMetadataRepo{
-			Dao: &model.MetadataDao{Dao: rdb.NewDao[*model.Metadata](gdb)},
-		}, redisServer
+		Dao:    &model.AppConfigDao{Dao: rdb.NewDao[*model.AppConfig](gdb)},
+		Syncer: testSyncer(redisServer),
+	}, &repo.DBPortalRuleRepo{
+		Dao:    &model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](gdb)},
+		Syncer: testSyncer(redisServer),
+	}, &repo.DBPortalCertRepo{
+		Dao:    &model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](gdb)},
+		Syncer: testSyncer(redisServer),
+	}, &repo.DBPortalSiteRepo{
+		Dao:        &model.PortalSiteDao{Dao: rdb.NewDao[*model.PortalSite](gdb)},
+		SchemaRepo: new(schema.MemorySchemaRepo),
+		Syncer:     testSyncer(redisServer),
+	}, &repo.DBMetadataRepo{
+		Dao: &model.MetadataDao{Dao: rdb.NewDao[*model.Metadata](gdb)},
+	}, redisServer
 }

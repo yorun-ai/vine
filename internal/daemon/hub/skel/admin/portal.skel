@@ -57,25 +57,28 @@ data PortalRuleCreation {
     name: string
 
     @desc("Matching protocol")
-    scheme: string
+    matchScheme: string
 
     @desc("Match Host, empty string means no restriction")
-    host: string
+    matchHost: string
 
-    @desc("Match port, 0 means no restriction")
-    port: int
+    @desc("Match matchPort, 0 means no restriction")
+    matchPort: int
 
     @desc("Match path prefix, empty string means match all paths")
-    pathPrefix: string
+    matchPathPrefix: string
+
+    @desc("Target site path prefix; empty means strip the matching prefix only")
+    routePathPrefix: string?
 
     @desc("Target type")
-    targetType: string
+    routeType: string
 
     @desc("Site name")
-    siteName: string
+    routeSiteName: string
 
     @desc("Redirect Pattern")
-    redirectionPattern: string
+    routeRedirectionPattern: string
 }
 
 @desc("Portal entry rules")
@@ -87,25 +90,28 @@ data PortalRule {
     name: string
 
     @desc("Matching protocol")
-    scheme: string
+    matchScheme: string
 
     @desc("Match Host, empty string means no restriction")
-    host: string
+    matchHost: string
 
-    @desc("Match port, 0 means no restriction")
-    port: int
+    @desc("Match matchPort, 0 means no restriction")
+    matchPort: int
 
     @desc("Match path prefix, empty string means match all paths")
-    pathPrefix: string
+    matchPathPrefix: string
+
+    @desc("Target site path prefix; empty means strip the matching prefix only")
+    routePathPrefix: string
 
     @desc("Target type")
-    targetType: string
+    routeType: string
 
     @desc("Site name")
-    siteName: string
+    routeSiteName: string
 
     @desc("Redirect Pattern")
-    redirectionPattern: string
+    routeRedirectionPattern: string
 
 }
 
@@ -115,25 +121,28 @@ data PortalRuleUpdate {
     name: string?
 
     @desc("Matching protocol")
-    scheme: string?
+    matchScheme: string?
 
     @desc("Match Host, empty string means no restriction")
-    host: string?
+    matchHost: string?
 
-    @desc("Match port, 0 means no restriction")
-    port: int?
+    @desc("Match matchPort, 0 means no restriction")
+    matchPort: int?
 
     @desc("Match path prefix, empty string means match all paths")
-    pathPrefix: string?
+    matchPathPrefix: string?
+
+    @desc("Target site path prefix; empty means strip the matching prefix only")
+    routePathPrefix: string?
 
     @desc("Target type")
-    targetType: string?
+    routeType: string?
 
     @desc("Site name")
-    siteName: string?
+    routeSiteName: string?
 
     @desc("Redirect Pattern")
-    redirectionPattern: string?
+    routeRedirectionPattern: string?
 }
 
 @desc("Portal access entry")
