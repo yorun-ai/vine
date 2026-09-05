@@ -60,6 +60,27 @@ Keep Hub's layer responsibilities distinct:
 - `comp` provides shared runtime components such as Redis and NATS.
 - `app` only assembles components, modules, and servicers.
 
+### Domain Writes
+
+Configuration, site, rule, and certificate writes go through their corresponding
+Core. `Validate` checks and normalizes a complete entity without accessing
+storage; `Save` creates or replaces by name and owns identity handling, along
+with versioning and built-in protection where applicable. API updates merge
+provided fields into the existing entity before validation.
+
+Seeder and Dashboard imports validate all supplied entities before writing,
+then call Core `Save`. Validation does not make an entire import transactional:
+a database failure can still leave some entities saved. The YAML conversion
+layer maps configuration fields only; it does not assign database identity or
+manage versions.
+
+`PortalSiteCore.EnsureDashboardSite` and `PortalRuleCore.EnsureDashboardRule`
+own built-in Dashboard provisioning. `RegistryCore` owns schema registration
+and expired-lease removal. Initializer and Sweeper coordinate runtime publication
+through Syncer. The seed-applied marker remains startup bookkeeping in Seeder.
+
+### Change Constraints
+
 Additional constraints for Hub changes:
 
 - Database schema changes must update both `src/server/repo/db/model/sql/sqlite` and `src/server/repo/db/model/sql/pgsql`.
@@ -108,7 +129,21 @@ Hub currently supports two database backends:
 - SQLite
 - PostgreSQL
 
-At startup, `--seed-yaml-file` can import initial configuration, site rules, and certificates from a local YAML file into the database. Portal rule YAML uses flat `matchScheme`, `matchHost`, `matchPort`, `matchPathPrefix`, `routeType`, `routeSiteName`, `routePathPrefix`, and `routeRedirectionPattern` fields. The `mod/seeder` package owns the shared YAML compatibility decoder used by both startup seeding and Dashboard imports. Both accept legacy rule fields with a warning per field; mixing old and new fields in one rule fails before applying changes. Rule creation, updates, and YAML imports go through `PortalRuleCore`; complete rules share entity validation, and imports preflight rules before writing imported entities. YAML cannot replace built-in rules. Admin API and Redis use only new fields; upgrade Hub and Portal together. Existing database columns are migrated to matching `match_*` / `route_*` names. Hub still reads the imported state through its database repos and publishes it to Redis, preserving consistent read and subscription semantics for Link.
+At startup, `--seed-yaml-file` imports initial configuration, Portal sites,
+rules, and certificates from local YAML into the database. Hub reads this state
+through its repos and publishes it to Redis for Link and Portal.
+
+Portal rule YAML uses flat fields in this order: `matchScheme`, `matchHost`,
+`matchPort`, `matchPathPrefix`, `routeType`, `routeSiteName`,
+`routeRedirectionPattern`, and `routePathPrefix`.
+
+The `mod/seeder` package owns the shared YAML compatibility decoder used by
+startup seeding and Dashboard imports. Both accept legacy rule fields with a
+warning per field; mixing old and new fields in one rule fails before applying
+imported data. YAML cannot replace built-in Dashboard sites or rules.
+
+Admin API and Redis use only the new fields; upgrade Hub and Portal together.
+Existing database columns are migrated to matching `match_*` / `route_*` names.
 
 ## Skeleton Generation
 
