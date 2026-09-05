@@ -22,8 +22,8 @@ func TestBuildsRedisClientFromRedisEndpoint(t *testing.T) {
 	}
 
 	component := &_RedisTestClient{}
-	minder := initTestClient(component)
-	defer minder.AfterAppStop()
+	manager := initTestClient(component)
+	defer manager.AfterAppStop()
 
 	assert.NotNil(t, options)
 	assert.Equal(t, "demo.local:7093", options.Addr)
@@ -42,10 +42,10 @@ func (*_RedisTestClient) InitOption(option *Option) {
 	option.Password = LinkPassword
 }
 
-func initTestClient(component app.FrameworkComponent) *ClientMinder {
-	minder := &ClientMinder{
+func initTestClient(component app.ManagedComponent) *ClientManager {
+	manager := &ClientManager{
 		Context: context.Background(),
 	}
-	minder.InitComponent(component)
-	return minder
+	manager.InitComponent(component)
+	return manager
 }

@@ -10,8 +10,8 @@ are not part of the public compatibility commitment.
 
 ### Fixed
 
-- Complete framework component minder initialization before injecting the component
-  into consumers, including dependencies of other minders. Initialization no longer
+- Complete managed component manager initialization before injecting the component
+  into consumers, including dependencies of other managers. Initialization no longer
   requires dependency-first component registration; lifecycle hook order is unchanged.
 
 ### Changed
@@ -26,6 +26,11 @@ are not part of the public compatibility commitment.
 - Portal rules use flat `match*` and `route*` fields across Go, Admin API, Redis, Dashboard, and YAML. Existing database columns are migrated. Legacy YAML fields remain supported with warnings; mixing legacy and new fields in one rule is rejected. Upgrade Hub and Portal together and regenerate Admin clients.
 
 ### Added
+
+- Export `app.ManagedComponent`, `BaseManagedComponent`, `ComponentManager`,
+  `BaseComponentManager`, and `ComponentLifecycle` for external component
+  implementations. Internal `FrameworkComponent` names are now `ManagedComponent`;
+  existing Redis and RDB embedding APIs retain their behavior.
 
 - Public DI bindings support `WithDependencies` to declare additional dependencies
   and run a callback before the constructed instance is returned to consumers.

@@ -26,17 +26,17 @@ type _ClientOps interface {
 	waitJetStreamReady(ctx context.Context, timeout time.Duration, interval time.Duration) error
 }
 
-type _ClientMinder struct {
-	app.BaseFrameworkComponentMinder
+type _ClientManager struct {
+	app.BaseComponentManager
 
 	Context context.Context `inject:""`
 
-	client app.FrameworkComponent
+	client app.ManagedComponent
 	option *_Option
 	conn   *gonats.Conn
 }
 
-func (m *_ClientMinder) InitComponent(component app.FrameworkComponent) {
+func (m *_ClientManager) InitComponent(component app.ManagedComponent) {
 	m.client = component
 	m.option = &_Option{}
 
@@ -67,15 +67,15 @@ func (m *_ClientMinder) InitComponent(component app.FrameworkComponent) {
 	clientOps.setConn(m.conn)
 }
 
-func (m *_ClientMinder) Component() app.FrameworkComponent {
+func (m *_ClientManager) Component() app.ManagedComponent {
 	return m.client
 }
 
-func (m *_ClientMinder) BeforeAppStart() error {
+func (m *_ClientManager) BeforeAppStart() error {
 	return m.client.(_ClientOps).waitJetStreamReady(m.Context, jetStreamReadyTimeout, jetStreamReadyInterval)
 }
 
-func (m *_ClientMinder) AfterAppStop() {
+func (m *_ClientManager) AfterAppStop() {
 	m.conn.Close()
 }
 

@@ -21,13 +21,13 @@ func (*testRedis) InitOption(option *Option) {
 
 func (*testRedis) InitLockers(add TypeAdder) {}
 
-func initTestRedis(component app.FrameworkComponent) *RedisMinder {
-	minder := new(RedisMinder)
-	minder.InitComponent(component)
-	return minder
+func initTestRedis(component app.ManagedComponent) *RedisManager {
+	manager := new(RedisManager)
+	manager.InitComponent(component)
+	return manager
 }
 
-func TestRedisMinderInitComponentInitializesOptionAndClient(t *testing.T) {
+func TestRedisManagerInitComponentInitializesOptionAndClient(t *testing.T) {
 	original := newRedisClient
 	t.Cleanup(func() {
 		newRedisClient = original
@@ -40,16 +40,16 @@ func TestRedisMinderInitComponentInitializesOptionAndClient(t *testing.T) {
 	}
 
 	component := new(testRedis)
-	minder := initTestRedis(component)
-	t.Cleanup(minder.AfterAppStop)
+	manager := initTestRedis(component)
+	t.Cleanup(manager.AfterAppStop)
 
-	require.NotNil(t, minder.option)
-	require.NotNil(t, minder.client)
+	require.NotNil(t, manager.option)
+	require.NotNil(t, manager.client)
 	require.NotNil(t, gotOption)
 	require.NotNil(t, component.Cmdable)
-	assert.Equal(t, "redis://demo-user:demo-pass@127.0.0.1:6379/2", minder.option.Endpoint)
-	assert.Same(t, minder.option, gotOption)
-	assert.Same(t, minder.client, component.Cmdable)
+	assert.Equal(t, "redis://demo-user:demo-pass@127.0.0.1:6379/2", manager.option.Endpoint)
+	assert.Same(t, manager.option, gotOption)
+	assert.Same(t, manager.client, component.Cmdable)
 }
 
 func TestEndpointOptions(t *testing.T) {
@@ -71,14 +71,14 @@ type testConsumer struct {
 	Redis *testRedis `inject:""`
 }
 
-func TestRedisMinderBindProvidesRedis(t *testing.T) {
+func TestRedisManagerBindProvidesRedis(t *testing.T) {
 	component := new(testRedis)
-	minder := initTestRedis(component)
-	t.Cleanup(minder.AfterAppStop)
+	manager := initTestRedis(component)
+	t.Cleanup(manager.AfterAppStop)
 
 	injector := di.NewInjector(func(b *di.Binder) {
 		b.BindInstance(component)
-		minder.Bind(b)
+		manager.Bind(b)
 		b.Bind(reflect.TypeFor[*testConsumer]()).In(di.TransientScope)
 	})
 
@@ -86,5 +86,5 @@ func TestRedisMinderBindProvidesRedis(t *testing.T) {
 	require.NotNil(t, consumer.Redis)
 	require.NotNil(t, consumer.Redis.Cmdable)
 	assert.Same(t, component, consumer.Redis)
-	assert.Same(t, minder.client, consumer.Redis.Cmdable)
+	assert.Same(t, manager.client, consumer.Redis.Cmdable)
 }

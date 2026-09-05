@@ -32,7 +32,7 @@ type DatabaseSpec interface {
 }
 
 type Database struct {
-	app.BaseFrameworkComponent[*DatabaseMinder]
+	app.BaseManagedComponent[*DatabaseManager]
 }
 
 func (*Database) InitOption(option *Option) {}
@@ -41,16 +41,17 @@ func (*Database) InitDao(addDao TypeAdder) {}
 
 func (*Database) mustBeDatabase() {}
 
-type DatabaseMinder struct {
-	app.BaseFrameworkComponentMinder
+// DatabaseManager owns database connections and DAO dependency bindings.
+type DatabaseManager struct {
+	app.BaseComponentManager
 
-	database app.FrameworkComponent
+	database app.ManagedComponent
 	option   *Option
 	daoTypes []reflect.Type
 	gormDB   *gorm.DB
 }
 
-func (m *DatabaseMinder) InitComponent(component app.FrameworkComponent) {
+func (m *DatabaseManager) InitComponent(component app.ManagedComponent) {
 	m.database = component
 	m.option = defaultOption()
 
@@ -67,11 +68,11 @@ func (m *DatabaseMinder) InitComponent(component app.FrameworkComponent) {
 	m.gormDB = gormDB
 }
 
-func (m *DatabaseMinder) Component() app.FrameworkComponent {
+func (m *DatabaseManager) Component() app.ManagedComponent {
 	return m.database
 }
 
-func (m *DatabaseMinder) Bind(b *di.Binder) {
+func (m *DatabaseManager) Bind(b *di.Binder) {
 	for _, daoType := range m.daoTypes {
 		b.Bind(daoType).ToFactory(func(ctx context.Context, logger *logger.Logger) any {
 			return m.instantiateDao(daoType, ctx, logger)
@@ -79,7 +80,7 @@ func (m *DatabaseMinder) Bind(b *di.Binder) {
 	}
 }
 
-func (m *DatabaseMinder) instantiateDao(daoType reflect.Type, ctx context.Context, logger *logger.Logger) any {
+func (m *DatabaseManager) instantiateDao(daoType reflect.Type, ctx context.Context, logger *logger.Logger) any {
 	daoValue := reflect.New(daoType.Elem())
 	dao, ok := daoValue.Interface().(_GormDBSetter)
 	vpre.Check(ok, "dao type %s must embed rdb.Dao[...] to receive gorm db", daoType)
@@ -87,6 +88,6 @@ func (m *DatabaseMinder) instantiateDao(daoType reflect.Type, ctx context.Contex
 	return daoValue.Interface()
 }
 
-func (m *DatabaseMinder) AfterAppStop() {
+func (m *DatabaseManager) AfterAppStop() {
 	closeConnection(m.option.ConnURL)
 }

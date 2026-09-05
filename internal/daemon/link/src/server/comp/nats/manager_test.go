@@ -34,15 +34,15 @@ func (c *_TestRemoteClient) InitOption(option *_Option) {
 	option.Endpoint = c.Endpoint
 }
 
-func initTestClient(component app.FrameworkComponent) *_ClientMinder {
-	minder := &_ClientMinder{
+func initTestClient(component app.ManagedComponent) *_ClientManager {
+	manager := &_ClientManager{
 		Context: context.Background(),
 	}
-	minder.InitComponent(component)
-	return minder
+	manager.InitComponent(component)
+	return manager
 }
 
-func TestClientMinderUsesInprocServer(t *testing.T) {
+func TestClientManagerUsesInprocServer(t *testing.T) {
 	natsModule := &hubnatsserver.NATSServer{
 		InprocFlag: &app.InternalInprocFlag{Enabled: true},
 		Flag:       &hubflag.Flag{MQEmbeddedNats: true},
@@ -51,15 +51,15 @@ func TestClientMinderUsesInprocServer(t *testing.T) {
 	t.Cleanup(natsModule.AfterAppStop)
 
 	component := &_TestInprocClient{}
-	minder := initTestClient(component)
-	defer minder.AfterAppStop()
+	manager := initTestClient(component)
+	defer manager.AfterAppStop()
 
-	if minder.conn == nil {
+	if manager.conn == nil {
 		t.Fatalf("expected inproc connection")
 	}
 }
 
-func TestClientMinderBuildsRemoteConnection(t *testing.T) {
+func TestClientManagerBuildsRemoteConnection(t *testing.T) {
 	server, err := natsserver.NewServer(&natsserver.Options{
 		Port:      -1,
 		NoSigs:    true,
@@ -79,15 +79,15 @@ func TestClientMinderBuildsRemoteConnection(t *testing.T) {
 	component := &_TestRemoteClient{
 		Endpoint: "nats://" + server.Addr().String(),
 	}
-	minder := initTestClient(component)
-	defer minder.AfterAppStop()
+	manager := initTestClient(component)
+	defer manager.AfterAppStop()
 
-	if minder.conn == nil {
+	if manager.conn == nil {
 		t.Fatalf("expected remote connection")
 	}
 }
 
-func TestClientMinderBuildsRemoteConnectionWithReconnectOptions(t *testing.T) {
+func TestClientManagerBuildsRemoteConnectionWithReconnectOptions(t *testing.T) {
 	oldNewNATSConnect := newNATSConnect
 	defer func() {
 		newNATSConnect = oldNewNATSConnect

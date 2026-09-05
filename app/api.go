@@ -37,6 +37,30 @@ type ApplicationSpec = internalapp.ApplicationSpec
 // Application provides default implementations for ApplicationSpec and is intended for embedding.
 type Application = internalapp.Application
 
+// ManagedComponent is a component whose initialization, bindings, and lifecycle
+// are provided by a ComponentManager. Implement it by embedding
+// BaseManagedComponent and register the component through InitComponents.
+type ManagedComponent = internalapp.ManagedComponent
+
+// BaseManagedComponent associates an embedded component with its manager type M.
+// Each registered component receives its own manager instance.
+type BaseManagedComponent[M ComponentManager] = internalapp.BaseManagedComponent[M]
+
+// ComponentManager initializes and manages a component. InitComponent runs
+// after the component's DIInit and before consumers receive it. Component must
+// return that same component; Bind publishes additional dependencies. A manager
+// must not inject its own managed component; InitComponent supplies it.
+type ComponentManager = internalapp.ComponentManager
+
+// BaseComponentManager provides no-op defaults for manager hooks. Override
+// InitComponent and Component to retain and return the managed component.
+type BaseComponentManager = internalapp.BaseComponentManager
+
+// ComponentLifecycle defines startup and shutdown hooks shared by modules and
+// component managers. Hooks run in registration order on start and reverse order
+// on stop, with components starting before modules and stopping after them.
+type ComponentLifecycle = internalapp.ComponentLifecycle
+
 // Module is a lifecycle-aware application module.
 type Module = internalapp.Module
 

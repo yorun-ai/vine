@@ -372,41 +372,41 @@ func (*testInternalServicerSpec) ServicerInitHandlers(addHandler TypeAdder) {
 	addHandler(T[*ConsoleServiceServerImpl]())
 }
 
-type TestLifecycleFrameworkComponent struct {
-	BaseFrameworkComponent[*TestLifecycleFrameworkComponent]
-	BaseFrameworkComponentMinder
+type TestLifecycleManagedComponent struct {
+	BaseManagedComponent[*TestLifecycleManagedComponent]
+	BaseComponentManager
 	Log *testLifecycleLog `inject:""`
 
-	component FrameworkComponent
+	component ManagedComponent
 }
 
-func (c *TestLifecycleFrameworkComponent) InitComponent(component FrameworkComponent) {
+func (c *TestLifecycleManagedComponent) InitComponent(component ManagedComponent) {
 	c.component = component
 }
 
-func (c *TestLifecycleFrameworkComponent) Component() FrameworkComponent {
+func (c *TestLifecycleManagedComponent) Component() ManagedComponent {
 	return c.component
 }
 
-func (c *TestLifecycleFrameworkComponent) BeforeAppStart() error {
+func (c *TestLifecycleManagedComponent) BeforeAppStart() error {
 	*c.Log.Events = append(*c.Log.Events, "fx-component-before-start")
 	return nil
 }
 
-func (c *TestLifecycleFrameworkComponent) AfterAppStart() {
+func (c *TestLifecycleManagedComponent) AfterAppStart() {
 	*c.Log.Events = append(*c.Log.Events, "fx-component-after-start")
 }
 
-func (c *TestLifecycleFrameworkComponent) BeforeAppStop() {
+func (c *TestLifecycleManagedComponent) BeforeAppStop() {
 	*c.Log.Events = append(*c.Log.Events, "fx-component-before-stop")
 }
 
-func (c *TestLifecycleFrameworkComponent) AfterAppStop() {
+func (c *TestLifecycleManagedComponent) AfterAppStop() {
 	*c.Log.Events = append(*c.Log.Events, "fx-component-after-stop")
 }
 
 type testLifecycleComponent struct {
-	TestLifecycleFrameworkComponent
+	TestLifecycleManagedComponent
 }
 
 func (c *testLifecycleComponent) BeforeAppStart() error {
