@@ -275,7 +275,7 @@ export function AppSidebar({
         <div className="h-14 overflow-hidden bg-sidebar p-0">
           <div
             className={cn(
-              'flex h-full items-center',
+              'relative flex h-full items-center',
               isLogoExpanded ? 'w-full px-3' : 'w-[3.4rem] justify-center',
             )}
           >
@@ -287,6 +287,18 @@ export function AppSidebar({
             {isLogoExpanded ? (
               <span className="ml-2.5 min-w-0 truncate text-[17px] font-semibold tracking-[-0.02em] text-foreground">
                 Vine Hub
+              </span>
+            ) : null}
+            {import.meta.env.DEV ? (
+              <span
+                className={cn(
+                  'shrink-0 rounded border border-amber-500/40 bg-amber-100 px-1 text-[8px] font-bold leading-3 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+                  isLogoExpanded
+                    ? 'ml-1 -translate-y-2'
+                    : 'absolute right-1 top-1.5',
+                )}
+              >
+                DEV
               </span>
             ) : null}
           </div>

@@ -1,4 +1,7 @@
 export const cn = {
+  'common.selectDomain': '选择 Domain',
+  'common.allDomains': '全部 Domain',
+  'common.clearSearch': '清除搜索',
   'common.language': '语言',
   'common.fields': '字段',
   'common.searchSkelName': '搜索 skelName',

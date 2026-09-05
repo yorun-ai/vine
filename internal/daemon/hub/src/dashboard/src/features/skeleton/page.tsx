@@ -1,6 +1,9 @@
+import { DomainFilter } from '@/components/domain-filter'
+import { SkelName } from '@/components/skel-name'
+import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
-import { ChevronDown, Loader2, RefreshCw, Search } from 'lucide-react'
+import { ChevronDown, Loader2, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
@@ -9,12 +12,7 @@ import {
   DeprecatedNotice,
 } from '@/components/deprecated'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  ResizableListHandle,
-  useReservedScrollbar,
-  useResizableListPanel,
-} from '@/components/ui/resizable-list-panel'
+import { ListDetailLayout } from '@/components/ui/list-detail-layout'
 import {
   Popover,
   PopoverContent,
@@ -48,7 +46,6 @@ import type { SkeletonItem, SkeletonKind } from './model'
 
 const skeletonItemsByKind = new Map<SkeletonKind, Array<SkeletonItem>>()
 let cachedTypeDefinitions: Array<SkeletonData> | null = null
-const SKELETON_LIST_WIDTH_STORAGE_KEY = 'vinehub_skeleton_list_width_v2'
 const SKELETON_LIST_DEFAULT_WIDTH = 352
 
 function shouldUseBrowserNavigation(
@@ -176,11 +173,6 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
   const [loading, setLoading] = React.useState(
     () => !skeletonItemsByKind.has(kind),
   )
-  const listPanel = useResizableListPanel({
-    defaultWidth: SKELETON_LIST_DEFAULT_WIDTH,
-    storageKey: SKELETON_LIST_WIDTH_STORAGE_KEY,
-  })
-  const handleListScroll = useReservedScrollbar()
   const scrollHideTimers = React.useRef(new WeakMap<Element, number>())
 
   const loadItems = React.useCallback(async () => {
@@ -258,6 +250,14 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
       itemValues(item).some((value) => value.toLowerCase().includes(keyword)),
     )
   }, [items, query])
+  const domains = React.useMemo(
+    () =>
+      Array.from(new Set(items.map((item) => item.domain).filter(Boolean))).sort(
+        (left, right) => left.localeCompare(right),
+      ),
+    [items],
+  )
+
   const filteredGroups = React.useMemo(
     () => buildSkeletonItemVersionGroups(filteredItems),
     [filteredItems],
@@ -416,397 +416,385 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
   )
 
   return (
-    <section className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden bg-white">
-      <div
-        className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[var(--list-panel-width)_minmax(0,1fr)]"
-        style={listPanel.gridStyle}
-      >
-        <aside className="relative flex min-h-0 flex-col border-b border-border/70 lg:border-r lg:border-b-0">
-          <div className="border-b border-border/70 p-4">
-            <div className="relative">
-              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={query}
-                className="pl-8"
-                placeholder={t('common.searchSkelName')}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            </div>
-            <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-              <span>
-                {t('common.itemCount').replace(
-                  '{count}',
-                  String(filteredGroups.length),
+    <ListDetailLayout
+      defaultWidth={SKELETON_LIST_DEFAULT_WIDTH}
+      resizeLabel={t('skeleton.resizeList')}
+      listFooter={t('common.itemCount').replace(
+        '{count}',
+        String(filteredGroups.length),
+      )}
+      listHeader={
+        <>
+          <div className="relative">
+            <SearchInput
+              value={query}
+              placeholder={t('common.searchSkelName')}
+              onValueChange={setQuery}
+            />
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <DomainFilter
+              domains={domains}
+              query={query}
+              onQueryChange={setQuery}
+              loading={loading}
+            />
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-7"
+                title={t('action.refreshList')}
+                onClick={() => void loadItems()}
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="size-3.5" />
                 )}
-              </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-7"
-                  title={t('action.refreshList')}
-                  onClick={() => void loadItems()}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <Loader2 className="size-3.5 animate-spin" />
-                  ) : (
-                    <RefreshCw className="size-3.5" />
-                  )}
-                </Button>
-              </div>
+              </Button>
             </div>
           </div>
+        </>
+      }
+      list={
+        loading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <Skeleton key={index} className="h-16 w-full" />
+            ))}
+          </div>
+        ) : filteredGroups.length === 0 ? (
+          <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+            {items.length === 0
+              ? tText(config.emptyTitle)
+              : t('skeleton.noMatch')}
+          </div>
+        ) : (
+          <div className="min-w-0 space-y-1">
+            {filteredGroups.map((group) => {
+              const item = group.main
+              const isSelected =
+                item.skelName === routeSkelName &&
+                (routeSchemaHash
+                  ? item.schemaHash === routeSchemaHash
+                  : item.isMain)
+              const listBadge = getSkeletonListBadge(item)
+              const groupKey = `${kind}:${group.skelName}`
+              const isExpanded = Boolean(expandedVersionGroups[groupKey])
 
-          <div
-            className="scrollbar-reserved min-h-0 flex-1 overflow-auto py-2 pr-1 pl-2"
-            onScroll={handleListScroll}
-          >
-            {loading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <Skeleton key={index} className="h-16 w-full" />
-                ))}
-              </div>
-            ) : filteredGroups.length === 0 ? (
-              <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-                {items.length === 0
-                  ? tText(config.emptyTitle)
-                  : t('skeleton.noMatch')}
-              </div>
-            ) : (
-              <div className="min-w-0 space-y-1">
-                {filteredGroups.map((group) => {
-                  const item = group.main
-                  const isSelected =
-                    item.skelName === routeSkelName &&
-                    (routeSchemaHash
-                      ? item.schemaHash === routeSchemaHash
-                      : item.isMain)
-                  const listBadge = getSkeletonListBadge(item)
-                  const groupKey = `${kind}:${group.skelName}`
-                  const isExpanded = Boolean(expandedVersionGroups[groupKey])
-
-                  return (
-                    <div key={group.skelName} className="grid min-w-0 gap-1">
-                      <div className="relative min-w-0">
-                        {group.versions.length > 0 ? (
-                          <button
-                            type="button"
-                            className="absolute top-2.5 right-2 z-10 inline-flex h-6 shrink-0 items-center gap-1 rounded-full border bg-background px-2 text-xs font-medium transition-colors hover:border-primary/40 hover:bg-primary/[0.04] hover:text-primary"
-                            title={
-                              isExpanded
-                                ? t('action.collapseVersions')
-                                : t('action.expandVersions')
-                            }
-                            onClick={(event) => {
-                              event.preventDefault()
-                              event.stopPropagation()
-                              setExpandedVersionGroups((current) => ({
-                                ...current,
-                                [groupKey]: !current[groupKey],
-                              }))
-                            }}
-                          >
-                            <span>{t('version.multiple')}</span>
-                            <ChevronDown
-                              className={cn(
-                                'size-3.5 transition-transform',
-                                !isExpanded && '-rotate-90',
-                              )}
-                            />
-                          </button>
-                        ) : null}
-                        <a
-                          id={skeletonListItemDomId(kind, item.skelName)}
-                          href={skeletonItemHref(item, kind)}
-                          onClick={(event) => {
-                            if (shouldUseBrowserNavigation(event)) {
-                              return
-                            }
-                            event.preventDefault()
-                            navigateToItem(item)
-                          }}
+              return (
+                <div key={group.skelName} className="grid min-w-0 gap-1">
+                  <div className="relative min-w-0">
+                    {group.versions.length > 0 ? (
+                      <button
+                        type="button"
+                        className="absolute top-2.5 right-2 z-10 inline-flex h-6 shrink-0 items-center gap-1 rounded-full border bg-background px-2 text-xs font-medium transition-colors hover:border-primary/40 hover:bg-primary/[0.04] hover:text-primary"
+                        title={
+                          isExpanded
+                            ? t('action.collapseVersions')
+                            : t('action.expandVersions')
+                        }
+                        onClick={(event) => {
+                          event.preventDefault()
+                          event.stopPropagation()
+                          setExpandedVersionGroups((current) => ({
+                            ...current,
+                            [groupKey]: !current[groupKey],
+                          }))
+                        }}
+                      >
+                        <span>{t('version.multiple')}</span>
+                        <ChevronDown
                           className={cn(
-                            'relative flex w-full min-w-0 flex-col gap-1 rounded-lg border px-3 py-2.5 text-left transition-colors',
-                            group.versions.length > 0 ? 'pr-24' : '',
-                            isSelected
-                              ? 'border-primary/30 bg-primary/[0.06]'
-                              : 'border-transparent hover:bg-primary/[0.05]',
+                            'size-3.5 transition-transform',
+                            !isExpanded && '-rotate-90',
                           )}
-                        >
-                          <span
+                        />
+                      </button>
+                    ) : null}
+                    <a
+                      id={skeletonListItemDomId(kind, item.skelName)}
+                      href={skeletonItemHref(item, kind)}
+                      onClick={(event) => {
+                        if (shouldUseBrowserNavigation(event)) {
+                          return
+                        }
+                        event.preventDefault()
+                        navigateToItem(item)
+                      }}
+                      className={cn(
+                        'relative flex w-full min-w-0 flex-col gap-1 rounded-lg border px-3 py-2.5 text-left transition-colors',
+                        group.versions.length > 0 ? 'pr-24' : '',
+                        isSelected
+                          ? 'border-primary/30 bg-primary/[0.06]'
+                          : 'border-transparent hover:bg-primary/[0.05]',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'flex min-w-0 items-center gap-2 text-sm font-medium',
+                          isSelected ? 'text-primary' : 'text-foreground',
+                        )}
+                      >
+                        <span className="truncate">
+                          {displayItemName(item)}
+                        </span>
+                        {listBadge ? (
+                          <Badge variant="outline" className="shrink-0">
+                            {listBadge}
+                          </Badge>
+                        ) : null}
+                        <DeprecatedBadge deprecated={item.deprecated} />
+                      </span>
+                      <span className="truncate text-xs text-muted-foreground">
+                        <SkelName skelName={item.skelName} domain={item.domain} />
+                      </span>
+                    </a>
+                  </div>
+                  {isExpanded && group.versions.length > 0 ? (
+                    <div
+                      className={cn(
+                        'ml-3 grid min-w-0 gap-1 border-l pl-2',
+                        group.versions.some(
+                          (version) =>
+                            version.skelName === routeSkelName &&
+                            version.schemaHash === routeSchemaHash,
+                        ) && 'border-amber-300',
+                      )}
+                    >
+                      {group.versions.map((version) => {
+                        const versionSelected =
+                          version.skelName === routeSkelName &&
+                          version.schemaHash === routeSchemaHash
+                        const versionBadge = getSkeletonListBadge(version)
+                        return (
+                          <a
+                            key={itemVersionKey(version)}
+                            id={skeletonVersionDomId(
+                              kind,
+                              version.skelName,
+                              version.schemaHash,
+                            )}
+                            href={skeletonItemHref(version, kind)}
+                            onClick={(event) => {
+                              if (shouldUseBrowserNavigation(event)) {
+                                return
+                              }
+                              event.preventDefault()
+                              navigateToItem(version)
+                            }}
                             className={cn(
-                              'flex min-w-0 items-center gap-2 text-sm font-medium',
-                              isSelected ? 'text-primary' : 'text-foreground',
+                              'grid min-w-0 gap-1 rounded-md border px-3 py-2 text-left transition-colors',
+                              versionSelected
+                                ? 'border-amber-300 bg-amber-50'
+                                : 'border-transparent hover:bg-amber-50/60',
                             )}
                           >
-                            <span className="truncate">
-                              {displayItemName(item)}
-                            </span>
-                            {listBadge ? (
-                              <Badge variant="outline" className="shrink-0">
-                                {listBadge}
-                              </Badge>
-                            ) : null}
-                            <DeprecatedBadge deprecated={item.deprecated} />
-                          </span>
-                          <span className="truncate text-xs text-muted-foreground">
-                            {item.skelName}
-                          </span>
-                        </a>
-                      </div>
-                      {isExpanded && group.versions.length > 0 ? (
-                        <div
-                          className={cn(
-                            'ml-3 grid min-w-0 gap-1 border-l pl-2',
-                            group.versions.some(
-                              (version) =>
-                                version.skelName === routeSkelName &&
-                                version.schemaHash === routeSchemaHash,
-                            ) && 'border-amber-300',
-                          )}
-                        >
-                          {group.versions.map((version) => {
-                            const versionSelected =
-                              version.skelName === routeSkelName &&
-                              version.schemaHash === routeSchemaHash
-                            const versionBadge = getSkeletonListBadge(version)
-                            return (
-                              <a
-                                key={itemVersionKey(version)}
-                                id={skeletonVersionDomId(
-                                  kind,
-                                  version.skelName,
-                                  version.schemaHash,
-                                )}
-                                href={skeletonItemHref(version, kind)}
-                                onClick={(event) => {
-                                  if (shouldUseBrowserNavigation(event)) {
-                                    return
-                                  }
-                                  event.preventDefault()
-                                  navigateToItem(version)
-                                }}
-                                className={cn(
-                                  'grid min-w-0 gap-1 rounded-md border px-3 py-2 text-left transition-colors',
-                                  versionSelected
-                                    ? 'border-amber-300 bg-amber-50'
-                                    : 'border-transparent hover:bg-amber-50/60',
-                                )}
-                              >
-                                <div className="flex min-w-0 items-center gap-2">
-                                  <div className="flex min-w-0 flex-1 items-center gap-2">
-                                    <span
-                                      className={cn(
-                                        'truncate text-sm font-medium',
-                                        versionSelected
-                                          ? 'text-amber-700'
-                                          : 'text-foreground',
-                                      )}
-                                    >
-                                      {displayItemName(version)}
-                                    </span>
-                                    {versionBadge ? (
-                                      <Badge
-                                        variant="outline"
-                                        className="shrink-0"
-                                      >
-                                        {versionBadge}
-                                      </Badge>
-                                    ) : null}
-                                    <DeprecatedBadge
-                                      deprecated={version.deprecated}
-                                    />
-                                  </div>
-                                  <Badge
-                                    variant="outline"
-                                    className="shrink-0 border-amber-300 bg-amber-50 text-amber-700"
-                                  >
-                                    {version.schemaHash}
-                                  </Badge>
-                                </div>
-                                <span className="truncate font-mono text-xs text-muted-foreground">
-                                  {version.skelName}
-                                </span>
-                              </a>
-                            )
-                          })}
-                        </div>
-                      ) : null}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-          <ResizableListHandle
-            defaultWidth={SKELETON_LIST_DEFAULT_WIDTH}
-            label={t('skeleton.resizeList')}
-            panel={listPanel}
-          />
-        </aside>
-
-        <main className="min-h-0 overflow-hidden">
-          {!routeSkelName && !loading ? (
-            <div className="flex h-full min-h-[24rem] items-center justify-center text-sm text-muted-foreground">
-              {t('skeleton.selectOne')}
-            </div>
-          ) : loading ? (
-            <div className="space-y-4 p-6">
-              <Skeleton className="h-8 w-56" />
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-[28rem] w-full" />
-            </div>
-          ) : selectedItem ? (
-            <div className="flex h-full min-h-0 flex-col">
-              <div className="border-b border-border/70 px-6 py-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Icon className="size-4 shrink-0 text-primary" />
-                      <h2 className="min-w-0 truncate text-base font-semibold">
-                        {displayItemName(selectedItem)}
-                      </h2>
-                      <SkeletonItemBadges
-                        item={selectedItem}
-                        showVersion={false}
-                      />
-                      {!selectedItem.isMain ? (
-                        <Badge
-                          variant="outline"
-                          className="border-amber-300 bg-amber-50 text-amber-700"
-                        >
-                          {selectedItem.schemaHash}
-                        </Badge>
-                      ) : selectedVersionGroup &&
-                        selectedVersionGroup.versions.length > 0 ? (
-                        <Popover>
-                          <PopoverTrigger
-                            className="inline-flex h-6 items-center gap-1 rounded-full border bg-background px-2 text-xs font-medium transition-colors hover:border-primary/40 hover:bg-primary/[0.04] hover:text-primary"
-                            title={t('action.viewVersions')}
-                          >
-                            <span>{t('version.multiple')}</span>
-                            <ChevronDown className="size-3.5" />
-                          </PopoverTrigger>
-                          <PopoverContent
-                            align="start"
-                            className="w-52 gap-1 p-1.5"
-                          >
-                            {selectedVersionGroup.versions.map((version) => {
-                              const versionSelected =
-                                version.schemaHash === selectedItem.schemaHash
-                              return (
-                                <a
-                                  key={itemVersionKey(version)}
-                                  href={skeletonItemHref(version, kind)}
-                                  onClick={(event) => {
-                                    if (shouldUseBrowserNavigation(event)) {
-                                      return
-                                    }
-                                    event.preventDefault()
-                                    navigateToItem(version)
-                                  }}
+                            <div className="flex min-w-0 items-center gap-2">
+                              <div className="flex min-w-0 flex-1 items-center gap-2">
+                                <span
                                   className={cn(
-                                    'flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors',
+                                    'truncate text-sm font-medium',
                                     versionSelected
-                                      ? 'bg-amber-50 text-amber-700'
-                                      : 'hover:bg-primary/[0.05]',
+                                      ? 'text-amber-700'
+                                      : 'text-foreground',
                                   )}
                                 >
-                                  <span className="font-mono text-xs">
-                                    {version.schemaHash}
-                                  </span>
-                                  {versionSelected ? (
-                                    <Badge
-                                      variant="outline"
-                                      className="border-amber-300 bg-amber-50 text-amber-700"
-                                    >
-                                      {t('action.current')}
-                                    </Badge>
-                                  ) : null}
-                                </a>
-                              )
-                            })}
-                          </PopoverContent>
-                        </Popover>
-                      ) : null}
-                    </div>
-                    <p className="mt-2 truncate font-mono text-xs text-muted-foreground">
-                      {(() => {
-                        const { domainPart, restPart } = splitDomainSkelName(
-                          selectedItem.domain,
-                          selectedItem.skelName,
+                                  {displayItemName(version)}
+                                </span>
+                                {versionBadge ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="shrink-0"
+                                  >
+                                    {versionBadge}
+                                  </Badge>
+                                ) : null}
+                                <DeprecatedBadge
+                                  deprecated={version.deprecated}
+                                />
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className="shrink-0 border-amber-300 bg-amber-50 text-amber-700"
+                              >
+                                {version.schemaHash}
+                              </Badge>
+                            </div>
+                            <span className="truncate font-mono text-xs text-muted-foreground">
+                              <SkelName skelName={version.skelName} domain={version.domain} />
+                            </span>
+                          </a>
                         )
-                        return (
-                          <>
+                      })}
+                    </div>
+                  ) : null}
+                </div>
+              )
+            })}
+          </div>
+        )
+      }
+    >
+      {!routeSkelName && !loading ? (
+        <div className="flex h-full min-h-[24rem] items-center justify-center text-sm text-muted-foreground">
+          {t('skeleton.selectOne')}
+        </div>
+      ) : loading ? (
+        <div className="space-y-4 p-6">
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-[28rem] w-full" />
+        </div>
+      ) : selectedItem ? (
+        <div className="flex h-full min-h-0 flex-col">
+          <div className="border-b border-border/70 px-6 py-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Icon className="size-4 shrink-0 text-primary" />
+                  <h2 className="min-w-0 truncate text-base font-semibold">
+                    {displayItemName(selectedItem)}
+                  </h2>
+                  <SkeletonItemBadges
+                    item={selectedItem}
+                    showVersion={false}
+                  />
+                  {!selectedItem.isMain ? (
+                    <Badge
+                      variant="outline"
+                      className="border-amber-300 bg-amber-50 text-amber-700"
+                    >
+                      {selectedItem.schemaHash}
+                    </Badge>
+                  ) : selectedVersionGroup &&
+                    selectedVersionGroup.versions.length > 0 ? (
+                    <Popover>
+                      <PopoverTrigger
+                        className="inline-flex h-6 items-center gap-1 rounded-full border bg-background px-2 text-xs font-medium transition-colors hover:border-primary/40 hover:bg-primary/[0.04] hover:text-primary"
+                        title={t('action.viewVersions')}
+                      >
+                        <span>{t('version.multiple')}</span>
+                        <ChevronDown className="size-3.5" />
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="start"
+                        className="w-52 gap-1 p-1.5"
+                      >
+                        {selectedVersionGroup.versions.map((version) => {
+                          const versionSelected =
+                            version.schemaHash === selectedItem.schemaHash
+                          return (
                             <a
-                              href={skeletonDomainHref(selectedItem)}
-                              className="font-mono text-primary underline-offset-2 hover:underline"
+                              key={itemVersionKey(version)}
+                              href={skeletonItemHref(version, kind)}
                               onClick={(event) => {
                                 if (shouldUseBrowserNavigation(event)) {
                                   return
                                 }
                                 event.preventDefault()
-                                navigateToDomainDefinition(selectedItem)
+                                navigateToItem(version)
                               }}
+                              className={cn(
+                                'flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors',
+                                versionSelected
+                                  ? 'bg-amber-50 text-amber-700'
+                                  : 'hover:bg-primary/[0.05]',
+                              )}
                             >
-                              {domainPart}
+                              <span className="font-mono text-xs">
+                                {version.schemaHash}
+                              </span>
+                              {versionSelected ? (
+                                <Badge
+                                  variant="outline"
+                                  className="border-amber-300 bg-amber-50 text-amber-700"
+                                >
+                                  {t('action.current')}
+                                </Badge>
+                              ) : null}
                             </a>
-                            {restPart}
-                          </>
-                        )
-                      })()}
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => void loadItems()}
-                    disabled={loading}
-                  >
-                    <RefreshCw />
-                    {t('action.refresh')}
-                  </Button>
+                          )
+                        })}
+                      </PopoverContent>
+                    </Popover>
+                  ) : null}
                 </div>
-                {selectedItem.description ? (
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {selectedItem.description}
-                  </p>
-                ) : null}
-                <DeprecatedNotice
-                  deprecated={selectedItem.deprecated}
-                  deprecatedReason={selectedItem.deprecatedReason}
-                  className="mt-3"
-                />
+                <p className="mt-2 truncate font-mono text-xs text-muted-foreground">
+                  {(() => {
+                    const { domainPart, restPart } = splitDomainSkelName(
+                      selectedItem.domain,
+                      selectedItem.skelName,
+                    )
+                    return (
+                      <>
+                        <a
+                          href={skeletonDomainHref(selectedItem)}
+                          className="font-mono text-primary underline-offset-2 hover:underline"
+                          onClick={(event) => {
+                            if (shouldUseBrowserNavigation(event)) {
+                              return
+                            }
+                            event.preventDefault()
+                            navigateToDomainDefinition(selectedItem)
+                          }}
+                        >
+                          {domainPart}
+                        </a>
+                        {restPart}
+                      </>
+                    )
+                  })()}
+                </p>
               </div>
-
-              <div
-                className="scrollbar-reserved min-h-0 flex-1 overflow-y-auto p-6 pr-4"
-                onScroll={handleScrollAreaScroll}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void loadItems()}
+                disabled={loading}
               >
-                <SkeletonItemDetails
-                  item={selectedItem}
-                  kind={kind}
-                  typeIndex={typeIndex}
-                  relatedServices={relatedServices}
-                  relatedWebs={relatedWebs}
-                  onTypeClick={navigateToTypeDefinition}
-                  onActorClick={navigateToActorDefinition}
-                  onServiceClick={navigateToServiceDefinition}
-                  onDataClick={navigateToDataDefinition}
-                  onWebClick={navigateToWebDefinition}
-                />
-              </div>
+                <RefreshCw />
+                {t('action.refresh')}
+              </Button>
             </div>
-          ) : (
-            <div className="flex h-full min-h-[24rem] items-center justify-center text-sm text-muted-foreground">
-              {t('skeleton.notFound')}
-            </div>
-          )}
-        </main>
-      </div>
-    </section>
+            {selectedItem.description ? (
+              <p className="mt-2 text-sm text-muted-foreground">
+                {selectedItem.description}
+              </p>
+            ) : null}
+            <DeprecatedNotice
+              deprecated={selectedItem.deprecated}
+              deprecatedReason={selectedItem.deprecatedReason}
+              className="mt-3"
+            />
+          </div>
+
+          <div
+            className="scrollbar-reserved min-h-0 flex-1 overflow-y-auto p-6 pr-4"
+            onScroll={handleScrollAreaScroll}
+          >
+            <SkeletonItemDetails
+              item={selectedItem}
+              kind={kind}
+              typeIndex={typeIndex}
+              relatedServices={relatedServices}
+              relatedWebs={relatedWebs}
+              onTypeClick={navigateToTypeDefinition}
+              onActorClick={navigateToActorDefinition}
+              onServiceClick={navigateToServiceDefinition}
+              onDataClick={navigateToDataDefinition}
+              onWebClick={navigateToWebDefinition}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="flex h-full min-h-[24rem] items-center justify-center text-sm text-muted-foreground">
+          {t('skeleton.notFound')}
+        </div>
+      )}
+    </ListDetailLayout>
   )
 }

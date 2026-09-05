@@ -2,13 +2,13 @@ import * as React from 'react'
 
 import { cn } from '@/lib/utils'
 
+const LIST_WIDTH_STORAGE_KEY = 'vinehub_list_detail_width'
 const DEFAULT_MIN_WIDTH = 260
 const DEFAULT_MAX_WIDTH = 520
 const DEFAULT_STEP = 16
 const SCROLLBAR_HIDE_DELAY_MS = 900
 
 interface UseResizableListPanelOptions {
-  storageKey: string
   defaultWidth: number
   minWidth?: number
   maxWidth?: number
@@ -53,13 +53,12 @@ function initialWidth({
   defaultWidth,
   maxWidth,
   minWidth,
-  storageKey,
 }: Required<UseResizableListPanelOptions>) {
   if (typeof window === 'undefined') {
     return defaultWidth
   }
 
-  const storedWidth = Number(window.localStorage.getItem(storageKey))
+  const storedWidth = Number(window.localStorage.getItem(LIST_WIDTH_STORAGE_KEY))
   if (!Number.isFinite(storedWidth) || storedWidth <= 0) {
     return defaultWidth
   }
@@ -71,11 +70,10 @@ export function useResizableListPanel({
   defaultWidth,
   maxWidth = DEFAULT_MAX_WIDTH,
   minWidth = DEFAULT_MIN_WIDTH,
-  storageKey,
 }: UseResizableListPanelOptions): ResizableListPanelState {
   const options = React.useMemo(
-    () => ({ defaultWidth, maxWidth, minWidth, storageKey }),
-    [defaultWidth, maxWidth, minWidth, storageKey],
+    () => ({ defaultWidth, maxWidth, minWidth }),
+    [defaultWidth, maxWidth, minWidth],
   )
   const [width, setWidth] = React.useState(() => initialWidth(options))
   const [isResizing, setIsResizing] = React.useState(false)
@@ -85,9 +83,9 @@ export function useResizableListPanel({
     (nextWidth: number) => {
       const clampedWidth = clampWidth(nextWidth, minWidth, maxWidth)
       setWidth(clampedWidth)
-      window.localStorage.setItem(storageKey, String(clampedWidth))
+      window.localStorage.setItem(LIST_WIDTH_STORAGE_KEY, String(clampedWidth))
     },
-    [maxWidth, minWidth, storageKey],
+    [maxWidth, minWidth],
   )
 
   const startResize = React.useCallback(

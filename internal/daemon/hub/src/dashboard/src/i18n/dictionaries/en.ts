@@ -1,6 +1,9 @@
 import type { TranslationKey } from './cn'
 
 export const en: Record<TranslationKey, string> = {
+  'common.selectDomain': 'Select domain',
+  'common.allDomains': 'All domains',
+  'common.clearSearch': 'Clear search',
   'common.language': 'Language',
   'common.fields': 'Fields',
   'common.searchSkelName': 'Search skelName',

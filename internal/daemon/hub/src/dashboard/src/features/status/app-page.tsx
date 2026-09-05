@@ -1,3 +1,5 @@
+import { ListDetailFooter } from '@/components/ui/list-detail-layout'
+import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import {
@@ -7,7 +9,6 @@ import {
   Globe2,
   Radio,
   RefreshCw,
-  Search,
   Server,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -21,7 +22,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty'
-import { Input } from '@/components/ui/input'
 import {
   ResizableListHandle,
   useReservedScrollbar,
@@ -49,7 +49,6 @@ import {
 
 const appStatusService = createAppStatusService(vrpcClient)
 const APP_STATUS_LIST_DEFAULT_WIDTH = 352
-const APP_STATUS_LIST_WIDTH_STORAGE_KEY = 'vinehub_status_app_list_width'
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Request failed'
@@ -432,7 +431,6 @@ export function AppStatusPage() {
   const [loading, setLoading] = React.useState(true)
   const listPanel = useResizableListPanel({
     defaultWidth: APP_STATUS_LIST_DEFAULT_WIDTH,
-    storageKey: APP_STATUS_LIST_WIDTH_STORAGE_KEY,
   })
   const handleListScroll = useReservedScrollbar()
   const [selectedInstanceId, setSelectedInstanceId] = React.useState<
@@ -536,21 +534,13 @@ export function AppStatusPage() {
         <aside className="relative flex min-h-0 flex-col border-b border-border/70 lg:border-r lg:border-b-0">
           <div className="grid gap-4 border-b border-border/70 p-4">
             <div className="relative w-full md:max-w-sm">
-              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
+              <SearchInput
                 value={query}
-                className="pl-8"
                 placeholder={t('statusApp.searchPlaceholder')}
-                onChange={(event) => setQuery(event.target.value)}
+                onValueChange={setQuery}
               />
             </div>
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-xs text-muted-foreground">
-                {t('statusApp.itemCount').replace(
-                  '{count}',
-                  String(items.length),
-                )}
-              </div>
+            <div className="flex items-center justify-end gap-2">
               <Button
                 type="button"
                 variant="ghost"
@@ -616,6 +606,12 @@ export function AppStatusPage() {
               </div>
             )}
           </div>
+          <ListDetailFooter>
+            {t('statusApp.itemCount').replace(
+              '{count}',
+              String(items.length),
+            )}
+          </ListDetailFooter>
           <ResizableListHandle
             defaultWidth={APP_STATUS_LIST_DEFAULT_WIDTH}
             label={t('statusApp.resizeList')}

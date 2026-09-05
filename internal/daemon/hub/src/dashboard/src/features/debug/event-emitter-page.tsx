@@ -1,13 +1,13 @@
+import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
 import { json } from '@codemirror/lang-json'
 import CodeMirror from '@uiw/react-codemirror'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
-import { Copy, Loader2, RotateCcw, Search, Send } from 'lucide-react'
+import { Copy, Loader2, RotateCcw, Send } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { DeprecatedBadge } from '@/components/deprecated'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -384,13 +384,11 @@ export function EventEmitterPage() {
                 header={
                   <div className="sticky top-0 z-10 border-b border-border bg-popover p-2">
                     <div className="relative">
-                      <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
+                      <SearchInput
                         ref={eventSearchInputRef}
                         value={eventQuery}
-                        className="h-8 pl-8"
                         placeholder="Search event"
-                        onChange={(event) => setEventQuery(event.target.value)}
+                        onValueChange={setEventQuery}
                         onKeyDownCapture={(event) => event.stopPropagation()}
                         onKeyDown={(event) => event.stopPropagation()}
                       />

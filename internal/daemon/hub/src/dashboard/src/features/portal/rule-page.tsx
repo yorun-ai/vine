@@ -1,3 +1,5 @@
+import { ListDetailFooter } from '@/components/ui/list-detail-layout'
+import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import {
@@ -6,7 +8,6 @@ import {
   Loader2,
   Plus,
   RefreshCw,
-  Search,
   ShieldCheck,
   Trash2,
 } from 'lucide-react'
@@ -69,7 +70,6 @@ import type {
 const portalRuleService = createPortalRuleService(vrpcClient)
 const portalSiteService = createPortalSiteService(vrpcClient)
 const PORTAL_RULE_LIST_DEFAULT_WIDTH = 352
-const PORTAL_RULE_LIST_WIDTH_STORAGE_KEY = 'vinehub_portal_rule_list_width'
 const targetTypes = [
   {
     value: 'SITE',
@@ -1149,7 +1149,6 @@ export function PortalRulePage() {
   const [query, setQuery] = React.useState('')
   const listPanel = useResizableListPanel({
     defaultWidth: PORTAL_RULE_LIST_DEFAULT_WIDTH,
-    storageKey: PORTAL_RULE_LIST_WIDTH_STORAGE_KEY,
   })
   const handleListScroll = useReservedScrollbar()
   const [loading, setLoading] = React.useState(true)
@@ -1346,21 +1345,13 @@ export function PortalRulePage() {
           <aside className="relative flex min-h-0 flex-col border-b border-border/70 lg:border-r lg:border-b-0">
             <div className="grid gap-4 border-b border-border/70 p-4">
               <div className="relative w-full md:max-w-sm">
-                <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
+                <SearchInput
                   value={query}
-                  className="pl-8"
                   placeholder={t('portalRule.searchPlaceholder')}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onValueChange={setQuery}
                 />
               </div>
-              <div className="flex items-center justify-between gap-2">
-                <div className="text-xs text-muted-foreground">
-                  {t('portalRule.itemCount').replace(
-                    '{count}',
-                    String(visibleRules.length),
-                  )}
-                </div>
+              <div className="flex items-center justify-end gap-2">
                 <div className="flex items-center gap-1">
                   <Button
                     type="button"
@@ -1442,6 +1433,12 @@ export function PortalRulePage() {
                 </div>
               )}
             </div>
+            <ListDetailFooter>
+              {t('portalRule.itemCount').replace(
+                '{count}',
+                String(visibleRules.length),
+              )}
+            </ListDetailFooter>
             <ResizableListHandle
               defaultWidth={PORTAL_RULE_LIST_DEFAULT_WIDTH}
               label={t('portalRule.resizeList')}
