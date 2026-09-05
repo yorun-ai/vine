@@ -8,10 +8,10 @@ CREATE TABLE IF NOT EXISTS portal_rule (
     match_host TEXT NOT NULL,                     -- Domain or IP, empty string means no restriction
     match_port INTEGER NOT NULL,                  -- Port, 0 means no restriction
     match_path_prefix TEXT NOT NULL,              -- Path prefix, empty string matches all paths
-    route_path_prefix TEXT NOT NULL DEFAULT '',
     route_type TEXT NOT NULL,              -- Target type: SITE / PERMANENT_REDIRECT / TEMPORARY_REDIRECT
     route_site_name TEXT NOT NULL,                -- Target site name, empty string when target is not SITE
     route_redirection_pattern TEXT NOT NULL,      -- Redirection pattern, empty string when target is not Redirect
+    route_path_prefix TEXT NOT NULL DEFAULT '',
     built_in BOOLEAN NOT NULL DEFAULT FALSE     -- Whether this rule is built in
 );
 

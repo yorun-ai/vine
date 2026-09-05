@@ -68,9 +68,6 @@ data PortalRuleCreation {
     @desc("Match path prefix, empty string means match all paths")
     matchPathPrefix: string
 
-    @desc("Target site path prefix; empty means strip the matching prefix only")
-    routePathPrefix: string?
-
     @desc("Target type")
     routeType: string
 
@@ -79,6 +76,9 @@ data PortalRuleCreation {
 
     @desc("Redirect Pattern")
     routeRedirectionPattern: string
+
+    @desc("Target site path prefix; empty means strip the matching prefix only")
+    routePathPrefix: string?
 }
 
 @desc("Portal entry rules")
@@ -101,9 +101,6 @@ data PortalRule {
     @desc("Match path prefix, empty string means match all paths")
     matchPathPrefix: string
 
-    @desc("Target site path prefix; empty means strip the matching prefix only")
-    routePathPrefix: string
-
     @desc("Target type")
     routeType: string
 
@@ -112,6 +109,9 @@ data PortalRule {
 
     @desc("Redirect Pattern")
     routeRedirectionPattern: string
+
+    @desc("Target site path prefix; empty means strip the matching prefix only")
+    routePathPrefix: string
 
 }
 
@@ -132,9 +132,6 @@ data PortalRuleUpdate {
     @desc("Match path prefix, empty string means match all paths")
     matchPathPrefix: string?
 
-    @desc("Target site path prefix; empty means strip the matching prefix only")
-    routePathPrefix: string?
-
     @desc("Target type")
     routeType: string?
 
@@ -143,6 +140,9 @@ data PortalRuleUpdate {
 
     @desc("Redirect Pattern")
     routeRedirectionPattern: string?
+
+    @desc("Target site path prefix; empty means strip the matching prefix only")
+    routePathPrefix: string?
 }
 
 @desc("Portal access entry")

@@ -90,10 +90,10 @@ func ToRedisedPortalRule(rule *core.PortalRule) *redised.PortalRule {
 		MatchHost:               rule.MatchHost,
 		MatchPort:               rule.MatchPort,
 		MatchPathPrefix:         rule.MatchPathPrefix,
-		RoutePathPrefix:         rule.RoutePathPrefix,
 		RouteType:               rule.RouteType,
 		RouteSiteName:           rule.RouteSiteName,
 		RouteRedirectionPattern: rule.RouteRedirectionPattern,
+		RoutePathPrefix:         rule.RoutePathPrefix,
 	}
 }
 

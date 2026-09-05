@@ -374,10 +374,10 @@ export function PortalEntryPage() {
           entryRule.rule.name,
           entryRule.rule.matchHost,
           entryRule.rule.matchPathPrefix,
-          entryRule.rule.routePathPrefix,
           entryRule.rule.routeType,
           entryRule.rule.routeSiteName,
           entryRule.rule.routeRedirectionPattern,
+          entryRule.rule.routePathPrefix,
         ]),
       ]
 

@@ -23,10 +23,10 @@ type PortalRule struct {
 	MatchHost               string
 	MatchPort               int
 	MatchPathPrefix         string
-	RoutePathPrefix         string
 	RouteType               string
 	RouteSiteName           string
 	RouteRedirectionPattern string
+	RoutePathPrefix         string
 	BuiltIn                 bool
 }
 
@@ -36,10 +36,10 @@ type PortalRuleCreation struct {
 	MatchHost               string
 	MatchPort               int
 	MatchPathPrefix         string
-	RoutePathPrefix         string
 	RouteType               string
 	RouteSiteName           string
 	RouteRedirectionPattern string
+	RoutePathPrefix         string
 }
 
 type PortalRuleUpdate struct {
@@ -48,10 +48,10 @@ type PortalRuleUpdate struct {
 	MatchHost               *string
 	MatchPort               *int
 	MatchPathPrefix         *string
-	RoutePathPrefix         *string
 	RouteType               *string
 	RouteSiteName           *string
 	RouteRedirectionPattern *string
+	RoutePathPrefix         *string
 }
 
 type PortalDashboardAccess struct {
@@ -106,10 +106,10 @@ func (m *PortalRuleCore) Create(creation PortalRuleCreation) PortalRule {
 		MatchHost:               creation.MatchHost,
 		MatchPort:               creation.MatchPort,
 		MatchPathPrefix:         creation.MatchPathPrefix,
-		RoutePathPrefix:         creation.RoutePathPrefix,
 		RouteType:               creation.RouteType,
 		RouteSiteName:           creation.RouteSiteName,
 		RouteRedirectionPattern: creation.RouteRedirectionPattern,
+		RoutePathPrefix:         creation.RoutePathPrefix,
 	}
 	rule = m.Validate(rule)
 	m.PortalRuleRepo.SaveRule(&rule)
@@ -141,9 +141,6 @@ func (m *PortalRuleCore) Update(id int, update PortalRuleUpdate) PortalRule {
 	if update.MatchPathPrefix != nil {
 		next.MatchPathPrefix = *update.MatchPathPrefix
 	}
-	if update.RoutePathPrefix != nil {
-		next.RoutePathPrefix = *update.RoutePathPrefix
-	}
 	if update.RouteType != nil {
 		next.RouteType = *update.RouteType
 	}
@@ -152,6 +149,9 @@ func (m *PortalRuleCore) Update(id int, update PortalRuleUpdate) PortalRule {
 	}
 	if update.RouteRedirectionPattern != nil {
 		next.RouteRedirectionPattern = *update.RouteRedirectionPattern
+	}
+	if update.RoutePathPrefix != nil {
+		next.RoutePathPrefix = *update.RoutePathPrefix
 	}
 
 	next = m.Validate(next)

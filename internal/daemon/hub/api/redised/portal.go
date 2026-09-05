@@ -18,10 +18,10 @@ type PortalRule struct {
 	MatchHost               string `json:"matchHost"`
 	MatchPort               int    `json:"matchPort"`
 	MatchPathPrefix         string `json:"matchPathPrefix"`
-	RoutePathPrefix         string `json:"routePathPrefix"`
 	RouteType               string `json:"routeType"`
 	RouteSiteName           string `json:"routeSiteName"`
 	RouteRedirectionPattern string `json:"routeRedirectionPattern"`
+	RoutePathPrefix         string `json:"routePathPrefix"`
 }
 
 func FormatPortalRuleKey(name string) string {

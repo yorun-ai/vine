@@ -24,10 +24,10 @@ type PortalRule struct {
 	MatchHost               string `gorm:"column:match_host"`
 	MatchPort               int    `gorm:"column:match_port"`
 	MatchPathPrefix         string `gorm:"column:match_path_prefix"`
-	RoutePathPrefix         string `gorm:"column:route_path_prefix;not null;default:''"`
 	RouteType               string `gorm:"column:route_type"`
 	RouteSiteName           string `gorm:"column:route_site_name"`
 	RouteRedirectionPattern string `gorm:"column:route_redirection_pattern"`
+	RoutePathPrefix         string `gorm:"column:route_path_prefix;not null;default:''"`
 	BuiltIn                 bool   `gorm:"column:built_in;not null;default:false"`
 }
 
@@ -77,10 +77,10 @@ func (d *PortalRuleDao) Save(rule *PortalRule) *PortalRule {
 		"match_host":                rule.MatchHost,
 		"match_port":                rule.MatchPort,
 		"match_path_prefix":         rule.MatchPathPrefix,
-		"route_path_prefix":         rule.RoutePathPrefix,
 		"route_type":                rule.RouteType,
 		"route_site_name":           rule.RouteSiteName,
 		"route_redirection_pattern": rule.RouteRedirectionPattern,
+		"route_path_prefix":         rule.RoutePathPrefix,
 		"built_in":                  rule.BuiltIn,
 	})
 	return row

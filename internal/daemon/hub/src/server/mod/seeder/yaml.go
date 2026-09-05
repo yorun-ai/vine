@@ -59,10 +59,10 @@ type _PortalRule struct {
 	MatchHost               string `yaml:"matchHost"`
 	MatchPort               int    `yaml:"matchPort"`
 	MatchPathPrefix         string `yaml:"matchPathPrefix"`
-	RoutePathPrefix         string `yaml:"routePathPrefix"`
 	RouteType               string `yaml:"routeType"`
 	RouteSiteName           string `yaml:"routeSiteName"`
 	RouteRedirectionPattern string `yaml:"routeRedirectionPattern"`
+	RoutePathPrefix         string `yaml:"routePathPrefix"`
 	Override                bool   `yaml:"override"`
 }
 
@@ -73,10 +73,10 @@ func (r _PortalRule) ToCorePortalRule() *core.PortalRule {
 		MatchHost:               r.MatchHost,
 		MatchPort:               r.MatchPort,
 		MatchPathPrefix:         r.MatchPathPrefix,
-		RoutePathPrefix:         r.RoutePathPrefix,
 		RouteType:               r.RouteType,
 		RouteSiteName:           r.RouteSiteName,
 		RouteRedirectionPattern: r.RouteRedirectionPattern,
+		RoutePathPrefix:         r.RoutePathPrefix,
 	}
 }
 

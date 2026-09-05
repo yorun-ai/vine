@@ -64,10 +64,10 @@ type _SeedPortalRule struct {
 	MatchHost               string `yaml:"matchHost"`
 	MatchPort               int    `yaml:"matchPort"`
 	MatchPathPrefix         string `yaml:"matchPathPrefix"`
-	RoutePathPrefix         string `yaml:"routePathPrefix"`
 	RouteType               string `yaml:"routeType"`
 	RouteSiteName           string `yaml:"routeSiteName"`
 	RouteRedirectionPattern string `yaml:"routeRedirectionPattern"`
+	RoutePathPrefix         string `yaml:"routePathPrefix"`
 }
 
 type _SeedPortalCert struct {
@@ -187,10 +187,10 @@ func (s *MaintenanceServiceServerImpl) previewPortalRule(rule _SeedPortalRule) s
 		{"matchHost", rule.MatchHost},
 		{"matchPort", intString(rule.MatchPort)},
 		{"matchPathPrefix", rule.MatchPathPrefix},
-		{"routePathPrefix", rule.RoutePathPrefix},
 		{"routeType", rule.RouteType},
 		{"routeSiteName", rule.RouteSiteName},
 		{"routeRedirectionPattern", rule.RouteRedirectionPattern},
+		{"routePathPrefix", rule.RoutePathPrefix},
 	})
 }
 
@@ -292,10 +292,10 @@ func currentPortalRuleFields(rule *core.PortalRule) map[string]string {
 		"matchHost":               rule.MatchHost,
 		"matchPort":               intString(rule.MatchPort),
 		"matchPathPrefix":         rule.MatchPathPrefix,
-		"routePathPrefix":         rule.RoutePathPrefix,
 		"routeType":               rule.RouteType,
 		"routeSiteName":           rule.RouteSiteName,
 		"routeRedirectionPattern": rule.RouteRedirectionPattern,
+		"routePathPrefix":         rule.RoutePathPrefix,
 	}
 }
 
@@ -349,7 +349,7 @@ func (r _SeedPortalRule) toCore() core.PortalRule {
 	return core.PortalRule{
 		Name: r.Name, MatchScheme: r.MatchScheme, MatchHost: r.MatchHost, MatchPort: r.MatchPort,
 		MatchPathPrefix: r.MatchPathPrefix, RouteType: r.RouteType, RouteSiteName: r.RouteSiteName,
-		RoutePathPrefix: r.RoutePathPrefix, RouteRedirectionPattern: r.RouteRedirectionPattern,
+		RouteRedirectionPattern: r.RouteRedirectionPattern, RoutePathPrefix: r.RoutePathPrefix,
 	}
 }
 

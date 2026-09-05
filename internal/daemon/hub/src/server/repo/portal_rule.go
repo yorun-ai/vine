@@ -59,10 +59,10 @@ func toCorePortalRule(row *model.PortalRule) *core.PortalRule {
 		MatchHost:               row.MatchHost,
 		MatchPort:               row.MatchPort,
 		MatchPathPrefix:         row.MatchPathPrefix,
-		RoutePathPrefix:         row.RoutePathPrefix,
 		RouteType:               row.RouteType,
 		RouteSiteName:           row.RouteSiteName,
 		RouteRedirectionPattern: row.RouteRedirectionPattern,
+		RoutePathPrefix:         row.RoutePathPrefix,
 		BuiltIn:                 row.BuiltIn,
 	}
 }
@@ -75,10 +75,10 @@ func toDBPortalRule(rule *core.PortalRule) *model.PortalRule {
 		MatchHost:               rule.MatchHost,
 		MatchPort:               rule.MatchPort,
 		MatchPathPrefix:         rule.MatchPathPrefix,
-		RoutePathPrefix:         rule.RoutePathPrefix,
 		RouteType:               rule.RouteType,
 		RouteSiteName:           rule.RouteSiteName,
 		RouteRedirectionPattern: rule.RouteRedirectionPattern,
+		RoutePathPrefix:         rule.RoutePathPrefix,
 		BuiltIn:                 rule.BuiltIn,
 	}
 }

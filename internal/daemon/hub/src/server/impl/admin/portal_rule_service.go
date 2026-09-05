@@ -38,10 +38,10 @@ func (s *PortalRuleServiceServerImpl) Create(creation skeled.PortalRuleCreation)
 		MatchHost:               creation.MatchHost,
 		MatchPort:               creation.MatchPort,
 		MatchPathPrefix:         creation.MatchPathPrefix,
-		RoutePathPrefix:         routePathPrefix,
 		RouteType:               creation.RouteType,
 		RouteSiteName:           creation.RouteSiteName,
 		RouteRedirectionPattern: creation.RouteRedirectionPattern,
+		RoutePathPrefix:         routePathPrefix,
 	}))
 }
 
@@ -52,10 +52,10 @@ func (s *PortalRuleServiceServerImpl) Update(id int, update skeled.PortalRuleUpd
 		MatchHost:               update.MatchHost,
 		MatchPort:               update.MatchPort,
 		MatchPathPrefix:         update.MatchPathPrefix,
-		RoutePathPrefix:         update.RoutePathPrefix,
 		RouteType:               update.RouteType,
 		RouteSiteName:           update.RouteSiteName,
 		RouteRedirectionPattern: update.RouteRedirectionPattern,
+		RoutePathPrefix:         update.RoutePathPrefix,
 	}))
 }
 
@@ -92,9 +92,9 @@ func toServerPortalRule(rule core.PortalRule) skeled.PortalRule {
 		MatchHost:               rule.MatchHost,
 		MatchPort:               rule.MatchPort,
 		MatchPathPrefix:         rule.MatchPathPrefix,
-		RoutePathPrefix:         rule.RoutePathPrefix,
 		RouteType:               rule.RouteType,
 		RouteSiteName:           rule.RouteSiteName,
 		RouteRedirectionPattern: rule.RouteRedirectionPattern,
+		RoutePathPrefix:         rule.RoutePathPrefix,
 	}
 }

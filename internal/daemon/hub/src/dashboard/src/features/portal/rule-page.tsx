@@ -98,10 +98,10 @@ interface PortalRuleFormValue {
   matchHost: string
   matchPort: string
   matchPathPrefix: string
-  routePathPrefix: string
   routeType: PortalRuleRouteType
   routeSiteName: string
   routeRedirectionPattern: string
+  routePathPrefix: string
 }
 
 const emptyFormValue: PortalRuleFormValue = {
@@ -110,10 +110,10 @@ const emptyFormValue: PortalRuleFormValue = {
   matchHost: '',
   matchPort: '',
   matchPathPrefix: '',
-  routePathPrefix: '',
   routeType: 'SITE',
   routeSiteName: '',
   routeRedirectionPattern: '',
+  routePathPrefix: '',
 }
 
 const defaultPortsByScheme: Record<string, string> = {
@@ -132,10 +132,10 @@ function ruleToFormValue(rule: PortalRule): PortalRuleFormValue {
     matchHost: rule.matchHost,
     matchPort: rule.matchPort === 0 ? '' : String(rule.matchPort),
     matchPathPrefix: rule.matchPathPrefix,
-    routePathPrefix: rule.routePathPrefix ?? '',
     routeType: normalizeTargetType(rule.routeType),
     routeSiteName: rule.routeSiteName,
     routeRedirectionPattern: rule.routeRedirectionPattern,
+    routePathPrefix: rule.routePathPrefix ?? '',
   }
 }
 
@@ -213,11 +213,11 @@ function formValueToCreation(value: PortalRuleFormValue): PortalRuleCreation {
     matchHost: value.matchHost.trim(),
     matchPort: Number(value.matchPort || 0),
     matchPathPrefix: value.matchPathPrefix.trim(),
-    routePathPrefix: value.routeType === 'SITE' ? value.routePathPrefix.trim() : '',
     routeType: value.routeType,
     routeSiteName: value.routeType === 'SITE' ? value.routeSiteName.trim() : '',
     routeRedirectionPattern:
       value.routeType === 'SITE' ? '' : value.routeRedirectionPattern.trim(),
+    routePathPrefix: value.routeType === 'SITE' ? value.routePathPrefix.trim() : '',
   }
 }
 
@@ -230,10 +230,10 @@ function formValueToUpdate(value: PortalRuleFormValue): PortalRuleUpdate {
     matchHost: creation.matchHost,
     matchPort: creation.matchPort,
     matchPathPrefix: creation.matchPathPrefix,
-    routePathPrefix: creation.routePathPrefix,
     routeType: creation.routeType,
     routeSiteName: creation.routeSiteName,
     routeRedirectionPattern: creation.routeRedirectionPattern,
+    routePathPrefix: creation.routePathPrefix,
   }
 }
 
@@ -606,6 +606,14 @@ function PortalRuleDialog({
                 </Select>
               </Field>
 
+              <Field label={t('portalRule.matchHost')}>
+                <Input
+                  value={formValue.matchHost}
+                  placeholder={t('portalRule.hostPlaceholder')}
+                  onChange={(event) => setField('matchHost', event.target.value)}
+                />
+              </Field>
+
               <Field label={t('portalRule.matchPort')} error={fieldErrors.matchPort}>
                 <Input
                   aria-invalid={Boolean(fieldErrors.matchPort)}
@@ -613,14 +621,6 @@ function PortalRuleDialog({
                   inputMode="numeric"
                   placeholder={t('portalRule.portPlaceholder')}
                   onChange={(event) => setField('matchPort', event.target.value)}
-                />
-              </Field>
-
-              <Field label={t('portalRule.matchHost')}>
-                <Input
-                  value={formValue.matchHost}
-                  placeholder={t('portalRule.hostPlaceholder')}
-                  onChange={(event) => setField('matchHost', event.target.value)}
                 />
               </Field>
 
@@ -1031,6 +1031,14 @@ function PortalRuleInlineEditor({
             </Select>
           </Field>
 
+          <Field label={t('portalRule.matchHost')}>
+            <Input
+              value={formValue.matchHost}
+              placeholder={t('portalRule.hostPlaceholder')}
+              onChange={(event) => setField('matchHost', event.target.value)}
+            />
+          </Field>
+
           <Field label={t('portalRule.matchPort')} error={fieldErrors.matchPort}>
             <Input
               aria-invalid={Boolean(fieldErrors.matchPort)}
@@ -1038,14 +1046,6 @@ function PortalRuleInlineEditor({
               inputMode="numeric"
               placeholder={t('portalRule.portPlaceholder')}
               onChange={(event) => setField('matchPort', event.target.value)}
-            />
-          </Field>
-
-          <Field label={t('portalRule.matchHost')}>
-            <Input
-              value={formValue.matchHost}
-              placeholder={t('portalRule.hostPlaceholder')}
-              onChange={(event) => setField('matchHost', event.target.value)}
             />
           </Field>
 
@@ -1253,10 +1253,10 @@ export function PortalRulePage() {
         rule.matchHost,
         String(rule.matchPort),
         rule.matchPathPrefix,
-        rule.routePathPrefix,
         rule.routeType,
         rule.routeSiteName,
         rule.routeRedirectionPattern,
+        rule.routePathPrefix,
       ]
 
       return values.some((value) => value.toLowerCase().includes(keyword))
@@ -1604,13 +1604,13 @@ export function PortalRulePage() {
                           <ReadonlyField label={t('portalRule.matchScheme')}>
                             {selectedRule.matchScheme}
                           </ReadonlyField>
+                          <ReadonlyField label={t('portalRule.matchHost')}>
+                            {selectedRule.matchHost || t('portalRule.anyHost')}
+                          </ReadonlyField>
                           <ReadonlyField label={t('portalRule.matchPort')}>
                             {selectedRule.matchPort === 0
                               ? t('portalRule.followScheme')
                               : selectedRule.matchPort}
-                          </ReadonlyField>
-                          <ReadonlyField label={t('portalRule.matchHost')}>
-                            {selectedRule.matchHost || t('portalRule.anyHost')}
                           </ReadonlyField>
                           <ReadonlyField label={t('portalRule.matchPathPrefix')}>
                             {selectedRule.matchPathPrefix || '/'}

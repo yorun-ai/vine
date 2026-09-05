@@ -496,10 +496,6 @@ export type PortalRule = {
    */
   matchPathPrefix:         string;
   /**
-   * Target site path prefix; empty means strip the matching prefix only.
-   */
-  routePathPrefix:         string;
-  /**
    * Target type.
    */
   routeType:               string;
@@ -511,6 +507,10 @@ export type PortalRule = {
    * Redirect Pattern.
    */
   routeRedirectionPattern: string;
+  /**
+   * Target site path prefix; empty means strip the matching prefix only.
+   */
+  routePathPrefix:         string;
 }
 /**
  * Portal entry rule creation parameters.
@@ -537,10 +537,6 @@ export type PortalRuleCreation = {
    */
   matchPathPrefix:         string;
   /**
-   * Target site path prefix; empty means strip the matching prefix only.
-   */
-  routePathPrefix:         string | null;
-  /**
    * Target type.
    */
   routeType:               string;
@@ -552,6 +548,10 @@ export type PortalRuleCreation = {
    * Redirect Pattern.
    */
   routeRedirectionPattern: string;
+  /**
+   * Target site path prefix; empty means strip the matching prefix only.
+   */
+  routePathPrefix:         string | null;
 }
 /**
  * Portal entry rule update parameters.
@@ -578,10 +578,6 @@ export type PortalRuleUpdate = {
    */
   matchPathPrefix:         string | null;
   /**
-   * Target site path prefix; empty means strip the matching prefix only.
-   */
-  routePathPrefix:         string | null;
-  /**
    * Target type.
    */
   routeType:               string | null;
@@ -593,6 +589,10 @@ export type PortalRuleUpdate = {
    * Redirect Pattern.
    */
   routeRedirectionPattern: string | null;
+  /**
+   * Target site path prefix; empty means strip the matching prefix only.
+   */
+  routePathPrefix:         string | null;
 }
 /**
  * Portal target site.
