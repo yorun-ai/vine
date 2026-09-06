@@ -3,12 +3,10 @@ package rdb
 import (
 	"fmt"
 	"math"
-	"strings"
 	"sync"
 	"time"
 
-	"github.com/glebarez/sqlite"
-	"gorm.io/driver/postgres"
+	"go.yorun.ai/vine/internal/infra/rdb/adapter"
 	"gorm.io/gorm"
 )
 
@@ -43,7 +41,7 @@ func openConnection(config Option) (*gorm.DB, error) {
 		return gormDB, nil
 	}
 
-	gormDB, err := gorm.Open(newDialector(config.ConnURL), &gorm.Config{
+	gormDB, err := gorm.Open(adapter.NewDialector(config.ConnURL), &gorm.Config{
 		Logger: newLogger(),
 	})
 	if err != nil {
@@ -87,15 +85,6 @@ func closeConnection(connURL string) {
 		return
 	}
 	_ = sqlDB.Close()
-}
-
-func newDialector(connURL string) gorm.Dialector {
-	switch {
-	case strings.HasPrefix(connURL, "sqlite://"):
-		return sqlite.Open(strings.TrimPrefix(connURL, "sqlite://"))
-	default:
-		return postgres.Open(connURL)
-	}
 }
 
 func configurePool(gormDB *gorm.DB, config Option) error {

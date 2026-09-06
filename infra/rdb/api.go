@@ -19,11 +19,23 @@ type DatabaseSpec = internalrdb.DatabaseSpec
 // Database exposes the underlying GORM connection and transaction helpers.
 type Database = internalrdb.Database
 
-// Model provides the common identifier and timestamp fields for persisted records.
+// Model provides an integer identifier, timestamps, and soft deletion.
+// Prefer UModel for new models; Model remains available for existing integer-key tables.
 type Model = internalrdb.Model
 
-// DeletableModel extends Model with soft-deletion metadata.
+// DeletableModel provides an integer identifier and timestamps for physical deletion.
+// Prefer UDeletableModel for new models that require physical deletion.
 type DeletableModel = internalrdb.DeletableModel
+
+// UModel provides a UUIDv7 identifier, timestamps, and soft deletion.
+// It is the recommended base for new models.
+// RDB connections generate an ID when empty, before user-defined creation hooks.
+type UModel = internalrdb.UModel
+
+// UDeletableModel provides a UUIDv7 identifier and timestamps for physical deletion.
+// It is the recommended base for new models that require physical deletion.
+// RDB connections generate an ID when empty, before user-defined creation hooks.
+type UDeletableModel = internalrdb.UDeletableModel
 
 // ModelConstraint is implemented by model pointer types accepted by Dao and Query.
 type ModelConstraint = internalrdb.ModelConstraint
@@ -42,7 +54,8 @@ func T[T any]() reflect.Type {
 	return internalrdb.T[T]()
 }
 
-// NewDao creates a typed data access object backed by gdb.
+// NewDao creates a typed data access object backed by gdb and registers UUID generation.
+// Initialize DAOs before using an externally managed connection concurrently.
 func NewDao[M ModelConstraint](gdb *gorm.DB) Dao[M] {
 	return internalrdb.NewDao[M](gdb)
 }

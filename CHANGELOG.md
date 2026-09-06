@@ -16,6 +16,8 @@ are not part of the public compatibility commitment.
 
 ### Changed
 
+- Upgrade GORM from v1.31.1 to v1.31.2.
+
 - Configuration versions now advance only when values change. Certificate issuer,
   domains, and validity dates are derived from certificate content across the
   Admin API, startup seeds, and Dashboard imports.
@@ -26,6 +28,19 @@ are not part of the public compatibility commitment.
 - Portal rules use flat `match*` and `route*` fields across Go, Admin API, Redis, Dashboard, and YAML. Existing database columns are migrated. Legacy YAML fields remain supported with warnings; mixing legacy and new fields in one rule is rejected. Upgrade Hub and Portal together and regenerate Admin clients.
 
 ### Added
+
+- Add `rdb.UModel` and `rdb.UDeletableModel` with automatically generated UUIDv7
+  primary keys using Go’s `uuid.UUID` (PostgreSQL `uuid`, SQLite `TEXT`), sharing the existing database, DAO, and query implementation.
+  Model constraints use a marker method instead of unused integer ID accessors;
+  existing integer-key models and storage remain unchanged.
+- Generate UUID primary keys in a GORM create callback before user hooks, without
+  requiring models to chain an embedded BeforeCreate method.
+- DAO queries normalize UUID primary-key shorthand, map conditions, and UUID
+  lists before GORM parses conditions, without mutating caller arguments.
+- UUID serialization supports nullable `*uuid.UUID` fields, preserving the
+  distinction between SQL NULL and the zero UUID.
+- RDB connections automatically bind Go `uuid.UUID` parameters for direct and
+  prepared SQL, including transactions and UUID lists expanded by GORM.
 
 - Export `app.ManagedComponent`, `BaseManagedComponent`, `ComponentManager`,
   `BaseComponentManager`, and `ComponentLifecycle` for external component

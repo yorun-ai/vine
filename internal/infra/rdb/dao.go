@@ -2,6 +2,7 @@ package rdb
 
 import (
 	"go.yorun.ai/vine/internal/core/ex"
+	"go.yorun.ai/vine/internal/infra/rdb/adapter"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -17,6 +18,7 @@ type Dao[M ModelConstraint] struct {
 type Patch map[string]any
 
 func NewDao[M ModelConstraint](gdb *gorm.DB) Dao[M] {
+	ex.PanicIfError(adapter.RegisterCreateCallbacks(gdb))
 	return Dao[M]{
 		gormDB: gdb,
 	}
@@ -33,7 +35,7 @@ func (d *Dao[M]) GormDB() *gorm.DB {
 func (d *Dao[M]) Query(conditions ...any) *Query[M] {
 	return &Query[M]{
 		gormDB:     d.gormDB,
-		conditions: conditions,
+		conditions: adapter.NormalizeConditions(conditions),
 	}
 }
 
@@ -45,6 +47,9 @@ func (d *Dao[M]) List(conditions ...any) []M {
 	return d.Query(conditions...).List()
 }
 
+// Create returns the candidate model after creation. With OnConflict DoNothing,
+// it may retain a generated ID even when no row was inserted. Use GORM directly
+// and inspect RowsAffected when the insertion outcome is required.
 func (d *Dao[M]) Create(model M) M {
 	result := d.gormDB.Clauses(clause.Returning{}).Create(model)
 	ex.PanicIfError(result.Error)
