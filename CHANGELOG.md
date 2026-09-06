@@ -8,6 +8,30 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-09-07
+
+### Upgrade notes
+
+- Upgrade Hub and Portal together: Portal rule fields changed in both the Admin
+  API and Redis. Update custom Admin clients to the new `match*` / `route*`
+  fields. Existing application binaries do not need to be rebuilt for this
+  infrastructure upgrade.
+- Back up the Hub database before upgrading. Hub automatically renames legacy
+  rule columns and adds the route path prefix column; reverting only the Hub
+  binary does not reverse this migration. Do not run old and new Hub versions
+  against the same database.
+- Legacy rule YAML remains accepted with warnings, but a single rule must not
+  mix legacy and current field names. Stricter validation may reject previously
+  accepted inputs when they are saved or imported again.
+- Applications that upgrade their Vine dependency must review configuration
+  values that intentionally contain leading or trailing whitespace. Use
+  `skel:"noTrim"` on those config fields; `sensitive` alone does not preserve
+  whitespace. The `.skel` annotation and generator support are not included.
+- Upgrade Portal before publishing schemas with a custom permission code
+  argument name. Existing schemas continue to use `code`, and existing
+  generated argument tags remain supported.
+- Update deployment scripts that reference `examples/k8s` to use `deploy/k8s`.
+
 ### Added
 
 - Read comma-separated `skel` struct tag attributes: config fields can use
@@ -23,33 +47,6 @@ are not part of the public compatibility commitment.
   name retains the legacy `code` argument; custom names allow business arguments
   named `code` without overwriting the injected permission code. Upgrade Portal
   before publishing schemas that use a custom name.
-
-### Fixed
-
-- Complete managed component manager initialization before injecting the component
-  into consumers, including dependencies of other managers. Initialization no longer
-  requires dependency-first component registration; lifecycle hook order is unchanged.
-
-### Changed
-
-- Breaking: configuration reads now trim leading and trailing Unicode whitespace
-  from string fields, nullable strings, list elements, and map values for both
-  lifecycles. Map keys, JSON contents, and named scalars are preserved. Review
-  existing whitespace-sensitive values before upgrading; config fields can opt
-  out with `skel:"noTrim"`.
-
-- Upgrade GORM from v1.31.1 to v1.31.2.
-
-- Configuration versions now advance only when values change. Certificate issuer,
-  domains, and validity dates are derived from certificate content across the
-  Admin API, startup seeds, and Dashboard imports.
-- Configuration, site, rule, and certificate inputs are validated consistently
-  across the Admin API and YAML imports. Imports validate all supplied items
-  before writing and reject replacements of built-in Dashboard sites and rules.
-
-- Portal rules use flat `match*` and `route*` fields across Go, Admin API, Redis, Dashboard, and YAML. Existing database columns are migrated. Legacy YAML fields remain supported with warnings; mixing legacy and new fields in one rule is rejected. Upgrade Hub and Portal together and regenerate Admin clients.
-
-### Added
 
 - Add `vstring.TrimSpacePtr` for nil-safe string trimming and
   `vstring.FirstNonBlank` for selecting the first trimmed non-blank value.
@@ -85,6 +82,23 @@ are not part of the public compatibility commitment.
 
 ### Changed
 
+- Breaking: configuration reads now trim leading and trailing Unicode whitespace
+  from string fields, nullable strings, list elements, and map values for both
+  lifecycles. Map keys, JSON contents, and named scalars are preserved. Review
+  existing whitespace-sensitive values before upgrading; config fields can opt
+  out with `skel:"noTrim"`.
+
+- Upgrade GORM from v1.31.1 to v1.31.2.
+
+- Configuration versions now advance only when values change. Certificate issuer,
+  domains, and validity dates are derived from certificate content across the
+  Admin API, startup seeds, and Dashboard imports.
+- Configuration, site, rule, and certificate inputs are validated consistently
+  across the Admin API and YAML imports. Imports validate all supplied items
+  before writing and reject replacements of built-in Dashboard sites and rules.
+
+- Portal rules use flat `match*` and `route*` fields across Go, Admin API, Redis, Dashboard, and YAML. Existing database columns are migrated. Legacy YAML fields remain supported with warnings; mixing legacy and new fields in one rule is rejected. Upgrade Hub and Portal together and regenerate Admin clients.
+
 - Moved Kubernetes manifests from `examples/k8s` to `deploy/k8s`, with a
   version-pinned stable default and composable backend mTLS configuration
 - Build and publish release binaries and container images in parallel after
@@ -101,6 +115,10 @@ are not part of the public compatibility commitment.
   retain secret scanning and third-party license checks
 
 ### Fixed
+
+- Complete managed component manager initialization before injecting the component
+  into consumers, including dependencies of other managers. Initialization no longer
+  requires dependency-first component registration; lifecycle hook order is unchanged.
 
 - Fixed release image metadata extraction from a detached checkout and added
   image-only publication for existing releases without overwriting binary assets
