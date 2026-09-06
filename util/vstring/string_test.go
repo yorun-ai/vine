@@ -23,6 +23,35 @@ func TestIsBlank(t *testing.T) {
 	assert.False(t, IsBlank(" demo "))
 }
 
+func TestTrimSpacePtr(t *testing.T) {
+	assert.Equal(t, "", TrimSpacePtr(nil))
+	for _, tt := range []struct {
+		input string
+		want  string
+	}{
+		{"", ""},
+		{" \t\n\u2003\u00a0", ""},
+		{"demo", "demo"},
+		{"\u2003 hello  world\ninside \u00a0", "hello  world\ninside"},
+	} {
+		t.Run(tt.input, func(t *testing.T) {
+			value := tt.input
+			assert.Equal(t, tt.want, TrimSpacePtr(&value))
+			assert.Equal(t, tt.input, value, "must not mutate the input")
+		})
+	}
+}
+
+func TestFirstNonBlank(t *testing.T) {
+	assert.Equal(t, "", FirstNonBlank())
+	assert.Equal(t, "", FirstNonBlank("", " \t\n", "\u2003\u00a0"))
+	values := []string{"", "\u2003", "\u00a0 first  value\ninside \t", "second"}
+	original := append([]string(nil), values...)
+	assert.Equal(t, "first  value\ninside", FirstNonBlank(values...))
+	assert.Equal(t, original, values, "must not mutate the inputs")
+	assert.Equal(t, "first", FirstNonBlank("first", "second"))
+}
+
 func TestEncodeDelimitedKeepsPairOrder(t *testing.T) {
 	got := EncodeDelimited(
 		"name", "demo.app",

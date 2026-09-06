@@ -34,6 +34,9 @@ are not part of the public compatibility commitment.
 
 ### Added
 
+- Add `vstring.TrimSpacePtr` for nil-safe string trimming and
+  `vstring.FirstNonBlank` for selecting the first trimmed non-blank value.
+
 - Infer PostgreSQL UUID and SQLite TEXT columns for untagged `uuid.UUID` and
   `*uuid.UUID` fields on RDB connections, preserving explicit type/serializer tags.
 
