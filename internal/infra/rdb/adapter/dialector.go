@@ -3,9 +3,11 @@ package adapter
 import (
 	"context"
 	"database/sql"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -32,7 +34,7 @@ func NewDialector(connURL string) gorm.Dialector {
 type _SQLiteDialector struct{ *sqlite.Dialector }
 
 func (d *_SQLiteDialector) DataTypeOf(field *schema.Field) string {
-	if field.DataType == "uuid" {
+	if field.DataType == "uuid" || automaticUUIDField(field) {
 		return "text"
 	}
 	return d.Dialector.DataTypeOf(field)
@@ -105,4 +107,25 @@ func (d *_PostgresDialector) Initialize(db *gorm.DB) error {
 		return err
 	}
 	return nil
+}
+
+// Native UUID reads are supported by the Go SQL conversion path; writes are
+// handled by our driver. Infer only the column type, without mutating cached
+// schemas or replacing explicit field serializers.
+func automaticUUIDField(field *schema.Field) bool {
+	return field.IndirectFieldType == reflect.TypeFor[uuid.UUID]() &&
+		field.TagSettings["TYPE"] == "" && field.Serializer == nil
+}
+
+func (d *_PostgresDialector) DataTypeOf(field *schema.Field) string {
+	if automaticUUIDField(field) {
+		return "uuid"
+	}
+	return d.Dialector.DataTypeOf(field)
+}
+
+func (d *_PostgresDialector) Migrator(db *gorm.DB) gorm.Migrator {
+	m := d.Dialector.Migrator(db).(postgres.Migrator)
+	m.Dialector = d
+	return m
 }
