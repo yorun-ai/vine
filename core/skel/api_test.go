@@ -159,3 +159,33 @@ func TestFacadeDurationJSONRoundTrip(t *testing.T) {
 		t.Fatalf("unexpected duration value: %s", decoded.Value.String())
 	}
 }
+
+func TestPermCheckInvocationCodeArgumentNameJSON(t *testing.T) {
+	for name, input := range map[string]string{
+		"":      `{"resourceSkelName":"app.User","actionName":"read"}`,
+		"code_": `{"resourceSkelName":"app.User","actionName":"read","codeArgumentName":"code_"}`,
+	} {
+		var check PermCheckInvocation
+		if err := json.Unmarshal([]byte(input), &check); err != nil {
+			t.Fatal(err)
+		}
+		if check.CodeArgumentName != name {
+			t.Fatalf("decoded argument name = %q, want %q", check.CodeArgumentName, name)
+		}
+		encoded, err := json.Marshal(check)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var fields map[string]any
+		if err := json.Unmarshal(encoded, &fields); err != nil {
+			t.Fatal(err)
+		}
+		if check.CodeArgumentName == "" {
+			if _, exists := fields["codeArgumentName"]; exists {
+				t.Fatalf("legacy schema should omit codeArgumentName: %s", encoded)
+			}
+		} else if fields["codeArgumentName"] != "code_" {
+			t.Fatalf("custom argument name lost in schema JSON: %s", encoded)
+		}
+	}
+}

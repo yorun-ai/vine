@@ -218,11 +218,13 @@ type PermExpr struct {
 }
 
 type PermCheckInvocation struct {
-	ResourceSkelName string               `json:"resourceSkelName"`
-	ActionName       string               `json:"actionName"`
-	CheckName        string               `json:"checkName"`
-	ServiceSkelName  string               `json:"serviceSkelName"`
-	MethodSkelName   string               `json:"methodSkelName"`
+	ResourceSkelName string `json:"resourceSkelName"`
+	ActionName       string `json:"actionName"`
+	CheckName        string `json:"checkName"`
+	ServiceSkelName  string `json:"serviceSkelName"`
+	MethodSkelName   string `json:"methodSkelName"`
+	// CodeArgumentName names the parameter receiving the injected permission code.
+	CodeArgumentName string               `json:"codeArgumentName,omitempty"`
 	Arguments        []*PermCheckArgument `json:"arguments,omitempty"`
 }
 

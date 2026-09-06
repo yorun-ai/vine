@@ -119,7 +119,7 @@ func TestExtractCheckParamsSupportsCborRequestBody(t *testing.T) {
 	if !ok {
 		t.Fatalf("extractCheckParams() ok = false, want true")
 	}
-	if params["code"] != skel.PermissionCode("app.User:update") {
+	if params["code"] != "app.User:update" {
 		t.Fatalf("unexpected code param: %#v", params["code"])
 	}
 	if params["userId"] != uint64(42) {
@@ -206,4 +206,35 @@ func newAccessTestEndpointManager(serviceName string, endpoint string) *epmgr.Ma
 	}
 	manager.DIInit()
 	return manager
+}
+
+func TestExtractCheckParamsUsesSchemaCodeArgumentName(t *testing.T) {
+	for _, mediaType := range []string{rpchttp.ContentTypeJson, rpchttp.ContentTypeCbor} {
+		for _, name := range []string{"", "code_"} {
+			t.Run(mediaType+"/"+name, func(t *testing.T) {
+				businessName := "orderCode"
+				if name != "" {
+					businessName = "code"
+				}
+				body := map[string]any{"params": map[string]any{businessName: "business-value"}}
+				encoded := vcode.MustMarshalJson(body)
+				if mediaType == rpchttp.ContentTypeCbor {
+					encoded = vcode.MustMarshalCbor(body)
+				}
+				request := httptest.NewRequest(http.MethodPost, "/rpc/invoke/app.UserService/update", nil)
+				request.Header.Set(rpchttp.HeaderContentType, mediaType)
+				operation := &RpcOperation{Request: request, requestBody: encoded}
+				params, ok := operation.extractCheckParams(&skel.PermCheckInvocation{
+					ResourceSkelName: "app.User", ActionName: "update", CodeArgumentName: name,
+					Arguments: []*skel.PermCheckArgument{{Name: businessName, JsonPath: businessName}},
+				})
+				if name == "" {
+					name = "code"
+				}
+				if !ok || len(params) != 2 || params[name] != "app.User:update" || params[businessName] != "business-value" {
+					t.Fatalf("unexpected check arguments: ok=%v params=%#v", ok, params)
+				}
+			})
+		}
+	}
 }

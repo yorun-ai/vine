@@ -94,8 +94,6 @@ func (d *Decimal) UnmarshalCBOR(data []byte) error {
 
 type Binary []byte
 
-type PermissionCode string
-
 func (b Binary) MarshalJSON() ([]byte, error) {
 	return json.Marshal(base64.StdEncoding.EncodeToString([]byte(b)))
 }
@@ -131,6 +129,13 @@ func (b *Binary) UnmarshalCBOR(data []byte) error {
 	*b = Binary(decoded)
 	return nil
 }
+
+// PermissionCode is a stable permission identifier generated from a Skel contract.
+//
+// Deprecated: Use string instead. Retained for compatibility with older generated code.
+//
+// TODO: Remove PermissionCode when compatibility with older generated code is dropped.
+type PermissionCode string
 
 // Timestamp is the shared skel timestamp type.
 // It is encoded as an RFC3339Nano string in both JSON and CBOR.
