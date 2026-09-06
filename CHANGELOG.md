@@ -16,6 +16,11 @@ are not part of the public compatibility commitment.
 
 ### Changed
 
+- Breaking: configuration reads now trim leading and trailing Unicode whitespace
+  from string fields, nullable strings, list elements, and map values for both
+  lifecycles. Map keys, JSON contents, and named scalars are preserved. Review
+  existing whitespace-sensitive values before upgrading; no opt-out is provided yet.
+
 - Upgrade GORM from v1.31.1 to v1.31.2.
 
 - Configuration versions now advance only when values change. Certificate issuer,

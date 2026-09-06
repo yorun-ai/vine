@@ -11,6 +11,9 @@ type Lifecycle = internalconf.Lifecycle
 type Config = internalconf.Config
 
 // Reader resolves registered configurations by name or Go type.
+// Resolved string fields, list elements, and map values have leading and trailing
+// Unicode whitespace removed; map keys, JSON contents, and named scalars retain
+// their original values.
 type Reader = internalconf.Reader
 
 // ConfigModel can be embedded to implement Config.
