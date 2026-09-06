@@ -207,3 +207,32 @@ func TestUUIDUpsertPreservesExistingPrimaryKey(t *testing.T) {
 	require.NotEqual(t, originalID, inserted.Id)
 	require.Equal(t, 2, dao.Query().Count())
 }
+
+func TestUUIDDoNothingRetainsUnpersistedCandidateID(t *testing.T) {
+	url := "sqlite://" + t.TempDir() + "/do-nothing.sqlite"
+	db, err := openConnection(Option{ConnURL: url})
+	require.NoError(t, err)
+	t.Cleanup(func() { closeConnection(url) })
+	require.NoError(t, db.AutoMigrate(new(uuidUpsertModel)))
+	dao := NewDao[*uuidUpsertModel](db)
+	original := dao.Create(new(uuidUpsertModel{Key: "same", Value: "original"}))
+	conflict := clause.OnConflict{Columns: []clause.Column{{Name: "key"}}, DoNothing: true}
+	candidate := new(uuidUpsertModel{Key: "same", Value: "ignored"})
+	result := db.Clauses(conflict, clause.Returning{}).Create(candidate)
+	require.NoError(t, result.Error)
+	require.Zero(t, result.RowsAffected)
+	require.False(t, candidate.IsNew())
+	require.NotEqual(t, original.Id, candidate.Id)
+	_, found := dao.First(candidate.Id)
+	require.False(t, found)
+	// Dao.Create returns the candidate, not proof that an INSERT took place.
+	ignored := NewDao[*uuidUpsertModel](db.Clauses(conflict))
+	returned := ignored.Create(new(uuidUpsertModel{Key: "same", Value: "also ignored"}))
+	require.False(t, returned.IsNew())
+	_, found = dao.First(returned.Id)
+	require.False(t, found)
+	loaded, found := dao.First(original.Id)
+	require.True(t, found)
+	require.Equal(t, "original", loaded.Value)
+	require.Equal(t, 1, dao.Query().Count())
+}

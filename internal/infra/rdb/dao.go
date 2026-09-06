@@ -47,6 +47,9 @@ func (d *Dao[M]) List(conditions ...any) []M {
 	return d.Query(conditions...).List()
 }
 
+// Create returns the candidate model after creation. With OnConflict DoNothing,
+// it may retain a generated ID even when no row was inserted. Use GORM directly
+// and inspect RowsAffected when the insertion outcome is required.
 func (d *Dao[M]) Create(model M) M {
 	result := d.gormDB.Clauses(clause.Returning{}).Create(model)
 	ex.PanicIfError(result.Error)

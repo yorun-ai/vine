@@ -16,6 +16,8 @@ are not part of the public compatibility commitment.
 
 ### Changed
 
+- Upgrade GORM from v1.31.1 to v1.31.2.
+
 - Configuration versions now advance only when values change. Certificate issuer,
   domains, and validity dates are derived from certificate content across the
   Admin API, startup seeds, and Dashboard imports.

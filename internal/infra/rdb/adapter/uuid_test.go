@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm/schema"
+	"os"
 	"reflect"
 	"sync"
 	"testing"
@@ -92,4 +93,31 @@ func TestUUIDSerializerNullableRoundTrip(t *testing.T) {
 	require.NoError(t, db.Save(rows[1]).Error)
 	require.NoError(t, db.First(&row, rows[1].ID).Error)
 	require.Equal(t, &zero, row.Ref)
+}
+
+func TestUUIDSingleColumnReads(t *testing.T) {
+	for _, backend := range []string{"sqlite", "postgres"} {
+		t.Run(backend, func(t *testing.T) {
+			url := "sqlite://" + t.TempDir() + "/projection.sqlite"
+			columnType := "TEXT"
+			if backend == "postgres" {
+				url = os.Getenv("VINE_TEST_POSTGRES_DSN")
+				if url == "" {
+					t.Skip("set VINE_TEST_POSTGRES_DSN to run PostgreSQL integration tests")
+				}
+				columnType = "UUID"
+			}
+			db, err := openDriverTestDB(t, url)
+			require.NoError(t, err)
+			ids := []uuid.UUID{uuid.NewV7(), uuid.NewV7()}
+			query := "SELECT CAST(? AS " + columnType + ") AS id, 1 AS position UNION ALL SELECT CAST(? AS " + columnType + "), 2"
+			source := db.Raw(query, ids[0].String(), ids[1].String())
+			var scalar uuid.UUID
+			require.NoError(t, db.Table("(?) AS source", source).Select("id").Where("position = ?", 1).Row().Scan(&scalar))
+			require.Equal(t, ids[0], scalar)
+			var projected []uuid.UUID
+			require.NoError(t, db.Table("(?) AS source", source).Order("position").Pluck("id", &projected).Error)
+			require.Equal(t, ids, projected)
+		})
+	}
 }
