@@ -1,5 +1,7 @@
 // Package rdb integrates relational databases, models, queries, and data access objects with Vine.
 //
+// UUID primary keys are generated before user creation hooks on RDB connections
+// and connections passed to NewDao, including when user hooks are skipped.
 // Prefer UModel for new models. Its uuid.UUID primary key is generated as UUIDv7
 // and serialized using the registered GORM "uuid" serializer. RDB connections
 // store UUID columns as PostgreSQL uuid or SQLite TEXT.

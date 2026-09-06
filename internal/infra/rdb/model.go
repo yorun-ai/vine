@@ -50,14 +50,6 @@ type UModel struct {
 
 func (*UModel) mustBeModel() {}
 
-// BeforeCreate assigns a UUIDv7 identifier when one has not been supplied.
-func (m *UModel) BeforeCreate(_ *gorm.DB) error {
-	if m.Id == uuid.Nil() {
-		m.Id = uuid.NewV7()
-	}
-	return nil
-}
-
 // UDeletableModel provides a UUIDv7 identifier and timestamps for physical deletion.
 // It is the recommended base for new models that require physical deletion.
 type UDeletableModel struct {
@@ -67,11 +59,3 @@ type UDeletableModel struct {
 }
 
 func (*UDeletableModel) mustBeModel() {}
-
-// BeforeCreate assigns a UUIDv7 identifier when one has not been supplied.
-func (m *UDeletableModel) BeforeCreate(_ *gorm.DB) error {
-	if m.Id == uuid.Nil() {
-		m.Id = uuid.NewV7()
-	}
-	return nil
-}

@@ -2,6 +2,7 @@ package rdb
 
 import (
 	"go.yorun.ai/vine/internal/core/ex"
+	"go.yorun.ai/vine/internal/infra/rdb/adapter"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -17,6 +18,7 @@ type Dao[M ModelConstraint] struct {
 type Patch map[string]any
 
 func NewDao[M ModelConstraint](gdb *gorm.DB) Dao[M] {
+	ex.PanicIfError(adapter.RegisterCreateCallbacks(gdb))
 	return Dao[M]{
 		gormDB: gdb,
 	}

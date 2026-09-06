@@ -90,12 +90,6 @@ type driverTestModel struct {
 	Name string
 }
 
-func (m *driverTestModel) BeforeCreate(_ *gorm.DB) error {
-	if m.Id == uuid.Nil() {
-		m.Id = uuid.NewV7()
-	}
-	return nil
-}
 func openDriverTestDB(t *testing.T, url string) (*gorm.DB, error) {
 	t.Helper()
 	db, err := gorm.Open(NewDialector(url), &gorm.Config{})

@@ -31,6 +31,8 @@ are not part of the public compatibility commitment.
   primary keys using Go’s `uuid.UUID` (PostgreSQL `uuid`, SQLite `TEXT`), sharing the existing database, DAO, and query implementation.
   Model constraints use a marker method instead of unused integer ID accessors;
   existing integer-key models and storage remain unchanged.
+- Generate UUID primary keys in a GORM create callback before user hooks, without
+  requiring models to chain an embedded BeforeCreate method.
 - UUID serialization supports nullable `*uuid.UUID` fields, preserving the
   distinction between SQL NULL and the zero UUID.
 - RDB connections automatically bind Go `uuid.UUID` parameters for direct and

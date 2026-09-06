@@ -1,6 +1,8 @@
 package rdb
 
 import (
+	"github.com/glebarez/sqlite"
+	"gorm.io/gorm"
 	"testing"
 	"time"
 
@@ -106,4 +108,31 @@ func TestDaoUUIDModelCRUD(t *testing.T) {
 	dao.Delete(loaded)
 	_, ok = dao.First("id = ?", id)
 	assert.False(t, ok)
+}
+
+type externalUUIDTestModel struct {
+	UModel
+	HookID string `gorm:"-"`
+}
+
+func (m *externalUUIDTestModel) BeforeCreate(_ *gorm.DB) error {
+	m.HookID = m.Id.String()
+	return nil
+}
+
+func TestNewDaoRegistersUUIDGenerationOnExternalConnection(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(t.TempDir()+"/external.sqlite"), &gorm.Config{})
+	require.NoError(t, err)
+	pool, err := db.DB()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = pool.Close() })
+	require.NoError(t, db.AutoMigrate(new(externalUUIDTestModel)))
+	dao := NewDao[*externalUUIDTestModel](db)
+	row := dao.Create(new(externalUUIDTestModel))
+	require.NotZero(t, row.Id)
+	require.Equal(t, row.Id.String(), row.HookID)
+	direct := new(externalUUIDTestModel)
+	require.NoError(t, db.Create(direct).Error)
+	require.NotZero(t, direct.Id)
+	require.Equal(t, direct.Id.String(), direct.HookID)
 }
