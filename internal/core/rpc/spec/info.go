@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -251,13 +252,17 @@ func buildArgumentFieldInfos(argsType reflect.Type) []_ArgumentFieldInfo {
 	seenIndexes := map[int]string{}
 	for index := 0; index < argsType.NumField(); index++ {
 		field := argsType.Field(index)
-		tag, ok := field.Tag.Lookup(argTagName)
-		vpre.Must(ok)
-		labels := strings.Split(tag, ",")
-		vpre.Must(len(labels) > 0)
-
-		argIndex, err := strconv.Atoi(labels[0])
-		vpre.MustNil(err)
+		argIndex, found, err := skel.TagIndex(field.Tag)
+		vpre.CheckNilError(err, "invalid argument index on %s.%s", argsType, field.Name)
+		// TODO: Remove legacy arg tag support once all supported generated code uses skel:"index(n)".
+		if tag, legacy := field.Tag.Lookup(argTagName); legacy {
+			label, _, _ := strings.Cut(tag, ",")
+			legacyIndex, err := strconv.Atoi(label)
+			vpre.CheckNilError(err, "invalid legacy arg index on %s.%s", argsType, field.Name)
+			vpre.Check(!found || argIndex == legacyIndex, "conflicting argument indexes on %s.%s", argsType, field.Name)
+			argIndex, found = legacyIndex, true
+		}
+		vpre.Check(found, "missing argument index on %s.%s", argsType, field.Name)
 		vpre.Check(argIndex >= 0 && argIndex < argsType.NumField(), "arg index %d out of range on %s.%s", argIndex, argsType, field.Name)
 		if existingFieldName, exists := seenIndexes[argIndex]; exists {
 			vpre.Panicf("duplicate arg index %d on %s.%s and %s.%s", argIndex, argsType, existingFieldName, argsType, field.Name)

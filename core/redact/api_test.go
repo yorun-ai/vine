@@ -27,6 +27,25 @@ func TestRenderPublicAPI(t *testing.T) {
 	}
 }
 
+func TestRenderCombinedFieldAttributes(t *testing.T) {
+	value := struct {
+		Password string `json:"password" skel:"sensitive,noTrim"`
+		Argument string `json:"argument" skel:"index(0),sensitive"`
+		Visible  string `json:"visible" skel:"noTrim"`
+	}{Password: " password ", Argument: "argument-secret", Visible: " visible "}
+	result, err := redact.Render(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.Redacted || result.JSON != `{"argument":"<redacted>","password":"<redacted>","visible":" visible "}` {
+		t.Fatalf("unexpected combined-tag rendering: %s", result.JSON)
+	}
+	revealed, err := redact.Render(value, redact.Option{RevealSensitive: true})
+	if err != nil || revealed.Redacted || !strings.Contains(revealed.JSON, `"password":" password "`) {
+		t.Fatalf("unexpected revealed result: %#v, %v", revealed, err)
+	}
+}
+
 func TestRenderSensitiveValueAsAWhole(t *testing.T) {
 	var _ skel.Sensitive = sensitiveCredential{}
 	result, err := redact.Render(struct {

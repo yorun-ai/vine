@@ -14,6 +14,7 @@ type Config = internalconf.Config
 // Resolved string fields, list elements, and map values have leading and trailing
 // Unicode whitespace removed; map keys, JSON contents, and named scalars retain
 // their original values.
+// A skel:"noTrim" field tag preserves all string values in that config field.
 type Reader = internalconf.Reader
 
 // ConfigModel can be embedded to implement Config.

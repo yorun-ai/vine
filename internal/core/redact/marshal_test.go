@@ -19,7 +19,7 @@ func (objectMarshaler) MarshalJSON() ([]byte, error) {
 }
 
 type taggedMarshaler struct {
-	Secret string `json:"customSecret" skel:"sensitive"`
+	Secret string `json:"customSecret" skel:"index(0),sensitive"`
 }
 
 func (taggedMarshaler) MarshalJSON() ([]byte, error) {
@@ -45,7 +45,7 @@ func (*pointerJSONMarshaler) MarshalJSON() ([]byte, error) {
 }
 
 type nestedSensitiveValue struct {
-	Token string `json:"token" skel:"sensitive"`
+	Token string `json:"token" skel:"noTrim,sensitive"`
 }
 
 type nestedSensitiveMarshaler struct {

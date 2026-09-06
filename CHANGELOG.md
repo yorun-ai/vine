@@ -10,6 +10,14 @@ are not part of the public compatibility commitment.
 
 ### Added
 
+- Read comma-separated `skel` struct tag attributes: config fields can use
+  `noTrim` to preserve string whitespace, including nullable and collection
+  values; Rpc argument fields can use `index(n)` in place of `arg:"n"`.
+  Legacy argument tags remain supported, and conflicting or invalid indexes
+  fail registration. `sensitive` continues to redact when combined with either
+  attribute, including values with custom JSON marshalers. Upgrade Vine before
+  generating combined tags; Skel syntax and generator support are separate work.
+
 - Added `skel.PermCheckInvocation.CodeArgumentName` so Portal can inject a
   resource permission code into a schema-selected argument. An omitted or empty
   name retains the legacy `code` argument; custom names allow business arguments
@@ -27,7 +35,8 @@ are not part of the public compatibility commitment.
 - Breaking: configuration reads now trim leading and trailing Unicode whitespace
   from string fields, nullable strings, list elements, and map values for both
   lifecycles. Map keys, JSON contents, and named scalars are preserved. Review
-  existing whitespace-sensitive values before upgrading; no opt-out is provided yet.
+  existing whitespace-sensitive values before upgrading; config fields can opt
+  out with `skel:"noTrim"`.
 
 - Upgrade GORM from v1.31.1 to v1.31.2.
 
