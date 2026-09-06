@@ -1,10 +1,13 @@
 package rdb
 
 import (
+	"database/sql"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -135,4 +138,72 @@ func TestNewDaoRegistersUUIDGenerationOnExternalConnection(t *testing.T) {
 	require.NoError(t, db.Create(direct).Error)
 	require.NotZero(t, direct.Id)
 	require.Equal(t, direct.Id.String(), direct.HookID)
+}
+
+func TestDaoUUIDQueryConditions(t *testing.T) {
+	url := "sqlite://" + t.TempDir() + "/conditions.sqlite"
+	db, err := openConnection(Option{ConnURL: url})
+	require.NoError(t, err)
+	t.Cleanup(func() { closeConnection(url) })
+	require.NoError(t, db.AutoMigrate(new(uuidDaoTestModel)))
+	dao := NewDao[*uuidDaoTestModel](db)
+	first := dao.Create(new(uuidDaoTestModel{Name: "a"}))
+	second := dao.Create(new(uuidDaoTestModel{Name: "b"}))
+	ids := []uuid.UUID{first.Id, second.Id}
+	for _, condition := range []any{first.Id, &first.Id, map[string]any{"id": first.Id}, map[string]any{"id": &first.Id}} {
+		row, ok := dao.First(condition)
+		require.True(t, ok)
+		require.Equal(t, first.Id, row.Id)
+		require.Equal(t, 1, dao.Query(condition).Count())
+	}
+	for _, condition := range []any{ids, map[string]any{"id": ids}, map[string]any{"id": []*uuid.UUID{&first.Id, &second.Id}}} {
+		require.Len(t, dao.List(condition), 2)
+		require.Equal(t, 2, dao.Query(condition).Count())
+	}
+	require.Len(t, dao.List("id IN ?", ids), 2)
+	require.Len(t, dao.List("id IN (?)", ids), 2)
+	row, ok := dao.First("id = @id", sql.Named("id", first.Id))
+	require.True(t, ok)
+	require.Equal(t, first.Id, row.Id)
+	require.Empty(t, dao.List(map[string]any{"id": []uuid.UUID{}}))
+	require.Zero(t, dao.Query((*uuid.UUID)(nil)).Count())
+	_, ok = dao.First((*uuid.UUID)(nil))
+	require.False(t, ok)
+	original := map[string]any{"id": ids}
+	query := dao.Query(original)
+	require.IsType(t, []uuid.UUID{}, original["id"])
+	ids[0] = uuid.NewV7()
+	require.Equal(t, 2, query.Count())
+}
+
+type uuidUpsertModel struct {
+	UModel
+	Key   string `gorm:"uniqueIndex"`
+	Value string
+}
+
+func TestUUIDUpsertPreservesExistingPrimaryKey(t *testing.T) {
+	url := "sqlite://" + t.TempDir() + "/upsert.sqlite"
+	db, err := openConnection(Option{ConnURL: url})
+	require.NoError(t, err)
+	t.Cleanup(func() { closeConnection(url) })
+	require.NoError(t, db.AutoMigrate(new(uuidUpsertModel)))
+	dao := NewDao[*uuidUpsertModel](db)
+	original := dao.Create(new(uuidUpsertModel{Key: "same", Value: "before"}))
+	originalID := original.Id
+	// Explicitly update only business fields; RETURNING must replace the candidate ID.
+	upsert := NewDao[*uuidUpsertModel](db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "key"}},
+		DoUpdates: clause.AssignmentColumns([]string{"value", "updated_at"}),
+	}))
+	replacement := upsert.Create(new(uuidUpsertModel{Key: "same", Value: "after"}))
+	require.Equal(t, originalID, replacement.Id)
+	loaded, ok := dao.First(originalID)
+	require.True(t, ok)
+	require.Equal(t, "after", loaded.Value)
+	require.Equal(t, 1, dao.Query().Count())
+	inserted := upsert.Create(new(uuidUpsertModel{Key: "new", Value: "inserted"}))
+	require.NotEqual(t, uuid.Nil(), inserted.Id)
+	require.NotEqual(t, originalID, inserted.Id)
+	require.Equal(t, 2, dao.Query().Count())
 }

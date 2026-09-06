@@ -35,7 +35,7 @@ func (d *Dao[M]) GormDB() *gorm.DB {
 func (d *Dao[M]) Query(conditions ...any) *Query[M] {
 	return &Query[M]{
 		gormDB:     d.gormDB,
-		conditions: conditions,
+		conditions: adapter.NormalizeConditions(conditions),
 	}
 }
 

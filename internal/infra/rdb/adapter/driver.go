@@ -7,14 +7,20 @@ import (
 	"fmt"
 	"uuid"
 
-	gosqlite "github.com/glebarez/go-sqlite"
 	"github.com/jackc/pgx/v5/stdlib"
 )
 
 // Register separate drivers so UUID conversion is limited to RDB connections.
 func init() {
-	sql.Register("vine-infra-rdb-sqlite", &_Driver{Driver: new(gosqlite.Driver)})
-	sql.Register("vine-infra-rdb-pgx", &_Driver{Driver: stdlib.GetDefaultDriver()})
+	// sql.Open is lazy: obtain the registered driver without opening a connection.
+	db, err := sql.Open("sqlite", ":memory:")
+	if err != nil {
+		panic(err)
+	}
+	sqliteDriver := db.Driver()
+	_ = db.Close()
+	sql.Register("vine-rdb-sqlite", &_Driver{Driver: sqliteDriver})
+	sql.Register("vine-rdb-pgx", &_Driver{Driver: stdlib.GetDefaultDriver()})
 }
 
 type _Driver struct{ driver.Driver }

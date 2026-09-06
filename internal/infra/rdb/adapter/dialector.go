@@ -14,9 +14,9 @@ import (
 func NewDialector(connURL string) gorm.Dialector {
 	switch {
 	case strings.HasPrefix(connURL, "sqlite://"):
-		return &_SQLiteDialector{Dialector: &sqlite.Dialector{DriverName: "vine-infra-rdb-sqlite", DSN: strings.TrimPrefix(connURL, "sqlite://")}}
+		return &_SQLiteDialector{Dialector: &sqlite.Dialector{DriverName: "vine-rdb-sqlite", DSN: strings.TrimPrefix(connURL, "sqlite://")}}
 	default:
-		return &_PostgresDialector{Dialector: postgres.New(postgres.Config{DriverName: "vine-infra-rdb-pgx", DSN: connURL}).(*postgres.Dialector)}
+		return &_PostgresDialector{Dialector: postgres.New(postgres.Config{DriverName: "vine-rdb-pgx", DSN: connURL}).(*postgres.Dialector)}
 	}
 }
 

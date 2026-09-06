@@ -12,7 +12,7 @@ import (
 )
 
 type serializerTestModel struct {
-	Id uuid.UUID `gorm:"type:uuid;serializer:uuid"`
+	Id uuid.UUID `gorm:"type:uuid;serializer:vine-rdb-uuid"`
 }
 
 func TestUUIDSerializerScan(t *testing.T) {
@@ -38,7 +38,7 @@ func TestUUIDSerializerScan(t *testing.T) {
 
 type nullableUUIDTestModel struct {
 	ID  int
-	Ref *uuid.UUID `gorm:"type:uuid;serializer:uuid"`
+	Ref *uuid.UUID `gorm:"type:uuid;serializer:vine-rdb-uuid"`
 }
 
 func TestUUIDSerializerNullableScan(t *testing.T) {

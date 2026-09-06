@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	schema.RegisterSerializer("uuid", _UUIDSerializer{})
+	schema.RegisterSerializer("vine-rdb-uuid", _UUIDSerializer{})
 }
 
 type _UUIDSerializer struct{}

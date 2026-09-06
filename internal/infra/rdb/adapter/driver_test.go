@@ -3,6 +3,9 @@ package adapter
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
+	gosqlite "github.com/glebarez/go-sqlite"
+	"strings"
 	"testing"
 	"uuid"
 
@@ -86,7 +89,7 @@ func TestUUIDSQLPreparedParameters(t *testing.T) {
 
 // Fixtures deliberately use plain GORM models without depending on the parent rdb package.
 type driverTestModel struct {
-	Id   uuid.UUID `gorm:"primaryKey;type:uuid;serializer:uuid"`
+	Id   uuid.UUID `gorm:"primaryKey;type:uuid;serializer:vine-rdb-uuid"`
 	Name string
 }
 
@@ -102,4 +105,23 @@ func openDriverTestDB(t *testing.T, url string) (*gorm.DB, error) {
 	}
 	t.Cleanup(func() { _ = pool.Close() })
 	return db, nil
+}
+
+func TestDriverPreservesSQLiteRegisteredFunctions(t *testing.T) {
+	// Registration is process-global; a unique name also supports repeated test runs.
+	name := "vine_test_" + strings.ReplaceAll(uuid.NewV7().String(), "-", "")
+	require.NoError(t, gosqlite.RegisterScalarFunction(name, 0,
+		func(_ *gosqlite.FunctionContext, _ []driver.Value) (driver.Value, error) {
+			return int64(17), nil
+		}))
+	for _, driverName := range []string{"sqlite", "vine-rdb-sqlite"} {
+		t.Run(driverName, func(t *testing.T) {
+			db, err := sql.Open(driverName, ":memory:")
+			require.NoError(t, err)
+			t.Cleanup(func() { _ = db.Close() })
+			var result int
+			require.NoError(t, db.QueryRow("SELECT "+name+"()").Scan(&result))
+			require.Equal(t, 17, result)
+		})
+	}
 }

@@ -108,3 +108,69 @@ func TestUUIDColumnTypes(t *testing.T) {
 		assert.Equal(t, byte(7), parsed[6]>>4)
 	}
 }
+
+func TestModelIsNew(t *testing.T) {
+	id := uuid.NewV7()
+	tests := []struct {
+		name  string
+		model interface{ IsNew() bool }
+		want  bool
+	}{
+		{"integer unset", new(Model), true},
+		{"integer assigned", new(Model{Id: 1}), false},
+		{"deletable integer unset", new(DeletableModel), true},
+		{"deletable integer assigned", new(DeletableModel{Id: 1}), false},
+		{"uuid unset", new(UModel), true},
+		{"uuid assigned before insert", new(UModel{Id: id}), false},
+		{"deletable uuid unset", new(UDeletableModel), true},
+		{"deletable uuid assigned before insert", new(UDeletableModel{Id: id}), false},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) { assert.Equal(t, test.want, test.model.IsNew()) })
+	}
+}
+
+type uuidParent struct {
+	UModel
+	Name     string
+	Children []uuidChild `gorm:"foreignKey:ParentID;references:Id"`
+}
+
+type uuidChild struct {
+	UModel
+	ParentID uuid.UUID `gorm:"type:uuid;serializer:vine-rdb-uuid;not null"`
+	Name     string
+}
+
+func TestUUIDAssociationSaveAndPreload(t *testing.T) {
+	url := "sqlite://" + t.TempDir() + "/associations.sqlite"
+	db, err := openConnection(Option{ConnURL: url})
+	require.NoError(t, err)
+	t.Cleanup(func() { closeConnection(url) })
+	require.NoError(t, db.AutoMigrate(new(uuidParent), new(uuidChild)))
+	parents := []*uuidParent{
+		{Name: "first", Children: []uuidChild{{Name: "one"}, {Name: "two"}}},
+		{Name: "second", Children: []uuidChild{{Name: "three"}}},
+	}
+	require.NoError(t, db.Create(&parents).Error)
+	for _, parent := range parents {
+		require.NotEqual(t, uuid.Nil(), parent.Id)
+		for _, child := range parent.Children {
+			require.NotEqual(t, uuid.Nil(), child.Id)
+			require.Equal(t, parent.Id, child.ParentID)
+		}
+	}
+	var loaded []uuidParent
+	require.NoError(t, db.Preload("Children", func(db *gorm.DB) *gorm.DB { return db.Order("name") }).Order("name").Find(&loaded).Error)
+	require.Len(t, loaded, 2)
+	require.Len(t, loaded[0].Children, 2)
+	require.Len(t, loaded[1].Children, 1)
+	require.Equal(t, "one", loaded[0].Children[0].Name)
+	require.Equal(t, "two", loaded[0].Children[1].Name)
+	require.Equal(t, "three", loaded[1].Children[0].Name)
+	for _, parent := range loaded {
+		for _, child := range parent.Children {
+			require.Equal(t, parent.Id, child.ParentID)
+		}
+	}
+}

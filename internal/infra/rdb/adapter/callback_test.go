@@ -10,8 +10,8 @@ import (
 )
 
 type callbackTestModel struct {
-	ID        uuid.UUID `gorm:"primaryKey;type:uuid;serializer:uuid"`
-	Reference uuid.UUID `gorm:"type:uuid;serializer:uuid"`
+	ID        uuid.UUID `gorm:"primaryKey;type:uuid;serializer:vine-rdb-uuid"`
+	Reference uuid.UUID `gorm:"type:uuid;serializer:vine-rdb-uuid"`
 	Hooks     []string  `gorm:"-"`
 }
 

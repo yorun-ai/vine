@@ -33,6 +33,8 @@ are not part of the public compatibility commitment.
   existing integer-key models and storage remain unchanged.
 - Generate UUID primary keys in a GORM create callback before user hooks, without
   requiring models to chain an embedded BeforeCreate method.
+- DAO queries normalize UUID primary-key shorthand, map conditions, and UUID
+  lists before GORM parses conditions, without mutating caller arguments.
 - UUID serialization supports nullable `*uuid.UUID` fields, preserving the
   distinction between SQL NULL and the zero UUID.
 - RDB connections automatically bind Go `uuid.UUID` parameters for direct and
