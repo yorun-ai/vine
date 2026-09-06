@@ -19,6 +19,10 @@ type Decimal = internalskel.Decimal
 type Binary = internalskel.Binary
 
 // PermissionCode is a stable permission identifier generated from a Skel contract.
+//
+// Deprecated: Use string instead. Retained for compatibility with older generated code.
+//
+// TODO: Remove PermissionCode when compatibility with older generated code is dropped.
 type PermissionCode = internalskel.PermissionCode
 
 // UUID is the runtime representation of the Skel uuid scalar.

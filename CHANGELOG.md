@@ -8,6 +8,14 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Added
+
+- Added `skel.PermCheckInvocation.CodeArgumentName` so Portal can inject a
+  resource permission code into a schema-selected argument. An omitted or empty
+  name retains the legacy `code` argument; custom names allow business arguments
+  named `code` without overwriting the injected permission code. Upgrade Portal
+  before publishing schemas that use a custom name.
+
 ### Fixed
 
 - Complete managed component manager initialization before injecting the component
