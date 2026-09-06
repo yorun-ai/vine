@@ -1,7 +1,6 @@
 package rdb
 
 import (
-	"database/sql/driver"
 	"go.yorun.ai/vine/internal/infra/rdb/adapter"
 	"gorm.io/gorm"
 	"testing"
@@ -99,12 +98,8 @@ func TestUUIDColumnTypes(t *testing.T) {
 		assert.Equal(t, "uuid", pg.Migrator().FullDataTypeOf(stmt.Schema.LookUpField("Id")).SQL)
 		result := pg.Create(model)
 		require.NoError(t, result.Error)
-		valuer, ok := result.Statement.Vars[0].(driver.Valuer)
+		parsed, ok := result.Statement.Vars[0].(uuid.UUID)
 		require.True(t, ok)
-		value, err := valuer.Value()
-		require.NoError(t, err)
-		parsed, err := uuid.Parse(value.(string))
-		require.NoError(t, err)
 		assert.Equal(t, byte(7), parsed[6]>>4)
 	}
 }

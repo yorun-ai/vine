@@ -29,6 +29,9 @@ are not part of the public compatibility commitment.
 
 ### Added
 
+- Infer PostgreSQL UUID and SQLite TEXT columns for untagged `uuid.UUID` and
+  `*uuid.UUID` fields on RDB connections, preserving explicit type/serializer tags.
+
 - Add `rdb.UModel` and `rdb.UDeletableModel` with automatically generated UUIDv7
   primary keys using Go’s `uuid.UUID` (PostgreSQL `uuid`, SQLite `TEXT`), sharing the existing database, DAO, and query implementation.
   Model constraints use a marker method instead of unused integer ID accessors;

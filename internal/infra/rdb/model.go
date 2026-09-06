@@ -54,7 +54,7 @@ func (m *DeletableModel) IsNew() bool {
 // UModel provides a UUIDv7 identifier, timestamps, and soft deletion.
 // It is the recommended base for new models.
 type UModel struct {
-	Id        uuid.UUID      `gorm:"column:id;primaryKey;type:uuid;serializer:vine-rdb-uuid"`
+	Id        uuid.UUID      `gorm:"column:id;primaryKey"`
 	CreatedAt time.Time      `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt time.Time      `gorm:"column:updated_at;autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at"`
@@ -71,7 +71,7 @@ func (m *UModel) IsNew() bool {
 // UDeletableModel provides a UUIDv7 identifier and timestamps for physical deletion.
 // It is the recommended base for new models that require physical deletion.
 type UDeletableModel struct {
-	Id        uuid.UUID `gorm:"column:id;primaryKey;type:uuid;serializer:vine-rdb-uuid"`
+	Id        uuid.UUID `gorm:"column:id;primaryKey"`
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
 }
