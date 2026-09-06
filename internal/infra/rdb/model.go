@@ -1,17 +1,23 @@
 package rdb
 
 import (
-	"gorm.io/gorm"
 	"time"
+	"uuid"
+
+	"gorm.io/gorm"
 )
+
+// Constraint
 
 // ModelConstraint is the generic model contract used by Dao and Query.
 type ModelConstraint interface {
-	getId() int
-	setId(id int)
+	mustBeModel()
 }
 
-// Model is gorm.Model plus extra methods
+// Model
+
+// Model provides an integer identifier, timestamps, and soft deletion.
+// Prefer UModel for new models; Model remains available for existing integer-key tables.
 type Model struct {
 	Id        int            `gorm:"column:id;primaryKey"`
 	CreatedAt time.Time      `gorm:"column:created_at;autoCreateTime"`
@@ -19,25 +25,53 @@ type Model struct {
 	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at"`
 }
 
-func (m *Model) getId() int {
-	return m.Id
-}
+func (*Model) mustBeModel() {}
 
-func (m *Model) setId(id int) {
-	m.Id = id
-}
-
-// DeletableModel can be delete permanently
+// DeletableModel provides an integer identifier and timestamps for physical deletion.
+// Prefer UDeletableModel for new models that require physical deletion.
 type DeletableModel struct {
 	Id        int       `gorm:"column:id;primaryKey"`
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
 }
 
-func (m *DeletableModel) getId() int {
-	return m.Id
+func (*DeletableModel) mustBeModel() {}
+
+// UUID Model
+
+// UModel provides a UUIDv7 identifier, timestamps, and soft deletion.
+// It is the recommended base for new models.
+type UModel struct {
+	Id        uuid.UUID      `gorm:"column:id;primaryKey;type:uuid;serializer:uuid"`
+	CreatedAt time.Time      `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt time.Time      `gorm:"column:updated_at;autoUpdateTime"`
+	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at"`
 }
 
-func (m *DeletableModel) setId(id int) {
-	m.Id = id
+func (*UModel) mustBeModel() {}
+
+// BeforeCreate assigns a UUIDv7 identifier when one has not been supplied.
+func (m *UModel) BeforeCreate(_ *gorm.DB) error {
+	if m.Id == uuid.Nil() {
+		m.Id = uuid.NewV7()
+	}
+	return nil
+}
+
+// UDeletableModel provides a UUIDv7 identifier and timestamps for physical deletion.
+// It is the recommended base for new models that require physical deletion.
+type UDeletableModel struct {
+	Id        uuid.UUID `gorm:"column:id;primaryKey;type:uuid;serializer:uuid"`
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
+}
+
+func (*UDeletableModel) mustBeModel() {}
+
+// BeforeCreate assigns a UUIDv7 identifier when one has not been supplied.
+func (m *UDeletableModel) BeforeCreate(_ *gorm.DB) error {
+	if m.Id == uuid.Nil() {
+		m.Id = uuid.NewV7()
+	}
+	return nil
 }

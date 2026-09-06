@@ -27,6 +27,15 @@ are not part of the public compatibility commitment.
 
 ### Added
 
+- Add `rdb.UModel` and `rdb.UDeletableModel` with automatically generated UUIDv7
+  primary keys using Go’s `uuid.UUID` (PostgreSQL `uuid`, SQLite `TEXT`), sharing the existing database, DAO, and query implementation.
+  Model constraints use a marker method instead of unused integer ID accessors;
+  existing integer-key models and storage remain unchanged.
+- UUID serialization supports nullable `*uuid.UUID` fields, preserving the
+  distinction between SQL NULL and the zero UUID.
+- RDB connections automatically bind Go `uuid.UUID` parameters for direct and
+  prepared SQL, including transactions and UUID lists expanded by GORM.
+
 - Export `app.ManagedComponent`, `BaseManagedComponent`, `ComponentManager`,
   `BaseComponentManager`, and `ComponentLifecycle` for external component
   implementations. Internal `FrameworkComponent` names are now `ManagedComponent`;

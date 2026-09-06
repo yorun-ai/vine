@@ -82,3 +82,28 @@ func TestDaoDeleteRemovesModel(t *testing.T) {
 	_, ok := dao.First("id = ?", model.Id)
 	assert.False(t, ok)
 }
+
+type uuidDaoTestModel struct {
+	UModel
+	Name string
+}
+
+func TestDaoUUIDModelCRUD(t *testing.T) {
+	connURL := "sqlite://" + t.TempDir() + "/uuid-dao.sqlite"
+	db, err := openConnection(Option{ConnURL: connURL})
+	require.NoError(t, err)
+	t.Cleanup(func() { closeConnection(connURL) })
+	require.NoError(t, db.AutoMigrate(new(uuidDaoTestModel)))
+	dao := NewDao[*uuidDaoTestModel](db)
+	row := dao.Create(new(uuidDaoTestModel{Name: "before"}))
+	require.NotEmpty(t, row.Id)
+	id := row.Id
+	dao.Update(row, Patch{"name": "after"})
+	loaded, ok := dao.First("id = ?", id)
+	require.True(t, ok)
+	assert.Equal(t, id, loaded.Id)
+	assert.Equal(t, "after", loaded.Name)
+	dao.Delete(loaded)
+	_, ok = dao.First("id = ?", id)
+	assert.False(t, ok)
+}
