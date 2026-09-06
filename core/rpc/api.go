@@ -41,6 +41,8 @@ type ServiceSpecType = internalspec.ServiceSpecType
 type ServiceSpec = internalspec.ServiceSpec
 
 // MethodSpec describes one method in a ServiceSpec.
+// Argument fields declare their position using skel:"index(n)"; legacy arg:"n"
+// tags remain supported. When both are present, their indexes must agree.
 type MethodSpec = internalspec.MethodSpec
 
 // ServiceInfo is runtime metadata derived from a ServiceSpec.

@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	corelink "go.yorun.ai/vine/internal/core/link"
+	"go.yorun.ai/vine/internal/core/redact"
 	"go.yorun.ai/vine/internal/core/skel"
 )
 
@@ -20,6 +21,50 @@ type readerTestInstantConfig struct {
 }
 
 type readerTestEnum string
+
+type readerNoTrimConfig struct {
+	ConfigModel
+	Plain    string              `json:"plain"`
+	Secret   string              `json:"secret" skel:"sensitive"`
+	Password string              `json:"password" skel:"sensitive,noTrim"`
+	Optional *string             `json:"optional" skel:"noTrim"`
+	Missing  *string             `json:"missing" skel:"noTrim"`
+	Items    *[]*string          `json:"items" skel:"noTrim,sensitive"`
+	Values   *map[string]*string `json:"values" skel:"noTrim"`
+	Empty    []string            `json:"empty" skel:"noTrim"`
+	NilItems []string            `json:"nilItems" skel:"noTrim"`
+}
+
+func TestReaderNoTrimAndSensitiveAreIndependent(t *testing.T) {
+	const key = "demo.NoTrimConfig"
+	const raw = `{"plain":" plain ","secret":" secret ","password":"\u2003 password \n","optional":" \t ","missing":null,"items":[" item ",null],"values":{" key ":" value ","nil":null},"empty":[],"nilItems":null}`
+	for _, lifecycle := range []Lifecycle{LifecycleEternal, LifecycleInstant} {
+		t.Run(string(lifecycle), func(t *testing.T) {
+			registry := NewRegistry()
+			registry.Register(ConfigSpec{SkelName: key, Lifecycle: lifecycle, Type: reflect.TypeFor[*readerNoTrimConfig]()})
+			reader := newReader(&corelink.TestLinker{
+				EternalConfigByKey: map[string]string{key: raw}, InstantConfigByKey: map[string]string{key: raw},
+			}, registry)
+			value := reader.GetByType(reflect.TypeFor[*readerNoTrimConfig]()).(*readerNoTrimConfig)
+			require.Equal(t, "plain", value.Plain)
+			require.Equal(t, "secret", value.Secret)
+			require.Equal(t, "\u2003 password \n", value.Password)
+			require.Equal(t, " \t ", *value.Optional)
+			require.Nil(t, value.Missing)
+			require.Equal(t, []*string{new(" item "), nil}, *value.Items)
+			require.Equal(t, map[string]*string{" key ": new(" value "), "nil": nil}, *value.Values)
+			require.NotNil(t, value.Empty)
+			require.Empty(t, value.Empty)
+			require.Nil(t, value.NilItems)
+			result, err := redact.Render(value)
+			require.NoError(t, err)
+			require.Contains(t, result.JSON, `"password":"<redacted>"`)
+			require.Contains(t, result.JSON, `"secret":"<redacted>"`)
+			require.Contains(t, result.JSON, `"items":"<redacted>"`)
+			require.Contains(t, result.JSON, `" key ":" value "`)
+		})
+	}
+}
 
 type readerTrimConfig struct {
 	ConfigModel

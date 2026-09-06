@@ -164,7 +164,7 @@ func typeHasSensitiveMetadata(valueType reflect.Type, visiting map[reflect.Type]
 			if field.PkgPath != "" || field.Tag.Get("json") == "-" {
 				continue
 			}
-			if field.Tag.Get("skel") == "sensitive" ||
+			if skel.HasTagFlag(field.Tag, "sensitive") ||
 				typeHasSensitiveMetadata(field.Type, visiting) {
 				return true
 			}
@@ -189,7 +189,7 @@ func (s *_ProjectionState) projectStruct(value reflect.Value, depth int) (any, e
 		if skip {
 			continue
 		}
-		if !s.option.RevealSensitive && fieldInfo.Tag.Get("skel") == "sensitive" {
+		if !s.option.RevealSensitive && skel.HasTagFlag(fieldInfo.Tag, "sensitive") {
 			s.redacted = true
 			result[name] = redactedValue
 			continue

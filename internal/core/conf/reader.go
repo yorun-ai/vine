@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"go.yorun.ai/vine/internal/core/link"
+	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -34,8 +35,8 @@ func (r *_Reader) GetByType(kind reflect.Type) any {
 	value := reflect.New(kind.Elem())
 	err := json.Unmarshal([]byte(text), value.Interface())
 	vpre.CheckNilError(err, "unmarshal config %s failed", info.SkelName)
-	for _, field := range value.Elem().Fields() {
-		if field.CanSet() {
+	for info, field := range value.Elem().Fields() {
+		if field.CanSet() && !skel.HasTagFlag(info.Tag, "noTrim") {
 			trimConfigStrings(field)
 		}
 	}

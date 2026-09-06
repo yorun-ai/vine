@@ -5,9 +5,35 @@ import (
 	"reflect"
 	"sync/atomic"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 var initializedMethodInfoCounter atomic.Uint64
+
+func TestArgumentSkelIndexes(t *testing.T) {
+	type arguments struct {
+		Second string `skel:"index(1),sensitive"`
+		First  int    `skel:"index(0)"`
+	}
+	method := newInitializedMethodInfo(reflect.TypeFor[arguments](), nil, false, false)
+	require.Equal(t, []any{42, " second "}, method.PositionArguments(&arguments{First: 42, Second: " second "}))
+	for _, tag := range []reflect.StructTag{`arg:"0"`, `skel:"index(0)"`, `arg:"0" skel:"index(0),sensitive"`} {
+		kind := reflect.StructOf([]reflect.StructField{{Name: "Value", Type: reflect.TypeFor[string](), Tag: tag}})
+		require.Equal(t, 0, buildArgumentFieldInfos(kind)[0].ArgIndex)
+	}
+	for _, tag := range []reflect.StructTag{`skel:"sensitive"`, `skel:"index(x)" arg:"0"`, `skel:"index(-1)"`, `skel:"index(1)"`, `skel:"index(0),index(0)"`, `skel:"index(0)" arg:"1"`} {
+		t.Run(string(tag), func(t *testing.T) {
+			kind := reflect.StructOf([]reflect.StructField{{Name: "Value", Type: reflect.TypeFor[string](), Tag: tag}})
+			require.Panics(t, func() { buildArgumentFieldInfos(kind) })
+		})
+	}
+	type duplicate struct {
+		First  int `skel:"index(0)"`
+		Second int `skel:"index(0)"`
+	}
+	require.Panics(t, func() { buildArgumentFieldInfos(reflect.TypeFor[duplicate]()) })
+}
 
 type testValidateArgumentsInput struct {
 	Name *string `arg:"0"`
