@@ -17,6 +17,26 @@ func IsBlank(str string) bool {
 	return strings.TrimSpace(str) == ""
 }
 
+// TrimSpacePtr returns the pointed-to string with leading and trailing Unicode
+// whitespace removed, or an empty string if value is nil.
+func TrimSpacePtr(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return strings.TrimSpace(*value)
+}
+
+// FirstNonBlank returns the first non-blank value with leading and trailing
+// Unicode whitespace removed. It returns an empty string if no such value exists.
+func FirstNonBlank(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
+}
+
 // EncodeDelimited encodes alternating name and value arguments as comma-separated name=value fields.
 // It panics on an odd argument count, empty fields, commas, or equals signs.
 func EncodeDelimited(pairs ...string) string {
