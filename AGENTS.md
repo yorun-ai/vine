@@ -1,11 +1,6 @@
 # Vine Agent Guidelines
 
-## Working in the Repository
-
-- Some directories contain a `README.md` with additional instructions. Read the
-  applicable README before modifying that directory or any of its descendants.
-- Preserve the ownership, dependency, and lifecycle boundaries documented by
-  those READMEs. Update the applicable README when a change alters them.
+Read the applicable directory README for ownership, dependency, and lifecycle constraints.
 
 ## Go Version and Syntax
 
@@ -49,8 +44,6 @@
 
 - Vine is an application framework, and most arguments are passed by code within
   the project. Do not add unnecessary nil or empty-value checks.
-- Understand a method's responsibility and intended usage before changing it.
-  Avoid indiscriminate defensive checks that do not belong to its contract.
 - Do not add defensive behavior to production code solely to accommodate tests.
 - Preserve the active `meta.Context`, trace, actor, initiator, cancellation, and
   deadline when forwarding or deriving work. Do not replace an active request
@@ -62,8 +55,8 @@
 
 - Treat Rpc/Web headers, Redis key formats, serialized JSON/CBOR fields, Skel
   schemas, and generated contracts as cross-component protocol boundaries.
-- When changing one of these formats, update all producers, consumers, tests,
-  documentation, and compatibility notes together.
+- When changing these formats, update affected producers, consumers and tests;
+  correct existing documentation and add migration guidance when needed.
 - Use Go's `encoding/json/v2` and `encoding/json/jsontext` APIs for Vine JSON;
   do not reintroduce the v1 `encoding/json` implementation.
 - Encode Rpc, Event, and Task Skel payloads with the encoder selected for the
@@ -81,8 +74,9 @@
   repository. English source documents live under `docs`, and Simplified
   Chinese translations live under
   `i18n/zh-CN/docusaurus-plugin-content-docs/current`.
-- When changing public behavior, update the corresponding current documentation
-  in `vine-site` in the same delivery and keep both locales synchronized.
+- Correct existing documentation made inaccurate by public behavior changes and
+  document new user-facing features, keeping both locales synchronized. Internal
+  changes and fixes restoring documented behavior do not need new site content.
 - Do not manually edit versioned documentation snapshots in `vine-site`.
 
 ## Container Images
@@ -96,56 +90,19 @@
 - Do not make the Hub image silently select a database or messaging mode.
   Deployments must explicitly choose exactly one of SQLite or PostgreSQL and
   exactly one of embedded or external NATS.
-- Pull requests and `main` builds smoke-test the Hub image only and never push
-  images. Optional Dashboard, container, and workflow jobs are
-  selected by changed paths inside `ci.yml` and included in `CI / Required Checks`; only
-  explicitly unselected jobs may be skipped. Tag pushes do not trigger CI.
-  The Release workflow publishes Hub, Link, and Portal to GHCR for every
-  supported architecture. Binaries and images run independently in parallel
-  after shared release validation. The workflow runs on Release publication or
-  a manual rebuild of an existing published release, not tag pushes. Use the
-  release commit for image metadata, and update `latest` only for GitHub's
-  latest non-prerelease.
-- Release validation requires the exact tag commit to belong to `main` and
-  have a successful latest main-push CI run. Fetch tag refs when extracting
-  Git-context image metadata from that commit.
-- Cancel superseded PR runs, but isolate main CI concurrency by commit SHA.
-  Serialize `latest` promotion across release versions and recheck eligibility
-  inside that job's lock. Do not serialize binary/image builds behind promotion.
-- Retry only transient read-only network failures; never retry publication or
-  relax checksum, metadata, permission, or overwrite checks to hide failures.
-- Manual publication selects `artifacts: all | binaries | images`; unselected
-  jobs are skipped. Existing binary assets must never be overwritten. Scripts
-  come from the workflow revision, while builds use the validated tag commit.
-- Verify all binary checksums and anonymous access to all three AMD64/ARM64
-  images before updating `latest`. Partial recovery may publish one artifact
-  family, but release completion still requires both families to be valid.
-- See `.github/CI.md` for triggers, recovery, and workflow tests.
-- Delegate dependency vulnerability detection and security update PRs to
-  Dependabot. Keep dependency graph, Dependabot alerts, and security updates
-  enabled in GitHub repository settings; do not run `pnpm audit` or
-  `govulncheck` in CI. Secret scanning and license checks remain required.
+- For CI or publication changes, read `.github/CI.md` for required gates,
+  release validation, concurrency, recovery, and dependency security policy.
 
 ## Release Preparation
 
-- Update the three image tags in `deploy/k8s/overlays/stable/kustomization.yaml`
-  to the release version. Run `bash test/k8s.sh vX.Y.Z` to validate the default,
-  stable, and stable-mTLS renders, including init-container image versions.
-- Keep Kubernetes resources in `deploy/k8s/base`, image versions in overlays,
-  and reusable mTLS patches in `deploy/k8s/components/mtls`. Do not duplicate
-  full resource manifests or add a directory for every release version.
-- Compare all commits since the previous tag with `CHANGELOG.md`. Move the
-  completed entries from `[Unreleased]` under a dated release heading while
-  retaining an empty `[Unreleased]` section.
-- When Dashboard source changed since the previous embedded asset, run
-  `bash script/build-dashboard-assets.sh` and commit the resulting
-  `dashboard.tar.zst`; never assemble the archive manually.
+- Follow `CONTRIBUTING.md` for Kubernetes image tags and validation, Dashboard
+  asset rebuilding, and generated contracts; follow `.github/CI.md` for publication.
+- Compare commits since the previous tag against `CHANGELOG.md`, move completed
+  entries to a dated release heading, and retain an empty `[Unreleased]` section.
 - After Go dependency changes, run `bash script/gen-third-party-licenses.sh`
-  and commit any resulting license inventory changes.
-- Regenerate all internal contracts with `bash script/gen-skel.sh all` and
-  confirm there is no unexpected generated drift.
-- Module versions come from release tags and build-time `ldflags`; do not add or
-  update a source-level version constant during release preparation.
+  and commit inventory changes. Regenerate contracts with `bash script/gen-skel.sh all`
+  and inspect drift. Build Dashboard archives only with the documented script.
+- Versions come from release tags and build-time `ldflags`, not source constants.
 
 ## Tests
 
