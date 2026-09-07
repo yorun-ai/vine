@@ -52,8 +52,8 @@ func (o *RpcOperation) setActor(actor meta.Actor) {
 	o.Request.Header.Set(rpchttp.HeaderRpcActor, meta.EncodeActorToBase64(actor))
 }
 
-func (o *RpcOperation) writeError(code ex.Code, message string) {
-	vpre.MustNil(rpchttp.WriteRequestErrorResponse(o.Response, o.Request, o.Server, ex.New(code, message)))
+func (o *RpcOperation) writeError(code ex.Code, message string, options ...ex.ErrorOption) {
+	vpre.MustNil(rpchttp.WriteRequestErrorResponse(o.Response, o.Request, o.Server, ex.New(code, message, options...)))
 }
 
 func (o *RpcOperation) loadMethodSchema() bool {
@@ -80,4 +80,12 @@ func (o *RpcOperation) authMode() skel.AuthMode {
 		authMode = defaultAuthMode
 	}
 	return authMode
+}
+
+func (o *RpcOperation) writeErrorWithReason(code ex.Code, message, reason string) {
+	var options []ex.ErrorOption
+	if reason != "" {
+		options = append(options, ex.WithReason(reason))
+	}
+	o.writeError(code, message, options...)
 }

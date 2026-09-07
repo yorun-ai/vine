@@ -2,10 +2,12 @@ package access
 
 import (
 	"context"
+	"encoding/json/v2"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
@@ -236,5 +238,50 @@ func TestExtractCheckParamsUsesSchemaCodeArgumentName(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestCheckPreservesPermissionErrorReason(t *testing.T) {
+	for _, mode := range []skel.PermRequireMode{skel.PermRequireModeCode, skel.PermRequireModeCheck} {
+		t.Run(string(mode), func(t *testing.T) {
+			const serviceName = "app.PermissionService"
+			server := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				err := rpchttp.WriteRequestErrorResponse(w, r, testServerApp(), ex.New(ex.PermissionDenied, "tenant suspended", ex.WithReason("TENANT_SUSPENDED")))
+				require.NoError(t, err)
+			}))
+			server.Config.Protocols = new(http.Protocols)
+			server.Config.Protocols.SetUnencryptedHTTP2(true)
+			server.Start()
+			manager := newAccessTestEndpointManager(serviceName, server.URL)
+			watcher := manager.WatchRpc(serviceName)
+			t.Cleanup(watcher.Release)
+			request := httptest.NewRequest(http.MethodPost, "/app.UserService/update", nil)
+			setTestRequestHeaders(t, request)
+			recorder := httptest.NewRecorder()
+			operation := &RpcOperation{
+				Auther:        authOperationForTest(t, request, recorder),
+				Server:        testServerApp(),
+				serviceSchema: &skel.ServiceSchema{},
+				methodSchema: &skel.MethodSchema{Require: &skel.PermRequire{Expr: &skel.PermExpr{
+					Mode: mode, Code: "app.User:update",
+					Check: &skel.PermCheckInvocation{ServiceSkelName: serviceName, MethodSkelName: "check", ResourceSkelName: "app.User", ActionName: "update"},
+				}}},
+			}
+			operation.endpointManager = manager
+			operation.actorSchema = &skel.ActorSchema{
+				PermEnabled: true,
+				PermService: &skel.ServiceSchema{SkelName: serviceName},
+				PermMethod:  &skel.MethodSchema{SkelName: "checkCodes"},
+			}
+			require.False(t, operation.Check())
+			assertRpcAuthError(t, recorder, ex.PermissionDenied, "tenant suspended")
+			var body struct {
+				Error struct {
+					Reason string `json:"reason"`
+				} `json:"error"`
+			}
+			require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &body))
+			require.Equal(t, "TENANT_SUSPENDED", body.Error.Reason)
+		})
 	}
 }

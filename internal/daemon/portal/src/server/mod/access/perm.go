@@ -29,9 +29,9 @@ func (o *RpcOperation) Check() bool {
 		return false
 	}
 
-	ok, code, message := evalPermExpr(expr, o.permissionCodeResults, o.tryCheckPermission)
+	ok, code, message, reason := evalPermExpr(expr, o.permissionCodeResults, o.tryCheckPermission)
 	if !ok {
-		o.writeError(code, message)
+		o.writeErrorWithReason(code, message, reason)
 	}
 
 	return ok
@@ -103,10 +103,10 @@ func (o *RpcOperation) readRequestBody() bool {
 	return true
 }
 
-func (o *RpcOperation) tryCheckPermission(check *skel.PermCheckInvocation) (bool, ex.Code, string) {
+func (o *RpcOperation) tryCheckPermission(check *skel.PermCheckInvocation) (bool, ex.Code, string, string) {
 	params, ok := o.extractCheckParams(check)
 	if !ok {
-		return false, ex.InvalidRequest, "permission check argument is missing"
+		return false, ex.InvalidRequest, "permission check argument is missing", ""
 	}
 
 	request := o.buildInvokeRequest(
@@ -147,15 +147,15 @@ func (o *RpcOperation) extractCheckArgument(jsonPath string) (any, bool) {
 	return nil, false
 }
 
-func (o *RpcOperation) tryForwardCheckRequest(request *http.Request, serviceSkelName string, defaultMessage string) (bool, ex.Code, string) {
-	_, code, message, ok := o.invoke[any](request, serviceSkelName, "permission", defaultMessage)
-	return ok, code, message
+func (o *RpcOperation) tryForwardCheckRequest(request *http.Request, serviceSkelName string, defaultMessage string) (bool, ex.Code, string, string) {
+	_, code, message, reason, ok := o.invoke[any](request, serviceSkelName, "permission", defaultMessage)
+	return ok, code, message, reason
 }
 
 func (o *RpcOperation) forwardCheckCodesRequest(request *http.Request, serviceSkelName string) bool {
-	results, code, message, ok := o.invoke[map[string]bool](request, serviceSkelName, "permission", "permission check failed")
+	results, code, message, reason, ok := o.invoke[map[string]bool](request, serviceSkelName, "permission", "permission check failed")
 	if !ok {
-		o.writeError(code, message)
+		o.writeErrorWithReason(code, message, reason)
 		return false
 	}
 

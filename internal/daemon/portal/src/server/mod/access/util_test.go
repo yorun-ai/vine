@@ -74,7 +74,7 @@ func TestCborGetByPathRejectsUnsupportedWildcardPaths(t *testing.T) {
 }
 
 func TestEvalPermExprKeepsAnyBranchesSeparate(t *testing.T) {
-	ok, _, _ := evalPermExpr(&skel.PermExpr{
+	ok, _, _, _ := evalPermExpr(&skel.PermExpr{
 		Mode: skel.PermRequireModeAny,
 		Children: []*skel.PermExpr{
 			{Mode: skel.PermRequireModeCode, Code: "app.User:manage"},
@@ -88,9 +88,9 @@ func TestEvalPermExprKeepsAnyBranchesSeparate(t *testing.T) {
 	}, map[string]bool{
 		"app.User:manage": false,
 		"app.User:update": true,
-	}, func(*skel.PermCheckInvocation) (bool, ex.Code, string) {
+	}, func(*skel.PermCheckInvocation) (bool, ex.Code, string, string) {
 		t.Fatal("checkFunc should not be called")
-		return false, ex.ServiceUnavailable, ""
+		return false, ex.ServiceUnavailable, "", ""
 	})
 	if !ok {
 		t.Fatalf("evalPermExpr() ok = false, want true")
@@ -126,14 +126,45 @@ func TestReorderPermExprDelaysChecksInSameGroup(t *testing.T) {
 		t.Fatalf("nested first child mode = %s, want code", expr.Children[1].Children[0].Mode)
 	}
 
-	ok, _, _ := evalPermExpr(expr, map[string]bool{
+	ok, _, _, _ := evalPermExpr(expr, map[string]bool{
 		"app.User:manage": true,
 		"app.User:update": true,
-	}, func(*skel.PermCheckInvocation) (bool, ex.Code, string) {
+	}, func(*skel.PermCheckInvocation) (bool, ex.Code, string, string) {
 		t.Fatal("checkFunc should not be called after code branch succeeds")
-		return false, ex.ServiceUnavailable, ""
+		return false, ex.ServiceUnavailable, "", ""
 	})
 	if !ok {
 		t.Fatalf("evalPermExpr() ok = false, want true")
+	}
+}
+
+func TestEvalPermExprPreservesSelectedFailureReason(t *testing.T) {
+	check := func(name string) *skel.PermExpr {
+		return &skel.PermExpr{Mode: skel.PermRequireModeCheck, Check: &skel.PermCheckInvocation{CheckName: name}}
+	}
+	for _, tc := range []struct {
+		name        string
+		expr        *skel.PermExpr
+		wantOK      bool
+		wantMessage string
+		wantReason  string
+	}{
+		{"all", &skel.PermExpr{Mode: skel.PermRequireModeAll, Children: []*skel.PermExpr{check("first"), check("last")}}, false, "first", "first_reason"},
+		{"any", &skel.PermExpr{Mode: skel.PermRequireModeAny, Children: []*skel.PermExpr{check("first"), check("last")}}, false, "last", "last_reason"},
+		{"any succeeds", &skel.PermExpr{Mode: skel.PermRequireModeAny, Children: []*skel.PermExpr{check("first"), {Mode: skel.PermRequireModeCode, Code: "allowed"}}}, true, "", ""},
+		{"any ends with code denial", &skel.PermExpr{Mode: skel.PermRequireModeAny, Children: []*skel.PermExpr{check("first"), {Mode: skel.PermRequireModeCode, Code: "denied"}}}, false, "permission denied: denied", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ok, code, message, reason := evalPermExpr(tc.expr, map[string]bool{"allowed": true}, func(check *skel.PermCheckInvocation) (bool, ex.Code, string, string) {
+				return false, ex.PermissionDenied, check.CheckName, check.CheckName + "_reason"
+			})
+			wantCode := ex.PermissionDenied
+			if tc.wantOK {
+				wantCode = ex.OK
+			}
+			if ok != tc.wantOK || code != wantCode || message != tc.wantMessage || reason != tc.wantReason {
+				t.Fatalf("got (%v, %s, %q, %q), want (%v, %s, %q, %q)", ok, code, message, reason, tc.wantOK, wantCode, tc.wantMessage, tc.wantReason)
+			}
+		})
 	}
 }
