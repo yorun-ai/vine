@@ -272,12 +272,12 @@ func toServerSkeletonActorItem(version _SkeletonVersionFields, schema *skel.Acto
 		DomainSchemaHash: version.DomainSchemaHash,
 		Name:             schema.Name,
 		SkelName:         schema.SkelName,
-		Description:      optionalString(schema.Description),
+		Description:      schema.Description,
 		Deprecated:       schema.Deprecated,
-		DeprecatedReason: optionalString(schema.DeprecatedReason),
+		DeprecatedReason: schema.DeprecatedReason,
 		ActorVias:        vias,
 		AuthEnabled:      schema.AuthEnabled,
-		IdentifierField:  optionalString(schema.IdentifierField),
+		IdentifierField:  schema.IdentifierField,
 		Credential:       toServerSkeletonActorData(version, schema.AuthCredential),
 		Info:             toServerSkeletonActorData(version, schema.AuthInfo),
 		AuthService:      toServerSkeletonActorService(version, schema.AuthService),
@@ -419,9 +419,9 @@ func toServerSkeletonServiceItem(version _SkeletonVersionFields, schema *skel.Se
 		DomainSchemaHash: version.DomainSchemaHash,
 		Name:             schema.Name,
 		SkelName:         schema.SkelName,
-		Description:      optionalString(schema.Description),
+		Description:      schema.Description,
 		Deprecated:       schema.Deprecated,
-		DeprecatedReason: optionalString(schema.DeprecatedReason),
+		DeprecatedReason: schema.DeprecatedReason,
 		Pub:              schema.Pub,
 		AuthMode:         string(schema.AuthMode),
 		Require:          toServerSkeletonPermExpr(schema.Require),
@@ -440,9 +440,9 @@ func toServerSkeletonResourceItem(version _SkeletonVersionFields, schema *skel.R
 		DomainSchemaHash: version.DomainSchemaHash,
 		Name:             schema.Name,
 		SkelName:         schema.SkelName,
-		Description:      optionalString(schema.Description),
+		Description:      schema.Description,
 		Deprecated:       schema.Deprecated,
-		DeprecatedReason: optionalString(schema.DeprecatedReason),
+		DeprecatedReason: schema.DeprecatedReason,
 		Checks:           toServerSkeletonResourceChecks(schema.Checks),
 		Actions:          toServerSkeletonResourceActions(schema.Actions),
 		CheckService:     toServerSkeletonResourceCheckService(version, schema.CheckService),
@@ -467,9 +467,9 @@ func toServerSkeletonConfigItem(version _SkeletonVersionFields, schema *skel.Con
 		DomainSchemaHash: version.DomainSchemaHash,
 		Name:             schema.Name,
 		SkelName:         schema.SkelName,
-		Description:      optionalString(schema.Description),
+		Description:      schema.Description,
 		Deprecated:       schema.Deprecated,
-		DeprecatedReason: optionalString(schema.DeprecatedReason),
+		DeprecatedReason: schema.DeprecatedReason,
 		Pub:              schema.Pub,
 		Sensitive:        schema.Sensitive,
 		Lifecycle:        schema.Lifecycle,
@@ -487,9 +487,9 @@ func toServerSkeletonWebItem(version _SkeletonVersionFields, schema *skel.WebSch
 		DomainSchemaHash: version.DomainSchemaHash,
 		Name:             schema.Name,
 		SkelName:         schema.SkelName,
-		Description:      optionalString(schema.Description),
+		Description:      schema.Description,
 		Deprecated:       schema.Deprecated,
-		DeprecatedReason: optionalString(schema.DeprecatedReason),
+		DeprecatedReason: schema.DeprecatedReason,
 		Actors:           toServerSkeletonActorRefs(schema.Audiences),
 	}
 }
@@ -500,10 +500,10 @@ func toServerSkeletonTask(version _SkeletonVersionFields, schema *skel.TaskSchem
 		triggers = append(triggers, skeled.SkeletonTrigger{
 			Name:               trigger.Name,
 			SkelName:           trigger.SkelName,
-			Description:        optionalString(trigger.Description),
+			Description:        trigger.Description,
 			Deprecated:         trigger.Deprecated,
-			DeprecatedReason:   optionalString(trigger.DeprecatedReason),
-			InputDescription:   optionalString(trigger.InputDescription),
+			DeprecatedReason:   trigger.DeprecatedReason,
+			InputDescription:   trigger.InputDescription,
 			Arguments:          toServerSkeletonFields(trigger.Arguments),
 			ArgumentsSensitive: trigger.ArgumentsSensitive,
 		})
@@ -517,9 +517,9 @@ func toServerSkeletonTask(version _SkeletonVersionFields, schema *skel.TaskSchem
 		DomainSchemaHash: version.DomainSchemaHash,
 		Name:             schema.Name,
 		SkelName:         schema.SkelName,
-		Description:      optionalString(schema.Description),
+		Description:      schema.Description,
 		Deprecated:       schema.Deprecated,
-		DeprecatedReason: optionalString(schema.DeprecatedReason),
+		DeprecatedReason: schema.DeprecatedReason,
 		Triggers:         triggers,
 	}
 }
@@ -534,9 +534,9 @@ func toServerSkeletonEventItem(version _SkeletonVersionFields, schema *skel.Even
 		DomainSchemaHash: version.DomainSchemaHash,
 		Name:             schema.Name,
 		SkelName:         schema.SkelName,
-		Description:      optionalString(schema.Description),
+		Description:      schema.Description,
 		Deprecated:       schema.Deprecated,
-		DeprecatedReason: optionalString(schema.DeprecatedReason),
+		DeprecatedReason: schema.DeprecatedReason,
 		Pub:              schema.Pub,
 		Sensitive:        schema.Sensitive,
 		Fields:           toServerSkeletonFields(schema.Members),
@@ -553,9 +553,9 @@ func toServerSkeletonData(version _SkeletonVersionFields, schema *skel.DataSchem
 		DomainSchemaHash: version.DomainSchemaHash,
 		Name:             schema.Name,
 		SkelName:         schema.SkelName,
-		Description:      optionalString(schema.Description),
+		Description:      schema.Description,
 		Deprecated:       schema.Deprecated,
-		DeprecatedReason: optionalString(schema.DeprecatedReason),
+		DeprecatedReason: schema.DeprecatedReason,
 		Enum:             false,
 		Sensitive:        schema.Sensitive,
 		TypeParameters:   append([]string{}, schema.TypeParameters...),
@@ -574,9 +574,9 @@ func toServerSkeletonEnumData(version _SkeletonVersionFields, schema *skel.EnumS
 		DomainSchemaHash: version.DomainSchemaHash,
 		Name:             schema.Name,
 		SkelName:         schema.SkelName,
-		Description:      optionalString(schema.Description),
+		Description:      schema.Description,
 		Deprecated:       schema.Deprecated,
-		DeprecatedReason: optionalString(schema.DeprecatedReason),
+		DeprecatedReason: schema.DeprecatedReason,
 		Enum:             true,
 		TypeParameters:   []string{},
 		Fields:           []skeled.SkeletonField{},
@@ -589,9 +589,9 @@ func toServerSkeletonEnumItems(schemas []*skel.EnumItemSchema) []skeled.Skeleton
 	for _, schema := range schemas {
 		ret = append(ret, skeled.SkeletonEnumItem{
 			Name:             schema.Name,
-			Description:      optionalString(schema.Description),
+			Description:      schema.Description,
 			Deprecated:       schema.Deprecated,
-			DeprecatedReason: optionalString(schema.DeprecatedReason),
+			DeprecatedReason: schema.DeprecatedReason,
 		})
 	}
 	return ret
@@ -603,7 +603,7 @@ func toServerSkeletonActorRefs(refs []*skel.ActorAudienceSchema) []skeled.Skelet
 		ret = append(ret, skeled.SkeletonActorRef{
 			Name:     ref.Name,
 			SkelName: ref.SkelName,
-			Via:      optionalString(string(ref.Via)),
+			Via:      string(ref.Via),
 		})
 	}
 	return ret
@@ -621,15 +621,15 @@ func toServerSkeletonMethod(schema *skel.MethodSchema) skeled.SkeletonMethod {
 	return skeled.SkeletonMethod{
 		Name:               schema.Name,
 		SkelName:           schema.SkelName,
-		Description:        optionalString(schema.Description),
+		Description:        schema.Description,
 		Deprecated:         schema.Deprecated,
-		DeprecatedReason:   optionalString(schema.DeprecatedReason),
-		InputDescription:   optionalString(schema.InputDescription),
-		OutputDescription:  optionalString(schema.OutputDescription),
-		Example:            optionalString(schema.Example),
+		DeprecatedReason:   schema.DeprecatedReason,
+		InputDescription:   schema.InputDescription,
+		OutputDescription:  schema.OutputDescription,
+		Example:            schema.Example,
 		AuthMode:           string(schema.AuthMode),
 		Require:            toServerSkeletonPermExpr(schema.Require),
-		OutputExample:      optionalString(schema.OutputExample),
+		OutputExample:      schema.OutputExample,
 		Arguments:          toServerSkeletonFields(schema.Arguments),
 		ArgumentsSensitive: schema.ArgumentsSensitive,
 		ResultType:         formatSkeletonType(schema.ResultType),
@@ -658,7 +658,7 @@ func toServerSkeletonPermExprNode(schema *skel.PermExpr) *skeled.SkeletonPermExp
 	}
 	return &skeled.SkeletonPermExpr{
 		Mode:     string(schema.Mode),
-		Code:     optionalString(schema.Code),
+		Code:     schema.Code,
 		Check:    toServerSkeletonPermCheck(schema.Check),
 		Children: children,
 	}
@@ -696,9 +696,9 @@ func toServerSkeletonResourceActions(schemas []*skel.ResourceActionSchema) []ske
 		ret = append(ret, skeled.SkeletonResourceAction{
 			Name:             schema.Name,
 			PermissionCode:   schema.PermissionCode,
-			Description:      optionalString(schema.Description),
+			Description:      schema.Description,
 			Deprecated:       schema.Deprecated,
-			DeprecatedReason: optionalString(schema.DeprecatedReason),
+			DeprecatedReason: schema.DeprecatedReason,
 			Checks:           toServerSkeletonResourceChecks(schema.Checks),
 		})
 	}
@@ -711,7 +711,7 @@ func toServerSkeletonResourceChecks(schemas []*skel.ResourceCheckSchema) []skele
 		ret = append(ret, skeled.SkeletonResourceCheck{
 			Name:               schema.Name,
 			Deprecated:         schema.Deprecated,
-			DeprecatedReason:   optionalString(schema.DeprecatedReason),
+			DeprecatedReason:   schema.DeprecatedReason,
 			MethodName:         schema.Method.Name,
 			MethodSkelName:     schema.Method.SkelName,
 			Arguments:          toServerSkeletonFields(schema.Arguments),
@@ -727,10 +727,10 @@ func toServerSkeletonFields(schemas []*skel.MemberSchema) []skeled.SkeletonField
 		ret = append(ret, skeled.SkeletonField{
 			Name:             schema.Name,
 			Type:             formatSkeletonType(schema.Type),
-			Description:      optionalString(schema.Description),
+			Description:      schema.Description,
 			Deprecated:       schema.Deprecated,
-			DeprecatedReason: optionalString(schema.DeprecatedReason),
-			Example:          optionalString(schema.Example),
+			DeprecatedReason: schema.DeprecatedReason,
+			Example:          schema.Example,
 			Sensitive:        schema.Sensitive,
 		})
 	}

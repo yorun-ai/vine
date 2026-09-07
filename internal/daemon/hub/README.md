@@ -145,6 +145,15 @@ imported data. YAML cannot replace built-in Dashboard sites or rules.
 Admin API and Redis use only the new fields; upgrade Hub and Portal together.
 Existing database columns are migrated to matching `match_*` / `route_*` names.
 
+## Admin Display Strings
+
+Skeleton, configuration-schema, and debug-schema display fields use strings.
+Missing descriptions, deprecation reasons, examples, identifiers, access methods,
+and permission codes are represented by an empty string, not null. Update and
+debug-request fields retain optionality where omission has a separate meaning.
+Regenerate custom Admin clients when adopting this contract; deploy the matching
+Dashboard assets with Hub.
+
 ## Skeleton Generation
 
 Hub maintains independent Skel source directories at `skel/control` and

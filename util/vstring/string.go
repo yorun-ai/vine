@@ -17,6 +17,15 @@ func IsBlank(str string) bool {
 	return strings.TrimSpace(str) == ""
 }
 
+// Optional returns nil for an empty string, or a pointer to a copy of value.
+// Whitespace is preserved and is not considered empty.
+func Optional(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return new(value)
+}
+
 // TrimSpacePtr returns the pointed-to string with leading and trailing Unicode
 // whitespace removed, or an empty string if value is nil.
 func TrimSpacePtr(value *string) string {

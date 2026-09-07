@@ -350,9 +350,9 @@ func toServerAppConfigSchema(schema *skel.ConfigSchema, enumSchemas []*skel.Enum
 	return &skeled.AppConfigSchema{
 		SkelName:         schema.SkelName,
 		Name:             schema.Name,
-		Description:      optionalString(schema.Description),
+		Description:      schema.Description,
 		Deprecated:       schema.Deprecated,
-		DeprecatedReason: optionalString(schema.DeprecatedReason),
+		DeprecatedReason: schema.DeprecatedReason,
 		Lifecycle:        schema.Lifecycle,
 		Fields:           toServerAppConfigSchemaFields(schema.Members, enumSchemas),
 	}
@@ -373,9 +373,9 @@ func toServerAppConfigSchemaFields(members []*skel.MemberSchema, enumSchemas []*
 		fields = append(fields, skeled.AppConfigSchemaField{
 			Name:             member.Name,
 			Type:             formatAppConfigSchemaFieldType(member.Type),
-			Description:      optionalString(member.Description),
+			Description:      member.Description,
 			Deprecated:       member.Deprecated,
-			DeprecatedReason: optionalString(member.DeprecatedReason),
+			DeprecatedReason: member.DeprecatedReason,
 			EnumItems:        toServerAppConfigSchemaEnumItems(findEnumSchema(member.Type, enumSchemas)),
 		})
 	}
@@ -441,17 +441,10 @@ func toServerAppConfigSchemaEnumItems(enumSchema *skel.EnumSchema) []skeled.AppC
 	for _, item := range enumSchema.Items {
 		items = append(items, skeled.AppConfigSchemaEnumItem{
 			Name:             item.Name,
-			Description:      optionalString(item.Description),
+			Description:      item.Description,
 			Deprecated:       item.Deprecated,
-			DeprecatedReason: optionalString(item.DeprecatedReason),
+			DeprecatedReason: item.DeprecatedReason,
 		})
 	}
 	return items
-}
-
-func optionalString(value string) *string {
-	if value == "" {
-		return nil
-	}
-	return &value
 }

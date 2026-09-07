@@ -89,7 +89,7 @@ export type AppConfigSchema = {
   /**
    * Configuration description.
    */
-  description:      string | null;
+  description:      string;
   /**
    * Whether the configuration is deprecated.
    */
@@ -97,7 +97,7 @@ export type AppConfigSchema = {
   /**
    * Configuration deprecation reason.
    */
-  deprecatedReason: string | null;
+  deprecatedReason: string;
   /**
    * Configuration lifecycle.
    */
@@ -118,7 +118,7 @@ export type AppConfigSchemaEnumItem = {
   /**
    * Enumeration options description.
    */
-  description:      string | null;
+  description:      string;
   /**
    * Whether the enumeration option is deprecated.
    */
@@ -126,7 +126,7 @@ export type AppConfigSchemaEnumItem = {
   /**
    * Enumeration option deprecation reason.
    */
-  deprecatedReason: string | null;
+  deprecatedReason: string;
 }
 /**
  * Configuration schema fields.
@@ -143,7 +143,7 @@ export type AppConfigSchemaField = {
   /**
    * Field description.
    */
-  description:      string | null;
+  description:      string;
   /**
    * Whether the field is deprecated.
    */
@@ -151,7 +151,7 @@ export type AppConfigSchemaField = {
   /**
    * Field deprecation reason.
    */
-  deprecatedReason: string | null;
+  deprecatedReason: string;
   /**
    * Enumeration options list.
    */
@@ -264,7 +264,7 @@ export type EventDebugEventItem = {
   /**
    * Event description.
    */
-  description:      string | null;
+  description:      string;
   /**
    * Whether the Event is deprecated.
    */
@@ -272,7 +272,7 @@ export type EventDebugEventItem = {
   /**
    * Event deprecation reason.
    */
-  deprecatedReason: string | null;
+  deprecatedReason: string;
   /**
    * Field list.
    */
@@ -977,7 +977,7 @@ export type ServiceDebugMethodItem = {
   /**
    * Method description.
    */
-  description:       string | null;
+  description:       string;
   /**
    * Whether the method is deprecated.
    */
@@ -985,23 +985,23 @@ export type ServiceDebugMethodItem = {
   /**
    * Method deprecation reason.
    */
-  deprecatedReason:  string | null;
+  deprecatedReason:  string;
   /**
    * Input description.
    */
-  inputDescription:  string | null;
+  inputDescription:  string;
   /**
    * Output description.
    */
-  outputDescription: string | null;
+  outputDescription: string;
   /**
    * Input example.
    */
-  example:           string | null;
+  example:           string;
   /**
    * Output example.
    */
-  outputExample:     string | null;
+  outputExample:     string;
   /**
    * Parameter list.
    */
@@ -1030,7 +1030,7 @@ export type ServiceDebugServiceItem = {
   /**
    * Service deprecation reason.
    */
-  deprecatedReason: string | null;
+  deprecatedReason: string;
 }
 /**
  * Rpc service processing capability registration information provided by the application.
@@ -1088,7 +1088,7 @@ export type SkeletonActorItem = {
   /**
    * Actor description.
    */
-  description:      string | null;
+  description:      string;
   /**
    * Whether the Actor is deprecated.
    */
@@ -1096,7 +1096,7 @@ export type SkeletonActorItem = {
   /**
    * Actor deprecation reason.
    */
-  deprecatedReason: string | null;
+  deprecatedReason: string;
   /**
    * Actor access method list.
    */
@@ -1108,7 +1108,7 @@ export type SkeletonActorItem = {
   /**
    * Actor identifier field in Info.
    */
-  identifierField:  string | null;
+  identifierField:  string;
   /**
    * Authentication credentials.
    */
@@ -1157,7 +1157,7 @@ export type SkeletonActorRef = {
   /**
    * Access method.
    */
-  via:      string | null;
+  via:      string;
 }
 /**
  * SkeletonConfig.
@@ -1198,7 +1198,7 @@ export type SkeletonConfigItem = {
   /**
    * Config description.
    */
-  description:      string | null;
+  description:      string;
   /**
    * Whether the Config is deprecated.
    */
@@ -1206,7 +1206,7 @@ export type SkeletonConfigItem = {
   /**
    * Config deprecation reason.
    */
-  deprecatedReason: string | null;
+  deprecatedReason: string;
   /**
    * Whether the item is public.
    */
@@ -1263,7 +1263,7 @@ export type SkeletonData = {
   /**
    * Data description.
    */
-  description:      string | null;
+  description:      string;
   /**
    * Whether the Data or Enum is deprecated.
    */
@@ -1271,7 +1271,7 @@ export type SkeletonData = {
   /**
    * Data or Enum deprecation reason.
    */
-  deprecatedReason: string | null;
+  deprecatedReason: string;
   /**
    * Whether it is Enum.
    */
@@ -1365,7 +1365,7 @@ export type SkeletonEnumItem = {
   /**
    * Enumeration item description.
    */
-  description:      string | null;
+  description:      string;
   /**
    * Whether the enumeration item is deprecated.
    */
@@ -1373,7 +1373,7 @@ export type SkeletonEnumItem = {
   /**
    * Enumeration item deprecation reason.
    */
-  deprecatedReason: string | null;
+  deprecatedReason: string;
 }
 /**
  * Skeleton event.
@@ -1414,7 +1414,7 @@ export type SkeletonEventItem = {
   /**
    * Event description.
    */
-  description:      string | null;
+  description:      string;
   /**
    * Whether the Event is deprecated.
    */
@@ -1422,7 +1422,7 @@ export type SkeletonEventItem = {
   /**
    * Event deprecation reason.
    */
-  deprecatedReason: string | null;
+  deprecatedReason: string;
   /**
    * Whether the item is public.
    */
@@ -1451,7 +1451,7 @@ export type SkeletonField = {
   /**
    * Field description.
    */
-  description:      string | null;
+  description:      string;
   /**
    * Whether the field is deprecated.
    */
@@ -1459,11 +1459,11 @@ export type SkeletonField = {
   /**
    * Field deprecation reason.
    */
-  deprecatedReason: string | null;
+  deprecatedReason: string;
   /**
    * Field example.
    */
-  example:          string | null;
+  example:          string;
   /**
    * Whether the field is sensitive.
    */
@@ -1484,7 +1484,7 @@ export type SkeletonMethod = {
   /**
    * Method description.
    */
-  description:        string | null;
+  description:        string;
   /**
    * Whether the method is deprecated.
    */
@@ -1492,19 +1492,19 @@ export type SkeletonMethod = {
   /**
    * Method deprecation reason.
    */
-  deprecatedReason:   string | null;
+  deprecatedReason:   string;
   /**
    * Input description.
    */
-  inputDescription:   string | null;
+  inputDescription:   string;
   /**
    * Output description.
    */
-  outputDescription:  string | null;
+  outputDescription:  string;
   /**
    * Input example.
    */
-  example:            string | null;
+  example:            string;
   /**
    * Authentication mode.
    */
@@ -1516,7 +1516,7 @@ export type SkeletonMethod = {
   /**
    * Output example.
    */
-  outputExample:      string | null;
+  outputExample:      string;
   /**
    * Parameter list.
    */
@@ -1591,7 +1591,7 @@ export type SkeletonPermExpr = {
   /**
    * Permission code.
    */
-  code:     string | null;
+  code:     string;
   /**
    * Permission verification call.
    */
@@ -1616,7 +1616,7 @@ export type SkeletonResourceAction = {
   /**
    * Action description.
    */
-  description:      string | null;
+  description:      string;
   /**
    * Whether the Action is deprecated.
    */
@@ -1624,7 +1624,7 @@ export type SkeletonResourceAction = {
   /**
    * Action deprecation reason.
    */
-  deprecatedReason: string | null;
+  deprecatedReason: string;
   /**
    * Check list.
    */
@@ -1645,7 +1645,7 @@ export type SkeletonResourceCheck = {
   /**
    * Check deprecation reason.
    */
-  deprecatedReason:   string | null;
+  deprecatedReason:   string;
   /**
    * Check method name.
    */
@@ -1702,7 +1702,7 @@ export type SkeletonResourceItem = {
   /**
    * Resource description.
    */
-  description:      string | null;
+  description:      string;
   /**
    * Whether the Resource is deprecated.
    */
@@ -1710,7 +1710,7 @@ export type SkeletonResourceItem = {
   /**
    * Resource deprecation reason.
    */
-  deprecatedReason: string | null;
+  deprecatedReason: string;
   /**
    * Resource level Check list.
    */
@@ -1763,7 +1763,7 @@ export type SkeletonServiceItem = {
   /**
    * Service Description.
    */
-  description:      string | null;
+  description:      string;
   /**
    * Whether the Service is deprecated.
    */
@@ -1771,7 +1771,7 @@ export type SkeletonServiceItem = {
   /**
    * Service deprecation reason.
    */
-  deprecatedReason: string | null;
+  deprecatedReason: string;
   /**
    * Whether the item is public.
    */
@@ -1832,7 +1832,7 @@ export type SkeletonTask = {
   /**
    * Task description.
    */
-  description:      string | null;
+  description:      string;
   /**
    * Whether the Task is deprecated.
    */
@@ -1840,7 +1840,7 @@ export type SkeletonTask = {
   /**
    * Task deprecation reason.
    */
-  deprecatedReason: string | null;
+  deprecatedReason: string;
   /**
    * Trigger list.
    */
@@ -1861,7 +1861,7 @@ export type SkeletonTrigger = {
   /**
    * Trigger description.
    */
-  description:        string | null;
+  description:        string;
   /**
    * Whether the Trigger is deprecated.
    */
@@ -1869,15 +1869,15 @@ export type SkeletonTrigger = {
   /**
    * Trigger deprecation reason.
    */
-  deprecatedReason:   string | null;
+  deprecatedReason:   string;
   /**
    * Input description.
    */
-  inputDescription:   string | null;
+  inputDescription:   string;
   /**
    * Input example.
    */
-  example:            string | null;
+  example:            string;
   /**
    * Parameter list.
    */
@@ -1926,7 +1926,7 @@ export type SkeletonWebItem = {
   /**
    * Web page description.
    */
-  description:      string | null;
+  description:      string;
   /**
    * Whether the Web is deprecated.
    */
@@ -1934,7 +1934,7 @@ export type SkeletonWebItem = {
   /**
    * Web deprecation reason.
    */
-  deprecatedReason: string | null;
+  deprecatedReason: string;
   /**
    * Accessible Actor List.
    */
@@ -2005,7 +2005,7 @@ export type TaskDebugTaskItem = {
   /**
    * Task description.
    */
-  description:      string | null;
+  description:      string;
   /**
    * Whether the Task is deprecated.
    */
@@ -2013,7 +2013,7 @@ export type TaskDebugTaskItem = {
   /**
    * Task deprecation reason.
    */
-  deprecatedReason: string | null;
+  deprecatedReason: string;
 }
 /**
  * Trigger called by Task Debug.
@@ -2030,7 +2030,7 @@ export type TaskDebugTriggerItem = {
   /**
    * Trigger description.
    */
-  description:      string | null;
+  description:      string;
   /**
    * Whether the Trigger is deprecated.
    */
@@ -2038,15 +2038,15 @@ export type TaskDebugTriggerItem = {
   /**
    * Trigger deprecation reason.
    */
-  deprecatedReason: string | null;
+  deprecatedReason: string;
   /**
    * Input description.
    */
-  inputDescription: string | null;
+  inputDescription: string;
   /**
    * Input example.
    */
-  example:          string | null;
+  example:          string;
   /**
    * Parameter list.
    */
