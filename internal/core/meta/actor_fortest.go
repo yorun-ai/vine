@@ -21,6 +21,7 @@ func NewAuthenticatedActorForTest() Actor {
 	return &_Actor{
 		kind:        ActorTypeAuthenticated,
 		actorInfo:   actorInfo,
+		realm:       actorInfo.SkelName,
 		rawAuthInfo: []byte(`{"Id":"test"}`),
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/tidwall/gjson"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -100,7 +101,16 @@ func (s *ServiceDebugServiceServerImpl) debugActor(actorSkelName *string, actorI
 	if !info.IsValid() {
 		ex.PanicNew(ex.InvalidRequest, "invalid actor info json")
 	}
-	return meta.NewAuthenticatedActorWithRawInfo(actor.AuthInfo.SkelName, info)
+	identifier := ""
+	if actor.IdentifierField != "" {
+		value := gjson.GetBytes(info, actor.IdentifierField)
+		ex.PanicNewIfNot(value.Type != gjson.Null, ex.InvalidRequest, "actor identifier field is missing or null")
+		identifier = value.Raw
+		if value.Type == gjson.String {
+			identifier = value.Str
+		}
+	}
+	return meta.NewAuthenticatedActorWithRawInfo(actor.SkelName, identifier, actor.AuthInfo.SkelName, info)
 }
 
 const (

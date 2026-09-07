@@ -46,7 +46,7 @@ func TestBindActorAllowsNullableUnmatchedActorInfos(t *testing.T) {
 	ensureUtilTestActorsRegistered()
 
 	actor, err := meta.DecodeActorFromBase64(meta.EncodeActorToBase64(meta.NewAuthenticatedActorWithRawInfo(
-		"test.app.UtilTestActorAInfo",
+		"test.app.UtilTestActorA", "", "test.app.UtilTestActorAInfo",
 		[]byte(`{"Name":"A"}`),
 	)))
 	if err != nil {

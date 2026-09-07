@@ -27,6 +27,9 @@ type Actor interface {
 	IsAnonymous() bool
 	IsAuthenticated() bool
 
+	Realm() string
+	Identifier() string
+
 	RawInfo() string
 
 	mustByActor()
@@ -35,6 +38,9 @@ type Actor interface {
 type _Actor struct {
 	kind      ActorType
 	actorInfo *_ActorInfo
+
+	realm      string
+	identifier string
 
 	rawAuthInfo jsontext.Value
 }
@@ -49,6 +55,14 @@ func (a *_Actor) IsAnonymous() bool {
 
 func (a *_Actor) IsAuthenticated() bool {
 	return a.kind == ActorTypeAuthenticated
+}
+
+func (a *_Actor) Realm() string {
+	return a.realm
+}
+
+func (a *_Actor) Identifier() string {
+	return a.identifier
 }
 
 func (a *_Actor) RawInfo() string {
@@ -83,16 +97,20 @@ func NewAuthenticatedActor[I any](info I) Actor {
 	return &_Actor{
 		kind:        ActorTypeAuthenticated,
 		actorInfo:   actorInfo,
+		realm:       actorInfo.SkelName,
+		identifier:  actorInfo.identifier(info),
 		rawAuthInfo: rawAuthInfo,
 	}
 }
 
-func NewAuthenticatedActorWithRawInfo(infoSkelName string, info jsontext.Value) Actor {
+func NewAuthenticatedActorWithRawInfo(realm, identifier, infoSkelName string, info jsontext.Value) Actor {
 	return &_Actor{
 		kind: ActorTypeAuthenticated,
 		actorInfo: &_ActorInfo{
 			InfoSkelName: infoSkelName,
 		},
+		realm:       realm,
+		identifier:  identifier,
 		rawAuthInfo: info,
 	}
 }
@@ -134,7 +152,11 @@ func MustGetActorInfoByType(metaActor Actor, kind reflect.Type) any {
 // Actor Payload
 
 type _ActorPayload struct {
-	Type         ActorType      `json:"type"`
+	Type ActorType `json:"type"`
+
+	Realm      string `json:"realm,omitempty"`
+	Identifier string `json:"identifier,omitempty"`
+
 	InfoSkelName string         `json:"infoSkelName,omitempty"`
 	Info         jsontext.Value `json:"info,omitempty"`
 }
@@ -166,6 +188,8 @@ func DecodeActorFromBase64(value string) (Actor, error) {
 	return &_Actor{
 		kind:        ActorTypeAuthenticated,
 		actorInfo:   actorInfo,
+		realm:       payload.Realm,
+		identifier:  payload.Identifier,
 		rawAuthInfo: payload.Info,
 	}, nil
 }
@@ -173,8 +197,10 @@ func DecodeActorFromBase64(value string) (Actor, error) {
 func EncodeActorToBase64(metaActor Actor) string {
 	actor := metaActor.(*_Actor)
 	payload := &_ActorPayload{
-		Type: actor.kind,
-		Info: actor.rawAuthInfo,
+		Type:       actor.kind,
+		Realm:      actor.Realm(),
+		Identifier: actor.Identifier(),
+		Info:       actor.rawAuthInfo,
 	}
 	if actor.actorInfo != nil {
 		payload.InfoSkelName = actor.actorInfo.InfoSkelName

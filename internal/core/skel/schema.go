@@ -100,6 +100,7 @@ type ActorSchema struct {
 	AuthEnabled      bool           `json:"authEnabled"`
 	AuthCredential   *DataSchema    `json:"authCredential,omitempty"`
 	AuthInfo         *DataSchema    `json:"authInfo,omitempty"`
+	IdentifierField  string         `json:"identifierField,omitempty"`
 	AuthService      *ServiceSchema `json:"authService,omitempty"`
 	AuthMethod       *MethodSchema  `json:"authMethod,omitempty"`
 	PermEnabled      bool           `json:"permEnabled"`
