@@ -11,10 +11,10 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "d6736d53",
+	Hash:        "4a37d550",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
-		CompilerVersion: "v0.16.0",
+		CompilerVersion: "v0.17.0",
 	},
 
 	Enums: []*skel.EnumSchema{
@@ -85,7 +85,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "AppConfigItem",
 			SkelName:    "vine.hub.admin.AppConfigItem",
 			Description: "Configuration items",
-			Hash:        "01c89019",
+			Hash:        "0a18f099",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "id",
@@ -143,7 +143,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "AppConfigSchema",
 			SkelName:    "vine.hub.admin.AppConfigSchema",
 			Description: "Configuration schema items",
-			Hash:        "6a8ec31e",
+			Hash:        "80292035",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "skelName",
@@ -165,9 +165,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Configuration description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -182,9 +181,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Configuration deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -213,7 +211,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "AppConfigSchemaEnumItem",
 			SkelName:    "vine.hub.admin.AppConfigSchemaEnumItem",
 			Description: "Configuration schema enumeration options",
-			Hash:        "868d018e",
+			Hash:        "e326a9c1",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -227,9 +225,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Enumeration options description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -244,9 +241,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Enumeration option deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 			},
@@ -255,7 +251,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "AppConfigSchemaField",
 			SkelName:    "vine.hub.admin.AppConfigSchemaField",
 			Description: "Configuration schema fields",
-			Hash:        "d78be5bc",
+			Hash:        "4d70deff",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -277,9 +273,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Field description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -294,9 +289,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Field deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -504,7 +498,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "EventDebugEventItem",
 			SkelName:    "vine.hub.admin.EventDebugEventItem",
 			Description: "Event called by Event Debug",
-			Hash:        "0439a607",
+			Hash:        "a952531e",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -534,9 +528,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Event description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -551,9 +544,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Event deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -1969,7 +1961,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "ServiceDebugMethodItem",
 			SkelName:    "vine.hub.admin.ServiceDebugMethodItem",
 			Description: "Method called by Service Debug",
-			Hash:        "ab6fe734",
+			Hash:        "cbe110e0",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -1991,9 +1983,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Method description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -2008,45 +1999,40 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Method deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
 					Name:        "inputDescription",
 					Description: "Input description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
 					Name:        "outputDescription",
 					Description: "Output description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
 					Name:        "example",
 					Description: "Input example",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
 					Name:        "outputExample",
 					Description: "Output example",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -2075,7 +2061,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "ServiceDebugServiceItem",
 			SkelName:    "vine.hub.admin.ServiceDebugServiceItem",
 			Description: "Service called by Service Debug",
-			Hash:        "4d68fc4b",
+			Hash:        "dc57795b",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "serviceSkelName",
@@ -2105,9 +2091,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Service deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 			},
@@ -2148,7 +2133,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonActorItem",
 			SkelName:    "vine.hub.admin.SkeletonActorItem",
 			Description: "SkeletonActor",
-			Hash:        "811c5ebf",
+			Hash:        "d0e143ff",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -2218,9 +2203,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Actor description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -2235,9 +2219,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Actor deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -2257,6 +2240,14 @@ var _DomainSchema = &skel.DomainSchema{
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarBool,
+					},
+				},
+				{
+					Name:        "identifierField",
+					Description: "Actor identifier field in Info",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -2347,7 +2338,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonActorRef",
 			SkelName:    "vine.hub.admin.SkeletonActorRef",
 			Description: "Skeleton Actor Reference",
-			Hash:        "215bcd74",
+			Hash:        "6bc3e89c",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -2369,9 +2360,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "via",
 					Description: "Access method",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 			},
@@ -2380,7 +2370,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonConfigItem",
 			SkelName:    "vine.hub.admin.SkeletonConfigItem",
 			Description: "SkeletonConfig",
-			Hash:        "54401655",
+			Hash:        "b9ac2803",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -2450,9 +2440,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Config description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -2467,9 +2456,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Config deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -2514,7 +2502,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonData",
 			SkelName:    "vine.hub.admin.SkeletonData",
 			Description: "SkeletonData",
-			Hash:        "cc8009bd",
+			Hash:        "9ea3981d",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -2584,9 +2572,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Data description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -2601,9 +2588,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Data or Enum deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -2663,7 +2649,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonDomain",
 			SkelName:    "vine.hub.admin.SkeletonDomain",
 			Description: "Domain skeleton version",
-			Hash:        "d63d46be",
+			Hash:        "df54ce0d",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -2815,7 +2801,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonEnumItem",
 			SkelName:    "vine.hub.admin.SkeletonEnumItem",
 			Description: "Skeleton enumeration items",
-			Hash:        "b3d68d02",
+			Hash:        "8b5c74a4",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -2829,9 +2815,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Enumeration item description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -2846,9 +2831,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Enumeration item deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 			},
@@ -2857,7 +2841,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonEventItem",
 			SkelName:    "vine.hub.admin.SkeletonEventItem",
 			Description: "Skeleton event",
-			Hash:        "2d74d273",
+			Hash:        "cf41289c",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -2927,9 +2911,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Event description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -2944,9 +2927,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Event deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -2983,7 +2965,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonField",
 			SkelName:    "vine.hub.admin.SkeletonField",
 			Description: "Skeleton field",
-			Hash:        "9d79062c",
+			Hash:        "02833a63",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -3005,9 +2987,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Field description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -3022,18 +3003,16 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Field deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
 					Name:        "example",
 					Description: "Field example",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -3050,7 +3029,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonMethod",
 			SkelName:    "vine.hub.admin.SkeletonMethod",
 			Description: "Skeleton method",
-			Hash:        "40a2b72f",
+			Hash:        "f3be138b",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -3072,9 +3051,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Method description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -3089,36 +3067,32 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Method deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
 					Name:        "inputDescription",
 					Description: "Input description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
 					Name:        "outputDescription",
 					Description: "Output description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
 					Name:        "example",
 					Description: "Input example",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -3143,9 +3117,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "outputExample",
 					Description: "Output example",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -3282,7 +3255,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonPermExpr",
 			SkelName:    "vine.hub.admin.SkeletonPermExpr",
 			Description: "Skeleton permission expression",
-			Hash:        "a544d321",
+			Hash:        "8273aed2",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "mode",
@@ -3296,9 +3269,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "code",
 					Description: "Permission code",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -3329,7 +3301,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonResourceAction",
 			SkelName:    "vine.hub.admin.SkeletonResourceAction",
 			Description: "SkeletonResource Action",
-			Hash:        "535e71c6",
+			Hash:        "424f1bd5",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -3351,9 +3323,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Action description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -3368,9 +3339,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Action deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -3391,7 +3361,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonResourceCheck",
 			SkelName:    "vine.hub.admin.SkeletonResourceCheck",
 			Description: "SkeletonResource Check",
-			Hash:        "8031f4e8",
+			Hash:        "5c8943a3",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -3413,9 +3383,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Check deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -3460,7 +3429,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonResourceItem",
 			SkelName:    "vine.hub.admin.SkeletonResourceItem",
 			Description: "Skeleton Resource item",
-			Hash:        "8fadaae1",
+			Hash:        "d75cadbc",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -3530,9 +3499,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Resource description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -3547,9 +3515,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Resource deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -3592,7 +3559,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonServiceItem",
 			SkelName:    "vine.hub.admin.SkeletonServiceItem",
 			Description: "Skeleton service items",
-			Hash:        "c2fa0b0f",
+			Hash:        "9d74420d",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -3662,9 +3629,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Service Description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -3679,9 +3645,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Service deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -3740,7 +3705,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonTask",
 			SkelName:    "vine.hub.admin.SkeletonTask",
 			Description: "Skeleton task",
-			Hash:        "8932513a",
+			Hash:        "de6c3c97",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -3810,9 +3775,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Task description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -3827,9 +3791,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Task deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -3850,7 +3813,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonTrigger",
 			SkelName:    "vine.hub.admin.SkeletonTrigger",
 			Description: "Skeleton task trigger",
-			Hash:        "122bf216",
+			Hash:        "8f4e55b5",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -3872,9 +3835,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Trigger description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -3889,27 +3851,24 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Trigger deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
 					Name:        "inputDescription",
 					Description: "Input description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
 					Name:        "example",
 					Description: "Input example",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -3938,7 +3897,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonWebItem",
 			SkelName:    "vine.hub.admin.SkeletonWebItem",
 			Description: "Skeleton web page",
-			Hash:        "a6cd92aa",
+			Hash:        "a831714a",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -4008,9 +3967,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Web page description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -4025,9 +3983,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Web deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -4138,7 +4095,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "TaskDebugTaskItem",
 			SkelName:    "vine.hub.admin.TaskDebugTaskItem",
 			Description: "Task called by Task Debug",
-			Hash:        "e9c50aac",
+			Hash:        "2302d2f6",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -4168,9 +4125,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Task description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -4185,9 +4141,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Task deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 			},
@@ -4196,7 +4151,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "TaskDebugTriggerItem",
 			SkelName:    "vine.hub.admin.TaskDebugTriggerItem",
 			Description: "Trigger called by Task Debug",
-			Hash:        "8f21ff8d",
+			Hash:        "4f9a8d5e",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -4218,9 +4173,8 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "description",
 					Description: "Trigger description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -4235,27 +4189,24 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "deprecatedReason",
 					Description: "Trigger deprecation reason",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
 					Name:        "inputDescription",
 					Description: "Input description",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
 					Name:        "example",
 					Description: "Input example",
 					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 				{
@@ -4420,7 +4371,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "AppConfigService",
 			SkelName:    "vine.hub.admin.AppConfigService",
 			Description: "Hub's application configuration service, called by Client",
-			Hash:        "042d0906",
+			Hash:        "333fd54d",
 			Pub:         false,
 			AuthMode:    skel.AuthModeNoAuth,
 			Audiences: []*skel.ActorAudienceSchema{
@@ -4431,7 +4382,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "list",
 					SkelName:          "list",
 					Description:       "List configuration items",
-					Hash:              "5db62cf1",
+					Hash:              "75573ff7",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Configuration item list",
 					ResultType: &skel.TypeSchema{
@@ -4447,7 +4398,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "get",
 					SkelName:          "get",
 					Description:       "Read configuration",
-					Hash:              "2045187d",
+					Hash:              "1973712b",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Configuration items",
 					Arguments: []*skel.MemberSchema{
@@ -4470,7 +4421,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "update",
 					SkelName:          "update",
 					Description:       "Modify configuration",
-					Hash:              "aefc6761",
+					Hash:              "d6760cee",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Configuration items",
 					Arguments: []*skel.MemberSchema{
@@ -4502,7 +4453,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "create",
 					SkelName:          "create",
 					Description:       "Create configuration",
-					Hash:              "a4b78c08",
+					Hash:              "9c4ff160",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Configuration items",
 					Arguments: []*skel.MemberSchema{
@@ -4578,7 +4529,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "EventDebugService",
 			SkelName:    "vine.hub.admin.EventDebugService",
 			Description: "Hub Dashboard Event Debugging Service",
-			Hash:        "15339225",
+			Hash:        "ac472116",
 			Pub:         false,
 			AuthMode:    skel.AuthModeNoAuth,
 			Audiences: []*skel.ActorAudienceSchema{
@@ -4589,7 +4540,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "listEvents",
 					SkelName:    "listEvents",
 					Description: "List the events monitored by the application instance",
-					Hash:        "c64bc079",
+					Hash:        "bf56d012",
 					AuthMode:    skel.AuthModeUnset,
 					ResultType: &skel.TypeSchema{
 						Kind: skel.TypeKindList,
@@ -5253,7 +5204,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "ServiceDebugService",
 			SkelName:    "vine.hub.admin.ServiceDebugService",
 			Description: "Hub Dashboard Service debugging service",
-			Hash:        "47472b36",
+			Hash:        "ee7982b6",
 			Pub:         false,
 			AuthMode:    skel.AuthModeNoAuth,
 			Audiences: []*skel.ActorAudienceSchema{
@@ -5279,7 +5230,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "listServices",
 					SkelName:    "listServices",
 					Description: "List the services provided by the application instance",
-					Hash:        "bb32651f",
+					Hash:        "cfff1797",
 					AuthMode:    skel.AuthModeUnset,
 					ResultType: &skel.TypeSchema{
 						Kind: skel.TypeKindList,
@@ -5327,7 +5278,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "listMethods",
 					SkelName:    "listMethods",
 					Description: "List Service methods",
-					Hash:        "25214085",
+					Hash:        "cb02bafd",
 					AuthMode:    skel.AuthModeUnset,
 					Arguments: []*skel.MemberSchema{
 						{
@@ -5423,7 +5374,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonService",
 			SkelName:    "vine.hub.admin.SkeletonService",
 			Description: "Hub's skeleton service, called by the Portal admin client",
-			Hash:        "906a0496",
+			Hash:        "3f04ddc9",
 			Pub:         false,
 			AuthMode:    skel.AuthModeNoAuth,
 			Audiences: []*skel.ActorAudienceSchema{
@@ -5434,7 +5385,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listDomains",
 					SkelName:          "listDomains",
 					Description:       "List Domain skeleton",
-					Hash:              "e2a995cf",
+					Hash:              "a490fde0",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Domain skeleton list",
 					ResultType: &skel.TypeSchema{
@@ -5450,7 +5401,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listActors",
 					SkelName:          "listActors",
 					Description:       "List Actor Skeleton",
-					Hash:              "691f1139",
+					Hash:              "a5873ec9",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Actor skeleton list",
 					ResultType: &skel.TypeSchema{
@@ -5466,7 +5417,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listServices",
 					SkelName:          "listServices",
 					Description:       "List Service skeleton",
-					Hash:              "01231f3e",
+					Hash:              "6e75552e",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Service skeleton list",
 					ResultType: &skel.TypeSchema{
@@ -5482,7 +5433,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listResources",
 					SkelName:          "listResources",
 					Description:       "List Resource skeleton",
-					Hash:              "bf064b7c",
+					Hash:              "43339b4e",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Resource skeleton list",
 					ResultType: &skel.TypeSchema{
@@ -5498,7 +5449,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listWebs",
 					SkelName:          "listWebs",
 					Description:       "List Web Skeletons",
-					Hash:              "29993a65",
+					Hash:              "1a5e7855",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Web skeleton list",
 					ResultType: &skel.TypeSchema{
@@ -5514,7 +5465,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listTasks",
 					SkelName:          "listTasks",
 					Description:       "List Task skeleton",
-					Hash:              "aeb243e0",
+					Hash:              "1c8182b7",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Task skeleton list",
 					ResultType: &skel.TypeSchema{
@@ -5530,7 +5481,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listEvents",
 					SkelName:          "listEvents",
 					Description:       "List Event skeletons",
-					Hash:              "8b8e6079",
+					Hash:              "685c55b6",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Event skeleton list",
 					ResultType: &skel.TypeSchema{
@@ -5546,7 +5497,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listData",
 					SkelName:          "listData",
 					Description:       "List Data skeleton",
-					Hash:              "faee9662",
+					Hash:              "f5aa55bd",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Data skeleton list, including Enum",
 					ResultType: &skel.TypeSchema{
@@ -5562,7 +5513,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listConfigs",
 					SkelName:          "listConfigs",
 					Description:       "List Config skeleton",
-					Hash:              "63d9946f",
+					Hash:              "63234eff",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Config skeleton list",
 					ResultType: &skel.TypeSchema{
@@ -5580,7 +5531,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "TaskDebugService",
 			SkelName:    "vine.hub.admin.TaskDebugService",
 			Description: "Hub Dashboard Task Debugging Service",
-			Hash:        "ff2c30a1",
+			Hash:        "7eef7fc5",
 			Pub:         false,
 			AuthMode:    skel.AuthModeNoAuth,
 			Audiences: []*skel.ActorAudienceSchema{
@@ -5591,7 +5542,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "listTasks",
 					SkelName:    "listTasks",
 					Description: "List the tasks provided by the application instance",
-					Hash:        "0864a329",
+					Hash:        "64ec80ce",
 					AuthMode:    skel.AuthModeUnset,
 					ResultType: &skel.TypeSchema{
 						Kind: skel.TypeKindList,
@@ -5606,7 +5557,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "listTriggers",
 					SkelName:    "listTriggers",
 					Description: "List Task triggers",
-					Hash:        "c086ebf9",
+					Hash:        "e559ea60",
 					AuthMode:    skel.AuthModeUnset,
 					Arguments: []*skel.MemberSchema{
 						{

@@ -113,9 +113,9 @@ func toEventDebugEventItem(event *skel.EventSchema, schemaHash string) skeled.Ev
 		Name:             event.Name,
 		EventSkelName:    event.SkelName,
 		SchemaHash:       schemaHash,
-		Description:      optionalString(event.Description),
+		Description:      event.Description,
 		Deprecated:       event.Deprecated,
-		DeprecatedReason: optionalString(event.DeprecatedReason),
+		DeprecatedReason: event.DeprecatedReason,
 		Fields:           toDebugSkeletonFields(event.Members),
 	}
 }

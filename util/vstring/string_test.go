@@ -91,3 +91,22 @@ func TestDecodeDelimitedRejectsInvalidValue(t *testing.T) {
 	_, err = DecodeDelimited("name=demo,name=other")
 	assert.Error(t, err)
 }
+
+func TestOptional(t *testing.T) {
+	for _, value := range []string{"", "demo", " ", "\t\n", " demo "} {
+		t.Run(value, func(t *testing.T) {
+			got := Optional(value)
+			if value == "" {
+				assert.Nil(t, got)
+				return
+			}
+			if !assert.NotNil(t, got) {
+				return
+			}
+			assert.Equal(t, value, *got)
+			original := value
+			*got = "changed"
+			assert.Equal(t, original, value)
+		})
+	}
+}

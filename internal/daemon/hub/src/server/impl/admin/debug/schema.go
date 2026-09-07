@@ -65,19 +65,17 @@ func (s *ServiceDebugServiceServerImpl) serviceDebugActors(serviceSchema *skel.S
 
 func toServiceDebugMethodItem(method *skel.MethodSchema) skeled.ServiceDebugMethodItem {
 	return skeled.ServiceDebugMethodItem{
-		Name:             method.Name,
-		SkelName:         method.SkelName,
-		Description:      optionalString(method.Description),
-		Deprecated:       method.Deprecated,
-		DeprecatedReason: optionalString(method.DeprecatedReason),
-		InputDescription: optionalString(method.InputDescription),
-		OutputDescription: optionalString(
-			method.OutputDescription,
-		),
-		Example:       optionalString(method.Example),
-		OutputExample: optionalString(method.OutputExample),
-		Arguments:     toDebugSkeletonFields(method.Arguments),
-		ResultType:    formatSkeletonType(method.ResultType),
+		Name:              method.Name,
+		SkelName:          method.SkelName,
+		Description:       method.Description,
+		Deprecated:        method.Deprecated,
+		DeprecatedReason:  method.DeprecatedReason,
+		InputDescription:  method.InputDescription,
+		OutputDescription: method.OutputDescription,
+		Example:           method.Example,
+		OutputExample:     method.OutputExample,
+		Arguments:         toDebugSkeletonFields(method.Arguments),
+		ResultType:        formatSkeletonType(method.ResultType),
 	}
 }
 
@@ -87,10 +85,10 @@ func toDebugSkeletonFields(schemas []*skel.MemberSchema) []skeled.SkeletonField 
 		ret = append(ret, skeled.SkeletonField{
 			Name:             schema.Name,
 			Type:             formatSkeletonType(schema.Type),
-			Description:      optionalString(schema.Description),
+			Description:      schema.Description,
 			Deprecated:       schema.Deprecated,
-			DeprecatedReason: optionalString(schema.DeprecatedReason),
-			Example:          optionalString(schema.Example),
+			DeprecatedReason: schema.DeprecatedReason,
+			Example:          schema.Example,
 			Sensitive:        schema.Sensitive,
 		})
 	}
@@ -149,11 +147,4 @@ func shortSkelName(skelName string) string {
 		_, name, ok = strings.Cut(skelName, ".")
 	}
 	return skelName
-}
-
-func optionalString(value string) *string {
-	if value == "" {
-		return nil
-	}
-	return &value
 }

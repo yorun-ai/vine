@@ -98,6 +98,8 @@ export const cn = {
   'skeleton.accessibleWeb': '可访问 Web',
   'skeleton.noAccessibleWeb': '暂无可访问 Web',
   'skeleton.actorVia': 'Actor访问方式',
+  'skeleton.actorRealm': 'Realm',
+  'skeleton.actorIdentifierField': 'Identifier 字段（Info）',
   'skeleton.authGroup': 'Auth',
   'skeleton.permissionGroup': 'Permission',
   'skeleton.actorCredential': 'Credential Data',

@@ -52,11 +52,11 @@ type AppConfigSchema struct {
 	// Name Configuration name
 	Name string `json:"name"`
 	// Description Configuration description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the configuration is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Configuration deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 	// Lifecycle Configuration lifecycle
 	Lifecycle string `json:"lifecycle"`
 	// Fields Configuration field list
@@ -66,20 +66,12 @@ type AppConfigSchema struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v AppConfigSchema) Clone() AppConfigSchema {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
 	if v.Fields == nil {
 		cloned.Fields = nil
 	} else {
 		cloned.Fields = make([]AppConfigSchemaField, len(v.Fields))
-		for index2 := range v.Fields {
-			cloned.Fields[index2] = v.Fields[index2].Clone()
+		for index0 := range v.Fields {
+			cloned.Fields[index0] = v.Fields[index0].Clone()
 		}
 	}
 	return cloned
@@ -90,24 +82,16 @@ type AppConfigSchemaEnumItem struct {
 	// Name Enum option name
 	Name string `json:"name"`
 	// Description Enumeration options description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the enumeration option is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Enumeration option deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
 func (v AppConfigSchemaEnumItem) Clone() AppConfigSchemaEnumItem {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
 	return cloned
 }
 
@@ -118,11 +102,11 @@ type AppConfigSchemaField struct {
 	// Type Field type
 	Type string `json:"type"`
 	// Description Field description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the field is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Field deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 	// EnumItems Enumeration options list
 	EnumItems []AppConfigSchemaEnumItem `json:"enumItems"`
 }
@@ -130,20 +114,12 @@ type AppConfigSchemaField struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v AppConfigSchemaField) Clone() AppConfigSchemaField {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
 	if v.EnumItems == nil {
 		cloned.EnumItems = nil
 	} else {
 		cloned.EnumItems = make([]AppConfigSchemaEnumItem, len(v.EnumItems))
-		for index2 := range v.EnumItems {
-			cloned.EnumItems[index2] = v.EnumItems[index2].Clone()
+		for index0 := range v.EnumItems {
+			cloned.EnumItems[index0] = v.EnumItems[index0].Clone()
 		}
 	}
 	return cloned
@@ -276,11 +252,11 @@ type EventDebugEventItem struct {
 	// SchemaHash Event schema hash
 	SchemaHash string `json:"schemaHash"`
 	// Description Event description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the Event is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Event deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 	// Fields Field list
 	Fields []SkeletonField `json:"fields"`
 }
@@ -288,20 +264,12 @@ type EventDebugEventItem struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v EventDebugEventItem) Clone() EventDebugEventItem {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
 	if v.Fields == nil {
 		cloned.Fields = nil
 	} else {
 		cloned.Fields = make([]SkeletonField, len(v.Fields))
-		for index2 := range v.Fields {
-			cloned.Fields[index2] = v.Fields[index2].Clone()
+		for index0 := range v.Fields {
+			cloned.Fields[index0] = v.Fields[index0].Clone()
 		}
 	}
 	return cloned
@@ -1075,19 +1043,19 @@ type ServiceDebugMethodItem struct {
 	// SkelName Method Skel name
 	SkelName string `json:"skelName"`
 	// Description Method description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the method is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Method deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 	// InputDescription Input description
-	InputDescription *string `json:"inputDescription"`
+	InputDescription string `json:"inputDescription"`
 	// OutputDescription Output description
-	OutputDescription *string `json:"outputDescription"`
+	OutputDescription string `json:"outputDescription"`
 	// Example Input example
-	Example *string `json:"example"`
+	Example string `json:"example"`
 	// OutputExample Output example
-	OutputExample *string `json:"outputExample"`
+	OutputExample string `json:"outputExample"`
 	// Arguments Parameter list
 	Arguments []SkeletonField `json:"arguments"`
 	// ResultType Return type
@@ -1097,36 +1065,12 @@ type ServiceDebugMethodItem struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v ServiceDebugMethodItem) Clone() ServiceDebugMethodItem {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
-	if v.InputDescription != nil {
-		clonedValue2 := *v.InputDescription
-		cloned.InputDescription = &clonedValue2
-	}
-	if v.OutputDescription != nil {
-		clonedValue3 := *v.OutputDescription
-		cloned.OutputDescription = &clonedValue3
-	}
-	if v.Example != nil {
-		clonedValue4 := *v.Example
-		cloned.Example = &clonedValue4
-	}
-	if v.OutputExample != nil {
-		clonedValue5 := *v.OutputExample
-		cloned.OutputExample = &clonedValue5
-	}
 	if v.Arguments == nil {
 		cloned.Arguments = nil
 	} else {
 		cloned.Arguments = make([]SkeletonField, len(v.Arguments))
-		for index6 := range v.Arguments {
-			cloned.Arguments[index6] = v.Arguments[index6].Clone()
+		for index0 := range v.Arguments {
+			cloned.Arguments[index0] = v.Arguments[index0].Clone()
 		}
 	}
 	return cloned
@@ -1141,16 +1085,12 @@ type ServiceDebugServiceItem struct {
 	// Deprecated Whether the Service is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Service deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
 func (v ServiceDebugServiceItem) Clone() ServiceDebugServiceItem {
 	cloned := v
-	if v.DeprecatedReason != nil {
-		clonedValue0 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue0
-	}
 	return cloned
 }
 
@@ -1189,15 +1129,17 @@ type SkeletonActorItem struct {
 	// SkelName Actor Skel name
 	SkelName string `json:"skelName"`
 	// Description Actor description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the Actor is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Actor deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 	// ActorVias Actor access method list
 	ActorVias []string `json:"actorVias"`
 	// AuthEnabled Whether to enable authentication
 	AuthEnabled bool `json:"authEnabled"`
+	// IdentifierField Actor identifier field in Info
+	IdentifierField string `json:"identifierField"`
 	// Credential Authentication credentials
 	Credential *SkeletonData `json:"credential"`
 	// Info Authentication information
@@ -1219,14 +1161,6 @@ type SkeletonActorItem struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonActorItem) Clone() SkeletonActorItem {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
 	if v.ActorVias == nil {
 		cloned.ActorVias = nil
 	} else {
@@ -1234,44 +1168,44 @@ func (v SkeletonActorItem) Clone() SkeletonActorItem {
 		copy(cloned.ActorVias, v.ActorVias)
 	}
 	if v.Credential != nil {
-		clonedValue3 := *v.Credential
-		clonedValue3 = (*v.Credential).Clone()
-		cloned.Credential = &clonedValue3
+		clonedValue1 := *v.Credential
+		clonedValue1 = (*v.Credential).Clone()
+		cloned.Credential = &clonedValue1
 	}
 	if v.Info != nil {
-		clonedValue4 := *v.Info
-		clonedValue4 = (*v.Info).Clone()
-		cloned.Info = &clonedValue4
+		clonedValue2 := *v.Info
+		clonedValue2 = (*v.Info).Clone()
+		cloned.Info = &clonedValue2
 	}
 	if v.AuthService != nil {
-		clonedValue5 := *v.AuthService
-		clonedValue5 = (*v.AuthService).Clone()
-		cloned.AuthService = &clonedValue5
+		clonedValue3 := *v.AuthService
+		clonedValue3 = (*v.AuthService).Clone()
+		cloned.AuthService = &clonedValue3
 	}
 	if v.PermService != nil {
-		clonedValue6 := *v.PermService
-		clonedValue6 = (*v.PermService).Clone()
-		cloned.PermService = &clonedValue6
+		clonedValue4 := *v.PermService
+		clonedValue4 = (*v.PermService).Clone()
+		cloned.PermService = &clonedValue4
 	}
 	if v.PermMethod != nil {
-		clonedValue7 := *v.PermMethod
-		clonedValue7 = (*v.PermMethod).Clone()
-		cloned.PermMethod = &clonedValue7
+		clonedValue5 := *v.PermMethod
+		clonedValue5 = (*v.PermMethod).Clone()
+		cloned.PermMethod = &clonedValue5
 	}
 	if v.Services == nil {
 		cloned.Services = nil
 	} else {
 		cloned.Services = make([]SkeletonServiceItem, len(v.Services))
-		for index8 := range v.Services {
-			cloned.Services[index8] = v.Services[index8].Clone()
+		for index6 := range v.Services {
+			cloned.Services[index6] = v.Services[index6].Clone()
 		}
 	}
 	if v.Webs == nil {
 		cloned.Webs = nil
 	} else {
 		cloned.Webs = make([]SkeletonWebItem, len(v.Webs))
-		for index9 := range v.Webs {
-			cloned.Webs[index9] = v.Webs[index9].Clone()
+		for index7 := range v.Webs {
+			cloned.Webs[index7] = v.Webs[index7].Clone()
 		}
 	}
 	return cloned
@@ -1284,16 +1218,12 @@ type SkeletonActorRef struct {
 	// SkelName Actor Skel name
 	SkelName string `json:"skelName"`
 	// Via Access method
-	Via *string `json:"via"`
+	Via string `json:"via"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonActorRef) Clone() SkeletonActorRef {
 	cloned := v
-	if v.Via != nil {
-		clonedValue0 := *v.Via
-		cloned.Via = &clonedValue0
-	}
 	return cloned
 }
 
@@ -1316,11 +1246,11 @@ type SkeletonConfigItem struct {
 	// SkelName Config Skel name
 	SkelName string `json:"skelName"`
 	// Description Config description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the Config is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Config deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 	// Pub Whether the item is public
 	Pub bool `json:"pub"`
 	// Sensitive Whether the config value is sensitive
@@ -1334,20 +1264,12 @@ type SkeletonConfigItem struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonConfigItem) Clone() SkeletonConfigItem {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
 	if v.Fields == nil {
 		cloned.Fields = nil
 	} else {
 		cloned.Fields = make([]SkeletonField, len(v.Fields))
-		for index2 := range v.Fields {
-			cloned.Fields[index2] = v.Fields[index2].Clone()
+		for index0 := range v.Fields {
+			cloned.Fields[index0] = v.Fields[index0].Clone()
 		}
 	}
 	return cloned
@@ -1372,11 +1294,11 @@ type SkeletonData struct {
 	// SkelName Data Skel name
 	SkelName string `json:"skelName"`
 	// Description Data description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the Data or Enum is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Data or Enum deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 	// Enum Whether it is Enum
 	Enum bool `json:"enum"`
 	// Sensitive Whether the data is sensitive
@@ -1392,14 +1314,6 @@ type SkeletonData struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonData) Clone() SkeletonData {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
 	if v.TypeParameters == nil {
 		cloned.TypeParameters = nil
 	} else {
@@ -1410,16 +1324,16 @@ func (v SkeletonData) Clone() SkeletonData {
 		cloned.Fields = nil
 	} else {
 		cloned.Fields = make([]SkeletonField, len(v.Fields))
-		for index3 := range v.Fields {
-			cloned.Fields[index3] = v.Fields[index3].Clone()
+		for index1 := range v.Fields {
+			cloned.Fields[index1] = v.Fields[index1].Clone()
 		}
 	}
 	if v.EnumItems == nil {
 		cloned.EnumItems = nil
 	} else {
 		cloned.EnumItems = make([]SkeletonEnumItem, len(v.EnumItems))
-		for index4 := range v.EnumItems {
-			cloned.EnumItems[index4] = v.EnumItems[index4].Clone()
+		for index2 := range v.EnumItems {
+			cloned.EnumItems[index2] = v.EnumItems[index2].Clone()
 		}
 	}
 	return cloned
@@ -1532,24 +1446,16 @@ type SkeletonEnumItem struct {
 	// Name Enumeration item name
 	Name string `json:"name"`
 	// Description Enumeration item description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the enumeration item is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Enumeration item deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonEnumItem) Clone() SkeletonEnumItem {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
 	return cloned
 }
 
@@ -1572,11 +1478,11 @@ type SkeletonEventItem struct {
 	// SkelName Event Skel name
 	SkelName string `json:"skelName"`
 	// Description Event description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the Event is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Event deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 	// Pub Whether the item is public
 	Pub bool `json:"pub"`
 	// Sensitive Whether the event payload is sensitive
@@ -1588,20 +1494,12 @@ type SkeletonEventItem struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonEventItem) Clone() SkeletonEventItem {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
 	if v.Fields == nil {
 		cloned.Fields = nil
 	} else {
 		cloned.Fields = make([]SkeletonField, len(v.Fields))
-		for index2 := range v.Fields {
-			cloned.Fields[index2] = v.Fields[index2].Clone()
+		for index0 := range v.Fields {
+			cloned.Fields[index0] = v.Fields[index0].Clone()
 		}
 	}
 	return cloned
@@ -1614,13 +1512,13 @@ type SkeletonField struct {
 	// Type Field type
 	Type string `json:"type"`
 	// Description Field description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the field is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Field deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 	// Example Field example
-	Example *string `json:"example"`
+	Example string `json:"example"`
 	// Sensitive Whether the field is sensitive
 	Sensitive bool `json:"sensitive"`
 }
@@ -1628,18 +1526,6 @@ type SkeletonField struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonField) Clone() SkeletonField {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
-	if v.Example != nil {
-		clonedValue2 := *v.Example
-		cloned.Example = &clonedValue2
-	}
 	return cloned
 }
 
@@ -1650,23 +1536,23 @@ type SkeletonMethod struct {
 	// SkelName Method Skel name
 	SkelName string `json:"skelName"`
 	// Description Method description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the method is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Method deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 	// InputDescription Input description
-	InputDescription *string `json:"inputDescription"`
+	InputDescription string `json:"inputDescription"`
 	// OutputDescription Output description
-	OutputDescription *string `json:"outputDescription"`
+	OutputDescription string `json:"outputDescription"`
 	// Example Input example
-	Example *string `json:"example"`
+	Example string `json:"example"`
 	// AuthMode Authentication mode
 	AuthMode string `json:"authMode"`
 	// Require Permission requirements
 	Require *SkeletonPermExpr `json:"require"`
 	// OutputExample Output example
-	OutputExample *string `json:"outputExample"`
+	OutputExample string `json:"outputExample"`
 	// Arguments Parameter list
 	Arguments []SkeletonField `json:"arguments"`
 	// ArgumentsSensitive Whether all input arguments are sensitive
@@ -1680,41 +1566,17 @@ type SkeletonMethod struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonMethod) Clone() SkeletonMethod {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
-	if v.InputDescription != nil {
-		clonedValue2 := *v.InputDescription
-		cloned.InputDescription = &clonedValue2
-	}
-	if v.OutputDescription != nil {
-		clonedValue3 := *v.OutputDescription
-		cloned.OutputDescription = &clonedValue3
-	}
-	if v.Example != nil {
-		clonedValue4 := *v.Example
-		cloned.Example = &clonedValue4
-	}
 	if v.Require != nil {
-		clonedValue5 := *v.Require
-		clonedValue5 = (*v.Require).Clone()
-		cloned.Require = &clonedValue5
-	}
-	if v.OutputExample != nil {
-		clonedValue6 := *v.OutputExample
-		cloned.OutputExample = &clonedValue6
+		clonedValue0 := *v.Require
+		clonedValue0 = (*v.Require).Clone()
+		cloned.Require = &clonedValue0
 	}
 	if v.Arguments == nil {
 		cloned.Arguments = nil
 	} else {
 		cloned.Arguments = make([]SkeletonField, len(v.Arguments))
-		for index7 := range v.Arguments {
-			cloned.Arguments[index7] = v.Arguments[index7].Clone()
+		for index1 := range v.Arguments {
+			cloned.Arguments[index1] = v.Arguments[index1].Clone()
 		}
 	}
 	return cloned
@@ -1771,7 +1633,7 @@ type SkeletonPermExpr struct {
 	// Mode Permission expression pattern
 	Mode string `json:"mode"`
 	// Code Permission code
-	Code *string `json:"code"`
+	Code string `json:"code"`
 	// Check Permission verification call
 	Check *SkeletonPermCheck `json:"check"`
 	// Children Subexpression
@@ -1781,21 +1643,17 @@ type SkeletonPermExpr struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonPermExpr) Clone() SkeletonPermExpr {
 	cloned := v
-	if v.Code != nil {
-		clonedValue0 := *v.Code
-		cloned.Code = &clonedValue0
-	}
 	if v.Check != nil {
-		clonedValue1 := *v.Check
-		clonedValue1 = (*v.Check).Clone()
-		cloned.Check = &clonedValue1
+		clonedValue0 := *v.Check
+		clonedValue0 = (*v.Check).Clone()
+		cloned.Check = &clonedValue0
 	}
 	if v.Children == nil {
 		cloned.Children = nil
 	} else {
 		cloned.Children = make([]SkeletonPermExpr, len(v.Children))
-		for index2 := range v.Children {
-			cloned.Children[index2] = v.Children[index2].Clone()
+		for index1 := range v.Children {
+			cloned.Children[index1] = v.Children[index1].Clone()
 		}
 	}
 	return cloned
@@ -1808,11 +1666,11 @@ type SkeletonResourceAction struct {
 	// PermissionCode Permission code
 	PermissionCode string `json:"permissionCode"`
 	// Description Action description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the Action is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Action deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 	// Checks Check list
 	Checks []SkeletonResourceCheck `json:"checks"`
 }
@@ -1820,20 +1678,12 @@ type SkeletonResourceAction struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonResourceAction) Clone() SkeletonResourceAction {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
 	if v.Checks == nil {
 		cloned.Checks = nil
 	} else {
 		cloned.Checks = make([]SkeletonResourceCheck, len(v.Checks))
-		for index2 := range v.Checks {
-			cloned.Checks[index2] = v.Checks[index2].Clone()
+		for index0 := range v.Checks {
+			cloned.Checks[index0] = v.Checks[index0].Clone()
 		}
 	}
 	return cloned
@@ -1846,7 +1696,7 @@ type SkeletonResourceCheck struct {
 	// Deprecated Whether the Check is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Check deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 	// MethodName Check method name
 	MethodName string `json:"methodName"`
 	// MethodSkelName Check method Skel name
@@ -1860,16 +1710,12 @@ type SkeletonResourceCheck struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonResourceCheck) Clone() SkeletonResourceCheck {
 	cloned := v
-	if v.DeprecatedReason != nil {
-		clonedValue0 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue0
-	}
 	if v.Arguments == nil {
 		cloned.Arguments = nil
 	} else {
 		cloned.Arguments = make([]SkeletonField, len(v.Arguments))
-		for index1 := range v.Arguments {
-			cloned.Arguments[index1] = v.Arguments[index1].Clone()
+		for index0 := range v.Arguments {
+			cloned.Arguments[index0] = v.Arguments[index0].Clone()
 		}
 	}
 	return cloned
@@ -1894,11 +1740,11 @@ type SkeletonResourceItem struct {
 	// SkelName Resource Skel name
 	SkelName string `json:"skelName"`
 	// Description Resource description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the Resource is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Resource deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 	// Checks Resource level Check list
 	Checks []SkeletonResourceCheck `json:"checks"`
 	// Actions Action list
@@ -1910,34 +1756,26 @@ type SkeletonResourceItem struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonResourceItem) Clone() SkeletonResourceItem {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
 	if v.Checks == nil {
 		cloned.Checks = nil
 	} else {
 		cloned.Checks = make([]SkeletonResourceCheck, len(v.Checks))
-		for index2 := range v.Checks {
-			cloned.Checks[index2] = v.Checks[index2].Clone()
+		for index0 := range v.Checks {
+			cloned.Checks[index0] = v.Checks[index0].Clone()
 		}
 	}
 	if v.Actions == nil {
 		cloned.Actions = nil
 	} else {
 		cloned.Actions = make([]SkeletonResourceAction, len(v.Actions))
-		for index3 := range v.Actions {
-			cloned.Actions[index3] = v.Actions[index3].Clone()
+		for index1 := range v.Actions {
+			cloned.Actions[index1] = v.Actions[index1].Clone()
 		}
 	}
 	if v.CheckService != nil {
-		clonedValue4 := *v.CheckService
-		clonedValue4 = (*v.CheckService).Clone()
-		cloned.CheckService = &clonedValue4
+		clonedValue2 := *v.CheckService
+		clonedValue2 = (*v.CheckService).Clone()
+		cloned.CheckService = &clonedValue2
 	}
 	return cloned
 }
@@ -1961,11 +1799,11 @@ type SkeletonServiceItem struct {
 	// SkelName Service Skel name
 	SkelName string `json:"skelName"`
 	// Description Service Description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the Service is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Service deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 	// Pub Whether the item is public
 	Pub bool `json:"pub"`
 	// AuthMode Authentication mode
@@ -1981,33 +1819,25 @@ type SkeletonServiceItem struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonServiceItem) Clone() SkeletonServiceItem {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
 	if v.Require != nil {
-		clonedValue2 := *v.Require
-		clonedValue2 = (*v.Require).Clone()
-		cloned.Require = &clonedValue2
+		clonedValue0 := *v.Require
+		clonedValue0 = (*v.Require).Clone()
+		cloned.Require = &clonedValue0
 	}
 	if v.Actors == nil {
 		cloned.Actors = nil
 	} else {
 		cloned.Actors = make([]SkeletonActorRef, len(v.Actors))
-		for index3 := range v.Actors {
-			cloned.Actors[index3] = v.Actors[index3].Clone()
+		for index1 := range v.Actors {
+			cloned.Actors[index1] = v.Actors[index1].Clone()
 		}
 	}
 	if v.Methods == nil {
 		cloned.Methods = nil
 	} else {
 		cloned.Methods = make([]SkeletonMethod, len(v.Methods))
-		for index4 := range v.Methods {
-			cloned.Methods[index4] = v.Methods[index4].Clone()
+		for index2 := range v.Methods {
+			cloned.Methods[index2] = v.Methods[index2].Clone()
 		}
 	}
 	return cloned
@@ -2032,11 +1862,11 @@ type SkeletonTask struct {
 	// SkelName Task Skel name
 	SkelName string `json:"skelName"`
 	// Description Task description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the Task is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Task deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 	// Triggers Trigger list
 	Triggers []SkeletonTrigger `json:"triggers"`
 }
@@ -2044,20 +1874,12 @@ type SkeletonTask struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonTask) Clone() SkeletonTask {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
 	if v.Triggers == nil {
 		cloned.Triggers = nil
 	} else {
 		cloned.Triggers = make([]SkeletonTrigger, len(v.Triggers))
-		for index2 := range v.Triggers {
-			cloned.Triggers[index2] = v.Triggers[index2].Clone()
+		for index0 := range v.Triggers {
+			cloned.Triggers[index0] = v.Triggers[index0].Clone()
 		}
 	}
 	return cloned
@@ -2070,15 +1892,15 @@ type SkeletonTrigger struct {
 	// SkelName Trigger Skel name
 	SkelName string `json:"skelName"`
 	// Description Trigger description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the Trigger is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Trigger deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 	// InputDescription Input description
-	InputDescription *string `json:"inputDescription"`
+	InputDescription string `json:"inputDescription"`
 	// Example Input example
-	Example *string `json:"example"`
+	Example string `json:"example"`
 	// Arguments Parameter list
 	Arguments []SkeletonField `json:"arguments"`
 	// ArgumentsSensitive Whether all input arguments are sensitive
@@ -2088,28 +1910,12 @@ type SkeletonTrigger struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonTrigger) Clone() SkeletonTrigger {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
-	if v.InputDescription != nil {
-		clonedValue2 := *v.InputDescription
-		cloned.InputDescription = &clonedValue2
-	}
-	if v.Example != nil {
-		clonedValue3 := *v.Example
-		cloned.Example = &clonedValue3
-	}
 	if v.Arguments == nil {
 		cloned.Arguments = nil
 	} else {
 		cloned.Arguments = make([]SkeletonField, len(v.Arguments))
-		for index4 := range v.Arguments {
-			cloned.Arguments[index4] = v.Arguments[index4].Clone()
+		for index0 := range v.Arguments {
+			cloned.Arguments[index0] = v.Arguments[index0].Clone()
 		}
 	}
 	return cloned
@@ -2134,11 +1940,11 @@ type SkeletonWebItem struct {
 	// SkelName Web Skel name
 	SkelName string `json:"skelName"`
 	// Description Web page description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the Web is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Web deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 	// Actors Accessible Actor List
 	Actors []SkeletonActorRef `json:"actors"`
 }
@@ -2146,20 +1952,12 @@ type SkeletonWebItem struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonWebItem) Clone() SkeletonWebItem {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
 	if v.Actors == nil {
 		cloned.Actors = nil
 	} else {
 		cloned.Actors = make([]SkeletonActorRef, len(v.Actors))
-		for index2 := range v.Actors {
-			cloned.Actors[index2] = v.Actors[index2].Clone()
+		for index0 := range v.Actors {
+			cloned.Actors[index0] = v.Actors[index0].Clone()
 		}
 	}
 	return cloned
@@ -2220,24 +2018,16 @@ type TaskDebugTaskItem struct {
 	// SchemaHash Task schema hash
 	SchemaHash string `json:"schemaHash"`
 	// Description Task description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the Task is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Task deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
 func (v TaskDebugTaskItem) Clone() TaskDebugTaskItem {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
 	return cloned
 }
 
@@ -2248,15 +2038,15 @@ type TaskDebugTriggerItem struct {
 	// SkelName Trigger Skel name
 	SkelName string `json:"skelName"`
 	// Description Trigger description
-	Description *string `json:"description"`
+	Description string `json:"description"`
 	// Deprecated Whether the Trigger is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Trigger deprecation reason
-	DeprecatedReason *string `json:"deprecatedReason"`
+	DeprecatedReason string `json:"deprecatedReason"`
 	// InputDescription Input description
-	InputDescription *string `json:"inputDescription"`
+	InputDescription string `json:"inputDescription"`
 	// Example Input example
-	Example *string `json:"example"`
+	Example string `json:"example"`
 	// Arguments Parameter list
 	Arguments []SkeletonField `json:"arguments"`
 }
@@ -2264,28 +2054,12 @@ type TaskDebugTriggerItem struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v TaskDebugTriggerItem) Clone() TaskDebugTriggerItem {
 	cloned := v
-	if v.Description != nil {
-		clonedValue0 := *v.Description
-		cloned.Description = &clonedValue0
-	}
-	if v.DeprecatedReason != nil {
-		clonedValue1 := *v.DeprecatedReason
-		cloned.DeprecatedReason = &clonedValue1
-	}
-	if v.InputDescription != nil {
-		clonedValue2 := *v.InputDescription
-		cloned.InputDescription = &clonedValue2
-	}
-	if v.Example != nil {
-		clonedValue3 := *v.Example
-		cloned.Example = &clonedValue3
-	}
 	if v.Arguments == nil {
 		cloned.Arguments = nil
 	} else {
 		cloned.Arguments = make([]SkeletonField, len(v.Arguments))
-		for index4 := range v.Arguments {
-			cloned.Arguments[index4] = v.Arguments[index4].Clone()
+		for index0 := range v.Arguments {
+			cloned.Arguments[index0] = v.Arguments[index0].Clone()
 		}
 	}
 	return cloned

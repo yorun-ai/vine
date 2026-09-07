@@ -8,6 +8,26 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Changed
+
+- Hub Admin schema display strings now return an empty string instead of null
+  when absent. This includes descriptions, deprecation reasons, examples,
+  Actor identifier fields, access methods, and permission codes. Custom Admin
+  clients should regenerate against the updated contracts; ship matching Hub
+  and Dashboard assets. Optional update and debug-request parameters are unchanged.
+
+### Fixed
+
+- Hub SQLite startup no longer mistakes current Portal rule column names for
+  legacy columns during schema migration.
+
+### Added
+
+- Hub Dashboard Actor details show the authentication realm and Info identifier
+  field. Embedded Dashboard assets include the updated Admin contracts.
+- `vstring.Optional` converts an empty string to nil and preserves non-empty
+  strings, including whitespace, as pointers.
+
 ## [0.15.1] - 2026-09-07
 
 ### Upgrade notes

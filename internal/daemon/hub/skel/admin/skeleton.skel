@@ -27,19 +27,22 @@ data SkeletonActorItem {
     skelName: string
 
     @desc("Actor description")
-    description: string?
+    description: string
 
     @desc("Whether the Actor is deprecated")
     deprecated: bool
 
     @desc("Actor deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 
     @desc("Actor access method list")
     actorVias: list<string>
 
     @desc("Whether to enable authentication")
     authEnabled: bool
+
+    @desc("Actor identifier field in Info")
+    identifierField: string
 
     @desc("Authentication credentials")
     credential: SkeletonData?
@@ -75,7 +78,7 @@ data SkeletonActorRef {
     skelName: string
 
     @desc("Access method")
-    via: string?
+    via: string
 }
 
 @desc("Skeleton field")
@@ -87,16 +90,16 @@ data SkeletonField {
     type: string
 
     @desc("Field description")
-    description: string?
+    description: string
 
     @desc("Whether the field is deprecated")
     deprecated: bool
 
     @desc("Field deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 
     @desc("Field example")
-    example: string?
+    example: string
 
     @desc("Whether the field is sensitive")
     sensitive: bool
@@ -111,22 +114,22 @@ data SkeletonMethod {
     skelName: string
 
     @desc("Method description")
-    description: string?
+    description: string
 
     @desc("Whether the method is deprecated")
     deprecated: bool
 
     @desc("Method deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 
     @desc("Input description")
-    inputDescription: string?
+    inputDescription: string
 
     @desc("Output description")
-    outputDescription: string?
+    outputDescription: string
 
     @desc("Input example")
-    example: string?
+    example: string
 
     @desc("Authentication mode")
     authMode: string
@@ -135,7 +138,7 @@ data SkeletonMethod {
     require: SkeletonPermExpr?
 
     @desc("Output example")
-    outputExample: string?
+    outputExample: string
 
     @desc("Parameter list")
     arguments: list<SkeletonField>
@@ -177,13 +180,13 @@ data SkeletonServiceItem {
     skelName: string
 
     @desc("Service Description")
-    description: string?
+    description: string
 
     @desc("Whether the Service is deprecated")
     deprecated: bool
 
     @desc("Service deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 
     @desc("Whether the item is public")
     pub: bool
@@ -240,7 +243,7 @@ data SkeletonPermExpr {
     mode: string
 
     @desc("Permission code")
-    code: string?
+    code: string
 
     @desc("Permission verification call")
     check: SkeletonPermCheck?
@@ -258,7 +261,7 @@ data SkeletonResourceCheck {
     deprecated: bool
 
     @desc("Check deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 
     @desc("Check method name")
     methodName: string
@@ -282,13 +285,13 @@ data SkeletonResourceAction {
     permissionCode: string
 
     @desc("Action description")
-    description: string?
+    description: string
 
     @desc("Whether the Action is deprecated")
     deprecated: bool
 
     @desc("Action deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 
     @desc("Check list")
     checks: list<SkeletonResourceCheck>
@@ -321,13 +324,13 @@ data SkeletonResourceItem {
     skelName: string
 
     @desc("Resource description")
-    description: string?
+    description: string
 
     @desc("Whether the Resource is deprecated")
     deprecated: bool
 
     @desc("Resource deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 
     @desc("Resource level Check list")
     checks: list<SkeletonResourceCheck>
@@ -366,13 +369,13 @@ data SkeletonWebItem {
     skelName: string
 
     @desc("Web page description")
-    description: string?
+    description: string
 
     @desc("Whether the Web is deprecated")
     deprecated: bool
 
     @desc("Web deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 
     @desc("Accessible Actor List")
     actors: list<SkeletonActorRef>
@@ -387,19 +390,19 @@ data SkeletonTrigger {
     skelName: string
 
     @desc("Trigger description")
-    description: string?
+    description: string
 
     @desc("Whether the Trigger is deprecated")
     deprecated: bool
 
     @desc("Trigger deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 
     @desc("Input description")
-    inputDescription: string?
+    inputDescription: string
 
     @desc("Input example")
-    example: string?
+    example: string
 
     @desc("Parameter list")
     arguments: list<SkeletonField>
@@ -435,13 +438,13 @@ data SkeletonTask {
     skelName: string
 
     @desc("Task description")
-    description: string?
+    description: string
 
     @desc("Whether the Task is deprecated")
     deprecated: bool
 
     @desc("Task deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 
     @desc("Trigger list")
     triggers: list<SkeletonTrigger>
@@ -474,13 +477,13 @@ data SkeletonEventItem {
     skelName: string
 
     @desc("Event description")
-    description: string?
+    description: string
 
     @desc("Whether the Event is deprecated")
     deprecated: bool
 
     @desc("Event deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 
     @desc("Whether the item is public")
     pub: bool
@@ -498,13 +501,13 @@ data SkeletonEnumItem {
     name: string
 
     @desc("Enumeration item description")
-    description: string?
+    description: string
 
     @desc("Whether the enumeration item is deprecated")
     deprecated: bool
 
     @desc("Enumeration item deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 }
 
 @desc("SkeletonData")
@@ -534,13 +537,13 @@ data SkeletonData {
     skelName: string
 
     @desc("Data description")
-    description: string?
+    description: string
 
     @desc("Whether the Data or Enum is deprecated")
     deprecated: bool
 
     @desc("Data or Enum deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 
     @desc("Whether it is Enum")
     enum: bool
@@ -585,13 +588,13 @@ data SkeletonConfigItem {
     skelName: string
 
     @desc("Config description")
-    description: string?
+    description: string
 
     @desc("Whether the Config is deprecated")
     deprecated: bool
 
     @desc("Config deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 
     @desc("Whether the item is public")
     pub: bool

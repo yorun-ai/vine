@@ -994,6 +994,26 @@ export function SkeletonItemDetails({
             )}
           </div>
           <DetailSection icon={KeyRound} title={t('skeleton.authGroup')}>
+            {'authEnabled' in item && item.authEnabled ? (
+              <dl className="flex flex-wrap gap-x-6 gap-y-2 rounded-md border px-3 py-2 text-xs">
+                <div className="flex min-w-0 items-baseline gap-2">
+                  <dt className="shrink-0 text-muted-foreground">
+                    {t('skeleton.actorRealm')}
+                  </dt>
+                  <dd className="break-all font-mono">
+                    {item.skelName}
+                  </dd>
+                </div>
+                <div className="flex min-w-0 items-baseline gap-2">
+                  <dt className="shrink-0 text-muted-foreground">
+                    {t('skeleton.actorIdentifierField')}
+                  </dt>
+                  <dd className="break-all font-mono">
+                    {item.identifierField || t('common.none')}
+                  </dd>
+                </div>
+              </dl>
+            ) : null}
             <div className="grid gap-3 md:grid-cols-3">
               <ActorSchemaLink
                 icon={KeyRound}

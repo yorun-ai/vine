@@ -51,9 +51,9 @@ func (s *TaskDebugServiceServerImpl) ListTasks() []skeled.TaskDebugTaskItem {
 				Name:             taskSchema.Name,
 				TaskSkelName:     taskSchema.SkelName,
 				SchemaHash:       runner.SchemaHash,
-				Description:      optionalString(taskSchema.Description),
+				Description:      taskSchema.Description,
 				Deprecated:       taskSchema.Deprecated,
-				DeprecatedReason: optionalString(taskSchema.DeprecatedReason),
+				DeprecatedReason: taskSchema.DeprecatedReason,
 			})
 		}
 	}
@@ -142,10 +142,10 @@ func toTaskDebugTriggerItem(trigger *skel.TriggerSchema) skeled.TaskDebugTrigger
 	return skeled.TaskDebugTriggerItem{
 		Name:             trigger.Name,
 		SkelName:         trigger.SkelName,
-		Description:      optionalString(trigger.Description),
+		Description:      trigger.Description,
 		Deprecated:       trigger.Deprecated,
-		DeprecatedReason: optionalString(trigger.DeprecatedReason),
-		InputDescription: optionalString(trigger.InputDescription),
+		DeprecatedReason: trigger.DeprecatedReason,
+		InputDescription: trigger.InputDescription,
 		Arguments:        toDebugSkeletonFields(trigger.Arguments),
 	}
 }

@@ -27,7 +27,7 @@ data ServiceDebugServiceItem {
     deprecated: bool
 
     @desc("Service deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 }
 
 @desc("Method called by Service Debug")
@@ -39,25 +39,25 @@ data ServiceDebugMethodItem {
     skelName: string
 
     @desc("Method description")
-    description: string?
+    description: string
 
     @desc("Whether the method is deprecated")
     deprecated: bool
 
     @desc("Method deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 
     @desc("Input description")
-    inputDescription: string?
+    inputDescription: string
 
     @desc("Output description")
-    outputDescription: string?
+    outputDescription: string
 
     @desc("Input example")
-    example: string?
+    example: string
 
     @desc("Output example")
-    outputExample: string?
+    outputExample: string
 
     @desc("Parameter list")
     arguments: list<SkeletonField>
@@ -165,13 +165,13 @@ data TaskDebugTaskItem {
     schemaHash: string
 
     @desc("Task description")
-    description: string?
+    description: string
 
     @desc("Whether the Task is deprecated")
     deprecated: bool
 
     @desc("Task deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 }
 
 @desc("Trigger called by Task Debug")
@@ -183,19 +183,19 @@ data TaskDebugTriggerItem {
     skelName: string
 
     @desc("Trigger description")
-    description: string?
+    description: string
 
     @desc("Whether the Trigger is deprecated")
     deprecated: bool
 
     @desc("Trigger deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 
     @desc("Input description")
-    inputDescription: string?
+    inputDescription: string
 
     @desc("Input example")
-    example: string?
+    example: string
 
     @desc("Parameter list")
     arguments: list<SkeletonField>
@@ -246,13 +246,13 @@ data EventDebugEventItem {
     schemaHash: string
 
     @desc("Event description")
-    description: string?
+    description: string
 
     @desc("Whether the Event is deprecated")
     deprecated: bool
 
     @desc("Event deprecation reason")
-    deprecatedReason: string?
+    deprecatedReason: string
 
     @desc("Field list")
     fields: list<SkeletonField>
