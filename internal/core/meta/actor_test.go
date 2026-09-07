@@ -3,6 +3,7 @@ package meta
 import (
 	"reflect"
 	"testing"
+	"uuid"
 )
 
 type _TestActorInfo struct {
@@ -143,7 +144,7 @@ func TestActorTypePredicates(t *testing.T) {
 		},
 		{
 			name:          "authenticated",
-			actor:         NewAuthenticatedActorWithRawInfo("test.actor.Info", []byte(`{"Name":"demo"}`)),
+			actor:         NewAuthenticatedActorWithRawInfo("test.actor.Actor", "", "test.actor.Info", []byte(`{"Name":"demo"}`)),
 			authenticated: true,
 		},
 	}
@@ -199,7 +200,7 @@ func TestNewAuthorizedActorBase64RoundTrip(t *testing.T) {
 	}
 	RegisterActor(spec)
 
-	actor := NewAuthenticatedActorWithRawInfo(spec.InfoSkelName, []byte(`{"Name":"demo"}`))
+	actor := NewAuthenticatedActorWithRawInfo(spec.SkelName, "", spec.InfoSkelName, []byte(`{"Name":"demo"}`))
 	got, err := DecodeActorFromBase64(EncodeActorToBase64(actor))
 	if err != nil {
 		t.Fatalf("DecodeActorFromBase64() error = %v", err)
@@ -223,7 +224,7 @@ func TestGetActorInfoByType(t *testing.T) {
 	}
 	RegisterActor(spec)
 
-	actor, err := DecodeActorFromBase64(EncodeActorToBase64(NewAuthenticatedActorWithRawInfo(spec.InfoSkelName, []byte(`{"Name":"demo"}`))))
+	actor, err := DecodeActorFromBase64(EncodeActorToBase64(NewAuthenticatedActorWithRawInfo(spec.SkelName, "", spec.InfoSkelName, []byte(`{"Name":"demo"}`))))
 	if err != nil {
 		t.Fatalf("DecodeActorFromBase64() error = %v", err)
 	}
@@ -259,5 +260,64 @@ func TestActorBase64RoundTripWithAbsentType(t *testing.T) {
 	}
 	if got.Type() != actor.Type() {
 		t.Fatalf("unexpected actor type: got=%s want=%s", got.Type(), actor.Type())
+	}
+}
+
+func TestActorIdentityRoundTrip(t *testing.T) {
+	previousRegistry := defaultRegistry
+	defaultRegistry = NewRegistry()
+	t.Cleanup(func() { defaultRegistry = previousRegistry })
+	type identityInfo struct {
+		ID int64 `json:"id" skel:"identifier"`
+	}
+	spec := ActorSpec{SkelName: "base.UserActor", InfoSkelName: "base.UserActorInfo", InfoType: reflect.TypeFor[*identityInfo]()}
+	RegisterActor(spec)
+	actor := NewAuthenticatedActor(new(identityInfo{ID: 9007199254740993}))
+	raw := NewAuthenticatedActorWithRawInfo(spec.SkelName, "9007199254740993", spec.InfoSkelName, []byte(`{"id":9007199254740993}`))
+	for _, candidate := range []Actor{actor, raw} {
+		got, err := DecodeActorFromBase64(EncodeActorToBase64(candidate))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.Realm() != spec.SkelName || got.Identifier() != "9007199254740993" {
+			t.Fatalf("wrong identity: %s/%s", got.Realm(), got.Identifier())
+		}
+		if MustGetActorInfo[*identityInfo](got).ID != 9007199254740993 {
+			t.Fatal("info lost precision")
+		}
+	}
+	forwarded, err := DecodeActorFromBase64(encodePayloadToBase64(&_ActorPayload{
+		Type: ActorTypeAuthenticated, Realm: "forwarded.UserActor", Identifier: "forwarded-id",
+		InfoSkelName: spec.InfoSkelName, Info: []byte(`{"id":1}`),
+	}))
+	if err != nil || forwarded.Realm() != "forwarded.UserActor" || forwarded.Identifier() != "forwarded-id" {
+		t.Fatalf("forwarded identity changed: %v", err)
+	}
+	for _, candidate := range []Actor{NewAbsentActor(), NewAnonymousActor(), NewAuthenticatingActor()} {
+		if candidate.Realm() != "" || candidate.Identifier() != "" {
+			t.Fatal("unexpected unauthenticated identity")
+		}
+	}
+}
+
+func TestActorIdentifierTag(t *testing.T) {
+	previousRegistry := defaultRegistry
+	defaultRegistry = NewRegistry()
+	t.Cleanup(func() { defaultRegistry = previousRegistry })
+	type stringInfo struct {
+		Name string `json:"name"`
+		ID   string `json:"id" skel:"sensitive,identifier"`
+	}
+	type uuidInfo struct {
+		ID uuid.UUID `json:"id" skel:"identifier"`
+	}
+	RegisterActor(ActorSpec{SkelName: "base.StringActor", InfoSkelName: "base.StringInfo", InfoType: reflect.TypeFor[*stringInfo]()})
+	RegisterActor(ActorSpec{SkelName: "base.UUIDActor", InfoSkelName: "base.UUIDInfo", InfoType: reflect.TypeFor[*uuidInfo]()})
+	if got := NewAuthenticatedActor(new(stringInfo{Name: "other", ID: "user-1"})).Identifier(); got != "user-1" {
+		t.Fatalf("unexpected string identifier: %s", got)
+	}
+	id := uuid.MustParse("12345678-1234-5678-9abc-123456789abc")
+	if got := NewAuthenticatedActor(new(uuidInfo{ID: id})).Identifier(); got != id.String() {
+		t.Fatalf("unexpected UUID identifier: %s", got)
 	}
 }

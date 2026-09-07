@@ -29,6 +29,9 @@ func TestFacadeMetadataRoundTrip(t *testing.T) {
 	if ctx.Trace().Id() != trace.Id() || ctx.Trace().Span() != trace.Span() {
 		t.Fatal("expected facade context to retain trace metadata")
 	}
+	if actor.Realm() != "" || actor.Identifier() != "" {
+		t.Fatal("anonymous actor has identity")
+	}
 	if ctx.Actor().Type() != meta.ActorTypeAnonymous {
 		t.Fatalf("unexpected actor type: %s", ctx.Actor().Type())
 	}

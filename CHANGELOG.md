@@ -8,6 +8,10 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Added
+
+- Add `Actor.Realm()` and `Actor.Identifier()`, schema-driven identity extraction in Portal and Hub debug calls, tag-based identity extraction for `NewAuthenticatedActor(info)` without floating-point conversion, and identity propagation.
+
 ### Fixed
 
 - Preserve backend error reasons in Portal Rpc responses when authentication,

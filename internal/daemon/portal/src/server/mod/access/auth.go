@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/tidwall/gjson"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/mtls"
@@ -122,6 +123,18 @@ func (o *Auther) executeAuthRequest(authRequest *http.Request, writeError _AuthE
 		return false
 	}
 
-	setActor(meta.NewAuthenticatedActorWithRawInfo(o.actorSchema.AuthInfo.SkelName, info))
+	identifier := ""
+	if o.actorSchema.IdentifierField != "" {
+		value := gjson.GetBytes(info, o.actorSchema.IdentifierField)
+		if value.Type == gjson.Null {
+			writeError(ex.ServiceUnavailable, "bad auth response")
+			return false
+		}
+		identifier = value.Raw
+		if value.Type == gjson.String {
+			identifier = value.Str
+		}
+	}
+	setActor(meta.NewAuthenticatedActorWithRawInfo(o.actorSchema.SkelName, identifier, o.actorSchema.AuthInfo.SkelName, info))
 	return true
 }
