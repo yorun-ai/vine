@@ -2,10 +2,7 @@
 
 package control
 
-import (
-	rpc "go.yorun.ai/vine/internal/core/rpc/spec"
-	"go.yorun.ai/vine/internal/core/skel"
-)
+import "go.yorun.ai/vine/internal/core/skel"
 
 // AppRegistration Link application instance information registered with Hub
 type AppRegistration struct {
@@ -27,33 +24,6 @@ type AppRegistration struct {
 	TaskRunners []TaskRunnerRegistration `json:"taskRunners"`
 	// DomainSchemas List of all DomainSchemas registered by the application
 	DomainSchemas []skel.JSON `json:"domainSchemas"`
-}
-
-func (v *AppRegistration) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.ServiceHandlers, rpc.JoinPath(path, "ServiceHandlers")); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.WebHandlers, rpc.JoinPath(path, "WebHandlers")); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.EventListeners, rpc.JoinPath(path, "EventListeners")); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.TaskRunners, rpc.JoinPath(path, "TaskRunners")); err != nil {
-		return err
-	}
-	for i0 := range v.TaskRunners {
-		if err := (&v.TaskRunners[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "TaskRunners"), i0)); err != nil {
-			return err
-		}
-	}
-	if err := rpc.CheckValueNotNil(v.DomainSchemas, rpc.JoinPath(path, "DomainSchemas")); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -196,16 +166,6 @@ type TaskRunnerRegistration struct {
 	NoRetry bool `json:"noRetry"`
 	// CronSchedulers Cron schedule list
 	CronSchedulers []TaskRunnerCronScheduler `json:"cronSchedulers"`
-}
-
-func (v *TaskRunnerRegistration) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.CronSchedulers, rpc.JoinPath(path, "CronSchedulers")); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.

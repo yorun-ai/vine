@@ -59,18 +59,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]AppConfigItem](),
-		ValidateResult: func(value any) error {
-			ret := value.([]AppConfigItem)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			for i0 := range ret {
-				if err := (&ret[i0]).Validate(rpcspec.JoinIndex("result", i0)); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]AppConfigItem)
 			cloned := source
@@ -105,14 +94,8 @@ var (
 			cloned := *source
 			return &cloned
 		},
-		ResultType: reflect.TypeFor[AppConfigItem](),
-		ValidateResult: func(value any) error {
-			ret := value.(AppConfigItem)
-			if err := (&ret).Validate("result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ResultType:     reflect.TypeFor[AppConfigItem](),
+		ValidateResult: nil,
 		CloneResult: func(value any) any {
 			source := value.(AppConfigItem)
 			cloned := source
@@ -141,14 +124,8 @@ var (
 			cloned.Update = source.Update.Clone()
 			return &cloned
 		},
-		ResultType: reflect.TypeFor[AppConfigItem](),
-		ValidateResult: func(value any) error {
-			ret := value.(AppConfigItem)
-			if err := (&ret).Validate("result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ResultType:     reflect.TypeFor[AppConfigItem](),
+		ValidateResult: nil,
 		CloneResult: func(value any) any {
 			source := value.(AppConfigItem)
 			cloned := source
@@ -177,14 +154,8 @@ var (
 			cloned.Creation = source.Creation.Clone()
 			return &cloned
 		},
-		ResultType: reflect.TypeFor[AppConfigItem](),
-		ValidateResult: func(value any) error {
-			ret := value.(AppConfigItem)
-			if err := (&ret).Validate("result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ResultType:     reflect.TypeFor[AppConfigItem](),
+		ValidateResult: nil,
 		CloneResult: func(value any) any {
 			source := value.(AppConfigItem)
 			cloned := source
@@ -552,18 +523,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]AppStatusView](),
-		ValidateResult: func(value any) error {
-			ret := value.([]AppStatusView)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			for i0 := range ret {
-				if err := (&ret[i0]).Validate(rpcspec.JoinIndex("result", i0)); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]AppStatusView)
 			cloned := source
@@ -730,18 +690,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]EventDebugEventItem](),
-		ValidateResult: func(value any) error {
-			ret := value.([]EventDebugEventItem)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			for i0 := range ret {
-				if err := (&ret[i0]).Validate(rpcspec.JoinIndex("result", i0)); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]EventDebugEventItem)
 			cloned := source
@@ -1048,14 +997,8 @@ var (
 			cloned := *source
 			return &cloned
 		},
-		ResultType: reflect.TypeFor[SeedPreview](),
-		ValidateResult: func(value any) error {
-			ret := value.(SeedPreview)
-			if err := (&ret).Validate("result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ResultType:     reflect.TypeFor[SeedPreview](),
+		ValidateResult: nil,
 		CloneResult: func(value any) any {
 			source := value.(SeedPreview)
 			cloned := source
@@ -1074,16 +1017,10 @@ var (
 		},
 	}
 	_MaintenanceServiceApplySeedYamlSpec = &rpcspec.MethodSpec{
-		Name:          "ApplySeedYaml",
-		SkelName:      "applySeedYaml",
-		ArgumentsType: reflect.TypeFor[_MaintenanceServiceApplySeedYamlArguments](),
-		ValidateArguments: func(value any) error {
-			args := value.(*_MaintenanceServiceApplySeedYamlArguments)
-			if err := rpcspec.CheckValueNotNil(args.Selections, rpcspec.JoinPath("arguments", "Selections")); err != nil {
-				return err
-			}
-			return nil
-		},
+		Name:              "ApplySeedYaml",
+		SkelName:          "applySeedYaml",
+		ArgumentsType:     reflect.TypeFor[_MaintenanceServiceApplySeedYamlArguments](),
+		ValidateArguments: nil,
 		CloneArguments: func(value any) any {
 			source := value.(*_MaintenanceServiceApplySeedYamlArguments)
 			cloned := *source
@@ -1097,14 +1034,8 @@ var (
 			}
 			return &cloned
 		},
-		ResultType: reflect.TypeFor[SeedPreview](),
-		ValidateResult: func(value any) error {
-			ret := value.(SeedPreview)
-			if err := (&ret).Validate("result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ResultType:     reflect.TypeFor[SeedPreview](),
+		ValidateResult: nil,
 		CloneResult: func(value any) any {
 			source := value.(SeedPreview)
 			cloned := source
@@ -1328,18 +1259,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]PortalCert](),
-		ValidateResult: func(value any) error {
-			ret := value.([]PortalCert)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			for i0 := range ret {
-				if err := (&ret[i0]).Validate(rpcspec.JoinIndex("result", i0)); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]PortalCert)
 			cloned := source
@@ -1374,14 +1294,8 @@ var (
 			cloned := *source
 			return &cloned
 		},
-		ResultType: reflect.TypeFor[PortalCert](),
-		ValidateResult: func(value any) error {
-			ret := value.(PortalCert)
-			if err := (&ret).Validate("result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ResultType:     reflect.TypeFor[PortalCert](),
+		ValidateResult: nil,
 		CloneResult: func(value any) any {
 			source := value.(PortalCert)
 			cloned := source
@@ -1410,14 +1324,8 @@ var (
 			cloned.Creation = source.Creation.Clone()
 			return &cloned
 		},
-		ResultType: reflect.TypeFor[PortalCert](),
-		ValidateResult: func(value any) error {
-			ret := value.(PortalCert)
-			if err := (&ret).Validate("result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ResultType:     reflect.TypeFor[PortalCert](),
+		ValidateResult: nil,
 		CloneResult: func(value any) any {
 			source := value.(PortalCert)
 			cloned := source
@@ -1446,14 +1354,8 @@ var (
 			cloned.Update = source.Update.Clone()
 			return &cloned
 		},
-		ResultType: reflect.TypeFor[PortalCert](),
-		ValidateResult: func(value any) error {
-			ret := value.(PortalCert)
-			if err := (&ret).Validate("result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ResultType:     reflect.TypeFor[PortalCert](),
+		ValidateResult: nil,
 		CloneResult: func(value any) any {
 			source := value.(PortalCert)
 			cloned := source
@@ -1812,18 +1714,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]PortalEntry](),
-		ValidateResult: func(value any) error {
-			ret := value.([]PortalEntry)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			for i0 := range ret {
-				if err := (&ret[i0]).Validate(rpcspec.JoinIndex("result", i0)); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]PortalEntry)
 			cloned := source
@@ -1859,14 +1750,8 @@ var (
 			cloned.Update = source.Update.Clone()
 			return &cloned
 		},
-		ResultType: reflect.TypeFor[PortalEntry](),
-		ValidateResult: func(value any) error {
-			ret := value.(PortalEntry)
-			if err := (&ret).Validate("result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ResultType:     reflect.TypeFor[PortalEntry](),
+		ValidateResult: nil,
 		CloneResult: func(value any) any {
 			source := value.(PortalEntry)
 			cloned := source
@@ -2093,13 +1978,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]PortalRule](),
-		ValidateResult: func(value any) error {
-			ret := value.([]PortalRule)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]PortalRule)
 			cloned := source
@@ -2272,14 +2151,8 @@ var (
 			cloned := *source
 			return &cloned
 		},
-		ResultType: reflect.TypeFor[[]PortalRule](),
-		ValidateResult: func(value any) error {
-			ret := value.([]PortalRule)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ResultType:     reflect.TypeFor[[]PortalRule](),
+		ValidateResult: nil,
 		CloneResult: func(value any) any {
 			source := value.([]PortalRule)
 			cloned := source
@@ -2717,18 +2590,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]PortalSite](),
-		ValidateResult: func(value any) error {
-			ret := value.([]PortalSite)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			for i0 := range ret {
-				if err := (&ret[i0]).Validate(rpcspec.JoinIndex("result", i0)); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]PortalSite)
 			cloned := source
@@ -2760,13 +2622,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[PortalSiteOptions](),
-		ValidateResult: func(value any) error {
-			ret := value.(PortalSiteOptions)
-			if err := (&ret).Validate("result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.(PortalSiteOptions)
 			cloned := source
@@ -2794,14 +2650,8 @@ var (
 			cloned := *source
 			return &cloned
 		},
-		ResultType: reflect.TypeFor[PortalSite](),
-		ValidateResult: func(value any) error {
-			ret := value.(PortalSite)
-			if err := (&ret).Validate("result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ResultType:     reflect.TypeFor[PortalSite](),
+		ValidateResult: nil,
 		CloneResult: func(value any) any {
 			source := value.(PortalSite)
 			cloned := source
@@ -2820,30 +2670,18 @@ var (
 		},
 	}
 	_PortalSiteServiceCreateSpec = &rpcspec.MethodSpec{
-		Name:          "Create",
-		SkelName:      "create",
-		ArgumentsType: reflect.TypeFor[_PortalSiteServiceCreateArguments](),
-		ValidateArguments: func(value any) error {
-			args := value.(*_PortalSiteServiceCreateArguments)
-			if err := (&args.Creation).Validate(rpcspec.JoinPath("arguments", "Creation")); err != nil {
-				return err
-			}
-			return nil
-		},
+		Name:              "Create",
+		SkelName:          "create",
+		ArgumentsType:     reflect.TypeFor[_PortalSiteServiceCreateArguments](),
+		ValidateArguments: nil,
 		CloneArguments: func(value any) any {
 			source := value.(*_PortalSiteServiceCreateArguments)
 			cloned := *source
 			cloned.Creation = source.Creation.Clone()
 			return &cloned
 		},
-		ResultType: reflect.TypeFor[PortalSite](),
-		ValidateResult: func(value any) error {
-			ret := value.(PortalSite)
-			if err := (&ret).Validate("result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ResultType:     reflect.TypeFor[PortalSite](),
+		ValidateResult: nil,
 		CloneResult: func(value any) any {
 			source := value.(PortalSite)
 			cloned := source
@@ -2862,30 +2700,18 @@ var (
 		},
 	}
 	_PortalSiteServiceUpdateSpec = &rpcspec.MethodSpec{
-		Name:          "Update",
-		SkelName:      "update",
-		ArgumentsType: reflect.TypeFor[_PortalSiteServiceUpdateArguments](),
-		ValidateArguments: func(value any) error {
-			args := value.(*_PortalSiteServiceUpdateArguments)
-			if err := (&args.Update).Validate(rpcspec.JoinPath("arguments", "Update")); err != nil {
-				return err
-			}
-			return nil
-		},
+		Name:              "Update",
+		SkelName:          "update",
+		ArgumentsType:     reflect.TypeFor[_PortalSiteServiceUpdateArguments](),
+		ValidateArguments: nil,
 		CloneArguments: func(value any) any {
 			source := value.(*_PortalSiteServiceUpdateArguments)
 			cloned := *source
 			cloned.Update = source.Update.Clone()
 			return &cloned
 		},
-		ResultType: reflect.TypeFor[PortalSite](),
-		ValidateResult: func(value any) error {
-			ret := value.(PortalSite)
-			if err := (&ret).Validate("result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ResultType:     reflect.TypeFor[PortalSite](),
+		ValidateResult: nil,
 		CloneResult: func(value any) any {
 			source := value.(PortalSite)
 			cloned := source
@@ -3282,13 +3108,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]ServiceDebugAppInstance](),
-		ValidateResult: func(value any) error {
-			ret := value.([]ServiceDebugAppInstance)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]ServiceDebugAppInstance)
 			cloned := source
@@ -3320,13 +3140,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]ServiceDebugServiceItem](),
-		ValidateResult: func(value any) error {
-			ret := value.([]ServiceDebugServiceItem)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]ServiceDebugServiceItem)
 			cloned := source
@@ -3361,14 +3175,8 @@ var (
 			cloned := *source
 			return &cloned
 		},
-		ResultType: reflect.TypeFor[[]ServiceDebugAppInstance](),
-		ValidateResult: func(value any) error {
-			ret := value.([]ServiceDebugAppInstance)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ResultType:     reflect.TypeFor[[]ServiceDebugAppInstance](),
+		ValidateResult: nil,
 		CloneResult: func(value any) any {
 			source := value.([]ServiceDebugAppInstance)
 			cloned := source
@@ -3403,19 +3211,8 @@ var (
 			cloned := *source
 			return &cloned
 		},
-		ResultType: reflect.TypeFor[[]ServiceDebugMethodItem](),
-		ValidateResult: func(value any) error {
-			ret := value.([]ServiceDebugMethodItem)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			for i0 := range ret {
-				if err := (&ret[i0]).Validate(rpcspec.JoinIndex("result", i0)); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		ResultType:     reflect.TypeFor[[]ServiceDebugMethodItem](),
+		ValidateResult: nil,
 		CloneResult: func(value any) any {
 			source := value.([]ServiceDebugMethodItem)
 			cloned := source
@@ -3450,14 +3247,8 @@ var (
 			cloned := *source
 			return &cloned
 		},
-		ResultType: reflect.TypeFor[ServiceDebugDefaultInvokeRequest](),
-		ValidateResult: func(value any) error {
-			ret := value.(ServiceDebugDefaultInvokeRequest)
-			if err := (&ret).Validate("result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ResultType:     reflect.TypeFor[ServiceDebugDefaultInvokeRequest](),
+		ValidateResult: nil,
 		CloneResult: func(value any) any {
 			source := value.(ServiceDebugDefaultInvokeRequest)
 			cloned := source
@@ -3866,18 +3657,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]SkeletonDomain](),
-		ValidateResult: func(value any) error {
-			ret := value.([]SkeletonDomain)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			for i0 := range ret {
-				if err := (&ret[i0]).Validate(rpcspec.JoinIndex("result", i0)); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]SkeletonDomain)
 			cloned := source
@@ -3909,18 +3689,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]SkeletonActorItem](),
-		ValidateResult: func(value any) error {
-			ret := value.([]SkeletonActorItem)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			for i0 := range ret {
-				if err := (&ret[i0]).Validate(rpcspec.JoinIndex("result", i0)); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]SkeletonActorItem)
 			cloned := source
@@ -3952,18 +3721,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]SkeletonServiceItem](),
-		ValidateResult: func(value any) error {
-			ret := value.([]SkeletonServiceItem)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			for i0 := range ret {
-				if err := (&ret[i0]).Validate(rpcspec.JoinIndex("result", i0)); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]SkeletonServiceItem)
 			cloned := source
@@ -3995,18 +3753,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]SkeletonResourceItem](),
-		ValidateResult: func(value any) error {
-			ret := value.([]SkeletonResourceItem)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			for i0 := range ret {
-				if err := (&ret[i0]).Validate(rpcspec.JoinIndex("result", i0)); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]SkeletonResourceItem)
 			cloned := source
@@ -4038,18 +3785,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]SkeletonWebItem](),
-		ValidateResult: func(value any) error {
-			ret := value.([]SkeletonWebItem)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			for i0 := range ret {
-				if err := (&ret[i0]).Validate(rpcspec.JoinIndex("result", i0)); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]SkeletonWebItem)
 			cloned := source
@@ -4081,18 +3817,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]SkeletonTask](),
-		ValidateResult: func(value any) error {
-			ret := value.([]SkeletonTask)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			for i0 := range ret {
-				if err := (&ret[i0]).Validate(rpcspec.JoinIndex("result", i0)); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]SkeletonTask)
 			cloned := source
@@ -4124,18 +3849,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]SkeletonEventItem](),
-		ValidateResult: func(value any) error {
-			ret := value.([]SkeletonEventItem)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			for i0 := range ret {
-				if err := (&ret[i0]).Validate(rpcspec.JoinIndex("result", i0)); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]SkeletonEventItem)
 			cloned := source
@@ -4167,18 +3881,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]SkeletonData](),
-		ValidateResult: func(value any) error {
-			ret := value.([]SkeletonData)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			for i0 := range ret {
-				if err := (&ret[i0]).Validate(rpcspec.JoinIndex("result", i0)); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]SkeletonData)
 			cloned := source
@@ -4210,18 +3913,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]SkeletonConfigItem](),
-		ValidateResult: func(value any) error {
-			ret := value.([]SkeletonConfigItem)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			for i0 := range ret {
-				if err := (&ret[i0]).Validate(rpcspec.JoinIndex("result", i0)); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]SkeletonConfigItem)
 			cloned := source
@@ -4664,13 +4356,7 @@ var (
 		ValidateArguments: nil,
 		CloneArguments:    nil,
 		ResultType:        reflect.TypeFor[[]TaskDebugTaskItem](),
-		ValidateResult: func(value any) error {
-			ret := value.([]TaskDebugTaskItem)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			return nil
-		},
+		ValidateResult:    nil,
 		CloneResult: func(value any) any {
 			source := value.([]TaskDebugTaskItem)
 			cloned := source
@@ -4705,19 +4391,8 @@ var (
 			cloned := *source
 			return &cloned
 		},
-		ResultType: reflect.TypeFor[[]TaskDebugTriggerItem](),
-		ValidateResult: func(value any) error {
-			ret := value.([]TaskDebugTriggerItem)
-			if err := rpcspec.CheckValueNotNil(ret, "result"); err != nil {
-				return err
-			}
-			for i0 := range ret {
-				if err := (&ret[i0]).Validate(rpcspec.JoinIndex("result", i0)); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		ResultType:     reflect.TypeFor[[]TaskDebugTriggerItem](),
+		ValidateResult: nil,
 		CloneResult: func(value any) any {
 			source := value.([]TaskDebugTriggerItem)
 			cloned := source

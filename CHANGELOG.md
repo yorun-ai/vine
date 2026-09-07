@@ -18,6 +18,16 @@ are not part of the public compatibility commitment.
   propagation. Receivers use the transmitted realm and identifier; headers
   without those fields retain empty values.
 
+- Internal App, Link, and Hub contracts are now generated with skelc v0.16.0.
+  Nil collections use empty arrays/maps on JSON and CBOR boundaries, and
+  generated collection non-null validation is removed. Clients consuming these
+  infrastructure APIs must accept the current collection representation.
+
+### Changed
+
+- Regenerate built-in contracts with skelc v0.16.0 while retaining the minimum
+  supported business-contract compiler version at v0.14.0.
+
 ### Added
 
 - Add `Actor.Realm()` and `Actor.Identifier()`, schema-driven identity extraction in Portal and Hub debug calls, tag-based identity extraction for `NewAuthenticatedActor(info)` without floating-point conversion, and identity propagation.
