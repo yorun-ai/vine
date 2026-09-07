@@ -16,7 +16,7 @@ import (
 
 const headerAuthorization = "Authorization"
 
-type _AuthErrorWriter func(ex.Code, string)
+type _AuthErrorWriter func(ex.Code, string, ...ex.ErrorOption)
 type _AuthActorSetter func(meta.Actor)
 
 type Auther struct {
@@ -107,9 +107,13 @@ func parseCredential(schema *skel.DataSchema, authorization string) (map[string]
 
 func (o *Auther) executeAuthRequest(authRequest *http.Request, writeError _AuthErrorWriter, setActor _AuthActorSetter) bool {
 	skelServiceName := o.actorSchema.AuthService.SkelName
-	info, code, message, ok := o.invoke[jsontext.Value](authRequest, skelServiceName, "auth", "auth failed")
+	info, code, message, reason, ok := o.invoke[jsontext.Value](authRequest, skelServiceName, "auth", "auth failed")
 	if !ok {
-		writeError(code, message)
+		var options []ex.ErrorOption
+		if reason != "" {
+			options = append(options, ex.WithReason(reason))
+		}
+		writeError(code, message, options...)
 		return false
 	}
 

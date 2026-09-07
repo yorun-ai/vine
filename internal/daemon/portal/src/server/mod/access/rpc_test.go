@@ -560,3 +560,23 @@ func assertRpcAuthError(t *testing.T, recorder *httptest.ResponseRecorder, code 
 func testServerApp() meta.App {
 	return meta.MustNewApp("vine.portal", "0.0.0", "123e4567-e89b-12d3-a456-426614174099")
 }
+
+func TestAccessAllowRpcPreservesAuthErrorReason(t *testing.T) {
+	endpoint := "link+inproc://vine/auth-reason-test"
+	ingressinproc.Register(endpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set(rpchttp.HeaderContentType, "application/vrpc+json")
+		rpchttp.EncodeStatusCodeToHeader(w.Header(), ex.PermissionDenied)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"error":{"message":"pending review","reason":"USER_PENDING_REVIEW"}}`))
+	}))
+	t.Cleanup(func() { ingressinproc.Unregister(endpoint) })
+	manager := testManager(testAuthValues(endpoint))
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
+	setTestRequestHeaders(t, request)
+	request.Header.Set("Authorization", "Key1 token123, key2 dXNlcjpwd2Q=")
+	allowed := manager.AllowRpc(testRpcAuthContext(t, redised.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	require.False(t, allowed)
+	assertRpcAuthError(t, recorder, ex.PermissionDenied, "pending review")
+	assert.Contains(t, recorder.Body.String(), `"reason":"USER_PENDING_REVIEW"`)
+}

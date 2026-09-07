@@ -29,7 +29,7 @@ func BenchmarkReadInvokeResponse(b *testing.B) {
 			Header:     header,
 			Body:       io.NopCloser(bytes.NewReader(body)),
 		}
-		result, _, _, ok := readInvokeResponse[benchmarkInvokeResult](response, "benchmark", "bad response", "failed")
+		result, _, _, _, ok := readInvokeResponse[benchmarkInvokeResult](response, "benchmark", "bad response", "failed")
 		if !ok || !result.Allowed || len(result.Roles) != 2 {
 			b.Fatal("readInvokeResponse() returned an unexpected result")
 		}

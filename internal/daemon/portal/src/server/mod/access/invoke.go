@@ -18,6 +18,7 @@ type _InvokeResponseBody[T any] struct {
 
 type _InvokeErrorBody struct {
 	Message string `json:"message"`
+	Reason  string `json:"reason"`
 }
 
 func (o *Auther) buildInvokeRequest(serviceSkelName string, methodSkelName string, params map[string]any) *http.Request {
@@ -56,47 +57,51 @@ func (o *Auther) forwardInvokeRequest(request *http.Request, serviceSkelName str
 	return response, ex.OK, "", true
 }
 
-func (o *Auther) invoke[T any](request *http.Request, serviceSkelName string, serviceLabel string, defaultErrorMessage string) (T, ex.Code, string, bool) {
+func (o *Auther) invoke[T any](request *http.Request, serviceSkelName string, serviceLabel string, defaultErrorMessage string) (T, ex.Code, string, string, bool) {
 	var zero T
 	response, code, message, ok := o.forwardInvokeRequest(request, serviceSkelName, serviceLabel+" service")
 	if !ok {
-		return zero, code, message, false
+		return zero, code, message, "", false
 	}
 	defer func() { _ = response.Body.Close() }()
 
 	return readInvokeResponse[T](response, serviceLabel, "bad "+serviceLabel+" response", defaultErrorMessage)
 }
 
-func readInvokeResponse[T any](response *http.Response, serviceLabel string, badResponseMessage string, defaultErrorMessage string) (T, ex.Code, string, bool) {
+func readInvokeResponse[T any](response *http.Response, serviceLabel string, badResponseMessage string, defaultErrorMessage string) (T, ex.Code, string, string, bool) {
 	var zero T
 	body, err := rpchttp.ReadResponseBody(response)
 	if err != nil {
-		return zero, ex.ServiceUnavailable, serviceLabel + " response body cannot be read", false
+		return zero, ex.ServiceUnavailable, serviceLabel + " response body cannot be read", "", false
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return zero, mapInvokeHttpStatus(response.StatusCode), serviceLabel + " service returned status " + http.StatusText(response.StatusCode), false
+		return zero, mapInvokeHttpStatus(response.StatusCode), serviceLabel + " service returned status " + http.StatusText(response.StatusCode), "", false
 	}
 
 	statusCode, err := rpchttp.DecodeStatusCodeFromHeader(response.Header)
 	if err != nil {
-		return zero, ex.ServiceUnavailable, badResponseMessage, false
+		return zero, ex.ServiceUnavailable, badResponseMessage, "", false
 	}
 
 	responseBody := &_InvokeResponseBody[T]{}
 	if err = json.Unmarshal(body, responseBody); err != nil {
-		return zero, ex.ServiceUnavailable, badResponseMessage, false
+		return zero, ex.ServiceUnavailable, badResponseMessage, "", false
 	}
 
 	if statusCode == ex.OK {
-		return responseBody.Result, ex.OK, "", true
+		return responseBody.Result, ex.OK, "", "", true
 	}
 
+	reason := ""
 	message := defaultErrorMessage
-	if responseBody.Error != nil && responseBody.Error.Message != "" {
-		message = responseBody.Error.Message
+	if responseBody.Error != nil {
+		reason = responseBody.Error.Reason
+		if responseBody.Error.Message != "" {
+			message = responseBody.Error.Message
+		}
 	}
-	return zero, mapInvokeStatusCode(statusCode), message, false
+	return zero, mapInvokeStatusCode(statusCode), message, reason, false
 }
 
 func mapInvokeHttpStatus(statusCode int) ex.Code {

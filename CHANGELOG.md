@@ -8,6 +8,11 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Fixed
+
+- Preserve backend error reasons in Portal Rpc responses when authentication,
+  actor permission service calls, or resource permission checks fail.
+
 ## [0.15.0] - 2026-09-07
 
 ### Upgrade notes

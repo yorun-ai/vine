@@ -225,40 +225,42 @@ func hasPermissionChecks(expr *skel.PermExpr) bool {
 	return slices.ContainsFunc(expr.Children, hasPermissionChecks)
 }
 
-func evalPermExpr(expr *skel.PermExpr, codeResults map[string]bool, checkFunc func(*skel.PermCheckInvocation) (bool, ex.Code, string)) (bool, ex.Code, string) {
+func evalPermExpr(expr *skel.PermExpr, codeResults map[string]bool, checkFunc func(*skel.PermCheckInvocation) (bool, ex.Code, string, string)) (bool, ex.Code, string, string) {
 	switch expr.Mode {
 	case skel.PermRequireModeCode:
 		if codeResults[expr.Code] {
-			return true, ex.OK, ""
+			return true, ex.OK, "", ""
 		}
-		return false, ex.PermissionDenied, "permission denied: " + expr.Code
+		return false, ex.PermissionDenied, "permission denied: " + expr.Code, ""
 	case skel.PermRequireModeCheck:
 		return checkFunc(expr.Check)
 	case skel.PermRequireModeAll:
 		for _, child := range expr.Children {
-			ok, code, message := evalPermExpr(child, codeResults, checkFunc)
+			ok, code, message, reason := evalPermExpr(child, codeResults, checkFunc)
 			if !ok {
-				return false, code, message
+				return false, code, message, reason
 			}
 		}
-		return true, ex.OK, ""
+		return true, ex.OK, "", ""
 	case skel.PermRequireModeAny:
 		return evalAnyPermExpr(expr.Children, codeResults, checkFunc)
 	default:
-		return false, ex.ServiceUnavailable, "unsupported permission require mode"
+		return false, ex.ServiceUnavailable, "unsupported permission require mode", ""
 	}
 }
 
-func evalAnyPermExpr(children []*skel.PermExpr, codeResults map[string]bool, checkFunc func(*skel.PermCheckInvocation) (bool, ex.Code, string)) (bool, ex.Code, string) {
+func evalAnyPermExpr(children []*skel.PermExpr, codeResults map[string]bool, checkFunc func(*skel.PermCheckInvocation) (bool, ex.Code, string, string)) (bool, ex.Code, string, string) {
 	code := ex.ClientForbidden
 	message := "permission check failed"
+	reason := ""
 	for _, child := range children {
-		ok, checkCode, checkMessage := evalPermExpr(child, codeResults, checkFunc)
+		ok, checkCode, checkMessage, checkReason := evalPermExpr(child, codeResults, checkFunc)
 		if ok {
-			return true, ex.OK, ""
+			return true, ex.OK, "", ""
 		}
 		code = checkCode
 		message = checkMessage
+		reason = checkReason
 	}
-	return false, code, message
+	return false, code, message, reason
 }

@@ -24,6 +24,6 @@ func (o *WebOperation) setActor(actor meta.Actor) {
 	o.Request.Header.Set(webspec.HeaderWebActor, meta.EncodeActorToBase64(actor))
 }
 
-func (o *WebOperation) writeError(code ex.Code, message string) {
+func (o *WebOperation) writeError(code ex.Code, message string, options ...ex.ErrorOption) {
 	http.Error(o.Response, message, ex.HTTPStatusCode(code))
 }
