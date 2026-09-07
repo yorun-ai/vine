@@ -3,8 +3,7 @@ package meta
 import (
 	"reflect"
 	"testing"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type _TestActorInfo struct {
