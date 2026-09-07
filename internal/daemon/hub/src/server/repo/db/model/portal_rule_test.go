@@ -154,3 +154,15 @@ func TestPortalRuleColumnRenamePreservesDataAndIndexes(t *testing.T) {
 	duplicate.Name = row.Name
 	require.Error(t, db.Create(&duplicate).Error, "name uniqueness must survive migration")
 }
+
+func TestPortalRuleMigrationOnCurrentSchema(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "current.sqlite")), &gorm.Config{})
+	require.NoError(t, err)
+	connection, err := db.DB()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = connection.Close() })
+	require.NoError(t, db.Exec(createPortalRuleSQLiteSQL).Error)
+	dao := &PortalRuleDao{Dao: rdb.NewDao[*PortalRule](db)}
+	require.NoError(t, dao.migrateSchema())
+	require.NoError(t, dao.migrateSchema())
+}

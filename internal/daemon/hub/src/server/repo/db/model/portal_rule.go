@@ -100,19 +100,31 @@ func (d *PortalRuleDao) migrateSchema() error {
 	return d.GormDB().Transaction(func(tx *gorm.DB) error {
 		migrator := tx.Migrator()
 		if migrator.HasTable(&PortalRule{}) {
+			// SQLite HasColumn searches the CREATE TABLE text with LIKE, so
+			// match_scheme can be mistaken for the legacy scheme column.
+			columnTypes, err := migrator.ColumnTypes(&PortalRule{})
+			if err != nil {
+				return err
+			}
+			columnNames := make(map[string]bool, len(columnTypes))
+			for _, column := range columnTypes {
+				columnNames[column.Name()] = true
+			}
 			for _, columns := range [][2]string{
 				{"scheme", "match_scheme"}, {"host", "match_host"}, {"port", "match_port"},
 				{"path_prefix", "match_path_prefix"}, {"target_type", "route_type"},
 				{"site_name", "route_site_name"}, {"target_path", "route_path_prefix"},
 				{"redirection_pattern", "route_redirection_pattern"},
 			} {
-				if migrator.HasColumn("portal_rule", columns[0]) {
+				if columnNames[columns[0]] {
 					if err := migrator.RenameColumn("portal_rule", columns[0], columns[1]); err != nil {
 						return err
 					}
+					delete(columnNames, columns[0])
+					columnNames[columns[1]] = true
 				}
 			}
-			if !migrator.HasColumn(&PortalRule{}, "route_path_prefix") {
+			if !columnNames["route_path_prefix"] {
 				if err := migrator.AddColumn(&PortalRule{}, "RoutePathPrefix"); err != nil {
 					return err
 				}
