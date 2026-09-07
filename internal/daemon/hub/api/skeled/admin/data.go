@@ -2,10 +2,7 @@
 
 package admin
 
-import (
-	rpc "go.yorun.ai/vine/internal/core/rpc/spec"
-	"go.yorun.ai/vine/internal/core/skel"
-)
+import "go.yorun.ai/vine/internal/core/skel"
 
 // AppConfigCreation Configuration creation parameters
 type AppConfigCreation struct {
@@ -37,18 +34,6 @@ type AppConfigItem struct {
 	Schema *AppConfigSchema `json:"schema"`
 }
 
-func (v *AppConfigItem) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if v.Schema != nil {
-		if err := v.Schema.Validate(rpc.JoinPath(path, "Schema")); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // Clone returns a value-isolated copy of the generated data.
 func (v AppConfigItem) Clone() AppConfigItem {
 	cloned := v
@@ -76,21 +61,6 @@ type AppConfigSchema struct {
 	Lifecycle string `json:"lifecycle"`
 	// Fields Configuration field list
 	Fields []AppConfigSchemaField `json:"fields"`
-}
-
-func (v *AppConfigSchema) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Fields, rpc.JoinPath(path, "Fields")); err != nil {
-		return err
-	}
-	for i0 := range v.Fields {
-		if err := (&v.Fields[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Fields"), i0)); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -157,16 +127,6 @@ type AppConfigSchemaField struct {
 	EnumItems []AppConfigSchemaEnumItem `json:"enumItems"`
 }
 
-func (v *AppConfigSchemaField) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.EnumItems, rpc.JoinPath(path, "EnumItems")); err != nil {
-		return err
-	}
-	return nil
-}
-
 // Clone returns a value-isolated copy of the generated data.
 func (v AppConfigSchemaField) Clone() AppConfigSchemaField {
 	cloned := v
@@ -223,30 +183,6 @@ type AppStatusView struct {
 	EventListeners []EventListenerRegistration `json:"eventListeners"`
 	// TaskRunners List of task execution capabilities provided by the application
 	TaskRunners []TaskRunnerRegistration `json:"taskRunners"`
-}
-
-func (v *AppStatusView) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.ServiceHandlers, rpc.JoinPath(path, "ServiceHandlers")); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.WebHandlers, rpc.JoinPath(path, "WebHandlers")); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.EventListeners, rpc.JoinPath(path, "EventListeners")); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.TaskRunners, rpc.JoinPath(path, "TaskRunners")); err != nil {
-		return err
-	}
-	for i0 := range v.TaskRunners {
-		if err := (&v.TaskRunners[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "TaskRunners"), i0)); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -349,16 +285,6 @@ type EventDebugEventItem struct {
 	Fields []SkeletonField `json:"fields"`
 }
 
-func (v *EventDebugEventItem) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Fields, rpc.JoinPath(path, "Fields")); err != nil {
-		return err
-	}
-	return nil
-}
-
 // Clone returns a value-isolated copy of the generated data.
 func (v EventDebugEventItem) Clone() EventDebugEventItem {
 	cloned := v
@@ -419,16 +345,6 @@ type PortalCert struct {
 	ValidFrom skel.Timestamp `json:"validFrom"`
 	// ValidTo Validity end time
 	ValidTo skel.Timestamp `json:"validTo"`
-}
-
-func (v *PortalCert) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Domains, rpc.JoinPath(path, "Domains")); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -495,16 +411,6 @@ type PortalCors struct {
 	AllowedOrigins []string `json:"allowedOrigins"`
 }
 
-func (v *PortalCors) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.AllowedOrigins, rpc.JoinPath(path, "AllowedOrigins")); err != nil {
-		return err
-	}
-	return nil
-}
-
 // Clone returns a value-isolated copy of the generated data.
 func (v PortalCors) Clone() PortalCors {
 	cloned := v
@@ -551,21 +457,6 @@ type PortalEntry struct {
 	Rules []PortalEntryRule `json:"rules"`
 }
 
-func (v *PortalEntry) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Rules, rpc.JoinPath(path, "Rules")); err != nil {
-		return err
-	}
-	for i0 := range v.Rules {
-		if err := (&v.Rules[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Rules"), i0)); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // Clone returns a value-isolated copy of the generated data.
 func (v PortalEntry) Clone() PortalEntry {
 	cloned := v
@@ -602,18 +493,6 @@ type PortalEntryRule struct {
 	Rule PortalRule `json:"rule"`
 	// Site Target site
 	Site *PortalSite `json:"site"`
-}
-
-func (v *PortalEntryRule) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if v.Site != nil {
-		if err := v.Site.Validate(rpc.JoinPath(path, "Site")); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -774,21 +653,6 @@ type PortalSite struct {
 	WebName string `json:"webName"`
 }
 
-func (v *PortalSite) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.RpcgwServices, rpc.JoinPath(path, "RpcgwServices")); err != nil {
-		return err
-	}
-	if v.Cors != nil {
-		if err := v.Cors.Validate(rpc.JoinPath(path, "Cors")); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // Clone returns a value-isolated copy of the generated data.
 func (v PortalSite) Clone() PortalSite {
 	cloned := v
@@ -814,16 +678,6 @@ type PortalSiteActorOption struct {
 	SkelName string `json:"skelName"`
 	// ActorVias Actor access method list
 	ActorVias []string `json:"actorVias"`
-}
-
-func (v *PortalSiteActorOption) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.ActorVias, rpc.JoinPath(path, "ActorVias")); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -854,18 +708,6 @@ type PortalSiteCreation struct {
 	WebName string `json:"webName"`
 }
 
-func (v *PortalSiteCreation) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if v.Cors != nil {
-		if err := v.Cors.Validate(rpc.JoinPath(path, "Cors")); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // Clone returns a value-isolated copy of the generated data.
 func (v PortalSiteCreation) Clone() PortalSiteCreation {
 	cloned := v
@@ -885,37 +727,6 @@ type PortalSiteOptions struct {
 	Services []PortalSiteServiceOption `json:"services"`
 	// Webs Web options
 	Webs []PortalSiteWebOption `json:"webs"`
-}
-
-func (v *PortalSiteOptions) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Actors, rpc.JoinPath(path, "Actors")); err != nil {
-		return err
-	}
-	for i0 := range v.Actors {
-		if err := (&v.Actors[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Actors"), i0)); err != nil {
-			return err
-		}
-	}
-	if err := rpc.CheckValueNotNil(v.Services, rpc.JoinPath(path, "Services")); err != nil {
-		return err
-	}
-	for i0 := range v.Services {
-		if err := (&v.Services[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Services"), i0)); err != nil {
-			return err
-		}
-	}
-	if err := rpc.CheckValueNotNil(v.Webs, rpc.JoinPath(path, "Webs")); err != nil {
-		return err
-	}
-	for i0 := range v.Webs {
-		if err := (&v.Webs[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Webs"), i0)); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -958,16 +769,6 @@ type PortalSiteServiceOption struct {
 	ActorSkelNames []string `json:"actorSkelNames"`
 }
 
-func (v *PortalSiteServiceOption) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.ActorSkelNames, rpc.JoinPath(path, "ActorSkelNames")); err != nil {
-		return err
-	}
-	return nil
-}
-
 // Clone returns a value-isolated copy of the generated data.
 func (v PortalSiteServiceOption) Clone() PortalSiteServiceOption {
 	cloned := v
@@ -994,18 +795,6 @@ type PortalSiteUpdate struct {
 	Cors *PortalCors `json:"cors"`
 	// WebName Web name
 	WebName *string `json:"webName"`
-}
-
-func (v *PortalSiteUpdate) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if v.Cors != nil {
-		if err := v.Cors.Validate(rpc.JoinPath(path, "Cors")); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -1049,16 +838,6 @@ type PortalSiteWebOption struct {
 	ActorSkelNames []string `json:"actorSkelNames"`
 }
 
-func (v *PortalSiteWebOption) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.ActorSkelNames, rpc.JoinPath(path, "ActorSkelNames")); err != nil {
-		return err
-	}
-	return nil
-}
-
 // Clone returns a value-isolated copy of the generated data.
 func (v PortalSiteWebOption) Clone() PortalSiteWebOption {
 	cloned := v
@@ -1081,16 +860,6 @@ type SeedEntityDiff struct {
 	Exists bool `json:"exists"`
 	// Fields Field differences
 	Fields []SeedFieldDiff `json:"fields"`
-}
-
-func (v *SeedEntityDiff) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Fields, rpc.JoinPath(path, "Fields")); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -1143,21 +912,6 @@ func (v SeedItemSelection) Clone() SeedItemSelection {
 type SeedPreview struct {
 	// Items Entity differences
 	Items []SeedEntityDiff `json:"items"`
-}
-
-func (v *SeedPreview) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Items, rpc.JoinPath(path, "Items")); err != nil {
-		return err
-	}
-	for i0 := range v.Items {
-		if err := (&v.Items[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Items"), i0)); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -1224,16 +978,6 @@ type ServiceDebugDefaultInvokeRequest struct {
 	ActorInfoJson skel.JSON `json:"actorInfoJson"`
 	// ParamsJson Default request parameters JSON
 	ParamsJson skel.JSON `json:"paramsJson"`
-}
-
-func (v *ServiceDebugDefaultInvokeRequest) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Actors, rpc.JoinPath(path, "Actors")); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -1348,16 +1092,6 @@ type ServiceDebugMethodItem struct {
 	Arguments []SkeletonField `json:"arguments"`
 	// ResultType Return type
 	ResultType string `json:"resultType"`
-}
-
-func (v *ServiceDebugMethodItem) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Arguments, rpc.JoinPath(path, "Arguments")); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -1482,57 +1216,6 @@ type SkeletonActorItem struct {
 	Webs []SkeletonWebItem `json:"webs"`
 }
 
-func (v *SkeletonActorItem) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.ActorVias, rpc.JoinPath(path, "ActorVias")); err != nil {
-		return err
-	}
-	if v.Credential != nil {
-		if err := v.Credential.Validate(rpc.JoinPath(path, "Credential")); err != nil {
-			return err
-		}
-	}
-	if v.Info != nil {
-		if err := v.Info.Validate(rpc.JoinPath(path, "Info")); err != nil {
-			return err
-		}
-	}
-	if v.AuthService != nil {
-		if err := v.AuthService.Validate(rpc.JoinPath(path, "AuthService")); err != nil {
-			return err
-		}
-	}
-	if v.PermService != nil {
-		if err := v.PermService.Validate(rpc.JoinPath(path, "PermService")); err != nil {
-			return err
-		}
-	}
-	if v.PermMethod != nil {
-		if err := v.PermMethod.Validate(rpc.JoinPath(path, "PermMethod")); err != nil {
-			return err
-		}
-	}
-	if err := rpc.CheckValueNotNil(v.Services, rpc.JoinPath(path, "Services")); err != nil {
-		return err
-	}
-	for i0 := range v.Services {
-		if err := (&v.Services[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Services"), i0)); err != nil {
-			return err
-		}
-	}
-	if err := rpc.CheckValueNotNil(v.Webs, rpc.JoinPath(path, "Webs")); err != nil {
-		return err
-	}
-	for i0 := range v.Webs {
-		if err := (&v.Webs[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Webs"), i0)); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonActorItem) Clone() SkeletonActorItem {
 	cloned := v
@@ -1648,16 +1331,6 @@ type SkeletonConfigItem struct {
 	Fields []SkeletonField `json:"fields"`
 }
 
-func (v *SkeletonConfigItem) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Fields, rpc.JoinPath(path, "Fields")); err != nil {
-		return err
-	}
-	return nil
-}
-
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonConfigItem) Clone() SkeletonConfigItem {
 	cloned := v
@@ -1714,22 +1387,6 @@ type SkeletonData struct {
 	Fields []SkeletonField `json:"fields"`
 	// EnumItems List of enumeration items
 	EnumItems []SkeletonEnumItem `json:"enumItems"`
-}
-
-func (v *SkeletonData) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.TypeParameters, rpc.JoinPath(path, "TypeParameters")); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Fields, rpc.JoinPath(path, "Fields")); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.EnumItems, rpc.JoinPath(path, "EnumItems")); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -1798,77 +1455,6 @@ type SkeletonDomain struct {
 	Tasks []SkeletonTask `json:"tasks"`
 	// Events Event list
 	Events []SkeletonEventItem `json:"events"`
-}
-
-func (v *SkeletonDomain) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Actors, rpc.JoinPath(path, "Actors")); err != nil {
-		return err
-	}
-	for i0 := range v.Actors {
-		if err := (&v.Actors[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Actors"), i0)); err != nil {
-			return err
-		}
-	}
-	if err := rpc.CheckValueNotNil(v.Services, rpc.JoinPath(path, "Services")); err != nil {
-		return err
-	}
-	for i0 := range v.Services {
-		if err := (&v.Services[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Services"), i0)); err != nil {
-			return err
-		}
-	}
-	if err := rpc.CheckValueNotNil(v.Resources, rpc.JoinPath(path, "Resources")); err != nil {
-		return err
-	}
-	for i0 := range v.Resources {
-		if err := (&v.Resources[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Resources"), i0)); err != nil {
-			return err
-		}
-	}
-	if err := rpc.CheckValueNotNil(v.Data, rpc.JoinPath(path, "Data")); err != nil {
-		return err
-	}
-	for i0 := range v.Data {
-		if err := (&v.Data[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Data"), i0)); err != nil {
-			return err
-		}
-	}
-	if err := rpc.CheckValueNotNil(v.Configs, rpc.JoinPath(path, "Configs")); err != nil {
-		return err
-	}
-	for i0 := range v.Configs {
-		if err := (&v.Configs[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Configs"), i0)); err != nil {
-			return err
-		}
-	}
-	if err := rpc.CheckValueNotNil(v.Webs, rpc.JoinPath(path, "Webs")); err != nil {
-		return err
-	}
-	for i0 := range v.Webs {
-		if err := (&v.Webs[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Webs"), i0)); err != nil {
-			return err
-		}
-	}
-	if err := rpc.CheckValueNotNil(v.Tasks, rpc.JoinPath(path, "Tasks")); err != nil {
-		return err
-	}
-	for i0 := range v.Tasks {
-		if err := (&v.Tasks[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Tasks"), i0)); err != nil {
-			return err
-		}
-	}
-	if err := rpc.CheckValueNotNil(v.Events, rpc.JoinPath(path, "Events")); err != nil {
-		return err
-	}
-	for i0 := range v.Events {
-		if err := (&v.Events[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Events"), i0)); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -1999,16 +1585,6 @@ type SkeletonEventItem struct {
 	Fields []SkeletonField `json:"fields"`
 }
 
-func (v *SkeletonEventItem) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Fields, rpc.JoinPath(path, "Fields")); err != nil {
-		return err
-	}
-	return nil
-}
-
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonEventItem) Clone() SkeletonEventItem {
 	cloned := v
@@ -2101,21 +1677,6 @@ type SkeletonMethod struct {
 	ResultSensitive bool `json:"resultSensitive"`
 }
 
-func (v *SkeletonMethod) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if v.Require != nil {
-		if err := v.Require.Validate(rpc.JoinPath(path, "Require")); err != nil {
-			return err
-		}
-	}
-	if err := rpc.CheckValueNotNil(v.Arguments, rpc.JoinPath(path, "Arguments")); err != nil {
-		return err
-	}
-	return nil
-}
-
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonMethod) Clone() SkeletonMethod {
 	cloned := v
@@ -2175,16 +1736,6 @@ type SkeletonPermCheck struct {
 	Arguments []SkeletonPermCheckArgument `json:"arguments"`
 }
 
-func (v *SkeletonPermCheck) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Arguments, rpc.JoinPath(path, "Arguments")); err != nil {
-		return err
-	}
-	return nil
-}
-
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonPermCheck) Clone() SkeletonPermCheck {
 	cloned := v
@@ -2227,26 +1778,6 @@ type SkeletonPermExpr struct {
 	Children []SkeletonPermExpr `json:"children"`
 }
 
-func (v *SkeletonPermExpr) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if v.Check != nil {
-		if err := v.Check.Validate(rpc.JoinPath(path, "Check")); err != nil {
-			return err
-		}
-	}
-	if err := rpc.CheckValueNotNil(v.Children, rpc.JoinPath(path, "Children")); err != nil {
-		return err
-	}
-	for i0 := range v.Children {
-		if err := (&v.Children[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Children"), i0)); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonPermExpr) Clone() SkeletonPermExpr {
 	cloned := v
@@ -2284,21 +1815,6 @@ type SkeletonResourceAction struct {
 	DeprecatedReason *string `json:"deprecatedReason"`
 	// Checks Check list
 	Checks []SkeletonResourceCheck `json:"checks"`
-}
-
-func (v *SkeletonResourceAction) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Checks, rpc.JoinPath(path, "Checks")); err != nil {
-		return err
-	}
-	for i0 := range v.Checks {
-		if err := (&v.Checks[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Checks"), i0)); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -2339,16 +1855,6 @@ type SkeletonResourceCheck struct {
 	Arguments []SkeletonField `json:"arguments"`
 	// ArgumentsSensitive Whether all input arguments are sensitive
 	ArgumentsSensitive bool `json:"argumentsSensitive"`
-}
-
-func (v *SkeletonResourceCheck) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Arguments, rpc.JoinPath(path, "Arguments")); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -2399,34 +1905,6 @@ type SkeletonResourceItem struct {
 	Actions []SkeletonResourceAction `json:"actions"`
 	// CheckService Check service
 	CheckService *SkeletonServiceItem `json:"checkService"`
-}
-
-func (v *SkeletonResourceItem) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Checks, rpc.JoinPath(path, "Checks")); err != nil {
-		return err
-	}
-	for i0 := range v.Checks {
-		if err := (&v.Checks[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Checks"), i0)); err != nil {
-			return err
-		}
-	}
-	if err := rpc.CheckValueNotNil(v.Actions, rpc.JoinPath(path, "Actions")); err != nil {
-		return err
-	}
-	for i0 := range v.Actions {
-		if err := (&v.Actions[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Actions"), i0)); err != nil {
-			return err
-		}
-	}
-	if v.CheckService != nil {
-		if err := v.CheckService.Validate(rpc.JoinPath(path, "CheckService")); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -2500,29 +1978,6 @@ type SkeletonServiceItem struct {
 	Methods []SkeletonMethod `json:"methods"`
 }
 
-func (v *SkeletonServiceItem) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if v.Require != nil {
-		if err := v.Require.Validate(rpc.JoinPath(path, "Require")); err != nil {
-			return err
-		}
-	}
-	if err := rpc.CheckValueNotNil(v.Actors, rpc.JoinPath(path, "Actors")); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Methods, rpc.JoinPath(path, "Methods")); err != nil {
-		return err
-	}
-	for i0 := range v.Methods {
-		if err := (&v.Methods[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Methods"), i0)); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonServiceItem) Clone() SkeletonServiceItem {
 	cloned := v
@@ -2586,21 +2041,6 @@ type SkeletonTask struct {
 	Triggers []SkeletonTrigger `json:"triggers"`
 }
 
-func (v *SkeletonTask) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Triggers, rpc.JoinPath(path, "Triggers")); err != nil {
-		return err
-	}
-	for i0 := range v.Triggers {
-		if err := (&v.Triggers[i0]).Validate(rpc.JoinIndex(rpc.JoinPath(path, "Triggers"), i0)); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // Clone returns a value-isolated copy of the generated data.
 func (v SkeletonTask) Clone() SkeletonTask {
 	cloned := v
@@ -2643,16 +2083,6 @@ type SkeletonTrigger struct {
 	Arguments []SkeletonField `json:"arguments"`
 	// ArgumentsSensitive Whether all input arguments are sensitive
 	ArgumentsSensitive bool `json:"argumentsSensitive"`
-}
-
-func (v *SkeletonTrigger) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Arguments, rpc.JoinPath(path, "Arguments")); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -2711,16 +2141,6 @@ type SkeletonWebItem struct {
 	DeprecatedReason *string `json:"deprecatedReason"`
 	// Actors Accessible Actor List
 	Actors []SkeletonActorRef `json:"actors"`
-}
-
-func (v *SkeletonWebItem) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Actors, rpc.JoinPath(path, "Actors")); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -2841,16 +2261,6 @@ type TaskDebugTriggerItem struct {
 	Arguments []SkeletonField `json:"arguments"`
 }
 
-func (v *TaskDebugTriggerItem) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.Arguments, rpc.JoinPath(path, "Arguments")); err != nil {
-		return err
-	}
-	return nil
-}
-
 // Clone returns a value-isolated copy of the generated data.
 func (v TaskDebugTriggerItem) Clone() TaskDebugTriggerItem {
 	cloned := v
@@ -2909,16 +2319,6 @@ type TaskRunnerRegistration struct {
 	NoRetry bool `json:"noRetry"`
 	// CronSchedulers Cron schedule list
 	CronSchedulers []TaskRunnerCronScheduler `json:"cronSchedulers"`
-}
-
-func (v *TaskRunnerRegistration) Validate(path string) error {
-	if err := rpc.CheckValueNotNil(v, path); err != nil {
-		return err
-	}
-	if err := rpc.CheckValueNotNil(v.CronSchedulers, rpc.JoinPath(path, "CronSchedulers")); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Clone returns a value-isolated copy of the generated data.

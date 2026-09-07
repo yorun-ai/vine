@@ -615,16 +615,10 @@ var (
 		},
 	}
 	_RegistryServiceRegisterSpec = &rpcspec.MethodSpec{
-		Name:          "Register",
-		SkelName:      "register",
-		ArgumentsType: reflect.TypeFor[_RegistryServiceRegisterArguments](),
-		ValidateArguments: func(value any) error {
-			args := value.(*_RegistryServiceRegisterArguments)
-			if err := (&args.Registration).Validate(rpcspec.JoinPath("arguments", "Registration")); err != nil {
-				return err
-			}
-			return nil
-		},
+		Name:              "Register",
+		SkelName:          "register",
+		ArgumentsType:     reflect.TypeFor[_RegistryServiceRegisterArguments](),
+		ValidateArguments: nil,
 		CloneArguments: func(value any) any {
 			source := value.(*_RegistryServiceRegisterArguments)
 			cloned := *source
