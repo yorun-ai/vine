@@ -23,6 +23,11 @@ are not part of the public compatibility commitment.
 
 ### Added
 
+- Portal authentication accepts omitted nullable credential fields. Required
+  fields and any supplied optional fields must contain non-empty values; at
+  least one credential value is required. Use a skelc build that supports
+  `string?` credential declarations and regenerate actor schemas.
+
 - Hub Dashboard Actor details show the authentication realm and Info identifier
   field. Embedded Dashboard assets include the updated Admin contracts.
 - `vstring.Optional` converts an empty string to nil and preserves non-empty

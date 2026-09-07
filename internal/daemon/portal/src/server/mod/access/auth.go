@@ -79,7 +79,6 @@ func parseCredential(schema *skel.DataSchema, authorization string) (map[string]
 	}
 
 	credential := map[string]string{}
-	hasValue := false
 	for part := range strings.SplitSeq(authorization, ",") {
 		part = strings.TrimSpace(part)
 		if part == "" {
@@ -93,17 +92,22 @@ func parseCredential(schema *skel.DataSchema, authorization string) (map[string]
 		key = strings.TrimSpace(key)
 		value = strings.TrimSpace(value)
 		name, ok := credentialNames[strings.ToLower(key)]
-		if !ok {
+		if !ok || value == "" {
 			return nil, false
 		}
 		credential[name] = value
-		if value != "" {
-			hasValue = true
-		}
 	}
 
-	allKeyPresent := len(credential) == len(credentialNames)
-	return credential, allKeyPresent && hasValue
+	for _, member := range schema.Members {
+		if member.Type != nil && member.Type.Nullable {
+			continue
+		}
+		if _, present := credential[member.Name]; !present {
+			return nil, false
+		}
+	}
+	// skelc guarantees at least one required credential field.
+	return credential, true
 }
 
 func (o *Auther) executeAuthRequest(authRequest *http.Request, writeError _AuthErrorWriter, setActor _AuthActorSetter) bool {
