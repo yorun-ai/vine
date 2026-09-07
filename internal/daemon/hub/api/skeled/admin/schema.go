@@ -11,10 +11,10 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "d6736d53",
+	Hash:        "667bdc2d",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
-		CompilerVersion: "v0.16.0",
+		CompilerVersion: "v0.17.0",
 	},
 
 	Enums: []*skel.EnumSchema{
@@ -2148,7 +2148,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonActorItem",
 			SkelName:    "vine.hub.admin.SkeletonActorItem",
 			Description: "SkeletonActor",
-			Hash:        "811c5ebf",
+			Hash:        "ef79c77b",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -2257,6 +2257,15 @@ var _DomainSchema = &skel.DomainSchema{
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarBool,
+					},
+				},
+				{
+					Name:        "identifierField",
+					Description: "Actor identifier field in Info",
+					Type: &skel.TypeSchema{
+						Kind:     skel.TypeKindScalar,
+						Scalar:   skel.ScalarString,
+						Nullable: true,
 					},
 				},
 				{
@@ -2663,7 +2672,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonDomain",
 			SkelName:    "vine.hub.admin.SkeletonDomain",
 			Description: "Domain skeleton version",
-			Hash:        "d63d46be",
+			Hash:        "628a4575",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "domain",
@@ -5423,7 +5432,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonService",
 			SkelName:    "vine.hub.admin.SkeletonService",
 			Description: "Hub's skeleton service, called by the Portal admin client",
-			Hash:        "906a0496",
+			Hash:        "e27a99bb",
 			Pub:         false,
 			AuthMode:    skel.AuthModeNoAuth,
 			Audiences: []*skel.ActorAudienceSchema{
@@ -5434,7 +5443,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listDomains",
 					SkelName:          "listDomains",
 					Description:       "List Domain skeleton",
-					Hash:              "e2a995cf",
+					Hash:              "9a06bada",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Domain skeleton list",
 					ResultType: &skel.TypeSchema{
@@ -5450,7 +5459,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "listActors",
 					SkelName:          "listActors",
 					Description:       "List Actor Skeleton",
-					Hash:              "691f1139",
+					Hash:              "dc4a1257",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Actor skeleton list",
 					ResultType: &skel.TypeSchema{

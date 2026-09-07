@@ -105,6 +105,8 @@ export const en: Record<TranslationKey, string> = {
   'skeleton.accessibleWeb': 'Accessible Web',
   'skeleton.noAccessibleWeb': 'No accessible Web',
   'skeleton.actorVia': 'Actor Via',
+  'skeleton.actorRealm': 'Realm',
+  'skeleton.actorIdentifierField': 'Identifier Field (Info)',
   'skeleton.authGroup': 'Auth',
   'skeleton.permissionGroup': 'Permission',
   'skeleton.actorCredential': 'Credential Data',

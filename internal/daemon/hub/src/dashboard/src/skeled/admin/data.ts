@@ -1106,6 +1106,10 @@ export type SkeletonActorItem = {
    */
   authEnabled:      boolean;
   /**
+   * Actor identifier field in Info.
+   */
+  identifierField:  string | null;
+  /**
    * Authentication credentials.
    */
   credential:       SkeletonData | null;

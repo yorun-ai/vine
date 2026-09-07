@@ -41,6 +41,9 @@ data SkeletonActorItem {
     @desc("Whether to enable authentication")
     authEnabled: bool
 
+    @desc("Actor identifier field in Info")
+    identifierField: string?
+
     @desc("Authentication credentials")
     credential: SkeletonData?
 

@@ -277,6 +277,7 @@ func toServerSkeletonActorItem(version _SkeletonVersionFields, schema *skel.Acto
 		DeprecatedReason: optionalString(schema.DeprecatedReason),
 		ActorVias:        vias,
 		AuthEnabled:      schema.AuthEnabled,
+		IdentifierField:  optionalString(schema.IdentifierField),
 		Credential:       toServerSkeletonActorData(version, schema.AuthCredential),
 		Info:             toServerSkeletonActorData(version, schema.AuthInfo),
 		AuthService:      toServerSkeletonActorService(version, schema.AuthService),

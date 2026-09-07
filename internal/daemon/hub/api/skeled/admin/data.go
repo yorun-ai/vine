@@ -1198,6 +1198,8 @@ type SkeletonActorItem struct {
 	ActorVias []string `json:"actorVias"`
 	// AuthEnabled Whether to enable authentication
 	AuthEnabled bool `json:"authEnabled"`
+	// IdentifierField Actor identifier field in Info
+	IdentifierField *string `json:"identifierField"`
 	// Credential Authentication credentials
 	Credential *SkeletonData `json:"credential"`
 	// Info Authentication information
@@ -1233,45 +1235,49 @@ func (v SkeletonActorItem) Clone() SkeletonActorItem {
 		cloned.ActorVias = make([]string, len(v.ActorVias))
 		copy(cloned.ActorVias, v.ActorVias)
 	}
+	if v.IdentifierField != nil {
+		clonedValue3 := *v.IdentifierField
+		cloned.IdentifierField = &clonedValue3
+	}
 	if v.Credential != nil {
-		clonedValue3 := *v.Credential
-		clonedValue3 = (*v.Credential).Clone()
-		cloned.Credential = &clonedValue3
+		clonedValue4 := *v.Credential
+		clonedValue4 = (*v.Credential).Clone()
+		cloned.Credential = &clonedValue4
 	}
 	if v.Info != nil {
-		clonedValue4 := *v.Info
-		clonedValue4 = (*v.Info).Clone()
-		cloned.Info = &clonedValue4
+		clonedValue5 := *v.Info
+		clonedValue5 = (*v.Info).Clone()
+		cloned.Info = &clonedValue5
 	}
 	if v.AuthService != nil {
-		clonedValue5 := *v.AuthService
-		clonedValue5 = (*v.AuthService).Clone()
-		cloned.AuthService = &clonedValue5
+		clonedValue6 := *v.AuthService
+		clonedValue6 = (*v.AuthService).Clone()
+		cloned.AuthService = &clonedValue6
 	}
 	if v.PermService != nil {
-		clonedValue6 := *v.PermService
-		clonedValue6 = (*v.PermService).Clone()
-		cloned.PermService = &clonedValue6
+		clonedValue7 := *v.PermService
+		clonedValue7 = (*v.PermService).Clone()
+		cloned.PermService = &clonedValue7
 	}
 	if v.PermMethod != nil {
-		clonedValue7 := *v.PermMethod
-		clonedValue7 = (*v.PermMethod).Clone()
-		cloned.PermMethod = &clonedValue7
+		clonedValue8 := *v.PermMethod
+		clonedValue8 = (*v.PermMethod).Clone()
+		cloned.PermMethod = &clonedValue8
 	}
 	if v.Services == nil {
 		cloned.Services = nil
 	} else {
 		cloned.Services = make([]SkeletonServiceItem, len(v.Services))
-		for index8 := range v.Services {
-			cloned.Services[index8] = v.Services[index8].Clone()
+		for index9 := range v.Services {
+			cloned.Services[index9] = v.Services[index9].Clone()
 		}
 	}
 	if v.Webs == nil {
 		cloned.Webs = nil
 	} else {
 		cloned.Webs = make([]SkeletonWebItem, len(v.Webs))
-		for index9 := range v.Webs {
-			cloned.Webs[index9] = v.Webs[index9].Clone()
+		for index10 := range v.Webs {
+			cloned.Webs[index10] = v.Webs[index10].Clone()
 		}
 	}
 	return cloned

@@ -624,16 +624,17 @@ func TestSkeletonServiceIncludesActorCredentialInfoAndAuthService(t *testing.T) 
 				Domain: "demo.user",
 				Hash:   "domain-hash",
 				Actors: []*skel.ActorSchema{{
-					Name:           "UserActor",
-					SkelName:       "demo.user.UserActor",
-					Hash:           "actor-hash",
-					AuthEnabled:    true,
-					AuthCredential: credential,
-					AuthInfo:       info,
-					AuthService:    authService,
-					PermEnabled:    true,
-					PermService:    permService,
-					PermMethod:     permMethod,
+					Name:            "UserActor",
+					SkelName:        "demo.user.UserActor",
+					Hash:            "actor-hash",
+					AuthEnabled:     true,
+					AuthCredential:  credential,
+					AuthInfo:        info,
+					IdentifierField: "userId",
+					AuthService:     authService,
+					PermEnabled:     true,
+					PermService:     permService,
+					PermMethod:      permMethod,
 				}},
 			}},
 		},
@@ -645,6 +646,8 @@ func TestSkeletonServiceIncludesActorCredentialInfoAndAuthService(t *testing.T) 
 
 	require.Len(t, actors, 1)
 	assert.True(t, actors[0].AuthEnabled)
+	assert.Equal(t, "demo.user.UserActor", actors[0].SkelName)
+	assert.Equal(t, "userId", *actors[0].IdentifierField)
 	require.NotNil(t, actors[0].Credential)
 	assert.Equal(t, "demo.user.UserActorCredential", actors[0].Credential.SkelName)
 	require.NotNil(t, actors[0].Info)
