@@ -8,13 +8,24 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.15.2] - 2026-09-08
+
+### Upgrade notes
+
+- Upgrade Portal before sending requests that omit optional credential fields.
+  Generate nullable credentials with skelc v0.17.1 or later. Required fields
+  and explicitly supplied optional fields must be non-empty; requests containing
+  an empty credential value are now rejected.
+- Hub bundles the matching Dashboard assets. Custom Admin clients should
+  regenerate their contracts for display fields changing from nullable strings
+  to strings; absent display values are now empty strings.
+
 ### Changed
 
 - Hub Admin schema display strings now return an empty string instead of null
   when absent. This includes descriptions, deprecation reasons, examples,
-  Actor identifier fields, access methods, and permission codes. Custom Admin
-  clients should regenerate against the updated contracts; ship matching Hub
-  and Dashboard assets. Optional update and debug-request parameters are unchanged.
+  Actor identifier fields, access methods, and permission codes. Optional update
+  and debug-request parameters are unchanged.
 
 ### Fixed
 
@@ -25,8 +36,8 @@ are not part of the public compatibility commitment.
 
 - Portal authentication accepts omitted nullable credential fields. Required
   fields and any supplied optional fields must contain non-empty values; at
-  least one credential value is required. Use a skelc build that supports
-  `string?` credential declarations and regenerate actor schemas.
+  least one credential value is required. Regenerate actor schemas with
+  skelc v0.17.1 or later to use `string?` credential declarations.
 
 - Hub Dashboard Actor details show the authentication realm and Info identifier
   field. Embedded Dashboard assets include the updated Admin contracts.
