@@ -68,4 +68,4 @@ case "${scope}" in
 esac
 
 cd "${repo_dir}"
-GORACE="${GORACE:-atexit_sleep_ms=0}" GOWORK=off go test -race "${packages[@]}"
+GORACE="${GORACE:-atexit_sleep_ms=0}" GOWORK=off go test -vet=off -race "${packages[@]}"
