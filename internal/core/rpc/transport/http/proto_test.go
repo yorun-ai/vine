@@ -374,3 +374,21 @@ func TestDecodeServiceAndMethodFromPath(t *testing.T) {
 		t.Fatalf("expected invalid path to be rejected")
 	}
 }
+
+func TestReadRequestAndResponseBodyLimits(t *testing.T) {
+	request := &http.Request{
+		Body:          http.NoBody,
+		ContentLength: MaxRequestBodyBytes + 1,
+	}
+	if _, err := ReadRequestBody(request); err == nil {
+		t.Fatal("ReadRequestBody() error = nil")
+	}
+
+	response := &http.Response{
+		Body:          http.NoBody,
+		ContentLength: MaxResponseBodyBytes + 1,
+	}
+	if _, err := ReadResponseBody(response); err == nil {
+		t.Fatal("ReadResponseBody() error = nil")
+	}
+}

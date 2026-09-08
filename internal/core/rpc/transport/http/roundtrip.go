@@ -9,6 +9,8 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 	"go.yorun.ai/vine/internal/util/httputil"
+
+	rpchttp "go.yorun.ai/vrpc/transport/http"
 )
 
 var defaultHTTPClient = httputil.NewH2CClient()
@@ -42,11 +44,12 @@ func roundTrip(
 	if err != nil {
 		return nil, ex.New(ex.InvocationFailed, err.Error())
 	}
-	if prepared != nil {
-		prepared()
+	rpcResponse, err := rpchttp.RoundTrip(httpRequest, prepared, do, func(response *http.Response) (spec.Response, error) {
+		return decodeResponse(response, rpcRequest.MethodInfo())
+	})
+	if decodeErr, ok := errors.AsType[*rpchttp.DecodeError](err); ok {
+		return nil, ex.New(ex.UnexpectedResponse, decodeErr.Cause.Error())
 	}
-
-	httpResponse, err := do(httpRequest)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			return nil, ex.New(ex.InvocationCancelled, err.Error())
@@ -61,12 +64,6 @@ func roundTrip(
 			return nil, ex.New(ex.ServerUnreachable, err.Error())
 		}
 		return nil, ex.New(ex.InvocationFailed, err.Error())
-	}
-	defer func() { _ = httpResponse.Body.Close() }()
-
-	rpcResponse, err := decodeResponse(httpResponse, rpcRequest.MethodInfo())
-	if err != nil {
-		return nil, ex.New(ex.UnexpectedResponse, err.Error())
 	}
 	return rpcResponse, nil
 }

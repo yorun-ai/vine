@@ -44,10 +44,8 @@ var (
 		Name:                        "Ping",
 		SkelName:                    "ping",
 		ArgumentsType:               nil,
-		ValidateArguments:           nil,
 		CloneArguments:              nil,
 		ResultType:                  nil,
-		ValidateResult:              nil,
 		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -191,10 +189,9 @@ var (
 		},
 	}
 	_EventServiceOnEventSpec = &rpcspec.MethodSpec{
-		Name:              "OnEvent",
-		SkelName:          "onEvent",
-		ArgumentsType:     reflect.TypeFor[_EventServiceOnEventArguments](),
-		ValidateArguments: nil,
+		Name:          "OnEvent",
+		SkelName:      "onEvent",
+		ArgumentsType: reflect.TypeFor[_EventServiceOnEventArguments](),
 		CloneArguments: func(value any) any {
 			source := value.(*_EventServiceOnEventArguments)
 			cloned := *source
@@ -202,7 +199,6 @@ var (
 			return &cloned
 		},
 		ResultType:                  nil,
-		ValidateResult:              nil,
 		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -220,7 +216,7 @@ var (
 // EventService / Arguments
 
 type _EventServiceOnEventArguments struct {
-	On EventOn `json:"on" arg:"0"`
+	On EventOn `json:"on" skel:"index(0)"`
 }
 
 // EventService / Server
@@ -357,10 +353,9 @@ var (
 		},
 	}
 	_TaskServiceRunTaskSpec = &rpcspec.MethodSpec{
-		Name:              "RunTask",
-		SkelName:          "runTask",
-		ArgumentsType:     reflect.TypeFor[_TaskServiceRunTaskArguments](),
-		ValidateArguments: nil,
+		Name:          "RunTask",
+		SkelName:      "runTask",
+		ArgumentsType: reflect.TypeFor[_TaskServiceRunTaskArguments](),
 		CloneArguments: func(value any) any {
 			source := value.(*_TaskServiceRunTaskArguments)
 			cloned := *source
@@ -368,7 +363,6 @@ var (
 			return &cloned
 		},
 		ResultType:                  nil,
-		ValidateResult:              nil,
 		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -386,7 +380,7 @@ var (
 // TaskService / Arguments
 
 type _TaskServiceRunTaskArguments struct {
-	Run TaskRun `json:"run" arg:"0"`
+	Run TaskRun `json:"run" skel:"index(0)"`
 }
 
 // TaskService / Server
