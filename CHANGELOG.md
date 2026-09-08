@@ -8,6 +8,14 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.15.3] - 2026-09-08
+
+### Changed
+
+- Update Go runtime dependencies, including SQLite, PostgreSQL, NATS, Redis,
+  CBOR, compression, CLI parsing, and networking libraries, and refresh the
+  bundled third-party license inventory.
+
 ## [0.15.2] - 2026-09-08
 
 ### Upgrade notes
