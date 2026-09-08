@@ -85,8 +85,10 @@ Before submitting a repository-wide Go change, run:
 bash test/test.sh
 ```
 
-The repository test script randomizes test execution order and prints the seed,
-so order-dependent failures can be reproduced with `go test -shuffle=<seed>`.
+The ordinary test script reuses cached results. Run `bash test/shuffle.sh` for
+targeted order checks or `VINE_SHUFFLE_SCOPE=all bash test/shuffle.sh` for the full
+suite. Shuffle prints a seed that can be reproduced with `go test -shuffle=<seed>`.
+Main CI uses the full shuffled suite instead of a second ordinary test pass.
 
 Also run `go vet ./...` after changes involving public APIs, concurrency,
 reflection, or runtime wiring.

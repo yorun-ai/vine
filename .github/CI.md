@@ -7,8 +7,8 @@ This directory owns repository automation, not public deployment documentation.
 
 | Event | Workflow | Responsibility |
 | --- | --- | --- |
-| PR targeting main | `ci.yml` | Ordinary tests, static/secret/license checks, targeted race/shuffle and lifecycle checks; optional jobs below |
-| Push to main | `ci.yml` | Test the actual integrated commit, using full race/shuffle; optional jobs below |
+| PR targeting main | `ci.yml` | Run checks selected by changed inputs; always scan secrets and verify the required gate |
+| Push to main | `ci.yml` | Full shuffled Go tests, full race, leak/static/license checks; conditional artifact checks |
 | Tag push | None | Mark a version only; never publish artifacts |
 | Published Release | `release.yml` | Validate the tag and its main CI, then publish binaries and images in parallel |
 | Manual Release workflow | `release.yml` | Recover artifacts for an existing published release |
@@ -16,19 +16,39 @@ This directory owns repository automation, not public deployment documentation.
 ## Required CI Gate
 
 Keep the name `CI / Required Checks`: the organization ruleset requires it.
-Do not add workflow-level path filters. The `changes` job selects optional jobs,
-and the final gate requires all unconditional jobs to succeed. Optional jobs
-must succeed when selected and must be skipped only when explicitly unselected.
-Failed classification, cancellation, or an unexpected skipped job fails the gate.
+Do not add workflow-level path filters. Change classification and secret scanning
+always run. Every selected job must succeed, and only explicitly unselected jobs
+may be skipped. Missing selection outputs, cancellation, or classification failure
+fail the gate.
 
-- Dashboard source, its packaging script, or `ci.yml` changes select Dashboard
-  build checks. Release-only workflow changes do not select the Dashboard build.
-- Dockerfile, Docker ignore rules, or Go module files select the Hub build on PRs.
-- Main also selects the Hub build for runtime source and embedded input changes,
-  including SQL and the embedded Dashboard archive.
-- Workflow/helper changes select workflow tests and the Hub build check.
-- Pure README/changelog changes do not select these expensive optional jobs.
-- Go checks still cover the full repository rather than only changed packages.
+| Changed PR inputs | Selected checks, in addition to secrets and the gate |
+| --- | --- |
+| Documentation only | None |
+| Go source, module files, backend resources or test fixtures | Full ordinary Go tests and leak checks, static checks, targeted race |
+| Non-test Go source or module files | Also regenerate and check the CLI license inventory |
+| Go test shell scripts | Go checks and workflow checks |
+| Dashboard source/dependencies or packaging script | Dashboard build, including type checking; shell scripts also select workflow checks |
+| Dockerfile or Docker ignore rules | Hub image build |
+| Kubernetes manifests or their validation script | Render and validate Kubernetes overlays; shell scripts also select workflow checks |
+| License inventory or its generator | License checks; the generator also selects workflow checks |
+| CI workflow or classification helpers | All optional checks, to validate the gate and its wiring |
+| Release workflow/helpers | Workflow checks and Hub image build |
+| Other workflow or shell scripts | Workflow checks |
+
+Go tests cover all packages when selected; PRs do not maintain a dependency-based
+package filter. Backend resource changes include embedded SQL, Dashboard archives,
+and test fixtures. Frontend source and Markdown do not select Go checks by themselves.
+
+The ordinary Go test job also runs the separate build-tagged goroutine leak tests.
+PRs do not run an extra shuffle pass. On main, full shuffled tests replace ordinary
+tests; full race remains separate. Race and leak scripts disable implicit vet,
+because the static job runs full vet once.
+
+Main always runs Go and license checks. It also builds the Hub image when Go
+module files or backend runtime inputs change. Dependency-only PRs defer image
+validation to main. PR image builds read the shared cache without exporting it;
+main builds refresh the cache. Pure frontend changes select the Dashboard build,
+not a rebuild of the unchanged embedded archive.
 
 Tests use the latest Go `1.27.x`; container and release builds use Go `1.27.1`.
 PR updates cancel older runs for the same PR. Main CI uses per-commit concurrency
@@ -47,8 +67,8 @@ Verify that the graph recognizes `go.mod` and
 CI does not run `pnpm audit` or `govulncheck`, and there is no scheduled or
 manual audit workflow. Dependabot alerts monitor the default branch rather than
 acting as a PR merge gate. No scheduled version-update configuration is needed
-for security updates. Secret scanning and third-party license checks remain
-required CI jobs.
+for security updates. Secret scanning always runs; third-party license checks are required whenever
+selected by the change policy.
 
 ## Release Sequence and Recovery
 
@@ -101,7 +121,7 @@ Authentication errors, invalid JSON, checksum/label mismatches, and publication
 operations are not retried automatically. GitHub CLI failures still fail the job.
 
 ```bash
-shellcheck .github/scripts/*.sh
+shellcheck .github/scripts/*.sh test/*.sh
 bash .github/scripts/ci_test.sh
 bash .github/scripts/release_test.sh
 GOWORK=off go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12

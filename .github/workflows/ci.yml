@@ -24,9 +24,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      dashboard: ${{ steps.changes.outputs.dashboard }}
-      container: ${{ steps.changes.outputs.container }}
-      workflow: ${{ steps.changes.outputs.workflow }}
+      go-test: ${{ steps.changes.outputs['go-test'] }}
+      go-static: ${{ steps.changes.outputs['go-static'] }}
+      go-race: ${{ steps.changes.outputs['go-race'] }}
+      licenses: ${{ steps.changes.outputs['licenses'] }}
+      dashboard: ${{ steps.changes.outputs['dashboard'] }}
+      container: ${{ steps.changes.outputs['container'] }}
+      workflow: ${{ steps.changes.outputs['workflow'] }}
+      k8s: ${{ steps.changes.outputs['k8s'] }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -39,6 +44,8 @@ jobs:
 
   go-test:
     name: Go test
+    needs: changes
+    if: needs.changes.outputs['go-test'] == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -54,38 +61,22 @@ jobs:
           cache: true
 
       - name: Test
-        run: bash test/test.sh
-
-  go-lifecycle:
-    name: Go lifecycle
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
-      - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          check-latest: true
-          cache: true
-          cache-dependency-path: |
-            go.sum
-            test/shuffle.sh
-            test/goroutineleak.sh
-
-      - name: Test shuffled packages
         env:
-          VINE_SHUFFLE_SCOPE: ${{ github.event_name == 'push' && 'all' || 'targeted' }}
-        run: bash test/shuffle.sh
+          CI_EVENT: ${{ github.event_name }}
+        run: |
+          if [[ "$CI_EVENT" == push ]]; then
+            VINE_SHUFFLE_SCOPE=all bash test/shuffle.sh
+          else
+            bash test/test.sh
+          fi
 
       - name: Test goroutine lifecycles
         run: bash test/goroutineleak.sh
 
   go-static:
     name: Go static
+    needs: changes
+    if: needs.changes.outputs['go-static'] == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -108,6 +99,8 @@ jobs:
 
   go-race:
     name: Go race
+    needs: changes
+    if: needs.changes.outputs['go-race'] == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -131,33 +124,57 @@ jobs:
         run: bash test/race.sh
 
   security:
-    name: Secrets and licenses
+    name: Secrets
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
+    timeout-minutes: 5
     steps:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          check-latest: true
-          cache: true
-
       - name: Check secrets
         uses: docker://ghcr.io/gitleaks/gitleaks:v8.30.1
         with:
           args: git --redact --no-banner .
 
+  licenses:
+    name: Third-party licenses
+    needs: changes
+    if: needs.changes.outputs.licenses == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          check-latest: true
+          cache: true
       - name: Check third-party licenses
-        shell: bash
         run: |
           bash script/gen-third-party-licenses.sh
           git diff --exit-code -- THIRD_PARTY_LICENSES.txt
+
+  k8s:
+    name: Kubernetes manifests
+    needs: changes
+    if: needs.changes.outputs.k8s == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Install manifest tools
+        run: |
+          mkdir -p "$RUNNER_TEMP/k8s-bin"
+          GOBIN="$RUNNER_TEMP/k8s-bin" GOWORK=off go install github.com/mikefarah/yq/v4@v4.53.6
+          GOBIN="$RUNNER_TEMP/k8s-bin" GOWORK=off go install sigs.k8s.io/kustomize/kustomize/v5@v5.8.1
+          echo "$RUNNER_TEMP/k8s-bin" >> "$GITHUB_PATH"
+      - name: Validate manifests
+        run: bash test/k8s.sh
 
   dashboard:
     name: Dashboard
@@ -214,7 +231,7 @@ jobs:
             GO_VERSION=${{ env.BUILD_GO_VERSION }}
             VERSION=v0.0.0-dev
           cache-from: type=gha,scope=vine-hub
-          cache-to: type=gha,mode=max,scope=vine-hub
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=vine-hub' || '' }}
 
   workflow:
     name: Workflow checks
@@ -234,7 +251,8 @@ jobs:
         run: GOWORK=off go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
       - name: Test CI and release policy
         run: |
-          shellcheck .github/scripts/*.sh
+          shellcheck .github/scripts/*.sh test/*.sh
+          for script in script/*.sh; do bash -n "$script"; done
           bash .github/scripts/ci_test.sh
           bash .github/scripts/release_test.sh
       - name: Prepare detached release metadata fixture
@@ -258,7 +276,7 @@ jobs:
   ci-checks:
     name: CI / Required Checks
     if: ${{ always() }}
-    needs: [changes, go-test, go-lifecycle, go-static, go-race, security, dashboard, container, workflow]
+    needs: [changes, go-test, go-static, go-race, security, licenses, dashboard, container, workflow, k8s]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6

@@ -15,4 +15,4 @@ packages=(
 )
 
 cd "${repo_dir}"
-GOWORK=off go test -count=1 -tags=goroutineleak -run '^TestGoroutineLeak' "${packages[@]}"
+GOWORK=off go test -vet=off -count=1 -tags=goroutineleak -run '^TestGoroutineLeak' "${packages[@]}"
