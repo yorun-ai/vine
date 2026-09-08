@@ -8,6 +8,11 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Changed
+
+- Reuse the HTTP transport from `go.yorun.ai/vrpc v0.10.0` for request/response envelopes, protocol helpers and round-trip handling while retaining Vine schema encoding and error mapping.
+- Refresh generated contracts with skelc v0.17.1 and update the third-party license inventory.
+
 ## [0.15.3] - 2026-09-08
 
 ### Changed

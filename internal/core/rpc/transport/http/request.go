@@ -1,13 +1,10 @@
 package http
 
 import (
-	"bytes"
 	"context"
-	"encoding/json/jsontext"
-	"encoding/json/v2"
 	"fmt"
 	"net/http"
-	"time"
+	"strings"
 
 	"github.com/fxamacker/cbor/v2"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -15,6 +12,7 @@ import (
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/util/vcode"
 	"go.yorun.ai/vine/util/vpre"
+	rpchttp "go.yorun.ai/vrpc/transport/http"
 )
 
 type _RequestDecoder struct {
@@ -23,14 +21,6 @@ type _RequestDecoder struct {
 	serviceSkelName string
 	methodSkelName  string
 	bodyBytes       []byte
-}
-
-type _RequestPayloadJson struct {
-	Params jsontext.Value `json:"params"`
-}
-
-type _RequestPayloadCbor struct {
-	Params cbor.RawMessage `json:"params"`
 }
 
 type RejectionDiagnostic struct {
@@ -179,31 +169,22 @@ func (d *_RequestDecoder) decodeArguments() error {
 }
 
 func (d *_RequestDecoder) decodeArgumentsBytes(bodyBytes []byte, arguments any) error {
-	var rawMessage []byte
-	var unmarshal func(data []byte, v any) error
+	var raw []byte
+	var err error
+	unmarshal := unmarshalJson
 	switch MediaTypeOf(d.httpRequest.Header.Get(HeaderContentType)) {
 	case ContentTypeJson:
-		requestPayload := &_RequestPayloadJson{}
-		if err := json.Unmarshal(bodyBytes, requestPayload); err != nil {
-			return fmt.Errorf("request body cannot be parsed")
-		}
-		rawMessage = requestPayload.Params
-		unmarshal = unmarshalJson
+		raw, err = rpchttp.DecodeJSONRequest(bodyBytes)
 	case ContentTypeCbor:
-		requestPayload := &_RequestPayloadCbor{}
-		if err := cbor.Unmarshal(bodyBytes, requestPayload); err != nil {
-			return fmt.Errorf("request body cannot be parsed")
-		}
-		rawMessage = requestPayload.Params
+		raw, err = rpchttp.DecodeCBORRequest(bodyBytes)
 		unmarshal = cbor.Unmarshal
 	default:
 		return fmt.Errorf("request body cannot be parsed")
 	}
-
-	if len(rawMessage) == 0 {
-		return fmt.Errorf("missing request params")
+	if err != nil {
+		return err
 	}
-	if err := unmarshal(rawMessage, arguments); err != nil {
+	if err := unmarshal(raw, arguments); err != nil {
 		return fmt.Errorf("request body cannot be parsed")
 	}
 	return nil
@@ -218,21 +199,15 @@ func encodeRequest(endpoint string, rpcRequest spec.Request) (request *http.Requ
 	}()
 
 	ctx := rpcRequest.Context()
-	url := endpoint + rpcRequest.MethodInfo().FullURLPath()
 	encodedArguments, err := encodeArgumentsToBytes(rpcRequest)
 	if err != nil {
 		return nil, err
 	}
-	bodyBytes := bytes.NewReader(encodedArguments)
-
-	httpRequest, err := http.NewRequestWithContext(ctx, RequestMethod, url, bodyBytes)
+	httpRequest, err := rpchttp.NewRequest(ctx, endpoint, rpcRequest.MethodInfo().FullURLPath(), encodedArguments, requestBodyContentType(rpcRequest.MethodInfo()), requestAcceptContentType(rpcRequest.MethodInfo()))
 	if err != nil {
 		return nil, err
 	}
-
 	header := httpRequest.Header
-	EncodeContentTypeHeadersToHeaderByMethod(header, rpcRequest.MethodInfo())
-	EncodeRequestOptionsToHeader(header, rpcRequest.Context())
 	EncodeTraceToHeader(header, rpcRequest.Trace())
 	EncodeClientToHeader(header, rpcRequest.Client())
 	if actor := rpcRequest.Actor(); actor != nil {
@@ -246,15 +221,7 @@ func encodeRequest(endpoint string, rpcRequest spec.Request) (request *http.Requ
 }
 
 func EncodeRequestOptionsToHeader(header http.Header, ctx context.Context) {
-	deadline, ok := ctx.Deadline()
-	if !ok {
-		return
-	}
-	timeout := time.Until(deadline)
-	if timeout <= 0 {
-		return
-	}
-	EncodeOptionsToHeader(header, &Options{Timeout: timeout})
+	rpchttp.EncodeRequestOptionsToHeader(header, ctx)
 }
 
 func encodeArgumentsToBytes(rpcRequest spec.Request) (encoded []byte, err error) {
@@ -280,18 +247,43 @@ func encodeArgumentsToBytes(rpcRequest spec.Request) (encoded []byte, err error)
 		if err != nil {
 			return nil, err
 		}
-		requestPayload := &_RequestPayloadCbor{
-			Params: encodedArguments,
-		}
-		return vcode.MarshalCbor(requestPayload)
+		return rpchttp.EncodeCBORRequest(encodedArguments)
 	default:
 		encodedArguments, err := encoder.MarshalJson(arguments)
 		if err != nil {
 			return nil, err
 		}
-		requestPayload := &_RequestPayloadJson{
-			Params: encodedArguments,
-		}
-		return vcode.MarshalJson(requestPayload)
+		return rpchttp.EncodeJSONRequest(encodedArguments)
 	}
+}
+
+type InvokeRequest struct {
+	Context         context.Context
+	Endpoint        string
+	ServiceSkelName string
+	MethodSkelName  string
+	Params          any
+	Trace           meta.Trace
+	Client          meta.App
+	Actor           meta.Actor
+	Initiator       meta.Initiator
+}
+
+func BuildInvokeRequest(invokeRequest InvokeRequest) *http.Request {
+	params := vcode.MustMarshalJson(invokeRequest.Params)
+	body, err := rpchttp.EncodeJSONRequest(params)
+	vpre.MustNil(err)
+
+	request, err := rpchttp.NewRequest(invokeRequest.Context, strings.TrimRight(invokeRequest.Endpoint, "/"), "/"+invokeRequest.ServiceSkelName+"/"+invokeRequest.MethodSkelName, body, ContentTypeJson, ContentTypeJson)
+	vpre.MustNil(err)
+	header := request.Header
+	EncodeTraceToHeader(header, invokeRequest.Trace)
+	EncodeClientToHeader(header, invokeRequest.Client)
+	if invokeRequest.Actor != nil {
+		EncodeActorToHeader(header, invokeRequest.Actor)
+	}
+	if invokeRequest.Initiator != nil {
+		EncodeInitiatorToHeader(header, invokeRequest.Initiator)
+	}
+	return request
 }

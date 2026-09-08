@@ -43,13 +43,11 @@ var (
 		},
 	}
 	_BootServiceGetInfoSpec = &rpcspec.MethodSpec{
-		Name:              "GetInfo",
-		SkelName:          "getInfo",
-		ArgumentsType:     nil,
-		ValidateArguments: nil,
-		CloneArguments:    nil,
-		ResultType:        reflect.TypeFor[BootInfo](),
-		ValidateResult:    nil,
+		Name:           "GetInfo",
+		SkelName:       "getInfo",
+		ArgumentsType:  nil,
+		CloneArguments: nil,
+		ResultType:     reflect.TypeFor[BootInfo](),
 		CloneResult: func(value any) any {
 			source := value.(BootInfo)
 			cloned := source
@@ -202,17 +200,15 @@ var (
 		},
 	}
 	_ConfigServiceGetEternalSpec = &rpcspec.MethodSpec{
-		Name:              "GetEternal",
-		SkelName:          "getEternal",
-		ArgumentsType:     reflect.TypeFor[_ConfigServiceGetEternalArguments](),
-		ValidateArguments: nil,
+		Name:          "GetEternal",
+		SkelName:      "getEternal",
+		ArgumentsType: reflect.TypeFor[_ConfigServiceGetEternalArguments](),
 		CloneArguments: func(value any) any {
 			source := value.(*_ConfigServiceGetEternalArguments)
 			cloned := *source
 			return &cloned
 		},
-		ResultType:     reflect.TypeFor[string](),
-		ValidateResult: nil,
+		ResultType: reflect.TypeFor[string](),
 		CloneResult: func(value any) any {
 			source := value.(string)
 			cloned := source
@@ -230,17 +226,15 @@ var (
 		},
 	}
 	_ConfigServiceGetInstantSpec = &rpcspec.MethodSpec{
-		Name:              "GetInstant",
-		SkelName:          "getInstant",
-		ArgumentsType:     reflect.TypeFor[_ConfigServiceGetInstantArguments](),
-		ValidateArguments: nil,
+		Name:          "GetInstant",
+		SkelName:      "getInstant",
+		ArgumentsType: reflect.TypeFor[_ConfigServiceGetInstantArguments](),
 		CloneArguments: func(value any) any {
 			source := value.(*_ConfigServiceGetInstantArguments)
 			cloned := *source
 			return &cloned
 		},
-		ResultType:     reflect.TypeFor[string](),
-		ValidateResult: nil,
+		ResultType: reflect.TypeFor[string](),
 		CloneResult: func(value any) any {
 			source := value.(string)
 			cloned := source
@@ -262,11 +256,11 @@ var (
 // ConfigService / Arguments
 
 type _ConfigServiceGetEternalArguments struct {
-	Key string `json:"key" arg:"0"`
+	Key string `json:"key" skel:"index(0)"`
 }
 
 type _ConfigServiceGetInstantArguments struct {
-	Key string `json:"key" arg:"0"`
+	Key string `json:"key" skel:"index(0)"`
 }
 
 // ConfigService / Server
@@ -448,10 +442,9 @@ var (
 		},
 	}
 	_EventServiceEmitEventSpec = &rpcspec.MethodSpec{
-		Name:              "EmitEvent",
-		SkelName:          "emitEvent",
-		ArgumentsType:     reflect.TypeFor[_EventServiceEmitEventArguments](),
-		ValidateArguments: nil,
+		Name:          "EmitEvent",
+		SkelName:      "emitEvent",
+		ArgumentsType: reflect.TypeFor[_EventServiceEmitEventArguments](),
 		CloneArguments: func(value any) any {
 			source := value.(*_EventServiceEmitEventArguments)
 			cloned := *source
@@ -459,7 +452,6 @@ var (
 			return &cloned
 		},
 		ResultType:                  nil,
-		ValidateResult:              nil,
 		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -477,7 +469,7 @@ var (
 // EventService / Arguments
 
 type _EventServiceEmitEventArguments struct {
-	Emission EventEmission `json:"emission" arg:"0"`
+	Emission EventEmission `json:"emission" skel:"index(0)"`
 }
 
 // EventService / Server
@@ -615,10 +607,9 @@ var (
 		},
 	}
 	_RegistryServiceRegisterSpec = &rpcspec.MethodSpec{
-		Name:              "Register",
-		SkelName:          "register",
-		ArgumentsType:     reflect.TypeFor[_RegistryServiceRegisterArguments](),
-		ValidateArguments: nil,
+		Name:          "Register",
+		SkelName:      "register",
+		ArgumentsType: reflect.TypeFor[_RegistryServiceRegisterArguments](),
 		CloneArguments: func(value any) any {
 			source := value.(*_RegistryServiceRegisterArguments)
 			cloned := *source
@@ -626,7 +617,6 @@ var (
 			return &cloned
 		},
 		ResultType:                  nil,
-		ValidateResult:              nil,
 		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -643,10 +633,8 @@ var (
 		Name:                        "Unregister",
 		SkelName:                    "unregister",
 		ArgumentsType:               nil,
-		ValidateArguments:           nil,
 		CloneArguments:              nil,
 		ResultType:                  nil,
-		ValidateResult:              nil,
 		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -664,7 +652,7 @@ var (
 // RegistryService / Arguments
 
 type _RegistryServiceRegisterArguments struct {
-	Registration AppRegistration `json:"registration" arg:"0"`
+	Registration AppRegistration `json:"registration" skel:"index(0)"`
 }
 
 // RegistryService / Server
@@ -829,10 +817,9 @@ var (
 		},
 	}
 	_TaskServiceLaunchTaskSpec = &rpcspec.MethodSpec{
-		Name:              "LaunchTask",
-		SkelName:          "launchTask",
-		ArgumentsType:     reflect.TypeFor[_TaskServiceLaunchTaskArguments](),
-		ValidateArguments: nil,
+		Name:          "LaunchTask",
+		SkelName:      "launchTask",
+		ArgumentsType: reflect.TypeFor[_TaskServiceLaunchTaskArguments](),
 		CloneArguments: func(value any) any {
 			source := value.(*_TaskServiceLaunchTaskArguments)
 			cloned := *source
@@ -840,7 +827,6 @@ var (
 			return &cloned
 		},
 		ResultType:                  nil,
-		ValidateResult:              nil,
 		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
@@ -858,7 +844,7 @@ var (
 // TaskService / Arguments
 
 type _TaskServiceLaunchTaskArguments struct {
-	Launch TaskLaunch `json:"launch" arg:"0"`
+	Launch TaskLaunch `json:"launch" skel:"index(0)"`
 }
 
 // TaskService / Server

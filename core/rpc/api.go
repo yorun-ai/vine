@@ -58,16 +58,24 @@ type Request = internalspec.Request
 type Response = internalspec.Response
 
 // CheckValueNotNil validates that a generated request value is not nil.
-var CheckValueNotNil = internalspec.CheckValueNotNil
+func CheckValueNotNil(value any, path string) error {
+	return internalspec.CheckValueNotNil(value, path)
+}
 
 // JoinPath appends a field name to a generated validation path.
-var JoinPath = internalspec.JoinPath
+func JoinPath(base string, field string) string {
+	return internalspec.JoinPath(base, field)
+}
 
 // JoinIndex appends a list index to a generated validation path.
-var JoinIndex = internalspec.JoinIndex
+func JoinIndex(base string, index int) string {
+	return internalspec.JoinIndex(base, index)
+}
 
 // JoinMapKey appends a map key to a generated validation path.
-var JoinMapKey = internalspec.JoinMapKey
+func JoinMapKey(base string, key any) string {
+	return internalspec.JoinMapKey(base, key)
+}
 
 const (
 	// ServiceSpecTypeClient identifies a client-only service contract.

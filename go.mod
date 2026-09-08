@@ -22,6 +22,7 @@ require (
 	github.com/tidwall/gjson v1.19.0
 	github.com/tidwall/redcon v1.6.4
 	github.com/urfave/cli/v3 v3.11.0
+	go.yorun.ai/vrpc v0.10.0
 	golang.org/x/net v0.58.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/postgres v1.6.2

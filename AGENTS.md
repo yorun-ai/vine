@@ -39,6 +39,9 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
 - When changing a public facade, update its GoDoc, facade tests, user
   documentation, and compatibility notes as applicable.
 - Add a useful GoDoc comment for every newly exported public symbol.
+- Expose callable APIs to Vine users as function declarations, never exported
+  function-valued package variables. Internal adapters may use function variables
+  for forwarding; type aliases are allowed at either boundary.
 
 ## API and Implementation Design
 
