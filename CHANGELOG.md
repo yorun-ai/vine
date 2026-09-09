@@ -8,6 +8,10 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Changed
+
+- Upgrade `go.yorun.ai/vrpc` to v0.12.0.
+
 ## [0.15.4] - 2026-09-09
 
 ### Upgrade notes
