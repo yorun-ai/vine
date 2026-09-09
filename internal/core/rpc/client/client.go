@@ -55,6 +55,17 @@ func (c *Client) Invoke(methodInfo spec.MethodInfo, arguments any, options ...In
 	return invoker.invoke()
 }
 
+// InvokeAs invokes a method and returns its result as T, or the zero value on error or no result.
+// A non-nil result must be assignable to T; invocation options and error handling match Invoke.
+func (c *Client) InvokeAs[T any](methodInfo spec.MethodInfo, arguments any, options ...InvokeOption) (T, ex.Error) {
+	result, err := c.Invoke(methodInfo, arguments, options...)
+	if err != nil || result == nil {
+		var zero T
+		return zero, err
+	}
+	return result.(T), nil
+}
+
 type InvokeOption interface {
 	apply(options *_InvokeOptions)
 }
