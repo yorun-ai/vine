@@ -266,7 +266,7 @@ func TestTimestampJSONRoundTrip(t *testing.T) {
 		t.Fatalf("Unmarshal() error = %v", err)
 	}
 	if !decoded.Value.Equal(raw.UTC()) {
-		t.Fatalf("unexpected timestamp value: got=%s want=%s", decoded.Value.Format(timestampLayout), raw.UTC().Format(timestampLayout))
+		t.Fatalf("unexpected timestamp value: got=%s want=%s", decoded.Value.Format(time.RFC3339Nano), raw.UTC().Format(time.RFC3339Nano))
 	}
 }
 
@@ -294,7 +294,7 @@ func TestTimestampCBORRoundTrip(t *testing.T) {
 		t.Fatalf("UnmarshalCbor() error = %v", err)
 	}
 	if !decoded.Value.Equal(raw.UTC()) {
-		t.Fatalf("unexpected timestamp value: got=%s want=%s", decoded.Value.Format(timestampLayout), raw.UTC().Format(timestampLayout))
+		t.Fatalf("unexpected timestamp value: got=%s want=%s", decoded.Value.Format(time.RFC3339Nano), raw.UTC().Format(time.RFC3339Nano))
 	}
 }
 

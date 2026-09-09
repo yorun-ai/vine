@@ -2,12 +2,14 @@ package rpcproxy
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
 
+	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
 )
 
@@ -132,5 +134,25 @@ func TestResolveOutboundEndpointRejectsLocalTargetWithoutService(t *testing.T) {
 	}
 	if exErr.Code() != "SERVICE_UNAVAILABLE" {
 		t.Fatalf("unexpected error code: %s", exErr.Code())
+	}
+}
+
+func TestApiServiceRejectsBackendCallsAtLink(t *testing.T) {
+	for _, local := range []bool{false, true} {
+		t.Run(fmt.Sprint(local), func(t *testing.T) {
+			caller := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")
+			target := mustMetaApp(t, "target.app", "22222222-2222-2222-2222-222222222222")
+			proxy := newTestRpcProxy(t, newTestHubRedisClient(map[string][]redised.RpcServiceRegistration{
+				"demo.OrderService": {{ServiceName: "demo.OrderService", Api: true, AppInstanceId: target.InstanceId(), Endpoint: "http://remote.invalid/rpc/proxy/in/target"}},
+			}))
+			registerLocalApp(proxy, caller, "http://127.0.0.1:8080"+testPathRpcInvoke, "http://127.0.0.1:8080", nil)
+			if local {
+				registerLocalApp(proxy, target, "http://127.0.0.1:8081"+testPathRpcInvoke, "http://127.0.0.1:8081", []string{"demo.OrderService"})
+			}
+			_, err := proxy.resolveOutboundEndpoint("demo.OrderService", caller)
+			if err == nil || err.Code() != ex.ClientForbidden {
+				t.Fatalf("API backend call was not rejected: %v", err)
+			}
+		})
 	}
 }

@@ -209,6 +209,7 @@ func TestRegistryRepoSaveAndGetRpcServiceRegistration(t *testing.T) {
 	registration := &core.RpcServiceRegistration{
 		Endpoint:      "http://127.0.0.1:23001/rpc",
 		ServiceName:   "svc.alpha",
+		Api:           true,
 		AppName:       "demo.app",
 		AppVersion:    "1.2.3",
 		AppInstanceId: "instance-1",

@@ -105,6 +105,7 @@ type RpcServiceRegistration struct {
 	Endpoint       string
 	ServerIdentity daemon.Identity
 	ServiceName    string
+	Api            bool
 	AppName        string
 	AppVersion     string
 	AppInstanceId  string

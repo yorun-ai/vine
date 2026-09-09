@@ -40,6 +40,9 @@ func (s *Syncer) SyncSchemas(domainViews []core.DomainSchemaView) {
 				continue
 			}
 			service := serviceVersion.Schema
+			if !service.ClientApi() {
+				continue
+			}
 			if oldHash, ok := s.schemaServiceHashes[service.SkelName]; !ok || oldHash != service.Hash {
 				batch.Set(redised.FormatSchemaServiceKey(service.SkelName), vcode.MustMarshalJsonS(service))
 			}
@@ -92,6 +95,9 @@ func (s *Syncer) WriteSchemas(domainViews []core.DomainSchemaView) {
 				continue
 			}
 			service := serviceVersion.Schema
+			if !service.ClientApi() {
+				continue
+			}
 			s.RedisServer.SetAndNotify(redised.FormatSchemaServiceKey(service.SkelName), vcode.MustMarshalJsonS(service))
 		}
 	}
