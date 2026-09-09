@@ -1,9 +1,11 @@
 package core
 
 import (
+	"time"
+
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon"
-	"time"
+	"go.yorun.ai/vine/util/vcode"
 )
 
 type RegistryCore struct {
@@ -22,11 +24,21 @@ func (m *RegistryCore) Register(reg AppRegistration) {
 		EventListeners:  reg.EventListeners,
 		TaskRunners:     reg.TaskRunners,
 	})
+	apiServices := map[string]bool{}
+	for _, raw := range reg.DomainSchemas {
+		domain := vcode.MustUnmarshalJsonS[*skel.DomainSchema](string(raw))
+		for _, service := range domain.Services {
+			if service.Api {
+				apiServices[service.SkelName] = true
+			}
+		}
+	}
 	for _, serviceHandler := range reg.ServiceHandlers {
 		m.RegistryRepo.SaveRpcServiceRegistration(&RpcServiceRegistration{
 			Endpoint:       serviceHandler.Endpoint,
 			ServerIdentity: daemon.LinkIdentity,
 			ServiceName:    serviceHandler.ServiceSkelName,
+			Api:            apiServices[serviceHandler.ServiceSkelName],
 			AppName:        reg.Name,
 			AppVersion:     reg.Version,
 			AppInstanceId:  reg.InstanceId,

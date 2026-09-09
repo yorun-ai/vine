@@ -219,7 +219,7 @@ func TestSyncerSyncSchemasDoesNotDeleteVineHubSchemas(t *testing.T) {
 			Main:       true,
 		}},
 		Services: []core.SchemaVersion[*skel.ServiceSchema]{{
-			Schema:     &skel.ServiceSchema{SkelName: "vine.hub.admin.SkeletonService", Hash: "skeleton-service-main"},
+			Schema:     &skel.ServiceSchema{Api: true, SkelName: "vine.hub.admin.SkeletonService", Hash: "skeleton-service-main"},
 			SkelName:   "vine.hub.admin.SkeletonService",
 			SchemaHash: "skeleton-service-main",
 			Main:       true,
@@ -250,7 +250,7 @@ func TestSyncerSyncSchemasRemovesStaleSchemas(t *testing.T) {
 			Main:       true,
 		}},
 		Services: []core.SchemaVersion[*skel.ServiceSchema]{{
-			Schema: &skel.ServiceSchema{
+			Schema: &skel.ServiceSchema{Api: true,
 				SkelName: "demo.user.UserService",
 			},
 			SkelName:   "demo.user.UserService",
@@ -287,7 +287,7 @@ func TestSyncerSyncSchemasOnlyWritesChangedHashes(t *testing.T) {
 			Main:       true,
 		}},
 		Services: []core.SchemaVersion[*skel.ServiceSchema]{{
-			Schema: &skel.ServiceSchema{
+			Schema: &skel.ServiceSchema{Api: true,
 				SkelName: "demo.user.UserService",
 				Hash:     "service-main",
 			},
@@ -329,4 +329,27 @@ func testRedisRevision(t *testing.T, redisServer *redisserver.Server) uint64 {
 	revision, err := strconv.ParseUint(value, 10, 64)
 	require.NoError(t, err)
 	return revision
+}
+
+func TestPortalSchemasExcludeBackendServices(t *testing.T) {
+	redisServer := redisserver.NewServerForTest()
+	defer redisServer.AfterAppStop()
+	target := testSyncer(redisServer)
+	view := []core.DomainSchemaView{{Services: []core.SchemaVersion[*skel.ServiceSchema]{
+		{Main: true, Schema: &skel.ServiceSchema{SkelName: "demo.BackendService", Pub: true, Hash: "backend"}},
+		{Main: true, Schema: &skel.ServiceSchema{SkelName: "demo.ApiService", Api: true, Hash: "api"}},
+		{Main: true, Schema: &skel.ServiceSchema{SkelName: "demo.LegacyService", AuthMode: skel.AuthModeAuth, Hash: "legacy"}},
+	}}}
+	target.SyncSchemas(view)
+	for _, name := range []string{"demo.ApiService", "demo.LegacyService"} {
+		_, ok := redisServer.Get(redised.FormatSchemaServiceKey(name))
+		require.True(t, ok, name)
+	}
+	_, ok := redisServer.Get(redised.FormatSchemaServiceKey("demo.BackendService"))
+	require.False(t, ok)
+	view[0].Services[1].Schema.Api = false
+	view[0].Services[1].Schema.Pub = true
+	target.SyncSchemas(view)
+	_, ok = redisServer.Get(redised.FormatSchemaServiceKey("demo.ApiService"))
+	require.False(t, ok, "API converted to backend must be removed from Portal")
 }

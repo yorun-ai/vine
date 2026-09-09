@@ -380,3 +380,21 @@ func TestRegistryCoreHeartbeatWithoutStatus(t *testing.T) {
 	}, repo.calls)
 	assert.False(t, registered)
 }
+
+func TestRegistryPropagatesApiBoundaryFromSchema(t *testing.T) {
+	repo := &registryRepoSpy{}
+	core := newRegistryCoreForTest(repo, &schemaRepoSpy{})
+	core.Register(AppRegistration{
+		InstanceId: "instance-1", Name: "demo.app", Version: "1.0.0",
+		DomainSchemas: []skel.JSON{skel.JSON(`{"name":"demo","services":[{"skelName":"demo.ApiService","api":true},{"skelName":"demo.BackendService","pub":true},{"skelName":"demo.LegacyService","authMode":"auth"}]}`)},
+		ServiceHandlers: []ServiceHandlerRegistration{
+			{ServiceSkelName: "demo.ApiService"},
+			{ServiceSkelName: "demo.BackendService"},
+			{ServiceSkelName: "demo.LegacyService"},
+		},
+	})
+	assert.Len(t, repo.rpcRegistrations, 3)
+	assert.True(t, repo.rpcRegistrations[0].Api)
+	assert.False(t, repo.rpcRegistrations[1].Api)
+	assert.False(t, repo.rpcRegistrations[2].Api)
+}

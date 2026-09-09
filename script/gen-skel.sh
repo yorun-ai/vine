@@ -161,7 +161,7 @@ generate_hub_skel_domain() {
   local frontend_dir="$3"
 
   skelc gen go --skel-in "${skel_dir}" --go-out "${api_dir}"
-  skelc gen ts --skel-in "${skel_dir}" --ts-out "${frontend_dir}"
+  skelc gen ts --api --skel-in "${skel_dir}" --ts-out "${frontend_dir}"
   rewrite_ts_service_comments "${frontend_dir}"
 
   rewrite_common_go_imports "${api_dir}"

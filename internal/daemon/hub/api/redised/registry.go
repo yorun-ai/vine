@@ -15,6 +15,7 @@ type RpcServiceRegistration struct {
 	Endpoint       string          `json:"endpoint"`
 	ServerIdentity daemon.Identity `json:"serverIdentity,omitempty"`
 	ServiceName    string          `json:"serviceName"`
+	Api            bool            `json:"api,omitzero"`
 	AppName        string          `json:"appName"`
 	AppVersion     string          `json:"appVersion"`
 	AppInstanceId  string          `json:"appInstanceId"`

@@ -115,18 +115,34 @@ type ActorAudienceSchema struct {
 }
 
 type ServiceSchema struct {
-	Name             string                 `json:"name"`
-	SkelName         string                 `json:"skelName"`
-	Description      string                 `json:"description,omitempty"`
-	Deprecated       bool                   `json:"deprecated,omitzero"`
-	DeprecatedReason string                 `json:"deprecatedReason,omitempty"`
-	Hash             string                 `json:"hash"`
-	Pub              bool                   `json:"pub"`
-	AuthMode         AuthMode               `json:"authMode"`
-	Audiences        []*ActorAudienceSchema `json:"audiences,omitempty"`
+	Name             string `json:"name"`
+	SkelName         string `json:"skelName"`
+	Description      string `json:"description,omitempty"`
+	Deprecated       bool   `json:"deprecated,omitzero"`
+	DeprecatedReason string `json:"deprecatedReason,omitempty"`
+	Hash             string `json:"hash"`
+	Pub              bool   `json:"pub"`
+	// Api restricts calls to the Portal client path.
+	Api       bool                   `json:"api,omitzero"`
+	AuthMode  AuthMode               `json:"authMode"`
+	Audiences []*ActorAudienceSchema `json:"audiences,omitempty"`
 
 	Require *PermRequire    `json:"require,omitempty"`
 	Methods []*MethodSchema `json:"methods"`
+}
+
+// ClientApi includes explicit API services and legacy contracts with client rules.
+// TODO: Remove this method and use Api directly when support for legacy generated code ends.
+func (s *ServiceSchema) ClientApi() bool {
+	if s.Api || len(s.Audiences) > 0 || (s.AuthMode != "" && s.AuthMode != AuthModeUnset) || s.Require != nil {
+		return true
+	}
+	for _, method := range s.Methods {
+		if (method.AuthMode != "" && method.AuthMode != AuthModeUnset) || method.Require != nil {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *ServiceSchema) MethodByName(skelName string) (*MethodSchema, bool) {

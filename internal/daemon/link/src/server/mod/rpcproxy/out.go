@@ -114,6 +114,9 @@ func (p *RpcProxy) resolveOutboundTarget(serviceName string, clientApp meta.App)
 		return _OutboundTarget{}, ex.New(ex.ServiceUnavailable, "rpc proxy outbound target unavailable")
 	}
 
+	if registration.Api {
+		return _OutboundTarget{}, ex.New(ex.ClientForbidden, "API services must be invoked through Portal")
+	}
 	if targetAppState, ok := p.getAppStateByInstanceID(registration.AppInstanceId); ok {
 		if !targetAppState.hasService(serviceName) {
 			return _OutboundTarget{}, ex.New(ex.ServiceUnavailable, "rpc proxy outbound local target unavailable")
