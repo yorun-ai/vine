@@ -61,6 +61,7 @@ type ApplicationSpec interface {
 	Name() string
 	InitComponents(addComponent TypeAdder)
 	InitModules(addModule TypeAdder)
+	InitHooks(add *HookAdder)
 	BindCommon(b *di.Binder)
 
 	mustBeApplicationSpec()
@@ -77,6 +78,8 @@ func (*Application) Name() string {
 func (a *Application) InitComponents(addComponent TypeAdder) {}
 
 func (*Application) InitModules(addModule TypeAdder) {}
+
+func (*Application) InitHooks(add *HookAdder) {}
 
 func (a *Application) BindCommon(b *di.Binder) {}
 

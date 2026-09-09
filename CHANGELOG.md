@@ -8,6 +8,13 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Added
+
+- Add `ApplicationSpec.InitHooks` with injected callbacks registered through
+  `AfterAppBootstrap`, `AfterComponentsInitialized`, and
+  `AfterModulesInitialized`, for one-time initialization without a dedicated
+  module or component.
+
 ## [0.15.6] - 2026-09-09
 
 ### Added

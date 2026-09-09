@@ -57,6 +57,7 @@ type _AppImpl struct {
 	components          []Component
 	componentLifecycles []ComponentLifecycle
 	modules             []Module
+	hooks               HookAdder
 
 	httpServer *http.Server
 	httpWG     sync.WaitGroup
@@ -162,8 +163,10 @@ func (a *_AppImpl) Start() {
 	vpre.Check(a.lifecycleState == appLifecycleStateNew, "application already stopped")
 	a.lifecycleState = appLifecycleStateStarted
 
+	a.spec.InitHooks(&a.hooks)
 	a.initLinking()
 	a.initInjector()
+	a.afterAppBootstrap()
 	a.initComponents()
 	a.initModules()
 	a.initServers()
