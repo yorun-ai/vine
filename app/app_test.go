@@ -107,3 +107,12 @@ func TestApplyOptionKeepsUnsetCliOption(t *testing.T) {
 
 	assert.Equal(t, "http://cli-link.local:7079", cliOption.LinkEndpoint)
 }
+
+func TestHookAdderFacade(t *testing.T) {
+	add := new(HookAdder)
+	add.BeforeAppStart(func() {})
+	add.AfterAppStart(func() {})
+	add.BeforeAppStop(func() {})
+	add.AfterAppStop(func() {})
+	assert.Panics(t, func() { add.AfterAppStart(nil) })
+}

@@ -8,6 +8,13 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Added
+
+- Add `ApplicationSpec.InitHooks` with injected callbacks for `BeforeAppStart`,
+  `AfterAppStart`, `BeforeAppStop`, and `AfterAppStop`, without a dedicated
+  module or component. App callbacks surround the component and module lifecycle;
+  `BeforeAppStart` may return an error to abort startup.
+
 ## [0.15.6] - 2026-09-09
 
 ### Added

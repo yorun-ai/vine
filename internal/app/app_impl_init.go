@@ -220,6 +220,7 @@ func (a *_AppImpl) initModules() {
 				b.Bind(moduleType).In(di.SingletonScope)
 			}
 		})
+	a.moduleInjector = injector
 	a.modules = make([]Module, 0, len(moduleTypes))
 	for _, moduleType := range moduleTypes {
 		module := injector.Get(moduleType).Interface().(Module)
