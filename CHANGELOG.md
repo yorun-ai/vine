@@ -8,6 +8,8 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.15.7] - 2026-09-09
+
 ### Added
 
 - Add `ApplicationSpec.InitHooks` with injected callbacks for `BeforeAppStart`,
