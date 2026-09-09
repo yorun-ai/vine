@@ -7,8 +7,8 @@ resources:
 # Update all three tags together during release preparation.
 images:
   - name: ghcr.io/yorun-ai/vine-hub
-    newTag: v0.15.3
+    newTag: v0.15.4
   - name: ghcr.io/yorun-ai/vine-link
-    newTag: v0.15.3
+    newTag: v0.15.4
   - name: ghcr.io/yorun-ai/vine-portal
-    newTag: v0.15.3
+    newTag: v0.15.4
