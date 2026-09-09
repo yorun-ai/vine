@@ -99,13 +99,14 @@ func (i *_Invoker) buildRequest() spec.Request {
 	}
 
 	return &spec.RequestImpl{
-		ContextValue:    reqContext,
-		TraceValue:      i.context.Trace().NewChildTrace(),
-		ActorValue:      i.context.Actor(),
-		InitiatorValue:  i.context.Initiator(),
-		ClientValue:     i.clientApp,
-		MethodInfoValue: i.methodInfo,
-		ArgumentsValue:  i.arguments,
+		ContextValue:     reqContext,
+		TraceValue:       i.context.Trace().NewChildTrace(),
+		ActorValue:       i.context.Actor(),
+		InitiatorValue:   i.context.Initiator(),
+		ClientValue:      i.clientApp,
+		DestinationValue: i.options.destination,
+		MethodInfoValue:  i.methodInfo,
+		ArgumentsValue:   i.arguments,
 	}
 }
 

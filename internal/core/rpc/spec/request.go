@@ -15,6 +15,7 @@ type Request interface {
 	Initiator() meta.Initiator
 
 	Client() meta.App
+	Destination() string
 
 	MethodInfo() MethodInfo
 	MethodImpl() MethodImpl
@@ -31,7 +32,8 @@ type RequestImpl struct {
 	ActorValue     meta.Actor
 	InitiatorValue meta.Initiator
 
-	ClientValue meta.App
+	ClientValue      meta.App
+	DestinationValue string
 
 	MethodInfoValue MethodInfo
 	MethodImplValue MethodImpl
@@ -64,6 +66,10 @@ func (r *RequestImpl) Client() meta.App {
 	return r.ClientValue
 }
 
+func (r *RequestImpl) Destination() string {
+	return r.DestinationValue
+}
+
 func (r *RequestImpl) MethodInfo() MethodInfo {
 	return r.MethodInfoValue
 }
@@ -78,4 +84,18 @@ func (r *RequestImpl) Arguments() any {
 
 func (r *RequestImpl) PositionalArguments() []any {
 	return r.MethodInfo().PositionArguments(r.ArgumentsValue)
+}
+
+func WithoutDestination(request Request) Request {
+	return &RequestImpl{
+		ContextValue:    request.Context(),
+		CancelValue:     request.Cancel,
+		TraceValue:      request.Trace(),
+		ActorValue:      request.Actor(),
+		InitiatorValue:  request.Initiator(),
+		ClientValue:     request.Client(),
+		MethodInfoValue: request.MethodInfo(),
+		MethodImplValue: request.MethodImpl(),
+		ArgumentsValue:  request.Arguments(),
+	}
 }

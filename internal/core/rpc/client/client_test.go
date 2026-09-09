@@ -262,3 +262,12 @@ func TestInvokeEncodingFailureLogsRejectedWithoutStarted(t *testing.T) {
 		t.Fatalf("local rejection should include stack and safe arguments: %#v", record)
 	}
 }
+
+func TestWithDestinationRejectsEmptyName(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected empty destination to panic")
+		}
+	}()
+	WithDestination("")
+}

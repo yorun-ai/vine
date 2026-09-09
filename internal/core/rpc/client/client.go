@@ -92,10 +92,20 @@ func WithTimeout(duration time.Duration) InvokeOption {
 	})
 }
 
+// WithDestination restricts routing to instances of the named application.
+// The application name must not be empty.
+func WithDestination(appName string) InvokeOption {
+	vpre.Check(appName != "", "rpc destination must not be empty")
+	return _InvokeOptionFunc(func(options *_InvokeOptions) {
+		options.destination = appName
+	})
+}
+
 type _InvokeOptions struct {
-	context    context.Context
-	timeout    time.Duration
-	timeoutSet bool
+	context     context.Context
+	timeout     time.Duration
+	timeoutSet  bool
+	destination string
 }
 
 const defaultRequestTimeout = time.Second * 30

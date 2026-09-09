@@ -210,6 +210,9 @@ func encodeRequest(endpoint string, rpcRequest spec.Request) (request *http.Requ
 	header := httpRequest.Header
 	EncodeTraceToHeader(header, rpcRequest.Trace())
 	EncodeClientToHeader(header, rpcRequest.Client())
+	if destination := rpcRequest.Destination(); destination != "" {
+		encodeDestinationToHeader(header, destination)
+	}
 	if actor := rpcRequest.Actor(); actor != nil {
 		EncodeActorToHeader(header, actor)
 	}

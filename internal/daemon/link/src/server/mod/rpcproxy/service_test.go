@@ -149,3 +149,33 @@ func TestOnDrainKeepsOutboundSourceState(t *testing.T) {
 		t.Fatalf("unexpected resolved endpoint: %s", resolved)
 	}
 }
+
+func TestDestinationRoundRobin(t *testing.T) {
+	caller := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")
+	service := "demo.service.UserService"
+	proxy := newTestRpcProxy(t, newTestHubRedisClient(map[string][]redised.RpcServiceRegistration{
+		service: {
+			{ServiceName: service, AppName: "target.app", AppInstanceId: "one", Endpoint: "http://one.invalid"},
+			{ServiceName: service, AppName: "target.app", AppInstanceId: "two", Endpoint: "http://two.invalid"},
+			{ServiceName: service, AppName: "other.app", AppInstanceId: "three", Endpoint: "http://three.invalid"},
+		},
+	}))
+	registerLocalApp(proxy, caller, "http://caller.invalid", "http://caller.invalid", nil)
+	seen := map[string]int{}
+	for range 6 {
+		target, err := proxy.resolveOutboundTarget(service, caller, "target.app")
+		if err != nil {
+			t.Fatal(err)
+		}
+		seen[target.endpoint]++
+		if _, err := proxy.resolveOutboundTarget(service, caller, "other.app"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if seen["http://one.invalid"] != 3 || seen["http://two.invalid"] != 3 || len(seen) != 2 {
+		t.Fatalf("unexpected destinations: %v", seen)
+	}
+	if _, err := proxy.resolveOutboundTarget(service, caller, "missing.app"); err == nil {
+		t.Fatal("missing destination fell back")
+	}
+}

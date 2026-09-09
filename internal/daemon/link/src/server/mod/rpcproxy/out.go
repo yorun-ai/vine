@@ -28,7 +28,13 @@ func (p *RpcProxy) handleOut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	target, exErr := p.resolveOutboundTarget(serviceName, clientApp)
+	r = r.Clone(r.Context())
+	destination, err := rpchttp.ConsumeDestinationFromHeader(r.Header)
+	if err != nil {
+		p.writeGatewayError(w, r, ex.New(ex.InvalidRequest, "invalid request options", ex.WithDetail(err.Error())))
+		return
+	}
+	target, exErr := p.resolveOutboundTarget(serviceName, clientApp, destination)
 	if exErr != nil {
 		p.writeGatewayError(w, r, exErr)
 		return
@@ -36,10 +42,6 @@ func (p *RpcProxy) handleOut(w http.ResponseWriter, r *http.Request) {
 
 	targetURL := target.endpoint + r.URL.Path
 	p.forwardOutboundWithTransport(w, r, targetURL, target.transport)
-}
-
-func (p *RpcProxy) forwardOutbound(w http.ResponseWriter, r *http.Request, targetURL string) {
-	p.forwardOutboundWithTransport(w, r, targetURL, p.transport)
 }
 
 func (p *RpcProxy) forwardOutboundWithTransport(w http.ResponseWriter, r *http.Request, targetURL string, transport http.RoundTripper) {
@@ -72,7 +74,7 @@ func (p *RpcProxy) forwardOutboundRequestWithTransport(r *http.Request, targetUR
 
 func (p *RpcProxy) serveRpcOut(rpcRequest spec.Request) spec.Response {
 	serviceName := rpcRequest.MethodInfo().Service().SkelName()
-	target, exErr := p.resolveOutboundTarget(serviceName, rpcRequest.Client())
+	target, exErr := p.resolveOutboundTarget(serviceName, rpcRequest.Client(), rpcRequest.Destination())
 	if exErr != nil {
 		return &spec.ResponseImpl{
 			ServerValue: p.App,
@@ -81,7 +83,7 @@ func (p *RpcProxy) serveRpcOut(rpcRequest spec.Request) spec.Response {
 		}
 	}
 
-	rpcResponse, exErr := p.roundTripWithTransport(target.endpoint, rpcRequest, target.transport)
+	rpcResponse, exErr := p.roundTripWithTransport(target.endpoint, spec.WithoutDestination(rpcRequest), target.transport)
 	if exErr != nil {
 		return &spec.ResponseImpl{
 			ServerValue: p.App,
@@ -94,11 +96,11 @@ func (p *RpcProxy) serveRpcOut(rpcRequest spec.Request) spec.Response {
 }
 
 func (p *RpcProxy) resolveOutboundEndpoint(serviceName string, clientApp meta.App) (string, ex.Error) {
-	target, exErr := p.resolveOutboundTarget(serviceName, clientApp)
+	target, exErr := p.resolveOutboundTarget(serviceName, clientApp, "")
 	return target.endpoint, exErr
 }
 
-func (p *RpcProxy) resolveOutboundTarget(serviceName string, clientApp meta.App) (_OutboundTarget, ex.Error) {
+func (p *RpcProxy) resolveOutboundTarget(serviceName string, clientApp meta.App, destination string) (_OutboundTarget, ex.Error) {
 	appState, ok := p.getAppStateByInstanceID(clientApp.InstanceId())
 	if !ok {
 		return _OutboundTarget{}, ex.New(ex.ServiceUnavailable, "rpc proxy outbound source unavailable")
@@ -109,7 +111,7 @@ func (p *RpcProxy) resolveOutboundTarget(serviceName string, clientApp meta.App)
 	}
 
 	p.retainService(serviceName, clientApp.InstanceId())
-	registration, ok := p.nextServiceEndpoint(serviceName)
+	registration, ok := p.nextServiceEndpoint(serviceName, destination)
 	if !ok {
 		return _OutboundTarget{}, ex.New(ex.ServiceUnavailable, "rpc proxy outbound target unavailable")
 	}

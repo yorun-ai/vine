@@ -53,11 +53,12 @@ type _AppState struct {
 }
 
 type _ServiceState struct {
-	refsByAppInstanceID map[string]struct{}
-	registrationsByKey  map[string]redised.RpcServiceRegistration
-	endpoints           []redised.RpcServiceRegistration
-	nextIndex           int
-	cancel              context.CancelFunc
+	refsByAppInstanceID    map[string]struct{}
+	registrationsByKey     map[string]redised.RpcServiceRegistration
+	endpoints              []redised.RpcServiceRegistration
+	nextIndex              int
+	nextIndexByDestination map[string]int
+	cancel                 context.CancelFunc
 }
 
 type _OutboundTarget struct {
