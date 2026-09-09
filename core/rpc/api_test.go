@@ -5,9 +5,12 @@ import (
 	"testing"
 	"time"
 
+	"go.yorun.ai/vine/core/ex"
 	"go.yorun.ai/vine/core/meta"
 	"go.yorun.ai/vine/core/rpc"
 )
+
+var _ func(*rpc.Client, rpc.MethodInfo, any, ...rpc.InvokeOption) (string, ex.Error) = (*rpc.Client).InvokeAs[string]
 
 func TestFacadeContextAndExecutors(t *testing.T) {
 	app := meta.MustNewApp("demo.user", "1.2.3", "550e8400-e29b-41d4-a716-446655440000")

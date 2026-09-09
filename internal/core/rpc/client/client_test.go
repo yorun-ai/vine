@@ -15,6 +15,7 @@ import (
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
+	"go.yorun.ai/vine/internal/core/rpc/transport/inproc"
 )
 
 type clientEncodingArguments struct {
@@ -121,6 +122,83 @@ func TestInvokeReturnsSystemErrorWhenReturnIfSystemErrorEnabled(t *testing.T) {
 	}
 	if err.Type() != ex.SystemError {
 		t.Fatalf("unexpected error type: got %s want %s", err.Type(), ex.SystemError)
+	}
+}
+
+func newTypedInvokeClient(t *testing.T, result any, err ex.Error) (*Client, spec.MethodInfo) {
+	t.Helper()
+	endpoint := inproc.Endpoint(t.Name())
+	t.Cleanup(inproc.Register(endpoint, spec.RpcHandlerFunc(func(request spec.Request) spec.Response {
+		return &spec.ResponseImpl{ResultValue: result, ErrorValue: err}
+	})))
+	return New(Option{
+		Context:        testClientContext(),
+		ClientApp:      testClientApp(t),
+		Logger:         testClientLogger(),
+		ServerEndpoint: endpoint,
+	}), newInvokerTestMethodInfo("Get", "get", nil, reflect.TypeOf(result), nil)
+}
+
+func TestInvokeAsReturnsValue(t *testing.T) {
+	client, method := newTypedInvokeClient(t, "pong", nil)
+	result, err := client.InvokeAs[string](method, nil)
+	if result != "pong" || err != nil {
+		t.Fatalf("unexpected result: %q, %v", result, err)
+	}
+}
+
+func TestInvokeAsReturnsNullableResult(t *testing.T) {
+	for _, want := range []*invokerClientResult{new(invokerClientResult{Name: "vine"}), nil} {
+		t.Run(fmt.Sprint(want), func(t *testing.T) {
+			client, method := newTypedInvokeClient(t, want, nil)
+			result, err := client.InvokeAs[*invokerClientResult](method, nil)
+			if result != want || err != nil {
+				t.Fatalf("unexpected result: %#v, %v", result, err)
+			}
+		})
+	}
+}
+
+func TestInvokeAsWithoutResult(t *testing.T) {
+	client, method := newTypedInvokeClient(t, nil, nil)
+	result, err := client.InvokeAs[struct{}](method, nil)
+	if result != (struct{}{}) || err != nil {
+		t.Fatalf("unexpected result: %#v, %v", result, err)
+	}
+}
+
+func TestInvokeAsPreservesErrors(t *testing.T) {
+	for _, returnSystemError := range []bool{false, true} {
+		t.Run(fmt.Sprint(returnSystemError), func(t *testing.T) {
+			wantErr := ex.New(ex.InvocationFailed, "unavailable")
+			client, method := newTypedInvokeClient(t, "discarded", wantErr)
+			client.returnIfSystemError = returnSystemError
+			if !returnSystemError {
+				defer func() {
+					if got := recover(); got != wantErr {
+						t.Fatalf("expected original system error panic, got %v", got)
+					}
+				}()
+			}
+			result, err := client.InvokeAs[string](method, nil)
+			if !returnSystemError {
+				t.Fatal("expected system error panic")
+			}
+			if result != "" || err != wantErr {
+				t.Fatalf("expected zero result and original error, got %q, %v", result, err)
+			}
+		})
+	}
+}
+
+func TestInvokeAsForwardsContextOption(t *testing.T) {
+	client, method := newTypedInvokeClient(t, "pong", nil)
+	client.returnIfSystemError = true
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	result, err := client.InvokeAs[string](method, nil, WithContext(ctx))
+	if result != "" || err == nil || err.Code() != ex.InvocationCancelled {
+		t.Fatalf("expected cancelled invocation, got %q, %v", result, err)
 	}
 }
 

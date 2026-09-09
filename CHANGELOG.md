@@ -8,6 +8,10 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Added
+
+- Add `rpc.Client.InvokeAs[T]` for typed results with the existing invocation options and error behavior.
+
 ### Changed
 
 - Reuse scalar types from `go.yorun.ai/vrpc/skel` v0.11.0 through the existing Skel API.
