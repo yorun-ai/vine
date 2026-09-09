@@ -25,7 +25,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { vrpcClient } from '@/config/vrpc-client'
 import { useLocale } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { createSkeletonService } from '@/skeled/admin'
+import { createSkeletonApiService } from '@/skeled/admin'
 import type {
   SkeletonActorItem,
   SkeletonConfigItem,
@@ -40,7 +40,7 @@ import type {
 
 import { skeletonItemHref } from './model'
 
-const skeletonService = createSkeletonService(vrpcClient)
+const skeletonService = createSkeletonApiService(vrpcClient)
 const SKELETON_DOMAIN_LIST_DEFAULT_WIDTH = 352
 
 type SkeletonDomainKind =
@@ -686,6 +686,9 @@ export function SkeletonDomainPage() {
                             <span className="truncate text-sm font-medium">
                               {displayItemName(item)}
                             </span>
+                            {'api' in item && item.api ? (
+                              <Badge variant="outline">api</Badge>
+                            ) : null}
                             <DeprecatedBadge
                               deprecated={item.deprecated}
                             />

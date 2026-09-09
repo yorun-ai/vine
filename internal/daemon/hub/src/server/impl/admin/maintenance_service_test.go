@@ -52,7 +52,7 @@ func (r *_MaintenanceServiceAppConfigRepo) RemoveItem(id int) bool {
 }
 
 func TestMaintenanceServicePreviewSeedYamlReturnsEmptyItems(t *testing.T) {
-	service := &MaintenanceServiceServerImpl{}
+	service := &MaintenanceApiServiceServerImpl{}
 
 	preview := service.PreviewSeedYaml("unknown_items: []")
 
@@ -73,7 +73,7 @@ func TestMaintenanceServiceApplySeedYamlUpdatesSelectedItem(t *testing.T) {
 			Version: 1,
 		},
 	}}
-	service := &MaintenanceServiceServerImpl{
+	service := &MaintenanceApiServiceServerImpl{
 		AppConfigRepo: configRepo,
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 	}
@@ -120,7 +120,7 @@ func TestMaintenanceServiceSeedYamlDoesNotExposeVineField(t *testing.T) {
 			BuiltIn:         true,
 		},
 	}}
-	service := &MaintenanceServiceServerImpl{
+	service := &MaintenanceApiServiceServerImpl{
 		EntryRepo: entryRepo,
 		SiteCore:  &core.PortalSiteCore{PortalSiteRepo: entryRepo},
 		RuleRepo:  ruleRepo,
@@ -279,7 +279,7 @@ func (r *_MaintenanceServicePortalRuleRepo) RemoveRule(id int) bool {
 
 func TestMaintenanceTargetPathSeedRoundTrip(t *testing.T) {
 	repo := &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{}}
-	service := &MaintenanceServiceServerImpl{RuleRepo: repo,
+	service := &MaintenanceApiServiceServerImpl{RuleRepo: repo,
 		RuleCore: &core.PortalRuleCore{PortalRuleRepo: repo}}
 	payload := service.parseSeed("portalRules:\n  - name: mapped\n    scheme: http\n    targetType: SITE\n    siteName: web\n    pathPrefix: /api\n    targetPath: /internal/\n")
 	rule := payload.PortalRules[0]
@@ -298,7 +298,7 @@ func TestMaintenanceTargetPathSeedRoundTrip(t *testing.T) {
 }
 
 func TestMaintenanceRuleFieldNames(t *testing.T) {
-	service := &MaintenanceServiceServerImpl{}
+	service := &MaintenanceApiServiceServerImpl{}
 	payload := service.parseSeed("portalRules:\n  - name: example\n    matchScheme: http\n    routeType: SITE\n    routeSiteName: web\n    routePathPrefix: /internal")
 	require.Equal(t, "http", payload.PortalRules[0].MatchScheme)
 	require.Equal(t, "/internal", payload.PortalRules[0].RoutePathPrefix)
@@ -312,7 +312,7 @@ func TestMaintenanceUsesDomainValidationForBothYAMLVocabularies(t *testing.T) {
 			content = strings.NewReplacer("matchScheme:", "scheme:", "matchPort:", "port:", "routeType:", "targetType:", "routeSiteName:", "siteName:").Replace(content)
 		}
 		repo := &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{}}
-		service := &MaintenanceServiceServerImpl{RuleRepo: repo, RuleCore: &core.PortalRuleCore{PortalRuleRepo: repo}}
+		service := &MaintenanceApiServiceServerImpl{RuleRepo: repo, RuleCore: &core.PortalRuleCore{PortalRuleRepo: repo}}
 		require.Panics(t, func() { service.PreviewSeedYaml(content) })
 		require.Panics(t, func() {
 			service.ApplySeedYaml(content, []skeled.SeedItemSelection{{Kind: seedKindPortalRule, Name: "invalid"}})
@@ -328,7 +328,7 @@ func TestMaintenancePreflightsSitesAndCertificatesBeforeWriting(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			configs := &_MaintenanceServiceAppConfigRepo{items: map[string]*core.AppConfig{}}
-			target := &MaintenanceServiceServerImpl{AppConfigCore: &core.AppConfigCore{AppConfigRepo: configs}, SiteCore: &core.PortalSiteCore{}, CertCore: &core.PortalCertCore{}}
+			target := &MaintenanceApiServiceServerImpl{AppConfigCore: &core.AppConfigCore{AppConfigRepo: configs}, SiteCore: &core.PortalSiteCore{}, CertCore: &core.PortalCertCore{}}
 			content := "appConfigs:\n  - name: pending\n    value: test\n" + invalid
 			require.Panics(t, func() { target.PreviewSeedYaml(content) })
 			require.Panics(t, func() {

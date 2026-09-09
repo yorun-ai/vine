@@ -9,7 +9,7 @@ import (
 	"go.yorun.ai/vine/util/vslice"
 )
 
-func (s *ServiceDebugServiceServerImpl) hasServiceSchema(serviceSkelName string, schemaHash string) bool {
+func (s *ServiceDebugApiServiceServerImpl) hasServiceSchema(serviceSkelName string, schemaHash string) bool {
 	for _, version := range s.SchemaRepo.ListServiceSchemaVersions() {
 		if version.Schema.SkelName == serviceSkelName && (schemaHash == "" || version.SchemaHash == schemaHash) {
 			return true
@@ -18,7 +18,7 @@ func (s *ServiceDebugServiceServerImpl) hasServiceSchema(serviceSkelName string,
 	return false
 }
 
-func (s *ServiceDebugServiceServerImpl) findServiceSchema(serviceSkelName string, schemaHash string) *skel.ServiceSchema {
+func (s *ServiceDebugApiServiceServerImpl) findServiceSchema(serviceSkelName string, schemaHash string) *skel.ServiceSchema {
 	for _, version := range s.SchemaRepo.ListServiceSchemaVersions() {
 		if version.Schema.SkelName == serviceSkelName && (schemaHash == "" || version.SchemaHash == schemaHash) {
 			return version.Schema
@@ -28,13 +28,13 @@ func (s *ServiceDebugServiceServerImpl) findServiceSchema(serviceSkelName string
 	panic("unreachable")
 }
 
-func (s *ServiceDebugServiceServerImpl) findMethodSchema(serviceSchema *skel.ServiceSchema, methodSkelName string) *skel.MethodSchema {
+func (s *ServiceDebugApiServiceServerImpl) findMethodSchema(serviceSchema *skel.ServiceSchema, methodSkelName string) *skel.MethodSchema {
 	method, ok := serviceSchema.MethodByName(methodSkelName)
 	ex.PanicNewIfNot(ok, ex.NotFound, "method schema not found")
 	return method
 }
 
-func (s *ServiceDebugServiceServerImpl) findActorSchema(actorSkelName string) *skel.ActorSchema {
+func (s *ServiceDebugApiServiceServerImpl) findActorSchema(actorSkelName string) *skel.ActorSchema {
 	for _, schema := range s.SchemaRepo.ListActorSchemas() {
 		if schema.SkelName == actorSkelName {
 			return schema
@@ -44,7 +44,7 @@ func (s *ServiceDebugServiceServerImpl) findActorSchema(actorSkelName string) *s
 	panic("unreachable")
 }
 
-func (s *ServiceDebugServiceServerImpl) serviceDebugActors(serviceSchema *skel.ServiceSchema) []skeled.ServiceDebugActorItem {
+func (s *ServiceDebugApiServiceServerImpl) serviceDebugActors(serviceSchema *skel.ServiceSchema) []skeled.ServiceDebugActorItem {
 	ret := make([]skeled.ServiceDebugActorItem, 0, len(serviceSchema.Audiences))
 	for _, audience := range serviceSchema.Audiences {
 		actor := s.findActorSchema(audience.SkelName)

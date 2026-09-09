@@ -352,7 +352,7 @@ data PortalSiteOptions {
 }
 
 @desc("Hub's Portal site certificate service, called by the Portal admin client")
-service PortalCertService {
+api service PortalCertApiService {
     for AdminActor
 
     noauth
@@ -406,7 +406,7 @@ service PortalCertService {
 }
 
 @desc("Hub's Portal access entry service, called by the Portal admin client")
-service PortalEntryService {
+api service PortalEntryApiService {
     for AdminActor
 
     noauth
@@ -438,7 +438,7 @@ service PortalEntryService {
 }
 
 @desc("Hub's Portal entry rule service, called by the Portal admin client")
-service PortalRuleService {
+api service PortalRuleApiService {
     for AdminActor
 
     noauth
@@ -514,7 +514,7 @@ service PortalRuleService {
 }
 
 @desc("Hub's Portal target site service, called by the Portal admin client")
-service PortalSiteService {
+api service PortalSiteApiService {
     for AdminActor
 
     noauth

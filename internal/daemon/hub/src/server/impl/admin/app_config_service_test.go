@@ -140,7 +140,7 @@ func (*_AppConfigServiceSchemaRepo) ListWebSchemas() []*skel.WebSchema {
 }
 
 func TestAppConfigServiceListReturnsConfigSchemaDescriptionsAndFields(t *testing.T) {
-	service := &AppConfigServiceServerImpl{
+	service := &AppConfigApiServiceServerImpl{
 		AppConfigCore: &core.AppConfigCore{
 			AppConfigRepo: &_AppConfigServiceAppConfigRepo{
 				items: []*core.AppConfig{{
@@ -251,7 +251,7 @@ func TestAppConfigServiceListReturnsConfigSchemaDescriptionsAndFields(t *testing
 }
 
 func TestAppConfigServiceListIncludesUnusedAndUnconfiguredConfigs(t *testing.T) {
-	service := &AppConfigServiceServerImpl{
+	service := &AppConfigApiServiceServerImpl{
 		AppConfigCore: &core.AppConfigCore{
 			AppConfigRepo: &_AppConfigServiceAppConfigRepo{
 				items: []*core.AppConfig{
@@ -303,7 +303,7 @@ func TestAppConfigServiceListIncludesUnusedAndUnconfiguredConfigs(t *testing.T) 
 }
 
 func TestAppConfigServiceListMatchesConfigSchemaByFullSkelName(t *testing.T) {
-	service := &AppConfigServiceServerImpl{
+	service := &AppConfigApiServiceServerImpl{
 		AppConfigCore: &core.AppConfigCore{
 			AppConfigRepo: &_AppConfigServiceAppConfigRepo{
 				items: []*core.AppConfig{{
@@ -360,7 +360,7 @@ func TestAppConfigServiceListMatchesConfigSchemaByFullSkelName(t *testing.T) {
 }
 
 func TestAppConfigServiceListDoesNotMatchConfigSchemaByShortName(t *testing.T) {
-	service := &AppConfigServiceServerImpl{
+	service := &AppConfigApiServiceServerImpl{
 		AppConfigCore: &core.AppConfigCore{
 			AppConfigRepo: &_AppConfigServiceAppConfigRepo{
 				items: []*core.AppConfig{{
@@ -401,7 +401,7 @@ func TestAppConfigServiceListDoesNotMatchConfigSchemaByShortName(t *testing.T) {
 
 func TestAppConfigServiceCreateConfig(t *testing.T) {
 	repo := &_AppConfigServiceAppConfigRepo{}
-	service := &AppConfigServiceServerImpl{
+	service := &AppConfigApiServiceServerImpl{
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: repo},
 		SchemaRepo: &_AppConfigServiceSchemaRepo{
 			configSchemas: []*skel.ConfigSchema{{
@@ -425,7 +425,7 @@ func TestAppConfigServiceCreateConfig(t *testing.T) {
 }
 
 func TestAppConfigServiceCreateRejectsInvalidConfigSkelName(t *testing.T) {
-	service := &AppConfigServiceServerImpl{
+	service := &AppConfigApiServiceServerImpl{
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: &_AppConfigServiceAppConfigRepo{}},
 		SchemaRepo:    &_AppConfigServiceSchemaRepo{},
 	}
@@ -447,7 +447,7 @@ func TestAppConfigServiceRemoveOnlyAllowsUnusedConfig(t *testing.T) {
 			{Id: 8, Name: "demo.user.LegacyConfig", Value: `{}`, Version: 1},
 		},
 	}
-	service := &AppConfigServiceServerImpl{
+	service := &AppConfigApiServiceServerImpl{
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: repo},
 		SchemaRepo: &_AppConfigServiceSchemaRepo{
 			configSchemas: []*skel.ConfigSchema{{

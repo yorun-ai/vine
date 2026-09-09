@@ -7,14 +7,14 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 )
 
-type PortalRuleServiceServerImpl struct {
-	skeled.DefaultPortalRuleServiceServer
+type PortalRuleApiServiceServerImpl struct {
+	skeled.DefaultPortalRuleApiServiceServer
 
 	PortalRuleCore *core.PortalRuleCore `inject:""`
 	Flag           *flag.Flag           `inject:""`
 }
 
-func (s *PortalRuleServiceServerImpl) List() []skeled.PortalRule {
+func (s *PortalRuleApiServiceServerImpl) List() []skeled.PortalRule {
 	rules := s.PortalRuleCore.List()
 	ret := make([]skeled.PortalRule, 0, len(rules))
 	for _, rule := range rules {
@@ -23,11 +23,11 @@ func (s *PortalRuleServiceServerImpl) List() []skeled.PortalRule {
 	return ret
 }
 
-func (s *PortalRuleServiceServerImpl) Get(id int) skeled.PortalRule {
+func (s *PortalRuleApiServiceServerImpl) Get(id int) skeled.PortalRule {
 	return toServerPortalRule(s.PortalRuleCore.Get(id))
 }
 
-func (s *PortalRuleServiceServerImpl) Create(creation skeled.PortalRuleCreation) skeled.PortalRule {
+func (s *PortalRuleApiServiceServerImpl) Create(creation skeled.PortalRuleCreation) skeled.PortalRule {
 	var routePathPrefix string
 	if creation.RoutePathPrefix != nil {
 		routePathPrefix = *creation.RoutePathPrefix
@@ -45,7 +45,7 @@ func (s *PortalRuleServiceServerImpl) Create(creation skeled.PortalRuleCreation)
 	}))
 }
 
-func (s *PortalRuleServiceServerImpl) Update(id int, update skeled.PortalRuleUpdate) skeled.PortalRule {
+func (s *PortalRuleApiServiceServerImpl) Update(id int, update skeled.PortalRuleUpdate) skeled.PortalRule {
 	return toServerPortalRule(s.PortalRuleCore.Update(id, core.PortalRuleUpdate{
 		Name:                    update.Name,
 		MatchScheme:             update.MatchScheme,
@@ -59,11 +59,11 @@ func (s *PortalRuleServiceServerImpl) Update(id int, update skeled.PortalRuleUpd
 	}))
 }
 
-func (s *PortalRuleServiceServerImpl) Remove(id int) {
+func (s *PortalRuleApiServiceServerImpl) Remove(id int) {
 	s.PortalRuleCore.Remove(id)
 }
 
-func (s *PortalRuleServiceServerImpl) GetDashboardAccess() skeled.PortalDashboardAccess {
+func (s *PortalRuleApiServiceServerImpl) GetDashboardAccess() skeled.PortalDashboardAccess {
 	access := s.PortalRuleCore.DashboardAccess()
 	return skeled.PortalDashboardAccess{
 		Scheme:     access.Scheme,
@@ -74,7 +74,7 @@ func (s *PortalRuleServiceServerImpl) GetDashboardAccess() skeled.PortalDashboar
 	}
 }
 
-func (s *PortalRuleServiceServerImpl) UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string) []skeled.PortalRule {
+func (s *PortalRuleApiServiceServerImpl) UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string) []skeled.PortalRule {
 	ex.PanicNewIfNot(!s.Flag.DashboardURLSet, ex.OperationFailed, "dashboard access is configured by dashboard-url")
 	rules := s.PortalRuleCore.UpdateDashboardAccess(scheme, host, port, pathPrefix)
 	ret := make([]skeled.PortalRule, 0, len(rules))

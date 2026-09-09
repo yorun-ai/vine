@@ -19,8 +19,8 @@ const (
 	seedKindPortalCert = "portal_cert"
 )
 
-type MaintenanceServiceServerImpl struct {
-	skeled.DefaultMaintenanceServiceServer
+type MaintenanceApiServiceServerImpl struct {
+	skeled.DefaultMaintenanceApiServiceServer
 
 	AppConfigRepo core.AppConfigRepo   `inject:""`
 	EntryRepo     core.PortalSiteRepo  `inject:""`
@@ -90,11 +90,11 @@ type _SeedSelectionKey struct {
 	name string
 }
 
-func (s *MaintenanceServiceServerImpl) PreviewSeedYaml(content string) skeled.SeedPreview {
+func (s *MaintenanceApiServiceServerImpl) PreviewSeedYaml(content string) skeled.SeedPreview {
 	return s.preview(s.parseSeed(content))
 }
 
-func (s *MaintenanceServiceServerImpl) ApplySeedYaml(content string, selections []skeled.SeedItemSelection) skeled.SeedPreview {
+func (s *MaintenanceApiServiceServerImpl) ApplySeedYaml(content string, selections []skeled.SeedItemSelection) skeled.SeedPreview {
 	payload := s.parseSeed(content)
 	selected := map[_SeedSelectionKey]struct{}{}
 	for _, selection := range selections {
@@ -111,7 +111,7 @@ func (s *MaintenanceServiceServerImpl) ApplySeedYaml(content string, selections 
 	return s.preview(payload)
 }
 
-func (s *MaintenanceServiceServerImpl) parseSeed(content string) *_SeedYAMLPayload {
+func (s *MaintenanceApiServiceServerImpl) parseSeed(content string) *_SeedYAMLPayload {
 	payload, err := vcode.UnmarshalYaml[*_SeedYAMLPayload]([]byte(content))
 	ex.PanicNewIfNot(err == nil, ex.OperationFailed, ex.F("parse seed yaml failed: %v", err))
 	if payload != nil {
@@ -138,7 +138,7 @@ func (s *MaintenanceServiceServerImpl) parseSeed(content string) *_SeedYAMLPaylo
 	return payload
 }
 
-func (s *MaintenanceServiceServerImpl) preview(payload *_SeedYAMLPayload) skeled.SeedPreview {
+func (s *MaintenanceApiServiceServerImpl) preview(payload *_SeedYAMLPayload) skeled.SeedPreview {
 	if payload == nil {
 		return newSeedPreview()
 	}
@@ -163,14 +163,14 @@ func newSeedPreview() skeled.SeedPreview {
 	return skeled.SeedPreview{Items: make([]skeled.SeedEntityDiff, 0)}
 }
 
-func (s *MaintenanceServiceServerImpl) previewAppConfig(item _SeedAppConfig) skeled.SeedEntityDiff {
+func (s *MaintenanceApiServiceServerImpl) previewAppConfig(item _SeedAppConfig) skeled.SeedEntityDiff {
 	current, exists := s.AppConfigRepo.GetItemByName(item.Name)
 	return seedEntityDiff(seedKindAppConfig, item.Name, exists, currentConfigFields(current), []_FieldValue{
 		{"value", item.Value},
 	})
 }
 
-func (s *MaintenanceServiceServerImpl) previewPortalSite(entry _SeedPortalSite) skeled.SeedEntityDiff {
+func (s *MaintenanceApiServiceServerImpl) previewPortalSite(entry _SeedPortalSite) skeled.SeedEntityDiff {
 	current, exists := s.EntryRepo.GetEntryByName(entry.Name)
 	return seedEntityDiff(seedKindPortalSite, entry.Name, exists, currentPortalSiteFields(current), []_FieldValue{
 		{"type", entry.Type},
@@ -180,7 +180,7 @@ func (s *MaintenanceServiceServerImpl) previewPortalSite(entry _SeedPortalSite) 
 	})
 }
 
-func (s *MaintenanceServiceServerImpl) previewPortalRule(rule _SeedPortalRule) skeled.SeedEntityDiff {
+func (s *MaintenanceApiServiceServerImpl) previewPortalRule(rule _SeedPortalRule) skeled.SeedEntityDiff {
 	current, exists := s.RuleRepo.GetRuleByName(rule.Name)
 	return seedEntityDiff(seedKindPortalRule, rule.Name, exists, currentPortalRuleFields(current), []_FieldValue{
 		{"matchScheme", rule.MatchScheme},
@@ -194,7 +194,7 @@ func (s *MaintenanceServiceServerImpl) previewPortalRule(rule _SeedPortalRule) s
 	})
 }
 
-func (s *MaintenanceServiceServerImpl) previewPortalCert(cert _SeedPortalCert) skeled.SeedEntityDiff {
+func (s *MaintenanceApiServiceServerImpl) previewPortalCert(cert _SeedPortalCert) skeled.SeedEntityDiff {
 	current, exists := s.CertRepo.GetCertByName(cert.Name)
 	return seedEntityDiff(seedKindPortalCert, cert.Name, exists, currentPortalCertFields(current), []_FieldValue{
 		{"issuer", cert.Issuer},
@@ -225,7 +225,7 @@ func seedEntityDiff(kind string, name string, exists bool, currentFields map[str
 	}
 }
 
-func (s *MaintenanceServiceServerImpl) applyAppConfigs(items []_SeedAppConfig, selected map[_SeedSelectionKey]struct{}) {
+func (s *MaintenanceApiServiceServerImpl) applyAppConfigs(items []_SeedAppConfig, selected map[_SeedSelectionKey]struct{}) {
 	for _, item := range items {
 		if !hasSelection(selected, seedKindAppConfig, item.Name) {
 			continue
@@ -234,7 +234,7 @@ func (s *MaintenanceServiceServerImpl) applyAppConfigs(items []_SeedAppConfig, s
 	}
 }
 
-func (s *MaintenanceServiceServerImpl) applyPortalEntries(entries []_SeedPortalSite, selected map[_SeedSelectionKey]struct{}) {
+func (s *MaintenanceApiServiceServerImpl) applyPortalEntries(entries []_SeedPortalSite, selected map[_SeedSelectionKey]struct{}) {
 	for _, entry := range entries {
 		if !hasSelection(selected, seedKindPortalSite, entry.Name) {
 			continue
@@ -243,7 +243,7 @@ func (s *MaintenanceServiceServerImpl) applyPortalEntries(entries []_SeedPortalS
 	}
 }
 
-func (s *MaintenanceServiceServerImpl) applyPortalRules(rules []_SeedPortalRule, selected map[_SeedSelectionKey]struct{}) {
+func (s *MaintenanceApiServiceServerImpl) applyPortalRules(rules []_SeedPortalRule, selected map[_SeedSelectionKey]struct{}) {
 	for _, rule := range rules {
 		if !hasSelection(selected, seedKindPortalRule, rule.Name) {
 			continue
@@ -252,7 +252,7 @@ func (s *MaintenanceServiceServerImpl) applyPortalRules(rules []_SeedPortalRule,
 	}
 }
 
-func (s *MaintenanceServiceServerImpl) applyPortalCerts(certs []_SeedPortalCert, selected map[_SeedSelectionKey]struct{}) {
+func (s *MaintenanceApiServiceServerImpl) applyPortalCerts(certs []_SeedPortalCert, selected map[_SeedSelectionKey]struct{}) {
 	for _, cert := range certs {
 		if !hasSelection(selected, seedKindPortalCert, cert.Name) {
 			continue

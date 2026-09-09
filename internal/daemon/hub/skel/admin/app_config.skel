@@ -97,7 +97,7 @@ data AppConfigCreation {
 }
 
 @desc("Hub's application configuration service, called by Client")
-service AppConfigService {
+api service AppConfigApiService {
     for AdminActor
 
     noauth

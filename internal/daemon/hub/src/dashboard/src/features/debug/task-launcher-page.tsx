@@ -18,12 +18,12 @@ import { vrpcClient } from '@/config/vrpc-client'
 import { copyTextToClipboard } from '@/lib/clipboard'
 import { cn } from '@/lib/utils'
 import {
-  createTaskDebugService,
+  createTaskDebugApiService,
   type TaskDebugTaskItem,
   type TaskDebugTriggerItem,
 } from '@/skeled/admin'
 
-const taskDebugService = createTaskDebugService(vrpcClient)
+const taskDebugService = createTaskDebugApiService(vrpcClient)
 const jsonExtensions = [json()]
 const defaultArgumentsJson = '{\n  \n}'
 const storageArgumentsPrefix = 'vine.hub.debug.taskLauncher.arguments.'

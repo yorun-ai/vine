@@ -168,10 +168,7 @@ func NewBootServiceClientER(rpcClient *rpcclient.Client) BootServiceClientER {
 }
 
 func (client *_BootServiceClientER) GetInfo(_ivOpts ...rpcclient.InvokeOption) (BootInfo, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_BootServiceGetInfoSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.(BootInfo)
-	err, _ := errI.(ex.Error)
-	return ret, err
+	return client.rpcClient.InvokeAs[BootInfo](_BootServiceGetInfoSpec.Info(), nil, _ivOpts...)
 }
 
 // ConfigServiceServer Link's application configuration service, called by the App
@@ -400,21 +397,15 @@ func NewConfigServiceClientER(rpcClient *rpcclient.Client) ConfigServiceClientER
 }
 
 func (client *_ConfigServiceClientER) GetEternal(key string, _ivOpts ...rpcclient.InvokeOption) (string, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_ConfigServiceGetEternalSpec.Info(), &_ConfigServiceGetEternalArguments{
+	return client.rpcClient.InvokeAs[string](_ConfigServiceGetEternalSpec.Info(), &_ConfigServiceGetEternalArguments{
 		Key: key,
 	}, _ivOpts...)
-	ret, _ := retI.(string)
-	err, _ := errI.(ex.Error)
-	return ret, err
 }
 
 func (client *_ConfigServiceClientER) GetInstant(key string, _ivOpts ...rpcclient.InvokeOption) (string, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_ConfigServiceGetInstantSpec.Info(), &_ConfigServiceGetInstantArguments{
+	return client.rpcClient.InvokeAs[string](_ConfigServiceGetInstantSpec.Info(), &_ConfigServiceGetInstantArguments{
 		Key: key,
 	}, _ivOpts...)
-	ret, _ := retI.(string)
-	err, _ := errI.(ex.Error)
-	return ret, err
 }
 
 // EventServiceServer Link's event service, called by App
@@ -574,10 +565,9 @@ func NewEventServiceClientER(rpcClient *rpcclient.Client) EventServiceClientER {
 }
 
 func (client *_EventServiceClientER) EmitEvent(emission EventEmission, _ivOpts ...rpcclient.InvokeOption) ex.Error {
-	_, errI := client.rpcClient.Invoke(_EventServiceEmitEventSpec.Info(), &_EventServiceEmitEventArguments{
+	_, err := client.rpcClient.Invoke(_EventServiceEmitEventSpec.Info(), &_EventServiceEmitEventArguments{
 		Emission: emission,
 	}, _ivOpts...)
-	err, _ := errI.(ex.Error)
 	return err
 }
 
@@ -779,16 +769,14 @@ func NewRegistryServiceClientER(rpcClient *rpcclient.Client) RegistryServiceClie
 }
 
 func (client *_RegistryServiceClientER) Register(registration AppRegistration, _ivOpts ...rpcclient.InvokeOption) ex.Error {
-	_, errI := client.rpcClient.Invoke(_RegistryServiceRegisterSpec.Info(), &_RegistryServiceRegisterArguments{
+	_, err := client.rpcClient.Invoke(_RegistryServiceRegisterSpec.Info(), &_RegistryServiceRegisterArguments{
 		Registration: registration,
 	}, _ivOpts...)
-	err, _ := errI.(ex.Error)
 	return err
 }
 
 func (client *_RegistryServiceClientER) Unregister(_ivOpts ...rpcclient.InvokeOption) ex.Error {
-	_, errI := client.rpcClient.Invoke(_RegistryServiceUnregisterSpec.Info(), nil, _ivOpts...)
-	err, _ := errI.(ex.Error)
+	_, err := client.rpcClient.Invoke(_RegistryServiceUnregisterSpec.Info(), nil, _ivOpts...)
 	return err
 }
 
@@ -949,9 +937,8 @@ func NewTaskServiceClientER(rpcClient *rpcclient.Client) TaskServiceClientER {
 }
 
 func (client *_TaskServiceClientER) LaunchTask(launch TaskLaunch, _ivOpts ...rpcclient.InvokeOption) ex.Error {
-	_, errI := client.rpcClient.Invoke(_TaskServiceLaunchTaskSpec.Info(), &_TaskServiceLaunchTaskArguments{
+	_, err := client.rpcClient.Invoke(_TaskServiceLaunchTaskSpec.Info(), &_TaskServiceLaunchTaskArguments{
 		Launch: launch,
 	}, _ivOpts...)
-	err, _ := errI.(ex.Error)
 	return err
 }

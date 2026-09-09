@@ -5,13 +5,13 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 )
 
-type PortalSiteServiceServerImpl struct {
-	skeled.DefaultPortalSiteServiceServer
+type PortalSiteApiServiceServerImpl struct {
+	skeled.DefaultPortalSiteApiServiceServer
 
 	PortalSiteCore *core.PortalSiteCore `inject:""`
 }
 
-func (s *PortalSiteServiceServerImpl) List() []skeled.PortalSite {
+func (s *PortalSiteApiServiceServerImpl) List() []skeled.PortalSite {
 	entries := s.PortalSiteCore.List()
 	ret := make([]skeled.PortalSite, 0, len(entries))
 	for _, entry := range entries {
@@ -20,15 +20,15 @@ func (s *PortalSiteServiceServerImpl) List() []skeled.PortalSite {
 	return ret
 }
 
-func (s *PortalSiteServiceServerImpl) ListOptions() skeled.PortalSiteOptions {
+func (s *PortalSiteApiServiceServerImpl) ListOptions() skeled.PortalSiteOptions {
 	return toServerPortalSiteOptions(s.PortalSiteCore.ListOptions())
 }
 
-func (s *PortalSiteServiceServerImpl) Get(id int) skeled.PortalSite {
+func (s *PortalSiteApiServiceServerImpl) Get(id int) skeled.PortalSite {
 	return s.toServerPortalSite(s.PortalSiteCore.Get(id))
 }
 
-func (s *PortalSiteServiceServerImpl) Create(creation skeled.PortalSiteCreation) skeled.PortalSite {
+func (s *PortalSiteApiServiceServerImpl) Create(creation skeled.PortalSiteCreation) skeled.PortalSite {
 	return s.toServerPortalSite(s.PortalSiteCore.Create(core.PortalSiteCreation{
 		Name:          creation.Name,
 		Type:          core.PortalSiteType(creation.Type),
@@ -39,7 +39,7 @@ func (s *PortalSiteServiceServerImpl) Create(creation skeled.PortalSiteCreation)
 	}))
 }
 
-func (s *PortalSiteServiceServerImpl) Update(id int, update skeled.PortalSiteUpdate) skeled.PortalSite {
+func (s *PortalSiteApiServiceServerImpl) Update(id int, update skeled.PortalSiteUpdate) skeled.PortalSite {
 	return s.toServerPortalSite(s.PortalSiteCore.Update(id, core.PortalSiteUpdate{
 		Name:          update.Name,
 		Type:          toCorePortalSiteTypePointer(update.Type),
@@ -50,11 +50,11 @@ func (s *PortalSiteServiceServerImpl) Update(id int, update skeled.PortalSiteUpd
 	}))
 }
 
-func (s *PortalSiteServiceServerImpl) Remove(id int) {
+func (s *PortalSiteApiServiceServerImpl) Remove(id int) {
 	s.PortalSiteCore.Remove(id)
 }
 
-func (s *PortalSiteServiceServerImpl) toServerPortalSite(entry core.PortalSite) skeled.PortalSite {
+func (s *PortalSiteApiServiceServerImpl) toServerPortalSite(entry core.PortalSite) skeled.PortalSite {
 	return toServerPortalSite(entry, s.PortalSiteCore.RpcgwServices(entry))
 }
 

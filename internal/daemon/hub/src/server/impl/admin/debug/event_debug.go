@@ -16,8 +16,8 @@ import (
 	"go.yorun.ai/vine/util/vslice"
 )
 
-type EventDebugServiceServerImpl struct {
-	skeled.DefaultEventDebugServiceServer
+type EventDebugApiServiceServerImpl struct {
+	skeled.DefaultEventDebugApiServiceServer
 
 	RegistryRepo core.RegistryRepo      `inject:""`
 	SchemaRepo   core.SchemaRepo        `inject:""`
@@ -25,18 +25,18 @@ type EventDebugServiceServerImpl struct {
 	Flag         *hubflag.Flag          `inject:""`
 }
 
-func (s *EventDebugServiceServerImpl) defaultBuilder() _DebugDefaultBuilder {
+func (s *EventDebugApiServiceServerImpl) defaultBuilder() _DebugDefaultBuilder {
 	return _DebugDefaultBuilder{SchemaRepo: s.SchemaRepo}
 }
 
-func (s *EventDebugServiceServerImpl) natsPublisher() _DebugNATSPublisher {
+func (s *EventDebugApiServiceServerImpl) natsPublisher() _DebugNATSPublisher {
 	return _DebugNATSPublisher{
 		NATSServer: s.NATSServer,
 		Flag:       s.Flag,
 	}
 }
 
-func (s *EventDebugServiceServerImpl) ListEvents() []skeled.EventDebugEventItem {
+func (s *EventDebugApiServiceServerImpl) ListEvents() []skeled.EventDebugEventItem {
 	ret := []skeled.EventDebugEventItem{}
 	seen := map[string]struct{}{}
 	for _, status := range s.RegistryRepo.ListAppStatuses() {
@@ -58,7 +58,7 @@ func (s *EventDebugServiceServerImpl) ListEvents() []skeled.EventDebugEventItem 
 	})
 }
 
-func (s *EventDebugServiceServerImpl) BuildDefaultEmitRequest(eventSkelName string, schemaHash string) skeled.EventDebugDefaultEmitRequest {
+func (s *EventDebugApiServiceServerImpl) BuildDefaultEmitRequest(eventSkelName string, schemaHash string) skeled.EventDebugDefaultEmitRequest {
 	eventSchema := s.findEventSchema(eventSkelName, schemaHash)
 	trace := meta.InitialTrace()
 	return skeled.EventDebugDefaultEmitRequest{
@@ -68,7 +68,7 @@ func (s *EventDebugServiceServerImpl) BuildDefaultEmitRequest(eventSkelName stri
 	}
 }
 
-func (s *EventDebugServiceServerImpl) EmitEvent(request skeled.EventDebugEmitRequest) {
+func (s *EventDebugApiServiceServerImpl) EmitEvent(request skeled.EventDebugEmitRequest) {
 	s.checkEventListener(request.EventSkelName, request.SchemaHash)
 	debugParseJson(string(request.EventJson))
 
@@ -89,7 +89,7 @@ func (s *EventDebugServiceServerImpl) EmitEvent(request skeled.EventDebugEmitReq
 	publisher.publish(debugEventStreamConfig(), debugEventSubject(request.EventSkelName), vcode.MustMarshalJson(msg))
 }
 
-func (s *EventDebugServiceServerImpl) checkEventListener(eventSkelName string, schemaHash string) {
+func (s *EventDebugApiServiceServerImpl) checkEventListener(eventSkelName string, schemaHash string) {
 	for _, status := range s.RegistryRepo.ListAppStatuses() {
 		if statusHasEventListener(status, eventSkelName, schemaHash) {
 			return
@@ -98,7 +98,7 @@ func (s *EventDebugServiceServerImpl) checkEventListener(eventSkelName string, s
 	ex.PanicNew(ex.NotFound, "event listener registration not found")
 }
 
-func (s *EventDebugServiceServerImpl) findEventSchema(eventSkelName string, schemaHash string) *skel.EventSchema {
+func (s *EventDebugApiServiceServerImpl) findEventSchema(eventSkelName string, schemaHash string) *skel.EventSchema {
 	for _, version := range s.SchemaRepo.ListEventSchemaVersions() {
 		if version.Schema.SkelName == eventSkelName && (schemaHash == "" || version.SchemaHash == schemaHash) {
 			return version.Schema

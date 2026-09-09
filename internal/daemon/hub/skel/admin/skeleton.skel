@@ -191,6 +191,8 @@ data SkeletonServiceItem {
     @desc("Whether the item is public")
     pub: bool
 
+    api: bool
+
     @desc("Authentication mode")
     authMode: string
 
@@ -655,7 +657,7 @@ data SkeletonDomain {
 }
 
 @desc("Hub's skeleton service, called by the Portal admin client")
-service SkeletonService {
+api service SkeletonApiService {
     for AdminActor
 
     noauth

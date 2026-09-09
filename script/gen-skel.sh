@@ -86,6 +86,7 @@ rewrite_service_imports() {
     s/\brpc\.InvokeOption\b/rpcclient.InvokeOption/g;
     s/\brpc\.(CheckValueNotNil|JoinPath|JoinIndex|JoinMapKey)\b/rpcspec.$1/g;
     s/\*rpc\.Client\b/*rpcclient.Client/g;
+    s/^\s*rpcclient "go\.yorun\.ai\/vine\/internal\/core\/rpc\/client"\n//m unless /\brpcclient\./;
   ' "${target_dir}/service.go"
 }
 
@@ -151,7 +152,7 @@ generate_app_skel() {
   local skel_dir="${repo_dir}/internal/core/app/skel"
   local target_dir="${repo_dir}/internal/core/app/skeled"
 
-  skelc gen go --skel-in "${skel_dir}" --go-out "${target_dir}"
+  skelc --strict gen go --skel-in "${skel_dir}" --go-out "${target_dir}"
   rewrite_common_go_imports "${target_dir}"
 }
 
@@ -160,8 +161,8 @@ generate_hub_skel_domain() {
   local api_dir="$2"
   local frontend_dir="$3"
 
-  skelc gen go --skel-in "${skel_dir}" --go-out "${api_dir}"
-  skelc gen ts --api --skel-in "${skel_dir}" --ts-out "${frontend_dir}"
+  skelc --strict gen go --skel-in "${skel_dir}" --go-out "${api_dir}"
+  skelc --strict gen ts --api --skel-in "${skel_dir}" --ts-out "${frontend_dir}"
   rewrite_ts_service_comments "${frontend_dir}"
 
   rewrite_common_go_imports "${api_dir}"
@@ -186,7 +187,7 @@ generate_link_skel() {
   local skel_dir="${repo_dir}/internal/daemon/link/skel"
   local target_dir="${repo_dir}/internal/core/link/skeled"
 
-  skelc gen go --skel-in "${skel_dir}" --go-out "${target_dir}"
+  skelc --strict gen go --skel-in "${skel_dir}" --go-out "${target_dir}"
   rewrite_common_go_imports "${target_dir}"
 }
 

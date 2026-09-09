@@ -57,7 +57,7 @@ import {
 import { vrpcClient } from '@/config/vrpc-client'
 import { useLocale } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { createPortalSiteService } from '@/skeled/admin'
+import { createPortalSiteApiService } from '@/skeled/admin'
 import type {
   PortalSite,
   PortalSiteCreation,
@@ -72,7 +72,7 @@ import {
   skeletonWebHref,
 } from '../skeleton/model'
 
-const portalSiteService = createPortalSiteService(vrpcClient)
+const portalSiteService = createPortalSiteApiService(vrpcClient)
 const PORTAL_SITE_LIST_DEFAULT_WIDTH = 352
 
 const portalSiteTypes = [

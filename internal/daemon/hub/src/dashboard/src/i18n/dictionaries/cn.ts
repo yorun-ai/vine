@@ -1,4 +1,5 @@
 export const cn = {
+  'debug.directInvocationHelp': 'Hub Debug 使用你提供的 Actor 身份和 Info 直接调用服务。API 服务也使用此方式，跳过 Portal 的认证与准入检查。验证完整客户端流程时，请通过 Portal 入口调用。',
   'portalRule.pathPreviewRequest': '示例请求路径',
   'portalRule.pathPreviewResult': '转发路径',
   'portalRule.pathPreview': '路径预览',

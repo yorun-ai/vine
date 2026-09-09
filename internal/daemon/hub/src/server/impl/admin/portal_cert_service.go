@@ -6,13 +6,13 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 )
 
-type PortalCertServiceServerImpl struct {
-	skeled.DefaultPortalCertServiceServer
+type PortalCertApiServiceServerImpl struct {
+	skeled.DefaultPortalCertApiServiceServer
 
 	PortalCertCore *core.PortalCertCore `inject:""`
 }
 
-func (s *PortalCertServiceServerImpl) List() []skeled.PortalCert {
+func (s *PortalCertApiServiceServerImpl) List() []skeled.PortalCert {
 	certs := s.PortalCertCore.List()
 	ret := make([]skeled.PortalCert, 0, len(certs))
 	for _, cert := range certs {
@@ -21,11 +21,11 @@ func (s *PortalCertServiceServerImpl) List() []skeled.PortalCert {
 	return ret
 }
 
-func (s *PortalCertServiceServerImpl) Get(id int) skeled.PortalCert {
+func (s *PortalCertApiServiceServerImpl) Get(id int) skeled.PortalCert {
 	return toServerPortalCert(s.PortalCertCore.Get(id))
 }
 
-func (s *PortalCertServiceServerImpl) Create(creation skeled.PortalCertCreation) skeled.PortalCert {
+func (s *PortalCertApiServiceServerImpl) Create(creation skeled.PortalCertCreation) skeled.PortalCert {
 	return toServerPortalCert(s.PortalCertCore.Create(core.PortalCertCreation{
 		Name:             creation.Name,
 		PublicKeyBase64:  creation.PublicKeyBase64,
@@ -33,7 +33,7 @@ func (s *PortalCertServiceServerImpl) Create(creation skeled.PortalCertCreation)
 	}))
 }
 
-func (s *PortalCertServiceServerImpl) Update(id int, update skeled.PortalCertUpdate) skeled.PortalCert {
+func (s *PortalCertApiServiceServerImpl) Update(id int, update skeled.PortalCertUpdate) skeled.PortalCert {
 	return toServerPortalCert(s.PortalCertCore.Update(id, core.PortalCertUpdate{
 		Name:             update.Name,
 		PublicKeyBase64:  update.PublicKeyBase64,
@@ -41,7 +41,7 @@ func (s *PortalCertServiceServerImpl) Update(id int, update skeled.PortalCertUpd
 	}))
 }
 
-func (s *PortalCertServiceServerImpl) Remove(id int) {
+func (s *PortalCertApiServiceServerImpl) Remove(id int) {
 	s.PortalCertCore.Remove(id)
 }
 

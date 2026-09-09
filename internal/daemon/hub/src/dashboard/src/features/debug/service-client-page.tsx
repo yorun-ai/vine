@@ -1,3 +1,5 @@
+import { useLocale } from '@/i18n'
+import { Badge } from '@/components/ui/badge'
 import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
 import { json } from '@codemirror/lang-json'
@@ -17,7 +19,7 @@ import {
 } from '@/components/ui/select'
 import { vrpcClient } from '@/config/vrpc-client'
 import {
-  createServiceDebugService,
+  createServiceDebugApiService,
   type ServiceDebugActorItem,
   type ServiceDebugAppInstance,
   type ServiceDebugInvokeResponse,
@@ -27,7 +29,7 @@ import {
 import { copyTextToClipboard } from '@/lib/clipboard'
 import { cn } from '@/lib/utils'
 
-const serviceDebugService = createServiceDebugService(vrpcClient)
+const serviceDebugService = createServiceDebugApiService(vrpcClient)
 const jsonExtensions = [json()]
 const defaultParams = '{\n  \n}'
 const defaultActorInfo = '{}'
@@ -138,6 +140,7 @@ function selectedPathParts(pathname: string) {
 }
 
 interface SelectCardTextProps {
+  api?: boolean
   deprecated?: boolean
   description?: string
   placeholder?: string
@@ -145,6 +148,7 @@ interface SelectCardTextProps {
 }
 
 function SelectCardText({
+  api = false,
   deprecated = false,
   description,
   placeholder,
@@ -166,6 +170,7 @@ function SelectCardText({
         >
           {title || placeholder}
         </span>
+        {api ? <Badge variant="outline">api</Badge> : null}
         <DeprecatedBadge deprecated={deprecated} />
       </span>
       {title ? (
@@ -183,17 +188,19 @@ function SelectCardText({
 }
 
 function SelectCardItem({
+  api = false,
   deprecated = false,
   description,
   title,
 }: Required<Pick<SelectCardTextProps, 'description' | 'title'>> &
-  Pick<SelectCardTextProps, 'deprecated'>) {
+  Pick<SelectCardTextProps, 'deprecated' | 'api'>) {
   return (
     <span className="grid min-w-0 flex-1 gap-0.5">
       <span className="flex min-w-0 items-center gap-2">
         <span className="truncate text-sm font-semibold text-foreground">
           {title}
         </span>
+        {api ? <Badge variant="outline">api</Badge> : null}
         <DeprecatedBadge deprecated={deprecated} />
       </span>
       <span className="truncate font-mono text-xs text-muted-foreground">
@@ -204,6 +211,7 @@ function SelectCardItem({
 }
 
 export function ServiceClientPage() {
+  const { t } = useLocale()
   const navigate = useNavigate()
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
@@ -658,6 +666,7 @@ export function ServiceClientPage() {
               <SelectTrigger className="h-auto w-full rounded-lg border-transparent bg-primary/[0.05] px-3 py-2.5 hover:bg-primary/[0.07] focus-visible:border-primary/30">
                 <SelectCardText
                   title={selectedService?.serviceSkelName}
+                  api={selectedService?.api}
                   description={
                     selectedService?.deprecatedReason ??
                     selectedService?.schemaHash
@@ -707,6 +716,7 @@ export function ServiceClientPage() {
                     >
                       <SelectCardItem
                         title={item.serviceSkelName}
+                        api={item.api}
                         description={item.deprecatedReason ?? item.schemaHash}
                         deprecated={item.deprecated}
                       />
@@ -876,6 +886,9 @@ export function ServiceClientPage() {
           <div className="grid min-h-0 flex-1 gap-3 p-3 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
             <section className="flex min-h-0 flex-col">
               <div className="grid shrink-0 gap-3">
+                <p className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                  {t('debug.directInvocationHelp')}
+                </p>
                 <h3 className="text-sm font-semibold text-foreground">Actor</h3>
                 <label className="grid min-w-0">
                   <Select

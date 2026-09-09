@@ -26,13 +26,13 @@ import {
 import { vrpcClient } from '@/config/vrpc-client'
 import { useLocale } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { createMaintenanceService } from '@/skeled/admin'
+import { createMaintenanceApiService } from '@/skeled/admin'
 import type {
   SeedItemSelection,
   SeedPreview,
 } from '@/skeled/admin'
 
-const maintenanceService = createMaintenanceService(vrpcClient)
+const maintenanceService = createMaintenanceApiService(vrpcClient)
 const dataUpdateStorageKey = 'vine.hub.maintenance.dataUpdate'
 
 const kindLabels: Record<string, string> = {

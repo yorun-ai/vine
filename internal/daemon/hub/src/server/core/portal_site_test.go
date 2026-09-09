@@ -129,7 +129,7 @@ func TestMatchPortalSiteRpcgwServicesInDomainViewsIncludesVineSchemas(t *testing
 			Schema: &skel.DomainSchema{
 				Services: []*skel.ServiceSchema{
 					{
-						SkelName: "vine.hub.admin.PortalSiteService",
+						SkelName: "vine.hub.admin.PortalSiteApiService",
 						Audiences: []*skel.ActorAudienceSchema{
 							{SkelName: "vine.hub.admin.AdminActor"},
 						},
@@ -147,7 +147,7 @@ func TestMatchPortalSiteRpcgwServicesInDomainViewsIncludesVineSchemas(t *testing
 
 	services := MatchPortalSiteRpcgwServicesInDomainViews(site, views)
 
-	assert.Equal(t, []string{"vine.hub.admin.PortalSiteService"}, services)
+	assert.Equal(t, []string{"vine.hub.admin.PortalSiteApiService"}, services)
 }
 
 func TestMatchPortalSiteRpcgwServicesInDomainViewsMatchesActorVia(t *testing.T) {

@@ -34,7 +34,7 @@ data EventOn {
 }
 
 @desc("App's event processing service, called by Link")
-service EventService {
+pub service EventService {
     @desc("Trigger event processing")
     method onEvent {
         input {

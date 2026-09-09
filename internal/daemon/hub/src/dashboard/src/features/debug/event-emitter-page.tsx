@@ -18,11 +18,11 @@ import { vrpcClient } from '@/config/vrpc-client'
 import { copyTextToClipboard } from '@/lib/clipboard'
 import { cn } from '@/lib/utils'
 import {
-  createEventDebugService,
+  createEventDebugApiService,
   type EventDebugEventItem,
 } from '@/skeled/admin'
 
-const eventDebugService = createEventDebugService(vrpcClient)
+const eventDebugService = createEventDebugApiService(vrpcClient)
 const jsonExtensions = [json()]
 const defaultEventJson = '{\n  \n}'
 const storageEventJsonPrefix = 'vine.hub.debug.eventEmitter.eventJson.'

@@ -16,13 +16,13 @@ import {
 import { vrpcClient } from '@/config/vrpc-client'
 import { useLocale } from '@/i18n'
 import {
-  createPortalCertService,
-  createPortalRuleService,
+  createPortalCertApiService,
+  createPortalRuleApiService,
 } from '@/skeled/admin'
 import type { PortalCert } from '@/skeled/admin'
 
-const portalRuleService = createPortalRuleService(vrpcClient)
-const portalCertService = createPortalCertService(vrpcClient)
+const portalRuleService = createPortalRuleApiService(vrpcClient)
+const portalCertService = createPortalCertApiService(vrpcClient)
 const dashboardRedirectSeconds = 3
 const dashboardReadyProbeMaxAttempts = 10
 const dashboardReadyProbeAsset = '/brand/vine.svg'

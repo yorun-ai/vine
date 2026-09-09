@@ -100,7 +100,7 @@ data AppStatusView {
 }
 
 @desc("Hub Dashboard's application status service")
-service AppStatusService {
+api service AppStatusApiService {
     for AdminActor
 
     noauth

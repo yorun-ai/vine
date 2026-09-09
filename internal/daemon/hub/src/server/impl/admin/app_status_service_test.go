@@ -59,7 +59,7 @@ func (*_AppStatusServiceRegistryRepo) KeepWebRegistration(string, string, string
 func (*_AppStatusServiceRegistryRepo) RemoveWebRegistration(string, string, string) {}
 
 func TestAppStatusServiceListReturnsEmptyList(t *testing.T) {
-	service := &AppStatusServiceServerImpl{
+	service := &AppStatusApiServiceServerImpl{
 		RegistryRepo: &_AppStatusServiceRegistryRepo{},
 	}
 
@@ -70,7 +70,7 @@ func TestAppStatusServiceListReturnsEmptyList(t *testing.T) {
 }
 
 func TestAppStatusServiceList(t *testing.T) {
-	service := &AppStatusServiceServerImpl{
+	service := &AppStatusApiServiceServerImpl{
 		RegistryRepo: &_AppStatusServiceRegistryRepo{
 			statuses: []*core.AppStatus{{
 				Name:       "demo.booker",
@@ -121,7 +121,7 @@ func TestAppStatusServiceList(t *testing.T) {
 }
 
 func TestAppStatusServiceListReturnsEmptyRegistrationLists(t *testing.T) {
-	service := &AppStatusServiceServerImpl{
+	service := &AppStatusApiServiceServerImpl{
 		RegistryRepo: &_AppStatusServiceRegistryRepo{
 			statuses: []*core.AppStatus{{
 				Name:       "demo.user",
@@ -144,7 +144,7 @@ func TestAppStatusServiceListReturnsEmptyRegistrationLists(t *testing.T) {
 }
 
 func TestAppStatusServiceListSortsStatusesAndRegistrations(t *testing.T) {
-	service := &AppStatusServiceServerImpl{
+	service := &AppStatusApiServiceServerImpl{
 		RegistryRepo: &_AppStatusServiceRegistryRepo{
 			statuses: []*core.AppStatus{{
 				Name:       "demo.user",

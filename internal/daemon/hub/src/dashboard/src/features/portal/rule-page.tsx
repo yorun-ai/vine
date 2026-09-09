@@ -58,8 +58,8 @@ import { vrpcClient } from '@/config/vrpc-client'
 import { useLocale } from '@/i18n'
 import { cn } from '@/lib/utils'
 import {
-  createPortalRuleService,
-  createPortalSiteService,
+  createPortalRuleApiService,
+  createPortalSiteApiService,
 } from '@/skeled/admin'
 import type {
   PortalRule,
@@ -68,8 +68,8 @@ import type {
   PortalSite,
 } from '@/skeled/admin'
 
-const portalRuleService = createPortalRuleService(vrpcClient)
-const portalSiteService = createPortalSiteService(vrpcClient)
+const portalRuleService = createPortalRuleApiService(vrpcClient)
+const portalSiteService = createPortalSiteApiService(vrpcClient)
 const PORTAL_RULE_LIST_DEFAULT_WIDTH = 352
 const routeTypes = [
   {

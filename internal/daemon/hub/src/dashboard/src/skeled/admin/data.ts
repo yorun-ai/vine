@@ -1023,6 +1023,7 @@ export type ServiceDebugServiceItem = {
    * Service schema hash.
    */
   schemaHash:       string;
+  api:              boolean;
   /**
    * Whether the Service is deprecated.
    */
@@ -1776,6 +1777,7 @@ export type SkeletonServiceItem = {
    * Whether the item is public.
    */
   pub:              boolean;
+  api:              boolean;
   /**
    * Authentication mode.
    */

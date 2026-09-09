@@ -11,10 +11,10 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.app",
 	Description: "Internal API for vine framework",
-	Hash:        "c7fbe5cb",
+	Hash:        "bea736f6",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
-		CompilerVersion: "v0.17.1",
+		CompilerVersion: "v0.18.1",
 	},
 
 	Data: []*skel.DataSchema{
@@ -211,8 +211,8 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "ConsoleService",
 			SkelName:    "vine.app.ConsoleService",
 			Description: "App's console service, called by Link",
-			Hash:        "edd76e05",
-			Pub:         false,
+			Hash:        "ef0ecbc5",
+			Pub:         true,
 			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
 				{
@@ -228,8 +228,8 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "EventService",
 			SkelName:    "vine.app.EventService",
 			Description: "App's event processing service, called by Link",
-			Hash:        "e2f6b7ae",
-			Pub:         false,
+			Hash:        "d6668714",
+			Pub:         true,
 			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
 				{
@@ -256,8 +256,8 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "TaskService",
 			SkelName:    "vine.app.TaskService",
 			Description: "App's task execution service, called by Link",
-			Hash:        "56e140ce",
-			Pub:         false,
+			Hash:        "1974ce48",
+			Pub:         true,
 			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
 				{

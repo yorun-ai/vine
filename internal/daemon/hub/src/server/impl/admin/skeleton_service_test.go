@@ -287,14 +287,14 @@ func testSchemaVersionsByDomainHash[T any](versions []core.SchemaVersion[T], dom
 }
 
 func TestSkeletonServiceListServices(t *testing.T) {
-	service := &SkeletonServiceServerImpl{
+	service := &SkeletonApiServiceServerImpl{
 		SchemaRepo: &_SkeletonServiceSchemaRepo{
 			domainSchemas: []*skel.DomainSchema{{
 				Domain: "demo.user",
 				Services: []*skel.ServiceSchema{
 					{
-						Name:     "AppConfigService",
-						SkelName: "vine.hub.admin.AppConfigService",
+						Name:     "AppConfigApiService",
+						SkelName: "vine.hub.admin.AppConfigApiService",
 					},
 					{
 						Name:             "UserService",
@@ -417,7 +417,7 @@ func TestSkeletonServiceListResources(t *testing.T) {
 			Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString},
 		}},
 	}
-	service := &SkeletonServiceServerImpl{
+	service := &SkeletonApiServiceServerImpl{
 		SchemaRepo: &_SkeletonServiceSchemaRepo{
 			domainSchemas: []*skel.DomainSchema{{
 				Domain: "demo.user",
@@ -494,7 +494,7 @@ func TestSkeletonServiceListResources(t *testing.T) {
 }
 
 func TestSkeletonServiceFormatsExternalDomainTypesWithSkelName(t *testing.T) {
-	service := &SkeletonServiceServerImpl{
+	service := &SkeletonApiServiceServerImpl{
 		SchemaRepo: &_SkeletonServiceSchemaRepo{
 			domainSchemas: []*skel.DomainSchema{{
 				Domain: "booker",
@@ -552,7 +552,7 @@ func TestSkeletonServiceFormatsExternalDomainTypesWithSkelName(t *testing.T) {
 }
 
 func TestSkeletonServiceListActorsFiltersVineSkeletons(t *testing.T) {
-	service := &SkeletonServiceServerImpl{
+	service := &SkeletonApiServiceServerImpl{
 		SchemaRepo: &_SkeletonServiceSchemaRepo{
 			domainSchemas: []*skel.DomainSchema{{
 				Domain: "demo.user",
@@ -618,7 +618,7 @@ func TestSkeletonServiceIncludesActorCredentialInfoAndAuthService(t *testing.T) 
 		Hash:     "perm-service-hash",
 		Methods:  []*skel.MethodSchema{permMethod},
 	}
-	service := &SkeletonServiceServerImpl{
+	service := &SkeletonApiServiceServerImpl{
 		SchemaRepo: &_SkeletonServiceSchemaRepo{
 			domainSchemas: []*skel.DomainSchema{{
 				Domain: "demo.user",
@@ -727,7 +727,7 @@ func TestSkeletonServiceListActorsIncludesAccessibleItems(t *testing.T) {
 			},
 		},
 	}
-	service := &SkeletonServiceServerImpl{
+	service := &SkeletonApiServiceServerImpl{
 		SchemaRepo: &_SkeletonServiceSchemaRepo{
 			versions: []core.DomainSchemaVersion{
 				{Schema: oldSchema, MainSchemaHash: "domain-main", Main: false, MultiVersion: true},
@@ -747,7 +747,7 @@ func TestSkeletonServiceListActorsIncludesAccessibleItems(t *testing.T) {
 }
 
 func TestSkeletonServiceListActorsIncludesCrossDomainAccessibleItems(t *testing.T) {
-	service := &SkeletonServiceServerImpl{
+	service := &SkeletonApiServiceServerImpl{
 		SchemaRepo: &_SkeletonServiceSchemaRepo{
 			domainSchemas: []*skel.DomainSchema{
 				{
@@ -803,7 +803,7 @@ func TestSkeletonServiceListActorsIncludesCrossDomainAccessibleItems(t *testing.
 }
 
 func TestSkeletonServiceListConfigs(t *testing.T) {
-	service := &SkeletonServiceServerImpl{
+	service := &SkeletonApiServiceServerImpl{
 		SchemaRepo: &_SkeletonServiceSchemaRepo{
 			domainSchemas: []*skel.DomainSchema{{
 				Domain: "demo.user",
@@ -845,7 +845,7 @@ func TestSkeletonServiceListConfigs(t *testing.T) {
 }
 
 func TestSkeletonServiceListTasksAndEvents(t *testing.T) {
-	service := &SkeletonServiceServerImpl{
+	service := &SkeletonApiServiceServerImpl{
 		SchemaRepo: &_SkeletonServiceSchemaRepo{
 			domainSchemas: []*skel.DomainSchema{{
 				Domain: "demo.user",
@@ -908,7 +908,7 @@ func TestSkeletonServiceListTasksAndEvents(t *testing.T) {
 }
 
 func TestSkeletonServiceListDataIncludesEnums(t *testing.T) {
-	service := &SkeletonServiceServerImpl{
+	service := &SkeletonApiServiceServerImpl{
 		SchemaRepo: &_SkeletonServiceSchemaRepo{
 			domainSchemas: []*skel.DomainSchema{{
 				Domain: "demo.user",
@@ -1004,7 +1004,7 @@ func TestSkeletonServiceMergesItemVersionsOnServer(t *testing.T) {
 			{Name: "RemovedService", SkelName: "demo.user.RemovedService", Hash: "removed-service-a"},
 		},
 	}
-	service := &SkeletonServiceServerImpl{
+	service := &SkeletonApiServiceServerImpl{
 		SchemaRepo: &_SkeletonServiceSchemaRepo{
 			versions: []core.DomainSchemaVersion{
 				{Schema: oldSchema, MainSchemaHash: "domain-main", Main: false, MultiVersion: true},
@@ -1054,4 +1054,25 @@ func TestSkeletonServiceMergesItemVersionsOnServer(t *testing.T) {
 	require.Len(t, domains[1].Data, 1)
 	assert.Equal(t, "domain-cross", domains[2].SchemaHash)
 	assert.False(t, domains[2].IsMain)
+}
+
+func TestSkeletonServiceApiFlag(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		api      bool
+		pub      bool
+		authMode skel.AuthMode
+	}{
+		{name: "api", api: true},
+		{name: "backend", pub: true},
+		{name: "legacy", pub: true, authMode: skel.AuthModeAuth},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			item := toServerSkeletonServiceItem(_SkeletonVersionFields{}, &skel.ServiceSchema{
+				Api: tc.api, Pub: tc.pub, AuthMode: tc.authMode,
+			})
+			assert.Equal(t, tc.api, item.Api)
+			assert.Equal(t, tc.pub, item.Pub)
+		})
+	}
 }

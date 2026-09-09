@@ -87,17 +87,17 @@ func (a *HubApp) BindCommon(b *di.Binder) {
 }
 
 func (*HubApp) ServicerInitHandlers(addHandler app.TypeAdder) {
-	addHandler(app.T[*debugimpl.ServiceDebugServiceServerImpl]())
-	addHandler(app.T[*debugimpl.TaskDebugServiceServerImpl]())
-	addHandler(app.T[*debugimpl.EventDebugServiceServerImpl]())
-	addHandler(app.T[*impl.SkeletonServiceServerImpl]())
-	addHandler(app.T[*impl.AppStatusServiceServerImpl]())
-	addHandler(app.T[*impl.AppConfigServiceServerImpl]())
-	addHandler(app.T[*impl.PortalCertServiceServerImpl]())
-	addHandler(app.T[*impl.PortalEntryServiceServerImpl]())
-	addHandler(app.T[*impl.PortalRuleServiceServerImpl]())
-	addHandler(app.T[*impl.MaintenanceServiceServerImpl]())
-	addHandler(app.T[*impl.PortalSiteServiceServerImpl]())
+	addHandler(app.T[*debugimpl.ServiceDebugApiServiceServerImpl]())
+	addHandler(app.T[*debugimpl.TaskDebugApiServiceServerImpl]())
+	addHandler(app.T[*debugimpl.EventDebugApiServiceServerImpl]())
+	addHandler(app.T[*impl.SkeletonApiServiceServerImpl]())
+	addHandler(app.T[*impl.AppStatusApiServiceServerImpl]())
+	addHandler(app.T[*impl.AppConfigApiServiceServerImpl]())
+	addHandler(app.T[*impl.PortalCertApiServiceServerImpl]())
+	addHandler(app.T[*impl.PortalEntryApiServiceServerImpl]())
+	addHandler(app.T[*impl.PortalRuleApiServiceServerImpl]())
+	addHandler(app.T[*impl.MaintenanceApiServiceServerImpl]())
+	addHandler(app.T[*impl.PortalSiteApiServiceServerImpl]())
 }
 
 func (*HubApp) WebberInitHandlers(addHandler app.TypeAdder) {

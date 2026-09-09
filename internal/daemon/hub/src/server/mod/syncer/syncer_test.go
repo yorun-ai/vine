@@ -173,11 +173,11 @@ func TestSyncerWriteSchemasWritesMainActorAndServiceSchemas(t *testing.T) {
 		}},
 		Services: []core.SchemaVersion[*skel.ServiceSchema]{{
 			Schema: &skel.ServiceSchema{
-				SkelName: "vine.hub.admin.SkeletonService",
+				SkelName: "vine.hub.admin.SkeletonApiService",
 				Hash:     "skeleton-service-main",
 				AuthMode: skel.AuthModeNoAuth,
 			},
-			SkelName:   "vine.hub.admin.SkeletonService",
+			SkelName:   "vine.hub.admin.SkeletonApiService",
 			SchemaHash: "skeleton-service-main",
 			Main:       true,
 		}},
@@ -194,11 +194,11 @@ func TestSyncerWriteSchemasWritesMainActorAndServiceSchemas(t *testing.T) {
 		"vias": []
 	}`, value)
 
-	value, ok = redisServer.Get(redised.FormatSchemaServiceKey("vine.hub.admin.SkeletonService"))
+	value, ok = redisServer.Get(redised.FormatSchemaServiceKey("vine.hub.admin.SkeletonApiService"))
 	require.True(t, ok)
 	assert.JSONEq(t, `{
 		"name": "",
-		"skelName": "vine.hub.admin.SkeletonService",
+		"skelName": "vine.hub.admin.SkeletonApiService",
 		"hash": "skeleton-service-main",
 		"pub": false,
 		"authMode": "noauth",
@@ -219,8 +219,8 @@ func TestSyncerSyncSchemasDoesNotDeleteVineHubSchemas(t *testing.T) {
 			Main:       true,
 		}},
 		Services: []core.SchemaVersion[*skel.ServiceSchema]{{
-			Schema:     &skel.ServiceSchema{Api: true, SkelName: "vine.hub.admin.SkeletonService", Hash: "skeleton-service-main"},
-			SkelName:   "vine.hub.admin.SkeletonService",
+			Schema:     &skel.ServiceSchema{Api: true, SkelName: "vine.hub.admin.SkeletonApiService", Hash: "skeleton-service-main"},
+			SkelName:   "vine.hub.admin.SkeletonApiService",
 			SchemaHash: "skeleton-service-main",
 			Main:       true,
 		}},
@@ -230,7 +230,7 @@ func TestSyncerSyncSchemasDoesNotDeleteVineHubSchemas(t *testing.T) {
 
 	_, ok := redisServer.Get(redised.FormatSchemaActorKey("vine.hub.admin.AdminActor"))
 	assert.True(t, ok)
-	_, ok = redisServer.Get(redised.FormatSchemaServiceKey("vine.hub.admin.SkeletonService"))
+	_, ok = redisServer.Get(redised.FormatSchemaServiceKey("vine.hub.admin.SkeletonApiService"))
 	assert.True(t, ok)
 }
 

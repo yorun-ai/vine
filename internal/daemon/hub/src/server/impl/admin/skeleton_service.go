@@ -10,13 +10,13 @@ import (
 	"go.yorun.ai/vine/util/vslice"
 )
 
-type SkeletonServiceServerImpl struct {
-	skeled.DefaultSkeletonServiceServer
+type SkeletonApiServiceServerImpl struct {
+	skeled.DefaultSkeletonApiServiceServer
 
 	SchemaRepo core.SchemaRepo `inject:""`
 }
 
-func (s *SkeletonServiceServerImpl) ListDomains() []skeled.SkeletonDomain {
+func (s *SkeletonApiServiceServerImpl) ListDomains() []skeled.SkeletonDomain {
 	views := s.SchemaRepo.ListDomainSchemaViews()
 	serviceVersionsByKey := skeletonSchemaVersionsByKey(s.SchemaRepo.ListServiceSchemaVersions())
 	webVersionsByKey := skeletonSchemaVersionsByKey(s.SchemaRepo.ListWebSchemaVersions())
@@ -31,7 +31,7 @@ func (s *SkeletonServiceServerImpl) ListDomains() []skeled.SkeletonDomain {
 	return sortedSkeletonDomains(ret)
 }
 
-func (s *SkeletonServiceServerImpl) ListActors() []skeled.SkeletonActorItem {
+func (s *SkeletonApiServiceServerImpl) ListActors() []skeled.SkeletonActorItem {
 	views := s.SchemaRepo.ListDomainSchemaViews()
 	serviceVersionsByKey := skeletonSchemaVersionsByKey(s.SchemaRepo.ListServiceSchemaVersions())
 	webVersionsByKey := skeletonSchemaVersionsByKey(s.SchemaRepo.ListWebSchemaVersions())
@@ -44,7 +44,7 @@ func (s *SkeletonServiceServerImpl) ListActors() []skeled.SkeletonActorItem {
 	return ret
 }
 
-func (s *SkeletonServiceServerImpl) ListConfigs() []skeled.SkeletonConfigItem {
+func (s *SkeletonApiServiceServerImpl) ListConfigs() []skeled.SkeletonConfigItem {
 	ret := make([]skeled.SkeletonConfigItem, 0)
 	for _, version := range s.SchemaRepo.ListConfigSchemaVersions() {
 		ret = append(ret, toServerSkeletonConfigItem(toSkeletonVersionFields(version), version.Schema))
@@ -52,7 +52,7 @@ func (s *SkeletonServiceServerImpl) ListConfigs() []skeled.SkeletonConfigItem {
 	return ret
 }
 
-func (s *SkeletonServiceServerImpl) ListServices() []skeled.SkeletonServiceItem {
+func (s *SkeletonApiServiceServerImpl) ListServices() []skeled.SkeletonServiceItem {
 	ret := make([]skeled.SkeletonServiceItem, 0)
 	for _, version := range s.SchemaRepo.ListServiceSchemaVersions() {
 		ret = append(ret, toServerSkeletonServiceItem(toSkeletonVersionFields(version), version.Schema))
@@ -60,7 +60,7 @@ func (s *SkeletonServiceServerImpl) ListServices() []skeled.SkeletonServiceItem 
 	return ret
 }
 
-func (s *SkeletonServiceServerImpl) ListResources() []skeled.SkeletonResourceItem {
+func (s *SkeletonApiServiceServerImpl) ListResources() []skeled.SkeletonResourceItem {
 	ret := make([]skeled.SkeletonResourceItem, 0)
 	for _, version := range s.SchemaRepo.ListResourceSchemaVersions() {
 		ret = append(ret, toServerSkeletonResourceItem(toSkeletonVersionFields(version), version.Schema))
@@ -68,7 +68,7 @@ func (s *SkeletonServiceServerImpl) ListResources() []skeled.SkeletonResourceIte
 	return ret
 }
 
-func (s *SkeletonServiceServerImpl) ListWebs() []skeled.SkeletonWebItem {
+func (s *SkeletonApiServiceServerImpl) ListWebs() []skeled.SkeletonWebItem {
 	ret := make([]skeled.SkeletonWebItem, 0)
 	for _, version := range s.SchemaRepo.ListWebSchemaVersions() {
 		ret = append(ret, toServerSkeletonWebItem(toSkeletonVersionFields(version), version.Schema))
@@ -76,7 +76,7 @@ func (s *SkeletonServiceServerImpl) ListWebs() []skeled.SkeletonWebItem {
 	return ret
 }
 
-func (s *SkeletonServiceServerImpl) ListTasks() []skeled.SkeletonTask {
+func (s *SkeletonApiServiceServerImpl) ListTasks() []skeled.SkeletonTask {
 	ret := make([]skeled.SkeletonTask, 0)
 	for _, version := range s.SchemaRepo.ListTaskSchemaVersions() {
 		ret = append(ret, toServerSkeletonTask(toSkeletonVersionFields(version), version.Schema))
@@ -84,7 +84,7 @@ func (s *SkeletonServiceServerImpl) ListTasks() []skeled.SkeletonTask {
 	return ret
 }
 
-func (s *SkeletonServiceServerImpl) ListEvents() []skeled.SkeletonEventItem {
+func (s *SkeletonApiServiceServerImpl) ListEvents() []skeled.SkeletonEventItem {
 	ret := make([]skeled.SkeletonEventItem, 0)
 	for _, version := range s.SchemaRepo.ListEventSchemaVersions() {
 		ret = append(ret, toServerSkeletonEventItem(toSkeletonVersionFields(version), version.Schema))
@@ -92,7 +92,7 @@ func (s *SkeletonServiceServerImpl) ListEvents() []skeled.SkeletonEventItem {
 	return ret
 }
 
-func (s *SkeletonServiceServerImpl) ListData() []skeled.SkeletonData {
+func (s *SkeletonApiServiceServerImpl) ListData() []skeled.SkeletonData {
 	ret := make([]skeled.SkeletonData, 0)
 	for _, version := range s.SchemaRepo.ListDataSchemaVersions() {
 		ret = append(ret, toServerSkeletonData(toSkeletonVersionFields(version), version.Schema))
@@ -423,6 +423,7 @@ func toServerSkeletonServiceItem(version _SkeletonVersionFields, schema *skel.Se
 		Deprecated:       schema.Deprecated,
 		DeprecatedReason: schema.DeprecatedReason,
 		Pub:              schema.Pub,
+		Api:              schema.Api,
 		AuthMode:         string(schema.AuthMode),
 		Require:          toServerSkeletonPermExpr(schema.Require),
 		Actors:           toServerSkeletonActorRefs(schema.Audiences),

@@ -95,7 +95,7 @@ func TestForwardRequest(t *testing.T) {
 			rpcinproc.Unregister(rpcEndpoint)
 		})
 
-		request := httptest.NewRequest(http.MethodPost, "http://demo.local/vine.hub.admin.AppConfigService/list", nil)
+		request := httptest.NewRequest(http.MethodPost, "http://demo.local/vine.hub.admin.AppConfigApiService/list", nil)
 		request.Header.Set("accept", "application/vrpc+json")
 		request.Header.Set("content-type", "application/vrpc+json")
 		request.Header.Set("vrpc-trace", "id=123e4567e89b12d3a456426614174000,span=1234567890abcdef")

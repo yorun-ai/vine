@@ -46,7 +46,7 @@ data SeedItemSelection {
 }
 
 @desc("Hub maintenance service")
-service MaintenanceService {
+api service MaintenanceApiService {
     for AdminActor
 
     noauth

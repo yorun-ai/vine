@@ -97,8 +97,8 @@ func TestMemorySchemaRepoListsVineHubSchemaViews(t *testing.T) {
 			Hash:     "admin-actor-hash",
 		}},
 		Services: []*skel.ServiceSchema{{
-			Name:     "SkeletonService",
-			SkelName: "vine.hub.admin.SkeletonService",
+			Name:     "SkeletonApiService",
+			SkelName: "vine.hub.admin.SkeletonApiService",
 			Hash:     "skeleton-service-hash",
 		}},
 	}
@@ -132,7 +132,7 @@ func TestMemorySchemaRepoListsVineHubSchemaViews(t *testing.T) {
 			require.Len(t, view.Actors, 1)
 			assert.Equal(t, "vine.hub.admin.AdminActor", view.Actors[0].SkelName)
 			require.Len(t, view.Services, 1)
-			assert.Equal(t, "vine.hub.admin.SkeletonService", view.Services[0].SkelName)
+			assert.Equal(t, "vine.hub.admin.SkeletonApiService", view.Services[0].SkelName)
 		}
 	}
 	assert.True(t, foundControl)

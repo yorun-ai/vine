@@ -50,14 +50,14 @@ import {
 import { vrpcClient } from '@/config/vrpc-client'
 import { useLocale } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { createPortalCertService } from '@/skeled/admin'
+import { createPortalCertApiService } from '@/skeled/admin'
 import type {
   PortalCert,
   PortalCertCreation,
   PortalCertUpdate,
 } from '@/skeled/admin'
 
-const portalCertService = createPortalCertService(vrpcClient)
+const portalCertService = createPortalCertApiService(vrpcClient)
 const PORTAL_CERT_LIST_DEFAULT_WIDTH = 352
 
 interface PortalCertFormValue {
