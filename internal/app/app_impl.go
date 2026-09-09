@@ -53,6 +53,7 @@ type _AppImpl struct {
 	inprocFlag *InternalInprocFlag
 
 	injector            di.PlainInjector
+	moduleInjector      di.PlainInjector
 	componentManagers   []ComponentManager
 	components          []Component
 	componentLifecycles []ComponentLifecycle
@@ -166,9 +167,9 @@ func (a *_AppImpl) Start() {
 	a.spec.InitHooks(&a.hooks)
 	a.initLinking()
 	a.initInjector()
-	a.afterAppBootstrap()
 	a.initComponents()
 	a.initModules()
+	a.prepareHooks()
 	a.initServers()
 
 	err := a.beforeAppStart()
@@ -261,6 +262,9 @@ func (a *_AppImpl) shouldEnableConsole() bool {
 }
 
 func (a *_AppImpl) beforeAppStart() error {
+	if err := invokeHooks(a.hooks.beforeStart, false); err != nil {
+		return err
+	}
 	for _, componentHook := range a.componentLifecycles {
 		if err := componentHook.BeforeAppStart(); err != nil {
 			return err
@@ -281,9 +285,11 @@ func (a *_AppImpl) afterAppStart() {
 	for _, module := range a.modules {
 		module.AfterAppStart()
 	}
+	invokeHooks(a.hooks.afterStart, false)
 }
 
 func (a *_AppImpl) beforeAppStop() {
+	invokeHooks(a.hooks.beforeStop, true)
 	for i := range a.modules {
 		a.modules[len(a.modules)-1-i].BeforeAppStop()
 	}
@@ -299,6 +305,7 @@ func (a *_AppImpl) afterAppStop() {
 	for i := range a.componentLifecycles {
 		a.componentLifecycles[len(a.componentLifecycles)-1-i].AfterAppStop()
 	}
+	invokeHooks(a.hooks.afterStop, true)
 }
 
 func (a *_AppImpl) registerApp() {

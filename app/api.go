@@ -13,7 +13,7 @@ type FlagApplier = internalapp.FlagApplier
 // TypeAdder adds a component or module type to an application specification.
 type TypeAdder = internalapp.TypeAdder
 
-// HookAdder registers callbacks whose parameters are injected at each initialization stage.
+// HookAdder registers application lifecycle callbacks with injected parameters.
 type HookAdder = internalapp.HookAdder
 
 // ListenerTypeAdder adds an event listener type with optional execution settings.
@@ -34,7 +34,7 @@ type RunFlag = internalapp.RunFlag
 // App is a constructed application with start and graceful-stop lifecycle methods.
 type App = internalapp.App
 
-// ApplicationSpec describes an application's name, components, modules, shared bindings, and initialization hooks.
+// ApplicationSpec describes an application's name, components, modules, shared bindings, and lifecycle hooks.
 type ApplicationSpec = internalapp.ApplicationSpec
 
 // Application provides default implementations for ApplicationSpec and is intended for embedding.

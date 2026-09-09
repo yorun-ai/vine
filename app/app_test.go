@@ -110,8 +110,9 @@ func TestApplyOptionKeepsUnsetCliOption(t *testing.T) {
 
 func TestHookAdderFacade(t *testing.T) {
 	add := new(HookAdder)
-	add.AfterAppBootstrap(func() {})
-	add.AfterComponentsInitialized(func() {})
-	add.AfterModulesInitialized(func() {})
-	assert.Panics(t, func() { add.AfterComponentsInitialized(nil) })
+	add.BeforeAppStart(func() {})
+	add.AfterAppStart(func() {})
+	add.BeforeAppStop(func() {})
+	add.AfterAppStop(func() {})
+	assert.Panics(t, func() { add.AfterAppStart(nil) })
 }

@@ -126,7 +126,7 @@ func newAppLogger(appName string, categories ...string) *logger.Logger {
 func (a *_AppImpl) initComponents() {
 	componentTypes := a.componentTypes()
 	checkComponentTypes(componentTypes)
-	if len(componentTypes) == 0 && len(a.hooks.afterComponents) == 0 {
+	if len(componentTypes) == 0 {
 		return
 	}
 
@@ -183,15 +183,6 @@ func (a *_AppImpl) initComponents() {
 		a.componentManagers = append(a.componentManagers, manager)
 		a.componentLifecycles = append(a.componentLifecycles, manager)
 	}
-	if len(a.hooks.afterComponents) > 0 {
-		hookInjector := a.injector.SubInjector(
-			a.bindClients,
-			a.bindEmitters,
-			a.bindLaunchers,
-			a.bindComponents,
-		)
-		invokeInitHooks(hookInjector, a.hooks.afterComponents)
-	}
 }
 
 func (a *_AppImpl) bindComponents(b *di.Binder) {
@@ -214,7 +205,7 @@ func (a *_AppImpl) bindCommon(b *di.Binder) {
 func (a *_AppImpl) initModules() {
 	moduleTypes := a.moduleTypes()
 	checkTypes[Module]("module", moduleTypes)
-	if len(moduleTypes) == 0 && len(a.hooks.afterModules) == 0 {
+	if len(moduleTypes) == 0 {
 		return
 	}
 
@@ -229,18 +220,11 @@ func (a *_AppImpl) initModules() {
 				b.Bind(moduleType).In(di.SingletonScope)
 			}
 		})
+	a.moduleInjector = injector
 	a.modules = make([]Module, 0, len(moduleTypes))
 	for _, moduleType := range moduleTypes {
 		module := injector.Get(moduleType).Interface().(Module)
 		a.modules = append(a.modules, module)
-	}
-	if len(a.hooks.afterModules) > 0 {
-		hookInjector := injector.SubInjector(func(b *di.Binder) {
-			for _, module := range a.modules {
-				module.Bind(b)
-			}
-		})
-		invokeInitHooks(hookInjector, a.hooks.afterModules)
 	}
 }
 
