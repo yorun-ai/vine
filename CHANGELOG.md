@@ -8,6 +8,14 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.15.4] - 2026-09-09
+
+### Upgrade notes
+
+- Upgrade Hub, Link, Portal, and application Vine dependencies before deploying
+  contracts that mark services as API. Existing generated contracts remain
+  supported, including legacy services with client rules.
+
 ### Added
 
 - Add `rpc.Client.InvokeAs[T]` for typed results with the existing invocation options and error behavior.
@@ -16,7 +24,7 @@ are not part of the public compatibility commitment.
 
 - Reuse scalar types from `go.yorun.ai/vrpc/skel` v0.11.0 through the existing Skel API.
 - Restrict explicit API services to Portal calls: publish client-facing schemas to Portal and reject backend API calls at Link. Legacy services with client rules retain both paths.
-- Reuse the HTTP transport from `go.yorun.ai/vrpc v0.10.0` for request/response envelopes, protocol helpers and round-trip handling while retaining Vine schema encoding and error mapping.
+- Reuse the HTTP transport from `go.yorun.ai/vrpc` for request/response envelopes, protocol helpers and round-trip handling while retaining Vine schema encoding and error mapping.
 - Refresh generated contracts with skelc v0.17.1 and update the third-party license inventory.
 
 ## [0.15.3] - 2026-09-08
