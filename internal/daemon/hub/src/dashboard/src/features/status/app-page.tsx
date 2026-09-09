@@ -30,7 +30,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { vrpcClient } from '@/config/vrpc-client'
 import { cn } from '@/lib/utils'
-import { createAppStatusService } from '@/skeled/admin'
+import { createAppStatusApiService } from '@/skeled/admin'
 import { useLocale } from '@/i18n'
 import type {
   AppStatusView,
@@ -47,7 +47,7 @@ import {
   skeletonWebHref,
 } from '../skeleton/model'
 
-const appStatusService = createAppStatusService(vrpcClient)
+const appStatusService = createAppStatusApiService(vrpcClient)
 const APP_STATUS_LIST_DEFAULT_WIDTH = 352
 
 function getErrorMessage(error: unknown) {

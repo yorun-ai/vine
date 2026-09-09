@@ -88,7 +88,7 @@ func debugTrace(traceId *string, spanId *string) meta.Trace {
 	return trace
 }
 
-func (s *ServiceDebugServiceServerImpl) debugActor(actorSkelName *string, actorInfoJson skel.JSON) meta.Actor {
+func (s *ServiceDebugApiServiceServerImpl) debugActor(actorSkelName *string, actorInfoJson skel.JSON) meta.Actor {
 	if actorSkelName == nil || strings.TrimSpace(*actorSkelName) == "" {
 		return nil
 	}

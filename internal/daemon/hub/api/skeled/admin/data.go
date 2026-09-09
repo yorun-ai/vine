@@ -1082,6 +1082,7 @@ type ServiceDebugServiceItem struct {
 	ServiceSkelName string `json:"serviceSkelName"`
 	// SchemaHash Service schema hash
 	SchemaHash string `json:"schemaHash"`
+	Api        bool   `json:"api"`
 	// Deprecated Whether the Service is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Service deprecation reason
@@ -1806,6 +1807,7 @@ type SkeletonServiceItem struct {
 	DeprecatedReason string `json:"deprecatedReason"`
 	// Pub Whether the item is public
 	Pub bool `json:"pub"`
+	Api bool `json:"api"`
 	// AuthMode Authentication mode
 	AuthMode string `json:"authMode"`
 	// Require Permission requirements

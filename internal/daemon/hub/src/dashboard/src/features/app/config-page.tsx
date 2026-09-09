@@ -57,8 +57,8 @@ import { copyTextToClipboard } from '@/lib/clipboard'
 import { useLocale } from '@/i18n'
 import { cn } from '@/lib/utils'
 import {
-  createAppConfigService,
-  createSkeletonService,
+  createAppConfigApiService,
+  createSkeletonApiService,
 } from '@/skeled/admin'
 import type {
   AppConfigItem,
@@ -66,8 +66,8 @@ import type {
   SkeletonData,
 } from '@/skeled/admin'
 
-const appConfigService = createAppConfigService(vrpcClient)
-const skeletonService = createSkeletonService(vrpcClient)
+const appConfigService = createAppConfigApiService(vrpcClient)
+const skeletonService = createSkeletonApiService(vrpcClient)
 const jsonExtensions = [json()]
 const APP_CONFIG_LIST_DEFAULT_WIDTH = 352
 

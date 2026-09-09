@@ -8,13 +8,13 @@ import (
 	"go.yorun.ai/vine/util/vslice"
 )
 
-type AppStatusServiceServerImpl struct {
-	skeled.DefaultAppStatusServiceServer
+type AppStatusApiServiceServerImpl struct {
+	skeled.DefaultAppStatusApiServiceServer
 
 	RegistryRepo core.RegistryRepo `inject:""`
 }
 
-func (s *AppStatusServiceServerImpl) List() []skeled.AppStatusView {
+func (s *AppStatusApiServiceServerImpl) List() []skeled.AppStatusView {
 	statuses := s.RegistryRepo.ListAppStatuses()
 	items := make([]skeled.AppStatusView, 0, len(statuses))
 	for _, status := range statuses {

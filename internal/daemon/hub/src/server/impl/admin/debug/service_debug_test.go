@@ -44,7 +44,7 @@ func TestInvokeServicePropagatesTimeoutAsRpcOptions(t *testing.T) {
 
 	appName := "demo.app"
 	appInstanceId := "instance-1"
-	target := &ServiceDebugServiceServerImpl{
+	target := &ServiceDebugApiServiceServerImpl{
 		RegistryRepo: &_ServiceDebugRegistryRepo{
 			status: &core.AppStatus{
 				Name:       appName,
@@ -103,4 +103,53 @@ func mustDecodeDebugRpcOptions(t *testing.T, value string) *rpchttp.Options {
 		t.Fatalf("DecodeOptionsFromHeader() error = %v", err)
 	}
 	return options
+}
+
+func TestInvokeApiServiceUsesDirectDebugPath(t *testing.T) {
+	ingressEndpoint := "link+inproc://vine/hub-debug-api-test"
+	ingressinproc.Register(ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Debug-Rpc-Options", r.Header.Get(rpchttp.HeaderRpcOptions))
+		w.WriteHeader(http.StatusAccepted)
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
+
+	appName := "demo.app"
+	appInstanceId := "instance-1"
+	target := &ServiceDebugApiServiceServerImpl{
+		RegistryRepo: &_ServiceDebugRegistryRepo{
+			status: &core.AppStatus{
+				Name:       appName,
+				InstanceId: appInstanceId,
+			},
+			registration: &core.RpcServiceRegistration{
+				Endpoint:      ingressEndpoint,
+				Api:           true,
+				ServiceName:   "demo.UserService",
+				AppName:       appName,
+				AppInstanceId: appInstanceId,
+			},
+		},
+	}
+
+	response := target.InvokeService(skeled.ServiceDebugInvokeRequest{
+		AppName:         &appName,
+		AppInstanceId:   &appInstanceId,
+		ServiceSkelName: "demo.UserService",
+		MethodSkelName:  "Get",
+		ParamsJson:      skel.JSON(`{}`),
+		TimeoutSeconds:  5,
+	})
+
+	if response.HttpStatus != http.StatusAccepted {
+		t.Fatalf("http status = %d, want %d", response.HttpStatus, http.StatusAccepted)
+	}
+	header := http.Header{}
+	if err := json.Unmarshal([]byte(response.HeadersJson), &header); err != nil {
+		t.Fatalf("Unmarshal headers error = %v", err)
+	}
+	options := mustDecodeDebugRpcOptions(t, header.Get("X-Debug-Rpc-Options"))
+	if options.Timeout <= 0 || options.Timeout > 5*time.Second {
+		t.Fatalf("timeout = %s, want within 5s", options.Timeout)
+	}
 }

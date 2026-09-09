@@ -6,53 +6,48 @@ import (
 	"reflect"
 
 	"go.yorun.ai/vine/internal/core/ex"
-	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
 )
 
 func init() {
-	rpcspec.Register(_AppConfigServiceSpec)
-	rpcspec.Register(_AppStatusServiceSpec)
-	rpcspec.Register(_EventDebugServiceSpec)
-	rpcspec.Register(_MaintenanceServiceSpec)
-	rpcspec.Register(_PortalCertServiceSpec)
-	rpcspec.Register(_PortalEntryServiceSpec)
-	rpcspec.Register(_PortalRuleServiceSpec)
-	rpcspec.Register(_PortalSiteServiceSpec)
-	rpcspec.Register(_ServiceDebugServiceSpec)
-	rpcspec.Register(_SkeletonServiceSpec)
-	rpcspec.Register(_TaskDebugServiceSpec)
+	rpcspec.Register(_AppConfigApiServiceSpec)
+	rpcspec.Register(_AppStatusApiServiceSpec)
+	rpcspec.Register(_EventDebugApiServiceSpec)
+	rpcspec.Register(_MaintenanceApiServiceSpec)
+	rpcspec.Register(_PortalCertApiServiceSpec)
+	rpcspec.Register(_PortalEntryApiServiceSpec)
+	rpcspec.Register(_PortalRuleApiServiceSpec)
+	rpcspec.Register(_PortalSiteApiServiceSpec)
+	rpcspec.Register(_ServiceDebugApiServiceSpec)
+	rpcspec.Register(_SkeletonApiServiceSpec)
+	rpcspec.Register(_TaskDebugApiServiceSpec)
 }
 
-// AppConfigServiceServer Hub's application configuration service, called by Client
+// AppConfigApiServiceServer Hub's application configuration service, called by Client
 
-// AppConfigService / Spec
+// AppConfigApiService / Spec
 
 var (
-	_AppConfigServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
-		Name:              "AppConfigService",
-		SkelName:          "vine.hub.admin.AppConfigService",
-		Hash:              "333fd54d",
-		ServerType:        reflect.TypeFor[AppConfigServiceServer](),
-		DefaultServerType: reflect.TypeFor[*DefaultAppConfigServiceServer](),
-		ClientType:        reflect.TypeFor[AppConfigServiceClient](),
-		ClientCtor:        NewAppConfigServiceClient,
+	_AppConfigApiServiceSpec = &rpcspec.ServiceSpec{
+		Type:              rpcspec.ServiceSpecTypeServer,
+		Name:              "AppConfigApiService",
+		SkelName:          "vine.hub.admin.AppConfigApiService",
+		Hash:              "32633c96",
+		ServerType:        reflect.TypeFor[AppConfigApiServiceServer](),
+		DefaultServerType: reflect.TypeFor[*DefaultAppConfigApiServiceServer](),
 
-		ERServerType:        reflect.TypeFor[AppConfigServiceServerER](),
-		WrapperERServerCtor: _NewWrapperAppConfigServiceServerER,
-		DefaultERServerType: reflect.TypeFor[*DefaultAppConfigServiceServerER](),
-		ERClientType:        reflect.TypeFor[AppConfigServiceClientER](),
-		ERClientCtor:        NewAppConfigServiceClientER,
+		ERServerType:        reflect.TypeFor[AppConfigApiServiceServerER](),
+		WrapperERServerCtor: _NewWrapperAppConfigApiServiceServerER,
+		DefaultERServerType: reflect.TypeFor[*DefaultAppConfigApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
-			_AppConfigServiceListSpec,
-			_AppConfigServiceGetSpec,
-			_AppConfigServiceUpdateSpec,
-			_AppConfigServiceCreateSpec,
-			_AppConfigServiceRemoveSpec,
+			_AppConfigApiServiceListSpec,
+			_AppConfigApiServiceGetSpec,
+			_AppConfigApiServiceUpdateSpec,
+			_AppConfigApiServiceCreateSpec,
+			_AppConfigApiServiceRemoveSpec,
 		},
 	}
-	_AppConfigServiceListSpec = &rpcspec.MethodSpec{
+	_AppConfigApiServiceListSpec = &rpcspec.MethodSpec{
 		Name:           "List",
 		SkelName:       "list",
 		ArgumentsType:  nil,
@@ -76,18 +71,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			AppConfigServiceClient.List,
-			AppConfigServiceClientER.List,
-			AppConfigServiceServer.List,
-			AppConfigServiceServerER.List,
+			AppConfigApiServiceServer.List,
+			AppConfigApiServiceServerER.List,
 		},
 	}
-	_AppConfigServiceGetSpec = &rpcspec.MethodSpec{
+	_AppConfigApiServiceGetSpec = &rpcspec.MethodSpec{
 		Name:          "Get",
 		SkelName:      "get",
-		ArgumentsType: reflect.TypeFor[_AppConfigServiceGetArguments](),
+		ArgumentsType: reflect.TypeFor[_AppConfigApiServiceGetArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_AppConfigServiceGetArguments)
+			source := value.(*_AppConfigApiServiceGetArguments)
 			cloned := *source
 			return &cloned
 		},
@@ -103,18 +96,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			AppConfigServiceClient.Get,
-			AppConfigServiceClientER.Get,
-			AppConfigServiceServer.Get,
-			AppConfigServiceServerER.Get,
+			AppConfigApiServiceServer.Get,
+			AppConfigApiServiceServerER.Get,
 		},
 	}
-	_AppConfigServiceUpdateSpec = &rpcspec.MethodSpec{
+	_AppConfigApiServiceUpdateSpec = &rpcspec.MethodSpec{
 		Name:          "Update",
 		SkelName:      "update",
-		ArgumentsType: reflect.TypeFor[_AppConfigServiceUpdateArguments](),
+		ArgumentsType: reflect.TypeFor[_AppConfigApiServiceUpdateArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_AppConfigServiceUpdateArguments)
+			source := value.(*_AppConfigApiServiceUpdateArguments)
 			cloned := *source
 			cloned.Update = source.Update.Clone()
 			return &cloned
@@ -131,18 +122,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			AppConfigServiceClient.Update,
-			AppConfigServiceClientER.Update,
-			AppConfigServiceServer.Update,
-			AppConfigServiceServerER.Update,
+			AppConfigApiServiceServer.Update,
+			AppConfigApiServiceServerER.Update,
 		},
 	}
-	_AppConfigServiceCreateSpec = &rpcspec.MethodSpec{
+	_AppConfigApiServiceCreateSpec = &rpcspec.MethodSpec{
 		Name:          "Create",
 		SkelName:      "create",
-		ArgumentsType: reflect.TypeFor[_AppConfigServiceCreateArguments](),
+		ArgumentsType: reflect.TypeFor[_AppConfigApiServiceCreateArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_AppConfigServiceCreateArguments)
+			source := value.(*_AppConfigApiServiceCreateArguments)
 			cloned := *source
 			cloned.Creation = source.Creation.Clone()
 			return &cloned
@@ -159,18 +148,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			AppConfigServiceClient.Create,
-			AppConfigServiceClientER.Create,
-			AppConfigServiceServer.Create,
-			AppConfigServiceServerER.Create,
+			AppConfigApiServiceServer.Create,
+			AppConfigApiServiceServerER.Create,
 		},
 	}
-	_AppConfigServiceRemoveSpec = &rpcspec.MethodSpec{
+	_AppConfigApiServiceRemoveSpec = &rpcspec.MethodSpec{
 		Name:          "Remove",
 		SkelName:      "remove",
-		ArgumentsType: reflect.TypeFor[_AppConfigServiceRemoveArguments](),
+		ArgumentsType: reflect.TypeFor[_AppConfigApiServiceRemoveArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_AppConfigServiceRemoveArguments)
+			source := value.(*_AppConfigApiServiceRemoveArguments)
 			cloned := *source
 			return &cloned
 		},
@@ -185,36 +172,34 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			AppConfigServiceClient.Remove,
-			AppConfigServiceClientER.Remove,
-			AppConfigServiceServer.Remove,
-			AppConfigServiceServerER.Remove,
+			AppConfigApiServiceServer.Remove,
+			AppConfigApiServiceServerER.Remove,
 		},
 	}
 )
 
-// AppConfigService / Arguments
+// AppConfigApiService / Arguments
 
-type _AppConfigServiceGetArguments struct {
+type _AppConfigApiServiceGetArguments struct {
 	Id int `json:"id" skel:"index(0)"`
 }
 
-type _AppConfigServiceUpdateArguments struct {
+type _AppConfigApiServiceUpdateArguments struct {
 	Id     int             `json:"id" skel:"index(0)"`
 	Update AppConfigUpdate `json:"update" skel:"index(1)"`
 }
 
-type _AppConfigServiceCreateArguments struct {
+type _AppConfigApiServiceCreateArguments struct {
 	Creation AppConfigCreation `json:"creation" skel:"index(0)"`
 }
 
-type _AppConfigServiceRemoveArguments struct {
+type _AppConfigApiServiceRemoveArguments struct {
 	Id int `json:"id" skel:"index(0)"`
 }
 
-// AppConfigService / Server
+// AppConfigApiService / Server
 
-type AppConfigServiceServer interface {
+type AppConfigApiServiceServer interface {
 	// List List configuration items.
 	//   @returns []AppConfigItem - Configuration item list
 	List() []AppConfigItem
@@ -236,277 +221,131 @@ type AppConfigServiceServer interface {
 	//   @returns bool - Whether deletion succeeded
 	Remove(id int) bool
 
-	mustBeAppConfigServiceServer()
+	mustBeAppConfigApiServiceServer()
 }
 
-// AppConfigService / Server / DefaultServer
+// AppConfigApiService / Server / DefaultServer
 
-type DefaultAppConfigServiceServer struct{}
+type DefaultAppConfigApiServiceServer struct{}
 
-func (*DefaultAppConfigServiceServer) List() []AppConfigItem {
+func (*DefaultAppConfigApiServiceServer) List() []AppConfigItem {
 	ex.PanicNew(ex.InvalidRequest, "method list is not implemented")
 	return []AppConfigItem{}
 }
 
-func (*DefaultAppConfigServiceServer) Get(int) AppConfigItem {
+func (*DefaultAppConfigApiServiceServer) Get(int) AppConfigItem {
 	ex.PanicNew(ex.InvalidRequest, "method get is not implemented")
 	return AppConfigItem{}
 }
 
-func (*DefaultAppConfigServiceServer) Update(int, AppConfigUpdate) AppConfigItem {
+func (*DefaultAppConfigApiServiceServer) Update(int, AppConfigUpdate) AppConfigItem {
 	ex.PanicNew(ex.InvalidRequest, "method update is not implemented")
 	return AppConfigItem{}
 }
 
-func (*DefaultAppConfigServiceServer) Create(AppConfigCreation) AppConfigItem {
+func (*DefaultAppConfigApiServiceServer) Create(AppConfigCreation) AppConfigItem {
 	ex.PanicNew(ex.InvalidRequest, "method create is not implemented")
 	return AppConfigItem{}
 }
 
-func (*DefaultAppConfigServiceServer) Remove(int) bool {
+func (*DefaultAppConfigApiServiceServer) Remove(int) bool {
 	ex.PanicNew(ex.InvalidRequest, "method remove is not implemented")
 	return false
 }
 
-func (*DefaultAppConfigServiceServer) mustBeAppConfigServiceServer() {}
+func (*DefaultAppConfigApiServiceServer) mustBeAppConfigApiServiceServer() {}
 
-// AppConfigService / ERServer
+// AppConfigApiService / ERServer
 
-type AppConfigServiceServerER interface {
+type AppConfigApiServiceServerER interface {
 	List() ([]AppConfigItem, ex.Error)
 	Get(id int) (AppConfigItem, ex.Error)
 	Update(id int, update AppConfigUpdate) (AppConfigItem, ex.Error)
 	Create(creation AppConfigCreation) (AppConfigItem, ex.Error)
 	Remove(id int) (bool, ex.Error)
 
-	mustBeAppConfigServiceServerER()
+	mustBeAppConfigApiServiceServerER()
 }
 
-// AppConfigService / ERServer / WrapperERServer
+// AppConfigApiService / ERServer / WrapperERServer
 
-type _WrapperAppConfigServiceServerER struct {
-	DefaultAppConfigServiceServer
-	serverImpl AppConfigServiceServer
+type _WrapperAppConfigApiServiceServerER struct {
+	DefaultAppConfigApiServiceServer
+	serverImpl AppConfigApiServiceServer
 }
 
-func _NewWrapperAppConfigServiceServerER(serverImpl AppConfigServiceServer) AppConfigServiceServerER {
-	return &_WrapperAppConfigServiceServerER{
+func _NewWrapperAppConfigApiServiceServerER(serverImpl AppConfigApiServiceServer) AppConfigApiServiceServerER {
+	return &_WrapperAppConfigApiServiceServerER{
 		serverImpl: serverImpl,
 	}
 }
 
-func (service *_WrapperAppConfigServiceServerER) server() AppConfigServiceServer {
+func (service *_WrapperAppConfigApiServiceServerER) server() AppConfigApiServiceServer {
 	if service.serverImpl == nil {
-		return &service.DefaultAppConfigServiceServer
+		return &service.DefaultAppConfigApiServiceServer
 	}
 	return service.serverImpl
 }
 
-func (service *_WrapperAppConfigServiceServerER) List() (ret []AppConfigItem, err ex.Error) {
+func (service *_WrapperAppConfigApiServiceServerER) List() (ret []AppConfigItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().List()
 	return
 }
 
-func (service *_WrapperAppConfigServiceServerER) Get(id int) (ret AppConfigItem, err ex.Error) {
+func (service *_WrapperAppConfigApiServiceServerER) Get(id int) (ret AppConfigItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().Get(id)
 	return
 }
 
-func (service *_WrapperAppConfigServiceServerER) Update(id int, update AppConfigUpdate) (ret AppConfigItem, err ex.Error) {
+func (service *_WrapperAppConfigApiServiceServerER) Update(id int, update AppConfigUpdate) (ret AppConfigItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().Update(id, update)
 	return
 }
 
-func (service *_WrapperAppConfigServiceServerER) Create(creation AppConfigCreation) (ret AppConfigItem, err ex.Error) {
+func (service *_WrapperAppConfigApiServiceServerER) Create(creation AppConfigCreation) (ret AppConfigItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().Create(creation)
 	return
 }
 
-func (service *_WrapperAppConfigServiceServerER) Remove(id int) (ret bool, err ex.Error) {
+func (service *_WrapperAppConfigApiServiceServerER) Remove(id int) (ret bool, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().Remove(id)
 	return
 }
 
-func (*_WrapperAppConfigServiceServerER) mustBeAppConfigServiceServerER() {}
+func (*_WrapperAppConfigApiServiceServerER) mustBeAppConfigApiServiceServerER() {}
 
-// AppConfigService / ERServer / DefaultERServer
+// AppConfigApiService / ERServer / DefaultERServer
 
-type DefaultAppConfigServiceServerER struct {
-	_WrapperAppConfigServiceServerER
+type DefaultAppConfigApiServiceServerER struct {
+	_WrapperAppConfigApiServiceServerER
 }
 
-// AppConfigService / Client
+// AppStatusApiServiceServer Hub Dashboard's application status service
 
-type AppConfigServiceClient interface {
-	// List List configuration items.
-	//   @returns []AppConfigItem - Configuration item list
-	List(_ivOpts ...rpcclient.InvokeOption) []AppConfigItem
-	// Get Read configuration.
-	//   @param id - Configuration ID
-	//   @returns AppConfigItem - Configuration items
-	Get(id int, _ivOpts ...rpcclient.InvokeOption) AppConfigItem
-	// Update Modify configuration.
-	//   @param id - Configuration ID
-	//   @param update - Configuration update parameters
-	//   @returns AppConfigItem - Configuration items
-	Update(id int, update AppConfigUpdate, _ivOpts ...rpcclient.InvokeOption) AppConfigItem
-	// Create Create configuration.
-	//   @param creation - Configuration creation parameters
-	//   @returns AppConfigItem - Configuration items
-	Create(creation AppConfigCreation, _ivOpts ...rpcclient.InvokeOption) AppConfigItem
-	// Remove Delete unused configuration.
-	//   @param id - Configuration ID
-	//   @returns bool - Whether deletion succeeded
-	Remove(id int, _ivOpts ...rpcclient.InvokeOption) bool
-}
-
-type _AppConfigServiceClient struct {
-	clientER AppConfigServiceClientER
-}
-
-func NewAppConfigServiceClient(clientER AppConfigServiceClientER) AppConfigServiceClient {
-	return &_AppConfigServiceClient{clientER: clientER}
-}
-
-func (client *_AppConfigServiceClient) List(_ivOpts ...rpcclient.InvokeOption) []AppConfigItem {
-	ret, err := client.clientER.List(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_AppConfigServiceClient) Get(id int, _ivOpts ...rpcclient.InvokeOption) AppConfigItem {
-	ret, err := client.clientER.Get(id, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_AppConfigServiceClient) Update(id int, update AppConfigUpdate, _ivOpts ...rpcclient.InvokeOption) AppConfigItem {
-	ret, err := client.clientER.Update(id, update, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_AppConfigServiceClient) Create(creation AppConfigCreation, _ivOpts ...rpcclient.InvokeOption) AppConfigItem {
-	ret, err := client.clientER.Create(creation, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_AppConfigServiceClient) Remove(id int, _ivOpts ...rpcclient.InvokeOption) bool {
-	ret, err := client.clientER.Remove(id, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-// AppConfigService / ERClient
-
-type AppConfigServiceClientER interface {
-	// List List configuration items.
-	//   @returns []AppConfigItem - Configuration item list
-	List(_ivOpts ...rpcclient.InvokeOption) ([]AppConfigItem, ex.Error)
-	// Get Read configuration.
-	//   @param id - Configuration ID
-	//   @returns AppConfigItem - Configuration items
-	Get(id int, _ivOpts ...rpcclient.InvokeOption) (AppConfigItem, ex.Error)
-	// Update Modify configuration.
-	//   @param id - Configuration ID
-	//   @param update - Configuration update parameters
-	//   @returns AppConfigItem - Configuration items
-	Update(id int, update AppConfigUpdate, _ivOpts ...rpcclient.InvokeOption) (AppConfigItem, ex.Error)
-	// Create Create configuration.
-	//   @param creation - Configuration creation parameters
-	//   @returns AppConfigItem - Configuration items
-	Create(creation AppConfigCreation, _ivOpts ...rpcclient.InvokeOption) (AppConfigItem, ex.Error)
-	// Remove Delete unused configuration.
-	//   @param id - Configuration ID
-	//   @returns bool - Whether deletion succeeded
-	Remove(id int, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error)
-}
-
-type _AppConfigServiceClientER struct {
-	rpcClient *rpcclient.Client
-}
-
-func NewAppConfigServiceClientER(rpcClient *rpcclient.Client) AppConfigServiceClientER {
-	return &_AppConfigServiceClientER{
-		rpcClient: rpcClient,
-	}
-}
-
-func (client *_AppConfigServiceClientER) List(_ivOpts ...rpcclient.InvokeOption) ([]AppConfigItem, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_AppConfigServiceListSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]AppConfigItem)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_AppConfigServiceClientER) Get(id int, _ivOpts ...rpcclient.InvokeOption) (AppConfigItem, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_AppConfigServiceGetSpec.Info(), &_AppConfigServiceGetArguments{
-		Id: id,
-	}, _ivOpts...)
-	ret, _ := retI.(AppConfigItem)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_AppConfigServiceClientER) Update(id int, update AppConfigUpdate, _ivOpts ...rpcclient.InvokeOption) (AppConfigItem, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_AppConfigServiceUpdateSpec.Info(), &_AppConfigServiceUpdateArguments{
-		Id:     id,
-		Update: update,
-	}, _ivOpts...)
-	ret, _ := retI.(AppConfigItem)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_AppConfigServiceClientER) Create(creation AppConfigCreation, _ivOpts ...rpcclient.InvokeOption) (AppConfigItem, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_AppConfigServiceCreateSpec.Info(), &_AppConfigServiceCreateArguments{
-		Creation: creation,
-	}, _ivOpts...)
-	ret, _ := retI.(AppConfigItem)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_AppConfigServiceClientER) Remove(id int, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_AppConfigServiceRemoveSpec.Info(), &_AppConfigServiceRemoveArguments{
-		Id: id,
-	}, _ivOpts...)
-	ret, _ := retI.(bool)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-// AppStatusServiceServer Hub Dashboard's application status service
-
-// AppStatusService / Spec
+// AppStatusApiService / Spec
 
 var (
-	_AppStatusServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
-		Name:              "AppStatusService",
-		SkelName:          "vine.hub.admin.AppStatusService",
-		Hash:              "750c670f",
-		ServerType:        reflect.TypeFor[AppStatusServiceServer](),
-		DefaultServerType: reflect.TypeFor[*DefaultAppStatusServiceServer](),
-		ClientType:        reflect.TypeFor[AppStatusServiceClient](),
-		ClientCtor:        NewAppStatusServiceClient,
+	_AppStatusApiServiceSpec = &rpcspec.ServiceSpec{
+		Type:              rpcspec.ServiceSpecTypeServer,
+		Name:              "AppStatusApiService",
+		SkelName:          "vine.hub.admin.AppStatusApiService",
+		Hash:              "c4f2c531",
+		ServerType:        reflect.TypeFor[AppStatusApiServiceServer](),
+		DefaultServerType: reflect.TypeFor[*DefaultAppStatusApiServiceServer](),
 
-		ERServerType:        reflect.TypeFor[AppStatusServiceServerER](),
-		WrapperERServerCtor: _NewWrapperAppStatusServiceServerER,
-		DefaultERServerType: reflect.TypeFor[*DefaultAppStatusServiceServerER](),
-		ERClientType:        reflect.TypeFor[AppStatusServiceClientER](),
-		ERClientCtor:        NewAppStatusServiceClientER,
+		ERServerType:        reflect.TypeFor[AppStatusApiServiceServerER](),
+		WrapperERServerCtor: _NewWrapperAppStatusApiServiceServerER,
+		DefaultERServerType: reflect.TypeFor[*DefaultAppStatusApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
-			_AppStatusServiceListSpec,
+			_AppStatusApiServiceListSpec,
 		},
 	}
-	_AppStatusServiceListSpec = &rpcspec.MethodSpec{
+	_AppStatusApiServiceListSpec = &rpcspec.MethodSpec{
 		Name:           "List",
 		SkelName:       "list",
 		ArgumentsType:  nil,
@@ -530,148 +369,97 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			AppStatusServiceClient.List,
-			AppStatusServiceClientER.List,
-			AppStatusServiceServer.List,
-			AppStatusServiceServerER.List,
+			AppStatusApiServiceServer.List,
+			AppStatusApiServiceServerER.List,
 		},
 	}
 )
 
-// AppStatusService / Server
+// AppStatusApiService / Server
 
-type AppStatusServiceServer interface {
+type AppStatusApiServiceServer interface {
 	// List List application instance statuses currently stored in Redis.
 	List() []AppStatusView
 
-	mustBeAppStatusServiceServer()
+	mustBeAppStatusApiServiceServer()
 }
 
-// AppStatusService / Server / DefaultServer
+// AppStatusApiService / Server / DefaultServer
 
-type DefaultAppStatusServiceServer struct{}
+type DefaultAppStatusApiServiceServer struct{}
 
-func (*DefaultAppStatusServiceServer) List() []AppStatusView {
+func (*DefaultAppStatusApiServiceServer) List() []AppStatusView {
 	ex.PanicNew(ex.InvalidRequest, "method list is not implemented")
 	return []AppStatusView{}
 }
 
-func (*DefaultAppStatusServiceServer) mustBeAppStatusServiceServer() {}
+func (*DefaultAppStatusApiServiceServer) mustBeAppStatusApiServiceServer() {}
 
-// AppStatusService / ERServer
+// AppStatusApiService / ERServer
 
-type AppStatusServiceServerER interface {
+type AppStatusApiServiceServerER interface {
 	List() ([]AppStatusView, ex.Error)
 
-	mustBeAppStatusServiceServerER()
+	mustBeAppStatusApiServiceServerER()
 }
 
-// AppStatusService / ERServer / WrapperERServer
+// AppStatusApiService / ERServer / WrapperERServer
 
-type _WrapperAppStatusServiceServerER struct {
-	DefaultAppStatusServiceServer
-	serverImpl AppStatusServiceServer
+type _WrapperAppStatusApiServiceServerER struct {
+	DefaultAppStatusApiServiceServer
+	serverImpl AppStatusApiServiceServer
 }
 
-func _NewWrapperAppStatusServiceServerER(serverImpl AppStatusServiceServer) AppStatusServiceServerER {
-	return &_WrapperAppStatusServiceServerER{
+func _NewWrapperAppStatusApiServiceServerER(serverImpl AppStatusApiServiceServer) AppStatusApiServiceServerER {
+	return &_WrapperAppStatusApiServiceServerER{
 		serverImpl: serverImpl,
 	}
 }
 
-func (service *_WrapperAppStatusServiceServerER) server() AppStatusServiceServer {
+func (service *_WrapperAppStatusApiServiceServerER) server() AppStatusApiServiceServer {
 	if service.serverImpl == nil {
-		return &service.DefaultAppStatusServiceServer
+		return &service.DefaultAppStatusApiServiceServer
 	}
 	return service.serverImpl
 }
 
-func (service *_WrapperAppStatusServiceServerER) List() (ret []AppStatusView, err ex.Error) {
+func (service *_WrapperAppStatusApiServiceServerER) List() (ret []AppStatusView, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().List()
 	return
 }
 
-func (*_WrapperAppStatusServiceServerER) mustBeAppStatusServiceServerER() {}
+func (*_WrapperAppStatusApiServiceServerER) mustBeAppStatusApiServiceServerER() {}
 
-// AppStatusService / ERServer / DefaultERServer
+// AppStatusApiService / ERServer / DefaultERServer
 
-type DefaultAppStatusServiceServerER struct {
-	_WrapperAppStatusServiceServerER
+type DefaultAppStatusApiServiceServerER struct {
+	_WrapperAppStatusApiServiceServerER
 }
 
-// AppStatusService / Client
+// EventDebugApiServiceServer Hub Dashboard Event Debugging Service
 
-type AppStatusServiceClient interface {
-	// List List application instance statuses currently stored in Redis.
-	List(_ivOpts ...rpcclient.InvokeOption) []AppStatusView
-}
-
-type _AppStatusServiceClient struct {
-	clientER AppStatusServiceClientER
-}
-
-func NewAppStatusServiceClient(clientER AppStatusServiceClientER) AppStatusServiceClient {
-	return &_AppStatusServiceClient{clientER: clientER}
-}
-
-func (client *_AppStatusServiceClient) List(_ivOpts ...rpcclient.InvokeOption) []AppStatusView {
-	ret, err := client.clientER.List(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-// AppStatusService / ERClient
-
-type AppStatusServiceClientER interface {
-	// List List application instance statuses currently stored in Redis.
-	List(_ivOpts ...rpcclient.InvokeOption) ([]AppStatusView, ex.Error)
-}
-
-type _AppStatusServiceClientER struct {
-	rpcClient *rpcclient.Client
-}
-
-func NewAppStatusServiceClientER(rpcClient *rpcclient.Client) AppStatusServiceClientER {
-	return &_AppStatusServiceClientER{
-		rpcClient: rpcClient,
-	}
-}
-
-func (client *_AppStatusServiceClientER) List(_ivOpts ...rpcclient.InvokeOption) ([]AppStatusView, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_AppStatusServiceListSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]AppStatusView)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-// EventDebugServiceServer Hub Dashboard Event Debugging Service
-
-// EventDebugService / Spec
+// EventDebugApiService / Spec
 
 var (
-	_EventDebugServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
-		Name:              "EventDebugService",
-		SkelName:          "vine.hub.admin.EventDebugService",
-		Hash:              "ac472116",
-		ServerType:        reflect.TypeFor[EventDebugServiceServer](),
-		DefaultServerType: reflect.TypeFor[*DefaultEventDebugServiceServer](),
-		ClientType:        reflect.TypeFor[EventDebugServiceClient](),
-		ClientCtor:        NewEventDebugServiceClient,
+	_EventDebugApiServiceSpec = &rpcspec.ServiceSpec{
+		Type:              rpcspec.ServiceSpecTypeServer,
+		Name:              "EventDebugApiService",
+		SkelName:          "vine.hub.admin.EventDebugApiService",
+		Hash:              "aa36888a",
+		ServerType:        reflect.TypeFor[EventDebugApiServiceServer](),
+		DefaultServerType: reflect.TypeFor[*DefaultEventDebugApiServiceServer](),
 
-		ERServerType:        reflect.TypeFor[EventDebugServiceServerER](),
-		WrapperERServerCtor: _NewWrapperEventDebugServiceServerER,
-		DefaultERServerType: reflect.TypeFor[*DefaultEventDebugServiceServerER](),
-		ERClientType:        reflect.TypeFor[EventDebugServiceClientER](),
-		ERClientCtor:        NewEventDebugServiceClientER,
+		ERServerType:        reflect.TypeFor[EventDebugApiServiceServerER](),
+		WrapperERServerCtor: _NewWrapperEventDebugApiServiceServerER,
+		DefaultERServerType: reflect.TypeFor[*DefaultEventDebugApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
-			_EventDebugServiceListEventsSpec,
-			_EventDebugServiceBuildDefaultEmitRequestSpec,
-			_EventDebugServiceEmitEventSpec,
+			_EventDebugApiServiceListEventsSpec,
+			_EventDebugApiServiceBuildDefaultEmitRequestSpec,
+			_EventDebugApiServiceEmitEventSpec,
 		},
 	}
-	_EventDebugServiceListEventsSpec = &rpcspec.MethodSpec{
+	_EventDebugApiServiceListEventsSpec = &rpcspec.MethodSpec{
 		Name:           "ListEvents",
 		SkelName:       "listEvents",
 		ArgumentsType:  nil,
@@ -695,18 +483,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			EventDebugServiceClient.ListEvents,
-			EventDebugServiceClientER.ListEvents,
-			EventDebugServiceServer.ListEvents,
-			EventDebugServiceServerER.ListEvents,
+			EventDebugApiServiceServer.ListEvents,
+			EventDebugApiServiceServerER.ListEvents,
 		},
 	}
-	_EventDebugServiceBuildDefaultEmitRequestSpec = &rpcspec.MethodSpec{
+	_EventDebugApiServiceBuildDefaultEmitRequestSpec = &rpcspec.MethodSpec{
 		Name:          "BuildDefaultEmitRequest",
 		SkelName:      "buildDefaultEmitRequest",
-		ArgumentsType: reflect.TypeFor[_EventDebugServiceBuildDefaultEmitRequestArguments](),
+		ArgumentsType: reflect.TypeFor[_EventDebugApiServiceBuildDefaultEmitRequestArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_EventDebugServiceBuildDefaultEmitRequestArguments)
+			source := value.(*_EventDebugApiServiceBuildDefaultEmitRequestArguments)
 			cloned := *source
 			return &cloned
 		},
@@ -722,18 +508,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			EventDebugServiceClient.BuildDefaultEmitRequest,
-			EventDebugServiceClientER.BuildDefaultEmitRequest,
-			EventDebugServiceServer.BuildDefaultEmitRequest,
-			EventDebugServiceServerER.BuildDefaultEmitRequest,
+			EventDebugApiServiceServer.BuildDefaultEmitRequest,
+			EventDebugApiServiceServerER.BuildDefaultEmitRequest,
 		},
 	}
-	_EventDebugServiceEmitEventSpec = &rpcspec.MethodSpec{
+	_EventDebugApiServiceEmitEventSpec = &rpcspec.MethodSpec{
 		Name:          "EmitEvent",
 		SkelName:      "emitEvent",
-		ArgumentsType: reflect.TypeFor[_EventDebugServiceEmitEventArguments](),
+		ArgumentsType: reflect.TypeFor[_EventDebugApiServiceEmitEventArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_EventDebugServiceEmitEventArguments)
+			source := value.(*_EventDebugApiServiceEmitEventArguments)
 			cloned := *source
 			cloned.Request = source.Request.Clone()
 			return &cloned
@@ -745,28 +529,26 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			EventDebugServiceClient.EmitEvent,
-			EventDebugServiceClientER.EmitEvent,
-			EventDebugServiceServer.EmitEvent,
-			EventDebugServiceServerER.EmitEvent,
+			EventDebugApiServiceServer.EmitEvent,
+			EventDebugApiServiceServerER.EmitEvent,
 		},
 	}
 )
 
-// EventDebugService / Arguments
+// EventDebugApiService / Arguments
 
-type _EventDebugServiceBuildDefaultEmitRequestArguments struct {
+type _EventDebugApiServiceBuildDefaultEmitRequestArguments struct {
 	EventSkelName string `json:"eventSkelName" skel:"index(0)"`
 	SchemaHash    string `json:"schemaHash" skel:"index(1)"`
 }
 
-type _EventDebugServiceEmitEventArguments struct {
+type _EventDebugApiServiceEmitEventArguments struct {
 	Request EventDebugEmitRequest `json:"request" skel:"index(0)"`
 }
 
-// EventDebugService / Server
+// EventDebugApiService / Server
 
-type EventDebugServiceServer interface {
+type EventDebugApiServiceServer interface {
 	// ListEvents List the events monitored by the application instance.
 	ListEvents() []EventDebugEventItem
 	// BuildDefaultEmitRequest Generate a default Event send request.
@@ -777,204 +559,112 @@ type EventDebugServiceServer interface {
 	//   @param request - Debug send request
 	EmitEvent(request EventDebugEmitRequest)
 
-	mustBeEventDebugServiceServer()
+	mustBeEventDebugApiServiceServer()
 }
 
-// EventDebugService / Server / DefaultServer
+// EventDebugApiService / Server / DefaultServer
 
-type DefaultEventDebugServiceServer struct{}
+type DefaultEventDebugApiServiceServer struct{}
 
-func (*DefaultEventDebugServiceServer) ListEvents() []EventDebugEventItem {
+func (*DefaultEventDebugApiServiceServer) ListEvents() []EventDebugEventItem {
 	ex.PanicNew(ex.InvalidRequest, "method listEvents is not implemented")
 	return []EventDebugEventItem{}
 }
 
-func (*DefaultEventDebugServiceServer) BuildDefaultEmitRequest(string, string) EventDebugDefaultEmitRequest {
+func (*DefaultEventDebugApiServiceServer) BuildDefaultEmitRequest(string, string) EventDebugDefaultEmitRequest {
 	ex.PanicNew(ex.InvalidRequest, "method buildDefaultEmitRequest is not implemented")
 	return EventDebugDefaultEmitRequest{}
 }
 
-func (*DefaultEventDebugServiceServer) EmitEvent(EventDebugEmitRequest) {
+func (*DefaultEventDebugApiServiceServer) EmitEvent(EventDebugEmitRequest) {
 	ex.PanicNew(ex.InvalidRequest, "method emitEvent is not implemented")
 }
 
-func (*DefaultEventDebugServiceServer) mustBeEventDebugServiceServer() {}
+func (*DefaultEventDebugApiServiceServer) mustBeEventDebugApiServiceServer() {}
 
-// EventDebugService / ERServer
+// EventDebugApiService / ERServer
 
-type EventDebugServiceServerER interface {
+type EventDebugApiServiceServerER interface {
 	ListEvents() ([]EventDebugEventItem, ex.Error)
 	BuildDefaultEmitRequest(eventSkelName string, schemaHash string) (EventDebugDefaultEmitRequest, ex.Error)
 	EmitEvent(request EventDebugEmitRequest) ex.Error
 
-	mustBeEventDebugServiceServerER()
+	mustBeEventDebugApiServiceServerER()
 }
 
-// EventDebugService / ERServer / WrapperERServer
+// EventDebugApiService / ERServer / WrapperERServer
 
-type _WrapperEventDebugServiceServerER struct {
-	DefaultEventDebugServiceServer
-	serverImpl EventDebugServiceServer
+type _WrapperEventDebugApiServiceServerER struct {
+	DefaultEventDebugApiServiceServer
+	serverImpl EventDebugApiServiceServer
 }
 
-func _NewWrapperEventDebugServiceServerER(serverImpl EventDebugServiceServer) EventDebugServiceServerER {
-	return &_WrapperEventDebugServiceServerER{
+func _NewWrapperEventDebugApiServiceServerER(serverImpl EventDebugApiServiceServer) EventDebugApiServiceServerER {
+	return &_WrapperEventDebugApiServiceServerER{
 		serverImpl: serverImpl,
 	}
 }
 
-func (service *_WrapperEventDebugServiceServerER) server() EventDebugServiceServer {
+func (service *_WrapperEventDebugApiServiceServerER) server() EventDebugApiServiceServer {
 	if service.serverImpl == nil {
-		return &service.DefaultEventDebugServiceServer
+		return &service.DefaultEventDebugApiServiceServer
 	}
 	return service.serverImpl
 }
 
-func (service *_WrapperEventDebugServiceServerER) ListEvents() (ret []EventDebugEventItem, err ex.Error) {
+func (service *_WrapperEventDebugApiServiceServerER) ListEvents() (ret []EventDebugEventItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListEvents()
 	return
 }
 
-func (service *_WrapperEventDebugServiceServerER) BuildDefaultEmitRequest(eventSkelName string, schemaHash string) (ret EventDebugDefaultEmitRequest, err ex.Error) {
+func (service *_WrapperEventDebugApiServiceServerER) BuildDefaultEmitRequest(eventSkelName string, schemaHash string) (ret EventDebugDefaultEmitRequest, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().BuildDefaultEmitRequest(eventSkelName, schemaHash)
 	return
 }
 
-func (service *_WrapperEventDebugServiceServerER) EmitEvent(request EventDebugEmitRequest) (err ex.Error) {
+func (service *_WrapperEventDebugApiServiceServerER) EmitEvent(request EventDebugEmitRequest) (err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	service.server().EmitEvent(request)
 	return
 }
 
-func (*_WrapperEventDebugServiceServerER) mustBeEventDebugServiceServerER() {}
+func (*_WrapperEventDebugApiServiceServerER) mustBeEventDebugApiServiceServerER() {}
 
-// EventDebugService / ERServer / DefaultERServer
+// EventDebugApiService / ERServer / DefaultERServer
 
-type DefaultEventDebugServiceServerER struct {
-	_WrapperEventDebugServiceServerER
+type DefaultEventDebugApiServiceServerER struct {
+	_WrapperEventDebugApiServiceServerER
 }
 
-// EventDebugService / Client
+// MaintenanceApiServiceServer Hub maintenance service
 
-type EventDebugServiceClient interface {
-	// ListEvents List the events monitored by the application instance.
-	ListEvents(_ivOpts ...rpcclient.InvokeOption) []EventDebugEventItem
-	// BuildDefaultEmitRequest Generate a default Event send request.
-	//   @param eventSkelName - Event Skel name
-	//   @param schemaHash - Event schema hash
-	BuildDefaultEmitRequest(eventSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) EventDebugDefaultEmitRequest
-	// EmitEvent Send Event.
-	//   @param request - Debug send request
-	EmitEvent(request EventDebugEmitRequest, _ivOpts ...rpcclient.InvokeOption)
-}
-
-type _EventDebugServiceClient struct {
-	clientER EventDebugServiceClientER
-}
-
-func NewEventDebugServiceClient(clientER EventDebugServiceClientER) EventDebugServiceClient {
-	return &_EventDebugServiceClient{clientER: clientER}
-}
-
-func (client *_EventDebugServiceClient) ListEvents(_ivOpts ...rpcclient.InvokeOption) []EventDebugEventItem {
-	ret, err := client.clientER.ListEvents(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_EventDebugServiceClient) BuildDefaultEmitRequest(eventSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) EventDebugDefaultEmitRequest {
-	ret, err := client.clientER.BuildDefaultEmitRequest(eventSkelName, schemaHash, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_EventDebugServiceClient) EmitEvent(request EventDebugEmitRequest, _ivOpts ...rpcclient.InvokeOption) {
-	err := client.clientER.EmitEvent(request, _ivOpts...)
-	ex.PanicIfError(err)
-}
-
-// EventDebugService / ERClient
-
-type EventDebugServiceClientER interface {
-	// ListEvents List the events monitored by the application instance.
-	ListEvents(_ivOpts ...rpcclient.InvokeOption) ([]EventDebugEventItem, ex.Error)
-	// BuildDefaultEmitRequest Generate a default Event send request.
-	//   @param eventSkelName - Event Skel name
-	//   @param schemaHash - Event schema hash
-	BuildDefaultEmitRequest(eventSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) (EventDebugDefaultEmitRequest, ex.Error)
-	// EmitEvent Send Event.
-	//   @param request - Debug send request
-	EmitEvent(request EventDebugEmitRequest, _ivOpts ...rpcclient.InvokeOption) ex.Error
-}
-
-type _EventDebugServiceClientER struct {
-	rpcClient *rpcclient.Client
-}
-
-func NewEventDebugServiceClientER(rpcClient *rpcclient.Client) EventDebugServiceClientER {
-	return &_EventDebugServiceClientER{
-		rpcClient: rpcClient,
-	}
-}
-
-func (client *_EventDebugServiceClientER) ListEvents(_ivOpts ...rpcclient.InvokeOption) ([]EventDebugEventItem, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_EventDebugServiceListEventsSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]EventDebugEventItem)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_EventDebugServiceClientER) BuildDefaultEmitRequest(eventSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) (EventDebugDefaultEmitRequest, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_EventDebugServiceBuildDefaultEmitRequestSpec.Info(), &_EventDebugServiceBuildDefaultEmitRequestArguments{
-		EventSkelName: eventSkelName,
-		SchemaHash:    schemaHash,
-	}, _ivOpts...)
-	ret, _ := retI.(EventDebugDefaultEmitRequest)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_EventDebugServiceClientER) EmitEvent(request EventDebugEmitRequest, _ivOpts ...rpcclient.InvokeOption) ex.Error {
-	_, errI := client.rpcClient.Invoke(_EventDebugServiceEmitEventSpec.Info(), &_EventDebugServiceEmitEventArguments{
-		Request: request,
-	}, _ivOpts...)
-	err, _ := errI.(ex.Error)
-	return err
-}
-
-// MaintenanceServiceServer Hub maintenance service
-
-// MaintenanceService / Spec
+// MaintenanceApiService / Spec
 
 var (
-	_MaintenanceServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
-		Name:              "MaintenanceService",
-		SkelName:          "vine.hub.admin.MaintenanceService",
-		Hash:              "136b6e26",
-		ServerType:        reflect.TypeFor[MaintenanceServiceServer](),
-		DefaultServerType: reflect.TypeFor[*DefaultMaintenanceServiceServer](),
-		ClientType:        reflect.TypeFor[MaintenanceServiceClient](),
-		ClientCtor:        NewMaintenanceServiceClient,
+	_MaintenanceApiServiceSpec = &rpcspec.ServiceSpec{
+		Type:              rpcspec.ServiceSpecTypeServer,
+		Name:              "MaintenanceApiService",
+		SkelName:          "vine.hub.admin.MaintenanceApiService",
+		Hash:              "2a1db1e3",
+		ServerType:        reflect.TypeFor[MaintenanceApiServiceServer](),
+		DefaultServerType: reflect.TypeFor[*DefaultMaintenanceApiServiceServer](),
 
-		ERServerType:        reflect.TypeFor[MaintenanceServiceServerER](),
-		WrapperERServerCtor: _NewWrapperMaintenanceServiceServerER,
-		DefaultERServerType: reflect.TypeFor[*DefaultMaintenanceServiceServerER](),
-		ERClientType:        reflect.TypeFor[MaintenanceServiceClientER](),
-		ERClientCtor:        NewMaintenanceServiceClientER,
+		ERServerType:        reflect.TypeFor[MaintenanceApiServiceServerER](),
+		WrapperERServerCtor: _NewWrapperMaintenanceApiServiceServerER,
+		DefaultERServerType: reflect.TypeFor[*DefaultMaintenanceApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
-			_MaintenanceServicePreviewSeedYamlSpec,
-			_MaintenanceServiceApplySeedYamlSpec,
+			_MaintenanceApiServicePreviewSeedYamlSpec,
+			_MaintenanceApiServiceApplySeedYamlSpec,
 		},
 	}
-	_MaintenanceServicePreviewSeedYamlSpec = &rpcspec.MethodSpec{
+	_MaintenanceApiServicePreviewSeedYamlSpec = &rpcspec.MethodSpec{
 		Name:          "PreviewSeedYaml",
 		SkelName:      "previewSeedYaml",
-		ArgumentsType: reflect.TypeFor[_MaintenanceServicePreviewSeedYamlArguments](),
+		ArgumentsType: reflect.TypeFor[_MaintenanceApiServicePreviewSeedYamlArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_MaintenanceServicePreviewSeedYamlArguments)
+			source := value.(*_MaintenanceApiServicePreviewSeedYamlArguments)
 			cloned := *source
 			return &cloned
 		},
@@ -990,18 +680,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			MaintenanceServiceClient.PreviewSeedYaml,
-			MaintenanceServiceClientER.PreviewSeedYaml,
-			MaintenanceServiceServer.PreviewSeedYaml,
-			MaintenanceServiceServerER.PreviewSeedYaml,
+			MaintenanceApiServiceServer.PreviewSeedYaml,
+			MaintenanceApiServiceServerER.PreviewSeedYaml,
 		},
 	}
-	_MaintenanceServiceApplySeedYamlSpec = &rpcspec.MethodSpec{
+	_MaintenanceApiServiceApplySeedYamlSpec = &rpcspec.MethodSpec{
 		Name:          "ApplySeedYaml",
 		SkelName:      "applySeedYaml",
-		ArgumentsType: reflect.TypeFor[_MaintenanceServiceApplySeedYamlArguments](),
+		ArgumentsType: reflect.TypeFor[_MaintenanceApiServiceApplySeedYamlArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_MaintenanceServiceApplySeedYamlArguments)
+			source := value.(*_MaintenanceApiServiceApplySeedYamlArguments)
 			cloned := *source
 			if source.Selections == nil {
 				cloned.Selections = nil
@@ -1025,28 +713,26 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			MaintenanceServiceClient.ApplySeedYaml,
-			MaintenanceServiceClientER.ApplySeedYaml,
-			MaintenanceServiceServer.ApplySeedYaml,
-			MaintenanceServiceServerER.ApplySeedYaml,
+			MaintenanceApiServiceServer.ApplySeedYaml,
+			MaintenanceApiServiceServerER.ApplySeedYaml,
 		},
 	}
 )
 
-// MaintenanceService / Arguments
+// MaintenanceApiService / Arguments
 
-type _MaintenanceServicePreviewSeedYamlArguments struct {
+type _MaintenanceApiServicePreviewSeedYamlArguments struct {
 	Content string `json:"content" skel:"index(0)"`
 }
 
-type _MaintenanceServiceApplySeedYamlArguments struct {
+type _MaintenanceApiServiceApplySeedYamlArguments struct {
 	Content    string              `json:"content" skel:"index(0)"`
 	Selections []SeedItemSelection `json:"selections" skel:"index(1)"`
 }
 
-// MaintenanceService / Server
+// MaintenanceApiService / Server
 
-type MaintenanceServiceServer interface {
+type MaintenanceApiServiceServer interface {
 	// PreviewSeedYaml Preview Seed YAML differences.
 	//   @param content - Seed YAML content
 	//   @returns SeedPreview - Seed preview
@@ -1057,180 +743,99 @@ type MaintenanceServiceServer interface {
 	//   @returns SeedPreview - Updated Seed preview
 	ApplySeedYaml(content string, selections []SeedItemSelection) SeedPreview
 
-	mustBeMaintenanceServiceServer()
+	mustBeMaintenanceApiServiceServer()
 }
 
-// MaintenanceService / Server / DefaultServer
+// MaintenanceApiService / Server / DefaultServer
 
-type DefaultMaintenanceServiceServer struct{}
+type DefaultMaintenanceApiServiceServer struct{}
 
-func (*DefaultMaintenanceServiceServer) PreviewSeedYaml(string) SeedPreview {
+func (*DefaultMaintenanceApiServiceServer) PreviewSeedYaml(string) SeedPreview {
 	ex.PanicNew(ex.InvalidRequest, "method previewSeedYaml is not implemented")
 	return SeedPreview{}
 }
 
-func (*DefaultMaintenanceServiceServer) ApplySeedYaml(string, []SeedItemSelection) SeedPreview {
+func (*DefaultMaintenanceApiServiceServer) ApplySeedYaml(string, []SeedItemSelection) SeedPreview {
 	ex.PanicNew(ex.InvalidRequest, "method applySeedYaml is not implemented")
 	return SeedPreview{}
 }
 
-func (*DefaultMaintenanceServiceServer) mustBeMaintenanceServiceServer() {}
+func (*DefaultMaintenanceApiServiceServer) mustBeMaintenanceApiServiceServer() {}
 
-// MaintenanceService / ERServer
+// MaintenanceApiService / ERServer
 
-type MaintenanceServiceServerER interface {
+type MaintenanceApiServiceServerER interface {
 	PreviewSeedYaml(content string) (SeedPreview, ex.Error)
 	ApplySeedYaml(content string, selections []SeedItemSelection) (SeedPreview, ex.Error)
 
-	mustBeMaintenanceServiceServerER()
+	mustBeMaintenanceApiServiceServerER()
 }
 
-// MaintenanceService / ERServer / WrapperERServer
+// MaintenanceApiService / ERServer / WrapperERServer
 
-type _WrapperMaintenanceServiceServerER struct {
-	DefaultMaintenanceServiceServer
-	serverImpl MaintenanceServiceServer
+type _WrapperMaintenanceApiServiceServerER struct {
+	DefaultMaintenanceApiServiceServer
+	serverImpl MaintenanceApiServiceServer
 }
 
-func _NewWrapperMaintenanceServiceServerER(serverImpl MaintenanceServiceServer) MaintenanceServiceServerER {
-	return &_WrapperMaintenanceServiceServerER{
+func _NewWrapperMaintenanceApiServiceServerER(serverImpl MaintenanceApiServiceServer) MaintenanceApiServiceServerER {
+	return &_WrapperMaintenanceApiServiceServerER{
 		serverImpl: serverImpl,
 	}
 }
 
-func (service *_WrapperMaintenanceServiceServerER) server() MaintenanceServiceServer {
+func (service *_WrapperMaintenanceApiServiceServerER) server() MaintenanceApiServiceServer {
 	if service.serverImpl == nil {
-		return &service.DefaultMaintenanceServiceServer
+		return &service.DefaultMaintenanceApiServiceServer
 	}
 	return service.serverImpl
 }
 
-func (service *_WrapperMaintenanceServiceServerER) PreviewSeedYaml(content string) (ret SeedPreview, err ex.Error) {
+func (service *_WrapperMaintenanceApiServiceServerER) PreviewSeedYaml(content string) (ret SeedPreview, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().PreviewSeedYaml(content)
 	return
 }
 
-func (service *_WrapperMaintenanceServiceServerER) ApplySeedYaml(content string, selections []SeedItemSelection) (ret SeedPreview, err ex.Error) {
+func (service *_WrapperMaintenanceApiServiceServerER) ApplySeedYaml(content string, selections []SeedItemSelection) (ret SeedPreview, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ApplySeedYaml(content, selections)
 	return
 }
 
-func (*_WrapperMaintenanceServiceServerER) mustBeMaintenanceServiceServerER() {}
+func (*_WrapperMaintenanceApiServiceServerER) mustBeMaintenanceApiServiceServerER() {}
 
-// MaintenanceService / ERServer / DefaultERServer
+// MaintenanceApiService / ERServer / DefaultERServer
 
-type DefaultMaintenanceServiceServerER struct {
-	_WrapperMaintenanceServiceServerER
+type DefaultMaintenanceApiServiceServerER struct {
+	_WrapperMaintenanceApiServiceServerER
 }
 
-// MaintenanceService / Client
+// PortalCertApiServiceServer Hub's Portal site certificate service, called by the Portal admin client
 
-type MaintenanceServiceClient interface {
-	// PreviewSeedYaml Preview Seed YAML differences.
-	//   @param content - Seed YAML content
-	//   @returns SeedPreview - Seed preview
-	PreviewSeedYaml(content string, _ivOpts ...rpcclient.InvokeOption) SeedPreview
-	// ApplySeedYaml Apply Seed YAML entity updates.
-	//   @param content - Seed YAML content
-	//   @param selections - Entity to update
-	//   @returns SeedPreview - Updated Seed preview
-	ApplySeedYaml(content string, selections []SeedItemSelection, _ivOpts ...rpcclient.InvokeOption) SeedPreview
-}
-
-type _MaintenanceServiceClient struct {
-	clientER MaintenanceServiceClientER
-}
-
-func NewMaintenanceServiceClient(clientER MaintenanceServiceClientER) MaintenanceServiceClient {
-	return &_MaintenanceServiceClient{clientER: clientER}
-}
-
-func (client *_MaintenanceServiceClient) PreviewSeedYaml(content string, _ivOpts ...rpcclient.InvokeOption) SeedPreview {
-	ret, err := client.clientER.PreviewSeedYaml(content, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_MaintenanceServiceClient) ApplySeedYaml(content string, selections []SeedItemSelection, _ivOpts ...rpcclient.InvokeOption) SeedPreview {
-	ret, err := client.clientER.ApplySeedYaml(content, selections, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-// MaintenanceService / ERClient
-
-type MaintenanceServiceClientER interface {
-	// PreviewSeedYaml Preview Seed YAML differences.
-	//   @param content - Seed YAML content
-	//   @returns SeedPreview - Seed preview
-	PreviewSeedYaml(content string, _ivOpts ...rpcclient.InvokeOption) (SeedPreview, ex.Error)
-	// ApplySeedYaml Apply Seed YAML entity updates.
-	//   @param content - Seed YAML content
-	//   @param selections - Entity to update
-	//   @returns SeedPreview - Updated Seed preview
-	ApplySeedYaml(content string, selections []SeedItemSelection, _ivOpts ...rpcclient.InvokeOption) (SeedPreview, ex.Error)
-}
-
-type _MaintenanceServiceClientER struct {
-	rpcClient *rpcclient.Client
-}
-
-func NewMaintenanceServiceClientER(rpcClient *rpcclient.Client) MaintenanceServiceClientER {
-	return &_MaintenanceServiceClientER{
-		rpcClient: rpcClient,
-	}
-}
-
-func (client *_MaintenanceServiceClientER) PreviewSeedYaml(content string, _ivOpts ...rpcclient.InvokeOption) (SeedPreview, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_MaintenanceServicePreviewSeedYamlSpec.Info(), &_MaintenanceServicePreviewSeedYamlArguments{
-		Content: content,
-	}, _ivOpts...)
-	ret, _ := retI.(SeedPreview)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_MaintenanceServiceClientER) ApplySeedYaml(content string, selections []SeedItemSelection, _ivOpts ...rpcclient.InvokeOption) (SeedPreview, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_MaintenanceServiceApplySeedYamlSpec.Info(), &_MaintenanceServiceApplySeedYamlArguments{
-		Content:    content,
-		Selections: selections,
-	}, _ivOpts...)
-	ret, _ := retI.(SeedPreview)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-// PortalCertServiceServer Hub's Portal site certificate service, called by the Portal admin client
-
-// PortalCertService / Spec
+// PortalCertApiService / Spec
 
 var (
-	_PortalCertServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
-		Name:              "PortalCertService",
-		SkelName:          "vine.hub.admin.PortalCertService",
-		Hash:              "4498d919",
-		ServerType:        reflect.TypeFor[PortalCertServiceServer](),
-		DefaultServerType: reflect.TypeFor[*DefaultPortalCertServiceServer](),
-		ClientType:        reflect.TypeFor[PortalCertServiceClient](),
-		ClientCtor:        NewPortalCertServiceClient,
+	_PortalCertApiServiceSpec = &rpcspec.ServiceSpec{
+		Type:              rpcspec.ServiceSpecTypeServer,
+		Name:              "PortalCertApiService",
+		SkelName:          "vine.hub.admin.PortalCertApiService",
+		Hash:              "5c8fbb24",
+		ServerType:        reflect.TypeFor[PortalCertApiServiceServer](),
+		DefaultServerType: reflect.TypeFor[*DefaultPortalCertApiServiceServer](),
 
-		ERServerType:        reflect.TypeFor[PortalCertServiceServerER](),
-		WrapperERServerCtor: _NewWrapperPortalCertServiceServerER,
-		DefaultERServerType: reflect.TypeFor[*DefaultPortalCertServiceServerER](),
-		ERClientType:        reflect.TypeFor[PortalCertServiceClientER](),
-		ERClientCtor:        NewPortalCertServiceClientER,
+		ERServerType:        reflect.TypeFor[PortalCertApiServiceServerER](),
+		WrapperERServerCtor: _NewWrapperPortalCertApiServiceServerER,
+		DefaultERServerType: reflect.TypeFor[*DefaultPortalCertApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
-			_PortalCertServiceListSpec,
-			_PortalCertServiceGetSpec,
-			_PortalCertServiceCreateSpec,
-			_PortalCertServiceUpdateSpec,
-			_PortalCertServiceRemoveSpec,
+			_PortalCertApiServiceListSpec,
+			_PortalCertApiServiceGetSpec,
+			_PortalCertApiServiceCreateSpec,
+			_PortalCertApiServiceUpdateSpec,
+			_PortalCertApiServiceRemoveSpec,
 		},
 	}
-	_PortalCertServiceListSpec = &rpcspec.MethodSpec{
+	_PortalCertApiServiceListSpec = &rpcspec.MethodSpec{
 		Name:           "List",
 		SkelName:       "list",
 		ArgumentsType:  nil,
@@ -1254,18 +859,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalCertServiceClient.List,
-			PortalCertServiceClientER.List,
-			PortalCertServiceServer.List,
-			PortalCertServiceServerER.List,
+			PortalCertApiServiceServer.List,
+			PortalCertApiServiceServerER.List,
 		},
 	}
-	_PortalCertServiceGetSpec = &rpcspec.MethodSpec{
+	_PortalCertApiServiceGetSpec = &rpcspec.MethodSpec{
 		Name:          "Get",
 		SkelName:      "get",
-		ArgumentsType: reflect.TypeFor[_PortalCertServiceGetArguments](),
+		ArgumentsType: reflect.TypeFor[_PortalCertApiServiceGetArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_PortalCertServiceGetArguments)
+			source := value.(*_PortalCertApiServiceGetArguments)
 			cloned := *source
 			return &cloned
 		},
@@ -1281,18 +884,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalCertServiceClient.Get,
-			PortalCertServiceClientER.Get,
-			PortalCertServiceServer.Get,
-			PortalCertServiceServerER.Get,
+			PortalCertApiServiceServer.Get,
+			PortalCertApiServiceServerER.Get,
 		},
 	}
-	_PortalCertServiceCreateSpec = &rpcspec.MethodSpec{
+	_PortalCertApiServiceCreateSpec = &rpcspec.MethodSpec{
 		Name:          "Create",
 		SkelName:      "create",
-		ArgumentsType: reflect.TypeFor[_PortalCertServiceCreateArguments](),
+		ArgumentsType: reflect.TypeFor[_PortalCertApiServiceCreateArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_PortalCertServiceCreateArguments)
+			source := value.(*_PortalCertApiServiceCreateArguments)
 			cloned := *source
 			cloned.Creation = source.Creation.Clone()
 			return &cloned
@@ -1309,18 +910,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalCertServiceClient.Create,
-			PortalCertServiceClientER.Create,
-			PortalCertServiceServer.Create,
-			PortalCertServiceServerER.Create,
+			PortalCertApiServiceServer.Create,
+			PortalCertApiServiceServerER.Create,
 		},
 	}
-	_PortalCertServiceUpdateSpec = &rpcspec.MethodSpec{
+	_PortalCertApiServiceUpdateSpec = &rpcspec.MethodSpec{
 		Name:          "Update",
 		SkelName:      "update",
-		ArgumentsType: reflect.TypeFor[_PortalCertServiceUpdateArguments](),
+		ArgumentsType: reflect.TypeFor[_PortalCertApiServiceUpdateArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_PortalCertServiceUpdateArguments)
+			source := value.(*_PortalCertApiServiceUpdateArguments)
 			cloned := *source
 			cloned.Update = source.Update.Clone()
 			return &cloned
@@ -1337,18 +936,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalCertServiceClient.Update,
-			PortalCertServiceClientER.Update,
-			PortalCertServiceServer.Update,
-			PortalCertServiceServerER.Update,
+			PortalCertApiServiceServer.Update,
+			PortalCertApiServiceServerER.Update,
 		},
 	}
-	_PortalCertServiceRemoveSpec = &rpcspec.MethodSpec{
+	_PortalCertApiServiceRemoveSpec = &rpcspec.MethodSpec{
 		Name:          "Remove",
 		SkelName:      "remove",
-		ArgumentsType: reflect.TypeFor[_PortalCertServiceRemoveArguments](),
+		ArgumentsType: reflect.TypeFor[_PortalCertApiServiceRemoveArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_PortalCertServiceRemoveArguments)
+			source := value.(*_PortalCertApiServiceRemoveArguments)
 			cloned := *source
 			return &cloned
 		},
@@ -1359,36 +956,34 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalCertServiceClient.Remove,
-			PortalCertServiceClientER.Remove,
-			PortalCertServiceServer.Remove,
-			PortalCertServiceServerER.Remove,
+			PortalCertApiServiceServer.Remove,
+			PortalCertApiServiceServerER.Remove,
 		},
 	}
 )
 
-// PortalCertService / Arguments
+// PortalCertApiService / Arguments
 
-type _PortalCertServiceGetArguments struct {
+type _PortalCertApiServiceGetArguments struct {
 	Id int `json:"id" skel:"index(0)"`
 }
 
-type _PortalCertServiceCreateArguments struct {
+type _PortalCertApiServiceCreateArguments struct {
 	Creation PortalCertCreation `json:"creation" skel:"index(0)"`
 }
 
-type _PortalCertServiceUpdateArguments struct {
+type _PortalCertApiServiceUpdateArguments struct {
 	Id     int              `json:"id" skel:"index(0)"`
 	Update PortalCertUpdate `json:"update" skel:"index(1)"`
 }
 
-type _PortalCertServiceRemoveArguments struct {
+type _PortalCertApiServiceRemoveArguments struct {
 	Id int `json:"id" skel:"index(0)"`
 }
 
-// PortalCertService / Server
+// PortalCertApiService / Server
 
-type PortalCertServiceServer interface {
+type PortalCertApiServiceServer interface {
 	// List List Portal site certificates.
 	//   @returns []PortalCert - Portal site certificate list
 	List() []PortalCert
@@ -1409,273 +1004,131 @@ type PortalCertServiceServer interface {
 	//   @param id - Certificate ID
 	Remove(id int)
 
-	mustBePortalCertServiceServer()
+	mustBePortalCertApiServiceServer()
 }
 
-// PortalCertService / Server / DefaultServer
+// PortalCertApiService / Server / DefaultServer
 
-type DefaultPortalCertServiceServer struct{}
+type DefaultPortalCertApiServiceServer struct{}
 
-func (*DefaultPortalCertServiceServer) List() []PortalCert {
+func (*DefaultPortalCertApiServiceServer) List() []PortalCert {
 	ex.PanicNew(ex.InvalidRequest, "method list is not implemented")
 	return []PortalCert{}
 }
 
-func (*DefaultPortalCertServiceServer) Get(int) PortalCert {
+func (*DefaultPortalCertApiServiceServer) Get(int) PortalCert {
 	ex.PanicNew(ex.InvalidRequest, "method get is not implemented")
 	return PortalCert{}
 }
 
-func (*DefaultPortalCertServiceServer) Create(PortalCertCreation) PortalCert {
+func (*DefaultPortalCertApiServiceServer) Create(PortalCertCreation) PortalCert {
 	ex.PanicNew(ex.InvalidRequest, "method create is not implemented")
 	return PortalCert{}
 }
 
-func (*DefaultPortalCertServiceServer) Update(int, PortalCertUpdate) PortalCert {
+func (*DefaultPortalCertApiServiceServer) Update(int, PortalCertUpdate) PortalCert {
 	ex.PanicNew(ex.InvalidRequest, "method update is not implemented")
 	return PortalCert{}
 }
 
-func (*DefaultPortalCertServiceServer) Remove(int) {
+func (*DefaultPortalCertApiServiceServer) Remove(int) {
 	ex.PanicNew(ex.InvalidRequest, "method remove is not implemented")
 }
 
-func (*DefaultPortalCertServiceServer) mustBePortalCertServiceServer() {}
+func (*DefaultPortalCertApiServiceServer) mustBePortalCertApiServiceServer() {}
 
-// PortalCertService / ERServer
+// PortalCertApiService / ERServer
 
-type PortalCertServiceServerER interface {
+type PortalCertApiServiceServerER interface {
 	List() ([]PortalCert, ex.Error)
 	Get(id int) (PortalCert, ex.Error)
 	Create(creation PortalCertCreation) (PortalCert, ex.Error)
 	Update(id int, update PortalCertUpdate) (PortalCert, ex.Error)
 	Remove(id int) ex.Error
 
-	mustBePortalCertServiceServerER()
+	mustBePortalCertApiServiceServerER()
 }
 
-// PortalCertService / ERServer / WrapperERServer
+// PortalCertApiService / ERServer / WrapperERServer
 
-type _WrapperPortalCertServiceServerER struct {
-	DefaultPortalCertServiceServer
-	serverImpl PortalCertServiceServer
+type _WrapperPortalCertApiServiceServerER struct {
+	DefaultPortalCertApiServiceServer
+	serverImpl PortalCertApiServiceServer
 }
 
-func _NewWrapperPortalCertServiceServerER(serverImpl PortalCertServiceServer) PortalCertServiceServerER {
-	return &_WrapperPortalCertServiceServerER{
+func _NewWrapperPortalCertApiServiceServerER(serverImpl PortalCertApiServiceServer) PortalCertApiServiceServerER {
+	return &_WrapperPortalCertApiServiceServerER{
 		serverImpl: serverImpl,
 	}
 }
 
-func (service *_WrapperPortalCertServiceServerER) server() PortalCertServiceServer {
+func (service *_WrapperPortalCertApiServiceServerER) server() PortalCertApiServiceServer {
 	if service.serverImpl == nil {
-		return &service.DefaultPortalCertServiceServer
+		return &service.DefaultPortalCertApiServiceServer
 	}
 	return service.serverImpl
 }
 
-func (service *_WrapperPortalCertServiceServerER) List() (ret []PortalCert, err ex.Error) {
+func (service *_WrapperPortalCertApiServiceServerER) List() (ret []PortalCert, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().List()
 	return
 }
 
-func (service *_WrapperPortalCertServiceServerER) Get(id int) (ret PortalCert, err ex.Error) {
+func (service *_WrapperPortalCertApiServiceServerER) Get(id int) (ret PortalCert, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().Get(id)
 	return
 }
 
-func (service *_WrapperPortalCertServiceServerER) Create(creation PortalCertCreation) (ret PortalCert, err ex.Error) {
+func (service *_WrapperPortalCertApiServiceServerER) Create(creation PortalCertCreation) (ret PortalCert, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().Create(creation)
 	return
 }
 
-func (service *_WrapperPortalCertServiceServerER) Update(id int, update PortalCertUpdate) (ret PortalCert, err ex.Error) {
+func (service *_WrapperPortalCertApiServiceServerER) Update(id int, update PortalCertUpdate) (ret PortalCert, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().Update(id, update)
 	return
 }
 
-func (service *_WrapperPortalCertServiceServerER) Remove(id int) (err ex.Error) {
+func (service *_WrapperPortalCertApiServiceServerER) Remove(id int) (err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	service.server().Remove(id)
 	return
 }
 
-func (*_WrapperPortalCertServiceServerER) mustBePortalCertServiceServerER() {}
+func (*_WrapperPortalCertApiServiceServerER) mustBePortalCertApiServiceServerER() {}
 
-// PortalCertService / ERServer / DefaultERServer
+// PortalCertApiService / ERServer / DefaultERServer
 
-type DefaultPortalCertServiceServerER struct {
-	_WrapperPortalCertServiceServerER
+type DefaultPortalCertApiServiceServerER struct {
+	_WrapperPortalCertApiServiceServerER
 }
 
-// PortalCertService / Client
+// PortalEntryApiServiceServer Hub's Portal access entry service, called by the Portal admin client
 
-type PortalCertServiceClient interface {
-	// List List Portal site certificates.
-	//   @returns []PortalCert - Portal site certificate list
-	List(_ivOpts ...rpcclient.InvokeOption) []PortalCert
-	// Get Read the Portal site certificate.
-	//   @param id - Certificate ID
-	//   @returns PortalCert - Portal site certificate
-	Get(id int, _ivOpts ...rpcclient.InvokeOption) PortalCert
-	// Create Create Portal site certificate.
-	//   @param creation - Portal site certificate creation parameters
-	//   @returns PortalCert - Portal site certificate
-	Create(creation PortalCertCreation, _ivOpts ...rpcclient.InvokeOption) PortalCert
-	// Update Modify Portal site certificate.
-	//   @param id - Certificate ID
-	//   @param update - Portal site certificate update parameters
-	//   @returns PortalCert - Portal site certificate
-	Update(id int, update PortalCertUpdate, _ivOpts ...rpcclient.InvokeOption) PortalCert
-	// Remove Delete Portal site certificate.
-	//   @param id - Certificate ID
-	Remove(id int, _ivOpts ...rpcclient.InvokeOption)
-}
-
-type _PortalCertServiceClient struct {
-	clientER PortalCertServiceClientER
-}
-
-func NewPortalCertServiceClient(clientER PortalCertServiceClientER) PortalCertServiceClient {
-	return &_PortalCertServiceClient{clientER: clientER}
-}
-
-func (client *_PortalCertServiceClient) List(_ivOpts ...rpcclient.InvokeOption) []PortalCert {
-	ret, err := client.clientER.List(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_PortalCertServiceClient) Get(id int, _ivOpts ...rpcclient.InvokeOption) PortalCert {
-	ret, err := client.clientER.Get(id, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_PortalCertServiceClient) Create(creation PortalCertCreation, _ivOpts ...rpcclient.InvokeOption) PortalCert {
-	ret, err := client.clientER.Create(creation, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_PortalCertServiceClient) Update(id int, update PortalCertUpdate, _ivOpts ...rpcclient.InvokeOption) PortalCert {
-	ret, err := client.clientER.Update(id, update, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_PortalCertServiceClient) Remove(id int, _ivOpts ...rpcclient.InvokeOption) {
-	err := client.clientER.Remove(id, _ivOpts...)
-	ex.PanicIfError(err)
-}
-
-// PortalCertService / ERClient
-
-type PortalCertServiceClientER interface {
-	// List List Portal site certificates.
-	//   @returns []PortalCert - Portal site certificate list
-	List(_ivOpts ...rpcclient.InvokeOption) ([]PortalCert, ex.Error)
-	// Get Read the Portal site certificate.
-	//   @param id - Certificate ID
-	//   @returns PortalCert - Portal site certificate
-	Get(id int, _ivOpts ...rpcclient.InvokeOption) (PortalCert, ex.Error)
-	// Create Create Portal site certificate.
-	//   @param creation - Portal site certificate creation parameters
-	//   @returns PortalCert - Portal site certificate
-	Create(creation PortalCertCreation, _ivOpts ...rpcclient.InvokeOption) (PortalCert, ex.Error)
-	// Update Modify Portal site certificate.
-	//   @param id - Certificate ID
-	//   @param update - Portal site certificate update parameters
-	//   @returns PortalCert - Portal site certificate
-	Update(id int, update PortalCertUpdate, _ivOpts ...rpcclient.InvokeOption) (PortalCert, ex.Error)
-	// Remove Delete Portal site certificate.
-	//   @param id - Certificate ID
-	Remove(id int, _ivOpts ...rpcclient.InvokeOption) ex.Error
-}
-
-type _PortalCertServiceClientER struct {
-	rpcClient *rpcclient.Client
-}
-
-func NewPortalCertServiceClientER(rpcClient *rpcclient.Client) PortalCertServiceClientER {
-	return &_PortalCertServiceClientER{
-		rpcClient: rpcClient,
-	}
-}
-
-func (client *_PortalCertServiceClientER) List(_ivOpts ...rpcclient.InvokeOption) ([]PortalCert, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_PortalCertServiceListSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]PortalCert)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_PortalCertServiceClientER) Get(id int, _ivOpts ...rpcclient.InvokeOption) (PortalCert, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_PortalCertServiceGetSpec.Info(), &_PortalCertServiceGetArguments{
-		Id: id,
-	}, _ivOpts...)
-	ret, _ := retI.(PortalCert)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_PortalCertServiceClientER) Create(creation PortalCertCreation, _ivOpts ...rpcclient.InvokeOption) (PortalCert, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_PortalCertServiceCreateSpec.Info(), &_PortalCertServiceCreateArguments{
-		Creation: creation,
-	}, _ivOpts...)
-	ret, _ := retI.(PortalCert)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_PortalCertServiceClientER) Update(id int, update PortalCertUpdate, _ivOpts ...rpcclient.InvokeOption) (PortalCert, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_PortalCertServiceUpdateSpec.Info(), &_PortalCertServiceUpdateArguments{
-		Id:     id,
-		Update: update,
-	}, _ivOpts...)
-	ret, _ := retI.(PortalCert)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_PortalCertServiceClientER) Remove(id int, _ivOpts ...rpcclient.InvokeOption) ex.Error {
-	_, errI := client.rpcClient.Invoke(_PortalCertServiceRemoveSpec.Info(), &_PortalCertServiceRemoveArguments{
-		Id: id,
-	}, _ivOpts...)
-	err, _ := errI.(ex.Error)
-	return err
-}
-
-// PortalEntryServiceServer Hub's Portal access entry service, called by the Portal admin client
-
-// PortalEntryService / Spec
+// PortalEntryApiService / Spec
 
 var (
-	_PortalEntryServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
-		Name:              "PortalEntryService",
-		SkelName:          "vine.hub.admin.PortalEntryService",
-		Hash:              "1d18a5b7",
-		ServerType:        reflect.TypeFor[PortalEntryServiceServer](),
-		DefaultServerType: reflect.TypeFor[*DefaultPortalEntryServiceServer](),
-		ClientType:        reflect.TypeFor[PortalEntryServiceClient](),
-		ClientCtor:        NewPortalEntryServiceClient,
+	_PortalEntryApiServiceSpec = &rpcspec.ServiceSpec{
+		Type:              rpcspec.ServiceSpecTypeServer,
+		Name:              "PortalEntryApiService",
+		SkelName:          "vine.hub.admin.PortalEntryApiService",
+		Hash:              "fd8872a7",
+		ServerType:        reflect.TypeFor[PortalEntryApiServiceServer](),
+		DefaultServerType: reflect.TypeFor[*DefaultPortalEntryApiServiceServer](),
 
-		ERServerType:        reflect.TypeFor[PortalEntryServiceServerER](),
-		WrapperERServerCtor: _NewWrapperPortalEntryServiceServerER,
-		DefaultERServerType: reflect.TypeFor[*DefaultPortalEntryServiceServerER](),
-		ERClientType:        reflect.TypeFor[PortalEntryServiceClientER](),
-		ERClientCtor:        NewPortalEntryServiceClientER,
+		ERServerType:        reflect.TypeFor[PortalEntryApiServiceServerER](),
+		WrapperERServerCtor: _NewWrapperPortalEntryApiServiceServerER,
+		DefaultERServerType: reflect.TypeFor[*DefaultPortalEntryApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
-			_PortalEntryServiceListSpec,
-			_PortalEntryServiceUpdateAccessSpec,
+			_PortalEntryApiServiceListSpec,
+			_PortalEntryApiServiceUpdateAccessSpec,
 		},
 	}
-	_PortalEntryServiceListSpec = &rpcspec.MethodSpec{
+	_PortalEntryApiServiceListSpec = &rpcspec.MethodSpec{
 		Name:           "List",
 		SkelName:       "list",
 		ArgumentsType:  nil,
@@ -1699,18 +1152,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalEntryServiceClient.List,
-			PortalEntryServiceClientER.List,
-			PortalEntryServiceServer.List,
-			PortalEntryServiceServerER.List,
+			PortalEntryApiServiceServer.List,
+			PortalEntryApiServiceServerER.List,
 		},
 	}
-	_PortalEntryServiceUpdateAccessSpec = &rpcspec.MethodSpec{
+	_PortalEntryApiServiceUpdateAccessSpec = &rpcspec.MethodSpec{
 		Name:          "UpdateAccess",
 		SkelName:      "updateAccess",
-		ArgumentsType: reflect.TypeFor[_PortalEntryServiceUpdateAccessArguments](),
+		ArgumentsType: reflect.TypeFor[_PortalEntryApiServiceUpdateAccessArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_PortalEntryServiceUpdateAccessArguments)
+			source := value.(*_PortalEntryApiServiceUpdateAccessArguments)
 			cloned := *source
 			cloned.Update = source.Update.Clone()
 			return &cloned
@@ -1727,26 +1178,24 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalEntryServiceClient.UpdateAccess,
-			PortalEntryServiceClientER.UpdateAccess,
-			PortalEntryServiceServer.UpdateAccess,
-			PortalEntryServiceServerER.UpdateAccess,
+			PortalEntryApiServiceServer.UpdateAccess,
+			PortalEntryApiServiceServerER.UpdateAccess,
 		},
 	}
 )
 
-// PortalEntryService / Arguments
+// PortalEntryApiService / Arguments
 
-type _PortalEntryServiceUpdateAccessArguments struct {
+type _PortalEntryApiServiceUpdateAccessArguments struct {
 	Scheme string                  `json:"scheme" skel:"index(0)"`
 	Host   string                  `json:"host" skel:"index(1)"`
 	Port   int                     `json:"port" skel:"index(2)"`
 	Update PortalEntryAccessUpdate `json:"update" skel:"index(3)"`
 }
 
-// PortalEntryService / Server
+// PortalEntryApiService / Server
 
-type PortalEntryServiceServer interface {
+type PortalEntryApiServiceServer interface {
 	// List List Portal access entries.
 	//   @returns []PortalEntry - Portal access entry list
 	List() []PortalEntry
@@ -1758,184 +1207,101 @@ type PortalEntryServiceServer interface {
 	//   @returns PortalEntry - Portal access entry
 	UpdateAccess(scheme string, host string, port int, update PortalEntryAccessUpdate) PortalEntry
 
-	mustBePortalEntryServiceServer()
+	mustBePortalEntryApiServiceServer()
 }
 
-// PortalEntryService / Server / DefaultServer
+// PortalEntryApiService / Server / DefaultServer
 
-type DefaultPortalEntryServiceServer struct{}
+type DefaultPortalEntryApiServiceServer struct{}
 
-func (*DefaultPortalEntryServiceServer) List() []PortalEntry {
+func (*DefaultPortalEntryApiServiceServer) List() []PortalEntry {
 	ex.PanicNew(ex.InvalidRequest, "method list is not implemented")
 	return []PortalEntry{}
 }
 
-func (*DefaultPortalEntryServiceServer) UpdateAccess(string, string, int, PortalEntryAccessUpdate) PortalEntry {
+func (*DefaultPortalEntryApiServiceServer) UpdateAccess(string, string, int, PortalEntryAccessUpdate) PortalEntry {
 	ex.PanicNew(ex.InvalidRequest, "method updateAccess is not implemented")
 	return PortalEntry{}
 }
 
-func (*DefaultPortalEntryServiceServer) mustBePortalEntryServiceServer() {}
+func (*DefaultPortalEntryApiServiceServer) mustBePortalEntryApiServiceServer() {}
 
-// PortalEntryService / ERServer
+// PortalEntryApiService / ERServer
 
-type PortalEntryServiceServerER interface {
+type PortalEntryApiServiceServerER interface {
 	List() ([]PortalEntry, ex.Error)
 	UpdateAccess(scheme string, host string, port int, update PortalEntryAccessUpdate) (PortalEntry, ex.Error)
 
-	mustBePortalEntryServiceServerER()
+	mustBePortalEntryApiServiceServerER()
 }
 
-// PortalEntryService / ERServer / WrapperERServer
+// PortalEntryApiService / ERServer / WrapperERServer
 
-type _WrapperPortalEntryServiceServerER struct {
-	DefaultPortalEntryServiceServer
-	serverImpl PortalEntryServiceServer
+type _WrapperPortalEntryApiServiceServerER struct {
+	DefaultPortalEntryApiServiceServer
+	serverImpl PortalEntryApiServiceServer
 }
 
-func _NewWrapperPortalEntryServiceServerER(serverImpl PortalEntryServiceServer) PortalEntryServiceServerER {
-	return &_WrapperPortalEntryServiceServerER{
+func _NewWrapperPortalEntryApiServiceServerER(serverImpl PortalEntryApiServiceServer) PortalEntryApiServiceServerER {
+	return &_WrapperPortalEntryApiServiceServerER{
 		serverImpl: serverImpl,
 	}
 }
 
-func (service *_WrapperPortalEntryServiceServerER) server() PortalEntryServiceServer {
+func (service *_WrapperPortalEntryApiServiceServerER) server() PortalEntryApiServiceServer {
 	if service.serverImpl == nil {
-		return &service.DefaultPortalEntryServiceServer
+		return &service.DefaultPortalEntryApiServiceServer
 	}
 	return service.serverImpl
 }
 
-func (service *_WrapperPortalEntryServiceServerER) List() (ret []PortalEntry, err ex.Error) {
+func (service *_WrapperPortalEntryApiServiceServerER) List() (ret []PortalEntry, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().List()
 	return
 }
 
-func (service *_WrapperPortalEntryServiceServerER) UpdateAccess(scheme string, host string, port int, update PortalEntryAccessUpdate) (ret PortalEntry, err ex.Error) {
+func (service *_WrapperPortalEntryApiServiceServerER) UpdateAccess(scheme string, host string, port int, update PortalEntryAccessUpdate) (ret PortalEntry, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().UpdateAccess(scheme, host, port, update)
 	return
 }
 
-func (*_WrapperPortalEntryServiceServerER) mustBePortalEntryServiceServerER() {}
+func (*_WrapperPortalEntryApiServiceServerER) mustBePortalEntryApiServiceServerER() {}
 
-// PortalEntryService / ERServer / DefaultERServer
+// PortalEntryApiService / ERServer / DefaultERServer
 
-type DefaultPortalEntryServiceServerER struct {
-	_WrapperPortalEntryServiceServerER
+type DefaultPortalEntryApiServiceServerER struct {
+	_WrapperPortalEntryApiServiceServerER
 }
 
-// PortalEntryService / Client
+// PortalRuleApiServiceServer Hub's Portal entry rule service, called by the Portal admin client
 
-type PortalEntryServiceClient interface {
-	// List List Portal access entries.
-	//   @returns []PortalEntry - Portal access entry list
-	List(_ivOpts ...rpcclient.InvokeOption) []PortalEntry
-	// UpdateAccess Modify Portal access configuration.
-	//   @param scheme - Entry protocol
-	//   @param host - Match Host, empty string means no restriction
-	//   @param port - Entry port
-	//   @param update - Portal access entry configuration update parameters
-	//   @returns PortalEntry - Portal access entry
-	UpdateAccess(scheme string, host string, port int, update PortalEntryAccessUpdate, _ivOpts ...rpcclient.InvokeOption) PortalEntry
-}
-
-type _PortalEntryServiceClient struct {
-	clientER PortalEntryServiceClientER
-}
-
-func NewPortalEntryServiceClient(clientER PortalEntryServiceClientER) PortalEntryServiceClient {
-	return &_PortalEntryServiceClient{clientER: clientER}
-}
-
-func (client *_PortalEntryServiceClient) List(_ivOpts ...rpcclient.InvokeOption) []PortalEntry {
-	ret, err := client.clientER.List(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_PortalEntryServiceClient) UpdateAccess(scheme string, host string, port int, update PortalEntryAccessUpdate, _ivOpts ...rpcclient.InvokeOption) PortalEntry {
-	ret, err := client.clientER.UpdateAccess(scheme, host, port, update, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-// PortalEntryService / ERClient
-
-type PortalEntryServiceClientER interface {
-	// List List Portal access entries.
-	//   @returns []PortalEntry - Portal access entry list
-	List(_ivOpts ...rpcclient.InvokeOption) ([]PortalEntry, ex.Error)
-	// UpdateAccess Modify Portal access configuration.
-	//   @param scheme - Entry protocol
-	//   @param host - Match Host, empty string means no restriction
-	//   @param port - Entry port
-	//   @param update - Portal access entry configuration update parameters
-	//   @returns PortalEntry - Portal access entry
-	UpdateAccess(scheme string, host string, port int, update PortalEntryAccessUpdate, _ivOpts ...rpcclient.InvokeOption) (PortalEntry, ex.Error)
-}
-
-type _PortalEntryServiceClientER struct {
-	rpcClient *rpcclient.Client
-}
-
-func NewPortalEntryServiceClientER(rpcClient *rpcclient.Client) PortalEntryServiceClientER {
-	return &_PortalEntryServiceClientER{
-		rpcClient: rpcClient,
-	}
-}
-
-func (client *_PortalEntryServiceClientER) List(_ivOpts ...rpcclient.InvokeOption) ([]PortalEntry, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_PortalEntryServiceListSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]PortalEntry)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_PortalEntryServiceClientER) UpdateAccess(scheme string, host string, port int, update PortalEntryAccessUpdate, _ivOpts ...rpcclient.InvokeOption) (PortalEntry, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_PortalEntryServiceUpdateAccessSpec.Info(), &_PortalEntryServiceUpdateAccessArguments{
-		Scheme: scheme,
-		Host:   host,
-		Port:   port,
-		Update: update,
-	}, _ivOpts...)
-	ret, _ := retI.(PortalEntry)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-// PortalRuleServiceServer Hub's Portal entry rule service, called by the Portal admin client
-
-// PortalRuleService / Spec
+// PortalRuleApiService / Spec
 
 var (
-	_PortalRuleServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
-		Name:              "PortalRuleService",
-		SkelName:          "vine.hub.admin.PortalRuleService",
-		Hash:              "d8ceeb86",
-		ServerType:        reflect.TypeFor[PortalRuleServiceServer](),
-		DefaultServerType: reflect.TypeFor[*DefaultPortalRuleServiceServer](),
-		ClientType:        reflect.TypeFor[PortalRuleServiceClient](),
-		ClientCtor:        NewPortalRuleServiceClient,
+	_PortalRuleApiServiceSpec = &rpcspec.ServiceSpec{
+		Type:              rpcspec.ServiceSpecTypeServer,
+		Name:              "PortalRuleApiService",
+		SkelName:          "vine.hub.admin.PortalRuleApiService",
+		Hash:              "ce4bc186",
+		ServerType:        reflect.TypeFor[PortalRuleApiServiceServer](),
+		DefaultServerType: reflect.TypeFor[*DefaultPortalRuleApiServiceServer](),
 
-		ERServerType:        reflect.TypeFor[PortalRuleServiceServerER](),
-		WrapperERServerCtor: _NewWrapperPortalRuleServiceServerER,
-		DefaultERServerType: reflect.TypeFor[*DefaultPortalRuleServiceServerER](),
-		ERClientType:        reflect.TypeFor[PortalRuleServiceClientER](),
-		ERClientCtor:        NewPortalRuleServiceClientER,
+		ERServerType:        reflect.TypeFor[PortalRuleApiServiceServerER](),
+		WrapperERServerCtor: _NewWrapperPortalRuleApiServiceServerER,
+		DefaultERServerType: reflect.TypeFor[*DefaultPortalRuleApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
-			_PortalRuleServiceListSpec,
-			_PortalRuleServiceGetSpec,
-			_PortalRuleServiceCreateSpec,
-			_PortalRuleServiceUpdateSpec,
-			_PortalRuleServiceRemoveSpec,
-			_PortalRuleServiceGetDashboardAccessSpec,
-			_PortalRuleServiceUpdateDashboardAccessSpec,
+			_PortalRuleApiServiceListSpec,
+			_PortalRuleApiServiceGetSpec,
+			_PortalRuleApiServiceCreateSpec,
+			_PortalRuleApiServiceUpdateSpec,
+			_PortalRuleApiServiceRemoveSpec,
+			_PortalRuleApiServiceGetDashboardAccessSpec,
+			_PortalRuleApiServiceUpdateDashboardAccessSpec,
 		},
 	}
-	_PortalRuleServiceListSpec = &rpcspec.MethodSpec{
+	_PortalRuleApiServiceListSpec = &rpcspec.MethodSpec{
 		Name:           "List",
 		SkelName:       "list",
 		ArgumentsType:  nil,
@@ -1959,18 +1325,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalRuleServiceClient.List,
-			PortalRuleServiceClientER.List,
-			PortalRuleServiceServer.List,
-			PortalRuleServiceServerER.List,
+			PortalRuleApiServiceServer.List,
+			PortalRuleApiServiceServerER.List,
 		},
 	}
-	_PortalRuleServiceGetSpec = &rpcspec.MethodSpec{
+	_PortalRuleApiServiceGetSpec = &rpcspec.MethodSpec{
 		Name:          "Get",
 		SkelName:      "get",
-		ArgumentsType: reflect.TypeFor[_PortalRuleServiceGetArguments](),
+		ArgumentsType: reflect.TypeFor[_PortalRuleApiServiceGetArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_PortalRuleServiceGetArguments)
+			source := value.(*_PortalRuleApiServiceGetArguments)
 			cloned := *source
 			return &cloned
 		},
@@ -1986,18 +1350,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalRuleServiceClient.Get,
-			PortalRuleServiceClientER.Get,
-			PortalRuleServiceServer.Get,
-			PortalRuleServiceServerER.Get,
+			PortalRuleApiServiceServer.Get,
+			PortalRuleApiServiceServerER.Get,
 		},
 	}
-	_PortalRuleServiceCreateSpec = &rpcspec.MethodSpec{
+	_PortalRuleApiServiceCreateSpec = &rpcspec.MethodSpec{
 		Name:          "Create",
 		SkelName:      "create",
-		ArgumentsType: reflect.TypeFor[_PortalRuleServiceCreateArguments](),
+		ArgumentsType: reflect.TypeFor[_PortalRuleApiServiceCreateArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_PortalRuleServiceCreateArguments)
+			source := value.(*_PortalRuleApiServiceCreateArguments)
 			cloned := *source
 			cloned.Creation = source.Creation.Clone()
 			return &cloned
@@ -2014,18 +1376,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalRuleServiceClient.Create,
-			PortalRuleServiceClientER.Create,
-			PortalRuleServiceServer.Create,
-			PortalRuleServiceServerER.Create,
+			PortalRuleApiServiceServer.Create,
+			PortalRuleApiServiceServerER.Create,
 		},
 	}
-	_PortalRuleServiceUpdateSpec = &rpcspec.MethodSpec{
+	_PortalRuleApiServiceUpdateSpec = &rpcspec.MethodSpec{
 		Name:          "Update",
 		SkelName:      "update",
-		ArgumentsType: reflect.TypeFor[_PortalRuleServiceUpdateArguments](),
+		ArgumentsType: reflect.TypeFor[_PortalRuleApiServiceUpdateArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_PortalRuleServiceUpdateArguments)
+			source := value.(*_PortalRuleApiServiceUpdateArguments)
 			cloned := *source
 			cloned.Update = source.Update.Clone()
 			return &cloned
@@ -2042,18 +1402,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalRuleServiceClient.Update,
-			PortalRuleServiceClientER.Update,
-			PortalRuleServiceServer.Update,
-			PortalRuleServiceServerER.Update,
+			PortalRuleApiServiceServer.Update,
+			PortalRuleApiServiceServerER.Update,
 		},
 	}
-	_PortalRuleServiceRemoveSpec = &rpcspec.MethodSpec{
+	_PortalRuleApiServiceRemoveSpec = &rpcspec.MethodSpec{
 		Name:          "Remove",
 		SkelName:      "remove",
-		ArgumentsType: reflect.TypeFor[_PortalRuleServiceRemoveArguments](),
+		ArgumentsType: reflect.TypeFor[_PortalRuleApiServiceRemoveArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_PortalRuleServiceRemoveArguments)
+			source := value.(*_PortalRuleApiServiceRemoveArguments)
 			cloned := *source
 			return &cloned
 		},
@@ -2064,13 +1422,11 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalRuleServiceClient.Remove,
-			PortalRuleServiceClientER.Remove,
-			PortalRuleServiceServer.Remove,
-			PortalRuleServiceServerER.Remove,
+			PortalRuleApiServiceServer.Remove,
+			PortalRuleApiServiceServerER.Remove,
 		},
 	}
-	_PortalRuleServiceGetDashboardAccessSpec = &rpcspec.MethodSpec{
+	_PortalRuleApiServiceGetDashboardAccessSpec = &rpcspec.MethodSpec{
 		Name:           "GetDashboardAccess",
 		SkelName:       "getDashboardAccess",
 		ArgumentsType:  nil,
@@ -2087,18 +1443,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalRuleServiceClient.GetDashboardAccess,
-			PortalRuleServiceClientER.GetDashboardAccess,
-			PortalRuleServiceServer.GetDashboardAccess,
-			PortalRuleServiceServerER.GetDashboardAccess,
+			PortalRuleApiServiceServer.GetDashboardAccess,
+			PortalRuleApiServiceServerER.GetDashboardAccess,
 		},
 	}
-	_PortalRuleServiceUpdateDashboardAccessSpec = &rpcspec.MethodSpec{
+	_PortalRuleApiServiceUpdateDashboardAccessSpec = &rpcspec.MethodSpec{
 		Name:          "UpdateDashboardAccess",
 		SkelName:      "updateDashboardAccess",
-		ArgumentsType: reflect.TypeFor[_PortalRuleServiceUpdateDashboardAccessArguments](),
+		ArgumentsType: reflect.TypeFor[_PortalRuleApiServiceUpdateDashboardAccessArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_PortalRuleServiceUpdateDashboardAccessArguments)
+			source := value.(*_PortalRuleApiServiceUpdateDashboardAccessArguments)
 			cloned := *source
 			return &cloned
 		},
@@ -2121,43 +1475,41 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalRuleServiceClient.UpdateDashboardAccess,
-			PortalRuleServiceClientER.UpdateDashboardAccess,
-			PortalRuleServiceServer.UpdateDashboardAccess,
-			PortalRuleServiceServerER.UpdateDashboardAccess,
+			PortalRuleApiServiceServer.UpdateDashboardAccess,
+			PortalRuleApiServiceServerER.UpdateDashboardAccess,
 		},
 	}
 )
 
-// PortalRuleService / Arguments
+// PortalRuleApiService / Arguments
 
-type _PortalRuleServiceGetArguments struct {
+type _PortalRuleApiServiceGetArguments struct {
 	Id int `json:"id" skel:"index(0)"`
 }
 
-type _PortalRuleServiceCreateArguments struct {
+type _PortalRuleApiServiceCreateArguments struct {
 	Creation PortalRuleCreation `json:"creation" skel:"index(0)"`
 }
 
-type _PortalRuleServiceUpdateArguments struct {
+type _PortalRuleApiServiceUpdateArguments struct {
 	Id     int              `json:"id" skel:"index(0)"`
 	Update PortalRuleUpdate `json:"update" skel:"index(1)"`
 }
 
-type _PortalRuleServiceRemoveArguments struct {
+type _PortalRuleApiServiceRemoveArguments struct {
 	Id int `json:"id" skel:"index(0)"`
 }
 
-type _PortalRuleServiceUpdateDashboardAccessArguments struct {
+type _PortalRuleApiServiceUpdateDashboardAccessArguments struct {
 	Scheme     string `json:"scheme" skel:"index(0)"`
 	Host       string `json:"host" skel:"index(1)"`
 	Port       int    `json:"port" skel:"index(2)"`
 	PathPrefix string `json:"pathPrefix" skel:"index(3)"`
 }
 
-// PortalRuleService / Server
+// PortalRuleApiService / Server
 
-type PortalRuleServiceServer interface {
+type PortalRuleApiServiceServer interface {
 	// List List Portal entry rules.
 	//   @returns []PortalRule - Portal entry rule list
 	List() []PortalRule
@@ -2188,52 +1540,52 @@ type PortalRuleServiceServer interface {
 	//   @returns []PortalRule - Hub Dashboard entry rules
 	UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string) []PortalRule
 
-	mustBePortalRuleServiceServer()
+	mustBePortalRuleApiServiceServer()
 }
 
-// PortalRuleService / Server / DefaultServer
+// PortalRuleApiService / Server / DefaultServer
 
-type DefaultPortalRuleServiceServer struct{}
+type DefaultPortalRuleApiServiceServer struct{}
 
-func (*DefaultPortalRuleServiceServer) List() []PortalRule {
+func (*DefaultPortalRuleApiServiceServer) List() []PortalRule {
 	ex.PanicNew(ex.InvalidRequest, "method list is not implemented")
 	return []PortalRule{}
 }
 
-func (*DefaultPortalRuleServiceServer) Get(int) PortalRule {
+func (*DefaultPortalRuleApiServiceServer) Get(int) PortalRule {
 	ex.PanicNew(ex.InvalidRequest, "method get is not implemented")
 	return PortalRule{}
 }
 
-func (*DefaultPortalRuleServiceServer) Create(PortalRuleCreation) PortalRule {
+func (*DefaultPortalRuleApiServiceServer) Create(PortalRuleCreation) PortalRule {
 	ex.PanicNew(ex.InvalidRequest, "method create is not implemented")
 	return PortalRule{}
 }
 
-func (*DefaultPortalRuleServiceServer) Update(int, PortalRuleUpdate) PortalRule {
+func (*DefaultPortalRuleApiServiceServer) Update(int, PortalRuleUpdate) PortalRule {
 	ex.PanicNew(ex.InvalidRequest, "method update is not implemented")
 	return PortalRule{}
 }
 
-func (*DefaultPortalRuleServiceServer) Remove(int) {
+func (*DefaultPortalRuleApiServiceServer) Remove(int) {
 	ex.PanicNew(ex.InvalidRequest, "method remove is not implemented")
 }
 
-func (*DefaultPortalRuleServiceServer) GetDashboardAccess() PortalDashboardAccess {
+func (*DefaultPortalRuleApiServiceServer) GetDashboardAccess() PortalDashboardAccess {
 	ex.PanicNew(ex.InvalidRequest, "method getDashboardAccess is not implemented")
 	return PortalDashboardAccess{}
 }
 
-func (*DefaultPortalRuleServiceServer) UpdateDashboardAccess(string, string, int, string) []PortalRule {
+func (*DefaultPortalRuleApiServiceServer) UpdateDashboardAccess(string, string, int, string) []PortalRule {
 	ex.PanicNew(ex.InvalidRequest, "method updateDashboardAccess is not implemented")
 	return []PortalRule{}
 }
 
-func (*DefaultPortalRuleServiceServer) mustBePortalRuleServiceServer() {}
+func (*DefaultPortalRuleApiServiceServer) mustBePortalRuleApiServiceServer() {}
 
-// PortalRuleService / ERServer
+// PortalRuleApiService / ERServer
 
-type PortalRuleServiceServerER interface {
+type PortalRuleApiServiceServerER interface {
 	List() ([]PortalRule, ex.Error)
 	Get(id int) (PortalRule, ex.Error)
 	Create(creation PortalRuleCreation) (PortalRule, ex.Error)
@@ -2242,298 +1594,105 @@ type PortalRuleServiceServerER interface {
 	GetDashboardAccess() (PortalDashboardAccess, ex.Error)
 	UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string) ([]PortalRule, ex.Error)
 
-	mustBePortalRuleServiceServerER()
+	mustBePortalRuleApiServiceServerER()
 }
 
-// PortalRuleService / ERServer / WrapperERServer
+// PortalRuleApiService / ERServer / WrapperERServer
 
-type _WrapperPortalRuleServiceServerER struct {
-	DefaultPortalRuleServiceServer
-	serverImpl PortalRuleServiceServer
+type _WrapperPortalRuleApiServiceServerER struct {
+	DefaultPortalRuleApiServiceServer
+	serverImpl PortalRuleApiServiceServer
 }
 
-func _NewWrapperPortalRuleServiceServerER(serverImpl PortalRuleServiceServer) PortalRuleServiceServerER {
-	return &_WrapperPortalRuleServiceServerER{
+func _NewWrapperPortalRuleApiServiceServerER(serverImpl PortalRuleApiServiceServer) PortalRuleApiServiceServerER {
+	return &_WrapperPortalRuleApiServiceServerER{
 		serverImpl: serverImpl,
 	}
 }
 
-func (service *_WrapperPortalRuleServiceServerER) server() PortalRuleServiceServer {
+func (service *_WrapperPortalRuleApiServiceServerER) server() PortalRuleApiServiceServer {
 	if service.serverImpl == nil {
-		return &service.DefaultPortalRuleServiceServer
+		return &service.DefaultPortalRuleApiServiceServer
 	}
 	return service.serverImpl
 }
 
-func (service *_WrapperPortalRuleServiceServerER) List() (ret []PortalRule, err ex.Error) {
+func (service *_WrapperPortalRuleApiServiceServerER) List() (ret []PortalRule, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().List()
 	return
 }
 
-func (service *_WrapperPortalRuleServiceServerER) Get(id int) (ret PortalRule, err ex.Error) {
+func (service *_WrapperPortalRuleApiServiceServerER) Get(id int) (ret PortalRule, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().Get(id)
 	return
 }
 
-func (service *_WrapperPortalRuleServiceServerER) Create(creation PortalRuleCreation) (ret PortalRule, err ex.Error) {
+func (service *_WrapperPortalRuleApiServiceServerER) Create(creation PortalRuleCreation) (ret PortalRule, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().Create(creation)
 	return
 }
 
-func (service *_WrapperPortalRuleServiceServerER) Update(id int, update PortalRuleUpdate) (ret PortalRule, err ex.Error) {
+func (service *_WrapperPortalRuleApiServiceServerER) Update(id int, update PortalRuleUpdate) (ret PortalRule, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().Update(id, update)
 	return
 }
 
-func (service *_WrapperPortalRuleServiceServerER) Remove(id int) (err ex.Error) {
+func (service *_WrapperPortalRuleApiServiceServerER) Remove(id int) (err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	service.server().Remove(id)
 	return
 }
 
-func (service *_WrapperPortalRuleServiceServerER) GetDashboardAccess() (ret PortalDashboardAccess, err ex.Error) {
+func (service *_WrapperPortalRuleApiServiceServerER) GetDashboardAccess() (ret PortalDashboardAccess, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().GetDashboardAccess()
 	return
 }
 
-func (service *_WrapperPortalRuleServiceServerER) UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string) (ret []PortalRule, err ex.Error) {
+func (service *_WrapperPortalRuleApiServiceServerER) UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string) (ret []PortalRule, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().UpdateDashboardAccess(scheme, host, port, pathPrefix)
 	return
 }
 
-func (*_WrapperPortalRuleServiceServerER) mustBePortalRuleServiceServerER() {}
+func (*_WrapperPortalRuleApiServiceServerER) mustBePortalRuleApiServiceServerER() {}
 
-// PortalRuleService / ERServer / DefaultERServer
+// PortalRuleApiService / ERServer / DefaultERServer
 
-type DefaultPortalRuleServiceServerER struct {
-	_WrapperPortalRuleServiceServerER
+type DefaultPortalRuleApiServiceServerER struct {
+	_WrapperPortalRuleApiServiceServerER
 }
 
-// PortalRuleService / Client
+// PortalSiteApiServiceServer Hub's Portal target site service, called by the Portal admin client
 
-type PortalRuleServiceClient interface {
-	// List List Portal entry rules.
-	//   @returns []PortalRule - Portal entry rule list
-	List(_ivOpts ...rpcclient.InvokeOption) []PortalRule
-	// Get Read Portal entry rules.
-	//   @param id - Rule ID
-	//   @returns PortalRule - Portal entry rules
-	Get(id int, _ivOpts ...rpcclient.InvokeOption) PortalRule
-	// Create Create Portal entry rules.
-	//   @param creation - Portal entry rule creation parameters
-	//   @returns PortalRule - Portal entry rules
-	Create(creation PortalRuleCreation, _ivOpts ...rpcclient.InvokeOption) PortalRule
-	// Update Modify Portal entry rules.
-	//   @param id - Rule ID
-	//   @param update - Portal entry rule update parameters
-	//   @returns PortalRule - Portal entry rules
-	Update(id int, update PortalRuleUpdate, _ivOpts ...rpcclient.InvokeOption) PortalRule
-	// Remove Delete Portal entry rules.
-	//   @param id - Rule ID
-	Remove(id int, _ivOpts ...rpcclient.InvokeOption)
-	// GetDashboardAccess Get the Hub Dashboard access entry.
-	//   @returns PortalDashboardAccess - Hub Dashboard access entry
-	GetDashboardAccess(_ivOpts ...rpcclient.InvokeOption) PortalDashboardAccess
-	// UpdateDashboardAccess Modify Hub Dashboard access entry.
-	//   @param scheme - Hub Dashboard entry protocol
-	//   @param host - Hub Dashboard entry host
-	//   @param port - Hub Dashboard entry port
-	//   @param pathPrefix - Hub Dashboard entry path prefix
-	//   @returns []PortalRule - Hub Dashboard entry rules
-	UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string, _ivOpts ...rpcclient.InvokeOption) []PortalRule
-}
-
-type _PortalRuleServiceClient struct {
-	clientER PortalRuleServiceClientER
-}
-
-func NewPortalRuleServiceClient(clientER PortalRuleServiceClientER) PortalRuleServiceClient {
-	return &_PortalRuleServiceClient{clientER: clientER}
-}
-
-func (client *_PortalRuleServiceClient) List(_ivOpts ...rpcclient.InvokeOption) []PortalRule {
-	ret, err := client.clientER.List(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_PortalRuleServiceClient) Get(id int, _ivOpts ...rpcclient.InvokeOption) PortalRule {
-	ret, err := client.clientER.Get(id, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_PortalRuleServiceClient) Create(creation PortalRuleCreation, _ivOpts ...rpcclient.InvokeOption) PortalRule {
-	ret, err := client.clientER.Create(creation, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_PortalRuleServiceClient) Update(id int, update PortalRuleUpdate, _ivOpts ...rpcclient.InvokeOption) PortalRule {
-	ret, err := client.clientER.Update(id, update, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_PortalRuleServiceClient) Remove(id int, _ivOpts ...rpcclient.InvokeOption) {
-	err := client.clientER.Remove(id, _ivOpts...)
-	ex.PanicIfError(err)
-}
-
-func (client *_PortalRuleServiceClient) GetDashboardAccess(_ivOpts ...rpcclient.InvokeOption) PortalDashboardAccess {
-	ret, err := client.clientER.GetDashboardAccess(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_PortalRuleServiceClient) UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string, _ivOpts ...rpcclient.InvokeOption) []PortalRule {
-	ret, err := client.clientER.UpdateDashboardAccess(scheme, host, port, pathPrefix, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-// PortalRuleService / ERClient
-
-type PortalRuleServiceClientER interface {
-	// List List Portal entry rules.
-	//   @returns []PortalRule - Portal entry rule list
-	List(_ivOpts ...rpcclient.InvokeOption) ([]PortalRule, ex.Error)
-	// Get Read Portal entry rules.
-	//   @param id - Rule ID
-	//   @returns PortalRule - Portal entry rules
-	Get(id int, _ivOpts ...rpcclient.InvokeOption) (PortalRule, ex.Error)
-	// Create Create Portal entry rules.
-	//   @param creation - Portal entry rule creation parameters
-	//   @returns PortalRule - Portal entry rules
-	Create(creation PortalRuleCreation, _ivOpts ...rpcclient.InvokeOption) (PortalRule, ex.Error)
-	// Update Modify Portal entry rules.
-	//   @param id - Rule ID
-	//   @param update - Portal entry rule update parameters
-	//   @returns PortalRule - Portal entry rules
-	Update(id int, update PortalRuleUpdate, _ivOpts ...rpcclient.InvokeOption) (PortalRule, ex.Error)
-	// Remove Delete Portal entry rules.
-	//   @param id - Rule ID
-	Remove(id int, _ivOpts ...rpcclient.InvokeOption) ex.Error
-	// GetDashboardAccess Get the Hub Dashboard access entry.
-	//   @returns PortalDashboardAccess - Hub Dashboard access entry
-	GetDashboardAccess(_ivOpts ...rpcclient.InvokeOption) (PortalDashboardAccess, ex.Error)
-	// UpdateDashboardAccess Modify Hub Dashboard access entry.
-	//   @param scheme - Hub Dashboard entry protocol
-	//   @param host - Hub Dashboard entry host
-	//   @param port - Hub Dashboard entry port
-	//   @param pathPrefix - Hub Dashboard entry path prefix
-	//   @returns []PortalRule - Hub Dashboard entry rules
-	UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string, _ivOpts ...rpcclient.InvokeOption) ([]PortalRule, ex.Error)
-}
-
-type _PortalRuleServiceClientER struct {
-	rpcClient *rpcclient.Client
-}
-
-func NewPortalRuleServiceClientER(rpcClient *rpcclient.Client) PortalRuleServiceClientER {
-	return &_PortalRuleServiceClientER{
-		rpcClient: rpcClient,
-	}
-}
-
-func (client *_PortalRuleServiceClientER) List(_ivOpts ...rpcclient.InvokeOption) ([]PortalRule, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_PortalRuleServiceListSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]PortalRule)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_PortalRuleServiceClientER) Get(id int, _ivOpts ...rpcclient.InvokeOption) (PortalRule, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_PortalRuleServiceGetSpec.Info(), &_PortalRuleServiceGetArguments{
-		Id: id,
-	}, _ivOpts...)
-	ret, _ := retI.(PortalRule)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_PortalRuleServiceClientER) Create(creation PortalRuleCreation, _ivOpts ...rpcclient.InvokeOption) (PortalRule, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_PortalRuleServiceCreateSpec.Info(), &_PortalRuleServiceCreateArguments{
-		Creation: creation,
-	}, _ivOpts...)
-	ret, _ := retI.(PortalRule)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_PortalRuleServiceClientER) Update(id int, update PortalRuleUpdate, _ivOpts ...rpcclient.InvokeOption) (PortalRule, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_PortalRuleServiceUpdateSpec.Info(), &_PortalRuleServiceUpdateArguments{
-		Id:     id,
-		Update: update,
-	}, _ivOpts...)
-	ret, _ := retI.(PortalRule)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_PortalRuleServiceClientER) Remove(id int, _ivOpts ...rpcclient.InvokeOption) ex.Error {
-	_, errI := client.rpcClient.Invoke(_PortalRuleServiceRemoveSpec.Info(), &_PortalRuleServiceRemoveArguments{
-		Id: id,
-	}, _ivOpts...)
-	err, _ := errI.(ex.Error)
-	return err
-}
-
-func (client *_PortalRuleServiceClientER) GetDashboardAccess(_ivOpts ...rpcclient.InvokeOption) (PortalDashboardAccess, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_PortalRuleServiceGetDashboardAccessSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.(PortalDashboardAccess)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_PortalRuleServiceClientER) UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string, _ivOpts ...rpcclient.InvokeOption) ([]PortalRule, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_PortalRuleServiceUpdateDashboardAccessSpec.Info(), &_PortalRuleServiceUpdateDashboardAccessArguments{
-		Scheme:     scheme,
-		Host:       host,
-		Port:       port,
-		PathPrefix: pathPrefix,
-	}, _ivOpts...)
-	ret, _ := retI.([]PortalRule)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-// PortalSiteServiceServer Hub's Portal target site service, called by the Portal admin client
-
-// PortalSiteService / Spec
+// PortalSiteApiService / Spec
 
 var (
-	_PortalSiteServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
-		Name:              "PortalSiteService",
-		SkelName:          "vine.hub.admin.PortalSiteService",
-		Hash:              "1c5ec722",
-		ServerType:        reflect.TypeFor[PortalSiteServiceServer](),
-		DefaultServerType: reflect.TypeFor[*DefaultPortalSiteServiceServer](),
-		ClientType:        reflect.TypeFor[PortalSiteServiceClient](),
-		ClientCtor:        NewPortalSiteServiceClient,
+	_PortalSiteApiServiceSpec = &rpcspec.ServiceSpec{
+		Type:              rpcspec.ServiceSpecTypeServer,
+		Name:              "PortalSiteApiService",
+		SkelName:          "vine.hub.admin.PortalSiteApiService",
+		Hash:              "2330e138",
+		ServerType:        reflect.TypeFor[PortalSiteApiServiceServer](),
+		DefaultServerType: reflect.TypeFor[*DefaultPortalSiteApiServiceServer](),
 
-		ERServerType:        reflect.TypeFor[PortalSiteServiceServerER](),
-		WrapperERServerCtor: _NewWrapperPortalSiteServiceServerER,
-		DefaultERServerType: reflect.TypeFor[*DefaultPortalSiteServiceServerER](),
-		ERClientType:        reflect.TypeFor[PortalSiteServiceClientER](),
-		ERClientCtor:        NewPortalSiteServiceClientER,
+		ERServerType:        reflect.TypeFor[PortalSiteApiServiceServerER](),
+		WrapperERServerCtor: _NewWrapperPortalSiteApiServiceServerER,
+		DefaultERServerType: reflect.TypeFor[*DefaultPortalSiteApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
-			_PortalSiteServiceListSpec,
-			_PortalSiteServiceListOptionsSpec,
-			_PortalSiteServiceGetSpec,
-			_PortalSiteServiceCreateSpec,
-			_PortalSiteServiceUpdateSpec,
-			_PortalSiteServiceRemoveSpec,
+			_PortalSiteApiServiceListSpec,
+			_PortalSiteApiServiceListOptionsSpec,
+			_PortalSiteApiServiceGetSpec,
+			_PortalSiteApiServiceCreateSpec,
+			_PortalSiteApiServiceUpdateSpec,
+			_PortalSiteApiServiceRemoveSpec,
 		},
 	}
-	_PortalSiteServiceListSpec = &rpcspec.MethodSpec{
+	_PortalSiteApiServiceListSpec = &rpcspec.MethodSpec{
 		Name:           "List",
 		SkelName:       "list",
 		ArgumentsType:  nil,
@@ -2557,13 +1716,11 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalSiteServiceClient.List,
-			PortalSiteServiceClientER.List,
-			PortalSiteServiceServer.List,
-			PortalSiteServiceServerER.List,
+			PortalSiteApiServiceServer.List,
+			PortalSiteApiServiceServerER.List,
 		},
 	}
-	_PortalSiteServiceListOptionsSpec = &rpcspec.MethodSpec{
+	_PortalSiteApiServiceListOptionsSpec = &rpcspec.MethodSpec{
 		Name:           "ListOptions",
 		SkelName:       "listOptions",
 		ArgumentsType:  nil,
@@ -2580,18 +1737,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalSiteServiceClient.ListOptions,
-			PortalSiteServiceClientER.ListOptions,
-			PortalSiteServiceServer.ListOptions,
-			PortalSiteServiceServerER.ListOptions,
+			PortalSiteApiServiceServer.ListOptions,
+			PortalSiteApiServiceServerER.ListOptions,
 		},
 	}
-	_PortalSiteServiceGetSpec = &rpcspec.MethodSpec{
+	_PortalSiteApiServiceGetSpec = &rpcspec.MethodSpec{
 		Name:          "Get",
 		SkelName:      "get",
-		ArgumentsType: reflect.TypeFor[_PortalSiteServiceGetArguments](),
+		ArgumentsType: reflect.TypeFor[_PortalSiteApiServiceGetArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_PortalSiteServiceGetArguments)
+			source := value.(*_PortalSiteApiServiceGetArguments)
 			cloned := *source
 			return &cloned
 		},
@@ -2607,18 +1762,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalSiteServiceClient.Get,
-			PortalSiteServiceClientER.Get,
-			PortalSiteServiceServer.Get,
-			PortalSiteServiceServerER.Get,
+			PortalSiteApiServiceServer.Get,
+			PortalSiteApiServiceServerER.Get,
 		},
 	}
-	_PortalSiteServiceCreateSpec = &rpcspec.MethodSpec{
+	_PortalSiteApiServiceCreateSpec = &rpcspec.MethodSpec{
 		Name:          "Create",
 		SkelName:      "create",
-		ArgumentsType: reflect.TypeFor[_PortalSiteServiceCreateArguments](),
+		ArgumentsType: reflect.TypeFor[_PortalSiteApiServiceCreateArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_PortalSiteServiceCreateArguments)
+			source := value.(*_PortalSiteApiServiceCreateArguments)
 			cloned := *source
 			cloned.Creation = source.Creation.Clone()
 			return &cloned
@@ -2635,18 +1788,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalSiteServiceClient.Create,
-			PortalSiteServiceClientER.Create,
-			PortalSiteServiceServer.Create,
-			PortalSiteServiceServerER.Create,
+			PortalSiteApiServiceServer.Create,
+			PortalSiteApiServiceServerER.Create,
 		},
 	}
-	_PortalSiteServiceUpdateSpec = &rpcspec.MethodSpec{
+	_PortalSiteApiServiceUpdateSpec = &rpcspec.MethodSpec{
 		Name:          "Update",
 		SkelName:      "update",
-		ArgumentsType: reflect.TypeFor[_PortalSiteServiceUpdateArguments](),
+		ArgumentsType: reflect.TypeFor[_PortalSiteApiServiceUpdateArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_PortalSiteServiceUpdateArguments)
+			source := value.(*_PortalSiteApiServiceUpdateArguments)
 			cloned := *source
 			cloned.Update = source.Update.Clone()
 			return &cloned
@@ -2663,18 +1814,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalSiteServiceClient.Update,
-			PortalSiteServiceClientER.Update,
-			PortalSiteServiceServer.Update,
-			PortalSiteServiceServerER.Update,
+			PortalSiteApiServiceServer.Update,
+			PortalSiteApiServiceServerER.Update,
 		},
 	}
-	_PortalSiteServiceRemoveSpec = &rpcspec.MethodSpec{
+	_PortalSiteApiServiceRemoveSpec = &rpcspec.MethodSpec{
 		Name:          "Remove",
 		SkelName:      "remove",
-		ArgumentsType: reflect.TypeFor[_PortalSiteServiceRemoveArguments](),
+		ArgumentsType: reflect.TypeFor[_PortalSiteApiServiceRemoveArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_PortalSiteServiceRemoveArguments)
+			source := value.(*_PortalSiteApiServiceRemoveArguments)
 			cloned := *source
 			return &cloned
 		},
@@ -2685,36 +1834,34 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalSiteServiceClient.Remove,
-			PortalSiteServiceClientER.Remove,
-			PortalSiteServiceServer.Remove,
-			PortalSiteServiceServerER.Remove,
+			PortalSiteApiServiceServer.Remove,
+			PortalSiteApiServiceServerER.Remove,
 		},
 	}
 )
 
-// PortalSiteService / Arguments
+// PortalSiteApiService / Arguments
 
-type _PortalSiteServiceGetArguments struct {
+type _PortalSiteApiServiceGetArguments struct {
 	Id int `json:"id" skel:"index(0)"`
 }
 
-type _PortalSiteServiceCreateArguments struct {
+type _PortalSiteApiServiceCreateArguments struct {
 	Creation PortalSiteCreation `json:"creation" skel:"index(0)"`
 }
 
-type _PortalSiteServiceUpdateArguments struct {
+type _PortalSiteApiServiceUpdateArguments struct {
 	Id     int              `json:"id" skel:"index(0)"`
 	Update PortalSiteUpdate `json:"update" skel:"index(1)"`
 }
 
-type _PortalSiteServiceRemoveArguments struct {
+type _PortalSiteApiServiceRemoveArguments struct {
 	Id int `json:"id" skel:"index(0)"`
 }
 
-// PortalSiteService / Server
+// PortalSiteApiService / Server
 
-type PortalSiteServiceServer interface {
+type PortalSiteApiServiceServer interface {
 	// List List Portal target sites.
 	//   @returns []PortalSite - Portal target site list
 	List() []PortalSite
@@ -2738,47 +1885,47 @@ type PortalSiteServiceServer interface {
 	//   @param id - Target site id
 	Remove(id int)
 
-	mustBePortalSiteServiceServer()
+	mustBePortalSiteApiServiceServer()
 }
 
-// PortalSiteService / Server / DefaultServer
+// PortalSiteApiService / Server / DefaultServer
 
-type DefaultPortalSiteServiceServer struct{}
+type DefaultPortalSiteApiServiceServer struct{}
 
-func (*DefaultPortalSiteServiceServer) List() []PortalSite {
+func (*DefaultPortalSiteApiServiceServer) List() []PortalSite {
 	ex.PanicNew(ex.InvalidRequest, "method list is not implemented")
 	return []PortalSite{}
 }
 
-func (*DefaultPortalSiteServiceServer) ListOptions() PortalSiteOptions {
+func (*DefaultPortalSiteApiServiceServer) ListOptions() PortalSiteOptions {
 	ex.PanicNew(ex.InvalidRequest, "method listOptions is not implemented")
 	return PortalSiteOptions{}
 }
 
-func (*DefaultPortalSiteServiceServer) Get(int) PortalSite {
+func (*DefaultPortalSiteApiServiceServer) Get(int) PortalSite {
 	ex.PanicNew(ex.InvalidRequest, "method get is not implemented")
 	return PortalSite{}
 }
 
-func (*DefaultPortalSiteServiceServer) Create(PortalSiteCreation) PortalSite {
+func (*DefaultPortalSiteApiServiceServer) Create(PortalSiteCreation) PortalSite {
 	ex.PanicNew(ex.InvalidRequest, "method create is not implemented")
 	return PortalSite{}
 }
 
-func (*DefaultPortalSiteServiceServer) Update(int, PortalSiteUpdate) PortalSite {
+func (*DefaultPortalSiteApiServiceServer) Update(int, PortalSiteUpdate) PortalSite {
 	ex.PanicNew(ex.InvalidRequest, "method update is not implemented")
 	return PortalSite{}
 }
 
-func (*DefaultPortalSiteServiceServer) Remove(int) {
+func (*DefaultPortalSiteApiServiceServer) Remove(int) {
 	ex.PanicNew(ex.InvalidRequest, "method remove is not implemented")
 }
 
-func (*DefaultPortalSiteServiceServer) mustBePortalSiteServiceServer() {}
+func (*DefaultPortalSiteApiServiceServer) mustBePortalSiteApiServiceServer() {}
 
-// PortalSiteService / ERServer
+// PortalSiteApiService / ERServer
 
-type PortalSiteServiceServerER interface {
+type PortalSiteApiServiceServerER interface {
 	List() ([]PortalSite, ex.Error)
 	ListOptions() (PortalSiteOptions, ex.Error)
 	Get(id int) (PortalSite, ex.Error)
@@ -2786,260 +1933,99 @@ type PortalSiteServiceServerER interface {
 	Update(id int, update PortalSiteUpdate) (PortalSite, ex.Error)
 	Remove(id int) ex.Error
 
-	mustBePortalSiteServiceServerER()
+	mustBePortalSiteApiServiceServerER()
 }
 
-// PortalSiteService / ERServer / WrapperERServer
+// PortalSiteApiService / ERServer / WrapperERServer
 
-type _WrapperPortalSiteServiceServerER struct {
-	DefaultPortalSiteServiceServer
-	serverImpl PortalSiteServiceServer
+type _WrapperPortalSiteApiServiceServerER struct {
+	DefaultPortalSiteApiServiceServer
+	serverImpl PortalSiteApiServiceServer
 }
 
-func _NewWrapperPortalSiteServiceServerER(serverImpl PortalSiteServiceServer) PortalSiteServiceServerER {
-	return &_WrapperPortalSiteServiceServerER{
+func _NewWrapperPortalSiteApiServiceServerER(serverImpl PortalSiteApiServiceServer) PortalSiteApiServiceServerER {
+	return &_WrapperPortalSiteApiServiceServerER{
 		serverImpl: serverImpl,
 	}
 }
 
-func (service *_WrapperPortalSiteServiceServerER) server() PortalSiteServiceServer {
+func (service *_WrapperPortalSiteApiServiceServerER) server() PortalSiteApiServiceServer {
 	if service.serverImpl == nil {
-		return &service.DefaultPortalSiteServiceServer
+		return &service.DefaultPortalSiteApiServiceServer
 	}
 	return service.serverImpl
 }
 
-func (service *_WrapperPortalSiteServiceServerER) List() (ret []PortalSite, err ex.Error) {
+func (service *_WrapperPortalSiteApiServiceServerER) List() (ret []PortalSite, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().List()
 	return
 }
 
-func (service *_WrapperPortalSiteServiceServerER) ListOptions() (ret PortalSiteOptions, err ex.Error) {
+func (service *_WrapperPortalSiteApiServiceServerER) ListOptions() (ret PortalSiteOptions, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListOptions()
 	return
 }
 
-func (service *_WrapperPortalSiteServiceServerER) Get(id int) (ret PortalSite, err ex.Error) {
+func (service *_WrapperPortalSiteApiServiceServerER) Get(id int) (ret PortalSite, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().Get(id)
 	return
 }
 
-func (service *_WrapperPortalSiteServiceServerER) Create(creation PortalSiteCreation) (ret PortalSite, err ex.Error) {
+func (service *_WrapperPortalSiteApiServiceServerER) Create(creation PortalSiteCreation) (ret PortalSite, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().Create(creation)
 	return
 }
 
-func (service *_WrapperPortalSiteServiceServerER) Update(id int, update PortalSiteUpdate) (ret PortalSite, err ex.Error) {
+func (service *_WrapperPortalSiteApiServiceServerER) Update(id int, update PortalSiteUpdate) (ret PortalSite, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().Update(id, update)
 	return
 }
 
-func (service *_WrapperPortalSiteServiceServerER) Remove(id int) (err ex.Error) {
+func (service *_WrapperPortalSiteApiServiceServerER) Remove(id int) (err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	service.server().Remove(id)
 	return
 }
 
-func (*_WrapperPortalSiteServiceServerER) mustBePortalSiteServiceServerER() {}
+func (*_WrapperPortalSiteApiServiceServerER) mustBePortalSiteApiServiceServerER() {}
 
-// PortalSiteService / ERServer / DefaultERServer
+// PortalSiteApiService / ERServer / DefaultERServer
 
-type DefaultPortalSiteServiceServerER struct {
-	_WrapperPortalSiteServiceServerER
+type DefaultPortalSiteApiServiceServerER struct {
+	_WrapperPortalSiteApiServiceServerER
 }
 
-// PortalSiteService / Client
+// ServiceDebugApiServiceServer Hub Dashboard Service debugging service
 
-type PortalSiteServiceClient interface {
-	// List List Portal target sites.
-	//   @returns []PortalSite - Portal target site list
-	List(_ivOpts ...rpcclient.InvokeOption) []PortalSite
-	// ListOptions List Portal target site form options.
-	//   @returns PortalSiteOptions - Portal target site form options
-	ListOptions(_ivOpts ...rpcclient.InvokeOption) PortalSiteOptions
-	// Get Read the Portal target site.
-	//   @param id - Target site id
-	//   @returns PortalSite - Portal target site
-	Get(id int, _ivOpts ...rpcclient.InvokeOption) PortalSite
-	// Create Create Portal target site.
-	//   @param creation - Portal target site creation parameters
-	//   @returns PortalSite - Portal target site
-	Create(creation PortalSiteCreation, _ivOpts ...rpcclient.InvokeOption) PortalSite
-	// Update Modify Portal target site.
-	//   @param id - Target site id
-	//   @param update - Portal target site update parameters
-	//   @returns PortalSite - Portal target site
-	Update(id int, update PortalSiteUpdate, _ivOpts ...rpcclient.InvokeOption) PortalSite
-	// Remove Delete Portal target site.
-	//   @param id - Target site id
-	Remove(id int, _ivOpts ...rpcclient.InvokeOption)
-}
-
-type _PortalSiteServiceClient struct {
-	clientER PortalSiteServiceClientER
-}
-
-func NewPortalSiteServiceClient(clientER PortalSiteServiceClientER) PortalSiteServiceClient {
-	return &_PortalSiteServiceClient{clientER: clientER}
-}
-
-func (client *_PortalSiteServiceClient) List(_ivOpts ...rpcclient.InvokeOption) []PortalSite {
-	ret, err := client.clientER.List(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_PortalSiteServiceClient) ListOptions(_ivOpts ...rpcclient.InvokeOption) PortalSiteOptions {
-	ret, err := client.clientER.ListOptions(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_PortalSiteServiceClient) Get(id int, _ivOpts ...rpcclient.InvokeOption) PortalSite {
-	ret, err := client.clientER.Get(id, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_PortalSiteServiceClient) Create(creation PortalSiteCreation, _ivOpts ...rpcclient.InvokeOption) PortalSite {
-	ret, err := client.clientER.Create(creation, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_PortalSiteServiceClient) Update(id int, update PortalSiteUpdate, _ivOpts ...rpcclient.InvokeOption) PortalSite {
-	ret, err := client.clientER.Update(id, update, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_PortalSiteServiceClient) Remove(id int, _ivOpts ...rpcclient.InvokeOption) {
-	err := client.clientER.Remove(id, _ivOpts...)
-	ex.PanicIfError(err)
-}
-
-// PortalSiteService / ERClient
-
-type PortalSiteServiceClientER interface {
-	// List List Portal target sites.
-	//   @returns []PortalSite - Portal target site list
-	List(_ivOpts ...rpcclient.InvokeOption) ([]PortalSite, ex.Error)
-	// ListOptions List Portal target site form options.
-	//   @returns PortalSiteOptions - Portal target site form options
-	ListOptions(_ivOpts ...rpcclient.InvokeOption) (PortalSiteOptions, ex.Error)
-	// Get Read the Portal target site.
-	//   @param id - Target site id
-	//   @returns PortalSite - Portal target site
-	Get(id int, _ivOpts ...rpcclient.InvokeOption) (PortalSite, ex.Error)
-	// Create Create Portal target site.
-	//   @param creation - Portal target site creation parameters
-	//   @returns PortalSite - Portal target site
-	Create(creation PortalSiteCreation, _ivOpts ...rpcclient.InvokeOption) (PortalSite, ex.Error)
-	// Update Modify Portal target site.
-	//   @param id - Target site id
-	//   @param update - Portal target site update parameters
-	//   @returns PortalSite - Portal target site
-	Update(id int, update PortalSiteUpdate, _ivOpts ...rpcclient.InvokeOption) (PortalSite, ex.Error)
-	// Remove Delete Portal target site.
-	//   @param id - Target site id
-	Remove(id int, _ivOpts ...rpcclient.InvokeOption) ex.Error
-}
-
-type _PortalSiteServiceClientER struct {
-	rpcClient *rpcclient.Client
-}
-
-func NewPortalSiteServiceClientER(rpcClient *rpcclient.Client) PortalSiteServiceClientER {
-	return &_PortalSiteServiceClientER{
-		rpcClient: rpcClient,
-	}
-}
-
-func (client *_PortalSiteServiceClientER) List(_ivOpts ...rpcclient.InvokeOption) ([]PortalSite, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_PortalSiteServiceListSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]PortalSite)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_PortalSiteServiceClientER) ListOptions(_ivOpts ...rpcclient.InvokeOption) (PortalSiteOptions, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_PortalSiteServiceListOptionsSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.(PortalSiteOptions)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_PortalSiteServiceClientER) Get(id int, _ivOpts ...rpcclient.InvokeOption) (PortalSite, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_PortalSiteServiceGetSpec.Info(), &_PortalSiteServiceGetArguments{
-		Id: id,
-	}, _ivOpts...)
-	ret, _ := retI.(PortalSite)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_PortalSiteServiceClientER) Create(creation PortalSiteCreation, _ivOpts ...rpcclient.InvokeOption) (PortalSite, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_PortalSiteServiceCreateSpec.Info(), &_PortalSiteServiceCreateArguments{
-		Creation: creation,
-	}, _ivOpts...)
-	ret, _ := retI.(PortalSite)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_PortalSiteServiceClientER) Update(id int, update PortalSiteUpdate, _ivOpts ...rpcclient.InvokeOption) (PortalSite, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_PortalSiteServiceUpdateSpec.Info(), &_PortalSiteServiceUpdateArguments{
-		Id:     id,
-		Update: update,
-	}, _ivOpts...)
-	ret, _ := retI.(PortalSite)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_PortalSiteServiceClientER) Remove(id int, _ivOpts ...rpcclient.InvokeOption) ex.Error {
-	_, errI := client.rpcClient.Invoke(_PortalSiteServiceRemoveSpec.Info(), &_PortalSiteServiceRemoveArguments{
-		Id: id,
-	}, _ivOpts...)
-	err, _ := errI.(ex.Error)
-	return err
-}
-
-// ServiceDebugServiceServer Hub Dashboard Service debugging service
-
-// ServiceDebugService / Spec
+// ServiceDebugApiService / Spec
 
 var (
-	_ServiceDebugServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
-		Name:              "ServiceDebugService",
-		SkelName:          "vine.hub.admin.ServiceDebugService",
-		Hash:              "ee7982b6",
-		ServerType:        reflect.TypeFor[ServiceDebugServiceServer](),
-		DefaultServerType: reflect.TypeFor[*DefaultServiceDebugServiceServer](),
-		ClientType:        reflect.TypeFor[ServiceDebugServiceClient](),
-		ClientCtor:        NewServiceDebugServiceClient,
+	_ServiceDebugApiServiceSpec = &rpcspec.ServiceSpec{
+		Type:              rpcspec.ServiceSpecTypeServer,
+		Name:              "ServiceDebugApiService",
+		SkelName:          "vine.hub.admin.ServiceDebugApiService",
+		Hash:              "6f47d948",
+		ServerType:        reflect.TypeFor[ServiceDebugApiServiceServer](),
+		DefaultServerType: reflect.TypeFor[*DefaultServiceDebugApiServiceServer](),
 
-		ERServerType:        reflect.TypeFor[ServiceDebugServiceServerER](),
-		WrapperERServerCtor: _NewWrapperServiceDebugServiceServerER,
-		DefaultERServerType: reflect.TypeFor[*DefaultServiceDebugServiceServerER](),
-		ERClientType:        reflect.TypeFor[ServiceDebugServiceClientER](),
-		ERClientCtor:        NewServiceDebugServiceClientER,
+		ERServerType:        reflect.TypeFor[ServiceDebugApiServiceServerER](),
+		WrapperERServerCtor: _NewWrapperServiceDebugApiServiceServerER,
+		DefaultERServerType: reflect.TypeFor[*DefaultServiceDebugApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
-			_ServiceDebugServiceListAppInstancesSpec,
-			_ServiceDebugServiceListServicesSpec,
-			_ServiceDebugServiceListServiceAppInstancesSpec,
-			_ServiceDebugServiceListMethodsSpec,
-			_ServiceDebugServiceBuildDefaultInvokeRequestSpec,
-			_ServiceDebugServiceInvokeServiceSpec,
+			_ServiceDebugApiServiceListAppInstancesSpec,
+			_ServiceDebugApiServiceListServicesSpec,
+			_ServiceDebugApiServiceListServiceAppInstancesSpec,
+			_ServiceDebugApiServiceListMethodsSpec,
+			_ServiceDebugApiServiceBuildDefaultInvokeRequestSpec,
+			_ServiceDebugApiServiceInvokeServiceSpec,
 		},
 	}
-	_ServiceDebugServiceListAppInstancesSpec = &rpcspec.MethodSpec{
+	_ServiceDebugApiServiceListAppInstancesSpec = &rpcspec.MethodSpec{
 		Name:           "ListAppInstances",
 		SkelName:       "listAppInstances",
 		ArgumentsType:  nil,
@@ -3063,13 +2049,11 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			ServiceDebugServiceClient.ListAppInstances,
-			ServiceDebugServiceClientER.ListAppInstances,
-			ServiceDebugServiceServer.ListAppInstances,
-			ServiceDebugServiceServerER.ListAppInstances,
+			ServiceDebugApiServiceServer.ListAppInstances,
+			ServiceDebugApiServiceServerER.ListAppInstances,
 		},
 	}
-	_ServiceDebugServiceListServicesSpec = &rpcspec.MethodSpec{
+	_ServiceDebugApiServiceListServicesSpec = &rpcspec.MethodSpec{
 		Name:           "ListServices",
 		SkelName:       "listServices",
 		ArgumentsType:  nil,
@@ -3093,18 +2077,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			ServiceDebugServiceClient.ListServices,
-			ServiceDebugServiceClientER.ListServices,
-			ServiceDebugServiceServer.ListServices,
-			ServiceDebugServiceServerER.ListServices,
+			ServiceDebugApiServiceServer.ListServices,
+			ServiceDebugApiServiceServerER.ListServices,
 		},
 	}
-	_ServiceDebugServiceListServiceAppInstancesSpec = &rpcspec.MethodSpec{
+	_ServiceDebugApiServiceListServiceAppInstancesSpec = &rpcspec.MethodSpec{
 		Name:          "ListServiceAppInstances",
 		SkelName:      "listServiceAppInstances",
-		ArgumentsType: reflect.TypeFor[_ServiceDebugServiceListServiceAppInstancesArguments](),
+		ArgumentsType: reflect.TypeFor[_ServiceDebugApiServiceListServiceAppInstancesArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_ServiceDebugServiceListServiceAppInstancesArguments)
+			source := value.(*_ServiceDebugApiServiceListServiceAppInstancesArguments)
 			cloned := *source
 			return &cloned
 		},
@@ -3127,18 +2109,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			ServiceDebugServiceClient.ListServiceAppInstances,
-			ServiceDebugServiceClientER.ListServiceAppInstances,
-			ServiceDebugServiceServer.ListServiceAppInstances,
-			ServiceDebugServiceServerER.ListServiceAppInstances,
+			ServiceDebugApiServiceServer.ListServiceAppInstances,
+			ServiceDebugApiServiceServerER.ListServiceAppInstances,
 		},
 	}
-	_ServiceDebugServiceListMethodsSpec = &rpcspec.MethodSpec{
+	_ServiceDebugApiServiceListMethodsSpec = &rpcspec.MethodSpec{
 		Name:          "ListMethods",
 		SkelName:      "listMethods",
-		ArgumentsType: reflect.TypeFor[_ServiceDebugServiceListMethodsArguments](),
+		ArgumentsType: reflect.TypeFor[_ServiceDebugApiServiceListMethodsArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_ServiceDebugServiceListMethodsArguments)
+			source := value.(*_ServiceDebugApiServiceListMethodsArguments)
 			cloned := *source
 			return &cloned
 		},
@@ -3161,18 +2141,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			ServiceDebugServiceClient.ListMethods,
-			ServiceDebugServiceClientER.ListMethods,
-			ServiceDebugServiceServer.ListMethods,
-			ServiceDebugServiceServerER.ListMethods,
+			ServiceDebugApiServiceServer.ListMethods,
+			ServiceDebugApiServiceServerER.ListMethods,
 		},
 	}
-	_ServiceDebugServiceBuildDefaultInvokeRequestSpec = &rpcspec.MethodSpec{
+	_ServiceDebugApiServiceBuildDefaultInvokeRequestSpec = &rpcspec.MethodSpec{
 		Name:          "BuildDefaultInvokeRequest",
 		SkelName:      "buildDefaultInvokeRequest",
-		ArgumentsType: reflect.TypeFor[_ServiceDebugServiceBuildDefaultInvokeRequestArguments](),
+		ArgumentsType: reflect.TypeFor[_ServiceDebugApiServiceBuildDefaultInvokeRequestArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_ServiceDebugServiceBuildDefaultInvokeRequestArguments)
+			source := value.(*_ServiceDebugApiServiceBuildDefaultInvokeRequestArguments)
 			cloned := *source
 			return &cloned
 		},
@@ -3188,18 +2166,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			ServiceDebugServiceClient.BuildDefaultInvokeRequest,
-			ServiceDebugServiceClientER.BuildDefaultInvokeRequest,
-			ServiceDebugServiceServer.BuildDefaultInvokeRequest,
-			ServiceDebugServiceServerER.BuildDefaultInvokeRequest,
+			ServiceDebugApiServiceServer.BuildDefaultInvokeRequest,
+			ServiceDebugApiServiceServerER.BuildDefaultInvokeRequest,
 		},
 	}
-	_ServiceDebugServiceInvokeServiceSpec = &rpcspec.MethodSpec{
+	_ServiceDebugApiServiceInvokeServiceSpec = &rpcspec.MethodSpec{
 		Name:          "InvokeService",
 		SkelName:      "invokeService",
-		ArgumentsType: reflect.TypeFor[_ServiceDebugServiceInvokeServiceArguments](),
+		ArgumentsType: reflect.TypeFor[_ServiceDebugApiServiceInvokeServiceArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_ServiceDebugServiceInvokeServiceArguments)
+			source := value.(*_ServiceDebugApiServiceInvokeServiceArguments)
 			cloned := *source
 			cloned.Request = source.Request.Clone()
 			return &cloned
@@ -3216,39 +2192,37 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			ServiceDebugServiceClient.InvokeService,
-			ServiceDebugServiceClientER.InvokeService,
-			ServiceDebugServiceServer.InvokeService,
-			ServiceDebugServiceServerER.InvokeService,
+			ServiceDebugApiServiceServer.InvokeService,
+			ServiceDebugApiServiceServerER.InvokeService,
 		},
 	}
 )
 
-// ServiceDebugService / Arguments
+// ServiceDebugApiService / Arguments
 
-type _ServiceDebugServiceListServiceAppInstancesArguments struct {
+type _ServiceDebugApiServiceListServiceAppInstancesArguments struct {
 	ServiceSkelName string `json:"serviceSkelName" skel:"index(0)"`
 	SchemaHash      string `json:"schemaHash" skel:"index(1)"`
 }
 
-type _ServiceDebugServiceListMethodsArguments struct {
+type _ServiceDebugApiServiceListMethodsArguments struct {
 	ServiceSkelName string `json:"serviceSkelName" skel:"index(0)"`
 	SchemaHash      string `json:"schemaHash" skel:"index(1)"`
 }
 
-type _ServiceDebugServiceBuildDefaultInvokeRequestArguments struct {
+type _ServiceDebugApiServiceBuildDefaultInvokeRequestArguments struct {
 	ServiceSkelName string `json:"serviceSkelName" skel:"index(0)"`
 	SchemaHash      string `json:"schemaHash" skel:"index(1)"`
 	MethodSkelName  string `json:"methodSkelName" skel:"index(2)"`
 }
 
-type _ServiceDebugServiceInvokeServiceArguments struct {
+type _ServiceDebugApiServiceInvokeServiceArguments struct {
 	Request ServiceDebugInvokeRequest `json:"request" skel:"index(0)"`
 }
 
-// ServiceDebugService / Server
+// ServiceDebugApiService / Server
 
-type ServiceDebugServiceServer interface {
+type ServiceDebugApiServiceServer interface {
 	// ListAppInstances List application instances.
 	ListAppInstances() []ServiceDebugAppInstance
 	// ListServices List the services provided by the application instance.
@@ -3270,48 +2244,48 @@ type ServiceDebugServiceServer interface {
 	//   @param request - Debug call request
 	InvokeService(request ServiceDebugInvokeRequest) ServiceDebugInvokeResponse
 
-	mustBeServiceDebugServiceServer()
+	mustBeServiceDebugApiServiceServer()
 }
 
-// ServiceDebugService / Server / DefaultServer
+// ServiceDebugApiService / Server / DefaultServer
 
-type DefaultServiceDebugServiceServer struct{}
+type DefaultServiceDebugApiServiceServer struct{}
 
-func (*DefaultServiceDebugServiceServer) ListAppInstances() []ServiceDebugAppInstance {
+func (*DefaultServiceDebugApiServiceServer) ListAppInstances() []ServiceDebugAppInstance {
 	ex.PanicNew(ex.InvalidRequest, "method listAppInstances is not implemented")
 	return []ServiceDebugAppInstance{}
 }
 
-func (*DefaultServiceDebugServiceServer) ListServices() []ServiceDebugServiceItem {
+func (*DefaultServiceDebugApiServiceServer) ListServices() []ServiceDebugServiceItem {
 	ex.PanicNew(ex.InvalidRequest, "method listServices is not implemented")
 	return []ServiceDebugServiceItem{}
 }
 
-func (*DefaultServiceDebugServiceServer) ListServiceAppInstances(string, string) []ServiceDebugAppInstance {
+func (*DefaultServiceDebugApiServiceServer) ListServiceAppInstances(string, string) []ServiceDebugAppInstance {
 	ex.PanicNew(ex.InvalidRequest, "method listServiceAppInstances is not implemented")
 	return []ServiceDebugAppInstance{}
 }
 
-func (*DefaultServiceDebugServiceServer) ListMethods(string, string) []ServiceDebugMethodItem {
+func (*DefaultServiceDebugApiServiceServer) ListMethods(string, string) []ServiceDebugMethodItem {
 	ex.PanicNew(ex.InvalidRequest, "method listMethods is not implemented")
 	return []ServiceDebugMethodItem{}
 }
 
-func (*DefaultServiceDebugServiceServer) BuildDefaultInvokeRequest(string, string, string) ServiceDebugDefaultInvokeRequest {
+func (*DefaultServiceDebugApiServiceServer) BuildDefaultInvokeRequest(string, string, string) ServiceDebugDefaultInvokeRequest {
 	ex.PanicNew(ex.InvalidRequest, "method buildDefaultInvokeRequest is not implemented")
 	return ServiceDebugDefaultInvokeRequest{}
 }
 
-func (*DefaultServiceDebugServiceServer) InvokeService(ServiceDebugInvokeRequest) ServiceDebugInvokeResponse {
+func (*DefaultServiceDebugApiServiceServer) InvokeService(ServiceDebugInvokeRequest) ServiceDebugInvokeResponse {
 	ex.PanicNew(ex.InvalidRequest, "method invokeService is not implemented")
 	return ServiceDebugInvokeResponse{}
 }
 
-func (*DefaultServiceDebugServiceServer) mustBeServiceDebugServiceServer() {}
+func (*DefaultServiceDebugApiServiceServer) mustBeServiceDebugApiServiceServer() {}
 
-// ServiceDebugService / ERServer
+// ServiceDebugApiService / ERServer
 
-type ServiceDebugServiceServerER interface {
+type ServiceDebugApiServiceServerER interface {
 	ListAppInstances() ([]ServiceDebugAppInstance, ex.Error)
 	ListServices() ([]ServiceDebugServiceItem, ex.Error)
 	ListServiceAppInstances(serviceSkelName string, schemaHash string) ([]ServiceDebugAppInstance, ex.Error)
@@ -3319,264 +2293,102 @@ type ServiceDebugServiceServerER interface {
 	BuildDefaultInvokeRequest(serviceSkelName string, schemaHash string, methodSkelName string) (ServiceDebugDefaultInvokeRequest, ex.Error)
 	InvokeService(request ServiceDebugInvokeRequest) (ServiceDebugInvokeResponse, ex.Error)
 
-	mustBeServiceDebugServiceServerER()
+	mustBeServiceDebugApiServiceServerER()
 }
 
-// ServiceDebugService / ERServer / WrapperERServer
+// ServiceDebugApiService / ERServer / WrapperERServer
 
-type _WrapperServiceDebugServiceServerER struct {
-	DefaultServiceDebugServiceServer
-	serverImpl ServiceDebugServiceServer
+type _WrapperServiceDebugApiServiceServerER struct {
+	DefaultServiceDebugApiServiceServer
+	serverImpl ServiceDebugApiServiceServer
 }
 
-func _NewWrapperServiceDebugServiceServerER(serverImpl ServiceDebugServiceServer) ServiceDebugServiceServerER {
-	return &_WrapperServiceDebugServiceServerER{
+func _NewWrapperServiceDebugApiServiceServerER(serverImpl ServiceDebugApiServiceServer) ServiceDebugApiServiceServerER {
+	return &_WrapperServiceDebugApiServiceServerER{
 		serverImpl: serverImpl,
 	}
 }
 
-func (service *_WrapperServiceDebugServiceServerER) server() ServiceDebugServiceServer {
+func (service *_WrapperServiceDebugApiServiceServerER) server() ServiceDebugApiServiceServer {
 	if service.serverImpl == nil {
-		return &service.DefaultServiceDebugServiceServer
+		return &service.DefaultServiceDebugApiServiceServer
 	}
 	return service.serverImpl
 }
 
-func (service *_WrapperServiceDebugServiceServerER) ListAppInstances() (ret []ServiceDebugAppInstance, err ex.Error) {
+func (service *_WrapperServiceDebugApiServiceServerER) ListAppInstances() (ret []ServiceDebugAppInstance, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListAppInstances()
 	return
 }
 
-func (service *_WrapperServiceDebugServiceServerER) ListServices() (ret []ServiceDebugServiceItem, err ex.Error) {
+func (service *_WrapperServiceDebugApiServiceServerER) ListServices() (ret []ServiceDebugServiceItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListServices()
 	return
 }
 
-func (service *_WrapperServiceDebugServiceServerER) ListServiceAppInstances(serviceSkelName string, schemaHash string) (ret []ServiceDebugAppInstance, err ex.Error) {
+func (service *_WrapperServiceDebugApiServiceServerER) ListServiceAppInstances(serviceSkelName string, schemaHash string) (ret []ServiceDebugAppInstance, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListServiceAppInstances(serviceSkelName, schemaHash)
 	return
 }
 
-func (service *_WrapperServiceDebugServiceServerER) ListMethods(serviceSkelName string, schemaHash string) (ret []ServiceDebugMethodItem, err ex.Error) {
+func (service *_WrapperServiceDebugApiServiceServerER) ListMethods(serviceSkelName string, schemaHash string) (ret []ServiceDebugMethodItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListMethods(serviceSkelName, schemaHash)
 	return
 }
 
-func (service *_WrapperServiceDebugServiceServerER) BuildDefaultInvokeRequest(serviceSkelName string, schemaHash string, methodSkelName string) (ret ServiceDebugDefaultInvokeRequest, err ex.Error) {
+func (service *_WrapperServiceDebugApiServiceServerER) BuildDefaultInvokeRequest(serviceSkelName string, schemaHash string, methodSkelName string) (ret ServiceDebugDefaultInvokeRequest, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().BuildDefaultInvokeRequest(serviceSkelName, schemaHash, methodSkelName)
 	return
 }
 
-func (service *_WrapperServiceDebugServiceServerER) InvokeService(request ServiceDebugInvokeRequest) (ret ServiceDebugInvokeResponse, err ex.Error) {
+func (service *_WrapperServiceDebugApiServiceServerER) InvokeService(request ServiceDebugInvokeRequest) (ret ServiceDebugInvokeResponse, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().InvokeService(request)
 	return
 }
 
-func (*_WrapperServiceDebugServiceServerER) mustBeServiceDebugServiceServerER() {}
+func (*_WrapperServiceDebugApiServiceServerER) mustBeServiceDebugApiServiceServerER() {}
 
-// ServiceDebugService / ERServer / DefaultERServer
+// ServiceDebugApiService / ERServer / DefaultERServer
 
-type DefaultServiceDebugServiceServerER struct {
-	_WrapperServiceDebugServiceServerER
+type DefaultServiceDebugApiServiceServerER struct {
+	_WrapperServiceDebugApiServiceServerER
 }
 
-// ServiceDebugService / Client
+// SkeletonApiServiceServer Hub's skeleton service, called by the Portal admin client
 
-type ServiceDebugServiceClient interface {
-	// ListAppInstances List application instances.
-	ListAppInstances(_ivOpts ...rpcclient.InvokeOption) []ServiceDebugAppInstance
-	// ListServices List the services provided by the application instance.
-	ListServices(_ivOpts ...rpcclient.InvokeOption) []ServiceDebugServiceItem
-	// ListServiceAppInstances List application instances that provide the specified service.
-	//   @param serviceSkelName - Service Skel name
-	//   @param schemaHash - Service schema hash
-	ListServiceAppInstances(serviceSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) []ServiceDebugAppInstance
-	// ListMethods List Service methods.
-	//   @param serviceSkelName - Service Skel name
-	//   @param schemaHash - Service schema hash
-	ListMethods(serviceSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) []ServiceDebugMethodItem
-	// BuildDefaultInvokeRequest Generate default Service call request.
-	//   @param serviceSkelName - Service Skel name
-	//   @param schemaHash - Service schema hash
-	//   @param methodSkelName - Method Skel name
-	BuildDefaultInvokeRequest(serviceSkelName string, schemaHash string, methodSkelName string, _ivOpts ...rpcclient.InvokeOption) ServiceDebugDefaultInvokeRequest
-	// InvokeService Call Service method.
-	//   @param request - Debug call request
-	InvokeService(request ServiceDebugInvokeRequest, _ivOpts ...rpcclient.InvokeOption) ServiceDebugInvokeResponse
-}
-
-type _ServiceDebugServiceClient struct {
-	clientER ServiceDebugServiceClientER
-}
-
-func NewServiceDebugServiceClient(clientER ServiceDebugServiceClientER) ServiceDebugServiceClient {
-	return &_ServiceDebugServiceClient{clientER: clientER}
-}
-
-func (client *_ServiceDebugServiceClient) ListAppInstances(_ivOpts ...rpcclient.InvokeOption) []ServiceDebugAppInstance {
-	ret, err := client.clientER.ListAppInstances(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_ServiceDebugServiceClient) ListServices(_ivOpts ...rpcclient.InvokeOption) []ServiceDebugServiceItem {
-	ret, err := client.clientER.ListServices(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_ServiceDebugServiceClient) ListServiceAppInstances(serviceSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) []ServiceDebugAppInstance {
-	ret, err := client.clientER.ListServiceAppInstances(serviceSkelName, schemaHash, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_ServiceDebugServiceClient) ListMethods(serviceSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) []ServiceDebugMethodItem {
-	ret, err := client.clientER.ListMethods(serviceSkelName, schemaHash, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_ServiceDebugServiceClient) BuildDefaultInvokeRequest(serviceSkelName string, schemaHash string, methodSkelName string, _ivOpts ...rpcclient.InvokeOption) ServiceDebugDefaultInvokeRequest {
-	ret, err := client.clientER.BuildDefaultInvokeRequest(serviceSkelName, schemaHash, methodSkelName, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_ServiceDebugServiceClient) InvokeService(request ServiceDebugInvokeRequest, _ivOpts ...rpcclient.InvokeOption) ServiceDebugInvokeResponse {
-	ret, err := client.clientER.InvokeService(request, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-// ServiceDebugService / ERClient
-
-type ServiceDebugServiceClientER interface {
-	// ListAppInstances List application instances.
-	ListAppInstances(_ivOpts ...rpcclient.InvokeOption) ([]ServiceDebugAppInstance, ex.Error)
-	// ListServices List the services provided by the application instance.
-	ListServices(_ivOpts ...rpcclient.InvokeOption) ([]ServiceDebugServiceItem, ex.Error)
-	// ListServiceAppInstances List application instances that provide the specified service.
-	//   @param serviceSkelName - Service Skel name
-	//   @param schemaHash - Service schema hash
-	ListServiceAppInstances(serviceSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) ([]ServiceDebugAppInstance, ex.Error)
-	// ListMethods List Service methods.
-	//   @param serviceSkelName - Service Skel name
-	//   @param schemaHash - Service schema hash
-	ListMethods(serviceSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) ([]ServiceDebugMethodItem, ex.Error)
-	// BuildDefaultInvokeRequest Generate default Service call request.
-	//   @param serviceSkelName - Service Skel name
-	//   @param schemaHash - Service schema hash
-	//   @param methodSkelName - Method Skel name
-	BuildDefaultInvokeRequest(serviceSkelName string, schemaHash string, methodSkelName string, _ivOpts ...rpcclient.InvokeOption) (ServiceDebugDefaultInvokeRequest, ex.Error)
-	// InvokeService Call Service method.
-	//   @param request - Debug call request
-	InvokeService(request ServiceDebugInvokeRequest, _ivOpts ...rpcclient.InvokeOption) (ServiceDebugInvokeResponse, ex.Error)
-}
-
-type _ServiceDebugServiceClientER struct {
-	rpcClient *rpcclient.Client
-}
-
-func NewServiceDebugServiceClientER(rpcClient *rpcclient.Client) ServiceDebugServiceClientER {
-	return &_ServiceDebugServiceClientER{
-		rpcClient: rpcClient,
-	}
-}
-
-func (client *_ServiceDebugServiceClientER) ListAppInstances(_ivOpts ...rpcclient.InvokeOption) ([]ServiceDebugAppInstance, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_ServiceDebugServiceListAppInstancesSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]ServiceDebugAppInstance)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_ServiceDebugServiceClientER) ListServices(_ivOpts ...rpcclient.InvokeOption) ([]ServiceDebugServiceItem, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_ServiceDebugServiceListServicesSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]ServiceDebugServiceItem)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_ServiceDebugServiceClientER) ListServiceAppInstances(serviceSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) ([]ServiceDebugAppInstance, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_ServiceDebugServiceListServiceAppInstancesSpec.Info(), &_ServiceDebugServiceListServiceAppInstancesArguments{
-		ServiceSkelName: serviceSkelName,
-		SchemaHash:      schemaHash,
-	}, _ivOpts...)
-	ret, _ := retI.([]ServiceDebugAppInstance)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_ServiceDebugServiceClientER) ListMethods(serviceSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) ([]ServiceDebugMethodItem, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_ServiceDebugServiceListMethodsSpec.Info(), &_ServiceDebugServiceListMethodsArguments{
-		ServiceSkelName: serviceSkelName,
-		SchemaHash:      schemaHash,
-	}, _ivOpts...)
-	ret, _ := retI.([]ServiceDebugMethodItem)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_ServiceDebugServiceClientER) BuildDefaultInvokeRequest(serviceSkelName string, schemaHash string, methodSkelName string, _ivOpts ...rpcclient.InvokeOption) (ServiceDebugDefaultInvokeRequest, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_ServiceDebugServiceBuildDefaultInvokeRequestSpec.Info(), &_ServiceDebugServiceBuildDefaultInvokeRequestArguments{
-		ServiceSkelName: serviceSkelName,
-		SchemaHash:      schemaHash,
-		MethodSkelName:  methodSkelName,
-	}, _ivOpts...)
-	ret, _ := retI.(ServiceDebugDefaultInvokeRequest)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_ServiceDebugServiceClientER) InvokeService(request ServiceDebugInvokeRequest, _ivOpts ...rpcclient.InvokeOption) (ServiceDebugInvokeResponse, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_ServiceDebugServiceInvokeServiceSpec.Info(), &_ServiceDebugServiceInvokeServiceArguments{
-		Request: request,
-	}, _ivOpts...)
-	ret, _ := retI.(ServiceDebugInvokeResponse)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-// SkeletonServiceServer Hub's skeleton service, called by the Portal admin client
-
-// SkeletonService / Spec
+// SkeletonApiService / Spec
 
 var (
-	_SkeletonServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
-		Name:              "SkeletonService",
-		SkelName:          "vine.hub.admin.SkeletonService",
-		Hash:              "3f04ddc9",
-		ServerType:        reflect.TypeFor[SkeletonServiceServer](),
-		DefaultServerType: reflect.TypeFor[*DefaultSkeletonServiceServer](),
-		ClientType:        reflect.TypeFor[SkeletonServiceClient](),
-		ClientCtor:        NewSkeletonServiceClient,
+	_SkeletonApiServiceSpec = &rpcspec.ServiceSpec{
+		Type:              rpcspec.ServiceSpecTypeServer,
+		Name:              "SkeletonApiService",
+		SkelName:          "vine.hub.admin.SkeletonApiService",
+		Hash:              "0473c6fe",
+		ServerType:        reflect.TypeFor[SkeletonApiServiceServer](),
+		DefaultServerType: reflect.TypeFor[*DefaultSkeletonApiServiceServer](),
 
-		ERServerType:        reflect.TypeFor[SkeletonServiceServerER](),
-		WrapperERServerCtor: _NewWrapperSkeletonServiceServerER,
-		DefaultERServerType: reflect.TypeFor[*DefaultSkeletonServiceServerER](),
-		ERClientType:        reflect.TypeFor[SkeletonServiceClientER](),
-		ERClientCtor:        NewSkeletonServiceClientER,
+		ERServerType:        reflect.TypeFor[SkeletonApiServiceServerER](),
+		WrapperERServerCtor: _NewWrapperSkeletonApiServiceServerER,
+		DefaultERServerType: reflect.TypeFor[*DefaultSkeletonApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
-			_SkeletonServiceListDomainsSpec,
-			_SkeletonServiceListActorsSpec,
-			_SkeletonServiceListServicesSpec,
-			_SkeletonServiceListResourcesSpec,
-			_SkeletonServiceListWebsSpec,
-			_SkeletonServiceListTasksSpec,
-			_SkeletonServiceListEventsSpec,
-			_SkeletonServiceListDataSpec,
-			_SkeletonServiceListConfigsSpec,
+			_SkeletonApiServiceListDomainsSpec,
+			_SkeletonApiServiceListActorsSpec,
+			_SkeletonApiServiceListServicesSpec,
+			_SkeletonApiServiceListResourcesSpec,
+			_SkeletonApiServiceListWebsSpec,
+			_SkeletonApiServiceListTasksSpec,
+			_SkeletonApiServiceListEventsSpec,
+			_SkeletonApiServiceListDataSpec,
+			_SkeletonApiServiceListConfigsSpec,
 		},
 	}
-	_SkeletonServiceListDomainsSpec = &rpcspec.MethodSpec{
+	_SkeletonApiServiceListDomainsSpec = &rpcspec.MethodSpec{
 		Name:           "ListDomains",
 		SkelName:       "listDomains",
 		ArgumentsType:  nil,
@@ -3600,13 +2412,11 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			SkeletonServiceClient.ListDomains,
-			SkeletonServiceClientER.ListDomains,
-			SkeletonServiceServer.ListDomains,
-			SkeletonServiceServerER.ListDomains,
+			SkeletonApiServiceServer.ListDomains,
+			SkeletonApiServiceServerER.ListDomains,
 		},
 	}
-	_SkeletonServiceListActorsSpec = &rpcspec.MethodSpec{
+	_SkeletonApiServiceListActorsSpec = &rpcspec.MethodSpec{
 		Name:           "ListActors",
 		SkelName:       "listActors",
 		ArgumentsType:  nil,
@@ -3630,13 +2440,11 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			SkeletonServiceClient.ListActors,
-			SkeletonServiceClientER.ListActors,
-			SkeletonServiceServer.ListActors,
-			SkeletonServiceServerER.ListActors,
+			SkeletonApiServiceServer.ListActors,
+			SkeletonApiServiceServerER.ListActors,
 		},
 	}
-	_SkeletonServiceListServicesSpec = &rpcspec.MethodSpec{
+	_SkeletonApiServiceListServicesSpec = &rpcspec.MethodSpec{
 		Name:           "ListServices",
 		SkelName:       "listServices",
 		ArgumentsType:  nil,
@@ -3660,13 +2468,11 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			SkeletonServiceClient.ListServices,
-			SkeletonServiceClientER.ListServices,
-			SkeletonServiceServer.ListServices,
-			SkeletonServiceServerER.ListServices,
+			SkeletonApiServiceServer.ListServices,
+			SkeletonApiServiceServerER.ListServices,
 		},
 	}
-	_SkeletonServiceListResourcesSpec = &rpcspec.MethodSpec{
+	_SkeletonApiServiceListResourcesSpec = &rpcspec.MethodSpec{
 		Name:           "ListResources",
 		SkelName:       "listResources",
 		ArgumentsType:  nil,
@@ -3690,13 +2496,11 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			SkeletonServiceClient.ListResources,
-			SkeletonServiceClientER.ListResources,
-			SkeletonServiceServer.ListResources,
-			SkeletonServiceServerER.ListResources,
+			SkeletonApiServiceServer.ListResources,
+			SkeletonApiServiceServerER.ListResources,
 		},
 	}
-	_SkeletonServiceListWebsSpec = &rpcspec.MethodSpec{
+	_SkeletonApiServiceListWebsSpec = &rpcspec.MethodSpec{
 		Name:           "ListWebs",
 		SkelName:       "listWebs",
 		ArgumentsType:  nil,
@@ -3720,13 +2524,11 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			SkeletonServiceClient.ListWebs,
-			SkeletonServiceClientER.ListWebs,
-			SkeletonServiceServer.ListWebs,
-			SkeletonServiceServerER.ListWebs,
+			SkeletonApiServiceServer.ListWebs,
+			SkeletonApiServiceServerER.ListWebs,
 		},
 	}
-	_SkeletonServiceListTasksSpec = &rpcspec.MethodSpec{
+	_SkeletonApiServiceListTasksSpec = &rpcspec.MethodSpec{
 		Name:           "ListTasks",
 		SkelName:       "listTasks",
 		ArgumentsType:  nil,
@@ -3750,13 +2552,11 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			SkeletonServiceClient.ListTasks,
-			SkeletonServiceClientER.ListTasks,
-			SkeletonServiceServer.ListTasks,
-			SkeletonServiceServerER.ListTasks,
+			SkeletonApiServiceServer.ListTasks,
+			SkeletonApiServiceServerER.ListTasks,
 		},
 	}
-	_SkeletonServiceListEventsSpec = &rpcspec.MethodSpec{
+	_SkeletonApiServiceListEventsSpec = &rpcspec.MethodSpec{
 		Name:           "ListEvents",
 		SkelName:       "listEvents",
 		ArgumentsType:  nil,
@@ -3780,13 +2580,11 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			SkeletonServiceClient.ListEvents,
-			SkeletonServiceClientER.ListEvents,
-			SkeletonServiceServer.ListEvents,
-			SkeletonServiceServerER.ListEvents,
+			SkeletonApiServiceServer.ListEvents,
+			SkeletonApiServiceServerER.ListEvents,
 		},
 	}
-	_SkeletonServiceListDataSpec = &rpcspec.MethodSpec{
+	_SkeletonApiServiceListDataSpec = &rpcspec.MethodSpec{
 		Name:           "ListData",
 		SkelName:       "listData",
 		ArgumentsType:  nil,
@@ -3810,13 +2608,11 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			SkeletonServiceClient.ListData,
-			SkeletonServiceClientER.ListData,
-			SkeletonServiceServer.ListData,
-			SkeletonServiceServerER.ListData,
+			SkeletonApiServiceServer.ListData,
+			SkeletonApiServiceServerER.ListData,
 		},
 	}
-	_SkeletonServiceListConfigsSpec = &rpcspec.MethodSpec{
+	_SkeletonApiServiceListConfigsSpec = &rpcspec.MethodSpec{
 		Name:           "ListConfigs",
 		SkelName:       "listConfigs",
 		ArgumentsType:  nil,
@@ -3840,17 +2636,15 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			SkeletonServiceClient.ListConfigs,
-			SkeletonServiceClientER.ListConfigs,
-			SkeletonServiceServer.ListConfigs,
-			SkeletonServiceServerER.ListConfigs,
+			SkeletonApiServiceServer.ListConfigs,
+			SkeletonApiServiceServerER.ListConfigs,
 		},
 	}
 )
 
-// SkeletonService / Server
+// SkeletonApiService / Server
 
-type SkeletonServiceServer interface {
+type SkeletonApiServiceServer interface {
 	// ListDomains List Domain skeleton.
 	//   @returns []SkeletonDomain - Domain skeleton list
 	ListDomains() []SkeletonDomain
@@ -3879,63 +2673,63 @@ type SkeletonServiceServer interface {
 	//   @returns []SkeletonConfigItem - Config skeleton list
 	ListConfigs() []SkeletonConfigItem
 
-	mustBeSkeletonServiceServer()
+	mustBeSkeletonApiServiceServer()
 }
 
-// SkeletonService / Server / DefaultServer
+// SkeletonApiService / Server / DefaultServer
 
-type DefaultSkeletonServiceServer struct{}
+type DefaultSkeletonApiServiceServer struct{}
 
-func (*DefaultSkeletonServiceServer) ListDomains() []SkeletonDomain {
+func (*DefaultSkeletonApiServiceServer) ListDomains() []SkeletonDomain {
 	ex.PanicNew(ex.InvalidRequest, "method listDomains is not implemented")
 	return []SkeletonDomain{}
 }
 
-func (*DefaultSkeletonServiceServer) ListActors() []SkeletonActorItem {
+func (*DefaultSkeletonApiServiceServer) ListActors() []SkeletonActorItem {
 	ex.PanicNew(ex.InvalidRequest, "method listActors is not implemented")
 	return []SkeletonActorItem{}
 }
 
-func (*DefaultSkeletonServiceServer) ListServices() []SkeletonServiceItem {
+func (*DefaultSkeletonApiServiceServer) ListServices() []SkeletonServiceItem {
 	ex.PanicNew(ex.InvalidRequest, "method listServices is not implemented")
 	return []SkeletonServiceItem{}
 }
 
-func (*DefaultSkeletonServiceServer) ListResources() []SkeletonResourceItem {
+func (*DefaultSkeletonApiServiceServer) ListResources() []SkeletonResourceItem {
 	ex.PanicNew(ex.InvalidRequest, "method listResources is not implemented")
 	return []SkeletonResourceItem{}
 }
 
-func (*DefaultSkeletonServiceServer) ListWebs() []SkeletonWebItem {
+func (*DefaultSkeletonApiServiceServer) ListWebs() []SkeletonWebItem {
 	ex.PanicNew(ex.InvalidRequest, "method listWebs is not implemented")
 	return []SkeletonWebItem{}
 }
 
-func (*DefaultSkeletonServiceServer) ListTasks() []SkeletonTask {
+func (*DefaultSkeletonApiServiceServer) ListTasks() []SkeletonTask {
 	ex.PanicNew(ex.InvalidRequest, "method listTasks is not implemented")
 	return []SkeletonTask{}
 }
 
-func (*DefaultSkeletonServiceServer) ListEvents() []SkeletonEventItem {
+func (*DefaultSkeletonApiServiceServer) ListEvents() []SkeletonEventItem {
 	ex.PanicNew(ex.InvalidRequest, "method listEvents is not implemented")
 	return []SkeletonEventItem{}
 }
 
-func (*DefaultSkeletonServiceServer) ListData() []SkeletonData {
+func (*DefaultSkeletonApiServiceServer) ListData() []SkeletonData {
 	ex.PanicNew(ex.InvalidRequest, "method listData is not implemented")
 	return []SkeletonData{}
 }
 
-func (*DefaultSkeletonServiceServer) ListConfigs() []SkeletonConfigItem {
+func (*DefaultSkeletonApiServiceServer) ListConfigs() []SkeletonConfigItem {
 	ex.PanicNew(ex.InvalidRequest, "method listConfigs is not implemented")
 	return []SkeletonConfigItem{}
 }
 
-func (*DefaultSkeletonServiceServer) mustBeSkeletonServiceServer() {}
+func (*DefaultSkeletonApiServiceServer) mustBeSkeletonApiServiceServer() {}
 
-// SkeletonService / ERServer
+// SkeletonApiService / ERServer
 
-type SkeletonServiceServerER interface {
+type SkeletonApiServiceServerER interface {
 	ListDomains() ([]SkeletonDomain, ex.Error)
 	ListActors() ([]SkeletonActorItem, ex.Error)
 	ListServices() ([]SkeletonServiceItem, ex.Error)
@@ -3946,318 +2740,115 @@ type SkeletonServiceServerER interface {
 	ListData() ([]SkeletonData, ex.Error)
 	ListConfigs() ([]SkeletonConfigItem, ex.Error)
 
-	mustBeSkeletonServiceServerER()
+	mustBeSkeletonApiServiceServerER()
 }
 
-// SkeletonService / ERServer / WrapperERServer
+// SkeletonApiService / ERServer / WrapperERServer
 
-type _WrapperSkeletonServiceServerER struct {
-	DefaultSkeletonServiceServer
-	serverImpl SkeletonServiceServer
+type _WrapperSkeletonApiServiceServerER struct {
+	DefaultSkeletonApiServiceServer
+	serverImpl SkeletonApiServiceServer
 }
 
-func _NewWrapperSkeletonServiceServerER(serverImpl SkeletonServiceServer) SkeletonServiceServerER {
-	return &_WrapperSkeletonServiceServerER{
+func _NewWrapperSkeletonApiServiceServerER(serverImpl SkeletonApiServiceServer) SkeletonApiServiceServerER {
+	return &_WrapperSkeletonApiServiceServerER{
 		serverImpl: serverImpl,
 	}
 }
 
-func (service *_WrapperSkeletonServiceServerER) server() SkeletonServiceServer {
+func (service *_WrapperSkeletonApiServiceServerER) server() SkeletonApiServiceServer {
 	if service.serverImpl == nil {
-		return &service.DefaultSkeletonServiceServer
+		return &service.DefaultSkeletonApiServiceServer
 	}
 	return service.serverImpl
 }
 
-func (service *_WrapperSkeletonServiceServerER) ListDomains() (ret []SkeletonDomain, err ex.Error) {
+func (service *_WrapperSkeletonApiServiceServerER) ListDomains() (ret []SkeletonDomain, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListDomains()
 	return
 }
 
-func (service *_WrapperSkeletonServiceServerER) ListActors() (ret []SkeletonActorItem, err ex.Error) {
+func (service *_WrapperSkeletonApiServiceServerER) ListActors() (ret []SkeletonActorItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListActors()
 	return
 }
 
-func (service *_WrapperSkeletonServiceServerER) ListServices() (ret []SkeletonServiceItem, err ex.Error) {
+func (service *_WrapperSkeletonApiServiceServerER) ListServices() (ret []SkeletonServiceItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListServices()
 	return
 }
 
-func (service *_WrapperSkeletonServiceServerER) ListResources() (ret []SkeletonResourceItem, err ex.Error) {
+func (service *_WrapperSkeletonApiServiceServerER) ListResources() (ret []SkeletonResourceItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListResources()
 	return
 }
 
-func (service *_WrapperSkeletonServiceServerER) ListWebs() (ret []SkeletonWebItem, err ex.Error) {
+func (service *_WrapperSkeletonApiServiceServerER) ListWebs() (ret []SkeletonWebItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListWebs()
 	return
 }
 
-func (service *_WrapperSkeletonServiceServerER) ListTasks() (ret []SkeletonTask, err ex.Error) {
+func (service *_WrapperSkeletonApiServiceServerER) ListTasks() (ret []SkeletonTask, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListTasks()
 	return
 }
 
-func (service *_WrapperSkeletonServiceServerER) ListEvents() (ret []SkeletonEventItem, err ex.Error) {
+func (service *_WrapperSkeletonApiServiceServerER) ListEvents() (ret []SkeletonEventItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListEvents()
 	return
 }
 
-func (service *_WrapperSkeletonServiceServerER) ListData() (ret []SkeletonData, err ex.Error) {
+func (service *_WrapperSkeletonApiServiceServerER) ListData() (ret []SkeletonData, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListData()
 	return
 }
 
-func (service *_WrapperSkeletonServiceServerER) ListConfigs() (ret []SkeletonConfigItem, err ex.Error) {
+func (service *_WrapperSkeletonApiServiceServerER) ListConfigs() (ret []SkeletonConfigItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListConfigs()
 	return
 }
 
-func (*_WrapperSkeletonServiceServerER) mustBeSkeletonServiceServerER() {}
+func (*_WrapperSkeletonApiServiceServerER) mustBeSkeletonApiServiceServerER() {}
 
-// SkeletonService / ERServer / DefaultERServer
+// SkeletonApiService / ERServer / DefaultERServer
 
-type DefaultSkeletonServiceServerER struct {
-	_WrapperSkeletonServiceServerER
+type DefaultSkeletonApiServiceServerER struct {
+	_WrapperSkeletonApiServiceServerER
 }
 
-// SkeletonService / Client
+// TaskDebugApiServiceServer Hub Dashboard Task Debugging Service
 
-type SkeletonServiceClient interface {
-	// ListDomains List Domain skeleton.
-	//   @returns []SkeletonDomain - Domain skeleton list
-	ListDomains(_ivOpts ...rpcclient.InvokeOption) []SkeletonDomain
-	// ListActors List Actor Skeleton.
-	//   @returns []SkeletonActorItem - Actor skeleton list
-	ListActors(_ivOpts ...rpcclient.InvokeOption) []SkeletonActorItem
-	// ListServices List Service skeleton.
-	//   @returns []SkeletonServiceItem - Service skeleton list
-	ListServices(_ivOpts ...rpcclient.InvokeOption) []SkeletonServiceItem
-	// ListResources List Resource skeleton.
-	//   @returns []SkeletonResourceItem - Resource skeleton list
-	ListResources(_ivOpts ...rpcclient.InvokeOption) []SkeletonResourceItem
-	// ListWebs List Web Skeletons.
-	//   @returns []SkeletonWebItem - Web skeleton list
-	ListWebs(_ivOpts ...rpcclient.InvokeOption) []SkeletonWebItem
-	// ListTasks List Task skeleton.
-	//   @returns []SkeletonTask - Task skeleton list
-	ListTasks(_ivOpts ...rpcclient.InvokeOption) []SkeletonTask
-	// ListEvents List Event skeletons.
-	//   @returns []SkeletonEventItem - Event skeleton list
-	ListEvents(_ivOpts ...rpcclient.InvokeOption) []SkeletonEventItem
-	// ListData List Data skeleton.
-	//   @returns []SkeletonData - Data skeleton list, including Enum
-	ListData(_ivOpts ...rpcclient.InvokeOption) []SkeletonData
-	// ListConfigs List Config skeleton.
-	//   @returns []SkeletonConfigItem - Config skeleton list
-	ListConfigs(_ivOpts ...rpcclient.InvokeOption) []SkeletonConfigItem
-}
-
-type _SkeletonServiceClient struct {
-	clientER SkeletonServiceClientER
-}
-
-func NewSkeletonServiceClient(clientER SkeletonServiceClientER) SkeletonServiceClient {
-	return &_SkeletonServiceClient{clientER: clientER}
-}
-
-func (client *_SkeletonServiceClient) ListDomains(_ivOpts ...rpcclient.InvokeOption) []SkeletonDomain {
-	ret, err := client.clientER.ListDomains(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_SkeletonServiceClient) ListActors(_ivOpts ...rpcclient.InvokeOption) []SkeletonActorItem {
-	ret, err := client.clientER.ListActors(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_SkeletonServiceClient) ListServices(_ivOpts ...rpcclient.InvokeOption) []SkeletonServiceItem {
-	ret, err := client.clientER.ListServices(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_SkeletonServiceClient) ListResources(_ivOpts ...rpcclient.InvokeOption) []SkeletonResourceItem {
-	ret, err := client.clientER.ListResources(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_SkeletonServiceClient) ListWebs(_ivOpts ...rpcclient.InvokeOption) []SkeletonWebItem {
-	ret, err := client.clientER.ListWebs(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_SkeletonServiceClient) ListTasks(_ivOpts ...rpcclient.InvokeOption) []SkeletonTask {
-	ret, err := client.clientER.ListTasks(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_SkeletonServiceClient) ListEvents(_ivOpts ...rpcclient.InvokeOption) []SkeletonEventItem {
-	ret, err := client.clientER.ListEvents(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_SkeletonServiceClient) ListData(_ivOpts ...rpcclient.InvokeOption) []SkeletonData {
-	ret, err := client.clientER.ListData(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_SkeletonServiceClient) ListConfigs(_ivOpts ...rpcclient.InvokeOption) []SkeletonConfigItem {
-	ret, err := client.clientER.ListConfigs(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-// SkeletonService / ERClient
-
-type SkeletonServiceClientER interface {
-	// ListDomains List Domain skeleton.
-	//   @returns []SkeletonDomain - Domain skeleton list
-	ListDomains(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonDomain, ex.Error)
-	// ListActors List Actor Skeleton.
-	//   @returns []SkeletonActorItem - Actor skeleton list
-	ListActors(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonActorItem, ex.Error)
-	// ListServices List Service skeleton.
-	//   @returns []SkeletonServiceItem - Service skeleton list
-	ListServices(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonServiceItem, ex.Error)
-	// ListResources List Resource skeleton.
-	//   @returns []SkeletonResourceItem - Resource skeleton list
-	ListResources(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonResourceItem, ex.Error)
-	// ListWebs List Web Skeletons.
-	//   @returns []SkeletonWebItem - Web skeleton list
-	ListWebs(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonWebItem, ex.Error)
-	// ListTasks List Task skeleton.
-	//   @returns []SkeletonTask - Task skeleton list
-	ListTasks(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonTask, ex.Error)
-	// ListEvents List Event skeletons.
-	//   @returns []SkeletonEventItem - Event skeleton list
-	ListEvents(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonEventItem, ex.Error)
-	// ListData List Data skeleton.
-	//   @returns []SkeletonData - Data skeleton list, including Enum
-	ListData(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonData, ex.Error)
-	// ListConfigs List Config skeleton.
-	//   @returns []SkeletonConfigItem - Config skeleton list
-	ListConfigs(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonConfigItem, ex.Error)
-}
-
-type _SkeletonServiceClientER struct {
-	rpcClient *rpcclient.Client
-}
-
-func NewSkeletonServiceClientER(rpcClient *rpcclient.Client) SkeletonServiceClientER {
-	return &_SkeletonServiceClientER{
-		rpcClient: rpcClient,
-	}
-}
-
-func (client *_SkeletonServiceClientER) ListDomains(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonDomain, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_SkeletonServiceListDomainsSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]SkeletonDomain)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_SkeletonServiceClientER) ListActors(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonActorItem, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_SkeletonServiceListActorsSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]SkeletonActorItem)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_SkeletonServiceClientER) ListServices(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonServiceItem, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_SkeletonServiceListServicesSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]SkeletonServiceItem)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_SkeletonServiceClientER) ListResources(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonResourceItem, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_SkeletonServiceListResourcesSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]SkeletonResourceItem)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_SkeletonServiceClientER) ListWebs(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonWebItem, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_SkeletonServiceListWebsSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]SkeletonWebItem)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_SkeletonServiceClientER) ListTasks(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonTask, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_SkeletonServiceListTasksSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]SkeletonTask)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_SkeletonServiceClientER) ListEvents(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonEventItem, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_SkeletonServiceListEventsSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]SkeletonEventItem)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_SkeletonServiceClientER) ListData(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonData, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_SkeletonServiceListDataSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]SkeletonData)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_SkeletonServiceClientER) ListConfigs(_ivOpts ...rpcclient.InvokeOption) ([]SkeletonConfigItem, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_SkeletonServiceListConfigsSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]SkeletonConfigItem)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-// TaskDebugServiceServer Hub Dashboard Task Debugging Service
-
-// TaskDebugService / Spec
+// TaskDebugApiService / Spec
 
 var (
-	_TaskDebugServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
-		Name:              "TaskDebugService",
-		SkelName:          "vine.hub.admin.TaskDebugService",
-		Hash:              "7eef7fc5",
-		ServerType:        reflect.TypeFor[TaskDebugServiceServer](),
-		DefaultServerType: reflect.TypeFor[*DefaultTaskDebugServiceServer](),
-		ClientType:        reflect.TypeFor[TaskDebugServiceClient](),
-		ClientCtor:        NewTaskDebugServiceClient,
+	_TaskDebugApiServiceSpec = &rpcspec.ServiceSpec{
+		Type:              rpcspec.ServiceSpecTypeServer,
+		Name:              "TaskDebugApiService",
+		SkelName:          "vine.hub.admin.TaskDebugApiService",
+		Hash:              "11c85af4",
+		ServerType:        reflect.TypeFor[TaskDebugApiServiceServer](),
+		DefaultServerType: reflect.TypeFor[*DefaultTaskDebugApiServiceServer](),
 
-		ERServerType:        reflect.TypeFor[TaskDebugServiceServerER](),
-		WrapperERServerCtor: _NewWrapperTaskDebugServiceServerER,
-		DefaultERServerType: reflect.TypeFor[*DefaultTaskDebugServiceServerER](),
-		ERClientType:        reflect.TypeFor[TaskDebugServiceClientER](),
-		ERClientCtor:        NewTaskDebugServiceClientER,
+		ERServerType:        reflect.TypeFor[TaskDebugApiServiceServerER](),
+		WrapperERServerCtor: _NewWrapperTaskDebugApiServiceServerER,
+		DefaultERServerType: reflect.TypeFor[*DefaultTaskDebugApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
-			_TaskDebugServiceListTasksSpec,
-			_TaskDebugServiceListTriggersSpec,
-			_TaskDebugServiceBuildDefaultLaunchRequestSpec,
-			_TaskDebugServiceLaunchTaskSpec,
+			_TaskDebugApiServiceListTasksSpec,
+			_TaskDebugApiServiceListTriggersSpec,
+			_TaskDebugApiServiceBuildDefaultLaunchRequestSpec,
+			_TaskDebugApiServiceLaunchTaskSpec,
 		},
 	}
-	_TaskDebugServiceListTasksSpec = &rpcspec.MethodSpec{
+	_TaskDebugApiServiceListTasksSpec = &rpcspec.MethodSpec{
 		Name:           "ListTasks",
 		SkelName:       "listTasks",
 		ArgumentsType:  nil,
@@ -4281,18 +2872,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			TaskDebugServiceClient.ListTasks,
-			TaskDebugServiceClientER.ListTasks,
-			TaskDebugServiceServer.ListTasks,
-			TaskDebugServiceServerER.ListTasks,
+			TaskDebugApiServiceServer.ListTasks,
+			TaskDebugApiServiceServerER.ListTasks,
 		},
 	}
-	_TaskDebugServiceListTriggersSpec = &rpcspec.MethodSpec{
+	_TaskDebugApiServiceListTriggersSpec = &rpcspec.MethodSpec{
 		Name:          "ListTriggers",
 		SkelName:      "listTriggers",
-		ArgumentsType: reflect.TypeFor[_TaskDebugServiceListTriggersArguments](),
+		ArgumentsType: reflect.TypeFor[_TaskDebugApiServiceListTriggersArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_TaskDebugServiceListTriggersArguments)
+			source := value.(*_TaskDebugApiServiceListTriggersArguments)
 			cloned := *source
 			return &cloned
 		},
@@ -4315,18 +2904,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			TaskDebugServiceClient.ListTriggers,
-			TaskDebugServiceClientER.ListTriggers,
-			TaskDebugServiceServer.ListTriggers,
-			TaskDebugServiceServerER.ListTriggers,
+			TaskDebugApiServiceServer.ListTriggers,
+			TaskDebugApiServiceServerER.ListTriggers,
 		},
 	}
-	_TaskDebugServiceBuildDefaultLaunchRequestSpec = &rpcspec.MethodSpec{
+	_TaskDebugApiServiceBuildDefaultLaunchRequestSpec = &rpcspec.MethodSpec{
 		Name:          "BuildDefaultLaunchRequest",
 		SkelName:      "buildDefaultLaunchRequest",
-		ArgumentsType: reflect.TypeFor[_TaskDebugServiceBuildDefaultLaunchRequestArguments](),
+		ArgumentsType: reflect.TypeFor[_TaskDebugApiServiceBuildDefaultLaunchRequestArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_TaskDebugServiceBuildDefaultLaunchRequestArguments)
+			source := value.(*_TaskDebugApiServiceBuildDefaultLaunchRequestArguments)
 			cloned := *source
 			return &cloned
 		},
@@ -4342,18 +2929,16 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			TaskDebugServiceClient.BuildDefaultLaunchRequest,
-			TaskDebugServiceClientER.BuildDefaultLaunchRequest,
-			TaskDebugServiceServer.BuildDefaultLaunchRequest,
-			TaskDebugServiceServerER.BuildDefaultLaunchRequest,
+			TaskDebugApiServiceServer.BuildDefaultLaunchRequest,
+			TaskDebugApiServiceServerER.BuildDefaultLaunchRequest,
 		},
 	}
-	_TaskDebugServiceLaunchTaskSpec = &rpcspec.MethodSpec{
+	_TaskDebugApiServiceLaunchTaskSpec = &rpcspec.MethodSpec{
 		Name:          "LaunchTask",
 		SkelName:      "launchTask",
-		ArgumentsType: reflect.TypeFor[_TaskDebugServiceLaunchTaskArguments](),
+		ArgumentsType: reflect.TypeFor[_TaskDebugApiServiceLaunchTaskArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_TaskDebugServiceLaunchTaskArguments)
+			source := value.(*_TaskDebugApiServiceLaunchTaskArguments)
 			cloned := *source
 			cloned.Request = source.Request.Clone()
 			return &cloned
@@ -4365,34 +2950,32 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			TaskDebugServiceClient.LaunchTask,
-			TaskDebugServiceClientER.LaunchTask,
-			TaskDebugServiceServer.LaunchTask,
-			TaskDebugServiceServerER.LaunchTask,
+			TaskDebugApiServiceServer.LaunchTask,
+			TaskDebugApiServiceServerER.LaunchTask,
 		},
 	}
 )
 
-// TaskDebugService / Arguments
+// TaskDebugApiService / Arguments
 
-type _TaskDebugServiceListTriggersArguments struct {
+type _TaskDebugApiServiceListTriggersArguments struct {
 	TaskSkelName string `json:"taskSkelName" skel:"index(0)"`
 	SchemaHash   string `json:"schemaHash" skel:"index(1)"`
 }
 
-type _TaskDebugServiceBuildDefaultLaunchRequestArguments struct {
+type _TaskDebugApiServiceBuildDefaultLaunchRequestArguments struct {
 	TaskSkelName    string `json:"taskSkelName" skel:"index(0)"`
 	SchemaHash      string `json:"schemaHash" skel:"index(1)"`
 	TriggerSkelName string `json:"triggerSkelName" skel:"index(2)"`
 }
 
-type _TaskDebugServiceLaunchTaskArguments struct {
+type _TaskDebugApiServiceLaunchTaskArguments struct {
 	Request TaskDebugLaunchRequest `json:"request" skel:"index(0)"`
 }
 
-// TaskDebugService / Server
+// TaskDebugApiService / Server
 
-type TaskDebugServiceServer interface {
+type TaskDebugApiServiceServer interface {
 	// ListTasks List the tasks provided by the application instance.
 	ListTasks() []TaskDebugTaskItem
 	// ListTriggers List Task triggers.
@@ -4408,208 +2991,93 @@ type TaskDebugServiceServer interface {
 	//   @param request - Debug launch request
 	LaunchTask(request TaskDebugLaunchRequest)
 
-	mustBeTaskDebugServiceServer()
+	mustBeTaskDebugApiServiceServer()
 }
 
-// TaskDebugService / Server / DefaultServer
+// TaskDebugApiService / Server / DefaultServer
 
-type DefaultTaskDebugServiceServer struct{}
+type DefaultTaskDebugApiServiceServer struct{}
 
-func (*DefaultTaskDebugServiceServer) ListTasks() []TaskDebugTaskItem {
+func (*DefaultTaskDebugApiServiceServer) ListTasks() []TaskDebugTaskItem {
 	ex.PanicNew(ex.InvalidRequest, "method listTasks is not implemented")
 	return []TaskDebugTaskItem{}
 }
 
-func (*DefaultTaskDebugServiceServer) ListTriggers(string, string) []TaskDebugTriggerItem {
+func (*DefaultTaskDebugApiServiceServer) ListTriggers(string, string) []TaskDebugTriggerItem {
 	ex.PanicNew(ex.InvalidRequest, "method listTriggers is not implemented")
 	return []TaskDebugTriggerItem{}
 }
 
-func (*DefaultTaskDebugServiceServer) BuildDefaultLaunchRequest(string, string, string) TaskDebugDefaultLaunchRequest {
+func (*DefaultTaskDebugApiServiceServer) BuildDefaultLaunchRequest(string, string, string) TaskDebugDefaultLaunchRequest {
 	ex.PanicNew(ex.InvalidRequest, "method buildDefaultLaunchRequest is not implemented")
 	return TaskDebugDefaultLaunchRequest{}
 }
 
-func (*DefaultTaskDebugServiceServer) LaunchTask(TaskDebugLaunchRequest) {
+func (*DefaultTaskDebugApiServiceServer) LaunchTask(TaskDebugLaunchRequest) {
 	ex.PanicNew(ex.InvalidRequest, "method launchTask is not implemented")
 }
 
-func (*DefaultTaskDebugServiceServer) mustBeTaskDebugServiceServer() {}
+func (*DefaultTaskDebugApiServiceServer) mustBeTaskDebugApiServiceServer() {}
 
-// TaskDebugService / ERServer
+// TaskDebugApiService / ERServer
 
-type TaskDebugServiceServerER interface {
+type TaskDebugApiServiceServerER interface {
 	ListTasks() ([]TaskDebugTaskItem, ex.Error)
 	ListTriggers(taskSkelName string, schemaHash string) ([]TaskDebugTriggerItem, ex.Error)
 	BuildDefaultLaunchRequest(taskSkelName string, schemaHash string, triggerSkelName string) (TaskDebugDefaultLaunchRequest, ex.Error)
 	LaunchTask(request TaskDebugLaunchRequest) ex.Error
 
-	mustBeTaskDebugServiceServerER()
+	mustBeTaskDebugApiServiceServerER()
 }
 
-// TaskDebugService / ERServer / WrapperERServer
+// TaskDebugApiService / ERServer / WrapperERServer
 
-type _WrapperTaskDebugServiceServerER struct {
-	DefaultTaskDebugServiceServer
-	serverImpl TaskDebugServiceServer
+type _WrapperTaskDebugApiServiceServerER struct {
+	DefaultTaskDebugApiServiceServer
+	serverImpl TaskDebugApiServiceServer
 }
 
-func _NewWrapperTaskDebugServiceServerER(serverImpl TaskDebugServiceServer) TaskDebugServiceServerER {
-	return &_WrapperTaskDebugServiceServerER{
+func _NewWrapperTaskDebugApiServiceServerER(serverImpl TaskDebugApiServiceServer) TaskDebugApiServiceServerER {
+	return &_WrapperTaskDebugApiServiceServerER{
 		serverImpl: serverImpl,
 	}
 }
 
-func (service *_WrapperTaskDebugServiceServerER) server() TaskDebugServiceServer {
+func (service *_WrapperTaskDebugApiServiceServerER) server() TaskDebugApiServiceServer {
 	if service.serverImpl == nil {
-		return &service.DefaultTaskDebugServiceServer
+		return &service.DefaultTaskDebugApiServiceServer
 	}
 	return service.serverImpl
 }
 
-func (service *_WrapperTaskDebugServiceServerER) ListTasks() (ret []TaskDebugTaskItem, err ex.Error) {
+func (service *_WrapperTaskDebugApiServiceServerER) ListTasks() (ret []TaskDebugTaskItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListTasks()
 	return
 }
 
-func (service *_WrapperTaskDebugServiceServerER) ListTriggers(taskSkelName string, schemaHash string) (ret []TaskDebugTriggerItem, err ex.Error) {
+func (service *_WrapperTaskDebugApiServiceServerER) ListTriggers(taskSkelName string, schemaHash string) (ret []TaskDebugTriggerItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListTriggers(taskSkelName, schemaHash)
 	return
 }
 
-func (service *_WrapperTaskDebugServiceServerER) BuildDefaultLaunchRequest(taskSkelName string, schemaHash string, triggerSkelName string) (ret TaskDebugDefaultLaunchRequest, err ex.Error) {
+func (service *_WrapperTaskDebugApiServiceServerER) BuildDefaultLaunchRequest(taskSkelName string, schemaHash string, triggerSkelName string) (ret TaskDebugDefaultLaunchRequest, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().BuildDefaultLaunchRequest(taskSkelName, schemaHash, triggerSkelName)
 	return
 }
 
-func (service *_WrapperTaskDebugServiceServerER) LaunchTask(request TaskDebugLaunchRequest) (err ex.Error) {
+func (service *_WrapperTaskDebugApiServiceServerER) LaunchTask(request TaskDebugLaunchRequest) (err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	service.server().LaunchTask(request)
 	return
 }
 
-func (*_WrapperTaskDebugServiceServerER) mustBeTaskDebugServiceServerER() {}
+func (*_WrapperTaskDebugApiServiceServerER) mustBeTaskDebugApiServiceServerER() {}
 
-// TaskDebugService / ERServer / DefaultERServer
+// TaskDebugApiService / ERServer / DefaultERServer
 
-type DefaultTaskDebugServiceServerER struct {
-	_WrapperTaskDebugServiceServerER
-}
-
-// TaskDebugService / Client
-
-type TaskDebugServiceClient interface {
-	// ListTasks List the tasks provided by the application instance.
-	ListTasks(_ivOpts ...rpcclient.InvokeOption) []TaskDebugTaskItem
-	// ListTriggers List Task triggers.
-	//   @param taskSkelName - Task Skel name
-	//   @param schemaHash - Task schema hash
-	ListTriggers(taskSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) []TaskDebugTriggerItem
-	// BuildDefaultLaunchRequest Generate a default Task launch request.
-	//   @param taskSkelName - Task Skel name
-	//   @param schemaHash - Task schema hash
-	//   @param triggerSkelName - Trigger Skel name
-	BuildDefaultLaunchRequest(taskSkelName string, schemaHash string, triggerSkelName string, _ivOpts ...rpcclient.InvokeOption) TaskDebugDefaultLaunchRequest
-	// LaunchTask Initiate Task.
-	//   @param request - Debug launch request
-	LaunchTask(request TaskDebugLaunchRequest, _ivOpts ...rpcclient.InvokeOption)
-}
-
-type _TaskDebugServiceClient struct {
-	clientER TaskDebugServiceClientER
-}
-
-func NewTaskDebugServiceClient(clientER TaskDebugServiceClientER) TaskDebugServiceClient {
-	return &_TaskDebugServiceClient{clientER: clientER}
-}
-
-func (client *_TaskDebugServiceClient) ListTasks(_ivOpts ...rpcclient.InvokeOption) []TaskDebugTaskItem {
-	ret, err := client.clientER.ListTasks(_ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_TaskDebugServiceClient) ListTriggers(taskSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) []TaskDebugTriggerItem {
-	ret, err := client.clientER.ListTriggers(taskSkelName, schemaHash, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_TaskDebugServiceClient) BuildDefaultLaunchRequest(taskSkelName string, schemaHash string, triggerSkelName string, _ivOpts ...rpcclient.InvokeOption) TaskDebugDefaultLaunchRequest {
-	ret, err := client.clientER.BuildDefaultLaunchRequest(taskSkelName, schemaHash, triggerSkelName, _ivOpts...)
-	ex.PanicIfError(err)
-	return ret
-}
-
-func (client *_TaskDebugServiceClient) LaunchTask(request TaskDebugLaunchRequest, _ivOpts ...rpcclient.InvokeOption) {
-	err := client.clientER.LaunchTask(request, _ivOpts...)
-	ex.PanicIfError(err)
-}
-
-// TaskDebugService / ERClient
-
-type TaskDebugServiceClientER interface {
-	// ListTasks List the tasks provided by the application instance.
-	ListTasks(_ivOpts ...rpcclient.InvokeOption) ([]TaskDebugTaskItem, ex.Error)
-	// ListTriggers List Task triggers.
-	//   @param taskSkelName - Task Skel name
-	//   @param schemaHash - Task schema hash
-	ListTriggers(taskSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) ([]TaskDebugTriggerItem, ex.Error)
-	// BuildDefaultLaunchRequest Generate a default Task launch request.
-	//   @param taskSkelName - Task Skel name
-	//   @param schemaHash - Task schema hash
-	//   @param triggerSkelName - Trigger Skel name
-	BuildDefaultLaunchRequest(taskSkelName string, schemaHash string, triggerSkelName string, _ivOpts ...rpcclient.InvokeOption) (TaskDebugDefaultLaunchRequest, ex.Error)
-	// LaunchTask Initiate Task.
-	//   @param request - Debug launch request
-	LaunchTask(request TaskDebugLaunchRequest, _ivOpts ...rpcclient.InvokeOption) ex.Error
-}
-
-type _TaskDebugServiceClientER struct {
-	rpcClient *rpcclient.Client
-}
-
-func NewTaskDebugServiceClientER(rpcClient *rpcclient.Client) TaskDebugServiceClientER {
-	return &_TaskDebugServiceClientER{
-		rpcClient: rpcClient,
-	}
-}
-
-func (client *_TaskDebugServiceClientER) ListTasks(_ivOpts ...rpcclient.InvokeOption) ([]TaskDebugTaskItem, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_TaskDebugServiceListTasksSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.([]TaskDebugTaskItem)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_TaskDebugServiceClientER) ListTriggers(taskSkelName string, schemaHash string, _ivOpts ...rpcclient.InvokeOption) ([]TaskDebugTriggerItem, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_TaskDebugServiceListTriggersSpec.Info(), &_TaskDebugServiceListTriggersArguments{
-		TaskSkelName: taskSkelName,
-		SchemaHash:   schemaHash,
-	}, _ivOpts...)
-	ret, _ := retI.([]TaskDebugTriggerItem)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_TaskDebugServiceClientER) BuildDefaultLaunchRequest(taskSkelName string, schemaHash string, triggerSkelName string, _ivOpts ...rpcclient.InvokeOption) (TaskDebugDefaultLaunchRequest, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_TaskDebugServiceBuildDefaultLaunchRequestSpec.Info(), &_TaskDebugServiceBuildDefaultLaunchRequestArguments{
-		TaskSkelName:    taskSkelName,
-		SchemaHash:      schemaHash,
-		TriggerSkelName: triggerSkelName,
-	}, _ivOpts...)
-	ret, _ := retI.(TaskDebugDefaultLaunchRequest)
-	err, _ := errI.(ex.Error)
-	return ret, err
-}
-
-func (client *_TaskDebugServiceClientER) LaunchTask(request TaskDebugLaunchRequest, _ivOpts ...rpcclient.InvokeOption) ex.Error {
-	_, errI := client.rpcClient.Invoke(_TaskDebugServiceLaunchTaskSpec.Info(), &_TaskDebugServiceLaunchTaskArguments{
-		Request: request,
-	}, _ivOpts...)
-	err, _ := errI.(ex.Error)
-	return err
+type DefaultTaskDebugApiServiceServerER struct {
+	_WrapperTaskDebugApiServiceServerER
 }

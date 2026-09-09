@@ -901,6 +901,9 @@ export function SkeletonItemBadges({
       {'sensitive' in item && item.sensitive ? (
         <SensitiveBadge label={t('skeleton.sensitive')} />
       ) : null}
+      {'api' in item && item.api ? (
+        <Badge variant="outline">api</Badge>
+      ) : null}
       {'pub' in item && item.pub ? (
         <Badge variant="outline">public</Badge>
       ) : null}

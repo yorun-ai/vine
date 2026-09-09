@@ -114,6 +114,9 @@ function compareSkeletonItems(a: SkeletonItem, b: SkeletonItem) {
 }
 
 function getSkeletonListBadge(item: SkeletonItem) {
+  if ('api' in item && item.api) {
+    return 'api'
+  }
   if ('lifecycle' in item && item.lifecycle) {
     return item.lifecycle
   }

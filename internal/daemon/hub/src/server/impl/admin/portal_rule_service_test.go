@@ -12,7 +12,7 @@ import (
 )
 
 func TestPortalRuleServiceGetDashboardAccessCanUpdate(t *testing.T) {
-	service := newTestPortalRuleService(false)
+	service := newTestPortalRuleApiService(false)
 
 	access := service.GetDashboardAccess()
 
@@ -24,7 +24,7 @@ func TestPortalRuleServiceGetDashboardAccessCanUpdate(t *testing.T) {
 }
 
 func TestPortalRuleServiceGetDashboardAccessLockedByFlag(t *testing.T) {
-	service := newTestPortalRuleService(true)
+	service := newTestPortalRuleApiService(true)
 
 	access := service.GetDashboardAccess()
 
@@ -32,7 +32,7 @@ func TestPortalRuleServiceGetDashboardAccessLockedByFlag(t *testing.T) {
 }
 
 func TestPortalRuleServiceUpdateDashboardAccessRejectsLockedFlag(t *testing.T) {
-	service := newTestPortalRuleService(true)
+	service := newTestPortalRuleApiService(true)
 
 	panicValue := capturePanic(func() {
 		service.UpdateDashboardAccess("http", "", 8080, "/")
@@ -43,8 +43,8 @@ func TestPortalRuleServiceUpdateDashboardAccessRejectsLockedFlag(t *testing.T) {
 	assert.Equal(t, ex.OperationFailed, err.Code())
 }
 
-func newTestPortalRuleService(dashboardURLSet bool) *PortalRuleServiceServerImpl {
-	return &PortalRuleServiceServerImpl{
+func newTestPortalRuleApiService(dashboardURLSet bool) *PortalRuleApiServiceServerImpl {
+	return &PortalRuleApiServiceServerImpl{
 		PortalRuleCore: &core.PortalRuleCore{
 			PortalRuleRepo: &_PortalRuleRepoSpy{
 				rules: map[int]*core.PortalRule{

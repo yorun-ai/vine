@@ -17,19 +17,19 @@ import (
 	"go.yorun.ai/vine/util/vslice"
 )
 
-type ServiceDebugServiceServerImpl struct {
-	skeled.DefaultServiceDebugServiceServer
+type ServiceDebugApiServiceServerImpl struct {
+	skeled.DefaultServiceDebugApiServiceServer
 
 	RegistryRepo core.RegistryRepo `inject:""`
 	SchemaRepo   core.SchemaRepo   `inject:""`
 	Identity     *mtls.Identity    `inject:""`
 }
 
-func (s *ServiceDebugServiceServerImpl) defaultBuilder() _DebugDefaultBuilder {
+func (s *ServiceDebugApiServiceServerImpl) defaultBuilder() _DebugDefaultBuilder {
 	return _DebugDefaultBuilder{SchemaRepo: s.SchemaRepo}
 }
 
-func (s *ServiceDebugServiceServerImpl) ListAppInstances() []skeled.ServiceDebugAppInstance {
+func (s *ServiceDebugApiServiceServerImpl) ListAppInstances() []skeled.ServiceDebugAppInstance {
 	return listDebugAppInstances(s.RegistryRepo.ListAppStatuses(), func(*core.AppStatus) bool { return true })
 }
 
@@ -54,7 +54,7 @@ func listDebugAppInstances(statuses []*core.AppStatus, include func(*core.AppSta
 	})
 }
 
-func (s *ServiceDebugServiceServerImpl) ListServices() []skeled.ServiceDebugServiceItem {
+func (s *ServiceDebugApiServiceServerImpl) ListServices() []skeled.ServiceDebugServiceItem {
 	ret := []skeled.ServiceDebugServiceItem{}
 	seen := map[string]struct{}{}
 	for _, status := range s.RegistryRepo.ListAppStatuses() {
@@ -71,6 +71,7 @@ func (s *ServiceDebugServiceServerImpl) ListServices() []skeled.ServiceDebugServ
 			ret = append(ret, skeled.ServiceDebugServiceItem{
 				ServiceSkelName:  handler.ServiceSkelName,
 				SchemaHash:       handler.SchemaHash,
+				Api:              serviceSchema.Api,
 				Deprecated:       serviceSchema.Deprecated,
 				DeprecatedReason: serviceSchema.DeprecatedReason,
 			})
@@ -84,13 +85,13 @@ func (s *ServiceDebugServiceServerImpl) ListServices() []skeled.ServiceDebugServ
 	})
 }
 
-func (s *ServiceDebugServiceServerImpl) ListServiceAppInstances(serviceSkelName string, schemaHash string) []skeled.ServiceDebugAppInstance {
+func (s *ServiceDebugApiServiceServerImpl) ListServiceAppInstances(serviceSkelName string, schemaHash string) []skeled.ServiceDebugAppInstance {
 	return listDebugAppInstances(s.RegistryRepo.ListAppStatuses(), func(status *core.AppStatus) bool {
 		return statusHasServiceHandler(status, serviceSkelName, schemaHash)
 	})
 }
 
-func (s *ServiceDebugServiceServerImpl) ListMethods(serviceSkelName string, schemaHash string) []skeled.ServiceDebugMethodItem {
+func (s *ServiceDebugApiServiceServerImpl) ListMethods(serviceSkelName string, schemaHash string) []skeled.ServiceDebugMethodItem {
 	serviceSchema := s.findServiceSchema(serviceSkelName, schemaHash)
 	ret := make([]skeled.ServiceDebugMethodItem, 0, len(serviceSchema.Methods))
 	for _, method := range serviceSchema.Methods {
@@ -101,7 +102,7 @@ func (s *ServiceDebugServiceServerImpl) ListMethods(serviceSkelName string, sche
 	})
 }
 
-func (s *ServiceDebugServiceServerImpl) BuildDefaultInvokeRequest(serviceSkelName string, schemaHash string, methodSkelName string) skeled.ServiceDebugDefaultInvokeRequest {
+func (s *ServiceDebugApiServiceServerImpl) BuildDefaultInvokeRequest(serviceSkelName string, schemaHash string, methodSkelName string) skeled.ServiceDebugDefaultInvokeRequest {
 	serviceSchema := s.findServiceSchema(serviceSkelName, schemaHash)
 	methodSchema := s.findMethodSchema(serviceSchema, methodSkelName)
 	trace := meta.InitialTrace()
@@ -123,7 +124,7 @@ func (s *ServiceDebugServiceServerImpl) BuildDefaultInvokeRequest(serviceSkelNam
 	}
 }
 
-func (s *ServiceDebugServiceServerImpl) InvokeService(request skeled.ServiceDebugInvokeRequest) skeled.ServiceDebugInvokeResponse {
+func (s *ServiceDebugApiServiceServerImpl) InvokeService(request skeled.ServiceDebugInvokeRequest) skeled.ServiceDebugInvokeResponse {
 	var params any
 	if strings.TrimSpace(string(request.ParamsJson)) == "" {
 		params = map[string]any{}
@@ -167,7 +168,7 @@ func (s *ServiceDebugServiceServerImpl) InvokeService(request skeled.ServiceDebu
 	}
 }
 
-func (s *ServiceDebugServiceServerImpl) resolveRpcServiceRegistration(request skeled.ServiceDebugInvokeRequest) *core.RpcServiceRegistration {
+func (s *ServiceDebugApiServiceServerImpl) resolveRpcServiceRegistration(request skeled.ServiceDebugInvokeRequest) *core.RpcServiceRegistration {
 	appName := optionalTrimmedString(request.AppName)
 	appInstanceId := optionalTrimmedString(request.AppInstanceId)
 	if appName != "" && appInstanceId != "" {
@@ -194,7 +195,7 @@ func (s *ServiceDebugServiceServerImpl) resolveRpcServiceRegistration(request sk
 	return registration
 }
 
-func (s *ServiceDebugServiceServerImpl) serviceAppInstances(serviceSkelName string, schemaHash string) []skeled.ServiceDebugAppInstance {
+func (s *ServiceDebugApiServiceServerImpl) serviceAppInstances(serviceSkelName string, schemaHash string) []skeled.ServiceDebugAppInstance {
 	return listDebugAppInstances(s.RegistryRepo.ListAppStatuses(), func(status *core.AppStatus) bool {
 		return statusHasServiceHandler(status, serviceSkelName, schemaHash)
 	})

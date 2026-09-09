@@ -8,8 +8,17 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.15.5] - 2026-09-09
+
 ### Changed
 
+- Migrate internal Hub Admin services to explicit API contracts and update the
+  bundled Dashboard together. Existing application contracts remain supported.
+- Generate Vine contracts with skelc v0.18.1 in strict mode. Application control
+  services remain backend public services.
+- Show API badges in Hub service lists, details, and debug selectors. Hub Debug
+  retains direct invocation with supplied Actor identity and explains that it
+  skips Portal authentication and admission checks.
 - Upgrade `go.yorun.ai/vrpc` to v0.12.0.
 
 ## [0.15.4] - 2026-09-09

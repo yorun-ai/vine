@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 
 import { vrpcClient } from '@/config/vrpc-client'
-import { createSkeletonService } from '@/skeled/admin'
+import { createSkeletonApiService } from '@/skeled/admin'
 import type {
   SkeletonActorItem,
   SkeletonConfigItem,
@@ -23,7 +23,7 @@ import type {
   SkeletonWebItem,
 } from '@/skeled/admin'
 
-export const skeletonService = createSkeletonService(vrpcClient)
+export const skeletonService = createSkeletonApiService(vrpcClient)
 
 export type SkeletonKind =
   | 'actors'

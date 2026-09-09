@@ -169,10 +169,7 @@ func NewInfoServiceClientER(rpcClient *rpcclient.Client) InfoServiceClientER {
 }
 
 func (client *_InfoServiceClientER) GetInfo(_ivOpts ...rpcclient.InvokeOption) (Info, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_InfoServiceGetInfoSpec.Info(), nil, _ivOpts...)
-	ret, _ := retI.(Info)
-	err, _ := errI.(ex.Error)
-	return ret, err
+	return client.rpcClient.InvokeAs[Info](_InfoServiceGetInfoSpec.Info(), nil, _ivOpts...)
 }
 
 // RegistryServiceServer Hub's application registration service, called by Link
@@ -450,27 +447,22 @@ func NewRegistryServiceClientER(rpcClient *rpcclient.Client) RegistryServiceClie
 }
 
 func (client *_RegistryServiceClientER) Register(registration AppRegistration, _ivOpts ...rpcclient.InvokeOption) ex.Error {
-	_, errI := client.rpcClient.Invoke(_RegistryServiceRegisterSpec.Info(), &_RegistryServiceRegisterArguments{
+	_, err := client.rpcClient.Invoke(_RegistryServiceRegisterSpec.Info(), &_RegistryServiceRegisterArguments{
 		Registration: registration,
 	}, _ivOpts...)
-	err, _ := errI.(ex.Error)
 	return err
 }
 
 func (client *_RegistryServiceClientER) Unregister(name string, instanceId skel.UUID, _ivOpts ...rpcclient.InvokeOption) ex.Error {
-	_, errI := client.rpcClient.Invoke(_RegistryServiceUnregisterSpec.Info(), &_RegistryServiceUnregisterArguments{
+	_, err := client.rpcClient.Invoke(_RegistryServiceUnregisterSpec.Info(), &_RegistryServiceUnregisterArguments{
 		Name:       name,
 		InstanceId: instanceId,
 	}, _ivOpts...)
-	err, _ := errI.(ex.Error)
 	return err
 }
 
 func (client *_RegistryServiceClientER) Heartbeat(status AppStatus, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error) {
-	retI, errI := client.rpcClient.Invoke(_RegistryServiceHeartbeatSpec.Info(), &_RegistryServiceHeartbeatArguments{
+	return client.rpcClient.InvokeAs[bool](_RegistryServiceHeartbeatSpec.Info(), &_RegistryServiceHeartbeatArguments{
 		Status: status,
 	}, _ivOpts...)
-	ret, _ := retI.(bool)
-	err, _ := errI.(ex.Error)
-	return ret, err
 }

@@ -5,17 +5,17 @@ import type {
   VrpcRequestOptions,
 } from '@yorun-ai/vrpc';
 import {
-  AppConfigServiceSpec,
-  AppStatusServiceSpec,
-  EventDebugServiceSpec,
-  MaintenanceServiceSpec,
-  PortalCertServiceSpec,
-  PortalEntryServiceSpec,
-  PortalRuleServiceSpec,
-  PortalSiteServiceSpec,
-  ServiceDebugServiceSpec,
-  SkeletonServiceSpec,
-  TaskDebugServiceSpec,
+  AppConfigApiServiceSpec,
+  AppStatusApiServiceSpec,
+  EventDebugApiServiceSpec,
+  MaintenanceApiServiceSpec,
+  PortalCertApiServiceSpec,
+  PortalEntryApiServiceSpec,
+  PortalRuleApiServiceSpec,
+  PortalSiteApiServiceSpec,
+  ServiceDebugApiServiceSpec,
+  SkeletonApiServiceSpec,
+  TaskDebugApiServiceSpec,
 } from './spec';
 import type {
   AppConfigItem,
@@ -63,7 +63,7 @@ import type {
 /**
  * Hub's application configuration service, called by Client
  */
-export function createAppConfigService(client: VrpcClient) {
+export function createAppConfigApiService(client: VrpcClient) {
   return {
     /**
      * List configuration items.
@@ -76,8 +76,8 @@ export function createAppConfigService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<AppConfigItem>>({
-        serviceName: AppConfigServiceSpec.serviceName,
-        methodName: AppConfigServiceSpec.methods.list,
+        serviceName: AppConfigApiServiceSpec.serviceName,
+        methodName: AppConfigApiServiceSpec.methods.list,
         params,
         options,
       });
@@ -95,8 +95,8 @@ export function createAppConfigService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<AppConfigItem>({
-        serviceName: AppConfigServiceSpec.serviceName,
-        methodName: AppConfigServiceSpec.methods.get,
+        serviceName: AppConfigApiServiceSpec.serviceName,
+        methodName: AppConfigApiServiceSpec.methods.get,
         params,
         options,
       });
@@ -115,8 +115,8 @@ export function createAppConfigService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<AppConfigItem>({
-        serviceName: AppConfigServiceSpec.serviceName,
-        methodName: AppConfigServiceSpec.methods.update,
+        serviceName: AppConfigApiServiceSpec.serviceName,
+        methodName: AppConfigApiServiceSpec.methods.update,
         params,
         options,
       });
@@ -134,8 +134,8 @@ export function createAppConfigService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<AppConfigItem>({
-        serviceName: AppConfigServiceSpec.serviceName,
-        methodName: AppConfigServiceSpec.methods.create,
+        serviceName: AppConfigApiServiceSpec.serviceName,
+        methodName: AppConfigApiServiceSpec.methods.create,
         params,
         options,
       });
@@ -153,8 +153,8 @@ export function createAppConfigService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<boolean>({
-        serviceName: AppConfigServiceSpec.serviceName,
-        methodName: AppConfigServiceSpec.methods.remove,
+        serviceName: AppConfigApiServiceSpec.serviceName,
+        methodName: AppConfigApiServiceSpec.methods.remove,
         params,
         options,
       });
@@ -164,7 +164,7 @@ export function createAppConfigService(client: VrpcClient) {
 /**
  * Hub Dashboard's application status service
  */
-export function createAppStatusService(client: VrpcClient) {
+export function createAppStatusApiService(client: VrpcClient) {
   return {
     /**
      * List application instance statuses currently stored in Redis.
@@ -177,8 +177,8 @@ export function createAppStatusService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<AppStatusView>>({
-        serviceName: AppStatusServiceSpec.serviceName,
-        methodName: AppStatusServiceSpec.methods.list,
+        serviceName: AppStatusApiServiceSpec.serviceName,
+        methodName: AppStatusApiServiceSpec.methods.list,
         params,
         options,
       });
@@ -188,7 +188,7 @@ export function createAppStatusService(client: VrpcClient) {
 /**
  * Hub Dashboard Event Debugging Service
  */
-export function createEventDebugService(client: VrpcClient) {
+export function createEventDebugApiService(client: VrpcClient) {
   return {
     /**
      * List the events monitored by the application instance.
@@ -201,8 +201,8 @@ export function createEventDebugService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<EventDebugEventItem>>({
-        serviceName: EventDebugServiceSpec.serviceName,
-        methodName: EventDebugServiceSpec.methods.listEvents,
+        serviceName: EventDebugApiServiceSpec.serviceName,
+        methodName: EventDebugApiServiceSpec.methods.listEvents,
         params,
         options,
       });
@@ -221,8 +221,8 @@ export function createEventDebugService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<EventDebugDefaultEmitRequest>({
-        serviceName: EventDebugServiceSpec.serviceName,
-        methodName: EventDebugServiceSpec.methods.buildDefaultEmitRequest,
+        serviceName: EventDebugApiServiceSpec.serviceName,
+        methodName: EventDebugApiServiceSpec.methods.buildDefaultEmitRequest,
         params,
         options,
       });
@@ -239,8 +239,8 @@ export function createEventDebugService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<void>({
-        serviceName: EventDebugServiceSpec.serviceName,
-        methodName: EventDebugServiceSpec.methods.emitEvent,
+        serviceName: EventDebugApiServiceSpec.serviceName,
+        methodName: EventDebugApiServiceSpec.methods.emitEvent,
         params,
         options,
       });
@@ -250,7 +250,7 @@ export function createEventDebugService(client: VrpcClient) {
 /**
  * Hub maintenance service
  */
-export function createMaintenanceService(client: VrpcClient) {
+export function createMaintenanceApiService(client: VrpcClient) {
   return {
     /**
      * Preview Seed YAML differences.
@@ -265,8 +265,8 @@ export function createMaintenanceService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<SeedPreview>({
-        serviceName: MaintenanceServiceSpec.serviceName,
-        methodName: MaintenanceServiceSpec.methods.previewSeedYaml,
+        serviceName: MaintenanceApiServiceSpec.serviceName,
+        methodName: MaintenanceApiServiceSpec.methods.previewSeedYaml,
         params,
         options,
       });
@@ -285,8 +285,8 @@ export function createMaintenanceService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<SeedPreview>({
-        serviceName: MaintenanceServiceSpec.serviceName,
-        methodName: MaintenanceServiceSpec.methods.applySeedYaml,
+        serviceName: MaintenanceApiServiceSpec.serviceName,
+        methodName: MaintenanceApiServiceSpec.methods.applySeedYaml,
         params,
         options,
       });
@@ -296,7 +296,7 @@ export function createMaintenanceService(client: VrpcClient) {
 /**
  * Hub's Portal site certificate service, called by the Portal admin client
  */
-export function createPortalCertService(client: VrpcClient) {
+export function createPortalCertApiService(client: VrpcClient) {
   return {
     /**
      * List Portal site certificates.
@@ -309,8 +309,8 @@ export function createPortalCertService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<PortalCert>>({
-        serviceName: PortalCertServiceSpec.serviceName,
-        methodName: PortalCertServiceSpec.methods.list,
+        serviceName: PortalCertApiServiceSpec.serviceName,
+        methodName: PortalCertApiServiceSpec.methods.list,
         params,
         options,
       });
@@ -328,8 +328,8 @@ export function createPortalCertService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<PortalCert>({
-        serviceName: PortalCertServiceSpec.serviceName,
-        methodName: PortalCertServiceSpec.methods.get,
+        serviceName: PortalCertApiServiceSpec.serviceName,
+        methodName: PortalCertApiServiceSpec.methods.get,
         params,
         options,
       });
@@ -347,8 +347,8 @@ export function createPortalCertService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<PortalCert>({
-        serviceName: PortalCertServiceSpec.serviceName,
-        methodName: PortalCertServiceSpec.methods.create,
+        serviceName: PortalCertApiServiceSpec.serviceName,
+        methodName: PortalCertApiServiceSpec.methods.create,
         params,
         options,
       });
@@ -367,8 +367,8 @@ export function createPortalCertService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<PortalCert>({
-        serviceName: PortalCertServiceSpec.serviceName,
-        methodName: PortalCertServiceSpec.methods.update,
+        serviceName: PortalCertApiServiceSpec.serviceName,
+        methodName: PortalCertApiServiceSpec.methods.update,
         params,
         options,
       });
@@ -385,8 +385,8 @@ export function createPortalCertService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<void>({
-        serviceName: PortalCertServiceSpec.serviceName,
-        methodName: PortalCertServiceSpec.methods.remove,
+        serviceName: PortalCertApiServiceSpec.serviceName,
+        methodName: PortalCertApiServiceSpec.methods.remove,
         params,
         options,
       });
@@ -396,7 +396,7 @@ export function createPortalCertService(client: VrpcClient) {
 /**
  * Hub's Portal access entry service, called by the Portal admin client
  */
-export function createPortalEntryService(client: VrpcClient) {
+export function createPortalEntryApiService(client: VrpcClient) {
   return {
     /**
      * List Portal access entries.
@@ -409,8 +409,8 @@ export function createPortalEntryService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<PortalEntry>>({
-        serviceName: PortalEntryServiceSpec.serviceName,
-        methodName: PortalEntryServiceSpec.methods.list,
+        serviceName: PortalEntryApiServiceSpec.serviceName,
+        methodName: PortalEntryApiServiceSpec.methods.list,
         params,
         options,
       });
@@ -431,8 +431,8 @@ export function createPortalEntryService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<PortalEntry>({
-        serviceName: PortalEntryServiceSpec.serviceName,
-        methodName: PortalEntryServiceSpec.methods.updateAccess,
+        serviceName: PortalEntryApiServiceSpec.serviceName,
+        methodName: PortalEntryApiServiceSpec.methods.updateAccess,
         params,
         options,
       });
@@ -442,7 +442,7 @@ export function createPortalEntryService(client: VrpcClient) {
 /**
  * Hub's Portal entry rule service, called by the Portal admin client
  */
-export function createPortalRuleService(client: VrpcClient) {
+export function createPortalRuleApiService(client: VrpcClient) {
   return {
     /**
      * List Portal entry rules.
@@ -455,8 +455,8 @@ export function createPortalRuleService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<PortalRule>>({
-        serviceName: PortalRuleServiceSpec.serviceName,
-        methodName: PortalRuleServiceSpec.methods.list,
+        serviceName: PortalRuleApiServiceSpec.serviceName,
+        methodName: PortalRuleApiServiceSpec.methods.list,
         params,
         options,
       });
@@ -474,8 +474,8 @@ export function createPortalRuleService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<PortalRule>({
-        serviceName: PortalRuleServiceSpec.serviceName,
-        methodName: PortalRuleServiceSpec.methods.get,
+        serviceName: PortalRuleApiServiceSpec.serviceName,
+        methodName: PortalRuleApiServiceSpec.methods.get,
         params,
         options,
       });
@@ -493,8 +493,8 @@ export function createPortalRuleService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<PortalRule>({
-        serviceName: PortalRuleServiceSpec.serviceName,
-        methodName: PortalRuleServiceSpec.methods.create,
+        serviceName: PortalRuleApiServiceSpec.serviceName,
+        methodName: PortalRuleApiServiceSpec.methods.create,
         params,
         options,
       });
@@ -513,8 +513,8 @@ export function createPortalRuleService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<PortalRule>({
-        serviceName: PortalRuleServiceSpec.serviceName,
-        methodName: PortalRuleServiceSpec.methods.update,
+        serviceName: PortalRuleApiServiceSpec.serviceName,
+        methodName: PortalRuleApiServiceSpec.methods.update,
         params,
         options,
       });
@@ -531,8 +531,8 @@ export function createPortalRuleService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<void>({
-        serviceName: PortalRuleServiceSpec.serviceName,
-        methodName: PortalRuleServiceSpec.methods.remove,
+        serviceName: PortalRuleApiServiceSpec.serviceName,
+        methodName: PortalRuleApiServiceSpec.methods.remove,
         params,
         options,
       });
@@ -548,8 +548,8 @@ export function createPortalRuleService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<PortalDashboardAccess>({
-        serviceName: PortalRuleServiceSpec.serviceName,
-        methodName: PortalRuleServiceSpec.methods.getDashboardAccess,
+        serviceName: PortalRuleApiServiceSpec.serviceName,
+        methodName: PortalRuleApiServiceSpec.methods.getDashboardAccess,
         params,
         options,
       });
@@ -570,8 +570,8 @@ export function createPortalRuleService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<PortalRule>>({
-        serviceName: PortalRuleServiceSpec.serviceName,
-        methodName: PortalRuleServiceSpec.methods.updateDashboardAccess,
+        serviceName: PortalRuleApiServiceSpec.serviceName,
+        methodName: PortalRuleApiServiceSpec.methods.updateDashboardAccess,
         params,
         options,
       });
@@ -581,7 +581,7 @@ export function createPortalRuleService(client: VrpcClient) {
 /**
  * Hub's Portal target site service, called by the Portal admin client
  */
-export function createPortalSiteService(client: VrpcClient) {
+export function createPortalSiteApiService(client: VrpcClient) {
   return {
     /**
      * List Portal target sites.
@@ -594,8 +594,8 @@ export function createPortalSiteService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<PortalSite>>({
-        serviceName: PortalSiteServiceSpec.serviceName,
-        methodName: PortalSiteServiceSpec.methods.list,
+        serviceName: PortalSiteApiServiceSpec.serviceName,
+        methodName: PortalSiteApiServiceSpec.methods.list,
         params,
         options,
       });
@@ -611,8 +611,8 @@ export function createPortalSiteService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<PortalSiteOptions>({
-        serviceName: PortalSiteServiceSpec.serviceName,
-        methodName: PortalSiteServiceSpec.methods.listOptions,
+        serviceName: PortalSiteApiServiceSpec.serviceName,
+        methodName: PortalSiteApiServiceSpec.methods.listOptions,
         params,
         options,
       });
@@ -630,8 +630,8 @@ export function createPortalSiteService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<PortalSite>({
-        serviceName: PortalSiteServiceSpec.serviceName,
-        methodName: PortalSiteServiceSpec.methods.get,
+        serviceName: PortalSiteApiServiceSpec.serviceName,
+        methodName: PortalSiteApiServiceSpec.methods.get,
         params,
         options,
       });
@@ -649,8 +649,8 @@ export function createPortalSiteService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<PortalSite>({
-        serviceName: PortalSiteServiceSpec.serviceName,
-        methodName: PortalSiteServiceSpec.methods.create,
+        serviceName: PortalSiteApiServiceSpec.serviceName,
+        methodName: PortalSiteApiServiceSpec.methods.create,
         params,
         options,
       });
@@ -669,8 +669,8 @@ export function createPortalSiteService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<PortalSite>({
-        serviceName: PortalSiteServiceSpec.serviceName,
-        methodName: PortalSiteServiceSpec.methods.update,
+        serviceName: PortalSiteApiServiceSpec.serviceName,
+        methodName: PortalSiteApiServiceSpec.methods.update,
         params,
         options,
       });
@@ -687,8 +687,8 @@ export function createPortalSiteService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<void>({
-        serviceName: PortalSiteServiceSpec.serviceName,
-        methodName: PortalSiteServiceSpec.methods.remove,
+        serviceName: PortalSiteApiServiceSpec.serviceName,
+        methodName: PortalSiteApiServiceSpec.methods.remove,
         params,
         options,
       });
@@ -698,7 +698,7 @@ export function createPortalSiteService(client: VrpcClient) {
 /**
  * Hub Dashboard Service debugging service
  */
-export function createServiceDebugService(client: VrpcClient) {
+export function createServiceDebugApiService(client: VrpcClient) {
   return {
     /**
      * List application instances.
@@ -711,8 +711,8 @@ export function createServiceDebugService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<ServiceDebugAppInstance>>({
-        serviceName: ServiceDebugServiceSpec.serviceName,
-        methodName: ServiceDebugServiceSpec.methods.listAppInstances,
+        serviceName: ServiceDebugApiServiceSpec.serviceName,
+        methodName: ServiceDebugApiServiceSpec.methods.listAppInstances,
         params,
         options,
       });
@@ -728,8 +728,8 @@ export function createServiceDebugService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<ServiceDebugServiceItem>>({
-        serviceName: ServiceDebugServiceSpec.serviceName,
-        methodName: ServiceDebugServiceSpec.methods.listServices,
+        serviceName: ServiceDebugApiServiceSpec.serviceName,
+        methodName: ServiceDebugApiServiceSpec.methods.listServices,
         params,
         options,
       });
@@ -748,8 +748,8 @@ export function createServiceDebugService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<ServiceDebugAppInstance>>({
-        serviceName: ServiceDebugServiceSpec.serviceName,
-        methodName: ServiceDebugServiceSpec.methods.listServiceAppInstances,
+        serviceName: ServiceDebugApiServiceSpec.serviceName,
+        methodName: ServiceDebugApiServiceSpec.methods.listServiceAppInstances,
         params,
         options,
       });
@@ -768,8 +768,8 @@ export function createServiceDebugService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<ServiceDebugMethodItem>>({
-        serviceName: ServiceDebugServiceSpec.serviceName,
-        methodName: ServiceDebugServiceSpec.methods.listMethods,
+        serviceName: ServiceDebugApiServiceSpec.serviceName,
+        methodName: ServiceDebugApiServiceSpec.methods.listMethods,
         params,
         options,
       });
@@ -789,8 +789,8 @@ export function createServiceDebugService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<ServiceDebugDefaultInvokeRequest>({
-        serviceName: ServiceDebugServiceSpec.serviceName,
-        methodName: ServiceDebugServiceSpec.methods.buildDefaultInvokeRequest,
+        serviceName: ServiceDebugApiServiceSpec.serviceName,
+        methodName: ServiceDebugApiServiceSpec.methods.buildDefaultInvokeRequest,
         params,
         options,
       });
@@ -808,8 +808,8 @@ export function createServiceDebugService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<ServiceDebugInvokeResponse>({
-        serviceName: ServiceDebugServiceSpec.serviceName,
-        methodName: ServiceDebugServiceSpec.methods.invokeService,
+        serviceName: ServiceDebugApiServiceSpec.serviceName,
+        methodName: ServiceDebugApiServiceSpec.methods.invokeService,
         params,
         options,
       });
@@ -819,7 +819,7 @@ export function createServiceDebugService(client: VrpcClient) {
 /**
  * Hub's skeleton service, called by the Portal admin client
  */
-export function createSkeletonService(client: VrpcClient) {
+export function createSkeletonApiService(client: VrpcClient) {
   return {
     /**
      * List Domain skeleton.
@@ -832,8 +832,8 @@ export function createSkeletonService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<SkeletonDomain>>({
-        serviceName: SkeletonServiceSpec.serviceName,
-        methodName: SkeletonServiceSpec.methods.listDomains,
+        serviceName: SkeletonApiServiceSpec.serviceName,
+        methodName: SkeletonApiServiceSpec.methods.listDomains,
         params,
         options,
       });
@@ -849,8 +849,8 @@ export function createSkeletonService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<SkeletonActorItem>>({
-        serviceName: SkeletonServiceSpec.serviceName,
-        methodName: SkeletonServiceSpec.methods.listActors,
+        serviceName: SkeletonApiServiceSpec.serviceName,
+        methodName: SkeletonApiServiceSpec.methods.listActors,
         params,
         options,
       });
@@ -866,8 +866,8 @@ export function createSkeletonService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<SkeletonServiceItem>>({
-        serviceName: SkeletonServiceSpec.serviceName,
-        methodName: SkeletonServiceSpec.methods.listServices,
+        serviceName: SkeletonApiServiceSpec.serviceName,
+        methodName: SkeletonApiServiceSpec.methods.listServices,
         params,
         options,
       });
@@ -883,8 +883,8 @@ export function createSkeletonService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<SkeletonResourceItem>>({
-        serviceName: SkeletonServiceSpec.serviceName,
-        methodName: SkeletonServiceSpec.methods.listResources,
+        serviceName: SkeletonApiServiceSpec.serviceName,
+        methodName: SkeletonApiServiceSpec.methods.listResources,
         params,
         options,
       });
@@ -900,8 +900,8 @@ export function createSkeletonService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<SkeletonWebItem>>({
-        serviceName: SkeletonServiceSpec.serviceName,
-        methodName: SkeletonServiceSpec.methods.listWebs,
+        serviceName: SkeletonApiServiceSpec.serviceName,
+        methodName: SkeletonApiServiceSpec.methods.listWebs,
         params,
         options,
       });
@@ -917,8 +917,8 @@ export function createSkeletonService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<SkeletonTask>>({
-        serviceName: SkeletonServiceSpec.serviceName,
-        methodName: SkeletonServiceSpec.methods.listTasks,
+        serviceName: SkeletonApiServiceSpec.serviceName,
+        methodName: SkeletonApiServiceSpec.methods.listTasks,
         params,
         options,
       });
@@ -934,8 +934,8 @@ export function createSkeletonService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<SkeletonEventItem>>({
-        serviceName: SkeletonServiceSpec.serviceName,
-        methodName: SkeletonServiceSpec.methods.listEvents,
+        serviceName: SkeletonApiServiceSpec.serviceName,
+        methodName: SkeletonApiServiceSpec.methods.listEvents,
         params,
         options,
       });
@@ -951,8 +951,8 @@ export function createSkeletonService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<SkeletonData>>({
-        serviceName: SkeletonServiceSpec.serviceName,
-        methodName: SkeletonServiceSpec.methods.listData,
+        serviceName: SkeletonApiServiceSpec.serviceName,
+        methodName: SkeletonApiServiceSpec.methods.listData,
         params,
         options,
       });
@@ -968,8 +968,8 @@ export function createSkeletonService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<SkeletonConfigItem>>({
-        serviceName: SkeletonServiceSpec.serviceName,
-        methodName: SkeletonServiceSpec.methods.listConfigs,
+        serviceName: SkeletonApiServiceSpec.serviceName,
+        methodName: SkeletonApiServiceSpec.methods.listConfigs,
         params,
         options,
       });
@@ -979,7 +979,7 @@ export function createSkeletonService(client: VrpcClient) {
 /**
  * Hub Dashboard Task Debugging Service
  */
-export function createTaskDebugService(client: VrpcClient) {
+export function createTaskDebugApiService(client: VrpcClient) {
   return {
     /**
      * List the tasks provided by the application instance.
@@ -992,8 +992,8 @@ export function createTaskDebugService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<TaskDebugTaskItem>>({
-        serviceName: TaskDebugServiceSpec.serviceName,
-        methodName: TaskDebugServiceSpec.methods.listTasks,
+        serviceName: TaskDebugApiServiceSpec.serviceName,
+        methodName: TaskDebugApiServiceSpec.methods.listTasks,
         params,
         options,
       });
@@ -1012,8 +1012,8 @@ export function createTaskDebugService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<Array<TaskDebugTriggerItem>>({
-        serviceName: TaskDebugServiceSpec.serviceName,
-        methodName: TaskDebugServiceSpec.methods.listTriggers,
+        serviceName: TaskDebugApiServiceSpec.serviceName,
+        methodName: TaskDebugApiServiceSpec.methods.listTriggers,
         params,
         options,
       });
@@ -1033,8 +1033,8 @@ export function createTaskDebugService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<TaskDebugDefaultLaunchRequest>({
-        serviceName: TaskDebugServiceSpec.serviceName,
-        methodName: TaskDebugServiceSpec.methods.buildDefaultLaunchRequest,
+        serviceName: TaskDebugApiServiceSpec.serviceName,
+        methodName: TaskDebugApiServiceSpec.methods.buildDefaultLaunchRequest,
         params,
         options,
       });
@@ -1051,8 +1051,8 @@ export function createTaskDebugService(client: VrpcClient) {
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<void>({
-        serviceName: TaskDebugServiceSpec.serviceName,
-        methodName: TaskDebugServiceSpec.methods.launchTask,
+        serviceName: TaskDebugApiServiceSpec.serviceName,
+        methodName: TaskDebugApiServiceSpec.methods.launchTask,
         params,
         options,
       });

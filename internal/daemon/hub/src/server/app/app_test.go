@@ -150,7 +150,7 @@ func TestHubAppMainServicerExcludesControlAPIHandlers(t *testing.T) {
 
 	assert.NotContains(t, handlerTypes, internalapp.T[*controlimpl.InfoServiceServerImpl]())
 	assert.NotContains(t, handlerTypes, internalapp.T[*controlimpl.RegistryServiceServerImpl]())
-	assert.Contains(t, handlerTypes, internalapp.T[*adminimpl.AppConfigServiceServerImpl]())
+	assert.Contains(t, handlerTypes, internalapp.T[*adminimpl.AppConfigApiServiceServerImpl]())
 }
 
 func TestHubAppDIInitKeepsEnableNatsOutsideInproc(t *testing.T) {

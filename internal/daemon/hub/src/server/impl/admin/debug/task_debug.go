@@ -16,8 +16,8 @@ import (
 	"go.yorun.ai/vine/util/vslice"
 )
 
-type TaskDebugServiceServerImpl struct {
-	skeled.DefaultTaskDebugServiceServer
+type TaskDebugApiServiceServerImpl struct {
+	skeled.DefaultTaskDebugApiServiceServer
 
 	RegistryRepo core.RegistryRepo      `inject:""`
 	SchemaRepo   core.SchemaRepo        `inject:""`
@@ -25,18 +25,18 @@ type TaskDebugServiceServerImpl struct {
 	Flag         *hubflag.Flag          `inject:""`
 }
 
-func (s *TaskDebugServiceServerImpl) defaultBuilder() _DebugDefaultBuilder {
+func (s *TaskDebugApiServiceServerImpl) defaultBuilder() _DebugDefaultBuilder {
 	return _DebugDefaultBuilder{SchemaRepo: s.SchemaRepo}
 }
 
-func (s *TaskDebugServiceServerImpl) natsPublisher() _DebugNATSPublisher {
+func (s *TaskDebugApiServiceServerImpl) natsPublisher() _DebugNATSPublisher {
 	return _DebugNATSPublisher{
 		NATSServer: s.NATSServer,
 		Flag:       s.Flag,
 	}
 }
 
-func (s *TaskDebugServiceServerImpl) ListTasks() []skeled.TaskDebugTaskItem {
+func (s *TaskDebugApiServiceServerImpl) ListTasks() []skeled.TaskDebugTaskItem {
 	ret := []skeled.TaskDebugTaskItem{}
 	seen := map[string]struct{}{}
 	for _, status := range s.RegistryRepo.ListAppStatuses() {
@@ -65,7 +65,7 @@ func (s *TaskDebugServiceServerImpl) ListTasks() []skeled.TaskDebugTaskItem {
 	})
 }
 
-func (s *TaskDebugServiceServerImpl) ListTriggers(taskSkelName string, schemaHash string) []skeled.TaskDebugTriggerItem {
+func (s *TaskDebugApiServiceServerImpl) ListTriggers(taskSkelName string, schemaHash string) []skeled.TaskDebugTriggerItem {
 	taskSchema := s.findTaskSchema(taskSkelName, schemaHash)
 	ret := make([]skeled.TaskDebugTriggerItem, 0, len(taskSchema.Triggers))
 	for _, trigger := range taskSchema.Triggers {
@@ -76,7 +76,7 @@ func (s *TaskDebugServiceServerImpl) ListTriggers(taskSkelName string, schemaHas
 	})
 }
 
-func (s *TaskDebugServiceServerImpl) BuildDefaultLaunchRequest(taskSkelName string, schemaHash string, triggerSkelName string) skeled.TaskDebugDefaultLaunchRequest {
+func (s *TaskDebugApiServiceServerImpl) BuildDefaultLaunchRequest(taskSkelName string, schemaHash string, triggerSkelName string) skeled.TaskDebugDefaultLaunchRequest {
 	taskSchema := s.findTaskSchema(taskSkelName, schemaHash)
 	triggerSchema := s.findTriggerSchema(taskSchema, triggerSkelName)
 	trace := meta.InitialTrace()
@@ -87,7 +87,7 @@ func (s *TaskDebugServiceServerImpl) BuildDefaultLaunchRequest(taskSkelName stri
 	}
 }
 
-func (s *TaskDebugServiceServerImpl) LaunchTask(request skeled.TaskDebugLaunchRequest) {
+func (s *TaskDebugApiServiceServerImpl) LaunchTask(request skeled.TaskDebugLaunchRequest) {
 	s.checkTaskRunner(request.TaskSkelName, request.SchemaHash)
 	debugParseJson(string(request.ArgumentsJson))
 
@@ -109,7 +109,7 @@ func (s *TaskDebugServiceServerImpl) LaunchTask(request skeled.TaskDebugLaunchRe
 	publisher.publish(debugTaskStreamConfig(), debugTaskSubject(request.TaskSkelName), vcode.MustMarshalJson(msg))
 }
 
-func (s *TaskDebugServiceServerImpl) checkTaskRunner(taskSkelName string, schemaHash string) {
+func (s *TaskDebugApiServiceServerImpl) checkTaskRunner(taskSkelName string, schemaHash string) {
 	for _, status := range s.RegistryRepo.ListAppStatuses() {
 		if statusHasTaskRunner(status, taskSkelName, schemaHash) {
 			return
@@ -118,7 +118,7 @@ func (s *TaskDebugServiceServerImpl) checkTaskRunner(taskSkelName string, schema
 	ex.PanicNew(ex.NotFound, "task runner registration not found")
 }
 
-func (s *TaskDebugServiceServerImpl) findTaskSchema(taskSkelName string, schemaHash string) *skel.TaskSchema {
+func (s *TaskDebugApiServiceServerImpl) findTaskSchema(taskSkelName string, schemaHash string) *skel.TaskSchema {
 	for _, version := range s.SchemaRepo.ListTaskSchemaVersions() {
 		if version.Schema.SkelName == taskSkelName && (schemaHash == "" || version.SchemaHash == schemaHash) {
 			return version.Schema
@@ -128,7 +128,7 @@ func (s *TaskDebugServiceServerImpl) findTaskSchema(taskSkelName string, schemaH
 	panic("unreachable")
 }
 
-func (s *TaskDebugServiceServerImpl) findTriggerSchema(taskSchema *skel.TaskSchema, triggerSkelName string) *skel.TriggerSchema {
+func (s *TaskDebugApiServiceServerImpl) findTriggerSchema(taskSchema *skel.TaskSchema, triggerSkelName string) *skel.TriggerSchema {
 	for _, trigger := range taskSchema.Triggers {
 		if trigger.SkelName == triggerSkelName {
 			return trigger

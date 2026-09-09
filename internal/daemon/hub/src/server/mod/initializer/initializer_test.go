@@ -273,7 +273,7 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, adminActorValue, `"skelName":"vine.hub.admin.AdminActor"`)
 
-	skeletonServiceValue, err := db.Get(redised.FormatSchemaServiceKey("vine.hub.admin.SkeletonService"))
+	skeletonServiceValue, err := db.Get(redised.FormatSchemaServiceKey("vine.hub.admin.SkeletonApiService"))
 	assert.NoError(t, err)
 	assert.Contains(t, skeletonServiceValue, `"authMode":"noauth"`)
 
@@ -403,17 +403,17 @@ func TestInitializerDIInitWritesDashboardEntriesAndRulesFromRepo(t *testing.T) {
 
 func TestDashboardRpcServicesDerivedFromRegisteredSchema(t *testing.T) {
 	assert.Equal(t, []string{
-		"vine.hub.admin.AppConfigService",
-		"vine.hub.admin.AppStatusService",
-		"vine.hub.admin.EventDebugService",
-		"vine.hub.admin.MaintenanceService",
-		"vine.hub.admin.PortalCertService",
-		"vine.hub.admin.PortalEntryService",
-		"vine.hub.admin.PortalRuleService",
-		"vine.hub.admin.PortalSiteService",
-		"vine.hub.admin.ServiceDebugService",
-		"vine.hub.admin.SkeletonService",
-		"vine.hub.admin.TaskDebugService",
+		"vine.hub.admin.AppConfigApiService",
+		"vine.hub.admin.AppStatusApiService",
+		"vine.hub.admin.EventDebugApiService",
+		"vine.hub.admin.MaintenanceApiService",
+		"vine.hub.admin.PortalCertApiService",
+		"vine.hub.admin.PortalEntryApiService",
+		"vine.hub.admin.PortalRuleApiService",
+		"vine.hub.admin.PortalSiteApiService",
+		"vine.hub.admin.ServiceDebugApiService",
+		"vine.hub.admin.SkeletonApiService",
+		"vine.hub.admin.TaskDebugApiService",
 	}, seeder.DashboardRpcServices)
 }
 

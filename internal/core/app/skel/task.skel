@@ -37,7 +37,7 @@ data TaskRun {
 }
 
 @desc("App's task execution service, called by Link")
-service TaskService {
+pub service TaskService {
     @desc("Trigger task execution")
     method runTask {
         input {

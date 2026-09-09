@@ -25,7 +25,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeBoth,
 		Name:              "ConsoleService",
 		SkelName:          "vine.app.ConsoleService",
-		Hash:              "edd76e05",
+		Hash:              "ef0ecbc5",
 		ServerType:        reflect.TypeFor[ConsoleServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultConsoleServiceServer](),
 		ClientType:        reflect.TypeFor[ConsoleServiceClient](),
@@ -159,8 +159,7 @@ func NewConsoleServiceClientER(rpcClient *rpcclient.Client) ConsoleServiceClient
 }
 
 func (client *_ConsoleServiceClientER) Ping(_ivOpts ...rpcclient.InvokeOption) ex.Error {
-	_, errI := client.rpcClient.Invoke(_ConsoleServicePingSpec.Info(), nil, _ivOpts...)
-	err, _ := errI.(ex.Error)
+	_, err := client.rpcClient.Invoke(_ConsoleServicePingSpec.Info(), nil, _ivOpts...)
 	return err
 }
 
@@ -173,7 +172,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeBoth,
 		Name:              "EventService",
 		SkelName:          "vine.app.EventService",
-		Hash:              "e2f6b7ae",
+		Hash:              "d6668714",
 		ServerType:        reflect.TypeFor[EventServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultEventServiceServer](),
 		ClientType:        reflect.TypeFor[EventServiceClient](),
@@ -321,10 +320,9 @@ func NewEventServiceClientER(rpcClient *rpcclient.Client) EventServiceClientER {
 }
 
 func (client *_EventServiceClientER) OnEvent(on EventOn, _ivOpts ...rpcclient.InvokeOption) ex.Error {
-	_, errI := client.rpcClient.Invoke(_EventServiceOnEventSpec.Info(), &_EventServiceOnEventArguments{
+	_, err := client.rpcClient.Invoke(_EventServiceOnEventSpec.Info(), &_EventServiceOnEventArguments{
 		On: on,
 	}, _ivOpts...)
-	err, _ := errI.(ex.Error)
 	return err
 }
 
@@ -337,7 +335,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeBoth,
 		Name:              "TaskService",
 		SkelName:          "vine.app.TaskService",
-		Hash:              "56e140ce",
+		Hash:              "1974ce48",
 		ServerType:        reflect.TypeFor[TaskServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultTaskServiceServer](),
 		ClientType:        reflect.TypeFor[TaskServiceClient](),
@@ -485,9 +483,8 @@ func NewTaskServiceClientER(rpcClient *rpcclient.Client) TaskServiceClientER {
 }
 
 func (client *_TaskServiceClientER) RunTask(run TaskRun, _ivOpts ...rpcclient.InvokeOption) ex.Error {
-	_, errI := client.rpcClient.Invoke(_TaskServiceRunTaskSpec.Info(), &_TaskServiceRunTaskArguments{
+	_, err := client.rpcClient.Invoke(_TaskServiceRunTaskSpec.Info(), &_TaskServiceRunTaskArguments{
 		Run: run,
 	}, _ivOpts...)
-	err, _ := errI.(ex.Error)
 	return err
 }

@@ -13,6 +13,7 @@ import (
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/client"
+	"go.yorun.ai/vine/internal/core/rpc/spec"
 	"go.yorun.ai/vine/internal/core/rpc/transport/inproc"
 	"go.yorun.ai/vine/internal/core/skel"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
@@ -174,15 +175,18 @@ func TestDevRuntimeAcceptsNetworkAppRegistration(t *testing.T) {
 		inproc.Endpoint(hubapp.HubAdminInprocHostPath, coreapp.PathRpcInvoke),
 		externalApp,
 	)
-	skeletonClient := hubskeled.NewSkeletonServiceClientER(hubRPCClient)
+	method, ok := spec.GetMethodInfo("vine.hub.admin.SkeletonApiService", "listData")
+	if !ok {
+		t.Fatal("missing SkeletonApiService.listData")
+	}
 	controlRPCClient := newDevTestRPCClient(
 		inproc.Endpoint(hubapp.HubControlInprocHostPath, coreapp.PathRpcInvoke),
 		externalApp,
 	)
-	if _, err := hubskeled.NewSkeletonServiceClientER(controlRPCClient).ListData(); err == nil {
+	if _, err := controlRPCClient.InvokeAs[[]hubskeled.SkeletonData](method, nil); err == nil {
 		t.Fatal("expected Hub Control API to reject admin service")
 	}
-	items, listErr := skeletonClient.ListData()
+	items, listErr := hubRPCClient.InvokeAs[[]hubskeled.SkeletonData](method, nil)
 	if listErr != nil {
 		t.Fatalf("list Hub data schemas: %v", listErr)
 	}

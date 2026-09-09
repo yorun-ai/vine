@@ -23,6 +23,8 @@ data ServiceDebugServiceItem {
     @desc("Service schema hash")
     schemaHash: string
 
+    api: bool
+
     @desc("Whether the Service is deprecated")
     deprecated: bool
 
@@ -289,7 +291,7 @@ data EventDebugEmitRequest {
 }
 
 @desc("Hub Dashboard Service debugging service")
-service ServiceDebugService {
+api service ServiceDebugApiService {
     for AdminActor
 
     noauth
@@ -358,7 +360,7 @@ service ServiceDebugService {
 }
 
 @desc("Hub Dashboard Task Debugging Service")
-service TaskDebugService {
+api service TaskDebugApiService {
     for AdminActor
 
     noauth
@@ -407,7 +409,7 @@ service TaskDebugService {
 }
 
 @desc("Hub Dashboard Event Debugging Service")
-service EventDebugService {
+api service EventDebugApiService {
     for AdminActor
 
     noauth

@@ -21,8 +21,8 @@ const (
 	appConfigStatusMismatch     = "MISMATCH"
 )
 
-type AppConfigServiceServerImpl struct {
-	skeled.DefaultAppConfigServiceServer
+type AppConfigApiServiceServerImpl struct {
+	skeled.DefaultAppConfigApiServiceServer
 
 	AppConfigCore *core.AppConfigCore `inject:""`
 	SchemaRepo    core.SchemaRepo     `inject:""`
@@ -33,7 +33,7 @@ type _AppConfigListItem struct {
 	CreatedAt  time.Time
 }
 
-func (s *AppConfigServiceServerImpl) List() []skeled.AppConfigItem {
+func (s *AppConfigApiServiceServerImpl) List() []skeled.AppConfigItem {
 	items := s.AppConfigCore.List()
 	schemas := s.SchemaRepo.ListAppConfigSchemas()
 	enumSchemas := s.SchemaRepo.ListEnumSchemas()
@@ -60,17 +60,17 @@ func (s *AppConfigServiceServerImpl) List() []skeled.AppConfigItem {
 	return serverAppConfigItems(sortedServerAppConfigItems(ret))
 }
 
-func (s *AppConfigServiceServerImpl) Get(id int) skeled.AppConfigItem {
+func (s *AppConfigApiServiceServerImpl) Get(id int) skeled.AppConfigItem {
 	return s.toServerAppConfigItem(s.AppConfigCore.Get(id))
 }
 
-func (s *AppConfigServiceServerImpl) Update(id int, update skeled.AppConfigUpdate) skeled.AppConfigItem {
+func (s *AppConfigApiServiceServerImpl) Update(id int, update skeled.AppConfigUpdate) skeled.AppConfigItem {
 	return s.toServerAppConfigItem(s.AppConfigCore.Update(id, core.AppConfigUpdate{
 		Value: update.Value,
 	}))
 }
 
-func (s *AppConfigServiceServerImpl) Create(creation skeled.AppConfigCreation) skeled.AppConfigItem {
+func (s *AppConfigApiServiceServerImpl) Create(creation skeled.AppConfigCreation) skeled.AppConfigItem {
 	ex.PanicNewIfNot(isValidConfigSkelName(creation.SkelName), ex.OperationFailed, ex.F("invalid config skelName %q", creation.SkelName))
 	return s.toServerAppConfigItem(s.AppConfigCore.Create(core.AppConfigCreation{
 		Name:  creation.SkelName,
@@ -78,14 +78,14 @@ func (s *AppConfigServiceServerImpl) Create(creation skeled.AppConfigCreation) s
 	}))
 }
 
-func (s *AppConfigServiceServerImpl) Remove(id int) bool {
+func (s *AppConfigApiServiceServerImpl) Remove(id int) bool {
 	item := s.AppConfigCore.Get(id)
 	schema := findConfigSchema(item.Name, s.SchemaRepo.ListAppConfigSchemas())
 	ex.PanicNewIfNot(schema == nil, ex.OperationFailed, ex.F("config %q is not unused", item.Name))
 	return s.AppConfigCore.Remove(id)
 }
 
-func (s *AppConfigServiceServerImpl) toServerAppConfigItem(item *core.AppConfig) skeled.AppConfigItem {
+func (s *AppConfigApiServiceServerImpl) toServerAppConfigItem(item *core.AppConfig) skeled.AppConfigItem {
 	return toServerAppConfigItem(item, findConfigSchema(item.Name, s.SchemaRepo.ListAppConfigSchemas()), s.SchemaRepo.ListEnumSchemas())
 }
 

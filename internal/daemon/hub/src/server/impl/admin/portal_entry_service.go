@@ -5,14 +5,14 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 )
 
-type PortalEntryServiceServerImpl struct {
-	skeled.DefaultPortalEntryServiceServer
+type PortalEntryApiServiceServerImpl struct {
+	skeled.DefaultPortalEntryApiServiceServer
 
 	PortalEntryCore *core.PortalEntryCore `inject:""`
 	PortalSiteCore  *core.PortalSiteCore  `inject:""`
 }
 
-func (s *PortalEntryServiceServerImpl) List() []skeled.PortalEntry {
+func (s *PortalEntryApiServiceServerImpl) List() []skeled.PortalEntry {
 	entries := s.PortalEntryCore.List()
 	ret := make([]skeled.PortalEntry, 0, len(entries))
 	for _, entry := range entries {
@@ -21,7 +21,7 @@ func (s *PortalEntryServiceServerImpl) List() []skeled.PortalEntry {
 	return ret
 }
 
-func (s *PortalEntryServiceServerImpl) UpdateAccess(scheme string, host string, port int, update skeled.PortalEntryAccessUpdate) skeled.PortalEntry {
+func (s *PortalEntryApiServiceServerImpl) UpdateAccess(scheme string, host string, port int, update skeled.PortalEntryAccessUpdate) skeled.PortalEntry {
 	entry := s.PortalEntryCore.UpdateAccess(scheme, host, port, core.PortalEntryAccessUpdate{
 		Scheme: update.Scheme,
 		Host:   update.Host,
@@ -30,7 +30,7 @@ func (s *PortalEntryServiceServerImpl) UpdateAccess(scheme string, host string, 
 	return s.toServerPortalEntry(entry)
 }
 
-func (s *PortalEntryServiceServerImpl) toServerPortalEntry(entry core.PortalEntry) skeled.PortalEntry {
+func (s *PortalEntryApiServiceServerImpl) toServerPortalEntry(entry core.PortalEntry) skeled.PortalEntry {
 	rules := make([]skeled.PortalEntryRule, 0, len(entry.Rules))
 	for _, rule := range entry.Rules {
 		rules = append(rules, s.toServerPortalEntryRule(rule))
@@ -44,7 +44,7 @@ func (s *PortalEntryServiceServerImpl) toServerPortalEntry(entry core.PortalEntr
 	}
 }
 
-func (s *PortalEntryServiceServerImpl) toServerPortalEntryRule(rule core.PortalEntryRule) skeled.PortalEntryRule {
+func (s *PortalEntryApiServiceServerImpl) toServerPortalEntryRule(rule core.PortalEntryRule) skeled.PortalEntryRule {
 	var site *skeled.PortalSite
 	if rule.Site != nil {
 		value := toServerPortalSite(*rule.Site, s.PortalSiteCore.RpcgwServices(*rule.Site))
