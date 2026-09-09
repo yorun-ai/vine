@@ -8,6 +8,7 @@ import (
 
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/gwutil"
+	vrpchttp "go.yorun.ai/vrpc/transport/http"
 )
 
 const (
@@ -16,7 +17,22 @@ const (
 )
 
 func requestWithRpcOptionsTimeout(request *http.Request, gatewayContext context.Context) (*http.Request, context.CancelFunc, error) {
-	options, err := rpchttp.DecodeOptionsFromHeader(request.Header)
+	header := request.Header.Clone()
+	values := header.Values(rpchttp.HeaderRpcOptions)
+	if len(values) > 1 {
+		return request, nil, fmt.Errorf("invalid request header %s", rpchttp.HeaderRpcOptions)
+	}
+	if len(values) == 1 {
+		fields, err := vrpchttp.DecodeFields(values[0])
+		if err != nil {
+			return request, nil, fmt.Errorf("invalid request header %s", rpchttp.HeaderRpcOptions)
+		}
+		header.Del(rpchttp.HeaderRpcOptions)
+		if timeout := fields["timeout"]; timeout != "" {
+			header.Set(rpchttp.HeaderRpcOptions, vrpchttp.EncodeFields("timeout", timeout))
+		}
+	}
+	options, err := rpchttp.DecodeOptionsFromHeader(header)
 	if err != nil {
 		return request, nil, err
 	}
@@ -31,7 +47,7 @@ func requestWithRpcOptionsTimeout(request *http.Request, gatewayContext context.
 
 	ctx, cancel := gwutil.ContextWithoutClientCancel(request.Context(), gatewayContext, timeout)
 	next := request.Clone(ctx)
-	next.Header = request.Header.Clone()
+	next.Header = header
 	rpchttp.EncodeOptionsToHeader(next.Header, &rpchttp.Options{Timeout: timeout})
 	return next, cancel, nil
 }

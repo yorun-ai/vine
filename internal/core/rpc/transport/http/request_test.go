@@ -448,3 +448,31 @@ func testInitiator(t *testing.T) meta.Initiator {
 	}
 	return initiator
 }
+
+func TestEncodeRequestDestination(t *testing.T) {
+	rpcCtx := testContext()
+	ctx, cancel := context.WithTimeout(rpcCtx, time.Minute)
+	defer cancel()
+	for _, destination := range []string{"target.app", ""} {
+		msg := &spec.RequestImpl{ContextValue: ctx, TraceValue: rpcCtx.Trace(), ClientValue: rpcCtx.Client(), DestinationValue: destination, MethodInfoValue: testServiceInfo().Methods()[0], ArgumentsValue: &pingArguments{Name: "vine"}}
+		req, err := encodeRequest("http://localhost:8080", msg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Body.Close()
+		got, err := ConsumeDestinationFromHeader(req.Header)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != destination {
+			t.Fatalf("destination = %q, want %q", got, destination)
+		}
+		options, err := DecodeOptionsFromHeader(req.Header)
+		if err != nil || options.Timeout <= 0 || options.Timeout > time.Minute {
+			t.Fatalf("timeout not preserved: %v, %v", options, err)
+		}
+		if req.Header.Get("vrpc-destination") != "" {
+			t.Fatal("unexpected destination header")
+		}
+	}
+}

@@ -318,3 +318,20 @@ func TestParseResponseReturnsResponseResultAsIs(t *testing.T) {
 		t.Fatalf("unexpected result: %#v", got)
 	}
 }
+
+func TestInvokerDestination(t *testing.T) {
+	rpcContext := &meta.ContextImpl{Context: context.Background(), TraceValue: meta.InitialTrace()}
+	c := New(Option{Context: rpcContext, ClientApp: testClientApp(t), Logger: testClientLogger()})
+	for _, destination := range []string{"target.app", ""} {
+		var options []InvokeOption
+		if destination != "" {
+			options = append(options, WithDestination(destination))
+		}
+		invoker := c.newInvoker(testMethodInfo(), nil, options)
+		request := invoker.buildRequest()
+		defer invoker.cleanup()
+		if request.Destination() != destination || request.Client() != c.clientApp {
+			t.Fatalf("destination or caller identity changed: %v", request)
+		}
+	}
+}

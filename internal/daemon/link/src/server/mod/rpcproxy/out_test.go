@@ -3,8 +3,11 @@ package rpcproxy
 import (
 	"context"
 	"fmt"
+	"go.yorun.ai/vine/internal/core/rpc/spec"
+	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -143,16 +146,74 @@ func TestApiServiceRejectsBackendCallsAtLink(t *testing.T) {
 			caller := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")
 			target := mustMetaApp(t, "target.app", "22222222-2222-2222-2222-222222222222")
 			proxy := newTestRpcProxy(t, newTestHubRedisClient(map[string][]redised.RpcServiceRegistration{
-				"demo.OrderService": {{ServiceName: "demo.OrderService", Api: true, AppInstanceId: target.InstanceId(), Endpoint: "http://remote.invalid/rpc/proxy/in/target"}},
+				"demo.OrderService": {{ServiceName: "demo.OrderService", Api: true, AppName: target.Name(), AppInstanceId: target.InstanceId(), Endpoint: "http://remote.invalid/rpc/proxy/in/target"}},
 			}))
 			registerLocalApp(proxy, caller, "http://127.0.0.1:8080"+testPathRpcInvoke, "http://127.0.0.1:8080", nil)
 			if local {
 				registerLocalApp(proxy, target, "http://127.0.0.1:8081"+testPathRpcInvoke, "http://127.0.0.1:8081", []string{"demo.OrderService"})
 			}
-			_, err := proxy.resolveOutboundEndpoint("demo.OrderService", caller)
-			if err == nil || err.Code() != ex.ClientForbidden {
-				t.Fatalf("API backend call was not rejected: %v", err)
+			for _, destination := range []string{"", target.Name()} {
+				_, err := proxy.resolveOutboundTarget("demo.OrderService", caller, destination)
+				if err == nil || err.Code() != ex.ClientForbidden {
+					t.Fatalf("API backend call was not rejected: %v", err)
+				}
 			}
 		})
+	}
+}
+
+func TestOutboundDestinationTransports(t *testing.T) {
+	method := ensureTestInboundMethodInfo()
+	service := method.Service().SkelName()
+	caller := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")
+	target := mustMetaApp(t, "target.app", "22222222-2222-2222-2222-222222222222")
+	proxy := newTestRpcProxy(t, newTestHubRedisClient(map[string][]redised.RpcServiceRegistration{
+		service: {{ServiceName: service, AppName: target.Name(), AppInstanceId: target.InstanceId(), Endpoint: "http://target.invalid"}},
+	}))
+	registerLocalApp(proxy, caller, "http://caller.invalid", "http://caller.invalid", nil)
+	registerLocalApp(proxy, target, "http://target.invalid", "http://target.invalid", []string{service})
+	for _, destination := range []string{target.Name(), "missing.app"} {
+		t.Run("http/"+destination, func(t *testing.T) {
+			called := false
+			proxy.transport = _OutboundRoundTripperFunc(func(r *http.Request) (*http.Response, error) {
+				called = true
+				if got := r.Header.Get(rpchttp.HeaderRpcOptions); got != "timeout=10s,future=value" {
+					t.Errorf("forwarded options: %s", got)
+				}
+				if r.URL.Host != "target.invalid" {
+					t.Errorf("unexpected target: %s", r.URL)
+				}
+				return &http.Response{StatusCode: http.StatusOK, Header: http.Header{}, Body: io.NopCloser(strings.NewReader("ok"))}, nil
+			})
+			req := newInboundProxyRequest(t, caller, method.FullURLPath())
+			req.Header.Set(rpchttp.HeaderRpcOptions, "timeout=10s,future=value,destination="+destination)
+			recorder := httptest.NewRecorder()
+			proxy.handleOut(recorder, req)
+			if called != (destination == target.Name()) {
+				t.Fatalf("forwarded = %v", called)
+			}
+			if !called {
+				assertGatewayErrorStatus(t, recorder.Result(), ex.ServiceUnavailable)
+			}
+		})
+	}
+	proxy.AppMinder.UnregisterInstance(target.InstanceId())
+	endpoint := "rpc+inproc://destination-test/rpc"
+	registerLocalApp(proxy, target, endpoint, "destination-test", []string{service})
+	registerTestInprocHandler(t, endpoint, spec.RpcHandlerFunc(func(req spec.Request) spec.Response {
+		if req.Destination() != "" {
+			t.Error("destination reached server")
+		}
+		return &spec.ResponseImpl{ServerValue: target, MethodValue: method, ErrorValue: ex.NewOK()}
+	}))
+	for _, destination := range []string{target.Name(), "missing.app"} {
+		response := proxy.serveRpcOut(&spec.RequestImpl{ContextValue: context.Background(), ClientValue: caller, DestinationValue: destination, MethodInfoValue: method})
+		want := ex.OK
+		if destination != target.Name() {
+			want = ex.ServiceUnavailable
+		}
+		if response.Error().Code() != want {
+			t.Fatalf("inproc destination %s: %v", destination, response.Error())
+		}
 	}
 }

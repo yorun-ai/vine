@@ -96,6 +96,12 @@ func WithContext(ctx context.Context) InvokeOption {
 	return internalclient.WithContext(ctx)
 }
 
+// WithDestination restricts routing to instances of the named application.
+// The application name must not be empty.
+func WithDestination(appName string) InvokeOption {
+	return internalclient.WithDestination(appName)
+}
+
 // WithTimeout sets the maximum duration of one invocation.
 func WithTimeout(duration time.Duration) InvokeOption {
 	return internalclient.WithTimeout(duration)

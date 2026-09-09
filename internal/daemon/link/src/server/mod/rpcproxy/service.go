@@ -53,12 +53,29 @@ func (p *RpcProxy) releaseInstanceState(appInstanceID string) {
 	}
 }
 
-func (p *RpcProxy) nextServiceEndpoint(serviceName string) (redised.RpcServiceRegistration, bool) {
+func (p *RpcProxy) nextServiceEndpoint(serviceName string, destination string) (redised.RpcServiceRegistration, bool) {
 	p.serviceStateMutex.Lock()
 	defer p.serviceStateMutex.Unlock()
 	state, ok := p.serviceStatesByName[serviceName]
 	if !ok || len(state.endpoints) == 0 {
 		return redised.RpcServiceRegistration{}, false
+	}
+	if destination != "" {
+		endpoints := make([]redised.RpcServiceRegistration, 0)
+		for _, registration := range state.endpoints {
+			if registration.AppName == destination {
+				endpoints = append(endpoints, registration)
+			}
+		}
+		if len(endpoints) == 0 {
+			return redised.RpcServiceRegistration{}, false
+		}
+		if state.nextIndexByDestination == nil {
+			state.nextIndexByDestination = map[string]int{}
+		}
+		index := state.nextIndexByDestination[destination] % len(endpoints)
+		state.nextIndexByDestination[destination] = (index + 1) % len(endpoints)
+		return endpoints[index], true
 	}
 	if state.nextIndex >= len(state.endpoints) {
 		state.nextIndex = 0
@@ -130,6 +147,7 @@ func (p *RpcProxy) rebuildServiceEndpointsLocked(state *_ServiceState) {
 		endpoints = append(endpoints, registration)
 	}
 	state.endpoints = endpoints
+	clear(state.nextIndexByDestination)
 	if len(state.endpoints) == 0 || state.nextIndex >= len(state.endpoints) {
 		state.nextIndex = 0
 	}

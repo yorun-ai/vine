@@ -8,6 +8,18 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.15.6] - 2026-09-09
+
+### Added
+
+- Add `rpc.WithDestination(appName)` to route backend Rpc calls only to
+  instances of the named application, with independent round-robin selection.
+  The name must be non-empty; an unavailable destination returns
+  `ServiceUnavailable` without falling back to another application.
+- Carry the destination as a private App-to-Link extension in `vrpc-options`.
+  Link consumes it and forwards other options; Portal strips unknown options.
+  Upgrade Link before using the option, since older versions do not support it.
+
 ## [0.15.5] - 2026-09-09
 
 ### Changed

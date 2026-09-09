@@ -29,6 +29,7 @@ func TestFacadeContextAndExecutors(t *testing.T) {
 	}
 
 	var invokeOption rpc.InvokeOption = rpc.WithTimeout(time.Second)
+	var _ rpc.InvokeOption = rpc.WithDestination("target.app")
 	if invokeOption == nil {
 		t.Fatal("expected timeout invocation option")
 	}
