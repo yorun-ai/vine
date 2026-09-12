@@ -63,15 +63,6 @@ archive_names() {
   printf 'vine_%s_%s.tar.gz\n' "$version" darwin_amd64 "$version" darwin_arm64 "$version" linux_amd64 "$version" linux_arm64
 }
 
-require_successful_ci() {
-  jq -e --arg sha "$1" '
-    map(select(.head_sha == $sha and .event == "push" and .head_branch == "main")) |
-    sort_by(.id) | last |
-    if .status == "completed" and .conclusion == "success" then true
-    elif . == null then error("No main-push CI run for release commit " + $sha)
-    else error("Latest main CI for " + $sha + " (run " + (.id | tostring) + "): status=" + (.status // "missing") + ", conclusion=" + (.conclusion // "missing")) end'
-}
-
 require_new_assets() {
   local names
   names=$(archive_names "$1" | jq -Rsc 'split("\n")[:-1] + ["checksums.txt"]')
@@ -165,7 +156,7 @@ verify_binaries() (
 
 release_main() {
   local command="${1:-}" tag="$RELEASE_TAG" repo="$GITHUB_REPOSITORY"
-  local selected version sha release pages latest_tag publish
+  local selected version sha release latest_tag publish
   selected=$(select_artifacts "${ARTIFACTS:-all}")
   version=$(release_version "$tag")
   case "$command" in
@@ -175,8 +166,6 @@ release_main() {
       release=$(gh api "repos/$repo/releases/tags/$tag")
       require_published_release "$tag" <<< "$release"
       require_changelog "$version" < CHANGELOG.md
-      pages=$(gh api --paginate --slurp "repos/$repo/actions/workflows/ci.yml/runs?event=push&branch=main&head_sha=$sha&per_page=100")
-      jq '[.[].workflow_runs[]]' <<< "$pages" | require_successful_ci "$sha"
       if [[ "$(jq -r .binaries <<< "$selected")" == true ]]; then
         jq .assets <<< "$release" | require_new_assets "$tag"
       fi

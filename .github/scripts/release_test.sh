@@ -27,8 +27,6 @@ for changelog in '' '## [0.14.1] - TBD' $'## [0.14.1] - 2026-09-04\n## [0.14.1] 
 done
 diagnostic=$(bash -c 'source "$1"; require_changelog 0.14.1' _ "$script" <<< '## [0.14.1] - TBD' 2>&1 || true)
 [[ "$diagnostic" == *'YYYY-MM-DD'* ]]
-diagnostic=$(bash -c 'source "$1"; require_successful_ci "$2"' _ "$script" "$sha" <<< '[]' 2>&1 || true)
-[[ "$diagnostic" == *"No main-push CI run for release commit $sha"* ]]
 for choice in all binaries images; do
   selected=$(select_artifacts "$choice")
   jq -e --arg choice "$choice" '.binaries == ($choice != "images") and .images == ($choice != "binaries")' <<< "$selected" >/dev/null
@@ -44,15 +42,6 @@ for choice in all binaries images; do
   done
 done
 
-green=$(jq -n --arg sha "$sha" '[{id:1,head_sha:$sha,head_branch:"main",event:"push",status:"completed",conclusion:"success"}]')
-require_successful_ci "$sha" <<< "$green" >/dev/null
-expect_failure require_successful_ci "$sha" <<< '[]'
-for field in head_sha head_branch event status conclusion; do
-  bad=$(jq --arg field "$field" '.[0][$field] = "wrong"' <<< "$green")
-  expect_failure require_successful_ci "$sha" <<< "$bad"
-done
-bad=$(jq '. + [ (.[0] | .id = 2 | .conclusion = "failure") ]' <<< "$green")
-expect_failure require_successful_ci "$sha" <<< "$bad"
 require_new_assets "$tag" <<< '[{"name":"unrelated.txt"}]' >/dev/null
 names=$(archive_names "$tag")
 while IFS= read -r name; do

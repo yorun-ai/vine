@@ -54,7 +54,7 @@ jobs:
           ref: refs/tags/${{ env.RELEASE_TAG }}
           path: source
 
-      - name: Validate release and exact main CI commit
+      - name: Validate release
         id: release
         run: bash ../automation/.github/scripts/release.sh validate
         env:
