@@ -13,7 +13,7 @@ expect_failure() {
 
 tag=v0.14.1
 (
-  read_url() { printf '{"token":"fixture-token"}'; }
+  read_url() { printf '{"token":"fixture-token"}'; return "${TOKEN_EXIT:-0}"; }
   curl() { printf '%s' "$REGISTRY_STATUS"; return "${CURL_EXIT:-0}"; }
   export -f read_url curl image_build_needed fail
   expect_registry_failure() {
@@ -32,9 +32,7 @@ tag=v0.14.1
   export REGISTRY_STATUS=404 CURL_EXIT=28
   expect_registry_failure
   export CURL_EXIT=0
-  # shellcheck disable=SC2329
-  read_url() { return 22; }
-  export -f read_url
+  export TOKEN_EXIT=22
   expect_registry_failure
 )
 sha=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
