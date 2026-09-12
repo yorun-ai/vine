@@ -12,7 +12,7 @@ classify_changes() {
         ((startswith("test/") or startswith("script/")) and endswith(".sh"))) and
         (test("\\.(md|mdx)$") | not)) as $workflow |
       any(.[]; startswith("internal/daemon/hub/src/dashboard/") and (test("\\.(md|mdx)$") | not)) as $frontend |
-      ($policy or $frontend or any(.[]; . == "script/build-dashboard-assets.sh")) as $dashboard |
+      ($ci or $frontend or any(.[]; . == "script/build-dashboard-assets.sh" or . == ".github/workflows/ci-dashboard.yml")) as $dashboard |
       any(.[]; . == "go.mod" or . == "go.sum") as $dependencies |
       any(.[]; endswith(".go")) as $go_files |
       any(.[]; endswith(".go") and (endswith("_test.go") | not)) as $go_source |
@@ -31,7 +31,8 @@ classify_changes() {
         dashboard: $dashboard,
         container: ($packaging or $dependencies or $runtime),
         workflow: $workflow,
-        k8s: ($policy or any(.[]; (startswith("deploy/k8s/") and (test("\\.(md|mdx)$") | not)) or . == "test/k8s.sh"))
+        k8s: ($ci or any(.[]; (startswith("deploy/k8s/") and (test("\\.(md|mdx)$") | not)) or . == "test/k8s.sh" or . == ".github/workflows/ci-k8s.yml")),
+        "release-policy": ($ci or any(.[]; . == ".github/workflows/release.yml" or startswith(".github/scripts/release")))
       }
     end'
 }
@@ -41,10 +42,16 @@ verify_ci_results() {
     . as $needs |
     all(["changes", "security"][];
       . as $job | $needs[$job].result == "success") and
-    all(["go-test", "go-static", "go-race", "licenses", "dashboard", "container", "workflow", "k8s"][];
-      . as $job | $needs.changes.outputs[$job] as $selected |
-      ($selected == "true" and $needs[$job].result == "success") or
-      ($selected == "false" and $needs[$job].result == "skipped"))
+    all(["go-test", "go-static", "go-race", "licenses", "dashboard", "container", "workflow", "k8s", "release-policy"][];
+      . as $flag | $needs.changes.outputs[$flag] | . == "true" or . == "false") and
+    all(["go-test", "go-race", "dashboard", "container", "workflow", "k8s", "go-checks"][];
+      . as $job |
+      (if $job == "go-checks" then
+        ($needs.changes.outputs["go-static"] == "true" or $needs.changes.outputs.licenses == "true")
+      else $needs.changes.outputs[$job] == "true" end) as $selected |
+      ($selected and $needs[$job].result == "success") or
+      (($selected | not) and $needs[$job].result == "skipped")) and
+    ($needs.changes.outputs["release-policy"] != "true" or $needs.changes.outputs.workflow == "true")
     | if . then true else error("CI failed or contains an unexpected skipped job") end'
 }
 

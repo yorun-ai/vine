@@ -31,9 +31,10 @@ fail the gate.
 | Dockerfile or Docker ignore rules | Hub image build |
 | Kubernetes manifests or their validation script | Render and validate Kubernetes overlays; shell scripts also select workflow checks |
 | License inventory or its generator | License checks; the generator also selects workflow checks |
-| CI workflow | Go checks, license checks, Hub image build and workflow checks |
+| CI orchestration workflow | All optional checks, to validate job wiring |
+| Dashboard/Kubernetes reusable workflow | Its corresponding check and workflow lint |
 | Classification helpers | All optional checks, to validate the gate and its wiring |
-| Release workflow/helpers | Workflow checks and Hub image build |
+| Release workflow/helpers | Workflow checks, release policy/metadata checks and Hub image build |
 | Other workflow or shell scripts | Workflow checks |
 
 Go tests cover all packages when selected; PRs do not maintain a dependency-based
@@ -46,14 +47,16 @@ The ordinary Go test job also runs the separate build-tagged goroutine leak test
 PRs run ordinary tests and targeted race checks. Full shuffled and race suites are
 available through local release validation when needed.
 Race and leak scripts disable implicit vet,
-because the static job runs full vet once.
+because the Go checks job runs full vet once. Static checks and license validation
+share one job and Go setup, but retain independent step conditions. License-only
+changes do not run vet or module tidiness checks.
 
 Go module and backend production input changes validate the Hub image in the PR.
 There is no main or tag CI. PR image builds read the shared cache without exporting
 it. Pure frontend changes select the Dashboard build, not a rebuild of the unchanged
-embedded archive. CI workflow changes do not select Dashboard or Kubernetes checks;
-validate those jobs locally when changing their steps. Classification helper changes
-still select all jobs to exercise the complete gate.
+embedded archive. Dashboard and Kubernetes steps live in reusable workflows; changes to either
+select that check. The orchestration workflow and classification helpers still
+select all jobs to exercise their wiring and the complete gate.
 
 Tests use the latest Go `1.27.x`; container and release builds use Go `1.27.1`.
 PR updates cancel older runs for the same PR.
@@ -129,7 +132,11 @@ GOWORK=off go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
 git diff --check
 ```
 
-Workflow CI also exercises the actual pinned Docker metadata action against a
+Release policy tests and the metadata fixture run only when the release workflow,
+release helpers, CI orchestration or classification helpers change. Other workflow
+and test-script edits run lint and CI policy tests without release checks.
+
+For those release-related changes, workflow CI exercises the actual pinned Docker metadata action against a
 detached checkout with tag refs, without publishing. Keep this regression check
 when changing checkout behavior or metadata configuration. Test all three image
 targets when changing shared image stages or release publication.
