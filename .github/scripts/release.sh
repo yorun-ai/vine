@@ -107,6 +107,22 @@ verify_archive_contents() (
   sha256sum --check --strict checksums.txt
 )
 
+image_build_needed() {
+  local image="$1" tag="$2" token status
+  token=$(read_url --user "$GITHUB_ACTOR:$GH_TOKEN" \
+    "https://ghcr.io/token?service=ghcr.io&scope=repository:$image:pull" | jq -er .token) || return $?
+  status=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 \
+    --output /dev/null --write-out '%{http_code}' \
+    -H "Authorization: Bearer $token" \
+    -H 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json' \
+    "https://ghcr.io/v2/$image/manifests/$tag") || return $?
+  case "$status" in
+    200) echo false ;;
+    404) echo true ;;
+    *) fail "Cannot check ghcr.io/$image:$tag (HTTP $status)"; return 1 ;;
+  esac
+}
+
 image_platforms() {
   jq -e '
     [.manifests[] | select(.platform.os != "unknown")] |
@@ -169,6 +185,14 @@ release_main() {
   selected=$(select_artifacts "${ARTIFACTS:-all}")
   version=$(release_version "$tag")
   case "$command" in
+    image-build-needed)
+      case "${IMAGE_TARGET:-}" in hub|link|portal) ;; *) fail "Invalid image target"; return 1 ;; esac
+      local image build
+      image="$(printf '%s' "${repo%%/*}" | tr '[:upper:]' '[:lower:]')/vine-$IMAGE_TARGET"
+      build=$(image_build_needed "$image" "$tag")
+      printf 'build=%s\n' "$build" >> "$GITHUB_OUTPUT"
+      if [[ "$build" == false ]]; then echo "Skipping existing ghcr.io/$image:$tag; final release verification still applies"; fi
+      ;;
     validate)
       sha=$(git rev-parse HEAD)
       require_release_checkout "$tag" "$sha"
@@ -212,7 +236,7 @@ release_main() {
       fi
       printf 'publish-latest=%s\n' "$publish" >> "$GITHUB_OUTPUT"
       ;;
-    *) echo "Usage: release.sh validate|preflight-binaries|verify|latest-eligible|verify-latest" >&2; return 1 ;;
+    *) echo "Usage: release.sh validate|preflight-binaries|image-build-needed|verify|latest-eligible|verify-latest" >&2; return 1 ;;
   esac
 }
 
