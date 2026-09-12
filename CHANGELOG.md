@@ -8,7 +8,12 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.15.8] - 2026-09-13
+
 ### Fixed
+
+- Release archives embed the exact tagged Go module version and clean source
+  revision, instead of an untagged pseudo-version.
 
 - Embed the IANA timezone database in the Vine binary so cron expressions with
   `CRON_TZ`, such as `CRON_TZ=Asia/Shanghai 0 1 * * *`, and database timestamp

@@ -22,6 +22,7 @@ env:
   GO_VERSION: '1.27.1'
   RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
   ARTIFACTS: ${{ inputs.artifacts || 'all' }}
+  GOWORK: 'off'
 
 concurrency:
   group: release-${{ github.event.release.tag_name || inputs.tag }}
@@ -79,6 +80,7 @@ jobs:
       - name: Check out release
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
+          fetch-depth: 0
           ref: ${{ needs.validate.outputs.commit }}
           path: source
 
@@ -94,6 +96,8 @@ jobs:
           set -euo pipefail
 
           version="${RELEASE_TAG#v}"
+          revision="$(git rev-parse HEAD)"
+          git tag --points-at HEAD --list "$RELEASE_TAG" | grep -Fx "$RELEASE_TAG"
           ldflags="-s -w -X go.yorun.ai/vine/buildinfo.ldModuleVersion=$RELEASE_TAG"
           mkdir -p dist
 
@@ -108,15 +112,18 @@ jobs:
             archive="vine_${version}_${goos}_${goarch}"
             stage="dist/$archive"
 
+            if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
+              echo "Release builds require a clean Git working tree"
+              exit 1
+            fi
             mkdir -p "$stage"
             GOOS="$goos" GOARCH="$goarch" CGO_ENABLED=0 \
               GOMODCACHE="$RUNNER_TEMP/go-mod" \
               go build -trimpath -ldflags "$ldflags" \
                 -o "$stage/vine" ./cmd/vine
-            go version -m "$stage/vine" | awk '
-              $1 == "mod" && $2 == "go.yorun.ai/vine" { found = 1 }
-              END { exit !found }
-            '
+            go version -m "$stage/vine" | tee "$RUNNER_TEMP/vine-build-info.txt"
+            source ../automation/.github/scripts/release.sh
+            require_binary_metadata "$RELEASE_TAG" "$revision" < "$RUNNER_TEMP/vine-build-info.txt"
             cp LICENSE README.md THIRD_PARTY_LICENSES.txt "$stage/"
             tar -C dist -czf "dist/$archive.tar.gz" "$archive"
           done

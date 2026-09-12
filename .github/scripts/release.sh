@@ -71,6 +71,15 @@ require_new_assets() {
     if length == 0 then true else error("Existing binary assets; use images-only recovery: " + join(", ")) end'
 }
 
+require_binary_metadata() {
+  awk -v version="$1" -v revision="$2" '
+    $1 == "mod" && $2 == "go.yorun.ai/vine" && $3 == version { module_ok = 1 }
+    $1 == "build" && $2 == "vcs.revision=" revision { revision_ok = 1 }
+    $1 == "build" && $2 == "vcs.modified=false" { clean = 1 }
+    END { exit !(module_ok && revision_ok && clean) }
+  ' || { fail "Binary metadata must match clean release $1 at $2"; return 1; }
+}
+
 verify_release_jobs() {
   local selected
   selected=$(select_artifacts "$1")

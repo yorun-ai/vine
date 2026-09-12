@@ -43,6 +43,11 @@ for choice in all binaries images; do
 done
 
 require_new_assets "$tag" <<< '[{"name":"unrelated.txt"}]' >/dev/null
+metadata=$(printf 'mod go.yorun.ai/vine %s\nbuild vcs.revision=%s\nbuild vcs.modified=false\n' "$tag" "$sha")
+require_binary_metadata "$tag" "$sha" <<< "$metadata"
+for bad in "${metadata//$tag/v0.0.0-20260909114016-63ce09d208d1}" "${metadata//$tag/$tag+dirty}" "${metadata//false/true}" "${metadata//$sha/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb}" ''; do
+  expect_failure require_binary_metadata "$tag" "$sha" <<< "$bad"
+done
 names=$(archive_names "$tag")
 while IFS= read -r name; do
   expect_failure require_new_assets "$tag" <<< "$(jq -n --arg name "$name" '[{name:$name}]')"
