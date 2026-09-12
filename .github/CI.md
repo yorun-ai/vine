@@ -36,8 +36,10 @@ fail the gate.
 | Other workflow or shell scripts | Workflow checks |
 
 Go tests cover all packages when selected; PRs do not maintain a dependency-based
-package filter. Backend resource changes include embedded SQL, Dashboard archives,
-and test fixtures. Frontend source and Markdown do not select Go checks by themselves.
+package filter. Test-only Go changes select Go test and targeted race checks but
+skip static checks. Backend resource changes include embedded SQL, Dashboard
+archives, and test fixtures. Frontend source and Markdown do not select Go checks
+by themselves.
 
 The ordinary Go test job also runs the separate build-tagged goroutine leak tests.
 PRs run ordinary tests and targeted race checks. Full shuffled and race suites are
