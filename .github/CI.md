@@ -92,6 +92,13 @@ selected by the change policy.
    promotion jobs may be superseded under GitHub's default concurrency policy;
    rerun a cancelled job if its release is still the intended latest.
 
+Image jobs check their version tag with authenticated GHCR access before building.
+Existing version images are skipped; only HTTP 404 permits a build. Authentication,
+network, and other registry errors fail the job. Final verification still checks
+all three images, so existing invalid images require manual inspection. This
+workflow check does not prevent another registry client from overwriting a tag.
+The `latest` promotion remains unchanged.
+
 Manual runs select `artifacts: all`, `binaries`, or `images`. Use `images` when
 binary assets already exist. The workflow rejects existing expected binary
 assets (including partial uploads), and upload never uses `--clobber`. A partial

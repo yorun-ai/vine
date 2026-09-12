@@ -12,6 +12,29 @@ expect_failure() {
 }
 
 tag=v0.14.1
+(
+  read_url() { printf '{"token":"fixture-token"}'; return "${TOKEN_EXIT:-0}"; }
+  curl() { printf '%s' "$REGISTRY_STATUS"; return "${CURL_EXIT:-0}"; }
+  export -f read_url curl image_build_needed fail
+  expect_registry_failure() {
+    if bash -e -o pipefail -c 'image_build_needed yorun-ai/vine-hub v0.15.8' >/dev/null 2>&1; then
+      echo 'Expected registry check failure' >&2; exit 1
+    fi
+  }
+  export GITHUB_ACTOR=fixture GH_TOKEN=fixture REGISTRY_STATUS=200
+  [[ "$(image_build_needed yorun-ai/vine-hub v0.15.8)" == false ]]
+  export REGISTRY_STATUS=404
+  [[ "$(image_build_needed yorun-ai/vine-hub v0.15.8)" == true ]]
+  for status in 401 403 429 500 503; do
+    export REGISTRY_STATUS="$status"
+    expect_registry_failure
+  done
+  export REGISTRY_STATUS=404 CURL_EXIT=28
+  expect_registry_failure
+  export CURL_EXIT=0
+  export TOKEN_EXIT=22
+  expect_registry_failure
+)
 sha=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 [[ "$(release_version "$tag")" == 0.14.1 ]]
 [[ "$(release_version v0.15.0-rc.1)" == 0.15.0-rc.1 ]]
