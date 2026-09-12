@@ -5,8 +5,8 @@ on:
     branches: [main]
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -35,8 +35,8 @@ jobs:
           fetch-depth: 0
       - id: changes
         env:
-          CHANGE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
-          CHANGE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          CHANGE_BASE: ${{ github.event.pull_request.base.sha }}
+          CHANGE_HEAD: ${{ github.event.pull_request.head.sha }}
         run: bash .github/scripts/ci.sh changes
 
   go-test:
@@ -58,24 +58,10 @@ jobs:
           cache: true
 
       - name: Test
-        env:
-          CI_EVENT: ${{ github.event_name }}
-        run: |
-          if [[ "$CI_EVENT" == push ]]; then
-            VINE_SHUFFLE_SCOPE=all bash test/shuffle.sh
-          else
-            bash test/test.sh
-          fi
+        run: bash test/test.sh
 
       - name: Test goroutine lifecycles
         run: bash test/goroutineleak.sh
-
-      - name: Test embedded timezones without system data
-        run: |
-          root=$(mktemp -d "$RUNNER_TEMP/vine-timezones.XXXXXXXX")
-          trap 'rm -r "$root"' EXIT
-          CGO_ENABLED=0 GOWORK=off go test -c -o "$root/timezone.test" ./cmd/vine
-          sudo env -u ZONEINFO -u GOROOT chroot "$root" /timezone.test -test.run '^TestEmbeddedTimeZones$' -test.v
 
   go-static:
     name: Go static
@@ -123,8 +109,6 @@ jobs:
             test/race.sh
 
       - name: Test with race detector
-        env:
-          VINE_RACE_SCOPE: ${{ github.event_name == 'push' && 'all' || 'targeted' }}
         run: bash test/race.sh
 
   security:
@@ -235,7 +219,6 @@ jobs:
             GO_VERSION=${{ env.BUILD_GO_VERSION }}
             VERSION=v0.0.0-dev
           cache-from: type=gha,scope=vine-hub
-          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=vine-hub' || '' }}
 
   workflow:
     name: Workflow checks

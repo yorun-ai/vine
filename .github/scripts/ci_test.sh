@@ -20,22 +20,21 @@ check_paths() {
 go_jobs='go-test go-static go-race'
 all_jobs="$go_jobs licenses dashboard container workflow k8s"
 check_paths pull_request '' README.md CHANGELOG.md .github/CI.md .github/scripts/README.md deploy/k8s/README.md
-check_paths push "$go_jobs licenses" README.md
 for file in go.mod go.sum app/example.go $'internal/path with\nnewline.go'; do
-  check_paths pull_request "$go_jobs licenses" "$file"
-  check_paths push "$go_jobs licenses container" "$file"
+  check_paths pull_request "$go_jobs licenses container" "$file"
 done
-for file in internal/app/example_test.go internal/daemon/hub/src/server/repo/db/model/sql/sqlite/create_portal_rule.sql internal/daemon/hub/src/server/impl/admin/dashboard/assets/dashboard.tar.zst internal/testdata/input.json; do
-  check_paths pull_request "$go_jobs" "$file"
-  check_paths push "$go_jobs licenses container" "$file"
+check_paths pull_request "go-test go-race" internal/app/example_test.go
+check_paths pull_request "go-test go-race" core/skel/api_test.go
+check_paths pull_request "$go_jobs licenses container" internal/app/example_test.go internal/app/example.go
+for file in internal/daemon/hub/src/server/repo/db/model/sql/sqlite/create_portal_rule.sql internal/daemon/hub/src/server/impl/admin/dashboard/assets/dashboard.tar.zst internal/testdata/input.json; do
+  check_paths pull_request "$go_jobs container" "$file"
 done
 for file in Dockerfile .dockerignore; do
   check_paths pull_request container "$file"
-  check_paths push "$go_jobs licenses container" "$file"
 done
-for file in .github/workflows/ci.yml .github/scripts/ci.sh .github/scripts/ci_test.sh; do
+check_paths pull_request "$go_jobs licenses container workflow" .github/workflows/ci.yml
+for file in .github/scripts/ci.sh .github/scripts/ci_test.sh; do
   check_paths pull_request "$all_jobs" "$file"
-  check_paths push "$all_jobs" "$file"
 done
 for file in .github/workflows/release.yml .github/scripts/release.sh .github/scripts/release_test.sh; do
   check_paths pull_request 'workflow container' "$file"
@@ -51,10 +50,9 @@ check_paths pull_request 'licenses workflow' script/gen-third-party-licenses.sh
 check_paths pull_request 'dashboard workflow' script/build-dashboard-assets.sh
 for file in src/App.tsx package.json pnpm-lock.yaml; do
   check_paths pull_request dashboard "internal/daemon/hub/src/dashboard/$file"
-  check_paths push "$go_jobs licenses dashboard" "internal/daemon/hub/src/dashboard/$file"
 done
 check_paths pull_request '' internal/daemon/hub/src/dashboard/README.md
-check_paths pull_request "$go_jobs licenses dashboard" README.md go.sum internal/daemon/hub/src/dashboard/src/App.tsx
+check_paths pull_request "$go_jobs licenses container dashboard" README.md go.sum internal/daemon/hub/src/dashboard/src/App.tsx
 
 for selected in '' "$all_jobs" "$go_jobs licenses" 'dashboard k8s'; do
   needs=$(jq -n --arg selected "$selected" '
@@ -93,7 +91,6 @@ trap 'rm -rf -- "$directory"' EXIT
   git config user.name 'CI fixture'
   git config user.email 'ci@example.invalid'
   git commit -qm initial --allow-empty
-  base=$(git rev-parse HEAD)
   git checkout -qb feature
   mkdir -p internal
   touch 'internal/example with spaces.go'
@@ -107,11 +104,6 @@ trap 'rm -rf -- "$directory"' EXIT
   advanced_base=$(git rev-parse HEAD)
   GITHUB_EVENT_NAME=pull_request CHANGE_BASE="$advanced_base" CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/output" bash "$script" changes >/dev/null
   diff -u <(printf '%s\0' 'internal/example with spaces.go' | classify_changes pull_request | jq -r 'to_entries[] | "\(.key)=\(.value)"') "$directory/output"
-  GITHUB_EVENT_NAME=push CHANGE_BASE="$base" CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/push-output" bash "$script" changes >/dev/null
-  grep -qx 'container=true' "$directory/push-output"
-  grep -qx 'go-test=true' "$directory/push-output"
-  GITHUB_EVENT_NAME=push CHANGE_BASE=0000000000000000000000000000000000000000 CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/initial-output" bash "$script" changes >/dev/null
-  [[ "$(grep -c '=true$' "$directory/initial-output")" == 8 ]]
   git checkout -q feature
   git mv 'internal/example with spaces.go' example.md
   git commit -qm rename
@@ -124,7 +116,8 @@ trap 'rm -rf -- "$directory"' EXIT
   deleted=$(git rev-parse HEAD)
   GITHUB_EVENT_NAME=pull_request CHANGE_BASE="$head" CHANGE_HEAD="$deleted" GITHUB_OUTPUT="$directory/delete-output" bash "$script" changes >/dev/null
   grep -qx 'go-test=true' "$directory/delete-output"
-  if GITHUB_EVENT_NAME=push CHANGE_BASE=invalid CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/output" bash "$script" changes >/dev/null 2>&1; then exit 1; fi
-  if GITHUB_EVENT_NAME=push CHANGE_BASE=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/output" bash "$script" changes >/dev/null 2>&1; then exit 1; fi
+  if GITHUB_EVENT_NAME=pull_request CHANGE_BASE=0000000000000000000000000000000000000000 CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/output" bash "$script" changes >/dev/null 2>&1; then exit 1; fi
+  if GITHUB_EVENT_NAME=pull_request CHANGE_BASE=invalid CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/output" bash "$script" changes >/dev/null 2>&1; then exit 1; fi
+  if GITHUB_EVENT_NAME=pull_request CHANGE_BASE=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/output" bash "$script" changes >/dev/null 2>&1; then exit 1; fi
 )
 echo 'CI policy tests passed'

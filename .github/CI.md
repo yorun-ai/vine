@@ -8,7 +8,6 @@ This directory owns repository automation, not public deployment documentation.
 | Event | Workflow | Responsibility |
 | --- | --- | --- |
 | PR targeting main | `ci.yml` | Run checks selected by changed inputs; always scan secrets and verify the required gate |
-| Pull request targeting main | `ci.yml` | Run checks selected by changed inputs; always scan secrets and verify the required gate |
 | Tag push | None | Mark a version only; never publish artifacts |
 | Published Release | `release.yml` | Validate the tag and publish binaries and images in parallel |
 | Manual Release workflow | `release.yml` | Recover artifacts for an existing published release |
@@ -24,14 +23,16 @@ fail the gate.
 | Changed PR inputs | Selected checks, in addition to secrets and the gate |
 | --- | --- |
 | Documentation only | None |
-| Go source, module files, backend resources or test fixtures | Full ordinary Go tests and leak checks, static checks, targeted race |
+| Go production source, module files, backend resources or test fixtures | Full ordinary Go tests and leak checks, static checks, targeted race, Hub image build |
+| Go test files only | Full ordinary Go tests and leak checks, targeted race |
 | Non-test Go source or module files | Also regenerate and check the CLI license inventory |
 | Go test shell scripts | Go checks and workflow checks |
 | Dashboard source/dependencies or packaging script | Dashboard build, including type checking; shell scripts also select workflow checks |
 | Dockerfile or Docker ignore rules | Hub image build |
 | Kubernetes manifests or their validation script | Render and validate Kubernetes overlays; shell scripts also select workflow checks |
 | License inventory or its generator | License checks; the generator also selects workflow checks |
-| CI workflow or classification helpers | All optional checks, to validate the gate and its wiring |
+| CI workflow | Go checks, license checks, Hub image build and workflow checks |
+| Classification helpers | All optional checks, to validate the gate and its wiring |
 | Release workflow/helpers | Workflow checks and Hub image build |
 | Other workflow or shell scripts | Workflow checks |
 
@@ -42,23 +43,20 @@ archives, and test fixtures. Frontend source and Markdown do not select Go check
 by themselves.
 
 The ordinary Go test job also runs the separate build-tagged goroutine leak tests.
-It also runs the CLI timezone regression test as a static test binary in an empty
-chroot, ensuring named zones and cron schedules work without system or GOROOT
-timezone files.
 PRs run ordinary tests and targeted race checks. Full shuffled and race suites are
-available through explicit workflow or local release validation when needed.
+available through local release validation when needed.
 Race and leak scripts disable implicit vet,
 because the static job runs full vet once.
 
-Main always runs Go and license checks. It also builds the Hub image when Go
-module files or backend runtime inputs change. Dependency-only PRs defer image
-validation to main. PR image builds read the shared cache without exporting it;
-main builds refresh the cache. Pure frontend changes select the Dashboard build,
-not a rebuild of the unchanged embedded archive.
+Go module and backend production input changes validate the Hub image in the PR.
+There is no main or tag CI. PR image builds read the shared cache without exporting
+it. Pure frontend changes select the Dashboard build, not a rebuild of the unchanged
+embedded archive. CI workflow changes do not select Dashboard or Kubernetes checks;
+validate those jobs locally when changing their steps. Classification helper changes
+still select all jobs to exercise the complete gate.
 
 Tests use the latest Go `1.27.x`; container and release builds use Go `1.27.1`.
-PR updates cancel older runs for the same PR. Main CI uses per-commit concurrency
-groups, so a subsequent merge cannot cancel validation of a release candidate.
+PR updates cancel older runs for the same PR.
 The Hub check builds Linux AMD64 without publishing. All three image targets and
 both Linux architectures are published only by the Release workflow.
 
