@@ -70,6 +70,13 @@ jobs:
       - name: Test goroutine lifecycles
         run: bash test/goroutineleak.sh
 
+      - name: Test embedded timezones without system data
+        run: |
+          root=$(mktemp -d "$RUNNER_TEMP/vine-timezones.XXXXXXXX")
+          trap 'rm -r "$root"' EXIT
+          CGO_ENABLED=0 GOWORK=off go test -c -o "$root/timezone.test" ./cmd/vine
+          sudo env -u ZONEINFO -u GOROOT chroot "$root" /timezone.test -test.run '^TestEmbeddedTimeZones$' -test.v
+
   go-static:
     name: Go static
     needs: changes

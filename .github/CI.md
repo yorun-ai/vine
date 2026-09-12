@@ -42,6 +42,9 @@ archives, and test fixtures. Frontend source and Markdown do not select Go check
 by themselves.
 
 The ordinary Go test job also runs the separate build-tagged goroutine leak tests.
+It also runs the CLI timezone regression test as a static test binary in an empty
+chroot, ensuring named zones and cron schedules work without system or GOROOT
+timezone files.
 PRs run ordinary tests and targeted race checks. Full shuffled and race suites are
 available through explicit workflow or local release validation when needed.
 Race and leak scripts disable implicit vet,
