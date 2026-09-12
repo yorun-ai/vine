@@ -1,17 +1,14 @@
 package task_test
 
 import (
-	"testing"
+	"reflect"
 
+	"go.yorun.ai/vine/core/di"
 	"go.yorun.ai/vine/core/task"
 )
 
-func TestFacadeCreatesContainerExecutor(t *testing.T) {
-	var executor task.Executor = task.NewContainerExecutor(nil, nil)
-	if executor == nil {
-		t.Fatal("expected container executor")
-	}
-
-	_ = task.LauncherOption{}
-	_ = task.ServerOption{}
-}
+var (
+	_ task.LauncherOption
+	_ task.ServerOption
+	_ func([]reflect.Type, []di.BindApplier) task.Executor = task.NewContainerExecutor
+)

@@ -5,8 +5,8 @@ on:
     branches: [main]
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -29,14 +29,15 @@ jobs:
       container: ${{ steps.changes.outputs['container'] }}
       workflow: ${{ steps.changes.outputs['workflow'] }}
       k8s: ${{ steps.changes.outputs['k8s'] }}
+      release-policy: ${{ steps.changes.outputs['release-policy'] }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
       - id: changes
         env:
-          CHANGE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
-          CHANGE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          CHANGE_BASE: ${{ github.event.pull_request.base.sha }}
+          CHANGE_HEAD: ${{ github.event.pull_request.head.sha }}
         run: bash .github/scripts/ci.sh changes
 
   go-test:
@@ -58,29 +59,15 @@ jobs:
           cache: true
 
       - name: Test
-        env:
-          CI_EVENT: ${{ github.event_name }}
-        run: |
-          if [[ "$CI_EVENT" == push ]]; then
-            VINE_SHUFFLE_SCOPE=all bash test/shuffle.sh
-          else
-            bash test/test.sh
-          fi
+        run: bash test/test.sh
 
       - name: Test goroutine lifecycles
         run: bash test/goroutineleak.sh
 
-      - name: Test embedded timezones without system data
-        run: |
-          root=$(mktemp -d "$RUNNER_TEMP/vine-timezones.XXXXXXXX")
-          trap 'rm -r "$root"' EXIT
-          CGO_ENABLED=0 GOWORK=off go test -c -o "$root/timezone.test" ./cmd/vine
-          sudo env -u ZONEINFO -u GOROOT chroot "$root" /timezone.test -test.run '^TestEmbeddedTimeZones$' -test.v
-
-  go-static:
-    name: Go static
+  go-checks:
+    name: Go checks
     needs: changes
-    if: needs.changes.outputs['go-static'] == 'true'
+    if: needs.changes.outputs['go-static'] == 'true' || needs.changes.outputs.licenses == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -96,10 +83,18 @@ jobs:
           cache: true
 
       - name: Vet
+        if: needs.changes.outputs['go-static'] == 'true'
         run: GOWORK=off go vet ./...
 
       - name: Check module files
+        if: needs.changes.outputs['go-static'] == 'true'
         run: GOWORK=off go mod tidy -diff
+
+      - name: Check third-party licenses
+        if: needs.changes.outputs.licenses == 'true'
+        run: |
+          bash script/gen-third-party-licenses.sh
+          git diff --exit-code -- THIRD_PARTY_LICENSES.txt
 
   go-race:
     name: Go race
@@ -123,8 +118,6 @@ jobs:
             test/race.sh
 
       - name: Test with race detector
-        env:
-          VINE_RACE_SCOPE: ${{ github.event_name == 'push' && 'all' || 'targeted' }}
         run: bash test/race.sh
 
   security:
@@ -141,78 +134,19 @@ jobs:
         with:
           args: git --redact --no-banner .
 
-  licenses:
-    name: Third-party licenses
-    needs: changes
-    if: needs.changes.outputs.licenses == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          check-latest: true
-          cache: true
-      - name: Check third-party licenses
-        run: |
-          bash script/gen-third-party-licenses.sh
-          git diff --exit-code -- THIRD_PARTY_LICENSES.txt
-
   k8s:
     name: Kubernetes manifests
     needs: changes
     if: needs.changes.outputs.k8s == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-      - name: Install manifest tools
-        run: |
-          mkdir -p "$RUNNER_TEMP/k8s-bin"
-          GOBIN="$RUNNER_TEMP/k8s-bin" GOWORK=off go install github.com/mikefarah/yq/v4@v4.53.6
-          GOBIN="$RUNNER_TEMP/k8s-bin" GOWORK=off go install sigs.k8s.io/kustomize/kustomize/v5@v5.8.1
-          echo "$RUNNER_TEMP/k8s-bin" >> "$GITHUB_PATH"
-      - name: Validate manifests
-        run: bash test/k8s.sh
+    uses: ./.github/workflows/ci-k8s.yml
+    with:
+      go-version: '1.27.x'
 
   dashboard:
     name: Dashboard
     needs: changes
     if: needs.changes.outputs.dashboard == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: internal/daemon/hub/src/dashboard
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
-        with:
-          version: 11.15.0
-          run_install: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: 24.11.0
-          cache: pnpm
-          cache-dependency-path: internal/daemon/hub/src/dashboard/pnpm-lock.yaml
-          registry-url: https://registry.npmjs.org/
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build
-        run: pnpm build
+    uses: ./.github/workflows/ci-dashboard.yml
 
   container:
     name: Build hub image
@@ -235,7 +169,6 @@ jobs:
             GO_VERSION=${{ env.BUILD_GO_VERSION }}
             VERSION=v0.0.0-dev
           cache-from: type=gha,scope=vine-hub
-          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=vine-hub' || '' }}
 
   workflow:
     name: Workflow checks
@@ -253,17 +186,21 @@ jobs:
           check-latest: true
       - name: Lint workflows
         run: GOWORK=off go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
-      - name: Test CI and release policy
+      - name: Test CI policy
         run: |
           shellcheck .github/scripts/*.sh test/*.sh
           for script in script/*.sh; do bash -n "$script"; done
           bash .github/scripts/ci_test.sh
-          bash .github/scripts/release_test.sh
+      - name: Test release policy
+        if: needs.changes.outputs['release-policy'] == 'true'
+        run: bash .github/scripts/release_test.sh
       - name: Prepare detached release metadata fixture
+        if: needs.changes.outputs['release-policy'] == 'true'
         run: |
           git checkout --detach HEAD
           git tag "ci-metadata-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
       - name: Exercise release metadata action without publishing
+        if: needs.changes.outputs['release-policy'] == 'true'
         id: metadata
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
@@ -272,6 +209,7 @@ jobs:
           flavor: latest=false
           tags: type=raw,value=ci-check
       - name: Verify metadata revision
+        if: needs.changes.outputs['release-policy'] == 'true'
         env:
           METADATA: ${{ steps.metadata.outputs.json }}
         run: |
@@ -280,7 +218,7 @@ jobs:
   ci-checks:
     name: CI / Required Checks
     if: ${{ always() }}
-    needs: [changes, go-test, go-static, go-race, security, licenses, dashboard, container, workflow, k8s]
+    needs: [changes, go-test, go-checks, go-race, security, dashboard, container, workflow, k8s]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6

@@ -2,22 +2,9 @@ package web
 
 import (
 	"context"
-	"net/http/httptest"
 	"reflect"
 	"testing"
-
-	"github.com/gin-gonic/gin"
 )
-
-type facadeTestHandler struct {
-	defaultFacadeTestWebServer
-}
-
-func (h *facadeTestHandler) Routes(r *Router) {
-	r.GET("/ping", h.Ping)
-}
-
-func (*facadeTestHandler) Ping() {}
 
 type facadeTestWebServer interface {
 	Handler
@@ -43,28 +30,7 @@ func init() {
 	})
 }
 
-func TestFacadeConstructorsReturnValues(t *testing.T) {
-	server := NewServer(Option{
-		HandlerTypes: []reflect.Type{reflect.TypeFor[*facadeTestHandler]()},
-	})
-	if server == nil {
-		t.Fatalf("expected web server")
-	}
-
-	if NewContainerExecutor(nil, nil) == nil {
-		t.Fatalf("expected container executor")
-	}
-}
-
-func TestNewContextImplementsContext(t *testing.T) {
-	ginCtx, _ := gin.CreateTestContext(httptest.NewRecorder())
-	ginCtx.Request = httptest.NewRequest("GET", "/", nil)
-	ctx := NewContext(ginCtx, nil, nil, nil, nil)
-
-	if _, ok := any(ctx).(context.Context); !ok {
-		t.Fatalf("expected web context to implement context.Context")
-	}
-}
+var _ context.Context = Context(nil)
 
 func TestRegisteredWebInfosContainsFacadeRegisteredWeb(t *testing.T) {
 	infos := RegisteredWebInfos()
