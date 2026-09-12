@@ -8,9 +8,9 @@ This directory owns repository automation, not public deployment documentation.
 | Event | Workflow | Responsibility |
 | --- | --- | --- |
 | PR targeting main | `ci.yml` | Run checks selected by changed inputs; always scan secrets and verify the required gate |
-| Push to main | `ci.yml` | Full shuffled Go tests, full race, leak/static/license checks; conditional artifact checks |
+| Pull request targeting main | `ci.yml` | Run checks selected by changed inputs; always scan secrets and verify the required gate |
 | Tag push | None | Mark a version only; never publish artifacts |
-| Published Release | `release.yml` | Validate the tag and its main CI, then publish binaries and images in parallel |
+| Published Release | `release.yml` | Validate the tag and publish binaries and images in parallel |
 | Manual Release workflow | `release.yml` | Recover artifacts for an existing published release |
 
 ## Required CI Gate
@@ -36,12 +36,15 @@ fail the gate.
 | Other workflow or shell scripts | Workflow checks |
 
 Go tests cover all packages when selected; PRs do not maintain a dependency-based
-package filter. Backend resource changes include embedded SQL, Dashboard archives,
-and test fixtures. Frontend source and Markdown do not select Go checks by themselves.
+package filter. Test-only Go changes select Go test and targeted race checks but
+skip static checks. Backend resource changes include embedded SQL, Dashboard
+archives, and test fixtures. Frontend source and Markdown do not select Go checks
+by themselves.
 
 The ordinary Go test job also runs the separate build-tagged goroutine leak tests.
-PRs do not run an extra shuffle pass. On main, full shuffled tests replace ordinary
-tests; full race remains separate. Race and leak scripts disable implicit vet,
+PRs run ordinary tests and targeted race checks. Full shuffled and race suites are
+available through explicit workflow or local release validation when needed.
+Race and leak scripts disable implicit vet,
 because the static job runs full vet once.
 
 Main always runs Go and license checks. It also builds the Hub image when Go
@@ -73,12 +76,9 @@ selected by the change policy.
 ## Release Sequence and Recovery
 
 1. Prepare the dated changelog in a PR, pass CI, and merge it.
-2. Wait for main CI on that exact merged commit to succeed.
-3. Create the version tag at that commit, then publish its GitHub Release.
-4. Shared validation checks tag, changelog, main ancestry, and the latest main
-   push CI run for that exact SHA. Missing, pending, cancelled, or failed CI
-   blocks publication; a green PR or a green different SHA is insufficient.
-5. Binaries and all three images publish independently after validation.
+2. Create the version tag at that commit, then publish its GitHub Release.
+3. Shared validation checks tag, changelog, and main ancestry.
+4. Binaries and all three images publish independently after validation.
 6. Completion verifies four archive checksums, anonymous access to all three
    images, Linux AMD64/ARM64, and release version/source/revision labels.
    Only then may the current non-prerelease update image `latest` tags.

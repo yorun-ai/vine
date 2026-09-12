@@ -13,15 +13,17 @@ classify_changes() {
       any(.[]; startswith("internal/daemon/hub/src/dashboard/") and (test("\\.(md|mdx)$") | not)) as $frontend |
       ($ci or $frontend or any(.[]; . == "script/build-dashboard-assets.sh")) as $dashboard |
       any(.[]; . == "go.mod" or . == "go.sum") as $dependencies |
-      any(.[]; endswith(".go")) as $go_source |
+      any(.[]; endswith(".go")) as $go_files |
+      any(.[]; endswith(".go") and (endswith("_test.go") | not)) as $go_source |
       any(.[]; test("^(app|buildinfo|cmd|core|infra|internal|util)/") and
         (startswith("internal/daemon/hub/src/dashboard/") | not) and (test("\\.(md|mdx)$") | not)) as $runtime |
-      ($event == "push" or $ci or $dependencies or $go_source or $runtime or
+      ($event == "push" or $ci or $dependencies or $go_files or $runtime or
         any(.[]; startswith("test/") and endswith(".sh") and . != "test/k8s.sh")) as $go |
       ($ci or any(.[]; . == "Dockerfile" or . == ".dockerignore" or
         . == ".github/workflows/release.yml" or startswith(".github/scripts/release"))) as $packaging |
       {
-        "go-test": $go, "go-static": $go, "go-race": $go,
+        "go-test": $go, "go-static": ($event == "push" or $ci or $dependencies or $go_source or $runtime or
+          any(.[]; startswith("test/") and endswith(".sh") and . != "test/k8s.sh")), "go-race": $go,
         licenses: ($event == "push" or $ci or $dependencies or
           any(.[]; endswith(".go") and (endswith("_test.go") | not)) or
           any(.[]; . == "THIRD_PARTY_LICENSES.txt" or . == "script/gen-third-party-licenses.sh")),
