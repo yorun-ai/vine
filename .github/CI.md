@@ -140,3 +140,7 @@ For those release-related changes, workflow CI exercises the actual pinned Docke
 detached checkout with tag refs, without publishing. Keep this regression check
 when changing checkout behavior or metadata configuration. Test all three image
 targets when changing shared image stages or release publication.
+
+Binary builds fetch tag refs, require a clean checkout, and verify that each
+binary embeds the exact release version, source revision, and `vcs.modified=false`.
+The CLI version override alone is not sufficient to validate release metadata.
