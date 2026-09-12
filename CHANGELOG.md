@@ -8,6 +8,13 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Fixed
+
+- Embed the IANA timezone database in the Vine binary so cron expressions with
+  `CRON_TZ`, such as `CRON_TZ=Asia/Shanghai 0 1 * * *`, and database timestamp
+  scanning resolve named locations inside the Hub, Link, and Portal images,
+  which do not ship a system tzdata package.
+
 ## [0.15.7] - 2026-09-09
 
 ### Added
