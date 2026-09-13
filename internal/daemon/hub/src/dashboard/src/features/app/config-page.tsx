@@ -1,4 +1,7 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { formatConfigYaml, normalizeConfigYaml } from './config-yaml-document'
 import { ConfigJsonEditor } from './config-json-editor'
+import { normalizeConfigJson, getFreeConfigJsonErrors } from './config-json-document'
 import { useConfigAccess } from '@/lib/config-access'
 import { DomainFilter } from '@/components/domain-filter'
 import { SkelName } from '@/components/skel-name'
@@ -9,8 +12,8 @@ import CodeMirror from '@uiw/react-codemirror'
 import { json } from '@codemirror/lang-json'
 import {
   Braces,
-  CalendarIcon,
   Copy,
+  Replace,
   Loader2,
   Plus,
   RefreshCw,
@@ -23,12 +26,10 @@ import { toast } from 'sonner'
 import {
   DeprecatedBadge,
   DeprecatedNotice,
-  DeprecatedReason,
 } from '@/components/deprecated'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
 import {
   Dialog,
   DialogClose,
@@ -39,21 +40,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
 import { ListDetailLayout } from '@/components/ui/list-detail-layout'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { vrpcClient } from '@/config/vrpc-client'
 import { copyTextToClipboard } from '@/lib/clipboard'
 import { useLocale } from '@/i18n'
@@ -72,6 +60,7 @@ const appConfigService = createAppConfigApiService(vrpcClient)
 const skeletonService = createSkeletonApiService(vrpcClient)
 const jsonExtensions = [json()]
 const APP_CONFIG_LIST_DEFAULT_WIDTH = 352
+const configFormatStorageKey = 'vine.hub.config.editorFormat'
 
 interface AppConfigPageProps {
   routeKey?: string
@@ -197,14 +186,6 @@ function isValidJson(value: string) {
   }
 }
 
-function parseJsonString(value: string) {
-  try {
-    return JSON.parse(value) as unknown
-  } catch {
-    return value
-  }
-}
-
 function parseConfigObject(value: string) {
   try {
     const parsed = JSON.parse(value) as unknown
@@ -227,24 +208,12 @@ function stringifyConfigObject(value: Record<string, unknown>) {
   return JSON.stringify(value, null, 2)
 }
 
-function stringifyFieldJsonValue(value: unknown) {
-  return JSON.stringify(value, null, 2)
-}
-
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Request failed'
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && !Array.isArray(value) && typeof value === 'object'
-}
-
-function valueToInputText(value: unknown) {
-  if (value === null || value === undefined) {
-    return ''
-  }
-
-  return String(value)
 }
 
 function valuesEqual(left: unknown, right: unknown) {
@@ -416,29 +385,6 @@ function collectConfigMismatchIssues(
   return issues
 }
 
-function getMapKeyType(typeText: string) {
-  const matched = /^map<([^,>]+),/.exec(baseConfigType(typeText))
-  return matched?.[1]?.trim() ?? ''
-}
-
-function getMapValueType(typeText: string) {
-  const matched = /^map<[^,>]+,\s*([^>]+)>$/.exec(baseConfigType(typeText))
-  return matched?.[1]?.trim() ?? ''
-}
-
-function getListValueType(typeText: string) {
-  const matched = /^list<([^>]+)>$/.exec(baseConfigType(typeText))
-  return matched?.[1]?.trim() ?? ''
-}
-
-function isIntegerKey(value: string) {
-  return /^-?\d+$/.test(value)
-}
-
-function isNumberText(value: string) {
-  return value.trim() !== '' && Number.isFinite(Number(value))
-}
-
 function isNumericType(typeText: string) {
   return typeText === 'int' || typeText === 'float' || typeText === 'decimal'
 }
@@ -449,417 +395,6 @@ function buildTypeDefinitionIndex(items: Array<SkeletonData>) {
     index.set(item.skelName, item)
   }
   return index
-}
-
-function ConfigTypeText({
-  type,
-  typeIndex,
-  onTypeClick,
-}: {
-  type: string
-  typeIndex: TypeDefinitionIndex
-  onTypeClick: (skelName: string) => void
-}) {
-  const parts: Array<React.ReactNode> = []
-  const pattern = /[A-Za-z_][A-Za-z0-9_.]*/g
-  let cursor = 0
-  let match: RegExpExecArray | null
-
-  while ((match = pattern.exec(type)) !== null) {
-    const token = match[0]
-    const start = match.index
-    const definition = typeIndex.get(token)
-
-    if (start > cursor) {
-      parts.push(type.slice(cursor, start))
-    }
-
-    if (definition) {
-      parts.push(
-        <a
-          key={`${token}:${start}`}
-          href={`/skeleton/data/${encodeURIComponent(definition.skelName)}`}
-          className="font-mono text-primary underline-offset-2 hover:underline"
-          onClick={(event) => {
-            if (shouldUseBrowserNavigation(event)) {
-              return
-            }
-            event.preventDefault()
-            onTypeClick(definition.skelName)
-          }}
-        >
-          {token}
-        </a>,
-      )
-    } else {
-      parts.push(token)
-    }
-
-    cursor = start + token.length
-  }
-
-  if (cursor < type.length) {
-    parts.push(type.slice(cursor))
-  }
-
-  return <>{parts}</>
-}
-
-function parseMapInputValue(value: string, valueType: string) {
-  if (isNumericType(valueType)) {
-    return Number(value)
-  }
-
-  return value
-}
-
-function BooleanSelect({
-  value,
-  onChange,
-}: {
-  value: boolean
-  onChange: (value: boolean) => void
-}) {
-  const { t } = useLocale()
-
-  return (
-    <Select
-      value={String(value)}
-      onValueChange={(nextValue) => onChange(nextValue === 'true')}
-    >
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder={t('common.select')} />
-      </SelectTrigger>
-      <SelectContent align="start">
-        <SelectItem value="true">true</SelectItem>
-        <SelectItem value="false">false</SelectItem>
-      </SelectContent>
-    </Select>
-  )
-}
-
-function isTimeScalarType(typeText: string) {
-  return (
-    typeText === 'timestamp' ||
-    typeText === 'duration' ||
-    typeText === 'localdate' ||
-    typeText === 'localtime' ||
-    typeText === 'localdatetime'
-  )
-}
-
-function splitTimeFraction(value: string) {
-  const matched = /^(.*?)(?:\.(\d+))?$/.exec(value)
-
-  return {
-    base: matched?.[1] ?? value,
-    fraction: matched?.[2] ?? '',
-  }
-}
-
-function splitTimestampValue(value: string) {
-  const matched =
-    /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?)(?:\.(\d+))?(Z|[+-]\d{2}:\d{2})?$/.exec(
-      value,
-    )
-
-  if (!matched) {
-    return {
-      dateTime: value.replace(/(Z|[+-]\d{2}:\d{2})$/, ''),
-      fraction: '',
-    }
-  }
-
-  return {
-    dateTime: matched[1],
-    fraction: matched[2] ?? '',
-  }
-}
-
-function joinTimeFraction(base: string, fraction: string) {
-  const normalizedFraction = fraction.replace(/\D/g, '')
-
-  return normalizedFraction ? `${base}.${normalizedFraction}` : base
-}
-
-function joinTimestampValue(dateTime: string, fraction: string) {
-  return `${joinTimeFraction(dateTime, fraction)}Z`
-}
-
-function parseDurationParts(value: string) {
-  const unitSeconds = new Map([
-    ['h', 3600],
-    ['m', 60],
-    ['s', 1],
-  ])
-  const tokenPattern = /(\d+)(h|m|s)/g
-  let matched: RegExpExecArray | null
-  let totalSeconds = 0
-  let consumed = ''
-
-  while ((matched = tokenPattern.exec(value)) !== null) {
-    totalSeconds += Number(matched[1]) * (unitSeconds.get(matched[2]) ?? 0)
-    consumed += matched[0]
-  }
-
-  if (consumed !== value || !Number.isFinite(totalSeconds)) {
-    return null
-  }
-
-  let rest = Math.floor(totalSeconds)
-  const years = Math.floor(rest / 31_536_000)
-  rest %= 31_536_000
-  const months = Math.floor(rest / 2_592_000)
-  rest %= 2_592_000
-  const days = Math.floor(rest / 86_400)
-  rest %= 86_400
-  const hours = Math.floor(rest / 3600)
-  rest %= 3600
-  const minutes = Math.floor(rest / 60)
-  const seconds = rest % 60
-
-  return {
-    years,
-    months,
-    days,
-    hours,
-    minutes,
-    seconds,
-  }
-}
-
-interface DurationParts {
-  years: number
-  months: number
-  days: number
-  hours: number
-  minutes: number
-  seconds: number
-}
-
-function formatDurationParts(parts: DurationParts) {
-  const segments: Array<string> = []
-  const totalHours =
-    parts.years * 365 * 24 +
-    parts.months * 30 * 24 +
-    parts.days * 24 +
-    parts.hours
-
-  if (totalHours !== 0) {
-    segments.push(`${totalHours}h`)
-  }
-
-  if (parts.minutes !== 0) {
-    segments.push(`${parts.minutes}m`)
-  }
-
-  if (parts.seconds !== 0) {
-    segments.push(`${parts.seconds}s`)
-  }
-
-  if (segments.length === 0) {
-    segments.push('0s')
-  }
-
-  return segments.join('')
-}
-
-function parseLocalDate(value: string) {
-  const matched = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
-
-  if (!matched) {
-    return undefined
-  }
-
-  return new Date(
-    Number(matched[1]),
-    Number(matched[2]) - 1,
-    Number(matched[3]),
-  )
-}
-
-function formatLocalDate(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
-
-function splitLocalDateTime(value: string) {
-  const [date = '', time = ''] = value.split('T')
-  const { base, fraction } = splitTimeFraction(time)
-
-  return {
-    date,
-    time: base,
-    fraction,
-  }
-}
-
-function DatePickerInput({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (value: string) => void
-}) {
-  const { t } = useLocale()
-  const selectedDate = parseLocalDate(value)
-
-  return (
-    <Popover>
-      <PopoverTrigger
-        render={
-          <Button
-            type="button"
-            variant="outline"
-            className={cn(
-              'w-full justify-start text-left font-normal',
-              !value && 'text-muted-foreground',
-            )}
-          />
-        }
-      >
-        <CalendarIcon className="size-4" />
-        {value || t('common.selectDate')}
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <Calendar
-          mode="single"
-          selected={selectedDate}
-          defaultMonth={selectedDate}
-          captionLayout="dropdown"
-          onSelect={(date) => {
-            if (date) {
-              onChange(formatLocalDate(date))
-            }
-          }}
-        />
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-function TimeScalarInput({
-  type,
-  value,
-  onChange,
-}: {
-  type: string
-  value: string
-  onChange: (value: string) => void
-}) {
-  const { t } = useLocale()
-
-  if (type === 'localdate') {
-    return <DatePickerInput value={value} onChange={onChange} />
-  }
-
-  if (type === 'localtime') {
-    const { base } = splitTimeFraction(value)
-
-    return (
-      <Input
-        type="time"
-        step="1"
-        value={base}
-        onChange={(event) => onChange(event.target.value)}
-      />
-    )
-  }
-
-  if (type === 'localdatetime') {
-    const { date, time } = splitLocalDateTime(value)
-
-    return (
-      <div className="grid gap-2 sm:grid-cols-[minmax(10rem,1fr)_10rem]">
-        <DatePickerInput
-          value={date}
-          onChange={(nextDate) => onChange(`${nextDate}T${time}`)}
-        />
-        <Input
-          type="time"
-          step="1"
-          value={time}
-          onChange={(event) => onChange(`${date}T${event.target.value}`)}
-        />
-      </div>
-    )
-  }
-
-  if (type === 'timestamp') {
-    const { dateTime } = splitTimestampValue(value)
-    const { date, time } = splitLocalDateTime(dateTime)
-
-    return (
-      <div className="grid gap-2 sm:grid-cols-[minmax(10rem,1fr)_10rem_auto]">
-        <DatePickerInput
-          value={date}
-          onChange={(nextDate) =>
-            onChange(joinTimestampValue(`${nextDate}T${time}`, ''))
-          }
-        />
-        <Input
-          type="time"
-          step="1"
-          value={time}
-          onChange={(event) =>
-            onChange(joinTimestampValue(`${date}T${event.target.value}`, ''))
-          }
-        />
-        <span className="flex h-9 items-center px-1 text-sm font-medium text-muted-foreground">
-          Z
-        </span>
-      </div>
-    )
-  }
-
-  const durationParts = parseDurationParts(value)
-
-  if (!durationParts) {
-    return (
-      <Input value={value} onChange={(event) => onChange(event.target.value)} />
-    )
-  }
-
-  const updateDurationPart = (key: keyof DurationParts, nextValue: number) => {
-    onChange(
-      formatDurationParts({
-        ...durationParts,
-        [key]: nextValue,
-      }),
-    )
-  }
-
-  return (
-    <div className="grid gap-2 sm:grid-cols-6">
-      {[
-        ['years', t('common.durationYears')],
-        ['months', t('common.durationMonths')],
-        ['days', t('common.durationDays')],
-        ['hours', t('common.durationHours')],
-        ['minutes', t('common.durationMinutes')],
-        ['seconds', t('common.durationSeconds')],
-      ].map(([key, label]) => (
-        <label key={key} className="grid gap-1">
-          <span className="text-xs text-muted-foreground">{label}</span>
-          <Input
-            type="number"
-            min="0"
-            step="1"
-            value={durationParts[key as keyof DurationParts] as number}
-            onChange={(event) =>
-              updateDurationPart(
-                key as keyof DurationParts,
-                Number(event.target.value),
-              )
-            }
-          />
-        </label>
-      ))}
-    </div>
-  )
 }
 
 export function AppConfigPage({ routeKey }: AppConfigPageProps) {
@@ -883,7 +418,6 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
   const effectiveRouteKey = routeKey ?? pathnameRouteKey
   const routeKeyRef = React.useRef(effectiveRouteKey)
   const scrollHideTimers = React.useRef(new WeakMap<Element, number>())
-  const mapKeyInputRefs = React.useRef(new Map<string, HTMLInputElement>())
   const appConfigsRef = React.useRef<Array<AppConfigItem>>([])
   const [appConfigs, setAppConfigs] = React.useState<Array<AppConfigItem>>([])
   const [typeDefinitions, setTypeDefinitions] = React.useState<
@@ -896,9 +430,19 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
     React.useState<AppConfigItem | null>(null)
   const [query, setQuery] = React.useState('')
   const [value, setValue] = React.useState('')
+  const [rawReplacement, setRawReplacement] = React.useState(false)
+  const [editorFormat, setEditorFormat] = React.useState<'json5' | 'yaml'>(() => {
+    try {
+      return window.localStorage.getItem(configFormatStorageKey) === 'yaml' ? 'yaml' : 'json5'
+    } catch {
+      return 'json5'
+    }
+  })
+  const [replaceFormat, setReplaceFormat] = React.useState<'json5' | 'yaml'>('json5')
+  const [replaceDialogOpen, setReplaceDialogOpen] = React.useState(false)
+  const [replaceDraft, setReplaceDraft] = React.useState('')
   const [jsonDraftInvalid, setJsonDraftInvalid] = React.useState(false)
   const [jsonEditorRevision, setJsonEditorRevision] = React.useState(0)
-  const [configView, setConfigView] = React.useState('json')
   const [listLoading, setListLoading] = React.useState(true)
   const [detailLoading, setDetailLoading] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
@@ -918,19 +462,6 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
   const [createMessage, setCreateMessage] = React.useState<string | null>(null)
   const [createMatchedConfig, setCreateMatchedConfig] =
     React.useState<AppConfigItem | null>(null)
-  const [mapKeyDrafts, setMapKeyDrafts] = React.useState<
-    Record<string, string>
-  >({})
-  const [mapValueDrafts, setMapValueDrafts] = React.useState<
-    Record<string, string>
-  >({})
-  const [fieldValueDrafts, setFieldValueDrafts] = React.useState<
-    Record<string, string>
-  >({})
-  const [listValueDrafts, setListValueDrafts] = React.useState<
-    Record<string, string>
-  >({})
-
   const configDomains = React.useMemo(
     () =>
       Array.from(
@@ -977,7 +508,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
     [typeDefinitions],
   )
 
-  const valueIsValidJson = React.useMemo(() => isValidJson(value), [value])
+  const valueIsValidJson = React.useMemo(() => isValidJson(value) && getFreeConfigJsonErrors(value).length === 0, [value])
   const configObject = React.useMemo(() => parseConfigObject(value), [value])
   const selectedIsUnconfigured = selectedAppConfig
     ? configIsUnconfigured(selectedAppConfig)
@@ -1023,20 +554,12 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
   const hasChanges =
     selectedAppConfig !== null &&
     (selectedIsUnconfigured || jsonDraftInvalid || value !== selectedSavedValue)
-  const hasMapErrors =
-    Object.keys(mapKeyDrafts).length > 0 ||
-    Object.keys(mapValueDrafts).length > 0
-  const hasFieldValueErrors = Object.keys(fieldValueDrafts).length > 0
-  const hasListValueErrors = Object.keys(listValueDrafts).length > 0
   const canSave =
     !readOnly &&
     selectedAppConfig !== null &&
     hasChanges &&
     valueIsValidJson &&
     !jsonDraftInvalid &&
-    !hasMapErrors &&
-    !hasFieldValueErrors &&
-    !hasListValueErrors &&
     !saving
 
   const handleScrollAreaScroll = React.useCallback(
@@ -1187,26 +710,23 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
   }, [loadTypeDefinitions])
 
   React.useEffect(() => {
-    routeKeyRef.current = effectiveRouteKey
-    setSelectedKey(effectiveRouteKey ?? null)
-  }, [effectiveRouteKey])
+    try {
+      window.localStorage.setItem(configFormatStorageKey, editorFormat)
+    } catch {
+      return
+    }
+  }, [editorFormat])
 
   React.useEffect(() => {
-    setMapKeyDrafts({})
-    setMapValueDrafts({})
-    setFieldValueDrafts({})
-    setListValueDrafts({})
+    setReplaceDialogOpen(false)
+    setReplaceDraft('')
+    setRawReplacement(false)
   }, [selectedKey])
 
   React.useEffect(() => {
-    if (selectedIsUnused || selectedIsMismatched) {
-      setConfigView('json')
-      return
-    }
-    if (selectedAppConfig) {
-      setConfigView('json')
-    }
-  }, [selectedAppConfig, selectedIsMismatched, selectedIsUnused])
+    routeKeyRef.current = effectiveRouteKey
+    setSelectedKey(effectiveRouteKey ?? null)
+  }, [effectiveRouteKey])
 
   React.useEffect(() => {
     if (!selectedKey) {
@@ -1221,22 +741,6 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
         })
     })
   }, [filteredConfigs, selectedKey])
-
-  React.useEffect(() => {
-    for (const [draftKey, draftValue] of Object.entries(mapKeyDrafts)) {
-      if (draftValue !== '') {
-        continue
-      }
-
-      const input = mapKeyInputRefs.current.get(draftKey)
-      if (!input) {
-        continue
-      }
-
-      input.focus()
-      input.select()
-    }
-  }, [mapKeyDrafts])
 
   React.useEffect(() => {
     if (!selectedKey) {
@@ -1406,40 +910,37 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
       return
     }
 
+    setRawReplacement(false)
     setValue(selectedSavedValue)
     setJsonEditorRevision((revision) => revision + 1)
-    setMapKeyDrafts({})
-    setMapValueDrafts({})
-    setFieldValueDrafts({})
-    setListValueDrafts({})
+  }
+
+  function replaceConfigJson(text: string) {
+    if (readOnly) {
+      return
+    }
+    let nextValue = text
+    let invalid = false
+    try {
+      nextValue = replaceFormat === 'yaml' ? normalizeConfigYaml(text) : normalizeConfigJson(text)
+    } catch {
+      invalid = true
+    }
+    setRawReplacement(invalid)
+    setEditorFormat(replaceFormat)
+    setValue(nextValue)
+    setJsonEditorRevision((revision) => revision + 1)
+    setReplaceDialogOpen(false)
+    setReplaceDraft('')
   }
 
   async function handleCopyConfigJson() {
     try {
-      await copyTextToClipboard(value)
-      toast.success(t('appConfig.jsonCopied'))
+      await copyTextToClipboard(editorFormat === 'yaml' ? formatConfigYaml(value) : value)
+      toast.success(t('appConfig.configCopied'))
     } catch (error) {
       toast.error(getErrorMessage(error))
     }
-  }
-
-  function updateConfigField(fieldName: string, nextValue: unknown) {
-    setValue((current) => {
-      const currentObject = parseConfigObject(current)
-
-      if (!currentObject) {
-        return current
-      }
-
-      return stringifyConfigObject({
-        ...currentObject,
-        [fieldName]: nextValue,
-      })
-    })
-  }
-
-  function handleEnumValueChange(fieldName: string, enumValue: string) {
-    updateConfigField(fieldName, enumValue)
   }
 
   return (
@@ -1952,909 +1453,113 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
           <div className="min-h-0 flex-1 overflow-hidden p-6">
             <div className="flex h-full min-w-0 flex-col gap-4">
               <Tabs
-                value={configView}
-                onValueChange={(nextView) => {
-                  if (
-                    (selectedIsUnused || selectedIsMismatched) &&
-                    nextView === 'fields'
-                  ) {
-                    return
+                value={editorFormat}
+                onValueChange={(format) => {
+                  if (!jsonDraftInvalid && valueIsValidJson && (format === 'json5' || format === 'yaml')) {
+                    setEditorFormat(format)
                   }
-                  setConfigView(nextView)
                 }}
-                className="min-h-0 flex-1"
+                className="min-h-0 flex-1 gap-0 overflow-hidden rounded-lg border border-input bg-background"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <h3 className="text-sm font-semibold text-foreground">
-                      {t('appConfig.fieldsTitle')}
-                    </h3>
-                    {configView === 'json' ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => void handleCopyConfigJson()}
+                <div className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-muted/20 pr-4">
+                  <div className="flex h-full items-center gap-3">
+                    <TabsList className="h-full rounded-none bg-transparent p-0 group-data-horizontal/tabs:h-full" aria-label={t('appConfig.format')}>
+                    {(['json5', 'yaml'] as const).map((format) => (
+                      <TabsTrigger
+                        key={format}
+                        value={format}
+                        className="h-full min-w-20 rounded-none border-0 border-b-2 border-b-transparent px-4 after:hidden data-active:border-b-primary data-active:bg-primary/5 data-active:text-primary data-active:shadow-none dark:data-active:bg-primary/5 dark:data-active:text-primary"
+                        disabled={jsonDraftInvalid || !valueIsValidJson}
                       >
-                        <Copy />
-                        Copy
-                      </Button>
-                    ) : null}
-                  </div>
-                  <TabsList>
-                    {!selectedIsUnused && !selectedIsMismatched ? (
-                      <TabsTrigger value="fields" disabled={jsonDraftInvalid}>
-                        {t('common.fields')}
+                        {format.toUpperCase()}
                       </TabsTrigger>
-                    ) : null}
-                    <TabsTrigger value="json">
-                      JSON5
-                    </TabsTrigger>
-                  </TabsList>
+                    ))}
+                    </TabsList>
+                  </div>
+                  <div className="ml-auto flex shrink-0 items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      disabled={jsonDraftInvalid || !valueIsValidJson}
+                      onClick={() => void handleCopyConfigJson()}
+                    >
+                      <Copy />
+                      {t('appConfig.copy')}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      disabled={readOnly || saving}
+                      onClick={() => {
+                        setReplaceDraft('')
+                        setReplaceFormat(editorFormat)
+                        setReplaceDialogOpen(true)
+                      }}
+                    >
+                      <Replace />
+                      {t('appConfig.replace')}
+                    </Button>
+                    <Dialog open={replaceDialogOpen} onOpenChange={setReplaceDialogOpen}>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>{t('appConfig.replaceTitle')}</DialogTitle>
+                          <DialogDescription>{t('appConfig.replaceDescription')}</DialogDescription>
+                        </DialogHeader>
+                        <select
+                          aria-label={t('appConfig.format')}
+                          className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                          value={replaceFormat}
+                          onChange={(event) => setReplaceFormat(event.target.value as 'json5' | 'yaml')}
+                        >
+                          <option value="json5">JSON5</option>
+                          <option value="yaml">YAML</option>
+                        </select>
+                        <textarea
+                          autoFocus
+                          aria-label={t('appConfig.replaceTitle')}
+                          className="h-64 w-full resize-y rounded-md border border-input p-3 font-mono text-sm"
+                          value={replaceDraft}
+                          onChange={(event) => setReplaceDraft(event.target.value)}
+                        />
+                        <DialogFooter>
+                          <DialogClose render={<Button variant="outline" />}>
+                            {t('action.cancel')}
+                          </DialogClose>
+                          <Button disabled={readOnly || saving} onClick={() => replaceConfigJson(replaceDraft)}>
+                            {t('appConfig.replaceSubmit')}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+
                 </div>
 
-                {!selectedIsUnused && !selectedIsMismatched ? (
-                  <TabsContent
-                    value="fields"
-                    className="scrollbar-reserved min-h-0 overflow-y-auto pr-1"
-                    onScroll={handleScrollAreaScroll}
-                  >
-                    {selectedSchema && selectedSchema.fields.length > 0 ? (
-                      <div className="grid gap-1">
-                        {selectedSchema.fields.map((field) => {
-                          const enumItems = field.enumItems ?? []
-                          const fieldValue = configObject?.[field.name]
-                          const isDirty = dirtyFields.has(field.name)
-                          const listValueType = getListValueType(field.type)
-                          const isListNumericValue =
-                            field.type.startsWith('list<') &&
-                            isNumericType(listValueType)
-                          const isListBooleanValue =
-                            field.type.startsWith('list<') &&
-                            listValueType === 'bool'
-                          const isMapEnumKey =
-                            enumItems.length > 0 &&
-                            field.type.startsWith('map<')
-                          const mapKeyType = getMapKeyType(field.type)
-                          const mapValueType = getMapValueType(field.type)
-                          const isMapIntKey =
-                            field.type.startsWith('map<') &&
-                            mapKeyType === 'int'
-                          const isMapNumericValue =
-                            field.type.startsWith('map<') &&
-                            isNumericType(mapValueType)
-                          const isMapBooleanValue =
-                            field.type.startsWith('map<') &&
-                            mapValueType === 'bool'
-
-                          return (
-                            <div
-                              key={field.name}
-                              data-dirty={isDirty}
-                              onPointerDown={(event) =>
-                                event.stopPropagation()
-                              }
-                              className={cn(
-                                'grid gap-3 border-b border-l-2 border-b-border/50 border-l-transparent px-3 py-3 text-left last:border-b-0 md:grid-cols-[minmax(12rem,17rem)_minmax(0,1fr)] md:items-start',
-                                isDirty &&
-                                  'rounded-md border-l-amber-400 bg-amber-100/70',
-                              )}
-                            >
-                              <div className="min-w-0 text-left">
-                                <div className="flex min-w-0 items-center gap-2">
-                                  <span className="truncate text-sm font-medium text-foreground">
-                                    {field.name}
-                                  </span>
-                                  <DeprecatedBadge
-                                    deprecated={field.deprecated}
-                                  />
-                                </div>
-                                <div className="mt-1 flex min-w-0 items-center gap-2 text-xs leading-5 text-muted-foreground">
-                                  {field.type ? (
-                                    <span className="inline-flex shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] leading-4 text-muted-foreground">
-                                      <ConfigTypeText
-                                        type={field.type}
-                                        typeIndex={typeIndex}
-                                        onTypeClick={
-                                          navigateToTypeDefinition
-                                        }
-                                      />
-                                    </span>
-                                  ) : null}
-                                  <span className="min-w-0 truncate">
-                                    {field.description ??
-                                      t('appConfig.noFieldDescription')}
-                                  </span>
-                                </div>
-                                <DeprecatedReason
-                                  deprecated={field.deprecated}
-                                  deprecatedReason={
-                                    field.deprecatedReason
-                                  }
-                                  className="mt-1"
-                                />
-                              </div>
-
-                              {enumItems.length > 0 &&
-                              typeof fieldValue === 'string' ? (
-                                <Select
-                                  value={fieldValue}
-                                  onValueChange={(nextValue) => {
-                                    if (nextValue) {
-                                      handleEnumValueChange(
-                                        field.name,
-                                        nextValue,
-                                      )
-                                    }
-                                  }}
-                                >
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue
-                                      placeholder={t('common.select')}
-                                    />
-                                  </SelectTrigger>
-                                  <SelectContent align="start">
-                                    {enumItems.map((item) => (
-                                      <SelectItem
-                                        key={item.name}
-                                        value={item.name}
-                                      >
-                                        <span className="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-2">
-                                          <span className="truncate">
-                                            {item.name}
-                                          </span>
-                                          <span className="flex min-w-0 items-center gap-1.5">
-                                            <span className="truncate text-xs text-muted-foreground">
-                                              {item.deprecatedReason ??
-                                                item.description ??
-                                                ''}
-                                            </span>
-                                            <DeprecatedBadge
-                                              deprecated={item.deprecated}
-                                            />
-                                          </span>
-                                        </span>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              ) : typeof fieldValue === 'boolean' ? (
-                                <BooleanSelect
-                                  value={fieldValue}
-                                  onChange={(checked) =>
-                                    updateConfigField(field.name, checked)
-                                  }
-                                />
-                              ) : typeof fieldValue === 'number' ||
-                                (field.type === 'decimal' &&
-                                  typeof fieldValue === 'string') ? (
-                                <div className="grid gap-1">
-                                  <Input
-                                    type="number"
-                                    inputMode="decimal"
-                                    value={
-                                      fieldValueDrafts[field.name] ??
-                                      valueToInputText(fieldValue)
-                                    }
-                                    aria-invalid={Boolean(
-                                      fieldValueDrafts[field.name],
-                                    )}
-                                    className={cn(
-                                      fieldValueDrafts[field.name] &&
-                                        'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20',
-                                    )}
-                                    onChange={(event) => {
-                                      const nextValue = event.target.value
-
-                                      if (!isNumberText(nextValue)) {
-                                        setFieldValueDrafts((current) => ({
-                                          ...current,
-                                          [field.name]: nextValue,
-                                        }))
-                                        return
-                                      }
-
-                                      setFieldValueDrafts((current) => {
-                                        const next = { ...current }
-                                        delete next[field.name]
-                                        return next
-                                      })
-                                      updateConfigField(
-                                        field.name,
-                                        field.type === 'decimal'
-                                          ? nextValue
-                                          : Number(nextValue),
-                                      )
-                                    }}
-                                  />
-                                  {fieldValueDrafts[field.name] ? (
-                                    <div className="text-xs text-destructive">
-                                      {t('appConfig.valueMustBeNumber')}
-                                    </div>
-                                  ) : null}
-                                </div>
-                              ) : typeof fieldValue === 'string' &&
-                                isTimeScalarType(field.type) ? (
-                                <TimeScalarInput
-                                  type={field.type}
-                                  value={fieldValue}
-                                  onChange={(nextValue) =>
-                                    updateConfigField(field.name, nextValue)
-                                  }
-                                />
-                              ) : typeof fieldValue === 'string' &&
-                                field.type === 'json' ? (
-                                (() => {
-                                  const formattedFieldJson =
-                                    stringifyFieldJsonValue(
-                                      parseJsonString(fieldValue),
-                                    )
-
-                                  return (
-                                    <CodeMirror
-                                      value={formattedFieldJson}
-                                      extensions={jsonExtensions}
-                                      onChange={(nextValue) => {
-                                        if (isValidJson(nextValue)) {
-                                          updateConfigField(
-                                            field.name,
-                                            JSON.stringify(
-                                              JSON.parse(
-                                                nextValue,
-                                              ) as unknown,
-                                            ),
-                                          )
-                                        }
-                                      }}
-                                      basicSetup={{
-                                        autocompletion: true,
-                                        bracketMatching: true,
-                                        closeBrackets: true,
-                                        foldGutter: true,
-                                        highlightActiveLine: true,
-                                        highlightActiveLineGutter: true,
-                                        lineNumbers: true,
-                                      }}
-                                      height={`${
-                                        Math.max(
-                                          4,
-                                          formattedFieldJson.split('\n')
-                                            .length,
-                                        ) * 1.5
-                                      }rem`}
-                                      className="overflow-hidden rounded-md border border-input bg-background text-[13px]"
-                                      theme="light"
-                                    />
-                                  )
-                                })()
-                              ) : typeof fieldValue === 'string' ? (
-                                <Input
-                                  value={fieldValue}
-                                  onChange={(event) =>
-                                    updateConfigField(
-                                      field.name,
-                                      event.target.value,
-                                    )
-                                  }
-                                />
-                              ) : Array.isArray(fieldValue) ? (
-                                <div
-                                  className="scrollbar-reserved grid max-h-48 gap-2 overflow-y-auto pr-1"
-                                  onScroll={handleScrollAreaScroll}
-                                >
-                                  {fieldValue.map((item, index) => {
-                                    const listDraftKey = `${field.name}:${index}`
-                                    const shownListValue =
-                                      listValueDrafts[listDraftKey] ??
-                                      valueToInputText(item)
-                                    const hasInvalidListValue =
-                                      isListNumericValue &&
-                                      !isNumberText(shownListValue)
-                                    const selectedEnumNames = new Set(
-                                      fieldValue.filter(
-                                        (valueItem, itemIndex) =>
-                                          itemIndex !== index &&
-                                          typeof valueItem === 'string',
-                                      ) as Array<string>,
-                                    )
-
-                                    return (
-                                      <div
-                                        key={`${field.name}-${index}`}
-                                        className="grid grid-cols-[minmax(0,1fr)_2rem] gap-2"
-                                      >
-                                        {enumItems.length > 0 ? (
-                                          <Select
-                                            value={
-                                              typeof item === 'string'
-                                                ? item
-                                                : undefined
-                                            }
-                                            onValueChange={(nextValue) => {
-                                              const nextItems = [
-                                                ...fieldValue,
-                                              ]
-                                              nextItems[index] = nextValue
-                                              updateConfigField(
-                                                field.name,
-                                                nextItems,
-                                              )
-                                            }}
-                                          >
-                                            <SelectTrigger className="w-full">
-                                              <SelectValue
-                                                placeholder={t(
-                                                  'common.select',
-                                                )}
-                                              />
-                                            </SelectTrigger>
-                                            <SelectContent align="start">
-                                              {enumItems.map((enumItem) => (
-                                                <SelectItem
-                                                  key={enumItem.name}
-                                                  value={enumItem.name}
-                                                  disabled={selectedEnumNames.has(
-                                                    enumItem.name,
-                                                  )}
-                                                >
-                                                  <span className="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-2">
-                                                    <span className="truncate">
-                                                      {enumItem.name}
-                                                    </span>
-                                                    <span className="truncate text-xs text-muted-foreground">
-                                                      {enumItem.description ??
-                                                        ''}
-                                                    </span>
-                                                  </span>
-                                                </SelectItem>
-                                              ))}
-                                            </SelectContent>
-                                          </Select>
-                                        ) : isListBooleanValue ? (
-                                          <BooleanSelect
-                                            value={Boolean(item)}
-                                            onChange={(checked) => {
-                                              const nextItems = [
-                                                ...fieldValue,
-                                              ]
-                                              nextItems[index] = checked
-                                              updateConfigField(
-                                                field.name,
-                                                nextItems,
-                                              )
-                                            }}
-                                          />
-                                        ) : (
-                                          <Input
-                                            value={shownListValue}
-                                            type={
-                                              isListNumericValue
-                                                ? 'number'
-                                                : undefined
-                                            }
-                                            inputMode={
-                                              isListNumericValue
-                                                ? 'decimal'
-                                                : undefined
-                                            }
-                                            aria-invalid={
-                                              hasInvalidListValue
-                                            }
-                                            className={cn(
-                                              hasInvalidListValue &&
-                                                'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20',
-                                            )}
-                                            onChange={(event) => {
-                                              const nextValue =
-                                                event.target.value
-
-                                              if (
-                                                isListNumericValue &&
-                                                !isNumberText(nextValue)
-                                              ) {
-                                                setListValueDrafts(
-                                                  (current) => ({
-                                                    ...current,
-                                                    [listDraftKey]:
-                                                      nextValue,
-                                                  }),
-                                                )
-                                                return
-                                              }
-
-                                              const nextItems = [
-                                                ...fieldValue,
-                                              ]
-                                              nextItems[index] =
-                                                isListNumericValue
-                                                  ? Number(nextValue)
-                                                  : nextValue
-                                              setListValueDrafts(
-                                                (current) => {
-                                                  const next = {
-                                                    ...current,
-                                                  }
-                                                  delete next[listDraftKey]
-                                                  return next
-                                                },
-                                              )
-                                              updateConfigField(
-                                                field.name,
-                                                nextItems,
-                                              )
-                                            }}
-                                          />
-                                        )}
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="icon"
-                                          className="size-8 shrink-0"
-                                          onClick={() => {
-                                            updateConfigField(
-                                              field.name,
-                                              fieldValue.filter(
-                                                (_, itemIndex) =>
-                                                  itemIndex !== index,
-                                              ),
-                                            )
-                                            setListValueDrafts(
-                                              (current) => {
-                                                const next = { ...current }
-                                                delete next[listDraftKey]
-                                                return next
-                                              },
-                                            )
-                                          }}
-                                        >
-                                          <Trash2 className="size-4" />
-                                        </Button>
-                                        {hasInvalidListValue ? (
-                                          <div className="col-span-2 text-xs text-destructive">
-                                            {t(
-                                              'appConfig.valueMustBeNumber',
-                                            )}
-                                          </div>
-                                        ) : null}
-                                      </div>
-                                    )
-                                  })}
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="justify-start"
-                                    disabled={
-                                      enumItems.length > 0 &&
-                                      !enumItems.some(
-                                        (enumItem) =>
-                                          !fieldValue.includes(
-                                            enumItem.name,
-                                          ),
-                                      )
-                                    }
-                                    onClick={() => {
-                                      const nextEnumName = enumItems.find(
-                                        (enumItem) =>
-                                          !fieldValue.includes(
-                                            enumItem.name,
-                                          ),
-                                      )?.name
-
-                                      updateConfigField(field.name, [
-                                        ...fieldValue,
-                                        enumItems.length > 0
-                                          ? (nextEnumName ?? '')
-                                          : isListBooleanValue
-                                            ? false
-                                            : '',
-                                      ])
-                                    }}
-                                  >
-                                    <Plus className="size-4" />
-                                    {t('action.add')}
-                                  </Button>
-                                </div>
-                              ) : isPlainObject(fieldValue) ? (
-                                <div
-                                  className="scrollbar-reserved grid max-h-48 gap-2 overflow-y-auto pr-1"
-                                  onScroll={handleScrollAreaScroll}
-                                >
-                                  {Object.entries(fieldValue).map(
-                                    ([itemKey, itemValue], index) => {
-                                      const draftKey = `${field.name}:${index}`
-                                      const valueDraftKey = `${draftKey}:value`
-                                      const shownItemKey =
-                                        mapKeyDrafts[draftKey] ?? itemKey
-                                      const shownItemValue =
-                                        mapValueDrafts[valueDraftKey] ??
-                                        valueToInputText(itemValue)
-                                      const selectedMapKeys = new Set(
-                                        Object.keys(fieldValue).filter(
-                                          (_, itemIndex) =>
-                                            itemIndex !== index,
-                                        ),
-                                      )
-                                      const hasDuplicateKey =
-                                        selectedMapKeys.has(shownItemKey)
-                                      const hasInvalidKey =
-                                        shownItemKey === '' ||
-                                        (isMapIntKey &&
-                                          !isIntegerKey(shownItemKey)) ||
-                                        (isMapEnumKey &&
-                                          !enumItems.some(
-                                            (enumItem) =>
-                                              enumItem.name ===
-                                              shownItemKey,
-                                          ))
-                                      const hasKeyError =
-                                        hasDuplicateKey || hasInvalidKey
-                                      const hasInvalidValue =
-                                        isMapNumericValue &&
-                                        !isNumberText(shownItemValue)
-
-                                      return (
-                                        <div
-                                          key={`${field.name}-${index}`}
-                                          className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2rem] gap-2"
-                                        >
-                                          {isMapEnumKey ? (
-                                            <Select
-                                              value={
-                                                shownItemKey === ''
-                                                  ? undefined
-                                                  : shownItemKey
-                                              }
-                                              onValueChange={(nextKey) => {
-                                                if (!nextKey) {
-                                                  return
-                                                }
-
-                                                const nextEntries =
-                                                  Object.entries(fieldValue)
-                                                nextEntries[index] = [
-                                                  nextKey,
-                                                  itemValue,
-                                                ]
-                                                setMapKeyDrafts(
-                                                  (current) => {
-                                                    const next = {
-                                                      ...current,
-                                                    }
-                                                    delete next[draftKey]
-                                                    return next
-                                                  },
-                                                )
-                                                updateConfigField(
-                                                  field.name,
-                                                  Object.fromEntries(
-                                                    nextEntries,
-                                                  ),
-                                                )
-                                              }}
-                                            >
-                                              <SelectTrigger className="w-full">
-                                                <SelectValue
-                                                  placeholder={t(
-                                                    'common.select',
-                                                  )}
-                                                />
-                                              </SelectTrigger>
-                                              <SelectContent align="start">
-                                                {enumItems.map(
-                                                  (enumItem) => (
-                                                    <SelectItem
-                                                      key={enumItem.name}
-                                                      value={enumItem.name}
-                                                      disabled={selectedMapKeys.has(
-                                                        enumItem.name,
-                                                      )}
-                                                    >
-                                                      <span className="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-2">
-                                                        <span className="truncate">
-                                                          {enumItem.name}
-                                                        </span>
-                                                        <span className="truncate text-xs text-muted-foreground">
-                                                          {enumItem.description ??
-                                                            ''}
-                                                        </span>
-                                                      </span>
-                                                    </SelectItem>
-                                                  ),
-                                                )}
-                                              </SelectContent>
-                                            </Select>
-                                          ) : (
-                                            <Input
-                                              ref={(node) => {
-                                                if (node) {
-                                                  mapKeyInputRefs.current.set(
-                                                    draftKey,
-                                                    node,
-                                                  )
-                                                } else {
-                                                  mapKeyInputRefs.current.delete(
-                                                    draftKey,
-                                                  )
-                                                }
-                                              }}
-                                              value={shownItemKey}
-                                              type={
-                                                isMapIntKey
-                                                  ? 'number'
-                                                  : undefined
-                                              }
-                                              inputMode={
-                                                isMapIntKey
-                                                  ? 'numeric'
-                                                  : undefined
-                                              }
-                                              aria-invalid={hasKeyError}
-                                              className={cn(
-                                                hasKeyError &&
-                                                  'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20',
-                                              )}
-                                              onChange={(event) => {
-                                                const nextKey =
-                                                  event.target.value
-                                                const isInvalidNextKey =
-                                                  selectedMapKeys.has(
-                                                    nextKey,
-                                                  ) ||
-                                                  (isMapIntKey &&
-                                                    !isIntegerKey(nextKey))
-
-                                                if (isInvalidNextKey) {
-                                                  setMapKeyDrafts(
-                                                    (current) => ({
-                                                      ...current,
-                                                      [draftKey]: nextKey,
-                                                    }),
-                                                  )
-                                                  return
-                                                }
-
-                                                const nextEntries =
-                                                  Object.entries(fieldValue)
-                                                nextEntries[index] = [
-                                                  nextKey,
-                                                  itemValue,
-                                                ]
-                                                setMapKeyDrafts(
-                                                  (current) => {
-                                                    const next = {
-                                                      ...current,
-                                                    }
-                                                    delete next[draftKey]
-                                                    return next
-                                                  },
-                                                )
-                                                updateConfigField(
-                                                  field.name,
-                                                  Object.fromEntries(
-                                                    nextEntries,
-                                                  ),
-                                                )
-                                              }}
-                                            />
-                                          )}
-                                          {isMapBooleanValue ? (
-                                            <BooleanSelect
-                                              value={Boolean(itemValue)}
-                                              onChange={(checked) => {
-                                                updateConfigField(
-                                                  field.name,
-                                                  {
-                                                    ...fieldValue,
-                                                    [itemKey]: checked,
-                                                  },
-                                                )
-                                              }}
-                                            />
-                                          ) : (
-                                            <Input
-                                              value={shownItemValue}
-                                              type={
-                                                isMapNumericValue
-                                                  ? 'number'
-                                                  : undefined
-                                              }
-                                              inputMode={
-                                                isMapNumericValue
-                                                  ? 'decimal'
-                                                  : undefined
-                                              }
-                                              aria-invalid={hasInvalidValue}
-                                              className={cn(
-                                                hasInvalidValue &&
-                                                  'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20',
-                                              )}
-                                              onChange={(event) => {
-                                                const nextValue =
-                                                  event.target.value
-
-                                                if (
-                                                  isMapNumericValue &&
-                                                  !isNumberText(nextValue)
-                                                ) {
-                                                  setMapValueDrafts(
-                                                    (current) => ({
-                                                      ...current,
-                                                      [valueDraftKey]:
-                                                        nextValue,
-                                                    }),
-                                                  )
-                                                  return
-                                                }
-
-                                                setMapValueDrafts(
-                                                  (current) => {
-                                                    const next = {
-                                                      ...current,
-                                                    }
-                                                    delete next[
-                                                      valueDraftKey
-                                                    ]
-                                                    return next
-                                                  },
-                                                )
-                                                updateConfigField(
-                                                  field.name,
-                                                  {
-                                                    ...fieldValue,
-                                                    [itemKey]:
-                                                      parseMapInputValue(
-                                                        nextValue,
-                                                        mapValueType,
-                                                      ),
-                                                  },
-                                                )
-                                              }}
-                                            />
-                                          )}
-                                          <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            className="size-8"
-                                            onClick={() => {
-                                              const nextMap = {
-                                                ...fieldValue,
-                                              }
-                                              delete nextMap[itemKey]
-                                              setMapKeyDrafts((current) => {
-                                                const next = { ...current }
-                                                delete next[draftKey]
-                                                return next
-                                              })
-                                              setMapValueDrafts(
-                                                (current) => {
-                                                  const next = {
-                                                    ...current,
-                                                  }
-                                                  delete next[valueDraftKey]
-                                                  return next
-                                                },
-                                              )
-                                              updateConfigField(
-                                                field.name,
-                                                nextMap,
-                                              )
-                                            }}
-                                          >
-                                            <Trash2 className="size-4" />
-                                          </Button>
-                                          {hasDuplicateKey ? (
-                                            <div className="col-span-3 text-xs text-destructive">
-                                              {t('appConfig.keyExists')}
-                                            </div>
-                                          ) : null}
-                                          {!hasDuplicateKey &&
-                                          shownItemKey === '' ? (
-                                            <div className="col-span-3 text-xs text-destructive">
-                                              {t('appConfig.keyRequired')}
-                                            </div>
-                                          ) : null}
-                                          {!hasDuplicateKey &&
-                                          shownItemKey !== '' &&
-                                          hasInvalidKey ? (
-                                            <div className="col-span-3 text-xs text-destructive">
-                                              {isMapEnumKey
-                                                ? t(
-                                                    'appConfig.keyMustBeEnum',
-                                                  )
-                                                : t(
-                                                    'appConfig.keyMustBeInteger',
-                                                  )}
-                                            </div>
-                                          ) : null}
-                                          {hasInvalidValue ? (
-                                            <div className="col-span-3 text-xs text-destructive">
-                                              {t(
-                                                'appConfig.valueMustBeNumber',
-                                              )}
-                                            </div>
-                                          ) : null}
-                                        </div>
-                                      )
-                                    },
-                                  )}
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="justify-start"
-                                    disabled={
-                                      isMapEnumKey &&
-                                      !enumItems.some(
-                                        (enumItem) =>
-                                          !Object.prototype.hasOwnProperty.call(
-                                            fieldValue,
-                                            enumItem.name,
-                                          ),
-                                      )
-                                    }
-                                    onClick={() => {
-                                      const nextKey = ''
-
-                                      const nextMap = {
-                                        ...fieldValue,
-                                        [nextKey]: '',
-                                      }
-
-                                      updateConfigField(field.name, nextMap)
-
-                                      setMapKeyDrafts((current) => ({
-                                        ...current,
-                                        [`${field.name}:${Object.keys(nextMap).length - 1}`]:
-                                          '',
-                                      }))
-                                    }}
-                                  >
-                                    <Plus className="size-4" />
-                                    {t('action.add')}
-                                  </Button>
-                                </div>
-                              ) : (
-                                <Input
-                                  value={valueToInputText(fieldValue)}
-                                  onChange={(event) =>
-                                    updateConfigField(
-                                      field.name,
-                                      event.target.value,
-                                    )
-                                  }
-                                />
-                              )}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    ) : (
-                      <div className="text-sm text-muted-foreground">
-                        {t('appConfig.noFieldDescription')}
-                      </div>
-                    )}
-                  </TabsContent>
-                ) : null}
-
                 <TabsContent
-                  value="json"
-                  className="scrollbar-reserved min-h-0 overflow-y-auto pr-1"
+                  value={editorFormat}
+                  className="scrollbar-reserved min-h-0 flex-1 overflow-y-auto"
                   onScroll={handleScrollAreaScroll}
                 >
                   <ConfigJsonEditor
-                    key={`${selectedKey}:${jsonEditorRevision}`}
+                    key={`${selectedKey}:${jsonEditorRevision}:${editorFormat}`}
+                    format={editorFormat}
+                    rawValue={rawReplacement}
                     value={value}
                     fields={selectedSchema?.fields ?? []}
-                    lockKeys={selectedSchema !== null && !selectedIsUnused && configObject !== null}
+                    lockKeys={!rawReplacement && valueIsValidJson && selectedSchema !== null && !selectedIsUnused && configObject !== null}
                     mismatchMessages={visibleMismatchMessages}
                     dirtyFields={dirtyFields}
                     typeIndex={typeIndex}
                     onTypeClick={navigateToTypeDefinition}
                     readOnly={readOnly}
-                    onChange={setValue}
+                    onChange={(nextValue) => {
+                      setRawReplacement(false)
+                      setValue(nextValue)
+                    }}
                     onInvalidChange={setJsonDraftInvalid}
                   />
                 </TabsContent>
@@ -2867,7 +1572,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                   </AlertTitle>
                   <AlertDescription>
                     {!valueIsValidJson || jsonDraftInvalid ? (
-                      <span>{t('appConfig.invalidJson5')}</span>
+                      <span>{t(editorFormat === 'yaml' ? 'appConfig.invalidYaml' : 'appConfig.invalidJson5')}</span>
                     ) : (
                     <ul className="grid gap-2">
                       {mismatchIssues.map((issue) => (

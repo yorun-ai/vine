@@ -1,3 +1,5 @@
+import { yamlLanguage } from '@codemirror/lang-yaml'
+import { createConfigYamlDocument, normalizeConfigYaml, getConfigYamlErrors, getConfigYamlPropertyRanges } from './config-yaml-document'
 import { useLocale } from '@/i18n'
 import { createConfigChoiceExtension } from './config-json-choice-widget'
 import * as React from 'react'
@@ -22,6 +24,8 @@ class ConfigDirtyGutterMarker extends GutterMarker {
 const dirtyGutterMarker = new ConfigDirtyGutterMarker()
 
 interface ConfigJsonEditorProps {
+  rawValue?: boolean
+  format?: 'json5' | 'yaml'
   value: string
   fields: ReadonlyArray<ConfigJsonField>
   typeIndex: ReadonlyMap<string, { skelName: string }>
@@ -36,6 +40,8 @@ interface ConfigJsonEditorProps {
 
 export function ConfigJsonEditor({
   value,
+  format = 'json5',
+  rawValue = false,
   fields,
   mismatchMessages,
   dirtyFields,
@@ -47,6 +53,17 @@ export function ConfigJsonEditor({
   onInvalidChange,
 }: ConfigJsonEditorProps) {
   const { t } = useLocale()
+  const isYaml = format === 'yaml'
+  const createDocument = React.useCallback((text: string, definitions: ReadonlyArray<ConfigJsonField>, locked: boolean) => {
+    if (rawValue) {
+      return createConfigJsonDocument(text, definitions, false)
+    }
+    return (isYaml ? createConfigYamlDocument : createConfigJsonDocument)(text, definitions, locked)
+  }, [isYaml, rawValue])
+  const freeErrors = isYaml ? getConfigYamlErrors : getFreeConfigJsonErrors
+  const fieldErrors = isYaml ? getConfigYamlErrors : getConfigJsonErrors
+  const propertyRanges = isYaml ? getConfigYamlPropertyRanges : getConfigJsonPropertyRanges
+  const language = isYaml ? yamlLanguage : configJsonLanguage
   const durationLabels = React.useMemo(() => ({
     amount: t('appConfig.durationAmount'),
     unit: t('appConfig.durationUnit'),
@@ -57,7 +74,7 @@ export function ConfigJsonEditor({
   }), [t])
   const lastEmittedValue = React.useRef(value)
   const [document, setDocument] = React.useState(() =>
-    createConfigJsonDocument(value, fields, lockKeys),
+    createDocument(value, fields, lockKeys),
   )
   const [draft, setDraft] = React.useState(document.doc)
 
@@ -65,16 +82,18 @@ export function ConfigJsonEditor({
     if (value === lastEmittedValue.current && document.lockKeys === lockKeys) {
       return
     }
-    const nextDocument = createConfigJsonDocument(value, fields, lockKeys)
+    const nextDocument = createDocument(value, fields, lockKeys)
     lastEmittedValue.current = value
     setDocument(nextDocument)
     setDraft(nextDocument.doc)
-  }, [value, fields, lockKeys, document.lockKeys])
+  }, [value, fields, lockKeys, document.lockKeys, createDocument])
 
   React.useEffect(() => {
-    onInvalidChange(false)
+    onInvalidChange((isYaml
+      ? getConfigYamlErrors(document.doc, lockKeys ? document.ranges : [])
+      : getFreeConfigJsonErrors(document.doc)).length > 0)
     return () => onInvalidChange(false)
-  }, [onInvalidChange])
+  }, [document, isYaml, lockKeys, onInvalidChange])
 
   const protection = React.useMemo(
     () => createConfigValueProtection(document.ranges),
@@ -85,7 +104,7 @@ export function ConfigJsonEditor({
     return {
       ranges,
       extensions: [
-        configJsonLanguage,
+        language,
         EditorView.theme({
           '.cm-tooltip.cm-config-error-tooltip': {
             padding: '6px 8px',
@@ -141,7 +160,9 @@ export function ConfigJsonEditor({
         ...(lockKeys ? protection.extensions : [ranges]),
         hoverTooltip((view, position) => {
           const valueRanges = view.state.field(ranges)
-          const hoverRanges = lockKeys ? valueRanges : getFreeConfigJsonErrors(view.state.doc.toString())
+          const hoverRanges = isYaml
+            ? [...getConfigYamlErrors(view.state.doc.toString(), lockKeys ? valueRanges : []), ...valueRanges]
+            : lockKeys ? valueRanges : freeErrors(view.state.doc.toString())
           const range = hoverRanges.find((item) =>
             position >= (item.from === item.to ? item.from - 1 : item.from) && position <= item.to,
           )
@@ -149,8 +170,8 @@ export function ConfigJsonEditor({
             return null
           }
           const error = (lockKeys
-            ? getConfigJsonErrors(view.state.doc.toString(), valueRanges)
-            : getFreeConfigJsonErrors(view.state.doc.toString()))
+            ? fieldErrors(view.state.doc.toString(), valueRanges)
+            : freeErrors(view.state.doc.toString()))
             .find((item) => item.name === range.name)?.message ?? mismatchMessages.get(range.name)
           if (!error) {
             return null
@@ -168,15 +189,15 @@ export function ConfigJsonEditor({
             },
           }
         }, { hoverTime: 1, hideOnChange: true }),
-        createConfigChoiceExtension(fields, readOnly, ranges, mismatchMessages, durationLabels, dirtyFields),
+        createConfigChoiceExtension(fields, readOnly, ranges, mismatchMessages, durationLabels, dirtyFields, isYaml),
         gutterLineClass.compute([ranges], (state) => {
           const doc = state.doc.toString()
           const valueRanges = state.field(ranges)
-          const diagnostics = lockKeys ? getConfigJsonErrors(doc, valueRanges) : getFreeConfigJsonErrors(doc)
+          const diagnostics = lockKeys ? fieldErrors(doc, valueRanges) : freeErrors(doc)
           if (diagnostics.length > 0) {
             return RangeSet.empty
           }
-          const dirtyRanges = lockKeys ? valueRanges : getConfigJsonPropertyRanges(doc)
+          const dirtyRanges = lockKeys ? valueRanges : propertyRanges(doc)
           return RangeSet.of(getConfigJsonDirtyLines(doc, dirtyRanges, dirtyFields, mismatchMessages)
             .map((line) => dirtyGutterMarker.range(line)))
         }),
@@ -205,13 +226,13 @@ export function ConfigJsonEditor({
           },
         }),
         EditorView.decorations.of((view) => {
-          const marks = getConfigJsonKeyRanges(view.state.doc.toString()).map((range) =>
+          const marks = (isYaml ? [] : getConfigJsonKeyRanges(view.state.doc.toString())).map((range) =>
             Decoration.mark({ class: 'cm-config-key' }).range(range.from, range.to),
           )
-          const tree = configJsonLanguage.parser.parse(view.state.doc.toString())
+          const tree = language.parser.parse(view.state.doc.toString())
           tree.iterate({
             enter: (node) => {
-              if (node.name === 'LineComment' || node.name === 'BlockComment') {
+              if (node.name === 'LineComment' || node.name === 'BlockComment' || node.name === 'Comment') {
                 marks.push(
                   Decoration.mark({ class: 'cm-config-comment' }).range(node.from, node.to),
                 )
@@ -231,9 +252,18 @@ export function ConfigJsonEditor({
               },
             }).range(link.from, link.to))
           }
-          const diagnostics = lockKeys ? getConfigJsonErrors(doc, valueRanges) : getFreeConfigJsonErrors(doc)
+          const diagnostics = lockKeys ? fieldErrors(doc, valueRanges) : freeErrors(doc)
           const errors = new Map(diagnostics.map((error) => [error.name, error.message]))
-          for (const range of lockKeys ? valueRanges : diagnostics) {
+          if (isYaml) {
+            for (const diagnostic of diagnostics) {
+              if (diagnostic.from < diagnostic.to) {
+                marks.push(Decoration.mark({
+                  class: 'rounded bg-destructive/15 px-0.5 ring-1 ring-destructive/30',
+                }).range(diagnostic.from, diagnostic.to))
+              }
+            }
+          }
+          for (const range of isYaml && diagnostics.length > 0 ? [] : lockKeys ? valueRanges : diagnostics) {
             if (range.to > 0 && (errors.has(range.name) || mismatchMessages.has(range.name))) {
               marks.push(Decoration.mark({
                 class: 'rounded bg-destructive/15 px-0.5 ring-1 ring-destructive/30',
@@ -244,7 +274,7 @@ export function ConfigJsonEditor({
             }
           }
           if (diagnostics.length === 0) {
-            const dirtyRanges = lockKeys ? valueRanges : getConfigJsonPropertyRanges(doc)
+            const dirtyRanges = lockKeys ? valueRanges : propertyRanges(doc)
             for (const line of getConfigJsonDirtyLines(doc, dirtyRanges, dirtyFields, mismatchMessages)) {
               marks.push(Decoration.line({ class: 'cm-config-dirty-line' }).range(line))
             }
@@ -253,7 +283,7 @@ export function ConfigJsonEditor({
         }),
       ],
     }
-  }, [document, protection, fields, readOnly, lockKeys, mismatchMessages, dirtyFields, durationLabels, typeIndex, onTypeClick])
+  }, [document, protection, fields, readOnly, lockKeys, mismatchMessages, dirtyFields, durationLabels, typeIndex, onTypeClick, isYaml, language, freeErrors, fieldErrors, propertyRanges])
 
   return (
     <CodeMirror
@@ -265,7 +295,10 @@ export function ConfigJsonEditor({
         setDraft(nextDraft)
         let nextValue: string
         try {
-          nextValue = lockKeys
+          if (isYaml && getConfigYamlErrors(nextDraft, lockKeys ? update.state.field(ranges) : []).length > 0) {
+            throw new Error('Invalid YAML configuration')
+          }
+          nextValue = isYaml ? normalizeConfigYaml(nextDraft) : lockKeys
             ? extractConfigJson(nextDraft, update.state.field(ranges))
             : normalizeConfigJson(nextDraft)
         } catch {
@@ -283,7 +316,7 @@ export function ConfigJsonEditor({
         closeBrackets: true,
       }}
       minHeight="28rem"
-      className="overflow-hidden rounded-lg border border-input bg-background text-[13px]"
+      className="overflow-hidden bg-background text-[13px]"
       theme="light"
     />
   )

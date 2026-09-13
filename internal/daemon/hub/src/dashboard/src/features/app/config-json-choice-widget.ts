@@ -2,6 +2,7 @@ import { isConfigDateTime } from './config-json-date-time.ts'
 import { appendConfigDateTimeControls } from './config-json-date-time-controls.ts'
 import { configDurationUnits, formatConfigDuration, splitConfigDuration } from './config-json-duration.ts'
 import JSON5 from 'json5'
+import { parseConfigYaml } from './config-yaml-document.ts'
 import { Decoration, EditorView, StateField, WidgetType } from '@uiw/react-codemirror'
 import type { EditorState } from '@uiw/react-codemirror'
 import type { ConfigJsonField, ConfigValueRange } from './config-json-document.ts'
@@ -20,6 +21,7 @@ interface ConfigEditorLabels {
 const defaultConfigEditorLabels: ConfigEditorLabels = { amount: 'Value', unit: 'Unit', date: 'Date', time: 'Time', fraction: 'Fractional seconds', offset: 'UTC offset' }
 
 export class ConfigJsonChoiceWidget extends WidgetType {
+  readonly yaml: boolean
   readonly dateTimeType: string
   readonly duration: boolean
   readonly durationLabels: ConfigEditorLabels
@@ -44,8 +46,10 @@ export class ConfigJsonChoiceWidget extends WidgetType {
     durationLabels = defaultConfigEditorLabels,
     dirty = false,
     dateTimeType = '',
+    yaml = false,
   ) {
     super()
+    this.yaml = yaml
     this.dateTimeType = dateTimeType
     this.duration = duration
     this.durationLabels = durationLabels
@@ -60,7 +64,7 @@ export class ConfigJsonChoiceWidget extends WidgetType {
   }
 
   eq(other: ConfigJsonChoiceWidget) {
-    return this.dateTimeType === other.dateTimeType && this.duration === other.duration && JSON.stringify(this.durationLabels) === JSON.stringify(other.durationLabels) &&
+    return this.yaml === other.yaml && this.dateTimeType === other.dateTimeType && this.duration === other.duration && JSON.stringify(this.durationLabels) === JSON.stringify(other.durationLabels) &&
       this.name === other.name && this.value === other.value && this.error === other.error && this.dirty === other.dirty &&
       this.multiple === other.multiple && this.readOnly === other.readOnly &&
       this.ranges === other.ranges && JSON.stringify(this.choices) === JSON.stringify(other.choices)
@@ -146,13 +150,13 @@ export class ConfigJsonChoiceWidget extends WidgetType {
           return
         }
         const range = view.state.field(this.ranges).find((item) => item.name === this.name)!
-        const current: unknown = JSON5.parse(view.state.doc.sliceString(range.from, range.to))
+        const current: unknown = (this.yaml ? parseConfigYaml : JSON5.parse)(view.state.doc.sliceString(range.from, range.to))
         const next = this.multiple ? toggleConfigJsonChoice(current, choice.value) : JSON.parse(choice.value)
         if (!this.multiple) {
           popup.hidePopover()
           button.focus()
         }
-        view.dispatch({ changes: { from: range.from, to: range.to, insert: JSON.stringify(next) } })
+        view.dispatch({ changes: { from: range.from, to: range.to, insert: (this.yaml ? ' ' : '') + JSON.stringify(next) } })
       })
       popup.append(label)
     }
@@ -185,7 +189,7 @@ export class ConfigJsonChoiceWidget extends WidgetType {
           return
         }
         const range = view.state.field(this.ranges).find((item) => item.name === this.name)!
-        const next = JSON.stringify(unit.value === 'null' ? null : duration)
+        const next = (this.yaml ? ' ' : '') + JSON.stringify(unit.value === 'null' ? null : duration)
         if (view.state.doc.sliceString(range.from, range.to) !== next) {
           view.dispatch({ changes: { from: range.from, to: range.to, insert: next } })
         }
@@ -203,7 +207,7 @@ export class ConfigJsonChoiceWidget extends WidgetType {
       popup.addEventListener('beforetoggle', (event) => {
         if (event.newState === 'open') {
           const range = view.state.field(this.ranges).find((item) => item.name === this.name)!
-          const value: unknown = JSON5.parse(view.state.doc.sliceString(range.from, range.to))
+          const value: unknown = (this.yaml ? parseConfigYaml : JSON5.parse)(view.state.doc.sliceString(range.from, range.to))
           const current = splitConfigDuration(value)
           amount.value = current.amount
           unit.value = value === null && this.choices.some((choice) => choice.value === 'null') ? 'null' : current.unit
@@ -214,10 +218,10 @@ export class ConfigJsonChoiceWidget extends WidgetType {
     if (this.dateTimeType) {
       appendConfigDateTimeControls(popup, button, this.dateTimeType, this.durationLabels, () => {
         const range = view.state.field(this.ranges).find((item) => item.name === this.name)!
-        return JSON5.parse(view.state.doc.sliceString(range.from, range.to))
+        return (this.yaml ? parseConfigYaml : JSON5.parse)(view.state.doc.sliceString(range.from, range.to))
       }, (value) => {
         const range = view.state.field(this.ranges).find((item) => item.name === this.name)!
-        const next = JSON.stringify(value)
+        const next = (this.yaml ? ' ' : '') + JSON.stringify(value)
         if (view.state.doc.sliceString(range.from, range.to) !== next) {
           view.dispatch({ changes: { from: range.from, to: range.to, insert: next } })
         }
@@ -240,6 +244,7 @@ export function createConfigChoiceExtension(
   errors: ReadonlyMap<string, string> = new Map(),
   durationLabels: ConfigEditorLabels = defaultConfigEditorLabels,
   dirtyFields: ReadonlySet<string> = new Set(),
+  yaml = false,
 ) {
   function decorations(state: EditorState) {
     const marks: Array<ReturnType<Decoration['range']>> = []
@@ -253,9 +258,9 @@ export function createConfigChoiceExtension(
         continue
       }
       try {
-        const value = JSON.stringify(JSON5.parse(state.doc.sliceString(range.from, range.to)))
+        const value = JSON.stringify((yaml ? parseConfigYaml : JSON5.parse)(state.doc.sliceString(range.from, range.to)))
         marks.push(Decoration.replace({
-          widget: new ConfigJsonChoiceWidget(field.name, value, choices, isConfigJsonMultiChoice(field), readOnly, ranges, errors.get(field.name), /^duration\??$/.test(field.type), durationLabels, dirtyFields.has(field.name), isConfigDateTime(field.type) ? field.type : ''),
+          widget: new ConfigJsonChoiceWidget(field.name, value, choices, isConfigJsonMultiChoice(field), readOnly, ranges, errors.get(field.name), /^duration\??$/.test(field.type), durationLabels, dirtyFields.has(field.name), isConfigDateTime(field.type) ? field.type : '', yaml),
         }).range(range.from, range.to))
       } catch {
         continue
