@@ -355,6 +355,11 @@ func (r _SeedPortalRule) toCore() core.PortalRule {
 	}
 }
 
+func (i *_SeedAppConfig) UnmarshalYAML(node *yaml.Node) error {
+	type plain _SeedAppConfig
+	return seeder.DecodeAppConfig(node, (*plain)(i))
+}
+
 func (i _SeedAppConfig) toCore() core.AppConfig {
 	return core.AppConfig{Name: i.Name, Value: i.Value}
 }

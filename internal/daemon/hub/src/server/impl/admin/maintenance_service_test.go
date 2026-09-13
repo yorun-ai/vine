@@ -338,3 +338,28 @@ func TestMaintenancePreflightsSitesAndCertificatesBeforeWriting(t *testing.T) {
 		})
 	}
 }
+
+func TestMaintenanceStructuredAppConfigYAML(t *testing.T) {
+	configRepo := new(_MaintenanceServiceAppConfigRepo{
+		items: map[string]*core.AppConfig{},
+	})
+	service := new(MaintenanceApiServiceServerImpl{
+		AppConfigRepo: configRepo,
+		AppConfigCore: new(core.AppConfigCore{AppConfigRepo: configRepo}),
+	})
+	const content = `appConfigs:
+  - name: demo.Config
+    value:
+      statuses: {EAST: ACTIVE}
+      openingDate: 2026-09-13
+`
+	preview := service.PreviewSeedYaml(content)
+	require.Len(t, preview.Items, 1)
+	service.ApplySeedYaml(content, []skeled.SeedItemSelection{{Kind: seedKindAppConfig, Name: "demo.Config"}})
+	item, ok := configRepo.GetItemByName("demo.Config")
+	require.True(t, ok)
+	require.Equal(t, `{"openingDate":"2026-09-13","statuses":{"EAST":"ACTIVE"}}`, item.Value)
+	version := item.Version
+	service.ApplySeedYaml(content, []skeled.SeedItemSelection{{Kind: seedKindAppConfig, Name: "demo.Config"}})
+	require.Equal(t, version, configRepo.items["demo.Config"].Version)
+}

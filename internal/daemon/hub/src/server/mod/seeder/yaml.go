@@ -47,6 +47,11 @@ type _AppConfig struct {
 	Override bool   `yaml:"override"`
 }
 
+func (i *_AppConfig) UnmarshalYAML(node *yaml.Node) error {
+	type plain _AppConfig
+	return DecodeAppConfig(node, (*plain)(i))
+}
+
 func (i _AppConfig) ToCoreAppConfig() *core.AppConfig {
 	return &core.AppConfig{Name: i.Name, Value: i.Value}
 }
