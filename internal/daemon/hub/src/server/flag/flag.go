@@ -35,6 +35,7 @@ type Flag struct {
 
 	SourceType    string
 	SeedYAMLPath  string
+	SeedYAML      string
 	NoDB          bool
 	DBSQLiteFile  string
 	DBPostgresURL string
@@ -78,6 +79,7 @@ func (f *Flag) normalizeListen() {
 }
 
 func (f *Flag) normalizeSource() {
+	vpre.CheckNot(f.SeedYAMLPath != "" && f.SeedYAML != "", "SeedYAML and seed-yaml-file are mutually exclusive")
 	vpre.CheckNot(f.NoDB && (f.DBSQLiteFile != "" || f.DBPostgresURL != "" || (f.SourceType != "" && f.SourceType != SourceMemory)), "no-db cannot be used with a database source")
 	kind := f.SourceType
 	if kind == "" {
@@ -90,7 +92,7 @@ func (f *Flag) normalizeSource() {
 	switch kind {
 	case SourceMemory:
 		f.NoDB = true
-		vpre.CheckNotEmpty(f.SeedYAMLPath, "no-db requires seed-yaml-file")
+		vpre.Check(f.SeedYAMLPath != "" || f.SeedYAML != "", "no-db requires seed-yaml-file or SeedYAML")
 	case SourceSQLite:
 		vpre.CheckNotEmpty(f.DBSQLiteFile, "DBSQLiteFile is empty")
 	case SourcePostgreSQL:

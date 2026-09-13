@@ -6,6 +6,7 @@ import (
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
+	"go.yorun.ai/vine/util/vcode"
 	"go.yorun.ai/vine/util/vfile"
 )
 
@@ -29,7 +30,7 @@ func (s *Seeder) DIInit() {
 	// Keep built-in dashboard entry data current even when user seed has already run.
 	s.seedDashboard()
 
-	if s.Flag.SeedYAMLPath == "" {
+	if s.Flag.SeedYAMLPath == "" && s.Flag.SeedYAML == "" {
 		if !s.MetadataRepo.IsSeeded() {
 			s.Logger.Warn("mark hub seed as applied without seed yaml path")
 			s.MetadataRepo.MarkSeeded()
@@ -51,7 +52,13 @@ func (s *Seeder) DIInit() {
 }
 
 func (s *Seeder) loadSeedYAML() {
-	payload, err := vfile.ReadAsYaml[*_SettingsYAMLPayload](s.Flag.SeedYAMLPath)
+	var payload *_SettingsYAMLPayload
+	var err error
+	if s.Flag.SeedYAML != "" {
+		payload, err = vcode.UnmarshalYamlS[*_SettingsYAMLPayload](s.Flag.SeedYAML)
+	} else {
+		payload, err = vfile.ReadAsYaml[*_SettingsYAMLPayload](s.Flag.SeedYAMLPath)
+	}
 	ex.PanicIfError(err)
 	ex.PanicNewIfNot(payload != nil, ex.ValidationFailed, "seed YAML must contain a configuration mapping (use {} for empty configuration)")
 

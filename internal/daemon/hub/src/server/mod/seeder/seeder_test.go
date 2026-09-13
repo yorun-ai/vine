@@ -34,9 +34,11 @@ import (
 )
 
 func TestSeederLoadsYAMLIntoSQLiteRepos(t *testing.T) {
-	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, redisServer := newTestSeederRepos(t)
-	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
-	require.NoError(t, vfile.WriteString(seedPath, `
+	for _, inline := range []bool{false, true} {
+		t.Run(fmt.Sprintf("inline=%t", inline), func(t *testing.T) {
+			configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, redisServer := newTestSeederRepos(t)
+			seedPath := filepath.Join(t.TempDir(), "hub.yaml")
+			seedYAML := `
 appConfigs:
   - name: feature.flag
     value: '{"enabled":true}'
@@ -62,53 +64,63 @@ portalCerts:
     issuer: ignored
     domains:
       - ignored.local
-    publicKeyBase64: `+testSeederCertificate(t)+`
+    publicKeyBase64: ` + testSeederCertificate(t) + `
     privateKeyBase64: pri
     validFrom: 2026-01-01T00:00:00Z
     validTo: 2027-01-01T00:00:00Z
-`))
+`
 
-	seeder := &Seeder{
-		Flag:          newTestSeederFlag(seedPath),
-		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
-		MetadataRepo:  metadataRepo,
-		Logger:        logger.New("vine:test"),
-		RuleRepo:      ruleRepo,
-		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
-		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
-		SiteCore:      &core.PortalSiteCore{PortalSiteRepo: entryRepo},
+			flags := newTestSeederFlag(seedPath)
+			if inline {
+				flags = new(flag.Flag{SeedYAML: seedYAML})
+				flags.Normalize(true)
+			} else {
+				require.NoError(t, vfile.WriteString(seedPath, seedYAML))
+			}
+
+			seeder := &Seeder{
+				Flag:          flags,
+				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
+				MetadataRepo:  metadataRepo,
+				Logger:        logger.New("vine:test"),
+				RuleRepo:      ruleRepo,
+				RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
+				CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+				SiteCore:      &core.PortalSiteCore{PortalSiteRepo: entryRepo},
+			}
+			seeder.DIInit()
+
+			item, ok := configRepo.GetItemByName("feature.flag")
+			require.True(t, ok)
+			assert.Equal(t, `{"enabled":true}`, item.Value)
+			assert.Equal(t, 1, item.Version)
+
+			rule, ok := ruleRepo.GetRuleByName("admin")
+			require.True(t, ok)
+			assert.Equal(t, "/admin", rule.MatchPathPrefix)
+			assert.Equal(t, "admin@demo.app", rule.RouteSiteName)
+			assert.False(t, rule.BuiltIn)
+
+			entry, ok := entryRepo.GetEntryByName("admin@demo.app")
+			require.True(t, ok)
+			assert.Equal(t, "demo.AdminActor", entry.ActorSkelName)
+			assert.Equal(t, "demo.AdminWeb", entry.WebName)
+			assert.False(t, entry.BuiltIn)
+
+			cert, ok := certRepo.GetCertByName("admin-cert")
+			require.True(t, ok)
+			assert.Equal(t, []string{"admin.local"}, cert.Domains)
+			assert.Equal(t, time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), cert.ValidFrom)
+
+			_, ok = redisServer.Get(redised.FormatPortalRuleKey("admin"))
+			assert.True(t, ok)
+			_, ok = redisServer.Get(redised.FormatPortalSiteKey("admin@demo.app"))
+			assert.True(t, ok)
+			_, ok = redisServer.Get(redised.FormatPortalCertKey("admin-cert"))
+			assert.True(t, ok)
+			assert.True(t, metadataRepo.IsSeeded())
+		})
 	}
-	seeder.DIInit()
-
-	item, ok := configRepo.GetItemByName("feature.flag")
-	require.True(t, ok)
-	assert.Equal(t, `{"enabled":true}`, item.Value)
-	assert.Equal(t, 1, item.Version)
-
-	rule, ok := ruleRepo.GetRuleByName("admin")
-	require.True(t, ok)
-	assert.Equal(t, "/admin", rule.MatchPathPrefix)
-	assert.Equal(t, "admin@demo.app", rule.RouteSiteName)
-	assert.False(t, rule.BuiltIn)
-
-	entry, ok := entryRepo.GetEntryByName("admin@demo.app")
-	require.True(t, ok)
-	assert.Equal(t, "demo.AdminActor", entry.ActorSkelName)
-	assert.Equal(t, "demo.AdminWeb", entry.WebName)
-	assert.False(t, entry.BuiltIn)
-
-	cert, ok := certRepo.GetCertByName("admin-cert")
-	require.True(t, ok)
-	assert.Equal(t, []string{"admin.local"}, cert.Domains)
-	assert.Equal(t, time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), cert.ValidFrom)
-
-	_, ok = redisServer.Get(redised.FormatPortalRuleKey("admin"))
-	assert.True(t, ok)
-	_, ok = redisServer.Get(redised.FormatPortalSiteKey("admin@demo.app"))
-	assert.True(t, ok)
-	_, ok = redisServer.Get(redised.FormatPortalCertKey("admin-cert"))
-	assert.True(t, ok)
-	assert.True(t, metadataRepo.IsSeeded())
 }
 
 func testSyncer(redisServer *redisserver.Server) *syncer.Syncer {
@@ -646,4 +658,19 @@ func TestSeederPreflightsSitesAndCertificatesBeforeWriting(t *testing.T) {
 			require.False(t, metadata.IsSeeded())
 		})
 	}
+}
+
+func TestSeederRejectsInvalidInlineYAML(t *testing.T) {
+	for _, source := range []string{" ", "null", "appConfigs: [", "[]"} {
+		t.Run(source, func(t *testing.T) {
+			seeder := new(Seeder{Flag: new(flag.Flag{SeedYAML: source})})
+			require.Panics(t, seeder.loadSeedYAML)
+		})
+	}
+}
+
+func TestSeederAcceptsEmptyInlineMapping(t *testing.T) {
+	seeder := new(Seeder{Flag: new(flag.Flag{SeedYAML: "{}"})})
+	require.NotPanics(t, seeder.loadSeedYAML)
+	require.NotNil(t, seeder.payload)
 }

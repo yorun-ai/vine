@@ -27,10 +27,14 @@ type _App struct {
 
 // Option configures the infrastructure started by standalone mode.
 type Option struct {
-	// SeedYAMLFile is the Hub seed configuration file; required in no-db mode.
+	// SeedYAMLFile is the Hub seed configuration file, mutually exclusive with SeedYAML.
 	SeedYAMLFile string
 
-	// NoDB loads read-only configuration from SeedYAMLFile into memory. This is
+	// SeedYAML contains inline Hub seed YAML, mutually exclusive with SeedYAMLFile.
+	// No-db mode requires one seed source; use "{}" for empty configuration.
+	SeedYAML string
+
+	// NoDB loads read-only configuration from the seed YAML into memory. This is
 	// the default when neither SQLiteFile nor PostgresURL is supplied.
 	NoDB bool
 	// SQLiteFile selects SQLite persistence and specifies its database file.
@@ -44,6 +48,7 @@ type Option struct {
 
 func (o Option) isZero() bool {
 	return o.SeedYAMLFile == "" &&
+		o.SeedYAML == "" &&
 		!o.NoDB &&
 		o.SQLiteFile == "" &&
 		o.PostgresURL == "" &&
@@ -176,6 +181,9 @@ func applyOption(flag *hubflag.Flag, option Option) {
 	}
 	if option.PostgresURL != "" {
 		flag.DBPostgresURL = option.PostgresURL
+	}
+	if option.SeedYAML != "" {
+		flag.SeedYAML = option.SeedYAML
 	}
 	if option.SeedYAMLFile != "" {
 		flag.SeedYAMLPath = option.SeedYAMLFile

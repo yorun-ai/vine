@@ -11,7 +11,9 @@ to app configs, Portal sites, rules, and certificates. Edit the seed file and
 restart Hub to apply changes. Dashboard exposes this state and disables editing;
 registration, schemas, and leases remain writable. Explicit `--db-sqlite-file`
 or `--db-postgres-url` keeps writable persistence and is mutually exclusive
-with `--no-db`. This also applies to standalone and `vine dev`.
+with `--no-db`. This also applies to standalone and `vine dev`. Standalone
+can alternatively receive inline YAML through `Option.SeedYAML`, mutually
+exclusive with the seed file; it uses the same import and read-only behavior.
 
 ## Directory Structure
 
