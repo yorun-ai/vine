@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/logger"
@@ -36,9 +37,11 @@ type Vault struct {
 	certs      map[string]*_Certificate
 	namesByKey map[string]string
 
-	certsByHost   map[string]*_Certificate
-	missingHosts  *cacheutil.LruSet[string]
-	wildcardCerts []*_Certificate
+	certsByHost    map[string]*_Certificate
+	missingHosts   *cacheutil.LruSet[string]
+	wildcardCerts  []*_Certificate
+	indexBuiltAt   time.Time
+	indexExpiresAt time.Time
 
 	temporaryWebCerts *_TemporaryWebCertificates
 }
@@ -61,14 +64,19 @@ func (v *Vault) initTemporaryWebCerts() {
 }
 
 func (v *Vault) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	return v.getCertificateAt(hello, time.Now())
+}
+
+func (v *Vault) getCertificateAt(hello *tls.ClientHelloInfo, now time.Time) (*tls.Certificate, error) {
 	host := strings.ToLower(strings.TrimSuffix(hello.ServerName, "."))
 
 	v.mutex.RLock()
+	fresh := v.indexFreshLocked(now)
 	cert := v.certsByHost[host]
 	temporaryWebCerts := v.temporaryWebCerts
 	missing := temporaryWebCerts == nil && host != "" && v.missingHosts.Contains(host)
 	v.mutex.RUnlock()
-	if cert != nil {
+	if fresh && cert != nil {
 		return cert.cert, nil
 	}
 	if host == "" {
@@ -77,14 +85,21 @@ func (v *Vault) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, er
 		}
 		return nil, errCertificateNotFound
 	}
-	if missing {
+	if fresh && missing {
 		return nil, errCertificateNotFound
 	}
 
 	v.mutex.Lock()
 	defer v.mutex.Unlock()
 
-	cert = v.matchWildcardCertLocked(host)
+	if !v.indexFreshLocked(now) {
+		v.rebuildIndexAtLocked(now)
+	}
+	// Recheck the exact/cache entry after upgrading the lock.
+	cert = v.certsByHost[host]
+	if cert == nil {
+		cert = v.matchWildcardCertLocked(host)
+	}
 	if cert != nil {
 		v.certsByHost[host] = cert
 		return cert.cert, nil
@@ -138,7 +153,18 @@ func (v *Vault) setCertLocked(cert *redised.PortalCert) {
 	v.certs[cert.Name] = parsed
 }
 
+func (v *Vault) indexFreshLocked(now time.Time) bool {
+	return !now.Before(v.indexBuiltAt) && (v.indexExpiresAt.IsZero() || now.Before(v.indexExpiresAt))
+}
+
 func (v *Vault) rebuildIndexLocked() {
+	v.rebuildIndexAtLocked(time.Now())
+}
+
+func (v *Vault) rebuildIndexAtLocked(now time.Time) {
+	// Certificate validity follows wall time, including clock corrections.
+	v.indexBuiltAt = now.Round(0)
+	v.indexExpiresAt = time.Time{}
 	v.certsByHost = map[string]*_Certificate{}
 	v.missingHosts = cacheutil.NewLruSet[string](maxMissingHostCacheSize)
 	v.wildcardCerts = nil
@@ -146,8 +172,21 @@ func (v *Vault) rebuildIndexLocked() {
 	names := make([]string, 0, len(v.certs))
 	for name := range v.certs {
 		names = append(names, name)
+		cert := v.certs[name]
+		// X.509 validity includes both endpoints; expiry starts just after validTo.
+		for _, boundary := range []time.Time{cert.validFrom, cert.validTo.Add(time.Nanosecond)} {
+			if boundary.After(now) && (v.indexExpiresAt.IsZero() || boundary.Before(v.indexExpiresAt)) {
+				v.indexExpiresAt = boundary
+			}
+		}
 	}
-	sort.Strings(names)
+	sort.Slice(names, func(i, j int) bool {
+		a, b := v.certs[names[i]], v.certs[names[j]]
+		if a.validAt(now) != b.validAt(now) {
+			return a.validAt(now)
+		}
+		return names[i] < names[j]
+	})
 
 	for _, name := range names {
 		cert := v.certs[name]
@@ -163,6 +202,15 @@ func (v *Vault) rebuildIndexLocked() {
 		}
 		if hasWildcard {
 			v.wildcardCerts = append(v.wildcardCerts, cert)
+		}
+	}
+	// A valid wildcard outranks an exact match outside its validity period.
+	for host, cert := range v.certsByHost {
+		if !cert.validAt(now) {
+			wildcard := v.matchWildcardCertLocked(host)
+			if wildcard != nil && wildcard.validAt(now) {
+				v.certsByHost[host] = wildcard
+			}
 		}
 	}
 }

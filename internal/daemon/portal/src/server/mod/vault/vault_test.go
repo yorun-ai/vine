@@ -220,3 +220,92 @@ func newTemporaryWebCertVault(t *testing.T, certs map[string]*_Certificate) *Vau
 	vault.rebuildIndexLocked()
 	return vault
 }
+
+func TestVaultCertificatePriority(t *testing.T) {
+	now := time.Date(2026, 9, 13, 12, 0, 0, 0, time.UTC)
+	kinds := []struct {
+		name     string
+		domain   string
+		from, to time.Time
+		rank     int
+	}{
+		{"valid exact", "admin.demo.local", now.Add(-time.Hour), now.Add(time.Hour), 0},
+		{"valid wildcard", "*.demo.local", now.Add(-time.Hour), now.Add(time.Hour), 1},
+		{"expired exact", "admin.demo.local", now.Add(-2 * time.Hour), now.Add(-time.Hour), 2},
+		{"future exact", "admin.demo.local", now.Add(time.Hour), now.Add(2 * time.Hour), 2},
+		{"expired wildcard", "*.demo.local", now.Add(-2 * time.Hour), now.Add(-time.Hour), 3},
+		{"future wildcard", "*.demo.local", now.Add(time.Hour), now.Add(2 * time.Hour), 3},
+	}
+	for _, a := range kinds {
+		for _, b := range kinds {
+			t.Run(a.name+" vs "+b.name, func(t *testing.T) {
+				first := new(_Certificate{name: "a-cert", domains: []string{a.domain}, validFrom: a.from, validTo: a.to, cert: new(tls.Certificate)})
+				second := new(_Certificate{name: "z-cert", domains: []string{b.domain}, validFrom: b.from, validTo: b.to, cert: new(tls.Certificate)})
+				vault := new(Vault{certs: map[string]*_Certificate{second.name: second, first.name: first}})
+				vault.rebuildIndexAtLocked(now)
+				want := first
+				if b.rank < a.rank {
+					want = second
+				}
+				for range 2 {
+					got, err := vault.getCertificateAt(&tls.ClientHelloInfo{ServerName: "ADMIN.demo.local."}, now)
+					require.NoError(t, err)
+					assert.Same(t, want.cert, got)
+				}
+			})
+		}
+	}
+}
+
+func TestVaultCertificateCacheValidityBoundaries(t *testing.T) {
+	now := time.Date(2026, 9, 13, 12, 0, 0, 0, time.UTC)
+	for _, domain := range []string{"admin.demo.local", "*.demo.local"} {
+		t.Run(domain, func(t *testing.T) {
+			first := new(_Certificate{name: "a-cert", domains: []string{domain}, validFrom: now, validTo: now.Add(time.Hour), cert: new(tls.Certificate)})
+			second := new(_Certificate{name: "z-cert", domains: []string{domain}, validFrom: now.Add(-time.Hour), validTo: now.Add(2 * time.Hour), cert: new(tls.Certificate)})
+			vault := new(Vault{certs: map[string]*_Certificate{first.name: first, second.name: second}})
+			vault.rebuildIndexAtLocked(now.Add(-time.Nanosecond))
+			for _, step := range []struct {
+				at   time.Time
+				want *_Certificate
+			}{
+				{now.Add(-time.Nanosecond), second},
+				{now, first},
+				{first.validTo, first},
+				{first.validTo.Add(time.Nanosecond), second},
+				{second.validTo.Add(time.Nanosecond), first},
+				{now.Add(-time.Nanosecond), second}, // Clock rollback must also discard cached choices.
+			} {
+				got, err := vault.getCertificateAt(&tls.ClientHelloInfo{ServerName: "admin.demo.local"}, step.at)
+				require.NoError(t, err)
+				assert.Same(t, step.want.cert, got, "at %s", step.at)
+			}
+		})
+	}
+}
+
+func TestVaultCertificateCacheSwitchesBetweenExactAndWildcard(t *testing.T) {
+	now := time.Date(2026, 9, 13, 12, 0, 0, 0, time.UTC)
+	exact := new(_Certificate{name: "a-cert", domains: []string{"admin.demo.local"}, validFrom: now, validTo: now.Add(time.Hour), cert: new(tls.Certificate)})
+	wildcard := new(_Certificate{name: "z-cert", domains: []string{"*.demo.local"}, validFrom: now.Add(-time.Hour), validTo: now.Add(2 * time.Hour), cert: new(tls.Certificate)})
+	vault := new(Vault{certs: map[string]*_Certificate{exact.name: exact, wildcard.name: wildcard}})
+	vault.rebuildIndexAtLocked(now.Add(-time.Nanosecond))
+	for _, step := range []struct {
+		at   time.Time
+		want *_Certificate
+	}{
+		{now.Add(-time.Nanosecond), wildcard},
+		{now, exact},
+		{exact.validTo.Add(time.Nanosecond), wildcard},
+		{wildcard.validTo.Add(time.Nanosecond), exact},
+	} {
+		got, err := vault.getCertificateAt(&tls.ClientHelloInfo{ServerName: "admin.demo.local"}, step.at)
+		require.NoError(t, err)
+		assert.Same(t, step.want.cert, got)
+	}
+	for _, host := range []string{"demo.local", "a.admin.demo.local"} {
+		got, err := vault.getCertificateAt(&tls.ClientHelloInfo{ServerName: host}, now)
+		require.ErrorIs(t, err, errCertificateNotFound)
+		assert.Nil(t, got)
+	}
+}
