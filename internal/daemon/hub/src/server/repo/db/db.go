@@ -1,7 +1,8 @@
 package db
 
 import (
-	"github.com/google/uuid"
+	"uuid"
+
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
 	"go.yorun.ai/vine/internal/infra/rdb"
@@ -17,7 +18,7 @@ type HubDatabase struct {
 func (d *HubDatabase) InitOption(option *rdb.Option) {
 	switch d.Flag.SourceType {
 	case flag.SourceMemory:
-		option.ConnURL = "sqlite://file:vine-hub-" + uuid.NewString() + "?mode=memory&cache=shared"
+		option.ConnURL = "sqlite://file:vine-hub-" + uuid.New().String() + "?mode=memory&cache=shared"
 		option.MaxOpenConn = 1
 	case flag.SourceSQLite:
 		option.ConnURL = "sqlite://" + d.Flag.DBSQLiteFile
