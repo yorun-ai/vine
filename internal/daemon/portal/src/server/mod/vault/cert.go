@@ -78,3 +78,7 @@ func matchesWildcardCertDomain(domain string, host string) bool {
 	suffix := domain[1:]
 	return strings.HasSuffix(host, suffix) && strings.Count(host, ".") == strings.Count(domain, ".")
 }
+
+func (c *_Certificate) validAt(now time.Time) bool {
+	return !now.Before(c.validFrom) && !now.After(c.validTo)
+}
