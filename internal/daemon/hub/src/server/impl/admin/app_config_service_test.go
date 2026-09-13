@@ -1,6 +1,9 @@
 package admin
 
 import (
+	"encoding/json/jsontext"
+	"encoding/json/v2"
+	"os"
 	"testing"
 	"time"
 
@@ -508,5 +511,52 @@ func TestAppConfigMapEnumKeysAndValues(t *testing.T) {
 			assert.False(t, jsonValueMatchesType(map[string]any{"EAST": 1}, mapType, enums))
 			assert.False(t, jsonValueMatchesType(map[string]any{"EAST": nil}, mapType, enums))
 		})
+	}
+}
+
+func TestEditorScalarFormatsMatchRuntime(t *testing.T) {
+	data, err := os.ReadFile("../../../dashboard/src/features/app/testdata/config-scalar.json")
+	require.NoError(t, err)
+	var cases []struct {
+		Type  string         `json:"type"`
+		Value jsontext.Value `json:"value"`
+		Valid bool           `json:"valid"`
+	}
+	require.NoError(t, json.Unmarshal(data, &cases))
+	for _, item := range cases {
+		t.Run(item.Type+"/"+string(item.Value), func(t *testing.T) {
+			var target any
+			switch item.Type {
+			case "duration":
+				target = new(skel.Duration)
+			case "decimal":
+				target = new(skel.Decimal)
+			case "uuid":
+				target = new(skel.UUID)
+			case "timestamp":
+				target = new(skel.Timestamp)
+			case "localdate":
+				target = new(skel.LocalDate)
+			case "localtime":
+				target = new(skel.LocalTime)
+			case "localdatetime":
+				target = new(skel.LocalDateTime)
+			default:
+				t.Fatalf("unknown scalar %s", item.Type)
+			}
+			err := json.Unmarshal(item.Value, target)
+			require.Equal(t, item.Valid, err == nil, "decode error: %v", err)
+		})
+	}
+}
+
+func TestIntegerMapKeyMatchesRuntime(t *testing.T) {
+	schema := &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}
+	for _, key := range []string{"0", "-1", "9223372036854775807", "-9223372036854775808", "1e3", "1.0", "1_000", "0x10", "01", "9223372036854775808", "-9223372036854775809"} {
+		encoded, err := json.Marshal(map[string]bool{key: true})
+		require.NoError(t, err)
+		var target map[int64]bool
+		err = json.Unmarshal(encoded, &target)
+		require.Equal(t, err == nil, jsonMapKeyMatchesType(key, schema, nil), key)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"encoding/json/v2"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 
@@ -263,11 +264,8 @@ func jsonMapKeyMatchesType(value string, typeSchema *skel.TypeSchema, enumSchema
 		case skel.ScalarBool:
 			return value == "true" || value == "false"
 		case skel.ScalarInt, skel.ScalarLong:
-			var decoded float64
-			if json.Unmarshal([]byte(value), &decoded) != nil {
-				return false
-			}
-			return math.Trunc(decoded) == decoded
+			decoded, err := strconv.ParseInt(value, 10, 64)
+			return err == nil && (strconv.FormatInt(decoded, 10) == value || value == "-0")
 		default:
 			return true
 		}

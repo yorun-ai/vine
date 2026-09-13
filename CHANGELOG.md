@@ -8,9 +8,25 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Added
+
+- JSON5/YAML configuration editor with inline controls, type links, change
+  highlighting, copy/replace actions, and validation diagnostics.
+- Structured YAML app config seeds, standalone `Option.SeedYAML`, and enum
+  keys and values in configuration maps.
+
 ### Changed
 
-- Hub, standalone, and `vine dev` now default to `--no-db`, requiring a seed YAML file. Configuration is rebuilt in memory on startup and becomes read-only after initialization; edit the file and restart to apply changes. Explicit SQLite/PostgreSQL storage retains writable configuration. Dashboard shows the read-only state and disables configuration writes.
+- Hub, standalone, and `vine dev` default to read-only `--no-db` mode with a
+  required seed source. Update the source and restart to apply changes;
+  explicit SQLite/PostgreSQL storage remains writable.
+- YAML seeds and editing reject anchors, aliases, merge keys, and nonstandard
+  numeric notation. Expand references and use ordinary decimal numbers.
+
+### Fixed
+
+- Prevent unsafe integer saves and improve collection, map key, and scalar
+  format diagnostics; refresh the embedded Dashboard.
 
 ## [0.15.8] - 2026-09-13
 

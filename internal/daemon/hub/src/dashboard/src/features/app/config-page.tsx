@@ -1,4 +1,4 @@
-import { configMapEnumIssues } from './config-map-enum'
+import { configValueIssues } from './config-value-validation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatConfigYaml, normalizeConfigYaml } from './config-yaml-document'
 import { ConfigJsonEditor } from './config-json-editor'
@@ -172,7 +172,7 @@ function shouldUseBrowserNavigation(
 
 function formatConfigValue(value: string) {
   try {
-    return JSON.stringify(JSON.parse(value), null, 2)
+    return normalizeConfigJson(value)
   } catch {
     return value
   }
@@ -181,6 +181,7 @@ function formatConfigValue(value: string) {
 function isValidJson(value: string) {
   try {
     JSON.parse(value)
+    normalizeConfigJson(value)
     return true
   } catch {
     return false
@@ -211,10 +212,6 @@ function stringifyConfigObject(value: Record<string, unknown>) {
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Request failed'
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return value !== null && !Array.isArray(value) && typeof value === 'object'
 }
 
 function valuesEqual(left: unknown, right: unknown) {
@@ -280,56 +277,6 @@ function completeConfigValue(value: string, schema: AppConfigSchema | null) {
   })
 }
 
-function jsonValueType(value: unknown) {
-  if (value === null) {
-    return 'null'
-  }
-  if (Array.isArray(value)) {
-    return 'list'
-  }
-  return typeof value
-}
-
-function configTypeLabel(typeText: string) {
-  return baseConfigType(typeText)
-}
-
-function jsonValueMatchesConfigType(
-  value: unknown,
-  typeText: string,
-  enumItems: Array<{ name: string }>,
-): boolean {
-  if (value === null) {
-    return typeText.endsWith('?')
-  }
-
-  const type = baseConfigType(typeText)
-  if (type.startsWith('list<')) {
-    return Array.isArray(value)
-  }
-  if (type.startsWith('map<')) {
-    return isPlainObject(value)
-  }
-  if (enumItems.length > 0) {
-    return (
-      typeof value === 'string' && enumItems.some((item) => item.name === value)
-    )
-  }
-  if (type === 'bool') {
-    return typeof value === 'boolean'
-  }
-  if (isNumericType(type)) {
-    return (
-      typeof value === 'number' ||
-      (type === 'decimal' && typeof value === 'string')
-    )
-  }
-  if (type === 'json') {
-    return true
-  }
-  return typeof value === 'string'
-}
-
 function collectConfigMismatchIssues(
   value: string,
   schema: AppConfigSchema | null,
@@ -360,24 +307,13 @@ function collectConfigMismatchIssues(
     }
 
     const fieldValue = parsed[field.name]
-    for (const issue of configMapEnumIssues(fieldValue, field)) {
+    for (const issue of configValueIssues(fieldValue, field)) {
       issues.push({
         fieldName: field.name,
-        text: t(issue.part === 'key' ? 'appConfig.mapEnumKeyMismatch' : 'appConfig.mapEnumValueMismatch')
-          .replace('{field}', `${field.name}[${JSON.stringify(issue.key)}]`)
+        text: t(issue.part === 'key' ? 'appConfig.mapEnumKeyMismatch' : 'appConfig.typeMismatch')
+          .replace('{field}', issue.path)
           .replace('{expected}', issue.expected)
           .replace('{actual}', issue.actual),
-      })
-    }
-    if (
-      !jsonValueMatchesConfigType(fieldValue, field.type, field.enumItems ?? [])
-    ) {
-      issues.push({
-        fieldName: field.name,
-        text: t('appConfig.typeMismatch')
-          .replace('{field}', field.name)
-          .replace('{expected}', configTypeLabel(field.type))
-          .replace('{actual}', jsonValueType(fieldValue)),
       })
     }
   }
@@ -850,7 +786,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
       return
     }
     if (!isValidJson(createValue)) {
-      setCreateValueError(t('appConfig.valueInvalidJson'))
+      setCreateValueError(t('appConfig.invalidJson5'))
       return
     }
 

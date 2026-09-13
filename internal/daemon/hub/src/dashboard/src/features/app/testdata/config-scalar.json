@@ -1,0 +1,382 @@
+[
+  {
+    "type": "duration",
+    "value": "0",
+    "valid": true
+  },
+  {
+    "type": "duration",
+    "value": "+0",
+    "valid": true
+  },
+  {
+    "type": "duration",
+    "value": "-0",
+    "valid": true
+  },
+  {
+    "type": "duration",
+    "value": "1h30m",
+    "valid": true
+  },
+  {
+    "type": "duration",
+    "value": ".5s",
+    "valid": true
+  },
+  {
+    "type": "duration",
+    "value": "1.s",
+    "valid": true
+  },
+  {
+    "type": "duration",
+    "value": "-2m3s",
+    "valid": true
+  },
+  {
+    "type": "duration",
+    "value": "1us",
+    "valid": true
+  },
+  {
+    "type": "duration",
+    "value": "1µs",
+    "valid": true
+  },
+  {
+    "type": "duration",
+    "value": "1μs",
+    "valid": true
+  },
+  {
+    "type": "duration",
+    "value": "9223372036854775807ns",
+    "valid": true
+  },
+  {
+    "type": "duration",
+    "value": "-9223372036854775808ns",
+    "valid": true
+  },
+  {
+    "type": "duration",
+    "value": "0.1ns",
+    "valid": true
+  },
+  {
+    "type": "duration",
+    "value": "garbage",
+    "valid": false
+  },
+  {
+    "type": "duration",
+    "value": "",
+    "valid": false
+  },
+  {
+    "type": "duration",
+    "value": "1",
+    "valid": false
+  },
+  {
+    "type": "duration",
+    "value": "1d",
+    "valid": false
+  },
+  {
+    "type": "duration",
+    "value": "1e3s",
+    "valid": false
+  },
+  {
+    "type": "duration",
+    "value": "1s-2s",
+    "valid": false
+  },
+  {
+    "type": "duration",
+    "value": "9223372036854775808ns",
+    "valid": false
+  },
+  {
+    "type": "duration",
+    "value": "-9223372036854775809ns",
+    "valid": false
+  },
+  {
+    "type": "duration",
+    "value": "999999999999999h",
+    "valid": false
+  },
+  {
+    "type": "decimal",
+    "value": "1.00",
+    "valid": true
+  },
+  {
+    "type": "decimal",
+    "value": "-.5",
+    "valid": true
+  },
+  {
+    "type": "decimal",
+    "value": "+1.",
+    "valid": true
+  },
+  {
+    "type": "decimal",
+    "value": "1e-30",
+    "valid": true
+  },
+  {
+    "type": "decimal",
+    "value": "9007199254740993.123456789",
+    "valid": true
+  },
+  {
+    "type": "decimal",
+    "value": "1e2147483647",
+    "valid": true
+  },
+  {
+    "type": "decimal",
+    "value": "1e-2147483648",
+    "valid": true
+  },
+  {
+    "type": "decimal",
+    "value": "bad",
+    "valid": false
+  },
+  {
+    "type": "decimal",
+    "value": "NaN",
+    "valid": false
+  },
+  {
+    "type": "decimal",
+    "value": "Infinity",
+    "valid": false
+  },
+  {
+    "type": "decimal",
+    "value": "1.2.3",
+    "valid": false
+  },
+  {
+    "type": "decimal",
+    "value": "1e",
+    "valid": false
+  },
+  {
+    "type": "decimal",
+    "value": "0.1e-2147483648",
+    "valid": false
+  },
+  {
+    "type": "decimal",
+    "value": "1e2147483648",
+    "valid": false
+  },
+  {
+    "type": "decimal",
+    "value": 123,
+    "valid": false
+  },
+  {
+    "type": "uuid",
+    "value": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
+    "valid": true
+  },
+  {
+    "type": "uuid",
+    "value": "F81D4FAE-7DEC-11D0-A765-00A0C91E6BF6",
+    "valid": true
+  },
+  {
+    "type": "uuid",
+    "value": "{f81d4fae-7dec-11d0-a765-00a0c91e6bf6}",
+    "valid": true
+  },
+  {
+    "type": "uuid",
+    "value": "urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
+    "valid": true
+  },
+  {
+    "type": "uuid",
+    "value": "f81d4fae7dec11d0a76500a0c91e6bf6",
+    "valid": true
+  },
+  {
+    "type": "uuid",
+    "value": "bad",
+    "valid": false
+  },
+  {
+    "type": "uuid",
+    "value": "f81d4fae-7dec-11d0-a765-00a0c91e6bf60",
+    "valid": false
+  },
+  {
+    "type": "uuid",
+    "value": "{f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
+    "valid": false
+  },
+  {
+    "type": "uuid",
+    "value": "z81d4fae-7dec-11d0-a765-00a0c91e6bf6",
+    "valid": false
+  },
+  {
+    "type": "localdate",
+    "value": "2024-02-29",
+    "valid": true
+  },
+  {
+    "type": "localdate",
+    "value": "2026-09-13",
+    "valid": true
+  },
+  {
+    "type": "localdate",
+    "value": "0000-01-01",
+    "valid": true
+  },
+  {
+    "type": "localdate",
+    "value": "2023-02-29",
+    "valid": false
+  },
+  {
+    "type": "localdate",
+    "value": "2026-04-31",
+    "valid": false
+  },
+  {
+    "type": "localdate",
+    "value": "2026-13-01",
+    "valid": false
+  },
+  {
+    "type": "localdate",
+    "value": "2026-1-1",
+    "valid": false
+  },
+  {
+    "type": "localtime",
+    "value": "00:00:00",
+    "valid": true
+  },
+  {
+    "type": "localtime",
+    "value": "23:59:59.123456789",
+    "valid": true
+  },
+  {
+    "type": "localtime",
+    "value": "1:02:03",
+    "valid": true
+  },
+  {
+    "type": "localtime",
+    "value": "12:34:56,123",
+    "valid": true
+  },
+  {
+    "type": "localtime",
+    "value": "12:34:56.1234567890",
+    "valid": true
+  },
+  {
+    "type": "localtime",
+    "value": "24:00:00",
+    "valid": false
+  },
+  {
+    "type": "localtime",
+    "value": "12:60:00",
+    "valid": false
+  },
+  {
+    "type": "localtime",
+    "value": "12:00:60",
+    "valid": false
+  },
+  {
+    "type": "localtime",
+    "value": "12:34",
+    "valid": false
+  },
+  {
+    "type": "localtime",
+    "value": "12:34:56Z",
+    "valid": false
+  },
+  {
+    "type": "localdatetime",
+    "value": "2026-09-13T12:34:56.123",
+    "valid": true
+  },
+  {
+    "type": "localdatetime",
+    "value": "2026-09-13t12:34:56",
+    "valid": true
+  },
+  {
+    "type": "localdatetime",
+    "value": "2023-02-29T12:34:56",
+    "valid": false
+  },
+  {
+    "type": "localdatetime",
+    "value": "2026-09-13T12:34:56Z",
+    "valid": false
+  },
+  {
+    "type": "localdatetime",
+    "value": "2026-09-13",
+    "valid": false
+  },
+  {
+    "type": "timestamp",
+    "value": "2026-09-13T12:34:56Z",
+    "valid": true
+  },
+  {
+    "type": "timestamp",
+    "value": "2026-09-13T12:34:56.123456789+08:00",
+    "valid": true
+  },
+  {
+    "type": "timestamp",
+    "value": "2026-09-13T1:34:56,123Z",
+    "valid": true
+  },
+  {
+    "type": "timestamp",
+    "value": "2026-09-13T12:34:56+24:00",
+    "valid": true
+  },
+  {
+    "type": "timestamp",
+    "value": "not-a-date",
+    "valid": false
+  },
+  {
+    "type": "timestamp",
+    "value": "2023-02-29T12:34:56Z",
+    "valid": false
+  },
+  {
+    "type": "timestamp",
+    "value": "2026-09-13T12:34:56",
+    "valid": false
+  },
+  {
+    "type": "timestamp",
+    "value": "2026-09-13T12:34:56+25:00",
+    "valid": false
+  }
+]

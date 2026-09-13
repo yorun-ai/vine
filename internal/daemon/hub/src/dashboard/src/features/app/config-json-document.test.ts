@@ -118,3 +118,13 @@ test('dirty highlighting covers type, description and every value line only', ()
   assert.deepEqual(getConfigJsonDirtyLines(document.doc, document.ranges, new Set(), new Map()), [])
   assert.deepEqual(getConfigJsonDirtyLines(document.doc, document.ranges, new Set(['items']), new Map([['items', 'Invalid']])), [])
 })
+
+test('unsafe integers block saving including nested and rounded backend values', () => {
+  for (const number of ['9007199254740993', '-9007199254740993', '9007199254740992', '1e20']) {
+    const raw = `{"nested":{"items":[${number}]}}`
+    assert.throws(() => normalizeConfigJson(raw), /safe range/)
+    assert.match(getFreeConfigJsonErrors(raw)[0].message, /safe range/)
+    assert.equal(createConfigJsonDocument(raw, [], false).doc, raw)
+  }
+  assert.doesNotThrow(() => normalizeConfigJson('{"max":9007199254740991,"min":-9007199254740991,"fraction":1.5,"text":"9007199254740993"}'))
+})

@@ -152,6 +152,6 @@ func TestDBAppConfigRepoRejectsReadOnlyWrites(t *testing.T) {
 	access := new(configaccess.Access)
 	access.Lock()
 	repo := &DBAppConfigRepo{Access: access}
-	require.PanicsWithError(t, "Configuration is read-only; edit the seed configuration file and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.SaveItem(new(core.AppConfig)) })
-	require.PanicsWithError(t, "Configuration is read-only; edit the seed configuration file and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.RemoveItem(1) })
+	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.SaveItem(new(core.AppConfig)) })
+	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.RemoveItem(1) })
 }

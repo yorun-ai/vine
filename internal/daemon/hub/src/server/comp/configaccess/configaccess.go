@@ -22,5 +22,5 @@ func (a *Access) ReadOnly() bool {
 }
 
 func (a *Access) CheckWrite() {
-	ex.PanicNewIfNot(!a.ReadOnly(), ex.PermissionDenied, "Configuration is read-only; edit the seed configuration file and restart Hub.")
+	ex.PanicNewIfNot(!a.ReadOnly(), ex.PermissionDenied, "Configuration is read-only; update the configuration source and restart Hub.")
 }

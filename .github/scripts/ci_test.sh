@@ -60,6 +60,9 @@ check_paths pull_request 'dashboard workflow' script/build-dashboard-assets.sh
 for file in src/App.tsx package.json pnpm-lock.yaml; do
   check_paths pull_request dashboard "internal/daemon/hub/src/dashboard/$file"
 done
+for event in pull_request push; do
+  check_paths "$event" "go-test go-race dashboard" internal/daemon/hub/src/dashboard/src/features/app/testdata/config-scalar.json
+done
 check_paths pull_request '' internal/daemon/hub/src/dashboard/README.md
 check_paths pull_request "$go_jobs licenses container dashboard" README.md go.sum internal/daemon/hub/src/dashboard/src/App.tsx
 

@@ -64,6 +64,9 @@ function parseConfigJsonValue(value: string): unknown {
     if (typeof item === 'number' && !Number.isFinite(item)) {
       throw new Error('Configuration numbers must be finite.')
     }
+    if (typeof item === 'number' && Number.isInteger(item) && !Number.isSafeInteger(item)) {
+      throw new Error('Configuration integers must be within the safe range: -9007199254740991 to 9007199254740991.')
+    }
     return item
   })
 }

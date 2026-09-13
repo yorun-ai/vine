@@ -133,7 +133,7 @@ func (a *_App) initInfra() {
 		&ucli.BoolFlag{
 			Name:        vinecli.FlagHubNoDB,
 			Sources:     ucli.EnvVars(vinecli.EnvHubNoDB),
-			Usage:       "use no persistent database (default); requires seed-yaml-file; configuration is read-only",
+			Usage:       "use no persistent database (default); requires seed-yaml-file or Option.SeedYAML; configuration is read-only",
 			Destination: &flag.NoDB,
 		},
 		&ucli.StringFlag{

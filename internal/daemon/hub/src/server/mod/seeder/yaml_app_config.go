@@ -13,8 +13,11 @@ func DecodeAppConfig(node *yaml.Node, target any) error {
 	if err := node.Decode(&fields); err != nil {
 		return err
 	}
+	if err := CheckSeedYAMLSyntax(node); err != nil {
+		return fmt.Errorf("app config %q: %w", fields["name"].Value, err)
+	}
 	if value, ok := fields["value"]; ok && value.ShortTag() != "!!str" {
-		normalized, err := configJSONNode(&value, map[*yaml.Node]*yaml.Node{})
+		normalized, err := configJSONNode(&value)
 		if err != nil {
 			return fmt.Errorf("app config %q value: %w", fields["name"].Value, err)
 		}
@@ -37,46 +40,32 @@ func DecodeAppConfig(node *yaml.Node, target any) error {
 	return normalized.Decode(target)
 }
 
-func configJSONNode(node *yaml.Node, copies map[*yaml.Node]*yaml.Node) (*yaml.Node, error) {
-	if copy, ok := copies[node]; ok {
-		if copy == nil {
-			return nil, fmt.Errorf("cyclic YAML aliases are not supported")
-		}
-		return copy, nil
-	}
-	copies[node] = nil
+func configJSONNode(node *yaml.Node) (*yaml.Node, error) {
 	copy := *node
 	copy.Content = nil
-	if node.Kind == yaml.AliasNode {
-		alias, err := configJSONNode(node.Alias, copies)
+	switch node.ShortTag() {
+	case "!!timestamp":
+		copy.Tag = "!!str"
+	case "!!merge":
+		return nil, fmt.Errorf("YAML merge keys are not supported")
+	case "!!str", "!!bool", "!!int", "!!float", "!!null", "!!map", "!!seq":
+	default:
+		return nil, fmt.Errorf("unsupported YAML tag %q", node.Tag)
+	}
+	for index, child := range node.Content {
+		normalized, err := configJSONNode(child)
 		if err != nil {
 			return nil, err
 		}
-		copy.Alias = alias
-	} else {
-		switch node.ShortTag() {
-		case "!!timestamp":
-			copy.Tag = "!!str"
-		case "!!str", "!!bool", "!!int", "!!float", "!!null", "!!map", "!!seq", "!!merge":
-		default:
-			return nil, fmt.Errorf("unsupported YAML tag %q", node.Tag)
-		}
-		for index, child := range node.Content {
-			normalized, err := configJSONNode(child, copies)
-			if err != nil {
-				return nil, err
+		if node.Kind == yaml.MappingNode && index%2 == 0 {
+			if child.Kind != yaml.ScalarNode || child.ShortTag() == "!!null" {
+				return nil, fmt.Errorf("configuration map keys must be non-null scalars")
 			}
-			if node.Kind == yaml.MappingNode && index%2 == 0 && child.ShortTag() != "!!merge" {
-				if child.Kind != yaml.ScalarNode || child.ShortTag() == "!!null" {
-					return nil, fmt.Errorf("configuration map keys must be non-null scalars")
-				}
-				key := *normalized
-				key.Tag = "!!str"
-				normalized = &key
-			}
-			copy.Content = append(copy.Content, normalized)
+			key := *normalized
+			key.Tag = "!!str"
+			normalized = &key
 		}
+		copy.Content = append(copy.Content, normalized)
 	}
-	copies[node] = &copy
 	return &copy, nil
 }

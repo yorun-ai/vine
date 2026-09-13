@@ -46,3 +46,17 @@ test('string map keys remain editable and invalid enum values have read-only dro
   assert.equal(widgets.iter().value!.spec.widget.readOnly, true)
   assert.equal(widgets.iter().value!.spec.widget.error, 'Invalid enum')
 })
+
+test('YAML numeric map keys retain enum value dropdowns and exact edit ranges', () => {
+  const schema = { ...field, type: 'map<int, demo.Status>', mapKeyEnumItems: [] }
+  const text = '1: ACTIVE\n9007199254740993: LOCKED'
+  const protection = createConfigValueProtection([{ name: 'statuses', from: 0, to: text.length }])
+  const extensions = createConfigMapEnumExtension([schema], protection.ranges, false, true, new Map(), new Set())
+  let state = EditorState.create({ doc: text, extensions: [...protection.extensions, ...extensions] })
+  assert.equal(state.field(extensions[1]).size, 2)
+  const entries = configMapEntries(text, state.field(protection.ranges)[0], true)
+  assert.equal(entries[1].key, '9007199254740993')
+  state = state.update({ changes: { ...entries[0].valueRange, insert: 'LOCKED' } }).state
+  assert.deepEqual(JSON.parse(normalizeConfigYaml(state.doc.toString())), { '1': 'LOCKED', '9007199254740993': 'LOCKED' })
+  assert.equal(state.field(extensions[1]).size, 2)
+})

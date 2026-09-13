@@ -1,4 +1,5 @@
-import { isMap, isScalar, parseDocument, stringify, visit } from 'yaml'
+import { isAlias, isNode, isMap, isScalar, parseDocument, stringify, visit } from 'yaml'
+import { normalizeConfigJson } from './config-json-document.ts'
 import type { ConfigJsonField, ConfigValueRange, createConfigJsonDocument } from './config-json-document.ts'
 
 export function parseConfigYaml(text: string): unknown {
@@ -7,15 +8,43 @@ export function parseConfigYaml(text: string): unknown {
   if (problem) {
     throw problem
   }
+  visit(document, (_key, node) => {
+    if (isScalar(node) && node.type === 'PLAIN' && node.tag !== 'tag:yaml.org,2002:str') {
+      const source = node.source ?? ''
+      const numeric = typeof node.value === 'number' || /^[+-]?(?:(?:[0-9][0-9_]*(?:\.[0-9_]*)?|\.[0-9_]+)(?:[eE][+-]?[0-9_]+)?|0[xX][0-9a-fA-F_]+|0[oO][0-7_]+|0[bB][01_]+)$/.test(source)
+      if (numeric && !/^[+-]?(0|[1-9][0-9]*)(\.[0-9]+)?$/.test(source)) {
+        throw Object.assign(new Error('Unsupported YAML number; use plain decimal notation without separators, leading zeros, or exponents.'), { pos: node.range })
+      }
+    }
+    if (isAlias(node) || (isNode(node) && 'anchor' in node && node.anchor)) {
+      throw Object.assign(new Error('YAML anchors and aliases are not supported.'), { pos: node.range })
+    }
+  })
   visit(document, {
     Scalar(_key, scalar) {
       if (typeof scalar.value === 'number' && !Number.isFinite(scalar.value)) {
         throw Object.assign(new Error('Configuration numbers must be finite.'), { pos: scalar.range })
       }
+      if (typeof scalar.value === 'number' && Number.isInteger(scalar.value) && !Number.isSafeInteger(scalar.value)) {
+        throw Object.assign(new Error('Configuration integers must be within the safe range: -9007199254740991 to 9007199254740991.'), { pos: scalar.range })
+      }
     },
-    Pair(_key, pair) {
-      if (!isScalar(pair.key) || typeof pair.key.value !== 'string') {
-        throw new Error('Configuration mapping keys must be strings.')
+    Map(_key, map) {
+      const keys = new Set<string>()
+      for (const pair of map.items) {
+        const key = pair.key
+        if (!isScalar(key) || key.value === null) {
+          throw Object.assign(new Error('Configuration map keys must be non-null scalars.'), { pos: isScalar(key) ? key.range : undefined })
+        }
+        if ((key.type === 'PLAIN' && key.source === '<<') || key.tag === 'tag:yaml.org,2002:merge') {
+          throw Object.assign(new Error('YAML merge keys are not supported.'), { pos: key.range })
+        }
+        const name = typeof key.value === 'string' ? key.value : key.source ?? String(key.value)
+        if (keys.has(name)) {
+          throw Object.assign(new Error(`Duplicate configuration map key: ${name}`), { pos: key.range })
+        }
+        keys.add(name)
+        key.value = name
       }
     },
   })
@@ -33,8 +62,30 @@ export function normalizeConfigYaml(text: string) {
   return JSON.stringify(parseConfigYaml(text), null, 2)
 }
 
+function stringifyConfigYaml(value: unknown) {
+  return stringify(value, {
+    lineWidth: 0,
+    customTags: (tags) => tags.map((tag) => typeof tag !== 'string' && tag.collection === undefined && tag.tag === 'tag:yaml.org,2002:float' ? {
+      ...tag,
+      stringify: (node: { value: unknown }) => {
+        const text = String(node.value)
+        const match = /^(-?)(\d+)(?:\.(\d+))?e([+-]?\d+)$/i.exec(text)
+        if (!match) {
+          return text
+        }
+        const digits = match[2] + (match[3] ?? '')
+        const point = match[2].length + Number(match[4])
+        const decimal = point <= 0 ? `0.${'0'.repeat(-point)}${digits}`
+          : point >= digits.length ? digits + '0'.repeat(point - digits.length)
+          : `${digits.slice(0, point)}.${digits.slice(point)}`
+        return match[1] + decimal
+      },
+    } : tag),
+  })
+}
+
 export function formatConfigYaml(value: string) {
-  return stringify(JSON.parse(value), { lineWidth: 0 })
+  return stringifyConfigYaml(JSON.parse(normalizeConfigJson(value)))
 }
 
 export function getConfigYamlPropertyRanges(text: string): Array<ConfigValueRange> {
@@ -92,7 +143,7 @@ export function createConfigYamlDocument(value: string, fields: ReadonlyArray<Co
     for (const line of [field?.type, field?.description].filter(Boolean).join('\n').split(/\r\n|[\n\r\u2028\u2029]/)) {
       doc += `# ${line}\n`
     }
-    const entry = stringify({ [name]: item }, { lineWidth: 0 })
+    const entry = stringifyConfigYaml({ [name]: item })
     const pair = (parseDocument(entry).contents as import('yaml').YAMLMap).items[0]
     const start = pair.key && isScalar(pair.key) ? pair.key.range![1] : 0
     const from = doc.length + start + 1
