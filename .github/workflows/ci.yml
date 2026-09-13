@@ -83,6 +83,19 @@ jobs:
         if: needs.changes.outputs['go-static'] == 'true'
         run: GOWORK=off go vet ./...
 
+      - name: Build Linux static binary
+        if: needs.changes.outputs['go-static'] == 'true'
+        env:
+          GOTOOLCHAIN: go${{ env.BUILD_GO_VERSION }}
+          GOWORK: 'off'
+          CGO_ENABLED: '0'
+          GOOS: linux
+          GOARCH: amd64
+        run: >-
+          go build -trimpath
+          -ldflags="-s -w -X go.yorun.ai/vine/buildinfo.ldModuleVersion=v0.0.0-dev"
+          -o "${RUNNER_TEMP}/vine" ./cmd/vine
+
       - name: Check module files
         if: needs.changes.outputs['go-static'] == 'true'
         run: GOWORK=off go mod tidy -diff
