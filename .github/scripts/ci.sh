@@ -30,7 +30,7 @@ classify_changes() {
           any(.[]; endswith(".go") and (endswith("_test.go") | not)) or
           any(.[]; . == "THIRD_PARTY_LICENSES.txt" or . == "script/gen-third-party-licenses.sh")),
         dashboard: $dashboard,
-        container: ($packaging or $dependencies or $runtime),
+        container: ($packaging or $dependencies or ($event == "push" and $runtime)),
         workflow: $workflow,
         k8s: ($ci or any(.[]; (startswith("deploy/k8s/") and (test("\\.(md|mdx)$") | not)) or . == "test/k8s.sh" or . == ".github/workflows/ci-k8s.yml")),
         "release-policy": ($ci or any(.[]; . == ".github/workflows/release.yml" or startswith(".github/scripts/release")))

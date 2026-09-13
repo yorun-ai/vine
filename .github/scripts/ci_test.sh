@@ -20,14 +20,19 @@ check_paths() {
 go_jobs='go-test go-static go-race'
 all_jobs="$go_jobs licenses dashboard container workflow k8s release-policy"
 check_paths pull_request '' README.md CHANGELOG.md .github/CI.md .github/scripts/README.md .github/actions/go-cache/README.md deploy/k8s/README.md
-for file in go.mod go.sum app/example.go $'internal/path with\nnewline.go'; do
+for file in go.mod go.sum; do
   check_paths pull_request "$go_jobs licenses container" "$file"
+done
+for file in app/example.go cmd/vine/main.go $'internal/path with\nnewline.go'; do
+  check_paths pull_request "$go_jobs licenses" "$file"
+  check_paths push "$go_jobs licenses container" "$file"
 done
 check_paths pull_request "go-test go-race" internal/app/example_test.go
 check_paths pull_request "go-test go-race" core/skel/api_test.go
-check_paths pull_request "$go_jobs licenses container" internal/app/example_test.go internal/app/example.go
+check_paths pull_request "$go_jobs licenses" internal/app/example_test.go internal/app/example.go
 for file in internal/daemon/hub/src/server/repo/db/model/sql/sqlite/create_portal_rule.sql internal/daemon/hub/src/server/impl/admin/dashboard/assets/dashboard.tar.zst internal/testdata/input.json; do
-  check_paths pull_request "$go_jobs container" "$file"
+  check_paths pull_request "$go_jobs" "$file"
+  check_paths push "$go_jobs container" "$file"
 done
 for file in Dockerfile .dockerignore; do
   check_paths pull_request container "$file"

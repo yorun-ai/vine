@@ -24,7 +24,7 @@ fail the gate.
 | Changed PR inputs | Selected checks, in addition to secrets and the gate |
 | --- | --- |
 | Documentation only | None |
-| Go production source, module files, backend resources or test fixtures | Full ordinary Go tests and leak checks, static checks, targeted race, Hub image build |
+| Go production source, module files, backend resources or test fixtures | Full ordinary Go tests and leak checks, static checks including Linux static compilation, targeted race; module files also select Hub image build |
 | Shared Dashboard/Go test data | Go tests and targeted race checks, plus Dashboard tests/build |
 | Go test files only | Full ordinary Go tests and leak checks, targeted race |
 | Non-test Go source or module files | Also regenerate and check the CLI license inventory |
@@ -53,7 +53,12 @@ because the Go checks job runs full vet once. Static checks and license validati
 share one job and Go setup, but retain independent step conditions. License-only
 changes do not run vet or module tidiness checks.
 
-Go module and backend production input changes validate the Hub image in the PR.
+Go module, Dockerfile, Docker ignore, and image workflow changes validate the
+Hub image in the PR. Ordinary Go source and backend resource changes instead
+compile `cmd/vine` in the Go checks job with the image build's pinned Go version,
+`CGO_ENABLED=0`, Linux AMD64 target, trimpath, and linker flags. This catches
+static compilation failures without rebuilding the container. The image check
+only builds the image; it does not test service startup.
 Main runs cache warmup only; tags do not run CI. PR image builds read the shared
 cache without exporting it. Pure frontend changes select the Dashboard build, not a rebuild of the unchanged
 embedded archive. Dashboard and Kubernetes steps live in reusable workflows; changes to either
@@ -88,6 +93,9 @@ so it cannot race the ordinary-test job to save an incomplete standard cache.
 PR caches are scoped to that PR and accelerate subsequent commits or reruns;
 main caches are available to all PRs. No check is skipped merely because a cache
 was restored: Go validates compilation and test inputs before reusing results.
+
+Source and backend resource changes still select the main Hub image warmup,
+so narrowing PR image checks does not reduce release layer-cache coverage.
 
 The standard warmup runs ordinary tests, lifecycle tests, and vet to populate
 build, test-result, and analysis caches. The race warmup uses the same targeted
