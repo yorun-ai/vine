@@ -8,6 +8,7 @@ This directory owns repository automation, not public deployment documentation.
 | Event | Workflow | Responsibility |
 | --- | --- | --- |
 | PR targeting main | `ci.yml` | Run checks selected by changed inputs; always scan secrets and verify the required gate |
+| Push to main | `cache.yml` | Populate Go test/build and Hub image layer caches for future PRs; no correctness gate or publication |
 | Tag push | None | Mark a version only; never publish artifacts |
 | Published Release | `release.yml` | Validate the tag and publish binaries and images in parallel |
 | Manual Release workflow | `release.yml` | Recover artifacts for an existing published release |
@@ -31,7 +32,7 @@ fail the gate.
 | Dockerfile or Docker ignore rules | Hub image build |
 | Kubernetes manifests or their validation script | Render and validate Kubernetes overlays; shell scripts also select workflow checks |
 | License inventory or its generator | License checks; the generator also selects workflow checks |
-| CI orchestration workflow | All optional checks, to validate job wiring |
+| CI/cache orchestration workflows or local actions | All optional checks, to validate job wiring |
 | Dashboard/Kubernetes reusable workflow | Its corresponding check and workflow lint |
 | Classification helpers | All optional checks, to validate the gate and its wiring |
 | Release workflow/helpers | Workflow checks, release policy/metadata checks and Hub image build |
@@ -52,8 +53,8 @@ share one job and Go setup, but retain independent step conditions. License-only
 changes do not run vet or module tidiness checks.
 
 Go module and backend production input changes validate the Hub image in the PR.
-There is no main or tag CI. PR image builds read the shared cache without exporting
-it. Pure frontend changes select the Dashboard build, not a rebuild of the unchanged
+Main runs cache warmup only; tags do not run CI. PR image builds read the shared
+cache without exporting it. Pure frontend changes select the Dashboard build, not a rebuild of the unchanged
 embedded archive. Dashboard and Kubernetes steps live in reusable workflows; changes to either
 select that check. The orchestration workflow and classification helpers still
 select all jobs to exercise their wiring and the complete gate.
@@ -62,6 +63,43 @@ Tests use the latest Go `1.27.x`; container and release builds use Go `1.27.1`.
 PR updates cancel older runs for the same PR.
 The Hub check builds Linux AMD64 without publishing. All three image targets and
 both Linux architectures are published only by the Release workflow.
+
+## Main Cache Warmup
+
+PR `CI / Required Checks` remains the functional validation and error gate.
+`Main Cache Warmup` runs on main pushes only, with jobs named `Cache / …` to
+make their purpose explicit. It has no required-check aggregation and publishes
+no images or binaries. Failures leave existing caches usable and do not change
+PR check requirements.
+
+Both workflows reuse the same path classifier. PRs compare their merge base with
+the head; main compares the push's before and after commits. Initial pushes or
+unavailable old commits classify the entire new tree. Documentation-only pushes
+skip all warmup jobs. New selected warmups cancel older jobs in the same cache
+category; skipped jobs do not cancel useful warmups from earlier commits.
+
+The shared `go-cache` action disables setup-go's built-in cache. Keys include a
+cache schema version, OS/architecture, resolved Go version, standard/race mode,
+go.sum hash, and commit SHA. Restores prefer the latest cache with matching
+dependencies, then the same toolchain and mode. Successful main warmups and PR
+ordinary-test/race jobs save new entries. The PR static-check job restores only,
+so it cannot race the ordinary-test job to save an incomplete standard cache.
+PR caches are scoped to that PR and accelerate subsequent commits or reruns;
+main caches are available to all PRs. No check is skipped merely because a cache
+was restored: Go validates compilation and test inputs before reusing results.
+
+The standard warmup runs ordinary tests, lifecycle tests, and vet to populate
+build, test-result, and analysis caches. The race warmup uses the same targeted
+race command as PRs in a separate cache. Neither warmup runs module tidiness,
+license validation, secrets scanning, or a second correctness gate.
+
+The Hub warmup uses the same Linux AMD64 target and build arguments as the PR
+image check, exporting `type=gha,mode=max,scope=vine-hub`. Release builds also use
+this scope. This reuses BuildKit layers; changing source invalidates the layer
+that compiles Vine, so image builds are not guaranteed to become fully incremental.
+Cache effectiveness and total PR latency must be measured after the first main
+warmup and a subsequent PR. GitHub cache storage and transfer costs grow with
+new commit keys; eviction may cause cold builds without affecting correctness.
 
 ## Dependency Security
 

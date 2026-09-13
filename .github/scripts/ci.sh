@@ -4,11 +4,11 @@ set -euo pipefail
 # Read NUL-delimited paths so whitespace in filenames is preserved.
 classify_changes() {
   jq -Rse --arg event "$1" '
-    if $event != "pull_request" then error("Unsupported event") else
+    if $event != "pull_request" and $event != "push" then error("Unsupported event") else
       split("\u0000") | map(select(length > 0)) |
       any(.[]; . == ".github/scripts/ci.sh" or . == ".github/scripts/ci_test.sh") as $policy |
-      ($policy or any(.[]; . == ".github/workflows/ci.yml")) as $ci |
-      any(.[]; (startswith(".github/workflows/") or startswith(".github/scripts/") or
+      ($policy or any(.[]; . == ".github/workflows/ci.yml" or . == ".github/workflows/cache.yml" or (startswith(".github/actions/") and (test("\\.(md|mdx)$") | not)))) as $ci |
+      any(.[]; (startswith(".github/workflows/") or startswith(".github/scripts/") or startswith(".github/actions/") or
         ((startswith("test/") or startswith("script/")) and endswith(".sh"))) and
         (test("\\.(md|mdx)$") | not)) as $workflow |
       any(.[]; startswith("internal/daemon/hub/src/dashboard/") and (test("\\.(md|mdx)$") | not)) as $frontend |
@@ -61,9 +61,18 @@ ci_main() {
       [[ "$CHANGE_HEAD" =~ ^[0-9a-f]{40}$ && "$CHANGE_BASE" =~ ^[0-9a-f]{40}$ ]] || {
         echo "Invalid change range: base=$CHANGE_BASE head=$CHANGE_HEAD" >&2; return 1;
       }
-      [[ "$GITHUB_EVENT_NAME" == pull_request ]] || { echo "Unsupported event" >&2; return 1; }
       local base flags
-      base=$(git merge-base "$CHANGE_BASE" "$CHANGE_HEAD")
+      case "$GITHUB_EVENT_NAME" in
+        pull_request) base=$(git merge-base "$CHANGE_BASE" "$CHANGE_HEAD") ;;
+        push)
+          if [[ "$CHANGE_BASE" == 0000000000000000000000000000000000000000 ]] || ! git cat-file -e "${CHANGE_BASE}^{commit}" 2>/dev/null; then
+            base=$(git hash-object -t tree /dev/null)
+          else
+            base="$CHANGE_BASE"
+          fi
+          ;;
+        *) echo "Unsupported event" >&2; return 1 ;;
+      esac
       flags=$(git diff --name-only --no-renames -z "$base" "$CHANGE_HEAD" | classify_changes "$GITHUB_EVENT_NAME")
       jq -r 'to_entries[] | "\(.key)=\(.value)"' <<< "$flags" | tee -a "$GITHUB_OUTPUT"
       ;;

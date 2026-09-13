@@ -1,0 +1,48 @@
+name: Go build and test cache
+description: Share compatible Go caches between main warmup and PR checks.
+inputs:
+  go-version:
+    description: Go toolchain version
+    required: true
+  mode:
+    description: Separate standard and race compilation caches
+    default: standard
+  save:
+    description: Save a new cache after a successful job
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+      id: go
+      with:
+        go-version: ${{ inputs.go-version }}
+        check-latest: true
+        cache: false
+    - id: paths
+      shell: bash
+      run: |
+        echo "modules=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
+        echo "build=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
+    - name: Restore cache without saving
+      if: inputs.save != 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ${{ steps.paths.outputs.modules }}
+          ${{ steps.paths.outputs.build }}
+        key: vine-go-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-${{ inputs.mode }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+        restore-keys: |
+          vine-go-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-${{ inputs.mode }}-${{ hashFiles('go.sum') }}-
+          vine-go-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-${{ inputs.mode }}-
+    - name: Restore cache and save on success
+      if: inputs.save == 'true' && (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ${{ steps.paths.outputs.modules }}
+          ${{ steps.paths.outputs.build }}
+        key: vine-go-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-${{ inputs.mode }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+        restore-keys: |
+          vine-go-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-${{ inputs.mode }}-${{ hashFiles('go.sum') }}-
+          vine-go-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-${{ inputs.mode }}-

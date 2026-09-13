@@ -1,0 +1,90 @@
+name: Main Cache Warmup
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: '1.27.x'
+  BUILD_GO_VERSION: '1.27.1'
+
+jobs:
+  changes:
+    name: Cache / Select warmup jobs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      go: ${{ steps.changes.outputs['go-test'] }}
+      container: ${{ steps.changes.outputs.container }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+      - id: changes
+        env:
+          CHANGE_BASE: ${{ github.event.before }}
+          CHANGE_HEAD: ${{ github.sha }}
+        run: bash .github/scripts/ci.sh changes
+
+  go-cache:
+    name: Cache / Go ${{ matrix.mode }} build and test results
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [standard, race]
+    concurrency:
+      group: cache-go-${{ matrix.mode }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Restore cache and save successful warmup
+        uses: ./.github/actions/go-cache
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          mode: ${{ matrix.mode }}
+          save: 'true'
+      - name: Populate ordinary test and build cache
+        if: matrix.mode == 'standard'
+        run: bash test/test.sh
+      - name: Populate lifecycle test cache
+        if: matrix.mode == 'standard'
+        run: bash test/goroutineleak.sh
+      - name: Populate vet analysis cache
+        if: matrix.mode == 'standard'
+        run: GOWORK=off go vet ./...
+      - name: Populate race build and test cache
+        if: matrix.mode == 'race'
+        run: bash test/race.sh
+
+  hub-cache:
+    name: Cache / Hub image build layers
+    needs: changes
+    if: needs.changes.outputs.container == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: cache-hub-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: Populate image build cache without publishing
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: ./Dockerfile
+          target: hub
+          platforms: linux/amd64
+          push: false
+          build-args: |
+            GO_VERSION=${{ env.BUILD_GO_VERSION }}
+            VERSION=v0.0.0-dev
+          cache-from: type=gha,scope=vine-hub
+          cache-to: type=gha,mode=max,scope=vine-hub

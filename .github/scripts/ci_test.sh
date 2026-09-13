@@ -19,7 +19,7 @@ check_paths() {
 
 go_jobs='go-test go-static go-race'
 all_jobs="$go_jobs licenses dashboard container workflow k8s release-policy"
-check_paths pull_request '' README.md CHANGELOG.md .github/CI.md .github/scripts/README.md deploy/k8s/README.md
+check_paths pull_request '' README.md CHANGELOG.md .github/CI.md .github/scripts/README.md .github/actions/go-cache/README.md deploy/k8s/README.md
 for file in go.mod go.sum app/example.go $'internal/path with\nnewline.go'; do
   check_paths pull_request "$go_jobs licenses container" "$file"
 done
@@ -32,7 +32,14 @@ done
 for file in Dockerfile .dockerignore; do
   check_paths pull_request container "$file"
 done
-check_paths pull_request "$all_jobs" .github/workflows/ci.yml
+for file in .github/workflows/ci.yml .github/workflows/cache.yml .github/actions/go-cache/action.yml; do
+  check_paths pull_request "$all_jobs" "$file"
+done
+check_paths push '' README.md
+check_paths push "$go_jobs licenses container" internal/app/example.go
+check_paths push 'go-test go-race' internal/app/example_test.go
+check_paths push container Dockerfile
+if printf '%s\0' README.md | classify_changes workflow_dispatch >/dev/null 2>&1; then exit 1; fi
 for file in .github/scripts/ci.sh .github/scripts/ci_test.sh; do
   check_paths pull_request "$all_jobs" "$file"
 done
@@ -135,6 +142,14 @@ trap 'rm -rf -- "$directory"' EXIT
   deleted=$(git rev-parse HEAD)
   GITHUB_EVENT_NAME=pull_request CHANGE_BASE="$head" CHANGE_HEAD="$deleted" GITHUB_OUTPUT="$directory/delete-output" bash "$script" changes >/dev/null
   grep -qx 'go-test=true' "$directory/delete-output"
+  GITHUB_EVENT_NAME=push CHANGE_BASE="$head" CHANGE_HEAD="$deleted" GITHUB_OUTPUT="$directory/push-output" bash "$script" changes >/dev/null
+  grep -qx 'go-test=true' "$directory/push-output"
+  GITHUB_EVENT_NAME=push CHANGE_BASE=0000000000000000000000000000000000000000 CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/initial-output" bash "$script" changes >/dev/null
+  grep -qx 'go-test=true' "$directory/initial-output"
+  GITHUB_EVENT_NAME=push CHANGE_BASE=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/force-output" bash "$script" changes >/dev/null
+  grep -qx 'go-test=true' "$directory/force-output"
+  GITHUB_EVENT_NAME=push CHANGE_BASE="$advanced_base" CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/diverged-output" bash "$script" changes >/dev/null
+  grep -qx 'container=true' "$directory/diverged-output"
   if GITHUB_EVENT_NAME=pull_request CHANGE_BASE=0000000000000000000000000000000000000000 CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/output" bash "$script" changes >/dev/null 2>&1; then exit 1; fi
   if GITHUB_EVENT_NAME=pull_request CHANGE_BASE=invalid CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/output" bash "$script" changes >/dev/null 2>&1; then exit 1; fi
   if GITHUB_EVENT_NAME=pull_request CHANGE_BASE=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa CHANGE_HEAD="$head" GITHUB_OUTPUT="$directory/output" bash "$script" changes >/dev/null 2>&1; then exit 1; fi
