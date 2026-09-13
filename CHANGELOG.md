@@ -8,25 +8,31 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-09-13
+
 ### Added
 
-- JSON5/YAML configuration editor with inline controls, type links, change
-  highlighting, copy/replace actions, and validation diagnostics.
-- Structured YAML app config seeds, standalone `Option.SeedYAML`, and enum
-  keys and values in configuration maps.
+- `--no-db` for Hub, standalone, and `vine dev`: initialize configuration from
+  seed without a persistent database. App configs, Portal sites, rules, and
+  certificates become read-only, with corresponding Dashboard guidance.
+- Unified JSON5/YAML configuration editor with type-aware controls and validation.
+- Enum keys and values in configuration maps.
+- Structured YAML app config seed values; existing JSON string values remain supported.
+- Standalone `Option.SeedYAML` for embedded seed content, mutually exclusive with
+  `SeedYAMLFile`.
 
 ### Changed
 
-- Hub, standalone, and `vine dev` default to read-only `--no-db` mode with a
-  required seed source. Update the source and restart to apply changes;
-  explicit SQLite/PostgreSQL storage remains writable.
-- YAML seeds and editing reject anchors, aliases, merge keys, and nonstandard
-  numeric notation. Expand references and use ordinary decimal numbers.
+- Hub, standalone, and `vine dev` default to `--no-db` when no database is
+  specified and require a seed source. Update that source and restart to apply
+  changes; select SQLite/PostgreSQL explicitly to retain writable persistence.
+- YAML seeds and editing reject anchors, aliases, merge keys, numeric separators,
+  non-decimal bases, scientific notation, and ambiguous leading zeros. Expand
+  references and use ordinary decimal numbers when migrating existing seeds.
 
 ### Fixed
 
-- Prevent unsafe integer saves and improve collection, map key, and scalar
-  format diagnostics; refresh the embedded Dashboard.
+- Prevent unsafe integer saves and improve configuration validation errors.
 
 ## [0.15.8] - 2026-09-13
 
