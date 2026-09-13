@@ -8,25 +8,46 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-09-13
+
 ### Added
 
-- JSON5/YAML configuration editor with inline controls, type links, change
-  highlighting, copy/replace actions, and validation diagnostics.
-- Structured YAML app config seeds, standalone `Option.SeedYAML`, and enum
-  keys and values in configuration maps.
+- `--no-db` for Hub, standalone, and `vine dev`: load seed configuration into
+  isolated in-memory SQLite, then make app configs, Portal sites, rules, and
+  certificates read-only. Dashboard shows the mode and disables writes;
+  registration and runtime status remain available.
+- JSON5/YAML configuration editing with remembered views, copy/replace actions,
+  type links, field change highlighting, and positioned errors with hover tips.
+  Inline controls support booleans, enums, enum lists, durations, and date/time values.
+- Enum keys and values in configuration maps, including editor dropdowns.
+- Structured YAML app config seed values using JSON field names; existing JSON
+  string values remain supported for startup and Dashboard imports.
+- Standalone `Option.SeedYAML` for embedded seed content, mutually exclusive with
+  `SeedYAMLFile`, without an additional CLI flag.
+- Optional database-level `InitSchema(*gorm.DB)` initialization before DAO use.
 
 ### Changed
 
-- Hub, standalone, and `vine dev` default to read-only `--no-db` mode with a
-  required seed source. Update the source and restart to apply changes;
-  explicit SQLite/PostgreSQL storage remains writable.
-- YAML seeds and editing reject anchors, aliases, merge keys, and nonstandard
-  numeric notation. Expand references and use ordinary decimal numbers.
+- Hub, standalone, and `vine dev` default to `--no-db` when no database is
+  specified and require a seed source. Update that source and restart to apply
+  changes; select SQLite/PostgreSQL explicitly to retain writable persistence.
+- Replace the field-form editor with the unified JSON5/YAML editor, including
+  unused and schema-mismatched configurations.
+- YAML seeds and editing reject anchors, aliases, merge keys, numeric separators,
+  non-decimal bases, scientific notation, and ambiguous leading zeros. Expand
+  references and use ordinary decimal numbers when migrating existing seeds.
+- Main warms build/test caches; PRs retain functional checks and save reusable
+  Go caches. Editor tests and shared-fixture Go checks now run in PR CI.
 
 ### Fixed
 
-- Prevent unsafe integer saves and improve collection, map key, and scalar
-  format diagnostics; refresh the embedded Dashboard.
+- Report unsafe integer values and block saving them; improve scalar, collection,
+  and map key diagnostics, including manual edits and replacements.
+- Support numeric YAML map keys and reject duplicate keys after normalization.
+- Keep in-memory SQLite alive across idle periods and connection lifetime limits.
+- Skip existing version images when retrying releases while retaining final
+  multi-platform, revision, and public-access verification.
+- Refresh embedded Dashboard assets and clarify read-only guidance for embedded seeds.
 
 ## [0.15.8] - 2026-09-13
 
