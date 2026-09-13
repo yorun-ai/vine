@@ -18,7 +18,7 @@ func TestNormalizeRejectsPartialMTLSFiles(t *testing.T) {
 func TestFlagNormalizeRequiresSeedWithoutDatabase(t *testing.T) {
 	flags := &Flag{}
 
-	require.PanicsWithError(t, "no-db requires seed-yaml-file", func() {
+	require.PanicsWithError(t, "no-db requires seed-yaml-file or SeedYAML", func() {
 		flags.Normalize(false)
 	})
 }
@@ -278,5 +278,17 @@ func TestNoDBModes(t *testing.T) {
 	}
 	for _, f := range []*Flag{{NoDB: true, DBSQLiteFile: "hub.sqlite"}, {NoDB: true, DBPostgresURL: "postgres://localhost/hub"}} {
 		require.PanicsWithError(t, "no-db cannot be used with a database source", func() { f.Normalize(true) })
+	}
+}
+
+func TestInlineSeedSourceModes(t *testing.T) {
+	for _, flags := range []*Flag{
+		{SeedYAML: "{}"},
+		{SeedYAML: "{}", NoDB: true},
+		{SeedYAML: "{}", DBSQLiteFile: "hub.sqlite"},
+		{SeedYAML: "{}", DBPostgresURL: "postgres://localhost/hub"},
+	} {
+		require.NotPanics(t, func() { flags.Normalize(true) })
+		require.Equal(t, flags.DBSQLiteFile == "" && flags.DBPostgresURL == "", flags.NoDB)
 	}
 }

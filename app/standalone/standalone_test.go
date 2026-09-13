@@ -150,3 +150,30 @@ func (a _RecordingApp) StopGracefully() {
 }
 
 func (_RecordingApp) StartAndWait() {}
+
+func TestInlineSeedOption(t *testing.T) {
+	flags := new(hubflag.Flag{})
+	applyOption(flags, Option{SeedYAML: "{}"})
+	flags.Normalize(true)
+	assert.Equal(t, "{}", flags.SeedYAML)
+	assert.True(t, flags.NoDB)
+	assert.PanicsWithError(t, "bundled standalone app must not have option", func() {
+		NewBundled(new(_App{option: Option{SeedYAML: "{}"}}))
+	})
+}
+
+func TestInlineSeedConflictsWithFile(t *testing.T) {
+	for _, fromCLI := range []bool{false, true} {
+		flags := new(hubflag.Flag{})
+		option := Option{SeedYAML: "{}"}
+		if fromCLI {
+			flags.SeedYAMLPath = "seed.yaml"
+		} else {
+			option.SeedYAMLFile = "seed.yaml"
+		}
+		applyOption(flags, option)
+		assert.PanicsWithError(t, "SeedYAML and seed-yaml-file are mutually exclusive", func() {
+			flags.Normalize(true)
+		})
+	}
+}
