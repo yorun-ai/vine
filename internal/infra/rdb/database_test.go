@@ -2,6 +2,7 @@ package rdb
 
 import (
 	"context"
+	"gorm.io/gorm"
 	"reflect"
 	"testing"
 
@@ -114,4 +115,46 @@ func TestDatabaseAfterAppStopReleasesSharedConnection(t *testing.T) {
 	_, ok := sharedGormDBs[connURL]
 	sharedGormDBsMu.Unlock()
 	assert.False(t, ok)
+}
+
+type schemaDatabaseTestComponent struct {
+	databaseTestComponent
+	calls int
+	fail  bool
+}
+
+func (d *schemaDatabaseTestComponent) InitSchema(db *gorm.DB) {
+	d.calls++
+	if d.fail {
+		panic("schema failed")
+	}
+	if err := db.AutoMigrate(&databaseTestModel{}); err != nil {
+		panic(err)
+	}
+}
+
+func TestDatabaseInitializesSchemaBeforeBindingDAOs(t *testing.T) {
+	component := &schemaDatabaseTestComponent{databaseTestComponent: databaseTestComponent{connURL: "sqlite://" + t.TempDir() + "/schema.sqlite"}}
+	manager := initTestDatabase(component)
+	t.Cleanup(manager.AfterAppStop)
+	require.True(t, manager.gormDB.Migrator().HasTable(&databaseTestModel{}))
+	for range 2 {
+		injector := di.NewInjector(func(b *di.Binder) {
+			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
+			b.BindInstance(logger.New("test:schema"))
+			manager.Bind(b)
+		})
+		require.NotNil(t, injector.Get(T[*databaseTestDAO]()))
+	}
+	require.Equal(t, 1, component.calls)
+}
+
+func TestDatabaseSchemaFailureReleasesConnection(t *testing.T) {
+	url := "sqlite://" + t.TempDir() + "/schema.sqlite"
+	component := &schemaDatabaseTestComponent{databaseTestComponent: databaseTestComponent{connURL: url}, fail: true}
+	require.PanicsWithValue(t, "schema failed", func() { initTestDatabase(component) })
+	sharedGormDBsMu.Lock()
+	_, exists := sharedGormDBs[url]
+	sharedGormDBsMu.Unlock()
+	require.False(t, exists)
 }

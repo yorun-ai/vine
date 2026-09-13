@@ -1,3 +1,4 @@
+import { useConfigAccess } from '@/lib/config-access'
 import { RulePathPreview } from './rule-path-preview'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
 import { SearchInput } from '@/components/ui/search-input'
@@ -1191,6 +1192,7 @@ function PortalRuleInlineEditor({
 }
 
 export function PortalRulePage() {
+  const { readOnly } = useConfigAccess()
   const { t } = useLocale()
   const navigate = useNavigate()
   const pathname = useRouterState({
@@ -1422,6 +1424,7 @@ export function PortalRulePage() {
                   <Button
                     type="button"
                     size="sm"
+                    disabled={readOnly}
                     onClick={() => {
                       setEditingRule(null)
                       setIsCreating(true)
@@ -1552,6 +1555,7 @@ export function PortalRulePage() {
                               type="button"
                               variant="outline"
                               size="sm"
+                              disabled={readOnly}
                               onClick={() => setEditingRule(selectedRule)}
                             >
                               <Edit3 />
@@ -1568,6 +1572,7 @@ export function PortalRulePage() {
                               type="button"
                               variant="ghost"
                               size="icon-sm"
+                              disabled={readOnly}
                               onClick={() => setDeleteRule(selectedRule)}
                             >
                               <Trash2 />
@@ -1693,7 +1698,7 @@ export function PortalRulePage() {
                 </EmptyHeader>
                 {visibleRules.length === 0 ? (
                   <EmptyContent>
-                    <Button type="button" onClick={() => setIsCreating(true)}>
+                    <Button type="button" disabled={readOnly} onClick={() => setIsCreating(true)}>
                       <Plus />
                       {t('portalRule.createTitle')}
                     </Button>

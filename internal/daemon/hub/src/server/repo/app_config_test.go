@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
@@ -118,8 +119,9 @@ func newTestDBAppConfigRepo(t *testing.T) (*gorm.DB, *DBAppConfigRepo, *redisser
 			Dao: rdb.NewDao[*model.AppConfig](db),
 		},
 		Syncer: testSyncer(redisServer),
+		Access: new(configaccess.Access),
 	}
-	repo.Dao.DIInit()
+	repo.Dao.InitSchema()
 	require.NoError(t, db.Exec("DELETE FROM app_config").Error)
 
 	return db, repo, redisServer
@@ -144,4 +146,12 @@ func testAppConfig(name string, value string, version int) *core.AppConfig {
 		Value:   value,
 		Version: version,
 	}
+}
+
+func TestDBAppConfigRepoRejectsReadOnlyWrites(t *testing.T) {
+	access := new(configaccess.Access)
+	access.Lock()
+	repo := &DBAppConfigRepo{Access: access}
+	require.PanicsWithError(t, "Configuration is read-only; edit the seed configuration file and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.SaveItem(new(core.AppConfig)) })
+	require.PanicsWithError(t, "Configuration is read-only; edit the seed configuration file and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.RemoveItem(1) })
 }

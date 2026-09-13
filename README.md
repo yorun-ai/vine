@@ -153,8 +153,8 @@ Use an exact release tag instead of `@latest` in deployment build scripts.
 Common entry points:
 
 ```bash
-# Local Hub + Portal + Link; uses temporary SQLite when no DB is supplied.
-vine dev
+# Local Hub + Portal + Link; configuration comes from YAML and is read-only.
+vine dev --seed-yaml-file ./hub.yaml
 
 # Independently operated runtime services; run each in its own process.
 vine hub serve --mq-embedded-nats --db-sqlite-file ./hub.sqlite

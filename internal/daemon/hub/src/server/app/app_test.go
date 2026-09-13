@@ -13,6 +13,7 @@ import (
 	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/internal/core/logger"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
@@ -223,6 +224,7 @@ func TestHubAppComponentTypesReturnsSQLiteDatabaseWhenSourceIsSQLite(t *testing.
 	}
 
 	assert.Equal(t, []reflect.Type{
+		internalapp.T[*configaccess.Access](),
 		internalapp.T[*repodb.HubDatabase](),
 		internalapp.T[*natsserver.NATSServer](),
 		internalapp.T[*redisserver.Server](),
@@ -235,6 +237,7 @@ func TestHubAppComponentTypesReturnsPGDatabaseWhenSourceIsPG(t *testing.T) {
 	}
 
 	assert.Equal(t, []reflect.Type{
+		internalapp.T[*configaccess.Access](),
 		internalapp.T[*repodb.HubDatabase](),
 		internalapp.T[*natsserver.NATSServer](),
 		internalapp.T[*redisserver.Server](),
@@ -297,7 +300,7 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForSQLite(t *testing.T) {
 		Flag:       &flag.Flag{SourceType: flag.SourceSQLite},
 	})
 
-	assert.IsType(t, &repo.DBAppConfigRepo{}, configRepo)
+	assert.IsType(t, &repo.DBAppConfigRepo{Access: new(configaccess.Access)}, configRepo)
 }
 
 func TestHubAppBindCommonProvidesDBAppConfigRepoForPG(t *testing.T) {
@@ -309,7 +312,7 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForPG(t *testing.T) {
 		},
 	})
 
-	assert.IsType(t, &repo.DBAppConfigRepo{}, configRepo)
+	assert.IsType(t, &repo.DBAppConfigRepo{Access: new(configaccess.Access)}, configRepo)
 }
 
 func TestHubAppBindCommonProvidesMemorySchemaRepoForDBInInprocMode(t *testing.T) {
@@ -374,7 +377,7 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForInitializerWithSQLite(t *test
 		module = injector.Get(di.T[*initializer.Initializer]()).Interface().(*initializer.Initializer)
 	})
 	assert.NotNil(t, module)
-	assert.IsType(t, &repo.DBAppConfigRepo{}, module.AppConfigRepo)
+	assert.IsType(t, &repo.DBAppConfigRepo{Access: new(configaccess.Access)}, module.AppConfigRepo)
 }
 
 func TestConfigDatabaseBindProvidesAppConfigRepoDAO(t *testing.T) {

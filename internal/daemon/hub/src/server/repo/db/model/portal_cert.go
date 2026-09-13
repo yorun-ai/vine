@@ -2,7 +2,6 @@ package model
 
 import (
 	_ "embed"
-	"sync"
 	"time"
 
 	"go.yorun.ai/vine/internal/core/ex"
@@ -14,8 +13,6 @@ var createPortalCertSQLiteSQL string
 
 //go:embed sql/pgsql/create_portal_cert.sql
 var createPortalCertPgSQL string
-
-var entryCertSchemaOnce sync.Once
 
 type PortalCert struct {
 	rdb.Model
@@ -36,16 +33,10 @@ type PortalCertDao struct {
 	rdb.Dao[*PortalCert]
 }
 
-func (d *PortalCertDao) DIInit() {
-	d.ensureSchema()
-}
-
-func (d *PortalCertDao) ensureSchema() {
-	entryCertSchemaOnce.Do(func() {
-		sql := schemaSQL(d.GormDB(), createPortalCertSQLiteSQL, createPortalCertPgSQL)
-		err := d.GormDB().Exec(sql).Error
-		ex.PanicIfError(err)
-	})
+func (d *PortalCertDao) InitSchema() {
+	sql := schemaSQL(d.GormDB(), createPortalCertSQLiteSQL, createPortalCertPgSQL)
+	err := d.GormDB().Exec(sql).Error
+	ex.PanicIfError(err)
 }
 
 func (d *PortalCertDao) ListOrdered() []*PortalCert {

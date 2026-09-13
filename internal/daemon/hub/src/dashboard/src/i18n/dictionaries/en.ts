@@ -1,6 +1,10 @@
 import type { TranslationKey } from './cn'
 
 export const en: Record<TranslationKey, string> = {
+  'configAccess.readOnlyTitle': 'No-database mode',
+  'configAccess.unavailableTitle': 'Configuration editing unavailable',
+  'configAccess.readOnly': 'Configuration is read-only. To make changes, edit the configuration file and restart Hub.',
+  'configAccess.unavailable': 'Configuration access could not be checked. Editing is unavailable.',
   'debug.directInvocationHelp': 'Hub Debug calls the service directly using the Actor identity and Info you provide. This also applies to API services: Portal authentication and admission checks are skipped. Use the Portal endpoint to verify the complete client flow.',
   'portalRule.pathPreviewRequest': 'Example request path',
   'portalRule.pathPreviewResult': 'Forwarded path',

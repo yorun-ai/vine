@@ -90,9 +90,9 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
 - Keep the default `GO_VERSION` build argument in `Dockerfile` aligned with the
   Go version in `go.mod`. CI and release workflows may override it with the
   approved patch version.
-- Do not make the Hub image silently select a database or messaging mode.
-  Deployments must explicitly choose exactly one of SQLite or PostgreSQL and
-  exactly one of embedded or external NATS.
+- Hub defaults to no-db mode with a required seed YAML file and read-only
+  configuration. Explicit SQLite or PostgreSQL selects writable persistence.
+  Deployments must still explicitly choose exactly one of embedded or external NATS.
 - For CI or publication changes, read `.github/CI.md` for required gates,
   release validation, concurrency, recovery, and dependency security policy.
 

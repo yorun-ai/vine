@@ -1,3 +1,4 @@
+import { useConfigAccess } from '@/lib/config-access'
 import { DomainFilter } from '@/components/domain-filter'
 import { SkelName } from '@/components/skel-name'
 import { SearchInput } from '@/components/ui/search-input'
@@ -1037,6 +1038,7 @@ function TimeScalarInput({
 }
 
 export function AppConfigPage({ routeKey }: AppConfigPageProps) {
+  const { readOnly } = useConfigAccess()
   const { t } = useLocale()
   const navigate = useNavigate()
   const pathnameRouteKey = useRouterState({
@@ -1231,6 +1233,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
   const hasFieldValueErrors = Object.keys(fieldValueDrafts).length > 0
   const hasListValueErrors = Object.keys(listValueDrafts).length > 0
   const canSave =
+    !readOnly &&
     selectedAppConfig !== null &&
     hasChanges &&
     valueIsValidJson &&
@@ -1682,6 +1685,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
               </Button>
               <Button
                 size="sm"
+                disabled={readOnly}
                 onClick={() => {
                   setCreateDialogOpen(true)
                   setCreateSkelName('')
@@ -1847,7 +1851,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                 <Button
                   type="button"
                   onClick={() => void handleCreateConfig()}
-                  disabled={creating || createExistingConfig !== null}
+                  disabled={readOnly || creating || createExistingConfig !== null}
                 >
                   {creating ? (
                     <Loader2 className="size-4 animate-spin" />
@@ -2081,7 +2085,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                     type="button"
                     variant="outline"
                     onClick={() => setDeleteDialogOpen(true)}
-                    disabled={removing}
+                    disabled={readOnly || removing}
                   >
                     <Trash2 className="size-4" />
                     {t('action.delete')}
@@ -2131,7 +2135,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                         type="button"
                         variant="destructive"
                         onClick={() => void handleRemoveConfig()}
-                        disabled={removing}
+                        disabled={readOnly || removing}
                       >
                         {removing ? (
                           <Loader2 className="size-4 animate-spin" />
@@ -3068,7 +3072,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                   <CodeMirror
                     value={value}
                     extensions={jsonPreviewExtensions}
-                    readOnly={!selectedIsUnused && !selectedIsMismatched}
+                    readOnly={readOnly || (!selectedIsUnused && !selectedIsMismatched)}
                     onChange={(nextValue) => {
                       if (selectedIsUnused || selectedIsMismatched) {
                         setValue(nextValue)

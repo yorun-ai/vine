@@ -24,6 +24,8 @@ func defaultOption() *Option {
 
 type TypeAdder func(daoType reflect.Type)
 
+// DatabaseSpec declares database options and DAOs. A spec may additionally
+// implement InitSchema(*gorm.DB), which runs before DAOs are exposed.
 type DatabaseSpec interface {
 	InitOption(option *Option)
 	InitDao(add TypeAdder)
@@ -65,7 +67,17 @@ func (m *DatabaseManager) InitComponent(component app.ManagedComponent) {
 
 	gormDB, err := openConnection(*m.option)
 	vpre.CheckNilError(err, "gorm open failed")
+	initialized := false
+	defer func() {
+		if !initialized {
+			closeConnection(m.option.ConnURL)
+		}
+	}()
 	m.gormDB = gormDB
+	if initializer, ok := m.database.(interface{ InitSchema(*gorm.DB) }); ok {
+		initializer.InitSchema(gormDB)
+	}
+	initialized = true
 }
 
 func (m *DatabaseManager) Component() app.ManagedComponent {

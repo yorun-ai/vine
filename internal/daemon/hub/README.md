@@ -4,6 +4,15 @@
 
 Hub is Vine's configuration and service registry. It broadly follows a DDD-style layered architecture, maintains configuration, application state, and Rpc service registrations, and exposes read and subscription capabilities through Redis.
 
+Without a database option, Hub defaults to `--no-db` and requires
+`--seed-yaml-file`. Configuration is loaded into an isolated in-memory SQLite
+database on each start. After initialization, configuration repos reject writes
+to app configs, Portal sites, rules, and certificates. Edit the seed file and
+restart Hub to apply changes. Dashboard exposes this state and disables editing;
+registration, schemas, and leases remain writable. Explicit `--db-sqlite-file`
+or `--db-postgres-url` keeps writable persistence and is mutually exclusive
+with `--no-db`. This also applies to standalone and `vine dev`.
+
 ## Directory Structure
 
 ```text

@@ -2,7 +2,6 @@ package model
 
 import (
 	_ "embed"
-	"sync"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/infra/rdb"
@@ -13,8 +12,6 @@ var createPortalSiteSQLiteSQL string
 
 //go:embed sql/pgsql/create_portal_site.sql
 var createPortalSitePgSQL string
-
-var portalSiteSchemaOnce sync.Once
 
 type PortalSite struct {
 	rdb.Model
@@ -36,18 +33,12 @@ type PortalSiteDao struct {
 	rdb.Dao[*PortalSite]
 }
 
-func (d *PortalSiteDao) DIInit() {
-	d.ensureSchema()
-}
-
-func (d *PortalSiteDao) ensureSchema() {
-	portalSiteSchemaOnce.Do(func() {
-		sql := schemaSQL(d.GormDB(), createPortalSiteSQLiteSQL, createPortalSitePgSQL)
-		err := d.GormDB().Exec(sql).Error
-		ex.PanicIfError(err)
-		d.ensureColumn("cors_mode", "CorsMode")
-		d.ensureColumn("cors_origins", "CorsOrigins")
-	})
+func (d *PortalSiteDao) InitSchema() {
+	sql := schemaSQL(d.GormDB(), createPortalSiteSQLiteSQL, createPortalSitePgSQL)
+	err := d.GormDB().Exec(sql).Error
+	ex.PanicIfError(err)
+	d.ensureColumn("cors_mode", "CorsMode")
+	d.ensureColumn("cors_origins", "CorsOrigins")
 }
 
 func (d *PortalSiteDao) ensureColumn(columnName string, fieldName string) {

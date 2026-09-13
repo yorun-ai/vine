@@ -53,6 +53,7 @@ func (s *Seeder) DIInit() {
 func (s *Seeder) loadSeedYAML() {
 	payload, err := vfile.ReadAsYaml[*_SettingsYAMLPayload](s.Flag.SeedYAMLPath)
 	ex.PanicIfError(err)
+	ex.PanicNewIfNot(payload != nil, ex.ValidationFailed, "seed YAML must contain a configuration mapping (use {} for empty configuration)")
 
 	for _, item := range payload.AppConfigs {
 		s.AppConfigCore.Validate(*item.ToCoreAppConfig())

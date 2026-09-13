@@ -3,8 +3,6 @@ package cli
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	ucli "github.com/urfave/cli/v3"
 	"go.yorun.ai/vine/internal/app"
@@ -15,7 +13,6 @@ import (
 	linkflag "go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 	portalapp "go.yorun.ai/vine/internal/daemon/portal/src/server/app"
 	portalflag "go.yorun.ai/vine/internal/daemon/portal/src/server/flag"
-	"go.yorun.ai/vine/util/vpre"
 )
 
 const (
@@ -28,6 +25,7 @@ type _DevOption struct {
 	LinkAPIListen string
 	SeedYAMLFile  string
 	DashboardURL  string
+	NoDB          bool
 	DBSQLiteFile  string
 	DBPostgresURL string
 }
@@ -51,7 +49,12 @@ func newDevCommand() *ucli.Command {
 		Usage: "start a local runtime for external app development",
 		Flags: []ucli.Flag{
 			&ucli.StringFlag{Name: flagDevLinkAPIListen, Sources: ucli.EnvVars(EnvLinkAPIListen), Value: linkflag.LinkDefaultAPIListen, Usage: "link API listen address for external apps"},
-			&ucli.StringFlag{Name: FlagHubDBSQLiteFile, Sources: ucli.EnvVars(EnvHubDBSQLiteFile), Usage: "hub SQLite database file; temporary when omitted"},
+			&ucli.BoolFlag{
+				Name:    FlagHubNoDB,
+				Sources: ucli.EnvVars(EnvHubNoDB),
+				Usage:   "use no persistent database (default); requires seed-yaml-file; configuration is read-only",
+			},
+			&ucli.StringFlag{Name: FlagHubDBSQLiteFile, Sources: ucli.EnvVars(EnvHubDBSQLiteFile), Usage: "hub SQLite database file"},
 			&ucli.StringFlag{Name: FlagHubDBPostgresURL, Sources: ucli.EnvVars(EnvHubDBPostgresURL), Usage: "hub PostgreSQL database URL"},
 			&ucli.StringFlag{Name: FlagHubSeedYAMLFile, Sources: ucli.EnvVars(EnvHubSeedYAMLFile), Usage: "hub seed YAML file"},
 			&ucli.StringFlag{Name: FlagHubDashboardURL, Sources: ucli.EnvVars(EnvHubDashboardURL), Usage: "hub dashboard URL"},
@@ -65,6 +68,7 @@ func newDevCommand() *ucli.Command {
 				LinkAPIListen: cmd.String(flagDevLinkAPIListen),
 				SeedYAMLFile:  cmd.String(FlagHubSeedYAMLFile),
 				DashboardURL:  cmd.String(FlagHubDashboardURL),
+				NoDB:          cmd.Bool(FlagHubNoDB),
 				DBSQLiteFile:  cmd.String(FlagHubDBSQLiteFile),
 				DBPostgresURL: cmd.String(FlagHubDBPostgresURL),
 			})
@@ -105,21 +109,11 @@ func prepareDevHubFlag(option _DevOption) (*hubflag.Flag, func()) {
 	flag := &hubflag.Flag{
 		SeedYAMLPath:    option.SeedYAMLFile,
 		DashboardURLRaw: option.DashboardURL,
+		NoDB:            option.NoDB,
 		DBSQLiteFile:    option.DBSQLiteFile,
 		DBPostgresURL:   option.DBPostgresURL,
 	}
-	if flag.DBSQLiteFile != "" || flag.DBPostgresURL != "" {
-		return flag, func() {}
-	}
-
-	dir, err := os.MkdirTemp("", "vine-dev-")
-	vpre.CheckNilError(err, "create temporary dev runtime directory failed")
-	flag.DBSQLiteFile = filepath.Join(dir, "hub.sqlite")
-	return flag, func() {
-		if err := os.RemoveAll(dir); err != nil {
-			logger.Warn("remove temporary dev runtime directory failed", "path", dir, "error", err)
-		}
-	}
+	return flag, func() {}
 }
 
 func (r *_DevRuntime) Start() {

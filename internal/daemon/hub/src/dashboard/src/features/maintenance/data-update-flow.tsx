@@ -1,3 +1,4 @@
+import { useConfigAccess } from '@/lib/config-access'
 import * as React from 'react'
 import { Navigate, useNavigate } from '@tanstack/react-router'
 import {
@@ -357,6 +358,7 @@ export function DataUpdateUploadPage() {
   )
 }
 export function DataUpdatePreviewPage() {
+  const { readOnly: configReadOnly } = useConfigAccess()
   const navigate = useNavigate()
   const { t } = useLocale()
   const [session, setSession] = useDataUpdateSession()
@@ -471,7 +473,7 @@ export function DataUpdatePreviewPage() {
                 </label>
                 <Button
                   type="button"
-                  disabled={selectedCount === 0 || applying}
+                  disabled={configReadOnly || selectedCount === 0 || applying}
                   onClick={() => void handleApply()}
                 >
                   {applying ? (

@@ -62,7 +62,7 @@ func newTestPortalRuleDao(t *testing.T) *PortalRuleDao {
 	dao := &PortalRuleDao{
 		Dao: rdb.NewDao[*PortalRule](db),
 	}
-	dao.DIInit()
+	dao.InitSchema()
 	require.NoError(t, db.Exec("DELETE FROM portal_rule").Error)
 	return dao
 }

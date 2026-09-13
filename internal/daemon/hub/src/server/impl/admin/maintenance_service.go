@@ -6,6 +6,7 @@ import (
 
 	"go.yorun.ai/vine/internal/core/ex"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/seeder"
 	"go.yorun.ai/vine/util/vcode"
@@ -30,6 +31,7 @@ type MaintenanceApiServiceServerImpl struct {
 	SiteCore      *core.PortalSiteCore `inject:""`
 	CertCore      *core.PortalCertCore `inject:""`
 	CertRepo      core.PortalCertRepo  `inject:""`
+	Access        *configaccess.Access `inject:""`
 }
 
 type _SeedYAMLPayload struct {
@@ -371,4 +373,8 @@ func (s _SeedPortalSite) toCore() core.PortalSite {
 }
 func (c _SeedPortalCert) toCore() core.PortalCert {
 	return core.PortalCert{Name: c.Name, PublicKeyBase64: c.PublicKeyBase64, PrivateKeyBase64: c.PrivateKeyBase64}
+}
+
+func (s *MaintenanceApiServiceServerImpl) ConfigReadOnly() bool {
+	return s.Access.ReadOnly()
 }

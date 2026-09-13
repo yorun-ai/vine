@@ -11,10 +11,10 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "5a2f8f87",
+	Hash:        "edb3a8fb",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
-		CompilerVersion: "v0.18.1",
+		CompilerVersion: "v0.19.1",
 	},
 
 	Enums: []*skel.EnumSchema{
@@ -4622,7 +4622,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "MaintenanceApiService",
 			SkelName:    "vine.hub.admin.MaintenanceApiService",
 			Description: "Hub maintenance service",
-			Hash:        "2a1db1e3",
+			Hash:        "a4ba47c3",
 			Pub:         false,
 			Api:         true,
 			AuthMode:    skel.AuthModeNoAuth,
@@ -4630,6 +4630,17 @@ var _DomainSchema = &skel.DomainSchema{
 				{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"},
 			},
 			Methods: []*skel.MethodSchema{
+				{
+					Name:        "configReadOnly",
+					SkelName:    "configReadOnly",
+					Description: "Whether Hub configuration is read-only",
+					Hash:        "c9522dd4",
+					AuthMode:    skel.AuthModeUnset,
+					ResultType: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarBool,
+					},
+				},
 				{
 					Name:              "previewSeedYaml",
 					SkelName:          "previewSeedYaml",

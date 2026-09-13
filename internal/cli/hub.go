@@ -21,6 +21,7 @@ const (
 	FlagHubMQEmbeddedNats    = "mq-embedded-nats"
 	FlagHubSeedYAMLFile      = "seed-yaml-file"
 	FlagHubDashboardURL      = "dashboard-url"
+	FlagHubNoDB              = "no-db"
 	FlagHubDBSQLiteFile      = "db-sqlite-file"
 	FlagHubDBPostgresURL     = "db-postgres-url"
 
@@ -31,6 +32,7 @@ const (
 	EnvHubMQEmbeddedNats    = "VINE_MQ_EMBEDDED_NATS"
 	EnvHubSeedYAMLFile      = "VINE_SEED_YAML_FILE"
 	EnvHubDashboardURL      = "VINE_DASHBOARD_URL"
+	EnvHubNoDB              = "VINE_NO_DB"
 	EnvHubDBSQLiteFile      = "VINE_DB_SQLITE_FILE"
 	EnvHubDBPostgresURL     = "VINE_DB_POSTGRES_URL"
 )
@@ -59,6 +61,11 @@ func newHubServeFlags() []ucli.Flag {
 		&ucli.StringFlag{Name: FlagHubControlListen, Sources: ucli.EnvVars(EnvHubControlListen), Value: hubflag.HubDefaultControlListen, Usage: "hub Control API listen address used by Link and Portal"},
 		&ucli.StringFlag{Name: FlagHubAdminListen, Sources: ucli.EnvVars(EnvHubAdminListen), Value: hubflag.HubDefaultAdminListen, Usage: "hub admin API and Dashboard Web listen address"},
 		&ucli.StringFlag{Name: FlagHubRedisListen, Sources: ucli.EnvVars(EnvHubRedisListen), Value: hubflag.HubDefaultRedisListen, Usage: "hub redis listen address"},
+		&ucli.BoolFlag{
+			Name:    FlagHubNoDB,
+			Sources: ucli.EnvVars(EnvHubNoDB),
+			Usage:   "use no persistent database (default); requires seed-yaml-file; configuration is read-only",
+		},
 		&ucli.StringFlag{Name: FlagHubDBSQLiteFile, Sources: ucli.EnvVars(EnvHubDBSQLiteFile), Usage: "hub SQLite database file"},
 		&ucli.StringFlag{Name: FlagHubDBPostgresURL, Sources: ucli.EnvVars(EnvHubDBPostgresURL), Usage: "hub PostgreSQL database URL"},
 		&ucli.StringFlag{Name: FlagHubMQExternalNatsURL, Sources: ucli.EnvVars(EnvHubMQExternalNatsURL), Usage: "external NATS URL, e.g. nats://127.0.0.1:4222"},
@@ -86,6 +93,7 @@ func newHubServeCommand() *ucli.Command {
 				MQEmbeddedNats:    cmd.Bool(FlagHubMQEmbeddedNats),
 				SeedYAMLPath:      cmd.String(FlagHubSeedYAMLFile),
 				DashboardURLRaw:   cmd.String(FlagHubDashboardURL),
+				NoDB:              cmd.Bool(FlagHubNoDB),
 				DBSQLiteFile:      cmd.String(FlagHubDBSQLiteFile),
 				DBPostgresURL:     cmd.String(FlagHubDBPostgresURL),
 				MTLS:              mtlsFiles(cmd),

@@ -17,6 +17,7 @@ const (
 	HubDefaultDashboardURL     = "http://:7099/"
 	HubMTLSDefaultDashboardURL = "https://:7099/"
 
+	SourceMemory     = "memory"
 	SourceSQLite     = "sqlite"
 	SourcePostgreSQL = "postgres"
 )
@@ -34,6 +35,7 @@ type Flag struct {
 
 	SourceType    string
 	SeedYAMLPath  string
+	NoDB          bool
 	DBSQLiteFile  string
 	DBPostgresURL string
 
@@ -76,6 +78,7 @@ func (f *Flag) normalizeListen() {
 }
 
 func (f *Flag) normalizeSource() {
+	vpre.CheckNot(f.NoDB && (f.DBSQLiteFile != "" || f.DBPostgresURL != "" || (f.SourceType != "" && f.SourceType != SourceMemory)), "no-db cannot be used with a database source")
 	kind := f.SourceType
 	if kind == "" {
 		var err error
@@ -85,6 +88,9 @@ func (f *Flag) normalizeSource() {
 	f.SourceType = kind
 
 	switch kind {
+	case SourceMemory:
+		f.NoDB = true
+		vpre.CheckNotEmpty(f.SeedYAMLPath, "no-db requires seed-yaml-file")
 	case SourceSQLite:
 		vpre.CheckNotEmpty(f.DBSQLiteFile, "DBSQLiteFile is empty")
 	case SourcePostgreSQL:
@@ -170,6 +176,6 @@ func (f *Flag) inferSourceType() (string, error) {
 	case hasPostgreSQL:
 		return SourcePostgreSQL, nil
 	default:
-		return "", fmt.Errorf("one of DBSQLiteFile or DBPostgresURL must be set")
+		return SourceMemory, nil
 	}
 }

@@ -15,10 +15,10 @@ func TestNormalizeRejectsPartialMTLSFiles(t *testing.T) {
 	})
 }
 
-func TestFlagNormalizeRequiresSource(t *testing.T) {
+func TestFlagNormalizeRequiresSeedWithoutDatabase(t *testing.T) {
 	flags := &Flag{}
 
-	require.PanicsWithError(t, "hub flag normalize failed: one of DBSQLiteFile or DBPostgresURL must be set", func() {
+	require.PanicsWithError(t, "no-db requires seed-yaml-file", func() {
 		flags.Normalize(false)
 	})
 }
@@ -238,13 +238,13 @@ func TestFlagNormalizeInprocClearsListenAndMQ(t *testing.T) {
 	assert.True(t, flags.MQEmbeddedNats)
 }
 
-func TestFlagInferSourceTypeRequiresSource(t *testing.T) {
+func TestFlagInferSourceTypeDefaultsToMemory(t *testing.T) {
 	flags := &Flag{}
 
 	sourceType, err := flags.inferSourceType()
-	require.EqualError(t, err, "one of DBSQLiteFile or DBPostgresURL must be set")
+	require.NoError(t, err)
 
-	assert.Empty(t, sourceType)
+	assert.Equal(t, SourceMemory, sourceType)
 }
 
 func TestFlagInferSourceTypeReturnsSQLite(t *testing.T) {
@@ -267,4 +267,16 @@ func TestFlagInferSourceTypeRejectsMultipleSources(t *testing.T) {
 	sourceType, err := flags.inferSourceType()
 	require.EqualError(t, err, "only one of DBSQLiteFile or DBPostgresURL can be set")
 	assert.Empty(t, sourceType)
+}
+
+func TestNoDBModes(t *testing.T) {
+	for _, explicit := range []bool{false, true} {
+		f := &Flag{NoDB: explicit, SeedYAMLPath: "seed.yaml"}
+		f.Normalize(true)
+		require.True(t, f.NoDB)
+		require.Equal(t, SourceMemory, f.SourceType)
+	}
+	for _, f := range []*Flag{{NoDB: true, DBSQLiteFile: "hub.sqlite"}, {NoDB: true, DBPostgresURL: "postgres://localhost/hub"}} {
+		require.PanicsWithError(t, "no-db cannot be used with a database source", func() { f.Normalize(true) })
+	}
 }

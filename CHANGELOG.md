@@ -8,6 +8,10 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Changed
+
+- Hub, standalone, and `vine dev` now default to `--no-db`, requiring a seed YAML file. Configuration is rebuilt in memory on startup and becomes read-only after initialization; edit the file and restart to apply changes. Explicit SQLite/PostgreSQL storage retains writable configuration. Dashboard shows the read-only state and disables configuration writes.
+
 ## [0.15.8] - 2026-09-13
 
 ### Fixed

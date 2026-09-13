@@ -143,8 +143,8 @@ vine --help
 常用入口：
 
 ```bash
-# 本地 Hub + Portal + Link；未指定数据库时使用临时 SQLite。
-vine dev
+# 本地 Hub + Portal + Link；从 YAML 加载只读配置。
+vine dev --seed-yaml-file ./hub.yaml
 
 # 独立运行的运行时服务；每条命令分别在独立进程中执行。
 vine hub serve --mq-embedded-nats --db-sqlite-file ./hub.sqlite

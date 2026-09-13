@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
@@ -11,6 +12,7 @@ type DBPortalSiteRepo struct {
 	Dao        *model.PortalSiteDao `inject:""`
 	SchemaRepo core.SchemaRepo      `inject:""`
 	Syncer     *syncer.Syncer       `inject:""`
+	Access     *configaccess.Access `inject:""`
 }
 
 func (s *DBPortalSiteRepo) ListEntries() []core.PortalSite {
@@ -37,6 +39,7 @@ func (s *DBPortalSiteRepo) GetEntryByName(name string) (*core.PortalSite, bool) 
 }
 
 func (s *DBPortalSiteRepo) SaveEntry(entry *core.PortalSite) {
+	s.Access.CheckWrite()
 	row := toDBPortalSite(entry)
 	s.Dao.Save(row)
 	entry.Id = row.Id
@@ -49,6 +52,7 @@ func (s *DBPortalSiteRepo) rpcgwServices(entry *core.PortalSite) []string {
 }
 
 func (s *DBPortalSiteRepo) RemoveEntry(id int) bool {
+	s.Access.CheckWrite()
 	entry, ok := s.Dao.DeleteById(id)
 	if !ok {
 		return false

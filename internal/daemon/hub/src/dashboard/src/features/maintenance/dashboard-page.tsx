@@ -1,3 +1,4 @@
+import { useConfigAccess } from '@/lib/config-access'
 import * as React from 'react'
 import { ExternalLink, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -133,6 +134,7 @@ function hasConfiguredCertForHost(certs: Array<PortalCert>, host: string) {
 }
 
 export function DashboardSettingsPage() {
+  const { readOnly } = useConfigAccess()
   const { t } = useLocale()
   const [schemeValue, setSchemeValue] = React.useState<DashboardScheme>(() =>
     window.location.protocol === 'https:' ? 'https' : 'http',
@@ -153,7 +155,7 @@ export function DashboardSettingsPage() {
   )
 
   const parsedPort = parsedPortValue(portValue)
-  const accessDisabled = loadingAccess || saving || !canUpdateAccess
+  const accessDisabled = readOnly || loadingAccess || saving || !canUpdateAccess
 
   const jumpToDashboardPort = React.useCallback(() => {
     if (!redirect) {

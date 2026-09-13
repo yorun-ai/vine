@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
@@ -9,6 +10,7 @@ import (
 type DBPortalRuleRepo struct {
 	Dao    *model.PortalRuleDao `inject:""`
 	Syncer *syncer.Syncer       `inject:""`
+	Access *configaccess.Access `inject:""`
 }
 
 func (s *DBPortalRuleRepo) ListRules() []core.PortalRule {
@@ -35,6 +37,7 @@ func (s *DBPortalRuleRepo) GetRuleByName(name string) (*core.PortalRule, bool) {
 }
 
 func (s *DBPortalRuleRepo) SaveRule(rule *core.PortalRule) {
+	s.Access.CheckWrite()
 	row := toDBPortalRule(rule)
 	s.Dao.Save(row)
 	rule.Id = row.Id
@@ -43,6 +46,7 @@ func (s *DBPortalRuleRepo) SaveRule(rule *core.PortalRule) {
 }
 
 func (s *DBPortalRuleRepo) RemoveRule(id int) bool {
+	s.Access.CheckWrite()
 	rule, ok := s.Dao.DeleteById(id)
 	if !ok {
 		return false
