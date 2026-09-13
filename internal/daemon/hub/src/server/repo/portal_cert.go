@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
@@ -10,6 +11,7 @@ import (
 type DBPortalCertRepo struct {
 	Dao    *model.PortalCertDao `inject:""`
 	Syncer *syncer.Syncer       `inject:""`
+	Access *configaccess.Access `inject:""`
 }
 
 func (s *DBPortalCertRepo) ListCerts() []*core.PortalCert {
@@ -36,6 +38,7 @@ func (s *DBPortalCertRepo) GetCertByName(name string) (*core.PortalCert, bool) {
 }
 
 func (s *DBPortalCertRepo) SaveCert(cert *core.PortalCert) {
+	s.Access.CheckWrite()
 	row := toDBPortalCert(cert)
 	s.Dao.Save(row)
 	cert.Id = row.Id
@@ -44,6 +47,7 @@ func (s *DBPortalCertRepo) SaveCert(cert *core.PortalCert) {
 }
 
 func (s *DBPortalCertRepo) RemoveCert(id int) bool {
+	s.Access.CheckWrite()
 	cert, ok := s.Dao.DeleteById(id)
 	if !ok {
 		return false

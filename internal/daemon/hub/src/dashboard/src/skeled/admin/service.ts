@@ -253,6 +253,23 @@ export function createEventDebugApiService(client: VrpcClient) {
 export function createMaintenanceApiService(client: VrpcClient) {
   return {
     /**
+     * Whether Hub configuration is read-only.
+     * @param params - Request parameters, or null for methods without input
+     * @param options - Optional invocation options
+     * @returns boolean -
+     */
+    configReadOnly(
+      params: null,
+      options?: VrpcRequestOptions,
+    ) {
+      return client.invoke<boolean>({
+        serviceName: MaintenanceApiServiceSpec.serviceName,
+        methodName: MaintenanceApiServiceSpec.methods.configReadOnly,
+        params,
+        options,
+      });
+    },
+    /**
      * Preview Seed YAML differences.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options

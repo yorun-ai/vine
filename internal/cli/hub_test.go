@@ -237,3 +237,23 @@ func TestRunHubServeEnableNats(t *testing.T) {
 		t.Fatal("expected hub app to start")
 	}
 }
+
+func TestRunHubServeNoDB(t *testing.T) {
+	original := startHubApp
+	t.Cleanup(func() { startHubApp = original })
+	startHubApp = func(flags hubconf.Flag) {
+		flags.Normalize(false)
+		if !flags.NoDB || flags.SourceType != hubconf.SourceMemory {
+			t.Fatal("expected no-db")
+		}
+	}
+	for _, args := range [][]string{
+		{"hub", "serve", "--no-db", "--seed-yaml-file", "seed.yaml", "--mq-embedded-nats"},
+		{"hub", "serve", "--seed-yaml-file", "seed.yaml", "--mq-embedded-nats"},
+	} {
+		result := run(args)
+		if result.exitCode != exitCodeSuccess {
+			t.Fatalf("%s", result.stderr)
+		}
+	}
+}

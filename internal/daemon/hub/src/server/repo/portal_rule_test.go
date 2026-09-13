@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
@@ -120,8 +121,9 @@ func newTestDBPortalRuleRepo(t *testing.T) (*gorm.DB, *DBPortalRuleRepo, *rediss
 			Dao: rdb.NewDao[*model.PortalRule](db),
 		},
 		Syncer: testSyncer(redisServer),
+		Access: new(configaccess.Access),
 	}
-	repo.Dao.DIInit()
+	repo.Dao.InitSchema()
 	require.NoError(t, db.Exec("DELETE FROM portal_rule").Error)
 
 	return db, repo, redisServer
@@ -151,4 +153,12 @@ func testPortalRule(name string) *core.PortalRule {
 		RouteSiteName:           "admin@demo.app",
 		RouteRedirectionPattern: "",
 	}
+}
+
+func TestDBPortalRuleRepoRejectsReadOnlyWrites(t *testing.T) {
+	access := new(configaccess.Access)
+	access.Lock()
+	repo := &DBPortalRuleRepo{Access: access}
+	require.PanicsWithError(t, "Configuration is read-only; edit the seed configuration file and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.SaveRule(new(core.PortalRule)) })
+	require.PanicsWithError(t, "Configuration is read-only; edit the seed configuration file and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.RemoveRule(1) })
 }

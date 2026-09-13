@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
@@ -175,8 +176,9 @@ func newTestDBPortalSiteRepo(t *testing.T) (*gorm.DB, *DBPortalSiteRepo, *rediss
 		},
 		SchemaRepo: &_PortalSiteSchemaRepo{},
 		Syncer:     testSyncer(redisServer),
+		Access:     new(configaccess.Access),
 	}
-	repo.Dao.DIInit()
+	repo.Dao.InitSchema()
 	require.NoError(t, db.Exec("DELETE FROM portal_site").Error)
 
 	return db, repo, redisServer
@@ -220,4 +222,12 @@ func assertRedisedPortalSite(t *testing.T, expected *core.PortalSite, actual *re
 	assert.Equal(t, expected.Cors.AllowedOrigins, actual.Cors.AllowedOrigins)
 	require.NotNil(t, actual.RpcgwConfig)
 	assert.Empty(t, actual.RpcgwConfig.Services)
+}
+
+func TestDBPortalSiteRepoRejectsReadOnlyWrites(t *testing.T) {
+	access := new(configaccess.Access)
+	access.Lock()
+	repo := &DBPortalSiteRepo{Access: access}
+	require.PanicsWithError(t, "Configuration is read-only; edit the seed configuration file and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.SaveEntry(new(core.PortalSite)) })
+	require.PanicsWithError(t, "Configuration is read-only; edit the seed configuration file and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.RemoveEntry(1) })
 }

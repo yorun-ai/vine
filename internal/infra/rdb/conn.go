@@ -3,6 +3,8 @@ package rdb
 import (
 	"fmt"
 	"math"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -103,5 +105,15 @@ func configurePool(gormDB *gorm.DB, config Option) error {
 	sqlDB.SetMaxOpenConns(maxOpenConns)
 	sqlDB.SetConnMaxIdleTime(connMaxIdleTime)
 	sqlDB.SetConnMaxLifetime(connMaxLifeTime)
+	if strings.HasPrefix(config.ConnURL, "sqlite://") {
+		dsn := strings.TrimPrefix(config.ConnURL, "sqlite://")
+		_, query, _ := strings.Cut(dsn, "?")
+		params, _ := url.ParseQuery(query)
+		if dsn == ":memory:" || params.Get("mode") == "memory" {
+			// An in-memory database disappears when its last connection closes.
+			sqlDB.SetConnMaxIdleTime(0)
+			sqlDB.SetConnMaxLifetime(0)
+		}
+	}
 	return nil
 }

@@ -1,3 +1,4 @@
+import { useConfigAccess } from '@/lib/config-access'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
 import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
@@ -309,6 +310,7 @@ function PortalEntryAccessDialog({
 }
 
 export function PortalEntryPage() {
+  const { readOnly } = useConfigAccess()
   const { t, tText } = useLocale()
   const navigate = useNavigate()
   const pathname = useRouterState({
@@ -592,7 +594,8 @@ export function PortalEntryPage() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setEditingEntry(selectedEntry)}
+                    disabled={readOnly}
+                              onClick={() => setEditingEntry(selectedEntry)}
                   >
                     <Edit3 className="size-4" />
                     {t('action.edit')}

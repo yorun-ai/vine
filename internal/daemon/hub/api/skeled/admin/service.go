@@ -647,7 +647,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "MaintenanceApiService",
 		SkelName:          "vine.hub.admin.MaintenanceApiService",
-		Hash:              "2a1db1e3",
+		Hash:              "a4ba47c3",
 		ServerType:        reflect.TypeFor[MaintenanceApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultMaintenanceApiServiceServer](),
 
@@ -655,8 +655,29 @@ var (
 		WrapperERServerCtor: _NewWrapperMaintenanceApiServiceServerER,
 		DefaultERServerType: reflect.TypeFor[*DefaultMaintenanceApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
+			_MaintenanceApiServiceConfigReadOnlySpec,
 			_MaintenanceApiServicePreviewSeedYamlSpec,
 			_MaintenanceApiServiceApplySeedYamlSpec,
+		},
+	}
+	_MaintenanceApiServiceConfigReadOnlySpec = &rpcspec.MethodSpec{
+		Name:           "ConfigReadOnly",
+		SkelName:       "configReadOnly",
+		ArgumentsType:  nil,
+		CloneArguments: nil,
+		ResultType:     reflect.TypeFor[bool](),
+		CloneResult: func(value any) any {
+			source := value.(bool)
+			cloned := source
+			return cloned
+		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
+		ArgumentsContainsBinaryType: false,
+		ResultContainsBinaryType:    false,
+		MethodFuncs: []any{
+			MaintenanceApiServiceServer.ConfigReadOnly,
+			MaintenanceApiServiceServerER.ConfigReadOnly,
 		},
 	}
 	_MaintenanceApiServicePreviewSeedYamlSpec = &rpcspec.MethodSpec{
@@ -733,6 +754,8 @@ type _MaintenanceApiServiceApplySeedYamlArguments struct {
 // MaintenanceApiService / Server
 
 type MaintenanceApiServiceServer interface {
+	// ConfigReadOnly Whether Hub configuration is read-only.
+	ConfigReadOnly() bool
 	// PreviewSeedYaml Preview Seed YAML differences.
 	//   @param content - Seed YAML content
 	//   @returns SeedPreview - Seed preview
@@ -750,6 +773,11 @@ type MaintenanceApiServiceServer interface {
 
 type DefaultMaintenanceApiServiceServer struct{}
 
+func (*DefaultMaintenanceApiServiceServer) ConfigReadOnly() bool {
+	ex.PanicNew(ex.InvalidRequest, "method configReadOnly is not implemented")
+	return false
+}
+
 func (*DefaultMaintenanceApiServiceServer) PreviewSeedYaml(string) SeedPreview {
 	ex.PanicNew(ex.InvalidRequest, "method previewSeedYaml is not implemented")
 	return SeedPreview{}
@@ -765,6 +793,7 @@ func (*DefaultMaintenanceApiServiceServer) mustBeMaintenanceApiServiceServer() {
 // MaintenanceApiService / ERServer
 
 type MaintenanceApiServiceServerER interface {
+	ConfigReadOnly() (bool, ex.Error)
 	PreviewSeedYaml(content string) (SeedPreview, ex.Error)
 	ApplySeedYaml(content string, selections []SeedItemSelection) (SeedPreview, ex.Error)
 
@@ -789,6 +818,12 @@ func (service *_WrapperMaintenanceApiServiceServerER) server() MaintenanceApiSer
 		return &service.DefaultMaintenanceApiServiceServer
 	}
 	return service.serverImpl
+}
+
+func (service *_WrapperMaintenanceApiServiceServerER) ConfigReadOnly() (ret bool, err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	ret = service.server().ConfigReadOnly()
+	return
 }
 
 func (service *_WrapperMaintenanceApiServiceServerER) PreviewSeedYaml(content string) (ret SeedPreview, err ex.Error) {

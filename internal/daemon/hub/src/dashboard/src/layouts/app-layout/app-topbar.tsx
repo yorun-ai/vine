@@ -1,7 +1,8 @@
 import * as React from 'react'
-import { ChevronRight, Menu } from 'lucide-react'
+import { ChevronRight, LockKeyhole, Menu } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { useConfigAccess } from '@/lib/config-access'
 import { useLocale } from '@/i18n'
 
 import { AccountPopover } from './account-popover'
@@ -28,13 +29,23 @@ export function AppTopbar({
 }: AppTopbarProps) {
   const [isSidebarIconHovered, setIsSidebarIconHovered] = React.useState(false)
   const { t } = useLocale()
+  const configAccess = useConfigAccess()
+  const isConfigurationPage = activeItem !== null && [
+    'app-config',
+    'portal-entry',
+    'portal-rule',
+    'portal-site',
+    'portal-cert',
+    'settings-dashboard-port',
+    'maintenance',
+  ].includes(activeItem.id)
   const SidebarIcon =
     isSidebarIconHovered || isMobile
       ? Menu
       : (activeItem?.icon ?? activeScene.icon)
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-background px-4">
+    <header className="flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border bg-background px-4 py-2">
       <div className="flex min-w-0 items-center gap-3">
         <button
           type="button"
@@ -78,7 +89,26 @@ export function AppTopbar({
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      {isConfigurationPage && !configAccess.loading && configAccess.readOnly ? (
+        <div className="order-last flex w-full min-w-0 justify-center lg:order-none lg:w-auto lg:flex-1">
+          <div
+            role="status"
+            className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs text-amber-950 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
+          >
+            <LockKeyhole className="size-4 shrink-0" aria-hidden="true" />
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <span className="font-semibold">
+                {t(configAccess.error ? 'configAccess.unavailableTitle' : 'configAccess.readOnlyTitle')}
+              </span>
+              <span>
+                {t(configAccess.error ? 'configAccess.unavailable' : 'configAccess.readOnly')}
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="flex shrink-0 items-center gap-2">
         <LanguageToggle />
         <div className="pl-1">
           <AccountPopover />

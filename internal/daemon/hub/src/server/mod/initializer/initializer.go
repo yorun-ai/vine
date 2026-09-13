@@ -4,6 +4,7 @@ import (
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/skel"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	hubflag "go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/seeder"
@@ -21,6 +22,7 @@ type Initializer struct {
 	RegistryCore  *core.RegistryCore      `inject:""`
 	Seeder        *seeder.Seeder          `inject:""`
 	Syncer        *syncer.Syncer          `inject:""`
+	Access        *configaccess.Access    `inject:""`
 	InprocFlag    *app.InternalInprocFlag `inject:""`
 	Flag          *hubflag.Flag           `inject:""`
 	Identity      *mtls.Identity          `inject:""`
@@ -49,5 +51,8 @@ func (i *Initializer) DIInit() {
 	}
 	for _, cert := range i.CertRepo.ListCerts() {
 		i.Syncer.SyncPortalCert(cert)
+	}
+	if i.Flag.NoDB {
+		i.Access.Lock()
 	}
 }

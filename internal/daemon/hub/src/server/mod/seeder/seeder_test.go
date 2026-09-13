@@ -20,6 +20,7 @@ import (
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
@@ -562,16 +563,20 @@ func newTestSeederRepos(t *testing.T) (*repo.DBAppConfigRepo, *repo.DBPortalRule
 	return &repo.DBAppConfigRepo{
 		Dao:    &model.AppConfigDao{Dao: rdb.NewDao[*model.AppConfig](gdb)},
 		Syncer: testSyncer(redisServer),
+		Access: new(configaccess.Access),
 	}, &repo.DBPortalRuleRepo{
 		Dao:    &model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](gdb)},
 		Syncer: testSyncer(redisServer),
+		Access: new(configaccess.Access),
 	}, &repo.DBPortalCertRepo{
 		Dao:    &model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](gdb)},
 		Syncer: testSyncer(redisServer),
+		Access: new(configaccess.Access),
 	}, &repo.DBPortalSiteRepo{
 		Dao:        &model.PortalSiteDao{Dao: rdb.NewDao[*model.PortalSite](gdb)},
 		SchemaRepo: new(schema.MemorySchemaRepo),
 		Syncer:     testSyncer(redisServer),
+		Access:     new(configaccess.Access),
 	}, &repo.DBMetadataRepo{
 		Dao: &model.MetadataDao{Dao: rdb.NewDao[*model.Metadata](gdb)},
 	}, redisServer

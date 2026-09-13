@@ -1,3 +1,4 @@
+import { useConfigAccess } from '@/lib/config-access'
 import { SkelName } from '@/components/skel-name'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
 import { SearchInput } from '@/components/ui/search-input'
@@ -1302,6 +1303,7 @@ function PortalSiteInlineEditor({
 }
 
 export function PortalSitePage() {
+  const { readOnly } = useConfigAccess()
   const { t, tText } = useLocale()
   const navigate = useNavigate()
   const pathname = useRouterState({
@@ -1530,6 +1532,7 @@ export function PortalSitePage() {
                   <Button
                     type="button"
                     size="sm"
+                    disabled={readOnly}
                     onClick={() => {
                       setEditingEntry(null)
                       setIsCreating(true)
@@ -1673,6 +1676,7 @@ export function PortalSitePage() {
                               type="button"
                               variant="outline"
                               size="sm"
+                              disabled={readOnly}
                               onClick={() => setEditingEntry(selectedEntry)}
                             >
                               <Edit3 />
@@ -1689,6 +1693,7 @@ export function PortalSitePage() {
                               type="button"
                               variant="ghost"
                               size="icon-sm"
+                              disabled={readOnly}
                               onClick={() => setDeleteEntry(selectedEntry)}
                             >
                               <Trash2 />
@@ -1821,7 +1826,7 @@ export function PortalSitePage() {
                 </EmptyHeader>
                 {visibleEntries.length === 0 ? (
                   <EmptyContent>
-                    <Button type="button" onClick={() => setIsCreating(true)}>
+                    <Button type="button" disabled={readOnly} onClick={() => setIsCreating(true)}>
                       <Plus />
                       {t('portalSite.createTitle')}
                     </Button>

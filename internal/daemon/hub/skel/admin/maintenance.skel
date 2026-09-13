@@ -51,6 +51,11 @@ api service MaintenanceApiService {
 
     noauth
 
+    @desc("Whether Hub configuration is read-only")
+    method configReadOnly {
+        output bool
+    }
+
     @desc("Preview Seed YAML differences")
     method previewSeedYaml {
         input {

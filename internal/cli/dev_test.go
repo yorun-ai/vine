@@ -2,9 +2,11 @@ package cli
 
 import (
 	"context"
+	"go.yorun.ai/vine/internal/core/ex"
 	"net"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"go.yorun.ai/vine/internal/app"
@@ -77,19 +79,12 @@ func TestRunDevUsesDefaults(t *testing.T) {
 	}
 }
 
-func TestPrepareDevHubFlagUsesTemporarySQLite(t *testing.T) {
-	flag, cleanup := prepareDevHubFlag(_DevOption{})
-	dir := filepath.Dir(flag.DBSQLiteFile)
-	if filepath.Base(flag.DBSQLiteFile) != "hub.sqlite" {
-		t.Fatalf("unexpected SQLite file: %q", flag.DBSQLiteFile)
-	}
-	if _, err := os.Stat(dir); err != nil {
-		t.Fatalf("stat temporary directory: %v", err)
-	}
-
-	cleanup()
-	if _, err := os.Stat(dir); !os.IsNotExist(err) {
-		t.Fatalf("expected temporary directory to be removed, stat error = %v", err)
+func TestPrepareDevHubFlagDefaultsToNoDB(t *testing.T) {
+	flag, cleanup := prepareDevHubFlag(_DevOption{SeedYAMLFile: "seed.yaml"})
+	defer cleanup()
+	flag.Normalize(true)
+	if !flag.NoDB || flag.DBSQLiteFile != "" {
+		t.Fatal("expected no-db without a SQLite file")
 	}
 }
 
@@ -119,9 +114,14 @@ func TestDevRuntimeLifecycleOrder(t *testing.T) {
 }
 
 func TestDevRuntimeAcceptsNetworkAppRegistration(t *testing.T) {
+	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
+	if err := os.WriteFile(seedPath, []byte("appConfigs:\n  - name: demo.Config\n    value: '{\"enabled\":true}'\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
 	linkListen := freeDevTestListenAddress(t)
 	portalListen := freeDevTestListenAddress(t)
 	runtime := newDevRuntime(_DevOption{
+		SeedYAMLFile:  seedPath,
 		LinkAPIListen: linkListen,
 		DashboardURL:  "http://" + portalListen + "/",
 	})
@@ -175,6 +175,23 @@ func TestDevRuntimeAcceptsNetworkAppRegistration(t *testing.T) {
 		inproc.Endpoint(hubapp.HubAdminInprocHostPath, coreapp.PathRpcInvoke),
 		externalApp,
 	)
+	readOnlyMethod, _ := spec.GetMethodInfo("vine.hub.admin.MaintenanceApiService", "configReadOnly")
+	readOnly, accessErr := hubRPCClient.InvokeAs[bool](readOnlyMethod, nil)
+	if accessErr != nil || !readOnly {
+		t.Fatalf("expected initialized read-only Hub: %v %v", readOnly, accessErr)
+	}
+	configMethod, _ := spec.GetMethodInfo("vine.hub.admin.AppConfigApiService", "list")
+	configs, configErr := hubRPCClient.InvokeAs[[]hubskeled.AppConfigItem](configMethod, nil)
+	if configErr != nil || len(configs) != 1 {
+		t.Fatalf("expected seeded config: %v %v", configs, configErr)
+	}
+	removeMethod, _ := spec.GetMethodInfo("vine.hub.admin.AppConfigApiService", "remove")
+	arguments := reflect.New(removeMethod.ArgumentsType())
+	arguments.Elem().FieldByName("Id").SetInt(int64(configs[0].Id))
+	_, removeErr := hubRPCClient.InvokeAs[bool](removeMethod, arguments.Interface())
+	if removeErr == nil || removeErr.Code() != ex.PermissionDenied {
+		t.Fatalf("expected read-only rejection, got %v", removeErr)
+	}
 	method, ok := spec.GetMethodInfo("vine.hub.admin.SkeletonApiService", "listData")
 	if !ok {
 		t.Fatal("missing SkeletonApiService.listData")

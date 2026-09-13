@@ -2,7 +2,6 @@ package model
 
 import (
 	_ "embed"
-	"sync"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/infra/rdb"
@@ -13,8 +12,6 @@ var createMetadataSQLiteSQL string
 
 //go:embed sql/pgsql/create_metadata.sql
 var createMetadataPgSQL string
-
-var metadataSchemaOnce sync.Once
 
 type Metadata struct {
 	rdb.Model
@@ -30,12 +27,10 @@ type MetadataDao struct {
 	rdb.Dao[*Metadata]
 }
 
-func (d *MetadataDao) DIInit() {
-	metadataSchemaOnce.Do(func() {
-		sql := schemaSQL(d.GormDB(), createMetadataSQLiteSQL, createMetadataPgSQL)
-		err := d.GormDB().Exec(sql).Error
-		ex.PanicIfError(err)
-	})
+func (d *MetadataDao) InitSchema() {
+	sql := schemaSQL(d.GormDB(), createMetadataSQLiteSQL, createMetadataPgSQL)
+	err := d.GormDB().Exec(sql).Error
+	ex.PanicIfError(err)
 }
 
 func (d *MetadataDao) ByName(name string) (*Metadata, bool) {

@@ -1,3 +1,4 @@
+import { useConfigAccess } from '@/lib/config-access'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
 import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
@@ -581,6 +582,7 @@ function PortalCertInlineEditor({
 }
 
 export function PortalCertPage() {
+  const { readOnly } = useConfigAccess()
   const { t } = useLocale()
   const navigate = useNavigate()
   const pathname = useRouterState({
@@ -790,6 +792,7 @@ export function PortalCertPage() {
                   <Button
                     type="button"
                     size="sm"
+                    disabled={readOnly}
                     onClick={() => {
                       setEditingCert(null)
                       setIsCreating(true)
@@ -919,7 +922,8 @@ export function PortalCertPage() {
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setEditingCert(selectedCert)}
+                                disabled={readOnly}
+                              onClick={() => setEditingCert(selectedCert)}
                               />
                             }
                           >
@@ -935,7 +939,8 @@ export function PortalCertPage() {
                                 type="button"
                                 variant="ghost"
                                 size="icon-sm"
-                                onClick={() => setDeleteCert(selectedCert)}
+                                disabled={readOnly}
+                              onClick={() => setDeleteCert(selectedCert)}
                               />
                             }
                           >
@@ -1046,7 +1051,7 @@ export function PortalCertPage() {
                 </EmptyHeader>
                 {certs.length === 0 ? (
                   <EmptyContent>
-                    <Button type="button" onClick={() => setIsCreating(true)}>
+                    <Button type="button" disabled={readOnly} onClick={() => setIsCreating(true)}>
                       <Plus />
                       {t('portalCert.createTitle')}
                     </Button>

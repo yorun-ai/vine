@@ -1,9 +1,12 @@
 package db
 
 import (
+	"uuid"
+
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
 	"go.yorun.ai/vine/internal/infra/rdb"
+	"gorm.io/gorm"
 )
 
 type HubDatabase struct {
@@ -14,6 +17,9 @@ type HubDatabase struct {
 
 func (d *HubDatabase) InitOption(option *rdb.Option) {
 	switch d.Flag.SourceType {
+	case flag.SourceMemory:
+		option.ConnURL = "sqlite://file:vine-hub-" + uuid.New().String() + "?mode=memory&cache=shared"
+		option.MaxOpenConn = 1
 	case flag.SourceSQLite:
 		option.ConnURL = "sqlite://" + d.Flag.DBSQLiteFile
 	case flag.SourcePostgreSQL:
@@ -27,4 +33,12 @@ func (*HubDatabase) InitDao(addDao rdb.TypeAdder) {
 	addDao(rdb.T[*model.PortalRuleDao]())
 	addDao(rdb.T[*model.MetadataDao]())
 	addDao(rdb.T[*model.PortalSiteDao]())
+}
+
+func (*HubDatabase) InitSchema(db *gorm.DB) {
+	(&model.AppConfigDao{Dao: rdb.NewDao[*model.AppConfig](db)}).InitSchema()
+	(&model.PortalSiteDao{Dao: rdb.NewDao[*model.PortalSite](db)}).InitSchema()
+	(&model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](db)}).InitSchema()
+	(&model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](db)}).InitSchema()
+	(&model.MetadataDao{Dao: rdb.NewDao[*model.Metadata](db)}).InitSchema()
 }

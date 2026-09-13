@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
@@ -9,8 +10,9 @@ import (
 // DB Repo
 
 type DBAppConfigRepo struct {
-	Dao    *model.AppConfigDao `inject:""`
-	Syncer *syncer.Syncer      `inject:""`
+	Dao    *model.AppConfigDao  `inject:""`
+	Syncer *syncer.Syncer       `inject:""`
+	Access *configaccess.Access `inject:""`
 }
 
 func (s *DBAppConfigRepo) ListItems() []*core.AppConfig {
@@ -37,6 +39,7 @@ func (s *DBAppConfigRepo) GetItemByName(name string) (*core.AppConfig, bool) {
 }
 
 func (s *DBAppConfigRepo) SaveItem(item *core.AppConfig) {
+	s.Access.CheckWrite()
 	row := s.Dao.Save(&model.AppConfig{
 		Id:      item.Id,
 		Name:    item.Name,
@@ -49,6 +52,7 @@ func (s *DBAppConfigRepo) SaveItem(item *core.AppConfig) {
 }
 
 func (s *DBAppConfigRepo) RemoveItem(id int) bool {
+	s.Access.CheckWrite()
 	item, ok := s.Dao.DeleteById(id)
 	if !ok {
 		return false

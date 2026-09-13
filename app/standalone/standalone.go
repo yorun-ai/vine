@@ -27,18 +27,24 @@ type _App struct {
 
 // Option configures the infrastructure started by standalone mode.
 type Option struct {
-	// SeedYAMLFile is the optional Hub seed configuration file.
+	// SeedYAMLFile is the Hub seed configuration file; required in no-db mode.
 	SeedYAMLFile string
+
+	// NoDB loads read-only configuration from SeedYAMLFile into memory. This is
+	// the default when neither SQLiteFile nor PostgresURL is supplied.
+	NoDB bool
 	// SQLiteFile selects SQLite persistence and specifies its database file.
 	SQLiteFile string
 	// PostgresURL selects PostgreSQL persistence and specifies its connection URL.
 	PostgresURL string
+
 	// DashboardURL is the optional URL from which Hub dashboard assets are loaded.
 	DashboardURL string
 }
 
 func (o Option) isZero() bool {
 	return o.SeedYAMLFile == "" &&
+		!o.NoDB &&
 		o.SQLiteFile == "" &&
 		o.PostgresURL == "" &&
 		o.DashboardURL == ""
@@ -119,6 +125,12 @@ const (
 func (a *_App) initInfra() {
 	flag := &hubflag.Flag{}
 	appcli.Handle(
+		&ucli.BoolFlag{
+			Name:        vinecli.FlagHubNoDB,
+			Sources:     ucli.EnvVars(vinecli.EnvHubNoDB),
+			Usage:       "use no persistent database (default); requires seed-yaml-file; configuration is read-only",
+			Destination: &flag.NoDB,
+		},
 		&ucli.StringFlag{
 			Name:        flagSQLiteFile,
 			Sources:     ucli.EnvVars(envSQLiteFile),
@@ -156,6 +168,9 @@ func (a *_App) initInfra() {
 }
 
 func applyOption(flag *hubflag.Flag, option Option) {
+	if option.NoDB {
+		flag.NoDB = true
+	}
 	if option.SQLiteFile != "" {
 		flag.DBSQLiteFile = option.SQLiteFile
 	}

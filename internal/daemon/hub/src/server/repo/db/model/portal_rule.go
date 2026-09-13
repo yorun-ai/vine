@@ -2,7 +2,6 @@ package model
 
 import (
 	_ "embed"
-	"sync"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/infra/rdb"
@@ -14,8 +13,6 @@ var createPortalRuleSQLiteSQL string
 
 //go:embed sql/pgsql/create_portal_rule.sql
 var createPortalRulePgSQL string
-
-var entryRuleSchemaOnce sync.Once
 
 type PortalRule struct {
 	rdb.Model
@@ -39,16 +36,9 @@ type PortalRuleDao struct {
 	rdb.Dao[*PortalRule]
 }
 
-func (d *PortalRuleDao) DIInit() {
-	d.ensureSchema()
-}
-
-func (d *PortalRuleDao) ensureSchema() {
-	// TODO: Design a unified, versioned migration mechanism tied to database
-	// initialization instead of DAO initialization and a process-wide sync.Once.
-	entryRuleSchemaOnce.Do(func() {
-		ex.PanicIfError(d.migrateSchema())
-	})
+func (d *PortalRuleDao) InitSchema() {
+	// TODO: Replace compatibility migrations with a unified versioned schema.
+	ex.PanicIfError(d.migrateSchema())
 }
 
 func (d *PortalRuleDao) ListOrdered() []*PortalRule {

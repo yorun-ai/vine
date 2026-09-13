@@ -2,7 +2,6 @@ package model
 
 import (
 	_ "embed"
-	"sync"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/infra/rdb"
@@ -13,8 +12,6 @@ var createAppConfigSQLiteSQL string
 
 //go:embed sql/pgsql/create_app_config.sql
 var createAppConfigPgSQL string
-
-var configItemSchemaOnce sync.Once
 
 type AppConfig struct {
 	rdb.Model
@@ -31,16 +28,10 @@ type AppConfigDao struct {
 	rdb.Dao[*AppConfig]
 }
 
-func (d *AppConfigDao) DIInit() {
-	d.ensureSchema()
-}
-
-func (d *AppConfigDao) ensureSchema() {
-	configItemSchemaOnce.Do(func() {
-		sql := schemaSQL(d.GormDB(), createAppConfigSQLiteSQL, createAppConfigPgSQL)
-		err := d.GormDB().Exec(sql).Error
-		ex.PanicIfError(err)
-	})
+func (d *AppConfigDao) InitSchema() {
+	sql := schemaSQL(d.GormDB(), createAppConfigSQLiteSQL, createAppConfigPgSQL)
+	err := d.GormDB().Exec(sql).Error
+	ex.PanicIfError(err)
 }
 
 func (d *AppConfigDao) ListOrdered() []*AppConfig {
