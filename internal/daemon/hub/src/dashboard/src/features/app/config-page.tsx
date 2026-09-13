@@ -1,10 +1,11 @@
+import { ConfigJsonEditor } from './config-json-editor'
 import { useConfigAccess } from '@/lib/config-access'
 import { DomainFilter } from '@/components/domain-filter'
 import { SkelName } from '@/components/skel-name'
 import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
-import CodeMirror, { Decoration, EditorView } from '@uiw/react-codemirror'
+import CodeMirror from '@uiw/react-codemirror'
 import { json } from '@codemirror/lang-json'
 import {
   Braces,
@@ -76,19 +77,13 @@ interface AppConfigPageProps {
   routeKey?: string
 }
 
-interface JsonFieldRange {
-  name: string
-  from: number
-  valueFrom: number
-  to: number
-}
-
 type TypeDefinitionIndex = Map<string, SkeletonData>
 type AppConfigStatus = 'NORMAL' | 'UNUSED' | 'UNCONFIGURED' | 'MISMATCH'
 
 const emptyConfigValue = '{}'
 
 interface ConfigMismatchIssue {
+  repair?: 'add' | 'remove' | 'reset'
   fieldName?: string
   text: string
 }
@@ -240,139 +235,6 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Request failed'
 }
 
-function skipJsonString(value: string, start: number) {
-  let position = start + 1
-
-  while (position < value.length) {
-    const char = value[position]
-
-    if (char === '\\') {
-      position += 2
-      continue
-    }
-
-    if (char === '"') {
-      return position + 1
-    }
-
-    position += 1
-  }
-
-  return value.length
-}
-
-function skipWhitespace(value: string, start: number) {
-  let position = start
-
-  while (position < value.length && /\s/.test(value[position])) {
-    position += 1
-  }
-
-  return position
-}
-
-function findJsonValueEnd(value: string, start: number) {
-  let position = start
-  let depth = 0
-  let inString = false
-  let escaped = false
-
-  while (position < value.length) {
-    const char = value[position]
-
-    if (inString) {
-      if (escaped) {
-        escaped = false
-      } else if (char === '\\') {
-        escaped = true
-      } else if (char === '"') {
-        inString = false
-      }
-
-      position += 1
-      continue
-    }
-
-    if (char === '"') {
-      inString = true
-    } else if (char === '{' || char === '[') {
-      depth += 1
-    } else if (char === '}' || char === ']') {
-      if (depth === 0) {
-        break
-      }
-
-      depth -= 1
-    } else if (char === ',' && depth === 0) {
-      break
-    }
-
-    position += 1
-  }
-
-  return position
-}
-
-function getTopLevelJsonFieldRanges(value: string) {
-  const ranges: Array<JsonFieldRange> = []
-  let position = skipWhitespace(value, 0)
-
-  if (value[position] !== '{') {
-    return ranges
-  }
-
-  position += 1
-
-  while (position < value.length) {
-    position = skipWhitespace(value, position)
-
-    if (value[position] === '}') {
-      break
-    }
-
-    if (value[position] !== '"') {
-      position += 1
-      continue
-    }
-
-    const keyFrom = position
-    const keyTo = skipJsonString(value, keyFrom)
-    const colonPosition = skipWhitespace(value, keyTo)
-
-    if (value[colonPosition] !== ':') {
-      position = keyTo
-      continue
-    }
-
-    let name: string
-
-    try {
-      name = JSON.parse(value.slice(keyFrom, keyTo)) as string
-    } catch {
-      position = keyTo
-      continue
-    }
-
-    const valueFrom = skipWhitespace(value, colonPosition + 1)
-    const valueTo = findJsonValueEnd(value, valueFrom)
-
-    ranges.push({
-      name,
-      from: keyFrom,
-      valueFrom,
-      to: valueTo,
-    })
-
-    position = valueTo
-
-    if (value[position] === ',') {
-      position += 1
-    }
-  }
-
-  return ranges
-}
-
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && !Array.isArray(value) && typeof value === 'object'
 }
@@ -509,7 +371,7 @@ function collectConfigMismatchIssues(
 
   const parsed = parseConfigObject(value)
   if (!parsed) {
-    return [{ text: t('appConfig.valueMustBeObject') }]
+    return [{ text: t('appConfig.valueMustBeObject'), repair: 'reset' as const }]
   }
 
   const issues: Array<ConfigMismatchIssue> = []
@@ -520,6 +382,8 @@ function collectConfigMismatchIssues(
   for (const field of schema.fields) {
     if (!Object.prototype.hasOwnProperty.call(parsed, field.name)) {
       issues.push({
+        fieldName: field.name,
+        repair: 'add',
         text: t('appConfig.missingField').replace('{field}', field.name),
       })
       continue
@@ -543,52 +407,13 @@ function collectConfigMismatchIssues(
     if (!fieldsByName.has(key)) {
       issues.push({
         fieldName: key,
+        repair: 'remove',
         text: t('appConfig.unknownField').replace('{field}', key),
       })
     }
   }
 
   return issues
-}
-
-function collectConfigMismatchFieldNames(
-  value: string,
-  schema: AppConfigSchema | null,
-) {
-  if (!schema) {
-    return new Set<string>()
-  }
-
-  const parsed = parseConfigObject(value)
-  if (!parsed) {
-    return new Set<string>()
-  }
-
-  const ret = new Set<string>()
-  const fieldsByName = new Map(
-    schema.fields.map((field) => [field.name, field]),
-  )
-
-  for (const field of schema.fields) {
-    if (!Object.prototype.hasOwnProperty.call(parsed, field.name)) {
-      continue
-    }
-
-    const fieldValue = parsed[field.name]
-    if (
-      !jsonValueMatchesConfigType(fieldValue, field.type, field.enumItems ?? [])
-    ) {
-      ret.add(field.name)
-    }
-  }
-
-  for (const key of Object.keys(parsed)) {
-    if (!fieldsByName.has(key)) {
-      ret.add(key)
-    }
-  }
-
-  return ret
 }
 
 function getMapKeyType(typeText: string) {
@@ -1071,7 +896,9 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
     React.useState<AppConfigItem | null>(null)
   const [query, setQuery] = React.useState('')
   const [value, setValue] = React.useState('')
-  const [configView, setConfigView] = React.useState('fields')
+  const [jsonDraftInvalid, setJsonDraftInvalid] = React.useState(false)
+  const [jsonEditorRevision, setJsonEditorRevision] = React.useState(0)
+  const [configView, setConfigView] = React.useState('json')
   const [listLoading, setListLoading] = React.useState(true)
   const [detailLoading, setDetailLoading] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
@@ -1172,12 +999,15 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
     () => collectConfigMismatchIssues(value, selectedSchema, t),
     [selectedSchema, t, value],
   )
-  const mismatchFieldNames = React.useMemo(
-    () =>
-      selectedIsMismatched
-        ? collectConfigMismatchFieldNames(value, selectedSchema)
-        : new Set<string>(),
-    [selectedIsMismatched, selectedSchema, value],
+  const mismatchMessages = React.useMemo(
+    () => new Map(mismatchIssues.flatMap((issue) =>
+      issue.fieldName ? [[issue.fieldName, issue.text] as const] : [],
+    )),
+    [mismatchIssues],
+  )
+  const visibleMismatchMessages = React.useMemo(
+    () => jsonDraftInvalid || !valueIsValidJson ? new Map<string, string>() : mismatchMessages,
+    [jsonDraftInvalid, valueIsValidJson, mismatchMessages],
   )
   const dirtyFields = React.useMemo(() => {
     if (!configObject || !savedConfigObject) {
@@ -1190,43 +1020,9 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
       ),
     )
   }, [configObject, savedConfigObject])
-  const jsonPreviewExtensions = React.useMemo(() => {
-    if (dirtyFields.size === 0 && mismatchFieldNames.size === 0) {
-      return jsonExtensions
-    }
-
-    const dirtyMark = Decoration.mark({
-      class: 'rounded bg-amber-100 px-0.5 ring-1 ring-amber-200',
-    })
-    const mismatchMark = Decoration.mark({
-      class: 'rounded bg-destructive/15 px-0.5 ring-1 ring-destructive/30',
-    })
-
-    return [
-      ...jsonExtensions,
-      EditorView.decorations.of((view) => {
-        const decorations = getTopLevelJsonFieldRanges(
-          view.state.doc.toString(),
-        )
-          .filter(
-            (range) =>
-              dirtyFields.has(range.name) || mismatchFieldNames.has(range.name),
-          )
-          .map((range) => {
-            const mark = mismatchFieldNames.has(range.name)
-              ? mismatchMark
-              : dirtyMark
-            return mark.range(range.from, range.to)
-          })
-
-        return Decoration.set(decorations, true)
-      }),
-    ]
-  }, [dirtyFields, mismatchFieldNames])
-
   const hasChanges =
     selectedAppConfig !== null &&
-    (selectedIsUnconfigured || value !== selectedSavedValue)
+    (selectedIsUnconfigured || jsonDraftInvalid || value !== selectedSavedValue)
   const hasMapErrors =
     Object.keys(mapKeyDrafts).length > 0 ||
     Object.keys(mapValueDrafts).length > 0
@@ -1237,6 +1033,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
     selectedAppConfig !== null &&
     hasChanges &&
     valueIsValidJson &&
+    !jsonDraftInvalid &&
     !hasMapErrors &&
     !hasFieldValueErrors &&
     !hasListValueErrors &&
@@ -1407,7 +1204,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
       return
     }
     if (selectedAppConfig) {
-      setConfigView('fields')
+      setConfigView('json')
     }
   }, [selectedAppConfig, selectedIsMismatched, selectedIsUnused])
 
@@ -1610,6 +1407,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
     }
 
     setValue(selectedSavedValue)
+    setJsonEditorRevision((revision) => revision + 1)
     setMapKeyDrafts({})
     setMapValueDrafts({})
     setFieldValueDrafts({})
@@ -2153,31 +1951,6 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
 
           <div className="min-h-0 flex-1 overflow-hidden p-6">
             <div className="flex h-full min-w-0 flex-col gap-4">
-              {selectedIsMismatched ? (
-                <Alert variant="destructive">
-                  <AlertTitle>{t('appConfig.mismatchTitle')}</AlertTitle>
-                  <AlertDescription>
-                    <div className="grid gap-2">
-                      <span>{t('appConfig.fieldsUnavailable')}</span>
-                      {mismatchIssues.length > 0 ? (
-                        <ul className="list-disc space-y-1 pl-4">
-                          {mismatchIssues.slice(0, 8).map((issue) => (
-                            <li key={issue.text}>{issue.text}</li>
-                          ))}
-                          {mismatchIssues.length > 8 ? (
-                            <li>
-                              {t('appConfig.moreIssues').replace(
-                                '{count}',
-                                String(mismatchIssues.length - 8),
-                              )}
-                            </li>
-                          ) : null}
-                        </ul>
-                      ) : null}
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              ) : null}
               <Tabs
                 value={configView}
                 onValueChange={(nextView) => {
@@ -2211,11 +1984,13 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                   </div>
                   <TabsList>
                     {!selectedIsUnused && !selectedIsMismatched ? (
-                      <TabsTrigger value="fields">
+                      <TabsTrigger value="fields" disabled={jsonDraftInvalid}>
                         {t('common.fields')}
                       </TabsTrigger>
                     ) : null}
-                    <TabsTrigger value="json">JSON</TabsTrigger>
+                    <TabsTrigger value="json">
+                      JSON5
+                    </TabsTrigger>
                   </TabsList>
                 </div>
 
@@ -3066,43 +2841,74 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
 
                 <TabsContent
                   value="json"
-                  className="scrollbar-reserved grid min-h-0 gap-2 overflow-y-auto pr-1"
+                  className="scrollbar-reserved min-h-0 overflow-y-auto pr-1"
                   onScroll={handleScrollAreaScroll}
                 >
-                  <CodeMirror
+                  <ConfigJsonEditor
+                    key={`${selectedKey}:${jsonEditorRevision}`}
                     value={value}
-                    extensions={jsonPreviewExtensions}
-                    readOnly={readOnly || (!selectedIsUnused && !selectedIsMismatched)}
-                    onChange={(nextValue) => {
-                      if (selectedIsUnused || selectedIsMismatched) {
-                        setValue(nextValue)
-                      }
-                    }}
-                    basicSetup={{
-                      autocompletion: true,
-                      bracketMatching: true,
-                      closeBrackets: true,
-                      foldGutter: true,
-                      highlightActiveLine: true,
-                      highlightActiveLineGutter: true,
-                      lineNumbers: true,
-                    }}
-                    minHeight="28rem"
-                    className={cn(
-                      'overflow-hidden rounded-lg border bg-background text-[13px]',
-                      valueIsValidJson
-                        ? 'border-input'
-                        : 'border-destructive',
-                    )}
-                    theme="light"
+                    fields={selectedSchema?.fields ?? []}
+                    lockKeys={selectedSchema !== null && !selectedIsUnused && configObject !== null}
+                    mismatchMessages={visibleMismatchMessages}
+                    dirtyFields={dirtyFields}
+                    typeIndex={typeIndex}
+                    onTypeClick={navigateToTypeDefinition}
+                    readOnly={readOnly}
+                    onChange={setValue}
+                    onInvalidChange={setJsonDraftInvalid}
                   />
-                  {!valueIsValidJson ? (
-                    <span className="text-sm text-destructive">
-                      {t('appConfig.invalidJson')}
-                    </span>
-                  ) : null}
                 </TabsContent>
               </Tabs>
+              <div className="h-28 shrink-0 overflow-y-auto" aria-live="polite">
+                {!valueIsValidJson || jsonDraftInvalid || mismatchIssues.length > 0 ? (
+                <Alert variant="destructive" className="min-h-full">
+                  <AlertTitle>
+                    {t(!valueIsValidJson || jsonDraftInvalid ? 'appConfig.formatErrorTitle' : 'appConfig.mismatchTitle')}
+                  </AlertTitle>
+                  <AlertDescription>
+                    {!valueIsValidJson || jsonDraftInvalid ? (
+                      <span>{t('appConfig.invalidJson5')}</span>
+                    ) : (
+                    <ul className="grid gap-2">
+                      {mismatchIssues.map((issue) => (
+                        <li key={issue.text} className="flex items-center justify-between gap-3">
+                          <span>{issue.text}</span>
+                          {issue.repair ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={readOnly || jsonDraftInvalid}
+                              onClick={() => {
+                                const next = { ...configObject }
+                                if (issue.repair === 'reset') {
+                                  setValue(defaultConfigValue(selectedSchema))
+                                } else {
+                                  if (issue.repair === 'add') {
+                                    next[issue.fieldName!] = defaultConfigObject(selectedSchema)[issue.fieldName!]
+                                  } else {
+                                    delete next[issue.fieldName!]
+                                  }
+                                  setValue(stringifyConfigObject(next))
+                                }
+                                setJsonEditorRevision((revision) => revision + 1)
+                              }}
+                            >
+                              {t(issue.repair === 'add'
+                                ? 'appConfig.addMissingField'
+                                : issue.repair === 'remove'
+                                  ? 'appConfig.removeUnknownField'
+                                  : 'appConfig.resetInvalidObject')}
+                            </Button>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                    )}
+                  </AlertDescription>
+                </Alert>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
