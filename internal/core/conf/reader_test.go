@@ -236,3 +236,31 @@ func TestReaderGetByTypePanicsWhenConfigJSONIsInvalid(t *testing.T) {
 		reader.GetByType(reflect.TypeFor[*readerTestConfig]())
 	})
 }
+
+type readerEnumMapConfig struct {
+	ConfigModel
+	ByName   map[string]readerTestEnum         `json:"byName"`
+	ByStatus map[readerTestEnum]readerTestEnum `json:"byStatus"`
+	Labels   map[readerTestEnum]string         `json:"labels"`
+}
+
+func TestReaderEnumMapKeysAndValues(t *testing.T) {
+	const key = "demo.EnumMapConfig"
+	const raw = `{"byName":{"primary":"ACTIVE"},"byStatus":{"ACTIVE":"LOCKED"},"labels":{"ACTIVE":" label "}}`
+	for _, lifecycle := range []Lifecycle{LifecycleEternal, LifecycleInstant} {
+		t.Run(string(lifecycle), func(t *testing.T) {
+			registry := NewRegistry()
+			registry.Register(ConfigSpec{
+				SkelName: key, Lifecycle: lifecycle, Type: reflect.TypeFor[*readerEnumMapConfig](),
+			})
+			reader := newReader(new(corelink.TestLinker{
+				EternalConfigByKey: map[string]string{key: raw},
+				InstantConfigByKey: map[string]string{key: raw},
+			}), registry)
+			value := reader.GetByType(reflect.TypeFor[*readerEnumMapConfig]()).(*readerEnumMapConfig)
+			require.Equal(t, map[string]readerTestEnum{"primary": "ACTIVE"}, value.ByName)
+			require.Equal(t, map[readerTestEnum]readerTestEnum{"ACTIVE": "LOCKED"}, value.ByStatus)
+			require.Equal(t, map[readerTestEnum]string{"ACTIVE": "label"}, value.Labels)
+		})
+	}
+}

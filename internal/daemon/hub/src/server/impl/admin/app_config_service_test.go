@@ -473,3 +473,40 @@ func findAppConfigItemForTest(items []skeled.AppConfigItem, key string) *skeled.
 	}
 	return nil
 }
+
+func TestAppConfigMapEnumKeysAndValues(t *testing.T) {
+	keyType := new(skel.TypeSchema{
+		Kind: skel.TypeKindEnum, SkelName: "demo.Region",
+	})
+	valueType := new(skel.TypeSchema{
+		Kind: skel.TypeKindEnum, SkelName: "demo.Status",
+	})
+	enums := []*skel.EnumSchema{
+		{SkelName: "demo.Region", Items: []*skel.EnumItemSchema{{Name: "EAST", Description: "East"}, {Name: "WEST"}}},
+		{SkelName: "demo.Status", Items: []*skel.EnumItemSchema{{Name: "ACTIVE", Description: "Active"}, {Name: "LOCKED"}}},
+	}
+	for _, key := range []*skel.TypeSchema{keyType, {Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}} {
+		t.Run(string(key.Kind), func(t *testing.T) {
+			mapType := new(skel.TypeSchema{
+				Kind: skel.TypeKindMap, Key: key, Value: valueType,
+			})
+			fields := toServerAppConfigSchemaFields([]*skel.MemberSchema{{Name: "statuses", Type: mapType}}, enums)
+			require.Len(t, fields, 1)
+			require.Len(t, fields[0].MapValueEnumItems, 2)
+			assert.Equal(t, "ACTIVE", fields[0].MapValueEnumItems[0].Name)
+			assert.Equal(t, "Active", fields[0].MapValueEnumItems[0].Description)
+			if key.Kind == skel.TypeKindEnum {
+				require.Len(t, fields[0].MapKeyEnumItems, 2)
+				assert.Equal(t, "EAST", fields[0].MapKeyEnumItems[0].Name)
+				assert.Equal(t, fields[0].MapKeyEnumItems, fields[0].EnumItems)
+				assert.False(t, jsonValueMatchesType(map[string]any{"UNKNOWN": "ACTIVE"}, mapType, enums))
+			} else {
+				assert.Empty(t, fields[0].MapKeyEnumItems)
+			}
+			assert.True(t, jsonValueMatchesType(map[string]any{"EAST": "ACTIVE", "WEST": "LOCKED"}, mapType, enums))
+			assert.False(t, jsonValueMatchesType(map[string]any{"EAST": "UNKNOWN"}, mapType, enums))
+			assert.False(t, jsonValueMatchesType(map[string]any{"EAST": 1}, mapType, enums))
+			assert.False(t, jsonValueMatchesType(map[string]any{"EAST": nil}, mapType, enums))
+		})
+	}
+}

@@ -5,6 +5,8 @@ export interface ConfigJsonField {
   type: string
   description: string
   enumItems?: ReadonlyArray<{ name: string; description: string }>
+  mapKeyEnumItems?: ReadonlyArray<{ name: string; description: string }>
+  mapValueEnumItems?: ReadonlyArray<{ name: string; description: string }>
 }
 
 export interface ConfigValueRange {

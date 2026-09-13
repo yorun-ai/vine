@@ -1,3 +1,4 @@
+import { configMapEnumIssues } from './config-map-enum'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatConfigYaml, normalizeConfigYaml } from './config-yaml-document'
 import { ConfigJsonEditor } from './config-json-editor'
@@ -359,6 +360,15 @@ function collectConfigMismatchIssues(
     }
 
     const fieldValue = parsed[field.name]
+    for (const issue of configMapEnumIssues(fieldValue, field)) {
+      issues.push({
+        fieldName: field.name,
+        text: t(issue.part === 'key' ? 'appConfig.mapEnumKeyMismatch' : 'appConfig.mapEnumValueMismatch')
+          .replace('{field}', `${field.name}[${JSON.stringify(issue.key)}]`)
+          .replace('{expected}', issue.expected)
+          .replace('{actual}', issue.actual),
+      })
+    }
     if (
       !jsonValueMatchesConfigType(fieldValue, field.type, field.enumItems ?? [])
     ) {
@@ -531,9 +541,16 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
     [selectedSchema, t, value],
   )
   const mismatchMessages = React.useMemo(
-    () => new Map(mismatchIssues.flatMap((issue) =>
-      issue.fieldName ? [[issue.fieldName, issue.text] as const] : [],
-    )),
+    () => {
+      const messages = new Map<string, string>()
+      for (const issue of mismatchIssues) {
+        if (issue.fieldName) {
+          const previous = messages.get(issue.fieldName)
+          messages.set(issue.fieldName, previous ? `${previous}\n${issue.text}` : issue.text)
+        }
+      }
+      return messages
+    },
     [mismatchIssues],
   )
   const visibleMismatchMessages = React.useMemo(

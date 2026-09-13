@@ -11,7 +11,7 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "edb3a8fb",
+	Hash:        "60e86947",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
 		CompilerVersion: "v0.19.1",
@@ -85,7 +85,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "AppConfigItem",
 			SkelName:    "vine.hub.admin.AppConfigItem",
 			Description: "Configuration items",
-			Hash:        "0a18f099",
+			Hash:        "52dc750b",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "id",
@@ -143,7 +143,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "AppConfigSchema",
 			SkelName:    "vine.hub.admin.AppConfigSchema",
 			Description: "Configuration schema items",
-			Hash:        "80292035",
+			Hash:        "24585ab7",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "skelName",
@@ -251,7 +251,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "AppConfigSchemaField",
 			SkelName:    "vine.hub.admin.AppConfigSchemaField",
 			Description: "Configuration schema fields",
-			Hash:        "4d70deff",
+			Hash:        "006cd1a8",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "name",
@@ -296,6 +296,30 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "enumItems",
 					Description: "Enumeration options list",
+					Type: &skel.TypeSchema{
+						Kind: skel.TypeKindList,
+						Element: &skel.TypeSchema{
+							Kind:     skel.TypeKindData,
+							Name:     "AppConfigSchemaEnumItem",
+							SkelName: "vine.hub.admin.AppConfigSchemaEnumItem",
+						},
+					},
+				},
+				{
+					Name:        "mapKeyEnumItems",
+					Description: "Map key enumeration options",
+					Type: &skel.TypeSchema{
+						Kind: skel.TypeKindList,
+						Element: &skel.TypeSchema{
+							Kind:     skel.TypeKindData,
+							Name:     "AppConfigSchemaEnumItem",
+							SkelName: "vine.hub.admin.AppConfigSchemaEnumItem",
+						},
+					},
+				},
+				{
+					Name:        "mapValueEnumItems",
+					Description: "Map value enumeration options",
 					Type: &skel.TypeSchema{
 						Kind: skel.TypeKindList,
 						Element: &skel.TypeSchema{
@@ -4385,7 +4409,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "AppConfigApiService",
 			SkelName:    "vine.hub.admin.AppConfigApiService",
 			Description: "Hub's application configuration service, called by Client",
-			Hash:        "32633c96",
+			Hash:        "30963159",
 			Pub:         false,
 			Api:         true,
 			AuthMode:    skel.AuthModeNoAuth,
@@ -4397,7 +4421,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "list",
 					SkelName:          "list",
 					Description:       "List configuration items",
-					Hash:              "75573ff7",
+					Hash:              "96ac4540",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Configuration item list",
 					ResultType: &skel.TypeSchema{
@@ -4413,7 +4437,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "get",
 					SkelName:          "get",
 					Description:       "Read configuration",
-					Hash:              "1973712b",
+					Hash:              "650efae9",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Configuration items",
 					Arguments: []*skel.MemberSchema{
@@ -4436,7 +4460,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "update",
 					SkelName:          "update",
 					Description:       "Modify configuration",
-					Hash:              "d6760cee",
+					Hash:              "1e4adeac",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Configuration items",
 					Arguments: []*skel.MemberSchema{
@@ -4468,7 +4492,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "create",
 					SkelName:          "create",
 					Description:       "Create configuration",
-					Hash:              "9c4ff160",
+					Hash:              "c782cf97",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Configuration items",
 					Arguments: []*skel.MemberSchema{
