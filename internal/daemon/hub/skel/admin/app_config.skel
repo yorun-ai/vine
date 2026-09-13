@@ -40,6 +40,12 @@ data AppConfigSchemaField {
 
     @desc("Enumeration options list")
     enumItems: list<AppConfigSchemaEnumItem>
+
+    @desc("Map key enumeration options")
+    mapKeyEnumItems: list<AppConfigSchemaEnumItem>
+
+    @desc("Map value enumeration options")
+    mapValueEnumItems: list<AppConfigSchemaEnumItem>
 }
 
 @desc("Configuration schema enumeration options")

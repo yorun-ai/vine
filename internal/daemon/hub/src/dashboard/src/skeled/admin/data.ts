@@ -135,27 +135,35 @@ export type AppConfigSchemaField = {
   /**
    * Field name.
    */
-  name:             string;
+  name:              string;
   /**
    * Field type.
    */
-  type:             string;
+  type:              string;
   /**
    * Field description.
    */
-  description:      string;
+  description:       string;
   /**
    * Whether the field is deprecated.
    */
-  deprecated:       boolean;
+  deprecated:        boolean;
   /**
    * Field deprecation reason.
    */
-  deprecatedReason: string;
+  deprecatedReason:  string;
   /**
    * Enumeration options list.
    */
-  enumItems:        Array<AppConfigSchemaEnumItem>;
+  enumItems:         Array<AppConfigSchemaEnumItem>;
+  /**
+   * Map key enumeration options.
+   */
+  mapKeyEnumItems:   Array<AppConfigSchemaEnumItem>;
+  /**
+   * Map value enumeration options.
+   */
+  mapValueEnumItems: Array<AppConfigSchemaEnumItem>;
 }
 /**
  * Configuration update parameters.

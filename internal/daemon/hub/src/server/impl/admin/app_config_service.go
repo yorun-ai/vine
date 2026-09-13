@@ -370,14 +370,21 @@ func findConfigSchema(name string, schemas []*skel.ConfigSchema) *skel.ConfigSch
 func toServerAppConfigSchemaFields(members []*skel.MemberSchema, enumSchemas []*skel.EnumSchema) []skeled.AppConfigSchemaField {
 	fields := make([]skeled.AppConfigSchemaField, 0, len(members))
 	for _, member := range members {
-		fields = append(fields, skeled.AppConfigSchemaField{
+		field := skeled.AppConfigSchemaField{
 			Name:             member.Name,
 			Type:             formatAppConfigSchemaFieldType(member.Type),
 			Description:      member.Description,
 			Deprecated:       member.Deprecated,
 			DeprecatedReason: member.DeprecatedReason,
 			EnumItems:        toServerAppConfigSchemaEnumItems(findEnumSchema(member.Type, enumSchemas)),
-		})
+		}
+		field.MapKeyEnumItems = []skeled.AppConfigSchemaEnumItem{}
+		field.MapValueEnumItems = []skeled.AppConfigSchemaEnumItem{}
+		if member.Type != nil && member.Type.Kind == skel.TypeKindMap {
+			field.MapKeyEnumItems = toServerAppConfigSchemaEnumItems(findEnumSchema(member.Type.Key, enumSchemas))
+			field.MapValueEnumItems = toServerAppConfigSchemaEnumItems(findEnumSchema(member.Type.Value, enumSchemas))
+		}
+		fields = append(fields, field)
 	}
 	return fields
 }

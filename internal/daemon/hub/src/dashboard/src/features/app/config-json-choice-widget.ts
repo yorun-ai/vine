@@ -21,6 +21,7 @@ interface ConfigEditorLabels {
 const defaultConfigEditorLabels: ConfigEditorLabels = { amount: 'Value', unit: 'Unit', date: 'Date', time: 'Time', fraction: 'Fractional seconds', offset: 'UTC offset' }
 
 export class ConfigJsonChoiceWidget extends WidgetType {
+  readonly yamlPrefix: boolean
   readonly yaml: boolean
   readonly dateTimeType: string
   readonly duration: boolean
@@ -47,8 +48,10 @@ export class ConfigJsonChoiceWidget extends WidgetType {
     dirty = false,
     dateTimeType = '',
     yaml = false,
+    yamlPrefix = yaml,
   ) {
     super()
+    this.yamlPrefix = yamlPrefix
     this.yaml = yaml
     this.dateTimeType = dateTimeType
     this.duration = duration
@@ -64,7 +67,7 @@ export class ConfigJsonChoiceWidget extends WidgetType {
   }
 
   eq(other: ConfigJsonChoiceWidget) {
-    return this.yaml === other.yaml && this.dateTimeType === other.dateTimeType && this.duration === other.duration && JSON.stringify(this.durationLabels) === JSON.stringify(other.durationLabels) &&
+    return this.yamlPrefix === other.yamlPrefix && this.yaml === other.yaml && this.dateTimeType === other.dateTimeType && this.duration === other.duration && JSON.stringify(this.durationLabels) === JSON.stringify(other.durationLabels) &&
       this.name === other.name && this.value === other.value && this.error === other.error && this.dirty === other.dirty &&
       this.multiple === other.multiple && this.readOnly === other.readOnly &&
       this.ranges === other.ranges && JSON.stringify(this.choices) === JSON.stringify(other.choices)
@@ -150,13 +153,13 @@ export class ConfigJsonChoiceWidget extends WidgetType {
           return
         }
         const range = view.state.field(this.ranges).find((item) => item.name === this.name)!
-        const current: unknown = (this.yaml ? parseConfigYaml : JSON5.parse)(view.state.doc.sliceString(range.from, range.to))
+        const current: unknown = this.multiple ? (this.yaml ? parseConfigYaml : JSON5.parse)(view.state.doc.sliceString(range.from, range.to)) : null
         const next = this.multiple ? toggleConfigJsonChoice(current, choice.value) : JSON.parse(choice.value)
         if (!this.multiple) {
           popup.hidePopover()
           button.focus()
         }
-        view.dispatch({ changes: { from: range.from, to: range.to, insert: (this.yaml ? ' ' : '') + JSON.stringify(next) } })
+        view.dispatch({ changes: { from: range.from, to: range.to, insert: (this.yamlPrefix ? ' ' : '') + JSON.stringify(next) } })
       })
       popup.append(label)
     }
@@ -189,7 +192,7 @@ export class ConfigJsonChoiceWidget extends WidgetType {
           return
         }
         const range = view.state.field(this.ranges).find((item) => item.name === this.name)!
-        const next = (this.yaml ? ' ' : '') + JSON.stringify(unit.value === 'null' ? null : duration)
+        const next = (this.yamlPrefix ? ' ' : '') + JSON.stringify(unit.value === 'null' ? null : duration)
         if (view.state.doc.sliceString(range.from, range.to) !== next) {
           view.dispatch({ changes: { from: range.from, to: range.to, insert: next } })
         }
@@ -221,7 +224,7 @@ export class ConfigJsonChoiceWidget extends WidgetType {
         return (this.yaml ? parseConfigYaml : JSON5.parse)(view.state.doc.sliceString(range.from, range.to))
       }, (value) => {
         const range = view.state.field(this.ranges).find((item) => item.name === this.name)!
-        const next = (this.yaml ? ' ' : '') + JSON.stringify(value)
+        const next = (this.yamlPrefix ? ' ' : '') + JSON.stringify(value)
         if (view.state.doc.sliceString(range.from, range.to) !== next) {
           view.dispatch({ changes: { from: range.from, to: range.to, insert: next } })
         }

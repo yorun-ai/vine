@@ -410,6 +410,8 @@ export const en: Record<TranslationKey, string> = {
     'skelName must use the domain.NameConfig format and end with Config',
   'appConfig.valueInvalidJson': 'The configuration value must be valid JSON',
   'appConfig.deleted': 'Configuration deleted',
+  'appConfig.mapEnumKeyMismatch': 'Invalid key at {field}: expected {expected}, got {actual}',
+  'appConfig.mapEnumValueMismatch': 'Invalid value at {field}: expected {expected}, got {actual}',
   'appConfig.format': 'Configuration format',
   'appConfig.configCopied': 'Configuration copied',
   'appConfig.invalidYaml': 'The content is invalid YAML or contains unsupported values. Fix it before saving.',

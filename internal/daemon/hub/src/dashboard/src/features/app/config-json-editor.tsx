@@ -1,3 +1,4 @@
+import { createConfigMapEnumExtension } from './config-map-enum-widget'
 import { yamlLanguage } from '@codemirror/lang-yaml'
 import { createConfigYamlDocument, normalizeConfigYaml, getConfigYamlErrors, getConfigYamlPropertyRanges } from './config-yaml-document'
 import { useLocale } from '@/i18n'
@@ -190,6 +191,7 @@ export function ConfigJsonEditor({
           }
         }, { hoverTime: 1, hideOnChange: true }),
         createConfigChoiceExtension(fields, readOnly, ranges, mismatchMessages, durationLabels, dirtyFields, isYaml),
+        ...createConfigMapEnumExtension(fields, ranges, readOnly, isYaml, mismatchMessages, dirtyFields),
         gutterLineClass.compute([ranges], (state) => {
           const doc = state.doc.toString()
           const valueRanges = state.field(ranges)

@@ -109,6 +109,10 @@ type AppConfigSchemaField struct {
 	DeprecatedReason string `json:"deprecatedReason"`
 	// EnumItems Enumeration options list
 	EnumItems []AppConfigSchemaEnumItem `json:"enumItems"`
+	// MapKeyEnumItems Map key enumeration options
+	MapKeyEnumItems []AppConfigSchemaEnumItem `json:"mapKeyEnumItems"`
+	// MapValueEnumItems Map value enumeration options
+	MapValueEnumItems []AppConfigSchemaEnumItem `json:"mapValueEnumItems"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -120,6 +124,22 @@ func (v AppConfigSchemaField) Clone() AppConfigSchemaField {
 		cloned.EnumItems = make([]AppConfigSchemaEnumItem, len(v.EnumItems))
 		for index0 := range v.EnumItems {
 			cloned.EnumItems[index0] = v.EnumItems[index0].Clone()
+		}
+	}
+	if v.MapKeyEnumItems == nil {
+		cloned.MapKeyEnumItems = nil
+	} else {
+		cloned.MapKeyEnumItems = make([]AppConfigSchemaEnumItem, len(v.MapKeyEnumItems))
+		for index1 := range v.MapKeyEnumItems {
+			cloned.MapKeyEnumItems[index1] = v.MapKeyEnumItems[index1].Clone()
+		}
+	}
+	if v.MapValueEnumItems == nil {
+		cloned.MapValueEnumItems = nil
+	} else {
+		cloned.MapValueEnumItems = make([]AppConfigSchemaEnumItem, len(v.MapValueEnumItems))
+		for index2 := range v.MapValueEnumItems {
+			cloned.MapValueEnumItems[index2] = v.MapValueEnumItems[index2].Clone()
 		}
 	}
 	return cloned

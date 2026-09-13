@@ -389,6 +389,8 @@ export const cn = {
     'skelName 必须是 domain.NameConfig 格式，且名称以 Config 结尾',
   'appConfig.valueInvalidJson': '配置值必须是有效 JSON',
   'appConfig.deleted': '配置已删除',
+  'appConfig.mapEnumKeyMismatch': '{field} 的键无效：期望 {expected}，当前 {actual}',
+  'appConfig.mapEnumValueMismatch': '{field} 的值无效：期望 {expected}，当前 {actual}',
   'appConfig.format': '配置格式',
   'appConfig.configCopied': '配置已复制',
   'appConfig.invalidYaml': '当前内容不是有效的 YAML 或包含无法保存的值，修正后才可保存。',
