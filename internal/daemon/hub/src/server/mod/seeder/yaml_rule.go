@@ -15,6 +15,9 @@ var ruleLogger = logger.New("vine.hub.seed")
 // TODO: Remove legacy field aliases, compatibility warnings, and mixed-field
 // checks once old YAML support is retired; accept only match* / route* fields.
 func DecodePortalRule(node *yaml.Node, target any) error {
+	if err := CheckSeedYAMLSyntax(node); err != nil {
+		return err
+	}
 	if node.Kind != yaml.MappingNode {
 		return fmt.Errorf("portal rule must be a YAML mapping")
 	}
@@ -24,8 +27,7 @@ func DecodePortalRule(node *yaml.Node, target any) error {
 		"siteName": "routeSiteName", "targetPath": "routePathPrefix",
 		"redirectionPattern": "routeRedirectionPattern",
 	}
-	// Decode the mapping first so YAML aliases and merge keys are resolved and
-	// duplicate keys rejected before checking which field vocabulary is used.
+	// Reject duplicate keys before checking which field vocabulary is used.
 	var fields map[string]yaml.Node
 	if err := node.Decode(&fields); err != nil {
 		return err

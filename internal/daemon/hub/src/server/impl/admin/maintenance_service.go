@@ -92,6 +92,14 @@ type _SeedSelectionKey struct {
 	name string
 }
 
+func (p *_SeedYAMLPayload) UnmarshalYAML(node *yaml.Node) error {
+	if err := seeder.CheckSeedYAMLSyntax(node); err != nil {
+		return err
+	}
+	type _Plain _SeedYAMLPayload
+	return node.Decode((*_Plain)(p))
+}
+
 func (s *MaintenanceApiServiceServerImpl) PreviewSeedYaml(content string) skeled.SeedPreview {
 	return s.preview(s.parseSeed(content))
 }

@@ -18,7 +18,8 @@ classify_changes() {
       any(.[]; endswith(".go") and (endswith("_test.go") | not)) as $go_source |
       any(.[]; test("^(app|buildinfo|cmd|core|infra|internal|util)/") and
         (startswith("internal/daemon/hub/src/dashboard/") | not) and (test("\\.(md|mdx)$") | not) and (endswith("_test.go") | not)) as $runtime |
-      ($ci or $dependencies or $go_files or $runtime or
+      any(.[]; startswith("internal/daemon/hub/src/dashboard/src/features/app/testdata/")) as $shared_testdata |
+      ($ci or $dependencies or $go_files or $runtime or $shared_testdata or
         any(.[]; startswith("test/") and endswith(".sh") and . != "test/k8s.sh")) as $go |
       ($ci or any(.[]; . == "Dockerfile" or . == ".dockerignore" or
         . == ".github/workflows/release.yml" or startswith(".github/scripts/release"))) as $packaging |

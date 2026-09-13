@@ -15,7 +15,7 @@ func TestAppConfigStructuredYAML(t *testing.T) {
     value:
       displayName: Demo
       statuses: {EAST: ACTIVE, WEST: LOCKED}
-      numericKeys: {1: ACTIVE}
+      numericKeys: {1: ACTIVE, 9007199254740993: LARGE}
       enabled: true
       count: 42
       optional: null
@@ -36,7 +36,7 @@ func TestAppConfigStructuredYAML(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(item.Value), &value))
 	require.Equal(t, "Demo", value["displayName"])
 	require.Equal(t, map[string]any{"EAST": "ACTIVE", "WEST": "LOCKED"}, value["statuses"])
-	require.Equal(t, map[string]any{"1": "ACTIVE"}, value["numericKeys"])
+	require.Equal(t, map[string]any{"1": "ACTIVE", "9007199254740993": "LARGE"}, value["numericKeys"])
 	require.Equal(t, true, value["enabled"])
 	require.Equal(t, float64(42), value["count"])
 	require.Nil(t, value["optional"])
@@ -60,6 +60,7 @@ func TestAppConfigLegacyAndScalarYAML(t *testing.T) {
 		{`null`, `null`},
 		{`[ACTIVE, LOCKED]`, `["ACTIVE","LOCKED"]`},
 		{`{}`, `{}`},
+		{`{"<<": "literal"}`, `{"<<":"literal"}`},
 	} {
 		t.Run(test.input, func(t *testing.T) {
 			var item _AppConfig
@@ -69,32 +70,27 @@ func TestAppConfigLegacyAndScalarYAML(t *testing.T) {
 	}
 }
 
-func TestAppConfigYAMLAliasesAndMerge(t *testing.T) {
-	const input = `appConfigs:
-  - &config
-    name: demo.First
-    value: &value
-      <<: &defaults {enabled: true, status: ACTIVE}
-      status: LOCKED
-  - <<: *config
-    name: demo.Second
-    value: *value
-  - name: demo.Legacy
-    value: &legacy '{"enabled":true}'
-  - name: demo.LegacyAlias
-    value: *legacy
-`
-	var settings _SettingsYAMLPayload
-	require.NoError(t, yaml.Unmarshal([]byte(input), &settings))
-	require.Equal(t, `{"enabled":true,"status":"LOCKED"}`, settings.AppConfigs[0].Value)
-	require.Equal(t, settings.AppConfigs[0].Value, settings.AppConfigs[1].Value)
-	require.Equal(t, `{"enabled":true}`, settings.AppConfigs[3].Value)
+func TestAppConfigYAMLRejectsAnchorsAndAliases(t *testing.T) {
+	for _, input := range []string{
+		"name: demo.Config\nvalue: &value {enabled: true}",
+		"name: demo.Config\nvalue: &value '{\"enabled\":true}'",
+		"name: demo.Config\nvalue: {a: &a 1, b: *a}",
+		"name: demo.Config\nvalue: &loop {self: *loop}",
+		"name: &name demo.Config\nvalue: *name",
+	} {
+		t.Run(input, func(t *testing.T) {
+			var item _AppConfig
+			err := yaml.Unmarshal([]byte(input), &item)
+			require.ErrorContains(t, err, "YAML anchors and aliases are not supported")
+		})
+	}
 }
 
 func TestAppConfigYAMLRejectsValuesWithoutJSONRepresentation(t *testing.T) {
 	for _, value := range []string{
 		`{a: 1, a: 2}`, `{a: .inf}`, `{a: .nan}`, `{a: !custom text}`,
-		`{? [a, b]: value}`, `{null: value}`, `&loop {self: *loop}`,
+		`{1: first, "1": second}`, `{<<: {enabled: true}}`, `{nested: {<<: {enabled: true}}}`,
+		`{? [a, b]: value}`, `{null: value}`,
 	} {
 		t.Run(value, func(t *testing.T) {
 			var item _AppConfig

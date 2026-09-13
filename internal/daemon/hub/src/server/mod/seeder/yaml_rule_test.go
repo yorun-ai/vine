@@ -69,14 +69,17 @@ func TestPortalRuleYAMLRejectsMixedFields(t *testing.T) {
 	}
 }
 
-func TestPortalRuleYAMLMergeAndDuplicateKeys(t *testing.T) {
-	var payload struct {
-		Rules []testRule `yaml:"rules"`
+func TestPortalRuleYAMLRejectsReferencesAndDuplicateKeys(t *testing.T) {
+	for _, input := range []string{
+		"name: rule\n<<: {scheme: http}",
+		"name: rule\nhost: &host example.com",
+		"name: &name rule\nhost: *name",
+	} {
+		t.Run(input, func(t *testing.T) {
+			var rule testRule
+			require.ErrorContains(t, yaml.Unmarshal([]byte(input), &rule), "not supported")
+		})
 	}
-	require.NoError(t, yaml.Unmarshal([]byte("defaults: &defaults\n  scheme: http\n  targetType: SITE\nrules:\n  - <<: *defaults\n    name: merged\n"), &payload))
-	require.Equal(t, "http", payload.Rules[0].MatchScheme)
-	require.Equal(t, "SITE", payload.Rules[0].RouteType)
-	require.ErrorContains(t, yaml.Unmarshal([]byte("defaults: &defaults\n  scheme: http\nrules:\n  - <<: *defaults\n    matchScheme: https\n"), &payload), "cannot be mixed")
 	var rule testRule
 	require.Error(t, yaml.Unmarshal([]byte("host: a\nhost: b"), &rule))
 }

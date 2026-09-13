@@ -466,3 +466,79 @@ func newHubBoundSchemaRepo(t *testing.T, spec *HubApp) core.SchemaRepo {
 
 	return injector.Get(di.T[core.SchemaRepo]()).Interface().(core.SchemaRepo)
 }
+
+func TestHubConfigurationLifecycle(t *testing.T) {
+	for _, persistent := range []bool{false, true} {
+		name := "no-db"
+		if persistent {
+			name = "sqlite"
+		}
+		t.Run(name, func(t *testing.T) {
+			flags := &flag.Flag{SeedYAML: "appConfigs: [{name: demo.Config, value: {enabled: true}}]"}
+			if persistent {
+				flags.DBSQLiteFile = filepath.Join(t.TempDir(), "hub.sqlite")
+			}
+			flags.Normalize(true)
+			manager := initTestConfigDatabase(&repodb.HubDatabase{Flag: flags})
+			t.Cleanup(manager.AfterAppStop)
+			redis := redisserver.NewServerForTest()
+			t.Cleanup(redis.AfterAppStop)
+			access := new(configaccess.Access)
+			spec := &HubApp{Flag: flags, InprocFlag: &internalapp.InternalInprocFlag{Enabled: true}}
+			injector := di.NewInjector(func(b *di.Binder) {
+				b.Bind(di.T[context.Context]()).ToInstance(context.Background())
+				b.BindInstance(logger.New("vine:test:lifecycle"))
+				b.BindInstance(flags)
+				b.BindInstance(spec.InprocFlag)
+				b.BindInstance(redis)
+				b.BindInstance(access)
+				manager.Bind(b)
+				spec.BindCommon(b)
+				b.Bind(di.T[*adminimpl.MaintenanceApiServiceServerImpl]()).In(di.SingletonScope)
+				b.Bind(di.T[*seeder.Seeder]()).In(di.SingletonScope)
+				b.Bind(di.T[*initializer.Initializer]()).In(di.SingletonScope)
+			})
+			require.False(t, access.ReadOnly())
+			module := injector.Get(di.T[*initializer.Initializer]()).Interface().(*initializer.Initializer)
+			require.Equal(t, !persistent, access.ReadOnly())
+			item, ok := module.AppConfigRepo.GetItemByName("demo.Config")
+			require.True(t, ok)
+			require.Equal(t, `{"enabled":true}`, item.Value)
+			require.NotEmpty(t, module.EntryRepo.ListEntries())
+			require.NotEmpty(t, module.RuleRepo.ListRules())
+			actions := []struct {
+				name string
+				call func()
+			}{
+				{"save config", func() { module.AppConfigRepo.SaveItem(&core.AppConfig{Name: "new.config", Value: "{}", Version: 1}) }},
+				{"remove config", func() { module.AppConfigRepo.RemoveItem(item.Id) }},
+				{"save site", func() {
+					module.EntryRepo.SaveEntry(&core.PortalSite{Name: "new.site", Type: core.PortalSiteTypeWEBGW, WebName: "demo.Web"})
+				}},
+				{"remove site", func() { module.EntryRepo.RemoveEntry(-1) }},
+				{"save rule", func() {
+					module.RuleRepo.SaveRule(&core.PortalRule{Name: "new.rule", RouteType: "SITE", RouteSiteName: "new.site"})
+				}},
+				{"remove rule", func() { module.RuleRepo.RemoveRule(-1) }},
+				{"save cert", func() { module.CertRepo.SaveCert(&core.PortalCert{Name: "new.cert", Domains: []string{"demo.local"}}) }},
+				{"remove cert", func() { module.CertRepo.RemoveCert(-1) }},
+			}
+			for _, action := range actions {
+				t.Run(action.name, func(t *testing.T) {
+					if persistent {
+						require.NotPanics(t, action.call)
+					} else {
+						require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", action.call)
+					}
+				})
+			}
+			require.NotPanics(t, func() {
+				module.RegistryCore.Register(core.AppRegistration{Name: "demo", InstanceId: "test", Version: "test"})
+			})
+			require.NotEmpty(t, module.RegistryCore.RegistryRepo.ListAppStatuses())
+			require.NotEmpty(t, module.SchemaRepo.ListDomainSchemaViews())
+			service := injector.Get(di.T[*adminimpl.MaintenanceApiServiceServerImpl]()).Interface().(*adminimpl.MaintenanceApiServiceServerImpl)
+			require.Equal(t, !persistent, service.ConfigReadOnly())
+		})
+	}
+}

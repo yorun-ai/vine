@@ -3,7 +3,7 @@ import type { TranslationKey } from './cn'
 export const en: Record<TranslationKey, string> = {
   'configAccess.readOnlyTitle': 'No-database mode',
   'configAccess.unavailableTitle': 'Configuration editing unavailable',
-  'configAccess.readOnly': 'Configuration is read-only. To make changes, edit the configuration file and restart Hub.',
+  'configAccess.readOnly': 'Configuration is read-only. To make changes, update the configuration source and restart Hub.',
   'configAccess.unavailable': 'Configuration access could not be checked. Editing is unavailable.',
   'debug.directInvocationHelp': 'Hub Debug calls the service directly using the Actor identity and Info you provide. This also applies to API services: Portal authentication and admission checks are skipped. Use the Portal endpoint to verify the complete client flow.',
   'portalRule.pathPreviewRequest': 'Example request path',
@@ -54,7 +54,7 @@ export const en: Record<TranslationKey, string> = {
   'appConfig.durationAmount': 'Value',
   'appConfig.durationUnit': 'Unit',
   'appConfig.formatErrorTitle': 'Invalid configuration format',
-  'appConfig.invalidJson5': 'The content is invalid JSON5 or contains non-finite numbers. Fix it before saving.',
+  'appConfig.invalidJson5': 'The content is invalid JSON5 or contains non-finite numbers or integers outside the safe range (±9007199254740991). Fix it before saving.',
   'appConfig.invalidJson':
     'The current content is invalid JSON. Fix it before saving.',
   'common.select': 'Select',
@@ -414,7 +414,7 @@ export const en: Record<TranslationKey, string> = {
   'appConfig.mapEnumValueMismatch': 'Invalid value at {field}: expected {expected}, got {actual}',
   'appConfig.format': 'Configuration format',
   'appConfig.configCopied': 'Configuration copied',
-  'appConfig.invalidYaml': 'The content is invalid YAML or contains unsupported values. Fix it before saving.',
+  'appConfig.invalidYaml': 'The content is invalid YAML or contains unsupported values, including integers outside ±9007199254740991. Fix it before saving.',
   'appConfig.copy': 'Copy',
   'appConfig.replace': 'Replace',
   'appConfig.replaceTitle': 'Replace complete configuration',

@@ -1,6 +1,8 @@
 package seeder
 
 import (
+	"fmt"
+	"regexp"
 	"time"
 
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
@@ -13,6 +15,39 @@ type _SettingsYAMLPayload struct {
 	PortalEntries []_PortalSite `yaml:"portalSites"`
 	PortalRules   []_PortalRule `yaml:"portalRules"`
 	PortalCerts   []_PortalCert `yaml:"portalCerts"`
+}
+
+func (p *_SettingsYAMLPayload) UnmarshalYAML(node *yaml.Node) error {
+	if err := CheckSeedYAMLSyntax(node); err != nil {
+		return err
+	}
+	type _Plain _SettingsYAMLPayload
+	return node.Decode((*_Plain)(p))
+}
+
+var plainYAMLNumber = regexp.MustCompile(`^[+-]?(0|[1-9][0-9]*)(\.[0-9]+)?$`)
+
+// CheckSeedYAMLSyntax rejects unsupported references and ambiguous numbers before seed decoding.
+func CheckSeedYAMLSyntax(node *yaml.Node) error {
+	return checkSeedYAMLNode(node)
+}
+
+func checkSeedYAMLNode(node *yaml.Node) error {
+	if node.Anchor != "" || node.Kind == yaml.AliasNode {
+		return fmt.Errorf("line %d, column %d: YAML anchors and aliases are not supported", node.Line, node.Column)
+	}
+	if node.ShortTag() == "!!merge" {
+		return fmt.Errorf("line %d, column %d: YAML merge keys are not supported", node.Line, node.Column)
+	}
+	if (node.ShortTag() == "!!int" || node.ShortTag() == "!!float") && !plainYAMLNumber.MatchString(node.Value) {
+		return fmt.Errorf("line %d, column %d: unsupported YAML number %q; use plain decimal notation without separators, leading zeros, or exponents", node.Line, node.Column, node.Value)
+	}
+	for _, child := range node.Content {
+		if err := checkSeedYAMLNode(child); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (p *_SettingsYAMLPayload) Overridden() (*_SettingsYAMLPayload, bool) {

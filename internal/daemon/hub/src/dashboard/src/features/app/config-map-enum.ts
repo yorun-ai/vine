@@ -32,12 +32,12 @@ export function configMapEntries(doc: string, range: ConfigValueRange, yaml: boo
       return entries
     }
     for (const pair of document.contents.items) {
-      if (!isScalar(pair.key) || typeof pair.key.value !== 'string' || !pair.key.range || !pair.value?.range) {
+      if (!isScalar(pair.key) || pair.key.value === null || !pair.key.range || !pair.value?.range) {
         continue
       }
       const from = pair.value.range[0]
       const to = from + text.slice(from, pair.value.range[1]).trimEnd().length
-      entries.push({ key: pair.key.value, keyRange: absolute(pair.key.range[0], pair.key.range[1]), valueRange: absolute(from, to) })
+      entries.push({ key: typeof pair.key.value === 'string' ? pair.key.value : pair.key.source ?? String(pair.key.value), keyRange: absolute(pair.key.range[0], pair.key.range[1]), valueRange: absolute(from, to) })
     }
     return entries
   }

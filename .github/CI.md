@@ -25,10 +25,11 @@ fail the gate.
 | --- | --- |
 | Documentation only | None |
 | Go production source, module files, backend resources or test fixtures | Full ordinary Go tests and leak checks, static checks, targeted race, Hub image build |
+| Shared Dashboard/Go test data | Go tests and targeted race checks, plus Dashboard tests/build |
 | Go test files only | Full ordinary Go tests and leak checks, targeted race |
 | Non-test Go source or module files | Also regenerate and check the CLI license inventory |
 | Go test shell scripts | Go checks and workflow checks |
-| Dashboard source/dependencies or packaging script | Dashboard build, including type checking; shell scripts also select workflow checks |
+| Dashboard source/dependencies or packaging script | Dashboard editor tests and build, including type checking; shell scripts also select workflow checks |
 | Dockerfile or Docker ignore rules | Hub image build |
 | Kubernetes manifests or their validation script | Render and validate Kubernetes overlays; shell scripts also select workflow checks |
 | License inventory or its generator | License checks; the generator also selects workflow checks |

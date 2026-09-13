@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -362,4 +363,34 @@ func TestMaintenanceStructuredAppConfigYAML(t *testing.T) {
 	version := item.Version
 	service.ApplySeedYaml(content, []skeled.SeedItemSelection{{Kind: seedKindAppConfig, Name: "demo.Config"}})
 	require.Equal(t, version, configRepo.items["demo.Config"].Version)
+}
+
+func TestMaintenanceSeedRejectsYAMLReferencesBeforePreviewOrApply(t *testing.T) {
+	for _, content := range []string{
+		"&seed {appConfigs: []}",
+		"unknown: &unused text",
+		"<<: {appConfigs: []}",
+		"appConfigs: [{name: demo.Config, value: &value {enabled: true}}]",
+		"portalSites: [{name: site, urls: &urls []}]",
+		"portalRules: [{name: rule, <<: {routeType: SITE}}]",
+		"portalCerts: [{name: &name cert, cert: *name}]",
+	} {
+		t.Run(content, func(t *testing.T) {
+			service := new(MaintenanceApiServiceServerImpl)
+			for _, call := range []func(){
+				func() { service.PreviewSeedYaml(content) },
+				func() { service.ApplySeedYaml(content, nil) },
+			} {
+				func() {
+					defer func() {
+						failure := recover()
+						require.NotNil(t, failure)
+						require.Contains(t, fmt.Sprint(failure), "not supported")
+						require.Contains(t, fmt.Sprint(failure), "line ")
+					}()
+					call()
+				}()
+			}
+		})
+	}
 }
