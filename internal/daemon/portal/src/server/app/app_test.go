@@ -1,6 +1,7 @@
 package app
 
 import (
+	"go.yorun.ai/vine/buildinfo"
 	"reflect"
 	"testing"
 
@@ -40,6 +41,10 @@ func TestPortalAppDIInitSetsRunFlagListenAddr(t *testing.T) {
 
 	spec.DIInit()
 
+	if got, want := spec.InternalAttrs.Info.Version(), buildinfo.MustVineVersion(); got != want {
+		t.Fatalf("unexpected daemon version: got %q, want Vine version %q", got, want)
+	}
+
 	if got := spec.AppFlag.ListenAddr; got != "" {
 		t.Fatalf("expected empty listen addr, got %q", got)
 	}
@@ -68,6 +73,10 @@ func TestPortalAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 	}
 
 	spec.DIInit()
+
+	if got, want := spec.InternalAttrs.Info.Version(), buildinfo.MustVineVersion(); got != want {
+		t.Fatalf("unexpected daemon version: got %q, want Vine version %q", got, want)
+	}
 
 	if got := spec.Name(); got != "vine.portal" {
 		t.Fatalf("unexpected spec name: %s", got)
