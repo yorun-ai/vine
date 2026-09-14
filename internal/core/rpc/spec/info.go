@@ -2,8 +2,6 @@ package spec
 
 import (
 	"reflect"
-	"strconv"
-	"strings"
 
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/util/vpre"
@@ -115,7 +113,6 @@ type MethodInfo interface {
 	ArgumentsSensitive() bool
 	ArgumentsContainsBinaryType() bool
 	PositionArguments(arguments any) []any
-	ValidateArguments(any) error
 	CloneArguments(any) any
 
 	HasResult() bool
@@ -123,7 +120,6 @@ type MethodInfo interface {
 	ResultType() reflect.Type
 	ResultSensitive() bool
 	ResultContainsBinaryType() bool
-	ValidateResult(any) error
 	CloneResult(any) any
 }
 
@@ -138,13 +134,11 @@ type _MethodInfo struct {
 	argumentsSensitive          bool
 	argumentsContainsBinaryType bool
 	argumentFieldInfos          []_ArgumentFieldInfo
-	validateArguments           func(any) error
 	cloneArguments              func(any) any
 
 	resultType               reflect.Type
 	resultSensitive          bool
 	resultContainsBinaryType bool
-	validateResult           func(any) error
 	cloneResult              func(any) any
 }
 
@@ -197,10 +191,6 @@ func (mi *_MethodInfo) PositionArguments(arguments any) []any {
 	return positionalArguments
 }
 
-func (mi *_MethodInfo) ValidateArguments(arguments any) error {
-	return mi.validateArguments(arguments)
-}
-
 func (mi *_MethodInfo) CloneArguments(arguments any) any {
 	return mi.cloneArguments(arguments)
 }
@@ -225,22 +215,13 @@ func (mi *_MethodInfo) ResultContainsBinaryType() bool {
 	return mi.resultContainsBinaryType
 }
 
-func (mi *_MethodInfo) ValidateResult(result any) error {
-	return mi.validateResult(result)
-}
-
 func (mi *_MethodInfo) CloneResult(result any) any {
 	return mi.cloneResult(result)
 }
 
 type EmptyArguments struct{}
 
-const (
-	argTagName = "arg"
-)
-
 type _ArgumentFieldInfo struct {
-	Name       string
 	FieldIndex int
 	ArgIndex   int
 }
@@ -254,14 +235,6 @@ func buildArgumentFieldInfos(argsType reflect.Type) []_ArgumentFieldInfo {
 		field := argsType.Field(index)
 		argIndex, found, err := skel.TagIndex(field.Tag)
 		vpre.CheckNilError(err, "invalid argument index on %s.%s", argsType, field.Name)
-		// TODO: Remove legacy arg tag support once all supported generated code uses skel:"index(n)".
-		if tag, legacy := field.Tag.Lookup(argTagName); legacy {
-			label, _, _ := strings.Cut(tag, ",")
-			legacyIndex, err := strconv.Atoi(label)
-			vpre.CheckNilError(err, "invalid legacy arg index on %s.%s", argsType, field.Name)
-			vpre.Check(!found || argIndex == legacyIndex, "conflicting argument indexes on %s.%s", argsType, field.Name)
-			argIndex, found = legacyIndex, true
-		}
 		vpre.Check(found, "missing argument index on %s.%s", argsType, field.Name)
 		vpre.Check(argIndex >= 0 && argIndex < argsType.NumField(), "arg index %d out of range on %s.%s", argIndex, argsType, field.Name)
 		if existingFieldName, exists := seenIndexes[argIndex]; exists {
@@ -270,7 +243,6 @@ func buildArgumentFieldInfos(argsType reflect.Type) []_ArgumentFieldInfo {
 		seenIndexes[argIndex] = field.Name
 
 		argField := _ArgumentFieldInfo{
-			Name:       field.Name,
 			FieldIndex: index,
 			ArgIndex:   argIndex,
 		}
@@ -281,12 +253,4 @@ func buildArgumentFieldInfos(argsType reflect.Type) []_ArgumentFieldInfo {
 		vpre.CheckNotEmpty(seenIndexes[expectedIndex], "missing arg index %d on %s", expectedIndex, argsType)
 	}
 	return argFields
-}
-
-func noopValidateResult(any) error {
-	return nil
-}
-
-func noopValidateArguments(any) error {
-	return nil
 }

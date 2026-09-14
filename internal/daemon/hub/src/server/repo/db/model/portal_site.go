@@ -40,15 +40,6 @@ func (d *PortalSiteDao) InitSchema() {
 	err := d.GormDB().Exec(sql).Error
 	ex.PanicIfError(err)
 	ensureFieldSourceTable(d.GormDB())
-	d.ensureColumn("cors_mode", "CorsMode")
-	d.ensureColumn("cors_origins", "CorsOrigins")
-}
-
-func (d *PortalSiteDao) ensureColumn(columnName string, fieldName string) {
-	if d.GormDB().Migrator().HasColumn(&PortalSite{}, columnName) {
-		return
-	}
-	ex.PanicIfError(d.GormDB().Migrator().AddColumn(&PortalSite{}, fieldName))
 }
 
 func (d *PortalSiteDao) ListOrdered() []*PortalSite {

@@ -165,7 +165,7 @@ func (s *Server) ginRecovery() gin.HandlerFunc {
 
 func (s *Server) recoverWebError(ginCtx *gin.Context, err ex.Error) {
 	if err.Type() == ex.SystemError {
-		stack := ex.PanicStack(err)
+		stack := ex.Stack(err)
 		if stack == "" {
 			stack = string(debug.Stack())
 		}

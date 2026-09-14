@@ -190,6 +190,8 @@ func findTaskTriggerInfoBySkelName(taskInfo taskspec.TaskInfo, triggerSkelName s
 	return nil
 }
 
+// start reserves an internal hook for future Task startup logic.
+// Keep it in the startup sequence after servers start and before app registration.
 func (*_Tasker) start() {}
 
 // AppTaskServiceServerImpl

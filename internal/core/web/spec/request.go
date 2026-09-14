@@ -114,10 +114,6 @@ func decodeInitiatorFromHeader(header http.Header) (meta.Initiator, error) {
 	return initiator, nil
 }
 
-func encodeInitiatorToHeader(header http.Header, metaInitiator meta.Initiator) {
-	header.Set(HeaderWebInitiator, meta.EncodeInitiatorToBase64(metaInitiator))
-}
-
 func DecodeRequestMeta(header http.Header) (*RequestMeta, error) {
 	trace, err := DecodeTraceFromHeader(header)
 	if err != nil {

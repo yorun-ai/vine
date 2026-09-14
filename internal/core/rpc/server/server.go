@@ -145,15 +145,6 @@ func (s *Server) serveRpc(rpcRequest spec.Request) spec.Response {
 	startedAt := time.Now()
 	methodInfo := rpcRequest.MethodInfo()
 	rpcRequest.(*spec.RequestImpl).ArgumentsValue = spec.CloneInprocRequestArguments(rpcRequest.Arguments(), methodInfo)
-	if err := methodInfo.ValidateArguments(rpcRequest.Arguments()); err != nil {
-		rejectedErr := ex.New(ex.InvalidRequest, err.Error())
-		rpclog.ServerRejected(s.log, startedAt, rpcRequest.Trace(), methodInfo, rpcRequest.Client(), s.opt.App, rejectedErr)
-		return &spec.ResponseImpl{
-			ServerValue: s.opt.App,
-			MethodValue: methodInfo,
-			ErrorValue:  rejectedErr,
-		}
-	}
 
 	methodImpl, err := s.implDict.GetMethodImplByInfo(rpcRequest.MethodInfo())
 	if err != nil {

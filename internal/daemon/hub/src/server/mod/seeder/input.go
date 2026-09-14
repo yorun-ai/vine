@@ -170,8 +170,8 @@ func resolveSeedInputWithSchemas(template, variables, source []byte, domains []*
 			if err != nil {
 				return fmt.Errorf("seed application point %s: %w", location, err)
 			}
-			legacyConfig := !whole && target != nil && target.Kind == skel.TypeKindConfig
-			if !whole && !legacyConfig && target != nil && (target.Kind != skel.TypeKindScalar || target.Scalar != skel.ScalarString) {
+			jsonStringConfig := !whole && target != nil && target.Kind == skel.TypeKindConfig
+			if !whole && !jsonStringConfig && target != nil && (target.Kind != skel.TypeKindScalar || target.Scalar != skel.ScalarString) {
 				return fmt.Errorf("string interpolation requires a string target at %s", location)
 			}
 			dependencies := map[string]bool{}
@@ -262,7 +262,7 @@ func resolveSeedInputWithSchemas(template, variables, source []byte, domains []*
 				return nil
 			}
 			n.Value = seedVariable.ReplaceAllStringFunc(n.Value, func(ref string) string { return replacements[ref].Value })
-			if legacyConfig {
+			if jsonStringConfig {
 				if !jsontext.Value(n.Value).IsValid() {
 					return fmt.Errorf("invalid interpolated config JSON at %s", location)
 				}

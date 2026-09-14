@@ -165,7 +165,9 @@ warning per field; mixing old and new fields in one rule fails before applying
 imported data. YAML cannot replace built-in Dashboard sites or rules.
 
 Admin API and Redis use only the new fields; upgrade Hub and Portal together.
-Existing database columns are migrated to matching `match_*` / `route_*` names.
+The database upgrade baseline is Vine v0.15.7, with `match_*` / `route_*`
+columns already present. Start older databases with v0.15.7 to complete migration
+before upgrading; current Hub no longer migrates legacy Portal rule columns.
 
 ## Admin Display Strings
 

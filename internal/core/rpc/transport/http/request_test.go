@@ -16,26 +16,6 @@ import (
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 )
 
-type validateArgumentsInput struct {
-	Name *string `arg:"0"`
-}
-
-type validateRequestServiceServer interface {
-	mustBeValidateRequestServiceServer()
-}
-
-type defaultValidateRequestServiceServer struct{}
-
-func (*defaultValidateRequestServiceServer) mustBeValidateRequestServiceServer() {}
-
-type validateRequestServiceServerER interface {
-	mustBeValidateRequestServiceServerER()
-}
-
-type defaultValidateRequestServiceServerER struct{}
-
-func (*defaultValidateRequestServiceServerER) mustBeValidateRequestServiceServerER() {}
-
 type _PingNoArgsServiceServer interface {
 	mustBePingNoArgsServiceServer()
 }
@@ -59,12 +39,6 @@ func (*_DefaultPingNoArgsServiceServerER) mustBePingNoArgsServiceServerER() {}
 type _PingNoArgsServiceImpl struct {
 	_DefaultPingNoArgsServiceServer
 }
-
-type _ValidateRequestServiceImpl struct {
-	defaultValidateRequestServiceServer
-}
-
-func (*_ValidateRequestServiceImpl) CreateUser(*validateArgumentsInput) {}
 
 func _newRequestTestHandlerDict(t *testing.T, serviceInfo *spec.ServiceSpec, handlerType reflect.Type) *spec.ImplDict {
 	t.Helper()
@@ -163,37 +137,6 @@ func TestDecodeRequestRejectsInvalidJSONBody(t *testing.T) {
 	_, err = DecodeRequest(req)
 	if err == nil || err.Error() != "request body cannot be parsed" {
 		t.Fatalf("expected request body cannot be parsed error, got %v", err)
-	}
-}
-
-func TestDecodeRequestRejectsInvalidGeneratedArguments(t *testing.T) {
-	service := &spec.ServiceSpec{
-		Name:                "Service",
-		SkelName:            "service.request_test",
-		ServerType:          reflect.TypeFor[validateRequestServiceServer](),
-		DefaultServerType:   reflect.TypeFor[*defaultValidateRequestServiceServer](),
-		ERServerType:        reflect.TypeFor[validateRequestServiceServerER](),
-		DefaultERServerType: reflect.TypeFor[*defaultValidateRequestServiceServerER](),
-		Methods: []*spec.MethodSpec{{
-			Name:              "CreateUser",
-			SkelName:          "create_user",
-			ArgumentsType:     reflect.TypeFor[validateArgumentsInput](),
-			ValidateArguments: func(any) error { return io.ErrUnexpectedEOF },
-		}},
-	}
-	_newRequestTestHandlerDict(t, service, reflect.TypeFor[*_ValidateRequestServiceImpl]())
-
-	req, err := http.NewRequest(RequestMethod, "http://localhost:8080/service.request_test/create_user", bytes.NewBufferString(`{"params":{"Name":null}}`))
-	if err != nil {
-		t.Fatalf("http.NewRequest() error = %v", err)
-	}
-	EncodeContentTypeHeadersToHeaderByMethod(req.Header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, false))
-	EncodeTraceToHeader(req.Header, testContext().Trace())
-	EncodeClientToHeader(req.Header, testContext().Client())
-
-	_, err = DecodeRequest(req)
-	if err != io.ErrUnexpectedEOF {
-		t.Fatalf("expected generated argument validation error, got %v", err)
 	}
 }
 

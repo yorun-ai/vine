@@ -201,14 +201,6 @@ func TestNewUsesInternalAttrsInfoAndLinker(t *testing.T) {
 	assert.Equal(t, "http://demo.local:7071/rpc/invoke", app.linker.RpcProxyEndpoint())
 }
 
-func TestNewInternalByTypePanicsWhenSpecIsNotInternal(t *testing.T) {
-	restoreAppRegistry(t)
-
-	assert.PanicsWithError(t, "application spec *app.testAppSpec is not internal", func() {
-		newInternalByType(T[*testAppSpec](), false)
-	})
-}
-
 func TestNewProvidesDefaultInjectedFlagWhenNotPassed(t *testing.T) {
 	restoreAppRegistry(t)
 

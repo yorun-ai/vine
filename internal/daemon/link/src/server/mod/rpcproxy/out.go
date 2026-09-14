@@ -58,10 +58,6 @@ func (p *RpcProxy) forwardOutboundWithTransport(w http.ResponseWriter, r *http.R
 	_, _ = w.Write(body)
 }
 
-func (p *RpcProxy) forwardOutboundRequest(r *http.Request, targetURL string) (*http.Response, []byte, ex.Error) {
-	return p.forwardOutboundRequestWithTransport(r, targetURL, p.transport)
-}
-
 func (p *RpcProxy) forwardOutboundRequestWithTransport(r *http.Request, targetURL string, transport http.RoundTripper) (*http.Response, []byte, ex.Error) {
 	req, err := http.NewRequestWithContext(r.Context(), r.Method, targetURL, r.Body)
 	if err != nil {
@@ -93,11 +89,6 @@ func (p *RpcProxy) serveRpcOut(rpcRequest spec.Request) spec.Response {
 	}
 
 	return rpcResponse
-}
-
-func (p *RpcProxy) resolveOutboundEndpoint(serviceName string, clientApp meta.App) (string, ex.Error) {
-	target, exErr := p.resolveOutboundTarget(serviceName, clientApp, "")
-	return target.endpoint, exErr
 }
 
 func (p *RpcProxy) resolveOutboundTarget(serviceName string, clientApp meta.App, destination string) (_OutboundTarget, ex.Error) {

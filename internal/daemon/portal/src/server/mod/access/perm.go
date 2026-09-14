@@ -119,12 +119,7 @@ func (o *RpcOperation) tryCheckPermission(check *skel.PermCheckInvocation) (bool
 
 func (o *RpcOperation) extractCheckParams(check *skel.PermCheckInvocation) (map[string]any, bool) {
 	params := make(map[string]any, len(check.Arguments)+1)
-	codeArgumentName := check.CodeArgumentName
-	// TODO: Remove this fallback when all supported schemas specify CodeArgumentName.
-	if codeArgumentName == "" {
-		codeArgumentName = "code"
-	}
-	params[codeArgumentName] = check.ResourceSkelName + ":" + check.ActionName
+	params[check.CodeArgumentName] = check.ResourceSkelName + ":" + check.ActionName
 	for _, argument := range check.Arguments {
 		value, ok := o.extractCheckArgument(argument.JsonPath)
 		if !ok {

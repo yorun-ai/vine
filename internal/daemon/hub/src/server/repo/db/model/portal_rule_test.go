@@ -3,7 +3,6 @@ package model
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"testing"
 
@@ -80,86 +79,7 @@ func sharedTestPortalRuleDB(t *testing.T) *gorm.DB {
 	return testPortalRuleDB
 }
 
-func TestPortalRuleTargetPathMigration(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "legacy.sqlite")), &gorm.Config{})
-	require.NoError(t, err)
-	connection, err := db.DB()
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = connection.Close() })
-	legacySQL := strings.NewReplacer(
-		"match_scheme", "scheme", "match_host", "host", "match_port", "port",
-		"match_path_prefix", "path_prefix", "route_type", "target_type",
-		"route_site_name", "site_name", "route_path_prefix", "target_path",
-		"route_redirection_pattern", "redirection_pattern",
-	).Replace(createPortalRuleSQLiteSQL)
-	legacySQL = strings.ReplaceAll(legacySQL, "    target_path TEXT NOT NULL DEFAULT '',\n", "")
-	require.NoError(t, db.Exec(legacySQL).Error)
-	require.NoError(t, db.Exec("INSERT INTO portal_rule(name, scheme, host, port, path_prefix, target_type, site_name, redirection_pattern, built_in) VALUES ('legacy', 'http', '', 80, '/api', 'SITE', 'site', '', false)").Error)
-	dao := &PortalRuleDao{Dao: rdb.NewDao[*PortalRule](db)}
-	require.NoError(t, dao.migrateSchema())
-	dao.InitSchema()
-	require.NoError(t, dao.migrateSchema())
-	dao.InitSchema()
-	row, ok := dao.ByName("legacy")
-	require.True(t, ok)
-	assert.Empty(t, row.RoutePathPrefix)
-	row.RoutePathPrefix = "/internal"
-	dao.Save(row)
-	row, _ = dao.ByName("legacy")
-	assert.Equal(t, "/internal", row.RoutePathPrefix)
-	row.RoutePathPrefix = ""
-	dao.Save(row)
-	row, _ = dao.ByName("legacy")
-	assert.Empty(t, row.RoutePathPrefix)
-}
-
-func TestPortalRuleColumnRenamePreservesDataAndIndexes(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "legacy-with-target.sqlite")), &gorm.Config{})
-	require.NoError(t, err)
-	connection, err := db.DB()
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = connection.Close() })
-	legacySQL := strings.NewReplacer(
-		"match_scheme", "scheme", "match_host", "host", "match_port", "port",
-		"match_path_prefix", "path_prefix", "route_type", "target_type",
-		"route_site_name", "site_name", "route_path_prefix", "target_path",
-		"route_redirection_pattern", "redirection_pattern",
-	).Replace(createPortalRuleSQLiteSQL)
-	require.NoError(t, db.Exec(legacySQL).Error)
-	require.NoError(t, db.Exec("INSERT INTO portal_rule(id, name, scheme, host, port, path_prefix, target_type, site_name, target_path, redirection_pattern, built_in) VALUES (17, 'legacy', 'https', 'example.com', 443, '/api', 'SITE', 'web', '/internal', '', true), (18, 'redirect', 'http', 'old.example.com', 80, '/', 'PERMANENT_REDIRECT', '', '', 'https://example.com', false)").Error)
-	dao := &PortalRuleDao{Dao: rdb.NewDao[*PortalRule](db)}
-	require.NoError(t, dao.migrateSchema())
-	dao.InitSchema()
-	require.NoError(t, dao.migrateSchema())
-	dao.InitSchema()
-	row, ok := dao.ByName("legacy")
-	require.True(t, ok)
-	assert.Equal(t, 17, row.Id)
-	assert.Equal(t, "https", row.MatchScheme)
-	assert.Equal(t, "example.com", row.MatchHost)
-	assert.Equal(t, 443, row.MatchPort)
-	assert.Equal(t, "/api", row.MatchPathPrefix)
-	assert.Equal(t, "SITE", row.RouteType)
-	assert.Equal(t, "web", row.RouteSiteName)
-	assert.Equal(t, "/internal", row.RoutePathPrefix)
-	assert.True(t, row.BuiltIn)
-	redirect, ok := dao.ByName("redirect")
-	require.True(t, ok)
-	assert.Equal(t, "PERMANENT_REDIRECT", redirect.RouteType)
-	assert.Equal(t, "https://example.com", redirect.RouteRedirectionPattern)
-	for _, old := range []string{"scheme", "host", "port", "path_prefix", "target_type", "site_name", "target_path", "redirection_pattern"} {
-		assert.False(t, db.Migrator().HasColumn("portal_rule", old), old)
-	}
-	duplicate := *row
-	duplicate.Id = 0
-	duplicate.Name = "different-name"
-	require.Error(t, db.Create(&duplicate).Error, "match uniqueness must survive migration")
-	duplicate.MatchHost = "different.example.com"
-	duplicate.Name = row.Name
-	require.Error(t, db.Create(&duplicate).Error, "name uniqueness must survive migration")
-}
-
-func TestPortalRuleMigrationOnCurrentSchema(t *testing.T) {
+func TestPortalRuleInitSchemaOnCurrentSchema(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "current.sqlite")), &gorm.Config{})
 	require.NoError(t, err)
 	connection, err := db.DB()
@@ -167,8 +87,6 @@ func TestPortalRuleMigrationOnCurrentSchema(t *testing.T) {
 	t.Cleanup(func() { _ = connection.Close() })
 	require.NoError(t, db.Exec(createPortalRuleSQLiteSQL).Error)
 	dao := &PortalRuleDao{Dao: rdb.NewDao[*PortalRule](db)}
-	require.NoError(t, dao.migrateSchema())
 	dao.InitSchema()
-	require.NoError(t, dao.migrateSchema())
 	dao.InitSchema()
 }

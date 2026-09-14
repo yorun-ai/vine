@@ -223,12 +223,6 @@ func panicWithStack(err error) {
 	panic(withPanic(exErr, err))
 }
 
-// PanicStack formats the local diagnostic stack. Stack should be preferred by
-// new internal callers; this compatibility name remains for existing Web code.
-func PanicStack(err Error) string {
-	return Stack(err)
-}
-
 // Recover
 
 func Recover(r any) Error {

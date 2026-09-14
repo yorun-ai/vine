@@ -18,13 +18,6 @@ type Decimal = internalskel.Decimal
 // Binary is the runtime representation of the Skel binary scalar.
 type Binary = internalskel.Binary
 
-// PermissionCode is a stable permission identifier generated from a Skel contract.
-//
-// Deprecated: Use string instead. Retained for compatibility with older generated code.
-//
-// TODO: Remove PermissionCode when compatibility with older generated code is dropped.
-type PermissionCode = internalskel.PermissionCode
-
 // UUID is the runtime representation of the Skel uuid scalar.
 type UUID = internalskel.UUID
 
@@ -177,8 +170,6 @@ const (
 
 	// TypeKindTypeParameter identifies a generic type parameter.
 	TypeKindTypeParameter = internalskel.TypeKindTypeParameter
-	// TypeKindSkelPermissionCode identifies the built-in permission-code type.
-	TypeKindSkelPermissionCode = internalskel.TypeKindSkelPermissionCode
 
 	// ScalarString identifies the string scalar.
 	ScalarString = internalskel.ScalarString

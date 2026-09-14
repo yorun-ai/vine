@@ -6,8 +6,8 @@ import (
 )
 
 type testPositionalArgumentsInput struct {
-	Second int    `arg:"1"`
-	First  string `arg:"0"`
+	Second int    `skel:"index(1)"`
+	First  string `skel:"index(0)"`
 }
 
 func TestRequestImplPositionalArgumentsUsesMethodArgumentOrder(t *testing.T) {

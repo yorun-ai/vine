@@ -32,7 +32,7 @@ type defaultTestServiceServerER struct{}
 func (*defaultTestServiceServerER) Ping(string) (string, ex.Error) { return "", nil }
 
 type pingArguments struct {
-	Name string `arg:"0"`
+	Name string `skel:"index(0)"`
 }
 
 var (

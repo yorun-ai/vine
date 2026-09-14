@@ -10,7 +10,7 @@ type inprocClonePayload struct {
 }
 
 type inprocCloneArguments struct {
-	Payload inprocClonePayload `json:"payload" arg:"0"`
+	Payload inprocClonePayload `json:"payload" skel:"index(0)"`
 }
 
 func TestCloneInprocRequestArgumentsUsesMethodClone(t *testing.T) {

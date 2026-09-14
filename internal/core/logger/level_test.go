@@ -61,12 +61,12 @@ func TestSetGlobalLevel(t *testing.T) {
 	resetGlobalOptionForTest(t)
 
 	SetGlobalLevel(LevelDebug)
-	if got := levelFromSlog(globalLevel.Level()); got != LevelDebug {
+	if got := globalLevel.Level(); got != slog.LevelDebug {
 		t.Fatalf("global level = %s, want %s", got, LevelDebug)
 	}
 
 	SetGlobalLevel(LevelError)
-	if got := levelFromSlog(globalLevel.Level()); got != LevelError {
+	if got := globalLevel.Level(); got != slog.LevelError {
 		t.Fatalf("global level = %s, want %s", got, LevelError)
 	}
 }

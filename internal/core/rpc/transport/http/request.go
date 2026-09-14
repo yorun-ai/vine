@@ -9,7 +9,6 @@ import (
 	"github.com/fxamacker/cbor/v2"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/util/vcode"
 	"go.yorun.ai/vine/util/vpre"
 	rpchttp "go.yorun.ai/vrpc/transport/http"
@@ -159,11 +158,6 @@ func (d *_RequestDecoder) decodeArguments() error {
 		return err
 	}
 
-	err := methodInfo.ValidateArguments(arguments)
-	if err != nil {
-		return err
-	}
-
 	d.rpcRequest.ArgumentsValue = arguments
 	return nil
 }
@@ -236,7 +230,6 @@ func encodeArgumentsToBytes(rpcRequest spec.Request) (encoded []byte, err error)
 	}()
 
 	methodInfo := rpcRequest.MethodInfo()
-	encoder := skel.EncoderForSkelName(methodInfo.Service().SkelName())
 	contentType := requestBodyContentType(methodInfo)
 	var arguments any = &spec.EmptyArguments{}
 	if methodInfo.HasArguments() {
@@ -246,13 +239,13 @@ func encodeArgumentsToBytes(rpcRequest spec.Request) (encoded []byte, err error)
 
 	switch contentType {
 	case ContentTypeCbor:
-		encodedArguments, err := encoder.MarshalCbor(arguments)
+		encodedArguments, err := vcode.MarshalCbor(arguments)
 		if err != nil {
 			return nil, err
 		}
 		return rpchttp.EncodeCBORRequest(encodedArguments)
 	default:
-		encodedArguments, err := encoder.MarshalJson(arguments)
+		encodedArguments, err := vcode.MarshalJson(arguments)
 		if err != nil {
 			return nil, err
 		}

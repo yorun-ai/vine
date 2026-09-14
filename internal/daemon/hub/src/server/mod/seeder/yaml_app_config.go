@@ -7,7 +7,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// DecodeAppConfig accepts structured YAML values and legacy JSON strings.
+// DecodeAppConfig accepts structured YAML values and JSON-encoded strings.
+// Both are supported input formats indefinitely; JSON strings are not a
+// migration fallback and must remain supported when retiring older Vine versions.
 func DecodeAppConfig(node *yaml.Node, target any) error {
 	var fields map[string]yaml.Node
 	if err := node.Decode(&fields); err != nil {
