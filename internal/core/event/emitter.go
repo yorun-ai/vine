@@ -10,6 +10,7 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
 	"go.yorun.ai/vine/internal/core/skel"
+	"go.yorun.ai/vine/util/vcode"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -65,7 +66,6 @@ func (e *Emitter) buildEmission(eventInfo spec.EventInfo, eventPayload any, opti
 		option.apply(emitOptions)
 	}
 
-	encoder := skel.EncoderForSkelName(eventInfo.SkelName())
 	return linkskeled.EventEmission{
 		Metadata: linkskeled.EventEmissionMeta{
 			TraceId:       e.context.Trace().Id(),
@@ -75,6 +75,6 @@ func (e *Emitter) buildEmission(eventInfo spec.EventInfo, eventPayload any, opti
 			AppInstanceId: skel.NewUUID(uuid.MustParse(e.clientApp.InstanceId())),
 		},
 		EventSkelName: eventInfo.SkelName(),
-		EventJson:     encoder.MustMarshalJsonS(eventPayload),
+		EventJson:     vcode.MustMarshalJsonS(eventPayload),
 	}
 }

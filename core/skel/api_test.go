@@ -31,7 +31,7 @@ func TestFacadeScalarConstructors(t *testing.T) {
 
 func TestPermCheckInvocationCodeArgumentNameJSON(t *testing.T) {
 	for name, input := range map[string]string{
-		"":      `{"resourceSkelName":"app.User","actionName":"read"}`,
+		"code":  `{"resourceSkelName":"app.User","actionName":"read","codeArgumentName":"code"}`,
 		"code_": `{"resourceSkelName":"app.User","actionName":"read","codeArgumentName":"code_"}`,
 	} {
 		var check PermCheckInvocation
@@ -49,12 +49,8 @@ func TestPermCheckInvocationCodeArgumentNameJSON(t *testing.T) {
 		if err := json.Unmarshal(encoded, &fields); err != nil {
 			t.Fatal(err)
 		}
-		if check.CodeArgumentName == "" {
-			if _, exists := fields["codeArgumentName"]; exists {
-				t.Fatalf("legacy schema should omit codeArgumentName: %s", encoded)
-			}
-		} else if fields["codeArgumentName"] != "code_" {
-			t.Fatalf("custom argument name lost in schema JSON: %s", encoded)
+		if fields["codeArgumentName"] != name {
+			t.Fatalf("argument name lost in schema JSON: %s", encoded)
 		}
 	}
 }

@@ -109,4 +109,6 @@ func (s *_Servicer) serviceHandlerRegistrations() []linkskeled.ServiceHandlerReg
 	return registrations
 }
 
+// start reserves an internal hook for future Rpc startup logic.
+// Keep it in the startup sequence after servers start and before app registration.
 func (s *_Servicer) start() {}

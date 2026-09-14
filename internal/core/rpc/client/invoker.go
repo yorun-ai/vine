@@ -70,7 +70,7 @@ func (i *_Invoker) invoke() (result any, err ex.Error) {
 	if !inproc.IsEndpoint(i.serverEndpoint) && !logSpan.Started() && err != nil {
 		rpclog.ClientRejected(i.logger, startedAt, rpcRequest.Trace(), i.methodInfo, i.serverEndpoint, i.arguments, err)
 	}
-	result, err = i.parseResponse(rpcResponse, err)
+	result, err = parseResponse(rpcResponse, err)
 
 	if err != nil && !i.returnIfSystemError && err.Type() == ex.SystemError {
 		panic(err)
@@ -121,7 +121,7 @@ func (i *_Invoker) roundTrip(rpcRequest spec.Request, prepared func()) (spec.Res
 	return http.RoundTripWithPrepared(i.serverEndpoint, rpcRequest, prepared)
 }
 
-func (i *_Invoker) parseResponse(rpcResponse spec.Response, err ex.Error) (any, ex.Error) {
+func parseResponse(rpcResponse spec.Response, err ex.Error) (any, ex.Error) {
 	if err != nil {
 		return nil, err
 	}
@@ -130,9 +130,5 @@ func (i *_Invoker) parseResponse(rpcResponse spec.Response, err ex.Error) (any, 
 		return nil, rpcResponse.Error()
 	}
 
-	result := rpcResponse.Result()
-	if err := i.methodInfo.ValidateResult(result); err != nil {
-		return nil, ex.New(ex.UnexpectedResponse, err.Error())
-	}
-	return result, nil
+	return rpcResponse.Result(), nil
 }

@@ -12,10 +12,6 @@ import (
 // Sensitive marks complete payloads for redaction.
 type Sensitive = clientskel.Sensitive
 
-// PermissionCode is retained for older generated contracts.
-// Deprecated: Use string instead.
-type PermissionCode string
-
 type Decimal = clientskel.Decimal
 
 type Binary = clientskel.Binary

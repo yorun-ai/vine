@@ -25,19 +25,18 @@ type invokerServerResult struct {
 }
 
 func testMethodInfo() spec.MethodInfo {
-	return newInvokerTestMethodInfo("Ping", "ping", nil, nil, nil)
+	return newInvokerTestMethodInfo("Ping", "ping", nil, nil)
 }
 
-func newInvokerTestMethodInfo(name string, skelName string, argumentsType reflect.Type, resultType reflect.Type, validateResult func(any) error) spec.MethodInfo {
+func newInvokerTestMethodInfo(name string, skelName string, argumentsType reflect.Type, resultType reflect.Type) spec.MethodInfo {
 	return spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
 		Name:     "InvokerTestService",
 		SkelName: fmt.Sprintf("invoker.test.service.%s.%d", skelName, invokerTestMethodCounter.Add(1)),
 		Methods: []*spec.MethodSpec{{
-			Name:           name,
-			SkelName:       skelName,
-			ArgumentsType:  argumentsType,
-			ResultType:     resultType,
-			ValidateResult: validateResult,
+			Name:          name,
+			SkelName:      skelName,
+			ArgumentsType: argumentsType,
+			ResultType:    resultType,
 		}},
 	}).Methods()[0]
 }
@@ -210,13 +209,9 @@ func TestWithContextAndWithTimeoutCannotBeUsedTogether(t *testing.T) {
 }
 
 func TestParseResponseReturnsTransportError(t *testing.T) {
-	invoker := New(Option{
-		Context: testClientContext(),
-		Logger:  testClientLogger(),
-	}).newInvoker(testMethodInfo(), nil, nil)
 	expected := ex.New(ex.InvocationFailed, "boom")
 
-	result, err := invoker.parseResponse(nil, expected)
+	result, err := parseResponse(nil, expected)
 	if result != nil {
 		t.Fatal("expected nil result when transport error exists")
 	}
@@ -226,13 +221,9 @@ func TestParseResponseReturnsTransportError(t *testing.T) {
 }
 
 func TestParseResponseReturnsRPCError(t *testing.T) {
-	invoker := New(Option{
-		Context: testClientContext(),
-		Logger:  testClientLogger(),
-	}).newInvoker(testMethodInfo(), nil, nil)
 	expected := ex.New(ex.NotFound, "missing")
 
-	result, err := invoker.parseResponse(&spec.ResponseImpl{
+	result, err := parseResponse(&spec.ResponseImpl{
 		ErrorValue: expected,
 	}, nil)
 	if result != nil {
@@ -244,12 +235,7 @@ func TestParseResponseReturnsRPCError(t *testing.T) {
 }
 
 func TestParseResponseAllowsOKErrorAndReturnsResult(t *testing.T) {
-	invoker := New(Option{
-		Context: testClientContext(),
-		Logger:  testClientLogger(),
-	}).newInvoker(testMethodInfo(), nil, nil)
-
-	result, err := invoker.parseResponse(&spec.ResponseImpl{
+	result, err := parseResponse(&spec.ResponseImpl{
 		ResultValue: "ok",
 		ErrorValue:  ex.NewOK(),
 	}, nil)
@@ -261,32 +247,8 @@ func TestParseResponseAllowsOKErrorAndReturnsResult(t *testing.T) {
 	}
 }
 
-func TestParseResponseRejectsUnexpectedNilResult(t *testing.T) {
-	invoker := New(Option{
-		Context: testClientContext(),
-		Logger:  testClientLogger(),
-	}).newInvoker(newInvokerTestMethodInfo("Ping", "ping", nil, nil, func(value any) error {
-		return spec.CheckValueNotNil(value, "result")
-	}), nil, nil)
-
-	result, err := invoker.parseResponse(&spec.ResponseImpl{}, nil)
-	if result != nil {
-		t.Fatal("expected nil result")
-	}
-	if err == nil || err.Code() != ex.UnexpectedResponse {
-		t.Fatalf("expected UnexpectedResponse, got %#v", err)
-	}
-}
-
 func TestParseResponseReturnsSuccessResult(t *testing.T) {
-	invoker := New(Option{
-		Context: testClientContext(),
-		Logger:  testClientLogger(),
-	}).newInvoker(newInvokerTestMethodInfo("Ping", "ping", nil, nil, func(value any) error {
-		return spec.CheckValueNotNil(value, "result")
-	}), nil, nil)
-
-	result, err := invoker.parseResponse(&spec.ResponseImpl{
+	result, err := parseResponse(&spec.ResponseImpl{
 		ResultValue: "pong",
 	}, nil)
 	if err != nil {
@@ -298,12 +260,7 @@ func TestParseResponseReturnsSuccessResult(t *testing.T) {
 }
 
 func TestParseResponseReturnsResponseResultAsIs(t *testing.T) {
-	invoker := New(Option{
-		Context: testClientContext(),
-		Logger:  testClientLogger(),
-	}).newInvoker(newInvokerTestMethodInfo("Ping", "ping", nil, reflect.TypeFor[invokerClientResult](), nil), nil, nil)
-
-	result, err := invoker.parseResponse(&spec.ResponseImpl{
+	result, err := parseResponse(&spec.ResponseImpl{
 		ResultValue: invokerServerResult{Name: "vine"},
 	}, nil)
 	if err != nil {

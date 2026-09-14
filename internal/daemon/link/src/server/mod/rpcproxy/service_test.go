@@ -10,7 +10,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 )
 
-func TestResolveOutboundEndpointRejectsPlaintextWithMTLS(t *testing.T) {
+func TestResolveOutboundTargetRejectsPlaintextWithMTLS(t *testing.T) {
 	callerApp := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")
 	remoteApp := mustMetaApp(t, "remote.app", "22222222-2222-2222-2222-222222222222")
 	proxy := newTestRpcProxy(t, newTestHubRedisClient(map[string][]redised.RpcServiceRegistration{
@@ -26,7 +26,7 @@ func TestResolveOutboundEndpointRejectsPlaintextWithMTLS(t *testing.T) {
 	proxy.Identity = mtlstest.NewCA(t).Identity(t, daemon.LinkIdentity.SPIFFEPath())
 	registerLocalApp(proxy, callerApp, "http://127.0.0.1:8080"+testPathRpcInvoke, "http://127.0.0.1:8080", []string{"demo.service.CallerService"})
 
-	_, exErr := proxy.resolveOutboundEndpoint("demo.service.UserService", callerApp)
+	_, exErr := proxy.resolveOutboundTarget("demo.service.UserService", callerApp, "")
 	if exErr == nil {
 		t.Fatal("expected plaintext registration to be rejected")
 	}
@@ -35,7 +35,7 @@ func TestResolveOutboundEndpointRejectsPlaintextWithMTLS(t *testing.T) {
 	}
 }
 
-func TestResolveOutboundEndpointRoundRobin(t *testing.T) {
+func TestResolveOutboundTargetRoundRobin(t *testing.T) {
 	callerApp := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")
 	firstApp := mustMetaApp(t, "first.app", "22222222-2222-2222-2222-222222222222")
 	secondApp := mustMetaApp(t, "second.app", "33333333-3333-3333-3333-333333333333")
@@ -63,23 +63,23 @@ func TestResolveOutboundEndpointRoundRobin(t *testing.T) {
 
 	registerLocalApp(proxy, callerApp, "http://127.0.0.1:8080"+testPathRpcInvoke, "http://127.0.0.1:8080", []string{"demo.service.CallerService"})
 
-	firstResolved, exErr := proxy.resolveOutboundEndpoint("demo.service.UserService", callerApp)
+	firstResolved, exErr := proxy.resolveOutboundTarget("demo.service.UserService", callerApp, "")
 	if exErr != nil {
 		t.Fatalf("unexpected resolve error: %v", exErr)
 	}
 
-	secondResolved, exErr := proxy.resolveOutboundEndpoint("demo.service.UserService", callerApp)
+	secondResolved, exErr := proxy.resolveOutboundTarget("demo.service.UserService", callerApp, "")
 	if exErr != nil {
 		t.Fatalf("unexpected resolve error: %v", exErr)
 	}
 
-	if firstResolved == secondResolved {
-		t.Fatalf("expected round-robin endpoints, got %s and %s", firstResolved, secondResolved)
+	if firstResolved.endpoint == secondResolved.endpoint {
+		t.Fatalf("expected round-robin endpoints, got %s and %s", firstResolved.endpoint, secondResolved.endpoint)
 	}
 
 	resolvedSet := map[string]struct{}{
-		firstResolved:  {},
-		secondResolved: {},
+		firstResolved.endpoint:  {},
+		secondResolved.endpoint: {},
 	}
 	if _, ok := resolvedSet[firstEndpoint]; !ok {
 		t.Fatalf("expected first endpoint to participate: %s", firstEndpoint)
@@ -106,7 +106,7 @@ func TestOnDestroyCleansAppAndServiceState(t *testing.T) {
 
 	registerLocalApp(proxy, callerApp, "http://127.0.0.1:8080"+testPathRpcInvoke, "http://127.0.0.1:8080", []string{"demo.service.CallerService"})
 
-	if _, exErr := proxy.resolveOutboundEndpoint("demo.service.UserService", callerApp); exErr != nil {
+	if _, exErr := proxy.resolveOutboundTarget("demo.service.UserService", callerApp, ""); exErr != nil {
 		t.Fatalf("unexpected resolve error: %v", exErr)
 	}
 	if len(proxy.serviceStatesByName) != 1 {
@@ -141,12 +141,12 @@ func TestOnDrainKeepsOutboundSourceState(t *testing.T) {
 	registerLocalApp(proxy, callerApp, "http://127.0.0.1:8080"+testPathRpcInvoke, "http://127.0.0.1:8080", []string{"demo.service.CallerService"})
 	proxy.OnDrain(&minder.AppInstance{AppInfo: callerApp})
 
-	resolved, exErr := proxy.resolveOutboundEndpoint("demo.service.UserService", callerApp)
+	resolved, exErr := proxy.resolveOutboundTarget("demo.service.UserService", callerApp, "")
 	if exErr != nil {
 		t.Fatalf("unexpected resolve error: %v", exErr)
 	}
-	if resolved != remoteEndpoint {
-		t.Fatalf("unexpected resolved endpoint: %s", resolved)
+	if resolved.endpoint != remoteEndpoint {
+		t.Fatalf("unexpected resolved endpoint: %s", resolved.endpoint)
 	}
 }
 

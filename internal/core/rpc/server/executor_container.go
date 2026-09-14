@@ -69,9 +69,5 @@ func (e *_ContainerExecutor) Execute(rpcContext spec.Context, methodImpl spec.Me
 		return nil, nil
 	}
 
-	result := results[0]
-	if err := methodInfo.ValidateResult(result); err != nil {
-		vpre.Panicf("%s", err.Error())
-	}
-	return result, nil
+	return results[0], nil
 }

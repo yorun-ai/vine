@@ -5,16 +5,14 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-// MarshalCbor encodes data as CBOR.
+// MarshalCbor encodes data as CBOR using the default encoder.
 func MarshalCbor(data any) ([]byte, error) {
 	return defaultEncoder.MarshalCbor(data)
 }
 
 // MustMarshalCbor is like MarshalCbor but panics on failure.
 func MustMarshalCbor(data any) []byte {
-	cborBytes, err := MarshalCbor(data)
-	vpre.MustNil(err)
-	return cborBytes
+	return defaultEncoder.MustMarshalCbor(data)
 }
 
 // UnmarshalCbor decodes CBOR data into a newly allocated T.

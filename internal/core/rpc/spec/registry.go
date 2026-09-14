@@ -168,14 +168,6 @@ func (r *Registry) registerDefaultEmbeddedTypes(defaultServerType reflect.Type, 
 func (r *Registry) initMethodInfos(serviceSpec *ServiceSpec, serviceInfo *_ServiceInfo) []MethodInfo {
 	methodInfos := make([]MethodInfo, 0, len(serviceSpec.Methods))
 	for _, methodSpec := range serviceSpec.Methods {
-		validateArguments := methodSpec.ValidateArguments
-		if validateArguments == nil {
-			validateArguments = noopValidateArguments
-		}
-		validateResult := methodSpec.ValidateResult
-		if validateResult == nil {
-			validateResult = noopValidateResult
-		}
 		methodInfo := &_MethodInfo{
 			name:                        methodSpec.Name,
 			skelName:                    methodSpec.SkelName,
@@ -183,10 +175,8 @@ func (r *Registry) initMethodInfos(serviceSpec *ServiceSpec, serviceInfo *_Servi
 			fullURLPath:                 "/" + serviceInfo.skelName + "/" + methodSpec.SkelName,
 			argumentsType:               methodSpec.ArgumentsType,
 			argumentsSensitive:          methodSpec.ArgumentsSensitive,
-			validateArguments:           validateArguments,
 			resultType:                  methodSpec.ResultType,
 			resultSensitive:             methodSpec.ResultSensitive,
-			validateResult:              validateResult,
 			argumentsContainsBinaryType: methodSpec.ArgumentsContainsBinaryType,
 			resultContainsBinaryType:    methodSpec.ResultContainsBinaryType,
 			cloneArguments:              methodSpec.CloneArguments,

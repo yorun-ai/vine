@@ -4,7 +4,6 @@ import (
 	"reflect"
 
 	"go.yorun.ai/vine/internal/core/di"
-	"go.yorun.ai/vine/util/vpre"
 )
 
 type App interface {
@@ -38,11 +37,6 @@ func NewInternalInproc[S interface {
 	InternalApplicationSpec
 }](opts ...FlagApplier) App {
 	return defaultGuard.create[S](true, opts...)
-}
-
-func newInternalByType(specType reflect.Type, enableInproc bool, opts ...FlagApplier) App {
-	vpre.Check(specType.Implements(T[InternalApplicationSpec]()), "application spec %s is not internal", specType)
-	return defaultGuard.createByType(specType, enableInproc, opts...)
 }
 
 func newSpec(specType reflect.Type, flags _Flags) ApplicationSpec {

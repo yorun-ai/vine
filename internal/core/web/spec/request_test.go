@@ -97,7 +97,7 @@ func TestInitiatorHeaderRoundTrip(t *testing.T) {
 		t.Fatalf("NewInitiator() error = %v", err)
 	}
 
-	encodeInitiatorToHeader(header, initiator)
+	header.Set(HeaderWebInitiator, meta.EncodeInitiatorToBase64(initiator))
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header = header
 

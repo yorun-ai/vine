@@ -60,7 +60,7 @@ type serverTestServiceImpl struct {
 }
 
 type serverCloneArguments struct {
-	Names []string `json:"names" arg:"0"`
+	Names []string `json:"names" skel:"index(0)"`
 }
 
 type serverCloneServiceServer interface {

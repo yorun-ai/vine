@@ -19,7 +19,7 @@ import (
 )
 
 type clientEncodingArguments struct {
-	Unsupported chan int `json:"unsupported" arg:"0"`
+	Unsupported chan int `json:"unsupported" skel:"index(0)"`
 }
 
 func testClientContext() meta.Context {
@@ -136,7 +136,7 @@ func newTypedInvokeClient(t *testing.T, result any, err ex.Error) (*Client, spec
 		ClientApp:      testClientApp(t),
 		Logger:         testClientLogger(),
 		ServerEndpoint: endpoint,
-	}), newInvokerTestMethodInfo("Get", "get", nil, reflect.TypeOf(result), nil)
+	}), newInvokerTestMethodInfo("Get", "get", nil, reflect.TypeOf(result))
 }
 
 func TestInvokeAsReturnsValue(t *testing.T) {

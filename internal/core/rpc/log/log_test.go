@@ -18,8 +18,8 @@ import (
 )
 
 type rpcLifecycleArguments struct {
-	UserID string `json:"userId" arg:"0"`
-	Token  string `json:"token" arg:"1" skel:"sensitive"`
+	UserID string `json:"userId" skel:"index(0)"`
+	Token  string `json:"token" skel:"index(1),sensitive"`
 }
 
 type rpcFailingMarshaler struct{}

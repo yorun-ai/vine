@@ -32,7 +32,7 @@ func DefaultEncoder() Encoder {
 	return defaultEncoder
 }
 
-// MarshalJson encodes data as JSON using the encoder's collection profile.
+// MarshalJson encodes data as JSON using the configured options.
 func (e Encoder) MarshalJson(data any) ([]byte, error) {
 	if e.jsonOptions == nil {
 		return json.Marshal(data)
@@ -52,7 +52,7 @@ func (e Encoder) MustMarshalJsonS(data any) string {
 	return string(e.MustMarshalJson(data))
 }
 
-// MarshalCbor encodes data as CBOR using the encoder's collection profile.
+// MarshalCbor encodes data as CBOR using the configured mode.
 func (e Encoder) MarshalCbor(data any) ([]byte, error) {
 	return e.cborMode.Marshal(data)
 }

@@ -66,7 +66,7 @@ type embeddedTypesHolder struct {
 }
 
 type testRegistryCloneArguments struct {
-	Value string `arg:"0"`
+	Value string `skel:"index(0)"`
 }
 
 func newRegistryTestServiceInfo(skelName string) *ServiceSpec {

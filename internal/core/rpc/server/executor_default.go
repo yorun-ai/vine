@@ -82,11 +82,7 @@ func (e *_DefaultExecutor) Execute(rpcContext spec.Context, methodImpl spec.Meth
 		return nil, nil
 	}
 
-	result := results[0].Interface()
-	if err := methodInfo.ValidateResult(result); err != nil {
-		vpre.Panicf("%s", err.Error())
-	}
-	return result, nil
+	return results[0].Interface(), nil
 }
 
 func (e *_DefaultExecutor) inject(methodValue reflect.Value, rpcContext spec.Context) {

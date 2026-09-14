@@ -236,13 +236,6 @@ var _CTRWrappedServiceSpec = &spec.ServiceSpec{
 		Name:       "Preview",
 		SkelName:   "preview",
 		ResultType: reflect.TypeFor[_CTRWrappedResult](),
-		ValidateResult: func(value any) error {
-			result := value.(_CTRWrappedResult)
-			if result.Items == nil {
-				return ex.New(ex.OperationFailed, "result.Items cannot be nil")
-			}
-			return nil
-		},
 	}},
 }
 

@@ -62,10 +62,8 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
   correct existing documentation and add migration guidance when needed.
 - Use Go's `encoding/json/v2` and `encoding/json/jsontext` APIs for Vine JSON;
   do not reintroduce the v1 `encoding/json` implementation.
-- Encode Rpc, Event, and Task Skel payloads with the encoder selected for the
-  registered schema, such as `skel.EncoderForSkelName`, so compiler-version
-  collection compatibility is preserved. Do not bypass it with the default
-  `vcode` encoder.
+- Encode Rpc, Event, and Task Skel payloads with the shared `vcode` encoder.
+  Supported schemas use empty arrays/maps for nil collections.
 - Rpc methods must provide `CloneArguments` when they have arguments and
   `CloneResult` when they have results. Generated code obtains these hooks from
   a supported skelc; manually constructed `MethodSpec` values must supply them,

@@ -111,6 +111,7 @@ func TestExtractCheckParamsSupportsCborRequestBody(t *testing.T) {
 	}
 
 	params, ok := operation.extractCheckParams(&skel.PermCheckInvocation{
+		CodeArgumentName: "code",
 		ResourceSkelName: "app.User",
 		ActionName:       "update",
 		Arguments: []*skel.PermCheckArgument{
@@ -151,6 +152,7 @@ func TestExtractCheckParamsSupportsJsonWildcardPath(t *testing.T) {
 	}
 
 	params, ok := operation.extractCheckParams(&skel.PermCheckInvocation{
+		CodeArgumentName: "code",
 		ResourceSkelName: "app.User",
 		ActionName:       "update",
 		Arguments: []*skel.PermCheckArgument{
@@ -183,6 +185,7 @@ func TestExtractCheckParamsRejectsTrailingWildcardPath(t *testing.T) {
 	}
 
 	_, ok := operation.extractCheckParams(&skel.PermCheckInvocation{
+		CodeArgumentName: "code",
 		ResourceSkelName: "app.User",
 		ActionName:       "update",
 		Arguments: []*skel.PermCheckArgument{
@@ -212,10 +215,10 @@ func newAccessTestEndpointManager(serviceName string, endpoint string) *epmgr.Ma
 
 func TestExtractCheckParamsUsesSchemaCodeArgumentName(t *testing.T) {
 	for _, mediaType := range []string{rpchttp.ContentTypeJson, rpchttp.ContentTypeCbor} {
-		for _, name := range []string{"", "code_"} {
+		for _, name := range []string{"code", "code1"} {
 			t.Run(mediaType+"/"+name, func(t *testing.T) {
 				businessName := "orderCode"
-				if name != "" {
+				if name != "code" {
 					businessName = "code"
 				}
 				body := map[string]any{"params": map[string]any{businessName: "business-value"}}
@@ -230,9 +233,6 @@ func TestExtractCheckParamsUsesSchemaCodeArgumentName(t *testing.T) {
 					ResourceSkelName: "app.User", ActionName: "update", CodeArgumentName: name,
 					Arguments: []*skel.PermCheckArgument{{Name: businessName, JsonPath: businessName}},
 				})
-				if name == "" {
-					name = "code"
-				}
 				if !ok || len(params) != 2 || params[name] != "app.User:update" || params[businessName] != "business-value" {
 					t.Fatalf("unexpected check arguments: ok=%v params=%#v", ok, params)
 				}
@@ -264,7 +264,7 @@ func TestCheckPreservesPermissionErrorReason(t *testing.T) {
 				serviceSchema: &skel.ServiceSchema{},
 				methodSchema: &skel.MethodSchema{Require: &skel.PermRequire{Expr: &skel.PermExpr{
 					Mode: mode, Code: "app.User:update",
-					Check: &skel.PermCheckInvocation{ServiceSkelName: serviceName, MethodSkelName: "check", ResourceSkelName: "app.User", ActionName: "update"},
+					Check: &skel.PermCheckInvocation{CodeArgumentName: "code", ServiceSkelName: serviceName, MethodSkelName: "check", ResourceSkelName: "app.User", ActionName: "update"},
 				}}},
 			}
 			operation.endpointManager = manager

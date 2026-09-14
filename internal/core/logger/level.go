@@ -52,21 +52,6 @@ func (l Level) ToSLogLevel() slog.Level {
 	}
 }
 
-func levelFromSlog(level slog.Level) Level {
-	switch level {
-	case slog.LevelDebug:
-		return LevelDebug
-	case slog.LevelInfo:
-		return LevelInfo
-	case slog.LevelWarn:
-		return LevelWarn
-	case slog.LevelError:
-		return LevelError
-	default:
-		panic("global logger level is invalid")
-	}
-}
-
 // Global level
 
 // globalLevel is the fallback for auto-level loggers that match no named rule.

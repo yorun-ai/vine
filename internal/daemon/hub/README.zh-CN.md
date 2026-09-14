@@ -116,6 +116,9 @@ Hub 当前支持两类数据库配置来源：
 
 启动时可以通过 `--seed-hub-data-file` 让 `seeder` 从本地 YAML 文件一次性导入初始配置、站点规则和证书到数据库；导入后 Hub 仍然统一从数据库 repo 读取，再写入 Redis，对 Link 暴露一致的读取与订阅语义。
 
+数据库升级基线为 Vine `v0.15.7`，规则表应已具备 `match_*` / `route_*` 列。
+更早的数据库应先用 `v0.15.7` 启动完成迁移；当前 Hub 不再迁移旧 Portal rule 列。
+
 数据库 metadata 记录首次 seed 完成状态。后续启动跳过全部 seed、变量和来源输入，seed 条目不再提供 `override` 开关。无数据库模式每次建立新存储并导入 seed；内置 Dashboard 配置的维护独立于 seed 标记。
 
 字段来源以 JSON 保存原始字段模板，并记录每次替换的相对路径、变量名、占位符、实际应用的 JSON 值和默认值使用标记。AppConfig 的嵌套替换归属 value 的一级 key；管理接口修改字段后清除旧模板和替换记录。管理 API 与 Dashboard 一同展示这些信息及字段来源。

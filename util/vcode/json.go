@@ -7,9 +7,9 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-// MarshalJson encodes data as JSON.
+// MarshalJson encodes data as JSON using the default encoder.
 func MarshalJson(data any) ([]byte, error) {
-	return MarshalJsonWithOptions(data)
+	return defaultEncoder.MarshalJson(data)
 }
 
 // MarshalJsonWithOptions encodes data as JSON with additional options.
@@ -25,14 +25,12 @@ func MarshalJsonS(data any) (string, error) {
 
 // MustMarshalJson is like MarshalJson but panics on failure.
 func MustMarshalJson(data any) []byte {
-	jsonBytes, err := MarshalJson(data)
-	vpre.MustNil(err)
-	return jsonBytes
+	return defaultEncoder.MustMarshalJson(data)
 }
 
 // MustMarshalJsonS is like MarshalJsonS but panics on failure.
 func MustMarshalJsonS(data any) string {
-	return string(MustMarshalJson(data))
+	return defaultEncoder.MustMarshalJsonS(data)
 }
 
 // UnmarshalJson decodes JSON data into T.

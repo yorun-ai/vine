@@ -163,6 +163,8 @@ func (e *_Eventer) eventListenerRegistrations() []linkskeled.EventListenerRegist
 	return registrations
 }
 
+// start reserves an internal hook for future Event startup logic.
+// Keep it in the startup sequence after servers start and before app registration.
 func (*_Eventer) start() {}
 
 type _AppEventServiceServerImpl struct {
