@@ -19,7 +19,7 @@ export function FieldSourceInfo({ kind, name, path }: { kind: string; name: stri
     (field.define || field.override || field.variables.length > 0) &&
     (field.path === path || field.path.startsWith(path + '/') || path.startsWith(field.path + '/')),
   )
-  const origins = [...new Map(fields.map((field) => [JSON.stringify([field.source, field.define, field.override, field.variables]), field])).values()]
+  const origins = [...new Map(fields.map((field) => [JSON.stringify([field.source, field.define, field.override, field.variables, field.template, field.bindings]), field])).values()]
   if (origins.length === 0) return null
   return <Tooltip open={open} onOpenChange={setOpen}>
     <TooltipTrigger render={<button type="button" aria-label={`${t('fieldSource.title')} · ${path.slice(1)}`} className="inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />}>
@@ -33,7 +33,9 @@ export function FieldSourceInfo({ kind, name, path }: { kind: string; name: stri
             <dt className="font-mono">source</dt><dd className="break-all">{field.source || '—'}</dd>
             <dt className="font-mono">define</dt><dd className="break-all">{field.define || '—'}</dd>
             <dt className="font-mono">override</dt><dd className="break-all">{field.override || '—'}</dd>
-            {field.variables.length > 0 && <><dt className="font-mono">variables</dt><dd className="break-all">{field.variables.join(', ')}</dd></>}
+            {field.template != null && <><dt className="font-mono">template</dt><dd className="break-all whitespace-pre-wrap font-mono">{field.template}</dd></>}
+            {field.bindings.map((binding, index) => <React.Fragment key={index}><dt className="font-mono">{binding.variable}</dt><dd className="break-all whitespace-pre-wrap font-mono">{binding.path && `${binding.path}: `}{binding.reference} = {binding.value}{binding.defaultUsed && ' (default)'}</dd></React.Fragment>)}
+            {field.bindings.length === 0 && field.variables.length > 0 && <><dt className="font-mono">variables</dt><dd className="break-all">{field.variables.join(', ')}</dd></>}
           </dl>
         </div>)}</div>}
     </TooltipContent>

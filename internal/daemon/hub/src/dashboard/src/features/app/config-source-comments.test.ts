@@ -39,3 +39,17 @@ test('list and object sources display once without descendant paths', () => {
 test('source is supplied by the backend without frontend fallback', () => {
   assert.equal(configSourceComment('enabled', [{path: '/value/enabled', source: '', define: 'domain/demo', override: 'app/default', variables: []}]), '@define domain/demo\n@override app/default')
 })
+
+test('template and resolved bindings preserve types and distinct defaults', () => {
+ const comment = configSourceComment('options', [{
+  path: '/value/options', source: 'app/default', define: 'app/default', override: '', variables: ['port'],
+  template: '{"first":"${port:80}","second":"${port:443}"}',
+  bindings: [
+   {path: '/first', variable: 'port', reference: '${port:80}', value: '80', defaultUsed: true},
+   {path: '/second', variable: 'port', reference: '${port:443}', value: '443', defaultUsed: true},
+  ],
+ }])
+ assert.ok(comment?.includes('@template {"first":"${port:80}","second":"${port:443}"}'))
+ assert.ok(comment?.includes('@variables /first: ${port:80} = 80 (default)'))
+ assert.ok(comment?.includes('@variables /second: ${port:443} = 443 (default)'))
+})

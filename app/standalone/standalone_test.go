@@ -95,20 +95,20 @@ func TestStopGracefullyWaitsAppsBeforeStoppingInfra(t *testing.T) {
 
 func TestApplyOptionOverridesFlag(t *testing.T) {
 	flag := &hubflag.Flag{
-		SeedYAMLPath:    "/tmp/cli-hub.yaml",
+		SeedHubDataFile: "/tmp/cli-hub.yaml",
 		DBSQLiteFile:    "/tmp/cli-hub.sqlite",
 		DBPostgresURL:   "postgres://cli",
 		DashboardURLRaw: "http://:7099",
 	}
 
 	applyOption(flag, Option{
-		SeedYAMLFile: "/tmp/option-hub.yaml",
-		SQLiteFile:   "/tmp/option-hub.sqlite",
-		PostgresURL:  "postgres://demo:demo@127.0.0.1:5432/hub",
-		DashboardURL: "https://hub.example.com:8443/admin",
+		SeedHubDataFile: "/tmp/option-hub.yaml",
+		SQLiteFile:      "/tmp/option-hub.sqlite",
+		PostgresURL:     "postgres://demo:demo@127.0.0.1:5432/hub",
+		DashboardURL:    "https://hub.example.com:8443/admin",
 	})
 
-	assert.Equal(t, "/tmp/option-hub.yaml", flag.SeedYAMLPath)
+	assert.Equal(t, "/tmp/option-hub.yaml", flag.SeedHubDataFile)
 	assert.Equal(t, "/tmp/option-hub.sqlite", flag.DBSQLiteFile)
 	assert.Equal(t, "postgres://demo:demo@127.0.0.1:5432/hub", flag.DBPostgresURL)
 	assert.Equal(t, "https://hub.example.com:8443/admin", flag.DashboardURLRaw)
@@ -116,7 +116,7 @@ func TestApplyOptionOverridesFlag(t *testing.T) {
 
 func TestApplyOptionKeepsUnsetFlagValues(t *testing.T) {
 	flag := &hubflag.Flag{
-		SeedYAMLPath:    "/tmp/cli-hub.yaml",
+		SeedHubDataFile: "/tmp/cli-hub.yaml",
 		DBSQLiteFile:    "/tmp/cli-hub.sqlite",
 		DBPostgresURL:   "postgres://cli",
 		DashboardURLRaw: "http://:7099",
@@ -124,7 +124,7 @@ func TestApplyOptionKeepsUnsetFlagValues(t *testing.T) {
 
 	applyOption(flag, Option{})
 
-	assert.Equal(t, "/tmp/cli-hub.yaml", flag.SeedYAMLPath)
+	assert.Equal(t, "/tmp/cli-hub.yaml", flag.SeedHubDataFile)
 	assert.Equal(t, "/tmp/cli-hub.sqlite", flag.DBSQLiteFile)
 	assert.Equal(t, "postgres://cli", flag.DBPostgresURL)
 	assert.Equal(t, "http://:7099", flag.DashboardURLRaw)
@@ -153,26 +153,26 @@ func (_RecordingApp) StartAndWait() {}
 
 func TestInlineSeedOption(t *testing.T) {
 	flags := new(hubflag.Flag{})
-	applyOption(flags, Option{SeedYAML: "{}"})
+	applyOption(flags, Option{SeedHubData: "{}"})
 	flags.Normalize(true)
-	assert.Equal(t, "{}", flags.SeedYAML)
+	assert.Equal(t, "{}", flags.SeedHubData)
 	assert.True(t, flags.NoDB)
 	assert.PanicsWithError(t, "bundled standalone app must not have option", func() {
-		NewBundled(new(_App{option: Option{SeedYAML: "{}"}}))
+		NewBundled(new(_App{option: Option{SeedHubData: "{}"}}))
 	})
 }
 
 func TestInlineSeedConflictsWithFile(t *testing.T) {
 	for _, fromCLI := range []bool{false, true} {
 		flags := new(hubflag.Flag{})
-		option := Option{SeedYAML: "{}"}
+		option := Option{SeedHubData: "{}"}
 		if fromCLI {
-			flags.SeedYAMLPath = "seed.yaml"
+			flags.SeedHubDataFile = "seed.yaml"
 		} else {
-			option.SeedYAMLFile = "seed.yaml"
+			option.SeedHubDataFile = "seed.yaml"
 		}
 		applyOption(flags, option)
-		assert.PanicsWithError(t, "SeedYAML and seed-yaml-file are mutually exclusive", func() {
+		assert.PanicsWithError(t, "SeedHubData and seed-hub-data-file are mutually exclusive", func() {
 			flags.Normalize(true)
 		})
 	}
@@ -180,9 +180,21 @@ func TestInlineSeedConflictsWithFile(t *testing.T) {
 
 func TestApplySeedTemplateOptions(t *testing.T) {
 	flags := new(hubflag.Flag)
-	applyOption(flags, Option{SeedYAML: "{}", SeedSource: "source", SeedVarsFile: "vars.yaml"})
-	assert.Equal(t, "source", flags.SeedSource)
-	assert.Equal(t, "vars.yaml", flags.SeedVarsFile)
-	assert.False(t, Option{SeedSourceFile: "source.yaml"}.isZero())
-	assert.False(t, Option{SeedVarsFile: "vars.yaml"}.isZero())
+	applyOption(flags, Option{SeedHubData: "{}", SeedHubSource: "source", SeedHubVarsFile: "vars.yaml"})
+	assert.Equal(t, "source", flags.SeedHubSource)
+	assert.Equal(t, "vars.yaml", flags.SeedHubVarsFile)
+	assert.False(t, Option{SeedHubSourceFile: "source.yaml"}.isZero())
+	assert.False(t, Option{SeedHubVarsFile: "vars.yaml"}.isZero())
+}
+
+func TestDeprecatedSeedYamlOption(t *testing.T) {
+	option := Option{SeedYAMLFile: "old.yaml"}
+	assert.False(t, option.isZero())
+	flags := &hubflag.Flag{}
+	applyOption(flags, option)
+	flags.Normalize(true)
+	assert.Equal(t, "old.yaml", flags.SeedHubDataFile)
+	flags = &hubflag.Flag{}
+	applyOption(flags, Option{SeedYAMLFile: "old.yaml", SeedHubDataFile: "new.yaml"})
+	assert.Panics(t, func() { flags.Normalize(true) })
 }

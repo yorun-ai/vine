@@ -4,13 +4,13 @@
 
 配置与服务注册中心，大体遵循 DDD 分层设计，负责维护配置、应用状态与 Rpc 服务注册，并通过 Redis 对外提供读取与订阅能力。
 
-未指定数据库参数时，Hub 默认启用 `--no-db`，必须提供 `--seed-yaml-file`。
+未指定数据库参数时，Hub 默认启用 `--no-db`，必须提供 `--seed-hub-data-file`。
 每次启动将配置加载到独立的内存 SQLite，初始化完成后，repo 层禁止修改
 应用配置、Portal 站点、规则和证书。请编辑 seed 文件后重启 Hub。
 Dashboard 展示只读提示并禁用编辑入口；注册、schema 和租约仍可写。
 显式指定 `--db-sqlite-file` 或 `--db-postgres-url` 则保留可写持久化行为，
 它们与 `--no-db` 互斥。standalone 和 `vine dev` 也遵循这些规则。
-standalone 也可通过 `Option.SeedYAML` 传入内联 YAML，与 seed 文件互斥，
+standalone 也可通过 `Option.SeedHubData` 传入内联 YAML，与 seed 文件互斥，
 使用相同的导入和只读机制。
 
 ## 目录结构
@@ -114,9 +114,11 @@ Hub 当前支持两类数据库配置来源：
 - SQLite
 - PostgreSQL
 
-启动时可以通过 `--seed-yaml-file` 让 `seeder` 从本地 YAML 文件一次性导入初始配置、站点规则和证书到数据库；导入后 Hub 仍然统一从数据库 repo 读取，再写入 Redis，对 Link 暴露一致的读取与订阅语义。
+启动时可以通过 `--seed-hub-data-file` 让 `seeder` 从本地 YAML 文件一次性导入初始配置、站点规则和证书到数据库；导入后 Hub 仍然统一从数据库 repo 读取，再写入 Redis，对 Link 暴露一致的读取与订阅语义。
 
 数据库 metadata 记录首次 seed 完成状态。后续启动跳过全部 seed、变量和来源输入，seed 条目不再提供 `override` 开关。无数据库模式每次建立新存储并导入 seed；内置 Dashboard 配置的维护独立于 seed 标记。
+
+字段来源以 JSON 保存原始字段模板，并记录每次替换的相对路径、变量名、占位符、实际应用的 JSON 值和默认值使用标记。AppConfig 的嵌套替换归属 value 的一级 key；管理接口修改字段后清除旧模板和替换记录。管理 API 与 Dashboard 一同展示这些信息及字段来源。
 
 ## Skeleton 生成
 

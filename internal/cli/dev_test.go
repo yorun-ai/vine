@@ -36,7 +36,7 @@ func TestRunDev(t *testing.T) {
 		"dev",
 		"--link-api-listen", "127.0.0.1:8079",
 		"--db-sqlite-file", "/tmp/vine-dev.sqlite",
-		"--seed-yaml-file", "/tmp/vine-dev.yaml",
+		"--seed-hub-data-file", "/tmp/vine-dev.yaml",
 		"--dashboard-url", "http://:8099",
 	})
 
@@ -49,8 +49,8 @@ func TestRunDev(t *testing.T) {
 	if got.DBSQLiteFile != "/tmp/vine-dev.sqlite" {
 		t.Fatalf("unexpected SQLite file: %q", got.DBSQLiteFile)
 	}
-	if got.SeedYAMLFile != "/tmp/vine-dev.yaml" {
-		t.Fatalf("unexpected seed YAML file: %q", got.SeedYAMLFile)
+	if got.SeedHubDataFile != "/tmp/vine-dev.yaml" {
+		t.Fatalf("unexpected seed YAML file: %q", got.SeedHubDataFile)
 	}
 	if got.DashboardURL != "http://:8099" {
 		t.Fatalf("unexpected dashboard URL: %q", got.DashboardURL)
@@ -80,7 +80,7 @@ func TestRunDevUsesDefaults(t *testing.T) {
 }
 
 func TestPrepareDevHubFlagDefaultsToNoDB(t *testing.T) {
-	flag, cleanup := prepareDevHubFlag(_DevOption{SeedYAMLFile: "seed.yaml"})
+	flag, cleanup := prepareDevHubFlag(_DevOption{SeedHubDataFile: "seed.yaml"})
 	defer cleanup()
 	flag.Normalize(true)
 	if !flag.NoDB || flag.DBSQLiteFile != "" {
@@ -121,9 +121,9 @@ func TestDevRuntimeAcceptsNetworkAppRegistration(t *testing.T) {
 	linkListen := freeDevTestListenAddress(t)
 	portalListen := freeDevTestListenAddress(t)
 	runtime := newDevRuntime(_DevOption{
-		SeedYAMLFile:  seedPath,
-		LinkAPIListen: linkListen,
-		DashboardURL:  "http://" + portalListen + "/",
+		SeedHubDataFile: seedPath,
+		LinkAPIListen:   linkListen,
+		DashboardURL:    "http://" + portalListen + "/",
 	})
 	runtime.Start()
 	t.Cleanup(func() {
@@ -259,3 +259,19 @@ func (a *_DevRecordingApp) StopGracefully() {
 }
 
 func (*_DevRecordingApp) StartAndWait() {}
+
+func TestDevLegacySeedDataFile(t *testing.T) {
+	original := startDevRuntime
+	t.Cleanup(func() { startDevRuntime = original })
+	called := false
+	startDevRuntime = func(option _DevOption) {
+		called = true
+		if option.SeedYAMLFile != "old.yaml" {
+			t.Fatalf("lost deprecated data file: %#v", option)
+		}
+	}
+	result := run([]string{"dev", "--seed-yaml-file", "old.yaml"})
+	if result.exitCode != exitCodeSuccess || !called {
+		t.Fatalf("legacy dev flag failed: %#v", result)
+	}
+}

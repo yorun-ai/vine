@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"io"
 	"os"
@@ -17,7 +18,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type _SeedSourceFile struct {
+type _SeedHubSourceFile struct {
 	Version    int               `yaml:"version"`
 	SeedSHA256 string            `yaml:"seedSha256"`
 	Fields     core.FieldSources `yaml:"fields"`
@@ -105,6 +106,10 @@ func resolveSeedInputWithSchemas(template, variables, source []byte, domains []*
 	if err != nil {
 		return nil, nil, err
 	}
+	originals := map[string]*yaml.Node{}
+	if err := walkSeedValues(cloneSeedNode(node), "", func(n *yaml.Node, path string) error { originals[path] = n; return nil }); err != nil {
+		return nil, nil, err
+	}
 	sources := core.FieldSources{}
 	paths := map[string]bool{}
 	if err := walkSeedValues(node, "", func(_ *yaml.Node, path string) error { paths[path] = true; return nil }); err != nil {
@@ -114,7 +119,7 @@ func resolveSeedInputWithSchemas(template, variables, source []byte, domains []*
 		if _, err := parseSeedNode(source); err != nil {
 			return nil, nil, fmt.Errorf("seed source: %w", err)
 		}
-		var file _SeedSourceFile
+		var file _SeedHubSourceFile
 		decoder := yaml.NewDecoder(bytes.NewReader(source))
 		decoder.KnownFields(true)
 		if err := decoder.Decode(&file); err != nil {
@@ -135,8 +140,8 @@ func resolveSeedInputWithSchemas(template, variables, source []byte, domains []*
 			if !paths[path] || len(parts) < 4 || origin.Define == "" || origin.Source == "" || (parts[1] == "appConfigs" && parts[3] == "value" && len(parts) > 5) {
 				return nil, nil, fmt.Errorf("invalid seed source field %s", path)
 			}
-			if len(origin.Variables) > 0 {
-				return nil, nil, fmt.Errorf("variable dependencies must be derived from the seed template: %s", path)
+			if len(origin.Variables) > 0 || origin.Template != nil || len(origin.Bindings) > 0 {
+				return nil, nil, fmt.Errorf("substitution metadata must be derived from the seed template: %s", path)
 			}
 			sources[path] = origin
 		}
@@ -171,6 +176,7 @@ func resolveSeedInputWithSchemas(template, variables, source []byte, domains []*
 			}
 			dependencies := map[string]bool{}
 			replacements := map[string]*yaml.Node{}
+			bindings := []core.FieldSourceBinding{}
 			for _, m := range matches {
 				name, fallback, hasDefault := strings.Cut(m[1], ":")
 				for _, segment := range strings.Split(name, ".") {
@@ -217,6 +223,11 @@ func resolveSeedInputWithSchemas(template, variables, source []byte, domains []*
 				} else if value.Kind != yaml.ScalarNode || value.ShortTag() == "!!null" {
 					return fmt.Errorf("seed variable %s must be a non-null scalar for interpolation at %s", name, location)
 				}
+				encoded, err := seedNodeJSON(value)
+				if err != nil {
+					return fmt.Errorf("cannot record variable %q: %w", name, err)
+				}
+				bindings = append(bindings, core.FieldSourceBinding{Variable: name, Reference: m[0], Value: encoded, DefaultUsed: !found})
 				dependencies[name] = true
 				replacements[m[0]] = value
 			}
@@ -226,6 +237,17 @@ func resolveSeedInputWithSchemas(template, variables, source []byte, domains []*
 				sourcePath = strings.Join(parts[:5], "/")
 			}
 			origin := sources[sourcePath]
+			if origin.Template == nil {
+				original, err := seedNodeJSON(originals[sourcePath])
+				if err != nil {
+					return fmt.Errorf("cannot record template at %s: %w", location, err)
+				}
+				origin.Template = &original
+			}
+			for _, binding := range bindings {
+				binding.Path = strings.TrimPrefix(path, sourcePath)
+				origin.Bindings = append(origin.Bindings, binding)
+			}
 			for _, name := range origin.Variables {
 				dependencies[name] = true
 			}
@@ -324,4 +346,17 @@ func entityFieldSources(all core.FieldSources, kind string, index int) core.Fiel
 		}
 	}
 	return result
+}
+
+func seedNodeJSON(node *yaml.Node) (skel.JSON, error) {
+	normalized, err := configJSONNode(node)
+	if err != nil {
+		return "", err
+	}
+	var value any
+	if err := normalized.Decode(&value); err != nil {
+		return "", err
+	}
+	encoded, err := json.Marshal(value, json.Deterministic(true))
+	return skel.JSON(encoded), err
 }

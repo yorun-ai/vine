@@ -647,7 +647,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "MaintenanceApiService",
 		SkelName:          "vine.hub.admin.MaintenanceApiService",
-		Hash:              "29fd31df",
+		Hash:              "27ea02dd",
 		ServerType:        reflect.TypeFor[MaintenanceApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultMaintenanceApiServiceServer](),
 

@@ -10,12 +10,23 @@ are not part of the public compatibility commitment.
 
 ### Changed
 
+- Hub seed inputs use `SeedHubData`, `SeedHubSource`, and their `File` forms,
+  plus `SeedHubVarsFile`. CLI flags and environment variables use
+  `seed-hub-{data,source,vars}-file` and `VINE_SEED_HUB_{DATA,SOURCE,VARS}_FILE`.
+  Only the legacy seed YAML file flag, environment variable, and Go option
+  remain as deprecated aliases; other old seed input names are removed.
+
 - Hub seed is applied only once, as recorded in database metadata. Later starts
   skip seed, variable, and source files entirely. Removed the per-item `override`
   flag; use Hub configuration updates for persistent databases. No-db mode
   continues to seed its fresh in-memory store on every start.
 
 ### Added
+
+- Field sources retain the original field template and resolved variable
+  bindings, including substitution paths and whether defaults were used. Hub
+  exposes these records to Dashboard comments and tooltips; editing a field
+  clears its obsolete template and bindings.
 
 - Seed deployment variables and optional field source maps through `--seed-vars-file`
   and `--seed-source-file`. Standalone can embed seed and source maps together;

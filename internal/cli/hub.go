@@ -11,6 +11,11 @@ import (
 )
 
 const (
+	// Deprecated: use FlagSeedHubDataFile.
+	FlagHubSeedYAMLFile = "seed-yaml-file"
+	// Deprecated: use EnvSeedHubDataFile.
+	EnvHubSeedYAMLFile = "VINE_SEED_YAML_FILE"
+
 	commandHub      = "hub"
 	commandHubServe = "serve"
 
@@ -19,9 +24,9 @@ const (
 	FlagHubRedisListen       = "redis-listen"
 	FlagHubMQExternalNatsURL = "mq-external-nats-url"
 	FlagHubMQEmbeddedNats    = "mq-embedded-nats"
-	FlagHubSeedSourceFile    = "seed-source-file"
-	FlagHubSeedVarsFile      = "seed-vars-file"
-	FlagHubSeedYAMLFile      = "seed-yaml-file"
+	FlagSeedHubSourceFile    = "seed-hub-source-file"
+	FlagSeedHubVarsFile      = "seed-hub-vars-file"
+	FlagSeedHubDataFile      = "seed-hub-data-file"
 	FlagHubDashboardURL      = "dashboard-url"
 	FlagHubNoDB              = "no-db"
 	FlagHubDBSQLiteFile      = "db-sqlite-file"
@@ -32,9 +37,9 @@ const (
 	EnvHubRedisListen       = "VINE_REDIS_LISTEN"
 	EnvHubMQExternalNatsURL = "VINE_MQ_EXTERNAL_NATS_URL"
 	EnvHubMQEmbeddedNats    = "VINE_MQ_EMBEDDED_NATS"
-	EnvHubSeedSourceFile    = "VINE_SEED_SOURCE_FILE"
-	EnvHubSeedVarsFile      = "VINE_SEED_VARS_FILE"
-	EnvHubSeedYAMLFile      = "VINE_SEED_YAML_FILE"
+	EnvSeedHubSourceFile    = "VINE_SEED_HUB_SOURCE_FILE"
+	EnvSeedHubVarsFile      = "VINE_SEED_HUB_VARS_FILE"
+	EnvSeedHubDataFile      = "VINE_SEED_HUB_DATA_FILE"
 	EnvHubDashboardURL      = "VINE_DASHBOARD_URL"
 	EnvHubNoDB              = "VINE_NO_DB"
 	EnvHubDBSQLiteFile      = "VINE_DB_SQLITE_FILE"
@@ -62,22 +67,70 @@ func newHubCommand() *ucli.Command {
 
 func newHubServeFlags() []ucli.Flag {
 	return append([]ucli.Flag{
-		&ucli.StringFlag{Name: FlagHubControlListen, Sources: ucli.EnvVars(EnvHubControlListen), Value: hubflag.HubDefaultControlListen, Usage: "hub Control API listen address used by Link and Portal"},
-		&ucli.StringFlag{Name: FlagHubAdminListen, Sources: ucli.EnvVars(EnvHubAdminListen), Value: hubflag.HubDefaultAdminListen, Usage: "hub admin API and Dashboard Web listen address"},
-		&ucli.StringFlag{Name: FlagHubRedisListen, Sources: ucli.EnvVars(EnvHubRedisListen), Value: hubflag.HubDefaultRedisListen, Usage: "hub redis listen address"},
+		&ucli.StringFlag{
+			Name:    FlagHubControlListen,
+			Sources: ucli.EnvVars(EnvHubControlListen),
+			Value:   hubflag.HubDefaultControlListen,
+			Usage:   "hub Control API listen address used by Link and Portal",
+		},
+		&ucli.StringFlag{
+			Name:    FlagHubAdminListen,
+			Sources: ucli.EnvVars(EnvHubAdminListen),
+			Value:   hubflag.HubDefaultAdminListen,
+			Usage:   "hub admin API and Dashboard Web listen address",
+		},
+		&ucli.StringFlag{
+			Name:    FlagHubRedisListen,
+			Sources: ucli.EnvVars(EnvHubRedisListen),
+			Value:   hubflag.HubDefaultRedisListen,
+			Usage:   "hub redis listen address",
+		},
 		&ucli.BoolFlag{
 			Name:    FlagHubNoDB,
 			Sources: ucli.EnvVars(EnvHubNoDB),
-			Usage:   "use no persistent database (default); requires seed-yaml-file; configuration is read-only",
+			Usage:   "use no persistent database (default); requires seed-hub-data-file; configuration is read-only",
 		},
-		&ucli.StringFlag{Name: FlagHubDBSQLiteFile, Sources: ucli.EnvVars(EnvHubDBSQLiteFile), Usage: "hub SQLite database file"},
-		&ucli.StringFlag{Name: FlagHubDBPostgresURL, Sources: ucli.EnvVars(EnvHubDBPostgresURL), Usage: "hub PostgreSQL database URL"},
-		&ucli.StringFlag{Name: FlagHubMQExternalNatsURL, Sources: ucli.EnvVars(EnvHubMQExternalNatsURL), Usage: "external NATS URL, e.g. nats://127.0.0.1:4222"},
+		&ucli.StringFlag{
+			Name:    FlagHubDBSQLiteFile,
+			Sources: ucli.EnvVars(EnvHubDBSQLiteFile),
+			Usage:   "hub SQLite database file",
+		},
+		&ucli.StringFlag{
+			Name:    FlagHubDBPostgresURL,
+			Sources: ucli.EnvVars(EnvHubDBPostgresURL),
+			Usage:   "hub PostgreSQL database URL",
+		},
+		&ucli.StringFlag{
+			Name:    FlagHubMQExternalNatsURL,
+			Sources: ucli.EnvVars(EnvHubMQExternalNatsURL),
+			Usage:   "external NATS URL, e.g. nats://127.0.0.1:4222",
+		},
 		&ucli.BoolFlag{Name: FlagHubMQEmbeddedNats, Sources: ucli.EnvVars(EnvHubMQEmbeddedNats), Usage: "start an embedded NATS server"},
-		&ucli.StringFlag{Name: FlagHubSeedYAMLFile, Sources: ucli.EnvVars(EnvHubSeedYAMLFile), Usage: "hub seed YAML file"},
-		&ucli.StringFlag{Name: FlagHubSeedSourceFile, Sources: ucli.EnvVars(EnvHubSeedSourceFile), Usage: "hub seed source YAML file"},
-		&ucli.StringFlag{Name: FlagHubSeedVarsFile, Sources: ucli.EnvVars(EnvHubSeedVarsFile), Usage: "hub seed vars YAML file"},
-		&ucli.StringFlag{Name: FlagHubDashboardURL, Sources: ucli.EnvVars(EnvHubDashboardURL), Usage: "hub dashboard URL"},
+		&ucli.StringFlag{
+			Name:    FlagHubSeedYAMLFile,
+			Sources: ucli.EnvVars(EnvHubSeedYAMLFile),
+			Usage:   "deprecated: use --seed-hub-data-file",
+		},
+		&ucli.StringFlag{
+			Name:    FlagSeedHubDataFile,
+			Sources: ucli.EnvVars(EnvSeedHubDataFile),
+			Usage:   "hub seed YAML file",
+		},
+		&ucli.StringFlag{
+			Name:    FlagSeedHubSourceFile,
+			Sources: ucli.EnvVars(EnvSeedHubSourceFile),
+			Usage:   "hub seed source YAML file",
+		},
+		&ucli.StringFlag{
+			Name:    FlagSeedHubVarsFile,
+			Sources: ucli.EnvVars(EnvSeedHubVarsFile),
+			Usage:   "hub seed vars YAML file",
+		},
+		&ucli.StringFlag{
+			Name:    FlagHubDashboardURL,
+			Sources: ucli.EnvVars(EnvHubDashboardURL),
+			Usage:   "hub dashboard URL",
+		},
 	}, mtlsFlags()...)
 }
 
@@ -97,9 +150,10 @@ func newHubServeCommand() *ucli.Command {
 				RedisListen:       cmd.String(FlagHubRedisListen),
 				MQExternalNatsURL: cmd.String(FlagHubMQExternalNatsURL),
 				MQEmbeddedNats:    cmd.Bool(FlagHubMQEmbeddedNats),
-				SeedYAMLPath:      cmd.String(FlagHubSeedYAMLFile),
-				SeedSourceFile:    cmd.String(FlagHubSeedSourceFile),
-				SeedVarsFile:      cmd.String(FlagHubSeedVarsFile),
+				SeedYAMLFile:      cmd.String(FlagHubSeedYAMLFile),
+				SeedHubDataFile:   cmd.String(FlagSeedHubDataFile),
+				SeedHubSourceFile: cmd.String(FlagSeedHubSourceFile),
+				SeedHubVarsFile:   cmd.String(FlagSeedHubVarsFile),
 				DashboardURLRaw:   cmd.String(FlagHubDashboardURL),
 				NoDB:              cmd.Bool(FlagHubNoDB),
 				DBSQLiteFile:      cmd.String(FlagHubDBSQLiteFile),
