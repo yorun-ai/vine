@@ -206,29 +206,18 @@ func (ti *_TriggerInfo) PositionArguments(arguments any) []any {
 	return positionalArguments
 }
 
+// ValidateArguments requires an argument object; pointer fields may represent
+// nullable Skel values and must not be inferred to be required.
 func (ti *_TriggerInfo) ValidateArguments(arguments any) error {
-	if arguments == nil {
+	if arguments == nil || (ti.HasArguments() && reflect.ValueOf(arguments).IsNil()) {
 		return fmt.Errorf("arguments of %s cannot be nil", ti.name)
-	}
-	if !ti.HasArguments() {
-		return nil
-	}
-
-	argsValue := reflect.ValueOf(arguments).Elem()
-	for _, argFieldInfo := range ti.argumentFieldInfos {
-		argField := argsValue.Field(argFieldInfo.FieldIndex)
-		if argFieldInfo.CheckNotNil && argField.IsNil() {
-			return fmt.Errorf("unexpected nil value on arg %s of %s", argFieldInfo.Name, ti.name)
-		}
 	}
 	return nil
 }
 
 type _ArgumentFieldInfo struct {
-	Name        string
-	FieldIndex  int
-	ArgIndex    int
-	CheckNotNil bool
+	FieldIndex int
+	ArgIndex   int
 }
 
 func buildArgumentFieldInfos(argumentsType reflect.Type) []_ArgumentFieldInfo {
@@ -236,12 +225,9 @@ func buildArgumentFieldInfos(argumentsType reflect.Type) []_ArgumentFieldInfo {
 
 	infos := make([]_ArgumentFieldInfo, 0, argumentsType.NumField())
 	for fieldIndex := 0; fieldIndex < argumentsType.NumField(); fieldIndex++ {
-		field := argumentsType.Field(fieldIndex)
 		infos = append(infos, _ArgumentFieldInfo{
-			Name:        field.Name,
-			FieldIndex:  fieldIndex,
-			ArgIndex:    fieldIndex,
-			CheckNotNil: field.Type.Kind() == reflect.Pointer,
+			FieldIndex: fieldIndex,
+			ArgIndex:   fieldIndex,
 		})
 	}
 	return infos

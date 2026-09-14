@@ -8,6 +8,12 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Fixed
+
+- Accept nil values for nullable Task arguments, including strings, lists, and
+  maps, during launch and execution. Preserve null versus empty collections
+  while continuing to reject a nil argument object.
+
 ### Changed
 
 - Remove Rpc `MethodSpec.ValidateArguments` / `ValidateResult` callbacks and

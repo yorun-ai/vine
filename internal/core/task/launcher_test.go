@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"encoding/json/v2"
 	"reflect"
 	"testing"
 	"time"
@@ -39,6 +40,9 @@ func (c *testLauncherTaskClient) LaunchTask(launch linkskeled.TaskLaunch, _ivOpt
 
 type testLauncherTaskArguments struct {
 	StartAt time.Time
+	Note    *string            `json:"note"`
+	Items   *[]string          `json:"items"`
+	Labels  *map[string]string `json:"labels"`
 }
 
 type testLauncherTaskRunner interface {
@@ -197,5 +201,22 @@ func TestNewTaskLauncherStoresConfiguredValues(t *testing.T) {
 	}
 	if launcher.taskClient != taskClient {
 		t.Fatal("expected task client to be stored")
+	}
+}
+
+func TestTaskLauncherPreservesNullableArguments(t *testing.T) {
+	client := &testLauncherTaskClient{}
+	launcher := NewLauncher(LauncherOption{Context: testLauncherContext(), Logger: testLauncherLogger(), ClientApp: meta.MustNewApp("test.app", "1.0.0", "123e4567-e89b-12d3-a456-426614174000"), TaskClient: client})
+	emptyItems, emptyLabels := []string{}, map[string]string{}
+	note, items, labels := "note", []string{"item"}, map[string]string{"key": "value"}
+	for _, args := range []*testLauncherTaskArguments{{}, {Items: &emptyItems, Labels: &emptyLabels}, {Note: &note, Items: &items, Labels: &labels}} {
+		launcher.Launch(testLauncherTriggerInfo(), args)
+		var decoded testLauncherTaskArguments
+		if err := json.Unmarshal([]byte(client.launch.ArgumentsJson), &decoded); err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(&decoded, args) {
+			t.Fatalf("nullable arguments changed: %s", client.launch.ArgumentsJson)
+		}
 	}
 }
