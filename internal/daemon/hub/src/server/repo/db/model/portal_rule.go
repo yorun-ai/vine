@@ -15,6 +15,7 @@ var createPortalRuleSQLiteSQL string
 var createPortalRulePgSQL string
 
 type PortalRule struct {
+	FieldSources string `gorm:"-"`
 	rdb.Model
 	Name                    string `gorm:"column:name"`
 	MatchScheme             string `gorm:"column:match_scheme"`
@@ -39,6 +40,7 @@ type PortalRuleDao struct {
 func (d *PortalRuleDao) InitSchema() {
 	// TODO: Replace compatibility migrations with a unified versioned schema.
 	ex.PanicIfError(d.migrateSchema())
+	ensureFieldSourceTable(d.GormDB())
 }
 
 func (d *PortalRuleDao) ListOrdered() []*PortalRule {
@@ -61,6 +63,7 @@ func (d *PortalRuleDao) Save(rule *PortalRule) *PortalRule {
 
 	row, ok := d.ById(rule.Id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("entry rule %d not found", rule.Id))
+	row.FieldSources = rule.FieldSources
 	d.Update(row, rdb.Patch{
 		"name":                      rule.Name,
 		"match_scheme":              rule.MatchScheme,
@@ -122,4 +125,16 @@ func (d *PortalRuleDao) migrateSchema() error {
 		}
 		return tx.Exec(schemaSQL(tx, createPortalRuleSQLiteSQL, createPortalRulePgSQL)).Error
 	})
+}
+
+func (row *PortalRule) AfterFind(tx *gorm.DB) error {
+	return loadFieldSource(tx, "portal_rule", row.Id, &row.FieldSources)
+}
+
+func (row *PortalRule) AfterSave(tx *gorm.DB) error {
+	return saveFieldSource(tx, "portal_rule", row.Id, row.FieldSources)
+}
+
+func (row *PortalRule) AfterDelete(tx *gorm.DB) error {
+	return deleteFieldSource(tx, "portal_rule", row.Id)
 }

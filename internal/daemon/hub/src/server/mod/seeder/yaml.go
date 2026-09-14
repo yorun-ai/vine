@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
-	"go.yorun.ai/vine/util/vslice"
 	"gopkg.in/yaml.v3"
 )
 
@@ -50,36 +49,12 @@ func checkSeedYAMLNode(node *yaml.Node) error {
 	return nil
 }
 
-func (p *_SettingsYAMLPayload) Overridden() (*_SettingsYAMLPayload, bool) {
-	overridden := &_SettingsYAMLPayload{
-		AppConfigs: vslice.Filter(p.AppConfigs, func(item _AppConfig) bool {
-			return item.Override
-		}),
-		PortalEntries: vslice.Filter(p.PortalEntries, func(item _PortalSite) bool {
-			return item.Override
-		}),
-		PortalRules: vslice.Filter(p.PortalRules, func(item _PortalRule) bool {
-			return item.Override
-		}),
-		PortalCerts: vslice.Filter(p.PortalCerts, func(item _PortalCert) bool {
-			return item.Override
-		}),
-	}
-
-	hasOverridden := len(overridden.AppConfigs) > 0 ||
-		len(overridden.PortalEntries) > 0 ||
-		len(overridden.PortalRules) > 0 ||
-		len(overridden.PortalCerts) > 0
-
-	return overridden, hasOverridden
-}
-
 // App config
 
 type _AppConfig struct {
-	Name     string `yaml:"name"`
-	Value    string `yaml:"value"`
-	Override bool   `yaml:"override"`
+	Sources core.FieldSources `yaml:"-"`
+	Name    string            `yaml:"name"`
+	Value   string            `yaml:"value"`
 }
 
 func (i *_AppConfig) UnmarshalYAML(node *yaml.Node) error {
@@ -88,26 +63,26 @@ func (i *_AppConfig) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (i _AppConfig) ToCoreAppConfig() *core.AppConfig {
-	return &core.AppConfig{Name: i.Name, Value: i.Value}
+	return &core.AppConfig{FieldSources: i.Sources, Name: i.Name, Value: i.Value}
 }
 
 // Portal rule
 
 type _PortalRule struct {
-	Name                    string `yaml:"name"`
-	MatchScheme             string `yaml:"matchScheme"`
-	MatchHost               string `yaml:"matchHost"`
-	MatchPort               int    `yaml:"matchPort"`
-	MatchPathPrefix         string `yaml:"matchPathPrefix"`
-	RouteType               string `yaml:"routeType"`
-	RouteSiteName           string `yaml:"routeSiteName"`
-	RouteRedirectionPattern string `yaml:"routeRedirectionPattern"`
-	RoutePathPrefix         string `yaml:"routePathPrefix"`
-	Override                bool   `yaml:"override"`
+	Sources                 core.FieldSources `yaml:"-"`
+	Name                    string            `yaml:"name"`
+	MatchScheme             string            `yaml:"matchScheme"`
+	MatchHost               string            `yaml:"matchHost"`
+	MatchPort               int               `yaml:"matchPort"`
+	MatchPathPrefix         string            `yaml:"matchPathPrefix"`
+	RouteType               string            `yaml:"routeType"`
+	RouteSiteName           string            `yaml:"routeSiteName"`
+	RouteRedirectionPattern string            `yaml:"routeRedirectionPattern"`
+	RoutePathPrefix         string            `yaml:"routePathPrefix"`
 }
 
 func (r _PortalRule) ToCorePortalRule() *core.PortalRule {
-	return &core.PortalRule{
+	return &core.PortalRule{FieldSources: r.Sources,
 		Name:                    r.Name,
 		MatchScheme:             r.MatchScheme,
 		MatchHost:               r.MatchHost,
@@ -123,13 +98,13 @@ func (r _PortalRule) ToCorePortalRule() *core.PortalRule {
 // Portal site
 
 type _PortalSite struct {
-	Name          string      `yaml:"name"`
-	Type          string      `yaml:"type"`
-	ActorSkelName string      `yaml:"actorSkelName"`
-	ActorVia      string      `yaml:"actorVia"`
-	Cors          _PortalCors `yaml:"cors"`
-	WebName       string      `yaml:"webName"`
-	Override      bool        `yaml:"override"`
+	Sources       core.FieldSources `yaml:"-"`
+	Name          string            `yaml:"name"`
+	Type          string            `yaml:"type"`
+	ActorSkelName string            `yaml:"actorSkelName"`
+	ActorVia      string            `yaml:"actorVia"`
+	Cors          _PortalCors       `yaml:"cors"`
+	WebName       string            `yaml:"webName"`
 }
 
 type _PortalCors struct {
@@ -142,7 +117,7 @@ func (s _PortalSite) ToCorePortalSite() *core.PortalSite {
 		Mode:           core.PortalCorsMode(s.Cors.Mode),
 		AllowedOrigins: append([]string{}, s.Cors.AllowedOrigins...),
 	}
-	site := &core.PortalSite{
+	site := &core.PortalSite{FieldSources: s.Sources,
 		Name:          s.Name,
 		Type:          core.PortalSiteType(s.Type),
 		ActorSkelName: s.ActorSkelName,
@@ -156,18 +131,18 @@ func (s _PortalSite) ToCorePortalSite() *core.PortalSite {
 // Portal cert
 
 type _PortalCert struct {
-	Name             string    `yaml:"name"`
-	Issuer           string    `yaml:"issuer"`
-	Domains          []string  `yaml:"domains"`
-	PublicKeyBase64  string    `yaml:"publicKeyBase64"`
-	PrivateKeyBase64 string    `yaml:"privateKeyBase64"`
-	ValidFrom        time.Time `yaml:"validFrom"`
-	ValidTo          time.Time `yaml:"validTo"`
-	Override         bool      `yaml:"override"`
+	Sources          core.FieldSources `yaml:"-"`
+	Name             string            `yaml:"name"`
+	Issuer           string            `yaml:"issuer"`
+	Domains          []string          `yaml:"domains"`
+	PublicKeyBase64  string            `yaml:"publicKeyBase64"`
+	PrivateKeyBase64 string            `yaml:"privateKeyBase64"`
+	ValidFrom        time.Time         `yaml:"validFrom"`
+	ValidTo          time.Time         `yaml:"validTo"`
 }
 
 func (c _PortalCert) ToCorePortalCert() *core.PortalCert {
-	cert := &core.PortalCert{
+	cert := &core.PortalCert{FieldSources: c.Sources,
 		Name:             c.Name,
 		PublicKeyBase64:  c.PublicKeyBase64,
 		PrivateKeyBase64: c.PrivateKeyBase64,

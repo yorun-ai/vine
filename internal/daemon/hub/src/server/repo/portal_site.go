@@ -67,6 +67,7 @@ func toCorePortalSite(row *model.PortalSite) *core.PortalSite {
 		AllowedOrigins: decodePortalCorsOrigins(row.CorsOrigins),
 	})
 	return &core.PortalSite{
+		FieldSources:  decodeFieldSources(row.FieldSources),
 		Id:            row.Id,
 		Name:          row.Name,
 		Type:          core.PortalSiteType(row.Type),
@@ -80,6 +81,7 @@ func toCorePortalSite(row *model.PortalSite) *core.PortalSite {
 
 func toDBPortalSite(entry *core.PortalSite) *model.PortalSite {
 	return &model.PortalSite{
+		FieldSources:  encodeFieldSources(entry.FieldSources),
 		Id:            entry.Id,
 		Name:          entry.Name,
 		Type:          string(entry.Type),

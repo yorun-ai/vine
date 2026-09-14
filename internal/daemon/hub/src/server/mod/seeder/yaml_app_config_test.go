@@ -11,7 +11,6 @@ import (
 func TestAppConfigStructuredYAML(t *testing.T) {
 	const input = `appConfigs:
   - name: demo.Config
-    override: true
     value:
       displayName: Demo
       statuses: {EAST: ACTIVE, WEST: LOCKED}
@@ -30,7 +29,6 @@ func TestAppConfigStructuredYAML(t *testing.T) {
 	require.NoError(t, yaml.Unmarshal([]byte(input), &settings))
 	require.Len(t, settings.AppConfigs, 1)
 	item := settings.AppConfigs[0]
-	require.True(t, item.Override)
 	require.Equal(t, "demo.Config", item.Name)
 	var value map[string]any
 	require.NoError(t, json.Unmarshal([]byte(item.Value), &value))

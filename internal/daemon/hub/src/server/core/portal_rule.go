@@ -17,6 +17,7 @@ const (
 // Structs
 
 type PortalRule struct {
+	FieldSources            FieldSources
 	Id                      int
 	Name                    string
 	MatchScheme             string
@@ -122,7 +123,9 @@ func (m *PortalRuleCore) Update(id int, update PortalRuleUpdate) PortalRule {
 	ex.PanicNewIfNot(!rule.BuiltIn, ex.OperationFailed, ex.F("built-in entry rule %q cannot be updated", rule.Name))
 
 	next := *rule
+	next.FieldSources = cloneFieldSources(rule.FieldSources)
 	if update.Name != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/name")
 		if *update.Name != rule.Name {
 			_, exists := m.PortalRuleRepo.GetRuleByName(*update.Name)
 			ex.PanicNewIfNot(!exists, ex.OperationFailed, ex.F("entry rule %q already exists", *update.Name))
@@ -130,27 +133,35 @@ func (m *PortalRuleCore) Update(id int, update PortalRuleUpdate) PortalRule {
 		next.Name = *update.Name
 	}
 	if update.MatchScheme != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/matchScheme")
 		next.MatchScheme = *update.MatchScheme
 	}
 	if update.MatchHost != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/matchHost")
 		next.MatchHost = *update.MatchHost
 	}
 	if update.MatchPort != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/matchPort")
 		next.MatchPort = *update.MatchPort
 	}
 	if update.MatchPathPrefix != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/matchPathPrefix")
 		next.MatchPathPrefix = *update.MatchPathPrefix
 	}
 	if update.RouteType != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/routeType")
 		next.RouteType = *update.RouteType
 	}
 	if update.RouteSiteName != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/routeSiteName")
 		next.RouteSiteName = *update.RouteSiteName
 	}
 	if update.RouteRedirectionPattern != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/routeRedirectionPattern")
 		next.RouteRedirectionPattern = *update.RouteRedirectionPattern
 	}
 	if update.RoutePathPrefix != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/routePathPrefix")
 		next.RoutePathPrefix = *update.RoutePathPrefix
 	}
 

@@ -11,7 +11,7 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "60e86947",
+	Hash:        "7323d0fb",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
 		CompilerVersion: "v0.19.1",
@@ -630,6 +630,52 @@ var _DomainSchema = &skel.DomainSchema{
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarBool,
+					},
+				},
+			},
+		},
+		{
+			Name:        "FieldSource",
+			SkelName:    "vine.hub.admin.FieldSource",
+			Description: "Source of a configuration field without configuration or variable values",
+			Hash:        "fdb8b2b4",
+			Members: []*skel.MemberSchema{
+				{
+					Name: "path",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
+				{
+					Name: "source",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
+				{
+					Name: "define",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
+				{
+					Name: "override",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
+				{
+					Name: "variables",
+					Type: &skel.TypeSchema{
+						Kind: skel.TypeKindList,
+						Element: &skel.TypeSchema{
+							Kind:   skel.TypeKindScalar,
+							Scalar: skel.ScalarString,
+						},
 					},
 				},
 			},
@@ -4646,7 +4692,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "MaintenanceApiService",
 			SkelName:    "vine.hub.admin.MaintenanceApiService",
 			Description: "Hub maintenance service",
-			Hash:        "a4ba47c3",
+			Hash:        "29fd31df",
 			Pub:         false,
 			Api:         true,
 			AuthMode:    skel.AuthModeNoAuth,
@@ -4654,6 +4700,37 @@ var _DomainSchema = &skel.DomainSchema{
 				{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"},
 			},
 			Methods: []*skel.MethodSchema{
+				{
+					Name:        "fieldSources",
+					SkelName:    "fieldSources",
+					Description: "Query field sources by entity kind and stable name",
+					Hash:        "5f378d47",
+					AuthMode:    skel.AuthModeUnset,
+					Arguments: []*skel.MemberSchema{
+						{
+							Name: "kind",
+							Type: &skel.TypeSchema{
+								Kind:   skel.TypeKindScalar,
+								Scalar: skel.ScalarString,
+							},
+						},
+						{
+							Name: "name",
+							Type: &skel.TypeSchema{
+								Kind:   skel.TypeKindScalar,
+								Scalar: skel.ScalarString,
+							},
+						},
+					},
+					ResultType: &skel.TypeSchema{
+						Kind: skel.TypeKindList,
+						Element: &skel.TypeSchema{
+							Kind:     skel.TypeKindData,
+							Name:     "FieldSource",
+							SkelName: "vine.hub.admin.FieldSource",
+						},
+					},
+				},
 				{
 					Name:        "configReadOnly",
 					SkelName:    "configReadOnly",

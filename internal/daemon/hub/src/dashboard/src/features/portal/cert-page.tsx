@@ -1,3 +1,4 @@
+import { FieldSourceInfo } from '@/features/field-source/field-source-info'
 import { useConfigAccess } from '@/lib/config-access'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
 import { SearchInput } from '@/components/ui/search-input'
@@ -424,16 +425,18 @@ function certDomains(cert: PortalCert) {
 
 function ReadonlyField({
   label,
+  source,
   children,
   className,
 }: {
+  source: React.ReactNode
   label: string
   children: React.ReactNode
   className?: string
 }) {
   return (
     <div className="grid gap-2">
-      <Label>{label}</Label>
+      <Label className="flex items-center gap-1.5">{label}{source}</Label>
       <div
         className={cn(
           'min-h-9 rounded-md border border-input bg-muted/20 px-3 py-2 text-sm',
@@ -963,14 +966,14 @@ export function PortalCertPage() {
                     />
                   ) : (
                     <div className="grid gap-5">
-                      <ReadonlyField label={t('portalCert.name')}>
+                      <ReadonlyField source={<FieldSourceInfo kind="portal_cert" name={selectedCert.name} path="/name" />} label={t('portalCert.name')}>
                         {selectedCert.name}
                       </ReadonlyField>
                       <div className="grid gap-4 sm:grid-cols-2">
-                        <ReadonlyField label={t('portalCert.issuer')}>
+                        <ReadonlyField source={<FieldSourceInfo kind="portal_cert" name={selectedCert.name} path="/publicKeyBase64" />} label={t('portalCert.issuer')}>
                           {selectedCert.issuer || t('portalCert.unparsed')}
                         </ReadonlyField>
-                        <ReadonlyField label={t('portalCert.validity')}>
+                        <ReadonlyField source={<FieldSourceInfo kind="portal_cert" name={selectedCert.name} path="/publicKeyBase64" />} label={t('portalCert.validity')}>
                           <span className="text-muted-foreground">
                             {formatDateTime(selectedCert.validFrom)}{' '}
                             {t('common.to')}{' '}
@@ -978,7 +981,7 @@ export function PortalCertPage() {
                           </span>
                         </ReadonlyField>
                       </div>
-                      <ReadonlyField
+                      <ReadonlyField source={<FieldSourceInfo kind="portal_cert" name={selectedCert.name} path="/domains" />}
                         label={t('portalCert.domains')}
                         className="min-h-20"
                       >
@@ -996,7 +999,7 @@ export function PortalCertPage() {
                           )}
                         </div>
                       </ReadonlyField>
-                      <ReadonlyField
+                      <ReadonlyField source={<FieldSourceInfo kind="portal_cert" name={selectedCert.name} path="/publicKeyBase64" />}
                         label={t('portalCert.publicKeyBase64')}
                         className="h-36 overflow-y-auto whitespace-pre-wrap break-all font-mono text-xs"
                       >
@@ -1006,7 +1009,7 @@ export function PortalCertPage() {
                           </span>
                         )}
                       </ReadonlyField>
-                      <ReadonlyField
+                      <ReadonlyField source={<FieldSourceInfo kind="portal_cert" name={selectedCert.name} path="/privateKeyBase64" />}
                         label={t('portalCert.privateKeyBase64')}
                         className="min-h-20"
                       >

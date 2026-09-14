@@ -1,3 +1,5 @@
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu'
+import { configSourceComment } from './config-source-comments'
 import { configValueIssues } from './config-value-validation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatConfigYaml, normalizeConfigYaml } from './config-yaml-document'
@@ -12,6 +14,7 @@ import { useNavigate, useRouterState } from '@tanstack/react-router'
 import CodeMirror from '@uiw/react-codemirror'
 import { json } from '@codemirror/lang-json'
 import {
+  ListFilter,
   Braces,
   Copy,
   Replace,
@@ -48,19 +51,24 @@ import { copyTextToClipboard } from '@/lib/clipboard'
 import { useLocale } from '@/i18n'
 import { cn } from '@/lib/utils'
 import {
+  createMaintenanceApiService,
   createAppConfigApiService,
   createSkeletonApiService,
 } from '@/skeled/admin'
 import type {
+  FieldSource,
   AppConfigItem,
   AppConfigSchema,
   SkeletonData,
 } from '@/skeled/admin'
 
+const maintenanceService = createMaintenanceApiService(vrpcClient)
 const appConfigService = createAppConfigApiService(vrpcClient)
 const skeletonService = createSkeletonApiService(vrpcClient)
 const jsonExtensions = [json()]
 const APP_CONFIG_LIST_DEFAULT_WIDTH = 352
+const commentTagNames = ['type', 'desc', 'source', 'define', 'override'] as const
+const commentFilterStorageKey = 'vine.hub.config.commentTags.v4'
 const configFormatStorageKey = 'vine.hub.config.editorFormat'
 
 interface AppConfigPageProps {
@@ -384,6 +392,20 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
       return 'json5'
     }
   })
+  const [commentTags, setCommentTags] = React.useState<string[]>(() => {
+    try {
+      const stored = window.localStorage.getItem(commentFilterStorageKey)
+      const saved = stored !== null ? JSON.parse(stored) : null
+      if (Array.isArray(saved)) {
+        const tags = saved.map((tag) => tag === 'effective' ? 'source' : tag)
+        return commentTagNames.filter((tag) => tags.includes(tag))
+      }
+    } catch { /* Use defaults when preferences cannot be read. */ }
+    return ['type', 'desc']
+  })
+  React.useEffect(() => {
+    try { window.localStorage.setItem(commentFilterStorageKey, JSON.stringify(commentTags)) } catch { /* Optional preference. */ }
+  }, [commentTags])
   const [replaceFormat, setReplaceFormat] = React.useState<'json5' | 'yaml'>('json5')
   const [replaceDialogOpen, setReplaceDialogOpen] = React.useState(false)
   const [replaceDraft, setReplaceDraft] = React.useState('')
@@ -449,6 +471,23 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
   const selectedSchema = React.useMemo(() => {
     return selectedAppConfig?.schema ?? null
   }, [selectedAppConfig])
+  const [sourceResult, setSourceResult] = React.useState<{ key: string; fields: FieldSource[]; config?: AppConfigItem } | null>(null)
+  React.useEffect(() => {
+    if (!selectedAppConfig || sourceResult?.config === selectedAppConfig) return
+    let active = true
+    const config = selectedAppConfig
+    maintenanceService.fieldSources({ kind: 'app_config', name: config.key }).then(
+      (fields) => { if (active) setSourceResult({ key: config.key, fields, config }) },
+      () => { /* Source annotations remain unchanged if refreshing fails. */ },
+    )
+    return () => { active = false }
+  }, [selectedAppConfig, sourceResult?.config])
+  const editorFields = React.useMemo(() => {
+    const sources = sourceResult?.key === selectedAppConfig?.key ? sourceResult?.fields ?? [] : []
+    return (selectedSchema?.fields ?? []).map((field) => ({
+      ...field, commentTags, sourceComment: configSourceComment(field.name, sources),
+    }))
+  }, [selectedSchema, selectedAppConfig?.key, sourceResult, commentTags])
   const typeIndex = React.useMemo(
     () => buildTypeDefinitionIndex(typeDefinitions),
     [typeDefinitions],
@@ -619,38 +658,30 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
     }
   }, [navigateToConfig, updateConfigs])
 
+  const detailRequest = React.useRef(0)
   const loadAppConfig = React.useCallback(async (key: string) => {
-    const listedConfig = appConfigsRef.current.find(
-      (config) => config.key === key,
-    )
+    const request = ++detailRequest.current
+    const listedConfig = appConfigsRef.current.find((config) => config.key === key)
     if (!listedConfig) {
       setSelectedAppConfig(null)
       setValue('')
       return
     }
-
-    const listedValue = configIsUnconfigured(listedConfig)
-      ? defaultConfigValue(listedConfig.schema)
-      : formatConfigValue(listedConfig.value)
-
-    setSelectedAppConfig({ ...listedConfig, value: listedValue })
-    setValue(listedValue)
-    setDetailLoading(false)
     setErrorMessage(null)
-
-    if (configIsUnconfigured(listedConfig)) {
-      return
-    }
-
     try {
-      const config = await appConfigService.get({ id: listedConfig.id })
-      const formattedValue = formatConfigValue(config.value)
-      const nextValue = formattedValue
-
-      setSelectedAppConfig({ ...config, value: nextValue })
+      const [config, fields] = await Promise.all([
+        configIsUnconfigured(listedConfig) ? Promise.resolve(listedConfig) : appConfigService.get({ id: listedConfig.id }),
+        maintenanceService.fieldSources({ kind: 'app_config', name: key }).catch(() => []),
+      ])
+      if (request !== detailRequest.current) return
+      const nextValue = configIsUnconfigured(config) ? defaultConfigValue(config.schema) : formatConfigValue(config.value)
+      const selected = { ...config, value: nextValue }
+      setSourceResult({ key, fields, config: selected })
+      setSelectedAppConfig(selected)
       setValue(nextValue)
+      setDetailLoading(false)
     } catch (error) {
-      setErrorMessage(getErrorMessage(error))
+      if (request === detailRequest.current) setErrorMessage(getErrorMessage(error))
     }
   }, [])
 
@@ -1456,6 +1487,21 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                       <Replace />
                       {t('appConfig.replace')}
                     </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon-sm" className="ml-1 text-muted-foreground" aria-label={t('appConfig.commentFilter')} title={t('appConfig.commentFilter')} />}>
+                        <ListFilter className="size-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="min-w-36">
+                        {commentTagNames.map((tag) => <DropdownMenuCheckboxItem
+                          key={tag}
+                          className="whitespace-nowrap"
+                          checked={commentTags.includes(tag)}
+                          onCheckedChange={(checked) => setCommentTags((current) => checked ? [...current, tag] : current.filter((item) => item !== tag))}
+                        >
+                          <span className="font-mono">{tag}</span>
+                        </DropdownMenuCheckboxItem>)}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <Dialog open={replaceDialogOpen} onOpenChange={setReplaceDialogOpen}>
                       <DialogContent>
                         <DialogHeader>
@@ -1498,11 +1544,11 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                   onScroll={handleScrollAreaScroll}
                 >
                   <ConfigJsonEditor
-                    key={`${selectedKey}:${jsonEditorRevision}:${editorFormat}`}
+                    key={`${selectedAppConfig.key}:${jsonEditorRevision}:${editorFormat}`}
                     format={editorFormat}
                     rawValue={rawReplacement}
                     value={value}
-                    fields={selectedSchema?.fields ?? []}
+                    fields={editorFields}
                     lockKeys={!rawReplacement && valueIsValidJson && selectedSchema !== null && !selectedIsUnused && configObject !== null}
                     mismatchMessages={visibleMismatchMessages}
                     dirtyFields={dirtyFields}

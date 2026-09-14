@@ -58,6 +58,7 @@ func (s *DBPortalCertRepo) RemoveCert(id int) bool {
 
 func toCorePortalCert(row *model.PortalCert) *core.PortalCert {
 	return &core.PortalCert{
+		FieldSources:     decodeFieldSources(row.FieldSources),
 		Id:               row.Id,
 		Name:             row.Name,
 		Issuer:           row.Issuer,
@@ -71,6 +72,7 @@ func toCorePortalCert(row *model.PortalCert) *core.PortalCert {
 
 func toDBPortalCert(cert *core.PortalCert) *model.PortalCert {
 	return &model.PortalCert{
+		FieldSources:     encodeFieldSources(cert.FieldSources),
 		Id:               cert.Id,
 		Name:             cert.Name,
 		Issuer:           cert.Issuer,

@@ -57,6 +57,7 @@ func (s *DBPortalRuleRepo) RemoveRule(id int) bool {
 
 func toCorePortalRule(row *model.PortalRule) *core.PortalRule {
 	return &core.PortalRule{
+		FieldSources:            decodeFieldSources(row.FieldSources),
 		Id:                      row.Id,
 		Name:                    row.Name,
 		MatchScheme:             row.MatchScheme,
@@ -73,6 +74,7 @@ func toCorePortalRule(row *model.PortalRule) *core.PortalRule {
 
 func toDBPortalRule(rule *core.PortalRule) *model.PortalRule {
 	return &model.PortalRule{
+		FieldSources:            encodeFieldSources(rule.FieldSources),
 		Id:                      rule.Id,
 		Name:                    rule.Name,
 		MatchScheme:             rule.MatchScheme,

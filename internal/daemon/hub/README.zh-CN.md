@@ -116,6 +116,8 @@ Hub 当前支持两类数据库配置来源：
 
 启动时可以通过 `--seed-yaml-file` 让 `seeder` 从本地 YAML 文件一次性导入初始配置、站点规则和证书到数据库；导入后 Hub 仍然统一从数据库 repo 读取，再写入 Redis，对 Link 暴露一致的读取与订阅语义。
 
+数据库 metadata 记录首次 seed 完成状态。后续启动跳过全部 seed、变量和来源输入，seed 条目不再提供 `override` 开关。无数据库模式每次建立新存储并导入 seed；内置 Dashboard 配置的维护独立于 seed 标记。
+
 ## Skeleton 生成
 
 Hub 在 `skel/control` 与 `skel/admin` 中分别维护两套契约。Go 代码生成到

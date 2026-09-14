@@ -22,12 +22,14 @@ const (
 )
 
 type _DevOption struct {
-	LinkAPIListen string
-	SeedYAMLFile  string
-	DashboardURL  string
-	NoDB          bool
-	DBSQLiteFile  string
-	DBPostgresURL string
+	LinkAPIListen  string
+	SeedYAMLFile   string
+	SeedSourceFile string
+	SeedVarsFile   string
+	DashboardURL   string
+	NoDB           bool
+	DBSQLiteFile   string
+	DBPostgresURL  string
 }
 
 type _DevRuntime struct {
@@ -57,6 +59,8 @@ func newDevCommand() *ucli.Command {
 			&ucli.StringFlag{Name: FlagHubDBSQLiteFile, Sources: ucli.EnvVars(EnvHubDBSQLiteFile), Usage: "hub SQLite database file"},
 			&ucli.StringFlag{Name: FlagHubDBPostgresURL, Sources: ucli.EnvVars(EnvHubDBPostgresURL), Usage: "hub PostgreSQL database URL"},
 			&ucli.StringFlag{Name: FlagHubSeedYAMLFile, Sources: ucli.EnvVars(EnvHubSeedYAMLFile), Usage: "hub seed YAML file"},
+			&ucli.StringFlag{Name: FlagHubSeedSourceFile, Sources: ucli.EnvVars(EnvHubSeedSourceFile), Usage: "hub seed source YAML file"},
+			&ucli.StringFlag{Name: FlagHubSeedVarsFile, Sources: ucli.EnvVars(EnvHubSeedVarsFile), Usage: "hub seed vars YAML file"},
 			&ucli.StringFlag{Name: FlagHubDashboardURL, Sources: ucli.EnvVars(EnvHubDashboardURL), Usage: "hub dashboard URL"},
 		},
 		Action: func(_ context.Context, cmd *ucli.Command) error {
@@ -65,12 +69,14 @@ func newDevCommand() *ucli.Command {
 			}
 
 			startDevRuntime(_DevOption{
-				LinkAPIListen: cmd.String(flagDevLinkAPIListen),
-				SeedYAMLFile:  cmd.String(FlagHubSeedYAMLFile),
-				DashboardURL:  cmd.String(FlagHubDashboardURL),
-				NoDB:          cmd.Bool(FlagHubNoDB),
-				DBSQLiteFile:  cmd.String(FlagHubDBSQLiteFile),
-				DBPostgresURL: cmd.String(FlagHubDBPostgresURL),
+				LinkAPIListen:  cmd.String(flagDevLinkAPIListen),
+				SeedYAMLFile:   cmd.String(FlagHubSeedYAMLFile),
+				SeedSourceFile: cmd.String(FlagHubSeedSourceFile),
+				SeedVarsFile:   cmd.String(FlagHubSeedVarsFile),
+				DashboardURL:   cmd.String(FlagHubDashboardURL),
+				NoDB:           cmd.Bool(FlagHubNoDB),
+				DBSQLiteFile:   cmd.String(FlagHubDBSQLiteFile),
+				DBPostgresURL:  cmd.String(FlagHubDBPostgresURL),
 			})
 			return nil
 		},
@@ -108,6 +114,8 @@ func newDevRuntime(option _DevOption) *_DevRuntime {
 func prepareDevHubFlag(option _DevOption) (*hubflag.Flag, func()) {
 	flag := &hubflag.Flag{
 		SeedYAMLPath:    option.SeedYAMLFile,
+		SeedSourceFile:  option.SeedSourceFile,
+		SeedVarsFile:    option.SeedVarsFile,
 		DashboardURLRaw: option.DashboardURL,
 		NoDB:            option.NoDB,
 		DBSQLiteFile:    option.DBSQLiteFile,

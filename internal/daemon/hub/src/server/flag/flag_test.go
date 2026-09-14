@@ -31,7 +31,7 @@ func TestFlagNormalizeInfersSQLiteSourceFromPath(t *testing.T) {
 
 	flags.Normalize(false)
 
-	assert.Equal(t, SourceSQLite, flags.SourceType)
+	assert.Equal(t, StoreSQLite, flags.Store)
 	assert.Equal(t, "/tmp/hub.sqlite", flags.DBSQLiteFile)
 }
 
@@ -43,11 +43,11 @@ func TestFlagNormalizeInfersPostgreSQLSourceFromURL(t *testing.T) {
 
 	flags.Normalize(false)
 
-	assert.Equal(t, SourcePostgreSQL, flags.SourceType)
+	assert.Equal(t, StorePostgreSQL, flags.Store)
 	assert.Equal(t, "postgres://demo:demo@127.0.0.1:5432/hub", flags.DBPostgresURL)
 }
 
-func TestFlagNormalizeRejectsMultipleSources(t *testing.T) {
+func TestFlagNormalizeRejectsMultipleStores(t *testing.T) {
 	flags := &Flag{
 		DBSQLiteFile:  "/tmp/hub.sqlite",
 		DBPostgresURL: "postgres://demo:demo@127.0.0.1:5432/hub",
@@ -58,16 +58,16 @@ func TestFlagNormalizeRejectsMultipleSources(t *testing.T) {
 	})
 }
 
-func TestFlagNormalizeKeepsExplicitSourceType(t *testing.T) {
+func TestFlagNormalizeKeepsExplicitStore(t *testing.T) {
 	flags := &Flag{
-		SourceType:     SourceSQLite,
+		Store:          StoreSQLite,
 		DBSQLiteFile:   "/tmp/hub.sqlite",
 		MQEmbeddedNats: true,
 	}
 
 	flags.Normalize(false)
 
-	assert.Equal(t, SourceSQLite, flags.SourceType)
+	assert.Equal(t, StoreSQLite, flags.Store)
 	assert.Equal(t, "/tmp/hub.sqlite", flags.DBSQLiteFile)
 	assert.Equal(t, HubDefaultControlListen, flags.ControlListen)
 	assert.Equal(t, HubDefaultAdminListen, flags.AdminListen)
@@ -78,7 +78,7 @@ func TestFlagNormalizeKeepsExplicitSourceType(t *testing.T) {
 
 func TestFlagNormalizeNormalizesDashboardURL(t *testing.T) {
 	flags := &Flag{
-		SourceType:      SourceSQLite,
+		Store:           StoreSQLite,
 		DBSQLiteFile:    "/tmp/hub.sqlite",
 		MQEmbeddedNats:  true,
 		DashboardURLRaw: ":7099",
@@ -97,7 +97,7 @@ func TestFlagNormalizeUsesHTTPSDashboardDefaultWithMTLS(t *testing.T) {
 			CertFile: "cert.pem",
 			KeyFile:  "key.pem",
 		},
-		SourceType:     SourceSQLite,
+		Store:          StoreSQLite,
 		DBSQLiteFile:   "/tmp/hub.sqlite",
 		MQEmbeddedNats: true,
 	}
@@ -116,7 +116,7 @@ func TestFlagNormalizeKeepsExplicitHTTPDashboardURLWithMTLS(t *testing.T) {
 			CertFile: "cert.pem",
 			KeyFile:  "key.pem",
 		},
-		SourceType:      SourceSQLite,
+		Store:           StoreSQLite,
 		DBSQLiteFile:    "/tmp/hub.sqlite",
 		MQEmbeddedNats:  true,
 		DashboardURLRaw: "http://:7099/",
@@ -131,7 +131,7 @@ func TestFlagNormalizeKeepsExplicitHTTPDashboardURLWithMTLS(t *testing.T) {
 
 func TestFlagNormalizeAddsDashboardURLPath(t *testing.T) {
 	flags := &Flag{
-		SourceType:      SourceSQLite,
+		Store:           StoreSQLite,
 		DBSQLiteFile:    "/tmp/hub.sqlite",
 		MQEmbeddedNats:  true,
 		DashboardURLRaw: "https://hub.example.com:8443",
@@ -144,7 +144,7 @@ func TestFlagNormalizeAddsDashboardURLPath(t *testing.T) {
 
 func TestFlagNormalizeRejectsInvalidDashboardURLScheme(t *testing.T) {
 	flags := &Flag{
-		SourceType:      SourceSQLite,
+		Store:           StoreSQLite,
 		DBSQLiteFile:    "/tmp/hub.sqlite",
 		MQEmbeddedNats:  true,
 		DashboardURLRaw: "ftp://hub.example.com:8443/admin",
@@ -157,7 +157,7 @@ func TestFlagNormalizeRejectsInvalidDashboardURLScheme(t *testing.T) {
 
 func TestFlagNormalizeAcceptsValidMQEndpoint(t *testing.T) {
 	flags := &Flag{
-		SourceType:        SourceSQLite,
+		Store:             StoreSQLite,
 		DBSQLiteFile:      "/tmp/hub.sqlite",
 		MQExternalNatsURL: "nats://127.0.0.1:4222",
 	}
@@ -170,7 +170,7 @@ func TestFlagNormalizeAcceptsValidMQEndpoint(t *testing.T) {
 
 func TestFlagNormalizeRejectsMQEndpointWithEnableNats(t *testing.T) {
 	flags := &Flag{
-		SourceType:        SourceSQLite,
+		Store:             StoreSQLite,
 		DBSQLiteFile:      "/tmp/hub.sqlite",
 		MQExternalNatsURL: "nats://127.0.0.1:4222",
 		MQEmbeddedNats:    true,
@@ -183,7 +183,7 @@ func TestFlagNormalizeRejectsMQEndpointWithEnableNats(t *testing.T) {
 
 func TestFlagNormalizeRejectsInvalidMQEndpoint(t *testing.T) {
 	flags := &Flag{
-		SourceType:        SourceSQLite,
+		Store:             StoreSQLite,
 		DBSQLiteFile:      "/tmp/hub.sqlite",
 		MQExternalNatsURL: "http://127.0.0.1:4222",
 	}
@@ -195,7 +195,7 @@ func TestFlagNormalizeRejectsInvalidMQEndpoint(t *testing.T) {
 
 func TestFlagNormalizeRequiresMQEndpointOrEnableNats(t *testing.T) {
 	flags := &Flag{
-		SourceType:   SourceSQLite,
+		Store:        StoreSQLite,
 		DBSQLiteFile: "/tmp/hub.sqlite",
 	}
 
@@ -206,7 +206,7 @@ func TestFlagNormalizeRequiresMQEndpointOrEnableNats(t *testing.T) {
 
 func TestFlagNormalizeAcceptsEnableNats(t *testing.T) {
 	flags := &Flag{
-		SourceType:     SourceSQLite,
+		Store:          StoreSQLite,
 		DBSQLiteFile:   "/tmp/hub.sqlite",
 		MQEmbeddedNats: true,
 	}
@@ -218,7 +218,7 @@ func TestFlagNormalizeAcceptsEnableNats(t *testing.T) {
 
 func TestFlagNormalizeInprocClearsListenAndMQ(t *testing.T) {
 	flags := &Flag{
-		SourceType:        SourceSQLite,
+		Store:             StoreSQLite,
 		DBSQLiteFile:      "/tmp/hub.sqlite",
 		ControlListen:     "127.0.0.1:7071",
 		AdminListen:       "127.0.0.1:7075",
@@ -229,7 +229,7 @@ func TestFlagNormalizeInprocClearsListenAndMQ(t *testing.T) {
 
 	flags.Normalize(true)
 
-	assert.Equal(t, SourceSQLite, flags.SourceType)
+	assert.Equal(t, StoreSQLite, flags.Store)
 	assert.Equal(t, "/tmp/hub.sqlite", flags.DBSQLiteFile)
 	assert.Empty(t, flags.ControlListen)
 	assert.Empty(t, flags.AdminListen)
@@ -238,35 +238,35 @@ func TestFlagNormalizeInprocClearsListenAndMQ(t *testing.T) {
 	assert.True(t, flags.MQEmbeddedNats)
 }
 
-func TestFlagInferSourceTypeDefaultsToMemory(t *testing.T) {
+func TestFlagInferStoreDefaultsToMemory(t *testing.T) {
 	flags := &Flag{}
 
-	sourceType, err := flags.inferSourceType()
+	store, err := flags.inferStore()
 	require.NoError(t, err)
 
-	assert.Equal(t, SourceMemory, sourceType)
+	assert.Equal(t, StoreMemory, store)
 }
 
-func TestFlagInferSourceTypeReturnsSQLite(t *testing.T) {
+func TestFlagInferStoreReturnsSQLite(t *testing.T) {
 	flags := &Flag{
 		DBSQLiteFile: "/tmp/hub.sqlite",
 	}
 
-	sourceType, err := flags.inferSourceType()
+	store, err := flags.inferStore()
 	require.NoError(t, err)
 
-	assert.Equal(t, SourceSQLite, sourceType)
+	assert.Equal(t, StoreSQLite, store)
 }
 
-func TestFlagInferSourceTypeRejectsMultipleSources(t *testing.T) {
+func TestFlagInferStoreRejectsMultipleStores(t *testing.T) {
 	flags := &Flag{
 		DBSQLiteFile:  "/tmp/hub.sqlite",
 		DBPostgresURL: "postgres://demo:demo@127.0.0.1:5432/hub",
 	}
 
-	sourceType, err := flags.inferSourceType()
+	store, err := flags.inferStore()
 	require.EqualError(t, err, "only one of DBSQLiteFile or DBPostgresURL can be set")
-	assert.Empty(t, sourceType)
+	assert.Empty(t, store)
 }
 
 func TestNoDBModes(t *testing.T) {
@@ -274,10 +274,10 @@ func TestNoDBModes(t *testing.T) {
 		f := &Flag{NoDB: explicit, SeedYAMLPath: "seed.yaml"}
 		f.Normalize(true)
 		require.True(t, f.NoDB)
-		require.Equal(t, SourceMemory, f.SourceType)
+		require.Equal(t, StoreMemory, f.Store)
 	}
 	for _, f := range []*Flag{{NoDB: true, DBSQLiteFile: "hub.sqlite"}, {NoDB: true, DBPostgresURL: "postgres://localhost/hub"}} {
-		require.PanicsWithError(t, "no-db cannot be used with a database source", func() { f.Normalize(true) })
+		require.PanicsWithError(t, "no-db cannot be used with a database store", func() { f.Normalize(true) })
 	}
 }
 
@@ -290,5 +290,25 @@ func TestInlineSeedSourceModes(t *testing.T) {
 	} {
 		require.NotPanics(t, func() { flags.Normalize(true) })
 		require.Equal(t, flags.DBSQLiteFile == "" && flags.DBPostgresURL == "", flags.NoDB)
+	}
+}
+
+func TestSeedSupplementInputsRequireTemplateAndAreExclusive(t *testing.T) {
+	for _, flags := range []*Flag{
+		{SeedYAML: "{}", SeedSource: "{}", SeedSourceFile: "source.yaml"},
+		{SeedYAML: "{}", SeedSourceFile: "source.yaml"},
+		{SeedYAMLPath: "seed.yaml", SeedSource: "{}"},
+		{DBSQLiteFile: "hub.sqlite", SeedSourceFile: "source.yaml"},
+		{DBSQLiteFile: "hub.sqlite", SeedVarsFile: "vars.yaml"},
+	} {
+		require.Panics(t, func() { flags.Normalize(true) })
+	}
+	for _, valid := range []*Flag{
+		{SeedYAML: "{}", SeedSource: "{}", SeedVarsFile: "vars.yaml"},
+		{SeedYAMLPath: "seed.yaml", SeedSourceFile: "source.yaml", SeedVarsFile: "vars.yaml"},
+		{SeedYAML: "{}", SeedVarsFile: "vars.yaml"},
+		{SeedYAMLPath: "seed.yaml", SeedVarsFile: "vars.yaml"},
+	} {
+		require.NotPanics(t, func() { valid.Normalize(true) })
 	}
 }

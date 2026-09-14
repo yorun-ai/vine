@@ -10,11 +10,12 @@ import (
 // Structs
 
 type AppConfig struct {
-	Id        int
-	CreatedAt time.Time
-	Name      string
-	Value     string
-	Version   int
+	FieldSources FieldSources
+	Id           int
+	CreatedAt    time.Time
+	Name         string
+	Value        string
+	Version      int
 }
 
 type AppConfigCreation struct {
@@ -72,13 +73,15 @@ func (m *AppConfigCore) Update(id int, update AppConfigUpdate) *AppConfig {
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("config %d not found", id))
 
 	next := &AppConfig{
-		Id:        item.Id,
-		CreatedAt: item.CreatedAt,
-		Name:      item.Name,
-		Value:     item.Value,
-		Version:   item.Version,
+		FieldSources: cloneFieldSources(item.FieldSources),
+		Id:           item.Id,
+		CreatedAt:    item.CreatedAt,
+		Name:         item.Name,
+		Value:        item.Value,
+		Version:      item.Version,
 	}
 	if update.Value != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/value")
 		next.Value = *update.Value
 	}
 	*next = m.Validate(*next)

@@ -34,6 +34,17 @@ type Option struct {
 	// No-db mode requires one seed source; use "{}" for empty configuration.
 	SeedYAML string
 
+	// SeedSource contains an embedded seed source map and requires SeedYAML.
+	SeedSource string
+	// SeedSourceFile is the optional field source map and requires SeedYAMLFile.
+	SeedSourceFile string
+	// SeedVarsFile supplies a YAML mapping for ${path} and ${path:default} references.
+	// Paths use camelCase segments separated by dots. Defaults apply only to
+	// missing keys; existing null and zero values are preserved until use.
+	// Importing skeled/app registers app.Vars for type checking; unused fields
+	// are not required. Values inserted from this file are never re-expanded.
+	SeedVarsFile string
+
 	// NoDB loads read-only configuration from the seed YAML into memory. This is
 	// the default when neither SQLiteFile nor PostgresURL is supplied.
 	NoDB bool
@@ -48,7 +59,7 @@ type Option struct {
 
 func (o Option) isZero() bool {
 	return o.SeedYAMLFile == "" &&
-		o.SeedYAML == "" &&
+		o.SeedYAML == "" && o.SeedSource == "" && o.SeedSourceFile == "" && o.SeedVarsFile == "" &&
 		!o.NoDB &&
 		o.SQLiteFile == "" &&
 		o.PostgresURL == "" &&
@@ -154,6 +165,8 @@ func (a *_App) initInfra() {
 			Usage:       "seed YAML file",
 			Destination: &flag.SeedYAMLPath,
 		},
+		&ucli.StringFlag{Name: vinecli.FlagHubSeedSourceFile, Sources: ucli.EnvVars(vinecli.EnvHubSeedSourceFile), Usage: "seed source YAML file", Destination: &flag.SeedSourceFile},
+		&ucli.StringFlag{Name: vinecli.FlagHubSeedVarsFile, Sources: ucli.EnvVars(vinecli.EnvHubSeedVarsFile), Usage: "seed vars YAML file", Destination: &flag.SeedVarsFile},
 		&ucli.StringFlag{
 			Name:        flagDashboardURL,
 			Sources:     ucli.EnvVars(envDashboardURL),
@@ -173,6 +186,16 @@ func (a *_App) initInfra() {
 }
 
 func applyOption(flag *hubflag.Flag, option Option) {
+	if option.SeedSource != "" {
+		flag.SeedSource = option.SeedSource
+	}
+	if option.SeedSourceFile != "" {
+		flag.SeedSourceFile = option.SeedSourceFile
+	}
+	if option.SeedVarsFile != "" {
+		flag.SeedVarsFile = option.SeedVarsFile
+	}
+
 	if option.NoDB {
 		flag.NoDB = true
 	}

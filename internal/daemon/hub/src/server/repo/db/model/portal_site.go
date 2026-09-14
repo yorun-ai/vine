@@ -5,6 +5,7 @@ import (
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/infra/rdb"
+	"gorm.io/gorm"
 )
 
 //go:embed sql/sqlite/create_portal_site.sql
@@ -14,6 +15,7 @@ var createPortalSiteSQLiteSQL string
 var createPortalSitePgSQL string
 
 type PortalSite struct {
+	FieldSources string `gorm:"-"`
 	rdb.Model
 	Name          string `gorm:"column:name"`
 	Type          string `gorm:"column:type"`
@@ -37,6 +39,7 @@ func (d *PortalSiteDao) InitSchema() {
 	sql := schemaSQL(d.GormDB(), createPortalSiteSQLiteSQL, createPortalSitePgSQL)
 	err := d.GormDB().Exec(sql).Error
 	ex.PanicIfError(err)
+	ensureFieldSourceTable(d.GormDB())
 	d.ensureColumn("cors_mode", "CorsMode")
 	d.ensureColumn("cors_origins", "CorsOrigins")
 }
@@ -68,6 +71,7 @@ func (d *PortalSiteDao) Save(entry *PortalSite) *PortalSite {
 
 	row, ok := d.ById(entry.Id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", entry.Id))
+	row.FieldSources = entry.FieldSources
 	d.Update(row, rdb.Patch{
 		"name":            entry.Name,
 		"type":            entry.Type,
@@ -88,4 +92,16 @@ func (d *PortalSiteDao) DeleteById(id int) (*PortalSite, bool) {
 	}
 	d.Delete(row)
 	return row, true
+}
+
+func (row *PortalSite) AfterFind(tx *gorm.DB) error {
+	return loadFieldSource(tx, "portal_site", row.Id, &row.FieldSources)
+}
+
+func (row *PortalSite) AfterSave(tx *gorm.DB) error {
+	return saveFieldSource(tx, "portal_site", row.Id, row.FieldSources)
+}
+
+func (row *PortalSite) AfterDelete(tx *gorm.DB) error {
+	return deleteFieldSource(tx, "portal_site", row.Id)
 }

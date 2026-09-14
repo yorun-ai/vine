@@ -73,6 +73,7 @@ export function ConfigJsonEditor({
     fraction: t('appConfig.timeFraction'),
     offset: t('appConfig.timeOffset'),
   }), [t])
+  const renderedFields = React.useRef(fields)
   const lastEmittedValue = React.useRef(value)
   const [document, setDocument] = React.useState(() =>
     createDocument(value, fields, lockKeys),
@@ -80,14 +81,16 @@ export function ConfigJsonEditor({
   const [draft, setDraft] = React.useState(document.doc)
 
   React.useEffect(() => {
-    if (value === lastEmittedValue.current && document.lockKeys === lockKeys) {
+    if (value === lastEmittedValue.current && document.lockKeys === lockKeys && renderedFields.current === fields) {
       return
     }
+    if (freeErrors(draft).length > 0 && value === lastEmittedValue.current) return
+    renderedFields.current = fields
     const nextDocument = createDocument(value, fields, lockKeys)
     lastEmittedValue.current = value
     setDocument(nextDocument)
     setDraft(nextDocument.doc)
-  }, [value, fields, lockKeys, document.lockKeys, createDocument])
+  }, [value, fields, lockKeys, document.lockKeys, createDocument, draft, freeErrors])
 
   React.useEffect(() => {
     onInvalidChange((isYaml
@@ -242,6 +245,7 @@ export function ConfigJsonEditor({
             },
           })
           const doc = view.state.doc.toString()
+
           const valueRanges = view.state.field(ranges)
           for (const link of getConfigJsonTypeLinks(document, valueRanges, typeIndex)) {
             marks.push(Decoration.mark({

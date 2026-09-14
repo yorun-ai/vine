@@ -10,6 +10,13 @@ import (
 
 var ruleLogger = logger.New("vine.hub.seed")
 
+var portalRuleAliases = map[string]string{
+	"scheme": "matchScheme", "host": "matchHost", "port": "matchPort",
+	"pathPrefix": "matchPathPrefix", "targetType": "routeType",
+	"siteName": "routeSiteName", "targetPath": "routePathPrefix",
+	"redirectionPattern": "routeRedirectionPattern",
+}
+
 // DecodePortalRule accepts legacy YAML fields only at the import boundary.
 // A rule must use either legacy or new fields, never a mixture of both.
 // TODO: Remove legacy field aliases, compatibility warnings, and mixed-field
@@ -21,12 +28,7 @@ func DecodePortalRule(node *yaml.Node, target any) error {
 	if node.Kind != yaml.MappingNode {
 		return fmt.Errorf("portal rule must be a YAML mapping")
 	}
-	aliases := map[string]string{
-		"scheme": "matchScheme", "host": "matchHost", "port": "matchPort",
-		"pathPrefix": "matchPathPrefix", "targetType": "routeType",
-		"siteName": "routeSiteName", "targetPath": "routePathPrefix",
-		"redirectionPattern": "routeRedirectionPattern",
-	}
+
 	// Reject duplicate keys before checking which field vocabulary is used.
 	var fields map[string]yaml.Node
 	if err := node.Decode(&fields); err != nil {
@@ -40,10 +42,10 @@ func DecodePortalRule(node *yaml.Node, target any) error {
 	name := fields["name"].Value
 	legacy, current := "", ""
 	for _, key := range keys {
-		if _, ok := aliases[key]; ok {
+		if _, ok := portalRuleAliases[key]; ok {
 			legacy = key
 		}
-		for _, replacement := range aliases {
+		for _, replacement := range portalRuleAliases {
 			if key == replacement {
 				current = key
 			}
@@ -56,7 +58,7 @@ func DecodePortalRule(node *yaml.Node, target any) error {
 	normalized.Content = make([]*yaml.Node, 0, len(fields)*2)
 	for _, field := range keys {
 		key := field
-		if replacement, ok := aliases[field]; ok {
+		if replacement, ok := portalRuleAliases[field]; ok {
 			ruleLogger.Warn("deprecated portal rule YAML field; use the new field instead", "rule", name, "field", field, "replacement", replacement)
 			key = replacement
 		}

@@ -315,6 +315,27 @@ func (v EventListenerRegistration) Clone() EventListenerRegistration {
 	return cloned
 }
 
+// FieldSource Source of a configuration field without configuration or variable values
+type FieldSource struct {
+	Path      string   `json:"path"`
+	Source    string   `json:"source"`
+	Define    string   `json:"define"`
+	Override  string   `json:"override"`
+	Variables []string `json:"variables"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v FieldSource) Clone() FieldSource {
+	cloned := v
+	if v.Variables == nil {
+		cloned.Variables = nil
+	} else {
+		cloned.Variables = make([]string, len(v.Variables))
+		copy(cloned.Variables, v.Variables)
+	}
+	return cloned
+}
+
 // PortalCert Portal site certificate
 type PortalCert struct {
 	// Id Certificate ID

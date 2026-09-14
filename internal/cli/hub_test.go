@@ -243,7 +243,7 @@ func TestRunHubServeNoDB(t *testing.T) {
 	t.Cleanup(func() { startHubApp = original })
 	startHubApp = func(flags hubconf.Flag) {
 		flags.Normalize(false)
-		if !flags.NoDB || flags.SourceType != hubconf.SourceMemory {
+		if !flags.NoDB || flags.Store != hubconf.StoreMemory {
 			t.Fatal("expected no-db")
 		}
 	}

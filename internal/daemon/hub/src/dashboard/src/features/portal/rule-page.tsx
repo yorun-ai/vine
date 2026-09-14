@@ -1,3 +1,4 @@
+import { FieldSourceInfo } from '@/features/field-source/field-source-info'
 import { useConfigAccess } from '@/lib/config-access'
 import { RulePathPreview } from './rule-path-preview'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
@@ -837,16 +838,18 @@ function PortalRuleListSkeleton() {
 
 function ReadonlyField({
   label,
+  source,
   children,
   className,
 }: {
+  source: React.ReactNode
   label: string
   children: React.ReactNode
   className?: string
 }) {
   return (
     <div className="grid gap-2">
-      <Label>{label}</Label>
+      <Label className="flex items-center gap-1.5">{label}{source}</Label>
       <div
         className={cn(
           'min-h-9 rounded-md border border-input bg-muted/20 px-3 py-2 text-sm',
@@ -1597,7 +1600,7 @@ export function PortalRulePage() {
                   ) : (
                     <div className="grid gap-5">
                       <div className="max-w-xl">
-                        <ReadonlyField label={t('portalRule.name')}>
+                        <ReadonlyField source={<FieldSourceInfo kind="portal_rule" name={selectedRule.name} path="/name" />} label={t('portalRule.name')}>
                           {selectedRule.name}
                         </ReadonlyField>
                       </div>
@@ -1606,18 +1609,18 @@ export function PortalRulePage() {
                           title={t('portalRule.match')}
                           description={t('portalRule.matchDescription')}
                         >
-                          <ReadonlyField label={t('portalRule.matchScheme')}>
+                          <ReadonlyField source={<FieldSourceInfo kind="portal_rule" name={selectedRule.name} path="/matchScheme" />} label={t('portalRule.matchScheme')}>
                             {selectedRule.matchScheme}
                           </ReadonlyField>
-                          <ReadonlyField label={t('portalRule.matchHost')}>
+                          <ReadonlyField source={<FieldSourceInfo kind="portal_rule" name={selectedRule.name} path="/matchHost" />} label={t('portalRule.matchHost')}>
                             {selectedRule.matchHost || t('portalRule.anyHost')}
                           </ReadonlyField>
-                          <ReadonlyField label={t('portalRule.matchPort')}>
+                          <ReadonlyField source={<FieldSourceInfo kind="portal_rule" name={selectedRule.name} path="/matchPort" />} label={t('portalRule.matchPort')}>
                             {selectedRule.matchPort === 0
                               ? t('portalRule.followScheme')
                               : selectedRule.matchPort}
                           </ReadonlyField>
-                          <ReadonlyField label={t('portalRule.matchPathPrefix')}>
+                          <ReadonlyField source={<FieldSourceInfo kind="portal_rule" name={selectedRule.name} path="/matchPathPrefix" />} label={t('portalRule.matchPathPrefix')}>
                             {selectedRule.matchPathPrefix || '/'}
                           </ReadonlyField>
                         </RuleFlowSection>
@@ -1630,12 +1633,12 @@ export function PortalRulePage() {
                           title={t('portalRule.route')}
                           description={t('portalRule.routeDescription')}
                         >
-                          <ReadonlyField label={t('portalRule.routeType')}>
+                          <ReadonlyField source={<FieldSourceInfo kind="portal_rule" name={selectedRule.name} path="/routeType" />} label={t('portalRule.routeType')}>
                             <TargetTypeBadge
                               routeType={selectedRule.routeType}
                             />
                           </ReadonlyField>
-                          <ReadonlyField
+                          <ReadonlyField source={<FieldSourceInfo kind="portal_rule" name={selectedRule.name} path={selectedRule.routeType === 'SITE' ? '/routeSiteName' : '/routeRedirectionPattern'} />}
                             label={
                               selectedRule.routeType === 'SITE'
                                 ? t('portalRule.routeSiteName')
@@ -1666,7 +1669,7 @@ export function PortalRulePage() {
                             )}
                           </ReadonlyField>
                           {selectedRule.routeType === 'SITE' ? (
-                            <ReadonlyField label={t('portalRule.routePathPrefix')}>
+                            <ReadonlyField source={<FieldSourceInfo kind="portal_rule" name={selectedRule.name} path="/routePathPrefix" />} label={t('portalRule.routePathPrefix')}>
                               {selectedRule.routePathPrefix || '/'}
                             </ReadonlyField>
                           ) : null}

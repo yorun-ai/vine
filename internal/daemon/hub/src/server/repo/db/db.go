@@ -16,13 +16,13 @@ type HubDatabase struct {
 }
 
 func (d *HubDatabase) InitOption(option *rdb.Option) {
-	switch d.Flag.SourceType {
-	case flag.SourceMemory:
+	switch d.Flag.Store {
+	case flag.StoreMemory:
 		option.ConnURL = "sqlite://file:vine-hub-" + uuid.New().String() + "?mode=memory&cache=shared"
 		option.MaxOpenConn = 1
-	case flag.SourceSQLite:
+	case flag.StoreSQLite:
 		option.ConnURL = "sqlite://" + d.Flag.DBSQLiteFile
-	case flag.SourcePostgreSQL:
+	case flag.StorePostgreSQL:
 		option.ConnURL = d.Flag.DBPostgresURL
 	}
 }

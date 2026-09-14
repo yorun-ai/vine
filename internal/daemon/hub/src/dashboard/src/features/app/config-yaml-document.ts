@@ -1,5 +1,5 @@
 import { isAlias, isNode, isMap, isScalar, parseDocument, stringify, visit } from 'yaml'
-import { normalizeConfigJson } from './config-json-document.ts'
+import { normalizeConfigJson, configFieldCommentLines } from './config-json-document.ts'
 import type { ConfigJsonField, ConfigValueRange, createConfigJsonDocument } from './config-json-document.ts'
 
 export function parseConfigYaml(text: string): unknown {
@@ -136,11 +136,14 @@ export function createConfigYamlDocument(value: string, fields: ReadonlyArray<Co
   for (const [name, item] of Object.entries(JSON.parse(value) as Record<string, unknown>)) {
     const field = fields.find((field) => field.name === name)
     const blockFrom = doc.length
-    for (const match of (field?.type ?? '').matchAll(/[A-Za-z_][A-Za-z0-9_.]*/g)) {
-      const from = doc.length + 2 + match.index
-      typeRanges.push({ fieldName: name, typeName: match[0], from, to: from + match[0].length })
-    }
-    for (const line of [field?.type, field?.description].filter(Boolean).join('\n').split(/\r\n|[\n\r\u2028\u2029]/)) {
+    for (const [index, line] of configFieldCommentLines(field).entries()) {
+      if (index === 0 && line.startsWith('@type ')) {
+        const valueOffset = line.match(/^@type +/)![0].length
+        for (const match of line.slice(valueOffset).matchAll(/[A-Za-z_][A-Za-z0-9_.]*/g)) {
+          const from = doc.length + 2 + valueOffset + match.index
+          typeRanges.push({ fieldName: name, typeName: match[0], from, to: from + match[0].length })
+        }
+      }
       doc += `# ${line}\n`
     }
     const entry = stringifyConfigYaml({ [name]: item })

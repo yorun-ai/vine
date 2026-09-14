@@ -8,6 +8,26 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Changed
+
+- Hub seed is applied only once, as recorded in database metadata. Later starts
+  skip seed, variable, and source files entirely. Removed the per-item `override`
+  flag; use Hub configuration updates for persistent databases. No-db mode
+  continues to seed its fresh in-memory store on every start.
+
+### Added
+
+- Seed deployment variables and optional field source maps through `--seed-vars-file`
+  and `--seed-source-file`. Standalone can embed seed and source maps together;
+  variables are always supplied by file. Hub stores
+  field origins with configuration records and exposes them in the Dashboard.
+  SQLite/PostgreSQL store field sources in a separate `field_source` table keyed by entity kind and ID.
+- Nested camelCase variable paths (`${database.port}`) and missing-key defaults
+  (`${database.port:5432}`). Registered `app.Vars` schemas validate referenced
+  variables, and registered config schemas validate whole-object substitutions.
+  Explicit null and zero values do not select defaults; unused variables are
+  not required and extra object fields are ignored.
+
 ## [0.16.0] - 2026-09-13
 
 ### Added

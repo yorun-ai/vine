@@ -4,6 +4,8 @@ export interface ConfigJsonField {
   name: string
   type: string
   description: string
+  commentTags?: ReadonlyArray<string>
+  sourceComment?: string
   enumItems?: ReadonlyArray<{ name: string; description: string }>
   mapKeyEnumItems?: ReadonlyArray<{ name: string; description: string }>
   mapValueEnumItems?: ReadonlyArray<{ name: string; description: string }>
@@ -21,6 +23,25 @@ export interface ConfigTypeRange {
   typeName: string
   from: number
   to: number
+}
+
+export function configFieldCommentLines(field: ConfigJsonField | undefined) {
+  const tags = field?.commentTags ?? ['type', 'desc']
+  const lines: Array<{ tag: string; value: string }> = []
+  const add = (tag: string, value: string) => {
+    if (!tags.includes(tag) && tag !== 'variables') return
+    for (const [index, line] of value.split(/\r\n|[\n\r\u2028\u2029]/).entries()) {
+      lines.push({ tag: index === 0 ? '@' + tag : '', value: line })
+    }
+  }
+  if (field?.type) add('type', field.type)
+  if (field?.description) add('desc', field.description)
+  for (const line of field?.sourceComment?.split('\n') ?? []) {
+    const match = line.match(/^@(\w+) (.*)$/)
+    if (match) add(match[1], match[2])
+  }
+  const width = Math.max(0, ...lines.map((line) => line.tag.length))
+  return lines.map((line) => `${line.tag.padEnd(width)} ${line.value}`)
 }
 
 export function createConfigJsonDocument(
@@ -41,13 +62,19 @@ export function createConfigJsonDocument(
   for (const [index, [name, fieldValue]] of entries.entries()) {
     const blockFrom = doc.length
     const field = fieldIndex.get(name)
-    for (const match of (field?.type ?? '').matchAll(/[A-Za-z_][A-Za-z0-9_.]*/g)) {
-      const from = doc.length + 5 + match.index
-      typeRanges.push({ fieldName: name, typeName: match[0], from, to: from + match[0].length })
-    }
-    const description = [field?.type, field?.description].filter(Boolean).join('\n')
-    for (const line of description.split(/\r\n|[\n\r\u2028\u2029]/)) {
-      doc += `  // ${line}\n`
+    const comments = configFieldCommentLines(field)
+    if (comments.length > 0) {
+      for (const [index, line] of comments.entries()) {
+        const prefix = '  // '
+        if (index === 0 && line.startsWith('@type ')) {
+          const valueOffset = line.match(/^@type +/)![0].length
+          for (const match of line.slice(valueOffset).matchAll(/[A-Za-z_][A-Za-z0-9_.]*/g)) {
+            const from = doc.length + prefix.length + valueOffset + match.index
+            typeRanges.push({ fieldName: name, typeName: match[0], from, to: from + match[0].length })
+          }
+        }
+        doc += `${prefix}${line}\n`
+      }
     }
     doc += `  ${JSON.stringify(name)}: `
     const from = doc.length

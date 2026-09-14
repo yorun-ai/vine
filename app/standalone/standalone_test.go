@@ -177,3 +177,12 @@ func TestInlineSeedConflictsWithFile(t *testing.T) {
 		})
 	}
 }
+
+func TestApplySeedTemplateOptions(t *testing.T) {
+	flags := new(hubflag.Flag)
+	applyOption(flags, Option{SeedYAML: "{}", SeedSource: "source", SeedVarsFile: "vars.yaml"})
+	assert.Equal(t, "source", flags.SeedSource)
+	assert.Equal(t, "vars.yaml", flags.SeedVarsFile)
+	assert.False(t, Option{SeedSourceFile: "source.yaml"}.isZero())
+	assert.False(t, Option{SeedVarsFile: "vars.yaml"}.isZero())
+}

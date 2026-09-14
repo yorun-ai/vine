@@ -9,7 +9,7 @@ test('descriptions become comments and never enter the saved configuration', () 
     { name: 'scheme', type: 'string', description: '访问协议\n"http" 或 "https"' },
     { name: 'port', type: 'int', description: '访问端口' },
   ])
-  assert.equal(document.doc.includes('// int\n  // 访问端口'), true)
+  assert.equal(document.doc.includes('// @type int\n  // @desc 访问端口'), true)
   assert.deepEqual(JSON5.parse(document.doc), value)
   assert.deepEqual(JSON.parse(extractConfigJson(document.doc, document.ranges)), value)
 })
@@ -113,7 +113,7 @@ test('dirty highlighting covers type, description and every value line only', ()
   const lines = getConfigJsonDirtyLines(document.doc, document.ranges, new Set(['items']), new Map())
   const highlighted = lines.map((from) => document.doc.slice(from).split('\n')[0])
   assert.deepEqual(highlighted, [
-    '  // list<string>', '  // Allowed items', '  "items": [', '    "a",', '    "b"', '  ],',
+    '  // @type list<string>', '  // @desc Allowed items', '  "items": [', '    "a",', '    "b"', '  ],',
   ])
   assert.deepEqual(getConfigJsonDirtyLines(document.doc, document.ranges, new Set(), new Map()), [])
   assert.deepEqual(getConfigJsonDirtyLines(document.doc, document.ranges, new Set(['items']), new Map([['items', 'Invalid']])), [])
@@ -127,4 +127,65 @@ test('unsafe integers block saving including nested and rounded backend values',
     assert.equal(createConfigJsonDocument(raw, [], false).doc, raw)
   }
   assert.doesNotThrow(() => normalizeConfigJson('{"max":9007199254740991,"min":-9007199254740991,"fraction":1.5,"text":"9007199254740993"}'))
+})
+
+test('source metadata is protected commentary and never part of saved JSON', () => {
+  const value = { enabled: true }
+  const document = createConfigJsonDocument(JSON.stringify(value), [{
+    name: 'enabled', type: 'bool', description: 'Enabled',
+    commentTags: ['type', 'desc', 'define', 'override', 'source'],
+    sourceComment: '@define domain/user\n@override profile/dev',
+  }])
+  assert.ok(document.doc.includes('// @define   domain/user'))
+  assert.ok(document.doc.includes('// @override profile/dev'))
+  const offset = document.doc.indexOf('domain/user')
+  assert.equal(isConfigValueChange(document.ranges, offset, offset + 1), false)
+  assert.deepEqual(JSON.parse(extractConfigJson(document.doc, document.ranges)), value)
+})
+
+test('field documentation renders line comment tags with optional origins', () => {
+  const document = createConfigJsonDocument('{"enabled":true}', [{
+    name: 'enabled', type: 'bool', description: 'Enable feature',
+    commentTags: ['type', 'desc', 'define', 'override', 'source'],
+    sourceComment: '@define domain/demo\n@override app/default',
+  }])
+  assert.equal(document.doc, `{
+  // @type     bool
+  // @desc     Enable feature
+  // @define   domain/demo
+  // @override app/default
+  "enabled": true
+}`)
+  assert.deepEqual(JSON.parse(extractConfigJson(document.doc, document.ranges)), { enabled: true })
+})
+
+test('comment filters preserve config values and type links follow the visible type tag', () => {
+  for (const commentTags of [[], ['desc'], ['type'], ['source'], ['define', 'override']]) {
+    const document = createConfigJsonDocument('{"category":"A"}', [{
+      name: 'category', type: 'booker.Category', description: 'Category', commentTags,
+      sourceComment: '@source app/default\n@define domain/booker\n@override app/default',
+    }])
+    for (const tag of ['type', 'desc', 'define', 'override', 'source']) {
+      assert.equal(document.doc.includes('@' + tag), commentTags.includes(tag))
+    }
+    const links = getConfigJsonTypeLinks(document, document.ranges, new Map([['booker.Category', {skelName: 'booker.Category'}]]))
+    assert.equal(links.length, commentTags.includes('type') ? 1 : 0)
+    assert.deepEqual(JSON.parse(extractConfigJson(document.doc, document.ranges)), {category: 'A'})
+  }
+})
+
+test('source annotations are hidden by default and enabled empty overrides retain a line', () => {
+  const field = {
+    name: 'enabled', type: 'bool', description: 'Enabled',
+    sourceComment: '@source domain/demo\n@define domain/demo\n@override ',
+  }
+  const defaults = createConfigJsonDocument('{"enabled":true}', [field]).doc
+  assert.ok(defaults.includes('@type'))
+  assert.ok(defaults.includes('@desc'))
+  assert.equal(defaults.includes('@source'), false)
+  assert.equal(defaults.includes('@define'), false)
+  assert.equal(defaults.includes('@override'), false)
+  const explicit = createConfigJsonDocument('{"enabled":true}', [{...field, commentTags: ['override']}])
+  assert.match(explicit.doc, /\/\/ @override +\n/)
+  assert.deepEqual(JSON.parse(extractConfigJson(explicit.doc, explicit.ranges)), {enabled: true})
 })
