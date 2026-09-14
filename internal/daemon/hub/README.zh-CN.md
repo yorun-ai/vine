@@ -127,14 +127,14 @@ Hub 当前支持两类数据库配置来源：
 
 Hub 在 `skel/control` 与 `skel/admin` 中分别维护两套契约。Go 代码生成到
 对应的 `api/skeled/control` 与 `api/skeled/admin` package，TypeScript
-代码生成到 `src/dashboard/src/skeled` 下的对应目录。统一使用顶层脚本：
+仅为 admin 生成代码，输出到 `src/dashboard/src/skeled/admin`。统一使用顶层脚本：
 
 ```bash
 bash script/gen-skel.sh hub
 ```
 
 不要直接修改生成文件。应修改 `skel/control` 或 `skel/admin` 中对应的
-契约，再通过上述脚本同时生成 Go 和 TypeScript 代码，并检查两端调用是否仍然一致。
+契约，再通过上述脚本重新生成对应代码，并检查所有调用方是否仍然一致。
 
 ## Inproc 模式
 

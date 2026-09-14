@@ -85,3 +85,25 @@ func TestHubInfoWatchEndpointSupportsHubVersions(t *testing.T) {
 		})
 	}
 }
+
+func TestHubInfoMQSupportsHubVersions(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		payload  string
+		endpoint string
+		embedded bool
+	}{
+		{"old embedded", `{"natsPort":4222}`, "nats://hub:4222", true},
+		{"new embedded", `{"mqEmbedded":true,"mqNatsPort":4223}`, "nats://hub:4223", true},
+		{"prefer new port", `{"mqEmbedded":true,"mqNatsPort":4223,"natsPort":4222}`, "nats://hub:4223", true},
+		{"old external", `{"mqEndpoint":"nats://old:4222"}`, "nats://old:4222", false},
+		{"new external", `{"mqNatsEndpoint":"nats://new:4222"}`, "nats://new:4222", false},
+		{"prefer new endpoint", `{"mqNatsEndpoint":"nats://new:4222","mqEndpoint":"nats://old:4222"}`, "nats://new:4222", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			component := &HubInfo{host: "hub", Flag: &flag.Flag{}, info: vcode.MustUnmarshalJsonS[hubskeled.Info](tc.payload)}
+			assert.Equal(t, tc.endpoint, component.MQEndpoint())
+			assert.Equal(t, tc.embedded, component.UsesEmbeddedNATS())
+		})
+	}
+}

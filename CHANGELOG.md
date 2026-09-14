@@ -14,6 +14,10 @@ are not part of the public compatibility commitment.
 
 ### Changed
 
+- Hub MQ information explicitly reports `mqEmbedded`, `mqNatsPort`, and
+  `mqNatsEndpoint`. Link prefers these fields while retaining compatibility
+  with `natsPort` and `mqEndpoint` from older Hubs.
+
 - Configure the Hub watch listener with `--watch-listen` or `VINE_WATCH_LISTEN`.
   The deprecated `--redis-listen` and `VINE_REDIS_LISTEN` inputs remain accepted
   with a warning; explicit watch inputs take precedence.

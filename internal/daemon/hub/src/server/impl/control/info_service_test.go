@@ -38,12 +38,13 @@ func TestHubInfoServiceReturnsPortsFromFlag(t *testing.T) {
 	info := service.GetInfo()
 
 	assert.Equal(t, skeled.Info{
-		Version:    buildinfo.MustVineVersion(),
-		ApiPort:    7071,
-		RedisPort:  7072,
-		WatchPort:  7072,
-		NatsPort:   0,
-		MqEndpoint: "nats://127.0.0.1:4222",
+		Version:        buildinfo.MustVineVersion(),
+		ApiPort:        7071,
+		RedisPort:      7072,
+		WatchPort:      7072,
+		NatsPort:       0,
+		MqEndpoint:     "nats://127.0.0.1:4222",
+		MqNatsEndpoint: "nats://127.0.0.1:4222",
 	}, info)
 }
 
@@ -71,6 +72,9 @@ func TestHubInfoServiceReturnsNATSServerPortWhenEnabled(t *testing.T) {
 	assert.Equal(t, info.RedisPort, info.WatchPort)
 	assert.Equal(t, service.NATSServer.Port(), info.NatsPort)
 	assert.Empty(t, info.MqEndpoint)
+	assert.True(t, info.MqEmbedded)
+	assert.Equal(t, info.NatsPort, info.MqNatsPort)
+	assert.Empty(t, info.MqNatsEndpoint)
 }
 
 func TestHubInfoServicePreservesOldClientPort(t *testing.T) {
@@ -89,4 +93,19 @@ func TestHubInfoServicePreservesOldClientPort(t *testing.T) {
 	assert.Equal(t, 7072, decoded.RedisPort)
 	assert.Equal(t, info.WatchPort, decoded.RedisPort)
 	assert.Equal(t, info.MqEndpoint, decoded.MqEndpoint)
+}
+
+func TestHubInfoServiceInprocEmbeddedMQ(t *testing.T) {
+	service := &InfoServiceServerImpl{
+		InprocFlag: &app.InternalInprocFlag{Enabled: true},
+		Flag:       &flag.Flag{ControlListen: ":7071", WatchListen: ":7072", MQEmbeddedNats: true},
+	}
+	info := service.GetInfo()
+	assert.True(t, info.MqEmbedded)
+	assert.Zero(t, info.MqNatsPort)
+	assert.Empty(t, info.MqNatsEndpoint)
+	assert.Zero(t, info.NatsPort)
+	assert.Empty(t, info.MqEndpoint)
+	assert.False(t, info.RedisEmbedded)
+	assert.Zero(t, info.RedisPort2)
 }

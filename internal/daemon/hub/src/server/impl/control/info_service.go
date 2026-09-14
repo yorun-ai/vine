@@ -24,11 +24,14 @@ func (s *InfoServiceServerImpl) GetInfo() skeled.Info {
 		mqEndpoint = ""
 	}
 	return skeled.Info{
-		Version:    buildinfo.MustVineVersion(),
-		ApiPort:    s.Flag.ControlPort(),
-		RedisPort:  s.Flag.WatchPort(), // Keep the same port for older Link and Portal clients.
-		WatchPort:  s.Flag.WatchPort(),
-		NatsPort:   natsPort,
-		MqEndpoint: mqEndpoint,
+		Version:        buildinfo.MustVineVersion(),
+		ApiPort:        s.Flag.ControlPort(),
+		RedisPort:      s.Flag.WatchPort(), // Keep the same port for older Link and Portal clients.
+		WatchPort:      s.Flag.WatchPort(),
+		MqEmbedded:     s.Flag.MQEmbeddedNats,
+		MqNatsPort:     natsPort,
+		MqNatsEndpoint: mqEndpoint,
+		NatsPort:       natsPort,
+		MqEndpoint:     mqEndpoint,
 	}
 }

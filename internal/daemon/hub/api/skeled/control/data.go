@@ -110,16 +110,30 @@ type Info struct {
 	Version string `json:"version"`
 	// ApiPort Control API service port
 	ApiPort int `json:"apiPort"`
+	// WatchPort Configuration and service discovery watch port
+	WatchPort int `json:"watchPort"`
+	// MqEmbedded Whether MQ is embedded in Hub
+	MqEmbedded bool `json:"mqEmbedded"`
+	// MqNatsPort Embedded NATS service port
+	MqNatsPort int `json:"mqNatsPort"`
+	// MqNatsEndpoint External NATS service endpoint
+	MqNatsEndpoint string `json:"mqNatsEndpoint"`
+	// RedisEmbedded Whether Redis is embedded in Hub
+	RedisEmbedded bool `json:"redisEmbedded"`
+	// RedisPort2 Embedded Redis service port. TODO: rename to redisPort after old redisPort retired.
+	RedisPort2 int `json:"redisPort2"`
 	// RedisPort Redis service port
 	//
 	// Deprecated: Use watchPort instead.
 	RedisPort int `json:"redisPort"`
 	// NatsPort NATS service port
+	//
+	// Deprecated: Use mqNatsPort instead.
 	NatsPort int `json:"natsPort"`
-	// MqEndpoint Standalone MQ service address
+	// MqEndpoint External NATS service endpoint
+	//
+	// Deprecated: Use mqNatsEndpoint instead.
 	MqEndpoint string `json:"mqEndpoint"`
-	// WatchPort Configuration and service discovery watch port
-	WatchPort int `json:"watchPort"`
 }
 
 // Clone returns a value-isolated copy of the generated data.

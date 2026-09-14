@@ -14,7 +14,7 @@ Usage: bash script/gen-skel.sh [all|app|hub|link]...
 Targets:
   all   generate all skeleton code
   app   generate internal/core/app/skeled
-  hub   generate Hub control and admin Go/TypeScript skeled packages
+  hub   generate Hub control/admin Go and admin TypeScript skeled packages
   link  generate internal/core/link/skeled
 EOF
 }
@@ -159,11 +159,13 @@ generate_app_skel() {
 generate_hub_skel_domain() {
   local skel_dir="$1"
   local api_dir="$2"
-  local frontend_dir="$3"
+  local frontend_dir="${3:-}"
 
   skelc --strict gen go --skel-in "${skel_dir}" --go-out "${api_dir}"
-  skelc --strict gen ts --api --skel-in "${skel_dir}" --ts-out "${frontend_dir}"
-  rewrite_ts_service_comments "${frontend_dir}"
+  if [[ -n "${frontend_dir}" ]]; then
+    skelc --strict gen ts --api --skel-in "${skel_dir}" --ts-out "${frontend_dir}"
+    rewrite_ts_service_comments "${frontend_dir}"
+  fi
 
   rewrite_common_go_imports "${api_dir}"
   rewrite_actor_imports "${api_dir}"
@@ -175,8 +177,7 @@ generate_hub_skel_domain() {
 generate_hub_skel() {
   generate_hub_skel_domain \
     "${repo_dir}/internal/daemon/hub/skel/control" \
-    "${repo_dir}/internal/daemon/hub/api/skeled/control" \
-    "${repo_dir}/internal/daemon/hub/src/dashboard/src/skeled/control"
+    "${repo_dir}/internal/daemon/hub/api/skeled/control"
   generate_hub_skel_domain \
     "${repo_dir}/internal/daemon/hub/skel/admin" \
     "${repo_dir}/internal/daemon/hub/api/skeled/admin" \

@@ -8,18 +8,35 @@ pub data Info {
     @desc("Control API service port")
     apiPort: int
 
+    @desc("Configuration and service discovery watch port")
+    watchPort: int
+
+    @desc("Whether MQ is embedded in Hub")
+    mqEmbedded: bool
+
+    @desc("Embedded NATS service port")
+    mqNatsPort: int
+
+    @desc("External NATS service endpoint")
+    mqNatsEndpoint: string
+
+    @desc("Whether Redis is embedded in Hub")
+    redisEmbedded: bool
+
+    @desc("Embedded Redis service port. TODO: rename to redisPort after old redisPort retired.")
+    redisPort2: int
+
     @desc("Redis service port")
     @deprecated("Use watchPort instead")
     redisPort: int
 
     @desc("NATS service port")
+    @deprecated("Use mqNatsPort instead")
     natsPort: int
 
-    @desc("Standalone MQ service address")
+    @desc("External NATS service endpoint")
+    @deprecated("Use mqNatsEndpoint instead")
     mqEndpoint: string
-
-    @desc("Configuration and service discovery watch port")
-    watchPort: int
 }
 
 @desc("Hub's information service, called by Link")

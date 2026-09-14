@@ -183,7 +183,7 @@ Dashboard assets with Hub.
 Hub maintains independent Skel source directories at `skel/control` and
 `skel/admin`. Go code is generated into the matching
 `api/skeled/control` and `api/skeled/admin` packages; TypeScript code is
-generated into matching directories under `src/dashboard/src/skeled`. Use the
+generated only for admin into `src/dashboard/src/skeled/admin`. Use the
 top-level script:
 
 ```bash
@@ -191,8 +191,8 @@ bash script/gen-skel.sh hub
 ```
 
 Do not edit generated files directly. Modify the corresponding contracts under
-`skel/control` or `skel/admin`, regenerate both Go and TypeScript code
-with the script, and verify that callers on both sides remain consistent.
+`skel/control` or `skel/admin`, regenerate the corresponding code
+with the script, and verify that all callers remain consistent.
 
 ## Inproc Mode
 
