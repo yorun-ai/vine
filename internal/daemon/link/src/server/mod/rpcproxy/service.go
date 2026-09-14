@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json/v2"
 
-	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 )
 
 func (p *RpcProxy) retainService(serviceName string, appInstanceID string) {
@@ -53,22 +53,22 @@ func (p *RpcProxy) releaseInstanceState(appInstanceID string) {
 	}
 }
 
-func (p *RpcProxy) nextServiceEndpoint(serviceName string, destination string) (redised.RpcServiceRegistration, bool) {
+func (p *RpcProxy) nextServiceEndpoint(serviceName string, destination string) (watched.RpcServiceRegistration, bool) {
 	p.serviceStateMutex.Lock()
 	defer p.serviceStateMutex.Unlock()
 	state, ok := p.serviceStatesByName[serviceName]
 	if !ok || len(state.endpoints) == 0 {
-		return redised.RpcServiceRegistration{}, false
+		return watched.RpcServiceRegistration{}, false
 	}
 	if destination != "" {
-		endpoints := make([]redised.RpcServiceRegistration, 0)
+		endpoints := make([]watched.RpcServiceRegistration, 0)
 		for _, registration := range state.endpoints {
 			if registration.AppName == destination {
 				endpoints = append(endpoints, registration)
 			}
 		}
 		if len(endpoints) == 0 {
-			return redised.RpcServiceRegistration{}, false
+			return watched.RpcServiceRegistration{}, false
 		}
 		if state.nextIndexByDestination == nil {
 			state.nextIndexByDestination = map[string]int{}
@@ -85,7 +85,7 @@ func (p *RpcProxy) nextServiceEndpoint(serviceName string, destination string) (
 	return registration, true
 }
 
-func (p *RpcProxy) newServiceState(serviceName string) (*_ServiceState, hubredis.Subscription) {
+func (p *RpcProxy) newServiceState(serviceName string) (*_ServiceState, hubwatch.Subscription) {
 	watchCtx, cancel := context.WithCancel(p.Context)
 	registrationsByKey, subscription := p.loadAndWatchServiceRegistrations(serviceName, watchCtx)
 	state := &_ServiceState{
@@ -97,21 +97,21 @@ func (p *RpcProxy) newServiceState(serviceName string) (*_ServiceState, hubredis
 	return state, subscription
 }
 
-func (p *RpcProxy) loadAndWatchServiceRegistrations(serviceName string, ctx context.Context) (map[string]redised.RpcServiceRegistration, hubredis.Subscription) {
-	valuesByKey, subscription := p.RedisClient.LoadListAndSubscribe(
+func (p *RpcProxy) loadAndWatchServiceRegistrations(serviceName string, ctx context.Context) (map[string]watched.RpcServiceRegistration, hubwatch.Subscription) {
+	valuesByKey, subscription := p.WatchClient.LoadListAndSubscribe(
 		ctx,
-		redised.FormatRpcServiceRegistrationPrefix(serviceName),
-		func(event hubredis.Event) {
+		watched.FormatRpcServiceRegistrationPrefix(serviceName),
+		func(event hubwatch.Event) {
 			p.handleServiceRegistrationEvent(serviceName, event)
 		},
 	)
 	return parseServiceRegistrations(valuesByKey), subscription
 }
 
-func parseServiceRegistrations(valuesByKey map[string]string) map[string]redised.RpcServiceRegistration {
-	registrationsByKey := map[string]redised.RpcServiceRegistration{}
+func parseServiceRegistrations(valuesByKey map[string]string) map[string]watched.RpcServiceRegistration {
+	registrationsByKey := map[string]watched.RpcServiceRegistration{}
 	for key, value := range valuesByKey {
-		var registration redised.RpcServiceRegistration
+		var registration watched.RpcServiceRegistration
 		if err := json.Unmarshal([]byte(value), &registration); err != nil {
 			continue
 		}
@@ -120,7 +120,7 @@ func parseServiceRegistrations(valuesByKey map[string]string) map[string]redised
 	return registrationsByKey
 }
 
-func (p *RpcProxy) handleServiceRegistrationEvent(serviceName string, event hubredis.Event) {
+func (p *RpcProxy) handleServiceRegistrationEvent(serviceName string, event hubwatch.Event) {
 	p.serviceStateMutex.Lock()
 	defer p.serviceStateMutex.Unlock()
 	state, ok := p.serviceStatesByName[serviceName]
@@ -129,10 +129,10 @@ func (p *RpcProxy) handleServiceRegistrationEvent(serviceName string, event hubr
 	}
 
 	switch event.Kind {
-	case hubredis.EventKindDelete:
+	case hubwatch.EventKindDelete:
 		delete(state.registrationsByKey, event.Key)
 	default:
-		var registration redised.RpcServiceRegistration
+		var registration watched.RpcServiceRegistration
 		if err := json.Unmarshal([]byte(event.Value), &registration); err != nil {
 			return
 		}
@@ -142,7 +142,7 @@ func (p *RpcProxy) handleServiceRegistrationEvent(serviceName string, event hubr
 }
 
 func (p *RpcProxy) rebuildServiceEndpointsLocked(state *_ServiceState) {
-	endpoints := make([]redised.RpcServiceRegistration, 0, len(state.registrationsByKey))
+	endpoints := make([]watched.RpcServiceRegistration, 0, len(state.registrationsByKey))
 	for _, registration := range state.registrationsByKey {
 		endpoints = append(endpoints, registration)
 	}

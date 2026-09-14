@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"go.yorun.ai/vine/internal/app"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vcode"
 )
@@ -14,7 +14,7 @@ import (
 type Syncer struct {
 	app.BaseModule
 
-	RedisServer *redisserver.Server `inject:""`
+	WatchServer *watchserver.Server `inject:""`
 
 	namesMutex           sync.Mutex
 	schemaMutex          sync.Mutex
@@ -41,8 +41,8 @@ func (s *Syncer) SyncAppConfig(item *core.AppConfig) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
-	s.removeRenamedKeyLocked(s.appConfigNamesById, item.Id, item.Name, redised.FormatConfigKey)
-	s.RedisServer.SetAndNotify(redised.FormatConfigKey(item.Name), vcode.MustMarshalJsonS(ToRedisedAppConfig(item)))
+	s.removeRenamedKeyLocked(s.appConfigNamesById, item.Id, item.Name, watched.FormatConfigKey)
+	s.WatchServer.SetAndNotify(watched.FormatConfigKey(item.Name), vcode.MustMarshalJsonS(ToWatchedAppConfig(item)))
 	s.saveNameByIdLocked(s.appConfigNamesById, item.Id, item.Name)
 }
 
@@ -50,27 +50,27 @@ func (s *Syncer) RemoveAppConfig(item *core.AppConfig) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
-	s.RedisServer.DeleteAndNotify(redised.FormatConfigKey(item.Name))
+	s.WatchServer.DeleteAndNotify(watched.FormatConfigKey(item.Name))
 	delete(s.appConfigNamesById, item.Id)
 }
 
-func (s *Syncer) SyncRpcServiceRegistration(reg redised.RpcServiceRegistration) {
-	s.RedisServer.SetAndNotify(
-		redised.FormatRpcServiceRegistrationKey(reg.ServiceName, reg.AppName, reg.AppInstanceId),
+func (s *Syncer) SyncRpcServiceRegistration(reg watched.RpcServiceRegistration) {
+	s.WatchServer.SetAndNotify(
+		watched.FormatRpcServiceRegistrationKey(reg.ServiceName, reg.AppName, reg.AppInstanceId),
 		vcode.MustMarshalJsonS(reg),
 	)
 }
 
-func (s *Syncer) SyncWebRegistration(webName string, reg redised.WebRegistration) {
-	s.RedisServer.SetAndNotify(
-		redised.FormatWebRegistrationKey(webName, reg.AppName, reg.AppInstanceId),
+func (s *Syncer) SyncWebRegistration(webName string, reg watched.WebRegistration) {
+	s.WatchServer.SetAndNotify(
+		watched.FormatWebRegistrationKey(webName, reg.AppName, reg.AppInstanceId),
 		vcode.MustMarshalJsonS(reg),
 	)
 }
 
 func (s *Syncer) removeRenamedKeyLocked(namesById map[int]string, id int, name string, formatKey func(string) string) {
 	if oldName, ok := namesById[id]; ok && oldName != name {
-		s.RedisServer.DeleteAndNotify(formatKey(oldName))
+		s.WatchServer.DeleteAndNotify(formatKey(oldName))
 	}
 }
 
@@ -78,8 +78,8 @@ func (s *Syncer) saveNameByIdLocked(namesById map[int]string, id int, name strin
 	namesById[id] = name
 }
 
-func ToRedisedAppConfig(item *core.AppConfig) *redised.ConfigValue {
-	return &redised.ConfigValue{
+func ToWatchedAppConfig(item *core.AppConfig) *watched.ConfigValue {
+	return &watched.ConfigValue{
 		Name:  item.Name,
 		Value: jsontext.Value(item.Value),
 	}

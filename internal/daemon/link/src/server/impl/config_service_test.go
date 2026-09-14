@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubredis"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/config"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 	"go.yorun.ai/vine/util/vcode"
@@ -25,8 +25,8 @@ func TestConfigServiceReturnsInstantValue(t *testing.T) {
 	appMinder.DIInit()
 	reader := &config.Reader{
 		Context: context.Background(),
-		Client: hubredis.NewClientForTest(map[string]string{
-			redised.FormatConfigKey("demo.FeatureConfig"): marshalTestConfigValue("demo.FeatureConfig", `{"enabled":true}`),
+		Client: hubwatch.NewClientForTest(map[string]string{
+			watched.FormatConfigKey("demo.FeatureConfig"): marshalTestConfigValue("demo.FeatureConfig", `{"enabled":true}`),
 		}),
 		AppMinder: appMinder,
 	}
@@ -56,8 +56,8 @@ func TestConfigServiceReturnsEternalValue(t *testing.T) {
 	appMinder.DIInit()
 	reader := &config.Reader{
 		Context: context.Background(),
-		Client: hubredis.NewClientForTest(map[string]string{
-			redised.FormatConfigKey("demo.FeatureConfig"): marshalTestConfigValue("demo.FeatureConfig", `{"enabled":true}`),
+		Client: hubwatch.NewClientForTest(map[string]string{
+			watched.FormatConfigKey("demo.FeatureConfig"): marshalTestConfigValue("demo.FeatureConfig", `{"enabled":true}`),
 		}),
 		AppMinder: appMinder,
 	}
@@ -77,7 +77,7 @@ func TestConfigServiceReturnsEternalValue(t *testing.T) {
 }
 
 func marshalTestConfigValue(name string, value string) string {
-	return vcode.MustMarshalJsonS(redised.ConfigValue{
+	return vcode.MustMarshalJsonS(watched.ConfigValue{
 		Name:  name,
 		Value: []byte(value),
 	})

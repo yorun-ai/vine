@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"go.yorun.ai/vine/internal/core/ex"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"golang.org/x/net/http2"
 )
 
@@ -63,7 +63,7 @@ func TestResolveOutboundTargetPrefersLocalTarget(t *testing.T) {
 	targetApp := mustMetaApp(t, "target.app", "22222222-2222-2222-2222-222222222222")
 	remoteEndpoint := "http://remote.invalid/rpc/proxy/in/" + targetApp.InstanceId()
 
-	proxy := newTestRpcProxy(t, newTestHubRedisClient(map[string][]redised.RpcServiceRegistration{
+	proxy := newTestRpcProxy(t, newTestHubWatchClient(map[string][]watched.RpcServiceRegistration{
 		"demo.service.UserService": {{
 			ServiceName:   "demo.service.UserService",
 			Endpoint:      remoteEndpoint,
@@ -93,7 +93,7 @@ func TestResolveOutboundTargetFallsBackToRemoteRegistration(t *testing.T) {
 	remoteApp := mustMetaApp(t, "remote.app", "22222222-2222-2222-2222-222222222222")
 	remoteEndpoint := "http://remote.invalid/rpc/proxy/in/" + remoteApp.InstanceId()
 
-	proxy := newTestRpcProxy(t, newTestHubRedisClient(map[string][]redised.RpcServiceRegistration{
+	proxy := newTestRpcProxy(t, newTestHubWatchClient(map[string][]watched.RpcServiceRegistration{
 		"demo.service.UserService": {{
 			ServiceName:   "demo.service.UserService",
 			Endpoint:      remoteEndpoint,
@@ -123,7 +123,7 @@ func TestResolveOutboundTargetRejectsLocalTargetWithoutService(t *testing.T) {
 	targetApp := mustMetaApp(t, "target.app", "22222222-2222-2222-2222-222222222222")
 	remoteEndpoint := "http://remote.invalid/rpc/proxy/in/" + targetApp.InstanceId()
 
-	proxy := newTestRpcProxy(t, newTestHubRedisClient(map[string][]redised.RpcServiceRegistration{
+	proxy := newTestRpcProxy(t, newTestHubWatchClient(map[string][]watched.RpcServiceRegistration{
 		"demo.service.UserService": {{
 			ServiceName:   "demo.service.UserService",
 			Endpoint:      remoteEndpoint,
@@ -153,7 +153,7 @@ func TestApiServiceRejectsBackendCallsAtLink(t *testing.T) {
 		t.Run(fmt.Sprint(local), func(t *testing.T) {
 			caller := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")
 			target := mustMetaApp(t, "target.app", "22222222-2222-2222-2222-222222222222")
-			proxy := newTestRpcProxy(t, newTestHubRedisClient(map[string][]redised.RpcServiceRegistration{
+			proxy := newTestRpcProxy(t, newTestHubWatchClient(map[string][]watched.RpcServiceRegistration{
 				"demo.OrderService": {{ServiceName: "demo.OrderService", Api: true, AppName: target.Name(), AppInstanceId: target.InstanceId(), Endpoint: "http://remote.invalid/rpc/proxy/in/target"}},
 			}))
 			registerLocalApp(proxy, caller, "http://127.0.0.1:8080"+testPathRpcInvoke, "http://127.0.0.1:8080", nil)
@@ -175,7 +175,7 @@ func TestOutboundDestinationTransports(t *testing.T) {
 	service := method.Service().SkelName()
 	caller := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")
 	target := mustMetaApp(t, "target.app", "22222222-2222-2222-2222-222222222222")
-	proxy := newTestRpcProxy(t, newTestHubRedisClient(map[string][]redised.RpcServiceRegistration{
+	proxy := newTestRpcProxy(t, newTestHubWatchClient(map[string][]watched.RpcServiceRegistration{
 		service: {{ServiceName: service, AppName: target.Name(), AppInstanceId: target.InstanceId(), Endpoint: "http://target.invalid"}},
 	}))
 	registerLocalApp(proxy, caller, "http://caller.invalid", "http://caller.invalid", nil)

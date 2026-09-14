@@ -8,7 +8,7 @@ import (
 	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/internal/daemon"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubinfo"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubredis"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/entry"
@@ -45,7 +45,7 @@ func (a *PortalApp) DIInit() {
 
 func (*PortalApp) InitComponents(addComponent app.TypeAdder) {
 	addComponent(app.T[*hubinfo.HubInfo]())
-	addComponent(app.T[*hubredis.Client]())
+	addComponent(app.T[*hubwatch.Client]())
 }
 
 func (*PortalApp) InitModules(addModule app.TypeAdder) {

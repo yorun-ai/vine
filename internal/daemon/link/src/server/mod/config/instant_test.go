@@ -1,15 +1,15 @@
 package config
 
 import (
-	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestHandleInstantConfigEventIgnoresInvalidConfigValue(t *testing.T) {
-	reader := newTestReader(map[string]redised.ConfigValue{
+	reader := newTestReader(map[string]watched.ConfigValue{
 		"demo.FeatureConfig": {
 			Name:  "demo.FeatureConfig",
 			Value: []byte(`{"enabled":true}`),
@@ -19,8 +19,8 @@ func TestHandleInstantConfigEventIgnoresInvalidConfigValue(t *testing.T) {
 	registerTestAppInstance(reader, appInstanceID)
 	reader.GetInstant(appInstanceID, "demo.FeatureConfig")
 
-	reader.handleInstantConfigEvent(redised.FormatConfigKey("demo.FeatureConfig"), hubredis.Event{
-		Kind:  hubredis.EventKindUpsert,
+	reader.handleInstantConfigEvent(watched.FormatConfigKey("demo.FeatureConfig"), hubwatch.Event{
+		Kind:  hubwatch.EventKindUpsert,
 		Value: "not-a-config-value",
 	})
 
@@ -28,7 +28,7 @@ func TestHandleInstantConfigEventIgnoresInvalidConfigValue(t *testing.T) {
 }
 
 func TestHandleInstantConfigEventRefreshesInstantValueForAllInstances(t *testing.T) {
-	reader := newTestReader(map[string]redised.ConfigValue{
+	reader := newTestReader(map[string]watched.ConfigValue{
 		"demo.FeatureConfig": {
 			Name:  "demo.FeatureConfig",
 			Value: []byte(`{"enabled":true}`),
@@ -42,8 +42,8 @@ func TestHandleInstantConfigEventRefreshesInstantValueForAllInstances(t *testing
 	reader.GetInstant(firstAppInstanceID, "demo.FeatureConfig")
 	reader.GetInstant(secondAppInstanceID, "demo.FeatureConfig")
 
-	reader.handleInstantConfigEvent(redised.FormatConfigKey("demo.FeatureConfig"), hubredis.Event{
-		Kind:  hubredis.EventKindUpsert,
+	reader.handleInstantConfigEvent(watched.FormatConfigKey("demo.FeatureConfig"), hubwatch.Event{
+		Kind:  hubwatch.EventKindUpsert,
 		Value: marshalTestConfigValue("demo.FeatureConfig", `{"enabled":false}`),
 	})
 
@@ -52,7 +52,7 @@ func TestHandleInstantConfigEventRefreshesInstantValueForAllInstances(t *testing
 }
 
 func TestGetInstantInitializesNewSnapshotFromStateValue(t *testing.T) {
-	reader := newTestReader(map[string]redised.ConfigValue{
+	reader := newTestReader(map[string]watched.ConfigValue{
 		"demo.FeatureConfig": {
 			Name:  "demo.FeatureConfig",
 			Value: []byte(`{"enabled":true}`),
@@ -63,8 +63,8 @@ func TestGetInstantInitializesNewSnapshotFromStateValue(t *testing.T) {
 	registerTestAppInstance(reader, firstAppInstanceID)
 	registerTestAppInstance(reader, secondAppInstanceID)
 	reader.GetInstant(firstAppInstanceID, "demo.FeatureConfig")
-	reader.handleInstantConfigEvent(redised.FormatConfigKey("demo.FeatureConfig"), hubredis.Event{
-		Kind:  hubredis.EventKindUpsert,
+	reader.handleInstantConfigEvent(watched.FormatConfigKey("demo.FeatureConfig"), hubwatch.Event{
+		Kind:  hubwatch.EventKindUpsert,
 		Value: marshalTestConfigValue("demo.FeatureConfig", `{"enabled":false}`),
 	})
 
@@ -76,12 +76,12 @@ func TestHandleInstantConfigEventDeletesInstantValueOnDeleteEvent(t *testing.T) 
 	appInstanceID := "11111111-1111-1111-1111-111111111111"
 	registerTestAppInstance(reader, appInstanceID)
 	reader.GetInstant(appInstanceID, "demo.FeatureConfig")
-	reader.handleInstantConfigEvent(redised.FormatConfigKey("demo.FeatureConfig"), hubredis.Event{
-		Kind:  hubredis.EventKindUpsert,
+	reader.handleInstantConfigEvent(watched.FormatConfigKey("demo.FeatureConfig"), hubwatch.Event{
+		Kind:  hubwatch.EventKindUpsert,
 		Value: marshalTestConfigValue("demo.FeatureConfig", `{"enabled":true}`),
 	})
 
-	reader.handleInstantConfigEvent(redised.FormatConfigKey("demo.FeatureConfig"), hubredis.Event{Kind: hubredis.EventKindDelete})
+	reader.handleInstantConfigEvent(watched.FormatConfigKey("demo.FeatureConfig"), hubwatch.Event{Kind: hubwatch.EventKindDelete})
 
 	assert.Equal(t, "", reader.GetInstant(appInstanceID, "demo.FeatureConfig"))
 }
@@ -93,8 +93,8 @@ func TestHandleInstantConfigEventRecoversValueAfterInitialMiss(t *testing.T) {
 
 	assert.Equal(t, "", reader.GetInstant(appInstanceID, "demo.FeatureConfig"))
 
-	reader.handleInstantConfigEvent(redised.FormatConfigKey("demo.FeatureConfig"), hubredis.Event{
-		Kind:  hubredis.EventKindUpsert,
+	reader.handleInstantConfigEvent(watched.FormatConfigKey("demo.FeatureConfig"), hubwatch.Event{
+		Kind:  hubwatch.EventKindUpsert,
 		Value: marshalTestConfigValue("demo.FeatureConfig", `{"enabled":true}`),
 	})
 
@@ -102,7 +102,7 @@ func TestHandleInstantConfigEventRecoversValueAfterInitialMiss(t *testing.T) {
 }
 
 func TestReleaseInstantConfigStateByInstanceRemovesRetainedRef(t *testing.T) {
-	reader := newTestReader(map[string]redised.ConfigValue{
+	reader := newTestReader(map[string]watched.ConfigValue{
 		"demo.FeatureConfig": {
 			Name:  "demo.FeatureConfig",
 			Value: []byte(`{"enabled":true}`),
@@ -115,13 +115,13 @@ func TestReleaseInstantConfigStateByInstanceRemovesRetainedRef(t *testing.T) {
 	reader.releaseInstantConfigStateByInstance(appInstanceID)
 
 	reader.mutex.RLock()
-	_, ok := reader.instantConfigStatesByKey[redised.FormatConfigKey("demo.FeatureConfig")]
+	_, ok := reader.instantConfigStatesByKey[watched.FormatConfigKey("demo.FeatureConfig")]
 	reader.mutex.RUnlock()
 	assert.False(t, ok)
 }
 
 func TestReleaseInstantConfigStateByInstanceKeepsConfigWhileRetainedByAnotherApp(t *testing.T) {
-	reader := newTestReader(map[string]redised.ConfigValue{
+	reader := newTestReader(map[string]watched.ConfigValue{
 		"demo.FeatureConfig": {
 			Name:  "demo.FeatureConfig",
 			Value: []byte(`{"enabled":true}`),

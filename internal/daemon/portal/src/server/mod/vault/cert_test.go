@@ -14,7 +14,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 )
 
 func TestCertificateUsesParsedLeafDomains(t *testing.T) {
@@ -36,11 +36,11 @@ func TestCertificateMatchesWildcardHost(t *testing.T) {
 	assert.False(t, parsed.MatchesWildcardHost("demo.local"))
 }
 
-func newTestPortalCert(t *testing.T, name string, domains []string) *redised.PortalCert {
+func newTestPortalCert(t *testing.T, name string, domains []string) *watched.PortalCert {
 	t.Helper()
 
 	certPEM, keyPEM := newTestCertificatePEM(t, domains)
-	return &redised.PortalCert{
+	return &watched.PortalCert{
 		Name:             name,
 		Issuer:           "test",
 		PublicKeyBase64:  base64.StdEncoding.EncodeToString(certPEM),

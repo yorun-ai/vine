@@ -84,11 +84,16 @@ export type EventListenerRegistration = {
  */
 export type Info = {
   /**
+   * Hub Vine runtime version.
+   */
+  version:    string;
+  /**
    * Control API service port.
    */
   apiPort:    number;
   /**
    * Redis service port.
+   * @deprecated Use watchPort instead
    */
   redisPort:  number;
   /**
@@ -99,6 +104,10 @@ export type Info = {
    * Standalone MQ service address.
    */
   mqEndpoint: string;
+  /**
+   * Configuration and service discovery watch port.
+   */
+  watchPort:  number;
 }
 /**
  * Rpc service processing capability registration information provided by the application.

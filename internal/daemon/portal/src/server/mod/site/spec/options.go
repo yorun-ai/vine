@@ -10,7 +10,7 @@ import (
 	"golang.org/x/net/publicsuffix"
 
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/util/vpre"
 	"go.yorun.ai/vine/util/vslice"
 )
@@ -32,7 +32,7 @@ var corsExposeHeaders = []string{
 	rpchttp.HeaderRpcServer,
 }
 
-func ServeOptions(w http.ResponseWriter, r *http.Request, cors redised.PortalCors, entryOrigin EntryOrigin, allowedMethods []string) {
+func ServeOptions(w http.ResponseWriter, r *http.Request, cors watched.PortalCors, entryOrigin EntryOrigin, allowedMethods []string) {
 	if ApplyCORS(w, r, cors, entryOrigin) {
 		methods := append(vslice.Clone(allowedMethods), http.MethodOptions)
 		header := w.Header()
@@ -48,7 +48,7 @@ func ServeOptions(w http.ResponseWriter, r *http.Request, cors redised.PortalCor
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func ApplyCORS(w http.ResponseWriter, r *http.Request, cors redised.PortalCors, entryOrigin EntryOrigin) bool {
+func ApplyCORS(w http.ResponseWriter, r *http.Request, cors watched.PortalCors, entryOrigin EntryOrigin) bool {
 	origin := r.Header.Get("Origin")
 	if !isCORSRequest(origin) || !allowOrigin(cors, origin, entryOrigin) {
 		return false
@@ -82,13 +82,13 @@ func isCORSRequest(origin string) bool {
 	return origin != ""
 }
 
-func allowOrigin(cors redised.PortalCors, origin string, entryOrigin EntryOrigin) bool {
+func allowOrigin(cors watched.PortalCors, origin string, entryOrigin EntryOrigin) bool {
 	switch cors.Mode {
-	case redised.PortalCorsModeDisabled:
+	case watched.PortalCorsModeDisabled:
 		return false
-	case redised.PortalCorsModeSameDomain:
+	case watched.PortalCorsModeSameDomain:
 		return sameDomainOrigin(origin, entryOrigin)
-	case redised.PortalCorsModeStrict:
+	case watched.PortalCorsModeStrict:
 		return vslice.Any(cors.AllowedOrigins, func(allowed string) bool {
 			return sameOrigin(allowed, origin)
 		})

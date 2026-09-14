@@ -106,14 +106,20 @@ func (v EventListenerRegistration) Clone() EventListenerRegistration {
 
 // Info Hub information
 type Info struct {
+	// Version Hub Vine runtime version
+	Version string `json:"version"`
 	// ApiPort Control API service port
 	ApiPort int `json:"apiPort"`
 	// RedisPort Redis service port
+	//
+	// Deprecated: Use watchPort instead.
 	RedisPort int `json:"redisPort"`
 	// NatsPort NATS service port
 	NatsPort int `json:"natsPort"`
 	// MqEndpoint Standalone MQ service address
 	MqEndpoint string `json:"mqEndpoint"`
+	// WatchPort Configuration and service discovery watch port
+	WatchPort int `json:"watchPort"`
 }
 
 // Clone returns a value-isolated copy of the generated data.

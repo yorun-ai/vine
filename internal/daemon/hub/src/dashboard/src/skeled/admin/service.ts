@@ -168,7 +168,7 @@ export function createAppConfigApiService(client: VrpcClient) {
 export function createAppStatusApiService(client: VrpcClient) {
   return {
     /**
-     * List application instance statuses currently stored in Redis.
+     * List application instance statuses.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns Array<AppStatusView> -

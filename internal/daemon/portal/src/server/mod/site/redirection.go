@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 )
 
@@ -31,7 +31,7 @@ func (s *_RedirectionSite) Serve(ctx *spec.Context) {
 	http.Redirect(ctx.ResponseWriter, ctx.Request, s.location(ctx), s.statusCode())
 }
 
-func (s *_RedirectionSite) Update(config redised.PortalSite) bool {
+func (s *_RedirectionSite) Update(config watched.PortalSite) bool {
 	return false
 }
 

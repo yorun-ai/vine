@@ -1,6 +1,7 @@
 package control
 
 import (
+	"go.yorun.ai/vine/buildinfo"
 	"go.yorun.ai/vine/internal/app"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
@@ -23,8 +24,10 @@ func (s *InfoServiceServerImpl) GetInfo() skeled.Info {
 		mqEndpoint = ""
 	}
 	return skeled.Info{
+		Version:    buildinfo.MustVineVersion(),
 		ApiPort:    s.Flag.ControlPort(),
-		RedisPort:  s.Flag.RedisPort(),
+		RedisPort:  s.Flag.WatchPort(), // Keep the same port for older Link and Portal clients.
+		WatchPort:  s.Flag.WatchPort(),
 		NatsPort:   natsPort,
 		MqEndpoint: mqEndpoint,
 	}

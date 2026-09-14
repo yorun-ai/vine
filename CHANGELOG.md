@@ -8,6 +8,21 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Added
+
+- Hub connection information includes its Vine runtime `version`.
+
+### Changed
+
+- Configure the Hub watch listener with `--watch-listen` or `VINE_WATCH_LISTEN`.
+  The deprecated `--redis-listen` and `VINE_REDIS_LISTEN` inputs remain accepted
+  with a warning; explicit watch inputs take precedence.
+
+- Hub connection information now advertises `watchPort` for configuration and
+  service discovery. Link and Portal prefer it and fall back to `redisPort`
+  when connecting to older Hubs. Hub retains the deprecated `redisPort` field
+  for existing clients.
+
 ## [0.17.0] - 2026-09-14
 
 ### Fixed

@@ -80,3 +80,14 @@ func MustVineDependencyVersion() string {
 	}
 	return DevVersion
 }
+
+// MustVineVersion returns the Vine runtime version of this executable, whether
+// Vine is the main module or a dependency of an embedding application.
+func MustVineVersion() string {
+	info, ok := readBuildInfo()
+	vpre.Check(ok, "read Go build info failed")
+	if info.Main.Path == "go.yorun.ai/vine" {
+		return MustDebugBuildInfo().Version
+	}
+	return MustVineDependencyVersion()
+}

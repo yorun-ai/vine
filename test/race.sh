@@ -25,15 +25,15 @@ case "${scope}" in
       ./internal/core/web/inproc
       ./internal/core/web/proxy
       ./internal/daemon/hub/api/nats
-      ./internal/daemon/hub/api/redis
+      ./internal/daemon/hub/api/watch
       ./internal/daemon/hub/src/server/app
       ./internal/daemon/hub/src/server/comp/natsserver
-      ./internal/daemon/hub/src/server/comp/redisserver
-      ./internal/daemon/hub/src/server/comp/redisserver/embedded
+      ./internal/daemon/hub/src/server/comp/watchserver
+      ./internal/daemon/hub/src/server/comp/watchserver/embedded
       ./internal/daemon/hub/src/server/core
       ./internal/daemon/hub/src/server/mod/scheduler
       ./internal/daemon/hub/src/server/repo/...
-      ./internal/daemon/link/src/server/comp/hubredis
+      ./internal/daemon/link/src/server/comp/hubwatch
       ./internal/daemon/link/src/server/comp/nats
       ./internal/daemon/link/src/server/mod/config
       ./internal/daemon/link/src/server/mod/event
@@ -43,7 +43,7 @@ case "${scope}" in
       ./internal/daemon/link/src/server/mod/task
       ./internal/daemon/link/src/server/mod/webproxy
       ./internal/daemon/portal/src/server/cacheutil
-      ./internal/daemon/portal/src/server/comp/hubredis
+      ./internal/daemon/portal/src/server/comp/hubwatch
       ./internal/daemon/portal/src/server/mod/access
       ./internal/daemon/portal/src/server/mod/entry
       ./internal/daemon/portal/src/server/mod/epmgr

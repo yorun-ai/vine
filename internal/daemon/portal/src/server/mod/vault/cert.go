@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 )
 
 type _Certificate struct {
@@ -18,7 +18,7 @@ type _Certificate struct {
 	cert      *tls.Certificate
 }
 
-func newCertificate(cert *redised.PortalCert) (*_Certificate, error) {
+func newCertificate(cert *watched.PortalCert) (*_Certificate, error) {
 	publicKeyPEM, err := base64.StdEncoding.DecodeString(cert.PublicKeyBase64)
 	if err != nil {
 		return nil, err

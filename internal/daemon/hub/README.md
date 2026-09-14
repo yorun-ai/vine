@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-Hub is Vine's configuration and service registry. It broadly follows a DDD-style layered architecture, maintains configuration, application state, and Rpc service registrations, and exposes read and subscription capabilities through Redis.
+Hub is Vine's configuration and service registry. It broadly follows a DDD-style layered architecture, maintains configuration, application state, and Rpc service registrations, and exposes read and subscription capabilities through Watch using the Redis protocol.
 
 Without a database option, Hub defaults to `--no-db` and requires
 `--seed-hub-data-file`. Configuration is loaded into an isolated in-memory SQLite
@@ -22,15 +22,15 @@ internal/daemon/hub/
 ├── api/                  Public APIs exposed by Hub to other runtime components
 │   ├── app/              Shared constants such as the Hub inproc endpoint
 │   ├── nats/             Hub NATS inproc access
-│   ├── redis/            Hub Redis client, events, and inproc access
-│   ├── redised/          Redis value structures and key formatting
+│   ├── watch/            Hub Watch client, events, and inproc access
+│   ├── watched/          Watch value structures and key formatting
 │   └── skeled/           Generated control/admin Go packages
 ├── skel/                 Control and admin skeleton definitions
 └── src/
     ├── dashboard/        Dashboard frontend source
     └── server/           Hub server runtime
         ├── app/          Assembly of Hub components, modules, and servicers
-        ├── comp/         Shared runtime components such as Redis and NATS servers
+        ├── comp/         Shared runtime components such as Watch and NATS servers
         ├── core/         Domain state and Core/Repo interfaces
         ├── flag/         Hub flags and default normalization
         ├── impl/         Implementations split by exposed API boundary
@@ -62,13 +62,13 @@ The script runs `pnpm run build` in `src/dashboard` and packages `dist` as a new
 Keep Hub's layer responsibilities distinct:
 
 - `core` defines domain state and Repo interfaces without depending on concrete database or Redis implementations.
-- `repo` implements persistence and Redis synchronization without owning external service orchestration.
+- `repo` implements persistence and Watch synchronization without owning external service orchestration.
 - `impl/control` implements only the Link/Portal-facing Control API services,
   while `impl/admin` and its `debug` and `dashboard` subpackages implement
   the Dashboard admin surface through `core` and `repo`.
 - `mod` contains runtime flows such as the Control API listener, initializer,
   seeder, syncer, scheduler, and sweeper.
-- `comp` provides shared runtime components such as Redis and NATS.
+- `comp` provides shared runtime components such as Watch and NATS.
 - `app` only assembles components, modules, and servicers.
 
 ### Domain Writes
@@ -96,7 +96,7 @@ Additional constraints for Hub changes:
 
 - Database schema changes must update both `src/server/repo/db/model/sql/sqlite` and `src/server/repo/db/model/sql/pgsql`.
 - Redis keys, Redis value JSON, and event formats are protocols shared by Hub, Link, and Portal. Update every producer, consumer, and test together.
-- `redisserver` is a runtime distribution layer. Do not turn it into a second source of business state that bypasses Repo/Core.
+- `watchserver` is a runtime distribution layer. Do not turn it into a second source of business state that bypasses Repo/Core.
 - Registration semantics differ between normal and inproc modes for TTL, heartbeat, and sweeper behavior. Validate both modes separately.
 
 ## Runtime Model
@@ -104,13 +104,13 @@ Additional constraints for Hub changes:
 Hub has four primary responsibilities:
 
 1. Configuration center
-   Hub reads configuration from the database and exposes it through `AppConfigRepo`. During startup, `initializer` loads configuration into Redis for Link to read and subscribe to.
+   Hub reads configuration from the database and exposes it through `AppConfigRepo`. During startup, `initializer` loads configuration into Watch for Link to read and subscribe to.
 
 2. Service registry
    Link writes application state and Rpc service registrations to Hub. Hub persists them through `RegistryRepo` and exposes queries and heartbeat lease renewal.
 
-3. Redis distribution layer
-   `redisserver` maintains an in-memory Redis dataset. Configuration, application state, Rpc/Web endpoints, and schemas are synchronized into it. Link and Portal read snapshots and subscribe to change events through Redis.
+3. Watch distribution layer
+   `watchserver` maintains an in-memory Watch dataset. Configuration, application state, Rpc/Web endpoints, and schemas are synchronized into it. Link and Portal read snapshots and subscribe to change events through Redis.
 
    The embedded Redis protocol requires authentication before any data command. It defines three users with resource-level ACLs:
 
@@ -142,7 +142,7 @@ Hub currently supports two database backends:
 
 At startup, `--seed-hub-data-file` imports initial configuration, Portal sites,
 rules, and certificates from local YAML into the database. Hub reads this state
-through its repos and publishes it to Redis for Link and Portal.
+through its repos and publishes it to Watch for Link and Portal.
 
 Database metadata records completion of the initial seed. Subsequent starts skip
 all seed, variable, and source inputs; seed entries have no `override` switch.
@@ -164,7 +164,7 @@ startup seeding and Dashboard imports. Both accept legacy rule fields with a
 warning per field; mixing old and new fields in one rule fails before applying
 imported data. YAML cannot replace built-in Dashboard sites or rules.
 
-Admin API and Redis use only the new fields; upgrade Hub and Portal together.
+Admin API and Watch use only the new fields; upgrade Hub and Portal together.
 The database upgrade baseline is Vine v0.15.7, with `match_*` / `route_*`
 columns already present. Start older databases with v0.15.7 to complete migration
 before upgrading; current Hub no longer migrates legacy Portal rule columns.
@@ -202,8 +202,8 @@ Hub can run as a component in a single-process runtime:
   admin Rpc and Web handlers register below
   `rpc+inproc://vine/hub/admin` and
   `web+inproc://vine/hub/admin` instead of being exposed over HTTP.
-- `redisserver` does not open an external TCP port and retains only the in-process Redis server.
-- `vined` keeps a pointer to that in-process Redis server so an inproc `RedisClient` can access it directly.
+- `watchserver` does not open an external TCP port and retains only the in-process Watch server.
+- `vined` keeps a pointer to that in-process Watch server so an inproc `WatchClient` can access it directly.
 
 Hub retains its configuration-center and registry responsibilities; only the underlying exposure changes from network access to in-process access.
 
@@ -212,10 +212,10 @@ Hub retains its configuration-center and registry responsibilities; only the und
 Hub handles registrations differently in normal and inproc modes:
 
 - Normal mode
-  - Application state and Rpc service registrations are written to Redis with a TTL.
+  - Application state and Rpc service registrations are written to Watch with a TTL.
   - Link continuously renews leases through heartbeat.
   - Hub's registry sweeper scans expired application leases, unregisters expired instances, and publishes delete events.
-  - Redis key TTL is a fallback cleanup mechanism; the Hub sweeper publishes the actual registration-expiration events.
+  - Watch key TTL is a fallback cleanup mechanism; the Hub sweeper publishes the actual registration-expiration events.
 
 - Inproc mode
   - Application state and Rpc service registrations do not use a TTL.

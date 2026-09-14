@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"go.yorun.ai/vine/internal/app"
-	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubredis"
+	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 )
 
@@ -19,7 +19,7 @@ type Reader struct {
 	app.BaseModule
 
 	Context   context.Context   `inject:""`
-	Client    *hubredis.Client  `inject:""`
+	Client    *hubwatch.Client  `inject:""`
 	AppMinder *minder.AppMinder `inject:""`
 
 	mutex                       sync.RWMutex

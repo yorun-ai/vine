@@ -20,8 +20,8 @@ import (
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	portalhubredis "go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubredis"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	portalhubwatch "go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
@@ -31,7 +31,7 @@ import (
 
 func TestRpcGatewayRejectsPlaintextRegistrationWithMTLS(t *testing.T) {
 	target := newTestRpcGateway(map[string]string{
-		redised.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:       "http://link.local/rpc/proxy/in/instance-1",
 			ServerIdentity: daemon.LinkIdentity,
 			ServiceName:    "demo.UserService",
@@ -67,7 +67,7 @@ func TestRpcGatewayForwardsConfiguredServiceToRegistrationEndpoint(t *testing.T)
 	}))
 
 	target := newTestRpcGateway(map[string]string{
-		redised.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
@@ -138,7 +138,7 @@ func TestRpcGatewayClearsAcceptEncodingBeforeForward(t *testing.T) {
 	}))
 
 	target := newTestRpcGateway(map[string]string{
-		redised.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
@@ -165,7 +165,7 @@ func TestRpcGatewayAddsDefaultRpcOptionsTimeoutBeforeForward(t *testing.T) {
 	}))
 
 	target := newTestRpcGateway(map[string]string{
-		redised.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
@@ -193,7 +193,7 @@ func TestRpcGatewayIgnoresClientCancelAfterRequestIsAccepted(t *testing.T) {
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
 	target := newTestRpcGateway(map[string]string{
-		redised.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
@@ -224,7 +224,7 @@ func TestRpcGatewayForwardsRemainingRpcOptionsTimeout(t *testing.T) {
 	}))
 
 	target := newTestRpcGateway(map[string]string{
-		redised.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
@@ -246,7 +246,7 @@ func TestRpcGatewayForwardsRemainingRpcOptionsTimeout(t *testing.T) {
 
 func TestRpcGatewayRejectsRpcOptionsTimeoutOverMax(t *testing.T) {
 	target := newTestRpcGateway(map[string]string{
-		redised.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      "http://127.0.0.1:23001/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
@@ -283,7 +283,7 @@ func TestRpcGatewayGeneratesMissingRpcSpanBeforeForward(t *testing.T) {
 	}))
 
 	target := newTestRpcGateway(map[string]string{
-		redised.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
@@ -320,7 +320,7 @@ func TestRpcGatewayMapsForwardedRpcErrorToHTTPStatusCode(t *testing.T) {
 	}))
 
 	target := newTestRpcGateway(map[string]string{
-		redised.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
@@ -378,7 +378,7 @@ func TestRpcGatewayCreatesForwardSpan(t *testing.T) {
 	}))
 
 	target := newTestRpcGateway(map[string]string{
-		redised.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
@@ -413,7 +413,7 @@ func TestRpcGatewayOverwritesExistingRpcInitiator(t *testing.T) {
 	}))
 
 	target := newTestRpcGateway(map[string]string{
-		redised.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
@@ -443,7 +443,7 @@ func TestRpcGatewayOverwritesExistingRpcInitiator(t *testing.T) {
 
 func TestRpcGatewayRejectsMissingRpcClient(t *testing.T) {
 	target := newTestRpcGateway(map[string]string{
-		redised.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      "http://127.0.0.1:23001/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
@@ -462,7 +462,7 @@ func TestRpcGatewayRejectsMissingRpcClient(t *testing.T) {
 
 func TestRpcGatewayRejectsMissingRpcTrace(t *testing.T) {
 	target := newTestRpcGateway(map[string]string{
-		redised.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      "http://127.0.0.1:23001/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
@@ -481,7 +481,7 @@ func TestRpcGatewayRejectsMissingRpcTrace(t *testing.T) {
 
 func TestRpcGatewayRejectsInvalidContentType(t *testing.T) {
 	target := newTestRpcGateway(map[string]string{
-		redised.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      "http://127.0.0.1:23001/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
@@ -500,7 +500,7 @@ func TestRpcGatewayRejectsInvalidContentType(t *testing.T) {
 
 func TestRpcGatewayRejectsInvalidRpcOptionsForInprocEndpoint(t *testing.T) {
 	target := newTestRpcGateway(map[string]string{
-		redised.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      "rpc+inproc://vine/portal-rpcgw-options-test/rpc/invoke",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
@@ -526,7 +526,7 @@ func TestRpcGatewayOverwritesExistingRpcActor(t *testing.T) {
 	}))
 
 	target := newTestRpcGateway(map[string]string{
-		redised.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
@@ -597,8 +597,8 @@ func TestRpcGatewayDoesNotAllowOptionsForWildcardEntryOrigin(t *testing.T) {
 }
 
 func TestRpcGatewayAllowsOptionsFromStrictAllowedOrigin(t *testing.T) {
-	target := newTestRpcGatewayWithCors(nil, redised.PortalCors{
-		Mode: redised.PortalCorsModeStrict,
+	target := newTestRpcGatewayWithCors(nil, watched.PortalCors{
+		Mode: watched.PortalCorsModeStrict,
 		AllowedOrigins: []string{
 			"https://console.example.com",
 		},
@@ -613,8 +613,8 @@ func TestRpcGatewayAllowsOptionsFromStrictAllowedOrigin(t *testing.T) {
 }
 
 func TestRpcGatewayDoesNotAllowOptionsWhenCorsDisabled(t *testing.T) {
-	target := newTestRpcGatewayWithCors(nil, redised.PortalCors{
-		Mode: redised.PortalCorsModeDisabled,
+	target := newTestRpcGatewayWithCors(nil, watched.PortalCors{
+		Mode: watched.PortalCorsModeDisabled,
 	})
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodOptions, "http://api.example.com/invoke/demo.UserService/Get", nil)
@@ -638,7 +638,7 @@ func TestRpcGatewayReturnsUnavailableWhenServiceHasNoEndpoint(t *testing.T) {
 
 func TestRpcGatewayRejectsServiceOutsideConfiguredList(t *testing.T) {
 	target := newTestRpcGateway(map[string]string{
-		redised.FormatRpcServiceRegistrationKey("demo.OrderService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.OrderService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      "http://127.0.0.1:23001/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.OrderService",
 			AppName:       "demo.app",
@@ -646,18 +646,18 @@ func TestRpcGatewayRejectsServiceOutsideConfiguredList(t *testing.T) {
 		}),
 	})
 
-	target.Update(redised.PortalSite{
+	target.Update(watched.PortalSite{
 		Name: "demo-api",
 		Type: "RPCGW",
-		RpcgwConfig: &redised.PortalRpcgwConfig{
-			Services: []redised.PortalRpcgwService{{SkelName: "demo.OrderService"}},
+		RpcgwConfig: &watched.PortalRpcgwConfig{
+			Services: []watched.PortalRpcgwService{{SkelName: "demo.OrderService"}},
 		},
 	})
 
-	target.Update(redised.PortalSite{
+	target.Update(watched.PortalSite{
 		Name:        "demo-api",
 		Type:        "RPCGW",
-		RpcgwConfig: &redised.PortalRpcgwConfig{},
+		RpcgwConfig: &watched.PortalRpcgwConfig{},
 	})
 
 	if registration, configured := target.routeService("demo.OrderService"); configured || registration != nil {
@@ -699,21 +699,21 @@ func testCredentialSchema() *skel.DataSchema {
 }
 
 func newTestRpcGateway(valuesByKey map[string]string) *RpcGateway {
-	return newTestRpcGatewayWithCors(valuesByKey, redised.PortalCors{
-		Mode: redised.PortalCorsModeSameDomain,
+	return newTestRpcGatewayWithCors(valuesByKey, watched.PortalCors{
+		Mode: watched.PortalCorsModeSameDomain,
 	})
 }
 
-func newTestRpcGatewayWithCors(valuesByKey map[string]string, cors redised.PortalCors) *RpcGateway {
-	return New(context.Background(), testServerApp(), newTestAccess(), newTestEpmgr(valuesByKey), redised.PortalSite{
+func newTestRpcGatewayWithCors(valuesByKey map[string]string, cors watched.PortalCors) *RpcGateway {
+	return New(context.Background(), testServerApp(), newTestAccess(), newTestEpmgr(valuesByKey), watched.PortalSite{
 		Name: "demo-api",
 		Type: "RPCGW",
-		ActorVia: redised.PortalActorVia{
+		ActorVia: watched.PortalActorVia{
 			ActorSkelName: "demo.UserActor",
 		},
 		Cors: cors,
-		RpcgwConfig: &redised.PortalRpcgwConfig{
-			Services: []redised.PortalRpcgwService{{SkelName: "demo.UserService"}},
+		RpcgwConfig: &watched.PortalRpcgwConfig{
+			Services: []watched.PortalRpcgwService{{SkelName: "demo.UserService"}},
 		},
 	})
 }
@@ -794,36 +794,36 @@ func testServerApp() meta.App {
 func newTestEpmgr(valuesByKey map[string]string) *epmgr.Manager {
 	manager := &epmgr.Manager{
 		Context: context.Background(),
-		Redis:   portalhubredis.NewTestClient(valuesByKey),
+		Watch:   portalhubwatch.NewTestClient(valuesByKey),
 	}
 	manager.DIInit()
 	return manager
 }
 
 func newTestAccess() *access.Access {
-	redisClient := newTestSchemaRedis()
+	watchClient := newTestSchemaWatch()
 	epmgrManager := &epmgr.Manager{
 		Context: context.Background(),
-		Redis:   redisClient,
+		Watch:   watchClient,
 	}
 	epmgrManager.DIInit()
 	manager := &access.Access{
 		Context: context.Background(),
-		Redis:   redisClient,
+		Watch:   watchClient,
 		Epmgr:   epmgrManager,
 	}
 	manager.DIInit()
 	return manager
 }
 
-func newTestSchemaRedis() *portalhubredis.Client {
-	redisClient := portalhubredis.NewTestClient(map[string]string{
-		redised.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(redised.SchemaActor{
+func newTestSchemaWatch() *portalhubwatch.Client {
+	watchClient := portalhubwatch.NewTestClient(map[string]string{
+		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.SchemaActor{
 			SkelName:       "demo.UserActor",
 			AuthCredential: testCredentialSchema(),
 			AuthInfo:       &skel.DataSchema{SkelName: "demo.UserInfo"},
 		}),
-		redised.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(redised.SchemaService{
+		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
 			SkelName: "demo.UserService",
 			AuthMode: skel.AuthModeNoAuth,
 			Audiences: []*skel.ActorAudienceSchema{
@@ -834,7 +834,7 @@ func newTestSchemaRedis() *portalhubredis.Client {
 			},
 		}),
 	})
-	return redisClient
+	return watchClient
 }
 
 func registerTestIngress(t *testing.T, endpoint string, handler http.Handler) {
@@ -852,7 +852,7 @@ func serveTestRpcGatewayCompressedResponse(t *testing.T, body string, acceptEnco
 	}))
 
 	target := newTestRpcGateway(map[string]string{
-		redised.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",

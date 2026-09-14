@@ -6,7 +6,7 @@ import (
 
 	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubinfo"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubredis"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/entry"
@@ -77,7 +77,7 @@ func TestPortalAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 	}
 }
 
-func TestPortalAppInitComponentsAddsHubRedisClient(t *testing.T) {
+func TestPortalAppInitComponentsAddsHubWatchClient(t *testing.T) {
 	spec := &PortalApp{}
 
 	componentTypes := collectComponentTypes(spec)
@@ -88,7 +88,7 @@ func TestPortalAppInitComponentsAddsHubRedisClient(t *testing.T) {
 	if got := componentTypes[0]; got != internalapp.T[*hubinfo.HubInfo]() {
 		t.Fatalf("unexpected first component type: %v", got)
 	}
-	if got := componentTypes[1]; got != internalapp.T[*hubredis.Client]() {
+	if got := componentTypes[1]; got != internalapp.T[*hubwatch.Client]() {
 		t.Fatalf("unexpected second component type: %v", got)
 	}
 }

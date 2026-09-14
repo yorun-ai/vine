@@ -17,9 +17,9 @@ spec:
     - name: control
       port: 7071
       targetPort: control
-    - name: redis
+    - name: watch
       port: 7072
-      targetPort: redis
+      targetPort: watch
     - name: admin
       port: 7075
       targetPort: admin
@@ -63,7 +63,7 @@ spec:
               value: 0.0.0.0:7071
             - name: VINE_ADMIN_LISTEN
               value: 0.0.0.0:7075
-            - name: VINE_REDIS_LISTEN
+            - name: VINE_WATCH_LISTEN
               value: 0.0.0.0:7072
             - name: VINE_DB_SQLITE_FILE
               value: /data/hub.sqlite
@@ -72,7 +72,7 @@ spec:
           ports:
             - name: control
               containerPort: 7071
-            - name: redis
+            - name: watch
               containerPort: 7072
             - name: admin
               containerPort: 7075

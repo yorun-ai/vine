@@ -11,7 +11,7 @@ import (
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	impl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin"
@@ -63,7 +63,7 @@ func (a *HubApp) InitComponents(addComponent app.TypeAdder) {
 	addComponent(app.T[*configaccess.Access]())
 	addComponent(app.T[*repodb.HubDatabase]())
 	addComponent(app.T[*natsserver.NATSServer]())
-	addComponent(app.T[*redisserver.Server]())
+	addComponent(app.T[*watchserver.Server]())
 }
 
 func (a *HubApp) InitModules(addModule app.TypeAdder) {
@@ -85,7 +85,7 @@ func (a *HubApp) BindCommon(b *di.Binder) {
 	b.Bind(di.T[core.MetadataRepo]()).ToImplementation(di.T[*repo.DBMetadataRepo]())
 
 	b.Bind(di.T[core.SchemaRepo]()).ToImplementation(di.T[*schema.MemorySchemaRepo]())
-	b.Bind(di.T[core.RegistryRepo]()).ToImplementation(di.T[*repo.RedisRegistryRepo]())
+	b.Bind(di.T[core.RegistryRepo]()).ToImplementation(di.T[*repo.WatchRegistryRepo]())
 }
 
 func (*HubApp) ServicerInitHandlers(addHandler app.TypeAdder) {

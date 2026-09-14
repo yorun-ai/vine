@@ -334,7 +334,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "AppStatusApiService",
 		SkelName:          "vine.hub.admin.AppStatusApiService",
-		Hash:              "c4f2c531",
+		Hash:              "dead143d",
 		ServerType:        reflect.TypeFor[AppStatusApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultAppStatusApiServiceServer](),
 
@@ -378,7 +378,7 @@ var (
 // AppStatusApiService / Server
 
 type AppStatusApiServiceServer interface {
-	// List List application instance statuses currently stored in Redis.
+	// List List application instance statuses.
 	List() []AppStatusView
 
 	mustBeAppStatusApiServiceServer()

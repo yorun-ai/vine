@@ -3,17 +3,17 @@ package config
 import (
 	"context"
 
-	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 )
 
-func (c *Reader) newInstantConfigState(redisKey string) (*_InstantConfigState, hubredis.Subscription) {
+func (c *Reader) newInstantConfigState(watchKey string) (*_InstantConfigState, hubwatch.Subscription) {
 	watchCtx, cancel := context.WithCancel(c.Context)
 	state := &_InstantConfigState{
 		refsByAppInstanceID: map[string]struct{}{},
 		cancel:              cancel,
 	}
-	loadedConfigValue, loadedOk, subscription := c.loadAndWatchInstantConfigValue(redisKey, watchCtx)
+	loadedConfigValue, loadedOk, subscription := c.loadAndWatchInstantConfigValue(watchKey, watchCtx)
 	if !loadedOk {
 		return state, subscription
 	}
@@ -22,34 +22,34 @@ func (c *Reader) newInstantConfigState(redisKey string) (*_InstantConfigState, h
 	return state, subscription
 }
 
-func (c *Reader) loadAndWatchInstantConfigValue(redisKey string, ctx context.Context) (redised.ConfigValue, bool, hubredis.Subscription) {
-	value, ok, subscription := c.Client.LoadAndSubscribe(ctx, redisKey, func(event hubredis.Event) {
-		c.handleInstantConfigEvent(redisKey, event)
+func (c *Reader) loadAndWatchInstantConfigValue(watchKey string, ctx context.Context) (watched.ConfigValue, bool, hubwatch.Subscription) {
+	value, ok, subscription := c.Client.LoadAndSubscribe(ctx, watchKey, func(event hubwatch.Event) {
+		c.handleInstantConfigEvent(watchKey, event)
 	})
 	if !ok {
-		return redised.ConfigValue{}, false, subscription
+		return watched.ConfigValue{}, false, subscription
 	}
 	configValue, err := unmarshalConfigValue(value)
 	if err != nil {
-		return redised.ConfigValue{}, false, subscription
+		return watched.ConfigValue{}, false, subscription
 	}
 	return configValue, true, subscription
 }
 
-func (c *Reader) handleInstantConfigEvent(redisKey string, event hubredis.Event) {
+func (c *Reader) handleInstantConfigEvent(watchKey string, event hubwatch.Event) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	state, ok := c.instantConfigStatesByKey[redisKey]
+	state, ok := c.instantConfigStatesByKey[watchKey]
 	if !ok {
 		return
 	}
 
 	switch event.Kind {
-	case hubredis.EventKindDelete:
+	case hubwatch.EventKindDelete:
 		state.value = ""
 		for appInstanceID := range state.refsByAppInstanceID {
-			c.setConfigValueSnapshotLocked(appInstanceID, redisKey, "")
+			c.setConfigValueSnapshotLocked(appInstanceID, watchKey, "")
 		}
 	default:
 		configValue, err := unmarshalConfigValue(event.Value)
@@ -59,7 +59,7 @@ func (c *Reader) handleInstantConfigEvent(redisKey string, event hubredis.Event)
 		value := string(configValue.Value)
 		state.value = value
 		for appInstanceID := range state.refsByAppInstanceID {
-			c.setConfigValueSnapshotLocked(appInstanceID, redisKey, value)
+			c.setConfigValueSnapshotLocked(appInstanceID, watchKey, value)
 		}
 	}
 }

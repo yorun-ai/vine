@@ -5,7 +5,7 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	"go.yorun.ai/vine/internal/core/skel"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -16,7 +16,7 @@ type RpcOperation struct {
 
 	Server meta.App
 
-	ActorVia    redised.PortalActorVia
+	ActorVia    watched.PortalActorVia
 	ServiceName string
 	MethodName  string
 

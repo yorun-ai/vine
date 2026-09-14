@@ -3,8 +3,8 @@ package config
 import (
 	"encoding/json/v2"
 
-	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 )
 
 func (c *Reader) GetEternal(appInstanceID string, key string) string {
@@ -15,15 +15,15 @@ func (c *Reader) GetEternal(appInstanceID string, key string) string {
 }
 
 func (c *Reader) retainEternalConfig(appInstanceID string, key string) string {
-	redisKey := redised.FormatConfigKey(key)
-	configValue, ok := c.loadConfigValue(redisKey)
+	watchKey := watched.FormatConfigKey(key)
+	configValue, ok := c.loadConfigValue(watchKey)
 	if !ok {
 		return ""
 	}
 
 	value := string(configValue.Value)
 	c.mutex.Lock()
-	c.setConfigValueSnapshotLocked(appInstanceID, redisKey, value)
+	c.setConfigValueSnapshotLocked(appInstanceID, watchKey, value)
 	c.mutex.Unlock()
 	return value
 }
@@ -36,17 +36,17 @@ func (c *Reader) GetInstant(appInstanceID string, key string) string {
 }
 
 func (c *Reader) retainInstantConfig(appInstanceID string, key string) string {
-	redisKey := redised.FormatConfigKey(key)
+	watchKey := watched.FormatConfigKey(key)
 	c.mutex.Lock()
-	state, exists := c.instantConfigStatesByKey[redisKey]
-	var subscription hubredis.Subscription
+	state, exists := c.instantConfigStatesByKey[watchKey]
+	var subscription hubwatch.Subscription
 	if !exists {
-		state, subscription = c.newInstantConfigState(redisKey)
-		c.instantConfigStatesByKey[redisKey] = state
+		state, subscription = c.newInstantConfigState(watchKey)
+		c.instantConfigStatesByKey[watchKey] = state
 	}
 	value := state.value
 	state.refsByAppInstanceID[appInstanceID] = struct{}{}
-	c.setConfigValueSnapshotLocked(appInstanceID, redisKey, value)
+	c.setConfigValueSnapshotLocked(appInstanceID, watchKey, value)
 	if subscription != nil {
 		subscription.Start()
 	}
@@ -54,26 +54,26 @@ func (c *Reader) retainInstantConfig(appInstanceID string, key string) string {
 	return value
 }
 
-func (c *Reader) loadConfigValue(redisKey string) (redised.ConfigValue, bool) {
-	value, ok := c.Client.Load(redisKey)
+func (c *Reader) loadConfigValue(watchKey string) (watched.ConfigValue, bool) {
+	value, ok := c.Client.Load(watchKey)
 	if !ok {
-		return redised.ConfigValue{}, false
+		return watched.ConfigValue{}, false
 	}
 
 	configValue, err := unmarshalConfigValue(value)
 	if err != nil {
-		return redised.ConfigValue{}, false
+		return watched.ConfigValue{}, false
 	}
 	return configValue, true
 }
 
-func unmarshalConfigValue(value string) (configValue redised.ConfigValue, err error) {
+func unmarshalConfigValue(value string) (configValue watched.ConfigValue, err error) {
 	err = json.Unmarshal([]byte(value), &configValue)
 	return
 }
 
 func (c *Reader) findConfigValueSnapshot(appInstanceID string, key string) (string, bool) {
-	redisKey := redised.FormatConfigKey(key)
+	watchKey := watched.FormatConfigKey(key)
 
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
@@ -83,14 +83,14 @@ func (c *Reader) findConfigValueSnapshot(appInstanceID string, key string) (stri
 		return "", false
 	}
 
-	value, ok := valuesByKey[redisKey]
+	value, ok := valuesByKey[watchKey]
 	return value, ok
 }
 
-func (c *Reader) setConfigValueSnapshotLocked(appInstanceID string, redisKey string, value string) {
+func (c *Reader) setConfigValueSnapshotLocked(appInstanceID string, watchKey string, value string) {
 	valuesByKey, ok := c.configValuesByAppInstanceID[appInstanceID]
 	if !ok {
 		return
 	}
-	valuesByKey[redisKey] = value
+	valuesByKey[watchKey] = value
 }

@@ -8,22 +8,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/skel"
-	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
+	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 )
 
-func testSyncer(redisServer *redisserver.Server) *Syncer {
-	target := &Syncer{RedisServer: redisServer}
+func testSyncer(watchServer *watchserver.Server) *Syncer {
+	target := &Syncer{WatchServer: watchServer}
 	target.DIInit()
 	return target
 }
 
 func TestSyncerSyncSchemasWritesMainActorAndServiceSchemas(t *testing.T) {
-	redisServer := redisserver.NewServerForTest()
-	defer redisServer.AfterAppStop()
-	target := testSyncer(redisServer)
+	watchServer := watchserver.NewServerForTest()
+	defer watchServer.AfterAppStop()
+	target := testSyncer(watchServer)
 
 	target.SyncSchemas([]core.DomainSchemaView{{
 		Actors: []core.SchemaVersion[*skel.ActorSchema]{
@@ -95,7 +95,7 @@ func TestSyncerSyncSchemasWritesMainActorAndServiceSchemas(t *testing.T) {
 		},
 	}})
 
-	value, ok := redisServer.Get(redised.FormatSchemaActorKey("demo.user.UserActor"))
+	value, ok := watchServer.Get(watched.FormatSchemaActorKey("demo.user.UserActor"))
 	require.True(t, ok)
 	assert.JSONEq(t, `{
 		"name": "",
@@ -123,7 +123,7 @@ func TestSyncerSyncSchemasWritesMainActorAndServiceSchemas(t *testing.T) {
 			"methods": []
 		}
 	}`, value)
-	value, ok = redisServer.Get(redised.FormatSchemaActorKey("demo.user.NoAuthActor"))
+	value, ok = watchServer.Get(watched.FormatSchemaActorKey("demo.user.NoAuthActor"))
 	require.True(t, ok)
 	assert.JSONEq(t, `{
 		"name": "",
@@ -133,10 +133,10 @@ func TestSyncerSyncSchemasWritesMainActorAndServiceSchemas(t *testing.T) {
 		"permEnabled": false,
 		"vias": []
 	}`, value)
-	_, ok = redisServer.Get(redised.FormatSchemaActorKey("demo.user.OldActor"))
+	_, ok = watchServer.Get(watched.FormatSchemaActorKey("demo.user.OldActor"))
 	assert.False(t, ok)
 
-	value, ok = redisServer.Get(redised.FormatSchemaServiceKey("demo.user.UserService"))
+	value, ok = watchServer.Get(watched.FormatSchemaServiceKey("demo.user.UserService"))
 	require.True(t, ok)
 	assert.JSONEq(t, `{
 		"name": "",
@@ -152,14 +152,14 @@ func TestSyncerSyncSchemasWritesMainActorAndServiceSchemas(t *testing.T) {
 			{"name": "", "skelName": "Update", "hash": "", "authMode": "auth"}
 		]
 	}`, value)
-	_, ok = redisServer.Get(redised.FormatSchemaServiceKey("demo.user.OldService"))
+	_, ok = watchServer.Get(watched.FormatSchemaServiceKey("demo.user.OldService"))
 	assert.False(t, ok)
 }
 
 func TestSyncerWriteSchemasWritesMainActorAndServiceSchemas(t *testing.T) {
-	redisServer := redisserver.NewServerForTest()
-	defer redisServer.AfterAppStop()
-	target := testSyncer(redisServer)
+	watchServer := watchserver.NewServerForTest()
+	defer watchServer.AfterAppStop()
+	target := testSyncer(watchServer)
 
 	target.WriteSchemas([]core.DomainSchemaView{{
 		Actors: []core.SchemaVersion[*skel.ActorSchema]{{
@@ -183,7 +183,7 @@ func TestSyncerWriteSchemasWritesMainActorAndServiceSchemas(t *testing.T) {
 		}},
 	}})
 
-	value, ok := redisServer.Get(redised.FormatSchemaActorKey("vine.hub.admin.AdminActor"))
+	value, ok := watchServer.Get(watched.FormatSchemaActorKey("vine.hub.admin.AdminActor"))
 	require.True(t, ok)
 	assert.JSONEq(t, `{
 		"name": "",
@@ -194,7 +194,7 @@ func TestSyncerWriteSchemasWritesMainActorAndServiceSchemas(t *testing.T) {
 		"vias": []
 	}`, value)
 
-	value, ok = redisServer.Get(redised.FormatSchemaServiceKey("vine.hub.admin.SkeletonApiService"))
+	value, ok = watchServer.Get(watched.FormatSchemaServiceKey("vine.hub.admin.SkeletonApiService"))
 	require.True(t, ok)
 	assert.JSONEq(t, `{
 		"name": "",
@@ -207,9 +207,9 @@ func TestSyncerWriteSchemasWritesMainActorAndServiceSchemas(t *testing.T) {
 }
 
 func TestSyncerSyncSchemasDoesNotDeleteVineHubSchemas(t *testing.T) {
-	redisServer := redisserver.NewServerForTest()
-	defer redisServer.AfterAppStop()
-	target := testSyncer(redisServer)
+	watchServer := watchserver.NewServerForTest()
+	defer watchServer.AfterAppStop()
+	target := testSyncer(watchServer)
 
 	target.WriteSchemas([]core.DomainSchemaView{{
 		Actors: []core.SchemaVersion[*skel.ActorSchema]{{
@@ -228,16 +228,16 @@ func TestSyncerSyncSchemasDoesNotDeleteVineHubSchemas(t *testing.T) {
 
 	target.SyncSchemas([]core.DomainSchemaView{})
 
-	_, ok := redisServer.Get(redised.FormatSchemaActorKey("vine.hub.admin.AdminActor"))
+	_, ok := watchServer.Get(watched.FormatSchemaActorKey("vine.hub.admin.AdminActor"))
 	assert.True(t, ok)
-	_, ok = redisServer.Get(redised.FormatSchemaServiceKey("vine.hub.admin.SkeletonApiService"))
+	_, ok = watchServer.Get(watched.FormatSchemaServiceKey("vine.hub.admin.SkeletonApiService"))
 	assert.True(t, ok)
 }
 
 func TestSyncerSyncSchemasRemovesStaleSchemas(t *testing.T) {
-	redisServer := redisserver.NewServerForTest()
-	defer redisServer.AfterAppStop()
-	target := testSyncer(redisServer)
+	watchServer := watchserver.NewServerForTest()
+	defer watchServer.AfterAppStop()
+	target := testSyncer(watchServer)
 
 	target.SyncSchemas([]core.DomainSchemaView{{
 		Actors: []core.SchemaVersion[*skel.ActorSchema]{{
@@ -258,23 +258,23 @@ func TestSyncerSyncSchemasRemovesStaleSchemas(t *testing.T) {
 			Main:       true,
 		}},
 	}})
-	_, ok := redisServer.Get(redised.FormatSchemaActorKey("demo.user.UserActor"))
+	_, ok := watchServer.Get(watched.FormatSchemaActorKey("demo.user.UserActor"))
 	require.True(t, ok)
-	_, ok = redisServer.Get(redised.FormatSchemaServiceKey("demo.user.UserService"))
+	_, ok = watchServer.Get(watched.FormatSchemaServiceKey("demo.user.UserService"))
 	require.True(t, ok)
 
 	target.SyncSchemas([]core.DomainSchemaView{})
 
-	_, ok = redisServer.Get(redised.FormatSchemaActorKey("demo.user.UserActor"))
+	_, ok = watchServer.Get(watched.FormatSchemaActorKey("demo.user.UserActor"))
 	assert.False(t, ok)
-	_, ok = redisServer.Get(redised.FormatSchemaServiceKey("demo.user.UserService"))
+	_, ok = watchServer.Get(watched.FormatSchemaServiceKey("demo.user.UserService"))
 	assert.False(t, ok)
 }
 
 func TestSyncerSyncSchemasOnlyWritesChangedHashes(t *testing.T) {
-	redisServer := redisserver.NewServerForTest()
-	defer redisServer.AfterAppStop()
-	target := testSyncer(redisServer)
+	watchServer := watchserver.NewServerForTest()
+	defer watchServer.AfterAppStop()
+	target := testSyncer(watchServer)
 
 	view := []core.DomainSchemaView{{
 		Actors: []core.SchemaVersion[*skel.ActorSchema]{{
@@ -297,13 +297,13 @@ func TestSyncerSyncSchemasOnlyWritesChangedHashes(t *testing.T) {
 		}},
 	}}
 
-	baseRevision := testRedisRevision(t, redisServer)
+	baseRevision := testWatchRevision(t, watchServer)
 	target.SyncSchemas(view)
-	firstRevision := testRedisRevision(t, redisServer)
+	firstRevision := testWatchRevision(t, watchServer)
 	assert.Equal(t, baseRevision+1, firstRevision)
 
 	target.SyncSchemas(view)
-	secondRevision := testRedisRevision(t, redisServer)
+	secondRevision := testWatchRevision(t, watchServer)
 	assert.Equal(t, firstRevision, secondRevision)
 
 	view[0].Services[0].Schema.Hash = "service-next"
@@ -311,20 +311,20 @@ func TestSyncerSyncSchemasOnlyWritesChangedHashes(t *testing.T) {
 	view[0].Services[0].Schema.DeprecatedReason = "Use demo.user.NextService instead."
 	view[0].Services[0].SchemaHash = "service-next"
 	target.SyncSchemas(view)
-	thirdRevision := testRedisRevision(t, redisServer)
+	thirdRevision := testWatchRevision(t, watchServer)
 	assert.Equal(t, secondRevision+1, thirdRevision)
 
-	value, ok := redisServer.Get(redised.FormatSchemaServiceKey("demo.user.UserService"))
+	value, ok := watchServer.Get(watched.FormatSchemaServiceKey("demo.user.UserService"))
 	require.True(t, ok)
-	var service redised.SchemaService
+	var service watched.SchemaService
 	require.NoError(t, json.Unmarshal([]byte(value), &service))
 	assert.True(t, service.Deprecated)
 	assert.Equal(t, "Use demo.user.NextService instead.", service.DeprecatedReason)
 }
 
-func testRedisRevision(t *testing.T, redisServer *redisserver.Server) uint64 {
+func testWatchRevision(t *testing.T, watchServer *watchserver.Server) uint64 {
 	t.Helper()
-	value, ok := redisServer.Get(hubredis.RevisionKey)
+	value, ok := watchServer.Get(hubwatch.RevisionKey)
 	require.True(t, ok)
 	revision, err := strconv.ParseUint(value, 10, 64)
 	require.NoError(t, err)
@@ -332,9 +332,9 @@ func testRedisRevision(t *testing.T, redisServer *redisserver.Server) uint64 {
 }
 
 func TestPortalSchemasExcludeBackendServices(t *testing.T) {
-	redisServer := redisserver.NewServerForTest()
-	defer redisServer.AfterAppStop()
-	target := testSyncer(redisServer)
+	watchServer := watchserver.NewServerForTest()
+	defer watchServer.AfterAppStop()
+	target := testSyncer(watchServer)
 	view := []core.DomainSchemaView{{Services: []core.SchemaVersion[*skel.ServiceSchema]{
 		{Main: true, Schema: &skel.ServiceSchema{SkelName: "demo.BackendService", Pub: true, Hash: "backend"}},
 		{Main: true, Schema: &skel.ServiceSchema{SkelName: "demo.ApiService", Api: true, Hash: "api"}},
@@ -342,14 +342,14 @@ func TestPortalSchemasExcludeBackendServices(t *testing.T) {
 	}}}
 	target.SyncSchemas(view)
 	for _, name := range []string{"demo.ApiService", "demo.LegacyService"} {
-		_, ok := redisServer.Get(redised.FormatSchemaServiceKey(name))
+		_, ok := watchServer.Get(watched.FormatSchemaServiceKey(name))
 		require.True(t, ok, name)
 	}
-	_, ok := redisServer.Get(redised.FormatSchemaServiceKey("demo.BackendService"))
+	_, ok := watchServer.Get(watched.FormatSchemaServiceKey("demo.BackendService"))
 	require.False(t, ok)
 	view[0].Services[1].Schema.Api = false
 	view[0].Services[1].Schema.Pub = true
 	target.SyncSchemas(view)
-	_, ok = redisServer.Get(redised.FormatSchemaServiceKey("demo.ApiService"))
+	_, ok = watchServer.Get(watched.FormatSchemaServiceKey("demo.ApiService"))
 	require.False(t, ok, "API converted to backend must be removed from Portal")
 }

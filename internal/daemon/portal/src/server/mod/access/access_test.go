@@ -7,19 +7,19 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/skel"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubredis"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/util/vcode"
 )
 
 func TestManagerLoadsActorAndServiceSchemas(t *testing.T) {
 	manager := testManager(map[string]string{
-		redised.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(redised.SchemaActor{
+		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.SchemaActor{
 			SkelName: "demo.UserActor",
 			Hash:     "actor-main",
 		}),
-		redised.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(redised.SchemaService{
+		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
 			SkelName: "demo.UserService",
 			Hash:     "service-main",
 			AuthMode: skel.AuthModeAuth,
@@ -37,15 +37,15 @@ func TestManagerLoadsActorAndServiceSchemas(t *testing.T) {
 }
 
 func testManager(valuesByKey map[string]string) *Access {
-	redisClient := hubredis.NewTestClient(valuesByKey)
+	watchClient := hubwatch.NewTestClient(valuesByKey)
 	epmgrManager := &epmgr.Manager{
 		Context: context.Background(),
-		Redis:   redisClient,
+		Watch:   watchClient,
 	}
 	epmgrManager.DIInit()
 	manager := &Access{
 		Context: context.Background(),
-		Redis:   redisClient,
+		Watch:   watchClient,
 		Epmgr:   epmgrManager,
 	}
 	manager.DIInit()

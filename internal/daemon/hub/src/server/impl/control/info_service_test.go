@@ -1,7 +1,10 @@
 package control
 
 import (
+	"go.yorun.ai/vine/buildinfo"
 	"testing"
+
+	"go.yorun.ai/vine/util/vcode"
 
 	"github.com/stretchr/testify/assert"
 	"go.yorun.ai/vine/internal/app"
@@ -26,7 +29,7 @@ func TestHubInfoServiceReturnsPortsFromFlag(t *testing.T) {
 		InprocFlag: &app.InternalInprocFlag{},
 		Flag: &flag.Flag{
 			ControlListen:     ":7071",
-			RedisListen:       ":7072",
+			WatchListen:       ":7072",
 			MQExternalNatsURL: "nats://127.0.0.1:4222",
 		},
 		NATSServer: &natsserver.NATSServer{},
@@ -35,8 +38,10 @@ func TestHubInfoServiceReturnsPortsFromFlag(t *testing.T) {
 	info := service.GetInfo()
 
 	assert.Equal(t, skeled.Info{
+		Version:    buildinfo.MustVineVersion(),
 		ApiPort:    7071,
 		RedisPort:  7072,
+		WatchPort:  7072,
 		NatsPort:   0,
 		MqEndpoint: "nats://127.0.0.1:4222",
 	}, info)
@@ -47,7 +52,7 @@ func TestHubInfoServiceReturnsNATSServerPortWhenEnabled(t *testing.T) {
 		InprocFlag: &app.InternalInprocFlag{},
 		Flag: &flag.Flag{
 			ControlListen:  ":7071",
-			RedisListen:    ":7072",
+			WatchListen:    ":7072",
 			MQEmbeddedNats: true,
 		},
 		NATSServer: &natsserver.NATSServer{
@@ -63,6 +68,25 @@ func TestHubInfoServiceReturnsNATSServerPortWhenEnabled(t *testing.T) {
 
 	assert.Equal(t, 7071, info.ApiPort)
 	assert.Equal(t, 7072, info.RedisPort)
+	assert.Equal(t, info.RedisPort, info.WatchPort)
 	assert.Equal(t, service.NATSServer.Port(), info.NatsPort)
 	assert.Empty(t, info.MqEndpoint)
+}
+
+func TestHubInfoServicePreservesOldClientPort(t *testing.T) {
+	service := &InfoServiceServerImpl{
+		InprocFlag: &app.InternalInprocFlag{},
+		Flag:       &flag.Flag{ControlListen: ":7071", WatchListen: ":7072", MQExternalNatsURL: "nats://localhost:4222"},
+	}
+	type oldInfo struct {
+		ApiPort    int    `json:"apiPort"`
+		RedisPort  int    `json:"redisPort"`
+		NatsPort   int    `json:"natsPort"`
+		MqEndpoint string `json:"mqEndpoint"`
+	}
+	info := service.GetInfo()
+	decoded := vcode.MustUnmarshalJsonS[oldInfo](vcode.MustMarshalJsonS(info))
+	assert.Equal(t, 7072, decoded.RedisPort)
+	assert.Equal(t, info.WatchPort, decoded.RedisPort)
+	assert.Equal(t, info.MqEndpoint, decoded.MqEndpoint)
 }

@@ -8,7 +8,7 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
@@ -22,8 +22,8 @@ var optionsAllowedMethods = []string{http.MethodPost}
 
 type RpcGateway struct {
 	name     string
-	actorVia redised.PortalActorVia
-	cors     redised.PortalCors
+	actorVia watched.PortalActorVia
+	cors     watched.PortalCors
 
 	app     meta.App
 	context context.Context
@@ -35,7 +35,7 @@ type RpcGateway struct {
 	watchers map[string]*epmgr.Watcher
 }
 
-func New(ctx context.Context, appInfo meta.App, accessManager *access.Access, epmgrManager *epmgr.Manager, config redised.PortalSite) *RpcGateway {
+func New(ctx context.Context, appInfo meta.App, accessManager *access.Access, epmgrManager *epmgr.Manager, config watched.PortalSite) *RpcGateway {
 	gatewayCtx, cancel := context.WithCancel(ctx)
 	gateway := &RpcGateway{
 		context: gatewayCtx,
@@ -48,7 +48,7 @@ func New(ctx context.Context, appInfo meta.App, accessManager *access.Access, ep
 	return gateway
 }
 
-func (g *RpcGateway) init(config redised.PortalSite) {
+func (g *RpcGateway) init(config watched.PortalSite) {
 	g.name = config.Name
 	g.actorVia = config.ActorVia
 	g.cors = config.Cors
@@ -58,7 +58,7 @@ func (g *RpcGateway) init(config redised.PortalSite) {
 	}
 }
 
-func (g *RpcGateway) Update(config redised.PortalSite) bool {
+func (g *RpcGateway) Update(config watched.PortalSite) bool {
 	serviceNames := map[string]struct{}{}
 	for _, service := range config.RpcgwConfig.Services {
 		serviceNames[service.SkelName] = struct{}{}
@@ -98,7 +98,7 @@ func (g *RpcGateway) watchService(serviceName string) {
 	g.watchers[serviceName] = g.epmgr.WatchRpc(serviceName)
 }
 
-func (g *RpcGateway) routeService(serviceName string) (*redised.RpcServiceRegistration, bool) {
+func (g *RpcGateway) routeService(serviceName string) (*watched.RpcServiceRegistration, bool) {
 	return g.epmgr.NextRpcEndpoint(serviceName)
 }
 

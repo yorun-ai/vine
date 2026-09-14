@@ -2,7 +2,7 @@
 
 [English](README.md) | **简体中文**
 
-配置与服务注册中心，大体遵循 DDD 分层设计，负责维护配置、应用状态与 Rpc 服务注册，并通过 Redis 对外提供读取与订阅能力。
+配置与服务注册中心，大体遵循 DDD 分层设计，负责维护配置、应用状态与 Rpc 服务注册，并通过采用 Redis 协议的 Watch 服务对外提供读取与订阅能力。
 
 未指定数据库参数时，Hub 默认启用 `--no-db`，必须提供 `--seed-hub-data-file`。
 每次启动将配置加载到独立的内存 SQLite，初始化完成后，repo 层禁止修改
@@ -20,15 +20,15 @@ internal/daemon/hub/
 ├── api/                  Hub 对其他 runtime 组件暴露的公共 API
 │   ├── app/              Hub inproc endpoint 等公共常量
 │   ├── nats/             Hub NATS inproc 访问入口
-│   ├── redis/            Hub Redis client、事件与 inproc 访问入口
-│   ├── redised/          写入 Redis 的结构与 key 格式
+│   ├── watch/            Hub Watch client、事件与 inproc 访问入口
+│   ├── watched/          Watch 数据结构与 key 格式
 │   └── skeled/           生成的 control/admin Go package
 ├── skel/                 Control 与 Admin skeleton 定义
 └── src/
     ├── dashboard/        Dashboard 前端源码
     └── server/           Hub 服务端运行目录
         ├── app/          应用装配层，决定 Hub 启用哪些 component、module 和 servicer
-        ├── comp/         运行时共享组件，如 `redisserver`、`natsserver`
+        ├── comp/         运行时共享组件，如 `watchserver`、`natsserver`
         ├── core/         领域层，定义状态对象、Core 与 Repo 接口
         ├── flag/         Hub 启动参数与默认值规范化
         ├── impl/         按对外 API 边界拆分的接口实现层
@@ -60,20 +60,20 @@ bash script/build-dashboard-assets.sh
 Hub 的层次职责必须保持清晰：
 
 - `core` 定义领域状态与 Repo 接口，不依赖具体数据库或 Redis 实现。
-- `repo` 实现持久化和 Redis 同步，不承载对外服务编排。
+- `repo` 实现持久化和 Watch 同步，不承载对外服务编排。
 - `impl/control` 只实现面向 Link/Portal 的 Control API；`impl/admin`
   及其 `debug`、`dashboard` 子包通过 `core` 和 `repo` 实现 Dashboard
   Admin API 能力。
 - `mod` 承载 Control API listener、initializer、seeder、syncer、scheduler、
   sweeper 等运行时流程。
-- `comp` 提供 Redis、NATS 等共享运行时组件。
+- `comp` 提供 Watch、NATS 等共享运行时组件。
 - `app` 只负责装配 component、module 和 servicer。
 
 修改 Hub 时还应遵守：
 
 - 数据库表结构必须同时更新 `src/server/repo/db/model/sql/sqlite` 和 `src/server/repo/db/model/sql/pgsql`。
 - Redis key、Redis value JSON 和事件格式属于 Hub、Link、Portal 之间的协议；修改时必须同步所有生产者、消费者和测试。
-- `redisserver` 是运行时分发层，不应成为绕过 Repo/Core 直接实现业务规则的第二套状态源。
+- `watchserver` 是运行时分发层，不应成为绕过 Repo/Core 直接实现业务规则的第二套状态源。
 - 普通模式与 inproc 模式的 TTL、heartbeat、sweeper 语义不同；修改注册逻辑时必须分别验证。
 
 ## 运行机制
@@ -86,8 +86,8 @@ Hub 的职责可以拆成四条主线：
 2. 服务注册中心
    Link 会把应用状态与 Rpc 服务注册写入 Hub。Hub 通过 `RegistryRepo` 持久化这些状态，并对外提供查询与心跳续租能力。
 
-3. Redis 分发层
-   `redisserver` 维护一份内存 Redis 数据。配置、应用状态、Rpc/Web endpoint 和 schema 都会同步写入其中，Link 与 Portal 通过 Redis 读取快照并监听变更事件。
+3. Watch 分发层
+   `watchserver` 维护一份内存 Redis 数据。配置、应用状态、Rpc/Web endpoint 和 schema 都会同步写入其中，Link 与 Portal 通过 Redis 读取快照并监听变更事件。
 
    内嵌 Redis 协议要求客户端在执行数据命令前完成认证，并为三个用户分别配置资源级 ACL：
 
@@ -143,8 +143,8 @@ Hub 支持作为单进程内组件运行：
 - Hub Control API 注册在 `rpc+inproc://vine/hub`；Dashboard Admin Rpc 和 Web
   handler 分别注册在 `rpc+inproc://vine/hub/admin` 与
   `web+inproc://vine/hub/admin` 下，不再通过 HTTP 暴露。
-- `redisserver` 不再启动对外 TCP 端口，只保留进程内 Redis server。
-- `vined` 中会保存这份进程内 Redis server 指针，供 inproc 模式下的 `RedisClient` 直接使用。
+- `watchserver` 不再启动对外 TCP 端口，只保留进程内 Redis server。
+- `vined` 中会保存这份进程内 Redis server 指针，供 inproc 模式下的 `WatchClient` 直接使用。
 
 此时 Hub 仍然承担配置中心和注册中心职责，只是底层不再通过网络暴露。
 
@@ -153,13 +153,13 @@ Hub 支持作为单进程内组件运行：
 Hub 在普通模式和 inproc 模式下，对注册信息的处理不同：
 
 - 普通模式
-  - 应用状态与 Rpc 服务注册写入 Redis 时会带 TTL。
+  - 应用状态与 Rpc 服务注册写入 Watch 时会带 TTL。
   - Link 通过 heartbeat 持续续租。
   - Hub 通过 registry sweeper 扫描过期 app lease，主动 unregister 过期实例并发布 delete 事件。
-  - Redis key TTL 是兜底清理机制，实际的注册失效事件由 Hub sweeper 负责发布。
+  - Watch key TTL 是兜底清理机制，实际的注册失效事件由 Hub sweeper 负责发布。
 
 - Inproc 模式
-  - 应用状态与 Rpc 服务注册写入 Redis 时不再设置 TTL。
+  - 应用状态与 Rpc 服务注册写入 Watch 时不再设置 TTL。
   - `KeepAppStatus` 和 `KeepRpcServiceRegistration` 变为 noop。
   - registry sweeper 不启动。
   - 状态改为长期有效，依赖显式 unregister 清理。

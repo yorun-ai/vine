@@ -2,10 +2,14 @@ domain vine.hub.control
 
 @desc("Hub information")
 pub data Info {
+    @desc("Hub Vine runtime version")
+    version: string
+
     @desc("Control API service port")
     apiPort: int
 
     @desc("Redis service port")
+    @deprecated("Use watchPort instead")
     redisPort: int
 
     @desc("NATS service port")
@@ -13,6 +17,9 @@ pub data Info {
 
     @desc("Standalone MQ service address")
     mqEndpoint: string
+
+    @desc("Configuration and service discovery watch port")
+    watchPort: int
 }
 
 @desc("Hub's information service, called by Link")

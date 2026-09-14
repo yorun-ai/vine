@@ -1,7 +1,7 @@
 package syncer
 
 import (
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vcode"
 )
@@ -10,8 +10,8 @@ func (s *Syncer) SyncPortalSiteWithRpcgwServices(site *core.PortalSite, rpcgwSer
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
-	s.removeRenamedKeyLocked(s.portalSiteNamesById, site.Id, site.Name, redised.FormatPortalSiteKey)
-	s.RedisServer.SetAndNotify(redised.FormatPortalSiteKey(site.Name), vcode.MustMarshalJsonS(toRedisedPortalSite(site, rpcgwServices)))
+	s.removeRenamedKeyLocked(s.portalSiteNamesById, site.Id, site.Name, watched.FormatPortalSiteKey)
+	s.WatchServer.SetAndNotify(watched.FormatPortalSiteKey(site.Name), vcode.MustMarshalJsonS(toWatchedPortalSite(site, rpcgwServices)))
 	s.saveNameByIdLocked(s.portalSiteNamesById, site.Id, site.Name)
 }
 
@@ -19,7 +19,7 @@ func (s *Syncer) RemovePortalSite(site *core.PortalSite) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
-	s.RedisServer.DeleteAndNotify(redised.FormatPortalSiteKey(site.Name))
+	s.WatchServer.DeleteAndNotify(watched.FormatPortalSiteKey(site.Name))
 	delete(s.portalSiteNamesById, site.Id)
 }
 
@@ -27,8 +27,8 @@ func (s *Syncer) SyncPortalRule(rule *core.PortalRule) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
-	s.removeRenamedKeyLocked(s.portalRuleNamesById, rule.Id, rule.Name, redised.FormatPortalRuleKey)
-	s.RedisServer.SetAndNotify(redised.FormatPortalRuleKey(rule.Name), vcode.MustMarshalJsonS(ToRedisedPortalRule(rule)))
+	s.removeRenamedKeyLocked(s.portalRuleNamesById, rule.Id, rule.Name, watched.FormatPortalRuleKey)
+	s.WatchServer.SetAndNotify(watched.FormatPortalRuleKey(rule.Name), vcode.MustMarshalJsonS(ToWatchedPortalRule(rule)))
 	s.saveNameByIdLocked(s.portalRuleNamesById, rule.Id, rule.Name)
 }
 
@@ -36,7 +36,7 @@ func (s *Syncer) RemovePortalRule(rule *core.PortalRule) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
-	s.RedisServer.DeleteAndNotify(redised.FormatPortalRuleKey(rule.Name))
+	s.WatchServer.DeleteAndNotify(watched.FormatPortalRuleKey(rule.Name))
 	delete(s.portalRuleNamesById, rule.Id)
 }
 
@@ -44,8 +44,8 @@ func (s *Syncer) SyncPortalCert(cert *core.PortalCert) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
-	s.removeRenamedKeyLocked(s.portalCertNamesById, cert.Id, cert.Name, redised.FormatPortalCertKey)
-	s.RedisServer.SetAndNotify(redised.FormatPortalCertKey(cert.Name), vcode.MustMarshalJsonS(ToRedisedPortalCert(cert)))
+	s.removeRenamedKeyLocked(s.portalCertNamesById, cert.Id, cert.Name, watched.FormatPortalCertKey)
+	s.WatchServer.SetAndNotify(watched.FormatPortalCertKey(cert.Name), vcode.MustMarshalJsonS(ToWatchedPortalCert(cert)))
 	s.saveNameByIdLocked(s.portalCertNamesById, cert.Id, cert.Name)
 }
 
@@ -53,38 +53,38 @@ func (s *Syncer) RemovePortalCert(cert *core.PortalCert) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
-	s.RedisServer.DeleteAndNotify(redised.FormatPortalCertKey(cert.Name))
+	s.WatchServer.DeleteAndNotify(watched.FormatPortalCertKey(cert.Name))
 	delete(s.portalCertNamesById, cert.Id)
 }
 
-func toRedisedPortalSite(site *core.PortalSite, rpcgwServices []string) *redised.PortalSite {
-	ret := &redised.PortalSite{
+func toWatchedPortalSite(site *core.PortalSite, rpcgwServices []string) *watched.PortalSite {
+	ret := &watched.PortalSite{
 		Name: site.Name,
 		Type: string(site.Type),
-		ActorVia: redised.PortalActorVia{
+		ActorVia: watched.PortalActorVia{
 			ActorSkelName: site.ActorSkelName,
 			ActorVia:      site.ActorVia,
 		},
-		Cors: redised.PortalCors{
-			Mode:           redised.PortalCorsMode(site.Cors.Mode),
+		Cors: watched.PortalCors{
+			Mode:           watched.PortalCorsMode(site.Cors.Mode),
 			AllowedOrigins: append([]string{}, site.Cors.AllowedOrigins...),
 		},
 	}
 	if site.Type == core.PortalSiteTypeRPCGW {
-		services := make([]redised.PortalRpcgwService, 0, len(rpcgwServices))
+		services := make([]watched.PortalRpcgwService, 0, len(rpcgwServices))
 		for _, serviceName := range rpcgwServices {
-			services = append(services, redised.PortalRpcgwService{SkelName: serviceName})
+			services = append(services, watched.PortalRpcgwService{SkelName: serviceName})
 		}
-		ret.RpcgwConfig = &redised.PortalRpcgwConfig{Services: services}
+		ret.RpcgwConfig = &watched.PortalRpcgwConfig{Services: services}
 	}
 	if site.Type == core.PortalSiteTypeWEBGW {
-		ret.WebgwConfig = &redised.PortalWebgwConfig{WebName: site.WebName}
+		ret.WebgwConfig = &watched.PortalWebgwConfig{WebName: site.WebName}
 	}
 	return ret
 }
 
-func ToRedisedPortalRule(rule *core.PortalRule) *redised.PortalRule {
-	return &redised.PortalRule{
+func ToWatchedPortalRule(rule *core.PortalRule) *watched.PortalRule {
+	return &watched.PortalRule{
 		Name:                    rule.Name,
 		MatchScheme:             rule.MatchScheme,
 		MatchHost:               rule.MatchHost,
@@ -97,8 +97,8 @@ func ToRedisedPortalRule(rule *core.PortalRule) *redised.PortalRule {
 	}
 }
 
-func ToRedisedPortalCert(cert *core.PortalCert) *redised.PortalCert {
-	return &redised.PortalCert{
+func ToWatchedPortalCert(cert *core.PortalCert) *watched.PortalCert {
+	return &watched.PortalCert{
 		Name:             cert.Name,
 		Issuer:           cert.Issuer,
 		PublicKeyBase64:  cert.PublicKeyBase64,

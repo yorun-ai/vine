@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/util/vpre"
@@ -36,7 +36,7 @@ type _Rule struct {
 	routeSiteName   string
 }
 
-func newRule(rule redised.PortalRule, siteManager *site.Manager) (*_Rule, bool) {
+func newRule(rule watched.PortalRule, siteManager *site.Manager) (*_Rule, bool) {
 	isRedirection := rule.RouteType == routeTypePermanentRedirect || rule.RouteType == routeTypeTemporaryRedirect
 	isEntry := rule.RouteType == routeTypeSite
 	if !isRedirection && !isEntry {

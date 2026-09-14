@@ -169,3 +169,27 @@ func assertPanicContains(t *testing.T, expected string) func() {
 		}
 	}
 }
+
+func TestMustVineVersion(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		info   debug.BuildInfo
+		linker string
+		want   string
+	}{
+		{name: "Vine binary", info: debug.BuildInfo{Main: debug.Module{Path: "go.yorun.ai/vine", Version: "v0.17.0"}}, want: "v0.17.0"},
+		{name: "release linker version", info: debug.BuildInfo{Main: debug.Module{Path: "go.yorun.ai/vine", Version: "(devel)"}}, linker: "v0.18.0", want: "v0.18.0"},
+		{name: "embedded Hub", info: debug.BuildInfo{Main: debug.Module{Path: "example.com/app", Version: "v9.0.0"}, Deps: []*debug.Module{{Path: "go.yorun.ai/vine", Version: "v0.17.0"}}}, linker: "v9.0.0", want: "v0.17.0"},
+		{name: "development dependency", info: debug.BuildInfo{Main: debug.Module{Path: "example.com/app", Version: "v9.0.0"}, Deps: []*debug.Module{{Path: "go.yorun.ai/vine", Version: "(devel)"}}}, want: DevVersion},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			originalRead, originalLinker := readBuildInfo, ldModuleVersion
+			t.Cleanup(func() { readBuildInfo, ldModuleVersion = originalRead, originalLinker })
+			readBuildInfo = func() (*debug.BuildInfo, bool) { return &tc.info, true }
+			ldModuleVersion = tc.linker
+			if got := MustVineVersion(); got != tc.want {
+				t.Fatalf("got %q, want %q", got, tc.want)
+			}
+		})
+	}
+}

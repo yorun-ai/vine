@@ -9,8 +9,8 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/skel"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubredis"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 )
 
@@ -18,7 +18,7 @@ type Access struct {
 	app.BaseModule
 
 	Context  context.Context  `inject:""`
-	Redis    *hubredis.Client `inject:""`
+	Watch    *hubwatch.Client `inject:""`
 	Epmgr    *epmgr.Manager   `inject:""`
 	Identity *mtls.Identity   `inject:""`
 
@@ -26,9 +26,9 @@ type Access struct {
 	actorNamesByKey                   map[string]string
 	serviceNamesByKey                 map[string]string
 	resourceNamesByKey                map[string]string
-	actorsBySkelName                  map[string]*redised.SchemaActor
-	servicesBySkelName                map[string]*redised.SchemaService
-	resourcesBySkelName               map[string]*redised.SchemaResource
+	actorsBySkelName                  map[string]*watched.SchemaActor
+	servicesBySkelName                map[string]*watched.SchemaService
+	resourcesBySkelName               map[string]*watched.SchemaResource
 	authServiceWatchersByActorKey     map[string]*epmgr.Watcher
 	permServiceWatchersByActorKey     map[string]*epmgr.Watcher
 	checkServiceWatchersByResourceKey map[string]*epmgr.Watcher
@@ -38,9 +38,9 @@ func (a *Access) DIInit() {
 	a.actorNamesByKey = map[string]string{}
 	a.serviceNamesByKey = map[string]string{}
 	a.resourceNamesByKey = map[string]string{}
-	a.actorsBySkelName = map[string]*redised.SchemaActor{}
-	a.servicesBySkelName = map[string]*redised.SchemaService{}
-	a.resourcesBySkelName = map[string]*redised.SchemaResource{}
+	a.actorsBySkelName = map[string]*watched.SchemaActor{}
+	a.servicesBySkelName = map[string]*watched.SchemaService{}
+	a.resourcesBySkelName = map[string]*watched.SchemaResource{}
 	a.authServiceWatchersByActorKey = map[string]*epmgr.Watcher{}
 	a.permServiceWatchersByActorKey = map[string]*epmgr.Watcher{}
 	a.checkServiceWatchersByResourceKey = map[string]*epmgr.Watcher{}

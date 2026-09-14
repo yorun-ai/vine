@@ -6,14 +6,14 @@ import (
 	"testing"
 
 	"go.yorun.ai/vine/internal/core/skel"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 )
 
 func TestSyncerSupportsConcurrentStateUpdates(t *testing.T) {
-	redisServer := redisserver.NewServerForTest()
-	defer redisServer.AfterAppStop()
-	target := testSyncer(redisServer)
+	watchServer := watchserver.NewServerForTest()
+	defer watchServer.AfterAppStop()
+	target := testSyncer(watchServer)
 
 	start := make(chan struct{})
 	var waitGroup sync.WaitGroup

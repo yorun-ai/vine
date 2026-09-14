@@ -1,14 +1,14 @@
 package access
 
 import (
-	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/util/vcode"
 )
 
 // Actor
 
-func (a *Access) actorSchema(actorSkelName string) (*redised.SchemaActor, bool) {
+func (a *Access) actorSchema(actorSkelName string) (*watched.SchemaActor, bool) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
@@ -17,7 +17,7 @@ func (a *Access) actorSchema(actorSkelName string) (*redised.SchemaActor, bool) 
 }
 
 func (a *Access) loadActors() {
-	valuesByKey, subscription := a.Redis.LoadListAndSubscribe(a.Context, redised.FormatSchemaActorPrefix(), a.handleActorEvent)
+	valuesByKey, subscription := a.Watch.LoadListAndSubscribe(a.Context, watched.FormatSchemaActorPrefix(), a.handleActorEvent)
 
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -29,18 +29,18 @@ func (a *Access) loadActors() {
 	subscription.Start()
 }
 
-func (a *Access) handleActorEvent(event hubredis.Event) {
+func (a *Access) handleActorEvent(event hubwatch.Event) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
-	if event.Kind == hubredis.EventKindDelete {
+	if event.Kind == hubwatch.EventKindDelete {
 		a.removeActorLocked(event.Key)
 		return
 	}
 	a.setActorLocked(event.Key, decodeActor(event.Value))
 }
 
-func (a *Access) setActorLocked(key string, actor *redised.SchemaActor) {
+func (a *Access) setActorLocked(key string, actor *watched.SchemaActor) {
 	a.removeActorLocked(key)
 	a.actorNamesByKey[key] = actor.SkelName
 	a.actorsBySkelName[actor.SkelName] = actor
@@ -57,7 +57,7 @@ func (a *Access) removeActorLocked(key string) {
 	}
 }
 
-func (a *Access) watchActorAuthServiceLocked(key string, actor *redised.SchemaActor) {
+func (a *Access) watchActorAuthServiceLocked(key string, actor *watched.SchemaActor) {
 	if actor.AuthService == nil {
 		return
 	}
@@ -73,7 +73,7 @@ func (a *Access) releaseActorAuthServiceLocked(key string) {
 	delete(a.authServiceWatchersByActorKey, key)
 }
 
-func (a *Access) watchActorPermServiceLocked(key string, actor *redised.SchemaActor) {
+func (a *Access) watchActorPermServiceLocked(key string, actor *watched.SchemaActor) {
 	if !actor.PermEnabled || actor.PermService == nil {
 		return
 	}
@@ -89,13 +89,13 @@ func (a *Access) releaseActorPermServiceLocked(key string) {
 	delete(a.permServiceWatchersByActorKey, key)
 }
 
-func decodeActor(value string) *redised.SchemaActor {
-	return vcode.MustUnmarshalJsonS[*redised.SchemaActor](value)
+func decodeActor(value string) *watched.SchemaActor {
+	return vcode.MustUnmarshalJsonS[*watched.SchemaActor](value)
 }
 
 // Service
 
-func (a *Access) serviceSchema(serviceSkelName string) (*redised.SchemaService, bool) {
+func (a *Access) serviceSchema(serviceSkelName string) (*watched.SchemaService, bool) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
@@ -104,7 +104,7 @@ func (a *Access) serviceSchema(serviceSkelName string) (*redised.SchemaService, 
 }
 
 func (a *Access) loadServices() {
-	valuesByKey, subscription := a.Redis.LoadListAndSubscribe(a.Context, redised.FormatSchemaServicePrefix(), a.handleServiceEvent)
+	valuesByKey, subscription := a.Watch.LoadListAndSubscribe(a.Context, watched.FormatSchemaServicePrefix(), a.handleServiceEvent)
 
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -115,18 +115,18 @@ func (a *Access) loadServices() {
 	subscription.Start()
 }
 
-func (a *Access) handleServiceEvent(event hubredis.Event) {
+func (a *Access) handleServiceEvent(event hubwatch.Event) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
-	if event.Kind == hubredis.EventKindDelete {
+	if event.Kind == hubwatch.EventKindDelete {
 		a.removeServiceLocked(event.Key)
 		return
 	}
 	a.setServiceLocked(event.Key, decodeService(event.Value))
 }
 
-func (a *Access) setServiceLocked(key string, service *redised.SchemaService) {
+func (a *Access) setServiceLocked(key string, service *watched.SchemaService) {
 	a.removeServiceLocked(key)
 	a.serviceNamesByKey[key] = service.SkelName
 	a.servicesBySkelName[service.SkelName] = service
@@ -139,14 +139,14 @@ func (a *Access) removeServiceLocked(key string) {
 	}
 }
 
-func decodeService(value string) *redised.SchemaService {
-	return vcode.MustUnmarshalJsonS[*redised.SchemaService](value)
+func decodeService(value string) *watched.SchemaService {
+	return vcode.MustUnmarshalJsonS[*watched.SchemaService](value)
 }
 
 // Resource
 
 func (a *Access) loadResources() {
-	valuesByKey, subscription := a.Redis.LoadListAndSubscribe(a.Context, redised.FormatSchemaResourcePrefix(), a.handleResourceEvent)
+	valuesByKey, subscription := a.Watch.LoadListAndSubscribe(a.Context, watched.FormatSchemaResourcePrefix(), a.handleResourceEvent)
 
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -157,18 +157,18 @@ func (a *Access) loadResources() {
 	subscription.Start()
 }
 
-func (a *Access) handleResourceEvent(event hubredis.Event) {
+func (a *Access) handleResourceEvent(event hubwatch.Event) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
-	if event.Kind == hubredis.EventKindDelete {
+	if event.Kind == hubwatch.EventKindDelete {
 		a.removeResourceLocked(event.Key)
 		return
 	}
 	a.setResourceLocked(event.Key, decodeResource(event.Value))
 }
 
-func (a *Access) setResourceLocked(key string, resource *redised.SchemaResource) {
+func (a *Access) setResourceLocked(key string, resource *watched.SchemaResource) {
 	a.removeResourceLocked(key)
 	a.resourceNamesByKey[key] = resource.SkelName
 	a.resourcesBySkelName[resource.SkelName] = resource
@@ -183,7 +183,7 @@ func (a *Access) removeResourceLocked(key string) {
 	}
 }
 
-func (a *Access) watchResourceCheckServiceLocked(key string, resource *redised.SchemaResource) {
+func (a *Access) watchResourceCheckServiceLocked(key string, resource *watched.SchemaResource) {
 	if resource.CheckService == nil {
 		return
 	}
@@ -199,6 +199,6 @@ func (a *Access) releaseResourceCheckServiceLocked(key string) {
 	delete(a.checkServiceWatchersByResourceKey, key)
 }
 
-func decodeResource(value string) *redised.SchemaResource {
-	return vcode.MustUnmarshalJsonS[*redised.SchemaResource](value)
+func decodeResource(value string) *watched.SchemaResource {
+	return vcode.MustUnmarshalJsonS[*watched.SchemaResource](value)
 }

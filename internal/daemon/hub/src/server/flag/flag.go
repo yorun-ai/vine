@@ -12,7 +12,7 @@ import (
 
 const (
 	HubDefaultControlListen    = "127.0.0.1:7071"
-	HubDefaultRedisListen      = "127.0.0.1:7072"
+	HubDefaultWatchListen      = "127.0.0.1:7072"
 	HubDefaultAdminListen      = "127.0.0.1:7075"
 	HubDefaultDashboardURL     = "http://:7099/"
 	HubMTLSDefaultDashboardURL = "https://:7099/"
@@ -28,7 +28,7 @@ type Flag struct {
 
 	ControlListen string
 	AdminListen   string
-	RedisListen   string
+	WatchListen   string
 
 	MQExternalNatsURL string
 	MQEmbeddedNats    bool
@@ -61,7 +61,7 @@ func (f *Flag) Normalize(inproc bool) {
 		// so external listen addresses and MQ endpoint must not leak into runtime info.
 		f.ControlListen = ""
 		f.AdminListen = ""
-		f.RedisListen = ""
+		f.WatchListen = ""
 		f.MQExternalNatsURL = ""
 		f.MQEmbeddedNats = true
 		return
@@ -78,8 +78,8 @@ func (f *Flag) normalizeListen() {
 	if f.AdminListen == "" {
 		f.AdminListen = HubDefaultAdminListen
 	}
-	if f.RedisListen == "" {
-		f.RedisListen = HubDefaultRedisListen
+	if f.WatchListen == "" {
+		f.WatchListen = HubDefaultWatchListen
 	}
 }
 
@@ -133,8 +133,8 @@ func (f *Flag) AdminPort() int {
 	return vnet.MustParsePort(f.AdminListen)
 }
 
-func (f *Flag) RedisPort() int {
-	return vnet.MustParsePort(f.RedisListen)
+func (f *Flag) WatchPort() int {
+	return vnet.MustParsePort(f.WatchListen)
 }
 
 func (f *Flag) normalizeDashboardURL() {
