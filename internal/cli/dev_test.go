@@ -259,19 +259,3 @@ func (a *_DevRecordingApp) StopGracefully() {
 }
 
 func (*_DevRecordingApp) StartAndWait() {}
-
-func TestDevLegacySeedDataFile(t *testing.T) {
-	original := startDevRuntime
-	t.Cleanup(func() { startDevRuntime = original })
-	called := false
-	startDevRuntime = func(option _DevOption) {
-		called = true
-		if option.SeedYAMLFile != "old.yaml" {
-			t.Fatalf("lost deprecated data file: %#v", option)
-		}
-	}
-	result := run([]string{"dev", "--seed-yaml-file", "old.yaml"})
-	if result.exitCode != exitCodeSuccess || !called {
-		t.Fatalf("legacy dev flag failed: %#v", result)
-	}
-}

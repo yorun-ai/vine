@@ -312,11 +312,3 @@ func TestSeedSupplementInputsRequireTemplateAndAreExclusive(t *testing.T) {
 		require.NotPanics(t, func() { valid.Normalize(true) })
 	}
 }
-
-func TestDeprecatedSeedYamlFile(t *testing.T) {
-	f := &Flag{SeedYAMLFile: "old.yaml"}
-	f.Normalize(true)
-	assert.Equal(t, "old.yaml", f.SeedHubDataFile)
-	assert.Empty(t, f.SeedYAMLFile)
-	assert.Panics(t, func() { (&Flag{SeedYAMLFile: "old.yaml", SeedHubDataFile: "new.yaml"}).Normalize(true) })
-}

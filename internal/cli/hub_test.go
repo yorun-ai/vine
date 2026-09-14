@@ -259,41 +259,12 @@ func TestRunHubServeNoDB(t *testing.T) {
 	}
 }
 
-func TestHubDeprecatedSeedDataFileInputs(t *testing.T) {
-	original := startHubApp
-	t.Cleanup(func() { startHubApp = original })
-	for _, legacyEnv := range []bool{false, true} {
-		t.Run(fmt.Sprint(legacyEnv), func(t *testing.T) {
-			t.Setenv(EnvSeedHubDataFile, "")
-			t.Setenv(EnvHubSeedYAMLFile, "")
-			called := false
-			startHubApp = func(flags hubconf.Flag) {
-				flags.Normalize(true)
-				called = true
-				if flags.SeedHubDataFile != "old.yaml" {
-					t.Fatalf("incorrect path: %s", flags.SeedHubDataFile)
-				}
-			}
-			args := []string{"hub", "serve"}
-			if legacyEnv {
-				t.Setenv(EnvHubSeedYAMLFile, "old.yaml")
-			} else {
-				args = append(args, "--seed-yaml-file", "old.yaml")
-			}
-			result := run(args)
-			if result.exitCode != exitCodeSuccess || !called {
-				t.Fatalf("legacy input failed: %#v", result)
-			}
-		})
-	}
-}
-
 func TestHubSeedHubInputs(t *testing.T) {
 	original := startHubApp
 	t.Cleanup(func() { startHubApp = original })
 	for _, fromEnv := range []bool{false, true} {
 		t.Run(fmt.Sprint(fromEnv), func(t *testing.T) {
-			for _, name := range []string{EnvSeedHubDataFile, EnvSeedHubSourceFile, EnvSeedHubVarsFile, EnvHubSeedYAMLFile} {
+			for _, name := range []string{EnvSeedHubDataFile, EnvSeedHubSourceFile, EnvSeedHubVarsFile} {
 				t.Setenv(name, "")
 			}
 			called := false

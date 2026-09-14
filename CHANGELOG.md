@@ -13,8 +13,9 @@ are not part of the public compatibility commitment.
 - Hub seed inputs use `SeedHubData`, `SeedHubSource`, and their `File` forms,
   plus `SeedHubVarsFile`. CLI flags and environment variables use
   `seed-hub-{data,source,vars}-file` and `VINE_SEED_HUB_{DATA,SOURCE,VARS}_FILE`.
-  Only the legacy seed YAML file flag, environment variable, and Go option
-  remain as deprecated aliases; other old seed input names are removed.
+  All old seed input names are removed, including `--seed-yaml-file`,
+  `VINE_SEED_YAML_FILE`, and the `SeedYAMLFile` Go option; update callers to
+  the corresponding Hub data names.
 
 - Hub seed is applied only once, as recorded in database metadata. Later starts
   skip seed, variable, and source files entirely. Removed the per-item `override`
@@ -28,8 +29,8 @@ are not part of the public compatibility commitment.
   exposes these records to Dashboard comments and tooltips; editing a field
   clears its obsolete template and bindings.
 
-- Seed deployment variables and optional field source maps through `--seed-vars-file`
-  and `--seed-source-file`. Standalone can embed seed and source maps together;
+- Seed deployment variables and optional field source maps through `--seed-hub-vars-file`
+  and `--seed-hub-source-file`. Standalone can embed seed and source maps together;
   variables are always supplied by file. Hub stores
   field origins with configuration records and exposes them in the Dashboard.
   SQLite/PostgreSQL store field sources in a separate `field_source` table keyed by entity kind and ID.

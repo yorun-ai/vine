@@ -11,11 +11,6 @@ import (
 )
 
 const (
-	// Deprecated: use FlagSeedHubDataFile.
-	FlagHubSeedYAMLFile = "seed-yaml-file"
-	// Deprecated: use EnvSeedHubDataFile.
-	EnvHubSeedYAMLFile = "VINE_SEED_YAML_FILE"
-
 	commandHub      = "hub"
 	commandHubServe = "serve"
 
@@ -107,11 +102,6 @@ func newHubServeFlags() []ucli.Flag {
 		},
 		&ucli.BoolFlag{Name: FlagHubMQEmbeddedNats, Sources: ucli.EnvVars(EnvHubMQEmbeddedNats), Usage: "start an embedded NATS server"},
 		&ucli.StringFlag{
-			Name:    FlagHubSeedYAMLFile,
-			Sources: ucli.EnvVars(EnvHubSeedYAMLFile),
-			Usage:   "deprecated: use --seed-hub-data-file",
-		},
-		&ucli.StringFlag{
 			Name:    FlagSeedHubDataFile,
 			Sources: ucli.EnvVars(EnvSeedHubDataFile),
 			Usage:   "hub seed YAML file",
@@ -150,7 +140,6 @@ func newHubServeCommand() *ucli.Command {
 				RedisListen:       cmd.String(FlagHubRedisListen),
 				MQExternalNatsURL: cmd.String(FlagHubMQExternalNatsURL),
 				MQEmbeddedNats:    cmd.Bool(FlagHubMQEmbeddedNats),
-				SeedYAMLFile:      cmd.String(FlagHubSeedYAMLFile),
 				SeedHubDataFile:   cmd.String(FlagSeedHubDataFile),
 				SeedHubSourceFile: cmd.String(FlagSeedHubSourceFile),
 				SeedHubVarsFile:   cmd.String(FlagSeedHubVarsFile),

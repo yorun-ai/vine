@@ -186,15 +186,3 @@ func TestApplySeedTemplateOptions(t *testing.T) {
 	assert.False(t, Option{SeedHubSourceFile: "source.yaml"}.isZero())
 	assert.False(t, Option{SeedHubVarsFile: "vars.yaml"}.isZero())
 }
-
-func TestDeprecatedSeedYamlOption(t *testing.T) {
-	option := Option{SeedYAMLFile: "old.yaml"}
-	assert.False(t, option.isZero())
-	flags := &hubflag.Flag{}
-	applyOption(flags, option)
-	flags.Normalize(true)
-	assert.Equal(t, "old.yaml", flags.SeedHubDataFile)
-	flags = &hubflag.Flag{}
-	applyOption(flags, Option{SeedYAMLFile: "old.yaml", SeedHubDataFile: "new.yaml"})
-	assert.Panics(t, func() { flags.Normalize(true) })
-}

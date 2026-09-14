@@ -5,7 +5,6 @@ import (
 	"net/url"
 
 	"go.yorun.ai/vine/internal/app"
-	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/util/vnet"
 	"go.yorun.ai/vine/util/vpre"
@@ -24,8 +23,6 @@ const (
 )
 
 type Flag struct {
-	// Deprecated: use SeedHubDataFile.
-	SeedYAMLFile string
 	app.FlagModel
 	MTLS mtls.Files
 
@@ -87,12 +84,6 @@ func (f *Flag) normalizeListen() {
 }
 
 func (f *Flag) normalizeSeed() {
-	if f.SeedYAMLFile != "" {
-		vpre.Check(f.SeedHubDataFile == "", "seed-yaml-file and seed-hub-data-file are mutually exclusive")
-		logger.Warn("seed-yaml-file / VINE_SEED_YAML_FILE is deprecated; use seed-hub-data-file / VINE_SEED_HUB_DATA_FILE")
-		f.SeedHubDataFile = f.SeedYAMLFile
-		f.SeedYAMLFile = ""
-	}
 	vpre.CheckNot(f.SeedHubSource != "" && f.SeedHubSourceFile != "", "SeedHubSource and seed-hub-source-file are mutually exclusive")
 	vpre.CheckNot((f.SeedHubSource != "" || f.SeedHubSourceFile != "" || f.SeedHubVarsFile != "") && f.SeedHubData == "" && f.SeedHubDataFile == "", "seed source and variables require seed YAML")
 	vpre.CheckNot(f.SeedHubDataFile != "" && f.SeedHubData != "", "SeedHubData and seed-hub-data-file are mutually exclusive")
