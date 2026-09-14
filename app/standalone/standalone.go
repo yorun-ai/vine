@@ -27,8 +27,6 @@ type _App struct {
 
 // Option configures the infrastructure started by standalone mode.
 type Option struct {
-	// Deprecated: use SeedHubDataFile.
-	SeedYAMLFile string
 	// SeedHubDataFile is the Hub seed configuration file, mutually exclusive with SeedHubData.
 	SeedHubDataFile string
 
@@ -60,7 +58,7 @@ type Option struct {
 }
 
 func (o Option) isZero() bool {
-	return o.SeedYAMLFile == "" && o.SeedHubDataFile == "" &&
+	return o.SeedHubDataFile == "" &&
 		o.SeedHubData == "" && o.SeedHubSource == "" && o.SeedHubSourceFile == "" && o.SeedHubVarsFile == "" &&
 		!o.NoDB &&
 		o.SQLiteFile == "" &&
@@ -162,12 +160,6 @@ func (a *_App) initInfra() {
 			Destination: &flag.DBPostgresURL,
 		},
 		&ucli.StringFlag{
-			Name:        vinecli.FlagHubSeedYAMLFile,
-			Sources:     ucli.EnvVars(vinecli.EnvHubSeedYAMLFile),
-			Usage:       "deprecated: use --seed-hub-data-file",
-			Destination: &flag.SeedYAMLFile,
-		},
-		&ucli.StringFlag{
 			Name:        flagSeedHubDataFile,
 			Sources:     ucli.EnvVars(envSeedHubDataFile),
 			Usage:       "seed YAML file",
@@ -204,9 +196,6 @@ func (a *_App) initInfra() {
 }
 
 func applyOption(flag *hubflag.Flag, option Option) {
-	if option.SeedYAMLFile != "" {
-		flag.SeedYAMLFile = option.SeedYAMLFile
-	}
 	if option.SeedHubSource != "" {
 		flag.SeedHubSource = option.SeedHubSource
 	}

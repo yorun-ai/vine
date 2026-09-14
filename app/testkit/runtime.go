@@ -99,13 +99,6 @@ func (r *Runtime) stopAfterStartFailure() {
 func prepareStandaloneOption(t testing.TB, option Option) (standalone.Option, func()) {
 	t.Helper()
 
-	if option.SeedYAMLFile != "" {
-		if option.SeedHubDataFile != "" {
-			t.Fatal("SeedYAMLFile and SeedHubDataFile are mutually exclusive")
-		}
-		t.Log("SeedYAMLFile is deprecated; use SeedHubDataFile")
-		option.SeedHubDataFile = option.SeedYAMLFile
-	}
 	seedYAMLFile := option.SeedHubDataFile
 	cleanup := func() {}
 	if len(option.ConfigOverrides) > 0 {

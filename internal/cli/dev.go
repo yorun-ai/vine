@@ -22,7 +22,6 @@ const (
 )
 
 type _DevOption struct {
-	SeedYAMLFile      string
 	LinkAPIListen     string
 	SeedHubDataFile   string
 	SeedHubSourceFile string
@@ -73,11 +72,6 @@ func newDevCommand() *ucli.Command {
 				Usage:   "hub PostgreSQL database URL",
 			},
 			&ucli.StringFlag{
-				Name:    FlagHubSeedYAMLFile,
-				Sources: ucli.EnvVars(EnvHubSeedYAMLFile),
-				Usage:   "deprecated: use --seed-hub-data-file",
-			},
-			&ucli.StringFlag{
 				Name:    FlagSeedHubDataFile,
 				Sources: ucli.EnvVars(EnvSeedHubDataFile),
 				Usage:   "hub seed YAML file",
@@ -105,7 +99,6 @@ func newDevCommand() *ucli.Command {
 
 			startDevRuntime(_DevOption{
 				LinkAPIListen:     cmd.String(flagDevLinkAPIListen),
-				SeedYAMLFile:      cmd.String(FlagHubSeedYAMLFile),
 				SeedHubDataFile:   cmd.String(FlagSeedHubDataFile),
 				SeedHubSourceFile: cmd.String(FlagSeedHubSourceFile),
 				SeedHubVarsFile:   cmd.String(FlagSeedHubVarsFile),
@@ -149,7 +142,6 @@ func newDevRuntime(option _DevOption) *_DevRuntime {
 
 func prepareDevHubFlag(option _DevOption) (*hubflag.Flag, func()) {
 	flag := &hubflag.Flag{
-		SeedYAMLFile:      option.SeedYAMLFile,
 		SeedHubDataFile:   option.SeedHubDataFile,
 		SeedHubSourceFile: option.SeedHubSourceFile,
 		SeedHubVarsFile:   option.SeedHubVarsFile,
