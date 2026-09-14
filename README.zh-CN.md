@@ -10,7 +10,7 @@
 
 Vine 是一个面向契约优先 Go 应用的运行框架。它统一应用生命周期、依赖注入、配置、
 Rpc、Web、Event、Task、Redis 与关系型数据库，并让同一套应用模型从单进程开发运行时
-平滑演进到由 Hub、Link、Portal 组成的分离式部署。
+演进到由 Hub、Link、Portal 组成的分离式部署。
 
 当应用需要的不只是 HTTP 路由器，而是类型安全的跨应用契约、运行时发现、异步投递、
 配置更新、外部网关，以及可预期的启动与优雅关闭时，可以使用 Vine。
@@ -25,7 +25,7 @@ Rpc、Web、Event、Task、Redis 与关系型数据库，并让同一套应用�
 | 应用模型 | 有序的组件与模块生命周期、基于类型的依赖注入、执行作用域和优雅关闭 |
 | 类型化能力 | Rpc 请求/响应、Web 路由、Event 广播、Task 竞争消费和托管配置 |
 | 运行时服务 | Hub 配置与注册中心、Link 发现与转发，以及可选的 Portal HTTP/HTTPS 网关 |
-| 基础设施 | 结构化日志、trace 与身份传播、Redis client/cache/lock，以及基于 SQLite 或 PostgreSQL 的 RDB |
+| 基础设施 | 结构化日志、trace 与身份传播、Redis 客户端/缓存/锁，以及基于 SQLite 或 PostgreSQL 的 RDB |
 | 工具链 | `vine` 运行时 CLI、`app/testkit`、Go 公开 API facade，以及 Skel 生成的 Go/TypeScript 契约 |
 | 部署 | standalone、本地 `vine dev`、linked 与完全分离式拓扑，无需重写业务模块 |
 
@@ -43,13 +43,13 @@ flowchart LR
 
 | 角色 | 职责 |
 | --- | --- |
-| **App** | 承载业务模块、handler、配置 schema 和应用拥有的基础设施依赖。 |
+| **App** | 承载业务模块、handler、配置 schema 和基础设施依赖。 |
 | **Link** | 注册本地应用，订阅发现与配置状态，选择实例，转发 Rpc/Web 流量并投递 Event/Task。 |
 | **Hub** | 管理配置、schema、注册、租约、Portal 配置、管理 API 和 Dashboard。 |
 | **Portal** | 提供可选的外部 HTTP/HTTPS 入口、路由、准入和公网 TLS 证书选择。 |
 
-应用之间的内部调用经过 Link，不经过 Portal。standalone 模式保留相同的职责边界，只是
-把网络通信替换为进程内 transport。
+应用之间的内部调用经过 Link，不经过 Portal。standalone 模式保持相同的职责划分，只是
+把网络边界替换为进程内 transport。
 
 ## 快速开始
 
@@ -62,8 +62,8 @@ go mod init example.com/vine-hello
 go get go.yorun.ai/vine@latest
 ```
 
-Go 会把解析得到的发布版本写入 `go.mod`。审核并提交 `go.mod` 与 `go.sum`；需要可复现的
-初始化脚本应显式指定 Vine 发布 tag。
+Go 会把解析出的发布版本写入 `go.mod`。请审核并提交 `go.mod` 与 `go.sum`；要求可复现的
+bootstrap 脚本应显式指定 Vine 发布 tag。
 
 创建 `main.go`：
 
@@ -111,8 +111,8 @@ go run .
 
 日志出现 `hello from Vine` 时，Hub、Portal、Link 和业务应用就已经在同一个进程中运行。
 按 `Ctrl+C` 会以相反的生命周期顺序停止它们。接下来可以继续阅读
-[首个应用教程](https://vine.yorun.ai/zh-CN/docs/getting-started/tutorial-first-app)，
-或者通过[首个 Skel 契约](https://vine.yorun.ai/zh-CN/docs/getting-started/first-contract)
+[首个应用教程](https://vine.yorun.ai/zh-CN/docs/tutorial-first-app)，
+或者通过[首个 Skel 契约](https://vine.yorun.ai/zh-CN/docs/first-skel-contract)
 定义类型化 API。
 
 ## 选择运行模式
@@ -155,15 +155,15 @@ vine link serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-运行分离式服务前，阅读 [CLI 指南](https://vine.yorun.ai/zh-CN/docs/getting-started/cli)；
+运行分离式服务前，阅读 [CLI 指南](https://vine.yorun.ai/zh-CN/docs/cli)；
 其中说明了持久化、NATS、listener、seed、Dashboard、环境变量与后端 mTLS 选项。
 
 ## Docker 镜像
 
 Release workflow 将 Hub、Link 和 Portal 镜像发布到
 `ghcr.io/yorun-ai/vine-hub`、`ghcr.io/yorun-ai/vine-link` 和
-`ghcr.io/yorun-ai/vine-portal`，三个镜像共用根目录的多阶段 `Dockerfile`。镜像名称、运行配置、
-Kubernetes manifests 和后台 mTLS 参阅
+`ghcr.io/yorun-ai/vine-portal`，三个镜像共用根目录的多阶段 `Dockerfile`。
+镜像名称、运行配置、Kubernetes manifests 和后台 mTLS 参阅
 [容器与 Kubernetes 部署指南](https://vine.yorun.ai/zh-CN/docs/container-deployment)。
 
 ## 公开包索引
@@ -178,11 +178,13 @@ Vine 将公开 API 保持在少量 facade 包中。`internal` 下的包属于实
 | [`core/rpc`](core/rpc)、[`core/web`](core/web) | 同步服务契约和 Web 处理 |
 | [`core/event`](core/event)、[`core/task`](core/task) | 异步广播和竞争消费者任务 |
 | [`core/conf`](core/conf) | eternal 配置快照和 instant 配置更新 |
+| [`core/skel`](core/skel) | Skel 运行时标量类型、schema 注册和生成器兼容性检查 |
 | [`core/meta`](core/meta)、[`core/logger`](core/logger)、[`core/ex`](core/ex)、[`core/redact`](core/redact) | 请求元数据、结构化日志、系统错误和敏感数据脱敏 |
+| [`core/runtime`](core/runtime) | 应用标识、版本、实例 ID 和构建元数据 |
 | [`infra/redis`](infra/redis)、[`infra/rdb`](infra/rdb) | 托管 Redis 与关系型数据库集成 |
 | [`util`](util) | 可复用的编码、文件、集合、数学、网络、校验与字符串辅助能力 |
 
-通过[框架包索引](https://vine.yorun.ai/zh-CN/docs/framework/core-packages)了解使用路径，
+通过[框架包索引](https://vine.yorun.ai/zh-CN/docs/core-packages)了解使用路径，
 通过 [pkg.go.dev](https://pkg.go.dev/go.yorun.ai/vine) 查询准确的 API 签名。
 
 ## 契约与生态
@@ -202,10 +204,10 @@ Vine 使用 [Skel](https://skel.yorun.ai/zh-CN/docs/) 契约描述 Rpc、Web、E
 ## 文档
 
 - [开始使用 Vine](https://vine.yorun.ai/zh-CN/docs/getting-started)
-- [构建首个应用](https://vine.yorun.ai/zh-CN/docs/getting-started/tutorial-first-app)
-- [编写首个 Skel 契约](https://vine.yorun.ai/zh-CN/docs/getting-started/first-contract)
-- [应用生命周期](https://vine.yorun.ai/zh-CN/docs/runtime/application-lifecycle)
-- [请求路由与就绪](https://vine.yorun.ai/zh-CN/docs/runtime/request-routing)
+- [构建首个应用](https://vine.yorun.ai/zh-CN/docs/tutorial-first-app)
+- [编写首个 Skel 契约](https://vine.yorun.ai/zh-CN/docs/first-skel-contract)
+- [应用生命周期](https://vine.yorun.ai/zh-CN/docs/application-lifecycle)
+- [请求路由与就绪](https://vine.yorun.ai/zh-CN/docs/request-routing)
 - [运行模式](https://vine.yorun.ai/zh-CN/docs/deployment-modes)
 - [生产就绪检查](https://vine.yorun.ai/zh-CN/docs/production-readiness)
 - [Go API 参考](https://pkg.go.dev/go.yorun.ai/vine)

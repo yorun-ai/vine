@@ -10,11 +10,11 @@
 
 Vine is a runtime framework for contract-first Go applications. It unifies
 application lifecycle, dependency injection, configuration, Rpc, Web, Event,
-Task, Redis, and relational databases, then carries the same application model
-from a one-process development runtime to a separated deployment with Hub,
-Link, and Portal.
+Task, Redis, and relational databases, and carries one application model from a
+single-process development runtime to a separated Hub, Link, and Portal
+deployment.
 
-Use Vine when the application needs more than an HTTP router: typed
+Use Vine when an application needs more than an HTTP router: typed
 cross-application contracts, runtime discovery, asynchronous delivery,
 configuration updates, external gateways, and predictable startup and graceful
 shutdown.
@@ -120,9 +120,9 @@ go run .
 When `hello from Vine` appears, Hub, Portal, Link, and the business application
 are running in one process. Press `Ctrl+C` to stop them in reverse lifecycle
 order. Continue with the
-[first application tutorial](https://vine.yorun.ai/docs/getting-started/tutorial-first-app)
+[first application tutorial](https://vine.yorun.ai/docs/tutorial-first-app)
 or define a typed API in the
-[first Skel contract](https://vine.yorun.ai/docs/getting-started/first-contract).
+[first Skel contract](https://vine.yorun.ai/docs/first-skel-contract).
 
 ## Choose a Runtime Mode
 
@@ -165,9 +165,9 @@ vine link serve \
   --hub-endpoint http://127.0.0.1:7071
 ```
 
-Read the [CLI guide](https://vine.yorun.ai/docs/getting-started/cli) before
-operating the separated services; it documents persistence, NATS, listener,
-seed, Dashboard, environment-variable, and backend mTLS options.
+Read the [CLI guide](https://vine.yorun.ai/docs/cli) before operating the
+separated services; it documents persistence, NATS, listener, seed, Dashboard,
+environment-variable, and backend mTLS options.
 
 ## Docker Images
 
@@ -191,11 +191,13 @@ Vine keeps its public API in a small set of facade packages. Packages under
 | [`core/rpc`](core/rpc), [`core/web`](core/web) | Synchronous service contracts and Web handling |
 | [`core/event`](core/event), [`core/task`](core/task) | Asynchronous fan-out and competing-consumer work |
 | [`core/conf`](core/conf) | Eternal configuration snapshots and instant configuration updates |
+| [`core/skel`](core/skel) | Skel runtime scalar types, schema registration, and generator compatibility checks |
 | [`core/meta`](core/meta), [`core/logger`](core/logger), [`core/ex`](core/ex), [`core/redact`](core/redact) | Request metadata, structured logging, system errors, and sensitive-data redaction |
+| [`core/runtime`](core/runtime) | Application identity, version, instance ID, and build metadata |
 | [`infra/redis`](infra/redis), [`infra/rdb`](infra/rdb) | Managed Redis and relational database integration |
 | [`util`](util) | Reusable encoding, file, collection, math, network, validation, and string helpers |
 
-Use the [framework package index](https://vine.yorun.ai/docs/framework/core-packages)
+Use the [framework package index](https://vine.yorun.ai/docs/core-packages)
 for a guided map and [pkg.go.dev](https://pkg.go.dev/go.yorun.ai/vine) for exact
 API signatures.
 
@@ -217,10 +219,10 @@ in your Vine modules and handlers.
 ## Documentation
 
 - [Start with Vine](https://vine.yorun.ai/docs/getting-started)
-- [Build your first application](https://vine.yorun.ai/docs/getting-started/tutorial-first-app)
-- [Write your first Skel contract](https://vine.yorun.ai/docs/getting-started/first-contract)
-- [Application lifecycle](https://vine.yorun.ai/docs/runtime/application-lifecycle)
-- [Request routing and readiness](https://vine.yorun.ai/docs/runtime/request-routing)
+- [Build your first application](https://vine.yorun.ai/docs/tutorial-first-app)
+- [Write your first Skel contract](https://vine.yorun.ai/docs/first-skel-contract)
+- [Application lifecycle](https://vine.yorun.ai/docs/application-lifecycle)
+- [Request routing and readiness](https://vine.yorun.ai/docs/request-routing)
 - [Deployment modes](https://vine.yorun.ai/docs/deployment-modes)
 - [Production readiness](https://vine.yorun.ai/docs/production-readiness)
 - [Go API reference](https://pkg.go.dev/go.yorun.ai/vine)
