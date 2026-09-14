@@ -10,7 +10,7 @@ import (
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/computil"
@@ -92,7 +92,7 @@ func (g *RpcGateway) serveInvoke(ctx *spec.Context) {
 	}, registration)
 }
 
-func (g *RpcGateway) forwardInvoke(ctx *spec.Context, registration *redised.RpcServiceRegistration) {
+func (g *RpcGateway) forwardInvoke(ctx *spec.Context, registration *watched.RpcServiceRegistration) {
 	endpoint := registration.Endpoint
 	acceptEncoding, forwardRequest := prepareForwardRequest(ctx.Request)
 	transport, err := g.access.Identity.BackendTransport(registration.ServerIdentity.SPIFFEPath(), endpoint)

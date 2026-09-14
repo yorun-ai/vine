@@ -27,6 +27,11 @@ func (c *HubInfo) DIInit() {
 	c.info = c.InfoServiceClient.GetInfo()
 }
 
-func (c *HubInfo) RedisEndpoint() string {
-	return fmt.Sprintf("%s:%d", c.host, c.info.RedisPort)
+func (c *HubInfo) WatchEndpoint() string {
+	port := c.info.WatchPort
+	if port == 0 {
+		// Hubs predating watchPort only advertise redisPort.
+		port = c.info.RedisPort
+	}
+	return fmt.Sprintf("%s:%d", c.host, port)
 }

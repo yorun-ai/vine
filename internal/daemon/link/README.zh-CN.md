@@ -12,12 +12,12 @@ internal/daemon/link/
 └── src/
     └── server/           Link 服务端运行目录
         ├── app/          应用装配层，决定 Link 启用哪些 module 和 servicer
-        ├── comp/         运行时共享组件，如 `hubinfo`、Hub Redis client 与 NATS client
+        ├── comp/         运行时共享组件，如 `hubinfo`、Hub Watch client 与 NATS client
         ├── flag/         Link 启动参数与默认值规范化
         ├── impl/         对外服务实现层，承载 Link 暴露的注册与配置服务
         └── mod/          运行时模块层
             ├── minder/   本地应用管理、变更广播、注册、heartbeat 与健康检查
-            ├── config/   配置读取与 Redis 变化订阅
+            ├── config/   配置读取与 Watch 变化订阅
             ├── event/    事件 consumer 管理与投递
             ├── ingress/  对外 HTTP 入口，把请求分发给 proxy
             ├── rpcproxy/ 本地与远端应用之间的 Rpc 转发
@@ -41,9 +41,9 @@ Link 的职责可以拆成四条主线：
    app 启动后调用 `RegistryService`，`minder` 会写入本地实例真源，向 Hub 发布应用注册信息，并启动 heartbeat 与健康检查。
 
 2. 配置与发现
-   `config.Reader` 会从 Hub 对应的 Redis 中拉取配置并持续监听变更；`rpcproxy` 和 `webproxy` 分别维护 Rpc 与 Web 的发现状态。
+   `config.Reader` 会从 Hub Watch 拉取配置并持续监听变更；`rpcproxy` 和 `webproxy` 分别维护 Rpc 与 Web 的发现状态。
 
-   Hub Redis client 使用 `vine.link` 用户，其 ACL 仅允许读取配置、Rpc endpoint、共享 revision key 以及所需的订阅。Redis 密码为空，用于进程内模式和分离部署调试。启用后端 mTLS 时，Link 证书会认证客户端，并把其 SPIFFE 身份绑定到 `vine.link` 用户。未启用 mTLS 时，用户名只能选择 ACL 角色，因此 Redis endpoint 仍需进行网络隔离。
+   Hub Watch client 使用 `vine.link` 用户，其 ACL 仅允许读取配置、Rpc endpoint、共享 revision key 以及所需的订阅。Redis 密码为空，用于进程内模式和分离部署调试。启用后端 mTLS 时，Link 证书会认证客户端，并把其 SPIFFE 身份绑定到 `vine.link` 用户。未启用 mTLS 时，用户名只能选择 ACL 角色，因此 Redis endpoint 仍需进行网络隔离。
 
 3. 异步事件与任务
    `event` 和 `task` 订阅 `minder` 中本地应用声明的监听能力与运行能力，负责把 NATS 中的消息投递到对应本地应用。
@@ -78,7 +78,7 @@ Link 的职责可以拆成四条主线：
 - 不要在 `rpcproxy`、`webproxy`、`event`、`task` 或 `config` 中建立第二份本地 app instance 真源。
 - 新增 app 能力或注册字段时，先扩展 `minder` 保存的基础事实和 mutator，再让下游 module 维护派生状态。
 - module 不应绕过 `minder` 直接承担 register、unregister、heartbeat 或 healthcheck 生命周期。
-- Rpc/Web endpoint、事件和任务协议发生变化时，必须同步 Hub Redis 结构、App 侧注册代码和相关转发/投递测试。
+- Rpc/Web endpoint、事件和任务协议发生变化时，必须同步 Hub Watch 结构、App 侧注册代码和相关转发/投递测试。
 
 ## 依赖关系
 

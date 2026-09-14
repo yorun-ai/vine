@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/skel"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
 	"go.yorun.ai/vine/util/vslice"
@@ -145,15 +145,15 @@ func (*_RegistryServiceSchemaRepo) ListWebSchemas() []*skel.WebSchema {
 	return nil
 }
 
-func testRegistrySyncer(redisServer *redisserver.Server) *syncer.Syncer {
-	target := &syncer.Syncer{RedisServer: redisServer}
+func testRegistrySyncer(watchServer *watchserver.Server) *syncer.Syncer {
+	target := &syncer.Syncer{WatchServer: watchServer}
 	target.DIInit()
 	return target
 }
 
 func TestRegistryServiceRefreshesPortalSiteRpcgwServices(t *testing.T) {
-	redisServer := redisserver.NewServerForTest()
-	defer redisServer.AfterAppStop()
+	watchServer := watchserver.NewServerForTest()
+	defer watchServer.AfterAppStop()
 
 	service := &RegistryServiceServerImpl{
 		PortalSiteRepo: &_RegistryServicePortalSiteRepo{
@@ -197,32 +197,32 @@ func TestRegistryServiceRefreshesPortalSiteRpcgwServices(t *testing.T) {
 				},
 			},
 		},
-		Syncer: testRegistrySyncer(redisServer),
+		Syncer: testRegistrySyncer(watchServer),
 	}
 
 	service.refreshPortalSiteRpcgwServices()
 
-	value, ok := redisServer.Get(redised.FormatPortalSiteKey("demo.UserActor-client-rpc"))
+	value, ok := watchServer.Get(watched.FormatPortalSiteKey("demo.UserActor-client-rpc"))
 	require.True(t, ok)
-	site := new(redised.PortalSite)
+	site := new(watched.PortalSite)
 	require.NoError(t, json.Unmarshal([]byte(value), site))
 	require.NotNil(t, site.RpcgwConfig)
-	assert.Equal(t, []redised.PortalRpcgwService{{SkelName: "demo.UserService"}}, site.RpcgwConfig.Services)
+	assert.Equal(t, []watched.PortalRpcgwService{{SkelName: "demo.UserService"}}, site.RpcgwConfig.Services)
 
-	_, ok = redisServer.Get(redised.FormatPortalSiteKey("vine.hub.admin.AdminActor-client-rpc"))
+	_, ok = watchServer.Get(watched.FormatPortalSiteKey("vine.hub.admin.AdminActor-client-rpc"))
 	assert.False(t, ok)
 
-	value, ok = redisServer.Get(redised.FormatPortalSiteKey("demo.Web-web"))
+	value, ok = watchServer.Get(watched.FormatPortalSiteKey("demo.Web-web"))
 	require.True(t, ok)
-	webSite := new(redised.PortalSite)
+	webSite := new(watched.PortalSite)
 	require.NoError(t, json.Unmarshal([]byte(value), webSite))
 	assert.Nil(t, webSite.RpcgwConfig)
 	assert.Equal(t, "demo.Web", webSite.WebgwConfig.WebName)
 }
 
 func TestRegistryServiceRefreshesSchemas(t *testing.T) {
-	redisServer := redisserver.NewServerForTest()
-	defer redisServer.AfterAppStop()
+	watchServer := watchserver.NewServerForTest()
+	defer watchServer.AfterAppStop()
 
 	service := &RegistryServiceServerImpl{
 		SchemaRepo: &_RegistryServiceSchemaRepo{
@@ -246,23 +246,23 @@ func TestRegistryServiceRefreshesSchemas(t *testing.T) {
 				},
 			},
 		},
-		Syncer: testRegistrySyncer(redisServer),
+		Syncer: testRegistrySyncer(watchServer),
 	}
 
 	service.refreshSchemas()
 
-	value, ok := redisServer.Get(redised.FormatSchemaActorKey("demo.UserActor"))
+	value, ok := watchServer.Get(watched.FormatSchemaActorKey("demo.UserActor"))
 	require.True(t, ok)
-	actor := new(redised.SchemaActor)
+	actor := new(watched.SchemaActor)
 	require.NoError(t, json.Unmarshal([]byte(value), actor))
 	assert.Equal(t, "demo.UserActor", actor.SkelName)
 	assert.Equal(t, "actor-main", actor.Hash)
 	require.NotNil(t, actor.AuthService)
 	assert.Equal(t, "demo.UserAuthService", actor.AuthService.SkelName)
 
-	value, ok = redisServer.Get(redised.FormatSchemaServiceKey("demo.UserService"))
+	value, ok = watchServer.Get(watched.FormatSchemaServiceKey("demo.UserService"))
 	require.True(t, ok)
-	serviceSchema := new(redised.SchemaService)
+	serviceSchema := new(watched.SchemaService)
 	require.NoError(t, json.Unmarshal([]byte(value), serviceSchema))
 	assert.Equal(t, "demo.UserService", serviceSchema.SkelName)
 	assert.Equal(t, "service-main", serviceSchema.Hash)

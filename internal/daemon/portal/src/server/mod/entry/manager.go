@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"go.yorun.ai/vine/internal/app"
-	hubapiredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubredis"
+	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/vault"
 	"go.yorun.ai/vine/util/vcode"
@@ -26,16 +26,16 @@ type Manager struct {
 	Context     context.Context  `inject:""`
 	SiteManager *site.Manager    `inject:""`
 	Vault       *vault.Vault     `inject:""`
-	Redis       *hubredis.Client `inject:""`
+	Watch       *hubwatch.Client `inject:""`
 
 	mutex            sync.Mutex
-	entryRulesByName map[string]redised.PortalRule
+	entryRulesByName map[string]watched.PortalRule
 	entriesByKey     map[_Key]*_Entry
 	started          bool
 }
 
 func (e *Manager) DIInit() {
-	e.entryRulesByName = map[string]redised.PortalRule{}
+	e.entryRulesByName = map[string]watched.PortalRule{}
 	e.entriesByKey = map[_Key]*_Entry{}
 	e.loadPortalRules()
 }
@@ -64,30 +64,30 @@ func (e *Manager) AfterAppStop() {
 }
 
 func (e *Manager) loadPortalRules() {
-	valuesByKey, subscription := e.Redis.LoadListAndSubscribe(e.Context, redised.FormatPortalRulePrefix(), e.handlePortalRuleEvent)
+	valuesByKey, subscription := e.Watch.LoadListAndSubscribe(e.Context, watched.FormatPortalRulePrefix(), e.handlePortalRuleEvent)
 
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
 	for key, value := range valuesByKey {
-		rule := vcode.MustUnmarshalJsonS[*redised.PortalRule](value)
+		rule := vcode.MustUnmarshalJsonS[*watched.PortalRule](value)
 		e.entryRulesByName[key] = *rule
 	}
 	e.reconcileEntriesLocked()
 	subscription.Start()
 }
 
-func (e *Manager) handlePortalRuleEvent(event hubapiredis.Event) {
+func (e *Manager) handlePortalRuleEvent(event hubapiwatch.Event) {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
-	if event.Kind == hubapiredis.EventKindDelete {
+	if event.Kind == hubapiwatch.EventKindDelete {
 		delete(e.entryRulesByName, event.Key)
 		e.reconcileEntriesLocked()
 		return
 	}
 
-	rule := vcode.MustUnmarshalJsonS[*redised.PortalRule](event.Value)
+	rule := vcode.MustUnmarshalJsonS[*watched.PortalRule](event.Value)
 	e.entryRulesByName[event.Key] = *rule
 	e.reconcileEntriesLocked()
 }

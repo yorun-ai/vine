@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/skel"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
 	"go.yorun.ai/vine/internal/infra/rdb"
@@ -101,7 +101,7 @@ func (*_PortalSiteSchemaRepo) ListEnumSchemas() []*skel.EnumSchema {
 }
 
 func TestDBPortalSiteRepoSaveEntryCreate(t *testing.T) {
-	_, repo, redisServer := newTestDBPortalSiteRepo(t)
+	_, repo, watchServer := newTestDBPortalSiteRepo(t)
 
 	entry := testPortalSite("demo-entry")
 	repo.SaveEntry(entry)
@@ -110,9 +110,9 @@ func TestDBPortalSiteRepoSaveEntryCreate(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, entry, got)
 
-	raw, ok := redisServer.Get(redised.FormatPortalSiteKey("demo-entry"))
+	raw, ok := watchServer.Get(watched.FormatPortalSiteKey("demo-entry"))
 	require.True(t, ok)
-	assertRedisedPortalSite(t, entry, vcode.MustUnmarshalJsonS[*redised.PortalSite](raw))
+	assertWatchedPortalSite(t, entry, vcode.MustUnmarshalJsonS[*watched.PortalSite](raw))
 }
 
 func TestDBPortalSiteRepoSaveEntryBuiltIn(t *testing.T) {
@@ -132,23 +132,23 @@ func TestDBPortalSiteRepoSaveEntryBuiltIn(t *testing.T) {
 }
 
 func TestDBPortalSiteRepoSaveEntryRename(t *testing.T) {
-	_, repo, redisServer := newTestDBPortalSiteRepo(t)
+	_, repo, watchServer := newTestDBPortalSiteRepo(t)
 
 	entry := testPortalSite("demo-entry")
 	repo.SaveEntry(entry)
 	entry.Name = "next-entry"
 	repo.SaveEntry(entry)
 
-	_, ok := redisServer.Get(redised.FormatPortalSiteKey("demo-entry"))
+	_, ok := watchServer.Get(watched.FormatPortalSiteKey("demo-entry"))
 	assert.False(t, ok)
 
-	raw, ok := redisServer.Get(redised.FormatPortalSiteKey("next-entry"))
+	raw, ok := watchServer.Get(watched.FormatPortalSiteKey("next-entry"))
 	require.True(t, ok)
-	assertRedisedPortalSite(t, entry, vcode.MustUnmarshalJsonS[*redised.PortalSite](raw))
+	assertWatchedPortalSite(t, entry, vcode.MustUnmarshalJsonS[*watched.PortalSite](raw))
 }
 
 func TestDBPortalSiteRepoRemoveEntry(t *testing.T) {
-	_, repo, redisServer := newTestDBPortalSiteRepo(t)
+	_, repo, watchServer := newTestDBPortalSiteRepo(t)
 
 	entry := testPortalSite("demo-entry")
 	repo.SaveEntry(entry)
@@ -158,30 +158,30 @@ func TestDBPortalSiteRepoRemoveEntry(t *testing.T) {
 	assert.False(t, ok)
 	assert.Nil(t, got)
 
-	_, ok = redisServer.Get(redised.FormatPortalSiteKey("demo-entry"))
+	_, ok = watchServer.Get(watched.FormatPortalSiteKey("demo-entry"))
 	assert.False(t, ok)
 	assert.False(t, repo.RemoveEntry(entry.Id))
 }
 
-func newTestDBPortalSiteRepo(t *testing.T) (*gorm.DB, *DBPortalSiteRepo, *redisserver.Server) {
+func newTestDBPortalSiteRepo(t *testing.T) (*gorm.DB, *DBPortalSiteRepo, *watchserver.Server) {
 	t.Helper()
 
 	db := sharedTestPortalSiteRepoDB(t)
-	redisServer := redisserver.NewServerForTest()
-	t.Cleanup(redisServer.AfterAppStop)
+	watchServer := watchserver.NewServerForTest()
+	t.Cleanup(watchServer.AfterAppStop)
 
 	repo := &DBPortalSiteRepo{
 		Dao: &model.PortalSiteDao{
 			Dao: rdb.NewDao[*model.PortalSite](db),
 		},
 		SchemaRepo: &_PortalSiteSchemaRepo{},
-		Syncer:     testSyncer(redisServer),
+		Syncer:     testSyncer(watchServer),
 		Access:     new(configaccess.Access),
 	}
 	repo.Dao.InitSchema()
 	require.NoError(t, db.Exec("DELETE FROM portal_site").Error)
 
-	return db, repo, redisServer
+	return db, repo, watchServer
 }
 
 func sharedTestPortalSiteRepoDB(t *testing.T) *gorm.DB {
@@ -210,7 +210,7 @@ func testPortalSite(name string) *core.PortalSite {
 	}
 }
 
-func assertRedisedPortalSite(t *testing.T, expected *core.PortalSite, actual *redised.PortalSite) {
+func assertWatchedPortalSite(t *testing.T, expected *core.PortalSite, actual *watched.PortalSite) {
 	t.Helper()
 
 	require.NotNil(t, actual)
@@ -218,7 +218,7 @@ func assertRedisedPortalSite(t *testing.T, expected *core.PortalSite, actual *re
 	assert.Equal(t, string(expected.Type), actual.Type)
 	assert.Equal(t, expected.ActorSkelName, actual.ActorVia.ActorSkelName)
 	assert.Equal(t, expected.ActorVia, actual.ActorVia.ActorVia)
-	assert.Equal(t, redised.PortalCorsMode(expected.Cors.Mode), actual.Cors.Mode)
+	assert.Equal(t, watched.PortalCorsMode(expected.Cors.Mode), actual.Cors.Mode)
 	assert.Equal(t, expected.Cors.AllowedOrigins, actual.Cors.AllowedOrigins)
 	require.NotNil(t, actual.RpcgwConfig)
 	assert.Empty(t, actual.RpcgwConfig.Services)

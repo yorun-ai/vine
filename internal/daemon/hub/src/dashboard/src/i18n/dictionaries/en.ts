@@ -95,7 +95,7 @@ export const en: Record<TranslationKey, string> = {
   'statusApp.empty': 'No app status',
   'statusApp.noMatch': 'No matching app status',
   'statusApp.emptyDescription':
-    'App instances appear here after heartbeats are written to Redis.',
+    'App instances appear here after Hub receives their heartbeats.',
   'statusApp.instanceInfo': 'Instance Info',
   'statusApp.instanceId': 'Instance ID',
   'statusApp.endpoint': 'Endpoint',

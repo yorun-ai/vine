@@ -9,9 +9,9 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
@@ -26,7 +26,7 @@ var (
 )
 
 func TestDBPortalRuleRepoSaveRuleCreate(t *testing.T) {
-	_, repo, redisServer := newTestDBPortalRuleRepo(t)
+	_, repo, watchServer := newTestDBPortalRuleRepo(t)
 
 	rule := testPortalRule("admin")
 	repo.SaveRule(rule)
@@ -35,10 +35,10 @@ func TestDBPortalRuleRepoSaveRuleCreate(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, rule, got)
 
-	key := redised.FormatPortalRuleKey("admin")
-	raw, ok := redisServer.Get(key)
+	key := watched.FormatPortalRuleKey("admin")
+	raw, ok := watchServer.Get(key)
 	require.True(t, ok)
-	assert.Equal(t, syncer.ToRedisedPortalRule(rule), vcode.MustUnmarshalJsonS[*redised.PortalRule](raw))
+	assert.Equal(t, syncer.ToWatchedPortalRule(rule), vcode.MustUnmarshalJsonS[*watched.PortalRule](raw))
 }
 
 func TestDBPortalRuleRepoSaveRuleUpdate(t *testing.T) {
@@ -73,7 +73,7 @@ func TestDBPortalRuleRepoSaveRuleBuiltIn(t *testing.T) {
 }
 
 func TestDBPortalRuleRepoSaveRuleRename(t *testing.T) {
-	_, repo, redisServer := newTestDBPortalRuleRepo(t)
+	_, repo, watchServer := newTestDBPortalRuleRepo(t)
 
 	rule := testPortalRule("admin")
 	repo.SaveRule(rule)
@@ -84,16 +84,16 @@ func TestDBPortalRuleRepoSaveRuleRename(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "console", got.Name)
 
-	_, ok = redisServer.Get(redised.FormatPortalRuleKey("admin"))
+	_, ok = watchServer.Get(watched.FormatPortalRuleKey("admin"))
 	assert.False(t, ok)
 
-	raw, ok := redisServer.Get(redised.FormatPortalRuleKey("console"))
+	raw, ok := watchServer.Get(watched.FormatPortalRuleKey("console"))
 	require.True(t, ok)
-	assert.Equal(t, syncer.ToRedisedPortalRule(rule), vcode.MustUnmarshalJsonS[*redised.PortalRule](raw))
+	assert.Equal(t, syncer.ToWatchedPortalRule(rule), vcode.MustUnmarshalJsonS[*watched.PortalRule](raw))
 }
 
 func TestDBPortalRuleRepoRemoveRule(t *testing.T) {
-	_, repo, redisServer := newTestDBPortalRuleRepo(t)
+	_, repo, watchServer := newTestDBPortalRuleRepo(t)
 
 	rule := testPortalRule("admin")
 	repo.SaveRule(rule)
@@ -103,30 +103,30 @@ func TestDBPortalRuleRepoRemoveRule(t *testing.T) {
 	assert.False(t, ok)
 	assert.Nil(t, got)
 
-	key := redised.FormatPortalRuleKey("admin")
-	_, ok = redisServer.Get(key)
+	key := watched.FormatPortalRuleKey("admin")
+	_, ok = watchServer.Get(key)
 	assert.False(t, ok)
 	assert.False(t, repo.RemoveRule(rule.Id))
 }
 
-func newTestDBPortalRuleRepo(t *testing.T) (*gorm.DB, *DBPortalRuleRepo, *redisserver.Server) {
+func newTestDBPortalRuleRepo(t *testing.T) (*gorm.DB, *DBPortalRuleRepo, *watchserver.Server) {
 	t.Helper()
 
 	db := sharedTestPortalRuleRepoDB(t)
-	redisServer := redisserver.NewServerForTest()
-	t.Cleanup(redisServer.AfterAppStop)
+	watchServer := watchserver.NewServerForTest()
+	t.Cleanup(watchServer.AfterAppStop)
 
 	repo := &DBPortalRuleRepo{
 		Dao: &model.PortalRuleDao{
 			Dao: rdb.NewDao[*model.PortalRule](db),
 		},
-		Syncer: testSyncer(redisServer),
+		Syncer: testSyncer(watchServer),
 		Access: new(configaccess.Access),
 	}
 	repo.Dao.InitSchema()
 	require.NoError(t, db.Exec("DELETE FROM portal_rule").Error)
 
-	return db, repo, redisServer
+	return db, repo, watchServer
 }
 
 func sharedTestPortalRuleRepoDB(t *testing.T) *gorm.DB {

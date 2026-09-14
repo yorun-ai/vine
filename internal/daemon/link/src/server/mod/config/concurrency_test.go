@@ -4,8 +4,8 @@ import (
 	"sync"
 	"testing"
 
-	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 )
 
 func TestGetInstantConcurrentWithEventUpdate(t *testing.T) {
@@ -15,7 +15,7 @@ func TestGetInstantConcurrentWithEventUpdate(t *testing.T) {
 		firstValue    = `{"enabled":true}`
 		secondValue   = `{"enabled":false}`
 	)
-	reader := newTestReader(map[string]redised.ConfigValue{
+	reader := newTestReader(map[string]watched.ConfigValue{
 		configName: {
 			Name:  configName,
 			Value: []byte(firstValue),
@@ -26,7 +26,7 @@ func TestGetInstantConcurrentWithEventUpdate(t *testing.T) {
 		t.Fatalf("unexpected initial config value: %s", value)
 	}
 
-	redisKey := redised.FormatConfigKey(configName)
+	watchKey := watched.FormatConfigKey(configName)
 	eventValues := []string{
 		marshalTestConfigValue(configName, firstValue),
 		marshalTestConfigValue(configName, secondValue),
@@ -37,9 +37,9 @@ func TestGetInstantConcurrentWithEventUpdate(t *testing.T) {
 	waitGroup.Go(func() {
 		<-start
 		for idx := range 1000 {
-			reader.handleInstantConfigEvent(redisKey, hubredis.Event{
-				Kind:  hubredis.EventKindUpsert,
-				Key:   redisKey,
+			reader.handleInstantConfigEvent(watchKey, hubwatch.Event{
+				Kind:  hubwatch.EventKindUpsert,
+				Key:   watchKey,
 				Value: eventValues[idx%len(eventValues)],
 			})
 		}

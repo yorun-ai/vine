@@ -6,6 +6,7 @@ import (
 
 	ucli "github.com/urfave/cli/v3"
 	"go.yorun.ai/vine/internal/app"
+	"go.yorun.ai/vine/internal/core/logger"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/src/server/app"
 	hubflag "go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 )
@@ -14,8 +15,10 @@ const (
 	commandHub      = "hub"
 	commandHubServe = "serve"
 
-	FlagHubControlListen     = "control-listen"
-	FlagHubAdminListen       = "admin-listen"
+	FlagHubControlListen = "control-listen"
+	FlagHubAdminListen   = "admin-listen"
+	FlagHubWatchListen   = "watch-listen"
+	// Deprecated: use FlagHubWatchListen.
 	FlagHubRedisListen       = "redis-listen"
 	FlagHubMQExternalNatsURL = "mq-external-nats-url"
 	FlagHubMQEmbeddedNats    = "mq-embedded-nats"
@@ -27,8 +30,10 @@ const (
 	FlagHubDBSQLiteFile      = "db-sqlite-file"
 	FlagHubDBPostgresURL     = "db-postgres-url"
 
-	EnvHubControlListen     = "VINE_CONTROL_LISTEN"
-	EnvHubAdminListen       = "VINE_ADMIN_LISTEN"
+	EnvHubControlListen = "VINE_CONTROL_LISTEN"
+	EnvHubAdminListen   = "VINE_ADMIN_LISTEN"
+	EnvHubWatchListen   = "VINE_WATCH_LISTEN"
+	// Deprecated: use EnvHubWatchListen.
 	EnvHubRedisListen       = "VINE_REDIS_LISTEN"
 	EnvHubMQExternalNatsURL = "VINE_MQ_EXTERNAL_NATS_URL"
 	EnvHubMQEmbeddedNats    = "VINE_MQ_EMBEDDED_NATS"
@@ -75,10 +80,15 @@ func newHubServeFlags() []ucli.Flag {
 			Usage:   "hub admin API and Dashboard Web listen address",
 		},
 		&ucli.StringFlag{
+			Name:    FlagHubWatchListen,
+			Sources: ucli.EnvVars(EnvHubWatchListen),
+			Value:   hubflag.HubDefaultWatchListen,
+			Usage:   "hub configuration and service discovery watch listen address",
+		},
+		&ucli.StringFlag{
 			Name:    FlagHubRedisListen,
 			Sources: ucli.EnvVars(EnvHubRedisListen),
-			Value:   hubflag.HubDefaultRedisListen,
-			Usage:   "hub redis listen address",
+			Usage:   "deprecated: use --watch-listen or VINE_WATCH_LISTEN",
 		},
 		&ucli.BoolFlag{
 			Name:    FlagHubNoDB,
@@ -137,7 +147,7 @@ func newHubServeCommand() *ucli.Command {
 			flags := hubflag.Flag{
 				ControlListen:     cmd.String(FlagHubControlListen),
 				AdminListen:       cmd.String(FlagHubAdminListen),
-				RedisListen:       cmd.String(FlagHubRedisListen),
+				WatchListen:       hubWatchListen(cmd),
 				MQExternalNatsURL: cmd.String(FlagHubMQExternalNatsURL),
 				MQEmbeddedNats:    cmd.Bool(FlagHubMQEmbeddedNats),
 				SeedHubDataFile:   cmd.String(FlagSeedHubDataFile),
@@ -153,4 +163,15 @@ func newHubServeCommand() *ucli.Command {
 			return nil
 		},
 	}
+}
+
+// hubWatchListen normalizes compatibility inputs before constructing Hub flags.
+func hubWatchListen(cmd *ucli.Command) string {
+	if cmd.IsSet(FlagHubRedisListen) {
+		logger.Warn("--redis-listen / VINE_REDIS_LISTEN is deprecated; use --watch-listen / VINE_WATCH_LISTEN")
+		if !cmd.IsSet(FlagHubWatchListen) {
+			return cmd.String(FlagHubRedisListen)
+		}
+	}
+	return cmd.String(FlagHubWatchListen)
 }

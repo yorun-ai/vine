@@ -3,7 +3,7 @@ package spec
 import (
 	"net/http"
 
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 )
 
 type Context struct {
@@ -29,6 +29,6 @@ const (
 type Site interface {
 	Name() string
 	Serve(ctx *Context)
-	Update(config redised.PortalSite) bool
+	Update(config watched.PortalSite) bool
 	Stop()
 }

@@ -5,8 +5,8 @@ import (
 	"time"
 
 	internalapp "go.yorun.ai/vine/internal/app"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vcode"
 	"go.yorun.ai/vine/util/vslice"
@@ -38,20 +38,20 @@ type _AppLease struct {
 
 // Repo
 
-type RedisRegistryRepo struct {
-	RedisServer *redisserver.Server             `inject:""`
+type WatchRegistryRepo struct {
+	WatchServer *watchserver.Server             `inject:""`
 	InprocFlag  *internalapp.InternalInprocFlag `inject:""`
 }
 
-func (r *RedisRegistryRepo) SaveAppStatus(status *core.AppStatus) {
+func (r *WatchRegistryRepo) SaveAppStatus(status *core.AppStatus) {
 	r.saveStatus(status)
 }
 
-func (r *RedisRegistryRepo) ListAppStatuses() []*core.AppStatus {
-	keys := r.RedisServer.Scan(redised.FormatAppStatusPattern())
+func (r *WatchRegistryRepo) ListAppStatuses() []*core.AppStatus {
+	keys := r.WatchServer.Scan(watched.FormatAppStatusPattern())
 	items := make([]*core.AppStatus, 0, len(keys))
 	for _, key := range keys {
-		value, ok := r.RedisServer.Get(key)
+		value, ok := r.WatchServer.Get(key)
 		if !ok {
 			continue
 		}
@@ -66,7 +66,7 @@ func (r *RedisRegistryRepo) ListAppStatuses() []*core.AppStatus {
 	})
 }
 
-func (r *RedisRegistryRepo) GetAppStatus(appName string, instanceId string) (*core.AppStatus, bool) {
+func (r *WatchRegistryRepo) GetAppStatus(appName string, instanceId string) (*core.AppStatus, bool) {
 	status, ok := r.getAppStatus(appName, instanceId)
 	if !ok {
 		return nil, false
@@ -74,7 +74,7 @@ func (r *RedisRegistryRepo) GetAppStatus(appName string, instanceId string) (*co
 	return toCoreAppStatus(status), true
 }
 
-func (r *RedisRegistryRepo) KeepAppStatus(appName string, instanceId string) bool {
+func (r *WatchRegistryRepo) KeepAppStatus(appName string, instanceId string) bool {
 	if r.InprocFlag.Enabled {
 		return true
 	}
@@ -83,86 +83,86 @@ func (r *RedisRegistryRepo) KeepAppStatus(appName string, instanceId string) boo
 		return false
 	}
 	status.ExpiresAt = timeNow().Add(hubRegistryLeaseTTL)
-	key := redised.FormatAppStatusKey(appName, instanceId)
-	r.RedisServer.SetEphemeral(key, vcode.MustMarshalJsonS(status), hubRegistryEphemeralTTL)
+	key := watched.FormatAppStatusKey(appName, instanceId)
+	r.WatchServer.SetEphemeral(key, vcode.MustMarshalJsonS(status), hubRegistryEphemeralTTL)
 	r.saveAppLease(appName, instanceId)
 	return true
 }
 
-func (r *RedisRegistryRepo) RemoveAppStatus(appName string, instanceId string) {
-	key := redised.FormatAppStatusKey(appName, instanceId)
+func (r *WatchRegistryRepo) RemoveAppStatus(appName string, instanceId string) {
+	key := watched.FormatAppStatusKey(appName, instanceId)
 	r.removeAppLease(appName, instanceId)
-	r.RedisServer.DeleteAndNotify(key)
+	r.WatchServer.DeleteAndNotify(key)
 }
 
-func (r *RedisRegistryRepo) SaveRpcServiceRegistration(registration *core.RpcServiceRegistration) {
-	redisRegistration := toRpcServiceRegistration(registration)
-	key := redised.FormatRpcServiceRegistrationKey(redisRegistration.ServiceName, redisRegistration.AppName, redisRegistration.AppInstanceId)
-	value := vcode.MustMarshalJsonS(redisRegistration)
+func (r *WatchRegistryRepo) SaveRpcServiceRegistration(registration *core.RpcServiceRegistration) {
+	watchRegistration := toRpcServiceRegistration(registration)
+	key := watched.FormatRpcServiceRegistrationKey(watchRegistration.ServiceName, watchRegistration.AppName, watchRegistration.AppInstanceId)
+	value := vcode.MustMarshalJsonS(watchRegistration)
 	if r.InprocFlag.Enabled {
-		r.RedisServer.SetAndNotify(key, value)
+		r.WatchServer.SetAndNotify(key, value)
 		return
 	}
-	r.RedisServer.SetEphemeralAndNotify(key, value, hubRegistryEphemeralTTL)
+	r.WatchServer.SetEphemeralAndNotify(key, value, hubRegistryEphemeralTTL)
 }
 
-func (r *RedisRegistryRepo) GetRpcServiceRegistration(serviceName string, appName string, instanceId string) (*core.RpcServiceRegistration, bool) {
-	key := redised.FormatRpcServiceRegistrationKey(serviceName, appName, instanceId)
-	value, ok := r.RedisServer.Get(key)
+func (r *WatchRegistryRepo) GetRpcServiceRegistration(serviceName string, appName string, instanceId string) (*core.RpcServiceRegistration, bool) {
+	key := watched.FormatRpcServiceRegistrationKey(serviceName, appName, instanceId)
+	value, ok := r.WatchServer.Get(key)
 	if !ok {
 		return nil, false
 	}
-	return toCoreRpcServiceRegistration(vcode.MustUnmarshalJsonS[*redised.RpcServiceRegistration](value)), true
+	return toCoreRpcServiceRegistration(vcode.MustUnmarshalJsonS[*watched.RpcServiceRegistration](value)), true
 }
 
-func (r *RedisRegistryRepo) KeepRpcServiceRegistration(serviceName string, appName string, appInstanceId string) bool {
+func (r *WatchRegistryRepo) KeepRpcServiceRegistration(serviceName string, appName string, appInstanceId string) bool {
 	if r.InprocFlag.Enabled {
 		return true
 	}
-	key := redised.FormatRpcServiceRegistrationKey(serviceName, appName, appInstanceId)
-	return r.RedisServer.KeepEphemeral(key, hubRegistryEphemeralTTL)
+	key := watched.FormatRpcServiceRegistrationKey(serviceName, appName, appInstanceId)
+	return r.WatchServer.KeepEphemeral(key, hubRegistryEphemeralTTL)
 }
 
-func (r *RedisRegistryRepo) RemoveRpcServiceRegistration(serviceName string, appName string, appInstanceId string) {
-	key := redised.FormatRpcServiceRegistrationKey(serviceName, appName, appInstanceId)
-	r.RedisServer.DeleteAndNotify(key)
+func (r *WatchRegistryRepo) RemoveRpcServiceRegistration(serviceName string, appName string, appInstanceId string) {
+	key := watched.FormatRpcServiceRegistrationKey(serviceName, appName, appInstanceId)
+	r.WatchServer.DeleteAndNotify(key)
 }
 
-func (r *RedisRegistryRepo) SaveWebRegistration(registration *core.WebRegistration) {
-	redisRegistration := toWebRegistration(registration)
-	key := redised.FormatWebRegistrationKey(redisRegistration.WebSkelName, redisRegistration.AppName, redisRegistration.AppInstanceId)
-	value := vcode.MustMarshalJsonS(redisRegistration)
+func (r *WatchRegistryRepo) SaveWebRegistration(registration *core.WebRegistration) {
+	watchRegistration := toWebRegistration(registration)
+	key := watched.FormatWebRegistrationKey(watchRegistration.WebSkelName, watchRegistration.AppName, watchRegistration.AppInstanceId)
+	value := vcode.MustMarshalJsonS(watchRegistration)
 	if r.InprocFlag.Enabled {
-		r.RedisServer.SetAndNotify(key, value)
+		r.WatchServer.SetAndNotify(key, value)
 		return
 	}
-	r.RedisServer.SetEphemeralAndNotify(key, value, hubRegistryEphemeralTTL)
+	r.WatchServer.SetEphemeralAndNotify(key, value, hubRegistryEphemeralTTL)
 }
 
-func (r *RedisRegistryRepo) GetWebRegistration(name string, appName string, instanceId string) (*core.WebRegistration, bool) {
-	key := redised.FormatWebRegistrationKey(name, appName, instanceId)
-	value, ok := r.RedisServer.Get(key)
+func (r *WatchRegistryRepo) GetWebRegistration(name string, appName string, instanceId string) (*core.WebRegistration, bool) {
+	key := watched.FormatWebRegistrationKey(name, appName, instanceId)
+	value, ok := r.WatchServer.Get(key)
 	if !ok {
 		return nil, false
 	}
-	return toCoreWebRegistration(vcode.MustUnmarshalJsonS[*redised.WebRegistration](value)), true
+	return toCoreWebRegistration(vcode.MustUnmarshalJsonS[*watched.WebRegistration](value)), true
 }
 
-func (r *RedisRegistryRepo) KeepWebRegistration(name string, appName string, appInstanceId string) bool {
+func (r *WatchRegistryRepo) KeepWebRegistration(name string, appName string, appInstanceId string) bool {
 	if r.InprocFlag.Enabled {
 		return true
 	}
-	key := redised.FormatWebRegistrationKey(name, appName, appInstanceId)
-	return r.RedisServer.KeepEphemeral(key, hubRegistryEphemeralTTL)
+	key := watched.FormatWebRegistrationKey(name, appName, appInstanceId)
+	return r.WatchServer.KeepEphemeral(key, hubRegistryEphemeralTTL)
 }
 
-func (r *RedisRegistryRepo) RemoveWebRegistration(name string, appName string, appInstanceId string) {
-	key := redised.FormatWebRegistrationKey(name, appName, appInstanceId)
-	r.RedisServer.DeleteAndNotify(key)
+func (r *WatchRegistryRepo) RemoveWebRegistration(name string, appName string, appInstanceId string) {
+	key := watched.FormatWebRegistrationKey(name, appName, appInstanceId)
+	r.WatchServer.DeleteAndNotify(key)
 }
 
-func (r *RedisRegistryRepo) saveStatus(status *core.AppStatus) {
-	statusKey := redised.FormatAppStatusKey(status.Name, status.InstanceId)
+func (r *WatchRegistryRepo) saveStatus(status *core.AppStatus) {
+	statusKey := watched.FormatAppStatusKey(status.Name, status.InstanceId)
 	statusValue := _AppStatus{
 		InstanceId:      status.InstanceId,
 		Name:            status.Name,
@@ -175,22 +175,22 @@ func (r *RedisRegistryRepo) saveStatus(status *core.AppStatus) {
 	}
 	value := vcode.MustMarshalJsonS(statusValue)
 	if r.InprocFlag.Enabled {
-		r.RedisServer.SetAndNotify(statusKey, value)
+		r.WatchServer.SetAndNotify(statusKey, value)
 		return
 	}
 
 	statusValue.ExpiresAt = timeNow().Add(hubRegistryLeaseTTL)
 	value = vcode.MustMarshalJsonS(statusValue)
-	r.RedisServer.SetEphemeralAndNotify(statusKey, value, hubRegistryEphemeralTTL)
+	r.WatchServer.SetEphemeralAndNotify(statusKey, value, hubRegistryEphemeralTTL)
 	r.saveAppLease(status.Name, status.InstanceId)
 }
 
-func (r *RedisRegistryRepo) PopExpiredAppLeases() []core.AppHeartbeat {
+func (r *WatchRegistryRepo) PopExpiredAppLeases() []core.AppHeartbeat {
 	if r.InprocFlag.Enabled {
 		return nil
 	}
 
-	members := r.RedisServer.PopExpiredLeases(hubRegistryLeaseKey, hubRegistryLeaseSweepLimit)
+	members := r.WatchServer.PopExpiredLeases(hubRegistryLeaseKey, hubRegistryLeaseSweepLimit)
 	leases := make([]core.AppHeartbeat, 0, len(members))
 	for _, member := range members {
 		lease := vcode.MustUnmarshalJsonS[*_AppLease](member)
@@ -207,18 +207,18 @@ func (r *RedisRegistryRepo) PopExpiredAppLeases() []core.AppHeartbeat {
 	return leases
 }
 
-func (r *RedisRegistryRepo) saveAppLease(appName string, instanceId string) {
+func (r *WatchRegistryRepo) saveAppLease(appName string, instanceId string) {
 	member := vcode.MustMarshalJsonS(_AppLease{Name: appName, InstanceId: instanceId})
-	r.RedisServer.KeepLease(hubRegistryLeaseKey, member, hubRegistryLeaseTTL)
+	r.WatchServer.KeepLease(hubRegistryLeaseKey, member, hubRegistryLeaseTTL)
 }
 
-func (r *RedisRegistryRepo) removeAppLease(appName string, instanceId string) {
+func (r *WatchRegistryRepo) removeAppLease(appName string, instanceId string) {
 	member := vcode.MustMarshalJsonS(_AppLease{Name: appName, InstanceId: instanceId})
-	r.RedisServer.RemoveLease(hubRegistryLeaseKey, member)
+	r.WatchServer.RemoveLease(hubRegistryLeaseKey, member)
 }
 
-func (r *RedisRegistryRepo) getAppStatus(appName string, instanceId string) (*_AppStatus, bool) {
-	value, ok := r.RedisServer.Get(redised.FormatAppStatusKey(appName, instanceId))
+func (r *WatchRegistryRepo) getAppStatus(appName string, instanceId string) (*_AppStatus, bool) {
+	value, ok := r.WatchServer.Get(watched.FormatAppStatusKey(appName, instanceId))
 	if !ok {
 		return nil, false
 	}
@@ -239,8 +239,8 @@ func toCoreAppStatus(status *_AppStatus) *core.AppStatus {
 	}
 }
 
-func toRpcServiceRegistration(registration *core.RpcServiceRegistration) *redised.RpcServiceRegistration {
-	return &redised.RpcServiceRegistration{
+func toRpcServiceRegistration(registration *core.RpcServiceRegistration) *watched.RpcServiceRegistration {
+	return &watched.RpcServiceRegistration{
 		Endpoint:       registration.Endpoint,
 		ServerIdentity: registration.ServerIdentity,
 		ServiceName:    registration.ServiceName,
@@ -251,7 +251,7 @@ func toRpcServiceRegistration(registration *core.RpcServiceRegistration) *redise
 	}
 }
 
-func toCoreRpcServiceRegistration(registration *redised.RpcServiceRegistration) *core.RpcServiceRegistration {
+func toCoreRpcServiceRegistration(registration *watched.RpcServiceRegistration) *core.RpcServiceRegistration {
 	return &core.RpcServiceRegistration{
 		Endpoint:       registration.Endpoint,
 		ServerIdentity: registration.ServerIdentity,
@@ -263,8 +263,8 @@ func toCoreRpcServiceRegistration(registration *redised.RpcServiceRegistration) 
 	}
 }
 
-func toWebRegistration(registration *core.WebRegistration) *redised.WebRegistration {
-	return &redised.WebRegistration{
+func toWebRegistration(registration *core.WebRegistration) *watched.WebRegistration {
+	return &watched.WebRegistration{
 		Endpoint:       registration.Endpoint,
 		ServerIdentity: registration.ServerIdentity,
 		WebSkelName:    registration.WebSkelName,
@@ -274,7 +274,7 @@ func toWebRegistration(registration *core.WebRegistration) *redised.WebRegistrat
 	}
 }
 
-func toCoreWebRegistration(registration *redised.WebRegistration) *core.WebRegistration {
+func toCoreWebRegistration(registration *watched.WebRegistration) *core.WebRegistration {
 	return &core.WebRegistration{
 		Endpoint:       registration.Endpoint,
 		ServerIdentity: registration.ServerIdentity,

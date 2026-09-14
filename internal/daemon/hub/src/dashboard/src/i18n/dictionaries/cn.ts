@@ -88,7 +88,7 @@ export const cn = {
   'statusApp.itemCount': '共 {count} 个应用实例',
   'statusApp.empty': '暂无应用状态',
   'statusApp.noMatch': '没有匹配的应用状态',
-  'statusApp.emptyDescription': '应用实例心跳写入 Redis 后会出现在这里。',
+  'statusApp.emptyDescription': 'Hub 收到应用实例的心跳后，实例会出现在这里。',
   'statusApp.instanceInfo': '实例信息',
   'statusApp.instanceId': '实例 ID',
   'statusApp.endpoint': '访问地址',

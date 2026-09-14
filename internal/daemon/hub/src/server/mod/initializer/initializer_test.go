@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	appcore "go.yorun.ai/vine/internal/app"
 	coreskel "go.yorun.ai/vine/internal/core/skel"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
 	_ "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	_ "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	hubflag "go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/seeder"
@@ -20,20 +20,20 @@ import (
 	"go.yorun.ai/vine/util/vcode"
 )
 
-type _RedisTestStore struct {
-	server *redisserver.Server
+type _WatchTestStore struct {
+	server *watchserver.Server
 }
 
-func formatTestRedisListPattern(prefix string) string {
+func formatTestWatchListPattern(prefix string) string {
 	return strings.TrimSuffix(prefix, ":") + ":*"
 }
 
-func (s _RedisTestStore) Get(key string) (string, error) {
+func (s _WatchTestStore) Get(key string) (string, error) {
 	value, _ := s.server.Get(key)
 	return value, nil
 }
 
-func (s _RedisTestStore) ExecuteCommand(command string, args ...string) ([]byte, error) {
+func (s _WatchTestStore) ExecuteCommand(command string, args ...string) ([]byte, error) {
 	pattern := "*"
 	for i := 0; i+1 < len(args); i++ {
 		if args[i] == "MATCH" {
@@ -160,8 +160,8 @@ func (*testPortalSiteRepo) RemoveEntry(int) bool {
 	return false
 }
 
-func testSyncer(redisServer *redisserver.Server) *syncer.Syncer {
-	target := &syncer.Syncer{RedisServer: redisServer}
+func testSyncer(watchServer *watchserver.Server) *syncer.Syncer {
+	target := &syncer.Syncer{WatchServer: watchServer}
 	target.DIInit()
 	return target
 }
@@ -201,12 +201,12 @@ func testPortalSiteWithId(id int, site core.PortalSite) core.PortalSite {
 }
 
 func TestInitializerDIInitWritesRepoItems(t *testing.T) {
-	redisServer := redisserver.NewServerForTest()
-	defer redisServer.AfterAppStop()
-	db := _RedisTestStore{redisServer}
+	watchServer := watchserver.NewServerForTest()
+	defer watchServer.AfterAppStop()
+	db := _WatchTestStore{watchServer}
 
 	p := &Initializer{
-		Syncer: testSyncer(redisServer),
+		Syncer: testSyncer(watchServer),
 		AppConfigRepo: &testAppConfigRepo{
 			items: []*core.AppConfig{
 				{Id: 1, Name: "demo.DatabaseConfig", Value: `{"dsn":"postgres://demo"}`},
@@ -240,49 +240,49 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 
 	p.DIInit()
 
-	value, err := db.Get(redised.FormatConfigKey("demo.DatabaseConfig"))
+	value, err := db.Get(watched.FormatConfigKey("demo.DatabaseConfig"))
 	assert.NoError(t, err)
 	assert.Equal(t, marshalTestConfigValue("demo.DatabaseConfig", `{"dsn":"postgres://demo"}`), value)
 
-	value, err = db.Get(redised.FormatConfigKey("demo.FeatureConfig"))
+	value, err = db.Get(watched.FormatConfigKey("demo.FeatureConfig"))
 	assert.NoError(t, err)
 	assert.Equal(t, marshalTestConfigValue("demo.FeatureConfig", `{"enabled":true}`), value)
 
-	ruleKey := redised.FormatPortalRuleKey("demo-entry")
+	ruleKey := watched.FormatPortalRuleKey("demo-entry")
 	value, err = db.Get(ruleKey)
 	assert.NoError(t, err)
 	assert.Contains(t, value, `"name":"demo-entry"`)
 
-	defaultRuleValue, err := db.Get(redised.FormatPortalRuleKey(core.DashboardAdminApiRuleName))
+	defaultRuleValue, err := db.Get(watched.FormatPortalRuleKey(core.DashboardAdminApiRuleName))
 	assert.NoError(t, err)
 	assert.Contains(t, defaultRuleValue, `"name":"vine.hub.admin-api"`)
 
-	defaultWebRuleValue, err := db.Get(redised.FormatPortalRuleKey(core.DashboardWebRuleName))
+	defaultWebRuleValue, err := db.Get(watched.FormatPortalRuleKey(core.DashboardWebRuleName))
 	assert.NoError(t, err)
 	assert.Contains(t, defaultWebRuleValue, `"name":"vine.hub.dashboard-web"`)
 
-	defaultSiteValue, err := db.Get(redised.FormatPortalSiteKey(seeder.DashboardRpcCoreEntry.Name))
+	defaultSiteValue, err := db.Get(watched.FormatPortalSiteKey(seeder.DashboardRpcCoreEntry.Name))
 	assert.NoError(t, err)
 	assert.Contains(t, defaultSiteValue, `"name":"vine.hub.admin.AdminActor-client-rpc"`)
 
-	defaultWebSiteValue, err := db.Get(redised.FormatPortalSiteKey(seeder.DashboardWebCoreEntry.Name))
+	defaultWebSiteValue, err := db.Get(watched.FormatPortalSiteKey(seeder.DashboardWebCoreEntry.Name))
 	assert.NoError(t, err)
 	assert.Contains(t, defaultWebSiteValue, `"name":"vine.hub.admin.DashboardWeb-web"`)
 
-	adminActorValue, err := db.Get(redised.FormatSchemaActorKey("vine.hub.admin.AdminActor"))
+	adminActorValue, err := db.Get(watched.FormatSchemaActorKey("vine.hub.admin.AdminActor"))
 	assert.NoError(t, err)
 	assert.Contains(t, adminActorValue, `"skelName":"vine.hub.admin.AdminActor"`)
 
-	skeletonServiceValue, err := db.Get(redised.FormatSchemaServiceKey("vine.hub.admin.SkeletonApiService"))
+	skeletonServiceValue, err := db.Get(watched.FormatSchemaServiceKey("vine.hub.admin.SkeletonApiService"))
 	assert.NoError(t, err)
 	assert.Contains(t, skeletonServiceValue, `"authMode":"noauth"`)
 
-	siteKey := redised.FormatPortalSiteKey("demo-entry")
+	siteKey := watched.FormatPortalSiteKey("demo-entry")
 	value, err = db.Get(siteKey)
 	assert.NoError(t, err)
 	assert.Contains(t, value, `"name":"demo-entry"`)
 
-	defaultWebRegistrationKey := redised.FormatWebRegistrationKey(seeder.DashboardWebCoreEntry.WebName, dashboardAppName, dashboardAppInstanceId)
+	defaultWebRegistrationKey := watched.FormatWebRegistrationKey(seeder.DashboardWebCoreEntry.WebName, dashboardAppName, dashboardAppInstanceId)
 	defaultWebRegistrationValue, err := db.Get(defaultWebRegistrationKey)
 	assert.NoError(t, err)
 	expectedWebReg := dashboardWebRegistration
@@ -291,40 +291,40 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 
 	entryRuleScan, err := db.ExecuteCommand("SCAN", "0", "MATCH", "portal:rule:*", "COUNT", strconv.Itoa(1000))
 	assert.NoError(t, err)
-	assert.Contains(t, string(entryRuleScan), redised.FormatPortalRuleKey(core.DashboardAdminApiRuleName))
-	assert.Contains(t, string(entryRuleScan), redised.FormatPortalRuleKey(core.DashboardWebRuleName))
+	assert.Contains(t, string(entryRuleScan), watched.FormatPortalRuleKey(core.DashboardAdminApiRuleName))
+	assert.Contains(t, string(entryRuleScan), watched.FormatPortalRuleKey(core.DashboardWebRuleName))
 	siteScan, err := db.ExecuteCommand("SCAN", "0", "MATCH", "portal:site:*", "COUNT", strconv.Itoa(1000))
 	assert.NoError(t, err)
-	assert.Contains(t, string(siteScan), redised.FormatPortalSiteKey(seeder.DashboardRpcCoreEntry.Name))
-	assert.Contains(t, string(siteScan), redised.FormatPortalSiteKey(seeder.DashboardWebCoreEntry.Name))
+	assert.Contains(t, string(siteScan), watched.FormatPortalSiteKey(seeder.DashboardRpcCoreEntry.Name))
+	assert.Contains(t, string(siteScan), watched.FormatPortalSiteKey(seeder.DashboardWebCoreEntry.Name))
 
 	webRegistrationScan, err := db.ExecuteCommand("SCAN", "0", "MATCH", "web:"+seeder.DashboardWebCoreEntry.WebName+":endpoint:*", "COUNT", strconv.Itoa(1000))
 	assert.NoError(t, err)
 	assert.Contains(t, string(webRegistrationScan), defaultWebRegistrationKey)
 
 	for _, serviceName := range seeder.DashboardRpcServices {
-		registrationKey := redised.FormatRpcServiceRegistrationKey(serviceName, dashboardAppName, dashboardAppInstanceId)
+		registrationKey := watched.FormatRpcServiceRegistrationKey(serviceName, dashboardAppName, dashboardAppInstanceId)
 		registrationValue, err := db.Get(registrationKey)
 		assert.NoError(t, err)
 		expectedReg := dashboardRpcRegistrations[serviceName]
 		expectedReg.Endpoint = p.dashboardRpcEndpoint()
 		assert.Equal(t, vcode.MustMarshalJsonS(expectedReg), registrationValue)
 
-		registrationScan, err := db.ExecuteCommand("SCAN", "0", "MATCH", formatTestRedisListPattern(redised.FormatRpcServiceRegistrationPrefix(serviceName)), "COUNT", strconv.Itoa(1000))
+		registrationScan, err := db.ExecuteCommand("SCAN", "0", "MATCH", formatTestWatchListPattern(watched.FormatRpcServiceRegistrationPrefix(serviceName)), "COUNT", strconv.Itoa(1000))
 		assert.NoError(t, err)
 		assert.Contains(t, string(registrationScan), registrationKey)
 	}
 
-	certKey := redised.FormatPortalCertKey("demo-cert")
+	certKey := watched.FormatPortalCertKey("demo-cert")
 	value, err = db.Get(certKey)
 	assert.NoError(t, err)
 	assert.Contains(t, value, `"name":"demo-cert"`)
 }
 
 func TestInitializerDIInitWritesDashboardEntriesAndRulesFromRepo(t *testing.T) {
-	redisServer := redisserver.NewServerForTest()
-	defer redisServer.AfterAppStop()
-	db := _RedisTestStore{redisServer}
+	watchServer := watchserver.NewServerForTest()
+	defer watchServer.AfterAppStop()
+	db := _WatchTestStore{watchServer}
 
 	existingApiRule := core.PortalRule{
 		Id:              1,
@@ -366,7 +366,7 @@ func TestInitializerDIInitWritesDashboardEntriesAndRulesFromRepo(t *testing.T) {
 	ruleRepo := &testPortalRuleRepo{rules: []core.PortalRule{existingApiRule, existingWebRule}}
 	entryRepo := &testPortalSiteRepo{entries: []core.PortalSite{existingRpcSite, existingWebSite}}
 	p := &Initializer{
-		Syncer:        testSyncer(redisServer),
+		Syncer:        testSyncer(watchServer),
 		AppConfigRepo: &testAppConfigRepo{},
 		RuleRepo:      ruleRepo,
 		CertRepo:      &testPortalCertRepo{},
@@ -382,21 +382,21 @@ func TestInitializerDIInitWritesDashboardEntriesAndRulesFromRepo(t *testing.T) {
 	assert.Len(t, ruleRepo.rules, 2)
 	assert.Len(t, entryRepo.entries, 2)
 
-	value, err := db.Get(redised.FormatPortalRuleKey(core.DashboardAdminApiRuleName))
+	value, err := db.Get(watched.FormatPortalRuleKey(core.DashboardAdminApiRuleName))
 	assert.NoError(t, err)
 	assert.Contains(t, value, `"matchPort":8088`)
 	assert.Contains(t, value, "/custom-api")
 
-	value, err = db.Get(redised.FormatPortalSiteKey(seeder.DashboardRpcCoreEntry.Name))
+	value, err = db.Get(watched.FormatPortalSiteKey(seeder.DashboardRpcCoreEntry.Name))
 	assert.NoError(t, err)
 	assert.Contains(t, value, "custom.Actor")
 
-	value, err = db.Get(redised.FormatPortalRuleKey(core.DashboardWebRuleName))
+	value, err = db.Get(watched.FormatPortalRuleKey(core.DashboardWebRuleName))
 	assert.NoError(t, err)
 	assert.Contains(t, value, `"matchPort":8088`)
 	assert.Contains(t, value, "/custom-web")
 
-	value, err = db.Get(redised.FormatPortalSiteKey(seeder.DashboardWebCoreEntry.Name))
+	value, err = db.Get(watched.FormatPortalSiteKey(seeder.DashboardWebCoreEntry.Name))
 	assert.NoError(t, err)
 	assert.Contains(t, value, "custom.Web")
 }
@@ -418,7 +418,7 @@ func TestDashboardRpcServicesDerivedFromRegisteredSchema(t *testing.T) {
 }
 
 func marshalTestConfigValue(name string, value string) string {
-	return vcode.MustMarshalJsonS(redised.ConfigValue{
+	return vcode.MustMarshalJsonS(watched.ConfigValue{
 		Name:  name,
 		Value: []byte(value),
 	})
@@ -461,8 +461,8 @@ func TestDashboardWebEndpointUsesHTTPListenOutsideInproc(t *testing.T) {
 }
 
 func TestInitializerDIInitLoadsRegisteredSchemasIntoMemoryRepoInInprocMode(t *testing.T) {
-	redisServer := redisserver.NewServerForTest()
-	defer redisServer.AfterAppStop()
+	watchServer := watchserver.NewServerForTest()
+	defer watchServer.AfterAppStop()
 
 	domainSchema := &coreskel.DomainSchema{
 		Domain:    "test.initializer.schema",
@@ -473,7 +473,7 @@ func TestInitializerDIInitLoadsRegisteredSchemasIntoMemoryRepoInInprocMode(t *te
 
 	schemaRepo := new(schema.MemorySchemaRepo)
 	p := &Initializer{
-		Syncer:        testSyncer(redisServer),
+		Syncer:        testSyncer(watchServer),
 		AppConfigRepo: &testAppConfigRepo{},
 		RuleRepo:      &testPortalRuleRepo{},
 		CertRepo:      &testPortalCertRepo{},
@@ -492,8 +492,8 @@ func TestInitializerDIInitLoadsRegisteredSchemasIntoMemoryRepoInInprocMode(t *te
 }
 
 func TestInitializerDIInitLoadsHubSchemasIntoMemoryRepoInNormalMode(t *testing.T) {
-	redisServer := redisserver.NewServerForTest()
-	defer redisServer.AfterAppStop()
+	watchServer := watchserver.NewServerForTest()
+	defer watchServer.AfterAppStop()
 
 	hubSchemas := make(map[string]*coreskel.DomainSchema)
 	for _, schema := range coreskel.RegisteredDomainSchemas() {
@@ -508,7 +508,7 @@ func TestInitializerDIInitLoadsHubSchemasIntoMemoryRepoInNormalMode(t *testing.T
 
 	schemaRepo := new(schema.MemorySchemaRepo)
 	p := &Initializer{
-		Syncer:        testSyncer(redisServer),
+		Syncer:        testSyncer(watchServer),
 		AppConfigRepo: &testAppConfigRepo{},
 		RuleRepo:      &testPortalRuleRepo{},
 		CertRepo:      &testPortalCertRepo{},

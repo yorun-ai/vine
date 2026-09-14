@@ -4,15 +4,15 @@ import (
 	"context"
 	"sync"
 
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 )
 
 type WebGateway struct {
 	name     string
-	actorVia redised.PortalActorVia
-	cors     redised.PortalCors
+	actorVia watched.PortalActorVia
+	cors     watched.PortalCors
 	webName  string
 
 	context context.Context
@@ -24,7 +24,7 @@ type WebGateway struct {
 	watcher *epmgr.Watcher
 }
 
-func New(ctx context.Context, accessManager *access.Access, epmgrManager *epmgr.Manager, config redised.PortalSite) *WebGateway {
+func New(ctx context.Context, accessManager *access.Access, epmgrManager *epmgr.Manager, config watched.PortalSite) *WebGateway {
 	gatewayCtx, cancel := context.WithCancel(ctx)
 	gateway := &WebGateway{
 		context: gatewayCtx,
@@ -36,7 +36,7 @@ func New(ctx context.Context, accessManager *access.Access, epmgrManager *epmgr.
 	return gateway
 }
 
-func (g *WebGateway) init(config redised.PortalSite) {
+func (g *WebGateway) init(config watched.PortalSite) {
 	g.name = config.Name
 	g.actorVia = config.ActorVia
 	g.cors = config.Cors
@@ -44,7 +44,7 @@ func (g *WebGateway) init(config redised.PortalSite) {
 	g.watcher = g.epmgr.WatchWeb(g.webName)
 }
 
-func (g *WebGateway) Update(config redised.PortalSite) bool {
+func (g *WebGateway) Update(config watched.PortalSite) bool {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
@@ -66,7 +66,7 @@ func (g *WebGateway) Name() string {
 	return g.name
 }
 
-func (g *WebGateway) routeWeb() (*redised.WebRegistration, bool) {
+func (g *WebGateway) routeWeb() (*watched.WebRegistration, bool) {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 	return g.epmgr.NextWebEndpoint(g.webName)

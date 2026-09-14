@@ -11,10 +11,10 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "6e592a45",
+	Hash:        "913ec257",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
-		CompilerVersion: "v0.19.1",
+		CompilerVersion: "v0.19.3",
 	},
 
 	Enums: []*skel.EnumSchema{
@@ -4648,7 +4648,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "AppStatusApiService",
 			SkelName:    "vine.hub.admin.AppStatusApiService",
 			Description: "Hub Dashboard's application status service",
-			Hash:        "c4f2c531",
+			Hash:        "dead143d",
 			Pub:         false,
 			Api:         true,
 			AuthMode:    skel.AuthModeNoAuth,
@@ -4659,8 +4659,8 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "list",
 					SkelName:    "list",
-					Description: "List application instance statuses currently stored in Redis",
-					Hash:        "26344fcb",
+					Description: "List application instance statuses",
+					Hash:        "ba8cd3fb",
 					AuthMode:    skel.AuthModeUnset,
 					ResultType: &skel.TypeSchema{
 						Kind: skel.TypeKindList,

@@ -8,14 +8,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 )
 
 func TestNewRuleBuildsSiteRule(t *testing.T) {
 	siteManager := newTestSiteManager("admin@demo.app")
 
-	rule, ok := newRule(redised.PortalRule{
+	rule, ok := newRule(watched.PortalRule{
 		Name:            "admin",
 		MatchScheme:     string(spec.SchemeHTTPS),
 		MatchHost:       "demo.local",
@@ -36,7 +36,7 @@ func TestNewRuleBuildsSiteRule(t *testing.T) {
 }
 
 func TestNewRuleBuildsRedirectRule(t *testing.T) {
-	rule, ok := newRule(redised.PortalRule{
+	rule, ok := newRule(watched.PortalRule{
 		Name:                    "redirect",
 		MatchScheme:             string(spec.SchemeHTTP),
 		MatchHost:               "demo.local",
@@ -56,7 +56,7 @@ func TestNewRuleBuildsRedirectRule(t *testing.T) {
 }
 
 func TestNewRuleBuildsSiteRuleWithMissingSiteName(t *testing.T) {
-	rule, ok := newRule(redised.PortalRule{
+	rule, ok := newRule(watched.PortalRule{
 		Name:          "admin",
 		MatchScheme:   string(spec.SchemeHTTPS),
 		RouteType:     routeTypeSite,
@@ -68,7 +68,7 @@ func TestNewRuleBuildsSiteRuleWithMissingSiteName(t *testing.T) {
 }
 
 func TestNewRuleSkipsUnknownTargetType(t *testing.T) {
-	rule, ok := newRule(redised.PortalRule{
+	rule, ok := newRule(watched.PortalRule{
 		Name:          "broken",
 		MatchScheme:   "tcp",
 		RouteType:     "BROKEN",

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -21,8 +22,8 @@ func TestRunHubServe(t *testing.T) {
 		if flags.AdminListen != ":9092" {
 			t.Fatalf("unexpected admin listen: %q", flags.AdminListen)
 		}
-		if flags.RedisListen != "127.0.0.1:9091" {
-			t.Fatalf("unexpected redis listen: %q", flags.RedisListen)
+		if flags.WatchListen != "127.0.0.1:9091" {
+			t.Fatalf("unexpected watch listen: %q", flags.WatchListen)
 		}
 		if flags.DBSQLiteFile != "/tmp/hub.sqlite" {
 			t.Fatalf("unexpected sqlitePath: %q", flags.DBSQLiteFile)
@@ -50,7 +51,7 @@ func TestRunHubServe(t *testing.T) {
 		}
 	}
 
-	result := run([]string{"hub", "serve", "--control-listen", ":9090", "--admin-listen", ":9092", "--redis-listen", "127.0.0.1:9091", "--mq-external-nats-url", "nats://127.0.0.1:4222", "--seed-hub-data-file", "/tmp/hub.yaml", "--dashboard-url", "https://hub.example.com:8443/admin", "--db-sqlite-file", "/tmp/hub.sqlite", "--mtls-ca-file", "/tmp/ca.pem", "--mtls-cert-file", "/tmp/hub.pem", "--mtls-key-file", "/tmp/hub-key.pem"})
+	result := run([]string{"hub", "serve", "--control-listen", ":9090", "--admin-listen", ":9092", "--watch-listen", "127.0.0.1:9091", "--mq-external-nats-url", "nats://127.0.0.1:4222", "--seed-hub-data-file", "/tmp/hub.yaml", "--dashboard-url", "https://hub.example.com:8443/admin", "--db-sqlite-file", "/tmp/hub.sqlite", "--mtls-ca-file", "/tmp/ca.pem", "--mtls-cert-file", "/tmp/hub.pem", "--mtls-key-file", "/tmp/hub-key.pem"})
 
 	if result.exitCode != exitCodeSuccess {
 		t.Fatalf("unexpected exit code: %d, stderr=%q", result.exitCode, result.stderr)
@@ -163,7 +164,7 @@ func TestRunHubServeFromEnv(t *testing.T) {
 
 	t.Setenv(EnvHubControlListen, ":10090")
 	t.Setenv(EnvHubAdminListen, ":10092")
-	t.Setenv(EnvHubRedisListen, "127.0.0.1:10091")
+	t.Setenv(EnvHubWatchListen, "127.0.0.1:10091")
 	t.Setenv(EnvHubMQExternalNatsURL, "nats://127.0.0.1:4222")
 	t.Setenv(EnvSeedHubDataFile, "/tmp/env-hub.yaml")
 	t.Setenv(EnvHubDashboardURL, "http://:10099")
@@ -178,8 +179,8 @@ func TestRunHubServeFromEnv(t *testing.T) {
 		if flags.AdminListen != ":10092" {
 			t.Fatalf("unexpected admin listen: %q", flags.AdminListen)
 		}
-		if flags.RedisListen != "127.0.0.1:10091" {
-			t.Fatalf("unexpected redis listen: %q", flags.RedisListen)
+		if flags.WatchListen != "127.0.0.1:10091" {
+			t.Fatalf("unexpected watch listen: %q", flags.WatchListen)
 		}
 		if flags.DBSQLiteFile != "/tmp/env-hub.sqlite" {
 			t.Fatalf("unexpected sqlitePath: %q", flags.DBSQLiteFile)
@@ -287,5 +288,59 @@ func TestHubSeedHubInputs(t *testing.T) {
 				t.Fatalf("new seed flags failed: %#v", result)
 			}
 		})
+	}
+}
+
+func TestHubWatchListenCompatibility(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		args []string
+		env  map[string]string
+		want string
+	}{
+		{name: "default", want: "127.0.0.1:7072"},
+		{name: "watch flag", args: []string{"--watch-listen", ":8100"}, want: ":8100"},
+		{name: "watch environment", env: map[string]string{EnvHubWatchListen: ":8101"}, want: ":8101"},
+		{name: "redis flag", args: []string{"--redis-listen", ":8200"}, want: ":8200"},
+		{name: "redis environment", env: map[string]string{EnvHubRedisListen: ":8201"}, want: ":8201"},
+		{name: "both flags", args: []string{"--watch-listen", ":8100", "--redis-listen", ":8200"}, want: ":8100"},
+		{name: "both flags reversed", args: []string{"--redis-listen", ":8200", "--watch-listen", ":8100"}, want: ":8100"},
+		{name: "both environments", env: map[string]string{EnvHubWatchListen: ":8101", EnvHubRedisListen: ":8201"}, want: ":8101"},
+		{name: "watch flag and redis environment", args: []string{"--watch-listen", ":8100"}, env: map[string]string{EnvHubRedisListen: ":8201"}, want: ":8100"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, name := range []string{EnvHubWatchListen, EnvHubRedisListen} {
+				t.Setenv(name, "")
+				if err := os.Unsetenv(name); err != nil {
+					t.Fatal(err)
+				}
+			}
+			for name, value := range tc.env {
+				t.Setenv(name, value)
+			}
+			original := startHubApp
+			t.Cleanup(func() { startHubApp = original })
+			called := false
+			startHubApp = func(flags hubconf.Flag) {
+				called = true
+				if flags.WatchListen != tc.want {
+					t.Fatalf("got %q, want %q", flags.WatchListen, tc.want)
+				}
+			}
+			result := run(append([]string{"hub", "serve"}, tc.args...))
+			if result.exitCode != exitCodeSuccess || !called {
+				t.Fatalf("command failed: %#v", result)
+			}
+			if result.stderr != "" {
+				t.Fatalf("unexpected command error: %q", result.stderr)
+			}
+		})
+	}
+}
+
+func TestHubServeHelpMarksRedisListenDeprecated(t *testing.T) {
+	result := run([]string{"hub", "serve", "--help"})
+	if result.exitCode != exitCodeSuccess || !strings.Contains(result.stdout, "--watch-listen") || !strings.Contains(result.stdout, "deprecated: use --watch-listen") {
+		t.Fatalf("unexpected help: %#v", result)
 	}
 }

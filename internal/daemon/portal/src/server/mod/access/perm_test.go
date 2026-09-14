@@ -13,8 +13,8 @@ import (
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	"go.yorun.ai/vine/internal/core/skel"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubredis"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/util/vcode"
 )
@@ -200,8 +200,8 @@ func TestExtractCheckParamsRejectsTrailingWildcardPath(t *testing.T) {
 func newAccessTestEndpointManager(serviceName string, endpoint string) *epmgr.Manager {
 	manager := &epmgr.Manager{
 		Context: context.Background(),
-		Redis: hubredis.NewTestClient(map[string]string{
-			redised.FormatRpcServiceRegistrationKey(serviceName, "perm.test", "instance-1"): vcode.MustMarshalJsonS(redised.RpcServiceRegistration{
+		Watch: hubwatch.NewTestClient(map[string]string{
+			watched.FormatRpcServiceRegistrationKey(serviceName, "perm.test", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 				Endpoint:      endpoint,
 				ServiceName:   serviceName,
 				AppName:       "perm.test",

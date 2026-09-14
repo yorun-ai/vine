@@ -1,14 +1,14 @@
 package config
 
 import (
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAfterAppStopClearsRetainedStates(t *testing.T) {
-	reader := newTestReader(map[string]redised.ConfigValue{
+	reader := newTestReader(map[string]watched.ConfigValue{
 		"demo.FeatureConfig": {
 			Name:  "demo.FeatureConfig",
 			Value: []byte(`{"enabled":true}`),
@@ -24,7 +24,7 @@ func TestAfterAppStopClearsRetainedStates(t *testing.T) {
 }
 
 func TestOnDestroyReleasesInstanceState(t *testing.T) {
-	reader := newTestReader(map[string]redised.ConfigValue{
+	reader := newTestReader(map[string]watched.ConfigValue{
 		"demo.FeatureConfig": {
 			Name:  "demo.FeatureConfig",
 			Value: []byte(`{"enabled":true}`),
@@ -37,7 +37,7 @@ func TestOnDestroyReleasesInstanceState(t *testing.T) {
 	reader.OnDestroy(instance)
 
 	reader.mutex.RLock()
-	_, ok := reader.instantConfigStatesByKey[redised.FormatConfigKey("demo.FeatureConfig")]
+	_, ok := reader.instantConfigStatesByKey[watched.FormatConfigKey("demo.FeatureConfig")]
 	reader.mutex.RUnlock()
 	assert.False(t, ok)
 }

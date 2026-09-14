@@ -11,10 +11,10 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.control",
 	Description: "Internal control API for Link and Portal",
-	Hash:        "55e23029",
+	Hash:        "77fa1653",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
-		CompilerVersion: "v0.19.1",
+		CompilerVersion: "v0.19.3",
 	},
 
 	Data: []*skel.DataSchema{
@@ -194,8 +194,16 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "Info",
 			SkelName:    "vine.hub.control.Info",
 			Description: "Hub information",
-			Hash:        "739bccb5",
+			Hash:        "45be4a06",
 			Members: []*skel.MemberSchema{
+				{
+					Name:        "version",
+					Description: "Hub Vine runtime version",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
 				{
 					Name:        "apiPort",
 					Description: "Control API service port",
@@ -205,24 +213,78 @@ var _DomainSchema = &skel.DomainSchema{
 					},
 				},
 				{
-					Name:        "redisPort",
-					Description: "Redis service port",
+					Name:        "watchPort",
+					Description: "Configuration and service discovery watch port",
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarInt,
 					},
 				},
 				{
-					Name:        "natsPort",
-					Description: "NATS service port",
+					Name:        "mqEmbedded",
+					Description: "Whether MQ is embedded in Hub",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarBool,
+					},
+				},
+				{
+					Name:        "mqNatsPort",
+					Description: "Embedded NATS service port",
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarInt,
 					},
 				},
 				{
-					Name:        "mqEndpoint",
-					Description: "Standalone MQ service address",
+					Name:        "mqNatsEndpoint",
+					Description: "External NATS service endpoint",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
+				{
+					Name:        "redisEmbedded",
+					Description: "Whether Redis is embedded in Hub",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarBool,
+					},
+				},
+				{
+					Name:        "redisPort2",
+					Description: "Embedded Redis service port. TODO: rename to redisPort after old redisPort retired.",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarInt,
+					},
+				},
+				{
+					Name:             "redisPort",
+					Description:      "Redis service port",
+					Deprecated:       true,
+					DeprecatedReason: "Use watchPort instead",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarInt,
+					},
+				},
+				{
+					Name:             "natsPort",
+					Description:      "NATS service port",
+					Deprecated:       true,
+					DeprecatedReason: "Use mqNatsPort instead",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarInt,
+					},
+				},
+				{
+					Name:             "mqEndpoint",
+					Description:      "External NATS service endpoint",
+					Deprecated:       true,
+					DeprecatedReason: "Use mqNatsEndpoint instead",
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -385,7 +447,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "InfoService",
 			SkelName:    "vine.hub.control.InfoService",
 			Description: "Hub's information service, called by Link",
-			Hash:        "0d4b717f",
+			Hash:        "8d063434",
 			Pub:         true,
 			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
@@ -393,7 +455,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "getInfo",
 					SkelName:          "getInfo",
 					Description:       "Read Hub information",
-					Hash:              "3929d753",
+					Hash:              "e79576a6",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Hub information",
 					ResultType: &skel.TypeSchema{

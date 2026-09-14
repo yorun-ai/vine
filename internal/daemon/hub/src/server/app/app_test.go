@@ -15,7 +15,7 @@ import (
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	adminimpl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin"
@@ -97,7 +97,7 @@ func TestHubAppDIInitNormalizesFlagAndSetsRunFlag(t *testing.T) {
 	assert.Equal(t, flag.StoreSQLite, spec.Flag.Store)
 	assert.Equal(t, flag.HubDefaultControlListen, spec.Flag.ControlListen)
 	assert.Equal(t, flag.HubDefaultAdminListen, spec.Flag.AdminListen)
-	assert.Equal(t, flag.HubDefaultRedisListen, spec.Flag.RedisListen)
+	assert.Equal(t, flag.HubDefaultWatchListen, spec.Flag.WatchListen)
 	assert.Equal(t, "/tmp/hub.sqlite", spec.Flag.DBSQLiteFile)
 	assert.Equal(t, "nats://127.0.0.1:4222", spec.Flag.MQExternalNatsURL)
 	assert.False(t, spec.Flag.MQEmbeddedNats)
@@ -142,7 +142,7 @@ func TestHubAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 	assert.Empty(t, spec.AppFlag.ListenAddr)
 	assert.Empty(t, spec.Flag.ControlListen)
 	assert.Empty(t, spec.Flag.AdminListen)
-	assert.Empty(t, spec.Flag.RedisListen)
+	assert.Empty(t, spec.Flag.WatchListen)
 	assert.True(t, spec.Flag.MQEmbeddedNats)
 }
 
@@ -227,7 +227,7 @@ func TestHubAppComponentTypesReturnsSQLiteDatabaseWhenSourceIsSQLite(t *testing.
 		internalapp.T[*configaccess.Access](),
 		internalapp.T[*repodb.HubDatabase](),
 		internalapp.T[*natsserver.NATSServer](),
-		internalapp.T[*redisserver.Server](),
+		internalapp.T[*watchserver.Server](),
 	}, collectComponentTypes(spec))
 }
 
@@ -240,7 +240,7 @@ func TestHubAppComponentTypesReturnsPGDatabaseWhenSourceIsPG(t *testing.T) {
 		internalapp.T[*configaccess.Access](),
 		internalapp.T[*repodb.HubDatabase](),
 		internalapp.T[*natsserver.NATSServer](),
-		internalapp.T[*redisserver.Server](),
+		internalapp.T[*watchserver.Server](),
 	}, collectComponentTypes(spec))
 }
 
@@ -346,8 +346,8 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForInitializerWithSQLite(t *test
 	}
 	manager := initTestConfigDatabase(component)
 	t.Cleanup(manager.AfterAppStop)
-	redisServer := redisserver.NewServerForTest()
-	t.Cleanup(redisServer.AfterAppStop)
+	watchServer := watchserver.NewServerForTest()
+	t.Cleanup(watchServer.AfterAppStop)
 
 	spec := &HubApp{
 		InprocFlag: &internalapp.InternalInprocFlag{},
@@ -356,7 +356,7 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForInitializerWithSQLite(t *test
 			AdminListen:  flag.HubDefaultAdminListen,
 			DashboardURL: testDashboardURL(),
 			DBSQLiteFile: sharedTestSQLitePath(t),
-			RedisListen:  flag.HubDefaultRedisListen,
+			WatchListen:  flag.HubDefaultWatchListen,
 		},
 	}
 
@@ -365,7 +365,7 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForInitializerWithSQLite(t *test
 			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
 			b.BindInstance(logger.New("vine:test"))
 			manager.Bind(b)
-			b.BindInstance(redisServer)
+			b.BindInstance(watchServer)
 			b.Bind(di.T[*initializer.Initializer]()).In(di.SingletonScope)
 			b.Bind(di.T[*flag.Flag]()).ToInstance(spec.Flag)
 			spec.BindCommon(b)
@@ -433,8 +433,8 @@ func newHubBoundAppConfigRepo(t *testing.T, spec *HubApp) core.AppConfigRepo {
 	daoExecution := daoInjector.StartExecution()
 	defer daoExecution.CompleteExecution()
 	daoInstance := daoExecution.Get(rdb.T[*model.AppConfigDao]()).Interface()
-	redisServer := redisserver.NewServerForTest()
-	t.Cleanup(redisServer.AfterAppStop)
+	watchServer := watchserver.NewServerForTest()
+	t.Cleanup(watchServer.AfterAppStop)
 
 	injector := di.NewInjector(
 		func(b *di.Binder) {
@@ -442,7 +442,7 @@ func newHubBoundAppConfigRepo(t *testing.T, spec *HubApp) core.AppConfigRepo {
 			b.Bind(di.T[*flag.Flag]()).ToInstance(spec.Flag)
 			b.BindInstance(daoInstance)
 			b.BindInstance(logger.New("vine:test"))
-			b.BindInstance(redisServer)
+			b.BindInstance(watchServer)
 			spec.BindCommon(b)
 		},
 	)
@@ -481,8 +481,8 @@ func TestHubConfigurationLifecycle(t *testing.T) {
 			flags.Normalize(true)
 			manager := initTestConfigDatabase(&repodb.HubDatabase{Flag: flags})
 			t.Cleanup(manager.AfterAppStop)
-			redis := redisserver.NewServerForTest()
-			t.Cleanup(redis.AfterAppStop)
+			watch := watchserver.NewServerForTest()
+			t.Cleanup(watch.AfterAppStop)
 			access := new(configaccess.Access)
 			spec := &HubApp{Flag: flags, InprocFlag: &internalapp.InternalInprocFlag{Enabled: true}}
 			injector := di.NewInjector(func(b *di.Binder) {
@@ -490,7 +490,7 @@ func TestHubConfigurationLifecycle(t *testing.T) {
 				b.BindInstance(logger.New("vine:test:lifecycle"))
 				b.BindInstance(flags)
 				b.BindInstance(spec.InprocFlag)
-				b.BindInstance(redis)
+				b.BindInstance(watch)
 				b.BindInstance(access)
 				manager.Bind(b)
 				spec.BindCommon(b)

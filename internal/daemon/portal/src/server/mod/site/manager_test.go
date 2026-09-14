@@ -11,25 +11,25 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	"go.yorun.ai/vine/internal/core/skel"
-	hubapiredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubredis"
+	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/util/vcode"
 )
 
-func TestManagerLoadsRpcgwSiteFromRedis(t *testing.T) {
+func TestManagerLoadsRpcgwSiteFromWatch(t *testing.T) {
 	manager := newTestManager(map[string]string{
-		redised.FormatPortalSiteKey("demo-api"): vcode.MustMarshalJsonS(redised.PortalSite{
+		watched.FormatPortalSiteKey("demo-api"): vcode.MustMarshalJsonS(watched.PortalSite{
 			Name: "demo-api",
 			Type: siteTypeRpcgw,
-			ActorVia: redised.PortalActorVia{
+			ActorVia: watched.PortalActorVia{
 				ActorSkelName: "demo.UserActor",
 			},
-			RpcgwConfig: &redised.PortalRpcgwConfig{
-				Services: []redised.PortalRpcgwService{{SkelName: "demo.UserService"}},
+			RpcgwConfig: &watched.PortalRpcgwConfig{
+				Services: []watched.PortalRpcgwService{{SkelName: "demo.UserService"}},
 			},
 		}),
 	})
@@ -60,14 +60,14 @@ func TestManagerLoadsRpcgwSiteFromRedis(t *testing.T) {
 
 func TestManagerDoesNotLoadPortalRulesAsSites(t *testing.T) {
 	manager := newTestManager(map[string]string{
-		redised.FormatPortalSiteKey("demo-web"): vcode.MustMarshalJsonS(redised.PortalSite{
+		watched.FormatPortalSiteKey("demo-web"): vcode.MustMarshalJsonS(watched.PortalSite{
 			Name: "demo-web",
 			Type: siteTypeWebgw,
-			WebgwConfig: &redised.PortalWebgwConfig{
+			WebgwConfig: &watched.PortalWebgwConfig{
 				WebName: "demo.Web",
 			},
 		}),
-		redised.FormatPortalRuleKey("demo-web"): vcode.MustMarshalJsonS(redised.PortalRule{
+		watched.FormatPortalRuleKey("demo-web"): vcode.MustMarshalJsonS(watched.PortalRule{
 			Name:          "demo-web",
 			RouteType:     "SITE",
 			RouteSiteName: "demo-web",
@@ -98,13 +98,13 @@ func TestManagerSiteReturnsFalseForUnknownSite(t *testing.T) {
 func TestManagerHandlesSiteEvents(t *testing.T) {
 	manager := newTestManager(nil)
 
-	manager.handleSiteEvent(hubapiredis.Event{
-		Kind: hubapiredis.EventKindUpsert,
-		Key:  redised.FormatPortalSiteKey("demo-web"),
-		Value: vcode.MustMarshalJsonS(redised.PortalSite{
+	manager.handleSiteEvent(hubapiwatch.Event{
+		Kind: hubapiwatch.EventKindUpsert,
+		Key:  watched.FormatPortalSiteKey("demo-web"),
+		Value: vcode.MustMarshalJsonS(watched.PortalSite{
 			Name: "demo-web",
 			Type: siteTypeWebgw,
-			WebgwConfig: &redised.PortalWebgwConfig{
+			WebgwConfig: &watched.PortalWebgwConfig{
 				WebName: "admin@demo.app",
 			},
 		}),
@@ -113,9 +113,9 @@ func TestManagerHandlesSiteEvents(t *testing.T) {
 		t.Fatal("expected demo-web site")
 	}
 
-	manager.handleSiteEvent(hubapiredis.Event{
-		Kind: hubapiredis.EventKindDelete,
-		Key:  redised.FormatPortalSiteKey("demo-web"),
+	manager.handleSiteEvent(hubapiwatch.Event{
+		Kind: hubapiwatch.EventKindDelete,
+		Key:  watched.FormatPortalSiteKey("demo-web"),
 	})
 	if _, ok := manager.Site("demo-web"); ok {
 		t.Fatal("expected deleted demo-web site")
@@ -126,10 +126,10 @@ func TestManagerUpsertReplacesSiteWithoutRemovingName(t *testing.T) {
 	manager := newTestManager(nil)
 	oldSite := &_TestSite{name: "demo-api"}
 	newSite := &_TestSite{name: "demo-api"}
-	manager.sitesByKey[redised.FormatPortalSiteKey("demo-api")] = oldSite
+	manager.sitesByKey[watched.FormatPortalSiteKey("demo-api")] = oldSite
 	manager.sitesByName["demo-api"] = oldSite
 
-	stopSite(manager.replaceSite(redised.FormatPortalSiteKey("demo-api"), newSite))
+	stopSite(manager.replaceSite(watched.FormatPortalSiteKey("demo-api"), newSite))
 
 	if !oldSite.stopped {
 		t.Fatal("expected old site to stop")
@@ -145,11 +145,11 @@ func TestManagerUpsertReplacesSiteWithoutRemovingName(t *testing.T) {
 
 func TestManagerUpsertUpdatesSameSiteTypeInPlace(t *testing.T) {
 	manager := newTestManager(map[string]string{
-		redised.FormatPortalSiteKey("demo-api"): vcode.MustMarshalJsonS(redised.PortalSite{
+		watched.FormatPortalSiteKey("demo-api"): vcode.MustMarshalJsonS(watched.PortalSite{
 			Name: "demo-api",
 			Type: siteTypeRpcgw,
-			RpcgwConfig: &redised.PortalRpcgwConfig{
-				Services: []redised.PortalRpcgwService{{SkelName: "demo.UserService"}},
+			RpcgwConfig: &watched.PortalRpcgwConfig{
+				Services: []watched.PortalRpcgwService{{SkelName: "demo.UserService"}},
 			},
 		}),
 	})
@@ -158,14 +158,14 @@ func TestManagerUpsertUpdatesSameSiteTypeInPlace(t *testing.T) {
 		t.Fatal("expected demo-api site")
 	}
 
-	manager.handleSiteEvent(hubapiredis.Event{
-		Kind: hubapiredis.EventKindUpsert,
-		Key:  redised.FormatPortalSiteKey("demo-api"),
-		Value: vcode.MustMarshalJsonS(redised.PortalSite{
+	manager.handleSiteEvent(hubapiwatch.Event{
+		Kind: hubapiwatch.EventKindUpsert,
+		Key:  watched.FormatPortalSiteKey("demo-api"),
+		Value: vcode.MustMarshalJsonS(watched.PortalSite{
 			Name: "demo-api",
 			Type: siteTypeRpcgw,
-			RpcgwConfig: &redised.PortalRpcgwConfig{
-				Services: []redised.PortalRpcgwService{{SkelName: "demo.OrderService"}},
+			RpcgwConfig: &watched.PortalRpcgwConfig{
+				Services: []watched.PortalRpcgwService{{SkelName: "demo.OrderService"}},
 			},
 		}),
 	})
@@ -181,7 +181,7 @@ func TestManagerUpsertUpdatesSameSiteTypeInPlace(t *testing.T) {
 
 func TestManagerSiteReturnsRegisteredUnknownKindSite(t *testing.T) {
 	manager := newTestManager(map[string]string{
-		redised.FormatPortalSiteKey("demo-unknown"): vcode.MustMarshalJsonS(redised.PortalSite{
+		watched.FormatPortalSiteKey("demo-unknown"): vcode.MustMarshalJsonS(watched.PortalSite{
 			Name: "demo-unknown",
 			Type: "unknown",
 		}),
@@ -216,7 +216,7 @@ func newTestManager(valuesByKey map[string]string) *Manager {
 	manager := &Manager{
 		Context: context.Background(),
 		App:     meta.MustNewApp("vine.portal", "0.0.0", "123e4567-e89b-12d3-a456-426614174099"),
-		Redis:   hubredis.NewTestClient(valuesByKey),
+		Watch:   hubwatch.NewTestClient(valuesByKey),
 		Access:  newTestAccess(),
 		Epmgr:   epmgrManager,
 	}
@@ -227,31 +227,31 @@ func newTestManager(valuesByKey map[string]string) *Manager {
 func newTestEpmgr(valuesByKey map[string]string) *epmgr.Manager {
 	manager := &epmgr.Manager{
 		Context: context.Background(),
-		Redis:   hubredis.NewTestClient(valuesByKey),
+		Watch:   hubwatch.NewTestClient(valuesByKey),
 	}
 	manager.DIInit()
 	return manager
 }
 
 func newTestAccess() *access.Access {
-	redisClient := newTestSchemaRedis()
+	watchClient := newTestSchemaWatch()
 	epmgrManager := &epmgr.Manager{
 		Context: context.Background(),
-		Redis:   redisClient,
+		Watch:   watchClient,
 	}
 	epmgrManager.DIInit()
 	manager := &access.Access{
 		Context: context.Background(),
-		Redis:   redisClient,
+		Watch:   watchClient,
 		Epmgr:   epmgrManager,
 	}
 	manager.DIInit()
 	return manager
 }
 
-func newTestSchemaRedis() *hubredis.Client {
-	redisClient := hubredis.NewTestClient(map[string]string{
-		redised.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(redised.SchemaActor{
+func newTestSchemaWatch() *hubwatch.Client {
+	watchClient := hubwatch.NewTestClient(map[string]string{
+		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.SchemaActor{
 			SkelName: "demo.UserActor",
 			AuthCredential: &skel.DataSchema{
 				SkelName: "demo.UserCredential",
@@ -261,7 +261,7 @@ func newTestSchemaRedis() *hubredis.Client {
 			},
 			AuthInfo: &skel.DataSchema{SkelName: "demo.UserInfo"},
 		}),
-		redised.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(redised.SchemaService{
+		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
 			SkelName: "demo.UserService",
 			AuthMode: skel.AuthModeNoAuth,
 			Audiences: []*skel.ActorAudienceSchema{
@@ -272,7 +272,7 @@ func newTestSchemaRedis() *hubredis.Client {
 			},
 		}),
 	})
-	return redisClient
+	return watchClient
 }
 
 type _TestSite struct {
@@ -289,7 +289,7 @@ func (s *_TestSite) Serve(ctx *spec.Context) {
 	s.served++
 }
 
-func (s *_TestSite) Update(config redised.PortalSite) bool {
+func (s *_TestSite) Update(config watched.PortalSite) bool {
 	return false
 }
 

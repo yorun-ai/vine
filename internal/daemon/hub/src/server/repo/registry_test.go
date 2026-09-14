@@ -12,43 +12,43 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	internalapp "go.yorun.ai/vine/internal/app"
-	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
+	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	"go.yorun.ai/vine/util/vcode"
 )
 
-func newTestRegistryRepo(t *testing.T, inproc bool) (*RedisRegistryRepo, *redisserver.Server) {
+func newTestRegistryRepo(t *testing.T, inproc bool) (*WatchRegistryRepo, *watchserver.Server) {
 	t.Helper()
 
-	redisServer := &redisserver.Server{
+	watchServer := &watchserver.Server{
 		Context:    t.Context(),
 		Option:     &flag.Flag{},
 		InprocFlag: &internalapp.InternalInprocFlag{Enabled: true},
 	}
-	redisServer.DIInit()
-	repo := &RedisRegistryRepo{
-		RedisServer: redisServer,
+	watchServer.DIInit()
+	repo := &WatchRegistryRepo{
+		WatchServer: watchServer,
 		InprocFlag: &internalapp.InternalInprocFlag{
 			Enabled: inproc,
 		},
 	}
 
 	t.Cleanup(func() {
-		redisServer.AfterAppStop()
+		watchServer.AfterAppStop()
 	})
 
-	return repo, redisServer
+	return repo, watchServer
 }
 
-func formatTestRedisListPattern(prefix string) string {
+func formatTestWatchListPattern(prefix string) string {
 	return strings.TrimSuffix(prefix, ":") + ":*"
 }
 
 func TestRegistryRepoSaveAndGetAppStatus(t *testing.T) {
-	repo, redisServer := newTestRegistryRepo(t, false)
+	repo, watchServer := newTestRegistryRepo(t, false)
 	now := time.Now().UTC().Round(0)
 	setTimeNowForTest(t, func() time.Time { return now })
 
@@ -65,8 +65,8 @@ func TestRegistryRepoSaveAndGetAppStatus(t *testing.T) {
 
 	repo.SaveAppStatus(status)
 
-	key := redised.FormatAppStatusKey(status.Name, status.InstanceId)
-	raw, ok := redisServer.Get(key)
+	key := watched.FormatAppStatusKey(status.Name, status.InstanceId)
+	raw, ok := watchServer.Get(key)
 	assert.True(t, ok)
 	gotRaw := vcode.MustUnmarshalJsonS[*_AppStatus](raw)
 	assert.Equal(t, &_AppStatus{
@@ -86,7 +86,7 @@ func TestRegistryRepoSaveAndGetAppStatus(t *testing.T) {
 	status.ExpiresAt = now.Add(hubRegistryLeaseTTL)
 	assert.Equal(t, status, got)
 
-	ttl := redisServer.TTL(key)
+	ttl := watchServer.TTL(key)
 	assert.True(t, ttl > 0)
 	assert.True(t, ttl <= int(hubRegistryEphemeralTTL/time.Second))
 }
@@ -123,20 +123,20 @@ func TestRegistryRepoListAppStatuses(t *testing.T) {
 }
 
 func TestRegistryRepoKeepAndRemoveAppStatus(t *testing.T) {
-	repo, redisServer := newTestRegistryRepo(t, false)
+	repo, watchServer := newTestRegistryRepo(t, false)
 
 	status := &core.AppStatus{InstanceId: "instance-1", Name: "demo.app"}
 	repo.SaveAppStatus(status)
 
-	key := redised.FormatAppStatusKey(status.Name, status.InstanceId)
-	assert.True(t, redisServer.Expire(key, 1))
+	key := watched.FormatAppStatusKey(status.Name, status.InstanceId)
+	assert.True(t, watchServer.Expire(key, 1))
 	repo.KeepAppStatus(status.Name, status.InstanceId)
 
 	got, ok := repo.GetAppStatus(status.Name, status.InstanceId)
 	assert.True(t, ok)
 	assert.Equal(t, status.InstanceId, got.InstanceId)
 
-	ttlAfter := redisServer.TTL(key)
+	ttlAfter := watchServer.TTL(key)
 	assert.True(t, ttlAfter > 1)
 
 	repo.RemoveAppStatus(status.Name, status.InstanceId)
@@ -178,17 +178,17 @@ func TestRegistryRepoKeepAppStatusRefreshesAppLease(t *testing.T) {
 }
 
 func TestRegistryRepoPopExpiredAppLeasesSkipsRenewedStatus(t *testing.T) {
-	repo, redisServer := newTestRegistryRepo(t, false)
+	repo, watchServer := newTestRegistryRepo(t, false)
 	now := time.Now().Round(0)
 	setTimeNowForTest(t, func() time.Time { return now })
 	status := &core.AppStatus{InstanceId: "instance-1", Name: "demo.app"}
 	repo.SaveAppStatus(status)
 
-	key := redised.FormatAppStatusKey(status.Name, status.InstanceId)
+	key := watched.FormatAppStatusKey(status.Name, status.InstanceId)
 	raw, ok := repo.getAppStatus(status.Name, status.InstanceId)
 	assert.True(t, ok)
 	raw.ExpiresAt = now.Add(2 * hubRegistryLeaseTTL)
-	redisServer.SetEphemeral(key, vcode.MustMarshalJsonS(raw), hubRegistryEphemeralTTL)
+	watchServer.SetEphemeral(key, vcode.MustMarshalJsonS(raw), hubRegistryEphemeralTTL)
 
 	now = now.Add(hubRegistryLeaseTTL + time.Second)
 
@@ -204,7 +204,7 @@ func TestRegistryRepoInprocDoesNotSaveAppLease(t *testing.T) {
 }
 
 func TestRegistryRepoSaveAndGetRpcServiceRegistration(t *testing.T) {
-	repo, redisServer := newTestRegistryRepo(t, false)
+	repo, watchServer := newTestRegistryRepo(t, false)
 
 	registration := &core.RpcServiceRegistration{
 		Endpoint:      "http://127.0.0.1:23001/rpc",
@@ -217,23 +217,23 @@ func TestRegistryRepoSaveAndGetRpcServiceRegistration(t *testing.T) {
 
 	repo.SaveRpcServiceRegistration(registration)
 
-	key := redised.FormatRpcServiceRegistrationKey(registration.ServiceName, registration.AppName, registration.AppInstanceId)
-	raw, ok := redisServer.Get(key)
+	key := watched.FormatRpcServiceRegistrationKey(registration.ServiceName, registration.AppName, registration.AppInstanceId)
+	raw, ok := watchServer.Get(key)
 	assert.True(t, ok)
-	gotRaw := vcode.MustUnmarshalJsonS[*redised.RpcServiceRegistration](raw)
+	gotRaw := vcode.MustUnmarshalJsonS[*watched.RpcServiceRegistration](raw)
 	assert.Equal(t, toRpcServiceRegistration(registration), gotRaw)
 
 	got, ok := repo.GetRpcServiceRegistration(registration.ServiceName, registration.AppName, registration.AppInstanceId)
 	assert.True(t, ok)
 	assert.Equal(t, registration, got)
 
-	ttl := redisServer.TTL(key)
+	ttl := watchServer.TTL(key)
 	assert.True(t, ttl > 0)
 	assert.True(t, ttl <= int(hubRegistryEphemeralTTL/time.Second))
 }
 
 func TestRegistryRepoSaveAndGetWebRegistration(t *testing.T) {
-	repo, redisServer := newTestRegistryRepo(t, false)
+	repo, watchServer := newTestRegistryRepo(t, false)
 
 	registration := &core.WebRegistration{
 		Endpoint:      "http://127.0.0.1:23001",
@@ -245,17 +245,17 @@ func TestRegistryRepoSaveAndGetWebRegistration(t *testing.T) {
 
 	repo.SaveWebRegistration(registration)
 
-	key := redised.FormatWebRegistrationKey(registration.WebSkelName, registration.AppName, registration.AppInstanceId)
-	raw, ok := redisServer.Get(key)
+	key := watched.FormatWebRegistrationKey(registration.WebSkelName, registration.AppName, registration.AppInstanceId)
+	raw, ok := watchServer.Get(key)
 	assert.True(t, ok)
-	gotRaw := vcode.MustUnmarshalJsonS[*redised.WebRegistration](raw)
+	gotRaw := vcode.MustUnmarshalJsonS[*watched.WebRegistration](raw)
 	assert.Equal(t, toWebRegistration(registration), gotRaw)
 
 	got, ok := repo.GetWebRegistration(registration.WebSkelName, registration.AppName, registration.AppInstanceId)
 	assert.True(t, ok)
 	assert.Equal(t, registration, got)
 
-	ttl := redisServer.TTL(key)
+	ttl := watchServer.TTL(key)
 	assert.True(t, ttl > 0)
 	assert.True(t, ttl <= int(hubRegistryEphemeralTTL/time.Second))
 }
@@ -277,7 +277,7 @@ func TestRegistryRepoGetWebRegistrationReturnsFalseWhenMissing(t *testing.T) {
 }
 
 func TestRegistryRepoKeepAndRemoveRpcServiceRegistration(t *testing.T) {
-	repo, redisServer := newTestRegistryRepo(t, false)
+	repo, watchServer := newTestRegistryRepo(t, false)
 
 	registration := &core.RpcServiceRegistration{
 		Endpoint:      "http://127.0.0.1:23001/rpc",
@@ -288,16 +288,16 @@ func TestRegistryRepoKeepAndRemoveRpcServiceRegistration(t *testing.T) {
 	}
 	repo.SaveRpcServiceRegistration(registration)
 
-	key := redised.FormatRpcServiceRegistrationKey(registration.ServiceName, registration.AppName, registration.AppInstanceId)
+	key := watched.FormatRpcServiceRegistrationKey(registration.ServiceName, registration.AppName, registration.AppInstanceId)
 
-	assert.True(t, redisServer.Expire(key, 1))
+	assert.True(t, watchServer.Expire(key, 1))
 	repo.KeepRpcServiceRegistration(registration.ServiceName, registration.AppName, registration.AppInstanceId)
 
 	got, ok := repo.GetRpcServiceRegistration(registration.ServiceName, registration.AppName, registration.AppInstanceId)
 	assert.True(t, ok)
 	assert.Equal(t, registration, got)
 
-	ttlAfter := redisServer.TTL(key)
+	ttlAfter := watchServer.TTL(key)
 	assert.True(t, ttlAfter > 1)
 
 	repo.RemoveRpcServiceRegistration(registration.ServiceName, registration.AppName, registration.AppInstanceId)
@@ -308,7 +308,7 @@ func TestRegistryRepoKeepAndRemoveRpcServiceRegistration(t *testing.T) {
 }
 
 func TestRegistryRepoKeepAndRemoveWebRegistration(t *testing.T) {
-	repo, redisServer := newTestRegistryRepo(t, false)
+	repo, watchServer := newTestRegistryRepo(t, false)
 
 	registration := &core.WebRegistration{
 		Endpoint:      "http://127.0.0.1:23001",
@@ -319,16 +319,16 @@ func TestRegistryRepoKeepAndRemoveWebRegistration(t *testing.T) {
 	}
 	repo.SaveWebRegistration(registration)
 
-	key := redised.FormatWebRegistrationKey(registration.WebSkelName, registration.AppName, registration.AppInstanceId)
+	key := watched.FormatWebRegistrationKey(registration.WebSkelName, registration.AppName, registration.AppInstanceId)
 
-	assert.True(t, redisServer.Expire(key, 1))
+	assert.True(t, watchServer.Expire(key, 1))
 	repo.KeepWebRegistration(registration.WebSkelName, registration.AppName, registration.AppInstanceId)
 
 	got, ok := repo.GetWebRegistration(registration.WebSkelName, registration.AppName, registration.AppInstanceId)
 	assert.True(t, ok)
 	assert.Equal(t, registration, got)
 
-	ttlAfter := redisServer.TTL(key)
+	ttlAfter := watchServer.TTL(key)
 	assert.True(t, ttlAfter > 1)
 
 	repo.RemoveWebRegistration(registration.WebSkelName, registration.AppName, registration.AppInstanceId)
@@ -339,7 +339,7 @@ func TestRegistryRepoKeepAndRemoveWebRegistration(t *testing.T) {
 }
 
 func TestRegistryRepoInprocSavesWithoutTTL(t *testing.T) {
-	repo, redisServer := newTestRegistryRepo(t, true)
+	repo, watchServer := newTestRegistryRepo(t, true)
 
 	status := &core.AppStatus{
 		InstanceId: "instance-1",
@@ -347,8 +347,8 @@ func TestRegistryRepoInprocSavesWithoutTTL(t *testing.T) {
 	}
 	repo.SaveAppStatus(status)
 
-	key := redised.FormatAppStatusKey(status.Name, status.InstanceId)
-	ttl := redisServer.TTL(key)
+	key := watched.FormatAppStatusKey(status.Name, status.InstanceId)
+	ttl := watchServer.TTL(key)
 	assert.Equal(t, -1, ttl)
 	got, ok := repo.GetAppStatus(status.Name, status.InstanceId)
 	assert.True(t, ok)
@@ -363,8 +363,8 @@ func TestRegistryRepoInprocSavesWithoutTTL(t *testing.T) {
 	}
 	repo.SaveRpcServiceRegistration(registration)
 
-	key = redised.FormatRpcServiceRegistrationKey(registration.ServiceName, registration.AppName, registration.AppInstanceId)
-	ttl = redisServer.TTL(key)
+	key = watched.FormatRpcServiceRegistrationKey(registration.ServiceName, registration.AppName, registration.AppInstanceId)
+	ttl = watchServer.TTL(key)
 	assert.Equal(t, -1, ttl)
 
 	webRegistration := &core.WebRegistration{
@@ -376,23 +376,23 @@ func TestRegistryRepoInprocSavesWithoutTTL(t *testing.T) {
 	}
 	repo.SaveWebRegistration(webRegistration)
 
-	key = redised.FormatWebRegistrationKey(webRegistration.WebSkelName, webRegistration.AppName, webRegistration.AppInstanceId)
-	ttl = redisServer.TTL(key)
+	key = watched.FormatWebRegistrationKey(webRegistration.WebSkelName, webRegistration.AppName, webRegistration.AppInstanceId)
+	ttl = watchServer.TTL(key)
 	assert.Equal(t, -1, ttl)
 }
 
 func TestRegistryRepoInprocSaveWebRegistrationNotifiesSubscribers(t *testing.T) {
-	repo, redisServer := newTestRegistryRepo(t, true)
+	repo, watchServer := newTestRegistryRepo(t, true)
 	pattern := "web:default@demo.app:endpoint:*"
 	client := redis.NewClient(&redis.Options{
-		Addr: hubredis.RedisInprocEndpoint,
+		Addr: hubwatch.WatchInprocEndpoint,
 		Dialer: func(ctx context.Context, network string, addr string) (net.Conn, error) {
-			return redisServer.DialInproc(ctx)
+			return watchServer.DialInproc(ctx)
 		},
-		Username: hubredis.PortalUsername,
-		Password: hubredis.PortalPassword,
+		Username: hubwatch.PortalUsername,
+		Password: hubwatch.PortalPassword,
 		OnConnect: func(ctx context.Context, conn *redis.Conn) error {
-			return conn.AuthACL(ctx, hubredis.PortalUsername, hubredis.PortalPassword).Err()
+			return conn.AuthACL(ctx, hubwatch.PortalUsername, hubwatch.PortalPassword).Err()
 		},
 		Protocol:        2,
 		DisableIdentity: true,
@@ -415,9 +415,9 @@ func TestRegistryRepoInprocSaveWebRegistrationNotifiesSubscribers(t *testing.T) 
 
 	message, err := pubsub.ReceiveMessage(t.Context())
 	require.NoError(t, err)
-	var event hubredis.Event
+	var event hubwatch.Event
 	assert.NoError(t, json.Unmarshal([]byte(message.Payload), &event))
-	assert.Equal(t, hubredis.EventKindUpsert, event.Kind)
-	assert.Equal(t, redised.FormatWebRegistrationKey(registration.WebSkelName, registration.AppName, registration.AppInstanceId), event.Key)
+	assert.Equal(t, hubwatch.EventKindUpsert, event.Kind)
+	assert.Equal(t, watched.FormatWebRegistrationKey(registration.WebSkelName, registration.AppName, registration.AppInstanceId), event.Key)
 	assert.Equal(t, vcode.MustMarshalJsonS(toWebRegistration(registration)), event.Value)
 }

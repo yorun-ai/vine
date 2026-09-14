@@ -27,21 +27,33 @@ func (c *HubInfo) DIInit() {
 	c.info = c.InfoServiceClient.GetInfo()
 }
 
-func (c *HubInfo) RedisEndpoint() string {
-	return fmt.Sprintf("%s:%d", c.host, c.info.RedisPort)
+func (c *HubInfo) WatchEndpoint() string {
+	port := c.info.WatchPort
+	if port == 0 {
+		// Hubs predating watchPort only advertise redisPort.
+		port = c.info.RedisPort
+	}
+	return fmt.Sprintf("%s:%d", c.host, port)
 }
 
 func (c *HubInfo) MQEndpoint() string {
-	if c.info.NatsPort != 0 {
+	if c.UsesEmbeddedNATS() {
+		port := c.info.MqNatsPort
+		if port == 0 {
+			port = c.info.NatsPort
+		}
 		scheme := "nats"
 		if c.Flag.MTLS.Enabled() {
 			scheme = "tls"
 		}
-		return fmt.Sprintf("%s://%s:%d", scheme, c.host, c.info.NatsPort)
+		return fmt.Sprintf("%s://%s:%d", scheme, c.host, port)
+	}
+	if c.info.MqNatsEndpoint != "" {
+		return c.info.MqNatsEndpoint
 	}
 	return c.info.MqEndpoint
 }
 
 func (c *HubInfo) UsesEmbeddedNATS() bool {
-	return c.info.NatsPort != 0
+	return c.info.MqEmbedded || c.info.NatsPort != 0
 }

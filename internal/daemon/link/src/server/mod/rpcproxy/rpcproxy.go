@@ -14,8 +14,8 @@ import (
 	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 	"go.yorun.ai/vine/internal/core/runtime"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubredis"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 )
 
@@ -28,7 +28,7 @@ type RpcProxy struct {
 	app.BaseModule
 
 	Context     context.Context   `inject:""`
-	RedisClient *hubredis.Client  `inject:""`
+	WatchClient *hubwatch.Client  `inject:""`
 	App         runtime.App       `inject:""`
 	Logger      *logger.Logger    `inject:""`
 	AppMinder   *minder.AppMinder `inject:""`
@@ -54,8 +54,8 @@ type _AppState struct {
 
 type _ServiceState struct {
 	refsByAppInstanceID    map[string]struct{}
-	registrationsByKey     map[string]redised.RpcServiceRegistration
-	endpoints              []redised.RpcServiceRegistration
+	registrationsByKey     map[string]watched.RpcServiceRegistration
+	endpoints              []watched.RpcServiceRegistration
 	nextIndex              int
 	nextIndexByDestination map[string]int
 	cancel                 context.CancelFunc

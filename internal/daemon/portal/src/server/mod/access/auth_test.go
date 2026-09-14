@@ -15,7 +15,7 @@ import (
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	"go.yorun.ai/vine/internal/core/skel"
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/util/vcode"
 )
 
@@ -85,7 +85,7 @@ func TestAuthPropagatesIdentifierAndRejectsInvalidResponse(t *testing.T) {
 			schema := testAuthActorSchema()
 			schema.IdentifierField = "userId"
 			schema.AuthInfo.Members = []*skel.MemberSchema{{Name: "userId", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}}}
-			values[redised.FormatSchemaActorKey("demo.UserActor")] = vcode.MustMarshalJsonS(schema)
+			values[watched.FormatSchemaActorKey("demo.UserActor")] = vcode.MustMarshalJsonS(schema)
 			manager := testManager(values)
 			for _, web := range []bool{false, true} {
 				recorder := httptest.NewRecorder()
@@ -98,9 +98,9 @@ func TestAuthPropagatesIdentifierAndRejectsInvalidResponse(t *testing.T) {
 				header := rpchttp.HeaderRpcActor
 				if web {
 					header = webspec.HeaderWebActor
-					ok = manager.AuthWeb(&WebOperation{Auther: authOperationForTest(t, request, recorder), ActorVia: redised.PortalActorVia{ActorSkelName: "demo.UserActor"}})
+					ok = manager.AuthWeb(&WebOperation{Auther: authOperationForTest(t, request, recorder), ActorVia: watched.PortalActorVia{ActorSkelName: "demo.UserActor"}})
 				} else {
-					ok = manager.AllowRpc(&RpcOperation{Auther: authOperationForTest(t, request, recorder), Server: testServerApp(), ActorVia: redised.PortalActorVia{ActorSkelName: "demo.UserActor"}, ServiceName: "demo.UserService", MethodName: "Get"})
+					ok = manager.AllowRpc(&RpcOperation{Auther: authOperationForTest(t, request, recorder), Server: testServerApp(), ActorVia: watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, ServiceName: "demo.UserService", MethodName: "Get"})
 				}
 				require.Equal(t, tt.valid, ok)
 				if !ok {
@@ -206,7 +206,7 @@ func TestOptionalCredentialAuthForwarding(t *testing.T) {
 					schema := testAuthActorSchema()
 					schema.AuthCredential.Members[1].Type = &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}
 					values := testAuthValues(endpoint)
-					values[redised.FormatSchemaActorKey("demo.UserActor")] = vcode.MustMarshalJsonS(schema)
+					values[watched.FormatSchemaActorKey("demo.UserActor")] = vcode.MustMarshalJsonS(schema)
 					manager := testManager(values)
 					recorder := httptest.NewRecorder()
 					request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
@@ -214,9 +214,9 @@ func TestOptionalCredentialAuthForwarding(t *testing.T) {
 					request.Header.Set("Authorization", tt.header)
 					var ok bool
 					if transport.web {
-						ok = manager.AuthWeb(&WebOperation{Auther: authOperationForTest(t, request, recorder), ActorVia: redised.PortalActorVia{ActorSkelName: "demo.UserActor"}})
+						ok = manager.AuthWeb(&WebOperation{Auther: authOperationForTest(t, request, recorder), ActorVia: watched.PortalActorVia{ActorSkelName: "demo.UserActor"}})
 					} else {
-						ok = manager.AllowRpc(testRpcAuthContext(t, redised.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+						ok = manager.AllowRpc(testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 					}
 					require.Equal(t, tt.valid, ok)
 					if tt.valid {

@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"go.yorun.ai/vine/internal/core/logger"
-	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
+	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 )
 
 var epmgrLogger = logger.New("daemon:portal:epmgr")
@@ -46,7 +46,7 @@ func (m *Manager) watch(prefix string, registrationType reflect.Type) *Watcher {
 	m.mutex.Unlock()
 
 	watchCtx, cancel := context.WithCancel(m.Context)
-	valuesByKey, subscription := m.Redis.LoadListAndSubscribe(watchCtx, prefix, func(event hubredis.Event) {
+	valuesByKey, subscription := m.Watch.LoadListAndSubscribe(watchCtx, prefix, func(event hubwatch.Event) {
 		m.handleRegistrationEvent(prefix, event)
 	})
 	route = &_Route{
@@ -120,7 +120,7 @@ func (m *Manager) release(prefix string) {
 	delete(m.routesByPrefix, prefix)
 }
 
-func (m *Manager) handleRegistrationEvent(prefix string, event hubredis.Event) {
+func (m *Manager) handleRegistrationEvent(prefix string, event hubwatch.Event) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -130,7 +130,7 @@ func (m *Manager) handleRegistrationEvent(prefix string, event hubredis.Event) {
 	}
 
 	switch event.Kind {
-	case hubredis.EventKindDelete:
+	case hubwatch.EventKindDelete:
 		delete(route.registrationsByKey, event.Key)
 	default:
 		registration, ok := parseRegistration(event.Key, event.Value, route.registrationType)

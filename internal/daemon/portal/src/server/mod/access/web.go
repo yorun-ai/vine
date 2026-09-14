@@ -6,13 +6,13 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 )
 
 type WebOperation struct {
 	Auther
 
-	ActorVia redised.PortalActorVia
+	ActorVia watched.PortalActorVia
 }
 
 func (o *WebOperation) Auth() bool {

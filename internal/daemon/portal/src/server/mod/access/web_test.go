@@ -13,7 +13,7 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 )
 
 func TestAuthWebUsesAnonymousActorWithoutAuthorization(t *testing.T) {
@@ -22,7 +22,7 @@ func TestAuthWebUsesAnonymousActorWithoutAuthorization(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/ping", nil)
 	setTestWebRequestHeaders(t, request)
 
-	ok := access.AuthWeb(testWebAuthContext(t, redised.PortalActorVia{ActorSkelName: "missing.Actor"}, request, recorder))
+	ok := access.AuthWeb(testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "missing.Actor"}, request, recorder))
 
 	require.True(t, ok)
 	actor, err := meta.DecodeActorFromBase64(request.Header.Get(webspec.HeaderWebActor))
@@ -39,7 +39,7 @@ func TestAuthWebParsesAuthorization(t *testing.T) {
 	setTestWebRequestHeaders(t, request)
 	request.Header.Set(headerAuthorization, "Key1 token123, key2 dXNlcjpwd2Q=")
 
-	ok := access.AuthWeb(testWebAuthContext(t, redised.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	ok := access.AuthWeb(testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 
 	require.True(t, ok)
 	actor, err := meta.DecodeActorFromBase64(request.Header.Get(webspec.HeaderWebActor))
@@ -55,7 +55,7 @@ func TestAuthWebRejectsBadAuthorizationAsUnauthorized(t *testing.T) {
 	setTestWebRequestHeaders(t, request)
 	request.Header.Set(headerAuthorization, "Key1 token123, unknown value")
 
-	ok := access.AuthWeb(testWebAuthContext(t, redised.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	ok := access.AuthWeb(testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 
 	require.False(t, ok)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
@@ -70,7 +70,7 @@ func TestAuthWebMapsAuthServiceStatus(t *testing.T) {
 	setTestWebRequestHeaders(t, request)
 	request.Header.Set(headerAuthorization, "Key1 token123, key2 dXNlcjpwd2Q=")
 
-	ok := access.AuthWeb(testWebAuthContext(t, redised.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	ok := access.AuthWeb(testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 
 	require.False(t, ok)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
@@ -95,7 +95,7 @@ func TestAuthWebForwardsTimeoutToAuthService(t *testing.T) {
 	setTestWebRequestHeaders(t, request)
 	request.Header.Set(headerAuthorization, "Key1 token123, key2 dXNlcjpwd2Q=")
 
-	ok := access.AuthWeb(testWebAuthContext(t, redised.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	ok := access.AuthWeb(testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 
 	require.True(t, ok)
 }
@@ -109,7 +109,7 @@ func setTestWebRequestHeaders(t *testing.T, request *http.Request) {
 	request.Header.Set(webspec.HeaderWebInitiator, meta.EncodeInitiatorToBase64(initiator))
 }
 
-func testWebAuthContext(t *testing.T, actorVia redised.PortalActorVia, request *http.Request, response http.ResponseWriter) *WebOperation {
+func testWebAuthContext(t *testing.T, actorVia watched.PortalActorVia, request *http.Request, response http.ResponseWriter) *WebOperation {
 	t.Helper()
 
 	trace, err := webspec.DecodeTraceFromHeader(request.Header)

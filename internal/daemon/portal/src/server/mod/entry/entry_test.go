@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubredis"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/util/vcode"
@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/util/httputil"
@@ -39,7 +39,7 @@ func (s *_TestSite) Serve(ctx *spec.Context) {
 	s.remote = ctx.RemoteAddr
 }
 
-func (s *_TestSite) Update(config redised.PortalSite) bool {
+func (s *_TestSite) Update(config watched.PortalSite) bool {
 	return false
 }
 
@@ -233,22 +233,22 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
 			values := map[string]string{
-				redised.FormatPortalSiteKey("web"): vcode.MustMarshalJsonS(redised.PortalSite{
-					Name: "web", Type: "WEBGW", WebgwConfig: &redised.PortalWebgwConfig{WebName: "demo.Web"},
+				watched.FormatPortalSiteKey("web"): vcode.MustMarshalJsonS(watched.PortalSite{
+					Name: "web", Type: "WEBGW", WebgwConfig: &watched.PortalWebgwConfig{WebName: "demo.Web"},
 				}),
-				redised.FormatWebRegistrationKey("demo.Web", "demo", "instance"): vcode.MustMarshalJsonS(redised.WebRegistration{
+				watched.FormatWebRegistrationKey("demo.Web", "demo", "instance"): vcode.MustMarshalJsonS(watched.WebRegistration{
 					Endpoint: endpoint + "/web/proxy/in/instance/demo.Web", WebSkelName: "demo.Web", AppName: "demo", AppInstanceId: "instance",
 				}),
 			}
-			endpoints := &epmgr.Manager{Context: ctx, Redis: hubredis.NewTestClient(values)}
+			endpoints := &epmgr.Manager{Context: ctx, Watch: hubwatch.NewTestClient(values)}
 			endpoints.DIInit()
-			sites := &site.Manager{Context: ctx, Redis: hubredis.NewTestClient(values), Epmgr: endpoints, Access: new(access.Access)}
+			sites := &site.Manager{Context: ctx, Watch: hubwatch.NewTestClient(values), Epmgr: endpoints, Access: new(access.Access)}
 			sites.DIInit()
 			entry := newEntry(spec.SchemeHTTP, 80, nil)
 			public := httptest.NewServer(entry)
 			t.Cleanup(public.Close)
 			for _, targetPath := range []string{"/internal", "/v2", ""} {
-				rule, ok := newRule(redised.PortalRule{Name: "rule", MatchScheme: "http", MatchPathPrefix: "/api", RoutePathPrefix: targetPath, RouteType: "SITE", RouteSiteName: "web"}, sites)
+				rule, ok := newRule(watched.PortalRule{Name: "rule", MatchScheme: "http", MatchPathPrefix: "/api", RoutePathPrefix: targetPath, RouteType: "SITE", RouteSiteName: "web"}, sites)
 				require.True(t, ok)
 				entry.SetOrUpdateRules([]*_Rule{rule})
 				request, err := http.NewRequest(http.MethodPost, public.URL+"/api/a%2Fb/?q=%2F", strings.NewReader("payload"))
@@ -268,7 +268,7 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 }
 
 func TestEntryTargetPathDispatchesWithinRpcGateway(t *testing.T) {
-	rule, ok := newRule(redised.PortalRule{Name: "rpc", MatchScheme: "http", MatchPathPrefix: "/api", RoutePathPrefix: "/inspect", RouteType: "SITE", RouteSiteName: "rpc"}, newTestSiteManager("rpc"))
+	rule, ok := newRule(watched.PortalRule{Name: "rpc", MatchScheme: "http", MatchPathPrefix: "/api", RoutePathPrefix: "/inspect", RouteType: "SITE", RouteSiteName: "rpc"}, newTestSiteManager("rpc"))
 	require.True(t, ok)
 	entry := newEntry(spec.SchemeHTTP, 80, nil)
 	entry.SetOrUpdateRules([]*_Rule{rule})

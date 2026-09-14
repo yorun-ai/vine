@@ -22,9 +22,9 @@ import (
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/skel"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
@@ -39,7 +39,7 @@ import (
 func TestSeederLoadsYAMLIntoSQLiteRepos(t *testing.T) {
 	for _, inline := range []bool{false, true} {
 		t.Run(fmt.Sprintf("inline=%t", inline), func(t *testing.T) {
-			configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, redisServer := newTestSeederRepos(t)
+			configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, watchServer := newTestSeederRepos(t)
 			seedPath := filepath.Join(t.TempDir(), "hub.yaml")
 			seedYAML := `
 appConfigs:
@@ -115,19 +115,19 @@ portalCerts:
 			assert.Equal(t, []string{"admin.local"}, cert.Domains)
 			assert.Equal(t, time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), cert.ValidFrom)
 
-			_, ok = redisServer.Get(redised.FormatPortalRuleKey("admin"))
+			_, ok = watchServer.Get(watched.FormatPortalRuleKey("admin"))
 			assert.True(t, ok)
-			_, ok = redisServer.Get(redised.FormatPortalSiteKey("admin@demo.app"))
+			_, ok = watchServer.Get(watched.FormatPortalSiteKey("admin@demo.app"))
 			assert.True(t, ok)
-			_, ok = redisServer.Get(redised.FormatPortalCertKey("admin-cert"))
+			_, ok = watchServer.Get(watched.FormatPortalCertKey("admin-cert"))
 			assert.True(t, ok)
 			assert.True(t, metadataRepo.IsSeeded())
 		})
 	}
 }
 
-func testSyncer(redisServer *redisserver.Server) *syncer.Syncer {
-	target := &syncer.Syncer{RedisServer: redisServer}
+func testSyncer(watchServer *watchserver.Server) *syncer.Syncer {
+	target := &syncer.Syncer{WatchServer: watchServer}
 	target.DIInit()
 	return target
 }
@@ -571,7 +571,7 @@ func TestSeederAppliesExplicitDashboardURLToExistingDashboardRules(t *testing.T)
 	assert.Equal(t, "/admin", webRule.MatchPathPrefix)
 }
 
-func newTestSeederRepos(t *testing.T) (*repo.DBAppConfigRepo, *repo.DBPortalRuleRepo, *repo.DBPortalCertRepo, *repo.DBPortalSiteRepo, *repo.DBMetadataRepo, *redisserver.Server) {
+func newTestSeederRepos(t *testing.T) (*repo.DBAppConfigRepo, *repo.DBPortalRuleRepo, *repo.DBPortalCertRepo, *repo.DBPortalSiteRepo, *repo.DBMetadataRepo, *watchserver.Server) {
 	t.Helper()
 
 	gdb, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "hub.sqlite")), &gorm.Config{})
@@ -582,29 +582,29 @@ func newTestSeederRepos(t *testing.T) (*repo.DBAppConfigRepo, *repo.DBPortalRule
 	(&model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](gdb)}).InitSchema()
 	(&model.PortalSiteDao{Dao: rdb.NewDao[*model.PortalSite](gdb)}).InitSchema()
 
-	redisServer := redisserver.NewServerForTest()
-	t.Cleanup(redisServer.AfterAppStop)
+	watchServer := watchserver.NewServerForTest()
+	t.Cleanup(watchServer.AfterAppStop)
 
 	return &repo.DBAppConfigRepo{
 		Dao:    &model.AppConfigDao{Dao: rdb.NewDao[*model.AppConfig](gdb)},
-		Syncer: testSyncer(redisServer),
+		Syncer: testSyncer(watchServer),
 		Access: new(configaccess.Access),
 	}, &repo.DBPortalRuleRepo{
 		Dao:    &model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](gdb)},
-		Syncer: testSyncer(redisServer),
+		Syncer: testSyncer(watchServer),
 		Access: new(configaccess.Access),
 	}, &repo.DBPortalCertRepo{
 		Dao:    &model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](gdb)},
-		Syncer: testSyncer(redisServer),
+		Syncer: testSyncer(watchServer),
 		Access: new(configaccess.Access),
 	}, &repo.DBPortalSiteRepo{
 		Dao:        &model.PortalSiteDao{Dao: rdb.NewDao[*model.PortalSite](gdb)},
 		SchemaRepo: new(schema.MemorySchemaRepo),
-		Syncer:     testSyncer(redisServer),
+		Syncer:     testSyncer(watchServer),
 		Access:     new(configaccess.Access),
 	}, &repo.DBMetadataRepo{
 		Dao: &model.MetadataDao{Dao: rdb.NewDao[*model.Metadata](gdb)},
-	}, redisServer
+	}, watchServer
 }
 
 func TestSeederPreflightsAllRulesBeforeImporting(t *testing.T) {

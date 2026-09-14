@@ -42,7 +42,8 @@ func TestClientInitOptionUsesHubInfoNATSPort(t *testing.T) {
 		Flag: flags,
 		InfoServiceClient: &_TestInfoServiceClient{
 			info: hubskeled.Info{
-				NatsPort: 4222,
+				MqEmbedded: true,
+				MqNatsPort: 4222,
 			},
 		},
 	}
@@ -69,7 +70,7 @@ func TestClientInitOptionUsesHubInfoMQEndpointWhenNATSPortIsEmpty(t *testing.T) 
 		Flag: flags,
 		InfoServiceClient: &_TestInfoServiceClient{
 			info: hubskeled.Info{
-				MqEndpoint: "nats://10.0.0.8:4222",
+				MqNatsEndpoint: "nats://10.0.0.8:4222",
 			},
 		},
 	}

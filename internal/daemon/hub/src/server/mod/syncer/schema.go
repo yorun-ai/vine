@@ -1,7 +1,7 @@
 package syncer
 
 import (
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vcode"
 )
@@ -10,7 +10,7 @@ func (s *Syncer) SyncSchemas(domainViews []core.DomainSchemaView) {
 	s.schemaMutex.Lock()
 	defer s.schemaMutex.Unlock()
 
-	batch := s.RedisServer.NotifyBatch()
+	batch := s.WatchServer.NotifyBatch()
 	nextActorHashes := map[string]string{}
 	nextResourceHashes := map[string]string{}
 	nextServiceHashes := map[string]string{}
@@ -21,7 +21,7 @@ func (s *Syncer) SyncSchemas(domainViews []core.DomainSchemaView) {
 			}
 			actor := actorVersion.Schema
 			if oldHash, ok := s.schemaActorHashes[actor.SkelName]; !ok || oldHash != actor.Hash {
-				batch.Set(redised.FormatSchemaActorKey(actor.SkelName), vcode.MustMarshalJsonS(actor))
+				batch.Set(watched.FormatSchemaActorKey(actor.SkelName), vcode.MustMarshalJsonS(actor))
 			}
 			nextActorHashes[actor.SkelName] = actor.Hash
 		}
@@ -31,7 +31,7 @@ func (s *Syncer) SyncSchemas(domainViews []core.DomainSchemaView) {
 			}
 			resource := resourceVersion.Schema
 			if oldHash, ok := s.schemaResourceHashes[resource.SkelName]; !ok || oldHash != resource.Hash {
-				batch.Set(redised.FormatSchemaResourceKey(resource.SkelName), vcode.MustMarshalJsonS(resource))
+				batch.Set(watched.FormatSchemaResourceKey(resource.SkelName), vcode.MustMarshalJsonS(resource))
 			}
 			nextResourceHashes[resource.SkelName] = resource.Hash
 		}
@@ -44,24 +44,24 @@ func (s *Syncer) SyncSchemas(domainViews []core.DomainSchemaView) {
 				continue
 			}
 			if oldHash, ok := s.schemaServiceHashes[service.SkelName]; !ok || oldHash != service.Hash {
-				batch.Set(redised.FormatSchemaServiceKey(service.SkelName), vcode.MustMarshalJsonS(service))
+				batch.Set(watched.FormatSchemaServiceKey(service.SkelName), vcode.MustMarshalJsonS(service))
 			}
 			nextServiceHashes[service.SkelName] = service.Hash
 		}
 	}
 	for actorSkelName := range s.schemaActorHashes {
 		if _, ok := nextActorHashes[actorSkelName]; !ok {
-			batch.Delete(redised.FormatSchemaActorKey(actorSkelName))
+			batch.Delete(watched.FormatSchemaActorKey(actorSkelName))
 		}
 	}
 	for resourceSkelName := range s.schemaResourceHashes {
 		if _, ok := nextResourceHashes[resourceSkelName]; !ok {
-			batch.Delete(redised.FormatSchemaResourceKey(resourceSkelName))
+			batch.Delete(watched.FormatSchemaResourceKey(resourceSkelName))
 		}
 	}
 	for serviceSkelName := range s.schemaServiceHashes {
 		if _, ok := nextServiceHashes[serviceSkelName]; !ok {
-			batch.Delete(redised.FormatSchemaServiceKey(serviceSkelName))
+			batch.Delete(watched.FormatSchemaServiceKey(serviceSkelName))
 		}
 	}
 	batch.Notify()
@@ -81,14 +81,14 @@ func (s *Syncer) WriteSchemas(domainViews []core.DomainSchemaView) {
 				continue
 			}
 			actor := actorVersion.Schema
-			s.RedisServer.SetAndNotify(redised.FormatSchemaActorKey(actor.SkelName), vcode.MustMarshalJsonS(actor))
+			s.WatchServer.SetAndNotify(watched.FormatSchemaActorKey(actor.SkelName), vcode.MustMarshalJsonS(actor))
 		}
 		for _, resourceVersion := range view.Resources {
 			if !resourceVersion.Main {
 				continue
 			}
 			resource := resourceVersion.Schema
-			s.RedisServer.SetAndNotify(redised.FormatSchemaResourceKey(resource.SkelName), vcode.MustMarshalJsonS(resource))
+			s.WatchServer.SetAndNotify(watched.FormatSchemaResourceKey(resource.SkelName), vcode.MustMarshalJsonS(resource))
 		}
 		for _, serviceVersion := range view.Services {
 			if !serviceVersion.Main {
@@ -98,7 +98,7 @@ func (s *Syncer) WriteSchemas(domainViews []core.DomainSchemaView) {
 			if !service.ClientApi() {
 				continue
 			}
-			s.RedisServer.SetAndNotify(redised.FormatSchemaServiceKey(service.SkelName), vcode.MustMarshalJsonS(service))
+			s.WatchServer.SetAndNotify(watched.FormatSchemaServiceKey(service.SkelName), vcode.MustMarshalJsonS(service))
 		}
 	}
 }

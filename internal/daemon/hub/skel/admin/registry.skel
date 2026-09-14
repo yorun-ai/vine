@@ -105,7 +105,7 @@ api service AppStatusApiService {
 
     noauth
 
-    @desc("List application instance statuses currently stored in Redis")
+    @desc("List application instance statuses")
     method list {
         output list<AppStatusView>
     }

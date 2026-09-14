@@ -8,7 +8,7 @@ import (
 	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/internal/daemon"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubinfo"
-	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubredis"
+	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubwatch"
 	linknats "go.yorun.ai/vine/internal/daemon/link/src/server/comp/nats"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/impl"
@@ -51,7 +51,7 @@ func (a *LinkApp) DIInit() {
 
 func (*LinkApp) InitComponents(addComponent app.TypeAdder) {
 	addComponent(app.T[*hubinfo.HubInfo]())
-	addComponent(app.T[*hubredis.Client]())
+	addComponent(app.T[*hubwatch.Client]())
 	addComponent(app.T[*linknats.Client]())
 }
 

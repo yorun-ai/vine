@@ -10,7 +10,7 @@ import (
 	webinproc "go.yorun.ai/vine/internal/core/web/inproc"
 	"go.yorun.ai/vine/internal/daemon"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/seeder"
 	"go.yorun.ai/vine/util/vnet"
 )
@@ -68,7 +68,7 @@ var (
 	dashboardInprocPath  = hubapp.HubAdminInprocHostPath
 
 	dashboardRpcRegistrations = newDashboardRpcRegistrations()
-	dashboardWebRegistration  = redised.WebRegistration{
+	dashboardWebRegistration  = watched.WebRegistration{
 		ServerIdentity: daemon.HubIdentity,
 		WebSkelName:    seeder.DashboardWebCoreEntry.WebName,
 		AppName:        dashboardAppName,
@@ -77,10 +77,10 @@ var (
 	}
 )
 
-func newDashboardRpcRegistrations() map[string]redised.RpcServiceRegistration {
-	registrations := make(map[string]redised.RpcServiceRegistration, len(seeder.DashboardRpcServices))
+func newDashboardRpcRegistrations() map[string]watched.RpcServiceRegistration {
+	registrations := make(map[string]watched.RpcServiceRegistration, len(seeder.DashboardRpcServices))
 	for _, serviceName := range seeder.DashboardRpcServices {
-		registrations[serviceName] = redised.RpcServiceRegistration{
+		registrations[serviceName] = watched.RpcServiceRegistration{
 			ServerIdentity: daemon.HubIdentity,
 			ServiceName:    serviceName,
 			AppName:        dashboardAppName,

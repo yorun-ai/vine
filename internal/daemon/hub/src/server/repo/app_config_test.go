@@ -9,9 +9,9 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
 	"go.yorun.ai/vine/internal/infra/rdb"
@@ -39,7 +39,7 @@ func TestDBAppConfigRepoListItems(t *testing.T) {
 }
 
 func TestDBAppConfigRepoSaveItemCreate(t *testing.T) {
-	_, repo, redisServer := newTestDBAppConfigRepo(t)
+	_, repo, watchServer := newTestDBAppConfigRepo(t)
 
 	item := testAppConfig("db.main", `{"connUrl":"postgres://demo"}`, 1)
 	repo.SaveItem(item)
@@ -50,10 +50,10 @@ func TestDBAppConfigRepoSaveItemCreate(t *testing.T) {
 	assert.Equal(t, `{"connUrl":"postgres://demo"}`, item.Value)
 	assert.Equal(t, 1, item.Version)
 
-	key := redised.FormatConfigKey("db.main")
-	raw, ok := redisServer.Get(key)
+	key := watched.FormatConfigKey("db.main")
+	raw, ok := watchServer.Get(key)
 	require.True(t, ok)
-	assert.Equal(t, &redised.ConfigValue{Name: "db.main", Value: []byte(`{"connUrl":"postgres://demo"}`)}, vcode.MustUnmarshalJsonS[*redised.ConfigValue](raw))
+	assert.Equal(t, &watched.ConfigValue{Name: "db.main", Value: []byte(`{"connUrl":"postgres://demo"}`)}, vcode.MustUnmarshalJsonS[*watched.ConfigValue](raw))
 }
 
 func TestDBAppConfigRepoSaveItemDuplicateNameWithoutId(t *testing.T) {
@@ -67,7 +67,7 @@ func TestDBAppConfigRepoSaveItemDuplicateNameWithoutId(t *testing.T) {
 }
 
 func TestDBAppConfigRepoSaveItemUpdate(t *testing.T) {
-	_, repo, redisServer := newTestDBAppConfigRepo(t)
+	_, repo, watchServer := newTestDBAppConfigRepo(t)
 
 	item := testAppConfig("feature.flag", `{"enabled":true}`, 1)
 	repo.SaveItem(item)
@@ -80,14 +80,14 @@ func TestDBAppConfigRepoSaveItemUpdate(t *testing.T) {
 	assert.Equal(t, `{"enabled":false}`, item.Value)
 	assert.Equal(t, 2, item.Version)
 
-	key := redised.FormatConfigKey("feature.flag")
-	raw, ok := redisServer.Get(key)
+	key := watched.FormatConfigKey("feature.flag")
+	raw, ok := watchServer.Get(key)
 	require.True(t, ok)
-	assert.Equal(t, &redised.ConfigValue{Name: "feature.flag", Value: []byte(`{"enabled":false}`)}, vcode.MustUnmarshalJsonS[*redised.ConfigValue](raw))
+	assert.Equal(t, &watched.ConfigValue{Name: "feature.flag", Value: []byte(`{"enabled":false}`)}, vcode.MustUnmarshalJsonS[*watched.ConfigValue](raw))
 }
 
 func TestDBAppConfigRepoRemoveItem(t *testing.T) {
-	_, repo, redisServer := newTestDBAppConfigRepo(t)
+	_, repo, watchServer := newTestDBAppConfigRepo(t)
 	item := testAppConfig("feature.flag", `{"enabled":true}`, 1)
 	repo.SaveItem(item)
 	id := item.Id
@@ -99,32 +99,32 @@ func TestDBAppConfigRepoRemoveItem(t *testing.T) {
 	assert.Nil(t, item)
 	assert.Empty(t, repo.ListItems())
 
-	key := redised.FormatConfigKey("feature.flag")
-	_, ok = redisServer.Get(key)
+	key := watched.FormatConfigKey("feature.flag")
+	_, ok = watchServer.Get(key)
 	assert.False(t, ok)
 	assert.False(t, repo.RemoveItem(id))
 }
 
 // Helpers
 
-func newTestDBAppConfigRepo(t *testing.T) (*gorm.DB, *DBAppConfigRepo, *redisserver.Server) {
+func newTestDBAppConfigRepo(t *testing.T) (*gorm.DB, *DBAppConfigRepo, *watchserver.Server) {
 	t.Helper()
 
 	db := sharedTestConfigDB(t)
-	redisServer := redisserver.NewServerForTest()
-	t.Cleanup(redisServer.AfterAppStop)
+	watchServer := watchserver.NewServerForTest()
+	t.Cleanup(watchServer.AfterAppStop)
 
 	repo := &DBAppConfigRepo{
 		Dao: &model.AppConfigDao{
 			Dao: rdb.NewDao[*model.AppConfig](db),
 		},
-		Syncer: testSyncer(redisServer),
+		Syncer: testSyncer(watchServer),
 		Access: new(configaccess.Access),
 	}
 	repo.Dao.InitSchema()
 	require.NoError(t, db.Exec("DELETE FROM app_config").Error)
 
-	return db, repo, redisServer
+	return db, repo, watchServer
 }
 
 func sharedTestConfigDB(t *testing.T) *gorm.DB {

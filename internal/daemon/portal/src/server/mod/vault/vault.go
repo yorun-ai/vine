@@ -12,10 +12,10 @@ import (
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/mtls"
-	hubapiredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/cacheutil"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubredis"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/util/vcode"
 	"go.yorun.ai/vine/util/vpre"
 )
@@ -29,7 +29,7 @@ var vaultLogger = logger.New("daemon:portal:vault")
 type Vault struct {
 	app.BaseModule
 
-	Redis    *hubredis.Client `inject:""`
+	Watch    *hubwatch.Client `inject:""`
 	Context  context.Context  `inject:""`
 	Identity *mtls.Identity   `inject:""`
 
@@ -51,7 +51,7 @@ func (v *Vault) DIInit() {
 	v.certs = map[string]*_Certificate{}
 	v.namesByKey = map[string]string{}
 	v.rebuildIndexLocked()
-	valuesByKey, subscription := v.Redis.LoadListAndSubscribe(v.Context, redised.FormatPortalCertPrefix(), v.handleCertEvent)
+	valuesByKey, subscription := v.Watch.LoadListAndSubscribe(v.Context, watched.FormatPortalCertPrefix(), v.handleCertEvent)
 	v.loadCerts(valuesByKey, subscription)
 }
 
@@ -111,12 +111,12 @@ func (v *Vault) getCertificateAt(hello *tls.ClientHelloInfo, now time.Time) (*tl
 	return temporaryWebCerts.Certificate(host)
 }
 
-func (v *Vault) loadCerts(valuesByKey map[string]string, subscription hubapiredis.Subscription) {
+func (v *Vault) loadCerts(valuesByKey map[string]string, subscription hubapiwatch.Subscription) {
 	v.mutex.Lock()
 	defer v.mutex.Unlock()
 
 	for key, value := range valuesByKey {
-		cert := vcode.MustUnmarshalJsonS[*redised.PortalCert](value)
+		cert := vcode.MustUnmarshalJsonS[*watched.PortalCert](value)
 		v.setCertLocked(cert)
 		v.namesByKey[key] = cert.Name
 	}
@@ -124,26 +124,26 @@ func (v *Vault) loadCerts(valuesByKey map[string]string, subscription hubapiredi
 	subscription.Start()
 }
 
-func (v *Vault) handleCertEvent(event hubapiredis.Event) {
+func (v *Vault) handleCertEvent(event hubapiwatch.Event) {
 	v.mutex.Lock()
 	defer v.mutex.Unlock()
 
 	name := v.namesByKey[event.Key]
-	if event.Kind == hubapiredis.EventKindDelete {
+	if event.Kind == hubapiwatch.EventKindDelete {
 		delete(v.certs, name)
 		delete(v.namesByKey, event.Key)
 		v.rebuildIndexLocked()
 		return
 	}
 
-	cert := vcode.MustUnmarshalJsonS[*redised.PortalCert](event.Value)
+	cert := vcode.MustUnmarshalJsonS[*watched.PortalCert](event.Value)
 	delete(v.certs, name)
 	v.setCertLocked(cert)
 	v.namesByKey[event.Key] = cert.Name
 	v.rebuildIndexLocked()
 }
 
-func (v *Vault) setCertLocked(cert *redised.PortalCert) {
+func (v *Vault) setCertLocked(cert *watched.PortalCert) {
 	parsed, err := newCertificate(cert)
 	if err != nil {
 		vaultLogger.Error("vine.portal entry cert ignored", "name", cert.Name, "error", err)

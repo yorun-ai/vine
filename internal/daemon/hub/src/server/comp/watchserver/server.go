@@ -1,0 +1,134 @@
+package watchserver
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"math"
+	"net"
+	"time"
+
+	"go.yorun.ai/vine/internal/app"
+	"go.yorun.ai/vine/internal/core/mtls"
+	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver/embedded"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
+	"go.yorun.ai/vine/util/vpre"
+)
+
+type Server struct {
+	app.BaseComponent
+
+	Context    context.Context         `inject:""`
+	Option     *flag.Flag              `inject:""`
+	InprocFlag *app.InternalInprocFlag `inject:""`
+	Identity   *mtls.Identity          `inject:""`
+
+	store       _WatchStore
+	hubPassword string
+}
+
+func (s *Server) DIInit() {
+	s.hubPassword = newHubPassword()
+	s.store = embedded.NewStore(s.Option.WatchListen, s.InprocFlag.Enabled, s.hubPassword, s.Identity)
+	s.store.Start()
+	s.store.InitRevision()
+	if s.InprocFlag.Enabled {
+		hubwatch.SetInprocServer(s)
+	}
+}
+
+func (s *Server) AfterAppStop() {
+	if hubwatch.InprocServer() == s {
+		hubwatch.SetInprocServer(nil)
+	}
+	s.store.Stop()
+	s.hubPassword = ""
+}
+
+// newHubPassword creates a process-local credential for the privileged Hub
+// Redis user. Generating it at startup is temporary: once Redis credentials are
+// supplied by deployment configuration, Hub should use that configured secret
+// so credentials can be rotated and managed consistently across processes.
+func newHubPassword() string {
+	random := make([]byte, 32)
+	_, err := rand.Read(random)
+	vpre.CheckNilError(err, "generate watch server password failed")
+	return base64.RawURLEncoding.EncodeToString(random)
+}
+
+func (s *Server) DialInproc(ctx context.Context) (net.Conn, error) {
+	store, ok := s.store.(*embedded.Store)
+	vpre.Check(ok, "watch inproc and embedded protocol modes require embedded store")
+	return store.DialInproc(ctx)
+}
+
+func (s *Server) Set(key string, value string) {
+	s.store.Set(key, value)
+}
+
+func (s *Server) Get(key string) (string, bool) {
+	return s.store.Get(key)
+}
+
+func (s *Server) TTL(key string) int {
+	return s.store.TTL(key)
+}
+
+func (s *Server) Scan(pattern string) []string {
+	return s.store.Scan(pattern)
+}
+
+func (s *Server) Incr(key string) (int64, error) {
+	return s.store.Incr(key)
+}
+
+func (s *Server) Del(key string) bool {
+	return s.store.Del(key)
+}
+
+func (s *Server) Expire(key string, seconds int) bool {
+	return s.store.Expire(key, seconds)
+}
+
+func (s *Server) Publish(channel string, message string) int {
+	return s.store.Publish(channel, message)
+}
+
+func (s *Server) SetEphemeral(key string, value string, ttl time.Duration) {
+	s.store.SetWithTTL(key, value, ttl)
+}
+
+func (s *Server) SetAndNotify(key string, value string) {
+	s.store.SetAndNotify(key, value)
+}
+
+func (s *Server) SetEphemeralAndNotify(key string, value string, ttl time.Duration) {
+	s.store.SetWithTTLAndNotify(key, value, ttl)
+}
+
+func (s *Server) DeleteAndNotify(key string) {
+	s.store.DeleteAndNotify(key)
+}
+
+func (s *Server) applyAndNotify(operations []hubwatch.NotifyOperation) {
+	s.store.ApplyAndNotify(operations)
+}
+
+// KeepEphemeral refreshes the TTL for an existing ephemeral key. It returns false when the key is missing.
+func (s *Server) KeepEphemeral(key string, ttl time.Duration) bool {
+	return s.store.Keep(key, ttl)
+}
+
+func (s *Server) KeepLease(key string, member string, ttl time.Duration) {
+	score := float64(timeNow().Add(ttl).UnixMilli())
+	s.store.ZAdd(key, score, member)
+}
+
+func (s *Server) PopExpiredLeases(key string, limit int) []string {
+	return s.store.ZPopRangeByScore(key, math.Inf(-1), float64(timeNow().UnixMilli()), limit)
+}
+
+func (s *Server) RemoveLease(key string, member string) bool {
+	return s.store.ZRem(key, member)
+}

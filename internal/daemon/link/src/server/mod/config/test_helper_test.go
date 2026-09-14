@@ -3,27 +3,27 @@ package config
 import (
 	"context"
 
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
 	"go.yorun.ai/vine/internal/core/skel"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
-	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubredis"
+	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 	"go.yorun.ai/vine/util/vcode"
 )
 
-func newTestReader(configValuesByName map[string]redised.ConfigValue) *Reader {
+func newTestReader(configValuesByName map[string]watched.ConfigValue) *Reader {
 	valuesByKey := map[string]string{}
 	for key, value := range configValuesByName {
-		valuesByKey[redised.FormatConfigKey(key)] = marshalTestConfigValue(key, string(value.Value))
+		valuesByKey[watched.FormatConfigKey(key)] = marshalTestConfigValue(key, string(value.Value))
 	}
 	reader := &Reader{
 		Context:   context.Background(),
-		Client:    hubredis.NewClientForTest(valuesByKey),
+		Client:    hubwatch.NewClientForTest(valuesByKey),
 		AppMinder: newTestMinder(),
 	}
 	reader.DIInit()
@@ -31,7 +31,7 @@ func newTestReader(configValuesByName map[string]redised.ConfigValue) *Reader {
 }
 
 func marshalTestConfigValue(name string, value string) string {
-	return vcode.MustMarshalJsonS(redised.ConfigValue{
+	return vcode.MustMarshalJsonS(watched.ConfigValue{
 		Name:  name,
 		Value: []byte(value),
 	})

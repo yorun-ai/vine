@@ -98,12 +98,12 @@ for scope in "$@"; do
       patterns+=(
         ./internal/daemon/hub/...
         ./internal/daemon/link/src/server/comp/hubinfo
-        ./internal/daemon/link/src/server/comp/hubredis
+        ./internal/daemon/link/src/server/comp/hubwatch
         ./internal/daemon/link/src/server/mod/config
         ./internal/daemon/link/src/server/mod/minder
         ./internal/daemon/link/src/server/mod/rpcproxy
         ./internal/daemon/portal/src/server/comp/hubinfo
-        ./internal/daemon/portal/src/server/comp/hubredis
+        ./internal/daemon/portal/src/server/comp/hubwatch
         ./internal/daemon/portal/src/server/mod/access
         ./internal/daemon/portal/src/server/mod/epmgr
         ./internal/daemon/portal/src/server/mod/site/...

@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubredis"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
@@ -17,12 +17,12 @@ import (
 
 func TestManagerReconcileEntriesBindsPortAndRules(t *testing.T) {
 	manager := &Manager{
-		entryRulesByName: map[string]redised.PortalRule{},
+		entryRulesByName: map[string]watched.PortalRule{},
 		entriesByKey:     map[_Key]*_Entry{},
 		SiteManager:      newTestSiteManager("admin@demo.app", "home@demo.app"),
 	}
 
-	manager.entryRulesByName["admin"] = redised.PortalRule{
+	manager.entryRulesByName["admin"] = watched.PortalRule{
 		Name:            "admin",
 		MatchScheme:     string(spec.SchemeHTTPS),
 		MatchHost:       "demo.local",
@@ -31,7 +31,7 @@ func TestManagerReconcileEntriesBindsPortAndRules(t *testing.T) {
 		RouteType:       "SITE",
 		RouteSiteName:   "admin@demo.app",
 	}
-	manager.entryRulesByName["home"] = redised.PortalRule{
+	manager.entryRulesByName["home"] = watched.PortalRule{
 		Name:            "home",
 		MatchScheme:     string(spec.SchemeHTTPS),
 		MatchHost:       "demo.local",
@@ -40,7 +40,7 @@ func TestManagerReconcileEntriesBindsPortAndRules(t *testing.T) {
 		RouteType:       "SITE",
 		RouteSiteName:   "home@demo.app",
 	}
-	manager.entryRulesByName["redirect"] = redised.PortalRule{
+	manager.entryRulesByName["redirect"] = watched.PortalRule{
 		Name:                    "redirect",
 		MatchScheme:             string(spec.SchemeHTTP),
 		MatchHost:               "demo.local",
@@ -63,19 +63,19 @@ func TestManagerReconcileEntriesBindsPortAndRules(t *testing.T) {
 
 func TestManagerReconcileEntriesDeduplicatesBySchemeAndPort(t *testing.T) {
 	manager := &Manager{
-		entryRulesByName: map[string]redised.PortalRule{},
+		entryRulesByName: map[string]watched.PortalRule{},
 		entriesByKey:     map[_Key]*_Entry{},
 		SiteManager:      newTestSiteManager("admin@demo.app", "home@demo.app"),
 	}
 
-	manager.entryRulesByName["admin"] = redised.PortalRule{
+	manager.entryRulesByName["admin"] = watched.PortalRule{
 		Name:          "admin",
 		MatchScheme:   string(spec.SchemeHTTPS),
 		MatchPort:     8443,
 		RouteType:     "SITE",
 		RouteSiteName: "admin@demo.app",
 	}
-	manager.entryRulesByName["home"] = redised.PortalRule{
+	manager.entryRulesByName["home"] = watched.PortalRule{
 		Name:          "home",
 		MatchScheme:   string(spec.SchemeHTTP),
 		MatchPort:     8443,
@@ -96,14 +96,14 @@ func TestManagerReconcileEntriesUpdatesExistingPortalRules(t *testing.T) {
 	existing := newEntry(spec.SchemeHTTPS, 8443, nil)
 	existing.SetOrUpdateRules([]*_Rule{{name: "old"}})
 	manager := &Manager{
-		entryRulesByName: map[string]redised.PortalRule{},
+		entryRulesByName: map[string]watched.PortalRule{},
 		entriesByKey: map[_Key]*_Entry{
 			{scheme: spec.SchemeHTTPS, port: 8443}: existing,
 		},
 		SiteManager: newTestSiteManager("admin@demo.app"),
 	}
 
-	manager.entryRulesByName["admin"] = redised.PortalRule{
+	manager.entryRulesByName["admin"] = watched.PortalRule{
 		Name:          "admin",
 		MatchScheme:   string(spec.SchemeHTTPS),
 		MatchPort:     8443,
@@ -131,7 +131,7 @@ func TestManagerAfterAppStartStartsEntriesCreatedBeforeStart(t *testing.T) {
 
 	existing := newEntry(spec.SchemeHTTP, 8080, nil)
 	manager := &Manager{
-		entryRulesByName: map[string]redised.PortalRule{
+		entryRulesByName: map[string]watched.PortalRule{
 			"admin": {
 				Name:          "admin",
 				MatchScheme:   string(spec.SchemeHTTP),
@@ -155,23 +155,23 @@ func TestManagerAfterAppStartStartsEntriesCreatedBeforeStart(t *testing.T) {
 func newTestSiteManager(names ...string) *site.Manager {
 	valuesByKey := map[string]string{}
 	for _, name := range names {
-		valuesByKey[redised.FormatPortalSiteKey(name)] = vcode.MustMarshalJsonS(redised.PortalSite{
+		valuesByKey[watched.FormatPortalSiteKey(name)] = vcode.MustMarshalJsonS(watched.PortalSite{
 			Name: name,
 			Type: "RPCGW",
-			RpcgwConfig: &redised.PortalRpcgwConfig{
-				Services: []redised.PortalRpcgwService{{SkelName: "demo.UserService"}},
+			RpcgwConfig: &watched.PortalRpcgwConfig{
+				Services: []watched.PortalRpcgwService{{SkelName: "demo.UserService"}},
 			},
 		})
 	}
 	epmgrManager := &epmgr.Manager{
 		Context: context.Background(),
-		Redis:   hubredis.NewTestClient(valuesByKey),
+		Watch:   hubwatch.NewTestClient(valuesByKey),
 	}
 	epmgrManager.DIInit()
 	manager := &site.Manager{
 		App:     meta.MustNewApp("vine.portal", "0.0.0", "123e4567-e89b-12d3-a456-426614174099"),
 		Context: context.Background(),
-		Redis:   hubredis.NewTestClient(valuesByKey),
+		Watch:   hubwatch.NewTestClient(valuesByKey),
 		Epmgr:   epmgrManager,
 	}
 	manager.DIInit()

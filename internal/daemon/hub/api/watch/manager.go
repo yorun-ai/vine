@@ -1,0 +1,85 @@
+package watch
+
+import (
+	"context"
+	"strings"
+
+	"github.com/redis/go-redis/v9"
+	"go.yorun.ai/vine/internal/app"
+	"go.yorun.ai/vine/util/vpre"
+)
+
+// ClientManager configures and closes a Hub Watch client.
+type ClientManager struct {
+	app.BaseComponentManager
+
+	Context context.Context `inject:""`
+
+	client app.ManagedComponent
+	option *Option
+}
+
+func (m *ClientManager) InitComponent(component app.ManagedComponent) {
+	m.client = component
+	m.option = &Option{}
+
+	spec := component.(ClientSpec)
+	spec.InitOption(m.option)
+
+	client := component.(_RedisClientSetter)
+	redisOptions := &redis.Options{
+		Protocol:        2,
+		DisableIdentity: true,
+		Username:        m.option.Username,
+		Password:        m.option.Password,
+		TLSConfig:       m.option.TLSConfig,
+	}
+	if m.option.Username != "" && m.option.Password == "" {
+		// go-redis omits HELLO AUTH when the password is empty. Link and Portal
+		// temporarily use empty passwords, so authenticate each newly opened
+		// connection explicitly. OnConnect is also used for PubSub and replacement
+		// pool connections, preventing reconnects from silently becoming anonymous.
+		username := m.option.Username
+		redisOptions.OnConnect = func(ctx context.Context, conn *redis.Conn) error {
+			return conn.AuthACL(ctx, username, "").Err()
+		}
+	}
+	if m.option.InprocMode {
+		vpre.CheckNotNil(InprocServer(), "inproc watch server missing")
+		redisOptions.Addr = WatchInprocEndpoint
+		redisOptions.Dialer = DialInproc
+		client.setRedisClient(context.Background(), newRedisClient(redisOptions))
+		return
+	}
+
+	vpre.CheckNotEmpty(m.option.Endpoint, "watch endpoint is empty")
+	redisOptions.Addr = redisAddr(m.option.Endpoint)
+	client.setRedisClient(m.Context, newRedisClient(redisOptions))
+}
+
+func (m *ClientManager) Component() app.ManagedComponent {
+	return m.client
+}
+
+func (m *ClientManager) AfterAppStop() {
+	if client, ok := m.client.(interface{ closeRedisClient() }); ok {
+		client.closeRedisClient()
+	}
+}
+
+func (c *Client) closeRedisClient() {
+	c.Close()
+}
+
+var newRedisClient = func(opt *redis.Options) *redis.Client {
+	return redis.NewClient(opt)
+}
+
+func redisAddr(endpoint string) string {
+	if !strings.Contains(endpoint, "://") {
+		return endpoint
+	}
+	parts := strings.SplitN(endpoint, "://", 2)
+	vpre.Check(len(parts) == 2 && parts[1] != "", "watch endpoint host is empty")
+	return parts[1]
+}

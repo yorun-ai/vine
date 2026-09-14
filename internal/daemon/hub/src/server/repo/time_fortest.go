@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 )
 
 func setTimeNowForTest(t *testing.T, now func() time.Time) {
@@ -14,5 +14,5 @@ func setTimeNowForTest(t *testing.T, now func() time.Time) {
 	t.Cleanup(func() {
 		timeNow = old
 	})
-	redisserver.SetTimeNowForTest(t, now)
+	watchserver.SetTimeNowForTest(t, now)
 }

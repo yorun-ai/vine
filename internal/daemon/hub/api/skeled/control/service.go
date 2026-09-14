@@ -25,7 +25,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeBoth,
 		Name:              "InfoService",
 		SkelName:          "vine.hub.control.InfoService",
-		Hash:              "0d4b717f",
+		Hash:              "8d063434",
 		ServerType:        reflect.TypeFor[InfoServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultInfoServiceServer](),
 		ClientType:        reflect.TypeFor[InfoServiceClient](),

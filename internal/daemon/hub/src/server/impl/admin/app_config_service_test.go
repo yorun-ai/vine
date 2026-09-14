@@ -311,8 +311,8 @@ func TestAppConfigServiceListMatchesConfigSchemaByFullSkelName(t *testing.T) {
 			AppConfigRepo: &_AppConfigServiceAppConfigRepo{
 				items: []*core.AppConfig{{
 					Id:      7,
-					Name:    "lca.core.RedisConfig",
-					Value:   `{"endpoint":"redis://redis.example.com:6379/0"}`,
+					Name:    "demo.alpha.ClientConfig",
+					Value:   `{"endpoint":"https://api.example.com"}`,
 					Version: 1,
 				}},
 			},
@@ -320,8 +320,8 @@ func TestAppConfigServiceListMatchesConfigSchemaByFullSkelName(t *testing.T) {
 		SchemaRepo: &_AppConfigServiceSchemaRepo{
 			configSchemas: []*skel.ConfigSchema{
 				{
-					Name:      "RedisConfig",
-					SkelName:  "uic.RedisConfig",
+					Name:      "ClientConfig",
+					SkelName:  "demo.beta.ClientConfig",
 					Lifecycle: "ETERNAL",
 					Members: []*skel.MemberSchema{{
 						Name: "addr",
@@ -332,8 +332,8 @@ func TestAppConfigServiceListMatchesConfigSchemaByFullSkelName(t *testing.T) {
 					}},
 				},
 				{
-					Name:      "RedisConfig",
-					SkelName:  "lca.core.RedisConfig",
+					Name:      "ClientConfig",
+					SkelName:  "demo.alpha.ClientConfig",
 					Lifecycle: "ETERNAL",
 					Members: []*skel.MemberSchema{{
 						Name: "endpoint",
@@ -350,14 +350,14 @@ func TestAppConfigServiceListMatchesConfigSchemaByFullSkelName(t *testing.T) {
 	items := service.List()
 
 	require.Len(t, items, 2)
-	config := findAppConfigItemForTest(items, "lca.core.RedisConfig")
+	config := findAppConfigItemForTest(items, "demo.alpha.ClientConfig")
 	require.NotNil(t, config)
 	assert.Equal(t, "NORMAL", config.Status)
 	require.NotNil(t, config.Schema)
-	assert.Equal(t, "lca.core.RedisConfig", config.Schema.SkelName)
+	assert.Equal(t, "demo.alpha.ClientConfig", config.Schema.SkelName)
 	require.Len(t, config.Schema.Fields, 1)
 	assert.Equal(t, "endpoint", config.Schema.Fields[0].Name)
-	unconfigured := findAppConfigItemForTest(items, "uic.RedisConfig")
+	unconfigured := findAppConfigItemForTest(items, "demo.beta.ClientConfig")
 	require.NotNil(t, unconfigured)
 	assert.Equal(t, "UNCONFIGURED", unconfigured.Status)
 }
@@ -368,16 +368,16 @@ func TestAppConfigServiceListDoesNotMatchConfigSchemaByShortName(t *testing.T) {
 			AppConfigRepo: &_AppConfigServiceAppConfigRepo{
 				items: []*core.AppConfig{{
 					Id:      7,
-					Name:    "RedisConfig",
-					Value:   `{"endpoint":"redis://localhost:6379/0"}`,
+					Name:    "ClientConfig",
+					Value:   `{"endpoint":"http://localhost:8080"}`,
 					Version: 1,
 				}},
 			},
 		},
 		SchemaRepo: &_AppConfigServiceSchemaRepo{
 			configSchemas: []*skel.ConfigSchema{{
-				Name:      "RedisConfig",
-				SkelName:  "lca.core.RedisConfig",
+				Name:      "ClientConfig",
+				SkelName:  "demo.alpha.ClientConfig",
 				Lifecycle: "ETERNAL",
 				Members: []*skel.MemberSchema{{
 					Name: "endpoint",
@@ -393,11 +393,11 @@ func TestAppConfigServiceListDoesNotMatchConfigSchemaByShortName(t *testing.T) {
 	items := service.List()
 
 	require.Len(t, items, 2)
-	shortConfig := findAppConfigItemForTest(items, "RedisConfig")
+	shortConfig := findAppConfigItemForTest(items, "ClientConfig")
 	require.NotNil(t, shortConfig)
 	assert.Equal(t, "UNUSED", shortConfig.Status)
 	assert.Nil(t, shortConfig.Schema)
-	fullConfig := findAppConfigItemForTest(items, "lca.core.RedisConfig")
+	fullConfig := findAppConfigItemForTest(items, "demo.alpha.ClientConfig")
 	require.NotNil(t, fullConfig)
 	assert.Equal(t, "UNCONFIGURED", fullConfig.Status)
 }

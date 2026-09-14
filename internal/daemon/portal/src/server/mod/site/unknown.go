@@ -3,7 +3,7 @@ package site
 import (
 	"net/http"
 
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 )
 
@@ -24,7 +24,7 @@ func (s *_UnknownSite) Serve(ctx *spec.Context) {
 	http.Error(ctx.ResponseWriter, "portal site type is not supported: "+s.kind+" ("+s.name+")", http.StatusNotImplemented)
 }
 
-func (s *_UnknownSite) Update(config redised.PortalSite) bool {
+func (s *_UnknownSite) Update(config watched.PortalSite) bool {
 	return false
 }
 

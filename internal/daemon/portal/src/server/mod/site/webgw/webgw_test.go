@@ -16,8 +16,8 @@ import (
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/core/meta"
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	portalhubredis "go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubredis"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	portalhubwatch "go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
@@ -35,7 +35,7 @@ func TestWebGatewayForwardsToRegistrationEndpoint(t *testing.T) {
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
 	target := newTestWebGateway(map[string]string{
-		redised.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.WebRegistration{
+		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      ingressEndpoint + "/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
 			AppName:       "demo.app",
@@ -86,7 +86,7 @@ func TestWebGatewayForwardsAnonymousActorWithoutAuthorization(t *testing.T) {
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
 	target := newTestWebGateway(map[string]string{
-		redised.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.WebRegistration{
+		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      ingressEndpoint + "/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
 			AppName:       "demo.app",
@@ -112,7 +112,7 @@ func TestWebGatewayCreatesForwardTrace(t *testing.T) {
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
 	target := newTestWebGateway(map[string]string{
-		redised.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.WebRegistration{
+		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      ingressEndpoint + "/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
 			AppName:       "demo.app",
@@ -143,7 +143,7 @@ func TestWebGatewayAddsDefaultOptionsTimeoutBeforeForward(t *testing.T) {
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
 	target := newTestWebGateway(map[string]string{
-		redised.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.WebRegistration{
+		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      ingressEndpoint + "/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
 			AppName:       "demo.app",
@@ -233,7 +233,7 @@ func TestWebGatewayIgnoresClientCancelAfterRequestIsAccepted(t *testing.T) {
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
 	target := newTestWebGateway(map[string]string{
-		redised.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.WebRegistration{
+		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      ingressEndpoint + "/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
 			AppName:       "demo.app",
@@ -264,7 +264,7 @@ func TestWebGatewayForwardsRemainingOptionsTimeout(t *testing.T) {
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
 	target := newTestWebGateway(map[string]string{
-		redised.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.WebRegistration{
+		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      ingressEndpoint + "/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
 			AppName:       "demo.app",
@@ -307,7 +307,7 @@ func TestWebGatewayReturnsRequestTraceId(t *testing.T) {
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
 	target := newTestWebGateway(map[string]string{
-		redised.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.WebRegistration{
+		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      ingressEndpoint + "/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
 			AppName:       "demo.app",
@@ -330,7 +330,7 @@ func TestWebGatewayReturnsRequestTraceId(t *testing.T) {
 
 func TestWebGatewayReturnsGeneratedTraceIdWhenRequestTraceIsInvalid(t *testing.T) {
 	target := newTestWebGateway(map[string]string{
-		redised.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.WebRegistration{
+		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      "http://127.0.0.1:23001/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
 			AppName:       "demo.app",
@@ -361,7 +361,7 @@ func TestWebGatewayCompressesLargeTextResponse(t *testing.T) {
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
 	target := newTestWebGateway(map[string]string{
-		redised.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.WebRegistration{
+		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      ingressEndpoint + "/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
 			AppName:       "demo.app",
@@ -425,8 +425,8 @@ func TestWebGatewayDoesNotAllowOptionsForWildcardEntryOrigin(t *testing.T) {
 }
 
 func TestWebGatewayAllowsOptionsFromStrictAllowedOrigin(t *testing.T) {
-	target := newTestWebGatewayWithCors(nil, redised.PortalCors{
-		Mode: redised.PortalCorsModeStrict,
+	target := newTestWebGatewayWithCors(nil, watched.PortalCors{
+		Mode: watched.PortalCorsModeStrict,
 		AllowedOrigins: []string{
 			"https://console.example.com",
 		},
@@ -441,8 +441,8 @@ func TestWebGatewayAllowsOptionsFromStrictAllowedOrigin(t *testing.T) {
 }
 
 func TestWebGatewayDoesNotAllowOptionsWhenCorsDisabled(t *testing.T) {
-	target := newTestWebGatewayWithCors(nil, redised.PortalCors{
-		Mode: redised.PortalCorsModeDisabled,
+	target := newTestWebGatewayWithCors(nil, watched.PortalCors{
+		Mode: watched.PortalCorsModeDisabled,
 	})
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodOptions, "http://api.example.com/ping", nil)
@@ -455,7 +455,7 @@ func TestWebGatewayDoesNotAllowOptionsWhenCorsDisabled(t *testing.T) {
 
 func TestWebGatewayUpdateKeepsRegistrationWhenWebNameDoesNotChange(t *testing.T) {
 	target := newTestWebGateway(map[string]string{
-		redised.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.WebRegistration{
+		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      "http://127.0.0.1:23001/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
 			AppName:       "demo.app",
@@ -463,10 +463,10 @@ func TestWebGatewayUpdateKeepsRegistrationWhenWebNameDoesNotChange(t *testing.T)
 		}),
 	})
 
-	target.Update(redised.PortalSite{
+	target.Update(watched.PortalSite{
 		Name: "demo-web",
 		Type: "WEBGW",
-		WebgwConfig: &redised.PortalWebgwConfig{
+		WebgwConfig: &watched.PortalWebgwConfig{
 			WebName: "admin@demo.app",
 		},
 	})
@@ -478,13 +478,13 @@ func TestWebGatewayUpdateKeepsRegistrationWhenWebNameDoesNotChange(t *testing.T)
 
 func TestWebGatewayUpdateSwitchesWebName(t *testing.T) {
 	target := newTestWebGateway(map[string]string{
-		redised.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.WebRegistration{
+		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      "http://127.0.0.1:23001/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
 			AppName:       "demo.app",
 			AppInstanceId: "instance-1",
 		}),
-		redised.FormatWebRegistrationKey("home@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(redised.WebRegistration{
+		watched.FormatWebRegistrationKey("home@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      "http://127.0.0.1:23002/web/proxy/in/instance-1/home@demo.app",
 			WebSkelName:   "home@demo.app",
 			AppName:       "demo.app",
@@ -492,10 +492,10 @@ func TestWebGatewayUpdateSwitchesWebName(t *testing.T) {
 		}),
 	})
 
-	target.Update(redised.PortalSite{
+	target.Update(watched.PortalSite{
 		Name: "demo-web",
 		Type: "WEBGW",
-		WebgwConfig: &redised.PortalWebgwConfig{
+		WebgwConfig: &watched.PortalWebgwConfig{
 			WebName: "home@demo.app",
 		},
 	})
@@ -527,17 +527,17 @@ func testContextWithEntryOrigin(recorder http.ResponseWriter, request *http.Requ
 }
 
 func newTestWebGateway(valuesByKey map[string]string) *WebGateway {
-	return newTestWebGatewayWithCors(valuesByKey, redised.PortalCors{
-		Mode: redised.PortalCorsModeSameDomain,
+	return newTestWebGatewayWithCors(valuesByKey, watched.PortalCors{
+		Mode: watched.PortalCorsModeSameDomain,
 	})
 }
 
-func newTestWebGatewayWithCors(valuesByKey map[string]string, cors redised.PortalCors) *WebGateway {
-	return New(context.Background(), new(access.Access), newTestEpmgr(valuesByKey), redised.PortalSite{
+func newTestWebGatewayWithCors(valuesByKey map[string]string, cors watched.PortalCors) *WebGateway {
+	return New(context.Background(), new(access.Access), newTestEpmgr(valuesByKey), watched.PortalSite{
 		Name: "demo-web",
 		Type: "WEBGW",
 		Cors: cors,
-		WebgwConfig: &redised.PortalWebgwConfig{
+		WebgwConfig: &watched.PortalWebgwConfig{
 			WebName: "admin@demo.app",
 		},
 	})
@@ -546,7 +546,7 @@ func newTestWebGatewayWithCors(valuesByKey map[string]string, cors redised.Porta
 func newTestEpmgr(valuesByKey map[string]string) *epmgr.Manager {
 	manager := &epmgr.Manager{
 		Context: context.Background(),
-		Redis:   portalhubredis.NewTestClient(valuesByKey),
+		Watch:   portalhubwatch.NewTestClient(valuesByKey),
 	}
 	manager.DIInit()
 	return manager

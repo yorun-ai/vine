@@ -6,14 +6,14 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/mtls/mtlstest"
 	"go.yorun.ai/vine/internal/daemon"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 )
 
 func TestResolveOutboundTargetRejectsPlaintextWithMTLS(t *testing.T) {
 	callerApp := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")
 	remoteApp := mustMetaApp(t, "remote.app", "22222222-2222-2222-2222-222222222222")
-	proxy := newTestRpcProxy(t, newTestHubRedisClient(map[string][]redised.RpcServiceRegistration{
+	proxy := newTestRpcProxy(t, newTestHubWatchClient(map[string][]watched.RpcServiceRegistration{
 		"demo.service.UserService": {{
 			ServiceName:    "demo.service.UserService",
 			Endpoint:       "http://remote.invalid/rpc/proxy/in/" + remoteApp.InstanceId(),
@@ -42,7 +42,7 @@ func TestResolveOutboundTargetRoundRobin(t *testing.T) {
 	firstEndpoint := "http://first.invalid/rpc/proxy/in/" + firstApp.InstanceId()
 	secondEndpoint := "http://second.invalid/rpc/proxy/in/" + secondApp.InstanceId()
 
-	proxy := newTestRpcProxy(t, newTestHubRedisClient(map[string][]redised.RpcServiceRegistration{
+	proxy := newTestRpcProxy(t, newTestHubWatchClient(map[string][]watched.RpcServiceRegistration{
 		"demo.service.UserService": {
 			{
 				ServiceName:   "demo.service.UserService",
@@ -94,7 +94,7 @@ func TestOnDestroyCleansAppAndServiceState(t *testing.T) {
 	remoteApp := mustMetaApp(t, "remote.app", "22222222-2222-2222-2222-222222222222")
 	remoteEndpoint := "http://remote.invalid/rpc/proxy/in/" + remoteApp.InstanceId()
 
-	proxy := newTestRpcProxy(t, newTestHubRedisClient(map[string][]redised.RpcServiceRegistration{
+	proxy := newTestRpcProxy(t, newTestHubWatchClient(map[string][]watched.RpcServiceRegistration{
 		"demo.service.UserService": {{
 			ServiceName:   "demo.service.UserService",
 			Endpoint:      remoteEndpoint,
@@ -128,7 +128,7 @@ func TestOnDrainKeepsOutboundSourceState(t *testing.T) {
 	remoteApp := mustMetaApp(t, "remote.app", "22222222-2222-2222-2222-222222222222")
 	remoteEndpoint := "http://remote.invalid/rpc/proxy/in/" + remoteApp.InstanceId()
 
-	proxy := newTestRpcProxy(t, newTestHubRedisClient(map[string][]redised.RpcServiceRegistration{
+	proxy := newTestRpcProxy(t, newTestHubWatchClient(map[string][]watched.RpcServiceRegistration{
 		"demo.service.UserService": {{
 			ServiceName:   "demo.service.UserService",
 			Endpoint:      remoteEndpoint,
@@ -153,7 +153,7 @@ func TestOnDrainKeepsOutboundSourceState(t *testing.T) {
 func TestDestinationRoundRobin(t *testing.T) {
 	caller := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")
 	service := "demo.service.UserService"
-	proxy := newTestRpcProxy(t, newTestHubRedisClient(map[string][]redised.RpcServiceRegistration{
+	proxy := newTestRpcProxy(t, newTestHubWatchClient(map[string][]watched.RpcServiceRegistration{
 		service: {
 			{ServiceName: service, AppName: "target.app", AppInstanceId: "one", Endpoint: "http://one.invalid"},
 			{ServiceName: service, AppName: "target.app", AppInstanceId: "two", Endpoint: "http://two.invalid"},

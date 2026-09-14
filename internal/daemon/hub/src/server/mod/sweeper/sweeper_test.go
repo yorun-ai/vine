@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.yorun.ai/vine/internal/core/skel"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
 )
@@ -85,9 +85,9 @@ func TestSweeperSkipsLiveLeaseStatus(t *testing.T) {
 }
 
 func TestSweeperUnregistersExpiredLeaseStatus(t *testing.T) {
-	redisServer := redisserver.NewServerForTest()
-	defer redisServer.AfterAppStop()
-	syncerModule := &syncer.Syncer{RedisServer: redisServer}
+	watchServer := watchserver.NewServerForTest()
+	defer watchServer.AfterAppStop()
+	syncerModule := &syncer.Syncer{WatchServer: watchServer}
 	syncerModule.DIInit()
 	registryRepo := &_SweeperRegistryRepo{
 		leases: []core.AppHeartbeat{{Name: "demo.app", InstanceId: "instance-1"}},
@@ -141,7 +141,7 @@ func TestSweeperUnregistersExpiredLeaseStatus(t *testing.T) {
 
 	assert.Equal(t, []string{"demo.app:instance-1"}, registryRepo.removedApp)
 	assert.Equal(t, []string{"demo.app:instance-1"}, schemaRepo.released)
-	value, ok := redisServer.Get(redised.FormatPortalSiteKey("demo-rpc"))
+	value, ok := watchServer.Get(watched.FormatPortalSiteKey("demo-rpc"))
 	assert.True(t, ok)
 	assert.JSONEq(t, `{
 		"name": "demo-rpc",

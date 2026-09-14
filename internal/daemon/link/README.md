@@ -12,12 +12,12 @@ internal/daemon/link/
 └── src/
     └── server/           Link server runtime
         ├── app/          Assembly of Link modules and servicers
-        ├── comp/         Shared components such as Hub info and Redis/NATS clients
+        ├── comp/         Shared components such as Hub info and Watch/NATS clients
         ├── flag/         Link flags and default normalization
         ├── impl/         Implementations of Link registration and configuration services
         └── mod/          Runtime modules
             ├── minder/   Local app ownership, mutation, registration, heartbeat, and health checks
-            ├── config/   Configuration reads and Redis change subscriptions
+            ├── config/   Configuration reads and Watch change subscriptions
             ├── event/    Event consumer management and delivery
             ├── ingress/  External HTTP entry point dispatching requests to proxies
             ├── rpcproxy/ Local and remote Rpc forwarding
@@ -41,9 +41,9 @@ Link has four primary responsibilities:
    After an application starts, it calls `RegistryService`. `minder` records the local instance as source state, publishes application registrations to Hub, and starts heartbeat and health checks.
 
 2. Configuration and discovery
-   `config.Reader` loads configuration from Hub Redis and continuously watches for changes. `rpcproxy` and `webproxy` maintain Rpc and Web discovery state respectively.
+   `config.Reader` loads configuration from Hub Watch and continuously watches for changes. `rpcproxy` and `webproxy` maintain Rpc and Web discovery state respectively.
 
-   The Hub Redis client uses the `vine.link` user. Its ACL is limited to configuration, Rpc endpoint discovery, the shared revision key, and their required subscriptions. The Redis password is empty for in-process mode and separated-deployment debugging. With backend mTLS enabled, the Link certificate authenticates the client and binds its SPIFFE identity to the `vine.link` user. Without mTLS, the username only selects an ACL role, so the Redis endpoint still requires network isolation.
+   The Hub Watch client uses the `vine.link` user. Its ACL is limited to configuration, Rpc endpoint discovery, the shared revision key, and their required subscriptions. The Redis password is empty for in-process mode and separated-deployment debugging. With backend mTLS enabled, the Link certificate authenticates the client and binds its SPIFFE identity to the `vine.link` user. Without mTLS, the username only selects an ACL role, so the Redis endpoint still requires network isolation.
 
 3. Asynchronous events and tasks
    `event` and `task` subscribe to the listener and runner capabilities declared by local instances in `minder`, then deliver messages received through NATS.
@@ -78,7 +78,7 @@ Preserve these boundaries when modifying modules:
 - Do not create a second source of local application instance state in `rpcproxy`, `webproxy`, `event`, `task`, or `config`.
 - When adding an application capability or registration field, first extend the source facts and mutators owned by `minder`, then update derived state in downstream modules.
 - Modules must not bypass `minder` to own register, unregister, heartbeat, or health-check lifecycles.
-- When Rpc/Web endpoint, event, or task protocols change, update Hub Redis structures, application registration code, and forwarding/delivery tests together.
+- When Rpc/Web endpoint, event, or task protocols change, update Hub Watch structures, application registration code, and forwarding/delivery tests together.
 
 ## Dependencies
 

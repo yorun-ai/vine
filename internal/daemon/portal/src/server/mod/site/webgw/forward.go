@@ -6,14 +6,14 @@ import (
 	"net/http"
 
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/computil"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/gwutil"
 	"go.yorun.ai/vine/internal/util/httputil"
 )
 
-func (g *WebGateway) forward(ctx *spec.Context, request *http.Request, registration *redised.WebRegistration, traceId string) {
+func (g *WebGateway) forward(ctx *spec.Context, request *http.Request, registration *watched.WebRegistration, traceId string) {
 	endpoint := registration.Endpoint
 	encodeWebOptionsToHeader(request)
 	encodeWebForwardTrace(request.Header)

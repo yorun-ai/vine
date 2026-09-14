@@ -6,23 +6,23 @@ import (
 	"sync"
 
 	"go.yorun.ai/vine/internal/app"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubredis"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 )
 
 type Manager struct {
 	app.BaseModule
 
 	Context context.Context  `inject:""`
-	Redis   *hubredis.Client `inject:""`
+	Watch   *hubwatch.Client `inject:""`
 
 	mutex          sync.Mutex
 	routesByPrefix map[string]*_Route
 }
 
 var (
-	rpcServiceRegistrationType = reflect.TypeFor[redised.RpcServiceRegistration]()
-	webRegistrationType        = reflect.TypeFor[redised.WebRegistration]()
+	rpcServiceRegistrationType = reflect.TypeFor[watched.RpcServiceRegistration]()
+	webRegistrationType        = reflect.TypeFor[watched.WebRegistration]()
 )
 
 type _Route struct {
@@ -40,27 +40,27 @@ func (m *Manager) DIInit() {
 }
 
 func (m *Manager) WatchRpc(serviceName string) *Watcher {
-	return m.watch(redised.FormatRpcServiceRegistrationPrefix(serviceName), rpcServiceRegistrationType)
+	return m.watch(watched.FormatRpcServiceRegistrationPrefix(serviceName), rpcServiceRegistrationType)
 }
 
 func (m *Manager) WatchWeb(webName string) *Watcher {
-	return m.watch(redised.FormatWebRegistrationPrefix(webName), webRegistrationType)
+	return m.watch(watched.FormatWebRegistrationPrefix(webName), webRegistrationType)
 }
 
-func (m *Manager) NextRpcEndpoint(serviceName string) (*redised.RpcServiceRegistration, bool) {
-	endpoint, configured := m.nextEndpoint(redised.FormatRpcServiceRegistrationPrefix(serviceName))
+func (m *Manager) NextRpcEndpoint(serviceName string) (*watched.RpcServiceRegistration, bool) {
+	endpoint, configured := m.nextEndpoint(watched.FormatRpcServiceRegistrationPrefix(serviceName))
 	if endpoint == nil {
 		return nil, configured
 	}
-	return endpoint.(*redised.RpcServiceRegistration), configured
+	return endpoint.(*watched.RpcServiceRegistration), configured
 }
 
-func (m *Manager) NextWebEndpoint(webName string) (*redised.WebRegistration, bool) {
-	endpoint, configured := m.nextEndpoint(redised.FormatWebRegistrationPrefix(webName))
+func (m *Manager) NextWebEndpoint(webName string) (*watched.WebRegistration, bool) {
+	endpoint, configured := m.nextEndpoint(watched.FormatWebRegistrationPrefix(webName))
 	if endpoint == nil {
 		return nil, configured
 	}
-	return endpoint.(*redised.WebRegistration), configured
+	return endpoint.(*watched.WebRegistration), configured
 }
 
 func (m *Manager) nextEndpoint(prefix string) (any, bool) {

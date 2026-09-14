@@ -6,9 +6,9 @@ import (
 
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/runtime"
-	hubapiredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubredis"
+	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/rpcgw"
@@ -27,7 +27,7 @@ type Manager struct {
 
 	Context context.Context  `inject:""`
 	App     runtime.App      `inject:""`
-	Redis   *hubredis.Client `inject:""`
+	Watch   *hubwatch.Client `inject:""`
 	Access  *access.Access   `inject:""`
 	Epmgr   *epmgr.Manager   `inject:""`
 
@@ -51,7 +51,7 @@ func (m *Manager) Site(siteName string) (spec.Site, bool) {
 }
 
 func (m *Manager) loadSites() {
-	valuesByKey, subscription := m.Redis.LoadListAndSubscribe(m.Context, redised.FormatPortalSitePrefix(), m.handleSiteEvent)
+	valuesByKey, subscription := m.Watch.LoadListAndSubscribe(m.Context, watched.FormatPortalSitePrefix(), m.handleSiteEvent)
 
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
@@ -64,8 +64,8 @@ func (m *Manager) loadSites() {
 	subscription.Start()
 }
 
-func (m *Manager) handleSiteEvent(event hubapiredis.Event) {
-	if event.Kind == hubapiredis.EventKindDelete {
+func (m *Manager) handleSiteEvent(event hubapiwatch.Event) {
+	if event.Kind == hubapiwatch.EventKindDelete {
 		stopSite(m.removeSite(event.Key))
 		return
 	}
@@ -96,7 +96,7 @@ func (m *Manager) replaceSite(key string, site spec.Site) spec.Site {
 	return toRemove
 }
 
-func (m *Manager) updateSite(key string, config redised.PortalSite) spec.Site {
+func (m *Manager) updateSite(key string, config watched.PortalSite) spec.Site {
 	m.mutex.RLock()
 	current := m.sitesByKey[key]
 	m.mutex.RUnlock()
@@ -113,11 +113,11 @@ func stopSite(site spec.Site) {
 	}
 }
 
-func (m *Manager) decodeSite(value string) redised.PortalSite {
-	return *vcode.MustUnmarshalJsonS[*redised.PortalSite](value)
+func (m *Manager) decodeSite(value string) watched.PortalSite {
+	return *vcode.MustUnmarshalJsonS[*watched.PortalSite](value)
 }
 
-func (m *Manager) newSite(config redised.PortalSite) spec.Site {
+func (m *Manager) newSite(config watched.PortalSite) spec.Site {
 	switch config.Type {
 	case siteTypeRpcgw:
 		return rpcgw.New(m.Context, m.App, m.Access, m.Epmgr, config)

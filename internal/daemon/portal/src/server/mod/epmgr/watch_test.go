@@ -5,12 +5,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	hubredis "go.yorun.ai/vine/internal/daemon/hub/api/redis"
-	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
+	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 )
 
 func TestManagerRpcWatchUsesRefCount(t *testing.T) {
-	prefix := redised.FormatRpcServiceRegistrationPrefix("demo.UserService")
+	prefix := watched.FormatRpcServiceRegistrationPrefix("demo.UserService")
 	manager := newTestManager(map[string]string{
 		testRpcRegistrationKey("demo.UserService", "instance-1"): testRpcRegistrationValue("demo.UserService", "instance-1", "http://127.0.0.1:23001"),
 	})
@@ -36,25 +36,25 @@ func TestManagerRpcWatchUsesRefCount(t *testing.T) {
 }
 
 func TestManagerHandlesRpcRegistrationEvents(t *testing.T) {
-	prefix := redised.FormatRpcServiceRegistrationPrefix("demo.UserService")
+	prefix := watched.FormatRpcServiceRegistrationPrefix("demo.UserService")
 	manager := newTestManager(map[string]string{})
 	watcher := manager.WatchRpc("demo.UserService")
 	t.Cleanup(watcher.Release)
 
 	key := testRpcRegistrationKey("demo.UserService", "instance-1")
-	manager.handleRegistrationEvent(prefix, hubredis.Event{
-		Kind:  hubredis.EventKindUpsert,
+	manager.handleRegistrationEvent(prefix, hubwatch.Event{
+		Kind:  hubwatch.EventKindUpsert,
 		Key:   key,
 		Value: testRpcRegistrationValue("demo.UserService", "instance-1", "http://127.0.0.1:23001"),
 	})
 	endpoint, configured := manager.nextEndpoint(prefix)
 	require.True(t, configured)
 	require.NotNil(t, endpoint)
-	registration := endpoint.(*redised.RpcServiceRegistration)
+	registration := endpoint.(*watched.RpcServiceRegistration)
 	assert.Equal(t, "http://127.0.0.1:23001", registration.Endpoint)
 
-	manager.handleRegistrationEvent(prefix, hubredis.Event{
-		Kind: hubredis.EventKindDelete,
+	manager.handleRegistrationEvent(prefix, hubwatch.Event{
+		Kind: hubwatch.EventKindDelete,
 		Key:  key,
 	})
 	endpoint, configured = manager.nextEndpoint(prefix)
@@ -63,7 +63,7 @@ func TestManagerHandlesRpcRegistrationEvents(t *testing.T) {
 }
 
 func TestManagerWebWatchUsesRefCount(t *testing.T) {
-	prefix := redised.FormatWebRegistrationPrefix("admin@demo.app")
+	prefix := watched.FormatWebRegistrationPrefix("admin@demo.app")
 	manager := newTestManager(map[string]string{
 		testWebRegistrationKey("admin@demo.app", "instance-1"): testWebRegistrationValue("admin@demo.app", "instance-1", "http://127.0.0.1:23001"),
 	})
@@ -89,25 +89,25 @@ func TestManagerWebWatchUsesRefCount(t *testing.T) {
 }
 
 func TestManagerHandlesWebRegistrationEvents(t *testing.T) {
-	prefix := redised.FormatWebRegistrationPrefix("admin@demo.app")
+	prefix := watched.FormatWebRegistrationPrefix("admin@demo.app")
 	manager := newTestManager(map[string]string{})
 	watcher := manager.WatchWeb("admin@demo.app")
 	t.Cleanup(watcher.Release)
 
 	key := testWebRegistrationKey("admin@demo.app", "instance-1")
-	manager.handleRegistrationEvent(prefix, hubredis.Event{
-		Kind:  hubredis.EventKindUpsert,
+	manager.handleRegistrationEvent(prefix, hubwatch.Event{
+		Kind:  hubwatch.EventKindUpsert,
 		Key:   key,
 		Value: testWebRegistrationValue("admin@demo.app", "instance-1", "http://127.0.0.1:23001"),
 	})
 	endpoint, configured := manager.nextEndpoint(prefix)
 	require.True(t, configured)
 	require.NotNil(t, endpoint)
-	registration := endpoint.(*redised.WebRegistration)
+	registration := endpoint.(*watched.WebRegistration)
 	assert.Equal(t, "http://127.0.0.1:23001", registration.Endpoint)
 
-	manager.handleRegistrationEvent(prefix, hubredis.Event{
-		Kind: hubredis.EventKindDelete,
+	manager.handleRegistrationEvent(prefix, hubwatch.Event{
+		Kind: hubwatch.EventKindDelete,
 		Key:  key,
 	})
 	endpoint, configured = manager.nextEndpoint(prefix)
