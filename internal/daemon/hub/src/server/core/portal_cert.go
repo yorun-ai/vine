@@ -12,6 +12,7 @@ import (
 )
 
 type PortalCert struct {
+	FieldSources     FieldSources
 	Id               int
 	Name             string
 	Issuer           string
@@ -74,6 +75,7 @@ func (m *PortalCertCore) Update(id int, update PortalCertUpdate) *PortalCert {
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("entry cert %d not found", id))
 
 	next := &PortalCert{
+		FieldSources:     cloneFieldSources(cert.FieldSources),
 		Id:               cert.Id,
 		Name:             cert.Name,
 		Issuer:           cert.Issuer,
@@ -84,6 +86,7 @@ func (m *PortalCertCore) Update(id int, update PortalCertUpdate) *PortalCert {
 		ValidTo:          cert.ValidTo,
 	}
 	if update.Name != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/name")
 		if *update.Name != cert.Name {
 			_, exists := m.PortalCertRepo.GetCertByName(*update.Name)
 			ex.PanicNewIfNot(!exists, ex.OperationFailed, ex.F("entry cert %q already exists", *update.Name))
@@ -91,9 +94,11 @@ func (m *PortalCertCore) Update(id int, update PortalCertUpdate) *PortalCert {
 		next.Name = *update.Name
 	}
 	if update.PublicKeyBase64 != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/publicKeyBase64")
 		next.PublicKeyBase64 = *update.PublicKeyBase64
 	}
 	if update.PrivateKeyBase64 != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/privateKeyBase64")
 		next.PrivateKeyBase64 = *update.PrivateKeyBase64
 	}
 

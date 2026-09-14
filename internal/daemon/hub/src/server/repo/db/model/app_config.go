@@ -5,6 +5,7 @@ import (
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/infra/rdb"
+	"gorm.io/gorm"
 )
 
 //go:embed sql/sqlite/create_app_config.sql
@@ -14,6 +15,7 @@ var createAppConfigSQLiteSQL string
 var createAppConfigPgSQL string
 
 type AppConfig struct {
+	FieldSources string `gorm:"-"`
 	rdb.Model
 	Name    string `gorm:"column:name"`
 	Value   string `gorm:"column:value"`
@@ -32,6 +34,7 @@ func (d *AppConfigDao) InitSchema() {
 	sql := schemaSQL(d.GormDB(), createAppConfigSQLiteSQL, createAppConfigPgSQL)
 	err := d.GormDB().Exec(sql).Error
 	ex.PanicIfError(err)
+	ensureFieldSourceTable(d.GormDB())
 }
 
 func (d *AppConfigDao) ListOrdered() []*AppConfig {
@@ -54,6 +57,7 @@ func (d *AppConfigDao) Save(item *AppConfig) *AppConfig {
 
 	row, ok := d.ById(item.Id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("config item %d not found", item.Id))
+	row.FieldSources = item.FieldSources
 	d.Update(row, rdb.Patch{
 		"name":    item.Name,
 		"value":   item.Value,
@@ -69,4 +73,16 @@ func (d *AppConfigDao) DeleteById(id int) (*AppConfig, bool) {
 	}
 	d.Delete(row)
 	return row, true
+}
+
+func (row *AppConfig) AfterFind(tx *gorm.DB) error {
+	return loadFieldSource(tx, "app_config", row.Id, &row.FieldSources)
+}
+
+func (row *AppConfig) AfterSave(tx *gorm.DB) error {
+	return saveFieldSource(tx, "app_config", row.Id, row.FieldSources)
+}
+
+func (row *AppConfig) AfterDelete(tx *gorm.DB) error {
+	return deleteFieldSource(tx, "app_config", row.Id)
 }

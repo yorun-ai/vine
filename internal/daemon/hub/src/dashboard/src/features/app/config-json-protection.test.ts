@@ -37,7 +37,7 @@ test('value ranges follow edits, including empty drafts and later fields', () =>
     port: 80,
     host: 'example.local',
   })
-  assert.equal(state.doc.toString().includes('// \n  "host"'), true)
+  assert.equal(state.doc.toString().includes('\n\n  "host"'), true)
 })
 
 test('multi-selection edits are rejected if any selection touches protected text', () => {

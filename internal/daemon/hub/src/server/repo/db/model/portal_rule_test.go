@@ -97,7 +97,9 @@ func TestPortalRuleTargetPathMigration(t *testing.T) {
 	require.NoError(t, db.Exec("INSERT INTO portal_rule(name, scheme, host, port, path_prefix, target_type, site_name, redirection_pattern, built_in) VALUES ('legacy', 'http', '', 80, '/api', 'SITE', 'site', '', false)").Error)
 	dao := &PortalRuleDao{Dao: rdb.NewDao[*PortalRule](db)}
 	require.NoError(t, dao.migrateSchema())
+	dao.InitSchema()
 	require.NoError(t, dao.migrateSchema())
+	dao.InitSchema()
 	row, ok := dao.ByName("legacy")
 	require.True(t, ok)
 	assert.Empty(t, row.RoutePathPrefix)
@@ -127,7 +129,9 @@ func TestPortalRuleColumnRenamePreservesDataAndIndexes(t *testing.T) {
 	require.NoError(t, db.Exec("INSERT INTO portal_rule(id, name, scheme, host, port, path_prefix, target_type, site_name, target_path, redirection_pattern, built_in) VALUES (17, 'legacy', 'https', 'example.com', 443, '/api', 'SITE', 'web', '/internal', '', true), (18, 'redirect', 'http', 'old.example.com', 80, '/', 'PERMANENT_REDIRECT', '', '', 'https://example.com', false)").Error)
 	dao := &PortalRuleDao{Dao: rdb.NewDao[*PortalRule](db)}
 	require.NoError(t, dao.migrateSchema())
+	dao.InitSchema()
 	require.NoError(t, dao.migrateSchema())
+	dao.InitSchema()
 	row, ok := dao.ByName("legacy")
 	require.True(t, ok)
 	assert.Equal(t, 17, row.Id)
@@ -164,5 +168,7 @@ func TestPortalRuleMigrationOnCurrentSchema(t *testing.T) {
 	require.NoError(t, db.Exec(createPortalRuleSQLiteSQL).Error)
 	dao := &PortalRuleDao{Dao: rdb.NewDao[*PortalRule](db)}
 	require.NoError(t, dao.migrateSchema())
+	dao.InitSchema()
 	require.NoError(t, dao.migrateSchema())
+	dao.InitSchema()
 }

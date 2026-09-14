@@ -144,6 +144,11 @@ At startup, `--seed-yaml-file` imports initial configuration, Portal sites,
 rules, and certificates from local YAML into the database. Hub reads this state
 through its repos and publishes it to Redis for Link and Portal.
 
+Database metadata records completion of the initial seed. Subsequent starts skip
+all seed, variable, and source inputs; seed entries have no `override` switch.
+No-db mode creates a fresh store and imports the seed on every start. Built-in
+Dashboard provisioning is maintained independently of the seed marker.
+
 Portal rule YAML uses flat fields in this order: `matchScheme`, `matchHost`,
 `matchPort`, `matchPathPrefix`, `routeType`, `routeSiteName`,
 `routeRedirectionPattern`, and `routePathPrefix`.

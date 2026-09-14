@@ -85,7 +85,7 @@ func TestHubAppDIInitNormalizesFlagAndSetsRunFlag(t *testing.T) {
 		AppFlag:    &internalapp.RunFlag{},
 		InprocFlag: &internalapp.InternalInprocFlag{},
 		Flag: &flag.Flag{
-			SourceType:        flag.SourceSQLite,
+			Store:             flag.StoreSQLite,
 			DBSQLiteFile:      "/tmp/hub.sqlite",
 			MQExternalNatsURL: "nats://127.0.0.1:4222",
 		},
@@ -94,7 +94,7 @@ func TestHubAppDIInitNormalizesFlagAndSetsRunFlag(t *testing.T) {
 	spec.DIInit()
 
 	assert.Equal(t, flag.HubDefaultAdminListen, spec.AppFlag.ListenAddr)
-	assert.Equal(t, flag.SourceSQLite, spec.Flag.SourceType)
+	assert.Equal(t, flag.StoreSQLite, spec.Flag.Store)
 	assert.Equal(t, flag.HubDefaultControlListen, spec.Flag.ControlListen)
 	assert.Equal(t, flag.HubDefaultAdminListen, spec.Flag.AdminListen)
 	assert.Equal(t, flag.HubDefaultRedisListen, spec.Flag.RedisListen)
@@ -108,7 +108,7 @@ func TestHubAppDIInitKeepsPGConnUrl(t *testing.T) {
 		AppFlag:    &internalapp.RunFlag{},
 		InprocFlag: &internalapp.InternalInprocFlag{},
 		Flag: &flag.Flag{
-			SourceType:        flag.SourcePostgreSQL,
+			Store:             flag.StorePostgreSQL,
 			DBPostgresURL:     "postgres://demo:demo@127.0.0.1:5432/hub",
 			MQExternalNatsURL: "nats://127.0.0.1:4222",
 		},
@@ -116,7 +116,7 @@ func TestHubAppDIInitKeepsPGConnUrl(t *testing.T) {
 
 	spec.DIInit()
 
-	assert.Equal(t, flag.SourcePostgreSQL, spec.Flag.SourceType)
+	assert.Equal(t, flag.StorePostgreSQL, spec.Flag.Store)
 	assert.Equal(t, "postgres://demo:demo@127.0.0.1:5432/hub", spec.Flag.DBPostgresURL)
 	assert.Equal(t, "nats://127.0.0.1:4222", spec.Flag.MQExternalNatsURL)
 	assert.False(t, spec.Flag.MQEmbeddedNats)
@@ -128,7 +128,7 @@ func TestHubAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 		AppFlag:    &internalapp.RunFlag{},
 		InprocFlag: &internalapp.InternalInprocFlag{Enabled: true},
 		Flag: &flag.Flag{
-			SourceType:     flag.SourceSQLite,
+			Store:          flag.StoreSQLite,
 			DBSQLiteFile:   "/tmp/hub.sqlite",
 			MQEmbeddedNats: true,
 		},
@@ -159,7 +159,7 @@ func TestHubAppDIInitKeepsEnableNatsOutsideInproc(t *testing.T) {
 		AppFlag:    &internalapp.RunFlag{},
 		InprocFlag: &internalapp.InternalInprocFlag{},
 		Flag: &flag.Flag{
-			SourceType:     flag.SourceSQLite,
+			Store:          flag.StoreSQLite,
 			DBSQLiteFile:   "/tmp/hub.sqlite",
 			MQEmbeddedNats: true,
 		},
@@ -220,7 +220,7 @@ func TestHubAppModuleTypesIncludesRuntimeModulesWhenEnableNats(t *testing.T) {
 
 func TestHubAppComponentTypesReturnsSQLiteDatabaseWhenSourceIsSQLite(t *testing.T) {
 	spec := &HubApp{
-		Flag: &flag.Flag{SourceType: flag.SourceSQLite},
+		Flag: &flag.Flag{Store: flag.StoreSQLite},
 	}
 
 	assert.Equal(t, []reflect.Type{
@@ -233,7 +233,7 @@ func TestHubAppComponentTypesReturnsSQLiteDatabaseWhenSourceIsSQLite(t *testing.
 
 func TestHubAppComponentTypesReturnsPGDatabaseWhenSourceIsPG(t *testing.T) {
 	spec := &HubApp{
-		Flag: &flag.Flag{SourceType: flag.SourcePostgreSQL},
+		Flag: &flag.Flag{Store: flag.StorePostgreSQL},
 	}
 
 	assert.Equal(t, []reflect.Type{
@@ -247,7 +247,7 @@ func TestHubAppComponentTypesReturnsPGDatabaseWhenSourceIsPG(t *testing.T) {
 func TestConfigDatabaseInitOptionForSQLite(t *testing.T) {
 	spec := &repodb.HubDatabase{
 		Flag: &flag.Flag{
-			SourceType:   flag.SourceSQLite,
+			Store:        flag.StoreSQLite,
 			DBSQLiteFile: "/tmp/hub.sqlite",
 		},
 	}
@@ -272,7 +272,7 @@ func TestConfigDatabaseInitOptionForSQLite(t *testing.T) {
 func TestConfigDatabaseInitOptionForPG(t *testing.T) {
 	spec := &repodb.HubDatabase{
 		Flag: &flag.Flag{
-			SourceType:    flag.SourcePostgreSQL,
+			Store:         flag.StorePostgreSQL,
 			DBPostgresURL: "postgres://demo:demo@127.0.0.1:5432/hub",
 		},
 	}
@@ -297,7 +297,7 @@ func TestConfigDatabaseInitOptionForPG(t *testing.T) {
 func TestHubAppBindCommonProvidesDBAppConfigRepoForSQLite(t *testing.T) {
 	configRepo := newHubBoundAppConfigRepo(t, &HubApp{
 		InprocFlag: &internalapp.InternalInprocFlag{},
-		Flag:       &flag.Flag{SourceType: flag.SourceSQLite},
+		Flag:       &flag.Flag{Store: flag.StoreSQLite},
 	})
 
 	assert.IsType(t, &repo.DBAppConfigRepo{Access: new(configaccess.Access)}, configRepo)
@@ -307,7 +307,7 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForPG(t *testing.T) {
 	configRepo := newHubBoundAppConfigRepo(t, &HubApp{
 		InprocFlag: &internalapp.InternalInprocFlag{},
 		Flag: &flag.Flag{
-			SourceType:    flag.SourcePostgreSQL,
+			Store:         flag.StorePostgreSQL,
 			DBPostgresURL: "postgres://demo:demo@127.0.0.1:5432/hub",
 		},
 	})
@@ -318,7 +318,7 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForPG(t *testing.T) {
 func TestHubAppBindCommonProvidesMemorySchemaRepoForDBInInprocMode(t *testing.T) {
 	schemaRepo := newHubBoundSchemaRepo(t, &HubApp{
 		InprocFlag: &internalapp.InternalInprocFlag{Enabled: true},
-		Flag:       &flag.Flag{SourceType: flag.SourceSQLite},
+		Flag:       &flag.Flag{Store: flag.StoreSQLite},
 	})
 
 	assert.IsType(t, &schema.MemorySchemaRepo{}, schemaRepo)
@@ -327,7 +327,7 @@ func TestHubAppBindCommonProvidesMemorySchemaRepoForDBInInprocMode(t *testing.T)
 func TestHubAppBindCommonProvidesMemorySchemaRepoForDB(t *testing.T) {
 	schemaRepo := newHubBoundSchemaRepo(t, &HubApp{
 		InprocFlag: &internalapp.InternalInprocFlag{},
-		Flag:       &flag.Flag{SourceType: flag.SourceSQLite},
+		Flag:       &flag.Flag{Store: flag.StoreSQLite},
 	})
 
 	assert.IsType(t, &schema.MemorySchemaRepo{}, schemaRepo)
@@ -340,7 +340,7 @@ func testDashboardURL() *vnet.HttpURL {
 func TestHubAppBindCommonProvidesDBAppConfigRepoForInitializerWithSQLite(t *testing.T) {
 	component := &repodb.HubDatabase{
 		Flag: &flag.Flag{
-			SourceType:   flag.SourceSQLite,
+			Store:        flag.StoreSQLite,
 			DBSQLiteFile: sharedTestSQLitePath(t),
 		},
 	}
@@ -352,7 +352,7 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForInitializerWithSQLite(t *test
 	spec := &HubApp{
 		InprocFlag: &internalapp.InternalInprocFlag{},
 		Flag: &flag.Flag{
-			SourceType:   flag.SourceSQLite,
+			Store:        flag.StoreSQLite,
 			AdminListen:  flag.HubDefaultAdminListen,
 			DashboardURL: testDashboardURL(),
 			DBSQLiteFile: sharedTestSQLitePath(t),
@@ -383,7 +383,7 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForInitializerWithSQLite(t *test
 func TestConfigDatabaseBindProvidesAppConfigRepoDAO(t *testing.T) {
 	component := &repodb.HubDatabase{
 		Flag: &flag.Flag{
-			SourceType:   flag.SourceSQLite,
+			Store:        flag.StoreSQLite,
 			DBSQLiteFile: sharedTestSQLitePath(t),
 		},
 	}
@@ -416,7 +416,7 @@ func newHubBoundAppConfigRepo(t *testing.T, spec *HubApp) core.AppConfigRepo {
 
 	component := &repodb.HubDatabase{
 		Flag: &flag.Flag{
-			SourceType:   flag.SourceSQLite,
+			Store:        flag.StoreSQLite,
 			DBSQLiteFile: sharedTestSQLitePath(t),
 		},
 	}

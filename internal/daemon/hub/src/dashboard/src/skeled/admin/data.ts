@@ -312,6 +312,16 @@ export type EventListenerRegistration = {
   noRetry:       boolean;
 }
 /**
+ * Source of a configuration field without configuration or variable values.
+ */
+export type FieldSource = {
+  path:      string;
+  source:    string;
+  define:    string;
+  override:  string;
+  variables: Array<string>;
+}
+/**
  * Portal site certificate.
  */
 export type PortalCert = {

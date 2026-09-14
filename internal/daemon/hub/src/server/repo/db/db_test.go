@@ -13,7 +13,7 @@ import (
 func TestNoDBCreatesIsolatedDatabasesAndSchemas(t *testing.T) {
 	var previous string
 	for range 2 {
-		component := &HubDatabase{Flag: &flag.Flag{SourceType: flag.SourceMemory}}
+		component := &HubDatabase{Flag: &flag.Flag{Store: flag.StoreMemory}}
 		option := new(rdb.Option)
 		component.InitOption(option)
 		require.NotEqual(t, previous, option.ConnURL)

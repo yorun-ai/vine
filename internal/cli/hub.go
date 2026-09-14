@@ -19,6 +19,8 @@ const (
 	FlagHubRedisListen       = "redis-listen"
 	FlagHubMQExternalNatsURL = "mq-external-nats-url"
 	FlagHubMQEmbeddedNats    = "mq-embedded-nats"
+	FlagHubSeedSourceFile    = "seed-source-file"
+	FlagHubSeedVarsFile      = "seed-vars-file"
 	FlagHubSeedYAMLFile      = "seed-yaml-file"
 	FlagHubDashboardURL      = "dashboard-url"
 	FlagHubNoDB              = "no-db"
@@ -30,6 +32,8 @@ const (
 	EnvHubRedisListen       = "VINE_REDIS_LISTEN"
 	EnvHubMQExternalNatsURL = "VINE_MQ_EXTERNAL_NATS_URL"
 	EnvHubMQEmbeddedNats    = "VINE_MQ_EMBEDDED_NATS"
+	EnvHubSeedSourceFile    = "VINE_SEED_SOURCE_FILE"
+	EnvHubSeedVarsFile      = "VINE_SEED_VARS_FILE"
 	EnvHubSeedYAMLFile      = "VINE_SEED_YAML_FILE"
 	EnvHubDashboardURL      = "VINE_DASHBOARD_URL"
 	EnvHubNoDB              = "VINE_NO_DB"
@@ -71,6 +75,8 @@ func newHubServeFlags() []ucli.Flag {
 		&ucli.StringFlag{Name: FlagHubMQExternalNatsURL, Sources: ucli.EnvVars(EnvHubMQExternalNatsURL), Usage: "external NATS URL, e.g. nats://127.0.0.1:4222"},
 		&ucli.BoolFlag{Name: FlagHubMQEmbeddedNats, Sources: ucli.EnvVars(EnvHubMQEmbeddedNats), Usage: "start an embedded NATS server"},
 		&ucli.StringFlag{Name: FlagHubSeedYAMLFile, Sources: ucli.EnvVars(EnvHubSeedYAMLFile), Usage: "hub seed YAML file"},
+		&ucli.StringFlag{Name: FlagHubSeedSourceFile, Sources: ucli.EnvVars(EnvHubSeedSourceFile), Usage: "hub seed source YAML file"},
+		&ucli.StringFlag{Name: FlagHubSeedVarsFile, Sources: ucli.EnvVars(EnvHubSeedVarsFile), Usage: "hub seed vars YAML file"},
 		&ucli.StringFlag{Name: FlagHubDashboardURL, Sources: ucli.EnvVars(EnvHubDashboardURL), Usage: "hub dashboard URL"},
 	}, mtlsFlags()...)
 }
@@ -92,6 +98,8 @@ func newHubServeCommand() *ucli.Command {
 				MQExternalNatsURL: cmd.String(FlagHubMQExternalNatsURL),
 				MQEmbeddedNats:    cmd.Bool(FlagHubMQEmbeddedNats),
 				SeedYAMLPath:      cmd.String(FlagHubSeedYAMLFile),
+				SeedSourceFile:    cmd.String(FlagHubSeedSourceFile),
+				SeedVarsFile:      cmd.String(FlagHubSeedVarsFile),
 				DashboardURLRaw:   cmd.String(FlagHubDashboardURL),
 				NoDB:              cmd.Bool(FlagHubNoDB),
 				DBSQLiteFile:      cmd.String(FlagHubDBSQLiteFile),

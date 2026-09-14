@@ -43,7 +43,7 @@ test('YAML comments and type links participate in dirty blocks', () => {
   const links = getConfigJsonTypeLinks(doc, doc.ranges, new Map([['booker.Category', { skelName: 'booker.Category' }]]))
   assert.equal(doc.doc.slice(links[0].from, links[0].to), 'booker.Category')
   const dirty = getConfigJsonDirtyLines(doc.doc, doc.ranges, new Set(['categories']), new Map())
-  assert.equal(dirty[0], doc.doc.indexOf('# list<booker.Category>'))
+  assert.equal(dirty[0], doc.doc.indexOf('# @type list<booker.Category>'))
   assert.equal(dirty.length, 5)
 })
 
@@ -120,4 +120,16 @@ test('generated YAML expands scientific notation into ordinary decimals', () => 
   assert.deepEqual(parseConfigYaml(text), value)
   const doc = createConfigYamlDocument(JSON.stringify(value), [], true)
   assert.deepEqual(parseConfigYaml(doc.doc), value)
+})
+
+test('YAML source comments do not enter configuration values', () => {
+  const document = createConfigYamlDocument('{"enabled":true}', [{
+    name: 'enabled', type: 'bool', description: 'Enabled',
+    commentTags: ['type', 'desc', 'define', 'override', 'source'],
+    sourceComment: '@define domain/user\n@variables ENABLED',
+  }], true)
+  assert.ok(document.doc.includes('# @define    domain/user'))
+  assert.ok(document.doc.includes('# @variables ENABLED'))
+  assert.deepEqual(parseConfigYaml(document.doc), { enabled: true })
+  assert.equal(document.doc.slice(document.ranges[0].from, document.ranges[0].to).trim(), 'true')
 })

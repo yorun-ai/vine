@@ -4,11 +4,13 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/base64"
 	"fmt"
 	"math/big"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -131,7 +133,7 @@ func testSyncer(redisServer *redisserver.Server) *syncer.Syncer {
 
 func newTestSeederFlag(seedYAMLPath string) *flag.Flag {
 	flags := &flag.Flag{
-		SourceType:   flag.SourceSQLite,
+		Store:        flag.StoreSQLite,
 		DBSQLiteFile: "/tmp/hub.sqlite",
 		SeedYAMLPath: seedYAMLPath,
 	}
@@ -146,7 +148,7 @@ func newTestSeederMTLSFlag() *flag.Flag {
 			CertFile: "cert.pem",
 			KeyFile:  "key.pem",
 		},
-		SourceType:   flag.SourceSQLite,
+		Store:        flag.StoreSQLite,
 		DBSQLiteFile: "/tmp/hub.sqlite",
 	}
 	flags.Normalize(true)
@@ -354,16 +356,26 @@ appConfigs:
 	require.True(t, ok)
 	assert.Equal(t, `{"enabled":true}`, item.Value)
 	assert.Equal(t, 7, item.Version)
+	// After metadata is set, none of the deployment inputs are read again.
+	seeder.Flag.SeedVarsFile = filepath.Join(t.TempDir(), "missing-vars.yaml")
+	seeder.Flag.SeedSourceFile = filepath.Join(t.TempDir(), "missing-source.yaml")
+	require.NotPanics(t, seeder.DIInit)
+	require.NoError(t, vfile.WriteString(seedPath, "appConfigs: [{name: feature.flag, value: '${missing}'}]"))
+	require.NotPanics(t, seeder.DIInit)
+	require.NoError(t, vfile.WriteString(seedPath, "[invalid YAML"))
+	require.NotPanics(t, seeder.DIInit)
+	seeder.Flag.SeedYAMLPath = filepath.Join(t.TempDir(), "missing-seed.yaml")
+	require.NotPanics(t, seeder.DIInit)
+
 }
 
-func TestSeederAppliesOverrideItemsWhenSeedYAMLWasApplied(t *testing.T) {
+func TestSeederPreservesAllItemsWhenAlreadySeeded(t *testing.T) {
 	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
 	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
 	require.NoError(t, vfile.WriteString(seedPath, `
 appConfigs:
   - name: feature.flag
     value: '{"enabled":false}'
-    override: true
   - name: feature.keep
     value: '{"enabled":false}'
 portalSites:
@@ -372,7 +384,6 @@ portalSites:
     actorSkelName: demo.AdminActor
     actorVia: client
     webName: demo.AdminWeb
-    override: true
 portalRules:
   - name: admin
     scheme: https
@@ -382,7 +393,6 @@ portalRules:
     targetType: SITE
     siteName: admin@demo.app
     redirectionPattern: ""
-    override: true
 portalCerts:
   - name: admin-cert
     issuer: ignored
@@ -392,7 +402,6 @@ portalCerts:
     privateKeyBase64: pri
     validFrom: 2026-01-01T00:00:00Z
     validTo: 2027-01-01T00:00:00Z
-    override: true
 `))
 
 	configRepo.SaveItem(&core.AppConfig{Name: "feature.flag", Value: `{"enabled":true}`, Version: 7})
@@ -416,8 +425,8 @@ portalCerts:
 
 	item, ok := configRepo.GetItemByName("feature.flag")
 	require.True(t, ok)
-	assert.Equal(t, `{"enabled":false}`, item.Value)
-	assert.Equal(t, 8, item.Version)
+	assert.Equal(t, `{"enabled":true}`, item.Value)
+	assert.Equal(t, 7, item.Version)
 	kept, ok := configRepo.GetItemByName("feature.keep")
 	require.True(t, ok)
 	assert.Equal(t, `{"enabled":true}`, kept.Value)
@@ -425,16 +434,16 @@ portalCerts:
 
 	entry, ok := entryRepo.GetEntryByName("admin@demo.app")
 	require.True(t, ok)
-	assert.Equal(t, "demo.AdminActor", entry.ActorSkelName)
-	assert.Equal(t, "demo.AdminWeb", entry.WebName)
+	assert.Equal(t, "old.Actor", entry.ActorSkelName)
+	assert.Equal(t, "old.Web", entry.WebName)
 	rule, ok := ruleRepo.GetRuleByName("admin")
 	require.True(t, ok)
-	assert.Equal(t, "https", rule.MatchScheme)
-	assert.Equal(t, "/admin", rule.MatchPathPrefix)
+	assert.Equal(t, "http", rule.MatchScheme)
+	assert.Equal(t, "/old", rule.MatchPathPrefix)
 	cert, ok := certRepo.GetCertByName("admin-cert")
 	require.True(t, ok)
-	assert.Equal(t, "manual", cert.Issuer)
-	assert.Equal(t, []string{"admin.local"}, cert.Domains)
+	assert.Equal(t, "old", cert.Issuer)
+	assert.Equal(t, []string{"old.local"}, cert.Domains)
 }
 
 func TestSeederRejectsSeedYAMLConflictingWithBuiltInItems(t *testing.T) {
@@ -448,7 +457,6 @@ portalRules:
   - name: vine.hub.admin-api
     scheme: http
 `))
-	metadataRepo.MarkSeeded()
 
 	seeder := &Seeder{
 		Flag:          newTestSeederFlag(seedPath),
@@ -532,7 +540,7 @@ func TestSeederAppliesExplicitDashboardURLToExistingDashboardRules(t *testing.T)
 	})
 	metadataRepo.MarkSeeded()
 
-	flags := &flag.Flag{SourceType: flag.SourceSQLite, DBSQLiteFile: "/tmp/hub.sqlite", DashboardURLRaw: "https://hub.example.com:8443/admin"}
+	flags := &flag.Flag{Store: flag.StoreSQLite, DBSQLiteFile: "/tmp/hub.sqlite", DashboardURLRaw: "https://hub.example.com:8443/admin"}
 	flags.Normalize(true)
 
 	seeder := &Seeder{
@@ -567,7 +575,11 @@ func newTestSeederRepos(t *testing.T) (*repo.DBAppConfigRepo, *repo.DBPortalRule
 
 	gdb, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "hub.sqlite")), &gorm.Config{})
 	require.NoError(t, err)
-	require.NoError(t, gdb.AutoMigrate(&model.AppConfig{}, &model.PortalRule{}, &model.PortalCert{}, &model.PortalSite{}, &model.Metadata{}))
+	require.NoError(t, gdb.AutoMigrate(&model.Metadata{}))
+	(&model.AppConfigDao{Dao: rdb.NewDao[*model.AppConfig](gdb)}).InitSchema()
+	(&model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](gdb)}).InitSchema()
+	(&model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](gdb)}).InitSchema()
+	(&model.PortalSiteDao{Dao: rdb.NewDao[*model.PortalSite](gdb)}).InitSchema()
 
 	redisServer := redisserver.NewServerForTest()
 	t.Cleanup(redisServer.AfterAppStop)
@@ -673,4 +685,80 @@ func TestSeederAcceptsEmptyInlineMapping(t *testing.T) {
 	seeder := new(Seeder{Flag: new(flag.Flag{SeedYAML: "{}"})})
 	require.NotPanics(t, seeder.loadSeedYAML)
 	require.NotNil(t, seeder.payload)
+}
+
+func TestSeederPersistsSourcesByEntityAndClearsOnRemoval(t *testing.T) {
+	configRepo, ruleRepo, certRepo, siteRepo, metadataRepo, _ := newTestSeederRepos(t)
+	template := "appConfigs:\n- name: second\n  value: '${value}'\n- name: first\n  value: {}\n"
+	source := fmt.Sprintf("version: 1\nseedSha256: %x\nfields:\n  /appConfigs/0/value:\n    source: app/default\n    define: domain/booker\n    override: app/default\n", sha256.Sum256([]byte(template)))
+	s := new(Seeder{Flag: new(flag.Flag{SeedYAML: template, SeedSource: source, SeedVarsFile: writeSeedVarsFile(t, `value: '"resolved"'`)}),
+		AppConfigCore: new(core.AppConfigCore{AppConfigRepo: configRepo}),
+		RuleCore:      new(core.PortalRuleCore{PortalRuleRepo: ruleRepo}),
+		SiteCore:      new(core.PortalSiteCore{PortalSiteRepo: siteRepo}),
+		CertCore:      new(core.PortalCertCore{PortalCertRepo: certRepo}),
+		RuleRepo:      ruleRepo, MetadataRepo: metadataRepo, Logger: logger.New("seed-source-test"),
+	})
+	s.Flag.Normalize(true)
+	s.DIInit()
+	item, ok := configRepo.GetItemByName("second")
+	require.True(t, ok)
+	require.Equal(t, `"resolved"`, item.Value)
+	require.Equal(t, core.FieldSource{Source: "app/default", Define: "domain/booker", Override: "app/default", Variables: []string{"value"}}, item.FieldSources["/value"])
+	other, ok := configRepo.GetItemByName("first")
+	require.True(t, ok)
+	require.Empty(t, other.FieldSources)
+	// Metadata is loaded from the database, not retained by the Seeder instance.
+	reread, ok := configRepo.GetItemById(item.Id)
+	require.True(t, ok)
+	require.Equal(t, item.FieldSources, reread.FieldSources)
+	s.AppConfigCore.Update(item.Id, core.AppConfigUpdate{Value: new(`"resolved"`)})
+	updated, ok := configRepo.GetItemById(item.Id)
+	require.True(t, ok)
+	require.Equal(t, "hub", updated.FieldSources["/value"].Override)
+	require.Empty(t, updated.FieldSources["/value"].Variables)
+	require.True(t, s.AppConfigCore.Remove(item.Id))
+	var storeCount int64
+	require.NoError(t, configRepo.Dao.GormDB().Table("field_source").Where("kind = ? AND entity_id = ?", "app_config", item.Id).Count(&storeCount).Error)
+	require.Zero(t, storeCount)
+	require.Empty(t, s.AppConfigCore.Save(core.AppConfig{Name: "third", Value: "{}"}).FieldSources)
+}
+
+func TestSeederPersistsConfigValueKeySources(t *testing.T) {
+	configs, rules, certs, sites, metadata, _ := newTestSeederRepos(t)
+	template := "appConfigs:\n- name: user.AuthConfig\n  value:\n    accessTokenTTL: ${ttl}\n    refreshTokenTTL: 168h\n    nested: {enabled: false}\n"
+	source := fmt.Sprintf(`version: 1
+seedSha256: %x
+fields:
+  /appConfigs/0/value/accessTokenTTL: {source: profile/dev, define: domain/user, override: profile/dev}
+  /appConfigs/0/value/refreshTokenTTL: {source: domain/user, define: domain/user}
+  /appConfigs/0/value/nested: {source: app/default, define: domain/user, override: app/default}
+`, sha256.Sum256([]byte(template)))
+	target := new(Seeder{
+		Flag:          new(flag.Flag{SeedYAML: template, SeedSource: source, SeedVarsFile: writeSeedVarsFile(t, "ttl: 2h")}),
+		AppConfigCore: new(core.AppConfigCore{AppConfigRepo: configs}),
+		RuleCore:      new(core.PortalRuleCore{PortalRuleRepo: rules}),
+		SiteCore:      new(core.PortalSiteCore{PortalSiteRepo: sites}),
+		CertCore:      new(core.PortalCertCore{PortalCertRepo: certs}),
+		RuleRepo:      rules, MetadataRepo: metadata, Logger: logger.New("seed-key-sources-test"),
+	})
+	target.Flag.Normalize(true)
+	target.DIInit()
+	item, ok := configs.GetItemByName("user.AuthConfig")
+	require.True(t, ok)
+	require.JSONEq(t, `{"accessTokenTTL":"2h","refreshTokenTTL":"168h","nested":{"enabled":false}}`, item.Value)
+	require.Equal(t, core.FieldSources{
+		"/value/accessTokenTTL":  {Source: "profile/dev", Define: "domain/user", Override: "profile/dev", Variables: []string{"ttl"}},
+		"/value/refreshTokenTTL": {Source: "domain/user", Define: "domain/user"},
+		"/value/nested":          {Source: "app/default", Define: "domain/user", Override: "app/default"},
+	}, item.FieldSources)
+	reread, ok := configs.GetItemById(item.Id)
+	require.True(t, ok)
+	require.Equal(t, item.FieldSources, reread.FieldSources)
+}
+
+func writeSeedVarsFile(t *testing.T, content string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "vars.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(content), 0600))
+	return path
 }

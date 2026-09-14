@@ -6,6 +6,7 @@ import (
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/infra/rdb"
+	"gorm.io/gorm"
 )
 
 //go:embed sql/sqlite/create_portal_cert.sql
@@ -15,6 +16,7 @@ var createPortalCertSQLiteSQL string
 var createPortalCertPgSQL string
 
 type PortalCert struct {
+	FieldSources string `gorm:"-"`
 	rdb.Model
 	Name             string    `gorm:"column:name"`
 	Issuer           string    `gorm:"column:issuer"`
@@ -37,6 +39,7 @@ func (d *PortalCertDao) InitSchema() {
 	sql := schemaSQL(d.GormDB(), createPortalCertSQLiteSQL, createPortalCertPgSQL)
 	err := d.GormDB().Exec(sql).Error
 	ex.PanicIfError(err)
+	ensureFieldSourceTable(d.GormDB())
 }
 
 func (d *PortalCertDao) ListOrdered() []*PortalCert {
@@ -59,6 +62,7 @@ func (d *PortalCertDao) Save(cert *PortalCert) *PortalCert {
 
 	row, ok := d.ById(cert.Id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("entry cert %d not found", cert.Id))
+	row.FieldSources = cert.FieldSources
 	d.Update(row, rdb.Patch{
 		"name":               cert.Name,
 		"issuer":             cert.Issuer,
@@ -78,4 +82,16 @@ func (d *PortalCertDao) DeleteById(id int) (*PortalCert, bool) {
 	}
 	d.Delete(row)
 	return row, true
+}
+
+func (row *PortalCert) AfterFind(tx *gorm.DB) error {
+	return loadFieldSource(tx, "portal_cert", row.Id, &row.FieldSources)
+}
+
+func (row *PortalCert) AfterSave(tx *gorm.DB) error {
+	return saveFieldSource(tx, "portal_cert", row.Id, row.FieldSources)
+}
+
+func (row *PortalCert) AfterDelete(tx *gorm.DB) error {
+	return deleteFieldSource(tx, "portal_cert", row.Id)
 }

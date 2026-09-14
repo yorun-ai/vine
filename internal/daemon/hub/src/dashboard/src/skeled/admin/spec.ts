@@ -30,6 +30,7 @@ export const EventDebugApiServiceSpec = {
 export const MaintenanceApiServiceSpec = {
   serviceName: 'vine.hub.admin.MaintenanceApiService',
   methods: {
+    fieldSources: 'fieldSources',
     configReadOnly: 'configReadOnly',
     previewSeedYaml: 'previewSeedYaml',
     applySeedYaml: 'applySeedYaml',

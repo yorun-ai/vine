@@ -1,3 +1,4 @@
+import { FieldSourceInfo } from '@/features/field-source/field-source-info'
 import { useConfigAccess } from '@/lib/config-access'
 import { SkelName } from '@/components/skel-name'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
@@ -877,16 +878,18 @@ function PortalSiteListSkeleton() {
 
 function ReadonlyField({
   label,
+  source,
   children,
   className,
 }: {
+  source: React.ReactNode
   label: string
   children: React.ReactNode
   className?: string
 }) {
   return (
     <div className="grid gap-2">
-      <Label>{label}</Label>
+      <Label className="flex items-center gap-1.5">{label}{source}</Label>
       <div
         className={cn(
           'min-h-9 rounded-md border border-input bg-muted/20 px-3 py-2 text-sm',
@@ -1718,17 +1721,17 @@ export function PortalSitePage() {
                   ) : (
                     <div className="grid gap-5">
                       <FieldRow>
-                        <ReadonlyField label={t('portalSite.name')}>
+                        <ReadonlyField source={<FieldSourceInfo kind="portal_site" name={selectedEntry.name} path="/name" />} label={t('portalSite.name')}>
                           {selectedEntry.name}
                         </ReadonlyField>
-                        <ReadonlyField label={t('portalSite.type')}>
+                        <ReadonlyField source={<FieldSourceInfo kind="portal_site" name={selectedEntry.name} path="/type" />} label={t('portalSite.type')}>
                           <Badge variant="secondary">
                             {tText(portalSiteTypeLabel(selectedEntry.type))}
                           </Badge>
                         </ReadonlyField>
                       </FieldRow>
                       <FieldRow>
-                        <ReadonlyField label="Actor Skel">
+                        <ReadonlyField source={<FieldSourceInfo kind="portal_site" name={selectedEntry.name} path="/actorSkelName" />} label="Actor Skel">
                           <a
                             href={skeletonActorHref(
                               selectedEntry.actorSkelName,
@@ -1738,19 +1741,19 @@ export function PortalSitePage() {
                           <SkelName skelName={selectedEntry.actorSkelName} />
                         </a>
                       </ReadonlyField>
-                        <ReadonlyField label={t('portalSite.actorVia')}>
+                        <ReadonlyField source={<FieldSourceInfo kind="portal_site" name={selectedEntry.name} path="/actorVia" />} label={t('portalSite.actorVia')}>
                           <Badge variant="outline">
                             {selectedEntry.actorVia}
                           </Badge>
                         </ReadonlyField>
                       </FieldRow>
                       <FieldRow>
-                        <ReadonlyField label={t('portalSite.corsMode')}>
+                        <ReadonlyField source={<FieldSourceInfo kind="portal_site" name={selectedEntry.name} path="/cors/mode" />} label={t('portalSite.corsMode')}>
                           <Badge variant="outline">
                             {t(portalCorsModeLabel(selectedEntry.cors?.mode))}
                           </Badge>
                         </ReadonlyField>
-                        <ReadonlyField label={t('portalSite.allowedOrigins')}>
+                        <ReadonlyField source={<FieldSourceInfo kind="portal_site" name={selectedEntry.name} path="/cors/allowedOrigins" />} label={t('portalSite.allowedOrigins')}>
                           {selectedEntry.cors?.mode === 'STRICT' &&
                           (selectedEntry.cors.allowedOrigins ?? []).length >
                             0 ? (
@@ -1768,7 +1771,7 @@ export function PortalSitePage() {
                           )}
                         </ReadonlyField>
                       </FieldRow>
-                      <ReadonlyField
+                      <ReadonlyField source={<FieldSourceInfo kind="portal_site" name={selectedEntry.name} path={selectedEntry.type === 'RPCGW' ? '/rpcgwServices' : '/webName'} />}
                         label={
                           selectedEntry.type === 'RPCGW'
                             ? t('portalSite.rpcService')

@@ -25,6 +25,7 @@ import type {
   EventDebugEventItem,
   EventDebugDefaultEmitRequest,
   EventDebugEmitRequest,
+  FieldSource,
   SeedPreview,
   SeedItemSelection,
   PortalCert,
@@ -252,6 +253,26 @@ export function createEventDebugApiService(client: VrpcClient) {
  */
 export function createMaintenanceApiService(client: VrpcClient) {
   return {
+    /**
+     * Query field sources by entity kind and stable name.
+     * @param params - Request parameters, or null for methods without input
+     * @param options - Optional invocation options
+     * @returns Array<FieldSource> -
+     */
+    fieldSources(
+      params: {
+        kind: string;
+        name: string;
+      },
+      options?: VrpcRequestOptions,
+    ) {
+      return client.invoke<Array<FieldSource>>({
+        serviceName: MaintenanceApiServiceSpec.serviceName,
+        methodName: MaintenanceApiServiceSpec.methods.fieldSources,
+        params,
+        options,
+      });
+    },
     /**
      * Whether Hub configuration is read-only.
      * @param params - Request parameters, or null for methods without input

@@ -17,9 +17,9 @@ const (
 	HubDefaultDashboardURL     = "http://:7099/"
 	HubMTLSDefaultDashboardURL = "https://:7099/"
 
-	SourceMemory     = "memory"
-	SourceSQLite     = "sqlite"
-	SourcePostgreSQL = "postgres"
+	StoreMemory     = "memory"
+	StoreSQLite     = "sqlite"
+	StorePostgreSQL = "postgres"
 )
 
 type Flag struct {
@@ -33,12 +33,16 @@ type Flag struct {
 	MQExternalNatsURL string
 	MQEmbeddedNats    bool
 
-	SourceType    string
-	SeedYAMLPath  string
-	SeedYAML      string
+	Store         string
 	NoDB          bool
 	DBSQLiteFile  string
 	DBPostgresURL string
+
+	SeedYAML       string
+	SeedYAMLPath   string
+	SeedSource     string
+	SeedSourceFile string
+	SeedVarsFile   string
 
 	DashboardURLRaw         string
 	DashboardURLSet         bool
@@ -48,7 +52,8 @@ type Flag struct {
 
 func (f *Flag) Normalize(inproc bool) {
 	vpre.CheckNilError(f.MTLS.Validate(), "hub flag normalize failed")
-	f.normalizeSource()
+	f.normalizeSeed()
+	f.normalizeStore()
 	f.normalizeDashboardURL()
 
 	if inproc {
@@ -78,27 +83,34 @@ func (f *Flag) normalizeListen() {
 	}
 }
 
-func (f *Flag) normalizeSource() {
+func (f *Flag) normalizeSeed() {
+	vpre.CheckNot(f.SeedSource != "" && f.SeedSourceFile != "", "SeedSource and seed-source-file are mutually exclusive")
+	vpre.CheckNot((f.SeedSource != "" || f.SeedSourceFile != "" || f.SeedVarsFile != "") && f.SeedYAML == "" && f.SeedYAMLPath == "", "seed source and variables require seed YAML")
 	vpre.CheckNot(f.SeedYAMLPath != "" && f.SeedYAML != "", "SeedYAML and seed-yaml-file are mutually exclusive")
-	vpre.CheckNot(f.NoDB && (f.DBSQLiteFile != "" || f.DBPostgresURL != "" || (f.SourceType != "" && f.SourceType != SourceMemory)), "no-db cannot be used with a database source")
-	kind := f.SourceType
+	vpre.CheckNot(f.SeedSource != "" && f.SeedYAML == "", "SeedSource requires inline SeedYAML")
+	vpre.CheckNot(f.SeedSourceFile != "" && f.SeedYAMLPath == "", "seed-source-file requires seed-yaml-file")
+}
+
+func (f *Flag) normalizeStore() {
+	vpre.CheckNot(f.NoDB && (f.DBSQLiteFile != "" || f.DBPostgresURL != "" || (f.Store != "" && f.Store != StoreMemory)), "no-db cannot be used with a database store")
+	kind := f.Store
 	if kind == "" {
 		var err error
-		kind, err = f.inferSourceType()
+		kind, err = f.inferStore()
 		vpre.CheckNilError(err, "hub flag normalize failed")
 	}
-	f.SourceType = kind
+	f.Store = kind
 
 	switch kind {
-	case SourceMemory:
+	case StoreMemory:
 		f.NoDB = true
 		vpre.Check(f.SeedYAMLPath != "" || f.SeedYAML != "", "no-db requires seed-yaml-file or SeedYAML")
-	case SourceSQLite:
+	case StoreSQLite:
 		vpre.CheckNotEmpty(f.DBSQLiteFile, "DBSQLiteFile is empty")
-	case SourcePostgreSQL:
+	case StorePostgreSQL:
 		vpre.CheckNotEmpty(f.DBPostgresURL, "DBPostgresURL is empty")
 	default:
-		vpre.Panicf("unsupported hub source type %q", kind)
+		vpre.Panicf("unsupported hub store %q", kind)
 	}
 }
 
@@ -157,27 +169,27 @@ func validateMQExternalNatsURL(endpoint string) error {
 	return nil
 }
 
-func (f *Flag) inferSourceType() (string, error) {
+func (f *Flag) inferStore() (string, error) {
 	hasSQLite := f.DBSQLiteFile != ""
 	hasPostgreSQL := f.DBPostgresURL != ""
 
-	sourceCount := 0
+	storeCount := 0
 	if hasSQLite {
-		sourceCount++
+		storeCount++
 	}
 	if hasPostgreSQL {
-		sourceCount++
+		storeCount++
 	}
-	if sourceCount > 1 {
+	if storeCount > 1 {
 		return "", fmt.Errorf("only one of DBSQLiteFile or DBPostgresURL can be set")
 	}
 
 	switch {
 	case hasSQLite:
-		return SourceSQLite, nil
+		return StoreSQLite, nil
 	case hasPostgreSQL:
-		return SourcePostgreSQL, nil
+		return StorePostgreSQL, nil
 	default:
-		return SourceMemory, nil
+		return StoreMemory, nil
 	}
 }

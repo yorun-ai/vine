@@ -647,7 +647,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "MaintenanceApiService",
 		SkelName:          "vine.hub.admin.MaintenanceApiService",
-		Hash:              "a4ba47c3",
+		Hash:              "29fd31df",
 		ServerType:        reflect.TypeFor[MaintenanceApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultMaintenanceApiServiceServer](),
 
@@ -655,9 +655,42 @@ var (
 		WrapperERServerCtor: _NewWrapperMaintenanceApiServiceServerER,
 		DefaultERServerType: reflect.TypeFor[*DefaultMaintenanceApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
+			_MaintenanceApiServiceFieldSourcesSpec,
 			_MaintenanceApiServiceConfigReadOnlySpec,
 			_MaintenanceApiServicePreviewSeedYamlSpec,
 			_MaintenanceApiServiceApplySeedYamlSpec,
+		},
+	}
+	_MaintenanceApiServiceFieldSourcesSpec = &rpcspec.MethodSpec{
+		Name:          "FieldSources",
+		SkelName:      "fieldSources",
+		ArgumentsType: reflect.TypeFor[_MaintenanceApiServiceFieldSourcesArguments](),
+		CloneArguments: func(value any) any {
+			source := value.(*_MaintenanceApiServiceFieldSourcesArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[[]FieldSource](),
+		CloneResult: func(value any) any {
+			source := value.([]FieldSource)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]FieldSource, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
+		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
+		ArgumentsContainsBinaryType: false,
+		ResultContainsBinaryType:    false,
+		MethodFuncs: []any{
+			MaintenanceApiServiceServer.FieldSources,
+			MaintenanceApiServiceServerER.FieldSources,
 		},
 	}
 	_MaintenanceApiServiceConfigReadOnlySpec = &rpcspec.MethodSpec{
@@ -742,6 +775,11 @@ var (
 
 // MaintenanceApiService / Arguments
 
+type _MaintenanceApiServiceFieldSourcesArguments struct {
+	Kind string `json:"kind" skel:"index(0)"`
+	Name string `json:"name" skel:"index(1)"`
+}
+
 type _MaintenanceApiServicePreviewSeedYamlArguments struct {
 	Content string `json:"content" skel:"index(0)"`
 }
@@ -754,6 +792,8 @@ type _MaintenanceApiServiceApplySeedYamlArguments struct {
 // MaintenanceApiService / Server
 
 type MaintenanceApiServiceServer interface {
+	// FieldSources Query field sources by entity kind and stable name.
+	FieldSources(kind string, name string) []FieldSource
 	// ConfigReadOnly Whether Hub configuration is read-only.
 	ConfigReadOnly() bool
 	// PreviewSeedYaml Preview Seed YAML differences.
@@ -772,6 +812,11 @@ type MaintenanceApiServiceServer interface {
 // MaintenanceApiService / Server / DefaultServer
 
 type DefaultMaintenanceApiServiceServer struct{}
+
+func (*DefaultMaintenanceApiServiceServer) FieldSources(string, string) []FieldSource {
+	ex.PanicNew(ex.InvalidRequest, "method fieldSources is not implemented")
+	return []FieldSource{}
+}
 
 func (*DefaultMaintenanceApiServiceServer) ConfigReadOnly() bool {
 	ex.PanicNew(ex.InvalidRequest, "method configReadOnly is not implemented")
@@ -793,6 +838,7 @@ func (*DefaultMaintenanceApiServiceServer) mustBeMaintenanceApiServiceServer() {
 // MaintenanceApiService / ERServer
 
 type MaintenanceApiServiceServerER interface {
+	FieldSources(kind string, name string) ([]FieldSource, ex.Error)
 	ConfigReadOnly() (bool, ex.Error)
 	PreviewSeedYaml(content string) (SeedPreview, ex.Error)
 	ApplySeedYaml(content string, selections []SeedItemSelection) (SeedPreview, ex.Error)
@@ -818,6 +864,12 @@ func (service *_WrapperMaintenanceApiServiceServerER) server() MaintenanceApiSer
 		return &service.DefaultMaintenanceApiServiceServer
 	}
 	return service.serverImpl
+}
+
+func (service *_WrapperMaintenanceApiServiceServerER) FieldSources(kind string, name string) (ret []FieldSource, err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	ret = service.server().FieldSources(kind, name)
+	return
 }
 
 func (service *_WrapperMaintenanceApiServiceServerER) ConfigReadOnly() (ret bool, err ex.Error) {

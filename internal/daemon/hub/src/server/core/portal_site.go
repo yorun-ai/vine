@@ -42,6 +42,7 @@ func NormalizePortalCors(cors PortalCors) PortalCors {
 }
 
 type PortalSite struct {
+	FieldSources  FieldSources
 	Id            int
 	Name          string
 	Type          PortalSiteType
@@ -162,7 +163,9 @@ func (m *PortalSiteCore) Update(id int, update PortalSiteUpdate) PortalSite {
 	ex.PanicNewIfNot(!entry.BuiltIn, ex.OperationFailed, ex.F("built-in portal entry %q cannot be updated", entry.Name))
 
 	next := *entry
+	next.FieldSources = cloneFieldSources(entry.FieldSources)
 	if update.Name != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/name")
 		if *update.Name != entry.Name {
 			_, exists := m.PortalSiteRepo.GetEntryByName(*update.Name)
 			ex.PanicNewIfNot(!exists, ex.OperationFailed, ex.F("portal entry %q already exists", *update.Name))
@@ -170,18 +173,23 @@ func (m *PortalSiteCore) Update(id int, update PortalSiteUpdate) PortalSite {
 		next.Name = *update.Name
 	}
 	if update.Type != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/type")
 		next.Type = *update.Type
 	}
 	if update.ActorSkelName != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/actorSkelName")
 		next.ActorSkelName = *update.ActorSkelName
 	}
 	if update.ActorVia != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/actorVia")
 		next.ActorVia = *update.ActorVia
 	}
 	if update.Cors != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/cors")
 		next.Cors = *update.Cors
 	}
 	if update.WebName != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/webName")
 		next.WebName = *update.WebName
 	}
 

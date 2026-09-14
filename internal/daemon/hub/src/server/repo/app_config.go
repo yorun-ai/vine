@@ -41,10 +41,11 @@ func (s *DBAppConfigRepo) GetItemByName(name string) (*core.AppConfig, bool) {
 func (s *DBAppConfigRepo) SaveItem(item *core.AppConfig) {
 	s.Access.CheckWrite()
 	row := s.Dao.Save(&model.AppConfig{
-		Id:      item.Id,
-		Name:    item.Name,
-		Value:   item.Value,
-		Version: item.Version,
+		FieldSources: encodeFieldSources(item.FieldSources),
+		Id:           item.Id,
+		Name:         item.Name,
+		Value:        item.Value,
+		Version:      item.Version,
 	})
 	item.Id = row.Id
 
@@ -63,10 +64,11 @@ func (s *DBAppConfigRepo) RemoveItem(id int) bool {
 
 func mapAppConfig(row *model.AppConfig) *core.AppConfig {
 	return &core.AppConfig{
-		Id:        row.Id,
-		CreatedAt: row.CreatedAt,
-		Name:      row.Name,
-		Value:     row.Value,
-		Version:   row.Version,
+		FieldSources: decodeFieldSources(row.FieldSources),
+		Id:           row.Id,
+		CreatedAt:    row.CreatedAt,
+		Name:         row.Name,
+		Value:        row.Value,
+		Version:      row.Version,
 	}
 }

@@ -6,8 +6,6 @@ import (
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
-	"go.yorun.ai/vine/util/vcode"
-	"go.yorun.ai/vine/util/vfile"
 )
 
 type Seeder struct {
@@ -30,21 +28,18 @@ func (s *Seeder) DIInit() {
 	// Keep built-in dashboard entry data current even when user seed has already run.
 	s.seedDashboard()
 
+	if s.MetadataRepo.IsSeeded() {
+		s.Logger.Info("skip hub seed: all configuration is loaded from the database")
+		return
+	}
+
 	if s.Flag.SeedYAMLPath == "" && s.Flag.SeedYAML == "" {
-		if !s.MetadataRepo.IsSeeded() {
-			s.Logger.Warn("mark hub seed as applied without seed yaml path")
-			s.MetadataRepo.MarkSeeded()
-		}
+		s.Logger.Warn("mark hub seed as applied without seed yaml path")
+		s.MetadataRepo.MarkSeeded()
 		return
 	}
 
 	s.loadSeedYAML()
-	if s.MetadataRepo.IsSeeded() {
-		if s.applyOverrideSeed() {
-			s.Logger.Warn("apply override hub seed")
-		}
-		return
-	}
 
 	s.applySeed()
 	s.MetadataRepo.MarkSeeded()
@@ -52,15 +47,28 @@ func (s *Seeder) DIInit() {
 }
 
 func (s *Seeder) loadSeedYAML() {
-	var payload *_SettingsYAMLPayload
-	var err error
-	if s.Flag.SeedYAML != "" {
-		payload, err = vcode.UnmarshalYamlS[*_SettingsYAMLPayload](s.Flag.SeedYAML)
-	} else {
-		payload, err = vfile.ReadAsYaml[*_SettingsYAMLPayload](s.Flag.SeedYAMLPath)
-	}
+	template, err := readSeedInput(s.Flag.SeedYAML, s.Flag.SeedYAMLPath)
 	ex.PanicIfError(err)
-	ex.PanicNewIfNot(payload != nil, ex.ValidationFailed, "seed YAML must contain a configuration mapping (use {} for empty configuration)")
+	variables, err := readSeedInput("", s.Flag.SeedVarsFile)
+	ex.PanicIfError(err)
+	source, err := readSeedInput(s.Flag.SeedSource, s.Flag.SeedSourceFile)
+	ex.PanicIfError(err)
+	node, sources, err := resolveSeedInput(template, variables, source)
+	ex.PanicIfError(err)
+	payload := new(_SettingsYAMLPayload)
+	ex.PanicIfError(node.Decode(payload))
+	for i := range payload.AppConfigs {
+		payload.AppConfigs[i].Sources = entityFieldSources(sources, "appConfigs", i)
+	}
+	for i := range payload.PortalEntries {
+		payload.PortalEntries[i].Sources = entityFieldSources(sources, "portalSites", i)
+	}
+	for i := range payload.PortalRules {
+		payload.PortalRules[i].Sources = entityFieldSources(sources, "portalRules", i)
+	}
+	for i := range payload.PortalCerts {
+		payload.PortalCerts[i].Sources = entityFieldSources(sources, "portalCerts", i)
+	}
 
 	for _, item := range payload.AppConfigs {
 		s.AppConfigCore.Validate(*item.ToCoreAppConfig())
@@ -91,26 +99,4 @@ func (s *Seeder) applySeed() {
 	for _, cert := range s.payload.PortalCerts {
 		s.CertCore.Save(*cert.ToCorePortalCert())
 	}
-}
-
-func (s *Seeder) applyOverrideSeed() bool {
-	payload, toOverride := s.payload.Overridden()
-	if !toOverride {
-		return false
-	}
-
-	for _, item := range payload.AppConfigs {
-		s.AppConfigCore.Save(*item.ToCoreAppConfig())
-	}
-	for _, site := range payload.PortalEntries {
-		s.SiteCore.Save(*site.ToCorePortalSite())
-	}
-	for _, rule := range payload.PortalRules {
-		s.RuleCore.Save(*rule.ToCorePortalRule())
-	}
-	for _, cert := range payload.PortalCerts {
-		s.CertCore.Save(*cert.ToCorePortalCert())
-	}
-
-	return true
 }
