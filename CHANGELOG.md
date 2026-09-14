@@ -8,7 +8,12 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-09-14
+
 ### Fixed
+
+- Prefer Portal TLS certificates within their validity period when selecting
+  among matching certificates.
 
 - Accept nil values for nullable Task arguments, including strings, lists, and
   maps, during launch and execution. Preserve null versus empty collections
