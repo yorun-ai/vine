@@ -11,7 +11,7 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "7323d0fb",
+	Hash:        "6e592a45",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
 		CompilerVersion: "v0.19.1",
@@ -637,8 +637,8 @@ var _DomainSchema = &skel.DomainSchema{
 		{
 			Name:        "FieldSource",
 			SkelName:    "vine.hub.admin.FieldSource",
-			Description: "Source of a configuration field without configuration or variable values",
-			Hash:        "fdb8b2b4",
+			Description: "Source of a configuration field and its seed substitutions",
+			Hash:        "1095c581",
 			Members: []*skel.MemberSchema{
 				{
 					Name: "path",
@@ -676,6 +676,68 @@ var _DomainSchema = &skel.DomainSchema{
 							Kind:   skel.TypeKindScalar,
 							Scalar: skel.ScalarString,
 						},
+					},
+				},
+				{
+					Name: "template",
+					Type: &skel.TypeSchema{
+						Kind:     skel.TypeKindScalar,
+						Scalar:   skel.ScalarJson,
+						Nullable: true,
+					},
+				},
+				{
+					Name: "bindings",
+					Type: &skel.TypeSchema{
+						Kind: skel.TypeKindList,
+						Element: &skel.TypeSchema{
+							Kind:     skel.TypeKindData,
+							Name:     "FieldSourceBinding",
+							SkelName: "vine.hub.admin.FieldSourceBinding",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name:        "FieldSourceBinding",
+			SkelName:    "vine.hub.admin.FieldSourceBinding",
+			Description: "A resolved variable reference within a field template",
+			Hash:        "c81a56e7",
+			Members: []*skel.MemberSchema{
+				{
+					Name: "path",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
+				{
+					Name: "variable",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
+				{
+					Name: "reference",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
+				{
+					Name: "value",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarJson,
+					},
+				},
+				{
+					Name: "defaultUsed",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarBool,
 					},
 				},
 			},
@@ -4692,7 +4754,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "MaintenanceApiService",
 			SkelName:    "vine.hub.admin.MaintenanceApiService",
 			Description: "Hub maintenance service",
-			Hash:        "29fd31df",
+			Hash:        "27ea02dd",
 			Pub:         false,
 			Api:         true,
 			AuthMode:    skel.AuthModeNoAuth,
@@ -4704,7 +4766,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "fieldSources",
 					SkelName:    "fieldSources",
 					Description: "Query field sources by entity kind and stable name",
-					Hash:        "5f378d47",
+					Hash:        "8eecc9a1",
 					AuthMode:    skel.AuthModeUnset,
 					Arguments: []*skel.MemberSchema{
 						{

@@ -315,13 +315,15 @@ func (v EventListenerRegistration) Clone() EventListenerRegistration {
 	return cloned
 }
 
-// FieldSource Source of a configuration field without configuration or variable values
+// FieldSource Source of a configuration field and its seed substitutions
 type FieldSource struct {
-	Path      string   `json:"path"`
-	Source    string   `json:"source"`
-	Define    string   `json:"define"`
-	Override  string   `json:"override"`
-	Variables []string `json:"variables"`
+	Path      string               `json:"path"`
+	Source    string               `json:"source"`
+	Define    string               `json:"define"`
+	Override  string               `json:"override"`
+	Variables []string             `json:"variables"`
+	Template  *skel.JSON           `json:"template"`
+	Bindings  []FieldSourceBinding `json:"bindings"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -333,6 +335,33 @@ func (v FieldSource) Clone() FieldSource {
 		cloned.Variables = make([]string, len(v.Variables))
 		copy(cloned.Variables, v.Variables)
 	}
+	if v.Template != nil {
+		clonedValue1 := *v.Template
+		cloned.Template = &clonedValue1
+	}
+	if v.Bindings == nil {
+		cloned.Bindings = nil
+	} else {
+		cloned.Bindings = make([]FieldSourceBinding, len(v.Bindings))
+		for index2 := range v.Bindings {
+			cloned.Bindings[index2] = v.Bindings[index2].Clone()
+		}
+	}
+	return cloned
+}
+
+// FieldSourceBinding A resolved variable reference within a field template
+type FieldSourceBinding struct {
+	Path        string    `json:"path"`
+	Variable    string    `json:"variable"`
+	Reference   string    `json:"reference"`
+	Value       skel.JSON `json:"value"`
+	DefaultUsed bool      `json:"defaultUsed"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v FieldSourceBinding) Clone() FieldSourceBinding {
+	cloned := v
 	return cloned
 }
 

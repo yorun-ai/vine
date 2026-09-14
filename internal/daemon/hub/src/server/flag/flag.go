@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"go.yorun.ai/vine/internal/app"
+	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/util/vnet"
 	"go.yorun.ai/vine/util/vpre"
@@ -23,6 +24,8 @@ const (
 )
 
 type Flag struct {
+	// Deprecated: use SeedHubDataFile.
+	SeedYAMLFile string
 	app.FlagModel
 	MTLS mtls.Files
 
@@ -38,11 +41,11 @@ type Flag struct {
 	DBSQLiteFile  string
 	DBPostgresURL string
 
-	SeedYAML       string
-	SeedYAMLPath   string
-	SeedSource     string
-	SeedSourceFile string
-	SeedVarsFile   string
+	SeedHubData       string
+	SeedHubDataFile   string
+	SeedHubSource     string
+	SeedHubSourceFile string
+	SeedHubVarsFile   string
 
 	DashboardURLRaw         string
 	DashboardURLSet         bool
@@ -84,11 +87,17 @@ func (f *Flag) normalizeListen() {
 }
 
 func (f *Flag) normalizeSeed() {
-	vpre.CheckNot(f.SeedSource != "" && f.SeedSourceFile != "", "SeedSource and seed-source-file are mutually exclusive")
-	vpre.CheckNot((f.SeedSource != "" || f.SeedSourceFile != "" || f.SeedVarsFile != "") && f.SeedYAML == "" && f.SeedYAMLPath == "", "seed source and variables require seed YAML")
-	vpre.CheckNot(f.SeedYAMLPath != "" && f.SeedYAML != "", "SeedYAML and seed-yaml-file are mutually exclusive")
-	vpre.CheckNot(f.SeedSource != "" && f.SeedYAML == "", "SeedSource requires inline SeedYAML")
-	vpre.CheckNot(f.SeedSourceFile != "" && f.SeedYAMLPath == "", "seed-source-file requires seed-yaml-file")
+	if f.SeedYAMLFile != "" {
+		vpre.Check(f.SeedHubDataFile == "", "seed-yaml-file and seed-hub-data-file are mutually exclusive")
+		logger.Warn("seed-yaml-file / VINE_SEED_YAML_FILE is deprecated; use seed-hub-data-file / VINE_SEED_HUB_DATA_FILE")
+		f.SeedHubDataFile = f.SeedYAMLFile
+		f.SeedYAMLFile = ""
+	}
+	vpre.CheckNot(f.SeedHubSource != "" && f.SeedHubSourceFile != "", "SeedHubSource and seed-hub-source-file are mutually exclusive")
+	vpre.CheckNot((f.SeedHubSource != "" || f.SeedHubSourceFile != "" || f.SeedHubVarsFile != "") && f.SeedHubData == "" && f.SeedHubDataFile == "", "seed source and variables require seed YAML")
+	vpre.CheckNot(f.SeedHubDataFile != "" && f.SeedHubData != "", "SeedHubData and seed-hub-data-file are mutually exclusive")
+	vpre.CheckNot(f.SeedHubSource != "" && f.SeedHubData == "", "SeedHubSource requires inline SeedHubData")
+	vpre.CheckNot(f.SeedHubSourceFile != "" && f.SeedHubDataFile == "", "seed-hub-source-file requires seed-hub-data-file")
 }
 
 func (f *Flag) normalizeStore() {
@@ -104,7 +113,7 @@ func (f *Flag) normalizeStore() {
 	switch kind {
 	case StoreMemory:
 		f.NoDB = true
-		vpre.Check(f.SeedYAMLPath != "" || f.SeedYAML != "", "no-db requires seed-yaml-file or SeedYAML")
+		vpre.Check(f.SeedHubDataFile != "" || f.SeedHubData != "", "no-db requires seed-hub-data-file or SeedHubData")
 	case StoreSQLite:
 		vpre.CheckNotEmpty(f.DBSQLiteFile, "DBSQLiteFile is empty")
 	case StorePostgreSQL:

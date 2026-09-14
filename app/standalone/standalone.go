@@ -27,23 +27,25 @@ type _App struct {
 
 // Option configures the infrastructure started by standalone mode.
 type Option struct {
-	// SeedYAMLFile is the Hub seed configuration file, mutually exclusive with SeedYAML.
+	// Deprecated: use SeedHubDataFile.
 	SeedYAMLFile string
+	// SeedHubDataFile is the Hub seed configuration file, mutually exclusive with SeedHubData.
+	SeedHubDataFile string
 
-	// SeedYAML contains inline Hub seed YAML, mutually exclusive with SeedYAMLFile.
+	// SeedHubData contains inline Hub seed YAML, mutually exclusive with SeedHubDataFile.
 	// No-db mode requires one seed source; use "{}" for empty configuration.
-	SeedYAML string
+	SeedHubData string
 
-	// SeedSource contains an embedded seed source map and requires SeedYAML.
-	SeedSource string
-	// SeedSourceFile is the optional field source map and requires SeedYAMLFile.
-	SeedSourceFile string
-	// SeedVarsFile supplies a YAML mapping for ${path} and ${path:default} references.
+	// SeedHubSource contains an embedded seed source map and requires SeedHubData.
+	SeedHubSource string
+	// SeedHubSourceFile is the optional field source map and requires SeedHubDataFile.
+	SeedHubSourceFile string
+	// SeedHubVarsFile supplies a YAML mapping for ${path} and ${path:default} references.
 	// Paths use camelCase segments separated by dots. Defaults apply only to
 	// missing keys; existing null and zero values are preserved until use.
 	// Importing skeled/app registers app.Vars for type checking; unused fields
 	// are not required. Values inserted from this file are never re-expanded.
-	SeedVarsFile string
+	SeedHubVarsFile string
 
 	// NoDB loads read-only configuration from the seed YAML into memory. This is
 	// the default when neither SQLiteFile nor PostgresURL is supplied.
@@ -58,8 +60,8 @@ type Option struct {
 }
 
 func (o Option) isZero() bool {
-	return o.SeedYAMLFile == "" &&
-		o.SeedYAML == "" && o.SeedSource == "" && o.SeedSourceFile == "" && o.SeedVarsFile == "" &&
+	return o.SeedYAMLFile == "" && o.SeedHubDataFile == "" &&
+		o.SeedHubData == "" && o.SeedHubSource == "" && o.SeedHubSourceFile == "" && o.SeedHubVarsFile == "" &&
 		!o.NoDB &&
 		o.SQLiteFile == "" &&
 		o.PostgresURL == "" &&
@@ -127,15 +129,15 @@ func (a *_App) StartAndWait() {
 }
 
 const (
-	flagSQLiteFile   = vinecli.FlagHubDBSQLiteFile
-	flagPostgresURL  = vinecli.FlagHubDBPostgresURL
-	flagSeedYAMLFile = vinecli.FlagHubSeedYAMLFile
-	flagDashboardURL = vinecli.FlagHubDashboardURL
+	flagSQLiteFile      = vinecli.FlagHubDBSQLiteFile
+	flagPostgresURL     = vinecli.FlagHubDBPostgresURL
+	flagSeedHubDataFile = vinecli.FlagSeedHubDataFile
+	flagDashboardURL    = vinecli.FlagHubDashboardURL
 
-	envSQLiteFile   = vinecli.EnvHubDBSQLiteFile
-	envPostgresURL  = vinecli.EnvHubDBPostgresURL
-	envSeedYAMLFile = vinecli.EnvHubSeedYAMLFile
-	envDashboardURL = vinecli.EnvHubDashboardURL
+	envSQLiteFile      = vinecli.EnvHubDBSQLiteFile
+	envPostgresURL     = vinecli.EnvHubDBPostgresURL
+	envSeedHubDataFile = vinecli.EnvSeedHubDataFile
+	envDashboardURL    = vinecli.EnvHubDashboardURL
 )
 
 func (a *_App) initInfra() {
@@ -144,7 +146,7 @@ func (a *_App) initInfra() {
 		&ucli.BoolFlag{
 			Name:        vinecli.FlagHubNoDB,
 			Sources:     ucli.EnvVars(vinecli.EnvHubNoDB),
-			Usage:       "use no persistent database (default); requires seed-yaml-file or Option.SeedYAML; configuration is read-only",
+			Usage:       "use no persistent database (default); requires seed-hub-data-file or Option.SeedHubData; configuration is read-only",
 			Destination: &flag.NoDB,
 		},
 		&ucli.StringFlag{
@@ -160,13 +162,29 @@ func (a *_App) initInfra() {
 			Destination: &flag.DBPostgresURL,
 		},
 		&ucli.StringFlag{
-			Name:        flagSeedYAMLFile,
-			Sources:     ucli.EnvVars(envSeedYAMLFile),
-			Usage:       "seed YAML file",
-			Destination: &flag.SeedYAMLPath,
+			Name:        vinecli.FlagHubSeedYAMLFile,
+			Sources:     ucli.EnvVars(vinecli.EnvHubSeedYAMLFile),
+			Usage:       "deprecated: use --seed-hub-data-file",
+			Destination: &flag.SeedYAMLFile,
 		},
-		&ucli.StringFlag{Name: vinecli.FlagHubSeedSourceFile, Sources: ucli.EnvVars(vinecli.EnvHubSeedSourceFile), Usage: "seed source YAML file", Destination: &flag.SeedSourceFile},
-		&ucli.StringFlag{Name: vinecli.FlagHubSeedVarsFile, Sources: ucli.EnvVars(vinecli.EnvHubSeedVarsFile), Usage: "seed vars YAML file", Destination: &flag.SeedVarsFile},
+		&ucli.StringFlag{
+			Name:        flagSeedHubDataFile,
+			Sources:     ucli.EnvVars(envSeedHubDataFile),
+			Usage:       "seed YAML file",
+			Destination: &flag.SeedHubDataFile,
+		},
+		&ucli.StringFlag{
+			Name:        vinecli.FlagSeedHubSourceFile,
+			Sources:     ucli.EnvVars(vinecli.EnvSeedHubSourceFile),
+			Usage:       "seed source YAML file",
+			Destination: &flag.SeedHubSourceFile,
+		},
+		&ucli.StringFlag{
+			Name:        vinecli.FlagSeedHubVarsFile,
+			Sources:     ucli.EnvVars(vinecli.EnvSeedHubVarsFile),
+			Usage:       "seed vars YAML file",
+			Destination: &flag.SeedHubVarsFile,
+		},
 		&ucli.StringFlag{
 			Name:        flagDashboardURL,
 			Sources:     ucli.EnvVars(envDashboardURL),
@@ -186,14 +204,17 @@ func (a *_App) initInfra() {
 }
 
 func applyOption(flag *hubflag.Flag, option Option) {
-	if option.SeedSource != "" {
-		flag.SeedSource = option.SeedSource
+	if option.SeedYAMLFile != "" {
+		flag.SeedYAMLFile = option.SeedYAMLFile
 	}
-	if option.SeedSourceFile != "" {
-		flag.SeedSourceFile = option.SeedSourceFile
+	if option.SeedHubSource != "" {
+		flag.SeedHubSource = option.SeedHubSource
 	}
-	if option.SeedVarsFile != "" {
-		flag.SeedVarsFile = option.SeedVarsFile
+	if option.SeedHubSourceFile != "" {
+		flag.SeedHubSourceFile = option.SeedHubSourceFile
+	}
+	if option.SeedHubVarsFile != "" {
+		flag.SeedHubVarsFile = option.SeedHubVarsFile
 	}
 
 	if option.NoDB {
@@ -205,11 +226,11 @@ func applyOption(flag *hubflag.Flag, option Option) {
 	if option.PostgresURL != "" {
 		flag.DBPostgresURL = option.PostgresURL
 	}
-	if option.SeedYAML != "" {
-		flag.SeedYAML = option.SeedYAML
+	if option.SeedHubData != "" {
+		flag.SeedHubData = option.SeedHubData
 	}
-	if option.SeedYAMLFile != "" {
-		flag.SeedYAMLPath = option.SeedYAMLFile
+	if option.SeedHubDataFile != "" {
+		flag.SeedHubDataFile = option.SeedHubDataFile
 	}
 	if option.DashboardURL != "" {
 		flag.DashboardURLRaw = option.DashboardURL

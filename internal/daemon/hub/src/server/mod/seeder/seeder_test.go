@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/mtls"
+	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/api/redised"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/redisserver"
@@ -74,7 +75,7 @@ portalCerts:
 
 			flags := newTestSeederFlag(seedPath)
 			if inline {
-				flags = new(flag.Flag{SeedYAML: seedYAML})
+				flags = new(flag.Flag{SeedHubData: seedYAML})
 				flags.Normalize(true)
 			} else {
 				require.NoError(t, vfile.WriteString(seedPath, seedYAML))
@@ -133,9 +134,9 @@ func testSyncer(redisServer *redisserver.Server) *syncer.Syncer {
 
 func newTestSeederFlag(seedYAMLPath string) *flag.Flag {
 	flags := &flag.Flag{
-		Store:        flag.StoreSQLite,
-		DBSQLiteFile: "/tmp/hub.sqlite",
-		SeedYAMLPath: seedYAMLPath,
+		Store:           flag.StoreSQLite,
+		DBSQLiteFile:    "/tmp/hub.sqlite",
+		SeedHubDataFile: seedYAMLPath,
 	}
 	flags.Normalize(true)
 	return flags
@@ -155,7 +156,7 @@ func newTestSeederMTLSFlag() *flag.Flag {
 	return flags
 }
 
-func TestSeederMarksSeededWhenSeedYAMLPathIsEmpty(t *testing.T) {
+func TestSeederMarksSeededWhenSeedHubDataFileIsEmpty(t *testing.T) {
 	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
 
 	seeder := &Seeder{
@@ -304,7 +305,7 @@ func TestSeederPreservesCustomDashboardAccessWithMTLSDefault(t *testing.T) {
 	assert.Equal(t, "/custom", webRule.MatchPathPrefix)
 }
 
-func TestSeederSkipsEmptySeedYAMLPathWhenApplied(t *testing.T) {
+func TestSeederSkipsEmptySeedHubDataFileWhenApplied(t *testing.T) {
 	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
 	metadataRepo.MarkSeeded()
 
@@ -357,14 +358,14 @@ appConfigs:
 	assert.Equal(t, `{"enabled":true}`, item.Value)
 	assert.Equal(t, 7, item.Version)
 	// After metadata is set, none of the deployment inputs are read again.
-	seeder.Flag.SeedVarsFile = filepath.Join(t.TempDir(), "missing-vars.yaml")
-	seeder.Flag.SeedSourceFile = filepath.Join(t.TempDir(), "missing-source.yaml")
+	seeder.Flag.SeedHubVarsFile = filepath.Join(t.TempDir(), "missing-vars.yaml")
+	seeder.Flag.SeedHubSourceFile = filepath.Join(t.TempDir(), "missing-source.yaml")
 	require.NotPanics(t, seeder.DIInit)
 	require.NoError(t, vfile.WriteString(seedPath, "appConfigs: [{name: feature.flag, value: '${missing}'}]"))
 	require.NotPanics(t, seeder.DIInit)
 	require.NoError(t, vfile.WriteString(seedPath, "[invalid YAML"))
 	require.NotPanics(t, seeder.DIInit)
-	seeder.Flag.SeedYAMLPath = filepath.Join(t.TempDir(), "missing-seed.yaml")
+	seeder.Flag.SeedHubDataFile = filepath.Join(t.TempDir(), "missing-seed.yaml")
 	require.NotPanics(t, seeder.DIInit)
 
 }
@@ -675,14 +676,14 @@ func TestSeederPreflightsSitesAndCertificatesBeforeWriting(t *testing.T) {
 func TestSeederRejectsInvalidInlineYAML(t *testing.T) {
 	for _, source := range []string{" ", "null", "appConfigs: [", "[]"} {
 		t.Run(source, func(t *testing.T) {
-			seeder := new(Seeder{Flag: new(flag.Flag{SeedYAML: source})})
+			seeder := new(Seeder{Flag: new(flag.Flag{SeedHubData: source})})
 			require.Panics(t, seeder.loadSeedYAML)
 		})
 	}
 }
 
 func TestSeederAcceptsEmptyInlineMapping(t *testing.T) {
-	seeder := new(Seeder{Flag: new(flag.Flag{SeedYAML: "{}"})})
+	seeder := new(Seeder{Flag: new(flag.Flag{SeedHubData: "{}"})})
 	require.NotPanics(t, seeder.loadSeedYAML)
 	require.NotNil(t, seeder.payload)
 }
@@ -691,7 +692,7 @@ func TestSeederPersistsSourcesByEntityAndClearsOnRemoval(t *testing.T) {
 	configRepo, ruleRepo, certRepo, siteRepo, metadataRepo, _ := newTestSeederRepos(t)
 	template := "appConfigs:\n- name: second\n  value: '${value}'\n- name: first\n  value: {}\n"
 	source := fmt.Sprintf("version: 1\nseedSha256: %x\nfields:\n  /appConfigs/0/value:\n    source: app/default\n    define: domain/booker\n    override: app/default\n", sha256.Sum256([]byte(template)))
-	s := new(Seeder{Flag: new(flag.Flag{SeedYAML: template, SeedSource: source, SeedVarsFile: writeSeedVarsFile(t, `value: '"resolved"'`)}),
+	s := new(Seeder{Flag: new(flag.Flag{SeedHubData: template, SeedHubSource: source, SeedHubVarsFile: writeSeedHubVarsFile(t, `value: '"resolved"'`)}),
 		AppConfigCore: new(core.AppConfigCore{AppConfigRepo: configRepo}),
 		RuleCore:      new(core.PortalRuleCore{PortalRuleRepo: ruleRepo}),
 		SiteCore:      new(core.PortalSiteCore{PortalSiteRepo: siteRepo}),
@@ -703,7 +704,7 @@ func TestSeederPersistsSourcesByEntityAndClearsOnRemoval(t *testing.T) {
 	item, ok := configRepo.GetItemByName("second")
 	require.True(t, ok)
 	require.Equal(t, `"resolved"`, item.Value)
-	require.Equal(t, core.FieldSource{Source: "app/default", Define: "domain/booker", Override: "app/default", Variables: []string{"value"}}, item.FieldSources["/value"])
+	require.Equal(t, core.FieldSource{Source: "app/default", Define: "domain/booker", Override: "app/default", Variables: []string{"value"}, Template: new(skel.JSON(`"${value}"`)), Bindings: []core.FieldSourceBinding{{Variable: "value", Reference: "${value}", Value: skel.JSON(`"\"resolved\""`)}}}, item.FieldSources["/value"])
 	other, ok := configRepo.GetItemByName("first")
 	require.True(t, ok)
 	require.Empty(t, other.FieldSources)
@@ -734,7 +735,7 @@ fields:
   /appConfigs/0/value/nested: {source: app/default, define: domain/user, override: app/default}
 `, sha256.Sum256([]byte(template)))
 	target := new(Seeder{
-		Flag:          new(flag.Flag{SeedYAML: template, SeedSource: source, SeedVarsFile: writeSeedVarsFile(t, "ttl: 2h")}),
+		Flag:          new(flag.Flag{SeedHubData: template, SeedHubSource: source, SeedHubVarsFile: writeSeedHubVarsFile(t, "ttl: 2h")}),
 		AppConfigCore: new(core.AppConfigCore{AppConfigRepo: configs}),
 		RuleCore:      new(core.PortalRuleCore{PortalRuleRepo: rules}),
 		SiteCore:      new(core.PortalSiteCore{PortalSiteRepo: sites}),
@@ -747,7 +748,7 @@ fields:
 	require.True(t, ok)
 	require.JSONEq(t, `{"accessTokenTTL":"2h","refreshTokenTTL":"168h","nested":{"enabled":false}}`, item.Value)
 	require.Equal(t, core.FieldSources{
-		"/value/accessTokenTTL":  {Source: "profile/dev", Define: "domain/user", Override: "profile/dev", Variables: []string{"ttl"}},
+		"/value/accessTokenTTL":  {Source: "profile/dev", Define: "domain/user", Override: "profile/dev", Variables: []string{"ttl"}, Template: new(skel.JSON(`"${ttl}"`)), Bindings: []core.FieldSourceBinding{{Variable: "ttl", Reference: "${ttl}", Value: skel.JSON(`"2h"`)}}},
 		"/value/refreshTokenTTL": {Source: "domain/user", Define: "domain/user"},
 		"/value/nested":          {Source: "app/default", Define: "domain/user", Override: "app/default"},
 	}, item.FieldSources)
@@ -756,7 +757,7 @@ fields:
 	require.Equal(t, item.FieldSources, reread.FieldSources)
 }
 
-func writeSeedVarsFile(t *testing.T, content string) string {
+func writeSeedHubVarsFile(t *testing.T, content string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "vars.yaml")
 	require.NoError(t, os.WriteFile(path, []byte(content), 0600))

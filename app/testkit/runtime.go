@@ -99,19 +99,26 @@ func (r *Runtime) stopAfterStartFailure() {
 func prepareStandaloneOption(t testing.TB, option Option) (standalone.Option, func()) {
 	t.Helper()
 
-	seedYAMLFile := option.SeedYAMLFile
+	if option.SeedYAMLFile != "" {
+		if option.SeedHubDataFile != "" {
+			t.Fatal("SeedYAMLFile and SeedHubDataFile are mutually exclusive")
+		}
+		t.Log("SeedYAMLFile is deprecated; use SeedHubDataFile")
+		option.SeedHubDataFile = option.SeedYAMLFile
+	}
+	seedYAMLFile := option.SeedHubDataFile
 	cleanup := func() {}
 	if len(option.ConfigOverrides) > 0 {
 		var err error
-		seedYAMLFile, cleanup, err = mergeSeedConfigOverrides(t, option.SeedYAMLFile, option.ConfigOverrides)
+		seedYAMLFile, cleanup, err = mergeSeedConfigOverrides(t, option.SeedHubDataFile, option.ConfigOverrides)
 		if err != nil {
 			t.Fatalf("prepare testkit seed yaml failed: %v", err)
 		}
 	}
 
 	return standalone.Option{
-		SeedYAMLFile: seedYAMLFile,
-		SQLiteFile:   standaloneSQLiteFile(t),
+		SeedHubDataFile: seedYAMLFile,
+		SQLiteFile:      standaloneSQLiteFile(t),
 	}, cleanup
 }
 

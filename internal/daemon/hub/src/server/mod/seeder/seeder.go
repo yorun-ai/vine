@@ -33,7 +33,7 @@ func (s *Seeder) DIInit() {
 		return
 	}
 
-	if s.Flag.SeedYAMLPath == "" && s.Flag.SeedYAML == "" {
+	if s.Flag.SeedHubDataFile == "" && s.Flag.SeedHubData == "" {
 		s.Logger.Warn("mark hub seed as applied without seed yaml path")
 		s.MetadataRepo.MarkSeeded()
 		return
@@ -47,11 +47,11 @@ func (s *Seeder) DIInit() {
 }
 
 func (s *Seeder) loadSeedYAML() {
-	template, err := readSeedInput(s.Flag.SeedYAML, s.Flag.SeedYAMLPath)
+	template, err := readSeedInput(s.Flag.SeedHubData, s.Flag.SeedHubDataFile)
 	ex.PanicIfError(err)
-	variables, err := readSeedInput("", s.Flag.SeedVarsFile)
+	variables, err := readSeedInput("", s.Flag.SeedHubVarsFile)
 	ex.PanicIfError(err)
-	source, err := readSeedInput(s.Flag.SeedSource, s.Flag.SeedSourceFile)
+	source, err := readSeedInput(s.Flag.SeedHubSource, s.Flag.SeedHubSourceFile)
 	ex.PanicIfError(err)
 	node, sources, err := resolveSeedInput(template, variables, source)
 	ex.PanicIfError(err)

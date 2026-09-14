@@ -474,7 +474,7 @@ func TestHubConfigurationLifecycle(t *testing.T) {
 			name = "sqlite"
 		}
 		t.Run(name, func(t *testing.T) {
-			flags := &flag.Flag{SeedYAML: "appConfigs: [{name: demo.Config, value: {enabled: true}}]"}
+			flags := &flag.Flag{SeedHubData: "appConfigs: [{name: demo.Config, value: {enabled: true}}]"}
 			if persistent {
 				flags.DBSQLiteFile = filepath.Join(t.TempDir(), "hub.sqlite")
 			}

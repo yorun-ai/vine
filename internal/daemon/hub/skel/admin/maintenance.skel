@@ -89,11 +89,22 @@ api service MaintenanceApiService {
     }
 }
 
-@desc("Source of a configuration field without configuration or variable values")
+@desc("Source of a configuration field and its seed substitutions")
 data FieldSource {
     path: string
     source: string
     define: string
     override: string
     variables: list<string>
+    template: json?
+    bindings: list<FieldSourceBinding>
+}
+
+@desc("A resolved variable reference within a field template")
+data FieldSourceBinding {
+    path: string
+    variable: string
+    reference: string
+    value: json
+    defaultUsed: bool
 }

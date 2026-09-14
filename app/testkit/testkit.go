@@ -16,8 +16,10 @@ const (
 
 // Option configures a standalone application test runtime.
 type Option struct {
-	// SeedYAMLFile is the base Hub seed configuration file.
+	// Deprecated: use SeedHubDataFile.
 	SeedYAMLFile string
+	// SeedHubDataFile is the base Hub seed configuration file.
+	SeedHubDataFile string
 	// ConfigOverrides replaces application configuration values in the test seed.
 	ConfigOverrides []ConfigOverride
 }

@@ -18,7 +18,7 @@ func TestNormalizeRejectsPartialMTLSFiles(t *testing.T) {
 func TestFlagNormalizeRequiresSeedWithoutDatabase(t *testing.T) {
 	flags := &Flag{}
 
-	require.PanicsWithError(t, "no-db requires seed-yaml-file or SeedYAML", func() {
+	require.PanicsWithError(t, "no-db requires seed-hub-data-file or SeedHubData", func() {
 		flags.Normalize(false)
 	})
 }
@@ -271,7 +271,7 @@ func TestFlagInferStoreRejectsMultipleStores(t *testing.T) {
 
 func TestNoDBModes(t *testing.T) {
 	for _, explicit := range []bool{false, true} {
-		f := &Flag{NoDB: explicit, SeedYAMLPath: "seed.yaml"}
+		f := &Flag{NoDB: explicit, SeedHubDataFile: "seed.yaml"}
 		f.Normalize(true)
 		require.True(t, f.NoDB)
 		require.Equal(t, StoreMemory, f.Store)
@@ -283,10 +283,10 @@ func TestNoDBModes(t *testing.T) {
 
 func TestInlineSeedSourceModes(t *testing.T) {
 	for _, flags := range []*Flag{
-		{SeedYAML: "{}"},
-		{SeedYAML: "{}", NoDB: true},
-		{SeedYAML: "{}", DBSQLiteFile: "hub.sqlite"},
-		{SeedYAML: "{}", DBPostgresURL: "postgres://localhost/hub"},
+		{SeedHubData: "{}"},
+		{SeedHubData: "{}", NoDB: true},
+		{SeedHubData: "{}", DBSQLiteFile: "hub.sqlite"},
+		{SeedHubData: "{}", DBPostgresURL: "postgres://localhost/hub"},
 	} {
 		require.NotPanics(t, func() { flags.Normalize(true) })
 		require.Equal(t, flags.DBSQLiteFile == "" && flags.DBPostgresURL == "", flags.NoDB)
@@ -295,20 +295,28 @@ func TestInlineSeedSourceModes(t *testing.T) {
 
 func TestSeedSupplementInputsRequireTemplateAndAreExclusive(t *testing.T) {
 	for _, flags := range []*Flag{
-		{SeedYAML: "{}", SeedSource: "{}", SeedSourceFile: "source.yaml"},
-		{SeedYAML: "{}", SeedSourceFile: "source.yaml"},
-		{SeedYAMLPath: "seed.yaml", SeedSource: "{}"},
-		{DBSQLiteFile: "hub.sqlite", SeedSourceFile: "source.yaml"},
-		{DBSQLiteFile: "hub.sqlite", SeedVarsFile: "vars.yaml"},
+		{SeedHubData: "{}", SeedHubSource: "{}", SeedHubSourceFile: "source.yaml"},
+		{SeedHubData: "{}", SeedHubSourceFile: "source.yaml"},
+		{SeedHubDataFile: "seed.yaml", SeedHubSource: "{}"},
+		{DBSQLiteFile: "hub.sqlite", SeedHubSourceFile: "source.yaml"},
+		{DBSQLiteFile: "hub.sqlite", SeedHubVarsFile: "vars.yaml"},
 	} {
 		require.Panics(t, func() { flags.Normalize(true) })
 	}
 	for _, valid := range []*Flag{
-		{SeedYAML: "{}", SeedSource: "{}", SeedVarsFile: "vars.yaml"},
-		{SeedYAMLPath: "seed.yaml", SeedSourceFile: "source.yaml", SeedVarsFile: "vars.yaml"},
-		{SeedYAML: "{}", SeedVarsFile: "vars.yaml"},
-		{SeedYAMLPath: "seed.yaml", SeedVarsFile: "vars.yaml"},
+		{SeedHubData: "{}", SeedHubSource: "{}", SeedHubVarsFile: "vars.yaml"},
+		{SeedHubDataFile: "seed.yaml", SeedHubSourceFile: "source.yaml", SeedHubVarsFile: "vars.yaml"},
+		{SeedHubData: "{}", SeedHubVarsFile: "vars.yaml"},
+		{SeedHubDataFile: "seed.yaml", SeedHubVarsFile: "vars.yaml"},
 	} {
 		require.NotPanics(t, func() { valid.Normalize(true) })
 	}
+}
+
+func TestDeprecatedSeedYamlFile(t *testing.T) {
+	f := &Flag{SeedYAMLFile: "old.yaml"}
+	f.Normalize(true)
+	assert.Equal(t, "old.yaml", f.SeedHubDataFile)
+	assert.Empty(t, f.SeedYAMLFile)
+	assert.Panics(t, func() { (&Flag{SeedYAMLFile: "old.yaml", SeedHubDataFile: "new.yaml"}).Normalize(true) })
 }

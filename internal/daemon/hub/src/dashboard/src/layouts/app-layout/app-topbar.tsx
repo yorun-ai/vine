@@ -89,7 +89,7 @@ export function AppTopbar({
         </div>
       </div>
 
-      {isConfigurationPage && !configAccess.loading && configAccess.readOnly ? (
+      {isConfigurationPage && !configAccess.loading && !configAccess.error && configAccess.readOnly ? (
         <div className="order-last flex w-full min-w-0 justify-center lg:order-none lg:w-auto lg:flex-1">
           <div
             role="status"
@@ -98,10 +98,10 @@ export function AppTopbar({
             <LockKeyhole className="size-4 shrink-0" aria-hidden="true" />
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
               <span className="font-semibold">
-                {t(configAccess.error ? 'configAccess.unavailableTitle' : 'configAccess.readOnlyTitle')}
+                {t('configAccess.readOnlyTitle')}
               </span>
               <span>
-                {t(configAccess.error ? 'configAccess.unavailable' : 'configAccess.readOnly')}
+                {t('configAccess.readOnly')}
               </span>
             </div>
           </div>

@@ -5,14 +5,14 @@
 Hub is Vine's configuration and service registry. It broadly follows a DDD-style layered architecture, maintains configuration, application state, and Rpc service registrations, and exposes read and subscription capabilities through Redis.
 
 Without a database option, Hub defaults to `--no-db` and requires
-`--seed-yaml-file`. Configuration is loaded into an isolated in-memory SQLite
+`--seed-hub-data-file`. Configuration is loaded into an isolated in-memory SQLite
 database on each start. After initialization, configuration repos reject writes
 to app configs, Portal sites, rules, and certificates. Edit the seed file and
 restart Hub to apply changes. Dashboard exposes this state and disables editing;
 registration, schemas, and leases remain writable. Explicit `--db-sqlite-file`
 or `--db-postgres-url` keeps writable persistence and is mutually exclusive
 with `--no-db`. This also applies to standalone and `vine dev`. Standalone
-can alternatively receive inline YAML through `Option.SeedYAML`, mutually
+can alternatively receive inline YAML through `Option.SeedHubData`, mutually
 exclusive with the seed file; it uses the same import and read-only behavior.
 
 ## Directory Structure
@@ -140,7 +140,7 @@ Hub currently supports two database backends:
 - SQLite
 - PostgreSQL
 
-At startup, `--seed-yaml-file` imports initial configuration, Portal sites,
+At startup, `--seed-hub-data-file` imports initial configuration, Portal sites,
 rules, and certificates from local YAML into the database. Hub reads this state
 through its repos and publishes it to Redis for Link and Portal.
 
@@ -148,6 +148,12 @@ Database metadata records completion of the initial seed. Subsequent starts skip
 all seed, variable, and source inputs; seed entries have no `override` switch.
 No-db mode creates a fresh store and imports the seed on every start. Built-in
 Dashboard provisioning is maintained independently of the seed marker.
+
+Field source metadata stores the original field template as JSON and each
+resolved binding (relative path, variable name, placeholder, applied JSON value,
+and default-use flag). AppConfig metadata groups nested substitutions under the
+top-level value key. Admin edits clear obsolete templates and bindings. The
+admin API and Dashboard expose this metadata alongside field origins.
 
 Portal rule YAML uses flat fields in this order: `matchScheme`, `matchHost`,
 `matchPort`, `matchPathPrefix`, `routeType`, `routeSiteName`,

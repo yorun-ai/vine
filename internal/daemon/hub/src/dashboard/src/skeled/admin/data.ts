@@ -312,7 +312,7 @@ export type EventListenerRegistration = {
   noRetry:       boolean;
 }
 /**
- * Source of a configuration field without configuration or variable values.
+ * Source of a configuration field and its seed substitutions.
  */
 export type FieldSource = {
   path:      string;
@@ -320,6 +320,18 @@ export type FieldSource = {
   define:    string;
   override:  string;
   variables: Array<string>;
+  template:  string | null;
+  bindings:  Array<FieldSourceBinding>;
+}
+/**
+ * A resolved variable reference within a field template.
+ */
+export type FieldSourceBinding = {
+  path:        string;
+  variable:    string;
+  reference:   string;
+  value:       string;
+  defaultUsed: boolean;
 }
 /**
  * Portal site certificate.

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -26,8 +27,8 @@ func TestRunHubServe(t *testing.T) {
 		if flags.DBSQLiteFile != "/tmp/hub.sqlite" {
 			t.Fatalf("unexpected sqlitePath: %q", flags.DBSQLiteFile)
 		}
-		if flags.SeedYAMLPath != "/tmp/hub.yaml" {
-			t.Fatalf("unexpected seed yaml path: %q", flags.SeedYAMLPath)
+		if flags.SeedHubDataFile != "/tmp/hub.yaml" {
+			t.Fatalf("unexpected seed yaml path: %q", flags.SeedHubDataFile)
 		}
 		if flags.DashboardURLRaw != "https://hub.example.com:8443/admin" {
 			t.Fatalf("unexpected dashboard url raw: %q", flags.DashboardURLRaw)
@@ -49,7 +50,7 @@ func TestRunHubServe(t *testing.T) {
 		}
 	}
 
-	result := run([]string{"hub", "serve", "--control-listen", ":9090", "--admin-listen", ":9092", "--redis-listen", "127.0.0.1:9091", "--mq-external-nats-url", "nats://127.0.0.1:4222", "--seed-yaml-file", "/tmp/hub.yaml", "--dashboard-url", "https://hub.example.com:8443/admin", "--db-sqlite-file", "/tmp/hub.sqlite", "--mtls-ca-file", "/tmp/ca.pem", "--mtls-cert-file", "/tmp/hub.pem", "--mtls-key-file", "/tmp/hub-key.pem"})
+	result := run([]string{"hub", "serve", "--control-listen", ":9090", "--admin-listen", ":9092", "--redis-listen", "127.0.0.1:9091", "--mq-external-nats-url", "nats://127.0.0.1:4222", "--seed-hub-data-file", "/tmp/hub.yaml", "--dashboard-url", "https://hub.example.com:8443/admin", "--db-sqlite-file", "/tmp/hub.sqlite", "--mtls-ca-file", "/tmp/ca.pem", "--mtls-cert-file", "/tmp/hub.pem", "--mtls-key-file", "/tmp/hub-key.pem"})
 
 	if result.exitCode != exitCodeSuccess {
 		t.Fatalf("unexpected exit code: %d, stderr=%q", result.exitCode, result.stderr)
@@ -142,7 +143,7 @@ func TestRunHubHelpShowsServeOptions(t *testing.T) {
 	if !strings.Contains(result.stdout, "--mq-embedded-nats") {
 		t.Fatalf("unexpected stdout: %q", result.stdout)
 	}
-	if !strings.Contains(result.stdout, "--seed-yaml-file") {
+	if !strings.Contains(result.stdout, "--seed-hub-data-file") {
 		t.Fatalf("unexpected stdout: %q", result.stdout)
 	}
 	if !strings.Contains(result.stdout, "--dashboard-url") {
@@ -164,7 +165,7 @@ func TestRunHubServeFromEnv(t *testing.T) {
 	t.Setenv(EnvHubAdminListen, ":10092")
 	t.Setenv(EnvHubRedisListen, "127.0.0.1:10091")
 	t.Setenv(EnvHubMQExternalNatsURL, "nats://127.0.0.1:4222")
-	t.Setenv(EnvHubSeedYAMLFile, "/tmp/env-hub.yaml")
+	t.Setenv(EnvSeedHubDataFile, "/tmp/env-hub.yaml")
 	t.Setenv(EnvHubDashboardURL, "http://:10099")
 	t.Setenv(EnvHubDBSQLiteFile, "/tmp/env-hub.sqlite")
 
@@ -183,8 +184,8 @@ func TestRunHubServeFromEnv(t *testing.T) {
 		if flags.DBSQLiteFile != "/tmp/env-hub.sqlite" {
 			t.Fatalf("unexpected sqlitePath: %q", flags.DBSQLiteFile)
 		}
-		if flags.SeedYAMLPath != "/tmp/env-hub.yaml" {
-			t.Fatalf("unexpected seed yaml path: %q", flags.SeedYAMLPath)
+		if flags.SeedHubDataFile != "/tmp/env-hub.yaml" {
+			t.Fatalf("unexpected seed yaml path: %q", flags.SeedHubDataFile)
 		}
 		if flags.DashboardURLRaw != "http://:10099" {
 			t.Fatalf("unexpected dashboard url raw: %q", flags.DashboardURLRaw)
@@ -248,12 +249,72 @@ func TestRunHubServeNoDB(t *testing.T) {
 		}
 	}
 	for _, args := range [][]string{
-		{"hub", "serve", "--no-db", "--seed-yaml-file", "seed.yaml", "--mq-embedded-nats"},
-		{"hub", "serve", "--seed-yaml-file", "seed.yaml", "--mq-embedded-nats"},
+		{"hub", "serve", "--no-db", "--seed-hub-data-file", "seed.yaml", "--mq-embedded-nats"},
+		{"hub", "serve", "--seed-hub-data-file", "seed.yaml", "--mq-embedded-nats"},
 	} {
 		result := run(args)
 		if result.exitCode != exitCodeSuccess {
 			t.Fatalf("%s", result.stderr)
 		}
+	}
+}
+
+func TestHubDeprecatedSeedDataFileInputs(t *testing.T) {
+	original := startHubApp
+	t.Cleanup(func() { startHubApp = original })
+	for _, legacyEnv := range []bool{false, true} {
+		t.Run(fmt.Sprint(legacyEnv), func(t *testing.T) {
+			t.Setenv(EnvSeedHubDataFile, "")
+			t.Setenv(EnvHubSeedYAMLFile, "")
+			called := false
+			startHubApp = func(flags hubconf.Flag) {
+				flags.Normalize(true)
+				called = true
+				if flags.SeedHubDataFile != "old.yaml" {
+					t.Fatalf("incorrect path: %s", flags.SeedHubDataFile)
+				}
+			}
+			args := []string{"hub", "serve"}
+			if legacyEnv {
+				t.Setenv(EnvHubSeedYAMLFile, "old.yaml")
+			} else {
+				args = append(args, "--seed-yaml-file", "old.yaml")
+			}
+			result := run(args)
+			if result.exitCode != exitCodeSuccess || !called {
+				t.Fatalf("legacy input failed: %#v", result)
+			}
+		})
+	}
+}
+
+func TestHubSeedHubInputs(t *testing.T) {
+	original := startHubApp
+	t.Cleanup(func() { startHubApp = original })
+	for _, fromEnv := range []bool{false, true} {
+		t.Run(fmt.Sprint(fromEnv), func(t *testing.T) {
+			for _, name := range []string{EnvSeedHubDataFile, EnvSeedHubSourceFile, EnvSeedHubVarsFile, EnvHubSeedYAMLFile} {
+				t.Setenv(name, "")
+			}
+			called := false
+			startHubApp = func(flags hubconf.Flag) {
+				called = true
+				if flags.SeedHubDataFile != "data.yaml" || flags.SeedHubSourceFile != "source.yaml" || flags.SeedHubVarsFile != "vars.yaml" {
+					t.Fatalf("incorrect input mapping: %#v", flags)
+				}
+			}
+			args := []string{"hub", "serve"}
+			if fromEnv {
+				t.Setenv(EnvSeedHubDataFile, "data.yaml")
+				t.Setenv(EnvSeedHubSourceFile, "source.yaml")
+				t.Setenv(EnvSeedHubVarsFile, "vars.yaml")
+			} else {
+				args = append(args, "--seed-hub-data-file", "data.yaml", "--seed-hub-source-file", "source.yaml", "--seed-hub-vars-file", "vars.yaml")
+			}
+			result := run(args)
+			if result.exitCode != exitCodeSuccess || !called {
+				t.Fatalf("new seed flags failed: %#v", result)
+			}
+		})
 	}
 }

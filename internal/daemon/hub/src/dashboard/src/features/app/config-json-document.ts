@@ -29,7 +29,7 @@ export function configFieldCommentLines(field: ConfigJsonField | undefined) {
   const tags = field?.commentTags ?? ['type', 'desc']
   const lines: Array<{ tag: string; value: string }> = []
   const add = (tag: string, value: string) => {
-    if (!tags.includes(tag) && tag !== 'variables') return
+    if (!tags.includes(tag) && tag !== 'variables' && tag !== 'template') return
     for (const [index, line] of value.split(/\r\n|[\n\r\u2028\u2029]/).entries()) {
       lines.push({ tag: index === 0 ? '@' + tag : '', value: line })
     }
