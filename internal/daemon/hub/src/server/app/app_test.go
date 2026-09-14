@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"go.yorun.ai/vine/buildinfo"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -93,6 +94,10 @@ func TestHubAppDIInitNormalizesFlagAndSetsRunFlag(t *testing.T) {
 
 	spec.DIInit()
 
+	if got, want := spec.InternalAttrs.Info.Version(), buildinfo.MustVineVersion(); got != want {
+		t.Fatalf("unexpected daemon version: got %q, want Vine version %q", got, want)
+	}
+
 	assert.Equal(t, flag.HubDefaultAdminListen, spec.AppFlag.ListenAddr)
 	assert.Equal(t, flag.StoreSQLite, spec.Flag.Store)
 	assert.Equal(t, flag.HubDefaultControlListen, spec.Flag.ControlListen)
@@ -116,6 +121,10 @@ func TestHubAppDIInitKeepsPGConnUrl(t *testing.T) {
 
 	spec.DIInit()
 
+	if got, want := spec.InternalAttrs.Info.Version(), buildinfo.MustVineVersion(); got != want {
+		t.Fatalf("unexpected daemon version: got %q, want Vine version %q", got, want)
+	}
+
 	assert.Equal(t, flag.StorePostgreSQL, spec.Flag.Store)
 	assert.Equal(t, "postgres://demo:demo@127.0.0.1:5432/hub", spec.Flag.DBPostgresURL)
 	assert.Equal(t, "nats://127.0.0.1:4222", spec.Flag.MQExternalNatsURL)
@@ -135,6 +144,10 @@ func TestHubAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 	}
 
 	spec.DIInit()
+
+	if got, want := spec.InternalAttrs.Info.Version(), buildinfo.MustVineVersion(); got != want {
+		t.Fatalf("unexpected daemon version: got %q, want Vine version %q", got, want)
+	}
 
 	assert.Equal(t, "vine.hub", spec.Name())
 	assert.Equal(t, "vine.hub", spec.InternalAttrs.Info.Name())
@@ -166,6 +179,10 @@ func TestHubAppDIInitKeepsEnableNatsOutsideInproc(t *testing.T) {
 	}
 
 	spec.DIInit()
+
+	if got, want := spec.InternalAttrs.Info.Version(), buildinfo.MustVineVersion(); got != want {
+		t.Fatalf("unexpected daemon version: got %q, want Vine version %q", got, want)
+	}
 
 	assert.True(t, spec.Flag.MQEmbeddedNats)
 }

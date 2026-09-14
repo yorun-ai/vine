@@ -8,6 +8,11 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Fixed
+
+- Hub, Link, and Portal identify themselves with the Vine runtime version in
+  Rpc metadata, including when embedded in a business application.
+
 ### Added
 
 - Hub connection information includes its Vine runtime `version`.

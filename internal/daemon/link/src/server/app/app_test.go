@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"go.yorun.ai/vine/buildinfo"
 	"strings"
 	"testing"
 
@@ -19,6 +20,10 @@ func TestLinkAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 	}
 
 	spec.DIInit()
+
+	if got, want := spec.InternalAttrs.Info.Version(), buildinfo.MustVineVersion(); got != want {
+		t.Fatalf("unexpected daemon version: got %q, want Vine version %q", got, want)
+	}
 
 	if got := spec.Name(); got != "vine.link" {
 		t.Fatalf("unexpected spec name: %s", got)

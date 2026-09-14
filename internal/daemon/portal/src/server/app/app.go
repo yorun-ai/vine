@@ -1,11 +1,11 @@
 package app
 
 import (
+	"go.yorun.ai/vine/buildinfo"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/link"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/mtls"
-	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/internal/daemon"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubinfo"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
@@ -32,7 +32,7 @@ func (a *PortalApp) DIInit() {
 	a.Flag.Normalize()
 	identity := mtls.MustLoad(daemon.PortalIdentity.SPIFFEPath(), a.Flag.MTLS)
 
-	appInfo := meta.MustNewAppWithRandomId(a.Name(), runtime.Application().Version())
+	appInfo := meta.MustNewAppWithRandomId(a.Name(), buildinfo.MustVineVersion())
 	a.InternalAttrs = app.InternalAttributes{
 		Info:              appInfo,
 		Linker:            link.NewRedirectedInternalLinker(appInfo, a.Flag.HubEndpoint),
