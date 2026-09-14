@@ -48,3 +48,33 @@ func TestConvertSpecToInfoForTestBuildsTriggerInfo(t *testing.T) {
 		t.Fatal("expected trigger arguments to be sensitive")
 	}
 }
+
+func TestTriggerNullableArguments(t *testing.T) {
+	type arguments struct {
+		Note   *string
+		Items  *[]string
+		Labels *map[string]string
+	}
+	trigger := &_TriggerInfo{name: "Run", argumentsType: reflect.TypeFor[arguments](), argumentFieldInfos: buildArgumentFieldInfos(reflect.TypeFor[arguments]())}
+	emptyItems, emptyLabels := []string{}, map[string]string{}
+	note, items, labels := "note", []string{"item"}, map[string]string{"key": "value"}
+	for _, args := range []*arguments{{}, {Items: &emptyItems, Labels: &emptyLabels}, {Note: &note, Items: &items, Labels: &labels}} {
+		if err := trigger.ValidateArguments(args); err != nil {
+			t.Fatalf("valid nullable arguments rejected: %v", err)
+		}
+		want := []any{args.Note, args.Items, args.Labels}
+		if got := trigger.PositionArguments(args); !reflect.DeepEqual(got, want) {
+			t.Fatalf("arguments changed: got %#v want %#v", got, want)
+		}
+	}
+}
+
+func TestTriggerRejectsNilArgumentObject(t *testing.T) {
+	type arguments struct{ Note *string }
+	trigger := &_TriggerInfo{name: "Run", argumentsType: reflect.TypeFor[arguments]()}
+	for _, args := range []any{nil, (*arguments)(nil)} {
+		if err := trigger.ValidateArguments(args); err == nil {
+			t.Fatal("nil argument object must be rejected")
+		}
+	}
+}

@@ -23,7 +23,10 @@ import (
 )
 
 type testRunnerArguments struct {
-	GroupId int `json:"groupId"`
+	GroupId int                `json:"groupId"`
+	Note    *string            `json:"note"`
+	Items   *[]string          `json:"items"`
+	Labels  *map[string]string `json:"labels"`
 }
 
 func testTaskServerApp() meta.App {
@@ -424,5 +427,31 @@ func BenchmarkServerRunTask(b *testing.B) {
 		if err := server.RunTask(context.Background(), run); err != nil {
 			b.Fatal(err)
 		}
+	}
+}
+
+func TestServerRunTaskAcceptsNullableArguments(t *testing.T) {
+	ensureRunnerTaskRegistered()
+	for _, tc := range []struct {
+		name, body string
+		want       []any
+	}{
+		{"null", `{"groupId":9,"note":null,"items":null,"labels":null}`, []any{9, (*string)(nil), (*[]string)(nil), (*map[string]string)(nil)}},
+		{"omitted", `{"groupId":9}`, []any{9, (*string)(nil), (*[]string)(nil), (*map[string]string)(nil)}},
+		{"empty", `{"groupId":9,"note":"","items":[],"labels":{}}`, []any{9, new(""), new([]string{}), new(map[string]string{})}},
+		{"value", `{"groupId":9,"note":"note","items":["item"],"labels":{"key":"value"}}`, []any{9, new("note"), new([]string{"item"}), new(map[string]string{"key": "value"})}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			executor := &_RunnerRecorderExecutor{}
+			server := NewServer(Option{App: testTaskServerApp(), ImplTypes: []reflect.Type{reflect.TypeFor[*testRunnerImpl]()}, Executor: executor})
+			trace := meta.InitialTrace()
+			err := server.RunTask(context.Background(), appskeled.TaskRun{Metadata: appskeled.TaskRunMeta{TraceId: trace.Id(), TraceSpan: trace.Span(), AppName: "remote.app", AppVersion: "1.0.0", AppInstanceId: skel.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333"))}, TaskSkelName: "runner.task", TriggerSkelName: "forGroup", ArgumentsJson: tc.body})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(executor.args, tc.want) {
+				t.Fatalf("arguments changed: got %#v want %#v", executor.args, tc.want)
+			}
+		})
 	}
 }
