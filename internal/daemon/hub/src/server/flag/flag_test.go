@@ -25,8 +25,8 @@ func TestFlagNormalizeRequiresSeedWithoutDatabase(t *testing.T) {
 
 func TestFlagNormalizeInfersSQLiteSourceFromPath(t *testing.T) {
 	flags := &Flag{
-		DBSQLiteFile:   "/tmp/hub.sqlite",
-		MQEmbeddedNats: true,
+		DBSQLiteFile: "/tmp/hub.sqlite",
+		MQEmbedded:   true,
 	}
 
 	flags.Normalize(false)
@@ -37,8 +37,8 @@ func TestFlagNormalizeInfersSQLiteSourceFromPath(t *testing.T) {
 
 func TestFlagNormalizeInfersPostgreSQLSourceFromURL(t *testing.T) {
 	flags := &Flag{
-		DBPostgresURL:  "postgres://demo:demo@127.0.0.1:5432/hub",
-		MQEmbeddedNats: true,
+		DBPostgresURL: "postgres://demo:demo@127.0.0.1:5432/hub",
+		MQEmbedded:    true,
 	}
 
 	flags.Normalize(false)
@@ -60,9 +60,9 @@ func TestFlagNormalizeRejectsMultipleStores(t *testing.T) {
 
 func TestFlagNormalizeKeepsExplicitStore(t *testing.T) {
 	flags := &Flag{
-		Store:          StoreSQLite,
-		DBSQLiteFile:   "/tmp/hub.sqlite",
-		MQEmbeddedNats: true,
+		Store:        StoreSQLite,
+		DBSQLiteFile: "/tmp/hub.sqlite",
+		MQEmbedded:   true,
 	}
 
 	flags.Normalize(false)
@@ -80,7 +80,7 @@ func TestFlagNormalizeNormalizesDashboardURL(t *testing.T) {
 	flags := &Flag{
 		Store:           StoreSQLite,
 		DBSQLiteFile:    "/tmp/hub.sqlite",
-		MQEmbeddedNats:  true,
+		MQEmbedded:      true,
 		DashboardURLRaw: ":7099",
 	}
 
@@ -97,9 +97,9 @@ func TestFlagNormalizeUsesHTTPSDashboardDefaultWithMTLS(t *testing.T) {
 			CertFile: "cert.pem",
 			KeyFile:  "key.pem",
 		},
-		Store:          StoreSQLite,
-		DBSQLiteFile:   "/tmp/hub.sqlite",
-		MQEmbeddedNats: true,
+		Store:        StoreSQLite,
+		DBSQLiteFile: "/tmp/hub.sqlite",
+		MQEmbedded:   true,
 	}
 
 	flags.Normalize(false)
@@ -118,7 +118,7 @@ func TestFlagNormalizeKeepsExplicitHTTPDashboardURLWithMTLS(t *testing.T) {
 		},
 		Store:           StoreSQLite,
 		DBSQLiteFile:    "/tmp/hub.sqlite",
-		MQEmbeddedNats:  true,
+		MQEmbedded:      true,
 		DashboardURLRaw: "http://:7099/",
 	}
 
@@ -133,7 +133,7 @@ func TestFlagNormalizeAddsDashboardURLPath(t *testing.T) {
 	flags := &Flag{
 		Store:           StoreSQLite,
 		DBSQLiteFile:    "/tmp/hub.sqlite",
-		MQEmbeddedNats:  true,
+		MQEmbedded:      true,
 		DashboardURLRaw: "https://hub.example.com:8443",
 	}
 
@@ -146,7 +146,7 @@ func TestFlagNormalizeRejectsInvalidDashboardURLScheme(t *testing.T) {
 	flags := &Flag{
 		Store:           StoreSQLite,
 		DBSQLiteFile:    "/tmp/hub.sqlite",
-		MQEmbeddedNats:  true,
+		MQEmbedded:      true,
 		DashboardURLRaw: "ftp://hub.example.com:8443/admin",
 	}
 
@@ -157,38 +157,38 @@ func TestFlagNormalizeRejectsInvalidDashboardURLScheme(t *testing.T) {
 
 func TestFlagNormalizeAcceptsValidMQEndpoint(t *testing.T) {
 	flags := &Flag{
-		Store:             StoreSQLite,
-		DBSQLiteFile:      "/tmp/hub.sqlite",
-		MQExternalNatsURL: "nats://127.0.0.1:4222",
+		Store:          StoreSQLite,
+		DBSQLiteFile:   "/tmp/hub.sqlite",
+		MQNatsEndpoint: "nats://127.0.0.1:4222",
 	}
 
 	flags.Normalize(false)
 
-	assert.Equal(t, "nats://127.0.0.1:4222", flags.MQExternalNatsURL)
-	assert.False(t, flags.MQEmbeddedNats)
+	assert.Equal(t, "nats://127.0.0.1:4222", flags.MQNatsEndpoint)
+	assert.False(t, flags.MQEmbedded)
 }
 
 func TestFlagNormalizeRejectsMQEndpointWithEnableNats(t *testing.T) {
 	flags := &Flag{
-		Store:             StoreSQLite,
-		DBSQLiteFile:      "/tmp/hub.sqlite",
-		MQExternalNatsURL: "nats://127.0.0.1:4222",
-		MQEmbeddedNats:    true,
+		Store:          StoreSQLite,
+		DBSQLiteFile:   "/tmp/hub.sqlite",
+		MQNatsEndpoint: "nats://127.0.0.1:4222",
+		MQEmbedded:     true,
 	}
 
-	require.PanicsWithError(t, "exactly one of MQExternalNatsURL or MQEmbeddedNats must be set", func() {
+	require.PanicsWithError(t, "exactly one of MQNatsEndpoint or MQEmbedded must be set", func() {
 		flags.Normalize(false)
 	})
 }
 
 func TestFlagNormalizeRejectsInvalidMQEndpoint(t *testing.T) {
 	flags := &Flag{
-		Store:             StoreSQLite,
-		DBSQLiteFile:      "/tmp/hub.sqlite",
-		MQExternalNatsURL: "http://127.0.0.1:4222",
+		Store:          StoreSQLite,
+		DBSQLiteFile:   "/tmp/hub.sqlite",
+		MQNatsEndpoint: "http://127.0.0.1:4222",
 	}
 
-	require.PanicsWithError(t, "hub flag normalize failed: MQExternalNatsURL currently only supports nats://", func() {
+	require.PanicsWithError(t, "hub flag normalize failed: MQNatsEndpoint currently only supports nats://", func() {
 		flags.Normalize(false)
 	})
 }
@@ -199,32 +199,32 @@ func TestFlagNormalizeRequiresMQEndpointOrEnableNats(t *testing.T) {
 		DBSQLiteFile: "/tmp/hub.sqlite",
 	}
 
-	require.PanicsWithError(t, "exactly one of MQExternalNatsURL or MQEmbeddedNats must be set", func() {
+	require.PanicsWithError(t, "exactly one of MQNatsEndpoint or MQEmbedded must be set", func() {
 		flags.Normalize(false)
 	})
 }
 
 func TestFlagNormalizeAcceptsEnableNats(t *testing.T) {
 	flags := &Flag{
-		Store:          StoreSQLite,
-		DBSQLiteFile:   "/tmp/hub.sqlite",
-		MQEmbeddedNats: true,
+		Store:        StoreSQLite,
+		DBSQLiteFile: "/tmp/hub.sqlite",
+		MQEmbedded:   true,
 	}
 
 	flags.Normalize(false)
 
-	assert.True(t, flags.MQEmbeddedNats)
+	assert.True(t, flags.MQEmbedded)
 }
 
 func TestFlagNormalizeInprocClearsListenAndMQ(t *testing.T) {
 	flags := &Flag{
-		Store:             StoreSQLite,
-		DBSQLiteFile:      "/tmp/hub.sqlite",
-		ControlListen:     "127.0.0.1:7071",
-		AdminListen:       "127.0.0.1:7075",
-		WatchListen:       "127.0.0.1:7072",
-		MQExternalNatsURL: "nats://127.0.0.1:4222",
-		DBPostgresURL:     "",
+		Store:          StoreSQLite,
+		DBSQLiteFile:   "/tmp/hub.sqlite",
+		ControlListen:  "127.0.0.1:7071",
+		AdminListen:    "127.0.0.1:7075",
+		WatchListen:    "127.0.0.1:7072",
+		MQNatsEndpoint: "nats://127.0.0.1:4222",
+		DBPostgresURL:  "",
 	}
 
 	flags.Normalize(true)
@@ -234,8 +234,8 @@ func TestFlagNormalizeInprocClearsListenAndMQ(t *testing.T) {
 	assert.Empty(t, flags.ControlListen)
 	assert.Empty(t, flags.AdminListen)
 	assert.Empty(t, flags.WatchListen)
-	assert.Empty(t, flags.MQExternalNatsURL)
-	assert.True(t, flags.MQEmbeddedNats)
+	assert.Empty(t, flags.MQNatsEndpoint)
+	assert.True(t, flags.MQEmbedded)
 }
 
 func TestFlagInferStoreDefaultsToMemory(t *testing.T) {

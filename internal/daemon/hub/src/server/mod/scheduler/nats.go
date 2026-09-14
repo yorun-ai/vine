@@ -60,7 +60,7 @@ func (p *_NATSTaskPublisher) connect() (*gonats.Conn, error) {
 	if p.Flag == nil {
 		return nil, fmt.Errorf("scheduler nats flag is nil")
 	}
-	if p.Flag.MQExternalNatsURL == "" {
+	if p.Flag.MQNatsEndpoint == "" {
 		if p.NATSServer == nil {
 			return nil, fmt.Errorf("embedded nats server is nil")
 		}
@@ -70,7 +70,7 @@ func (p *_NATSTaskPublisher) connect() (*gonats.Conn, error) {
 		}
 		return conn, nil
 	}
-	conn, err := gonats.Connect(p.Flag.MQExternalNatsURL, gonats.Timeout(schedulerNatsReadyTimeout))
+	conn, err := gonats.Connect(p.Flag.MQNatsEndpoint, gonats.Timeout(schedulerNatsReadyTimeout))
 	if err != nil {
 		return nil, fmt.Errorf("connect external nats: %w", err)
 	}

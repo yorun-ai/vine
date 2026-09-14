@@ -43,7 +43,7 @@ type NATSServer struct {
 }
 
 func (s *NATSServer) DIInit() {
-	if !s.Flag.MQEmbeddedNats {
+	if !s.Flag.MQEmbedded {
 		return
 	}
 

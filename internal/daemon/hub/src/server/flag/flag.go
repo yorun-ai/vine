@@ -30,8 +30,8 @@ type Flag struct {
 	AdminListen   string
 	WatchListen   string
 
-	MQExternalNatsURL string
-	MQEmbeddedNats    bool
+	MQNatsEndpoint string
+	MQEmbedded     bool
 
 	Store         string
 	NoDB          bool
@@ -62,8 +62,8 @@ func (f *Flag) Normalize(inproc bool) {
 		f.ControlListen = ""
 		f.AdminListen = ""
 		f.WatchListen = ""
-		f.MQExternalNatsURL = ""
-		f.MQEmbeddedNats = true
+		f.MQNatsEndpoint = ""
+		f.MQEmbedded = true
 		return
 	}
 
@@ -115,11 +115,11 @@ func (f *Flag) normalizeStore() {
 }
 
 func (f *Flag) normalizeMQ() {
-	if (f.MQExternalNatsURL != "") == f.MQEmbeddedNats {
-		vpre.Panicf("exactly one of MQExternalNatsURL or MQEmbeddedNats must be set")
+	if (f.MQNatsEndpoint != "") == f.MQEmbedded {
+		vpre.Panicf("exactly one of MQNatsEndpoint or MQEmbedded must be set")
 	}
-	if f.MQExternalNatsURL != "" {
-		vpre.CheckNilError(validateMQExternalNatsURL(f.MQExternalNatsURL), "hub flag normalize failed")
+	if f.MQNatsEndpoint != "" {
+		vpre.CheckNilError(validateMQNatsEndpoint(f.MQNatsEndpoint), "hub flag normalize failed")
 	}
 }
 
@@ -155,16 +155,16 @@ func (f *Flag) normalizeDashboardURL() {
 	f.DashboardURL = parsed
 }
 
-func validateMQExternalNatsURL(endpoint string) error {
+func validateMQNatsEndpoint(endpoint string) error {
 	parsed, err := url.Parse(endpoint)
 	if err != nil {
-		return fmt.Errorf("MQExternalNatsURL is invalid: %w", err)
+		return fmt.Errorf("MQNatsEndpoint is invalid: %w", err)
 	}
 	if parsed.Scheme != "nats" {
-		return fmt.Errorf("MQExternalNatsURL currently only supports nats://")
+		return fmt.Errorf("MQNatsEndpoint currently only supports nats://")
 	}
 	if parsed.Host == "" {
-		return fmt.Errorf("MQExternalNatsURL host is empty")
+		return fmt.Errorf("MQNatsEndpoint host is empty")
 	}
 	return nil
 }

@@ -19,31 +19,43 @@ const (
 	FlagHubAdminListen   = "admin-listen"
 	FlagHubWatchListen   = "watch-listen"
 	// Deprecated: use FlagHubWatchListen.
-	FlagHubRedisListen       = "redis-listen"
+	FlagHubRedisListen = "redis-listen"
+
+	FlagHubMQEmbedded     = "mq-embedded"
+	FlagHubMQNatsEndpoint = "mq-nats-endpoint"
+	// Deprecated: use FlagHubMQEmbedded.
+	FlagHubMQEmbeddedNats = "mq-embedded-nats"
+	// Deprecated: use FlagHubMQNatsEndpoint.
 	FlagHubMQExternalNatsURL = "mq-external-nats-url"
-	FlagHubMQEmbeddedNats    = "mq-embedded-nats"
-	FlagSeedHubSourceFile    = "seed-hub-source-file"
-	FlagSeedHubVarsFile      = "seed-hub-vars-file"
-	FlagSeedHubDataFile      = "seed-hub-data-file"
-	FlagHubDashboardURL      = "dashboard-url"
-	FlagHubNoDB              = "no-db"
-	FlagHubDBSQLiteFile      = "db-sqlite-file"
-	FlagHubDBPostgresURL     = "db-postgres-url"
+
+	FlagSeedHubSourceFile = "seed-hub-source-file"
+	FlagSeedHubVarsFile   = "seed-hub-vars-file"
+	FlagSeedHubDataFile   = "seed-hub-data-file"
+	FlagHubDashboardURL   = "dashboard-url"
+	FlagHubNoDB           = "no-db"
+	FlagHubDBSQLiteFile   = "db-sqlite-file"
+	FlagHubDBPostgresURL  = "db-postgres-url"
 
 	EnvHubControlListen = "VINE_CONTROL_LISTEN"
 	EnvHubAdminListen   = "VINE_ADMIN_LISTEN"
 	EnvHubWatchListen   = "VINE_WATCH_LISTEN"
 	// Deprecated: use EnvHubWatchListen.
-	EnvHubRedisListen       = "VINE_REDIS_LISTEN"
+	EnvHubRedisListen = "VINE_REDIS_LISTEN"
+
+	EnvHubMQEmbedded     = "VINE_MQ_EMBEDDED"
+	EnvHubMQNatsEndpoint = "VINE_MQ_NATS_ENDPOINT"
+	// Deprecated: use EnvHubMQEmbedded.
+	EnvHubMQEmbeddedNats = "VINE_MQ_EMBEDDED_NATS"
+	// Deprecated: use EnvHubMQNatsEndpoint.
 	EnvHubMQExternalNatsURL = "VINE_MQ_EXTERNAL_NATS_URL"
-	EnvHubMQEmbeddedNats    = "VINE_MQ_EMBEDDED_NATS"
-	EnvSeedHubSourceFile    = "VINE_SEED_HUB_SOURCE_FILE"
-	EnvSeedHubVarsFile      = "VINE_SEED_HUB_VARS_FILE"
-	EnvSeedHubDataFile      = "VINE_SEED_HUB_DATA_FILE"
-	EnvHubDashboardURL      = "VINE_DASHBOARD_URL"
-	EnvHubNoDB              = "VINE_NO_DB"
-	EnvHubDBSQLiteFile      = "VINE_DB_SQLITE_FILE"
-	EnvHubDBPostgresURL     = "VINE_DB_POSTGRES_URL"
+
+	EnvSeedHubSourceFile = "VINE_SEED_HUB_SOURCE_FILE"
+	EnvSeedHubVarsFile   = "VINE_SEED_HUB_VARS_FILE"
+	EnvSeedHubDataFile   = "VINE_SEED_HUB_DATA_FILE"
+	EnvHubDashboardURL   = "VINE_DASHBOARD_URL"
+	EnvHubNoDB           = "VINE_NO_DB"
+	EnvHubDBSQLiteFile   = "VINE_DB_SQLITE_FILE"
+	EnvHubDBPostgresURL  = "VINE_DB_POSTGRES_URL"
 )
 
 // startHubApp is overridden in tests to assert parsed flags without starting the real app.
@@ -105,12 +117,27 @@ func newHubServeFlags() []ucli.Flag {
 			Sources: ucli.EnvVars(EnvHubDBPostgresURL),
 			Usage:   "hub PostgreSQL database URL",
 		},
+		&ucli.BoolFlag{
+			Name:    FlagHubMQEmbedded,
+			Sources: ucli.EnvVars(EnvHubMQEmbedded),
+			Usage:   "start an embedded NATS server",
+		},
+		&ucli.StringFlag{
+			Name:    FlagHubMQNatsEndpoint,
+			Sources: ucli.EnvVars(EnvHubMQNatsEndpoint),
+			Usage:   "external NATS URL, e.g. nats://127.0.0.1:4222",
+		},
+		&ucli.BoolFlag{
+			Name:    FlagHubMQEmbeddedNats,
+			Sources: ucli.EnvVars(EnvHubMQEmbeddedNats),
+			Usage:   "deprecated: use --mq-embedded or VINE_MQ_EMBEDDED",
+		},
 		&ucli.StringFlag{
 			Name:    FlagHubMQExternalNatsURL,
 			Sources: ucli.EnvVars(EnvHubMQExternalNatsURL),
-			Usage:   "external NATS URL, e.g. nats://127.0.0.1:4222",
+			Usage:   "deprecated: use --mq-nats-endpoint or VINE_MQ_NATS_ENDPOINT",
 		},
-		&ucli.BoolFlag{Name: FlagHubMQEmbeddedNats, Sources: ucli.EnvVars(EnvHubMQEmbeddedNats), Usage: "start an embedded NATS server"},
+
 		&ucli.StringFlag{
 			Name:    FlagSeedHubDataFile,
 			Sources: ucli.EnvVars(EnvSeedHubDataFile),
@@ -148,8 +175,8 @@ func newHubServeCommand() *ucli.Command {
 				ControlListen:     cmd.String(FlagHubControlListen),
 				AdminListen:       cmd.String(FlagHubAdminListen),
 				WatchListen:       hubWatchListen(cmd),
-				MQExternalNatsURL: cmd.String(FlagHubMQExternalNatsURL),
-				MQEmbeddedNats:    cmd.Bool(FlagHubMQEmbeddedNats),
+				MQNatsEndpoint:    hubMQNatsEndpoint(cmd),
+				MQEmbedded:        hubMQEmbedded(cmd),
 				SeedHubDataFile:   cmd.String(FlagSeedHubDataFile),
 				SeedHubSourceFile: cmd.String(FlagSeedHubSourceFile),
 				SeedHubVarsFile:   cmd.String(FlagSeedHubVarsFile),
@@ -174,4 +201,24 @@ func hubWatchListen(cmd *ucli.Command) string {
 		}
 	}
 	return cmd.String(FlagHubWatchListen)
+}
+
+func hubMQEmbedded(cmd *ucli.Command) bool {
+	if cmd.IsSet(FlagHubMQEmbeddedNats) {
+		logger.Warn("--mq-embedded-nats and VINE_MQ_EMBEDDED_NATS are deprecated; use --mq-embedded or VINE_MQ_EMBEDDED")
+		if !cmd.IsSet(FlagHubMQEmbedded) {
+			return cmd.Bool(FlagHubMQEmbeddedNats)
+		}
+	}
+	return cmd.Bool(FlagHubMQEmbedded)
+}
+
+func hubMQNatsEndpoint(cmd *ucli.Command) string {
+	if cmd.IsSet(FlagHubMQExternalNatsURL) {
+		logger.Warn("--mq-external-nats-url and VINE_MQ_EXTERNAL_NATS_URL are deprecated; use --mq-nats-endpoint or VINE_MQ_NATS_ENDPOINT")
+		if !cmd.IsSet(FlagHubMQNatsEndpoint) {
+			return cmd.String(FlagHubMQExternalNatsURL)
+		}
+	}
+	return cmd.String(FlagHubMQNatsEndpoint)
 }
