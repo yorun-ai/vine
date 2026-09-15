@@ -148,12 +148,7 @@ func (s *_VarsSchema) targetType(root *yaml.Node, path string) (*skel.TypeSchema
 	case section == "portalCerts" && (field == "validFrom" || field == "validTo"):
 		kind = seedScalar(skel.ScalarTimestamp)
 	default:
-		fields := map[string]string{
-			"portalSites": " name type actorSkelName actorVia webName ",
-			"portalRules": " name matchScheme matchHost matchPathPrefix routeType routeSiteName routeRedirectionPattern routePathPrefix ",
-			"portalCerts": " name issuer publicKeyBase64 privateKeyBase64 ",
-		}
-		if strings.Contains(fields[section], " "+field+" ") {
+		if seedStringFields[section][field] {
 			kind = seedScalar(skel.ScalarString)
 		}
 	}
@@ -189,7 +184,7 @@ func parseSeedDefault(value string, kind *skel.TypeSchema) (*yaml.Node, error) {
 	if len(doc.Content) != 1 {
 		return nil, fmt.Errorf("invalid seed default")
 	}
-	if err := CheckSeedYAMLSyntax(&doc); err != nil {
+	if err := checkSeedYAMLSyntax(&doc); err != nil {
 		return nil, fmt.Errorf("invalid seed default syntax")
 	}
 	return doc.Content[0], nil

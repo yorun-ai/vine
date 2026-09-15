@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/ex"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/util/vslice"
 )
 
@@ -15,19 +14,19 @@ type entryRuleRepoSpy struct {
 	rules map[int]*PortalRule
 }
 
-func (s *entryRuleRepoSpy) ListRules() []PortalRule {
-	s.calls = append(s.calls, "ListRules")
-	rules := make([]PortalRule, 0, len(s.rules))
+func (s *entryRuleRepoSpy) List() []*PortalRule {
+	s.calls = append(s.calls, "List")
+	rules := make([]*PortalRule, 0, len(s.rules))
 	for _, rule := range s.rules {
-		rules = append(rules, *rule)
+		rules = append(rules, rule)
 	}
-	return vslice.SortBy(rules, func(a PortalRule, b PortalRule) bool {
+	return vslice.SortBy(rules, func(a *PortalRule, b *PortalRule) bool {
 		return a.Id < b.Id
 	})
 }
 
-func (s *entryRuleRepoSpy) GetRuleById(id int) (*PortalRule, bool) {
-	s.calls = append(s.calls, "GetRuleById")
+func (s *entryRuleRepoSpy) GetById(id int) (*PortalRule, bool) {
+	s.calls = append(s.calls, "GetById")
 	rule, ok := s.rules[id]
 	if !ok {
 		return nil, false
@@ -36,8 +35,8 @@ func (s *entryRuleRepoSpy) GetRuleById(id int) (*PortalRule, bool) {
 	return &value, true
 }
 
-func (s *entryRuleRepoSpy) GetRuleByName(name string) (*PortalRule, bool) {
-	s.calls = append(s.calls, "GetRuleByName:"+name)
+func (s *entryRuleRepoSpy) GetByName(name string) (*PortalRule, bool) {
+	s.calls = append(s.calls, "GetByName:"+name)
 	for _, rule := range s.rules {
 		if rule.Name == name {
 			value := *rule
@@ -47,8 +46,8 @@ func (s *entryRuleRepoSpy) GetRuleByName(name string) (*PortalRule, bool) {
 	return nil, false
 }
 
-func (s *entryRuleRepoSpy) SaveRule(rule *PortalRule) {
-	s.calls = append(s.calls, "SaveRule")
+func (s *entryRuleRepoSpy) Save(rule *PortalRule) {
+	s.calls = append(s.calls, "Save")
 	if s.rules == nil {
 		s.rules = map[int]*PortalRule{}
 	}
@@ -56,8 +55,8 @@ func (s *entryRuleRepoSpy) SaveRule(rule *PortalRule) {
 	s.rules[value.Id] = &value
 }
 
-func (s *entryRuleRepoSpy) RemoveRule(id int) bool {
-	s.calls = append(s.calls, "RemoveRule")
+func (s *entryRuleRepoSpy) Remove(id int) bool {
+	s.calls = append(s.calls, "Remove")
 	if _, ok := s.rules[id]; !ok {
 		return false
 	}
@@ -80,7 +79,7 @@ func TestPortalRuleCoreUpdateBuiltInRule(t *testing.T) {
 	err, ok := panicValue.(ex.Error)
 	require.True(t, ok)
 	assert.Equal(t, ex.OperationFailed, err.Code())
-	assert.Equal(t, []string{"GetRuleById"}, repo.calls)
+	assert.Equal(t, []string{"GetById"}, repo.calls)
 }
 
 func TestPortalRuleCoreRemoveBuiltInRule(t *testing.T) {
@@ -98,7 +97,7 @@ func TestPortalRuleCoreRemoveBuiltInRule(t *testing.T) {
 	err, ok := panicValue.(ex.Error)
 	require.True(t, ok)
 	assert.Equal(t, ex.OperationFailed, err.Code())
-	assert.Equal(t, []string{"GetRuleById"}, repo.calls)
+	assert.Equal(t, []string{"GetById"}, repo.calls)
 }
 
 func TestPortalRuleCoreUpdateDashboardAccess(t *testing.T) {
@@ -109,7 +108,7 @@ func TestPortalRuleCoreUpdateDashboardAccess(t *testing.T) {
 		},
 	}
 	certRepo := newTestPortalCertRepo()
-	certRepo.SaveCert(&PortalCert{
+	certRepo.Save(&PortalCert{
 		Name:             "hub-cert",
 		Domains:          []string{"hub.example.com"},
 		PrivateKeyBase64: "pri",
@@ -136,10 +135,10 @@ func TestPortalRuleCoreUpdateDashboardAccess(t *testing.T) {
 	assert.Equal(t, "/api", repo.rules[1].MatchPathPrefix)
 	assert.Equal(t, "/hub", repo.rules[2].MatchPathPrefix)
 	assert.Equal(t, []string{
-		"GetRuleByName:" + DashboardAdminApiRuleName,
-		"GetRuleByName:" + DashboardWebRuleName,
-		"SaveRule",
-		"SaveRule",
+		"GetByName:" + DashboardAdminApiRuleName,
+		"GetByName:" + DashboardWebRuleName,
+		"Save",
+		"Save",
 	}, repo.calls)
 }
 
@@ -159,8 +158,8 @@ func TestPortalRuleCoreDashboardAccess(t *testing.T) {
 	assert.Equal(t, 8443, access.Port)
 	assert.Equal(t, "/hub", access.PathPrefix)
 	assert.Equal(t, []string{
-		"GetRuleByName:" + DashboardAdminApiRuleName,
-		"GetRuleByName:" + DashboardWebRuleName,
+		"GetByName:" + DashboardAdminApiRuleName,
+		"GetByName:" + DashboardWebRuleName,
 	}, repo.calls)
 }
 
@@ -200,8 +199,8 @@ func TestPortalRuleCoreUpdateDashboardAccessRejectsNormalRule(t *testing.T) {
 	assert.Equal(t, 7099, repo.rules[1].MatchPort)
 	assert.Equal(t, 7099, repo.rules[2].MatchPort)
 	assert.Equal(t, []string{
-		"GetRuleByName:" + DashboardAdminApiRuleName,
-		"GetRuleByName:" + DashboardWebRuleName,
+		"GetByName:" + DashboardAdminApiRuleName,
+		"GetByName:" + DashboardWebRuleName,
 	}, repo.calls)
 }
 
@@ -263,7 +262,7 @@ func TestPortalRuleCoreUpdateDashboardAccessRejectsHttpsWithoutHost(t *testing.T
 
 func TestPortalRuleCoreUpdateDashboardAccessRejectsHttpsWithoutCertificate(t *testing.T) {
 	certRepo := newTestPortalCertRepo()
-	certRepo.SaveCert(&PortalCert{
+	certRepo.Save(&PortalCert{
 		Name:             "other-cert",
 		Domains:          []string{"other.example.com"},
 		PrivateKeyBase64: "pri",
@@ -362,10 +361,10 @@ func TestPortalRuleValidationAcrossCreateUpdateSave(t *testing.T) {
 					RoutePathPrefix: bad.RoutePathPrefix, RouteRedirectionPattern: bad.RouteRedirectionPattern,
 				})
 			})
-			require.NotContains(t, repo.calls, "SaveRule")
+			require.NotContains(t, repo.calls, "Save")
 			repo.calls = nil
 			require.Panics(t, func() { service.Save(bad) })
-			require.NotContains(t, repo.calls, "SaveRule")
+			require.NotContains(t, repo.calls, "Save")
 			original := validPortalRule()
 			original.Id = 7
 			repo.rules = map[int]*PortalRule{7: &original}
@@ -377,7 +376,7 @@ func TestPortalRuleValidationAcrossCreateUpdateSave(t *testing.T) {
 					RoutePathPrefix: &bad.RoutePathPrefix, RouteRedirectionPattern: &bad.RouteRedirectionPattern,
 				})
 			})
-			require.NotContains(t, repo.calls, "SaveRule")
+			require.NotContains(t, repo.calls, "Save")
 			require.Equal(t, original, *repo.rules[7])
 		})
 	}
@@ -405,7 +404,7 @@ func TestPortalRuleSaveIdentityAndPartialUpdate(t *testing.T) {
 	repo.rules[17].BuiltIn = true
 	repo.calls = nil
 	require.Panics(t, func() { service.Save(next) })
-	require.NotContains(t, repo.calls, "SaveRule")
+	require.NotContains(t, repo.calls, "Save")
 }
 
 func TestPortalRuleValidHostsAndDefaultPort(t *testing.T) {
@@ -433,10 +432,7 @@ func TestPortalRuleCoreValidateKeepsRuleRepoUntouched(t *testing.T) {
 }
 
 func TestPortalRuleCoreValidatesWebMountPath(t *testing.T) {
-	service := newWebRuleCoreForTest(
-		PortalSite{Name: "web", Type: PortalSiteTypeWEBGW, WebName: "demo.Web"},
-		webSchemaForTest("demo.Web", "/demo"),
-	)
+	service := newWebRuleCoreForTest(PortalSite{Name: "web", Type: PortalSiteTypeWEBGW, WebName: "demo.Web"}, "/demo")
 
 	matched := validPortalRule()
 	matched.MatchPathPrefix = "/demo"
@@ -466,16 +462,13 @@ func TestPortalRuleCoreValidatesWebMountPath(t *testing.T) {
 			require.True(t, ok)
 			assert.Equal(t, ex.OperationFailed, err.Code())
 			assert.Contains(t, err.Message(), `Web mountPath "/demo"`)
-			assert.NotContains(t, repo.calls, "SaveRule")
+			assert.NotContains(t, repo.calls, "Save")
 		})
 	}
 }
 
 func TestPortalRuleCoreEnforcesDeclaredRootWebMountPath(t *testing.T) {
-	service := newWebRuleCoreForTest(
-		PortalSite{Name: "web", Type: PortalSiteTypeWEBGW, WebName: "app.Web"},
-		webSchemaForTest("app.Web", "/"),
-	)
+	service := newWebRuleCoreForTest(PortalSite{Name: "web", Type: PortalSiteTypeWEBGW, WebName: "app.Web"}, "/")
 
 	cases := map[string][2]string{
 		"root prefixes":  {"/", "/"},
@@ -510,39 +503,20 @@ func TestPortalRuleCoreSkipsWebMountPathValidation(t *testing.T) {
 		rule    PortalRule
 	}{
 		"rpc gateway site": {
-			service: newWebRuleCoreForTest(
-				PortalSite{Name: "web", Type: PortalSiteTypeRPCGW, WebName: "demo.Web"},
-				webSchemaForTest("demo.Web", "/demo"),
-			),
-			rule: mismatched,
+			service: newWebRuleCoreForTest(PortalSite{Name: "web", Type: PortalSiteTypeRPCGW, WebName: "demo.Web"}, ""),
+			rule:    mismatched,
 		},
 		"unknown site": {
-			service: newWebRuleCoreForTest(
-				PortalSite{Name: "other", Type: PortalSiteTypeWEBGW, WebName: "demo.Web"},
-				webSchemaForTest("demo.Web", "/demo"),
-			),
-			rule: mismatched,
-		},
-		"unknown web": {
-			service: newWebRuleCoreForTest(
-				PortalSite{Name: "web", Type: PortalSiteTypeWEBGW, WebName: "missing.Web"},
-				webSchemaForTest("demo.Web", "/demo"),
-			),
-			rule: mismatched,
+			service: newWebRuleCoreForTest(PortalSite{Name: "other", Type: PortalSiteTypeWEBGW, WebName: "demo.Web"}, "/demo"),
+			rule:    mismatched,
 		},
 		"web without mount path": {
-			service: newWebRuleCoreForTest(
-				PortalSite{Name: "web", Type: PortalSiteTypeWEBGW, WebName: "app.Web"},
-				webSchemaForTest("app.Web", ""),
-			),
-			rule: mismatched,
+			service: newWebRuleCoreForTest(PortalSite{Name: "web", Type: PortalSiteTypeWEBGW, WebName: "app.Web"}, ""),
+			rule:    mismatched,
 		},
 		"redirect rule": {
-			service: newWebRuleCoreForTest(
-				PortalSite{Name: "web", Type: PortalSiteTypeWEBGW, WebName: "demo.Web"},
-				webSchemaForTest("demo.Web", "/demo"),
-			),
-			rule: redirect,
+			service: newWebRuleCoreForTest(PortalSite{Name: "web", Type: PortalSiteTypeWEBGW, WebName: "demo.Web"}, "/demo"),
+			rule:    redirect,
 		},
 	}
 	for name, test := range cases {
@@ -561,23 +535,14 @@ func newPortalRuleCoreForTest(ruleRepo PortalRuleRepo, certRepo PortalCertRepo) 
 	return &PortalRuleCore{
 		PortalRuleRepo: ruleRepo,
 		PortalCertRepo: certRepo,
-		PortalSiteCore: &PortalSiteCore{
-			PortalSiteRepo: &portalSiteRepoSpy{},
-			SchemaRepo:     &schemaRepoSpy{},
-		},
+		PortalSiteRepo: &portalSiteRepoSpy{},
 	}
 }
 
-func newWebRuleCoreForTest(site PortalSite, webs ...*skel.WebSchema) *PortalRuleCore {
+func newWebRuleCoreForTest(site PortalSite, mountPath string) *PortalRuleCore {
 	site.Id = 1
+	site.WebMountPath = mountPath
 	service := newPortalRuleCoreForTest(&entryRuleRepoSpy{}, nil)
-	service.PortalSiteCore = &PortalSiteCore{
-		PortalSiteRepo: &portalSiteRepoSpy{entries: map[int]*PortalSite{1: &site}},
-		SchemaRepo:     &schemaRepoSpy{webs: webs},
-	}
+	service.PortalSiteRepo = &portalSiteRepoSpy{entries: map[int]*PortalSite{1: &site}}
 	return service
-}
-
-func webSchemaForTest(skelName string, mountPath string) *skel.WebSchema {
-	return &skel.WebSchema{Name: skelName, SkelName: skelName, MountPath: mountPath}
 }

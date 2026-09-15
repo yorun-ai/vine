@@ -8,8 +8,6 @@ export const en: Record<TranslationKey, string> = {
   'appConfig.comment.define': 'Defined by',
   'appConfig.comment.override': 'Overridden by',
   'fieldSource.title': 'Field sources',
-  'fieldSource.error': 'Could not load sources',
-  'fieldSource.loading': 'Loading…',
   'fieldSource.empty': 'No source information',
   'fieldSource.field': 'Field',
   'fieldSource.defined': 'Defined by',

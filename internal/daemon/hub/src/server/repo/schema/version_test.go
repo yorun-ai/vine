@@ -8,9 +8,8 @@ import (
 	"go.yorun.ai/vine/internal/core/skel"
 )
 
-func TestMemorySchemaRepoSaveDomainSchemas(t *testing.T) {
-	resetMemorySchemaRepoForTest()
-	repo := new(MemorySchemaRepo)
+func TestSchemaRepoSaveDomainSchemas(t *testing.T) {
+	repo := new(SchemaRepo)
 	oldSchema := testDomainSchema()
 	newSchema := testDomainSchema()
 	newSchema.Hash = "pkg-hash-2"
@@ -36,9 +35,8 @@ func TestMemorySchemaRepoSaveDomainSchemas(t *testing.T) {
 	require.Len(t, views[1].Webs, 1)
 }
 
-func TestMemorySchemaRepoListServiceSchemaVersions(t *testing.T) {
-	resetMemorySchemaRepoForTest()
-	repo := new(MemorySchemaRepo)
+func TestSchemaRepoListServiceSchemaVersions(t *testing.T) {
+	repo := new(SchemaRepo)
 	oldSchema := testDomainSchema()
 	oldSchema.Hash = "domain-old"
 	oldSchema.Services = []*skel.ServiceSchema{
@@ -85,9 +83,8 @@ func TestMemorySchemaRepoListServiceSchemaVersions(t *testing.T) {
 	assert.True(t, versions[3].MultiVersion)
 }
 
-func TestMemorySchemaRepoListsVineHubSchemaViews(t *testing.T) {
-	resetMemorySchemaRepoForTest()
-	repo := new(MemorySchemaRepo)
+func TestSchemaRepoListsVineHubSchemaViews(t *testing.T) {
+	repo := new(SchemaRepo)
 	adminSchema := &skel.DomainSchema{
 		Domain: "vine.hub.admin",
 		Hash:   "hub-admin-domain-hash",

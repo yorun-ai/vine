@@ -7,45 +7,45 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
 )
 
-type DBPortalRuleRepo struct {
+type PortalRuleRepo struct {
 	Dao    *model.PortalRuleDao `inject:""`
 	Syncer *syncer.Syncer       `inject:""`
 	Access *configaccess.Access `inject:""`
 }
 
-func (s *DBPortalRuleRepo) ListRules() []core.PortalRule {
+func (s *PortalRuleRepo) List() []*core.PortalRule {
 	rows := s.Dao.ListOrdered()
-	rules := make([]core.PortalRule, 0, len(rows))
+	rules := make([]*core.PortalRule, 0, len(rows))
 	for _, row := range rows {
-		rules = append(rules, *toCorePortalRule(row))
+		rules = append(rules, toCorePortalRule(row))
 	}
 	return rules
 }
 
-func (s *DBPortalRuleRepo) GetRuleById(id int) (*core.PortalRule, bool) {
+func (s *PortalRuleRepo) GetById(id int) (*core.PortalRule, bool) {
 	if row, ok := s.Dao.ById(id); ok {
 		return toCorePortalRule(row), true
 	}
 	return nil, false
 }
 
-func (s *DBPortalRuleRepo) GetRuleByName(name string) (*core.PortalRule, bool) {
+func (s *PortalRuleRepo) GetByName(name string) (*core.PortalRule, bool) {
 	if row, ok := s.Dao.ByName(name); ok {
 		return toCorePortalRule(row), true
 	}
 	return nil, false
 }
 
-func (s *DBPortalRuleRepo) SaveRule(rule *core.PortalRule) {
+func (s *PortalRuleRepo) Save(rule *core.PortalRule) {
 	s.Access.CheckWrite()
-	row := toDBPortalRule(rule)
+	row := toModelPortalRule(rule)
 	s.Dao.Save(row)
 	rule.Id = row.Id
 
 	s.Syncer.SyncPortalRule(rule)
 }
 
-func (s *DBPortalRuleRepo) RemoveRule(id int) bool {
+func (s *PortalRuleRepo) Remove(id int) bool {
 	s.Access.CheckWrite()
 	rule, ok := s.Dao.DeleteById(id)
 	if !ok {
@@ -72,7 +72,7 @@ func toCorePortalRule(row *model.PortalRule) *core.PortalRule {
 	}
 }
 
-func toDBPortalRule(rule *core.PortalRule) *model.PortalRule {
+func toModelPortalRule(rule *core.PortalRule) *model.PortalRule {
 	return &model.PortalRule{
 		FieldSources:            encodeFieldSources(rule.FieldSources),
 		Id:                      rule.Id,

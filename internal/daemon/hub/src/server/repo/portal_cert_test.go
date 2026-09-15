@@ -26,13 +26,13 @@ var (
 	testPortalCertRepoDBOnce sync.Once
 )
 
-func TestDBPortalCertRepoSaveCertCreate(t *testing.T) {
-	_, repo, watchServer := newTestDBPortalCertRepo(t)
+func TestPortalCertRepoSaveCertCreate(t *testing.T) {
+	_, repo, watchServer := newTestPortalCertRepo(t)
 
 	cert := testPortalCert("demo-cert")
-	repo.SaveCert(cert)
+	repo.Save(cert)
 
-	got, ok := repo.GetCertById(cert.Id)
+	got, ok := repo.GetById(cert.Id)
 	require.True(t, ok)
 	assert.Equal(t, cert, got)
 
@@ -42,30 +42,30 @@ func TestDBPortalCertRepoSaveCertCreate(t *testing.T) {
 	assert.Equal(t, syncer.ToWatchedPortalCert(cert), vcode.MustUnmarshalJsonS[*watched.PortalCert](raw))
 }
 
-func TestDBPortalCertRepoSaveCertUpdate(t *testing.T) {
-	_, repo, _ := newTestDBPortalCertRepo(t)
+func TestPortalCertRepoSaveCertUpdate(t *testing.T) {
+	_, repo, _ := newTestPortalCertRepo(t)
 
 	cert := testPortalCert("demo-cert")
-	repo.SaveCert(cert)
+	repo.Save(cert)
 	cert.Issuer = "manual"
 	cert.Domains = []string{"next.local"}
-	repo.SaveCert(cert)
+	repo.Save(cert)
 
-	got, ok := repo.GetCertById(cert.Id)
+	got, ok := repo.GetById(cert.Id)
 	require.True(t, ok)
 	assert.Equal(t, "manual", got.Issuer)
 	assert.Equal(t, []string{"next.local"}, got.Domains)
 }
 
-func TestDBPortalCertRepoSaveCertRename(t *testing.T) {
-	_, repo, watchServer := newTestDBPortalCertRepo(t)
+func TestPortalCertRepoSaveCertRename(t *testing.T) {
+	_, repo, watchServer := newTestPortalCertRepo(t)
 
 	cert := testPortalCert("demo-cert")
-	repo.SaveCert(cert)
+	repo.Save(cert)
 	cert.Name = "next-cert"
-	repo.SaveCert(cert)
+	repo.Save(cert)
 
-	got, ok := repo.GetCertById(cert.Id)
+	got, ok := repo.GetById(cert.Id)
 	require.True(t, ok)
 	assert.Equal(t, "next-cert", got.Name)
 
@@ -77,31 +77,31 @@ func TestDBPortalCertRepoSaveCertRename(t *testing.T) {
 	assert.Equal(t, syncer.ToWatchedPortalCert(cert), vcode.MustUnmarshalJsonS[*watched.PortalCert](raw))
 }
 
-func TestDBPortalCertRepoRemoveCert(t *testing.T) {
-	_, repo, watchServer := newTestDBPortalCertRepo(t)
+func TestPortalCertRepoRemoveCert(t *testing.T) {
+	_, repo, watchServer := newTestPortalCertRepo(t)
 
 	cert := testPortalCert("demo-cert")
-	repo.SaveCert(cert)
-	assert.True(t, repo.RemoveCert(cert.Id))
+	repo.Save(cert)
+	assert.True(t, repo.Remove(cert.Id))
 
-	got, ok := repo.GetCertById(cert.Id)
+	got, ok := repo.GetById(cert.Id)
 	assert.False(t, ok)
 	assert.Nil(t, got)
 
 	key := watched.FormatPortalCertKey("demo-cert")
 	_, ok = watchServer.Get(key)
 	assert.False(t, ok)
-	assert.False(t, repo.RemoveCert(cert.Id))
+	assert.False(t, repo.Remove(cert.Id))
 }
 
-func newTestDBPortalCertRepo(t *testing.T) (*gorm.DB, *DBPortalCertRepo, *watchserver.Server) {
+func newTestPortalCertRepo(t *testing.T) (*gorm.DB, *PortalCertRepo, *watchserver.Server) {
 	t.Helper()
 
 	db := sharedTestPortalCertRepoDB(t)
 	watchServer := watchserver.NewServerForTest()
 	t.Cleanup(watchServer.AfterAppStop)
 
-	repo := &DBPortalCertRepo{
+	repo := &PortalCertRepo{
 		Dao: &model.PortalCertDao{
 			Dao: rdb.NewDao[*model.PortalCert](db),
 		},
@@ -139,10 +139,10 @@ func testPortalCert(name string) *core.PortalCert {
 	}
 }
 
-func TestDBPortalCertRepoRejectsReadOnlyWrites(t *testing.T) {
+func TestPortalCertRepoRejectsReadOnlyWrites(t *testing.T) {
 	access := new(configaccess.Access)
 	access.Lock()
-	repo := &DBPortalCertRepo{Access: access}
-	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.SaveCert(new(core.PortalCert)) })
-	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.RemoveCert(1) })
+	repo := &PortalCertRepo{Access: access}
+	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.Save(new(core.PortalCert)) })
+	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.Remove(1) })
 }

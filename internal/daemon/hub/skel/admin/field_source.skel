@@ -1,0 +1,43 @@
+domain vine.hub.admin
+
+@desc("Layers that supplied an entity field")
+data FieldSource {
+    @desc("Field JSON pointer")
+    path: string
+
+    @desc("Seed source")
+    source: string
+
+    @desc("Seed definition name")
+    define: string
+
+    @desc("Seed override name")
+    override: string
+
+    @desc("Referenced seed variables")
+    variables: list<string>
+
+    @desc("Seed template")
+    template: json?
+
+    @desc("Resolved variable bindings")
+    bindings: list<FieldSourceBinding>
+}
+
+@desc("A resolved variable reference within a field template")
+data FieldSourceBinding {
+    @desc("Template JSON pointer")
+    path: string
+
+    @desc("Variable name")
+    variable: string
+
+    @desc("Variable reference")
+    reference: string
+
+    @desc("Resolved value")
+    value: json
+
+    @desc("Whether the default was used")
+    defaultUsed: bool
+}

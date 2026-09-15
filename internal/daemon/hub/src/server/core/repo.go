@@ -120,6 +120,9 @@ type WebRegistration struct {
 	AppInstanceId  string
 }
 
+// RegistryRepo tracks several entity kinds at once - application instances, Rpc
+// service registrations, Web registrations and their leases - so every method names
+// the entity it addresses.
 type RegistryRepo interface {
 	SaveAppStatus(status *AppStatus)
 	ListAppStatuses() []*AppStatus
@@ -139,6 +142,8 @@ type RegistryRepo interface {
 	RemoveWebRegistration(name string, appName string, appInstanceId string)
 }
 
+// SchemaRepo stores the schemas applications register and selects the versions
+// the Hub serves.
 type SchemaRepo interface {
 	SaveDomainSchemas(ownerName string, ownerId string, schemas []*skel.DomainSchema)
 	SaveDomainSchemasJSON(ownerName string, ownerId string, schemas []skel.JSON)

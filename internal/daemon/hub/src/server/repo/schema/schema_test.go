@@ -8,37 +8,34 @@ import (
 	"go.yorun.ai/vine/internal/core/skel"
 )
 
-func TestMemorySchemaRepoSaveDomainSchemasOnce(t *testing.T) {
-	resetMemorySchemaRepoForTest()
-	repo := new(MemorySchemaRepo)
+func TestSchemaRepoSaveDomainSchemasOnce(t *testing.T) {
+	repo := new(SchemaRepo)
 	schema := testDomainSchema()
 
 	repo.SaveDomainSchemas("demo.app", "instance-1", []*skel.DomainSchema{schema})
 	repo.SaveDomainSchemas("demo.app", "instance-1", []*skel.DomainSchema{schema})
 
-	entry := memoryDomainSchemaByHash[schema.Hash]
+	entry := repo.byHash[schema.Hash]
 	require.NotNil(t, entry)
 	assert.Same(t, schema, entry.Schema)
-	assert.Len(t, memoryDomainSchemaByHash, 1)
+	assert.Len(t, repo.byHash, 1)
 }
 
-func TestMemorySchemaRepoSharesSchemasAcrossInstances(t *testing.T) {
-	resetMemorySchemaRepoForTest()
-	writer := new(MemorySchemaRepo)
-	reader := new(MemorySchemaRepo)
+func TestSchemaRepoInstancesAreIndependent(t *testing.T) {
+	writer := new(SchemaRepo)
+	reader := new(SchemaRepo)
 	schema := testDomainSchema()
 
 	writer.SaveDomainSchemas("demo.app", "instance-1", []*skel.DomainSchema{schema})
 
-	views := reader.ListDomainSchemaViews()
-	require.Len(t, views, 1)
-	assert.Same(t, schema, views[0].DomainVersion.Schema)
-	assert.Len(t, reader.ListAppConfigSchemas(), 1)
+	// Hub binds one repository per application, so readers inside an application
+	// share state while separate instances stay independent.
+	assert.Len(t, writer.ListAppConfigSchemas(), 1)
+	assert.Empty(t, reader.ListDomainSchemaViews())
 }
 
-func TestMemorySchemaRepoReleaseDomainSchemas(t *testing.T) {
-	resetMemorySchemaRepoForTest()
-	repo := new(MemorySchemaRepo)
+func TestSchemaRepoReleaseDomainSchemas(t *testing.T) {
+	repo := new(SchemaRepo)
 	oldSchema := testDomainSchema()
 	newSchema := testDomainSchema()
 	newSchema.Hash = "pkg-hash-2"
@@ -47,7 +44,7 @@ func TestMemorySchemaRepoReleaseDomainSchemas(t *testing.T) {
 	repo.SaveDomainSchemas("demo.app", "instance-2", []*skel.DomainSchema{newSchema})
 	repo.ReleaseDomainSchemas("demo.app", "instance-2")
 
-	_, ok := memoryDomainSchemaByHash[newSchema.Hash]
+	_, ok := repo.byHash[newSchema.Hash]
 	assert.False(t, ok)
 	views := repo.ListDomainSchemaViews()
 	require.Len(t, views, 1)
@@ -56,10 +53,8 @@ func TestMemorySchemaRepoReleaseDomainSchemas(t *testing.T) {
 	assert.False(t, views[0].DomainVersion.MultiVersion)
 }
 
-func TestMemorySchemaRepoGetWebSchemaTracksSelectedVersion(t *testing.T) {
-	resetMemorySchemaRepoForTest()
-	t.Cleanup(resetMemorySchemaRepoForTest)
-	repo := new(MemorySchemaRepo)
+func TestSchemaRepoGetWebSchemaTracksSelectedVersion(t *testing.T) {
+	repo := new(SchemaRepo)
 	oldSchema := testDomainSchema()
 	newer := testDomainSchema()
 	newer.Hash = "new-domain"

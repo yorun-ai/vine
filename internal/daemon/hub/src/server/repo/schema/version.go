@@ -9,10 +9,10 @@ import (
 	"go.yorun.ai/vine/util/vslice"
 )
 
-func memoryBuildDomainSchemaVersions() []core.DomainSchemaVersion {
-	versions := make([]core.DomainSchemaVersion, 0, len(memoryDomainSchemaByHash))
-	for _, hashes := range memoryDomainSchemaHashesByDomain {
-		entries := memoryActiveDomainSchemaEntries(hashes)
+func (r *SchemaRepo) buildDomainSchemaVersions() []core.DomainSchemaVersion {
+	versions := make([]core.DomainSchemaVersion, 0, len(r.byHash))
+	for _, hashes := range r.hashesByDomain {
+		entries := r.activeDomainSchemaEntries(hashes)
 		if len(entries) == 0 {
 			continue
 		}
@@ -42,21 +42,21 @@ func memoryBuildDomainSchemaVersions() []core.DomainSchemaVersion {
 	})
 }
 
-func memoryBuildSchemaVersions[T any](
+func buildSchemaVersions[T any](
 	domainVersions []core.DomainSchemaVersion,
-	getRefs func(schema *skel.DomainSchema) []_MemorySchemaRef[T],
+	getRefs func(schema *skel.DomainSchema) []_SchemaRef[T],
 ) []core.SchemaVersion[T] {
-	states := memorySchemaVersionStates(domainVersions, getRefs, func(skelName string) bool {
-		return !memoryIsVineSchemaRef(skelName)
+	states := schemaVersionStates(domainVersions, getRefs, func(skelName string) bool {
+		return !isVineSchemaRef(skelName)
 	})
 	ret := make([]core.SchemaVersion[T], 0)
 	seen := map[string]struct{}{}
 	for _, domainVersion := range domainVersions {
 		for _, ref := range getRefs(domainVersion.Schema) {
-			if memoryIsVineSchemaRef(ref.SkelName) {
+			if isVineSchemaRef(ref.SkelName) {
 				continue
 			}
-			key := memorySchemaVersionKey(ref.SkelName, ref.Hash)
+			key := schemaVersionKey(ref.SkelName, ref.Hash)
 			if _, ok := seen[key]; ok {
 				continue
 			}
@@ -86,10 +86,10 @@ func memoryBuildSchemaVersions[T any](
 	})
 }
 
-func memoryBuildDomainSchemaItemVersions[T any](
+func buildDomainSchemaItemVersions[T any](
 	domainVersion core.DomainSchemaVersion,
-	states map[string]*_MemorySchemaVersionState,
-	getRefs func(schema *skel.DomainSchema) []_MemorySchemaRef[T],
+	states map[string]*_SchemaVersionState,
+	getRefs func(schema *skel.DomainSchema) []_SchemaRef[T],
 	include func(skelName string) bool,
 ) []core.SchemaVersion[T] {
 	refs := getRefs(domainVersion.Schema)
@@ -113,12 +113,12 @@ func memoryBuildDomainSchemaItemVersions[T any](
 	return ret
 }
 
-func memorySchemaVersionStates[T any](
+func schemaVersionStates[T any](
 	domainVersions []core.DomainSchemaVersion,
-	getRefs func(schema *skel.DomainSchema) []_MemorySchemaRef[T],
+	getRefs func(schema *skel.DomainSchema) []_SchemaRef[T],
 	include func(skelName string) bool,
-) map[string]*_MemorySchemaVersionState {
-	states := map[string]*_MemorySchemaVersionState{}
+) map[string]*_SchemaVersionState {
+	states := map[string]*_SchemaVersionState{}
 	for _, domainVersion := range domainVersions {
 		for _, ref := range getRefs(domainVersion.Schema) {
 			if !include(ref.SkelName) {
@@ -126,7 +126,7 @@ func memorySchemaVersionStates[T any](
 			}
 			state := states[ref.SkelName]
 			if state == nil {
-				state = &_MemorySchemaVersionState{Hashes: map[string]struct{}{}}
+				state = &_SchemaVersionState{Hashes: map[string]struct{}{}}
 				states[ref.SkelName] = state
 			}
 			state.Hashes[ref.Hash] = struct{}{}
@@ -148,18 +148,18 @@ func memorySchemaVersionStates[T any](
 	return states
 }
 
-func memorySchemaVersionKey(skelName string, hash string) string {
+func schemaVersionKey(skelName string, hash string) string {
 	return skelName + "\x00" + hash
 }
 
-func memoryIsVineSchemaRef(skelName string) bool {
+func isVineSchemaRef(skelName string) bool {
 	return strings.HasPrefix(skelName, "vine.")
 }
 
-func memoryIsVineHubSchemaRef(skelName string) bool {
+func isVineHubSchemaRef(skelName string) bool {
 	return strings.HasPrefix(skelName, "vine.hub.")
 }
 
-func memoryIsVineHubDomain(domain string) bool {
+func isVineHubDomain(domain string) bool {
 	return domain == "vine.hub" || strings.HasPrefix(domain, "vine.hub.")
 }

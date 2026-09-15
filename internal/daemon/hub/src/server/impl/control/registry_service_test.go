@@ -15,25 +15,25 @@ import (
 )
 
 type _RegistryServicePortalSiteRepo struct {
-	entries []core.PortalSite
+	entries []*core.PortalSite
 }
 
-func (r *_RegistryServicePortalSiteRepo) ListEntries() []core.PortalSite {
+func (r *_RegistryServicePortalSiteRepo) List() []*core.PortalSite {
 	return r.entries
 }
 
-func (*_RegistryServicePortalSiteRepo) GetEntryById(int) (*core.PortalSite, bool) {
+func (*_RegistryServicePortalSiteRepo) GetById(int) (*core.PortalSite, bool) {
 	return nil, false
 }
 
-func (*_RegistryServicePortalSiteRepo) GetEntryByName(string) (*core.PortalSite, bool) {
+func (*_RegistryServicePortalSiteRepo) GetByName(string) (*core.PortalSite, bool) {
 	return nil, false
 }
 
-func (*_RegistryServicePortalSiteRepo) SaveEntry(*core.PortalSite) {
+func (*_RegistryServicePortalSiteRepo) Save(*core.PortalSite) {
 }
 
-func (*_RegistryServicePortalSiteRepo) RemoveEntry(int) bool {
+func (*_RegistryServicePortalSiteRepo) Remove(int) bool {
 	return false
 }
 
@@ -155,49 +155,52 @@ func TestRegistryServiceRefreshesPortalSiteRpcgwServices(t *testing.T) {
 	watchServer := watchserver.NewServerForTest()
 	defer watchServer.AfterAppStop()
 
+	siteRepo := &_RegistryServicePortalSiteRepo{
+		entries: []*core.PortalSite{
+			{
+				Id:            1,
+				Name:          "demo.UserActor-client-rpc",
+				Type:          core.PortalSiteTypeRPCGW,
+				ActorSkelName: "demo.UserActor",
+				ActorVia:      "client",
+				RpcgwServices: []string{"demo.UserService"},
+			},
+			{
+				Id:            2,
+				Name:          "vine.hub.admin.AdminActor-client-rpc",
+				Type:          core.PortalSiteTypeRPCGW,
+				ActorSkelName: "vine.hub.admin.AdminActor",
+				ActorVia:      "client",
+				BuiltIn:       true,
+			},
+			{
+				Id:      3,
+				Name:    "demo.Web-web",
+				Type:    core.PortalSiteTypeWEBGW,
+				WebName: "demo.Web",
+			},
+		},
+	}
+	schemaRepo := &_RegistryServiceSchemaRepo{
+		serviceSchemas: []*skel.ServiceSchema{
+			{
+				SkelName: "demo.UserService",
+				Audiences: []*skel.ActorAudienceSchema{
+					{SkelName: "demo.UserActor"},
+				},
+			},
+			{
+				SkelName: "demo.AdminService",
+				Audiences: []*skel.ActorAudienceSchema{
+					{SkelName: "demo.AdminActor"},
+				},
+			},
+		},
+	}
 	service := &RegistryServiceServerImpl{
-		PortalSiteRepo: &_RegistryServicePortalSiteRepo{
-			entries: []core.PortalSite{
-				{
-					Id:            1,
-					Name:          "demo.UserActor-client-rpc",
-					Type:          core.PortalSiteTypeRPCGW,
-					ActorSkelName: "demo.UserActor",
-					ActorVia:      "client",
-				},
-				{
-					Id:            2,
-					Name:          "vine.hub.admin.AdminActor-client-rpc",
-					Type:          core.PortalSiteTypeRPCGW,
-					ActorSkelName: "vine.hub.admin.AdminActor",
-					ActorVia:      "client",
-					BuiltIn:       true,
-				},
-				{
-					Id:      3,
-					Name:    "demo.Web-web",
-					Type:    core.PortalSiteTypeWEBGW,
-					WebName: "demo.Web",
-				},
-			},
-		},
-		SchemaRepo: &_RegistryServiceSchemaRepo{
-			serviceSchemas: []*skel.ServiceSchema{
-				{
-					SkelName: "demo.UserService",
-					Audiences: []*skel.ActorAudienceSchema{
-						{SkelName: "demo.UserActor"},
-					},
-				},
-				{
-					SkelName: "demo.AdminService",
-					Audiences: []*skel.ActorAudienceSchema{
-						{SkelName: "demo.AdminActor"},
-					},
-				},
-			},
-		},
-		Syncer: testRegistrySyncer(watchServer),
+		PortalSiteCore: &core.PortalSiteCore{PortalSiteRepo: siteRepo, SchemaRepo: schemaRepo},
+		SchemaRepo:     schemaRepo,
+		Syncer:         testRegistrySyncer(watchServer),
 	}
 
 	service.refreshPortalSiteRpcgwServices()

@@ -1,6 +1,8 @@
 package app
 
 import (
+	"sync"
+
 	"go.yorun.ai/vine/buildinfo"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/di"
@@ -36,6 +38,18 @@ type HubApp struct {
 
 	Flag       *flag.Flag              `inject:""`
 	InprocFlag *app.InternalInprocFlag `inject:""`
+
+	// The schema repository is app state: every injector of this application
+	// shares the same store, while separate applications stay independent.
+	schemaRepoOnce sync.Once
+	schemaRepo     *schema.SchemaRepo
+}
+
+func (a *HubApp) schemaRepository() *schema.SchemaRepo {
+	a.schemaRepoOnce.Do(func() {
+		a.schemaRepo = new(schema.SchemaRepo)
+	})
+	return a.schemaRepo
 }
 
 func (a *HubApp) Name() string {
@@ -80,15 +94,15 @@ func (a *HubApp) InitModules(addModule app.TypeAdder) {
 }
 
 func (a *HubApp) BindCommon(b *di.Binder) {
-	b.Bind(di.T[core.AppConfigRepo]()).ToImplementation(di.T[*repo.DBAppConfigRepo]())
-	b.Bind(di.T[core.PortalCertRepo]()).ToImplementation(di.T[*repo.DBPortalCertRepo]())
-	b.Bind(di.T[core.PortalRuleRepo]()).ToImplementation(di.T[*repo.DBPortalRuleRepo]())
-	b.Bind(di.T[core.PortalSiteRepo]()).ToImplementation(di.T[*repo.DBPortalSiteRepo]())
-	b.Bind(di.T[core.MetadataRepo]()).ToImplementation(di.T[*repo.DBMetadataRepo]())
+	b.Bind(di.T[core.AppConfigRepo]()).ToImplementation(di.T[*repo.AppConfigRepo]())
+	b.Bind(di.T[core.PortalCertRepo]()).ToImplementation(di.T[*repo.PortalCertRepo]())
+	b.Bind(di.T[core.PortalRuleRepo]()).ToImplementation(di.T[*repo.PortalRuleRepo]())
+	b.Bind(di.T[core.PortalSiteRepo]()).ToImplementation(di.T[*repo.PortalSiteRepo]())
+	b.Bind(di.T[core.MetadataRepo]()).ToImplementation(di.T[*repo.MetadataRepo]())
 
-	b.Bind(di.T[core.SchemaRepo]()).ToImplementation(di.T[*schema.MemorySchemaRepo]())
-	b.Bind(di.T[core.RegistryRepo]()).ToImplementation(di.T[*repo.WatchRegistryRepo]())
-	b.Bind(di.T[core.PortalInstanceRepo]()).ToImplementation(di.T[*repo.WatchPortalInstanceRepo]())
+	b.Bind(di.T[core.SchemaRepo]()).ToInstance(a.schemaRepository())
+	b.Bind(di.T[core.RegistryRepo]()).ToImplementation(di.T[*repo.RegistryRepo]())
+	b.Bind(di.T[core.PortalInstanceRepo]()).ToImplementation(di.T[*repo.PortalInstanceRepo]())
 }
 
 func (*HubApp) ServicerInitHandlers(addHandler app.TypeAdder) {

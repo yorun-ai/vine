@@ -46,7 +46,7 @@ func parseSeedNode(data []byte) (*yaml.Node, error) {
 	if len(doc.Content) != 1 || doc.Content[0].Kind != yaml.MappingNode {
 		return nil, fmt.Errorf("seed YAML must contain a configuration mapping (use {} for empty configuration)")
 	}
-	if err := CheckSeedYAMLSyntax(&doc); err != nil {
+	if err := checkSeedYAMLSyntax(&doc); err != nil {
 		return nil, err
 	}
 	// Decode once to reject duplicate mapping keys before interpolation.

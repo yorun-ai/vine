@@ -2,16 +2,6 @@ package schema
 
 import "go.yorun.ai/vine/internal/core/skel"
 
-func resetMemorySchemaRepoForTest() {
-	memoryDomainSchemaMutex.Lock()
-	defer memoryDomainSchemaMutex.Unlock()
-	memoryDomainSchemaSequence = 0
-	memoryDomainSchemaByHash = map[string]*_MemoryDomainSchemaEntry{}
-	memoryDomainSchemaHashesByDomain = map[string]map[string]struct{}{}
-	memorySchemaHashesByOwner = map[string]map[string]struct{}{}
-	memorySchemaSnapshot = _MemorySchemaSnapshot{}
-}
-
 func testDomainSchema() *skel.DomainSchema {
 	return &skel.DomainSchema{
 		Domain: "demo.user",

@@ -44,28 +44,28 @@ internal/daemon/hub/
 
 - During development, set `VINE_HUB_DASHBOARD_DEV_PROXY` to proxy requests directly to a running `pnpm dev` server.
 - After changing Dashboard source, run `pnpm typecheck` and `pnpm build` in `src/dashboard`.
-- Do not update the embedded `dashboard.tar.zst` during ordinary development. Rebuild it only when the task explicitly includes updating release assets.
+- Rebuild the embedded `dashboard.tar.zst` whenever the Dashboard source or the admin API it calls changes, and commit it with that change: the embedded bundle must always match the admin API it calls. Merges are squashed, so a branch contributes only its final bundle to main.
 - Keep user-facing text synchronized between `src/i18n/dictionaries/cn.ts` and `en.ts`.
 
 The Dashboard source lives in `src/dashboard`. At runtime, Hub serves the build embedded in `src/server/impl/admin/dashboard/assets/dashboard.tar.zst`.
 
-When updating release assets, always run:
+Always rebuild the bundle with the script; never edit or assemble the archive by hand, and never resolve a conflict on it by picking a side:
 
 ```bash
 bash script/build-dashboard-assets.sh
 ```
 
-The script runs `pnpm run build` in `src/dashboard` and packages `dist` as a new `dashboard.tar.zst`. The build generates `THIRD_PARTY_LICENSES.md` for dependencies included in the Dashboard bundle and includes it in the archive. Do not assemble the archive manually. Commit the updated archive whenever release assets are refreshed; otherwise, the embedded Hub Dashboard and its license inventory will remain stale.
+The script runs `pnpm run build` in `src/dashboard` and packages `dist` as a new `dashboard.tar.zst`. The build generates `THIRD_PARTY_LICENSES.md` for dependencies included in the Dashboard bundle and includes it in the archive. Release preparation rebuilds the archive as well, so the released bundle and its license inventory match the released source.
 
 ## Layering and Change Constraints
 
 Keep Hub's layer responsibilities distinct:
 
-- `core` defines domain state and Repo interfaces without depending on concrete database or Redis implementations.
-- `repo` implements persistence and Watch synchronization without owning external service orchestration.
+- `core` defines domain state and Repo interfaces without depending on concrete database or Redis implementations. Repository interfaces name the storage primitives they provide - `List`, `GetById`, `GetByName`, `Save`, `Remove` - while the cores built on them expose the use cases, so the two layers share those verbs on purpose.
+- `repo` implements persistence and Watch synchronization without owning external service orchestration. Repositories assemble the entities they return: derived values such as a site's Web mount path and Rpc services, a configuration's definition and status, and stored provenance such as field sources.
 - `impl/control` implements only the Link/Portal-facing Control API services,
   while `impl/admin` and its `debug` and `dashboard` subpackages implement
-  the Dashboard admin surface through `core` and `repo`.
+  the Dashboard admin surface through `core`.
 - `mod` contains runtime flows such as the Control API listener, initializer,
   seeder, syncer, scheduler, and sweeper.
 - `comp` provides shared runtime components such as Watch and NATS.
@@ -74,10 +74,12 @@ Keep Hub's layer responsibilities distinct:
 ### Domain Writes
 
 Configuration, site, rule, and certificate writes go through their corresponding
-Core. `Validate` checks and normalizes a complete entity without accessing
-storage; `Save` creates or replaces by name and owns identity handling, along
-with versioning and built-in protection where applicable. API updates merge
-provided fields into the existing entity before validation.
+Core. `Validate` checks and normalizes a complete entity: it never writes, but it
+may read other repositories to enforce cross-entity rules, such as keeping a
+Portal rule aligned with the mount path of the Web its target site serves. `Save`
+creates or replaces by name and owns identity handling, along with versioning and
+built-in protection where applicable. API updates merge provided fields into the
+existing entity before validation.
 
 Seeder and Dashboard imports validate all supplied entities before writing,
 then call Core `Save`. Validation does not make an entire import transactional:
@@ -159,10 +161,12 @@ Portal rule YAML uses flat fields in this order: `matchScheme`, `matchHost`,
 `matchPort`, `matchPathPrefix`, `routeType`, `routeSiteName`,
 `routeRedirectionPattern`, and `routePathPrefix`.
 
-The `mod/seeder` package owns the shared YAML compatibility decoder used by
-startup seeding and Dashboard imports. Both accept legacy rule fields with a
-warning per field; mixing old and new fields in one rule fails before applying
-imported data. YAML cannot replace built-in Dashboard sites or rules.
+The `mod/seeder` package owns the seed YAML contract. `ParseSeedEntities`
+decodes a document into the domain entities it declares for Dashboard imports,
+and the same decoder backs startup seeding; the payload structs stay private to
+the package. Both accept legacy rule fields with a warning per field; mixing old
+and new fields in one rule fails before applying imported data. YAML cannot
+replace built-in Dashboard sites or rules.
 
 Admin API and Watch use only the new fields; upgrade Hub and Portal together.
 The database upgrade baseline is Vine v0.15.7, with `match_*` / `route_*`
@@ -177,6 +181,15 @@ and permission codes are represented by an empty string, not null. Update and
 debug-request fields retain optionality where omission has a separate meaning.
 Regenerate custom Admin clients when adopting this contract; deploy the matching
 Dashboard assets with Hub.
+
+## Admin Payloads
+
+Admin list methods return a `*ListItem` payload: the values the Dashboard shows
+in a row, without the entity's stored provenance. Detail responses (`get`,
+`create`, `update`) return the entity itself, including `fieldSources`, so a
+Dashboard form can read back what it just wrote. App config detail is addressed
+by `key`, because Hub also serves a configuration an application declares
+without a value; `update` and `remove` keep addressing the stored row by `id`.
 
 ## Skeleton Generation
 

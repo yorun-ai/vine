@@ -397,18 +397,6 @@ func skeletonActorRefsContain(refs []*skel.ActorAudienceSchema, skelName string)
 	return false
 }
 
-func skeletonSchemaVersionKey(skelName string, schemaHash string) string {
-	return skelName + "\x00" + schemaHash
-}
-
-func skeletonSchemaVersionsByKey[T any](versions []core.SchemaVersion[T]) map[string]core.SchemaVersion[T] {
-	ret := make(map[string]core.SchemaVersion[T], len(versions))
-	for _, version := range versions {
-		ret[skeletonSchemaVersionKey(version.SkelName, version.SchemaHash)] = version
-	}
-	return ret
-}
-
 func toServerSkeletonServiceItem(version _SkeletonVersionFields, schema *skel.ServiceSchema) skeled.SkeletonServiceItem {
 	return skeled.SkeletonServiceItem{
 		Domain:           version.Domain,
@@ -788,4 +776,16 @@ func shortSkelName(skelName string) string {
 		return shortName
 	}
 	return skelName
+}
+
+func skeletonSchemaVersionKey(skelName string, schemaHash string) string {
+	return skelName + "\x00" + schemaHash
+}
+
+func skeletonSchemaVersionsByKey[T any](versions []core.SchemaVersion[T]) map[string]core.SchemaVersion[T] {
+	ret := make(map[string]core.SchemaVersion[T], len(versions))
+	for _, version := range versions {
+		ret[skeletonSchemaVersionKey(version.SkelName, version.SchemaHash)] = version
+	}
+	return ret
 }

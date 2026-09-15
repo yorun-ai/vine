@@ -85,7 +85,7 @@ func (s *Seeder) canMigrateLegacyDashboardAccess() bool {
 		{name: dashboardWebRuleName, pathPrefix: "/"},
 	}
 	for _, legacy := range legacyRules {
-		rule, ok := s.RuleRepo.GetRuleByName(legacy.name)
+		rule, ok := s.RuleCore.FindByName(legacy.name)
 		if !ok {
 			continue
 		}

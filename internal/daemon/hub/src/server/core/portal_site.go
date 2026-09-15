@@ -50,10 +50,13 @@ type PortalSite struct {
 	ActorVia      string
 	Cors          PortalCors
 	WebName       string
-	// WebMountPath is the path the Web of this site is served at. It is derived
-	// from the Web contract and is empty when the Web is not limited to a path.
+	// WebMountPath is derived from the Web contract of the site and is empty when
+	// the Web is not limited to a path.
 	WebMountPath string
-	BuiltIn      bool
+	// RpcgwServices is derived from the registered services of the site actor and
+	// is empty for sites that do not forward Rpc traffic.
+	RpcgwServices []string
+	BuiltIn       bool
 }
 
 type PortalSiteCreation struct {
@@ -98,12 +101,14 @@ type PortalSiteOptions struct {
 	Webs     []PortalSiteWebOption
 }
 
+// PortalSiteRepo stores Portal sites. List and the lookups return entities the
+// caller owns; storage is free to assemble them from more than one source.
 type PortalSiteRepo interface {
-	ListEntries() []PortalSite
-	GetEntryById(id int) (*PortalSite, bool)
-	GetEntryByName(name string) (*PortalSite, bool)
-	SaveEntry(entry *PortalSite)
-	RemoveEntry(id int) bool
+	List() []*PortalSite
+	GetById(id int) (*PortalSite, bool)
+	GetByName(name string) (*PortalSite, bool)
+	Save(entry *PortalSite)
+	Remove(id int) bool
 }
 
 type PortalSiteCore struct {
@@ -111,14 +116,14 @@ type PortalSiteCore struct {
 	SchemaRepo     SchemaRepo     `inject:""`
 }
 
-func (m *PortalSiteCore) List() []PortalSite {
-	entries := m.PortalSiteRepo.ListEntries()
-	ret := make([]PortalSite, 0, len(entries))
+func (m *PortalSiteCore) List() []*PortalSite {
+	entries := m.PortalSiteRepo.List()
+	ret := make([]*PortalSite, 0, len(entries))
 	for _, entry := range entries {
 		if entry.BuiltIn {
 			continue
 		}
-		ret = append(ret, m.withWebMountPath(entry))
+		ret = append(ret, entry)
 	}
 	return ret
 }
@@ -131,40 +136,20 @@ func (m *PortalSiteCore) ListOptions() PortalSiteOptions {
 	}
 }
 
-func (m *PortalSiteCore) Get(id int) PortalSite {
-	entry, ok := m.PortalSiteRepo.GetEntryById(id)
+func (m *PortalSiteCore) Get(id int) *PortalSite {
+	entry, ok := m.PortalSiteRepo.GetById(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", id))
-	return m.withWebMountPath(*entry)
+	return entry
 }
 
-// GetByName returns a portal site with its derived Web mount path, including
-// built-in sites, or false when no site uses the name.
-func (m *PortalSiteCore) GetByName(name string) (PortalSite, bool) {
-	entry, ok := m.PortalSiteRepo.GetEntryByName(name)
-	if !ok {
-		return PortalSite{}, false
-	}
-	return m.withWebMountPath(*entry), true
+// FindByName returns a complete portal site, including built-in sites, or false
+// when no site uses the name.
+func (m *PortalSiteCore) FindByName(name string) (*PortalSite, bool) {
+	return m.PortalSiteRepo.GetByName(name)
 }
 
-func (m *PortalSiteCore) RpcgwServices(site PortalSite) []string {
-	return MatchPortalSiteRpcgwServicesInDomainViews(site, m.SchemaRepo.ListDomainSchemaViews())
-}
-
-// withWebMountPath derives the mount path of the Web the site forwards to.
-func (m *PortalSiteCore) withWebMountPath(site PortalSite) PortalSite {
-	site.WebMountPath = ""
-	if site.Type != PortalSiteTypeWEBGW || site.WebName == "" {
-		return site
-	}
-	if schema := m.SchemaRepo.GetWebSchema(site.WebName); schema != nil {
-		site.WebMountPath = schema.MountPath
-	}
-	return site
-}
-
-func (m *PortalSiteCore) Create(creation PortalSiteCreation) PortalSite {
-	_, ok := m.PortalSiteRepo.GetEntryByName(creation.Name)
+func (m *PortalSiteCore) Create(creation PortalSiteCreation) *PortalSite {
+	_, ok := m.PortalSiteRepo.GetByName(creation.Name)
 	ex.PanicNewIfNot(!ok, ex.OperationFailed, ex.F("portal entry %q already exists", creation.Name))
 
 	entry := PortalSite{
@@ -176,12 +161,12 @@ func (m *PortalSiteCore) Create(creation PortalSiteCreation) PortalSite {
 		WebName:       creation.WebName,
 	}
 	entry = m.Validate(entry)
-	m.PortalSiteRepo.SaveEntry(&entry)
-	return m.withWebMountPath(entry)
+	m.PortalSiteRepo.Save(&entry)
+	return &entry
 }
 
-func (m *PortalSiteCore) Update(id int, update PortalSiteUpdate) PortalSite {
-	entry, ok := m.PortalSiteRepo.GetEntryById(id)
+func (m *PortalSiteCore) Update(id int, update PortalSiteUpdate) *PortalSite {
+	entry, ok := m.PortalSiteRepo.GetById(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", id))
 	ex.PanicNewIfNot(!entry.BuiltIn, ex.OperationFailed, ex.F("built-in portal entry %q cannot be updated", entry.Name))
 
@@ -190,7 +175,7 @@ func (m *PortalSiteCore) Update(id int, update PortalSiteUpdate) PortalSite {
 	if update.Name != nil {
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/name")
 		if *update.Name != entry.Name {
-			_, exists := m.PortalSiteRepo.GetEntryByName(*update.Name)
+			_, exists := m.PortalSiteRepo.GetByName(*update.Name)
 			ex.PanicNewIfNot(!exists, ex.OperationFailed, ex.F("portal entry %q already exists", *update.Name))
 		}
 		next.Name = *update.Name
@@ -217,16 +202,16 @@ func (m *PortalSiteCore) Update(id int, update PortalSiteUpdate) PortalSite {
 	}
 
 	next = m.Validate(next)
-	m.PortalSiteRepo.SaveEntry(&next)
-	return m.withWebMountPath(next)
+	m.PortalSiteRepo.Save(&next)
+	return &next
 }
 
 func (m *PortalSiteCore) Remove(id int) {
-	entry, ok := m.PortalSiteRepo.GetEntryById(id)
+	entry, ok := m.PortalSiteRepo.GetById(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", id))
 	ex.PanicNewIfNot(!entry.BuiltIn, ex.OperationFailed, ex.F("built-in portal entry %q cannot be removed", entry.Name))
 
-	ok = m.PortalSiteRepo.RemoveEntry(id)
+	ok = m.PortalSiteRepo.Remove(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", id))
 }
 
@@ -262,6 +247,8 @@ func toPortalSiteServiceOptions(schemas []*skel.ServiceSchema) []PortalSiteServi
 	})
 }
 
+// MatchPortalSiteRpcgwServicesInDomainViews returns the Rpc services a site
+// forwards to, matching the services registered for its actor and access mode.
 func MatchPortalSiteRpcgwServicesInDomainViews(site PortalSite, views []DomainSchemaView) []string {
 	if site.Type != PortalSiteTypeRPCGW {
 		return []string{}
@@ -345,16 +332,16 @@ func (*PortalSiteCore) Validate(site PortalSite) PortalSite {
 }
 
 // Save creates or replaces a user site by name, preserving an existing ID.
-func (m *PortalSiteCore) Save(site PortalSite) PortalSite {
+func (m *PortalSiteCore) Save(site PortalSite) *PortalSite {
 	site = m.Validate(site)
 	site.Id = 0
 	site.BuiltIn = false
-	if current, ok := m.PortalSiteRepo.GetEntryByName(site.Name); ok {
+	if current, ok := m.PortalSiteRepo.GetByName(site.Name); ok {
 		ex.PanicNewIfNot(!current.BuiltIn, ex.OperationFailed, ex.F("built-in portal site %q cannot be replaced", site.Name))
 		site.Id = current.Id
 	}
-	m.PortalSiteRepo.SaveEntry(&site)
-	return m.withWebMountPath(site)
+	m.PortalSiteRepo.Save(&site)
+	return &site
 }
 
 // EnsureDashboardSite provisions an internal Dashboard site while keeping its ID.
@@ -363,8 +350,8 @@ func (m *PortalSiteCore) EnsureDashboardSite(site PortalSite) {
 	site.normalizeAndValidate()
 	site.Id = 0
 	site.BuiltIn = true
-	if current, ok := m.PortalSiteRepo.GetEntryByName(site.Name); ok {
+	if current, ok := m.PortalSiteRepo.GetByName(site.Name); ok {
 		site.Id = current.Id
 	}
-	m.PortalSiteRepo.SaveEntry(&site)
+	m.PortalSiteRepo.Save(&site)
 }

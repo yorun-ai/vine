@@ -22,7 +22,7 @@ type _PortalStatusServicePortalInstanceRepo struct {
 	instances []*core.PortalInstance
 }
 
-func (r *_PortalStatusServicePortalInstanceRepo) ListPortalInstances() []*core.PortalInstance {
+func (r *_PortalStatusServicePortalInstanceRepo) List() []*core.PortalInstance {
 	return r.instances
 }
 
@@ -56,11 +56,12 @@ func TestPortalStatusServiceListsWhatPortalRegistered(t *testing.T) {
 	watchServer.DIInit()
 	t.Cleanup(watchServer.AfterAppStop)
 
-	instanceRepo := &repo.WatchPortalInstanceRepo{
+	instanceRepo := &repo.PortalInstanceRepo{
 		WatchServer: watchServer,
 		InprocFlag:  &internalapp.InternalInprocFlag{},
 	}
-	registry := &controlimpl.PortalRegistryServiceServerImpl{PortalInstanceRepo: instanceRepo}
+	instanceCore := &core.PortalInstanceCore{PortalInstanceRepo: instanceRepo}
+	registry := &controlimpl.PortalRegistryServiceServerImpl{PortalInstanceCore: instanceCore}
 	service := &PortalStatusApiServiceServerImpl{PortalInstanceRepo: instanceRepo}
 
 	assert.Empty(t, service.List())

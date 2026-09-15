@@ -19,6 +19,30 @@ data AppConfigItem {
 
     @desc("Configuration schema")
     schema: AppConfigSchema?
+
+    @desc("Field sources; only returned by get, create and update")
+    fieldSources: list<FieldSource>
+}
+
+@desc("Configuration item list item")
+data AppConfigListItem {
+    @desc("Configuration ID")
+    id: int
+
+    @desc("Configuration key")
+    key: string
+
+    @desc("Configuration status")
+    status: string
+
+    @desc("Configuration lifecycle")
+    lifecycle: string
+
+    @desc("Configuration schema name; empty when no schema matches")
+    schemaName: string
+
+    @desc("Configuration schema Skel name; empty when no schema matches")
+    schemaSkelName: string
 }
 
 @desc("Configuration schema fields")
@@ -111,14 +135,14 @@ api service AppConfigApiService {
     @desc("List configuration items")
     method list {
         @desc("Configuration item list")
-        output list<AppConfigItem>
+        output list<AppConfigListItem>
     }
 
     @desc("Read configuration")
     method get {
         input {
-            @desc("Configuration ID")
-            id: int
+            @desc("Configuration key")
+            key: string
         }
         @desc("Configuration items")
         output AppConfigItem

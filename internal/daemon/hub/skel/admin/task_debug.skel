@@ -1,0 +1,131 @@
+domain vine.hub.admin
+
+@desc("Task called by Task Debug")
+data TaskDebugTaskItem {
+    @desc("Task name")
+    name: string
+
+    @desc("Task Skel name")
+    taskSkelName: string
+
+    @desc("Task schema hash")
+    schemaHash: string
+
+    @desc("Task description")
+    description: string
+
+    @desc("Whether the Task is deprecated")
+    deprecated: bool
+
+    @desc("Task deprecation reason")
+    deprecatedReason: string
+}
+
+@desc("Trigger called by Task Debug")
+data TaskDebugTriggerItem {
+    @desc("Trigger name")
+    name: string
+
+    @desc("Trigger Skel name")
+    skelName: string
+
+    @desc("Trigger description")
+    description: string
+
+    @desc("Whether the Trigger is deprecated")
+    deprecated: bool
+
+    @desc("Trigger deprecation reason")
+    deprecatedReason: string
+
+    @desc("Input description")
+    inputDescription: string
+
+    @desc("Input example")
+    example: string
+
+    @desc("Parameter list")
+    arguments: list<SkeletonField>
+}
+
+@desc("Task Debug initiates a request by default")
+data TaskDebugDefaultLaunchRequest {
+    @desc("Trace ID")
+    traceId: string
+
+    @desc("Span ID")
+    spanId: string
+
+    @desc("Default task parameters JSON")
+    argumentsJson: json
+}
+
+@desc("Task Debug initiates a request")
+data TaskDebugLaunchRequest {
+    @desc("Task Skel name")
+    taskSkelName: string
+
+    @desc("Task schema hash")
+    schemaHash: string
+
+    @desc("Trigger Skel name")
+    triggerSkelName: string
+
+    @desc("Task parameters JSON")
+    argumentsJson: json
+
+    @desc("Trace ID")
+    traceId: string?
+
+    @desc("Span ID")
+    spanId: string?
+}
+
+@desc("Hub Dashboard Task Debugging Service")
+api service TaskDebugApiService {
+    for AdminActor
+
+    noauth
+
+    @desc("List the tasks provided by the application instance")
+    method listTasks {
+        output list<TaskDebugTaskItem>
+    }
+
+    @desc("List Task triggers")
+    method listTriggers {
+        input {
+            @desc("Task Skel name")
+            taskSkelName: string
+
+            @desc("Task schema hash")
+            schemaHash: string
+        }
+
+        output list<TaskDebugTriggerItem>
+    }
+
+    @desc("Generate a default Task launch request")
+    method buildDefaultLaunchRequest {
+        input {
+            @desc("Task Skel name")
+            taskSkelName: string
+
+            @desc("Task schema hash")
+            schemaHash: string
+
+            @desc("Trigger Skel name")
+            triggerSkelName: string
+        }
+
+        output TaskDebugDefaultLaunchRequest
+    }
+
+    @desc("Initiate Task")
+    method launchTask {
+        input {
+            @desc("Debug launch request")
+            request: TaskDebugLaunchRequest
+        }
+    }
+}

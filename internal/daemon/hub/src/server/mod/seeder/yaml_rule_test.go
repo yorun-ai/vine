@@ -25,7 +25,7 @@ type testRule struct {
 
 func (r *testRule) UnmarshalYAML(node *yaml.Node) error {
 	type plain testRule
-	return DecodePortalRule(node, (*plain)(r))
+	return decodePortalRule(node, (*plain)(r))
 }
 
 func TestPortalRuleYAMLCompatibility(t *testing.T) {

@@ -1,0 +1,40 @@
+domain vine.hub.admin
+
+@desc("Application instance status view for Dashboard display")
+data AppStatusView {
+    @desc("Application name")
+    name: string
+
+    @desc("Application instance ID")
+    instanceId: string
+
+    @desc("Application version")
+    version: string
+
+    @desc("Application access address")
+    endpoint: string
+
+    @desc("List of Rpc service processing capabilities provided by the application")
+    serviceHandlers: list<ServiceHandlerRegistration>
+
+    @desc("List of web processing capabilities provided by the application")
+    webHandlers: list<WebHandlerRegistration>
+
+    @desc("List of event listening capabilities provided by the application")
+    eventListeners: list<EventListenerRegistration>
+
+    @desc("List of task execution capabilities provided by the application")
+    taskRunners: list<TaskRunnerRegistration>
+}
+
+@desc("Hub Dashboard's application status service")
+api service AppStatusApiService {
+    for AdminActor
+
+    noauth
+
+    @desc("List application instance statuses")
+    method list {
+        output list<AppStatusView>
+    }
+}

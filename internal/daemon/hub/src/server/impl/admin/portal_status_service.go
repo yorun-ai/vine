@@ -15,7 +15,7 @@ type PortalStatusApiServiceServerImpl struct {
 }
 
 func (s *PortalStatusApiServiceServerImpl) List() []skeled.PortalStatusView {
-	instances := s.PortalInstanceRepo.ListPortalInstances()
+	instances := s.PortalInstanceRepo.List()
 	items := make([]skeled.PortalStatusView, 0, len(instances))
 	for _, instance := range instances {
 		items = append(items, skeled.PortalStatusView{

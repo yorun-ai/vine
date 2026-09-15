@@ -6,8 +6,6 @@ export const cn = {
   'appConfig.comment.define': '定义于',
   'appConfig.comment.override': '覆盖于',
   'fieldSource.title': '字段来源',
-  'fieldSource.error': '加载失败',
-  'fieldSource.loading': '正在加载…',
   'fieldSource.empty': '没有来源信息',
   'fieldSource.field': '字段',
   'fieldSource.defined': '定义于',

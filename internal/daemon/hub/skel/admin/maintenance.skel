@@ -51,15 +51,6 @@ api service MaintenanceApiService {
 
     noauth
 
-    @desc("Query field sources by entity kind and stable name")
-    method fieldSources {
-        input {
-            kind: string
-            name: string
-        }
-        output list<FieldSource>
-    }
-
     @desc("Whether Hub configuration is read-only")
     method configReadOnly {
         output bool
@@ -87,24 +78,4 @@ api service MaintenanceApiService {
         @desc("Updated Seed preview")
         output SeedPreview
     }
-}
-
-@desc("Source of a configuration field and its seed substitutions")
-data FieldSource {
-    path: string
-    source: string
-    define: string
-    override: string
-    variables: list<string>
-    template: json?
-    bindings: list<FieldSourceBinding>
-}
-
-@desc("A resolved variable reference within a field template")
-data FieldSourceBinding {
-    path: string
-    variable: string
-    reference: string
-    value: json
-    defaultUsed: bool
 }

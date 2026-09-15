@@ -8,9 +8,8 @@ import (
 	"go.yorun.ai/vine/internal/core/skel"
 )
 
-func TestMemorySchemaRepoListAppConfigSchemas(t *testing.T) {
-	resetMemorySchemaRepoForTest()
-	repo := new(MemorySchemaRepo)
+func TestSchemaRepoListAppConfigSchemas(t *testing.T) {
+	repo := new(SchemaRepo)
 	schema := testDomainSchema()
 	schema.Configs[0].Description = "Main config description"
 	schema.Configs[0].Members = []*skel.MemberSchema{
@@ -25,9 +24,8 @@ func TestMemorySchemaRepoListAppConfigSchemas(t *testing.T) {
 	assert.Same(t, schema.Configs[0], schemas[0])
 }
 
-func TestMemorySchemaRepoListEnumSchemas(t *testing.T) {
-	resetMemorySchemaRepoForTest()
-	repo := new(MemorySchemaRepo)
+func TestSchemaRepoListEnumSchemas(t *testing.T) {
+	repo := new(SchemaRepo)
 	schema := testDomainSchema()
 	schema.Enums = []*skel.EnumSchema{{
 		Name:     "UserStatus",
@@ -45,9 +43,8 @@ func TestMemorySchemaRepoListEnumSchemas(t *testing.T) {
 	assert.Same(t, schema.Enums[0], schemas[0])
 }
 
-func TestMemorySchemaRepoListsLatestDomainSchemaByDomain(t *testing.T) {
-	resetMemorySchemaRepoForTest()
-	repo := new(MemorySchemaRepo)
+func TestSchemaRepoListsLatestDomainSchemaByDomain(t *testing.T) {
+	repo := new(SchemaRepo)
 	oldSchema := testDomainSchema()
 	newSchema := testDomainSchema()
 	newSchema.Hash = "pkg-hash-2"
@@ -67,5 +64,5 @@ func TestMemorySchemaRepoListsLatestDomainSchemaByDomain(t *testing.T) {
 
 	require.Len(t, actors, 1)
 	assert.Equal(t, "demo.user.UserActor", actors[0].SkelName)
-	assert.Len(t, memoryDomainSchemaByHash, 2)
+	assert.Len(t, repo.byHash, 2)
 }

@@ -57,35 +57,84 @@ func newTestPortalRuleApiService(dashboardURLSet bool) *PortalRuleApiServiceServ
 	}
 }
 
+// newTestPortalSiteCore builds a site core with the repositories Hub injects.
+func newTestPortalSiteCore(siteRepo core.PortalSiteRepo) *core.PortalSiteCore {
+	return &core.PortalSiteCore{PortalSiteRepo: siteRepo, SchemaRepo: &_SkeletonServiceSchemaRepo{}}
+}
+
+// _MaintenanceServicePortalCertRepo is a map-backed certificate repository.
+type _MaintenanceServicePortalCertRepo struct {
+	items map[string]*core.PortalCert
+}
+
+func (r *_MaintenanceServicePortalCertRepo) List() []*core.PortalCert {
+	items := make([]*core.PortalCert, 0, len(r.items))
+	for _, item := range r.items {
+		items = append(items, item)
+	}
+	return vslice.SortBy(items, func(a *core.PortalCert, b *core.PortalCert) bool { return a.Id < b.Id })
+}
+
+func (r *_MaintenanceServicePortalCertRepo) GetById(id int) (*core.PortalCert, bool) {
+	for _, item := range r.items {
+		if item.Id == id {
+			return item, true
+		}
+	}
+	return nil, false
+}
+
+func (r *_MaintenanceServicePortalCertRepo) GetByName(name string) (*core.PortalCert, bool) {
+	item, ok := r.items[name]
+	return item, ok
+}
+
+func (r *_MaintenanceServicePortalCertRepo) Save(cert *core.PortalCert) {
+	if r.items == nil {
+		r.items = map[string]*core.PortalCert{}
+	}
+	r.items[cert.Name] = cert
+}
+
+func (r *_MaintenanceServicePortalCertRepo) Remove(id int) bool {
+	for name, item := range r.items {
+		if item.Id == id {
+			delete(r.items, name)
+			return true
+		}
+	}
+	return false
+}
+
+// newTestPortalCertCore builds a certificate core with an empty repository.
+func newTestPortalCertCore() *core.PortalCertCore {
+	return &core.PortalCertCore{PortalCertRepo: &_MaintenanceServicePortalCertRepo{}}
+}
+
 // newTestPortalRuleCore builds a rule core with the Portal site and schema
 // repositories Hub injects; these tests only choose the rule repository.
 func newTestPortalRuleCore(ruleRepo core.PortalRuleRepo) *core.PortalRuleCore {
 	return &core.PortalRuleCore{
 		PortalRuleRepo: ruleRepo,
-		PortalSiteCore: newTestPortalSiteCore(&_MaintenanceServicePortalSiteRepo{}),
+		PortalSiteRepo: &_MaintenanceServicePortalSiteRepo{},
 	}
-}
-
-// newTestPortalSiteCore builds a site core with the repositories Hub injects.
-func newTestPortalSiteCore(siteRepo core.PortalSiteRepo) *core.PortalSiteCore {
-	return &core.PortalSiteCore{PortalSiteRepo: siteRepo, SchemaRepo: &_SkeletonServiceSchemaRepo{}}
 }
 
 type _PortalRuleRepoSpy struct {
 	rules map[int]*core.PortalRule
 }
 
-func (s *_PortalRuleRepoSpy) ListRules() []core.PortalRule {
-	rules := make([]core.PortalRule, 0, len(s.rules))
+func (s *_PortalRuleRepoSpy) List() []*core.PortalRule {
+	rules := make([]*core.PortalRule, 0, len(s.rules))
 	for _, rule := range s.rules {
-		rules = append(rules, *rule)
+		rules = append(rules, rule)
 	}
-	return vslice.SortBy(rules, func(a core.PortalRule, b core.PortalRule) bool {
+	return vslice.SortBy(rules, func(a *core.PortalRule, b *core.PortalRule) bool {
 		return a.Id < b.Id
 	})
 }
 
-func (s *_PortalRuleRepoSpy) GetRuleById(id int) (*core.PortalRule, bool) {
+func (s *_PortalRuleRepoSpy) GetById(id int) (*core.PortalRule, bool) {
 	rule, ok := s.rules[id]
 	if !ok {
 		return nil, false
@@ -94,7 +143,7 @@ func (s *_PortalRuleRepoSpy) GetRuleById(id int) (*core.PortalRule, bool) {
 	return &value, true
 }
 
-func (s *_PortalRuleRepoSpy) GetRuleByName(name string) (*core.PortalRule, bool) {
+func (s *_PortalRuleRepoSpy) GetByName(name string) (*core.PortalRule, bool) {
 	for _, rule := range s.rules {
 		if rule.Name == name {
 			value := *rule
@@ -104,12 +153,12 @@ func (s *_PortalRuleRepoSpy) GetRuleByName(name string) (*core.PortalRule, bool)
 	return nil, false
 }
 
-func (s *_PortalRuleRepoSpy) SaveRule(rule *core.PortalRule) {
+func (s *_PortalRuleRepoSpy) Save(rule *core.PortalRule) {
 	value := *rule
 	s.rules[value.Id] = &value
 }
 
-func (s *_PortalRuleRepoSpy) RemoveRule(id int) bool {
+func (s *_PortalRuleRepoSpy) Remove(id int) bool {
 	if _, ok := s.rules[id]; !ok {
 		return false
 	}
@@ -123,4 +172,26 @@ func capturePanic(fn func()) (got any) {
 	}()
 	fn()
 	return nil
+}
+
+func TestPortalRuleServiceGetReturnsFieldSources(t *testing.T) {
+	repo := &_PortalRuleRepoSpy{rules: map[int]*core.PortalRule{
+		3: {
+			Id:            3,
+			Name:          "demo.rule",
+			MatchScheme:   "http",
+			MatchPort:     80,
+			RouteType:     core.PortalRuleRouteTypeSite,
+			RouteSiteName: "demo-site",
+			FieldSources:  core.FieldSources{"/matchScheme": {Source: "app/default", Override: "hub"}},
+		},
+	}}
+	service := &PortalRuleApiServiceServerImpl{PortalRuleCore: newTestPortalRuleCore(repo)}
+
+	detail := service.Get(3)
+
+	require.Len(t, detail.FieldSources, 1)
+	assert.Equal(t, "/matchScheme", detail.FieldSources[0].Path)
+	assert.Equal(t, "app/default", detail.FieldSources[0].Source)
+	assert.Equal(t, "hub", detail.FieldSources[0].Override)
 }

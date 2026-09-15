@@ -14,17 +14,18 @@ type PortalRuleApiServiceServerImpl struct {
 	Flag           *flag.Flag           `inject:""`
 }
 
-func (s *PortalRuleApiServiceServerImpl) List() []skeled.PortalRule {
+func (s *PortalRuleApiServiceServerImpl) List() []skeled.PortalRuleListItem {
 	rules := s.PortalRuleCore.List()
-	ret := make([]skeled.PortalRule, 0, len(rules))
+	ret := make([]skeled.PortalRuleListItem, 0, len(rules))
 	for _, rule := range rules {
-		ret = append(ret, toServerPortalRule(rule))
+		ret = append(ret, toServerPortalRuleListItem(rule))
 	}
 	return ret
 }
 
 func (s *PortalRuleApiServiceServerImpl) Get(id int) skeled.PortalRule {
-	return toServerPortalRule(s.PortalRuleCore.Get(id))
+	rule := s.PortalRuleCore.Get(id)
+	return toServerPortalRule(rule, toServerFieldSources(rule.FieldSources))
 }
 
 func (s *PortalRuleApiServiceServerImpl) Create(creation skeled.PortalRuleCreation) skeled.PortalRule {
@@ -32,7 +33,7 @@ func (s *PortalRuleApiServiceServerImpl) Create(creation skeled.PortalRuleCreati
 	if creation.RoutePathPrefix != nil {
 		routePathPrefix = *creation.RoutePathPrefix
 	}
-	return toServerPortalRule(s.PortalRuleCore.Create(core.PortalRuleCreation{
+	rule := s.PortalRuleCore.Create(core.PortalRuleCreation{
 		Name:                    creation.Name,
 		MatchScheme:             creation.MatchScheme,
 		MatchHost:               creation.MatchHost,
@@ -42,11 +43,12 @@ func (s *PortalRuleApiServiceServerImpl) Create(creation skeled.PortalRuleCreati
 		RouteSiteName:           creation.RouteSiteName,
 		RouteRedirectionPattern: creation.RouteRedirectionPattern,
 		RoutePathPrefix:         routePathPrefix,
-	}))
+	})
+	return toServerPortalRule(rule, toServerFieldSources(rule.FieldSources))
 }
 
 func (s *PortalRuleApiServiceServerImpl) Update(id int, update skeled.PortalRuleUpdate) skeled.PortalRule {
-	return toServerPortalRule(s.PortalRuleCore.Update(id, core.PortalRuleUpdate{
+	rule := s.PortalRuleCore.Update(id, core.PortalRuleUpdate{
 		Name:                    update.Name,
 		MatchScheme:             update.MatchScheme,
 		MatchHost:               update.MatchHost,
@@ -56,7 +58,8 @@ func (s *PortalRuleApiServiceServerImpl) Update(id int, update skeled.PortalRule
 		RouteSiteName:           update.RouteSiteName,
 		RouteRedirectionPattern: update.RouteRedirectionPattern,
 		RoutePathPrefix:         update.RoutePathPrefix,
-	}))
+	})
+	return toServerPortalRule(rule, toServerFieldSources(rule.FieldSources))
 }
 
 func (s *PortalRuleApiServiceServerImpl) Remove(id int) {
@@ -79,12 +82,12 @@ func (s *PortalRuleApiServiceServerImpl) UpdateDashboardAccess(scheme string, ho
 	rules := s.PortalRuleCore.UpdateDashboardAccess(scheme, host, port, pathPrefix)
 	ret := make([]skeled.PortalRule, 0, len(rules))
 	for _, rule := range rules {
-		ret = append(ret, toServerPortalRule(rule))
+		ret = append(ret, toServerPortalRule(rule, nil))
 	}
 	return ret
 }
 
-func toServerPortalRule(rule core.PortalRule) skeled.PortalRule {
+func toServerPortalRule(rule *core.PortalRule, fieldSources []skeled.FieldSource) skeled.PortalRule {
 	return skeled.PortalRule{
 		Id:                      rule.Id,
 		Name:                    rule.Name,
@@ -96,5 +99,24 @@ func toServerPortalRule(rule core.PortalRule) skeled.PortalRule {
 		RouteSiteName:           rule.RouteSiteName,
 		RouteRedirectionPattern: rule.RouteRedirectionPattern,
 		RoutePathPrefix:         rule.RoutePathPrefix,
+		FieldSources:            fieldSources,
+	}
+}
+
+// toServerPortalRuleListItem maps a rule for list responses, which carry the
+// entity values without its seed provenance.
+func toServerPortalRuleListItem(rule *core.PortalRule) skeled.PortalRuleListItem {
+	detail := toServerPortalRule(rule, nil)
+	return skeled.PortalRuleListItem{
+		Id:                      detail.Id,
+		Name:                    detail.Name,
+		MatchScheme:             detail.MatchScheme,
+		MatchHost:               detail.MatchHost,
+		MatchPort:               detail.MatchPort,
+		MatchPathPrefix:         detail.MatchPathPrefix,
+		RouteType:               detail.RouteType,
+		RouteSiteName:           detail.RouteSiteName,
+		RouteRedirectionPattern: detail.RouteRedirectionPattern,
+		RoutePathPrefix:         detail.RoutePathPrefix,
 	}
 }

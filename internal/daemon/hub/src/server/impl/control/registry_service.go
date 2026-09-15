@@ -11,10 +11,10 @@ import (
 type RegistryServiceServerImpl struct {
 	skeled.DefaultRegistryServiceServer
 
-	RegistryCore   *core.RegistryCore  `inject:""`
-	PortalSiteRepo core.PortalSiteRepo `inject:""`
-	SchemaRepo     core.SchemaRepo     `inject:""`
-	Syncer         *syncer.Syncer      `inject:""`
+	RegistryCore   *core.RegistryCore   `inject:""`
+	PortalSiteCore *core.PortalSiteCore `inject:""`
+	SchemaRepo     core.SchemaRepo      `inject:""`
+	Syncer         *syncer.Syncer       `inject:""`
 }
 
 func (s *RegistryServiceServerImpl) Register(reg skeled.AppRegistration) {
@@ -47,12 +47,8 @@ func (s *RegistryServiceServerImpl) Heartbeat(status skeled.AppStatus) bool {
 }
 
 func (s *RegistryServiceServerImpl) refreshPortalSiteRpcgwServices() {
-	domainViews := s.SchemaRepo.ListDomainSchemaViews()
-	for _, site := range s.PortalSiteRepo.ListEntries() {
-		if site.BuiltIn {
-			continue
-		}
-		s.Syncer.SyncPortalSiteWithRpcgwServices(&site, core.MatchPortalSiteRpcgwServicesInDomainViews(site, domainViews))
+	for _, site := range s.PortalSiteCore.List() {
+		s.Syncer.SyncPortalSite(site)
 	}
 }
 

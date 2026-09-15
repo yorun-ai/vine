@@ -24,7 +24,7 @@ func TestSyncerSupportsConcurrentStateUpdates(t *testing.T) {
 				id := iteration % 3
 				name := fmt.Sprintf("demo.%d.%d", worker, iteration)
 				target.SyncAppConfig(&core.AppConfig{Id: id, Name: name, Value: `{}`})
-				target.SyncPortalSiteWithRpcgwServices(&core.PortalSite{Id: id, Name: name, Type: core.PortalSiteTypeWEBGW}, nil)
+				target.SyncPortalSite(&core.PortalSite{Id: id, Name: name, Type: core.PortalSiteTypeWEBGW})
 				target.SyncPortalRule(&core.PortalRule{Id: id, Name: name})
 				target.SyncPortalCert(&core.PortalCert{Id: id, Name: name})
 

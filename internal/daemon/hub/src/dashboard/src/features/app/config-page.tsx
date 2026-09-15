@@ -51,18 +51,17 @@ import { copyTextToClipboard } from '@/lib/clipboard'
 import { useLocale } from '@/i18n'
 import { cn } from '@/lib/utils'
 import {
-  createMaintenanceApiService,
   createAppConfigApiService,
   createSkeletonApiService,
 } from '@/skeled/admin'
 import type {
   FieldSource,
   AppConfigItem,
+  AppConfigListItem,
   AppConfigSchema,
   SkeletonData,
 } from '@/skeled/admin'
 
-const maintenanceService = createMaintenanceApiService(vrpcClient)
 const appConfigService = createAppConfigApiService(vrpcClient)
 const skeletonService = createSkeletonApiService(vrpcClient)
 const jsonExtensions = [json()]
@@ -90,27 +89,54 @@ function shortConfigName(key: string) {
   return key.split('.').at(-1) ?? key
 }
 
-function configName(config: AppConfigItem) {
-  return config.schema?.name ?? shortConfigName(config.key)
+// A list item carries the identity of its schema, a detail carries the schema
+// itself; both expose the same identity helpers.
+type AppConfigSummary = AppConfigListItem | AppConfigItem
+
+function configSchemaIdentity(config: AppConfigSummary) {
+  if ('schemaName' in config) {
+    return { name: config.schemaName, skelName: config.schemaSkelName }
+  }
+
+  return {
+    name: config.schema?.name ?? '',
+    skelName: config.schema?.skelName ?? '',
+  }
 }
 
-function configSkelName(config: AppConfigItem) {
-  return config.schema?.skelName ?? config.key
+function configListItem(config: AppConfigItem): AppConfigListItem {
+  const identity = configSchemaIdentity(config)
+  return {
+    id: config.id,
+    key: config.key,
+    status: config.status,
+    lifecycle: config.lifecycle,
+    schemaName: identity.name,
+    schemaSkelName: identity.skelName,
+  }
 }
 
-function configIsUnused(config: AppConfigItem) {
-  return config.status === 'UNUSED' || config.schema === null
+function configName(config: AppConfigSummary) {
+  return configSchemaIdentity(config).name || shortConfigName(config.key)
 }
 
-function configIsUnconfigured(config: AppConfigItem) {
+function configSkelName(config: AppConfigSummary) {
+  return configSchemaIdentity(config).skelName || config.key
+}
+
+function configIsUnused(config: AppConfigSummary) {
+  return config.status === 'UNUSED' || configSchemaIdentity(config).skelName === ''
+}
+
+function configIsUnconfigured(config: AppConfigSummary) {
   return config.status === 'UNCONFIGURED'
 }
 
-function configIsMismatched(config: AppConfigItem) {
+function configIsMismatched(config: AppConfigSummary) {
   return config.status === 'MISMATCH'
 }
 
-function configStatus(config: AppConfigItem): AppConfigStatus {
+function configStatus(config: AppConfigSummary): AppConfigStatus {
   if (configIsUnused(config)) {
     return 'UNUSED'
   }
@@ -372,8 +398,8 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
   const effectiveRouteKey = routeKey ?? pathnameRouteKey
   const routeKeyRef = React.useRef(effectiveRouteKey)
   const scrollHideTimers = React.useRef(new WeakMap<Element, number>())
-  const appConfigsRef = React.useRef<Array<AppConfigItem>>([])
-  const [appConfigs, setAppConfigs] = React.useState<Array<AppConfigItem>>([])
+  const appConfigsRef = React.useRef<Array<AppConfigListItem>>([])
+  const [appConfigs, setAppConfigs] = React.useState<Array<AppConfigListItem>>([])
   const [typeDefinitions, setTypeDefinitions] = React.useState<
     Array<SkeletonData>
   >([])
@@ -429,7 +455,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
   )
   const [createMessage, setCreateMessage] = React.useState<string | null>(null)
   const [createMatchedConfig, setCreateMatchedConfig] =
-    React.useState<AppConfigItem | null>(null)
+    React.useState<AppConfigListItem | null>(null)
   const configDomains = React.useMemo(
     () =>
       Array.from(
@@ -472,16 +498,6 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
     return selectedAppConfig?.schema ?? null
   }, [selectedAppConfig])
   const [sourceResult, setSourceResult] = React.useState<{ key: string; fields: FieldSource[]; config?: AppConfigItem } | null>(null)
-  React.useEffect(() => {
-    if (!selectedAppConfig || sourceResult?.config === selectedAppConfig) return
-    let active = true
-    const config = selectedAppConfig
-    maintenanceService.fieldSources({ kind: 'app_config', name: config.key }).then(
-      (fields) => { if (active) setSourceResult({ key: config.key, fields, config }) },
-      () => { /* Source annotations remain unchanged if refreshing fails. */ },
-    )
-    return () => { active = false }
-  }, [selectedAppConfig, sourceResult?.config])
   const editorFields = React.useMemo(() => {
     const sources = sourceResult?.key === selectedAppConfig?.key ? sourceResult?.fields ?? [] : []
     return (selectedSchema?.fields ?? []).map((field) => ({
@@ -628,7 +644,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
     }
   }, [])
 
-  const updateConfigs = React.useCallback((items: Array<AppConfigItem>) => {
+  const updateConfigs = React.useCallback((items: Array<AppConfigListItem>) => {
     appConfigsRef.current = items
     setAppConfigs(items)
   }, [])
@@ -669,14 +685,11 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
     }
     setErrorMessage(null)
     try {
-      const [config, fields] = await Promise.all([
-        configIsUnconfigured(listedConfig) ? Promise.resolve(listedConfig) : appConfigService.get({ id: listedConfig.id }),
-        maintenanceService.fieldSources({ kind: 'app_config', name: key }).catch(() => []),
-      ])
+      const config = await appConfigService.get({ key })
       if (request !== detailRequest.current) return
       const nextValue = configIsUnconfigured(config) ? defaultConfigValue(config.schema) : formatConfigValue(config.value)
       const selected = { ...config, value: nextValue }
-      setSourceResult({ key, fields, config: selected })
+      setSourceResult({ key, fields: config.fieldSources, config: selected })
       setSelectedAppConfig(selected)
       setValue(nextValue)
       setDetailLoading(false)
@@ -772,7 +785,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
       setValue(formattedValue)
       updateConfigs(
         appConfigsRef.current.map((config) =>
-          config.key === updated.key ? formattedUpdated : config,
+          config.key === updated.key ? configListItem(formattedUpdated) : config,
         ),
       )
       toast.success(t('appConfig.saved'))

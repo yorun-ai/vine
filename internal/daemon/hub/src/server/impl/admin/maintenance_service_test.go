@@ -15,7 +15,7 @@ type _MaintenanceServiceAppConfigRepo struct {
 	items map[string]*core.AppConfig
 }
 
-func (r *_MaintenanceServiceAppConfigRepo) ListItems() []*core.AppConfig {
+func (r *_MaintenanceServiceAppConfigRepo) List() []*core.AppConfig {
 	var items []*core.AppConfig
 	for _, item := range r.items {
 		items = append(items, item)
@@ -23,7 +23,15 @@ func (r *_MaintenanceServiceAppConfigRepo) ListItems() []*core.AppConfig {
 	return items
 }
 
-func (r *_MaintenanceServiceAppConfigRepo) GetItemById(id int) (*core.AppConfig, bool) {
+func (r *_MaintenanceServiceAppConfigRepo) ListSlots() []*core.AppConfig {
+	return r.List()
+}
+
+func (r *_MaintenanceServiceAppConfigRepo) FindByName(name string) (*core.AppConfig, bool) {
+	return r.GetByName(name)
+}
+
+func (r *_MaintenanceServiceAppConfigRepo) GetById(id int) (*core.AppConfig, bool) {
 	for _, item := range r.items {
 		if item.Id == id {
 			return item, true
@@ -32,16 +40,16 @@ func (r *_MaintenanceServiceAppConfigRepo) GetItemById(id int) (*core.AppConfig,
 	return nil, false
 }
 
-func (r *_MaintenanceServiceAppConfigRepo) GetItemByName(name string) (*core.AppConfig, bool) {
+func (r *_MaintenanceServiceAppConfigRepo) GetByName(name string) (*core.AppConfig, bool) {
 	item, ok := r.items[name]
 	return item, ok
 }
 
-func (r *_MaintenanceServiceAppConfigRepo) SaveItem(item *core.AppConfig) {
+func (r *_MaintenanceServiceAppConfigRepo) Save(item *core.AppConfig) {
 	r.items[item.Name] = item
 }
 
-func (r *_MaintenanceServiceAppConfigRepo) RemoveItem(id int) bool {
+func (r *_MaintenanceServiceAppConfigRepo) Remove(id int) bool {
 	for name, item := range r.items {
 		if item.Id != id {
 			continue
@@ -65,6 +73,13 @@ func TestMaintenanceServicePreviewSeedYamlReturnsEmptyItems(t *testing.T) {
 	}
 }
 
+func TestMaintenanceServiceEmptySeedDocumentPreviewsAndAppliesNothing(t *testing.T) {
+	service := &MaintenanceApiServiceServerImpl{}
+
+	require.Empty(t, service.PreviewSeedYaml("").Items)
+	require.Empty(t, service.ApplySeedYaml("", []skeled.SeedItemSelection{{Kind: seedKindAppConfig, Name: "demo.Config"}}).Items)
+}
+
 func TestMaintenanceServiceApplySeedYamlUpdatesSelectedItem(t *testing.T) {
 	configRepo := &_MaintenanceServiceAppConfigRepo{items: map[string]*core.AppConfig{
 		"demo.Config": {
@@ -75,7 +90,6 @@ func TestMaintenanceServiceApplySeedYamlUpdatesSelectedItem(t *testing.T) {
 		},
 	}}
 	service := &MaintenanceApiServiceServerImpl{
-		AppConfigRepo: configRepo,
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 	}
 
@@ -85,7 +99,7 @@ appConfigs:
     value: '{"old":false}'
 `, []skeled.SeedItemSelection{{Kind: seedKindAppConfig, Name: "demo.Config"}})
 
-	item, ok := configRepo.GetItemByName("demo.Config")
+	item, ok := configRepo.GetByName("demo.Config")
 	if !ok {
 		t.Fatal("expected config item")
 	}
@@ -122,10 +136,9 @@ func TestMaintenanceServiceSeedYamlDoesNotExposeVineField(t *testing.T) {
 		},
 	}}
 	service := &MaintenanceApiServiceServerImpl{
-		EntryRepo: entryRepo,
-		SiteCore:  newTestPortalSiteCore(entryRepo),
-		RuleRepo:  ruleRepo,
-		RuleCore:  newTestPortalRuleCore(ruleRepo),
+		SiteCore: newTestPortalSiteCore(entryRepo),
+		RuleCore: newTestPortalRuleCore(ruleRepo),
+		CertCore: newTestPortalCertCore(),
 	}
 	content := `
 portalSites:
@@ -166,14 +179,14 @@ portalRules:
 	require.Equal(t, "old.Web", entryRepo.items["admin@demo.app"].WebName, "preflight must reject before any writes")
 	require.Equal(t, "/old", ruleRepo.items[core.DashboardWebRuleName].MatchPathPrefix)
 
-	entry, ok := entryRepo.GetEntryByName("admin@demo.app")
+	entry, ok := entryRepo.GetByName("admin@demo.app")
 	if !ok {
 		t.Fatal("expected portal site")
 	}
 	if !entry.BuiltIn {
 		t.Fatal("expected existing portal site built-in flag to be preserved")
 	}
-	rule, ok := ruleRepo.GetRuleByName(core.DashboardWebRuleName)
+	rule, ok := ruleRepo.GetByName(core.DashboardWebRuleName)
 	if !ok {
 		t.Fatal("expected portal rule")
 	}
@@ -186,17 +199,17 @@ type _MaintenanceServicePortalSiteRepo struct {
 	items map[string]*core.PortalSite
 }
 
-func (r *_MaintenanceServicePortalSiteRepo) ListEntries() []core.PortalSite {
-	items := make([]core.PortalSite, 0, len(r.items))
+func (r *_MaintenanceServicePortalSiteRepo) List() []*core.PortalSite {
+	items := make([]*core.PortalSite, 0, len(r.items))
 	for _, item := range r.items {
-		items = append(items, *item)
+		items = append(items, item)
 	}
-	return vslice.SortBy(items, func(a core.PortalSite, b core.PortalSite) bool {
+	return vslice.SortBy(items, func(a *core.PortalSite, b *core.PortalSite) bool {
 		return a.Id < b.Id
 	})
 }
 
-func (r *_MaintenanceServicePortalSiteRepo) GetEntryById(id int) (*core.PortalSite, bool) {
+func (r *_MaintenanceServicePortalSiteRepo) GetById(id int) (*core.PortalSite, bool) {
 	for _, item := range r.items {
 		if item.Id == id {
 			value := *item
@@ -206,7 +219,7 @@ func (r *_MaintenanceServicePortalSiteRepo) GetEntryById(id int) (*core.PortalSi
 	return nil, false
 }
 
-func (r *_MaintenanceServicePortalSiteRepo) GetEntryByName(name string) (*core.PortalSite, bool) {
+func (r *_MaintenanceServicePortalSiteRepo) GetByName(name string) (*core.PortalSite, bool) {
 	item, ok := r.items[name]
 	if !ok {
 		return nil, false
@@ -215,12 +228,12 @@ func (r *_MaintenanceServicePortalSiteRepo) GetEntryByName(name string) (*core.P
 	return &value, true
 }
 
-func (r *_MaintenanceServicePortalSiteRepo) SaveEntry(entry *core.PortalSite) {
+func (r *_MaintenanceServicePortalSiteRepo) Save(entry *core.PortalSite) {
 	value := *entry
 	r.items[value.Name] = &value
 }
 
-func (r *_MaintenanceServicePortalSiteRepo) RemoveEntry(id int) bool {
+func (r *_MaintenanceServicePortalSiteRepo) Remove(id int) bool {
 	for name, item := range r.items {
 		if item.Id == id {
 			delete(r.items, name)
@@ -234,17 +247,17 @@ type _MaintenanceServicePortalRuleRepo struct {
 	items map[string]*core.PortalRule
 }
 
-func (r *_MaintenanceServicePortalRuleRepo) ListRules() []core.PortalRule {
-	items := make([]core.PortalRule, 0, len(r.items))
+func (r *_MaintenanceServicePortalRuleRepo) List() []*core.PortalRule {
+	items := make([]*core.PortalRule, 0, len(r.items))
 	for _, item := range r.items {
-		items = append(items, *item)
+		items = append(items, item)
 	}
-	return vslice.SortBy(items, func(a core.PortalRule, b core.PortalRule) bool {
+	return vslice.SortBy(items, func(a *core.PortalRule, b *core.PortalRule) bool {
 		return a.Id < b.Id
 	})
 }
 
-func (r *_MaintenanceServicePortalRuleRepo) GetRuleById(id int) (*core.PortalRule, bool) {
+func (r *_MaintenanceServicePortalRuleRepo) GetById(id int) (*core.PortalRule, bool) {
 	for _, item := range r.items {
 		if item.Id == id {
 			value := *item
@@ -254,7 +267,7 @@ func (r *_MaintenanceServicePortalRuleRepo) GetRuleById(id int) (*core.PortalRul
 	return nil, false
 }
 
-func (r *_MaintenanceServicePortalRuleRepo) GetRuleByName(name string) (*core.PortalRule, bool) {
+func (r *_MaintenanceServicePortalRuleRepo) GetByName(name string) (*core.PortalRule, bool) {
 	item, ok := r.items[name]
 	if !ok {
 		return nil, false
@@ -263,12 +276,12 @@ func (r *_MaintenanceServicePortalRuleRepo) GetRuleByName(name string) (*core.Po
 	return &value, true
 }
 
-func (r *_MaintenanceServicePortalRuleRepo) SaveRule(rule *core.PortalRule) {
+func (r *_MaintenanceServicePortalRuleRepo) Save(rule *core.PortalRule) {
 	value := *rule
 	r.items[value.Name] = &value
 }
 
-func (r *_MaintenanceServicePortalRuleRepo) RemoveRule(id int) bool {
+func (r *_MaintenanceServicePortalRuleRepo) Remove(id int) bool {
 	for name, item := range r.items {
 		if item.Id == id {
 			delete(r.items, name)
@@ -280,19 +293,18 @@ func (r *_MaintenanceServicePortalRuleRepo) RemoveRule(id int) bool {
 
 func TestMaintenanceTargetPathSeedRoundTrip(t *testing.T) {
 	repo := &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{}}
-	service := &MaintenanceApiServiceServerImpl{RuleRepo: repo,
-		RuleCore: newTestPortalRuleCore(repo)}
+	service := &MaintenanceApiServiceServerImpl{RuleCore: newTestPortalRuleCore(repo)}
 	payload := service.parseSeed("portalRules:\n  - name: mapped\n    scheme: http\n    targetType: SITE\n    siteName: web\n    pathPrefix: /api\n    targetPath: /internal/\n")
 	rule := payload.PortalRules[0]
 	if rule.RoutePathPrefix != "/internal" {
 		t.Fatalf("unexpected target path: %q", rule.RoutePathPrefix)
 	}
 	service.applyPortalRules(payload.PortalRules, map[_SeedSelectionKey]struct{}{{kind: seedKindPortalRule, name: "mapped"}: {}})
-	stored, ok := repo.GetRuleByName("mapped")
+	stored, ok := repo.GetByName("mapped")
 	if !ok || stored.RoutePathPrefix != "/internal" {
 		t.Fatalf("target path not persisted: %+v", stored)
 	}
-	fields := currentPortalRuleFields(stored)
+	fields := stored.SeedFields()
 	if fields["routePathPrefix"] != "/internal" {
 		t.Fatalf("target path not exported: %v", fields)
 	}
@@ -306,6 +318,44 @@ func TestMaintenanceRuleFieldNames(t *testing.T) {
 	require.Panics(t, func() { service.parseSeed("portalRules:\n  - scheme: http\n    routeType: SITE") })
 }
 
+func TestMaintenanceSeedPreviewComparesEverySeedFieldOfASite(t *testing.T) {
+	entryRepo := &_MaintenanceServicePortalSiteRepo{items: map[string]*core.PortalSite{
+		"demo.site": {
+			Id:            1,
+			Name:          "demo.site",
+			Type:          core.PortalSiteTypeRPCGW,
+			ActorSkelName: "demo.Actor",
+			ActorVia:      "client",
+			Cors:          core.PortalCors{Mode: core.PortalCorsModeDisabled},
+		},
+	}}
+	service := &MaintenanceApiServiceServerImpl{SiteCore: newTestPortalSiteCore(entryRepo)}
+
+	preview := service.PreviewSeedYaml(`
+portalSites:
+  - name: demo.site
+    type: RPCGW
+    actorSkelName: demo.Actor
+    actorVia: client
+    cors:
+      mode: STRICT
+      allowedOrigins: ["https://demo.local"]
+`)
+
+	require.Len(t, preview.Items, 1)
+	fields := map[string]skeled.SeedFieldDiff{}
+	for _, field := range preview.Items[0].Fields {
+		fields[field.Name] = field
+	}
+	require.False(t, fields["type"].Changed)
+	require.True(t, fields["corsMode"].Changed)
+	require.Equal(t, "DISABLED", fields["corsMode"].CurrentValue)
+	require.Equal(t, "STRICT", fields["corsMode"].SeedValue)
+	require.True(t, fields["corsOrigins"].Changed)
+	require.Equal(t, "[]", fields["corsOrigins"].CurrentValue)
+	require.Equal(t, `["https://demo.local"]`, fields["corsOrigins"].SeedValue)
+}
+
 func TestMaintenanceUsesDomainValidationForBothYAMLVocabularies(t *testing.T) {
 	for _, legacy := range []bool{false, true} {
 		content := "portalRules:\n  - name: invalid\n    matchScheme: http\n    matchPort: -1\n    routeType: SITE\n    routeSiteName: web\n"
@@ -313,7 +363,7 @@ func TestMaintenanceUsesDomainValidationForBothYAMLVocabularies(t *testing.T) {
 			content = strings.NewReplacer("matchScheme:", "scheme:", "matchPort:", "port:", "routeType:", "targetType:", "routeSiteName:", "siteName:").Replace(content)
 		}
 		repo := &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{}}
-		service := &MaintenanceApiServiceServerImpl{RuleRepo: repo, RuleCore: newTestPortalRuleCore(repo)}
+		service := &MaintenanceApiServiceServerImpl{RuleCore: newTestPortalRuleCore(repo)}
 		require.Panics(t, func() { service.PreviewSeedYaml(content) })
 		require.Panics(t, func() {
 			service.ApplySeedYaml(content, []skeled.SeedItemSelection{{Kind: seedKindPortalRule, Name: "invalid"}})
@@ -345,7 +395,6 @@ func TestMaintenanceStructuredAppConfigYAML(t *testing.T) {
 		items: map[string]*core.AppConfig{},
 	})
 	service := new(MaintenanceApiServiceServerImpl{
-		AppConfigRepo: configRepo,
 		AppConfigCore: new(core.AppConfigCore{AppConfigRepo: configRepo}),
 	})
 	const content = `appConfigs:
@@ -357,7 +406,7 @@ func TestMaintenanceStructuredAppConfigYAML(t *testing.T) {
 	preview := service.PreviewSeedYaml(content)
 	require.Len(t, preview.Items, 1)
 	service.ApplySeedYaml(content, []skeled.SeedItemSelection{{Kind: seedKindAppConfig, Name: "demo.Config"}})
-	item, ok := configRepo.GetItemByName("demo.Config")
+	item, ok := configRepo.GetByName("demo.Config")
 	require.True(t, ok)
 	require.Equal(t, `{"openingDate":"2026-09-13","statuses":{"EAST":"ACTIVE"}}`, item.Value)
 	version := item.Version

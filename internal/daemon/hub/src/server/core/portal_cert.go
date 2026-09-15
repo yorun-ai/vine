@@ -35,12 +35,14 @@ type PortalCertUpdate struct {
 	PrivateKeyBase64 *string
 }
 
+// PortalCertRepo stores Portal certificates. List and the lookups return entities
+// the caller owns.
 type PortalCertRepo interface {
-	ListCerts() []*PortalCert
-	GetCertById(id int) (*PortalCert, bool)
-	GetCertByName(name string) (*PortalCert, bool)
-	SaveCert(cert *PortalCert)
-	RemoveCert(id int) bool
+	List() []*PortalCert
+	GetById(id int) (*PortalCert, bool)
+	GetByName(name string) (*PortalCert, bool)
+	Save(cert *PortalCert)
+	Remove(id int) bool
 }
 
 type PortalCertCore struct {
@@ -48,17 +50,22 @@ type PortalCertCore struct {
 }
 
 func (m *PortalCertCore) List() []*PortalCert {
-	return m.PortalCertRepo.ListCerts()
+	return m.PortalCertRepo.List()
+}
+
+// FindByName returns the certificate with the name.
+func (m *PortalCertCore) FindByName(name string) (*PortalCert, bool) {
+	return m.PortalCertRepo.GetByName(name)
 }
 
 func (m *PortalCertCore) Get(id int) *PortalCert {
-	cert, ok := m.PortalCertRepo.GetCertById(id)
+	cert, ok := m.PortalCertRepo.GetById(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("entry cert %d not found", id))
 	return cert
 }
 
 func (m *PortalCertCore) Create(creation PortalCertCreation) *PortalCert {
-	_, ok := m.PortalCertRepo.GetCertByName(creation.Name)
+	_, ok := m.PortalCertRepo.GetByName(creation.Name)
 	ex.PanicNewIfNot(!ok, ex.OperationFailed, ex.F("entry cert %q already exists", creation.Name))
 
 	cert := new(m.Validate(PortalCert{
@@ -66,12 +73,12 @@ func (m *PortalCertCore) Create(creation PortalCertCreation) *PortalCert {
 		PublicKeyBase64:  creation.PublicKeyBase64,
 		PrivateKeyBase64: creation.PrivateKeyBase64,
 	}))
-	m.PortalCertRepo.SaveCert(cert)
+	m.PortalCertRepo.Save(cert)
 	return cert
 }
 
 func (m *PortalCertCore) Update(id int, update PortalCertUpdate) *PortalCert {
-	cert, ok := m.PortalCertRepo.GetCertById(id)
+	cert, ok := m.PortalCertRepo.GetById(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("entry cert %d not found", id))
 
 	next := &PortalCert{
@@ -88,7 +95,7 @@ func (m *PortalCertCore) Update(id int, update PortalCertUpdate) *PortalCert {
 	if update.Name != nil {
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/name")
 		if *update.Name != cert.Name {
-			_, exists := m.PortalCertRepo.GetCertByName(*update.Name)
+			_, exists := m.PortalCertRepo.GetByName(*update.Name)
 			ex.PanicNewIfNot(!exists, ex.OperationFailed, ex.F("entry cert %q already exists", *update.Name))
 		}
 		next.Name = *update.Name
@@ -103,12 +110,12 @@ func (m *PortalCertCore) Update(id int, update PortalCertUpdate) *PortalCert {
 	}
 
 	*next = m.Validate(*next)
-	m.PortalCertRepo.SaveCert(next)
+	m.PortalCertRepo.Save(next)
 	return next
 }
 
 func (m *PortalCertCore) Remove(id int) {
-	ok := m.PortalCertRepo.RemoveCert(id)
+	ok := m.PortalCertRepo.Remove(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("entry cert %d not found", id))
 }
 
@@ -183,12 +190,12 @@ func (*PortalCertCore) Validate(cert PortalCert) PortalCert {
 }
 
 // Save creates or replaces a certificate by name, preserving an existing ID.
-func (m *PortalCertCore) Save(cert PortalCert) PortalCert {
+func (m *PortalCertCore) Save(cert PortalCert) *PortalCert {
 	cert = m.Validate(cert)
 	cert.Id = 0
-	if current, ok := m.PortalCertRepo.GetCertByName(cert.Name); ok {
+	if current, ok := m.PortalCertRepo.GetByName(cert.Name); ok {
 		cert.Id = current.Id
 	}
-	m.PortalCertRepo.SaveCert(&cert)
-	return cert
+	m.PortalCertRepo.Save(&cert)
+	return &cert
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/json/v2"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,38 +13,94 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 )
 
+// _AppConfigServiceAppConfigRepo mirrors the repository contract: it returns
+// configuration slots with their declaration, status and lifecycle assembled.
 type _AppConfigServiceAppConfigRepo struct {
-	items []*core.AppConfig
+	items   []*core.AppConfig
+	schemas []*skel.ConfigSchema
+	enums   []*skel.EnumSchema
 }
 
-func (r *_AppConfigServiceAppConfigRepo) ListItems() []*core.AppConfig {
-	return r.items
+func (r *_AppConfigServiceAppConfigRepo) assemble(item *core.AppConfig) *core.AppConfig {
+	var schema *skel.ConfigSchema
+	for _, candidate := range r.schemas {
+		if candidate.SkelName == item.Name {
+			schema = candidate
+			break
+		}
+	}
+	item.Definition = core.NewAppConfigDefinition(schema, r.enums)
+	item.Configured = item.Id != 0
+	item.Lifecycle = core.AppConfigLifecycleFor(schema)
+	if item.Configured {
+		item.Status = core.AppConfigStatusFor(schema, item.Value, r.enums)
+	} else {
+		item.Status = core.AppConfigStatusUnconfigured
+	}
+	return item
 }
 
-func (r *_AppConfigServiceAppConfigRepo) GetItemById(id int) (*core.AppConfig, bool) {
+func (r *_AppConfigServiceAppConfigRepo) List() []*core.AppConfig {
+	items := make([]*core.AppConfig, 0, len(r.items))
+	for _, item := range r.items {
+		items = append(items, r.assemble(item))
+	}
+	return items
+}
+
+func (r *_AppConfigServiceAppConfigRepo) ListSlots() []*core.AppConfig {
+	slots := r.List()
+	seen := map[string]struct{}{}
+	for _, slot := range slots {
+		seen[slot.Name] = struct{}{}
+	}
+	for _, schema := range r.schemas {
+		if _, ok := seen[schema.SkelName]; ok {
+			continue
+		}
+		slots = append(slots, r.assemble(&core.AppConfig{Name: schema.SkelName}))
+	}
+	return slots
+}
+
+func (r *_AppConfigServiceAppConfigRepo) FindByName(name string) (*core.AppConfig, bool) {
+	if item, ok := r.GetByName(name); ok {
+		return item, true
+	}
+	for _, schema := range r.schemas {
+		if schema.SkelName == name {
+			return r.assemble(&core.AppConfig{Name: name}), true
+		}
+	}
+	return nil, false
+}
+
+func (r *_AppConfigServiceAppConfigRepo) GetById(id int) (*core.AppConfig, bool) {
 	for _, item := range r.items {
 		if item.Id == id {
-			return item, true
+			return r.assemble(item), true
 		}
 	}
 	return nil, false
 }
 
-func (r *_AppConfigServiceAppConfigRepo) GetItemByName(name string) (*core.AppConfig, bool) {
+func (r *_AppConfigServiceAppConfigRepo) GetByName(name string) (*core.AppConfig, bool) {
 	for _, item := range r.items {
 		if item.Name == name {
-			return item, true
+			return r.assemble(item), true
 		}
 	}
 	return nil, false
 }
 
-func (r *_AppConfigServiceAppConfigRepo) SaveItem(item *core.AppConfig) {
+func (r *_AppConfigServiceAppConfigRepo) Save(item *core.AppConfig) {
 	if item.Id == 0 {
 		item.Id = len(r.items) + 1
+		*item = *r.assemble(item)
 		r.items = append(r.items, item)
 		return
 	}
+	*item = *r.assemble(item)
 	for index, current := range r.items {
 		if current.Id == item.Id {
 			r.items[index] = item
@@ -55,7 +110,7 @@ func (r *_AppConfigServiceAppConfigRepo) SaveItem(item *core.AppConfig) {
 	r.items = append(r.items, item)
 }
 
-func (r *_AppConfigServiceAppConfigRepo) RemoveItem(id int) bool {
+func (r *_AppConfigServiceAppConfigRepo) Remove(id int) bool {
 	for index, item := range r.items {
 		if item.Id == id {
 			r.items = append(r.items[:index], r.items[index+1:]...)
@@ -142,278 +197,15 @@ func (*_AppConfigServiceSchemaRepo) ListWebSchemas() []*skel.WebSchema {
 	return nil
 }
 
-func TestAppConfigServiceListReturnsConfigSchemaDescriptionsAndFields(t *testing.T) {
-	service := &AppConfigApiServiceServerImpl{
-		AppConfigCore: &core.AppConfigCore{
-			AppConfigRepo: &_AppConfigServiceAppConfigRepo{
-				items: []*core.AppConfig{{
-					Id:      7,
-					Name:    "demo.user.SiteConfig",
-					Value:   `{"title":"Demo","defaultStatus":"ACTIVE","statusMessages":{"ACTIVE":"Ready"}}`,
-					Version: 1,
-				}},
-			},
-		},
-		SchemaRepo: &_AppConfigServiceSchemaRepo{
-			enumSchemas: []*skel.EnumSchema{
-				{
-					Name:     "UserStatus",
-					SkelName: "demo.admin.UserStatus",
-					Items: []*skel.EnumItemSchema{
-						{Name: "DISABLED", Description: "禁用"},
-					},
-				},
-				{
-					Name:     "UserStatus",
-					SkelName: "demo.user.UserStatus",
-					Items: []*skel.EnumItemSchema{
-						{Name: "ACTIVE", Description: "启用", Deprecated: true, DeprecatedReason: "Use ENABLED"},
-						{Name: "PENDING", Description: "待审核"},
-					},
-				},
-			},
-			configSchemas: []*skel.ConfigSchema{{
-				Name:             "SiteConfig",
-				SkelName:         "demo.user.SiteConfig",
-				Description:      "站点配置",
-				Deprecated:       true,
-				DeprecatedReason: "Use AppConfig",
-				Lifecycle:        "ETERNAL",
-				Members: []*skel.MemberSchema{
-					{
-						Name:             "title",
-						Description:      "页面标题",
-						Deprecated:       true,
-						DeprecatedReason: "Use displayTitle",
-						Type: &skel.TypeSchema{
-							Kind:   skel.TypeKindScalar,
-							Scalar: skel.ScalarString,
-						},
-					},
-					{
-						Name: "defaultStatus",
-						Type: &skel.TypeSchema{
-							Kind:     skel.TypeKindEnum,
-							Name:     "UserStatus",
-							SkelName: "demo.user.UserStatus",
-						},
-					},
-					{
-						Name: "statusMessages",
-						Type: &skel.TypeSchema{
-							Kind: skel.TypeKindMap,
-							Key: &skel.TypeSchema{
-								Kind:     skel.TypeKindEnum,
-								Name:     "UserStatus",
-								SkelName: "demo.user.UserStatus",
-							},
-							Value: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-					},
-				},
-			}},
-		},
-	}
-
-	items := service.List()
-
-	require.Len(t, items, 1)
-	assert.Equal(t, 7, items[0].Id)
-	assert.Equal(t, "NORMAL", items[0].Status)
-	require.NotNil(t, items[0].Schema)
-	assert.Equal(t, "demo.user.SiteConfig", items[0].Schema.SkelName)
-	assert.Equal(t, "SiteConfig", items[0].Schema.Name)
-
-	assert.Equal(t, "站点配置", items[0].Schema.Description)
-	assert.True(t, items[0].Schema.Deprecated)
-	assert.Equal(t, "Use AppConfig", items[0].Schema.DeprecatedReason)
-	assert.Equal(t, "ETERNAL", items[0].Schema.Lifecycle)
-	require.Len(t, items[0].Schema.Fields, 3)
-	assert.Equal(t, "title", items[0].Schema.Fields[0].Name)
-	assert.Equal(t, "string", items[0].Schema.Fields[0].Type)
-
-	assert.Equal(t, "页面标题", items[0].Schema.Fields[0].Description)
-	assert.True(t, items[0].Schema.Fields[0].Deprecated)
-	assert.Equal(t, "Use displayTitle", items[0].Schema.Fields[0].DeprecatedReason)
-	assert.Equal(t, "defaultStatus", items[0].Schema.Fields[1].Name)
-	assert.Equal(t, "demo.user.UserStatus", items[0].Schema.Fields[1].Type)
-	assert.Empty(t, items[0].Schema.Fields[1].Description)
-	require.Len(t, items[0].Schema.Fields[1].EnumItems, 2)
-	assert.Equal(t, "ACTIVE", items[0].Schema.Fields[1].EnumItems[0].Name)
-
-	assert.Equal(t, "启用", items[0].Schema.Fields[1].EnumItems[0].Description)
-	assert.True(t, items[0].Schema.Fields[1].EnumItems[0].Deprecated)
-	assert.Equal(t, "Use ENABLED", items[0].Schema.Fields[1].EnumItems[0].DeprecatedReason)
-	assert.Equal(t, "statusMessages", items[0].Schema.Fields[2].Name)
-	assert.Equal(t, "map<demo.user.UserStatus, string>", items[0].Schema.Fields[2].Type)
-	require.Len(t, items[0].Schema.Fields[2].EnumItems, 2)
-	assert.Equal(t, "ACTIVE", items[0].Schema.Fields[2].EnumItems[0].Name)
-}
-
-func TestAppConfigServiceListIncludesUnusedAndUnconfiguredConfigs(t *testing.T) {
-	service := &AppConfigApiServiceServerImpl{
-		AppConfigCore: &core.AppConfigCore{
-			AppConfigRepo: &_AppConfigServiceAppConfigRepo{
-				items: []*core.AppConfig{
-					{Id: 7, Name: "demo.user.SiteConfig", Value: `{}`, Version: 1},
-					{Id: 8, CreatedAt: time.Date(2026, time.May, 21, 10, 0, 0, 0, time.UTC), Name: "demo.user.LegacyConfig", Value: `{"enabled":true}`, Version: 1},
-					{Id: 9, CreatedAt: time.Date(2026, time.May, 22, 10, 0, 0, 0, time.UTC), Name: "demo.user.NewerConfig", Value: `{"enabled":true}`, Version: 1},
-					{Id: 10, Name: "demo.user.BrokenConfig", Value: `{"enabled":"yes"}`, Version: 1},
-				},
-			},
-		},
-		SchemaRepo: &_AppConfigServiceSchemaRepo{
-			configSchemas: []*skel.ConfigSchema{
-				{Name: "SiteConfig", SkelName: "demo.user.SiteConfig", Lifecycle: "ETERNAL"},
-				{
-					Name:      "BrokenConfig",
-					SkelName:  "demo.user.BrokenConfig",
-					Lifecycle: "INSTANT",
-					Members: []*skel.MemberSchema{{
-						Name: "enabled",
-						Type: &skel.TypeSchema{
-							Kind:   skel.TypeKindScalar,
-							Scalar: skel.ScalarBool,
-						},
-					}},
-				},
-				{Name: "FeatureConfig", SkelName: "demo.user.FeatureConfig", Lifecycle: "INSTANT"},
-			},
-		},
-	}
-
-	items := service.List()
-
-	require.Len(t, items, 5)
-	assert.Equal(t, "demo.user.BrokenConfig", items[0].Key)
-	assert.Equal(t, "MISMATCH", items[0].Status)
-	assert.Equal(t, "demo.user.FeatureConfig", items[1].Key)
-	assert.Equal(t, "UNCONFIGURED", items[1].Status)
-	assert.Equal(t, 0, items[1].Id)
-	assert.Equal(t, "", items[1].Value)
-	require.NotNil(t, items[1].Schema)
-	assert.Equal(t, "FeatureConfig", items[1].Schema.Name)
-	assert.Equal(t, "demo.user.NewerConfig", items[2].Key)
-	assert.Equal(t, "UNUSED", items[2].Status)
-	assert.Nil(t, items[2].Schema)
-	assert.Equal(t, "demo.user.LegacyConfig", items[3].Key)
-	assert.Equal(t, "UNUSED", items[3].Status)
-	assert.Equal(t, "demo.user.SiteConfig", items[4].Key)
-	assert.Equal(t, "NORMAL", items[4].Status)
-}
-
-func TestAppConfigServiceListMatchesConfigSchemaByFullSkelName(t *testing.T) {
-	service := &AppConfigApiServiceServerImpl{
-		AppConfigCore: &core.AppConfigCore{
-			AppConfigRepo: &_AppConfigServiceAppConfigRepo{
-				items: []*core.AppConfig{{
-					Id:      7,
-					Name:    "demo.alpha.ClientConfig",
-					Value:   `{"endpoint":"https://api.example.com"}`,
-					Version: 1,
-				}},
-			},
-		},
-		SchemaRepo: &_AppConfigServiceSchemaRepo{
-			configSchemas: []*skel.ConfigSchema{
-				{
-					Name:      "ClientConfig",
-					SkelName:  "demo.beta.ClientConfig",
-					Lifecycle: "ETERNAL",
-					Members: []*skel.MemberSchema{{
-						Name: "addr",
-						Type: &skel.TypeSchema{
-							Kind:   skel.TypeKindScalar,
-							Scalar: skel.ScalarString,
-						},
-					}},
-				},
-				{
-					Name:      "ClientConfig",
-					SkelName:  "demo.alpha.ClientConfig",
-					Lifecycle: "ETERNAL",
-					Members: []*skel.MemberSchema{{
-						Name: "endpoint",
-						Type: &skel.TypeSchema{
-							Kind:   skel.TypeKindScalar,
-							Scalar: skel.ScalarString,
-						},
-					}},
-				},
-			},
-		},
-	}
-
-	items := service.List()
-
-	require.Len(t, items, 2)
-	config := findAppConfigItemForTest(items, "demo.alpha.ClientConfig")
-	require.NotNil(t, config)
-	assert.Equal(t, "NORMAL", config.Status)
-	require.NotNil(t, config.Schema)
-	assert.Equal(t, "demo.alpha.ClientConfig", config.Schema.SkelName)
-	require.Len(t, config.Schema.Fields, 1)
-	assert.Equal(t, "endpoint", config.Schema.Fields[0].Name)
-	unconfigured := findAppConfigItemForTest(items, "demo.beta.ClientConfig")
-	require.NotNil(t, unconfigured)
-	assert.Equal(t, "UNCONFIGURED", unconfigured.Status)
-}
-
-func TestAppConfigServiceListDoesNotMatchConfigSchemaByShortName(t *testing.T) {
-	service := &AppConfigApiServiceServerImpl{
-		AppConfigCore: &core.AppConfigCore{
-			AppConfigRepo: &_AppConfigServiceAppConfigRepo{
-				items: []*core.AppConfig{{
-					Id:      7,
-					Name:    "ClientConfig",
-					Value:   `{"endpoint":"http://localhost:8080"}`,
-					Version: 1,
-				}},
-			},
-		},
-		SchemaRepo: &_AppConfigServiceSchemaRepo{
-			configSchemas: []*skel.ConfigSchema{{
-				Name:      "ClientConfig",
-				SkelName:  "demo.alpha.ClientConfig",
-				Lifecycle: "ETERNAL",
-				Members: []*skel.MemberSchema{{
-					Name: "endpoint",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				}},
-			}},
-		},
-	}
-
-	items := service.List()
-
-	require.Len(t, items, 2)
-	shortConfig := findAppConfigItemForTest(items, "ClientConfig")
-	require.NotNil(t, shortConfig)
-	assert.Equal(t, "UNUSED", shortConfig.Status)
-	assert.Nil(t, shortConfig.Schema)
-	fullConfig := findAppConfigItemForTest(items, "demo.alpha.ClientConfig")
-	require.NotNil(t, fullConfig)
-	assert.Equal(t, "UNCONFIGURED", fullConfig.Status)
-}
-
 func TestAppConfigServiceCreateConfig(t *testing.T) {
-	repo := &_AppConfigServiceAppConfigRepo{}
-	service := &AppConfigApiServiceServerImpl{
-		AppConfigCore: &core.AppConfigCore{AppConfigRepo: repo},
-		SchemaRepo: &_AppConfigServiceSchemaRepo{
-			configSchemas: []*skel.ConfigSchema{{
-				Name:      "FeatureConfig",
-				SkelName:  "demo.user.FeatureConfig",
-				Lifecycle: "INSTANT",
-			}},
-		},
+	repo := &_AppConfigServiceAppConfigRepo{
+		schemas: []*skel.ConfigSchema{{
+			Name:      "FeatureConfig",
+			SkelName:  "demo.user.FeatureConfig",
+			Lifecycle: "INSTANT",
+		}},
 	}
+	service := &AppConfigApiServiceServerImpl{AppConfigCore: &core.AppConfigCore{AppConfigRepo: repo}}
 
 	item := service.Create(skeled.AppConfigCreation{
 		SkelName: "demo.user.FeatureConfig",
@@ -430,7 +222,6 @@ func TestAppConfigServiceCreateConfig(t *testing.T) {
 func TestAppConfigServiceCreateRejectsInvalidConfigSkelName(t *testing.T) {
 	service := &AppConfigApiServiceServerImpl{
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: &_AppConfigServiceAppConfigRepo{}},
-		SchemaRepo:    &_AppConfigServiceSchemaRepo{},
 	}
 
 	for _, skelName := range []string{"ddd", "demo.ddd", "demo.user.bad-config", "demo.1user.BadConfig"} {
@@ -443,6 +234,23 @@ func TestAppConfigServiceCreateRejectsInvalidConfigSkelName(t *testing.T) {
 	}
 }
 
+func TestAppConfigSkelNameShape(t *testing.T) {
+	for name, want := range map[string]bool{
+		"demo.user.FeatureConfig": true,
+		"demo.Config":             true,
+		"Config":                  false,
+		"_demo.FeatureConfig":     true,
+		"ddd":                     false,
+		"demo.ddd":                false,
+		"demo.user.bad-config":    false,
+		"demo.1user.BadConfig":    false,
+		"demo.user.":              false,
+		".demo.Config":            false,
+	} {
+		assert.Equal(t, want, isValidConfigSkelName(name), name)
+	}
+}
+
 func TestAppConfigServiceRemoveOnlyAllowsUnusedConfig(t *testing.T) {
 	repo := &_AppConfigServiceAppConfigRepo{
 		items: []*core.AppConfig{
@@ -450,68 +258,27 @@ func TestAppConfigServiceRemoveOnlyAllowsUnusedConfig(t *testing.T) {
 			{Id: 8, Name: "demo.user.LegacyConfig", Value: `{}`, Version: 1},
 		},
 	}
-	service := &AppConfigApiServiceServerImpl{
-		AppConfigCore: &core.AppConfigCore{AppConfigRepo: repo},
-		SchemaRepo: &_AppConfigServiceSchemaRepo{
-			configSchemas: []*skel.ConfigSchema{{
-				Name:     "SiteConfig",
-				SkelName: "demo.user.SiteConfig",
-			}},
-		},
-	}
+	repo.schemas = []*skel.ConfigSchema{{
+		Name:     "SiteConfig",
+		SkelName: "demo.user.SiteConfig",
+	}}
+	service := &AppConfigApiServiceServerImpl{AppConfigCore: &core.AppConfigCore{AppConfigRepo: repo}}
 
 	assert.True(t, service.Remove(8))
-	_, ok := repo.GetItemById(8)
+	_, ok := repo.GetById(8)
 	assert.False(t, ok)
 	assert.Panics(t, func() {
 		service.Remove(7)
 	})
 }
 
-func findAppConfigItemForTest(items []skeled.AppConfigItem, key string) *skeled.AppConfigItem {
+func findAppConfigItemForTest(items []skeled.AppConfigListItem, key string) *skeled.AppConfigListItem {
 	for i := range items {
 		if items[i].Key == key {
 			return &items[i]
 		}
 	}
 	return nil
-}
-
-func TestAppConfigMapEnumKeysAndValues(t *testing.T) {
-	keyType := new(skel.TypeSchema{
-		Kind: skel.TypeKindEnum, SkelName: "demo.Region",
-	})
-	valueType := new(skel.TypeSchema{
-		Kind: skel.TypeKindEnum, SkelName: "demo.Status",
-	})
-	enums := []*skel.EnumSchema{
-		{SkelName: "demo.Region", Items: []*skel.EnumItemSchema{{Name: "EAST", Description: "East"}, {Name: "WEST"}}},
-		{SkelName: "demo.Status", Items: []*skel.EnumItemSchema{{Name: "ACTIVE", Description: "Active"}, {Name: "LOCKED"}}},
-	}
-	for _, key := range []*skel.TypeSchema{keyType, {Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}} {
-		t.Run(string(key.Kind), func(t *testing.T) {
-			mapType := new(skel.TypeSchema{
-				Kind: skel.TypeKindMap, Key: key, Value: valueType,
-			})
-			fields := toServerAppConfigSchemaFields([]*skel.MemberSchema{{Name: "statuses", Type: mapType}}, enums)
-			require.Len(t, fields, 1)
-			require.Len(t, fields[0].MapValueEnumItems, 2)
-			assert.Equal(t, "ACTIVE", fields[0].MapValueEnumItems[0].Name)
-			assert.Equal(t, "Active", fields[0].MapValueEnumItems[0].Description)
-			if key.Kind == skel.TypeKindEnum {
-				require.Len(t, fields[0].MapKeyEnumItems, 2)
-				assert.Equal(t, "EAST", fields[0].MapKeyEnumItems[0].Name)
-				assert.Equal(t, fields[0].MapKeyEnumItems, fields[0].EnumItems)
-				assert.False(t, jsonValueMatchesType(map[string]any{"UNKNOWN": "ACTIVE"}, mapType, enums))
-			} else {
-				assert.Empty(t, fields[0].MapKeyEnumItems)
-			}
-			assert.True(t, jsonValueMatchesType(map[string]any{"EAST": "ACTIVE", "WEST": "LOCKED"}, mapType, enums))
-			assert.False(t, jsonValueMatchesType(map[string]any{"EAST": "UNKNOWN"}, mapType, enums))
-			assert.False(t, jsonValueMatchesType(map[string]any{"EAST": 1}, mapType, enums))
-			assert.False(t, jsonValueMatchesType(map[string]any{"EAST": nil}, mapType, enums))
-		})
-	}
 }
 
 func TestEditorScalarFormatsMatchRuntime(t *testing.T) {
@@ -550,17 +317,6 @@ func TestEditorScalarFormatsMatchRuntime(t *testing.T) {
 	}
 }
 
-func TestIntegerMapKeyMatchesRuntime(t *testing.T) {
-	schema := &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}
-	for _, key := range []string{"0", "-1", "9223372036854775807", "-9223372036854775808", "1e3", "1.0", "1_000", "0x10", "01", "9223372036854775808", "-9223372036854775809"} {
-		encoded, err := json.Marshal(map[string]bool{key: true})
-		require.NoError(t, err)
-		var target map[int64]bool
-		err = json.Unmarshal(encoded, &target)
-		require.Equal(t, err == nil, jsonMapKeyMatchesType(key, schema, nil), key)
-	}
-}
-
 func (r *_AppConfigServiceSchemaRepo) GetWebSchema(skelName string) *skel.WebSchema {
 	for _, schema := range r.ListWebSchemas() {
 		if schema.SkelName == skelName {
@@ -568,4 +324,51 @@ func (r *_AppConfigServiceSchemaRepo) GetWebSchema(skelName string) *skel.WebSch
 		}
 	}
 	return nil
+}
+
+func TestAppConfigServiceGetReturnsFieldSourcesAndDeclaredSlots(t *testing.T) {
+	repo := &_AppConfigServiceAppConfigRepo{
+		schemas: []*skel.ConfigSchema{
+			{
+				Name:      "FeatureConfig",
+				SkelName:  "demo.FeatureConfig",
+				Lifecycle: "ETERNAL",
+				Members: []*skel.MemberSchema{
+					{Name: "enabled", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+				},
+			},
+			{Name: "OtherConfig", SkelName: "demo.OtherConfig", Lifecycle: "INSTANT"},
+		},
+		items: []*core.AppConfig{{
+			Id:           7,
+			Name:         "demo.FeatureConfig",
+			Value:        `{"enabled":true}`,
+			Version:      1,
+			FieldSources: core.FieldSources{"/value": {Source: "app/default", Override: "hub"}},
+		}},
+	}
+	service := &AppConfigApiServiceServerImpl{AppConfigCore: &core.AppConfigCore{AppConfigRepo: repo}}
+
+	detail := service.Get("demo.FeatureConfig")
+	require.Len(t, detail.FieldSources, 1)
+	assert.Equal(t, "/value", detail.FieldSources[0].Path)
+	assert.Equal(t, "hub", detail.FieldSources[0].Override)
+	assert.Equal(t, "demo.FeatureConfig", detail.Schema.SkelName)
+
+	// A configuration an application declares without a stored value resolves by
+	// key and carries no provenance.
+	declared := service.Get("demo.OtherConfig")
+	assert.Zero(t, declared.Id)
+	assert.Equal(t, "UNCONFIGURED", declared.Status)
+	assert.Equal(t, "INSTANT", declared.Lifecycle)
+	assert.Empty(t, declared.FieldSources)
+
+	// The list payload has no field for provenance, so it cannot leak sources.
+	items := service.List()
+	require.Len(t, items, 2)
+	statuses := map[string]string{}
+	for _, item := range items {
+		statuses[item.Key] = item.Status
+	}
+	assert.Equal(t, map[string]string{"demo.FeatureConfig": "NORMAL", "demo.OtherConfig": "UNCONFIGURED"}, statuses)
 }

@@ -19,6 +19,9 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
   types may use descriptive lowercase names such as `testApp` or
   `configRepoSpy`.
 - Use `Rpc`, not `RPC`, in identifiers.
+- Name repository implementations after the repository they provide, not after
+  the storage they happen to use: `repo.AppConfigRepo`, not
+  `repo.DBAppConfigRepo`.
 
 ## Generated Code
 
@@ -31,6 +34,12 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
   in `internal/core/skel/version.go`. Do not regenerate with an older compiler.
 - Keep the import rewriting and formatting performed by `script/gen-skel.sh`.
   Generated runtime code intentionally imports internal packages.
+- Treat the embedded Hub Dashboard bundle
+  (`internal/daemon/hub/src/server/impl/admin/dashboard/assets/dashboard.tar.zst`)
+  as generated: rebuild it with `bash script/build-dashboard-assets.sh` whenever
+  Dashboard source or the admin API it calls changes, and commit it with that
+  change. Never assemble the archive by hand, and never resolve a conflict on it
+  by picking one side; rebuild it from the merged source.
 
 ## Public API Boundaries
 
@@ -56,6 +65,15 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
   nullable, and declare the binding nullable instead of guessing at the
   consumption site.
 - Do not add defensive behavior to production code solely to accommodate tests.
+- Repository implementations assemble the complete entities they return:
+  derived values such as a site's Web mount path and Rpc services, the
+  definition and status of a configuration, and stored provenance such as field
+  sources. Domain code applies rules and invariants to the entities it receives;
+  API services map entities to payloads instead of joining data from several
+  sources.
+- Add a domain type only when it carries rules. Do not introduce pass-through
+  facades over a repository: a service that only queries storage may depend on
+  the repository interface directly.
 - Preserve the active `meta.Context`, trace, actor, initiator, cancellation, and
   deadline when forwarding or deriving work. Do not replace an active request
   context with `context.Background()`.
@@ -109,6 +127,9 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
   asset rebuilding, and generated contracts; follow `.github/CI.md` for publication.
 - Compare commits since the previous tag against `CHANGELOG.md`, move completed
   entries to a dated release heading, and retain an empty `[Unreleased]` section.
+- Record notable user-visible and contract changes under `[Unreleased]` in the
+  change that introduces them, so release preparation only moves entries to the
+  dated heading.
 - After Go dependency changes, run `bash script/gen-third-party-licenses.sh`
   and commit inventory changes. Regenerate contracts with `bash script/gen-skel.sh all`
   and inspect drift. Build Dashboard archives only with the documented script.

@@ -15,19 +15,19 @@ type portalSiteRepoSpy struct {
 	entries map[int]*PortalSite
 }
 
-func (s *portalSiteRepoSpy) ListEntries() []PortalSite {
-	s.calls = append(s.calls, "ListEntries")
-	entries := make([]PortalSite, 0, len(s.entries))
+func (s *portalSiteRepoSpy) List() []*PortalSite {
+	s.calls = append(s.calls, "List")
+	entries := make([]*PortalSite, 0, len(s.entries))
 	for _, entry := range s.entries {
-		entries = append(entries, *entry)
+		entries = append(entries, entry)
 	}
-	return vslice.SortBy(entries, func(a PortalSite, b PortalSite) bool {
+	return vslice.SortBy(entries, func(a *PortalSite, b *PortalSite) bool {
 		return a.Id < b.Id
 	})
 }
 
-func (s *portalSiteRepoSpy) GetEntryById(id int) (*PortalSite, bool) {
-	s.calls = append(s.calls, "GetEntryById")
+func (s *portalSiteRepoSpy) GetById(id int) (*PortalSite, bool) {
+	s.calls = append(s.calls, "GetById")
 	entry, ok := s.entries[id]
 	if !ok {
 		return nil, false
@@ -36,8 +36,8 @@ func (s *portalSiteRepoSpy) GetEntryById(id int) (*PortalSite, bool) {
 	return &value, true
 }
 
-func (s *portalSiteRepoSpy) GetEntryByName(name string) (*PortalSite, bool) {
-	s.calls = append(s.calls, "GetEntryByName:"+name)
+func (s *portalSiteRepoSpy) GetByName(name string) (*PortalSite, bool) {
+	s.calls = append(s.calls, "GetByName:"+name)
 	for _, entry := range s.entries {
 		if entry.Name == name {
 			value := *entry
@@ -47,8 +47,8 @@ func (s *portalSiteRepoSpy) GetEntryByName(name string) (*PortalSite, bool) {
 	return nil, false
 }
 
-func (s *portalSiteRepoSpy) SaveEntry(entry *PortalSite) {
-	s.calls = append(s.calls, "SaveEntry")
+func (s *portalSiteRepoSpy) Save(entry *PortalSite) {
+	s.calls = append(s.calls, "Save")
 	if s.entries == nil {
 		s.entries = map[int]*PortalSite{}
 	}
@@ -56,8 +56,8 @@ func (s *portalSiteRepoSpy) SaveEntry(entry *PortalSite) {
 	s.entries[value.Id] = &value
 }
 
-func (s *portalSiteRepoSpy) RemoveEntry(id int) bool {
-	s.calls = append(s.calls, "RemoveEntry")
+func (s *portalSiteRepoSpy) Remove(id int) bool {
+	s.calls = append(s.calls, "Remove")
 	if _, ok := s.entries[id]; !ok {
 		return false
 	}
@@ -86,7 +86,7 @@ func TestPortalSiteCoreUpdateBuiltInSite(t *testing.T) {
 	err, ok := panicValue.(ex.Error)
 	require.True(t, ok)
 	assert.Equal(t, ex.OperationFailed, err.Code())
-	assert.Equal(t, []string{"GetEntryById"}, repo.calls)
+	assert.Equal(t, []string{"GetById"}, repo.calls)
 }
 
 func TestPortalSiteCoreListSkipsBuiltInSites(t *testing.T) {
@@ -102,49 +102,7 @@ func TestPortalSiteCoreListSkipsBuiltInSites(t *testing.T) {
 
 	require.Len(t, entries, 1)
 	assert.Equal(t, "demo-booker", entries[0].Name)
-	assert.Equal(t, []string{"ListEntries"}, repo.calls)
-}
-
-func TestPortalSiteCoreDerivesWebMountPath(t *testing.T) {
-	repo := &portalSiteRepoSpy{entries: map[int]*PortalSite{
-		1: {Id: 1, Name: "web", Type: PortalSiteTypeWEBGW, WebName: "demo.Web"},
-		2: {Id: 2, Name: "plain", Type: PortalSiteTypeWEBGW, WebName: "app.Web"},
-		3: {Id: 3, Name: "api", Type: PortalSiteTypeRPCGW, WebName: "demo.Web"},
-	}}
-	core := &PortalSiteCore{
-		PortalSiteRepo: repo,
-		SchemaRepo: &schemaRepoSpy{webs: []*skel.WebSchema{
-			{Name: "demo.Web", SkelName: "demo.Web", MountPath: "/demo"},
-			{Name: "app.Web", SkelName: "app.Web"},
-		}},
-	}
-
-	entries := core.List()
-
-	require.Len(t, entries, 3)
-	assert.Equal(t, []string{"/demo", "", ""}, []string{
-		entries[0].WebMountPath,
-		entries[1].WebMountPath,
-		entries[2].WebMountPath,
-	})
-	assert.Equal(t, "/demo", core.Get(1).WebMountPath)
-	site, ok := core.GetByName("web")
-	require.True(t, ok)
-	assert.Equal(t, "/demo", site.WebMountPath)
-	_, ok = core.GetByName("missing")
-	assert.False(t, ok)
-}
-
-func TestPortalSiteCoreIgnoresProvidedWebMountPath(t *testing.T) {
-	core := &PortalSiteCore{
-		PortalSiteRepo: &portalSiteRepoSpy{},
-		SchemaRepo:     &schemaRepoSpy{webs: []*skel.WebSchema{{Name: "demo.Web", SkelName: "demo.Web", MountPath: "/demo"}}},
-	}
-
-	web := core.withWebMountPath(PortalSite{Type: PortalSiteTypeWEBGW, WebName: "demo.Web", WebMountPath: "/forged"})
-	assert.Equal(t, "/demo", web.WebMountPath)
-	rpc := core.withWebMountPath(PortalSite{Type: PortalSiteTypeRPCGW, WebMountPath: "/forged"})
-	assert.Empty(t, rpc.WebMountPath)
+	assert.Equal(t, []string{"List"}, repo.calls)
 }
 
 func TestPortalSiteCoreRemoveBuiltInSite(t *testing.T) {
@@ -162,7 +120,7 @@ func TestPortalSiteCoreRemoveBuiltInSite(t *testing.T) {
 	err, ok := panicValue.(ex.Error)
 	require.True(t, ok)
 	assert.Equal(t, ex.OperationFailed, err.Code())
-	assert.Equal(t, []string{"GetEntryById"}, repo.calls)
+	assert.Equal(t, []string{"GetById"}, repo.calls)
 }
 
 func TestMatchPortalSiteRpcgwServicesInDomainViewsIncludesVineSchemas(t *testing.T) {

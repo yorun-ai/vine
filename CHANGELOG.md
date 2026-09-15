@@ -8,6 +8,29 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Added
+
+- Hub keeps Portal rules aligned with the Web they serve. When an application
+  declares a mount path for its Web, a rule that forwards to that site must
+  match and forward exactly that path, and the Dashboard keeps the match and
+  route prefixes read-only instead of letting Hub reject the rule. Skel
+  compilers do not declare Web mount paths yet, so the constraint stays inert
+  until a Web does, and the built-in Dashboard rules Hub provisions for itself
+  are not affected.
+
+### Changed
+
+- The Hub admin API returns field sources with the detail of an entity instead
+  of through a separate query, and separates the list payload from the detail
+  payload for app configs, Portal sites, rules and certificates. An app config
+  detail is selected by key rather than by database id, so the Dashboard can
+  show a configuration an application declared but Hub has no value for. The app
+  config list carries only the identity of the configuration and its schema
+  instead of the configuration JSON and the complete schema.
+- The Dashboard seed preview compares every field the seed declares. A Portal
+  site whose seed changes its CORS mode or origins now reports those fields as
+  changed instead of applying them silently.
+
 ## [0.18.0] - 2026-09-15
 
 ### Fixed

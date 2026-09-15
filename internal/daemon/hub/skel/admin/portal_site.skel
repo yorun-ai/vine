@@ -1,0 +1,244 @@
+domain vine.hub.admin
+
+@desc("Portal target site type")
+enum PortalSiteType {
+    @desc("Rpc gateway")
+    RPCGW
+
+    @desc("Web gateway")
+    WEBGW
+}
+
+@desc("Portal site CORS mode")
+enum PortalCorsMode {
+    @desc("Disable CORS")
+    DISABLED
+
+    @desc("Allow origins in the same domain as the entry rule")
+    SAME_DOMAIN
+
+    @desc("Only allow Origins in the configuration list")
+    STRICT
+}
+
+@desc("Portal site CORS configuration")
+data PortalCors {
+    @desc("CORS mode: DISABLED/SAME_DOMAIN/STRICT")
+    mode: PortalCorsMode
+
+    @desc("List of origins allowed in strict mode")
+    allowedOrigins: list<string>
+}
+
+@desc("Portal target site creation parameters")
+data PortalSiteCreation {
+    @desc("Target site name")
+    name: string
+
+    @desc("Target site type")
+    type: PortalSiteType
+
+    @desc("Actor Skel name")
+    actorSkelName: string
+
+    @desc("Actor access method")
+    actorVia: string
+
+    @desc("CORS configuration")
+    cors: PortalCors?
+
+    @desc("Web name")
+    webName: string
+}
+
+@desc("Portal target site")
+data PortalSite {
+    @desc("Target site id")
+    id: int
+
+    @desc("Target site name")
+    name: string
+
+    @desc("Target site type")
+    type: PortalSiteType
+
+    @desc("Actor Skel name")
+    actorSkelName: string
+
+    @desc("Actor access method")
+    actorVia: string
+
+    @desc("Rpc gateway service Skel name list")
+    rpcgwServices: list<string>
+
+    @desc("CORS configuration")
+    cors: PortalCors?
+
+    @desc("Web name")
+    webName: string
+
+    @desc("Web mount path; empty means the Web is not limited to a path")
+    webMountPath: string
+
+    @desc("Field sources; only returned by get, create and update")
+    fieldSources: list<FieldSource>
+}
+
+@desc("Portal target site list item")
+data PortalSiteListItem {
+    @desc("Target site id")
+    id: int
+
+    @desc("Target site name")
+    name: string
+
+    @desc("Target site type")
+    type: PortalSiteType
+
+    @desc("Actor Skel name")
+    actorSkelName: string
+
+    @desc("Actor access method")
+    actorVia: string
+
+    @desc("Rpc gateway service Skel name list")
+    rpcgwServices: list<string>
+
+    @desc("CORS configuration")
+    cors: PortalCors?
+
+    @desc("Web name")
+    webName: string
+
+    @desc("Web mount path; empty means the Web is not limited to a path")
+    webMountPath: string
+}
+
+@desc("Portal target site update parameters")
+data PortalSiteUpdate {
+    @desc("Target site name")
+    name: string?
+
+    @desc("Target site type")
+    type: PortalSiteType?
+
+    @desc("Actor Skel name")
+    actorSkelName: string?
+
+    @desc("Actor access method")
+    actorVia: string?
+
+    @desc("CORS configuration")
+    cors: PortalCors?
+
+    @desc("Web name")
+    webName: string?
+}
+
+@desc("Portal target site Actor options")
+data PortalSiteActorOption {
+    @desc("Actor name")
+    name: string
+
+    @desc("Actor Skel name")
+    skelName: string
+
+    @desc("Actor access method list")
+    actorVias: list<string>
+}
+
+@desc("Portal target site service options")
+data PortalSiteServiceOption {
+    @desc("Service name")
+    name: string
+
+    @desc("Service Skel name")
+    skelName: string
+
+    @desc("Actor Skel name list")
+    actorSkelNames: list<string>
+}
+
+@desc("Portal target site web options")
+data PortalSiteWebOption {
+    @desc("Web name")
+    name: string
+
+    @desc("Web Skel name")
+    skelName: string
+
+    @desc("Actor Skel name list")
+    actorSkelNames: list<string>
+}
+
+@desc("Portal target site form options")
+data PortalSiteOptions {
+    @desc("Actor options")
+    actors: list<PortalSiteActorOption>
+
+    @desc("Rpc service options")
+    services: list<PortalSiteServiceOption>
+
+    @desc("Web options")
+    webs: list<PortalSiteWebOption>
+}
+
+@desc("Hub's Portal target site service, called by the Portal admin client")
+api service PortalSiteApiService {
+    for AdminActor
+
+    noauth
+
+    @desc("List Portal target sites")
+    method list {
+        @desc("Portal target site list")
+        output list<PortalSiteListItem>
+    }
+
+    @desc("List Portal target site form options")
+    method listOptions {
+        @desc("Portal target site form options")
+        output PortalSiteOptions
+    }
+
+    @desc("Read the Portal target site")
+    method get {
+        input {
+            @desc("Target site id")
+            id: int
+        }
+        @desc("Portal target site")
+        output PortalSite
+    }
+
+    @desc("Create Portal target site")
+    method create {
+        input {
+            @desc("Portal target site creation parameters")
+            creation: PortalSiteCreation
+        }
+        @desc("Portal target site")
+        output PortalSite
+    }
+
+    @desc("Modify Portal target site")
+    method update {
+        input {
+            @desc("Target site id")
+            id: int
+
+            @desc("Portal target site update parameters")
+            update: PortalSiteUpdate
+        }
+        @desc("Portal target site")
+        output PortalSite
+    }
+
+    @desc("Delete Portal target site")
+    method remove {
+        input {
+            @desc("Target site id")
+            id: int
+        }
+    }
+}

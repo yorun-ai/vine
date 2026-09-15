@@ -20,7 +20,7 @@ import {
   createPortalCertApiService,
   createPortalRuleApiService,
 } from '@/skeled/admin'
-import type { PortalCert } from '@/skeled/admin'
+import type { PortalCertListItem } from '@/skeled/admin'
 
 const portalRuleService = createPortalRuleApiService(vrpcClient)
 const portalCertService = createPortalCertApiService(vrpcClient)
@@ -125,7 +125,7 @@ function certDomainMatchesHost(domain: string, host: string) {
   return false
 }
 
-function hasConfiguredCertForHost(certs: Array<PortalCert>, host: string) {
+function hasConfiguredCertForHost(certs: Array<PortalCertListItem>, host: string) {
   return certs.some(
     (cert) =>
       cert.privateKeyConfigured &&

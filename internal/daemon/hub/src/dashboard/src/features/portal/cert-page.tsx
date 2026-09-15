@@ -55,6 +55,7 @@ import { cn } from '@/lib/utils'
 import { createPortalCertApiService } from '@/skeled/admin'
 import type {
   PortalCert,
+  PortalCertListItem,
   PortalCertCreation,
   PortalCertUpdate,
 } from '@/skeled/admin'
@@ -127,7 +128,7 @@ function formatDateTime(value: string) {
   return date.toLocaleString()
 }
 
-function certToFormValue(cert: PortalCert): PortalCertFormValue {
+function certToFormValue(cert: PortalCertListItem): PortalCertFormValue {
   return {
     name: cert.name,
     publicKeyBase64: cert.publicKeyBase64,
@@ -208,7 +209,7 @@ function PortalCertDialog({
 }: {
   mode: 'create' | 'edit'
   open: boolean
-  cert: PortalCert | null
+  cert: PortalCertListItem | null
   saving: boolean
   onOpenChange: (open: boolean) => void
   onSubmit: (value: PortalCertFormValue) => Promise<void>
@@ -367,7 +368,7 @@ function DeleteCertDialog({
   onConfirm,
 }: {
   open: boolean
-  cert: PortalCert | null
+  cert: PortalCertListItem | null
   deleting: boolean
   onOpenChange: (open: boolean) => void
   onConfirm: () => void
@@ -419,7 +420,7 @@ function PortalCertListSkeleton() {
   )
 }
 
-function certDomains(cert: PortalCert) {
+function certDomains(cert: PortalCertListItem) {
   return Array.isArray(cert.domains) ? cert.domains : []
 }
 
@@ -455,7 +456,7 @@ function PortalCertInlineEditor({
   onCancel,
   onSubmit,
 }: {
-  cert: PortalCert | null
+  cert: PortalCertListItem | null
   saving: boolean
   onCancel: () => void
   onSubmit: (value: PortalCertFormValue) => Promise<void>
@@ -591,7 +592,7 @@ export function PortalCertPage() {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
-  const [certs, setCerts] = React.useState<Array<PortalCert>>([])
+  const [certs, setCerts] = React.useState<Array<PortalCertListItem>>([])
   const [query, setQuery] = React.useState('')
   const [loading, setLoading] = React.useState(true)
   const listPanel = useResizableListPanel({
@@ -600,8 +601,8 @@ export function PortalCertPage() {
   const handleListScroll = useReservedScrollbar()
   const [saving, setSaving] = React.useState(false)
   const [deleting, setDeleting] = React.useState(false)
-  const [editingCert, setEditingCert] = React.useState<PortalCert | null>(null)
-  const [deleteCert, setDeleteCert] = React.useState<PortalCert | null>(null)
+  const [editingCert, setEditingCert] = React.useState<PortalCertListItem | null>(null)
+  const [deleteCert, setDeleteCert] = React.useState<PortalCertListItem | null>(null)
   const [isCreating, setIsCreating] = React.useState(false)
   const [selectedCertId, setSelectedCertId] = React.useState<number | null>(
     () => selectedCertIdFromPath(window.location.pathname),
@@ -650,6 +651,38 @@ export function PortalCertPage() {
       null,
     [filteredCerts, selectedCertId],
   )
+
+  // The list returns certificates without their seed provenance, so the detail
+  // view reads the selected certificate once more.
+  const [certDetail, setCertDetail] = React.useState<PortalCert | null>(null)
+
+  React.useEffect(() => {
+    const id = selectedCert?.id
+    if (id == null) {
+      setCertDetail(null)
+      return
+    }
+
+    let active = true
+    portalCertService.get({ id }).then(
+      (cert) => {
+        if (active) {
+          setCertDetail(cert)
+        }
+      },
+      () => {
+        if (active) {
+          setCertDetail(null)
+        }
+      },
+    )
+    return () => {
+      active = false
+    }
+  }, [selectedCert?.id])
+
+  const selectedCertFields =
+    certDetail?.id === selectedCert?.id ? certDetail.fieldSources : []
 
   const selectCert = React.useCallback(
     (id: number, replace = false) => {
@@ -705,6 +738,7 @@ export function PortalCertPage() {
         toast.success(t('portalCert.created'))
         setIsCreating(false)
         setCerts((current) => [...current, created])
+        setCertDetail(created)
         selectCert(created.id)
       } catch (error) {
         throw error
@@ -730,6 +764,7 @@ export function PortalCertPage() {
         })
         toast.success(t('portalCert.saved'))
         setEditingCert(null)
+        setCertDetail(updated)
         setCerts((current) =>
           current.map((cert) => (cert.id === updated.id ? updated : cert)),
         )
@@ -966,14 +1001,14 @@ export function PortalCertPage() {
                     />
                   ) : (
                     <div className="grid gap-5">
-                      <ReadonlyField source={<FieldSourceInfo kind="portal_cert" name={selectedCert.name} path="/name" />} label={t('portalCert.name')}>
+                      <ReadonlyField source={<FieldSourceInfo fields={selectedCertFields} path="/name" />} label={t('portalCert.name')}>
                         {selectedCert.name}
                       </ReadonlyField>
                       <div className="grid gap-4 sm:grid-cols-2">
-                        <ReadonlyField source={<FieldSourceInfo kind="portal_cert" name={selectedCert.name} path="/publicKeyBase64" />} label={t('portalCert.issuer')}>
+                        <ReadonlyField source={<FieldSourceInfo fields={selectedCertFields} path="/publicKeyBase64" />} label={t('portalCert.issuer')}>
                           {selectedCert.issuer || t('portalCert.unparsed')}
                         </ReadonlyField>
-                        <ReadonlyField source={<FieldSourceInfo kind="portal_cert" name={selectedCert.name} path="/publicKeyBase64" />} label={t('portalCert.validity')}>
+                        <ReadonlyField source={<FieldSourceInfo fields={selectedCertFields} path="/publicKeyBase64" />} label={t('portalCert.validity')}>
                           <span className="text-muted-foreground">
                             {formatDateTime(selectedCert.validFrom)}{' '}
                             {t('common.to')}{' '}
@@ -981,7 +1016,7 @@ export function PortalCertPage() {
                           </span>
                         </ReadonlyField>
                       </div>
-                      <ReadonlyField source={<FieldSourceInfo kind="portal_cert" name={selectedCert.name} path="/domains" />}
+                      <ReadonlyField source={<FieldSourceInfo fields={selectedCertFields} path="/domains" />}
                         label={t('portalCert.domains')}
                         className="min-h-20"
                       >
@@ -999,7 +1034,7 @@ export function PortalCertPage() {
                           )}
                         </div>
                       </ReadonlyField>
-                      <ReadonlyField source={<FieldSourceInfo kind="portal_cert" name={selectedCert.name} path="/publicKeyBase64" />}
+                      <ReadonlyField source={<FieldSourceInfo fields={selectedCertFields} path="/publicKeyBase64" />}
                         label={t('portalCert.publicKeyBase64')}
                         className="h-36 overflow-y-auto whitespace-pre-wrap break-all font-mono text-xs"
                       >
@@ -1009,7 +1044,7 @@ export function PortalCertPage() {
                           </span>
                         )}
                       </ReadonlyField>
-                      <ReadonlyField source={<FieldSourceInfo kind="portal_cert" name={selectedCert.name} path="/privateKeyBase64" />}
+                      <ReadonlyField source={<FieldSourceInfo fields={selectedCertFields} path="/privateKeyBase64" />}
                         label={t('portalCert.privateKeyBase64')}
                         className="min-h-20"
                       >

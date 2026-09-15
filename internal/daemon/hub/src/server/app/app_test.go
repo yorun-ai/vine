@@ -254,16 +254,16 @@ func TestConfigDatabaseInitOptionForPG(t *testing.T) {
 	}, daoTypes)
 }
 
-func TestHubAppBindCommonProvidesDBAppConfigRepoForSQLite(t *testing.T) {
+func TestHubAppBindCommonProvidesAppConfigRepoForSQLite(t *testing.T) {
 	configRepo := newHubBoundAppConfigRepo(t, &HubApp{
 		InprocFlag: &internalapp.InternalInprocFlag{},
 		Flag:       &flag.Flag{Store: flag.StoreSQLite},
 	})
 
-	assert.IsType(t, &repo.DBAppConfigRepo{Access: new(configaccess.Access)}, configRepo)
+	assert.IsType(t, &repo.AppConfigRepo{Access: new(configaccess.Access)}, configRepo)
 }
 
-func TestHubAppBindCommonProvidesDBAppConfigRepoForPG(t *testing.T) {
+func TestHubAppBindCommonProvidesAppConfigRepoForPG(t *testing.T) {
 	configRepo := newHubBoundAppConfigRepo(t, &HubApp{
 		InprocFlag: &internalapp.InternalInprocFlag{},
 		Flag: &flag.Flag{
@@ -272,10 +272,10 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForPG(t *testing.T) {
 		},
 	})
 
-	assert.IsType(t, &repo.DBAppConfigRepo{Access: new(configaccess.Access)}, configRepo)
+	assert.IsType(t, &repo.AppConfigRepo{Access: new(configaccess.Access)}, configRepo)
 }
 
-func TestHubAppBindCommonProvidesMemorySchemaRepoForDB(t *testing.T) {
+func TestHubAppBindCommonProvidesSchemaRepo(t *testing.T) {
 	// The schema repo binding is independent of the run mode, so the inproc and
 	// non-inproc modes do not need separate expectations.
 	schemaRepo := newHubBoundSchemaRepo(t, &HubApp{
@@ -283,14 +283,17 @@ func TestHubAppBindCommonProvidesMemorySchemaRepoForDB(t *testing.T) {
 		Flag:       &flag.Flag{Store: flag.StoreSQLite},
 	})
 
-	assert.IsType(t, &schema.MemorySchemaRepo{}, schemaRepo)
+	assert.IsType(t, &schema.SchemaRepo{}, schemaRepo)
 }
 
 func testDashboardURL() *vnet.HttpURL {
 	return vnet.MustParseHttpURL(flag.HubDefaultDashboardURL)
 }
 
-func TestHubAppBindCommonProvidesDBAppConfigRepoForInitializerWithSQLite(t *testing.T) {
+// TestInitializerResolvesFromCommonBindings is a composition smoke test: the
+// module graph of the initializer must be constructible from the bindings a Hub
+// application installs, without a running daemon.
+func TestInitializerResolvesFromCommonBindings(t *testing.T) {
 	component := &repodb.HubDatabase{
 		Flag: &flag.Flag{
 			Store:        flag.StoreSQLite,
@@ -330,38 +333,7 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForInitializerWithSQLite(t *test
 		module = injector.Get(di.T[*initializer.Initializer]()).Interface().(*initializer.Initializer)
 	})
 	assert.NotNil(t, module)
-	assert.IsType(t, &repo.DBAppConfigRepo{Access: new(configaccess.Access)}, module.AppConfigRepo)
-}
-
-func TestConfigDatabaseBindProvidesAppConfigRepoDAO(t *testing.T) {
-	component := &repodb.HubDatabase{
-		Flag: &flag.Flag{
-			Store:        flag.StoreSQLite,
-			DBSQLiteFile: sharedTestSQLitePath(t),
-		},
-	}
-	manager := initTestConfigDatabase(component)
-	t.Cleanup(manager.AfterAppStop)
-
-	injector := di.NewInjector(
-		func(b *di.Binder) {
-			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
-			b.BindInstance(logger.New("vine:test"))
-			manager.Bind(b)
-			b.Bind(di.T[*repo.DBAppConfigRepo]()).In(di.TransientScope)
-		},
-	)
-
-	execution := injector.StartExecution()
-	defer execution.CompleteExecution()
-
-	daoValue := execution.Get(rdb.T[*model.AppConfigDao]())
-	require.True(t, daoValue.IsValid())
-	gormDBMethod := daoValue.MethodByName("GormDB")
-	require.True(t, gormDBMethod.IsValid())
-	gormDBResult := gormDBMethod.Call(nil)
-	require.Len(t, gormDBResult, 1)
-	assert.False(t, gormDBResult[0].IsNil())
+	assert.IsType(t, &repo.AppConfigRepo{Access: new(configaccess.Access)}, module.AppConfigRepo)
 }
 
 func newHubBoundAppConfigRepo(t *testing.T, spec *HubApp) core.AppConfigRepo {
@@ -453,28 +425,32 @@ func TestHubConfigurationLifecycle(t *testing.T) {
 			})
 			require.False(t, access.ReadOnly())
 			module := injector.Get(di.T[*initializer.Initializer]()).Interface().(*initializer.Initializer)
+			siteRepo := injector.Get(di.T[core.PortalSiteRepo]()).Interface().(core.PortalSiteRepo)
+			appConfigRepo := injector.Get(di.T[core.AppConfigRepo]()).Interface().(core.AppConfigRepo)
+			ruleRepo := injector.Get(di.T[core.PortalRuleRepo]()).Interface().(core.PortalRuleRepo)
+			certRepo := injector.Get(di.T[core.PortalCertRepo]()).Interface().(core.PortalCertRepo)
 			require.Equal(t, !persistent, access.ReadOnly())
-			item, ok := module.AppConfigRepo.GetItemByName("demo.Config")
+			item, ok := appConfigRepo.GetByName("demo.Config")
 			require.True(t, ok)
 			require.Equal(t, `{"enabled":true}`, item.Value)
-			require.NotEmpty(t, module.EntryRepo.ListEntries())
-			require.NotEmpty(t, module.RuleRepo.ListRules())
+			require.NotEmpty(t, siteRepo.List())
+			require.NotEmpty(t, ruleRepo.List())
 			actions := []struct {
 				name string
 				call func()
 			}{
-				{"save config", func() { module.AppConfigRepo.SaveItem(&core.AppConfig{Name: "new.config", Value: "{}", Version: 1}) }},
-				{"remove config", func() { module.AppConfigRepo.RemoveItem(item.Id) }},
+				{"save config", func() { appConfigRepo.Save(&core.AppConfig{Name: "new.config", Value: "{}", Version: 1}) }},
+				{"remove config", func() { appConfigRepo.Remove(item.Id) }},
 				{"save site", func() {
-					module.EntryRepo.SaveEntry(&core.PortalSite{Name: "new.site", Type: core.PortalSiteTypeWEBGW, WebName: "demo.Web"})
+					siteRepo.Save(&core.PortalSite{Name: "new.site", Type: core.PortalSiteTypeWEBGW, WebName: "demo.Web"})
 				}},
-				{"remove site", func() { module.EntryRepo.RemoveEntry(-1) }},
+				{"remove site", func() { siteRepo.Remove(-1) }},
 				{"save rule", func() {
-					module.RuleRepo.SaveRule(&core.PortalRule{Name: "new.rule", RouteType: "SITE", RouteSiteName: "new.site"})
+					ruleRepo.Save(&core.PortalRule{Name: "new.rule", RouteType: "SITE", RouteSiteName: "new.site"})
 				}},
-				{"remove rule", func() { module.RuleRepo.RemoveRule(-1) }},
-				{"save cert", func() { module.CertRepo.SaveCert(&core.PortalCert{Name: "new.cert", Domains: []string{"demo.local"}}) }},
-				{"remove cert", func() { module.CertRepo.RemoveCert(-1) }},
+				{"remove rule", func() { ruleRepo.Remove(-1) }},
+				{"save cert", func() { certRepo.Save(&core.PortalCert{Name: "new.cert", Domains: []string{"demo.local"}}) }},
+				{"remove cert", func() { certRepo.Remove(-1) }},
 			}
 			for _, action := range actions {
 				t.Run(action.name, func(t *testing.T) {

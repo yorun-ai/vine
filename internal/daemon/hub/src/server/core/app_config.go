@@ -16,6 +16,15 @@ type AppConfig struct {
 	Name         string
 	Value        string
 	Version      int
+	// Definition is the declaration of the application that owns the config, nil
+	// when no registered application declares it.
+	Definition *AppConfigDefinition
+	// Configured reports whether the Hub stores a value for the config. An
+	// application can declare a config the Hub has no value for yet.
+	Configured bool
+	// Status and Lifecycle are derived from the value and the declaration.
+	Status    AppConfigStatus
+	Lifecycle string
 }
 
 type AppConfigCreation struct {
@@ -29,12 +38,19 @@ type AppConfigUpdate struct {
 
 // Repo
 
+// AppConfigRepo stores configurations. List and the lookups return entities the
+// caller owns, including configurations an application declared without a value.
 type AppConfigRepo interface {
-	ListItems() []*AppConfig
-	GetItemById(id int) (*AppConfig, bool)
-	GetItemByName(name string) (*AppConfig, bool)
-	SaveItem(item *AppConfig)
-	RemoveItem(id int) bool
+	List() []*AppConfig
+	// ListSlots returns every configuration the Hub serves: the stored values and
+	// the configurations registered applications declare without a value.
+	ListSlots() []*AppConfig
+	// FindByName returns the configuration with the name, stored or declared.
+	FindByName(name string) (*AppConfig, bool)
+	GetById(id int) (*AppConfig, bool)
+	GetByName(name string) (*AppConfig, bool)
+	Save(item *AppConfig)
+	Remove(id int) bool
 }
 
 // Core
@@ -44,17 +60,30 @@ type AppConfigCore struct {
 }
 
 func (m *AppConfigCore) List() []*AppConfig {
-	return m.AppConfigRepo.ListItems()
+	return m.AppConfigRepo.ListSlots()
+}
+
+// FindByName returns the stored configuration with the name.
+func (m *AppConfigCore) FindByName(name string) (*AppConfig, bool) {
+	return m.AppConfigRepo.GetByName(name)
 }
 
 func (m *AppConfigCore) Get(id int) *AppConfig {
-	item, ok := m.AppConfigRepo.GetItemById(id)
+	item, ok := m.AppConfigRepo.GetById(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("config %d not found", id))
 	return item
 }
 
+// GetSlot returns the configuration with the name, including a configuration an
+// application declares without a stored value.
+func (m *AppConfigCore) GetSlot(name string) *AppConfig {
+	slot, ok := m.AppConfigRepo.FindByName(name)
+	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("config %q not found", name))
+	return slot
+}
+
 func (m *AppConfigCore) Create(creation AppConfigCreation) *AppConfig {
-	_, ok := m.AppConfigRepo.GetItemByName(creation.Name)
+	_, ok := m.AppConfigRepo.GetByName(creation.Name)
 	ex.PanicNewIfNot(!ok, ex.OperationFailed, ex.F("config %q already exists", creation.Name))
 
 	item := &AppConfig{
@@ -64,12 +93,12 @@ func (m *AppConfigCore) Create(creation AppConfigCreation) *AppConfig {
 		CreatedAt: time.Now(),
 	}
 	*item = m.Validate(*item)
-	m.AppConfigRepo.SaveItem(item)
+	m.AppConfigRepo.Save(item)
 	return item
 }
 
 func (m *AppConfigCore) Update(id int, update AppConfigUpdate) *AppConfig {
-	item, ok := m.AppConfigRepo.GetItemById(id)
+	item, ok := m.AppConfigRepo.GetById(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("config %d not found", id))
 
 	next := &AppConfig{
@@ -89,14 +118,14 @@ func (m *AppConfigCore) Update(id int, update AppConfigUpdate) *AppConfig {
 		next.Version++
 	}
 
-	m.AppConfigRepo.SaveItem(next)
+	m.AppConfigRepo.Save(next)
 	return next
 }
 
 func (m *AppConfigCore) Remove(id int) bool {
-	item, ok := m.AppConfigRepo.GetItemById(id)
+	item, ok := m.AppConfigRepo.GetById(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("config %d not found", id))
-	return m.AppConfigRepo.RemoveItem(item.Id)
+	return m.AppConfigRepo.Remove(item.Id)
 }
 
 // Validate checks configuration fields without accessing storage.
@@ -106,12 +135,12 @@ func (*AppConfigCore) Validate(item AppConfig) AppConfig {
 }
 
 // Save creates or replaces a configuration by name. Only value changes advance its version.
-func (m *AppConfigCore) Save(item AppConfig) AppConfig {
+func (m *AppConfigCore) Save(item AppConfig) *AppConfig {
 	item = m.Validate(item)
 	item.Id = 0
 	item.Version = 1
 	item.CreatedAt = time.Now()
-	if current, ok := m.AppConfigRepo.GetItemByName(item.Name); ok {
+	if current, ok := m.AppConfigRepo.GetByName(item.Name); ok {
 		item.Id = current.Id
 		item.CreatedAt = current.CreatedAt
 		item.Version = current.Version
@@ -119,6 +148,6 @@ func (m *AppConfigCore) Save(item AppConfig) AppConfig {
 			item.Version++
 		}
 	}
-	m.AppConfigRepo.SaveItem(&item)
-	return item
+	m.AppConfigRepo.Save(&item)
+	return &item
 }

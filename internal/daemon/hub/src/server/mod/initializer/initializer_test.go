@@ -49,7 +49,7 @@ type testAppConfigRepo struct {
 }
 
 type testPortalRuleRepo struct {
-	rules []core.PortalRule
+	rules []*core.PortalRule
 }
 
 type testPortalCertRepo struct {
@@ -57,106 +57,114 @@ type testPortalCertRepo struct {
 }
 
 type testPortalSiteRepo struct {
-	entries []core.PortalSite
+	entries []*core.PortalSite
 }
 
-func (r *testAppConfigRepo) ListItems() []*core.AppConfig {
+func (r *testAppConfigRepo) List() []*core.AppConfig {
 	return r.items
 }
 
-func (*testAppConfigRepo) GetItemById(int) (*core.AppConfig, bool) {
+func (r *testAppConfigRepo) ListSlots() []*core.AppConfig {
+	return r.List()
+}
+
+func (r *testAppConfigRepo) FindByName(name string) (*core.AppConfig, bool) {
+	return r.GetByName(name)
+}
+
+func (*testAppConfigRepo) GetById(int) (*core.AppConfig, bool) {
 	return nil, false
 }
 
-func (*testAppConfigRepo) GetItemByName(string) (*core.AppConfig, bool) {
+func (*testAppConfigRepo) GetByName(string) (*core.AppConfig, bool) {
 	return nil, false
 }
 
-func (*testAppConfigRepo) SaveItem(*core.AppConfig) {
+func (*testAppConfigRepo) Save(*core.AppConfig) {
 }
 
-func (*testAppConfigRepo) RemoveItem(int) bool {
+func (*testAppConfigRepo) Remove(int) bool {
 	return false
 }
 
-func (r *testPortalRuleRepo) ListRules() []core.PortalRule {
+func (r *testPortalRuleRepo) List() []*core.PortalRule {
 	return r.rules
 }
 
-func (*testPortalRuleRepo) GetRuleById(int) (*core.PortalRule, bool) {
+func (*testPortalRuleRepo) GetById(int) (*core.PortalRule, bool) {
 	return nil, false
 }
 
-func (r *testPortalRuleRepo) GetRuleByName(name string) (*core.PortalRule, bool) {
+func (r *testPortalRuleRepo) GetByName(name string) (*core.PortalRule, bool) {
 	for i := range r.rules {
 		if r.rules[i].Name == name {
-			return &r.rules[i], true
+			return r.rules[i], true
 		}
 	}
 	return nil, false
 }
 
-func (r *testPortalRuleRepo) SaveRule(rule *core.PortalRule) {
+func (r *testPortalRuleRepo) Save(rule *core.PortalRule) {
 	for i := range r.rules {
 		if r.rules[i].Name == rule.Name {
-			r.rules[i] = *rule
+			r.rules[i] = rule
 			return
 		}
 	}
-	r.rules = append(r.rules, *rule)
+	r.rules = append(r.rules, rule)
 }
 
-func (*testPortalRuleRepo) RemoveRule(int) bool {
+func (*testPortalRuleRepo) Remove(int) bool {
 	return false
 }
 
-func (r *testPortalCertRepo) ListCerts() []*core.PortalCert {
+func (r *testPortalCertRepo) List() []*core.PortalCert {
 	return r.certs
 }
 
-func (*testPortalCertRepo) GetCertById(int) (*core.PortalCert, bool) {
+func (*testPortalCertRepo) GetById(int) (*core.PortalCert, bool) {
 	return nil, false
 }
 
-func (*testPortalCertRepo) GetCertByName(string) (*core.PortalCert, bool) {
+func (*testPortalCertRepo) GetByName(string) (*core.PortalCert, bool) {
 	return nil, false
 }
 
-func (*testPortalCertRepo) SaveCert(*core.PortalCert) {
+func (*testPortalCertRepo) Save(*core.PortalCert) {
 }
 
-func (*testPortalCertRepo) RemoveCert(int) bool {
+func (*testPortalCertRepo) Remove(int) bool {
 	return false
 }
 
-func (r *testPortalSiteRepo) ListEntries() []core.PortalSite {
+func (r *testPortalSiteRepo) List() []*core.PortalSite {
 	return r.entries
 }
 
-func (*testPortalSiteRepo) GetEntryById(int) (*core.PortalSite, bool) {
+func (*testPortalSiteRepo) GetById(int) (*core.PortalSite, bool) {
 	return nil, false
 }
 
-func (r *testPortalSiteRepo) GetEntryByName(name string) (*core.PortalSite, bool) {
+func (r *testPortalSiteRepo) GetByName(name string) (*core.PortalSite, bool) {
 	for i := range r.entries {
 		if r.entries[i].Name == name {
-			return &r.entries[i], true
+			return r.entries[i], true
 		}
 	}
 	return nil, false
 }
 
-func (r *testPortalSiteRepo) SaveEntry(entry *core.PortalSite) {
+func (r *testPortalSiteRepo) Save(entry *core.PortalSite) {
 	for i := range r.entries {
 		if r.entries[i].Name == entry.Name {
-			r.entries[i] = *entry
+			r.entries[i] = entry
 			return
 		}
 	}
-	r.entries = append(r.entries, *entry)
+	r.entries = append(r.entries, entry)
 }
 
-func (*testPortalSiteRepo) RemoveEntry(int) bool {
+func (*testPortalSiteRepo) Remove(int) bool {
 	return false
 }
 
@@ -164,6 +172,16 @@ func testSyncer(watchServer *watchserver.Server) *syncer.Syncer {
 	target := &syncer.Syncer{WatchServer: watchServer}
 	target.DIInit()
 	return target
+}
+
+func testPortalRulePtrWithId(id int, rule core.PortalRule) *core.PortalRule {
+	value := testPortalRuleWithId(id, rule)
+	return &value
+}
+
+func testPortalSitePtrWithId(id int, site core.PortalSite) *core.PortalSite {
+	value := testPortalSiteWithId(id, site)
+	return &value
 }
 
 func testPortalRuleWithId(id int, rule core.PortalRule) core.PortalRule {
@@ -204,6 +222,7 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 	watchServer := watchserver.NewServerForTest()
 	defer watchServer.AfterAppStop()
 	db := _WatchTestStore{watchServer}
+	schemaRepo := new(schema.SchemaRepo)
 
 	p := &Initializer{
 		Syncer: testSyncer(watchServer),
@@ -213,27 +232,27 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 				{Id: 2, Name: "demo.FeatureConfig", Value: `{"enabled":true}`},
 			},
 		},
-		RuleRepo: &testPortalRuleRepo{
-			rules: []core.PortalRule{
+		PortalRuleRepo: &testPortalRuleRepo{
+			rules: []*core.PortalRule{
 				{Id: 1, Name: "demo-entry", MatchScheme: "https", MatchHost: "demo.local", MatchPathPrefix: "/admin", RouteType: "SITE", RouteSiteName: "admin@demo.app"},
-				testPortalRuleWithId(2, testDashboardApiRule()),
-				testPortalRuleWithId(3, testDashboardWebRule()),
+				testPortalRulePtrWithId(2, testDashboardApiRule()),
+				testPortalRulePtrWithId(3, testDashboardWebRule()),
 			},
 		},
-		CertRepo: &testPortalCertRepo{
+		PortalCertRepo: &testPortalCertRepo{
 			certs: []*core.PortalCert{
 				{Id: 1, Name: "demo-cert", Issuer: "letsencrypt", Domains: []string{"demo.local"}, PublicKeyBase64: "pub", PrivateKeyBase64: "pri"},
 			},
 		},
-		EntryRepo: &testPortalSiteRepo{
-			entries: []core.PortalSite{
+		PortalSiteRepo: &testPortalSiteRepo{
+			entries: []*core.PortalSite{
 				{Id: 1, Name: "demo-entry", Type: core.PortalSiteTypeWEBGW, ActorSkelName: "demo.Actor", ActorVia: "client", WebName: "demo.Web"},
-				testPortalSiteWithId(2, seeder.DashboardRpcCoreEntry),
-				testPortalSiteWithId(3, seeder.DashboardWebCoreEntry),
+				testPortalSitePtrWithId(2, seeder.DashboardRpcCoreEntry),
+				testPortalSitePtrWithId(3, seeder.DashboardWebCoreEntry),
 			},
 		},
-		SchemaRepo:   &schema.MemorySchemaRepo{},
-		RegistryCore: &core.RegistryCore{SchemaRepo: &schema.MemorySchemaRepo{}},
+		SchemaRepo:   schemaRepo,
+		RegistryCore: &core.RegistryCore{SchemaRepo: schemaRepo},
 		InprocFlag:   &appcore.InternalInprocFlag{},
 		Flag:         &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
@@ -363,18 +382,18 @@ func TestInitializerDIInitWritesDashboardEntriesAndRulesFromRepo(t *testing.T) {
 		WebName:       "custom.Web",
 		BuiltIn:       true,
 	}
-	ruleRepo := &testPortalRuleRepo{rules: []core.PortalRule{existingApiRule, existingWebRule}}
-	entryRepo := &testPortalSiteRepo{entries: []core.PortalSite{existingRpcSite, existingWebSite}}
+	ruleRepo := &testPortalRuleRepo{rules: []*core.PortalRule{&existingApiRule, &existingWebRule}}
+	entryRepo := &testPortalSiteRepo{entries: []*core.PortalSite{&existingRpcSite, &existingWebSite}}
 	p := &Initializer{
-		Syncer:        testSyncer(watchServer),
-		AppConfigRepo: &testAppConfigRepo{},
-		RuleRepo:      ruleRepo,
-		CertRepo:      &testPortalCertRepo{},
-		EntryRepo:     entryRepo,
-		SchemaRepo:    &schema.MemorySchemaRepo{},
-		RegistryCore:  &core.RegistryCore{SchemaRepo: &schema.MemorySchemaRepo{}},
-		InprocFlag:    &appcore.InternalInprocFlag{},
-		Flag:          &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
+		Syncer:         testSyncer(watchServer),
+		AppConfigRepo:  &testAppConfigRepo{},
+		PortalRuleRepo: ruleRepo,
+		PortalCertRepo: &testPortalCertRepo{},
+		PortalSiteRepo: entryRepo,
+		SchemaRepo:     &schema.SchemaRepo{},
+		RegistryCore:   &core.RegistryCore{SchemaRepo: &schema.SchemaRepo{}},
+		InprocFlag:     &appcore.InternalInprocFlag{},
+		Flag:           &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
 
 	p.DIInit()
@@ -472,17 +491,17 @@ func TestInitializerDIInitLoadsRegisteredSchemasIntoMemoryRepoInInprocMode(t *te
 	}
 	coreskel.RegisterDomainSchema(domainSchema)
 
-	schemaRepo := new(schema.MemorySchemaRepo)
+	schemaRepo := new(schema.SchemaRepo)
 	p := &Initializer{
-		Syncer:        testSyncer(watchServer),
-		AppConfigRepo: &testAppConfigRepo{},
-		RuleRepo:      &testPortalRuleRepo{},
-		CertRepo:      &testPortalCertRepo{},
-		EntryRepo:     &testPortalSiteRepo{},
-		SchemaRepo:    schemaRepo,
-		RegistryCore:  &core.RegistryCore{SchemaRepo: schemaRepo},
-		InprocFlag:    &appcore.InternalInprocFlag{Enabled: true},
-		Flag:          &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
+		Syncer:         testSyncer(watchServer),
+		AppConfigRepo:  &testAppConfigRepo{},
+		PortalRuleRepo: &testPortalRuleRepo{},
+		PortalCertRepo: &testPortalCertRepo{},
+		PortalSiteRepo: &testPortalSiteRepo{},
+		SchemaRepo:     schemaRepo,
+		RegistryCore:   &core.RegistryCore{SchemaRepo: schemaRepo},
+		InprocFlag:     &appcore.InternalInprocFlag{Enabled: true},
+		Flag:           &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
 
 	p.DIInit()
@@ -507,17 +526,17 @@ func TestInitializerDIInitLoadsHubSchemasIntoMemoryRepoInNormalMode(t *testing.T
 		t.Fatalf("expected both Hub domain schemas, got %v", hubSchemas)
 	}
 
-	schemaRepo := new(schema.MemorySchemaRepo)
+	schemaRepo := new(schema.SchemaRepo)
 	p := &Initializer{
-		Syncer:        testSyncer(watchServer),
-		AppConfigRepo: &testAppConfigRepo{},
-		RuleRepo:      &testPortalRuleRepo{},
-		CertRepo:      &testPortalCertRepo{},
-		EntryRepo:     &testPortalSiteRepo{},
-		SchemaRepo:    schemaRepo,
-		RegistryCore:  &core.RegistryCore{SchemaRepo: schemaRepo},
-		InprocFlag:    &appcore.InternalInprocFlag{},
-		Flag:          &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
+		Syncer:         testSyncer(watchServer),
+		AppConfigRepo:  &testAppConfigRepo{},
+		PortalRuleRepo: &testPortalRuleRepo{},
+		PortalCertRepo: &testPortalCertRepo{},
+		PortalSiteRepo: &testPortalSiteRepo{},
+		SchemaRepo:     schemaRepo,
+		RegistryCore:   &core.RegistryCore{SchemaRepo: schemaRepo},
+		InprocFlag:     &appcore.InternalInprocFlag{},
+		Flag:           &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
 
 	p.DIInit()

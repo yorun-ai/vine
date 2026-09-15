@@ -16,8 +16,8 @@ type configRepoSpy struct {
 	savedItem *AppConfig
 }
 
-func (s *configRepoSpy) ListItems() []*AppConfig {
-	s.calls = append(s.calls, "ListItems")
+func (s *configRepoSpy) List() []*AppConfig {
+	s.calls = append(s.calls, "List")
 	items := make([]*AppConfig, 0, len(s.items))
 	for _, item := range s.items {
 		value := *item
@@ -26,8 +26,16 @@ func (s *configRepoSpy) ListItems() []*AppConfig {
 	return items
 }
 
-func (s *configRepoSpy) GetItemById(id int) (*AppConfig, bool) {
-	s.calls = append(s.calls, "GetItemById")
+func (s *configRepoSpy) ListSlots() []*AppConfig {
+	return s.List()
+}
+
+func (s *configRepoSpy) FindByName(name string) (*AppConfig, bool) {
+	return s.GetByName(name)
+}
+
+func (s *configRepoSpy) GetById(id int) (*AppConfig, bool) {
+	s.calls = append(s.calls, "GetById")
 	for _, item := range s.items {
 		if item.Id != id {
 			continue
@@ -38,8 +46,8 @@ func (s *configRepoSpy) GetItemById(id int) (*AppConfig, bool) {
 	return nil, false
 }
 
-func (s *configRepoSpy) GetItemByName(name string) (*AppConfig, bool) {
-	s.calls = append(s.calls, "GetItemByName:"+name)
+func (s *configRepoSpy) GetByName(name string) (*AppConfig, bool) {
+	s.calls = append(s.calls, "GetByName:"+name)
 	item, ok := s.items[name]
 	if !ok {
 		return nil, false
@@ -48,8 +56,8 @@ func (s *configRepoSpy) GetItemByName(name string) (*AppConfig, bool) {
 	return &value, true
 }
 
-func (s *configRepoSpy) SaveItem(item *AppConfig) {
-	s.calls = append(s.calls, "SaveItem")
+func (s *configRepoSpy) Save(item *AppConfig) {
+	s.calls = append(s.calls, "Save")
 	value := *item
 	s.savedItem = &value
 	if s.items == nil {
@@ -58,8 +66,8 @@ func (s *configRepoSpy) SaveItem(item *AppConfig) {
 	s.items[item.Name] = &value
 }
 
-func (s *configRepoSpy) RemoveItem(id int) bool {
-	s.calls = append(s.calls, "RemoveItem")
+func (s *configRepoSpy) Remove(id int) bool {
+	s.calls = append(s.calls, "Remove")
 	for name, item := range s.items {
 		if item.Id != id {
 			continue
@@ -86,7 +94,7 @@ func TestAppConfigCoreList(t *testing.T) {
 	items := core.List()
 
 	assert.Len(t, items, 1)
-	assert.Equal(t, []string{"ListItems"}, repo.calls)
+	assert.Equal(t, []string{"List"}, repo.calls)
 	assert.Equal(t, "db.main", items[0].Name)
 }
 
@@ -105,7 +113,7 @@ func TestAppConfigCoreGet(t *testing.T) {
 
 	item := core.Get(2)
 
-	assert.Equal(t, []string{"GetItemById"}, repo.calls)
+	assert.Equal(t, []string{"GetById"}, repo.calls)
 	assert.Equal(t, 2, item.Version)
 	assert.Equal(t, `{"enabled":true}`, item.Value)
 }
@@ -121,7 +129,7 @@ func TestAppConfigCoreGetMissing(t *testing.T) {
 	err, ok := panicValue.(ex.Error)
 	require.True(t, ok)
 	assert.Equal(t, ex.OperationFailed, err.Code())
-	assert.Equal(t, []string{"GetItemById"}, repo.calls)
+	assert.Equal(t, []string{"GetById"}, repo.calls)
 }
 
 func TestAppConfigCoreCreate(t *testing.T) {
@@ -134,8 +142,8 @@ func TestAppConfigCoreCreate(t *testing.T) {
 	})
 
 	assert.Equal(t, []string{
-		"GetItemByName:db.main",
-		"SaveItem",
+		"GetByName:db.main",
+		"Save",
 	}, repo.calls)
 	require.NotNil(t, repo.savedItem)
 	assert.Equal(t, 1, repo.savedItem.Version)
@@ -157,7 +165,7 @@ func TestAppConfigCoreCreateExisting(t *testing.T) {
 	err, ok := panicValue.(ex.Error)
 	require.True(t, ok)
 	assert.Equal(t, ex.OperationFailed, err.Code())
-	assert.Equal(t, []string{"GetItemByName:db.main"}, repo.calls)
+	assert.Equal(t, []string{"GetByName:db.main"}, repo.calls)
 }
 
 func TestAppConfigCoreUpdate(t *testing.T) {
@@ -179,8 +187,8 @@ func TestAppConfigCoreUpdate(t *testing.T) {
 	})
 
 	assert.Equal(t, []string{
-		"GetItemById",
-		"SaveItem",
+		"GetById",
+		"Save",
 	}, repo.calls)
 	require.NotNil(t, repo.savedItem)
 	assert.Equal(t, 4, item.Version)
@@ -199,7 +207,7 @@ func TestAppConfigCoreUpdateMissing(t *testing.T) {
 	err, ok := panicValue.(ex.Error)
 	require.True(t, ok)
 	assert.Equal(t, ex.OperationFailed, err.Code())
-	assert.Equal(t, []string{"GetItemById"}, repo.calls)
+	assert.Equal(t, []string{"GetById"}, repo.calls)
 }
 
 func capturePanic(fn func()) (got any) {
