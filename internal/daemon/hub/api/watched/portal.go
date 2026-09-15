@@ -13,15 +13,21 @@ const (
 )
 
 type PortalRule struct {
-	Name                    string `json:"name"`
-	MatchScheme             string `json:"matchScheme"`
-	MatchHost               string `json:"matchHost"`
-	MatchPort               int    `json:"matchPort"`
+	Name        string `json:"name"`
+	MatchScheme string `json:"matchScheme"`
+	MatchHost   string `json:"matchHost"`
+	MatchPort   int    `json:"matchPort"`
+	// Deprecated: Portal uses ResolvedMatchPathPrefix. TODO: remove after all
+	// watched PortalRule consumers have migrated to the resolved field.
 	MatchPathPrefix         string `json:"matchPathPrefix"`
 	RouteType               string `json:"routeType"`
 	RouteSiteName           string `json:"routeSiteName"`
 	RouteRedirectionPattern string `json:"routeRedirectionPattern"`
+	// Deprecated: Portal uses ResolvedRoutePathPrefix. TODO: remove after all
+	// watched PortalRule consumers have migrated to the resolved field.
 	RoutePathPrefix         string `json:"routePathPrefix"`
+	ResolvedMatchPathPrefix string `json:"resolvedMatchPathPrefix"`
+	ResolvedRoutePathPrefix string `json:"resolvedRoutePathPrefix"`
 }
 
 func FormatPortalRuleKey(name string) string {

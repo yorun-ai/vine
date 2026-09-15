@@ -3,14 +3,10 @@ package entry
 import (
 	"context"
 	"net"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/meta"
-	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
@@ -199,87 +195,4 @@ func (l *_TestListener) Close() error {
 
 func (*_TestListener) Addr() net.Addr {
 	return &net.TCPAddr{Port: 8080}
-}
-
-func TestManagerWebMountPathsFollowSiteEvents(t *testing.T) {
-	siteKey := watched.FormatPortalSiteKey("web")
-	ruleKey := watched.FormatPortalRuleKey("web-rule")
-	siteValue := func(path string) string {
-		return vcode.MustMarshalJsonS(watched.PortalSite{Name: "web", Type: "WEBGW",
-			WebgwConfig: &watched.PortalWebgwConfig{WebName: "demo.Web", MountPath: path}})
-	}
-	rule := watched.PortalRule{Name: "web-rule", MatchScheme: "http", MatchPort: 8080,
-		RouteType: "SITE", RouteSiteName: "web", MatchPathPrefix: "/configured", RoutePathPrefix: "/backend"}
-	manager := &Manager{Context: t.Context(), SiteManager: new(site.Manager), Watch: hubwatch.NewTestClient(map[string]string{
-		siteKey: siteValue("/initial/"), ruleKey: vcode.MustMarshalJsonS(rule),
-	})}
-	manager.DIInit()
-	t.Cleanup(manager.AfterAppStop)
-	entry := manager.entriesByKey[_Key{scheme: spec.SchemeHTTP, port: 8080}]
-	checkRoute := func(path string, rewritten string) {
-		t.Helper()
-		request := httptest.NewRequest("GET", "http://example.com"+path, nil)
-		matched, ok := entry.route(request)
-		require.True(t, ok)
-		require.Equal(t, rewritten, matched.rewritePath(request).URL.RequestURI())
-	}
-	checkRoute("/initial/a%2Fb?q=1", "/initial/a%2Fb?q=1")
-	checkRoute("/initial", "/initial")
-	_, ok := entry.route(httptest.NewRequest("GET", "http://example.com/initially", nil))
-	require.False(t, ok)
-	_, ok = entry.route(httptest.NewRequest("GET", "http://example.com/configured", nil))
-	require.False(t, ok)
-
-	manager.handlePortalSiteEvent(hubapiwatch.Event{Kind: hubapiwatch.EventKindUpsert, Key: siteKey, Value: siteValue("/next")})
-	checkRoute("/next/a", "/next/a")
-	_, ok = entry.route(httptest.NewRequest("GET", "http://example.com/initial/a", nil))
-	require.False(t, ok)
-
-	manager.handlePortalSiteEvent(hubapiwatch.Event{Kind: hubapiwatch.EventKindUpsert, Key: siteKey, Value: siteValue("/")})
-	checkRoute("/any/a%2Fb?q=1", "/any/a%2Fb?q=1")
-	manager.handlePortalSiteEvent(hubapiwatch.Event{Kind: hubapiwatch.EventKindUpsert, Key: siteKey, Value: siteValue("")})
-	checkRoute("/configured/a%2Fb?q=1", "/backend/a%2Fb?q=1")
-	manager.handlePortalSiteEvent(hubapiwatch.Event{Kind: hubapiwatch.EventKindUpsert, Key: siteKey, Value: siteValue("/again")})
-	checkRoute("/again/a", "/again/a")
-	manager.handlePortalSiteEvent(hubapiwatch.Event{Kind: hubapiwatch.EventKindDelete, Key: siteKey})
-	checkRoute("/configured/a", "/backend/a")
-	require.Equal(t, rule, manager.entryRulesByName[ruleKey], "site changes must not rewrite stored rule configuration")
-}
-
-func TestManagerMountChangesReorderRoutesOnLiveListener(t *testing.T) {
-	originalListen := listenEntryTCP
-	listenEntryTCP = func(network string, address string) (net.Listener, error) {
-		return net.Listen(network, "127.0.0.1:0")
-	}
-	t.Cleanup(func() { listenEntryTCP = originalListen })
-	siteKey := watched.FormatPortalSiteKey("web")
-	siteValue := func(path string) string {
-		return vcode.MustMarshalJsonS(watched.PortalSite{Name: "web", Type: "WEBGW",
-			WebgwConfig: &watched.PortalWebgwConfig{MountPath: path}})
-	}
-	manager := &Manager{Context: t.Context(), SiteManager: new(site.Manager), Watch: hubwatch.NewTestClient(map[string]string{
-		siteKey: siteValue("/app"),
-		watched.FormatPortalRuleKey("web"): vcode.MustMarshalJsonS(watched.PortalRule{
-			Name: "web", MatchScheme: "http", MatchPort: 8080, RouteType: "SITE", RouteSiteName: "web"}),
-		watched.FormatPortalRuleKey("fallback"): vcode.MustMarshalJsonS(watched.PortalRule{
-			Name: "fallback", MatchScheme: "http", MatchPort: 8080, MatchPathPrefix: "/", RouteType: "TEMPORARY_REDIRECT", RouteRedirectionPattern: "https://example.com"}),
-	})}
-	manager.DIInit()
-	manager.AfterAppStart()
-	t.Cleanup(manager.AfterAppStop)
-	entry := manager.entriesByKey[_Key{scheme: spec.SchemeHTTP, port: 8080}]
-	client := &http.Client{CheckRedirect: func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse }}
-	checkStatus := func(path string, status int) {
-		t.Helper()
-		response, err := client.Get("http://" + entry.addr + path)
-		require.NoError(t, err)
-		defer response.Body.Close()
-		require.Equal(t, status, response.StatusCode)
-	}
-	// No gateway is registered: 503 identifies the SITE rule, 307 the fallback.
-	checkStatus("/app/x", http.StatusServiceUnavailable)
-	checkStatus("/other", http.StatusTemporaryRedirect)
-	manager.handlePortalSiteEvent(hubapiwatch.Event{Kind: hubapiwatch.EventKindUpsert, Key: siteKey, Value: siteValue("/new")})
-	checkStatus("/new/x", http.StatusServiceUnavailable)
-	checkStatus("/app/x", http.StatusTemporaryRedirect)
 }

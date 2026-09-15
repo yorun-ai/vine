@@ -1,6 +1,8 @@
 package syncer
 
 import (
+	"strings"
+
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vcode"
@@ -25,12 +27,12 @@ func (s *Syncer) RemovePortalSite(site *core.PortalSite) {
 	delete(s.portalSiteNamesById, site.Id)
 }
 
-func (s *Syncer) SyncPortalRule(rule *core.PortalRule) {
+func (s *Syncer) SyncPortalRule(rule *core.PortalRule, sites ...*core.PortalSite) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
 	s.removeRenamedKeyLocked(s.portalRuleNamesById, rule.Id, rule.Name, watched.FormatPortalRuleKey)
-	s.WatchServer.SetAndNotify(watched.FormatPortalRuleKey(rule.Name), vcode.MustMarshalJsonS(ToWatchedPortalRule(rule)))
+	s.WatchServer.SetAndNotify(watched.FormatPortalRuleKey(rule.Name), vcode.MustMarshalJsonS(s.toWatchedPortalRule(rule, sites...)))
 	s.saveNameByIdLocked(s.portalRuleNamesById, rule.Id, rule.Name)
 }
 
@@ -88,6 +90,23 @@ func toWatchedPortalSite(site *core.PortalSite) *watched.PortalSite {
 	return ret
 }
 
+func (s *Syncer) toWatchedPortalRule(rule *core.PortalRule, sites ...*core.PortalSite) *watched.PortalRule {
+	ret := ToWatchedPortalRule(rule)
+	if len(sites) > 0 {
+		site := sites[0]
+		if site == nil || site.WebMountPath == "" || rule.RouteType != string(core.PortalRuleRouteTypeSite) {
+			return ret
+		}
+		mountPath := strings.TrimRight(site.WebMountPath, "/")
+		ret.ResolvedMatchPathPrefix = mountPath
+		ret.ResolvedRoutePathPrefix = mountPath
+		if mountPath == "" {
+			ret.ResolvedMatchPathPrefix = "/"
+		}
+	}
+	return ret
+}
+
 func ToWatchedPortalRule(rule *core.PortalRule) *watched.PortalRule {
 	return &watched.PortalRule{
 		Name:                    rule.Name,
@@ -99,6 +118,8 @@ func ToWatchedPortalRule(rule *core.PortalRule) *watched.PortalRule {
 		RouteSiteName:           rule.RouteSiteName,
 		RouteRedirectionPattern: rule.RouteRedirectionPattern,
 		RoutePathPrefix:         rule.RoutePathPrefix,
+		ResolvedMatchPathPrefix: rule.MatchPathPrefix,
+		ResolvedRoutePathPrefix: rule.RoutePathPrefix,
 	}
 }
 
