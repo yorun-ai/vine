@@ -14,9 +14,12 @@ are not part of the public compatibility commitment.
   Rpc metadata, including when embedded in a business application. Identity
   headers always carry a plain semantic version such as `0.17.0`, because the
   vRPC identity format rejects the Go module form `v0.17.0`. Peers that still
-  send the module form remain accepted, so mixed-version clusters keep working;
-  a version that the wire format cannot express is rejected immediately instead
-  of producing an unreadable header.
+  send the module form remain accepted, so mixed-version clusters keep working.
+
+- Application versions are validated as full semantic versions with an optional
+  leading `v`, so an incomplete version such as `1.2` or `01.2.3` is rejected
+  when the application is created instead of producing an identity header that
+  other components cannot read.
 
 - Link and Portal recover from a Hub restart that advertises different endpoints
   instead of requiring a restart of their own. Link re-reads Hub information

@@ -272,24 +272,6 @@ func TestEncodeClientToHeaderNormalizesGoVersionPrefix(t *testing.T) {
 	}
 }
 
-func TestEncodeClientToHeaderRejectsVersionOutsideWireFormat(t *testing.T) {
-	for _, version := range []string{"1.2", "01.2.3", "v0.17"} {
-		t.Run(version, func(t *testing.T) {
-			defer func() {
-				if recover() == nil {
-					t.Fatalf("expected panic for version %s", version)
-				}
-			}()
-
-			client, err := meta.NewApp("demo", version, "123e4567-e89b-12d3-a456-426614174000")
-			if err != nil {
-				t.Fatalf("NewApp() error = %v", err)
-			}
-			EncodeClientToHeader(http.Header{}, client)
-		})
-	}
-}
-
 func TestDecodeClientFromHeaderAcceptsGoVersionPrefix(t *testing.T) {
 	header := http.Header{}
 	header.Set(HeaderRpcClient, "name=vine.hub,version=v0.15.8,instanceId=123e4567-e89b-12d3-a456-426614174000")
