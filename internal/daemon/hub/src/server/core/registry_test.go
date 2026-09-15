@@ -23,6 +23,7 @@ type registryRepoSpy struct {
 
 type schemaRepoSpy struct {
 	domainSchemas []*skel.DomainSchema
+	webs          []*skel.WebSchema
 	saved         []string
 	released      []string
 }
@@ -104,8 +105,8 @@ func (*schemaRepoSpy) ListServiceSchemas() []*skel.ServiceSchema {
 	return nil
 }
 
-func (*schemaRepoSpy) ListWebSchemas() []*skel.WebSchema {
-	return nil
+func (s *schemaRepoSpy) ListWebSchemas() []*skel.WebSchema {
+	return s.webs
 }
 
 func (s *registryRepoSpy) SaveAppStatus(status *AppStatus) {
@@ -375,4 +376,13 @@ func TestRegistryPropagatesApiBoundaryFromSchema(t *testing.T) {
 	assert.True(t, repo.rpcRegistrations[0].Api)
 	assert.False(t, repo.rpcRegistrations[1].Api)
 	assert.False(t, repo.rpcRegistrations[2].Api)
+}
+
+func (r *schemaRepoSpy) GetWebSchema(skelName string) *skel.WebSchema {
+	for _, schema := range r.webs {
+		if schema.SkelName == skelName {
+			return schema
+		}
+	}
+	return nil
 }

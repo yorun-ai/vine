@@ -159,6 +159,8 @@ type SchemaRepo interface {
 	ListActorSchemas() []*skel.ActorSchema
 	ListServiceSchemas() []*skel.ServiceSchema
 	ListWebSchemas() []*skel.WebSchema
+	// GetWebSchema returns the selected schema by fully qualified Skel name, or nil if absent.
+	GetWebSchema(skelName string) *skel.WebSchema
 
 	ListAppConfigSchemas() []*skel.ConfigSchema
 	ListEnumSchemas() []*skel.EnumSchema

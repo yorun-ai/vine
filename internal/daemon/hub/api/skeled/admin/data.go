@@ -689,6 +689,8 @@ type PortalSite struct {
 	Cors *PortalCors `json:"cors"`
 	// WebName Web name
 	WebName string `json:"webName"`
+	// WebMountPath Web mount path; empty means the Web is not limited to a path
+	WebMountPath string `json:"webMountPath"`
 }
 
 // Clone returns a value-isolated copy of the generated data.

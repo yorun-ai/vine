@@ -268,3 +268,12 @@ func TestRegistryServiceRefreshesSchemas(t *testing.T) {
 	assert.Equal(t, "service-main", serviceSchema.Hash)
 	assert.Equal(t, skel.AuthModeAuth, serviceSchema.Methods[0].AuthMode)
 }
+
+func (r *_RegistryServiceSchemaRepo) GetWebSchema(skelName string) *skel.WebSchema {
+	for _, schema := range r.ListWebSchemas() {
+		if schema.SkelName == skelName {
+			return schema
+		}
+	}
+	return nil
+}

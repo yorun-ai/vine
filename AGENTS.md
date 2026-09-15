@@ -50,6 +50,11 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
 
 - Vine is an application framework, and most arguments are passed by code within
   the project. Do not add unnecessary nil or empty-value checks.
+- Injected dependencies are never nil: an unbound type panics when resolved, and
+  a factory that returns nil panics unless the binding declares
+  `AsNullable()`. Only check an injected field for nil when its binding is
+  nullable, and declare the binding nullable instead of guessing at the
+  consumption site.
 - Do not add defensive behavior to production code solely to accommodate tests.
 - Preserve the active `meta.Context`, trace, actor, initiator, cancellation, and
   deadline when forwarding or deriving work. Do not replace an active request

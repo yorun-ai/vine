@@ -50,7 +50,10 @@ type PortalSite struct {
 	ActorVia      string
 	Cors          PortalCors
 	WebName       string
-	BuiltIn       bool
+	// WebMountPath is the path the Web of this site is served at. It is derived
+	// from the Web contract and is empty when the Web is not limited to a path.
+	WebMountPath string
+	BuiltIn      bool
 }
 
 type PortalSiteCreation struct {
@@ -112,9 +115,10 @@ func (m *PortalSiteCore) List() []PortalSite {
 	entries := m.PortalSiteRepo.ListEntries()
 	ret := make([]PortalSite, 0, len(entries))
 	for _, entry := range entries {
-		if !entry.BuiltIn {
-			ret = append(ret, entry)
+		if entry.BuiltIn {
+			continue
 		}
+		ret = append(ret, m.withWebMountPath(entry))
 	}
 	return ret
 }
@@ -130,14 +134,33 @@ func (m *PortalSiteCore) ListOptions() PortalSiteOptions {
 func (m *PortalSiteCore) Get(id int) PortalSite {
 	entry, ok := m.PortalSiteRepo.GetEntryById(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", id))
-	return *entry
+	return m.withWebMountPath(*entry)
+}
+
+// GetByName returns a portal site with its derived Web mount path, including
+// built-in sites, or false when no site uses the name.
+func (m *PortalSiteCore) GetByName(name string) (PortalSite, bool) {
+	entry, ok := m.PortalSiteRepo.GetEntryByName(name)
+	if !ok {
+		return PortalSite{}, false
+	}
+	return m.withWebMountPath(*entry), true
 }
 
 func (m *PortalSiteCore) RpcgwServices(site PortalSite) []string {
-	if m.SchemaRepo == nil {
-		return []string{}
-	}
 	return MatchPortalSiteRpcgwServicesInDomainViews(site, m.SchemaRepo.ListDomainSchemaViews())
+}
+
+// withWebMountPath derives the mount path of the Web the site forwards to.
+func (m *PortalSiteCore) withWebMountPath(site PortalSite) PortalSite {
+	site.WebMountPath = ""
+	if site.Type != PortalSiteTypeWEBGW || site.WebName == "" {
+		return site
+	}
+	if schema := m.SchemaRepo.GetWebSchema(site.WebName); schema != nil {
+		site.WebMountPath = schema.MountPath
+	}
+	return site
 }
 
 func (m *PortalSiteCore) Create(creation PortalSiteCreation) PortalSite {
@@ -154,7 +177,7 @@ func (m *PortalSiteCore) Create(creation PortalSiteCreation) PortalSite {
 	}
 	entry = m.Validate(entry)
 	m.PortalSiteRepo.SaveEntry(&entry)
-	return entry
+	return m.withWebMountPath(entry)
 }
 
 func (m *PortalSiteCore) Update(id int, update PortalSiteUpdate) PortalSite {
@@ -195,7 +218,7 @@ func (m *PortalSiteCore) Update(id int, update PortalSiteUpdate) PortalSite {
 
 	next = m.Validate(next)
 	m.PortalSiteRepo.SaveEntry(&next)
-	return next
+	return m.withWebMountPath(next)
 }
 
 func (m *PortalSiteCore) Remove(id int) {
@@ -331,7 +354,7 @@ func (m *PortalSiteCore) Save(site PortalSite) PortalSite {
 		site.Id = current.Id
 	}
 	m.PortalSiteRepo.SaveEntry(&site)
-	return site
+	return m.withWebMountPath(site)
 }
 
 // EnsureDashboardSite provisions an internal Dashboard site while keeping its ID.

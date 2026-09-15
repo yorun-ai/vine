@@ -226,3 +226,16 @@ func (*MemorySchemaRepo) ListWebSchemas() []*skel.WebSchema {
 
 	return append([]*skel.WebSchema{}, memorySchemaSnapshot.WebSchemas...)
 }
+
+// GetWebSchema returns the same selected version as ListWebSchemas, without
+// allocating a copy of the complete schema list. It returns nil if absent.
+func (*MemorySchemaRepo) GetWebSchema(skelName string) *skel.WebSchema {
+	memoryDomainSchemaMutex.RLock()
+	defer memoryDomainSchemaMutex.RUnlock()
+	for _, schema := range memorySchemaSnapshot.WebSchemas {
+		if schema.SkelName == skelName {
+			return schema
+		}
+	}
+	return nil
+}

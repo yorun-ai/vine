@@ -68,6 +68,7 @@ func toServerPortalSite(entry core.PortalSite, rpcgwServices []string) skeled.Po
 		RpcgwServices: rpcgwServices,
 		Cors:          toServerPortalCors(entry.Cors),
 		WebName:       entry.WebName,
+		WebMountPath:  entry.WebMountPath,
 	}
 }
 

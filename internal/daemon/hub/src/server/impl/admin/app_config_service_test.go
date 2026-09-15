@@ -560,3 +560,12 @@ func TestIntegerMapKeyMatchesRuntime(t *testing.T) {
 		require.Equal(t, err == nil, jsonMapKeyMatchesType(key, schema, nil), key)
 	}
 }
+
+func (r *_AppConfigServiceSchemaRepo) GetWebSchema(skelName string) *skel.WebSchema {
+	for _, schema := range r.ListWebSchemas() {
+		if schema.SkelName == skelName {
+			return schema
+		}
+	}
+	return nil
+}

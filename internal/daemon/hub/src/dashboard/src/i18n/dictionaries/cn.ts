@@ -26,6 +26,7 @@ export const cn = {
   'portalRule.routePathPrefix': '路由路径前缀',
   'portalRule.routePathPrefixHelp': '留空表示移除入口路径前缀后直接转发。',
   'portalRule.routePathPrefixInvalid': '请输入以 / 开头的路径，不含 URL、查询参数、片段或 . / .. 路径段。',
+  'portalRule.webMountPathFixed': '由 Web 挂载路径 {mountPath} 固定，不可修改。',
   'common.selectDomain': '选择 Domain',
   'common.allDomains': '全部 Domain',
   'common.clearSearch': '清除搜索',

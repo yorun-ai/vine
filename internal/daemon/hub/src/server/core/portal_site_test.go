@@ -65,13 +65,19 @@ func (s *portalSiteRepoSpy) RemoveEntry(id int) bool {
 	return true
 }
 
+// newPortalSiteCoreForTest builds a site core with the repositories Hub injects,
+// so tests only choose the repositories they exercise.
+func newPortalSiteCoreForTest(repo PortalSiteRepo) *PortalSiteCore {
+	return &PortalSiteCore{PortalSiteRepo: repo, SchemaRepo: &schemaRepoSpy{}}
+}
+
 func TestPortalSiteCoreUpdateBuiltInSite(t *testing.T) {
 	repo := &portalSiteRepoSpy{
 		entries: map[int]*PortalSite{
 			1: {Id: 1, Name: "vine.hub.admin.DashboardWeb-web", BuiltIn: true},
 		},
 	}
-	core := &PortalSiteCore{PortalSiteRepo: repo}
+	core := newPortalSiteCoreForTest(repo)
 
 	panicValue := capturePanic(func() {
 		core.Update(1, PortalSiteUpdate{})
@@ -90,7 +96,7 @@ func TestPortalSiteCoreListSkipsBuiltInSites(t *testing.T) {
 			2: {Id: 2, Name: "demo-booker"},
 		},
 	}
-	core := &PortalSiteCore{PortalSiteRepo: repo}
+	core := newPortalSiteCoreForTest(repo)
 
 	entries := core.List()
 
@@ -99,13 +105,55 @@ func TestPortalSiteCoreListSkipsBuiltInSites(t *testing.T) {
 	assert.Equal(t, []string{"ListEntries"}, repo.calls)
 }
 
+func TestPortalSiteCoreDerivesWebMountPath(t *testing.T) {
+	repo := &portalSiteRepoSpy{entries: map[int]*PortalSite{
+		1: {Id: 1, Name: "web", Type: PortalSiteTypeWEBGW, WebName: "demo.Web"},
+		2: {Id: 2, Name: "plain", Type: PortalSiteTypeWEBGW, WebName: "app.Web"},
+		3: {Id: 3, Name: "api", Type: PortalSiteTypeRPCGW, WebName: "demo.Web"},
+	}}
+	core := &PortalSiteCore{
+		PortalSiteRepo: repo,
+		SchemaRepo: &schemaRepoSpy{webs: []*skel.WebSchema{
+			{Name: "demo.Web", SkelName: "demo.Web", MountPath: "/demo"},
+			{Name: "app.Web", SkelName: "app.Web"},
+		}},
+	}
+
+	entries := core.List()
+
+	require.Len(t, entries, 3)
+	assert.Equal(t, []string{"/demo", "", ""}, []string{
+		entries[0].WebMountPath,
+		entries[1].WebMountPath,
+		entries[2].WebMountPath,
+	})
+	assert.Equal(t, "/demo", core.Get(1).WebMountPath)
+	site, ok := core.GetByName("web")
+	require.True(t, ok)
+	assert.Equal(t, "/demo", site.WebMountPath)
+	_, ok = core.GetByName("missing")
+	assert.False(t, ok)
+}
+
+func TestPortalSiteCoreIgnoresProvidedWebMountPath(t *testing.T) {
+	core := &PortalSiteCore{
+		PortalSiteRepo: &portalSiteRepoSpy{},
+		SchemaRepo:     &schemaRepoSpy{webs: []*skel.WebSchema{{Name: "demo.Web", SkelName: "demo.Web", MountPath: "/demo"}}},
+	}
+
+	web := core.withWebMountPath(PortalSite{Type: PortalSiteTypeWEBGW, WebName: "demo.Web", WebMountPath: "/forged"})
+	assert.Equal(t, "/demo", web.WebMountPath)
+	rpc := core.withWebMountPath(PortalSite{Type: PortalSiteTypeRPCGW, WebMountPath: "/forged"})
+	assert.Empty(t, rpc.WebMountPath)
+}
+
 func TestPortalSiteCoreRemoveBuiltInSite(t *testing.T) {
 	repo := &portalSiteRepoSpy{
 		entries: map[int]*PortalSite{
 			1: {Id: 1, Name: "vine.hub.admin.DashboardWeb-web", BuiltIn: true},
 		},
 	}
-	core := &PortalSiteCore{PortalSiteRepo: repo}
+	core := newPortalSiteCoreForTest(repo)
 
 	panicValue := capturePanic(func() {
 		core.Remove(1)
@@ -217,7 +265,7 @@ func TestPortalSiteSaveAndUpdateProtectIdentityAndValidate(t *testing.T) {
 	site := testUserSite()
 	site.Id = 7
 	repo := &portalSiteRepoSpy{entries: map[int]*PortalSite{7: &site}}
-	target := &PortalSiteCore{PortalSiteRepo: repo}
+	target := newPortalSiteCoreForTest(repo)
 	incoming := testUserSite()
 	incoming.Id, incoming.BuiltIn = 99, true
 	got := target.Save(incoming)
@@ -234,7 +282,7 @@ func TestEnsureDashboardSitePreservesIdentity(t *testing.T) {
 	site := testUserSite()
 	site.Name, site.Id = DashboardWebSiteName, 7
 	repo := &portalSiteRepoSpy{entries: map[int]*PortalSite{7: &site}}
-	target := &PortalSiteCore{PortalSiteRepo: repo}
+	target := newPortalSiteCoreForTest(repo)
 	incoming := site
 	incoming.Id = 99
 	target.EnsureDashboardSite(incoming)

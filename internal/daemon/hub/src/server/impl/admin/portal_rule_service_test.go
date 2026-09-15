@@ -45,16 +45,30 @@ func TestPortalRuleServiceUpdateDashboardAccessRejectsLockedFlag(t *testing.T) {
 
 func newTestPortalRuleApiService(dashboardURLSet bool) *PortalRuleApiServiceServerImpl {
 	return &PortalRuleApiServiceServerImpl{
-		PortalRuleCore: &core.PortalRuleCore{
-			PortalRuleRepo: &_PortalRuleRepoSpy{
+		PortalRuleCore: newTestPortalRuleCore(
+			&_PortalRuleRepoSpy{
 				rules: map[int]*core.PortalRule{
 					1: {Id: 1, Name: core.DashboardAdminApiRuleName, MatchScheme: "http", MatchPort: 7099, MatchPathPrefix: "/api", BuiltIn: true},
 					2: {Id: 2, Name: core.DashboardWebRuleName, MatchScheme: "http", MatchPort: 7099, MatchPathPrefix: "/", BuiltIn: true},
 				},
 			},
-		},
+		),
 		Flag: &flag.Flag{DashboardURLSet: dashboardURLSet},
 	}
+}
+
+// newTestPortalRuleCore builds a rule core with the Portal site and schema
+// repositories Hub injects; these tests only choose the rule repository.
+func newTestPortalRuleCore(ruleRepo core.PortalRuleRepo) *core.PortalRuleCore {
+	return &core.PortalRuleCore{
+		PortalRuleRepo: ruleRepo,
+		PortalSiteCore: newTestPortalSiteCore(&_MaintenanceServicePortalSiteRepo{}),
+	}
+}
+
+// newTestPortalSiteCore builds a site core with the repositories Hub injects.
+func newTestPortalSiteCore(siteRepo core.PortalSiteRepo) *core.PortalSiteCore {
+	return &core.PortalSiteCore{PortalSiteRepo: siteRepo, SchemaRepo: &_SkeletonServiceSchemaRepo{}}
 }
 
 type _PortalRuleRepoSpy struct {

@@ -660,6 +660,10 @@ export type PortalSite = {
    * Web name.
    */
   webName:       string;
+  /**
+   * Web mount path; empty means the Web is not limited to a path.
+   */
+  webMountPath:  string;
 }
 /**
  * Portal target site Actor options.

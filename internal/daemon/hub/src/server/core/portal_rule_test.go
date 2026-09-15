@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/ex"
+	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/util/vslice"
 )
 
@@ -70,7 +71,7 @@ func TestPortalRuleCoreUpdateBuiltInRule(t *testing.T) {
 			1: {Id: 1, Name: "vine.hub.dashboard-web", BuiltIn: true},
 		},
 	}
-	core := &PortalRuleCore{PortalRuleRepo: repo}
+	core := newPortalRuleCoreForTest(repo, nil)
 
 	panicValue := capturePanic(func() {
 		core.Update(1, PortalRuleUpdate{})
@@ -88,7 +89,7 @@ func TestPortalRuleCoreRemoveBuiltInRule(t *testing.T) {
 			1: {Id: 1, Name: "vine.hub.dashboard-web", BuiltIn: true},
 		},
 	}
-	core := &PortalRuleCore{PortalRuleRepo: repo}
+	core := newPortalRuleCoreForTest(repo, nil)
 
 	panicValue := capturePanic(func() {
 		core.Remove(1)
@@ -113,7 +114,7 @@ func TestPortalRuleCoreUpdateDashboardAccess(t *testing.T) {
 		Domains:          []string{"hub.example.com"},
 		PrivateKeyBase64: "pri",
 	})
-	core := &PortalRuleCore{PortalRuleRepo: repo, PortalCertRepo: certRepo}
+	core := newPortalRuleCoreForTest(repo, certRepo)
 
 	rules := core.UpdateDashboardAccess("https", "hub.example.com", 8443, "/hub")
 
@@ -149,7 +150,7 @@ func TestPortalRuleCoreDashboardAccess(t *testing.T) {
 			2: {Id: 2, Name: DashboardWebRuleName, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "dashboard", MatchScheme: "https", MatchHost: "hub.example.com", MatchPort: 8443, MatchPathPrefix: "/hub", BuiltIn: true},
 		},
 	}
-	core := &PortalRuleCore{PortalRuleRepo: repo}
+	core := newPortalRuleCoreForTest(repo, nil)
 
 	access := core.DashboardAccess()
 
@@ -172,7 +173,7 @@ func TestPortalRuleCoreListSkipsBuiltInRules(t *testing.T) {
 			4: {Id: 4, Name: "demo", BuiltIn: true},
 		},
 	}
-	core := &PortalRuleCore{PortalRuleRepo: repo, PortalCertRepo: newTestPortalCertRepo()}
+	core := newPortalRuleCoreForTest(repo, newTestPortalCertRepo())
 
 	rules := core.List()
 
@@ -187,7 +188,7 @@ func TestPortalRuleCoreUpdateDashboardAccessRejectsNormalRule(t *testing.T) {
 			2: {Id: 2, Name: DashboardWebRuleName, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "dashboard", MatchPort: 7099},
 		},
 	}
-	core := &PortalRuleCore{PortalRuleRepo: repo}
+	core := newPortalRuleCoreForTest(repo, nil)
 
 	panicValue := capturePanic(func() {
 		core.UpdateDashboardAccess("http", "", 8080, "/")
@@ -205,7 +206,7 @@ func TestPortalRuleCoreUpdateDashboardAccessRejectsNormalRule(t *testing.T) {
 }
 
 func TestPortalRuleCoreUpdateDashboardAccessRejectsInvalidPort(t *testing.T) {
-	core := &PortalRuleCore{PortalRuleRepo: &entryRuleRepoSpy{}, PortalCertRepo: newTestPortalCertRepo()}
+	core := newPortalRuleCoreForTest(&entryRuleRepoSpy{}, newTestPortalCertRepo())
 
 	panicValue := capturePanic(func() {
 		core.UpdateDashboardAccess("http", "", -1, "/")
@@ -223,7 +224,7 @@ func TestPortalRuleCoreUpdateDashboardAccessNormalizesInput(t *testing.T) {
 			2: {Id: 2, Name: DashboardWebRuleName, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "dashboard", MatchPathPrefix: "/", BuiltIn: true},
 		},
 	}
-	core := &PortalRuleCore{PortalRuleRepo: repo, PortalCertRepo: newTestPortalCertRepo()}
+	core := newPortalRuleCoreForTest(repo, newTestPortalCertRepo())
 
 	rules := core.UpdateDashboardAccess(" HTTP ", " hub.example.com ", 8080, "hub")
 
@@ -237,7 +238,7 @@ func TestPortalRuleCoreUpdateDashboardAccessNormalizesInput(t *testing.T) {
 }
 
 func TestPortalRuleCoreUpdateDashboardAccessRejectsInvalidScheme(t *testing.T) {
-	core := &PortalRuleCore{PortalRuleRepo: &entryRuleRepoSpy{}, PortalCertRepo: newTestPortalCertRepo()}
+	core := newPortalRuleCoreForTest(&entryRuleRepoSpy{}, newTestPortalCertRepo())
 
 	panicValue := capturePanic(func() {
 		core.UpdateDashboardAccess("ftp", "", 8080, "/")
@@ -249,7 +250,7 @@ func TestPortalRuleCoreUpdateDashboardAccessRejectsInvalidScheme(t *testing.T) {
 }
 
 func TestPortalRuleCoreUpdateDashboardAccessRejectsHttpsWithoutHost(t *testing.T) {
-	core := &PortalRuleCore{PortalRuleRepo: &entryRuleRepoSpy{}, PortalCertRepo: newTestPortalCertRepo()}
+	core := newPortalRuleCoreForTest(&entryRuleRepoSpy{}, newTestPortalCertRepo())
 
 	panicValue := capturePanic(func() {
 		core.UpdateDashboardAccess("https", "", 8443, "/")
@@ -267,7 +268,7 @@ func TestPortalRuleCoreUpdateDashboardAccessRejectsHttpsWithoutCertificate(t *te
 		Domains:          []string{"other.example.com"},
 		PrivateKeyBase64: "pri",
 	})
-	core := &PortalRuleCore{PortalRuleRepo: &entryRuleRepoSpy{}, PortalCertRepo: certRepo}
+	core := newPortalRuleCoreForTest(&entryRuleRepoSpy{}, certRepo)
 
 	panicValue := capturePanic(func() {
 		core.UpdateDashboardAccess("https", "hub.example.com", 8443, "/")
@@ -297,7 +298,7 @@ func TestNormalizePortalRuleRoutePathPrefix(t *testing.T) {
 
 func TestPortalRuleTargetPathCreateUpdateClear(t *testing.T) {
 	repo := &entryRuleRepoSpy{}
-	service := &PortalRuleCore{PortalRuleRepo: repo}
+	service := newPortalRuleCoreForTest(repo, nil)
 	created := service.Create(PortalRuleCreation{Name: "mapping", MatchScheme: "http", RouteSiteName: "web", RouteType: "SITE", RoutePathPrefix: "/internal/"})
 	assert.Equal(t, "/internal", created.RoutePathPrefix)
 	updated := service.Update(created.Id, PortalRuleUpdate{RouteSiteName: new("next")})
@@ -353,7 +354,7 @@ func TestPortalRuleValidationAcrossCreateUpdateSave(t *testing.T) {
 			bad := validPortalRule()
 			change(&bad)
 			repo := &entryRuleRepoSpy{}
-			service := &PortalRuleCore{PortalRuleRepo: repo}
+			service := newPortalRuleCoreForTest(repo, nil)
 			require.Panics(t, func() {
 				service.Create(PortalRuleCreation{
 					Name: bad.Name, MatchScheme: bad.MatchScheme, MatchHost: bad.MatchHost, MatchPort: bad.MatchPort,
@@ -387,7 +388,7 @@ func TestPortalRuleSaveIdentityAndPartialUpdate(t *testing.T) {
 	original.Id = 17
 	original.RoutePathPrefix = "/internal"
 	repo := &entryRuleRepoSpy{rules: map[int]*PortalRule{17: &original}}
-	service := &PortalRuleCore{PortalRuleRepo: repo}
+	service := newPortalRuleCoreForTest(repo, nil)
 	next := validPortalRule()
 	next.Id = 99
 	next.RoutePathPrefix = "/next/"
@@ -416,9 +417,9 @@ func TestPortalRuleValidHostsAndDefaultPort(t *testing.T) {
 	}
 }
 
-func TestPortalRuleCoreValidateDoesNotAccessStorage(t *testing.T) {
+func TestPortalRuleCoreValidateKeepsRuleRepoUntouched(t *testing.T) {
 	repo := &entryRuleRepoSpy{}
-	service := &PortalRuleCore{PortalRuleRepo: repo}
+	service := newPortalRuleCoreForTest(repo, nil)
 	rule := validPortalRule()
 	rule.RoutePathPrefix = "/internal/"
 	normalized := service.Validate(rule)
@@ -429,4 +430,154 @@ func TestPortalRuleCoreValidateDoesNotAccessStorage(t *testing.T) {
 		require.Panics(t, func() { service.Validate(rule) })
 	}
 	require.Empty(t, repo.calls)
+}
+
+func TestPortalRuleCoreValidatesWebMountPath(t *testing.T) {
+	service := newWebRuleCoreForTest(
+		PortalSite{Name: "web", Type: PortalSiteTypeWEBGW, WebName: "demo.Web"},
+		webSchemaForTest("demo.Web", "/demo"),
+	)
+
+	matched := validPortalRule()
+	matched.MatchPathPrefix = "/demo"
+	matched.RoutePathPrefix = "/demo"
+	require.NotPanics(t, func() { service.Validate(matched) })
+
+	// A trailing slash describes the same mount path.
+	slashed := matched
+	slashed.MatchPathPrefix = "/demo/"
+	slashed.RoutePathPrefix = "/demo/"
+	require.NotPanics(t, func() { service.Validate(slashed) })
+
+	cases := map[string]func(*PortalRule){
+		"match path":        func(r *PortalRule) { r.MatchPathPrefix = "/other" },
+		"route path":        func(r *PortalRule) { r.RoutePathPrefix = "/other" },
+		"empty route path":  func(r *PortalRule) { r.RoutePathPrefix = "" },
+		"entry above mount": func(r *PortalRule) { r.MatchPathPrefix = "/"; r.RoutePathPrefix = "/" },
+	}
+	for name, change := range cases {
+		t.Run(name, func(t *testing.T) {
+			rule := matched
+			change(&rule)
+			repo := &entryRuleRepoSpy{}
+			service.PortalRuleRepo = repo
+			panicValue := capturePanic(func() { service.Save(rule) })
+			err, ok := panicValue.(ex.Error)
+			require.True(t, ok)
+			assert.Equal(t, ex.OperationFailed, err.Code())
+			assert.Contains(t, err.Message(), `Web mountPath "/demo"`)
+			assert.NotContains(t, repo.calls, "SaveRule")
+		})
+	}
+}
+
+func TestPortalRuleCoreEnforcesDeclaredRootWebMountPath(t *testing.T) {
+	service := newWebRuleCoreForTest(
+		PortalSite{Name: "web", Type: PortalSiteTypeWEBGW, WebName: "app.Web"},
+		webSchemaForTest("app.Web", "/"),
+	)
+
+	cases := map[string][2]string{
+		"root prefixes":  {"/", "/"},
+		"empty prefixes": {"", ""},
+		"legacy route":   {"/", ""},
+	}
+	for name, prefixes := range cases {
+		t.Run(name, func(t *testing.T) {
+			rule := validPortalRule()
+			rule.MatchPathPrefix = prefixes[0]
+			rule.RoutePathPrefix = prefixes[1]
+			require.NotPanics(t, func() { service.Validate(rule) })
+		})
+	}
+
+	nested := validPortalRule()
+	nested.MatchPathPrefix = "/app"
+	nested.RoutePathPrefix = "/app"
+	require.Panics(t, func() { service.Validate(nested) })
+}
+
+func TestPortalRuleCoreSkipsWebMountPathValidation(t *testing.T) {
+	mismatched := validPortalRule()
+	redirect := mismatched
+	redirect.RouteType = PortalRuleRouteTypeTemporaryRedirect
+	redirect.RouteSiteName = ""
+	redirect.MatchPathPrefix = "/api"
+	redirect.RouteRedirectionPattern = "https://example.com{uri}"
+
+	cases := map[string]struct {
+		service *PortalRuleCore
+		rule    PortalRule
+	}{
+		"rpc gateway site": {
+			service: newWebRuleCoreForTest(
+				PortalSite{Name: "web", Type: PortalSiteTypeRPCGW, WebName: "demo.Web"},
+				webSchemaForTest("demo.Web", "/demo"),
+			),
+			rule: mismatched,
+		},
+		"unknown site": {
+			service: newWebRuleCoreForTest(
+				PortalSite{Name: "other", Type: PortalSiteTypeWEBGW, WebName: "demo.Web"},
+				webSchemaForTest("demo.Web", "/demo"),
+			),
+			rule: mismatched,
+		},
+		"unknown web": {
+			service: newWebRuleCoreForTest(
+				PortalSite{Name: "web", Type: PortalSiteTypeWEBGW, WebName: "missing.Web"},
+				webSchemaForTest("demo.Web", "/demo"),
+			),
+			rule: mismatched,
+		},
+		"web without mount path": {
+			service: newWebRuleCoreForTest(
+				PortalSite{Name: "web", Type: PortalSiteTypeWEBGW, WebName: "app.Web"},
+				webSchemaForTest("app.Web", ""),
+			),
+			rule: mismatched,
+		},
+		"redirect rule": {
+			service: newWebRuleCoreForTest(
+				PortalSite{Name: "web", Type: PortalSiteTypeWEBGW, WebName: "demo.Web"},
+				webSchemaForTest("demo.Web", "/demo"),
+			),
+			rule: redirect,
+		},
+	}
+	for name, test := range cases {
+		t.Run(name, func(t *testing.T) {
+			require.NotPanics(t, func() { test.service.Validate(test.rule) })
+		})
+	}
+}
+
+// newPortalRuleCoreForTest builds a rule core with the repositories Hub injects,
+// so tests only choose the repositories they exercise.
+func newPortalRuleCoreForTest(ruleRepo PortalRuleRepo, certRepo PortalCertRepo) *PortalRuleCore {
+	if certRepo == nil {
+		certRepo = newTestPortalCertRepo()
+	}
+	return &PortalRuleCore{
+		PortalRuleRepo: ruleRepo,
+		PortalCertRepo: certRepo,
+		PortalSiteCore: &PortalSiteCore{
+			PortalSiteRepo: &portalSiteRepoSpy{},
+			SchemaRepo:     &schemaRepoSpy{},
+		},
+	}
+}
+
+func newWebRuleCoreForTest(site PortalSite, webs ...*skel.WebSchema) *PortalRuleCore {
+	site.Id = 1
+	service := newPortalRuleCoreForTest(&entryRuleRepoSpy{}, nil)
+	service.PortalSiteCore = &PortalSiteCore{
+		PortalSiteRepo: &portalSiteRepoSpy{entries: map[int]*PortalSite{1: &site}},
+		SchemaRepo:     &schemaRepoSpy{webs: webs},
+	}
+	return service
+}
+
+func webSchemaForTest(skelName string, mountPath string) *skel.WebSchema {
+	return &skel.WebSchema{Name: skelName, SkelName: skelName, MountPath: mountPath}
 }

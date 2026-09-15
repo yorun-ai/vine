@@ -123,9 +123,9 @@ func TestMaintenanceServiceSeedYamlDoesNotExposeVineField(t *testing.T) {
 	}}
 	service := &MaintenanceApiServiceServerImpl{
 		EntryRepo: entryRepo,
-		SiteCore:  &core.PortalSiteCore{PortalSiteRepo: entryRepo},
+		SiteCore:  newTestPortalSiteCore(entryRepo),
 		RuleRepo:  ruleRepo,
-		RuleCore:  &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
+		RuleCore:  newTestPortalRuleCore(ruleRepo),
 	}
 	content := `
 portalSites:
@@ -281,7 +281,7 @@ func (r *_MaintenanceServicePortalRuleRepo) RemoveRule(id int) bool {
 func TestMaintenanceTargetPathSeedRoundTrip(t *testing.T) {
 	repo := &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{}}
 	service := &MaintenanceApiServiceServerImpl{RuleRepo: repo,
-		RuleCore: &core.PortalRuleCore{PortalRuleRepo: repo}}
+		RuleCore: newTestPortalRuleCore(repo)}
 	payload := service.parseSeed("portalRules:\n  - name: mapped\n    scheme: http\n    targetType: SITE\n    siteName: web\n    pathPrefix: /api\n    targetPath: /internal/\n")
 	rule := payload.PortalRules[0]
 	if rule.RoutePathPrefix != "/internal" {
@@ -299,7 +299,7 @@ func TestMaintenanceTargetPathSeedRoundTrip(t *testing.T) {
 }
 
 func TestMaintenanceRuleFieldNames(t *testing.T) {
-	service := &MaintenanceApiServiceServerImpl{}
+	service := &MaintenanceApiServiceServerImpl{RuleCore: newTestPortalRuleCore(&_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{}})}
 	payload := service.parseSeed("portalRules:\n  - name: example\n    matchScheme: http\n    routeType: SITE\n    routeSiteName: web\n    routePathPrefix: /internal")
 	require.Equal(t, "http", payload.PortalRules[0].MatchScheme)
 	require.Equal(t, "/internal", payload.PortalRules[0].RoutePathPrefix)
@@ -313,7 +313,7 @@ func TestMaintenanceUsesDomainValidationForBothYAMLVocabularies(t *testing.T) {
 			content = strings.NewReplacer("matchScheme:", "scheme:", "matchPort:", "port:", "routeType:", "targetType:", "routeSiteName:", "siteName:").Replace(content)
 		}
 		repo := &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{}}
-		service := &MaintenanceApiServiceServerImpl{RuleRepo: repo, RuleCore: &core.PortalRuleCore{PortalRuleRepo: repo}}
+		service := &MaintenanceApiServiceServerImpl{RuleRepo: repo, RuleCore: newTestPortalRuleCore(repo)}
 		require.Panics(t, func() { service.PreviewSeedYaml(content) })
 		require.Panics(t, func() {
 			service.ApplySeedYaml(content, []skeled.SeedItemSelection{{Kind: seedKindPortalRule, Name: "invalid"}})

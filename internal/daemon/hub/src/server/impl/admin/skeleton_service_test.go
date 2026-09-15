@@ -1076,3 +1076,12 @@ func TestSkeletonServiceApiFlag(t *testing.T) {
 		})
 	}
 }
+
+func (r *_SkeletonServiceSchemaRepo) GetWebSchema(skelName string) *skel.WebSchema {
+	for _, schema := range r.ListWebSchemas() {
+		if schema.SkelName == skelName {
+			return schema
+		}
+	}
+	return nil
+}

@@ -12,15 +12,6 @@ import (
 	hubflag "go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 )
 
-func TestNATSTaskPublisherReturnsConfigurationError(t *testing.T) {
-	publisher := &_NATSTaskPublisher{}
-
-	err := publisher.PublishTask(newTestTaskMessage())
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "nats flag is nil")
-}
-
 func TestNATSTaskPublisherReturnsJetStreamError(t *testing.T) {
 	server, err := natsserverlib.NewServer(&natsserverlib.Options{
 		Port:   -1,

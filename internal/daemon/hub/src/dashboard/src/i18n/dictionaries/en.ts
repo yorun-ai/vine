@@ -28,6 +28,7 @@ export const en: Record<TranslationKey, string> = {
   'portalRule.routePathPrefix': 'Route Path Prefix',
   'portalRule.routePathPrefixHelp': 'Leave empty to forward after removing the entry path prefix.',
   'portalRule.routePathPrefixInvalid': 'Enter a path starting with / without a URL, query, fragment, or dot segments.',
+  'portalRule.webMountPathFixed': 'Fixed to the Web mount path {mountPath}.',
   'common.selectDomain': 'Select domain',
   'common.allDomains': 'All domains',
   'common.clearSearch': 'Clear search',

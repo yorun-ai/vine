@@ -231,3 +231,12 @@ func TestDBPortalSiteRepoRejectsReadOnlyWrites(t *testing.T) {
 	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.SaveEntry(new(core.PortalSite)) })
 	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.RemoveEntry(1) })
 }
+
+func (r *_PortalSiteSchemaRepo) GetWebSchema(skelName string) *skel.WebSchema {
+	for _, schema := range r.ListWebSchemas() {
+		if schema.SkelName == skelName {
+			return schema
+		}
+	}
+	return nil
+}

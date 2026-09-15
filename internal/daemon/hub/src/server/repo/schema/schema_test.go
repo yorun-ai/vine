@@ -55,3 +55,28 @@ func TestMemorySchemaRepoReleaseDomainSchemas(t *testing.T) {
 	assert.True(t, views[0].DomainVersion.Main)
 	assert.False(t, views[0].DomainVersion.MultiVersion)
 }
+
+func TestMemorySchemaRepoGetWebSchemaTracksSelectedVersion(t *testing.T) {
+	resetMemorySchemaRepoForTest()
+	t.Cleanup(resetMemorySchemaRepoForTest)
+	repo := new(MemorySchemaRepo)
+	oldSchema := testDomainSchema()
+	newer := testDomainSchema()
+	newer.Hash = "new-domain"
+	newer.Webs[0].Hash = "new-web"
+	newer.Webs[0].MountPath = "/new"
+	name := oldSchema.Webs[0].SkelName
+	got := repo.GetWebSchema(name)
+	require.Nil(t, got)
+	repo.SaveDomainSchemas("app", "old", []*skel.DomainSchema{oldSchema})
+	repo.SaveDomainSchemas("app", "new", []*skel.DomainSchema{newer})
+	got = repo.GetWebSchema(name)
+	require.Same(t, newer.Webs[0], got)
+	require.Equal(t, "/new", got.MountPath)
+	repo.ReleaseDomainSchemas("app", "new")
+	got = repo.GetWebSchema(name)
+	require.Same(t, oldSchema.Webs[0], got)
+	repo.ReleaseDomainSchemas("app", "old")
+	got = repo.GetWebSchema(name)
+	require.Nil(t, got)
+}

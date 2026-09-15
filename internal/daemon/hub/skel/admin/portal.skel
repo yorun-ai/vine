@@ -280,6 +280,8 @@ data PortalSite {
     @desc("Web name")
     webName: string
 
+    @desc("Web mount path; empty means the Web is not limited to a path")
+    webMountPath: string
 }
 
 @desc("Portal target site update parameters")

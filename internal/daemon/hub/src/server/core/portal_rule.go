@@ -75,8 +75,9 @@ type PortalRuleRepo interface {
 // Core
 
 type PortalRuleCore struct {
-	PortalRuleRepo PortalRuleRepo `inject:""`
-	PortalCertRepo PortalCertRepo `inject:""`
+	PortalRuleRepo PortalRuleRepo  `inject:""`
+	PortalCertRepo PortalCertRepo  `inject:""`
+	PortalSiteCore *PortalSiteCore `inject:""`
 }
 
 func (m *PortalRuleCore) List() []PortalRule {
@@ -253,9 +254,6 @@ func normalizeDashboardPathPrefix(pathPrefix string) string {
 }
 
 func (m *PortalRuleCore) hasConfiguredCertForHost(host string) bool {
-	if m.PortalCertRepo == nil {
-		return false
-	}
 	normalizedHost := strings.ToLower(strings.TrimSpace(host))
 	for _, cert := range m.PortalCertRepo.ListCerts() {
 		if cert == nil || cert.PrivateKeyBase64 == "" {
@@ -344,13 +342,39 @@ func (r *PortalRule) normalizeAndValidate() {
 	r.RoutePathPrefix = normalizePortalRuleRoutePathPrefix(r.RouteType, r.RoutePathPrefix)
 }
 
-// Validate checks and normalizes a complete user rule without accessing storage.
-// Reserved built-in names are protected independently of database contents.
-func (*PortalRuleCore) Validate(rule PortalRule) PortalRule {
+// Validate checks and normalizes a complete user rule. It resolves the target
+// site to keep the rule aligned with the mount path of the Web that site serves,
+// and never writes to storage. Reserved built-in names are protected
+// independently of database contents.
+func (m *PortalRuleCore) Validate(rule PortalRule) PortalRule {
 	ex.PanicNewIfNot(rule.Name != DashboardAdminApiRuleName && rule.Name != DashboardWebRuleName,
 		ex.OperationFailed, ex.F("built-in entry rule %q cannot be replaced", rule.Name))
 	rule.normalizeAndValidate()
+	if rule.RouteType == PortalRuleRouteTypeSite {
+		m.validateWebMountPath(rule)
+	}
 	return rule
+}
+
+// validateWebMountPath keeps a rule aligned with the Web its target site serves.
+func (m *PortalRuleCore) validateWebMountPath(rule PortalRule) {
+	site, ok := m.PortalSiteCore.GetByName(rule.RouteSiteName)
+	// A site whose Web declares no mount path accepts rules under any entry path.
+	if !ok || site.WebMountPath == "" {
+		return
+	}
+	mountPath := site.WebMountPath
+	ex.PanicNewIfNot(canonicalRulePathPrefix(rule.MatchPathPrefix) == canonicalRulePathPrefix(mountPath),
+		ex.OperationFailed, ex.F("portal rule %q matchPathPrefix must equal Web mountPath %q", rule.Name, mountPath))
+	ex.PanicNewIfNot(canonicalRulePathPrefix(rule.RoutePathPrefix) == canonicalRulePathPrefix(mountPath),
+		ex.OperationFailed, ex.F("portal rule %q routePathPrefix must equal Web mountPath %q", rule.Name, mountPath))
+}
+
+// canonicalRulePathPrefix returns a path prefix in the form used to compare a
+// rule against a Web mount path: without a trailing slash, and empty for the
+// root path.
+func canonicalRulePathPrefix(pathPrefix string) string {
+	return strings.TrimRight(pathPrefix, "/")
 }
 
 // Save creates or replaces a complete user rule by name, preserving an existing ID.
