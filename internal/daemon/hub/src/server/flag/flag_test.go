@@ -26,7 +26,7 @@ func TestFlagNormalizeRequiresSeedWithoutDatabase(t *testing.T) {
 func TestFlagNormalizeInfersSQLiteSourceFromPath(t *testing.T) {
 	flags := &Flag{
 		DBSQLiteFile: "/tmp/hub.sqlite",
-		MQEmbedded:   true,
+		MQMode:       MQModeEmbedded,
 	}
 
 	flags.Normalize(false)
@@ -38,7 +38,7 @@ func TestFlagNormalizeInfersSQLiteSourceFromPath(t *testing.T) {
 func TestFlagNormalizeInfersPostgreSQLSourceFromURL(t *testing.T) {
 	flags := &Flag{
 		DBPostgresURL: "postgres://demo:demo@127.0.0.1:5432/hub",
-		MQEmbedded:    true,
+		MQMode:        MQModeEmbedded,
 	}
 
 	flags.Normalize(false)
@@ -62,7 +62,7 @@ func TestFlagNormalizeKeepsExplicitStore(t *testing.T) {
 	flags := &Flag{
 		Store:        StoreSQLite,
 		DBSQLiteFile: "/tmp/hub.sqlite",
-		MQEmbedded:   true,
+		MQMode:       MQModeEmbedded,
 	}
 
 	flags.Normalize(false)
@@ -80,7 +80,7 @@ func TestFlagNormalizeNormalizesDashboardURL(t *testing.T) {
 	flags := &Flag{
 		Store:           StoreSQLite,
 		DBSQLiteFile:    "/tmp/hub.sqlite",
-		MQEmbedded:      true,
+		MQMode:          MQModeEmbedded,
 		DashboardURLRaw: ":7099",
 	}
 
@@ -99,7 +99,7 @@ func TestFlagNormalizeUsesHTTPSDashboardDefaultWithMTLS(t *testing.T) {
 		},
 		Store:        StoreSQLite,
 		DBSQLiteFile: "/tmp/hub.sqlite",
-		MQEmbedded:   true,
+		MQMode:       MQModeEmbedded,
 	}
 
 	flags.Normalize(false)
@@ -118,7 +118,7 @@ func TestFlagNormalizeKeepsExplicitHTTPDashboardURLWithMTLS(t *testing.T) {
 		},
 		Store:           StoreSQLite,
 		DBSQLiteFile:    "/tmp/hub.sqlite",
-		MQEmbedded:      true,
+		MQMode:          MQModeEmbedded,
 		DashboardURLRaw: "http://:7099/",
 	}
 
@@ -133,7 +133,7 @@ func TestFlagNormalizeAddsDashboardURLPath(t *testing.T) {
 	flags := &Flag{
 		Store:           StoreSQLite,
 		DBSQLiteFile:    "/tmp/hub.sqlite",
-		MQEmbedded:      true,
+		MQMode:          MQModeEmbedded,
 		DashboardURLRaw: "https://hub.example.com:8443",
 	}
 
@@ -146,7 +146,7 @@ func TestFlagNormalizeRejectsInvalidDashboardURLScheme(t *testing.T) {
 	flags := &Flag{
 		Store:           StoreSQLite,
 		DBSQLiteFile:    "/tmp/hub.sqlite",
-		MQEmbedded:      true,
+		MQMode:          MQModeEmbedded,
 		DashboardURLRaw: "ftp://hub.example.com:8443/admin",
 	}
 
@@ -157,6 +157,7 @@ func TestFlagNormalizeRejectsInvalidDashboardURLScheme(t *testing.T) {
 
 func TestFlagNormalizeAcceptsValidMQEndpoint(t *testing.T) {
 	flags := &Flag{
+		MQMode:         MQModeNATS,
 		Store:          StoreSQLite,
 		DBSQLiteFile:   "/tmp/hub.sqlite",
 		MQNatsEndpoint: "nats://127.0.0.1:4222",
@@ -165,7 +166,7 @@ func TestFlagNormalizeAcceptsValidMQEndpoint(t *testing.T) {
 	flags.Normalize(false)
 
 	assert.Equal(t, "nats://127.0.0.1:4222", flags.MQNatsEndpoint)
-	assert.False(t, flags.MQEmbedded)
+	assert.Equal(t, MQModeNATS, flags.MQMode)
 }
 
 func TestFlagNormalizeRejectsMQEndpointWithEnableNats(t *testing.T) {
@@ -173,16 +174,17 @@ func TestFlagNormalizeRejectsMQEndpointWithEnableNats(t *testing.T) {
 		Store:          StoreSQLite,
 		DBSQLiteFile:   "/tmp/hub.sqlite",
 		MQNatsEndpoint: "nats://127.0.0.1:4222",
-		MQEmbedded:     true,
+		MQMode:         MQModeEmbedded,
 	}
 
-	require.PanicsWithError(t, "exactly one of MQNatsEndpoint or MQEmbedded must be set", func() {
+	require.PanicsWithError(t, "mq-nats-endpoint cannot be used with mq-mode=embedded", func() {
 		flags.Normalize(false)
 	})
 }
 
 func TestFlagNormalizeRejectsInvalidMQEndpoint(t *testing.T) {
 	flags := &Flag{
+		MQMode:         MQModeNATS,
 		Store:          StoreSQLite,
 		DBSQLiteFile:   "/tmp/hub.sqlite",
 		MQNatsEndpoint: "http://127.0.0.1:4222",
@@ -193,31 +195,50 @@ func TestFlagNormalizeRejectsInvalidMQEndpoint(t *testing.T) {
 	})
 }
 
-func TestFlagNormalizeRequiresMQEndpointOrEnableNats(t *testing.T) {
-	flags := &Flag{
-		Store:        StoreSQLite,
-		DBSQLiteFile: "/tmp/hub.sqlite",
+func TestFlagNormalizeMQModes(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		mode     string
+		endpoint string
+		want     string
+		failure  string
+	}{
+		{name: "default", want: MQModeEmbedded},
+		{name: "embedded", mode: MQModeEmbedded, want: MQModeEmbedded},
+		{name: "external", mode: MQModeNATS, endpoint: "nats://localhost:4222", want: MQModeNATS},
+		{name: "default rejects endpoint", endpoint: "nats://localhost:4222", failure: "mq-nats-endpoint cannot be used with mq-mode=embedded"},
+		{name: "embedded rejects endpoint", mode: MQModeEmbedded, endpoint: "nats://localhost:4222", failure: "mq-nats-endpoint cannot be used with mq-mode=embedded"},
+		{name: "external needs endpoint", mode: MQModeNATS, failure: "mq-nats-endpoint is required when mq-mode=nats"},
+		{name: "unknown", mode: "unknown", failure: `unsupported MQ mode "unknown"`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := &Flag{SeedHubData: "{}", MQMode: tc.mode, MQNatsEndpoint: tc.endpoint}
+			if tc.failure != "" {
+				require.PanicsWithError(t, tc.failure, func() { f.Normalize(false) })
+				return
+			}
+			f.Normalize(false)
+			assert.Equal(t, tc.want, f.MQMode)
+			assert.Equal(t, tc.endpoint, f.MQNatsEndpoint)
+		})
 	}
-
-	require.PanicsWithError(t, "exactly one of MQNatsEndpoint or MQEmbedded must be set", func() {
-		flags.Normalize(false)
-	})
 }
 
 func TestFlagNormalizeAcceptsEnableNats(t *testing.T) {
 	flags := &Flag{
 		Store:        StoreSQLite,
 		DBSQLiteFile: "/tmp/hub.sqlite",
-		MQEmbedded:   true,
+		MQMode:       MQModeEmbedded,
 	}
 
 	flags.Normalize(false)
 
-	assert.True(t, flags.MQEmbedded)
+	assert.Equal(t, MQModeEmbedded, flags.MQMode)
 }
 
 func TestFlagNormalizeInprocClearsListenAndMQ(t *testing.T) {
 	flags := &Flag{
+		MQMode:         MQModeNATS,
 		Store:          StoreSQLite,
 		DBSQLiteFile:   "/tmp/hub.sqlite",
 		ControlListen:  "127.0.0.1:7071",
@@ -235,7 +256,7 @@ func TestFlagNormalizeInprocClearsListenAndMQ(t *testing.T) {
 	assert.Empty(t, flags.AdminListen)
 	assert.Empty(t, flags.WatchListen)
 	assert.Empty(t, flags.MQNatsEndpoint)
-	assert.True(t, flags.MQEmbedded)
+	assert.Equal(t, MQModeEmbedded, flags.MQMode)
 }
 
 func TestFlagInferStoreDefaultsToMemory(t *testing.T) {

@@ -19,7 +19,7 @@ type InfoServiceServerImpl struct {
 func (s *InfoServiceServerImpl) GetInfo() skeled.Info {
 	natsPort := 0
 	mqEndpoint := s.Flag.MQNatsEndpoint
-	if s.Flag.MQEmbedded && !s.InprocFlag.Enabled {
+	if s.Flag.MQMode == flag.MQModeEmbedded && !s.InprocFlag.Enabled {
 		natsPort = s.NATSServer.Port()
 		mqEndpoint = ""
 	}
@@ -28,7 +28,7 @@ func (s *InfoServiceServerImpl) GetInfo() skeled.Info {
 		ApiPort:        s.Flag.ControlPort(),
 		RedisPort:      s.Flag.WatchPort(), // Keep the same port for older Link and Portal clients.
 		WatchPort:      s.Flag.WatchPort(),
-		MqEmbedded:     s.Flag.MQEmbedded,
+		MqEmbedded:     s.Flag.MQMode == flag.MQModeEmbedded,
 		MqNatsPort:     natsPort,
 		MqNatsEndpoint: mqEndpoint,
 		NatsPort:       natsPort,

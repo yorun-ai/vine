@@ -67,8 +67,8 @@ spec:
               value: 0.0.0.0:7072
             - name: VINE_DB_SQLITE_FILE
               value: /data/hub.sqlite
-            - name: VINE_MQ_EMBEDDED
-              value: "true"
+            - name: VINE_MQ_MODE
+              value: "embedded"
           ports:
             - name: control
               containerPort: 7071

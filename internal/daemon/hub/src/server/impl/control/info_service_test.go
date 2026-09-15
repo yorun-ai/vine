@@ -54,11 +54,11 @@ func TestHubInfoServiceReturnsNATSServerPortWhenEnabled(t *testing.T) {
 		Flag: &flag.Flag{
 			ControlListen: ":7071",
 			WatchListen:   ":7072",
-			MQEmbedded:    true,
+			MQMode:        flag.MQModeEmbedded,
 		},
 		NATSServer: &natsserver.NATSServer{
 			InprocFlag: &app.InternalInprocFlag{},
-			Flag:       &flag.Flag{MQEmbedded: true},
+			Flag:       &flag.Flag{MQMode: flag.MQModeEmbedded},
 		},
 	}
 
@@ -98,7 +98,7 @@ func TestHubInfoServicePreservesOldClientPort(t *testing.T) {
 func TestHubInfoServiceInprocEmbeddedMQ(t *testing.T) {
 	service := &InfoServiceServerImpl{
 		InprocFlag: &app.InternalInprocFlag{Enabled: true},
-		Flag:       &flag.Flag{ControlListen: ":7071", WatchListen: ":7072", MQEmbedded: true},
+		Flag:       &flag.Flag{ControlListen: ":7071", WatchListen: ":7072", MQMode: flag.MQModeEmbedded},
 	}
 	info := service.GetInfo()
 	assert.True(t, info.MqEmbedded)

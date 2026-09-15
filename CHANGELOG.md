@@ -19,9 +19,11 @@ are not part of the public compatibility commitment.
 
 ### Changed
 
-- Configure Hub MQ using `--mq-embedded` and `--mq-nats-endpoint` (environment:
-  `VINE_MQ_EMBEDDED`, `VINE_MQ_NATS_ENDPOINT`). Previous MQ input names remain
-  accepted with a deprecation warning; explicit new inputs take precedence.
+- Configure Hub MQ using `--mq-mode=embedded|nats` (default: `embedded`) and
+  `--mq-nats-endpoint` (environment: `VINE_MQ_MODE`, `VINE_MQ_NATS_ENDPOINT`).
+  Embedded mode rejects an endpoint; nats mode requires one. The published
+  `mq-embedded-nats` and `mq-external-nats-url` inputs remain accepted at the CLI
+  boundary with a deprecation warning; explicit new inputs take precedence.
 
 - Hub MQ information explicitly reports `mqEmbedded`, `mqNatsPort`, and
   `mqNatsEndpoint`. Link prefers these fields while retaining compatibility

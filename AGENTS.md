@@ -90,7 +90,8 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
   approved patch version.
 - Hub defaults to no-db mode with a required seed YAML file and read-only
   configuration. Explicit SQLite or PostgreSQL selects writable persistence.
-  Deployments must still explicitly choose exactly one of embedded or external NATS.
+  Hub defaults to embedded MQ. External NATS requires mq-mode=nats and an endpoint;
+  embedded mode rejects an external endpoint.
 - For CI or publication changes, read `.github/CI.md` for required gates,
   release validation, concurrency, recovery, and dependency security policy.
 

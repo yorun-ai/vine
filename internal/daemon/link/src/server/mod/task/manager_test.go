@@ -65,7 +65,7 @@ func newTestManager(t *testing.T) (*Manager, func()) {
 
 	natsModule := &hubnatsserver.NATSServer{
 		InprocFlag: &internalapp.InternalInprocFlag{Enabled: true},
-		Flag:       &hubflag.Flag{MQEmbedded: true},
+		Flag:       &hubflag.Flag{MQMode: hubflag.MQModeEmbedded},
 	}
 	natsModule.DIInit()
 

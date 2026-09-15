@@ -21,9 +21,9 @@ const (
 	// Deprecated: use FlagHubWatchListen.
 	FlagHubRedisListen = "redis-listen"
 
-	FlagHubMQEmbedded     = "mq-embedded"
+	FlagHubMQMode         = "mq-mode"
 	FlagHubMQNatsEndpoint = "mq-nats-endpoint"
-	// Deprecated: use FlagHubMQEmbedded.
+	// Deprecated: use FlagHubMQMode.
 	FlagHubMQEmbeddedNats = "mq-embedded-nats"
 	// Deprecated: use FlagHubMQNatsEndpoint.
 	FlagHubMQExternalNatsURL = "mq-external-nats-url"
@@ -42,9 +42,9 @@ const (
 	// Deprecated: use EnvHubWatchListen.
 	EnvHubRedisListen = "VINE_REDIS_LISTEN"
 
-	EnvHubMQEmbedded     = "VINE_MQ_EMBEDDED"
+	EnvHubMQMode         = "VINE_MQ_MODE"
 	EnvHubMQNatsEndpoint = "VINE_MQ_NATS_ENDPOINT"
-	// Deprecated: use EnvHubMQEmbedded.
+	// Deprecated: use EnvHubMQMode.
 	EnvHubMQEmbeddedNats = "VINE_MQ_EMBEDDED_NATS"
 	// Deprecated: use EnvHubMQNatsEndpoint.
 	EnvHubMQExternalNatsURL = "VINE_MQ_EXTERNAL_NATS_URL"
@@ -117,10 +117,11 @@ func newHubServeFlags() []ucli.Flag {
 			Sources: ucli.EnvVars(EnvHubDBPostgresURL),
 			Usage:   "hub PostgreSQL database URL",
 		},
-		&ucli.BoolFlag{
-			Name:    FlagHubMQEmbedded,
-			Sources: ucli.EnvVars(EnvHubMQEmbedded),
-			Usage:   "start an embedded NATS server",
+		&ucli.StringFlag{
+			Name:    FlagHubMQMode,
+			Sources: ucli.EnvVars(EnvHubMQMode),
+			Value:   hubflag.MQModeEmbedded,
+			Usage:   "MQ mode: embedded or nats",
 		},
 		&ucli.StringFlag{
 			Name:    FlagHubMQNatsEndpoint,
@@ -130,7 +131,7 @@ func newHubServeFlags() []ucli.Flag {
 		&ucli.BoolFlag{
 			Name:    FlagHubMQEmbeddedNats,
 			Sources: ucli.EnvVars(EnvHubMQEmbeddedNats),
-			Usage:   "deprecated: use --mq-embedded or VINE_MQ_EMBEDDED",
+			Usage:   "deprecated: use --mq-mode or VINE_MQ_MODE",
 		},
 		&ucli.StringFlag{
 			Name:    FlagHubMQExternalNatsURL,
@@ -171,12 +172,13 @@ func newHubServeCommand() *ucli.Command {
 				return fmt.Errorf("unexpected args for %s", commandHubServe)
 			}
 
+			mqMode, mqEndpoint := hubMQConfig(cmd)
 			flags := hubflag.Flag{
 				ControlListen:     cmd.String(FlagHubControlListen),
 				AdminListen:       cmd.String(FlagHubAdminListen),
 				WatchListen:       hubWatchListen(cmd),
-				MQNatsEndpoint:    hubMQNatsEndpoint(cmd),
-				MQEmbedded:        hubMQEmbedded(cmd),
+				MQMode:            mqMode,
+				MQNatsEndpoint:    mqEndpoint,
 				SeedHubDataFile:   cmd.String(FlagSeedHubDataFile),
 				SeedHubSourceFile: cmd.String(FlagSeedHubSourceFile),
 				SeedHubVarsFile:   cmd.String(FlagSeedHubVarsFile),
@@ -203,22 +205,29 @@ func hubWatchListen(cmd *ucli.Command) string {
 	return cmd.String(FlagHubWatchListen)
 }
 
-func hubMQEmbedded(cmd *ucli.Command) bool {
-	if cmd.IsSet(FlagHubMQEmbeddedNats) {
-		logger.Warn("--mq-embedded-nats and VINE_MQ_EMBEDDED_NATS are deprecated; use --mq-embedded or VINE_MQ_EMBEDDED")
-		if !cmd.IsSet(FlagHubMQEmbedded) {
-			return cmd.Bool(FlagHubMQEmbeddedNats)
-		}
-	}
-	return cmd.Bool(FlagHubMQEmbedded)
-}
-
-func hubMQNatsEndpoint(cmd *ucli.Command) string {
+// hubMQConfig translates only published compatibility inputs at the CLI boundary.
+func hubMQConfig(cmd *ucli.Command) (string, string) {
+	endpoint := cmd.String(FlagHubMQNatsEndpoint)
 	if cmd.IsSet(FlagHubMQExternalNatsURL) {
-		logger.Warn("--mq-external-nats-url and VINE_MQ_EXTERNAL_NATS_URL are deprecated; use --mq-nats-endpoint or VINE_MQ_NATS_ENDPOINT")
+		logger.Warn("--mq-external-nats-url / VINE_MQ_EXTERNAL_NATS_URL is deprecated; use --mq-mode=nats and --mq-nats-endpoint")
 		if !cmd.IsSet(FlagHubMQNatsEndpoint) {
-			return cmd.String(FlagHubMQExternalNatsURL)
+			endpoint = cmd.String(FlagHubMQExternalNatsURL)
 		}
 	}
-	return cmd.String(FlagHubMQNatsEndpoint)
+	if cmd.IsSet(FlagHubMQEmbeddedNats) {
+		logger.Warn("--mq-embedded-nats / VINE_MQ_EMBEDDED_NATS is deprecated; use --mq-mode")
+	}
+	mode := cmd.String(FlagHubMQMode)
+	if !cmd.IsSet(FlagHubMQMode) {
+		if cmd.IsSet(FlagHubMQEmbeddedNats) {
+			if cmd.Bool(FlagHubMQEmbeddedNats) {
+				mode = hubflag.MQModeEmbedded
+			} else {
+				mode = hubflag.MQModeNATS
+			}
+		} else if cmd.IsSet(FlagHubMQExternalNatsURL) && !cmd.IsSet(FlagHubMQNatsEndpoint) && endpoint != "" {
+			mode = hubflag.MQModeNATS
+		}
+	}
+	return mode, endpoint
 }

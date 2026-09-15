@@ -17,6 +17,9 @@ const (
 	HubDefaultDashboardURL     = "http://:7099/"
 	HubMTLSDefaultDashboardURL = "https://:7099/"
 
+	MQModeEmbedded = "embedded"
+	MQModeNATS     = "nats"
+
 	StoreMemory     = "memory"
 	StoreSQLite     = "sqlite"
 	StorePostgreSQL = "postgres"
@@ -30,8 +33,8 @@ type Flag struct {
 	AdminListen   string
 	WatchListen   string
 
+	MQMode         string
 	MQNatsEndpoint string
-	MQEmbedded     bool
 
 	Store         string
 	NoDB          bool
@@ -63,7 +66,7 @@ func (f *Flag) Normalize(inproc bool) {
 		f.AdminListen = ""
 		f.WatchListen = ""
 		f.MQNatsEndpoint = ""
-		f.MQEmbedded = true
+		f.MQMode = MQModeEmbedded
 		return
 	}
 
@@ -115,11 +118,17 @@ func (f *Flag) normalizeStore() {
 }
 
 func (f *Flag) normalizeMQ() {
-	if (f.MQNatsEndpoint != "") == f.MQEmbedded {
-		vpre.Panicf("exactly one of MQNatsEndpoint or MQEmbedded must be set")
+	if f.MQMode == "" {
+		f.MQMode = MQModeEmbedded
 	}
-	if f.MQNatsEndpoint != "" {
+	switch f.MQMode {
+	case MQModeEmbedded:
+		vpre.Check(f.MQNatsEndpoint == "", "mq-nats-endpoint cannot be used with mq-mode=embedded")
+	case MQModeNATS:
+		vpre.CheckNotEmpty(f.MQNatsEndpoint, "mq-nats-endpoint is required when mq-mode=nats")
 		vpre.CheckNilError(validateMQNatsEndpoint(f.MQNatsEndpoint), "hub flag normalize failed")
+	default:
+		vpre.Panicf("unsupported MQ mode %q", f.MQMode)
 	}
 }
 

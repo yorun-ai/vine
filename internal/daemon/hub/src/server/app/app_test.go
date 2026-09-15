@@ -86,6 +86,7 @@ func TestHubAppDIInitNormalizesFlagAndSetsRunFlag(t *testing.T) {
 		AppFlag:    &internalapp.RunFlag{},
 		InprocFlag: &internalapp.InternalInprocFlag{},
 		Flag: &flag.Flag{
+			MQMode:         flag.MQModeNATS,
 			Store:          flag.StoreSQLite,
 			DBSQLiteFile:   "/tmp/hub.sqlite",
 			MQNatsEndpoint: "nats://127.0.0.1:4222",
@@ -105,7 +106,7 @@ func TestHubAppDIInitNormalizesFlagAndSetsRunFlag(t *testing.T) {
 	assert.Equal(t, flag.HubDefaultWatchListen, spec.Flag.WatchListen)
 	assert.Equal(t, "/tmp/hub.sqlite", spec.Flag.DBSQLiteFile)
 	assert.Equal(t, "nats://127.0.0.1:4222", spec.Flag.MQNatsEndpoint)
-	assert.False(t, spec.Flag.MQEmbedded)
+	assert.Equal(t, flag.MQModeNATS, spec.Flag.MQMode)
 }
 
 func TestHubAppDIInitKeepsPGConnUrl(t *testing.T) {
@@ -113,6 +114,7 @@ func TestHubAppDIInitKeepsPGConnUrl(t *testing.T) {
 		AppFlag:    &internalapp.RunFlag{},
 		InprocFlag: &internalapp.InternalInprocFlag{},
 		Flag: &flag.Flag{
+			MQMode:         flag.MQModeNATS,
 			Store:          flag.StorePostgreSQL,
 			DBPostgresURL:  "postgres://demo:demo@127.0.0.1:5432/hub",
 			MQNatsEndpoint: "nats://127.0.0.1:4222",
@@ -128,7 +130,7 @@ func TestHubAppDIInitKeepsPGConnUrl(t *testing.T) {
 	assert.Equal(t, flag.StorePostgreSQL, spec.Flag.Store)
 	assert.Equal(t, "postgres://demo:demo@127.0.0.1:5432/hub", spec.Flag.DBPostgresURL)
 	assert.Equal(t, "nats://127.0.0.1:4222", spec.Flag.MQNatsEndpoint)
-	assert.False(t, spec.Flag.MQEmbedded)
+	assert.Equal(t, flag.MQModeNATS, spec.Flag.MQMode)
 	assert.Equal(t, flag.HubDefaultAdminListen, spec.AppFlag.ListenAddr)
 }
 
@@ -139,7 +141,7 @@ func TestHubAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 		Flag: &flag.Flag{
 			Store:        flag.StoreSQLite,
 			DBSQLiteFile: "/tmp/hub.sqlite",
-			MQEmbedded:   true,
+			MQMode:       flag.MQModeEmbedded,
 		},
 	}
 
@@ -156,7 +158,7 @@ func TestHubAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 	assert.Empty(t, spec.Flag.ControlListen)
 	assert.Empty(t, spec.Flag.AdminListen)
 	assert.Empty(t, spec.Flag.WatchListen)
-	assert.True(t, spec.Flag.MQEmbedded)
+	assert.Equal(t, flag.MQModeEmbedded, spec.Flag.MQMode)
 }
 
 func TestHubAppMainServicerExcludesControlAPIHandlers(t *testing.T) {
@@ -174,7 +176,7 @@ func TestHubAppDIInitKeepsEnableNatsOutsideInproc(t *testing.T) {
 		Flag: &flag.Flag{
 			Store:        flag.StoreSQLite,
 			DBSQLiteFile: "/tmp/hub.sqlite",
-			MQEmbedded:   true,
+			MQMode:       flag.MQModeEmbedded,
 		},
 	}
 
@@ -184,7 +186,7 @@ func TestHubAppDIInitKeepsEnableNatsOutsideInproc(t *testing.T) {
 		t.Fatalf("unexpected daemon version: got %q, want Vine version %q", got, want)
 	}
 
-	assert.True(t, spec.Flag.MQEmbedded)
+	assert.Equal(t, flag.MQModeEmbedded, spec.Flag.MQMode)
 }
 
 func TestHubAppModuleTypesIncludesRuntimeModulesInInprocMode(t *testing.T) {
@@ -222,7 +224,7 @@ func TestHubAppModuleTypesIncludesRuntimeModulesInNormalMode(t *testing.T) {
 func TestHubAppModuleTypesIncludesRuntimeModulesWhenEnableNats(t *testing.T) {
 	spec := &HubApp{
 		InprocFlag: &internalapp.InternalInprocFlag{},
-		Flag:       &flag.Flag{MQEmbedded: true},
+		Flag:       &flag.Flag{MQMode: flag.MQModeEmbedded},
 	}
 
 	assert.Equal(t, []reflect.Type{

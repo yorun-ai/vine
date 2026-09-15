@@ -35,7 +35,7 @@ func runTestNATSServerDIInit(t *testing.T, server *NATSServer) {
 func TestNATSServerDIInitRegistersInprocServer(t *testing.T) {
 	server := &NATSServer{
 		InprocFlag: &app.InternalInprocFlag{Enabled: true},
-		Flag:       &flag.Flag{MQEmbedded: true},
+		Flag:       &flag.Flag{MQMode: flag.MQModeEmbedded},
 	}
 
 	runTestNATSServerDIInit(t, server)
@@ -52,7 +52,7 @@ func TestNATSServerDIInitRegistersInprocServer(t *testing.T) {
 func TestNATSServerCreatesMemoryStreams(t *testing.T) {
 	server := &NATSServer{
 		InprocFlag: &app.InternalInprocFlag{Enabled: true},
-		Flag:       &flag.Flag{MQEmbedded: true},
+		Flag:       &flag.Flag{MQMode: flag.MQModeEmbedded},
 	}
 
 	runTestNATSServerDIInit(t, server)
@@ -92,7 +92,7 @@ func TestNATSServerAfterAppStopRemovesStoreDir(t *testing.T) {
 
 	server := &NATSServer{
 		InprocFlag: &app.InternalInprocFlag{},
-		Flag:       &flag.Flag{MQEmbedded: true},
+		Flag:       &flag.Flag{MQMode: flag.MQModeEmbedded},
 	}
 
 	runTestNATSServerDIInit(t, server)
@@ -133,7 +133,7 @@ func TestNATSServerRemovesStoreDirWhenCreationFails(t *testing.T) {
 func TestNATSServerDIInitPublishesMQEndpointWhenEnableNats(t *testing.T) {
 	server := &NATSServer{
 		InprocFlag: &app.InternalInprocFlag{},
-		Flag:       &flag.Flag{MQEmbedded: true},
+		Flag:       &flag.Flag{MQMode: flag.MQModeEmbedded},
 	}
 
 	prev := detectHostForMQEndpoint
@@ -162,7 +162,7 @@ func TestNATSServerUsesMutualTLS(t *testing.T) {
 	portalIdentity := ca.Identity(t, daemon.PortalIdentity.SPIFFEPath())
 	server := &NATSServer{
 		InprocFlag: &app.InternalInprocFlag{},
-		Flag:       &flag.Flag{MQEmbedded: true},
+		Flag:       &flag.Flag{MQMode: flag.MQModeEmbedded},
 		Identity:   hubIdentity,
 	}
 
