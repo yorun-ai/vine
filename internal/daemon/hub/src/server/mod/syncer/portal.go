@@ -17,6 +17,11 @@ func (s *Syncer) SyncPortalSite(site *core.PortalSite) {
 	s.removeRenamedKeyLocked(s.portalSiteNamesById, site.Id, site.Name, watched.FormatPortalSiteKey)
 	s.WatchServer.SetAndNotify(watched.FormatPortalSiteKey(site.Name), vcode.MustMarshalJsonS(toWatchedPortalSite(site)))
 	s.saveNameByIdLocked(s.portalSiteNamesById, site.Id, site.Name)
+	for _, rule := range s.portalRulesById {
+		if rule.RouteSiteName == site.Name {
+			s.WatchServer.SetAndNotify(watched.FormatPortalRuleKey(rule.Name), vcode.MustMarshalJsonS(s.toWatchedPortalRule(rule, site)))
+		}
+	}
 }
 
 func (s *Syncer) RemovePortalSite(site *core.PortalSite) {
@@ -25,6 +30,11 @@ func (s *Syncer) RemovePortalSite(site *core.PortalSite) {
 
 	s.WatchServer.DeleteAndNotify(watched.FormatPortalSiteKey(site.Name))
 	delete(s.portalSiteNamesById, site.Id)
+	for _, rule := range s.portalRulesById {
+		if rule.RouteSiteName == site.Name {
+			s.WatchServer.SetAndNotify(watched.FormatPortalRuleKey(rule.Name), vcode.MustMarshalJsonS(ToWatchedPortalRule(rule)))
+		}
+	}
 }
 
 func (s *Syncer) SyncPortalRule(rule *core.PortalRule, sites ...*core.PortalSite) {
@@ -34,6 +44,7 @@ func (s *Syncer) SyncPortalRule(rule *core.PortalRule, sites ...*core.PortalSite
 	s.removeRenamedKeyLocked(s.portalRuleNamesById, rule.Id, rule.Name, watched.FormatPortalRuleKey)
 	s.WatchServer.SetAndNotify(watched.FormatPortalRuleKey(rule.Name), vcode.MustMarshalJsonS(s.toWatchedPortalRule(rule, sites...)))
 	s.saveNameByIdLocked(s.portalRuleNamesById, rule.Id, rule.Name)
+	s.portalRulesById[rule.Id] = clonePortalRule(rule)
 }
 
 func (s *Syncer) RemovePortalRule(rule *core.PortalRule) {
@@ -42,6 +53,12 @@ func (s *Syncer) RemovePortalRule(rule *core.PortalRule) {
 
 	s.WatchServer.DeleteAndNotify(watched.FormatPortalRuleKey(rule.Name))
 	delete(s.portalRuleNamesById, rule.Id)
+	delete(s.portalRulesById, rule.Id)
+}
+
+func clonePortalRule(rule *core.PortalRule) *core.PortalRule {
+	copy := *rule
+	return &copy
 }
 
 func (s *Syncer) SyncPortalCert(cert *core.PortalCert) {
