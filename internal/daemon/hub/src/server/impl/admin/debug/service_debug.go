@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/mtls"
@@ -20,10 +21,11 @@ import (
 type ServiceDebugApiServiceServerImpl struct {
 	skeled.DefaultServiceDebugApiServiceServer
 
-	RegistryRepo       core.RegistryRepo       `inject:""`
-	PortalInstanceRepo core.PortalInstanceRepo `inject:""`
-	SchemaRepo         core.SchemaRepo         `inject:""`
-	Identity           *mtls.Identity          `inject:""`
+	RegistryRepo       core.RegistryRepo               `inject:""`
+	PortalInstanceRepo core.PortalInstanceRepo         `inject:""`
+	SchemaRepo         core.SchemaRepo                 `inject:""`
+	Identity           *mtls.Identity                  `inject:""`
+	InprocFlag         *internalapp.InternalInprocFlag `inject:""`
 }
 
 func (s *ServiceDebugApiServiceServerImpl) defaultBuilder() _DebugDefaultBuilder {
@@ -41,6 +43,8 @@ func (s *ServiceDebugApiServiceServerImpl) ListPortalInstances() []skeled.Servic
 		ret = append(ret, skeled.ServiceDebugPortalInstance{
 			InstanceId: instance.InstanceId,
 			Version:    instance.Version,
+			StartedAt:  skel.NewTimestamp(instance.StartedAt),
+			Inproc:     s.InprocFlag.Enabled,
 		})
 	}
 	return vslice.SortBy(ret, func(a skeled.ServiceDebugPortalInstance, b skeled.ServiceDebugPortalInstance) bool {

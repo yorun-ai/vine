@@ -10,6 +10,7 @@ import (
 	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/internal/core/skel"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubinfo"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/flag"
 	"go.yorun.ai/vine/internal/util/goutil"
 )
@@ -19,17 +20,24 @@ import (
 // when it could not unregister itself.
 var heartbeatInterval = 10 * time.Second
 
+// portalStartedAt is the start of this Portal process, reported to Hub so the
+// Dashboard can tell a recently restarted instance from a stable one.
+var portalStartedAt = time.Now()
+
 var heartbeatLogger = logger.New("daemon:portal:heartbeat")
 
 // Heartbeat registers this Portal instance with Hub and keeps the registration
-// alive, so Hub can report which Portals are serving. Hub forgets Portal
-// instances when it restarts, and the next heartbeat registers again.
+// alive, so Hub can report which Portals are serving. Standalone Portal shares
+// Hub's process, so it registers without a heartbeat, like an application
+// instance. Hub forgets Portal instances when it restarts, and the next
+// heartbeat registers again.
 type Heartbeat struct {
 	app.BaseModule
 
 	Context              context.Context                    `inject:""`
 	Flag                 *flag.Flag                         `inject:""`
 	App                  runtime.App                        `inject:""`
+	HubInfo              *hubinfo.HubInfo                   `inject:""`
 	PortalRegistryClient skeled.PortalRegistryServiceClient `inject:""`
 
 	instanceId skel.UUID
@@ -37,14 +45,14 @@ type Heartbeat struct {
 }
 
 func (h *Heartbeat) AfterAppStart() {
-	if h.Flag.HubInprocMode {
-		// Hub and Portal share the process in inproc mode, where Hub keeps no
-		// separate Portal liveness to report.
-		return
-	}
-
 	h.instanceId = skel.NewUUID(uuid.MustParse(h.App.InstanceId()))
 	h.register()
+
+	if h.Flag.HubInprocMode {
+		// Standalone Portal lives in Hub's process, so its registration cannot
+		// outlive Hub and needs no liveness refresh.
+		return
+	}
 
 	heartbeatCtx, cancel := context.WithCancel(h.Context)
 	h.stop = cancel
@@ -53,29 +61,41 @@ func (h *Heartbeat) AfterAppStart() {
 			return
 		}
 		// Hub no longer knows this instance, which is what a Hub restart looks
-		// like, so register again.
+		// like. A restarted Hub can also advertise a new watch endpoint, so
+		// refresh Hub information before registering again.
+		goutil.RunWithRecover(heartbeatRecovered, h.HubInfo.Refresh)
 		h.register()
 	})
 }
 
-func (h *Heartbeat) AfterAppStop() {
+// BeforeAppStop unregisters while the application context is still live. A
+// cancelled context cannot reach Hub, and Hub expires the lease on its own when
+// this call cannot reach Hub.
+func (h *Heartbeat) BeforeAppStop() {
 	if h.stop != nil {
 		h.stop()
 		h.stop = nil
 	}
-	if h.Flag.HubInprocMode {
-		return
-	}
 
-	// Best effort: Hub expires the lease on its own when this call cannot reach Hub.
 	goutil.RunWithRecover(func(recovered any) {
 		heartbeatLogger.Warn("portal unregister from Hub failed", "error", recovered)
 	}, h.PortalRegistryClient.Unregister, h.instanceId)
 }
 
 func (h *Heartbeat) register() {
-	h.PortalRegistryClient.Register(skeled.PortalRegistration{
-		InstanceId: h.instanceId,
-		Version:    h.App.Version(),
+	// Best effort: a Hub without this service leaves the Portal running, and the
+	// heartbeat registers again once Hub answers.
+	goutil.RunWithRecover(func(recovered any) {
+		heartbeatLogger.Warn("portal register with Hub failed", "error", recovered)
+	}, func() {
+		h.PortalRegistryClient.Register(skeled.PortalRegistration{
+			InstanceId: h.instanceId,
+			Version:    h.App.Version(),
+			StartedAt:  skel.NewTimestamp(portalStartedAt),
+		})
 	})
+}
+
+func heartbeatRecovered(recovered any) {
+	heartbeatLogger.Warn("portal hub information refresh failed", "error", recovered)
 }

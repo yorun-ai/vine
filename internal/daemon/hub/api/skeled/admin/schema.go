@@ -11,7 +11,7 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "5fde2d9b",
+	Hash:        "1901ed5a",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
 		CompilerVersion: "v0.19.3",
@@ -2193,7 +2193,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "ServiceDebugPortalInstance",
 			SkelName:    "vine.hub.admin.ServiceDebugPortalInstance",
 			Description: "Portal instance registered with Hub",
-			Hash:        "14c26675",
+			Hash:        "b99587f1",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "instanceId",
@@ -2209,6 +2209,22 @@ var _DomainSchema = &skel.DomainSchema{
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
+					},
+				},
+				{
+					Name:        "startedAt",
+					Description: "Time this Portal process started",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarTimestamp,
+					},
+				},
+				{
+					Name:        "inproc",
+					Description: "Whether this Portal shares the Hub process in standalone mode",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarBool,
 					},
 				},
 			},
@@ -5424,7 +5440,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "ServiceDebugApiService",
 			SkelName:    "vine.hub.admin.ServiceDebugApiService",
 			Description: "Hub Dashboard Service debugging service",
-			Hash:        "11df3b5c",
+			Hash:        "b82c87a5",
 			Pub:         false,
 			Api:         true,
 			AuthMode:    skel.AuthModeNoAuth,
@@ -5451,7 +5467,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "listPortalInstances",
 					SkelName:    "listPortalInstances",
 					Description: "List registered Portal instances",
-					Hash:        "b35c9e4f",
+					Hash:        "cc386f98",
 					AuthMode:    skel.AuthModeUnset,
 					ResultType: &skel.TypeSchema{
 						Kind: skel.TypeKindList,

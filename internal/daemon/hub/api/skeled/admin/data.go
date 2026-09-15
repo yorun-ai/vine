@@ -1152,6 +1152,10 @@ type ServiceDebugPortalInstance struct {
 	InstanceId string `json:"instanceId"`
 	// Version Portal version
 	Version string `json:"version"`
+	// StartedAt Time this Portal process started
+	StartedAt skel.Timestamp `json:"startedAt"`
+	// Inproc Whether this Portal shares the Hub process in standalone mode
+	Inproc bool `json:"inproc"`
 }
 
 // Clone returns a value-isolated copy of the generated data.

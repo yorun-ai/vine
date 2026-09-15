@@ -1053,6 +1053,14 @@ export type ServiceDebugPortalInstance = {
    * Portal version.
    */
   version:    string;
+  /**
+   * Time this Portal process started.
+   */
+  startedAt:  string;
+  /**
+   * Whether this Portal shares the Hub process in standalone mode.
+   */
+  inproc:     boolean;
 }
 /**
  * Service called by Service Debug.

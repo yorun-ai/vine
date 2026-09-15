@@ -2096,7 +2096,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "ServiceDebugApiService",
 		SkelName:          "vine.hub.admin.ServiceDebugApiService",
-		Hash:              "11df3b5c",
+		Hash:              "b82c87a5",
 		ServerType:        reflect.TypeFor[ServiceDebugApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultServiceDebugApiServiceServer](),
 

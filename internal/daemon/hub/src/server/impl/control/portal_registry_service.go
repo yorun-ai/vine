@@ -18,6 +18,7 @@ func (s *PortalRegistryServiceServerImpl) Register(registration skeled.PortalReg
 	s.PortalInstanceRepo.SavePortalInstance(&core.PortalInstance{
 		InstanceId: registration.InstanceId.String(),
 		Version:    registration.Version,
+		StartedAt:  registration.StartedAt.Time,
 	})
 }
 

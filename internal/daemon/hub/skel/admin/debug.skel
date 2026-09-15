@@ -7,6 +7,12 @@ data ServiceDebugPortalInstance {
 
     @desc("Portal version")
     version: string
+
+    @desc("Time this Portal process started")
+    startedAt: timestamp
+
+    @desc("Whether this Portal shares the Hub process in standalone mode")
+    inproc: bool
 }
 
 @desc("Application instance called by Service Debug")
