@@ -15,7 +15,7 @@ type _DependencyGraph struct {
 }
 
 func newDependencyGraph(bounds []*_Bound) *_DependencyGraph {
-	sortedBounds := vslice.SortBy(bounds, func(left, right *_Bound) bool {
+	sortedBounds := vslice.SortBy(bounds, func(left *_Bound, right *_Bound) bool {
 		return compareTypeName(left.TargetType(), right.TargetType()) < 0
 	})
 	graph := &_DependencyGraph{
@@ -33,7 +33,7 @@ func newDependencyGraph(bounds []*_Bound) *_DependencyGraph {
 	return graph
 }
 
-func compareTypeName(left, right reflect.Type) int {
+func compareTypeName(left reflect.Type, right reflect.Type) int {
 	switch {
 	case left.String() < right.String():
 		return -1

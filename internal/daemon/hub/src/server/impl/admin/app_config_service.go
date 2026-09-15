@@ -122,7 +122,7 @@ func configItemStatus(schema *skel.ConfigSchema, value string, enumSchemas []*sk
 }
 
 func sortedServerAppConfigItems(items []_AppConfigListItem) []_AppConfigListItem {
-	return vslice.SortBy(items, func(a, b _AppConfigListItem) bool {
+	return vslice.SortBy(items, func(a _AppConfigListItem, b _AppConfigListItem) bool {
 		aStatusOrder := appConfigStatusOrder(a.ConfigItem.Status)
 		bStatusOrder := appConfigStatusOrder(b.ConfigItem.Status)
 		if aStatusOrder != bStatusOrder {

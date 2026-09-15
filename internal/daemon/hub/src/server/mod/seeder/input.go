@@ -27,7 +27,7 @@ type _SeedHubSourceFile struct {
 var seedVariable = regexp.MustCompile(`\$\{([^{}]*)\}`)
 var seedVariableSegment = regexp.MustCompile(`^[a-z][a-zA-Z0-9]*$`)
 
-func readSeedInput(inline, path string) ([]byte, error) {
+func readSeedInput(inline string, path string) ([]byte, error) {
 	if path != "" {
 		return os.ReadFile(path)
 	}
@@ -96,11 +96,11 @@ func walkSeedValues(node *yaml.Node, path string, visit func(*yaml.Node, string)
 
 // resolveSeedInput preserves YAML types for whole-field references. Substituted
 // variable values are literal data, not recursively evaluated templates.
-func resolveSeedInput(template, variables, source []byte) (*yaml.Node, core.FieldSources, error) {
+func resolveSeedInput(template []byte, variables []byte, source []byte) (*yaml.Node, core.FieldSources, error) {
 	return resolveSeedInputWithSchemas(template, variables, source, skel.RegisteredDomainSchemas())
 }
 
-func resolveSeedInputWithSchemas(template, variables, source []byte, domains []*skel.DomainSchema) (*yaml.Node, core.FieldSources, error) {
+func resolveSeedInputWithSchemas(template []byte, variables []byte, source []byte, domains []*skel.DomainSchema) (*yaml.Node, core.FieldSources, error) {
 	schema := newVarsSchema(domains)
 	node, err := parseSeedNode(template)
 	if err != nil {

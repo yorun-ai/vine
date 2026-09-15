@@ -5,7 +5,7 @@ package scheduler
 import (
 	"testing"
 
-	"go.yorun.ai/vine/internal/testutil/goroutineleak"
+	"go.yorun.ai/vine/internal/utilfortest/goroutineleak"
 )
 
 func TestGoroutineLeakSchedulerLifecycle(t *testing.T) {

@@ -6,6 +6,9 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
 
 - Target Go 1.27 syntax. Prefer `new` with a composite literal when creating a
   pointer, for example: `record := new(SomeStruct{Field: "value"})`.
+- Declare the type of every parameter and result independently. Write
+  `func f(key string, token string)`, never `func f(key, token string)`; the same
+  applies to results, named function types, function literals, and variables.
 
 ## Naming
 

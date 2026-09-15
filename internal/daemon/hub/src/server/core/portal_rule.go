@@ -172,7 +172,7 @@ func (m *PortalRuleCore) Update(id int, update PortalRuleUpdate) PortalRule {
 
 // normalizePortalRuleRoutePathPrefix validates a site-relative escaped path prefix.
 // Empty and root prefixes preserve the legacy prefix-stripping behavior.
-func normalizePortalRuleRoutePathPrefix(routeType, routePathPrefix string) string {
+func normalizePortalRuleRoutePathPrefix(routeType string, routePathPrefix string) string {
 	if routePathPrefix == "" {
 		return ""
 	}

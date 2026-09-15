@@ -232,7 +232,7 @@ func (s *_ProjectionState) projectMap(value reflect.Value, depth int) (any, erro
 		return map[string]any{"_value": "<unsupported-map-key>"}, nil
 	}
 	keys := value.MapKeys()
-	sort.Slice(keys, func(i, j int) bool { return keys[i].String() < keys[j].String() })
+	sort.Slice(keys, func(i int, j int) bool { return keys[i].String() < keys[j].String() })
 	result := make(map[string]any, len(keys))
 	for _, mapKey := range keys {
 		name := mapKey.String()

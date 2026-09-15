@@ -13,7 +13,7 @@ func TestGoSafelyExecutesFunction(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		done := make(chan int, 1)
 
-		GoSafely(func(a, b int) {
+		GoSafely(func(a int, b int) {
 			done <- a + b
 		}, 2, 5)
 		synctest.Wait()

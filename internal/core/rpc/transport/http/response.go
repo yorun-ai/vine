@@ -158,7 +158,8 @@ func writeResponseWithContentType(w http.ResponseWriter, rpcResponse spec.Respon
 }
 
 func encodeResponseToBytes(rpcResponse spec.Response, contentType string) []byte {
-	var result, errorBytes []byte
+	var result []byte
+	var errorBytes []byte
 	var encoded []byte
 	var err error
 	if contentType == ContentTypeCbor {

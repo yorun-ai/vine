@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/testutil/goroutineleak"
+	"go.yorun.ai/vine/internal/utilfortest/goroutineleak"
 )
 
 func TestGoroutineLeakRedisLockRefreshLifecycle(t *testing.T) {

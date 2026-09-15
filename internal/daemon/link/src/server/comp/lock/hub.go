@@ -10,15 +10,15 @@ type _HubLocker struct {
 	client hubskeled.LockServiceClient
 }
 
-func (l *_HubLocker) Acquire(ctx meta.Context, key, token string, ttlMillis int) bool {
+func (l *_HubLocker) Acquire(ctx meta.Context, key string, token string, ttlMillis int) bool {
 	return l.client.Acquire(key, token, ttlMillis, client.WithContext(ctx))
 }
 
-func (l *_HubLocker) Renew(ctx meta.Context, key, token string, ttlMillis int) bool {
+func (l *_HubLocker) Renew(ctx meta.Context, key string, token string, ttlMillis int) bool {
 	return l.client.Renew(key, token, ttlMillis, client.WithContext(ctx))
 }
 
-func (l *_HubLocker) Release(ctx meta.Context, key, token string) bool {
+func (l *_HubLocker) Release(ctx meta.Context, key string, token string) bool {
 	return l.client.Release(key, token, client.WithContext(ctx))
 }
 

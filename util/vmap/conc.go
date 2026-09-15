@@ -139,7 +139,7 @@ func (m *SyncMap[K, V]) LoadAndDelete(key K) (V, bool) {
 
 // Range calls iteratee for each entry until iteratee returns false.
 func (m *SyncMap[K, V]) Range(iteratee func(K, V) bool) {
-	m.dict.Range(func(key, value any) bool {
+	m.dict.Range(func(key any, value any) bool {
 		return iteratee(key.(K), value.(V))
 	})
 }

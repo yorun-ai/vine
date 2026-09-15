@@ -10,14 +10,14 @@ type LockServiceServerImpl struct {
 	Server *lockserver.Server `inject:""`
 }
 
-func (s *LockServiceServerImpl) Acquire(key, token string, ttlMillis int) bool {
+func (s *LockServiceServerImpl) Acquire(key string, token string, ttlMillis int) bool {
 	return s.Server.Acquire(key, token, ttlMillis)
 }
 
-func (s *LockServiceServerImpl) Renew(key, token string, ttlMillis int) bool {
+func (s *LockServiceServerImpl) Renew(key string, token string, ttlMillis int) bool {
 	return s.Server.Renew(key, token, ttlMillis)
 }
 
-func (s *LockServiceServerImpl) Release(key, token string) bool {
+func (s *LockServiceServerImpl) Release(key string, token string) bool {
 	return s.Server.Release(key, token)
 }

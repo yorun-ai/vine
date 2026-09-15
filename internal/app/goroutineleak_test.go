@@ -5,7 +5,7 @@ package app
 import (
 	"testing"
 
-	"go.yorun.ai/vine/internal/testutil/goroutineleak"
+	"go.yorun.ai/vine/internal/utilfortest/goroutineleak"
 )
 
 func TestGoroutineLeakAppHTTPServerLifecycle(t *testing.T) {

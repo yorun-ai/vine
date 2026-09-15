@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"testing"
 
-	"go.yorun.ai/vine/internal/testutil/goroutineleak"
+	"go.yorun.ai/vine/internal/utilfortest/goroutineleak"
 )
 
 func TestGoroutineLeakCanceledWebInprocRoundTripLifecycle(t *testing.T) {

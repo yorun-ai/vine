@@ -37,7 +37,7 @@ func (s *Server) DIInit() {
 	go s.sweep()
 }
 
-func (s *Server) checkRequest(key, token string) {
+func (s *Server) checkRequest(key string, token string) {
 	ex.PanicNewIfNot(s.Flag.LockMode == hublock.ModeEmbedded, ex.ServiceUnavailable, "Hub embedded lock service is not enabled")
 	ex.PanicNewIfNot(key != "" && token != "", ex.InvalidRequest, "lock key and token must not be empty")
 }
@@ -47,7 +47,7 @@ func leaseDuration(ttlMillis int) time.Duration {
 	return time.Duration(ttlMillis) * time.Millisecond
 }
 
-func (s *Server) Acquire(key, token string, ttlMillis int) bool {
+func (s *Server) Acquire(key string, token string, ttlMillis int) bool {
 	s.checkRequest(key, token)
 	ttl := leaseDuration(ttlMillis)
 	s.mutex.Lock()
@@ -61,7 +61,7 @@ func (s *Server) Acquire(key, token string, ttlMillis int) bool {
 	return true
 }
 
-func (s *Server) Renew(key, token string, ttlMillis int) bool {
+func (s *Server) Renew(key string, token string, ttlMillis int) bool {
 	s.checkRequest(key, token)
 	ttl := leaseDuration(ttlMillis)
 	s.mutex.Lock()
@@ -76,7 +76,7 @@ func (s *Server) Renew(key, token string, ttlMillis int) bool {
 	return true
 }
 
-func (s *Server) Release(key, token string) bool {
+func (s *Server) Release(key string, token string) bool {
 	s.checkRequest(key, token)
 	s.mutex.Lock()
 	defer s.mutex.Unlock()

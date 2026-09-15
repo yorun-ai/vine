@@ -27,7 +27,7 @@ type _Result struct {
 	failure ex.Error
 }
 
-func newLock(client skeled.LockServiceClient, parent context.Context, key, token string, ttl time.Duration, deadline time.Time) *Lock {
+func newLock(client skeled.LockServiceClient, parent context.Context, key string, token string, ttl time.Duration, deadline time.Time) *Lock {
 	ctx, cancel := context.WithCancelCause(parent)
 	l := new(Lock{client: client, key: key, token: token, ttl: ttl, ctx: ctx, cancel: cancel, unlock: make(chan chan _Result)})
 	go l.run(deadline)

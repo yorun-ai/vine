@@ -47,19 +47,19 @@ func newRedisLocker(endpoint string) *_RedisLocker {
 	return new(_RedisLocker{client: goredis.NewClient(options)})
 }
 
-func (l *_RedisLocker) Acquire(ctx meta.Context, key, token string, ttlMillis int) bool {
+func (l *_RedisLocker) Acquire(ctx meta.Context, key string, token string, ttlMillis int) bool {
 	return l.eval(ctx, acquireScript, key, token, ttlMillis)
 }
 
-func (l *_RedisLocker) Renew(ctx meta.Context, key, token string, ttlMillis int) bool {
+func (l *_RedisLocker) Renew(ctx meta.Context, key string, token string, ttlMillis int) bool {
 	return l.eval(ctx, renewScript, key, token, ttlMillis)
 }
 
-func (l *_RedisLocker) Release(ctx meta.Context, key, token string) bool {
+func (l *_RedisLocker) Release(ctx meta.Context, key string, token string) bool {
 	return l.eval(ctx, releaseScript, key, token)
 }
 
-func (l *_RedisLocker) eval(ctx meta.Context, script, key string, args ...any) bool {
+func (l *_RedisLocker) eval(ctx meta.Context, script string, key string, args ...any) bool {
 	result, err := l.client.Eval(ctx, script, []string{"vine:core:lock:" + key}, args...).Int64()
 	if err != nil {
 		code := ex.ServiceUnavailable

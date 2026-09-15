@@ -57,7 +57,7 @@ func TestRunWithRecover(t *testing.T) {
 
 		RunWithRecover(func(any) {
 			t.Fatal("recover handler should not be called")
-		}, func(a, b int) {
+		}, func(a int, b int) {
 			got = a + b
 		}, 2, 3)
 
