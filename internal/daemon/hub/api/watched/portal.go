@@ -77,6 +77,9 @@ type PortalRpcgwService struct {
 
 type PortalWebgwConfig struct {
 	WebName string `json:"webName"`
+	// MountPath overrides both prefixes of SITE rules at route construction.
+	// Empty preserves the prefixes configured on each rule.
+	MountPath string `json:"mountPath,omitempty"`
 }
 
 func FormatPortalSiteKey(name string) string {

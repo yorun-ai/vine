@@ -499,6 +499,9 @@ export function AppStatusPage() {
     if (!isAppStatusPath(pathname)) {
       return
     }
+    if (loading) {
+      return
+    }
     if (filteredItems.length === 0) {
       setSelectedInstanceId(null)
       return
@@ -509,7 +512,7 @@ export function AppStatusPage() {
     ) {
       selectItem(filteredItems[0].instanceId, true)
     }
-  }, [filteredItems, pathname, selectItem, selectedInstanceId])
+  }, [filteredItems, loading, pathname, selectItem, selectedInstanceId])
 
   React.useEffect(() => {
     if (!selectedInstanceId) {

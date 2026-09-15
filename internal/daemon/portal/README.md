@@ -27,7 +27,7 @@ internal/daemon/portal/
 Portal has four primary responsibilities:
 
 1. Entry listeners
-   `entry` reads `portal:rule:*` configuration from Watch, maintains HTTP/HTTPS listeners by scheme and port, and dispatches requests to the corresponding site. For SITE rules, it replaces the matched `matchPathPrefix` with `routePathPrefix` before site dispatch; an empty target retains prefix stripping. Path rewriting preserves the escaped suffix and query string and is owned by `entry`, not the target gateway.
+   `entry` reads `portal:rule:*` configuration from Watch, maintains HTTP/HTTPS listeners by scheme and port, and dispatches requests to the corresponding site. For SITE rules, it replaces the matched `matchPathPrefix` with `routePathPrefix` before site dispatch; an empty target retains prefix stripping. Path rewriting preserves the escaped suffix and query string and is owned by `entry`, not the target gateway. For Web sites with `webgwConfig.mountPath`, `entry` overrides both rule prefixes with that path. It subscribes to site mount-path metadata and rebuilds and sorts effective rules when the path changes, without changing stored rule configuration.
 
 2. Site routing
    `site` reads `portal:site:*` configuration from Watch and maintains RpcGW and WebGW instances by site type. Each gateway is responsible only for matching and forwarding requests within its site.

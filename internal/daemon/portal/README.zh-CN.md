@@ -27,7 +27,7 @@ internal/daemon/portal/
 Portal 的职责可以拆成四条主线：
 
 1. 入口监听
-   `entry` 从 Watch 读取 `portal:rule:*` 配置，按 scheme/port 维护 HTTP/HTTPS listener，并把请求交给对应 site。
+   `entry` 从 Watch 读取 `portal:rule:*` 配置，按 scheme/port 维护 HTTP/HTTPS listener，并把请求交给对应 site。对于带 `webgwConfig.mountPath` 的 Web 站点，匹配和转发前缀都使用该挂载路径。`entry` 同时订阅站点挂载路径元数据，在路径变化时重新生成并排序路由，不改写已保存的规则配置。
 
 2. 站点路由
    `site` 从 Watch 读取 `portal:site:*` 配置，按类型维护 RpcGW 和 WebGW。RpcGW/WebGW 只负责各自 site 内的请求匹配与转发。

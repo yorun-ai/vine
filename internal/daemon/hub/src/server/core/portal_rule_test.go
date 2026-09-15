@@ -1,6 +1,7 @@
 package core
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -431,98 +432,15 @@ func TestPortalRuleCoreValidateKeepsRuleRepoUntouched(t *testing.T) {
 	require.Empty(t, repo.calls)
 }
 
-func TestPortalRuleCoreValidatesWebMountPath(t *testing.T) {
-	service := newWebRuleCoreForTest(PortalSite{Name: "web", Type: PortalSiteTypeWEBGW, WebName: "demo.Web"}, "/demo")
-
-	matched := validPortalRule()
-	matched.MatchPathPrefix = "/demo"
-	matched.RoutePathPrefix = "/demo"
-	require.NotPanics(t, func() { service.Validate(matched) })
-
-	// A trailing slash describes the same mount path.
-	slashed := matched
-	slashed.MatchPathPrefix = "/demo/"
-	slashed.RoutePathPrefix = "/demo/"
-	require.NotPanics(t, func() { service.Validate(slashed) })
-
-	cases := map[string]func(*PortalRule){
-		"match path":        func(r *PortalRule) { r.MatchPathPrefix = "/other" },
-		"route path":        func(r *PortalRule) { r.RoutePathPrefix = "/other" },
-		"empty route path":  func(r *PortalRule) { r.RoutePathPrefix = "" },
-		"entry above mount": func(r *PortalRule) { r.MatchPathPrefix = "/"; r.RoutePathPrefix = "/" },
-	}
-	for name, change := range cases {
-		t.Run(name, func(t *testing.T) {
-			rule := matched
-			change(&rule)
-			repo := &entryRuleRepoSpy{}
-			service.PortalRuleRepo = repo
-			panicValue := capturePanic(func() { service.Save(rule) })
-			err, ok := panicValue.(ex.Error)
-			require.True(t, ok)
-			assert.Equal(t, ex.OperationFailed, err.Code())
-			assert.Contains(t, err.Message(), `Web mountPath "/demo"`)
-			assert.NotContains(t, repo.calls, "Save")
-		})
-	}
-}
-
-func TestPortalRuleCoreEnforcesDeclaredRootWebMountPath(t *testing.T) {
-	service := newWebRuleCoreForTest(PortalSite{Name: "web", Type: PortalSiteTypeWEBGW, WebName: "app.Web"}, "/")
-
-	cases := map[string][2]string{
-		"root prefixes":  {"/", "/"},
-		"empty prefixes": {"", ""},
-		"legacy route":   {"/", ""},
-	}
-	for name, prefixes := range cases {
-		t.Run(name, func(t *testing.T) {
-			rule := validPortalRule()
-			rule.MatchPathPrefix = prefixes[0]
-			rule.RoutePathPrefix = prefixes[1]
-			require.NotPanics(t, func() { service.Validate(rule) })
-		})
-	}
-
-	nested := validPortalRule()
-	nested.MatchPathPrefix = "/app"
-	nested.RoutePathPrefix = "/app"
-	require.Panics(t, func() { service.Validate(nested) })
-}
-
-func TestPortalRuleCoreSkipsWebMountPathValidation(t *testing.T) {
-	mismatched := validPortalRule()
-	redirect := mismatched
-	redirect.RouteType = PortalRuleRouteTypeTemporaryRedirect
-	redirect.RouteSiteName = ""
-	redirect.MatchPathPrefix = "/api"
-	redirect.RouteRedirectionPattern = "https://example.com{uri}"
-
-	cases := map[string]struct {
-		service *PortalRuleCore
-		rule    PortalRule
-	}{
-		"rpc gateway site": {
-			service: newWebRuleCoreForTest(PortalSite{Name: "web", Type: PortalSiteTypeRPCGW, WebName: "demo.Web"}, ""),
-			rule:    mismatched,
-		},
-		"unknown site": {
-			service: newWebRuleCoreForTest(PortalSite{Name: "other", Type: PortalSiteTypeWEBGW, WebName: "demo.Web"}, "/demo"),
-			rule:    mismatched,
-		},
-		"web without mount path": {
-			service: newWebRuleCoreForTest(PortalSite{Name: "web", Type: PortalSiteTypeWEBGW, WebName: "app.Web"}, ""),
-			rule:    mismatched,
-		},
-		"redirect rule": {
-			service: newWebRuleCoreForTest(PortalSite{Name: "web", Type: PortalSiteTypeWEBGW, WebName: "demo.Web"}, "/demo"),
-			rule:    redirect,
-		},
-	}
-	for name, test := range cases {
-		t.Run(name, func(t *testing.T) {
-			require.NotPanics(t, func() { test.service.Validate(test.rule) })
-		})
+func TestPortalRuleCorePreservesConfiguredPathsWithoutResolvingSites(t *testing.T) {
+	service := newPortalRuleCoreForTest(&entryRuleRepoSpy{}, nil)
+	for _, path := range []string{"", "/", "/configured"} {
+		rule := validPortalRule()
+		rule.MatchPathPrefix = path
+		rule.RoutePathPrefix = path
+		saved := service.Save(rule)
+		require.Equal(t, path, saved.MatchPathPrefix)
+		require.Equal(t, strings.TrimRight(path, "/"), saved.RoutePathPrefix)
 	}
 }
 
@@ -535,14 +453,5 @@ func newPortalRuleCoreForTest(ruleRepo PortalRuleRepo, certRepo PortalCertRepo) 
 	return &PortalRuleCore{
 		PortalRuleRepo: ruleRepo,
 		PortalCertRepo: certRepo,
-		PortalSiteRepo: &portalSiteRepoSpy{},
 	}
-}
-
-func newWebRuleCoreForTest(site PortalSite, mountPath string) *PortalRuleCore {
-	site.Id = 1
-	site.WebMountPath = mountPath
-	service := newPortalRuleCoreForTest(&entryRuleRepoSpy{}, nil)
-	service.PortalSiteRepo = &portalSiteRepoSpy{entries: map[int]*PortalSite{1: &site}}
-	return service
 }

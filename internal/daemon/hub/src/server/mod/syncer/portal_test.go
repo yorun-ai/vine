@@ -19,3 +19,14 @@ func TestPortalRuleTargetPathWatchRoundTrip(t *testing.T) {
 	assert.NotContains(t, wire, `"targetPath"`)
 	assert.NotContains(t, wire, `"targetType"`)
 }
+
+func TestPortalSitePublishesWebMountPath(t *testing.T) {
+	for _, mountPath := range []string{"", "/", "/app"} {
+		site := &core.PortalSite{Name: "web", Type: core.PortalSiteTypeWEBGW, WebName: "demo.Web", WebMountPath: mountPath}
+		wire := vcode.MustMarshalJsonS(toWatchedPortalSite(site))
+		decoded := vcode.MustUnmarshalJsonS[watched.PortalSite](wire)
+		assert.Equal(t, mountPath, decoded.WebgwConfig.MountPath)
+		site.BuiltIn = true
+		assert.Empty(t, toWatchedPortalSite(site).WebgwConfig.MountPath, "built-in Dashboard access remains configurable")
+	}
+}

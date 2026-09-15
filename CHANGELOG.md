@@ -10,13 +10,14 @@ are not part of the public compatibility commitment.
 
 ### Added
 
-- Hub keeps Portal rules aligned with the Web they serve. When an application
-  declares a mount path for its Web, a rule that forwards to that site must
-  match and forward exactly that path, and the Dashboard keeps the match and
-  route prefixes read-only instead of letting Hub reject the rule. Skel
-  compilers do not declare Web mount paths yet, so the constraint stays inert
-  until a Web does, and the built-in Dashboard rules Hub provisions for itself
-  are not affected.
+- Portal uses a Web's declared mount path as both the match and forwarding
+  prefix of rules targeting that site, overriding configured rule prefixes.
+  Site and schema changes refresh the effective paths automatically. Dashboard
+  shows both fields with the Web path, disables editing, and identifies Web as
+  their source. Seed rules can omit both prefixes; existing stored values need
+  no migration and apply again if the Web has no mount path. Built-in Dashboard
+  access and redirect rules are unchanged. Upgrade Hub and Portal together for
+  the new Watch mount-path metadata.
 
 ### Changed
 

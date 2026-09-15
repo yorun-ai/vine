@@ -71,7 +71,7 @@ Hub 的层次职责必须保持清晰：
 
 修改 Hub 时还应遵守：
 
-- Core 的 `Validate` 只做校验与归一化，不写存储；它可以读取其它 repo 来执行跨实体规则，例如要求 Portal 规则前缀与目标站点 Web 的挂载路径一致。
+- Core 的 `Validate` 只做校验与归一化，不写存储。规则校验不再查询站点；Hub 随站点发布 Web 挂载路径元数据，由 Portal 生成实际生效的规则路径。
 - 数据库表结构必须同时更新 `src/server/repo/db/model/sql/sqlite` 和 `src/server/repo/db/model/sql/pgsql`。
 - Redis key、Redis value JSON 和事件格式属于 Hub、Link、Portal 之间的协议；修改时必须同步所有生产者、消费者和测试。
 - `watchserver` 是运行时分发层，不应成为绕过 Repo/Core 直接实现业务规则的第二套状态源。

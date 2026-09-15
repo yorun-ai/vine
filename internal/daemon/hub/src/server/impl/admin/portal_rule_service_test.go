@@ -111,12 +111,10 @@ func newTestPortalCertCore() *core.PortalCertCore {
 	return &core.PortalCertCore{PortalCertRepo: &_MaintenanceServicePortalCertRepo{}}
 }
 
-// newTestPortalRuleCore builds a rule core with the Portal site and schema
-// repositories Hub injects; these tests only choose the rule repository.
+// newTestPortalRuleCore builds a rule core with the chosen rule repository.
 func newTestPortalRuleCore(ruleRepo core.PortalRuleRepo) *core.PortalRuleCore {
 	return &core.PortalRuleCore{
 		PortalRuleRepo: ruleRepo,
-		PortalSiteRepo: &_MaintenanceServicePortalSiteRepo{},
 	}
 }
 

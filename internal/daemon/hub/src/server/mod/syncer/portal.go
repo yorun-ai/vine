@@ -81,6 +81,9 @@ func toWatchedPortalSite(site *core.PortalSite) *watched.PortalSite {
 	}
 	if site.Type == core.PortalSiteTypeWEBGW {
 		ret.WebgwConfig = &watched.PortalWebgwConfig{WebName: site.WebName}
+		if !site.BuiltIn {
+			ret.WebgwConfig.MountPath = site.WebMountPath
+		}
 	}
 	return ret
 }
