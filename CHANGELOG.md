@@ -11,7 +11,12 @@ are not part of the public compatibility commitment.
 ### Fixed
 
 - Hub, Link, and Portal identify themselves with the Vine runtime version in
-  Rpc metadata, including when embedded in a business application.
+  Rpc metadata, including when embedded in a business application. Identity
+  headers always carry a plain semantic version such as `0.17.0`, because the
+  vRPC identity format rejects the Go module form `v0.17.0`. Peers that still
+  send the module form remain accepted, so mixed-version clusters keep working;
+  a version that the wire format cannot express is rejected immediately instead
+  of producing an unreadable header.
 
 ### Added
 
