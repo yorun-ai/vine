@@ -47,6 +47,7 @@ type _Linker struct {
 	configClient     linkskeled.ConfigServiceClient
 	eventClient      linkskeled.EventServiceClient
 	taskClient       linkskeled.TaskServiceClient
+	lockClient       linkskeled.LockServiceClient
 }
 
 // newLinker is replaceable in tests so app startup can observe linker calls
@@ -83,6 +84,7 @@ func (l *_Linker) init() {
 	l.configClient = linkskeled.NewConfigServiceClient(linkskeled.NewConfigServiceClientER(rpcClient))
 	l.eventClient = linkskeled.NewEventServiceClient(linkskeled.NewEventServiceClientER(rpcClient))
 	l.taskClient = linkskeled.NewTaskServiceClient(linkskeled.NewTaskServiceClientER(rpcClient))
+	l.lockClient = linkskeled.NewLockServiceClient(linkskeled.NewLockServiceClientER(rpcClient))
 	l.bootInfo = l.bootClient.GetInfo()
 }
 
@@ -135,4 +137,8 @@ func (l *_Linker) EventClient() linkskeled.EventServiceClient {
 
 func (l *_Linker) TaskClient() linkskeled.TaskServiceClient {
 	return l.taskClient
+}
+
+func (l *_Linker) LockClient() linkskeled.LockServiceClient {
+	return l.lockClient
 }

@@ -61,3 +61,8 @@ func (*_InternalLinker) TaskClient() linkskeled.TaskServiceClient {
 	vpre.MustNotReach()
 	return nil
 }
+
+func (*_InternalLinker) LockClient() linkskeled.LockServiceClient {
+	vpre.MustNotReach()
+	return nil
+}
