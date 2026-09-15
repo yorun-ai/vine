@@ -47,6 +47,9 @@ type _RedisClientSetter interface {
 type _ClientRepairer interface {
 	setRepair(repair func(option *Option) bool)
 	restartWatchers()
+	lockLifecycle()
+	unlockLifecycle()
+	closeWatchers()
 }
 
 // Client watches Hub-published keys over Hub's Redis protocol watch service.
@@ -60,8 +63,9 @@ type Client struct {
 	redisClient *redis.Client
 	repair      func(option *Option) bool
 
-	watcherMutex sync.Mutex
-	watchers     map[*_Watcher]struct{}
+	watcherMutex   sync.Mutex
+	lifecycleMutex sync.Mutex
+	watchers       map[*_Watcher]struct{}
 }
 
 func (*Client) InitOption(*Option) {}
@@ -115,12 +119,17 @@ func (c *Client) RepairEndpoint(option *Option) bool {
 }
 
 func (c *Client) Close() {
+	c.lockLifecycle()
+	defer c.unlockLifecycle()
 	redisClient, _ := c.currentRedisClient()
 	c.closeWatchers()
 	if redisClient != nil {
 		_ = redisClient.Close()
 	}
 }
+
+func (c *Client) lockLifecycle()   { c.lifecycleMutex.Lock() }
+func (c *Client) unlockLifecycle() { c.lifecycleMutex.Unlock() }
 
 func (c *Client) addWatcher(watcher *_Watcher) {
 	c.watcherMutex.Lock()
@@ -131,6 +140,8 @@ func (c *Client) addWatcher(watcher *_Watcher) {
 	}
 	c.watchers[watcher] = struct{}{}
 	context.AfterFunc(watcher.ctx, func() {
+		c.lockLifecycle()
+		defer c.unlockLifecycle()
 		watcher.stop()
 		c.removeWatcher(watcher)
 	})

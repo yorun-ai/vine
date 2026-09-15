@@ -74,12 +74,16 @@ func (*_Client) mustBeClient() {}
 // Lifecycle
 
 func (c *_Client) setConn(conn *gonats.Conn) {
-	c.conn = conn
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	js, err := jetstream.New(conn)
 	vpre.CheckNilError(err, "create nats jetstream context failed")
+	c.conn = conn
 	c.jetStream = js
 	c.ensuredStream = map[string]struct{}{}
-	c.consumers = map[*_ConsumeContext]struct{}{}
+	if c.consumers == nil {
+		c.consumers = map[*_ConsumeContext]struct{}{}
+	}
 }
 
 func (c *_Client) onReconnect(ctx context.Context, _ *gonats.Conn) {
@@ -119,22 +123,23 @@ func (c *_Client) Publish(streamConfig jetstream.StreamConfig, subject string, d
 }
 
 func (c *_Client) publishJetStream(streamConfig jetstream.StreamConfig, subject string, data []byte) {
-	c.ensureJetStream(streamConfig)
-	_, err := c.jetStream.Publish(context.Background(), subject, data)
+	js := c.ensureJetStream(streamConfig)
+	_, err := js.Publish(context.Background(), subject, data)
 	vpre.CheckNilError(err, "publish nats jetstream message failed")
 }
 
 // Stream
 
-func (c *_Client) ensureJetStream(streamConfig jetstream.StreamConfig) {
+func (c *_Client) ensureJetStream(streamConfig jetstream.StreamConfig) jetstream.JetStream {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
 	if _, exists := c.ensuredStream[streamConfig.Name]; exists {
-		return
+		return c.jetStream
 	}
 
 	_, err := c.jetStream.Stream(context.Background(), streamConfig.Name)
 	vpre.CheckNilError(err, "read nats jetstream stream failed")
 	c.ensuredStream[streamConfig.Name] = struct{}{}
+	return c.jetStream
 }

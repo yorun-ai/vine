@@ -2,6 +2,7 @@ package watch_test
 
 import (
 	"context"
+	"net"
 	"sync"
 	"testing"
 	"time"
@@ -101,4 +102,52 @@ func TestRepairEndpointResubscribesWatchersToNewHub(t *testing.T) {
 
 	nextHub.SetAndNotify("rpc:test:endpoint:other", "two")
 	require.Eventually(t, events.has(watch.EventKindUpsert, "rpc:test:endpoint:other", "two"), 5*time.Second, 10*time.Millisecond)
+}
+
+func TestRepairFailureKeepsSubscriptionsAndCanRetry(t *testing.T) {
+	old := newTestWatchServer(t)
+	next := newTestWatchServer(t)
+	client := &_EndpointTestClient{endpoint: testWatchEndpoint(t, old)}
+	manager := &watch.ClientManager{Context: t.Context()}
+	manager.InitComponent(client)
+	t.Cleanup(manager.AfterAppStop)
+	events := new(_eventLog)
+	_, sub := client.LoadListAndSubscribe(t.Context(), "rpc:test:endpoint", events.append)
+	sub.Start()
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	addr := listener.Addr().String()
+	require.NoError(t, listener.Close())
+	option := &watch.Option{Endpoint: addr, Username: watch.LinkUsername, Password: watch.LinkPassword}
+	require.Panics(t, func() { client.RepairEndpoint(option) })
+	old.SetAndNotify("rpc:test:endpoint:demo", "old-still-live")
+	require.Eventually(t, events.has(watch.EventKindUpsert, "rpc:test:endpoint:demo", "old-still-live"), time.Second, time.Millisecond)
+	option.Endpoint = testWatchEndpoint(t, next)
+	require.True(t, client.RepairEndpoint(option))
+	next.SetAndNotify("rpc:test:endpoint:demo", "new-live")
+	require.Eventually(t, events.has(watch.EventKindUpsert, "rpc:test:endpoint:demo", "new-live"), time.Second, time.Millisecond)
+}
+
+func TestSubscribeDuringEndpointReplacement(t *testing.T) {
+	old := newTestWatchServer(t)
+	next := newTestWatchServer(t)
+	client := &_EndpointTestClient{endpoint: testWatchEndpoint(t, old)}
+	manager := &watch.ClientManager{Context: t.Context()}
+	manager.InitComponent(client)
+	t.Cleanup(manager.AfterAppStop)
+	logs := make([]*_eventLog, 20)
+	var group sync.WaitGroup
+	for i := range logs {
+		logs[i] = new(_eventLog)
+		group.Go(func() {
+			_, subscription := client.LoadListAndSubscribe(t.Context(), "rpc:test:endpoint", logs[i].append)
+			subscription.Start()
+		})
+	}
+	client.RepairEndpoint(&watch.Option{Endpoint: testWatchEndpoint(t, next), Username: watch.LinkUsername, Password: watch.LinkPassword})
+	group.Wait()
+	next.SetAndNotify("rpc:test:endpoint:demo", "live")
+	for _, log := range logs {
+		require.Eventually(t, log.has(watch.EventKindUpsert, "rpc:test:endpoint:demo", "live"), time.Second, time.Millisecond)
+	}
 }

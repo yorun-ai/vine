@@ -50,6 +50,9 @@ func (m *ClientManager) InitComponent(component app.ManagedComponent) {
 func (m *ClientManager) repairEndpoint(option *Option) bool {
 	m.repairMutex.Lock()
 	defer m.repairMutex.Unlock()
+	repairer := m.client.(_ClientRepairer)
+	repairer.lockLifecycle()
+	defer repairer.unlockLifecycle()
 
 	if option.InprocMode || m.option.InprocMode {
 		return false
@@ -63,6 +66,7 @@ func (m *ClientManager) repairEndpoint(option *Option) bool {
 
 	client := m.client.(_RedisClientSetter)
 	next := newRedisClient(redisOptionsFor(option, addr))
+	repairer.closeWatchers()
 	previous := client.swapRedisClient(m.Context, next)
 	succeeded := false
 	defer func() {

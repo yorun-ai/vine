@@ -132,7 +132,10 @@ func (m *_ClientManager) AfterAppStop() {
 
 func (c *_Client) waitJetStreamReady(ctx context.Context, timeout time.Duration, interval time.Duration) error {
 	return waitJetStreamReady(func(ctx context.Context) error {
-		_, err := c.jetStream.AccountInfo(ctx)
+		c.mutex.Lock()
+		js := c.jetStream
+		c.mutex.Unlock()
+		_, err := js.AccountInfo(ctx)
 		return err
 	}, ctx, timeout, interval)
 }

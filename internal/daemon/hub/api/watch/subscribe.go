@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json/v2"
 	"sync"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 	"go.yorun.ai/vine/util/vmap"
@@ -11,6 +12,8 @@ import (
 )
 
 func (c *Client) LoadAndSubscribe(ctx context.Context, key string, handle func(event Event)) (string, bool, Subscription) {
+	c.lockLifecycle()
+	defer c.unlockLifecycle()
 	value, ok, _ := c.loadStableValue(key)
 	watcher := &_Watcher{
 		client:       c,
@@ -25,6 +28,8 @@ func (c *Client) LoadAndSubscribe(ctx context.Context, key string, handle func(e
 }
 
 func (c *Client) LoadListAndSubscribe(ctx context.Context, prefix string, handle func(event Event)) (map[string]string, Subscription) {
+	c.lockLifecycle()
+	defer c.unlockLifecycle()
 	valuesByKey, _ := c.loadStableScanKeyValues(prefix)
 	watcher := &_Watcher{
 		client:       c,
@@ -41,7 +46,14 @@ func (c *Client) LoadListAndSubscribe(ctx context.Context, prefix string, handle
 func (c *Client) subscribeWatcher(watcher *_Watcher) {
 	redisClient, _ := c.currentRedisClient()
 	c.addWatcher(watcher)
+	succeeded := false
+	defer func() {
+		if !succeeded {
+			c.removeWatcher(watcher)
+		}
+	}()
 	watcher.start(redisClient)
+	succeeded = true
 }
 
 // _Watcher owns one subscription to a key or key prefix. It outlives a
@@ -78,6 +90,13 @@ func (w *_Watcher) start(redisClient *redis.Client) {
 
 	consumeCtx, cancel := context.WithCancel(w.ctx)
 	pubsub := w.subscribe(consumeCtx, redisClient)
+	succeeded := false
+	defer func() {
+		if !succeeded {
+			cancel()
+			_ = pubsub.Close()
+		}
+	}()
 	if _, err := pubsub.Receive(consumeCtx); err != nil {
 		_ = pubsub.Close()
 		cancel()
@@ -87,6 +106,13 @@ func (w *_Watcher) start(redisClient *redis.Client) {
 	// Reconcile before consuming: the reload covers everything that changed
 	// while no subscription was attached, and later events are filtered by the
 	// resulting revision.
+	reader := &Client{ctx: consumeCtx, redisClient: redisClient}
+	switch snapshot := w.snapshot.(type) {
+	case *_WatchKeySnapshot:
+		snapshot.client = reader
+	case *_WatchListSnapshot:
+		snapshot.client = reader
+	}
 	handleEvent := w.snapshot.handleEvent(w.enqueue)
 	revision := w.snapshot.handleSubscription(handleEvent)
 
@@ -96,6 +122,7 @@ func (w *_Watcher) start(redisClient *redis.Client) {
 	w.done = make(chan struct{})
 	done := w.done
 	w.mutex.Unlock()
+	succeeded = true
 
 	go func() {
 		defer close(done)
@@ -229,7 +256,22 @@ func (c *Client) consumePatternMessages(
 			switch message := message.(type) {
 			case *redis.Subscription:
 				if message.Kind == "subscribe" || message.Kind == "psubscribe" {
-					revision = handleSubscription(handleEvent)
+					for {
+						loaded := false
+						func() {
+							defer func() { _ = recover() }()
+							revision = handleSubscription(handleEvent)
+							loaded = true
+						}()
+						if loaded {
+							break
+						}
+						select {
+						case <-ctx.Done():
+							return
+						case <-time.After(100 * time.Millisecond):
+						}
+					}
 				}
 			case *redis.Message:
 				var event Event

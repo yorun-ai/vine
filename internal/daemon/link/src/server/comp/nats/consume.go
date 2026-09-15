@@ -14,6 +14,8 @@ type ConsumeContext interface {
 }
 
 func (c *_Client) Consume(streamConfig jetstream.StreamConfig, subject string, consumerName string, handle func(msg jetstream.Msg)) ConsumeContext {
+	c.recoverMutex.Lock()
+	defer c.recoverMutex.Unlock()
 	consumeContext := &_ConsumeContext{
 		client:       c,
 		streamConfig: streamConfig,
@@ -27,8 +29,8 @@ func (c *_Client) Consume(streamConfig jetstream.StreamConfig, subject string, c
 }
 
 func (c *_Client) consumeJetStream(streamConfig jetstream.StreamConfig, subject string, consumerName string, handle func(msg jetstream.Msg)) jetstream.ConsumeContext {
-	c.ensureJetStream(streamConfig)
-	consumer, err := c.jetStream.CreateOrUpdateConsumer(context.Background(), streamConfig.Name, jetstream.ConsumerConfig{
+	js := c.ensureJetStream(streamConfig)
+	consumer, err := js.CreateOrUpdateConsumer(context.Background(), streamConfig.Name, jetstream.ConsumerConfig{
 		Durable:       consumerName,
 		DeliverPolicy: jetstream.DeliverAllPolicy,
 		AckPolicy:     jetstream.AckExplicitPolicy,
