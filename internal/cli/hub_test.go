@@ -281,6 +281,7 @@ func TestHubWatchListenCompatibility(t *testing.T) {
 		{name: "watch environment", env: map[string]string{EnvHubWatchListen: ":8101"}, want: ":8101"},
 		{name: "redis flag", args: []string{"--redis-listen", ":8200"}, want: ":8200"},
 		{name: "redis environment", env: map[string]string{EnvHubRedisListen: ":8201"}, want: ":8201"},
+		{name: "legacy flag overrides image default", args: []string{"--redis-listen", ":8202"}, env: map[string]string{EnvHubRedisListen: "0.0.0.0:7072"}, want: ":8202"},
 		{name: "both flags", args: []string{"--watch-listen", ":8100", "--redis-listen", ":8200"}, want: ":8100"},
 		{name: "both flags reversed", args: []string{"--redis-listen", ":8200", "--watch-listen", ":8100"}, want: ":8100"},
 		{name: "both environments", env: map[string]string{EnvHubWatchListen: ":8101", EnvHubRedisListen: ":8201"}, want: ":8101"},
