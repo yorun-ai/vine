@@ -12,6 +12,7 @@ import (
 	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/internal/core/event"
 	eventspec "go.yorun.ai/vine/internal/core/event/spec"
+	corelock "go.yorun.ai/vine/internal/core/lock"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/client"
@@ -61,6 +62,13 @@ func newMetaContext(ctx context.Context) meta.Context {
 }
 
 func (a *_AppImpl) bindClients(b *di.Binder) {
+	b.BindFactory(func(ctx meta.Context) *corelock.Locker {
+		return corelock.NewLocker(a.linker.LockClient(), ctx, a.info.Name())
+	})
+	b.BindFactory(func(ctx meta.Context) *corelock.UniversalLocker {
+		return corelock.NewUniversalLocker(a.linker.LockClient(), ctx)
+	})
+
 	b.BindFactory(func(ctx meta.Context) *client.Client {
 		return client.New(client.Option{
 			Context:        ctx,

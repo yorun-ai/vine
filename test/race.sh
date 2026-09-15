@@ -14,6 +14,7 @@ case "${scope}" in
       ./internal/core/di
       ./internal/core/event
       ./internal/core/link/ingressinproc
+      ./internal/core/lock
       ./internal/core/logger
       ./internal/core/rpc/client
       ./internal/core/rpc/log

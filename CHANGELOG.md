@@ -24,6 +24,9 @@ are not part of the public compatibility commitment.
 
 - Link exposes lease lock operations through its LockService, routing requests to
   Hub or directly to the advertised external Redis endpoint.
+- Applications can inject `core/lock.Locker` for application-scoped locks or
+  `core/lock.UniversalLocker` to share locks across applications using the same
+  lock backend.
 
 ### Changed
 

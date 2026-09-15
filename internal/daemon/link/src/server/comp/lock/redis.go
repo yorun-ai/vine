@@ -60,7 +60,7 @@ func (l *_RedisLocker) Release(ctx meta.Context, key, token string) bool {
 }
 
 func (l *_RedisLocker) eval(ctx meta.Context, script, key string, args ...any) bool {
-	result, err := l.client.Eval(ctx, script, []string{"vine:lock:" + key}, args...).Int64()
+	result, err := l.client.Eval(ctx, script, []string{"vine:core:lock:" + key}, args...).Int64()
 	if err != nil {
 		code := ex.ServiceUnavailable
 		message := "Redis lock service is unavailable"

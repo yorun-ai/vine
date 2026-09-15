@@ -54,9 +54,9 @@ func TestRedisRoutesDirectlyAndPreservesRequestContext(t *testing.T) {
 	assert.True(t, locker.Renew(ctx, "app:key", "token", 2345))
 	assert.True(t, locker.Release(ctx, "app:key", "token"))
 	assert.Equal(t, [][]any{
-		{"eval", acquireScript, 1, "vine:lock:app:key", "token", 1234},
-		{"eval", renewScript, 1, "vine:lock:app:key", "token", 2345},
-		{"eval", releaseScript, 1, "vine:lock:app:key", "token"},
+		{"eval", acquireScript, 1, "vine:core:lock:app:key", "token", 1234},
+		{"eval", renewScript, 1, "vine:core:lock:app:key", "token", 2345},
+		{"eval", releaseScript, 1, "vine:core:lock:app:key", "token"},
 	}, commands)
 	assert.Empty(t, hub.calls)
 }

@@ -32,6 +32,7 @@ type Linker interface {
 	ConfigClient() linkskeled.ConfigServiceClient
 	EventClient() linkskeled.EventServiceClient
 	TaskClient() linkskeled.TaskServiceClient
+	LockClient() linkskeled.LockServiceClient
 }
 
 // Linker
