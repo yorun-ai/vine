@@ -18,6 +18,15 @@ are not part of the public compatibility commitment.
   a version that the wire format cannot express is rejected immediately instead
   of producing an unreadable header.
 
+- Link and Portal recover from a Hub restart that advertises different endpoints
+  instead of requiring a restart of their own. Link re-reads Hub information
+  when a heartbeat reports that Hub no longer knows the application instance,
+  and reconnects the watch, MQ and lock clients only when an advertised endpoint
+  actually moved. Re-established watch subscriptions are reconciled, so keys
+  that changed while the endpoint was stale are reported. Portal re-reads Hub
+  information on a timer, so it notices a moved watch endpoint without a
+  restart.
+
 ### Added
 
 - Hub tracks running Portal daemons. Portal registers itself on startup,
