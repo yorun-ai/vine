@@ -74,6 +74,26 @@ func TestHubInfoRefreshNotifiesListenersOnlyWhenHubInfoChanged(t *testing.T) {
 	assert.Equal(t, "nats://127.0.0.1:4223", component.MQEndpoint())
 }
 
+func TestHubInfoRefreshRollsBackAndNotifiesEveryListenerAfterRepairFailure(t *testing.T) {
+	client := &_TestInfoServiceClient{info: hubskeled.Info{WatchPort: 7072}}
+	flags := &flag.Flag{HubEndpoint: "http://127.0.0.1:7071"}
+	flags.Normalize(false)
+	component := &HubInfo{Flag: flags, InfoServiceClient: client}
+	component.DIInit()
+
+	secondCalls := 0
+	component.OnRefresh(func() { panic("repair failed") })
+	component.OnRefresh(func() { secondCalls++ })
+	client.info.WatchPort = 7073
+
+	assert.PanicsWithValue(t, "repair failed", component.Refresh)
+	assert.Equal(t, 1, secondCalls)
+	assert.Equal(t, "127.0.0.1:7072", component.WatchEndpoint())
+
+	assert.PanicsWithValue(t, "repair failed", component.Refresh)
+	assert.Equal(t, 2, secondCalls)
+}
+
 func TestHubInfoRefreshSkipsLookupInInprocMode(t *testing.T) {
 	client := &_TestInfoServiceClient{}
 	flags := &flag.Flag{

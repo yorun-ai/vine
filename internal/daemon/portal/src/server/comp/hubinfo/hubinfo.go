@@ -15,8 +15,7 @@ import (
 )
 
 // refreshInterval bounds how long Portal can keep using a stale Hub endpoint.
-// Portal never registers with Hub, so unlike Link it cannot notice a Hub restart
-// through a registration heartbeat and polls instead.
+// Polling also repairs Portal when registration heartbeats cannot complete.
 var refreshInterval = 30 * time.Second
 
 var hubInfoLogger = logger.New("daemon:portal:hubinfo")
@@ -98,6 +97,7 @@ func (c *HubInfo) Refresh() {
 	info := c.InfoServiceClient.GetInfo()
 
 	c.mutex.Lock()
+	previous := c.info
 	changed := c.info != info
 	c.info = info
 	listeners := vslice.Clone(c.listeners)
@@ -106,9 +106,34 @@ func (c *HubInfo) Refresh() {
 	if !changed {
 		return
 	}
+	succeeded := false
+	defer func() {
+		if succeeded {
+			return
+		}
+		c.mutex.Lock()
+		c.info = previous
+		c.mutex.Unlock()
+	}()
+	var firstRecovered any
+	failed := false
 	for _, listener := range listeners {
-		listener()
+		func() {
+			defer func() {
+				if recovered := recover(); recovered != nil {
+					if !failed {
+						firstRecovered = recovered
+					}
+					failed = true
+				}
+			}()
+			listener()
+		}()
 	}
+	if failed {
+		panic(firstRecovered)
+	}
+	succeeded = true
 }
 
 func (c *HubInfo) WatchEndpoint() string {

@@ -59,7 +59,14 @@ func (h *Heartbeat) AfterAppStart() {
 		// Hub no longer knows this instance, which is what a Hub restart looks
 		// like. A restarted Hub can also advertise a new watch endpoint, so
 		// refresh Hub information before registering again.
-		goutil.RunWithRecover(heartbeatRecovered, h.HubInfo.Refresh)
+		refreshed := false
+		goutil.RunWithRecover(heartbeatRecovered, func() {
+			h.HubInfo.Refresh()
+			refreshed = true
+		})
+		if !refreshed {
+			return
+		}
 		h.register()
 	})
 }

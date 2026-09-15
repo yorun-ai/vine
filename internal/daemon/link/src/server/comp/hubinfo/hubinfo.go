@@ -56,6 +56,7 @@ func (c *HubInfo) Refresh() {
 	info := c.InfoServiceClient.GetInfo()
 
 	c.mutex.Lock()
+	previous := c.info
 	changed := c.info != info
 	c.info = info
 	listeners := vslice.Clone(c.listeners)
@@ -64,9 +65,34 @@ func (c *HubInfo) Refresh() {
 	if !changed {
 		return
 	}
+	succeeded := false
+	defer func() {
+		if succeeded {
+			return
+		}
+		c.mutex.Lock()
+		c.info = previous
+		c.mutex.Unlock()
+	}()
+	var firstRecovered any
+	failed := false
 	for _, listener := range listeners {
-		listener()
+		func() {
+			defer func() {
+				if recovered := recover(); recovered != nil {
+					if !failed {
+						firstRecovered = recovered
+					}
+					failed = true
+				}
+			}()
+			listener()
+		}()
 	}
+	if failed {
+		panic(firstRecovered)
+	}
+	succeeded = true
 }
 
 func (c *HubInfo) WatchEndpoint() string {

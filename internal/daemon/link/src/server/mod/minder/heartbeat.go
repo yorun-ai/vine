@@ -38,7 +38,14 @@ func (i *AppInstance) startHeartbeat() {
 		// Hub lost this instance, which is what a Hub restart looks like. A
 		// restarted Hub can also advertise new MQ and lock endpoints, so refresh
 		// Hub information before registering again.
-		goutil.RunWithRecover(heartbeatRecovered, i.minder.HubInfo.Refresh)
+		refreshed := false
+		goutil.RunWithRecover(heartbeatRecovered, func() {
+			i.minder.HubInfo.Refresh()
+			refreshed = true
+		})
+		if !refreshed {
+			return
+		}
 		goutil.RunWithRecover(heartbeatRecovered, i.registerHubInstance)
 	})
 }

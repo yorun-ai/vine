@@ -39,7 +39,9 @@ are not part of the public compatibility commitment.
   Portal instances next to the application instances. Standalone Portal shares
   Hub's process, so it registers without a heartbeat. Hub forgets Portal
   instances when it restarts and each Portal registers again on its next
-  heartbeat.
+  heartbeat. During a rolling upgrade, upgrade Hub before Portal; a new Portal
+  continues running against an older Hub, but retries the unavailable Portal
+  registry service and logs a warning on each 10-second heartbeat.
 
 - Hub connection information includes its Vine runtime `version`.
 

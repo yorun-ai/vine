@@ -173,6 +173,38 @@ func TestClientManagerReconnectsWhenHubMQEndpointChanged(t *testing.T) {
 	t.Cleanup(func() { manager.conn.Close() })
 }
 
+func TestClientManagerKeepsAppliedConnectionWhenReplacementDialFails(t *testing.T) {
+	previousServer := newTestNATSServer(t)
+	nextServer := newTestNATSServer(t)
+
+	component := &_TestRemoteClient{Endpoint: "nats://" + previousServer.Addr().String()}
+	manager := initTestClient(component)
+	previousConn := manager.conn
+	previousOption := manager.option
+
+	originalConnect := newNATSConnect
+	failNext := true
+	newNATSConnect = func(endpoint string, options ...gonats.Option) (*gonats.Conn, error) {
+		if failNext {
+			failNext = false
+			return nil, errors.New("temporary dial failure")
+		}
+		return originalConnect(endpoint, options...)
+	}
+	t.Cleanup(func() { newNATSConnect = originalConnect })
+
+	component.Endpoint = "nats://" + nextServer.Addr().String()
+	assert.Panics(t, manager.onHubInfoRefresh)
+	assert.Same(t, previousConn, manager.conn)
+	assert.Same(t, previousOption, manager.option)
+	assert.False(t, previousConn.IsClosed())
+
+	manager.onHubInfoRefresh()
+	assert.NotSame(t, previousConn, manager.conn)
+	assert.True(t, previousConn.IsClosed())
+	t.Cleanup(func() { manager.conn.Close() })
+}
+
 func TestWaitJetStreamReadyRetriesUntilReady(t *testing.T) {
 	callCount := 0
 

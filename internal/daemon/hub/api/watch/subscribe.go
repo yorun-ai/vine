@@ -61,6 +61,7 @@ type _Watcher struct {
 	mutex  sync.Mutex
 	cancel context.CancelFunc
 	pubsub *redis.PubSub
+	done   chan struct{}
 }
 
 // _Snapshot reconciles watched values with the events delivered for them.
@@ -70,7 +71,8 @@ type _Snapshot interface {
 }
 
 func (w *_Watcher) start(redisClient *redis.Client) {
-	if redisClient == nil {
+	if redisClient == nil || w.ctx.Err() != nil {
+		w.client.removeWatcher(w)
 		return
 	}
 
@@ -91,9 +93,14 @@ func (w *_Watcher) start(redisClient *redis.Client) {
 	w.mutex.Lock()
 	w.cancel = cancel
 	w.pubsub = pubsub
+	w.done = make(chan struct{})
+	done := w.done
 	w.mutex.Unlock()
 
-	go w.client.consumePatternMessages(consumeCtx, pubsub.ChannelWithSubscriptions(), revision, w.snapshot.handleSubscription, handleEvent, pubsub.Close)
+	go func() {
+		defer close(done)
+		w.client.consumePatternMessages(consumeCtx, pubsub.ChannelWithSubscriptions(), revision, w.snapshot.handleSubscription, handleEvent, pubsub.Close)
+	}()
 }
 
 func (w *_Watcher) subscribe(ctx context.Context, redisClient *redis.Client) *redis.PubSub {
@@ -116,8 +123,10 @@ func (w *_Watcher) stop() {
 	w.mutex.Lock()
 	cancel := w.cancel
 	pubsub := w.pubsub
+	done := w.done
 	w.cancel = nil
 	w.pubsub = nil
+	w.done = nil
 	w.mutex.Unlock()
 
 	if cancel != nil {
@@ -125,6 +134,9 @@ func (w *_Watcher) stop() {
 	}
 	if pubsub != nil {
 		_ = pubsub.Close()
+	}
+	if done != nil {
+		<-done
 	}
 }
 

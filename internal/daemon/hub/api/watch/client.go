@@ -130,6 +130,10 @@ func (c *Client) addWatcher(watcher *_Watcher) {
 		c.watchers = map[*_Watcher]struct{}{}
 	}
 	c.watchers[watcher] = struct{}{}
+	context.AfterFunc(watcher.ctx, func() {
+		watcher.stop()
+		c.removeWatcher(watcher)
+	})
 }
 
 func (c *Client) removeWatcher(watcher *_Watcher) {

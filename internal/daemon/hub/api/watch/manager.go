@@ -61,11 +61,24 @@ func (m *ClientManager) repairEndpoint(option *Option) bool {
 		return false
 	}
 
+	client := m.client.(_RedisClientSetter)
+	next := newRedisClient(redisOptionsFor(option, addr))
+	previous := client.swapRedisClient(m.Context, next)
+	succeeded := false
+	defer func() {
+		if succeeded {
+			return
+		}
+		client.swapRedisClient(m.Context, previous)
+		_ = next.Close()
+		// Restore the subscriptions that were stopped before the replacement
+		// endpoint failed. A later Hub refresh can then retry the replacement.
+		m.client.(_ClientRepairer).restartWatchers()
+	}()
+	m.client.(_ClientRepairer).restartWatchers()
 	m.option = option
 	m.addr = addr
-	client := m.client.(_RedisClientSetter)
-	previous := client.swapRedisClient(m.Context, newRedisClient(redisOptionsFor(option, addr)))
-	m.client.(_ClientRepairer).restartWatchers()
+	succeeded = true
 	if previous != nil {
 		_ = previous.Close()
 	}

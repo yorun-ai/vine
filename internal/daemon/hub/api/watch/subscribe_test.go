@@ -1,13 +1,30 @@
 package watch
 
 import (
+	"context"
 	"maps"
 	"sync"
 	"testing"
 	"testing/synctest"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestCancelledWatcherIsRemovedFromRepairSet(t *testing.T) {
+	client := new(Client)
+	ctx, cancel := context.WithCancel(context.Background())
+	watcher := &_Watcher{client: client, ctx: ctx}
+	client.addWatcher(watcher)
+
+	cancel()
+	require.Eventually(t, func() bool {
+		client.watcherMutex.Lock()
+		defer client.watcherMutex.Unlock()
+		return len(client.watchers) == 0
+	}, time.Second, time.Millisecond)
+}
 
 func TestSubscriptionReplaysDeleteAfterSnapshotPublication(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {

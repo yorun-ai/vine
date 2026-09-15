@@ -61,6 +61,12 @@ func (m *_ClientManager) InitComponent(component app.ManagedComponent) {
 // connect dials the endpoint described by option and installs the new
 // connection, the JetStream context and the consumer bookkeeping on the client.
 func (m *_ClientManager) connect(option *_Option) {
+	conn := m.newConnection(option)
+	m.conn = conn
+	m.client.(_ClientOps).setConn(conn)
+}
+
+func (m *_ClientManager) newConnection(option *_Option) *gonats.Conn {
 	vpre.CheckNotEmpty(option.Endpoint, "nats endpoint is empty")
 
 	connectOptions := []gonats.Option{
@@ -75,8 +81,7 @@ func (m *_ClientManager) connect(option *_Option) {
 	}
 	conn, err := newNATSConnect(option.Endpoint, connectOptions...)
 	vpre.CheckNilError(err, "connect nats failed")
-	m.conn = conn
-	m.client.(_ClientOps).setConn(conn)
+	return conn
 }
 
 // onHubInfoRefresh reconnects after Hub moved its MQ endpoint, which happens
@@ -98,14 +103,16 @@ func (m *_ClientManager) onHubInfoRefresh() {
 		return
 	}
 
+	conn := m.newConnection(next)
 	previous := m.conn
+	m.conn = conn
 	m.option = next
+	m.client.(_ClientOps).setConn(conn)
+	natsLogger.Info("link reconnected to Hub MQ after its endpoint changed", "endpoint", next.Endpoint)
+	m.client.(_ClientOps).onReconnect(m.Context, conn)
 	if previous != nil {
 		previous.Close()
 	}
-	m.connect(next)
-	natsLogger.Info("link reconnected to Hub MQ after its endpoint changed", "endpoint", next.Endpoint)
-	m.client.(_ClientOps).onReconnect(m.Context, m.conn)
 }
 
 func (m *_ClientManager) Component() app.ManagedComponent {
