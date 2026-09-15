@@ -15,13 +15,13 @@ type Numeric interface {
 }
 
 // InRange reports whether num is in the half-open interval [min, max).
-func InRange[N Numeric](num, min, max N) bool {
+func InRange[N Numeric](num N, min N, max N) bool {
 	return num >= min && num < max
 }
 
 // RandIntBetween returns a pseudorandom integer in the inclusive interval [left, right].
 // It panics when right is not greater than left.
-func RandIntBetween(left, right int) int {
+func RandIntBetween(left int, right int) int {
 	vpre.Check(right > left, "invalid interval, right(%d) was less than or equal to left(%d)", right, left)
 	return rander.Intn(right-left+1) + left
 }

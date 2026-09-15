@@ -58,7 +58,7 @@ func (g *Graph[N]) AddEdge(from N, tos ...N) {
 }
 
 // RemoveEdge removes the directed edge from from to to and reports whether it existed.
-func (g *Graph[N]) RemoveEdge(from, to N) bool {
+func (g *Graph[N]) RemoveEdge(from N, to N) bool {
 	targets, ok := g.edges[from]
 	if !ok {
 		return false

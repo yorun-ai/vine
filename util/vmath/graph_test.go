@@ -176,7 +176,7 @@ func FuzzGraphPaths(f *testing.F) {
 	})
 }
 
-func graphReachable(graph *Graph[int], from, target int) bool {
+func graphReachable(graph *Graph[int], from int, target int) bool {
 	queue := []int{from}
 	visited := map[int]bool{}
 	for len(queue) > 0 {

@@ -82,7 +82,7 @@ func (o *RpcOperation) authMode() skel.AuthMode {
 	return authMode
 }
 
-func (o *RpcOperation) writeErrorWithReason(code ex.Code, message, reason string) {
+func (o *RpcOperation) writeErrorWithReason(code ex.Code, message string, reason string) {
 	var options []ex.ErrorOption
 	if reason != "" {
 		options = append(options, ex.WithReason(reason))

@@ -96,7 +96,7 @@ func (m *RegistryCore) Heartbeat(heartbeat AppHeartbeat) bool {
 }
 
 // RegisterSchemas registers schema ownership without creating application endpoints.
-func (m *RegistryCore) RegisterSchemas(ownerName, ownerId string, schemas []*skel.DomainSchema) {
+func (m *RegistryCore) RegisterSchemas(ownerName string, ownerId string, schemas []*skel.DomainSchema) {
 	m.SchemaRepo.SaveDomainSchemas(ownerName, ownerId, schemas)
 }
 

@@ -20,7 +20,7 @@ type testClient struct {
 	release  func(context.Context, string, string) bool
 }
 
-func (c *testClient) Acquire(key, token string, ttlMillis int, options ...client.InvokeOption) bool {
+func (c *testClient) Acquire(key string, token string, ttlMillis int, options ...client.InvokeOption) bool {
 	ttl := time.Duration(ttlMillis) * time.Millisecond
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -41,7 +41,7 @@ func (c *testClient) Acquire(key, token string, ttlMillis int, options ...client
 	return true
 }
 
-func (c *testClient) Renew(key, token string, ttlMillis int, options ...client.InvokeOption) bool {
+func (c *testClient) Renew(key string, token string, ttlMillis int, options ...client.InvokeOption) bool {
 	ttl := time.Duration(ttlMillis) * time.Millisecond
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -57,7 +57,7 @@ func (c *testClient) Renew(key, token string, ttlMillis int, options ...client.I
 	return true
 }
 
-func (c *testClient) Release(key, token string, options ...client.InvokeOption) bool {
+func (c *testClient) Release(key string, token string, options ...client.InvokeOption) bool {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.releases++

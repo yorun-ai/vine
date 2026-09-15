@@ -23,9 +23,6 @@ func TestBuildContextLogFieldsIncludesAvailableValues(t *testing.T) {
 		t.Fatalf("unexpected trace error: %v", err)
 	}
 	actor := meta.NewAuthenticatedActorForTest()
-	if err != nil {
-		t.Fatalf("unexpected actor error: %v", err)
-	}
 	client, err := meta.NewApp("svc", "1.2.3", "00000000-0000-0000-0000-000000000123")
 	if err != nil {
 		t.Fatalf("unexpected client error: %v", err)

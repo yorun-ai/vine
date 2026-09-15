@@ -121,7 +121,7 @@ func TestManagerReconcileEntriesUpdatesExistingPortalRules(t *testing.T) {
 func TestManagerAfterAppStartStartsEntriesCreatedBeforeStart(t *testing.T) {
 	prev := listenEntryTCP
 	var listenAddress string
-	listenEntryTCP = func(network, address string) (net.Listener, error) {
+	listenEntryTCP = func(network string, address string) (net.Listener, error) {
 		listenAddress = address
 		return newTestListener(), nil
 	}

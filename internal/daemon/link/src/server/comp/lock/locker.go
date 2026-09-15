@@ -13,9 +13,9 @@ import (
 )
 
 type _Locker interface {
-	Acquire(ctx meta.Context, key, token string, ttlMillis int) bool
-	Renew(ctx meta.Context, key, token string, ttlMillis int) bool
-	Release(ctx meta.Context, key, token string) bool
+	Acquire(ctx meta.Context, key string, token string, ttlMillis int) bool
+	Renew(ctx meta.Context, key string, token string, ttlMillis int) bool
+	Release(ctx meta.Context, key string, token string) bool
 	Close()
 }
 
@@ -48,7 +48,7 @@ func (l *Locker) AfterAppStop() {
 	}
 }
 
-func (l *Locker) checkRequest(key, token string) {
+func (l *Locker) checkRequest(key string, token string) {
 	ex.PanicNewIfNot(l.impl != nil, ex.ServiceUnavailable, "lock service is disabled")
 	ex.PanicNewIfNot(key != "" && token != "", ex.InvalidRequest, "lock key and token must not be empty")
 }
@@ -57,19 +57,19 @@ func checkTTL(ttlMillis int) {
 	ex.PanicNewIfNot(ttlMillis > 0 && int64(ttlMillis) <= int64((1<<63-1)/time.Millisecond), ex.InvalidRequest, "invalid lock lease duration")
 }
 
-func (l *Locker) Acquire(ctx meta.Context, key, token string, ttlMillis int) bool {
+func (l *Locker) Acquire(ctx meta.Context, key string, token string, ttlMillis int) bool {
 	l.checkRequest(key, token)
 	checkTTL(ttlMillis)
 	return l.impl.Acquire(ctx, key, token, ttlMillis)
 }
 
-func (l *Locker) Renew(ctx meta.Context, key, token string, ttlMillis int) bool {
+func (l *Locker) Renew(ctx meta.Context, key string, token string, ttlMillis int) bool {
 	l.checkRequest(key, token)
 	checkTTL(ttlMillis)
 	return l.impl.Renew(ctx, key, token, ttlMillis)
 }
 
-func (l *Locker) Release(ctx meta.Context, key, token string) bool {
+func (l *Locker) Release(ctx meta.Context, key string, token string) bool {
 	l.checkRequest(key, token)
 	return l.impl.Release(ctx, key, token)
 }

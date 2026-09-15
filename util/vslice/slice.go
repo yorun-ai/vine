@@ -12,7 +12,7 @@ func Clone[S ~[]E, E any](s S) S {
 }
 
 // Delete removes the elements s[i:j] from s.
-func Delete[S ~[]E, E any](s S, i, j int) S {
+func Delete[S ~[]E, E any](s S, i int, j int) S {
 	return slices.Delete(s, i, j)
 }
 
@@ -97,7 +97,7 @@ func Chunk[E any](list []E, size int) [][]E {
 // The method returns new slice rather than modify origin.
 func Shuffle[E any](list []E) []E {
 	result := Clone(list)
-	rand.Shuffle(len(result), func(i, j int) {
+	rand.Shuffle(len(result), func(i int, j int) {
 		result[i], result[j] = result[j], result[i]
 	})
 	return result

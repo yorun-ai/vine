@@ -7,7 +7,7 @@ import (
 	"sort"
 )
 
-func (s *MaintenanceApiServiceServerImpl) FieldSources(kind, name string) []skeled.FieldSource {
+func (s *MaintenanceApiServiceServerImpl) FieldSources(kind string, name string) []skeled.FieldSource {
 	var sources core.FieldSources
 	switch kind {
 	case seedKindAppConfig:
@@ -33,7 +33,7 @@ func (s *MaintenanceApiServiceServerImpl) FieldSources(kind, name string) []skel
 	for path, source := range sources {
 		result = append(result, skeled.FieldSource{Path: path, Source: source.Source, Define: source.Define, Override: source.Override, Variables: append([]string{}, source.Variables...), Template: source.Template, Bindings: fieldSourceBindings(source.Bindings)})
 	}
-	sort.Slice(result, func(i, j int) bool { return result[i].Path < result[j].Path })
+	sort.Slice(result, func(i int, j int) bool { return result[i].Path < result[j].Path })
 	return result
 }
 

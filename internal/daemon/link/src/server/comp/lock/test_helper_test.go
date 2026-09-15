@@ -19,22 +19,22 @@ func (c *infoClient) GetInfo(...client.InvokeOption) hubskeled.Info {
 
 type hubClient struct{ calls []string }
 
-func (c *hubClient) Acquire(key, token string, ttl int, opts ...client.InvokeOption) bool {
+func (c *hubClient) Acquire(key string, token string, ttl int, opts ...client.InvokeOption) bool {
 	c.calls = append(c.calls, "acquire")
 	return true
 }
 
-func (c *hubClient) Renew(key, token string, ttl int, opts ...client.InvokeOption) bool {
+func (c *hubClient) Renew(key string, token string, ttl int, opts ...client.InvokeOption) bool {
 	c.calls = append(c.calls, "renew")
 	return true
 }
 
-func (c *hubClient) Release(key, token string, opts ...client.InvokeOption) bool {
+func (c *hubClient) Release(key string, token string, opts ...client.InvokeOption) bool {
 	c.calls = append(c.calls, "release")
 	return true
 }
 
-func newTestLocker(t *testing.T, mode, endpoint string, inproc bool) (*Locker, *hubClient) {
+func newTestLocker(t *testing.T, mode string, endpoint string, inproc bool) (*Locker, *hubClient) {
 	t.Helper()
 	flags := &flag.Flag{HubEndpoint: "http://localhost:7071", HubInprocMode: inproc}
 	flags.Normalize(false)

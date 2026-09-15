@@ -180,7 +180,7 @@ func (v *Vault) rebuildIndexAtLocked(now time.Time) {
 			}
 		}
 	}
-	sort.Slice(names, func(i, j int) bool {
+	sort.Slice(names, func(i int, j int) bool {
 		a, b := v.certs[names[i]], v.certs[names[j]]
 		if a.validAt(now) != b.validAt(now) {
 			return a.validAt(now)

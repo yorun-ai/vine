@@ -190,7 +190,7 @@ func newRules(byPattern map[string]Level) (*_Rules, error) {
 		rules.byPattern[pattern] = level
 		rules.ordered = append(rules.ordered, rule)
 	}
-	sort.Slice(rules.ordered, func(i, j int) bool {
+	sort.Slice(rules.ordered, func(i int, j int) bool {
 		return rules.ordered[i].moreSpecificThan(rules.ordered[j])
 	})
 	return rules, nil

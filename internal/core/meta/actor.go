@@ -103,7 +103,7 @@ func NewAuthenticatedActor[I any](info I) Actor {
 	}
 }
 
-func NewAuthenticatedActorWithRawInfo(realm, identifier, infoSkelName string, info jsontext.Value) Actor {
+func NewAuthenticatedActorWithRawInfo(realm string, identifier string, infoSkelName string, info jsontext.Value) Actor {
 	return &_Actor{
 		kind: ActorTypeAuthenticated,
 		actorInfo: &_ActorInfo{
