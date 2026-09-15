@@ -6,7 +6,7 @@ The project follows [Semantic Versioning](https://semver.org/). The public
 version history starts at `v0.9.0`; versions from the former private repository
 are not part of the public compatibility commitment.
 
-## [Unreleased]
+## [0.19.0] - 2026-09-16
 
 ### Added
 
