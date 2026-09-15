@@ -26,7 +26,7 @@ type Server struct {
 
 	handlerTypes []reflect.Type
 	webInfos     []spec.WebInfo
-	routes       []*spec.Route
+	routes       []spec.Route
 	executor     Executor
 
 	ginEngine *gin.Engine
@@ -49,8 +49,8 @@ func (s *Server) HTTPHandler() http.Handler {
 	return s.ginEngine
 }
 
-func (s *Server) Routes() []spec.RouteInfo {
-	routes := make([]spec.RouteInfo, 0, len(s.routes))
+func (s *Server) Routes() []spec.Route {
+	routes := make([]spec.Route, 0, len(s.routes))
 	for _, route := range s.routes {
 		routes = append(routes, route)
 	}
@@ -62,24 +62,18 @@ func (s *Server) WebInfos() []spec.WebInfo {
 }
 
 func (s *Server) initRoutes() {
-	routers := vslice.Map(s.handlerTypes, func(handlerType reflect.Type) *spec.Router {
+	for _, handlerType := range s.handlerTypes {
 		checkHandlerType(handlerType)
 		webInfo := spec.GetWebInfo(handlerType)
 		vpre.Check(handlerType.Implements(webInfo.ServerType()), "web handler type %s must implement web server %s", handlerType, webInfo.ServerType())
 		if !vslice.Contains(s.webInfos, webInfo) {
 			s.webInfos = append(s.webInfos, webInfo)
 		}
-		router := spec.NewRouter(handlerType, "/"+webInfo.SkelName())
+		router := spec.NewRouter(handlerType)
 		handlerIns := reflect.New(handlerType.Elem()).Interface()
 		handlerIns.(spec.Handler).Routes(router)
-		return router
-	})
-	routers = flattenRouters(routers)
-
-	for _, router := range routers {
-		for _, route := range router.Routes() {
-			s.routes = append(s.routes, route.WithBasePath(router.BasePath()))
-		}
+		prefix := "/" + webInfo.SkelName()
+		s.routes = append(s.routes, spec.CollectRoutes(router, prefix)...)
 	}
 }
 
@@ -108,7 +102,7 @@ func (s *Server) initEngine() {
 	}
 }
 
-func (s *Server) ginHandler(route *spec.Route) {
+func (s *Server) ginHandler(route spec.Route) {
 	s.ginEngine.Handle(route.Method(), route.Path(), func(ginCtx *gin.Context) {
 		s.executor.Execute(route, ginCtx)
 	})
@@ -197,14 +191,6 @@ func isAbortHandlerPanic(err any) bool {
 		return errors.Is(errValue, http.ErrAbortHandler)
 	}
 	return false
-}
-
-func flattenRouters(routers []*spec.Router) []*spec.Router {
-	flatten := vslice.Clone(routers)
-	for _, r := range routers {
-		flatten = append(flatten, flattenRouters(r.SubRouters())...)
-	}
-	return flatten
 }
 
 func (s *Server) overrideGinDebugRoutePrinter() func() {

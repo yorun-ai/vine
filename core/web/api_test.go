@@ -31,6 +31,17 @@ func init() {
 }
 
 var _ context.Context = Context(nil)
+var _ interface{ BasePath() string } = (*Router)(nil)
+
+func TestRouteAssemblyIsNotExposedThroughFacadeTypes(t *testing.T) {
+	for _, kind := range []reflect.Type{reflect.TypeFor[*Router](), reflect.TypeFor[Route]()} {
+		for _, name := range []string{"WithBasePath", "WithPrefix", "RoutesWithPrefix"} {
+			if _, ok := kind.MethodByName(name); ok {
+				t.Errorf("%s exposes internal route assembly method %s", kind, name)
+			}
+		}
+	}
+}
 
 func TestRegisteredWebInfosContainsFacadeRegisteredWeb(t *testing.T) {
 	infos := RegisteredWebInfos()

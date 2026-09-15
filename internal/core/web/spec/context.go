@@ -9,17 +9,17 @@ type Context interface {
 	meta.Context
 
 	Gin() *gin.Context
-	Route() RouteInfo
+	Route() Route
 }
 
 type _Context struct {
 	meta.Context
 
 	ginCtx *gin.Context
-	route  RouteInfo
+	route  Route
 }
 
-func NewContext(ginCtx *gin.Context, route RouteInfo, trace meta.Trace, initiator meta.Initiator, actor meta.Actor) Context {
+func NewContext(ginCtx *gin.Context, route Route, trace meta.Trace, initiator meta.Initiator, actor meta.Actor) Context {
 	return &_Context{
 		Context: meta.NewContext(ginCtx.Request.Context(), trace, initiator, actor),
 		ginCtx:  ginCtx,
@@ -31,6 +31,6 @@ func (c *_Context) Gin() *gin.Context {
 	return c.ginCtx
 }
 
-func (c *_Context) Route() RouteInfo {
+func (c *_Context) Route() Route {
 	return c.route
 }

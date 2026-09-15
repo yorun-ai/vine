@@ -13,8 +13,8 @@ import (
 )
 
 type Executor interface {
-	Init(routeDict []spec.RouteInfo)
-	Execute(route spec.RouteInfo, ginCtx *gin.Context)
+	Init(routeDict []spec.Route)
+	Execute(route spec.Route, ginCtx *gin.Context)
 }
 
 type _ContainerExecutor struct {
@@ -30,7 +30,7 @@ func NewContainerExecutor(filterTypes []reflect.Type, bindAppliers []di.BindAppl
 	}
 }
 
-func (e *_ContainerExecutor) Init(routeDict []spec.RouteInfo) {
+func (e *_ContainerExecutor) Init(routeDict []spec.Route) {
 	handlerTypeSet := map[reflect.Type]struct{}{}
 	for _, route := range routeDict {
 		handlerTypeSet[route.HandlerType()] = struct{}{}
@@ -53,7 +53,7 @@ func (e *_ContainerExecutor) Init(routeDict []spec.RouteInfo) {
 	})
 }
 
-func (e *_ContainerExecutor) Execute(route spec.RouteInfo, ginCtx *gin.Context) {
+func (e *_ContainerExecutor) Execute(route spec.Route, ginCtx *gin.Context) {
 	cancel, err := applyRequestOptions(ginCtx)
 	if err != nil {
 		logger.Warn(err.Error())
