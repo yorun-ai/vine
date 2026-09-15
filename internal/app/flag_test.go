@@ -22,6 +22,7 @@ func TestFlagsEnsureRunFlagAddsDefaultRunFlag(t *testing.T) {
 	if assert.True(t, ok) {
 		assert.Equal(t, "", runFlag.ListenAddr)
 		assert.Nil(t, runFlag.Context)
+		assert.Empty(t, flags.LinkEndpoint())
 	}
 }
 
@@ -61,13 +62,6 @@ func TestFlagsContextReturnsBackgroundWhenRunFlagContextIsNil(t *testing.T) {
 	}
 
 	assert.NotNil(t, flags.Context())
-}
-
-func TestFlagsLinkEndpointReturnsRunFlagValue(t *testing.T) {
-	flags := _Flags{}
-	flags.EnsureRunFlag()
-
-	assert.Empty(t, flags.LinkEndpoint())
 }
 
 func TestWithLinkEndpointSetsRunFlag(t *testing.T) {

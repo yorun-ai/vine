@@ -9,21 +9,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	coreapp "go.yorun.ai/vine/internal/core/app"
 	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/runtime"
 	web "go.yorun.ai/vine/internal/core/web/spec"
 )
-
-type testWebSpec struct {
-	Application
-	WebberEnabled
-}
-
-func (*testWebSpec) Name() string {
-	return "test.web"
-}
 
 func TestWebberMetaContextUsesApplicationInfo(t *testing.T) {
 	parent := context.Background()
@@ -284,16 +274,6 @@ func TestWebberBindContextMapsWebContextToCommonTypes(t *testing.T) {
 	if recorder.MetaCtx.Actor() == nil || recorder.MetaCtx.Actor().Type() != actor.Type() {
 		t.Fatalf("unexpected actor: %#v", recorder.MetaCtx.Actor())
 	}
-}
-
-func TestCollectWebberUsesWebAccessPathPrefix(t *testing.T) {
-	newWebber(
-		&testUniqueRouteAppSpec{},
-		runtime.App(meta.MustNewApp("test.unique.web", "1.2.3", "123e4567-e89b-12d3-a456-426614174000")),
-		func(*di.Binder) {},
-	)
-
-	assert.Equal(t, "/web/access", coreapp.PathWebAccess)
 }
 
 func TestUniqueWebberMountsAtDefaultPath(t *testing.T) {

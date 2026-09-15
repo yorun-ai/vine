@@ -223,12 +223,40 @@ func TestMuteSuccessLogRejectsUnknownMethod(t *testing.T) {
 }
 
 func TestMuteSuccessSpanStillLogsError(t *testing.T) {
-	span := &Span{
-		logger:      logger.New("vine:test"),
-		muteSuccess: true,
+	resetMuteForTest(t)
+
+	serviceSpec := &spec.ServiceSpec{
+		Type:     spec.ServiceSpecTypeClient,
+		Name:     "RpcMutedClientService",
+		SkelName: "rpc.log.test.muted.client",
+		Methods: []*spec.MethodSpec{{
+			Name:        "Ping",
+			SkelName:    "ping",
+			MethodFuncs: []any{rpcLogTestClientPing},
+		}},
+	}
+	spec.Register(serviceSpec)
+	MuteSuccessLog(rpcLogTestClientPing)
+
+	path := filepath.Join(t.TempDir(), "rpc-muted-client.jsonl")
+	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
+	span := StartClientInvoke(log, nil, serviceSpec.Methods[0].Info(), "http://127.0.0.1:1/rpc/invoke")
+	if !span.muteSuccess {
+		t.Fatal("expected muteSuccess span for muteSuccessLog client method")
 	}
 
 	span.Finish(ex.New(ex.InvocationFailed, "boom"))
+
+	records := readRpcLogRecords(t, path)
+	if len(records) != 1 || records[0]["msg"] != "rpc client invoke finished" {
+		t.Fatalf("muted client failure should emit only the finished record: %#v", records)
+	}
+	if records[0]["level"] != "ERROR" || records[0]["code"] != string(ex.InvocationFailed) {
+		t.Fatalf("muted client failure must still log its error: %#v", records[0])
+	}
+	if message, _ := records[0]["error"].(string); !strings.HasPrefix(message, "boom") {
+		t.Fatalf("muted client failure record lost the error: %#v", records[0])
+	}
 }
 
 func TestServerLifecycleLogsSafePayloadAndDebugFinished(t *testing.T) {

@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
 	"testing"
 
 	internalapp "go.yorun.ai/vine/internal/app"
@@ -78,8 +80,21 @@ func TestIngressUsesMutualTLS(t *testing.T) {
 	ing.startHTTPServer()
 	t.Cleanup(ing.stopHTTPServer)
 
-	if got := ing.Endpoint(); len(got) < len("https://") || got[:len("https://")] != "https://" {
-		t.Fatalf("expected https ingress endpoint, got %q", got)
+	secureEndpoint := ing.Endpoint()
+	authority, ok := strings.CutPrefix(secureEndpoint, "https://")
+	if !ok {
+		t.Fatalf("expected https ingress endpoint, got %q", secureEndpoint)
+	}
+	host, portText, ok := strings.Cut(authority, ":")
+	if !ok {
+		t.Fatalf("expected host:port ingress authority, got %q", authority)
+	}
+	port, err := strconv.Atoi(portText)
+	if err != nil {
+		t.Fatalf("expected numeric ingress port in %q", secureEndpoint)
+	}
+	if got, want := endpointOfHostPort(host, port), "http://"+authority; got != want {
+		t.Fatalf("unexpected plaintext ingress endpoint base: got %s, want %s", got, want)
 	}
 	client := &http.Client{Transport: portalIdentity.HTTPTransport(daemon.LinkIdentity.SPIFFEPath())}
 	response, err := client.Get(ing.Endpoint() + "/ready")
@@ -190,12 +205,6 @@ func TestIngressRegistersInprocEndpointWhenHubInprocModeEnabled(t *testing.T) {
 	}
 }
 
-func TestEndpointOfHostPort(t *testing.T) {
-	if got := endpointOfHostPort("127.0.0.1", 18091); got != "http://127.0.0.1:18091" {
-		t.Fatalf("unexpected endpoint: %s", got)
-	}
-}
-
 func mustMetaApp(t *testing.T, name string, instanceID string) meta.App {
 	t.Helper()
 	appInfo, err := meta.NewApp(name, "1.0.0", instanceID)
@@ -218,14 +227,6 @@ func newIngressProxyRequest(t *testing.T, url string) *http.Request {
 	rpchttp.EncodeTraceToHeader(req.Header, trace)
 	req.Header.Set(rpchttp.HeaderRpcClient, formatAppHeader(clientApp))
 	return req
-}
-
-func writeRPCResponse(w http.ResponseWriter, serverApp meta.App, result string) {
-	w.Header().Set(rpchttp.HeaderContentType, "application/vrpc+json")
-	w.Header().Set(rpchttp.HeaderRpcStatus, string(ex.OK))
-	w.Header().Set(rpchttp.HeaderRpcServer, formatAppHeader(serverApp))
-	w.WriteHeader(rpchttp.ResponseStatusCode)
-	_, _ = w.Write([]byte(`{"result":` + result + `,"error":null}`))
 }
 
 func formatAppHeader(appInfo meta.App) string {

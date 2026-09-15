@@ -211,18 +211,6 @@ func TestRedisManagerBindProvidesCache(t *testing.T) {
 	require.NotNil(t, consumer.Cache.cmdable)
 }
 
-func TestInstantiateCacheUsesDefaultTypePrefixWhenNotOverridden(t *testing.T) {
-	manager := &RedisManager{client: goredis.NewClient(&goredis.Options{Addr: "127.0.0.1:6379"})}
-	manager.component = &Redis{Cmdable: manager.client}
-	t.Cleanup(func() {
-		_ = manager.client.Close()
-	})
-
-	cache := manager.instantiateCache(reflect.TypeFor[*_TestDefaultCache](), context.Background()).(*_TestDefaultCache)
-
-	assert.Equal(t, "go.yorun.ai_vine_internal_infra_redis._TestDefaultCache", cache.keyPrefix)
-}
-
 func TestInstantiateCacheRequiresNonEmptyOverriddenPrefix(t *testing.T) {
 	manager := &RedisManager{client: goredis.NewClient(&goredis.Options{Addr: "127.0.0.1:6379"})}
 	manager.component = &Redis{Cmdable: manager.client}

@@ -6,79 +6,67 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNameGetterReportsDefaultAndOverride(t *testing.T) {
-	original := ldName
+func TestLinkerInjectedGettersReportDefaultAndOverride(t *testing.T) {
+	originalName, originalVersion := ldName, ldVersion
+	originalCommit, originalBuiltBy, originalBuiltTime := ldGitCommit, ldBuiltBy, ldBuiltTime
 	t.Cleanup(func() {
-		ldName = original
+		ldName, ldVersion = originalName, originalVersion
+		ldGitCommit, ldBuiltBy, ldBuiltTime = originalCommit, originalBuiltBy, originalBuiltTime
 	})
 
-	ldName = defaultName
-	value, ok := Name()
-	assert.Equal(t, defaultName, value)
-	assert.False(t, ok)
+	for _, tt := range []struct {
+		name     string
+		target   *string
+		get      func() (string, bool)
+		fallback string
+		override string
+	}{
+		{
+			name:     "Name",
+			target:   &ldName,
+			get:      Name,
+			fallback: defaultName,
+			override: "user-service",
+		},
+		{
+			name:     "Version",
+			target:   &ldVersion,
+			get:      Version,
+			fallback: defaultVersion,
+			override: "1.2.3",
+		},
+		{
+			name:     "GitCommit",
+			target:   &ldGitCommit,
+			get:      GitCommit,
+			fallback: defaultBuildText,
+			override: "abc123",
+		},
+		{
+			name:     "BuiltBy",
+			target:   &ldBuiltBy,
+			get:      BuiltBy,
+			fallback: defaultBuildText,
+			override: "ci",
+		},
+		{
+			name:     "BuiltTime",
+			target:   &ldBuiltTime,
+			get:      BuiltTime,
+			fallback: defaultBuildText,
+			override: "2026-04-17T00:00:00Z",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			*tt.target = tt.fallback
+			value, ok := tt.get()
+			assert.Equal(t, tt.fallback, value)
+			assert.False(t, ok)
 
-	ldName = "user-service"
-	value, ok = Name()
-	assert.Equal(t, "user-service", value)
-	assert.True(t, ok)
-}
-
-func TestVersionGetterReportsDefaultAndOverride(t *testing.T) {
-	original := ldVersion
-	t.Cleanup(func() {
-		ldVersion = original
-	})
-
-	ldVersion = defaultVersion
-	value, ok := Version()
-	assert.Equal(t, defaultVersion, value)
-	assert.False(t, ok)
-
-	ldVersion = "1.2.3"
-	value, ok = Version()
-	assert.Equal(t, "1.2.3", value)
-	assert.True(t, ok)
-}
-
-func TestBuildGettersReportDefaultAndOverride(t *testing.T) {
-	originalCommit := ldGitCommit
-	originalBuiltBy := ldBuiltBy
-	originalBuiltTime := ldBuiltTime
-	t.Cleanup(func() {
-		ldGitCommit = originalCommit
-		ldBuiltBy = originalBuiltBy
-		ldBuiltTime = originalBuiltTime
-	})
-
-	ldGitCommit = defaultBuildText
-	ldBuiltBy = defaultBuildText
-	ldBuiltTime = defaultBuildText
-
-	value, ok := GitCommit()
-	assert.Equal(t, defaultBuildText, value)
-	assert.False(t, ok)
-
-	value, ok = BuiltBy()
-	assert.Equal(t, defaultBuildText, value)
-	assert.False(t, ok)
-
-	value, ok = BuiltTime()
-	assert.Equal(t, defaultBuildText, value)
-	assert.False(t, ok)
-
-	ldGitCommit = "abc123"
-	ldBuiltBy = "ci"
-	ldBuiltTime = "2026-04-17T00:00:00Z"
-
-	value, ok = GitCommit()
-	assert.Equal(t, "abc123", value)
-	assert.True(t, ok)
-
-	value, ok = BuiltBy()
-	assert.Equal(t, "ci", value)
-	assert.True(t, ok)
-
-	value, ok = BuiltTime()
-	assert.Equal(t, "2026-04-17T00:00:00Z", value)
-	assert.True(t, ok)
+			*tt.target = tt.override
+			value, ok = tt.get()
+			assert.Equal(t, tt.override, value)
+			assert.True(t, ok)
+		})
+	}
 }

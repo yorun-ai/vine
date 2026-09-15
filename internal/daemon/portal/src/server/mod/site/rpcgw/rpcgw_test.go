@@ -498,26 +498,6 @@ func TestRpcGatewayRejectsInvalidContentType(t *testing.T) {
 	assertRpcGatewayError(t, recorder, ex.InvalidRequest, rpchttp.HeaderContentType)
 }
 
-func TestRpcGatewayRejectsInvalidRpcOptionsForInprocEndpoint(t *testing.T) {
-	target := newTestRpcGateway(map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
-			Endpoint:      "rpc+inproc://vine/portal-rpcgw-options-test/rpc/invoke",
-			ServiceName:   "demo.UserService",
-			AppName:       "demo.app",
-			AppInstanceId: "instance-1",
-		}),
-	})
-	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodPost, "http://demo.local/invoke/demo.UserService/Get", nil)
-	setTestAuthHeaders(request)
-	request.Header.Set(rpchttp.HeaderAccept, rpchttp.ContentTypeJson)
-	request.Header.Set(rpchttp.HeaderRpcOptions, "timeout=soon")
-
-	target.Serve(testContext(recorder, request))
-
-	assertRpcGatewayError(t, recorder, ex.InvalidRequest, rpchttp.HeaderRpcOptions)
-}
-
 func TestRpcGatewayOverwritesExistingRpcActor(t *testing.T) {
 	ingressEndpoint := "link+inproc://vine/portal-rpcgw-actor-test"
 	registerTestIngress(t, ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

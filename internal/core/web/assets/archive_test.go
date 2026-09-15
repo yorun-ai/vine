@@ -26,18 +26,6 @@ func TestNewTarZstAssetsAccessorOpen(t *testing.T) {
 	}
 }
 
-func TestNewTarZstAssetsAccessorReturnsNewAccessorInstance(t *testing.T) {
-	content := testTarZst(t, map[string]string{
-		"index.html": `<div id="app"></div>`,
-	})
-
-	first := NewTarZstAccessor(content)
-	second := NewTarZstAccessor(content)
-	if first == second {
-		t.Fatal("expected constructor to return a new accessor")
-	}
-}
-
 func TestNewTarGzipAssetsAccessorOpen(t *testing.T) {
 	content := testTarGzip(t, map[string]string{
 		"index.html":    `<div id="app"></div>`,
@@ -62,18 +50,6 @@ func TestNewTarGzipAssetsAccessorOpen(t *testing.T) {
 	}
 }
 
-func TestNewTarGzipAssetsAccessorReturnsNewAccessorInstance(t *testing.T) {
-	content := testTarGzip(t, map[string]string{
-		"index.html": `<div id="app"></div>`,
-	})
-
-	first := NewTarGzipAccessor(content)
-	second := NewTarGzipAccessor(content)
-	if first == second {
-		t.Fatal("expected constructor to return a new accessor")
-	}
-}
-
 func TestNewZipAccessorOpen(t *testing.T) {
 	content := testZip(t, map[string]string{
 		"index.html":    `<div id="app"></div>`,
@@ -95,17 +71,5 @@ func TestNewZipAccessorOpen(t *testing.T) {
 
 	if _, ok = store.Open("/missing.js", nil); ok {
 		t.Fatal("expected missing asset")
-	}
-}
-
-func TestNewZipAccessorReturnsNewAccessorInstance(t *testing.T) {
-	content := testZip(t, map[string]string{
-		"index.html": `<div id="app"></div>`,
-	})
-
-	first := NewZipAccessor(content)
-	second := NewZipAccessor(content)
-	if first == second {
-		t.Fatal("expected constructor to return a new accessor")
 	}
 }

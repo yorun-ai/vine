@@ -275,19 +275,6 @@ func (*testHTTPRouteModule) InitPathPrefixRoute(add PathPrefixRouteAdder) {
 	}), nil)
 }
 
-type testServicerSpec struct {
-	Application
-	ServicerEnabled
-}
-
-func (*testServicerSpec) Name() string {
-	return "test.servicer"
-}
-
-func (*testServicerSpec) ServicerInitHandlers(addHandler TypeAdder) {
-	addHandler(T[*ConsoleServiceServerImpl]())
-}
-
 type testUniqueWebberRegisterSpec struct {
 	InternalApplication
 	WebberEnabled
@@ -492,24 +479,12 @@ func TestHTTPRouteServeHTTPRewritesPathAndRequestURI(t *testing.T) {
 	assert.Equal(t, "/demo/ping", requestURI)
 }
 
-func TestAppImplInitConsoleServerCreatesHandler(t *testing.T) {
-	app := newTestAppImpl()
-
-	assert.NotNil(t, app.consoleServer)
-	assert.NotNil(t, app.consoleServer.HTTPHandler())
-	assert.True(t, app.shouldEnableConsole())
-}
-
 type testInternalOnlyAppSpec struct {
 	InternalApplication
 }
 
 func (*testInternalOnlyAppSpec) Name() string {
 	return "test.internal.only"
-}
-
-type testUnnamedInternalOnlyAppSpec struct {
-	InternalApplication
 }
 
 type testEmptyNameInternalOnlyAppSpec struct {
@@ -544,7 +519,7 @@ func TestAppImplInitConsoleServerSkipsWhenDisabledByInternalAttrs(t *testing.T) 
 	assert.False(t, app.shouldEnableConsole())
 }
 
-func TestAppImplInitConsoleServerCreatesHandlerWhenInprocEnabled(t *testing.T) {
+func TestAppImplInitConsoleServerCreatesHandler(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(true)
@@ -774,35 +749,6 @@ func TestStartHTTPServerDefaultsToLoopbackEphemeralAddress(t *testing.T) {
 	assert.NotZero(t, app.httpPort)
 }
 
-func TestAppImplStartDoesNotRegisterInternalApp(t *testing.T) {
-	flags := _Flags{}
-	flags.EnsureRunFlag()
-	flags.InitInprocFlag(false)
-	linker := &testLinker{}
-	app := newApp(&testInternalServicerSpec{
-		AppFlag: &RunFlag{},
-		InternalAttrs: InternalAttributes{
-			Info: testRuntimeApp{
-				name:       "test.app",
-				version:    "1.2.3",
-				instanceID: "00000000-0000-0000-0000-000000000123",
-			},
-			Linker:            linker,
-			DisableHTTPServer: true,
-		},
-	}, flags)
-
-	app.Start()
-	app.StopGracefully()
-
-	assert.Equal(t, "", linker.RegisterServiceEndpoint)
-	assert.Empty(t, linker.RegisterServiceHandlers)
-	assert.Empty(t, linker.RegisterWebHandlers)
-	assert.Empty(t, linker.RegisterEventListeners)
-	assert.Empty(t, linker.RegisterTaskRunners)
-	assert.Equal(t, 0, linker.UnregisterCalls)
-}
-
 func TestAppImplStartInprocModeSkipsHTTPServerAndLinkerRegistration(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
@@ -822,6 +768,9 @@ func TestAppImplStartInprocModeSkipsHTTPServerAndLinkerRegistration(t *testing.T
 	}, flags)
 
 	app.Start()
+
+	assert.NotEmpty(t, app.inprocCleanups)
+
 	app.StopGracefully()
 
 	assert.Nil(t, app.httpServer)
@@ -850,39 +799,6 @@ func TestAppImplStartWithDisableHTTPServerDoesNotRegisterInternalApp(t *testing.
 			},
 			Linker:            linker,
 			DisableHTTPServer: true,
-		},
-	}, flags)
-
-	app.Start()
-	app.StopGracefully()
-
-	assert.Nil(t, app.httpServer)
-	assert.Equal(t, "", app.httpHost)
-	assert.Equal(t, 0, app.httpPort)
-	assert.Equal(t, "", linker.RegisterServiceEndpoint)
-	assert.Empty(t, linker.RegisterServiceHandlers)
-	assert.Empty(t, linker.RegisterWebHandlers)
-	assert.Empty(t, linker.RegisterEventListeners)
-	assert.Empty(t, linker.RegisterTaskRunners)
-	assert.Equal(t, 0, linker.UnregisterCalls)
-}
-
-func TestAppImplStartInprocModeStillUsesInprocServerWhenHTTPServerDisabled(t *testing.T) {
-	flags := _Flags{}
-	flags.EnsureRunFlag()
-	flags.InitInprocFlag(true)
-	linker := &testLinker{}
-	app := newApp(&testInternalServicerSpec{
-		AppFlag: &RunFlag{},
-		InternalAttrs: InternalAttributes{
-			Info: testRuntimeApp{
-				name:       "test.app",
-				version:    "1.2.3",
-				instanceID: "00000000-0000-0000-0000-000000000123",
-			},
-			Linker:            linker,
-			DisableHTTPServer: true,
-			InprocHostPath:    "app/test-start-inproc-disable-http",
 		},
 	}, flags)
 
@@ -1219,26 +1135,17 @@ func TestAppImplMountsHTTPRouteModulePrefix(t *testing.T) {
 	assert.Equal(t, "/out/demo.Service/method", recorder.Body.String())
 }
 
-func TestAppImplHTTPHandlerReturns404WhenPathIsNotBuiltin(t *testing.T) {
+func TestAppImplHTTPHandlerReturns404ForNonBuiltinPaths(t *testing.T) {
 	app := newTestAppImpl()
 
-	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
-	recorder := httptest.NewRecorder()
+	for _, path := range []string{"/healthz", "/unknown"} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		recorder := httptest.NewRecorder()
 
-	app.httpHandler().ServeHTTP(recorder, req)
+		app.httpHandler().ServeHTTP(recorder, req)
 
-	assert.Equal(t, http.StatusNotFound, recorder.Code)
-}
-
-func TestAppImplHTTPHandlerReturns404ByDefaultForNonBuiltinPath(t *testing.T) {
-	app := newTestAppImpl()
-
-	req := httptest.NewRequest(http.MethodGet, "/unknown", nil)
-	recorder := httptest.NewRecorder()
-
-	app.httpHandler().ServeHTTP(recorder, req)
-
-	assert.Equal(t, http.StatusNotFound, recorder.Code)
+		assert.Equal(t, http.StatusNotFound, recorder.Code, "path %s", path)
+	}
 }
 
 func TestAppImplHTTPHandlerReturns404ForRPCPathWhenRPCServerIsDisabled(t *testing.T) {

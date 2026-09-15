@@ -17,38 +17,28 @@ func TestBootServiceReturnsRpcProxyEndpointPath(t *testing.T) {
 	info := service.GetInfo()
 
 	assert.Equal(t, "/rpc/proxy/out", info.RpcProxyEndpointPath)
-	assert.False(t, info.SkipDomainSchemas)
 }
 
-func TestBootServiceKeepsDomainSchemasForNetworkAppWithInprocHub(t *testing.T) {
-	service := &BootServiceServerImpl{
-		Flag:       &flag.Flag{HubInprocMode: true},
-		InprocFlag: &app.InternalInprocFlag{},
+func TestBootServiceSkipsDomainSchemasOnlyWhenHubAndAppShareProcess(t *testing.T) {
+	tests := []struct {
+		name          string
+		hubInprocMode bool
+		appInprocMode bool
+		wantSkip      bool
+	}{
+		{name: "network hub and network app", hubInprocMode: false, appInprocMode: false, wantSkip: false},
+		{name: "inproc hub and network app", hubInprocMode: true, appInprocMode: false, wantSkip: false},
+		{name: "network hub and inproc app", hubInprocMode: false, appInprocMode: true, wantSkip: false},
+		{name: "inproc hub and inproc app", hubInprocMode: true, appInprocMode: true, wantSkip: true},
 	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			service := &BootServiceServerImpl{
+				Flag:       &flag.Flag{HubInprocMode: test.hubInprocMode},
+				InprocFlag: &app.InternalInprocFlag{Enabled: test.appInprocMode},
+			}
 
-	info := service.GetInfo()
-
-	assert.False(t, info.SkipDomainSchemas)
-}
-
-func TestBootServiceKeepsDomainSchemasForInprocAppWithNetworkHub(t *testing.T) {
-	service := &BootServiceServerImpl{
-		Flag:       &flag.Flag{},
-		InprocFlag: &app.InternalInprocFlag{Enabled: true},
+			assert.Equal(t, test.wantSkip, service.GetInfo().SkipDomainSchemas)
+		})
 	}
-
-	info := service.GetInfo()
-
-	assert.False(t, info.SkipDomainSchemas)
-}
-
-func TestBootServiceSkipsDomainSchemasWhenHubAndAppShareProcess(t *testing.T) {
-	service := &BootServiceServerImpl{
-		Flag:       &flag.Flag{HubInprocMode: true},
-		InprocFlag: &app.InternalInprocFlag{Enabled: true},
-	}
-
-	info := service.GetInfo()
-
-	assert.True(t, info.SkipDomainSchemas)
 }

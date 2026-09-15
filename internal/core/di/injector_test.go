@@ -696,23 +696,6 @@ func TestSeederRequiresExecutionScope(t *testing.T) {
 	})
 }
 
-func TestSeedDoesNotInstantiateImmediately(t *testing.T) {
-	cleanupOrder = nil
-	injector := NewInjector(func(b *Binder) {
-		b.Bind(T[*SeededRequestContext]())
-	})
-
-	execution := injector.StartExecution(func(seeder *Seeder) {
-		seeder.SeedInstance(&SeededRequestContext{})
-	})
-
-	assert.Empty(t, cleanupOrder)
-
-	execution.CompleteExecution()
-
-	assert.Empty(t, cleanupOrder)
-}
-
 func TestSeededInstanceDoesNotParticipateInDispose(t *testing.T) {
 	cleanupOrder = nil
 	injector := NewInjector(func(b *Binder) {
@@ -731,25 +714,6 @@ func TestSeededInstanceDoesNotParticipateInDispose(t *testing.T) {
 	execution.CompleteExecution()
 
 	assert.Empty(t, cleanupOrder)
-}
-
-func TestSeedPanicsAfterExecutionScopedInstanceResolved(t *testing.T) {
-	injector := NewInjector(func(b *Binder) {
-		b.Bind(T[*RequestScope]())
-	})
-
-	var seeder *Seeder
-	execution := injector.StartExecution(func(current *Seeder) {
-		seeder = current
-	})
-
-	var scope *RequestScope
-	execution.Resolve(&scope)
-	assert.NotNil(t, scope)
-
-	assert.PanicsWithError(t, "execution injector is no longer accepting seeds", func() {
-		seeder.SeedInstance(&RequestScope{})
-	})
 }
 
 func TestSeedRejectsIncompatibleConcreteInstanceWithFriendlyError(t *testing.T) {

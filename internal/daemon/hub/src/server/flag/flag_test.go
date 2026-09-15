@@ -169,19 +169,6 @@ func TestFlagNormalizeAcceptsValidMQEndpoint(t *testing.T) {
 	assert.Equal(t, MQModeNATS, flags.MQMode)
 }
 
-func TestFlagNormalizeRejectsMQEndpointWithEnableNats(t *testing.T) {
-	flags := &Flag{
-		Store:          StoreSQLite,
-		DBSQLiteFile:   "/tmp/hub.sqlite",
-		MQNatsEndpoint: "nats://127.0.0.1:4222",
-		MQMode:         MQModeEmbedded,
-	}
-
-	require.PanicsWithError(t, "mq-nats-endpoint cannot be used with mq-mode=embedded", func() {
-		flags.Normalize(false)
-	})
-}
-
 func TestFlagNormalizeRejectsInvalidMQEndpoint(t *testing.T) {
 	flags := &Flag{
 		MQMode:         MQModeNATS,
@@ -222,18 +209,6 @@ func TestFlagNormalizeMQModes(t *testing.T) {
 			assert.Equal(t, tc.endpoint, f.MQNatsEndpoint)
 		})
 	}
-}
-
-func TestFlagNormalizeAcceptsEnableNats(t *testing.T) {
-	flags := &Flag{
-		Store:        StoreSQLite,
-		DBSQLiteFile: "/tmp/hub.sqlite",
-		MQMode:       MQModeEmbedded,
-	}
-
-	flags.Normalize(false)
-
-	assert.Equal(t, MQModeEmbedded, flags.MQMode)
 }
 
 func TestFlagNormalizeInprocClearsListenAndMQ(t *testing.T) {

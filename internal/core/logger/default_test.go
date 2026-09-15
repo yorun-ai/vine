@@ -2,8 +2,12 @@ package logger
 
 import (
 	"context"
+	"encoding/json/v2"
 	stdLog "log"
 	"log/slog"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -84,37 +88,62 @@ func TestSetDefaultConcurrentLogging(t *testing.T) {
 }
 
 func TestDefaultLoggerFunctions(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "default-functions.jsonl")
 	previousDefault := defaultLoggers.Load().logger
 	t.Cleanup(func() { SetDefault(previousDefault) })
-	Debug("e-ddd")
-	Info("e-iii")
-	Error("e-eee")
+	SetDefault(New("vine:test", WithOption{
+		Format:     FormatJSON,
+		Level:      LevelDebug,
+		OutputPath: path,
+	}))
 
-	a := map[string]string{
-		"a": "hello",
-		"b": "100",
-	}
-	c := map[string]string{
-		"e": "test",
-		"f": "100",
-	}
-	logger := New("vine:test").With(
-		slog.String("a", a["a"]),
-		slog.String("b", a["b"]),
-		slog.String("e", c["e"]),
-		slog.String("f", c["f"]),
-	)
-	SetDefault(logger)
-
+	Debug("test debug")
 	Info("test info")
-	a["a"] = "world"
-	logger.With(
-		slog.String("a", a["a"]),
-		slog.String("c", "cew"),
-		slog.String("d", "999999"),
-	).Debug("test debug")
-	logger.With(
-		slog.String("c", "cew"),
-		slog.String("d", "999999"),
-	).Error("test error")
+	Error("test error")
+
+	want := []struct {
+		level   string
+		message string
+	}{
+		{level: "DEBUG", message: "test debug"},
+		{level: "INFO", message: "test info"},
+		{level: "ERROR", message: "test error"},
+	}
+	records := readDefaultLoggerRecords(t, path)
+	if len(records) != len(want) {
+		t.Fatalf("default logger records = %#v, want %d records", records, len(want))
+	}
+	for index, wantRecord := range want {
+		got := records[index]
+		if got.Level != wantRecord.level || got.Logger != "vine:test" || got.Message != wantRecord.message {
+			t.Fatalf("record %d = %#v, want level %s logger vine:test message %q", index, got, wantRecord.level, wantRecord.message)
+		}
+	}
+}
+
+type defaultLoggerRecord struct {
+	Level   string `json:"level"`
+	Logger  string `json:"logger"`
+	Message string `json:"msg"`
+}
+
+func readDefaultLoggerRecords(t *testing.T, path string) []defaultLoggerRecord {
+	t.Helper()
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read default logger output: %v", err)
+	}
+	records := make([]defaultLoggerRecord, 0, 4)
+	for line := range strings.SplitSeq(strings.TrimSpace(string(data)), "\n") {
+		if line == "" {
+			continue
+		}
+		var record defaultLoggerRecord
+		if err := json.Unmarshal([]byte(line), &record); err != nil {
+			t.Fatalf("decode default logger record: %v", err)
+		}
+		records = append(records, record)
+	}
+	return records
 }

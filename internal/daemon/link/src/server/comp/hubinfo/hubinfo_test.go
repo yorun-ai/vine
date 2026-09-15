@@ -59,16 +59,6 @@ func TestHubInfoDIInitSkipsHubInfoLookupInInprocMode(t *testing.T) {
 	assert.Equal(t, 0, client.getInfoCall)
 }
 
-func TestHubInfoMQEndpointReturnsMQEndpointWhenNATSPortIsEmpty(t *testing.T) {
-	component := &HubInfo{
-		info: hubskeled.Info{
-			MqEndpoint: "nats://10.0.0.8:4222",
-		},
-	}
-
-	assert.Equal(t, "nats://10.0.0.8:4222", component.MQEndpoint())
-}
-
 func TestHubInfoWatchEndpointSupportsHubVersions(t *testing.T) {
 	for _, tc := range []struct {
 		name    string

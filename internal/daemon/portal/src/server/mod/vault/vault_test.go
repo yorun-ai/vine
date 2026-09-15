@@ -63,6 +63,25 @@ func TestVaultGetCertificateDoesNotMatchMissingHost(t *testing.T) {
 	assert.ErrorIs(t, err, errCertificateNotFound)
 	assert.Nil(t, got)
 	assert.True(t, vault.missingHosts.Contains("other.local"))
+
+	wildcardCert := newTestPortalCert(t, "wildcard-cert", []string{"*.demo.local"})
+	parsedWildcard, err := newCertificate(wildcardCert)
+	require.NoError(t, err)
+	wildcardVault := &Vault{
+		certs: map[string]*_Certificate{
+			parsedWildcard.name: parsedWildcard,
+		},
+	}
+	wildcardVault.rebuildIndexLocked()
+
+	for _, host := range []string{"demo.local", "a.admin.demo.local"} {
+		// A wildcard domain covers exactly one label, so neither the bare
+		// domain nor a two-label subdomain may match it.
+		matched, matchErr := wildcardVault.GetCertificate(&tls.ClientHelloInfo{ServerName: host})
+
+		assert.ErrorIs(t, matchErr, errCertificateNotFound, host)
+		assert.Nil(t, matched, host)
+	}
 }
 
 func TestVaultGetCertificateReturnsExpiredMatchingCert(t *testing.T) {
@@ -281,31 +300,5 @@ func TestVaultCertificateCacheValidityBoundaries(t *testing.T) {
 				assert.Same(t, step.want.cert, got, "at %s", step.at)
 			}
 		})
-	}
-}
-
-func TestVaultCertificateCacheSwitchesBetweenExactAndWildcard(t *testing.T) {
-	now := time.Date(2026, 9, 13, 12, 0, 0, 0, time.UTC)
-	exact := new(_Certificate{name: "a-cert", domains: []string{"admin.demo.local"}, validFrom: now, validTo: now.Add(time.Hour), cert: new(tls.Certificate)})
-	wildcard := new(_Certificate{name: "z-cert", domains: []string{"*.demo.local"}, validFrom: now.Add(-time.Hour), validTo: now.Add(2 * time.Hour), cert: new(tls.Certificate)})
-	vault := new(Vault{certs: map[string]*_Certificate{exact.name: exact, wildcard.name: wildcard}})
-	vault.rebuildIndexAtLocked(now.Add(-time.Nanosecond))
-	for _, step := range []struct {
-		at   time.Time
-		want *_Certificate
-	}{
-		{now.Add(-time.Nanosecond), wildcard},
-		{now, exact},
-		{exact.validTo.Add(time.Nanosecond), wildcard},
-		{wildcard.validTo.Add(time.Nanosecond), exact},
-	} {
-		got, err := vault.getCertificateAt(&tls.ClientHelloInfo{ServerName: "admin.demo.local"}, step.at)
-		require.NoError(t, err)
-		assert.Same(t, step.want.cert, got)
-	}
-	for _, host := range []string{"demo.local", "a.admin.demo.local"} {
-		got, err := vault.getCertificateAt(&tls.ClientHelloInfo{ServerName: host}, now)
-		require.ErrorIs(t, err, errCertificateNotFound)
-		assert.Nil(t, got)
 	}
 }

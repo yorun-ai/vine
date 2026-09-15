@@ -254,28 +254,6 @@ func TestRegistryCoreRegisterSavesDomainSchemas(t *testing.T) {
 	core.Register(AppRegistration{
 		InstanceId:    "instance-1",
 		Name:          "demo.app",
-		Version:       "1.2.3",
-		DomainSchemas: []skel.JSON{skel.JSON(vcode.MustMarshalJsonS(domainSchema))},
-	})
-
-	assert.Len(t, schemaRepo.domainSchemas, 1)
-	assert.Equal(t, domainSchema, schemaRepo.domainSchemas[0])
-	assert.Equal(t, []string{"demo.app:instance-1"}, schemaRepo.saved)
-	assert.Empty(t, schemaRepo.released)
-}
-
-func TestRegistryCoreRegisterSavesDomainSchemasWithoutModeBranch(t *testing.T) {
-	repo := &registryRepoSpy{}
-	schemaRepo := &schemaRepoSpy{}
-	core := newRegistryCoreForTest(repo, schemaRepo)
-	domainSchema := &skel.DomainSchema{
-		Domain: "demo.user",
-		Hash:   "pkg-hash-1",
-	}
-
-	core.Register(AppRegistration{
-		InstanceId:    "instance-1",
-		Name:          "demo.app",
 		DomainSchemas: []skel.JSON{skel.JSON(vcode.MustMarshalJsonS(domainSchema))},
 	})
 

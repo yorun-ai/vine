@@ -36,24 +36,6 @@ type testRegistryServerERImpl struct {
 	defaultTestRegistryServerER
 }
 
-type pubDefaultTestRegistryServer struct{}
-
-func (*pubDefaultTestRegistryServer) mustBeTestRegistryServer() {}
-func (*pubDefaultTestRegistryServer) Ping()                     {}
-
-type pubDefaultTestRegistryServerER struct{}
-
-func (*pubDefaultTestRegistryServerER) mustBeTestRegistryServerER() {}
-func (*pubDefaultTestRegistryServerER) Ping() error                 { return nil }
-
-type testRegistryPubServerImpl struct {
-	pubDefaultTestRegistryServer
-}
-
-type testRegistryPubServerERImpl struct {
-	pubDefaultTestRegistryServerER
-}
-
 type embeddedTypeA struct{}
 
 type embeddedTypeB struct{}

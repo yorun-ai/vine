@@ -30,13 +30,7 @@ import (
 	"go.yorun.ai/vine/util/vcode"
 )
 
-const (
-	testPathConsole   = "/console"
-	testPathRpcInvoke = "/rpc/invoke"
-	testPathWebAccess = "/web/access"
-	testPathEvent     = "/event"
-	testPathTask      = "/task"
-)
+const testPathRpcInvoke = "/rpc/invoke"
 
 type _TestRpcProxyInboundServer struct{}
 type _TestRpcProxyInboundERServer struct{}

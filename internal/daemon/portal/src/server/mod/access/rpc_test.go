@@ -405,31 +405,26 @@ func TestAccessAllowRpcRejectsActorWithoutInfoSchema(t *testing.T) {
 	})
 }
 
-func TestRpcAccessOperationParseAuthModeUsesMethodMode(t *testing.T) {
-	ctx := &RpcOperation{
-		serviceSchema: &skel.ServiceSchema{AuthMode: skel.AuthModeNoAuth},
-		methodSchema:  &skel.MethodSchema{AuthMode: skel.AuthModeAuth},
+func TestRpcAccessOperationParseAuthMode(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		serviceMode skel.AuthMode
+		methodMode  skel.AuthMode
+		want        skel.AuthMode
+	}{
+		{"method overrides service", skel.AuthModeNoAuth, skel.AuthModeAuth, skel.AuthModeAuth},
+		{"falls back to service", skel.AuthModeNoAuth, skel.AuthModeUnset, skel.AuthModeNoAuth},
+		{"defaults to auth", skel.AuthModeUnset, skel.AuthModeUnset, skel.AuthModeAuth},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := &RpcOperation{
+				serviceSchema: &skel.ServiceSchema{AuthMode: test.serviceMode},
+				methodSchema:  &skel.MethodSchema{AuthMode: test.methodMode},
+			}
+
+			assert.Equal(t, test.want, ctx.authMode())
+		})
 	}
-
-	assert.Equal(t, skel.AuthModeAuth, ctx.authMode())
-}
-
-func TestRpcAccessOperationParseAuthModeFallsBackToServiceMode(t *testing.T) {
-	ctx := &RpcOperation{
-		serviceSchema: &skel.ServiceSchema{AuthMode: skel.AuthModeNoAuth},
-		methodSchema:  &skel.MethodSchema{AuthMode: skel.AuthModeUnset},
-	}
-
-	assert.Equal(t, skel.AuthModeNoAuth, ctx.authMode())
-}
-
-func TestRpcAccessOperationParseAuthModeDefaultsToAuth(t *testing.T) {
-	ctx := &RpcOperation{
-		serviceSchema: &skel.ServiceSchema{AuthMode: skel.AuthModeUnset},
-		methodSchema:  &skel.MethodSchema{AuthMode: skel.AuthModeUnset},
-	}
-
-	assert.Equal(t, skel.AuthModeAuth, ctx.authMode())
 }
 
 func TestAccessAllowRpcInjectsActorAndServiceSchemas(t *testing.T) {

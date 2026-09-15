@@ -21,27 +21,6 @@ import (
 	taskspec "go.yorun.ai/vine/internal/core/task/spec"
 )
 
-type testTaskerSpec struct {
-	Application
-	TaskerEnabled
-}
-
-func (*testTaskerSpec) Name() string {
-	return "test.tasker"
-}
-
-func TestNewTaskerStoresAppAndSpec(t *testing.T) {
-	ensureTaskerTaskRegistered()
-
-	app := newTestAppImpl()
-	spec := &testTaskerRunnerSpec{}
-
-	tasker := newTasker(spec, app.info, app.bindAppDeps)
-
-	assert.Equal(t, app.info, tasker.appInfo)
-	assert.Same(t, spec, tasker.spec)
-}
-
 type testTaskerFilter struct{}
 
 func (*testTaskerFilter) Filter(next ctr.FilterNext) {
@@ -193,6 +172,8 @@ func TestNewTaskerInitBuildsServers(t *testing.T) {
 
 	tasker := newTasker(spec, app.info, app.bindAppDeps)
 
+	assert.Equal(t, app.info, tasker.appInfo)
+	assert.Same(t, spec, tasker.spec)
 	assert.NotNil(t, tasker.taskServer)
 	assert.NotNil(t, tasker.rpcServer)
 	assert.Equal(t, []reflect.Type{T[*testTaskerRunnerImpl]()}, tasker.runnerTypes())

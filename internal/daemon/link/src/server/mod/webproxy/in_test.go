@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -64,37 +65,35 @@ func TestHandleInForwardsToRegisteredWebEndpoint(t *testing.T) {
 	}
 }
 
-func TestHandleInRejectsInvalidInstanceScopedPath(t *testing.T) {
-	proxy := &WebProxy{
-		Context:   context.Background(),
-		AppMinder: newTestAppMinder(),
+func TestHandleInRejectsMalformedInstanceScopedPath(t *testing.T) {
+	tests := []struct {
+		name   string
+		path   string
+		reason string
+	}{
+		{name: "missing app instance id", path: "/", reason: "missing app instance id"},
+		{name: "invalid app instance id", path: "/not-a-uuid/admin@demo.app/ping", reason: "invalid app instance id"},
 	}
-	proxy.DIInit()
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			proxy := &WebProxy{
+				Context:   context.Background(),
+				AppMinder: newTestAppMinder(),
+			}
+			proxy.DIInit()
 
-	req := httptest.NewRequest(http.MethodGet, "/admin@demo.app/ping", nil)
-	recorder := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, test.path, nil)
+			recorder := httptest.NewRecorder()
 
-	proxy.handleIn(recorder, req)
+			proxy.handleIn(recorder, req)
 
-	if recorder.Code != http.StatusBadRequest {
-		t.Fatalf("unexpected status code: %d", recorder.Code)
-	}
-}
-
-func TestHandleInRejectsInvalidAppInstanceID(t *testing.T) {
-	proxy := &WebProxy{
-		Context:   context.Background(),
-		AppMinder: newTestAppMinder(),
-	}
-	proxy.DIInit()
-
-	req := httptest.NewRequest(http.MethodGet, "/not-a-uuid/admin@demo.app/ping", nil)
-	recorder := httptest.NewRecorder()
-
-	proxy.handleIn(recorder, req)
-
-	if recorder.Code != http.StatusBadRequest {
-		t.Fatalf("unexpected status code: %d", recorder.Code)
+			if recorder.Code != http.StatusBadRequest {
+				t.Fatalf("unexpected status code: %d", recorder.Code)
+			}
+			if body := strings.TrimSuffix(recorder.Body.String(), "\n"); body != test.reason {
+				t.Fatalf("unexpected body: %q, want %q", body, test.reason)
+			}
+		})
 	}
 }
 

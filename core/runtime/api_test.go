@@ -1,8 +1,11 @@
 package runtime_test
 
 import (
+	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"go.yorun.ai/vine/core/meta"
 	vineruntime "go.yorun.ai/vine/core/runtime"
@@ -22,9 +25,7 @@ func TestFacadeExposesRuntimeMetadata(t *testing.T) {
 	if vineruntime.GolangVersion() == "" || vineruntime.GolangCompiler() == "" {
 		t.Fatal("expected Go build metadata")
 	}
-	if !strings.Contains(vineruntime.GolangPlatform(), "/") {
-		t.Fatalf("unexpected Go platform: %q", vineruntime.GolangPlatform())
-	}
+	assert.Equal(t, runtime.GOOS+"/"+runtime.GOARCH, vineruntime.GolangPlatform())
 	if !strings.Contains(vineruntime.Inspect(), app.Name()) {
 		t.Fatal("expected inspection output to include the application name")
 	}

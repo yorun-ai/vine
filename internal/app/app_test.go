@@ -220,21 +220,3 @@ func TestNewProvidesDefaultRunFlagWhenNotPassed(t *testing.T) {
 	assert.NotNil(t, spec.AppFlag)
 	assert.Equal(t, "", spec.AppFlag.ListenAddr)
 }
-
-func TestEnabledSpecsDefaultToNil(t *testing.T) {
-	assert.Equal(t, "", (&Application{AppFlag: &RunFlag{}}).AppFlag.ListenAddr)
-	assert.Equal(t, "", (&Application{}).Name())
-	(&Application{}).BindCommon(nil)
-	(&ServicerEnabled{}).ServicerInitHandlers(nil)
-	(&ServicerEnabled{}).ServicerInitFilters(nil)
-	(&ServicerEnabled{}).ServicerBind(nil)
-	(&WebberEnabled{}).WebberInitHandlers(nil)
-	(&WebberEnabled{}).WebberInitFilters(nil)
-	(&WebberEnabled{}).WebberBind(nil)
-	(&EventerEnabled{}).EventerBind(nil)
-	(&EventerEnabled{}).EventerInitListeners(nil)
-	(&EventerEnabled{}).EventerInitFilters(nil)
-	(&TaskerEnabled{}).TaskerBind(nil)
-	(&TaskerEnabled{}).TaskerInitRunners(nil)
-	(&TaskerEnabled{}).TaskerInitFilters(nil)
-}

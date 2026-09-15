@@ -282,9 +282,14 @@ func TestDefaultExecutorInjectsInstanceByAsType(t *testing.T) {
 
 func TestInjectContextSkipsWhenNoSpecContextFieldExists(t *testing.T) {
 	implValue := reflect.New(reflect.TypeFor[_DefaultExecutorNoContextFieldService]())
+	untouched := reflect.New(reflect.TypeFor[_DefaultExecutorNoContextFieldService]()).Elem().Interface()
 
 	executor := newInitializedDefaultExecutor(t, reflect.TypeFor[*_DefaultExecutorNoContextFieldService]())
 	executor.inject(implValue, newDefaultExecutorRPCContext())
+
+	if !reflect.DeepEqual(untouched, implValue.Elem().Interface()) {
+		t.Fatalf("injection modified a service without a spec.Context field: %#v", implValue.Elem().Interface())
+	}
 }
 
 func TestDefaultExecutorInitPanicsWhenMultipleSpecContextFieldsExist(t *testing.T) {

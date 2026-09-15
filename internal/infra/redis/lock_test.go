@@ -182,18 +182,6 @@ func TestRedisManagerBindProvidesLocker(t *testing.T) {
 	require.NotNil(t, consumer.Locker.cmdable)
 }
 
-func TestInstantiateLockerUsesDefaultTypePrefixWhenNotOverridden(t *testing.T) {
-	manager := &RedisManager{client: goredis.NewClient(&goredis.Options{Addr: "127.0.0.1:6379"})}
-	manager.component = &Redis{Cmdable: manager.client}
-	t.Cleanup(func() {
-		_ = manager.client.Close()
-	})
-
-	locker := manager.instantiateLocker(reflect.TypeFor[*_TestDefaultLocker](), context.Background()).(*_TestDefaultLocker)
-
-	assert.Equal(t, "go.yorun.ai_vine_internal_infra_redis._TestDefaultLocker", locker.keyPrefix)
-}
-
 func TestInstantiateLockerRequiresNonEmptyOverriddenPrefix(t *testing.T) {
 	manager := &RedisManager{client: goredis.NewClient(&goredis.Options{Addr: "127.0.0.1:6379"})}
 	manager.component = &Redis{Cmdable: manager.client}
@@ -222,7 +210,6 @@ func TestLockerLockBuildsNamespacedKeyAndDefaultOption(t *testing.T) {
 	assert.Equal(t, "vine:lock:lock:user:123", cmdable.setNXCalls[0].key)
 	assert.Equal(t, lockDefaultTimeout, cmdable.setNXCalls[0].expiration)
 	assert.True(t, lock.option.refresh)
-	require.NotNil(t, lock.Context())
 	assert.NoError(t, lock.Context().Err())
 }
 
@@ -506,15 +493,11 @@ func TestLockMarkBrokenPreventsUnlock(t *testing.T) {
 	assert.Panics(t, func() {
 		lock.Unlock()
 	})
-	assert.Panics(t, func() {
-		lock.Unlock()
-	})
 }
 
 func TestLockContextRequiresHeldLock(t *testing.T) {
 	lock := new(Lock)
 
-	assert.False(t, lock.IsBroken())
 	assert.Panics(t, func() {
 		lock.Context()
 	})

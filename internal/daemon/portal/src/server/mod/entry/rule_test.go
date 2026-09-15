@@ -90,12 +90,6 @@ func TestPortalRulePortPanicsOnUnsupportedScheme(t *testing.T) {
 	})
 }
 
-func TestPortalRuleHost(t *testing.T) {
-	assert.Empty(t, entryRuleHost(""))
-	assert.Equal(t, "demo.local", entryRuleHost("demo.local"))
-	assert.Equal(t, "127.0.0.1", entryRuleHost("127.0.0.1"))
-}
-
 func TestRuleRewritePath(t *testing.T) {
 	for _, test := range []struct{ prefix, target, request, want string }{
 		{"/api", "", "/api/users?x=1", "/users?x=1"},

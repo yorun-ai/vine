@@ -35,14 +35,6 @@ func (*_LinkRegistryRegistryServiceClient) Heartbeat(hubskeled.AppStatus, ...cli
 	return true
 }
 
-func mustLinkRegistryTestApp() meta.App {
-	app, err := meta.NewApp("demo.app", "1.0.0", "11111111-1111-1111-1111-111111111111")
-	if err != nil {
-		panic(err)
-	}
-	return app
-}
-
 func newLinkRegistryTestIngress() *ingress.Ingress {
 	return &ingress.Ingress{}
 }

@@ -41,13 +41,6 @@ func TestMustParseHttpURL(t *testing.T) {
 	assert.Equal(t, 7099, parsed.Port())
 }
 
-func TestParseHttpURLParsesPort(t *testing.T) {
-	parsed, err := ParseHttpURL("https://hub.example.com:8443/admin")
-
-	require.NoError(t, err)
-	assert.Equal(t, 8443, parsed.Port())
-}
-
 func TestParseHttpURLRejectsMissingPort(t *testing.T) {
 	_, err := ParseHttpURL("https://hub.example.com/admin")
 

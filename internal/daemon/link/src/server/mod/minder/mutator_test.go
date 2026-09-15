@@ -36,28 +36,6 @@ func (w *_Mutator) OnDestroy(instance *AppInstance) {
 	w.destroyedIDs = append(w.destroyedIDs, instance.AppInfo.InstanceId())
 }
 
-func TestOnSetupNotifiesMutators(t *testing.T) {
-	minder := &AppMinder{
-		Context:               context.Background(),
-		Flag:                  &flag.Flag{},
-		App:                   mustTestMetaApp(),
-		InprocFlag:            &app.InternalInprocFlag{},
-		RegistryServiceClient: &_RegistryServiceClient{},
-	}
-	minder.DIInit()
-	mutator := &_Mutator{}
-	minder.AddMutator(mutator)
-	instance := minder.newAppInstance(AppRegistration{AppInfo: mustTestMetaApp()})
-
-	ok := minder.addInstance(instance)
-	minder.beforeRegistration(instance)
-
-	assert.True(t, ok)
-	mutator.mutex.Lock()
-	defer mutator.mutex.Unlock()
-	assert.Equal(t, []string{mustTestMetaApp().InstanceId()}, mutator.setupIDs)
-}
-
 func TestDrainAndDestroyNotifyMutatorsOnce(t *testing.T) {
 	minder := &AppMinder{
 		Context:               context.Background(),

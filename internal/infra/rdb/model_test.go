@@ -23,9 +23,7 @@ func TestModelUUIDLifecycle(t *testing.T) {
 		require.NoError(t, db.Create(&rows).Error)
 		seen := map[uuid.UUID]bool{}
 		for _, row := range rows {
-			parsed, err := uuid.Parse(row.Id.String())
-			require.NoError(t, err)
-			assert.Equal(t, byte(7), parsed[6]>>4)
+			require.Equal(t, byte(7), row.Id[6]>>4)
 			assert.False(t, seen[row.Id])
 			seen[row.Id] = true
 			var loaded UModel
@@ -45,9 +43,7 @@ func TestModelUUIDLifecycle(t *testing.T) {
 		supplied := uuid.NewV7()
 		rows := []*UDeletableModel{new(UDeletableModel), new(UDeletableModel{Id: supplied})}
 		require.NoError(t, db.Create(&rows).Error)
-		parsed, err := uuid.Parse(rows[0].Id.String())
-		require.NoError(t, err)
-		assert.Equal(t, byte(7), parsed[6]>>4)
+		require.Equal(t, byte(7), rows[0].Id[6]>>4)
 		assert.Equal(t, supplied, rows[1].Id)
 		dao := NewDao[*UDeletableModel](db)
 		loaded, ok := dao.First("id = ?", rows[0].Id)
