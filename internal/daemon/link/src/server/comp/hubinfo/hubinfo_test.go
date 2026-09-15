@@ -43,6 +43,55 @@ func TestHubInfoDIInitLoadsHubInfo(t *testing.T) {
 	assert.Equal(t, "nats://127.0.0.1:4222", component.MQEndpoint())
 }
 
+func TestHubInfoRefreshNotifiesListenersOnlyWhenHubInfoChanged(t *testing.T) {
+	client := &_TestInfoServiceClient{
+		info: hubskeled.Info{
+			MqEmbedded: true,
+			MqNatsPort: 4222,
+		},
+	}
+	flags := &flag.Flag{
+		HubEndpoint: "http://127.0.0.1:7071",
+	}
+	flags.Normalize(false)
+	component := &HubInfo{
+		Flag:              flags,
+		InfoServiceClient: client,
+	}
+	component.DIInit()
+
+	refreshes := 0
+	component.OnRefresh(func() { refreshes++ })
+
+	component.Refresh()
+	assert.Equal(t, 2, client.getInfoCall)
+	assert.Equal(t, 0, refreshes)
+
+	client.info.MqNatsPort = 4223
+	component.Refresh()
+
+	assert.Equal(t, 1, refreshes)
+	assert.Equal(t, "nats://127.0.0.1:4223", component.MQEndpoint())
+}
+
+func TestHubInfoRefreshSkipsLookupInInprocMode(t *testing.T) {
+	client := &_TestInfoServiceClient{}
+	flags := &flag.Flag{
+		HubInprocMode: true,
+		HubEndpoint:   "rpc+inproc://vine/hub",
+	}
+	flags.Normalize(false)
+	component := &HubInfo{
+		Flag:              flags,
+		InfoServiceClient: client,
+	}
+	component.DIInit()
+
+	component.Refresh()
+
+	assert.Equal(t, 0, client.getInfoCall)
+}
+
 func TestHubInfoDIInitSkipsHubInfoLookupInInprocMode(t *testing.T) {
 	client := &_TestInfoServiceClient{}
 	flags := &flag.Flag{

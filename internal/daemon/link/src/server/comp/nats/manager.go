@@ -3,6 +3,7 @@ package nats
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	gonats "github.com/nats-io/nats.go"
@@ -10,6 +11,7 @@ import (
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/ex"
 	hubnats "go.yorun.ai/vine/internal/daemon/hub/api/nats"
+	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubinfo"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -29,11 +31,13 @@ type _ClientOps interface {
 type _ClientManager struct {
 	app.BaseComponentManager
 
-	Context context.Context `inject:""`
+	Context context.Context  `inject:""`
+	HubInfo *hubinfo.HubInfo `inject:""`
 
-	client app.ManagedComponent
-	option *_Option
-	conn   *gonats.Conn
+	repairMutex sync.Mutex
+	client      app.ManagedComponent
+	option      *_Option
+	conn        *gonats.Conn
 }
 
 func (m *_ClientManager) InitComponent(component app.ManagedComponent) {
@@ -50,21 +54,58 @@ func (m *_ClientManager) InitComponent(component app.ManagedComponent) {
 		return
 	}
 
-	vpre.CheckNotEmpty(m.option.Endpoint, "nats endpoint is empty")
+	m.connect(m.option)
+	m.HubInfo.OnRefresh(m.onHubInfoRefresh)
+}
+
+// connect dials the endpoint described by option and installs the new
+// connection, the JetStream context and the consumer bookkeeping on the client.
+func (m *_ClientManager) connect(option *_Option) {
+	vpre.CheckNotEmpty(option.Endpoint, "nats endpoint is empty")
+
 	connectOptions := []gonats.Option{
 		gonats.MaxReconnects(maxReconnects),
 		gonats.ReconnectWait(reconnectWait),
 		gonats.ReconnectHandler(func(conn *gonats.Conn) {
-			clientOps.onReconnect(m.Context, conn)
+			m.client.(_ClientOps).onReconnect(m.Context, conn)
 		}),
 	}
-	if m.option.TLSConfig != nil {
-		connectOptions = append(connectOptions, gonats.Secure(m.option.TLSConfig), gonats.TLSHandshakeFirst())
+	if option.TLSConfig != nil {
+		connectOptions = append(connectOptions, gonats.Secure(option.TLSConfig), gonats.TLSHandshakeFirst())
 	}
-	conn, err := newNATSConnect(m.option.Endpoint, connectOptions...)
+	conn, err := newNATSConnect(option.Endpoint, connectOptions...)
 	vpre.CheckNilError(err, "connect nats failed")
 	m.conn = conn
-	clientOps.setConn(m.conn)
+	m.client.(_ClientOps).setConn(conn)
+}
+
+// onHubInfoRefresh reconnects after Hub moved its MQ endpoint, which happens
+// when a restarted Hub advertises a new embedded NATS port. An unchanged
+// endpoint keeps the healthy connection, so nats.go can keep reconnecting on
+// its own.
+func (m *_ClientManager) onHubInfoRefresh() {
+	m.repairMutex.Lock()
+	defer m.repairMutex.Unlock()
+
+	spec, ok := m.client.(_ClientSpec)
+	if !ok {
+		return
+	}
+
+	next := &_Option{}
+	spec.InitOption(next)
+	if next.InprocMode || next.Endpoint == m.option.Endpoint {
+		return
+	}
+
+	previous := m.conn
+	m.option = next
+	if previous != nil {
+		previous.Close()
+	}
+	m.connect(next)
+	natsLogger.Info("link reconnected to Hub MQ after its endpoint changed", "endpoint", next.Endpoint)
+	m.client.(_ClientOps).onReconnect(m.Context, m.conn)
 }
 
 func (m *_ClientManager) Component() app.ManagedComponent {
@@ -76,6 +117,9 @@ func (m *_ClientManager) BeforeAppStart() error {
 }
 
 func (m *_ClientManager) AfterAppStop() {
+	m.repairMutex.Lock()
+	defer m.repairMutex.Unlock()
+
 	m.conn.Close()
 }
 

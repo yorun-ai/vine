@@ -27,6 +27,7 @@ func TestNewAppInstanceClonesRegistrationSlices(t *testing.T) {
 		App:                   mustTestMetaApp(),
 		InprocFlag:            &app.InternalInprocFlag{},
 		RegistryServiceClient: &_RegistryServiceClient{},
+		HubInfo:               newTestHubInfo(new(_TestInfoServiceClient)),
 	}
 	minder.DIInit()
 

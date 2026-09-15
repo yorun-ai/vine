@@ -50,6 +50,19 @@ func newTestLocker(t *testing.T, mode string, endpoint string, inproc bool) (*Lo
 	return locker, hub
 }
 
+func newTestLockerWithHubInfo(t *testing.T, mode string, endpoint string) (*Locker, *infoClient, *hubinfo.HubInfo) {
+	t.Helper()
+	flags := &flag.Flag{HubEndpoint: "http://localhost:7071"}
+	flags.Normalize(false)
+	infoClientValue := &infoClient{info: hubskeled.Info{LockMode: mode, LockRedisEndpoint: endpoint}}
+	info := &hubinfo.HubInfo{Flag: flags, InfoServiceClient: infoClientValue}
+	info.DIInit()
+	locker := &Locker{HubInfo: info, Hub: &hubClient{}}
+	locker.DIInit()
+	t.Cleanup(locker.AfterAppStop)
+	return locker, infoClientValue, info
+}
+
 func lockContext(ctx context.Context) meta.Context {
 	return meta.NewContext(ctx, meta.InitialTrace(), nil, meta.NewAbsentActor())
 }

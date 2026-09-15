@@ -3,6 +3,7 @@ package watch
 import (
 	"context"
 	"strings"
+	"sync"
 
 	"github.com/redis/go-redis/v9"
 	"go.yorun.ai/vine/internal/app"
@@ -15,8 +16,10 @@ type ClientManager struct {
 
 	Context context.Context `inject:""`
 
-	client app.ManagedComponent
-	option *Option
+	repairMutex sync.Mutex
+	client      app.ManagedComponent
+	option      *Option
+	addr        string
 }
 
 func (m *ClientManager) InitComponent(component app.ManagedComponent) {
@@ -27,34 +30,46 @@ func (m *ClientManager) InitComponent(component app.ManagedComponent) {
 	spec.InitOption(m.option)
 
 	client := component.(_RedisClientSetter)
-	redisOptions := &redis.Options{
-		Protocol:        2,
-		DisableIdentity: true,
-		Username:        m.option.Username,
-		Password:        m.option.Password,
-		TLSConfig:       m.option.TLSConfig,
-	}
-	if m.option.Username != "" && m.option.Password == "" {
-		// go-redis omits HELLO AUTH when the password is empty. Link and Portal
-		// temporarily use empty passwords, so authenticate each newly opened
-		// connection explicitly. OnConnect is also used for PubSub and replacement
-		// pool connections, preventing reconnects from silently becoming anonymous.
-		username := m.option.Username
-		redisOptions.OnConnect = func(ctx context.Context, conn *redis.Conn) error {
-			return conn.AuthACL(ctx, username, "").Err()
-		}
-	}
 	if m.option.InprocMode {
 		vpre.CheckNotNil(InprocServer(), "inproc watch server missing")
-		redisOptions.Addr = WatchInprocEndpoint
-		redisOptions.Dialer = DialInproc
-		client.setRedisClient(context.Background(), newRedisClient(redisOptions))
-		return
+		m.addr = WatchInprocEndpoint
+		client.setRedisClient(context.Background(), newRedisClient(redisOptionsFor(m.option, m.addr)))
+	} else {
+		vpre.CheckNotEmpty(m.option.Endpoint, "watch endpoint is empty")
+		m.addr = redisAddr(m.option.Endpoint)
+		client.setRedisClient(m.Context, newRedisClient(redisOptionsFor(m.option, m.addr)))
 	}
 
-	vpre.CheckNotEmpty(m.option.Endpoint, "watch endpoint is empty")
-	redisOptions.Addr = redisAddr(m.option.Endpoint)
-	client.setRedisClient(m.Context, newRedisClient(redisOptions))
+	component.(_ClientRepairer).setRepair(m.repairEndpoint)
+}
+
+// repairEndpoint reconnects the watch client after Hub advertised a different
+// watch endpoint and re-subscribes every active watcher. An unchanged endpoint
+// keeps the existing connections, so a Hub restart without a watch endpoint
+// change reconnects nothing.
+func (m *ClientManager) repairEndpoint(option *Option) bool {
+	m.repairMutex.Lock()
+	defer m.repairMutex.Unlock()
+
+	if option.InprocMode || m.option.InprocMode {
+		return false
+	}
+	vpre.CheckNotEmpty(option.Endpoint, "watch endpoint is empty")
+
+	addr := redisAddr(option.Endpoint)
+	if addr == m.addr {
+		return false
+	}
+
+	m.option = option
+	m.addr = addr
+	client := m.client.(_RedisClientSetter)
+	previous := client.swapRedisClient(m.Context, newRedisClient(redisOptionsFor(option, addr)))
+	m.client.(_ClientRepairer).restartWatchers()
+	if previous != nil {
+		_ = previous.Close()
+	}
+	return true
 }
 
 func (m *ClientManager) Component() app.ManagedComponent {
@@ -69,6 +84,32 @@ func (m *ClientManager) AfterAppStop() {
 
 func (c *Client) closeRedisClient() {
 	c.Close()
+}
+
+func redisOptionsFor(option *Option, addr string) *redis.Options {
+	redisOptions := &redis.Options{
+		Protocol:        2,
+		DisableIdentity: true,
+		Username:        option.Username,
+		Password:        option.Password,
+		TLSConfig:       option.TLSConfig,
+		Addr:            addr,
+	}
+	if option.Username != "" && option.Password == "" {
+		// go-redis omits HELLO AUTH when the password is empty. Link and Portal
+		// temporarily use empty passwords, so authenticate each newly opened
+		// connection explicitly. OnConnect is also used for PubSub and replacement
+		// pool connections, preventing reconnects from silently becoming anonymous.
+		username := option.Username
+		redisOptions.OnConnect = func(ctx context.Context, conn *redis.Conn) error {
+			return conn.AuthACL(ctx, username, "").Err()
+		}
+	}
+	if option.InprocMode {
+		redisOptions.Addr = WatchInprocEndpoint
+		redisOptions.Dialer = DialInproc
+	}
+	return redisOptions
 }
 
 var newRedisClient = func(opt *redis.Options) *redis.Client {

@@ -46,6 +46,7 @@ func TestRegisterHubInstancePublishesRegistration(t *testing.T) {
 		App:                   appInfo,
 		InprocFlag:            &app.InternalInprocFlag{},
 		RegistryServiceClient: client,
+		HubInfo:               newTestHubInfo(new(_TestInfoServiceClient)),
 	}
 	minder.DIInit()
 	minder.AddMutator(&_EndpointMutator{})
@@ -92,6 +93,7 @@ func TestUnregisterHubInstancePublishesUnregister(t *testing.T) {
 		App:                   appInfo,
 		InprocFlag:            &app.InternalInprocFlag{},
 		RegistryServiceClient: client,
+		HubInfo:               newTestHubInfo(new(_TestInfoServiceClient)),
 	}
 	minder.DIInit()
 	instance := minder.newAppInstance(AppRegistration{AppInfo: appInfo})

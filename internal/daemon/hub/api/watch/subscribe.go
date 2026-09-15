@@ -11,41 +11,121 @@ import (
 )
 
 func (c *Client) LoadAndSubscribe(ctx context.Context, key string, handle func(event Event)) (string, bool, Subscription) {
-	pubsub := c.redisClient.Subscribe(ctx, key)
-	if _, err := pubsub.Receive(ctx); err != nil {
-		_ = pubsub.Close()
-		vpre.Panic(err)
+	value, ok, _ := c.loadStableValue(key)
+	watcher := &_Watcher{
+		client:       c,
+		ctx:          ctx,
+		key:          key,
+		handle:       handle,
+		snapshot:     &_WatchKeySnapshot{client: c, key: key, value: value, hasValue: ok},
+		subscription: newSubscription(ctx, handle),
 	}
-
-	value, ok, revision := c.loadStableValue(key)
-	snapshot := _WatchKeySnapshot{
-		client:   c,
-		key:      key,
-		value:    value,
-		hasValue: ok,
-	}
-	subscription := newSubscription(ctx, handle)
-	go c.consumePatternMessages(ctx, pubsub.ChannelWithSubscriptions(), revision, snapshot.handleSubscription, snapshot.handleEvent(subscription.enqueue), pubsub.Close)
-	return value, ok, subscription
+	c.subscribeWatcher(watcher)
+	return value, ok, watcher.subscription
 }
 
 func (c *Client) LoadListAndSubscribe(ctx context.Context, prefix string, handle func(event Event)) (map[string]string, Subscription) {
-	pattern := formatRedisListPattern(prefix)
-	pubsub := c.redisClient.PSubscribe(ctx, pattern)
-	if _, err := pubsub.Receive(ctx); err != nil {
+	valuesByKey, _ := c.loadStableScanKeyValues(prefix)
+	watcher := &_Watcher{
+		client:       c,
+		ctx:          ctx,
+		prefix:       prefix,
+		handle:       handle,
+		snapshot:     &_WatchListSnapshot{client: c, prefix: prefix, valuesByKey: vmap.Clone(valuesByKey)},
+		subscription: newSubscription(ctx, handle),
+	}
+	c.subscribeWatcher(watcher)
+	return valuesByKey, watcher.subscription
+}
+
+func (c *Client) subscribeWatcher(watcher *_Watcher) {
+	redisClient, _ := c.currentRedisClient()
+	c.addWatcher(watcher)
+	watcher.start(redisClient)
+}
+
+// _Watcher owns one subscription to a key or key prefix. It outlives a
+// reconnect: restart re-creates the PubSub on the current connection and
+// reconciles the snapshot against Hub again, so keys that changed while the
+// endpoint was stale are reported as regular events.
+type _Watcher struct {
+	client   *Client
+	ctx      context.Context
+	key      string
+	prefix   string
+	handle   func(event Event)
+	snapshot _Snapshot
+
+	subscription *_Subscription
+
+	mutex  sync.Mutex
+	cancel context.CancelFunc
+	pubsub *redis.PubSub
+}
+
+// _Snapshot reconciles watched values with the events delivered for them.
+type _Snapshot interface {
+	handleSubscription(handle func(event Event)) uint64
+	handleEvent(handle func(event Event)) func(event Event)
+}
+
+func (w *_Watcher) start(redisClient *redis.Client) {
+	if redisClient == nil {
+		return
+	}
+
+	consumeCtx, cancel := context.WithCancel(w.ctx)
+	pubsub := w.subscribe(consumeCtx, redisClient)
+	if _, err := pubsub.Receive(consumeCtx); err != nil {
 		_ = pubsub.Close()
+		cancel()
 		vpre.Panic(err)
 	}
 
-	valuesByKey, revision := c.loadStableScanKeyValues(prefix)
-	snapshot := _WatchListSnapshot{
-		client:      c,
-		prefix:      prefix,
-		valuesByKey: vmap.Clone(valuesByKey),
+	// Reconcile before consuming: the reload covers everything that changed
+	// while no subscription was attached, and later events are filtered by the
+	// resulting revision.
+	handleEvent := w.snapshot.handleEvent(w.enqueue)
+	revision := w.snapshot.handleSubscription(handleEvent)
+
+	w.mutex.Lock()
+	w.cancel = cancel
+	w.pubsub = pubsub
+	w.mutex.Unlock()
+
+	go w.client.consumePatternMessages(consumeCtx, pubsub.ChannelWithSubscriptions(), revision, w.snapshot.handleSubscription, handleEvent, pubsub.Close)
+}
+
+func (w *_Watcher) subscribe(ctx context.Context, redisClient *redis.Client) *redis.PubSub {
+	if w.key != "" {
+		return redisClient.Subscribe(ctx, w.key)
 	}
-	subscription := newSubscription(ctx, handle)
-	go c.consumePatternMessages(ctx, pubsub.ChannelWithSubscriptions(), revision, snapshot.handleSubscription, snapshot.handleEvent(subscription.enqueue), pubsub.Close)
-	return valuesByKey, subscription
+	return redisClient.PSubscribe(ctx, formatRedisListPattern(w.prefix))
+}
+
+func (w *_Watcher) enqueue(event Event) {
+	w.subscription.enqueue(event)
+}
+
+func (w *_Watcher) restart(redisClient *redis.Client) {
+	w.stop()
+	w.start(redisClient)
+}
+
+func (w *_Watcher) stop() {
+	w.mutex.Lock()
+	cancel := w.cancel
+	pubsub := w.pubsub
+	w.cancel = nil
+	w.pubsub = nil
+	w.mutex.Unlock()
+
+	if cancel != nil {
+		cancel()
+	}
+	if pubsub != nil {
+		_ = pubsub.Close()
+	}
 }
 
 type _Subscription struct {
