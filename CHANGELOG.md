@@ -11,9 +11,37 @@ are not part of the public compatibility commitment.
 ### Fixed
 
 - Hub, Link, and Portal identify themselves with the Vine runtime version in
-  Rpc metadata, including when embedded in a business application.
+  Rpc metadata, including when embedded in a business application. Identity
+  headers always carry a plain semantic version such as `0.17.0`, because the
+  vRPC identity format rejects the Go module form `v0.17.0`. Peers that still
+  send the module form remain accepted, so mixed-version clusters keep working.
+
+- Application versions are validated as full semantic versions with an optional
+  leading `v`, so an incomplete version such as `1.2` or `01.2.3` is rejected
+  when the application is created instead of producing an identity header that
+  other components cannot read.
+
+- Link and Portal recover from a Hub restart that advertises different endpoints
+  instead of requiring a restart of their own. Link re-reads Hub information
+  when a heartbeat reports that Hub no longer knows the application instance,
+  and reconnects the watch, MQ and lock clients only when an advertised endpoint
+  actually moved. Re-established watch subscriptions are reconciled, so keys
+  that changed while the endpoint was stale are reported. Portal re-reads Hub
+  information on a timer, so it notices a moved watch endpoint without a
+  restart.
 
 ### Added
+
+- Hub tracks running Portal daemons. Portal registers its instance ID and Vine
+  runtime version on startup, heartbeats every 10 seconds and unregisters on
+  shutdown; Hub drops a Portal instance 30 seconds after its last heartbeat, so a
+  terminated Portal stops being reported. The Hub Dashboard lists the registered
+  Portal instances next to the application instances. Standalone Portal shares
+  Hub's process, so it registers without a heartbeat. Hub forgets Portal
+  instances when it restarts and each Portal registers again on its next
+  heartbeat. During a rolling upgrade, upgrade Hub before Portal; a new Portal
+  continues running against an older Hub, but retries the unavailable Portal
+  registry service and logs a warning on each 10-second heartbeat.
 
 - Hub connection information includes its Vine runtime `version`.
 

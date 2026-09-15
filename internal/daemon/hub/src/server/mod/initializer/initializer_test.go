@@ -411,6 +411,7 @@ func TestDashboardRpcServicesDerivedFromRegisteredSchema(t *testing.T) {
 		"vine.hub.admin.PortalEntryApiService",
 		"vine.hub.admin.PortalRuleApiService",
 		"vine.hub.admin.PortalSiteApiService",
+		"vine.hub.admin.PortalStatusApiService",
 		"vine.hub.admin.ServiceDebugApiService",
 		"vine.hub.admin.SkeletonApiService",
 		"vine.hub.admin.TaskDebugApiService",

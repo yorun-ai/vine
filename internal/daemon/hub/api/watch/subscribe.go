@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json/v2"
 	"sync"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 	"go.yorun.ai/vine/util/vmap"
@@ -11,41 +12,159 @@ import (
 )
 
 func (c *Client) LoadAndSubscribe(ctx context.Context, key string, handle func(event Event)) (string, bool, Subscription) {
-	pubsub := c.redisClient.Subscribe(ctx, key)
-	if _, err := pubsub.Receive(ctx); err != nil {
-		_ = pubsub.Close()
-		vpre.Panic(err)
+	c.lockLifecycle()
+	defer c.unlockLifecycle()
+	value, ok, _ := c.loadStableValue(key)
+	watcher := &_Watcher{
+		client:       c,
+		ctx:          ctx,
+		key:          key,
+		handle:       handle,
+		snapshot:     &_WatchKeySnapshot{client: c, key: key, value: value, hasValue: ok},
+		subscription: newSubscription(ctx, handle),
 	}
-
-	value, ok, revision := c.loadStableValue(key)
-	snapshot := _WatchKeySnapshot{
-		client:   c,
-		key:      key,
-		value:    value,
-		hasValue: ok,
-	}
-	subscription := newSubscription(ctx, handle)
-	go c.consumePatternMessages(ctx, pubsub.ChannelWithSubscriptions(), revision, snapshot.handleSubscription, snapshot.handleEvent(subscription.enqueue), pubsub.Close)
-	return value, ok, subscription
+	c.subscribeWatcher(watcher)
+	return value, ok, watcher.subscription
 }
 
 func (c *Client) LoadListAndSubscribe(ctx context.Context, prefix string, handle func(event Event)) (map[string]string, Subscription) {
-	pattern := formatRedisListPattern(prefix)
-	pubsub := c.redisClient.PSubscribe(ctx, pattern)
-	if _, err := pubsub.Receive(ctx); err != nil {
+	c.lockLifecycle()
+	defer c.unlockLifecycle()
+	valuesByKey, _ := c.loadStableScanKeyValues(prefix)
+	watcher := &_Watcher{
+		client:       c,
+		ctx:          ctx,
+		prefix:       prefix,
+		handle:       handle,
+		snapshot:     &_WatchListSnapshot{client: c, prefix: prefix, valuesByKey: vmap.Clone(valuesByKey)},
+		subscription: newSubscription(ctx, handle),
+	}
+	c.subscribeWatcher(watcher)
+	return valuesByKey, watcher.subscription
+}
+
+func (c *Client) subscribeWatcher(watcher *_Watcher) {
+	redisClient, _ := c.currentRedisClient()
+	c.addWatcher(watcher)
+	succeeded := false
+	defer func() {
+		if !succeeded {
+			c.removeWatcher(watcher)
+		}
+	}()
+	watcher.start(redisClient)
+	succeeded = true
+}
+
+// _Watcher owns one subscription to a key or key prefix. It outlives a
+// reconnect: restart re-creates the PubSub on the current connection and
+// reconciles the snapshot against Hub again, so keys that changed while the
+// endpoint was stale are reported as regular events.
+type _Watcher struct {
+	client   *Client
+	ctx      context.Context
+	key      string
+	prefix   string
+	handle   func(event Event)
+	snapshot _Snapshot
+
+	subscription *_Subscription
+
+	mutex  sync.Mutex
+	cancel context.CancelFunc
+	pubsub *redis.PubSub
+	done   chan struct{}
+}
+
+// _Snapshot reconciles watched values with the events delivered for them.
+type _Snapshot interface {
+	handleSubscription(handle func(event Event)) uint64
+	handleEvent(handle func(event Event)) func(event Event)
+}
+
+func (w *_Watcher) start(redisClient *redis.Client) {
+	if redisClient == nil || w.ctx.Err() != nil {
+		w.client.removeWatcher(w)
+		return
+	}
+
+	consumeCtx, cancel := context.WithCancel(w.ctx)
+	pubsub := w.subscribe(consumeCtx, redisClient)
+	succeeded := false
+	defer func() {
+		if !succeeded {
+			cancel()
+			_ = pubsub.Close()
+		}
+	}()
+	if _, err := pubsub.Receive(consumeCtx); err != nil {
 		_ = pubsub.Close()
+		cancel()
 		vpre.Panic(err)
 	}
 
-	valuesByKey, revision := c.loadStableScanKeyValues(prefix)
-	snapshot := _WatchListSnapshot{
-		client:      c,
-		prefix:      prefix,
-		valuesByKey: vmap.Clone(valuesByKey),
+	// Reconcile before consuming: the reload covers everything that changed
+	// while no subscription was attached, and later events are filtered by the
+	// resulting revision.
+	reader := &Client{ctx: consumeCtx, redisClient: redisClient}
+	switch snapshot := w.snapshot.(type) {
+	case *_WatchKeySnapshot:
+		snapshot.client = reader
+	case *_WatchListSnapshot:
+		snapshot.client = reader
 	}
-	subscription := newSubscription(ctx, handle)
-	go c.consumePatternMessages(ctx, pubsub.ChannelWithSubscriptions(), revision, snapshot.handleSubscription, snapshot.handleEvent(subscription.enqueue), pubsub.Close)
-	return valuesByKey, subscription
+	handleEvent := w.snapshot.handleEvent(w.enqueue)
+	revision := w.snapshot.handleSubscription(handleEvent)
+
+	w.mutex.Lock()
+	w.cancel = cancel
+	w.pubsub = pubsub
+	w.done = make(chan struct{})
+	done := w.done
+	w.mutex.Unlock()
+	succeeded = true
+
+	go func() {
+		defer close(done)
+		w.client.consumePatternMessages(consumeCtx, pubsub.ChannelWithSubscriptions(), revision, w.snapshot.handleSubscription, handleEvent, pubsub.Close)
+	}()
+}
+
+func (w *_Watcher) subscribe(ctx context.Context, redisClient *redis.Client) *redis.PubSub {
+	if w.key != "" {
+		return redisClient.Subscribe(ctx, w.key)
+	}
+	return redisClient.PSubscribe(ctx, formatRedisListPattern(w.prefix))
+}
+
+func (w *_Watcher) enqueue(event Event) {
+	w.subscription.enqueue(event)
+}
+
+func (w *_Watcher) restart(redisClient *redis.Client) {
+	w.stop()
+	w.start(redisClient)
+}
+
+func (w *_Watcher) stop() {
+	w.mutex.Lock()
+	cancel := w.cancel
+	pubsub := w.pubsub
+	done := w.done
+	w.cancel = nil
+	w.pubsub = nil
+	w.done = nil
+	w.mutex.Unlock()
+
+	if cancel != nil {
+		cancel()
+	}
+	if pubsub != nil {
+		_ = pubsub.Close()
+	}
+	if done != nil {
+		<-done
+	}
 }
 
 type _Subscription struct {
@@ -137,7 +256,22 @@ func (c *Client) consumePatternMessages(
 			switch message := message.(type) {
 			case *redis.Subscription:
 				if message.Kind == "subscribe" || message.Kind == "psubscribe" {
-					revision = handleSubscription(handleEvent)
+					for {
+						loaded := false
+						func() {
+							defer func() { _ = recover() }()
+							revision = handleSubscription(handleEvent)
+							loaded = true
+						}()
+						if loaded {
+							break
+						}
+						select {
+						case <-ctx.Done():
+							return
+						case <-time.After(100 * time.Millisecond):
+						}
+					}
 				}
 			case *redis.Message:
 				var event Event

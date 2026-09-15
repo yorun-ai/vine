@@ -30,6 +30,41 @@ func TestNewAppRejectsInvalidVersion(t *testing.T) {
 	}
 }
 
+func TestIsValidVersionAcceptsGoModuleFormAndPlainSemver(t *testing.T) {
+	for _, version := range []string{
+		"0.0.0",
+		"1.2.3",
+		"v1.2.3",
+		"v0.0.0-dev",
+		"1.2.3-rc.1",
+		"1.2.3+build.5",
+	} {
+		if !IsValidVersion(version) {
+			t.Fatalf("expected valid version for %q", version)
+		}
+	}
+}
+
+func TestIsValidVersionRejectsIncompleteVersions(t *testing.T) {
+	for _, version := range []string{
+		"",
+		"v",
+		"1",
+		"1.2",
+		"v1.2",
+		"01.2.3",
+		"v01.2.3",
+		"1.2.3.4",
+		"1.2.3-01",
+		"V1.2.3",
+		"latest",
+	} {
+		if IsValidVersion(version) {
+			t.Fatalf("expected invalid version for %q", version)
+		}
+	}
+}
+
 func TestNewAppRejectsInvalidInstanceID(t *testing.T) {
 	if _, err := NewApp("demo.service", "1.2.3", "not-a-uuid"); err == nil {
 		t.Fatalf("expected invalid instance id error")

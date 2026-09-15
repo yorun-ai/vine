@@ -2,6 +2,7 @@ import { createRoute } from '@tanstack/react-router'
 import type { AnyRoute } from '@tanstack/react-router'
 
 import { AppStatusPage } from '@/features/status/app-page'
+import { PortalInstancePage } from '@/features/status/portal-page'
 
 import { OutletOrRedirect } from './shared'
 
@@ -26,8 +27,21 @@ export function createStatusRoutes<TParent extends AnyRoute>(
     component: AppStatusPage,
   })
 
+  const StatusPortalRoute = createRoute({
+    getParentRoute: () => StatusRoute,
+    path: 'portal',
+    component: PortalInstancePage,
+  })
+
+  const StatusPortalInstanceRoute = createRoute({
+    getParentRoute: () => StatusPortalRoute,
+    path: '$instanceId',
+    component: PortalInstancePage,
+  })
+
   return StatusRoute.addChildren([
     StatusAppRoute.addChildren([StatusAppInstanceRoute]),
+    StatusPortalRoute.addChildren([StatusPortalInstanceRoute]),
   ])
 }
 

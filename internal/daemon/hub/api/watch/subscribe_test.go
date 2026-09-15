@@ -1,13 +1,59 @@
 package watch
 
 import (
+	"context"
 	"maps"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"testing/synctest"
+	"time"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestSubscriptionSnapshotFailureRetriesAndRemainsCancellable(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		messages := make(chan any, 1)
+		messages <- &redis.Subscription{Kind: "subscribe"}
+		var calls atomic.Int32
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			new(Client).consumePatternMessages(ctx, messages, 0, func(func(Event)) uint64 {
+				if calls.Add(1) == 1 {
+					panic("temporary snapshot failure")
+				}
+				return 2
+			}, func(Event) {}, func() error { return nil })
+		}()
+		synctest.Wait()
+		require.Equal(t, int32(1), calls.Load())
+		synctest.Sleep(100 * time.Millisecond)
+		synctest.Wait()
+		require.Equal(t, int32(2), calls.Load())
+		cancel()
+		<-done
+	})
+}
+
+func TestCancelledWatcherIsRemovedFromRepairSet(t *testing.T) {
+	client := new(Client)
+	ctx, cancel := context.WithCancel(context.Background())
+	watcher := &_Watcher{client: client, ctx: ctx}
+	client.addWatcher(watcher)
+
+	cancel()
+	require.Eventually(t, func() bool {
+		client.watcherMutex.Lock()
+		defer client.watcherMutex.Unlock()
+		return len(client.watchers) == 0
+	}, time.Second, time.Millisecond)
+}
 
 func TestSubscriptionReplaysDeleteAfterSnapshotPublication(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {

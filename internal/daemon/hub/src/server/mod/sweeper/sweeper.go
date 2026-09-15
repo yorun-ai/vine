@@ -15,12 +15,13 @@ const registrySweepInterval = 5 * time.Second
 type Sweeper struct {
 	app.BaseModule
 
-	Context        context.Context         `inject:""`
-	InprocFlag     *app.InternalInprocFlag `inject:""`
-	RegistryCore   *core.RegistryCore      `inject:""`
-	PortalSiteRepo core.PortalSiteRepo     `inject:""`
-	SchemaRepo     core.SchemaRepo         `inject:""`
-	Syncer         *syncer.Syncer          `inject:""`
+	Context         context.Context         `inject:""`
+	InprocFlag      *app.InternalInprocFlag `inject:""`
+	RegistryCore    *core.RegistryCore      `inject:""`
+	PortalInstances core.PortalInstanceRepo `inject:""`
+	PortalSiteRepo  core.PortalSiteRepo     `inject:""`
+	SchemaRepo      core.SchemaRepo         `inject:""`
+	Syncer          *syncer.Syncer          `inject:""`
 
 	stop context.CancelFunc
 }
@@ -44,11 +45,20 @@ func (s *Sweeper) AfterAppStop() {
 }
 
 func (s *Sweeper) sweepExpiredLeases() {
+	s.sweepExpiredPortalInstances()
 	if !s.RegistryCore.SweepExpiredLeases() {
 		return
 	}
 	s.refreshSchemas()
 	s.refreshPortalSiteRpcgwServices()
+}
+
+// sweepExpiredPortalInstances drops Portal instances that stopped heartbeating,
+// for example a Portal that was terminated without unregistering.
+func (s *Sweeper) sweepExpiredPortalInstances() {
+	for _, instanceId := range s.PortalInstances.PopExpiredPortalLeases() {
+		s.PortalInstances.RemovePortalInstance(instanceId)
+	}
 }
 
 func (s *Sweeper) refreshSchemas() {

@@ -69,6 +69,8 @@ func IsValidName(name string) bool {
 }
 
 // IsValidVersion reports whether version is accepted as application metadata.
+// A leading "v" from the Go module form is accepted, and the remainder must be a
+// full semantic version such as "1.2.3" or "0.0.0-dev".
 func IsValidVersion(version string) bool {
 	return internalmeta.IsValidVersion(version)
 }

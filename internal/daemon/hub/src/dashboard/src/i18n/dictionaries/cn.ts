@@ -96,6 +96,15 @@ export const cn = {
   'statusApp.rpcService': 'RPC 服务',
   'statusApp.eventListener': '事件监听',
   'statusApp.taskRunner': '任务执行',
+  'portalInstance.searchPlaceholder': '搜索实例 ID 或版本',
+  'portalInstance.itemCount': '共 {count} 个 Portal 实例',
+  'portalInstance.empty': '暂无 Portal 实例',
+  'portalInstance.noMatch': '没有匹配的 Portal 实例',
+  'portalInstance.emptyDescription':
+    'Portal 向 Hub 注册后，实例会出现在这里。',
+  'portalInstance.instanceInfo': '实例信息',
+  'portalInstance.instanceId': '实例 ID',
+  'portalInstance.version': '版本',
   'common.emptyPrefix': '暂无',
   'common.itemCount': '共 {count} 项',
   'skeleton.noMatch': '没有匹配的骨架',
@@ -351,6 +360,8 @@ export const cn = {
   'nav.portalSite.description': '管理 Portal RPC 与 Web 目标站点。',
   'nav.portalCert.label': 'HTTPS证书',
   'nav.portalCert.description': '管理 Portal HTTPS 证书与域名有效期。',
+  'nav.portalInstance.label': 'Portal 实例',
+  'nav.portalInstance.description': '查看已注册到 Hub 的 Portal 实例与版本。',
   'nav.appStatus.label': '应用状态',
   'nav.appStatus.description': '查看应用注册状态、实例健康与运行概览。',
   'nav.serviceClient.label': 'Service Client',
@@ -444,6 +455,7 @@ export const cn = {
   'skeleton.resizeList': '调整骨架列表宽度',
   'skeleton.resizeDomainList': '调整 Domain 列表宽度',
   'statusApp.resizeList': '调整应用状态列表宽度',
+  'portalInstance.resizeList': '调整 Portal 实例列表宽度',
 } as const
 
 export type TranslationKey = keyof typeof cn

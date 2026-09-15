@@ -110,3 +110,24 @@ api service AppStatusApiService {
         output list<AppStatusView>
     }
 }
+
+@desc("Portal instance status view for Dashboard display")
+data PortalStatusView {
+    @desc("Portal instance ID")
+    instanceId: string
+
+    @desc("Portal version")
+    version: string
+}
+
+@desc("Hub Dashboard's Portal instance status service")
+api service PortalStatusApiService {
+    for AdminActor
+
+    noauth
+
+    @desc("List Portal instance statuses")
+    method list {
+        output list<PortalStatusView>
+    }
+}

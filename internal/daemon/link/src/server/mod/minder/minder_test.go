@@ -15,6 +15,7 @@ import (
 	"go.yorun.ai/vine/internal/core/rpc/client"
 	"go.yorun.ai/vine/internal/core/skel"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
+	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubinfo"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 )
 
@@ -57,6 +58,33 @@ func mustTestMetaApp() meta.App {
 	return app
 }
 
+type _TestInfoServiceClient struct {
+	mutex       sync.Mutex
+	info        hubskeled.Info
+	getInfoCall int
+}
+
+func (c *_TestInfoServiceClient) GetInfo(_ ...client.InvokeOption) hubskeled.Info {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	c.getInfoCall++
+	return c.info
+}
+
+func (c *_TestInfoServiceClient) calls() int {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	return c.getInfoCall
+}
+
+func newTestHubInfo(client *_TestInfoServiceClient) *hubinfo.HubInfo {
+	flags := &flag.Flag{HubEndpoint: "http://127.0.0.1:7071"}
+	flags.Normalize(false)
+	component := &hubinfo.HubInfo{Flag: flags, InfoServiceClient: client}
+	component.DIInit()
+	return component
+}
+
 func newTestMinder(flagValue *flag.Flag, inprocFlag *app.InternalInprocFlag, client *_RegistryServiceClient) *AppMinder {
 	if flagValue == nil {
 		flagValue = &flag.Flag{}
@@ -73,6 +101,7 @@ func newTestMinder(flagValue *flag.Flag, inprocFlag *app.InternalInprocFlag, cli
 		App:                   mustTestMetaApp(),
 		InprocFlag:            inprocFlag,
 		RegistryServiceClient: client,
+		HubInfo:               newTestHubInfo(new(_TestInfoServiceClient)),
 	}
 	minder.DIInit()
 	return minder

@@ -2,10 +2,13 @@ package hubinfo
 
 import (
 	"testing"
+	"testing/synctest"
+	"time"
 
 	"go.yorun.ai/vine/util/vcode"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/flag"
@@ -71,4 +74,49 @@ func TestHubInfoWatchEndpointSupportsHubVersions(t *testing.T) {
 			assert.Equal(t, tc.want, component.WatchEndpoint())
 		})
 	}
+}
+
+func TestHubInfoRefreshNotifiesListenersOnlyWhenHubInfoChanged(t *testing.T) {
+	client := &_TestInfoServiceClient{info: hubskeled.Info{WatchPort: 7072}}
+	flags := &flag.Flag{HubEndpoint: "http://127.0.0.1:7071"}
+	flags.Normalize()
+	component := &HubInfo{Flag: flags, InfoServiceClient: client}
+	component.DIInit()
+
+	refreshes := 0
+	component.OnRefresh(func() { refreshes++ })
+
+	component.Refresh()
+	assert.Equal(t, 2, client.getInfoCall)
+	assert.Equal(t, 0, refreshes)
+
+	client.info = hubskeled.Info{WatchPort: 7073}
+	component.Refresh()
+
+	assert.Equal(t, 1, refreshes)
+	assert.Equal(t, "127.0.0.1:7073", component.WatchEndpoint())
+}
+
+func TestHubInfoBeforeAppStartPollsHubInformation(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		client := &_TestInfoServiceClient{info: hubskeled.Info{WatchPort: 7072}}
+		flags := &flag.Flag{HubEndpoint: "http://127.0.0.1:7071"}
+		flags.Normalize()
+		component := &HubInfo{Context: t.Context(), Flag: flags, InfoServiceClient: client}
+		component.DIInit()
+
+		prev := refreshInterval
+		refreshInterval = 10 * time.Millisecond
+		defer func() { refreshInterval = prev }()
+
+		require.NoError(t, component.BeforeAppStart())
+		defer component.AfterAppStop()
+
+		refreshes := 0
+		component.OnRefresh(func() { refreshes++ })
+		synctest.Sleep(refreshInterval)
+
+		assert.GreaterOrEqual(t, client.getInfoCall, 2)
+		assert.Equal(t, 0, refreshes)
+	})
 }

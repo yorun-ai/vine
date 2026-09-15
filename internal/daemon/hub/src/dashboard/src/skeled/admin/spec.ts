@@ -81,6 +81,13 @@ export const PortalSiteApiServiceSpec = {
   },
 } as const;
 
+export const PortalStatusApiServiceSpec = {
+  serviceName: 'vine.hub.admin.PortalStatusApiService',
+  methods: {
+    list: 'list',
+  },
+} as const;
+
 export const ServiceDebugApiServiceSpec = {
   serviceName: 'vine.hub.admin.ServiceDebugApiService',
   methods: {

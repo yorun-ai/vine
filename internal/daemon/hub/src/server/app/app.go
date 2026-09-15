@@ -88,6 +88,7 @@ func (a *HubApp) BindCommon(b *di.Binder) {
 
 	b.Bind(di.T[core.SchemaRepo]()).ToImplementation(di.T[*schema.MemorySchemaRepo]())
 	b.Bind(di.T[core.RegistryRepo]()).ToImplementation(di.T[*repo.WatchRegistryRepo]())
+	b.Bind(di.T[core.PortalInstanceRepo]()).ToImplementation(di.T[*repo.WatchPortalInstanceRepo]())
 }
 
 func (*HubApp) ServicerInitHandlers(addHandler app.TypeAdder) {
@@ -96,6 +97,7 @@ func (*HubApp) ServicerInitHandlers(addHandler app.TypeAdder) {
 	addHandler(app.T[*debugimpl.EventDebugApiServiceServerImpl]())
 	addHandler(app.T[*impl.SkeletonApiServiceServerImpl]())
 	addHandler(app.T[*impl.AppStatusApiServiceServerImpl]())
+	addHandler(app.T[*impl.PortalStatusApiServiceServerImpl]())
 	addHandler(app.T[*impl.AppConfigApiServiceServerImpl]())
 	addHandler(app.T[*impl.PortalCertApiServiceServerImpl]())
 	addHandler(app.T[*impl.PortalEntryApiServiceServerImpl]())

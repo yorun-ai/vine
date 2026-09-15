@@ -888,6 +888,20 @@ func (v PortalSiteWebOption) Clone() PortalSiteWebOption {
 	return cloned
 }
 
+// PortalStatusView Portal instance status view for Dashboard display
+type PortalStatusView struct {
+	// InstanceId Portal instance ID
+	InstanceId string `json:"instanceId"`
+	// Version Portal version
+	Version string `json:"version"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalStatusView) Clone() PortalStatusView {
+	cloned := v
+	return cloned
+}
+
 // SeedEntityDiff Seed entity differences
 type SeedEntityDiff struct {
 	// Kind Entity type

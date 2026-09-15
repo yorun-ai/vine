@@ -29,3 +29,16 @@ func (c *Client) InitOption(option *hubapiwatch.Option) {
 		option.TLSConfig = c.Identity.ClientConfig(daemon.HubIdentity.SPIFFEPath())
 	}
 }
+
+func (c *Client) DIInit() {
+	c.HubInfo.OnRefresh(c.onHubInfoRefresh)
+}
+
+// onHubInfoRefresh reconnects the watch client after Hub advertised a different
+// watch endpoint and re-subscribes every active watcher. An unchanged endpoint
+// keeps the existing subscriptions.
+func (c *Client) onHubInfoRefresh() {
+	option := &hubapiwatch.Option{}
+	c.InitOption(option)
+	c.RepairEndpoint(option)
+}

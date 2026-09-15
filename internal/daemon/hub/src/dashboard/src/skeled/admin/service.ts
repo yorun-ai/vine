@@ -13,6 +13,7 @@ import {
   PortalEntryApiServiceSpec,
   PortalRuleApiServiceSpec,
   PortalSiteApiServiceSpec,
+  PortalStatusApiServiceSpec,
   ServiceDebugApiServiceSpec,
   SkeletonApiServiceSpec,
   TaskDebugApiServiceSpec,
@@ -41,6 +42,7 @@ import type {
   PortalSiteOptions,
   PortalSiteCreation,
   PortalSiteUpdate,
+  PortalStatusView,
   ServiceDebugAppInstance,
   ServiceDebugServiceItem,
   ServiceDebugMethodItem,
@@ -727,6 +729,30 @@ export function createPortalSiteApiService(client: VrpcClient) {
       return client.invoke<void>({
         serviceName: PortalSiteApiServiceSpec.serviceName,
         methodName: PortalSiteApiServiceSpec.methods.remove,
+        params,
+        options,
+      });
+    },
+  };
+}
+/**
+ * Hub Dashboard's Portal instance status service
+ */
+export function createPortalStatusApiService(client: VrpcClient) {
+  return {
+    /**
+     * List Portal instance statuses.
+     * @param params - Request parameters, or null for methods without input
+     * @param options - Optional invocation options
+     * @returns Array<PortalStatusView> -
+     */
+    list(
+      params: null,
+      options?: VrpcRequestOptions,
+    ) {
+      return client.invoke<Array<PortalStatusView>>({
+        serviceName: PortalStatusApiServiceSpec.serviceName,
+        methodName: PortalStatusApiServiceSpec.methods.list,
         params,
         options,
       });

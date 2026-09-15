@@ -10,6 +10,7 @@ import (
 	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/internal/core/skel"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
+	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubinfo"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 )
 
@@ -31,6 +32,7 @@ type AppMinder struct {
 	Flag                  *flag.Flag                      `inject:""`
 	App                   runtime.App                     `inject:""`
 	InprocFlag            *app.InternalInprocFlag         `inject:""`
+	HubInfo               *hubinfo.HubInfo                `inject:""`
 	RegistryServiceClient hubskeled.RegistryServiceClient `inject:""`
 
 	mutex        sync.Mutex

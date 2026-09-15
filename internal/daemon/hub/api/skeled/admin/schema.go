@@ -11,7 +11,7 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "913ec257",
+	Hash:        "0a63ef94",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
 		CompilerVersion: "v0.19.3",
@@ -1675,6 +1675,30 @@ var _DomainSchema = &skel.DomainSchema{
 							Kind:   skel.TypeKindScalar,
 							Scalar: skel.ScalarString,
 						},
+					},
+				},
+			},
+		},
+		{
+			Name:        "PortalStatusView",
+			SkelName:    "vine.hub.admin.PortalStatusView",
+			Description: "Portal instance status view for Dashboard display",
+			Hash:        "126d087a",
+			Members: []*skel.MemberSchema{
+				{
+					Name:        "instanceId",
+					Description: "Portal instance ID",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
+				{
+					Name:        "version",
+					Description: "Portal version",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 			},
@@ -5391,6 +5415,35 @@ var _DomainSchema = &skel.DomainSchema{
 								Kind:   skel.TypeKindScalar,
 								Scalar: skel.ScalarInt,
 							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name:        "PortalStatusApiService",
+			SkelName:    "vine.hub.admin.PortalStatusApiService",
+			Description: "Hub Dashboard's Portal instance status service",
+			Hash:        "00945e2a",
+			Pub:         false,
+			Api:         true,
+			AuthMode:    skel.AuthModeNoAuth,
+			Audiences: []*skel.ActorAudienceSchema{
+				{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"},
+			},
+			Methods: []*skel.MethodSchema{
+				{
+					Name:        "list",
+					SkelName:    "list",
+					Description: "List Portal instance statuses",
+					Hash:        "2916f955",
+					AuthMode:    skel.AuthModeUnset,
+					ResultType: &skel.TypeSchema{
+						Kind: skel.TypeKindList,
+						Element: &skel.TypeSchema{
+							Kind:     skel.TypeKindData,
+							Name:     "PortalStatusView",
+							SkelName: "vine.hub.admin.PortalStatusView",
 						},
 					},
 				},

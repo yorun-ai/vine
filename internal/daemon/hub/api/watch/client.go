@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/redis/go-redis/v9"
 	"go.yorun.ai/vine/internal/app"
@@ -40,13 +41,31 @@ type ClientOps interface {
 
 type _RedisClientSetter interface {
 	setRedisClient(ctx context.Context, redisClient *redis.Client)
+	swapRedisClient(ctx context.Context, redisClient *redis.Client) *redis.Client
 }
 
+type _ClientRepairer interface {
+	setRepair(repair func(option *Option) bool)
+	restartWatchers()
+	lockLifecycle()
+	unlockLifecycle()
+	closeWatchers()
+}
+
+// Client watches Hub-published keys over Hub's Redis protocol watch service.
+// A restarted Hub can advertise a different watch endpoint, so the owning
+// manager can replace the connection and re-subscribe every active watcher.
 type Client struct {
 	app.BaseManagedComponent[*ClientManager]
 
+	clientMutex sync.RWMutex
 	ctx         context.Context
 	redisClient *redis.Client
+	repair      func(option *Option) bool
+
+	watcherMutex   sync.Mutex
+	lifecycleMutex sync.Mutex
+	watchers       map[*_Watcher]struct{}
 }
 
 func (*Client) InitOption(*Option) {}
@@ -54,18 +73,118 @@ func (*Client) InitOption(*Option) {}
 func (*Client) mustBeClient() {}
 
 func (c *Client) setRedisClient(ctx context.Context, redisClient *redis.Client) {
+	c.clientMutex.Lock()
+	defer c.clientMutex.Unlock()
+
 	c.ctx = ctx
 	c.redisClient = redisClient
 }
 
+func (c *Client) swapRedisClient(ctx context.Context, redisClient *redis.Client) *redis.Client {
+	c.clientMutex.Lock()
+	defer c.clientMutex.Unlock()
+
+	previous := c.redisClient
+	c.ctx = ctx
+	c.redisClient = redisClient
+	return previous
+}
+
+func (c *Client) currentRedisClient() (*redis.Client, context.Context) {
+	c.clientMutex.RLock()
+	defer c.clientMutex.RUnlock()
+
+	return c.redisClient, c.ctx
+}
+
+func (c *Client) setRepair(repair func(option *Option) bool) {
+	c.clientMutex.Lock()
+	defer c.clientMutex.Unlock()
+
+	c.repair = repair
+}
+
+// RepairEndpoint reconnects the watch client after Hub advertised a different
+// watch endpoint and re-subscribes every active watcher. It reports whether the
+// endpoint moved; an unchanged endpoint keeps the existing connections.
+func (c *Client) RepairEndpoint(option *Option) bool {
+	c.clientMutex.RLock()
+	repair := c.repair
+	c.clientMutex.RUnlock()
+
+	if repair == nil {
+		return false
+	}
+	return repair(option)
+}
+
 func (c *Client) Close() {
-	if c.redisClient != nil {
-		_ = c.redisClient.Close()
+	c.lockLifecycle()
+	defer c.unlockLifecycle()
+	redisClient, _ := c.currentRedisClient()
+	c.closeWatchers()
+	if redisClient != nil {
+		_ = redisClient.Close()
+	}
+}
+
+func (c *Client) lockLifecycle()   { c.lifecycleMutex.Lock() }
+func (c *Client) unlockLifecycle() { c.lifecycleMutex.Unlock() }
+
+func (c *Client) addWatcher(watcher *_Watcher) {
+	c.watcherMutex.Lock()
+	defer c.watcherMutex.Unlock()
+
+	if c.watchers == nil {
+		c.watchers = map[*_Watcher]struct{}{}
+	}
+	c.watchers[watcher] = struct{}{}
+	context.AfterFunc(watcher.ctx, func() {
+		c.lockLifecycle()
+		defer c.unlockLifecycle()
+		watcher.stop()
+		c.removeWatcher(watcher)
+	})
+}
+
+func (c *Client) removeWatcher(watcher *_Watcher) {
+	c.watcherMutex.Lock()
+	defer c.watcherMutex.Unlock()
+
+	delete(c.watchers, watcher)
+}
+
+func (c *Client) watcherSnapshot() []*_Watcher {
+	c.watcherMutex.Lock()
+	defer c.watcherMutex.Unlock()
+
+	watchers := make([]*_Watcher, 0, len(c.watchers))
+	for watcher := range c.watchers {
+		watchers = append(watchers, watcher)
+	}
+	return watchers
+}
+
+func (c *Client) closeWatchers() {
+	for _, watcher := range c.watcherSnapshot() {
+		watcher.stop()
+	}
+}
+
+// restartWatchers re-subscribes every active watcher on the current connection.
+// Each watcher reloads its snapshot and reconciles against the last known state,
+// which is what recovers keys that changed while the watch endpoint was stale.
+func (c *Client) restartWatchers() {
+	redisClient, _ := c.currentRedisClient()
+	for _, watcher := range c.watcherSnapshot() {
+		watcher.restart(redisClient)
 	}
 }
 
 func (c *Client) Load(key string) (string, bool) {
-	value, err := c.redisClient.Get(c.ctx, key).Result()
+	redisClient, ctx := c.currentRedisClient()
+
+	value, err := redisClient.Get(ctx, key).Result()
 	if errors.Is(err, redis.Nil) {
 		return "", false
 	}
@@ -74,11 +193,13 @@ func (c *Client) Load(key string) (string, bool) {
 }
 
 func (c *Client) loadScanKeyValues(prefix string) map[string]string {
+	redisClient, ctx := c.currentRedisClient()
+
 	pattern := formatRedisListPattern(prefix)
 	keys := make([]string, 0)
 	var cursor uint64
 	for {
-		batch, nextCursor, err := c.redisClient.Scan(c.ctx, cursor, pattern, 1000).Result()
+		batch, nextCursor, err := redisClient.Scan(ctx, cursor, pattern, 1000).Result()
 		vpre.CheckNilError(err, "scan redis keys failed")
 		keys = append(keys, batch...)
 		if nextCursor == 0 {

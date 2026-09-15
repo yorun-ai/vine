@@ -43,6 +43,7 @@ func newTestHealthcheckMinder(ctx context.Context) *AppMinder {
 		App:                   mustTestMetaApp(),
 		InprocFlag:            &app.InternalInprocFlag{},
 		RegistryServiceClient: &_RegistryServiceClient{},
+		HubInfo:               newTestHubInfo(new(_TestInfoServiceClient)),
 	}
 	minder.DIInit()
 	return minder

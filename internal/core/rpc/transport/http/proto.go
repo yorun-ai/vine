@@ -3,12 +3,14 @@ package http
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 	"go.yorun.ai/vine/util/vpre"
 
+	"go.yorun.ai/vrpc"
 	rpchttp "go.yorun.ai/vrpc/transport/http"
 )
 
@@ -125,6 +127,10 @@ func decodeAppFromHeader(header http.Header, key string) (meta.App, error) {
 		return nil, fmt.Errorf("missing request header %s", key)
 	}
 
+	// The wire contract requires a plain semantic version, but the decoder stays
+	// lenient so that peers released before this normalization keep working.
+	// TODO: replace with vrpc.DecodeIdentity once every supported peer sends a
+	// plain semantic version.
 	appInfo, err := meta.DecodeAppFromDelimited(value)
 	if err != nil {
 		return nil, fmt.Errorf("invalid request header %s", key)
@@ -140,8 +146,17 @@ func DecodeServerFromHeader(header http.Header) (meta.App, error) {
 	return decodeAppFromHeader(header, HeaderRpcServer)
 }
 
+// encodeAppToHeader writes an identity header in the vRPC wire format.
+// Application versions keep the Go module form and may carry a leading "v",
+// while the wire format requires a plain semantic version.
 func encodeAppToHeader(header http.Header, appInfo meta.App, key string) {
-	header.Set(key, rpchttp.EncodeApp(appInfo.Name(), appInfo.Version(), appInfo.InstanceId()))
+	identity, err := vrpc.EncodeIdentity(vrpc.Identity{
+		Name:       appInfo.Name(),
+		Version:    strings.TrimPrefix(appInfo.Version(), "v"),
+		InstanceID: appInfo.InstanceId(),
+	})
+	vpre.CheckNilError(err, "invalid identity for header %s: %v", key, err)
+	header.Set(key, identity)
 }
 
 func EncodeClientToHeader(header http.Header, client meta.App) {

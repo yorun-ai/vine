@@ -13,6 +13,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/entry"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/heartbeat"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/vault"
 )
@@ -49,6 +50,7 @@ func (*PortalApp) InitComponents(addComponent app.TypeAdder) {
 }
 
 func (*PortalApp) InitModules(addModule app.TypeAdder) {
+	addModule(app.T[*heartbeat.Heartbeat]())
 	addModule(app.T[*epmgr.Manager]())
 	addModule(app.T[*access.Access]())
 	addModule(app.T[*site.Manager]())

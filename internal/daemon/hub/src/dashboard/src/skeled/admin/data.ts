@@ -788,6 +788,19 @@ export type PortalSiteWebOption = {
   actorSkelNames: Array<string>;
 }
 /**
+ * Portal instance status view for Dashboard display.
+ */
+export type PortalStatusView = {
+  /**
+   * Portal instance ID.
+   */
+  instanceId: string;
+  /**
+   * Portal version.
+   */
+  version:    string;
+}
+/**
  * Seed entity differences.
  */
 export type SeedEntityDiff = {

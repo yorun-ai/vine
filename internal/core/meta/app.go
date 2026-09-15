@@ -3,6 +3,7 @@ package meta
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"uuid"
 
 	"github.com/Masterminds/semver/v3"
@@ -104,8 +105,12 @@ func IsValidName(name string) bool {
 	return applicationNamePattern.MatchString(name)
 }
 
+// IsValidVersion reports whether version is usable as application metadata. A
+// version carries the Go module form, so a leading "v" is accepted; everything
+// after it must be a full semantic version, which is what the Rpc identity
+// header requires.
 func IsValidVersion(version string) bool {
-	_, err := semver.NewVersion(version)
+	_, err := semver.StrictNewVersion(strings.TrimPrefix(version, "v"))
 	return err == nil
 }
 

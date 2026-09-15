@@ -252,6 +252,39 @@ func TestClientAndServerHeaderRoundTrip(t *testing.T) {
 	}
 }
 
+func TestEncodeClientToHeaderNormalizesGoVersionPrefix(t *testing.T) {
+	client, err := meta.NewApp("vine.hub", "v0.17.0", "123e4567-e89b-12d3-a456-426614174000")
+	if err != nil {
+		t.Fatalf("NewApp() error = %v", err)
+	}
+	header := http.Header{}
+
+	EncodeClientToHeader(header, client)
+	if got := header.Get(HeaderRpcClient); got != "name=vine.hub,version=0.17.0,instanceId=123e4567-e89b-12d3-a456-426614174000" {
+		t.Fatalf("unexpected client header: %s", got)
+	}
+	got, err := DecodeClientFromHeader(header)
+	if err != nil {
+		t.Fatalf("DecodeClientFromHeader() error = %v", err)
+	}
+	if got.Version() != "0.17.0" {
+		t.Fatalf("unexpected version: %s", got.Version())
+	}
+}
+
+func TestDecodeClientFromHeaderAcceptsGoVersionPrefix(t *testing.T) {
+	header := http.Header{}
+	header.Set(HeaderRpcClient, "name=vine.hub,version=v0.15.8,instanceId=123e4567-e89b-12d3-a456-426614174000")
+
+	got, err := DecodeClientFromHeader(header)
+	if err != nil {
+		t.Fatalf("DecodeClientFromHeader() error = %v", err)
+	}
+	if got.Name() != "vine.hub" || got.Version() != "v0.15.8" {
+		t.Fatalf("unexpected client app: %s %s", got.Name(), got.Version())
+	}
+}
+
 func TestDecodeClientFromHeaderExported(t *testing.T) {
 	client, err := meta.NewApp("client", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
 	if err != nil {

@@ -103,6 +103,15 @@ export const en: Record<TranslationKey, string> = {
   'statusApp.rpcService': 'RPC Service',
   'statusApp.eventListener': 'Event Listeners',
   'statusApp.taskRunner': 'Task Runners',
+  'portalInstance.searchPlaceholder': 'Search instance ID or version',
+  'portalInstance.itemCount': '{count} Portal instances',
+  'portalInstance.empty': 'No Portal instances',
+  'portalInstance.noMatch': 'No matching Portal instances',
+  'portalInstance.emptyDescription':
+    'Portal instances appear here after they register with Hub.',
+  'portalInstance.instanceInfo': 'Instance Info',
+  'portalInstance.instanceId': 'Instance ID',
+  'portalInstance.version': 'Version',
   'common.emptyPrefix': 'No',
   'common.itemCount': '{count} items',
   'skeleton.noMatch': 'No matching skeletons',
@@ -367,6 +376,9 @@ export const en: Record<TranslationKey, string> = {
   'nav.portalCert.label': 'HTTPS Cert',
   'nav.portalCert.description':
     'Manage Portal HTTPS certificates and domain validity.',
+  'nav.portalInstance.label': 'Portal Instances',
+  'nav.portalInstance.description':
+    'View Portal instances registered with Hub and their versions.',
   'nav.appStatus.label': 'App Status',
   'nav.appStatus.description':
     'View app registration, instance health, and runtime status.',
@@ -465,4 +477,5 @@ export const en: Record<TranslationKey, string> = {
   'skeleton.resizeList': 'Resize skeleton list',
   'skeleton.resizeDomainList': 'Resize Domain list',
   'statusApp.resizeList': 'Resize application status list',
+  'portalInstance.resizeList': 'Resize Portal instance list',
 }

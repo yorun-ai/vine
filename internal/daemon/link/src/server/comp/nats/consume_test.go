@@ -85,6 +85,27 @@ func TestConsumeRestartsManagedConsumersDuringRecovery(t *testing.T) {
 	assertPayload(t, firstCh, "ok")
 }
 
+func TestConsumeSurvivesConnectionReplacement(t *testing.T) {
+	first := newTestNATSServer(t)
+	second := newTestNATSServer(t)
+	client := new(_Client)
+	old := connectTestNATS(t, "nats://"+first.Addr().String())
+	client.setConn(old)
+	messages := make(chan string, 4)
+	consumer := client.Consume(broadcastStreamConfigForTest(), formatTestBroadcastSubject("alpha.created"), "replacement", func(msg jetstream.Msg) {
+		messages <- string(msg.Data())
+		_ = msg.Ack()
+	})
+	defer consumer.Stop()
+	client.Publish(broadcastStreamConfigForTest(), formatTestBroadcastSubject("alpha.created"), []byte("before"))
+	assertPayload(t, messages, "before")
+	client.setConn(connectTestNATS(t, "nats://"+second.Addr().String()))
+	old.Close()
+	client.recoverJetStream(t.Context())
+	client.Publish(broadcastStreamConfigForTest(), formatTestBroadcastSubject("alpha.created"), []byte("after"))
+	assertPayload(t, messages, "after")
+}
+
 func TestConsumeStoppedManagedConsumerIsRemoved(t *testing.T) {
 	server := newTestNATSServer(t)
 
