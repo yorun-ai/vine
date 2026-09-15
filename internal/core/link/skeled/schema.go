@@ -11,10 +11,10 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.link",
 	Description: "Internal API for Vine Link",
-	Hash:        "b383d519",
+	Hash:        "4942a038",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
-		CompilerVersion: "v0.19.1",
+		CompilerVersion: "v0.19.3",
 	},
 
 	Data: []*skel.DataSchema{
@@ -602,6 +602,111 @@ var _DomainSchema = &skel.DomainSchema{
 								SkelName: "vine.link.EventEmission",
 							},
 						},
+					},
+				},
+			},
+		},
+		{
+			Name:        "LockService",
+			SkelName:    "vine.link.LockService",
+			Description: "Distributed lease lock service",
+			Hash:        "8d360286",
+			Pub:         true,
+			AuthMode:    skel.AuthModeUnset,
+			Methods: []*skel.MethodSchema{
+				{
+					Name:        "acquire",
+					SkelName:    "acquire",
+					Description: "Acquire a lock using a unique attempt token",
+					Hash:        "f085a1e5",
+					AuthMode:    skel.AuthModeUnset,
+					Arguments: []*skel.MemberSchema{
+						{
+							Name: "key",
+							Type: &skel.TypeSchema{
+								Kind:   skel.TypeKindScalar,
+								Scalar: skel.ScalarString,
+							},
+						},
+						{
+							Name: "token",
+							Type: &skel.TypeSchema{
+								Kind:   skel.TypeKindScalar,
+								Scalar: skel.ScalarString,
+							},
+						},
+						{
+							Name: "ttlMillis",
+							Type: &skel.TypeSchema{
+								Kind:   skel.TypeKindScalar,
+								Scalar: skel.ScalarInt,
+							},
+						},
+					},
+					ResultType: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarBool,
+					},
+				},
+				{
+					Name:        "renew",
+					SkelName:    "renew",
+					Description: "Renew a lock owned by the token",
+					Hash:        "1b8b3625",
+					AuthMode:    skel.AuthModeUnset,
+					Arguments: []*skel.MemberSchema{
+						{
+							Name: "key",
+							Type: &skel.TypeSchema{
+								Kind:   skel.TypeKindScalar,
+								Scalar: skel.ScalarString,
+							},
+						},
+						{
+							Name: "token",
+							Type: &skel.TypeSchema{
+								Kind:   skel.TypeKindScalar,
+								Scalar: skel.ScalarString,
+							},
+						},
+						{
+							Name: "ttlMillis",
+							Type: &skel.TypeSchema{
+								Kind:   skel.TypeKindScalar,
+								Scalar: skel.ScalarInt,
+							},
+						},
+					},
+					ResultType: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarBool,
+					},
+				},
+				{
+					Name:        "release",
+					SkelName:    "release",
+					Description: "Release a lock owned by the token",
+					Hash:        "2da2617f",
+					AuthMode:    skel.AuthModeUnset,
+					Arguments: []*skel.MemberSchema{
+						{
+							Name: "key",
+							Type: &skel.TypeSchema{
+								Kind:   skel.TypeKindScalar,
+								Scalar: skel.ScalarString,
+							},
+						},
+						{
+							Name: "token",
+							Type: &skel.TypeSchema{
+								Kind:   skel.TypeKindScalar,
+								Scalar: skel.ScalarString,
+							},
+						},
+					},
+					ResultType: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarBool,
 					},
 				},
 			},

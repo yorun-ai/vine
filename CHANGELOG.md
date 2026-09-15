@@ -22,6 +22,9 @@ are not part of the public compatibility commitment.
   which Hub advertises through its connection information. Inproc Hub always uses
   embedded locks. Active locks reject repeated acquisition, including the same token.
 
+- Link exposes lease lock operations through its LockService, routing requests to
+  Hub or directly to the advertised external Redis endpoint.
+
 ### Changed
 
 - Configure Hub MQ using `--mq-mode=embedded|nats` (default: `embedded`) and

@@ -34,6 +34,7 @@ case "${scope}" in
       ./internal/daemon/hub/src/server/core
       ./internal/daemon/hub/src/server/mod/scheduler
       ./internal/daemon/hub/src/server/repo/...
+      ./internal/daemon/link/src/server/comp/lock
       ./internal/daemon/link/src/server/comp/hubwatch
       ./internal/daemon/link/src/server/comp/nats
       ./internal/daemon/link/src/server/mod/config
