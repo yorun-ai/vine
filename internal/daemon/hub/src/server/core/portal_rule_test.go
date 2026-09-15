@@ -15,6 +15,39 @@ type entryRuleRepoSpy struct {
 	rules map[int]*PortalRule
 }
 
+func TestResolvePortalRulePaths(t *testing.T) {
+	rule := &PortalRule{
+		RouteType:       PortalRuleRouteTypeSite,
+		MatchPathPrefix: "/configured",
+		RoutePathPrefix: "/backend",
+	}
+	tests := []struct {
+		name  string
+		site  *PortalSite
+		match string
+		route string
+	}{
+		{name: "without site", match: "/configured", route: "/backend"},
+		{name: "empty mount", site: &PortalSite{WebMountPath: ""}, match: "/configured", route: "/backend"},
+		{name: "root mount", site: &PortalSite{WebMountPath: "/"}, match: "/", route: ""},
+		{name: "trim trailing slash", site: &PortalSite{WebMountPath: "/app/"}, match: "/app", route: "/app"},
+		{name: "nested mount", site: &PortalSite{WebMountPath: "/app/admin"}, match: "/app/admin", route: "/app/admin"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			match, route := ResolvePortalRulePaths(rule, tt.site)
+			assert.Equal(t, tt.match, match)
+			assert.Equal(t, tt.route, route)
+		})
+	}
+
+	redirect := *rule
+	redirect.RouteType = PortalRuleRouteTypeTemporaryRedirect
+	match, route := ResolvePortalRulePaths(&redirect, &PortalSite{WebMountPath: "/app"})
+	assert.Equal(t, "/configured", match)
+	assert.Equal(t, "/backend", route)
+}
+
 func (s *entryRuleRepoSpy) List() []*PortalRule {
 	s.calls = append(s.calls, "List")
 	rules := make([]*PortalRule, 0, len(s.rules))

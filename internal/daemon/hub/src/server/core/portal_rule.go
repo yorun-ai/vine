@@ -7,6 +7,7 @@ import (
 	"unicode"
 
 	"go.yorun.ai/vine/internal/core/ex"
+	"go.yorun.ai/vine/internal/util/httputil"
 )
 
 const (
@@ -60,6 +61,18 @@ type PortalDashboardAccess struct {
 	Host       string
 	Port       int
 	PathPrefix string
+}
+
+// ResolvePortalRulePaths returns the effective prefixes sent to Portal.
+func ResolvePortalRulePaths(rule *PortalRule, site *PortalSite) (string, string) {
+	if site == nil || site.WebMountPath == "" || rule.RouteType != PortalRuleRouteTypeSite {
+		return rule.MatchPathPrefix, rule.RoutePathPrefix
+	}
+	mountPath := strings.TrimRight(site.WebMountPath, "/")
+	if mountPath == "" {
+		return "/", ""
+	}
+	return mountPath, mountPath
 }
 
 // Repo
@@ -184,13 +197,9 @@ func normalizePortalRuleRoutePathPrefix(routeType string, routePathPrefix string
 		return ""
 	}
 	ex.PanicNewIfNot(routeType == PortalRuleRouteTypeSite, ex.OperationFailed, "routePathPrefix is only supported for SITE rules")
+	ex.PanicNewIfNot(httputil.ValidatePathPrefix(routePathPrefix) == nil, ex.OperationFailed, "routePathPrefix is invalid")
 	u, err := url.ParseRequestURI(routePathPrefix)
 	ex.PanicNewIfNot(err == nil, ex.OperationFailed, "routePathPrefix must be a valid absolute path")
-	ex.PanicNewIfNot(strings.HasPrefix(routePathPrefix, "/") && !strings.HasPrefix(routePathPrefix, "//") && !strings.ContainsAny(routePathPrefix, "?#") && u.Scheme == "" && u.Host == "", ex.OperationFailed, "routePathPrefix must be a path without scheme, host, query or fragment")
-	ex.PanicNewIfNot(!strings.Contains(u.Path, "\\") && strings.IndexFunc(u.Path, unicode.IsControl) < 0 && strings.IndexFunc(routePathPrefix, unicode.IsSpace) < 0, ex.OperationFailed, "routePathPrefix contains unsupported characters")
-	for segment := range strings.SplitSeq(u.Path, "/") {
-		ex.PanicNewIfNot(segment != "." && segment != "..", ex.OperationFailed, "routePathPrefix must not contain dot segments")
-	}
 	return strings.TrimRight(u.EscapedPath(), "/")
 }
 

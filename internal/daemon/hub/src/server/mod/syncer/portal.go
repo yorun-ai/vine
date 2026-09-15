@@ -1,8 +1,6 @@
 package syncer
 
 import (
-	"strings"
-
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vcode"
@@ -110,16 +108,7 @@ func toWatchedPortalSite(site *core.PortalSite) *watched.PortalSite {
 func (s *Syncer) toWatchedPortalRule(rule *core.PortalRule, sites ...*core.PortalSite) *watched.PortalRule {
 	ret := ToWatchedPortalRule(rule)
 	if len(sites) > 0 {
-		site := sites[0]
-		if site == nil || site.WebMountPath == "" || rule.RouteType != string(core.PortalRuleRouteTypeSite) {
-			return ret
-		}
-		mountPath := strings.TrimRight(site.WebMountPath, "/")
-		ret.ResolvedMatchPathPrefix = mountPath
-		ret.ResolvedRoutePathPrefix = mountPath
-		if mountPath == "" {
-			ret.ResolvedMatchPathPrefix = "/"
-		}
+		ret.ResolvedMatchPathPrefix, ret.ResolvedRoutePathPrefix = core.ResolvePortalRulePaths(rule, sites[0])
 	}
 	return ret
 }

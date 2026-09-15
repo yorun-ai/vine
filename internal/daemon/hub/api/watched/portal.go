@@ -83,7 +83,8 @@ type PortalRpcgwService struct {
 
 type PortalWebgwConfig struct {
 	WebName string `json:"webName"`
-	// MountPath overrides both prefixes of SITE rules at route construction.
+	// MountPath is published by Hub as Site metadata. Hub also publishes the
+	// effective rule prefixes through PortalRule.Resolved* fields.
 	// Empty preserves the prefixes configured on each rule.
 	MountPath string `json:"mountPath,omitempty"`
 }

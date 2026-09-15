@@ -59,3 +59,16 @@ func TestStripPathPrefix(t *testing.T) {
 		t.Fatalf("original request was mutated: %s", request.URL.Path)
 	}
 }
+
+func TestValidatePathPrefix(t *testing.T) {
+	for _, value := range []string{"", "/", "/app", "/app/", "/app/%2Fdocs"} {
+		if err := ValidatePathPrefix(value); err != nil {
+			t.Fatalf("expected %q to be valid: %v", value, err)
+		}
+	}
+	for _, value := range []string{"//app", "https://example.com/app", "/app?x=1", "/app#section", "/./app", "/app/../admin", "/app path", "/app\\data"} {
+		if err := ValidatePathPrefix(value); err == nil {
+			t.Fatalf("expected %q to be rejected", value)
+		}
+	}
+}

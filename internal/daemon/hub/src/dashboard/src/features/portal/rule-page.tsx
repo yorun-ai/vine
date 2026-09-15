@@ -3,7 +3,6 @@ import { useConfigAccess } from '@/lib/config-access'
 import { RulePathPreview } from './rule-path-preview'
 import {
   effectiveWebMountPrefixes,
-  lockWebMountPath,
   lockedWebMountPath,
   rulePathsForSave,
 } from './web-mount-path'
@@ -1269,11 +1268,12 @@ export function PortalRulePage() {
   }, [loadRules])
 
   const visibleRules = React.useMemo(() => {
-    return rules.map((rule) => lockWebMountPath(
-      rule,
-      lockedWebMountPath(rule.routeType, rule.routeSiteName, entries),
-    ))
-  }, [rules, entries])
+    return rules.map((rule) => ({
+      ...rule,
+      matchPathPrefix: rule.resolvedMatchPathPrefix,
+      routePathPrefix: rule.resolvedRoutePathPrefix,
+    }))
+  }, [rules])
 
   const filteredRules = React.useMemo(() => {
     const keyword = query.trim().toLowerCase()
@@ -1704,7 +1704,7 @@ export function PortalRulePage() {
                           </ReadonlyField>
                           <ReadonlyField source={selectedMountPath === null ? <FieldSourceInfo fields={selectedRuleFields} path="/matchPathPrefix" /> : undefined} label={t('portalRule.matchPathPrefix')}>
                             {selectedMountPath === null ? (
-                              rawSelectedRule?.matchPathPrefix || '/'
+                              selectedRule.matchPathPrefix || '/'
                             ) : (
                               <span className="text-destructive line-through">
                                 {rawSelectedRule?.matchPathPrefix || '/'}
@@ -1759,7 +1759,7 @@ export function PortalRulePage() {
                           {selectedRule.routeType === 'SITE' ? (
                             <ReadonlyField source={selectedMountPath === null ? <FieldSourceInfo fields={selectedRuleFields} path="/routePathPrefix" /> : undefined} label={t('portalRule.routePathPrefix')}>
                               {selectedMountPath === null ? (
-                                rawSelectedRule?.routePathPrefix || '/'
+                                selectedRule.routePathPrefix || '/'
                               ) : (
                                 <span className="text-destructive line-through">
                                   {rawSelectedRule?.routePathPrefix || '/'}
@@ -1773,8 +1773,8 @@ export function PortalRulePage() {
                         <RulePathPreview
                           key={selectedRule.id}
                           mountPath={selectedMountPath}
-                          matchPathPrefix={(selectedMountPath === null ? (rawSelectedRule?.matchPathPrefix ?? '') : effectiveWebMountPrefixes(selectedMountPath).matchPathPrefix)}
-                          routePathPrefix={(selectedMountPath === null ? (rawSelectedRule?.routePathPrefix ?? '') : effectiveWebMountPrefixes(selectedMountPath).routePathPrefix)}
+                          matchPathPrefix={selectedRule.matchPathPrefix}
+                          routePathPrefix={selectedRule.routePathPrefix}
                         />
                       ) : null}
                     </div>

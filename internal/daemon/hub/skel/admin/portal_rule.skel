@@ -62,6 +62,12 @@ data PortalRule {
     @desc("Target site path prefix; empty means strip the matching prefix only")
     routePathPrefix: string
 
+    @desc("Effective match path prefix after site mount path resolution")
+    resolvedMatchPathPrefix: string
+
+    @desc("Effective route path prefix after site mount path resolution")
+    resolvedRoutePathPrefix: string
+
     @desc("Field sources; only returned by get, create and update")
     fieldSources: list<FieldSource>
 
@@ -98,6 +104,12 @@ data PortalRuleListItem {
 
     @desc("Target site path prefix; empty means strip the matching prefix only")
     routePathPrefix: string
+
+    @desc("Effective match path prefix after site mount path resolution")
+    resolvedMatchPathPrefix: string
+
+    @desc("Effective route path prefix after site mount path resolution")
+    resolvedRoutePathPrefix: string
 }
 
 @desc("Portal entry rule update parameters")

@@ -652,6 +652,14 @@ export type PortalRule = {
    */
   routePathPrefix:         string;
   /**
+   * Effective match path prefix after site mount path resolution.
+   */
+  resolvedMatchPathPrefix: string;
+  /**
+   * Effective route path prefix after site mount path resolution.
+   */
+  resolvedRoutePathPrefix: string;
+  /**
    * Field sources; only returned by get, create and update.
    */
   fieldSources:            Array<FieldSource>;
@@ -741,6 +749,14 @@ export type PortalRuleListItem = {
    * Target site path prefix; empty means strip the matching prefix only.
    */
   routePathPrefix:         string;
+  /**
+   * Effective match path prefix after site mount path resolution.
+   */
+  resolvedMatchPathPrefix: string;
+  /**
+   * Effective route path prefix after site mount path resolution.
+   */
+  resolvedRoutePathPrefix: string;
 }
 /**
  * Portal entry rule update parameters.

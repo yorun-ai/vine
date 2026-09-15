@@ -1,4 +1,3 @@
-import { lockWebMountPath, lockedWebMountPath } from './web-mount-path'
 import { useConfigAccess } from '@/lib/config-access'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
 import { SearchInput } from '@/components/ui/search-input'
@@ -341,14 +340,6 @@ export function PortalEntryPage() {
       setEntries(loadedEntries.map((entry) => ({
         ...entry,
         rules: entry.rules
-          .map((item) => ({
-            ...item,
-            rule: lockWebMountPath(item.rule, lockedWebMountPath(
-              item.rule.routeType,
-              item.rule.routeSiteName,
-              item.site ? [item.site] : [],
-            )),
-          }))
           .sort((a, b) =>
             b.rule.matchPathPrefix.length - a.rule.matchPathPrefix.length ||
             a.rule.name.localeCompare(b.rule.name),

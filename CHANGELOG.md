@@ -16,8 +16,9 @@ are not part of the public compatibility commitment.
   shows both fields with the Web path, disables editing, and identifies Web as
   their source. Seed rules can omit both prefixes; existing stored values need
   no migration and apply again if the Web has no mount path. Built-in Dashboard
-  access and redirect rules are unchanged. Upgrade Hub and Portal together for
-  the new Watch mount-path metadata.
+  access and redirect rules are unchanged. During a rolling upgrade, upgrade
+  Hub first and verify that it publishes the resolved rule prefixes before
+  upgrading Portal; the new Portal depends on those fields.
 
 ### Changed
 

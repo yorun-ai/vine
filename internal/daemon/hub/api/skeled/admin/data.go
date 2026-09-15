@@ -653,6 +653,10 @@ type PortalRule struct {
 	RouteRedirectionPattern string `json:"routeRedirectionPattern"`
 	// RoutePathPrefix Target site path prefix; empty means strip the matching prefix only
 	RoutePathPrefix string `json:"routePathPrefix"`
+	// ResolvedMatchPathPrefix Effective match path prefix after site mount path resolution
+	ResolvedMatchPathPrefix string `json:"resolvedMatchPathPrefix"`
+	// ResolvedRoutePathPrefix Effective route path prefix after site mount path resolution
+	ResolvedRoutePathPrefix string `json:"resolvedRoutePathPrefix"`
 	// FieldSources Field sources; only returned by get, create and update
 	FieldSources []FieldSource `json:"fieldSources"`
 }
@@ -725,6 +729,10 @@ type PortalRuleListItem struct {
 	RouteRedirectionPattern string `json:"routeRedirectionPattern"`
 	// RoutePathPrefix Target site path prefix; empty means strip the matching prefix only
 	RoutePathPrefix string `json:"routePathPrefix"`
+	// ResolvedMatchPathPrefix Effective match path prefix after site mount path resolution
+	ResolvedMatchPathPrefix string `json:"resolvedMatchPathPrefix"`
+	// ResolvedRoutePathPrefix Effective route path prefix after site mount path resolution
+	ResolvedRoutePathPrefix string `json:"resolvedRoutePathPrefix"`
 }
 
 // Clone returns a value-isolated copy of the generated data.

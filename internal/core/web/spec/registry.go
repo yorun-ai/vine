@@ -3,6 +3,7 @@ package spec
 import (
 	"reflect"
 
+	"go.yorun.ai/vine/internal/util/httputil"
 	"go.yorun.ai/vine/internal/util/reflectutil"
 	"go.yorun.ai/vine/util/vmap"
 	"go.yorun.ai/vine/util/vpre"
@@ -65,6 +66,7 @@ func initWebInfo(webSpec *WebSpec) *_WebInfo {
 	if webSpec == nil {
 		return nil
 	}
+	checkMountPath(webSpec.MountPath)
 	mountPath := webSpec.MountPath
 	if mountPath == "" {
 		mountPath = "/"
@@ -79,4 +81,8 @@ func initWebInfo(webSpec *WebSpec) *_WebInfo {
 	}
 	webSpec.info = info
 	return info
+}
+
+func checkMountPath(mountPath string) {
+	vpre.CheckNilError(httputil.ValidatePathPrefix(mountPath), "invalid web mount path %q", mountPath)
 }
