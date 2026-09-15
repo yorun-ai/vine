@@ -6,7 +6,7 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 repo_dir="$(cd -- "${script_dir}/.." && pwd -P)"
 
 packages=(
-  ./internal/testutil/goroutineleak
+  ./internal/utilfortest/goroutineleak
   ./internal/app
   ./internal/core/rpc/transport/inproc
   ./internal/core/web/inproc

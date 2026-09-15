@@ -9,7 +9,7 @@ import (
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
-	"go.yorun.ai/vine/internal/testutil/goroutineleak"
+	"go.yorun.ai/vine/internal/utilfortest/goroutineleak"
 )
 
 type goroutineLeakHandler struct {
