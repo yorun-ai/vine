@@ -1,11 +1,26 @@
 import { strict as assert } from 'node:assert'
 import { test } from 'node:test'
-import { filterPortalInstances } from './instance-filter.ts'
+import { filterPortalInstances } from './portal-filter.ts'
 
 const instances = [
-  { instanceId: 'portal-a', version: '1.2.3' },
-  { instanceId: 'Portal-B', version: '1.2.4' },
-  { instanceId: 'edge-c', version: '' },
+  {
+    instanceId: 'portal-a',
+    version: '1.2.3',
+    startedAt: '2026-09-15T06:30:00Z',
+    inproc: false,
+  },
+  {
+    instanceId: 'Portal-B',
+    version: '1.2.4',
+    startedAt: '2026-09-15T07:00:00Z',
+    inproc: true,
+  },
+  {
+    instanceId: 'edge-c',
+    version: '',
+    startedAt: '',
+    inproc: false,
+  },
 ]
 
 test('returns every instance for a blank query', () => {

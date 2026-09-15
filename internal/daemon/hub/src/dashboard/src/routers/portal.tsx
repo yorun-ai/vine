@@ -3,7 +3,6 @@ import type { AnyRoute } from '@tanstack/react-router'
 
 import { PortalCertPage } from '@/features/portal/cert-page'
 import { PortalEntryPage } from '@/features/portal/entry-page'
-import { PortalInstancePage } from '@/features/portal/instance-page'
 import { PortalRulePage } from '@/features/portal/rule-page'
 import { PortalSitePage } from '@/features/portal/site-page'
 
@@ -62,23 +61,11 @@ export function createPortalRoutes<TParent extends AnyRoute>(
     component: PortalCertPage,
   })
 
-  const PortalInstanceRoute = createRoute({
-    getParentRoute: () => PortalRoute,
-    path: 'instance',
-    component: PortalInstancePage,
-  })
-  const PortalInstanceIdRoute = createRoute({
-    getParentRoute: () => PortalInstanceRoute,
-    path: '$instanceId',
-    component: PortalInstancePage,
-  })
-
   return PortalRoute.addChildren([
     PortalEntryRoute.addChildren([PortalEntryNameRoute]),
     PortalSiteRoute.addChildren([PortalSiteIdRoute]),
     PortalRuleRoute.addChildren([PortalRuleIdRoute]),
     PortalCertRoute.addChildren([PortalCertIdRoute]),
-    PortalInstanceRoute.addChildren([PortalInstanceIdRoute]),
   ])
 }
 

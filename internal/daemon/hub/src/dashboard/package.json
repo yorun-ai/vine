@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "test": "node --experimental-strip-types --test src/features/app/config-*.test.ts src/features/portal/*.test.ts",
+    "test": "node --experimental-strip-types --test src/features/app/config-*.test.ts src/features/portal/*.test.ts src/features/status/*.test.ts",
     "typecheck": "tsc --noEmit",
     "build": "pnpm typecheck && vite build",
     "preview": "vite preview"

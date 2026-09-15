@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils'
 import { createServiceDebugApiService } from '@/skeled/admin'
 import type { ServiceDebugPortalInstance } from '@/skeled/admin'
 
-import { filterPortalInstances } from './instance-filter'
+import { filterPortalInstances } from './portal-filter'
 
 const serviceDebugService = createServiceDebugApiService(vrpcClient)
 const PORTAL_INSTANCE_LIST_DEFAULT_WIDTH = 352
@@ -31,7 +31,7 @@ function getErrorMessage(error: unknown) {
 }
 
 function portalInstancePath(instanceId: string) {
-  return `/portal/instance/${encodeURIComponent(instanceId)}`
+  return `/status/portal/${encodeURIComponent(instanceId)}`
 }
 
 function portalInstanceListItemDomId(instanceId: string) {
@@ -52,14 +52,27 @@ function shouldUseBrowserNavigation(
 }
 
 function selectedInstanceIdFromPath(pathname: string) {
-  const match = pathname.match(/^\/portal\/instance\/(.+)$/)
+  const match = pathname.match(/^\/status\/portal\/(.+)$/)
   return match ? decodeURIComponent(match[1]) : null
 }
 
 function isPortalInstancePath(pathname: string) {
   return (
-    pathname === '/portal/instance' || pathname.startsWith('/portal/instance/')
+    pathname === '/status/portal' || pathname.startsWith('/status/portal/')
   )
+}
+
+function formatDateTime(value: string) {
+  if (!value) {
+    return '-'
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return date.toLocaleString()
 }
 
 function PortalInstanceListSkeleton() {
@@ -273,6 +286,11 @@ export function PortalInstancePage() {
               <Badge variant="outline">
                 {selectedItem.version || t('common.noVersion')}
               </Badge>
+              {selectedItem.inproc ? (
+                <Badge variant="secondary">
+                  {t('portalInstance.standalone')}
+                </Badge>
+              ) : null}
             </div>
           </div>
 
@@ -292,6 +310,10 @@ export function PortalInstancePage() {
                 <DetailRow
                   label={t('portalInstance.version')}
                   value={selectedItem.version || t('common.none')}
+                />
+                <DetailRow
+                  label={t('portalInstance.startedAt')}
+                  value={formatDateTime(selectedItem.startedAt)}
                 />
               </div>
             </section>
