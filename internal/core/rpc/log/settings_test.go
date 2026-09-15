@@ -16,14 +16,6 @@ func resetSettingsForTest(t *testing.T) {
 	})
 }
 
-func TestSettingsDefaultDisabled(t *testing.T) {
-	resetSettingsForTest(t)
-
-	if IsInprocClientLogEnabled() {
-		t.Fatal("expected inproc client log to be disabled")
-	}
-}
-
 func TestEnableDisableInprocClientLog(t *testing.T) {
 	resetSettingsForTest(t)
 

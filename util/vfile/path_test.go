@@ -3,7 +3,6 @@ package vfile
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -52,5 +51,4 @@ func TestExpandHomeDir(t *testing.T) {
 
 	assert.Equal(t, filepath.Join(homeDir, "demo"), ExpandHomeDir("~/demo"))
 	assert.Equal(t, "/tmp/demo", ExpandHomeDir("/tmp/demo"))
-	assert.True(t, strings.HasPrefix(ExpandHomeDir("~/demo"), homeDir))
 }

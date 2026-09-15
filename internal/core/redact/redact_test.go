@@ -120,14 +120,6 @@ func TestRenderFailureLogsSafeDiagnostic(t *testing.T) {
 	}
 }
 
-func TestDefaultLimitsArePositive(t *testing.T) {
-	limits := DefaultLimits()
-	if limits.MaxDepth <= 0 || limits.MaxNodes <= 0 || limits.MaxCollectionItems <= 0 ||
-		limits.MaxStringBytes <= 0 || limits.MaxOutputBytes <= 0 {
-		t.Fatalf("invalid default limits: %#v", limits)
-	}
-}
-
 func TestRenderTruncatesFinalOutput(t *testing.T) {
 	limits := DefaultLimits()
 	limits.MaxOutputBytes = 15

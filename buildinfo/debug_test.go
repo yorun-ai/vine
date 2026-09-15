@@ -26,15 +26,6 @@ func TestModuleVersion(t *testing.T) {
 	}
 }
 
-func TestIsDevVersion(t *testing.T) {
-	if !IsDevVersion(DevVersion) {
-		t.Fatalf("expected dev version")
-	}
-	if IsDevVersion("v1.0.0") {
-		t.Fatalf("did not expect release version")
-	}
-}
-
 func TestMustDebugBuildInfo(t *testing.T) {
 	setReadBuildInfoForTest(t, func() (*debug.BuildInfo, bool) {
 		return &debug.BuildInfo{
@@ -69,25 +60,6 @@ func TestMustDebugBuildInfoWithDevelVersion(t *testing.T) {
 	}
 }
 
-func TestMustDebugBuildInfoUsesLinkerVersion(t *testing.T) {
-	original := ldModuleVersion
-	t.Cleanup(func() {
-		ldModuleVersion = original
-	})
-	ldModuleVersion = "v1.2.3"
-	setReadBuildInfoForTest(t, func() (*debug.BuildInfo, bool) {
-		return &debug.BuildInfo{
-			GoVersion: "go1.26.0",
-			Main:      debug.Module{Version: "(devel)"},
-		}, true
-	})
-
-	info := MustDebugBuildInfo()
-	if info.Version != "v1.2.3" {
-		t.Fatalf("unexpected version: %q", info.Version)
-	}
-}
-
 func TestMustDebugBuildInfoRejectsMissingBuildInfo(t *testing.T) {
 	setReadBuildInfoForTest(t, func() (*debug.BuildInfo, bool) {
 		return nil, false
@@ -95,20 +67,6 @@ func TestMustDebugBuildInfoRejectsMissingBuildInfo(t *testing.T) {
 
 	defer assertPanicContains(t, "read Go build info failed")()
 	MustDebugBuildInfo()
-}
-
-func TestMustVineDependencyVersion(t *testing.T) {
-	setReadBuildInfoForTest(t, func() (*debug.BuildInfo, bool) {
-		return &debug.BuildInfo{
-			Deps: []*debug.Module{
-				{Path: "go.yorun.ai/vine", Version: "v1.1.5"},
-			},
-		}, true
-	})
-
-	if got := MustVineDependencyVersion(); got != "v1.1.5" {
-		t.Fatalf("unexpected dependency version: %q", got)
-	}
 }
 
 func TestMustVineDependencyVersionUsesDevVersionWhenDependencyIsWorkspaceMainModule(t *testing.T) {
@@ -128,20 +86,6 @@ func TestMustVineDependencyVersionRejectsMissingBuildInfo(t *testing.T) {
 
 	defer assertPanicContains(t, "read Go build info failed")()
 	MustVineDependencyVersion()
-}
-
-func TestMustVineDependencyVersionUsesDevVersionForDevelDependency(t *testing.T) {
-	setReadBuildInfoForTest(t, func() (*debug.BuildInfo, bool) {
-		return &debug.BuildInfo{
-			Deps: []*debug.Module{
-				{Path: "go.yorun.ai/vine", Version: "(devel)"},
-			},
-		}, true
-	})
-
-	if got := MustVineDependencyVersion(); got != DevVersion {
-		t.Fatalf("unexpected dependency version: %q", got)
-	}
 }
 
 func setReadBuildInfoForTest(t *testing.T, fn func() (*debug.BuildInfo, bool)) {

@@ -16,13 +16,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 )
 
-const (
-	testPathConsole   = "/console"
-	testPathRpcInvoke = "/rpc/invoke"
-	testPathWebAccess = "/web/access"
-	testPathEvent     = "/event"
-	testPathTask      = "/task"
-)
+const testPathWebAccess = "/web/access"
 
 type _WebProxyRegistryServiceClient struct{}
 

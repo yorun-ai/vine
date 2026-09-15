@@ -11,14 +11,6 @@ import (
 	linkflag "go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 )
 
-type _TestAppSpec struct {
-	app.Application
-}
-
-func (*_TestAppSpec) Name() string {
-	return "linked.test"
-}
-
 func TestStopGracefullyWaitsAppBeforeStoppingLink(t *testing.T) {
 	events := []string{}
 	application := &_App{

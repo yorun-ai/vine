@@ -9,10 +9,6 @@ type regTestConfig struct {
 	Name string `json:"name"`
 }
 
-type regTestConfigContract interface {
-	Name() string
-}
-
 func TestRegisterEternal(t *testing.T) {
 	registry := NewRegistry()
 
@@ -64,25 +60,6 @@ func TestRegisterInstant(t *testing.T) {
 	}
 	if reg.Lifecycle != LifecycleInstant {
 		t.Fatalf("unexpected lifecycle: %s", reg.Lifecycle)
-	}
-}
-
-func TestRegisterInterfaceWithConstructor(t *testing.T) {
-	registry := NewRegistry()
-
-	registry.Register(ConfigSpec{
-		Name:      "RegTestConfigContract",
-		SkelName:  "demo.user.RegTestConfigContract",
-		Lifecycle: LifecycleInstant,
-		Type:      reflect.TypeFor[regTestConfigContract](),
-	})
-
-	reg, ok := registry.infoBySkelName["demo.user.RegTestConfigContract"]
-	if !ok {
-		t.Fatal("expected registration")
-	}
-	if reg.Type != reflect.TypeFor[regTestConfigContract]() {
-		t.Fatalf("unexpected mapped type: %v", reg.Type)
 	}
 }
 

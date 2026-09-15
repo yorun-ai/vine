@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json/v2"
 	"net"
-	"strings"
 	"testing"
 	"time"
 
@@ -41,10 +40,6 @@ func newTestRegistryRepo(t *testing.T, inproc bool) (*WatchRegistryRepo, *watchs
 	})
 
 	return repo, watchServer
-}
-
-func formatTestWatchListPattern(prefix string) string {
-	return strings.TrimSuffix(prefix, ":") + ":*"
 }
 
 func TestRegistryRepoSaveAndGetAppStatus(t *testing.T) {

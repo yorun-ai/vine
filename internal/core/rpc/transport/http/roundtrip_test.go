@@ -38,14 +38,8 @@ type pingArguments struct {
 var (
 	testServiceInfoOnce         sync.Once
 	testServiceInfoInst         spec.ServiceInfo
-	testHandlerDictOnce         sync.Once
-	testHandlerDictInst         *spec.ImplDict
 	standaloneMethodInfoCounter atomic.Uint64
 )
-
-type testServiceImpl struct {
-	defaultTestServiceServer
-}
 
 func testMethodInfo() *spec.MethodSpec {
 	return &spec.MethodSpec{
@@ -89,15 +83,6 @@ func testServiceInfo() spec.ServiceInfo {
 		testServiceInfoInst = si.Methods[0].Info().Service()
 	})
 	return testServiceInfoInst
-}
-
-func testHandlerDict() *spec.ImplDict {
-	testHandlerDictOnce.Do(func() {
-		testServiceInfo()
-		testHandlerDictInst = spec.NewImplDict()
-		testHandlerDictInst.Add(reflect.TypeFor[*testServiceImpl]())
-	})
-	return testHandlerDictInst
 }
 
 func testContext() spec.Context {

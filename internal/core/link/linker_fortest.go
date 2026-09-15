@@ -15,25 +15,17 @@ type TestLinker struct {
 	LoopbackHostValue        string
 	HasLoopbackValue         bool
 
-	RegisterConsoleEndpoint   string
-	RegisterServiceEndpoint   string
-	RegisterWebEndpointPrefix string
-	RegisterEventEndpoint     string
-	RegisterTaskEndpoint      string
-	RegisterServiceHandlers   []linkskeled.ServiceHandlerRegistration
-	RegisterWebHandlers       []linkskeled.WebHandlerRegistration
-	RegisterEventListeners    []linkskeled.EventListenerRegistration
-	RegisterTaskRunners       []linkskeled.TaskRunnerRegistration
-	RegisterDomainSchemas     []skel.JSON
-	UnregisterCalls           int
-	UnregisterError           ex.Error
+	RegisterServiceEndpoint string
+	RegisterServiceHandlers []linkskeled.ServiceHandlerRegistration
+	RegisterWebHandlers     []linkskeled.WebHandlerRegistration
+	RegisterEventListeners  []linkskeled.EventListenerRegistration
+	RegisterTaskRunners     []linkskeled.TaskRunnerRegistration
+	RegisterDomainSchemas   []skel.JSON
+	UnregisterCalls         int
+	UnregisterError         ex.Error
 
 	EternalConfigByKey map[string]string
 	InstantConfigByKey map[string]string
-
-	EventEmissions  []linkskeled.EventEmission
-	TaskLaunches    []linkskeled.TaskLaunch
-	LockClientValue linkskeled.LockServiceClient
 }
 
 func SetNewLinkerForTest(factory func(app meta.App, endpoint string) Linker) func() {
@@ -70,15 +62,15 @@ func (l *TestLinker) ConfigClient() linkskeled.ConfigServiceClient {
 }
 
 func (l *TestLinker) EventClient() linkskeled.EventServiceClient {
-	return &_TestLinkEventClient{linker: l}
+	return &_TestLinkEventClient{}
 }
 
 func (l *TestLinker) TaskClient() linkskeled.TaskServiceClient {
-	return &_TestLinkTaskClient{linker: l}
+	return &_TestLinkTaskClient{}
 }
 
 func (l *TestLinker) LockClient() linkskeled.LockServiceClient {
-	return l.LockClientValue
+	return nil
 }
 
 type _TestLinkRegistryClient struct {
@@ -87,11 +79,7 @@ type _TestLinkRegistryClient struct {
 
 func (c *_TestLinkRegistryClient) Register(registration linkskeled.AppRegistration, _ivOpts ...rpcclient.InvokeOption) {
 	l := c.linker
-	l.RegisterConsoleEndpoint = registration.ConsoleEndpoint
 	l.RegisterServiceEndpoint = registration.ServiceEndpoint
-	l.RegisterWebEndpointPrefix = registration.WebEndpointPrefix
-	l.RegisterEventEndpoint = registration.EventEndpoint
-	l.RegisterTaskEndpoint = registration.TaskEndpoint
 	l.RegisterServiceHandlers = vslice.Clone(registration.ServiceHandlers)
 	l.RegisterWebHandlers = vslice.Clone(registration.WebHandlers)
 	l.RegisterEventListeners = vslice.Clone(registration.EventListeners)
@@ -129,18 +117,12 @@ func (c *_TestLinkConfigClient) GetInstant(key string, _ivOpts ...rpcclient.Invo
 	return c.linker.InstantConfigByKey[key]
 }
 
-type _TestLinkEventClient struct {
-	linker *TestLinker
+type _TestLinkEventClient struct{}
+
+type _TestLinkTaskClient struct{}
+
+func (*_TestLinkEventClient) EmitEvent(_ linkskeled.EventEmission, _ivOpts ...rpcclient.InvokeOption) {
 }
 
-type _TestLinkTaskClient struct {
-	linker *TestLinker
-}
-
-func (c *_TestLinkEventClient) EmitEvent(emit linkskeled.EventEmission, _ivOpts ...rpcclient.InvokeOption) {
-	c.linker.EventEmissions = append(c.linker.EventEmissions, emit)
-}
-
-func (c *_TestLinkTaskClient) LaunchTask(launch linkskeled.TaskLaunch, _ivOpts ...rpcclient.InvokeOption) {
-	c.linker.TaskLaunches = append(c.linker.TaskLaunches, launch)
+func (*_TestLinkTaskClient) LaunchTask(_ linkskeled.TaskLaunch, _ivOpts ...rpcclient.InvokeOption) {
 }

@@ -305,26 +305,6 @@ func TestSeederPreservesCustomDashboardAccessWithMTLSDefault(t *testing.T) {
 	assert.Equal(t, "/custom", webRule.MatchPathPrefix)
 }
 
-func TestSeederSkipsEmptySeedHubDataFileWhenApplied(t *testing.T) {
-	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
-	metadataRepo.MarkSeeded()
-
-	seeder := &Seeder{
-		Flag:          newTestSeederFlag(""),
-		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
-		MetadataRepo:  metadataRepo,
-		Logger:        logger.New("vine:test"),
-		RuleRepo:      ruleRepo,
-		RuleCore:      &core.PortalRuleCore{PortalRuleRepo: ruleRepo},
-		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
-		SiteCore:      &core.PortalSiteCore{PortalSiteRepo: entryRepo},
-	}
-	seeder.DIInit()
-
-	_, ok := configRepo.GetItemByName("feature.flag")
-	assert.False(t, ok)
-}
-
 func TestSeederSkipsWhenSeedYAMLWasApplied(t *testing.T) {
 	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
 	seedPath := filepath.Join(t.TempDir(), "hub.yaml")

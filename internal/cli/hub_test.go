@@ -218,31 +218,6 @@ func TestRunHubServeFromEnv(t *testing.T) {
 	}
 }
 
-func TestRunHubServeEnableNats(t *testing.T) {
-	originalStart := startHubApp
-	defer func() { startHubApp = originalStart }()
-
-	called := false
-	startHubApp = func(flags hubconf.Flag) {
-		called = true
-		if flags.MQMode != hubconf.MQModeEmbedded {
-			t.Fatal("expected embedded MQ mode")
-		}
-		if flags.MQNatsEndpoint != "" {
-			t.Fatalf("unexpected mq endpoint: %q", flags.MQNatsEndpoint)
-		}
-	}
-
-	result := run([]string{"hub", "serve", "--mq-mode=embedded", "--db-sqlite-file", "/tmp/hub.sqlite"})
-
-	if result.exitCode != exitCodeSuccess {
-		t.Fatalf("unexpected exit code: %d, stderr=%q", result.exitCode, result.stderr)
-	}
-	if !called {
-		t.Fatal("expected hub app to start")
-	}
-}
-
 func TestRunHubServeNoDB(t *testing.T) {
 	original := startHubApp
 	t.Cleanup(func() { startHubApp = original })

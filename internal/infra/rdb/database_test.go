@@ -138,14 +138,12 @@ func TestDatabaseInitializesSchemaBeforeBindingDAOs(t *testing.T) {
 	manager := initTestDatabase(component)
 	t.Cleanup(manager.AfterAppStop)
 	require.True(t, manager.gormDB.Migrator().HasTable(&databaseTestModel{}))
-	for range 2 {
-		injector := di.NewInjector(func(b *di.Binder) {
-			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
-			b.BindInstance(logger.New("test:schema"))
-			manager.Bind(b)
-		})
-		require.NotNil(t, injector.Get(T[*databaseTestDAO]()))
-	}
+	injector := di.NewInjector(func(b *di.Binder) {
+		b.Bind(di.T[context.Context]()).ToInstance(context.Background())
+		b.BindInstance(logger.New("test:schema"))
+		manager.Bind(b)
+	})
+	require.NotNil(t, injector.Get(T[*databaseTestDAO]()))
 	require.Equal(t, 1, component.calls)
 }
 

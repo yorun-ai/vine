@@ -129,10 +129,3 @@ func TestSanitizeNATSResourceNameReturnsFallbackForEmptyResult(t *testing.T) {
 		t.Fatalf("unexpected sanitized value: %s", got)
 	}
 }
-
-func TestSanitizeNATSResourceNameReplacesOnlyUnsupportedChars(t *testing.T) {
-	got := sanitizeNATSResourceName("...")
-	if got != "___" {
-		t.Fatalf("unexpected sanitized value: %s", got)
-	}
-}

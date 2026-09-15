@@ -143,17 +143,6 @@ func ensureEventerEventRegistered() {
 	registerEventerEventOnce()
 }
 
-func TestNewEventerStoresAppAndSpec(t *testing.T) {
-	ensureEventerEventRegistered()
-	app := newTestAppImpl()
-	spec := &testEventerSpec{}
-
-	m := newEventer(spec, app.info, app.bindAppDeps)
-
-	assert.Equal(t, app.info, m.appInfo)
-	assert.Same(t, spec, m.spec)
-}
-
 func TestNewEventerInitBuildsServers(t *testing.T) {
 	ensureEventerEventRegistered()
 
@@ -162,6 +151,8 @@ func TestNewEventerInitBuildsServers(t *testing.T) {
 
 	eventer := newEventer(spec, app.info, app.bindAppDeps)
 
+	assert.Equal(t, app.info, eventer.appInfo)
+	assert.Same(t, spec, eventer.spec)
 	assert.NotNil(t, eventer.eventServer)
 	assert.NotNil(t, eventer.rpcServer)
 	assert.Equal(t, []reflect.Type{T[*testEventerListenerImpl]()}, eventer.listenerTypes())

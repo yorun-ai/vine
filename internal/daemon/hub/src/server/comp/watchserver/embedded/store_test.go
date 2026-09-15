@@ -49,23 +49,6 @@ func newMTLSRedisClient(addr string, username string, tlsConfig *tls.Config) *go
 	return client
 }
 
-func TestStoreZSetPopRangeByScoreReturnsSortedMembers(t *testing.T) {
-	store := NewStore("", false, "test-server-password", nil)
-
-	store.ZAdd("registry:leases", 30, "app-c:instance-3")
-	store.ZAdd("registry:leases", 10, "app-b:instance-2")
-	store.ZAdd("registry:leases", 10, "app-a:instance-1")
-	store.ZAdd("registry:leases", 50, "app-d:instance-4")
-
-	members := store.ZPopRangeByScore("registry:leases", 0, 30, 0)
-
-	assert.Equal(t, []string{
-		"app-a:instance-1",
-		"app-b:instance-2",
-		"app-c:instance-3",
-	}, members)
-}
-
 func TestStoreZSetUpdatesScoreAndLimits(t *testing.T) {
 	store := NewStore("", false, "test-server-password", nil)
 

@@ -278,7 +278,6 @@ func newTestSchemaWatch() *hubwatch.Client {
 type _TestSite struct {
 	name    string
 	stopped bool
-	served  int
 }
 
 func (s *_TestSite) Name() string {
@@ -286,7 +285,6 @@ func (s *_TestSite) Name() string {
 }
 
 func (s *_TestSite) Serve(ctx *spec.Context) {
-	s.served++
 }
 
 func (s *_TestSite) Update(config watched.PortalSite) bool {

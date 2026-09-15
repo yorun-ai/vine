@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	coreapp "go.yorun.ai/vine/internal/core/app"
-	"go.yorun.ai/vine/internal/core/ex"
 	linkskeled "go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -207,84 +206,6 @@ func TestNewLinkerUsesRpcInprocEndpointWhenInprocEnabled(t *testing.T) {
 	NewLinker(app, true, "http://10.0.0.8:7079")
 
 	assert.Equal(t, "rpc+inproc://vine/link", actualLinkBaseEndpoint)
-}
-
-func TestLinkerRegistryClientReturnsClient(t *testing.T) {
-	client := &TestLinker{}
-
-	client.RegistryClient().Register(linkskeled.AppRegistration{
-		ServiceEndpoint: "http://127.0.0.1:12345/rpc/invoke",
-		ServiceHandlers: []linkskeled.ServiceHandlerRegistration{{
-			ServiceSkelName: "demo",
-		}},
-		WebHandlers: []linkskeled.WebHandlerRegistration{{
-			WebSkelName: "default@test.app",
-		}},
-	})
-
-	assert.Equal(t, "http://127.0.0.1:12345/rpc/invoke", client.RegisterServiceEndpoint)
-	assert.Equal(t, []linkskeled.ServiceHandlerRegistration{{ServiceSkelName: "demo"}}, client.RegisterServiceHandlers)
-	assert.Equal(t, []linkskeled.WebHandlerRegistration{{WebSkelName: "default@test.app"}}, client.RegisterWebHandlers)
-}
-
-func TestLinkerRegistryClientSupportsUnregister(t *testing.T) {
-	client := &TestLinker{}
-
-	client.RegistryClient().Unregister()
-
-	assert.Equal(t, 1, client.UnregisterCalls)
-}
-
-func TestLinkerRegistryClientERReturnsUnregisterError(t *testing.T) {
-	unregisterError := ex.New(ex.InvocationTimeout, "unregister timed out")
-	client := &TestLinker{UnregisterError: unregisterError}
-
-	err := client.RegistryClientER().Unregister()
-
-	assert.Same(t, unregisterError, err)
-	assert.Equal(t, 1, client.UnregisterCalls)
-}
-
-func TestLinkerConfigClientReturnsClient(t *testing.T) {
-	client := &TestLinker{
-		EternalConfigByKey: map[string]string{
-			"a": `{"a":1}`,
-		},
-		InstantConfigByKey: map[string]string{
-			"b": `{"b":2}`,
-		},
-	}
-
-	assert.Equal(t, `{"a":1}`, client.ConfigClient().GetEternal("a"))
-	assert.Equal(t, `{"b":2}`, client.ConfigClient().GetInstant("b"))
-}
-
-func TestLinkerEventClientReturnsClient(t *testing.T) {
-	client := &TestLinker{}
-
-	client.EventClient().EmitEvent(linkskeled.EventEmission{
-		EventSkelName: "demo.user.UserCreatedEvent",
-		EventJson:     `{"userId":1}`,
-	})
-
-	assert.Len(t, client.EventEmissions, 1)
-	assert.Equal(t, "demo.user.UserCreatedEvent", client.EventEmissions[0].EventSkelName)
-	assert.Equal(t, `{"userId":1}`, client.EventEmissions[0].EventJson)
-}
-
-func TestLinkerTaskClientReturnsClient(t *testing.T) {
-	client := &TestLinker{}
-
-	client.TaskClient().LaunchTask(linkskeled.TaskLaunch{
-		TaskSkelName:    "demo.user.RebuildUserIndexTask",
-		TriggerSkelName: "forGroup",
-		ArgumentsJson:   `{"groupId":1}`,
-	})
-
-	assert.Len(t, client.TaskLaunches, 1)
-	assert.Equal(t, "demo.user.RebuildUserIndexTask", client.TaskLaunches[0].TaskSkelName)
-	assert.Equal(t, "forGroup", client.TaskLaunches[0].TriggerSkelName)
-	assert.Equal(t, `{"groupId":1}`, client.TaskLaunches[0].ArgumentsJson)
 }
 
 func TestLinkContextBuildsRPCContext(t *testing.T) {

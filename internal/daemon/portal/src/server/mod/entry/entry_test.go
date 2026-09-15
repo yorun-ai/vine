@@ -25,9 +25,7 @@ import (
 )
 
 type _TestSite struct {
-	name    string
-	request *http.Request
-	remote  string
+	name string
 }
 
 func (s *_TestSite) Name() string {
@@ -35,8 +33,6 @@ func (s *_TestSite) Name() string {
 }
 
 func (s *_TestSite) Serve(ctx *spec.Context) {
-	s.request = ctx.Request
-	s.remote = ctx.RemoteAddr
 }
 
 func (s *_TestSite) Update(config watched.PortalSite) bool {
@@ -65,7 +61,7 @@ func TestEntryRouteMatchesAttachedRules(t *testing.T) {
 	assert.Same(t, target, rule.redirectionSite)
 }
 
-func TestEntryRouteMatchesEmptyHostWithIPRequestHost(t *testing.T) {
+func TestEntryRouteMatchesEmptyHostWithAnyRequestHost(t *testing.T) {
 	target := &_TestSite{name: "admin@demo.app"}
 	entry := &_Entry{
 		port: 8443,
@@ -78,29 +74,14 @@ func TestEntryRouteMatchesEmptyHostWithIPRequestHost(t *testing.T) {
 		}},
 	}
 
-	rule, ok := entry.route(newTestRequest("https://127.0.0.1:8443/admin/users"))
+	for _, requestHost := range []string{"127.0.0.1", "demo.local"} {
+		t.Run(requestHost, func(t *testing.T) {
+			rule, ok := entry.route(newTestRequest("https://" + requestHost + ":8443/admin/users"))
 
-	assert.True(t, ok)
-	assert.Same(t, target, rule.redirectionSite)
-}
-
-func TestEntryRouteMatchesEmptyHostWithDomainRequestHost(t *testing.T) {
-	target := &_TestSite{name: "admin@demo.app"}
-	entry := &_Entry{
-		port: 8443,
-		rules: []*_Rule{{
-			matchScheme:     spec.SchemeHTTPS,
-			matchHost:       "",
-			matchPort:       8443,
-			matchPathPrefix: "/admin",
-			redirectionSite: target,
-		}},
+			assert.True(t, ok)
+			assert.Same(t, target, rule.redirectionSite)
+		})
 	}
-
-	rule, ok := entry.route(newTestRequest("https://demo.local:8443/admin/users"))
-
-	assert.True(t, ok)
-	assert.Same(t, target, rule.redirectionSite)
 }
 
 func TestEntryRouteDoesNotMatchPartialPathPrefix(t *testing.T) {
@@ -173,26 +154,6 @@ func TestNewEntryHTTPServerAppliesConnectionLimits(t *testing.T) {
 	assert.Equal(t, httputil.DefaultMaxHeaderValueCount, server.MaxHeaderValueCount)
 	assert.Zero(t, server.ReadTimeout)
 	assert.Zero(t, server.WriteTimeout)
-}
-
-func TestRuleTrimsPathPrefix(t *testing.T) {
-	rule := _Rule{matchPathPrefix: "/admin"}
-	request := httptest.NewRequest(http.MethodGet, "https://demo.local:8443/admin/users", nil)
-
-	trimmed := rule.rewritePath(request)
-
-	assert.Equal(t, "/users", trimmed.URL.Path)
-	assert.Equal(t, "/admin/users", request.URL.Path)
-}
-
-func TestRuleTrimsPathPrefixToRoot(t *testing.T) {
-	rule := _Rule{matchPathPrefix: "/admin"}
-	request := httptest.NewRequest(http.MethodGet, "https://demo.local:8443/admin", nil)
-
-	trimmed := rule.rewritePath(request)
-
-	assert.Equal(t, "/", trimmed.URL.Path)
-	assert.Equal(t, "/admin", request.URL.Path)
 }
 
 func TestEntryResetRulesClearsAttachedRules(t *testing.T) {

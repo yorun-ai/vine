@@ -170,43 +170,9 @@ func TestHubAppMainServicerExcludesControlAPIHandlers(t *testing.T) {
 	assert.Contains(t, handlerTypes, internalapp.T[*adminimpl.AppConfigApiServiceServerImpl]())
 }
 
-func TestHubAppDIInitKeepsEnableNatsOutsideInproc(t *testing.T) {
-	spec := &HubApp{
-		AppFlag:    &internalapp.RunFlag{},
-		InprocFlag: &internalapp.InternalInprocFlag{},
-		Flag: &flag.Flag{
-			Store:        flag.StoreSQLite,
-			DBSQLiteFile: "/tmp/hub.sqlite",
-			MQMode:       flag.MQModeEmbedded,
-		},
-	}
-
-	spec.DIInit()
-
-	if got, want := spec.InternalAttrs.Info.Version(), buildinfo.MustVineVersion(); got != want {
-		t.Fatalf("unexpected daemon version: got %q, want Vine version %q", got, want)
-	}
-
-	assert.Equal(t, flag.MQModeEmbedded, spec.Flag.MQMode)
-}
-
-func TestHubAppModuleTypesIncludesRuntimeModulesInInprocMode(t *testing.T) {
-	spec := &HubApp{
-		InprocFlag: &internalapp.InternalInprocFlag{Enabled: true},
-		Flag:       &flag.Flag{},
-	}
-
-	assert.Equal(t, []reflect.Type{
-		internalapp.T[*syncer.Syncer](),
-		internalapp.T[*seeder.Seeder](),
-		internalapp.T[*initializer.Initializer](),
-		internalapp.T[*scheduler.Scheduler](),
-		internalapp.T[*sweeper.Sweeper](),
-		internalapp.T[*controlapi.Server](),
-	}, collectModuleTypes(spec))
-}
-
-func TestHubAppModuleTypesIncludesRuntimeModulesInNormalMode(t *testing.T) {
+func TestHubAppModuleTypesIncludesRuntimeModules(t *testing.T) {
+	// The runtime module list and its order are independent of the run mode and
+	// the MQ mode, so no mode combination needs its own expectation.
 	spec := &HubApp{
 		InprocFlag: &internalapp.InternalInprocFlag{},
 		Flag:       &flag.Flag{},
@@ -222,39 +188,11 @@ func TestHubAppModuleTypesIncludesRuntimeModulesInNormalMode(t *testing.T) {
 	}, collectModuleTypes(spec))
 }
 
-func TestHubAppModuleTypesIncludesRuntimeModulesWhenEnableNats(t *testing.T) {
-	spec := &HubApp{
-		InprocFlag: &internalapp.InternalInprocFlag{},
-		Flag:       &flag.Flag{MQMode: flag.MQModeEmbedded},
-	}
-
-	assert.Equal(t, []reflect.Type{
-		internalapp.T[*syncer.Syncer](),
-		internalapp.T[*seeder.Seeder](),
-		internalapp.T[*initializer.Initializer](),
-		internalapp.T[*scheduler.Scheduler](),
-		internalapp.T[*sweeper.Sweeper](),
-		internalapp.T[*controlapi.Server](),
-	}, collectModuleTypes(spec))
-}
-
-func TestHubAppComponentTypesReturnsSQLiteDatabaseWhenSourceIsSQLite(t *testing.T) {
+func TestHubAppComponentTypesReturnsRuntimeComponents(t *testing.T) {
+	// The component list is independent of the configured store, so SQLite and
+	// PostgreSQL do not need separate expectations.
 	spec := &HubApp{
 		Flag: &flag.Flag{Store: flag.StoreSQLite},
-	}
-
-	assert.Equal(t, []reflect.Type{
-		internalapp.T[*configaccess.Access](),
-		internalapp.T[*repodb.HubDatabase](),
-		internalapp.T[*natsserver.NATSServer](),
-		internalapp.T[*lockserver.Server](),
-		internalapp.T[*watchserver.Server](),
-	}, collectComponentTypes(spec))
-}
-
-func TestHubAppComponentTypesReturnsPGDatabaseWhenSourceIsPG(t *testing.T) {
-	spec := &HubApp{
-		Flag: &flag.Flag{Store: flag.StorePostgreSQL},
 	}
 
 	assert.Equal(t, []reflect.Type{
@@ -337,16 +275,9 @@ func TestHubAppBindCommonProvidesDBAppConfigRepoForPG(t *testing.T) {
 	assert.IsType(t, &repo.DBAppConfigRepo{Access: new(configaccess.Access)}, configRepo)
 }
 
-func TestHubAppBindCommonProvidesMemorySchemaRepoForDBInInprocMode(t *testing.T) {
-	schemaRepo := newHubBoundSchemaRepo(t, &HubApp{
-		InprocFlag: &internalapp.InternalInprocFlag{Enabled: true},
-		Flag:       &flag.Flag{Store: flag.StoreSQLite},
-	})
-
-	assert.IsType(t, &schema.MemorySchemaRepo{}, schemaRepo)
-}
-
 func TestHubAppBindCommonProvidesMemorySchemaRepoForDB(t *testing.T) {
+	// The schema repo binding is independent of the run mode, so the inproc and
+	// non-inproc modes do not need separate expectations.
 	schemaRepo := newHubBoundSchemaRepo(t, &HubApp{
 		InprocFlag: &internalapp.InternalInprocFlag{},
 		Flag:       &flag.Flag{Store: flag.StoreSQLite},

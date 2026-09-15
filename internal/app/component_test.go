@@ -7,11 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type testComponent struct {
-	BaseComponent
-	userComponent ManagedComponent
-}
-
 type testManagedComponent struct {
 	BaseManagedComponent[*testManagedComponent]
 	BaseComponentManager
