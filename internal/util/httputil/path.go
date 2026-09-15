@@ -2,21 +2,22 @@ package httputil
 
 import (
 	"net/http"
+	"path"
 	"strings"
 )
 
-func PathPrefix(path string) string {
-	if path == "" || path == "/" {
-		return "/"
-	}
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
-	}
-	parts := strings.SplitN(strings.TrimPrefix(path, "/"), "/", 2)
-	return "/" + parts[0]
+// JoinPath joins slash-separated path fragments using path.Join.
+// It cleans dot segments, repeated slashes, and trailing slashes except at root.
+func JoinPath(parts ...string) string {
+	return path.Join(parts...)
 }
 
-func TrimPathPrefix(r *http.Request, prefix string) *http.Request {
+func PathPrefix(path string) string {
+	prefix, _, _ := strings.Cut(strings.TrimPrefix(path, "/"), "/")
+	return "/" + prefix
+}
+
+func StripPathPrefix(r *http.Request, prefix string) *http.Request {
 	nextPath := strings.TrimPrefix(r.URL.Path, prefix)
 	if nextPath == "" {
 		nextPath = "/"

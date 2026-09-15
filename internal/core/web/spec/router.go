@@ -1,11 +1,13 @@
 package spec
 
 import (
-	"fmt"
 	"net/http"
 	"reflect"
 	"runtime"
 	"strings"
+
+	"go.yorun.ai/vine/internal/util/httputil"
+	"go.yorun.ai/vine/util/vpre"
 )
 
 type Route interface {
@@ -82,10 +84,11 @@ func (r *Router) SubRouters() []*Router {
 }
 
 func (r *Router) SubRouter(path string) *Router {
+	checkRoutePath(path)
 	if _, exists := r.subRouters[path]; !exists {
 		r.subRouters[path] = &Router{
 			handlerType: r.handlerType,
-			basePath:    r.basePath + path,
+			basePath:    httputil.JoinPath(r.basePath, path),
 			routes:      []*_Route{},
 			subRouters:  map[string]*Router{},
 		}
@@ -94,11 +97,10 @@ func (r *Router) SubRouter(path string) *Router {
 }
 
 func (r *Router) Handle(method string, path string, handleFunc HandleFunc) {
+	checkRoutePath(path)
 	targetMethodName := r.methodName(handleFunc)
 	targetMethod, ok := r.handlerType.MethodByName(targetMethodName)
-	if !ok {
-		panic(fmt.Sprintf("method=%s not found in type=%s", targetMethodName, r.handlerType.Name()))
-	}
+	vpre.Check(ok, "method=%s not found in type=%s", targetMethodName, r.handlerType.Name())
 
 	r.routes = append(r.routes, &_Route{
 		sourceMethod:  method,
@@ -106,6 +108,12 @@ func (r *Router) Handle(method string, path string, handleFunc HandleFunc) {
 		handlerType:   r.handlerType,
 		handlerMethod: targetMethod,
 	})
+}
+
+func checkRoutePath(path string) {
+	for segment := range strings.SplitSeq(path, "/") {
+		vpre.Check(segment != "." && segment != "..", `web route path must not contain "." or ".." path segments`)
+	}
 }
 
 func (r *Router) methodName(handleFunc HandleFunc) string {
@@ -161,7 +169,12 @@ func CollectRoutes(r *Router, prefix string) []Route {
 	routes := make([]Route, 0, len(r.routes))
 	for _, route := range r.routes {
 		copied := *route
-		copied.sourcePath = prefix + r.basePath + route.sourcePath
+		copied.sourcePath = httputil.JoinPath(prefix, r.basePath, route.sourcePath)
+		// A trailing slash distinguishes route patterns, even though path joining
+		// removes it. Preserve the slash explicitly requested by the handler.
+		if strings.HasSuffix(route.sourcePath, "/") && !strings.HasSuffix(copied.sourcePath, "/") {
+			copied.sourcePath += "/"
+		}
 		routes = append(routes, &copied)
 	}
 	for _, subRouter := range r.subRouters {

@@ -77,3 +77,20 @@ func TestCollectRoutesPreservesNestedPathsAndRegistrations(t *testing.T) {
 		t.Fatal("collecting routes changed the base path")
 	}
 }
+
+func TestRouterRejectsDotSegments(t *testing.T) {
+	router := NewRouter(reflect.TypeFor[*_RouterTestHandler]())
+	for _, register := range []func(){
+		func() { router.SubRouter("/../admin") },
+		func() { router.GET("/./health", (&_RouterTestHandler{}).Proxy) },
+	} {
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Fatal("expected dot segment registration to panic")
+				}
+			}()
+			register()
+		}()
+	}
+}
