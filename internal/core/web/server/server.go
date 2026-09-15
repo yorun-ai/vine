@@ -69,7 +69,7 @@ func (s *Server) initRoutes() {
 		if !vslice.Contains(s.webInfos, webInfo) {
 			s.webInfos = append(s.webInfos, webInfo)
 		}
-		router := spec.NewRouter(handlerType)
+		router := spec.NewRouter(handlerType, webInfo.MountPath())
 		handlerIns := reflect.New(handlerType.Elem()).Interface()
 		handlerIns.(spec.Handler).Routes(router)
 		prefix := "/" + webInfo.SkelName()

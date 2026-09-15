@@ -52,9 +52,13 @@ type Router struct {
 	subRouters  map[string]*Router
 }
 
-func NewRouter(handlerType reflect.Type) *Router {
+func NewRouter(handlerType reflect.Type, basePath string) *Router {
+	if basePath == "" {
+		basePath = "/"
+	}
 	return &Router{
 		handlerType: handlerType,
+		basePath:    basePath,
 		routes:      []*_Route{},
 		subRouters:  map[string]*Router{},
 	}

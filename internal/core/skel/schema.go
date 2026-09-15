@@ -79,6 +79,7 @@ type WebSchema struct {
 	DeprecatedReason string                 `json:"deprecatedReason,omitempty"`
 	Hash             string                 `json:"hash"`
 	Audiences        []*ActorAudienceSchema `json:"audiences"`
+	MountPath        string                 `json:"mountPath"`
 }
 
 type EventSchema struct {
