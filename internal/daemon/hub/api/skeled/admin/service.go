@@ -18,6 +18,7 @@ func init() {
 	rpcspec.Register(_PortalEntryApiServiceSpec)
 	rpcspec.Register(_PortalRuleApiServiceSpec)
 	rpcspec.Register(_PortalSiteApiServiceSpec)
+	rpcspec.Register(_PortalStatusApiServiceSpec)
 	rpcspec.Register(_ServiceDebugApiServiceSpec)
 	rpcspec.Register(_SkeletonApiServiceSpec)
 	rpcspec.Register(_TaskDebugApiServiceSpec)
@@ -2087,6 +2088,118 @@ type DefaultPortalSiteApiServiceServerER struct {
 	_WrapperPortalSiteApiServiceServerER
 }
 
+// PortalStatusApiServiceServer Hub Dashboard's Portal instance status service
+
+// PortalStatusApiService / Spec
+
+var (
+	_PortalStatusApiServiceSpec = &rpcspec.ServiceSpec{
+		Type:              rpcspec.ServiceSpecTypeServer,
+		Name:              "PortalStatusApiService",
+		SkelName:          "vine.hub.admin.PortalStatusApiService",
+		Hash:              "00945e2a",
+		ServerType:        reflect.TypeFor[PortalStatusApiServiceServer](),
+		DefaultServerType: reflect.TypeFor[*DefaultPortalStatusApiServiceServer](),
+
+		ERServerType:        reflect.TypeFor[PortalStatusApiServiceServerER](),
+		WrapperERServerCtor: _NewWrapperPortalStatusApiServiceServerER,
+		DefaultERServerType: reflect.TypeFor[*DefaultPortalStatusApiServiceServerER](),
+		Methods: []*rpcspec.MethodSpec{
+			_PortalStatusApiServiceListSpec,
+		},
+	}
+	_PortalStatusApiServiceListSpec = &rpcspec.MethodSpec{
+		Name:           "List",
+		SkelName:       "list",
+		ArgumentsType:  nil,
+		CloneArguments: nil,
+		ResultType:     reflect.TypeFor[[]PortalStatusView](),
+		CloneResult: func(value any) any {
+			source := value.([]PortalStatusView)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]PortalStatusView, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
+		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
+		ArgumentsContainsBinaryType: false,
+		ResultContainsBinaryType:    false,
+		MethodFuncs: []any{
+			PortalStatusApiServiceServer.List,
+			PortalStatusApiServiceServerER.List,
+		},
+	}
+)
+
+// PortalStatusApiService / Server
+
+type PortalStatusApiServiceServer interface {
+	// List List Portal instance statuses.
+	List() []PortalStatusView
+
+	mustBePortalStatusApiServiceServer()
+}
+
+// PortalStatusApiService / Server / DefaultServer
+
+type DefaultPortalStatusApiServiceServer struct{}
+
+func (*DefaultPortalStatusApiServiceServer) List() []PortalStatusView {
+	ex.PanicNew(ex.InvalidRequest, "method list is not implemented")
+	return []PortalStatusView{}
+}
+
+func (*DefaultPortalStatusApiServiceServer) mustBePortalStatusApiServiceServer() {}
+
+// PortalStatusApiService / ERServer
+
+type PortalStatusApiServiceServerER interface {
+	List() ([]PortalStatusView, ex.Error)
+
+	mustBePortalStatusApiServiceServerER()
+}
+
+// PortalStatusApiService / ERServer / WrapperERServer
+
+type _WrapperPortalStatusApiServiceServerER struct {
+	DefaultPortalStatusApiServiceServer
+	serverImpl PortalStatusApiServiceServer
+}
+
+func _NewWrapperPortalStatusApiServiceServerER(serverImpl PortalStatusApiServiceServer) PortalStatusApiServiceServerER {
+	return &_WrapperPortalStatusApiServiceServerER{
+		serverImpl: serverImpl,
+	}
+}
+
+func (service *_WrapperPortalStatusApiServiceServerER) server() PortalStatusApiServiceServer {
+	if service.serverImpl == nil {
+		return &service.DefaultPortalStatusApiServiceServer
+	}
+	return service.serverImpl
+}
+
+func (service *_WrapperPortalStatusApiServiceServerER) List() (ret []PortalStatusView, err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	ret = service.server().List()
+	return
+}
+
+func (*_WrapperPortalStatusApiServiceServerER) mustBePortalStatusApiServiceServerER() {}
+
+// PortalStatusApiService / ERServer / DefaultERServer
+
+type DefaultPortalStatusApiServiceServerER struct {
+	_WrapperPortalStatusApiServiceServerER
+}
+
 // ServiceDebugApiServiceServer Hub Dashboard Service debugging service
 
 // ServiceDebugApiService / Spec
@@ -2096,7 +2209,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "ServiceDebugApiService",
 		SkelName:          "vine.hub.admin.ServiceDebugApiService",
-		Hash:              "b82c87a5",
+		Hash:              "6f47d948",
 		ServerType:        reflect.TypeFor[ServiceDebugApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultServiceDebugApiServiceServer](),
 
@@ -2105,7 +2218,6 @@ var (
 		DefaultERServerType: reflect.TypeFor[*DefaultServiceDebugApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
 			_ServiceDebugApiServiceListAppInstancesSpec,
-			_ServiceDebugApiServiceListPortalInstancesSpec,
 			_ServiceDebugApiServiceListServicesSpec,
 			_ServiceDebugApiServiceListServiceAppInstancesSpec,
 			_ServiceDebugApiServiceListMethodsSpec,
@@ -2139,34 +2251,6 @@ var (
 		MethodFuncs: []any{
 			ServiceDebugApiServiceServer.ListAppInstances,
 			ServiceDebugApiServiceServerER.ListAppInstances,
-		},
-	}
-	_ServiceDebugApiServiceListPortalInstancesSpec = &rpcspec.MethodSpec{
-		Name:           "ListPortalInstances",
-		SkelName:       "listPortalInstances",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]ServiceDebugPortalInstance](),
-		CloneResult: func(value any) any {
-			source := value.([]ServiceDebugPortalInstance)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]ServiceDebugPortalInstance, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
-		ArgumentsSensitive:          false,
-		ResultSensitive:             false,
-		ArgumentsContainsBinaryType: false,
-		ResultContainsBinaryType:    false,
-		MethodFuncs: []any{
-			ServiceDebugApiServiceServer.ListPortalInstances,
-			ServiceDebugApiServiceServerER.ListPortalInstances,
 		},
 	}
 	_ServiceDebugApiServiceListServicesSpec = &rpcspec.MethodSpec{
@@ -2341,8 +2425,6 @@ type _ServiceDebugApiServiceInvokeServiceArguments struct {
 type ServiceDebugApiServiceServer interface {
 	// ListAppInstances List application instances.
 	ListAppInstances() []ServiceDebugAppInstance
-	// ListPortalInstances List registered Portal instances.
-	ListPortalInstances() []ServiceDebugPortalInstance
 	// ListServices List the services provided by the application instance.
 	ListServices() []ServiceDebugServiceItem
 	// ListServiceAppInstances List application instances that provide the specified service.
@@ -2372,11 +2454,6 @@ type DefaultServiceDebugApiServiceServer struct{}
 func (*DefaultServiceDebugApiServiceServer) ListAppInstances() []ServiceDebugAppInstance {
 	ex.PanicNew(ex.InvalidRequest, "method listAppInstances is not implemented")
 	return []ServiceDebugAppInstance{}
-}
-
-func (*DefaultServiceDebugApiServiceServer) ListPortalInstances() []ServiceDebugPortalInstance {
-	ex.PanicNew(ex.InvalidRequest, "method listPortalInstances is not implemented")
-	return []ServiceDebugPortalInstance{}
 }
 
 func (*DefaultServiceDebugApiServiceServer) ListServices() []ServiceDebugServiceItem {
@@ -2410,7 +2487,6 @@ func (*DefaultServiceDebugApiServiceServer) mustBeServiceDebugApiServiceServer()
 
 type ServiceDebugApiServiceServerER interface {
 	ListAppInstances() ([]ServiceDebugAppInstance, ex.Error)
-	ListPortalInstances() ([]ServiceDebugPortalInstance, ex.Error)
 	ListServices() ([]ServiceDebugServiceItem, ex.Error)
 	ListServiceAppInstances(serviceSkelName string, schemaHash string) ([]ServiceDebugAppInstance, ex.Error)
 	ListMethods(serviceSkelName string, schemaHash string) ([]ServiceDebugMethodItem, ex.Error)
@@ -2443,12 +2519,6 @@ func (service *_WrapperServiceDebugApiServiceServerER) server() ServiceDebugApiS
 func (service *_WrapperServiceDebugApiServiceServerER) ListAppInstances() (ret []ServiceDebugAppInstance, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListAppInstances()
-	return
-}
-
-func (service *_WrapperServiceDebugApiServiceServerER) ListPortalInstances() (ret []ServiceDebugPortalInstance, err ex.Error) {
-	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().ListPortalInstances()
 	return
 }
 

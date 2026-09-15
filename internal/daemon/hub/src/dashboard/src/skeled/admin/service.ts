@@ -13,6 +13,7 @@ import {
   PortalEntryApiServiceSpec,
   PortalRuleApiServiceSpec,
   PortalSiteApiServiceSpec,
+  PortalStatusApiServiceSpec,
   ServiceDebugApiServiceSpec,
   SkeletonApiServiceSpec,
   TaskDebugApiServiceSpec,
@@ -41,8 +42,8 @@ import type {
   PortalSiteOptions,
   PortalSiteCreation,
   PortalSiteUpdate,
+  PortalStatusView,
   ServiceDebugAppInstance,
-  ServiceDebugPortalInstance,
   ServiceDebugServiceItem,
   ServiceDebugMethodItem,
   ServiceDebugDefaultInvokeRequest,
@@ -735,6 +736,30 @@ export function createPortalSiteApiService(client: VrpcClient) {
   };
 }
 /**
+ * Hub Dashboard's Portal instance status service
+ */
+export function createPortalStatusApiService(client: VrpcClient) {
+  return {
+    /**
+     * List Portal instance statuses.
+     * @param params - Request parameters, or null for methods without input
+     * @param options - Optional invocation options
+     * @returns Array<PortalStatusView> -
+     */
+    list(
+      params: null,
+      options?: VrpcRequestOptions,
+    ) {
+      return client.invoke<Array<PortalStatusView>>({
+        serviceName: PortalStatusApiServiceSpec.serviceName,
+        methodName: PortalStatusApiServiceSpec.methods.list,
+        params,
+        options,
+      });
+    },
+  };
+}
+/**
  * Hub Dashboard Service debugging service
  */
 export function createServiceDebugApiService(client: VrpcClient) {
@@ -752,23 +777,6 @@ export function createServiceDebugApiService(client: VrpcClient) {
       return client.invoke<Array<ServiceDebugAppInstance>>({
         serviceName: ServiceDebugApiServiceSpec.serviceName,
         methodName: ServiceDebugApiServiceSpec.methods.listAppInstances,
-        params,
-        options,
-      });
-    },
-    /**
-     * List registered Portal instances.
-     * @param params - Request parameters, or null for methods without input
-     * @param options - Optional invocation options
-     * @returns Array<ServiceDebugPortalInstance> -
-     */
-    listPortalInstances(
-      params: null,
-      options?: VrpcRequestOptions,
-    ) {
-      return client.invoke<Array<ServiceDebugPortalInstance>>({
-        serviceName: ServiceDebugApiServiceSpec.serviceName,
-        methodName: ServiceDebugApiServiceSpec.methods.listPortalInstances,
         params,
         options,
       });

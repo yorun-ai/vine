@@ -2,7 +2,6 @@ package control
 
 import (
 	"testing"
-	"time"
 	"uuid"
 
 	"github.com/stretchr/testify/assert"
@@ -55,17 +54,11 @@ func TestPortalRegistryServiceRegistersAndUnregisters(t *testing.T) {
 	service := &PortalRegistryServiceServerImpl{PortalInstanceRepo: repo}
 
 	instanceId := skel.NewUUID(uuid.MustParse("11111111-1111-1111-1111-111111111111"))
-	startedAt := time.Date(2026, 9, 15, 6, 30, 0, 0, time.UTC)
-	service.Register(skeled.PortalRegistration{
-		InstanceId: instanceId,
-		Version:    "1.2.3",
-		StartedAt:  skel.NewTimestamp(startedAt),
-	})
+	service.Register(skeled.PortalRegistration{InstanceId: instanceId, Version: "1.2.3"})
 
 	require.Len(t, repo.saved, 1)
 	assert.Equal(t, "11111111-1111-1111-1111-111111111111", repo.saved[0].InstanceId)
 	assert.Equal(t, "1.2.3", repo.saved[0].Version)
-	assert.Equal(t, startedAt, repo.saved[0].StartedAt)
 
 	service.Unregister(instanceId)
 	assert.Equal(t, []string{"11111111-1111-1111-1111-111111111111"}, repo.removed)

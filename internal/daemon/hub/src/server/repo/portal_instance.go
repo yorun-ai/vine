@@ -20,7 +20,6 @@ const hubPortalRegistryLeaseSweepLimit = 100
 type _PortalInstance struct {
 	InstanceId string    `json:"instanceId"`
 	Version    string    `json:"version"`
-	StartedAt  time.Time `json:"startedAt"`
 	ExpiresAt  time.Time `json:"expiresAt"`
 }
 
@@ -43,7 +42,6 @@ func (r *WatchPortalInstanceRepo) SavePortalInstance(instance *core.PortalInstan
 	value := _PortalInstance{
 		InstanceId: instance.InstanceId,
 		Version:    instance.Version,
-		StartedAt:  instance.StartedAt,
 	}
 	if r.InprocFlag.Enabled {
 		r.WatchServer.SetAndNotify(key, vcode.MustMarshalJsonS(value))
@@ -141,7 +139,6 @@ func toCorePortalInstance(instance *_PortalInstance) *core.PortalInstance {
 	return &core.PortalInstance{
 		InstanceId: instance.InstanceId,
 		Version:    instance.Version,
-		StartedAt:  instance.StartedAt,
 		ExpiresAt:  instance.ExpiresAt,
 	}
 }

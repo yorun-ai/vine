@@ -108,12 +108,10 @@ export const en: Record<TranslationKey, string> = {
   'portalInstance.empty': 'No Portal instances',
   'portalInstance.noMatch': 'No matching Portal instances',
   'portalInstance.emptyDescription':
-    'Portal instances appear here after they register with Hub. Standalone Portal shares the Hub process and registers without a heartbeat.',
+    'Portal instances appear here after they register with Hub.',
   'portalInstance.instanceInfo': 'Instance Info',
   'portalInstance.instanceId': 'Instance ID',
   'portalInstance.version': 'Version',
-  'portalInstance.startedAt': 'Started At',
-  'portalInstance.standalone': 'Shares Hub process',
   'common.emptyPrefix': 'No',
   'common.itemCount': '{count} items',
   'skeleton.noMatch': 'No matching skeletons',
@@ -380,7 +378,7 @@ export const en: Record<TranslationKey, string> = {
     'Manage Portal HTTPS certificates and domain validity.',
   'nav.portalInstance.label': 'Portal Instances',
   'nav.portalInstance.description':
-    'View Portal instances registered with Hub, their versions and start times.',
+    'View Portal instances registered with Hub and their versions.',
   'nav.appStatus.label': 'App Status',
   'nav.appStatus.description':
     'View app registration, instance health, and runtime status.',

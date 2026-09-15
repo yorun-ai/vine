@@ -479,7 +479,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeBoth,
 		Name:              "PortalRegistryService",
 		SkelName:          "vine.hub.control.PortalRegistryService",
-		Hash:              "80f6fad4",
+		Hash:              "d3a88a51",
 		ServerType:        reflect.TypeFor[PortalRegistryServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalRegistryServiceServer](),
 		ClientType:        reflect.TypeFor[PortalRegistryServiceClient](),

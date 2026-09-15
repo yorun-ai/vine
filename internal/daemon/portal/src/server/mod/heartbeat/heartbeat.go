@@ -20,10 +20,6 @@ import (
 // when it could not unregister itself.
 var heartbeatInterval = 10 * time.Second
 
-// portalStartedAt is the start of this Portal process, reported to Hub so the
-// Dashboard can tell a recently restarted instance from a stable one.
-var portalStartedAt = time.Now()
-
 var heartbeatLogger = logger.New("daemon:portal:heartbeat")
 
 // Heartbeat registers this Portal instance with Hub and keeps the registration
@@ -91,7 +87,6 @@ func (h *Heartbeat) register() {
 		h.PortalRegistryClient.Register(skeled.PortalRegistration{
 			InstanceId: h.instanceId,
 			Version:    h.App.Version(),
-			StartedAt:  skel.NewTimestamp(portalStartedAt),
 		})
 	})
 }

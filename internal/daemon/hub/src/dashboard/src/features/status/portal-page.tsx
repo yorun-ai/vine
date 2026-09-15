@@ -18,12 +18,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { vrpcClient } from '@/config/vrpc-client'
 import { useLocale } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { createServiceDebugApiService } from '@/skeled/admin'
-import type { ServiceDebugPortalInstance } from '@/skeled/admin'
+import { createPortalStatusApiService } from '@/skeled/admin'
+import type { PortalStatusView } from '@/skeled/admin'
 
 import { filterPortalInstances } from './portal-filter'
 
-const serviceDebugService = createServiceDebugApiService(vrpcClient)
+const portalStatusService = createPortalStatusApiService(vrpcClient)
 const PORTAL_INSTANCE_LIST_DEFAULT_WIDTH = 352
 
 function getErrorMessage(error: unknown) {
@@ -62,19 +62,6 @@ function isPortalInstancePath(pathname: string) {
   )
 }
 
-function formatDateTime(value: string) {
-  if (!value) {
-    return '-'
-  }
-
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-
-  return date.toLocaleString()
-}
-
 function PortalInstanceListSkeleton() {
   return (
     <div className="space-y-1">
@@ -108,7 +95,7 @@ export function PortalInstancePage() {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
-  const [items, setItems] = React.useState<Array<ServiceDebugPortalInstance>>([])
+  const [items, setItems] = React.useState<Array<PortalStatusView>>([])
   const [query, setQuery] = React.useState('')
   const [loading, setLoading] = React.useState(true)
   const [selectedInstanceId, setSelectedInstanceId] = React.useState<
@@ -118,7 +105,7 @@ export function PortalInstancePage() {
   const loadItems = React.useCallback(async () => {
     setLoading(true)
     try {
-      setItems(await serviceDebugService.listPortalInstances(null))
+      setItems(await portalStatusService.list(null))
     } catch (error) {
       toast.error(getErrorMessage(error))
     } finally {
@@ -286,11 +273,6 @@ export function PortalInstancePage() {
               <Badge variant="outline">
                 {selectedItem.version || t('common.noVersion')}
               </Badge>
-              {selectedItem.inproc ? (
-                <Badge variant="secondary">
-                  {t('portalInstance.standalone')}
-                </Badge>
-              ) : null}
             </div>
           </div>
 
@@ -310,10 +292,6 @@ export function PortalInstancePage() {
                 <DetailRow
                   label={t('portalInstance.version')}
                   value={selectedItem.version || t('common.none')}
-                />
-                <DetailRow
-                  label={t('portalInstance.startedAt')}
-                  value={formatDateTime(selectedItem.startedAt)}
                 />
               </div>
             </section>

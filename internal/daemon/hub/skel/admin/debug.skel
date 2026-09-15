@@ -1,20 +1,5 @@
 domain vine.hub.admin
 
-@desc("Portal instance registered with Hub")
-data ServiceDebugPortalInstance {
-    @desc("Portal instance ID")
-    instanceId: string
-
-    @desc("Portal version")
-    version: string
-
-    @desc("Time this Portal process started")
-    startedAt: timestamp
-
-    @desc("Whether this Portal shares the Hub process in standalone mode")
-    inproc: bool
-}
-
 @desc("Application instance called by Service Debug")
 data ServiceDebugAppInstance {
     @desc("Application name")
@@ -314,11 +299,6 @@ api service ServiceDebugApiService {
     @desc("List application instances")
     method listAppInstances {
         output list<ServiceDebugAppInstance>
-    }
-
-    @desc("List registered Portal instances")
-    method listPortalInstances {
-        output list<ServiceDebugPortalInstance>
     }
 
     @desc("List the services provided by the application instance")

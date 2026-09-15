@@ -1,9 +1,9 @@
-import type { ServiceDebugPortalInstance } from '@/skeled/admin'
+import type { PortalStatusView } from '@/skeled/admin'
 
 export function filterPortalInstances(
-  instances: Array<ServiceDebugPortalInstance>,
+  instances: Array<PortalStatusView>,
   query: string,
-): Array<ServiceDebugPortalInstance> {
+): Array<PortalStatusView> {
   const keyword = query.trim().toLowerCase()
   if (keyword === '') {
     return instances

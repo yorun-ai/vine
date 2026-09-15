@@ -148,8 +148,6 @@ type PortalRegistration struct {
 	InstanceId skel.UUID `json:"instanceId"`
 	// Version Portal Vine runtime version
 	Version string `json:"version"`
-	// StartedAt Time this Portal process started
-	StartedAt skel.Timestamp `json:"startedAt"`
 }
 
 // Clone returns a value-isolated copy of the generated data.

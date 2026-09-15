@@ -29,14 +29,14 @@ are not part of the public compatibility commitment.
 
 ### Added
 
-- Hub tracks running Portal daemons. Portal registers its instance ID, Vine
-  runtime version and process start time on startup, heartbeats every 10 seconds
-  and unregisters on shutdown; Hub drops a Portal instance 30 seconds after its
-  last heartbeat, so a terminated Portal stops being reported. The Hub Dashboard
-  lists the registered Portal instances next to the application instances.
-  Standalone Portal shares Hub's process, so it registers without a heartbeat.
-  Hub forgets Portal instances when it restarts and each Portal registers again
-  on its next heartbeat.
+- Hub tracks running Portal daemons. Portal registers its instance ID and Vine
+  runtime version on startup, heartbeats every 10 seconds and unregisters on
+  shutdown; Hub drops a Portal instance 30 seconds after its last heartbeat, so a
+  terminated Portal stops being reported. The Hub Dashboard lists the registered
+  Portal instances next to the application instances. Standalone Portal shares
+  Hub's process, so it registers without a heartbeat. Hub forgets Portal
+  instances when it restarts and each Portal registers again on its next
+  heartbeat.
 
 - Hub connection information includes its Vine runtime `version`.
 

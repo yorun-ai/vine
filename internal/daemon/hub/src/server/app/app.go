@@ -97,6 +97,7 @@ func (*HubApp) ServicerInitHandlers(addHandler app.TypeAdder) {
 	addHandler(app.T[*debugimpl.EventDebugApiServiceServerImpl]())
 	addHandler(app.T[*impl.SkeletonApiServiceServerImpl]())
 	addHandler(app.T[*impl.AppStatusApiServiceServerImpl]())
+	addHandler(app.T[*impl.PortalStatusApiServiceServerImpl]())
 	addHandler(app.T[*impl.AppConfigApiServiceServerImpl]())
 	addHandler(app.T[*impl.PortalCertApiServiceServerImpl]())
 	addHandler(app.T[*impl.PortalEntryApiServiceServerImpl]())

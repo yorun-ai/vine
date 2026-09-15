@@ -27,21 +27,18 @@ func TestPortalInstanceRepoSavesAndListsInstances(t *testing.T) {
 	repo, _ := newTestPortalInstanceRepo(t, false)
 	now := time.Now().UTC().Round(0)
 	setTimeNowForTest(t, func() time.Time { return now })
-	startedAt := now.Add(-time.Hour)
 
-	repo.SavePortalInstance(&core.PortalInstance{InstanceId: "instance-1", Version: "1.2.3", StartedAt: startedAt})
+	repo.SavePortalInstance(&core.PortalInstance{InstanceId: "instance-1", Version: "1.2.3"})
 
 	instance, ok := repo.GetPortalInstance("instance-1")
 	require.True(t, ok)
 	assert.Equal(t, "instance-1", instance.InstanceId)
 	assert.Equal(t, "1.2.3", instance.Version)
-	assert.Equal(t, startedAt, instance.StartedAt)
 	assert.Equal(t, now.Add(hubPortalRegistryLeaseTTL), instance.ExpiresAt)
 
 	instances := repo.ListPortalInstances()
 	require.Len(t, instances, 1)
 	assert.Equal(t, "instance-1", instances[0].InstanceId)
-	assert.Equal(t, startedAt, instances[0].StartedAt)
 }
 
 func TestPortalInstanceRepoHeartbeatKeepsLease(t *testing.T) {
@@ -99,26 +96,17 @@ func TestPortalInstanceRepoRemovalDropsLease(t *testing.T) {
 }
 
 func TestPortalInstanceRepoInprocModeSkipsLeases(t *testing.T) {
-	repo, testServer := newTestPortalInstanceRepo(t, true)
-	now := time.Now().UTC().Round(0)
-	setTimeNowForTest(t, func() time.Time { return now })
-	startedAt := now.Add(-time.Hour)
+	repo, _ := newTestPortalInstanceRepo(t, true)
 
-	repo.SavePortalInstance(&core.PortalInstance{InstanceId: "instance-1", Version: "1.2.3", StartedAt: startedAt})
+	repo.SavePortalInstance(&core.PortalInstance{InstanceId: "instance-1", Version: "1.2.3"})
 
 	instance, ok := repo.GetPortalInstance("instance-1")
 	require.True(t, ok)
-	assert.Equal(t, startedAt, instance.StartedAt)
+	// Standalone Portal registers without a heartbeat and without a lease, so
+	// the sweeper has nothing to collect.
 	assert.True(t, instance.ExpiresAt.IsZero())
 	assert.True(t, repo.KeepPortalInstance("instance-1"))
 	assert.Empty(t, repo.PopExpiredPortalLeases())
-
-	// Standalone Portal registers without a heartbeat, so its record keeps the
-	// start time and no lease, which leaves the sweeper nothing to collect.
-	value, ok := testServer.Get(watched.FormatPortalInstanceKey("instance-1"))
-	require.True(t, ok)
-	record := vcode.MustUnmarshalJsonS[map[string]any](value)
-	assert.NotEmpty(t, record["startedAt"])
 }
 
 func TestPortalInstanceRepoRecordsJSONShape(t *testing.T) {
@@ -126,13 +114,12 @@ func TestPortalInstanceRepoRecordsJSONShape(t *testing.T) {
 	now := time.Now().UTC().Round(0)
 	setTimeNowForTest(t, func() time.Time { return now })
 
-	repo.SavePortalInstance(&core.PortalInstance{InstanceId: "instance-1", Version: "1.2.3", StartedAt: now.Add(-time.Hour)})
+	repo.SavePortalInstance(&core.PortalInstance{InstanceId: "instance-1", Version: "1.2.3"})
 
 	value, ok := testServer.Get(watched.FormatPortalInstanceKey("instance-1"))
 	require.True(t, ok)
 	record := vcode.MustUnmarshalJsonS[map[string]any](value)
 	assert.Equal(t, "instance-1", record["instanceId"])
 	assert.Equal(t, "1.2.3", record["version"])
-	assert.NotEmpty(t, record["startedAt"])
 	assert.NotEmpty(t, record["expiresAt"])
 }

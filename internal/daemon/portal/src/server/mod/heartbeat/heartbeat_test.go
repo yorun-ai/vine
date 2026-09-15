@@ -113,7 +113,6 @@ func TestHeartbeatRegistersOnStartAndUnregistersOnStop(t *testing.T) {
 		client.mutex.Lock()
 		assert.Equal(t, skel.NewUUID(uuid.MustParse(testPortalInstanceId)), client.registrations[0].InstanceId)
 		assert.Equal(t, "1.2.3", client.registrations[0].Version)
-		assert.Equal(t, portalStartedAt.UTC(), client.registrations[0].StartedAt.Time)
 		client.mutex.Unlock()
 
 		component.BeforeAppStop()

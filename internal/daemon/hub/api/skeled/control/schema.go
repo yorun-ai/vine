@@ -11,7 +11,7 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.control",
 	Description: "Internal control API for Link and Portal",
-	Hash:        "67609b5f",
+	Hash:        "4529348e",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
 		CompilerVersion: "v0.19.3",
@@ -296,7 +296,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "PortalRegistration",
 			SkelName:    "vine.hub.control.PortalRegistration",
 			Description: "Portal instance registration information provided by Portal",
-			Hash:        "451a9f65",
+			Hash:        "5a987267",
 			Members: []*skel.MemberSchema{
 				{
 					Name:        "instanceId",
@@ -312,14 +312,6 @@ var _DomainSchema = &skel.DomainSchema{
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "startedAt",
-					Description: "Time this Portal process started",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarTimestamp,
 					},
 				},
 			},
@@ -623,7 +615,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "PortalRegistryService",
 			SkelName:    "vine.hub.control.PortalRegistryService",
 			Description: "Hub's Portal registration service, called by Portal",
-			Hash:        "80f6fad4",
+			Hash:        "d3a88a51",
 			Pub:         true,
 			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
@@ -631,7 +623,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "register",
 					SkelName:    "register",
 					Description: "Register a Portal instance",
-					Hash:        "bb1ed679",
+					Hash:        "661d736c",
 					AuthMode:    skel.AuthModeUnset,
 					Arguments: []*skel.MemberSchema{
 						{

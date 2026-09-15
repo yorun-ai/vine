@@ -788,6 +788,19 @@ export type PortalSiteWebOption = {
   actorSkelNames: Array<string>;
 }
 /**
+ * Portal instance status view for Dashboard display.
+ */
+export type PortalStatusView = {
+  /**
+   * Portal instance ID.
+   */
+  instanceId: string;
+  /**
+   * Portal version.
+   */
+  version:    string;
+}
+/**
  * Seed entity differences.
  */
 export type SeedEntityDiff = {
@@ -1040,27 +1053,6 @@ export type ServiceDebugMethodItem = {
    * Return type.
    */
   resultType:        string;
-}
-/**
- * Portal instance registered with Hub.
- */
-export type ServiceDebugPortalInstance = {
-  /**
-   * Portal instance ID.
-   */
-  instanceId: string;
-  /**
-   * Portal version.
-   */
-  version:    string;
-  /**
-   * Time this Portal process started.
-   */
-  startedAt:  string;
-  /**
-   * Whether this Portal shares the Hub process in standalone mode.
-   */
-  inproc:     boolean;
 }
 /**
  * Service called by Service Debug.

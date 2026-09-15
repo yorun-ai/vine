@@ -6,9 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	"go.yorun.ai/vine/internal/core/skel"
@@ -106,54 +103,4 @@ func mustDecodeDebugRpcOptions(t *testing.T, value string) *rpchttp.Options {
 		t.Fatalf("DecodeOptionsFromHeader() error = %v", err)
 	}
 	return options
-}
-
-type _ServiceDebugPortalInstanceRepo struct {
-	core.PortalInstanceRepo
-
-	instances []*core.PortalInstance
-}
-
-func (r *_ServiceDebugPortalInstanceRepo) ListPortalInstances() []*core.PortalInstance {
-	return r.instances
-}
-
-func TestListPortalInstancesReportsRegisteredPortals(t *testing.T) {
-	startedAt := time.Date(2026, 9, 15, 6, 30, 0, 0, time.UTC)
-	service := &ServiceDebugApiServiceServerImpl{
-		PortalInstanceRepo: &_ServiceDebugPortalInstanceRepo{
-			instances: []*core.PortalInstance{
-				{InstanceId: "22222222-2222-2222-2222-222222222222", Version: "1.2.3", StartedAt: startedAt},
-				{InstanceId: "11111111-1111-1111-1111-111111111111", Version: "1.2.3", StartedAt: startedAt},
-			},
-		},
-		InprocFlag: &internalapp.InternalInprocFlag{},
-	}
-
-	instances := service.ListPortalInstances()
-
-	require.Len(t, instances, 2)
-	assert.Equal(t, "11111111-1111-1111-1111-111111111111", instances[0].InstanceId)
-	assert.Equal(t, "22222222-2222-2222-2222-222222222222", instances[1].InstanceId)
-	assert.Equal(t, "1.2.3", instances[0].Version)
-	assert.Equal(t, skel.NewTimestamp(startedAt), instances[0].StartedAt)
-	assert.False(t, instances[0].Inproc)
-}
-
-func TestListPortalInstancesReportsStandaloneProcess(t *testing.T) {
-	service := &ServiceDebugApiServiceServerImpl{
-		PortalInstanceRepo: &_ServiceDebugPortalInstanceRepo{
-			instances: []*core.PortalInstance{
-				{InstanceId: "11111111-1111-1111-1111-111111111111", Version: "1.2.3"},
-			},
-		},
-		InprocFlag: &internalapp.InternalInprocFlag{Enabled: true},
-	}
-
-	instances := service.ListPortalInstances()
-
-	require.Len(t, instances, 1)
-	// Standalone Portal shares Hub's process, so it registers without a
-	// heartbeat and the Dashboard reports the shared process instead.
-	assert.True(t, instances[0].Inproc)
 }

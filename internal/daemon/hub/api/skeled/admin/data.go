@@ -888,6 +888,20 @@ func (v PortalSiteWebOption) Clone() PortalSiteWebOption {
 	return cloned
 }
 
+// PortalStatusView Portal instance status view for Dashboard display
+type PortalStatusView struct {
+	// InstanceId Portal instance ID
+	InstanceId string `json:"instanceId"`
+	// Version Portal version
+	Version string `json:"version"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalStatusView) Clone() PortalStatusView {
+	cloned := v
+	return cloned
+}
+
 // SeedEntityDiff Seed entity differences
 type SeedEntityDiff struct {
 	// Kind Entity type
@@ -1143,24 +1157,6 @@ func (v ServiceDebugMethodItem) Clone() ServiceDebugMethodItem {
 			cloned.Arguments[index0] = v.Arguments[index0].Clone()
 		}
 	}
-	return cloned
-}
-
-// ServiceDebugPortalInstance Portal instance registered with Hub
-type ServiceDebugPortalInstance struct {
-	// InstanceId Portal instance ID
-	InstanceId string `json:"instanceId"`
-	// Version Portal version
-	Version string `json:"version"`
-	// StartedAt Time this Portal process started
-	StartedAt skel.Timestamp `json:"startedAt"`
-	// Inproc Whether this Portal shares the Hub process in standalone mode
-	Inproc bool `json:"inproc"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v ServiceDebugPortalInstance) Clone() ServiceDebugPortalInstance {
-	cloned := v
 	return cloned
 }
 
