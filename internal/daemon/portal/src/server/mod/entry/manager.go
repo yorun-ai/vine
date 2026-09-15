@@ -118,6 +118,8 @@ func (e *Manager) reconcileEntriesLocked() {
 func (e *Manager) buildRulesLocked() map[_Key][]*_Rule {
 	rulesByKey := map[_Key][]*_Rule{}
 	for _, item := range e.entryRulesByName {
+		item.MatchPathPrefix = item.ResolvedMatchPathPrefix
+		item.RoutePathPrefix = item.ResolvedRoutePathPrefix
 		if rule, ok := newRule(item, e.SiteManager); ok {
 			key := rule.Key()
 			rulesByKey[key] = append(rulesByKey[key], rule)

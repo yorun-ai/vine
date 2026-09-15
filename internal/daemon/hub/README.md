@@ -74,9 +74,9 @@ Keep Hub's layer responsibilities distinct:
 ### Domain Writes
 
 Configuration, site, rule, and certificate writes go through their corresponding
-Core. `Validate` checks and normalizes a complete entity: it never writes, but it
-may read other repositories to enforce cross-entity rules, such as keeping a
-Portal rule aligned with the mount path of the Web its target site serves. `Save`
+Core. `Validate` checks and normalizes a complete entity without writing.
+Rule validation does not resolve sites: Portal derives effective rule paths from
+Web mount-path metadata published with sites. `Save`
 creates or replaces by name and owns identity handling, along with versioning and
 built-in protection where applicable. API updates merge provided fields into the
 existing entity before validation.

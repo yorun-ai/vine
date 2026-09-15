@@ -1,8 +1,6 @@
-// A portal site whose Web declares a mount path is served there, so the Hub
-// rejects an entry rule that targets that site unless the rule matches and
-// forwards exactly that path. The Dashboard keeps both prefixes read-only and in
-// sync with it instead of letting the Hub reject the rule. A Web without a mount
-// path does not limit the rules of its site.
+// Web mount paths determine the effective match and route prefixes. The
+// Dashboard displays both the configured and effective prefixes; configured
+// prefixes are only used by sites whose Web has no mount path.
 
 export interface WebMountPathSite {
   name: string
@@ -29,6 +27,17 @@ export function lockedWebMountPath(
   return site.webMountPath.trim() || null
 }
 
+export function effectiveWebMountPrefixes(mountPath: string): {
+  matchPathPrefix: string
+  routePathPrefix: string
+} {
+  const prefix = mountPath.replace(/\/+$/, '')
+  return {
+    matchPathPrefix: prefix || '/',
+    routePathPrefix: prefix,
+  }
+}
+
 export function lockWebMountPath<
   T extends { matchPathPrefix: string; routePathPrefix: string },
 >(value: T, mountPath: string | null): T {
@@ -41,4 +50,11 @@ export function lockWebMountPath<
   }
 
   return { ...value, matchPathPrefix: mountPath, routePathPrefix: mountPath }
+}
+
+// Do not persist the displayed Web path as a second configuration source.
+export function rulePathsForSave<
+  T extends { matchPathPrefix: string; routePathPrefix: string },
+>(value: T, _mountPath: string | null): T {
+  return value
 }

@@ -705,6 +705,9 @@ export function PortalCertPage() {
     if (!isPortalCertPath(pathname)) {
       return
     }
+    if (loading) {
+      return
+    }
     if (filteredCerts.length === 0) {
       setSelectedCertId(null)
       return
@@ -713,7 +716,7 @@ export function PortalCertPage() {
     if (!filteredCerts.some((cert) => cert.id === selectedCertId)) {
       selectCert(filteredCerts[0].id, true)
     }
-  }, [filteredCerts, pathname, selectCert, selectedCertId])
+  }, [filteredCerts, loading, pathname, selectCert, selectedCertId])
 
   React.useEffect(() => {
     if (selectedCertId == null) {

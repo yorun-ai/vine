@@ -8,9 +8,10 @@ import (
 )
 
 type PortalRuleRepo struct {
-	Dao    *model.PortalRuleDao `inject:""`
-	Syncer *syncer.Syncer       `inject:""`
-	Access *configaccess.Access `inject:""`
+	Dao            *model.PortalRuleDao `inject:""`
+	Syncer         *syncer.Syncer       `inject:""`
+	Access         *configaccess.Access `inject:""`
+	PortalSiteRepo core.PortalSiteRepo  `inject:""`
 }
 
 func (s *PortalRuleRepo) List() []*core.PortalRule {
@@ -42,7 +43,11 @@ func (s *PortalRuleRepo) Save(rule *core.PortalRule) {
 	s.Dao.Save(row)
 	rule.Id = row.Id
 
-	s.Syncer.SyncPortalRule(rule)
+	var site *core.PortalSite
+	if s.PortalSiteRepo != nil && rule.RouteSiteName != "" {
+		site, _ = s.PortalSiteRepo.GetByName(rule.RouteSiteName)
+	}
+	s.Syncer.SyncPortalRule(rule, site)
 }
 
 func (s *PortalRuleRepo) Remove(id int) bool {

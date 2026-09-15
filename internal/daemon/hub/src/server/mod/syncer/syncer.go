@@ -21,6 +21,7 @@ type Syncer struct {
 	appConfigNamesById   map[int]string
 	portalSiteNamesById  map[int]string
 	portalRuleNamesById  map[int]string
+	portalRulesById      map[int]*core.PortalRule
 	portalCertNamesById  map[int]string
 	schemaActorHashes    map[string]string
 	schemaResourceHashes map[string]string
@@ -31,6 +32,7 @@ func (s *Syncer) DIInit() {
 	s.appConfigNamesById = map[int]string{}
 	s.portalSiteNamesById = map[int]string{}
 	s.portalRuleNamesById = map[int]string{}
+	s.portalRulesById = map[int]*core.PortalRule{}
 	s.portalCertNamesById = map[int]string{}
 	s.schemaActorHashes = map[string]string{}
 	s.schemaResourceHashes = map[string]string{}

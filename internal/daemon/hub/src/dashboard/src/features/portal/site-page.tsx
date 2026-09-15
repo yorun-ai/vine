@@ -1443,6 +1443,9 @@ export function PortalSitePage() {
     if (!isPortalSitePath(pathname)) {
       return
     }
+    if (loading) {
+      return
+    }
     if (filteredEntries.length === 0) {
       setSelectedEntryId(null)
       return
@@ -1451,7 +1454,7 @@ export function PortalSitePage() {
     if (!filteredEntries.some((entry) => entry.id === selectedEntryId)) {
       selectEntry(filteredEntries[0].id, true)
     }
-  }, [filteredEntries, pathname, selectEntry, selectedEntryId])
+  }, [filteredEntries, loading, pathname, selectEntry, selectedEntryId])
 
   React.useEffect(() => {
     if (selectedEntryId == null) {

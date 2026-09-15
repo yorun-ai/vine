@@ -32,6 +32,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/schema"
 	"go.yorun.ai/vine/internal/infra/rdb"
+	"go.yorun.ai/vine/util/vcode"
 	"go.yorun.ai/vine/util/vfile"
 	"gorm.io/gorm"
 )
@@ -40,6 +41,9 @@ func TestSeederLoadsYAMLIntoSQLiteRepos(t *testing.T) {
 	for _, inline := range []bool{false, true} {
 		t.Run(fmt.Sprintf("inline=%t", inline), func(t *testing.T) {
 			configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, watchServer := newTestSeederRepos(t)
+			entryRepo.SchemaRepo.SaveDomainSchemas("demo", "instance", []*skel.DomainSchema{{
+				Domain: "demo", Hash: "mounted-web", Webs: []*skel.WebSchema{{SkelName: "demo.AdminWeb", MountPath: "/mounted"}},
+			}})
 			seedPath := filepath.Join(t.TempDir(), "hub.yaml")
 			seedYAML := `
 appConfigs:
@@ -86,7 +90,7 @@ portalCerts:
 				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 				MetadataRepo:  metadataRepo,
 				Logger:        logger.New("vine:test"),
-				RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
+				RuleCore:      newTestRuleCore(ruleRepo),
 				CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
 				SiteCore:      newTestSiteCore(entryRepo),
 			}
@@ -108,6 +112,10 @@ portalCerts:
 			assert.Equal(t, "demo.AdminActor", entry.ActorSkelName)
 			assert.Equal(t, "demo.AdminWeb", entry.WebName)
 			assert.False(t, entry.BuiltIn)
+			assert.Equal(t, "/mounted", entry.WebMountPath)
+			published, exists := watchServer.Get(watched.FormatPortalSiteKey(entry.Name))
+			require.True(t, exists)
+			assert.Equal(t, "/mounted", vcode.MustUnmarshalJsonS[watched.PortalSite](published).WebgwConfig.MountPath)
 
 			cert, ok := certRepo.GetByName("admin-cert")
 			require.True(t, ok)
@@ -163,7 +171,7 @@ func TestSeederMarksSeededWhenSeedHubDataFileIsEmpty(t *testing.T) {
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
+		RuleCore:      newTestRuleCore(ruleRepo),
 		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
 		SiteCore:      newTestSiteCore(entryRepo),
 	}
@@ -192,7 +200,7 @@ func TestSeederUsesHTTPSForDefaultDashboardWithMTLS(t *testing.T) {
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
+		RuleCore:      newTestRuleCore(ruleRepo),
 		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
 		SiteCore:      newTestSiteCore(entryRepo),
 	}
@@ -235,7 +243,7 @@ func TestSeederMigratesLegacyDashboardDefaultsToHTTPSWithMTLS(t *testing.T) {
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
+		RuleCore:      newTestRuleCore(ruleRepo),
 		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
 		SiteCore:      newTestSiteCore(entryRepo),
 	}
@@ -282,7 +290,7 @@ func TestSeederPreservesCustomDashboardAccessWithMTLSDefault(t *testing.T) {
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
+		RuleCore:      newTestRuleCore(ruleRepo),
 		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
 		SiteCore:      newTestSiteCore(entryRepo),
 	}
@@ -321,7 +329,7 @@ appConfigs:
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
+		RuleCore:      newTestRuleCore(ruleRepo),
 		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
 		SiteCore:      newTestSiteCore(entryRepo),
 	}
@@ -391,7 +399,7 @@ portalCerts:
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
+		RuleCore:      newTestRuleCore(ruleRepo),
 		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
 		SiteCore:      newTestSiteCore(entryRepo),
 	}
@@ -437,7 +445,7 @@ portalRules:
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
+		RuleCore:      newTestRuleCore(ruleRepo),
 		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
 		SiteCore:      newTestSiteCore(entryRepo),
 	}
@@ -471,7 +479,7 @@ func TestSeederRefreshesDashboardWhenSeeded(t *testing.T) {
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
+		RuleCore:      newTestRuleCore(ruleRepo),
 		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
 		SiteCore:      newTestSiteCore(entryRepo),
 	}
@@ -520,7 +528,7 @@ func TestSeederAppliesExplicitDashboardURLToExistingDashboardRules(t *testing.T)
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
+		RuleCore:      newTestRuleCore(ruleRepo),
 		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
 		SiteCore:      newTestSiteCore(entryRepo),
 	}
@@ -583,12 +591,10 @@ func newTestSiteCore(siteRepo core.PortalSiteRepo) *core.PortalSiteCore {
 	return &core.PortalSiteCore{PortalSiteRepo: siteRepo, SchemaRepo: new(schema.SchemaRepo)}
 }
 
-// newTestRuleCore builds a rule core with the repositories Hub injects. The
-// seeds under test do not declare Web mount paths, so no schema is selected.
-func newTestRuleCore(ruleRepo core.PortalRuleRepo, siteRepo core.PortalSiteRepo) *core.PortalRuleCore {
+// newTestRuleCore builds a rule core with the chosen rule repository.
+func newTestRuleCore(ruleRepo core.PortalRuleRepo) *core.PortalRuleCore {
 	return &core.PortalRuleCore{
 		PortalRuleRepo: ruleRepo,
-		PortalSiteRepo: siteRepo,
 	}
 }
 
@@ -615,7 +621,7 @@ portalRules:
 			path := filepath.Join(t.TempDir(), "hub.yaml")
 			require.NoError(t, vfile.WriteString(path, content))
 			seeder := &Seeder{Flag: newTestSeederFlag(path), Logger: logger.New("vine:test"),
-				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo}, RuleCore: newTestRuleCore(ruleRepo, entryRepo),
+				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo}, RuleCore: newTestRuleCore(ruleRepo),
 				CertCore: &core.PortalCertCore{PortalCertRepo: certRepo},
 				SiteCore: newTestSiteCore(entryRepo), MetadataRepo: metadataRepo}
 			require.Panics(t, seeder.DIInit)
@@ -648,7 +654,7 @@ func TestSeederPreflightsSitesAndCertificatesBeforeWriting(t *testing.T) {
 			path := filepath.Join(t.TempDir(), "hub.yaml")
 			require.NoError(t, vfile.WriteString(path, "appConfigs:\n  - name: pending\n    value: test\n"+invalid))
 			target := &Seeder{Flag: newTestSeederFlag(path), Logger: logger.New("vine:test"), MetadataRepo: metadata,
-				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configs}, RuleCore: newTestRuleCore(rules, sites),
+				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configs}, RuleCore: newTestRuleCore(rules),
 				CertCore: &core.PortalCertCore{PortalCertRepo: certs}, SiteCore: newTestSiteCore(sites)}
 			require.Panics(t, target.DIInit)
 			_, exists := configs.GetByName("pending")
@@ -679,7 +685,7 @@ func TestSeederPersistsSourcesByEntityAndClearsOnRemoval(t *testing.T) {
 	source := fmt.Sprintf("version: 1\nseedSha256: %x\nfields:\n  /appConfigs/0/value:\n    source: app/default\n    define: domain/booker\n    override: app/default\n", sha256.Sum256([]byte(template)))
 	s := new(Seeder{Flag: new(flag.Flag{SeedHubData: template, SeedHubSource: source, SeedHubVarsFile: writeSeedHubVarsFile(t, `value: '"resolved"'`)}),
 		AppConfigCore: new(core.AppConfigCore{AppConfigRepo: configRepo}),
-		RuleCore:      newTestRuleCore(ruleRepo, siteRepo),
+		RuleCore:      newTestRuleCore(ruleRepo),
 		SiteCore:      newTestSiteCore(siteRepo),
 		CertCore:      new(core.PortalCertCore{PortalCertRepo: certRepo}), MetadataRepo: metadataRepo, Logger: logger.New("seed-source-test"),
 	})
@@ -721,7 +727,7 @@ fields:
 	target := new(Seeder{
 		Flag:          new(flag.Flag{SeedHubData: template, SeedHubSource: source, SeedHubVarsFile: writeSeedHubVarsFile(t, "ttl: 2h")}),
 		AppConfigCore: new(core.AppConfigCore{AppConfigRepo: configs}),
-		RuleCore:      newTestRuleCore(rules, sites),
+		RuleCore:      newTestRuleCore(rules),
 		SiteCore:      newTestSiteCore(sites),
 		CertCore:      new(core.PortalCertCore{PortalCertRepo: certs}),
 		MetadataRepo:  metadata, Logger: logger.New("seed-key-sources-test"),

@@ -11,6 +11,7 @@ type PortalRuleApiServiceServerImpl struct {
 	skeled.DefaultPortalRuleApiServiceServer
 
 	PortalRuleCore *core.PortalRuleCore `inject:""`
+	PortalSiteRepo core.PortalSiteRepo  `inject:""`
 	Flag           *flag.Flag           `inject:""`
 }
 
@@ -18,14 +19,14 @@ func (s *PortalRuleApiServiceServerImpl) List() []skeled.PortalRuleListItem {
 	rules := s.PortalRuleCore.List()
 	ret := make([]skeled.PortalRuleListItem, 0, len(rules))
 	for _, rule := range rules {
-		ret = append(ret, toServerPortalRuleListItem(rule))
+		ret = append(ret, toServerPortalRuleListItem(rule, s.PortalSiteRepo))
 	}
 	return ret
 }
 
 func (s *PortalRuleApiServiceServerImpl) Get(id int) skeled.PortalRule {
 	rule := s.PortalRuleCore.Get(id)
-	return toServerPortalRule(rule, toServerFieldSources(rule.FieldSources))
+	return s.toServerPortalRule(rule, toServerFieldSources(rule.FieldSources))
 }
 
 func (s *PortalRuleApiServiceServerImpl) Create(creation skeled.PortalRuleCreation) skeled.PortalRule {
@@ -44,7 +45,7 @@ func (s *PortalRuleApiServiceServerImpl) Create(creation skeled.PortalRuleCreati
 		RouteRedirectionPattern: creation.RouteRedirectionPattern,
 		RoutePathPrefix:         routePathPrefix,
 	})
-	return toServerPortalRule(rule, toServerFieldSources(rule.FieldSources))
+	return s.toServerPortalRule(rule, toServerFieldSources(rule.FieldSources))
 }
 
 func (s *PortalRuleApiServiceServerImpl) Update(id int, update skeled.PortalRuleUpdate) skeled.PortalRule {
@@ -59,7 +60,7 @@ func (s *PortalRuleApiServiceServerImpl) Update(id int, update skeled.PortalRule
 		RouteRedirectionPattern: update.RouteRedirectionPattern,
 		RoutePathPrefix:         update.RoutePathPrefix,
 	})
-	return toServerPortalRule(rule, toServerFieldSources(rule.FieldSources))
+	return s.toServerPortalRule(rule, toServerFieldSources(rule.FieldSources))
 }
 
 func (s *PortalRuleApiServiceServerImpl) Remove(id int) {
@@ -82,12 +83,13 @@ func (s *PortalRuleApiServiceServerImpl) UpdateDashboardAccess(scheme string, ho
 	rules := s.PortalRuleCore.UpdateDashboardAccess(scheme, host, port, pathPrefix)
 	ret := make([]skeled.PortalRule, 0, len(rules))
 	for _, rule := range rules {
-		ret = append(ret, toServerPortalRule(rule, nil))
+		ret = append(ret, s.toServerPortalRule(rule, nil))
 	}
 	return ret
 }
 
 func toServerPortalRule(rule *core.PortalRule, fieldSources []skeled.FieldSource) skeled.PortalRule {
+	resolvedMatchPathPrefix, resolvedRoutePathPrefix := resolvePortalRulePaths(rule, nil)
 	return skeled.PortalRule{
 		Id:                      rule.Id,
 		Name:                    rule.Name,
@@ -99,14 +101,37 @@ func toServerPortalRule(rule *core.PortalRule, fieldSources []skeled.FieldSource
 		RouteSiteName:           rule.RouteSiteName,
 		RouteRedirectionPattern: rule.RouteRedirectionPattern,
 		RoutePathPrefix:         rule.RoutePathPrefix,
+		ResolvedMatchPathPrefix: resolvedMatchPathPrefix,
+		ResolvedRoutePathPrefix: resolvedRoutePathPrefix,
 		FieldSources:            fieldSources,
 	}
 }
 
+func (s *PortalRuleApiServiceServerImpl) toServerPortalRule(rule *core.PortalRule, fieldSources []skeled.FieldSource) skeled.PortalRule {
+	ret := toServerPortalRule(rule, fieldSources)
+	if s.PortalSiteRepo != nil {
+		if site, ok := s.PortalSiteRepo.GetByName(rule.RouteSiteName); ok {
+			ret.ResolvedMatchPathPrefix, ret.ResolvedRoutePathPrefix = resolvePortalRulePaths(rule, site)
+		}
+	}
+	return ret
+}
+
+func resolvePortalRulePaths(rule *core.PortalRule, site *core.PortalSite) (string, string) {
+	return core.ResolvePortalRulePaths(rule, site)
+}
+
 // toServerPortalRuleListItem maps a rule for list responses, which carry the
 // entity values without its seed provenance.
-func toServerPortalRuleListItem(rule *core.PortalRule) skeled.PortalRuleListItem {
+func toServerPortalRuleListItem(rule *core.PortalRule, siteRepo core.PortalSiteRepo, sites ...*core.PortalSite) skeled.PortalRuleListItem {
 	detail := toServerPortalRule(rule, nil)
+	if len(sites) > 0 {
+		detail.ResolvedMatchPathPrefix, detail.ResolvedRoutePathPrefix = resolvePortalRulePaths(rule, sites[0])
+	} else if siteRepo != nil {
+		if site, ok := siteRepo.GetByName(rule.RouteSiteName); ok {
+			detail.ResolvedMatchPathPrefix, detail.ResolvedRoutePathPrefix = resolvePortalRulePaths(rule, site)
+		}
+	}
 	return skeled.PortalRuleListItem{
 		Id:                      detail.Id,
 		Name:                    detail.Name,
@@ -118,5 +143,7 @@ func toServerPortalRuleListItem(rule *core.PortalRule) skeled.PortalRuleListItem
 		RouteSiteName:           detail.RouteSiteName,
 		RouteRedirectionPattern: detail.RouteRedirectionPattern,
 		RoutePathPrefix:         detail.RoutePathPrefix,
+		ResolvedMatchPathPrefix: detail.ResolvedMatchPathPrefix,
+		ResolvedRoutePathPrefix: detail.ResolvedRoutePathPrefix,
 	}
 }

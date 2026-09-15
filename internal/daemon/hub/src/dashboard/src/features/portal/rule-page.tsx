@@ -1,7 +1,11 @@
 import { FieldSourceInfo } from '@/features/field-source/field-source-info'
 import { useConfigAccess } from '@/lib/config-access'
 import { RulePathPreview } from './rule-path-preview'
-import { lockWebMountPath, lockedWebMountPath } from './web-mount-path'
+import {
+  effectiveWebMountPrefixes,
+  lockedWebMountPath,
+  rulePathsForSave,
+} from './web-mount-path'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
 import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
@@ -381,16 +385,6 @@ function Field({
   )
 }
 
-function WebMountPathHint({ mountPath }: { mountPath: string }) {
-  const { t } = useLocale()
-
-  return (
-    <p className="text-xs text-muted-foreground">
-      {t('portalRule.webMountPathFixed').replace('{mountPath}', mountPath)}
-    </p>
-  )
-}
-
 function RuleFlowSection({
   children,
   description,
@@ -495,16 +489,6 @@ function PortalRuleDialog({
     [formValue.routeSiteName, formValue.routeType, entries],
   )
 
-  React.useEffect(() => {
-    if (lockedMountPath === null) {
-      return
-    }
-
-    setFormValue((current) =>
-      syncDerivedName(current, lockWebMountPath(current, lockedMountPath)),
-    )
-  }, [lockedMountPath, formValue.matchPathPrefix, formValue.routePathPrefix])
-
   const setField = React.useCallback(
     (field: keyof PortalRuleFormValue, value: string) => {
       setFormError(null)
@@ -551,13 +535,10 @@ function PortalRuleDialog({
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault()
 
-      const nextValue = lockWebMountPath(
-        {
-          ...formValue,
-          name: formValue.name.trim() || derivePortalRuleName(formValue),
-        },
-        lockedMountPath,
-      )
+      const nextValue = {
+        ...formValue,
+        name: formValue.name.trim() || derivePortalRuleName(formValue),
+      }
       const errors = validateFormValue(nextValue, t)
       if (hasFormErrors(errors)) {
         setFieldErrors(errors)
@@ -568,7 +549,7 @@ function PortalRuleDialog({
       setFormError(null)
 
       try {
-        await onSubmit(nextValue)
+        await onSubmit(rulePathsForSave(nextValue, lockedMountPath))
       } catch (error) {
         setFormError(getErrorMessage(error))
       }
@@ -655,16 +636,13 @@ function PortalRuleDialog({
 
               <Field label={t('portalRule.matchPathPrefix')}>
                 <Input
-                  disabled={lockedMountPath !== null}
+                  className={lockedMountPath === null ? undefined : 'text-destructive'}
                   value={formValue.matchPathPrefix}
                   placeholder={t('portalRule.pathPrefixPlaceholder')}
                   onChange={(event) =>
                     setField('matchPathPrefix', event.target.value)
                   }
                 />
-                {lockedMountPath === null ? null : (
-                  <WebMountPathHint mountPath={lockedMountPath} />
-                )}
               </Field>
             </RuleFlowSection>
 
@@ -773,23 +751,23 @@ function PortalRuleDialog({
               {formValue.routeType === 'SITE' ? (
                 <Field label={t('portalRule.routePathPrefix')} error={fieldErrors.routePathPrefix}>
                   <Input
-                    disabled={lockedMountPath !== null}
+                    className={lockedMountPath === null ? undefined : 'text-destructive'}
                     value={formValue.routePathPrefix}
                     placeholder="/internal"
                     aria-invalid={Boolean(fieldErrors.routePathPrefix)}
                     onChange={(event) => setField('routePathPrefix', event.target.value)}
                   />
-                  {lockedMountPath === null ? (
-                    <p className="text-xs text-muted-foreground">{t('portalRule.routePathPrefixHelp')}</p>
-                  ) : (
-                    <WebMountPathHint mountPath={lockedMountPath} />
-                  )}
+                <p className="text-xs text-muted-foreground">{t('portalRule.routePathPrefixHelp')}</p>
                 </Field>
               ) : null}
             </RuleFlowSection>
           </div>
           {formValue.routeType === 'SITE' ? (
-            <RulePathPreview matchPathPrefix={formValue.matchPathPrefix.trim()} routePathPrefix={formValue.routePathPrefix.trim()} />
+            <RulePathPreview
+              mountPath={lockedMountPath}
+              matchPathPrefix={(lockedMountPath === null ? formValue.matchPathPrefix : effectiveWebMountPrefixes(lockedMountPath).matchPathPrefix).trim()}
+              routePathPrefix={(lockedMountPath === null ? formValue.routePathPrefix : effectiveWebMountPrefixes(lockedMountPath).routePathPrefix).trim()}
+            />
           ) : null}
 
           <DialogFooter>
@@ -963,16 +941,6 @@ function PortalRuleInlineEditor({
     [formValue.routeSiteName, formValue.routeType, entries],
   )
 
-  React.useEffect(() => {
-    if (lockedMountPath === null) {
-      return
-    }
-
-    setFormValue((current) =>
-      syncDerivedName(current, lockWebMountPath(current, lockedMountPath)),
-    )
-  }, [lockedMountPath, formValue.matchPathPrefix, formValue.routePathPrefix])
-
   const setField = React.useCallback(
     (field: keyof PortalRuleFormValue, value: string) => {
       setFormError(null)
@@ -1019,13 +987,10 @@ function PortalRuleInlineEditor({
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault()
 
-      const nextValue = lockWebMountPath(
-        {
-          ...formValue,
-          name: formValue.name.trim() || derivePortalRuleName(formValue),
-        },
-        lockedMountPath,
-      )
+      const nextValue = {
+        ...formValue,
+        name: formValue.name.trim() || derivePortalRuleName(formValue),
+      }
       const errors = validateFormValue(nextValue, t)
       if (hasFormErrors(errors)) {
         setFieldErrors(errors)
@@ -1036,7 +1001,7 @@ function PortalRuleInlineEditor({
       setFormError(null)
 
       try {
-        await onSubmit(nextValue)
+        await onSubmit(rulePathsForSave(nextValue, lockedMountPath))
       } catch (error) {
         setFormError(getErrorMessage(error))
       }
@@ -1110,14 +1075,11 @@ function PortalRuleInlineEditor({
 
           <Field label={t('portalRule.matchPathPrefix')}>
             <Input
-              disabled={lockedMountPath !== null}
+              className={lockedMountPath === null ? undefined : 'text-destructive'}
               value={formValue.matchPathPrefix}
               placeholder={t('portalRule.pathPrefixPlaceholder')}
               onChange={(event) => setField('matchPathPrefix', event.target.value)}
             />
-            {lockedMountPath === null ? null : (
-              <WebMountPathHint mountPath={lockedMountPath} />
-            )}
           </Field>
         </RuleFlowSection>
 
@@ -1221,23 +1183,23 @@ function PortalRuleInlineEditor({
           {formValue.routeType === 'SITE' ? (
             <Field label={t('portalRule.routePathPrefix')} error={fieldErrors.routePathPrefix}>
               <Input
-                disabled={lockedMountPath !== null}
+                className={lockedMountPath === null ? undefined : 'text-destructive'}
                 value={formValue.routePathPrefix}
                 placeholder="/internal"
                 aria-invalid={Boolean(fieldErrors.routePathPrefix)}
                 onChange={(event) => setField('routePathPrefix', event.target.value)}
               />
-              {lockedMountPath === null ? (
-                <p className="text-xs text-muted-foreground">{t('portalRule.routePathPrefixHelp')}</p>
-              ) : (
-                <WebMountPathHint mountPath={lockedMountPath} />
-              )}
+              <p className="text-xs text-muted-foreground">{t('portalRule.routePathPrefixHelp')}</p>
             </Field>
           ) : null}
         </RuleFlowSection>
       </div>
       {formValue.routeType === 'SITE' ? (
-        <RulePathPreview matchPathPrefix={formValue.matchPathPrefix.trim()} routePathPrefix={formValue.routePathPrefix.trim()} />
+        <RulePathPreview
+          mountPath={lockedMountPath}
+          matchPathPrefix={(lockedMountPath === null ? formValue.matchPathPrefix : effectiveWebMountPrefixes(lockedMountPath).matchPathPrefix).trim()}
+          routePathPrefix={(lockedMountPath === null ? formValue.routePathPrefix : effectiveWebMountPrefixes(lockedMountPath).routePathPrefix).trim()}
+        />
       ) : null}
 
       <div className="flex justify-end gap-2 border-t pt-4">
@@ -1306,7 +1268,11 @@ export function PortalRulePage() {
   }, [loadRules])
 
   const visibleRules = React.useMemo(() => {
-    return rules
+    return rules.map((rule) => ({
+      ...rule,
+      matchPathPrefix: rule.resolvedMatchPathPrefix,
+      routePathPrefix: rule.resolvedRoutePathPrefix,
+    }))
   }, [rules])
 
   const filteredRules = React.useMemo(() => {
@@ -1339,12 +1305,22 @@ export function PortalRulePage() {
       null,
     [filteredRules, selectedRuleId],
   )
+  const rawSelectedRule = React.useMemo(
+    () =>
+      (selectedRule && rules.find((rule) => rule.id === selectedRule.id)) ??
+      selectedRule,
+    [rules, selectedRule],
+  )
   const selectedTargetSite = React.useMemo(() => {
     if (!selectedRule || selectedRule.routeType !== 'SITE') {
       return null
     }
     return entries.find((entry) => entry.name === selectedRule.routeSiteName) ?? null
   }, [entries, selectedRule])
+
+  const selectedMountPath = selectedRule
+    ? lockedWebMountPath(selectedRule.routeType, selectedRule.routeSiteName, entries)
+    : null
 
   // The list returns rules without their seed provenance, so the detail view
   // reads the selected rule once more.
@@ -1401,6 +1377,9 @@ export function PortalRulePage() {
     if (!isPortalRulePath(pathname)) {
       return
     }
+    if (loading) {
+      return
+    }
     if (filteredRules.length === 0) {
       setSelectedRuleId(null)
       return
@@ -1409,7 +1388,7 @@ export function PortalRulePage() {
     if (!filteredRules.some((rule) => rule.id === selectedRuleId)) {
       selectRule(filteredRules[0].id, true)
     }
-  }, [filteredRules, pathname, selectRule, selectedRuleId])
+  }, [filteredRules, loading, pathname, selectRule, selectedRuleId])
   React.useEffect(() => {
     if (selectedRuleId == null) {
       return
@@ -1659,7 +1638,10 @@ export function PortalRulePage() {
                               variant="outline"
                               size="sm"
                               disabled={readOnly}
-                              onClick={() => setEditingRule(selectedRule)}
+                              onClick={() => {
+                                const rawRule = rules.find((rule) => rule.id === selectedRule.id)
+                                setEditingRule(rawRule ?? selectedRule)
+                              }}
                             >
                               <Edit3 />
                               {t('action.edit')}
@@ -1691,7 +1673,7 @@ export function PortalRulePage() {
                 <div className="scrollbar-reserved min-h-0 flex-1 overflow-y-auto p-6 pr-4">
                   {editingRule?.id === selectedRule.id ? (
                     <PortalRuleInlineEditor
-                      rule={selectedRule}
+                      rule={rawSelectedRule ?? selectedRule}
                       saving={saving}
                       entries={entries}
                         onCancel={() => setEditingRule(null)}
@@ -1720,8 +1702,14 @@ export function PortalRulePage() {
                               ? t('portalRule.followScheme')
                               : selectedRule.matchPort}
                           </ReadonlyField>
-                          <ReadonlyField source={<FieldSourceInfo fields={selectedRuleFields} path="/matchPathPrefix" />} label={t('portalRule.matchPathPrefix')}>
-                            {selectedRule.matchPathPrefix || '/'}
+                          <ReadonlyField source={selectedMountPath === null ? <FieldSourceInfo fields={selectedRuleFields} path="/matchPathPrefix" /> : undefined} label={t('portalRule.matchPathPrefix')}>
+                            {selectedMountPath === null ? (
+                              selectedRule.matchPathPrefix || '/'
+                            ) : (
+                              <span className="text-destructive line-through">
+                                {rawSelectedRule?.matchPathPrefix || '/'}
+                              </span>
+                            )}
                           </ReadonlyField>
                         </RuleFlowSection>
 
@@ -1769,14 +1757,25 @@ export function PortalRulePage() {
                             )}
                           </ReadonlyField>
                           {selectedRule.routeType === 'SITE' ? (
-                            <ReadonlyField source={<FieldSourceInfo fields={selectedRuleFields} path="/routePathPrefix" />} label={t('portalRule.routePathPrefix')}>
-                              {selectedRule.routePathPrefix || '/'}
+                            <ReadonlyField source={selectedMountPath === null ? <FieldSourceInfo fields={selectedRuleFields} path="/routePathPrefix" /> : undefined} label={t('portalRule.routePathPrefix')}>
+                              {selectedMountPath === null ? (
+                                selectedRule.routePathPrefix || '/'
+                              ) : (
+                                <span className="text-destructive line-through">
+                                  {rawSelectedRule?.routePathPrefix || '/'}
+                                </span>
+                              )}
                             </ReadonlyField>
                           ) : null}
                         </RuleFlowSection>
                       </div>
                       {selectedRule.routeType === 'SITE' ? (
-                        <RulePathPreview key={selectedRule.id} matchPathPrefix={selectedRule.matchPathPrefix} routePathPrefix={selectedRule.routePathPrefix} />
+                        <RulePathPreview
+                          key={selectedRule.id}
+                          mountPath={selectedMountPath}
+                          matchPathPrefix={selectedRule.matchPathPrefix}
+                          routePathPrefix={selectedRule.routePathPrefix}
+                        />
                       ) : null}
                     </div>
                   )}
