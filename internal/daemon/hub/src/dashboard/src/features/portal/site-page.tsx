@@ -1420,7 +1420,9 @@ export function PortalSitePage() {
   }, [selectedEntry?.id])
 
   const selectedEntryFields =
-    entryDetail?.id === selectedEntry?.id ? entryDetail.fieldSources : []
+    entryDetail !== null && entryDetail.id === selectedEntry?.id
+      ? entryDetail.fieldSources
+      : []
 
   const selectEntry = React.useCallback(
     (id: number, replace = false) => {

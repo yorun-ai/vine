@@ -1376,7 +1376,9 @@ export function PortalRulePage() {
   }, [selectedRule?.id])
 
   const selectedRuleFields =
-    ruleDetail?.id === selectedRule?.id ? ruleDetail.fieldSources : []
+    ruleDetail !== null && ruleDetail.id === selectedRule?.id
+      ? ruleDetail.fieldSources
+      : []
 
   const selectRule = React.useCallback(
     (id: number, replace = false) => {

@@ -682,7 +682,9 @@ export function PortalCertPage() {
   }, [selectedCert?.id])
 
   const selectedCertFields =
-    certDetail?.id === selectedCert?.id ? certDetail.fieldSources : []
+    certDetail !== null && certDetail.id === selectedCert?.id
+      ? certDetail.fieldSources
+      : []
 
   const selectCert = React.useCallback(
     (id: number, replace = false) => {
