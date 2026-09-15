@@ -58,17 +58,17 @@ func (*_ServerTestInvalidHandler) Routes(*spec.Router) {}
 func (*_ServerTestInvalidHandler) mustBeServerTestWebServer() {}
 
 type _ServerTestExecutor struct {
-	initRoutes []spec.RouteInfo
-	executed   []spec.RouteInfo
+	initRoutes []spec.Route
+	executed   []spec.Route
 	contexts   []*gin.Context
-	execute    func(route spec.RouteInfo, ginCtx *gin.Context)
+	execute    func(route spec.Route, ginCtx *gin.Context)
 }
 
-func (e *_ServerTestExecutor) Init(routes []spec.RouteInfo) {
-	e.initRoutes = append([]spec.RouteInfo{}, routes...)
+func (e *_ServerTestExecutor) Init(routes []spec.Route) {
+	e.initRoutes = append([]spec.Route{}, routes...)
 }
 
-func (e *_ServerTestExecutor) Execute(route spec.RouteInfo, ginCtx *gin.Context) {
+func (e *_ServerTestExecutor) Execute(route spec.Route, ginCtx *gin.Context) {
 	if e.execute != nil {
 		e.execute(route, ginCtx)
 		return
@@ -143,7 +143,7 @@ func TestServerRecoveryIgnoresAbortHandlerPanic(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	server := newServerTestServer(&_ServerTestExecutor{
-		execute: func(route spec.RouteInfo, ginCtx *gin.Context) {
+		execute: func(route spec.Route, ginCtx *gin.Context) {
 			ginCtx.Status(http.StatusOK)
 			panic(http.ErrAbortHandler)
 		},
@@ -162,7 +162,7 @@ func TestServerRecoveryReturnsInternalServerErrorForPanic(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	server := newServerTestServer(&_ServerTestExecutor{
-		execute: func(route spec.RouteInfo, ginCtx *gin.Context) {
+		execute: func(route spec.Route, ginCtx *gin.Context) {
 			panic("boom")
 		},
 	})
@@ -191,7 +191,7 @@ func TestServerRecoveryMapsStructuredErrorToHTTPStatus(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			gin.SetMode(gin.TestMode)
 			server := newServerTestServer(&_ServerTestExecutor{
-				execute: func(route spec.RouteInfo, ginCtx *gin.Context) {
+				execute: func(route spec.Route, ginCtx *gin.Context) {
 					ex.PanicNew(testCase.code, "request failed")
 				},
 			})
@@ -213,7 +213,7 @@ func TestServerRecoveryMapsStructuredErrorToHTTPStatus(t *testing.T) {
 func TestServerRecoveryPreservesStartedWebResponse(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	server := newServerTestServer(&_ServerTestExecutor{
-		execute: func(route spec.RouteInfo, ginCtx *gin.Context) {
+		execute: func(route spec.Route, ginCtx *gin.Context) {
 			ginCtx.String(http.StatusAccepted, "partial response")
 			ex.PanicNew(ex.NotFound, "missing resource")
 		},
@@ -235,7 +235,7 @@ func TestServerRecoveryLogsSystemErrorRaiseStack(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logPath := setServerTestDefaultLogger(t)
 	server := newServerTestServer(&_ServerTestExecutor{
-		execute: func(route spec.RouteInfo, ginCtx *gin.Context) {
+		execute: func(route spec.Route, ginCtx *gin.Context) {
 			ex.PanicNew(ex.InvalidRequest, "bad request")
 		},
 	})
@@ -260,7 +260,7 @@ func TestServerLogsSuccessfulRequestAtDebug(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logPath := setServerTestDefaultLogger(t)
 	server := newServerTestServer(&_ServerTestExecutor{
-		execute: func(route spec.RouteInfo, ginCtx *gin.Context) {
+		execute: func(route spec.Route, ginCtx *gin.Context) {
 			ginCtx.Status(http.StatusNotModified)
 		},
 	})
@@ -279,7 +279,7 @@ func TestServerLogsBadRequestAtWarn(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logPath := setServerTestDefaultLogger(t)
 	server := newServerTestServer(&_ServerTestExecutor{
-		execute: func(route spec.RouteInfo, ginCtx *gin.Context) {
+		execute: func(route spec.Route, ginCtx *gin.Context) {
 			ginCtx.Status(http.StatusNotFound)
 		},
 	})

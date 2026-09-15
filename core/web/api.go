@@ -31,9 +31,6 @@ type Option = internalserver.Option
 // Route describes a generated Web route.
 type Route = internalspec.Route
 
-// RouteInfo is runtime metadata for a registered route.
-type RouteInfo = internalspec.RouteInfo
-
 // Router registers route handlers.
 type Router = internalspec.Router
 
@@ -59,7 +56,7 @@ type ProxyOption = internalproxy.Option
 type ReverseProxy = internalproxy.ReverseProxy
 
 // NewContext creates a Web execution context from Gin and Vine metadata.
-func NewContext(ginCtx *gin.Context, route RouteInfo, trace meta.Trace, initiator meta.Initiator, actor meta.Actor) Context {
+func NewContext(ginCtx *gin.Context, route Route, trace meta.Trace, initiator meta.Initiator, actor meta.Actor) Context {
 	return internalspec.NewContext(ginCtx, route, trace, initiator, actor)
 }
 

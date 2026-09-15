@@ -65,9 +65,14 @@ func initWebInfo(webSpec *WebSpec) *_WebInfo {
 	if webSpec == nil {
 		return nil
 	}
+	mountPath := webSpec.MountPath
+	if mountPath == "" {
+		mountPath = "/"
+	}
 	info := &_WebInfo{
 		name:              webSpec.Name,
 		skelName:          webSpec.SkelName,
+		mountPath:         mountPath,
 		hash:              webSpec.Hash,
 		serverType:        webSpec.ServerType,
 		defaultServerType: webSpec.DefaultServerType,

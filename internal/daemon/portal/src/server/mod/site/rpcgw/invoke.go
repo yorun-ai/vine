@@ -21,7 +21,7 @@ import (
 var rpcGatewayLogger = logger.New("daemon:portal:rpcgw")
 
 func (g *RpcGateway) serveInvoke(ctx *spec.Context) {
-	invokeRequest := httputil.TrimPathPrefix(ctx.Request, pathInvoke)
+	invokeRequest := httputil.StripPathPrefix(ctx.Request, pathInvoke)
 
 	if err := rpchttp.CheckRequestContentTypeHeader(invokeRequest.Header); err != nil {
 		rpcGatewayLogger.Warn("vine.portal rpcgw request content type is invalid", "path", ctx.Request.URL.Path, "error", err)

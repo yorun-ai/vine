@@ -6,6 +6,7 @@ type WebInfo interface {
 	Name() string
 	SkelName() string
 	Hash() string
+	MountPath() string
 	ServerType() reflect.Type
 	DefaultServerType() reflect.Type
 }
@@ -14,6 +15,7 @@ type WebSpec struct {
 	Name              string
 	SkelName          string
 	Hash              string
+	MountPath         string
 	ServerType        reflect.Type
 	DefaultServerType reflect.Type
 
@@ -28,6 +30,7 @@ type _WebInfo struct {
 	name              string
 	skelName          string
 	hash              string
+	mountPath         string
 	serverType        reflect.Type
 	defaultServerType reflect.Type
 }
@@ -42,6 +45,10 @@ func (i *_WebInfo) SkelName() string {
 
 func (i *_WebInfo) Hash() string {
 	return i.hash
+}
+
+func (i *_WebInfo) MountPath() string {
+	return i.mountPath
 }
 
 func (i *_WebInfo) ServerType() reflect.Type {

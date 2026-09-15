@@ -23,10 +23,31 @@ func TestPathPrefix(t *testing.T) {
 	}
 }
 
-func TestTrimPathPrefix(t *testing.T) {
+func TestJoinPath(t *testing.T) {
+	for _, tc := range []struct {
+		parts []string
+		want  string
+	}{
+		{[]string{}, ""},
+		{[]string{"/orders", "/:id"}, "/orders/:id"},
+		{[]string{"/orders/", "*path"}, "/orders/*path"},
+		{[]string{"", "/health"}, "/health"},
+		{[]string{"/orders", "../users"}, "/users"},
+		{[]string{"/orders", "./items"}, "/orders/items"},
+		{[]string{"/orders//", "//items/"}, "/orders/items"},
+		{[]string{"/orders", "/"}, "/orders"},
+		{[]string{"/", "/"}, "/"},
+	} {
+		if got := JoinPath(tc.parts...); got != tc.want {
+			t.Fatalf("JoinPath(%q) = %q, want %q", tc.parts, got, tc.want)
+		}
+	}
+}
+
+func TestStripPathPrefix(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/invoke/demo.Service/Get?debug=1", nil)
 
-	next := TrimPathPrefix(request, "/invoke")
+	next := StripPathPrefix(request, "/invoke")
 
 	if next.URL.Path != "/demo.Service/Get" {
 		t.Fatalf("unexpected path: %s", next.URL.Path)

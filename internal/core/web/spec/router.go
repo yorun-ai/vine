@@ -1,21 +1,16 @@
 package spec
 
 import (
-	"fmt"
 	"net/http"
 	"reflect"
 	"runtime"
 	"strings"
+
+	"go.yorun.ai/vine/internal/util/httputil"
+	"go.yorun.ai/vine/util/vpre"
 )
 
-type Router struct {
-	handlerType reflect.Type
-	basePath    string
-	routes      []*Route
-	subRouters  map[string]*Router
-}
-
-type RouteInfo interface {
+type Route interface {
 	Method() string
 	Path() string
 	HandlerType() reflect.Type
@@ -23,57 +18,65 @@ type RouteInfo interface {
 	HandlerName() string
 }
 
-type Route struct {
+type _Route struct {
 	sourceMethod  string
 	sourcePath    string
 	handlerType   reflect.Type
 	handlerMethod reflect.Method
 }
 
-func (r *Route) Method() string {
+func (r *_Route) Method() string {
 	return r.sourceMethod
 }
 
-func (r *Route) Path() string {
+func (r *_Route) Path() string {
 	return r.sourcePath
 }
 
-func (r *Route) HandlerType() reflect.Type {
+func (r *_Route) HandlerType() reflect.Type {
 	return r.handlerType
 }
 
-func (r *Route) HandlerMethod() reflect.Method {
+func (r *_Route) HandlerMethod() reflect.Method {
 	return r.handlerMethod
 }
 
-func (r *Route) HandlerName() string {
+func (r *_Route) HandlerName() string {
 	return runtime.FuncForPC(r.handlerMethod.Func.Pointer()).Name()
 }
 
-func (r *Route) WithBasePath(basePath string) *Route {
-	return &Route{
-		sourceMethod:  r.sourceMethod,
-		sourcePath:    fmt.Sprintf("%s%s", basePath, r.sourcePath),
-		handlerType:   r.handlerType,
-		handlerMethod: r.handlerMethod,
-	}
+type Router struct {
+	handlerType reflect.Type
+	basePath    string
+	routes      []*_Route
+	subRouters  map[string]*Router
 }
 
 func NewRouter(handlerType reflect.Type, basePath string) *Router {
+	if basePath == "" {
+		basePath = "/"
+	}
 	return &Router{
 		handlerType: handlerType,
 		basePath:    basePath,
-		routes:      []*Route{},
+		routes:      []*_Route{},
 		subRouters:  map[string]*Router{},
 	}
 }
 
+// BasePath returns the router's accumulated mount path within the Web.
+// The root router returns an empty string. Internal dispatch prefixes and
+// entry prefixes stripped before forwarding are not included.
 func (r *Router) BasePath() string {
 	return r.basePath
 }
 
-func (r *Router) Routes() []*Route {
-	return append([]*Route(nil), r.routes...)
+func (r *Router) Routes() []Route {
+	routes := make([]Route, 0, len(r.routes))
+	for _, route := range r.routes {
+		routes = append(routes, route)
+	}
+	return routes
 }
 
 func (r *Router) SubRouters() []*Router {
@@ -85,11 +88,12 @@ func (r *Router) SubRouters() []*Router {
 }
 
 func (r *Router) SubRouter(path string) *Router {
+	checkRoutePath(path)
 	if _, exists := r.subRouters[path]; !exists {
 		r.subRouters[path] = &Router{
 			handlerType: r.handlerType,
-			basePath:    fmt.Sprintf("%s%s", r.basePath, path),
-			routes:      []*Route{},
+			basePath:    httputil.JoinPath(r.basePath, path),
+			routes:      []*_Route{},
 			subRouters:  map[string]*Router{},
 		}
 	}
@@ -97,18 +101,23 @@ func (r *Router) SubRouter(path string) *Router {
 }
 
 func (r *Router) Handle(method string, path string, handleFunc HandleFunc) {
+	checkRoutePath(path)
 	targetMethodName := r.methodName(handleFunc)
 	targetMethod, ok := r.handlerType.MethodByName(targetMethodName)
-	if !ok {
-		panic(fmt.Sprintf("method=%s not found in type=%s", targetMethodName, r.handlerType.Name()))
-	}
+	vpre.Check(ok, "method=%s not found in type=%s", targetMethodName, r.handlerType.Name())
 
-	r.routes = append(r.routes, &Route{
+	r.routes = append(r.routes, &_Route{
 		sourceMethod:  method,
 		sourcePath:    path,
 		handlerType:   r.handlerType,
 		handlerMethod: targetMethod,
 	})
+}
+
+func checkRoutePath(path string) {
+	for segment := range strings.SplitSeq(path, "/") {
+		vpre.Check(segment != "." && segment != "..", `web route path must not contain "." or ".." path segments`)
+	}
 }
 
 func (r *Router) methodName(handleFunc HandleFunc) string {
@@ -156,4 +165,24 @@ func (r *Router) OPTIONS(path string, handleFunc HandleFunc) {
 
 func (r *Router) HEAD(path string, handleFunc HandleFunc) {
 	r.Handle(http.MethodHead, path, handleFunc)
+}
+
+// CollectRoutes assembles server routes with the Web dispatch prefix and each
+// router's accumulated base path. It is not exposed by the public web facade.
+func CollectRoutes(r *Router, prefix string) []Route {
+	routes := make([]Route, 0, len(r.routes))
+	for _, route := range r.routes {
+		copied := *route
+		copied.sourcePath = httputil.JoinPath(prefix, r.basePath, route.sourcePath)
+		// A trailing slash distinguishes route patterns, even though path joining
+		// removes it. Preserve the slash explicitly requested by the handler.
+		if strings.HasSuffix(route.sourcePath, "/") && !strings.HasSuffix(copied.sourcePath, "/") {
+			copied.sourcePath += "/"
+		}
+		routes = append(routes, &copied)
+	}
+	for _, subRouter := range r.subRouters {
+		routes = append(routes, CollectRoutes(subRouter, prefix)...)
+	}
+	return routes
 }
