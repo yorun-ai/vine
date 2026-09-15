@@ -257,6 +257,8 @@ func TestFlagNormalizeInprocClearsListenAndMQ(t *testing.T) {
 	assert.Empty(t, flags.WatchListen)
 	assert.Empty(t, flags.MQNatsEndpoint)
 	assert.Equal(t, MQModeEmbedded, flags.MQMode)
+	assert.Equal(t, "embedded", flags.LockMode)
+	assert.Empty(t, flags.LockRedisEndpoint)
 }
 
 func TestFlagInferStoreDefaultsToMemory(t *testing.T) {
@@ -332,4 +334,46 @@ func TestSeedSupplementInputsRequireTemplateAndAreExclusive(t *testing.T) {
 	} {
 		require.NotPanics(t, func() { valid.Normalize(true) })
 	}
+}
+
+func TestFlagNormalizeLockModes(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		mode     string
+		endpoint string
+		want     string
+		failure  bool
+	}{
+		{name: "default", want: "embedded"},
+		{name: "embedded", mode: "embedded", want: "embedded"},
+		{name: "redis", mode: "redis", endpoint: "redis://user:pass@localhost:6379/2", want: "redis"},
+		{name: "redis TLS", mode: "redis", endpoint: "rediss://localhost:6379", want: "redis"},
+		{name: "disable", mode: "disable", want: "disable"},
+		{name: "missing endpoint", mode: "redis", failure: true},
+		{name: "default rejects endpoint", endpoint: "redis://localhost", failure: true},
+		{name: "embedded rejects endpoint", mode: "embedded", endpoint: "redis://localhost", failure: true},
+		{name: "disable rejects endpoint", mode: "disable", endpoint: "redis://localhost", failure: true},
+		{name: "unsupported mode", mode: "disabled", failure: true},
+		{name: "wrong scheme", mode: "redis", endpoint: "http://localhost:6379", failure: true},
+		{name: "missing host", mode: "redis", endpoint: "redis://", failure: true},
+		{name: "invalid DB", mode: "redis", endpoint: "redis://localhost/not-a-db", failure: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := &Flag{SeedHubData: "{}", LockMode: tc.mode, LockRedisEndpoint: tc.endpoint}
+			if tc.failure {
+				require.Panics(t, func() { f.Normalize(false) })
+				return
+			}
+			f.Normalize(false)
+			assert.Equal(t, tc.want, f.LockMode)
+			assert.Equal(t, tc.endpoint, f.LockRedisEndpoint)
+		})
+	}
+}
+
+func TestFlagNormalizeInprocUsesEmbeddedLock(t *testing.T) {
+	f := &Flag{SeedHubData: "{}", LockMode: "redis", LockRedisEndpoint: "redis://localhost:6379"}
+	f.Normalize(true)
+	assert.Equal(t, "embedded", f.LockMode)
+	assert.Empty(t, f.LockRedisEndpoint)
 }

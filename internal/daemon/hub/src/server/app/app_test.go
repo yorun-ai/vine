@@ -15,6 +15,7 @@ import (
 	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/lockserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
@@ -246,6 +247,7 @@ func TestHubAppComponentTypesReturnsSQLiteDatabaseWhenSourceIsSQLite(t *testing.
 		internalapp.T[*configaccess.Access](),
 		internalapp.T[*repodb.HubDatabase](),
 		internalapp.T[*natsserver.NATSServer](),
+		internalapp.T[*lockserver.Server](),
 		internalapp.T[*watchserver.Server](),
 	}, collectComponentTypes(spec))
 }
@@ -259,6 +261,7 @@ func TestHubAppComponentTypesReturnsPGDatabaseWhenSourceIsPG(t *testing.T) {
 		internalapp.T[*configaccess.Access](),
 		internalapp.T[*repodb.HubDatabase](),
 		internalapp.T[*natsserver.NATSServer](),
+		internalapp.T[*lockserver.Server](),
 		internalapp.T[*watchserver.Server](),
 	}, collectComponentTypes(spec))
 }

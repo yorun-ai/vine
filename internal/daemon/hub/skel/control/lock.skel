@@ -1,0 +1,33 @@
+domain vine.hub.control
+
+@desc("Distributed lease lock service")
+pub service LockService {
+    @desc("Acquire a lock using a unique attempt token")
+    method acquire {
+        input {
+            key: string
+            token: string
+            ttlMillis: int
+        }
+        output bool
+    }
+
+    @desc("Renew a lock owned by the token")
+    method renew {
+        input {
+            key: string
+            token: string
+            ttlMillis: int
+        }
+        output bool
+    }
+
+    @desc("Release a lock owned by the token")
+    method release {
+        input {
+            key: string
+            token: string
+        }
+        output bool
+    }
+}

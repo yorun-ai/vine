@@ -118,10 +118,10 @@ type Info struct {
 	MqNatsPort int `json:"mqNatsPort"`
 	// MqNatsEndpoint External NATS service endpoint
 	MqNatsEndpoint string `json:"mqNatsEndpoint"`
-	// RedisEmbedded Whether Redis is embedded in Hub
-	RedisEmbedded bool `json:"redisEmbedded"`
-	// RedisPort2 Embedded Redis service port. TODO: rename to redisPort after old redisPort retired.
-	RedisPort2 int `json:"redisPort2"`
+	// LockMode Lock mode: embedded, redis or disable
+	LockMode string `json:"lockMode"`
+	// LockRedisEndpoint External Redis endpoint for locks
+	LockRedisEndpoint string `json:"lockRedisEndpoint"`
 	// RedisPort Redis service port
 	//
 	// Deprecated: Use watchPort instead.

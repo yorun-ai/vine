@@ -57,6 +57,7 @@ func (l *Listener) BeforeAppStart() error {
 	l.rpcHTTPHandler, l.rpcHandler = l.InternalRuntime.AdditionalServicer(
 		app.T[*impl.InfoServiceServerImpl](),
 		app.T[*impl.RegistryServiceServerImpl](),
+		app.T[*impl.LockServiceServerImpl](),
 	)
 
 	if l.InprocFlag.Enabled {

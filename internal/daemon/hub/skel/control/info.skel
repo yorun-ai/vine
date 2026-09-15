@@ -20,11 +20,11 @@ pub data Info {
     @desc("External NATS service endpoint")
     mqNatsEndpoint: string
 
-    @desc("Whether Redis is embedded in Hub")
-    redisEmbedded: bool
+    @desc("Lock mode: embedded, redis or disable")
+    lockMode: string
 
-    @desc("Embedded Redis service port. TODO: rename to redisPort after old redisPort retired.")
-    redisPort2: int
+    @desc("External Redis endpoint for locks")
+    lockRedisEndpoint: string
 
     @desc("Redis service port")
     @deprecated("Use watchPort instead")

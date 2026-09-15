@@ -28,6 +28,7 @@ case "${scope}" in
       ./internal/daemon/hub/api/watch
       ./internal/daemon/hub/src/server/app
       ./internal/daemon/hub/src/server/comp/natsserver
+      ./internal/daemon/hub/src/server/comp/lockserver
       ./internal/daemon/hub/src/server/comp/watchserver
       ./internal/daemon/hub/src/server/comp/watchserver/embedded
       ./internal/daemon/hub/src/server/core
