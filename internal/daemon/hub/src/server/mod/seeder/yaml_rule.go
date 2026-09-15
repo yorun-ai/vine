@@ -17,14 +17,14 @@ var portalRuleAliases = map[string]string{
 	"redirectionPattern": "routeRedirectionPattern",
 }
 
-// DecodePortalRule accepts legacy YAML fields only at the import boundary.
+// decodePortalRule accepts legacy YAML fields only at the import boundary.
 // A rule must use either legacy or new fields, never a mixture of both.
 // TODO: Remove legacy field aliases, compatibility warnings, and mixed-field
 // checks after explicitly retiring the old YAML format with migration guidance;
 // then accept only match* / route* fields. Raising the minimum Vine version alone
 // does not retire this format: Vine v0.15.7 still accepts these aliases.
-func DecodePortalRule(node *yaml.Node, target any) error {
-	if err := CheckSeedYAMLSyntax(node); err != nil {
+func decodePortalRule(node *yaml.Node, target any) error {
+	if err := checkSeedYAMLSyntax(node); err != nil {
 		return err
 	}
 	if node.Kind != yaml.MappingNode {

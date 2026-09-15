@@ -29,15 +29,15 @@ type _PortalLease struct {
 
 // Repo
 
-// WatchPortalInstanceRepo stores Portal instance liveness in the Hub watch
+// PortalInstanceRepo stores Portal instance liveness in the Hub watch
 // store. Like application registrations, Portal instances live only in Hub
 // memory and are re-registered by Portal after a Hub restart.
-type WatchPortalInstanceRepo struct {
+type PortalInstanceRepo struct {
 	WatchServer *watchserver.Server             `inject:""`
 	InprocFlag  *internalapp.InternalInprocFlag `inject:""`
 }
 
-func (r *WatchPortalInstanceRepo) SavePortalInstance(instance *core.PortalInstance) {
+func (r *PortalInstanceRepo) Save(instance *core.PortalInstance) {
 	key := watched.FormatPortalInstanceKey(instance.InstanceId)
 	value := _PortalInstance{
 		InstanceId: instance.InstanceId,
@@ -53,7 +53,7 @@ func (r *WatchPortalInstanceRepo) SavePortalInstance(instance *core.PortalInstan
 	r.savePortalLease(instance.InstanceId)
 }
 
-func (r *WatchPortalInstanceRepo) ListPortalInstances() []*core.PortalInstance {
+func (r *PortalInstanceRepo) List() []*core.PortalInstance {
 	keys := r.WatchServer.Scan(watched.FormatPortalInstancePattern())
 	instances := make([]*core.PortalInstance, 0, len(keys))
 	for _, key := range keys {
@@ -66,7 +66,7 @@ func (r *WatchPortalInstanceRepo) ListPortalInstances() []*core.PortalInstance {
 	return instances
 }
 
-func (r *WatchPortalInstanceRepo) GetPortalInstance(instanceId string) (*core.PortalInstance, bool) {
+func (r *PortalInstanceRepo) GetById(instanceId string) (*core.PortalInstance, bool) {
 	key := watched.FormatPortalInstanceKey(instanceId)
 	value, ok := r.WatchServer.Get(key)
 	if !ok {
@@ -75,7 +75,7 @@ func (r *WatchPortalInstanceRepo) GetPortalInstance(instanceId string) (*core.Po
 	return toCorePortalInstance(vcode.MustUnmarshalJsonS[*_PortalInstance](value)), true
 }
 
-func (r *WatchPortalInstanceRepo) KeepPortalInstance(instanceId string) bool {
+func (r *PortalInstanceRepo) Keep(instanceId string) bool {
 	if r.InprocFlag.Enabled {
 		return true
 	}
@@ -92,13 +92,13 @@ func (r *WatchPortalInstanceRepo) KeepPortalInstance(instanceId string) bool {
 	return true
 }
 
-func (r *WatchPortalInstanceRepo) RemovePortalInstance(instanceId string) {
+func (r *PortalInstanceRepo) Remove(instanceId string) {
 	key := watched.FormatPortalInstanceKey(instanceId)
 	r.removePortalLease(instanceId)
 	r.WatchServer.DeleteAndNotify(key)
 }
 
-func (r *WatchPortalInstanceRepo) PopExpiredPortalLeases() []string {
+func (r *PortalInstanceRepo) PopExpiredLeases() []string {
 	if r.InprocFlag.Enabled {
 		return nil
 	}
@@ -116,7 +116,7 @@ func (r *WatchPortalInstanceRepo) PopExpiredPortalLeases() []string {
 	return instanceIds
 }
 
-func (r *WatchPortalInstanceRepo) getPortalInstance(instanceId string) (*_PortalInstance, bool) {
+func (r *PortalInstanceRepo) getPortalInstance(instanceId string) (*_PortalInstance, bool) {
 	key := watched.FormatPortalInstanceKey(instanceId)
 	value, ok := r.WatchServer.Get(key)
 	if !ok {
@@ -125,12 +125,12 @@ func (r *WatchPortalInstanceRepo) getPortalInstance(instanceId string) (*_Portal
 	return vcode.MustUnmarshalJsonS[*_PortalInstance](value), true
 }
 
-func (r *WatchPortalInstanceRepo) savePortalLease(instanceId string) {
+func (r *PortalInstanceRepo) savePortalLease(instanceId string) {
 	member := vcode.MustMarshalJsonS(_PortalLease{InstanceId: instanceId})
 	r.WatchServer.KeepLease(hubPortalRegistryLeaseKey, member, hubPortalRegistryLeaseTTL)
 }
 
-func (r *WatchPortalInstanceRepo) removePortalLease(instanceId string) {
+func (r *PortalInstanceRepo) removePortalLease(instanceId string) {
 	member := vcode.MustMarshalJsonS(_PortalLease{InstanceId: instanceId})
 	r.WatchServer.RemoveLease(hubPortalRegistryLeaseKey, member)
 }

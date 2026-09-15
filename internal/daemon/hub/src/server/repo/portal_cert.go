@@ -8,13 +8,13 @@ import (
 	"go.yorun.ai/vine/util/vcode"
 )
 
-type DBPortalCertRepo struct {
+type PortalCertRepo struct {
 	Dao    *model.PortalCertDao `inject:""`
 	Syncer *syncer.Syncer       `inject:""`
 	Access *configaccess.Access `inject:""`
 }
 
-func (s *DBPortalCertRepo) ListCerts() []*core.PortalCert {
+func (s *PortalCertRepo) List() []*core.PortalCert {
 	rows := s.Dao.ListOrdered()
 	certs := make([]*core.PortalCert, 0, len(rows))
 	for _, row := range rows {
@@ -23,30 +23,30 @@ func (s *DBPortalCertRepo) ListCerts() []*core.PortalCert {
 	return certs
 }
 
-func (s *DBPortalCertRepo) GetCertById(id int) (*core.PortalCert, bool) {
+func (s *PortalCertRepo) GetById(id int) (*core.PortalCert, bool) {
 	if row, ok := s.Dao.ById(id); ok {
 		return toCorePortalCert(row), true
 	}
 	return nil, false
 }
 
-func (s *DBPortalCertRepo) GetCertByName(name string) (*core.PortalCert, bool) {
+func (s *PortalCertRepo) GetByName(name string) (*core.PortalCert, bool) {
 	if row, ok := s.Dao.ByName(name); ok {
 		return toCorePortalCert(row), true
 	}
 	return nil, false
 }
 
-func (s *DBPortalCertRepo) SaveCert(cert *core.PortalCert) {
+func (s *PortalCertRepo) Save(cert *core.PortalCert) {
 	s.Access.CheckWrite()
-	row := toDBPortalCert(cert)
+	row := toModelPortalCert(cert)
 	s.Dao.Save(row)
 	cert.Id = row.Id
 
 	s.Syncer.SyncPortalCert(cert)
 }
 
-func (s *DBPortalCertRepo) RemoveCert(id int) bool {
+func (s *PortalCertRepo) Remove(id int) bool {
 	s.Access.CheckWrite()
 	cert, ok := s.Dao.DeleteById(id)
 	if !ok {
@@ -70,7 +70,7 @@ func toCorePortalCert(row *model.PortalCert) *core.PortalCert {
 	}
 }
 
-func toDBPortalCert(cert *core.PortalCert) *model.PortalCert {
+func toModelPortalCert(cert *core.PortalCert) *model.PortalCert {
 	return &model.PortalCert{
 		FieldSources:     encodeFieldSources(cert.FieldSources),
 		Id:               cert.Id,

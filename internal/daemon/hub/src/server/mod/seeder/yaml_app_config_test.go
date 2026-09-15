@@ -42,7 +42,7 @@ func TestAppConfigStructuredYAML(t *testing.T) {
 	require.Equal(t, "2026-09-13T10:15:30.123456789+08:00", value["timestamp"])
 	require.Equal(t, []any{"one", "two"}, value["items"])
 	require.Equal(t, "first\nsecond\n", value["message"])
-	require.Equal(t, item.Value, item.ToCoreAppConfig().Value)
+	require.Equal(t, item.Value, item.toCoreAppConfig().Value)
 	var again _SettingsYAMLPayload
 	require.NoError(t, yaml.Unmarshal([]byte(input), &again))
 	require.Equal(t, item.Value, again.AppConfigs[0].Value)

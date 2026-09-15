@@ -53,10 +53,10 @@ func (r *_SweeperSchemaRepo) ListDomainSchemaViews() []core.DomainSchemaView {
 
 type _SweeperPortalSiteRepo struct {
 	core.PortalSiteRepo
-	entries []core.PortalSite
+	entries []*core.PortalSite
 }
 
-func (r *_SweeperPortalSiteRepo) ListEntries() []core.PortalSite {
+func (r *_SweeperPortalSiteRepo) List() []*core.PortalSite {
 	return r.entries
 }
 
@@ -72,7 +72,7 @@ func TestSweeperSkipsLiveLeaseStatus(t *testing.T) {
 	}
 	schemaRepo := &_SweeperSchemaRepo{}
 	target := &Sweeper{
-		PortalInstances: &_SweeperPortalInstanceRepo{},
+		PortalInstanceCore: &core.PortalInstanceCore{PortalInstanceRepo: &_SweeperPortalInstanceRepo{}},
 		RegistryCore: &core.RegistryCore{
 			RegistryRepo: registryRepo,
 			SchemaRepo:   schemaRepo,
@@ -122,17 +122,18 @@ func TestSweeperUnregistersExpiredLeaseStatus(t *testing.T) {
 			Main:       true,
 		}},
 	}}}
-	portalSiteRepo := &_SweeperPortalSiteRepo{entries: []core.PortalSite{{
+	portalSiteRepo := &_SweeperPortalSiteRepo{entries: []*core.PortalSite{{
 		Id:            1,
 		Name:          "demo-rpc",
 		Type:          core.PortalSiteTypeRPCGW,
 		ActorSkelName: "demo.Actor",
+		RpcgwServices: []string{"demo.Service"},
 	}}}
 	target := &Sweeper{
-		PortalInstances: &_SweeperPortalInstanceRepo{},
-		SchemaRepo:      schemaRepo,
-		PortalSiteRepo:  portalSiteRepo,
-		Syncer:          syncerModule,
+		PortalInstanceCore: &core.PortalInstanceCore{PortalInstanceRepo: &_SweeperPortalInstanceRepo{}},
+		SchemaRepo:         schemaRepo,
+		PortalSiteCore:     &core.PortalSiteCore{PortalSiteRepo: portalSiteRepo, SchemaRepo: schemaRepo},
+		Syncer:             syncerModule,
 		RegistryCore: &core.RegistryCore{
 			RegistryRepo: registryRepo,
 			SchemaRepo:   schemaRepo,
@@ -171,20 +172,20 @@ type _SweeperPortalInstanceRepo struct {
 	removed []string
 }
 
-func (r *_SweeperPortalInstanceRepo) PopExpiredPortalLeases() []string {
+func (r *_SweeperPortalInstanceRepo) PopExpiredLeases() []string {
 	leases := r.leases
 	r.leases = nil
 	return leases
 }
 
-func (r *_SweeperPortalInstanceRepo) RemovePortalInstance(instanceId string) {
+func (r *_SweeperPortalInstanceRepo) Remove(instanceId string) {
 	r.removed = append(r.removed, instanceId)
 }
 
 func TestSweeperRemovesExpiredPortalInstances(t *testing.T) {
 	portalRepo := &_SweeperPortalInstanceRepo{leases: []string{"instance-1", "instance-2"}}
 	target := &Sweeper{
-		PortalInstances: portalRepo,
+		PortalInstanceCore: &core.PortalInstanceCore{PortalInstanceRepo: portalRepo},
 		RegistryCore: &core.RegistryCore{
 			RegistryRepo: &_SweeperRegistryRepo{},
 			SchemaRepo:   &_SweeperSchemaRepo{},

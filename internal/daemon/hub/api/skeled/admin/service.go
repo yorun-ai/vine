@@ -33,7 +33,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "AppConfigApiService",
 		SkelName:          "vine.hub.admin.AppConfigApiService",
-		Hash:              "30963159",
+		Hash:              "0da7b047",
 		ServerType:        reflect.TypeFor[AppConfigApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultAppConfigApiServiceServer](),
 
@@ -53,14 +53,14 @@ var (
 		SkelName:       "list",
 		ArgumentsType:  nil,
 		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]AppConfigItem](),
+		ResultType:     reflect.TypeFor[[]AppConfigListItem](),
 		CloneResult: func(value any) any {
-			source := value.([]AppConfigItem)
+			source := value.([]AppConfigListItem)
 			cloned := source
 			if source == nil {
 				cloned = nil
 			} else {
-				cloned = make([]AppConfigItem, len(source))
+				cloned = make([]AppConfigListItem, len(source))
 				for index0 := range source {
 					cloned[index0] = source[index0].Clone()
 				}
@@ -182,7 +182,7 @@ var (
 // AppConfigApiService / Arguments
 
 type _AppConfigApiServiceGetArguments struct {
-	Id int `json:"id" skel:"index(0)"`
+	Key string `json:"key" skel:"index(0)"`
 }
 
 type _AppConfigApiServiceUpdateArguments struct {
@@ -202,12 +202,12 @@ type _AppConfigApiServiceRemoveArguments struct {
 
 type AppConfigApiServiceServer interface {
 	// List List configuration items.
-	//   @returns []AppConfigItem - Configuration item list
-	List() []AppConfigItem
+	//   @returns []AppConfigListItem - Configuration item list
+	List() []AppConfigListItem
 	// Get Read configuration.
-	//   @param id - Configuration ID
+	//   @param key - Configuration key
 	//   @returns AppConfigItem - Configuration items
-	Get(id int) AppConfigItem
+	Get(key string) AppConfigItem
 	// Update Modify configuration.
 	//   @param id - Configuration ID
 	//   @param update - Configuration update parameters
@@ -229,12 +229,12 @@ type AppConfigApiServiceServer interface {
 
 type DefaultAppConfigApiServiceServer struct{}
 
-func (*DefaultAppConfigApiServiceServer) List() []AppConfigItem {
+func (*DefaultAppConfigApiServiceServer) List() []AppConfigListItem {
 	ex.PanicNew(ex.InvalidRequest, "method list is not implemented")
-	return []AppConfigItem{}
+	return []AppConfigListItem{}
 }
 
-func (*DefaultAppConfigApiServiceServer) Get(int) AppConfigItem {
+func (*DefaultAppConfigApiServiceServer) Get(string) AppConfigItem {
 	ex.PanicNew(ex.InvalidRequest, "method get is not implemented")
 	return AppConfigItem{}
 }
@@ -259,8 +259,8 @@ func (*DefaultAppConfigApiServiceServer) mustBeAppConfigApiServiceServer() {}
 // AppConfigApiService / ERServer
 
 type AppConfigApiServiceServerER interface {
-	List() ([]AppConfigItem, ex.Error)
-	Get(id int) (AppConfigItem, ex.Error)
+	List() ([]AppConfigListItem, ex.Error)
+	Get(key string) (AppConfigItem, ex.Error)
 	Update(id int, update AppConfigUpdate) (AppConfigItem, ex.Error)
 	Create(creation AppConfigCreation) (AppConfigItem, ex.Error)
 	Remove(id int) (bool, ex.Error)
@@ -288,15 +288,15 @@ func (service *_WrapperAppConfigApiServiceServerER) server() AppConfigApiService
 	return service.serverImpl
 }
 
-func (service *_WrapperAppConfigApiServiceServerER) List() (ret []AppConfigItem, err ex.Error) {
+func (service *_WrapperAppConfigApiServiceServerER) List() (ret []AppConfigListItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().List()
 	return
 }
 
-func (service *_WrapperAppConfigApiServiceServerER) Get(id int) (ret AppConfigItem, err ex.Error) {
+func (service *_WrapperAppConfigApiServiceServerER) Get(key string) (ret AppConfigItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().Get(id)
+	ret = service.server().Get(key)
 	return
 }
 
@@ -648,7 +648,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "MaintenanceApiService",
 		SkelName:          "vine.hub.admin.MaintenanceApiService",
-		Hash:              "27ea02dd",
+		Hash:              "a4ba47c3",
 		ServerType:        reflect.TypeFor[MaintenanceApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultMaintenanceApiServiceServer](),
 
@@ -656,42 +656,9 @@ var (
 		WrapperERServerCtor: _NewWrapperMaintenanceApiServiceServerER,
 		DefaultERServerType: reflect.TypeFor[*DefaultMaintenanceApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
-			_MaintenanceApiServiceFieldSourcesSpec,
 			_MaintenanceApiServiceConfigReadOnlySpec,
 			_MaintenanceApiServicePreviewSeedYamlSpec,
 			_MaintenanceApiServiceApplySeedYamlSpec,
-		},
-	}
-	_MaintenanceApiServiceFieldSourcesSpec = &rpcspec.MethodSpec{
-		Name:          "FieldSources",
-		SkelName:      "fieldSources",
-		ArgumentsType: reflect.TypeFor[_MaintenanceApiServiceFieldSourcesArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_MaintenanceApiServiceFieldSourcesArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[[]FieldSource](),
-		CloneResult: func(value any) any {
-			source := value.([]FieldSource)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]FieldSource, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
-		ArgumentsSensitive:          false,
-		ResultSensitive:             false,
-		ArgumentsContainsBinaryType: false,
-		ResultContainsBinaryType:    false,
-		MethodFuncs: []any{
-			MaintenanceApiServiceServer.FieldSources,
-			MaintenanceApiServiceServerER.FieldSources,
 		},
 	}
 	_MaintenanceApiServiceConfigReadOnlySpec = &rpcspec.MethodSpec{
@@ -776,11 +743,6 @@ var (
 
 // MaintenanceApiService / Arguments
 
-type _MaintenanceApiServiceFieldSourcesArguments struct {
-	Kind string `json:"kind" skel:"index(0)"`
-	Name string `json:"name" skel:"index(1)"`
-}
-
 type _MaintenanceApiServicePreviewSeedYamlArguments struct {
 	Content string `json:"content" skel:"index(0)"`
 }
@@ -793,8 +755,6 @@ type _MaintenanceApiServiceApplySeedYamlArguments struct {
 // MaintenanceApiService / Server
 
 type MaintenanceApiServiceServer interface {
-	// FieldSources Query field sources by entity kind and stable name.
-	FieldSources(kind string, name string) []FieldSource
 	// ConfigReadOnly Whether Hub configuration is read-only.
 	ConfigReadOnly() bool
 	// PreviewSeedYaml Preview Seed YAML differences.
@@ -813,11 +773,6 @@ type MaintenanceApiServiceServer interface {
 // MaintenanceApiService / Server / DefaultServer
 
 type DefaultMaintenanceApiServiceServer struct{}
-
-func (*DefaultMaintenanceApiServiceServer) FieldSources(string, string) []FieldSource {
-	ex.PanicNew(ex.InvalidRequest, "method fieldSources is not implemented")
-	return []FieldSource{}
-}
 
 func (*DefaultMaintenanceApiServiceServer) ConfigReadOnly() bool {
 	ex.PanicNew(ex.InvalidRequest, "method configReadOnly is not implemented")
@@ -839,7 +794,6 @@ func (*DefaultMaintenanceApiServiceServer) mustBeMaintenanceApiServiceServer() {
 // MaintenanceApiService / ERServer
 
 type MaintenanceApiServiceServerER interface {
-	FieldSources(kind string, name string) ([]FieldSource, ex.Error)
 	ConfigReadOnly() (bool, ex.Error)
 	PreviewSeedYaml(content string) (SeedPreview, ex.Error)
 	ApplySeedYaml(content string, selections []SeedItemSelection) (SeedPreview, ex.Error)
@@ -865,12 +819,6 @@ func (service *_WrapperMaintenanceApiServiceServerER) server() MaintenanceApiSer
 		return &service.DefaultMaintenanceApiServiceServer
 	}
 	return service.serverImpl
-}
-
-func (service *_WrapperMaintenanceApiServiceServerER) FieldSources(kind string, name string) (ret []FieldSource, err ex.Error) {
-	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().FieldSources(kind, name)
-	return
 }
 
 func (service *_WrapperMaintenanceApiServiceServerER) ConfigReadOnly() (ret bool, err ex.Error) {
@@ -908,7 +856,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalCertApiService",
 		SkelName:          "vine.hub.admin.PortalCertApiService",
-		Hash:              "5c8fbb24",
+		Hash:              "47aa1ab8",
 		ServerType:        reflect.TypeFor[PortalCertApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalCertApiServiceServer](),
 
@@ -928,14 +876,14 @@ var (
 		SkelName:       "list",
 		ArgumentsType:  nil,
 		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]PortalCert](),
+		ResultType:     reflect.TypeFor[[]PortalCertListItem](),
 		CloneResult: func(value any) any {
-			source := value.([]PortalCert)
+			source := value.([]PortalCertListItem)
 			cloned := source
 			if source == nil {
 				cloned = nil
 			} else {
-				cloned = make([]PortalCert, len(source))
+				cloned = make([]PortalCertListItem, len(source))
 				for index0 := range source {
 					cloned[index0] = source[index0].Clone()
 				}
@@ -1073,8 +1021,8 @@ type _PortalCertApiServiceRemoveArguments struct {
 
 type PortalCertApiServiceServer interface {
 	// List List Portal site certificates.
-	//   @returns []PortalCert - Portal site certificate list
-	List() []PortalCert
+	//   @returns []PortalCertListItem - Portal site certificate list
+	List() []PortalCertListItem
 	// Get Read the Portal site certificate.
 	//   @param id - Certificate ID
 	//   @returns PortalCert - Portal site certificate
@@ -1099,9 +1047,9 @@ type PortalCertApiServiceServer interface {
 
 type DefaultPortalCertApiServiceServer struct{}
 
-func (*DefaultPortalCertApiServiceServer) List() []PortalCert {
+func (*DefaultPortalCertApiServiceServer) List() []PortalCertListItem {
 	ex.PanicNew(ex.InvalidRequest, "method list is not implemented")
-	return []PortalCert{}
+	return []PortalCertListItem{}
 }
 
 func (*DefaultPortalCertApiServiceServer) Get(int) PortalCert {
@@ -1128,7 +1076,7 @@ func (*DefaultPortalCertApiServiceServer) mustBePortalCertApiServiceServer() {}
 // PortalCertApiService / ERServer
 
 type PortalCertApiServiceServerER interface {
-	List() ([]PortalCert, ex.Error)
+	List() ([]PortalCertListItem, ex.Error)
 	Get(id int) (PortalCert, ex.Error)
 	Create(creation PortalCertCreation) (PortalCert, ex.Error)
 	Update(id int, update PortalCertUpdate) (PortalCert, ex.Error)
@@ -1157,7 +1105,7 @@ func (service *_WrapperPortalCertApiServiceServerER) server() PortalCertApiServi
 	return service.serverImpl
 }
 
-func (service *_WrapperPortalCertApiServiceServerER) List() (ret []PortalCert, err ex.Error) {
+func (service *_WrapperPortalCertApiServiceServerER) List() (ret []PortalCertListItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().List()
 	return
@@ -1204,7 +1152,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalEntryApiService",
 		SkelName:          "vine.hub.admin.PortalEntryApiService",
-		Hash:              "fd8872a7",
+		Hash:              "a2235e04",
 		ServerType:        reflect.TypeFor[PortalEntryApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalEntryApiServiceServer](),
 
@@ -1372,7 +1320,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalRuleApiService",
 		SkelName:          "vine.hub.admin.PortalRuleApiService",
-		Hash:              "ce4bc186",
+		Hash:              "112bf5c8",
 		ServerType:        reflect.TypeFor[PortalRuleApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalRuleApiServiceServer](),
 
@@ -1394,14 +1342,14 @@ var (
 		SkelName:       "list",
 		ArgumentsType:  nil,
 		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]PortalRule](),
+		ResultType:     reflect.TypeFor[[]PortalRuleListItem](),
 		CloneResult: func(value any) any {
-			source := value.([]PortalRule)
+			source := value.([]PortalRuleListItem)
 			cloned := source
 			if source == nil {
 				cloned = nil
 			} else {
-				cloned = make([]PortalRule, len(source))
+				cloned = make([]PortalRuleListItem, len(source))
 				for index0 := range source {
 					cloned[index0] = source[index0].Clone()
 				}
@@ -1599,8 +1547,8 @@ type _PortalRuleApiServiceUpdateDashboardAccessArguments struct {
 
 type PortalRuleApiServiceServer interface {
 	// List List Portal entry rules.
-	//   @returns []PortalRule - Portal entry rule list
-	List() []PortalRule
+	//   @returns []PortalRuleListItem - Portal entry rule list
+	List() []PortalRuleListItem
 	// Get Read Portal entry rules.
 	//   @param id - Rule ID
 	//   @returns PortalRule - Portal entry rules
@@ -1635,9 +1583,9 @@ type PortalRuleApiServiceServer interface {
 
 type DefaultPortalRuleApiServiceServer struct{}
 
-func (*DefaultPortalRuleApiServiceServer) List() []PortalRule {
+func (*DefaultPortalRuleApiServiceServer) List() []PortalRuleListItem {
 	ex.PanicNew(ex.InvalidRequest, "method list is not implemented")
-	return []PortalRule{}
+	return []PortalRuleListItem{}
 }
 
 func (*DefaultPortalRuleApiServiceServer) Get(int) PortalRule {
@@ -1674,7 +1622,7 @@ func (*DefaultPortalRuleApiServiceServer) mustBePortalRuleApiServiceServer() {}
 // PortalRuleApiService / ERServer
 
 type PortalRuleApiServiceServerER interface {
-	List() ([]PortalRule, ex.Error)
+	List() ([]PortalRuleListItem, ex.Error)
 	Get(id int) (PortalRule, ex.Error)
 	Create(creation PortalRuleCreation) (PortalRule, ex.Error)
 	Update(id int, update PortalRuleUpdate) (PortalRule, ex.Error)
@@ -1705,7 +1653,7 @@ func (service *_WrapperPortalRuleApiServiceServerER) server() PortalRuleApiServi
 	return service.serverImpl
 }
 
-func (service *_WrapperPortalRuleApiServiceServerER) List() (ret []PortalRule, err ex.Error) {
+func (service *_WrapperPortalRuleApiServiceServerER) List() (ret []PortalRuleListItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().List()
 	return
@@ -1764,7 +1712,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalSiteApiService",
 		SkelName:          "vine.hub.admin.PortalSiteApiService",
-		Hash:              "2330e138",
+		Hash:              "9d6001f2",
 		ServerType:        reflect.TypeFor[PortalSiteApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalSiteApiServiceServer](),
 
@@ -1785,14 +1733,14 @@ var (
 		SkelName:       "list",
 		ArgumentsType:  nil,
 		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]PortalSite](),
+		ResultType:     reflect.TypeFor[[]PortalSiteListItem](),
 		CloneResult: func(value any) any {
-			source := value.([]PortalSite)
+			source := value.([]PortalSiteListItem)
 			cloned := source
 			if source == nil {
 				cloned = nil
 			} else {
-				cloned = make([]PortalSite, len(source))
+				cloned = make([]PortalSiteListItem, len(source))
 				for index0 := range source {
 					cloned[index0] = source[index0].Clone()
 				}
@@ -1951,8 +1899,8 @@ type _PortalSiteApiServiceRemoveArguments struct {
 
 type PortalSiteApiServiceServer interface {
 	// List List Portal target sites.
-	//   @returns []PortalSite - Portal target site list
-	List() []PortalSite
+	//   @returns []PortalSiteListItem - Portal target site list
+	List() []PortalSiteListItem
 	// ListOptions List Portal target site form options.
 	//   @returns PortalSiteOptions - Portal target site form options
 	ListOptions() PortalSiteOptions
@@ -1980,9 +1928,9 @@ type PortalSiteApiServiceServer interface {
 
 type DefaultPortalSiteApiServiceServer struct{}
 
-func (*DefaultPortalSiteApiServiceServer) List() []PortalSite {
+func (*DefaultPortalSiteApiServiceServer) List() []PortalSiteListItem {
 	ex.PanicNew(ex.InvalidRequest, "method list is not implemented")
-	return []PortalSite{}
+	return []PortalSiteListItem{}
 }
 
 func (*DefaultPortalSiteApiServiceServer) ListOptions() PortalSiteOptions {
@@ -2014,7 +1962,7 @@ func (*DefaultPortalSiteApiServiceServer) mustBePortalSiteApiServiceServer() {}
 // PortalSiteApiService / ERServer
 
 type PortalSiteApiServiceServerER interface {
-	List() ([]PortalSite, ex.Error)
+	List() ([]PortalSiteListItem, ex.Error)
 	ListOptions() (PortalSiteOptions, ex.Error)
 	Get(id int) (PortalSite, ex.Error)
 	Create(creation PortalSiteCreation) (PortalSite, ex.Error)
@@ -2044,7 +1992,7 @@ func (service *_WrapperPortalSiteApiServiceServerER) server() PortalSiteApiServi
 	return service.serverImpl
 }
 
-func (service *_WrapperPortalSiteApiServiceServerER) List() (ret []PortalSite, err ex.Error) {
+func (service *_WrapperPortalSiteApiServiceServerER) List() (ret []PortalSiteListItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().List()
 	return

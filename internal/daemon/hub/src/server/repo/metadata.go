@@ -7,15 +7,15 @@ const (
 	metadataSeededValue = "true"
 )
 
-type DBMetadataRepo struct {
+type MetadataRepo struct {
 	Dao *model.MetadataDao `inject:""`
 }
 
-func (r *DBMetadataRepo) IsSeeded() bool {
+func (r *MetadataRepo) IsSeeded() bool {
 	row, ok := r.Dao.ByName(metadataSeededName)
 	return ok && row.Value == metadataSeededValue
 }
 
-func (r *DBMetadataRepo) MarkSeeded() {
+func (r *MetadataRepo) MarkSeeded() {
 	r.Dao.SaveByName(metadataSeededName, metadataSeededValue)
 }

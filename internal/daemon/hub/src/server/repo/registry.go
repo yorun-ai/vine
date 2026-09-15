@@ -38,16 +38,16 @@ type _AppLease struct {
 
 // Repo
 
-type WatchRegistryRepo struct {
+type RegistryRepo struct {
 	WatchServer *watchserver.Server             `inject:""`
 	InprocFlag  *internalapp.InternalInprocFlag `inject:""`
 }
 
-func (r *WatchRegistryRepo) SaveAppStatus(status *core.AppStatus) {
+func (r *RegistryRepo) SaveAppStatus(status *core.AppStatus) {
 	r.saveStatus(status)
 }
 
-func (r *WatchRegistryRepo) ListAppStatuses() []*core.AppStatus {
+func (r *RegistryRepo) ListAppStatuses() []*core.AppStatus {
 	keys := r.WatchServer.Scan(watched.FormatAppStatusPattern())
 	items := make([]*core.AppStatus, 0, len(keys))
 	for _, key := range keys {
@@ -66,7 +66,7 @@ func (r *WatchRegistryRepo) ListAppStatuses() []*core.AppStatus {
 	})
 }
 
-func (r *WatchRegistryRepo) GetAppStatus(appName string, instanceId string) (*core.AppStatus, bool) {
+func (r *RegistryRepo) GetAppStatus(appName string, instanceId string) (*core.AppStatus, bool) {
 	status, ok := r.getAppStatus(appName, instanceId)
 	if !ok {
 		return nil, false
@@ -74,7 +74,7 @@ func (r *WatchRegistryRepo) GetAppStatus(appName string, instanceId string) (*co
 	return toCoreAppStatus(status), true
 }
 
-func (r *WatchRegistryRepo) KeepAppStatus(appName string, instanceId string) bool {
+func (r *RegistryRepo) KeepAppStatus(appName string, instanceId string) bool {
 	if r.InprocFlag.Enabled {
 		return true
 	}
@@ -89,13 +89,13 @@ func (r *WatchRegistryRepo) KeepAppStatus(appName string, instanceId string) boo
 	return true
 }
 
-func (r *WatchRegistryRepo) RemoveAppStatus(appName string, instanceId string) {
+func (r *RegistryRepo) RemoveAppStatus(appName string, instanceId string) {
 	key := watched.FormatAppStatusKey(appName, instanceId)
 	r.removeAppLease(appName, instanceId)
 	r.WatchServer.DeleteAndNotify(key)
 }
 
-func (r *WatchRegistryRepo) SaveRpcServiceRegistration(registration *core.RpcServiceRegistration) {
+func (r *RegistryRepo) SaveRpcServiceRegistration(registration *core.RpcServiceRegistration) {
 	watchRegistration := toRpcServiceRegistration(registration)
 	key := watched.FormatRpcServiceRegistrationKey(watchRegistration.ServiceName, watchRegistration.AppName, watchRegistration.AppInstanceId)
 	value := vcode.MustMarshalJsonS(watchRegistration)
@@ -106,7 +106,7 @@ func (r *WatchRegistryRepo) SaveRpcServiceRegistration(registration *core.RpcSer
 	r.WatchServer.SetEphemeralAndNotify(key, value, hubRegistryEphemeralTTL)
 }
 
-func (r *WatchRegistryRepo) GetRpcServiceRegistration(serviceName string, appName string, instanceId string) (*core.RpcServiceRegistration, bool) {
+func (r *RegistryRepo) GetRpcServiceRegistration(serviceName string, appName string, instanceId string) (*core.RpcServiceRegistration, bool) {
 	key := watched.FormatRpcServiceRegistrationKey(serviceName, appName, instanceId)
 	value, ok := r.WatchServer.Get(key)
 	if !ok {
@@ -115,7 +115,7 @@ func (r *WatchRegistryRepo) GetRpcServiceRegistration(serviceName string, appNam
 	return toCoreRpcServiceRegistration(vcode.MustUnmarshalJsonS[*watched.RpcServiceRegistration](value)), true
 }
 
-func (r *WatchRegistryRepo) KeepRpcServiceRegistration(serviceName string, appName string, appInstanceId string) bool {
+func (r *RegistryRepo) KeepRpcServiceRegistration(serviceName string, appName string, appInstanceId string) bool {
 	if r.InprocFlag.Enabled {
 		return true
 	}
@@ -123,12 +123,12 @@ func (r *WatchRegistryRepo) KeepRpcServiceRegistration(serviceName string, appNa
 	return r.WatchServer.KeepEphemeral(key, hubRegistryEphemeralTTL)
 }
 
-func (r *WatchRegistryRepo) RemoveRpcServiceRegistration(serviceName string, appName string, appInstanceId string) {
+func (r *RegistryRepo) RemoveRpcServiceRegistration(serviceName string, appName string, appInstanceId string) {
 	key := watched.FormatRpcServiceRegistrationKey(serviceName, appName, appInstanceId)
 	r.WatchServer.DeleteAndNotify(key)
 }
 
-func (r *WatchRegistryRepo) SaveWebRegistration(registration *core.WebRegistration) {
+func (r *RegistryRepo) SaveWebRegistration(registration *core.WebRegistration) {
 	watchRegistration := toWebRegistration(registration)
 	key := watched.FormatWebRegistrationKey(watchRegistration.WebSkelName, watchRegistration.AppName, watchRegistration.AppInstanceId)
 	value := vcode.MustMarshalJsonS(watchRegistration)
@@ -139,7 +139,7 @@ func (r *WatchRegistryRepo) SaveWebRegistration(registration *core.WebRegistrati
 	r.WatchServer.SetEphemeralAndNotify(key, value, hubRegistryEphemeralTTL)
 }
 
-func (r *WatchRegistryRepo) GetWebRegistration(name string, appName string, instanceId string) (*core.WebRegistration, bool) {
+func (r *RegistryRepo) GetWebRegistration(name string, appName string, instanceId string) (*core.WebRegistration, bool) {
 	key := watched.FormatWebRegistrationKey(name, appName, instanceId)
 	value, ok := r.WatchServer.Get(key)
 	if !ok {
@@ -148,7 +148,7 @@ func (r *WatchRegistryRepo) GetWebRegistration(name string, appName string, inst
 	return toCoreWebRegistration(vcode.MustUnmarshalJsonS[*watched.WebRegistration](value)), true
 }
 
-func (r *WatchRegistryRepo) KeepWebRegistration(name string, appName string, appInstanceId string) bool {
+func (r *RegistryRepo) KeepWebRegistration(name string, appName string, appInstanceId string) bool {
 	if r.InprocFlag.Enabled {
 		return true
 	}
@@ -156,12 +156,12 @@ func (r *WatchRegistryRepo) KeepWebRegistration(name string, appName string, app
 	return r.WatchServer.KeepEphemeral(key, hubRegistryEphemeralTTL)
 }
 
-func (r *WatchRegistryRepo) RemoveWebRegistration(name string, appName string, appInstanceId string) {
+func (r *RegistryRepo) RemoveWebRegistration(name string, appName string, appInstanceId string) {
 	key := watched.FormatWebRegistrationKey(name, appName, appInstanceId)
 	r.WatchServer.DeleteAndNotify(key)
 }
 
-func (r *WatchRegistryRepo) saveStatus(status *core.AppStatus) {
+func (r *RegistryRepo) saveStatus(status *core.AppStatus) {
 	statusKey := watched.FormatAppStatusKey(status.Name, status.InstanceId)
 	statusValue := _AppStatus{
 		InstanceId:      status.InstanceId,
@@ -185,7 +185,7 @@ func (r *WatchRegistryRepo) saveStatus(status *core.AppStatus) {
 	r.saveAppLease(status.Name, status.InstanceId)
 }
 
-func (r *WatchRegistryRepo) PopExpiredAppLeases() []core.AppHeartbeat {
+func (r *RegistryRepo) PopExpiredAppLeases() []core.AppHeartbeat {
 	if r.InprocFlag.Enabled {
 		return nil
 	}
@@ -207,17 +207,17 @@ func (r *WatchRegistryRepo) PopExpiredAppLeases() []core.AppHeartbeat {
 	return leases
 }
 
-func (r *WatchRegistryRepo) saveAppLease(appName string, instanceId string) {
+func (r *RegistryRepo) saveAppLease(appName string, instanceId string) {
 	member := vcode.MustMarshalJsonS(_AppLease{Name: appName, InstanceId: instanceId})
 	r.WatchServer.KeepLease(hubRegistryLeaseKey, member, hubRegistryLeaseTTL)
 }
 
-func (r *WatchRegistryRepo) removeAppLease(appName string, instanceId string) {
+func (r *RegistryRepo) removeAppLease(appName string, instanceId string) {
 	member := vcode.MustMarshalJsonS(_AppLease{Name: appName, InstanceId: instanceId})
 	r.WatchServer.RemoveLease(hubRegistryLeaseKey, member)
 }
 
-func (r *WatchRegistryRepo) getAppStatus(appName string, instanceId string) (*_AppStatus, bool) {
+func (r *RegistryRepo) getAppStatus(appName string, instanceId string) (*_AppStatus, bool) {
 	value, ok := r.WatchServer.Get(watched.FormatAppStatusKey(appName, instanceId))
 	if !ok {
 		return nil, false

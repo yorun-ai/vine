@@ -1,0 +1,225 @@
+domain vine.hub.admin
+
+@desc("Portal entry rule creation parameters")
+data PortalRuleCreation {
+    @desc("Rule name")
+    name: string
+
+    @desc("Matching protocol")
+    matchScheme: string
+
+    @desc("Match Host, empty string means no restriction")
+    matchHost: string
+
+    @desc("Match matchPort, 0 means no restriction")
+    matchPort: int
+
+    @desc("Match path prefix, empty string means match all paths")
+    matchPathPrefix: string
+
+    @desc("Target type")
+    routeType: string
+
+    @desc("Site name")
+    routeSiteName: string
+
+    @desc("Redirect Pattern")
+    routeRedirectionPattern: string
+
+    @desc("Target site path prefix; empty means strip the matching prefix only")
+    routePathPrefix: string?
+}
+
+@desc("Portal entry rules")
+data PortalRule {
+    @desc("Rule ID")
+    id: int
+
+    @desc("Rule name")
+    name: string
+
+    @desc("Matching protocol")
+    matchScheme: string
+
+    @desc("Match Host, empty string means no restriction")
+    matchHost: string
+
+    @desc("Match matchPort, 0 means no restriction")
+    matchPort: int
+
+    @desc("Match path prefix, empty string means match all paths")
+    matchPathPrefix: string
+
+    @desc("Target type")
+    routeType: string
+
+    @desc("Site name")
+    routeSiteName: string
+
+    @desc("Redirect Pattern")
+    routeRedirectionPattern: string
+
+    @desc("Target site path prefix; empty means strip the matching prefix only")
+    routePathPrefix: string
+
+    @desc("Field sources; only returned by get, create and update")
+    fieldSources: list<FieldSource>
+
+}
+
+@desc("Portal entry rule list item")
+data PortalRuleListItem {
+    @desc("Rule ID")
+    id: int
+
+    @desc("Rule name")
+    name: string
+
+    @desc("Matching protocol")
+    matchScheme: string
+
+    @desc("Match Host, empty string means no restriction")
+    matchHost: string
+
+    @desc("Match matchPort, 0 means no restriction")
+    matchPort: int
+
+    @desc("Match path prefix, empty string means match all paths")
+    matchPathPrefix: string
+
+    @desc("Target type")
+    routeType: string
+
+    @desc("Site name")
+    routeSiteName: string
+
+    @desc("Redirect Pattern")
+    routeRedirectionPattern: string
+
+    @desc("Target site path prefix; empty means strip the matching prefix only")
+    routePathPrefix: string
+}
+
+@desc("Portal entry rule update parameters")
+data PortalRuleUpdate {
+    @desc("Rule name")
+    name: string?
+
+    @desc("Matching protocol")
+    matchScheme: string?
+
+    @desc("Match Host, empty string means no restriction")
+    matchHost: string?
+
+    @desc("Match matchPort, 0 means no restriction")
+    matchPort: int?
+
+    @desc("Match path prefix, empty string means match all paths")
+    matchPathPrefix: string?
+
+    @desc("Target type")
+    routeType: string?
+
+    @desc("Site name")
+    routeSiteName: string?
+
+    @desc("Redirect Pattern")
+    routeRedirectionPattern: string?
+
+    @desc("Target site path prefix; empty means strip the matching prefix only")
+    routePathPrefix: string?
+}
+
+@desc("Hub Dashboard access entry")
+data PortalDashboardAccess {
+    @desc("Entry protocol")
+    scheme: string
+
+    @desc("Match Host, empty string means no restriction")
+    host: string
+
+    @desc("Entry port")
+    port: int
+
+    @desc("Match path prefix")
+    pathPrefix: string
+
+    @desc("Whether to allow modification of Dashboard access entry")
+    canUpdate: bool
+}
+
+@desc("Hub's Portal entry rule service, called by the Portal admin client")
+api service PortalRuleApiService {
+    for AdminActor
+
+    noauth
+
+    @desc("List Portal entry rules")
+    method list {
+        @desc("Portal entry rule list")
+        output list<PortalRuleListItem>
+    }
+
+    @desc("Read Portal entry rules")
+    method get {
+        input {
+            @desc("Rule ID")
+            id: int
+        }
+        @desc("Portal entry rules")
+        output PortalRule
+    }
+
+    @desc("Create Portal entry rules")
+    method create {
+        input {
+            @desc("Portal entry rule creation parameters")
+            creation: PortalRuleCreation
+        }
+        @desc("Portal entry rules")
+        output PortalRule
+    }
+
+    @desc("Modify Portal entry rules")
+    method update {
+        input {
+            @desc("Rule ID")
+            id: int
+
+            @desc("Portal entry rule update parameters")
+            update: PortalRuleUpdate
+        }
+        @desc("Portal entry rules")
+        output PortalRule
+    }
+
+    @desc("Delete Portal entry rules")
+    method remove {
+        input {
+            @desc("Rule ID")
+            id: int
+        }
+    }
+
+    @desc("Get the Hub Dashboard access entry")
+    method getDashboardAccess {
+        @desc("Hub Dashboard access entry")
+        output PortalDashboardAccess
+    }
+
+    @desc("Modify Hub Dashboard access entry")
+    method updateDashboardAccess {
+        input {
+            @desc("Hub Dashboard entry protocol")
+            scheme: string
+            @desc("Hub Dashboard entry host")
+            host: string
+            @desc("Hub Dashboard entry port")
+            port: int
+            @desc("Hub Dashboard entry path prefix")
+            pathPrefix: string
+        }
+        @desc("Hub Dashboard entry rules")
+        output list<PortalRule>
+    }
+}

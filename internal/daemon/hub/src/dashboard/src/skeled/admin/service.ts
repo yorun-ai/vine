@@ -19,6 +19,7 @@ import {
   TaskDebugApiServiceSpec,
 } from './spec';
 import type {
+  AppConfigListItem,
   AppConfigItem,
   AppConfigUpdate,
   AppConfigCreation,
@@ -26,20 +27,22 @@ import type {
   EventDebugEventItem,
   EventDebugDefaultEmitRequest,
   EventDebugEmitRequest,
-  FieldSource,
   SeedPreview,
   SeedItemSelection,
+  PortalCertListItem,
   PortalCert,
   PortalCertCreation,
   PortalCertUpdate,
   PortalEntry,
   PortalEntryAccessUpdate,
+  PortalRuleListItem,
   PortalRule,
   PortalRuleCreation,
   PortalRuleUpdate,
   PortalDashboardAccess,
-  PortalSite,
+  PortalSiteListItem,
   PortalSiteOptions,
+  PortalSite,
   PortalSiteCreation,
   PortalSiteUpdate,
   PortalStatusView,
@@ -72,13 +75,13 @@ export function createAppConfigApiService(client: VrpcClient) {
      * List configuration items.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
-     * @returns Array<AppConfigItem> - Configuration item list
+     * @returns Array<AppConfigListItem> - Configuration item list
      */
     list(
       params: null,
       options?: VrpcRequestOptions,
     ) {
-      return client.invoke<Array<AppConfigItem>>({
+      return client.invoke<Array<AppConfigListItem>>({
         serviceName: AppConfigApiServiceSpec.serviceName,
         methodName: AppConfigApiServiceSpec.methods.list,
         params,
@@ -93,7 +96,7 @@ export function createAppConfigApiService(client: VrpcClient) {
      */
     get(
       params: {
-        id: number;
+        key: string;
       },
       options?: VrpcRequestOptions,
     ) {
@@ -256,26 +259,6 @@ export function createEventDebugApiService(client: VrpcClient) {
 export function createMaintenanceApiService(client: VrpcClient) {
   return {
     /**
-     * Query field sources by entity kind and stable name.
-     * @param params - Request parameters, or null for methods without input
-     * @param options - Optional invocation options
-     * @returns Array<FieldSource> -
-     */
-    fieldSources(
-      params: {
-        kind: string;
-        name: string;
-      },
-      options?: VrpcRequestOptions,
-    ) {
-      return client.invoke<Array<FieldSource>>({
-        serviceName: MaintenanceApiServiceSpec.serviceName,
-        methodName: MaintenanceApiServiceSpec.methods.fieldSources,
-        params,
-        options,
-      });
-    },
-    /**
      * Whether Hub configuration is read-only.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
@@ -342,13 +325,13 @@ export function createPortalCertApiService(client: VrpcClient) {
      * List Portal site certificates.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
-     * @returns Array<PortalCert> - Portal site certificate list
+     * @returns Array<PortalCertListItem> - Portal site certificate list
      */
     list(
       params: null,
       options?: VrpcRequestOptions,
     ) {
-      return client.invoke<Array<PortalCert>>({
+      return client.invoke<Array<PortalCertListItem>>({
         serviceName: PortalCertApiServiceSpec.serviceName,
         methodName: PortalCertApiServiceSpec.methods.list,
         params,
@@ -488,13 +471,13 @@ export function createPortalRuleApiService(client: VrpcClient) {
      * List Portal entry rules.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
-     * @returns Array<PortalRule> - Portal entry rule list
+     * @returns Array<PortalRuleListItem> - Portal entry rule list
      */
     list(
       params: null,
       options?: VrpcRequestOptions,
     ) {
-      return client.invoke<Array<PortalRule>>({
+      return client.invoke<Array<PortalRuleListItem>>({
         serviceName: PortalRuleApiServiceSpec.serviceName,
         methodName: PortalRuleApiServiceSpec.methods.list,
         params,
@@ -627,13 +610,13 @@ export function createPortalSiteApiService(client: VrpcClient) {
      * List Portal target sites.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
-     * @returns Array<PortalSite> - Portal target site list
+     * @returns Array<PortalSiteListItem> - Portal target site list
      */
     list(
       params: null,
       options?: VrpcRequestOptions,
     ) {
-      return client.invoke<Array<PortalSite>>({
+      return client.invoke<Array<PortalSiteListItem>>({
         serviceName: PortalSiteApiServiceSpec.serviceName,
         methodName: PortalSiteApiServiceSpec.methods.list,
         params,

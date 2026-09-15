@@ -25,13 +25,13 @@ var (
 	testPortalRuleRepoDBOnce sync.Once
 )
 
-func TestDBPortalRuleRepoSaveRuleCreate(t *testing.T) {
-	_, repo, watchServer := newTestDBPortalRuleRepo(t)
+func TestPortalRuleRepoSaveCreate(t *testing.T) {
+	_, repo, watchServer := newTestPortalRuleRepo(t)
 
 	rule := testPortalRule("admin")
-	repo.SaveRule(rule)
+	repo.Save(rule)
 
-	got, ok := repo.GetRuleById(rule.Id)
+	got, ok := repo.GetById(rule.Id)
 	require.True(t, ok)
 	assert.Equal(t, rule, got)
 
@@ -41,46 +41,46 @@ func TestDBPortalRuleRepoSaveRuleCreate(t *testing.T) {
 	assert.Equal(t, syncer.ToWatchedPortalRule(rule), vcode.MustUnmarshalJsonS[*watched.PortalRule](raw))
 }
 
-func TestDBPortalRuleRepoSaveRuleUpdate(t *testing.T) {
-	_, repo, _ := newTestDBPortalRuleRepo(t)
+func TestPortalRuleRepoSaveUpdate(t *testing.T) {
+	_, repo, _ := newTestPortalRuleRepo(t)
 
 	rule := testPortalRule("admin")
-	repo.SaveRule(rule)
+	repo.Save(rule)
 	rule.MatchPathPrefix = "/console"
 	rule.RouteSiteName = "console@demo.app"
-	repo.SaveRule(rule)
+	repo.Save(rule)
 
-	got, ok := repo.GetRuleById(rule.Id)
+	got, ok := repo.GetById(rule.Id)
 	require.True(t, ok)
 	assert.Equal(t, "/console", got.MatchPathPrefix)
 	assert.Equal(t, "console@demo.app", got.RouteSiteName)
 }
 
-func TestDBPortalRuleRepoSaveRuleBuiltIn(t *testing.T) {
-	db, repo, _ := newTestDBPortalRuleRepo(t)
+func TestPortalRuleRepoSaveBuiltIn(t *testing.T) {
+	db, repo, _ := newTestPortalRuleRepo(t)
 
 	rule := testPortalRule("admin")
 	rule.BuiltIn = true
-	repo.SaveRule(rule)
+	repo.Save(rule)
 
 	var row model.PortalRule
 	require.NoError(t, db.First(&row, "id = ?", rule.Id).Error)
 	assert.True(t, row.BuiltIn)
 
-	got, ok := repo.GetRuleById(rule.Id)
+	got, ok := repo.GetById(rule.Id)
 	require.True(t, ok)
 	assert.True(t, got.BuiltIn)
 }
 
-func TestDBPortalRuleRepoSaveRuleRename(t *testing.T) {
-	_, repo, watchServer := newTestDBPortalRuleRepo(t)
+func TestPortalRuleRepoSaveRename(t *testing.T) {
+	_, repo, watchServer := newTestPortalRuleRepo(t)
 
 	rule := testPortalRule("admin")
-	repo.SaveRule(rule)
+	repo.Save(rule)
 	rule.Name = "console"
-	repo.SaveRule(rule)
+	repo.Save(rule)
 
-	got, ok := repo.GetRuleById(rule.Id)
+	got, ok := repo.GetById(rule.Id)
 	require.True(t, ok)
 	assert.Equal(t, "console", got.Name)
 
@@ -92,31 +92,31 @@ func TestDBPortalRuleRepoSaveRuleRename(t *testing.T) {
 	assert.Equal(t, syncer.ToWatchedPortalRule(rule), vcode.MustUnmarshalJsonS[*watched.PortalRule](raw))
 }
 
-func TestDBPortalRuleRepoRemoveRule(t *testing.T) {
-	_, repo, watchServer := newTestDBPortalRuleRepo(t)
+func TestPortalRuleRepoRemove(t *testing.T) {
+	_, repo, watchServer := newTestPortalRuleRepo(t)
 
 	rule := testPortalRule("admin")
-	repo.SaveRule(rule)
-	assert.True(t, repo.RemoveRule(rule.Id))
+	repo.Save(rule)
+	assert.True(t, repo.Remove(rule.Id))
 
-	got, ok := repo.GetRuleById(rule.Id)
+	got, ok := repo.GetById(rule.Id)
 	assert.False(t, ok)
 	assert.Nil(t, got)
 
 	key := watched.FormatPortalRuleKey("admin")
 	_, ok = watchServer.Get(key)
 	assert.False(t, ok)
-	assert.False(t, repo.RemoveRule(rule.Id))
+	assert.False(t, repo.Remove(rule.Id))
 }
 
-func newTestDBPortalRuleRepo(t *testing.T) (*gorm.DB, *DBPortalRuleRepo, *watchserver.Server) {
+func newTestPortalRuleRepo(t *testing.T) (*gorm.DB, *PortalRuleRepo, *watchserver.Server) {
 	t.Helper()
 
 	db := sharedTestPortalRuleRepoDB(t)
 	watchServer := watchserver.NewServerForTest()
 	t.Cleanup(watchServer.AfterAppStop)
 
-	repo := &DBPortalRuleRepo{
+	repo := &PortalRuleRepo{
 		Dao: &model.PortalRuleDao{
 			Dao: rdb.NewDao[*model.PortalRule](db),
 		},
@@ -155,10 +155,10 @@ func testPortalRule(name string) *core.PortalRule {
 	}
 }
 
-func TestDBPortalRuleRepoRejectsReadOnlyWrites(t *testing.T) {
+func TestPortalRuleRepoRejectsReadOnlyWrites(t *testing.T) {
 	access := new(configaccess.Access)
 	access.Lock()
-	repo := &DBPortalRuleRepo{Access: access}
-	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.SaveRule(new(core.PortalRule)) })
-	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.RemoveRule(1) })
+	repo := &PortalRuleRepo{Access: access}
+	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.Save(new(core.PortalRule)) })
+	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.Remove(1) })
 }

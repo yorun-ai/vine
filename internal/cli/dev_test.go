@@ -181,7 +181,7 @@ func TestDevRuntimeAcceptsNetworkAppRegistration(t *testing.T) {
 		t.Fatalf("expected initialized read-only Hub: %v %v", readOnly, accessErr)
 	}
 	configMethod, _ := spec.GetMethodInfo("vine.hub.admin.AppConfigApiService", "list")
-	configs, configErr := hubRPCClient.InvokeAs[[]hubskeled.AppConfigItem](configMethod, nil)
+	configs, configErr := hubRPCClient.InvokeAs[[]hubskeled.AppConfigListItem](configMethod, nil)
 	if configErr != nil || len(configs) != 1 {
 		t.Fatalf("expected seeded config: %v %v", configs, configErr)
 	}

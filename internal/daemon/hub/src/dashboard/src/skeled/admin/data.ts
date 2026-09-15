@@ -52,27 +52,60 @@ export type AppConfigItem = {
   /**
    * Configuration ID.
    */
-  id:        number;
+  id:           number;
   /**
    * Configuration key.
    */
-  key:       string;
+  key:          string;
   /**
    * Configuration status.
    */
-  status:    string;
+  status:       string;
   /**
    * Configuration lifecycle.
    */
-  lifecycle: string;
+  lifecycle:    string;
   /**
    * Configuration JSON.
    */
-  value:     string;
+  value:        string;
   /**
    * Configuration schema.
    */
-  schema:    AppConfigSchema | null;
+  schema:       AppConfigSchema | null;
+  /**
+   * Field sources; only returned by get, create and update.
+   */
+  fieldSources: Array<FieldSource>;
+}
+/**
+ * Configuration item list item.
+ */
+export type AppConfigListItem = {
+  /**
+   * Configuration ID.
+   */
+  id:             number;
+  /**
+   * Configuration key.
+   */
+  key:            string;
+  /**
+   * Configuration status.
+   */
+  status:         string;
+  /**
+   * Configuration lifecycle.
+   */
+  lifecycle:      string;
+  /**
+   * Configuration schema name; empty when no schema matches.
+   */
+  schemaName:     string;
+  /**
+   * Configuration schema Skel name; empty when no schema matches.
+   */
+  schemaSkelName: string;
 }
 /**
  * Configuration schema items.
@@ -312,25 +345,61 @@ export type EventListenerRegistration = {
   noRetry:       boolean;
 }
 /**
- * Source of a configuration field and its seed substitutions.
+ * Layers that supplied an entity field.
  */
 export type FieldSource = {
+  /**
+   * Field JSON pointer.
+   */
   path:      string;
+  /**
+   * Seed source.
+   */
   source:    string;
+  /**
+   * Seed definition name.
+   */
   define:    string;
+  /**
+   * Seed override name.
+   */
   override:  string;
+  /**
+   * Referenced seed variables.
+   */
   variables: Array<string>;
+  /**
+   * Seed template.
+   */
   template:  string | null;
+  /**
+   * Resolved variable bindings.
+   */
   bindings:  Array<FieldSourceBinding>;
 }
 /**
  * A resolved variable reference within a field template.
  */
 export type FieldSourceBinding = {
+  /**
+   * Template JSON pointer.
+   */
   path:        string;
+  /**
+   * Variable name.
+   */
   variable:    string;
+  /**
+   * Variable reference.
+   */
   reference:   string;
+  /**
+   * Resolved value.
+   */
   value:       string;
+  /**
+   * Whether the default was used.
+   */
   defaultUsed: boolean;
 }
 /**
@@ -369,6 +438,10 @@ export type PortalCert = {
    * Validity end time.
    */
   validTo:              string;
+  /**
+   * Field sources; only returned by get, create and update.
+   */
+  fieldSources:         Array<FieldSource>;
 }
 /**
  * Portal site certificate creation parameters.
@@ -386,6 +459,43 @@ export type PortalCertCreation = {
    * Private key Base64.
    */
   privateKeyBase64: string;
+}
+/**
+ * Portal site certificate list item.
+ */
+export type PortalCertListItem = {
+  /**
+   * Certificate ID.
+   */
+  id:                   number;
+  /**
+   * Certificate name.
+   */
+  name:                 string;
+  /**
+   * Certificate issuer.
+   */
+  issuer:               string;
+  /**
+   * Certificate domain name.
+   */
+  domains:              Array<string>;
+  /**
+   * Certificate Base64.
+   */
+  publicKeyBase64:      string;
+  /**
+   * Whether the private key has been configured.
+   */
+  privateKeyConfigured: boolean;
+  /**
+   * Validity start time.
+   */
+  validFrom:            string;
+  /**
+   * Validity end time.
+   */
+  validTo:              string;
 }
 /**
  * Portal site certificate update parameters.
@@ -491,11 +601,11 @@ export type PortalEntryRule = {
   /**
    * Entry rules.
    */
-  rule: PortalRule;
+  rule: PortalRuleListItem;
   /**
    * Target site.
    */
-  site: PortalSite | null;
+  site: PortalSiteListItem | null;
 }
 /**
  * Portal entry rules.
@@ -541,6 +651,10 @@ export type PortalRule = {
    * Target site path prefix; empty means strip the matching prefix only.
    */
   routePathPrefix:         string;
+  /**
+   * Field sources; only returned by get, create and update.
+   */
+  fieldSources:            Array<FieldSource>;
 }
 /**
  * Portal entry rule creation parameters.
@@ -582,6 +696,51 @@ export type PortalRuleCreation = {
    * Target site path prefix; empty means strip the matching prefix only.
    */
   routePathPrefix:         string | null;
+}
+/**
+ * Portal entry rule list item.
+ */
+export type PortalRuleListItem = {
+  /**
+   * Rule ID.
+   */
+  id:                      number;
+  /**
+   * Rule name.
+   */
+  name:                    string;
+  /**
+   * Matching protocol.
+   */
+  matchScheme:             string;
+  /**
+   * Match Host, empty string means no restriction.
+   */
+  matchHost:               string;
+  /**
+   * Match matchPort, 0 means no restriction.
+   */
+  matchPort:               number;
+  /**
+   * Match path prefix, empty string means match all paths.
+   */
+  matchPathPrefix:         string;
+  /**
+   * Target type.
+   */
+  routeType:               string;
+  /**
+   * Site name.
+   */
+  routeSiteName:           string;
+  /**
+   * Redirect Pattern.
+   */
+  routeRedirectionPattern: string;
+  /**
+   * Target site path prefix; empty means strip the matching prefix only.
+   */
+  routePathPrefix:         string;
 }
 /**
  * Portal entry rule update parameters.
@@ -660,6 +819,14 @@ export type PortalSite = {
    * Web name.
    */
   webName:       string;
+  /**
+   * Web mount path; empty means the Web is not limited to a path.
+   */
+  webMountPath:  string;
+  /**
+   * Field sources; only returned by get, create and update.
+   */
+  fieldSources:  Array<FieldSource>;
 }
 /**
  * Portal target site Actor options.
@@ -706,6 +873,47 @@ export type PortalSiteCreation = {
    * Web name.
    */
   webName:       string;
+}
+/**
+ * Portal target site list item.
+ */
+export type PortalSiteListItem = {
+  /**
+   * Target site id.
+   */
+  id:            number;
+  /**
+   * Target site name.
+   */
+  name:          string;
+  /**
+   * Target site type.
+   */
+  type:          PortalSiteType;
+  /**
+   * Actor Skel name.
+   */
+  actorSkelName: string;
+  /**
+   * Actor access method.
+   */
+  actorVia:      string;
+  /**
+   * Rpc gateway service Skel name list.
+   */
+  rpcgwServices: Array<string>;
+  /**
+   * CORS configuration.
+   */
+  cors:          PortalCors | null;
+  /**
+   * Web name.
+   */
+  webName:       string;
+  /**
+   * Web mount path; empty means the Web is not limited to a path.
+   */
+  webMountPath:  string;
 }
 /**
  * Portal target site form options.

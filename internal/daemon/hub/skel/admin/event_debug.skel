@@ -1,0 +1,88 @@
+domain vine.hub.admin
+
+@desc("Event called by Event Debug")
+data EventDebugEventItem {
+    @desc("Event name")
+    name: string
+
+    @desc("Event Skel name")
+    eventSkelName: string
+
+    @desc("Event schema hash")
+    schemaHash: string
+
+    @desc("Event description")
+    description: string
+
+    @desc("Whether the Event is deprecated")
+    deprecated: bool
+
+    @desc("Event deprecation reason")
+    deprecatedReason: string
+
+    @desc("Field list")
+    fields: list<SkeletonField>
+}
+
+@desc("Default Event Debug send request")
+data EventDebugDefaultEmitRequest {
+    @desc("Trace ID")
+    traceId: string
+
+    @desc("Span ID")
+    spanId: string
+
+    @desc("Default event JSON")
+    eventJson: json
+}
+
+@desc("Event Debug send request")
+data EventDebugEmitRequest {
+    @desc("Event Skel name")
+    eventSkelName: string
+
+    @desc("Event schema hash")
+    schemaHash: string
+
+    @desc("Event JSON")
+    eventJson: json
+
+    @desc("Trace ID")
+    traceId: string?
+
+    @desc("Span ID")
+    spanId: string?
+}
+
+@desc("Hub Dashboard Event Debugging Service")
+api service EventDebugApiService {
+    for AdminActor
+
+    noauth
+
+    @desc("List the events monitored by the application instance")
+    method listEvents {
+        output list<EventDebugEventItem>
+    }
+
+    @desc("Generate a default Event send request")
+    method buildDefaultEmitRequest {
+        input {
+            @desc("Event Skel name")
+            eventSkelName: string
+
+            @desc("Event schema hash")
+            schemaHash: string
+        }
+
+        output EventDebugDefaultEmitRequest
+    }
+
+    @desc("Send Event")
+    method emitEvent {
+        input {
+            @desc("Debug send request")
+            request: EventDebugEmitRequest
+        }
+    }
+}

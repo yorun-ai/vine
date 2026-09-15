@@ -32,6 +32,8 @@ type AppConfigItem struct {
 	Value string `json:"value"`
 	// Schema Configuration schema
 	Schema *AppConfigSchema `json:"schema"`
+	// FieldSources Field sources; only returned by get, create and update
+	FieldSources []FieldSource `json:"fieldSources"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -42,6 +44,36 @@ func (v AppConfigItem) Clone() AppConfigItem {
 		clonedValue0 = (*v.Schema).Clone()
 		cloned.Schema = &clonedValue0
 	}
+	if v.FieldSources == nil {
+		cloned.FieldSources = nil
+	} else {
+		cloned.FieldSources = make([]FieldSource, len(v.FieldSources))
+		for index1 := range v.FieldSources {
+			cloned.FieldSources[index1] = v.FieldSources[index1].Clone()
+		}
+	}
+	return cloned
+}
+
+// AppConfigListItem Configuration item list item
+type AppConfigListItem struct {
+	// Id Configuration ID
+	Id int `json:"id"`
+	// Key Configuration key
+	Key string `json:"key"`
+	// Status Configuration status
+	Status string `json:"status"`
+	// Lifecycle Configuration lifecycle
+	Lifecycle string `json:"lifecycle"`
+	// SchemaName Configuration schema name; empty when no schema matches
+	SchemaName string `json:"schemaName"`
+	// SchemaSkelName Configuration schema Skel name; empty when no schema matches
+	SchemaSkelName string `json:"schemaSkelName"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v AppConfigListItem) Clone() AppConfigListItem {
+	cloned := v
 	return cloned
 }
 
@@ -315,15 +347,22 @@ func (v EventListenerRegistration) Clone() EventListenerRegistration {
 	return cloned
 }
 
-// FieldSource Source of a configuration field and its seed substitutions
+// FieldSource Layers that supplied an entity field
 type FieldSource struct {
-	Path      string               `json:"path"`
-	Source    string               `json:"source"`
-	Define    string               `json:"define"`
-	Override  string               `json:"override"`
-	Variables []string             `json:"variables"`
-	Template  *skel.JSON           `json:"template"`
-	Bindings  []FieldSourceBinding `json:"bindings"`
+	// Path Field JSON pointer
+	Path string `json:"path"`
+	// Source Seed source
+	Source string `json:"source"`
+	// Define Seed definition name
+	Define string `json:"define"`
+	// Override Seed override name
+	Override string `json:"override"`
+	// Variables Referenced seed variables
+	Variables []string `json:"variables"`
+	// Template Seed template
+	Template *skel.JSON `json:"template"`
+	// Bindings Resolved variable bindings
+	Bindings []FieldSourceBinding `json:"bindings"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -352,11 +391,16 @@ func (v FieldSource) Clone() FieldSource {
 
 // FieldSourceBinding A resolved variable reference within a field template
 type FieldSourceBinding struct {
-	Path        string    `json:"path"`
-	Variable    string    `json:"variable"`
-	Reference   string    `json:"reference"`
-	Value       skel.JSON `json:"value"`
-	DefaultUsed bool      `json:"defaultUsed"`
+	// Path Template JSON pointer
+	Path string `json:"path"`
+	// Variable Variable name
+	Variable string `json:"variable"`
+	// Reference Variable reference
+	Reference string `json:"reference"`
+	// Value Resolved value
+	Value skel.JSON `json:"value"`
+	// DefaultUsed Whether the default was used
+	DefaultUsed bool `json:"defaultUsed"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -383,6 +427,8 @@ type PortalCert struct {
 	ValidFrom skel.Timestamp `json:"validFrom"`
 	// ValidTo Validity end time
 	ValidTo skel.Timestamp `json:"validTo"`
+	// FieldSources Field sources; only returned by get, create and update
+	FieldSources []FieldSource `json:"fieldSources"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -393,6 +439,14 @@ func (v PortalCert) Clone() PortalCert {
 	} else {
 		cloned.Domains = make([]string, len(v.Domains))
 		copy(cloned.Domains, v.Domains)
+	}
+	if v.FieldSources == nil {
+		cloned.FieldSources = nil
+	} else {
+		cloned.FieldSources = make([]FieldSource, len(v.FieldSources))
+		for index1 := range v.FieldSources {
+			cloned.FieldSources[index1] = v.FieldSources[index1].Clone()
+		}
 	}
 	return cloned
 }
@@ -410,6 +464,38 @@ type PortalCertCreation struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v PortalCertCreation) Clone() PortalCertCreation {
 	cloned := v
+	return cloned
+}
+
+// PortalCertListItem Portal site certificate list item
+type PortalCertListItem struct {
+	// Id Certificate ID
+	Id int `json:"id"`
+	// Name Certificate name
+	Name string `json:"name"`
+	// Issuer Certificate issuer
+	Issuer string `json:"issuer"`
+	// Domains Certificate domain name
+	Domains []string `json:"domains"`
+	// PublicKeyBase64 Certificate Base64
+	PublicKeyBase64 string `json:"publicKeyBase64"`
+	// PrivateKeyConfigured Whether the private key has been configured
+	PrivateKeyConfigured bool `json:"privateKeyConfigured"`
+	// ValidFrom Validity start time
+	ValidFrom skel.Timestamp `json:"validFrom"`
+	// ValidTo Validity end time
+	ValidTo skel.Timestamp `json:"validTo"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalCertListItem) Clone() PortalCertListItem {
+	cloned := v
+	if v.Domains == nil {
+		cloned.Domains = nil
+	} else {
+		cloned.Domains = make([]string, len(v.Domains))
+		copy(cloned.Domains, v.Domains)
+	}
 	return cloned
 }
 
@@ -528,9 +614,9 @@ func (v PortalEntryAccessUpdate) Clone() PortalEntryAccessUpdate {
 // PortalEntryRule Portal access entry rules
 type PortalEntryRule struct {
 	// Rule Entry rules
-	Rule PortalRule `json:"rule"`
+	Rule PortalRuleListItem `json:"rule"`
 	// Site Target site
-	Site *PortalSite `json:"site"`
+	Site *PortalSiteListItem `json:"site"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -567,11 +653,21 @@ type PortalRule struct {
 	RouteRedirectionPattern string `json:"routeRedirectionPattern"`
 	// RoutePathPrefix Target site path prefix; empty means strip the matching prefix only
 	RoutePathPrefix string `json:"routePathPrefix"`
+	// FieldSources Field sources; only returned by get, create and update
+	FieldSources []FieldSource `json:"fieldSources"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
 func (v PortalRule) Clone() PortalRule {
 	cloned := v
+	if v.FieldSources == nil {
+		cloned.FieldSources = nil
+	} else {
+		cloned.FieldSources = make([]FieldSource, len(v.FieldSources))
+		for index0 := range v.FieldSources {
+			cloned.FieldSources[index0] = v.FieldSources[index0].Clone()
+		}
+	}
 	return cloned
 }
 
@@ -604,6 +700,36 @@ func (v PortalRuleCreation) Clone() PortalRuleCreation {
 		clonedValue0 := *v.RoutePathPrefix
 		cloned.RoutePathPrefix = &clonedValue0
 	}
+	return cloned
+}
+
+// PortalRuleListItem Portal entry rule list item
+type PortalRuleListItem struct {
+	// Id Rule ID
+	Id int `json:"id"`
+	// Name Rule name
+	Name string `json:"name"`
+	// MatchScheme Matching protocol
+	MatchScheme string `json:"matchScheme"`
+	// MatchHost Match Host, empty string means no restriction
+	MatchHost string `json:"matchHost"`
+	// MatchPort Match matchPort, 0 means no restriction
+	MatchPort int `json:"matchPort"`
+	// MatchPathPrefix Match path prefix, empty string means match all paths
+	MatchPathPrefix string `json:"matchPathPrefix"`
+	// RouteType Target type
+	RouteType string `json:"routeType"`
+	// RouteSiteName Site name
+	RouteSiteName string `json:"routeSiteName"`
+	// RouteRedirectionPattern Redirect Pattern
+	RouteRedirectionPattern string `json:"routeRedirectionPattern"`
+	// RoutePathPrefix Target site path prefix; empty means strip the matching prefix only
+	RoutePathPrefix string `json:"routePathPrefix"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalRuleListItem) Clone() PortalRuleListItem {
+	cloned := v
 	return cloned
 }
 
@@ -689,6 +815,10 @@ type PortalSite struct {
 	Cors *PortalCors `json:"cors"`
 	// WebName Web name
 	WebName string `json:"webName"`
+	// WebMountPath Web mount path; empty means the Web is not limited to a path
+	WebMountPath string `json:"webMountPath"`
+	// FieldSources Field sources; only returned by get, create and update
+	FieldSources []FieldSource `json:"fieldSources"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -704,6 +834,14 @@ func (v PortalSite) Clone() PortalSite {
 		clonedValue1 := *v.Cors
 		clonedValue1 = (*v.Cors).Clone()
 		cloned.Cors = &clonedValue1
+	}
+	if v.FieldSources == nil {
+		cloned.FieldSources = nil
+	} else {
+		cloned.FieldSources = make([]FieldSource, len(v.FieldSources))
+		for index2 := range v.FieldSources {
+			cloned.FieldSources[index2] = v.FieldSources[index2].Clone()
+		}
 	}
 	return cloned
 }
@@ -753,6 +891,45 @@ func (v PortalSiteCreation) Clone() PortalSiteCreation {
 		clonedValue0 := *v.Cors
 		clonedValue0 = (*v.Cors).Clone()
 		cloned.Cors = &clonedValue0
+	}
+	return cloned
+}
+
+// PortalSiteListItem Portal target site list item
+type PortalSiteListItem struct {
+	// Id Target site id
+	Id int `json:"id"`
+	// Name Target site name
+	Name string `json:"name"`
+	// Type Target site type
+	Type PortalSiteType `json:"type"`
+	// ActorSkelName Actor Skel name
+	ActorSkelName string `json:"actorSkelName"`
+	// ActorVia Actor access method
+	ActorVia string `json:"actorVia"`
+	// RpcgwServices Rpc gateway service Skel name list
+	RpcgwServices []string `json:"rpcgwServices"`
+	// Cors CORS configuration
+	Cors *PortalCors `json:"cors"`
+	// WebName Web name
+	WebName string `json:"webName"`
+	// WebMountPath Web mount path; empty means the Web is not limited to a path
+	WebMountPath string `json:"webMountPath"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalSiteListItem) Clone() PortalSiteListItem {
+	cloned := v
+	if v.RpcgwServices == nil {
+		cloned.RpcgwServices = nil
+	} else {
+		cloned.RpcgwServices = make([]string, len(v.RpcgwServices))
+		copy(cloned.RpcgwServices, v.RpcgwServices)
+	}
+	if v.Cors != nil {
+		clonedValue1 := *v.Cors
+		clonedValue1 = (*v.Cors).Clone()
+		cloned.Cors = &clonedValue1
 	}
 	return cloned
 }

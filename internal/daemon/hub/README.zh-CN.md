@@ -42,27 +42,27 @@ internal/daemon/hub/
 
 - 调试时使用 `VINE_HUB_DASHBOARD_DEV_PROXY` 环境变量，直接转发请求到启动的 `pnpm dev`。
 - 修改 Dashboard 源码后，在 `src/dashboard` 运行 `pnpm typecheck` 和 `pnpm build`。
-- 普通开发任务不要更新嵌入的 `dashboard.tar.zst`；只有任务明确要求更新发布资源时才重新打包。
+- Dashboard 源码或它所调用的 admin API 变化时，必须随该改动重新打包并提交嵌入的 `dashboard.tar.zst`：嵌入产物必须始终与它调用的 admin API 匹配。仓库使用 squash merge，分支只有最终产物会进入 main。
 - 面向用户的文案需要同步更新 `src/i18n/dictionaries/cn.ts` 和 `en.ts`。
 
 Dashboard 前端源码位于 `src/dashboard`，Hub 运行时读取的是嵌入在 `src/server/impl/admin/dashboard/assets/dashboard.tar.zst` 中的构建产物。
 
-发布时更新打包产物必须运行：
+必须用脚本重新打包，不要手工组装归档，也不要在冲突时直接选某一边：
 
 ```bash
 bash script/build-dashboard-assets.sh
 ```
 
-该脚本会进入 `src/dashboard` 执行 `pnpm run build`，为 Dashboard bundle 中实际包含的依赖生成 `THIRD_PARTY_LICENSES.md`，再把 `dist` 打包为新的 `dashboard.tar.zst`。不要手工组装归档。更新发布资源时必须同时提交新的 `dashboard.tar.zst`，否则内置 Hub Dashboard 及其许可证清单仍会使用旧版本。
+该脚本会进入 `src/dashboard` 执行 `pnpm run build`，为 Dashboard bundle 中实际包含的依赖生成 `THIRD_PARTY_LICENSES.md`，再把 `dist` 打包为新的 `dashboard.tar.zst`。发布准备同样会重新打包，保证发布产物与其许可证清单对应发布的源码。
 
 ## 分层与变更约束
 
 Hub 的层次职责必须保持清晰：
 
-- `core` 定义领域状态与 Repo 接口，不依赖具体数据库或 Redis 实现。
-- `repo` 实现持久化和 Watch 同步，不承载对外服务编排。
+- `core` 定义领域状态与 Repo 接口，不依赖具体数据库或 Redis 实现。Repo 接口命名的是它提供的存储原语（`List`、`GetById`、`GetByName`、`Save`、`Remove`），建立在其上的 core 暴露的是用例，因此两层有意共用这些动词。
+- `repo` 实现持久化和 Watch 同步，不承载对外服务编排。repo 负责装配它返回的完整实体：站点 Web 挂载路径与 Rpc 服务等派生值、配置的定义与状态，以及 field source 这类已存储的溯源信息。
 - `impl/control` 只实现面向 Link/Portal 的 Control API；`impl/admin`
-  及其 `debug`、`dashboard` 子包通过 `core` 和 `repo` 实现 Dashboard
+  及其 `debug`、`dashboard` 子包通过 `core` 实现 Dashboard
   Admin API 能力。
 - `mod` 承载 Control API listener、initializer、seeder、syncer、scheduler、
   sweeper 等运行时流程。
@@ -71,6 +71,7 @@ Hub 的层次职责必须保持清晰：
 
 修改 Hub 时还应遵守：
 
+- Core 的 `Validate` 只做校验与归一化，不写存储；它可以读取其它 repo 来执行跨实体规则，例如要求 Portal 规则前缀与目标站点 Web 的挂载路径一致。
 - 数据库表结构必须同时更新 `src/server/repo/db/model/sql/sqlite` 和 `src/server/repo/db/model/sql/pgsql`。
 - Redis key、Redis value JSON 和事件格式属于 Hub、Link、Portal 之间的协议；修改时必须同步所有生产者、消费者和测试。
 - `watchserver` 是运行时分发层，不应成为绕过 Repo/Core 直接实现业务规则的第二套状态源。
@@ -122,6 +123,12 @@ Hub 当前支持两类数据库配置来源：
 数据库 metadata 记录首次 seed 完成状态。后续启动跳过全部 seed、变量和来源输入，seed 条目不再提供 `override` 开关。无数据库模式每次建立新存储并导入 seed；内置 Dashboard 配置的维护独立于 seed 标记。
 
 字段来源以 JSON 保存原始字段模板，并记录每次替换的相对路径、变量名、占位符、实际应用的 JSON 值和默认值使用标记。AppConfig 的嵌套替换归属 value 的一级 key；管理接口修改字段后清除旧模板和替换记录。管理 API 与 Dashboard 一同展示这些信息及字段来源。
+
+`mod/seeder` 负责 seed YAML 契约：`ParseSeedEntities` 把文档解码成它声明的领域实体供 Dashboard 导入使用，启动 seed 复用同一套解码器，payload 结构体保持包内私有。两者都接受旧规则字段并逐字段告警；同一条规则混用新旧字段会在导入前失败。YAML 不能替换内置的 Dashboard 站点或规则。
+
+## Admin 载荷约定
+
+Admin 的 list 方法返回 `*ListItem`：只包含 Dashboard 列表需要展示的值，不含实体的溯源信息。详情响应（`get`、`create`、`update`）返回实体本身并携带 `fieldSources`，因此 Dashboard 表单可以直接回读刚写入的内容。AppConfig 的详情按 `key` 而不是 `id` 定位，因为 Hub 也会返回应用声明但尚未配置值的配置项；`update` 与 `remove` 仍按 `id` 定位已存储的行。
 
 ## Skeleton 生成
 

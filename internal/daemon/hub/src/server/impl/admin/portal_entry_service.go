@@ -9,7 +9,6 @@ type PortalEntryApiServiceServerImpl struct {
 	skeled.DefaultPortalEntryApiServiceServer
 
 	PortalEntryCore *core.PortalEntryCore `inject:""`
-	PortalSiteCore  *core.PortalSiteCore  `inject:""`
 }
 
 func (s *PortalEntryApiServiceServerImpl) List() []skeled.PortalEntry {
@@ -45,13 +44,13 @@ func (s *PortalEntryApiServiceServerImpl) toServerPortalEntry(entry core.PortalE
 }
 
 func (s *PortalEntryApiServiceServerImpl) toServerPortalEntryRule(rule core.PortalEntryRule) skeled.PortalEntryRule {
-	var site *skeled.PortalSite
+	var site *skeled.PortalSiteListItem
 	if rule.Site != nil {
-		value := toServerPortalSite(*rule.Site, s.PortalSiteCore.RpcgwServices(*rule.Site))
+		value := toServerPortalSiteListItem(rule.Site)
 		site = &value
 	}
 	return skeled.PortalEntryRule{
-		Rule: toServerPortalRule(*rule.Rule),
+		Rule: toServerPortalRuleListItem(rule.Rule),
 		Site: site,
 	}
 }

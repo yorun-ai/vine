@@ -64,12 +64,14 @@ type PortalDashboardAccess struct {
 
 // Repo
 
+// PortalRuleRepo stores entry rules. List and the lookups return entities the
+// caller owns.
 type PortalRuleRepo interface {
-	ListRules() []PortalRule
-	GetRuleById(id int) (*PortalRule, bool)
-	GetRuleByName(name string) (*PortalRule, bool)
-	SaveRule(rule *PortalRule)
-	RemoveRule(id int) bool
+	List() []*PortalRule
+	GetById(id int) (*PortalRule, bool)
+	GetByName(name string) (*PortalRule, bool)
+	Save(rule *PortalRule)
+	Remove(id int) bool
 }
 
 // Core
@@ -77,28 +79,34 @@ type PortalRuleRepo interface {
 type PortalRuleCore struct {
 	PortalRuleRepo PortalRuleRepo `inject:""`
 	PortalCertRepo PortalCertRepo `inject:""`
+	PortalSiteRepo PortalSiteRepo `inject:""`
 }
 
-func (m *PortalRuleCore) List() []PortalRule {
-	rules := m.PortalRuleRepo.ListRules()
-	ret := make([]PortalRule, 0, len(rules))
-	for i := range rules {
-		if rules[i].BuiltIn {
+func (m *PortalRuleCore) List() []*PortalRule {
+	rules := m.PortalRuleRepo.List()
+	ret := make([]*PortalRule, 0, len(rules))
+	for _, rule := range rules {
+		if rule.BuiltIn {
 			continue
 		}
-		ret = append(ret, rules[i])
+		ret = append(ret, rule)
 	}
 	return ret
 }
 
-func (m *PortalRuleCore) Get(id int) PortalRule {
-	rule, ok := m.PortalRuleRepo.GetRuleById(id)
-	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("entry rule %d not found", id))
-	return *rule
+// FindByName returns the rule with the name.
+func (m *PortalRuleCore) FindByName(name string) (*PortalRule, bool) {
+	return m.PortalRuleRepo.GetByName(name)
 }
 
-func (m *PortalRuleCore) Create(creation PortalRuleCreation) PortalRule {
-	_, ok := m.PortalRuleRepo.GetRuleByName(creation.Name)
+func (m *PortalRuleCore) Get(id int) *PortalRule {
+	rule, ok := m.PortalRuleRepo.GetById(id)
+	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("entry rule %d not found", id))
+	return rule
+}
+
+func (m *PortalRuleCore) Create(creation PortalRuleCreation) *PortalRule {
+	_, ok := m.PortalRuleRepo.GetByName(creation.Name)
 	ex.PanicNewIfNot(!ok, ex.OperationFailed, ex.F("entry rule %q already exists", creation.Name))
 
 	rule := PortalRule{
@@ -113,12 +121,12 @@ func (m *PortalRuleCore) Create(creation PortalRuleCreation) PortalRule {
 		RoutePathPrefix:         creation.RoutePathPrefix,
 	}
 	rule = m.Validate(rule)
-	m.PortalRuleRepo.SaveRule(&rule)
-	return rule
+	m.PortalRuleRepo.Save(&rule)
+	return &rule
 }
 
-func (m *PortalRuleCore) Update(id int, update PortalRuleUpdate) PortalRule {
-	rule, ok := m.PortalRuleRepo.GetRuleById(id)
+func (m *PortalRuleCore) Update(id int, update PortalRuleUpdate) *PortalRule {
+	rule, ok := m.PortalRuleRepo.GetById(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("entry rule %d not found", id))
 	ex.PanicNewIfNot(!rule.BuiltIn, ex.OperationFailed, ex.F("built-in entry rule %q cannot be updated", rule.Name))
 
@@ -127,7 +135,7 @@ func (m *PortalRuleCore) Update(id int, update PortalRuleUpdate) PortalRule {
 	if update.Name != nil {
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/name")
 		if *update.Name != rule.Name {
-			_, exists := m.PortalRuleRepo.GetRuleByName(*update.Name)
+			_, exists := m.PortalRuleRepo.GetByName(*update.Name)
 			ex.PanicNewIfNot(!exists, ex.OperationFailed, ex.F("entry rule %q already exists", *update.Name))
 		}
 		next.Name = *update.Name
@@ -166,8 +174,8 @@ func (m *PortalRuleCore) Update(id int, update PortalRuleUpdate) PortalRule {
 	}
 
 	next = m.Validate(next)
-	m.PortalRuleRepo.SaveRule(&next)
-	return next
+	m.PortalRuleRepo.Save(&next)
+	return &next
 }
 
 // normalizePortalRuleRoutePathPrefix validates a site-relative escaped path prefix.
@@ -188,15 +196,15 @@ func normalizePortalRuleRoutePathPrefix(routeType string, routePathPrefix string
 }
 
 func (m *PortalRuleCore) Remove(id int) {
-	rule, ok := m.PortalRuleRepo.GetRuleById(id)
+	rule, ok := m.PortalRuleRepo.GetById(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("entry rule %d not found", id))
 	ex.PanicNewIfNot(!rule.BuiltIn, ex.OperationFailed, ex.F("built-in entry rule %q cannot be removed", rule.Name))
 
-	ok = m.PortalRuleRepo.RemoveRule(id)
+	ok = m.PortalRuleRepo.Remove(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("entry rule %d not found", id))
 }
 
-func (m *PortalRuleCore) UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string) []PortalRule {
+func (m *PortalRuleCore) UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string) []*PortalRule {
 	scheme = strings.ToLower(strings.TrimSpace(scheme))
 	host = strings.TrimSpace(host)
 	pathPrefix = normalizeDashboardPathPrefix(pathPrefix)
@@ -221,12 +229,12 @@ func (m *PortalRuleCore) UpdateDashboardAccess(scheme string, host string, port 
 
 	adminRule.normalizeAndValidate()
 	webRule.normalizeAndValidate()
-	m.PortalRuleRepo.SaveRule(adminRule)
-	m.PortalRuleRepo.SaveRule(webRule)
+	m.PortalRuleRepo.Save(adminRule)
+	m.PortalRuleRepo.Save(webRule)
 
-	return []PortalRule{
-		*adminRule,
-		*webRule,
+	return []*PortalRule{
+		adminRule,
+		webRule,
 	}
 }
 
@@ -253,11 +261,8 @@ func normalizeDashboardPathPrefix(pathPrefix string) string {
 }
 
 func (m *PortalRuleCore) hasConfiguredCertForHost(host string) bool {
-	if m.PortalCertRepo == nil {
-		return false
-	}
 	normalizedHost := strings.ToLower(strings.TrimSpace(host))
-	for _, cert := range m.PortalCertRepo.ListCerts() {
+	for _, cert := range m.PortalCertRepo.List() {
 		if cert == nil || cert.PrivateKeyBase64 == "" {
 			continue
 		}
@@ -286,7 +291,7 @@ func portalCertDomainMatchesHost(domain string, host string) bool {
 }
 
 func (m *PortalRuleCore) dashboardRule(name string) *PortalRule {
-	rule, ok := m.PortalRuleRepo.GetRuleByName(name)
+	rule, ok := m.PortalRuleRepo.GetByName(name)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("dashboard entry rule %q not found", name))
 	ex.PanicNewIfNot(rule.BuiltIn, ex.OperationFailed, ex.F("dashboard entry rule %q is not a built-in rule", name))
 	return rule
@@ -344,26 +349,52 @@ func (r *PortalRule) normalizeAndValidate() {
 	r.RoutePathPrefix = normalizePortalRuleRoutePathPrefix(r.RouteType, r.RoutePathPrefix)
 }
 
-// Validate checks and normalizes a complete user rule without accessing storage.
-// Reserved built-in names are protected independently of database contents.
-func (*PortalRuleCore) Validate(rule PortalRule) PortalRule {
+// Validate checks and normalizes a complete user rule. It resolves the target
+// site to keep the rule aligned with the mount path of the Web that site serves,
+// and never writes to storage. Reserved built-in names are protected
+// independently of database contents.
+func (m *PortalRuleCore) Validate(rule PortalRule) PortalRule {
 	ex.PanicNewIfNot(rule.Name != DashboardAdminApiRuleName && rule.Name != DashboardWebRuleName,
 		ex.OperationFailed, ex.F("built-in entry rule %q cannot be replaced", rule.Name))
 	rule.normalizeAndValidate()
+	if rule.RouteType == PortalRuleRouteTypeSite {
+		m.validateWebMountPath(rule)
+	}
 	return rule
 }
 
+// validateWebMountPath keeps a rule aligned with the Web its target site serves.
+func (m *PortalRuleCore) validateWebMountPath(rule PortalRule) {
+	site, ok := m.PortalSiteRepo.GetByName(rule.RouteSiteName)
+	// A site whose Web declares no mount path accepts rules under any entry path.
+	if !ok || site.WebMountPath == "" {
+		return
+	}
+	mountPath := site.WebMountPath
+	ex.PanicNewIfNot(canonicalRulePathPrefix(rule.MatchPathPrefix) == canonicalRulePathPrefix(mountPath),
+		ex.OperationFailed, ex.F("portal rule %q matchPathPrefix must equal Web mountPath %q", rule.Name, mountPath))
+	ex.PanicNewIfNot(canonicalRulePathPrefix(rule.RoutePathPrefix) == canonicalRulePathPrefix(mountPath),
+		ex.OperationFailed, ex.F("portal rule %q routePathPrefix must equal Web mountPath %q", rule.Name, mountPath))
+}
+
+// canonicalRulePathPrefix returns a path prefix in the form used to compare a
+// rule against a Web mount path: without a trailing slash, and empty for the
+// root path.
+func canonicalRulePathPrefix(pathPrefix string) string {
+	return strings.TrimRight(pathPrefix, "/")
+}
+
 // Save creates or replaces a complete user rule by name, preserving an existing ID.
-func (m *PortalRuleCore) Save(rule PortalRule) PortalRule {
+func (m *PortalRuleCore) Save(rule PortalRule) *PortalRule {
 	rule = m.Validate(rule)
 	rule.Id = 0
 	rule.BuiltIn = false
-	if current, ok := m.PortalRuleRepo.GetRuleByName(rule.Name); ok {
+	if current, ok := m.PortalRuleRepo.GetByName(rule.Name); ok {
 		ex.PanicNewIfNot(!current.BuiltIn, ex.OperationFailed, ex.F("built-in entry rule %q cannot be replaced", rule.Name))
 		rule.Id = current.Id
 	}
-	m.PortalRuleRepo.SaveRule(&rule)
-	return rule
+	m.PortalRuleRepo.Save(&rule)
+	return &rule
 }
 
 // EnsureDashboardRule provisions a built-in rule, preserving configured access
@@ -371,7 +402,7 @@ func (m *PortalRuleCore) Save(rule PortalRule) PortalRule {
 func (m *PortalRuleCore) EnsureDashboardRule(rule PortalRule, refreshAccess bool) {
 	ex.PanicNewIfNot(rule.Name == DashboardAdminApiRuleName || rule.Name == DashboardWebRuleName, ex.OperationFailed, "not a dashboard rule")
 	rule.BuiltIn = true
-	if old, ok := m.PortalRuleRepo.GetRuleByName(rule.Name); ok {
+	if old, ok := m.PortalRuleRepo.GetByName(rule.Name); ok {
 		rule.Id = old.Id
 		if !refreshAccess {
 			rule.MatchScheme = old.MatchScheme
@@ -381,5 +412,5 @@ func (m *PortalRuleCore) EnsureDashboardRule(rule PortalRule, refreshAccess bool
 		}
 	}
 	rule.normalizeAndValidate()
-	m.PortalRuleRepo.SaveRule(&rule)
+	m.PortalRuleRepo.Save(&rule)
 }

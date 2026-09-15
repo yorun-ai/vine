@@ -11,20 +11,20 @@ import (
 type PortalRegistryServiceServerImpl struct {
 	skeled.DefaultPortalRegistryServiceServer
 
-	PortalInstanceRepo core.PortalInstanceRepo `inject:""`
+	PortalInstanceCore *core.PortalInstanceCore `inject:""`
 }
 
 func (s *PortalRegistryServiceServerImpl) Register(registration skeled.PortalRegistration) {
-	s.PortalInstanceRepo.SavePortalInstance(&core.PortalInstance{
+	s.PortalInstanceCore.Register(core.PortalInstance{
 		InstanceId: registration.InstanceId.String(),
 		Version:    registration.Version,
 	})
 }
 
 func (s *PortalRegistryServiceServerImpl) Unregister(instanceId skel.UUID) {
-	s.PortalInstanceRepo.RemovePortalInstance(instanceId.String())
+	s.PortalInstanceCore.Unregister(instanceId.String())
 }
 
 func (s *PortalRegistryServiceServerImpl) Heartbeat(status skeled.PortalStatus) bool {
-	return s.PortalInstanceRepo.KeepPortalInstance(status.InstanceId.String())
+	return s.PortalInstanceCore.Heartbeat(status.InstanceId.String())
 }

@@ -13,15 +13,15 @@ import (
 
 func TestPortalRuleSeedMapsWithoutDomainValidation(t *testing.T) {
 	seed := _PortalRule{Name: "mapped", RouteType: "SITE", RoutePathPrefix: "/internal/"}
-	rule := seed.ToCorePortalRule()
+	rule := seed.toCorePortalRule()
 	assert.Zero(t, rule.Id)
 	assert.False(t, rule.BuiltIn)
 	assert.Equal(t, "/internal/", rule.RoutePathPrefix)
 	seed.RoutePathPrefix = ""
-	assert.Empty(t, seed.ToCorePortalRule().RoutePathPrefix)
+	assert.Empty(t, seed.toCorePortalRule().RoutePathPrefix)
 	seed.RouteType = "PERMANENT_REDIRECT"
 	seed.RoutePathPrefix = "/internal"
-	assert.NotPanics(t, func() { seed.ToCorePortalRule() })
+	assert.NotPanics(t, func() { seed.toCorePortalRule() })
 }
 
 func TestSeedPortalRuleFieldNames(t *testing.T) {
@@ -31,7 +31,7 @@ func TestSeedPortalRuleFieldNames(t *testing.T) {
 	} {
 		payload, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload](content)
 		require.NoError(t, err)
-		rule := payload.PortalRules[0].ToCorePortalRule()
+		rule := payload.PortalRules[0].toCorePortalRule()
 		assert.Equal(t, "http", rule.MatchScheme)
 		assert.Equal(t, "/internal", rule.RoutePathPrefix)
 	}

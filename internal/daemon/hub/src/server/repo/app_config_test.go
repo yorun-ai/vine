@@ -9,6 +9,7 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
@@ -24,27 +25,25 @@ var (
 	testConfigDBOnce sync.Once
 )
 
-// DB config repo
+func TestAppConfigRepoListItems(t *testing.T) {
+	_, repo, _ := newTestAppConfigRepo(t)
+	repo.Save(testAppConfig("db.main", `{"connUrl":"postgres://demo","maxPoolSize":8}`, 1))
+	repo.Save(testAppConfig("feature.flag", `{"enabled":true}`, 2))
 
-func TestDBAppConfigRepoListItems(t *testing.T) {
-	_, repo, _ := newTestDBAppConfigRepo(t)
-	repo.SaveItem(testAppConfig("db.main", `{"connUrl":"postgres://demo","maxPoolSize":8}`, 1))
-	repo.SaveItem(testAppConfig("feature.flag", `{"enabled":true}`, 2))
-
-	items := repo.ListItems()
+	items := repo.List()
 	require.Len(t, items, 2)
 	assert.Equal(t, `{"connUrl":"postgres://demo","maxPoolSize":8}`, items[0].Value)
 	assert.Equal(t, "feature.flag", items[1].Name)
 	assert.Equal(t, 2, items[1].Version)
 }
 
-func TestDBAppConfigRepoSaveItemCreate(t *testing.T) {
-	_, repo, watchServer := newTestDBAppConfigRepo(t)
+func TestAppConfigRepoSaveItemCreate(t *testing.T) {
+	_, repo, watchServer := newTestAppConfigRepo(t)
 
 	item := testAppConfig("db.main", `{"connUrl":"postgres://demo"}`, 1)
-	repo.SaveItem(item)
+	repo.Save(item)
 
-	item, ok := repo.GetItemById(item.Id)
+	item, ok := repo.GetById(item.Id)
 	require.True(t, ok)
 	assert.NotZero(t, item.Id)
 	assert.Equal(t, `{"connUrl":"postgres://demo"}`, item.Value)
@@ -56,26 +55,26 @@ func TestDBAppConfigRepoSaveItemCreate(t *testing.T) {
 	assert.Equal(t, &watched.ConfigValue{Name: "db.main", Value: []byte(`{"connUrl":"postgres://demo"}`)}, vcode.MustUnmarshalJsonS[*watched.ConfigValue](raw))
 }
 
-func TestDBAppConfigRepoSaveItemDuplicateNameWithoutId(t *testing.T) {
-	_, repo, _ := newTestDBAppConfigRepo(t)
+func TestAppConfigRepoSaveItemDuplicateNameWithoutId(t *testing.T) {
+	_, repo, _ := newTestAppConfigRepo(t)
 
-	repo.SaveItem(testAppConfig("feature.flag", `{"enabled":true}`, 1))
+	repo.Save(testAppConfig("feature.flag", `{"enabled":true}`, 1))
 
 	assert.Panics(t, func() {
-		repo.SaveItem(testAppConfig("feature.flag", `{"enabled":false}`, 1))
+		repo.Save(testAppConfig("feature.flag", `{"enabled":false}`, 1))
 	})
 }
 
-func TestDBAppConfigRepoSaveItemUpdate(t *testing.T) {
-	_, repo, watchServer := newTestDBAppConfigRepo(t)
+func TestAppConfigRepoSaveItemUpdate(t *testing.T) {
+	_, repo, watchServer := newTestAppConfigRepo(t)
 
 	item := testAppConfig("feature.flag", `{"enabled":true}`, 1)
-	repo.SaveItem(item)
+	repo.Save(item)
 	item.Value = `{"enabled":false}`
 	item.Version = 2
-	repo.SaveItem(item)
+	repo.Save(item)
 
-	item, ok := repo.GetItemById(item.Id)
+	item, ok := repo.GetById(item.Id)
 	require.True(t, ok)
 	assert.Equal(t, `{"enabled":false}`, item.Value)
 	assert.Equal(t, 2, item.Version)
@@ -86,40 +85,41 @@ func TestDBAppConfigRepoSaveItemUpdate(t *testing.T) {
 	assert.Equal(t, &watched.ConfigValue{Name: "feature.flag", Value: []byte(`{"enabled":false}`)}, vcode.MustUnmarshalJsonS[*watched.ConfigValue](raw))
 }
 
-func TestDBAppConfigRepoRemoveItem(t *testing.T) {
-	_, repo, watchServer := newTestDBAppConfigRepo(t)
+func TestAppConfigRepoRemoveItem(t *testing.T) {
+	_, repo, watchServer := newTestAppConfigRepo(t)
 	item := testAppConfig("feature.flag", `{"enabled":true}`, 1)
-	repo.SaveItem(item)
+	repo.Save(item)
 	id := item.Id
 
-	assert.True(t, repo.RemoveItem(id))
+	assert.True(t, repo.Remove(id))
 
-	item, ok := repo.GetItemById(id)
+	item, ok := repo.GetById(id)
 	assert.False(t, ok)
 	assert.Nil(t, item)
-	assert.Empty(t, repo.ListItems())
+	assert.Empty(t, repo.List())
 
 	key := watched.FormatConfigKey("feature.flag")
 	_, ok = watchServer.Get(key)
 	assert.False(t, ok)
-	assert.False(t, repo.RemoveItem(id))
+	assert.False(t, repo.Remove(id))
 }
 
 // Helpers
 
-func newTestDBAppConfigRepo(t *testing.T) (*gorm.DB, *DBAppConfigRepo, *watchserver.Server) {
+func newTestAppConfigRepo(t *testing.T) (*gorm.DB, *AppConfigRepo, *watchserver.Server) {
 	t.Helper()
 
 	db := sharedTestConfigDB(t)
 	watchServer := watchserver.NewServerForTest()
 	t.Cleanup(watchServer.AfterAppStop)
 
-	repo := &DBAppConfigRepo{
+	repo := &AppConfigRepo{
 		Dao: &model.AppConfigDao{
 			Dao: rdb.NewDao[*model.AppConfig](db),
 		},
-		Syncer: testSyncer(watchServer),
-		Access: new(configaccess.Access),
+		SchemaRepo: new(_PortalSiteSchemaRepo),
+		Syncer:     testSyncer(watchServer),
+		Access:     new(configaccess.Access),
 	}
 	repo.Dao.InitSchema()
 	require.NoError(t, db.Exec("DELETE FROM app_config").Error)
@@ -148,10 +148,96 @@ func testAppConfig(name string, value string, version int) *core.AppConfig {
 	}
 }
 
-func TestDBAppConfigRepoRejectsReadOnlyWrites(t *testing.T) {
+func TestAppConfigRepoRejectsReadOnlyWrites(t *testing.T) {
 	access := new(configaccess.Access)
 	access.Lock()
-	repo := &DBAppConfigRepo{Access: access}
-	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.SaveItem(new(core.AppConfig)) })
-	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.RemoveItem(1) })
+	repo := &AppConfigRepo{Access: access}
+	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.Save(new(core.AppConfig)) })
+	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.Remove(1) })
+}
+
+func TestAppConfigRepoSlotsAssembleDeclaredAndStoredConfigs(t *testing.T) {
+	_, repo, _ := newTestAppConfigRepo(t)
+	schemas := repo.SchemaRepo.(*_PortalSiteSchemaRepo)
+	schemas.enumSchemas = []*skel.EnumSchema{{
+		SkelName: "demo.Mode",
+		Items:    []*skel.EnumItemSchema{{Name: "FAST", Description: "Fast"}, {Name: "SAFE"}},
+	}}
+	schemas.configSchemas = []*skel.ConfigSchema{
+		{
+			Name:      "FeatureConfig",
+			SkelName:  "demo.FeatureConfig",
+			Lifecycle: "ETERNAL",
+			Members: []*skel.MemberSchema{
+				{Name: "enabled", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+				{Name: "mode", Description: "Run mode", Type: &skel.TypeSchema{Kind: skel.TypeKindEnum, SkelName: "demo.Mode"}},
+			},
+		},
+		{Name: "OtherConfig", SkelName: "demo.OtherConfig", Lifecycle: "INSTANT"},
+		{
+			Name:     "MismatchedConfig",
+			SkelName: "demo.MismatchedConfig",
+			Members: []*skel.MemberSchema{
+				{Name: "enabled", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			},
+		},
+	}
+
+	repo.Save(testAppConfig("demo.FeatureConfig", `{"enabled":true,"mode":"FAST"}`, 2))
+	repo.Save(testAppConfig("demo.MismatchedConfig", `{"enabled":"yes"}`, 1))
+	repo.Save(testAppConfig("demo.LegacyConfig", `{}`, 1))
+
+	slots := map[string]*core.AppConfig{}
+	for _, slot := range repo.ListSlots() {
+		slots[slot.Name] = slot
+	}
+	require.Len(t, slots, 4)
+
+	configured := slots["demo.FeatureConfig"]
+	require.NotNil(t, configured)
+	assert.True(t, configured.Configured)
+	assert.Equal(t, core.AppConfigStatusNormal, configured.Status)
+	assert.Equal(t, "ETERNAL", configured.Lifecycle)
+	require.NotNil(t, configured.Definition)
+	require.Len(t, configured.Definition.Fields, 2)
+	assert.Equal(t, "Run mode", configured.Definition.Fields[1].Description)
+	require.Len(t, configured.Definition.Fields[1].EnumItems, 2)
+	assert.Equal(t, "FAST", configured.Definition.Fields[1].EnumItems[0].Name)
+
+	// A configuration an application declares without a stored value has no
+	// storage identity and no provenance.
+	declared := slots["demo.OtherConfig"]
+	require.NotNil(t, declared)
+	assert.False(t, declared.Configured)
+	assert.Zero(t, declared.Id)
+	assert.Equal(t, core.AppConfigStatusUnconfigured, declared.Status)
+	assert.Equal(t, "INSTANT", declared.Lifecycle)
+	assert.Empty(t, declared.FieldSources)
+
+	// A stored value that does not match its declaration is reported as such.
+	mismatched := slots["demo.MismatchedConfig"]
+	require.NotNil(t, mismatched)
+	assert.True(t, mismatched.Configured)
+	assert.Equal(t, core.AppConfigStatusMismatch, mismatched.Status)
+	require.NotNil(t, mismatched.Definition)
+
+	// A stored value without a declaration stays usable but unused.
+	unused := slots["demo.LegacyConfig"]
+	require.NotNil(t, unused)
+	assert.True(t, unused.Configured)
+	assert.Equal(t, core.AppConfigStatusUnused, unused.Status)
+	assert.Nil(t, unused.Definition)
+
+	// The stored list keeps serving downstream sync and excludes declared slots.
+	items := repo.List()
+	require.Len(t, items, 3)
+	for _, item := range items {
+		assert.NotEqual(t, "demo.OtherConfig", item.Name)
+	}
+
+	slot, ok := repo.FindByName("demo.OtherConfig")
+	require.True(t, ok)
+	assert.False(t, slot.Configured)
+	_, ok = repo.FindByName("demo.Missing")
+	assert.False(t, ok)
 }

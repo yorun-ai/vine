@@ -11,11 +11,11 @@ type PortalSiteApiServiceServerImpl struct {
 	PortalSiteCore *core.PortalSiteCore `inject:""`
 }
 
-func (s *PortalSiteApiServiceServerImpl) List() []skeled.PortalSite {
+func (s *PortalSiteApiServiceServerImpl) List() []skeled.PortalSiteListItem {
 	entries := s.PortalSiteCore.List()
-	ret := make([]skeled.PortalSite, 0, len(entries))
+	ret := make([]skeled.PortalSiteListItem, 0, len(entries))
 	for _, entry := range entries {
-		ret = append(ret, s.toServerPortalSite(entry))
+		ret = append(ret, toServerPortalSiteListItem(entry))
 	}
 	return ret
 }
@@ -25,49 +25,67 @@ func (s *PortalSiteApiServiceServerImpl) ListOptions() skeled.PortalSiteOptions 
 }
 
 func (s *PortalSiteApiServiceServerImpl) Get(id int) skeled.PortalSite {
-	return s.toServerPortalSite(s.PortalSiteCore.Get(id))
+	entry := s.PortalSiteCore.Get(id)
+	return toServerPortalSite(entry, toServerFieldSources(entry.FieldSources))
 }
 
 func (s *PortalSiteApiServiceServerImpl) Create(creation skeled.PortalSiteCreation) skeled.PortalSite {
-	return s.toServerPortalSite(s.PortalSiteCore.Create(core.PortalSiteCreation{
+	entry := s.PortalSiteCore.Create(core.PortalSiteCreation{
 		Name:          creation.Name,
 		Type:          core.PortalSiteType(creation.Type),
 		ActorSkelName: creation.ActorSkelName,
 		ActorVia:      creation.ActorVia,
 		Cors:          toCorePortalCors(creation.Cors),
 		WebName:       creation.WebName,
-	}))
+	})
+	return toServerPortalSite(entry, toServerFieldSources(entry.FieldSources))
 }
 
 func (s *PortalSiteApiServiceServerImpl) Update(id int, update skeled.PortalSiteUpdate) skeled.PortalSite {
-	return s.toServerPortalSite(s.PortalSiteCore.Update(id, core.PortalSiteUpdate{
+	entry := s.PortalSiteCore.Update(id, core.PortalSiteUpdate{
 		Name:          update.Name,
 		Type:          toCorePortalSiteTypePointer(update.Type),
 		ActorSkelName: update.ActorSkelName,
 		ActorVia:      update.ActorVia,
 		Cors:          toCorePortalCorsPointer(update.Cors),
 		WebName:       update.WebName,
-	}))
+	})
+	return toServerPortalSite(entry, toServerFieldSources(entry.FieldSources))
 }
 
 func (s *PortalSiteApiServiceServerImpl) Remove(id int) {
 	s.PortalSiteCore.Remove(id)
 }
 
-func (s *PortalSiteApiServiceServerImpl) toServerPortalSite(entry core.PortalSite) skeled.PortalSite {
-	return toServerPortalSite(entry, s.PortalSiteCore.RpcgwServices(entry))
-}
-
-func toServerPortalSite(entry core.PortalSite, rpcgwServices []string) skeled.PortalSite {
+func toServerPortalSite(entry *core.PortalSite, fieldSources []skeled.FieldSource) skeled.PortalSite {
 	return skeled.PortalSite{
 		Id:            entry.Id,
 		Name:          entry.Name,
 		Type:          skeled.PortalSiteType(entry.Type),
 		ActorSkelName: entry.ActorSkelName,
 		ActorVia:      entry.ActorVia,
-		RpcgwServices: rpcgwServices,
+		RpcgwServices: entry.RpcgwServices,
 		Cors:          toServerPortalCors(entry.Cors),
 		WebName:       entry.WebName,
+		WebMountPath:  entry.WebMountPath,
+		FieldSources:  fieldSources,
+	}
+}
+
+// toServerPortalSiteListItem maps a site for list responses, which carry the
+// entity values without its seed provenance.
+func toServerPortalSiteListItem(entry *core.PortalSite) skeled.PortalSiteListItem {
+	detail := toServerPortalSite(entry, nil)
+	return skeled.PortalSiteListItem{
+		Id:            detail.Id,
+		Name:          detail.Name,
+		Type:          detail.Type,
+		ActorSkelName: detail.ActorSkelName,
+		ActorVia:      detail.ActorVia,
+		RpcgwServices: detail.RpcgwServices,
+		Cors:          detail.Cors,
+		WebName:       detail.WebName,
+		WebMountPath:  detail.WebMountPath,
 	}
 }
 

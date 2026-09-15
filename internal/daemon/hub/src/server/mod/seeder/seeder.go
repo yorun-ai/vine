@@ -15,7 +15,6 @@ type Seeder struct {
 	Logger *logger.Logger `inject:""`
 
 	MetadataRepo  core.MetadataRepo    `inject:""`
-	RuleRepo      core.PortalRuleRepo  `inject:""`
 	RuleCore      *core.PortalRuleCore `inject:""`
 	AppConfigCore *core.AppConfigCore  `inject:""`
 	SiteCore      *core.PortalSiteCore `inject:""`
@@ -70,33 +69,35 @@ func (s *Seeder) loadSeedYAML() {
 		payload.PortalCerts[i].Sources = entityFieldSources(sources, "portalCerts", i)
 	}
 
-	for _, item := range payload.AppConfigs {
-		s.AppConfigCore.Validate(*item.ToCoreAppConfig())
+	entities := payload.entities()
+	for _, item := range entities.AppConfigs {
+		s.AppConfigCore.Validate(*item)
 	}
-	for _, site := range payload.PortalEntries {
-		s.SiteCore.Validate(*site.ToCorePortalSite())
+	for _, site := range entities.PortalSites {
+		s.SiteCore.Validate(*site)
 	}
-	for _, rule := range payload.PortalRules {
-		s.RuleCore.Validate(*rule.ToCorePortalRule())
+	for _, rule := range entities.PortalRules {
+		s.RuleCore.Validate(*rule)
 	}
-	for _, cert := range payload.PortalCerts {
-		s.CertCore.Validate(*cert.ToCorePortalCert())
+	for _, cert := range entities.PortalCerts {
+		s.CertCore.Validate(*cert)
 	}
 
 	s.payload = payload
 }
 
 func (s *Seeder) applySeed() {
-	for _, item := range s.payload.AppConfigs {
-		s.AppConfigCore.Save(*item.ToCoreAppConfig())
+	entities := s.payload.entities()
+	for _, item := range entities.AppConfigs {
+		s.AppConfigCore.Save(*item)
 	}
-	for _, site := range s.payload.PortalEntries {
-		s.SiteCore.Save(*site.ToCorePortalSite())
+	for _, site := range entities.PortalSites {
+		s.SiteCore.Save(*site)
 	}
-	for _, rule := range s.payload.PortalRules {
-		s.RuleCore.Save(*rule.ToCorePortalRule())
+	for _, rule := range entities.PortalRules {
+		s.RuleCore.Save(*rule)
 	}
-	for _, cert := range s.payload.PortalCerts {
-		s.CertCore.Save(*cert.ToCorePortalCert())
+	for _, cert := range entities.PortalCerts {
+		s.CertCore.Save(*cert)
 	}
 }

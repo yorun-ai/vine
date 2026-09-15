@@ -2,67 +2,31 @@ package admin
 
 import (
 	"cmp"
-	"encoding/json/v2"
-	"math"
-	"strconv"
 	"strings"
-	"time"
 
 	"go.yorun.ai/vine/internal/core/ex"
-	"go.yorun.ai/vine/internal/core/skel"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vslice"
-)
-
-const (
-	appConfigStatusNormal       = "NORMAL"
-	appConfigStatusUnused       = "UNUSED"
-	appConfigStatusUnconfigured = "UNCONFIGURED"
-	appConfigStatusMismatch     = "MISMATCH"
 )
 
 type AppConfigApiServiceServerImpl struct {
 	skeled.DefaultAppConfigApiServiceServer
 
 	AppConfigCore *core.AppConfigCore `inject:""`
-	SchemaRepo    core.SchemaRepo     `inject:""`
 }
 
-type _AppConfigListItem struct {
-	ConfigItem skeled.AppConfigItem
-	CreatedAt  time.Time
-}
-
-func (s *AppConfigApiServiceServerImpl) List() []skeled.AppConfigItem {
-	items := s.AppConfigCore.List()
-	schemas := s.SchemaRepo.ListAppConfigSchemas()
-	enumSchemas := s.SchemaRepo.ListEnumSchemas()
-	ret := make([]_AppConfigListItem, 0, len(items)+len(schemas))
-	usedSchemas := make(map[*skel.ConfigSchema]struct{}, len(items))
-	for _, item := range items {
-		schema := findConfigSchema(item.Name, schemas)
-		if schema != nil {
-			usedSchemas[schema] = struct{}{}
-		}
-		ret = append(ret, _AppConfigListItem{
-			ConfigItem: toServerAppConfigItem(item, schema, enumSchemas),
-			CreatedAt:  item.CreatedAt,
-		})
+func (s *AppConfigApiServiceServerImpl) List() []skeled.AppConfigListItem {
+	slots := s.AppConfigCore.List()
+	items := make([]skeled.AppConfigListItem, 0, len(slots))
+	for _, slot := range sortedAppConfigSlots(slots) {
+		items = append(items, toServerAppConfigListItem(slot))
 	}
-	for _, schema := range schemas {
-		if _, ok := usedSchemas[schema]; ok {
-			continue
-		}
-		ret = append(ret, _AppConfigListItem{
-			ConfigItem: toServerUnconfiguredAppConfigItem(schema, enumSchemas),
-		})
-	}
-	return serverAppConfigItems(sortedServerAppConfigItems(ret))
+	return items
 }
 
-func (s *AppConfigApiServiceServerImpl) Get(id int) skeled.AppConfigItem {
-	return s.toServerAppConfigItem(s.AppConfigCore.Get(id))
+func (s *AppConfigApiServiceServerImpl) Get(key string) skeled.AppConfigItem {
+	return s.toServerAppConfigItem(s.AppConfigCore.GetSlot(key))
 }
 
 func (s *AppConfigApiServiceServerImpl) Update(id int, update skeled.AppConfigUpdate) skeled.AppConfigItem {
@@ -81,375 +45,147 @@ func (s *AppConfigApiServiceServerImpl) Create(creation skeled.AppConfigCreation
 
 func (s *AppConfigApiServiceServerImpl) Remove(id int) bool {
 	item := s.AppConfigCore.Get(id)
-	schema := findConfigSchema(item.Name, s.SchemaRepo.ListAppConfigSchemas())
-	ex.PanicNewIfNot(schema == nil, ex.OperationFailed, ex.F("config %q is not unused", item.Name))
+	ex.PanicNewIfNot(item.Definition == nil, ex.OperationFailed, ex.F("config %q is not unused", item.Name))
 	return s.AppConfigCore.Remove(id)
 }
 
 func (s *AppConfigApiServiceServerImpl) toServerAppConfigItem(item *core.AppConfig) skeled.AppConfigItem {
-	return toServerAppConfigItem(item, findConfigSchema(item.Name, s.SchemaRepo.ListAppConfigSchemas()), s.SchemaRepo.ListEnumSchemas())
+	return toServerAppConfigItem(item, toServerFieldSources(item.FieldSources))
 }
 
-func toServerAppConfigItem(item *core.AppConfig, schema *skel.ConfigSchema, enumSchemas []*skel.EnumSchema) skeled.AppConfigItem {
+func toServerAppConfigItem(item *core.AppConfig, fieldSources []skeled.FieldSource) skeled.AppConfigItem {
 	return skeled.AppConfigItem{
-		Id:        item.Id,
-		Key:       item.Name,
-		Status:    configItemStatus(schema, item.Value, enumSchemas),
-		Lifecycle: configItemLifecycle(schema),
-		Value:     item.Value,
-		Schema:    toServerAppConfigSchema(schema, enumSchemas),
+		Id:           item.Id,
+		Key:          item.Name,
+		Status:       string(item.Status),
+		Lifecycle:    item.Lifecycle,
+		Value:        item.Value,
+		Schema:       toServerAppConfigSchema(item.Definition),
+		FieldSources: fieldSources,
 	}
 }
 
-func toServerUnconfiguredAppConfigItem(schema *skel.ConfigSchema, enumSchemas []*skel.EnumSchema) skeled.AppConfigItem {
-	return skeled.AppConfigItem{
-		Key:       schema.SkelName,
-		Status:    appConfigStatusUnconfigured,
-		Lifecycle: schema.Lifecycle,
-		Value:     "",
-		Schema:    toServerAppConfigSchema(schema, enumSchemas),
+func toServerAppConfigListItem(item *core.AppConfig) skeled.AppConfigListItem {
+	schemaName := ""
+	schemaSkelName := ""
+	if item.Definition != nil {
+		schemaName = item.Definition.Name
+		schemaSkelName = item.Definition.SkelName
+	}
+	return skeled.AppConfigListItem{
+		Id:             item.Id,
+		Key:            item.Name,
+		Status:         string(item.Status),
+		Lifecycle:      item.Lifecycle,
+		SchemaName:     schemaName,
+		SchemaSkelName: schemaSkelName,
 	}
 }
 
-func configItemStatus(schema *skel.ConfigSchema, value string, enumSchemas []*skel.EnumSchema) string {
-	if schema == nil {
-		return appConfigStatusUnused
-	}
-	if !appConfigValueMatchesSchema(value, schema, enumSchemas) {
-		return appConfigStatusMismatch
-	}
-	return appConfigStatusNormal
-}
-
-func sortedServerAppConfigItems(items []_AppConfigListItem) []_AppConfigListItem {
-	return vslice.SortBy(items, func(a _AppConfigListItem, b _AppConfigListItem) bool {
-		aStatusOrder := appConfigStatusOrder(a.ConfigItem.Status)
-		bStatusOrder := appConfigStatusOrder(b.ConfigItem.Status)
-		if aStatusOrder != bStatusOrder {
-			return aStatusOrder < bStatusOrder
+// sortedAppConfigSlots keeps the dashboard ordering: mismatch, unconfigured,
+// unused, then the remaining configs by key, with the newest unused first.
+func sortedAppConfigSlots(slots []*core.AppConfig) []*core.AppConfig {
+	return vslice.SortBy(slots, func(a *core.AppConfig, b *core.AppConfig) bool {
+		aOrder := appConfigStatusOrder(a.Status)
+		bOrder := appConfigStatusOrder(b.Status)
+		if aOrder != bOrder {
+			return aOrder < bOrder
 		}
-		if a.ConfigItem.Status == appConfigStatusUnused && !a.CreatedAt.Equal(b.CreatedAt) {
+		if a.Status == core.AppConfigStatusUnused && !a.CreatedAt.Equal(b.CreatedAt) {
 			return b.CreatedAt.Compare(a.CreatedAt) < 0
 		}
-		return cmp.Compare(a.ConfigItem.Key, b.ConfigItem.Key) < 0
+		return cmp.Compare(a.Name, b.Name) < 0
 	})
 }
 
-func serverAppConfigItems(items []_AppConfigListItem) []skeled.AppConfigItem {
-	ret := make([]skeled.AppConfigItem, 0, len(items))
-	for _, item := range items {
-		ret = append(ret, item.ConfigItem)
-	}
-	return ret
-}
-
-func appConfigStatusOrder(status string) int {
+func appConfigStatusOrder(status core.AppConfigStatus) int {
 	switch status {
-	case appConfigStatusMismatch:
+	case core.AppConfigStatusMismatch:
 		return 0
-	case appConfigStatusUnconfigured:
+	case core.AppConfigStatusUnconfigured:
 		return 1
-	case appConfigStatusUnused:
+	case core.AppConfigStatusUnused:
 		return 2
 	default:
 		return 3
 	}
 }
 
-func appConfigValueMatchesSchema(value string, schema *skel.ConfigSchema, enumSchemas []*skel.EnumSchema) bool {
-	var decoded any
-	if json.Unmarshal([]byte(value), &decoded) != nil {
-		return false
-	}
-	object, ok := decoded.(map[string]any)
-	if !ok {
-		return false
-	}
-
-	expectedFields := make(map[string]struct{}, len(schema.Members))
-	for _, member := range schema.Members {
-		expectedFields[member.Name] = struct{}{}
-		fieldValue, ok := object[member.Name]
-		if !ok || !jsonValueMatchesType(fieldValue, member.Type, enumSchemas) {
-			return false
-		}
-	}
-	for name := range object {
-		if _, ok := expectedFields[name]; !ok {
-			return false
-		}
-	}
-	return true
-}
-
-func jsonValueMatchesType(value any, typeSchema *skel.TypeSchema, enumSchemas []*skel.EnumSchema) bool {
-	if value == nil {
-		return typeSchema != nil && typeSchema.Nullable
-	}
-	if typeSchema == nil {
-		return false
-	}
-
-	switch typeSchema.Kind {
-	case skel.TypeKindScalar:
-		return jsonValueMatchesScalar(value, typeSchema.Scalar)
-	case skel.TypeKindEnum:
-		text, ok := value.(string)
-		return ok && enumValueExists(text, typeSchema, enumSchemas)
-	case skel.TypeKindList:
-		items, ok := value.([]any)
-		if !ok {
-			return false
-		}
-		for _, item := range items {
-			if !jsonValueMatchesType(item, typeSchema.Element, enumSchemas) {
-				return false
-			}
-		}
-		return true
-	case skel.TypeKindMap:
-		items, ok := value.(map[string]any)
-		if !ok {
-			return false
-		}
-		for key, item := range items {
-			if !jsonMapKeyMatchesType(key, typeSchema.Key, enumSchemas) || !jsonValueMatchesType(item, typeSchema.Value, enumSchemas) {
-				return false
-			}
-		}
-		return true
-	case skel.TypeKindData, skel.TypeKindConfig, skel.TypeKindEvent, skel.TypeKindTypeParameter:
-		_, ok := value.(map[string]any)
-		return ok
-	default:
-		return false
-	}
-}
-
-func jsonValueMatchesScalar(value any, scalar skel.Scalar) bool {
-	switch scalar {
-	case skel.ScalarBool:
-		_, ok := value.(bool)
-		return ok
-	case skel.ScalarInt, skel.ScalarLong:
-		number, ok := value.(float64)
-		return ok && math.Trunc(number) == number
-	case skel.ScalarFloat, skel.ScalarDouble:
-		_, ok := value.(float64)
-		return ok
-	case skel.ScalarDecimal:
-		switch value.(type) {
-		case float64, string:
-			return true
-		default:
-			return false
-		}
-	case skel.ScalarJson:
-		return true
-	default:
-		_, ok := value.(string)
-		return ok
-	}
-}
-
-func jsonMapKeyMatchesType(value string, typeSchema *skel.TypeSchema, enumSchemas []*skel.EnumSchema) bool {
-	if typeSchema == nil {
-		return false
-	}
-	switch typeSchema.Kind {
-	case skel.TypeKindEnum:
-		return enumValueExists(value, typeSchema, enumSchemas)
-	case skel.TypeKindScalar:
-		switch typeSchema.Scalar {
-		case skel.ScalarBool:
-			return value == "true" || value == "false"
-		case skel.ScalarInt, skel.ScalarLong:
-			decoded, err := strconv.ParseInt(value, 10, 64)
-			return err == nil && (strconv.FormatInt(decoded, 10) == value || value == "-0")
-		default:
-			return true
-		}
-	default:
-		return true
-	}
-}
-
-func enumValueExists(value string, typeSchema *skel.TypeSchema, enumSchemas []*skel.EnumSchema) bool {
-	for _, enumSchema := range enumSchemas {
-		if enumSchema.SkelName != typeSchema.SkelName {
-			continue
-		}
-		for _, item := range enumSchema.Items {
-			if item.Name == value {
-				return true
-			}
-		}
-		return false
-	}
-	return true
-}
-
-func isValidConfigSkelName(skelName string) bool {
-	parts := strings.Split(skelName, ".")
-	if len(parts) < 2 {
-		return false
-	}
-
-	configName := parts[len(parts)-1]
-	if !strings.HasSuffix(configName, "Config") || !isValidSkelIdentifier(configName) {
-		return false
-	}
-
-	for _, part := range parts[:len(parts)-1] {
-		if !isValidSkelIdentifier(part) {
-			return false
-		}
-	}
-	return true
-}
-
-func isValidSkelIdentifier(value string) bool {
-	if value == "" {
-		return false
-	}
-	for index, char := range value {
-		if index == 0 {
-			if !isAsciiLetter(char) && char != '_' {
-				return false
-			}
-			continue
-		}
-		if !isAsciiLetter(char) && !isAsciiDigit(char) && char != '_' {
-			return false
-		}
-	}
-	return true
-}
-
-func isAsciiLetter(char rune) bool {
-	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
-}
-
-func isAsciiDigit(char rune) bool {
-	return char >= '0' && char <= '9'
-}
-
-func configItemLifecycle(schema *skel.ConfigSchema) string {
-	if schema == nil {
-		return ""
-	}
-	return schema.Lifecycle
-}
-
-func toServerAppConfigSchema(schema *skel.ConfigSchema, enumSchemas []*skel.EnumSchema) *skeled.AppConfigSchema {
-	if schema == nil {
+func toServerAppConfigSchema(definition *core.AppConfigDefinition) *skeled.AppConfigSchema {
+	if definition == nil {
 		return nil
 	}
 	return &skeled.AppConfigSchema{
-		SkelName:         schema.SkelName,
-		Name:             schema.Name,
-		Description:      schema.Description,
-		Deprecated:       schema.Deprecated,
-		DeprecatedReason: schema.DeprecatedReason,
-		Lifecycle:        schema.Lifecycle,
-		Fields:           toServerAppConfigSchemaFields(schema.Members, enumSchemas),
+		SkelName:         definition.SkelName,
+		Name:             definition.Name,
+		Description:      definition.Description,
+		Deprecated:       definition.Deprecated,
+		DeprecatedReason: definition.DeprecatedReason,
+		Lifecycle:        definition.Lifecycle,
+		Fields:           toServerAppConfigSchemaFields(definition.Fields),
 	}
 }
 
-func findConfigSchema(name string, schemas []*skel.ConfigSchema) *skel.ConfigSchema {
-	for _, schema := range schemas {
-		if schema.SkelName == name {
-			return schema
-		}
-	}
-	return nil
-}
-
-func toServerAppConfigSchemaFields(members []*skel.MemberSchema, enumSchemas []*skel.EnumSchema) []skeled.AppConfigSchemaField {
-	fields := make([]skeled.AppConfigSchemaField, 0, len(members))
-	for _, member := range members {
-		field := skeled.AppConfigSchemaField{
-			Name:             member.Name,
-			Type:             formatAppConfigSchemaFieldType(member.Type),
-			Description:      member.Description,
-			Deprecated:       member.Deprecated,
-			DeprecatedReason: member.DeprecatedReason,
-			EnumItems:        toServerAppConfigSchemaEnumItems(findEnumSchema(member.Type, enumSchemas)),
-		}
-		field.MapKeyEnumItems = []skeled.AppConfigSchemaEnumItem{}
-		field.MapValueEnumItems = []skeled.AppConfigSchemaEnumItem{}
-		if member.Type != nil && member.Type.Kind == skel.TypeKindMap {
-			field.MapKeyEnumItems = toServerAppConfigSchemaEnumItems(findEnumSchema(member.Type.Key, enumSchemas))
-			field.MapValueEnumItems = toServerAppConfigSchemaEnumItems(findEnumSchema(member.Type.Value, enumSchemas))
-		}
-		fields = append(fields, field)
-	}
-	return fields
-}
-
-func formatAppConfigSchemaFieldType(typeSchema *skel.TypeSchema) string {
-	if typeSchema == nil {
-		return ""
-	}
-	var ret string
-	switch typeSchema.Kind {
-	case skel.TypeKindScalar:
-		ret = string(typeSchema.Scalar)
-	case skel.TypeKindEnum, skel.TypeKindData, skel.TypeKindConfig, skel.TypeKindEvent, skel.TypeKindTypeParameter:
-		ret = formatAppConfigNamedType(typeSchema)
-	case skel.TypeKindList:
-		ret = "list<" + formatAppConfigSchemaFieldType(typeSchema.Element) + ">"
-	case skel.TypeKindMap:
-		ret = "map<" + formatAppConfigSchemaFieldType(typeSchema.Key) + ", " + formatAppConfigSchemaFieldType(typeSchema.Value) + ">"
-	default:
-		ret = string(typeSchema.Kind)
-	}
-	if typeSchema.Nullable {
-		ret += "?"
+func toServerAppConfigSchemaFields(fields []core.AppConfigField) []skeled.AppConfigSchemaField {
+	ret := make([]skeled.AppConfigSchemaField, 0, len(fields))
+	for _, field := range fields {
+		ret = append(ret, skeled.AppConfigSchemaField{
+			Name:              field.Name,
+			Type:              field.Type,
+			Description:       field.Description,
+			Deprecated:        field.Deprecated,
+			DeprecatedReason:  field.DeprecatedReason,
+			EnumItems:         toServerAppConfigSchemaEnumItems(field.EnumItems),
+			MapKeyEnumItems:   toServerAppConfigSchemaEnumItems(field.MapKeyEnumItems),
+			MapValueEnumItems: toServerAppConfigSchemaEnumItems(field.MapValueEnumItems),
+		})
 	}
 	return ret
 }
 
-func formatAppConfigNamedType(typeSchema *skel.TypeSchema) string {
-	if typeSchema.SkelName != "" {
-		return typeSchema.SkelName
-	}
-	return typeSchema.Name
-}
-
-func findEnumSchema(typeSchema *skel.TypeSchema, enumSchemas []*skel.EnumSchema) *skel.EnumSchema {
-	if typeSchema == nil {
-		return nil
-	}
-	if typeSchema.Kind == skel.TypeKindList {
-		return findEnumSchema(typeSchema.Element, enumSchemas)
-	}
-	if typeSchema.Kind == skel.TypeKindMap {
-		return findEnumSchema(typeSchema.Key, enumSchemas)
-	}
-	if typeSchema.Kind != skel.TypeKindEnum {
-		return nil
-	}
-	for _, enumSchema := range enumSchemas {
-		if enumSchema.SkelName == typeSchema.SkelName {
-			return enumSchema
-		}
-	}
-	return nil
-}
-
-func toServerAppConfigSchemaEnumItems(enumSchema *skel.EnumSchema) []skeled.AppConfigSchemaEnumItem {
-	if enumSchema == nil {
-		return []skeled.AppConfigSchemaEnumItem{}
-	}
-	items := make([]skeled.AppConfigSchemaEnumItem, 0, len(enumSchema.Items))
-	for _, item := range enumSchema.Items {
-		items = append(items, skeled.AppConfigSchemaEnumItem{
+func toServerAppConfigSchemaEnumItems(items []core.AppConfigEnumItem) []skeled.AppConfigSchemaEnumItem {
+	ret := make([]skeled.AppConfigSchemaEnumItem, 0, len(items))
+	for _, item := range items {
+		ret = append(ret, skeled.AppConfigSchemaEnumItem{
 			Name:             item.Name,
 			Description:      item.Description,
 			Deprecated:       item.Deprecated,
 			DeprecatedReason: item.DeprecatedReason,
 		})
 	}
-	return items
+	return ret
+}
+
+// isValidConfigSkelName reports whether the Dashboard may create a value under
+// the name: a dotted Skel name whose final segment is a Config name. Skel owns
+// the identifier grammar, so this only guards the shape Hub serves.
+func isValidConfigSkelName(skelName string) bool {
+	segments := strings.Split(skelName, ".")
+	if len(segments) < 2 {
+		return false
+	}
+
+	if !strings.HasSuffix(segments[len(segments)-1], "Config") {
+		return false
+	}
+	for _, segment := range segments {
+		if !isSkelIdentifierSegment(segment) {
+			return false
+		}
+	}
+	return true
+}
+
+// isSkelIdentifierSegment matches one dot-separated part of a Skel name: ASCII
+// letters, digits and underscores, never starting with a digit.
+func isSkelIdentifierSegment(segment string) bool {
+	for index, char := range segment {
+		switch {
+		case char == '_' || (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z'):
+		case index > 0 && char >= '0' && char <= '9':
+		default:
+			return false
+		}
+	}
+	return segment != ""
 }

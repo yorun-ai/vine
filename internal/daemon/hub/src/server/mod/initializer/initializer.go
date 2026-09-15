@@ -14,18 +14,18 @@ import (
 type Initializer struct {
 	app.BaseModule
 
-	AppConfigRepo core.AppConfigRepo      `inject:""`
-	RuleRepo      core.PortalRuleRepo     `inject:""`
-	CertRepo      core.PortalCertRepo     `inject:""`
-	EntryRepo     core.PortalSiteRepo     `inject:""`
-	SchemaRepo    core.SchemaRepo         `inject:""`
-	RegistryCore  *core.RegistryCore      `inject:""`
-	Seeder        *seeder.Seeder          `inject:""`
-	Syncer        *syncer.Syncer          `inject:""`
-	Access        *configaccess.Access    `inject:""`
-	InprocFlag    *app.InternalInprocFlag `inject:""`
-	Flag          *hubflag.Flag           `inject:""`
-	Identity      *mtls.Identity          `inject:""`
+	AppConfigRepo  core.AppConfigRepo      `inject:""`
+	PortalRuleRepo core.PortalRuleRepo     `inject:""`
+	PortalCertRepo core.PortalCertRepo     `inject:""`
+	PortalSiteRepo core.PortalSiteRepo     `inject:""`
+	SchemaRepo     core.SchemaRepo         `inject:""`
+	RegistryCore   *core.RegistryCore      `inject:""`
+	Seeder         *seeder.Seeder          `inject:""`
+	Syncer         *syncer.Syncer          `inject:""`
+	Access         *configaccess.Access    `inject:""`
+	InprocFlag     *app.InternalInprocFlag `inject:""`
+	Flag           *hubflag.Flag           `inject:""`
+	Identity       *mtls.Identity          `inject:""`
 }
 
 const (
@@ -40,16 +40,16 @@ func (i *Initializer) DIInit() {
 
 	domainViews := i.SchemaRepo.ListDomainSchemaViews()
 	i.Syncer.SyncSchemas(domainViews)
-	for _, item := range i.AppConfigRepo.ListItems() {
+	for _, item := range i.AppConfigRepo.List() {
 		i.Syncer.SyncAppConfig(item)
 	}
-	for _, rule := range i.RuleRepo.ListRules() {
-		i.Syncer.SyncPortalRule(&rule)
+	for _, rule := range i.PortalRuleRepo.List() {
+		i.Syncer.SyncPortalRule(rule)
 	}
-	for _, site := range i.EntryRepo.ListEntries() {
-		i.Syncer.SyncPortalSiteWithRpcgwServices(&site, core.MatchPortalSiteRpcgwServicesInDomainViews(site, domainViews))
+	for _, site := range i.PortalSiteRepo.List() {
+		i.Syncer.SyncPortalSite(site)
 	}
-	for _, cert := range i.CertRepo.ListCerts() {
+	for _, cert := range i.PortalCertRepo.List() {
 		i.Syncer.SyncPortalCert(cert)
 	}
 	if i.Flag.NoDB {

@@ -1,0 +1,136 @@
+domain vine.hub.admin
+
+@desc("Portal site certificate creation parameters")
+data PortalCertCreation {
+    @desc("Certificate name")
+    name: string
+
+    @desc("Certificate Base64")
+    publicKeyBase64: string
+
+    @desc("Private key Base64")
+    privateKeyBase64: string
+}
+
+@desc("Portal site certificate")
+data PortalCert {
+    @desc("Certificate ID")
+    id: int
+
+    @desc("Certificate name")
+    name: string
+
+    @desc("Certificate issuer")
+    issuer: string
+
+    @desc("Certificate domain name")
+    domains: list<string>
+
+    @desc("Certificate Base64")
+    publicKeyBase64: string
+
+    @desc("Whether the private key has been configured")
+    privateKeyConfigured: bool
+
+    @desc("Validity start time")
+    validFrom: timestamp
+
+    @desc("Validity end time")
+    validTo: timestamp
+
+    @desc("Field sources; only returned by get, create and update")
+    fieldSources: list<FieldSource>
+}
+
+@desc("Portal site certificate list item")
+data PortalCertListItem {
+    @desc("Certificate ID")
+    id: int
+
+    @desc("Certificate name")
+    name: string
+
+    @desc("Certificate issuer")
+    issuer: string
+
+    @desc("Certificate domain name")
+    domains: list<string>
+
+    @desc("Certificate Base64")
+    publicKeyBase64: string
+
+    @desc("Whether the private key has been configured")
+    privateKeyConfigured: bool
+
+    @desc("Validity start time")
+    validFrom: timestamp
+
+    @desc("Validity end time")
+    validTo: timestamp
+}
+
+@desc("Portal site certificate update parameters")
+data PortalCertUpdate {
+    @desc("Certificate name")
+    name: string?
+
+    @desc("Certificate Base64")
+    publicKeyBase64: string?
+
+    @desc("Private key Base64")
+    privateKeyBase64: string?
+}
+
+@desc("Hub's Portal site certificate service, called by the Portal admin client")
+api service PortalCertApiService {
+    for AdminActor
+
+    noauth
+
+    @desc("List Portal site certificates")
+    method list {
+        @desc("Portal site certificate list")
+        output list<PortalCertListItem>
+    }
+
+    @desc("Read the Portal site certificate")
+    method get {
+        input {
+            @desc("Certificate ID")
+            id: int
+        }
+        @desc("Portal site certificate")
+        output PortalCert
+    }
+
+    @desc("Create Portal site certificate")
+    method create {
+        input {
+            @desc("Portal site certificate creation parameters")
+            creation: PortalCertCreation
+        }
+        @desc("Portal site certificate")
+        output PortalCert
+    }
+
+    @desc("Modify Portal site certificate")
+    method update {
+        input {
+            @desc("Certificate ID")
+            id: int
+
+            @desc("Portal site certificate update parameters")
+            update: PortalCertUpdate
+        }
+        @desc("Portal site certificate")
+        output PortalCert
+    }
+
+    @desc("Delete Portal site certificate")
+    method remove {
+        input {
+            @desc("Certificate ID")
+            id: int
+        }
+    }
+}

@@ -8,63 +8,39 @@ import (
 	"go.yorun.ai/vine/util/vcode"
 )
 
-// MemorySchemaRepo
+// SchemaRepo stores the schemas applications register and selects the versions
+// the Hub serves. The Hub binds it per application, so every reader sees the
+// same state.
+type SchemaRepo struct {
+	mu       sync.RWMutex
+	sequence int
 
-type MemorySchemaRepo struct{}
+	byHash         map[string]*_DomainSchemaEntry
+	hashesByDomain map[string]map[string]struct{}
+	hashesByOwner  map[string]map[string]struct{}
 
-type _MemoryDomainSchemaEntry struct {
+	snapshot _SchemaSnapshot
+}
+
+type _DomainSchemaEntry struct {
 	Schema   *skel.DomainSchema
 	Sequence int
 	OwnerIDs map[string]struct{}
 }
 
-type _MemorySchemaRef[T any] struct {
+type _SchemaRef[T any] struct {
 	SkelName string
 	Hash     string
 	Schema   T
 }
 
-type _MemorySchemaVersionState struct {
+type _SchemaVersionState struct {
 	DefaultHash    string
 	MainDomainHash string
 	Hashes         map[string]struct{}
 }
 
-type _MemorySchemaSnapshot struct {
-	DomainSchemas    []*skel.DomainSchema
-	DomainVersions   []core.DomainSchemaVersion
-	DomainViews      []core.DomainSchemaView
-	VineHubViews     []core.DomainSchemaView
-	ConfigSchemas    []*skel.ConfigSchema
-	ActorSchemas     []*skel.ActorSchema
-	DataSchemas      []*skel.DataSchema
-	EnumSchemas      []*skel.EnumSchema
-	EventSchemas     []*skel.EventSchema
-	ResourceSchemas  []*skel.ResourceSchema
-	ServiceSchemas   []*skel.ServiceSchema
-	TaskSchemas      []*skel.TaskSchema
-	WebSchemas       []*skel.WebSchema
-	ActorVersions    []core.SchemaVersion[*skel.ActorSchema]
-	ConfigVersions   []core.SchemaVersion[*skel.ConfigSchema]
-	DataVersions     []core.SchemaVersion[*skel.DataSchema]
-	EnumVersions     []core.SchemaVersion[*skel.EnumSchema]
-	EventVersions    []core.SchemaVersion[*skel.EventSchema]
-	ResourceVersions []core.SchemaVersion[*skel.ResourceSchema]
-	ServiceVersions  []core.SchemaVersion[*skel.ServiceSchema]
-	TaskVersions     []core.SchemaVersion[*skel.TaskSchema]
-	WebVersions      []core.SchemaVersion[*skel.WebSchema]
-}
-
-var (
-	memoryDomainSchemaMutex          sync.RWMutex
-	memoryDomainSchemaSequence       int
-	memoryDomainSchemaByHash         = map[string]*_MemoryDomainSchemaEntry{}
-	memoryDomainSchemaHashesByDomain = map[string]map[string]struct{}{}
-	memorySchemaHashesByOwner        = map[string]map[string]struct{}{}
-	memorySchemaSnapshot             = _MemorySchemaSnapshot{}
-)
-
-func (r *MemorySchemaRepo) SaveDomainSchemasJSON(ownerName string, ownerId string, schemas []skel.JSON) {
+func (r *SchemaRepo) SaveDomainSchemasJSON(ownerName string, ownerId string, schemas []skel.JSON) {
 	domainSchemas := make([]*skel.DomainSchema, 0, len(schemas))
 	for _, schemaJson := range schemas {
 		schema := vcode.MustUnmarshalJsonS[*skel.DomainSchema](string(schemaJson))
@@ -73,156 +49,166 @@ func (r *MemorySchemaRepo) SaveDomainSchemasJSON(ownerName string, ownerId strin
 	r.SaveDomainSchemas(ownerName, ownerId, domainSchemas)
 }
 
-func (*MemorySchemaRepo) SaveDomainSchemas(ownerName string, ownerId string, schemas []*skel.DomainSchema) {
-	memoryDomainSchemaMutex.Lock()
-	defer memoryDomainSchemaMutex.Unlock()
+func (r *SchemaRepo) SaveDomainSchemas(ownerName string, ownerId string, schemas []*skel.DomainSchema) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
-	ownerKey := memoryOwnerKey(ownerName, ownerId)
-	memoryReleaseDomainSchemas(ownerKey)
+	ownerKey := schemaOwnerKey(ownerName, ownerId)
+	r.releaseDomainSchemas(ownerKey)
 	for _, schema := range schemas {
-		memoryRetainDomainSchemaForOwner(ownerKey, schema)
+		r.retainDomainSchemaForOwner(ownerKey, schema)
 	}
-	memoryRefreshSchemaSnapshot()
+	r.refreshSnapshot()
 }
 
-func (*MemorySchemaRepo) ReleaseDomainSchemas(ownerName string, ownerId string) {
-	memoryDomainSchemaMutex.Lock()
-	defer memoryDomainSchemaMutex.Unlock()
+func (r *SchemaRepo) ReleaseDomainSchemas(ownerName string, ownerId string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
-	ownerKey := memoryOwnerKey(ownerName, ownerId)
-	memoryReleaseDomainSchemas(ownerKey)
-	memoryRefreshSchemaSnapshot()
+	r.releaseDomainSchemas(schemaOwnerKey(ownerName, ownerId))
+	r.refreshSnapshot()
 }
 
-func memoryRetainDomainSchemaForOwner(ownerKey string, schema *skel.DomainSchema) {
-	entry := memoryRetainDomainSchema(schema)
+func (r *SchemaRepo) retainDomainSchemaForOwner(ownerKey string, schema *skel.DomainSchema) {
+	if r.hashesByOwner == nil {
+		r.hashesByOwner = map[string]map[string]struct{}{}
+	}
+	entry := r.retainDomainSchema(schema)
 	entry.OwnerIDs[ownerKey] = struct{}{}
-	if memorySchemaHashesByOwner[ownerKey] == nil {
-		memorySchemaHashesByOwner[ownerKey] = map[string]struct{}{}
+	if r.hashesByOwner[ownerKey] == nil {
+		r.hashesByOwner[ownerKey] = map[string]struct{}{}
 	}
-	memorySchemaHashesByOwner[ownerKey][schema.Hash] = struct{}{}
+	r.hashesByOwner[ownerKey][schema.Hash] = struct{}{}
 }
 
-func memoryReleaseDomainSchemas(ownerKey string) {
-	hashes := memorySchemaHashesByOwner[ownerKey]
-	for hash := range hashes {
-		entry := memoryDomainSchemaByHash[hash]
+func (r *SchemaRepo) releaseDomainSchemas(ownerKey string) {
+	for hash := range r.hashesByOwner[ownerKey] {
+		entry := r.byHash[hash]
 		delete(entry.OwnerIDs, ownerKey)
 		if len(entry.OwnerIDs) == 0 {
-			memoryRemoveDomainSchemaEntry(hash, entry.Schema.Domain)
+			r.removeDomainSchemaEntry(hash, entry.Schema.Domain)
 		}
 	}
-	delete(memorySchemaHashesByOwner, ownerKey)
+	delete(r.hashesByOwner, ownerKey)
 }
 
-func (*MemorySchemaRepo) ListDomainSchemaViews() []core.DomainSchemaView {
-	memoryDomainSchemaMutex.RLock()
-	defer memoryDomainSchemaMutex.RUnlock()
+func (r *SchemaRepo) ListDomainSchemaViews() []core.DomainSchemaView {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	return append([]core.DomainSchemaView{}, memorySchemaSnapshot.DomainViews...)
+	return r.snapshot.Domains.Views()
 }
 
-func (*MemorySchemaRepo) ListVineHubSchemaViews() []core.DomainSchemaView {
-	memoryDomainSchemaMutex.RLock()
-	defer memoryDomainSchemaMutex.RUnlock()
+func (r *SchemaRepo) ListVineHubSchemaViews() []core.DomainSchemaView {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	return append([]core.DomainSchemaView{}, memorySchemaSnapshot.VineHubViews...)
+	return r.snapshot.Domains.VineHubViews()
 }
 
-func (*MemorySchemaRepo) ListActorSchemaVersions() []core.SchemaVersion[*skel.ActorSchema] {
-	memoryDomainSchemaMutex.RLock()
-	defer memoryDomainSchemaMutex.RUnlock()
+func (r *SchemaRepo) ListActorSchemaVersions() []core.SchemaVersion[*skel.ActorSchema] {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	return append([]core.SchemaVersion[*skel.ActorSchema]{}, memorySchemaSnapshot.ActorVersions...)
+	return r.snapshot.Actors.Versions()
 }
 
-func (*MemorySchemaRepo) ListConfigSchemaVersions() []core.SchemaVersion[*skel.ConfigSchema] {
-	memoryDomainSchemaMutex.RLock()
-	defer memoryDomainSchemaMutex.RUnlock()
+func (r *SchemaRepo) ListConfigSchemaVersions() []core.SchemaVersion[*skel.ConfigSchema] {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	return append([]core.SchemaVersion[*skel.ConfigSchema]{}, memorySchemaSnapshot.ConfigVersions...)
+	return r.snapshot.Configs.Versions()
 }
 
-func (*MemorySchemaRepo) ListDataSchemaVersions() []core.SchemaVersion[*skel.DataSchema] {
-	memoryDomainSchemaMutex.RLock()
-	defer memoryDomainSchemaMutex.RUnlock()
+func (r *SchemaRepo) ListDataSchemaVersions() []core.SchemaVersion[*skel.DataSchema] {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	return append([]core.SchemaVersion[*skel.DataSchema]{}, memorySchemaSnapshot.DataVersions...)
+	return r.snapshot.Data.Versions()
 }
 
-func (*MemorySchemaRepo) ListEnumSchemaVersions() []core.SchemaVersion[*skel.EnumSchema] {
-	memoryDomainSchemaMutex.RLock()
-	defer memoryDomainSchemaMutex.RUnlock()
+func (r *SchemaRepo) ListEnumSchemaVersions() []core.SchemaVersion[*skel.EnumSchema] {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	return append([]core.SchemaVersion[*skel.EnumSchema]{}, memorySchemaSnapshot.EnumVersions...)
+	return r.snapshot.Enums.Versions()
 }
 
-func (*MemorySchemaRepo) ListEventSchemaVersions() []core.SchemaVersion[*skel.EventSchema] {
-	memoryDomainSchemaMutex.RLock()
-	defer memoryDomainSchemaMutex.RUnlock()
+func (r *SchemaRepo) ListEventSchemaVersions() []core.SchemaVersion[*skel.EventSchema] {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	return append([]core.SchemaVersion[*skel.EventSchema]{}, memorySchemaSnapshot.EventVersions...)
+	return r.snapshot.Events.Versions()
 }
 
-func (*MemorySchemaRepo) ListResourceSchemaVersions() []core.SchemaVersion[*skel.ResourceSchema] {
-	memoryDomainSchemaMutex.RLock()
-	defer memoryDomainSchemaMutex.RUnlock()
+func (r *SchemaRepo) ListResourceSchemaVersions() []core.SchemaVersion[*skel.ResourceSchema] {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	return append([]core.SchemaVersion[*skel.ResourceSchema]{}, memorySchemaSnapshot.ResourceVersions...)
+	return r.snapshot.Resources.Versions()
 }
 
-func (*MemorySchemaRepo) ListServiceSchemaVersions() []core.SchemaVersion[*skel.ServiceSchema] {
-	memoryDomainSchemaMutex.RLock()
-	defer memoryDomainSchemaMutex.RUnlock()
+func (r *SchemaRepo) ListServiceSchemaVersions() []core.SchemaVersion[*skel.ServiceSchema] {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	return append([]core.SchemaVersion[*skel.ServiceSchema]{}, memorySchemaSnapshot.ServiceVersions...)
+	return r.snapshot.Services.Versions()
 }
 
-func (*MemorySchemaRepo) ListTaskSchemaVersions() []core.SchemaVersion[*skel.TaskSchema] {
-	memoryDomainSchemaMutex.RLock()
-	defer memoryDomainSchemaMutex.RUnlock()
+func (r *SchemaRepo) ListTaskSchemaVersions() []core.SchemaVersion[*skel.TaskSchema] {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	return append([]core.SchemaVersion[*skel.TaskSchema]{}, memorySchemaSnapshot.TaskVersions...)
+	return r.snapshot.Tasks.Versions()
 }
 
-func (*MemorySchemaRepo) ListWebSchemaVersions() []core.SchemaVersion[*skel.WebSchema] {
-	memoryDomainSchemaMutex.RLock()
-	defer memoryDomainSchemaMutex.RUnlock()
+func (r *SchemaRepo) ListWebSchemaVersions() []core.SchemaVersion[*skel.WebSchema] {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	return append([]core.SchemaVersion[*skel.WebSchema]{}, memorySchemaSnapshot.WebVersions...)
+	return r.snapshot.Webs.Versions()
 }
 
-func (*MemorySchemaRepo) ListAppConfigSchemas() []*skel.ConfigSchema {
-	memoryDomainSchemaMutex.RLock()
-	defer memoryDomainSchemaMutex.RUnlock()
+func (r *SchemaRepo) ListAppConfigSchemas() []*skel.ConfigSchema {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	return append([]*skel.ConfigSchema{}, memorySchemaSnapshot.ConfigSchemas...)
+	return r.snapshot.Configs.Selected()
 }
 
-func (*MemorySchemaRepo) ListActorSchemas() []*skel.ActorSchema {
-	memoryDomainSchemaMutex.RLock()
-	defer memoryDomainSchemaMutex.RUnlock()
+func (r *SchemaRepo) ListActorSchemas() []*skel.ActorSchema {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	return append([]*skel.ActorSchema{}, memorySchemaSnapshot.ActorSchemas...)
+	return r.snapshot.Actors.Selected()
 }
 
-func (*MemorySchemaRepo) ListEnumSchemas() []*skel.EnumSchema {
-	memoryDomainSchemaMutex.RLock()
-	defer memoryDomainSchemaMutex.RUnlock()
+func (r *SchemaRepo) ListEnumSchemas() []*skel.EnumSchema {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	return append([]*skel.EnumSchema{}, memorySchemaSnapshot.EnumSchemas...)
+	return r.snapshot.Enums.Selected()
 }
 
-func (*MemorySchemaRepo) ListServiceSchemas() []*skel.ServiceSchema {
-	memoryDomainSchemaMutex.RLock()
-	defer memoryDomainSchemaMutex.RUnlock()
+func (r *SchemaRepo) ListServiceSchemas() []*skel.ServiceSchema {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	return append([]*skel.ServiceSchema{}, memorySchemaSnapshot.ServiceSchemas...)
+	return r.snapshot.Services.Selected()
 }
 
-func (*MemorySchemaRepo) ListWebSchemas() []*skel.WebSchema {
-	memoryDomainSchemaMutex.RLock()
-	defer memoryDomainSchemaMutex.RUnlock()
+func (r *SchemaRepo) ListWebSchemas() []*skel.WebSchema {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	return append([]*skel.WebSchema{}, memorySchemaSnapshot.WebSchemas...)
+	return r.snapshot.Webs.Selected()
+}
+
+// GetWebSchema returns the selected schema with the Skel name, or nil when the
+// Hub does not serve it.
+func (r *SchemaRepo) GetWebSchema(skelName string) *skel.WebSchema {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	return r.snapshot.Webs.Get(skelName)
 }

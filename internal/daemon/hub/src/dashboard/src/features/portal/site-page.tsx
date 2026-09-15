@@ -62,6 +62,7 @@ import { cn } from '@/lib/utils'
 import { createPortalSiteApiService } from '@/skeled/admin'
 import type {
   PortalSite,
+  PortalSiteListItem,
   PortalSiteCreation,
   PortalCorsMode,
   PortalSiteOptions,
@@ -188,7 +189,7 @@ function normalizePortalCorsMode(value: string | null | undefined) {
     : 'SAME_DOMAIN'
 }
 
-function portalSiteToFormValue(entry: PortalSite): PortalSiteFormValue {
+function portalSiteToFormValue(entry: PortalSiteListItem): PortalSiteFormValue {
   const rpcgwServices = portalSiteRpcgwServices(entry)
   const cors = entry.cors
 
@@ -204,7 +205,7 @@ function portalSiteToFormValue(entry: PortalSite): PortalSiteFormValue {
   }
 }
 
-function portalSiteRpcgwServices(entry: PortalSite) {
+function portalSiteRpcgwServices(entry: PortalSiteListItem) {
   return Array.isArray(entry.rpcgwServices) ? entry.rpcgwServices : []
 }
 
@@ -399,7 +400,7 @@ function PortalSiteDialog({
   mode: 'create' | 'edit'
   open: boolean
   saving: boolean
-  entry: PortalSite | null
+  entry: PortalSiteListItem | null
   options: PortalSiteOptions
   onOpenChange: (open: boolean) => void
   onSubmit: (value: PortalSiteFormValue) => Promise<void>
@@ -825,7 +826,7 @@ function DeletePortalSiteDialog({
 }: {
   deleting: boolean
   open: boolean
-  entry: PortalSite | null
+  entry: PortalSiteListItem | null
   onConfirm: () => void
   onOpenChange: (open: boolean) => void
 }) {
@@ -910,7 +911,7 @@ function PortalSiteInlineEditor({
   onSubmit,
 }: {
   saving: boolean
-  entry: PortalSite | null
+  entry: PortalSiteListItem | null
   options: PortalSiteOptions
   onCancel: () => void
   onSubmit: (value: PortalSiteFormValue) => Promise<void>
@@ -1312,7 +1313,7 @@ export function PortalSitePage() {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
-  const [entries, setEntries] = React.useState<Array<PortalSite>>([])
+  const [entries, setEntries] = React.useState<Array<PortalSiteListItem>>([])
   const [portalSiteOptions, setPortalSiteOptions] =
     React.useState<PortalSiteOptions>(emptyPortalSiteOptions)
   const [query, setQuery] = React.useState('')
@@ -1323,10 +1324,10 @@ export function PortalSitePage() {
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
   const [deleting, setDeleting] = React.useState(false)
-  const [editingEntry, setEditingEntry] = React.useState<PortalSite | null>(
+  const [editingEntry, setEditingEntry] = React.useState<PortalSiteListItem | null>(
     null,
   )
-  const [deleteEntry, setDeleteEntry] = React.useState<PortalSite | null>(null)
+  const [deleteEntry, setDeleteEntry] = React.useState<PortalSiteListItem | null>(null)
   const [isCreating, setIsCreating] = React.useState(false)
   const [selectedEntryId, setSelectedEntryId] = React.useState<number | null>(
     () => selectedSiteIdFromPath(window.location.pathname),
@@ -1389,6 +1390,40 @@ export function PortalSitePage() {
     [filteredEntries, selectedEntryId],
   )
 
+  // The list returns entries without their seed provenance, so the detail view
+  // reads the selected entry once more.
+  const [entryDetail, setEntryDetail] = React.useState<PortalSite | null>(null)
+
+  React.useEffect(() => {
+    const id = selectedEntry?.id
+    if (id == null) {
+      setEntryDetail(null)
+      return
+    }
+
+    let active = true
+    portalSiteService.get({ id }).then(
+      (entry) => {
+        if (active) {
+          setEntryDetail(entry)
+        }
+      },
+      () => {
+        if (active) {
+          setEntryDetail(null)
+        }
+      },
+    )
+    return () => {
+      active = false
+    }
+  }, [selectedEntry?.id])
+
+  const selectedEntryFields =
+    entryDetail !== null && entryDetail.id === selectedEntry?.id
+      ? entryDetail.fieldSources
+      : []
+
   const selectEntry = React.useCallback(
     (id: number, replace = false) => {
       setSelectedEntryId(id)
@@ -1443,6 +1478,7 @@ export function PortalSitePage() {
         toast.success(t('portalSite.created'))
         setIsCreating(false)
         setEntries((current) => [...current, created])
+        setEntryDetail(created)
         selectEntry(created.id)
       } catch (error) {
         throw error
@@ -1468,6 +1504,7 @@ export function PortalSitePage() {
         })
         toast.success(t('portalSite.saved'))
         setEditingEntry(null)
+        setEntryDetail(updated)
         setEntries((current) =>
           current.map((entry) => (entry.id === updated.id ? updated : entry)),
         )
@@ -1721,17 +1758,17 @@ export function PortalSitePage() {
                   ) : (
                     <div className="grid gap-5">
                       <FieldRow>
-                        <ReadonlyField source={<FieldSourceInfo kind="portal_site" name={selectedEntry.name} path="/name" />} label={t('portalSite.name')}>
+                        <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path="/name" />} label={t('portalSite.name')}>
                           {selectedEntry.name}
                         </ReadonlyField>
-                        <ReadonlyField source={<FieldSourceInfo kind="portal_site" name={selectedEntry.name} path="/type" />} label={t('portalSite.type')}>
+                        <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path="/type" />} label={t('portalSite.type')}>
                           <Badge variant="secondary">
                             {tText(portalSiteTypeLabel(selectedEntry.type))}
                           </Badge>
                         </ReadonlyField>
                       </FieldRow>
                       <FieldRow>
-                        <ReadonlyField source={<FieldSourceInfo kind="portal_site" name={selectedEntry.name} path="/actorSkelName" />} label="Actor Skel">
+                        <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path="/actorSkelName" />} label="Actor Skel">
                           <a
                             href={skeletonActorHref(
                               selectedEntry.actorSkelName,
@@ -1741,19 +1778,19 @@ export function PortalSitePage() {
                           <SkelName skelName={selectedEntry.actorSkelName} />
                         </a>
                       </ReadonlyField>
-                        <ReadonlyField source={<FieldSourceInfo kind="portal_site" name={selectedEntry.name} path="/actorVia" />} label={t('portalSite.actorVia')}>
+                        <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path="/actorVia" />} label={t('portalSite.actorVia')}>
                           <Badge variant="outline">
                             {selectedEntry.actorVia}
                           </Badge>
                         </ReadonlyField>
                       </FieldRow>
                       <FieldRow>
-                        <ReadonlyField source={<FieldSourceInfo kind="portal_site" name={selectedEntry.name} path="/cors/mode" />} label={t('portalSite.corsMode')}>
+                        <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path="/cors/mode" />} label={t('portalSite.corsMode')}>
                           <Badge variant="outline">
                             {t(portalCorsModeLabel(selectedEntry.cors?.mode))}
                           </Badge>
                         </ReadonlyField>
-                        <ReadonlyField source={<FieldSourceInfo kind="portal_site" name={selectedEntry.name} path="/cors/allowedOrigins" />} label={t('portalSite.allowedOrigins')}>
+                        <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path="/cors/allowedOrigins" />} label={t('portalSite.allowedOrigins')}>
                           {selectedEntry.cors?.mode === 'STRICT' &&
                           (selectedEntry.cors.allowedOrigins ?? []).length >
                             0 ? (
@@ -1771,7 +1808,7 @@ export function PortalSitePage() {
                           )}
                         </ReadonlyField>
                       </FieldRow>
-                      <ReadonlyField source={<FieldSourceInfo kind="portal_site" name={selectedEntry.name} path={selectedEntry.type === 'RPCGW' ? '/rpcgwServices' : '/webName'} />}
+                      <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path={selectedEntry.type === 'RPCGW' ? '/rpcgwServices' : '/webName'} />}
                         label={
                           selectedEntry.type === 'RPCGW'
                             ? t('portalSite.rpcService')

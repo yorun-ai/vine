@@ -71,7 +71,7 @@ func newTestPortalCertRepo() *_TestPortalCertRepo {
 	}
 }
 
-func (r *_TestPortalCertRepo) ListCerts() []*PortalCert {
+func (r *_TestPortalCertRepo) List() []*PortalCert {
 	ret := make([]*PortalCert, 0, len(r.certs))
 	for _, cert := range r.certs {
 		ret = append(ret, cert)
@@ -79,12 +79,12 @@ func (r *_TestPortalCertRepo) ListCerts() []*PortalCert {
 	return ret
 }
 
-func (r *_TestPortalCertRepo) GetCertById(id int) (*PortalCert, bool) {
+func (r *_TestPortalCertRepo) GetById(id int) (*PortalCert, bool) {
 	cert, ok := r.certs[id]
 	return cert, ok
 }
 
-func (r *_TestPortalCertRepo) GetCertByName(name string) (*PortalCert, bool) {
+func (r *_TestPortalCertRepo) GetByName(name string) (*PortalCert, bool) {
 	id, ok := r.names[name]
 	if !ok {
 		return nil, false
@@ -92,7 +92,7 @@ func (r *_TestPortalCertRepo) GetCertByName(name string) (*PortalCert, bool) {
 	return r.certs[id], true
 }
 
-func (r *_TestPortalCertRepo) SaveCert(cert *PortalCert) {
+func (r *_TestPortalCertRepo) Save(cert *PortalCert) {
 	if cert.Id == 0 {
 		cert.Id = r.nextId
 		r.nextId++
@@ -106,7 +106,7 @@ func (r *_TestPortalCertRepo) SaveCert(cert *PortalCert) {
 	r.names[cert.Name] = cert.Id
 }
 
-func (r *_TestPortalCertRepo) RemoveCert(id int) bool {
+func (r *_TestPortalCertRepo) Remove(id int) bool {
 	cert, ok := r.certs[id]
 	if !ok {
 		return false
@@ -162,5 +162,5 @@ func TestPortalCertSaveDerivesMetadataAndPreservesIdentity(t *testing.T) {
 	cert.PublicKeyBase64 = "invalid"
 	require.Panics(t, func() { target.Save(cert) })
 	require.Equal(t, got.PublicKeyBase64, repo.certs[got.Id].PublicKeyBase64)
-	require.NotPanics(t, func() { (&PortalCertCore{}).Validate(got) })
+	require.NotPanics(t, func() { (&PortalCertCore{}).Validate(*got) })
 }

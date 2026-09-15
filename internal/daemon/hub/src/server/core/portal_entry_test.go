@@ -8,6 +8,15 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 )
 
+// newPortalEntryCoreForTest builds an entry core with the repositories Hub
+// injects, so tests only choose the repositories they exercise.
+func newPortalEntryCoreForTest(ruleRepo PortalRuleRepo, siteRepo PortalSiteRepo) *PortalEntryCore {
+	return &PortalEntryCore{
+		PortalRuleRepo: ruleRepo,
+		PortalSiteRepo: siteRepo,
+	}
+}
+
 func TestPortalEntryCoreListMergesRulesBySchemeHostAndPort(t *testing.T) {
 	repo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
@@ -24,16 +33,15 @@ func TestPortalEntryCoreListMergesRulesBySchemeHostAndPort(t *testing.T) {
 			2: {Id: 2, Name: "home-site"},
 		},
 	}
-	core := &PortalEntryCore{PortalRuleRepo: repo, PortalSiteRepo: siteRepo}
+	entry := newPortalEntryCoreForTest(repo, siteRepo)
 
-	entries := core.List()
+	entries := entry.List()
 
 	require.Len(t, entries, 3)
 	assert.Equal(t, "https:443", entries[0].Name)
 	assert.Equal(t, "https", entries[0].Scheme)
 	assert.Equal(t, "", entries[0].Host)
 	assert.Equal(t, 443, entries[0].Port)
-	assert.False(t, entries[0].BuiltIn)
 	require.Len(t, entries[0].Rules, 1)
 	assert.Equal(t, "home", entries[0].Rules[0].Rule.Name)
 	assert.Equal(t, 2, entries[0].Rules[0].Site.Id)
@@ -42,7 +50,6 @@ func TestPortalEntryCoreListMergesRulesBySchemeHostAndPort(t *testing.T) {
 	assert.Equal(t, "http", entries[1].Scheme)
 	assert.Equal(t, "", entries[1].Host)
 	assert.Equal(t, 8080, entries[1].Port)
-	assert.False(t, entries[1].BuiltIn)
 	require.Len(t, entries[1].Rules, 1)
 	assert.Equal(t, "api", entries[1].Rules[0].Rule.Name)
 
@@ -52,7 +59,7 @@ func TestPortalEntryCoreListMergesRulesBySchemeHostAndPort(t *testing.T) {
 	assert.Equal(t, 8080, entries[2].Port)
 	require.Len(t, entries[2].Rules, 1)
 	assert.Equal(t, "hosted", entries[2].Rules[0].Rule.Name)
-	assert.Equal(t, []string{"ListRules"}, repo.calls)
+	assert.Equal(t, []string{"List"}, repo.calls)
 }
 
 func TestPortalEntryCoreListSkipsBuiltInRules(t *testing.T) {
@@ -63,7 +70,7 @@ func TestPortalEntryCoreListSkipsBuiltInRules(t *testing.T) {
 			3: {Id: 3, Name: "demo", MatchScheme: "https", RouteType: PortalRuleRouteTypeSite},
 		},
 	}
-	core := &PortalEntryCore{PortalRuleRepo: repo, PortalSiteRepo: &portalSiteRepoSpy{}}
+	core := newPortalEntryCoreForTest(repo, &portalSiteRepoSpy{})
 
 	entries := core.List()
 
@@ -79,7 +86,7 @@ func TestPortalEntryCoreListRejectsUnknownScheme(t *testing.T) {
 			1: {Id: 1, Name: "tcp", MatchScheme: "tcp", MatchPort: 9000, RouteType: PortalRuleRouteTypeSite},
 		},
 	}
-	core := &PortalEntryCore{PortalRuleRepo: repo}
+	core := newPortalEntryCoreForTest(repo, &portalSiteRepoSpy{})
 
 	panicValue := capturePanic(func() {
 		core.List()
@@ -100,7 +107,7 @@ func TestPortalEntryCoreUpdateAccessUpdatesGroupedRules(t *testing.T) {
 			5: {Id: 5, Name: "vine", MatchScheme: "http", MatchPort: 7088, MatchPathPrefix: "/vine", RouteType: PortalRuleRouteTypeSite, BuiltIn: true},
 		},
 	}
-	core := &PortalEntryCore{PortalRuleRepo: repo, PortalSiteRepo: &portalSiteRepoSpy{}}
+	core := newPortalEntryCoreForTest(repo, &portalSiteRepoSpy{})
 
 	entry := core.UpdateAccess("http", "", 7088, PortalEntryAccessUpdate{
 		Scheme: "https",
@@ -123,7 +130,7 @@ func TestPortalEntryCoreUpdateAccessUpdatesGroupedRules(t *testing.T) {
 	assert.Equal(t, "demo.local", repo.rules[3].MatchHost)
 	assert.Equal(t, "https", repo.rules[4].MatchScheme)
 	assert.Equal(t, "http", repo.rules[5].MatchScheme)
-	assert.Equal(t, []string{"ListRules", "SaveRule", "SaveRule", "SaveRule", "ListRules"}, repo.calls)
+	assert.Equal(t, []string{"List", "Save", "Save", "Save", "List"}, repo.calls)
 }
 
 func TestPortalEntryCoreUpdateAccessRejectsMissingEntry(t *testing.T) {
@@ -132,7 +139,7 @@ func TestPortalEntryCoreUpdateAccessRejectsMissingEntry(t *testing.T) {
 			1: {Id: 1, Name: "web", MatchScheme: "http", MatchPort: 7088, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
 		},
 	}
-	core := &PortalEntryCore{PortalRuleRepo: repo}
+	core := newPortalEntryCoreForTest(repo, &portalSiteRepoSpy{})
 
 	panicValue := capturePanic(func() {
 		core.UpdateAccess("http", "missing.local", 7088, PortalEntryAccessUpdate{Scheme: "http", Port: 8080})
@@ -141,5 +148,5 @@ func TestPortalEntryCoreUpdateAccessRejectsMissingEntry(t *testing.T) {
 	err, ok := panicValue.(ex.Error)
 	require.True(t, ok)
 	assert.Equal(t, ex.OperationFailed, err.Code())
-	assert.Equal(t, []string{"ListRules"}, repo.calls)
+	assert.Equal(t, []string{"List"}, repo.calls)
 }

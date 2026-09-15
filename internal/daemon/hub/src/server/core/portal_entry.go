@@ -20,12 +20,11 @@ const (
 )
 
 type PortalEntry struct {
-	Name    string
-	Scheme  string
-	Host    string
-	Port    int
-	Rules   []PortalEntryRule
-	BuiltIn bool
+	Name   string
+	Scheme string
+	Host   string
+	Port   int
+	Rules  []PortalEntryRule
 }
 
 type PortalEntryAccessUpdate struct {
@@ -51,7 +50,7 @@ type _PortalEntryKey struct {
 }
 
 func (m *PortalEntryCore) List() []PortalEntry {
-	rules := m.PortalRuleRepo.ListRules()
+	rules := m.PortalRuleRepo.List()
 	entriesByKey := map[_PortalEntryKey]*PortalEntry{}
 	for _, rule := range rules {
 		if rule.BuiltIn {
@@ -77,10 +76,9 @@ func (m *PortalEntryCore) List() []PortalEntry {
 			entriesByKey[key] = entry
 		}
 		entry.Rules = append(entry.Rules, PortalEntryRule{
-			Rule: &rule,
+			Rule: rule,
 			Site: m.portalRuleSite(rule),
 		})
-		entry.BuiltIn = entry.BuiltIn || rule.BuiltIn
 	}
 
 	entries := make([]PortalEntry, 0, len(entriesByKey))
@@ -105,8 +103,8 @@ func (m *PortalEntryCore) UpdateAccess(scheme string, host string, port int, upd
 	currentKey := normalizePortalEntryKey(scheme, host, port)
 	nextKey := normalizePortalEntryKey(update.Scheme, update.Host, update.Port)
 
-	rules := m.PortalRuleRepo.ListRules()
-	updates := []PortalRule{}
+	rules := m.PortalRuleRepo.List()
+	updates := []*PortalRule{}
 	for _, rule := range rules {
 		if rule.BuiltIn || !isPortalEntryRuleRouteType(rule.RouteType) {
 			continue
@@ -124,8 +122,8 @@ func (m *PortalEntryCore) UpdateAccess(scheme string, host string, port int, upd
 
 	ex.PanicNewIfNot(len(updates) > 0, ex.OperationFailed, ex.F("portal entry %s not found", portalEntryName(currentKey)))
 
-	for i := range updates {
-		m.PortalRuleRepo.SaveRule(&updates[i])
+	for _, rule := range updates {
+		m.PortalRuleRepo.Save(rule)
 	}
 
 	for _, entry := range m.List() {
@@ -178,7 +176,7 @@ func normalizePortalEntryKey(scheme string, host string, port int) _PortalEntryK
 	}
 }
 
-func portalEntryRuleMatchesKey(rule PortalRule, key _PortalEntryKey) bool {
+func portalEntryRuleMatchesKey(rule *PortalRule, key _PortalEntryKey) bool {
 	return rule.MatchScheme == key.Scheme &&
 		rule.MatchHost == key.Host &&
 		portalEntryRulePort(rule.MatchScheme, rule.MatchPort) == key.Port
@@ -188,11 +186,11 @@ func portalEntryMatchesKey(entry PortalEntry, key _PortalEntryKey) bool {
 	return entry.Scheme == key.Scheme && entry.Host == key.Host && entry.Port == key.Port
 }
 
-func (m *PortalEntryCore) portalRuleSite(rule PortalRule) *PortalSite {
+func (m *PortalEntryCore) portalRuleSite(rule *PortalRule) *PortalSite {
 	if rule.RouteType != PortalRuleRouteTypeSite {
 		return nil
 	}
-	site, ok := m.PortalSiteRepo.GetEntryByName(rule.RouteSiteName)
+	site, ok := m.PortalSiteRepo.GetByName(rule.RouteSiteName)
 	if !ok {
 		return nil
 	}

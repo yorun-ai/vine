@@ -54,7 +54,7 @@ import type {
   PortalEntry,
   PortalEntryAccessUpdate,
   PortalEntryRule,
-  PortalRule,
+  PortalRuleListItem,
 } from '@/skeled/admin'
 
 const portalEntryService = createPortalEntryApiService(vrpcClient)
@@ -100,7 +100,7 @@ function isValidPort(value: string) {
   return Number.isInteger(port) && port >= 0 && port <= 65535
 }
 
-function ruleTargetLabel(rule: PortalRule) {
+function ruleTargetLabel(rule: PortalRuleListItem) {
   switch (rule.routeType) {
     case 'SITE':
       return 'Site'
@@ -121,12 +121,12 @@ function ruleTargetValue(entryRule: PortalEntryRule) {
   return rule.routeRedirectionPattern
 }
 
-function formatRuleMatch(rule: PortalRule) {
+function formatRuleMatch(rule: PortalRuleListItem) {
   const pathPrefix = rule.matchPathPrefix || '/'
   return rule.matchHost ? `${rule.matchHost}${pathPrefix}` : pathPrefix
 }
 
-function portalRuleHref(rule: PortalRule) {
+function portalRuleHref(rule: PortalRuleListItem) {
   return `/portal/rule/${rule.id}`
 }
 
@@ -403,7 +403,7 @@ export function PortalEntryPage() {
   )
 
   const jumpToRule = React.useCallback(
-    (rule: PortalRule) => {
+    (rule: PortalRuleListItem) => {
       void navigate({ to: portalRuleHref(rule) })
     },
     [navigate],

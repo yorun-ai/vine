@@ -1,0 +1,73 @@
+domain vine.hub.admin
+
+@desc("Portal access entry")
+data PortalEntry {
+    @desc("Entry name")
+    name: string
+
+    @desc("Entry protocol")
+    scheme: string
+
+    @desc("Match Host, empty string means no restriction")
+    host: string
+
+    @desc("Entry port")
+    port: int
+
+    @desc("Entry rule list")
+    rules: list<PortalEntryRule>
+
+}
+
+@desc("Portal access entry configuration update parameters")
+data PortalEntryAccessUpdate {
+    @desc("Entry protocol")
+    scheme: string
+
+    @desc("Match Host, empty string means no restriction")
+    host: string
+
+    @desc("Entry port")
+    port: int
+}
+
+@desc("Portal access entry rules")
+data PortalEntryRule {
+    @desc("Entry rules")
+    rule: PortalRuleListItem
+
+    @desc("Target site")
+    site: PortalSiteListItem?
+    }
+
+@desc("Hub's Portal access entry service, called by the Portal admin client")
+api service PortalEntryApiService {
+    for AdminActor
+
+    noauth
+
+    @desc("List Portal access entries")
+    method list {
+        @desc("Portal access entry list")
+        output list<PortalEntry>
+    }
+
+    @desc("Modify Portal access configuration")
+    method updateAccess {
+        input {
+            @desc("Entry protocol")
+            scheme: string
+
+            @desc("Match Host, empty string means no restriction")
+            host: string
+
+            @desc("Entry port")
+            port: int
+
+            @desc("Portal access entry configuration update parameters")
+            update: PortalEntryAccessUpdate
+        }
+        @desc("Portal access entry")
+        output PortalEntry
+    }
+}

@@ -57,13 +57,7 @@ func (p *_NATSTaskPublisher) connect() (*gonats.Conn, error) {
 		}
 		return conn, nil
 	}
-	if p.Flag == nil {
-		return nil, fmt.Errorf("scheduler nats flag is nil")
-	}
 	if p.Flag.MQNatsEndpoint == "" {
-		if p.NATSServer == nil {
-			return nil, fmt.Errorf("embedded nats server is nil")
-		}
 		conn, err := p.NATSServer.ConnectAsHub()
 		if err != nil {
 			return nil, fmt.Errorf("connect embedded nats as hub: %w", err)

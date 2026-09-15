@@ -15,19 +15,19 @@ type portalSiteRepoSpy struct {
 	entries map[int]*PortalSite
 }
 
-func (s *portalSiteRepoSpy) ListEntries() []PortalSite {
-	s.calls = append(s.calls, "ListEntries")
-	entries := make([]PortalSite, 0, len(s.entries))
+func (s *portalSiteRepoSpy) List() []*PortalSite {
+	s.calls = append(s.calls, "List")
+	entries := make([]*PortalSite, 0, len(s.entries))
 	for _, entry := range s.entries {
-		entries = append(entries, *entry)
+		entries = append(entries, entry)
 	}
-	return vslice.SortBy(entries, func(a PortalSite, b PortalSite) bool {
+	return vslice.SortBy(entries, func(a *PortalSite, b *PortalSite) bool {
 		return a.Id < b.Id
 	})
 }
 
-func (s *portalSiteRepoSpy) GetEntryById(id int) (*PortalSite, bool) {
-	s.calls = append(s.calls, "GetEntryById")
+func (s *portalSiteRepoSpy) GetById(id int) (*PortalSite, bool) {
+	s.calls = append(s.calls, "GetById")
 	entry, ok := s.entries[id]
 	if !ok {
 		return nil, false
@@ -36,8 +36,8 @@ func (s *portalSiteRepoSpy) GetEntryById(id int) (*PortalSite, bool) {
 	return &value, true
 }
 
-func (s *portalSiteRepoSpy) GetEntryByName(name string) (*PortalSite, bool) {
-	s.calls = append(s.calls, "GetEntryByName:"+name)
+func (s *portalSiteRepoSpy) GetByName(name string) (*PortalSite, bool) {
+	s.calls = append(s.calls, "GetByName:"+name)
 	for _, entry := range s.entries {
 		if entry.Name == name {
 			value := *entry
@@ -47,8 +47,8 @@ func (s *portalSiteRepoSpy) GetEntryByName(name string) (*PortalSite, bool) {
 	return nil, false
 }
 
-func (s *portalSiteRepoSpy) SaveEntry(entry *PortalSite) {
-	s.calls = append(s.calls, "SaveEntry")
+func (s *portalSiteRepoSpy) Save(entry *PortalSite) {
+	s.calls = append(s.calls, "Save")
 	if s.entries == nil {
 		s.entries = map[int]*PortalSite{}
 	}
@@ -56,13 +56,19 @@ func (s *portalSiteRepoSpy) SaveEntry(entry *PortalSite) {
 	s.entries[value.Id] = &value
 }
 
-func (s *portalSiteRepoSpy) RemoveEntry(id int) bool {
-	s.calls = append(s.calls, "RemoveEntry")
+func (s *portalSiteRepoSpy) Remove(id int) bool {
+	s.calls = append(s.calls, "Remove")
 	if _, ok := s.entries[id]; !ok {
 		return false
 	}
 	delete(s.entries, id)
 	return true
+}
+
+// newPortalSiteCoreForTest builds a site core with the repositories Hub injects,
+// so tests only choose the repositories they exercise.
+func newPortalSiteCoreForTest(repo PortalSiteRepo) *PortalSiteCore {
+	return &PortalSiteCore{PortalSiteRepo: repo, SchemaRepo: &schemaRepoSpy{}}
 }
 
 func TestPortalSiteCoreUpdateBuiltInSite(t *testing.T) {
@@ -71,7 +77,7 @@ func TestPortalSiteCoreUpdateBuiltInSite(t *testing.T) {
 			1: {Id: 1, Name: "vine.hub.admin.DashboardWeb-web", BuiltIn: true},
 		},
 	}
-	core := &PortalSiteCore{PortalSiteRepo: repo}
+	core := newPortalSiteCoreForTest(repo)
 
 	panicValue := capturePanic(func() {
 		core.Update(1, PortalSiteUpdate{})
@@ -80,7 +86,7 @@ func TestPortalSiteCoreUpdateBuiltInSite(t *testing.T) {
 	err, ok := panicValue.(ex.Error)
 	require.True(t, ok)
 	assert.Equal(t, ex.OperationFailed, err.Code())
-	assert.Equal(t, []string{"GetEntryById"}, repo.calls)
+	assert.Equal(t, []string{"GetById"}, repo.calls)
 }
 
 func TestPortalSiteCoreListSkipsBuiltInSites(t *testing.T) {
@@ -90,13 +96,13 @@ func TestPortalSiteCoreListSkipsBuiltInSites(t *testing.T) {
 			2: {Id: 2, Name: "demo-booker"},
 		},
 	}
-	core := &PortalSiteCore{PortalSiteRepo: repo}
+	core := newPortalSiteCoreForTest(repo)
 
 	entries := core.List()
 
 	require.Len(t, entries, 1)
 	assert.Equal(t, "demo-booker", entries[0].Name)
-	assert.Equal(t, []string{"ListEntries"}, repo.calls)
+	assert.Equal(t, []string{"List"}, repo.calls)
 }
 
 func TestPortalSiteCoreRemoveBuiltInSite(t *testing.T) {
@@ -105,7 +111,7 @@ func TestPortalSiteCoreRemoveBuiltInSite(t *testing.T) {
 			1: {Id: 1, Name: "vine.hub.admin.DashboardWeb-web", BuiltIn: true},
 		},
 	}
-	core := &PortalSiteCore{PortalSiteRepo: repo}
+	core := newPortalSiteCoreForTest(repo)
 
 	panicValue := capturePanic(func() {
 		core.Remove(1)
@@ -114,7 +120,7 @@ func TestPortalSiteCoreRemoveBuiltInSite(t *testing.T) {
 	err, ok := panicValue.(ex.Error)
 	require.True(t, ok)
 	assert.Equal(t, ex.OperationFailed, err.Code())
-	assert.Equal(t, []string{"GetEntryById"}, repo.calls)
+	assert.Equal(t, []string{"GetById"}, repo.calls)
 }
 
 func TestMatchPortalSiteRpcgwServicesInDomainViewsIncludesVineSchemas(t *testing.T) {
@@ -217,7 +223,7 @@ func TestPortalSiteSaveAndUpdateProtectIdentityAndValidate(t *testing.T) {
 	site := testUserSite()
 	site.Id = 7
 	repo := &portalSiteRepoSpy{entries: map[int]*PortalSite{7: &site}}
-	target := &PortalSiteCore{PortalSiteRepo: repo}
+	target := newPortalSiteCoreForTest(repo)
 	incoming := testUserSite()
 	incoming.Id, incoming.BuiltIn = 99, true
 	got := target.Save(incoming)
@@ -234,7 +240,7 @@ func TestEnsureDashboardSitePreservesIdentity(t *testing.T) {
 	site := testUserSite()
 	site.Name, site.Id = DashboardWebSiteName, 7
 	repo := &portalSiteRepoSpy{entries: map[int]*PortalSite{7: &site}}
-	target := &PortalSiteCore{PortalSiteRepo: repo}
+	target := newPortalSiteCoreForTest(repo)
 	incoming := site
 	incoming.Id = 99
 	target.EnsureDashboardSite(incoming)

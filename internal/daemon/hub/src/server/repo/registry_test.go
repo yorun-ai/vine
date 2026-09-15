@@ -19,7 +19,7 @@ import (
 	"go.yorun.ai/vine/util/vcode"
 )
 
-func newTestRegistryRepo(t *testing.T, inproc bool) (*WatchRegistryRepo, *watchserver.Server) {
+func newTestRegistryRepo(t *testing.T, inproc bool) (*RegistryRepo, *watchserver.Server) {
 	t.Helper()
 
 	watchServer := &watchserver.Server{
@@ -28,7 +28,7 @@ func newTestRegistryRepo(t *testing.T, inproc bool) (*WatchRegistryRepo, *watchs
 		InprocFlag: &internalapp.InternalInprocFlag{Enabled: true},
 	}
 	watchServer.DIInit()
-	repo := &WatchRegistryRepo{
+	repo := &RegistryRepo{
 		WatchServer: watchServer,
 		InprocFlag: &internalapp.InternalInprocFlag{
 			Enabled: inproc,

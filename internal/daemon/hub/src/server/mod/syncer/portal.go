@@ -6,12 +6,14 @@ import (
 	"go.yorun.ai/vine/util/vcode"
 )
 
-func (s *Syncer) SyncPortalSiteWithRpcgwServices(site *core.PortalSite, rpcgwServices []string) {
+// SyncPortalSite publishes a complete portal site, including the services it
+// derives from the schemas registered for its actor.
+func (s *Syncer) SyncPortalSite(site *core.PortalSite) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
 	s.removeRenamedKeyLocked(s.portalSiteNamesById, site.Id, site.Name, watched.FormatPortalSiteKey)
-	s.WatchServer.SetAndNotify(watched.FormatPortalSiteKey(site.Name), vcode.MustMarshalJsonS(toWatchedPortalSite(site, rpcgwServices)))
+	s.WatchServer.SetAndNotify(watched.FormatPortalSiteKey(site.Name), vcode.MustMarshalJsonS(toWatchedPortalSite(site)))
 	s.saveNameByIdLocked(s.portalSiteNamesById, site.Id, site.Name)
 }
 
@@ -57,7 +59,7 @@ func (s *Syncer) RemovePortalCert(cert *core.PortalCert) {
 	delete(s.portalCertNamesById, cert.Id)
 }
 
-func toWatchedPortalSite(site *core.PortalSite, rpcgwServices []string) *watched.PortalSite {
+func toWatchedPortalSite(site *core.PortalSite) *watched.PortalSite {
 	ret := &watched.PortalSite{
 		Name: site.Name,
 		Type: string(site.Type),
@@ -71,8 +73,8 @@ func toWatchedPortalSite(site *core.PortalSite, rpcgwServices []string) *watched
 		},
 	}
 	if site.Type == core.PortalSiteTypeRPCGW {
-		services := make([]watched.PortalRpcgwService, 0, len(rpcgwServices))
-		for _, serviceName := range rpcgwServices {
+		services := make([]watched.PortalRpcgwService, 0, len(site.RpcgwServices))
+		for _, serviceName := range site.RpcgwServices {
 			services = append(services, watched.PortalRpcgwService{SkelName: serviceName})
 		}
 		ret.RpcgwConfig = &watched.PortalRpcgwConfig{Services: services}
