@@ -25,13 +25,20 @@ type _TestPortalRegistryClient struct {
 	heartbeats    []skeled.PortalStatus
 	unregistered  []skel.UUID
 	registered    bool
+	registerFails bool
 }
 
 func (c *_TestPortalRegistryClient) Register(registration skeled.PortalRegistration, _ ...client.InvokeOption) {
 	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
 	c.registrations = append(c.registrations, registration)
+	fails := c.registerFails
+	c.mutex.Unlock()
+
+	if fails {
+		// A Hub without this service fails the call, which is what Portal sees
+		// when it runs against an older Hub.
+		panic("portal registration is not served")
+	}
 }
 
 func (c *_TestPortalRegistryClient) Unregister(instanceId skel.UUID, _ ...client.InvokeOption) {
@@ -162,9 +169,9 @@ func TestHeartbeatRegistersWithoutHeartbeatInStandaloneMode(t *testing.T) {
 
 func TestHeartbeatKeepsRunningWhenHubLacksTheRegistration(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		// A Hub that does not answer the registration leaves Portal running, and
-		// the next heartbeat registers again.
-		client := &_TestPortalRegistryClient{registered: false}
+		// A Hub that does not serve this service must not stop Portal: startup
+		// succeeds and the heartbeat keeps trying until Hub answers.
+		client := &_TestPortalRegistryClient{registered: false, registerFails: true}
 		component := newTestHeartbeat(client, &_TestInfoServiceClient{}, &flag.Flag{})
 		component.Context = t.Context()
 
@@ -173,10 +180,22 @@ func TestHeartbeatKeepsRunningWhenHubLacksTheRegistration(t *testing.T) {
 		defer func() { heartbeatInterval = prev }()
 
 		component.AfterAppStart()
+		synctest.Sleep(30 * time.Millisecond)
+
+		registrations, heartbeats, _ := client.state()
+		assert.GreaterOrEqual(t, registrations, 2)
+		assert.GreaterOrEqual(t, heartbeats, 1)
+
+		// Hub learns the service, so the next attempt registers for real.
+		client.mutex.Lock()
+		client.registerFails = false
+		client.mutex.Unlock()
 		synctest.Sleep(10 * time.Millisecond)
 
-		registrations, _, _ := client.state()
-		assert.GreaterOrEqual(t, registrations, 2)
+		client.mutex.Lock()
+		lastRegistration := client.registrations[len(client.registrations)-1]
+		client.mutex.Unlock()
+		assert.Equal(t, skel.NewUUID(uuid.MustParse(testPortalInstanceId)), lastRegistration.InstanceId)
 
 		component.BeforeAppStop()
 	})
