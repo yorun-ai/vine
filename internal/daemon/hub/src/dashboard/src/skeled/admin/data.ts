@@ -1042,6 +1042,19 @@ export type ServiceDebugMethodItem = {
   resultType:        string;
 }
 /**
+ * Portal instance registered with Hub.
+ */
+export type ServiceDebugPortalInstance = {
+  /**
+   * Portal instance ID.
+   */
+  instanceId: string;
+  /**
+   * Portal version.
+   */
+  version:    string;
+}
+/**
  * Service called by Service Debug.
  */
 export type ServiceDebugServiceItem = {

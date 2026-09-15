@@ -12,6 +12,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/entry"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/heartbeat"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/vault"
 )
@@ -107,22 +108,25 @@ func TestPortalAppInitModulesAddsManagers(t *testing.T) {
 
 	moduleTypes := collectModuleTypes(spec)
 
-	if len(moduleTypes) != 5 {
+	if len(moduleTypes) != 6 {
 		t.Fatalf("unexpected module count: %d", len(moduleTypes))
 	}
-	if got := moduleTypes[0]; got != internalapp.T[*epmgr.Manager]() {
+	if got := moduleTypes[0]; got != internalapp.T[*heartbeat.Heartbeat]() {
 		t.Fatalf("unexpected module type: %v", got)
 	}
-	if got := moduleTypes[1]; got != internalapp.T[*access.Access]() {
+	if got := moduleTypes[1]; got != internalapp.T[*epmgr.Manager]() {
 		t.Fatalf("unexpected module type: %v", got)
 	}
-	if got := moduleTypes[2]; got != internalapp.T[*site.Manager]() {
+	if got := moduleTypes[2]; got != internalapp.T[*access.Access]() {
 		t.Fatalf("unexpected module type: %v", got)
 	}
-	if got := moduleTypes[3]; got != internalapp.T[*vault.Vault]() {
+	if got := moduleTypes[3]; got != internalapp.T[*site.Manager]() {
 		t.Fatalf("unexpected module type: %v", got)
 	}
-	if got := moduleTypes[4]; got != internalapp.T[*entry.Manager]() {
+	if got := moduleTypes[4]; got != internalapp.T[*vault.Vault]() {
+		t.Fatalf("unexpected module type: %v", got)
+	}
+	if got := moduleTypes[5]; got != internalapp.T[*entry.Manager]() {
 		t.Fatalf("unexpected module type: %v", got)
 	}
 }

@@ -14,6 +14,7 @@ import (
 func init() {
 	rpcspec.Register(_InfoServiceSpec)
 	rpcspec.Register(_LockServiceSpec)
+	rpcspec.Register(_PortalRegistryServiceSpec)
 	rpcspec.Register(_RegistryServiceSpec)
 }
 
@@ -466,6 +467,296 @@ func (client *_LockServiceClientER) Release(key string, token string, _ivOpts ..
 	return client.rpcClient.InvokeAs[bool](_LockServiceReleaseSpec.Info(), &_LockServiceReleaseArguments{
 		Key:   key,
 		Token: token,
+	}, _ivOpts...)
+}
+
+// PortalRegistryServiceServer Hub's Portal registration service, called by Portal
+
+// PortalRegistryService / Spec
+
+var (
+	_PortalRegistryServiceSpec = &rpcspec.ServiceSpec{
+		Type:              rpcspec.ServiceSpecTypeBoth,
+		Name:              "PortalRegistryService",
+		SkelName:          "vine.hub.control.PortalRegistryService",
+		Hash:              "d3a88a51",
+		ServerType:        reflect.TypeFor[PortalRegistryServiceServer](),
+		DefaultServerType: reflect.TypeFor[*DefaultPortalRegistryServiceServer](),
+		ClientType:        reflect.TypeFor[PortalRegistryServiceClient](),
+		ClientCtor:        NewPortalRegistryServiceClient,
+
+		ERServerType:        reflect.TypeFor[PortalRegistryServiceServerER](),
+		WrapperERServerCtor: _NewWrapperPortalRegistryServiceServerER,
+		DefaultERServerType: reflect.TypeFor[*DefaultPortalRegistryServiceServerER](),
+		ERClientType:        reflect.TypeFor[PortalRegistryServiceClientER](),
+		ERClientCtor:        NewPortalRegistryServiceClientER,
+		Methods: []*rpcspec.MethodSpec{
+			_PortalRegistryServiceRegisterSpec,
+			_PortalRegistryServiceUnregisterSpec,
+			_PortalRegistryServiceHeartbeatSpec,
+		},
+	}
+	_PortalRegistryServiceRegisterSpec = &rpcspec.MethodSpec{
+		Name:          "Register",
+		SkelName:      "register",
+		ArgumentsType: reflect.TypeFor[_PortalRegistryServiceRegisterArguments](),
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalRegistryServiceRegisterArguments)
+			cloned := *source
+			cloned.Registration = source.Registration.Clone()
+			return &cloned
+		},
+		ResultType:                  nil,
+		CloneResult:                 nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
+		ArgumentsContainsBinaryType: false,
+		ResultContainsBinaryType:    false,
+		MethodFuncs: []any{
+			PortalRegistryServiceClient.Register,
+			PortalRegistryServiceClientER.Register,
+			PortalRegistryServiceServer.Register,
+			PortalRegistryServiceServerER.Register,
+		},
+	}
+	_PortalRegistryServiceUnregisterSpec = &rpcspec.MethodSpec{
+		Name:          "Unregister",
+		SkelName:      "unregister",
+		ArgumentsType: reflect.TypeFor[_PortalRegistryServiceUnregisterArguments](),
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalRegistryServiceUnregisterArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType:                  nil,
+		CloneResult:                 nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
+		ArgumentsContainsBinaryType: false,
+		ResultContainsBinaryType:    false,
+		MethodFuncs: []any{
+			PortalRegistryServiceClient.Unregister,
+			PortalRegistryServiceClientER.Unregister,
+			PortalRegistryServiceServer.Unregister,
+			PortalRegistryServiceServerER.Unregister,
+		},
+	}
+	_PortalRegistryServiceHeartbeatSpec = &rpcspec.MethodSpec{
+		Name:          "Heartbeat",
+		SkelName:      "heartbeat",
+		ArgumentsType: reflect.TypeFor[_PortalRegistryServiceHeartbeatArguments](),
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalRegistryServiceHeartbeatArguments)
+			cloned := *source
+			cloned.Status = source.Status.Clone()
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[bool](),
+		CloneResult: func(value any) any {
+			source := value.(bool)
+			cloned := source
+			return cloned
+		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
+		ArgumentsContainsBinaryType: false,
+		ResultContainsBinaryType:    false,
+		MethodFuncs: []any{
+			PortalRegistryServiceClient.Heartbeat,
+			PortalRegistryServiceClientER.Heartbeat,
+			PortalRegistryServiceServer.Heartbeat,
+			PortalRegistryServiceServerER.Heartbeat,
+		},
+	}
+)
+
+// PortalRegistryService / Arguments
+
+type _PortalRegistryServiceRegisterArguments struct {
+	Registration PortalRegistration `json:"registration" skel:"index(0)"`
+}
+
+type _PortalRegistryServiceUnregisterArguments struct {
+	InstanceId skel.UUID `json:"instanceId" skel:"index(0)"`
+}
+
+type _PortalRegistryServiceHeartbeatArguments struct {
+	Status PortalStatus `json:"status" skel:"index(0)"`
+}
+
+// PortalRegistryService / Server
+
+type PortalRegistryServiceServer interface {
+	// Register Register a Portal instance.
+	//   @param registration - Portal instance registration information
+	Register(registration PortalRegistration)
+	// Unregister Unregister a Portal instance.
+	//   @param instanceId - Portal instance ID
+	Unregister(instanceId skel.UUID)
+	// Heartbeat Portal instance heartbeat.
+	//   @param status - Portal instance status
+	//   @returns bool - Whether the current Portal instance is still registered in the Hub
+	Heartbeat(status PortalStatus) bool
+
+	mustBePortalRegistryServiceServer()
+}
+
+// PortalRegistryService / Server / DefaultServer
+
+type DefaultPortalRegistryServiceServer struct{}
+
+func (*DefaultPortalRegistryServiceServer) Register(PortalRegistration) {
+	ex.PanicNew(ex.InvalidRequest, "method register is not implemented")
+}
+
+func (*DefaultPortalRegistryServiceServer) Unregister(skel.UUID) {
+	ex.PanicNew(ex.InvalidRequest, "method unregister is not implemented")
+}
+
+func (*DefaultPortalRegistryServiceServer) Heartbeat(PortalStatus) bool {
+	ex.PanicNew(ex.InvalidRequest, "method heartbeat is not implemented")
+	return false
+}
+
+func (*DefaultPortalRegistryServiceServer) mustBePortalRegistryServiceServer() {}
+
+// PortalRegistryService / ERServer
+
+type PortalRegistryServiceServerER interface {
+	Register(registration PortalRegistration) ex.Error
+	Unregister(instanceId skel.UUID) ex.Error
+	Heartbeat(status PortalStatus) (bool, ex.Error)
+
+	mustBePortalRegistryServiceServerER()
+}
+
+// PortalRegistryService / ERServer / WrapperERServer
+
+type _WrapperPortalRegistryServiceServerER struct {
+	DefaultPortalRegistryServiceServer
+	serverImpl PortalRegistryServiceServer
+}
+
+func _NewWrapperPortalRegistryServiceServerER(serverImpl PortalRegistryServiceServer) PortalRegistryServiceServerER {
+	return &_WrapperPortalRegistryServiceServerER{
+		serverImpl: serverImpl,
+	}
+}
+
+func (service *_WrapperPortalRegistryServiceServerER) server() PortalRegistryServiceServer {
+	if service.serverImpl == nil {
+		return &service.DefaultPortalRegistryServiceServer
+	}
+	return service.serverImpl
+}
+
+func (service *_WrapperPortalRegistryServiceServerER) Register(registration PortalRegistration) (err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	service.server().Register(registration)
+	return
+}
+
+func (service *_WrapperPortalRegistryServiceServerER) Unregister(instanceId skel.UUID) (err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	service.server().Unregister(instanceId)
+	return
+}
+
+func (service *_WrapperPortalRegistryServiceServerER) Heartbeat(status PortalStatus) (ret bool, err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	ret = service.server().Heartbeat(status)
+	return
+}
+
+func (*_WrapperPortalRegistryServiceServerER) mustBePortalRegistryServiceServerER() {}
+
+// PortalRegistryService / ERServer / DefaultERServer
+
+type DefaultPortalRegistryServiceServerER struct {
+	_WrapperPortalRegistryServiceServerER
+}
+
+// PortalRegistryService / Client
+
+type PortalRegistryServiceClient interface {
+	// Register Register a Portal instance.
+	//   @param registration - Portal instance registration information
+	Register(registration PortalRegistration, _ivOpts ...rpcclient.InvokeOption)
+	// Unregister Unregister a Portal instance.
+	//   @param instanceId - Portal instance ID
+	Unregister(instanceId skel.UUID, _ivOpts ...rpcclient.InvokeOption)
+	// Heartbeat Portal instance heartbeat.
+	//   @param status - Portal instance status
+	//   @returns bool - Whether the current Portal instance is still registered in the Hub
+	Heartbeat(status PortalStatus, _ivOpts ...rpcclient.InvokeOption) bool
+}
+
+type _PortalRegistryServiceClient struct {
+	clientER PortalRegistryServiceClientER
+}
+
+func NewPortalRegistryServiceClient(clientER PortalRegistryServiceClientER) PortalRegistryServiceClient {
+	return &_PortalRegistryServiceClient{clientER: clientER}
+}
+
+func (client *_PortalRegistryServiceClient) Register(registration PortalRegistration, _ivOpts ...rpcclient.InvokeOption) {
+	err := client.clientER.Register(registration, _ivOpts...)
+	ex.PanicIfError(err)
+}
+
+func (client *_PortalRegistryServiceClient) Unregister(instanceId skel.UUID, _ivOpts ...rpcclient.InvokeOption) {
+	err := client.clientER.Unregister(instanceId, _ivOpts...)
+	ex.PanicIfError(err)
+}
+
+func (client *_PortalRegistryServiceClient) Heartbeat(status PortalStatus, _ivOpts ...rpcclient.InvokeOption) bool {
+	ret, err := client.clientER.Heartbeat(status, _ivOpts...)
+	ex.PanicIfError(err)
+	return ret
+}
+
+// PortalRegistryService / ERClient
+
+type PortalRegistryServiceClientER interface {
+	// Register Register a Portal instance.
+	//   @param registration - Portal instance registration information
+	Register(registration PortalRegistration, _ivOpts ...rpcclient.InvokeOption) ex.Error
+	// Unregister Unregister a Portal instance.
+	//   @param instanceId - Portal instance ID
+	Unregister(instanceId skel.UUID, _ivOpts ...rpcclient.InvokeOption) ex.Error
+	// Heartbeat Portal instance heartbeat.
+	//   @param status - Portal instance status
+	//   @returns bool - Whether the current Portal instance is still registered in the Hub
+	Heartbeat(status PortalStatus, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error)
+}
+
+type _PortalRegistryServiceClientER struct {
+	rpcClient *rpcclient.Client
+}
+
+func NewPortalRegistryServiceClientER(rpcClient *rpcclient.Client) PortalRegistryServiceClientER {
+	return &_PortalRegistryServiceClientER{
+		rpcClient: rpcClient,
+	}
+}
+
+func (client *_PortalRegistryServiceClientER) Register(registration PortalRegistration, _ivOpts ...rpcclient.InvokeOption) ex.Error {
+	_, err := client.rpcClient.Invoke(_PortalRegistryServiceRegisterSpec.Info(), &_PortalRegistryServiceRegisterArguments{
+		Registration: registration,
+	}, _ivOpts...)
+	return err
+}
+
+func (client *_PortalRegistryServiceClientER) Unregister(instanceId skel.UUID, _ivOpts ...rpcclient.InvokeOption) ex.Error {
+	_, err := client.rpcClient.Invoke(_PortalRegistryServiceUnregisterSpec.Info(), &_PortalRegistryServiceUnregisterArguments{
+		InstanceId: instanceId,
+	}, _ivOpts...)
+	return err
+}
+
+func (client *_PortalRegistryServiceClientER) Heartbeat(status PortalStatus, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error) {
+	return client.rpcClient.InvokeAs[bool](_PortalRegistryServiceHeartbeatSpec.Info(), &_PortalRegistryServiceHeartbeatArguments{
+		Status: status,
 	}, _ivOpts...)
 }
 

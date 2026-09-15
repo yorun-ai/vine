@@ -20,9 +20,10 @@ import (
 type ServiceDebugApiServiceServerImpl struct {
 	skeled.DefaultServiceDebugApiServiceServer
 
-	RegistryRepo core.RegistryRepo `inject:""`
-	SchemaRepo   core.SchemaRepo   `inject:""`
-	Identity     *mtls.Identity    `inject:""`
+	RegistryRepo       core.RegistryRepo       `inject:""`
+	PortalInstanceRepo core.PortalInstanceRepo `inject:""`
+	SchemaRepo         core.SchemaRepo         `inject:""`
+	Identity           *mtls.Identity          `inject:""`
 }
 
 func (s *ServiceDebugApiServiceServerImpl) defaultBuilder() _DebugDefaultBuilder {
@@ -31,6 +32,20 @@ func (s *ServiceDebugApiServiceServerImpl) defaultBuilder() _DebugDefaultBuilder
 
 func (s *ServiceDebugApiServiceServerImpl) ListAppInstances() []skeled.ServiceDebugAppInstance {
 	return listDebugAppInstances(s.RegistryRepo.ListAppStatuses(), func(*core.AppStatus) bool { return true })
+}
+
+func (s *ServiceDebugApiServiceServerImpl) ListPortalInstances() []skeled.ServiceDebugPortalInstance {
+	instances := s.PortalInstanceRepo.ListPortalInstances()
+	ret := make([]skeled.ServiceDebugPortalInstance, 0, len(instances))
+	for _, instance := range instances {
+		ret = append(ret, skeled.ServiceDebugPortalInstance{
+			InstanceId: instance.InstanceId,
+			Version:    instance.Version,
+		})
+	}
+	return vslice.SortBy(ret, func(a skeled.ServiceDebugPortalInstance, b skeled.ServiceDebugPortalInstance) bool {
+		return strings.Compare(a.InstanceId, b.InstanceId) < 0
+	})
 }
 
 func listDebugAppInstances(statuses []*core.AppStatus, include func(*core.AppStatus) bool) []skeled.ServiceDebugAppInstance {

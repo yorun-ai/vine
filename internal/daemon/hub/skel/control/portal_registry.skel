@@ -1,0 +1,46 @@
+domain vine.hub.control
+
+@desc("Portal instance registration information provided by Portal")
+pub data PortalRegistration {
+    @desc("Portal instance ID")
+    instanceId: uuid
+
+    @desc("Portal Vine runtime version")
+    version: string
+}
+
+@desc("Portal instance status information, used for heartbeat refresh")
+pub data PortalStatus {
+    @desc("Portal instance ID")
+    instanceId: uuid
+}
+
+@desc("Hub's Portal registration service, called by Portal")
+pub service PortalRegistryService {
+    @desc("Register a Portal instance")
+    method register {
+        input {
+            @desc("Portal instance registration information")
+            registration: PortalRegistration
+        }
+    }
+
+    @desc("Unregister a Portal instance")
+    method unregister {
+        input {
+            @desc("Portal instance ID")
+            instanceId: uuid
+        }
+    }
+
+    @desc("Portal instance heartbeat")
+    method heartbeat {
+        input {
+            @desc("Portal instance status")
+            status: PortalStatus
+        }
+
+        @desc("Whether the current Portal instance is still registered in the Hub")
+        output bool
+    }
+}

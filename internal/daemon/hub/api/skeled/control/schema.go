@@ -11,7 +11,7 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.control",
 	Description: "Internal control API for Link and Portal",
-	Hash:        "98002de8",
+	Hash:        "4529348e",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
 		CompilerVersion: "v0.19.3",
@@ -293,6 +293,46 @@ var _DomainSchema = &skel.DomainSchema{
 			},
 		},
 		{
+			Name:        "PortalRegistration",
+			SkelName:    "vine.hub.control.PortalRegistration",
+			Description: "Portal instance registration information provided by Portal",
+			Hash:        "5a987267",
+			Members: []*skel.MemberSchema{
+				{
+					Name:        "instanceId",
+					Description: "Portal instance ID",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarUuid,
+					},
+				},
+				{
+					Name:        "version",
+					Description: "Portal Vine runtime version",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
+			},
+		},
+		{
+			Name:        "PortalStatus",
+			SkelName:    "vine.hub.control.PortalStatus",
+			Description: "Portal instance status information, used for heartbeat refresh",
+			Hash:        "e8c669a5",
+			Members: []*skel.MemberSchema{
+				{
+					Name:        "instanceId",
+					Description: "Portal instance ID",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarUuid,
+					},
+				},
+			},
+		},
+		{
 			Name:        "ServiceHandlerRegistration",
 			SkelName:    "vine.hub.control.ServiceHandlerRegistration",
 			Description: "Rpc service processing capability registration information provided by the application",
@@ -561,6 +601,74 @@ var _DomainSchema = &skel.DomainSchema{
 							Type: &skel.TypeSchema{
 								Kind:   skel.TypeKindScalar,
 								Scalar: skel.ScalarString,
+							},
+						},
+					},
+					ResultType: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarBool,
+					},
+				},
+			},
+		},
+		{
+			Name:        "PortalRegistryService",
+			SkelName:    "vine.hub.control.PortalRegistryService",
+			Description: "Hub's Portal registration service, called by Portal",
+			Hash:        "d3a88a51",
+			Pub:         true,
+			AuthMode:    skel.AuthModeUnset,
+			Methods: []*skel.MethodSchema{
+				{
+					Name:        "register",
+					SkelName:    "register",
+					Description: "Register a Portal instance",
+					Hash:        "661d736c",
+					AuthMode:    skel.AuthModeUnset,
+					Arguments: []*skel.MemberSchema{
+						{
+							Name:        "registration",
+							Description: "Portal instance registration information",
+							Type: &skel.TypeSchema{
+								Kind:     skel.TypeKindData,
+								Name:     "PortalRegistration",
+								SkelName: "vine.hub.control.PortalRegistration",
+							},
+						},
+					},
+				},
+				{
+					Name:        "unregister",
+					SkelName:    "unregister",
+					Description: "Unregister a Portal instance",
+					Hash:        "9d4d34bf",
+					AuthMode:    skel.AuthModeUnset,
+					Arguments: []*skel.MemberSchema{
+						{
+							Name:        "instanceId",
+							Description: "Portal instance ID",
+							Type: &skel.TypeSchema{
+								Kind:   skel.TypeKindScalar,
+								Scalar: skel.ScalarUuid,
+							},
+						},
+					},
+				},
+				{
+					Name:              "heartbeat",
+					SkelName:          "heartbeat",
+					Description:       "Portal instance heartbeat",
+					Hash:              "f5ae4f0f",
+					AuthMode:          skel.AuthModeUnset,
+					OutputDescription: "Whether the current Portal instance is still registered in the Hub",
+					Arguments: []*skel.MemberSchema{
+						{
+							Name:        "status",
+							Description: "Portal instance status",
+							Type: &skel.TypeSchema{
+								Kind:     skel.TypeKindData,
+								Name:     "PortalStatus",
+								SkelName: "vine.hub.control.PortalStatus",
 							},
 						},
 					},

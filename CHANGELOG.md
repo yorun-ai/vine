@@ -15,6 +15,13 @@ are not part of the public compatibility commitment.
 
 ### Added
 
+- Hub tracks running Portal daemons. Portal registers itself on startup,
+  heartbeats every 10 seconds and unregisters on shutdown; Hub drops a Portal
+  instance 30 seconds after its last heartbeat, so a terminated Portal stops
+  being reported. The Hub Dashboard lists the registered Portal instances. Hub
+  forgets Portal instances when it restarts and each Portal registers again on
+  its next heartbeat. Inproc Portal shares Hub's process and does not register.
+
 - Hub connection information includes its Vine runtime `version`.
 
 - Hub provides an embedded in-memory lease lock service by default. Configure

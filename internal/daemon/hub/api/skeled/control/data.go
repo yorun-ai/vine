@@ -142,6 +142,32 @@ func (v Info) Clone() Info {
 	return cloned
 }
 
+// PortalRegistration Portal instance registration information provided by Portal
+type PortalRegistration struct {
+	// InstanceId Portal instance ID
+	InstanceId skel.UUID `json:"instanceId"`
+	// Version Portal Vine runtime version
+	Version string `json:"version"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalRegistration) Clone() PortalRegistration {
+	cloned := v
+	return cloned
+}
+
+// PortalStatus Portal instance status information, used for heartbeat refresh
+type PortalStatus struct {
+	// InstanceId Portal instance ID
+	InstanceId skel.UUID `json:"instanceId"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalStatus) Clone() PortalStatus {
+	cloned := v
+	return cloned
+}
+
 // ServiceHandlerRegistration Rpc service processing capability registration information provided by the application
 type ServiceHandlerRegistration struct {
 	// ServiceSkelName Service Skel name

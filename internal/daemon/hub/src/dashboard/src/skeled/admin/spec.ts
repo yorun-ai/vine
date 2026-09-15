@@ -85,6 +85,7 @@ export const ServiceDebugApiServiceSpec = {
   serviceName: 'vine.hub.admin.ServiceDebugApiService',
   methods: {
     listAppInstances: 'listAppInstances',
+    listPortalInstances: 'listPortalInstances',
     listServices: 'listServices',
     listServiceAppInstances: 'listServiceAppInstances',
     listMethods: 'listMethods',

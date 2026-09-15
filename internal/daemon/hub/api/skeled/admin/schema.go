@@ -11,7 +11,7 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "913ec257",
+	Hash:        "5fde2d9b",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
 		CompilerVersion: "v0.19.3",
@@ -2182,6 +2182,30 @@ var _DomainSchema = &skel.DomainSchema{
 				{
 					Name:        "resultType",
 					Description: "Return type",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
+			},
+		},
+		{
+			Name:        "ServiceDebugPortalInstance",
+			SkelName:    "vine.hub.admin.ServiceDebugPortalInstance",
+			Description: "Portal instance registered with Hub",
+			Hash:        "14c26675",
+			Members: []*skel.MemberSchema{
+				{
+					Name:        "instanceId",
+					Description: "Portal instance ID",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
+				{
+					Name:        "version",
+					Description: "Portal version",
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
@@ -5400,7 +5424,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "ServiceDebugApiService",
 			SkelName:    "vine.hub.admin.ServiceDebugApiService",
 			Description: "Hub Dashboard Service debugging service",
-			Hash:        "6f47d948",
+			Hash:        "11df3b5c",
 			Pub:         false,
 			Api:         true,
 			AuthMode:    skel.AuthModeNoAuth,
@@ -5420,6 +5444,21 @@ var _DomainSchema = &skel.DomainSchema{
 							Kind:     skel.TypeKindData,
 							Name:     "ServiceDebugAppInstance",
 							SkelName: "vine.hub.admin.ServiceDebugAppInstance",
+						},
+					},
+				},
+				{
+					Name:        "listPortalInstances",
+					SkelName:    "listPortalInstances",
+					Description: "List registered Portal instances",
+					Hash:        "b35c9e4f",
+					AuthMode:    skel.AuthModeUnset,
+					ResultType: &skel.TypeSchema{
+						Kind: skel.TypeKindList,
+						Element: &skel.TypeSchema{
+							Kind:     skel.TypeKindData,
+							Name:     "ServiceDebugPortalInstance",
+							SkelName: "vine.hub.admin.ServiceDebugPortalInstance",
 						},
 					},
 				},

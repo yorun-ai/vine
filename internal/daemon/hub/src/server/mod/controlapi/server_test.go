@@ -55,6 +55,7 @@ func TestServerServesOnlyControlRpcRoute(t *testing.T) {
 		app.T[*impl.InfoServiceServerImpl](),
 		app.T[*impl.RegistryServiceServerImpl](),
 		app.T[*impl.LockServiceServerImpl](),
+		app.T[*impl.PortalRegistryServiceServerImpl](),
 	}, runtime.handlerTypes)
 
 	response, err := http.Get("http://" + server.httpServer.Addr + coreapp.PathRpcInvoke + "/vine.hub.control.InfoService/getInfo")

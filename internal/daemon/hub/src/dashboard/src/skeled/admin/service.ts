@@ -42,6 +42,7 @@ import type {
   PortalSiteCreation,
   PortalSiteUpdate,
   ServiceDebugAppInstance,
+  ServiceDebugPortalInstance,
   ServiceDebugServiceItem,
   ServiceDebugMethodItem,
   ServiceDebugDefaultInvokeRequest,
@@ -751,6 +752,23 @@ export function createServiceDebugApiService(client: VrpcClient) {
       return client.invoke<Array<ServiceDebugAppInstance>>({
         serviceName: ServiceDebugApiServiceSpec.serviceName,
         methodName: ServiceDebugApiServiceSpec.methods.listAppInstances,
+        params,
+        options,
+      });
+    },
+    /**
+     * List registered Portal instances.
+     * @param params - Request parameters, or null for methods without input
+     * @param options - Optional invocation options
+     * @returns Array<ServiceDebugPortalInstance> -
+     */
+    listPortalInstances(
+      params: null,
+      options?: VrpcRequestOptions,
+    ) {
+      return client.invoke<Array<ServiceDebugPortalInstance>>({
+        serviceName: ServiceDebugApiServiceSpec.serviceName,
+        methodName: ServiceDebugApiServiceSpec.methods.listPortalInstances,
         params,
         options,
       });

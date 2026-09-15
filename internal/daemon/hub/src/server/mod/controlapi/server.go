@@ -58,6 +58,7 @@ func (s *Server) BeforeAppStart() error {
 		app.T[*impl.InfoServiceServerImpl](),
 		app.T[*impl.RegistryServiceServerImpl](),
 		app.T[*impl.LockServiceServerImpl](),
+		app.T[*impl.PortalRegistryServiceServerImpl](),
 	)
 
 	if s.InprocFlag.Enabled {

@@ -1146,6 +1146,20 @@ func (v ServiceDebugMethodItem) Clone() ServiceDebugMethodItem {
 	return cloned
 }
 
+// ServiceDebugPortalInstance Portal instance registered with Hub
+type ServiceDebugPortalInstance struct {
+	// InstanceId Portal instance ID
+	InstanceId string `json:"instanceId"`
+	// Version Portal version
+	Version string `json:"version"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v ServiceDebugPortalInstance) Clone() ServiceDebugPortalInstance {
+	cloned := v
+	return cloned
+}
+
 // ServiceDebugServiceItem Service called by Service Debug
 type ServiceDebugServiceItem struct {
 	// ServiceSkelName Service Skel name

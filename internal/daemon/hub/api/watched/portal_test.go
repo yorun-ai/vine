@@ -58,3 +58,17 @@ func TestPortalSiteJSON(t *testing.T) {
 func TestPortalCertKeys(t *testing.T) {
 	assert.Equal(t, "portal:cert:demo-cert", FormatPortalCertKey("demo-cert"))
 }
+
+func TestPortalInstanceKeys(t *testing.T) {
+	assert.Equal(t, "portal:instance:11111111-1111-1111-1111-111111111111", FormatPortalInstanceKey("11111111-1111-1111-1111-111111111111"))
+	assert.Equal(t, "portal:instance:*", FormatPortalInstancePattern())
+}
+
+func TestPortalInstanceJSON(t *testing.T) {
+	data, err := json.Marshal(PortalInstance{
+		InstanceId: "11111111-1111-1111-1111-111111111111",
+		Version:    "1.2.3",
+	})
+	assert.NoError(t, err)
+	assert.JSONEq(t, `{"instanceId":"11111111-1111-1111-1111-111111111111","version":"1.2.3","expiresAt":"0001-01-01T00:00:00Z"}`, string(data))
+}

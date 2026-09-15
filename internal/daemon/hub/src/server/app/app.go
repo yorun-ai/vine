@@ -88,6 +88,7 @@ func (a *HubApp) BindCommon(b *di.Binder) {
 
 	b.Bind(di.T[core.SchemaRepo]()).ToImplementation(di.T[*schema.MemorySchemaRepo]())
 	b.Bind(di.T[core.RegistryRepo]()).ToImplementation(di.T[*repo.WatchRegistryRepo]())
+	b.Bind(di.T[core.PortalInstanceRepo]()).ToImplementation(di.T[*repo.WatchPortalInstanceRepo]())
 }
 
 func (*HubApp) ServicerInitHandlers(addHandler app.TypeAdder) {

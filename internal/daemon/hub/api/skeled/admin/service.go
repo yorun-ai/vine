@@ -2096,7 +2096,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "ServiceDebugApiService",
 		SkelName:          "vine.hub.admin.ServiceDebugApiService",
-		Hash:              "6f47d948",
+		Hash:              "11df3b5c",
 		ServerType:        reflect.TypeFor[ServiceDebugApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultServiceDebugApiServiceServer](),
 
@@ -2105,6 +2105,7 @@ var (
 		DefaultERServerType: reflect.TypeFor[*DefaultServiceDebugApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
 			_ServiceDebugApiServiceListAppInstancesSpec,
+			_ServiceDebugApiServiceListPortalInstancesSpec,
 			_ServiceDebugApiServiceListServicesSpec,
 			_ServiceDebugApiServiceListServiceAppInstancesSpec,
 			_ServiceDebugApiServiceListMethodsSpec,
@@ -2138,6 +2139,34 @@ var (
 		MethodFuncs: []any{
 			ServiceDebugApiServiceServer.ListAppInstances,
 			ServiceDebugApiServiceServerER.ListAppInstances,
+		},
+	}
+	_ServiceDebugApiServiceListPortalInstancesSpec = &rpcspec.MethodSpec{
+		Name:           "ListPortalInstances",
+		SkelName:       "listPortalInstances",
+		ArgumentsType:  nil,
+		CloneArguments: nil,
+		ResultType:     reflect.TypeFor[[]ServiceDebugPortalInstance](),
+		CloneResult: func(value any) any {
+			source := value.([]ServiceDebugPortalInstance)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]ServiceDebugPortalInstance, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
+		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
+		ArgumentsContainsBinaryType: false,
+		ResultContainsBinaryType:    false,
+		MethodFuncs: []any{
+			ServiceDebugApiServiceServer.ListPortalInstances,
+			ServiceDebugApiServiceServerER.ListPortalInstances,
 		},
 	}
 	_ServiceDebugApiServiceListServicesSpec = &rpcspec.MethodSpec{
@@ -2312,6 +2341,8 @@ type _ServiceDebugApiServiceInvokeServiceArguments struct {
 type ServiceDebugApiServiceServer interface {
 	// ListAppInstances List application instances.
 	ListAppInstances() []ServiceDebugAppInstance
+	// ListPortalInstances List registered Portal instances.
+	ListPortalInstances() []ServiceDebugPortalInstance
 	// ListServices List the services provided by the application instance.
 	ListServices() []ServiceDebugServiceItem
 	// ListServiceAppInstances List application instances that provide the specified service.
@@ -2341,6 +2372,11 @@ type DefaultServiceDebugApiServiceServer struct{}
 func (*DefaultServiceDebugApiServiceServer) ListAppInstances() []ServiceDebugAppInstance {
 	ex.PanicNew(ex.InvalidRequest, "method listAppInstances is not implemented")
 	return []ServiceDebugAppInstance{}
+}
+
+func (*DefaultServiceDebugApiServiceServer) ListPortalInstances() []ServiceDebugPortalInstance {
+	ex.PanicNew(ex.InvalidRequest, "method listPortalInstances is not implemented")
+	return []ServiceDebugPortalInstance{}
 }
 
 func (*DefaultServiceDebugApiServiceServer) ListServices() []ServiceDebugServiceItem {
@@ -2374,6 +2410,7 @@ func (*DefaultServiceDebugApiServiceServer) mustBeServiceDebugApiServiceServer()
 
 type ServiceDebugApiServiceServerER interface {
 	ListAppInstances() ([]ServiceDebugAppInstance, ex.Error)
+	ListPortalInstances() ([]ServiceDebugPortalInstance, ex.Error)
 	ListServices() ([]ServiceDebugServiceItem, ex.Error)
 	ListServiceAppInstances(serviceSkelName string, schemaHash string) ([]ServiceDebugAppInstance, ex.Error)
 	ListMethods(serviceSkelName string, schemaHash string) ([]ServiceDebugMethodItem, ex.Error)
@@ -2406,6 +2443,12 @@ func (service *_WrapperServiceDebugApiServiceServerER) server() ServiceDebugApiS
 func (service *_WrapperServiceDebugApiServiceServerER) ListAppInstances() (ret []ServiceDebugAppInstance, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ListAppInstances()
+	return
+}
+
+func (service *_WrapperServiceDebugApiServiceServerER) ListPortalInstances() (ret []ServiceDebugPortalInstance, err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	ret = service.server().ListPortalInstances()
 	return
 }
 
