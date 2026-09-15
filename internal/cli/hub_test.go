@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	hubconf "go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 )
 
@@ -40,18 +42,18 @@ func TestRunHubServe(t *testing.T) {
 		if flags.DashboardURL != nil {
 			t.Fatalf("unexpected dashboard url before normalize: %q", flags.DashboardURL)
 		}
-		if flags.MQExternalNatsURL != "nats://127.0.0.1:4222" {
-			t.Fatalf("unexpected mq endpoint: %q", flags.MQExternalNatsURL)
+		if flags.MQNatsEndpoint != "nats://127.0.0.1:4222" {
+			t.Fatalf("unexpected mq endpoint: %q", flags.MQNatsEndpoint)
 		}
-		if flags.MQEmbeddedNats {
-			t.Fatal("unexpected mq-embedded-nats")
+		if flags.MQMode != hubconf.MQModeNATS {
+			t.Fatalf("unexpected MQ mode: %q", flags.MQMode)
 		}
 		if flags.MTLS.CAFile != "/tmp/ca.pem" || flags.MTLS.CertFile != "/tmp/hub.pem" || flags.MTLS.KeyFile != "/tmp/hub-key.pem" {
 			t.Fatalf("unexpected mTLS files: %#v", flags.MTLS)
 		}
 	}
 
-	result := run([]string{"hub", "serve", "--control-listen", ":9090", "--admin-listen", ":9092", "--watch-listen", "127.0.0.1:9091", "--mq-external-nats-url", "nats://127.0.0.1:4222", "--seed-hub-data-file", "/tmp/hub.yaml", "--dashboard-url", "https://hub.example.com:8443/admin", "--db-sqlite-file", "/tmp/hub.sqlite", "--mtls-ca-file", "/tmp/ca.pem", "--mtls-cert-file", "/tmp/hub.pem", "--mtls-key-file", "/tmp/hub-key.pem"})
+	result := run([]string{"hub", "serve", "--control-listen", ":9090", "--admin-listen", ":9092", "--watch-listen", "127.0.0.1:9091", "--mq-mode=nats", "--mq-nats-endpoint", "nats://127.0.0.1:4222", "--seed-hub-data-file", "/tmp/hub.yaml", "--dashboard-url", "https://hub.example.com:8443/admin", "--db-sqlite-file", "/tmp/hub.sqlite", "--mtls-ca-file", "/tmp/ca.pem", "--mtls-cert-file", "/tmp/hub.pem", "--mtls-key-file", "/tmp/hub-key.pem"})
 
 	if result.exitCode != exitCodeSuccess {
 		t.Fatalf("unexpected exit code: %d, stderr=%q", result.exitCode, result.stderr)
@@ -102,15 +104,15 @@ func TestRunHubServePG(t *testing.T) {
 		if flags.DBPostgresURL != "postgres://demo:demo@127.0.0.1:5432/hub" {
 			t.Fatalf("unexpected pgConnUrl: %q", flags.DBPostgresURL)
 		}
-		if flags.MQExternalNatsURL != "nats://127.0.0.1:4222" {
-			t.Fatalf("unexpected mq endpoint: %q", flags.MQExternalNatsURL)
+		if flags.MQNatsEndpoint != "nats://127.0.0.1:4222" {
+			t.Fatalf("unexpected mq endpoint: %q", flags.MQNatsEndpoint)
 		}
-		if flags.MQEmbeddedNats {
-			t.Fatal("unexpected mq-embedded-nats")
+		if flags.MQMode != hubconf.MQModeNATS {
+			t.Fatalf("unexpected MQ mode: %q", flags.MQMode)
 		}
 	}
 
-	result := run([]string{"hub", "serve", "--control-listen", ":7090", "--mq-external-nats-url", "nats://127.0.0.1:4222", "--db-postgres-url", "postgres://demo:demo@127.0.0.1:5432/hub"})
+	result := run([]string{"hub", "serve", "--control-listen", ":7090", "--mq-mode=nats", "--mq-nats-endpoint", "nats://127.0.0.1:4222", "--db-postgres-url", "postgres://demo:demo@127.0.0.1:5432/hub"})
 
 	if result.exitCode != exitCodeSuccess {
 		t.Fatalf("unexpected exit code: %d, stderr=%q", result.exitCode, result.stderr)
@@ -138,10 +140,10 @@ func TestRunHubHelpShowsServeOptions(t *testing.T) {
 	if !strings.Contains(result.stdout, "--admin-listen") {
 		t.Fatalf("unexpected stdout: %q", result.stdout)
 	}
-	if !strings.Contains(result.stdout, "--mq-external-nats-url") {
+	if !strings.Contains(result.stdout, "--mq-nats-endpoint") {
 		t.Fatalf("unexpected stdout: %q", result.stdout)
 	}
-	if !strings.Contains(result.stdout, "--mq-embedded-nats") {
+	if !strings.Contains(result.stdout, "--mq-mode") {
 		t.Fatalf("unexpected stdout: %q", result.stdout)
 	}
 	if !strings.Contains(result.stdout, "--seed-hub-data-file") {
@@ -165,7 +167,8 @@ func TestRunHubServeFromEnv(t *testing.T) {
 	t.Setenv(EnvHubControlListen, ":10090")
 	t.Setenv(EnvHubAdminListen, ":10092")
 	t.Setenv(EnvHubWatchListen, "127.0.0.1:10091")
-	t.Setenv(EnvHubMQExternalNatsURL, "nats://127.0.0.1:4222")
+	t.Setenv(EnvHubMQMode, "nats")
+	t.Setenv(EnvHubMQNatsEndpoint, "nats://127.0.0.1:4222")
 	t.Setenv(EnvSeedHubDataFile, "/tmp/env-hub.yaml")
 	t.Setenv(EnvHubDashboardURL, "http://:10099")
 	t.Setenv(EnvHubDBSQLiteFile, "/tmp/env-hub.sqlite")
@@ -197,11 +200,11 @@ func TestRunHubServeFromEnv(t *testing.T) {
 		if flags.DashboardURL != nil {
 			t.Fatalf("unexpected dashboard url before normalize: %q", flags.DashboardURL)
 		}
-		if flags.MQExternalNatsURL != "nats://127.0.0.1:4222" {
-			t.Fatalf("unexpected mq endpoint: %q", flags.MQExternalNatsURL)
+		if flags.MQNatsEndpoint != "nats://127.0.0.1:4222" {
+			t.Fatalf("unexpected mq endpoint: %q", flags.MQNatsEndpoint)
 		}
-		if flags.MQEmbeddedNats {
-			t.Fatal("unexpected mq-embedded-nats")
+		if flags.MQMode != hubconf.MQModeNATS {
+			t.Fatalf("unexpected MQ mode: %q", flags.MQMode)
 		}
 	}
 
@@ -222,15 +225,15 @@ func TestRunHubServeEnableNats(t *testing.T) {
 	called := false
 	startHubApp = func(flags hubconf.Flag) {
 		called = true
-		if !flags.MQEmbeddedNats {
-			t.Fatal("expected mq-embedded-nats")
+		if flags.MQMode != hubconf.MQModeEmbedded {
+			t.Fatal("expected embedded MQ mode")
 		}
-		if flags.MQExternalNatsURL != "" {
-			t.Fatalf("unexpected mq endpoint: %q", flags.MQExternalNatsURL)
+		if flags.MQNatsEndpoint != "" {
+			t.Fatalf("unexpected mq endpoint: %q", flags.MQNatsEndpoint)
 		}
 	}
 
-	result := run([]string{"hub", "serve", "--mq-embedded-nats", "--db-sqlite-file", "/tmp/hub.sqlite"})
+	result := run([]string{"hub", "serve", "--mq-mode=embedded", "--db-sqlite-file", "/tmp/hub.sqlite"})
 
 	if result.exitCode != exitCodeSuccess {
 		t.Fatalf("unexpected exit code: %d, stderr=%q", result.exitCode, result.stderr)
@@ -250,8 +253,8 @@ func TestRunHubServeNoDB(t *testing.T) {
 		}
 	}
 	for _, args := range [][]string{
-		{"hub", "serve", "--no-db", "--seed-hub-data-file", "seed.yaml", "--mq-embedded-nats"},
-		{"hub", "serve", "--seed-hub-data-file", "seed.yaml", "--mq-embedded-nats"},
+		{"hub", "serve", "--no-db", "--seed-hub-data-file", "seed.yaml", "--mq-mode=embedded"},
+		{"hub", "serve", "--seed-hub-data-file", "seed.yaml", "--mq-mode=embedded"},
 	} {
 		result := run(args)
 		if result.exitCode != exitCodeSuccess {
@@ -343,4 +346,53 @@ func TestHubServeHelpMarksRedisListenDeprecated(t *testing.T) {
 	if result.exitCode != exitCodeSuccess || !strings.Contains(result.stdout, "--watch-listen") || !strings.Contains(result.stdout, "deprecated: use --watch-listen") {
 		t.Fatalf("unexpected help: %#v", result)
 	}
+}
+
+func TestHubMQInputs(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		args     []string
+		env      map[string]string
+		mode     string
+		endpoint string
+	}{
+		{name: "default", mode: "embedded"},
+		{name: "embedded", args: []string{"--mq-mode=embedded"}, mode: "embedded"},
+		{name: "external", args: []string{"--mq-mode=nats", "--mq-nats-endpoint=nats://new:4222"}, mode: "nats", endpoint: "nats://new:4222"},
+		{name: "legacy embedded", args: []string{"--mq-embedded-nats"}, mode: "embedded"},
+		{name: "legacy external", args: []string{"--mq-external-nats-url=nats://old:4222"}, mode: "nats", endpoint: "nats://old:4222"},
+		{name: "legacy false", args: []string{"--mq-embedded-nats=false", "--mq-external-nats-url=nats://old:4222"}, mode: "nats", endpoint: "nats://old:4222"},
+		{name: "explicit mode wins", args: []string{"--mq-mode=nats", "--mq-embedded-nats", "--mq-nats-endpoint=nats://new:4222"}, mode: "nats", endpoint: "nats://new:4222"},
+		{name: "new endpoint wins", args: []string{"--mq-mode=nats", "--mq-nats-endpoint=nats://new:4222", "--mq-external-nats-url=nats://old:4222"}, mode: "nats", endpoint: "nats://new:4222"},
+		{name: "environment", env: map[string]string{EnvHubMQMode: "nats", EnvHubMQNatsEndpoint: "nats://new:4222"}, mode: "nats", endpoint: "nats://new:4222"},
+		{name: "legacy environment", env: map[string]string{EnvHubMQExternalNatsURL: "nats://old:4222"}, mode: "nats", endpoint: "nats://old:4222"},
+		{name: "legacy bool environment", env: map[string]string{EnvHubMQEmbeddedNats: "true"}, mode: "embedded"},
+		{name: "mode environment wins", env: map[string]string{EnvHubMQMode: "nats", EnvHubMQEmbeddedNats: "true", EnvHubMQNatsEndpoint: "nats://new:4222"}, mode: "nats", endpoint: "nats://new:4222"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, key := range []string{EnvHubMQMode, EnvHubMQNatsEndpoint, EnvHubMQEmbeddedNats, EnvHubMQExternalNatsURL} {
+				t.Setenv(key, "")
+				require.NoError(t, os.Unsetenv(key))
+			}
+			for key, value := range tc.env {
+				t.Setenv(key, value)
+			}
+			original := startHubApp
+			t.Cleanup(func() { startHubApp = original })
+			called := false
+			startHubApp = func(f hubconf.Flag) {
+				called = true
+				require.Equal(t, tc.mode, f.MQMode)
+				require.Equal(t, tc.endpoint, f.MQNatsEndpoint)
+			}
+			result := run(append([]string{"hub", "serve"}, tc.args...))
+			require.Equal(t, 0, result.exitCode, result.stderr)
+			require.True(t, called)
+		})
+	}
+}
+
+func TestHubRejectsUnreleasedMQEmbeddedFlag(t *testing.T) {
+	result := run([]string{"hub", "serve", "--mq-embedded"})
+	require.NotEqual(t, 0, result.exitCode)
 }

@@ -28,9 +28,9 @@ func TestHubInfoServiceReturnsPortsFromFlag(t *testing.T) {
 	service := &InfoServiceServerImpl{
 		InprocFlag: &app.InternalInprocFlag{},
 		Flag: &flag.Flag{
-			ControlListen:     ":7071",
-			WatchListen:       ":7072",
-			MQExternalNatsURL: "nats://127.0.0.1:4222",
+			ControlListen:  ":7071",
+			WatchListen:    ":7072",
+			MQNatsEndpoint: "nats://127.0.0.1:4222",
 		},
 		NATSServer: &natsserver.NATSServer{},
 	}
@@ -52,13 +52,13 @@ func TestHubInfoServiceReturnsNATSServerPortWhenEnabled(t *testing.T) {
 	service := &InfoServiceServerImpl{
 		InprocFlag: &app.InternalInprocFlag{},
 		Flag: &flag.Flag{
-			ControlListen:  ":7071",
-			WatchListen:    ":7072",
-			MQEmbeddedNats: true,
+			ControlListen: ":7071",
+			WatchListen:   ":7072",
+			MQMode:        flag.MQModeEmbedded,
 		},
 		NATSServer: &natsserver.NATSServer{
 			InprocFlag: &app.InternalInprocFlag{},
-			Flag:       &flag.Flag{MQEmbeddedNats: true},
+			Flag:       &flag.Flag{MQMode: flag.MQModeEmbedded},
 		},
 	}
 
@@ -80,7 +80,7 @@ func TestHubInfoServiceReturnsNATSServerPortWhenEnabled(t *testing.T) {
 func TestHubInfoServicePreservesOldClientPort(t *testing.T) {
 	service := &InfoServiceServerImpl{
 		InprocFlag: &app.InternalInprocFlag{},
-		Flag:       &flag.Flag{ControlListen: ":7071", WatchListen: ":7072", MQExternalNatsURL: "nats://localhost:4222"},
+		Flag:       &flag.Flag{ControlListen: ":7071", WatchListen: ":7072", MQNatsEndpoint: "nats://localhost:4222"},
 	}
 	type oldInfo struct {
 		ApiPort    int    `json:"apiPort"`
@@ -98,7 +98,7 @@ func TestHubInfoServicePreservesOldClientPort(t *testing.T) {
 func TestHubInfoServiceInprocEmbeddedMQ(t *testing.T) {
 	service := &InfoServiceServerImpl{
 		InprocFlag: &app.InternalInprocFlag{Enabled: true},
-		Flag:       &flag.Flag{ControlListen: ":7071", WatchListen: ":7072", MQEmbeddedNats: true},
+		Flag:       &flag.Flag{ControlListen: ":7071", WatchListen: ":7072", MQMode: flag.MQModeEmbedded},
 	}
 	info := service.GetInfo()
 	assert.True(t, info.MqEmbedded)

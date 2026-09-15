@@ -157,7 +157,7 @@ Common entry points:
 vine dev --seed-hub-data-file ./hub.yaml
 
 # Independently operated runtime services; run each in its own process.
-vine hub serve --mq-embedded-nats --db-sqlite-file ./hub.sqlite
+vine hub serve --db-sqlite-file ./hub.sqlite
 vine portal serve --hub-endpoint http://127.0.0.1:7071
 vine link serve \
   --api-listen 127.0.0.1:7079 \

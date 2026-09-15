@@ -45,7 +45,7 @@ func initTestClient(component app.ManagedComponent) *_ClientManager {
 func TestClientManagerUsesInprocServer(t *testing.T) {
 	natsModule := &hubnatsserver.NATSServer{
 		InprocFlag: &app.InternalInprocFlag{Enabled: true},
-		Flag:       &hubflag.Flag{MQEmbeddedNats: true},
+		Flag:       &hubflag.Flag{MQMode: hubflag.MQModeEmbedded},
 	}
 	natsModule.DIInit()
 	t.Cleanup(natsModule.AfterAppStop)

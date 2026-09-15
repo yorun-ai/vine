@@ -147,7 +147,7 @@ vine --help
 vine dev --seed-hub-data-file ./hub.yaml
 
 # 独立运行的运行时服务；每条命令分别在独立进程中执行。
-vine hub serve --mq-embedded-nats --db-sqlite-file ./hub.sqlite
+vine hub serve --db-sqlite-file ./hub.sqlite
 vine portal serve --hub-endpoint http://127.0.0.1:7071
 vine link serve \
   --api-listen 127.0.0.1:7079 \

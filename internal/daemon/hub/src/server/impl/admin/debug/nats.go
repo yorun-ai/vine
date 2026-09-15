@@ -41,13 +41,13 @@ func (p *_DebugNATSPublisher) connect() *gonats.Conn {
 	if hubnats.InprocServer() != nil {
 		return hubnats.ConnectInproc()
 	}
-	if p.Flag.MQExternalNatsURL == "" {
+	if p.Flag.MQNatsEndpoint == "" {
 		vpre.CheckNotNil(p.NATSServer, "embedded nats server is nil")
 		conn, err := p.NATSServer.ConnectAsHub()
 		vpre.CheckNilError(err, "connect embedded nats as hub failed")
 		return conn
 	}
-	conn, err := gonats.Connect(p.Flag.MQExternalNatsURL)
+	conn, err := gonats.Connect(p.Flag.MQNatsEndpoint)
 	vpre.CheckNilError(err, "connect external nats failed")
 	return conn
 }
