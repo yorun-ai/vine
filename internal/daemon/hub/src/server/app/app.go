@@ -76,7 +76,7 @@ func (a *HubApp) InitModules(addModule app.TypeAdder) {
 	addModule(app.T[*sweeper.Sweeper]())
 	// Keep Control API last so reverse lifecycle shutdown stops accepting Link
 	// and Portal requests before the rest of Hub begins to tear down.
-	addModule(app.T[*controlapi.Listener]())
+	addModule(app.T[*controlapi.Server]())
 }
 
 func (a *HubApp) BindCommon(b *di.Binder) {

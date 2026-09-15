@@ -202,7 +202,7 @@ func TestHubAppModuleTypesIncludesRuntimeModulesInInprocMode(t *testing.T) {
 		internalapp.T[*initializer.Initializer](),
 		internalapp.T[*scheduler.Scheduler](),
 		internalapp.T[*sweeper.Sweeper](),
-		internalapp.T[*controlapi.Listener](),
+		internalapp.T[*controlapi.Server](),
 	}, collectModuleTypes(spec))
 }
 
@@ -218,7 +218,7 @@ func TestHubAppModuleTypesIncludesRuntimeModulesInNormalMode(t *testing.T) {
 		internalapp.T[*initializer.Initializer](),
 		internalapp.T[*scheduler.Scheduler](),
 		internalapp.T[*sweeper.Sweeper](),
-		internalapp.T[*controlapi.Listener](),
+		internalapp.T[*controlapi.Server](),
 	}, collectModuleTypes(spec))
 }
 
@@ -234,7 +234,7 @@ func TestHubAppModuleTypesIncludesRuntimeModulesWhenEnableNats(t *testing.T) {
 		internalapp.T[*initializer.Initializer](),
 		internalapp.T[*scheduler.Scheduler](),
 		internalapp.T[*sweeper.Sweeper](),
-		internalapp.T[*controlapi.Listener](),
+		internalapp.T[*controlapi.Server](),
 	}, collectModuleTypes(spec))
 }
 

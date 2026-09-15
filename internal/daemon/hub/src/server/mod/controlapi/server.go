@@ -33,10 +33,10 @@ var (
 	listenTCP     = net.Listen
 )
 
-// Listener exposes only the Hub Control API used by Link and Portal. Hub's
+// Server exposes only the Hub Control API used by Link and Portal. Hub's
 // admin Rpc services and Dashboard Web handler remain on the main Hub
 // application listener and are deliberately absent from this server.
-type Listener struct {
+type Server struct {
 	app.BaseModule
 
 	Context         context.Context         `inject:""`
@@ -49,101 +49,101 @@ type Listener struct {
 	rpcHandler     rpcspec.RpcHandler
 	inprocEndpoint string
 	inprocCleanup  func()
-	server         *http.Server
+	httpServer     *http.Server
 	wg             sync.WaitGroup
 }
 
-func (l *Listener) BeforeAppStart() error {
-	l.rpcHTTPHandler, l.rpcHandler = l.InternalRuntime.AdditionalServicer(
+func (s *Server) BeforeAppStart() error {
+	s.rpcHTTPHandler, s.rpcHandler = s.InternalRuntime.AdditionalServicer(
 		app.T[*impl.InfoServiceServerImpl](),
 		app.T[*impl.RegistryServiceServerImpl](),
 		app.T[*impl.LockServiceServerImpl](),
 	)
 
-	if l.InprocFlag.Enabled {
-		l.startInproc()
+	if s.InprocFlag.Enabled {
+		s.startInproc()
 		return nil
 	}
-	return l.startHTTP()
+	return s.startHTTP()
 }
 
-func (l *Listener) BeforeAppStop() {
-	if l.InprocFlag.Enabled {
-		l.stopInproc()
+func (s *Server) BeforeAppStop() {
+	if s.InprocFlag.Enabled {
+		s.stopInproc()
 	} else {
-		l.stopHTTP()
+		s.stopHTTP()
 	}
-	l.rpcHTTPHandler = nil
-	l.rpcHandler = nil
+	s.rpcHTTPHandler = nil
+	s.rpcHandler = nil
 }
 
-func (l *Listener) startInproc() {
-	l.inprocEndpoint = rpcinproc.Endpoint(hubapp.HubControlInprocHostPath, coreapp.PathRpcInvoke)
-	l.inprocCleanup = rpcinproc.Register(l.inprocEndpoint, l.rpcHandler)
-	controlLogger.Info("hub control API listener started", "endpoint", l.inprocEndpoint)
+func (s *Server) startInproc() {
+	s.inprocEndpoint = rpcinproc.Endpoint(hubapp.HubControlInprocHostPath, coreapp.PathRpcInvoke)
+	s.inprocCleanup = rpcinproc.Register(s.inprocEndpoint, s.rpcHandler)
+	controlLogger.Info("hub control API server started", "endpoint", s.inprocEndpoint)
 }
 
-func (l *Listener) stopInproc() {
-	if l.inprocEndpoint == "" {
+func (s *Server) stopInproc() {
+	if s.inprocEndpoint == "" {
 		return
 	}
-	l.inprocCleanup()
-	controlLogger.Debug("hub control API listener stopped", "endpoint", l.inprocEndpoint)
-	l.inprocEndpoint = ""
-	l.inprocCleanup = nil
+	s.inprocCleanup()
+	controlLogger.Debug("hub control API server stopped", "endpoint", s.inprocEndpoint)
+	s.inprocEndpoint = ""
+	s.inprocCleanup = nil
 }
 
-func (l *Listener) startHTTP() error {
-	listener, err := listenTCP("tcp", l.Flag.ControlListen)
+func (s *Server) startHTTP() error {
+	listener, err := listenTCP("tcp", s.Flag.ControlListen)
 	if err != nil {
-		l.rpcHTTPHandler = nil
-		l.rpcHandler = nil
+		s.rpcHTTPHandler = nil
+		s.rpcHandler = nil
 		return fmt.Errorf("hub control API listen failed: %w", err)
 	}
 	server := httputil.NewServer(listener.Addr().String(), nil)
 	serve := server.Serve
-	if l.Identity.Enabled() {
-		server.Handler = l
-		server.TLSConfig = l.Identity.ServerConfig(daemon.LinkIdentity.SPIFFEPath(), daemon.PortalIdentity.SPIFFEPath())
+	if s.Identity.Enabled() {
+		server.Handler = s
+		server.TLSConfig = s.Identity.ServerConfig(daemon.LinkIdentity.SPIFFEPath(), daemon.PortalIdentity.SPIFFEPath())
 		if err := http2.ConfigureServer(server, &http2.Server{}); err != nil {
 			_ = listener.Close()
 			return fmt.Errorf("hub control API HTTP/2 configure failed: %w", err)
 		}
 		serve = func(listener net.Listener) error { return server.ServeTLS(listener, "", "") }
 	} else {
-		server.Handler = h2c.NewHandler(l, &http2.Server{})
+		server.Handler = h2c.NewHandler(s, &http2.Server{})
 	}
-	l.server = server
+	s.httpServer = server
 
-	l.wg.Go(func() {
-		controlLogger.Info("hub control API listener started", "addr", server.Addr)
+	s.wg.Go(func() {
+		controlLogger.Info("hub control API server started", "addr", server.Addr)
 		err := serve(listener)
 		if errors.Is(err, http.ErrServerClosed) {
-			controlLogger.Debug("hub control API listener stopped", "addr", server.Addr)
+			controlLogger.Debug("hub control API server stopped", "addr", server.Addr)
 			return
 		}
 		if err != nil {
-			controlLogger.Error("hub control API listener failed", "addr", server.Addr, "error", err)
+			controlLogger.Error("hub control API server failed", "addr", server.Addr, "error", err)
 		}
 	})
 	return nil
 }
 
-func (l *Listener) stopHTTP() {
-	if l.server == nil {
+func (s *Server) stopHTTP() {
+	if s.httpServer == nil {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(l.Context, shutdownTimeout)
+	ctx, cancel := context.WithTimeout(s.Context, shutdownTimeout)
 	defer cancel()
-	if err := httputil.ShutdownServer(l.server, ctx); err != nil {
-		controlLogger.Error("hub control API listener graceful shutdown failed, force closed", "addr", l.server.Addr, "error", err)
+	if err := httputil.ShutdownServer(s.httpServer, ctx); err != nil {
+		controlLogger.Error("hub control API server graceful shutdown failed, force closed", "addr", s.httpServer.Addr, "error", err)
 	}
-	l.wg.Wait()
-	l.server = nil
+	s.wg.Wait()
+	s.httpServer = nil
 }
 
-func (l *Listener) ServeHTTP(w http.ResponseWriter, request *http.Request) {
+func (s *Server) ServeHTTP(w http.ResponseWriter, request *http.Request) {
 	prefix := coreapp.PathRpcInvoke
 	if request.URL.Path != prefix && !strings.HasPrefix(request.URL.Path, prefix+"/") {
 		http.NotFound(w, request)
@@ -157,5 +157,5 @@ func (l *Listener) ServeHTTP(w http.ResponseWriter, request *http.Request) {
 	next := request.Clone(request.Context())
 	next.URL.Path = path
 	next.RequestURI = path
-	l.rpcHTTPHandler.ServeHTTP(w, next)
+	s.rpcHTTPHandler.ServeHTTP(w, next)
 }
