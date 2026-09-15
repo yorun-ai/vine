@@ -9,7 +9,7 @@ import (
 
 func TestResolveSeedVariablesAndSources(t *testing.T) {
 	template := []byte("appConfigs:\n- name: demo.Config\n  value:\n    enabled: ${enabled}\n    port: ${port}\n    origins: ${origins}\n    url: https://${host}:${port}\n")
-	source := []byte(fmt.Sprintf("version: 1\nseedSha256: %x\nfields:\n  /appConfigs/0/value/url:\n    source: profile/dev\n    define: domain/booker\n    override: profile/dev\n", sha256.Sum256(template)))
+	source := fmt.Appendf(nil, "version: 1\nseedSha256: %x\nfields:\n  /appConfigs/0/value/url:\n    source: profile/dev\n    define: domain/booker\n    override: profile/dev\n", sha256.Sum256(template))
 	node, origins, err := resolveSeedInput(template, []byte("enabled: false\nport: 8080\norigins: [https://example.com]\nhost: example.com\n"), source)
 	require.NoError(t, err)
 	var value map[string]any
@@ -57,7 +57,7 @@ func TestConfigVariableSourcesStopAtValueKeys(t *testing.T) {
     list: ['${b}', '${a}', '${b}']
     object: {first: '${a}', nested: {second: '${b}'}}
 `)
-	source := []byte(fmt.Sprintf("version: 1\nseedSha256: %x\nfields:\n  /appConfigs/0/value/list: {source: domain/demo, define: domain/demo}\n  /appConfigs/0/value/object: {source: app/default, define: domain/demo, override: app/default}\n", sha256.Sum256(template)))
+	source := fmt.Appendf(nil, "version: 1\nseedSha256: %x\nfields:\n  /appConfigs/0/value/list: {source: domain/demo, define: domain/demo}\n  /appConfigs/0/value/object: {source: app/default, define: domain/demo, override: app/default}\n", sha256.Sum256(template))
 	_, origins, err := resolveSeedInput(template, []byte("a: one\nb: two\n"), source)
 	require.NoError(t, err)
 	require.Len(t, origins, 2)
@@ -66,7 +66,7 @@ func TestConfigVariableSourcesStopAtValueKeys(t *testing.T) {
 		require.Equal(t, "domain/demo", origins["/appConfigs/0/value/"+key].Define)
 	}
 	require.Equal(t, "app/default", origins["/appConfigs/0/value/object"].Override)
-	deeper := []byte(fmt.Sprintf("version: 1\nseedSha256: %x\nfields:\n  /appConfigs/0/value/list/0: {source: domain/demo, define: domain/demo}\n", sha256.Sum256(template)))
+	deeper := fmt.Appendf(nil, "version: 1\nseedSha256: %x\nfields:\n  /appConfigs/0/value/list/0: {source: domain/demo, define: domain/demo}\n", sha256.Sum256(template))
 	_, _, err = resolveSeedInput(template, []byte("a: one\nb: two\n"), deeper)
 	require.ErrorContains(t, err, "invalid seed source field")
 }

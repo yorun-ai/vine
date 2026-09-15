@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"net/url"
 
+	goredis "github.com/redis/go-redis/v9"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/mtls"
+	hublock "go.yorun.ai/vine/internal/daemon/hub/api/lock"
 	"go.yorun.ai/vine/util/vnet"
 	"go.yorun.ai/vine/util/vpre"
 )
@@ -35,6 +37,9 @@ type Flag struct {
 
 	MQMode         string
 	MQNatsEndpoint string
+
+	LockMode          string
+	LockRedisEndpoint string
 
 	Store         string
 	NoDB          bool
@@ -67,11 +72,14 @@ func (f *Flag) Normalize(inproc bool) {
 		f.WatchListen = ""
 		f.MQNatsEndpoint = ""
 		f.MQMode = MQModeEmbedded
+		f.LockMode = hublock.ModeEmbedded
+		f.LockRedisEndpoint = ""
 		return
 	}
 
 	f.normalizeListen()
 	f.normalizeMQ()
+	f.normalizeLock()
 }
 
 func (f *Flag) normalizeListen() {
@@ -133,6 +141,26 @@ func (f *Flag) normalizeMQ() {
 }
 
 // ControlPort returns the component-facing Control API port.
+func (f *Flag) normalizeLock() {
+	if f.LockMode == "" {
+		f.LockMode = hublock.ModeEmbedded
+	}
+	switch f.LockMode {
+	case hublock.ModeEmbedded, hublock.ModeDisable:
+		vpre.Check(f.LockRedisEndpoint == "", "lock-redis-endpoint cannot be used with lock-mode=%s", f.LockMode)
+	case hublock.ModeRedis:
+		vpre.CheckNotEmpty(f.LockRedisEndpoint, "lock-redis-endpoint is required when lock-mode=redis")
+		endpoint, err := url.Parse(f.LockRedisEndpoint)
+		vpre.Check(err == nil, "invalid lock-redis-endpoint")
+		vpre.Check(endpoint.Scheme == "redis" || endpoint.Scheme == "rediss", "lock-redis-endpoint must use redis:// or rediss://")
+		vpre.CheckNotEmpty(endpoint.Hostname(), "lock-redis-endpoint host is empty")
+		_, err = goredis.ParseURL(f.LockRedisEndpoint)
+		vpre.Check(err == nil, "invalid lock-redis-endpoint")
+	default:
+		vpre.Panicf("unsupported lock mode %q", f.LockMode)
+	}
+}
+
 func (f *Flag) ControlPort() int {
 	return vnet.MustParsePort(f.ControlListen)
 }

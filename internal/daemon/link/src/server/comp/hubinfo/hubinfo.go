@@ -2,6 +2,7 @@ package hubinfo
 
 import (
 	"fmt"
+	hublock "go.yorun.ai/vine/internal/daemon/hub/api/lock"
 
 	"go.yorun.ai/vine/internal/app"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
@@ -56,4 +57,18 @@ func (c *HubInfo) MQEndpoint() string {
 
 func (c *HubInfo) UsesEmbeddedNATS() bool {
 	return c.info.MqEmbedded || c.info.NatsPort != 0
+}
+
+func (c *HubInfo) LockMode() string {
+	if c.Flag.HubInprocMode {
+		return hublock.ModeEmbedded
+	}
+	if c.info.LockMode == "" {
+		return hublock.ModeDisable
+	}
+	return c.info.LockMode
+}
+
+func (c *HubInfo) LockRedisEndpoint() string {
+	return c.info.LockRedisEndpoint
 }

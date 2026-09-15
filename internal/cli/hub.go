@@ -7,6 +7,7 @@ import (
 	ucli "github.com/urfave/cli/v3"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/logger"
+	hublock "go.yorun.ai/vine/internal/daemon/hub/api/lock"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/src/server/app"
 	hubflag "go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 )
@@ -28,6 +29,9 @@ const (
 	// Deprecated: use FlagHubMQNatsEndpoint.
 	FlagHubMQExternalNatsURL = "mq-external-nats-url"
 
+	FlagHubLockMode          = "lock-mode"
+	FlagHubLockRedisEndpoint = "lock-redis-endpoint"
+
 	FlagSeedHubSourceFile = "seed-hub-source-file"
 	FlagSeedHubVarsFile   = "seed-hub-vars-file"
 	FlagSeedHubDataFile   = "seed-hub-data-file"
@@ -48,6 +52,9 @@ const (
 	EnvHubMQEmbeddedNats = "VINE_MQ_EMBEDDED_NATS"
 	// Deprecated: use EnvHubMQNatsEndpoint.
 	EnvHubMQExternalNatsURL = "VINE_MQ_EXTERNAL_NATS_URL"
+
+	EnvHubLockMode          = "VINE_LOCK_MODE"
+	EnvHubLockRedisEndpoint = "VINE_LOCK_REDIS_ENDPOINT"
 
 	EnvSeedHubSourceFile = "VINE_SEED_HUB_SOURCE_FILE"
 	EnvSeedHubVarsFile   = "VINE_SEED_HUB_VARS_FILE"
@@ -138,6 +145,17 @@ func newHubServeFlags() []ucli.Flag {
 			Sources: ucli.EnvVars(EnvHubMQExternalNatsURL),
 			Usage:   "deprecated: use --mq-nats-endpoint or VINE_MQ_NATS_ENDPOINT",
 		},
+		&ucli.StringFlag{
+			Name:    FlagHubLockMode,
+			Sources: ucli.EnvVars(EnvHubLockMode),
+			Value:   hublock.ModeEmbedded,
+			Usage:   "lock mode: embedded, redis or disable",
+		},
+		&ucli.StringFlag{
+			Name:    FlagHubLockRedisEndpoint,
+			Sources: ucli.EnvVars(EnvHubLockRedisEndpoint),
+			Usage:   "external Redis URL for locks",
+		},
 
 		&ucli.StringFlag{
 			Name:    FlagSeedHubDataFile,
@@ -179,6 +197,8 @@ func newHubServeCommand() *ucli.Command {
 				WatchListen:       hubWatchListen(cmd),
 				MQMode:            mqMode,
 				MQNatsEndpoint:    mqEndpoint,
+				LockMode:          cmd.String(FlagHubLockMode),
+				LockRedisEndpoint: cmd.String(FlagHubLockRedisEndpoint),
 				SeedHubDataFile:   cmd.String(FlagSeedHubDataFile),
 				SeedHubSourceFile: cmd.String(FlagSeedHubSourceFile),
 				SeedHubVarsFile:   cmd.String(FlagSeedHubVarsFile),

@@ -10,6 +10,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/lockserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
@@ -63,6 +64,7 @@ func (a *HubApp) InitComponents(addComponent app.TypeAdder) {
 	addComponent(app.T[*configaccess.Access]())
 	addComponent(app.T[*repodb.HubDatabase]())
 	addComponent(app.T[*natsserver.NATSServer]())
+	addComponent(app.T[*lockserver.Server]())
 	addComponent(app.T[*watchserver.Server]())
 }
 

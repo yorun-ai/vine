@@ -31,8 +31,9 @@ type TestLinker struct {
 	EternalConfigByKey map[string]string
 	InstantConfigByKey map[string]string
 
-	EventEmissions []linkskeled.EventEmission
-	TaskLaunches   []linkskeled.TaskLaunch
+	EventEmissions  []linkskeled.EventEmission
+	TaskLaunches    []linkskeled.TaskLaunch
+	LockClientValue linkskeled.LockServiceClient
 }
 
 func SetNewLinkerForTest(factory func(app meta.App, endpoint string) Linker) func() {
@@ -74,6 +75,10 @@ func (l *TestLinker) EventClient() linkskeled.EventServiceClient {
 
 func (l *TestLinker) TaskClient() linkskeled.TaskServiceClient {
 	return &_TestLinkTaskClient{linker: l}
+}
+
+func (l *TestLinker) LockClient() linkskeled.LockServiceClient {
+	return l.LockClientValue
 }
 
 type _TestLinkRegistryClient struct {

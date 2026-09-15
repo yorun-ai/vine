@@ -54,6 +54,7 @@ func TestListenerServesOnlyControlRpcRoute(t *testing.T) {
 	assert.Equal(t, []reflect.Type{
 		app.T[*impl.InfoServiceServerImpl](),
 		app.T[*impl.RegistryServiceServerImpl](),
+		app.T[*impl.LockServiceServerImpl](),
 	}, runtime.handlerTypes)
 
 	response, err := http.Get("http://" + listener.server.Addr + coreapp.PathRpcInvoke + "/vine.hub.control.InfoService/getInfo")

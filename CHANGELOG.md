@@ -17,6 +17,17 @@ are not part of the public compatibility commitment.
 
 - Hub connection information includes its Vine runtime `version`.
 
+- Hub provides an embedded in-memory lease lock service by default. Configure
+  `--lock-mode=embedded|redis|disable`; Redis mode requires `--lock-redis-endpoint`,
+  which Hub advertises through its connection information. Inproc Hub always uses
+  embedded locks. Active locks reject repeated acquisition, including the same token.
+
+- Link exposes lease lock operations through its LockService, routing requests to
+  Hub or directly to the advertised external Redis endpoint.
+- Applications can inject `core/lock.Locker` for application-scoped locks or
+  `core/lock.UniversalLocker` to share locks across applications using the same
+  lock backend.
+
 ### Changed
 
 - Configure Hub MQ using `--mq-mode=embedded|nats` (default: `embedded`) and

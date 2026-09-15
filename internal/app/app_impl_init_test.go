@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	corelock "go.yorun.ai/vine/core/lock"
 	"go.yorun.ai/vine/internal/core/conf"
 	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -865,4 +866,18 @@ func TestInitComponentsRejectsCyclesThroughManager(t *testing.T) {
 	}}, flags)
 	a.initInjector()
 	assert.PanicsWithError(t, "cycle dependency detected: *app.managedReadyCycle -> *app.managedReadyCycleManager -> *app.managedReadyCycleConsumer -> *app.managedReadyCycle", a.initComponents)
+}
+
+func TestBindClientsProvidesBothLockScopes(t *testing.T) {
+	flags := _Flags{}
+	flags.EnsureRunFlag()
+	flags.InitInprocFlag(false)
+	app := newApp(&testDepsAppSpec{AppFlag: &RunFlag{}}, flags)
+	attachTestLinker(app)
+	app.initInjector()
+	injector := app.injector.SubInjector(app.bindClients)
+	locker := injector.Get(T[*corelock.Locker]()).Interface().(*corelock.Locker)
+	universal := injector.Get(T[*corelock.UniversalLocker]()).Interface().(*corelock.UniversalLocker)
+	assert.NotNil(t, locker)
+	assert.NotNil(t, universal)
 }

@@ -348,6 +348,43 @@ func TestHubServeHelpMarksRedisListenDeprecated(t *testing.T) {
 	}
 }
 
+func TestRunHubLockModes(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		args     []string
+		env      map[string]string
+		mode     string
+		endpoint string
+	}{
+		{name: "default", mode: "embedded"},
+		{name: "embedded", args: []string{"--lock-mode=embedded"}, mode: "embedded"},
+		{name: "redis", args: []string{"--lock-mode=redis", "--lock-redis-endpoint=redis://localhost:6379/2"}, mode: "redis", endpoint: "redis://localhost:6379/2"},
+		{name: "disable", args: []string{"--lock-mode=disable"}, mode: "disable"},
+		{name: "environment", env: map[string]string{EnvHubLockMode: "redis", EnvHubLockRedisEndpoint: "rediss://localhost:6379"}, mode: "redis", endpoint: "rediss://localhost:6379"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, key := range []string{EnvHubLockMode, EnvHubLockRedisEndpoint} {
+				t.Setenv(key, "")
+				require.NoError(t, os.Unsetenv(key))
+			}
+			for key, value := range tc.env {
+				t.Setenv(key, value)
+			}
+			original := startHubApp
+			t.Cleanup(func() { startHubApp = original })
+			called := false
+			startHubApp = func(flags hubconf.Flag) {
+				called = true
+				require.Equal(t, tc.mode, flags.LockMode)
+				require.Equal(t, tc.endpoint, flags.LockRedisEndpoint)
+			}
+			result := run(append([]string{"hub", "serve"}, tc.args...))
+			require.Equal(t, 0, result.exitCode, result.stderr)
+			require.True(t, called)
+		})
+	}
+}
+
 func TestHubMQInputs(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
@@ -395,4 +432,10 @@ func TestHubMQInputs(t *testing.T) {
 func TestHubRejectsUnreleasedMQEmbeddedFlag(t *testing.T) {
 	result := run([]string{"hub", "serve", "--mq-embedded"})
 	require.NotEqual(t, 0, result.exitCode)
+}
+
+func TestHubRejectsRemovedLockEnabledFlag(t *testing.T) {
+	result := run([]string{"hub", "serve", "--lock-enabled"})
+	require.NotEqual(t, 0, result.exitCode)
+	require.Contains(t, result.stderr, "lock-enabled")
 }

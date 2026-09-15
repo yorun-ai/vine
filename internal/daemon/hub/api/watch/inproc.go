@@ -8,7 +8,7 @@ import (
 )
 
 // WatchInprocEndpoint identifies the in-process Hub watch connection.
-const WatchInprocEndpoint = "redis+inproc://vine/hub"
+const WatchInprocEndpoint = "redis+inproc://vine/hub/watch"
 
 type InprocDialer interface {
 	DialInproc(ctx context.Context) (net.Conn, error)

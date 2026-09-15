@@ -13,6 +13,7 @@ import (
 
 func init() {
 	rpcspec.Register(_InfoServiceSpec)
+	rpcspec.Register(_LockServiceSpec)
 	rpcspec.Register(_RegistryServiceSpec)
 }
 
@@ -25,7 +26,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeBoth,
 		Name:              "InfoService",
 		SkelName:          "vine.hub.control.InfoService",
-		Hash:              "8d063434",
+		Hash:              "1c4fd8ce",
 		ServerType:        reflect.TypeFor[InfoServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultInfoServiceServer](),
 		ClientType:        reflect.TypeFor[InfoServiceClient](),
@@ -170,6 +171,302 @@ func NewInfoServiceClientER(rpcClient *rpcclient.Client) InfoServiceClientER {
 
 func (client *_InfoServiceClientER) GetInfo(_ivOpts ...rpcclient.InvokeOption) (Info, ex.Error) {
 	return client.rpcClient.InvokeAs[Info](_InfoServiceGetInfoSpec.Info(), nil, _ivOpts...)
+}
+
+// LockServiceServer Distributed lease lock service
+
+// LockService / Spec
+
+var (
+	_LockServiceSpec = &rpcspec.ServiceSpec{
+		Type:              rpcspec.ServiceSpecTypeBoth,
+		Name:              "LockService",
+		SkelName:          "vine.hub.control.LockService",
+		Hash:              "19321bbe",
+		ServerType:        reflect.TypeFor[LockServiceServer](),
+		DefaultServerType: reflect.TypeFor[*DefaultLockServiceServer](),
+		ClientType:        reflect.TypeFor[LockServiceClient](),
+		ClientCtor:        NewLockServiceClient,
+
+		ERServerType:        reflect.TypeFor[LockServiceServerER](),
+		WrapperERServerCtor: _NewWrapperLockServiceServerER,
+		DefaultERServerType: reflect.TypeFor[*DefaultLockServiceServerER](),
+		ERClientType:        reflect.TypeFor[LockServiceClientER](),
+		ERClientCtor:        NewLockServiceClientER,
+		Methods: []*rpcspec.MethodSpec{
+			_LockServiceAcquireSpec,
+			_LockServiceRenewSpec,
+			_LockServiceReleaseSpec,
+		},
+	}
+	_LockServiceAcquireSpec = &rpcspec.MethodSpec{
+		Name:          "Acquire",
+		SkelName:      "acquire",
+		ArgumentsType: reflect.TypeFor[_LockServiceAcquireArguments](),
+		CloneArguments: func(value any) any {
+			source := value.(*_LockServiceAcquireArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[bool](),
+		CloneResult: func(value any) any {
+			source := value.(bool)
+			cloned := source
+			return cloned
+		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
+		ArgumentsContainsBinaryType: false,
+		ResultContainsBinaryType:    false,
+		MethodFuncs: []any{
+			LockServiceClient.Acquire,
+			LockServiceClientER.Acquire,
+			LockServiceServer.Acquire,
+			LockServiceServerER.Acquire,
+		},
+	}
+	_LockServiceRenewSpec = &rpcspec.MethodSpec{
+		Name:          "Renew",
+		SkelName:      "renew",
+		ArgumentsType: reflect.TypeFor[_LockServiceRenewArguments](),
+		CloneArguments: func(value any) any {
+			source := value.(*_LockServiceRenewArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[bool](),
+		CloneResult: func(value any) any {
+			source := value.(bool)
+			cloned := source
+			return cloned
+		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
+		ArgumentsContainsBinaryType: false,
+		ResultContainsBinaryType:    false,
+		MethodFuncs: []any{
+			LockServiceClient.Renew,
+			LockServiceClientER.Renew,
+			LockServiceServer.Renew,
+			LockServiceServerER.Renew,
+		},
+	}
+	_LockServiceReleaseSpec = &rpcspec.MethodSpec{
+		Name:          "Release",
+		SkelName:      "release",
+		ArgumentsType: reflect.TypeFor[_LockServiceReleaseArguments](),
+		CloneArguments: func(value any) any {
+			source := value.(*_LockServiceReleaseArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[bool](),
+		CloneResult: func(value any) any {
+			source := value.(bool)
+			cloned := source
+			return cloned
+		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
+		ArgumentsContainsBinaryType: false,
+		ResultContainsBinaryType:    false,
+		MethodFuncs: []any{
+			LockServiceClient.Release,
+			LockServiceClientER.Release,
+			LockServiceServer.Release,
+			LockServiceServerER.Release,
+		},
+	}
+)
+
+// LockService / Arguments
+
+type _LockServiceAcquireArguments struct {
+	Key       string `json:"key" skel:"index(0)"`
+	Token     string `json:"token" skel:"index(1)"`
+	TtlMillis int    `json:"ttlMillis" skel:"index(2)"`
+}
+
+type _LockServiceRenewArguments struct {
+	Key       string `json:"key" skel:"index(0)"`
+	Token     string `json:"token" skel:"index(1)"`
+	TtlMillis int    `json:"ttlMillis" skel:"index(2)"`
+}
+
+type _LockServiceReleaseArguments struct {
+	Key   string `json:"key" skel:"index(0)"`
+	Token string `json:"token" skel:"index(1)"`
+}
+
+// LockService / Server
+
+type LockServiceServer interface {
+	// Acquire Acquire a lock using a unique attempt token.
+	Acquire(key string, token string, ttlMillis int) bool
+	// Renew Renew a lock owned by the token.
+	Renew(key string, token string, ttlMillis int) bool
+	// Release Release a lock owned by the token.
+	Release(key string, token string) bool
+
+	mustBeLockServiceServer()
+}
+
+// LockService / Server / DefaultServer
+
+type DefaultLockServiceServer struct{}
+
+func (*DefaultLockServiceServer) Acquire(string, string, int) bool {
+	ex.PanicNew(ex.InvalidRequest, "method acquire is not implemented")
+	return false
+}
+
+func (*DefaultLockServiceServer) Renew(string, string, int) bool {
+	ex.PanicNew(ex.InvalidRequest, "method renew is not implemented")
+	return false
+}
+
+func (*DefaultLockServiceServer) Release(string, string) bool {
+	ex.PanicNew(ex.InvalidRequest, "method release is not implemented")
+	return false
+}
+
+func (*DefaultLockServiceServer) mustBeLockServiceServer() {}
+
+// LockService / ERServer
+
+type LockServiceServerER interface {
+	Acquire(key string, token string, ttlMillis int) (bool, ex.Error)
+	Renew(key string, token string, ttlMillis int) (bool, ex.Error)
+	Release(key string, token string) (bool, ex.Error)
+
+	mustBeLockServiceServerER()
+}
+
+// LockService / ERServer / WrapperERServer
+
+type _WrapperLockServiceServerER struct {
+	DefaultLockServiceServer
+	serverImpl LockServiceServer
+}
+
+func _NewWrapperLockServiceServerER(serverImpl LockServiceServer) LockServiceServerER {
+	return &_WrapperLockServiceServerER{
+		serverImpl: serverImpl,
+	}
+}
+
+func (service *_WrapperLockServiceServerER) server() LockServiceServer {
+	if service.serverImpl == nil {
+		return &service.DefaultLockServiceServer
+	}
+	return service.serverImpl
+}
+
+func (service *_WrapperLockServiceServerER) Acquire(key string, token string, ttlMillis int) (ret bool, err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	ret = service.server().Acquire(key, token, ttlMillis)
+	return
+}
+
+func (service *_WrapperLockServiceServerER) Renew(key string, token string, ttlMillis int) (ret bool, err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	ret = service.server().Renew(key, token, ttlMillis)
+	return
+}
+
+func (service *_WrapperLockServiceServerER) Release(key string, token string) (ret bool, err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	ret = service.server().Release(key, token)
+	return
+}
+
+func (*_WrapperLockServiceServerER) mustBeLockServiceServerER() {}
+
+// LockService / ERServer / DefaultERServer
+
+type DefaultLockServiceServerER struct {
+	_WrapperLockServiceServerER
+}
+
+// LockService / Client
+
+type LockServiceClient interface {
+	// Acquire Acquire a lock using a unique attempt token.
+	Acquire(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) bool
+	// Renew Renew a lock owned by the token.
+	Renew(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) bool
+	// Release Release a lock owned by the token.
+	Release(key string, token string, _ivOpts ...rpcclient.InvokeOption) bool
+}
+
+type _LockServiceClient struct {
+	clientER LockServiceClientER
+}
+
+func NewLockServiceClient(clientER LockServiceClientER) LockServiceClient {
+	return &_LockServiceClient{clientER: clientER}
+}
+
+func (client *_LockServiceClient) Acquire(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) bool {
+	ret, err := client.clientER.Acquire(key, token, ttlMillis, _ivOpts...)
+	ex.PanicIfError(err)
+	return ret
+}
+
+func (client *_LockServiceClient) Renew(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) bool {
+	ret, err := client.clientER.Renew(key, token, ttlMillis, _ivOpts...)
+	ex.PanicIfError(err)
+	return ret
+}
+
+func (client *_LockServiceClient) Release(key string, token string, _ivOpts ...rpcclient.InvokeOption) bool {
+	ret, err := client.clientER.Release(key, token, _ivOpts...)
+	ex.PanicIfError(err)
+	return ret
+}
+
+// LockService / ERClient
+
+type LockServiceClientER interface {
+	// Acquire Acquire a lock using a unique attempt token.
+	Acquire(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error)
+	// Renew Renew a lock owned by the token.
+	Renew(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error)
+	// Release Release a lock owned by the token.
+	Release(key string, token string, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error)
+}
+
+type _LockServiceClientER struct {
+	rpcClient *rpcclient.Client
+}
+
+func NewLockServiceClientER(rpcClient *rpcclient.Client) LockServiceClientER {
+	return &_LockServiceClientER{
+		rpcClient: rpcClient,
+	}
+}
+
+func (client *_LockServiceClientER) Acquire(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error) {
+	return client.rpcClient.InvokeAs[bool](_LockServiceAcquireSpec.Info(), &_LockServiceAcquireArguments{
+		Key:       key,
+		Token:     token,
+		TtlMillis: ttlMillis,
+	}, _ivOpts...)
+}
+
+func (client *_LockServiceClientER) Renew(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error) {
+	return client.rpcClient.InvokeAs[bool](_LockServiceRenewSpec.Info(), &_LockServiceRenewArguments{
+		Key:       key,
+		Token:     token,
+		TtlMillis: ttlMillis,
+	}, _ivOpts...)
+}
+
+func (client *_LockServiceClientER) Release(key string, token string, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error) {
+	return client.rpcClient.InvokeAs[bool](_LockServiceReleaseSpec.Info(), &_LockServiceReleaseArguments{
+		Key:   key,
+		Token: token,
+	}, _ivOpts...)
 }
 
 // RegistryServiceServer Hub's application registration service, called by Link

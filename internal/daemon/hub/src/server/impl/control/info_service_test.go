@@ -106,6 +106,19 @@ func TestHubInfoServiceInprocEmbeddedMQ(t *testing.T) {
 	assert.Empty(t, info.MqNatsEndpoint)
 	assert.Zero(t, info.NatsPort)
 	assert.Empty(t, info.MqEndpoint)
-	assert.False(t, info.RedisEmbedded)
-	assert.Zero(t, info.RedisPort2)
+}
+
+func TestHubInfoAdvertisesLockConfiguration(t *testing.T) {
+	for _, mode := range []string{"embedded", "redis", "disable"} {
+		t.Run(mode, func(t *testing.T) {
+			flags := &flag.Flag{ControlListen: ":7071", WatchListen: ":7072", MQMode: flag.MQModeNATS, LockMode: mode}
+			if mode == "redis" {
+				flags.LockRedisEndpoint = "rediss://user:secret@redis:6380/2"
+			}
+			service := &InfoServiceServerImpl{InprocFlag: &app.InternalInprocFlag{}, Flag: flags}
+			info := service.GetInfo()
+			assert.Equal(t, mode, info.LockMode)
+			assert.Equal(t, flags.LockRedisEndpoint, info.LockRedisEndpoint)
+		})
+	}
 }

@@ -9,6 +9,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubinfo"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubwatch"
+	linklock "go.yorun.ai/vine/internal/daemon/link/src/server/comp/lock"
 	linknats "go.yorun.ai/vine/internal/daemon/link/src/server/comp/nats"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/impl"
@@ -53,6 +54,7 @@ func (*LinkApp) InitComponents(addComponent app.TypeAdder) {
 	addComponent(app.T[*hubinfo.HubInfo]())
 	addComponent(app.T[*hubwatch.Client]())
 	addComponent(app.T[*linknats.Client]())
+	addComponent(app.T[*linklock.Locker]())
 }
 
 func (*LinkApp) InitModules(addModule app.TypeAdder) {
@@ -71,4 +73,5 @@ func (*LinkApp) ServicerInitHandlers(addHandler app.TypeAdder) {
 	addHandler(app.T[*impl.ConfigServiceServerImpl]())
 	addHandler(app.T[*impl.EventServiceServerImpl]())
 	addHandler(app.T[*impl.TaskServiceServerImpl]())
+	addHandler(app.T[*impl.LockServiceServerImpl]())
 }

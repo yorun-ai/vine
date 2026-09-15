@@ -14,6 +14,7 @@ case "${scope}" in
       ./internal/core/di
       ./internal/core/event
       ./internal/core/link/ingressinproc
+      ./internal/core/lock
       ./internal/core/logger
       ./internal/core/rpc/client
       ./internal/core/rpc/log
@@ -28,11 +29,13 @@ case "${scope}" in
       ./internal/daemon/hub/api/watch
       ./internal/daemon/hub/src/server/app
       ./internal/daemon/hub/src/server/comp/natsserver
+      ./internal/daemon/hub/src/server/comp/lockserver
       ./internal/daemon/hub/src/server/comp/watchserver
       ./internal/daemon/hub/src/server/comp/watchserver/embedded
       ./internal/daemon/hub/src/server/core
       ./internal/daemon/hub/src/server/mod/scheduler
       ./internal/daemon/hub/src/server/repo/...
+      ./internal/daemon/link/src/server/comp/lock
       ./internal/daemon/link/src/server/comp/hubwatch
       ./internal/daemon/link/src/server/comp/nats
       ./internal/daemon/link/src/server/mod/config
