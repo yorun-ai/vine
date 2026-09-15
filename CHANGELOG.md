@@ -8,7 +8,13 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-09-15
+
 ### Fixed
+
+- Keep the Hub image's legacy watch-listener environment default so existing
+  `VINE_REDIS_LISTEN` and `--redis-listen` overrides continue to work. Explicit
+  `VINE_WATCH_LISTEN` and `--watch-listen` inputs still take precedence.
 
 - Hub, Link, and Portal identify themselves with the Vine runtime version in
   Rpc metadata, including when embedded in a business application. Identity
@@ -19,7 +25,9 @@ are not part of the public compatibility commitment.
 - Application versions are validated as full semantic versions with an optional
   leading `v`, so an incomplete version such as `1.2` or `01.2.3` is rejected
   when the application is created instead of producing an identity header that
-  other components cannot read.
+  other components cannot read. Before upgrading, replace such historical
+  versions with full semantic versions, for example `1.2.0` or `1.2.3`.
+  The stricter validation also applies to received application identities.
 
 - Link and Portal recover from a Hub restart that advertises different endpoints
   instead of requiring a restart of their own. Link re-reads Hub information

@@ -48,9 +48,11 @@ ENV VINE_MTLS_CA_FILE="" \
 # Build with --target hub to produce the Hub image.
 FROM runtime AS hub
 
+# Keep the image default on the legacy input so it cannot override a user's
+# legacy flag or environment value. Explicit new watch inputs take precedence.
 ENV VINE_CONTROL_LISTEN=0.0.0.0:7071 \
     VINE_ADMIN_LISTEN=0.0.0.0:7075 \
-    VINE_WATCH_LISTEN=0.0.0.0:7072 \
+    VINE_REDIS_LISTEN=0.0.0.0:7072 \
     VINE_DB_SQLITE_FILE="" \
     VINE_DB_POSTGRES_URL="" \
     VINE_SEED_HUB_DATA_FILE="" \
