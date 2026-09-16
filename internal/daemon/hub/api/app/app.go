@@ -8,8 +8,7 @@ const (
 	HubControlInprocHostPath = "vine/hub"
 	HubControlInprocEndpoint = rpcinproc.EndpointScheme + HubControlInprocHostPath
 
-	// HubInprocHostPath and HubInprocEndpoint retain their existing names for
-	// callers that treat the Hub endpoint as the Control API endpoint.
-	HubInprocHostPath = HubControlInprocHostPath
+	// HubInprocEndpoint retains its existing name for callers that treat the Hub
+	// endpoint as the Control API endpoint.
 	HubInprocEndpoint = HubControlInprocEndpoint
 )

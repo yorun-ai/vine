@@ -11,13 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-
 	"go.yorun.ai/vine/internal/app"
 	coreapp "go.yorun.ai/vine/internal/core/app"
 	"go.yorun.ai/vine/internal/core/logger"
-	"go.yorun.ai/vine/internal/core/mtls"
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	impl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin"
@@ -41,7 +37,6 @@ type Server struct {
 	Context         context.Context     `inject:""`
 	Flag            *flag.Flag          `inject:""`
 	InternalRuntime app.InternalRuntime `inject:""`
-	Identity        *mtls.Identity      `inject:""`
 
 	rpcHTTPHandler   http.Handler
 	rpcHandler       rpcspec.RpcHandler
@@ -95,25 +90,18 @@ func (s *Server) startHTTP() error {
 		return fmt.Errorf("hub admin API listen failed: %w", err)
 	}
 	server := httputil.NewServer(listener.Addr().String(), nil)
-	serve := server.Serve
-	if s.Identity.Enabled() {
-		server.Handler = s
-		// Hub accepts an Admin API call from any client the mesh CA issued, so an
-		// operator is not tied to another component's identity.
-		server.TLSConfig = s.Identity.ServerConfig()
-		if err := http2.ConfigureServer(server, &http2.Server{}); err != nil {
-			_ = listener.Close()
-			return fmt.Errorf("hub admin API HTTP/2 configure failed: %w", err)
-		}
-		serve = func(listener net.Listener) error { return server.ServeTLS(listener, "", "") }
-	} else {
-		server.Handler = h2c.NewHandler(s, &http2.Server{})
-	}
+	// The Admin API serves an operator's browser, which carries no mesh
+	// certificate and does not speak cleartext HTTP/2, so this listener stays
+	// plain HTTP/1.1 even when Hub enables backend mTLS for Link and Portal.
+	// TODO: Serve HTTP/2 over a server certificate. A browser speaks HTTP/2 only
+	// over TLS, and the certificate would encrypt the listener without
+	// authenticating the caller the way the backend mTLS identities do.
+	server.Handler = s
 	s.httpServer = server
 
 	s.wg.Go(func() {
 		adminLogger.Info("hub admin API server started", "addr", server.Addr)
-		err := serve(listener)
+		err := server.Serve(listener)
 		if errors.Is(err, http.ErrServerClosed) {
 			adminLogger.Debug("hub admin API server stopped", "addr", server.Addr)
 			return

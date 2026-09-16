@@ -153,9 +153,10 @@ Hub has four primary responsibilities:
 
 4. Separated API listeners
    The Control API listener exposes the `vine.hub.control` domain, containing
-   only `InfoService` and `RegistryService`, to Link and Portal. The main Hub
+   only `InfoService` and `RegistryService`, to Link and Portal. The admin
    listener exposes the `vine.hub.admin` domain containing Dashboard
-   admin Rpc services and `DashboardWeb`. This keeps component traffic
+   admin Rpc services and `DashboardWeb`, in cleartext because a browser carries
+   no mesh certificate. This keeps component traffic
    separate from the privileged admin surface without splitting Hub's
    process or state.
 

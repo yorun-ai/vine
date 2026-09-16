@@ -159,11 +159,6 @@ func (f *Flag) ControlPort() int {
 	return vnet.MustParsePort(f.ControlListen)
 }
 
-// AdminPort returns the Dashboard admin API and Web port.
-func (f *Flag) AdminPort() int {
-	return vnet.MustParsePort(f.AdminListen)
-}
-
 func (f *Flag) WatchPort() int {
 	return vnet.MustParsePort(f.WatchListen)
 }

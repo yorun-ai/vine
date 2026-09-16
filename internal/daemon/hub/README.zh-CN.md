@@ -140,9 +140,9 @@ Hub 的职责可以拆成四条主线：
 
 4. 分离的 API listener
    Control API listener 向 Link 和 Portal 暴露 `vine.hub.control` 域，其中
-   只包含 `InfoService` 与 `RegistryService`。Hub 主 listener 暴露
+   只包含 `InfoService` 与 `RegistryService`。admin listener 以明文暴露
    `vine.hub.admin` 域，其中包含 Dashboard Admin Rpc 服务和
-   `DashboardWeb`。二者共享同一个 Hub 进程和状态，但组件流量无法直接进入管理面。
+   `DashboardWeb`（浏览器不持有 mesh 证书）。二者共享同一个 Hub 进程和状态，但组件流量无法直接进入管理面。
 
 启用内嵌 NATS 时，server component 会使用内存存储预创建 `VINE_EVENTS` 和
 `VINE_TASKS` JetStream stream。外部 NATS 部署负责创建 stream 并决定存储策略；

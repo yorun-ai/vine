@@ -33,9 +33,8 @@ var (
 	listenTCP     = net.Listen
 )
 
-// Server exposes only the Hub Control API used by Link and Portal. Hub's
-// admin Rpc services and Dashboard Web handler remain on the main Hub
-// application listener and are deliberately absent from this server.
+// Server exposes only the Hub Control API used by Link and Portal. The Admin API
+// and the Dashboard belong to the admin module and are deliberately absent here.
 type Server struct {
 	app.BaseModule
 

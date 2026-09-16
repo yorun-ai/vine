@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"go.yorun.ai/vine/internal/core/mtls"
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 )
@@ -32,7 +31,6 @@ func TestServerOpensAdminListenerForInprocHub(t *testing.T) {
 				Context:         context.Background(),
 				Flag:            &flag.Flag{AdminListen: tc.adminListen},
 				InternalRuntime: _InternalRuntimeStub{},
-				Identity:        mtls.DisabledIdentity(),
 			}
 
 			if err := server.BeforeAppStart(); err != nil {

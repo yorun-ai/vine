@@ -61,6 +61,13 @@ are not part of the public compatibility commitment.
 
 ### Changed
 
+- The Admin API serves cleartext HTTP on its own listener whatever Hub's backend
+  mTLS configuration is. It used to demand a certificate the mesh CA issued,
+  which no browser holds, so enabling backend mTLS left the Dashboard
+  unreachable. The listener answers HTTP/1.1: cleartext HTTP/2 buys nothing for a
+  browser, which never speaks it. Hub's Control API, Watch, and MQ keep requiring
+  mTLS, and a Go client still reaches the Control API over h2c.
+
 - The Portal rule Hub publishes drops the deprecated `matchPathPrefix` and
   `routePathPrefix` fields, and Portal reads the resolved prefixes only, so a
   rule no longer carries the configured prefix beside the effective one. Portal
