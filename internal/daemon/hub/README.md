@@ -189,18 +189,27 @@ Portal rule YAML uses flat fields in this order: `matchScheme`, `matchHost`,
 `matchPort`, `matchPathPrefix`, `routeType`, `routeSiteName`,
 `routeRedirectionPattern`, and `routePathPrefix`.
 
-Portal sites, entries, rules, and certificates declare `enabled`, which defaults
-to true. Hub keeps a disabled entity in its database and stops publishing it to
+Hub stores an `enabled` switch on every Portal site, entry, rule, and
+certificate, and the Dashboard edits it. A seed declares the same switch as
+`disabled`, which defaults to false, so a seed names only the entities it turns
+off; a seed that writes `enabled` fails instead of silently publishing the
+entity. Hub keeps a disabled entity in its database and stops publishing it to
 Watch, so Portal never sees it: Hub omits a disabled rule, the rules of a
 disabled entry, the SITE rules of a disabled site, and a disabled certificate.
 A database that predates the switch keeps every stored entity enabled.
 
-Portal entry YAML declares `name`, `scheme`, `host`, and `port`. A seed applies
+Portal entry YAML declares `name`, `scheme`, `host`, `port`, and `disabled`. A seed applies
 entries before rules, so a rule joins the entry that serves its access and keeps
 the name the seed gave it; an entry may route no rule yet. Hub derives the name
 `scheme[:host]:port` only for the entry it creates on its own, which is why the
 entry a rule joins without a declared entry is named after its access. The
 built-in Dashboard entry has the reserved name `vine.hub.dashboard`.
+
+The Portal sections are typed: Hub rejects an entity that declares a field the
+section does not name, so a misspelled or renamed field fails instead of
+silently leaving the entity at its default. The built-in marker is not part of
+the seed: the built-in Dashboard site, entry, and rules belong to Hub, so a seed
+that declares `builtIn` fails instead of nominating an entity.
 
 A Portal rule joins an entry either by naming it with `entryName` or by declaring
 the access the entry serves. The two are mutually exclusive: a rule never does

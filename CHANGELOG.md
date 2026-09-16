@@ -41,13 +41,15 @@ are not part of the public compatibility commitment.
 
 ### Added
 
-- Portal sites, entries, rules, and certificates carry an `enabled` switch that a
-  seed declares and the Dashboard edits. Hub keeps a disabled entity in its
-  database and stops publishing it to Watch, so Portal never sees it: a disabled
-  rule, the rules of a disabled entry, the SITE rules of a disabled site, and a
-  disabled certificate are all removed from the published configuration. An
-  existing database keeps its configuration enabled, and a seed that omits the
-  switch stays enabled.
+- Portal sites, entries, rules, and certificates carry an `enabled` switch that
+  the Dashboard edits and a seed declares as `disabled`, so a seed names only
+  the entities it turns off. Hub keeps a disabled entity in its database and
+  stops publishing it to Watch, so Portal never sees it: a disabled rule, the
+  rules of a disabled entry, the SITE rules of a disabled site, and a disabled
+  certificate are all removed from the published configuration. An existing
+  database keeps its configuration enabled, a seed that omits the switch stays
+  enabled, and a Portal seed entry that declares a field Hub does not name
+  (`enabled` included) fails before Hub publishes anything.
 
 ### Changed
 

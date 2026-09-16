@@ -55,7 +55,6 @@ portalSites:
     actorSkelName: demo.AdminActor
     actorVia: client
     webName: demo.AdminWeb
-    builtIn: true
 portalRules:
   - name: admin
     scheme: https
@@ -65,7 +64,6 @@ portalRules:
     targetType: SITE
     siteName: admin@demo.app
     redirectionPattern: ""
-    builtIn: true
 portalCerts:
   - name: admin-cert
     issuer: ignored
@@ -663,7 +661,8 @@ func TestSeederPublishesRuleItAggregatesIntoANewEntry(t *testing.T) {
 	// A seed written the 0.19.0 way declares the access on the rule and declares
 	// no entry. Hub aggregates the access into an entry and keeps publishing the
 	// rule, the way a rule that names an entry Hub already stores stays
-	// published.
+	// published. A seed declares the switch as disabled, so leaving it at the
+	// default keeps the rule published.
 	configRepo, ruleRepo, certRepo, siteRepo, metadataRepo, watchServer := newTestSeederRepos(t)
 	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
 	require.NoError(t, vfile.WriteString(seedPath, `
@@ -675,6 +674,7 @@ portalSites:
     webName: demo.Web
 portalRules:
   - name: demo.web
+    disabled: false
     matchScheme: http
     matchPort: 8099
     matchPathPrefix: /
@@ -705,6 +705,87 @@ portalRules:
 	assert.True(t, published)
 }
 
+func TestSeederRejectsStoredSwitchName(t *testing.T) {
+	// Hub stores the switch as enabled, and a seed declares it as disabled.
+	// Decoding ignores a field the payload does not declare, so a seed that
+	// still writes enabled would silently keep the entity published: Hub names
+	// the field the seed should declare instead.
+	for _, testCase := range []struct {
+		name    string
+		content string
+	}{
+		{
+			name:    "portal entry",
+			content: "portalEntries:\n  - name: web\n    scheme: http\n    port: 8099\n    enabled: false\n",
+		},
+		{
+			name:    "portal site",
+			content: "portalSites:\n  - name: demo.Web\n    enabled: false\n",
+		},
+		{
+			name:    "portal rule",
+			content: "portalRules:\n  - name: demo.web\n    entryName: web\n    enabled: false\n",
+		},
+		{
+			name:    "portal certificate",
+			content: "portalCerts:\n  - name: demo-cert\n    enabled: false\n",
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			_, err := ParseSeedEntities(testCase.content)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), `declares "enabled"; a seed turns configuration off with "disabled: true"`)
+		})
+	}
+}
+
+func TestSeederRejectsUnknownPortalField(t *testing.T) {
+	// Portal sections are fully typed, so a field Hub does not know fails
+	// instead of silently leaving the entity at its default.
+	for _, testCase := range []struct {
+		name    string
+		content string
+		want    string
+	}{
+		{
+			name:    "portal entry",
+			content: "portalEntries:\n  - name: web\n    scheme: http\n    port: 8099\n    webname: demo.Web\n",
+			want:    `portal entry "web" declares unknown field "webname"`,
+		},
+		{
+			name:    "portal site",
+			content: "portalSites:\n  - name: demo.Web\n    webname: demo.Web\n",
+			want:    `portal site "demo.Web" declares unknown field "webname"`,
+		},
+		{
+			name:    "portal site cors",
+			content: "portalSites:\n  - name: demo.Web\n    cors:\n      allowOrigins: [https://demo.local]\n",
+			want:    `portal site cors "demo.Web" declares unknown field "allowOrigins"`,
+		},
+		{
+			name:    "portal rule",
+			content: "portalRules:\n  - name: demo.web\n    matchPathPrefix: /\n    routeSiteNam: demo.Web\n",
+			want:    `portal rule "demo.web" declares unknown field "routeSiteNam"`,
+		},
+		{
+			name:    "portal certificate",
+			content: "portalCerts:\n  - name: demo-cert\n    issuers: demo\n",
+			want:    `portal certificate "demo-cert" declares unknown field "issuers"`,
+		},
+		{
+			name:    "Hub-owned built-in marker",
+			content: "portalSites:\n  - name: demo.Web\n    webName: demo.Web\n    builtIn: true\n",
+			want:    `portal site "demo.Web" declares "builtIn"; Hub owns the built-in entities, so a seed cannot declare it`,
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			_, err := ParseSeedEntities(testCase.content)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), testCase.want)
+		})
+	}
+}
+
 func TestSeederStoresDisabledConfiguration(t *testing.T) {
 	// A seed can turn the switch off: Hub stores the entity and does not publish
 	// it to Portal.
@@ -715,26 +796,26 @@ portalEntries:
   - name: web
     scheme: http
     port: 8099
-    enabled: false
+    disabled: true
 portalSites:
   - name: demo.Web
     type: WEBGW
     actorSkelName: demo.Actor
     actorVia: client
     webName: demo.Web
-    enabled: false
+    disabled: true
 portalRules:
   - name: demo.web
     entryName: web
     matchPathPrefix: /
     routeType: SITE
     routeSiteName: demo.Web
-    enabled: false
+    disabled: true
 portalCerts:
   - name: demo-cert
     publicKeyBase64: `+testSeederCertificate(t)+`
     privateKeyBase64: pri
-    enabled: false
+    disabled: true
 `))
 	seeder := &Seeder{
 		Flag:          newTestSeederFlag(seedPath),

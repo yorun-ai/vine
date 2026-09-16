@@ -84,15 +84,21 @@ Hub 的层次职责必须保持清晰：
 - 内置 Dashboard 规则同样走 entry 模式：它们只引用内置 entry `vine.hub.dashboard`，
   由 Seeder 按 Dashboard URL 维护该 entry 的访问配置；没有显式 `--dashboard-url`
   或旧默认值迁移时，Hub 保持它当前服务的访问配置。
-- Portal 站点、entry、规则与证书都有 `enabled` 开关（默认启用），seed 可声明、
-  Dashboard 可编辑。Hub 会把停用的实体保留在数据库里但停止发布到 Watch，Portal
-  因此完全看不到它：停用的规则、停用 entry 下的规则、停用站点上的 SITE 规则以及
-  停用的证书都会从发布内容中移除。早于该开关的数据库中的实体保持启用。
+- Portal 站点、entry、规则与证书在库里都有 `enabled` 开关（默认启用），Dashboard
+  可编辑；seed 用 `disabled`（默认 false）声明同一个开关，只标出要停用的实体，
+  写 `enabled` 的 seed 会直接报错，避免被忽略后继续发布。Hub 会把停用的实体保留在
+  数据库里但停止发布到 Watch，Portal 因此完全看不到它：停用的规则、停用 entry 下
+  的规则、停用站点上的 SITE 规则以及停用的证书都会从发布内容中移除。早于该开关的
+  数据库中的实体保持启用。
 - entry 有自己的名称：seed 的 `portalEntries` 段声明 `name`、`scheme`、`host`、
   `port`，并在规则之前应用，因此规则会加入服务其访问配置的 entry 并沿用该名称；
   entry 也可以暂时不承载任何规则。Hub 只为它自行创建的 entry 推导
   `scheme[:host]:port` 名称，所以没有显式声明 entry 时规则加入的 entry 以访问配置
   命名。内置 Dashboard entry 使用保留名称 `vine.hub.dashboard`。
+- Portal 各段是强类型的：实体声明了该段没有的字段时 Hub 直接报错，避免拼错或改名
+  后的字段被静默忽略、实体停留在默认值。内置标记不属于 seed：内置 Dashboard
+  站点、entry 与规则由 Hub 自己维护，seed 里写 `builtIn` 会直接报错，而不是用来
+  指定某个实体是内置的。
 - 规则加入 entry 有两种写法：用 `entryName` 指定名称，或直接声明该 entry 服务的
   访问配置（`matchScheme` / `matchHost` / `matchPort`）。两者互斥：同一条规则不
   能同时使用两种写法，同一份 seed 文档也只能全部使用其中一种；声明了

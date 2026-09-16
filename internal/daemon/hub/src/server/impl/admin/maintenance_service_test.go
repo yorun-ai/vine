@@ -194,7 +194,6 @@ portalSites:
     actorSkelName: demo.AdminActor
     actorVia: client
     webName: demo.AdminWeb
-    builtIn: false
 portalRules:
   - name: vine.hub.dashboard-web
     scheme: https
@@ -204,7 +203,6 @@ portalRules:
     targetType: SITE
     siteName: admin@demo.app
     redirectionPattern: ""
-    builtIn: false
 `
 
 	preview := service.PreviewSeedYaml(strings.ReplaceAll(content, core.DashboardWebRuleName, "preview"))

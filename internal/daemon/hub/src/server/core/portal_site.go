@@ -207,7 +207,8 @@ func (m *PortalSiteCore) Update(id int, update PortalSiteUpdate) *PortalSite {
 		next.WebName = *update.WebName
 	}
 	if update.Enabled != nil {
-		next.FieldSources = overrideFieldSource(next.FieldSources, "/enabled")
+		// A seed declares the switch as disabled, so it owns that source path.
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/disabled")
 		next.Enabled = *update.Enabled
 	}
 

@@ -116,7 +116,8 @@ func (m *PortalCertCore) Update(id int, update PortalCertUpdate) *PortalCert {
 		next.PrivateKeyBase64 = *update.PrivateKeyBase64
 	}
 	if update.Enabled != nil {
-		next.FieldSources = overrideFieldSource(next.FieldSources, "/enabled")
+		// A seed declares the switch as disabled, so it owns that source path.
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/disabled")
 		next.Enabled = *update.Enabled
 	}
 

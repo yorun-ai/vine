@@ -76,6 +76,9 @@ func decodePortalRule(node *yaml.Node, target any) error {
 	if err := node.Decode(&fields); err != nil {
 		return err
 	}
+	if err := checkSeedFields(fields, "portalRules"); err != nil {
+		return err
+	}
 	keys := make([]string, 0, len(fields))
 	for key := range fields {
 		keys = append(keys, key)
