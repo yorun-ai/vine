@@ -29,6 +29,19 @@ func (s *PortalEntryApiServiceServerImpl) UpdateAccess(scheme string, host strin
 	return s.toServerPortalEntry(entry)
 }
 
+func (s *PortalEntryApiServiceServerImpl) Create(creation skeled.PortalEntryCreation) skeled.PortalEntry {
+	entry := s.PortalEntryCore.Create(core.PortalEntryCreation{
+		Scheme: creation.Scheme,
+		Host:   creation.Host,
+		Port:   creation.Port,
+	})
+	return s.toServerPortalEntry(entry)
+}
+
+func (s *PortalEntryApiServiceServerImpl) Remove(scheme string, host string, port int) {
+	s.PortalEntryCore.Remove(scheme, host, port)
+}
+
 func (s *PortalEntryApiServiceServerImpl) toServerPortalEntry(entry core.PortalEntryView) skeled.PortalEntry {
 	rules := make([]skeled.PortalEntryRule, 0, len(entry.Rules))
 	for _, rule := range entry.Rules {

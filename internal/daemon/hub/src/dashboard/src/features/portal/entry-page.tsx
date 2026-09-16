@@ -11,9 +11,12 @@ import {
   GitBranch,
   Loader2,
   RefreshCw,
+  Plus,
+  Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -46,6 +49,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { vrpcClient } from '@/config/vrpc-client'
 import { useLocale } from '@/i18n'
 import { cn } from '@/lib/utils'
@@ -65,6 +74,12 @@ interface PortalEntryAccessFormValue {
   scheme: string
   host: string
   port: string
+}
+
+const newAccessFormValue: PortalEntryAccessFormValue = {
+  scheme: 'http',
+  host: '',
+  port: '80',
 }
 
 function getErrorMessage(error: unknown) {
@@ -177,35 +192,51 @@ function PortalEntryListSkeleton() {
   )
 }
 
-function PortalEntryAccessDialog({
+type PortalEntryFormErrors = Partial<
+  Record<keyof PortalEntryAccessFormValue, string>
+>
+
+function Field({
+  children,
+  error,
+  label,
+}: {
+  children: React.ReactNode
+  error?: string
+  label: string
+}) {
+  return (
+    <div className="grid gap-2">
+      <Label>{label}</Label>
+      {children}
+      {error ? <div className="text-xs text-destructive">{error}</div> : null}
+    </div>
+  )
+}
+
+function PortalEntryInlineEditor({
   entry,
-  open,
-  onOpenChange,
-  onUpdated,
+  saving,
+  onCancel,
+  onSubmit,
 }: {
   entry: PortalEntry | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onUpdated: (entry: PortalEntry) => void
+  saving: boolean
+  onCancel: () => void
+  onSubmit: (value: PortalEntryAccessFormValue) => Promise<void>
 }) {
   const { t } = useLocale()
-  const [saving, setSaving] = React.useState(false)
   const [formValue, setFormValue] = React.useState<PortalEntryAccessFormValue>(
-    () =>
-      entry
-        ? portalEntryToAccessFormValue(entry)
-        : { scheme: 'http', host: '', port: '80' },
+    () => (entry ? portalEntryToAccessFormValue(entry) : newAccessFormValue),
   )
+  const [fieldErrors, setFieldErrors] = React.useState<PortalEntryFormErrors>(
+    {},
+  )
+  const [formError, setFormError] = React.useState<string | null>(null)
 
-  React.useEffect(() => {
-    if (!open || entry == null) {
-      return
-    }
-    setFormValue(portalEntryToAccessFormValue(entry))
-  }, [entry, open])
-
-  const updateField = React.useCallback(
+  const setField = React.useCallback(
     (field: keyof PortalEntryAccessFormValue, value: string) => {
+      setFormError(null)
       setFormValue((current) => ({
         ...current,
         [field]: value,
@@ -214,96 +245,133 @@ function PortalEntryAccessDialog({
     [],
   )
 
-  const submit = React.useCallback(
+  const handleSubmit = React.useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault()
-      if (entry == null) {
-        return
-      }
+
+      const errors: PortalEntryFormErrors = {}
       if (!isValidPort(formValue.port)) {
-        toast.error(t('portalEntry.invalidPort'))
+        errors.port = t('portalEntry.invalidPort')
+      }
+      setFieldErrors(errors)
+      setFormError(null)
+      if (Object.keys(errors).length > 0) {
         return
       }
 
-      setSaving(true)
       try {
-        const updated = await portalEntryService.updateAccess({
-          scheme: entry.scheme,
-          host: entry.host,
-          port: entry.port,
-          update: portalEntryAccessFormValueToUpdate(formValue),
-        })
-        toast.success(t('portalEntry.updateSuccess'))
-        onUpdated(updated)
-        onOpenChange(false)
+        await onSubmit(formValue)
       } catch (error) {
-        toast.error(getErrorMessage(error))
-      } finally {
-        setSaving(false)
+        setFormError(getErrorMessage(error))
       }
     },
-    [entry, formValue, onOpenChange, onUpdated, t],
+    [formValue, onSubmit, t],
   )
 
+  return (
+    <form className="grid gap-5" onSubmit={handleSubmit}>
+      {formError ? (
+        <Alert variant="destructive">
+          <AlertDescription>{formError}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      <Field label={t('portalEntry.scheme')} error={fieldErrors.scheme}>
+        <Select
+          value={formValue.scheme}
+          onValueChange={(value) => setField('scheme', value ?? '')}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {portalEntrySchemes.map((scheme) => (
+              <SelectItem key={scheme} value={scheme}>
+                {scheme}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Field>
+      <Field label={t('portalEntry.host')}>
+        <Input
+          value={formValue.host}
+          placeholder="*"
+          onChange={(event) => setField('host', event.target.value)}
+        />
+      </Field>
+      <Field label={t('portalEntry.port')} error={fieldErrors.port}>
+        <Input
+          value={formValue.port}
+          inputMode="numeric"
+          aria-invalid={Boolean(fieldErrors.port)}
+          onChange={(event) => setField('port', event.target.value)}
+        />
+      </Field>
+
+      <div className="flex justify-end gap-2 border-t pt-4">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={saving}
+          onClick={onCancel}
+        >
+          {t('action.cancel')}
+        </Button>
+        <Button type="submit" disabled={saving}>
+          {saving ? <Loader2 className="animate-spin" /> : null}
+          {t('action.save')}
+        </Button>
+      </div>
+    </form>
+  )
+}
+
+function PortalEntryDeleteDialog({
+  entry,
+  open,
+  deleting,
+  onOpenChange,
+  onConfirm,
+}: {
+  entry: PortalEntry | null
+  open: boolean
+  deleting: boolean
+  onOpenChange: (open: boolean) => void
+  onConfirm: () => void
+}) {
+  const { t } = useLocale()
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t('portalEntry.editAccessTitle')}</DialogTitle>
+          <DialogTitle>{t('portalEntry.deleteTitle')}</DialogTitle>
           <DialogDescription>
-            {t('portalEntry.editAccessDescription')}
+            {t('portalEntry.deleteDescription')}
           </DialogDescription>
         </DialogHeader>
-        <form className="grid gap-5" onSubmit={submit}>
-          <div className="grid gap-2">
-            <Label>{t('portalEntry.scheme')}</Label>
-            <Select
-              value={formValue.scheme}
-              onValueChange={(value) => updateField('scheme', value ?? '')}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {portalEntrySchemes.map((scheme) => (
-                  <SelectItem key={scheme} value={scheme}>
-                    {scheme}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-2">
-            <Label>{t('portalEntry.host')}</Label>
-            <Input
-              value={formValue.host}
-              placeholder="*"
-              onChange={(event) => updateField('host', event.target.value)}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label>{t('portalEntry.port')}</Label>
-            <Input
-              value={formValue.port}
-              inputMode="numeric"
-              onChange={(event) => updateField('port', event.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={saving}
-            >
-              {t('action.cancel')}
-            </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? <Loader2 className="size-4 animate-spin" /> : null}
-              {t('action.save')}
-            </Button>
-          </DialogFooter>
-        </form>
+        <div className="rounded-lg border bg-muted/30 px-3 py-2 font-mono text-sm">
+          {entry ? portalEntryAddress(entry) : ''}
+        </div>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={deleting}
+            onClick={() => onOpenChange(false)}
+          >
+            {t('action.cancel')}
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={deleting}
+            onClick={onConfirm}
+          >
+            {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
+            {t('action.delete')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
@@ -322,6 +390,12 @@ export function PortalEntryPage() {
   const [editingEntry, setEditingEntry] = React.useState<PortalEntry | null>(
     null,
   )
+  const [saving, setSaving] = React.useState(false)
+  const [creating, setCreating] = React.useState(false)
+  const [deletingEntry, setDeletingEntry] = React.useState<PortalEntry | null>(
+    null,
+  )
+  const [deleting, setDeleting] = React.useState(false)
   const listPanel = useResizableListPanel({
     defaultWidth: PORTAL_ENTRY_LIST_DEFAULT_WIDTH,
   })
@@ -358,17 +432,13 @@ export function PortalEntryPage() {
     void loadEntries()
   }, [loadEntries])
 
-  const visibleEntries = React.useMemo(() => {
-    return entries.filter((entry) => entry.rules.length > 0)
-  }, [entries])
-
   const filteredEntries = React.useMemo(() => {
     const keyword = query.trim().toLowerCase()
     if (keyword === '') {
-      return visibleEntries
+      return entries
     }
 
-    return visibleEntries.filter((entry) => {
+    return entries.filter((entry) => {
       const values = [
         entry.name,
         entry.scheme,
@@ -392,7 +462,7 @@ export function PortalEntryPage() {
 
       return values.some((value) => value.toLowerCase().includes(keyword))
     })
-  }, [query, visibleEntries])
+  }, [entries, query])
 
   const selectedEntry = React.useMemo(
     () =>
@@ -433,14 +503,68 @@ export function PortalEntryPage() {
     }))
   }, [])
 
-  const handleEntryUpdated = React.useCallback(
-    (entry: PortalEntry) => {
-      void loadEntries().then(() => {
-        selectEntry(entry.name, true)
-      })
+  const handleCreate = React.useCallback(
+    async (value: PortalEntryAccessFormValue) => {
+      setSaving(true)
+      try {
+        const created = await portalEntryService.create({
+          creation: portalEntryAccessFormValueToUpdate(value),
+        })
+        toast.success(t('portalEntry.createSuccess'))
+        setCreating(false)
+        await loadEntries()
+        selectEntry(created.name, true)
+      } finally {
+        setSaving(false)
+      }
     },
-    [loadEntries, selectEntry],
+    [loadEntries, selectEntry, t],
   )
+
+  const handleUpdate = React.useCallback(
+    async (value: PortalEntryAccessFormValue) => {
+      if (editingEntry == null) {
+        return
+      }
+      setSaving(true)
+      try {
+        const updated = await portalEntryService.updateAccess({
+          scheme: editingEntry.scheme,
+          host: editingEntry.host,
+          port: editingEntry.port,
+          update: portalEntryAccessFormValueToUpdate(value),
+        })
+        toast.success(t('portalEntry.updateSuccess'))
+        setEditingEntry(null)
+        await loadEntries()
+        selectEntry(updated.name, true)
+      } finally {
+        setSaving(false)
+      }
+    },
+    [editingEntry, loadEntries, selectEntry, t],
+  )
+
+  const removeEntry = React.useCallback(async () => {
+    if (deletingEntry == null) {
+      return
+    }
+    setDeleting(true)
+    try {
+      await portalEntryService.remove({
+        scheme: deletingEntry.scheme,
+        host: deletingEntry.host,
+        port: deletingEntry.port,
+      })
+      toast.success(t('portalEntry.deleteSuccess'))
+      setDeletingEntry(null)
+      await loadEntries()
+    } catch (error) {
+      toast.error(getErrorMessage(error))
+    } finally {
+      setDeleting(false)
+    }
+  }, [deletingEntry, loadEntries, t])
 
   React.useEffect(() => {
     if (!isPortalEntryPath(pathname)) {
@@ -480,7 +604,8 @@ export function PortalEntryPage() {
   }, [filteredEntries, selectedEntryName])
 
   return (
-    <section className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden bg-white">
+    <TooltipProvider>
+      <section className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden bg-white">
       <div
         className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[var(--list-panel-width)_minmax(0,1fr)]"
         style={listPanel.gridStyle}
@@ -505,11 +630,20 @@ export function PortalEntryPage() {
                   onClick={() => void loadEntries()}
                   disabled={loading}
                 >
-                  <RefreshCw
-                    className={cn('size-3.5', loading && 'animate-spin')}
-                  />
-                </Button>
-              </div>
+                    <RefreshCw
+                      className={cn('size-3.5', loading && 'animate-spin')}
+                    />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={readOnly}
+                    onClick={() => setCreating(true)}
+                  >
+                    <Plus />
+                    {t('action.create')}
+                  </Button>
+                </div>
             </div>
           </div>
 
@@ -521,7 +655,7 @@ export function PortalEntryPage() {
               <PortalEntryListSkeleton />
             ) : filteredEntries.length === 0 ? (
               <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-                {visibleEntries.length === 0
+                {entries.length === 0
                   ? t('portalEntry.empty')
                   : t('portalEntry.noMatch')}
               </div>
@@ -568,7 +702,7 @@ export function PortalEntryPage() {
           <ListDetailFooter>
             {t('portalEntry.itemCount').replace(
               '{count}',
-              String(visibleEntries.length),
+              String(entries.length),
             )}
           </ListDetailFooter>
           <ResizableListHandle
@@ -585,120 +719,194 @@ export function PortalEntryPage() {
               <Skeleton className="h-24 w-full" />
               <Skeleton className="h-24 w-full" />
             </div>
+          ) : creating ? (
+            <div className="flex h-full min-h-0 flex-col">
+              <div className="border-b border-border/70 px-6 py-4">
+                <div className="flex items-center gap-2">
+                  <Compass className="size-4 shrink-0 text-primary" />
+                  <h2 className="text-base font-semibold">
+                    {t('portalEntry.createTitle')}
+                  </h2>
+                </div>
+              </div>
+              <div className="scrollbar-reserved min-h-0 flex-1 overflow-y-auto p-6 pr-4">
+                <PortalEntryInlineEditor
+                  entry={null}
+                  saving={saving}
+                  onCancel={() => setCreating(false)}
+                  onSubmit={handleCreate}
+                />
+              </div>
+            </div>
           ) : selectedEntry ? (
             <div className="flex h-full min-h-0 flex-col">
-              <div className="border-b border-border/70 px-6 py-5">
-                <div className="flex min-w-0 items-start justify-between gap-3">
-                  <div className="min-w-0">
+              <div className="border-b border-border/70 px-6 py-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 items-center gap-2">
                       <Compass className="size-4 shrink-0 text-primary" />
-                      <h1 className="truncate text-xl font-semibold">
+                      <h2 className="truncate text-base font-semibold">
                         {selectedEntry.name}
-                      </h1>
+                      </h2>
                     </div>
-                    <div className="mt-1 font-mono text-sm text-muted-foreground">
+                    <p className="mt-2 font-mono text-xs text-muted-foreground">
                       {portalEntryAddress(selectedEntry)}
-                    </div>
+                    </p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={readOnly}
-                              onClick={() => setEditingEntry(selectedEntry)}
-                  >
-                    <Edit3 className="size-4" />
-                    {t('action.edit')}
-                  </Button>
+                  {editingEntry?.name === selectedEntry.name ? null : (
+                    <div className="flex items-center gap-2">
+                      <Tooltip>
+                        <TooltipTrigger render={<span className="inline-flex" />}>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={readOnly}
+                            onClick={() => setEditingEntry(selectedEntry)}
+                          >
+                            <Edit3 />
+                            {t('action.edit')}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{t('action.edit')}</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger render={<span className="inline-flex" />}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            disabled={
+                              readOnly || selectedEntry.rules.length > 0
+                            }
+                            title={
+                              selectedEntry.rules.length > 0
+                                ? t('portalEntry.deleteWithRules')
+                                : undefined
+                            }
+                            onClick={() => setDeletingEntry(selectedEntry)}
+                          >
+                            <Trash2 />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {selectedEntry.rules.length > 0
+                            ? t('portalEntry.deleteWithRules')
+                            : t('action.delete')}
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="min-h-0 flex-1 overflow-y-auto">
                 <div className="grid gap-5 px-6 pt-6 pb-6">
-                  <section className="grid gap-2">
-                    <button
-                      type="button"
-                      className="sticky top-0 z-20 -mx-6 flex items-center gap-2 bg-white px-6 py-2 text-left"
-                      onClick={() => toggleSectionCollapsed('rules')}
-                    >
-                      <ChevronDown
+                  {editingEntry?.name === selectedEntry.name ? (
+                    <PortalEntryInlineEditor
+                      entry={selectedEntry}
+                      saving={saving}
+                      onCancel={() => setEditingEntry(null)}
+                      onSubmit={handleUpdate}
+                    />
+                  ) : (
+                    <>
+                      <section className="grid gap-2">
+                      <button
+                        type="button"
+                        className="sticky top-0 z-20 -mx-6 flex items-center gap-2 bg-white px-6 py-2 text-left"
+                        onClick={() => toggleSectionCollapsed('rules')}
+                      >
+                        <ChevronDown
+                          className={cn(
+                            'size-3.5 text-muted-foreground transition-transform',
+                            collapsedSections.rules && '-rotate-90',
+                          )}
+                        />
+                        <GitBranch className="size-4 text-primary" />
+                        <h3 className="text-sm font-semibold">
+                          {t('portalEntry.rulesTitle')}
+                        </h3>
+                        <Badge variant="outline">
+                          {selectedEntry.rules.length}
+                        </Badge>
+                      </button>
+                      <div
                         className={cn(
-                          'size-3.5 text-muted-foreground transition-transform',
-                          collapsedSections.rules && '-rotate-90',
+                          'grid gap-3',
+                          collapsedSections.rules && 'hidden',
                         )}
-                      />
-                      <GitBranch className="size-4 text-primary" />
-                      <h3 className="text-sm font-semibold">
-                        {t('portalEntry.rulesTitle')}
-                      </h3>
-                      <Badge variant="outline">
-                        {selectedEntry.rules.length}
-                      </Badge>
-                    </button>
-                    <div
-                      className={cn(
-                        'grid gap-3',
-                        collapsedSections.rules && 'hidden',
-                      )}
-                    >
-                      {selectedEntry.rules.map((entryRule) => (
-                        <div
-                          key={entryRule.rule.id}
-                          className="grid gap-3 rounded-lg border bg-background p-4"
-                        >
-                          <div className="flex min-w-0 items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="flex min-w-0 items-center gap-2">
+                      >
+                        {selectedEntry.rules.length === 0 ? (
+                          <div className="rounded-lg border border-dashed px-4 py-6 text-center">
+                            <div className="text-sm font-medium">
+                              {t('portalEntry.noRules')}
+                            </div>
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              {t('portalEntry.noRulesDescription')}
+                            </div>
+                          </div>
+                        ) : null}
+                        {selectedEntry.rules.map((entryRule) => (
+                          <div
+                            key={entryRule.rule.id}
+                            className="grid gap-3 rounded-lg border bg-background p-4"
+                          >
+                            <div className="flex min-w-0 items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <a
+                                    href={portalRuleHref(entryRule.rule)}
+                                    className="truncate text-left text-sm font-semibold transition-colors hover:text-primary hover:underline"
+                                    onClick={(event) => {
+                                      if (shouldUseBrowserNavigation(event)) {
+                                        return
+                                      }
+                                      event.preventDefault()
+                                      jumpToRule(entryRule.rule)
+                                    }}
+                                  >
+                                    {entryRule.rule.name}
+                                  </a>
+                                </div>
+                              </div>
+                              <div className="flex shrink-0 items-center gap-2">
+                                <Badge variant="outline">
+                                  {tText(ruleTargetLabel(entryRule.rule))}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="flex min-w-0 items-center gap-2 text-sm">
+                              <span className="truncate font-mono text-muted-foreground">
+                                {formatRuleMatch(entryRule.rule)}
+                              </span>
+                              <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+                              {entryRule.site ? (
                                 <a
-                                  href={portalRuleHref(entryRule.rule)}
-                                  className="truncate text-left text-sm font-semibold transition-colors hover:text-primary hover:underline"
+                                  href={portalSitePath(entryRule.site.id)}
+                                  className="truncate font-mono transition-colors hover:text-primary hover:underline"
                                   onClick={(event) => {
                                     if (shouldUseBrowserNavigation(event)) {
                                       return
                                     }
                                     event.preventDefault()
-                                    jumpToRule(entryRule.rule)
+                                    jumpToSite(entryRule)
                                   }}
                                 >
-                                  {entryRule.rule.name}
+                                  {ruleTargetValue(entryRule)}
                                 </a>
-                              </div>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-2">
-                              <Badge variant="outline">
-                                {tText(ruleTargetLabel(entryRule.rule))}
-                              </Badge>
+                              ) : (
+                                <span className="truncate font-mono">
+                                  {ruleTargetValue(entryRule)}
+                                </span>
+                              )}
                             </div>
                           </div>
-                          <div className="flex min-w-0 items-center gap-2 text-sm">
-                            <span className="truncate font-mono text-muted-foreground">
-                              {formatRuleMatch(entryRule.rule)}
-                            </span>
-                            <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
-                            {entryRule.site ? (
-                              <a
-                                href={portalSitePath(entryRule.site.id)}
-                                className="truncate font-mono transition-colors hover:text-primary hover:underline"
-                                onClick={(event) => {
-                                  if (shouldUseBrowserNavigation(event)) {
-                                    return
-                                  }
-                                  event.preventDefault()
-                                  jumpToSite(entryRule)
-                                }}
-                              >
-                                {ruleTargetValue(entryRule)}
-                              </a>
-                            ) : (
-                              <span className="truncate font-mono">
-                                {ruleTargetValue(entryRule)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
+                        ))}
+                      </div>
+                      </section>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -709,7 +917,7 @@ export function PortalEntryPage() {
                   <Compass />
                 </EmptyMedia>
                 <EmptyTitle>
-                  {visibleEntries.length === 0
+                  {entries.length === 0
                     ? t('portalEntry.empty')
                     : t('portalEntry.noMatch')}
                 </EmptyTitle>
@@ -721,16 +929,18 @@ export function PortalEntryPage() {
           )}
         </main>
       </div>
-      <PortalEntryAccessDialog
-        entry={editingEntry}
-        open={editingEntry != null}
+      <PortalEntryDeleteDialog
+        entry={deletingEntry}
+        open={deletingEntry != null}
+        deleting={deleting}
         onOpenChange={(open) => {
           if (!open) {
-            setEditingEntry(null)
+            setDeletingEntry(null)
           }
         }}
-        onUpdated={handleEntryUpdated}
+        onConfirm={() => void removeEntry()}
       />
-    </section>
+      </section>
+    </TooltipProvider>
   )
 }

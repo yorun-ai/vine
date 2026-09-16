@@ -77,6 +77,13 @@ Hub 的层次职责必须保持清晰：
   `PortalRuleCore` 按规则声明的访问配置解析 entry，因此访问配置相同的规则共用
   同一个 entry。修改 entry 会改变它路由的全部规则，Hub 随即重新发布这些规则，
   让 Portal 读到该 entry 当前服务的访问配置。
+- `PortalEntryCore` 为尚无用户 entry 的访问配置创建 entry，并允许删除没有路由
+  任何规则的 entry：规则属于用户，删除仍有规则的 entry 会报错，而不是让规则失去
+  访问配置。entry 列表会返回尚未路由规则的 entry，因为用户先建 entry、再添加使用
+  它的规则。
+- Admin API 通过 entry 触达规则的访问配置：`PortalRuleCreation` 指定新规则属于哪个
+  entry，`PortalRuleUpdate` 完全不能修改访问配置。seed YAML 仍在规则上声明访问
+  配置，由 Hub 在应用 seed 时聚合为 entry。
 - 两条规则不能匹配同一个请求。Portal 按最长路径前缀解析匹配规则，因此 Hub 会
   拒绝访问配置与 `matchPathPrefix` 已被其他规则（包括内置 Dashboard 规则）占用
   的规则，并报出已占用该请求的规则名。seed 或 Dashboard 导入重复声明同一请求时

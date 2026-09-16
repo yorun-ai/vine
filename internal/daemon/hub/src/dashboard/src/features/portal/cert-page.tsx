@@ -440,7 +440,7 @@ function ReadonlyField({
       <Label className="flex items-center gap-1.5">{label}{source}</Label>
       <div
         className={cn(
-          'min-h-9 rounded-md border border-input bg-muted/20 px-3 py-2 text-sm',
+          'min-h-9 py-2 text-sm',
           className,
         )}
       >

@@ -69,6 +69,7 @@ type portalEntryRepoSpy struct {
 	calls   []string
 	nextId  int
 	entries map[int]*PortalEntry
+	removed []int
 }
 
 func newPortalEntryRepoSpy(entries ...*PortalEntry) *portalEntryRepoSpy {
@@ -151,6 +152,7 @@ func (s *portalEntryRepoSpy) Remove(id int) bool {
 	if _, ok := s.entries[id]; !ok {
 		return false
 	}
+	s.removed = append(s.removed, id)
 	delete(s.entries, id)
 	return true
 }
@@ -193,7 +195,8 @@ func TestPortalEntryCoreListGroupsRulesByEntry(t *testing.T) {
 
 	entries := core.List()
 
-	require.Len(t, entries, 3)
+	// The built-in entry is omitted, the entry that routes nothing is listed.
+	require.Len(t, entries, 4)
 	assert.Equal(t, "https:443", entries[0].Name)
 	assert.Equal(t, "https", entries[0].Scheme)
 	assert.Equal(t, "", entries[0].Host)
@@ -209,13 +212,76 @@ func TestPortalEntryCoreListGroupsRulesByEntry(t *testing.T) {
 	assert.Equal(t, "http:demo.local:8080", entries[2].Name)
 	require.Len(t, entries[2].Rules, 1)
 	assert.Equal(t, "hosted", entries[2].Rules[0].Rule.Name)
+
+	assert.Equal(t, "http:9090", entries[3].Name)
+	assert.Empty(t, entries[3].Rules)
 }
 
-func TestPortalEntryCoreListSkipsEntriesWithoutRules(t *testing.T) {
+func TestPortalEntryCoreListIncludesEntriesWithoutRules(t *testing.T) {
+	// An operator creates an entry before the rules that use it, so the entry
+	// list shows it while it routes nothing.
 	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Scheme: "https", Port: 443})
 	core := newPortalEntryCoreForTest(&entryRuleRepoSpy{}, entryRepo, nil)
 
-	assert.Empty(t, core.List())
+	entries := core.List()
+
+	require.Len(t, entries, 1)
+	assert.Equal(t, "https:443", entries[0].Name)
+	assert.Empty(t, entries[0].Rules)
+}
+
+func TestPortalEntryCoreCreate(t *testing.T) {
+	entryRepo := newPortalEntryRepoSpy()
+	core := newPortalEntryCoreForTest(&entryRuleRepoSpy{}, entryRepo, nil)
+
+	entry := core.Create(PortalEntryCreation{Scheme: " HTTPS ", Host: " demo.local ", Port: 0})
+
+	assert.Equal(t, "https", entry.Scheme)
+	assert.Equal(t, "demo.local", entry.Host)
+	assert.Equal(t, 443, entry.Port)
+	assert.Equal(t, "https:demo.local:443", entry.Name)
+	assert.Empty(t, entry.Rules)
+	require.Len(t, entryRepo.entries, 1)
+	assert.Equal(t, []string{"GetByAccess:https:demo.local:443", "Save"}, entryRepo.calls)
+
+	panicValue := capturePanic(func() {
+		core.Create(PortalEntryCreation{Scheme: "https", Host: "demo.local", Port: 443})
+	})
+	err, ok := panicValue.(ex.Error)
+	require.True(t, ok)
+	assert.Equal(t, ex.OperationFailed, err.Code())
+	assert.Len(t, entryRepo.entries, 1)
+}
+
+func TestPortalEntryCoreRemove(t *testing.T) {
+	entryRepo := newPortalEntryRepoSpy(
+		&PortalEntry{Id: 1, Scheme: "http", Port: 7088},
+		&PortalEntry{Id: 2, Scheme: "http", Port: 7099, BuiltIn: true},
+	)
+	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
+		1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+	}}
+	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
+
+	// An entry keeps its rules: Hub refuses to leave them without an access.
+	require.PanicsWithError(t,
+		`portal entry http:7088 still routes 1 rules; remove them first type=APPLICATION code=OPERATION_FAILED`,
+		func() { core.Remove("http", "", 7088) })
+	assert.Contains(t, entryRepo.entries, 1)
+
+	// The built-in Dashboard entry is not a user entry.
+	require.PanicsWithError(t,
+		`portal entry http:7099 not found type=APPLICATION code=OPERATION_FAILED`,
+		func() { core.Remove("http", "", 7099) })
+
+	// An entry that routes nothing is removed.
+	core.Create(PortalEntryCreation{Scheme: "http", Port: 8080})
+	created, ok := entryRepo.GetByAccess("http", "", 8080)
+	require.True(t, ok)
+	core.Remove(" HTTP ", " ", 8080)
+	_, ok = entryRepo.GetByAccess("http", "", 8080)
+	assert.False(t, ok)
+	assert.Contains(t, entryRepo.removed, created.Id)
 }
 
 func TestPortalEntryCoreListRejectsUnknownScheme(t *testing.T) {

@@ -34,6 +34,7 @@ import type {
   PortalCertCreation,
   PortalCertUpdate,
   PortalEntry,
+  PortalEntryCreation,
   PortalEntryAccessUpdate,
   PortalRuleListItem,
   PortalRule,
@@ -439,6 +440,25 @@ export function createPortalEntryApiService(client: VrpcClient) {
       });
     },
     /**
+     * Create a Portal access entry.
+     * @param params - Request parameters, or null for methods without input
+     * @param options - Optional invocation options
+     * @returns PortalEntry - Portal access entry
+     */
+    create(
+      params: {
+        creation: PortalEntryCreation;
+      },
+      options?: VrpcRequestOptions,
+    ) {
+      return client.invoke<PortalEntry>({
+        serviceName: PortalEntryApiServiceSpec.serviceName,
+        methodName: PortalEntryApiServiceSpec.methods.create,
+        params,
+        options,
+      });
+    },
+    /**
      * Modify Portal access configuration.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
@@ -456,6 +476,26 @@ export function createPortalEntryApiService(client: VrpcClient) {
       return client.invoke<PortalEntry>({
         serviceName: PortalEntryApiServiceSpec.serviceName,
         methodName: PortalEntryApiServiceSpec.methods.updateAccess,
+        params,
+        options,
+      });
+    },
+    /**
+     * Delete a Portal access entry that routes no rule.
+     * @param params - Request parameters, or null for methods without input
+     * @param options - Optional invocation options
+     */
+    remove(
+      params: {
+        scheme: string;
+        host: string;
+        port: number;
+      },
+      options?: VrpcRequestOptions,
+    ) {
+      return client.invoke<void>({
+        serviceName: PortalEntryApiServiceSpec.serviceName,
+        methodName: PortalEntryApiServiceSpec.methods.remove,
         params,
         options,
       });

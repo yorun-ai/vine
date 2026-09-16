@@ -595,6 +595,23 @@ export type PortalEntryAccessUpdate = {
   port:   number;
 }
 /**
+ * Portal access entry creation parameters.
+ */
+export type PortalEntryCreation = {
+  /**
+   * Entry protocol.
+   */
+  scheme: string;
+  /**
+   * Match Host, empty string means no restriction.
+   */
+  host:   string;
+  /**
+   * Entry port.
+   */
+  port:   number;
+}
+/**
  * Portal access entry rules.
  */
 export type PortalEntryRule = {
@@ -673,17 +690,9 @@ export type PortalRuleCreation = {
    */
   name:                    string;
   /**
-   * Matching protocol.
+   * Name of the Portal access entry the rule belongs to.
    */
-  matchScheme:             string;
-  /**
-   * Match Host, empty string means no restriction.
-   */
-  matchHost:               string;
-  /**
-   * Match matchPort, 0 means no restriction.
-   */
-  matchPort:               number;
+  entryName:               string;
   /**
    * Match path prefix, empty string means match all paths.
    */
@@ -766,18 +775,6 @@ export type PortalRuleUpdate = {
    * Rule name.
    */
   name:                    string | null;
-  /**
-   * Matching protocol.
-   */
-  matchScheme:             string | null;
-  /**
-   * Match Host, empty string means no restriction.
-   */
-  matchHost:               string | null;
-  /**
-   * Match matchPort, 0 means no restriction.
-   */
-  matchPort:               number | null;
   /**
    * Match path prefix, empty string means match all paths.
    */

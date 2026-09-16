@@ -47,6 +47,12 @@ type PortalEntryAccessUpdate struct {
 	Port   int
 }
 
+type PortalEntryCreation struct {
+	Scheme string
+	Host   string
+	Port   int
+}
+
 type PortalEntryRule struct {
 	Rule *PortalRule
 	Site *PortalSite
@@ -73,22 +79,21 @@ type PortalEntryCore struct {
 }
 
 // List returns the user entries with the rules they route, ordered by port,
-// scheme, and host. Built-in entries and entries that route no rule are
-// omitted.
+// scheme, and host. Built-in entries are omitted; an entry that routes no rule
+// is still listed, because an operator creates entries before the rules that
+// use them.
 func (m *PortalEntryCore) List() []PortalEntryView {
 	rulesByEntry := m.rulesByEntry()
-
 	views := make([]PortalEntryView, 0, len(rulesByEntry))
 	for _, stored := range m.PortalEntryRepo.List() {
 		if stored.BuiltIn {
 			continue
 		}
-		rules := rulesByEntry[stored.Id]
-		if len(rules) == 0 {
-			continue
-		}
 		entry := normalizePortalEntry(*stored)
-		views = append(views, PortalEntryView{PortalEntry: entry, Rules: sortedPortalEntryRules(rules)})
+		views = append(views, PortalEntryView{
+			PortalEntry: entry,
+			Rules:       sortedPortalEntryRules(rulesByEntry[entry.Id]),
+		})
 	}
 
 	return vslice.SortBy(views, func(a PortalEntryView, b PortalEntryView) bool {
@@ -102,11 +107,60 @@ func (m *PortalEntryCore) List() []PortalEntryView {
 	})
 }
 
+// Create adds the user entry for an access no user entry serves yet.
+func (m *PortalEntryCore) Create(creation PortalEntryCreation) PortalEntryView {
+	entry := normalizePortalEntry(PortalEntry{
+		Scheme: creation.Scheme,
+		Host:   creation.Host,
+		Port:   creation.Port,
+	})
+	_, ok := m.PortalEntryRepo.GetByAccess(entry.Scheme, entry.Host, entry.Port)
+	ex.PanicNewIfNot(!ok, ex.OperationFailed, ex.F("portal entry %s already exists", entry.Name))
+	m.PortalEntryRepo.Save(&entry)
+	return PortalEntryView{PortalEntry: entry}
+}
+
+// Remove deletes the user entry for an access that routes no rule. Hub keeps the
+// rules of an entry, so the operator moves or removes them first.
+func (m *PortalEntryCore) Remove(scheme string, host string, port int) {
+	access := normalizePortalEntry(PortalEntry{
+		Scheme: scheme,
+		Host:   host,
+		Port:   port,
+	})
+	entry, ok := m.PortalEntryRepo.GetByAccess(access.Scheme, access.Host, access.Port)
+	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %s not found", access.Name))
+
+	rules := 0
+	for _, rule := range m.PortalRuleRepo.List() {
+		if rule.EntryId == entry.Id {
+			rules++
+		}
+	}
+	ex.PanicNewIfNot(rules == 0, ex.OperationFailed,
+		ex.F("portal entry %s still routes %d rules; remove them first", access.Name, rules))
+	ex.PanicNewIfNot(m.PortalEntryRepo.Remove(entry.Id), ex.OperationFailed, ex.F("portal entry %s not found", access.Name))
+}
+
 // Get returns the entry with the id.
 func (m *PortalEntryCore) Get(id int) *PortalEntry {
 	entry, ok := m.PortalEntryRepo.GetById(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", id))
 	return entry
+}
+
+// FindByName returns the user entry Hub labels with the name. Hub derives an
+// entry name from its access, so the lookup reads the entries Hub stores.
+func (m *PortalEntryCore) FindByName(name string) (*PortalEntry, bool) {
+	for _, entry := range m.PortalEntryRepo.List() {
+		if entry.BuiltIn {
+			continue
+		}
+		if entry.Name == name {
+			return entry, true
+		}
+	}
+	return nil, false
 }
 
 // EnsureAccess returns the user entry rules with this access belong to, and

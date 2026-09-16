@@ -8,6 +8,22 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+### Added
+
+- Hub's Portal entry service can create an entry for an access and delete an
+  entry that routes no rule, and the entry list returns an entry that routes no
+  rule so it stays selectable while the operator adds the rules that use it. The
+  Dashboard Portal entry page gains New and Delete actions and shows an entry
+  that routes nothing.
+- The Portal rule interface no longer carries an access: `PortalRuleCreation`
+  names the Portal entry a rule belongs to, and `PortalRuleUpdate` has no
+  protocol, host, or port at all, so only the entry page changes an access. The
+  Dashboard rule editor selects an entry when it creates a rule, displays the
+  entry while editing, and links to the entry page from the rule detail, which
+  names the entry instead of repeating its protocol, host, and port. Portal site,
+  rule, and certificate details render their values as text instead of
+  input-like boxes, so a read-only field no longer looks editable.
+
 ### Changed
 
 - Hub stores Portal access entries instead of deriving them from rules. An entry
@@ -21,10 +37,14 @@ are not part of the public compatibility commitment.
   entry and a path, so Hub keeps the rule with the explicit port on its path and
   moves the rule that used the default port to a `/migrated` path, logging each
   move instead of refusing to start on stored data. A seed, Dashboard import, or
-  Admin write that declares a request another rule already serves keeps failing
-  with the rule that serves it, so Hub never rewrites a path the operator did
-  not ask for. A rule that leaves `matchPort` unset reports the port Portal
-  serves (`80` or `443`) in Admin API responses instead of `0`.
+  Admin write that declares a request another rule already serves fails with the
+  rule that serves it, so Hub never rewrites a path the operator did not ask for;
+  a seed that declared both an unset and an explicit default port for one path
+  must drop one of them, because Hub no longer stores one request twice. A rule
+  that leaves `matchPort` unset reports the port Portal serves (`80` or `443`) in
+  Admin API responses instead of `0`. Regenerate custom Admin clients and deploy
+  the matching Dashboard assets with this release: `PortalRuleCreation` and
+  `PortalRuleUpdate` changed.
 
 ## [0.19.0] - 2026-09-16
 

@@ -36,9 +36,7 @@ func (s *PortalRuleApiServiceServerImpl) Create(creation skeled.PortalRuleCreati
 	}
 	rule := s.PortalRuleCore.Create(core.PortalRuleCreation{
 		Name:                    creation.Name,
-		MatchScheme:             creation.MatchScheme,
-		MatchHost:               creation.MatchHost,
-		MatchPort:               creation.MatchPort,
+		EntryName:               creation.EntryName,
 		MatchPathPrefix:         creation.MatchPathPrefix,
 		RouteType:               creation.RouteType,
 		RouteSiteName:           creation.RouteSiteName,
@@ -51,9 +49,6 @@ func (s *PortalRuleApiServiceServerImpl) Create(creation skeled.PortalRuleCreati
 func (s *PortalRuleApiServiceServerImpl) Update(id int, update skeled.PortalRuleUpdate) skeled.PortalRule {
 	rule := s.PortalRuleCore.Update(id, core.PortalRuleUpdate{
 		Name:                    update.Name,
-		MatchScheme:             update.MatchScheme,
-		MatchHost:               update.MatchHost,
-		MatchPort:               update.MatchPort,
 		MatchPathPrefix:         update.MatchPathPrefix,
 		RouteType:               update.RouteType,
 		RouteSiteName:           update.RouteSiteName,

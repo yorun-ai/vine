@@ -5,14 +5,8 @@ data PortalRuleCreation {
     @desc("Rule name")
     name: string
 
-    @desc("Matching protocol")
-    matchScheme: string
-
-    @desc("Match Host, empty string means no restriction")
-    matchHost: string
-
-    @desc("Match matchPort, 0 means no restriction")
-    matchPort: int
+    @desc("Name of the Portal access entry the rule belongs to")
+    entryName: string
 
     @desc("Match path prefix, empty string means match all paths")
     matchPathPrefix: string
@@ -116,15 +110,6 @@ data PortalRuleListItem {
 data PortalRuleUpdate {
     @desc("Rule name")
     name: string?
-
-    @desc("Matching protocol")
-    matchScheme: string?
-
-    @desc("Match Host, empty string means no restriction")
-    matchHost: string?
-
-    @desc("Match matchPort, 0 means no restriction")
-    matchPort: int?
 
     @desc("Match path prefix, empty string means match all paths")
     matchPathPrefix: string?

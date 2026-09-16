@@ -31,6 +31,18 @@ data PortalEntryAccessUpdate {
     port: int
 }
 
+@desc("Portal access entry creation parameters")
+data PortalEntryCreation {
+    @desc("Entry protocol")
+    scheme: string
+
+    @desc("Match Host, empty string means no restriction")
+    host: string
+
+    @desc("Entry port")
+    port: int
+}
+
 @desc("Portal access entry rules")
 data PortalEntryRule {
     @desc("Entry rules")
@@ -52,6 +64,16 @@ api service PortalEntryApiService {
         output list<PortalEntry>
     }
 
+    @desc("Create a Portal access entry")
+    method create {
+        input {
+            @desc("Portal access entry creation parameters")
+            creation: PortalEntryCreation
+        }
+        @desc("Portal access entry")
+        output PortalEntry
+    }
+
     @desc("Modify Portal access configuration")
     method updateAccess {
         input {
@@ -69,5 +91,19 @@ api service PortalEntryApiService {
         }
         @desc("Portal access entry")
         output PortalEntry
+    }
+
+    @desc("Delete a Portal access entry that routes no rule")
+    method remove {
+        input {
+            @desc("Entry protocol")
+            scheme: string
+
+            @desc("Match Host, empty string means no restriction")
+            host: string
+
+            @desc("Entry port")
+            port: int
+        }
     }
 }

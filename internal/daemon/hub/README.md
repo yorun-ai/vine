@@ -87,6 +87,17 @@ access a rule declares, so rules that share an access share one entry. Changing
 an entry changes every rule it routes, and Hub republishes those rules so Portal
 receives the access the entry now serves.
 
+The Admin API reaches a rule's access through its entry: `PortalRuleCreation`
+names the entry a new rule belongs to, and `PortalRuleUpdate` cannot change an
+access at all. Seed YAML keeps declaring the access on the rule, because Hub
+aggregates the declared access into entries while it applies the seed.
+
+`PortalEntryCore` creates an entry for an access no user entry serves, and
+removes an entry that routes no rule: rules belong to the operator, so deleting
+their entry fails instead of leaving them without an access. The entry list
+returns an entry that routes nothing, because an operator creates the entry
+before the rules that use it.
+
 Two rules may not match the same request. Portal resolves matching rules by their
 longest path prefix, so Hub rejects a rule whose access and `matchPathPrefix`
 already match another rule, including a built-in Dashboard rule, and reports the

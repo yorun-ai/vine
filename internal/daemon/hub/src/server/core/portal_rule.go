@@ -41,9 +41,8 @@ type PortalRule struct {
 
 type PortalRuleCreation struct {
 	Name                    string
-	MatchScheme             string
-	MatchHost               string
-	MatchPort               int
+	// EntryName names the Portal entry that owns the access the rule matches.
+	EntryName               string
 	MatchPathPrefix         string
 	RouteType               string
 	RouteSiteName           string
@@ -53,9 +52,6 @@ type PortalRuleCreation struct {
 
 type PortalRuleUpdate struct {
 	Name                    *string
-	MatchScheme             *string
-	MatchHost               *string
-	MatchPort               *int
 	MatchPathPrefix         *string
 	RouteType               *string
 	RouteSiteName           *string
@@ -129,11 +125,16 @@ func (m *PortalRuleCore) Create(creation PortalRuleCreation) *PortalRule {
 	_, ok := m.PortalRuleRepo.GetByName(creation.Name)
 	ex.PanicNewIfNot(!ok, ex.OperationFailed, ex.F("entry rule %q already exists", creation.Name))
 
+	// The entry owns the access the rule matches, so a rule joins an entry Hub
+	// already stores instead of declaring an access of its own.
+	entry, ok := m.PortalEntryCore.FindByName(creation.EntryName)
+	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %s not found", creation.EntryName))
 	rule := PortalRule{
 		Name:                    creation.Name,
-		MatchScheme:             creation.MatchScheme,
-		MatchHost:               creation.MatchHost,
-		MatchPort:               creation.MatchPort,
+		EntryId:                 entry.Id,
+		MatchScheme:             entry.Scheme,
+		MatchHost:               entry.Host,
+		MatchPort:               entry.Port,
 		MatchPathPrefix:         creation.MatchPathPrefix,
 		RouteType:               creation.RouteType,
 		RouteSiteName:           creation.RouteSiteName,
@@ -141,7 +142,9 @@ func (m *PortalRuleCore) Create(creation PortalRuleCreation) *PortalRule {
 		RoutePathPrefix:         creation.RoutePathPrefix,
 	}
 	rule = m.Validate(rule)
-	return m.saveToEntry(rule)
+	m.checkMatchesUnique(&rule)
+	m.PortalRuleRepo.Save(&rule)
+	return &rule
 }
 
 func (m *PortalRuleCore) Update(id int, update PortalRuleUpdate) *PortalRule {
@@ -158,18 +161,6 @@ func (m *PortalRuleCore) Update(id int, update PortalRuleUpdate) *PortalRule {
 			ex.PanicNewIfNot(!exists, ex.OperationFailed, ex.F("entry rule %q already exists", *update.Name))
 		}
 		next.Name = *update.Name
-	}
-	if update.MatchScheme != nil {
-		next.FieldSources = overrideFieldSource(next.FieldSources, "/matchScheme")
-		next.MatchScheme = *update.MatchScheme
-	}
-	if update.MatchHost != nil {
-		next.FieldSources = overrideFieldSource(next.FieldSources, "/matchHost")
-		next.MatchHost = *update.MatchHost
-	}
-	if update.MatchPort != nil {
-		next.FieldSources = overrideFieldSource(next.FieldSources, "/matchPort")
-		next.MatchPort = *update.MatchPort
 	}
 	if update.MatchPathPrefix != nil {
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/matchPathPrefix")

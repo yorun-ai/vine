@@ -51,7 +51,9 @@ export const PortalEntryApiServiceSpec = {
   serviceName: 'vine.hub.admin.PortalEntryApiService',
   methods: {
     list: 'list',
+    create: 'create',
     updateAccess: 'updateAccess',
+    remove: 'remove',
   },
 } as const;
 

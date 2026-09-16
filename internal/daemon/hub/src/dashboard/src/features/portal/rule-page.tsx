@@ -12,6 +12,7 @@ import * as React from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import {
   ArrowRight,
+  Boxes,
   Edit3,
   Loader2,
   Plus,
@@ -65,10 +66,12 @@ import { vrpcClient } from '@/config/vrpc-client'
 import { useLocale } from '@/i18n'
 import { cn } from '@/lib/utils'
 import {
+  createPortalEntryApiService,
   createPortalRuleApiService,
   createPortalSiteApiService,
 } from '@/skeled/admin'
 import type {
+  PortalEntry,
   PortalRule,
   PortalRuleCreation,
   PortalRuleListItem,
@@ -76,6 +79,7 @@ import type {
   PortalSiteListItem,
 } from '@/skeled/admin'
 
+const portalEntryService = createPortalEntryApiService(vrpcClient)
 const portalRuleService = createPortalRuleApiService(vrpcClient)
 const portalSiteService = createPortalSiteApiService(vrpcClient)
 const PORTAL_RULE_LIST_DEFAULT_WIDTH = 352
@@ -122,11 +126,6 @@ const emptyFormValue: PortalRuleFormValue = {
   routeSiteName: '',
   routeRedirectionPattern: '',
   routePathPrefix: '',
-}
-
-const defaultPortsByScheme: Record<string, string> = {
-  http: '80',
-  https: '443',
 }
 
 function getErrorMessage(error: unknown) {
@@ -214,12 +213,11 @@ function updatePortalRuleField(
   })
 }
 
-function formValueToCreation(value: PortalRuleFormValue): PortalRuleCreation {
+// ruleFormTargetValue returns the fields a rule owns: the Portal entry owns the
+// access, so the target and the path are everything a rule declares.
+function ruleFormTargetValue(value: PortalRuleFormValue) {
   return {
     name: value.name.trim() || derivePortalRuleName(value),
-    matchScheme: value.matchScheme,
-    matchHost: value.matchHost.trim(),
-    matchPort: Number(value.matchPort || 0),
     matchPathPrefix: value.matchPathPrefix.trim(),
     routeType: value.routeType,
     routeSiteName: value.routeType === 'SITE' ? value.routeSiteName.trim() : '',
@@ -229,19 +227,21 @@ function formValueToCreation(value: PortalRuleFormValue): PortalRuleCreation {
   }
 }
 
-function formValueToUpdate(value: PortalRuleFormValue): PortalRuleUpdate {
-  const creation = formValueToCreation(value)
+function formValueToCreation(
+  value: PortalRuleFormValue,
+  accessEntries: Array<PortalEntry>,
+): PortalRuleCreation {
+  const entry = portalRuleFormAccessEntry(value, accessEntries)
 
   return {
-    name: creation.name,
-    matchScheme: creation.matchScheme,
-    matchHost: creation.matchHost,
-    matchPort: creation.matchPort,
-    matchPathPrefix: creation.matchPathPrefix,
-    routeType: creation.routeType,
-    routeSiteName: creation.routeSiteName,
-    routeRedirectionPattern: creation.routeRedirectionPattern,
-    routePathPrefix: creation.routePathPrefix,
+    ...ruleFormTargetValue(value),
+    entryName: entry?.name ?? '',
+  }
+}
+
+function formValueToUpdate(value: PortalRuleFormValue): PortalRuleUpdate {
+  return {
+    ...ruleFormTargetValue(value),
   }
 }
 
@@ -267,24 +267,19 @@ function isRedirectTarget(routeType: string) {
 
 function validateFormValue(
   value: PortalRuleFormValue,
+  accessEntries: Array<PortalEntry>,
   t: ReturnType<typeof useLocale>['t'],
 ) {
-  const matchPort = Number(value.matchPort)
   const errors: PortalRuleFormErrors = {}
 
   if (value.name.trim() === '') {
     errors.name = t('portalRule.nameRequired')
   }
 
-  if (value.matchScheme !== 'http' && value.matchScheme !== 'https') {
-    errors.matchScheme = t('portalRule.schemeInvalid')
-  }
-
-  if (
-    value.matchPort.trim() !== '' &&
-    (!Number.isInteger(matchPort) || matchPort < 1 || matchPort > 65535)
-  ) {
-    errors.matchPort = t('portalRule.portInvalid')
+  // The rule matches the access of its Portal entry, so a rule without an entry
+  // has no request to match.
+  if (portalRuleFormAccessEntry(value, accessEntries) === null) {
+    errors.matchScheme = t('portalRule.entryRequired')
   }
 
   if (value.routeType === 'SITE' && value.routePathPrefix.trim() !== '') {
@@ -325,6 +320,44 @@ function hasFormErrors(errors: PortalRuleFormErrors) {
 
 function portalRulePath(id: number) {
   return `/portal/rule/${id}`
+}
+
+function portalEntryPath(name: string) {
+  return `/portal/entry/${encodeURIComponent(name)}`
+}
+
+const portalEntryListPath = '/portal/entry'
+
+// portalRuleAccessEntry returns the entry that owns the access a rule matches.
+// Protocol, host, and port belong to the entry, so the rule page displays them
+// and links to the entry instead of editing them here.
+function portalRuleAccessEntry(
+  rule: PortalRuleListItem,
+  accessEntries: Array<PortalEntry>,
+) {
+  return (
+    accessEntries.find(
+      (entry) =>
+        entry.scheme === rule.matchScheme &&
+        entry.host === rule.matchHost &&
+        entry.port === rule.matchPort,
+    ) ?? null
+  )
+}
+
+function portalRuleFormAccessEntry(
+  value: PortalRuleFormValue,
+  accessEntries: Array<PortalEntry>,
+) {
+  const port = Number(value.matchPort)
+  return (
+    accessEntries.find(
+      (entry) =>
+        entry.scheme === value.matchScheme &&
+        entry.host === value.matchHost &&
+        entry.port === port,
+    ) ?? null
+  )
 }
 
 function portalRuleListItemDomId(id: number) {
@@ -420,376 +453,6 @@ function TargetTypeBadge({
   )
 }
 
-function PortalRuleDialog({
-  mode,
-  open,
-  rule,
-  saving,
-  entries,
-  onOpenChange,
-  onSubmit,
-}: {
-  mode: 'create' | 'edit'
-  open: boolean
-  rule: PortalRuleListItem | null
-  saving: boolean
-  entries: Array<PortalSiteListItem>
-  onOpenChange: (open: boolean) => void
-  onSubmit: (value: PortalRuleFormValue) => Promise<void>
-}) {
-  const { t, tText } = useLocale()
-  const [formValue, setFormValue] =
-    React.useState<PortalRuleFormValue>(emptyFormValue)
-  const [fieldErrors, setFieldErrors] = React.useState<PortalRuleFormErrors>({})
-  const [formError, setFormError] = React.useState<string | null>(null)
-  const isCreate = mode === 'create'
-  const entryOptions = React.useMemo(() => {
-    if (
-      formValue.routeSiteName === '' ||
-      entries.some((entry) => entry.name === formValue.routeSiteName)
-    ) {
-      return entries
-    }
-
-    return [
-      ...entries,
-      {
-        id: 0,
-        name: formValue.routeSiteName,
-        type: '',
-        actorSkelName: '',
-        actorVia: '',
-        rpcgwServices: [],
-        webName: '',
-      },
-    ]
-  }, [formValue.routeSiteName, entries])
-
-  React.useEffect(() => {
-    if (!open) {
-      return
-    }
-
-    const nextFormValue = rule ? ruleToFormValue(rule) : emptyFormValue
-    setFormValue({
-      ...nextFormValue,
-      name: nextFormValue.name || derivePortalRuleName(nextFormValue),
-    })
-    setFieldErrors({})
-    setFormError(null)
-  }, [open, rule])
-
-  const lockedMountPath = React.useMemo(
-    () =>
-      lockedWebMountPath(
-        formValue.routeType,
-        formValue.routeSiteName,
-        entries,
-      ),
-    [formValue.routeSiteName, formValue.routeType, entries],
-  )
-
-  const setField = React.useCallback(
-    (field: keyof PortalRuleFormValue, value: string) => {
-      setFormError(null)
-      setFieldErrors((current) => {
-        if (!current[field]) {
-          return current
-        }
-
-        const { [field]: _removed, ...next } = current
-        return next
-      })
-      setFormValue((current) => updatePortalRuleField(current, field, value))
-    },
-    [],
-  )
-
-  const handleSchemeChange = React.useCallback((matchScheme: string) => {
-    setFormError(null)
-    setFieldErrors((current) => {
-      if (!current.matchScheme && !current.matchPort) {
-        return current
-      }
-
-      const { matchScheme: _scheme, matchPort: _port, ...next } = current
-      return next
-    })
-    setFormValue((current) => {
-      const currentDefaultPort = defaultPortsByScheme[current.matchScheme]
-      const nextDefaultPort = defaultPortsByScheme[matchScheme]
-      const nextPort =
-        currentDefaultPort && current.matchPort === currentDefaultPort
-          ? (nextDefaultPort ?? current.matchPort)
-          : current.matchPort
-
-      return syncDerivedName(current, {
-        ...current,
-        matchScheme,
-        matchPort: nextPort,
-      })
-    })
-  }, [])
-
-  const handleSubmit = React.useCallback(
-    async (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault()
-
-      const nextValue = {
-        ...formValue,
-        name: formValue.name.trim() || derivePortalRuleName(formValue),
-      }
-      const errors = validateFormValue(nextValue, t)
-      if (hasFormErrors(errors)) {
-        setFieldErrors(errors)
-        return
-      }
-
-      setFieldErrors({})
-      setFormError(null)
-
-      try {
-        await onSubmit(rulePathsForSave(nextValue, lockedMountPath))
-      } catch (error) {
-        setFormError(getErrorMessage(error))
-      }
-    },
-    [formValue, lockedMountPath, onSubmit],
-  )
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-4xl">
-        <form className="grid gap-5" onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>
-              {isCreate
-                ? t('portalRule.createTitle')
-                : t('portalRule.editTitle')}
-            </DialogTitle>
-            <DialogDescription>
-              {t('portalRule.dialogDescription')}
-            </DialogDescription>
-          </DialogHeader>
-
-          {formError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{formError}</AlertDescription>
-            </Alert>
-          ) : null}
-
-          <div className="max-w-xl">
-            <Field label={t('portalRule.name')} error={fieldErrors.name}>
-              <Input
-                aria-invalid={Boolean(fieldErrors.name)}
-                value={formValue.name}
-                placeholder={derivePortalRuleName(formValue)}
-                onChange={(event) => setField('name', event.target.value)}
-              />
-            </Field>
-          </div>
-
-          <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_2.5rem_minmax(0,1fr)] md:items-start">
-            <RuleFlowSection
-              title={t('portalRule.match')}
-              description={t('portalRule.matchDescription')}
-            >
-              <Field label={t('portalRule.matchScheme')} error={fieldErrors.matchScheme}>
-                <Select
-                  value={formValue.matchScheme}
-                  onValueChange={(value) => {
-                    if (value) {
-                      handleSchemeChange(value)
-                    }
-                  }}
-                >
-                  <SelectTrigger
-                    aria-invalid={Boolean(fieldErrors.matchScheme)}
-                    className="w-full"
-                  >
-                    <SelectValue placeholder={t('portalRule.selectScheme')} />
-                  </SelectTrigger>
-                  <SelectContent align="start">
-                    <SelectItem value="http">http</SelectItem>
-                    <SelectItem value="https">https</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              <Field label={t('portalRule.matchHost')}>
-                <Input
-                  value={formValue.matchHost}
-                  placeholder={t('portalRule.hostPlaceholder')}
-                  onChange={(event) => setField('matchHost', event.target.value)}
-                />
-              </Field>
-
-              <Field label={t('portalRule.matchPort')} error={fieldErrors.matchPort}>
-                <Input
-                  aria-invalid={Boolean(fieldErrors.matchPort)}
-                  value={formValue.matchPort}
-                  inputMode="numeric"
-                  placeholder={t('portalRule.portPlaceholder')}
-                  onChange={(event) => setField('matchPort', event.target.value)}
-                />
-              </Field>
-
-              <Field label={t('portalRule.matchPathPrefix')}>
-                <Input
-                  className={lockedMountPath === null ? undefined : 'text-destructive'}
-                  value={formValue.matchPathPrefix}
-                  placeholder={t('portalRule.pathPrefixPlaceholder')}
-                  onChange={(event) =>
-                    setField('matchPathPrefix', event.target.value)
-                  }
-                />
-              </Field>
-            </RuleFlowSection>
-
-            <div className="flex justify-center pt-0 md:pt-20">
-              <div className="grid size-10 place-items-center rounded-full border bg-background text-muted-foreground shadow-xs">
-                <ArrowRight className="size-4 rotate-90 md:rotate-0" />
-              </div>
-            </div>
-
-            <RuleFlowSection
-              title={t('portalRule.route')}
-              description={t('portalRule.routeDescription')}
-            >
-              <Field
-                label={t('portalRule.routeType')}
-                error={fieldErrors.routeType}
-              >
-                <Select
-                  value={formValue.routeType}
-                  onValueChange={(value) => {
-                    if (value) {
-                      setField('routeType', normalizeTargetType(value))
-                    }
-                  }}
-                >
-                  <SelectTrigger
-                    aria-invalid={Boolean(fieldErrors.routeType)}
-                    className="w-full"
-                  >
-                    <SelectValue
-                      placeholder={t('portalRule.selectRouteType')}
-                    />
-                  </SelectTrigger>
-                  <SelectContent align="start">
-                    {routeTypes.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        <span className="flex flex-col">
-                          <span>{tText(item.label)}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {tText(item.description)}
-                          </span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              {formValue.routeType === 'SITE' ? (
-                <Field
-                  label={t('portalRule.routeSiteName')}
-                  error={fieldErrors.routeSiteName}
-                >
-                  <Select
-                    value={formValue.routeSiteName}
-                    onValueChange={(value) => {
-                      if (value) {
-                        setField('routeSiteName', value)
-                      }
-                    }}
-                  >
-                    <SelectTrigger
-                      aria-invalid={Boolean(fieldErrors.routeSiteName)}
-                      className="w-full"
-                    >
-                      <SelectValue placeholder={t('portalRule.selectSite')} />
-                    </SelectTrigger>
-                    <SelectContent align="start">
-                      {entryOptions.map((entry) => (
-                        <SelectItem
-                          key={`${entry.id}:${entry.name}`}
-                          value={entry.name}
-                        >
-                          <span className="flex flex-col">
-                            <span>{entry.name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {entry.id === 0
-                                ? t('portalRule.siteNotFound')
-                                : entry.type === 'RPCGW'
-                                  ? t('portalSite.rpcGateway')
-                                  : entry.type === 'WEBGW'
-                                    ? t('portalSite.webGateway')
-                                    : entry.type}
-                            </span>
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              ) : (
-                <Field
-                  label={t('portalRule.redirectPattern')}
-                  error={fieldErrors.routeRedirectionPattern}
-                >
-                  <Input
-                    aria-invalid={Boolean(fieldErrors.routeRedirectionPattern)}
-                    value={formValue.routeRedirectionPattern}
-                    placeholder="https://example.com{uri}"
-                    onChange={(event) =>
-                      setField('routeRedirectionPattern', event.target.value)
-                    }
-                  />
-                </Field>
-              )}
-              {formValue.routeType === 'SITE' ? (
-                <Field label={t('portalRule.routePathPrefix')} error={fieldErrors.routePathPrefix}>
-                  <Input
-                    className={lockedMountPath === null ? undefined : 'text-destructive'}
-                    value={formValue.routePathPrefix}
-                    placeholder="/internal"
-                    aria-invalid={Boolean(fieldErrors.routePathPrefix)}
-                    onChange={(event) => setField('routePathPrefix', event.target.value)}
-                  />
-                <p className="text-xs text-muted-foreground">{t('portalRule.routePathPrefixHelp')}</p>
-                </Field>
-              ) : null}
-            </RuleFlowSection>
-          </div>
-          {formValue.routeType === 'SITE' ? (
-            <RulePathPreview
-              mountPath={lockedMountPath}
-              matchPathPrefix={(lockedMountPath === null ? formValue.matchPathPrefix : effectiveWebMountPrefixes(lockedMountPath).matchPathPrefix).trim()}
-              routePathPrefix={(lockedMountPath === null ? formValue.routePathPrefix : effectiveWebMountPrefixes(lockedMountPath).routePathPrefix).trim()}
-            />
-          ) : null}
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={saving}
-              onClick={() => onOpenChange(false)}
-            >
-              {t('action.cancel')}
-            </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? <Loader2 className="animate-spin" /> : null}
-              {t('action.save')}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 function DeleteRuleDialog({
   open,
   rule,
@@ -866,7 +529,7 @@ function ReadonlyField({
       <Label className="flex items-center gap-1.5">{label}{source}</Label>
       <div
         className={cn(
-          'min-h-9 rounded-md border border-input bg-muted/20 px-3 py-2 text-sm',
+          'min-h-9 py-2 text-sm',
           className,
         )}
       >
@@ -880,16 +543,19 @@ function PortalRuleInlineEditor({
   rule,
   saving,
   entries,
+  accessEntries,
   onCancel,
   onSubmit,
 }: {
   rule: PortalRuleListItem | null
   saving: boolean
   entries: Array<PortalSiteListItem>
+  accessEntries: Array<PortalEntry>
   onCancel: () => void
   onSubmit: (value: PortalRuleFormValue) => Promise<void>
 }) {
   const { t, tText } = useLocale()
+  const navigate = useNavigate()
   const [formValue, setFormValue] = React.useState<PortalRuleFormValue>(() => {
     const nextFormValue = rule ? ruleToFormValue(rule) : emptyFormValue
     return {
@@ -899,6 +565,41 @@ function PortalRuleInlineEditor({
   })
   const [fieldErrors, setFieldErrors] = React.useState<PortalRuleFormErrors>({})
   const [formError, setFormError] = React.useState<string | null>(null)
+  // Protocol, host, and port belong to the entry, so the editor only chooses an
+  // entry: a new rule picks one, and an existing rule shows the entry it has.
+  const accessEntry = React.useMemo(
+    () => portalRuleFormAccessEntry(formValue, accessEntries),
+    [accessEntries, formValue],
+  )
+  const selectAccessEntry = React.useCallback(
+    (name: string) => {
+      const entry = accessEntries.find((item) => item.name === name)
+      if (entry === undefined) {
+        return
+      }
+      setFormError(null)
+      setFieldErrors((current) => {
+        const { matchScheme: _matchScheme, ...next } = current
+        return next
+      })
+      // Route the access through the shared field update so the derived rule
+      // name keeps following the entry.
+      setFormValue((current) => {
+        const withScheme = updatePortalRuleField(
+          current,
+          'matchScheme',
+          entry.scheme,
+        )
+        const withHost = updatePortalRuleField(
+          withScheme,
+          'matchHost',
+          entry.host,
+        )
+        return updatePortalRuleField(withHost, 'matchPort', String(entry.port))
+      })
+    },
+    [accessEntries],
+  )
   const entryOptions = React.useMemo(() => {
     if (
       formValue.routeSiteName === '' ||
@@ -957,32 +658,6 @@ function PortalRuleInlineEditor({
     [],
   )
 
-  const handleSchemeChange = React.useCallback((matchScheme: string) => {
-    setFormError(null)
-    setFieldErrors((current) => {
-      if (!current.matchScheme && !current.matchPort) {
-        return current
-      }
-
-      const { matchScheme: _scheme, matchPort: _port, ...next } = current
-      return next
-    })
-    setFormValue((current) => {
-      const currentDefaultPort = defaultPortsByScheme[current.matchScheme]
-      const nextDefaultPort = defaultPortsByScheme[matchScheme]
-      const nextPort =
-        currentDefaultPort && current.matchPort === currentDefaultPort
-          ? (nextDefaultPort ?? current.matchPort)
-          : current.matchPort
-
-      return syncDerivedName(current, {
-        ...current,
-        matchScheme,
-        matchPort: nextPort,
-      })
-    })
-  }, [])
-
   const handleSubmit = React.useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault()
@@ -991,7 +666,7 @@ function PortalRuleInlineEditor({
         ...formValue,
         name: formValue.name.trim() || derivePortalRuleName(formValue),
       }
-      const errors = validateFormValue(nextValue, t)
+      const errors = validateFormValue(nextValue, accessEntries, t)
       if (hasFormErrors(errors)) {
         setFieldErrors(errors)
         return
@@ -1017,6 +692,27 @@ function PortalRuleInlineEditor({
         </Alert>
       ) : null}
 
+      {rule === null && accessEntries.length === 0 ? (
+        <Alert>
+          <AlertDescription>
+            {t('portalRule.noEntry')}{' '}
+            <a
+              href={portalEntryListPath}
+              className="text-primary hover:underline"
+              onClick={(event) => {
+                if (shouldUseBrowserNavigation(event)) {
+                  return
+                }
+                event.preventDefault()
+                void navigate({ to: portalEntryListPath })
+              }}
+            >
+              {t('portalRule.openEntry')}
+            </a>
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       <div className="max-w-xl">
         <Field label={t('portalRule.name')} error={fieldErrors.name}>
           <Input
@@ -1033,44 +729,62 @@ function PortalRuleInlineEditor({
           title={t('portalRule.match')}
           description={t('portalRule.matchDescription')}
         >
-          <Field label={t('portalRule.matchScheme')} error={fieldErrors.matchScheme}>
-            <Select
-              value={formValue.matchScheme}
-              onValueChange={(value) => {
-                if (value) {
-                  handleSchemeChange(value)
-                }
-              }}
-            >
-              <SelectTrigger
-                aria-invalid={Boolean(fieldErrors.matchScheme)}
-                className="w-full"
+          <Field label={t('portalRule.entry')} error={fieldErrors.matchScheme}>
+            {rule === null ? (
+              <Select
+                value={accessEntry?.name ?? ''}
+                onValueChange={(value) => {
+                  if (value) {
+                    selectAccessEntry(value)
+                  }
+                }}
               >
-                <SelectValue placeholder={t('portalRule.selectScheme')} />
-              </SelectTrigger>
-              <SelectContent align="start">
-                <SelectItem value="http">http</SelectItem>
-                <SelectItem value="https">https</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
-
-          <Field label={t('portalRule.matchHost')}>
-            <Input
-              value={formValue.matchHost}
-              placeholder={t('portalRule.hostPlaceholder')}
-              onChange={(event) => setField('matchHost', event.target.value)}
-            />
-          </Field>
-
-          <Field label={t('portalRule.matchPort')} error={fieldErrors.matchPort}>
-            <Input
-              aria-invalid={Boolean(fieldErrors.matchPort)}
-              value={formValue.matchPort}
-              inputMode="numeric"
-              placeholder={t('portalRule.portPlaceholder')}
-              onChange={(event) => setField('matchPort', event.target.value)}
-            />
+                <SelectTrigger
+                  aria-invalid={Boolean(fieldErrors.matchScheme)}
+                  className="w-full"
+                >
+                  <SelectValue placeholder={t('portalRule.selectEntry')} />
+                </SelectTrigger>
+                <SelectContent align="start">
+                  {accessEntries.map((entry) => (
+                    <SelectItem key={entry.name} value={entry.name}>
+                      <span className="flex flex-col">
+                        <span>{entry.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {t('portalEntry.ruleCount').replace(
+                            '{count}',
+                            String(entry.rules.length),
+                          )}
+                        </span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="font-mono text-sm">
+                {accessEntry?.name ?? t('portalRule.entryMissing')}
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span>{t('portalRule.entryHelp')}</span>
+              {accessEntry === null ? null : (
+                <a
+                  href={portalEntryPath(accessEntry.name)}
+                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                  onClick={(event) => {
+                    if (shouldUseBrowserNavigation(event)) {
+                      return
+                    }
+                    event.preventDefault()
+                    void navigate({ to: portalEntryPath(accessEntry.name) })
+                  }}
+                >
+                  <Boxes className="size-3.5" />
+                  {t('portalRule.openEntry')}
+                </a>
+              )}
+            </div>
           </Field>
 
           <Field label={t('portalRule.matchPathPrefix')}>
@@ -1229,6 +943,9 @@ export function PortalRulePage() {
   })
   const [rules, setRules] = React.useState<Array<PortalRuleListItem>>([])
   const [entries, setEntries] = React.useState<Array<PortalSiteListItem>>([])
+  const [accessEntries, setAccessEntries] = React.useState<Array<PortalEntry>>(
+    [],
+  )
   const [query, setQuery] = React.useState('')
   const listPanel = useResizableListPanel({
     defaultWidth: PORTAL_RULE_LIST_DEFAULT_WIDTH,
@@ -1250,12 +967,14 @@ export function PortalRulePage() {
     setLoading(true)
 
     try {
-      const [nextRules, nextEntries] = await Promise.all([
+      const [nextRules, nextEntries, nextAccessEntries] = await Promise.all([
         portalRuleService.list(null),
         portalSiteService.list(null),
+        portalEntryService.list(null),
       ])
       setRules(nextRules)
       setEntries(nextEntries)
+      setAccessEntries(nextAccessEntries)
     } catch (error) {
       toast.error(getErrorMessage(error))
     } finally {
@@ -1317,6 +1036,16 @@ export function PortalRulePage() {
     }
     return entries.find((entry) => entry.name === selectedRule.routeSiteName) ?? null
   }, [entries, selectedRule])
+
+  // Protocol, host, and port belong to the Portal entry that owns the access, so
+  // the detail view links to it instead of offering an edit here.
+  const selectedAccessEntry = React.useMemo(
+    () =>
+      selectedRule === null
+        ? null
+        : portalRuleAccessEntry(selectedRule, accessEntries),
+    [accessEntries, selectedRule],
+  )
 
   const selectedMountPath = selectedRule
     ? lockedWebMountPath(selectedRule.routeType, selectedRule.routeSiteName, entries)
@@ -1409,7 +1138,7 @@ export function PortalRulePage() {
 
       try {
         const created = await portalRuleService.create({
-          creation: formValueToCreation(value),
+          creation: formValueToCreation(value, accessEntries),
         })
         toast.success(t('portalRule.created'))
         setIsCreating(false)
@@ -1422,7 +1151,7 @@ export function PortalRulePage() {
         setSaving(false)
       }
     },
-    [selectRule],
+    [accessEntries, selectRule],
   )
 
   const handleUpdate = React.useCallback(
@@ -1606,6 +1335,7 @@ export function PortalRulePage() {
                     rule={null}
                     saving={saving}
                     entries={entries}
+                    accessEntries={accessEntries}
                     onCancel={() => setIsCreating(false)}
                     onSubmit={handleCreate}
                   />
@@ -1676,7 +1406,8 @@ export function PortalRulePage() {
                       rule={rawSelectedRule ?? selectedRule}
                       saving={saving}
                       entries={entries}
-                        onCancel={() => setEditingRule(null)}
+                      accessEntries={accessEntries}
+                      onCancel={() => setEditingRule(null)}
                       onSubmit={handleUpdate}
                     />
                   ) : (
@@ -1691,17 +1422,35 @@ export function PortalRulePage() {
                           title={t('portalRule.match')}
                           description={t('portalRule.matchDescription')}
                         >
-                          <ReadonlyField source={<FieldSourceInfo fields={selectedRuleFields} path="/matchScheme" />} label={t('portalRule.matchScheme')}>
-                            {selectedRule.matchScheme}
-                          </ReadonlyField>
-                          <ReadonlyField source={<FieldSourceInfo fields={selectedRuleFields} path="/matchHost" />} label={t('portalRule.matchHost')}>
-                            {selectedRule.matchHost || t('portalRule.anyHost')}
-                          </ReadonlyField>
-                          <ReadonlyField source={<FieldSourceInfo fields={selectedRuleFields} path="/matchPort" />} label={t('portalRule.matchPort')}>
-                            {selectedRule.matchPort === 0
-                              ? t('portalRule.followScheme')
-                              : selectedRule.matchPort}
-                          </ReadonlyField>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {selectedAccessEntry === null ? (
+                              <span className="font-mono text-xs">
+                                {t('portalRule.entryMissing')}
+                              </span>
+                            ) : (
+                              <a
+                                href={portalEntryPath(selectedAccessEntry.name)}
+                                className="inline-flex items-center gap-1.5 rounded-md border bg-muted/30 px-2.5 py-1.5 font-mono text-xs transition-colors hover:text-primary hover:underline"
+                                onClick={(event) => {
+                                  if (shouldUseBrowserNavigation(event)) {
+                                    return
+                                  }
+                                  event.preventDefault()
+                                  void navigate({
+                                    to: portalEntryPath(selectedAccessEntry.name),
+                                  })
+                                }}
+                              >
+                                <Boxes className="size-3.5" />
+                                {selectedAccessEntry.name}
+                              </a>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              {t('portalRule.entryHelp')}
+                            </span>
+                          </div>
+                          {/* The entry chip above already names the protocol,
+                              host, and port the rule matches. */}
                           <ReadonlyField source={selectedMountPath === null ? <FieldSourceInfo fields={selectedRuleFields} path="/matchPathPrefix" /> : undefined} label={t('portalRule.matchPathPrefix')}>
                             {selectedMountPath === null ? (
                               selectedRule.matchPathPrefix || '/'
@@ -1810,19 +1559,6 @@ export function PortalRulePage() {
             )}
           </main>
         </div>
-        <PortalRuleDialog
-          mode="edit"
-          open={false}
-          rule={editingRule}
-          saving={saving}
-          entries={entries}
-          onOpenChange={(open) => {
-            if (!open) {
-              setEditingRule(null)
-            }
-          }}
-          onSubmit={handleUpdate}
-        />
         <DeleteRuleDialog
           open={deleteRule !== null}
           rule={deleteRule}

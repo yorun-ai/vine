@@ -611,6 +611,22 @@ func (v PortalEntryAccessUpdate) Clone() PortalEntryAccessUpdate {
 	return cloned
 }
 
+// PortalEntryCreation Portal access entry creation parameters
+type PortalEntryCreation struct {
+	// Scheme Entry protocol
+	Scheme string `json:"scheme"`
+	// Host Match Host, empty string means no restriction
+	Host string `json:"host"`
+	// Port Entry port
+	Port int `json:"port"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalEntryCreation) Clone() PortalEntryCreation {
+	cloned := v
+	return cloned
+}
+
 // PortalEntryRule Portal access entry rules
 type PortalEntryRule struct {
 	// Rule Entry rules
@@ -679,12 +695,8 @@ func (v PortalRule) Clone() PortalRule {
 type PortalRuleCreation struct {
 	// Name Rule name
 	Name string `json:"name"`
-	// MatchScheme Matching protocol
-	MatchScheme string `json:"matchScheme"`
-	// MatchHost Match Host, empty string means no restriction
-	MatchHost string `json:"matchHost"`
-	// MatchPort Match matchPort, 0 means no restriction
-	MatchPort int `json:"matchPort"`
+	// EntryName Name of the Portal access entry the rule belongs to
+	EntryName string `json:"entryName"`
 	// MatchPathPrefix Match path prefix, empty string means match all paths
 	MatchPathPrefix string `json:"matchPathPrefix"`
 	// RouteType Target type
@@ -745,12 +757,6 @@ func (v PortalRuleListItem) Clone() PortalRuleListItem {
 type PortalRuleUpdate struct {
 	// Name Rule name
 	Name *string `json:"name"`
-	// MatchScheme Matching protocol
-	MatchScheme *string `json:"matchScheme"`
-	// MatchHost Match Host, empty string means no restriction
-	MatchHost *string `json:"matchHost"`
-	// MatchPort Match matchPort, 0 means no restriction
-	MatchPort *int `json:"matchPort"`
 	// MatchPathPrefix Match path prefix, empty string means match all paths
 	MatchPathPrefix *string `json:"matchPathPrefix"`
 	// RouteType Target type
@@ -770,37 +776,25 @@ func (v PortalRuleUpdate) Clone() PortalRuleUpdate {
 		clonedValue0 := *v.Name
 		cloned.Name = &clonedValue0
 	}
-	if v.MatchScheme != nil {
-		clonedValue1 := *v.MatchScheme
-		cloned.MatchScheme = &clonedValue1
-	}
-	if v.MatchHost != nil {
-		clonedValue2 := *v.MatchHost
-		cloned.MatchHost = &clonedValue2
-	}
-	if v.MatchPort != nil {
-		clonedValue3 := *v.MatchPort
-		cloned.MatchPort = &clonedValue3
-	}
 	if v.MatchPathPrefix != nil {
-		clonedValue4 := *v.MatchPathPrefix
-		cloned.MatchPathPrefix = &clonedValue4
+		clonedValue1 := *v.MatchPathPrefix
+		cloned.MatchPathPrefix = &clonedValue1
 	}
 	if v.RouteType != nil {
-		clonedValue5 := *v.RouteType
-		cloned.RouteType = &clonedValue5
+		clonedValue2 := *v.RouteType
+		cloned.RouteType = &clonedValue2
 	}
 	if v.RouteSiteName != nil {
-		clonedValue6 := *v.RouteSiteName
-		cloned.RouteSiteName = &clonedValue6
+		clonedValue3 := *v.RouteSiteName
+		cloned.RouteSiteName = &clonedValue3
 	}
 	if v.RouteRedirectionPattern != nil {
-		clonedValue7 := *v.RouteRedirectionPattern
-		cloned.RouteRedirectionPattern = &clonedValue7
+		clonedValue4 := *v.RouteRedirectionPattern
+		cloned.RouteRedirectionPattern = &clonedValue4
 	}
 	if v.RoutePathPrefix != nil {
-		clonedValue8 := *v.RoutePathPrefix
-		cloned.RoutePathPrefix = &clonedValue8
+		clonedValue5 := *v.RoutePathPrefix
+		cloned.RoutePathPrefix = &clonedValue5
 	}
 	return cloned
 }

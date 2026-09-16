@@ -140,7 +140,10 @@ func (d *PortalRuleDao) migrateAccessColumns() {
 		return
 	}
 	if !columns["entry_id"] {
-		ex.PanicIfError(db.Migrator().AddColumn(&PortalRule{}, "EntryId"))
+		// Add the column with the type the schema declares, so an upgraded
+		// database matches a freshly created one. SQLite and PostgreSQL both
+		// accept this statement.
+		ex.PanicIfError(db.Exec("ALTER TABLE portal_rule ADD COLUMN entry_id INTEGER").Error)
 	}
 
 	groups := []_LegacyPortalRuleAccess{}

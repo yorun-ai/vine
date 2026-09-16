@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 )
 
@@ -52,4 +53,27 @@ func TestPortalEntryServiceMapsRulesAndTargetSites(t *testing.T) {
 	require.NotNil(t, entries[0].Rules[0].Site)
 	assert.Equal(t, "demo-site", entries[0].Rules[0].Site.Name)
 	assert.Equal(t, "/demo", entries[0].Rules[0].Site.WebMountPath)
+}
+
+func TestPortalEntryServiceCreatesAndRemovesEntry(t *testing.T) {
+	entryRepo := newTestPortalEntryRepoSpy()
+	service := &PortalEntryApiServiceServerImpl{PortalEntryCore: &core.PortalEntryCore{
+		PortalEntryRepo: entryRepo,
+		PortalRuleRepo:  &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{}},
+		PortalSiteRepo:  &_MaintenanceServicePortalSiteRepo{items: map[string]*core.PortalSite{}},
+	}}
+
+	created := service.Create(skeled.PortalEntryCreation{Scheme: "http", Host: "", Port: 8080})
+
+	// An entry routes no rule when the operator creates it.
+	assert.Equal(t, "http:8080", created.Name)
+	assert.Equal(t, "http", created.Scheme)
+	assert.Equal(t, 8080, created.Port)
+	assert.Empty(t, created.Rules)
+
+	assert.Len(t, service.List(), 1)
+
+	service.Remove("http", "", 8080)
+
+	assert.Empty(t, service.List())
 }
