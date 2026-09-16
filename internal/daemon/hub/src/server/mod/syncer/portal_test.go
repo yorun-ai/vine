@@ -10,6 +10,31 @@ import (
 	"go.yorun.ai/vine/util/vcode"
 )
 
+// Two rules that match one request have no defined order in Portal, so Hub
+// publishes the rule whose name sorts first and leaves the other out.
+func TestSyncerPublishesOneRulePerRequest(t *testing.T) {
+	watchServer := watchserver.NewServerForTest()
+	defer watchServer.AfterAppStop()
+	target := testSyncer(watchServer)
+
+	entry := &core.PortalEntry{Id: 1, Name: "web", Scheme: "http", Port: 8099, Enabled: true}
+	target.SyncPortalEntry(entry)
+	first := &core.PortalRule{Id: 1, Name: "demo.app", EntryId: entry.Id, MatchPathPrefix: "/", Enabled: true}
+	second := &core.PortalRule{Id: 2, Name: "demo.app-shadow", EntryId: entry.Id, MatchPathPrefix: "/", Enabled: true}
+	target.SyncPortalRule(second)
+	target.SyncPortalRule(first)
+
+	_, ok := watchServer.Get(watched.FormatPortalRuleKey("demo.app"))
+	assert.True(t, ok, "Hub publishes the rule whose name sorts first")
+	_, ok = watchServer.Get(watched.FormatPortalRuleKey("demo.app-shadow"))
+	assert.False(t, ok, "Hub leaves the rule the other one supersedes out")
+
+	// The rule that leaves lets the remaining one through again.
+	target.RemovePortalRule(first)
+	_, ok = watchServer.Get(watched.FormatPortalRuleKey("demo.app-shadow"))
+	assert.True(t, ok, "the remaining rule is published once it serves the request alone")
+}
+
 func TestSyncerPublishesOnlyEnabledConfiguration(t *testing.T) {
 	watchServer := watchserver.NewServerForTest()
 	defer watchServer.AfterAppStop()
@@ -23,7 +48,7 @@ func TestSyncerPublishesOnlyEnabledConfiguration(t *testing.T) {
 		Id: 1, Name: "web", EntryId: entry.Id, RouteType: core.PortalRuleRouteTypeSite,
 		RouteSiteName: site.Name, MatchPathPrefix: "/", Enabled: true,
 	}
-	target.SyncPortalRule(rule, site)
+	target.SyncPortalRule(rule)
 	target.SyncPortalCert(&core.PortalCert{Id: 1, Name: "web-cert", Enabled: true})
 
 	for _, key := range []string{
@@ -38,10 +63,10 @@ func TestSyncerPublishesOnlyEnabledConfiguration(t *testing.T) {
 	// Disabling a rule hides it, and enabling it again publishes it.
 	disabled := *rule
 	disabled.Enabled = false
-	target.SyncPortalRule(&disabled, site)
+	target.SyncPortalRule(&disabled)
 	_, ok := watchServer.Get(watched.FormatPortalRuleKey("web"))
 	assert.False(t, ok, "a disabled rule is not published")
-	target.SyncPortalRule(rule, site)
+	target.SyncPortalRule(rule)
 	_, ok = watchServer.Get(watched.FormatPortalRuleKey("web"))
 	assert.True(t, ok)
 

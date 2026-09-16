@@ -48,12 +48,7 @@ func (s *PortalRuleRepo) Save(rule *core.PortalRule) {
 	row := toModelPortalRule(rule, entry)
 	s.Dao.Save(row)
 	rule.Id = row.Id
-
-	var site *core.PortalSite
-	if s.PortalSiteRepo != nil && rule.RouteSiteName != "" {
-		site, _ = s.PortalSiteRepo.GetByName(rule.RouteSiteName)
-	}
-	s.Syncer.SyncPortalRule(rule, site)
+	s.Syncer.SyncPortalRule(rule)
 }
 
 func (s *PortalRuleRepo) Remove(id int) bool {

@@ -161,7 +161,7 @@ Hub 当前支持两类数据库配置来源：
 更早的数据库应先用 `v0.15.7` 启动完成迁移；当前 Hub 不再迁移旧 Portal rule 列。
 从把访问配置存在规则上的版本升级时，Hub 会原地迁移 `portal_rule`：建立
 `portal_entry`，把已存储的 `match_scheme`、`match_host`、`match_port` 归入
-entry，并按 entry 建立规则路径的唯一索引。这些列保留到后续版本再删除：Hub 从
+entry。这些列保留到后续版本再删除：Hub 从
 升级后就不再读取它们，并会一直写入所属 entry 的访问配置，因为删除用户数据库
 上的列无法撤销。未设置的端口会迁移成 Portal 实际监听的端口。若两条规则此前只
 靠未设置的端口区分，迁移后落在同一 entry 的同一路径上，Hub 保留显式写了端口的
@@ -174,7 +174,7 @@ entry，并按 entry 建立规则路径的唯一索引。这些列保留到后�
 
 字段来源以 JSON 保存原始字段模板，并记录每次替换的相对路径、变量名、占位符、实际应用的 JSON 值和默认值使用标记。AppConfig 的嵌套替换归属 value 的一级 key；管理接口修改字段后清除旧模板和替换记录。管理 API 与 Dashboard 一同展示这些信息及字段来源。
 
-`mod/seeder` 负责 seed YAML 契约：`ParseSeedEntities` 把文档解码成它声明的领域实体供 Dashboard 导入使用，启动 seed 复用同一套解码器，payload 结构体保持包内私有。两者都接受旧规则字段并逐字段告警；同一条规则混用新旧字段会在导入前失败。YAML 不能替换内置的 Dashboard 站点或规则。
+`mod/seeder` 负责 seed YAML 契约：它把文档解码成 Hub 要应用的领域实体，payload 结构体与解析结果保持包内私有。它接受旧规则字段并逐字段告警；同一条规则混用新旧字段会在 Hub 写入任何内容之前失败。
 
 seed 仍在规则上声明 `matchScheme`、`matchHost` 和 `matchPort`。应用 seed 时 Hub
 会把声明的访问配置聚合为 entry，因此 seed 不会把同一份访问配置写到每条规则上。

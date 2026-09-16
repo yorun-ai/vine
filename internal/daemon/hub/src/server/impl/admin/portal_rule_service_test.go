@@ -70,12 +70,14 @@ func newTestPortalRuleCore(ruleRepo core.PortalRuleRepo, entryRepos ...core.Port
 	if len(entryRepos) > 0 {
 		entryRepo = entryRepos[0]
 	}
+	siteRepo := &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{}}
 	return &core.PortalRuleCore{
 		PortalRuleRepo: ruleRepo,
+		PortalSiteRepo: siteRepo,
 		PortalEntryCore: &core.PortalEntryCore{
 			PortalEntryRepo: entryRepo,
 			PortalRuleRepo:  ruleRepo,
-			PortalSiteRepo:  &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{}},
+			PortalSiteRepo:  siteRepo,
 		},
 	}
 }
@@ -234,4 +236,31 @@ func TestPortalRuleServiceGetReturnsFieldSources(t *testing.T) {
 	assert.Equal(t, "/matchScheme", detail.FieldSources[0].Path)
 	assert.Equal(t, "app/default", detail.FieldSources[0].Source)
 	assert.Equal(t, "hub", detail.FieldSources[0].Override)
+}
+
+// Hub reports the rules that match the same request, so the Dashboard shows the
+// operator what Portal cannot order on its own.
+func TestPortalRuleServiceListConflicts(t *testing.T) {
+	entryRepo := newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Name: "http:80", Scheme: "http", Port: 80, Enabled: true})
+	ruleRepo := &_NamedPortalRuleRepoSpy{items: map[string]*core.PortalRule{
+		"web":   {Id: 1, Name: "web", EntryId: 1, RouteType: core.PortalRuleRouteTypeSite, RouteSiteName: "demo.Web", Enabled: true},
+		"fixed": {Id: 2, Name: "fixed", EntryId: 1, RouteType: core.PortalRuleRouteTypeSite, RouteSiteName: "demo.Fixed", Enabled: true},
+	}}
+	service := &PortalRuleApiServiceServerImpl{PortalRuleCore: newTestPortalRuleCore(ruleRepo, entryRepo)}
+
+	conflicts := service.ListConflicts()
+
+	require.Len(t, conflicts, 1)
+	assert.Equal(t, "fixed", conflicts[0].Rule)
+	assert.Equal(t, 2, conflicts[0].RuleId)
+	assert.Equal(t, "web", conflicts[0].ConflictRule)
+	assert.Equal(t, 1, conflicts[0].ConflictRuleId)
+	assert.Equal(t, "http:80", conflicts[0].Entry)
+	assert.Equal(t, "http://*:80", conflicts[0].Match)
+	// Hub publishes the rule whose name sorts first, so the Dashboard can say
+	// which one serves the request.
+	assert.Equal(t, "fixed", conflicts[0].PublishedRule)
+	assert.Equal(t, 2, conflicts[0].PublishedRuleId)
+	assert.Equal(t, "web", conflicts[0].SuppressedRule)
+	assert.Equal(t, 1, conflicts[0].SuppressedRuleId)
 }

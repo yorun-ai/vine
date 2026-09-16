@@ -705,6 +705,36 @@ func (v PortalRule) Clone() PortalRule {
 	return cloned
 }
 
+// PortalRuleConflict Portal entry rules that match the same request
+type PortalRuleConflict struct {
+	// RuleId Rule ID
+	RuleId int `json:"ruleId"`
+	// Rule Rule name
+	Rule string `json:"rule"`
+	// ConflictRuleId ID of the rule that already matches the request
+	ConflictRuleId int `json:"conflictRuleId"`
+	// ConflictRule Name of the rule that already matches the request
+	ConflictRule string `json:"conflictRule"`
+	// Entry Name of the Portal entry the rules belong to
+	Entry string `json:"entry"`
+	// Match Request both rules match
+	Match string `json:"match"`
+	// PublishedRuleId ID of the rule Hub publishes for the request
+	PublishedRuleId int `json:"publishedRuleId"`
+	// PublishedRule Name of the rule Hub publishes for the request
+	PublishedRule string `json:"publishedRule"`
+	// SuppressedRuleId ID of the rule Hub leaves out, because the published rule sorts first
+	SuppressedRuleId int `json:"suppressedRuleId"`
+	// SuppressedRule Name of the rule Hub leaves out, because the published rule sorts first
+	SuppressedRule string `json:"suppressedRule"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalRuleConflict) Clone() PortalRuleConflict {
+	cloned := v
+	return cloned
+}
+
 // PortalRuleCreation Portal entry rule creation parameters
 type PortalRuleCreation struct {
 	// Name Rule name

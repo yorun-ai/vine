@@ -144,3 +144,30 @@ func toServerPortalRuleListItem(entry *core.PortalEntry, rule *core.PortalRule, 
 		ResolvedRoutePathPrefix: detail.ResolvedRoutePathPrefix,
 	}
 }
+
+// ListConflicts returns the rules that match the same request, so the Dashboard
+// shows the operator what Portal cannot order on its own and which rule Hub
+// publishes for the request.
+func (s *PortalRuleApiServiceServerImpl) ListConflicts() []skeled.PortalRuleConflict {
+	conflicts := s.PortalRuleCore.Conflicts()
+	ret := make([]skeled.PortalRuleConflict, 0, len(conflicts))
+	for _, conflict := range conflicts {
+		publishedId, suppressedId := conflict.RuleId, conflict.ConflictId
+		if conflict.Published == conflict.Conflict {
+			publishedId, suppressedId = conflict.ConflictId, conflict.RuleId
+		}
+		ret = append(ret, skeled.PortalRuleConflict{
+			RuleId:           conflict.RuleId,
+			Rule:             conflict.Rule,
+			ConflictRuleId:   conflict.ConflictId,
+			ConflictRule:     conflict.Conflict,
+			Entry:            conflict.Access.Name,
+			Match:            conflict.MatchText(),
+			PublishedRuleId:  publishedId,
+			PublishedRule:    conflict.Published,
+			SuppressedRuleId: suppressedId,
+			SuppressedRule:   conflict.Suppressed,
+		})
+	}
+	return ret
+}

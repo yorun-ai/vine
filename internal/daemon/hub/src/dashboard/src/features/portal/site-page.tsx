@@ -1,10 +1,12 @@
 import { FieldSourceInfo } from '@/features/field-source/field-source-info'
 import { EnabledField } from './enabled-field'
+import { invalidateRuleConflicts } from '@/lib/rule-conflicts'
 import { useConfigAccess } from '@/lib/config-access'
 import { SkelName } from '@/components/skel-name'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
 import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import {
   Edit3,
@@ -1320,6 +1322,7 @@ function PortalSiteInlineEditor({
 
 export function PortalSitePage() {
   const { readOnly } = useConfigAccess()
+  const queryClient = useQueryClient()
   const { t, tText } = useLocale()
   const navigate = useNavigate()
   const pathname = useRouterState({
@@ -1491,6 +1494,7 @@ export function PortalSitePage() {
           creation: formValueToCreation(value),
         })
         toast.success(t('portalSite.created'))
+        invalidateRuleConflicts(queryClient)
         setIsCreating(false)
         setEntries((current) => [...current, created])
         setEntryDetail(created)
@@ -1518,6 +1522,7 @@ export function PortalSitePage() {
           update: formValueToUpdate(value),
         })
         toast.success(t('portalSite.saved'))
+        invalidateRuleConflicts(queryClient)
         setEditingEntry(null)
         setEntryDetail(updated)
         setEntries((current) =>
@@ -1542,6 +1547,7 @@ export function PortalSitePage() {
     try {
       await portalSiteService.remove({ id: deleteEntry.id })
       toast.success(t('portalSite.deleted'))
+      invalidateRuleConflicts(queryClient)
       setDeleteEntry(null)
       setEntries((current) =>
         current.filter((entry) => entry.id !== deleteEntry.id),

@@ -229,7 +229,25 @@ type PortalRuleConflict struct {
 	Access          PortalEntry
 	MatchPathPrefix string
 	Rule            string
+	RuleId          int
 	Conflict        string
+	ConflictId      int
+	// Published and Suppressed name the rules Hub publishes and leaves out:
+	// Portal resolves matching rules by their longest path prefix, so two rules
+	// that match identically have no defined order, and Hub keeps the rule whose
+	// name sorts first.
+	Published  string
+	Suppressed string
+}
+
+// PortalRuleConflictWinner returns the rule Hub publishes when two rules match
+// the same request: the rule whose name sorts first, so the choice never depends
+// on the order Hub applied them.
+func PortalRuleConflictWinner(rule string, conflict string) (published string, suppressed string) {
+	if conflict < rule {
+		return conflict, rule
+	}
+	return rule, conflict
 }
 
 // MatchText renders the request both rules match.
@@ -269,7 +287,11 @@ func (m *PortalRuleCore) save(rule PortalRule) *PortalRule {
 // so no write can answer this question: only a caller that reads the registered
 // schemas can report what Hub cannot resolve on its own.
 func (m *PortalRuleCore) Conflicts() []PortalRuleConflict {
-	matched := map[string]string{}
+	type _Match struct {
+		name string
+		id   int
+	}
+	matched := map[string]_Match{}
 	conflicts := []PortalRuleConflict{}
 	for _, rule := range m.PortalRuleRepo.List() {
 		if !rule.Enabled {
@@ -285,16 +307,21 @@ func (m *PortalRuleCore) Conflicts() []PortalRuleConflict {
 		}
 		matchPathPrefix, _ := ResolvePortalRulePaths(rule, site)
 		key := portalEntryMatchKey(*entry, matchPathPrefix)
-		name, found := matched[key]
+		matchedRule, found := matched[key]
 		if !found {
-			matched[key] = rule.Name
+			matched[key] = _Match{name: rule.Name, id: rule.Id}
 			continue
 		}
+		published, suppressed := PortalRuleConflictWinner(rule.Name, matchedRule.name)
 		conflicts = append(conflicts, PortalRuleConflict{
 			Access:          *entry,
 			MatchPathPrefix: matchPathPrefix,
 			Rule:            rule.Name,
-			Conflict:        name,
+			RuleId:          rule.Id,
+			Conflict:        matchedRule.name,
+			ConflictId:      matchedRule.id,
+			Published:       published,
+			Suppressed:      suppressed,
 		})
 	}
 	return conflicts

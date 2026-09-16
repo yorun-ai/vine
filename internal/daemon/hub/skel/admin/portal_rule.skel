@@ -115,6 +115,39 @@ data PortalRuleListItem {
     enabled: bool
 }
 
+@desc("Portal entry rules that match the same request")
+data PortalRuleConflict {
+    @desc("Rule ID")
+    ruleId: int
+
+    @desc("Rule name")
+    rule: string
+
+    @desc("ID of the rule that already matches the request")
+    conflictRuleId: int
+
+    @desc("Name of the rule that already matches the request")
+    conflictRule: string
+
+    @desc("Name of the Portal entry the rules belong to")
+    entry: string
+
+    @desc("Request both rules match")
+    match: string
+
+    @desc("ID of the rule Hub publishes for the request")
+    publishedRuleId: int
+
+    @desc("Name of the rule Hub publishes for the request")
+    publishedRule: string
+
+    @desc("ID of the rule Hub leaves out, because the published rule sorts first")
+    suppressedRuleId: int
+
+    @desc("Name of the rule Hub leaves out, because the published rule sorts first")
+    suppressedRule: string
+}
+
 @desc("Portal entry rule update parameters")
 data PortalRuleUpdate {
     @desc("Rule name")
@@ -141,6 +174,12 @@ data PortalRuleUpdate {
 
 @desc("Hub's Portal entry rule service, called by the Portal admin client")
 api service PortalRuleApiService {
+    @desc("List Portal entry rules that match the same request")
+    method listConflicts {
+        @desc("Portal entry rule conflicts")
+        output list<PortalRuleConflict>
+    }
+
     @desc("List Portal entry rules")
     method list {
         @desc("Portal entry rule list")

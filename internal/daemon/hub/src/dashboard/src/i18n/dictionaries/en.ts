@@ -273,6 +273,12 @@ export const en: Record<TranslationKey, string> = {
   'portalRule.selectEntry': 'Select a Portal Entry',
   'portalRule.openEntry': 'Open Portal Entry',
   'portalRule.entryMissing': 'Portal Entry not found',
+  'portalRule.conflict': 'Conflict',
+  'portalRule.conflictDetail': 'It matches the same request as another rule, so Portal cannot decide the order. Hub publishes the rule whose name sorts first; disabling the other one clears the conflict.',
+  'portalRule.conflictPublished': 'Hub publishes',
+  'portalRule.conflictSuppressed': 'not published',
+  'portalRule.conflictDisable': 'Disable the unpublished rule',
+  'portalRule.conflictDisabled': 'The unpublished rule is disabled',
   'portalRule.noEntry':
     'No Portal Entry exists yet. Create the entry Portal serves first.',
   'portalRule.portPlaceholder': 'Empty follows scheme',
@@ -334,7 +340,6 @@ export const en: Record<TranslationKey, string> = {
   'nav.group.status': 'Status',
   'nav.group.debug': 'Debug',
   'nav.group.skeleton': 'Skeleton',
-  'nav.group.settings': 'Settings',
   'nav.appConfig.label': 'App Config',
   'nav.appConfig.description':
     'Manage base data, product master data, and organization-wide configuration.',

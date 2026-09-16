@@ -9,9 +9,12 @@ import {
 } from './web-mount-path'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
 import { SearchInput } from '@/components/ui/search-input'
+import { invalidateRuleConflicts, useRuleConflicts } from '@/lib/rule-conflicts'
 import * as React from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import {
+  AlertTriangle,
   ArrowRight,
   Boxes,
   Edit3,
@@ -953,6 +956,8 @@ function PortalRuleInlineEditor({
 
 export function PortalRulePage() {
   const { readOnly } = useConfigAccess()
+  const { byRuleId } = useRuleConflicts()
+  const queryClient = useQueryClient()
   const { t } = useLocale()
   const navigate = useNavigate()
   const pathname = useRouterState({
@@ -1047,6 +1052,9 @@ export function PortalRulePage() {
       selectedRule,
     [rules, selectedRule],
   )
+  const selectedRuleConflict = selectedRule
+    ? (byRuleId.get(selectedRule.id) ?? null)
+    : null
   const selectedTargetSite = React.useMemo(() => {
     if (!selectedRule || selectedRule.routeType !== 'SITE') {
       return null
@@ -1162,6 +1170,7 @@ export function PortalRulePage() {
         setRules((current) => [...current, created])
         setRuleDetail(created)
         selectRule(created.id)
+        invalidateRuleConflicts(queryClient)
       } catch (error) {
         throw error
       } finally {
@@ -1190,6 +1199,7 @@ export function PortalRulePage() {
         setRules((current) =>
           current.map((rule) => (rule.id === updated.id ? updated : rule)),
         )
+        invalidateRuleConflicts(queryClient)
       } catch (error) {
         throw error
       } finally {
@@ -1211,12 +1221,67 @@ export function PortalRulePage() {
       toast.success(t('portalRule.deleted'))
       setDeleteRule(null)
       setRules((current) => current.filter((rule) => rule.id !== deleteRule.id))
+        invalidateRuleConflicts(queryClient)
     } catch (error) {
       toast.error(getErrorMessage(error))
     } finally {
       setDeleting(false)
     }
   }, [deleteRule])
+
+  // Disabling the rule Hub leaves out clears the conflict without changing what
+  // Portal serves: Hub publishes the rule whose name sorts first either way.
+  const handleDisableSuppressedRule = React.useCallback(
+    async (id: number) => {
+      setSaving(true)
+      try {
+        const updated = await portalRuleService.update({
+          id,
+          update: {
+            name: null,
+            matchPathPrefix: null,
+            routeType: null,
+            routeSiteName: null,
+            routeRedirectionPattern: null,
+            routePathPrefix: null,
+            enabled: false,
+          },
+        })
+        toast.success(t('portalRule.conflictDisabled'))
+        setRules((current) =>
+          current.map((rule) => (rule.id === updated.id ? updated : rule)),
+        )
+        setRuleDetail((current) =>
+          current !== null && current.id === updated.id ? updated : current,
+        )
+        invalidateRuleConflicts(queryClient)
+      } catch (error) {
+        toast.error(getErrorMessage(error))
+      } finally {
+        setSaving(false)
+      }
+    },
+    [queryClient, t],
+  )
+
+  const ruleLink = React.useCallback(
+    (id: number, name: string) => (
+      <a
+        href={portalRulePath(id)}
+        className="font-medium underline"
+        onClick={(event) => {
+          if (shouldUseBrowserNavigation(event)) {
+            return
+          }
+          event.preventDefault()
+          selectRule(id)
+        }}
+      >
+        {name}
+      </a>
+    ),
+    [selectRule],
+  )
 
   return (
     <TooltipProvider>
@@ -1309,6 +1374,11 @@ export function PortalRulePage() {
                         {rule.enabled ? null : (
                           <Badge variant="secondary">{t('common.disabled')}</Badge>
                         )}
+                        {byRuleId.has(rule.id) ? (
+                          <Badge variant="destructive">
+                            {t('portalRule.conflict')}
+                          </Badge>
+                        ) : null}
                       </div>
                       <div className="flex min-w-0 items-center gap-2">
                         <span className="truncate font-mono text-xs text-muted-foreground">
@@ -1374,6 +1444,11 @@ export function PortalRulePage() {
                         {selectedRule.enabled ? null : (
                           <Badge variant="secondary">{t('common.disabled')}</Badge>
                         )}
+                        {selectedRuleConflict ? (
+                          <Badge variant="destructive">
+                            {t('portalRule.conflict')}
+                          </Badge>
+                        ) : null}
                         <TargetTypeBadge routeType={selectedRule.routeType} />
                       </div>
                       <p className="mt-2 font-mono text-xs text-muted-foreground">
@@ -1435,6 +1510,46 @@ export function PortalRulePage() {
                     />
                   ) : (
                     <div className="grid gap-5">
+                      {selectedRuleConflict === null ? null : (
+                        <Alert variant="destructive" className="max-w-xl">
+                          <AlertTriangle />
+                          <AlertDescription className="grid gap-2">
+                            <span>{t('portalRule.conflictDetail')}</span>
+                            <span className="flex flex-wrap items-center gap-2">
+                              <span className="font-mono">
+                                {selectedRuleConflict.match}
+                              </span>
+                              <span>
+                                {t('portalRule.conflictPublished')}{' '}
+                                {ruleLink(
+                                  selectedRuleConflict.publishedRuleId,
+                                  selectedRuleConflict.publishedRule,
+                                )}
+                              </span>
+                              <span>
+                                {t('portalRule.conflictSuppressed')}{' '}
+                                {ruleLink(
+                                  selectedRuleConflict.suppressedRuleId,
+                                  selectedRuleConflict.suppressedRule,
+                                )}
+                              </span>
+                            </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={readOnly || saving}
+                              onClick={() =>
+                                void handleDisableSuppressedRule(
+                                  selectedRuleConflict.suppressedRuleId,
+                                )
+                              }
+                            >
+                              {t('portalRule.conflictDisable')}
+                            </Button>
+                          </AlertDescription>
+                        </Alert>
+                      )}
                       <div className="max-w-xl">
                         <ReadonlyField source={<FieldSourceInfo fields={selectedRuleFields} path="/name" />} label={t('portalRule.name')}>
                           {selectedRule.name}
@@ -1468,6 +1583,11 @@ export function PortalRulePage() {
                                 {selectedAccessEntry.name}
                               </a>
                             )}
+                            {selectedAccessEntry?.enabled === false ? (
+                              <Badge variant="secondary">
+                                {t('common.disabled')}
+                              </Badge>
+                            ) : null}
                             <span className="text-xs text-muted-foreground">
                               {t('portalRule.entryHelp')}
                             </span>
@@ -1527,6 +1647,11 @@ export function PortalRulePage() {
                             ) : (
                               selectedRule.routeRedirectionPattern
                             )}
+                            {selectedTargetSite?.enabled === false ? (
+                              <Badge variant="secondary">
+                                {t('common.disabled')}
+                              </Badge>
+                            ) : null}
                           </ReadonlyField>
                           {selectedRule.routeType === 'SITE' ? (
                             <ReadonlyField source={selectedMountPath === null ? <FieldSourceInfo fields={selectedRuleFields} path="/routePathPrefix" /> : undefined} label={t('portalRule.routePathPrefix')}>

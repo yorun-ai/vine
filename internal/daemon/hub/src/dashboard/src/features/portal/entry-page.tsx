@@ -1,8 +1,10 @@
 import { EnabledField } from './enabled-field'
+import { invalidateRuleConflicts, useRuleConflicts } from '@/lib/rule-conflicts'
 import { useConfigAccess } from '@/lib/config-access'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
 import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import {
   ArrowRight,
@@ -440,6 +442,8 @@ function PortalEntryDeleteDialog({
 
 export function PortalEntryPage() {
   const { readOnly } = useConfigAccess()
+  const { byRuleId } = useRuleConflicts()
+  const queryClient = useQueryClient()
   const { t, tText } = useLocale()
   const navigate = useNavigate()
   const pathname = useRouterState({
@@ -576,6 +580,7 @@ export function PortalEntryPage() {
         })
         toast.success(t('portalEntry.createSuccess'))
         setCreating(false)
+        invalidateRuleConflicts(queryClient)
         await loadEntries()
         selectEntry(created.name, true)
       } finally {
@@ -600,6 +605,7 @@ export function PortalEntryPage() {
         })
         toast.success(t('portalEntry.updateSuccess'))
         setEditingEntry(null)
+        invalidateRuleConflicts(queryClient)
         await loadEntries()
         selectEntry(updated.name, true)
       } finally {
@@ -622,6 +628,7 @@ export function PortalEntryPage() {
       })
       toast.success(t('portalEntry.deleteSuccess'))
       setDeletingEntry(null)
+      invalidateRuleConflicts(queryClient)
       await loadEntries()
     } catch (error) {
       toast.error(getErrorMessage(error))
@@ -938,6 +945,16 @@ export function PortalEntryPage() {
                                   >
                                     {entryRule.rule.name}
                                   </a>
+                                  {entryRule.rule.enabled ? null : (
+                                    <Badge variant="secondary">
+                                      {t('common.disabled')}
+                                    </Badge>
+                                  )}
+                                  {byRuleId.has(entryRule.rule.id) ? (
+                                    <Badge variant="destructive">
+                                      {t('portalRule.conflict')}
+                                    </Badge>
+                                  ) : null}
                                 </div>
                               </div>
                               <div className="flex shrink-0 items-center gap-2">

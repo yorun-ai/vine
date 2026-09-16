@@ -1306,7 +1306,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalRuleApiService",
 		SkelName:          "vine.hub.admin.PortalRuleApiService",
-		Hash:              "b5b8db6e",
+		Hash:              "b736159f",
 		ServerType:        reflect.TypeFor[PortalRuleApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalRuleApiServiceServer](),
 
@@ -1314,11 +1314,40 @@ var (
 		WrapperERServerCtor: _NewWrapperPortalRuleApiServiceServerER,
 		DefaultERServerType: reflect.TypeFor[*DefaultPortalRuleApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
+			_PortalRuleApiServiceListConflictsSpec,
 			_PortalRuleApiServiceListSpec,
 			_PortalRuleApiServiceGetSpec,
 			_PortalRuleApiServiceCreateSpec,
 			_PortalRuleApiServiceUpdateSpec,
 			_PortalRuleApiServiceRemoveSpec,
+		},
+	}
+	_PortalRuleApiServiceListConflictsSpec = &rpcspec.MethodSpec{
+		Name:           "ListConflicts",
+		SkelName:       "listConflicts",
+		ArgumentsType:  nil,
+		CloneArguments: nil,
+		ResultType:     reflect.TypeFor[[]PortalRuleConflict](),
+		CloneResult: func(value any) any {
+			source := value.([]PortalRuleConflict)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]PortalRuleConflict, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
+		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
+		ArgumentsContainsBinaryType: false,
+		ResultContainsBinaryType:    false,
+		MethodFuncs: []any{
+			PortalRuleApiServiceServer.ListConflicts,
+			PortalRuleApiServiceServerER.ListConflicts,
 		},
 	}
 	_PortalRuleApiServiceListSpec = &rpcspec.MethodSpec{
@@ -1470,6 +1499,9 @@ type _PortalRuleApiServiceRemoveArguments struct {
 // PortalRuleApiService / Server
 
 type PortalRuleApiServiceServer interface {
+	// ListConflicts List Portal entry rules that match the same request.
+	//   @returns []PortalRuleConflict - Portal entry rule conflicts
+	ListConflicts() []PortalRuleConflict
 	// List List Portal entry rules.
 	//   @returns []PortalRuleListItem - Portal entry rule list
 	List() []PortalRuleListItem
@@ -1496,6 +1528,11 @@ type PortalRuleApiServiceServer interface {
 // PortalRuleApiService / Server / DefaultServer
 
 type DefaultPortalRuleApiServiceServer struct{}
+
+func (*DefaultPortalRuleApiServiceServer) ListConflicts() []PortalRuleConflict {
+	ex.PanicNew(ex.InvalidRequest, "method listConflicts is not implemented")
+	return []PortalRuleConflict{}
+}
 
 func (*DefaultPortalRuleApiServiceServer) List() []PortalRuleListItem {
 	ex.PanicNew(ex.InvalidRequest, "method list is not implemented")
@@ -1526,6 +1563,7 @@ func (*DefaultPortalRuleApiServiceServer) mustBePortalRuleApiServiceServer() {}
 // PortalRuleApiService / ERServer
 
 type PortalRuleApiServiceServerER interface {
+	ListConflicts() ([]PortalRuleConflict, ex.Error)
 	List() ([]PortalRuleListItem, ex.Error)
 	Get(id int) (PortalRule, ex.Error)
 	Create(creation PortalRuleCreation) (PortalRule, ex.Error)
@@ -1553,6 +1591,12 @@ func (service *_WrapperPortalRuleApiServiceServerER) server() PortalRuleApiServi
 		return &service.DefaultPortalRuleApiServiceServer
 	}
 	return service.serverImpl
+}
+
+func (service *_WrapperPortalRuleApiServiceServerER) ListConflicts() (ret []PortalRuleConflict, err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	ret = service.server().ListConflicts()
+	return
 }
 
 func (service *_WrapperPortalRuleApiServiceServerER) List() (ret []PortalRuleListItem, err ex.Error) {

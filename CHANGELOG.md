@@ -59,6 +59,24 @@ are not part of the public compatibility commitment.
   to Hub, so an in-process Hub that declares no admin address now serves no Admin
   API at all, instead of an address no client reaches.
 
+- The Dashboard shows the rules that match the same request.
+  `PortalRuleApiService.listConflicts` reports the request, the entry, and both
+  rules, and the rule page marks them with a conflict badge next to the rule it
+  names, so an operator sees what Portal cannot order on its own and resolves it
+  by disabling a rule, moving it to another entry, or changing the mount path of
+  its site. Hub answers from the schemas it holds, so the list is current
+  whenever a rule, an entry, or a site changes, and a write no longer has to
+  decide it. The rules listed under an entry and the entry or site a rule targets
+  also show the switch Hub stores, so a rule that a disabled entity keeps out of
+  Portal says so where the operator reads it.
+
+- Hub publishes one rule for a request Portal cannot order: `PortalRuleApiService.listConflicts`
+  also names the rule Hub publishes and the one it leaves out, and the rule page
+  offers to disable the unpublished rule in one step. Hub keeps the rule whose
+  name sorts first, so the choice never depends on the order it applied them, and
+  the rule that lost comes back on its own when the winner stops serving the
+  request.
+
 ### Changed
 
 - The admin listener serves a Dashboard development server again, the way the

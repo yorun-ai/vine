@@ -693,6 +693,51 @@ export type PortalRule = {
   enabled:                 boolean;
 }
 /**
+ * Portal entry rules that match the same request.
+ */
+export type PortalRuleConflict = {
+  /**
+   * Rule ID.
+   */
+  ruleId:           number;
+  /**
+   * Rule name.
+   */
+  rule:             string;
+  /**
+   * ID of the rule that already matches the request.
+   */
+  conflictRuleId:   number;
+  /**
+   * Name of the rule that already matches the request.
+   */
+  conflictRule:     string;
+  /**
+   * Name of the Portal entry the rules belong to.
+   */
+  entry:            string;
+  /**
+   * Request both rules match.
+   */
+  match:            string;
+  /**
+   * ID of the rule Hub publishes for the request.
+   */
+  publishedRuleId:  number;
+  /**
+   * Name of the rule Hub publishes for the request.
+   */
+  publishedRule:    string;
+  /**
+   * ID of the rule Hub leaves out, because the published rule sorts first.
+   */
+  suppressedRuleId: number;
+  /**
+   * Name of the rule Hub leaves out, because the published rule sorts first.
+   */
+  suppressedRule:   string;
+}
+/**
  * Portal entry rule creation parameters.
  */
 export type PortalRuleCreation = {

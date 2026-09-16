@@ -107,11 +107,11 @@ fix it from, and a stored configuration keeps both rules until the operator
 resolves the request from the Dashboard. Only the access migration separates
 rules on its own, because stored data is not edited by hand.
 
-Seeder and Dashboard imports validate all supplied entities before writing,
-then call Core `Save`. Validation does not make an entire import transactional:
-a database failure can still leave some entities saved. The YAML conversion
-layer maps configuration fields only; it does not assign database identity or
-manage versions.
+Seeder validates every entity the document declares before it writes anything,
+and then calls Core `Save` per entity. Validation does not make an entire seed
+transactional: a database failure can still leave some entities saved. The YAML
+conversion layer maps configuration fields only; it does not assign database
+identity or manage versions.
 
 Hub serves the Admin API and the Dashboard on the admin module's own listener
 (`--admin-listen`, default `127.0.0.1:7099`), the way the Control API owns
@@ -180,8 +180,7 @@ through its repos and publishes it to Watch for Link and Portal.
 
 Database metadata records completion of the initial seed. Subsequent starts skip
 all seed, variable, and source inputs; seed entries have no `override` switch.
-No-db mode creates a fresh store and imports the seed on every start. Built-in
-Dashboard provisioning is maintained independently of the seed marker.
+No-db mode creates a fresh store and imports the seed on every start.
 
 Field source metadata stores the original field template as JSON and each
 resolved binding (relative path, variable name, placeholder, applied JSON value,
@@ -231,12 +230,11 @@ access into entries while the seed is applied, so a seed never stores the same
 access on every rule. Portal still receives rules carrying the access of their
 entry, and the entry is Hub-side state rather than a Watch key.
 
-The `mod/seeder` package owns the seed YAML contract. `ParseSeedEntities`
-decodes a document into the domain entities it declares for Dashboard imports,
-and the same decoder backs startup seeding; the payload structs stay private to
-the package. Both accept legacy rule fields with a warning per field; mixing old
-and new fields in one rule fails before applying imported data. A Portal section
-declares only the fields Hub names for it.
+The `mod/seeder` package owns the seed YAML contract. It decodes a document into
+the domain entities Hub applies; the payload structs and the parsed document
+stay private to the package. It accepts legacy rule fields with a warning per
+field, and mixing old and new fields in one rule fails before Hub writes
+anything. A Portal section declares only the fields Hub names for it.
 
 Admin API and Watch use only the new fields; upgrade Hub and Portal together.
 The database upgrade baseline is Vine v0.15.7, with `match_*` / `route_*`

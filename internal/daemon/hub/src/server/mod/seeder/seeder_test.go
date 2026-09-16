@@ -1012,6 +1012,51 @@ fields:
 	require.Equal(t, item.FieldSources, reread.FieldSources)
 }
 
+// A seed declares the access on the rule, and the entry owns it: the stored rule
+// keeps the sources of the fields it owns, because an entry carries no field
+// sources of its own.
+func TestSeederKeepsOnlyRuleFieldSources(t *testing.T) {
+	template := `
+portalRules:
+  - name: demo.app
+    matchScheme: http
+    matchHost: ""
+    matchPort: 7088
+    routeType: SITE
+    routeSiteName: demo.Web
+`
+	source := fmt.Sprintf(`
+version: 1
+seedSha256: %x
+fields:
+  /portalRules/0/name: {source: app/default, define: domain/booker}
+  /portalRules/0/matchScheme: {source: app/default, define: domain/booker}
+  /portalRules/0/matchHost: {source: app/default, define: domain/booker}
+  /portalRules/0/matchPort: {source: app/default, define: domain/booker}
+`, sha256.Sum256([]byte(template)))
+	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
+	seeder := &Seeder{
+		Flag:          new(flag.Flag{SeedHubData: template, SeedHubSource: source}),
+		AppConfigCore: new(core.AppConfigCore{AppConfigRepo: configRepo}),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo),
+		RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
+		SiteCore:      newTestSiteCore(entryRepo),
+		CertCore:      new(core.PortalCertCore{PortalCertRepo: certRepo}),
+		MetadataRepo:  metadataRepo,
+		Logger:        logger.New("seed-rule-sources-test"),
+	}
+	seeder.Flag.Normalize(true)
+
+	seeder.DIInit()
+
+	rule, ok := ruleRepo.GetByName("demo.app")
+	require.True(t, ok)
+	require.Equal(t, "app/default", rule.FieldSources["/name"].Source)
+	for _, field := range []string{"/matchScheme", "/matchHost", "/matchPort"} {
+		require.NotContains(t, rule.FieldSources, field)
+	}
+}
+
 func writeSeedHubVarsFile(t *testing.T, content string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "vars.yaml")

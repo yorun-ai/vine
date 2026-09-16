@@ -105,7 +105,7 @@ func (s *Seeder) applySeed() {
 		s.EntryCore.Save(*entry)
 	}
 	for _, rule := range entities.PortalRules {
-		s.RuleCore.Save(*ResolveSeedRule(s.EntryCore, rule))
+		s.RuleCore.Save(*resolveSeedRule(s.EntryCore, rule))
 	}
 	for _, cert := range entities.PortalCerts {
 		s.CertCore.Save(*cert)

@@ -58,6 +58,7 @@ export const PortalEntryApiServiceSpec = {
 export const PortalRuleApiServiceSpec = {
   serviceName: 'vine.hub.admin.PortalRuleApiService',
   methods: {
+    listConflicts: 'listConflicts',
     list: 'list',
     get: 'get',
     create: 'create',

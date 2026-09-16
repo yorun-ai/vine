@@ -1,6 +1,8 @@
 package syncer
 
 import (
+	"strconv"
+
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vcode"
@@ -80,18 +82,16 @@ func (s *Syncer) RemovePortalSite(site *core.PortalSite) {
 	}
 }
 
-func (s *Syncer) SyncPortalRule(rule *core.PortalRule, sites ...*core.PortalSite) {
+func (s *Syncer) SyncPortalRule(rule *core.PortalRule) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
 	s.removeRenamedKeyLocked(s.portalRuleNamesById, rule.Id, rule.Name, watched.FormatPortalRuleKey)
-	var site *core.PortalSite
-	if len(sites) > 0 {
-		site = sites[0]
-	}
-	s.publishPortalRuleLocked(rule, site)
 	s.saveNameByIdLocked(s.portalRuleNamesById, rule.Id, rule.Name)
 	s.portalRulesById[rule.Id] = clonePortalRule(rule)
+	// The rule that changed can stop matching the request another rule serves,
+	// so the whole set follows it instead of that one rule alone.
+	s.refreshRulesLocked()
 }
 
 func (s *Syncer) RemovePortalRule(rule *core.PortalRule) {
@@ -101,6 +101,17 @@ func (s *Syncer) RemovePortalRule(rule *core.PortalRule) {
 	s.WatchServer.DeleteAndNotify(watched.FormatPortalRuleKey(rule.Name))
 	delete(s.portalRuleNamesById, rule.Id)
 	delete(s.portalRulesById, rule.Id)
+	// The rule that leaves can have kept another rule out of Portal, so the
+	// remaining rules decide again.
+	s.refreshRulesLocked()
+}
+
+// refreshRulesLocked publishes every rule Hub holds, so the choices a conflict
+// forces on Hub stay current after one of them changed.
+func (s *Syncer) refreshRulesLocked() {
+	for _, rule := range s.portalRulesById {
+		s.publishPortalRuleLocked(rule, s.portalSiteOfRuleLocked(rule))
+	}
 }
 
 func clonePortalRule(rule *core.PortalRule) *core.PortalRule {
@@ -132,14 +143,54 @@ func (s *Syncer) RemovePortalCert(cert *core.PortalCert) {
 }
 
 // publishPortalRuleLocked publishes one rule for Portal, or removes it when Hub
-// does not publish it: a disabled rule, a rule of a disabled entry, or a SITE
-// rule whose site is disabled.
+// does not publish it: a disabled rule, a rule of a disabled entry, a SITE rule
+// whose site is disabled, or a rule another rule supersedes because both match
+// one request.
 func (s *Syncer) publishPortalRuleLocked(rule *core.PortalRule, site *core.PortalSite) {
-	if !s.publishesPortalRuleLocked(rule, site) {
-		s.WatchServer.DeleteAndNotify(watched.FormatPortalRuleKey(rule.Name))
+	if s.publishesPortalRuleLocked(rule, site) && !s.losesConflictLocked(rule, site) {
+		s.WatchServer.SetAndNotify(watched.FormatPortalRuleKey(rule.Name), vcode.MustMarshalJsonS(s.toWatchedPortalRule(rule, site)))
 		return
 	}
-	s.WatchServer.SetAndNotify(watched.FormatPortalRuleKey(rule.Name), vcode.MustMarshalJsonS(s.toWatchedPortalRule(rule, site)))
+	s.WatchServer.DeleteAndNotify(watched.FormatPortalRuleKey(rule.Name))
+}
+
+// losesConflictLocked reports whether a publishable rule that sorts before rule
+// matches the same request. Portal resolves matching rules by their longest path
+// prefix, so two rules that match identically have no defined order, and Hub
+// publishes the rule whose name sorts first.
+func (s *Syncer) losesConflictLocked(rule *core.PortalRule, site *core.PortalSite) bool {
+	key := s.portalRuleMatchKeyLocked(rule, site)
+	if key == "" {
+		return false
+	}
+	for _, other := range s.portalRulesById {
+		if other.Id == rule.Id {
+			continue
+		}
+		otherSite := s.portalSiteOfRuleLocked(other)
+		if !s.publishesPortalRuleLocked(other, otherSite) {
+			continue
+		}
+		if s.portalRuleMatchKeyLocked(other, otherSite) != key {
+			continue
+		}
+		if published, _ := core.PortalRuleConflictWinner(rule.Name, other.Name); published != rule.Name {
+			return true
+		}
+	}
+	return false
+}
+
+// portalRuleMatchKeyLocked identifies the request a rule matches: the access of
+// the entry it belongs to and the prefix its site resolves. An entry Hub has not
+// published leaves the rule without a request to compare.
+func (s *Syncer) portalRuleMatchKeyLocked(rule *core.PortalRule, site *core.PortalSite) string {
+	entry, ok := s.portalEntriesById[rule.EntryId]
+	if !ok {
+		return ""
+	}
+	matchPathPrefix, _ := core.ResolvePortalRulePaths(rule, site)
+	return entry.Scheme + "\x00" + entry.Host + "\x00" + strconv.Itoa(entry.Port) + "\x00" + matchPathPrefix
 }
 
 func (s *Syncer) publishesPortalRuleLocked(rule *core.PortalRule, site *core.PortalSite) bool {

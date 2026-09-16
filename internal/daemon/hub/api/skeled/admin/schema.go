@@ -11,7 +11,7 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "c08b9128",
+	Hash:        "8ce53a7d",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
 		CompilerVersion: "v0.20.0",
@@ -1410,6 +1410,94 @@ var _DomainSchema = &skel.DomainSchema{
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarBool,
+					},
+				},
+			},
+		},
+		{
+			Name:        "PortalRuleConflict",
+			SkelName:    "vine.hub.admin.PortalRuleConflict",
+			Description: "Portal entry rules that match the same request",
+			Hash:        "1182f80b",
+			Members: []*skel.MemberSchema{
+				{
+					Name:        "ruleId",
+					Description: "Rule ID",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarInt,
+					},
+				},
+				{
+					Name:        "rule",
+					Description: "Rule name",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
+				{
+					Name:        "conflictRuleId",
+					Description: "ID of the rule that already matches the request",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarInt,
+					},
+				},
+				{
+					Name:        "conflictRule",
+					Description: "Name of the rule that already matches the request",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
+				{
+					Name:        "entry",
+					Description: "Name of the Portal entry the rules belong to",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
+				{
+					Name:        "match",
+					Description: "Request both rules match",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
+				{
+					Name:        "publishedRuleId",
+					Description: "ID of the rule Hub publishes for the request",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarInt,
+					},
+				},
+				{
+					Name:        "publishedRule",
+					Description: "Name of the rule Hub publishes for the request",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
+				{
+					Name:        "suppressedRuleId",
+					Description: "ID of the rule Hub leaves out, because the published rule sorts first",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarInt,
+					},
+				},
+				{
+					Name:        "suppressedRule",
+					Description: "Name of the rule Hub leaves out, because the published rule sorts first",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
 					},
 				},
 			},
@@ -5375,11 +5463,27 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "PortalRuleApiService",
 			SkelName:    "vine.hub.admin.PortalRuleApiService",
 			Description: "Hub's Portal entry rule service, called by the Portal admin client",
-			Hash:        "b5b8db6e",
+			Hash:        "b736159f",
 			Pub:         false,
 			Api:         true,
 			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
+				{
+					Name:              "listConflicts",
+					SkelName:          "listConflicts",
+					Description:       "List Portal entry rules that match the same request",
+					Hash:              "440c6508",
+					AuthMode:          skel.AuthModeUnset,
+					OutputDescription: "Portal entry rule conflicts",
+					ResultType: &skel.TypeSchema{
+						Kind: skel.TypeKindList,
+						Element: &skel.TypeSchema{
+							Kind:     skel.TypeKindData,
+							Name:     "PortalRuleConflict",
+							SkelName: "vine.hub.admin.PortalRuleConflict",
+						},
+					},
+				},
 				{
 					Name:              "list",
 					SkelName:          "list",

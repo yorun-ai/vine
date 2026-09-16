@@ -34,6 +34,7 @@ import type {
   PortalEntry,
   PortalEntryCreation,
   PortalEntryAccessUpdate,
+  PortalRuleConflict,
   PortalRuleListItem,
   PortalRule,
   PortalRuleCreation,
@@ -465,6 +466,23 @@ export function createPortalEntryApiService(client: VrpcClient) {
  */
 export function createPortalRuleApiService(client: VrpcClient) {
   return {
+    /**
+     * List Portal entry rules that match the same request.
+     * @param params - Request parameters, or null for methods without input
+     * @param options - Optional invocation options
+     * @returns Array<PortalRuleConflict> - Portal entry rule conflicts
+     */
+    listConflicts(
+      params: null,
+      options?: VrpcRequestOptions,
+    ) {
+      return client.invoke<Array<PortalRuleConflict>>({
+        serviceName: PortalRuleApiServiceSpec.serviceName,
+        methodName: PortalRuleApiServiceSpec.methods.listConflicts,
+        params,
+        options,
+      });
+    },
     /**
      * List Portal entry rules.
      * @param params - Request parameters, or null for methods without input
