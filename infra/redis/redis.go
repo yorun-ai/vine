@@ -5,8 +5,8 @@ import (
 	"reflect"
 
 	goredis "github.com/redis/go-redis/v9"
-	"go.yorun.ai/vine/internal/app"
-	"go.yorun.ai/vine/internal/core/di"
+	"go.yorun.ai/vine/app"
+	"go.yorun.ai/vine/core/di"
 	"go.yorun.ai/vine/util/vpre"
 )
 

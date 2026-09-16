@@ -11,7 +11,7 @@ import (
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/core/di"
+	"go.yorun.ai/vine/core/di"
 )
 
 type _TestCacheRedis struct {

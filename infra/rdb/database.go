@@ -4,9 +4,9 @@ import (
 	"context"
 	"reflect"
 
-	"go.yorun.ai/vine/internal/app"
-	"go.yorun.ai/vine/internal/core/di"
-	"go.yorun.ai/vine/internal/core/logger"
+	"go.yorun.ai/vine/app"
+	"go.yorun.ai/vine/core/di"
+	"go.yorun.ai/vine/core/logger"
 	"go.yorun.ai/vine/util/vpre"
 	"gorm.io/gorm"
 )

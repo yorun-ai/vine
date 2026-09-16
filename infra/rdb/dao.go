@@ -1,8 +1,8 @@
 package rdb
 
 import (
+	"go.yorun.ai/vine/core/ex"
 	"go.yorun.ai/vine/infra/rdb/adapter"
-	"go.yorun.ai/vine/internal/core/ex"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
