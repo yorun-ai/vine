@@ -10,7 +10,7 @@ import (
 )
 
 func TestPortalEntryServiceMapsRulesAndTargetSites(t *testing.T) {
-	ruleRepo := &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{
+	ruleRepo := &_NamedPortalRuleRepoSpy{items: map[string]*core.PortalRule{
 		"demo-rule": {
 			Id:              1,
 			Name:            "demo-rule",
@@ -21,7 +21,7 @@ func TestPortalEntryServiceMapsRulesAndTargetSites(t *testing.T) {
 			FieldSources:    core.FieldSources{"/name": {Source: "app/default"}},
 		},
 	}}
-	siteRepo := &_MaintenanceServicePortalSiteRepo{items: map[string]*core.PortalSite{
+	siteRepo := &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{
 		"demo-site": {
 			Id:            2,
 			Name:          "demo-site",
@@ -57,8 +57,8 @@ func TestPortalEntryServiceCreatesAndRemovesEntry(t *testing.T) {
 	entryRepo := newTestPortalEntryRepoSpy()
 	service := &PortalEntryApiServiceServerImpl{PortalEntryCore: &core.PortalEntryCore{
 		PortalEntryRepo: entryRepo,
-		PortalRuleRepo:  &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{}},
-		PortalSiteRepo:  &_MaintenanceServicePortalSiteRepo{items: map[string]*core.PortalSite{}},
+		PortalRuleRepo:  &_NamedPortalRuleRepoSpy{items: map[string]*core.PortalRule{}},
+		PortalSiteRepo:  &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{}},
 	}}
 
 	created := service.Create(skeled.PortalEntryCreation{Name: "web", Scheme: "http", Host: "", Port: 8080})

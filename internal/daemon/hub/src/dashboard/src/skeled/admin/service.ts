@@ -5,10 +5,10 @@ import type {
   VrpcRequestOptions,
 } from '@yorun-ai/vrpc';
 import {
+  AdminApiServiceSpec,
   AppConfigApiServiceSpec,
   AppStatusApiServiceSpec,
   EventDebugApiServiceSpec,
-  MaintenanceApiServiceSpec,
   PortalCertApiServiceSpec,
   PortalEntryApiServiceSpec,
   PortalRuleApiServiceSpec,
@@ -27,8 +27,6 @@ import type {
   EventDebugEventItem,
   EventDebugDefaultEmitRequest,
   EventDebugEmitRequest,
-  SeedPreview,
-  SeedItemSelection,
   PortalCertListItem,
   PortalCert,
   PortalCertCreation,
@@ -66,6 +64,30 @@ import type {
   TaskDebugDefaultLaunchRequest,
   TaskDebugLaunchRequest,
 } from './data';
+/**
+ * Hub's Admin API service, called by the Dashboard
+ */
+export function createAdminApiService(client: VrpcClient) {
+  return {
+    /**
+     * Whether Hub configuration is read-only.
+     * @param params - Request parameters, or null for methods without input
+     * @param options - Optional invocation options
+     * @returns boolean -
+     */
+    readOnly(
+      params: null,
+      options?: VrpcRequestOptions,
+    ) {
+      return client.invoke<boolean>({
+        serviceName: AdminApiServiceSpec.serviceName,
+        methodName: AdminApiServiceSpec.methods.readOnly,
+        params,
+        options,
+      });
+    },
+  };
+}
 /**
  * Hub's application configuration service, called by Client
  */
@@ -247,69 +269,6 @@ export function createEventDebugApiService(client: VrpcClient) {
       return client.invoke<void>({
         serviceName: EventDebugApiServiceSpec.serviceName,
         methodName: EventDebugApiServiceSpec.methods.emitEvent,
-        params,
-        options,
-      });
-    },
-  };
-}
-/**
- * Hub maintenance service
- */
-export function createMaintenanceApiService(client: VrpcClient) {
-  return {
-    /**
-     * Whether Hub configuration is read-only.
-     * @param params - Request parameters, or null for methods without input
-     * @param options - Optional invocation options
-     * @returns boolean -
-     */
-    configReadOnly(
-      params: null,
-      options?: VrpcRequestOptions,
-    ) {
-      return client.invoke<boolean>({
-        serviceName: MaintenanceApiServiceSpec.serviceName,
-        methodName: MaintenanceApiServiceSpec.methods.configReadOnly,
-        params,
-        options,
-      });
-    },
-    /**
-     * Preview Seed YAML differences.
-     * @param params - Request parameters, or null for methods without input
-     * @param options - Optional invocation options
-     * @returns SeedPreview - Seed preview
-     */
-    previewSeedYaml(
-      params: {
-        content: string;
-      },
-      options?: VrpcRequestOptions,
-    ) {
-      return client.invoke<SeedPreview>({
-        serviceName: MaintenanceApiServiceSpec.serviceName,
-        methodName: MaintenanceApiServiceSpec.methods.previewSeedYaml,
-        params,
-        options,
-      });
-    },
-    /**
-     * Apply Seed YAML entity updates.
-     * @param params - Request parameters, or null for methods without input
-     * @param options - Optional invocation options
-     * @returns SeedPreview - Updated Seed preview
-     */
-    applySeedYaml(
-      params: {
-        content: string;
-        selections: Array<SeedItemSelection>;
-      },
-      options?: VrpcRequestOptions,
-    ) {
-      return client.invoke<SeedPreview>({
-        serviceName: MaintenanceApiServiceSpec.serviceName,
-        methodName: MaintenanceApiServiceSpec.methods.applySeedYaml,
         params,
         options,
       });

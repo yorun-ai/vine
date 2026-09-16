@@ -10,10 +10,10 @@ import (
 )
 
 func init() {
+	rpcspec.Register(_AdminApiServiceSpec)
 	rpcspec.Register(_AppConfigApiServiceSpec)
 	rpcspec.Register(_AppStatusApiServiceSpec)
 	rpcspec.Register(_EventDebugApiServiceSpec)
-	rpcspec.Register(_MaintenanceApiServiceSpec)
 	rpcspec.Register(_PortalCertApiServiceSpec)
 	rpcspec.Register(_PortalEntryApiServiceSpec)
 	rpcspec.Register(_PortalRuleApiServiceSpec)
@@ -22,6 +22,110 @@ func init() {
 	rpcspec.Register(_ServiceDebugApiServiceSpec)
 	rpcspec.Register(_SkeletonApiServiceSpec)
 	rpcspec.Register(_TaskDebugApiServiceSpec)
+}
+
+// AdminApiServiceServer Hub's Admin API service, called by the Dashboard
+
+// AdminApiService / Spec
+
+var (
+	_AdminApiServiceSpec = &rpcspec.ServiceSpec{
+		Type:              rpcspec.ServiceSpecTypeServer,
+		Name:              "AdminApiService",
+		SkelName:          "vine.hub.admin.AdminApiService",
+		Hash:              "67c3e840",
+		ServerType:        reflect.TypeFor[AdminApiServiceServer](),
+		DefaultServerType: reflect.TypeFor[*DefaultAdminApiServiceServer](),
+
+		ERServerType:        reflect.TypeFor[AdminApiServiceServerER](),
+		WrapperERServerCtor: _NewWrapperAdminApiServiceServerER,
+		DefaultERServerType: reflect.TypeFor[*DefaultAdminApiServiceServerER](),
+		Methods: []*rpcspec.MethodSpec{
+			_AdminApiServiceReadOnlySpec,
+		},
+	}
+	_AdminApiServiceReadOnlySpec = &rpcspec.MethodSpec{
+		Name:           "ReadOnly",
+		SkelName:       "readOnly",
+		ArgumentsType:  nil,
+		CloneArguments: nil,
+		ResultType:     reflect.TypeFor[bool](),
+		CloneResult: func(value any) any {
+			source := value.(bool)
+			cloned := source
+			return cloned
+		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
+		ArgumentsContainsBinaryType: false,
+		ResultContainsBinaryType:    false,
+		MethodFuncs: []any{
+			AdminApiServiceServer.ReadOnly,
+			AdminApiServiceServerER.ReadOnly,
+		},
+	}
+)
+
+// AdminApiService / Server
+
+type AdminApiServiceServer interface {
+	// ReadOnly Whether Hub configuration is read-only.
+	ReadOnly() bool
+
+	mustBeAdminApiServiceServer()
+}
+
+// AdminApiService / Server / DefaultServer
+
+type DefaultAdminApiServiceServer struct{}
+
+func (*DefaultAdminApiServiceServer) ReadOnly() bool {
+	ex.PanicNew(ex.InvalidRequest, "method readOnly is not implemented")
+	return false
+}
+
+func (*DefaultAdminApiServiceServer) mustBeAdminApiServiceServer() {}
+
+// AdminApiService / ERServer
+
+type AdminApiServiceServerER interface {
+	ReadOnly() (bool, ex.Error)
+
+	mustBeAdminApiServiceServerER()
+}
+
+// AdminApiService / ERServer / WrapperERServer
+
+type _WrapperAdminApiServiceServerER struct {
+	DefaultAdminApiServiceServer
+	serverImpl AdminApiServiceServer
+}
+
+func _NewWrapperAdminApiServiceServerER(serverImpl AdminApiServiceServer) AdminApiServiceServerER {
+	return &_WrapperAdminApiServiceServerER{
+		serverImpl: serverImpl,
+	}
+}
+
+func (service *_WrapperAdminApiServiceServerER) server() AdminApiServiceServer {
+	if service.serverImpl == nil {
+		return &service.DefaultAdminApiServiceServer
+	}
+	return service.serverImpl
+}
+
+func (service *_WrapperAdminApiServiceServerER) ReadOnly() (ret bool, err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	ret = service.server().ReadOnly()
+	return
+}
+
+func (*_WrapperAdminApiServiceServerER) mustBeAdminApiServiceServerER() {}
+
+// AdminApiService / ERServer / DefaultERServer
+
+type DefaultAdminApiServiceServerER struct {
+	_WrapperAdminApiServiceServerER
 }
 
 // AppConfigApiServiceServer Hub's application configuration service, called by Client
@@ -33,7 +137,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "AppConfigApiService",
 		SkelName:          "vine.hub.admin.AppConfigApiService",
-		Hash:              "0da7b047",
+		Hash:              "97ae8434",
 		ServerType:        reflect.TypeFor[AppConfigApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultAppConfigApiServiceServer](),
 
@@ -335,7 +439,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "AppStatusApiService",
 		SkelName:          "vine.hub.admin.AppStatusApiService",
-		Hash:              "dead143d",
+		Hash:              "5869e9a5",
 		ServerType:        reflect.TypeFor[AppStatusApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultAppStatusApiServiceServer](),
 
@@ -447,7 +551,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "EventDebugApiService",
 		SkelName:          "vine.hub.admin.EventDebugApiService",
-		Hash:              "aa36888a",
+		Hash:              "70021469",
 		ServerType:        reflect.TypeFor[EventDebugApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultEventDebugApiServiceServer](),
 
@@ -639,214 +743,6 @@ type DefaultEventDebugApiServiceServerER struct {
 	_WrapperEventDebugApiServiceServerER
 }
 
-// MaintenanceApiServiceServer Hub maintenance service
-
-// MaintenanceApiService / Spec
-
-var (
-	_MaintenanceApiServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeServer,
-		Name:              "MaintenanceApiService",
-		SkelName:          "vine.hub.admin.MaintenanceApiService",
-		Hash:              "a4ba47c3",
-		ServerType:        reflect.TypeFor[MaintenanceApiServiceServer](),
-		DefaultServerType: reflect.TypeFor[*DefaultMaintenanceApiServiceServer](),
-
-		ERServerType:        reflect.TypeFor[MaintenanceApiServiceServerER](),
-		WrapperERServerCtor: _NewWrapperMaintenanceApiServiceServerER,
-		DefaultERServerType: reflect.TypeFor[*DefaultMaintenanceApiServiceServerER](),
-		Methods: []*rpcspec.MethodSpec{
-			_MaintenanceApiServiceConfigReadOnlySpec,
-			_MaintenanceApiServicePreviewSeedYamlSpec,
-			_MaintenanceApiServiceApplySeedYamlSpec,
-		},
-	}
-	_MaintenanceApiServiceConfigReadOnlySpec = &rpcspec.MethodSpec{
-		Name:           "ConfigReadOnly",
-		SkelName:       "configReadOnly",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[bool](),
-		CloneResult: func(value any) any {
-			source := value.(bool)
-			cloned := source
-			return cloned
-		},
-		ArgumentsSensitive:          false,
-		ResultSensitive:             false,
-		ArgumentsContainsBinaryType: false,
-		ResultContainsBinaryType:    false,
-		MethodFuncs: []any{
-			MaintenanceApiServiceServer.ConfigReadOnly,
-			MaintenanceApiServiceServerER.ConfigReadOnly,
-		},
-	}
-	_MaintenanceApiServicePreviewSeedYamlSpec = &rpcspec.MethodSpec{
-		Name:          "PreviewSeedYaml",
-		SkelName:      "previewSeedYaml",
-		ArgumentsType: reflect.TypeFor[_MaintenanceApiServicePreviewSeedYamlArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_MaintenanceApiServicePreviewSeedYamlArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[SeedPreview](),
-		CloneResult: func(value any) any {
-			source := value.(SeedPreview)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
-		ArgumentsSensitive:          false,
-		ResultSensitive:             false,
-		ArgumentsContainsBinaryType: false,
-		ResultContainsBinaryType:    false,
-		MethodFuncs: []any{
-			MaintenanceApiServiceServer.PreviewSeedYaml,
-			MaintenanceApiServiceServerER.PreviewSeedYaml,
-		},
-	}
-	_MaintenanceApiServiceApplySeedYamlSpec = &rpcspec.MethodSpec{
-		Name:          "ApplySeedYaml",
-		SkelName:      "applySeedYaml",
-		ArgumentsType: reflect.TypeFor[_MaintenanceApiServiceApplySeedYamlArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_MaintenanceApiServiceApplySeedYamlArguments)
-			cloned := *source
-			if source.Selections == nil {
-				cloned.Selections = nil
-			} else {
-				cloned.Selections = make([]SeedItemSelection, len(source.Selections))
-				for index0 := range source.Selections {
-					cloned.Selections[index0] = source.Selections[index0].Clone()
-				}
-			}
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[SeedPreview](),
-		CloneResult: func(value any) any {
-			source := value.(SeedPreview)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
-		ArgumentsSensitive:          false,
-		ResultSensitive:             false,
-		ArgumentsContainsBinaryType: false,
-		ResultContainsBinaryType:    false,
-		MethodFuncs: []any{
-			MaintenanceApiServiceServer.ApplySeedYaml,
-			MaintenanceApiServiceServerER.ApplySeedYaml,
-		},
-	}
-)
-
-// MaintenanceApiService / Arguments
-
-type _MaintenanceApiServicePreviewSeedYamlArguments struct {
-	Content string `json:"content" skel:"index(0)"`
-}
-
-type _MaintenanceApiServiceApplySeedYamlArguments struct {
-	Content    string              `json:"content" skel:"index(0)"`
-	Selections []SeedItemSelection `json:"selections" skel:"index(1)"`
-}
-
-// MaintenanceApiService / Server
-
-type MaintenanceApiServiceServer interface {
-	// ConfigReadOnly Whether Hub configuration is read-only.
-	ConfigReadOnly() bool
-	// PreviewSeedYaml Preview Seed YAML differences.
-	//   @param content - Seed YAML content
-	//   @returns SeedPreview - Seed preview
-	PreviewSeedYaml(content string) SeedPreview
-	// ApplySeedYaml Apply Seed YAML entity updates.
-	//   @param content - Seed YAML content
-	//   @param selections - Entity to update
-	//   @returns SeedPreview - Updated Seed preview
-	ApplySeedYaml(content string, selections []SeedItemSelection) SeedPreview
-
-	mustBeMaintenanceApiServiceServer()
-}
-
-// MaintenanceApiService / Server / DefaultServer
-
-type DefaultMaintenanceApiServiceServer struct{}
-
-func (*DefaultMaintenanceApiServiceServer) ConfigReadOnly() bool {
-	ex.PanicNew(ex.InvalidRequest, "method configReadOnly is not implemented")
-	return false
-}
-
-func (*DefaultMaintenanceApiServiceServer) PreviewSeedYaml(string) SeedPreview {
-	ex.PanicNew(ex.InvalidRequest, "method previewSeedYaml is not implemented")
-	return SeedPreview{}
-}
-
-func (*DefaultMaintenanceApiServiceServer) ApplySeedYaml(string, []SeedItemSelection) SeedPreview {
-	ex.PanicNew(ex.InvalidRequest, "method applySeedYaml is not implemented")
-	return SeedPreview{}
-}
-
-func (*DefaultMaintenanceApiServiceServer) mustBeMaintenanceApiServiceServer() {}
-
-// MaintenanceApiService / ERServer
-
-type MaintenanceApiServiceServerER interface {
-	ConfigReadOnly() (bool, ex.Error)
-	PreviewSeedYaml(content string) (SeedPreview, ex.Error)
-	ApplySeedYaml(content string, selections []SeedItemSelection) (SeedPreview, ex.Error)
-
-	mustBeMaintenanceApiServiceServerER()
-}
-
-// MaintenanceApiService / ERServer / WrapperERServer
-
-type _WrapperMaintenanceApiServiceServerER struct {
-	DefaultMaintenanceApiServiceServer
-	serverImpl MaintenanceApiServiceServer
-}
-
-func _NewWrapperMaintenanceApiServiceServerER(serverImpl MaintenanceApiServiceServer) MaintenanceApiServiceServerER {
-	return &_WrapperMaintenanceApiServiceServerER{
-		serverImpl: serverImpl,
-	}
-}
-
-func (service *_WrapperMaintenanceApiServiceServerER) server() MaintenanceApiServiceServer {
-	if service.serverImpl == nil {
-		return &service.DefaultMaintenanceApiServiceServer
-	}
-	return service.serverImpl
-}
-
-func (service *_WrapperMaintenanceApiServiceServerER) ConfigReadOnly() (ret bool, err ex.Error) {
-	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().ConfigReadOnly()
-	return
-}
-
-func (service *_WrapperMaintenanceApiServiceServerER) PreviewSeedYaml(content string) (ret SeedPreview, err ex.Error) {
-	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().PreviewSeedYaml(content)
-	return
-}
-
-func (service *_WrapperMaintenanceApiServiceServerER) ApplySeedYaml(content string, selections []SeedItemSelection) (ret SeedPreview, err ex.Error) {
-	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().ApplySeedYaml(content, selections)
-	return
-}
-
-func (*_WrapperMaintenanceApiServiceServerER) mustBeMaintenanceApiServiceServerER() {}
-
-// MaintenanceApiService / ERServer / DefaultERServer
-
-type DefaultMaintenanceApiServiceServerER struct {
-	_WrapperMaintenanceApiServiceServerER
-}
-
 // PortalCertApiServiceServer Hub's Portal site certificate service, called by the Portal admin client
 
 // PortalCertApiService / Spec
@@ -856,7 +752,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalCertApiService",
 		SkelName:          "vine.hub.admin.PortalCertApiService",
-		Hash:              "721bef55",
+		Hash:              "9d1673c5",
 		ServerType:        reflect.TypeFor[PortalCertApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalCertApiServiceServer](),
 
@@ -1152,7 +1048,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalEntryApiService",
 		SkelName:          "vine.hub.admin.PortalEntryApiService",
-		Hash:              "c295c3f0",
+		Hash:              "e6e9d06b",
 		ServerType:        reflect.TypeFor[PortalEntryApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalEntryApiServiceServer](),
 
@@ -1410,7 +1306,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalRuleApiService",
 		SkelName:          "vine.hub.admin.PortalRuleApiService",
-		Hash:              "e0235b86",
+		Hash:              "b5b8db6e",
 		ServerType:        reflect.TypeFor[PortalRuleApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalRuleApiServiceServer](),
 
@@ -1706,7 +1602,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalSiteApiService",
 		SkelName:          "vine.hub.admin.PortalSiteApiService",
-		Hash:              "258ce5b9",
+		Hash:              "f713a78d",
 		ServerType:        reflect.TypeFor[PortalSiteApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalSiteApiServiceServer](),
 
@@ -2039,7 +1935,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalStatusApiService",
 		SkelName:          "vine.hub.admin.PortalStatusApiService",
-		Hash:              "00945e2a",
+		Hash:              "49b2f739",
 		ServerType:        reflect.TypeFor[PortalStatusApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalStatusApiServiceServer](),
 
@@ -2151,7 +2047,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "ServiceDebugApiService",
 		SkelName:          "vine.hub.admin.ServiceDebugApiService",
-		Hash:              "6f47d948",
+		Hash:              "7bbd9cf0",
 		ServerType:        reflect.TypeFor[ServiceDebugApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultServiceDebugApiServiceServer](),
 
@@ -2511,7 +2407,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "SkeletonApiService",
 		SkelName:          "vine.hub.admin.SkeletonApiService",
-		Hash:              "0473c6fe",
+		Hash:              "53e522bd",
 		ServerType:        reflect.TypeFor[SkeletonApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultSkeletonApiServiceServer](),
 
@@ -2976,7 +2872,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "TaskDebugApiService",
 		SkelName:          "vine.hub.admin.TaskDebugApiService",
-		Hash:              "11c85af4",
+		Hash:              "3040e825",
 		ServerType:        reflect.TypeFor[TaskDebugApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultTaskDebugApiServiceServer](),
 

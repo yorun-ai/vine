@@ -78,7 +78,7 @@ func HandlerTypes() []reflect.Type {
 		app.T[*impl.PortalCertApiServiceServerImpl](),
 		app.T[*impl.PortalEntryApiServiceServerImpl](),
 		app.T[*impl.PortalRuleApiServiceServerImpl](),
-		app.T[*impl.MaintenanceApiServiceServerImpl](),
+		app.T[*impl.AdminApiServiceServerImpl](),
 		app.T[*impl.PortalSiteApiServiceServerImpl](),
 	}
 }

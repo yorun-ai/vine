@@ -10,13 +10,11 @@ import {
   LayoutDashboard,
   PanelsTopLeft,
   Radio,
-  RefreshCw,
   Rocket,
   Server,
   SlidersHorizontal,
   Terminal,
   Users,
-  Wrench,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { TranslationKey } from '@/i18n'
@@ -307,38 +305,12 @@ export const APP_SCENES: Array<AppScene> = [
       },
     ],
   }),
-  createScene({
-    id: 'settings',
-    labelKey: 'scene.settings.label',
-    descriptionKey: 'scene.settings.description',
-    categoryKey: 'scene.category.vineHub',
-    icon: Wrench,
-    defaultTo: '/maintenance/data-update',
-    groups: [
-      {
-        id: 'maintenance-group',
-        titleKey: 'nav.group.maintenance',
-        title: cnDictionary['nav.group.maintenance'],
-        items: [
-          {
-            id: 'maintenance',
-            label: cnDictionary['nav.dataUpdate.label'],
-            labelKey: 'nav.dataUpdate.label',
-            description: cnDictionary['nav.dataUpdate.description'],
-            descriptionKey: 'nav.dataUpdate.description',
-            to: '/maintenance/data-update',
-            icon: RefreshCw,
-          },
-        ],
-      },
-    ],
-  }),
 ]
 
 export const APP_SCENE_CATEGORIES: Array<AppSceneCategory> = [
   {
     titleKey: 'scene.category.vineHub',
-    sceneIds: ['vine-hub', 'settings'],
+    sceneIds: ['vine-hub'],
   },
 ]
 

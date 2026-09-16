@@ -331,7 +331,7 @@ portalRules:
 `,
 	} {
 		t.Run(name, func(t *testing.T) {
-			_, err := ParseSeedEntities(content)
+			_, err := parseSeedEntities(content)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), `portal rule "demo.web" references portal entry "web" that the seed does not declare`)
 		})
@@ -353,7 +353,7 @@ portalRules:
     routeType: SITE
     routeSiteName: demo.Web
 `
-	_, err := ParseSeedEntities(content)
+	_, err := parseSeedEntities(content)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(),
 		`portal rule "demo.web" declares an access while the seed declares portalEntries; name the entry with entryName instead`)
@@ -377,7 +377,7 @@ portalRules:
     routeType: SITE
     routeSiteName: demo.Web
 `
-	_, err := ParseSeedEntities(content)
+	_, err := parseSeedEntities(content)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `portal rule "demo.api" declares an access while portal rule "demo.web" names an entry`)
 
@@ -482,7 +482,7 @@ func TestSeederRejectsStoredSwitchName(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
-			_, err := ParseSeedEntities(testCase.content)
+			_, err := parseSeedEntities(testCase.content)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), `declares "enabled"; a seed turns configuration off with "disabled: true"`)
 		})
@@ -529,7 +529,7 @@ func TestSeederRejectsUnknownPortalField(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
-			_, err := ParseSeedEntities(testCase.content)
+			_, err := parseSeedEntities(testCase.content)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), testCase.want)
 		})
@@ -646,7 +646,7 @@ func TestSeederRejectsPortalRuleMixingEntryNameAndAccess(t *testing.T) {
 	// access the entry serves, never both.
 	for _, field := range []string{"matchScheme: http", "matchHost: demo.local", "matchPort: 8099"} {
 		t.Run(field, func(t *testing.T) {
-			_, err := ParseSeedEntities("portalRules:\n  - name: demo.web\n    entryName: web\n    " + field + "\n    routeType: SITE\n    routeSiteName: demo.Web\n")
+			_, err := parseSeedEntities("portalRules:\n  - name: demo.web\n    entryName: web\n    " + field + "\n    routeType: SITE\n    routeSiteName: demo.Web\n")
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), "entryName cannot be mixed with")
 		})

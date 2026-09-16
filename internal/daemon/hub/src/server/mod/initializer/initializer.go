@@ -41,8 +41,6 @@ const (
 func (i *Initializer) DIInit() {
 	i.RegistryCore.RegisterSchemas(inprocSchemaAppName, inprocSchemaInstanceId, skel.RegisteredDomainSchemas())
 
-	i.removeLegacyDashboard()
-
 	domainViews := i.SchemaRepo.ListDomainSchemaViews()
 	i.Syncer.SyncSchemas(domainViews)
 	for _, item := range i.AppConfigRepo.List() {

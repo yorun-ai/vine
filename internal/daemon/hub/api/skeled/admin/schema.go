@@ -11,7 +11,7 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "6b0db7ac",
+	Hash:        "c08b9128",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
 		CompilerVersion: "v0.20.0",
@@ -2181,134 +2181,6 @@ var _DomainSchema = &skel.DomainSchema{
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "SeedEntityDiff",
-			SkelName:    "vine.hub.admin.SeedEntityDiff",
-			Description: "Seed entity differences",
-			Hash:        "419b68ca",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "kind",
-					Description: "Entity type",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "name",
-					Description: "Entity name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "exists",
-					Description: "Whether the entity currently exists",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "fields",
-					Description: "Field differences",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SeedFieldDiff",
-							SkelName: "vine.hub.admin.SeedFieldDiff",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "SeedFieldDiff",
-			SkelName:    "vine.hub.admin.SeedFieldDiff",
-			Description: "Seed field differences",
-			Hash:        "5fa13d6a",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Field name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "currentValue",
-					Description: "Current value",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "seedValue",
-					Description: "Seed value",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "changed",
-					Description: "Whether the values differ",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "SeedItemSelection",
-			SkelName:    "vine.hub.admin.SeedItemSelection",
-			Description: "Seed entity selection",
-			Hash:        "4d4178f6",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "kind",
-					Description: "Entity type",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "name",
-					Description: "Entity name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "SeedPreview",
-			SkelName:    "vine.hub.admin.SeedPreview",
-			Description: "Seed preview",
-			Hash:        "b2e95a72",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "items",
-					Description: "Entity differences",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SeedEntityDiff",
-							SkelName: "vine.hub.admin.SeedEntityDiff",
-						},
 					},
 				},
 			},
@@ -4993,43 +4865,37 @@ var _DomainSchema = &skel.DomainSchema{
 		},
 	},
 
-	Webs: []*skel.WebSchema{
-		{
-			Name:        "DashboardWeb",
-			SkelName:    "vine.hub.admin.DashboardWeb",
-			Description: "Hub Dashboard Web",
-			Hash:        "c10f559e",
-			Audiences: []*skel.ActorAudienceSchema{
-				{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"},
-			},
-		},
-	},
-
-	Actors: []*skel.ActorSchema{
-		{
-			Name:     "AdminActor",
-			SkelName: "vine.hub.admin.AdminActor",
-			Hash:     "8c0a3050",
-			Vias: []skel.ActorVia{
-				skel.ActorViaClient,
-			},
-			AuthEnabled: false,
-			PermEnabled: false,
-		},
-	},
-
 	Services: []*skel.ServiceSchema{
+		{
+			Name:        "AdminApiService",
+			SkelName:    "vine.hub.admin.AdminApiService",
+			Description: "Hub's Admin API service, called by the Dashboard",
+			Hash:        "67c3e840",
+			Pub:         false,
+			Api:         true,
+			AuthMode:    skel.AuthModeUnset,
+			Methods: []*skel.MethodSchema{
+				{
+					Name:        "readOnly",
+					SkelName:    "readOnly",
+					Description: "Whether Hub configuration is read-only",
+					Hash:        "af56a296",
+					AuthMode:    skel.AuthModeUnset,
+					ResultType: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarBool,
+					},
+				},
+			},
+		},
 		{
 			Name:        "AppConfigApiService",
 			SkelName:    "vine.hub.admin.AppConfigApiService",
 			Description: "Hub's application configuration service, called by Client",
-			Hash:        "0da7b047",
+			Hash:        "97ae8434",
 			Pub:         false,
 			Api:         true,
-			AuthMode:    skel.AuthModeNoAuth,
-			Audiences: []*skel.ActorAudienceSchema{
-				{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"},
-			},
+			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
 				{
 					Name:              "list",
@@ -5154,13 +5020,10 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "AppStatusApiService",
 			SkelName:    "vine.hub.admin.AppStatusApiService",
 			Description: "Hub Dashboard's application status service",
-			Hash:        "dead143d",
+			Hash:        "5869e9a5",
 			Pub:         false,
 			Api:         true,
-			AuthMode:    skel.AuthModeNoAuth,
-			Audiences: []*skel.ActorAudienceSchema{
-				{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"},
-			},
+			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
 				{
 					Name:        "list",
@@ -5183,13 +5046,10 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "EventDebugApiService",
 			SkelName:    "vine.hub.admin.EventDebugApiService",
 			Description: "Hub Dashboard Event Debugging Service",
-			Hash:        "aa36888a",
+			Hash:        "70021469",
 			Pub:         false,
 			Api:         true,
-			AuthMode:    skel.AuthModeNoAuth,
-			Audiences: []*skel.ActorAudienceSchema{
-				{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"},
-			},
+			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
 				{
 					Name:        "listEvents",
@@ -5257,99 +5117,13 @@ var _DomainSchema = &skel.DomainSchema{
 			},
 		},
 		{
-			Name:        "MaintenanceApiService",
-			SkelName:    "vine.hub.admin.MaintenanceApiService",
-			Description: "Hub maintenance service",
-			Hash:        "a4ba47c3",
-			Pub:         false,
-			Api:         true,
-			AuthMode:    skel.AuthModeNoAuth,
-			Audiences: []*skel.ActorAudienceSchema{
-				{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"},
-			},
-			Methods: []*skel.MethodSchema{
-				{
-					Name:        "configReadOnly",
-					SkelName:    "configReadOnly",
-					Description: "Whether Hub configuration is read-only",
-					Hash:        "c9522dd4",
-					AuthMode:    skel.AuthModeUnset,
-					ResultType: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:              "previewSeedYaml",
-					SkelName:          "previewSeedYaml",
-					Description:       "Preview Seed YAML differences",
-					Hash:              "7816ad3c",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Seed preview",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "content",
-							Description: "Seed YAML content",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "SeedPreview",
-						SkelName: "vine.hub.admin.SeedPreview",
-					},
-				},
-				{
-					Name:              "applySeedYaml",
-					SkelName:          "applySeedYaml",
-					Description:       "Apply Seed YAML entity updates",
-					Hash:              "29abfffc",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Updated Seed preview",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "content",
-							Description: "Seed YAML content",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name:        "selections",
-							Description: "Entity to update",
-							Type: &skel.TypeSchema{
-								Kind: skel.TypeKindList,
-								Element: &skel.TypeSchema{
-									Kind:     skel.TypeKindData,
-									Name:     "SeedItemSelection",
-									SkelName: "vine.hub.admin.SeedItemSelection",
-								},
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "SeedPreview",
-						SkelName: "vine.hub.admin.SeedPreview",
-					},
-				},
-			},
-		},
-		{
 			Name:        "PortalCertApiService",
 			SkelName:    "vine.hub.admin.PortalCertApiService",
 			Description: "Hub's Portal site certificate service, called by the Portal admin client",
-			Hash:        "721bef55",
+			Hash:        "9d1673c5",
 			Pub:         false,
 			Api:         true,
-			AuthMode:    skel.AuthModeNoAuth,
-			Audiences: []*skel.ActorAudienceSchema{
-				{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"},
-			},
+			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
 				{
 					Name:              "list",
@@ -5469,13 +5243,10 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "PortalEntryApiService",
 			SkelName:    "vine.hub.admin.PortalEntryApiService",
 			Description: "Hub's Portal access entry service, called by the Portal admin client",
-			Hash:        "c295c3f0",
+			Hash:        "e6e9d06b",
 			Pub:         false,
 			Api:         true,
-			AuthMode:    skel.AuthModeNoAuth,
-			Audiences: []*skel.ActorAudienceSchema{
-				{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"},
-			},
+			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
 				{
 					Name:              "list",
@@ -5604,13 +5375,10 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "PortalRuleApiService",
 			SkelName:    "vine.hub.admin.PortalRuleApiService",
 			Description: "Hub's Portal entry rule service, called by the Portal admin client",
-			Hash:        "e0235b86",
+			Hash:        "b5b8db6e",
 			Pub:         false,
 			Api:         true,
-			AuthMode:    skel.AuthModeNoAuth,
-			Audiences: []*skel.ActorAudienceSchema{
-				{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"},
-			},
+			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
 				{
 					Name:              "list",
@@ -5730,13 +5498,10 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "PortalSiteApiService",
 			SkelName:    "vine.hub.admin.PortalSiteApiService",
 			Description: "Hub's Portal target site service, called by the Portal admin client",
-			Hash:        "258ce5b9",
+			Hash:        "f713a78d",
 			Pub:         false,
 			Api:         true,
-			AuthMode:    skel.AuthModeNoAuth,
-			Audiences: []*skel.ActorAudienceSchema{
-				{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"},
-			},
+			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
 				{
 					Name:              "list",
@@ -5869,13 +5634,10 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "PortalStatusApiService",
 			SkelName:    "vine.hub.admin.PortalStatusApiService",
 			Description: "Hub Dashboard's Portal instance status service",
-			Hash:        "00945e2a",
+			Hash:        "49b2f739",
 			Pub:         false,
 			Api:         true,
-			AuthMode:    skel.AuthModeNoAuth,
-			Audiences: []*skel.ActorAudienceSchema{
-				{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"},
-			},
+			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
 				{
 					Name:        "list",
@@ -5898,13 +5660,10 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "ServiceDebugApiService",
 			SkelName:    "vine.hub.admin.ServiceDebugApiService",
 			Description: "Hub Dashboard Service debugging service",
-			Hash:        "6f47d948",
+			Hash:        "7bbd9cf0",
 			Pub:         false,
 			Api:         true,
-			AuthMode:    skel.AuthModeNoAuth,
-			Audiences: []*skel.ActorAudienceSchema{
-				{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"},
-			},
+			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
 				{
 					Name:        "listAppInstances",
@@ -6069,13 +5828,10 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "SkeletonApiService",
 			SkelName:    "vine.hub.admin.SkeletonApiService",
 			Description: "Hub's skeleton service, called by the Portal admin client",
-			Hash:        "0473c6fe",
+			Hash:        "53e522bd",
 			Pub:         false,
 			Api:         true,
-			AuthMode:    skel.AuthModeNoAuth,
-			Audiences: []*skel.ActorAudienceSchema{
-				{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"},
-			},
+			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
 				{
 					Name:              "listDomains",
@@ -6227,13 +5983,10 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "TaskDebugApiService",
 			SkelName:    "vine.hub.admin.TaskDebugApiService",
 			Description: "Hub Dashboard Task Debugging Service",
-			Hash:        "11c85af4",
+			Hash:        "3040e825",
 			Pub:         false,
 			Api:         true,
-			AuthMode:    skel.AuthModeNoAuth,
-			Audiences: []*skel.ActorAudienceSchema{
-				{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"},
-			},
+			AuthMode:    skel.AuthModeUnset,
 			Methods: []*skel.MethodSchema{
 				{
 					Name:        "listTasks",

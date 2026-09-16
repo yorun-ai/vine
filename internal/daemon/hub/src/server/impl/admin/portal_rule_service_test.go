@@ -14,12 +14,12 @@ func newTestPortalSiteCore(siteRepo core.PortalSiteRepo) *core.PortalSiteCore {
 	return &core.PortalSiteCore{PortalSiteRepo: siteRepo, SchemaRepo: &_SkeletonServiceSchemaRepo{}}
 }
 
-// _MaintenanceServicePortalCertRepo is a map-backed certificate repository.
-type _MaintenanceServicePortalCertRepo struct {
+// _PortalCertRepoSpy is a map-backed certificate repository.
+type _PortalCertRepoSpy struct {
 	items map[string]*core.PortalCert
 }
 
-func (r *_MaintenanceServicePortalCertRepo) List() []*core.PortalCert {
+func (r *_PortalCertRepoSpy) List() []*core.PortalCert {
 	items := make([]*core.PortalCert, 0, len(r.items))
 	for _, item := range r.items {
 		items = append(items, item)
@@ -27,7 +27,7 @@ func (r *_MaintenanceServicePortalCertRepo) List() []*core.PortalCert {
 	return vslice.SortBy(items, func(a *core.PortalCert, b *core.PortalCert) bool { return a.Id < b.Id })
 }
 
-func (r *_MaintenanceServicePortalCertRepo) GetById(id int) (*core.PortalCert, bool) {
+func (r *_PortalCertRepoSpy) GetById(id int) (*core.PortalCert, bool) {
 	for _, item := range r.items {
 		if item.Id == id {
 			return item, true
@@ -36,19 +36,19 @@ func (r *_MaintenanceServicePortalCertRepo) GetById(id int) (*core.PortalCert, b
 	return nil, false
 }
 
-func (r *_MaintenanceServicePortalCertRepo) GetByName(name string) (*core.PortalCert, bool) {
+func (r *_PortalCertRepoSpy) GetByName(name string) (*core.PortalCert, bool) {
 	item, ok := r.items[name]
 	return item, ok
 }
 
-func (r *_MaintenanceServicePortalCertRepo) Save(cert *core.PortalCert) {
+func (r *_PortalCertRepoSpy) Save(cert *core.PortalCert) {
 	if r.items == nil {
 		r.items = map[string]*core.PortalCert{}
 	}
 	r.items[cert.Name] = cert
 }
 
-func (r *_MaintenanceServicePortalCertRepo) Remove(id int) bool {
+func (r *_PortalCertRepoSpy) Remove(id int) bool {
 	for name, item := range r.items {
 		if item.Id == id {
 			delete(r.items, name)
@@ -60,7 +60,7 @@ func (r *_MaintenanceServicePortalCertRepo) Remove(id int) bool {
 
 // newTestPortalCertCore builds a certificate core with an empty repository.
 func newTestPortalCertCore() *core.PortalCertCore {
-	return &core.PortalCertCore{PortalCertRepo: &_MaintenanceServicePortalCertRepo{}}
+	return &core.PortalCertCore{PortalCertRepo: &_PortalCertRepoSpy{}}
 }
 
 // newTestPortalRuleCore builds a rule core with the chosen rule repository and
@@ -75,7 +75,7 @@ func newTestPortalRuleCore(ruleRepo core.PortalRuleRepo, entryRepos ...core.Port
 		PortalEntryCore: &core.PortalEntryCore{
 			PortalEntryRepo: entryRepo,
 			PortalRuleRepo:  ruleRepo,
-			PortalSiteRepo:  &_MaintenanceServicePortalSiteRepo{items: map[string]*core.PortalSite{}},
+			PortalSiteRepo:  &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{}},
 		},
 	}
 }

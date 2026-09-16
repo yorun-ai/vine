@@ -14,10 +14,8 @@ import (
 )
 
 type _SettingsYAMLPayload struct {
-	AppConfigs  []_AppConfig  `yaml:"appConfigs"`
-	PortalSites []_PortalSite `yaml:"portalSites"`
-	// PortalEntries declares named entries. Hub also creates an entry on its own
-	// for the access of a rule that no entry serves yet.
+	AppConfigs    []_AppConfig   `yaml:"appConfigs"`
+	PortalSites   []_PortalSite  `yaml:"portalSites"`
 	PortalEntries []_PortalEntry `yaml:"portalEntries"`
 	PortalRules   []_PortalRule  `yaml:"portalRules"`
 	PortalCerts   []_PortalCert  `yaml:"portalCerts"`
@@ -119,9 +117,9 @@ func ResolveSeedRule(entryCore *core.PortalEntryCore, rule *SeedRule) *core.Port
 	return &resolved
 }
 
-// ParseSeedEntities decodes a seed document without resolving seed variables and
+// parseSeedEntities decodes a seed document without resolving seed variables and
 // returns the entities it declares. Callers validate the entities they apply.
-func ParseSeedEntities(content string) (*SeedEntities, error) {
+func parseSeedEntities(content string) (*SeedEntities, error) {
 	payload, err := vcode.UnmarshalYaml[*_SettingsYAMLPayload]([]byte(content))
 	if err != nil || payload == nil {
 		return nil, err

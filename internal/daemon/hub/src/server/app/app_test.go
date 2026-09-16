@@ -413,7 +413,7 @@ func TestHubConfigurationLifecycle(t *testing.T) {
 				b.BindInstance(access)
 				manager.Bind(b)
 				spec.BindCommon(b)
-				b.Bind(di.T[*adminimpl.MaintenanceApiServiceServerImpl]()).In(di.SingletonScope)
+				b.Bind(di.T[*adminimpl.AdminApiServiceServerImpl]()).In(di.SingletonScope)
 				b.Bind(di.T[*seeder.Seeder]()).In(di.SingletonScope)
 				b.Bind(di.T[*initializer.Initializer]()).In(di.SingletonScope)
 			})
@@ -466,8 +466,8 @@ func TestHubConfigurationLifecycle(t *testing.T) {
 			})
 			require.NotEmpty(t, module.RegistryCore.RegistryRepo.ListAppStatuses())
 			require.NotEmpty(t, module.SchemaRepo.ListDomainSchemaViews())
-			service := injector.Get(di.T[*adminimpl.MaintenanceApiServiceServerImpl]()).Interface().(*adminimpl.MaintenanceApiServiceServerImpl)
-			require.Equal(t, !persistent, service.ConfigReadOnly())
+			service := injector.Get(di.T[*adminimpl.AdminApiServiceServerImpl]()).Interface().(*adminimpl.AdminApiServiceServerImpl)
+			require.Equal(t, !persistent, service.ReadOnly())
 		})
 	}
 }

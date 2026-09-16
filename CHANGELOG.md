@@ -166,6 +166,24 @@ are not part of the public compatibility commitment.
 
 ### Removed
 
+- The Dashboard no longer imports a seed document. The Admin API service keeps
+  only the `readOnly` method the Dashboard shows in its read-only banner, and the
+  page that previewed and applied a YAML update is gone with the API methods
+  behind it: a deployment applies its configuration from the seed Hub loads, and
+  an operator edits a stored database with the entity pages.
+
+- The admin domain declares no actor and no Web. `vine.hub.admin.AdminActor` and
+  `vine.hub.admin.DashboardWeb` existed so Portal could route the Dashboard and
+  its services, and `noauth` told that path to call them as an anonymous actor;
+  Hub serves the Admin API and the build on its own listener now, which resolves
+  no actor, so the schema names neither a Web nor an audience and the services
+  declare no auth mode. A Portal site that names one of them is refused, because
+  the service allows no audience. The startup cleanup that removed the Watch keys
+  an earlier release published for the Dashboard goes with it: Hub serves Watch
+  from memory in its own process, so a registration only exists while the release
+  that wrote it runs, and a stored built-in entity is removed from the database
+  instead.
+
 - The `vine dev` command is gone. It bundled Hub, Portal, and Link into the CLI
   process for local application development, but it reached Hub over in-process
   transports and therefore served no Admin API and no front-end asset, and its

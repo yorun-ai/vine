@@ -128,10 +128,6 @@ data AppConfigCreation {
 
 @desc("Hub's application configuration service, called by Client")
 api service AppConfigApiService {
-    for AdminActor
-
-    noauth
-
     @desc("List configuration items")
     method list {
         @desc("Configuration item list")

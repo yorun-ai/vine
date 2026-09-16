@@ -197,10 +197,6 @@ data PortalSiteOptions {
 
 @desc("Hub's Portal target site service, called by the Portal admin client")
 api service PortalSiteApiService {
-    for AdminActor
-
-    noauth
-
     @desc("List Portal target sites")
     method list {
         @desc("Portal target site list")

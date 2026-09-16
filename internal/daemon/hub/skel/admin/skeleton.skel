@@ -658,10 +658,6 @@ data SkeletonDomain {
 
 @desc("Hub's skeleton service, called by the Portal admin client")
 api service SkeletonApiService {
-    for AdminActor
-
-    noauth
-
     @desc("List Domain skeleton")
     method listDomains {
         @desc("Domain skeleton list")
