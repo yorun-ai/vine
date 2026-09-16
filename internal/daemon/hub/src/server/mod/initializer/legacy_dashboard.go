@@ -7,6 +7,11 @@ import (
 	"go.yorun.ai/vine/util/vslice"
 )
 
+// TODO: Delete this file once the upgrade window closes, together with the
+// built-in cleanup in the model: a Watch store that never held these keys needs
+// no removal, and a literal list would express the one-off pass better than the
+// schema scan below.
+
 // Hub used to publish its own Dashboard through Portal: it provisioned a
 // built-in entry, two sites, and two rules, and registered the Dashboard's Rpc
 // and Web endpoints in Watch. Hub serves the Admin API and the Dashboard on its

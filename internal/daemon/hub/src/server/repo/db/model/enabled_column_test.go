@@ -32,10 +32,6 @@ func TestPortalSchemaAdmitsAnOlderHub(t *testing.T) {
 		assert.NotNil(t, columnDefault(t, db, table, "enabled"), table+" publishes what an older Hub inserts")
 	}
 	assert.Nil(t, columnDefault(t, db, "portal_rule", "entry_id"))
-
-	// The built-in marker differs by design: its gorm tag drops the zero value
-	// on create, so its schema default is the value Hub relies on.
-	assert.NotNil(t, columnDefault(t, db, "portal_entry", "built_in"))
 }
 
 // columnDefault returns the database default of one column, nil when the schema

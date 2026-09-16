@@ -10,11 +10,11 @@ CREATE TABLE IF NOT EXISTS portal_rule (
     route_site_name TEXT NOT NULL,                -- Target site name, empty string when target is not SITE
     route_redirection_pattern TEXT NOT NULL,      -- Redirection pattern, empty string when target is not Redirect
     route_path_prefix TEXT NOT NULL DEFAULT '',
-    built_in BOOLEAN NOT NULL DEFAULT FALSE,      -- Whether this rule is built in
+    built_in BOOLEAN NOT NULL DEFAULT FALSE,      -- TODO: Drop with the built-in cleanup; nothing sets it TRUE
     enabled BOOLEAN NOT NULL DEFAULT TRUE,        -- Whether Hub publishes this rule; an older Hub leaves the default
-    match_scheme TEXT NOT NULL,                   -- Deprecated: the entry stores the access
-    match_host TEXT NOT NULL,                     -- Deprecated: the entry stores the access
-    match_port INTEGER NOT NULL                   -- Deprecated: the entry stores the access
+    match_scheme TEXT NOT NULL,                   -- TODO: Drop with entry_id; the entry stores the access, and only an earlier Hub reads these
+    match_host TEXT NOT NULL,                     -- TODO: Drop with entry_id
+    match_port INTEGER NOT NULL                   -- TODO: Drop with entry_id
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_rule_entry_path

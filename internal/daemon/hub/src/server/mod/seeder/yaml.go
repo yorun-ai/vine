@@ -272,6 +272,8 @@ func checkSeedEntityFields(fields map[string]yaml.Node, section string, name str
 				seedEntityLabel(section, name))
 		}
 		if key == "builtIn" {
+			// TODO: Report builtIn as an unknown field once the built-in entities
+			// are a release behind.
 			return fmt.Errorf("%s declares \"builtIn\"; Hub owns the built-in entities, so a seed cannot declare it",
 				seedEntityLabel(section, name))
 		}

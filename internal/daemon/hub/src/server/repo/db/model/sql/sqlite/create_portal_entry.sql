@@ -7,16 +7,14 @@ CREATE TABLE IF NOT EXISTS portal_entry (
     scheme TEXT NOT NULL,                   -- Scheme, only http / https are supported
     host TEXT NOT NULL,                     -- Domain or IP, empty string means no restriction
     port INTEGER NOT NULL,                  -- Port Portal listens on
-    built_in BOOLEAN NOT NULL DEFAULT FALSE, -- Whether this entry carries built-in Hub rules
-    enabled BOOLEAN NOT NULL DEFAULT TRUE    -- Whether Hub publishes the rules of this entry; an older Hub leaves the default
+    enabled BOOLEAN NOT NULL DEFAULT TRUE    -- Whether Hub publishes the rules of this entry
 );
 
 -- An entry name identifies the entry the Dashboard shows and links to.
 CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_entry_name
-    ON portal_entry(name) WHERE built_in = FALSE AND deleted_at IS NULL;
+    ON portal_entry(name) WHERE deleted_at IS NULL;
 
--- One user entry serves an access: the built-in Dashboard entry is not part of
--- user entries, a user rule never joins it, and Hub creates an entry again when
--- rules return to an access whose entry was removed.
+-- One entry serves an access, and Hub creates an entry again when rules return
+-- to an access whose entry was removed.
 CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_entry_access
-    ON portal_entry(scheme, host, port) WHERE built_in = FALSE AND deleted_at IS NULL;
+    ON portal_entry(scheme, host, port) WHERE deleted_at IS NULL;

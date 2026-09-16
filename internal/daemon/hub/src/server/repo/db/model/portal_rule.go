@@ -32,11 +32,11 @@ type PortalRule struct {
 	FieldSources string `gorm:"-"`
 	rdb.Model
 	Name string `gorm:"column:name"`
-	// MatchScheme, MatchHost, and MatchPort are deprecated: the entry of the
-	// rule owns the access, and Hub reads it from there. The columns stay in the
-	// table for one release so Hub does not drop data from a database it does
-	// not own, and Hub keeps them filled with the entry access until a later
-	// release removes both the columns and these fields.
+	// TODO: Delete MatchScheme, MatchHost, MatchPort, the columns behind them,
+	// and the writes below once the upgrade window closes. The entry owns the
+	// access, and Hub reads it from there: the columns stay because dropping a
+	// column in a database Hub does not own cannot be undone, and Hub fills them
+	// with the entry access only so an earlier Hub still reads the database.
 	MatchScheme string `gorm:"column:match_scheme"`
 	MatchHost   string `gorm:"column:match_host"`
 	MatchPort   int    `gorm:"column:match_port"`
@@ -61,9 +61,8 @@ type PortalRuleDao struct {
 
 func (d *PortalRuleDao) InitSchema() {
 	ex.PanicIfError(ensurePortalEntryTable(d.GormDB()))
-	legacyBuiltInAccesses := removeLegacyBuiltInEntities(d.GormDB())
+	removeLegacyBuiltInEntities(d.GormDB())
 	d.migrateAccessColumns()
-	removeLegacyBuiltInAccessEntries(d.GormDB(), legacyBuiltInAccesses)
 	ensureEnabledColumn(d.GormDB(), "portal_rule")
 	sql := schemaSQL(d.GormDB(), createPortalRuleSQLiteSQL, createPortalRulePgSQL)
 	ex.PanicIfError(d.GormDB().Exec(sql).Error)
@@ -91,6 +90,7 @@ func (d *PortalRuleDao) Save(rule *PortalRule) *PortalRule {
 	row, ok := d.ById(rule.Id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("entry rule %d not found", rule.Id))
 	row.FieldSources = rule.FieldSources
+	// TODO: Drop the three access columns from this patch with the fields above.
 	d.Update(row, rdb.Patch{
 		"name":                      rule.Name,
 		"entry_id":                  rule.EntryId,
@@ -146,6 +146,9 @@ type _PortalEntryId struct {
 // stored access and gives each group one entry the rules then reference. It
 // keeps the stored access columns for one release, because dropping columns in a
 // database Hub does not own cannot be undone, and Hub stops reading them.
+//
+// TODO: Delete this migration and migrateAccessGroup once the upgrade window
+// closes, and drop the access columns from the table then.
 func (d *PortalRuleDao) migrateAccessColumns() {
 	db := d.GormDB()
 	if !db.Migrator().HasTable(&PortalRule{}) {
@@ -176,8 +179,8 @@ func (d *PortalRuleDao) migrateAccessColumns() {
 
 	d.resolveMigratedRulePaths()
 
-	// The access columns stay: Hub stops reading them here and removes them in a
-	// later release, together with the matching PortalRule fields.
+	// TODO: Drop the access columns with the matching PortalRule fields; Hub
+	// stops reading them here and keeps them only for an earlier Hub.
 	//
 	// The index goes instead of the columns: it described what made a rule
 	// unique before entries existed, and Hub keeps one rule per entry path and
@@ -202,8 +205,8 @@ func (d *PortalRuleDao) migrateAccessGroup(group _LegacyPortalRuleAccess) int {
 
 	id := _PortalEntryId{}
 	ex.PanicIfError(db.Raw(
-		"SELECT id FROM portal_entry WHERE scheme = ? AND host = ? AND port = ? AND built_in = ?",
-		scheme, host, port, false,
+		"SELECT id FROM portal_entry WHERE scheme = ? AND host = ? AND port = ?",
+		scheme, host, port,
 	).Scan(&id).Error)
 	if id.Id != 0 {
 		return id.Id
@@ -214,8 +217,8 @@ func (d *PortalRuleDao) migrateAccessGroup(group _LegacyPortalRuleAccess) int {
 		portalEntryName(scheme, host, port), scheme, host, port, true,
 	).Error)
 	ex.PanicIfError(db.Raw(
-		"SELECT id FROM portal_entry WHERE scheme = ? AND host = ? AND port = ? AND built_in = ?",
-		scheme, host, port, false,
+		"SELECT id FROM portal_entry WHERE scheme = ? AND host = ? AND port = ?",
+		scheme, host, port,
 	).Scan(&id).Error)
 	return id.Id
 }
