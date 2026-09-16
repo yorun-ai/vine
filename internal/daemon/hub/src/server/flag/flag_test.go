@@ -18,7 +18,7 @@ func TestNormalizeRejectsPartialMTLSFiles(t *testing.T) {
 func TestFlagNormalizeRequiresSeedWithoutDatabase(t *testing.T) {
 	flags := &Flag{}
 
-	require.PanicsWithError(t, "no-db requires seed-data-file or SeedHubData", func() {
+	require.PanicsWithError(t, "no-db requires a seed data file or SeedHubData", func() {
 		flags.Normalize(false)
 	})
 }
@@ -130,7 +130,7 @@ func TestFlagNormalizeMQModes(t *testing.T) {
 	}
 }
 
-func TestFlagNormalizeInprocClearsListenAndMQ(t *testing.T) {
+func TestFlagNormalizeInprocClearsControlAndWatchListen(t *testing.T) {
 	flags := &Flag{
 		MQMode:         MQModeNATS,
 		Store:          StoreSQLite,
@@ -147,12 +147,21 @@ func TestFlagNormalizeInprocClearsListenAndMQ(t *testing.T) {
 	assert.Equal(t, StoreSQLite, flags.Store)
 	assert.Equal(t, "/tmp/hub.sqlite", flags.DBSQLiteFile)
 	assert.Empty(t, flags.ControlListen)
-	assert.Empty(t, flags.AdminListen)
 	assert.Empty(t, flags.WatchListen)
 	assert.Empty(t, flags.MQNatsEndpoint)
 	assert.Equal(t, MQModeEmbedded, flags.MQMode)
 	assert.Equal(t, "embedded", flags.LockMode)
 	assert.Empty(t, flags.LockRedisEndpoint)
+	// An inproc Hub keeps the admin address its caller declared.
+	assert.Equal(t, "127.0.0.1:7099", flags.AdminListen)
+}
+
+func TestFlagNormalizeInprocWithoutAdminListen(t *testing.T) {
+	flags := &Flag{SeedHubDataFile: "seed.yaml"}
+
+	flags.Normalize(true)
+
+	assert.Empty(t, flags.AdminListen)
 }
 
 func TestFlagInferStoreDefaultsToMemory(t *testing.T) {

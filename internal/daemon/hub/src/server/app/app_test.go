@@ -146,7 +146,6 @@ func TestHubAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 
 	assert.Equal(t, "vine.hub", spec.Name())
 	assert.Equal(t, "vine.hub", spec.InternalAttrs.Info.Name())
-	assert.Equal(t, "vine/hub/admin", spec.InternalAttrs.InprocHostPath)
 	assert.Empty(t, spec.AppFlag.ListenAddr)
 	assert.Empty(t, spec.Flag.ControlListen)
 	assert.Empty(t, spec.Flag.AdminListen)

@@ -19,8 +19,6 @@ import (
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/mtls"
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
-	rpcinproc "go.yorun.ai/vine/internal/core/rpc/transport/inproc"
-	hubapp "go.yorun.ai/vine/internal/daemon/hub/api/app"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	impl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin"
 	debugimpl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin/debug"
@@ -35,34 +33,31 @@ var (
 )
 
 // Server exposes the Hub Admin API on a listener of its own, the way the Hub
-// Control API does. Hub serves the Admin API in every mode, so the operator
-// reaches Hub without Link or Portal in the path.
+// Control API does, so the operator reaches Hub without Link or Portal in the
+// path.
 type Server struct {
 	app.BaseModule
 
-	Context         context.Context         `inject:""`
-	Flag            *flag.Flag              `inject:""`
-	InprocFlag      *app.InternalInprocFlag `inject:""`
-	InternalRuntime app.InternalRuntime     `inject:""`
-	Identity        *mtls.Identity          `inject:""`
+	Context         context.Context     `inject:""`
+	Flag            *flag.Flag          `inject:""`
+	InternalRuntime app.InternalRuntime `inject:""`
+	Identity        *mtls.Identity      `inject:""`
 
 	rpcHTTPHandler   http.Handler
 	rpcHandler       rpcspec.RpcHandler
 	dashboardHandler http.Handler
-	inprocEndpoint   string
-	inprocCleanup    func()
 	httpServer       *http.Server
 	wg               sync.WaitGroup
 }
 
 func (s *Server) BeforeAppStart() error {
+	if s.Flag.AdminListen == "" {
+		// An in-process Hub that asks for no listener serves no Admin API.
+		return nil
+	}
 	s.rpcHTTPHandler, s.rpcHandler = s.InternalRuntime.AdditionalServicer(HandlerTypes()...)
 	s.dashboardHandler = DashboardHandler()
 
-	if s.InprocFlag.Enabled {
-		s.startInproc()
-		return nil
-	}
 	return s.startHTTP()
 }
 
@@ -86,30 +81,10 @@ func HandlerTypes() []reflect.Type {
 }
 
 func (s *Server) BeforeAppStop() {
-	if s.InprocFlag.Enabled {
-		s.stopInproc()
-	} else {
-		s.stopHTTP()
-	}
+	s.stopHTTP()
 	s.rpcHTTPHandler = nil
 	s.rpcHandler = nil
 	s.dashboardHandler = nil
-}
-
-func (s *Server) startInproc() {
-	s.inprocEndpoint = rpcinproc.Endpoint(hubapp.HubAdminInprocHostPath, coreapp.PathRpcInvoke)
-	s.inprocCleanup = rpcinproc.Register(s.inprocEndpoint, s.rpcHandler)
-	adminLogger.Info("hub admin API server started", "endpoint", s.inprocEndpoint)
-}
-
-func (s *Server) stopInproc() {
-	if s.inprocEndpoint == "" {
-		return
-	}
-	s.inprocCleanup()
-	adminLogger.Debug("hub admin API server stopped", "endpoint", s.inprocEndpoint)
-	s.inprocEndpoint = ""
-	s.inprocCleanup = nil
 }
 
 func (s *Server) startHTTP() error {

@@ -102,16 +102,16 @@ func (a *_App) StartAndWait() {
 }
 
 const (
-	flagHubEndpoint   = vinecli.FlagLinkHubEndpoint
-	flagIngressListen = vinecli.FlagLinkIngressListen
-	flagMTLSCAFile    = vinecli.FlagMTLSCAFile
-	flagMTLSCertFile  = vinecli.FlagMTLSCertFile
-	flagMTLSKeyFile   = vinecli.FlagMTLSKeyFile
-	envHubEndpoint    = vinecli.EnvLinkHubEndpoint
-	envIngressListen  = vinecli.EnvLinkIngressListen
-	envMTLSCAFile     = vinecli.EnvMTLSCAFile
-	envMTLSCertFile   = vinecli.EnvMTLSCertFile
-	envMTLSKeyFile    = vinecli.EnvMTLSKeyFile
+	flagHubEndpoint   = vinecli.FlagLinkedHubEndpoint
+	flagIngressListen = vinecli.FlagLinkedIngressListen
+	flagMTLSCAFile    = vinecli.FlagLinkedMTLSCAFile
+	flagMTLSCertFile  = vinecli.FlagLinkedMTLSCertFile
+	flagMTLSKeyFile   = vinecli.FlagLinkedMTLSKeyFile
+	envHubEndpoint    = vinecli.EnvLinkedHubEndpoint
+	envIngressListen  = vinecli.EnvLinkedIngressListen
+	envMTLSCAFile     = vinecli.EnvLinkedMTLSCAFile
+	envMTLSCertFile   = vinecli.EnvLinkedMTLSCertFile
+	envMTLSKeyFile    = vinecli.EnvLinkedMTLSKeyFile
 )
 
 func startLink(option Option) app.App {
@@ -135,13 +135,13 @@ func flags(flag *linkflag.Flag) []ucli.Flag {
 		&ucli.StringFlag{
 			Name:        flagIngressListen,
 			Sources:     ucli.EnvVars(envIngressListen),
-			Usage:       "link ingress listen address",
+			Usage:       "in-process Link ingress listen address",
 			Destination: &flag.IngressListen,
 		},
 		&ucli.StringFlag{
 			Name:        flagMTLSCAFile,
 			Sources:     ucli.EnvVars(envMTLSCAFile),
-			Usage:       "Vine backend mTLS CA certificate file",
+			Usage:       "Vine backend mTLS CA certificate file for the in-process Link",
 			Destination: &flag.MTLS.CAFile,
 		},
 		&ucli.StringFlag{

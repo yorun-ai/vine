@@ -201,9 +201,8 @@ bash script/gen-skel.sh hub
 
 Hub 支持作为单进程内组件运行：
 
-- Hub Control API 注册在 `rpc+inproc://vine/hub`；Dashboard Admin Rpc 和 Web
-  handler 分别注册在 `rpc+inproc://vine/hub/admin` 与
-  `web+inproc://vine/hub/admin` 下，不再通过 HTTP 暴露。
+- Hub Control API 注册在 `rpc+inproc://vine/hub`；Admin API 只走自己的监听，
+  因此除非调用方声明了 admin 监听地址，进程内运行的 Hub 不提供 Admin API。
 - `watchserver` 不再启动对外 TCP 端口，只保留进程内 Redis server。
 - `vined` 中会保存这份进程内 Redis server 指针，供 inproc 模式下的 `WatchClient` 直接使用。
 

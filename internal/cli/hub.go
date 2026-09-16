@@ -48,6 +48,23 @@ const (
 	EnvHubNoDB          = "VINE_NO_DB"
 	EnvHubDBSQLiteFile  = "VINE_DB_SQLITE_FILE"
 	EnvHubDBPostgresURL = "VINE_DB_POSTGRES_URL"
+
+	// Standalone has no command to scope these, so they carry the prefix.
+	FlagStandaloneHubNoDB           = "hub-no-db"
+	FlagStandaloneHubDBSQLiteFile   = "hub-db-sqlite-file"
+	FlagStandaloneHubDBPostgresURL  = "hub-db-postgres-url"
+	FlagStandaloneHubSeedDataFile   = "hub-seed-data-file"
+	FlagStandaloneHubSeedSourceFile = "hub-seed-source-file"
+	FlagStandaloneHubSeedVarsFile   = "hub-seed-vars-file"
+	FlagStandaloneHubAdminListen    = "hub-admin-listen"
+
+	EnvStandaloneHubNoDB           = "VINE_HUB_NO_DB"
+	EnvStandaloneHubDBSQLiteFile   = "VINE_HUB_DB_SQLITE_FILE"
+	EnvStandaloneHubDBPostgresURL  = "VINE_HUB_DB_POSTGRES_URL"
+	EnvStandaloneHubSeedDataFile   = "VINE_HUB_SEED_DATA_FILE"
+	EnvStandaloneHubSeedSourceFile = "VINE_HUB_SEED_SOURCE_FILE"
+	EnvStandaloneHubSeedVarsFile   = "VINE_HUB_SEED_VARS_FILE"
+	EnvStandaloneHubAdminListen    = "VINE_HUB_ADMIN_LISTEN"
 )
 
 // startHubApp is overridden in tests to assert parsed flags without starting the real app.

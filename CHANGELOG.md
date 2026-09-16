@@ -47,6 +47,17 @@ are not part of the public compatibility commitment.
   database keeps its configuration enabled, a seed that omits the switch stays
   enabled, and a Portal seed entry that declares a field Hub does not name
   (`enabled` included) fails before Hub publishes anything.
+- Standalone can serve the in-process Hub's Admin API and Dashboard on a listener
+  of its own through `--hub-admin-listen` and `standalone.Option.AdminListen`,
+  and the Hub keeps the address in inproc mode for this purpose. The address is
+  empty by default: the Admin API carries no authentication, so an address
+  another host can reach exposes configuration writes to it. Every other Hub and
+  Link surface stays in-process.
+
+- The Admin API answers its listener only. It used to register a second handler
+  at `rpc+inproc://vine/hub/admin`, which nothing called once the Dashboard moved
+  to Hub, so an in-process Hub that declares no admin address now serves no Admin
+  API at all, instead of an address no client reaches.
 
 ### Changed
 
@@ -66,6 +77,15 @@ are not part of the public compatibility commitment.
   drop the redundant `hub` from their names, because they belong to Hub's own
   command: `--seed-data-file`, `--seed-source-file`, and `--seed-vars-file`, with
   `VINE_SEED_DATA_FILE`, `VINE_SEED_SOURCE_FILE`, and `VINE_SEED_VARS_FILE`.
+
+- A business binary that runs the runtime in its own process names the component
+  its parameters configure, because it has no serve command to scope them:
+  standalone accepts `--hub-no-db`, `--hub-db-sqlite-file`,
+  `--hub-db-postgres-url`, `--hub-seed-data-file`, `--hub-seed-source-file`, and
+  `--hub-seed-vars-file` under `VINE_HUB_*`, and linked accepts
+  `--link-hub-endpoint`, `--link-ingress-listen`, `--link-mtls-ca-file`,
+  `--link-mtls-cert-file`, and `--link-mtls-key-file` under `VINE_LINK_*`. The
+  Hub validation messages no longer name a flag the caller may not have.
 
 - Hub serves the Admin API on its own listener, the way it serves the Control
   API: the `admin` module owns `--admin-listen`, which defaults to

@@ -293,10 +293,9 @@ with the script, and verify that all callers remain consistent.
 
 Hub can run as a component in a single-process runtime:
 
-- The Hub Control API registers at `rpc+inproc://vine/hub`, while Dashboard
-  admin Rpc and Web handlers register below
-  `rpc+inproc://vine/hub/admin` and
-  `web+inproc://vine/hub/admin` instead of being exposed over HTTP.
+- The Hub Control API registers at `rpc+inproc://vine/hub`. The Admin API keeps
+  its own listener instead, so an in-process Hub serves no Admin API unless its
+  caller declares an admin address.
 - `watchserver` does not open an external TCP port and retains only the in-process Watch server.
 - `vined` keeps a pointer to that in-process Watch server so an inproc `WatchClient` can access it directly.
 
