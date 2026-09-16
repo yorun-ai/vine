@@ -1,8 +1,8 @@
 package rdb
 
 import (
-	"go.yorun.ai/vine/internal/core/ex"
-	"go.yorun.ai/vine/internal/infra/rdb/adapter"
+	"go.yorun.ai/vine/core/ex"
+	"go.yorun.ai/vine/infra/rdb/adapter"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -11,12 +11,16 @@ type _GormDBSetter interface {
 	setGormDB(*gorm.DB)
 }
 
+// Dao provides typed create, read, update, and delete operations for M.
 type Dao[M ModelConstraint] struct {
 	gormDB *gorm.DB
 }
 
+// Patch describes selected field updates for a record.
 type Patch map[string]any
 
+// NewDao creates a typed data access object backed by gdb and registers UUID generation.
+// Initialize DAOs before using an externally managed connection concurrently.
 func NewDao[M ModelConstraint](gdb *gorm.DB) Dao[M] {
 	ex.PanicIfError(adapter.RegisterCreateCallbacks(gdb))
 	return Dao[M]{

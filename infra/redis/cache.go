@@ -25,6 +25,7 @@ type _CacheSpec interface {
 	configure(ctx context.Context, cmdable goredis.Cmdable, keyPrefix string)
 }
 
+// Cache stores typed values under a shared key prefix.
 type Cache[T any] struct {
 	ctx       context.Context
 	cmdable   goredis.Cmdable

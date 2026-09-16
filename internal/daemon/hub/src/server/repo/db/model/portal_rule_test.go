@@ -9,7 +9,7 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/infra/rdb"
+	"go.yorun.ai/vine/infra/rdb"
 	"gorm.io/gorm"
 )
 

@@ -1,7 +1,7 @@
 package rdb
 
 import (
-	"go.yorun.ai/vine/internal/infra/rdb/adapter"
+	"go.yorun.ai/vine/infra/rdb/adapter"
 	"gorm.io/gorm"
 	"testing"
 	"uuid"

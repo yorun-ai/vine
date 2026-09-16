@@ -1,12 +1,13 @@
 package rdb
 
 import (
-	"go.yorun.ai/vine/internal/core/ex"
+	"go.yorun.ai/vine/core/ex"
 	"gorm.io/gorm"
 
 	"go.yorun.ai/vine/util/vpre"
 )
 
+// Query builds and executes typed queries for M.
 type Query[M ModelConstraint] struct {
 	gormDB *gorm.DB
 

@@ -12,7 +12,7 @@ import (
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/core/di"
+	"go.yorun.ai/vine/core/di"
 )
 
 type _TestLockerRedis struct {
@@ -151,7 +151,7 @@ func TestRedisNewLockerByTypeUsesDefaultTypePrefixWhenNotOverridden(t *testing.T
 
 	locker := redis.NewLockerByType(reflect.TypeFor[*_TestDefaultLocker](), context.Background()).(*_TestDefaultLocker)
 
-	assert.Equal(t, "go.yorun.ai_vine_internal_infra_redis._TestDefaultLocker", locker.keyPrefix)
+	assert.Equal(t, "go.yorun.ai_vine_infra_redis._TestDefaultLocker", locker.keyPrefix)
 }
 
 func TestRedisManagerBindProvidesLocker(t *testing.T) {

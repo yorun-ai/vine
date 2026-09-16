@@ -3,9 +3,9 @@ package db
 import (
 	"uuid"
 
+	"go.yorun.ai/vine/infra/rdb"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
-	"go.yorun.ai/vine/internal/infra/rdb"
 	"gorm.io/gorm"
 )
 

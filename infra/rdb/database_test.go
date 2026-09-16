@@ -8,9 +8,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/app"
-	"go.yorun.ai/vine/internal/core/di"
-	"go.yorun.ai/vine/internal/core/logger"
+	"go.yorun.ai/vine/app"
+	"go.yorun.ai/vine/core/di"
+	"go.yorun.ai/vine/core/logger"
 )
 
 type databaseTestModel struct {

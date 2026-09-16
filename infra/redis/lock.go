@@ -19,8 +19,11 @@ type _LockOption struct {
 	refresh bool
 }
 
+// LockOptionFunc configures one lock acquisition.
 type LockOptionFunc func(*_LockOption)
 
+// WithTimeout sets a fixed lease duration and disables automatic renewal, so the
+// lock expires at the timeout unless it is released first.
 func WithTimeout(timeout time.Duration) LockOptionFunc {
 	vpre.Check(timeout > 0, "redis lock timeout must be positive")
 	return func(option *_LockOption) {
@@ -71,6 +74,7 @@ type _LockerSpec interface {
 	configure(ctx context.Context, cmdable goredis.Cmdable, keyPrefix string)
 }
 
+// Locker creates distributed Redis locks.
 type Locker struct {
 	ctx       context.Context
 	cmdable   goredis.Cmdable
@@ -128,6 +132,7 @@ func (l *Locker) configure(ctx context.Context, cmdable goredis.Cmdable, keyPref
 	l.keyPrefix = keyPrefix
 }
 
+// Lock represents one distributed lock acquisition.
 type Lock struct {
 	ctx     context.Context
 	cmdable goredis.Cmdable

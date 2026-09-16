@@ -11,7 +11,7 @@ import (
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/core/di"
+	"go.yorun.ai/vine/core/di"
 )
 
 type _TestCacheRedis struct {
@@ -180,7 +180,7 @@ func TestRedisNewCacheByTypeUsesDefaultTypePrefixWhenNotOverridden(t *testing.T)
 
 	cache := redis.NewCacheByType(reflect.TypeFor[*_TestDefaultCache](), context.Background()).(*_TestDefaultCache)
 
-	assert.Equal(t, "go.yorun.ai_vine_internal_infra_redis._TestDefaultCache", cache.keyPrefix)
+	assert.Equal(t, "go.yorun.ai_vine_infra_redis._TestDefaultCache", cache.keyPrefix)
 }
 
 func TestRedisManagerBindProvidesCache(t *testing.T) {

@@ -5,21 +5,24 @@ import (
 	"reflect"
 
 	goredis "github.com/redis/go-redis/v9"
-	"go.yorun.ai/vine/internal/app"
-	"go.yorun.ai/vine/internal/core/di"
+	"go.yorun.ai/vine/app"
+	"go.yorun.ai/vine/core/di"
 	"go.yorun.ai/vine/util/vpre"
 )
 
+// Option configures a Redis component.
 type Option struct {
 	Endpoint string
 }
 
+// TypeAdder adds a Redis capability type to a specification.
 type TypeAdder func(lockerType reflect.Type)
 
 func defaultOption() *Option {
 	return new(Option)
 }
 
+// RedisSpec describes a named Redis connection and its capabilities.
 type RedisSpec interface {
 	InitOption(option *Option)
 	InitLockers(add TypeAdder)
@@ -33,6 +36,7 @@ type _RedisAccessor interface {
 	setCmdable(cmdable goredis.Cmdable)
 }
 
+// Redis wraps a Redis client for Vine-managed execution contexts.
 type Redis struct {
 	app.BaseManagedComponent[*RedisManager]
 	goredis.Cmdable

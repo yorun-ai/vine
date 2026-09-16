@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"go.yorun.ai/vine/internal/core/logger"
+	"go.yorun.ai/vine/core/logger"
 	gormLogger "gorm.io/gorm/logger"
 	"gorm.io/gorm/utils"
 )

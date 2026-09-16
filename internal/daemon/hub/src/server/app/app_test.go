@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.yorun.ai/vine/infra/rdb"
 	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/internal/core/logger"
@@ -32,7 +33,6 @@ import (
 	repodb "go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/schema"
-	"go.yorun.ai/vine/internal/infra/rdb"
 	"go.yorun.ai/vine/util/vnet"
 )
 
