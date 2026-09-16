@@ -11,7 +11,6 @@ packages=(
   ./internal/core/rpc/transport/inproc
   ./internal/core/web/inproc
   ./internal/daemon/hub/src/server/mod/scheduler
-  ./infra/redis
 )
 
 cd "${repo_dir}"
