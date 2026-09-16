@@ -180,7 +180,7 @@ func TestRedisNewCacheByTypeUsesDefaultTypePrefixWhenNotOverridden(t *testing.T)
 
 	cache := redis.NewCacheByType(reflect.TypeFor[*_TestDefaultCache](), context.Background()).(*_TestDefaultCache)
 
-	assert.Equal(t, "go.yorun.ai_vine_internal_infra_redis._TestDefaultCache", cache.keyPrefix)
+	assert.Equal(t, "go.yorun.ai_vine_infra_redis._TestDefaultCache", cache.keyPrefix)
 }
 
 func TestRedisManagerBindProvidesCache(t *testing.T) {

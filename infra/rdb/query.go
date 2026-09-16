@@ -7,6 +7,7 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
+// Query builds and executes typed queries for M.
 type Query[M ModelConstraint] struct {
 	gormDB *gorm.DB
 

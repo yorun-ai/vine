@@ -3,8 +3,8 @@ package model
 import (
 	_ "embed"
 
+	"go.yorun.ai/vine/infra/rdb"
 	"go.yorun.ai/vine/internal/core/ex"
-	"go.yorun.ai/vine/internal/infra/rdb"
 )
 
 //go:embed sql/sqlite/create_metadata.sql

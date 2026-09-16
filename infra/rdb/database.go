@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// Option configures a relational database component.
 type Option struct {
 	ConnURL     string
 	MaxOpenConn int
@@ -22,6 +23,7 @@ func defaultOption() *Option {
 	}
 }
 
+// TypeAdder adds a model type to a database specification.
 type TypeAdder func(daoType reflect.Type)
 
 // DatabaseSpec declares database options and DAOs. A spec may additionally
@@ -33,6 +35,7 @@ type DatabaseSpec interface {
 	mustBeDatabase()
 }
 
+// Database exposes the underlying GORM connection and transaction helpers.
 type Database struct {
 	app.BaseManagedComponent[*DatabaseManager]
 }

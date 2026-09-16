@@ -53,6 +53,7 @@ func (m *DeletableModel) IsNew() bool {
 
 // UModel provides a UUIDv7 identifier, timestamps, and soft deletion.
 // It is the recommended base for new models.
+// RDB connections generate an ID when empty, before user-defined creation hooks.
 type UModel struct {
 	Id        uuid.UUID      `gorm:"column:id;primaryKey"`
 	CreatedAt time.Time      `gorm:"column:created_at;autoCreateTime"`
@@ -70,6 +71,7 @@ func (m *UModel) IsNew() bool {
 
 // UDeletableModel provides a UUIDv7 identifier and timestamps for physical deletion.
 // It is the recommended base for new models that require physical deletion.
+// RDB connections generate an ID when empty, before user-defined creation hooks.
 type UDeletableModel struct {
 	Id        uuid.UUID `gorm:"column:id;primaryKey"`
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`

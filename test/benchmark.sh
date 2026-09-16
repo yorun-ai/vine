@@ -13,7 +13,7 @@ packages=(
   ./internal/core/rpc/transport/http
   ./internal/daemon/portal/src/server/mod/access
   ./internal/daemon/portal/src/server/util/computil
-  ./internal/infra/redis
+  ./infra/redis
   ./internal/core/event
   ./internal/core/task
 )

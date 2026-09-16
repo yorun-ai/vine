@@ -52,8 +52,8 @@ case "${scope}" in
       ./internal/daemon/portal/src/server/mod/epmgr
       ./internal/daemon/portal/src/server/mod/site/...
       ./internal/daemon/portal/src/server/mod/vault
-      ./internal/infra/rdb
-      ./internal/infra/redis
+      ./infra/rdb
+      ./infra/redis
       ./internal/util/goutil
       ./internal/util/httputil
       ./util/vmap

@@ -6,7 +6,7 @@ import (
 	"uuid"
 )
 
-// T returns the reflect.Type for T and keeps rdb package type references concise.
+// T returns the reflection type for T without requiring a value of T.
 func T[T any]() reflect.Type {
 	return reflect.TypeFor[T]()
 }

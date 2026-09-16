@@ -2,10 +2,10 @@ package db
 
 import (
 	"github.com/stretchr/testify/require"
+	"go.yorun.ai/vine/infra/rdb"
+	"go.yorun.ai/vine/infra/rdb/adapter"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
-	"go.yorun.ai/vine/internal/infra/rdb"
-	"go.yorun.ai/vine/internal/infra/rdb/adapter"
 	"gorm.io/gorm"
 	"testing"
 )

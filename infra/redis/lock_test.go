@@ -151,7 +151,7 @@ func TestRedisNewLockerByTypeUsesDefaultTypePrefixWhenNotOverridden(t *testing.T
 
 	locker := redis.NewLockerByType(reflect.TypeFor[*_TestDefaultLocker](), context.Background()).(*_TestDefaultLocker)
 
-	assert.Equal(t, "go.yorun.ai_vine_internal_infra_redis._TestDefaultLocker", locker.keyPrefix)
+	assert.Equal(t, "go.yorun.ai_vine_infra_redis._TestDefaultLocker", locker.keyPrefix)
 }
 
 func TestRedisManagerBindProvidesLocker(t *testing.T) {
