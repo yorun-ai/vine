@@ -14,11 +14,12 @@ type Seeder struct {
 	Flag   *flag.Flag     `inject:""`
 	Logger *logger.Logger `inject:""`
 
-	MetadataRepo  core.MetadataRepo    `inject:""`
-	RuleCore      *core.PortalRuleCore `inject:""`
-	AppConfigCore *core.AppConfigCore  `inject:""`
-	SiteCore      *core.PortalSiteCore `inject:""`
-	CertCore      *core.PortalCertCore `inject:""`
+	MetadataRepo  core.MetadataRepo     `inject:""`
+	EntryCore     *core.PortalEntryCore `inject:""`
+	RuleCore      *core.PortalRuleCore  `inject:""`
+	AppConfigCore *core.AppConfigCore   `inject:""`
+	SiteCore      *core.PortalSiteCore  `inject:""`
+	CertCore      *core.PortalCertCore  `inject:""`
 
 	payload *_SettingsYAMLPayload
 }
@@ -56,11 +57,12 @@ func (s *Seeder) loadSeedYAML() {
 	ex.PanicIfError(err)
 	payload := new(_SettingsYAMLPayload)
 	ex.PanicIfError(node.Decode(payload))
+	ex.PanicIfError(checkSeedRuleStyle(payload))
 	for i := range payload.AppConfigs {
 		payload.AppConfigs[i].Sources = entityFieldSources(sources, "appConfigs", i)
 	}
-	for i := range payload.PortalEntries {
-		payload.PortalEntries[i].Sources = entityFieldSources(sources, "portalSites", i)
+	for i := range payload.PortalSites {
+		payload.PortalSites[i].Sources = entityFieldSources(sources, "portalSites", i)
 	}
 	for i := range payload.PortalRules {
 		payload.PortalRules[i].Sources = entityFieldSources(sources, "portalRules", i)
@@ -75,6 +77,9 @@ func (s *Seeder) loadSeedYAML() {
 	}
 	for _, site := range entities.PortalSites {
 		s.SiteCore.Validate(*site)
+	}
+	for _, entry := range entities.PortalEntries {
+		s.EntryCore.Validate(*entry)
 	}
 	for _, rule := range entities.PortalRules {
 		s.RuleCore.Validate(*rule)
@@ -93,6 +98,11 @@ func (s *Seeder) applySeed() {
 	}
 	for _, site := range entities.PortalSites {
 		s.SiteCore.Save(*site)
+	}
+	// Entries come before rules: a rule joins the entry that serves its access,
+	// and an entry the seed named keeps that name.
+	for _, entry := range entities.PortalEntries {
+		s.EntryCore.Save(*entry)
 	}
 	for _, rule := range entities.PortalRules {
 		s.RuleCore.Save(*rule)

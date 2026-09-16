@@ -114,8 +114,9 @@ manage versions.
 
 `PortalSiteCore.EnsureDashboardSite` and `PortalRuleCore.EnsureDashboardRule`
 own built-in Dashboard provisioning. The built-in Dashboard rules belong to
-their own entry, which `PortalEntryCore.EnsureBuiltInAccess` maintains and the
-user entry list excludes. `RegistryCore` owns schema registration
+their own entry, which Seeder maintains from the Dashboard URL through
+`PortalEntryCore.EnsureBuiltInAccess` and the user entry list excludes. The
+built-in rules name that entry and never declare an access. `RegistryCore` owns schema registration
 and expired-lease removal. Initializer and Sweeper coordinate runtime publication
 through Syncer. The seed-applied marker remains startup bookkeeping in Seeder.
 
@@ -188,11 +189,27 @@ Portal rule YAML uses flat fields in this order: `matchScheme`, `matchHost`,
 `matchPort`, `matchPathPrefix`, `routeType`, `routeSiteName`,
 `routeRedirectionPattern`, and `routePathPrefix`.
 
-Seeds keep declaring `matchScheme`, `matchHost`, and `matchPort` on rules. Hub
-aggregates the declared access into entries while the seed is applied, so a seed
-never stores the same access on every rule. Portal still receives rules carrying
-the access of their entry, and the entry is Hub-side state rather than a Watch
-key.
+Portal entry YAML declares `name`, `scheme`, `host`, and `port`. A seed applies
+entries before rules, so a rule joins the entry that serves its access and keeps
+the name the seed gave it; an entry may route no rule yet. Hub derives the name
+`scheme[:host]:port` only for the entry it creates on its own, which is why the
+entry a rule joins without a declared entry is named after its access. The
+built-in Dashboard entry has the reserved name `vine.hub.dashboard`.
+
+A Portal rule joins an entry either by naming it with `entryName` or by declaring
+the access the entry serves. The two are mutually exclusive: a rule never does
+both, and one seed document uses one style for every rule it declares. A seed
+that declares `portalEntries` names them, so its rules reference an entry with
+`entryName` instead of declaring an access. A seed is self-contained: a rule only
+references an entry the same document declares, so Hub never reads stored data to
+complete the relationship. Hub rejects such a document before it writes anything,
+because the entry owns the access.
+
+Seeds keep declaring `matchScheme`, `matchHost`, and `matchPort` on rules, so a
+seed written before entries had names keeps working. Hub aggregates the declared
+access into entries while the seed is applied, so a seed never stores the same
+access on every rule. Portal still receives rules carrying the access of their
+entry, and the entry is Hub-side state rather than a Watch key.
 
 The `mod/seeder` package owns the seed YAML contract. `ParseSeedEntities`
 decodes a document into the domain entities it declares for Dashboard imports,

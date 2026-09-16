@@ -376,6 +376,77 @@ func TestPortalRuleValidationAcrossCreateUpdateSave(t *testing.T) {
 	}
 }
 
+func TestPortalRuleCoreEnsureDashboardRuleUsesBuiltInEntry(t *testing.T) {
+	// Hub's own rules name the built-in entry, which owns the access the
+	// Dashboard URL configures.
+	entryRepo := newPortalEntryRepoSpy(&PortalEntry{
+		Id: 7, Name: PortalEntryBuiltInName, Scheme: "https", Host: "hub.example.com", Port: 8443, BuiltIn: true,
+	})
+	repo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
+		1: {Id: 1, Name: DashboardWebRuleName, EntryId: 7, MatchScheme: "https", MatchHost: "hub.example.com", MatchPort: 8443, MatchPathPrefix: "/custom", RouteType: PortalRuleRouteTypeSite, BuiltIn: true},
+	}}
+	core := newPortalRuleCoreWithEntriesForTest(repo, nil, entryRepo)
+
+	core.EnsureDashboardRule(PortalRule{
+		Name: DashboardWebRuleName, EntryName: PortalEntryBuiltInName, MatchPathPrefix: "/",
+		RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site",
+	}, false)
+
+	// The rule keeps the configured path prefix and takes the entry's access.
+	assert.Equal(t, 7, repo.rules[1].EntryId)
+	assert.Equal(t, "/custom", repo.rules[1].MatchPathPrefix)
+	assert.Equal(t, "https", repo.rules[1].MatchScheme)
+	assert.Equal(t, 8443, repo.rules[1].MatchPort)
+	assert.Empty(t, repo.rules[1].EntryName)
+
+	require.PanicsWithError(t,
+		`dashboard rule "vine.hub.admin-api" must name the built-in portal entry type=APPLICATION code=OPERATION_FAILED`,
+		func() {
+			core.EnsureDashboardRule(PortalRule{
+				Name: DashboardAdminApiRuleName, MatchPathPrefix: "/api",
+				RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site",
+			}, true)
+		})
+}
+
+func TestPortalRuleCoreSaveJoinsNamedEntry(t *testing.T) {
+	// A seed may name the entry a rule joins instead of declaring an access.
+	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 4, Name: "web", Scheme: "https", Host: "app.example.com", Port: 8443})
+	repo := &entryRuleRepoSpy{}
+	core := newPortalRuleCoreWithEntriesForTest(repo, nil, entryRepo)
+
+	saved := core.Save(PortalRule{
+		Name: "demo.web", EntryName: "web", MatchPathPrefix: "/",
+		RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site",
+	})
+
+	assert.Equal(t, 4, saved.EntryId)
+	assert.Equal(t, "https", saved.MatchScheme)
+	assert.Equal(t, "app.example.com", saved.MatchHost)
+	assert.Equal(t, 8443, saved.MatchPort)
+	// The entry owns the access from here on.
+	assert.Empty(t, saved.EntryName)
+
+	// A rule declares an entry name or an access, never both.
+	require.PanicsWithError(t,
+		`portal rule "api": entryName cannot be mixed with matchScheme, matchHost, or matchPort type=APPLICATION code=OPERATION_FAILED`,
+		func() {
+			core.Save(PortalRule{
+				Name: "api", EntryName: "web", MatchScheme: "https", MatchHost: "app.example.com", MatchPort: 8443,
+				MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site",
+			})
+		})
+
+	// A named entry Hub does not store fails with its name.
+	require.PanicsWithError(t, "portal entry missing not found type=APPLICATION code=OPERATION_FAILED",
+		func() {
+			core.Save(PortalRule{
+				Name: "other", EntryName: "missing", MatchPathPrefix: "/",
+				RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site",
+			})
+		})
+}
+
 func TestPortalRuleSaveIdentityAndPartialUpdate(t *testing.T) {
 	original := validPortalRule()
 	original.Id = 17

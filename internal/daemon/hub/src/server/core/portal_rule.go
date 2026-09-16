@@ -25,6 +25,11 @@ type PortalRule struct {
 	Name         string
 	// EntryId identifies the Portal entry that owns the access configuration.
 	EntryId int
+	// EntryName names the entry a caller wants the rule to join, such as a seed
+	// that references a declared entry. Hub resolves the entry when it saves the
+	// rule and clears the field, because the entry, not the rule, stores the
+	// access. A stored rule leaves this field empty: its EntryId names the entry.
+	EntryName string
 	// MatchScheme, MatchHost, and MatchPort describe the entry the rule belongs
 	// to. The entry stores them; Hub assembles these values when it reads a
 	// rule, so a rule never owns access configuration of its own.
@@ -40,7 +45,7 @@ type PortalRule struct {
 }
 
 type PortalRuleCreation struct {
-	Name                    string
+	Name string
 	// EntryName names the Portal entry that owns the access the rule matches.
 	EntryName               string
 	MatchPathPrefix         string
@@ -317,8 +322,13 @@ func (r *PortalRule) normalizeAndValidate() {
 		ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal rule %q: %s", r.Name, message))
 	}
 	fail(strings.TrimSpace(r.Name) != "", "name is required")
-	fail(r.MatchScheme == "http" || r.MatchScheme == "https", "matchScheme must be http or https")
-	fail(r.MatchPort >= 0 && r.MatchPort <= 65535, "matchPort must be between 0 and 65535")
+	if r.EntryName != "" {
+		fail(r.MatchScheme == "" && r.MatchHost == "" && r.MatchPort == 0,
+			"entryName cannot be mixed with matchScheme, matchHost, or matchPort")
+	} else {
+		fail(r.MatchScheme == "http" || r.MatchScheme == "https", "matchScheme must be http or https")
+		fail(r.MatchPort >= 0 && r.MatchPort <= 65535, "matchPort must be between 0 and 65535")
+	}
 	if r.MatchHost != "" {
 		fail(!strings.ContainsAny(r.MatchHost, "/?#@*\\") && strings.IndexFunc(r.MatchHost, unicode.IsSpace) < 0 && strings.IndexFunc(r.MatchHost, unicode.IsControl) < 0, "matchHost must be a hostname or IP without a port")
 		if net.ParseIP(r.MatchHost) == nil {
@@ -432,8 +442,23 @@ func checkPortalRuleMatchesUnique(stored []*PortalRule, candidates ...*PortalRul
 	}
 }
 
-// Save creates or replaces a complete user rule by name, preserving an existing ID.
+// Save creates or replaces a complete user rule by name, preserving an existing
+// ID. A rule that names an entry joins that entry, while a rule that declares an
+// access joins the entry serving that access.
 func (m *PortalRuleCore) Save(rule PortalRule) *PortalRule {
+	if rule.EntryName != "" {
+		// Validate the shape the caller declared before Hub resolves the entry, so
+		// a rule that mixes an entry name with an access fails on that.
+		rule = m.Validate(rule)
+		entry, ok := m.PortalEntryCore.FindByName(rule.EntryName)
+		ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %s not found", rule.EntryName))
+		rule.EntryId = entry.Id
+		rule.MatchScheme = entry.Scheme
+		rule.MatchHost = entry.Host
+		rule.MatchPort = entry.Port
+		// The entry owns the access from here on.
+		rule.EntryName = ""
+	}
 	rule = m.Validate(rule)
 	rule.Id = 0
 	rule.BuiltIn = false
@@ -466,32 +491,29 @@ func (m *PortalRuleCore) checkMatchesUnique(rules ...*PortalRule) {
 	checkPortalRuleMatchesUnique(m.PortalRuleRepo.List(), rules...)
 }
 
-// EnsureDashboardRule provisions a built-in rule, preserving the configured
-// access of the built-in entry unless an explicit access update or legacy
-// migration requires a refresh.
+// EnsureDashboardRule provisions a built-in rule under Hub's own entry. The rule
+// names that entry and never declares an access: the built-in entry owns the
+// access, which Seeder ensures from the Dashboard URL. Without refresh the rule
+// keeps the path prefix it already stores.
 func (m *PortalRuleCore) EnsureDashboardRule(rule PortalRule, refreshAccess bool) {
 	ex.PanicNewIfNot(rule.Name == DashboardAdminApiRuleName || rule.Name == DashboardWebRuleName, ex.OperationFailed, "not a dashboard rule")
+	ex.PanicNewIfNot(rule.EntryName == PortalEntryBuiltInName, ex.OperationFailed,
+		ex.F("dashboard rule %q must name the built-in portal entry", rule.Name))
 	rule.BuiltIn = true
-	access := PortalEntry{
-		Scheme: rule.MatchScheme,
-		Host:   rule.MatchHost,
-		Port:   rule.MatchPort,
-	}
 	if old, ok := m.PortalRuleRepo.GetByName(rule.Name); ok {
 		rule.Id = old.Id
 		if !refreshAccess {
-			access.Scheme = old.MatchScheme
-			access.Host = old.MatchHost
-			access.Port = old.MatchPort
 			rule.MatchPathPrefix = old.MatchPathPrefix
 		}
 	}
-	rule.normalizeAndValidate()
-	entry := m.PortalEntryCore.EnsureBuiltInAccess(access.Scheme, access.Host, access.Port, refreshAccess)
+	entry := m.PortalEntryCore.BuiltIn()
 	rule.EntryId = entry.Id
 	rule.MatchScheme = entry.Scheme
 	rule.MatchHost = entry.Host
 	rule.MatchPort = entry.Port
+	// The entry owns the access from here on.
+	rule.EntryName = ""
+	rule.normalizeAndValidate()
 	m.checkMatchesUnique(&rule)
 	m.PortalRuleRepo.Save(&rule)
 }

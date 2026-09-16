@@ -141,6 +141,8 @@ func (s *_VarsSchema) targetType(root *yaml.Node, path string) (*skel.TypeSchema
 		kind = new(skel.TypeSchema{Kind: skel.TypeKindConfig, SkelName: name.Value})
 	case section == "portalRules" && field == "matchPort":
 		kind = seedScalar(skel.ScalarInt)
+	case section == "portalEntries" && field == "port":
+		kind = seedScalar(skel.ScalarInt)
 	case section == "portalSites" && field == "cors":
 		kind = new(skel.TypeSchema{Kind: skel.TypeKindData, SkelName: "seed.PortalCors"})
 	case section == "portalCerts" && field == "domains":

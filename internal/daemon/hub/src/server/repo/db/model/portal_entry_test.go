@@ -11,6 +11,60 @@ import (
 	"gorm.io/gorm"
 )
 
+func TestPortalEntryDaoStoresAndFindsName(t *testing.T) {
+	dao := newTestPortalEntryDao(t)
+
+	entry := dao.Save(&PortalEntry{Name: "web", Scheme: "https", Host: "demo.local", Port: 8443})
+	require.NotZero(t, entry.Id)
+
+	byName, ok := dao.ByName("web")
+	require.True(t, ok)
+	assert.Equal(t, entry.Id, byName.Id)
+	_, ok = dao.ByName("other")
+	assert.False(t, ok)
+
+	// A user entry name identifies one entry.
+	require.Panics(t, func() {
+		dao.Save(&PortalEntry{Name: "web", Scheme: "https", Host: "demo.local", Port: 9443})
+	})
+}
+
+// _legacyPortalEntrySchema is the entry table before Hub named entries.
+const _legacyPortalEntrySchema = `
+CREATE TABLE portal_entry (
+    id INTEGER PRIMARY KEY,
+    created_at DATETIME,
+    updated_at DATETIME,
+    deleted_at DATETIME,
+    scheme TEXT NOT NULL,
+    host TEXT NOT NULL,
+    port INTEGER NOT NULL,
+    built_in BOOLEAN NOT NULL DEFAULT FALSE
+);
+`
+
+func TestPortalEntryInitSchemaNamesEntriesFromAccess(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "legacy-entry.sqlite")), &gorm.Config{})
+	require.NoError(t, err)
+	connection, err := db.DB()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = connection.Close() })
+	require.NoError(t, db.Exec(_legacyPortalEntrySchema).Error)
+	require.NoError(t, db.Exec(`INSERT INTO portal_entry (scheme, host, port, built_in) VALUES ('http', '', 80, FALSE)`).Error)
+	require.NoError(t, db.Exec(`INSERT INTO portal_entry (scheme, host, port, built_in) VALUES ('https', 'api.example.com', 8443, TRUE)`).Error)
+
+	dao := &PortalEntryDao{Dao: rdb.NewDao[*PortalEntry](db)}
+	dao.InitSchema()
+
+	// Hub keeps the label it showed for those entries before they had a name.
+	web, ok := dao.ByAccess("http", "", 80)
+	require.True(t, ok)
+	assert.Equal(t, "http:80", web.Name)
+	builtIn, ok := dao.BuiltIn()
+	require.True(t, ok)
+	assert.Equal(t, "https:api.example.com:8443", builtIn.Name)
+}
+
 func TestPortalEntryDaoCreateQueryAndRemove(t *testing.T) {
 	dao := newTestPortalEntryDao(t)
 

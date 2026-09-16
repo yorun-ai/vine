@@ -39,6 +39,7 @@ const dataUpdateStorageKey = 'vine.hub.maintenance.dataUpdate'
 const kindLabels: Record<string, string> = {
   app_config: 'Config',
   portal_site: 'Portal Site',
+  portal_entry: 'Portal Entry',
   portal_rule: 'Entry Rule',
   portal_cert: 'Entry Cert',
 }

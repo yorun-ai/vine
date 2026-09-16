@@ -4,6 +4,7 @@ import (
 	"go.yorun.ai/vine/internal/core/skel"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
+	"go.yorun.ai/vine/util/vnet"
 	"go.yorun.ai/vine/util/vslice"
 )
 
@@ -37,12 +38,13 @@ func (s *Seeder) seedDashboard() {
 
 	url := s.Flag.DashboardURL
 	refreshAccess := s.Flag.DashboardURLSet || s.canMigrateLegacyDashboardAccess()
+	// Hub's own entry owns the access Portal serves for the Dashboard. The
+	// built-in rules only name that entry.
+	s.ensureDashboardEntry(url, refreshAccess)
 
 	s.saveDashboardRule(core.PortalRule{
 		Name:            dashboardApiRuleName,
-		MatchScheme:     url.Scheme,
-		MatchHost:       url.Hostname(),
-		MatchPort:       url.Port(),
+		EntryName:       core.PortalEntryBuiltInName,
 		MatchPathPrefix: "/api",
 		RouteType:       "SITE",
 		RouteSiteName:   DashboardRpcCoreEntry.Name,
@@ -50,9 +52,7 @@ func (s *Seeder) seedDashboard() {
 	}, refreshAccess)
 	s.saveDashboardRule(core.PortalRule{
 		Name:            dashboardWebRuleName,
-		MatchScheme:     url.Scheme,
-		MatchHost:       url.Hostname(),
-		MatchPort:       url.Port(),
+		EntryName:       core.PortalEntryBuiltInName,
 		MatchPathPrefix: url.EscapedPath(),
 		RouteType:       "SITE",
 		RouteSiteName:   DashboardWebCoreEntry.Name,
@@ -66,8 +66,8 @@ func (s *Seeder) saveDashboardSite(site core.PortalSite) {
 	s.SiteCore.EnsureDashboardSite(site)
 }
 
-// saveDashboardRule refreshes built-in rule fields on every startup. Access
-// fields are refreshed only for an explicit dashboard-url or when safely
+// saveDashboardRule refreshes built-in rule fields on every startup. The entry
+// access is refreshed only for an explicit dashboard-url or when safely
 // migrating the legacy built-in HTTP defaults to the mTLS HTTPS defaults.
 func (s *Seeder) saveDashboardRule(rule core.PortalRule, refreshAccess bool) {
 	s.RuleCore.EnsureDashboardRule(rule, refreshAccess)
@@ -116,4 +116,24 @@ func deriveDashboardRpcServiceNames() []string {
 		}
 	}
 	return vslice.Sort(names)
+}
+
+// ensureDashboardEntry keeps the access Portal serves for the Dashboard. Without
+// a refresh Hub keeps the access the built-in entry already serves, or the access
+// a database recorded on the built-in rules before they moved into an entry.
+func (s *Seeder) ensureDashboardEntry(url *vnet.HttpURL, refreshAccess bool) {
+	if !refreshAccess {
+		if _, ok := s.EntryCore.FindBuiltIn(); ok {
+			return
+		}
+		for _, name := range []string{dashboardApiRuleName, dashboardWebRuleName} {
+			rule, ok := s.RuleCore.FindByName(name)
+			if !ok {
+				continue
+			}
+			s.EntryCore.EnsureBuiltInAccess(rule.MatchScheme, rule.MatchHost, rule.MatchPort, false)
+			return
+		}
+	}
+	s.EntryCore.EnsureBuiltInAccess(url.Scheme, url.Hostname(), url.Port(), refreshAccess)
 }

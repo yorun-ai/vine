@@ -31,6 +31,7 @@ func (s *PortalEntryApiServiceServerImpl) UpdateAccess(scheme string, host strin
 
 func (s *PortalEntryApiServiceServerImpl) Create(creation skeled.PortalEntryCreation) skeled.PortalEntry {
 	entry := s.PortalEntryCore.Create(core.PortalEntryCreation{
+		Name:   creation.Name,
 		Scheme: creation.Scheme,
 		Host:   creation.Host,
 		Port:   creation.Port,

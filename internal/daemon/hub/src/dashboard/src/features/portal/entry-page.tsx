@@ -70,34 +70,68 @@ const portalEntryService = createPortalEntryApiService(vrpcClient)
 const PORTAL_ENTRY_LIST_DEFAULT_WIDTH = 352
 const portalEntrySchemes = ['http', 'https'] as const
 
-interface PortalEntryAccessFormValue {
+interface PortalEntryFormValue {
+  name: string
   scheme: string
   host: string
   port: string
 }
 
-const newAccessFormValue: PortalEntryAccessFormValue = {
+const newEntryFormValue: PortalEntryFormValue = {
+  name: 'http:80',
   scheme: 'http',
   host: '',
   port: '80',
+}
+
+// derivePortalEntryName mirrors the name Hub derives for an entry it creates on
+// its own, so a new entry starts with the label the Dashboard already showed.
+function derivePortalEntryName(value: PortalEntryFormValue) {
+  const host = value.host.trim()
+  const port = value.port.trim() || (value.scheme === 'https' ? '443' : '80')
+  return host === '' ? `${value.scheme}:${port}` : `${value.scheme}:${host}:${port}`
+}
+
+function syncDerivedEntryName(
+  current: PortalEntryFormValue,
+  next: PortalEntryFormValue,
+) {
+  const currentDerivedName = derivePortalEntryName(current)
+  if (current.name.trim() === '' || current.name === currentDerivedName) {
+    return { ...next, name: derivePortalEntryName(next) }
+  }
+  return next
+}
+
+function updatePortalEntryField(
+  current: PortalEntryFormValue,
+  field: keyof PortalEntryFormValue,
+  value: string,
+) {
+  if (field === 'name') {
+    if (value.trim() === '') {
+      return { ...current, name: derivePortalEntryName(current) }
+    }
+    return { ...current, name: value }
+  }
+  return syncDerivedEntryName(current, { ...current, [field]: value })
 }
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Request failed'
 }
 
-function portalEntryToAccessFormValue(
-  entry: PortalEntry,
-): PortalEntryAccessFormValue {
+function portalEntryToFormValue(entry: PortalEntry): PortalEntryFormValue {
   return {
+    name: entry.name,
     scheme: entry.scheme,
     host: entry.host,
     port: String(entry.port),
   }
 }
 
-function portalEntryAccessFormValueToUpdate(
-  value: PortalEntryAccessFormValue,
+function portalEntryFormValueToAccess(
+  value: PortalEntryFormValue,
 ): PortalEntryAccessUpdate {
   return {
     scheme: value.scheme,
@@ -193,7 +227,7 @@ function PortalEntryListSkeleton() {
 }
 
 type PortalEntryFormErrors = Partial<
-  Record<keyof PortalEntryAccessFormValue, string>
+  Record<keyof PortalEntryFormValue, string>
 >
 
 function Field({
@@ -223,11 +257,11 @@ function PortalEntryInlineEditor({
   entry: PortalEntry | null
   saving: boolean
   onCancel: () => void
-  onSubmit: (value: PortalEntryAccessFormValue) => Promise<void>
+  onSubmit: (value: PortalEntryFormValue) => Promise<void>
 }) {
   const { t } = useLocale()
-  const [formValue, setFormValue] = React.useState<PortalEntryAccessFormValue>(
-    () => (entry ? portalEntryToAccessFormValue(entry) : newAccessFormValue),
+  const [formValue, setFormValue] = React.useState<PortalEntryFormValue>(() =>
+    entry ? portalEntryToFormValue(entry) : newEntryFormValue,
   )
   const [fieldErrors, setFieldErrors] = React.useState<PortalEntryFormErrors>(
     {},
@@ -235,12 +269,9 @@ function PortalEntryInlineEditor({
   const [formError, setFormError] = React.useState<string | null>(null)
 
   const setField = React.useCallback(
-    (field: keyof PortalEntryAccessFormValue, value: string) => {
+    (field: keyof PortalEntryFormValue, value: string) => {
       setFormError(null)
-      setFormValue((current) => ({
-        ...current,
-        [field]: value,
-      }))
+      setFormValue((current) => updatePortalEntryField(current, field, value))
     },
     [],
   )
@@ -250,6 +281,9 @@ function PortalEntryInlineEditor({
       event.preventDefault()
 
       const errors: PortalEntryFormErrors = {}
+      if (entry == null && formValue.name.trim() === '') {
+        errors.name = t('portalEntry.nameRequired')
+      }
       if (!isValidPort(formValue.port)) {
         errors.port = t('portalEntry.invalidPort')
       }
@@ -265,7 +299,7 @@ function PortalEntryInlineEditor({
         setFormError(getErrorMessage(error))
       }
     },
-    [formValue, onSubmit, t],
+    [entry, formValue, onSubmit, t],
   )
 
   return (
@@ -276,6 +310,16 @@ function PortalEntryInlineEditor({
         </Alert>
       ) : null}
 
+      {entry == null ? (
+        <Field label={t('portalEntry.name')} error={fieldErrors.name}>
+          <Input
+            aria-invalid={Boolean(fieldErrors.name)}
+            value={formValue.name}
+            placeholder={derivePortalEntryName(formValue)}
+            onChange={(event) => setField('name', event.target.value)}
+          />
+        </Field>
+      ) : null}
       <Field label={t('portalEntry.scheme')} error={fieldErrors.scheme}>
         <Select
           value={formValue.scheme}
@@ -504,11 +548,14 @@ export function PortalEntryPage() {
   }, [])
 
   const handleCreate = React.useCallback(
-    async (value: PortalEntryAccessFormValue) => {
+    async (value: PortalEntryFormValue) => {
       setSaving(true)
       try {
         const created = await portalEntryService.create({
-          creation: portalEntryAccessFormValueToUpdate(value),
+          creation: {
+            name: value.name.trim(),
+            ...portalEntryFormValueToAccess(value),
+          },
         })
         toast.success(t('portalEntry.createSuccess'))
         setCreating(false)
@@ -522,7 +569,7 @@ export function PortalEntryPage() {
   )
 
   const handleUpdate = React.useCallback(
-    async (value: PortalEntryAccessFormValue) => {
+    async (value: PortalEntryFormValue) => {
       if (editingEntry == null) {
         return
       }
@@ -532,7 +579,7 @@ export function PortalEntryPage() {
           scheme: editingEntry.scheme,
           host: editingEntry.host,
           port: editingEntry.port,
-          update: portalEntryAccessFormValueToUpdate(value),
+          update: portalEntryFormValueToAccess(value),
         })
         toast.success(t('portalEntry.updateSuccess'))
         setEditingEntry(null)

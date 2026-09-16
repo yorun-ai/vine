@@ -78,6 +78,9 @@ func newPortalEntryRepoSpy(entries ...*PortalEntry) *portalEntryRepoSpy {
 		entries: map[int]*PortalEntry{},
 	}
 	for _, entry := range entries {
+		if entry.Name == "" {
+			entry.Name = PortalEntryName(entry.Scheme, entry.Host, entry.Port)
+		}
 		spy.Save(entry)
 		if entry.Id >= spy.nextId {
 			spy.nextId = entry.Id + 1
@@ -107,6 +110,20 @@ func (s *portalEntryRepoSpy) GetById(id int) (*PortalEntry, bool) {
 	}
 	value := *entry
 	return &value, true
+}
+
+func (s *portalEntryRepoSpy) GetByName(name string) (*PortalEntry, bool) {
+	s.calls = append(s.calls, "GetByName:"+name)
+	for _, entry := range s.entries {
+		if entry.BuiltIn {
+			continue
+		}
+		if entry.Name == name {
+			value := *entry
+			return &value, true
+		}
+	}
+	return nil, false
 }
 
 func (s *portalEntryRepoSpy) GetByAccess(scheme string, host string, port int) (*PortalEntry, bool) {
@@ -141,10 +158,8 @@ func (s *portalEntryRepoSpy) Save(entry *PortalEntry) {
 		value.Id = s.nextId
 		s.nextId++
 	}
-	value.Name = PortalEntryName(value.Scheme, value.Host, value.Port)
 	s.entries[value.Id] = &value
 	entry.Id = value.Id
-	entry.Name = value.Name
 }
 
 func (s *portalEntryRepoSpy) Remove(id int) bool {
@@ -168,6 +183,59 @@ func newPortalEntryCoreForTest(ruleRepo PortalRuleRepo, entryRepo PortalEntryRep
 		PortalRuleRepo:  ruleRepo,
 		PortalSiteRepo:  siteRepo,
 	}
+}
+
+func TestPortalEntryCoreSaveReplacesByName(t *testing.T) {
+	// A seed applies entries before rules: an entry keeps its identity, and
+	// replacing it republishes the rules it routes.
+	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Name: "web", Scheme: "http", Port: 7088})
+	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
+		1: {Id: 1, Name: "app", EntryId: 1, MatchScheme: "http", MatchPort: 7088, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+	}}
+	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
+
+	saved := core.Save(PortalEntry{Name: "web", Scheme: "https", Host: "app.example.com", Port: 8443})
+
+	assert.Equal(t, 1, saved.Id)
+	assert.Equal(t, "web", saved.Name)
+	assert.Equal(t, 8443, saved.Port)
+	// The rule follows the entry it belongs to.
+	assert.Equal(t, 1, ruleRepo.rules[1].EntryId)
+	assert.Equal(t, "https", ruleRepo.rules[1].MatchScheme)
+	assert.Equal(t, 8443, ruleRepo.rules[1].MatchPort)
+
+	// A name is required, and two entries never serve one access.
+	require.PanicsWithError(t, "portal entry name is required type=APPLICATION code=OPERATION_FAILED",
+		func() { core.Save(PortalEntry{Scheme: "http", Port: 8080}) })
+	require.PanicsWithError(t, `portal entry name "vine.hub.dashboard" is reserved type=APPLICATION code=OPERATION_FAILED`,
+		func() { core.Save(PortalEntry{Name: "vine.hub.dashboard", Scheme: "http", Port: 8080}) })
+	require.PanicsWithError(t, `portal entry "web" already serves https:app.example.com:8443 type=APPLICATION code=OPERATION_FAILED`,
+		func() { core.Save(PortalEntry{Name: "api", Scheme: "https", Host: "app.example.com", Port: 8443}) })
+}
+
+func TestPortalEntryCoreSaveRejectsRequestTakenByAnotherRule(t *testing.T) {
+	// Replacing an entry moves the access of every rule it routes. Hub rejects a
+	// move onto a request that a rule of its own built-in entry already serves.
+	entryRepo := newPortalEntryRepoSpy(
+		&PortalEntry{Id: 1, Name: "web", Scheme: "http", Port: 8088},
+		&PortalEntry{Id: 2, Name: PortalEntryBuiltInName, Scheme: "http", Port: 7099, BuiltIn: true},
+		&PortalEntry{Id: 3, Name: "api", Scheme: "http", Port: 8099},
+	)
+	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
+		1: {Id: 1, Name: "web", EntryId: 1, MatchScheme: "http", MatchPort: 8088, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+		2: {Id: 2, Name: DashboardWebRuleName, EntryId: 2, MatchScheme: "http", MatchPort: 7099, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, BuiltIn: true},
+	}}
+	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
+
+	require.PanicsWithError(t,
+		`portal rule "vine.hub.dashboard-web" already matches http://*:7099/ type=APPLICATION code=OPERATION_FAILED`,
+		func() { core.Save(PortalEntry{Name: "web", Scheme: "http", Port: 7099}) })
+	assert.Equal(t, 8088, entryRepo.entries[1].Port)
+
+	// Two user entries never serve one access.
+	require.PanicsWithError(t,
+		`portal entry "api" already serves http:8099 type=APPLICATION code=OPERATION_FAILED`,
+		func() { core.Save(PortalEntry{Name: "other", Scheme: "http", Port: 8099}) })
 }
 
 func TestPortalEntryCoreListGroupsRulesByEntry(t *testing.T) {
@@ -234,18 +302,30 @@ func TestPortalEntryCoreCreate(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy()
 	core := newPortalEntryCoreForTest(&entryRuleRepoSpy{}, entryRepo, nil)
 
-	entry := core.Create(PortalEntryCreation{Scheme: " HTTPS ", Host: " demo.local ", Port: 0})
+	entry := core.Create(PortalEntryCreation{Name: " web ", Scheme: " HTTPS ", Host: " demo.local ", Port: 0})
 
+	// The operator names an entry; the access is normalized as Hub stores it.
+	assert.Equal(t, "web", entry.Name)
 	assert.Equal(t, "https", entry.Scheme)
 	assert.Equal(t, "demo.local", entry.Host)
 	assert.Equal(t, 443, entry.Port)
-	assert.Equal(t, "https:demo.local:443", entry.Name)
 	assert.Empty(t, entry.Rules)
 	require.Len(t, entryRepo.entries, 1)
-	assert.Equal(t, []string{"GetByAccess:https:demo.local:443", "Save"}, entryRepo.calls)
+	assert.Equal(t, []string{"GetByName:web", "GetByAccess:https:demo.local:443", "Save"}, entryRepo.calls)
 
+	// The name identifies one entry, and an access serves one user entry.
+	require.PanicsWithError(t,
+		`portal entry "web" already exists type=APPLICATION code=OPERATION_FAILED`,
+		func() {
+			core.Create(PortalEntryCreation{Name: "web", Scheme: "https", Host: "demo.local", Port: 443})
+		})
+	require.PanicsWithError(t,
+		`portal entry "web" already serves https:demo.local:443 type=APPLICATION code=OPERATION_FAILED`,
+		func() {
+			core.Create(PortalEntryCreation{Name: "api", Scheme: "https", Host: "demo.local", Port: 443})
+		})
 	panicValue := capturePanic(func() {
-		core.Create(PortalEntryCreation{Scheme: "https", Host: "demo.local", Port: 443})
+		core.Create(PortalEntryCreation{Name: " "})
 	})
 	err, ok := panicValue.(ex.Error)
 	require.True(t, ok)
@@ -265,7 +345,7 @@ func TestPortalEntryCoreRemove(t *testing.T) {
 
 	// An entry keeps its rules: Hub refuses to leave them without an access.
 	require.PanicsWithError(t,
-		`portal entry http:7088 still routes 1 rules; remove them first type=APPLICATION code=OPERATION_FAILED`,
+		`portal entry "http:7088" still routes 1 rules; remove them first type=APPLICATION code=OPERATION_FAILED`,
 		func() { core.Remove("http", "", 7088) })
 	assert.Contains(t, entryRepo.entries, 1)
 
@@ -275,9 +355,10 @@ func TestPortalEntryCoreRemove(t *testing.T) {
 		func() { core.Remove("http", "", 7099) })
 
 	// An entry that routes nothing is removed.
-	core.Create(PortalEntryCreation{Scheme: "http", Port: 8080})
+	core.Create(PortalEntryCreation{Name: "idle", Scheme: "http", Port: 8080})
 	created, ok := entryRepo.GetByAccess("http", "", 8080)
 	require.True(t, ok)
+	assert.Equal(t, "idle", created.Name)
 	core.Remove(" HTTP ", " ", 8080)
 	_, ok = entryRepo.GetByAccess("http", "", 8080)
 	assert.False(t, ok)
@@ -323,7 +404,8 @@ func TestPortalEntryCoreUpdateAccessSavesEntryAndRepublishesRules(t *testing.T) 
 
 	// The access is one stored row: Hub no longer rewrites it per rule.
 	assert.Equal(t, 1, entry.Id)
-	assert.Equal(t, "https:app.example.com:8443", entry.Name)
+	// The name stays the one the entry already carries.
+	assert.Equal(t, "http:7088", entry.Name)
 	assert.Equal(t, "https", entry.Scheme)
 	assert.Equal(t, "app.example.com", entry.Host)
 	assert.Equal(t, 8443, entry.Port)
@@ -404,7 +486,7 @@ func TestPortalEntryCoreUpdateAccessNormalizesLookup(t *testing.T) {
 	entry := core.UpdateAccess(" HTTP ", " ", 0, PortalEntryAccessUpdate{Scheme: "https", Host: "demo.local", Port: 0})
 
 	assert.Equal(t, 2, entry.Id)
-	assert.Equal(t, "https:demo.local:443", entry.Name)
+	assert.Equal(t, "http:80", entry.Name)
 	assert.Equal(t, []string{"GetByAccess:http::80", "GetByAccess:https:demo.local:443", "Save"}, entryRepo.calls)
 }
 
@@ -485,6 +567,7 @@ func TestPortalEntryCoreEnsureAccessNormalizesAndReusesEntry(t *testing.T) {
 	assert.Equal(t, "https", created.Scheme)
 	assert.Equal(t, "demo.local", created.Host)
 	assert.Equal(t, 443, created.Port)
+	// Hub names an entry it creates on its own after the access it stores.
 	assert.Equal(t, "https:demo.local:443", created.Name)
 }
 
@@ -502,7 +585,8 @@ func TestPortalEntryCoreEnsureBuiltInAccessKeepsConfiguredAccess(t *testing.T) {
 	assert.Equal(t, "http", refreshed.Scheme)
 	assert.Equal(t, "", refreshed.Host)
 	assert.Equal(t, 7099, refreshed.Port)
-	assert.Equal(t, "http:7099", refreshed.Name)
+	// Hub's own entry carries a reserved name, never a user name.
+	assert.Equal(t, "vine.hub.dashboard", refreshed.Name)
 	assert.True(t, refreshed.BuiltIn)
 	assert.Len(t, entryRepo.entries, 1)
 }

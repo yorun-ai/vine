@@ -89,6 +89,8 @@ export const en: Record<TranslationKey, string> = {
   'portalEntry.noRules': 'No rules route through this entry',
   'portalEntry.noRulesDescription':
     'Portal listens on the entry access once a rule routes through it.',
+  'portalEntry.name': 'Entry Name',
+  'portalEntry.nameRequired': 'Enter an entry name',
   'portalEntry.scheme': 'Scheme',
   'portalEntry.host': 'Host',
   'portalEntry.port': 'Port',

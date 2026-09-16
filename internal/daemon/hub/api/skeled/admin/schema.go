@@ -11,7 +11,7 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "85efffcc",
+	Hash:        "dc617ef7",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
 		CompilerVersion: "v0.20.0",
@@ -1215,8 +1215,16 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "PortalEntryCreation",
 			SkelName:    "vine.hub.admin.PortalEntryCreation",
 			Description: "Portal access entry creation parameters",
-			Hash:        "06127461",
+			Hash:        "ea3adafe",
 			Members: []*skel.MemberSchema{
+				{
+					Name:        "name",
+					Description: "Entry name",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarString,
+					},
+				},
 				{
 					Name:        "scheme",
 					Description: "Entry protocol",
@@ -5381,7 +5389,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "PortalEntryApiService",
 			SkelName:    "vine.hub.admin.PortalEntryApiService",
 			Description: "Hub's Portal access entry service, called by the Portal admin client",
-			Hash:        "f2305cbc",
+			Hash:        "9f898d13",
 			Pub:         false,
 			Api:         true,
 			AuthMode:    skel.AuthModeNoAuth,
@@ -5409,7 +5417,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "create",
 					SkelName:          "create",
 					Description:       "Create a Portal access entry",
-					Hash:              "da747d6c",
+					Hash:              "ba78f2ef",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Portal access entry",
 					Arguments: []*skel.MemberSchema{

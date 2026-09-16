@@ -9,29 +9,32 @@ import (
 )
 
 const (
-	seedKindAppConfig  = "app_config"
-	seedKindPortalSite = "portal_site"
-	seedKindPortalRule = "portal_rule"
-	seedKindPortalCert = "portal_cert"
+	seedKindAppConfig   = "app_config"
+	seedKindPortalSite  = "portal_site"
+	seedKindPortalEntry = "portal_entry"
+	seedKindPortalRule  = "portal_rule"
+	seedKindPortalCert  = "portal_cert"
 )
 
 type MaintenanceApiServiceServerImpl struct {
 	skeled.DefaultMaintenanceApiServiceServer
 
-	AppConfigCore *core.AppConfigCore  `inject:""`
-	SiteCore      *core.PortalSiteCore `inject:""`
-	RuleCore      *core.PortalRuleCore `inject:""`
-	CertCore      *core.PortalCertCore `inject:""`
-	Access        *configaccess.Access `inject:""`
+	AppConfigCore *core.AppConfigCore   `inject:""`
+	SiteCore      *core.PortalSiteCore  `inject:""`
+	EntryCore     *core.PortalEntryCore `inject:""`
+	RuleCore      *core.PortalRuleCore  `inject:""`
+	CertCore      *core.PortalCertCore  `inject:""`
+	Access        *configaccess.Access  `inject:""`
 }
 
 // The fields each seed entity kind compares, in the order the Dashboard shows
 // them. Both sides of the comparison use Core SeedFields, so the preview cannot
 // drift from the values a seed applies.
 var (
-	seedAppConfigFields  = []string{"value"}
-	seedPortalSiteFields = []string{"type", "actorSkelName", "actorVia", "corsMode", "corsOrigins", "webName"}
-	seedPortalRuleFields = []string{
+	seedAppConfigFields   = []string{"value"}
+	seedPortalSiteFields  = []string{"type", "actorSkelName", "actorVia", "corsMode", "corsOrigins", "webName"}
+	seedPortalEntryFields = []string{"scheme", "host", "port"}
+	seedPortalRuleFields  = []string{
 		"matchScheme", "matchHost", "matchPort", "matchPathPrefix",
 		"routeType", "routeSiteName", "routeRedirectionPattern", "routePathPrefix",
 	}
@@ -65,6 +68,8 @@ func (s *MaintenanceApiServiceServerImpl) ApplySeedYaml(content string, selectio
 
 	s.applyAppConfigs(entities.AppConfigs, selected)
 	s.applyPortalSites(entities.PortalSites, selected)
+	// Entries come before rules: a rule joins the entry that serves its access.
+	s.applyPortalEntries(entities.PortalEntries, selected)
 	s.applyPortalRules(entities.PortalRules, selected)
 	s.applyPortalCerts(entities.PortalCerts, selected)
 	return s.preview(entities)
@@ -85,6 +90,10 @@ func (s *MaintenanceApiServiceServerImpl) parseSeed(content string) *seeder.Seed
 	for i, site := range entities.PortalSites {
 		validated := s.SiteCore.Validate(*site)
 		entities.PortalSites[i] = &validated
+	}
+	for i, entry := range entities.PortalEntries {
+		validated := s.EntryCore.Validate(*entry)
+		entities.PortalEntries[i] = &validated
 	}
 	for i, rule := range entities.PortalRules {
 		validated := s.RuleCore.Validate(*rule)
@@ -109,8 +118,15 @@ func (s *MaintenanceApiServiceServerImpl) preview(entities *seeder.SeedEntities)
 	for _, site := range entities.PortalSites {
 		preview.Items = append(preview.Items, s.previewPortalSite(site))
 	}
+	for _, entry := range entities.PortalEntries {
+		preview.Items = append(preview.Items, s.previewPortalEntry(entry))
+	}
+	seedEntries := make(map[string]*core.PortalEntry, len(entities.PortalEntries))
+	for _, entry := range entities.PortalEntries {
+		seedEntries[entry.Name] = entry
+	}
 	for _, rule := range entities.PortalRules {
-		preview.Items = append(preview.Items, s.previewPortalRule(rule))
+		preview.Items = append(preview.Items, s.previewPortalRule(rule, seedEntries))
 	}
 	for _, cert := range entities.PortalCerts {
 		preview.Items = append(preview.Items, s.previewPortalCert(cert))
@@ -132,9 +148,36 @@ func (s *MaintenanceApiServiceServerImpl) previewPortalSite(site *core.PortalSit
 	return seedEntityDiff(seedKindPortalSite, site.Name, exists, current.SeedFields(), site.SeedFields(), seedPortalSiteFields)
 }
 
-func (s *MaintenanceApiServiceServerImpl) previewPortalRule(rule *core.PortalRule) skeled.SeedEntityDiff {
+func (s *MaintenanceApiServiceServerImpl) previewPortalEntry(entry *core.PortalEntry) skeled.SeedEntityDiff {
+	current, exists := s.EntryCore.FindByName(entry.Name)
+	return seedEntityDiff(seedKindPortalEntry, entry.Name, exists, current.SeedFields(), entry.SeedFields(), seedPortalEntryFields)
+}
+
+func (s *MaintenanceApiServiceServerImpl) previewPortalRule(rule *core.PortalRule, seedEntries map[string]*core.PortalEntry) skeled.SeedEntityDiff {
 	current, exists := s.RuleCore.FindByName(rule.Name)
-	return seedEntityDiff(seedKindPortalRule, rule.Name, exists, current.SeedFields(), rule.SeedFields(), seedPortalRuleFields)
+	declared := *rule
+	if rule.EntryName != "" {
+		// A rule that names an entry matches the access that entry serves, which
+		// is how the import applies it.
+		if entry := s.seedPortalEntry(rule.EntryName, seedEntries); entry != nil {
+			declared.MatchScheme = entry.Scheme
+			declared.MatchHost = entry.Host
+			declared.MatchPort = entry.Port
+		}
+	}
+	return seedEntityDiff(seedKindPortalRule, rule.Name, exists, current.SeedFields(), declared.SeedFields(), seedPortalRuleFields)
+}
+
+// seedPortalEntry resolves an entry a seed document declares or Hub stores.
+func (s *MaintenanceApiServiceServerImpl) seedPortalEntry(name string, seedEntries map[string]*core.PortalEntry) *core.PortalEntry {
+	if entry, ok := seedEntries[name]; ok {
+		return entry
+	}
+	entry, ok := s.EntryCore.FindByName(name)
+	if !ok {
+		return nil
+	}
+	return entry
 }
 
 func (s *MaintenanceApiServiceServerImpl) previewPortalCert(cert *core.PortalCert) skeled.SeedEntityDiff {
@@ -184,6 +227,15 @@ func (s *MaintenanceApiServiceServerImpl) applyPortalSites(sites []*core.PortalS
 			continue
 		}
 		s.SiteCore.Save(*site)
+	}
+}
+
+func (s *MaintenanceApiServiceServerImpl) applyPortalEntries(entries []*core.PortalEntry, selected map[_SeedSelectionKey]struct{}) {
+	for _, entry := range entries {
+		if !hasSelection(selected, seedKindPortalEntry, entry.Name) {
+			continue
+		}
+		s.EntryCore.Save(*entry)
 	}
 }
 

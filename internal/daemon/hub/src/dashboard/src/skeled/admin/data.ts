@@ -599,6 +599,10 @@ export type PortalEntryAccessUpdate = {
  */
 export type PortalEntryCreation = {
   /**
+   * Entry name.
+   */
+  name:   string;
+  /**
    * Entry protocol.
    */
   scheme: string;

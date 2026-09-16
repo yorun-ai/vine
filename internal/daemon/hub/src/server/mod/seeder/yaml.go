@@ -12,19 +12,23 @@ import (
 )
 
 type _SettingsYAMLPayload struct {
-	AppConfigs    []_AppConfig  `yaml:"appConfigs"`
-	PortalEntries []_PortalSite `yaml:"portalSites"`
-	PortalRules   []_PortalRule `yaml:"portalRules"`
-	PortalCerts   []_PortalCert `yaml:"portalCerts"`
+	AppConfigs  []_AppConfig  `yaml:"appConfigs"`
+	PortalSites []_PortalSite `yaml:"portalSites"`
+	// PortalEntries declares named entries. Hub also creates an entry on its own
+	// for the access of a rule that no entry serves yet.
+	PortalEntries []_PortalEntry `yaml:"portalEntries"`
+	PortalRules   []_PortalRule  `yaml:"portalRules"`
+	PortalCerts   []_PortalCert  `yaml:"portalCerts"`
 }
 
 // seedStringFields lists the fields each seed section declares as plain strings.
 // A seed variable that targets one of them is validated as a string; the fields
 // with a structured or numeric type resolve through the cases in vars.go.
 var seedStringFields = map[string]map[string]bool{
-	"portalSites": stringFieldsOf(_PortalSite{}),
-	"portalRules": stringFieldsOf(_PortalRule{}),
-	"portalCerts": stringFieldsOf(_PortalCert{}),
+	"portalSites":   stringFieldsOf(_PortalSite{}),
+	"portalEntries": stringFieldsOf(_PortalEntry{}),
+	"portalRules":   stringFieldsOf(_PortalRule{}),
+	"portalCerts":   stringFieldsOf(_PortalCert{}),
 }
 
 // stringFieldsOf derives the string-valued YAML fields of a seed payload struct,
@@ -46,10 +50,11 @@ func stringFieldsOf(payload any) map[string]bool {
 // SeedEntities is a seed document expressed as the domain entities it declares.
 // Startup seeding and Dashboard imports read the same YAML contract through it.
 type SeedEntities struct {
-	AppConfigs  []*core.AppConfig
-	PortalSites []*core.PortalSite
-	PortalRules []*core.PortalRule
-	PortalCerts []*core.PortalCert
+	AppConfigs    []*core.AppConfig
+	PortalSites   []*core.PortalSite
+	PortalEntries []*core.PortalEntry
+	PortalRules   []*core.PortalRule
+	PortalCerts   []*core.PortalCert
 }
 
 // ParseSeedEntities decodes a seed document without resolving seed variables and
@@ -59,21 +64,28 @@ func ParseSeedEntities(content string) (*SeedEntities, error) {
 	if err != nil || payload == nil {
 		return nil, err
 	}
+	if err := checkSeedRuleStyle(payload); err != nil {
+		return nil, err
+	}
 	return payload.entities(), nil
 }
 
 func (p *_SettingsYAMLPayload) entities() *SeedEntities {
 	entities := &SeedEntities{
-		AppConfigs:  make([]*core.AppConfig, 0, len(p.AppConfigs)),
-		PortalSites: make([]*core.PortalSite, 0, len(p.PortalEntries)),
-		PortalRules: make([]*core.PortalRule, 0, len(p.PortalRules)),
-		PortalCerts: make([]*core.PortalCert, 0, len(p.PortalCerts)),
+		AppConfigs:    make([]*core.AppConfig, 0, len(p.AppConfigs)),
+		PortalSites:   make([]*core.PortalSite, 0, len(p.PortalSites)),
+		PortalEntries: make([]*core.PortalEntry, 0, len(p.PortalEntries)),
+		PortalRules:   make([]*core.PortalRule, 0, len(p.PortalRules)),
+		PortalCerts:   make([]*core.PortalCert, 0, len(p.PortalCerts)),
 	}
 	for _, item := range p.AppConfigs {
 		entities.AppConfigs = append(entities.AppConfigs, item.toCoreAppConfig())
 	}
-	for _, site := range p.PortalEntries {
+	for _, site := range p.PortalSites {
 		entities.PortalSites = append(entities.PortalSites, site.toCorePortalSite())
+	}
+	for _, entry := range p.PortalEntries {
+		entities.PortalEntries = append(entities.PortalEntries, entry.toCorePortalEntry())
 	}
 	for _, rule := range p.PortalRules {
 		entities.PortalRules = append(entities.PortalRules, rule.toCorePortalRule())
@@ -134,24 +146,46 @@ func (i _AppConfig) toCoreAppConfig() *core.AppConfig {
 	return &core.AppConfig{FieldSources: i.Sources, Name: i.Name, Value: i.Value}
 }
 
+// Portal entry
+
+type _PortalEntry struct {
+	Name   string `yaml:"name"`
+	Scheme string `yaml:"scheme"`
+	Host   string `yaml:"host"`
+	Port   int    `yaml:"port"`
+}
+
+func (e _PortalEntry) toCorePortalEntry() *core.PortalEntry {
+	return &core.PortalEntry{
+		Name:   e.Name,
+		Scheme: e.Scheme,
+		Host:   e.Host,
+		Port:   e.Port,
+	}
+}
+
 // Portal rule
 
 type _PortalRule struct {
-	Sources                 core.FieldSources `yaml:"-"`
-	Name                    string            `yaml:"name"`
-	MatchScheme             string            `yaml:"matchScheme"`
-	MatchHost               string            `yaml:"matchHost"`
-	MatchPort               int               `yaml:"matchPort"`
-	MatchPathPrefix         string            `yaml:"matchPathPrefix"`
-	RouteType               string            `yaml:"routeType"`
-	RouteSiteName           string            `yaml:"routeSiteName"`
-	RouteRedirectionPattern string            `yaml:"routeRedirectionPattern"`
-	RoutePathPrefix         string            `yaml:"routePathPrefix"`
+	Sources core.FieldSources `yaml:"-"`
+	Name    string            `yaml:"name"`
+	// EntryName names the entry the rule joins. A rule declares either the entry
+	// name or the access the entry serves, never both.
+	EntryName               string `yaml:"entryName"`
+	MatchScheme             string `yaml:"matchScheme"`
+	MatchHost               string `yaml:"matchHost"`
+	MatchPort               int    `yaml:"matchPort"`
+	MatchPathPrefix         string `yaml:"matchPathPrefix"`
+	RouteType               string `yaml:"routeType"`
+	RouteSiteName           string `yaml:"routeSiteName"`
+	RouteRedirectionPattern string `yaml:"routeRedirectionPattern"`
+	RoutePathPrefix         string `yaml:"routePathPrefix"`
 }
 
 func (r _PortalRule) toCorePortalRule() *core.PortalRule {
 	return &core.PortalRule{FieldSources: r.Sources,
 		Name:                    r.Name,
+		EntryName:               r.EntryName,
 		MatchScheme:             r.MatchScheme,
 		MatchHost:               r.MatchHost,
 		MatchPort:               r.MatchPort,

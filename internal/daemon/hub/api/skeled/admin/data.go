@@ -613,6 +613,8 @@ func (v PortalEntryAccessUpdate) Clone() PortalEntryAccessUpdate {
 
 // PortalEntryCreation Portal access entry creation parameters
 type PortalEntryCreation struct {
+	// Name Entry name
+	Name string `json:"name"`
 	// Scheme Entry protocol
 	Scheme string `json:"scheme"`
 	// Host Match Host, empty string means no restriction

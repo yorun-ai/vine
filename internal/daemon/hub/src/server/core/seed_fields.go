@@ -36,6 +36,19 @@ func (s *PortalSite) SeedFields() map[string]string {
 
 // SeedFields returns the entity values a seed compares against, keyed by the
 // field names seeds use.
+func (e *PortalEntry) SeedFields() map[string]string {
+	if e == nil {
+		return map[string]string{}
+	}
+	return map[string]string{
+		"scheme": e.Scheme,
+		"host":   e.Host,
+		"port":   strconv.Itoa(e.Port),
+	}
+}
+
+// SeedFields returns the entity values a seed compares against, keyed by the
+// field names seeds use.
 func (r *PortalRule) SeedFields() map[string]string {
 	if r == nil {
 		return map[string]string{}

@@ -83,6 +83,8 @@ export const cn = {
   'portalEntry.noRules': '该访问入口下还没有入口规则',
   'portalEntry.noRulesDescription':
     '添加入口规则后，Portal 才会在该访问入口上监听。',
+  'portalEntry.name': '入口名称',
+  'portalEntry.nameRequired': '请填写入口名称',
   'portalEntry.scheme': '协议',
   'portalEntry.host': 'Host',
   'portalEntry.port': '端口',

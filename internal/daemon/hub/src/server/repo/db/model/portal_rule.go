@@ -2,6 +2,7 @@ package model
 
 import (
 	_ "embed"
+	"fmt"
 	"sort"
 	"strings"
 
@@ -190,14 +191,22 @@ func (d *PortalRuleDao) migrateAccessGroup(group _LegacyPortalRuleAccess) int {
 	}
 
 	ex.PanicIfError(db.Exec(
-		"INSERT INTO portal_entry (scheme, host, port, built_in, created_at, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-		scheme, host, port, false,
+		"INSERT INTO portal_entry (name, scheme, host, port, built_in, created_at, updated_at) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+		portalEntryName(scheme, host, port), scheme, host, port, false,
 	).Error)
 	ex.PanicIfError(db.Raw(
 		"SELECT id FROM portal_entry WHERE scheme = ? AND host = ? AND port = ? AND built_in = ?",
 		scheme, host, port, false,
 	).Scan(&id).Error)
 	return id.Id
+}
+
+// portalEntryName is the name Hub derives for an entry it creates on its own.
+func portalEntryName(scheme string, host string, port int) string {
+	if host == "" {
+		return fmt.Sprintf("%s:%d", scheme, port)
+	}
+	return fmt.Sprintf("%s:%s:%d", scheme, host, port)
 }
 
 // _MigratedPortalRule is one rule whose stored access the migration moves into an

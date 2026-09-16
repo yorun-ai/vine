@@ -63,10 +63,10 @@ func TestPortalEntryServiceCreatesAndRemovesEntry(t *testing.T) {
 		PortalSiteRepo:  &_MaintenanceServicePortalSiteRepo{items: map[string]*core.PortalSite{}},
 	}}
 
-	created := service.Create(skeled.PortalEntryCreation{Scheme: "http", Host: "", Port: 8080})
+	created := service.Create(skeled.PortalEntryCreation{Name: "web", Scheme: "http", Host: "", Port: 8080})
 
 	// An entry routes no rule when the operator creates it.
-	assert.Equal(t, "http:8080", created.Name)
+	assert.Equal(t, "web", created.Name)
 	assert.Equal(t, "http", created.Scheme)
 	assert.Equal(t, 8080, created.Port)
 	assert.Empty(t, created.Rules)

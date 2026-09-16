@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
@@ -58,6 +59,52 @@ func (r *_MaintenanceServiceAppConfigRepo) Remove(id int) bool {
 		return true
 	}
 	return false
+}
+
+func TestMaintenancePreviewResolvesPortalRuleEntryName(t *testing.T) {
+	// A seed rule that names an entry matches the access that entry serves, so a
+	// rule that already belongs to it reports no field differences.
+	ruleRepo := &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{
+		"demo.web": {
+			Id: 1, Name: "demo.web", EntryId: 1, MatchScheme: "http", MatchPort: 8099,
+			MatchPathPrefix: "/", RouteType: "SITE", RouteSiteName: "demo.Web",
+		},
+	}}
+	entryRepo := newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Name: "web", Scheme: "http", Port: 8099})
+	service := &MaintenanceApiServiceServerImpl{
+		EntryCore: &core.PortalEntryCore{
+			PortalEntryRepo: entryRepo,
+			PortalRuleRepo:  ruleRepo,
+			PortalSiteRepo:  &_MaintenanceServicePortalSiteRepo{items: map[string]*core.PortalSite{}},
+		},
+		RuleCore: newTestPortalRuleCore(ruleRepo, entryRepo),
+	}
+
+	preview := service.PreviewSeedYaml(`
+portalEntries:
+  - name: web
+    scheme: http
+    port: 8099
+portalRules:
+  - name: demo.web
+    entryName: web
+    matchPathPrefix: /
+    routeType: SITE
+    routeSiteName: demo.Web
+`)
+
+	require.Len(t, preview.Items, 2)
+	byKind := map[string]skeled.SeedEntityDiff{}
+	for _, item := range preview.Items {
+		byKind[item.Kind] = item
+	}
+	for _, kind := range []string{seedKindPortalEntry, seedKindPortalRule} {
+		item := byKind[kind]
+		require.True(t, item.Exists, "kind %s", kind)
+		for _, field := range item.Fields {
+			assert.False(t, field.Changed, "%s field %s changed: %q -> %q", kind, field.Name, field.CurrentValue, field.SeedValue)
+		}
+	}
 }
 
 func TestMaintenanceServicePreviewSeedYamlReturnsEmptyItems(t *testing.T) {

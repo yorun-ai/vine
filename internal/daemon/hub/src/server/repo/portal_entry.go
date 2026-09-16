@@ -27,6 +27,13 @@ func (s *PortalEntryRepo) GetById(id int) (*core.PortalEntry, bool) {
 	return nil, false
 }
 
+func (s *PortalEntryRepo) GetByName(name string) (*core.PortalEntry, bool) {
+	if row, ok := s.Dao.ByName(name); ok {
+		return toCorePortalEntry(row), true
+	}
+	return nil, false
+}
+
 func (s *PortalEntryRepo) GetByAccess(scheme string, host string, port int) (*core.PortalEntry, bool) {
 	if row, ok := s.Dao.ByAccess(scheme, host, port); ok {
 		return toCorePortalEntry(row), true
@@ -61,7 +68,7 @@ func toCorePortalEntry(row *model.PortalEntry) *core.PortalEntry {
 	// Hub's own entry; the entry list filters built-in entries out.
 	return &core.PortalEntry{
 		Id:      row.Id,
-		Name:    core.PortalEntryName(row.Scheme, row.Host, row.Port),
+		Name:    row.Name,
 		Scheme:  row.Scheme,
 		Host:    row.Host,
 		Port:    row.Port,
@@ -72,6 +79,7 @@ func toCorePortalEntry(row *model.PortalEntry) *core.PortalEntry {
 func toModelPortalEntry(entry *core.PortalEntry) *model.PortalEntry {
 	return &model.PortalEntry{
 		Id:      entry.Id,
+		Name:    entry.Name,
 		Scheme:  entry.Scheme,
 		Host:    entry.Host,
 		Port:    entry.Port,

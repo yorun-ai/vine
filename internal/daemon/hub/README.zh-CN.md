@@ -81,6 +81,20 @@ Hub 的层次职责必须保持清晰：
   任何规则的 entry：规则属于用户，删除仍有规则的 entry 会报错，而不是让规则失去
   访问配置。entry 列表会返回尚未路由规则的 entry，因为用户先建 entry、再添加使用
   它的规则。
+- 内置 Dashboard 规则同样走 entry 模式：它们只引用内置 entry `vine.hub.dashboard`，
+  由 Seeder 按 Dashboard URL 维护该 entry 的访问配置；没有显式 `--dashboard-url`
+  或旧默认值迁移时，Hub 保持它当前服务的访问配置。
+- entry 有自己的名称：seed 的 `portalEntries` 段声明 `name`、`scheme`、`host`、
+  `port`，并在规则之前应用，因此规则会加入服务其访问配置的 entry 并沿用该名称；
+  entry 也可以暂时不承载任何规则。Hub 只为它自行创建的 entry 推导
+  `scheme[:host]:port` 名称，所以没有显式声明 entry 时规则加入的 entry 以访问配置
+  命名。内置 Dashboard entry 使用保留名称 `vine.hub.dashboard`。
+- 规则加入 entry 有两种写法：用 `entryName` 指定名称，或直接声明该 entry 服务的
+  访问配置（`matchScheme` / `matchHost` / `matchPort`）。两者互斥：同一条规则不
+  能同时使用两种写法，同一份 seed 文档也只能全部使用其中一种；声明了
+  `portalEntries` 的 seed 必须用 `entryName` 引用这些 entry，而不是在规则上声明
+  访问配置。seed 必须自洽：规则只能引用同一份文档声明的 entry，Hub 不会用库里的
+  数据补全关系。访问配置属于 entry，Hub 会在写入任何内容之前拒绝这类文档。
 - Admin API 通过 entry 触达规则的访问配置：`PortalRuleCreation` 指定新规则属于哪个
   entry，`PortalRuleUpdate` 完全不能修改访问配置。seed YAML 仍在规则上声明访问
   配置，由 Hub 在应用 seed 时聚合为 entry。

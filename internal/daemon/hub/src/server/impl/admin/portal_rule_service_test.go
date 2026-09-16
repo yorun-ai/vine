@@ -171,6 +171,18 @@ func (s *_PortalEntryRepoSpy) GetById(id int) (*core.PortalEntry, bool) {
 	return &value, true
 }
 
+func (s *_PortalEntryRepoSpy) GetByName(name string) (*core.PortalEntry, bool) {
+	for _, entry := range s.List() {
+		if entry.BuiltIn {
+			continue
+		}
+		if entry.Name == name {
+			return entry, true
+		}
+	}
+	return nil, false
+}
+
 func (s *_PortalEntryRepoSpy) GetByAccess(scheme string, host string, port int) (*core.PortalEntry, bool) {
 	for _, entry := range s.List() {
 		if entry.BuiltIn {
@@ -197,9 +209,6 @@ func (s *_PortalEntryRepoSpy) Save(entry *core.PortalEntry) {
 	if value.Id == 0 {
 		value.Id = s.nextId
 		s.nextId++
-	}
-	if value.Name == "" {
-		value.Name = core.PortalEntryName(value.Scheme, value.Host, value.Port)
 	}
 	s.entries[value.Id] = &value
 	entry.Id = value.Id

@@ -15,6 +15,21 @@ are not part of the public compatibility commitment.
   rule so it stays selectable while the operator adds the rules that use it. The
   Dashboard Portal entry page gains New and Delete actions and shows an entry
   that routes nothing.
+- Seed YAML declares named Portal entries in a `portalEntries` section with
+  `name`, `scheme`, `host`, and `port`. Hub applies entries before rules, so a
+  rule joins the entry that serves its access and keeps the name the seed gave
+  it, and an entry may route no rule yet. Hub derives the name
+  `scheme[:host]:port` only for the entry it creates on its own, and the built-in
+  Dashboard entry keeps the reserved name `vine.hub.dashboard`.
+- A Portal rule joins an entry either by naming it with `entryName` or by
+  declaring `matchScheme`, `matchHost`, and `matchPort`. One seed document uses
+  one of the two styles for every rule it declares, and a rule never mixes them,
+  because the entry owns the access. A seed that declares `portalEntries` names
+  them, so its rules reference the entry with `entryName` instead of declaring an
+  access. A seed is self-contained: a rule never references an entry the same
+  document does not declare, so Hub never completes the relationship from stored
+  data. Hub rejects a document that breaks any of these rules before it writes
+  anything.
 - The Portal rule interface no longer carries an access: `PortalRuleCreation`
   names the Portal entry a rule belongs to, and `PortalRuleUpdate` has no
   protocol, host, or port at all, so only the entry page changes an access. The
@@ -45,6 +60,11 @@ are not part of the public compatibility commitment.
   Admin API responses instead of `0`. Regenerate custom Admin clients and deploy
   the matching Dashboard assets with this release: `PortalRuleCreation` and
   `PortalRuleUpdate` changed.
+
+- Hub's own Dashboard rules name the built-in entry `vine.hub.dashboard` instead
+  of carrying an access, so the Dashboard URL configures that entry. Hub keeps
+  the access it already serves unless an explicit `--dashboard-url` or the
+  legacy-default migration refreshes it.
 
 ## [0.19.0] - 2026-09-16
 
