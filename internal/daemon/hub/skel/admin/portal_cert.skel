@@ -10,6 +10,9 @@ data PortalCertCreation {
 
     @desc("Private key Base64")
     privateKeyBase64: string
+
+    @desc("Whether Hub publishes this certificate to Portal")
+    enabled: bool?
 }
 
 @desc("Portal site certificate")
@@ -40,6 +43,9 @@ data PortalCert {
 
     @desc("Field sources; only returned by get, create and update")
     fieldSources: list<FieldSource>
+
+    @desc("Whether Hub publishes this certificate to Portal")
+    enabled: bool
 }
 
 @desc("Portal site certificate list item")
@@ -67,6 +73,9 @@ data PortalCertListItem {
 
     @desc("Validity end time")
     validTo: timestamp
+
+    @desc("Whether Hub publishes this certificate to Portal")
+    enabled: bool
 }
 
 @desc("Portal site certificate update parameters")
@@ -79,6 +88,9 @@ data PortalCertUpdate {
 
     @desc("Private key Base64")
     privateKeyBase64: string?
+
+    @desc("Whether Hub publishes this certificate to Portal")
+    enabled: bool?
 }
 
 @desc("Hub's Portal site certificate service, called by the Portal admin client")

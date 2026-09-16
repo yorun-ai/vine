@@ -856,7 +856,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalCertApiService",
 		SkelName:          "vine.hub.admin.PortalCertApiService",
-		Hash:              "47aa1ab8",
+		Hash:              "721bef55",
 		ServerType:        reflect.TypeFor[PortalCertApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalCertApiServiceServer](),
 
@@ -1152,7 +1152,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalEntryApiService",
 		SkelName:          "vine.hub.admin.PortalEntryApiService",
-		Hash:              "9f898d13",
+		Hash:              "c295c3f0",
 		ServerType:        reflect.TypeFor[PortalEntryApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalEntryApiServiceServer](),
 
@@ -1410,7 +1410,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalRuleApiService",
 		SkelName:          "vine.hub.admin.PortalRuleApiService",
-		Hash:              "22097d83",
+		Hash:              "04f2e38a",
 		ServerType:        reflect.TypeFor[PortalRuleApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalRuleApiServiceServer](),
 
@@ -1802,7 +1802,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalSiteApiService",
 		SkelName:          "vine.hub.admin.PortalSiteApiService",
-		Hash:              "9d6001f2",
+		Hash:              "258ce5b9",
 		ServerType:        reflect.TypeFor[PortalSiteApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalSiteApiServiceServer](),
 

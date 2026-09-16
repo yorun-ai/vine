@@ -1,3 +1,4 @@
+import { EnabledField } from './enabled-field'
 import { useConfigAccess } from '@/lib/config-access'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
 import { SearchInput } from '@/components/ui/search-input'
@@ -72,6 +73,7 @@ const portalEntrySchemes = ['http', 'https'] as const
 
 interface PortalEntryFormValue {
   name: string
+  enabled: boolean
   scheme: string
   host: string
   port: string
@@ -79,6 +81,7 @@ interface PortalEntryFormValue {
 
 const newEntryFormValue: PortalEntryFormValue = {
   name: 'http:80',
+  enabled: true,
   scheme: 'http',
   host: '',
   port: '80',
@@ -106,8 +109,14 @@ function syncDerivedEntryName(
 function updatePortalEntryField(
   current: PortalEntryFormValue,
   field: keyof PortalEntryFormValue,
-  value: string,
+  value: string | boolean,
 ) {
+  if (field === 'enabled') {
+    return { ...current, enabled: value === true }
+  }
+  if (typeof value !== 'string') {
+    return current
+  }
   if (field === 'name') {
     if (value.trim() === '') {
       return { ...current, name: derivePortalEntryName(current) }
@@ -124,6 +133,7 @@ function getErrorMessage(error: unknown) {
 function portalEntryToFormValue(entry: PortalEntry): PortalEntryFormValue {
   return {
     name: entry.name,
+    enabled: entry.enabled,
     scheme: entry.scheme,
     host: entry.host,
     port: String(entry.port),
@@ -137,6 +147,7 @@ function portalEntryFormValueToAccess(
     scheme: value.scheme,
     host: value.host.trim(),
     port: Number(value.port),
+    enabled: value.enabled,
   }
 }
 
@@ -269,7 +280,7 @@ function PortalEntryInlineEditor({
   const [formError, setFormError] = React.useState<string | null>(null)
 
   const setField = React.useCallback(
-    (field: keyof PortalEntryFormValue, value: string) => {
+    (field: keyof PortalEntryFormValue, value: string | boolean) => {
       setFormError(null)
       setFormValue((current) => updatePortalEntryField(current, field, value))
     },
@@ -352,6 +363,12 @@ function PortalEntryInlineEditor({
           onChange={(event) => setField('port', event.target.value)}
         />
       </Field>
+
+      <EnabledField
+        id="portal-entry-enabled"
+        enabled={formValue.enabled}
+        onChange={(enabled) => setField('enabled', enabled)}
+      />
 
       <div className="flex justify-end gap-2 border-t pt-4">
         <Button
@@ -731,6 +748,9 @@ export function PortalEntryPage() {
                       <span className="truncate text-sm font-medium">
                         {entry.name}
                       </span>
+                        {entry.enabled ? null : (
+                          <Badge variant="secondary">{t('common.disabled')}</Badge>
+                        )}
                     </div>
                     <div className="truncate font-mono text-xs text-muted-foreground">
                       {portalEntryAddress(entry)}
@@ -795,6 +815,9 @@ export function PortalEntryPage() {
                       <h2 className="truncate text-base font-semibold">
                         {selectedEntry.name}
                       </h2>
+                      {selectedEntry.enabled ? null : (
+                        <Badge variant="secondary">{t('common.disabled')}</Badge>
+                      )}
                     </div>
                     <p className="mt-2 font-mono text-xs text-muted-foreground">
                       {portalEntryAddress(selectedEntry)}

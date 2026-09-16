@@ -25,6 +25,9 @@ func TestPortalRuleDaoCreateAndQuery(t *testing.T) {
 	dao.Create(&PortalRule{
 		Name:                    "admin",
 		EntryId:                 3,
+		MatchScheme:             "https",
+		MatchHost:               "demo.local",
+		MatchPort:               8443,
 		MatchPathPrefix:         "/admin",
 		RouteType:               "SITE",
 		RouteSiteName:           "admin@demo.app",
@@ -34,9 +37,46 @@ func TestPortalRuleDaoCreateAndQuery(t *testing.T) {
 	rule, ok := dao.ByName("admin")
 	require.True(t, ok)
 	assert.Equal(t, 3, rule.EntryId)
+	assert.Equal(t, "https", rule.MatchScheme)
+	assert.Equal(t, "demo.local", rule.MatchHost)
+	assert.Equal(t, 8443, rule.MatchPort)
 	assert.Equal(t, "/admin", rule.MatchPathPrefix)
 	assert.Equal(t, "SITE", rule.RouteType)
 	assert.Equal(t, "admin@demo.app", rule.RouteSiteName)
+}
+
+func TestPortalRuleDaoKeepsDeprecatedAccessColumns(t *testing.T) {
+	dao := newTestPortalRuleDao(t)
+
+	// The deprecated columns follow the access of the entry Hub puts the rule
+	// under, both when Hub creates the rule and when it moves it.
+	rule := dao.Save(&PortalRule{
+		Name:            "admin",
+		EntryId:         1,
+		MatchScheme:     "https",
+		MatchHost:       "demo.local",
+		MatchPort:       8443,
+		MatchPathPrefix: "/admin",
+		RouteType:       "SITE",
+		RouteSiteName:   "admin@demo.app",
+	})
+	stored, ok := dao.ById(rule.Id)
+	require.True(t, ok)
+	assert.Equal(t, "https", stored.MatchScheme)
+	assert.Equal(t, "demo.local", stored.MatchHost)
+	assert.Equal(t, 8443, stored.MatchPort)
+
+	rule.EntryId = 2
+	rule.MatchScheme = "http"
+	rule.MatchHost = ""
+	rule.MatchPort = 80
+	dao.Save(rule)
+	stored, ok = dao.ById(rule.Id)
+	require.True(t, ok)
+	assert.Equal(t, 2, stored.EntryId)
+	assert.Equal(t, "http", stored.MatchScheme)
+	assert.Equal(t, "", stored.MatchHost)
+	assert.Equal(t, 80, stored.MatchPort)
 }
 
 func TestPortalRuleDaoListOrdered(t *testing.T) {
@@ -150,13 +190,19 @@ func TestPortalRuleInitSchemaMigratesRuleAccessToEntry(t *testing.T) {
 	assert.Equal(t, "/", byName["web"].MatchPathPrefix)
 	assert.True(t, byName["vine.hub.dashboard-web"].BuiltIn)
 
-	// The access columns and their index are gone from the rule table.
-	columns, err := tableColumnNames(db, &PortalRule{})
+	// The access columns stay for one release, so Hub never drops a column of a
+	// database it does not own, and the rule that left the port unset keeps the
+	// stored port it matched before the entry took over.
+	columns, err := tableColumnNames(db, "portal_rule")
 	require.NoError(t, err)
-	assert.False(t, columns["match_scheme"])
-	assert.False(t, columns["match_host"])
-	assert.False(t, columns["match_port"])
+	assert.True(t, columns["match_scheme"])
+	assert.True(t, columns["match_host"])
+	assert.True(t, columns["match_port"])
 	assert.True(t, columns["entry_id"])
+	assert.Equal(t, 0, byName["web"].MatchPort)
+	assert.Equal(t, 443, byName["secure"].MatchPort)
+	// The old index goes: Hub keeps one rule per entry path and checks request
+	// uniqueness itself, so the access columns no longer make a rule unique.
 	assert.False(t, db.Migrator().HasIndex("portal_rule", "uk_portal_rule_match"))
 	assert.True(t, db.Migrator().HasIndex("portal_rule", "uk_portal_rule_entry_path"))
 }

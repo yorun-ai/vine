@@ -442,6 +442,10 @@ export type PortalCert = {
    * Field sources; only returned by get, create and update.
    */
   fieldSources:         Array<FieldSource>;
+  /**
+   * Whether Hub publishes this certificate to Portal.
+   */
+  enabled:              boolean;
 }
 /**
  * Portal site certificate creation parameters.
@@ -459,6 +463,10 @@ export type PortalCertCreation = {
    * Private key Base64.
    */
   privateKeyBase64: string;
+  /**
+   * Whether Hub publishes this certificate to Portal.
+   */
+  enabled:          boolean | null;
 }
 /**
  * Portal site certificate list item.
@@ -496,6 +504,10 @@ export type PortalCertListItem = {
    * Validity end time.
    */
   validTo:              string;
+  /**
+   * Whether Hub publishes this certificate to Portal.
+   */
+  enabled:              boolean;
 }
 /**
  * Portal site certificate update parameters.
@@ -513,6 +525,10 @@ export type PortalCertUpdate = {
    * Private key Base64.
    */
   privateKeyBase64: string | null;
+  /**
+   * Whether Hub publishes this certificate to Portal.
+   */
+  enabled:          boolean | null;
 }
 /**
  * Portal site CORS configuration.
@@ -559,23 +575,27 @@ export type PortalEntry = {
   /**
    * Entry name.
    */
-  name:   string;
+  name:    string;
   /**
    * Entry protocol.
    */
-  scheme: string;
+  scheme:  string;
   /**
    * Match Host, empty string means no restriction.
    */
-  host:   string;
+  host:    string;
   /**
    * Entry port.
    */
-  port:   number;
+  port:    number;
   /**
    * Entry rule list.
    */
-  rules:  Array<PortalEntryRule>;
+  rules:   Array<PortalEntryRule>;
+  /**
+   * Whether Hub publishes the rules of this entry to Portal.
+   */
+  enabled: boolean;
 }
 /**
  * Portal access entry configuration update parameters.
@@ -584,15 +604,19 @@ export type PortalEntryAccessUpdate = {
   /**
    * Entry protocol.
    */
-  scheme: string;
+  scheme:  string;
   /**
    * Match Host, empty string means no restriction.
    */
-  host:   string;
+  host:    string;
   /**
    * Entry port.
    */
-  port:   number;
+  port:    number;
+  /**
+   * Whether Hub publishes the rules of this entry to Portal.
+   */
+  enabled: boolean | null;
 }
 /**
  * Portal access entry creation parameters.
@@ -601,19 +625,23 @@ export type PortalEntryCreation = {
   /**
    * Entry name.
    */
-  name:   string;
+  name:    string;
   /**
    * Entry protocol.
    */
-  scheme: string;
+  scheme:  string;
   /**
    * Match Host, empty string means no restriction.
    */
-  host:   string;
+  host:    string;
   /**
    * Entry port.
    */
-  port:   number;
+  port:    number;
+  /**
+   * Whether Hub publishes the rules of this entry to Portal; defaults to true.
+   */
+  enabled: boolean | null;
 }
 /**
  * Portal access entry rules.
@@ -684,6 +712,10 @@ export type PortalRule = {
    * Field sources; only returned by get, create and update.
    */
   fieldSources:            Array<FieldSource>;
+  /**
+   * Whether Hub publishes this rule to Portal.
+   */
+  enabled:                 boolean;
 }
 /**
  * Portal entry rule creation parameters.
@@ -717,6 +749,10 @@ export type PortalRuleCreation = {
    * Target site path prefix; empty means strip the matching prefix only.
    */
   routePathPrefix:         string | null;
+  /**
+   * Whether Hub publishes this rule to Portal.
+   */
+  enabled:                 boolean | null;
 }
 /**
  * Portal entry rule list item.
@@ -770,6 +806,10 @@ export type PortalRuleListItem = {
    * Effective route path prefix after site mount path resolution.
    */
   resolvedRoutePathPrefix: string;
+  /**
+   * Whether Hub publishes this rule to Portal.
+   */
+  enabled:                 boolean;
 }
 /**
  * Portal entry rule update parameters.
@@ -799,6 +839,10 @@ export type PortalRuleUpdate = {
    * Target site path prefix; empty means strip the matching prefix only.
    */
   routePathPrefix:         string | null;
+  /**
+   * Whether Hub publishes this rule to Portal.
+   */
+  enabled:                 boolean | null;
 }
 /**
  * Portal target site.
@@ -844,6 +888,10 @@ export type PortalSite = {
    * Field sources; only returned by get, create and update.
    */
   fieldSources:  Array<FieldSource>;
+  /**
+   * Whether Hub publishes this site to Portal.
+   */
+  enabled:       boolean;
 }
 /**
  * Portal target site Actor options.
@@ -890,6 +938,10 @@ export type PortalSiteCreation = {
    * Web name.
    */
   webName:       string;
+  /**
+   * Whether Hub publishes this site to Portal.
+   */
+  enabled:       boolean | null;
 }
 /**
  * Portal target site list item.
@@ -931,6 +983,10 @@ export type PortalSiteListItem = {
    * Web mount path; empty means the Web is not limited to a path.
    */
   webMountPath:  string;
+  /**
+   * Whether Hub publishes this site to Portal.
+   */
+  enabled:       boolean;
 }
 /**
  * Portal target site form options.
@@ -994,6 +1050,10 @@ export type PortalSiteUpdate = {
    * Web name.
    */
   webName:       string | null;
+  /**
+   * Whether Hub publishes this site to Portal.
+   */
+  enabled:       boolean | null;
 }
 /**
  * Portal target site web options.

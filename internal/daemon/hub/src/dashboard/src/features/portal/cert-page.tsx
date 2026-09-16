@@ -1,4 +1,5 @@
 import { FieldSourceInfo } from '@/features/field-source/field-source-info'
+import { EnabledField } from './enabled-field'
 import { useConfigAccess } from '@/lib/config-access'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
 import { SearchInput } from '@/components/ui/search-input'
@@ -67,6 +68,7 @@ interface PortalCertFormValue {
   name: string
   publicKeyBase64: string
   privateKeyBase64: string
+  enabled: boolean
 }
 
 type PortalCertFormErrors = Partial<Record<keyof PortalCertFormValue, string>>
@@ -75,6 +77,7 @@ const emptyFormValue: PortalCertFormValue = {
   name: '',
   publicKeyBase64: '',
   privateKeyBase64: '',
+  enabled: true,
 }
 
 function getErrorMessage(error: unknown) {
@@ -133,6 +136,7 @@ function certToFormValue(cert: PortalCertListItem): PortalCertFormValue {
     name: cert.name,
     publicKeyBase64: cert.publicKeyBase64,
     privateKeyBase64: '',
+    enabled: cert.enabled,
   }
 }
 
@@ -141,6 +145,7 @@ function formValueToCreation(value: PortalCertFormValue): PortalCertCreation {
     name: value.name.trim(),
     publicKeyBase64: value.publicKeyBase64.trim(),
     privateKeyBase64: value.privateKeyBase64.trim(),
+    enabled: value.enabled,
   }
 }
 
@@ -152,6 +157,7 @@ function formValueToUpdate(value: PortalCertFormValue): PortalCertUpdate {
     name: creation.name,
     publicKeyBase64: creation.publicKeyBase64,
     privateKeyBase64: privateKeyBase64 === '' ? null : privateKeyBase64,
+    enabled: value.enabled,
   }
 }
 
@@ -232,7 +238,7 @@ function PortalCertDialog({
   }, [cert, open])
 
   const setField = React.useCallback(
-    (field: keyof PortalCertFormValue, value: string) => {
+    (field: keyof PortalCertFormValue, value: string | boolean) => {
       setFormError(null)
       setFieldErrors((current) => {
         if (!current[field]) {
@@ -476,7 +482,7 @@ function PortalCertInlineEditor({
   }, [cert])
 
   const setField = React.useCallback(
-    (field: keyof PortalCertFormValue, value: string) => {
+    (field: keyof PortalCertFormValue, value: string | boolean) => {
       setFormError(null)
       setFieldErrors((current) => {
         if (!current[field]) {
@@ -566,6 +572,12 @@ function PortalCertInlineEditor({
             : t('portalCert.privateKeyEditHelp')}
         </p>
       </Field>
+
+      <EnabledField
+        id="portal-cert-enabled"
+        enabled={formValue.enabled}
+        onChange={(enabled) => setField('enabled', enabled)}
+      />
 
       <div className="flex justify-end gap-2 border-t pt-4">
         <Button
@@ -884,6 +896,9 @@ export function PortalCertPage() {
                       <span className="truncate text-sm font-medium">
                         {cert.name}
                       </span>
+                      {cert.enabled ? null : (
+                        <Badge variant="secondary">{t('common.disabled')}</Badge>
+                      )}
                       <span className="truncate text-xs text-muted-foreground">
                         {certDomains(cert).join(', ') || cert.issuer}
                       </span>
@@ -941,6 +956,9 @@ export function PortalCertPage() {
                         <h2 className="min-w-0 truncate text-base font-semibold">
                           {selectedCert.name}
                         </h2>
+                        {selectedCert.enabled ? null : (
+                          <Badge variant="secondary">{t('common.disabled')}</Badge>
+                        )}
                         {selectedCert.privateKeyConfigured ? (
                           <Badge variant="secondary">
                             <BadgeCheck />

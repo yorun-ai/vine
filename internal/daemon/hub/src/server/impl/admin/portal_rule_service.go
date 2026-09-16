@@ -42,6 +42,7 @@ func (s *PortalRuleApiServiceServerImpl) Create(creation skeled.PortalRuleCreati
 		RouteSiteName:           creation.RouteSiteName,
 		RouteRedirectionPattern: creation.RouteRedirectionPattern,
 		RoutePathPrefix:         routePathPrefix,
+		Enabled:                 creation.Enabled,
 	})
 	return s.toServerPortalRule(rule, toServerFieldSources(rule.FieldSources))
 }
@@ -54,6 +55,7 @@ func (s *PortalRuleApiServiceServerImpl) Update(id int, update skeled.PortalRule
 		RouteSiteName:           update.RouteSiteName,
 		RouteRedirectionPattern: update.RouteRedirectionPattern,
 		RoutePathPrefix:         update.RoutePathPrefix,
+		Enabled:                 update.Enabled,
 	})
 	return s.toServerPortalRule(rule, toServerFieldSources(rule.FieldSources))
 }
@@ -86,6 +88,7 @@ func (s *PortalRuleApiServiceServerImpl) UpdateDashboardAccess(scheme string, ho
 func toServerPortalRule(rule *core.PortalRule, fieldSources []skeled.FieldSource) skeled.PortalRule {
 	resolvedMatchPathPrefix, resolvedRoutePathPrefix := resolvePortalRulePaths(rule, nil)
 	return skeled.PortalRule{
+		Enabled:                 rule.Enabled,
 		Id:                      rule.Id,
 		Name:                    rule.Name,
 		MatchScheme:             rule.MatchScheme,
@@ -128,6 +131,7 @@ func toServerPortalRuleListItem(rule *core.PortalRule, siteRepo core.PortalSiteR
 		}
 	}
 	return skeled.PortalRuleListItem{
+		Enabled:                 detail.Enabled,
 		Id:                      detail.Id,
 		Name:                    detail.Name,
 		MatchScheme:             detail.MatchScheme,

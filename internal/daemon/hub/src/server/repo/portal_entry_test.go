@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/infra/rdb"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
 	"gorm.io/gorm"
@@ -72,8 +73,11 @@ func newTestPortalEntryRepoDB(t *testing.T) *PortalEntryRepo {
 	connection, err := db.DB()
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = connection.Close() })
+	watchServer := watchserver.NewServerForTest()
+	t.Cleanup(watchServer.AfterAppStop)
 	repo := &PortalEntryRepo{
 		Dao:    &model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](db)},
+		Syncer: testSyncer(watchServer),
 		Access: new(configaccess.Access),
 	}
 	repo.Dao.InitSchema()

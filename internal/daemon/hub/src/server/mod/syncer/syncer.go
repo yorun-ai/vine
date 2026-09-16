@@ -20,6 +20,8 @@ type Syncer struct {
 	schemaMutex          sync.Mutex
 	appConfigNamesById   map[int]string
 	portalSiteNamesById  map[int]string
+	portalSitesByName    map[string]*core.PortalSite
+	portalEntriesById    map[int]*core.PortalEntry
 	portalRuleNamesById  map[int]string
 	portalRulesById      map[int]*core.PortalRule
 	portalCertNamesById  map[int]string
@@ -31,6 +33,8 @@ type Syncer struct {
 func (s *Syncer) DIInit() {
 	s.appConfigNamesById = map[int]string{}
 	s.portalSiteNamesById = map[int]string{}
+	s.portalSitesByName = map[string]*core.PortalSite{}
+	s.portalEntriesById = map[int]*core.PortalEntry{}
 	s.portalRuleNamesById = map[int]string{}
 	s.portalRulesById = map[int]*core.PortalRule{}
 	s.portalCertNamesById = map[int]string{}

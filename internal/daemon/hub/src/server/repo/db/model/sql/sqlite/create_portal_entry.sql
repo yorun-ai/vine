@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS portal_entry (
     scheme TEXT NOT NULL,                   -- Scheme, only http / https are supported
     host TEXT NOT NULL,                     -- Domain or IP, empty string means no restriction
     port INTEGER NOT NULL,                  -- Port Portal listens on
-    built_in BOOLEAN NOT NULL DEFAULT FALSE -- Whether this entry carries built-in Hub rules
+    built_in BOOLEAN NOT NULL DEFAULT FALSE, -- Whether this entry carries built-in Hub rules
+    enabled BOOLEAN NOT NULL DEFAULT TRUE    -- Whether Hub publishes the rules of this entry; an older Hub leaves the default
 );
 
 -- An entry name identifies the entry the Dashboard shows and links to.

@@ -24,6 +24,7 @@ type PortalEntry struct {
 	Host    string `gorm:"column:host"`
 	Port    int    `gorm:"column:port"`
 	BuiltIn bool   `gorm:"column:built_in;not null;default:false"`
+	Enabled bool   `gorm:"column:enabled;not null"`
 }
 
 func (*PortalEntry) TableName() string {
@@ -75,6 +76,7 @@ func (d *PortalEntryDao) Save(entry *PortalEntry) *PortalEntry {
 		"host":     entry.Host,
 		"port":     entry.Port,
 		"built_in": entry.BuiltIn,
+		"enabled":  entry.Enabled,
 	})
 	return row
 }
@@ -94,6 +96,7 @@ func ensurePortalEntryTable(db *gorm.DB) error {
 	if err := ensurePortalEntryNameColumn(db); err != nil {
 		return err
 	}
+	ensureEnabledColumn(db, "portal_entry")
 	return db.Exec(schemaSQL(db, createPortalEntrySQLiteSQL, createPortalEntryPgSQL)).Error
 }
 
@@ -112,7 +115,7 @@ func ensurePortalEntryNameColumn(db *gorm.DB) error {
 	if !db.Migrator().HasTable(&PortalEntry{}) {
 		return nil
 	}
-	columns, err := tableColumnNames(db, &PortalEntry{})
+	columns, err := tableColumnNames(db, "portal_entry")
 	if err != nil {
 		return err
 	}

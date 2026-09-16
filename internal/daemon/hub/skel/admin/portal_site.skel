@@ -49,6 +49,9 @@ data PortalSiteCreation {
 
     @desc("Web name")
     webName: string
+
+    @desc("Whether Hub publishes this site to Portal")
+    enabled: bool?
 }
 
 @desc("Portal target site")
@@ -82,6 +85,9 @@ data PortalSite {
 
     @desc("Field sources; only returned by get, create and update")
     fieldSources: list<FieldSource>
+
+    @desc("Whether Hub publishes this site to Portal")
+    enabled: bool
 }
 
 @desc("Portal target site list item")
@@ -112,6 +118,9 @@ data PortalSiteListItem {
 
     @desc("Web mount path; empty means the Web is not limited to a path")
     webMountPath: string
+
+    @desc("Whether Hub publishes this site to Portal")
+    enabled: bool
 }
 
 @desc("Portal target site update parameters")
@@ -133,6 +142,9 @@ data PortalSiteUpdate {
 
     @desc("Web name")
     webName: string?
+
+    @desc("Whether Hub publishes this site to Portal")
+    enabled: bool?
 }
 
 @desc("Portal target site Actor options")

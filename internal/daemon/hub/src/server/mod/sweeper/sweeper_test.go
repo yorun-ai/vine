@@ -128,6 +128,7 @@ func TestSweeperUnregistersExpiredLeaseStatus(t *testing.T) {
 		Type:          core.PortalSiteTypeRPCGW,
 		ActorSkelName: "demo.Actor",
 		RpcgwServices: []string{"demo.Service"},
+		Enabled:       true,
 	}}}
 	target := &Sweeper{
 		PortalInstanceCore: &core.PortalInstanceCore{PortalInstanceRepo: &_SweeperPortalInstanceRepo{}},

@@ -22,6 +22,9 @@ data PortalRuleCreation {
 
     @desc("Target site path prefix; empty means strip the matching prefix only")
     routePathPrefix: string?
+
+    @desc("Whether Hub publishes this rule to Portal")
+    enabled: bool?
 }
 
 @desc("Portal entry rules")
@@ -65,6 +68,9 @@ data PortalRule {
     @desc("Field sources; only returned by get, create and update")
     fieldSources: list<FieldSource>
 
+    @desc("Whether Hub publishes this rule to Portal")
+    enabled: bool
+
 }
 
 @desc("Portal entry rule list item")
@@ -104,6 +110,9 @@ data PortalRuleListItem {
 
     @desc("Effective route path prefix after site mount path resolution")
     resolvedRoutePathPrefix: string
+
+    @desc("Whether Hub publishes this rule to Portal")
+    enabled: bool
 }
 
 @desc("Portal entry rule update parameters")
@@ -125,6 +134,9 @@ data PortalRuleUpdate {
 
     @desc("Target site path prefix; empty means strip the matching prefix only")
     routePathPrefix: string?
+
+    @desc("Whether Hub publishes this rule to Portal")
+    enabled: bool?
 }
 
 @desc("Hub Dashboard access entry")

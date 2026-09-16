@@ -22,19 +22,21 @@ func (s *PortalEntryApiServiceServerImpl) List() []skeled.PortalEntry {
 
 func (s *PortalEntryApiServiceServerImpl) UpdateAccess(scheme string, host string, port int, update skeled.PortalEntryAccessUpdate) skeled.PortalEntry {
 	entry := s.PortalEntryCore.UpdateAccess(scheme, host, port, core.PortalEntryAccessUpdate{
-		Scheme: update.Scheme,
-		Host:   update.Host,
-		Port:   update.Port,
+		Scheme:  update.Scheme,
+		Host:    update.Host,
+		Port:    update.Port,
+		Enabled: update.Enabled,
 	})
 	return s.toServerPortalEntry(entry)
 }
 
 func (s *PortalEntryApiServiceServerImpl) Create(creation skeled.PortalEntryCreation) skeled.PortalEntry {
 	entry := s.PortalEntryCore.Create(core.PortalEntryCreation{
-		Name:   creation.Name,
-		Scheme: creation.Scheme,
-		Host:   creation.Host,
-		Port:   creation.Port,
+		Name:    creation.Name,
+		Scheme:  creation.Scheme,
+		Host:    creation.Host,
+		Port:    creation.Port,
+		Enabled: creation.Enabled,
 	})
 	return s.toServerPortalEntry(entry)
 }
@@ -49,11 +51,12 @@ func (s *PortalEntryApiServiceServerImpl) toServerPortalEntry(entry core.PortalE
 		rules = append(rules, s.toServerPortalEntryRule(rule))
 	}
 	return skeled.PortalEntry{
-		Name:   entry.Name,
-		Scheme: entry.Scheme,
-		Host:   entry.Host,
-		Port:   entry.Port,
-		Rules:  rules,
+		Name:    entry.Name,
+		Scheme:  entry.Scheme,
+		Host:    entry.Host,
+		Port:    entry.Port,
+		Enabled: entry.Enabled,
+		Rules:   rules,
 	}
 }
 

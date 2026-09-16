@@ -16,6 +16,7 @@ var DashboardRpcCoreEntry = core.PortalSite{
 	ActorSkelName: skeled.AdminActor{}.SkelName(),
 	ActorVia:      string(skel.ActorViaClient),
 	BuiltIn:       true,
+	Enabled:       true,
 }
 
 var DashboardWebCoreEntry = core.PortalSite{
@@ -25,6 +26,7 @@ var DashboardWebCoreEntry = core.PortalSite{
 	ActorVia:      string(skel.ActorViaClient),
 	WebName:       "vine.hub.admin.DashboardWeb",
 	BuiltIn:       true,
+	Enabled:       true,
 }
 
 const (
@@ -49,6 +51,7 @@ func (s *Seeder) seedDashboard() {
 		RouteType:       "SITE",
 		RouteSiteName:   DashboardRpcCoreEntry.Name,
 		BuiltIn:         true,
+		Enabled:         true,
 	}, refreshAccess)
 	s.saveDashboardRule(core.PortalRule{
 		Name:            dashboardWebRuleName,
@@ -57,6 +60,7 @@ func (s *Seeder) seedDashboard() {
 		RouteType:       "SITE",
 		RouteSiteName:   DashboardWebCoreEntry.Name,
 		BuiltIn:         true,
+		Enabled:         true,
 	}, refreshAccess)
 }
 

@@ -159,6 +159,7 @@ func testPortalSite(name string) *core.PortalSite {
 			Mode:           core.PortalCorsModeStrict,
 			AllowedOrigins: []string{"https://console.example.com"},
 		},
+		Enabled: true,
 	}
 }
 

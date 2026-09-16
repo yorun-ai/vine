@@ -392,7 +392,9 @@ func TestPortalRuleCoreEnsureDashboardRuleUsesBuiltInEntry(t *testing.T) {
 		RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site",
 	}, false)
 
-	// The rule keeps the configured path prefix and takes the entry's access.
+	// The rule keeps the configured path prefix and takes the entry's access, and
+	// Hub always publishes the rules it provisions for its own Dashboard.
+	assert.True(t, repo.rules[1].Enabled)
 	assert.Equal(t, 7, repo.rules[1].EntryId)
 	assert.Equal(t, "/custom", repo.rules[1].MatchPathPrefix)
 	assert.Equal(t, "https", repo.rules[1].MatchScheme)

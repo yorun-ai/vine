@@ -84,6 +84,10 @@ Hub 的层次职责必须保持清晰：
 - 内置 Dashboard 规则同样走 entry 模式：它们只引用内置 entry `vine.hub.dashboard`，
   由 Seeder 按 Dashboard URL 维护该 entry 的访问配置；没有显式 `--dashboard-url`
   或旧默认值迁移时，Hub 保持它当前服务的访问配置。
+- Portal 站点、entry、规则与证书都有 `enabled` 开关（默认启用），seed 可声明、
+  Dashboard 可编辑。Hub 会把停用的实体保留在数据库里但停止发布到 Watch，Portal
+  因此完全看不到它：停用的规则、停用 entry 下的规则、停用站点上的 SITE 规则以及
+  停用的证书都会从发布内容中移除。早于该开关的数据库中的实体保持启用。
 - entry 有自己的名称：seed 的 `portalEntries` 段声明 `name`、`scheme`、`host`、
   `port`，并在规则之前应用，因此规则会加入服务其访问配置的 entry 并沿用该名称；
   entry 也可以暂时不承载任何规则。Hub 只为它自行创建的 entry 推导
@@ -152,10 +156,14 @@ Hub 当前支持两类数据库配置来源：
 更早的数据库应先用 `v0.15.7` 启动完成迁移；当前 Hub 不再迁移旧 Portal rule 列。
 从把访问配置存在规则上的版本升级时，Hub 会原地迁移 `portal_rule`：建立
 `portal_entry`，把已存储的 `match_scheme`、`match_host`、`match_port` 归入
-entry，删除规则上的这些列，并按 entry 建立规则路径的唯一索引。未设置的端口会
-迁移成 Portal 实际监听的端口。若两条规则此前只靠未设置的端口区分，迁移后落在
-同一 entry 的同一路径上，Hub 保留显式写了端口的那条，把使用默认端口的规则挪到
-`/migrated` 路径，并逐条记录日志：升级不会要求用户手工修库，Hub 也会正常启动。
+entry，并按 entry 建立规则路径的唯一索引。这些列保留到后续版本再删除：Hub 从
+升级后就不再读取它们，并会一直写入所属 entry 的访问配置，因为删除用户数据库
+上的列无法撤销。未设置的端口会迁移成 Portal 实际监听的端口。若两条规则此前只
+靠未设置的端口区分，迁移后落在同一 entry 的同一路径上，Hub 保留显式写了端口的
+那条，把使用默认端口的规则挪到 `/migrated` 路径，并逐条记录日志：升级不会要求
+用户手工修库，Hub 也会正常启动。退回旧版本后 Hub 仍能读写该数据库：它读取的访问
+列仍在，enabled 有"默认启用"的默认值，它插入的不带 entry 的规则会在下次升级时
+重新归入对应 entry。
 
 数据库 metadata 记录首次 seed 完成状态。后续启动跳过全部 seed、变量和来源输入，seed 条目不再提供 `override` 开关。无数据库模式每次建立新存储并导入 seed；内置 Dashboard 配置的维护独立于 seed 标记。
 

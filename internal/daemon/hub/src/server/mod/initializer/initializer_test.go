@@ -60,6 +60,38 @@ type testPortalSiteRepo struct {
 	entries []*core.PortalSite
 }
 
+// testPortalEntryRepo is an empty entry repository: the initializer only lists
+// entries to record which of them Hub publishes rules for.
+type testPortalEntryRepo struct {
+	entries []*core.PortalEntry
+}
+
+func (r *testPortalEntryRepo) List() []*core.PortalEntry {
+	return r.entries
+}
+
+func (*testPortalEntryRepo) GetById(int) (*core.PortalEntry, bool) {
+	return nil, false
+}
+
+func (*testPortalEntryRepo) GetByName(string) (*core.PortalEntry, bool) {
+	return nil, false
+}
+
+func (*testPortalEntryRepo) GetByAccess(string, string, int) (*core.PortalEntry, bool) {
+	return nil, false
+}
+
+func (*testPortalEntryRepo) GetBuiltIn() (*core.PortalEntry, bool) {
+	return nil, false
+}
+
+func (*testPortalEntryRepo) Save(*core.PortalEntry) {}
+
+func (*testPortalEntryRepo) Remove(int) bool {
+	return false
+}
+
 func (r *testAppConfigRepo) List() []*core.AppConfig {
 	return r.items
 }
@@ -198,6 +230,7 @@ func testDashboardApiRule() core.PortalRule {
 		RouteType:       "SITE",
 		RouteSiteName:   seeder.DashboardRpcCoreEntry.Name,
 		BuiltIn:         true,
+		Enabled:         true,
 	}
 }
 
@@ -210,6 +243,7 @@ func testDashboardWebRule() core.PortalRule {
 		RouteType:       "SITE",
 		RouteSiteName:   seeder.DashboardWebCoreEntry.Name,
 		BuiltIn:         true,
+		Enabled:         true,
 	}
 }
 
@@ -232,21 +266,22 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 				{Id: 2, Name: "demo.FeatureConfig", Value: `{"enabled":true}`},
 			},
 		},
+		PortalEntryRepo: &testPortalEntryRepo{},
 		PortalRuleRepo: &testPortalRuleRepo{
 			rules: []*core.PortalRule{
-				{Id: 1, Name: "demo-entry", MatchScheme: "https", MatchHost: "demo.local", MatchPathPrefix: "/admin", RouteType: "SITE", RouteSiteName: "admin@demo.app"},
+				{Id: 1, Name: "demo-entry", MatchScheme: "https", MatchHost: "demo.local", MatchPathPrefix: "/admin", RouteType: "SITE", RouteSiteName: "admin@demo.app", Enabled: true},
 				testPortalRulePtrWithId(2, testDashboardApiRule()),
 				testPortalRulePtrWithId(3, testDashboardWebRule()),
 			},
 		},
 		PortalCertRepo: &testPortalCertRepo{
 			certs: []*core.PortalCert{
-				{Id: 1, Name: "demo-cert", Issuer: "letsencrypt", Domains: []string{"demo.local"}, PublicKeyBase64: "pub", PrivateKeyBase64: "pri"},
+				{Id: 1, Name: "demo-cert", Issuer: "letsencrypt", Domains: []string{"demo.local"}, PublicKeyBase64: "pub", PrivateKeyBase64: "pri", Enabled: true},
 			},
 		},
 		PortalSiteRepo: &testPortalSiteRepo{
 			entries: []*core.PortalSite{
-				{Id: 1, Name: "demo-entry", Type: core.PortalSiteTypeWEBGW, ActorSkelName: "demo.Actor", ActorVia: "client", WebName: "demo.Web"},
+				{Id: 1, Name: "demo-entry", Type: core.PortalSiteTypeWEBGW, ActorSkelName: "demo.Actor", ActorVia: "client", WebName: "demo.Web", Enabled: true},
 				testPortalSitePtrWithId(2, seeder.DashboardRpcCoreEntry),
 				testPortalSitePtrWithId(3, seeder.DashboardWebCoreEntry),
 			},
@@ -354,6 +389,7 @@ func TestInitializerDIInitWritesDashboardEntriesAndRulesFromRepo(t *testing.T) {
 		RouteType:       "SITE",
 		RouteSiteName:   "custom-admin-entry",
 		BuiltIn:         true,
+		Enabled:         true,
 	}
 	existingWebRule := core.PortalRule{
 		Id:              2,
@@ -364,6 +400,7 @@ func TestInitializerDIInitWritesDashboardEntriesAndRulesFromRepo(t *testing.T) {
 		RouteType:       "SITE",
 		RouteSiteName:   "custom-web-entry",
 		BuiltIn:         true,
+		Enabled:         true,
 	}
 	existingRpcSite := core.PortalSite{
 		Id:            1,
@@ -372,6 +409,7 @@ func TestInitializerDIInitWritesDashboardEntriesAndRulesFromRepo(t *testing.T) {
 		ActorSkelName: "custom.Actor",
 		ActorVia:      "client",
 		BuiltIn:       true,
+		Enabled:       true,
 	}
 	existingWebSite := core.PortalSite{
 		Id:            2,
@@ -381,19 +419,21 @@ func TestInitializerDIInitWritesDashboardEntriesAndRulesFromRepo(t *testing.T) {
 		ActorVia:      "client",
 		WebName:       "custom.Web",
 		BuiltIn:       true,
+		Enabled:       true,
 	}
 	ruleRepo := &testPortalRuleRepo{rules: []*core.PortalRule{&existingApiRule, &existingWebRule}}
 	entryRepo := &testPortalSiteRepo{entries: []*core.PortalSite{&existingRpcSite, &existingWebSite}}
 	p := &Initializer{
-		Syncer:         testSyncer(watchServer),
-		AppConfigRepo:  &testAppConfigRepo{},
-		PortalRuleRepo: ruleRepo,
-		PortalCertRepo: &testPortalCertRepo{},
-		PortalSiteRepo: entryRepo,
-		SchemaRepo:     &schema.SchemaRepo{},
-		RegistryCore:   &core.RegistryCore{SchemaRepo: &schema.SchemaRepo{}},
-		InprocFlag:     &appcore.InternalInprocFlag{},
-		Flag:           &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
+		Syncer:          testSyncer(watchServer),
+		AppConfigRepo:   &testAppConfigRepo{},
+		PortalEntryRepo: &testPortalEntryRepo{},
+		PortalRuleRepo:  ruleRepo,
+		PortalCertRepo:  &testPortalCertRepo{},
+		PortalSiteRepo:  entryRepo,
+		SchemaRepo:      &schema.SchemaRepo{},
+		RegistryCore:    &core.RegistryCore{SchemaRepo: &schema.SchemaRepo{}},
+		InprocFlag:      &appcore.InternalInprocFlag{},
+		Flag:            &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
 
 	p.DIInit()
@@ -493,15 +533,16 @@ func TestInitializerDIInitLoadsRegisteredSchemasIntoMemoryRepoInInprocMode(t *te
 
 	schemaRepo := new(schema.SchemaRepo)
 	p := &Initializer{
-		Syncer:         testSyncer(watchServer),
-		AppConfigRepo:  &testAppConfigRepo{},
-		PortalRuleRepo: &testPortalRuleRepo{},
-		PortalCertRepo: &testPortalCertRepo{},
-		PortalSiteRepo: &testPortalSiteRepo{},
-		SchemaRepo:     schemaRepo,
-		RegistryCore:   &core.RegistryCore{SchemaRepo: schemaRepo},
-		InprocFlag:     &appcore.InternalInprocFlag{Enabled: true},
-		Flag:           &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
+		Syncer:          testSyncer(watchServer),
+		AppConfigRepo:   &testAppConfigRepo{},
+		PortalEntryRepo: &testPortalEntryRepo{},
+		PortalRuleRepo:  &testPortalRuleRepo{},
+		PortalCertRepo:  &testPortalCertRepo{},
+		PortalSiteRepo:  &testPortalSiteRepo{},
+		SchemaRepo:      schemaRepo,
+		RegistryCore:    &core.RegistryCore{SchemaRepo: schemaRepo},
+		InprocFlag:      &appcore.InternalInprocFlag{Enabled: true},
+		Flag:            &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
 
 	p.DIInit()
@@ -528,15 +569,16 @@ func TestInitializerDIInitLoadsHubSchemasIntoMemoryRepoInNormalMode(t *testing.T
 
 	schemaRepo := new(schema.SchemaRepo)
 	p := &Initializer{
-		Syncer:         testSyncer(watchServer),
-		AppConfigRepo:  &testAppConfigRepo{},
-		PortalRuleRepo: &testPortalRuleRepo{},
-		PortalCertRepo: &testPortalCertRepo{},
-		PortalSiteRepo: &testPortalSiteRepo{},
-		SchemaRepo:     schemaRepo,
-		RegistryCore:   &core.RegistryCore{SchemaRepo: schemaRepo},
-		InprocFlag:     &appcore.InternalInprocFlag{},
-		Flag:           &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
+		Syncer:          testSyncer(watchServer),
+		AppConfigRepo:   &testAppConfigRepo{},
+		PortalEntryRepo: &testPortalEntryRepo{},
+		PortalRuleRepo:  &testPortalRuleRepo{},
+		PortalCertRepo:  &testPortalCertRepo{},
+		PortalSiteRepo:  &testPortalSiteRepo{},
+		SchemaRepo:      schemaRepo,
+		RegistryCore:    &core.RegistryCore{SchemaRepo: schemaRepo},
+		InprocFlag:      &appcore.InternalInprocFlag{},
+		Flag:            &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
 	}
 
 	p.DIInit()

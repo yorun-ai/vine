@@ -153,14 +153,17 @@ type _PortalEntry struct {
 	Scheme string `yaml:"scheme"`
 	Host   string `yaml:"host"`
 	Port   int    `yaml:"port"`
+	// Enabled is optional and defaults to true.
+	Enabled *bool `yaml:"enabled"`
 }
 
 func (e _PortalEntry) toCorePortalEntry() *core.PortalEntry {
 	return &core.PortalEntry{
-		Name:   e.Name,
-		Scheme: e.Scheme,
-		Host:   e.Host,
-		Port:   e.Port,
+		Name:    e.Name,
+		Scheme:  e.Scheme,
+		Host:    e.Host,
+		Port:    e.Port,
+		Enabled: core.EnabledOrDefault(e.Enabled),
 	}
 }
 
@@ -180,6 +183,8 @@ type _PortalRule struct {
 	RouteSiteName           string `yaml:"routeSiteName"`
 	RouteRedirectionPattern string `yaml:"routeRedirectionPattern"`
 	RoutePathPrefix         string `yaml:"routePathPrefix"`
+	// Enabled is optional and defaults to true.
+	Enabled *bool `yaml:"enabled"`
 }
 
 func (r _PortalRule) toCorePortalRule() *core.PortalRule {
@@ -194,6 +199,7 @@ func (r _PortalRule) toCorePortalRule() *core.PortalRule {
 		RouteSiteName:           r.RouteSiteName,
 		RouteRedirectionPattern: r.RouteRedirectionPattern,
 		RoutePathPrefix:         r.RoutePathPrefix,
+		Enabled:                 core.EnabledOrDefault(r.Enabled),
 	}
 }
 
@@ -207,6 +213,8 @@ type _PortalSite struct {
 	ActorVia      string            `yaml:"actorVia"`
 	Cors          _PortalCors       `yaml:"cors"`
 	WebName       string            `yaml:"webName"`
+	// Enabled is optional and defaults to true.
+	Enabled *bool `yaml:"enabled"`
 }
 
 type _PortalCors struct {
@@ -226,6 +234,7 @@ func (s _PortalSite) toCorePortalSite() *core.PortalSite {
 		ActorVia:      s.ActorVia,
 		Cors:          cors,
 		WebName:       s.WebName,
+		Enabled:       core.EnabledOrDefault(s.Enabled),
 	}
 	return site
 }
@@ -241,6 +250,8 @@ type _PortalCert struct {
 	PrivateKeyBase64 string            `yaml:"privateKeyBase64"`
 	ValidFrom        time.Time         `yaml:"validFrom"`
 	ValidTo          time.Time         `yaml:"validTo"`
+	// Enabled is optional and defaults to true.
+	Enabled *bool `yaml:"enabled"`
 }
 
 func (c _PortalCert) toCorePortalCert() *core.PortalCert {
@@ -248,6 +259,7 @@ func (c _PortalCert) toCorePortalCert() *core.PortalCert {
 		Name:             c.Name,
 		PublicKeyBase64:  c.PublicKeyBase64,
 		PrivateKeyBase64: c.PrivateKeyBase64,
+		Enabled:          core.EnabledOrDefault(c.Enabled),
 	}
 	return cert
 }

@@ -37,6 +37,8 @@ type PortalEntry struct {
 	// BuiltIn marks the entry that carries the built-in Hub Dashboard rules.
 	// Hub maintains it, and it is not part of the user entry list.
 	BuiltIn bool
+	// Enabled decides whether Hub publishes the rules of the entry to Portal.
+	Enabled bool
 }
 
 // PortalEntryView is one entry together with the rules Portal routes through
@@ -50,6 +52,8 @@ type PortalEntryAccessUpdate struct {
 	Scheme string
 	Host   string
 	Port   int
+	// Enabled is optional and keeps the stored switch when it is nil.
+	Enabled *bool
 }
 
 type PortalEntryCreation struct {
@@ -57,6 +61,8 @@ type PortalEntryCreation struct {
 	Scheme string
 	Host   string
 	Port   int
+	// Enabled is optional and defaults to true.
+	Enabled *bool
 }
 
 type PortalEntryRule struct {
@@ -119,10 +125,11 @@ func (m *PortalEntryCore) List() []PortalEntryView {
 // Create adds the named user entry for an access no user entry serves yet.
 func (m *PortalEntryCore) Create(creation PortalEntryCreation) PortalEntryView {
 	entry := m.Validate(PortalEntry{
-		Name:   creation.Name,
-		Scheme: creation.Scheme,
-		Host:   creation.Host,
-		Port:   creation.Port,
+		Name:    creation.Name,
+		Scheme:  creation.Scheme,
+		Host:    creation.Host,
+		Port:    creation.Port,
+		Enabled: EnabledOrDefault(creation.Enabled),
 	})
 	_, ok := m.PortalEntryRepo.GetByName(entry.Name)
 	ex.PanicNewIfNot(!ok, ex.OperationFailed, ex.F("portal entry %q already exists", entry.Name))
@@ -219,6 +226,9 @@ func (m *PortalEntryCore) EnsureAccess(scheme string, host string, port int) *Po
 		Scheme: scheme,
 		Host:   host,
 		Port:   port,
+		// A rule Hub aggregates into a new entry stays published, the way a rule
+		// that names an entry Hub already stores does.
+		Enabled: true,
 	})
 	if current, ok := m.PortalEntryRepo.GetByAccess(normalized.Scheme, normalized.Host, normalized.Port); ok {
 		return current
@@ -244,6 +254,8 @@ func (m *PortalEntryCore) EnsureBuiltInAccess(scheme string, host string, port i
 		Host:    host,
 		Port:    port,
 		BuiltIn: true,
+		// Hub publishes its own Dashboard rules, so the entry stays enabled.
+		Enabled: true,
 	})
 	if ok {
 		entry.Id = current.Id
@@ -269,11 +281,15 @@ func (m *PortalEntryCore) UpdateAccess(scheme string, host string, port int, upd
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %s not found", portalEntryAccessText(access)))
 
 	next := normalizePortalEntry(PortalEntry{
-		Name:   current.Name,
-		Scheme: update.Scheme,
-		Host:   update.Host,
-		Port:   update.Port,
+		Name:    current.Name,
+		Scheme:  update.Scheme,
+		Host:    update.Host,
+		Port:    update.Port,
+		Enabled: current.Enabled,
 	})
+	if update.Enabled != nil {
+		next.Enabled = *update.Enabled
+	}
 	if target, ok := m.PortalEntryRepo.GetByAccess(next.Scheme, next.Host, next.Port); ok && target.Id != current.Id {
 		m.checkAccessChangeMatchesUnique(current.Id, &next)
 		m.saveRules(current.Id, &next, target.Id)

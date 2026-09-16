@@ -429,6 +429,8 @@ type PortalCert struct {
 	ValidTo skel.Timestamp `json:"validTo"`
 	// FieldSources Field sources; only returned by get, create and update
 	FieldSources []FieldSource `json:"fieldSources"`
+	// Enabled Whether Hub publishes this certificate to Portal
+	Enabled bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -459,11 +461,17 @@ type PortalCertCreation struct {
 	PublicKeyBase64 string `json:"publicKeyBase64"`
 	// PrivateKeyBase64 Private key Base64
 	PrivateKeyBase64 string `json:"privateKeyBase64"`
+	// Enabled Whether Hub publishes this certificate to Portal
+	Enabled *bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
 func (v PortalCertCreation) Clone() PortalCertCreation {
 	cloned := v
+	if v.Enabled != nil {
+		clonedValue0 := *v.Enabled
+		cloned.Enabled = &clonedValue0
+	}
 	return cloned
 }
 
@@ -485,6 +493,8 @@ type PortalCertListItem struct {
 	ValidFrom skel.Timestamp `json:"validFrom"`
 	// ValidTo Validity end time
 	ValidTo skel.Timestamp `json:"validTo"`
+	// Enabled Whether Hub publishes this certificate to Portal
+	Enabled bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -507,6 +517,8 @@ type PortalCertUpdate struct {
 	PublicKeyBase64 *string `json:"publicKeyBase64"`
 	// PrivateKeyBase64 Private key Base64
 	PrivateKeyBase64 *string `json:"privateKeyBase64"`
+	// Enabled Whether Hub publishes this certificate to Portal
+	Enabled *bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -523,6 +535,10 @@ func (v PortalCertUpdate) Clone() PortalCertUpdate {
 	if v.PrivateKeyBase64 != nil {
 		clonedValue2 := *v.PrivateKeyBase64
 		cloned.PrivateKeyBase64 = &clonedValue2
+	}
+	if v.Enabled != nil {
+		clonedValue3 := *v.Enabled
+		cloned.Enabled = &clonedValue3
 	}
 	return cloned
 }
@@ -579,6 +595,8 @@ type PortalEntry struct {
 	Port int `json:"port"`
 	// Rules Entry rule list
 	Rules []PortalEntryRule `json:"rules"`
+	// Enabled Whether Hub publishes the rules of this entry to Portal
+	Enabled bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -603,11 +621,17 @@ type PortalEntryAccessUpdate struct {
 	Host string `json:"host"`
 	// Port Entry port
 	Port int `json:"port"`
+	// Enabled Whether Hub publishes the rules of this entry to Portal
+	Enabled *bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
 func (v PortalEntryAccessUpdate) Clone() PortalEntryAccessUpdate {
 	cloned := v
+	if v.Enabled != nil {
+		clonedValue0 := *v.Enabled
+		cloned.Enabled = &clonedValue0
+	}
 	return cloned
 }
 
@@ -621,11 +645,17 @@ type PortalEntryCreation struct {
 	Host string `json:"host"`
 	// Port Entry port
 	Port int `json:"port"`
+	// Enabled Whether Hub publishes the rules of this entry to Portal; defaults to true
+	Enabled *bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
 func (v PortalEntryCreation) Clone() PortalEntryCreation {
 	cloned := v
+	if v.Enabled != nil {
+		clonedValue0 := *v.Enabled
+		cloned.Enabled = &clonedValue0
+	}
 	return cloned
 }
 
@@ -677,6 +707,8 @@ type PortalRule struct {
 	ResolvedRoutePathPrefix string `json:"resolvedRoutePathPrefix"`
 	// FieldSources Field sources; only returned by get, create and update
 	FieldSources []FieldSource `json:"fieldSources"`
+	// Enabled Whether Hub publishes this rule to Portal
+	Enabled bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -709,6 +741,8 @@ type PortalRuleCreation struct {
 	RouteRedirectionPattern string `json:"routeRedirectionPattern"`
 	// RoutePathPrefix Target site path prefix; empty means strip the matching prefix only
 	RoutePathPrefix *string `json:"routePathPrefix"`
+	// Enabled Whether Hub publishes this rule to Portal
+	Enabled *bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -717,6 +751,10 @@ func (v PortalRuleCreation) Clone() PortalRuleCreation {
 	if v.RoutePathPrefix != nil {
 		clonedValue0 := *v.RoutePathPrefix
 		cloned.RoutePathPrefix = &clonedValue0
+	}
+	if v.Enabled != nil {
+		clonedValue1 := *v.Enabled
+		cloned.Enabled = &clonedValue1
 	}
 	return cloned
 }
@@ -747,6 +785,8 @@ type PortalRuleListItem struct {
 	ResolvedMatchPathPrefix string `json:"resolvedMatchPathPrefix"`
 	// ResolvedRoutePathPrefix Effective route path prefix after site mount path resolution
 	ResolvedRoutePathPrefix string `json:"resolvedRoutePathPrefix"`
+	// Enabled Whether Hub publishes this rule to Portal
+	Enabled bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -769,6 +809,8 @@ type PortalRuleUpdate struct {
 	RouteRedirectionPattern *string `json:"routeRedirectionPattern"`
 	// RoutePathPrefix Target site path prefix; empty means strip the matching prefix only
 	RoutePathPrefix *string `json:"routePathPrefix"`
+	// Enabled Whether Hub publishes this rule to Portal
+	Enabled *bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -798,6 +840,10 @@ func (v PortalRuleUpdate) Clone() PortalRuleUpdate {
 		clonedValue5 := *v.RoutePathPrefix
 		cloned.RoutePathPrefix = &clonedValue5
 	}
+	if v.Enabled != nil {
+		clonedValue6 := *v.Enabled
+		cloned.Enabled = &clonedValue6
+	}
 	return cloned
 }
 
@@ -823,6 +869,8 @@ type PortalSite struct {
 	WebMountPath string `json:"webMountPath"`
 	// FieldSources Field sources; only returned by get, create and update
 	FieldSources []FieldSource `json:"fieldSources"`
+	// Enabled Whether Hub publishes this site to Portal
+	Enabled bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -886,6 +934,8 @@ type PortalSiteCreation struct {
 	Cors *PortalCors `json:"cors"`
 	// WebName Web name
 	WebName string `json:"webName"`
+	// Enabled Whether Hub publishes this site to Portal
+	Enabled *bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -895,6 +945,10 @@ func (v PortalSiteCreation) Clone() PortalSiteCreation {
 		clonedValue0 := *v.Cors
 		clonedValue0 = (*v.Cors).Clone()
 		cloned.Cors = &clonedValue0
+	}
+	if v.Enabled != nil {
+		clonedValue1 := *v.Enabled
+		cloned.Enabled = &clonedValue1
 	}
 	return cloned
 }
@@ -919,6 +973,8 @@ type PortalSiteListItem struct {
 	WebName string `json:"webName"`
 	// WebMountPath Web mount path; empty means the Web is not limited to a path
 	WebMountPath string `json:"webMountPath"`
+	// Enabled Whether Hub publishes this site to Portal
+	Enabled bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -1014,6 +1070,8 @@ type PortalSiteUpdate struct {
 	Cors *PortalCors `json:"cors"`
 	// WebName Web name
 	WebName *string `json:"webName"`
+	// Enabled Whether Hub publishes this site to Portal
+	Enabled *bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -1043,6 +1101,10 @@ func (v PortalSiteUpdate) Clone() PortalSiteUpdate {
 	if v.WebName != nil {
 		clonedValue5 := *v.WebName
 		cloned.WebName = &clonedValue5
+	}
+	if v.Enabled != nil {
+		clonedValue6 := *v.Enabled
+		cloned.Enabled = &clonedValue6
 	}
 	return cloned
 }

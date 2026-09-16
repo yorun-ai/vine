@@ -189,6 +189,12 @@ Portal rule YAML uses flat fields in this order: `matchScheme`, `matchHost`,
 `matchPort`, `matchPathPrefix`, `routeType`, `routeSiteName`,
 `routeRedirectionPattern`, and `routePathPrefix`.
 
+Portal sites, entries, rules, and certificates declare `enabled`, which defaults
+to true. Hub keeps a disabled entity in its database and stops publishing it to
+Watch, so Portal never sees it: Hub omits a disabled rule, the rules of a
+disabled entry, the SITE rules of a disabled site, and a disabled certificate.
+A database that predates the switch keeps every stored entity enabled.
+
 Portal entry YAML declares `name`, `scheme`, `host`, and `port`. A seed applies
 entries before rules, so a rule joins the entry that serves its access and keeps
 the name the seed gave it; an entry may route no rule yet. Hub derives the name
@@ -225,12 +231,18 @@ before upgrading; current Hub no longer migrates legacy Portal rule columns.
 
 Upgrading Hub from a release that stored rule access migrates `portal_rule` in
 place: Hub creates `portal_entry`, groups the stored `match_scheme`,
-`match_host`, and `match_port` values into entries, drops the rule columns, and
-indexes the rule path within its entry. An unset port migrates to the port
-Portal serves. Two rules that only differed by an unset port can share an entry
-and a path after the upgrade; Hub keeps the rule with the explicit port and moves
-the rule that used the default port to a `/migrated` path, and logs every move.
-An upgraded database is therefore never corrected by hand, and Hub starts.
+`match_host`, and `match_port` values into entries, and indexes the rule path
+within its entry. Hub stops reading those columns here and removes them in a
+later release, because dropping a column of a database Hub does not own cannot
+be undone; until then Hub keeps them filled with the entry access. An unset port
+migrates to the port Portal serves. Two rules that only differed by an unset port
+can share an entry and a path after the upgrade; Hub keeps the rule with the
+explicit port and moves the rule that used the default port to a `/migrated`
+path, and logs every move. An upgraded database is therefore never corrected by
+hand, and Hub starts. A Hub rolled back to the release that predates entries
+keeps reading and writing that database: the access columns it reads are still
+there, the enable switch defaults to published, and a rule it inserts without an
+entry joins its entry again on the next upgrade.
 
 ## Admin Display Strings
 

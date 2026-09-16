@@ -67,10 +67,10 @@ func TestMaintenancePreviewResolvesPortalRuleEntryName(t *testing.T) {
 	ruleRepo := &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{
 		"demo.web": {
 			Id: 1, Name: "demo.web", EntryId: 1, MatchScheme: "http", MatchPort: 8099,
-			MatchPathPrefix: "/", RouteType: "SITE", RouteSiteName: "demo.Web",
+			MatchPathPrefix: "/", RouteType: "SITE", RouteSiteName: "demo.Web", Enabled: true,
 		},
 	}}
-	entryRepo := newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Name: "web", Scheme: "http", Port: 8099})
+	entryRepo := newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Name: "web", Scheme: "http", Port: 8099, Enabled: true})
 	service := &MaintenanceApiServiceServerImpl{
 		EntryCore: &core.PortalEntryCore{
 			PortalEntryRepo: entryRepo,

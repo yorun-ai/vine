@@ -1,4 +1,5 @@
 import { FieldSourceInfo } from '@/features/field-source/field-source-info'
+import { EnabledField } from './enabled-field'
 import { useConfigAccess } from '@/lib/config-access'
 import { RulePathPreview } from './rule-path-preview'
 import {
@@ -106,6 +107,7 @@ type PortalRuleFormErrors = Partial<Record<keyof PortalRuleFormValue, string>>
 
 interface PortalRuleFormValue {
   name: string
+  enabled: boolean
   matchScheme: string
   matchHost: string
   matchPort: string
@@ -118,6 +120,7 @@ interface PortalRuleFormValue {
 
 const emptyFormValue: PortalRuleFormValue = {
   name: '',
+  enabled: true,
   matchScheme: 'http',
   matchHost: '',
   matchPort: '',
@@ -135,6 +138,7 @@ function getErrorMessage(error: unknown) {
 function ruleToFormValue(rule: PortalRuleListItem): PortalRuleFormValue {
   return {
     name: rule.name,
+    enabled: rule.enabled,
     matchScheme: rule.matchScheme,
     matchHost: rule.matchHost,
     matchPort: rule.matchPort === 0 ? '' : String(rule.matchPort),
@@ -191,8 +195,14 @@ function syncDerivedName(
 function updatePortalRuleField(
   current: PortalRuleFormValue,
   field: keyof PortalRuleFormValue,
-  value: string,
+  value: string | boolean,
 ) {
+  if (field === 'enabled') {
+    return { ...current, enabled: value === true }
+  }
+  if (typeof value !== 'string') {
+    return current
+  }
   if (field === 'name') {
     if (value.trim() === '') {
       return {
@@ -218,6 +228,7 @@ function updatePortalRuleField(
 function ruleFormTargetValue(value: PortalRuleFormValue) {
   return {
     name: value.name.trim() || derivePortalRuleName(value),
+    enabled: value.enabled,
     matchPathPrefix: value.matchPathPrefix.trim(),
     routeType: value.routeType,
     routeSiteName: value.routeType === 'SITE' ? value.routeSiteName.trim() : '',
@@ -643,7 +654,7 @@ function PortalRuleInlineEditor({
   )
 
   const setField = React.useCallback(
-    (field: keyof PortalRuleFormValue, value: string) => {
+    (field: keyof PortalRuleFormValue, value: string | boolean) => {
       setFormError(null)
       setFieldErrors((current) => {
         if (!current[field]) {
@@ -915,6 +926,12 @@ function PortalRuleInlineEditor({
           routePathPrefix={(lockedMountPath === null ? formValue.routePathPrefix : effectiveWebMountPrefixes(lockedMountPath).routePathPrefix).trim()}
         />
       ) : null}
+
+      <EnabledField
+        id="portal-rule-enabled"
+        enabled={formValue.enabled}
+        onChange={(enabled) => setField('enabled', enabled)}
+      />
 
       <div className="flex justify-end gap-2 border-t pt-4">
         <Button
@@ -1289,6 +1306,9 @@ export function PortalRulePage() {
                         <span className="truncate text-sm font-medium">
                           {rule.name}
                         </span>
+                        {rule.enabled ? null : (
+                          <Badge variant="secondary">{t('common.disabled')}</Badge>
+                        )}
                       </div>
                       <div className="flex min-w-0 items-center gap-2">
                         <span className="truncate font-mono text-xs text-muted-foreground">
@@ -1351,6 +1371,9 @@ export function PortalRulePage() {
                         <h2 className="min-w-0 truncate text-base font-semibold">
                           {selectedRule.name}
                         </h2>
+                        {selectedRule.enabled ? null : (
+                          <Badge variant="secondary">{t('common.disabled')}</Badge>
+                        )}
                         <TargetTypeBadge routeType={selectedRule.routeType} />
                       </div>
                       <p className="mt-2 font-mono text-xs text-muted-foreground">

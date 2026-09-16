@@ -1,4 +1,5 @@
 import { FieldSourceInfo } from '@/features/field-source/field-source-info'
+import { EnabledField } from './enabled-field'
 import { useConfigAccess } from '@/lib/config-access'
 import { SkelName } from '@/components/skel-name'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
@@ -109,6 +110,7 @@ type PortalCorsModeValue = Extract<
 >
 
 interface PortalSiteFormValue {
+  enabled: boolean
   name: string
   type: PortalSiteType
   actorSkelName: string
@@ -130,6 +132,7 @@ const emptyFormValue: PortalSiteFormValue = {
   corsAllowedOrigins: '',
   rpcgwServices: '',
   webName: '',
+  enabled: true,
 }
 
 const emptyPortalSiteOptions: PortalSiteOptions = {
@@ -202,6 +205,7 @@ function portalSiteToFormValue(entry: PortalSiteListItem): PortalSiteFormValue {
     corsAllowedOrigins: (cors?.allowedOrigins ?? []).join('\n'),
     rpcgwServices: rpcgwServices.join('\n'),
     webName: entry.webName,
+    enabled: entry.enabled,
   }
 }
 
@@ -229,6 +233,7 @@ function formValueToCreation(value: PortalSiteFormValue): PortalSiteCreation {
           : [],
     },
     webName: value.type === 'WEBGW' ? value.webName.trim() : '',
+    enabled: value.enabled,
   }
 }
 
@@ -242,6 +247,7 @@ function formValueToUpdate(value: PortalSiteFormValue): PortalSiteUpdate {
     actorVia: creation.actorVia,
     cors: creation.cors,
     webName: creation.webName,
+    enabled: value.enabled,
   }
 }
 
@@ -499,7 +505,7 @@ function PortalSiteDialog({
   }, [open, entry])
 
   const setField = React.useCallback(
-    (field: keyof PortalSiteFormValue, value: string) => {
+    (field: keyof PortalSiteFormValue, value: string | boolean) => {
       setFormError(null)
       setFieldErrors((current) => {
         if (!current[field]) {
@@ -1005,7 +1011,7 @@ function PortalSiteInlineEditor({
   }, [entry])
 
   const setField = React.useCallback(
-    (field: keyof PortalSiteFormValue, value: string) => {
+    (field: keyof PortalSiteFormValue, value: string | boolean) => {
       setFormError(null)
       setFieldErrors((current) => {
         if (!current[field]) {
@@ -1286,6 +1292,12 @@ function PortalSiteInlineEditor({
         formValue={formValue}
         fieldErrors={fieldErrors}
         setField={setField}
+      />
+
+      <EnabledField
+        id="portal-site-enabled"
+        enabled={formValue.enabled}
+        onChange={(enabled) => setField('enabled', enabled)}
       />
 
       <div className="flex justify-end gap-2 border-t pt-4">
@@ -1631,6 +1643,9 @@ export function PortalSitePage() {
                         <span className="truncate text-sm font-medium">
                           <span>{entry.name}</span>
                         </span>
+                        {entry.enabled ? null : (
+                          <Badge variant="secondary">{t('common.disabled')}</Badge>
+                        )}
                       </div>
                       <div className="flex min-w-0 items-center gap-2">
                         <span className="truncate font-mono text-xs text-muted-foreground">
@@ -1701,6 +1716,9 @@ export function PortalSitePage() {
                         <h2 className="min-w-0 truncate text-base font-semibold">
                           {selectedEntry.name}
                         </h2>
+                        {selectedEntry.enabled ? null : (
+                          <Badge variant="secondary">{t('common.disabled')}</Badge>
+                        )}
                         <Badge variant="secondary">
                           {tText(portalSiteTypeLabel(selectedEntry.type))}
                         </Badge>

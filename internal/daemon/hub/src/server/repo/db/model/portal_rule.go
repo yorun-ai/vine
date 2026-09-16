@@ -32,6 +32,14 @@ type PortalRule struct {
 	FieldSources string `gorm:"-"`
 	rdb.Model
 	Name string `gorm:"column:name"`
+	// MatchScheme, MatchHost, and MatchPort are deprecated: the entry of the
+	// rule owns the access, and Hub reads it from there. The columns stay in the
+	// table for one release so Hub does not drop data from a database it does
+	// not own, and Hub keeps them filled with the entry access until a later
+	// release removes both the columns and these fields.
+	MatchScheme string `gorm:"column:match_scheme"`
+	MatchHost   string `gorm:"column:match_host"`
+	MatchPort   int    `gorm:"column:match_port"`
 	// EntryId refers to the portal_entry that owns the access configuration of
 	// the rule.
 	EntryId                 int    `gorm:"column:entry_id"`
@@ -41,6 +49,7 @@ type PortalRule struct {
 	RouteRedirectionPattern string `gorm:"column:route_redirection_pattern"`
 	RoutePathPrefix         string `gorm:"column:route_path_prefix;not null;default:''"`
 	BuiltIn                 bool   `gorm:"column:built_in;not null;default:false"`
+	Enabled                 bool   `gorm:"column:enabled;not null"`
 }
 
 func (*PortalRule) TableName() string {
@@ -54,6 +63,7 @@ type PortalRuleDao struct {
 func (d *PortalRuleDao) InitSchema() {
 	ex.PanicIfError(ensurePortalEntryTable(d.GormDB()))
 	d.migrateAccessColumns()
+	ensureEnabledColumn(d.GormDB(), "portal_rule")
 	sql := schemaSQL(d.GormDB(), createPortalRuleSQLiteSQL, createPortalRulePgSQL)
 	ex.PanicIfError(d.GormDB().Exec(sql).Error)
 	ensureFieldSourceTable(d.GormDB())
@@ -83,12 +93,16 @@ func (d *PortalRuleDao) Save(rule *PortalRule) *PortalRule {
 	d.Update(row, rdb.Patch{
 		"name":                      rule.Name,
 		"entry_id":                  rule.EntryId,
+		"match_scheme":              rule.MatchScheme,
+		"match_host":                rule.MatchHost,
+		"match_port":                rule.MatchPort,
 		"match_path_prefix":         rule.MatchPathPrefix,
 		"route_type":                rule.RouteType,
 		"route_site_name":           rule.RouteSiteName,
 		"route_redirection_pattern": rule.RouteRedirectionPattern,
 		"route_path_prefix":         rule.RoutePathPrefix,
 		"built_in":                  rule.BuiltIn,
+		"enabled":                   rule.Enabled,
 	})
 	return row
 }
@@ -129,13 +143,15 @@ type _PortalEntryId struct {
 // migrateAccessColumns moves the access stored on every rule into portal_entry.
 // Rules used to carry match_scheme, match_host, and match_port, which made an
 // access change a rewrite of every rule that used it. The migration groups the
-// stored access and gives each group one entry the rules then reference.
+// stored access and gives each group one entry the rules then reference. It
+// keeps the stored access columns for one release, because dropping columns in a
+// database Hub does not own cannot be undone, and Hub stops reading them.
 func (d *PortalRuleDao) migrateAccessColumns() {
 	db := d.GormDB()
 	if !db.Migrator().HasTable(&PortalRule{}) {
 		return
 	}
-	columns, err := tableColumnNames(db, &PortalRule{})
+	columns, err := tableColumnNames(db, "portal_rule")
 	ex.PanicIfError(err)
 	if !columns["match_scheme"] {
 		return
@@ -160,10 +176,13 @@ func (d *PortalRuleDao) migrateAccessColumns() {
 
 	d.resolveMigratedRulePaths()
 
+	// The access columns stay: Hub stops reading them here and removes them in a
+	// later release, together with the matching PortalRule fields.
+	//
+	// The index goes instead of the columns: it described what made a rule
+	// unique before entries existed, and Hub keeps one rule per entry path and
+	// checks request uniqueness itself.
 	ex.PanicIfError(db.Exec("DROP INDEX IF EXISTS uk_portal_rule_match").Error)
-	for _, column := range []string{"match_scheme", "match_host", "match_port"} {
-		ex.PanicIfError(db.Exec("ALTER TABLE portal_rule DROP COLUMN " + column).Error)
-	}
 }
 
 // migrateAccessGroup returns the entry that serves one stored access, creating
@@ -191,8 +210,8 @@ func (d *PortalRuleDao) migrateAccessGroup(group _LegacyPortalRuleAccess) int {
 	}
 
 	ex.PanicIfError(db.Exec(
-		"INSERT INTO portal_entry (name, scheme, host, port, built_in, created_at, updated_at) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-		portalEntryName(scheme, host, port), scheme, host, port, false,
+		"INSERT INTO portal_entry (name, scheme, host, port, built_in, enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+		portalEntryName(scheme, host, port), scheme, host, port, false, true,
 	).Error)
 	ex.PanicIfError(db.Raw(
 		"SELECT id FROM portal_entry WHERE scheme = ? AND host = ? AND port = ? AND built_in = ?",
@@ -303,15 +322,23 @@ func migratedPortalRulePath(matchPathPrefix string) string {
 	return trimmed + portalRuleMigratedSuffix
 }
 
-// tableColumnNames returns the stored columns of a model's table.
-func tableColumnNames(db *gorm.DB, model any) (map[string]bool, error) {
-	columnTypes, err := db.Migrator().ColumnTypes(model)
-	if err != nil {
+// tableColumnNames returns the stored columns of one table. Hub reads the
+// catalog instead of the table itself: a migration adds and drops columns while
+// it runs, and PostgreSQL refuses a prepared statement whose result type changed
+// since its plan was cached, which is what reading a table before and after its
+// own DDL would ask for.
+func tableColumnNames(db *gorm.DB, table string) (map[string]bool, error) {
+	query := "SELECT column_name AS name FROM information_schema.columns WHERE table_name = ? AND table_schema = ANY(current_schemas(false))"
+	if db.Dialector.Name() != "postgres" {
+		query = "SELECT name FROM pragma_table_info(?)"
+	}
+	columnNames := []string{}
+	if err := db.Raw(query, table).Scan(&columnNames).Error; err != nil {
 		return nil, err
 	}
-	names := make(map[string]bool, len(columnTypes))
-	for _, column := range columnTypes {
-		names[column.Name()] = true
+	names := make(map[string]bool, len(columnNames))
+	for _, name := range columnNames {
+		names[name] = true
 	}
 	return names, nil
 }

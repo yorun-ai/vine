@@ -39,26 +39,42 @@ are not part of the public compatibility commitment.
   rule, and certificate details render their values as text instead of
   input-like boxes, so a read-only field no longer looks editable.
 
+### Added
+
+- Portal sites, entries, rules, and certificates carry an `enabled` switch that a
+  seed declares and the Dashboard edits. Hub keeps a disabled entity in its
+  database and stops publishing it to Watch, so Portal never sees it: a disabled
+  rule, the rules of a disabled entry, the SITE rules of a disabled site, and a
+  disabled certificate are all removed from the published configuration. An
+  existing database keeps its configuration enabled, and a seed that omits the
+  switch stays enabled.
+
 ### Changed
 
-- Hub stores Portal access entries instead of deriving them from rules. An entry
+- Hub stores Portal access entries instead of deriving from rules. An entry
   owns the scheme, host, and port Portal serves, and rules reference it, so
   changing an entry access updates one row rather than every rule that used it.
   Portal continues to receive rules carrying the access of their entry, and seed
   YAML keeps declaring `matchScheme`, `matchHost`, and `matchPort` on rules; Hub
   aggregates the declared access into entries while it applies the seed.
-  Upgrading a database groups the stored rule access into entries and drops the
-  rule access columns. Rules that only differed by an unset port can now share an
-  entry and a path, so Hub keeps the rule with the explicit port on its path and
-  moves the rule that used the default port to a `/migrated` path, logging each
-  move instead of refusing to start on stored data. A seed, Dashboard import, or
-  Admin write that declares a request another rule already serves fails with the
-  rule that serves it, so Hub never rewrites a path the operator did not ask for;
-  a seed that declared both an unset and an explicit default port for one path
-  must drop one of them, because Hub no longer stores one request twice. A rule
-  that leaves `matchPort` unset reports the port Portal serves (`80` or `443`) in
-  Admin API responses instead of `0`. Regenerate custom Admin clients and deploy
-  the matching Dashboard assets with this release: `PortalRuleCreation` and
+  Upgrading a database groups the stored rule access into entries and leaves the
+  rule access columns in place: Hub no longer reads them, keeps them filled with
+  the access of the entry, and removes them in a later release, because dropping
+  a column of a database Hub does not own cannot be undone. A Hub that predates
+  entries still reads and writes such a database: the switch of a row it inserts
+  defaults to published, and a rule it inserts without an entry joins one again
+  on the next upgrade. Rules that only
+  differed by an unset port can now share an entry and a path, so Hub keeps the
+  rule with the explicit port on its path and moves the rule that used the
+  default port to a `/migrated` path, logging each move instead of refusing to
+  start on stored data. A seed, Dashboard import, or Admin write that declares a
+  request another rule already serves fails with the rule that serves it, so Hub
+  never rewrites a path the operator did not ask for; a seed that declared both
+  an unset and an explicit default port for one path must drop one of them,
+  because Hub no longer stores one request twice. A rule that leaves `matchPort`
+  unset reports the port Portal serves (`80` or `443`) in Admin API responses
+  instead of `0`. Regenerate custom Admin clients and deploy the matching
+  Dashboard assets with this release: `PortalRuleCreation` and
   `PortalRuleUpdate` changed.
 
 - Hub's own Dashboard rules name the built-in entry `vine.hub.dashboard` instead

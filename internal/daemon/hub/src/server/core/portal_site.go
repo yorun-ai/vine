@@ -57,6 +57,8 @@ type PortalSite struct {
 	// is empty for sites that do not forward Rpc traffic.
 	RpcgwServices []string
 	BuiltIn       bool
+	// Enabled decides whether Hub publishes the site to Portal.
+	Enabled bool
 }
 
 type PortalSiteCreation struct {
@@ -66,6 +68,8 @@ type PortalSiteCreation struct {
 	ActorVia      string
 	Cors          PortalCors
 	WebName       string
+	// Enabled is optional and defaults to true.
+	Enabled *bool
 }
 
 type PortalSiteUpdate struct {
@@ -75,6 +79,7 @@ type PortalSiteUpdate struct {
 	ActorVia      *string
 	Cors          *PortalCors
 	WebName       *string
+	Enabled       *bool
 }
 
 type PortalSiteActorOption struct {
@@ -159,6 +164,7 @@ func (m *PortalSiteCore) Create(creation PortalSiteCreation) *PortalSite {
 		ActorVia:      creation.ActorVia,
 		Cors:          creation.Cors,
 		WebName:       creation.WebName,
+		Enabled:       EnabledOrDefault(creation.Enabled),
 	}
 	entry = m.Validate(entry)
 	m.PortalSiteRepo.Save(&entry)
@@ -199,6 +205,10 @@ func (m *PortalSiteCore) Update(id int, update PortalSiteUpdate) *PortalSite {
 	if update.WebName != nil {
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/webName")
 		next.WebName = *update.WebName
+	}
+	if update.Enabled != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/enabled")
+		next.Enabled = *update.Enabled
 	}
 
 	next = m.Validate(next)

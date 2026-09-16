@@ -72,6 +72,21 @@ func TestPortalRuleRepoSaveBuiltIn(t *testing.T) {
 	assert.True(t, got.BuiltIn)
 }
 
+func TestPortalRuleRepoSaveKeepsDeprecatedAccessColumns(t *testing.T) {
+	db, repo, _ := newTestPortalRuleRepo(t)
+
+	// The rule reads its access from the entry, and the deprecated columns stay
+	// filled with that access until Hub removes them.
+	rule := testPortalRule(t, repo, "admin")
+	repo.Save(rule)
+
+	var row model.PortalRule
+	require.NoError(t, db.First(&row, "id = ?", rule.Id).Error)
+	assert.Equal(t, "https", row.MatchScheme)
+	assert.Equal(t, "demo.local", row.MatchHost)
+	assert.Equal(t, 443, row.MatchPort)
+}
+
 func TestPortalRuleRepoSaveRename(t *testing.T) {
 	_, repo, watchServer := newTestPortalRuleRepo(t)
 
@@ -147,7 +162,7 @@ func newTestPortalRuleRepo(t *testing.T) (*gorm.DB, *PortalRuleRepo, *watchserve
 	watchServer := watchserver.NewServerForTest()
 	t.Cleanup(watchServer.AfterAppStop)
 
-	entryRepo := newTestPortalEntryRepo(db)
+	entryRepo := newTestPortalEntryRepo(db, testSyncer(watchServer))
 	entryRepo.Dao.InitSchema()
 	repo := &PortalRuleRepo{
 		Dao: &model.PortalRuleDao{
@@ -164,9 +179,10 @@ func newTestPortalRuleRepo(t *testing.T) (*gorm.DB, *PortalRuleRepo, *watchserve
 	return db, repo, watchServer
 }
 
-func newTestPortalEntryRepo(db *gorm.DB) *PortalEntryRepo {
+func newTestPortalEntryRepo(db *gorm.DB, sync *syncer.Syncer) *PortalEntryRepo {
 	return &PortalEntryRepo{
 		Dao:    &model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](db)},
+		Syncer: sync,
 		Access: new(configaccess.Access),
 	}
 }
@@ -191,7 +207,7 @@ func testPortalRule(t *testing.T, repo *PortalRuleRepo, name string) *core.Porta
 
 	entry, ok := repo.PortalEntryRepo.GetByAccess("https", "demo.local", 443)
 	if !ok {
-		entry = &core.PortalEntry{Scheme: "https", Host: "demo.local", Port: 443}
+		entry = &core.PortalEntry{Scheme: "https", Host: "demo.local", Port: 443, Enabled: true}
 		repo.PortalEntryRepo.Save(entry)
 	}
 	return &core.PortalRule{
@@ -204,6 +220,7 @@ func testPortalRule(t *testing.T, repo *PortalRuleRepo, name string) *core.Porta
 		RouteType:               "SITE",
 		RouteSiteName:           "admin@demo.app",
 		RouteRedirectionPattern: "",
+		Enabled:                 true,
 	}
 }
 

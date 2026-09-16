@@ -25,6 +25,7 @@ type PortalSite struct {
 	CorsOrigins   string `gorm:"column:cors_origins"`
 	WebName       string `gorm:"column:web_name"`
 	BuiltIn       bool   `gorm:"column:built_in;not null;default:false"`
+	Enabled       bool   `gorm:"column:enabled;not null"`
 }
 
 func (*PortalSite) TableName() string {
@@ -36,6 +37,7 @@ type PortalSiteDao struct {
 }
 
 func (d *PortalSiteDao) InitSchema() {
+	ensureEnabledColumn(d.GormDB(), "portal_site")
 	sql := schemaSQL(d.GormDB(), createPortalSiteSQLiteSQL, createPortalSitePgSQL)
 	err := d.GormDB().Exec(sql).Error
 	ex.PanicIfError(err)
@@ -72,6 +74,7 @@ func (d *PortalSiteDao) Save(entry *PortalSite) *PortalSite {
 		"cors_origins":    entry.CorsOrigins,
 		"web_name":        entry.WebName,
 		"built_in":        entry.BuiltIn,
+		"enabled":         entry.Enabled,
 	})
 	return row
 }

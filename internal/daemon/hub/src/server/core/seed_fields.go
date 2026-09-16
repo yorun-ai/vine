@@ -31,6 +31,7 @@ func (s *PortalSite) SeedFields() map[string]string {
 		"corsMode":      string(s.Cors.Mode),
 		"corsOrigins":   SeedJSONString(s.Cors.AllowedOrigins),
 		"webName":       s.WebName,
+		"enabled":       strconv.FormatBool(s.Enabled),
 	}
 }
 
@@ -41,9 +42,10 @@ func (e *PortalEntry) SeedFields() map[string]string {
 		return map[string]string{}
 	}
 	return map[string]string{
-		"scheme": e.Scheme,
-		"host":   e.Host,
-		"port":   strconv.Itoa(e.Port),
+		"scheme":  e.Scheme,
+		"host":    e.Host,
+		"port":    strconv.Itoa(e.Port),
+		"enabled": strconv.FormatBool(e.Enabled),
 	}
 }
 
@@ -62,6 +64,7 @@ func (r *PortalRule) SeedFields() map[string]string {
 		"routeSiteName":           r.RouteSiteName,
 		"routeRedirectionPattern": r.RouteRedirectionPattern,
 		"routePathPrefix":         r.RoutePathPrefix,
+		"enabled":                 strconv.FormatBool(r.Enabled),
 	}
 }
 
@@ -78,6 +81,7 @@ func (c *PortalCert) SeedFields() map[string]string {
 		"privateKeyBase64": c.PrivateKeyBase64,
 		"validFrom":        SeedTimeString(c.ValidFrom),
 		"validTo":          SeedTimeString(c.ValidTo),
+		"enabled":          strconv.FormatBool(c.Enabled),
 	}
 }
 

@@ -3,11 +3,13 @@ package repo
 import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
 )
 
 type PortalEntryRepo struct {
 	Dao    *model.PortalEntryDao `inject:""`
+	Syncer *syncer.Syncer        `inject:""`
 	Access *configaccess.Access  `inject:""`
 }
 
@@ -53,13 +55,16 @@ func (s *PortalEntryRepo) Save(entry *core.PortalEntry) {
 	row := toModelPortalEntry(entry)
 	s.Dao.Save(row)
 	entry.Id = row.Id
+	s.Syncer.SyncPortalEntry(entry)
 }
 
 func (s *PortalEntryRepo) Remove(id int) bool {
 	s.Access.CheckWrite()
-	if _, ok := s.Dao.DeleteById(id); !ok {
+	row, ok := s.Dao.DeleteById(id)
+	if !ok {
 		return false
 	}
+	s.Syncer.RemovePortalEntry(toCorePortalEntry(row))
 	return true
 }
 
@@ -73,6 +78,7 @@ func toCorePortalEntry(row *model.PortalEntry) *core.PortalEntry {
 		Host:    row.Host,
 		Port:    row.Port,
 		BuiltIn: row.BuiltIn,
+		Enabled: row.Enabled,
 	}
 }
 
@@ -84,5 +90,6 @@ func toModelPortalEntry(entry *core.PortalEntry) *model.PortalEntry {
 		Host:    entry.Host,
 		Port:    entry.Port,
 		BuiltIn: entry.BuiltIn,
+		Enabled: entry.Enabled,
 	}
 }

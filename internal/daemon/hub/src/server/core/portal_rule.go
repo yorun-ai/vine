@@ -42,6 +42,8 @@ type PortalRule struct {
 	RouteRedirectionPattern string
 	RoutePathPrefix         string
 	BuiltIn                 bool
+	// Enabled decides whether Hub publishes the rule to Portal.
+	Enabled bool
 }
 
 type PortalRuleCreation struct {
@@ -53,6 +55,8 @@ type PortalRuleCreation struct {
 	RouteSiteName           string
 	RouteRedirectionPattern string
 	RoutePathPrefix         string
+	// Enabled is optional and defaults to true.
+	Enabled *bool
 }
 
 type PortalRuleUpdate struct {
@@ -62,6 +66,7 @@ type PortalRuleUpdate struct {
 	RouteSiteName           *string
 	RouteRedirectionPattern *string
 	RoutePathPrefix         *string
+	Enabled                 *bool
 }
 
 type PortalDashboardAccess struct {
@@ -145,6 +150,7 @@ func (m *PortalRuleCore) Create(creation PortalRuleCreation) *PortalRule {
 		RouteSiteName:           creation.RouteSiteName,
 		RouteRedirectionPattern: creation.RouteRedirectionPattern,
 		RoutePathPrefix:         creation.RoutePathPrefix,
+		Enabled:                 EnabledOrDefault(creation.Enabled),
 	}
 	rule = m.Validate(rule)
 	m.checkMatchesUnique(&rule)
@@ -186,6 +192,10 @@ func (m *PortalRuleCore) Update(id int, update PortalRuleUpdate) *PortalRule {
 	if update.RoutePathPrefix != nil {
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/routePathPrefix")
 		next.RoutePathPrefix = *update.RoutePathPrefix
+	}
+	if update.Enabled != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/enabled")
+		next.Enabled = *update.Enabled
 	}
 
 	next = m.Validate(next)
@@ -500,6 +510,8 @@ func (m *PortalRuleCore) EnsureDashboardRule(rule PortalRule, refreshAccess bool
 	ex.PanicNewIfNot(rule.EntryName == PortalEntryBuiltInName, ex.OperationFailed,
 		ex.F("dashboard rule %q must name the built-in portal entry", rule.Name))
 	rule.BuiltIn = true
+	// Hub's own rules are always published.
+	rule.Enabled = true
 	if old, ok := m.PortalRuleRepo.GetByName(rule.Name); ok {
 		rule.Id = old.Id
 		if !refreshAccess {

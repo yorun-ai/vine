@@ -569,6 +569,8 @@ func TestPortalEntryCoreEnsureAccessNormalizesAndReusesEntry(t *testing.T) {
 	assert.Equal(t, 443, created.Port)
 	// Hub names an entry it creates on its own after the access it stores.
 	assert.Equal(t, "https:demo.local:443", created.Name)
+	// The rule that joins a new access stays published.
+	assert.True(t, created.Enabled)
 }
 
 func TestPortalEntryCoreEnsureBuiltInAccessKeepsConfiguredAccess(t *testing.T) {
@@ -585,8 +587,10 @@ func TestPortalEntryCoreEnsureBuiltInAccessKeepsConfiguredAccess(t *testing.T) {
 	assert.Equal(t, "http", refreshed.Scheme)
 	assert.Equal(t, "", refreshed.Host)
 	assert.Equal(t, 7099, refreshed.Port)
-	// Hub's own entry carries a reserved name, never a user name.
+	// Hub's own entry carries a reserved name, never a user name, and Hub always
+	// publishes the rules it routes.
 	assert.Equal(t, "vine.hub.dashboard", refreshed.Name)
+	assert.True(t, refreshed.Enabled)
 	assert.True(t, refreshed.BuiltIn)
 	assert.Len(t, entryRepo.entries, 1)
 }

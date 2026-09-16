@@ -659,6 +659,119 @@ portalRules:
 	assert.False(t, ok)
 }
 
+func TestSeederPublishesRuleItAggregatesIntoANewEntry(t *testing.T) {
+	// A seed written the 0.19.0 way declares the access on the rule and declares
+	// no entry. Hub aggregates the access into an entry and keeps publishing the
+	// rule, the way a rule that names an entry Hub already stores stays
+	// published.
+	configRepo, ruleRepo, certRepo, siteRepo, metadataRepo, watchServer := newTestSeederRepos(t)
+	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
+	require.NoError(t, vfile.WriteString(seedPath, `
+portalSites:
+  - name: demo.Web
+    type: WEBGW
+    actorSkelName: demo.Actor
+    actorVia: client
+    webName: demo.Web
+portalRules:
+  - name: demo.web
+    matchScheme: http
+    matchPort: 8099
+    matchPathPrefix: /
+    routeType: SITE
+    routeSiteName: demo.Web
+`))
+	seeder := &Seeder{
+		Flag:          newTestSeederFlag(seedPath),
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
+		MetadataRepo:  metadataRepo,
+		Logger:        logger.New("vine:test"),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo),
+		RuleCore:      newTestRuleCore(ruleRepo, siteRepo),
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore:      newTestSiteCore(siteRepo),
+	}
+
+	seeder.DIInit()
+
+	rule, ok := ruleRepo.GetByName("demo.web")
+	require.True(t, ok)
+	entry, ok := ruleRepo.PortalEntryRepo.GetById(rule.EntryId)
+	require.True(t, ok)
+	assert.Equal(t, "http", entry.Scheme)
+	assert.Equal(t, 8099, entry.Port)
+	assert.True(t, entry.Enabled)
+	_, published := watchServer.Get(watched.FormatPortalRuleKey("demo.web"))
+	assert.True(t, published)
+}
+
+func TestSeederStoresDisabledConfiguration(t *testing.T) {
+	// A seed can turn the switch off: Hub stores the entity and does not publish
+	// it to Portal.
+	configRepo, ruleRepo, certRepo, siteRepo, metadataRepo, watchServer := newTestSeederRepos(t)
+	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
+	require.NoError(t, vfile.WriteString(seedPath, `
+portalEntries:
+  - name: web
+    scheme: http
+    port: 8099
+    enabled: false
+portalSites:
+  - name: demo.Web
+    type: WEBGW
+    actorSkelName: demo.Actor
+    actorVia: client
+    webName: demo.Web
+    enabled: false
+portalRules:
+  - name: demo.web
+    entryName: web
+    matchPathPrefix: /
+    routeType: SITE
+    routeSiteName: demo.Web
+    enabled: false
+portalCerts:
+  - name: demo-cert
+    publicKeyBase64: `+testSeederCertificate(t)+`
+    privateKeyBase64: pri
+    enabled: false
+`))
+	seeder := &Seeder{
+		Flag:          newTestSeederFlag(seedPath),
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
+		MetadataRepo:  metadataRepo,
+		Logger:        logger.New("vine:test"),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo),
+		RuleCore:      newTestRuleCore(ruleRepo, siteRepo),
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore:      newTestSiteCore(siteRepo),
+	}
+
+	seeder.DIInit()
+
+	entry, ok := ruleRepo.PortalEntryRepo.GetByName("web")
+	require.True(t, ok)
+	assert.False(t, entry.Enabled)
+	rule, ok := ruleRepo.GetByName("demo.web")
+	require.True(t, ok)
+	assert.False(t, rule.Enabled)
+	site, ok := siteRepo.GetByName("demo.Web")
+	require.True(t, ok)
+	assert.False(t, site.Enabled)
+	cert, ok := certRepo.GetByName("demo-cert")
+	require.True(t, ok)
+	assert.False(t, cert.Enabled)
+
+	for _, key := range []string{
+		watched.FormatPortalRuleKey("demo.web"),
+		watched.FormatPortalSiteKey("demo.Web"),
+		watched.FormatPortalCertKey("demo-cert"),
+	} {
+		_, published := watchServer.Get(key)
+		assert.False(t, published, "disabled configuration is not published: %s", key)
+	}
+}
+
 func TestSeederPortalRuleJoinsNamedEntry(t *testing.T) {
 	configRepo, ruleRepo, certRepo, siteRepo, metadataRepo, _ := newTestSeederRepos(t)
 	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
@@ -863,7 +976,7 @@ func newTestSeederRepos(t *testing.T) (*repo.AppConfigRepo, *repo.PortalRuleRepo
 		Dao:             &model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](gdb)},
 		Syncer:          testSyncer(watchServer),
 		Access:          new(configaccess.Access),
-		PortalEntryRepo: &repo.PortalEntryRepo{Dao: &model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](gdb)}, Access: new(configaccess.Access)},
+		PortalEntryRepo: &repo.PortalEntryRepo{Dao: &model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](gdb)}, Syncer: testSyncer(watchServer), Access: new(configaccess.Access)},
 	}, &repo.PortalCertRepo{
 		Dao:    &model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](gdb)},
 		Syncer: testSyncer(watchServer),

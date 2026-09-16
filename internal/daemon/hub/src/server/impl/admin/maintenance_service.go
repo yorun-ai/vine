@@ -32,14 +32,14 @@ type MaintenanceApiServiceServerImpl struct {
 // drift from the values a seed applies.
 var (
 	seedAppConfigFields   = []string{"value"}
-	seedPortalSiteFields  = []string{"type", "actorSkelName", "actorVia", "corsMode", "corsOrigins", "webName"}
-	seedPortalEntryFields = []string{"scheme", "host", "port"}
+	seedPortalSiteFields  = []string{"type", "actorSkelName", "actorVia", "corsMode", "corsOrigins", "webName", "enabled"}
+	seedPortalEntryFields = []string{"scheme", "host", "port", "enabled"}
 	seedPortalRuleFields  = []string{
 		"matchScheme", "matchHost", "matchPort", "matchPathPrefix",
-		"routeType", "routeSiteName", "routeRedirectionPattern", "routePathPrefix",
+		"routeType", "routeSiteName", "routeRedirectionPattern", "routePathPrefix", "enabled",
 	}
 	seedPortalCertFields = []string{
-		"issuer", "domains", "publicKeyBase64", "privateKeyBase64", "validFrom", "validTo",
+		"issuer", "domains", "publicKeyBase64", "privateKeyBase64", "validFrom", "validTo", "enabled",
 	}
 )
 

@@ -17,6 +17,9 @@ data PortalEntry {
     @desc("Entry rule list")
     rules: list<PortalEntryRule>
 
+    @desc("Whether Hub publishes the rules of this entry to Portal")
+    enabled: bool
+
 }
 
 @desc("Portal access entry configuration update parameters")
@@ -29,6 +32,9 @@ data PortalEntryAccessUpdate {
 
     @desc("Entry port")
     port: int
+
+    @desc("Whether Hub publishes the rules of this entry to Portal")
+    enabled: bool?
 }
 
 @desc("Portal access entry creation parameters")
@@ -44,6 +50,9 @@ data PortalEntryCreation {
 
     @desc("Entry port")
     port: int
+
+    @desc("Whether Hub publishes the rules of this entry to Portal; defaults to true")
+    enabled: bool?
 }
 
 @desc("Portal access entry rules")

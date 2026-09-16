@@ -70,6 +70,10 @@ export const en: Record<TranslationKey, string> = {
   'appConfig.invalidJson':
     'The current content is invalid JSON. Fix it before saving.',
   'common.select': 'Select',
+  'common.enabled': 'Enabled',
+  'common.disabled': 'Disabled',
+  'common.enabledHelp':
+    'A disabled entity stays in Hub and is not published to Portal.',
   'portalEntry.searchPlaceholder': 'Search entries, ports, rules, or targets',
   'portalEntry.itemCount': '{count} entries',
   'portalEntry.empty': 'No entries',
