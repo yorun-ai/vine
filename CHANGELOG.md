@@ -6,6 +6,26 @@ The project follows [Semantic Versioning](https://semver.org/). The public
 version history starts at `v0.9.0`; versions from the former private repository
 are not part of the public compatibility commitment.
 
+## [Unreleased]
+
+### Changed
+
+- Hub stores Portal access entries instead of deriving them from rules. An entry
+  owns the scheme, host, and port Portal serves, and rules reference it, so
+  changing an entry access updates one row rather than every rule that used it.
+  Portal continues to receive rules carrying the access of their entry, and seed
+  YAML keeps declaring `matchScheme`, `matchHost`, and `matchPort` on rules; Hub
+  aggregates the declared access into entries while it applies the seed.
+  Upgrading a database groups the stored rule access into entries and drops the
+  rule access columns. Rules that only differed by an unset port can now share an
+  entry and a path, so Hub keeps the rule with the explicit port on its path and
+  moves the rule that used the default port to a `/migrated` path, logging each
+  move instead of refusing to start on stored data. A seed, Dashboard import, or
+  Admin write that declares a request another rule already serves keeps failing
+  with the rule that serves it, so Hub never rewrites a path the operator did
+  not ask for. A rule that leaves `matchPort` unset reports the port Portal
+  serves (`80` or `443`) in Admin API responses instead of `0`.
+
 ## [0.19.0] - 2026-09-16
 
 ### Added

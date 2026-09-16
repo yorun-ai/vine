@@ -1,8 +1,10 @@
 package core
 
 import (
+	"fmt"
 	"net"
 	"net/url"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -18,9 +20,14 @@ const (
 // Structs
 
 type PortalRule struct {
-	FieldSources            FieldSources
-	Id                      int
-	Name                    string
+	FieldSources FieldSources
+	Id           int
+	Name         string
+	// EntryId identifies the Portal entry that owns the access configuration.
+	EntryId int
+	// MatchScheme, MatchHost, and MatchPort describe the entry the rule belongs
+	// to. The entry stores them; Hub assembles these values when it reads a
+	// rule, so a rule never owns access configuration of its own.
 	MatchScheme             string
 	MatchHost               string
 	MatchPort               int
@@ -90,8 +97,9 @@ type PortalRuleRepo interface {
 // Core
 
 type PortalRuleCore struct {
-	PortalRuleRepo PortalRuleRepo `inject:""`
-	PortalCertRepo PortalCertRepo `inject:""`
+	PortalRuleRepo  PortalRuleRepo   `inject:""`
+	PortalCertRepo  PortalCertRepo   `inject:""`
+	PortalEntryCore *PortalEntryCore `inject:""`
 }
 
 func (m *PortalRuleCore) List() []*PortalRule {
@@ -133,8 +141,7 @@ func (m *PortalRuleCore) Create(creation PortalRuleCreation) *PortalRule {
 		RoutePathPrefix:         creation.RoutePathPrefix,
 	}
 	rule = m.Validate(rule)
-	m.PortalRuleRepo.Save(&rule)
-	return &rule
+	return m.saveToEntry(rule)
 }
 
 func (m *PortalRuleCore) Update(id int, update PortalRuleUpdate) *PortalRule {
@@ -186,8 +193,7 @@ func (m *PortalRuleCore) Update(id int, update PortalRuleUpdate) *PortalRule {
 	}
 
 	next = m.Validate(next)
-	m.PortalRuleRepo.Save(&next)
-	return &next
+	return m.saveToEntry(next)
 }
 
 // normalizePortalRuleRoutePathPrefix validates a site-relative escaped path prefix.
@@ -227,16 +233,24 @@ func (m *PortalRuleCore) UpdateDashboardAccess(scheme string, host string, port 
 	adminRule := m.dashboardRule(DashboardAdminApiRuleName)
 	webRule := m.dashboardRule(DashboardWebRuleName)
 
-	adminRule.MatchScheme = scheme
-	adminRule.MatchHost = host
-	adminRule.MatchPort = port
-	webRule.MatchScheme = scheme
-	webRule.MatchHost = host
-	webRule.MatchPort = port
+	access := normalizePortalEntry(PortalEntry{Scheme: scheme, Host: host, Port: port, BuiltIn: true})
+	adminRule.MatchScheme = access.Scheme
+	adminRule.MatchHost = access.Host
+	adminRule.MatchPort = access.Port
+	webRule.MatchScheme = access.Scheme
+	webRule.MatchHost = access.Host
+	webRule.MatchPort = access.Port
 	webRule.MatchPathPrefix = pathPrefix
 
+	// Check the new access before Hub stores it, so a rejected update leaves both
+	// the entry and its rules untouched.
 	adminRule.normalizeAndValidate()
 	webRule.normalizeAndValidate()
+	m.checkMatchesUnique(adminRule, webRule)
+
+	entry := m.PortalEntryCore.EnsureBuiltInAccess(access.Scheme, access.Host, access.Port, true)
+	adminRule.EntryId = entry.Id
+	webRule.EntryId = entry.Id
 	m.PortalRuleRepo.Save(adminRule)
 	m.PortalRuleRepo.Save(webRule)
 
@@ -249,10 +263,11 @@ func (m *PortalRuleCore) UpdateDashboardAccess(scheme string, host string, port 
 func (m *PortalRuleCore) DashboardAccess() PortalDashboardAccess {
 	adminRule := m.dashboardRule(DashboardAdminApiRuleName)
 	webRule := m.dashboardRule(DashboardWebRuleName)
+	entry := m.PortalEntryCore.Get(adminRule.EntryId)
 	return PortalDashboardAccess{
-		Scheme:     adminRule.MatchScheme,
-		Host:       adminRule.MatchHost,
-		Port:       adminRule.MatchPort,
+		Scheme:     entry.Scheme,
+		Host:       entry.Host,
+		Port:       entry.Port,
 		PathPrefix: webRule.MatchPathPrefix,
 	}
 }
@@ -367,6 +382,65 @@ func (*PortalRuleCore) Validate(rule PortalRule) PortalRule {
 	return rule
 }
 
+// portalRuleMatchKey identifies the requests a rule matches: the access of its
+// entry plus its match path prefix.
+func portalRuleMatchKey(rule *PortalRule) string {
+	return portalEntryMatchKey(portalRuleAccess(rule), rule.MatchPathPrefix)
+}
+
+// portalRuleAccess returns the access a rule resolves through its entry.
+func portalRuleAccess(rule *PortalRule) PortalEntry {
+	return PortalEntry{
+		Scheme: rule.MatchScheme,
+		Host:   rule.MatchHost,
+		Port:   rule.MatchPort,
+	}
+}
+
+// portalEntryMatchKey identifies the requests one access and path prefix match.
+func portalEntryMatchKey(access PortalEntry, matchPathPrefix string) string {
+	return access.Scheme + "\x00" + access.Host + "\x00" + strconv.Itoa(access.Port) + "\x00" + matchPathPrefix
+}
+
+// portalEntryMatchText renders the request an access and path prefix match for
+// error messages.
+func portalEntryMatchText(access PortalEntry, matchPathPrefix string) string {
+	host := access.Host
+	if host == "" {
+		host = "*"
+	}
+	return fmt.Sprintf("%s://%s:%d%s", access.Scheme, host, access.Port, matchPathPrefix)
+}
+
+// portalRuleMatchConflict returns the stored rule that already matches the
+// request the candidate matches at matchPathPrefix. A rule replaces the stored
+// rule with the same id or name, so it never conflicts with itself.
+func portalRuleMatchConflict(stored []*PortalRule, candidate PortalRule, matchPathPrefix string) *PortalRule {
+	key := portalEntryMatchKey(portalRuleAccess(&candidate), matchPathPrefix)
+	for _, rule := range stored {
+		if rule.Name == candidate.Name || (rule.Id != 0 && rule.Id == candidate.Id) {
+			continue
+		}
+		if portalRuleMatchKey(rule) == key {
+			return rule
+		}
+	}
+	return nil
+}
+
+// checkPortalRuleMatchesUnique rejects candidate rules that match the same
+// request as a stored rule. A rule replaces the stored rule with the same id or
+// name, so the rules of one update do not conflict with themselves.
+func checkPortalRuleMatchesUnique(stored []*PortalRule, candidates ...*PortalRule) {
+	for _, candidate := range candidates {
+		conflict := portalRuleMatchConflict(stored, *candidate, candidate.MatchPathPrefix)
+		if conflict != nil {
+			ex.PanicNew(ex.OperationFailed, ex.F("portal rule %q already matches %s",
+				conflict.Name, portalEntryMatchText(portalRuleAccess(candidate), candidate.MatchPathPrefix)))
+		}
+	}
+}
+
 // Save creates or replaces a complete user rule by name, preserving an existing ID.
 func (m *PortalRuleCore) Save(rule PortalRule) *PortalRule {
 	rule = m.Validate(rule)
@@ -376,24 +450,57 @@ func (m *PortalRuleCore) Save(rule PortalRule) *PortalRule {
 		ex.PanicNewIfNot(!current.BuiltIn, ex.OperationFailed, ex.F("built-in entry rule %q cannot be replaced", rule.Name))
 		rule.Id = current.Id
 	}
+	return m.saveToEntry(rule)
+}
+
+// saveToEntry stores a validated rule under the entry that serves its access,
+// creating the entry when no rule has used that access yet.
+func (m *PortalRuleCore) saveToEntry(rule PortalRule) *PortalRule {
+	entry := m.PortalEntryCore.EnsureAccess(rule.MatchScheme, rule.MatchHost, rule.MatchPort)
+	rule.EntryId = entry.Id
+	rule.MatchScheme = entry.Scheme
+	rule.MatchHost = entry.Host
+	rule.MatchPort = entry.Port
+	m.checkMatchesUnique(&rule)
 	m.PortalRuleRepo.Save(&rule)
 	return &rule
 }
 
-// EnsureDashboardRule provisions a built-in rule, preserving configured access
-// unless an explicit access update or legacy migration requires a refresh.
+// checkMatchesUnique rejects a rule that matches the same request as a stored
+// rule, including a built-in Dashboard rule. Portal resolves matching rules by
+// their longest path prefix, so two rules that match identically have no defined
+// order. Only the access migration separates such rules on its own, because an
+// upgraded database cannot be corrected by editing stored data.
+func (m *PortalRuleCore) checkMatchesUnique(rules ...*PortalRule) {
+	checkPortalRuleMatchesUnique(m.PortalRuleRepo.List(), rules...)
+}
+
+// EnsureDashboardRule provisions a built-in rule, preserving the configured
+// access of the built-in entry unless an explicit access update or legacy
+// migration requires a refresh.
 func (m *PortalRuleCore) EnsureDashboardRule(rule PortalRule, refreshAccess bool) {
 	ex.PanicNewIfNot(rule.Name == DashboardAdminApiRuleName || rule.Name == DashboardWebRuleName, ex.OperationFailed, "not a dashboard rule")
 	rule.BuiltIn = true
+	access := PortalEntry{
+		Scheme: rule.MatchScheme,
+		Host:   rule.MatchHost,
+		Port:   rule.MatchPort,
+	}
 	if old, ok := m.PortalRuleRepo.GetByName(rule.Name); ok {
 		rule.Id = old.Id
 		if !refreshAccess {
-			rule.MatchScheme = old.MatchScheme
-			rule.MatchHost = old.MatchHost
-			rule.MatchPort = old.MatchPort
+			access.Scheme = old.MatchScheme
+			access.Host = old.MatchHost
+			access.Port = old.MatchPort
 			rule.MatchPathPrefix = old.MatchPathPrefix
 		}
 	}
 	rule.normalizeAndValidate()
+	entry := m.PortalEntryCore.EnsureBuiltInAccess(access.Scheme, access.Host, access.Port, refreshAccess)
+	rule.EntryId = entry.Id
+	rule.MatchScheme = entry.Scheme
+	rule.MatchHost = entry.Host
+	rule.MatchPort = entry.Port
+	m.checkMatchesUnique(&rule)
 	m.PortalRuleRepo.Save(&rule)
 }

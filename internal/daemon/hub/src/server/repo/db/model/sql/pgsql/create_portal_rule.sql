@@ -4,9 +4,7 @@ CREATE TABLE IF NOT EXISTS portal_rule (
     updated_at TIMESTAMPTZ,                 -- Update time
     deleted_at TIMESTAMPTZ,                 -- Soft deletion time
     name TEXT NOT NULL,                     -- Rule name
-    match_scheme TEXT NOT NULL,                   -- Scheme, only http / https are supported
-    match_host TEXT NOT NULL,                     -- Domain or IP, empty string means no restriction
-    match_port INTEGER NOT NULL,                  -- Port, 0 means no restriction
+    entry_id INTEGER NOT NULL DEFAULT 0,          -- Portal entry that owns the access configuration
     match_path_prefix TEXT NOT NULL,              -- Path prefix, empty string matches all paths
     route_type TEXT NOT NULL,              -- Target type: SITE / PERMANENT_REDIRECT / TEMPORARY_REDIRECT
     route_site_name TEXT NOT NULL,                -- Target site name, empty string when target is not SITE
@@ -15,8 +13,8 @@ CREATE TABLE IF NOT EXISTS portal_rule (
     built_in BOOLEAN NOT NULL DEFAULT FALSE     -- Whether this rule is built in
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_rule_match
-    ON portal_rule(match_scheme, match_host, match_port, match_path_prefix);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_rule_entry_path
+    ON portal_rule(entry_id, match_path_prefix);
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_rule_name
     ON portal_rule(name);

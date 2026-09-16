@@ -223,6 +223,7 @@ func TestConfigDatabaseInitOptionForSQLite(t *testing.T) {
 	assert.Equal(t, []reflect.Type{
 		rdb.T[*model.AppConfigDao](),
 		rdb.T[*model.PortalCertDao](),
+		rdb.T[*model.PortalEntryDao](),
 		rdb.T[*model.PortalRuleDao](),
 		rdb.T[*model.MetadataDao](),
 		rdb.T[*model.PortalSiteDao](),
@@ -248,6 +249,7 @@ func TestConfigDatabaseInitOptionForPG(t *testing.T) {
 	assert.Equal(t, []reflect.Type{
 		rdb.T[*model.AppConfigDao](),
 		rdb.T[*model.PortalCertDao](),
+		rdb.T[*model.PortalEntryDao](),
 		rdb.T[*model.PortalRuleDao](),
 		rdb.T[*model.MetadataDao](),
 		rdb.T[*model.PortalSiteDao](),

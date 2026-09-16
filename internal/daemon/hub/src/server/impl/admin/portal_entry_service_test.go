@@ -13,6 +13,7 @@ func TestPortalEntryServiceMapsRulesAndTargetSites(t *testing.T) {
 		"demo-rule": {
 			Id:              1,
 			Name:            "demo-rule",
+			EntryId:         1,
 			MatchScheme:     "http",
 			MatchPort:       8080,
 			MatchPathPrefix: "/demo",
@@ -34,8 +35,9 @@ func TestPortalEntryServiceMapsRulesAndTargetSites(t *testing.T) {
 		},
 	}}
 	service := &PortalEntryApiServiceServerImpl{PortalEntryCore: &core.PortalEntryCore{
-		PortalRuleRepo: ruleRepo,
-		PortalSiteRepo: siteRepo,
+		PortalEntryRepo: newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Name: "http:8080", Scheme: "http", Port: 8080}),
+		PortalRuleRepo:  ruleRepo,
+		PortalSiteRepo:  siteRepo,
 	}}
 
 	entries := service.List()

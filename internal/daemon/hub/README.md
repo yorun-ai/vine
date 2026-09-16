@@ -7,7 +7,7 @@ Hub is Vine's configuration and service registry. It broadly follows a DDD-style
 Without a database option, Hub defaults to `--no-db` and requires
 `--seed-hub-data-file`. Configuration is loaded into an isolated in-memory SQLite
 database on each start. After initialization, configuration repos reject writes
-to app configs, Portal sites, rules, and certificates. Edit the seed file and
+to app configs, Portal entries, sites, rules, and certificates. Edit the seed file and
 restart Hub to apply changes. Dashboard exposes this state and disables editing;
 registration, schemas, and leases remain writable. Explicit `--db-sqlite-file`
 or `--db-postgres-url` keeps writable persistence and is mutually exclusive
@@ -73,13 +73,27 @@ Keep Hub's layer responsibilities distinct:
 
 ### Domain Writes
 
-Configuration, site, rule, and certificate writes go through their corresponding
-Core. `Validate` checks and normalizes a complete entity without writing.
-Rule validation does not resolve sites: Portal derives effective rule paths from
-Web mount-path metadata published with sites. `Save`
+Configuration, entry, site, rule, and certificate writes go through their
+corresponding Core. `Validate` checks and normalizes a complete entity without
+writing. Rule validation does not resolve sites: Portal derives effective rule
+paths from Web mount-path metadata published with sites. `Save`
 creates or replaces by name and owns identity handling, along with versioning and
 built-in protection where applicable. API updates merge provided fields into the
 existing entity before validation.
+
+An entry owns the scheme, host, and port Portal serves; rules reference the entry
+and never store access of their own. `PortalRuleCore` resolves the entry of the
+access a rule declares, so rules that share an access share one entry. Changing
+an entry changes every rule it routes, and Hub republishes those rules so Portal
+receives the access the entry now serves.
+
+Two rules may not match the same request. Portal resolves matching rules by their
+longest path prefix, so Hub rejects a rule whose access and `matchPathPrefix`
+already match another rule, including a built-in Dashboard rule, and reports the
+rule that serves that request. A seed or Dashboard import that declares the same
+request twice fails the same way, so a seed never starts Hub through a silent
+rewrite: the seed is the data source, and the fix belongs there. Only the access
+migration separates rules on its own, because stored data is not edited by hand.
 
 Seeder and Dashboard imports validate all supplied entities before writing,
 then call Core `Save`. Validation does not make an entire import transactional:
@@ -88,7 +102,9 @@ layer maps configuration fields only; it does not assign database identity or
 manage versions.
 
 `PortalSiteCore.EnsureDashboardSite` and `PortalRuleCore.EnsureDashboardRule`
-own built-in Dashboard provisioning. `RegistryCore` owns schema registration
+own built-in Dashboard provisioning. The built-in Dashboard rules belong to
+their own entry, which `PortalEntryCore.EnsureBuiltInAccess` maintains and the
+user entry list excludes. `RegistryCore` owns schema registration
 and expired-lease removal. Initializer and Sweeper coordinate runtime publication
 through Syncer. The seed-applied marker remains startup bookkeeping in Seeder.
 
@@ -161,6 +177,12 @@ Portal rule YAML uses flat fields in this order: `matchScheme`, `matchHost`,
 `matchPort`, `matchPathPrefix`, `routeType`, `routeSiteName`,
 `routeRedirectionPattern`, and `routePathPrefix`.
 
+Seeds keep declaring `matchScheme`, `matchHost`, and `matchPort` on rules. Hub
+aggregates the declared access into entries while the seed is applied, so a seed
+never stores the same access on every rule. Portal still receives rules carrying
+the access of their entry, and the entry is Hub-side state rather than a Watch
+key.
+
 The `mod/seeder` package owns the seed YAML contract. `ParseSeedEntities`
 decodes a document into the domain entities it declares for Dashboard imports,
 and the same decoder backs startup seeding; the payload structs stay private to
@@ -172,6 +194,15 @@ Admin API and Watch use only the new fields; upgrade Hub and Portal together.
 The database upgrade baseline is Vine v0.15.7, with `match_*` / `route_*`
 columns already present. Start older databases with v0.15.7 to complete migration
 before upgrading; current Hub no longer migrates legacy Portal rule columns.
+
+Upgrading Hub from a release that stored rule access migrates `portal_rule` in
+place: Hub creates `portal_entry`, groups the stored `match_scheme`,
+`match_host`, and `match_port` values into entries, drops the rule columns, and
+indexes the rule path within its entry. An unset port migrates to the port
+Portal serves. Two rules that only differed by an unset port can share an entry
+and a path after the upgrade; Hub keeps the rule with the explicit port and moves
+the rule that used the default port to a `/migrated` path, and logs every move.
+An upgraded database is therefore never corrected by hand, and Hub starts.
 
 ## Admin Display Strings
 

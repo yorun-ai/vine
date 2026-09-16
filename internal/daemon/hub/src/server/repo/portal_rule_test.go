@@ -28,7 +28,7 @@ var (
 func TestPortalRuleRepoSaveCreate(t *testing.T) {
 	_, repo, watchServer := newTestPortalRuleRepo(t)
 
-	rule := testPortalRule("admin")
+	rule := testPortalRule(t, repo, "admin")
 	repo.Save(rule)
 
 	got, ok := repo.GetById(rule.Id)
@@ -44,7 +44,7 @@ func TestPortalRuleRepoSaveCreate(t *testing.T) {
 func TestPortalRuleRepoSaveUpdate(t *testing.T) {
 	_, repo, _ := newTestPortalRuleRepo(t)
 
-	rule := testPortalRule("admin")
+	rule := testPortalRule(t, repo, "admin")
 	repo.Save(rule)
 	rule.MatchPathPrefix = "/console"
 	rule.RouteSiteName = "console@demo.app"
@@ -59,7 +59,7 @@ func TestPortalRuleRepoSaveUpdate(t *testing.T) {
 func TestPortalRuleRepoSaveBuiltIn(t *testing.T) {
 	db, repo, _ := newTestPortalRuleRepo(t)
 
-	rule := testPortalRule("admin")
+	rule := testPortalRule(t, repo, "admin")
 	rule.BuiltIn = true
 	repo.Save(rule)
 
@@ -75,7 +75,7 @@ func TestPortalRuleRepoSaveBuiltIn(t *testing.T) {
 func TestPortalRuleRepoSaveRename(t *testing.T) {
 	_, repo, watchServer := newTestPortalRuleRepo(t)
 
-	rule := testPortalRule("admin")
+	rule := testPortalRule(t, repo, "admin")
 	repo.Save(rule)
 	rule.Name = "console"
 	repo.Save(rule)
@@ -95,7 +95,7 @@ func TestPortalRuleRepoSaveRename(t *testing.T) {
 func TestPortalRuleRepoRemove(t *testing.T) {
 	_, repo, watchServer := newTestPortalRuleRepo(t)
 
-	rule := testPortalRule("admin")
+	rule := testPortalRule(t, repo, "admin")
 	repo.Save(rule)
 	assert.True(t, repo.Remove(rule.Id))
 
@@ -109,6 +109,37 @@ func TestPortalRuleRepoRemove(t *testing.T) {
 	assert.False(t, repo.Remove(rule.Id))
 }
 
+// TestPortalRuleRepoAssemblesEntryAccess covers the storage contract: rules no
+// longer store scheme, host, or port, so every read resolves them from the entry
+// the rule belongs to.
+func TestPortalRuleRepoAssemblesEntryAccess(t *testing.T) {
+	_, repo, watchServer := newTestPortalRuleRepo(t)
+
+	rule := testPortalRule(t, repo, "admin")
+	repo.Save(rule)
+	assert.Equal(t, "https", rule.MatchScheme)
+
+	entry, ok := repo.PortalEntryRepo.GetById(rule.EntryId)
+	require.True(t, ok)
+	entry.Scheme = "http"
+	entry.Host = "app.example.com"
+	entry.Port = 8080
+	repo.PortalEntryRepo.Save(entry)
+
+	got, ok := repo.GetById(rule.Id)
+	require.True(t, ok)
+	assert.Equal(t, "http", got.MatchScheme)
+	assert.Equal(t, "app.example.com", got.MatchHost)
+	assert.Equal(t, 8080, got.MatchPort)
+	assert.Equal(t, rule.EntryId, got.EntryId)
+
+	// Republishing the rule carries the access of the entry it belongs to.
+	repo.Save(got)
+	raw, ok := watchServer.Get(watched.FormatPortalRuleKey("admin"))
+	require.True(t, ok)
+	assert.Equal(t, syncer.ToWatchedPortalRule(got), vcode.MustUnmarshalJsonS[*watched.PortalRule](raw))
+}
+
 func newTestPortalRuleRepo(t *testing.T) (*gorm.DB, *PortalRuleRepo, *watchserver.Server) {
 	t.Helper()
 
@@ -116,17 +147,28 @@ func newTestPortalRuleRepo(t *testing.T) (*gorm.DB, *PortalRuleRepo, *watchserve
 	watchServer := watchserver.NewServerForTest()
 	t.Cleanup(watchServer.AfterAppStop)
 
+	entryRepo := newTestPortalEntryRepo(db)
+	entryRepo.Dao.InitSchema()
 	repo := &PortalRuleRepo{
 		Dao: &model.PortalRuleDao{
 			Dao: rdb.NewDao[*model.PortalRule](db),
 		},
-		Syncer: testSyncer(watchServer),
-		Access: new(configaccess.Access),
+		Syncer:          testSyncer(watchServer),
+		Access:          new(configaccess.Access),
+		PortalEntryRepo: entryRepo,
 	}
 	repo.Dao.InitSchema()
 	require.NoError(t, db.Exec("DELETE FROM portal_rule").Error)
+	require.NoError(t, db.Exec("DELETE FROM portal_entry").Error)
 
 	return db, repo, watchServer
+}
+
+func newTestPortalEntryRepo(db *gorm.DB) *PortalEntryRepo {
+	return &PortalEntryRepo{
+		Dao:    &model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](db)},
+		Access: new(configaccess.Access),
+	}
 }
 
 func sharedTestPortalRuleRepoDB(t *testing.T) *gorm.DB {
@@ -142,9 +184,19 @@ func sharedTestPortalRuleRepoDB(t *testing.T) *gorm.DB {
 	return testPortalRuleRepoDB
 }
 
-func testPortalRule(name string) *core.PortalRule {
+// testPortalRule builds a rule that belongs to the entry serving the access, the
+// way Core hands a complete rule to the repository.
+func testPortalRule(t *testing.T, repo *PortalRuleRepo, name string) *core.PortalRule {
+	t.Helper()
+
+	entry, ok := repo.PortalEntryRepo.GetByAccess("https", "demo.local", 443)
+	if !ok {
+		entry = &core.PortalEntry{Scheme: "https", Host: "demo.local", Port: 443}
+		repo.PortalEntryRepo.Save(entry)
+	}
 	return &core.PortalRule{
 		Name:                    name,
+		EntryId:                 entry.Id,
 		MatchScheme:             "https",
 		MatchHost:               "demo.local",
 		MatchPort:               443,

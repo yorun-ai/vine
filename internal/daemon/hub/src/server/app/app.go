@@ -96,6 +96,7 @@ func (a *HubApp) InitModules(addModule app.TypeAdder) {
 func (a *HubApp) BindCommon(b *di.Binder) {
 	b.Bind(di.T[core.AppConfigRepo]()).ToImplementation(di.T[*repo.AppConfigRepo]())
 	b.Bind(di.T[core.PortalCertRepo]()).ToImplementation(di.T[*repo.PortalCertRepo]())
+	b.Bind(di.T[core.PortalEntryRepo]()).ToImplementation(di.T[*repo.PortalEntryRepo]())
 	b.Bind(di.T[core.PortalRuleRepo]()).ToImplementation(di.T[*repo.PortalRuleRepo]())
 	b.Bind(di.T[core.PortalSiteRepo]()).ToImplementation(di.T[*repo.PortalSiteRepo]())
 	b.Bind(di.T[core.MetadataRepo]()).ToImplementation(di.T[*repo.MetadataRepo]())

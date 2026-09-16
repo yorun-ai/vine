@@ -29,7 +29,7 @@ func (s *PortalEntryApiServiceServerImpl) UpdateAccess(scheme string, host strin
 	return s.toServerPortalEntry(entry)
 }
 
-func (s *PortalEntryApiServiceServerImpl) toServerPortalEntry(entry core.PortalEntry) skeled.PortalEntry {
+func (s *PortalEntryApiServiceServerImpl) toServerPortalEntry(entry core.PortalEntryView) skeled.PortalEntry {
 	rules := make([]skeled.PortalEntryRule, 0, len(entry.Rules))
 	for _, rule := range entry.Rules {
 		rules = append(rules, s.toServerPortalEntryRule(rule))

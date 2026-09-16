@@ -48,10 +48,11 @@ func newTestPortalRuleApiService(dashboardURLSet bool) *PortalRuleApiServiceServ
 		PortalRuleCore: newTestPortalRuleCore(
 			&_PortalRuleRepoSpy{
 				rules: map[int]*core.PortalRule{
-					1: {Id: 1, Name: core.DashboardAdminApiRuleName, MatchScheme: "http", MatchPort: 7099, MatchPathPrefix: "/api", BuiltIn: true},
-					2: {Id: 2, Name: core.DashboardWebRuleName, MatchScheme: "http", MatchPort: 7099, MatchPathPrefix: "/", BuiltIn: true},
+					1: {Id: 1, Name: core.DashboardAdminApiRuleName, EntryId: 1, MatchScheme: "http", MatchPort: 7099, MatchPathPrefix: "/api", BuiltIn: true},
+					2: {Id: 2, Name: core.DashboardWebRuleName, EntryId: 1, MatchScheme: "http", MatchPort: 7099, MatchPathPrefix: "/", BuiltIn: true},
 				},
 			},
+			newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Name: "http:7099", Scheme: "http", Port: 7099, BuiltIn: true}),
 		),
 		Flag: &flag.Flag{DashboardURLSet: dashboardURLSet},
 	}
@@ -111,11 +112,107 @@ func newTestPortalCertCore() *core.PortalCertCore {
 	return &core.PortalCertCore{PortalCertRepo: &_MaintenanceServicePortalCertRepo{}}
 }
 
-// newTestPortalRuleCore builds a rule core with the chosen rule repository.
-func newTestPortalRuleCore(ruleRepo core.PortalRuleRepo) *core.PortalRuleCore {
+// newTestPortalRuleCore builds a rule core with the chosen rule repository and
+// an entry repository that starts empty.
+func newTestPortalRuleCore(ruleRepo core.PortalRuleRepo, entryRepos ...core.PortalEntryRepo) *core.PortalRuleCore {
+	entryRepo := core.PortalEntryRepo(newTestPortalEntryRepoSpy())
+	if len(entryRepos) > 0 {
+		entryRepo = entryRepos[0]
+	}
 	return &core.PortalRuleCore{
 		PortalRuleRepo: ruleRepo,
+		PortalEntryCore: &core.PortalEntryCore{
+			PortalEntryRepo: entryRepo,
+			PortalRuleRepo:  ruleRepo,
+			PortalSiteRepo:  &_MaintenanceServicePortalSiteRepo{items: map[string]*core.PortalSite{}},
+		},
 	}
+}
+
+// newTestPortalEntryRepoSpy builds a map-backed entry repository.
+func newTestPortalEntryRepoSpy(entries ...*core.PortalEntry) *_PortalEntryRepoSpy {
+	spy := &_PortalEntryRepoSpy{
+		nextId:  1,
+		entries: map[int]*core.PortalEntry{},
+	}
+	for _, entry := range entries {
+		spy.Save(entry)
+		if entry.Id >= spy.nextId {
+			spy.nextId = entry.Id + 1
+		}
+	}
+	return spy
+}
+
+// _PortalEntryRepoSpy is a map-backed entry repository.
+type _PortalEntryRepoSpy struct {
+	nextId  int
+	entries map[int]*core.PortalEntry
+	removed []int
+}
+
+func (s *_PortalEntryRepoSpy) List() []*core.PortalEntry {
+	entries := make([]*core.PortalEntry, 0, len(s.entries))
+	for _, entry := range s.entries {
+		value := *entry
+		entries = append(entries, &value)
+	}
+	return vslice.SortBy(entries, func(a *core.PortalEntry, b *core.PortalEntry) bool {
+		return a.Id < b.Id
+	})
+}
+
+func (s *_PortalEntryRepoSpy) GetById(id int) (*core.PortalEntry, bool) {
+	entry, ok := s.entries[id]
+	if !ok {
+		return nil, false
+	}
+	value := *entry
+	return &value, true
+}
+
+func (s *_PortalEntryRepoSpy) GetByAccess(scheme string, host string, port int) (*core.PortalEntry, bool) {
+	for _, entry := range s.List() {
+		if entry.BuiltIn {
+			continue
+		}
+		if entry.Scheme == scheme && entry.Host == host && entry.Port == port {
+			return entry, true
+		}
+	}
+	return nil, false
+}
+
+func (s *_PortalEntryRepoSpy) GetBuiltIn() (*core.PortalEntry, bool) {
+	for _, entry := range s.List() {
+		if entry.BuiltIn {
+			return entry, true
+		}
+	}
+	return nil, false
+}
+
+func (s *_PortalEntryRepoSpy) Save(entry *core.PortalEntry) {
+	value := *entry
+	if value.Id == 0 {
+		value.Id = s.nextId
+		s.nextId++
+	}
+	if value.Name == "" {
+		value.Name = core.PortalEntryName(value.Scheme, value.Host, value.Port)
+	}
+	s.entries[value.Id] = &value
+	entry.Id = value.Id
+	entry.Name = value.Name
+}
+
+func (s *_PortalEntryRepoSpy) Remove(id int) bool {
+	if _, ok := s.entries[id]; !ok {
+		return false
+	}
+	s.removed = append(s.removed, id)
+	delete(s.entries, id)
+	return true
 }
 
 type _PortalRuleRepoSpy struct {

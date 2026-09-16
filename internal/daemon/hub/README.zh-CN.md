@@ -6,7 +6,7 @@
 
 未指定数据库参数时，Hub 默认启用 `--no-db`，必须提供 `--seed-hub-data-file`。
 每次启动将配置加载到独立的内存 SQLite，初始化完成后，repo 层禁止修改
-应用配置、Portal 站点、规则和证书。请编辑 seed 文件后重启 Hub。
+应用配置、Portal entry、站点、规则和证书。请编辑 seed 文件后重启 Hub。
 Dashboard 展示只读提示并禁用编辑入口；注册、schema 和租约仍可写。
 显式指定 `--db-sqlite-file` 或 `--db-postgres-url` 则保留可写持久化行为，
 它们与 `--no-db` 互斥。standalone 和 `vine dev` 也遵循这些规则。
@@ -72,6 +72,16 @@ Hub 的层次职责必须保持清晰：
 修改 Hub 时还应遵守：
 
 - Core 的 `Validate` 只做校验与归一化，不写存储。规则校验不再查询站点；Hub 随站点发布 Web 挂载路径元数据，由 Portal 生成实际生效的规则路径。
+- 应用配置、entry、站点、规则和证书的写入都经过各自的 Core。entry 拥有 Portal
+  监听的 scheme、host 和 port，规则只引用 entry，不再自行保存访问配置。
+  `PortalRuleCore` 按规则声明的访问配置解析 entry，因此访问配置相同的规则共用
+  同一个 entry。修改 entry 会改变它路由的全部规则，Hub 随即重新发布这些规则，
+  让 Portal 读到该 entry 当前服务的访问配置。
+- 两条规则不能匹配同一个请求。Portal 按最长路径前缀解析匹配规则，因此 Hub 会
+  拒绝访问配置与 `matchPathPrefix` 已被其他规则（包括内置 Dashboard 规则）占用
+  的规则，并报出已占用该请求的规则名。seed 或 Dashboard 导入重复声明同一请求时
+  同样报错，Hub 不会通过静默改写路径启动：seed 就是数据源，应在那里修正。只有
+  访问配置迁移会自行消解这类冲突，因为已存储的数据不靠人工修改。
 - 数据库表结构必须同时更新 `src/server/repo/db/model/sql/sqlite` 和 `src/server/repo/db/model/sql/pgsql`。
 - Redis key、Redis value JSON 和事件格式属于 Hub、Link、Portal 之间的协议；修改时必须同步所有生产者、消费者和测试。
 - `watchserver` 是运行时分发层，不应成为绕过 Repo/Core 直接实现业务规则的第二套状态源。
@@ -119,12 +129,22 @@ Hub 当前支持两类数据库配置来源：
 
 数据库升级基线为 Vine `v0.15.7`，规则表应已具备 `match_*` / `route_*` 列。
 更早的数据库应先用 `v0.15.7` 启动完成迁移；当前 Hub 不再迁移旧 Portal rule 列。
+从把访问配置存在规则上的版本升级时，Hub 会原地迁移 `portal_rule`：建立
+`portal_entry`，把已存储的 `match_scheme`、`match_host`、`match_port` 归入
+entry，删除规则上的这些列，并按 entry 建立规则路径的唯一索引。未设置的端口会
+迁移成 Portal 实际监听的端口。若两条规则此前只靠未设置的端口区分，迁移后落在
+同一 entry 的同一路径上，Hub 保留显式写了端口的那条，把使用默认端口的规则挪到
+`/migrated` 路径，并逐条记录日志：升级不会要求用户手工修库，Hub 也会正常启动。
 
 数据库 metadata 记录首次 seed 完成状态。后续启动跳过全部 seed、变量和来源输入，seed 条目不再提供 `override` 开关。无数据库模式每次建立新存储并导入 seed；内置 Dashboard 配置的维护独立于 seed 标记。
 
 字段来源以 JSON 保存原始字段模板，并记录每次替换的相对路径、变量名、占位符、实际应用的 JSON 值和默认值使用标记。AppConfig 的嵌套替换归属 value 的一级 key；管理接口修改字段后清除旧模板和替换记录。管理 API 与 Dashboard 一同展示这些信息及字段来源。
 
 `mod/seeder` 负责 seed YAML 契约：`ParseSeedEntities` 把文档解码成它声明的领域实体供 Dashboard 导入使用，启动 seed 复用同一套解码器，payload 结构体保持包内私有。两者都接受旧规则字段并逐字段告警；同一条规则混用新旧字段会在导入前失败。YAML 不能替换内置的 Dashboard 站点或规则。
+
+seed 仍在规则上声明 `matchScheme`、`matchHost` 和 `matchPort`。应用 seed 时 Hub
+会把声明的访问配置聚合为 entry，因此 seed 不会把同一份访问配置写到每条规则上。
+Portal 收到的规则仍携带其 entry 的访问配置；entry 是 Hub 侧状态，不是 Watch key。
 
 ## Admin 载荷约定
 
