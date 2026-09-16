@@ -15,8 +15,6 @@ func TestPortalEntryServiceMapsRulesAndTargetSites(t *testing.T) {
 			Id:              1,
 			Name:            "demo-rule",
 			EntryId:         1,
-			MatchScheme:     "http",
-			MatchPort:       8080,
 			MatchPathPrefix: "/demo",
 			RouteType:       core.PortalRuleRouteTypeSite,
 			RouteSiteName:   "demo-site",

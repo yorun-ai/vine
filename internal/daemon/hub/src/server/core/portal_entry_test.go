@@ -173,7 +173,7 @@ func TestPortalEntryCoreSaveReplacesByName(t *testing.T) {
 	// replacing it republishes the rules it routes.
 	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Name: "web", Scheme: "http", Port: 7088})
 	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		1: {Id: 1, Name: "app", EntryId: 1, MatchScheme: "http", MatchPort: 7088, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+		1: {Id: 1, Name: "app", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
 	}}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
@@ -184,8 +184,6 @@ func TestPortalEntryCoreSaveReplacesByName(t *testing.T) {
 	assert.Equal(t, 8443, saved.Port)
 	// The rule follows the entry it belongs to.
 	assert.Equal(t, 1, ruleRepo.rules[1].EntryId)
-	assert.Equal(t, "https", ruleRepo.rules[1].MatchScheme)
-	assert.Equal(t, 8443, ruleRepo.rules[1].MatchPort)
 
 	// A name is required, and two entries never serve one access.
 	require.PanicsWithError(t, "portal entry name is required type=APPLICATION code=OPERATION_FAILED",
@@ -203,8 +201,8 @@ func TestPortalEntryCoreSaveRejectsAccessTakenByAnotherEntry(t *testing.T) {
 		&PortalEntry{Id: 3, Name: "api", Scheme: "http", Port: 8099},
 	)
 	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		1: {Id: 1, Name: "web", EntryId: 1, MatchScheme: "http", MatchPort: 8088, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-		2: {Id: 2, Name: "vine", EntryId: 2, MatchScheme: "http", MatchPort: 7099, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+		1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+		2: {Id: 2, Name: "vine", EntryId: 2, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
 	}}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
@@ -360,10 +358,10 @@ func TestPortalEntryCoreUpdateAccessSavesEntryAndRepublishesRules(t *testing.T) 
 		&PortalEntry{Id: 2, Scheme: "http", Host: "demo.local", Port: 7088},
 	)
 	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		1: {Id: 1, Name: "web", EntryId: 1, MatchScheme: "http", MatchPort: 7088, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-		2: {Id: 2, Name: "api", EntryId: 1, MatchScheme: "http", MatchPort: 7088, MatchPathPrefix: "/api", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "rpc-site"},
-		3: {Id: 3, Name: "other-host", EntryId: 2, MatchScheme: "http", MatchHost: "demo.local", MatchPort: 7088, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-		4: {Id: 4, Name: "redirect", EntryId: 1, MatchScheme: "http", MatchPort: 7088, MatchPathPrefix: "/old", RouteType: PortalRuleRouteTypePermanentRedirect, RouteRedirectionPattern: "https://demo.local"},
+		1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+		2: {Id: 2, Name: "api", EntryId: 1, MatchPathPrefix: "/api", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "rpc-site"},
+		3: {Id: 3, Name: "other-host", EntryId: 2, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+		4: {Id: 4, Name: "redirect", EntryId: 1, MatchPathPrefix: "/old", RouteType: PortalRuleRouteTypePermanentRedirect, RouteRedirectionPattern: "https://demo.local"},
 	}}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
@@ -389,19 +387,17 @@ func TestPortalEntryCoreUpdateAccessSavesEntryAndRepublishesRules(t *testing.T) 
 		"GetByAccess:https:app.example.com:8443",
 		"Save",
 	}, entryRepo.calls)
-	// The access change republishes the rules of the entry after checking that
-	// none of them matches the same request as another rule.
-	assert.Equal(t, []string{"List", "List", "Save", "Save", "Save", "List"}, ruleRepo.calls)
-	// The members of the entry are republished with the access they now resolve.
+	// The access change republishes the rules of the entry.
+	assert.Equal(t, []string{"List", "Save", "Save", "Save", "List"}, ruleRepo.calls)
+	// The members of the entry stay where they are: the entry owns the access
+	// they resolve through.
 	assert.Equal(t, 1, ruleRepo.rules[1].EntryId)
-	assert.Equal(t, "https", ruleRepo.rules[1].MatchScheme)
-	assert.Equal(t, "app.example.com", ruleRepo.rules[1].MatchHost)
-	assert.Equal(t, 8443, ruleRepo.rules[1].MatchPort)
-	assert.Equal(t, "https", ruleRepo.rules[2].MatchScheme)
-	assert.Equal(t, "https", ruleRepo.rules[4].MatchScheme)
-	// Another entry keeps its own access.
-	assert.Equal(t, "http", ruleRepo.rules[3].MatchScheme)
-	assert.Equal(t, "demo.local", ruleRepo.rules[3].MatchHost)
+	assert.Equal(t, 1, ruleRepo.rules[2].EntryId)
+	assert.Equal(t, 1, ruleRepo.rules[4].EntryId)
+	// Another entry keeps its own rules and access.
+	assert.Equal(t, 2, ruleRepo.rules[3].EntryId)
+	assert.Equal(t, "http", entryRepo.entries[2].Scheme)
+	assert.Equal(t, "demo.local", entryRepo.entries[2].Host)
 }
 
 func TestPortalEntryCoreUpdateAccessMergesIntoExistingEntry(t *testing.T) {
@@ -410,8 +406,8 @@ func TestPortalEntryCoreUpdateAccessMergesIntoExistingEntry(t *testing.T) {
 		&PortalEntry{Id: 2, Scheme: "https", Host: "demo.local", Port: 8443},
 	)
 	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		1: {Id: 1, Name: "web", EntryId: 1, MatchScheme: "http", MatchPort: 7088, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-		2: {Id: 2, Name: "api", EntryId: 2, MatchScheme: "https", MatchHost: "demo.local", MatchPort: 8443, MatchPathPrefix: "/api", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "rpc-site"},
+		1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+		2: {Id: 2, Name: "api", EntryId: 2, MatchPathPrefix: "/api", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "rpc-site"},
 	}}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
@@ -427,8 +423,8 @@ func TestPortalEntryCoreUpdateAccessMergesIntoExistingEntry(t *testing.T) {
 	assert.Equal(t, "web", entry.Rules[1].Rule.Name)
 	assert.NotContains(t, entryRepo.entries, 1)
 	assert.Equal(t, 2, ruleRepo.rules[1].EntryId)
-	assert.Equal(t, "https", ruleRepo.rules[1].MatchScheme)
-	assert.Equal(t, "demo.local", ruleRepo.rules[1].MatchHost)
+	assert.Equal(t, "https", entryRepo.entries[2].Scheme)
+	assert.Equal(t, "demo.local", entryRepo.entries[2].Host)
 }
 
 func TestPortalEntryCoreUpdateAccessRejectsMissingEntry(t *testing.T) {
@@ -459,56 +455,10 @@ func TestPortalEntryCoreUpdateAccessNormalizesLookup(t *testing.T) {
 	assert.Equal(t, []string{"GetByAccess:http::80", "GetByAccess:https:demo.local:443", "Save"}, entryRepo.calls)
 }
 
-func TestPortalEntryCoreUpdateAccessRejectsRequestTakenByAnotherEntry(t *testing.T) {
-	// Changing the access of the entry would make its rule match the same request
-	// as a rule of another entry.
-	entryRepo := newPortalEntryRepoSpy(
-		&PortalEntry{Id: 1, Scheme: "http", Port: 7088},
-		&PortalEntry{Id: 2, Scheme: "http", Port: 7099},
-	)
-	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		1: {Id: 1, Name: "web", EntryId: 1, MatchScheme: "http", MatchPort: 7088, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-		2: {Id: 2, Name: "vine", EntryId: 2, MatchScheme: "http", MatchPort: 7099, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-	}}
-	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
-
-	require.PanicsWithError(t,
-		`portal rule "vine" already matches http://*:7099/ type=APPLICATION code=OPERATION_FAILED`,
-		func() {
-			core.UpdateAccess("http", "", 7088, PortalEntryAccessUpdate{Scheme: "http", Port: 7099})
-		})
-	// Neither the entry nor its rules changed.
-	assert.Equal(t, 7088, entryRepo.entries[1].Port)
-	assert.Equal(t, 1, ruleRepo.rules[1].EntryId)
-	assert.Equal(t, 7088, ruleRepo.rules[1].MatchPort)
-}
-
-func TestPortalEntryCoreUpdateAccessRejectsMergedPathClash(t *testing.T) {
-	entryRepo := newPortalEntryRepoSpy(
-		&PortalEntry{Id: 1, Scheme: "http", Port: 7088},
-		&PortalEntry{Id: 2, Scheme: "http", Host: "demo.local", Port: 8080},
-	)
-	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		1: {Id: 1, Name: "web", EntryId: 1, MatchScheme: "http", MatchPort: 7088, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-		2: {Id: 2, Name: "api", EntryId: 2, MatchScheme: "http", MatchHost: "demo.local", MatchPort: 8080, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-	}}
-	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
-
-	require.PanicsWithError(t,
-		`portal rule "api" already matches http://demo.local:8080/ type=APPLICATION code=OPERATION_FAILED`,
-		func() {
-			core.UpdateAccess("http", "", 7088, PortalEntryAccessUpdate{Scheme: "http", Host: "demo.local", Port: 8080})
-		})
-	assert.Equal(t, 1, ruleRepo.rules[1].EntryId)
-	// The rejected update changes neither entry: the rules stay where they are.
-	assert.Contains(t, entryRepo.entries, 1)
-	assert.Contains(t, entryRepo.entries, 2)
-}
-
 func TestPortalEntryCoreUpdateAccessKeepsEntryOnUnchangedAccess(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Scheme: "http", Port: 7088})
 	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		1: {Id: 1, Name: "web", EntryId: 1, MatchScheme: "http", MatchPort: 7088, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+		1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
 	}}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 

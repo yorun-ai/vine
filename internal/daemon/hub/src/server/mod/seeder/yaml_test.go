@@ -30,9 +30,9 @@ func TestSeedPortalRuleFieldNames(t *testing.T) {
 	} {
 		payload, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload](content)
 		require.NoError(t, err)
-		rule := payload.PortalRules[0].toCorePortalRule()
-		assert.Equal(t, "http", rule.MatchScheme)
-		assert.Equal(t, "/internal", rule.RoutePathPrefix)
+		seedRule := payload.PortalRules[0].toSeedRule()
+		assert.Equal(t, "http", seedRule.Access.Scheme)
+		assert.Equal(t, "/internal", seedRule.Rule.RoutePathPrefix)
 	}
 	_, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload]("portalRules:\n  - scheme: http\n    routeType: SITE")
 	require.ErrorContains(t, err, "cannot be mixed")

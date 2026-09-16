@@ -42,7 +42,10 @@ func (s *PortalRuleRepo) GetByName(name string) (*core.PortalRule, bool) {
 
 func (s *PortalRuleRepo) Save(rule *core.PortalRule) {
 	s.Access.CheckWrite()
-	row := toModelPortalRule(rule)
+	entry := s.entryById(rule.EntryId)
+	ex.PanicNewIfNot(entry != nil, ex.OperationFailed,
+		ex.F("portal rule %q references missing portal entry %d", rule.Name, rule.EntryId))
+	row := toModelPortalRule(rule, entry)
 	s.Dao.Save(row)
 	rule.Id = row.Id
 
@@ -63,8 +66,8 @@ func (s *PortalRuleRepo) Remove(id int) bool {
 	return true
 }
 
-// toCorePortalRule reconstitutes a rule with the access of its entry, so rules
-// always carry the access Portal serves without storing it themselves.
+// toCorePortalRule reconstitutes a rule from its row. The rule owns the entry it
+// belongs to, never the access the entry serves.
 func toCorePortalRule(row *model.PortalRule, entry *core.PortalEntry) *core.PortalRule {
 	ex.PanicNewIfNot(entry != nil, ex.OperationFailed,
 		ex.F("portal rule %q references missing portal entry %d", row.Name, row.EntryId))
@@ -73,9 +76,6 @@ func toCorePortalRule(row *model.PortalRule, entry *core.PortalEntry) *core.Port
 		Id:                      row.Id,
 		Name:                    row.Name,
 		EntryId:                 row.EntryId,
-		MatchScheme:             entry.Scheme,
-		MatchHost:               entry.Host,
-		MatchPort:               entry.Port,
 		MatchPathPrefix:         row.MatchPathPrefix,
 		RouteType:               row.RouteType,
 		RouteSiteName:           row.RouteSiteName,
@@ -85,15 +85,16 @@ func toCorePortalRule(row *model.PortalRule, entry *core.PortalEntry) *core.Port
 	}
 }
 
-func toModelPortalRule(rule *core.PortalRule) *model.PortalRule {
+// toModelPortalRule fills the access columns older Hub versions still read.
+func toModelPortalRule(rule *core.PortalRule, entry *core.PortalEntry) *model.PortalRule {
 	return &model.PortalRule{
 		FieldSources:            encodeFieldSources(rule.FieldSources),
 		Id:                      rule.Id,
 		Name:                    rule.Name,
 		EntryId:                 rule.EntryId,
-		MatchScheme:             rule.MatchScheme,
-		MatchHost:               rule.MatchHost,
-		MatchPort:               rule.MatchPort,
+		MatchScheme:             entry.Scheme,
+		MatchHost:               entry.Host,
+		MatchPort:               entry.Port,
 		MatchPathPrefix:         rule.MatchPathPrefix,
 		RouteType:               rule.RouteType,
 		RouteSiteName:           rule.RouteSiteName,

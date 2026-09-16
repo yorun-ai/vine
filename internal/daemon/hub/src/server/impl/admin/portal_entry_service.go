@@ -48,7 +48,7 @@ func (s *PortalEntryApiServiceServerImpl) Remove(scheme string, host string, por
 func (s *PortalEntryApiServiceServerImpl) toServerPortalEntry(entry core.PortalEntryView) skeled.PortalEntry {
 	rules := make([]skeled.PortalEntryRule, 0, len(entry.Rules))
 	for _, rule := range entry.Rules {
-		rules = append(rules, s.toServerPortalEntryRule(rule))
+		rules = append(rules, s.toServerPortalEntryRule(entry.PortalEntry, rule))
 	}
 	return skeled.PortalEntry{
 		Name:    entry.Name,
@@ -60,14 +60,14 @@ func (s *PortalEntryApiServiceServerImpl) toServerPortalEntry(entry core.PortalE
 	}
 }
 
-func (s *PortalEntryApiServiceServerImpl) toServerPortalEntryRule(rule core.PortalEntryRule) skeled.PortalEntryRule {
+func (s *PortalEntryApiServiceServerImpl) toServerPortalEntryRule(entry core.PortalEntry, rule core.PortalEntryRule) skeled.PortalEntryRule {
 	var site *skeled.PortalSiteListItem
 	if rule.Site != nil {
 		value := toServerPortalSiteListItem(rule.Site)
 		site = &value
 	}
 	return skeled.PortalEntryRule{
-		Rule: toServerPortalRuleListItem(rule.Rule, nil, rule.Site),
+		Rule: toServerPortalRuleListItem(&entry, rule.Rule, nil, rule.Site),
 		Site: site,
 	}
 }

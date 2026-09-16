@@ -201,10 +201,11 @@ func TestPortalRuleInitSchemaMigratesRuleAccessToEntry(t *testing.T) {
 	assert.True(t, columns["entry_id"])
 	assert.Equal(t, 0, byName["web"].MatchPort)
 	assert.Equal(t, 443, byName["secure"].MatchPort)
-	// The old index goes: Hub keeps one rule per entry path and checks request
-	// uniqueness itself, so the access columns no longer make a rule unique.
+	// Both old indexes go: the columns no longer make a rule unique, and neither
+	// does the entry and path, because whether two rules match one request
+	// depends on the Web mount paths Hub reads once the schemas arrive.
 	assert.False(t, db.Migrator().HasIndex("portal_rule", "uk_portal_rule_match"))
-	assert.True(t, db.Migrator().HasIndex("portal_rule", "uk_portal_rule_entry_path"))
+	assert.False(t, db.Migrator().HasIndex("portal_rule", "uk_portal_rule_entry_path"))
 }
 
 func TestPortalRuleInitSchemaMovesDefaultPortRuleToMigratedPath(t *testing.T) {

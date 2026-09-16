@@ -42,7 +42,7 @@ internal/daemon/hub/
 
 ## Dashboard Packaging
 
-- During development, set `VINE_HUB_DASHBOARD_DEV_PROXY` to proxy requests directly to a running `pnpm dev` server.
+- During development, set `VINE_HUB_DASHBOARD_DEV_PROXY` (any non-empty value) to serve the Dashboard from the Vite server `script/dev-hub-dashboard.sh` starts on `localhost:7098`; Hub serves the embedded build whenever that server is not running.
 - After changing Dashboard source, run `pnpm typecheck` and `pnpm build` in `src/dashboard`.
 - Rebuild the embedded `dashboard.tar.zst` whenever the Dashboard source or the admin API it calls changes, and commit it with that change: the embedded bundle must always match the admin API it calls. Merges are squashed, so a branch contributes only its final bundle to main.
 - Keep user-facing text synchronized between `src/i18n/dictionaries/cn.ts` and `en.ts`.
@@ -98,13 +98,14 @@ their entry fails instead of leaving them without an access. The entry list
 returns an entry that routes nothing, because an operator creates the entry
 before the rules that use it.
 
-Two rules may not match the same request. Portal resolves matching rules by their
-longest path prefix, so Hub rejects a rule whose access and `matchPathPrefix`
-already match another rule, and reports the rule that serves that request. A seed
-or Dashboard import that declares the same
-request twice fails the same way, so a seed never starts Hub through a silent
-rewrite: the seed is the data source, and the fix belongs there. Only the access
-migration separates rules on its own, because stored data is not edited by hand.
+Two rules that match the same request are reported, not rejected: the path a rule
+matches comes from the Web mount path its site declares, and Hub reads those
+schemas only after an application registers them, which happens after Hub starts.
+Hub audits the requests its published rules match once the schemas arrive: a
+read-only Hub refuses to serve such a configuration, because it has no surface to
+fix it from, and a stored configuration keeps both rules until the operator
+resolves the request from the Dashboard. Only the access migration separates
+rules on its own, because stored data is not edited by hand.
 
 Seeder and Dashboard imports validate all supplied entities before writing,
 then call Core `Save`. Validation does not make an entire import transactional:
@@ -115,8 +116,9 @@ manage versions.
 Hub serves the Admin API and the Dashboard on the admin module's own listener
 (`--admin-listen`, default `127.0.0.1:7099`), the way the Control API owns
 `--control-listen`: the listener
-answers the API Rpc path and serves the embedded Dashboard build for every other
-path, so the Dashboard is not part of the Portal configuration. Hub provisions no
+answers the API on `/api/invoke`, the path the Dashboard calls, and serves the
+embedded Dashboard build for every other path, so the Dashboard is not part
+of the Portal configuration. Hub provisions no
 entry, site, or rule for it, and Portal never routes it. `RegistryCore` owns schema registration
 and expired-lease removal. Initializer and Sweeper coordinate runtime publication
 through Syncer. The seed-applied marker remains startup bookkeeping in Seeder.

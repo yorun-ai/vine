@@ -61,13 +61,20 @@ func (r *_MaintenanceServiceAppConfigRepo) Remove(id int) bool {
 	return false
 }
 
+// newTestMaintenanceRuleService builds the service with the cores a seed applies
+// rules through: the caller resolves the entry a rule joins, so the service owns
+// the entry core as well.
+func newTestMaintenanceRuleService(ruleRepo core.PortalRuleRepo, entryRepos ...core.PortalEntryRepo) *MaintenanceApiServiceServerImpl {
+	ruleCore := newTestPortalRuleCore(ruleRepo, entryRepos...)
+	return &MaintenanceApiServiceServerImpl{RuleCore: ruleCore, EntryCore: ruleCore.PortalEntryCore}
+}
+
 func TestMaintenancePreviewResolvesPortalRuleEntryName(t *testing.T) {
 	// A seed rule that names an entry matches the access that entry serves, so a
 	// rule that already belongs to it reports no field differences.
 	ruleRepo := &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{
 		"demo.web": {
-			Id: 1, Name: "demo.web", EntryId: 1, MatchScheme: "http", MatchPort: 8099,
-			MatchPathPrefix: "/", RouteType: "SITE", RouteSiteName: "demo.Web", Enabled: true,
+			Id: 1, Name: "demo.web", EntryId: 1, MatchPathPrefix: "/", RouteType: "SITE", RouteSiteName: "demo.Web", Enabled: true,
 		},
 	}}
 	entryRepo := newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Name: "web", Scheme: "http", Port: 8099, Enabled: true})
@@ -256,11 +263,11 @@ func (r *_MaintenanceServicePortalRuleRepo) Remove(id int) bool {
 
 func TestMaintenanceTargetPathSeedRoundTrip(t *testing.T) {
 	repo := &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{}}
-	service := &MaintenanceApiServiceServerImpl{RuleCore: newTestPortalRuleCore(repo)}
+	service := newTestMaintenanceRuleService(repo)
 	payload := service.parseSeed("portalRules:\n  - name: mapped\n    scheme: http\n    targetType: SITE\n    siteName: web\n    pathPrefix: /api\n    targetPath: /internal/\n")
 	rule := payload.PortalRules[0]
-	if rule.RoutePathPrefix != "/internal" {
-		t.Fatalf("unexpected target path: %q", rule.RoutePathPrefix)
+	if rule.Rule.RoutePathPrefix != "/internal" {
+		t.Fatalf("unexpected target path: %q", rule.Rule.RoutePathPrefix)
 	}
 	service.applyPortalRules(payload.PortalRules, map[_SeedSelectionKey]struct{}{{kind: seedKindPortalRule, name: "mapped"}: {}})
 	stored, ok := repo.GetByName("mapped")
@@ -274,10 +281,10 @@ func TestMaintenanceTargetPathSeedRoundTrip(t *testing.T) {
 }
 
 func TestMaintenanceRuleFieldNames(t *testing.T) {
-	service := &MaintenanceApiServiceServerImpl{RuleCore: newTestPortalRuleCore(&_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{}})}
+	service := newTestMaintenanceRuleService(&_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{}})
 	payload := service.parseSeed("portalRules:\n  - name: example\n    matchScheme: http\n    routeType: SITE\n    routeSiteName: web\n    routePathPrefix: /internal")
-	require.Equal(t, "http", payload.PortalRules[0].MatchScheme)
-	require.Equal(t, "/internal", payload.PortalRules[0].RoutePathPrefix)
+	require.Equal(t, "http", payload.PortalRules[0].Access.Scheme)
+	require.Equal(t, "/internal", payload.PortalRules[0].Rule.RoutePathPrefix)
 	require.Panics(t, func() { service.parseSeed("portalRules:\n  - scheme: http\n    routeType: SITE") })
 }
 
@@ -326,7 +333,7 @@ func TestMaintenanceUsesDomainValidationForBothYAMLVocabularies(t *testing.T) {
 			content = strings.NewReplacer("matchScheme:", "scheme:", "matchPort:", "port:", "routeType:", "targetType:", "routeSiteName:", "siteName:").Replace(content)
 		}
 		repo := &_MaintenanceServicePortalRuleRepo{items: map[string]*core.PortalRule{}}
-		service := &MaintenanceApiServiceServerImpl{RuleCore: newTestPortalRuleCore(repo)}
+		service := newTestMaintenanceRuleService(repo)
 		require.Panics(t, func() { service.PreviewSeedYaml(content) })
 		require.Panics(t, func() {
 			service.ApplySeedYaml(content, []skeled.SeedItemSelection{{Kind: seedKindPortalRule, Name: "invalid"}})

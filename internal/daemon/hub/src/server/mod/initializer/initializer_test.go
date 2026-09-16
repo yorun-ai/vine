@@ -1,11 +1,14 @@
 package initializer
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	appcore "go.yorun.ai/vine/internal/app"
+	"go.yorun.ai/vine/internal/core/logger"
 	coreskel "go.yorun.ai/vine/internal/core/skel"
 	_ "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	_ "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
@@ -20,6 +23,26 @@ import (
 
 type _WatchTestStore struct {
 	server *watchserver.Server
+}
+
+// withTestAudit fills the fields the conflict audit reads, so a test states only
+// the repositories it exercises.
+func withTestAudit(p *Initializer) *Initializer {
+	if p.RuleCore == nil {
+		p.RuleCore = &core.PortalRuleCore{
+			PortalRuleRepo: p.PortalRuleRepo,
+			PortalSiteRepo: p.PortalSiteRepo,
+			PortalEntryCore: &core.PortalEntryCore{
+				PortalEntryRepo: p.PortalEntryRepo,
+				PortalRuleRepo:  p.PortalRuleRepo,
+				PortalSiteRepo:  p.PortalSiteRepo,
+			},
+		}
+	}
+	if p.Logger == nil {
+		p.Logger = logger.New("vine:test:initializer")
+	}
+	return p
 }
 
 func formatTestWatchListPattern(prefix string) string {
@@ -253,6 +276,17 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 	defer watchServer.AfterAppStop()
 	db := _WatchTestStore{watchServer}
 	schemaRepo := new(schema.SchemaRepo)
+	entryRepo := &testPortalEntryRepo{}
+	ruleRepo := &testPortalRuleRepo{
+		rules: []*core.PortalRule{
+			{Id: 1, Name: "demo-entry", MatchPathPrefix: "/admin", RouteType: "SITE", RouteSiteName: "admin@demo.app", Enabled: true},
+		},
+	}
+	siteRepo := &testPortalSiteRepo{
+		entries: []*core.PortalSite{
+			{Id: 1, Name: "demo-entry", Type: core.PortalSiteTypeWEBGW, ActorSkelName: "demo.Actor", ActorVia: "client", WebName: "demo.Web", Enabled: true},
+		},
+	}
 
 	p := &Initializer{
 		Syncer: testSyncer(watchServer),
@@ -262,28 +296,31 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 				{Id: 2, Name: "demo.FeatureConfig", Value: `{"enabled":true}`},
 			},
 		},
-		PortalEntryRepo: &testPortalEntryRepo{},
-		PortalRuleRepo: &testPortalRuleRepo{
-			rules: []*core.PortalRule{
-				{Id: 1, Name: "demo-entry", MatchScheme: "https", MatchHost: "demo.local", MatchPathPrefix: "/admin", RouteType: "SITE", RouteSiteName: "admin@demo.app", Enabled: true},
-			},
-		},
+		PortalEntryRepo: entryRepo,
+		PortalRuleRepo:  ruleRepo,
 		PortalCertRepo: &testPortalCertRepo{
 			certs: []*core.PortalCert{
 				{Id: 1, Name: "demo-cert", Issuer: "letsencrypt", Domains: []string{"demo.local"}, PublicKeyBase64: "pub", PrivateKeyBase64: "pri", Enabled: true},
 			},
 		},
-		PortalSiteRepo: &testPortalSiteRepo{
-			entries: []*core.PortalSite{
-				{Id: 1, Name: "demo-entry", Type: core.PortalSiteTypeWEBGW, ActorSkelName: "demo.Actor", ActorVia: "client", WebName: "demo.Web", Enabled: true},
+		PortalSiteRepo: siteRepo,
+		RuleCore: &core.PortalRuleCore{
+			PortalRuleRepo: ruleRepo,
+			PortalSiteRepo: siteRepo,
+			PortalEntryCore: &core.PortalEntryCore{
+				PortalEntryRepo: entryRepo,
+				PortalRuleRepo:  ruleRepo,
+				PortalSiteRepo:  siteRepo,
 			},
 		},
 		SchemaRepo:   schemaRepo,
 		RegistryCore: &core.RegistryCore{SchemaRepo: schemaRepo},
 		InprocFlag:   &appcore.InternalInprocFlag{},
 		Flag:         &hubflag.Flag{AdminListen: "127.0.0.1:7099"},
+		Logger:       logger.New("vine:test:initializer"),
 	}
 
+	p = withTestAudit(p)
 	p.DIInit()
 
 	value, err := db.Get(watched.FormatConfigKey("demo.DatabaseConfig"))
@@ -349,6 +386,7 @@ func TestInitializerRemovesLegacyDashboard(t *testing.T) {
 		Flag:            &hubflag.Flag{AdminListen: "127.0.0.1:7099"},
 	}
 
+	p = withTestAudit(p)
 	p.DIInit()
 
 	// Hub stores the entities its own seed declares and keeps the legacy
@@ -415,6 +453,7 @@ func TestInitializerDIInitLoadsRegisteredSchemasIntoMemoryRepoInInprocMode(t *te
 		Flag:            &hubflag.Flag{AdminListen: "127.0.0.1:7099"},
 	}
 
+	p = withTestAudit(p)
 	p.DIInit()
 
 	got, ok := findDomainSchemaByHash(schemaRepo.ListDomainSchemaViews(), domainSchema.Hash)
@@ -451,6 +490,7 @@ func TestInitializerDIInitLoadsHubSchemasIntoMemoryRepoInNormalMode(t *testing.T
 		Flag:            &hubflag.Flag{AdminListen: "127.0.0.1:7099"},
 	}
 
+	p = withTestAudit(p)
 	p.DIInit()
 
 	views := schemaRepo.ListDomainSchemaViews()
@@ -458,6 +498,52 @@ func TestInitializerDIInitLoadsHubSchemasIntoMemoryRepoInNormalMode(t *testing.T
 		got, ok := findDomainSchemaByHash(views, hubSchema.Hash)
 		assert.True(t, ok, domain)
 		assert.Same(t, hubSchema, got, domain)
+	}
+}
+
+// Hub applies a seed before the applications register their schemas, so whether
+// two rules match one request depends on the Web mount paths Hub reads only
+// after those schemas arrive. A read-only Hub has no Dashboard to resolve the
+// conflict from, so it refuses to serve the configuration; a stored one keeps
+// running and reports what the operator has to fix.
+func TestInitializerReportsRulesThatShareOneRequest(t *testing.T) {
+	for _, noDB := range []bool{false, true} {
+		t.Run(fmt.Sprint(noDB), func(t *testing.T) {
+			watchServer := watchserver.NewServerForTest()
+			defer watchServer.AfterAppStop()
+
+			ruleRepo := &testPortalRuleRepo{rules: []*core.PortalRule{
+				{Id: 1, Name: "demo.app", EntryId: 1, RouteType: "SITE", RouteSiteName: "demo.app-site", Enabled: true},
+				{Id: 2, Name: "demo.app-explicit", EntryId: 1, RouteType: "SITE", RouteSiteName: "demo.fixed-site", Enabled: true},
+			}}
+			siteRepo := &testPortalSiteRepo{entries: []*core.PortalSite{
+				{Id: 1, Name: "demo.app-site", Type: core.PortalSiteTypeWEBGW, Enabled: true},
+				{Id: 2, Name: "demo.fixed-site", Type: core.PortalSiteTypeWEBGW, Enabled: true},
+			}}
+			entryRepo := &testPortalEntryRepo{entries: []*core.PortalEntry{
+				{Id: 1, Name: "http:80", Scheme: "http", Port: 80, Enabled: true},
+			}}
+			p := withTestAudit(&Initializer{
+				Syncer:          testSyncer(watchServer),
+				AppConfigRepo:   &testAppConfigRepo{},
+				PortalEntryRepo: entryRepo,
+				PortalRuleRepo:  ruleRepo,
+				PortalCertRepo:  &testPortalCertRepo{},
+				PortalSiteRepo:  siteRepo,
+				SchemaRepo:      new(schema.SchemaRepo),
+				RegistryCore:    &core.RegistryCore{SchemaRepo: new(schema.SchemaRepo)},
+				InprocFlag:      &appcore.InternalInprocFlag{},
+				Flag:            &hubflag.Flag{NoDB: noDB, AdminListen: "127.0.0.1:7099"},
+			})
+
+			if !noDB {
+				require.NotPanics(t, p.DIInit)
+				return
+			}
+			require.PanicsWithError(t,
+				`portal rule "demo.app-explicit" and portal rule "demo.app" both match http://*:80: give each request one rule in the seed Hub loads type=APPLICATION code=OPERATION_FAILED`,
+				p.DIInit)
+		})
 	}
 }
 

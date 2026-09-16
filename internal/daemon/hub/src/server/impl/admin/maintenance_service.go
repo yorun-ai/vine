@@ -1,6 +1,8 @@
 package admin
 
 import (
+	"strconv"
+
 	"go.yorun.ai/vine/internal/core/ex"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
@@ -95,9 +97,11 @@ func (s *MaintenanceApiServiceServerImpl) parseSeed(content string) *seeder.Seed
 		validated := s.EntryCore.Validate(*entry)
 		entities.PortalEntries[i] = &validated
 	}
-	for i, rule := range entities.PortalRules {
-		validated := s.RuleCore.Validate(*rule)
-		entities.PortalRules[i] = &validated
+	for _, rule := range entities.PortalRules {
+		*rule.Rule = s.RuleCore.Validate(*rule.Rule)
+		if rule.EntryName == "" {
+			s.EntryCore.ValidateAccess(rule.Access)
+		}
 	}
 	for i, cert := range entities.PortalCerts {
 		validated := s.CertCore.Validate(*cert)
@@ -153,19 +157,47 @@ func (s *MaintenanceApiServiceServerImpl) previewPortalEntry(entry *core.PortalE
 	return seedEntityDiff(seedKindPortalEntry, entry.Name, exists, current.SeedFields(), entry.SeedFields(), seedPortalEntryFields)
 }
 
-func (s *MaintenanceApiServiceServerImpl) previewPortalRule(rule *core.PortalRule, seedEntries map[string]*core.PortalEntry) skeled.SeedEntityDiff {
-	current, exists := s.RuleCore.FindByName(rule.Name)
-	declared := *rule
-	if rule.EntryName != "" {
-		// A rule that names an entry matches the access that entry serves, which
-		// is how the import applies it.
-		if entry := s.seedPortalEntry(rule.EntryName, seedEntries); entry != nil {
-			declared.MatchScheme = entry.Scheme
-			declared.MatchHost = entry.Host
-			declared.MatchPort = entry.Port
+// previewPortalRule compares a declared rule with the stored one. A rule carries
+// no access of its own, so the preview compares the access of the entry each side
+// joins as well: the values Portal matches are what an operator changes.
+func (s *MaintenanceApiServiceServerImpl) previewPortalRule(rule *seeder.SeedRule, seedEntries map[string]*core.PortalEntry) skeled.SeedEntityDiff {
+	current, exists := s.RuleCore.FindByName(rule.Rule.Name)
+	declared := rule.Rule.SeedFields()
+	if entry := s.seedRuleEntry(rule, seedEntries); entry != nil {
+		addPortalRuleAccess(declared, entry)
+	}
+	currentFields := map[string]string{}
+	if current != nil {
+		currentFields = current.SeedFields()
+		if entry, ok := s.EntryCore.FindById(current.EntryId); ok {
+			addPortalRuleAccess(currentFields, entry)
 		}
 	}
-	return seedEntityDiff(seedKindPortalRule, rule.Name, exists, current.SeedFields(), declared.SeedFields(), seedPortalRuleFields)
+	return seedEntityDiff(seedKindPortalRule, rule.Rule.Name, exists, currentFields, declared, seedPortalRuleFields)
+}
+
+// addPortalRuleAccess adds the access a rule matches to the fields a seed
+// compares, under the field names a rule declares it with.
+func addPortalRuleAccess(fields map[string]string, entry *core.PortalEntry) {
+	fields["matchScheme"] = entry.Scheme
+	fields["matchHost"] = entry.Host
+	fields["matchPort"] = strconv.Itoa(entry.Port)
+}
+
+// seedRuleEntry returns the entry a declared rule joins without creating one:
+// the entry the seed declares or Hub stores, or the entry that serves the access
+// the rule declares.
+func (s *MaintenanceApiServiceServerImpl) seedRuleEntry(rule *seeder.SeedRule, seedEntries map[string]*core.PortalEntry) *core.PortalEntry {
+	if rule.EntryName != "" {
+		return s.seedPortalEntry(rule.EntryName, seedEntries)
+	}
+	if entry, ok := s.EntryCore.FindByAccess(rule.Access.Scheme, rule.Access.Host, rule.Access.Port); ok {
+		return entry
+	}
+	access := rule.Access
+	access.Name = core.PortalEntryName(access.Scheme, access.Host, access.Port)
+	access.Enabled = true
+	return &access
 }
 
 // seedPortalEntry resolves an entry a seed document declares or Hub stores.
@@ -239,12 +271,12 @@ func (s *MaintenanceApiServiceServerImpl) applyPortalEntries(entries []*core.Por
 	}
 }
 
-func (s *MaintenanceApiServiceServerImpl) applyPortalRules(rules []*core.PortalRule, selected map[_SeedSelectionKey]struct{}) {
+func (s *MaintenanceApiServiceServerImpl) applyPortalRules(rules []*seeder.SeedRule, selected map[_SeedSelectionKey]struct{}) {
 	for _, rule := range rules {
-		if !hasSelection(selected, seedKindPortalRule, rule.Name) {
+		if !hasSelection(selected, seedKindPortalRule, rule.Rule.Name) {
 			continue
 		}
-		s.RuleCore.Save(*rule)
+		s.RuleCore.Save(*seeder.ResolveSeedRule(s.EntryCore, rule))
 	}
 }
 

@@ -4,10 +4,13 @@ import (
 	"bytes"
 	_ "embed"
 	"net/http"
+	"net/url"
+	"os"
 	"path"
 	"time"
 
 	"go.yorun.ai/vine/internal/core/web/assets"
+	"go.yorun.ai/vine/internal/core/web/proxy"
 )
 
 //go:embed assets/dashboard.tar.zst
@@ -16,6 +19,32 @@ var dashboardTarZst []byte
 var dashboardAssets = assets.NewTarZstAccessor(dashboardTarZst)
 
 const dashboardIndexPath = "/index.html"
+
+// dashboardDevProxyEnv starts Hub against a Dashboard development server
+// instead of the embedded build, so a Dashboard source change needs no build.
+const dashboardDevProxyEnv = "VINE_HUB_DASHBOARD_DEV_PROXY"
+
+// dashboardDevServerURL is the development server script/dev-hub-dashboard.sh
+// starts: it fails when Vite cannot take this port, so Hub always proxies the
+// server the script started.
+var dashboardDevServerURL = "http://localhost:7098"
+
+// DashboardDevProxy returns the reverse proxy a development Hub serves the
+// Dashboard through, or nil when no development server was asked for.
+func DashboardDevProxy() *proxy.ReverseProxy {
+	if os.Getenv(dashboardDevProxyEnv) == "" {
+		return nil
+	}
+	target, err := url.Parse(dashboardDevServerURL)
+	if err != nil {
+		adminLogger.Error("dashboard development proxy target is invalid",
+			"target", dashboardDevServerURL, "error", err)
+		return nil
+	}
+	adminLogger.Info("dashboard development proxy enabled",
+		"target", dashboardDevServerURL, "env", dashboardDevProxyEnv)
+	return proxy.NewReverseProxy(proxy.Option{Target: target})
+}
 
 // DashboardHandler serves the embedded Dashboard build on the admin listener,
 // which also serves the Admin API, so the Dashboard reaches Hub on one origin

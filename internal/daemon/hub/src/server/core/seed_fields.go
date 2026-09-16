@@ -56,9 +56,6 @@ func (r *PortalRule) SeedFields() map[string]string {
 		return map[string]string{}
 	}
 	return map[string]string{
-		"matchScheme":             r.MatchScheme,
-		"matchHost":               r.MatchHost,
-		"matchPort":               strconv.Itoa(r.MatchPort),
 		"matchPathPrefix":         r.MatchPathPrefix,
 		"routeType":               r.RouteType,
 		"routeSiteName":           r.RouteSiteName,

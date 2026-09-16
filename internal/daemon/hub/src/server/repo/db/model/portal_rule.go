@@ -182,10 +182,15 @@ func (d *PortalRuleDao) migrateAccessColumns() {
 	// TODO: Drop the access columns with the matching PortalRule fields; Hub
 	// stops reading them here and keeps them only for an earlier Hub.
 	//
-	// The index goes instead of the columns: it described what made a rule
-	// unique before entries existed, and Hub keeps one rule per entry path and
-	// checks request uniqueness itself.
+	// The indexes go instead of the columns: they described what made a rule
+	// unique before entries existed, when a rule carried its access and a rule
+	// per entry path was what Portal matched. The entry owns the access now, and
+	// whether two rules match the same request depends on the Web mount path of
+	// their sites, which Hub reads from the schemas an application registers
+	// after Hub starts. A database Hub does not own keeps both rules until the
+	// operator resolves the request from the Dashboard.
 	ex.PanicIfError(db.Exec("DROP INDEX IF EXISTS uk_portal_rule_match").Error)
+	ex.PanicIfError(db.Exec("DROP INDEX IF EXISTS uk_portal_rule_entry_path").Error)
 }
 
 // migrateAccessGroup returns the entry that serves one stored access, creating

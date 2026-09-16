@@ -38,7 +38,7 @@ func TestPortalRuleRepoSaveCreate(t *testing.T) {
 	key := watched.FormatPortalRuleKey("admin")
 	raw, ok := watchServer.Get(key)
 	require.True(t, ok)
-	assert.Equal(t, syncer.ToWatchedPortalRule(rule), vcode.MustUnmarshalJsonS[*watched.PortalRule](raw))
+	assert.Equal(t, syncer.ToWatchedPortalRule(rule, portalRuleEntry(t, repo, rule)), vcode.MustUnmarshalJsonS[*watched.PortalRule](raw))
 }
 
 func TestPortalRuleRepoSaveUpdate(t *testing.T) {
@@ -88,7 +88,7 @@ func TestPortalRuleRepoSaveRename(t *testing.T) {
 
 	raw, ok := watchServer.Get(watched.FormatPortalRuleKey("console"))
 	require.True(t, ok)
-	assert.Equal(t, syncer.ToWatchedPortalRule(rule), vcode.MustUnmarshalJsonS[*watched.PortalRule](raw))
+	assert.Equal(t, syncer.ToWatchedPortalRule(rule, portalRuleEntry(t, repo, rule)), vcode.MustUnmarshalJsonS[*watched.PortalRule](raw))
 }
 
 func TestPortalRuleRepoRemove(t *testing.T) {
@@ -108,15 +108,13 @@ func TestPortalRuleRepoRemove(t *testing.T) {
 	assert.False(t, repo.Remove(rule.Id))
 }
 
-// TestPortalRuleRepoAssemblesEntryAccess covers the storage contract: rules no
-// longer store scheme, host, or port, so every read resolves them from the entry
-// the rule belongs to.
-func TestPortalRuleRepoAssemblesEntryAccess(t *testing.T) {
+// TestPortalRuleRepoPublishesEntryAccess covers the entry contract: a rule owns
+// the entry it belongs to, and the access of that entry is what Portal receives.
+func TestPortalRuleRepoPublishesEntryAccess(t *testing.T) {
 	_, repo, watchServer := newTestPortalRuleRepo(t)
 
 	rule := testPortalRule(t, repo, "admin")
 	repo.Save(rule)
-	assert.Equal(t, "https", rule.MatchScheme)
 
 	entry, ok := repo.PortalEntryRepo.GetById(rule.EntryId)
 	require.True(t, ok)
@@ -127,16 +125,20 @@ func TestPortalRuleRepoAssemblesEntryAccess(t *testing.T) {
 
 	got, ok := repo.GetById(rule.Id)
 	require.True(t, ok)
-	assert.Equal(t, "http", got.MatchScheme)
-	assert.Equal(t, "app.example.com", got.MatchHost)
-	assert.Equal(t, 8080, got.MatchPort)
 	assert.Equal(t, rule.EntryId, got.EntryId)
 
-	// Republishing the rule carries the access of the entry it belongs to.
-	repo.Save(got)
+	// Changing the entry republishes the rules it routes with the new access.
 	raw, ok := watchServer.Get(watched.FormatPortalRuleKey("admin"))
 	require.True(t, ok)
-	assert.Equal(t, syncer.ToWatchedPortalRule(got), vcode.MustUnmarshalJsonS[*watched.PortalRule](raw))
+	assert.Equal(t, syncer.ToWatchedPortalRule(got, entry), vcode.MustUnmarshalJsonS[*watched.PortalRule](raw))
+}
+
+// portalRuleEntry returns the entry a rule belongs to.
+func portalRuleEntry(t *testing.T, repo *PortalRuleRepo, rule *core.PortalRule) *core.PortalEntry {
+	t.Helper()
+	entry, ok := repo.PortalEntryRepo.GetById(rule.EntryId)
+	require.True(t, ok)
+	return entry
 }
 
 func newTestPortalRuleRepo(t *testing.T) (*gorm.DB, *PortalRuleRepo, *watchserver.Server) {
@@ -146,13 +148,16 @@ func newTestPortalRuleRepo(t *testing.T) (*gorm.DB, *PortalRuleRepo, *watchserve
 	watchServer := watchserver.NewServerForTest()
 	t.Cleanup(watchServer.AfterAppStop)
 
-	entryRepo := newTestPortalEntryRepo(db, testSyncer(watchServer))
+	// One syncer serves both repositories, the way the injector hands Hub a
+	// single one: a rule publishes the access of the entry it belongs to.
+	sync := testSyncer(watchServer)
+	entryRepo := newTestPortalEntryRepo(db, sync)
 	entryRepo.Dao.InitSchema()
 	repo := &PortalRuleRepo{
 		Dao: &model.PortalRuleDao{
 			Dao: rdb.NewDao[*model.PortalRule](db),
 		},
-		Syncer:          testSyncer(watchServer),
+		Syncer:          sync,
 		Access:          new(configaccess.Access),
 		PortalEntryRepo: entryRepo,
 	}
@@ -197,9 +202,6 @@ func testPortalRule(t *testing.T, repo *PortalRuleRepo, name string) *core.Porta
 	return &core.PortalRule{
 		Name:                    name,
 		EntryId:                 entry.Id,
-		MatchScheme:             "https",
-		MatchHost:               "demo.local",
-		MatchPort:               443,
 		MatchPathPrefix:         "/admin",
 		RouteType:               "SITE",
 		RouteSiteName:           "admin@demo.app",

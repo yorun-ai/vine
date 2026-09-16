@@ -75,7 +75,7 @@ func TestSyncerPublishesOnlyEnabledConfiguration(t *testing.T) {
 
 func TestPortalRuleTargetPathWatchRoundTrip(t *testing.T) {
 	rule := &core.PortalRule{Name: "mapped", RouteType: "SITE", MatchPathPrefix: "/api", RoutePathPrefix: "/internal"}
-	wire := vcode.MustMarshalJsonS(ToWatchedPortalRule(rule))
+	wire := vcode.MustMarshalJsonS(ToWatchedPortalRule(rule, nil))
 	decoded := vcode.MustUnmarshalJsonS[*watched.PortalRule](wire)
 	assert.Equal(t, "/internal", decoded.ResolvedRoutePathPrefix)
 	assert.Contains(t, wire, `"resolvedRoutePathPrefix":"/internal"`)

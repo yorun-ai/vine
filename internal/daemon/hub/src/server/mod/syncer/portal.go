@@ -194,25 +194,31 @@ func toWatchedPortalSite(site *core.PortalSite) *watched.PortalSite {
 }
 
 func (s *Syncer) toWatchedPortalRule(rule *core.PortalRule, sites ...*core.PortalSite) *watched.PortalRule {
-	ret := ToWatchedPortalRule(rule)
+	ret := ToWatchedPortalRule(rule, s.portalEntriesById[rule.EntryId])
 	if len(sites) > 0 {
 		ret.ResolvedMatchPathPrefix, ret.ResolvedRoutePathPrefix = core.ResolvePortalRulePaths(rule, sites[0])
 	}
 	return ret
 }
 
-func ToWatchedPortalRule(rule *core.PortalRule) *watched.PortalRule {
-	return &watched.PortalRule{
+// ToWatchedPortalRule renders a rule for Portal with the access of the entry it
+// belongs to. An entry Hub has not published leaves the access empty, the way a
+// rule keeps its paths when Hub cannot resolve the site it targets.
+func ToWatchedPortalRule(rule *core.PortalRule, entry *core.PortalEntry) *watched.PortalRule {
+	ret := &watched.PortalRule{
 		Name:                    rule.Name,
-		MatchScheme:             rule.MatchScheme,
-		MatchHost:               rule.MatchHost,
-		MatchPort:               rule.MatchPort,
 		RouteType:               rule.RouteType,
 		RouteSiteName:           rule.RouteSiteName,
 		RouteRedirectionPattern: rule.RouteRedirectionPattern,
 		ResolvedMatchPathPrefix: rule.MatchPathPrefix,
 		ResolvedRoutePathPrefix: rule.RoutePathPrefix,
 	}
+	if entry != nil {
+		ret.MatchScheme = entry.Scheme
+		ret.MatchHost = entry.Host
+		ret.MatchPort = entry.Port
+	}
+	return ret
 }
 
 func ToWatchedPortalCert(cert *core.PortalCert) *watched.PortalCert {

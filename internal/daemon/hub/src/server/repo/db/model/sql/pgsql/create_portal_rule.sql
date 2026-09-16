@@ -17,8 +17,5 @@ CREATE TABLE IF NOT EXISTS portal_rule (
     match_port INTEGER NOT NULL                   -- TODO: Drop with entry_id
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_rule_entry_path
-    ON portal_rule(entry_id, match_path_prefix);
-
 CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_rule_name
     ON portal_rule(name);

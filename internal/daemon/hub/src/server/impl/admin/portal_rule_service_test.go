@@ -219,14 +219,14 @@ func TestPortalRuleServiceGetReturnsFieldSources(t *testing.T) {
 		3: {
 			Id:            3,
 			Name:          "demo.rule",
-			MatchScheme:   "http",
-			MatchPort:     80,
+			EntryId:       1,
 			RouteType:     core.PortalRuleRouteTypeSite,
 			RouteSiteName: "demo-site",
 			FieldSources:  core.FieldSources{"/matchScheme": {Source: "app/default", Override: "hub"}},
 		},
 	}}
-	service := &PortalRuleApiServiceServerImpl{PortalRuleCore: newTestPortalRuleCore(repo)}
+	ruleCore := newTestPortalRuleCore(repo, newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Scheme: "http", Port: 80, Enabled: true}))
+	service := &PortalRuleApiServiceServerImpl{PortalRuleCore: ruleCore, PortalEntryCore: ruleCore.PortalEntryCore}
 
 	detail := service.Get(3)
 

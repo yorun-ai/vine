@@ -243,7 +243,7 @@ portalCerts:
 	configRepo.Save(&core.AppConfig{Name: "feature.flag", Value: `{"enabled":true}`, Version: 7})
 	configRepo.Save(&core.AppConfig{Name: "feature.keep", Value: `{"enabled":true}`, Version: 3})
 	entryRepo.Save(&core.PortalSite{Name: "admin@demo.app", Type: core.PortalSiteTypeWEBGW, ActorSkelName: "old.Actor", ActorVia: "client", WebName: "old.Web"})
-	saveTestPortalRule(t, ruleRepo, &core.PortalRule{Name: "admin", MatchScheme: "http", MatchPort: 80, MatchPathPrefix: "/old", RouteType: "SITE", RouteSiteName: "old-site"})
+	saveTestPortalRule(t, ruleRepo, &core.PortalRule{Name: "admin", MatchPathPrefix: "/old", RouteType: "SITE", RouteSiteName: "old-site"}, core.PortalEntry{Scheme: "http", Port: 80})
 	certRepo.Save(&core.PortalCert{Name: "admin-cert", Issuer: "old", Domains: []string{"old.local"}, PublicKeyBase64: "old-pub", PrivateKeyBase64: "old-pri"})
 	metadataRepo.MarkSeeded()
 
@@ -274,7 +274,6 @@ portalCerts:
 	assert.Equal(t, "old.Web", entry.WebName)
 	rule, ok := ruleRepo.GetByName("admin")
 	require.True(t, ok)
-	assert.Equal(t, "http", rule.MatchScheme)
 	assert.Equal(t, "/old", rule.MatchPathPrefix)
 	cert, ok := certRepo.GetByName("admin-cert")
 	require.True(t, ok)
@@ -638,9 +637,8 @@ portalRules:
 	rule, ok := ruleRepo.GetByName("demo.web")
 	require.True(t, ok)
 	assert.Equal(t, entry.Id, rule.EntryId)
-	assert.Equal(t, "http", rule.MatchScheme)
-	assert.Equal(t, 8099, rule.MatchPort)
-	assert.Empty(t, rule.EntryName)
+	assert.Equal(t, "http", entry.Scheme)
+	assert.Equal(t, 8099, entry.Port)
 }
 
 func TestSeederRejectsPortalRuleMixingEntryNameAndAccess(t *testing.T) {
@@ -733,12 +731,12 @@ func newTestEntryCore(entryRepo core.PortalEntryRepo, ruleRepo core.PortalRuleRe
 	}
 }
 
-func TestSeederRejectsRulesThatShareOneRequest(t *testing.T) {
-	// A seed may declare the same request twice: once with the port left unset
-	// and once with the default port named explicitly. Portal resolves matching
-	// rules by their longest path prefix, so the seed must not start Hub: the seed
-	// is the data source, and the operator corrects it instead of letting Hub
-	// rewrite a rule path the database migration would have to rewrite itself.
+// A seed may declare the same request twice: once with the port left unset and
+// once with the default port named explicitly. Hub stores both rules, because
+// the request they match also depends on the Web mount paths the applications
+// register after Hub starts. Hub reports the conflict once it knows those paths;
+// a read-only Hub refuses to serve the seed instead of picking one rule.
+func TestSeederStoresRulesThatShareOneRequest(t *testing.T) {
 	implicit := `
   - name: demo.app
     matchScheme: http
@@ -755,11 +753,10 @@ func TestSeederRejectsRulesThatShareOneRequest(t *testing.T) {
     routeSiteName: demo.Web
 `
 	for name, test := range map[string]struct {
-		rules    string
-		conflict string
+		rules string
 	}{
-		"implicit first": {rules: implicit + explicit, conflict: "demo.app"},
-		"explicit first": {rules: explicit + implicit, conflict: "demo.app-explicit"},
+		"implicit first": {rules: implicit + explicit},
+		"explicit first": {rules: explicit + implicit},
 	} {
 		t.Run(name, func(t *testing.T) {
 			configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
@@ -776,10 +773,15 @@ func TestSeederRejectsRulesThatShareOneRequest(t *testing.T) {
 				SiteCore:      newTestSiteCore(entryRepo),
 			}
 
-			require.PanicsWithError(t,
-				fmt.Sprintf(`portal rule %q already matches http://*:80/app type=APPLICATION code=OPERATION_FAILED`, test.conflict),
-				seeder.DIInit)
-			assert.False(t, metadataRepo.IsSeeded())
+			seeder.DIInit()
+
+			assert.True(t, metadataRepo.IsSeeded())
+			require.Len(t, ruleRepo.List(), 2)
+			conflicts := seeder.RuleCore.Conflicts()
+			require.Len(t, conflicts, 1)
+			assert.ElementsMatch(t, []string{"demo.app", "demo.app-explicit"},
+				[]string{conflicts[0].Rule, conflicts[0].Conflict})
+			assert.Equal(t, "http://*:80/app", conflicts[0].MatchText())
 		})
 	}
 }
@@ -823,15 +825,15 @@ func newTestSeederRepos(t *testing.T) (*repo.AppConfigRepo, *repo.PortalRuleRepo
 	}, watchServer
 }
 
-// saveTestPortalRule stores a rule under the entry that serves its access, the
-// way Core stores rules and the way the migration rebuilds entry storage for an
-// upgraded database.
-func saveTestPortalRule(t *testing.T, ruleRepo *repo.PortalRuleRepo, rule *core.PortalRule) {
+// saveTestPortalRule stores a rule under the entry that serves the access the
+// caller declares, the way Core stores rules and the way the migration rebuilds
+// entry storage for an upgraded database.
+func saveTestPortalRule(t *testing.T, ruleRepo *repo.PortalRuleRepo, rule *core.PortalRule, access core.PortalEntry) {
 	t.Helper()
 
-	entry, ok := ruleRepo.PortalEntryRepo.GetByAccess(rule.MatchScheme, rule.MatchHost, rule.MatchPort)
+	entry, ok := ruleRepo.PortalEntryRepo.GetByAccess(access.Scheme, access.Host, access.Port)
 	if !ok {
-		entry = &core.PortalEntry{Scheme: rule.MatchScheme, Host: rule.MatchHost, Port: rule.MatchPort}
+		entry = &core.PortalEntry{Scheme: access.Scheme, Host: access.Host, Port: access.Port, Enabled: true}
 		ruleRepo.PortalEntryRepo.Save(entry)
 	}
 	rule.EntryId = entry.Id
@@ -848,6 +850,7 @@ func newTestSiteCore(siteRepo core.PortalSiteRepo) *core.PortalSiteCore {
 func newTestRuleCore(ruleRepo *repo.PortalRuleRepo, siteRepo core.PortalSiteRepo) *core.PortalRuleCore {
 	return &core.PortalRuleCore{
 		PortalRuleRepo: ruleRepo,
+		PortalSiteRepo: siteRepo,
 		PortalEntryCore: &core.PortalEntryCore{
 			PortalEntryRepo: ruleRepo.PortalEntryRepo,
 			PortalRuleRepo:  ruleRepo,

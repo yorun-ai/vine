@@ -61,6 +61,35 @@ are not part of the public compatibility commitment.
 
 ### Changed
 
+- The admin listener serves a Dashboard development server again, the way the
+  Portal-routed Dashboard did: `VINE_HUB_DASHBOARD_DEV_PROXY` (any non-empty
+  value) forwards every path outside `/api/invoke` to the Vite server
+  `script/dev-hub-dashboard.sh` starts on `localhost:7098`, and Hub serves the
+  embedded build whenever that server is not running. A Dashboard source change
+  needs no build while a developer works on it. Closing the proxy cancels the
+  requests it forwarded, so a development server that does not answer a request
+  cannot hold the listener open past its shutdown deadline.
+
+- The admin listener answers the Admin API on `/api/invoke`, the path beside the
+  Dashboard build it serves, and the Dashboard calls that path with a direct
+  trace, because Hub serves the build itself instead of a Portal entry carrying
+  it. Hub answered everything outside the runtime path from the Dashboard build,
+  so the API call came back as the entry document and every page that loads
+  configuration failed, and an API call without the trace span a Portal entry
+  used to open was rejected. Rebuild the Dashboard assets with
+  `script/build-dashboard-assets.sh`: the embedded build and the listener it
+  reaches ship together.
+
+- A Portal rule owns its entry and nothing else: the rule entity, the rows Hub
+  reads and writes, and the rule Hub publishes all take the access from the
+  `portal_entry` the rule belongs to. A seed still declares `matchScheme`,
+  `matchHost`, and `matchPort` on a rule, and an Admin call still names the entry
+  it joins; the layer that reads the declaration resolves the entry, the way the
+  entry owns the access. Hub drops the unique index on `entry_id` and
+  `match_path_prefix` with it: whether two rules match one request depends on the
+  Web mount paths Hub reads once the applications register their schemas, so the
+  storage layer cannot decide it.
+
 - The Admin API serves cleartext HTTP on its own listener whatever Hub's backend
   mTLS configuration is. It used to demand a certificate the mesh CA issued,
   which no browser holds, so enabling backend mTLS left the Dashboard
@@ -123,12 +152,14 @@ are not part of the public compatibility commitment.
   differed by an unset port can now share an entry and a path, so Hub keeps the
   rule with the explicit port on its path and moves the rule that used the
   default port to a `/migrated` path, logging each move instead of refusing to
-  start on stored data. A seed, Dashboard import, or Admin write that declares a
-  request another rule already serves fails with the rule that serves it, so Hub
-  never rewrites a path the operator did not ask for; a seed that declared both
-  an unset and an explicit default port for one path must drop one of them,
-  because Hub no longer stores one request twice. A rule that leaves `matchPort`
-  unset reports the port Portal serves (`80` or `443`) in Admin API responses
+  start on stored data. Whether two rules match the same request is a question
+  about the Web mount paths Hub reads from the schemas an application registers
+  after Hub starts, so no write answers it: Hub stores what a seed, a Dashboard
+  import, or an Admin call declares, and reports the requests two published rules
+  match once the schemas arrive. A read-only Hub refuses to serve such a seed
+  instead of picking one rule, and a stored configuration keeps both rules until
+  the operator resolves the request from the Dashboard. A rule that leaves
+  `matchPort` unset reports the port Portal serves (`80` or `443`) in Admin API responses
   instead of `0`. Regenerate custom Admin clients and deploy the matching
   Dashboard assets with this release: `PortalRuleCreation` and
   `PortalRuleUpdate` changed.

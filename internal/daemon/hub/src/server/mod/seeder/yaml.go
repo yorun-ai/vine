@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vcode"
 	"gopkg.in/yaml.v3"
@@ -87,8 +88,35 @@ type SeedEntities struct {
 	AppConfigs    []*core.AppConfig
 	PortalSites   []*core.PortalSite
 	PortalEntries []*core.PortalEntry
-	PortalRules   []*core.PortalRule
+	PortalRules   []*SeedRule
 	PortalCerts   []*core.PortalCert
+}
+
+// SeedRule is one Portal rule a seed declares together with the entry it joins:
+// the entry the document names, or the access the rule declares and Hub ensures
+// when it applies the rule.
+type SeedRule struct {
+	Rule *core.PortalRule
+	// EntryName names a Portal entry the same document declares. Empty means the
+	// rule declares the access it joins.
+	EntryName string
+	// Access is the access the rule declares, used when EntryName is empty.
+	Access core.PortalEntry
+}
+
+// ResolveSeedRule points a seed rule at the entry it joins: the entry the seed
+// names, or the entry that serves the access the rule declares. Hub ensures the
+// latter, the way it does for any rule whose access no entry serves yet.
+func ResolveSeedRule(entryCore *core.PortalEntryCore, rule *SeedRule) *core.PortalRule {
+	resolved := *rule.Rule
+	if rule.EntryName != "" {
+		entry, ok := entryCore.FindByName(rule.EntryName)
+		ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %s not found", rule.EntryName))
+		resolved.EntryId = entry.Id
+		return &resolved
+	}
+	resolved.EntryId = entryCore.EnsureAccess(rule.Access.Scheme, rule.Access.Host, rule.Access.Port).Id
+	return &resolved
 }
 
 // ParseSeedEntities decodes a seed document without resolving seed variables and
@@ -109,7 +137,7 @@ func (p *_SettingsYAMLPayload) entities() *SeedEntities {
 		AppConfigs:    make([]*core.AppConfig, 0, len(p.AppConfigs)),
 		PortalSites:   make([]*core.PortalSite, 0, len(p.PortalSites)),
 		PortalEntries: make([]*core.PortalEntry, 0, len(p.PortalEntries)),
-		PortalRules:   make([]*core.PortalRule, 0, len(p.PortalRules)),
+		PortalRules:   make([]*SeedRule, 0, len(p.PortalRules)),
 		PortalCerts:   make([]*core.PortalCert, 0, len(p.PortalCerts)),
 	}
 	for _, item := range p.AppConfigs {
@@ -122,7 +150,7 @@ func (p *_SettingsYAMLPayload) entities() *SeedEntities {
 		entities.PortalEntries = append(entities.PortalEntries, entry.toCorePortalEntry())
 	}
 	for _, rule := range p.PortalRules {
-		entities.PortalRules = append(entities.PortalRules, rule.toCorePortalRule())
+		entities.PortalRules = append(entities.PortalRules, rule.toSeedRule())
 	}
 	for _, cert := range p.PortalCerts {
 		entities.PortalCerts = append(entities.PortalCerts, cert.toCorePortalCert())
@@ -294,20 +322,33 @@ func seedEntityLabel(section string, name string) string {
 	return fmt.Sprintf("%s %q", kind, name)
 }
 
-func (r _PortalRule) toCorePortalRule() *core.PortalRule {
-	return &core.PortalRule{FieldSources: r.Sources,
-		Name:                    r.Name,
-		EntryName:               r.EntryName,
-		MatchScheme:             r.MatchScheme,
-		MatchHost:               r.MatchHost,
-		MatchPort:               r.MatchPort,
-		MatchPathPrefix:         r.MatchPathPrefix,
-		RouteType:               r.RouteType,
-		RouteSiteName:           r.RouteSiteName,
-		RouteRedirectionPattern: r.RouteRedirectionPattern,
-		RoutePathPrefix:         r.RoutePathPrefix,
-		Enabled:                 !r.Disabled,
+// toSeedRule carries the rule itself and the entry it joins: a seed expresses
+// the entry either by naming one it declares or by declaring the access Hub
+// ensures when it applies the rule.
+func (r _PortalRule) toSeedRule() *SeedRule {
+	return &SeedRule{
+		Rule: &core.PortalRule{FieldSources: r.Sources,
+			Name:                    r.Name,
+			MatchPathPrefix:         r.MatchPathPrefix,
+			RouteType:               r.RouteType,
+			RouteSiteName:           r.RouteSiteName,
+			RouteRedirectionPattern: r.RouteRedirectionPattern,
+			RoutePathPrefix:         r.RoutePathPrefix,
+			Enabled:                 !r.Disabled,
+		},
+		EntryName: r.EntryName,
+		Access: core.PortalEntry{
+			Scheme: r.MatchScheme,
+			Host:   r.MatchHost,
+			Port:   r.MatchPort,
+		},
 	}
+}
+
+// toCorePortalRule returns the rule the seed declares, without resolving the
+// entry it belongs to.
+func (r _PortalRule) toCorePortalRule() *core.PortalRule {
+	return r.toSeedRule().Rule
 }
 
 // Portal site

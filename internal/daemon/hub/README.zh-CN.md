@@ -39,7 +39,7 @@ internal/daemon/hub/
 
 ## Dashboard 打包
 
-- 调试时使用 `VINE_HUB_DASHBOARD_DEV_PROXY` 环境变量，直接转发请求到启动的 `pnpm dev`。
+- 调试时设置 `VINE_HUB_DASHBOARD_DEV_PROXY`（非空即可），Dashboard 就由 `script/dev-hub-dashboard.sh` 在 `localhost:7098` 启动的 Vite 服务提供；该服务没在跑时 Hub 回落到内嵌构建。
 - 修改 Dashboard 源码后，在 `src/dashboard` 运行 `pnpm typecheck` 和 `pnpm build`。
 - Dashboard 源码或它所调用的 admin API 变化时，必须随该改动重新打包并提交嵌入的 `dashboard.tar.zst`：嵌入产物必须始终与它调用的 admin API 匹配。仓库使用 squash merge，分支只有最终产物会进入 main。
 - 面向用户的文案需要同步更新 `src/i18n/dictionaries/cn.ts` 和 `en.ts`。
@@ -82,7 +82,7 @@ Hub 的层次职责必须保持清晰：
   它的规则。
 - Hub 在 admin 模块自己的监听上提供 Admin API 与 Dashboard（`--admin-listen`，
   默认 `127.0.0.1:7099`，与 Control API 的 `--control-listen` 对称）：该监听在 RPC
-  路径上响应 API，其它路径
+  路径 `/api/invoke` 上响应 API（Dashboard 调用的就是该路径），其它路径
   都返回内嵌的 Dashboard 构建产物，Dashboard 因此不再属于 Portal 配置——Hub 不为
   它创建任何 entry、站点或规则，Portal 也不会路由 Dashboard。
 - Portal 站点、entry、规则与证书在库里都有 `enabled` 开关（默认启用），Dashboard
@@ -107,11 +107,11 @@ Hub 的层次职责必须保持清晰：
 - Admin API 通过 entry 触达规则的访问配置：`PortalRuleCreation` 指定新规则属于哪个
   entry，`PortalRuleUpdate` 完全不能修改访问配置。seed YAML 仍在规则上声明访问
   配置，由 Hub 在应用 seed 时聚合为 entry。
-- 两条规则不能匹配同一个请求。Portal 按最长路径前缀解析匹配规则，因此 Hub 会
-  拒绝访问配置与 `matchPathPrefix` 已被其他规则占用的规则，并报出已占用该请求的
-  规则名。seed 或 Dashboard 导入重复声明同一请求时
-  同样报错，Hub 不会通过静默改写路径启动：seed 就是数据源，应在那里修正。只有
-  访问配置迁移会自行消解这类冲突，因为已存储的数据不靠人工修改。
+- 两条规则匹配同一个请求时行为是「报告」而不是「拒绝」：规则匹配的路径由 Web
+  声明的 mount 决定，而这些 schema 是应用在 Hub 启动之后才注册的，所以写入时
+  无法判断。Hub 在 schema 到位后审计并报出重复的请求（`no-db` 的只读配置直接
+  拒绝启动，因为没有可修复的界面；有数据库的配置继续运行，由操作者在 Dashboard
+  上解决）。只有访问配置迁移会自行消解这类冲突，因为已存储的数据不靠人工修改。
 - 数据库表结构必须同时更新 `src/server/repo/db/model/sql/sqlite` 和 `src/server/repo/db/model/sql/pgsql`。
 - Redis key、Redis value JSON 和事件格式属于 Hub、Link、Portal 之间的协议；修改时必须同步所有生产者、消费者和测试。
 - `watchserver` 是运行时分发层，不应成为绕过 Repo/Core 直接实现业务规则的第二套状态源。

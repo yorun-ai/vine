@@ -12,16 +12,22 @@ import (
 	"time"
 
 	"go.yorun.ai/vine/internal/app"
-	coreapp "go.yorun.ai/vine/internal/core/app"
 	"go.yorun.ai/vine/internal/core/logger"
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
+	"go.yorun.ai/vine/internal/core/web/proxy"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	impl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin"
 	debugimpl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin/debug"
 	"go.yorun.ai/vine/internal/util/httputil"
 )
 
-const shutdownTimeout = 10 * time.Second
+// shutdownTimeout bounds the graceful stop of the listener. A test shortens it.
+var shutdownTimeout = 10 * time.Second
+
+// apiPath is where the admin listener answers the Admin API. The listener owns
+// the path, because it owns the Dashboard build that calls it, while the runtime
+// path every component reaches other services through belongs to the runtime.
+const apiPath = "/api/invoke"
 
 var (
 	adminLogger = logger.New("daemon:hub:admin")
@@ -38,11 +44,12 @@ type Server struct {
 	Flag            *flag.Flag          `inject:""`
 	InternalRuntime app.InternalRuntime `inject:""`
 
-	rpcHTTPHandler   http.Handler
-	rpcHandler       rpcspec.RpcHandler
-	dashboardHandler http.Handler
-	httpServer       *http.Server
-	wg               sync.WaitGroup
+	rpcHTTPHandler    http.Handler
+	rpcHandler        rpcspec.RpcHandler
+	dashboardHandler  http.Handler
+	dashboardDevProxy *proxy.ReverseProxy
+	httpServer        *http.Server
+	wg                sync.WaitGroup
 }
 
 func (s *Server) BeforeAppStart() error {
@@ -52,6 +59,7 @@ func (s *Server) BeforeAppStart() error {
 	}
 	s.rpcHTTPHandler, s.rpcHandler = s.InternalRuntime.AdditionalServicer(HandlerTypes()...)
 	s.dashboardHandler = DashboardHandler()
+	s.dashboardDevProxy = DashboardDevProxy()
 
 	return s.startHTTP()
 }
@@ -76,10 +84,17 @@ func HandlerTypes() []reflect.Type {
 }
 
 func (s *Server) BeforeAppStop() {
+	// The Dashboard development proxy ends first: it cancels the requests it
+	// forwarded, so a request the development server does not answer cannot hold
+	// the listener open while it stops.
+	if s.dashboardDevProxy != nil {
+		s.dashboardDevProxy.Close()
+	}
 	s.stopHTTP()
 	s.rpcHTTPHandler = nil
 	s.rpcHandler = nil
 	s.dashboardHandler = nil
+	s.dashboardDevProxy = nil
 }
 
 func (s *Server) startHTTP() error {
@@ -128,20 +143,23 @@ func (s *Server) stopHTTP() {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, request *http.Request) {
-	prefix := coreapp.PathRpcInvoke
-	if request.URL.Path != prefix && !strings.HasPrefix(request.URL.Path, prefix+"/") {
-		// Everything outside the Admin API is the Dashboard build, so the
-		// Dashboard reaches Hub on the same origin as the API it calls.
-		s.dashboardHandler.ServeHTTP(w, request)
+	if request.URL.Path == apiPath || strings.HasPrefix(request.URL.Path, apiPath+"/") {
+		path := strings.TrimPrefix(request.URL.Path, apiPath)
+		if path == "" {
+			path = "/"
+		}
+		next := request.Clone(request.Context())
+		next.URL.Path = path
+		next.RequestURI = path
+		s.rpcHTTPHandler.ServeHTTP(w, next)
 		return
 	}
 
-	path := strings.TrimPrefix(request.URL.Path, prefix)
-	if path == "" {
-		path = "/"
+	// Everything outside the Admin API is the Dashboard, so it reaches Hub on the
+	// same origin as the API it calls: the development server a developer runs
+	// beside Hub when they asked for one, and the embedded build otherwise.
+	if s.dashboardDevProxy != nil && s.dashboardDevProxy.ServeHTTP(w, request) {
+		return
 	}
-	next := request.Clone(request.Context())
-	next.URL.Path = path
-	next.RequestURI = path
-	s.rpcHTTPHandler.ServeHTTP(w, next)
+	s.dashboardHandler.ServeHTTP(w, request)
 }

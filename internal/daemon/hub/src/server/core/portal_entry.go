@@ -2,7 +2,10 @@ package core
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"strings"
+	"unicode"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/util/vslice"
@@ -134,6 +137,13 @@ func (*PortalEntryCore) Validate(entry PortalEntry) PortalEntry {
 	return entry
 }
 
+// ValidateAccess checks and normalizes the access a caller declares for an entry
+// without accessing storage, so a seed fails on a bad access before Hub applies
+// the rule that declares it.
+func (*PortalEntryCore) ValidateAccess(access PortalEntry) PortalEntry {
+	return normalizePortalEntry(access)
+}
+
 // Save creates or replaces a complete user entry by name, preserving an existing
 // ID, the way a seed applies its entities. Rules reference the entry, so replacing
 // an entry republishes the rules it routes with the access it now serves.
@@ -147,11 +157,8 @@ func (m *PortalEntryCore) Save(entry PortalEntry) *PortalEntry {
 		ex.PanicNew(ex.OperationFailed,
 			ex.F("portal entry %q already serves %s", current.Name, portalEntryAccessText(entry)))
 	}
-	// Replacing an entry moves the access of every rule it routes, so a request
-	// another rule already serves fails here as well.
-	m.checkAccessChangeMatchesUnique(entry.Id, &entry)
 	m.PortalEntryRepo.Save(&entry)
-	m.saveRules(entry.Id, &entry, entry.Id)
+	m.saveRules(entry.Id, entry.Id)
 	return &entry
 }
 
@@ -187,6 +194,17 @@ func (m *PortalEntryCore) Get(id int) *PortalEntry {
 // FindByName returns the entry Hub labels with the name.
 func (m *PortalEntryCore) FindByName(name string) (*PortalEntry, bool) {
 	return m.PortalEntryRepo.GetByName(name)
+}
+
+// FindById returns the entry with the id.
+func (m *PortalEntryCore) FindById(id int) (*PortalEntry, bool) {
+	return m.PortalEntryRepo.GetById(id)
+}
+
+// FindByAccess returns the entry that serves the access.
+func (m *PortalEntryCore) FindByAccess(scheme string, host string, port int) (*PortalEntry, bool) {
+	access := normalizePortalEntry(PortalEntry{Scheme: scheme, Host: host, Port: port})
+	return m.PortalEntryRepo.GetByAccess(access.Scheme, access.Host, access.Port)
 }
 
 // EnsureAccess returns the user entry rules with this access belong to, and
@@ -235,8 +253,7 @@ func (m *PortalEntryCore) UpdateAccess(scheme string, host string, port int, upd
 		next.Enabled = *update.Enabled
 	}
 	if target, ok := m.PortalEntryRepo.GetByAccess(next.Scheme, next.Host, next.Port); ok && target.Id != current.Id {
-		m.checkAccessChangeMatchesUnique(current.Id, &next)
-		m.saveRules(current.Id, &next, target.Id)
+		m.saveRules(current.Id, target.Id)
 		m.PortalEntryRepo.Remove(current.Id)
 		return m.view(*target)
 	}
@@ -245,31 +262,10 @@ func (m *PortalEntryCore) UpdateAccess(scheme string, host string, port int, upd
 		return m.view(*current)
 	}
 
-	m.checkAccessChangeMatchesUnique(current.Id, &next)
 	next.Id = current.Id
 	m.PortalEntryRepo.Save(&next)
-	m.saveRules(next.Id, &next, next.Id)
+	m.saveRules(next.Id, next.Id)
 	return m.view(next)
-}
-
-// checkAccessChangeMatchesUnique rejects an access change that would make a rule
-// of the entry match the same request as a rule of another entry. Portal resolves
-// matching rules by their longest path prefix, so two rules that match
-// identically have no defined order.
-func (m *PortalEntryCore) checkAccessChangeMatchesUnique(entryId int, access *PortalEntry) {
-	stored := m.PortalRuleRepo.List()
-	candidates := make([]*PortalRule, 0, len(stored))
-	for _, rule := range stored {
-		if rule.EntryId != entryId {
-			continue
-		}
-		candidate := *rule
-		candidate.MatchScheme = access.Scheme
-		candidate.MatchHost = access.Host
-		candidate.MatchPort = access.Port
-		candidates = append(candidates, &candidate)
-	}
-	checkPortalRuleMatchesUnique(stored, candidates...)
 }
 
 // PortalEntryName returns the name Hub derives for an entry it creates on its
@@ -298,8 +294,26 @@ func normalizePortalEntry(entry PortalEntry) PortalEntry {
 	entry.Host = strings.TrimSpace(entry.Host)
 	ex.PanicNewIfNot(entry.Scheme == "http" || entry.Scheme == "https", ex.OperationFailed, ex.F("unknown portal entry scheme: %s", entry.Scheme))
 	ex.PanicNewIfNot(entry.Port >= 0 && entry.Port <= 65535, ex.OperationFailed, "portal entry port must be between 0 and 65535")
+	ex.PanicNewIfNot(portalEntryHostAccepted(entry.Host), ex.OperationFailed, "portal entry host must be a hostname or IP without a port")
 	entry.Port = portalEntrySchemePort(entry.Scheme, entry.Port)
 	return entry
+}
+
+// portalEntryHostAccepted reports whether a host Hub stores is a hostname or IP
+// address without a port, so the access an entry declares is a request Portal
+// can match.
+func portalEntryHostAccepted(host string) bool {
+	if host == "" {
+		return true
+	}
+	if strings.ContainsAny(host, "/?#@*\\") || strings.IndexFunc(host, unicode.IsSpace) >= 0 || strings.IndexFunc(host, unicode.IsControl) >= 0 {
+		return false
+	}
+	if net.ParseIP(host) != nil {
+		return true
+	}
+	parsed, err := url.Parse("//" + host)
+	return err == nil && parsed.Hostname() == host && !strings.ContainsAny(host, ":[]")
 }
 
 func isPortalEntryRuleRouteType(value string) bool {
@@ -348,16 +362,13 @@ func (m *PortalEntryCore) view(entry PortalEntry) PortalEntryView {
 }
 
 // saveRules points the rules of one entry at another entry and saves them, so
-// Hub republishes them with the access they now resolve.
-func (m *PortalEntryCore) saveRules(from int, access *PortalEntry, to int) {
+// Hub republishes them with the access they now resolve through the entry.
+func (m *PortalEntryCore) saveRules(from int, to int) {
 	for _, rule := range m.PortalRuleRepo.List() {
 		if rule.EntryId != from {
 			continue
 		}
 		rule.EntryId = to
-		rule.MatchScheme = access.Scheme
-		rule.MatchHost = access.Host
-		rule.MatchPort = access.Port
 		m.PortalRuleRepo.Save(rule)
 	}
 }

@@ -420,6 +420,7 @@ func TestHubConfigurationLifecycle(t *testing.T) {
 			require.False(t, access.ReadOnly())
 			module := injector.Get(di.T[*initializer.Initializer]()).Interface().(*initializer.Initializer)
 			siteRepo := injector.Get(di.T[core.PortalSiteRepo]()).Interface().(core.PortalSiteRepo)
+			entryRepo := injector.Get(di.T[core.PortalEntryRepo]()).Interface().(core.PortalEntryRepo)
 			appConfigRepo := injector.Get(di.T[core.AppConfigRepo]()).Interface().(core.AppConfigRepo)
 			ruleRepo := injector.Get(di.T[core.PortalRuleRepo]()).Interface().(core.PortalRuleRepo)
 			certRepo := injector.Get(di.T[core.PortalCertRepo]()).Interface().(core.PortalCertRepo)
@@ -441,7 +442,11 @@ func TestHubConfigurationLifecycle(t *testing.T) {
 				}},
 				{"remove site", func() { siteRepo.Remove(-1) }},
 				{"save rule", func() {
-					ruleRepo.Save(&core.PortalRule{Name: "new.rule", RouteType: "SITE", RouteSiteName: "new.site"})
+					// A rule belongs to the entry that serves its access, so Hub
+					// stores the entry before the rule.
+					entry := &core.PortalEntry{Name: "http:80", Scheme: "http", Port: 80, Enabled: true}
+					entryRepo.Save(entry)
+					ruleRepo.Save(&core.PortalRule{Name: "new.rule", EntryId: entry.Id, RouteType: "SITE", RouteSiteName: "new.site"})
 				}},
 				{"remove rule", func() { ruleRepo.Remove(-1) }},
 				{"save cert", func() { certRepo.Save(&core.PortalCert{Name: "new.cert", Domains: []string{"demo.local"}}) }},
