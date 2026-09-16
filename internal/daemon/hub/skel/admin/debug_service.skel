@@ -157,10 +157,6 @@ data ServiceDebugInvokeResponse {
 
 @desc("Hub Dashboard Service debugging service")
 api service ServiceDebugApiService {
-    for AdminActor
-
-    noauth
-
     @desc("List application instances")
     method listAppInstances {
         output list<ServiceDebugAppInstance>

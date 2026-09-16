@@ -17,6 +17,9 @@ data PortalEntry {
     @desc("Entry rule list")
     rules: list<PortalEntryRule>
 
+    @desc("Whether Hub publishes the rules of this entry to Portal")
+    enabled: bool
+
 }
 
 @desc("Portal access entry configuration update parameters")
@@ -29,6 +32,27 @@ data PortalEntryAccessUpdate {
 
     @desc("Entry port")
     port: int
+
+    @desc("Whether Hub publishes the rules of this entry to Portal")
+    enabled: bool?
+}
+
+@desc("Portal access entry creation parameters")
+data PortalEntryCreation {
+    @desc("Entry name")
+    name: string
+
+    @desc("Entry protocol")
+    scheme: string
+
+    @desc("Match Host, empty string means no restriction")
+    host: string
+
+    @desc("Entry port")
+    port: int
+
+    @desc("Whether Hub publishes the rules of this entry to Portal; defaults to true")
+    enabled: bool?
 }
 
 @desc("Portal access entry rules")
@@ -42,14 +66,20 @@ data PortalEntryRule {
 
 @desc("Hub's Portal access entry service, called by the Portal admin client")
 api service PortalEntryApiService {
-    for AdminActor
-
-    noauth
-
     @desc("List Portal access entries")
     method list {
         @desc("Portal access entry list")
         output list<PortalEntry>
+    }
+
+    @desc("Create a Portal access entry")
+    method create {
+        input {
+            @desc("Portal access entry creation parameters")
+            creation: PortalEntryCreation
+        }
+        @desc("Portal access entry")
+        output PortalEntry
     }
 
     @desc("Modify Portal access configuration")
@@ -69,5 +99,19 @@ api service PortalEntryApiService {
         }
         @desc("Portal access entry")
         output PortalEntry
+    }
+
+    @desc("Delete a Portal access entry that routes no rule")
+    method remove {
+        input {
+            @desc("Entry protocol")
+            scheme: string
+
+            @desc("Match Host, empty string means no restriction")
+            host: string
+
+            @desc("Entry port")
+            port: int
+        }
     }
 }

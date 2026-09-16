@@ -5,14 +5,8 @@ data PortalRuleCreation {
     @desc("Rule name")
     name: string
 
-    @desc("Matching protocol")
-    matchScheme: string
-
-    @desc("Match Host, empty string means no restriction")
-    matchHost: string
-
-    @desc("Match matchPort, 0 means no restriction")
-    matchPort: int
+    @desc("Name of the Portal access entry the rule belongs to")
+    entryName: string
 
     @desc("Match path prefix, empty string means match all paths")
     matchPathPrefix: string
@@ -28,6 +22,9 @@ data PortalRuleCreation {
 
     @desc("Target site path prefix; empty means strip the matching prefix only")
     routePathPrefix: string?
+
+    @desc("Whether Hub publishes this rule to Portal")
+    enabled: bool?
 }
 
 @desc("Portal entry rules")
@@ -71,6 +68,9 @@ data PortalRule {
     @desc("Field sources; only returned by get, create and update")
     fieldSources: list<FieldSource>
 
+    @desc("Whether Hub publishes this rule to Portal")
+    enabled: bool
+
 }
 
 @desc("Portal entry rule list item")
@@ -110,21 +110,48 @@ data PortalRuleListItem {
 
     @desc("Effective route path prefix after site mount path resolution")
     resolvedRoutePathPrefix: string
+
+    @desc("Whether Hub publishes this rule to Portal")
+    enabled: bool
+}
+
+@desc("Portal entry rules that match the same request")
+data PortalRuleConflict {
+    @desc("Rule ID")
+    ruleId: int
+
+    @desc("Rule name")
+    rule: string
+
+    @desc("ID of the rule that already matches the request")
+    conflictRuleId: int
+
+    @desc("Name of the rule that already matches the request")
+    conflictRule: string
+
+    @desc("Name of the Portal entry the rules belong to")
+    entry: string
+
+    @desc("Request both rules match")
+    match: string
+
+    @desc("ID of the rule Hub publishes for the request")
+    publishedRuleId: int
+
+    @desc("Name of the rule Hub publishes for the request")
+    publishedRule: string
+
+    @desc("ID of the rule Hub leaves out, because the published rule sorts first")
+    suppressedRuleId: int
+
+    @desc("Name of the rule Hub leaves out, because the published rule sorts first")
+    suppressedRule: string
 }
 
 @desc("Portal entry rule update parameters")
 data PortalRuleUpdate {
     @desc("Rule name")
     name: string?
-
-    @desc("Matching protocol")
-    matchScheme: string?
-
-    @desc("Match Host, empty string means no restriction")
-    matchHost: string?
-
-    @desc("Match matchPort, 0 means no restriction")
-    matchPort: int?
 
     @desc("Match path prefix, empty string means match all paths")
     matchPathPrefix: string?
@@ -140,31 +167,18 @@ data PortalRuleUpdate {
 
     @desc("Target site path prefix; empty means strip the matching prefix only")
     routePathPrefix: string?
-}
 
-@desc("Hub Dashboard access entry")
-data PortalDashboardAccess {
-    @desc("Entry protocol")
-    scheme: string
-
-    @desc("Match Host, empty string means no restriction")
-    host: string
-
-    @desc("Entry port")
-    port: int
-
-    @desc("Match path prefix")
-    pathPrefix: string
-
-    @desc("Whether to allow modification of Dashboard access entry")
-    canUpdate: bool
+    @desc("Whether Hub publishes this rule to Portal")
+    enabled: bool?
 }
 
 @desc("Hub's Portal entry rule service, called by the Portal admin client")
 api service PortalRuleApiService {
-    for AdminActor
-
-    noauth
+    @desc("List Portal entry rules that match the same request")
+    method listConflicts {
+        @desc("Portal entry rule conflicts")
+        output list<PortalRuleConflict>
+    }
 
     @desc("List Portal entry rules")
     method list {
@@ -213,25 +227,4 @@ api service PortalRuleApiService {
         }
     }
 
-    @desc("Get the Hub Dashboard access entry")
-    method getDashboardAccess {
-        @desc("Hub Dashboard access entry")
-        output PortalDashboardAccess
-    }
-
-    @desc("Modify Hub Dashboard access entry")
-    method updateDashboardAccess {
-        input {
-            @desc("Hub Dashboard entry protocol")
-            scheme: string
-            @desc("Hub Dashboard entry host")
-            host: string
-            @desc("Hub Dashboard entry port")
-            port: int
-            @desc("Hub Dashboard entry path prefix")
-            pathPrefix: string
-        }
-        @desc("Hub Dashboard entry rules")
-        output list<PortalRule>
-    }
 }

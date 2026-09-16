@@ -52,9 +52,9 @@ type Option struct {
 	SQLiteFile string
 	// PostgresURL selects PostgreSQL persistence and specifies its connection URL.
 	PostgresURL string
-
-	// DashboardURL is the optional URL from which Hub dashboard assets are loaded.
-	DashboardURL string
+	// AdminListen is the in-process Hub's Admin API and Dashboard address. Empty
+	// serves no Admin API; the API carries no authentication.
+	AdminListen string
 }
 
 func (o Option) isZero() bool {
@@ -63,7 +63,7 @@ func (o Option) isZero() bool {
 		!o.NoDB &&
 		o.SQLiteFile == "" &&
 		o.PostgresURL == "" &&
-		o.DashboardURL == ""
+		o.AdminListen == ""
 }
 
 // New constructs an application with an in-process Hub, Portal, and Link.
@@ -127,63 +127,18 @@ func (a *_App) StartAndWait() {
 }
 
 const (
-	flagSQLiteFile      = vinecli.FlagHubDBSQLiteFile
-	flagPostgresURL     = vinecli.FlagHubDBPostgresURL
-	flagSeedHubDataFile = vinecli.FlagSeedHubDataFile
-	flagDashboardURL    = vinecli.FlagHubDashboardURL
+	flagSQLiteFile      = vinecli.FlagStandaloneHubDBSQLiteFile
+	flagPostgresURL     = vinecli.FlagStandaloneHubDBPostgresURL
+	flagSeedHubDataFile = vinecli.FlagStandaloneHubSeedDataFile
 
-	envSQLiteFile      = vinecli.EnvHubDBSQLiteFile
-	envPostgresURL     = vinecli.EnvHubDBPostgresURL
-	envSeedHubDataFile = vinecli.EnvSeedHubDataFile
-	envDashboardURL    = vinecli.EnvHubDashboardURL
+	envSQLiteFile      = vinecli.EnvStandaloneHubDBSQLiteFile
+	envPostgresURL     = vinecli.EnvStandaloneHubDBPostgresURL
+	envSeedHubDataFile = vinecli.EnvStandaloneHubSeedDataFile
 )
 
 func (a *_App) initInfra() {
 	flag := &hubflag.Flag{}
-	appcli.Handle(
-		&ucli.BoolFlag{
-			Name:        vinecli.FlagHubNoDB,
-			Sources:     ucli.EnvVars(vinecli.EnvHubNoDB),
-			Usage:       "use no persistent database (default); requires seed-hub-data-file or Option.SeedHubData; configuration is read-only",
-			Destination: &flag.NoDB,
-		},
-		&ucli.StringFlag{
-			Name:        flagSQLiteFile,
-			Sources:     ucli.EnvVars(envSQLiteFile),
-			Usage:       "hub SQLite file",
-			Destination: &flag.DBSQLiteFile,
-		},
-		&ucli.StringFlag{
-			Name:        flagPostgresURL,
-			Sources:     ucli.EnvVars(envPostgresURL),
-			Usage:       "hub PostgreSQL URL",
-			Destination: &flag.DBPostgresURL,
-		},
-		&ucli.StringFlag{
-			Name:        flagSeedHubDataFile,
-			Sources:     ucli.EnvVars(envSeedHubDataFile),
-			Usage:       "seed YAML file",
-			Destination: &flag.SeedHubDataFile,
-		},
-		&ucli.StringFlag{
-			Name:        vinecli.FlagSeedHubSourceFile,
-			Sources:     ucli.EnvVars(vinecli.EnvSeedHubSourceFile),
-			Usage:       "seed source YAML file",
-			Destination: &flag.SeedHubSourceFile,
-		},
-		&ucli.StringFlag{
-			Name:        vinecli.FlagSeedHubVarsFile,
-			Sources:     ucli.EnvVars(vinecli.EnvSeedHubVarsFile),
-			Usage:       "seed vars YAML file",
-			Destination: &flag.SeedHubVarsFile,
-		},
-		&ucli.StringFlag{
-			Name:        flagDashboardURL,
-			Sources:     ucli.EnvVars(envDashboardURL),
-			Usage:       "hub dashboard URL",
-			Destination: &flag.DashboardURLRaw,
-		},
-	)
+	appcli.Handle(flags(flag)...)
 	applyOption(flag, a.option)
 
 	a.hub = internalapp.NewInternalInproc[*hubapp.HubApp](internalapp.With(flag))
@@ -193,6 +148,54 @@ func (a *_App) initInfra() {
 	a.portal = internalapp.NewInternalInproc[*portalapp.PortalApp](internalapp.With(&portalflag.Flag{
 		HubInprocMode: true,
 	}))
+}
+
+// flags lists the Hub parameters the business binary accepts.
+func flags(flag *hubflag.Flag) []ucli.Flag {
+	return []ucli.Flag{
+		&ucli.BoolFlag{
+			Name:        vinecli.FlagStandaloneHubNoDB,
+			Sources:     ucli.EnvVars(vinecli.EnvStandaloneHubNoDB),
+			Usage:       "use no persistent database (default); requires the seed data file or Option.SeedHubData; configuration is read-only",
+			Destination: &flag.NoDB,
+		},
+		&ucli.StringFlag{
+			Name:        flagSQLiteFile,
+			Sources:     ucli.EnvVars(envSQLiteFile),
+			Usage:       "in-process Hub SQLite database file",
+			Destination: &flag.DBSQLiteFile,
+		},
+		&ucli.StringFlag{
+			Name:        flagPostgresURL,
+			Sources:     ucli.EnvVars(envPostgresURL),
+			Usage:       "in-process Hub PostgreSQL database URL",
+			Destination: &flag.DBPostgresURL,
+		},
+		&ucli.StringFlag{
+			Name:        flagSeedHubDataFile,
+			Sources:     ucli.EnvVars(envSeedHubDataFile),
+			Usage:       "in-process Hub seed YAML file",
+			Destination: &flag.SeedHubDataFile,
+		},
+		&ucli.StringFlag{
+			Name:        vinecli.FlagStandaloneHubSeedSourceFile,
+			Sources:     ucli.EnvVars(vinecli.EnvStandaloneHubSeedSourceFile),
+			Usage:       "in-process Hub seed source YAML file",
+			Destination: &flag.SeedHubSourceFile,
+		},
+		&ucli.StringFlag{
+			Name:        vinecli.FlagStandaloneHubSeedVarsFile,
+			Sources:     ucli.EnvVars(vinecli.EnvStandaloneHubSeedVarsFile),
+			Usage:       "in-process Hub seed vars YAML file",
+			Destination: &flag.SeedHubVarsFile,
+		},
+		&ucli.StringFlag{
+			Name:        vinecli.FlagStandaloneHubAdminListen,
+			Sources:     ucli.EnvVars(vinecli.EnvStandaloneHubAdminListen),
+			Usage:       "in-process Hub Admin API and Dashboard listen address; unauthenticated, so loopback unless the network is trusted",
+			Destination: &flag.AdminListen,
+		},
+	}
 }
 
 func applyOption(flag *hubflag.Flag, option Option) {
@@ -215,14 +218,14 @@ func applyOption(flag *hubflag.Flag, option Option) {
 	if option.PostgresURL != "" {
 		flag.DBPostgresURL = option.PostgresURL
 	}
+	if option.AdminListen != "" {
+		flag.AdminListen = option.AdminListen
+	}
 	if option.SeedHubData != "" {
 		flag.SeedHubData = option.SeedHubData
 	}
 	if option.SeedHubDataFile != "" {
 		flag.SeedHubDataFile = option.SeedHubDataFile
-	}
-	if option.DashboardURL != "" {
-		flag.DashboardURLRaw = option.DashboardURL
 	}
 }
 

@@ -55,7 +55,6 @@ portalSites:
     actorSkelName: demo.AdminActor
     actorVia: client
     webName: demo.AdminWeb
-    builtIn: true
 portalRules:
   - name: admin
     scheme: https
@@ -65,7 +64,6 @@ portalRules:
     targetType: SITE
     siteName: admin@demo.app
     redirectionPattern: ""
-    builtIn: true
 portalCerts:
   - name: admin-cert
     issuer: ignored
@@ -90,7 +88,8 @@ portalCerts:
 				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 				MetadataRepo:  metadataRepo,
 				Logger:        logger.New("vine:test"),
-				RuleCore:      newTestRuleCore(ruleRepo),
+				EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo),
+				RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
 				CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
 				SiteCore:      newTestSiteCore(entryRepo),
 			}
@@ -105,13 +104,11 @@ portalCerts:
 			require.True(t, ok)
 			assert.Equal(t, "/admin", rule.MatchPathPrefix)
 			assert.Equal(t, "admin@demo.app", rule.RouteSiteName)
-			assert.False(t, rule.BuiltIn)
 
 			entry, ok := entryRepo.GetByName("admin@demo.app")
 			require.True(t, ok)
 			assert.Equal(t, "demo.AdminActor", entry.ActorSkelName)
 			assert.Equal(t, "demo.AdminWeb", entry.WebName)
-			assert.False(t, entry.BuiltIn)
 			assert.Equal(t, "/mounted", entry.WebMountPath)
 			published, exists := watchServer.Get(watched.FormatPortalSiteKey(entry.Name))
 			require.True(t, exists)
@@ -163,151 +160,6 @@ func newTestSeederMTLSFlag() *flag.Flag {
 	return flags
 }
 
-func TestSeederMarksSeededWhenSeedHubDataFileIsEmpty(t *testing.T) {
-	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
-
-	seeder := &Seeder{
-		Flag:          newTestSeederFlag(""),
-		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
-		MetadataRepo:  metadataRepo,
-		Logger:        logger.New("vine:test"),
-		RuleCore:      newTestRuleCore(ruleRepo),
-		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
-		SiteCore:      newTestSiteCore(entryRepo),
-	}
-
-	seeder.DIInit()
-
-	assert.True(t, metadataRepo.IsSeeded())
-	_, ok := configRepo.GetByName("feature.flag")
-	assert.False(t, ok)
-
-	rule, ok := ruleRepo.GetByName(dashboardApiRuleName)
-	require.True(t, ok)
-	assert.Equal(t, "http", rule.MatchScheme)
-	assert.Equal(t, "", rule.MatchHost)
-	assert.Equal(t, 7099, rule.MatchPort)
-	assert.Equal(t, "/api", rule.MatchPathPrefix)
-	entry, ok := entryRepo.GetByName(DashboardRpcCoreEntry.Name)
-	require.True(t, ok)
-	assert.Equal(t, DashboardRpcCoreEntry.ActorSkelName, entry.ActorSkelName)
-}
-
-func TestSeederUsesHTTPSForDefaultDashboardWithMTLS(t *testing.T) {
-	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
-	seeder := &Seeder{
-		Flag:          newTestSeederMTLSFlag(),
-		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
-		MetadataRepo:  metadataRepo,
-		Logger:        logger.New("vine:test"),
-		RuleCore:      newTestRuleCore(ruleRepo),
-		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
-		SiteCore:      newTestSiteCore(entryRepo),
-	}
-
-	seeder.DIInit()
-
-	apiRule, ok := ruleRepo.GetByName(dashboardApiRuleName)
-	require.True(t, ok)
-	assert.Equal(t, "https", apiRule.MatchScheme)
-	assert.Equal(t, 7099, apiRule.MatchPort)
-	webRule, ok := ruleRepo.GetByName(dashboardWebRuleName)
-	require.True(t, ok)
-	assert.Equal(t, "https", webRule.MatchScheme)
-	assert.Equal(t, 7099, webRule.MatchPort)
-}
-
-func TestSeederMigratesLegacyDashboardDefaultsToHTTPSWithMTLS(t *testing.T) {
-	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
-	ruleRepo.Save(&core.PortalRule{
-		Name:            dashboardApiRuleName,
-		MatchScheme:     "http",
-		MatchPort:       7099,
-		MatchPathPrefix: "/api",
-		RouteType:       "SITE",
-		RouteSiteName:   DashboardRpcCoreEntry.Name,
-		BuiltIn:         true,
-	})
-	ruleRepo.Save(&core.PortalRule{
-		Name:            dashboardWebRuleName,
-		MatchScheme:     "http",
-		MatchPort:       7099,
-		MatchPathPrefix: "/",
-		RouteType:       "SITE",
-		RouteSiteName:   DashboardWebCoreEntry.Name,
-		BuiltIn:         true,
-	})
-	metadataRepo.MarkSeeded()
-	seeder := &Seeder{
-		Flag:          newTestSeederMTLSFlag(),
-		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
-		MetadataRepo:  metadataRepo,
-		Logger:        logger.New("vine:test"),
-		RuleCore:      newTestRuleCore(ruleRepo),
-		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
-		SiteCore:      newTestSiteCore(entryRepo),
-	}
-
-	seeder.DIInit()
-
-	apiRule, ok := ruleRepo.GetByName(dashboardApiRuleName)
-	require.True(t, ok)
-	assert.Equal(t, "https", apiRule.MatchScheme)
-	webRule, ok := ruleRepo.GetByName(dashboardWebRuleName)
-	require.True(t, ok)
-	assert.Equal(t, "https", webRule.MatchScheme)
-}
-
-func TestSeederPreservesCustomDashboardAccessWithMTLSDefault(t *testing.T) {
-	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
-	for _, rule := range []*core.PortalRule{
-		{
-			Name:            dashboardApiRuleName,
-			MatchScheme:     "https",
-			MatchHost:       "hub.example.com",
-			MatchPort:       8443,
-			MatchPathPrefix: "/custom-api",
-			RouteType:       "SITE",
-			RouteSiteName:   DashboardRpcCoreEntry.Name,
-			BuiltIn:         true,
-		},
-		{
-			Name:            dashboardWebRuleName,
-			MatchScheme:     "https",
-			MatchHost:       "hub.example.com",
-			MatchPort:       8443,
-			MatchPathPrefix: "/custom",
-			RouteType:       "SITE",
-			RouteSiteName:   DashboardWebCoreEntry.Name,
-			BuiltIn:         true,
-		},
-	} {
-		ruleRepo.Save(rule)
-	}
-	metadataRepo.MarkSeeded()
-	seeder := &Seeder{
-		Flag:          newTestSeederMTLSFlag(),
-		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
-		MetadataRepo:  metadataRepo,
-		Logger:        logger.New("vine:test"),
-		RuleCore:      newTestRuleCore(ruleRepo),
-		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
-		SiteCore:      newTestSiteCore(entryRepo),
-	}
-
-	seeder.DIInit()
-
-	apiRule, ok := ruleRepo.GetByName(dashboardApiRuleName)
-	require.True(t, ok)
-	assert.Equal(t, "https", apiRule.MatchScheme)
-	assert.Equal(t, "hub.example.com", apiRule.MatchHost)
-	assert.Equal(t, 8443, apiRule.MatchPort)
-	assert.Equal(t, "/custom-api", apiRule.MatchPathPrefix)
-	webRule, ok := ruleRepo.GetByName(dashboardWebRuleName)
-	require.True(t, ok)
-	assert.Equal(t, "/custom", webRule.MatchPathPrefix)
-}
-
 func TestSeederSkipsWhenSeedYAMLWasApplied(t *testing.T) {
 	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
 	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
@@ -329,7 +181,8 @@ appConfigs:
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		RuleCore:      newTestRuleCore(ruleRepo),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo),
+		RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
 		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
 		SiteCore:      newTestSiteCore(entryRepo),
 	}
@@ -390,7 +243,7 @@ portalCerts:
 	configRepo.Save(&core.AppConfig{Name: "feature.flag", Value: `{"enabled":true}`, Version: 7})
 	configRepo.Save(&core.AppConfig{Name: "feature.keep", Value: `{"enabled":true}`, Version: 3})
 	entryRepo.Save(&core.PortalSite{Name: "admin@demo.app", Type: core.PortalSiteTypeWEBGW, ActorSkelName: "old.Actor", ActorVia: "client", WebName: "old.Web"})
-	ruleRepo.Save(&core.PortalRule{Name: "admin", MatchScheme: "http", MatchPort: 80, MatchPathPrefix: "/old", RouteType: "SITE", RouteSiteName: "old-site"})
+	saveTestPortalRule(t, ruleRepo, &core.PortalRule{Name: "admin", MatchPathPrefix: "/old", RouteType: "SITE", RouteSiteName: "old-site"}, core.PortalEntry{Scheme: "http", Port: 80})
 	certRepo.Save(&core.PortalCert{Name: "admin-cert", Issuer: "old", Domains: []string{"old.local"}, PublicKeyBase64: "old-pub", PrivateKeyBase64: "old-pri"})
 	metadataRepo.MarkSeeded()
 
@@ -399,7 +252,8 @@ portalCerts:
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		RuleCore:      newTestRuleCore(ruleRepo),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo),
+		RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
 		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
 		SiteCore:      newTestSiteCore(entryRepo),
 	}
@@ -420,7 +274,6 @@ portalCerts:
 	assert.Equal(t, "old.Web", entry.WebName)
 	rule, ok := ruleRepo.GetByName("admin")
 	require.True(t, ok)
-	assert.Equal(t, "http", rule.MatchScheme)
 	assert.Equal(t, "/old", rule.MatchPathPrefix)
 	cert, ok := certRepo.GetByName("admin-cert")
 	require.True(t, ok)
@@ -445,7 +298,8 @@ portalRules:
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		RuleCore:      newTestRuleCore(ruleRepo),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo),
+		RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
 		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
 		SiteCore:      newTestSiteCore(entryRepo),
 	}
@@ -453,100 +307,483 @@ portalRules:
 	assert.Panics(t, seeder.DIInit)
 }
 
-func TestSeederRefreshesDashboardWhenSeeded(t *testing.T) {
-	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
-	ruleRepo.Save(&core.PortalRule{
-		Name:            dashboardApiRuleName,
-		MatchScheme:     "https",
-		MatchHost:       "hub.example.com",
-		MatchPort:       8088,
-		MatchPathPrefix: "/old-api",
-		RouteType:       "SITE",
-		RouteSiteName:   "old-entry",
-		BuiltIn:         true,
-	})
-	entryRepo.Save(&core.PortalSite{
-		Name:          DashboardRpcCoreEntry.Name,
-		Type:          core.PortalSiteTypeRPCGW,
-		ActorSkelName: "old.Actor",
-		ActorVia:      "client",
-		BuiltIn:       true,
-	})
-	metadataRepo.MarkSeeded()
-
-	seeder := &Seeder{
-		Flag:          newTestSeederFlag(""),
-		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
-		MetadataRepo:  metadataRepo,
-		Logger:        logger.New("vine:test"),
-		RuleCore:      newTestRuleCore(ruleRepo),
-		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
-		SiteCore:      newTestSiteCore(entryRepo),
+func TestSeederRejectsRuleReferencingUndeclaredEntry(t *testing.T) {
+	// A seed is self-contained: a rule only references an entry the same document
+	// declares, so Hub never completes the relationship from stored data.
+	for name, content := range map[string]string{
+		"no entries": `
+portalRules:
+  - name: demo.web
+    entryName: web
+    routeType: SITE
+    routeSiteName: demo.Web
+`,
+		"other entry": `
+portalEntries:
+  - name: api
+    scheme: http
+    port: 8099
+portalRules:
+  - name: demo.web
+    entryName: web
+    routeType: SITE
+    routeSiteName: demo.Web
+`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := parseSeedEntities(content)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), `portal rule "demo.web" references portal entry "web" that the seed does not declare`)
+		})
 	}
-	seeder.DIInit()
-
-	rule, ok := ruleRepo.GetByName(dashboardApiRuleName)
-	require.True(t, ok)
-	assert.Equal(t, "https", rule.MatchScheme)
-	assert.Equal(t, "hub.example.com", rule.MatchHost)
-	assert.Equal(t, 8088, rule.MatchPort)
-	assert.Equal(t, "/old-api", rule.MatchPathPrefix)
-	assert.Equal(t, DashboardRpcCoreEntry.Name, rule.RouteSiteName)
-
-	entry, ok := entryRepo.GetByName(DashboardRpcCoreEntry.Name)
-	require.True(t, ok)
-	assert.Equal(t, DashboardRpcCoreEntry.ActorSkelName, entry.ActorSkelName)
 }
 
-func TestSeederAppliesExplicitDashboardURLToExistingDashboardRules(t *testing.T) {
-	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
-	ruleRepo.Save(&core.PortalRule{
-		Name:            dashboardApiRuleName,
-		MatchScheme:     "http",
-		MatchPort:       7099,
-		MatchPathPrefix: "/api",
-		RouteType:       "SITE",
-		RouteSiteName:   DashboardRpcCoreEntry.Name,
-		BuiltIn:         true,
-	})
-	ruleRepo.Save(&core.PortalRule{
-		Name:            dashboardWebRuleName,
-		MatchScheme:     "http",
-		MatchPort:       7099,
-		MatchPathPrefix: "/",
-		RouteType:       "SITE",
-		RouteSiteName:   DashboardWebCoreEntry.Name,
-		BuiltIn:         true,
-	})
-	metadataRepo.MarkSeeded()
+func TestSeederRejectsAccessRuleWithDeclaredEntries(t *testing.T) {
+	// A seed that declares portalEntries names them: Hub never guesses whether a
+	// rule meant a declared entry or the access it serves.
+	content := `
+portalEntries:
+  - name: web
+    scheme: http
+    port: 8099
+portalRules:
+  - name: demo.web
+    matchScheme: http
+    matchPort: 8099
+    routeType: SITE
+    routeSiteName: demo.Web
+`
+	_, err := parseSeedEntities(content)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(),
+		`portal rule "demo.web" declares an access while the seed declares portalEntries; name the entry with entryName instead`)
+}
 
-	flags := &flag.Flag{Store: flag.StoreSQLite, DBSQLiteFile: "/tmp/hub.sqlite", DashboardURLRaw: "https://hub.example.com:8443/admin"}
-	flags.Normalize(true)
+func TestSeederRejectsMixedPortalRuleStyles(t *testing.T) {
+	// One seed document uses one way for a rule to join an entry.
+	content := `
+portalEntries:
+  - name: web
+    scheme: http
+    port: 8099
+portalRules:
+  - name: demo.web
+    entryName: web
+    routeType: SITE
+    routeSiteName: demo.Web
+  - name: demo.api
+    matchScheme: https
+    matchPort: 8443
+    routeType: SITE
+    routeSiteName: demo.Web
+`
+	_, err := parseSeedEntities(content)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `portal rule "demo.api" declares an access while portal rule "demo.web" names an entry`)
 
+	// The startup seed fails the same way before Hub writes anything.
+	configRepo, ruleRepo, certRepo, siteRepo, metadataRepo, _ := newTestSeederRepos(t)
+	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
+	require.NoError(t, vfile.WriteString(seedPath, content))
 	seeder := &Seeder{
-		Flag:          flags,
+		Flag:          newTestSeederFlag(seedPath),
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		RuleCore:      newTestRuleCore(ruleRepo),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo),
+		RuleCore:      newTestRuleCore(ruleRepo, siteRepo),
 		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
-		SiteCore:      newTestSiteCore(entryRepo),
+		SiteCore:      newTestSiteCore(siteRepo),
 	}
+
+	require.PanicsWithError(t,
+		`portal rule "demo.api" declares an access while portal rule "demo.web" names an entry; a seed declares one or the other, never both`,
+		seeder.DIInit)
+	assert.False(t, metadataRepo.IsSeeded())
+	// The document is rejected before Hub writes any of its rules.
+	_, ok := ruleRepo.GetByName("demo.web")
+	assert.False(t, ok)
+	_, ok = ruleRepo.GetByName("demo.api")
+	assert.False(t, ok)
+}
+
+func TestSeederPublishesRuleItAggregatesIntoANewEntry(t *testing.T) {
+	// A seed written the 0.19.0 way declares the access on the rule and declares
+	// no entry. Hub aggregates the access into an entry and keeps publishing the
+	// rule, the way a rule that names an entry Hub already stores stays
+	// published. A seed declares the switch as disabled, so leaving it at the
+	// default keeps the rule published.
+	configRepo, ruleRepo, certRepo, siteRepo, metadataRepo, watchServer := newTestSeederRepos(t)
+	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
+	require.NoError(t, vfile.WriteString(seedPath, `
+portalSites:
+  - name: demo.Web
+    type: WEBGW
+    actorSkelName: demo.Actor
+    actorVia: client
+    webName: demo.Web
+portalRules:
+  - name: demo.web
+    disabled: false
+    matchScheme: http
+    matchPort: 8099
+    matchPathPrefix: /
+    routeType: SITE
+    routeSiteName: demo.Web
+`))
+	seeder := &Seeder{
+		Flag:          newTestSeederFlag(seedPath),
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
+		MetadataRepo:  metadataRepo,
+		Logger:        logger.New("vine:test"),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo),
+		RuleCore:      newTestRuleCore(ruleRepo, siteRepo),
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore:      newTestSiteCore(siteRepo),
+	}
+
 	seeder.DIInit()
 
-	apiRule, ok := ruleRepo.GetByName(dashboardApiRuleName)
+	rule, ok := ruleRepo.GetByName("demo.web")
 	require.True(t, ok)
-	assert.Equal(t, "https", apiRule.MatchScheme)
-	assert.Equal(t, "hub.example.com", apiRule.MatchHost)
-	assert.Equal(t, 8443, apiRule.MatchPort)
-	assert.Equal(t, "/api", apiRule.MatchPathPrefix)
+	entry, ok := ruleRepo.PortalEntryRepo.GetById(rule.EntryId)
+	require.True(t, ok)
+	assert.Equal(t, "http", entry.Scheme)
+	assert.Equal(t, 8099, entry.Port)
+	assert.True(t, entry.Enabled)
+	_, published := watchServer.Get(watched.FormatPortalRuleKey("demo.web"))
+	assert.True(t, published)
+}
 
-	webRule, ok := ruleRepo.GetByName(dashboardWebRuleName)
+func TestSeederRejectsStoredSwitchName(t *testing.T) {
+	// Hub stores the switch as enabled, and a seed declares it as disabled.
+	// Decoding ignores a field the payload does not declare, so a seed that
+	// still writes enabled would silently keep the entity published: Hub names
+	// the field the seed should declare instead.
+	for _, testCase := range []struct {
+		name    string
+		content string
+	}{
+		{
+			name:    "portal entry",
+			content: "portalEntries:\n  - name: web\n    scheme: http\n    port: 8099\n    enabled: false\n",
+		},
+		{
+			name:    "portal site",
+			content: "portalSites:\n  - name: demo.Web\n    enabled: false\n",
+		},
+		{
+			name:    "portal rule",
+			content: "portalRules:\n  - name: demo.web\n    entryName: web\n    enabled: false\n",
+		},
+		{
+			name:    "portal certificate",
+			content: "portalCerts:\n  - name: demo-cert\n    enabled: false\n",
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			_, err := parseSeedEntities(testCase.content)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), `declares "enabled"; a seed turns configuration off with "disabled: true"`)
+		})
+	}
+}
+
+func TestSeederRejectsUnknownPortalField(t *testing.T) {
+	// Portal sections are fully typed, so a field Hub does not know fails
+	// instead of silently leaving the entity at its default.
+	for _, testCase := range []struct {
+		name    string
+		content string
+		want    string
+	}{
+		{
+			name:    "portal entry",
+			content: "portalEntries:\n  - name: web\n    scheme: http\n    port: 8099\n    webname: demo.Web\n",
+			want:    `portal entry "web" declares unknown field "webname"`,
+		},
+		{
+			name:    "portal site",
+			content: "portalSites:\n  - name: demo.Web\n    webname: demo.Web\n",
+			want:    `portal site "demo.Web" declares unknown field "webname"`,
+		},
+		{
+			name:    "portal site cors",
+			content: "portalSites:\n  - name: demo.Web\n    cors:\n      allowOrigins: [https://demo.local]\n",
+			want:    `portal site cors "demo.Web" declares unknown field "allowOrigins"`,
+		},
+		{
+			name:    "portal rule",
+			content: "portalRules:\n  - name: demo.web\n    matchPathPrefix: /\n    routeSiteNam: demo.Web\n",
+			want:    `portal rule "demo.web" declares unknown field "routeSiteNam"`,
+		},
+		{
+			name:    "portal certificate",
+			content: "portalCerts:\n  - name: demo-cert\n    issuers: demo\n",
+			want:    `portal certificate "demo-cert" declares unknown field "issuers"`,
+		},
+		{
+			name:    "Hub-owned built-in marker",
+			content: "portalSites:\n  - name: demo.Web\n    webName: demo.Web\n    builtIn: true\n",
+			want:    `portal site "demo.Web" declares "builtIn"; Hub owns the built-in entities, so a seed cannot declare it`,
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			_, err := parseSeedEntities(testCase.content)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), testCase.want)
+		})
+	}
+}
+
+func TestSeederStoresDisabledConfiguration(t *testing.T) {
+	// A seed can turn the switch off: Hub stores the entity and does not publish
+	// it to Portal.
+	configRepo, ruleRepo, certRepo, siteRepo, metadataRepo, watchServer := newTestSeederRepos(t)
+	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
+	require.NoError(t, vfile.WriteString(seedPath, `
+portalEntries:
+  - name: web
+    scheme: http
+    port: 8099
+    disabled: true
+portalSites:
+  - name: demo.Web
+    type: WEBGW
+    actorSkelName: demo.Actor
+    actorVia: client
+    webName: demo.Web
+    disabled: true
+portalRules:
+  - name: demo.web
+    entryName: web
+    matchPathPrefix: /
+    routeType: SITE
+    routeSiteName: demo.Web
+    disabled: true
+portalCerts:
+  - name: demo-cert
+    publicKeyBase64: `+testSeederCertificate(t)+`
+    privateKeyBase64: pri
+    disabled: true
+`))
+	seeder := &Seeder{
+		Flag:          newTestSeederFlag(seedPath),
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
+		MetadataRepo:  metadataRepo,
+		Logger:        logger.New("vine:test"),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo),
+		RuleCore:      newTestRuleCore(ruleRepo, siteRepo),
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore:      newTestSiteCore(siteRepo),
+	}
+
+	seeder.DIInit()
+
+	entry, ok := ruleRepo.PortalEntryRepo.GetByName("web")
 	require.True(t, ok)
-	assert.Equal(t, "https", webRule.MatchScheme)
-	assert.Equal(t, "hub.example.com", webRule.MatchHost)
-	assert.Equal(t, 8443, webRule.MatchPort)
-	assert.Equal(t, "/admin", webRule.MatchPathPrefix)
+	assert.False(t, entry.Enabled)
+	rule, ok := ruleRepo.GetByName("demo.web")
+	require.True(t, ok)
+	assert.False(t, rule.Enabled)
+	site, ok := siteRepo.GetByName("demo.Web")
+	require.True(t, ok)
+	assert.False(t, site.Enabled)
+	cert, ok := certRepo.GetByName("demo-cert")
+	require.True(t, ok)
+	assert.False(t, cert.Enabled)
+
+	for _, key := range []string{
+		watched.FormatPortalRuleKey("demo.web"),
+		watched.FormatPortalSiteKey("demo.Web"),
+		watched.FormatPortalCertKey("demo-cert"),
+	} {
+		_, published := watchServer.Get(key)
+		assert.False(t, published, "disabled configuration is not published: %s", key)
+	}
+}
+
+func TestSeederPortalRuleJoinsNamedEntry(t *testing.T) {
+	configRepo, ruleRepo, certRepo, siteRepo, metadataRepo, _ := newTestSeederRepos(t)
+	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
+	require.NoError(t, vfile.WriteString(seedPath, `
+portalEntries:
+  - name: web
+    scheme: http
+    port: 8099
+portalRules:
+  - name: demo.web
+    entryName: web
+    matchPathPrefix: /
+    routeType: SITE
+    routeSiteName: demo.Web
+`))
+	seeder := &Seeder{
+		Flag:          newTestSeederFlag(seedPath),
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
+		MetadataRepo:  metadataRepo,
+		Logger:        logger.New("vine:test"),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo),
+		RuleCore:      newTestRuleCore(ruleRepo, siteRepo),
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore:      newTestSiteCore(siteRepo),
+	}
+
+	seeder.DIInit()
+
+	// A rule that names an entry joins it instead of declaring an access.
+	entry, ok := ruleRepo.PortalEntryRepo.GetByName("web")
+	require.True(t, ok)
+	rule, ok := ruleRepo.GetByName("demo.web")
+	require.True(t, ok)
+	assert.Equal(t, entry.Id, rule.EntryId)
+	assert.Equal(t, "http", entry.Scheme)
+	assert.Equal(t, 8099, entry.Port)
+}
+
+func TestSeederRejectsPortalRuleMixingEntryNameAndAccess(t *testing.T) {
+	// The entry owns the access, so a rule declares either the entry name or the
+	// access the entry serves, never both.
+	for _, field := range []string{"matchScheme: http", "matchHost: demo.local", "matchPort: 8099"} {
+		t.Run(field, func(t *testing.T) {
+			_, err := parseSeedEntities("portalRules:\n  - name: demo.web\n    entryName: web\n    " + field + "\n    routeType: SITE\n    routeSiteName: demo.Web\n")
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "entryName cannot be mixed with")
+		})
+	}
+}
+
+func TestSeederAppliesPortalEntriesBeforeRules(t *testing.T) {
+	configRepo, ruleRepo, certRepo, siteRepo, metadataRepo, _ := newTestSeederRepos(t)
+	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
+	require.NoError(t, vfile.WriteString(seedPath, `
+portalEntries:
+  - name: web
+    scheme: http
+    port: 8099
+  - name: idle
+    scheme: https
+    host: api.example.com
+    port: 8443
+portalRules:
+  - name: demo.web
+    entryName: web
+    routeType: SITE
+    routeSiteName: demo.Web
+`))
+	seeder := &Seeder{
+		Flag:          newTestSeederFlag(seedPath),
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
+		MetadataRepo:  metadataRepo,
+		Logger:        logger.New("vine:test"),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo),
+		RuleCore:      newTestRuleCore(ruleRepo, siteRepo),
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore:      newTestSiteCore(siteRepo),
+	}
+
+	seeder.DIInit()
+
+	// A seed names an entry, and a rule joins the entry it names.
+	web, ok := ruleRepo.PortalEntryRepo.GetByName("web")
+	require.True(t, ok)
+	assert.Equal(t, "http", web.Scheme)
+	assert.Equal(t, 8099, web.Port)
+	// An entry may route no rule: the seed declares the entry Portal serves.
+	idle, ok := ruleRepo.PortalEntryRepo.GetByName("idle")
+	require.True(t, ok)
+	assert.Equal(t, 8443, idle.Port)
+
+	rule, ok := ruleRepo.GetByName("demo.web")
+	require.True(t, ok)
+	assert.Equal(t, web.Id, rule.EntryId)
+}
+
+func TestSeederRejectsUnnamedPortalEntry(t *testing.T) {
+	configRepo, ruleRepo, certRepo, siteRepo, metadataRepo, _ := newTestSeederRepos(t)
+	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
+	require.NoError(t, vfile.WriteString(seedPath, `
+portalEntries:
+  - scheme: http
+    port: 8099
+`))
+	seeder := &Seeder{
+		Flag:          newTestSeederFlag(seedPath),
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
+		MetadataRepo:  metadataRepo,
+		Logger:        logger.New("vine:test"),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo),
+		RuleCore:      newTestRuleCore(ruleRepo, siteRepo),
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore:      newTestSiteCore(siteRepo),
+	}
+
+	require.PanicsWithError(t, "portal entry name is required type=APPLICATION code=OPERATION_FAILED", seeder.DIInit)
+	assert.False(t, metadataRepo.IsSeeded())
+}
+
+// newTestEntryCore builds an entry core with the repositories Hub injects.
+func newTestEntryCore(entryRepo core.PortalEntryRepo, ruleRepo core.PortalRuleRepo, siteRepo core.PortalSiteRepo) *core.PortalEntryCore {
+	return &core.PortalEntryCore{
+		PortalEntryRepo: entryRepo,
+		PortalRuleRepo:  ruleRepo,
+		PortalSiteRepo:  siteRepo,
+	}
+}
+
+// A seed may declare the same request twice: once with the port left unset and
+// once with the default port named explicitly. Hub stores both rules, because
+// the request they match also depends on the Web mount paths the applications
+// register after Hub starts. Hub reports the conflict once it knows those paths;
+// a read-only Hub refuses to serve the seed instead of picking one rule.
+func TestSeederStoresRulesThatShareOneRequest(t *testing.T) {
+	implicit := `
+  - name: demo.app
+    matchScheme: http
+    matchPathPrefix: /app
+    routeType: SITE
+    routeSiteName: demo.Web
+`
+	explicit := `
+  - name: demo.app-explicit
+    matchScheme: http
+    matchPort: 80
+    matchPathPrefix: /app
+    routeType: SITE
+    routeSiteName: demo.Web
+`
+	for name, test := range map[string]struct {
+		rules string
+	}{
+		"implicit first": {rules: implicit + explicit},
+		"explicit first": {rules: explicit + implicit},
+	} {
+		t.Run(name, func(t *testing.T) {
+			configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
+			seedPath := filepath.Join(t.TempDir(), "hub.yaml")
+			require.NoError(t, vfile.WriteString(seedPath, "portalRules:\n"+test.rules))
+			seeder := &Seeder{
+				Flag:          newTestSeederFlag(seedPath),
+				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
+				MetadataRepo:  metadataRepo,
+				Logger:        logger.New("vine:test"),
+				EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo),
+				RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
+				CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+				SiteCore:      newTestSiteCore(entryRepo),
+			}
+
+			seeder.DIInit()
+
+			assert.True(t, metadataRepo.IsSeeded())
+			require.Len(t, ruleRepo.List(), 2)
+			conflicts := seeder.RuleCore.Conflicts()
+			require.Len(t, conflicts, 1)
+			assert.ElementsMatch(t, []string{"demo.app", "demo.app-explicit"},
+				[]string{conflicts[0].Rule, conflicts[0].Conflict})
+			assert.Equal(t, "http://*:80/app", conflicts[0].MatchText())
+		})
+	}
 }
 
 func newTestSeederRepos(t *testing.T) (*repo.AppConfigRepo, *repo.PortalRuleRepo, *repo.PortalCertRepo, *repo.PortalSiteRepo, *repo.MetadataRepo, *watchserver.Server) {
@@ -556,6 +793,7 @@ func newTestSeederRepos(t *testing.T) (*repo.AppConfigRepo, *repo.PortalRuleRepo
 	require.NoError(t, err)
 	require.NoError(t, gdb.AutoMigrate(&model.Metadata{}))
 	(&model.AppConfigDao{Dao: rdb.NewDao[*model.AppConfig](gdb)}).InitSchema()
+	(&model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](gdb)}).InitSchema()
 	(&model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](gdb)}).InitSchema()
 	(&model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](gdb)}).InitSchema()
 	(&model.PortalSiteDao{Dao: rdb.NewDao[*model.PortalSite](gdb)}).InitSchema()
@@ -569,9 +807,10 @@ func newTestSeederRepos(t *testing.T) (*repo.AppConfigRepo, *repo.PortalRuleRepo
 		Syncer:     testSyncer(watchServer),
 		Access:     new(configaccess.Access),
 	}, &repo.PortalRuleRepo{
-		Dao:    &model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](gdb)},
-		Syncer: testSyncer(watchServer),
-		Access: new(configaccess.Access),
+		Dao:             &model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](gdb)},
+		Syncer:          testSyncer(watchServer),
+		Access:          new(configaccess.Access),
+		PortalEntryRepo: &repo.PortalEntryRepo{Dao: &model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](gdb)}, Syncer: testSyncer(watchServer), Access: new(configaccess.Access)},
 	}, &repo.PortalCertRepo{
 		Dao:    &model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](gdb)},
 		Syncer: testSyncer(watchServer),
@@ -586,15 +825,37 @@ func newTestSeederRepos(t *testing.T) (*repo.AppConfigRepo, *repo.PortalRuleRepo
 	}, watchServer
 }
 
+// saveTestPortalRule stores a rule under the entry that serves the access the
+// caller declares, the way Core stores rules and the way the migration rebuilds
+// entry storage for an upgraded database.
+func saveTestPortalRule(t *testing.T, ruleRepo *repo.PortalRuleRepo, rule *core.PortalRule, access core.PortalEntry) {
+	t.Helper()
+
+	entry, ok := ruleRepo.PortalEntryRepo.GetByAccess(access.Scheme, access.Host, access.Port)
+	if !ok {
+		entry = &core.PortalEntry{Scheme: access.Scheme, Host: access.Host, Port: access.Port, Enabled: true}
+		ruleRepo.PortalEntryRepo.Save(entry)
+	}
+	rule.EntryId = entry.Id
+	ruleRepo.Save(rule)
+}
+
 // newTestSiteCore builds a site core with the repositories Hub injects.
 func newTestSiteCore(siteRepo core.PortalSiteRepo) *core.PortalSiteCore {
 	return &core.PortalSiteCore{PortalSiteRepo: siteRepo, SchemaRepo: new(schema.SchemaRepo)}
 }
 
-// newTestRuleCore builds a rule core with the chosen rule repository.
-func newTestRuleCore(ruleRepo core.PortalRuleRepo) *core.PortalRuleCore {
+// newTestRuleCore builds a rule core with the chosen rule repository and the
+// entry repository rules resolve their access through.
+func newTestRuleCore(ruleRepo *repo.PortalRuleRepo, siteRepo core.PortalSiteRepo) *core.PortalRuleCore {
 	return &core.PortalRuleCore{
 		PortalRuleRepo: ruleRepo,
+		PortalSiteRepo: siteRepo,
+		PortalEntryCore: &core.PortalEntryCore{
+			PortalEntryRepo: ruleRepo.PortalEntryRepo,
+			PortalRuleRepo:  ruleRepo,
+			PortalSiteRepo:  siteRepo,
+		},
 	}
 }
 
@@ -621,7 +882,8 @@ portalRules:
 			path := filepath.Join(t.TempDir(), "hub.yaml")
 			require.NoError(t, vfile.WriteString(path, content))
 			seeder := &Seeder{Flag: newTestSeederFlag(path), Logger: logger.New("vine:test"),
-				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo}, RuleCore: newTestRuleCore(ruleRepo),
+				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo}, EntryCore: newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo),
+				RuleCore: newTestRuleCore(ruleRepo, entryRepo),
 				CertCore: &core.PortalCertCore{PortalCertRepo: certRepo},
 				SiteCore: newTestSiteCore(entryRepo), MetadataRepo: metadataRepo}
 			require.Panics(t, seeder.DIInit)
@@ -654,7 +916,8 @@ func TestSeederPreflightsSitesAndCertificatesBeforeWriting(t *testing.T) {
 			path := filepath.Join(t.TempDir(), "hub.yaml")
 			require.NoError(t, vfile.WriteString(path, "appConfigs:\n  - name: pending\n    value: test\n"+invalid))
 			target := &Seeder{Flag: newTestSeederFlag(path), Logger: logger.New("vine:test"), MetadataRepo: metadata,
-				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configs}, RuleCore: newTestRuleCore(rules),
+				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configs}, EntryCore: newTestEntryCore(rules.PortalEntryRepo, rules, sites),
+				RuleCore: newTestRuleCore(rules, sites),
 				CertCore: &core.PortalCertCore{PortalCertRepo: certs}, SiteCore: newTestSiteCore(sites)}
 			require.Panics(t, target.DIInit)
 			_, exists := configs.GetByName("pending")
@@ -685,7 +948,8 @@ func TestSeederPersistsSourcesByEntityAndClearsOnRemoval(t *testing.T) {
 	source := fmt.Sprintf("version: 1\nseedSha256: %x\nfields:\n  /appConfigs/0/value:\n    source: app/default\n    define: domain/booker\n    override: app/default\n", sha256.Sum256([]byte(template)))
 	s := new(Seeder{Flag: new(flag.Flag{SeedHubData: template, SeedHubSource: source, SeedHubVarsFile: writeSeedHubVarsFile(t, `value: '"resolved"'`)}),
 		AppConfigCore: new(core.AppConfigCore{AppConfigRepo: configRepo}),
-		RuleCore:      newTestRuleCore(ruleRepo),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo),
+		RuleCore:      newTestRuleCore(ruleRepo, siteRepo),
 		SiteCore:      newTestSiteCore(siteRepo),
 		CertCore:      new(core.PortalCertCore{PortalCertRepo: certRepo}), MetadataRepo: metadataRepo, Logger: logger.New("seed-source-test"),
 	})
@@ -727,7 +991,8 @@ fields:
 	target := new(Seeder{
 		Flag:          new(flag.Flag{SeedHubData: template, SeedHubSource: source, SeedHubVarsFile: writeSeedHubVarsFile(t, "ttl: 2h")}),
 		AppConfigCore: new(core.AppConfigCore{AppConfigRepo: configs}),
-		RuleCore:      newTestRuleCore(rules),
+		EntryCore:     newTestEntryCore(rules.PortalEntryRepo, rules, sites),
+		RuleCore:      newTestRuleCore(rules, sites),
 		SiteCore:      newTestSiteCore(sites),
 		CertCore:      new(core.PortalCertCore{PortalCertRepo: certs}),
 		MetadataRepo:  metadata, Logger: logger.New("seed-key-sources-test"),
@@ -745,6 +1010,51 @@ fields:
 	reread, ok := configs.GetById(item.Id)
 	require.True(t, ok)
 	require.Equal(t, item.FieldSources, reread.FieldSources)
+}
+
+// A seed declares the access on the rule, and the entry owns it: the stored rule
+// keeps the sources of the fields it owns, because an entry carries no field
+// sources of its own.
+func TestSeederKeepsOnlyRuleFieldSources(t *testing.T) {
+	template := `
+portalRules:
+  - name: demo.app
+    matchScheme: http
+    matchHost: ""
+    matchPort: 7088
+    routeType: SITE
+    routeSiteName: demo.Web
+`
+	source := fmt.Sprintf(`
+version: 1
+seedSha256: %x
+fields:
+  /portalRules/0/name: {source: app/default, define: domain/booker}
+  /portalRules/0/matchScheme: {source: app/default, define: domain/booker}
+  /portalRules/0/matchHost: {source: app/default, define: domain/booker}
+  /portalRules/0/matchPort: {source: app/default, define: domain/booker}
+`, sha256.Sum256([]byte(template)))
+	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
+	seeder := &Seeder{
+		Flag:          new(flag.Flag{SeedHubData: template, SeedHubSource: source}),
+		AppConfigCore: new(core.AppConfigCore{AppConfigRepo: configRepo}),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo),
+		RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
+		SiteCore:      newTestSiteCore(entryRepo),
+		CertCore:      new(core.PortalCertCore{PortalCertRepo: certRepo}),
+		MetadataRepo:  metadataRepo,
+		Logger:        logger.New("seed-rule-sources-test"),
+	}
+	seeder.Flag.Normalize(true)
+
+	seeder.DIInit()
+
+	rule, ok := ruleRepo.GetByName("demo.app")
+	require.True(t, ok)
+	require.Equal(t, "app/default", rule.FieldSources["/name"].Source)
+	for _, field := range []string{"/matchScheme", "/matchHost", "/matchPort"} {
+		require.NotContains(t, rule.FieldSources, field)
+	}
 }
 
 func writeSeedHubVarsFile(t *testing.T, content string) string {

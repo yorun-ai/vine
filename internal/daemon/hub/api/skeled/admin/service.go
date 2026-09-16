@@ -10,10 +10,10 @@ import (
 )
 
 func init() {
+	rpcspec.Register(_AdminApiServiceSpec)
 	rpcspec.Register(_AppConfigApiServiceSpec)
 	rpcspec.Register(_AppStatusApiServiceSpec)
 	rpcspec.Register(_EventDebugApiServiceSpec)
-	rpcspec.Register(_MaintenanceApiServiceSpec)
 	rpcspec.Register(_PortalCertApiServiceSpec)
 	rpcspec.Register(_PortalEntryApiServiceSpec)
 	rpcspec.Register(_PortalRuleApiServiceSpec)
@@ -22,6 +22,110 @@ func init() {
 	rpcspec.Register(_ServiceDebugApiServiceSpec)
 	rpcspec.Register(_SkeletonApiServiceSpec)
 	rpcspec.Register(_TaskDebugApiServiceSpec)
+}
+
+// AdminApiServiceServer Hub's Admin API service, called by the Dashboard
+
+// AdminApiService / Spec
+
+var (
+	_AdminApiServiceSpec = &rpcspec.ServiceSpec{
+		Type:              rpcspec.ServiceSpecTypeServer,
+		Name:              "AdminApiService",
+		SkelName:          "vine.hub.admin.AdminApiService",
+		Hash:              "67c3e840",
+		ServerType:        reflect.TypeFor[AdminApiServiceServer](),
+		DefaultServerType: reflect.TypeFor[*DefaultAdminApiServiceServer](),
+
+		ERServerType:        reflect.TypeFor[AdminApiServiceServerER](),
+		WrapperERServerCtor: _NewWrapperAdminApiServiceServerER,
+		DefaultERServerType: reflect.TypeFor[*DefaultAdminApiServiceServerER](),
+		Methods: []*rpcspec.MethodSpec{
+			_AdminApiServiceReadOnlySpec,
+		},
+	}
+	_AdminApiServiceReadOnlySpec = &rpcspec.MethodSpec{
+		Name:           "ReadOnly",
+		SkelName:       "readOnly",
+		ArgumentsType:  nil,
+		CloneArguments: nil,
+		ResultType:     reflect.TypeFor[bool](),
+		CloneResult: func(value any) any {
+			source := value.(bool)
+			cloned := source
+			return cloned
+		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
+		ArgumentsContainsBinaryType: false,
+		ResultContainsBinaryType:    false,
+		MethodFuncs: []any{
+			AdminApiServiceServer.ReadOnly,
+			AdminApiServiceServerER.ReadOnly,
+		},
+	}
+)
+
+// AdminApiService / Server
+
+type AdminApiServiceServer interface {
+	// ReadOnly Whether Hub configuration is read-only.
+	ReadOnly() bool
+
+	mustBeAdminApiServiceServer()
+}
+
+// AdminApiService / Server / DefaultServer
+
+type DefaultAdminApiServiceServer struct{}
+
+func (*DefaultAdminApiServiceServer) ReadOnly() bool {
+	ex.PanicNew(ex.InvalidRequest, "method readOnly is not implemented")
+	return false
+}
+
+func (*DefaultAdminApiServiceServer) mustBeAdminApiServiceServer() {}
+
+// AdminApiService / ERServer
+
+type AdminApiServiceServerER interface {
+	ReadOnly() (bool, ex.Error)
+
+	mustBeAdminApiServiceServerER()
+}
+
+// AdminApiService / ERServer / WrapperERServer
+
+type _WrapperAdminApiServiceServerER struct {
+	DefaultAdminApiServiceServer
+	serverImpl AdminApiServiceServer
+}
+
+func _NewWrapperAdminApiServiceServerER(serverImpl AdminApiServiceServer) AdminApiServiceServerER {
+	return &_WrapperAdminApiServiceServerER{
+		serverImpl: serverImpl,
+	}
+}
+
+func (service *_WrapperAdminApiServiceServerER) server() AdminApiServiceServer {
+	if service.serverImpl == nil {
+		return &service.DefaultAdminApiServiceServer
+	}
+	return service.serverImpl
+}
+
+func (service *_WrapperAdminApiServiceServerER) ReadOnly() (ret bool, err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	ret = service.server().ReadOnly()
+	return
+}
+
+func (*_WrapperAdminApiServiceServerER) mustBeAdminApiServiceServerER() {}
+
+// AdminApiService / ERServer / DefaultERServer
+
+type DefaultAdminApiServiceServerER struct {
+	_WrapperAdminApiServiceServerER
 }
 
 // AppConfigApiServiceServer Hub's application configuration service, called by Client
@@ -33,7 +137,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "AppConfigApiService",
 		SkelName:          "vine.hub.admin.AppConfigApiService",
-		Hash:              "0da7b047",
+		Hash:              "97ae8434",
 		ServerType:        reflect.TypeFor[AppConfigApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultAppConfigApiServiceServer](),
 
@@ -335,7 +439,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "AppStatusApiService",
 		SkelName:          "vine.hub.admin.AppStatusApiService",
-		Hash:              "dead143d",
+		Hash:              "5869e9a5",
 		ServerType:        reflect.TypeFor[AppStatusApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultAppStatusApiServiceServer](),
 
@@ -447,7 +551,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "EventDebugApiService",
 		SkelName:          "vine.hub.admin.EventDebugApiService",
-		Hash:              "aa36888a",
+		Hash:              "70021469",
 		ServerType:        reflect.TypeFor[EventDebugApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultEventDebugApiServiceServer](),
 
@@ -639,214 +743,6 @@ type DefaultEventDebugApiServiceServerER struct {
 	_WrapperEventDebugApiServiceServerER
 }
 
-// MaintenanceApiServiceServer Hub maintenance service
-
-// MaintenanceApiService / Spec
-
-var (
-	_MaintenanceApiServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeServer,
-		Name:              "MaintenanceApiService",
-		SkelName:          "vine.hub.admin.MaintenanceApiService",
-		Hash:              "a4ba47c3",
-		ServerType:        reflect.TypeFor[MaintenanceApiServiceServer](),
-		DefaultServerType: reflect.TypeFor[*DefaultMaintenanceApiServiceServer](),
-
-		ERServerType:        reflect.TypeFor[MaintenanceApiServiceServerER](),
-		WrapperERServerCtor: _NewWrapperMaintenanceApiServiceServerER,
-		DefaultERServerType: reflect.TypeFor[*DefaultMaintenanceApiServiceServerER](),
-		Methods: []*rpcspec.MethodSpec{
-			_MaintenanceApiServiceConfigReadOnlySpec,
-			_MaintenanceApiServicePreviewSeedYamlSpec,
-			_MaintenanceApiServiceApplySeedYamlSpec,
-		},
-	}
-	_MaintenanceApiServiceConfigReadOnlySpec = &rpcspec.MethodSpec{
-		Name:           "ConfigReadOnly",
-		SkelName:       "configReadOnly",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[bool](),
-		CloneResult: func(value any) any {
-			source := value.(bool)
-			cloned := source
-			return cloned
-		},
-		ArgumentsSensitive:          false,
-		ResultSensitive:             false,
-		ArgumentsContainsBinaryType: false,
-		ResultContainsBinaryType:    false,
-		MethodFuncs: []any{
-			MaintenanceApiServiceServer.ConfigReadOnly,
-			MaintenanceApiServiceServerER.ConfigReadOnly,
-		},
-	}
-	_MaintenanceApiServicePreviewSeedYamlSpec = &rpcspec.MethodSpec{
-		Name:          "PreviewSeedYaml",
-		SkelName:      "previewSeedYaml",
-		ArgumentsType: reflect.TypeFor[_MaintenanceApiServicePreviewSeedYamlArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_MaintenanceApiServicePreviewSeedYamlArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[SeedPreview](),
-		CloneResult: func(value any) any {
-			source := value.(SeedPreview)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
-		ArgumentsSensitive:          false,
-		ResultSensitive:             false,
-		ArgumentsContainsBinaryType: false,
-		ResultContainsBinaryType:    false,
-		MethodFuncs: []any{
-			MaintenanceApiServiceServer.PreviewSeedYaml,
-			MaintenanceApiServiceServerER.PreviewSeedYaml,
-		},
-	}
-	_MaintenanceApiServiceApplySeedYamlSpec = &rpcspec.MethodSpec{
-		Name:          "ApplySeedYaml",
-		SkelName:      "applySeedYaml",
-		ArgumentsType: reflect.TypeFor[_MaintenanceApiServiceApplySeedYamlArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_MaintenanceApiServiceApplySeedYamlArguments)
-			cloned := *source
-			if source.Selections == nil {
-				cloned.Selections = nil
-			} else {
-				cloned.Selections = make([]SeedItemSelection, len(source.Selections))
-				for index0 := range source.Selections {
-					cloned.Selections[index0] = source.Selections[index0].Clone()
-				}
-			}
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[SeedPreview](),
-		CloneResult: func(value any) any {
-			source := value.(SeedPreview)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
-		ArgumentsSensitive:          false,
-		ResultSensitive:             false,
-		ArgumentsContainsBinaryType: false,
-		ResultContainsBinaryType:    false,
-		MethodFuncs: []any{
-			MaintenanceApiServiceServer.ApplySeedYaml,
-			MaintenanceApiServiceServerER.ApplySeedYaml,
-		},
-	}
-)
-
-// MaintenanceApiService / Arguments
-
-type _MaintenanceApiServicePreviewSeedYamlArguments struct {
-	Content string `json:"content" skel:"index(0)"`
-}
-
-type _MaintenanceApiServiceApplySeedYamlArguments struct {
-	Content    string              `json:"content" skel:"index(0)"`
-	Selections []SeedItemSelection `json:"selections" skel:"index(1)"`
-}
-
-// MaintenanceApiService / Server
-
-type MaintenanceApiServiceServer interface {
-	// ConfigReadOnly Whether Hub configuration is read-only.
-	ConfigReadOnly() bool
-	// PreviewSeedYaml Preview Seed YAML differences.
-	//   @param content - Seed YAML content
-	//   @returns SeedPreview - Seed preview
-	PreviewSeedYaml(content string) SeedPreview
-	// ApplySeedYaml Apply Seed YAML entity updates.
-	//   @param content - Seed YAML content
-	//   @param selections - Entity to update
-	//   @returns SeedPreview - Updated Seed preview
-	ApplySeedYaml(content string, selections []SeedItemSelection) SeedPreview
-
-	mustBeMaintenanceApiServiceServer()
-}
-
-// MaintenanceApiService / Server / DefaultServer
-
-type DefaultMaintenanceApiServiceServer struct{}
-
-func (*DefaultMaintenanceApiServiceServer) ConfigReadOnly() bool {
-	ex.PanicNew(ex.InvalidRequest, "method configReadOnly is not implemented")
-	return false
-}
-
-func (*DefaultMaintenanceApiServiceServer) PreviewSeedYaml(string) SeedPreview {
-	ex.PanicNew(ex.InvalidRequest, "method previewSeedYaml is not implemented")
-	return SeedPreview{}
-}
-
-func (*DefaultMaintenanceApiServiceServer) ApplySeedYaml(string, []SeedItemSelection) SeedPreview {
-	ex.PanicNew(ex.InvalidRequest, "method applySeedYaml is not implemented")
-	return SeedPreview{}
-}
-
-func (*DefaultMaintenanceApiServiceServer) mustBeMaintenanceApiServiceServer() {}
-
-// MaintenanceApiService / ERServer
-
-type MaintenanceApiServiceServerER interface {
-	ConfigReadOnly() (bool, ex.Error)
-	PreviewSeedYaml(content string) (SeedPreview, ex.Error)
-	ApplySeedYaml(content string, selections []SeedItemSelection) (SeedPreview, ex.Error)
-
-	mustBeMaintenanceApiServiceServerER()
-}
-
-// MaintenanceApiService / ERServer / WrapperERServer
-
-type _WrapperMaintenanceApiServiceServerER struct {
-	DefaultMaintenanceApiServiceServer
-	serverImpl MaintenanceApiServiceServer
-}
-
-func _NewWrapperMaintenanceApiServiceServerER(serverImpl MaintenanceApiServiceServer) MaintenanceApiServiceServerER {
-	return &_WrapperMaintenanceApiServiceServerER{
-		serverImpl: serverImpl,
-	}
-}
-
-func (service *_WrapperMaintenanceApiServiceServerER) server() MaintenanceApiServiceServer {
-	if service.serverImpl == nil {
-		return &service.DefaultMaintenanceApiServiceServer
-	}
-	return service.serverImpl
-}
-
-func (service *_WrapperMaintenanceApiServiceServerER) ConfigReadOnly() (ret bool, err ex.Error) {
-	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().ConfigReadOnly()
-	return
-}
-
-func (service *_WrapperMaintenanceApiServiceServerER) PreviewSeedYaml(content string) (ret SeedPreview, err ex.Error) {
-	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().PreviewSeedYaml(content)
-	return
-}
-
-func (service *_WrapperMaintenanceApiServiceServerER) ApplySeedYaml(content string, selections []SeedItemSelection) (ret SeedPreview, err ex.Error) {
-	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().ApplySeedYaml(content, selections)
-	return
-}
-
-func (*_WrapperMaintenanceApiServiceServerER) mustBeMaintenanceApiServiceServerER() {}
-
-// MaintenanceApiService / ERServer / DefaultERServer
-
-type DefaultMaintenanceApiServiceServerER struct {
-	_WrapperMaintenanceApiServiceServerER
-}
-
 // PortalCertApiServiceServer Hub's Portal site certificate service, called by the Portal admin client
 
 // PortalCertApiService / Spec
@@ -856,7 +752,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalCertApiService",
 		SkelName:          "vine.hub.admin.PortalCertApiService",
-		Hash:              "47aa1ab8",
+		Hash:              "9d1673c5",
 		ServerType:        reflect.TypeFor[PortalCertApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalCertApiServiceServer](),
 
@@ -1152,7 +1048,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalEntryApiService",
 		SkelName:          "vine.hub.admin.PortalEntryApiService",
-		Hash:              "724b0b97",
+		Hash:              "e6e9d06b",
 		ServerType:        reflect.TypeFor[PortalEntryApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalEntryApiServiceServer](),
 
@@ -1161,7 +1057,9 @@ var (
 		DefaultERServerType: reflect.TypeFor[*DefaultPortalEntryApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
 			_PortalEntryApiServiceListSpec,
+			_PortalEntryApiServiceCreateSpec,
 			_PortalEntryApiServiceUpdateAccessSpec,
+			_PortalEntryApiServiceRemoveSpec,
 		},
 	}
 	_PortalEntryApiServiceListSpec = &rpcspec.MethodSpec{
@@ -1192,6 +1090,32 @@ var (
 			PortalEntryApiServiceServerER.List,
 		},
 	}
+	_PortalEntryApiServiceCreateSpec = &rpcspec.MethodSpec{
+		Name:          "Create",
+		SkelName:      "create",
+		ArgumentsType: reflect.TypeFor[_PortalEntryApiServiceCreateArguments](),
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalEntryApiServiceCreateArguments)
+			cloned := *source
+			cloned.Creation = source.Creation.Clone()
+			return &cloned
+		},
+		ResultType: reflect.TypeFor[PortalEntry](),
+		CloneResult: func(value any) any {
+			source := value.(PortalEntry)
+			cloned := source
+			cloned = source.Clone()
+			return cloned
+		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
+		ArgumentsContainsBinaryType: false,
+		ResultContainsBinaryType:    false,
+		MethodFuncs: []any{
+			PortalEntryApiServiceServer.Create,
+			PortalEntryApiServiceServerER.Create,
+		},
+	}
 	_PortalEntryApiServiceUpdateAccessSpec = &rpcspec.MethodSpec{
 		Name:          "UpdateAccess",
 		SkelName:      "updateAccess",
@@ -1218,9 +1142,33 @@ var (
 			PortalEntryApiServiceServerER.UpdateAccess,
 		},
 	}
+	_PortalEntryApiServiceRemoveSpec = &rpcspec.MethodSpec{
+		Name:          "Remove",
+		SkelName:      "remove",
+		ArgumentsType: reflect.TypeFor[_PortalEntryApiServiceRemoveArguments](),
+		CloneArguments: func(value any) any {
+			source := value.(*_PortalEntryApiServiceRemoveArguments)
+			cloned := *source
+			return &cloned
+		},
+		ResultType:                  nil,
+		CloneResult:                 nil,
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
+		ArgumentsContainsBinaryType: false,
+		ResultContainsBinaryType:    false,
+		MethodFuncs: []any{
+			PortalEntryApiServiceServer.Remove,
+			PortalEntryApiServiceServerER.Remove,
+		},
+	}
 )
 
 // PortalEntryApiService / Arguments
+
+type _PortalEntryApiServiceCreateArguments struct {
+	Creation PortalEntryCreation `json:"creation" skel:"index(0)"`
+}
 
 type _PortalEntryApiServiceUpdateAccessArguments struct {
 	Scheme string                  `json:"scheme" skel:"index(0)"`
@@ -1229,12 +1177,22 @@ type _PortalEntryApiServiceUpdateAccessArguments struct {
 	Update PortalEntryAccessUpdate `json:"update" skel:"index(3)"`
 }
 
+type _PortalEntryApiServiceRemoveArguments struct {
+	Scheme string `json:"scheme" skel:"index(0)"`
+	Host   string `json:"host" skel:"index(1)"`
+	Port   int    `json:"port" skel:"index(2)"`
+}
+
 // PortalEntryApiService / Server
 
 type PortalEntryApiServiceServer interface {
 	// List List Portal access entries.
 	//   @returns []PortalEntry - Portal access entry list
 	List() []PortalEntry
+	// Create Create a Portal access entry.
+	//   @param creation - Portal access entry creation parameters
+	//   @returns PortalEntry - Portal access entry
+	Create(creation PortalEntryCreation) PortalEntry
 	// UpdateAccess Modify Portal access configuration.
 	//   @param scheme - Entry protocol
 	//   @param host - Match Host, empty string means no restriction
@@ -1242,6 +1200,11 @@ type PortalEntryApiServiceServer interface {
 	//   @param update - Portal access entry configuration update parameters
 	//   @returns PortalEntry - Portal access entry
 	UpdateAccess(scheme string, host string, port int, update PortalEntryAccessUpdate) PortalEntry
+	// Remove Delete a Portal access entry that routes no rule.
+	//   @param scheme - Entry protocol
+	//   @param host - Match Host, empty string means no restriction
+	//   @param port - Entry port
+	Remove(scheme string, host string, port int)
 
 	mustBePortalEntryApiServiceServer()
 }
@@ -1255,9 +1218,18 @@ func (*DefaultPortalEntryApiServiceServer) List() []PortalEntry {
 	return []PortalEntry{}
 }
 
+func (*DefaultPortalEntryApiServiceServer) Create(PortalEntryCreation) PortalEntry {
+	ex.PanicNew(ex.InvalidRequest, "method create is not implemented")
+	return PortalEntry{}
+}
+
 func (*DefaultPortalEntryApiServiceServer) UpdateAccess(string, string, int, PortalEntryAccessUpdate) PortalEntry {
 	ex.PanicNew(ex.InvalidRequest, "method updateAccess is not implemented")
 	return PortalEntry{}
+}
+
+func (*DefaultPortalEntryApiServiceServer) Remove(string, string, int) {
+	ex.PanicNew(ex.InvalidRequest, "method remove is not implemented")
 }
 
 func (*DefaultPortalEntryApiServiceServer) mustBePortalEntryApiServiceServer() {}
@@ -1266,7 +1238,9 @@ func (*DefaultPortalEntryApiServiceServer) mustBePortalEntryApiServiceServer() {
 
 type PortalEntryApiServiceServerER interface {
 	List() ([]PortalEntry, ex.Error)
+	Create(creation PortalEntryCreation) (PortalEntry, ex.Error)
 	UpdateAccess(scheme string, host string, port int, update PortalEntryAccessUpdate) (PortalEntry, ex.Error)
+	Remove(scheme string, host string, port int) ex.Error
 
 	mustBePortalEntryApiServiceServerER()
 }
@@ -1297,9 +1271,21 @@ func (service *_WrapperPortalEntryApiServiceServerER) List() (ret []PortalEntry,
 	return
 }
 
+func (service *_WrapperPortalEntryApiServiceServerER) Create(creation PortalEntryCreation) (ret PortalEntry, err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	ret = service.server().Create(creation)
+	return
+}
+
 func (service *_WrapperPortalEntryApiServiceServerER) UpdateAccess(scheme string, host string, port int, update PortalEntryAccessUpdate) (ret PortalEntry, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().UpdateAccess(scheme, host, port, update)
+	return
+}
+
+func (service *_WrapperPortalEntryApiServiceServerER) Remove(scheme string, host string, port int) (err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	service.server().Remove(scheme, host, port)
 	return
 }
 
@@ -1320,7 +1306,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalRuleApiService",
 		SkelName:          "vine.hub.admin.PortalRuleApiService",
-		Hash:              "7e2cdf0d",
+		Hash:              "b736159f",
 		ServerType:        reflect.TypeFor[PortalRuleApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalRuleApiServiceServer](),
 
@@ -1328,13 +1314,40 @@ var (
 		WrapperERServerCtor: _NewWrapperPortalRuleApiServiceServerER,
 		DefaultERServerType: reflect.TypeFor[*DefaultPortalRuleApiServiceServerER](),
 		Methods: []*rpcspec.MethodSpec{
+			_PortalRuleApiServiceListConflictsSpec,
 			_PortalRuleApiServiceListSpec,
 			_PortalRuleApiServiceGetSpec,
 			_PortalRuleApiServiceCreateSpec,
 			_PortalRuleApiServiceUpdateSpec,
 			_PortalRuleApiServiceRemoveSpec,
-			_PortalRuleApiServiceGetDashboardAccessSpec,
-			_PortalRuleApiServiceUpdateDashboardAccessSpec,
+		},
+	}
+	_PortalRuleApiServiceListConflictsSpec = &rpcspec.MethodSpec{
+		Name:           "ListConflicts",
+		SkelName:       "listConflicts",
+		ArgumentsType:  nil,
+		CloneArguments: nil,
+		ResultType:     reflect.TypeFor[[]PortalRuleConflict](),
+		CloneResult: func(value any) any {
+			source := value.([]PortalRuleConflict)
+			cloned := source
+			if source == nil {
+				cloned = nil
+			} else {
+				cloned = make([]PortalRuleConflict, len(source))
+				for index0 := range source {
+					cloned[index0] = source[index0].Clone()
+				}
+			}
+			return cloned
+		},
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
+		ArgumentsContainsBinaryType: false,
+		ResultContainsBinaryType:    false,
+		MethodFuncs: []any{
+			PortalRuleApiServiceServer.ListConflicts,
+			PortalRuleApiServiceServerER.ListConflicts,
 		},
 	}
 	_PortalRuleApiServiceListSpec = &rpcspec.MethodSpec{
@@ -1462,59 +1475,6 @@ var (
 			PortalRuleApiServiceServerER.Remove,
 		},
 	}
-	_PortalRuleApiServiceGetDashboardAccessSpec = &rpcspec.MethodSpec{
-		Name:           "GetDashboardAccess",
-		SkelName:       "getDashboardAccess",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[PortalDashboardAccess](),
-		CloneResult: func(value any) any {
-			source := value.(PortalDashboardAccess)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
-		ArgumentsSensitive:          false,
-		ResultSensitive:             false,
-		ArgumentsContainsBinaryType: false,
-		ResultContainsBinaryType:    false,
-		MethodFuncs: []any{
-			PortalRuleApiServiceServer.GetDashboardAccess,
-			PortalRuleApiServiceServerER.GetDashboardAccess,
-		},
-	}
-	_PortalRuleApiServiceUpdateDashboardAccessSpec = &rpcspec.MethodSpec{
-		Name:          "UpdateDashboardAccess",
-		SkelName:      "updateDashboardAccess",
-		ArgumentsType: reflect.TypeFor[_PortalRuleApiServiceUpdateDashboardAccessArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_PortalRuleApiServiceUpdateDashboardAccessArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[[]PortalRule](),
-		CloneResult: func(value any) any {
-			source := value.([]PortalRule)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]PortalRule, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
-		ArgumentsSensitive:          false,
-		ResultSensitive:             false,
-		ArgumentsContainsBinaryType: false,
-		ResultContainsBinaryType:    false,
-		MethodFuncs: []any{
-			PortalRuleApiServiceServer.UpdateDashboardAccess,
-			PortalRuleApiServiceServerER.UpdateDashboardAccess,
-		},
-	}
 )
 
 // PortalRuleApiService / Arguments
@@ -1536,16 +1496,12 @@ type _PortalRuleApiServiceRemoveArguments struct {
 	Id int `json:"id" skel:"index(0)"`
 }
 
-type _PortalRuleApiServiceUpdateDashboardAccessArguments struct {
-	Scheme     string `json:"scheme" skel:"index(0)"`
-	Host       string `json:"host" skel:"index(1)"`
-	Port       int    `json:"port" skel:"index(2)"`
-	PathPrefix string `json:"pathPrefix" skel:"index(3)"`
-}
-
 // PortalRuleApiService / Server
 
 type PortalRuleApiServiceServer interface {
+	// ListConflicts List Portal entry rules that match the same request.
+	//   @returns []PortalRuleConflict - Portal entry rule conflicts
+	ListConflicts() []PortalRuleConflict
 	// List List Portal entry rules.
 	//   @returns []PortalRuleListItem - Portal entry rule list
 	List() []PortalRuleListItem
@@ -1565,16 +1521,6 @@ type PortalRuleApiServiceServer interface {
 	// Remove Delete Portal entry rules.
 	//   @param id - Rule ID
 	Remove(id int)
-	// GetDashboardAccess Get the Hub Dashboard access entry.
-	//   @returns PortalDashboardAccess - Hub Dashboard access entry
-	GetDashboardAccess() PortalDashboardAccess
-	// UpdateDashboardAccess Modify Hub Dashboard access entry.
-	//   @param scheme - Hub Dashboard entry protocol
-	//   @param host - Hub Dashboard entry host
-	//   @param port - Hub Dashboard entry port
-	//   @param pathPrefix - Hub Dashboard entry path prefix
-	//   @returns []PortalRule - Hub Dashboard entry rules
-	UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string) []PortalRule
 
 	mustBePortalRuleApiServiceServer()
 }
@@ -1582,6 +1528,11 @@ type PortalRuleApiServiceServer interface {
 // PortalRuleApiService / Server / DefaultServer
 
 type DefaultPortalRuleApiServiceServer struct{}
+
+func (*DefaultPortalRuleApiServiceServer) ListConflicts() []PortalRuleConflict {
+	ex.PanicNew(ex.InvalidRequest, "method listConflicts is not implemented")
+	return []PortalRuleConflict{}
+}
 
 func (*DefaultPortalRuleApiServiceServer) List() []PortalRuleListItem {
 	ex.PanicNew(ex.InvalidRequest, "method list is not implemented")
@@ -1607,28 +1558,17 @@ func (*DefaultPortalRuleApiServiceServer) Remove(int) {
 	ex.PanicNew(ex.InvalidRequest, "method remove is not implemented")
 }
 
-func (*DefaultPortalRuleApiServiceServer) GetDashboardAccess() PortalDashboardAccess {
-	ex.PanicNew(ex.InvalidRequest, "method getDashboardAccess is not implemented")
-	return PortalDashboardAccess{}
-}
-
-func (*DefaultPortalRuleApiServiceServer) UpdateDashboardAccess(string, string, int, string) []PortalRule {
-	ex.PanicNew(ex.InvalidRequest, "method updateDashboardAccess is not implemented")
-	return []PortalRule{}
-}
-
 func (*DefaultPortalRuleApiServiceServer) mustBePortalRuleApiServiceServer() {}
 
 // PortalRuleApiService / ERServer
 
 type PortalRuleApiServiceServerER interface {
+	ListConflicts() ([]PortalRuleConflict, ex.Error)
 	List() ([]PortalRuleListItem, ex.Error)
 	Get(id int) (PortalRule, ex.Error)
 	Create(creation PortalRuleCreation) (PortalRule, ex.Error)
 	Update(id int, update PortalRuleUpdate) (PortalRule, ex.Error)
 	Remove(id int) ex.Error
-	GetDashboardAccess() (PortalDashboardAccess, ex.Error)
-	UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string) ([]PortalRule, ex.Error)
 
 	mustBePortalRuleApiServiceServerER()
 }
@@ -1651,6 +1591,12 @@ func (service *_WrapperPortalRuleApiServiceServerER) server() PortalRuleApiServi
 		return &service.DefaultPortalRuleApiServiceServer
 	}
 	return service.serverImpl
+}
+
+func (service *_WrapperPortalRuleApiServiceServerER) ListConflicts() (ret []PortalRuleConflict, err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	ret = service.server().ListConflicts()
+	return
 }
 
 func (service *_WrapperPortalRuleApiServiceServerER) List() (ret []PortalRuleListItem, err ex.Error) {
@@ -1683,18 +1629,6 @@ func (service *_WrapperPortalRuleApiServiceServerER) Remove(id int) (err ex.Erro
 	return
 }
 
-func (service *_WrapperPortalRuleApiServiceServerER) GetDashboardAccess() (ret PortalDashboardAccess, err ex.Error) {
-	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().GetDashboardAccess()
-	return
-}
-
-func (service *_WrapperPortalRuleApiServiceServerER) UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string) (ret []PortalRule, err ex.Error) {
-	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().UpdateDashboardAccess(scheme, host, port, pathPrefix)
-	return
-}
-
 func (*_WrapperPortalRuleApiServiceServerER) mustBePortalRuleApiServiceServerER() {}
 
 // PortalRuleApiService / ERServer / DefaultERServer
@@ -1712,7 +1646,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalSiteApiService",
 		SkelName:          "vine.hub.admin.PortalSiteApiService",
-		Hash:              "9d6001f2",
+		Hash:              "f713a78d",
 		ServerType:        reflect.TypeFor[PortalSiteApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalSiteApiServiceServer](),
 
@@ -2045,7 +1979,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalStatusApiService",
 		SkelName:          "vine.hub.admin.PortalStatusApiService",
-		Hash:              "00945e2a",
+		Hash:              "49b2f739",
 		ServerType:        reflect.TypeFor[PortalStatusApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalStatusApiServiceServer](),
 
@@ -2157,7 +2091,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "ServiceDebugApiService",
 		SkelName:          "vine.hub.admin.ServiceDebugApiService",
-		Hash:              "6f47d948",
+		Hash:              "7bbd9cf0",
 		ServerType:        reflect.TypeFor[ServiceDebugApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultServiceDebugApiServiceServer](),
 
@@ -2517,7 +2451,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "SkeletonApiService",
 		SkelName:          "vine.hub.admin.SkeletonApiService",
-		Hash:              "0473c6fe",
+		Hash:              "53e522bd",
 		ServerType:        reflect.TypeFor[SkeletonApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultSkeletonApiServiceServer](),
 
@@ -2982,7 +2916,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "TaskDebugApiService",
 		SkelName:          "vine.hub.admin.TaskDebugApiService",
-		Hash:              "11c85af4",
+		Hash:              "3040e825",
 		ServerType:        reflect.TypeFor[TaskDebugApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultTaskDebugApiServiceServer](),
 

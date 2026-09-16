@@ -442,6 +442,10 @@ export type PortalCert = {
    * Field sources; only returned by get, create and update.
    */
   fieldSources:         Array<FieldSource>;
+  /**
+   * Whether Hub publishes this certificate to Portal.
+   */
+  enabled:              boolean;
 }
 /**
  * Portal site certificate creation parameters.
@@ -459,6 +463,10 @@ export type PortalCertCreation = {
    * Private key Base64.
    */
   privateKeyBase64: string;
+  /**
+   * Whether Hub publishes this certificate to Portal.
+   */
+  enabled:          boolean | null;
 }
 /**
  * Portal site certificate list item.
@@ -496,6 +504,10 @@ export type PortalCertListItem = {
    * Validity end time.
    */
   validTo:              string;
+  /**
+   * Whether Hub publishes this certificate to Portal.
+   */
+  enabled:              boolean;
 }
 /**
  * Portal site certificate update parameters.
@@ -513,6 +525,10 @@ export type PortalCertUpdate = {
    * Private key Base64.
    */
   privateKeyBase64: string | null;
+  /**
+   * Whether Hub publishes this certificate to Portal.
+   */
+  enabled:          boolean | null;
 }
 /**
  * Portal site CORS configuration.
@@ -528,54 +544,33 @@ export type PortalCors = {
   allowedOrigins: Array<string>;
 }
 /**
- * Hub Dashboard access entry.
- */
-export type PortalDashboardAccess = {
-  /**
-   * Entry protocol.
-   */
-  scheme:     string;
-  /**
-   * Match Host, empty string means no restriction.
-   */
-  host:       string;
-  /**
-   * Entry port.
-   */
-  port:       number;
-  /**
-   * Match path prefix.
-   */
-  pathPrefix: string;
-  /**
-   * Whether to allow modification of Dashboard access entry.
-   */
-  canUpdate:  boolean;
-}
-/**
  * Portal access entry.
  */
 export type PortalEntry = {
   /**
    * Entry name.
    */
-  name:   string;
+  name:    string;
   /**
    * Entry protocol.
    */
-  scheme: string;
+  scheme:  string;
   /**
    * Match Host, empty string means no restriction.
    */
-  host:   string;
+  host:    string;
   /**
    * Entry port.
    */
-  port:   number;
+  port:    number;
   /**
    * Entry rule list.
    */
-  rules:  Array<PortalEntryRule>;
+  rules:   Array<PortalEntryRule>;
+  /**
+   * Whether Hub publishes the rules of this entry to Portal.
+   */
+  enabled: boolean;
 }
 /**
  * Portal access entry configuration update parameters.
@@ -584,15 +579,44 @@ export type PortalEntryAccessUpdate = {
   /**
    * Entry protocol.
    */
-  scheme: string;
+  scheme:  string;
   /**
    * Match Host, empty string means no restriction.
    */
-  host:   string;
+  host:    string;
   /**
    * Entry port.
    */
-  port:   number;
+  port:    number;
+  /**
+   * Whether Hub publishes the rules of this entry to Portal.
+   */
+  enabled: boolean | null;
+}
+/**
+ * Portal access entry creation parameters.
+ */
+export type PortalEntryCreation = {
+  /**
+   * Entry name.
+   */
+  name:    string;
+  /**
+   * Entry protocol.
+   */
+  scheme:  string;
+  /**
+   * Match Host, empty string means no restriction.
+   */
+  host:    string;
+  /**
+   * Entry port.
+   */
+  port:    number;
+  /**
+   * Whether Hub publishes the rules of this entry to Portal; defaults to true.
+   */
+  enabled: boolean | null;
 }
 /**
  * Portal access entry rules.
@@ -663,6 +687,55 @@ export type PortalRule = {
    * Field sources; only returned by get, create and update.
    */
   fieldSources:            Array<FieldSource>;
+  /**
+   * Whether Hub publishes this rule to Portal.
+   */
+  enabled:                 boolean;
+}
+/**
+ * Portal entry rules that match the same request.
+ */
+export type PortalRuleConflict = {
+  /**
+   * Rule ID.
+   */
+  ruleId:           number;
+  /**
+   * Rule name.
+   */
+  rule:             string;
+  /**
+   * ID of the rule that already matches the request.
+   */
+  conflictRuleId:   number;
+  /**
+   * Name of the rule that already matches the request.
+   */
+  conflictRule:     string;
+  /**
+   * Name of the Portal entry the rules belong to.
+   */
+  entry:            string;
+  /**
+   * Request both rules match.
+   */
+  match:            string;
+  /**
+   * ID of the rule Hub publishes for the request.
+   */
+  publishedRuleId:  number;
+  /**
+   * Name of the rule Hub publishes for the request.
+   */
+  publishedRule:    string;
+  /**
+   * ID of the rule Hub leaves out, because the published rule sorts first.
+   */
+  suppressedRuleId: number;
+  /**
+   * Name of the rule Hub leaves out, because the published rule sorts first.
+   */
+  suppressedRule:   string;
 }
 /**
  * Portal entry rule creation parameters.
@@ -673,17 +746,9 @@ export type PortalRuleCreation = {
    */
   name:                    string;
   /**
-   * Matching protocol.
+   * Name of the Portal access entry the rule belongs to.
    */
-  matchScheme:             string;
-  /**
-   * Match Host, empty string means no restriction.
-   */
-  matchHost:               string;
-  /**
-   * Match matchPort, 0 means no restriction.
-   */
-  matchPort:               number;
+  entryName:               string;
   /**
    * Match path prefix, empty string means match all paths.
    */
@@ -704,6 +769,10 @@ export type PortalRuleCreation = {
    * Target site path prefix; empty means strip the matching prefix only.
    */
   routePathPrefix:         string | null;
+  /**
+   * Whether Hub publishes this rule to Portal.
+   */
+  enabled:                 boolean | null;
 }
 /**
  * Portal entry rule list item.
@@ -757,6 +826,10 @@ export type PortalRuleListItem = {
    * Effective route path prefix after site mount path resolution.
    */
   resolvedRoutePathPrefix: string;
+  /**
+   * Whether Hub publishes this rule to Portal.
+   */
+  enabled:                 boolean;
 }
 /**
  * Portal entry rule update parameters.
@@ -766,18 +839,6 @@ export type PortalRuleUpdate = {
    * Rule name.
    */
   name:                    string | null;
-  /**
-   * Matching protocol.
-   */
-  matchScheme:             string | null;
-  /**
-   * Match Host, empty string means no restriction.
-   */
-  matchHost:               string | null;
-  /**
-   * Match matchPort, 0 means no restriction.
-   */
-  matchPort:               number | null;
   /**
    * Match path prefix, empty string means match all paths.
    */
@@ -798,6 +859,10 @@ export type PortalRuleUpdate = {
    * Target site path prefix; empty means strip the matching prefix only.
    */
   routePathPrefix:         string | null;
+  /**
+   * Whether Hub publishes this rule to Portal.
+   */
+  enabled:                 boolean | null;
 }
 /**
  * Portal target site.
@@ -843,6 +908,10 @@ export type PortalSite = {
    * Field sources; only returned by get, create and update.
    */
   fieldSources:  Array<FieldSource>;
+  /**
+   * Whether Hub publishes this site to Portal.
+   */
+  enabled:       boolean;
 }
 /**
  * Portal target site Actor options.
@@ -889,6 +958,10 @@ export type PortalSiteCreation = {
    * Web name.
    */
   webName:       string;
+  /**
+   * Whether Hub publishes this site to Portal.
+   */
+  enabled:       boolean | null;
 }
 /**
  * Portal target site list item.
@@ -930,6 +1003,10 @@ export type PortalSiteListItem = {
    * Web mount path; empty means the Web is not limited to a path.
    */
   webMountPath:  string;
+  /**
+   * Whether Hub publishes this site to Portal.
+   */
+  enabled:       boolean;
 }
 /**
  * Portal target site form options.
@@ -993,6 +1070,10 @@ export type PortalSiteUpdate = {
    * Web name.
    */
   webName:       string | null;
+  /**
+   * Whether Hub publishes this site to Portal.
+   */
+  enabled:       boolean | null;
 }
 /**
  * Portal target site web options.
@@ -1023,70 +1104,6 @@ export type PortalStatusView = {
    * Portal version.
    */
   version:    string;
-}
-/**
- * Seed entity differences.
- */
-export type SeedEntityDiff = {
-  /**
-   * Entity type.
-   */
-  kind:   string;
-  /**
-   * Entity name.
-   */
-  name:   string;
-  /**
-   * Whether the entity currently exists.
-   */
-  exists: boolean;
-  /**
-   * Field differences.
-   */
-  fields: Array<SeedFieldDiff>;
-}
-/**
- * Seed field differences.
- */
-export type SeedFieldDiff = {
-  /**
-   * Field name.
-   */
-  name:         string;
-  /**
-   * Current value.
-   */
-  currentValue: string;
-  /**
-   * Seed value.
-   */
-  seedValue:    string;
-  /**
-   * Whether the values differ.
-   */
-  changed:      boolean;
-}
-/**
- * Seed entity selection.
- */
-export type SeedItemSelection = {
-  /**
-   * Entity type.
-   */
-  kind: string;
-  /**
-   * Entity name.
-   */
-  name: string;
-}
-/**
- * Seed preview.
- */
-export type SeedPreview = {
-  /**
-   * Entity differences.
-   */
-  items: Array<SeedEntityDiff>;
 }
 /**
  * Service Debug Actor options.

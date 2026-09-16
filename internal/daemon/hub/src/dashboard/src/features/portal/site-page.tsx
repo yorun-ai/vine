@@ -1,9 +1,12 @@
 import { FieldSourceInfo } from '@/features/field-source/field-source-info'
+import { EnabledField } from './enabled-field'
+import { invalidateRuleConflicts } from '@/lib/rule-conflicts'
 import { useConfigAccess } from '@/lib/config-access'
 import { SkelName } from '@/components/skel-name'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
 import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import {
   Edit3,
@@ -109,6 +112,7 @@ type PortalCorsModeValue = Extract<
 >
 
 interface PortalSiteFormValue {
+  enabled: boolean
   name: string
   type: PortalSiteType
   actorSkelName: string
@@ -130,6 +134,7 @@ const emptyFormValue: PortalSiteFormValue = {
   corsAllowedOrigins: '',
   rpcgwServices: '',
   webName: '',
+  enabled: true,
 }
 
 const emptyPortalSiteOptions: PortalSiteOptions = {
@@ -202,6 +207,7 @@ function portalSiteToFormValue(entry: PortalSiteListItem): PortalSiteFormValue {
     corsAllowedOrigins: (cors?.allowedOrigins ?? []).join('\n'),
     rpcgwServices: rpcgwServices.join('\n'),
     webName: entry.webName,
+    enabled: entry.enabled,
   }
 }
 
@@ -229,6 +235,7 @@ function formValueToCreation(value: PortalSiteFormValue): PortalSiteCreation {
           : [],
     },
     webName: value.type === 'WEBGW' ? value.webName.trim() : '',
+    enabled: value.enabled,
   }
 }
 
@@ -242,6 +249,7 @@ function formValueToUpdate(value: PortalSiteFormValue): PortalSiteUpdate {
     actorVia: creation.actorVia,
     cors: creation.cors,
     webName: creation.webName,
+    enabled: value.enabled,
   }
 }
 
@@ -499,7 +507,7 @@ function PortalSiteDialog({
   }, [open, entry])
 
   const setField = React.useCallback(
-    (field: keyof PortalSiteFormValue, value: string) => {
+    (field: keyof PortalSiteFormValue, value: string | boolean) => {
       setFormError(null)
       setFieldErrors((current) => {
         if (!current[field]) {
@@ -893,7 +901,7 @@ function ReadonlyField({
       <Label className="flex items-center gap-1.5">{label}{source}</Label>
       <div
         className={cn(
-          'min-h-9 rounded-md border border-input bg-muted/20 px-3 py-2 text-sm',
+          'min-h-9 py-2 text-sm',
           className,
         )}
       >
@@ -1005,7 +1013,7 @@ function PortalSiteInlineEditor({
   }, [entry])
 
   const setField = React.useCallback(
-    (field: keyof PortalSiteFormValue, value: string) => {
+    (field: keyof PortalSiteFormValue, value: string | boolean) => {
       setFormError(null)
       setFieldErrors((current) => {
         if (!current[field]) {
@@ -1288,6 +1296,12 @@ function PortalSiteInlineEditor({
         setField={setField}
       />
 
+      <EnabledField
+        id="portal-site-enabled"
+        enabled={formValue.enabled}
+        onChange={(enabled) => setField('enabled', enabled)}
+      />
+
       <div className="flex justify-end gap-2 border-t pt-4">
         <Button
           type="button"
@@ -1308,6 +1322,7 @@ function PortalSiteInlineEditor({
 
 export function PortalSitePage() {
   const { readOnly } = useConfigAccess()
+  const queryClient = useQueryClient()
   const { t, tText } = useLocale()
   const navigate = useNavigate()
   const pathname = useRouterState({
@@ -1479,6 +1494,7 @@ export function PortalSitePage() {
           creation: formValueToCreation(value),
         })
         toast.success(t('portalSite.created'))
+        invalidateRuleConflicts(queryClient)
         setIsCreating(false)
         setEntries((current) => [...current, created])
         setEntryDetail(created)
@@ -1506,6 +1522,7 @@ export function PortalSitePage() {
           update: formValueToUpdate(value),
         })
         toast.success(t('portalSite.saved'))
+        invalidateRuleConflicts(queryClient)
         setEditingEntry(null)
         setEntryDetail(updated)
         setEntries((current) =>
@@ -1530,6 +1547,7 @@ export function PortalSitePage() {
     try {
       await portalSiteService.remove({ id: deleteEntry.id })
       toast.success(t('portalSite.deleted'))
+      invalidateRuleConflicts(queryClient)
       setDeleteEntry(null)
       setEntries((current) =>
         current.filter((entry) => entry.id !== deleteEntry.id),
@@ -1631,6 +1649,9 @@ export function PortalSitePage() {
                         <span className="truncate text-sm font-medium">
                           <span>{entry.name}</span>
                         </span>
+                        {entry.enabled ? null : (
+                          <Badge variant="secondary">{t('common.disabled')}</Badge>
+                        )}
                       </div>
                       <div className="flex min-w-0 items-center gap-2">
                         <span className="truncate font-mono text-xs text-muted-foreground">
@@ -1701,6 +1722,9 @@ export function PortalSitePage() {
                         <h2 className="min-w-0 truncate text-base font-semibold">
                           {selectedEntry.name}
                         </h2>
+                        {selectedEntry.enabled ? null : (
+                          <Badge variant="secondary">{t('common.disabled')}</Badge>
+                        )}
                         <Badge variant="secondary">
                           {tText(portalSiteTypeLabel(selectedEntry.type))}
                         </Badge>

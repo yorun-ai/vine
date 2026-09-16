@@ -67,22 +67,6 @@ func TestPortalSiteRepoSaveCreate(t *testing.T) {
 	assertWatchedPortalSite(t, entry, vcode.MustUnmarshalJsonS[*watched.PortalSite](raw))
 }
 
-func TestPortalSiteRepoSaveBuiltIn(t *testing.T) {
-	db, repo, _ := newTestPortalSiteRepo(t)
-
-	entry := testPortalSite("demo-entry")
-	entry.BuiltIn = true
-	repo.Save(entry)
-
-	var row model.PortalSite
-	require.NoError(t, db.First(&row, "id = ?", entry.Id).Error)
-	assert.True(t, row.BuiltIn)
-
-	got, ok := repo.GetById(entry.Id)
-	require.True(t, ok)
-	assert.True(t, got.BuiltIn)
-}
-
 func TestPortalSiteRepoSaveRename(t *testing.T) {
 	_, repo, watchServer := newTestPortalSiteRepo(t)
 
@@ -159,6 +143,7 @@ func testPortalSite(name string) *core.PortalSite {
 			Mode:           core.PortalCorsModeStrict,
 			AllowedOrigins: []string{"https://console.example.com"},
 		},
+		Enabled: true,
 	}
 }
 

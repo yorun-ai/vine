@@ -11,10 +11,6 @@ data PortalStatusView {
 
 @desc("Hub Dashboard's Portal instance status service")
 api service PortalStatusApiService {
-    for AdminActor
-
-    noauth
-
     @desc("List Portal instance statuses")
     method list {
         output list<PortalStatusView>

@@ -5,10 +5,10 @@ import type {
   VrpcRequestOptions,
 } from '@yorun-ai/vrpc';
 import {
+  AdminApiServiceSpec,
   AppConfigApiServiceSpec,
   AppStatusApiServiceSpec,
   EventDebugApiServiceSpec,
-  MaintenanceApiServiceSpec,
   PortalCertApiServiceSpec,
   PortalEntryApiServiceSpec,
   PortalRuleApiServiceSpec,
@@ -27,19 +27,18 @@ import type {
   EventDebugEventItem,
   EventDebugDefaultEmitRequest,
   EventDebugEmitRequest,
-  SeedPreview,
-  SeedItemSelection,
   PortalCertListItem,
   PortalCert,
   PortalCertCreation,
   PortalCertUpdate,
   PortalEntry,
+  PortalEntryCreation,
   PortalEntryAccessUpdate,
+  PortalRuleConflict,
   PortalRuleListItem,
   PortalRule,
   PortalRuleCreation,
   PortalRuleUpdate,
-  PortalDashboardAccess,
   PortalSiteListItem,
   PortalSiteOptions,
   PortalSite,
@@ -66,6 +65,30 @@ import type {
   TaskDebugDefaultLaunchRequest,
   TaskDebugLaunchRequest,
 } from './data';
+/**
+ * Hub's Admin API service, called by the Dashboard
+ */
+export function createAdminApiService(client: VrpcClient) {
+  return {
+    /**
+     * Whether Hub configuration is read-only.
+     * @param params - Request parameters, or null for methods without input
+     * @param options - Optional invocation options
+     * @returns boolean -
+     */
+    readOnly(
+      params: null,
+      options?: VrpcRequestOptions,
+    ) {
+      return client.invoke<boolean>({
+        serviceName: AdminApiServiceSpec.serviceName,
+        methodName: AdminApiServiceSpec.methods.readOnly,
+        params,
+        options,
+      });
+    },
+  };
+}
 /**
  * Hub's application configuration service, called by Client
  */
@@ -254,69 +277,6 @@ export function createEventDebugApiService(client: VrpcClient) {
   };
 }
 /**
- * Hub maintenance service
- */
-export function createMaintenanceApiService(client: VrpcClient) {
-  return {
-    /**
-     * Whether Hub configuration is read-only.
-     * @param params - Request parameters, or null for methods without input
-     * @param options - Optional invocation options
-     * @returns boolean -
-     */
-    configReadOnly(
-      params: null,
-      options?: VrpcRequestOptions,
-    ) {
-      return client.invoke<boolean>({
-        serviceName: MaintenanceApiServiceSpec.serviceName,
-        methodName: MaintenanceApiServiceSpec.methods.configReadOnly,
-        params,
-        options,
-      });
-    },
-    /**
-     * Preview Seed YAML differences.
-     * @param params - Request parameters, or null for methods without input
-     * @param options - Optional invocation options
-     * @returns SeedPreview - Seed preview
-     */
-    previewSeedYaml(
-      params: {
-        content: string;
-      },
-      options?: VrpcRequestOptions,
-    ) {
-      return client.invoke<SeedPreview>({
-        serviceName: MaintenanceApiServiceSpec.serviceName,
-        methodName: MaintenanceApiServiceSpec.methods.previewSeedYaml,
-        params,
-        options,
-      });
-    },
-    /**
-     * Apply Seed YAML entity updates.
-     * @param params - Request parameters, or null for methods without input
-     * @param options - Optional invocation options
-     * @returns SeedPreview - Updated Seed preview
-     */
-    applySeedYaml(
-      params: {
-        content: string;
-        selections: Array<SeedItemSelection>;
-      },
-      options?: VrpcRequestOptions,
-    ) {
-      return client.invoke<SeedPreview>({
-        serviceName: MaintenanceApiServiceSpec.serviceName,
-        methodName: MaintenanceApiServiceSpec.methods.applySeedYaml,
-        params,
-        options,
-      });
-    },
-  };
-}
-/**
  * Hub's Portal site certificate service, called by the Portal admin client
  */
 export function createPortalCertApiService(client: VrpcClient) {
@@ -439,6 +399,25 @@ export function createPortalEntryApiService(client: VrpcClient) {
       });
     },
     /**
+     * Create a Portal access entry.
+     * @param params - Request parameters, or null for methods without input
+     * @param options - Optional invocation options
+     * @returns PortalEntry - Portal access entry
+     */
+    create(
+      params: {
+        creation: PortalEntryCreation;
+      },
+      options?: VrpcRequestOptions,
+    ) {
+      return client.invoke<PortalEntry>({
+        serviceName: PortalEntryApiServiceSpec.serviceName,
+        methodName: PortalEntryApiServiceSpec.methods.create,
+        params,
+        options,
+      });
+    },
+    /**
      * Modify Portal access configuration.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
@@ -460,6 +439,26 @@ export function createPortalEntryApiService(client: VrpcClient) {
         options,
       });
     },
+    /**
+     * Delete a Portal access entry that routes no rule.
+     * @param params - Request parameters, or null for methods without input
+     * @param options - Optional invocation options
+     */
+    remove(
+      params: {
+        scheme: string;
+        host: string;
+        port: number;
+      },
+      options?: VrpcRequestOptions,
+    ) {
+      return client.invoke<void>({
+        serviceName: PortalEntryApiServiceSpec.serviceName,
+        methodName: PortalEntryApiServiceSpec.methods.remove,
+        params,
+        options,
+      });
+    },
   };
 }
 /**
@@ -467,6 +466,23 @@ export function createPortalEntryApiService(client: VrpcClient) {
  */
 export function createPortalRuleApiService(client: VrpcClient) {
   return {
+    /**
+     * List Portal entry rules that match the same request.
+     * @param params - Request parameters, or null for methods without input
+     * @param options - Optional invocation options
+     * @returns Array<PortalRuleConflict> - Portal entry rule conflicts
+     */
+    listConflicts(
+      params: null,
+      options?: VrpcRequestOptions,
+    ) {
+      return client.invoke<Array<PortalRuleConflict>>({
+        serviceName: PortalRuleApiServiceSpec.serviceName,
+        methodName: PortalRuleApiServiceSpec.methods.listConflicts,
+        params,
+        options,
+      });
+    },
     /**
      * List Portal entry rules.
      * @param params - Request parameters, or null for methods without input
@@ -556,45 +572,6 @@ export function createPortalRuleApiService(client: VrpcClient) {
       return client.invoke<void>({
         serviceName: PortalRuleApiServiceSpec.serviceName,
         methodName: PortalRuleApiServiceSpec.methods.remove,
-        params,
-        options,
-      });
-    },
-    /**
-     * Get the Hub Dashboard access entry.
-     * @param params - Request parameters, or null for methods without input
-     * @param options - Optional invocation options
-     * @returns PortalDashboardAccess - Hub Dashboard access entry
-     */
-    getDashboardAccess(
-      params: null,
-      options?: VrpcRequestOptions,
-    ) {
-      return client.invoke<PortalDashboardAccess>({
-        serviceName: PortalRuleApiServiceSpec.serviceName,
-        methodName: PortalRuleApiServiceSpec.methods.getDashboardAccess,
-        params,
-        options,
-      });
-    },
-    /**
-     * Modify Hub Dashboard access entry.
-     * @param params - Request parameters, or null for methods without input
-     * @param options - Optional invocation options
-     * @returns Array<PortalRule> - Hub Dashboard entry rules
-     */
-    updateDashboardAccess(
-      params: {
-        scheme: string;
-        host: string;
-        port: number;
-        pathPrefix: string;
-      },
-      options?: VrpcRequestOptions,
-    ) {
-      return client.invoke<Array<PortalRule>>({
-        serviceName: PortalRuleApiServiceSpec.serviceName,
-        methodName: PortalRuleApiServiceSpec.methods.updateDashboardAccess,
         params,
         options,
       });

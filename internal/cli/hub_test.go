@@ -33,15 +33,6 @@ func TestRunHubServe(t *testing.T) {
 		if flags.SeedHubDataFile != "/tmp/hub.yaml" {
 			t.Fatalf("unexpected seed yaml path: %q", flags.SeedHubDataFile)
 		}
-		if flags.DashboardURLRaw != "https://hub.example.com:8443/admin" {
-			t.Fatalf("unexpected dashboard url raw: %q", flags.DashboardURLRaw)
-		}
-		if flags.DashboardURLSet {
-			t.Fatal("unexpected dashboard url set before normalize")
-		}
-		if flags.DashboardURL != nil {
-			t.Fatalf("unexpected dashboard url before normalize: %q", flags.DashboardURL)
-		}
 		if flags.MQNatsEndpoint != "nats://127.0.0.1:4222" {
 			t.Fatalf("unexpected mq endpoint: %q", flags.MQNatsEndpoint)
 		}
@@ -53,7 +44,7 @@ func TestRunHubServe(t *testing.T) {
 		}
 	}
 
-	result := run([]string{"hub", "serve", "--control-listen", ":9090", "--admin-listen", ":9092", "--watch-listen", "127.0.0.1:9091", "--mq-mode=nats", "--mq-nats-endpoint", "nats://127.0.0.1:4222", "--seed-hub-data-file", "/tmp/hub.yaml", "--dashboard-url", "https://hub.example.com:8443/admin", "--db-sqlite-file", "/tmp/hub.sqlite", "--mtls-ca-file", "/tmp/ca.pem", "--mtls-cert-file", "/tmp/hub.pem", "--mtls-key-file", "/tmp/hub-key.pem"})
+	result := run([]string{"hub", "serve", "--control-listen", ":9090", "--admin-listen", ":9092", "--watch-listen", "127.0.0.1:9091", "--mq-mode=nats", "--mq-nats-endpoint", "nats://127.0.0.1:4222", "--seed-data-file", "/tmp/hub.yaml", "--db-sqlite-file", "/tmp/hub.sqlite", "--mtls-ca-file", "/tmp/ca.pem", "--mtls-cert-file", "/tmp/hub.pem", "--mtls-key-file", "/tmp/hub-key.pem"})
 
 	if result.exitCode != exitCodeSuccess {
 		t.Fatalf("unexpected exit code: %d, stderr=%q", result.exitCode, result.stderr)
@@ -146,10 +137,7 @@ func TestRunHubHelpShowsServeOptions(t *testing.T) {
 	if !strings.Contains(result.stdout, "--mq-mode") {
 		t.Fatalf("unexpected stdout: %q", result.stdout)
 	}
-	if !strings.Contains(result.stdout, "--seed-hub-data-file") {
-		t.Fatalf("unexpected stdout: %q", result.stdout)
-	}
-	if !strings.Contains(result.stdout, "--dashboard-url") {
+	if !strings.Contains(result.stdout, "--seed-data-file") {
 		t.Fatalf("unexpected stdout: %q", result.stdout)
 	}
 	if !strings.Contains(result.stdout, "--db-sqlite-file") {
@@ -169,8 +157,7 @@ func TestRunHubServeFromEnv(t *testing.T) {
 	t.Setenv(EnvHubWatchListen, "127.0.0.1:10091")
 	t.Setenv(EnvHubMQMode, "nats")
 	t.Setenv(EnvHubMQNatsEndpoint, "nats://127.0.0.1:4222")
-	t.Setenv(EnvSeedHubDataFile, "/tmp/env-hub.yaml")
-	t.Setenv(EnvHubDashboardURL, "http://:10099")
+	t.Setenv(EnvSeedDataFile, "/tmp/env-hub.yaml")
 	t.Setenv(EnvHubDBSQLiteFile, "/tmp/env-hub.sqlite")
 
 	called := false
@@ -190,15 +177,6 @@ func TestRunHubServeFromEnv(t *testing.T) {
 		}
 		if flags.SeedHubDataFile != "/tmp/env-hub.yaml" {
 			t.Fatalf("unexpected seed yaml path: %q", flags.SeedHubDataFile)
-		}
-		if flags.DashboardURLRaw != "http://:10099" {
-			t.Fatalf("unexpected dashboard url raw: %q", flags.DashboardURLRaw)
-		}
-		if flags.DashboardURLSet {
-			t.Fatal("unexpected dashboard url set before normalize")
-		}
-		if flags.DashboardURL != nil {
-			t.Fatalf("unexpected dashboard url before normalize: %q", flags.DashboardURL)
 		}
 		if flags.MQNatsEndpoint != "nats://127.0.0.1:4222" {
 			t.Fatalf("unexpected mq endpoint: %q", flags.MQNatsEndpoint)
@@ -228,8 +206,8 @@ func TestRunHubServeNoDB(t *testing.T) {
 		}
 	}
 	for _, args := range [][]string{
-		{"hub", "serve", "--no-db", "--seed-hub-data-file", "seed.yaml", "--mq-mode=embedded"},
-		{"hub", "serve", "--seed-hub-data-file", "seed.yaml", "--mq-mode=embedded"},
+		{"hub", "serve", "--no-db", "--seed-data-file", "seed.yaml", "--mq-mode=embedded"},
+		{"hub", "serve", "--seed-data-file", "seed.yaml", "--mq-mode=embedded"},
 	} {
 		result := run(args)
 		if result.exitCode != exitCodeSuccess {
@@ -238,12 +216,12 @@ func TestRunHubServeNoDB(t *testing.T) {
 	}
 }
 
-func TestHubSeedHubInputs(t *testing.T) {
+func TestHubSeedInputs(t *testing.T) {
 	original := startHubApp
 	t.Cleanup(func() { startHubApp = original })
 	for _, fromEnv := range []bool{false, true} {
 		t.Run(fmt.Sprint(fromEnv), func(t *testing.T) {
-			for _, name := range []string{EnvSeedHubDataFile, EnvSeedHubSourceFile, EnvSeedHubVarsFile} {
+			for _, name := range []string{EnvSeedDataFile, EnvSeedSourceFile, EnvSeedVarsFile} {
 				t.Setenv(name, "")
 			}
 			called := false
@@ -255,11 +233,11 @@ func TestHubSeedHubInputs(t *testing.T) {
 			}
 			args := []string{"hub", "serve"}
 			if fromEnv {
-				t.Setenv(EnvSeedHubDataFile, "data.yaml")
-				t.Setenv(EnvSeedHubSourceFile, "source.yaml")
-				t.Setenv(EnvSeedHubVarsFile, "vars.yaml")
+				t.Setenv(EnvSeedDataFile, "data.yaml")
+				t.Setenv(EnvSeedSourceFile, "source.yaml")
+				t.Setenv(EnvSeedVarsFile, "vars.yaml")
 			} else {
-				args = append(args, "--seed-hub-data-file", "data.yaml", "--seed-hub-source-file", "source.yaml", "--seed-hub-vars-file", "vars.yaml")
+				args = append(args, "--seed-data-file", "data.yaml", "--seed-source-file", "source.yaml", "--seed-vars-file", "vars.yaml")
 			}
 			result := run(args)
 			if result.exitCode != exitCodeSuccess || !called {
@@ -269,7 +247,7 @@ func TestHubSeedHubInputs(t *testing.T) {
 	}
 }
 
-func TestHubWatchListenCompatibility(t *testing.T) {
+func TestHubWatchListenInputs(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		args []string
@@ -277,23 +255,12 @@ func TestHubWatchListenCompatibility(t *testing.T) {
 		want string
 	}{
 		{name: "default", want: "127.0.0.1:7072"},
-		{name: "watch flag", args: []string{"--watch-listen", ":8100"}, want: ":8100"},
-		{name: "watch environment", env: map[string]string{EnvHubWatchListen: ":8101"}, want: ":8101"},
-		{name: "redis flag", args: []string{"--redis-listen", ":8200"}, want: ":8200"},
-		{name: "redis environment", env: map[string]string{EnvHubRedisListen: ":8201"}, want: ":8201"},
-		{name: "legacy flag overrides image default", args: []string{"--redis-listen", ":8202"}, env: map[string]string{EnvHubRedisListen: "0.0.0.0:7072"}, want: ":8202"},
-		{name: "both flags", args: []string{"--watch-listen", ":8100", "--redis-listen", ":8200"}, want: ":8100"},
-		{name: "both flags reversed", args: []string{"--redis-listen", ":8200", "--watch-listen", ":8100"}, want: ":8100"},
-		{name: "both environments", env: map[string]string{EnvHubWatchListen: ":8101", EnvHubRedisListen: ":8201"}, want: ":8101"},
-		{name: "watch flag and redis environment", args: []string{"--watch-listen", ":8100"}, env: map[string]string{EnvHubRedisListen: ":8201"}, want: ":8100"},
+		{name: "flag", args: []string{"--watch-listen", ":8100"}, want: ":8100"},
+		{name: "environment", env: map[string]string{EnvHubWatchListen: ":8101"}, want: ":8101"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			for _, name := range []string{EnvHubWatchListen, EnvHubRedisListen} {
-				t.Setenv(name, "")
-				if err := os.Unsetenv(name); err != nil {
-					t.Fatal(err)
-				}
-			}
+			t.Setenv(EnvHubWatchListen, "")
+			require.NoError(t, os.Unsetenv(EnvHubWatchListen))
 			for name, value := range tc.env {
 				t.Setenv(name, value)
 			}
@@ -314,13 +281,6 @@ func TestHubWatchListenCompatibility(t *testing.T) {
 				t.Fatalf("unexpected command error: %q", result.stderr)
 			}
 		})
-	}
-}
-
-func TestHubServeHelpMarksRedisListenDeprecated(t *testing.T) {
-	result := run([]string{"hub", "serve", "--help"})
-	if result.exitCode != exitCodeSuccess || !strings.Contains(result.stdout, "--watch-listen") || !strings.Contains(result.stdout, "deprecated: use --watch-listen") {
-		t.Fatalf("unexpected help: %#v", result)
 	}
 }
 
@@ -372,18 +332,10 @@ func TestHubMQInputs(t *testing.T) {
 		{name: "default", mode: "embedded"},
 		{name: "embedded", args: []string{"--mq-mode=embedded"}, mode: "embedded"},
 		{name: "external", args: []string{"--mq-mode=nats", "--mq-nats-endpoint=nats://new:4222"}, mode: "nats", endpoint: "nats://new:4222"},
-		{name: "legacy embedded", args: []string{"--mq-embedded-nats"}, mode: "embedded"},
-		{name: "legacy external", args: []string{"--mq-external-nats-url=nats://old:4222"}, mode: "nats", endpoint: "nats://old:4222"},
-		{name: "legacy false", args: []string{"--mq-embedded-nats=false", "--mq-external-nats-url=nats://old:4222"}, mode: "nats", endpoint: "nats://old:4222"},
-		{name: "explicit mode wins", args: []string{"--mq-mode=nats", "--mq-embedded-nats", "--mq-nats-endpoint=nats://new:4222"}, mode: "nats", endpoint: "nats://new:4222"},
-		{name: "new endpoint wins", args: []string{"--mq-mode=nats", "--mq-nats-endpoint=nats://new:4222", "--mq-external-nats-url=nats://old:4222"}, mode: "nats", endpoint: "nats://new:4222"},
 		{name: "environment", env: map[string]string{EnvHubMQMode: "nats", EnvHubMQNatsEndpoint: "nats://new:4222"}, mode: "nats", endpoint: "nats://new:4222"},
-		{name: "legacy environment", env: map[string]string{EnvHubMQExternalNatsURL: "nats://old:4222"}, mode: "nats", endpoint: "nats://old:4222"},
-		{name: "legacy bool environment", env: map[string]string{EnvHubMQEmbeddedNats: "true"}, mode: "embedded"},
-		{name: "mode environment wins", env: map[string]string{EnvHubMQMode: "nats", EnvHubMQEmbeddedNats: "true", EnvHubMQNatsEndpoint: "nats://new:4222"}, mode: "nats", endpoint: "nats://new:4222"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			for _, key := range []string{EnvHubMQMode, EnvHubMQNatsEndpoint, EnvHubMQEmbeddedNats, EnvHubMQExternalNatsURL} {
+			for _, key := range []string{EnvHubMQMode, EnvHubMQNatsEndpoint} {
 				t.Setenv(key, "")
 				require.NoError(t, os.Unsetenv(key))
 			}

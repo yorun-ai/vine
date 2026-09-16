@@ -31,6 +31,7 @@ func (s *PortalCertApiServiceServerImpl) Create(creation skeled.PortalCertCreati
 		Name:             creation.Name,
 		PublicKeyBase64:  creation.PublicKeyBase64,
 		PrivateKeyBase64: creation.PrivateKeyBase64,
+		Enabled:          creation.Enabled,
 	})
 	return toServerPortalCert(cert, toServerFieldSources(cert.FieldSources))
 }
@@ -40,6 +41,7 @@ func (s *PortalCertApiServiceServerImpl) Update(id int, update skeled.PortalCert
 		Name:             update.Name,
 		PublicKeyBase64:  update.PublicKeyBase64,
 		PrivateKeyBase64: update.PrivateKeyBase64,
+		Enabled:          update.Enabled,
 	})
 	return toServerPortalCert(cert, toServerFieldSources(cert.FieldSources))
 }
@@ -50,6 +52,7 @@ func (s *PortalCertApiServiceServerImpl) Remove(id int) {
 
 func toServerPortalCert(cert *core.PortalCert, fieldSources []skeled.FieldSource) skeled.PortalCert {
 	return skeled.PortalCert{
+		Enabled:              cert.Enabled,
 		Id:                   cert.Id,
 		Name:                 cert.Name,
 		Issuer:               cert.Issuer,
@@ -67,6 +70,7 @@ func toServerPortalCert(cert *core.PortalCert, fieldSources []skeled.FieldSource
 func toServerPortalCertListItem(cert *core.PortalCert) skeled.PortalCertListItem {
 	detail := toServerPortalCert(cert, nil)
 	return skeled.PortalCertListItem{
+		Enabled:              detail.Enabled,
 		Id:                   detail.Id,
 		Name:                 detail.Name,
 		Issuer:               detail.Issuer,

@@ -27,7 +27,7 @@ Rpc、Web、Event、Task、Redis 与关系型数据库，并让同一套应用�
 | 运行时服务 | Hub 配置与注册中心、Link 发现与转发，以及可选的 Portal HTTP/HTTPS 网关 |
 | 基础设施 | 结构化日志、trace 与身份传播、Redis 客户端/缓存/锁，以及基于 SQLite 或 PostgreSQL 的 RDB |
 | 工具链 | `vine` 运行时 CLI、`app/testkit`、Go 公开 API facade，以及 Skel 生成的 Go/TypeScript 契约 |
-| 部署 | standalone、本地 `vine dev`、linked 与完全分离式拓扑，无需重写业务模块 |
+| 部署 | standalone、linked 与完全分离式拓扑，无需重写业务模块 |
 
 ## 运行时架构
 
@@ -120,7 +120,6 @@ go run .
 | 模式 | 运行时位置 | 启动方式 | 适用场景 |
 | --- | --- | --- | --- |
 | **Standalone** | Hub、Portal、Link 和 App 位于同一个进程 | `app/standalone` | 首个应用、包级测试和本地单体开发 |
-| **`vine dev`** | Hub、Portal、Link 位于 CLI 进程，App 独立运行 | `vine dev` + `app.New` | 使用临时本地基础设施调试真实 App-to-Link 网络边界 |
 | **Linked** | Hub、Portal 独立运行，Link 位于 App 进程内 | `app/linked` | 使用共享运行时服务，但不维护独立 Link sidecar |
 | **分离式** | Hub、Portal、Link、App 分别独立运行 | `vine ... serve` + `app.New` | 容器部署、独立扩缩容、租约和故障测试 |
 
@@ -143,9 +142,6 @@ vine --help
 常用入口：
 
 ```bash
-# 本地 Hub + Portal + Link；从 YAML 加载只读配置。
-vine dev --seed-hub-data-file ./hub.yaml
-
 # 独立运行的运行时服务；每条命令分别在独立进程中执行。
 vine hub serve --db-sqlite-file ./hub.sqlite
 vine portal serve --hub-endpoint http://127.0.0.1:7071

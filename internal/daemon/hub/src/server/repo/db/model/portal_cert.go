@@ -25,6 +25,7 @@ type PortalCert struct {
 	PrivateKeyBase64 string    `gorm:"column:private_key_base64"`
 	ValidFrom        time.Time `gorm:"column:valid_from"`
 	ValidTo          time.Time `gorm:"column:valid_to"`
+	Enabled          bool      `gorm:"column:enabled;not null"`
 }
 
 func (*PortalCert) TableName() string {
@@ -36,6 +37,7 @@ type PortalCertDao struct {
 }
 
 func (d *PortalCertDao) InitSchema() {
+	ensureEnabledColumn(d.GormDB(), "portal_cert")
 	sql := schemaSQL(d.GormDB(), createPortalCertSQLiteSQL, createPortalCertPgSQL)
 	err := d.GormDB().Exec(sql).Error
 	ex.PanicIfError(err)
@@ -71,6 +73,7 @@ func (d *PortalCertDao) Save(cert *PortalCert) *PortalCert {
 		"private_key_base64": cert.PrivateKeyBase64,
 		"valid_from":         cert.ValidFrom,
 		"valid_to":           cert.ValidTo,
+		"enabled":            cert.Enabled,
 	})
 	return row
 }

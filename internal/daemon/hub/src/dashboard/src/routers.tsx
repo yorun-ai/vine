@@ -13,9 +13,7 @@ import { AppLayout } from '@/layouts/app-layout/app-layout'
 
 import { createAppRoutes } from './routers/app'
 import { createDebugRoutes } from './routers/debug'
-import { createMaintenanceRoutes } from './routers/maintenance'
 import { createPortalRoutes } from './routers/portal'
-import { createSettingsRoutes } from './routers/settings'
 import { createSkeletonRoutes } from './routers/skeleton'
 import { createStatusRoutes } from './routers/status'
 
@@ -42,8 +40,6 @@ export const routeTree = RootRoute.addChildren([
     createStatusRoutes(AuthenticatedRoute),
     createDebugRoutes(AuthenticatedRoute),
     createPortalRoutes(AuthenticatedRoute),
-    createMaintenanceRoutes(AuthenticatedRoute),
-    createSettingsRoutes(AuthenticatedRoute),
     ...createSkeletonRoutes(AuthenticatedRoute),
   ]),
 ])

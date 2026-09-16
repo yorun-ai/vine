@@ -33,9 +33,8 @@ var (
 	listenTCP     = net.Listen
 )
 
-// Server exposes only the Hub Control API used by Link and Portal. Hub's
-// admin Rpc services and Dashboard Web handler remain on the main Hub
-// application listener and are deliberately absent from this server.
+// Server exposes only the Hub Control API used by Link and Portal. The Admin API
+// and the Dashboard belong to the admin module and are deliberately absent here.
 type Server struct {
 	app.BaseModule
 
@@ -145,13 +144,12 @@ func (s *Server) stopHTTP() {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, request *http.Request) {
-	prefix := coreapp.PathRpcInvoke
-	if request.URL.Path != prefix && !strings.HasPrefix(request.URL.Path, prefix+"/") {
+	if request.URL.Path != coreapp.PathRpcInvoke && !strings.HasPrefix(request.URL.Path, coreapp.PathRpcInvoke+"/") {
 		http.NotFound(w, request)
 		return
 	}
 
-	path := strings.TrimPrefix(request.URL.Path, prefix)
+	path := strings.TrimPrefix(request.URL.Path, coreapp.PathRpcInvoke)
 	if path == "" {
 		path = "/"
 	}

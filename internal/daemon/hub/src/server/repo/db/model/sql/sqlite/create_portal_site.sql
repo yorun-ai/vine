@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS portal_site (
     cors_mode TEXT NOT NULL DEFAULT 'SAME_DOMAIN', -- CORS mode
     cors_origins TEXT NOT NULL DEFAULT '[]',-- CORS allowed origins JSON
     web_name TEXT NOT NULL,                 -- Web skel name
-    built_in BOOLEAN NOT NULL DEFAULT FALSE     -- Whether this site is built in
+    built_in BOOLEAN NOT NULL DEFAULT FALSE,    -- TODO: Drop with the built-in cleanup; nothing sets it TRUE
+    enabled BOOLEAN NOT NULL DEFAULT TRUE       -- Whether Hub publishes this site; an older Hub leaves the default
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_site_name

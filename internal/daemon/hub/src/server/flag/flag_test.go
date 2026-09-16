@@ -18,7 +18,7 @@ func TestNormalizeRejectsPartialMTLSFiles(t *testing.T) {
 func TestFlagNormalizeRequiresSeedWithoutDatabase(t *testing.T) {
 	flags := &Flag{}
 
-	require.PanicsWithError(t, "no-db requires seed-hub-data-file or SeedHubData", func() {
+	require.PanicsWithError(t, "no-db requires a seed data file or SeedHubData", func() {
 		flags.Normalize(false)
 	})
 }
@@ -72,87 +72,6 @@ func TestFlagNormalizeKeepsExplicitStore(t *testing.T) {
 	assert.Equal(t, HubDefaultControlListen, flags.ControlListen)
 	assert.Equal(t, HubDefaultAdminListen, flags.AdminListen)
 	assert.Equal(t, "127.0.0.1:7072", flags.WatchListen)
-	assert.Equal(t, HubDefaultDashboardURL, flags.DashboardURL.String())
-	assert.False(t, flags.DashboardURLSet)
-}
-
-func TestFlagNormalizeNormalizesDashboardURL(t *testing.T) {
-	flags := &Flag{
-		Store:           StoreSQLite,
-		DBSQLiteFile:    "/tmp/hub.sqlite",
-		MQMode:          MQModeEmbedded,
-		DashboardURLRaw: ":7099",
-	}
-
-	flags.Normalize(false)
-
-	assert.Equal(t, HubDefaultDashboardURL, flags.DashboardURL.String())
-	assert.True(t, flags.DashboardURLSet)
-}
-
-func TestFlagNormalizeUsesHTTPSDashboardDefaultWithMTLS(t *testing.T) {
-	flags := &Flag{
-		MTLS: mtls.Files{
-			CAFile:   "ca.pem",
-			CertFile: "cert.pem",
-			KeyFile:  "key.pem",
-		},
-		Store:        StoreSQLite,
-		DBSQLiteFile: "/tmp/hub.sqlite",
-		MQMode:       MQModeEmbedded,
-	}
-
-	flags.Normalize(false)
-
-	assert.Equal(t, HubMTLSDefaultDashboardURL, flags.DashboardURL.String())
-	assert.False(t, flags.DashboardURLSet)
-	assert.True(t, flags.DashboardURLMTLSDefault)
-}
-
-func TestFlagNormalizeKeepsExplicitHTTPDashboardURLWithMTLS(t *testing.T) {
-	flags := &Flag{
-		MTLS: mtls.Files{
-			CAFile:   "ca.pem",
-			CertFile: "cert.pem",
-			KeyFile:  "key.pem",
-		},
-		Store:           StoreSQLite,
-		DBSQLiteFile:    "/tmp/hub.sqlite",
-		MQMode:          MQModeEmbedded,
-		DashboardURLRaw: "http://:7099/",
-	}
-
-	flags.Normalize(false)
-
-	assert.Equal(t, HubDefaultDashboardURL, flags.DashboardURL.String())
-	assert.True(t, flags.DashboardURLSet)
-	assert.False(t, flags.DashboardURLMTLSDefault)
-}
-
-func TestFlagNormalizeAddsDashboardURLPath(t *testing.T) {
-	flags := &Flag{
-		Store:           StoreSQLite,
-		DBSQLiteFile:    "/tmp/hub.sqlite",
-		MQMode:          MQModeEmbedded,
-		DashboardURLRaw: "https://hub.example.com:8443",
-	}
-
-	flags.Normalize(false)
-
-	assert.Equal(t, "https://hub.example.com:8443/", flags.DashboardURL.String())
-}
-
-func TestFlagNormalizeRejectsInvalidDashboardURLScheme(t *testing.T) {
-	flags := &Flag{
-		Store:           StoreSQLite,
-		DBSQLiteFile:    "/tmp/hub.sqlite",
-		MQMode:          MQModeEmbedded,
-		DashboardURLRaw: "ftp://hub.example.com:8443/admin",
-	}
-
-	require.PanicsWithError(t, "parse DashboardURL failed: scheme must be http or https", func() {
-		flags.Normalize(false)
-	})
 }
 
 func TestFlagNormalizeAcceptsValidMQEndpoint(t *testing.T) {
@@ -211,13 +130,13 @@ func TestFlagNormalizeMQModes(t *testing.T) {
 	}
 }
 
-func TestFlagNormalizeInprocClearsListenAndMQ(t *testing.T) {
+func TestFlagNormalizeInprocClearsControlAndWatchListen(t *testing.T) {
 	flags := &Flag{
 		MQMode:         MQModeNATS,
 		Store:          StoreSQLite,
 		DBSQLiteFile:   "/tmp/hub.sqlite",
 		ControlListen:  "127.0.0.1:7071",
-		AdminListen:    "127.0.0.1:7075",
+		AdminListen:    "127.0.0.1:7099",
 		WatchListen:    "127.0.0.1:7072",
 		MQNatsEndpoint: "nats://127.0.0.1:4222",
 		DBPostgresURL:  "",
@@ -228,12 +147,21 @@ func TestFlagNormalizeInprocClearsListenAndMQ(t *testing.T) {
 	assert.Equal(t, StoreSQLite, flags.Store)
 	assert.Equal(t, "/tmp/hub.sqlite", flags.DBSQLiteFile)
 	assert.Empty(t, flags.ControlListen)
-	assert.Empty(t, flags.AdminListen)
 	assert.Empty(t, flags.WatchListen)
 	assert.Empty(t, flags.MQNatsEndpoint)
 	assert.Equal(t, MQModeEmbedded, flags.MQMode)
 	assert.Equal(t, "embedded", flags.LockMode)
 	assert.Empty(t, flags.LockRedisEndpoint)
+	// An inproc Hub keeps the admin address its caller declared.
+	assert.Equal(t, "127.0.0.1:7099", flags.AdminListen)
+}
+
+func TestFlagNormalizeInprocWithoutAdminListen(t *testing.T) {
+	flags := &Flag{SeedHubDataFile: "seed.yaml"}
+
+	flags.Normalize(true)
+
+	assert.Empty(t, flags.AdminListen)
 }
 
 func TestFlagInferStoreDefaultsToMemory(t *testing.T) {

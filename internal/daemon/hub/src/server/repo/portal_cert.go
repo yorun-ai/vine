@@ -67,6 +67,7 @@ func toCorePortalCert(row *model.PortalCert) *core.PortalCert {
 		PrivateKeyBase64: row.PrivateKeyBase64,
 		ValidFrom:        row.ValidFrom,
 		ValidTo:          row.ValidTo,
+		Enabled:          row.Enabled,
 	}
 }
 
@@ -81,5 +82,6 @@ func toModelPortalCert(cert *core.PortalCert) *model.PortalCert {
 		PrivateKeyBase64: cert.PrivateKeyBase64,
 		ValidFrom:        cert.ValidFrom,
 		ValidTo:          cert.ValidTo,
+		Enabled:          cert.Enabled,
 	}
 }

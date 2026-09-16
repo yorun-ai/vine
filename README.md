@@ -33,7 +33,7 @@ shutdown.
 | Runtime services | Hub configuration and registry, Link discovery and forwarding, and optional Portal HTTP/HTTPS gateways |
 | Infrastructure | Structured logging, trace and identity propagation, Redis clients/caches/locks, and SQLite or PostgreSQL-backed RDB access |
 | Tooling | `vine` runtime CLI, `app/testkit`, Go API facades, and Skel-generated Go and TypeScript contracts |
-| Deployment | Standalone, local `vine dev`, linked, and fully separated topologies without rewriting business modules |
+| Deployment | Standalone, linked, and fully separated topologies without rewriting business modules |
 
 ## Runtime Architecture
 
@@ -129,7 +129,6 @@ or define a typed API in the
 | Mode | Runtime placement | Start with | Best for |
 | --- | --- | --- | --- |
 | **Standalone** | Hub, Portal, Link, and App share one process | `app/standalone` | First applications, package tests, and local monoliths |
-| **`vine dev`** | Hub, Portal, and Link share the CLI process; App runs separately | `vine dev` + `app.New` | Debugging a real App-to-Link network boundary with temporary local infrastructure |
 | **Linked** | Hub and Portal are separate; Link runs inside the App process | `app/linked` | Shared runtime services without a separate Link sidecar |
 | **Separated** | Hub, Portal, Link, and App run as independent processes | `vine ... serve` + `app.New` | Container deployment, independent scaling, leases, and failure testing |
 
@@ -153,9 +152,6 @@ Use an exact release tag instead of `@latest` in deployment build scripts.
 Common entry points:
 
 ```bash
-# Local Hub + Portal + Link; configuration comes from YAML and is read-only.
-vine dev --seed-hub-data-file ./hub.yaml
-
 # Independently operated runtime services; run each in its own process.
 vine hub serve --db-sqlite-file ./hub.sqlite
 vine portal serve --hub-endpoint http://127.0.0.1:7071

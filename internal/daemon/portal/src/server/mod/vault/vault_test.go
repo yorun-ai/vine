@@ -127,11 +127,11 @@ func TestVaultGetCertificatePrefersExactHostOverWildcard(t *testing.T) {
 func TestVaultGetCertificateUsesTemporaryWebCertWithMTLS(t *testing.T) {
 	vault := newTemporaryWebCertVault(t, nil)
 
-	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "dashboard.local"})
+	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "portal.example.com"})
 
 	require.NoError(t, err)
 	require.NotNil(t, got.Leaf)
-	assert.NoError(t, got.Leaf.VerifyHostname("dashboard.local"))
+	assert.NoError(t, got.Leaf.VerifyHostname("portal.example.com"))
 	assert.Equal(t, []string{"Vine Portal"}, got.Leaf.Subject.Organization)
 	assert.Equal(t, got.Leaf.RawSubject, got.Leaf.RawIssuer)
 	assert.Empty(t, got.Leaf.URIs)
@@ -140,9 +140,9 @@ func TestVaultGetCertificateUsesTemporaryWebCertWithMTLS(t *testing.T) {
 func TestVaultGetCertificateCachesTemporaryWebCert(t *testing.T) {
 	vault := newTemporaryWebCertVault(t, nil)
 
-	first, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "dashboard.local"})
+	first, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "portal.example.com"})
 	require.NoError(t, err)
-	second, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "dashboard.local"})
+	second, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "portal.example.com"})
 	require.NoError(t, err)
 
 	assert.Same(t, first, second)
@@ -160,12 +160,12 @@ func TestVaultGetCertificateTemporaryWebCertSupportsMissingSNI(t *testing.T) {
 }
 
 func TestVaultGetCertificatePrefersConfiguredCertOverTemporaryWebCert(t *testing.T) {
-	cert := newTestPortalCert(t, "demo-cert", []string{"dashboard.local"})
+	cert := newTestPortalCert(t, "demo-cert", []string{"portal.example.com"})
 	parsed, err := newCertificate(cert)
 	require.NoError(t, err)
 	vault := newTemporaryWebCertVault(t, map[string]*_Certificate{parsed.name: parsed})
 
-	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "dashboard.local"})
+	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "portal.example.com"})
 
 	require.NoError(t, err)
 	assert.Same(t, parsed.cert, got)
@@ -173,9 +173,9 @@ func TestVaultGetCertificatePrefersConfiguredCertOverTemporaryWebCert(t *testing
 
 func TestVaultGetCertificateReplacesTemporaryWebCertWithConfiguredCert(t *testing.T) {
 	vault := newTemporaryWebCertVault(t, nil)
-	temporary, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "dashboard.local"})
+	temporary, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "portal.example.com"})
 	require.NoError(t, err)
-	cert := newTestPortalCert(t, "dashboard-cert", []string{"dashboard.local"})
+	cert := newTestPortalCert(t, "portal-cert", []string{"portal.example.com"})
 	parsed, err := newCertificate(cert)
 	require.NoError(t, err)
 	vault.mutex.Lock()
@@ -183,7 +183,7 @@ func TestVaultGetCertificateReplacesTemporaryWebCertWithConfiguredCert(t *testin
 	vault.rebuildIndexLocked()
 	vault.mutex.Unlock()
 
-	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "dashboard.local"})
+	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "portal.example.com"})
 
 	require.NoError(t, err)
 	assert.NotSame(t, temporary, got)
@@ -191,12 +191,12 @@ func TestVaultGetCertificateReplacesTemporaryWebCertWithConfiguredCert(t *testin
 }
 
 func TestVaultGetCertificatePrefersConfiguredWildcardOverTemporaryWebCert(t *testing.T) {
-	cert := newTestPortalCert(t, "demo-cert", []string{"*.dashboard.local"})
+	cert := newTestPortalCert(t, "demo-cert", []string{"*.portal.example.com"})
 	parsed, err := newCertificate(cert)
 	require.NoError(t, err)
 	vault := newTemporaryWebCertVault(t, map[string]*_Certificate{parsed.name: parsed})
 
-	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "admin.dashboard.local"})
+	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "admin.portal.example.com"})
 
 	require.NoError(t, err)
 	assert.Same(t, parsed.cert, got)
@@ -219,7 +219,7 @@ func TestVaultDoesNotEnableTemporaryWebCertWithoutMTLS(t *testing.T) {
 	vault.initTemporaryWebCerts()
 	vault.rebuildIndexLocked()
 
-	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "dashboard.local"})
+	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "portal.example.com"})
 
 	assert.ErrorIs(t, err, errCertificateNotFound)
 	assert.Nil(t, got)

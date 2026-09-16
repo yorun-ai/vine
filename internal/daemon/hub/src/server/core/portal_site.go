@@ -11,9 +11,6 @@ import (
 type PortalSiteType string
 
 const (
-	DashboardRpcSiteName = "vine.hub.admin.AdminActor-client-rpc"
-	DashboardWebSiteName = "vine.hub.admin.DashboardWeb-web"
-
 	PortalSiteTypeRPCGW PortalSiteType = "RPCGW"
 	PortalSiteTypeWEBGW PortalSiteType = "WEBGW"
 )
@@ -56,7 +53,8 @@ type PortalSite struct {
 	// RpcgwServices is derived from the registered services of the site actor and
 	// is empty for sites that do not forward Rpc traffic.
 	RpcgwServices []string
-	BuiltIn       bool
+	// Enabled decides whether Hub publishes the site to Portal.
+	Enabled bool
 }
 
 type PortalSiteCreation struct {
@@ -66,6 +64,8 @@ type PortalSiteCreation struct {
 	ActorVia      string
 	Cors          PortalCors
 	WebName       string
+	// Enabled is optional and defaults to true.
+	Enabled *bool
 }
 
 type PortalSiteUpdate struct {
@@ -75,6 +75,7 @@ type PortalSiteUpdate struct {
 	ActorVia      *string
 	Cors          *PortalCors
 	WebName       *string
+	Enabled       *bool
 }
 
 type PortalSiteActorOption struct {
@@ -120,9 +121,6 @@ func (m *PortalSiteCore) List() []*PortalSite {
 	entries := m.PortalSiteRepo.List()
 	ret := make([]*PortalSite, 0, len(entries))
 	for _, entry := range entries {
-		if entry.BuiltIn {
-			continue
-		}
 		ret = append(ret, entry)
 	}
 	return ret
@@ -142,8 +140,7 @@ func (m *PortalSiteCore) Get(id int) *PortalSite {
 	return entry
 }
 
-// FindByName returns a complete portal site, including built-in sites, or false
-// when no site uses the name.
+// FindByName returns a complete portal site or false when no site uses the name.
 func (m *PortalSiteCore) FindByName(name string) (*PortalSite, bool) {
 	return m.PortalSiteRepo.GetByName(name)
 }
@@ -159,6 +156,7 @@ func (m *PortalSiteCore) Create(creation PortalSiteCreation) *PortalSite {
 		ActorVia:      creation.ActorVia,
 		Cors:          creation.Cors,
 		WebName:       creation.WebName,
+		Enabled:       EnabledOrDefault(creation.Enabled),
 	}
 	entry = m.Validate(entry)
 	m.PortalSiteRepo.Save(&entry)
@@ -168,7 +166,6 @@ func (m *PortalSiteCore) Create(creation PortalSiteCreation) *PortalSite {
 func (m *PortalSiteCore) Update(id int, update PortalSiteUpdate) *PortalSite {
 	entry, ok := m.PortalSiteRepo.GetById(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", id))
-	ex.PanicNewIfNot(!entry.BuiltIn, ex.OperationFailed, ex.F("built-in portal entry %q cannot be updated", entry.Name))
 
 	next := *entry
 	next.FieldSources = cloneFieldSources(entry.FieldSources)
@@ -200,6 +197,11 @@ func (m *PortalSiteCore) Update(id int, update PortalSiteUpdate) *PortalSite {
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/webName")
 		next.WebName = *update.WebName
 	}
+	if update.Enabled != nil {
+		// A seed declares the switch as disabled, so it owns that source path.
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/disabled")
+		next.Enabled = *update.Enabled
+	}
 
 	next = m.Validate(next)
 	m.PortalSiteRepo.Save(&next)
@@ -207,9 +209,8 @@ func (m *PortalSiteCore) Update(id int, update PortalSiteUpdate) *PortalSite {
 }
 
 func (m *PortalSiteCore) Remove(id int) {
-	entry, ok := m.PortalSiteRepo.GetById(id)
+	_, ok := m.PortalSiteRepo.GetById(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", id))
-	ex.PanicNewIfNot(!entry.BuiltIn, ex.OperationFailed, ex.F("built-in portal entry %q cannot be removed", entry.Name))
 
 	ok = m.PortalSiteRepo.Remove(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", id))
@@ -326,7 +327,6 @@ func (s *PortalSite) normalizeAndValidate() {
 
 // Validate checks and normalizes a user site without accessing storage.
 func (*PortalSiteCore) Validate(site PortalSite) PortalSite {
-	ex.PanicNewIfNot(site.Name != DashboardRpcSiteName && site.Name != DashboardWebSiteName, ex.OperationFailed, ex.F("built-in portal site %q cannot be replaced", site.Name))
 	site.normalizeAndValidate()
 	return site
 }
@@ -335,23 +335,9 @@ func (*PortalSiteCore) Validate(site PortalSite) PortalSite {
 func (m *PortalSiteCore) Save(site PortalSite) *PortalSite {
 	site = m.Validate(site)
 	site.Id = 0
-	site.BuiltIn = false
 	if current, ok := m.PortalSiteRepo.GetByName(site.Name); ok {
-		ex.PanicNewIfNot(!current.BuiltIn, ex.OperationFailed, ex.F("built-in portal site %q cannot be replaced", site.Name))
 		site.Id = current.Id
 	}
 	m.PortalSiteRepo.Save(&site)
 	return &site
-}
-
-// EnsureDashboardSite provisions an internal Dashboard site while keeping its ID.
-func (m *PortalSiteCore) EnsureDashboardSite(site PortalSite) {
-	ex.PanicNewIfNot(site.Name == DashboardRpcSiteName || site.Name == DashboardWebSiteName, ex.OperationFailed, "not a dashboard site")
-	site.normalizeAndValidate()
-	site.Id = 0
-	site.BuiltIn = true
-	if current, ok := m.PortalSiteRepo.GetByName(site.Name); ok {
-		site.Id = current.Id
-	}
-	m.PortalSiteRepo.Save(&site)
 }

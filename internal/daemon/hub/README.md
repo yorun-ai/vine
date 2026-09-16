@@ -5,15 +5,15 @@
 Hub is Vine's configuration and service registry. It broadly follows a DDD-style layered architecture, maintains configuration, application state, and Rpc service registrations, and exposes read and subscription capabilities through Watch using the Redis protocol.
 
 Without a database option, Hub defaults to `--no-db` and requires
-`--seed-hub-data-file`. Configuration is loaded into an isolated in-memory SQLite
+`--seed-data-file`. Configuration is loaded into an isolated in-memory SQLite
 database on each start. After initialization, configuration repos reject writes
-to app configs, Portal sites, rules, and certificates. Edit the seed file and
+to app configs, Portal entries, sites, rules, and certificates. Edit the seed file and
 restart Hub to apply changes. Dashboard exposes this state and disables editing;
 registration, schemas, and leases remain writable. Explicit `--db-sqlite-file`
 or `--db-postgres-url` keeps writable persistence and is mutually exclusive
-with `--no-db`. This also applies to standalone and `vine dev`. Standalone
-can alternatively receive inline YAML through `Option.SeedHubData`, mutually
-exclusive with the seed file; it uses the same import and read-only behavior.
+with `--no-db`. This also applies to standalone, which can alternatively receive
+inline YAML through `Option.SeedHubData`, mutually exclusive with the seed file;
+it uses the same import and read-only behavior.
 
 ## Directory Structure
 
@@ -42,12 +42,12 @@ internal/daemon/hub/
 
 ## Dashboard Packaging
 
-- During development, set `VINE_HUB_DASHBOARD_DEV_PROXY` to proxy requests directly to a running `pnpm dev` server.
+- During development, set `VINE_HUB_DASHBOARD_DEV_PROXY` (any non-empty value) to serve the Dashboard from the Vite server `script/dev-hub-dashboard.sh` starts on `localhost:7098`; Hub serves the embedded build whenever that server is not running.
 - After changing Dashboard source, run `pnpm typecheck` and `pnpm build` in `src/dashboard`.
 - Rebuild the embedded `dashboard.tar.zst` whenever the Dashboard source or the admin API it calls changes, and commit it with that change: the embedded bundle must always match the admin API it calls. Merges are squashed, so a branch contributes only its final bundle to main.
 - Keep user-facing text synchronized between `src/i18n/dictionaries/cn.ts` and `en.ts`.
 
-The Dashboard source lives in `src/dashboard`. At runtime, Hub serves the build embedded in `src/server/impl/admin/dashboard/assets/dashboard.tar.zst`.
+The Dashboard source lives in `src/dashboard`. At runtime, Hub serves the build embedded in `src/server/mod/admin/assets/dashboard.tar.zst`.
 
 Always rebuild the bundle with the script; never edit or assemble the archive by hand, and never resolve a conflict on it by picking a side:
 
@@ -73,22 +73,53 @@ Keep Hub's layer responsibilities distinct:
 
 ### Domain Writes
 
-Configuration, site, rule, and certificate writes go through their corresponding
-Core. `Validate` checks and normalizes a complete entity without writing.
-Rule validation does not resolve sites: Portal derives effective rule paths from
-Web mount-path metadata published with sites. `Save`
+Configuration, entry, site, rule, and certificate writes go through their
+corresponding Core. `Validate` checks and normalizes a complete entity without
+writing. Rule validation does not resolve sites: Portal derives effective rule
+paths from Web mount-path metadata published with sites. `Save`
 creates or replaces by name and owns identity handling, along with versioning and
 built-in protection where applicable. API updates merge provided fields into the
 existing entity before validation.
 
-Seeder and Dashboard imports validate all supplied entities before writing,
-then call Core `Save`. Validation does not make an entire import transactional:
-a database failure can still leave some entities saved. The YAML conversion
-layer maps configuration fields only; it does not assign database identity or
-manage versions.
+An entry owns the scheme, host, and port Portal serves; rules reference the entry
+and never store access of their own. `PortalRuleCore` resolves the entry of the
+access a rule declares, so rules that share an access share one entry. Changing
+an entry changes every rule it routes, and Hub republishes those rules so Portal
+receives the access the entry now serves.
 
-`PortalSiteCore.EnsureDashboardSite` and `PortalRuleCore.EnsureDashboardRule`
-own built-in Dashboard provisioning. `RegistryCore` owns schema registration
+The Admin API reaches a rule's access through its entry: `PortalRuleCreation`
+names the entry a new rule belongs to, and `PortalRuleUpdate` cannot change an
+access at all. Seed YAML keeps declaring the access on the rule, because Hub
+aggregates the declared access into entries while it applies the seed.
+
+`PortalEntryCore` creates an entry for an access no user entry serves, and
+removes an entry that routes no rule: rules belong to the operator, so deleting
+their entry fails instead of leaving them without an access. The entry list
+returns an entry that routes nothing, because an operator creates the entry
+before the rules that use it.
+
+Two rules that match the same request are reported, not rejected: the path a rule
+matches comes from the Web mount path its site declares, and Hub reads those
+schemas only after an application registers them, which happens after Hub starts.
+Hub audits the requests its published rules match once the schemas arrive: a
+read-only Hub refuses to serve such a configuration, because it has no surface to
+fix it from, and a stored configuration keeps both rules until the operator
+resolves the request from the Dashboard. Only the access migration separates
+rules on its own, because stored data is not edited by hand.
+
+Seeder validates every entity the document declares before it writes anything,
+and then calls Core `Save` per entity. Validation does not make an entire seed
+transactional: a database failure can still leave some entities saved. The YAML
+conversion layer maps configuration fields only; it does not assign database
+identity or manage versions.
+
+Hub serves the Admin API and the Dashboard on the admin module's own listener
+(`--admin-listen`, default `127.0.0.1:7099`), the way the Control API owns
+`--control-listen`: the listener
+answers the API on `/api/invoke`, the path the Dashboard calls, and serves the
+embedded Dashboard build for every other path, so the Dashboard is not part
+of the Portal configuration. Hub provisions no
+entry, site, or rule for it, and Portal never routes it. `RegistryCore` owns schema registration
 and expired-lease removal. Initializer and Sweeper coordinate runtime publication
 through Syncer. The seed-applied marker remains startup bookkeeping in Seeder.
 
@@ -124,9 +155,10 @@ Hub has four primary responsibilities:
 
 4. Separated API listeners
    The Control API listener exposes the `vine.hub.control` domain, containing
-   only `InfoService` and `RegistryService`, to Link and Portal. The main Hub
+   only `InfoService` and `RegistryService`, to Link and Portal. The admin
    listener exposes the `vine.hub.admin` domain containing Dashboard
-   admin Rpc services and `DashboardWeb`. This keeps component traffic
+   admin Rpc services and `DashboardWeb`, in cleartext because a browser carries
+   no mesh certificate. This keeps component traffic
    separate from the privileged admin surface without splitting Hub's
    process or state.
 
@@ -142,14 +174,13 @@ Hub currently supports two database backends:
 - SQLite
 - PostgreSQL
 
-At startup, `--seed-hub-data-file` imports initial configuration, Portal sites,
+At startup, `--seed-data-file` imports initial configuration, Portal sites,
 rules, and certificates from local YAML into the database. Hub reads this state
 through its repos and publishes it to Watch for Link and Portal.
 
 Database metadata records completion of the initial seed. Subsequent starts skip
 all seed, variable, and source inputs; seed entries have no `override` switch.
-No-db mode creates a fresh store and imports the seed on every start. Built-in
-Dashboard provisioning is maintained independently of the seed marker.
+No-db mode creates a fresh store and imports the seed on every start.
 
 Field source metadata stores the original field template as JSON and each
 resolved binding (relative path, variable name, placeholder, applied JSON value,
@@ -161,17 +192,69 @@ Portal rule YAML uses flat fields in this order: `matchScheme`, `matchHost`,
 `matchPort`, `matchPathPrefix`, `routeType`, `routeSiteName`,
 `routeRedirectionPattern`, and `routePathPrefix`.
 
-The `mod/seeder` package owns the seed YAML contract. `ParseSeedEntities`
-decodes a document into the domain entities it declares for Dashboard imports,
-and the same decoder backs startup seeding; the payload structs stay private to
-the package. Both accept legacy rule fields with a warning per field; mixing old
-and new fields in one rule fails before applying imported data. YAML cannot
-replace built-in Dashboard sites or rules.
+Hub stores an `enabled` switch on every Portal site, entry, rule, and
+certificate, and the Dashboard edits it. A seed declares the same switch as
+`disabled`, which defaults to false, so a seed names only the entities it turns
+off; a seed that writes `enabled` fails instead of silently publishing the
+entity. Hub keeps a disabled entity in its database and stops publishing it to
+Watch, so Portal never sees it: Hub omits a disabled rule, the rules of a
+disabled entry, the SITE rules of a disabled site, and a disabled certificate.
+A database that predates the switch keeps every stored entity enabled.
+
+Portal entry YAML declares `name`, `scheme`, `host`, `port`, and `disabled`. A seed applies
+entries before rules, so a rule joins the entry that serves its access and keeps
+the name the seed gave it; an entry may route no rule yet. Hub derives the name
+`scheme[:host]:port` only for the entry it creates on its own, which is why the
+entry a rule joins without a declared entry is named after its access. The
+The Portal sections are typed: Hub rejects an entity that declares a field the
+section does not name, so a misspelled or renamed field fails instead of
+silently leaving the entity at its default. The built-in marker is not part of
+the seed: Hub provisions no entity itself, and a field a Portal section does not
+declare fails instead of nominating an entity.
+
+Names stay unique per entity kind, which is why a site, an entry, and a rule may
+share one.
+
+A Portal rule joins an entry either by naming it with `entryName` or by declaring
+the access the entry serves. The two are mutually exclusive: a rule never does
+both, and one seed document uses one style for every rule it declares. A seed
+that declares `portalEntries` names them, so its rules reference an entry with
+`entryName` instead of declaring an access. A seed is self-contained: a rule only
+references an entry the same document declares, so Hub never reads stored data to
+complete the relationship. Hub rejects such a document before it writes anything,
+because the entry owns the access.
+
+Seeds keep declaring `matchScheme`, `matchHost`, and `matchPort` on rules, so a
+seed written before entries had names keeps working. Hub aggregates the declared
+access into entries while the seed is applied, so a seed never stores the same
+access on every rule. Portal still receives rules carrying the access of their
+entry, and the entry is Hub-side state rather than a Watch key.
+
+The `mod/seeder` package owns the seed YAML contract. It decodes a document into
+the domain entities Hub applies; the payload structs and the parsed document
+stay private to the package. It accepts legacy rule fields with a warning per
+field, and mixing old and new fields in one rule fails before Hub writes
+anything. A Portal section declares only the fields Hub names for it.
 
 Admin API and Watch use only the new fields; upgrade Hub and Portal together.
 The database upgrade baseline is Vine v0.15.7, with `match_*` / `route_*`
 columns already present. Start older databases with v0.15.7 to complete migration
 before upgrading; current Hub no longer migrates legacy Portal rule columns.
+
+Upgrading Hub from a release that stored rule access migrates `portal_rule` in
+place: Hub creates `portal_entry`, groups the stored `match_scheme`,
+`match_host`, and `match_port` values into entries, and indexes the rule path
+within its entry. Hub stops reading those columns here and removes them in a
+later release, because dropping a column of a database Hub does not own cannot
+be undone; until then Hub keeps them filled with the entry access. An unset port
+migrates to the port Portal serves. Two rules that only differed by an unset port
+can share an entry and a path after the upgrade; Hub keeps the rule with the
+explicit port and moves the rule that used the default port to a `/migrated`
+path, and logs every move. An upgraded database is therefore never corrected by
+hand, and Hub starts. A Hub rolled back to the release that predates entries
+keeps reading and writing that database: the access columns it reads are still
+there, the enable switch defaults to published, and a rule it inserts without an
+entry joins its entry again on the next upgrade.
 
 ## Admin Display Strings
 
@@ -211,10 +294,9 @@ with the script, and verify that all callers remain consistent.
 
 Hub can run as a component in a single-process runtime:
 
-- The Hub Control API registers at `rpc+inproc://vine/hub`, while Dashboard
-  admin Rpc and Web handlers register below
-  `rpc+inproc://vine/hub/admin` and
-  `web+inproc://vine/hub/admin` instead of being exposed over HTTP.
+- The Hub Control API registers at `rpc+inproc://vine/hub`. The Admin API keeps
+  its own listener instead, so an in-process Hub serves no Admin API unless its
+  caller declares an admin address.
 - `watchserver` does not open an external TCP port and retains only the in-process Watch server.
 - `vined` keeps a pointer to that in-process Watch server so an inproc `WatchClient` can access it directly.
 

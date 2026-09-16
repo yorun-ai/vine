@@ -23,6 +23,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	adminimpl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin"
 	controlimpl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/control"
+	adminapi "go.yorun.ai/vine/internal/daemon/hub/src/server/mod/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/controlapi"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/initializer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/scheduler"
@@ -33,7 +34,6 @@ import (
 	repodb "go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/schema"
-	"go.yorun.ai/vine/util/vnet"
 )
 
 var (
@@ -55,14 +55,6 @@ func collectModuleTypes(spec *HubApp) []reflect.Type {
 		moduleTypes = append(moduleTypes, moduleType)
 	})
 	return moduleTypes
-}
-
-func collectServicerHandlerTypes(spec *HubApp) []reflect.Type {
-	var handlerTypes []reflect.Type
-	spec.ServicerInitHandlers(func(handlerType reflect.Type) {
-		handlerTypes = append(handlerTypes, handlerType)
-	})
-	return handlerTypes
 }
 
 func initTestConfigDatabase(component *repodb.HubDatabase) *rdb.DatabaseManager {
@@ -154,7 +146,6 @@ func TestHubAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 
 	assert.Equal(t, "vine.hub", spec.Name())
 	assert.Equal(t, "vine.hub", spec.InternalAttrs.Info.Name())
-	assert.Equal(t, "vine/hub/admin", spec.InternalAttrs.InprocHostPath)
 	assert.Empty(t, spec.AppFlag.ListenAddr)
 	assert.Empty(t, spec.Flag.ControlListen)
 	assert.Empty(t, spec.Flag.AdminListen)
@@ -162,9 +153,14 @@ func TestHubAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 	assert.Equal(t, flag.MQModeEmbedded, spec.Flag.MQMode)
 }
 
-func TestHubAppMainServicerExcludesControlAPIHandlers(t *testing.T) {
-	handlerTypes := collectServicerHandlerTypes(new(HubApp))
+func TestHubAdminModuleServesOnlyAdminAPIHandlers(t *testing.T) {
+	// The Admin API moved off the application listener: Hub serves no routes of
+	// its own, and the admin module keeps the Admin API away from the Control
+	// API services.
+	assert.NotImplements(t, (*internalapp.ServicerSpec)(nil), new(HubApp))
+	assert.Contains(t, collectModuleTypes(new(HubApp)), internalapp.T[*adminapi.Server]())
 
+	handlerTypes := adminapi.HandlerTypes()
 	assert.NotContains(t, handlerTypes, internalapp.T[*controlimpl.InfoServiceServerImpl]())
 	assert.NotContains(t, handlerTypes, internalapp.T[*controlimpl.RegistryServiceServerImpl]())
 	assert.Contains(t, handlerTypes, internalapp.T[*adminimpl.AppConfigApiServiceServerImpl]())
@@ -185,6 +181,7 @@ func TestHubAppModuleTypesIncludesRuntimeModules(t *testing.T) {
 		internalapp.T[*scheduler.Scheduler](),
 		internalapp.T[*sweeper.Sweeper](),
 		internalapp.T[*controlapi.Server](),
+		internalapp.T[*adminapi.Server](),
 	}, collectModuleTypes(spec))
 }
 
@@ -223,6 +220,7 @@ func TestConfigDatabaseInitOptionForSQLite(t *testing.T) {
 	assert.Equal(t, []reflect.Type{
 		rdb.T[*model.AppConfigDao](),
 		rdb.T[*model.PortalCertDao](),
+		rdb.T[*model.PortalEntryDao](),
 		rdb.T[*model.PortalRuleDao](),
 		rdb.T[*model.MetadataDao](),
 		rdb.T[*model.PortalSiteDao](),
@@ -248,6 +246,7 @@ func TestConfigDatabaseInitOptionForPG(t *testing.T) {
 	assert.Equal(t, []reflect.Type{
 		rdb.T[*model.AppConfigDao](),
 		rdb.T[*model.PortalCertDao](),
+		rdb.T[*model.PortalEntryDao](),
 		rdb.T[*model.PortalRuleDao](),
 		rdb.T[*model.MetadataDao](),
 		rdb.T[*model.PortalSiteDao](),
@@ -286,10 +285,6 @@ func TestHubAppBindCommonProvidesSchemaRepo(t *testing.T) {
 	assert.IsType(t, &schema.SchemaRepo{}, schemaRepo)
 }
 
-func testDashboardURL() *vnet.HttpURL {
-	return vnet.MustParseHttpURL(flag.HubDefaultDashboardURL)
-}
-
 // TestInitializerResolvesFromCommonBindings is a composition smoke test: the
 // module graph of the initializer must be constructible from the bindings a Hub
 // application installs, without a running daemon.
@@ -310,7 +305,6 @@ func TestInitializerResolvesFromCommonBindings(t *testing.T) {
 		Flag: &flag.Flag{
 			Store:        flag.StoreSQLite,
 			AdminListen:  flag.HubDefaultAdminListen,
-			DashboardURL: testDashboardURL(),
 			DBSQLiteFile: sharedTestSQLitePath(t),
 			WatchListen:  flag.HubDefaultWatchListen,
 		},
@@ -419,13 +413,14 @@ func TestHubConfigurationLifecycle(t *testing.T) {
 				b.BindInstance(access)
 				manager.Bind(b)
 				spec.BindCommon(b)
-				b.Bind(di.T[*adminimpl.MaintenanceApiServiceServerImpl]()).In(di.SingletonScope)
+				b.Bind(di.T[*adminimpl.AdminApiServiceServerImpl]()).In(di.SingletonScope)
 				b.Bind(di.T[*seeder.Seeder]()).In(di.SingletonScope)
 				b.Bind(di.T[*initializer.Initializer]()).In(di.SingletonScope)
 			})
 			require.False(t, access.ReadOnly())
 			module := injector.Get(di.T[*initializer.Initializer]()).Interface().(*initializer.Initializer)
 			siteRepo := injector.Get(di.T[core.PortalSiteRepo]()).Interface().(core.PortalSiteRepo)
+			entryRepo := injector.Get(di.T[core.PortalEntryRepo]()).Interface().(core.PortalEntryRepo)
 			appConfigRepo := injector.Get(di.T[core.AppConfigRepo]()).Interface().(core.AppConfigRepo)
 			ruleRepo := injector.Get(di.T[core.PortalRuleRepo]()).Interface().(core.PortalRuleRepo)
 			certRepo := injector.Get(di.T[core.PortalCertRepo]()).Interface().(core.PortalCertRepo)
@@ -433,8 +428,9 @@ func TestHubConfigurationLifecycle(t *testing.T) {
 			item, ok := appConfigRepo.GetByName("demo.Config")
 			require.True(t, ok)
 			require.Equal(t, `{"enabled":true}`, item.Value)
-			require.NotEmpty(t, siteRepo.List())
-			require.NotEmpty(t, ruleRepo.List())
+			// The seed declares no site or rule, so Hub stores none.
+			require.Empty(t, siteRepo.List())
+			require.Empty(t, ruleRepo.List())
 			actions := []struct {
 				name string
 				call func()
@@ -446,7 +442,11 @@ func TestHubConfigurationLifecycle(t *testing.T) {
 				}},
 				{"remove site", func() { siteRepo.Remove(-1) }},
 				{"save rule", func() {
-					ruleRepo.Save(&core.PortalRule{Name: "new.rule", RouteType: "SITE", RouteSiteName: "new.site"})
+					// A rule belongs to the entry that serves its access, so Hub
+					// stores the entry before the rule.
+					entry := &core.PortalEntry{Name: "http:80", Scheme: "http", Port: 80, Enabled: true}
+					entryRepo.Save(entry)
+					ruleRepo.Save(&core.PortalRule{Name: "new.rule", EntryId: entry.Id, RouteType: "SITE", RouteSiteName: "new.site"})
 				}},
 				{"remove rule", func() { ruleRepo.Remove(-1) }},
 				{"save cert", func() { certRepo.Save(&core.PortalCert{Name: "new.cert", Domains: []string{"demo.local"}}) }},
@@ -466,8 +466,8 @@ func TestHubConfigurationLifecycle(t *testing.T) {
 			})
 			require.NotEmpty(t, module.RegistryCore.RegistryRepo.ListAppStatuses())
 			require.NotEmpty(t, module.SchemaRepo.ListDomainSchemaViews())
-			service := injector.Get(di.T[*adminimpl.MaintenanceApiServiceServerImpl]()).Interface().(*adminimpl.MaintenanceApiServiceServerImpl)
-			require.Equal(t, !persistent, service.ConfigReadOnly())
+			service := injector.Get(di.T[*adminimpl.AdminApiServiceServerImpl]()).Interface().(*adminimpl.AdminApiServiceServerImpl)
+			require.Equal(t, !persistent, service.ReadOnly())
 		})
 	}
 }

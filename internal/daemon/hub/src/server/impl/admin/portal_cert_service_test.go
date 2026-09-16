@@ -9,7 +9,7 @@ import (
 )
 
 func TestPortalCertServiceMapsListItemsAndDetail(t *testing.T) {
-	repo := &_MaintenanceServicePortalCertRepo{items: map[string]*core.PortalCert{
+	repo := &_PortalCertRepoSpy{items: map[string]*core.PortalCert{
 		"demo-cert": {
 			Id:               5,
 			Name:             "demo-cert",

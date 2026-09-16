@@ -17,9 +17,6 @@ spec:
     - name: https
       port: 443
       targetPort: https
-    - name: dashboard
-      port: 7099
-      targetPort: dashboard
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -72,22 +69,10 @@ spec:
               containerPort: 80
             - name: https
               containerPort: 443
-            - name: dashboard
-              containerPort: 7099
-          startupProbe:
-            tcpSocket:
-              port: dashboard
-            periodSeconds: 2
-            failureThreshold: 30
-          readinessProbe:
-            tcpSocket:
-              port: dashboard
-            periodSeconds: 5
-          livenessProbe:
-            tcpSocket:
-              port: dashboard
-            initialDelaySeconds: 10
-            periodSeconds: 10
+          # TODO: Portal listens on the access of every entry Hub publishes, so
+          # the deployment has no port that always exists to probe. Design a
+          # health endpoint or a fixed health listener for Portal, then probe
+          # that instead of leaving the container without probes.
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

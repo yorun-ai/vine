@@ -130,7 +130,7 @@ func TestForwardRequest(t *testing.T) {
 			webinproc.Unregister(webEndpoint)
 		})
 
-		request := httptest.NewRequest(http.MethodGet, "http://demo.local/vine.hub.admin.DashboardWeb/assets/app.js?v=1", nil)
+		request := httptest.NewRequest(http.MethodGet, "http://demo.local/demo.AdminWeb/assets/app.js?v=1", nil)
 		response, err := ForwardRequest(request, webEndpoint)
 		if err != nil {
 			t.Fatalf("ForwardRequest() error = %v", err)
@@ -141,7 +141,7 @@ func TestForwardRequest(t *testing.T) {
 		if response.StatusCode != http.StatusCreated {
 			t.Fatalf("unexpected status code: %d", response.StatusCode)
 		}
-		if got := response.Header.Get("X-Gwutil-Web-Inproc-Test"); got != "/web/access/vine.hub.admin.DashboardWeb/assets/app.js?v=1" {
+		if got := response.Header.Get("X-Gwutil-Web-Inproc-Test"); got != "/web/access/demo.AdminWeb/assets/app.js?v=1" {
 			t.Fatalf("unexpected web inproc path: %s", got)
 		}
 		if string(body) != "forwarded-web-inproc" {
@@ -161,7 +161,7 @@ func TestForwardRequest(t *testing.T) {
 		})
 
 		request := httptest.NewRequest(http.MethodGet, "http://demo.local/assets/app.js?v=1", nil)
-		response, err := ForwardRequest(request, webEndpoint+"/vine.hub.admin.DashboardWeb")
+		response, err := ForwardRequest(request, webEndpoint+"/demo.AdminWeb")
 		if err != nil {
 			t.Fatalf("ForwardRequest() error = %v", err)
 		}
@@ -171,7 +171,7 @@ func TestForwardRequest(t *testing.T) {
 		if response.StatusCode != http.StatusCreated {
 			t.Fatalf("unexpected status code: %d", response.StatusCode)
 		}
-		if got := response.Header.Get("X-Gwutil-Web-Inproc-Suffix-Test"); got != "/web/access/vine.hub.admin.DashboardWeb/assets/app.js?v=1" {
+		if got := response.Header.Get("X-Gwutil-Web-Inproc-Suffix-Test"); got != "/web/access/demo.AdminWeb/assets/app.js?v=1" {
 			t.Fatalf("unexpected web inproc path: %s", got)
 		}
 		if string(body) != "forwarded-web-inproc-suffix" {
@@ -191,7 +191,7 @@ func TestForwardRequest(t *testing.T) {
 		})
 
 		request := httptest.NewRequest(http.MethodGet, "http://demo.local/", nil)
-		response, err := ForwardRequest(request, webEndpoint+"/vine.hub.admin.DashboardWeb")
+		response, err := ForwardRequest(request, webEndpoint+"/demo.AdminWeb")
 		if err != nil {
 			t.Fatalf("ForwardRequest() error = %v", err)
 		}
@@ -201,7 +201,7 @@ func TestForwardRequest(t *testing.T) {
 		if response.StatusCode != http.StatusCreated {
 			t.Fatalf("unexpected status code: %d", response.StatusCode)
 		}
-		if got := response.Header.Get("X-Gwutil-Web-Inproc-Root-Test"); got != "/web/access/vine.hub.admin.DashboardWeb/" {
+		if got := response.Header.Get("X-Gwutil-Web-Inproc-Root-Test"); got != "/web/access/demo.AdminWeb/" {
 			t.Fatalf("unexpected web inproc path: %s", got)
 		}
 		if string(body) != "forwarded-web-inproc-root" {

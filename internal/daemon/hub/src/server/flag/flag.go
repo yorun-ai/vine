@@ -13,11 +13,11 @@ import (
 )
 
 const (
-	HubDefaultControlListen    = "127.0.0.1:7071"
-	HubDefaultWatchListen      = "127.0.0.1:7072"
-	HubDefaultAdminListen      = "127.0.0.1:7075"
-	HubDefaultDashboardURL     = "http://:7099/"
-	HubMTLSDefaultDashboardURL = "https://:7099/"
+	HubDefaultControlListen = "127.0.0.1:7071"
+	HubDefaultWatchListen   = "127.0.0.1:7072"
+	// HubDefaultAdminListen is the Dashboard port operators already know: the
+	// Dashboard reached Hub through Portal on 7099, and Hub serves it itself now.
+	HubDefaultAdminListen = "127.0.0.1:7099"
 
 	MQModeEmbedded = "embedded"
 	MQModeNATS     = "nats"
@@ -51,29 +51,23 @@ type Flag struct {
 	SeedHubSource     string
 	SeedHubSourceFile string
 	SeedHubVarsFile   string
-
-	DashboardURLRaw         string
-	DashboardURLSet         bool
-	DashboardURLMTLSDefault bool
-	DashboardURL            *vnet.HttpURL
 }
 
 func (f *Flag) Normalize(inproc bool) {
 	vpre.CheckNilError(f.MTLS.Validate(), "hub flag normalize failed")
 	f.normalizeSeed()
 	f.normalizeStore()
-	f.normalizeDashboardURL()
 
 	if inproc {
 		// Inproc hub is reached through rpc+inproc and uses in-process NATS,
 		// so external listen addresses and MQ endpoint must not leak into runtime info.
 		f.ControlListen = ""
-		f.AdminListen = ""
 		f.WatchListen = ""
 		f.MQNatsEndpoint = ""
 		f.MQMode = MQModeEmbedded
 		f.LockMode = hublock.ModeEmbedded
 		f.LockRedisEndpoint = ""
+		// AdminListen stays as declared: standalone opens that listener on request.
 		return
 	}
 
@@ -95,11 +89,11 @@ func (f *Flag) normalizeListen() {
 }
 
 func (f *Flag) normalizeSeed() {
-	vpre.CheckNot(f.SeedHubSource != "" && f.SeedHubSourceFile != "", "SeedHubSource and seed-hub-source-file are mutually exclusive")
+	vpre.CheckNot(f.SeedHubSource != "" && f.SeedHubSourceFile != "", "SeedHubSource and the seed source file are mutually exclusive")
 	vpre.CheckNot((f.SeedHubSource != "" || f.SeedHubSourceFile != "" || f.SeedHubVarsFile != "") && f.SeedHubData == "" && f.SeedHubDataFile == "", "seed source and variables require seed YAML")
-	vpre.CheckNot(f.SeedHubDataFile != "" && f.SeedHubData != "", "SeedHubData and seed-hub-data-file are mutually exclusive")
+	vpre.CheckNot(f.SeedHubDataFile != "" && f.SeedHubData != "", "SeedHubData and the seed data file are mutually exclusive")
 	vpre.CheckNot(f.SeedHubSource != "" && f.SeedHubData == "", "SeedHubSource requires inline SeedHubData")
-	vpre.CheckNot(f.SeedHubSourceFile != "" && f.SeedHubDataFile == "", "seed-hub-source-file requires seed-hub-data-file")
+	vpre.CheckNot(f.SeedHubSourceFile != "" && f.SeedHubDataFile == "", "a seed source file requires a seed data file")
 }
 
 func (f *Flag) normalizeStore() {
@@ -115,7 +109,7 @@ func (f *Flag) normalizeStore() {
 	switch kind {
 	case StoreMemory:
 		f.NoDB = true
-		vpre.Check(f.SeedHubDataFile != "" || f.SeedHubData != "", "no-db requires seed-hub-data-file or SeedHubData")
+		vpre.Check(f.SeedHubDataFile != "" || f.SeedHubData != "", "no-db requires a seed data file or SeedHubData")
 	case StoreSQLite:
 		vpre.CheckNotEmpty(f.DBSQLiteFile, "DBSQLiteFile is empty")
 	case StorePostgreSQL:
@@ -165,31 +159,8 @@ func (f *Flag) ControlPort() int {
 	return vnet.MustParsePort(f.ControlListen)
 }
 
-// AdminPort returns the Dashboard admin API and Web port.
-func (f *Flag) AdminPort() int {
-	return vnet.MustParsePort(f.AdminListen)
-}
-
 func (f *Flag) WatchPort() int {
 	return vnet.MustParsePort(f.WatchListen)
-}
-
-func (f *Flag) normalizeDashboardURL() {
-	rawURL := f.DashboardURLRaw
-	if rawURL == "" {
-		if f.MTLS.Enabled() {
-			rawURL = HubMTLSDefaultDashboardURL
-			f.DashboardURLMTLSDefault = true
-		} else {
-			rawURL = HubDefaultDashboardURL
-		}
-	} else {
-		f.DashboardURLSet = true
-	}
-
-	parsed, err := vnet.ParseHttpURL(rawURL)
-	vpre.CheckNilError(err, "parse DashboardURL failed")
-	f.DashboardURL = parsed
 }
 
 func validateMQNatsEndpoint(endpoint string) error {

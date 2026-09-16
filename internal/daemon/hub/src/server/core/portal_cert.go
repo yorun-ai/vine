@@ -21,18 +21,23 @@ type PortalCert struct {
 	PrivateKeyBase64 string
 	ValidFrom        time.Time
 	ValidTo          time.Time
+	// Enabled decides whether Hub publishes the certificate to Portal.
+	Enabled bool
 }
 
 type PortalCertCreation struct {
 	Name             string
 	PublicKeyBase64  string
 	PrivateKeyBase64 string
+	// Enabled is optional and defaults to true.
+	Enabled *bool
 }
 
 type PortalCertUpdate struct {
 	Name             *string
 	PublicKeyBase64  *string
 	PrivateKeyBase64 *string
+	Enabled          *bool
 }
 
 // PortalCertRepo stores Portal certificates. List and the lookups return entities
@@ -72,6 +77,7 @@ func (m *PortalCertCore) Create(creation PortalCertCreation) *PortalCert {
 		Name:             creation.Name,
 		PublicKeyBase64:  creation.PublicKeyBase64,
 		PrivateKeyBase64: creation.PrivateKeyBase64,
+		Enabled:          EnabledOrDefault(creation.Enabled),
 	}))
 	m.PortalCertRepo.Save(cert)
 	return cert
@@ -91,6 +97,7 @@ func (m *PortalCertCore) Update(id int, update PortalCertUpdate) *PortalCert {
 		PrivateKeyBase64: cert.PrivateKeyBase64,
 		ValidFrom:        cert.ValidFrom,
 		ValidTo:          cert.ValidTo,
+		Enabled:          cert.Enabled,
 	}
 	if update.Name != nil {
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/name")
@@ -107,6 +114,11 @@ func (m *PortalCertCore) Update(id int, update PortalCertUpdate) *PortalCert {
 	if update.PrivateKeyBase64 != nil {
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/privateKeyBase64")
 		next.PrivateKeyBase64 = *update.PrivateKeyBase64
+	}
+	if update.Enabled != nil {
+		// A seed declares the switch as disabled, so it owns that source path.
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/disabled")
+		next.Enabled = *update.Enabled
 	}
 
 	*next = m.Validate(*next)

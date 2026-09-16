@@ -26,6 +26,7 @@ func TestNoDBCreatesIsolatedDatabasesAndSchemas(t *testing.T) {
 		config := &model.AppConfigDao{Dao: rdb.NewDao[*model.AppConfig](db)}
 		config.InitSchema()
 		(&model.PortalSiteDao{Dao: rdb.NewDao[*model.PortalSite](db)}).InitSchema()
+		(&model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](db)}).InitSchema()
 		(&model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](db)}).InitSchema()
 		(&model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](db)}).InitSchema()
 		(&model.MetadataDao{Dao: rdb.NewDao[*model.Metadata](db)}).InitSchema()

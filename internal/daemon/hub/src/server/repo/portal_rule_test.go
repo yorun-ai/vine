@@ -28,7 +28,7 @@ var (
 func TestPortalRuleRepoSaveCreate(t *testing.T) {
 	_, repo, watchServer := newTestPortalRuleRepo(t)
 
-	rule := testPortalRule("admin")
+	rule := testPortalRule(t, repo, "admin")
 	repo.Save(rule)
 
 	got, ok := repo.GetById(rule.Id)
@@ -38,13 +38,13 @@ func TestPortalRuleRepoSaveCreate(t *testing.T) {
 	key := watched.FormatPortalRuleKey("admin")
 	raw, ok := watchServer.Get(key)
 	require.True(t, ok)
-	assert.Equal(t, syncer.ToWatchedPortalRule(rule), vcode.MustUnmarshalJsonS[*watched.PortalRule](raw))
+	assert.Equal(t, syncer.ToWatchedPortalRule(rule, portalRuleEntry(t, repo, rule)), vcode.MustUnmarshalJsonS[*watched.PortalRule](raw))
 }
 
 func TestPortalRuleRepoSaveUpdate(t *testing.T) {
 	_, repo, _ := newTestPortalRuleRepo(t)
 
-	rule := testPortalRule("admin")
+	rule := testPortalRule(t, repo, "admin")
 	repo.Save(rule)
 	rule.MatchPathPrefix = "/console"
 	rule.RouteSiteName = "console@demo.app"
@@ -56,26 +56,25 @@ func TestPortalRuleRepoSaveUpdate(t *testing.T) {
 	assert.Equal(t, "console@demo.app", got.RouteSiteName)
 }
 
-func TestPortalRuleRepoSaveBuiltIn(t *testing.T) {
+func TestPortalRuleRepoSaveKeepsDeprecatedAccessColumns(t *testing.T) {
 	db, repo, _ := newTestPortalRuleRepo(t)
 
-	rule := testPortalRule("admin")
-	rule.BuiltIn = true
+	// The rule reads its access from the entry, and the deprecated columns stay
+	// filled with that access until Hub removes them.
+	rule := testPortalRule(t, repo, "admin")
 	repo.Save(rule)
 
 	var row model.PortalRule
 	require.NoError(t, db.First(&row, "id = ?", rule.Id).Error)
-	assert.True(t, row.BuiltIn)
-
-	got, ok := repo.GetById(rule.Id)
-	require.True(t, ok)
-	assert.True(t, got.BuiltIn)
+	assert.Equal(t, "https", row.MatchScheme)
+	assert.Equal(t, "demo.local", row.MatchHost)
+	assert.Equal(t, 443, row.MatchPort)
 }
 
 func TestPortalRuleRepoSaveRename(t *testing.T) {
 	_, repo, watchServer := newTestPortalRuleRepo(t)
 
-	rule := testPortalRule("admin")
+	rule := testPortalRule(t, repo, "admin")
 	repo.Save(rule)
 	rule.Name = "console"
 	repo.Save(rule)
@@ -89,13 +88,13 @@ func TestPortalRuleRepoSaveRename(t *testing.T) {
 
 	raw, ok := watchServer.Get(watched.FormatPortalRuleKey("console"))
 	require.True(t, ok)
-	assert.Equal(t, syncer.ToWatchedPortalRule(rule), vcode.MustUnmarshalJsonS[*watched.PortalRule](raw))
+	assert.Equal(t, syncer.ToWatchedPortalRule(rule, portalRuleEntry(t, repo, rule)), vcode.MustUnmarshalJsonS[*watched.PortalRule](raw))
 }
 
 func TestPortalRuleRepoRemove(t *testing.T) {
 	_, repo, watchServer := newTestPortalRuleRepo(t)
 
-	rule := testPortalRule("admin")
+	rule := testPortalRule(t, repo, "admin")
 	repo.Save(rule)
 	assert.True(t, repo.Remove(rule.Id))
 
@@ -109,6 +108,39 @@ func TestPortalRuleRepoRemove(t *testing.T) {
 	assert.False(t, repo.Remove(rule.Id))
 }
 
+// TestPortalRuleRepoPublishesEntryAccess covers the entry contract: a rule owns
+// the entry it belongs to, and the access of that entry is what Portal receives.
+func TestPortalRuleRepoPublishesEntryAccess(t *testing.T) {
+	_, repo, watchServer := newTestPortalRuleRepo(t)
+
+	rule := testPortalRule(t, repo, "admin")
+	repo.Save(rule)
+
+	entry, ok := repo.PortalEntryRepo.GetById(rule.EntryId)
+	require.True(t, ok)
+	entry.Scheme = "http"
+	entry.Host = "app.example.com"
+	entry.Port = 8080
+	repo.PortalEntryRepo.Save(entry)
+
+	got, ok := repo.GetById(rule.Id)
+	require.True(t, ok)
+	assert.Equal(t, rule.EntryId, got.EntryId)
+
+	// Changing the entry republishes the rules it routes with the new access.
+	raw, ok := watchServer.Get(watched.FormatPortalRuleKey("admin"))
+	require.True(t, ok)
+	assert.Equal(t, syncer.ToWatchedPortalRule(got, entry), vcode.MustUnmarshalJsonS[*watched.PortalRule](raw))
+}
+
+// portalRuleEntry returns the entry a rule belongs to.
+func portalRuleEntry(t *testing.T, repo *PortalRuleRepo, rule *core.PortalRule) *core.PortalEntry {
+	t.Helper()
+	entry, ok := repo.PortalEntryRepo.GetById(rule.EntryId)
+	require.True(t, ok)
+	return entry
+}
+
 func newTestPortalRuleRepo(t *testing.T) (*gorm.DB, *PortalRuleRepo, *watchserver.Server) {
 	t.Helper()
 
@@ -116,17 +148,32 @@ func newTestPortalRuleRepo(t *testing.T) (*gorm.DB, *PortalRuleRepo, *watchserve
 	watchServer := watchserver.NewServerForTest()
 	t.Cleanup(watchServer.AfterAppStop)
 
+	// One syncer serves both repositories, the way the injector hands Hub a
+	// single one: a rule publishes the access of the entry it belongs to.
+	sync := testSyncer(watchServer)
+	entryRepo := newTestPortalEntryRepo(db, sync)
+	entryRepo.Dao.InitSchema()
 	repo := &PortalRuleRepo{
 		Dao: &model.PortalRuleDao{
 			Dao: rdb.NewDao[*model.PortalRule](db),
 		},
-		Syncer: testSyncer(watchServer),
-		Access: new(configaccess.Access),
+		Syncer:          sync,
+		Access:          new(configaccess.Access),
+		PortalEntryRepo: entryRepo,
 	}
 	repo.Dao.InitSchema()
 	require.NoError(t, db.Exec("DELETE FROM portal_rule").Error)
+	require.NoError(t, db.Exec("DELETE FROM portal_entry").Error)
 
 	return db, repo, watchServer
+}
+
+func newTestPortalEntryRepo(db *gorm.DB, sync *syncer.Syncer) *PortalEntryRepo {
+	return &PortalEntryRepo{
+		Dao:    &model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](db)},
+		Syncer: sync,
+		Access: new(configaccess.Access),
+	}
 }
 
 func sharedTestPortalRuleRepoDB(t *testing.T) *gorm.DB {
@@ -142,16 +189,24 @@ func sharedTestPortalRuleRepoDB(t *testing.T) *gorm.DB {
 	return testPortalRuleRepoDB
 }
 
-func testPortalRule(name string) *core.PortalRule {
+// testPortalRule builds a rule that belongs to the entry serving the access, the
+// way Core hands a complete rule to the repository.
+func testPortalRule(t *testing.T, repo *PortalRuleRepo, name string) *core.PortalRule {
+	t.Helper()
+
+	entry, ok := repo.PortalEntryRepo.GetByAccess("https", "demo.local", 443)
+	if !ok {
+		entry = &core.PortalEntry{Scheme: "https", Host: "demo.local", Port: 443, Enabled: true}
+		repo.PortalEntryRepo.Save(entry)
+	}
 	return &core.PortalRule{
 		Name:                    name,
-		MatchScheme:             "https",
-		MatchHost:               "demo.local",
-		MatchPort:               443,
+		EntryId:                 entry.Id,
 		MatchPathPrefix:         "/admin",
 		RouteType:               "SITE",
 		RouteSiteName:           "admin@demo.app",
 		RouteRedirectionPattern: "",
+		Enabled:                 true,
 	}
 }
 

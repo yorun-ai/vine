@@ -3,6 +3,7 @@ package proxy
 import (
 	"context"
 	"net"
+	"net/http"
 	stdhttputil "net/http/httputil"
 	"net/url"
 	"sync/atomic"
@@ -81,11 +82,46 @@ func (p *ReverseProxy) Serve(ginCtx *gin.Context) bool {
 		"target", p.target.String(),
 	)
 
-	requestPath := ginCtx.Param("path")
-	requestCtx := context.WithValue(ginCtx.Request.Context(), _RequestPathContextKey{}, requestPath)
+	requestCtx, release := p.requestContext(ginCtx.Request)
+	defer release()
+	requestCtx = context.WithValue(requestCtx, _RequestPathContextKey{}, ginCtx.Param("path"))
 	request := ginCtx.Request.WithContext(requestCtx)
 	p.reverseProxy.ServeHTTP(ginCtx.Writer, request)
 	return true
+}
+
+// ServeHTTP proxies the request when the target is reachable, and reports
+// whether it handled it, so a caller serves its own content while the target is
+// down. The request keeps the path the caller received, so a development server
+// answers the route the client asked for.
+func (p *ReverseProxy) ServeHTTP(writer http.ResponseWriter, request *http.Request) bool {
+	if !p.available.Load() {
+		return false
+	}
+
+	logger.Debug("reverse proxy request",
+		"method", request.Method,
+		"path", request.URL.RequestURI(),
+		"target", p.target.String(),
+	)
+
+	requestCtx, release := p.requestContext(request)
+	defer release()
+	requestCtx = context.WithValue(requestCtx, _RequestPathContextKey{}, request.URL.Path)
+	p.reverseProxy.ServeHTTP(writer, request.WithContext(requestCtx))
+	return true
+}
+
+// requestContext returns the context one proxied request runs under: it ends with
+// the request, and with the proxy, so Close aborts a request the target never
+// answers instead of leaving it in flight.
+func (p *ReverseProxy) requestContext(request *http.Request) (context.Context, func()) {
+	ctx, cancel := context.WithCancel(request.Context())
+	stop := context.AfterFunc(p.context, cancel)
+	return ctx, func() {
+		stop()
+		cancel()
+	}
 }
 
 func (p *ReverseProxy) watch() {

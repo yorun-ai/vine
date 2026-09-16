@@ -136,6 +136,7 @@ func testPortalCert(name string) *core.PortalCert {
 		PrivateKeyBase64: "pri",
 		ValidFrom:        time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
 		ValidTo:          time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC),
+		Enabled:          true,
 	}
 }
 

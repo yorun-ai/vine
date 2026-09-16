@@ -80,11 +80,11 @@ func TestFlagsParseHubEndpointAndIngressListen(t *testing.T) {
 	t.Cleanup(func() { os.Args = prevArgs })
 	os.Args = []string{
 		"/tmp/vine",
-		"--hub-endpoint", "http://10.0.0.8:7071",
-		"--ingress-listen", "127.0.0.1:8080",
-		"--mtls-ca-file", "/tmp/ca.pem",
-		"--mtls-cert-file", "/tmp/link.pem",
-		"--mtls-key-file", "/tmp/link-key.pem",
+		"--link-hub-endpoint", "http://10.0.0.8:7071",
+		"--link-ingress-listen", "127.0.0.1:8080",
+		"--link-mtls-ca-file", "/tmp/ca.pem",
+		"--link-mtls-cert-file", "/tmp/link.pem",
+		"--link-mtls-key-file", "/tmp/link-key.pem",
 	}
 
 	flag := &linkflag.Flag{}

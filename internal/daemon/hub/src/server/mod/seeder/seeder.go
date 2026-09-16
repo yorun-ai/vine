@@ -14,19 +14,17 @@ type Seeder struct {
 	Flag   *flag.Flag     `inject:""`
 	Logger *logger.Logger `inject:""`
 
-	MetadataRepo  core.MetadataRepo    `inject:""`
-	RuleCore      *core.PortalRuleCore `inject:""`
-	AppConfigCore *core.AppConfigCore  `inject:""`
-	SiteCore      *core.PortalSiteCore `inject:""`
-	CertCore      *core.PortalCertCore `inject:""`
+	MetadataRepo  core.MetadataRepo     `inject:""`
+	EntryCore     *core.PortalEntryCore `inject:""`
+	RuleCore      *core.PortalRuleCore  `inject:""`
+	AppConfigCore *core.AppConfigCore   `inject:""`
+	SiteCore      *core.PortalSiteCore  `inject:""`
+	CertCore      *core.PortalCertCore  `inject:""`
 
 	payload *_SettingsYAMLPayload
 }
 
 func (s *Seeder) DIInit() {
-	// Keep built-in dashboard entry data current even when user seed has already run.
-	s.seedDashboard()
-
 	if s.MetadataRepo.IsSeeded() {
 		s.Logger.Info("skip hub seed: all configuration is loaded from the database")
 		return
@@ -56,11 +54,12 @@ func (s *Seeder) loadSeedYAML() {
 	ex.PanicIfError(err)
 	payload := new(_SettingsYAMLPayload)
 	ex.PanicIfError(node.Decode(payload))
+	ex.PanicIfError(checkSeedRuleStyle(payload))
 	for i := range payload.AppConfigs {
 		payload.AppConfigs[i].Sources = entityFieldSources(sources, "appConfigs", i)
 	}
-	for i := range payload.PortalEntries {
-		payload.PortalEntries[i].Sources = entityFieldSources(sources, "portalSites", i)
+	for i := range payload.PortalSites {
+		payload.PortalSites[i].Sources = entityFieldSources(sources, "portalSites", i)
 	}
 	for i := range payload.PortalRules {
 		payload.PortalRules[i].Sources = entityFieldSources(sources, "portalRules", i)
@@ -76,8 +75,14 @@ func (s *Seeder) loadSeedYAML() {
 	for _, site := range entities.PortalSites {
 		s.SiteCore.Validate(*site)
 	}
+	for _, entry := range entities.PortalEntries {
+		s.EntryCore.Validate(*entry)
+	}
 	for _, rule := range entities.PortalRules {
-		s.RuleCore.Validate(*rule)
+		s.RuleCore.Validate(*rule.Rule)
+		if rule.EntryName == "" {
+			s.EntryCore.ValidateAccess(rule.Access)
+		}
 	}
 	for _, cert := range entities.PortalCerts {
 		s.CertCore.Validate(*cert)
@@ -94,8 +99,13 @@ func (s *Seeder) applySeed() {
 	for _, site := range entities.PortalSites {
 		s.SiteCore.Save(*site)
 	}
+	// Entries come before rules: a rule joins the entry that serves its access,
+	// and an entry the seed named keeps that name.
+	for _, entry := range entities.PortalEntries {
+		s.EntryCore.Save(*entry)
+	}
 	for _, rule := range entities.PortalRules {
-		s.RuleCore.Save(*rule)
+		s.RuleCore.Save(*resolveSeedRule(s.EntryCore, rule))
 	}
 	for _, cert := range entities.PortalCerts {
 		s.CertCore.Save(*cert)

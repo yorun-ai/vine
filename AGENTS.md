@@ -35,7 +35,7 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
 - Keep the import rewriting and formatting performed by `script/gen-skel.sh`.
   Generated runtime code intentionally imports internal packages.
 - Treat the embedded Hub Dashboard bundle
-  (`internal/daemon/hub/src/server/impl/admin/dashboard/assets/dashboard.tar.zst`)
+  (`internal/daemon/hub/src/server/mod/admin/assets/dashboard.tar.zst`)
   as generated: rebuild it with `bash script/build-dashboard-assets.sh` whenever
   Dashboard source or the admin API it calls changes, and commit it with that
   change. Never assemble the archive by hand, and never resolve a conflict on it

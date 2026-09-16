@@ -76,7 +76,7 @@ func (s *PortalSiteRepo) toCorePortalSite(row *model.PortalSite, schemas _Portal
 		ActorVia:      row.ActorVia,
 		Cors:          cors,
 		WebName:       row.WebName,
-		BuiltIn:       row.BuiltIn,
+		Enabled:       row.Enabled,
 	}
 	entry.WebMountPath = schemas.mountPath(entry)
 	entry.RpcgwServices = core.MatchPortalSiteRpcgwServicesInDomainViews(*entry, schemas.views)
@@ -119,7 +119,7 @@ func toModelPortalSite(entry *core.PortalSite) *model.PortalSite {
 		CorsMode:      string(entry.Cors.Mode),
 		CorsOrigins:   vcode.MustMarshalJsonS(entry.Cors.AllowedOrigins),
 		WebName:       entry.WebName,
-		BuiltIn:       entry.BuiltIn,
+		Enabled:       entry.Enabled,
 	}
 }
 

@@ -48,17 +48,14 @@ ENV VINE_MTLS_CA_FILE="" \
 # Build with --target hub to produce the Hub image.
 FROM runtime AS hub
 
-# Keep the image default on the legacy input so it cannot override a user's
-# legacy flag or environment value. Explicit new watch inputs take precedence.
 ENV VINE_CONTROL_LISTEN=0.0.0.0:7071 \
-    VINE_ADMIN_LISTEN=0.0.0.0:7075 \
-    VINE_REDIS_LISTEN=0.0.0.0:7072 \
+    VINE_ADMIN_LISTEN=0.0.0.0:7099 \
+    VINE_WATCH_LISTEN=0.0.0.0:7072 \
     VINE_DB_SQLITE_FILE="" \
     VINE_DB_POSTGRES_URL="" \
-    VINE_SEED_HUB_DATA_FILE="" \
-    VINE_DASHBOARD_URL=""
+    VINE_SEED_DATA_FILE=""
 
-EXPOSE 7071 7072 7075
+EXPOSE 7071 7072 7099
 CMD ["hub", "serve"]
 
 # Build with --target portal to produce the Portal image.
@@ -67,9 +64,8 @@ FROM runtime AS portal
 ENV VINE_HUB_ENDPOINT=http://hub:7071
 
 # Portal creates HTTP/HTTPS listeners from the rules stored in Hub. These are
-# the default ports; the Hub-seeded Dashboard entry uses 7099, and additional
-# configured entry ports can also be used.
-EXPOSE 80 443 7099
+# the default entry ports; additional configured entry ports can also be used.
+EXPOSE 80 443
 CMD ["portal", "serve"]
 
 # Build with --target link to produce the Link image.

@@ -22,35 +22,52 @@ func (s *PortalEntryApiServiceServerImpl) List() []skeled.PortalEntry {
 
 func (s *PortalEntryApiServiceServerImpl) UpdateAccess(scheme string, host string, port int, update skeled.PortalEntryAccessUpdate) skeled.PortalEntry {
 	entry := s.PortalEntryCore.UpdateAccess(scheme, host, port, core.PortalEntryAccessUpdate{
-		Scheme: update.Scheme,
-		Host:   update.Host,
-		Port:   update.Port,
+		Scheme:  update.Scheme,
+		Host:    update.Host,
+		Port:    update.Port,
+		Enabled: update.Enabled,
 	})
 	return s.toServerPortalEntry(entry)
 }
 
-func (s *PortalEntryApiServiceServerImpl) toServerPortalEntry(entry core.PortalEntry) skeled.PortalEntry {
+func (s *PortalEntryApiServiceServerImpl) Create(creation skeled.PortalEntryCreation) skeled.PortalEntry {
+	entry := s.PortalEntryCore.Create(core.PortalEntryCreation{
+		Name:    creation.Name,
+		Scheme:  creation.Scheme,
+		Host:    creation.Host,
+		Port:    creation.Port,
+		Enabled: creation.Enabled,
+	})
+	return s.toServerPortalEntry(entry)
+}
+
+func (s *PortalEntryApiServiceServerImpl) Remove(scheme string, host string, port int) {
+	s.PortalEntryCore.Remove(scheme, host, port)
+}
+
+func (s *PortalEntryApiServiceServerImpl) toServerPortalEntry(entry core.PortalEntryView) skeled.PortalEntry {
 	rules := make([]skeled.PortalEntryRule, 0, len(entry.Rules))
 	for _, rule := range entry.Rules {
-		rules = append(rules, s.toServerPortalEntryRule(rule))
+		rules = append(rules, s.toServerPortalEntryRule(entry.PortalEntry, rule))
 	}
 	return skeled.PortalEntry{
-		Name:   entry.Name,
-		Scheme: entry.Scheme,
-		Host:   entry.Host,
-		Port:   entry.Port,
-		Rules:  rules,
+		Name:    entry.Name,
+		Scheme:  entry.Scheme,
+		Host:    entry.Host,
+		Port:    entry.Port,
+		Enabled: entry.Enabled,
+		Rules:   rules,
 	}
 }
 
-func (s *PortalEntryApiServiceServerImpl) toServerPortalEntryRule(rule core.PortalEntryRule) skeled.PortalEntryRule {
+func (s *PortalEntryApiServiceServerImpl) toServerPortalEntryRule(entry core.PortalEntry, rule core.PortalEntryRule) skeled.PortalEntryRule {
 	var site *skeled.PortalSiteListItem
 	if rule.Site != nil {
 		value := toServerPortalSiteListItem(rule.Site)
 		site = &value
 	}
 	return skeled.PortalEntryRule{
-		Rule: toServerPortalRuleListItem(rule.Rule, nil, rule.Site),
+		Rule: toServerPortalRuleListItem(&entry, rule.Rule, nil, rule.Site),
 		Site: site,
 	}
 }

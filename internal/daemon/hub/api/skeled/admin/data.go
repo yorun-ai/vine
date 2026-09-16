@@ -429,6 +429,8 @@ type PortalCert struct {
 	ValidTo skel.Timestamp `json:"validTo"`
 	// FieldSources Field sources; only returned by get, create and update
 	FieldSources []FieldSource `json:"fieldSources"`
+	// Enabled Whether Hub publishes this certificate to Portal
+	Enabled bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -459,11 +461,17 @@ type PortalCertCreation struct {
 	PublicKeyBase64 string `json:"publicKeyBase64"`
 	// PrivateKeyBase64 Private key Base64
 	PrivateKeyBase64 string `json:"privateKeyBase64"`
+	// Enabled Whether Hub publishes this certificate to Portal
+	Enabled *bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
 func (v PortalCertCreation) Clone() PortalCertCreation {
 	cloned := v
+	if v.Enabled != nil {
+		clonedValue0 := *v.Enabled
+		cloned.Enabled = &clonedValue0
+	}
 	return cloned
 }
 
@@ -485,6 +493,8 @@ type PortalCertListItem struct {
 	ValidFrom skel.Timestamp `json:"validFrom"`
 	// ValidTo Validity end time
 	ValidTo skel.Timestamp `json:"validTo"`
+	// Enabled Whether Hub publishes this certificate to Portal
+	Enabled bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -507,6 +517,8 @@ type PortalCertUpdate struct {
 	PublicKeyBase64 *string `json:"publicKeyBase64"`
 	// PrivateKeyBase64 Private key Base64
 	PrivateKeyBase64 *string `json:"privateKeyBase64"`
+	// Enabled Whether Hub publishes this certificate to Portal
+	Enabled *bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -523,6 +535,10 @@ func (v PortalCertUpdate) Clone() PortalCertUpdate {
 	if v.PrivateKeyBase64 != nil {
 		clonedValue2 := *v.PrivateKeyBase64
 		cloned.PrivateKeyBase64 = &clonedValue2
+	}
+	if v.Enabled != nil {
+		clonedValue3 := *v.Enabled
+		cloned.Enabled = &clonedValue3
 	}
 	return cloned
 }
@@ -547,26 +563,6 @@ func (v PortalCors) Clone() PortalCors {
 	return cloned
 }
 
-// PortalDashboardAccess Hub Dashboard access entry
-type PortalDashboardAccess struct {
-	// Scheme Entry protocol
-	Scheme string `json:"scheme"`
-	// Host Match Host, empty string means no restriction
-	Host string `json:"host"`
-	// Port Entry port
-	Port int `json:"port"`
-	// PathPrefix Match path prefix
-	PathPrefix string `json:"pathPrefix"`
-	// CanUpdate Whether to allow modification of Dashboard access entry
-	CanUpdate bool `json:"canUpdate"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalDashboardAccess) Clone() PortalDashboardAccess {
-	cloned := v
-	return cloned
-}
-
 // PortalEntry Portal access entry
 type PortalEntry struct {
 	// Name Entry name
@@ -579,6 +575,8 @@ type PortalEntry struct {
 	Port int `json:"port"`
 	// Rules Entry rule list
 	Rules []PortalEntryRule `json:"rules"`
+	// Enabled Whether Hub publishes the rules of this entry to Portal
+	Enabled bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -603,11 +601,41 @@ type PortalEntryAccessUpdate struct {
 	Host string `json:"host"`
 	// Port Entry port
 	Port int `json:"port"`
+	// Enabled Whether Hub publishes the rules of this entry to Portal
+	Enabled *bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
 func (v PortalEntryAccessUpdate) Clone() PortalEntryAccessUpdate {
 	cloned := v
+	if v.Enabled != nil {
+		clonedValue0 := *v.Enabled
+		cloned.Enabled = &clonedValue0
+	}
+	return cloned
+}
+
+// PortalEntryCreation Portal access entry creation parameters
+type PortalEntryCreation struct {
+	// Name Entry name
+	Name string `json:"name"`
+	// Scheme Entry protocol
+	Scheme string `json:"scheme"`
+	// Host Match Host, empty string means no restriction
+	Host string `json:"host"`
+	// Port Entry port
+	Port int `json:"port"`
+	// Enabled Whether Hub publishes the rules of this entry to Portal; defaults to true
+	Enabled *bool `json:"enabled"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalEntryCreation) Clone() PortalEntryCreation {
+	cloned := v
+	if v.Enabled != nil {
+		clonedValue0 := *v.Enabled
+		cloned.Enabled = &clonedValue0
+	}
 	return cloned
 }
 
@@ -659,6 +687,8 @@ type PortalRule struct {
 	ResolvedRoutePathPrefix string `json:"resolvedRoutePathPrefix"`
 	// FieldSources Field sources; only returned by get, create and update
 	FieldSources []FieldSource `json:"fieldSources"`
+	// Enabled Whether Hub publishes this rule to Portal
+	Enabled bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -675,16 +705,42 @@ func (v PortalRule) Clone() PortalRule {
 	return cloned
 }
 
+// PortalRuleConflict Portal entry rules that match the same request
+type PortalRuleConflict struct {
+	// RuleId Rule ID
+	RuleId int `json:"ruleId"`
+	// Rule Rule name
+	Rule string `json:"rule"`
+	// ConflictRuleId ID of the rule that already matches the request
+	ConflictRuleId int `json:"conflictRuleId"`
+	// ConflictRule Name of the rule that already matches the request
+	ConflictRule string `json:"conflictRule"`
+	// Entry Name of the Portal entry the rules belong to
+	Entry string `json:"entry"`
+	// Match Request both rules match
+	Match string `json:"match"`
+	// PublishedRuleId ID of the rule Hub publishes for the request
+	PublishedRuleId int `json:"publishedRuleId"`
+	// PublishedRule Name of the rule Hub publishes for the request
+	PublishedRule string `json:"publishedRule"`
+	// SuppressedRuleId ID of the rule Hub leaves out, because the published rule sorts first
+	SuppressedRuleId int `json:"suppressedRuleId"`
+	// SuppressedRule Name of the rule Hub leaves out, because the published rule sorts first
+	SuppressedRule string `json:"suppressedRule"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalRuleConflict) Clone() PortalRuleConflict {
+	cloned := v
+	return cloned
+}
+
 // PortalRuleCreation Portal entry rule creation parameters
 type PortalRuleCreation struct {
 	// Name Rule name
 	Name string `json:"name"`
-	// MatchScheme Matching protocol
-	MatchScheme string `json:"matchScheme"`
-	// MatchHost Match Host, empty string means no restriction
-	MatchHost string `json:"matchHost"`
-	// MatchPort Match matchPort, 0 means no restriction
-	MatchPort int `json:"matchPort"`
+	// EntryName Name of the Portal access entry the rule belongs to
+	EntryName string `json:"entryName"`
 	// MatchPathPrefix Match path prefix, empty string means match all paths
 	MatchPathPrefix string `json:"matchPathPrefix"`
 	// RouteType Target type
@@ -695,6 +751,8 @@ type PortalRuleCreation struct {
 	RouteRedirectionPattern string `json:"routeRedirectionPattern"`
 	// RoutePathPrefix Target site path prefix; empty means strip the matching prefix only
 	RoutePathPrefix *string `json:"routePathPrefix"`
+	// Enabled Whether Hub publishes this rule to Portal
+	Enabled *bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -703,6 +761,10 @@ func (v PortalRuleCreation) Clone() PortalRuleCreation {
 	if v.RoutePathPrefix != nil {
 		clonedValue0 := *v.RoutePathPrefix
 		cloned.RoutePathPrefix = &clonedValue0
+	}
+	if v.Enabled != nil {
+		clonedValue1 := *v.Enabled
+		cloned.Enabled = &clonedValue1
 	}
 	return cloned
 }
@@ -733,6 +795,8 @@ type PortalRuleListItem struct {
 	ResolvedMatchPathPrefix string `json:"resolvedMatchPathPrefix"`
 	// ResolvedRoutePathPrefix Effective route path prefix after site mount path resolution
 	ResolvedRoutePathPrefix string `json:"resolvedRoutePathPrefix"`
+	// Enabled Whether Hub publishes this rule to Portal
+	Enabled bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -745,12 +809,6 @@ func (v PortalRuleListItem) Clone() PortalRuleListItem {
 type PortalRuleUpdate struct {
 	// Name Rule name
 	Name *string `json:"name"`
-	// MatchScheme Matching protocol
-	MatchScheme *string `json:"matchScheme"`
-	// MatchHost Match Host, empty string means no restriction
-	MatchHost *string `json:"matchHost"`
-	// MatchPort Match matchPort, 0 means no restriction
-	MatchPort *int `json:"matchPort"`
 	// MatchPathPrefix Match path prefix, empty string means match all paths
 	MatchPathPrefix *string `json:"matchPathPrefix"`
 	// RouteType Target type
@@ -761,6 +819,8 @@ type PortalRuleUpdate struct {
 	RouteRedirectionPattern *string `json:"routeRedirectionPattern"`
 	// RoutePathPrefix Target site path prefix; empty means strip the matching prefix only
 	RoutePathPrefix *string `json:"routePathPrefix"`
+	// Enabled Whether Hub publishes this rule to Portal
+	Enabled *bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -770,37 +830,29 @@ func (v PortalRuleUpdate) Clone() PortalRuleUpdate {
 		clonedValue0 := *v.Name
 		cloned.Name = &clonedValue0
 	}
-	if v.MatchScheme != nil {
-		clonedValue1 := *v.MatchScheme
-		cloned.MatchScheme = &clonedValue1
-	}
-	if v.MatchHost != nil {
-		clonedValue2 := *v.MatchHost
-		cloned.MatchHost = &clonedValue2
-	}
-	if v.MatchPort != nil {
-		clonedValue3 := *v.MatchPort
-		cloned.MatchPort = &clonedValue3
-	}
 	if v.MatchPathPrefix != nil {
-		clonedValue4 := *v.MatchPathPrefix
-		cloned.MatchPathPrefix = &clonedValue4
+		clonedValue1 := *v.MatchPathPrefix
+		cloned.MatchPathPrefix = &clonedValue1
 	}
 	if v.RouteType != nil {
-		clonedValue5 := *v.RouteType
-		cloned.RouteType = &clonedValue5
+		clonedValue2 := *v.RouteType
+		cloned.RouteType = &clonedValue2
 	}
 	if v.RouteSiteName != nil {
-		clonedValue6 := *v.RouteSiteName
-		cloned.RouteSiteName = &clonedValue6
+		clonedValue3 := *v.RouteSiteName
+		cloned.RouteSiteName = &clonedValue3
 	}
 	if v.RouteRedirectionPattern != nil {
-		clonedValue7 := *v.RouteRedirectionPattern
-		cloned.RouteRedirectionPattern = &clonedValue7
+		clonedValue4 := *v.RouteRedirectionPattern
+		cloned.RouteRedirectionPattern = &clonedValue4
 	}
 	if v.RoutePathPrefix != nil {
-		clonedValue8 := *v.RoutePathPrefix
-		cloned.RoutePathPrefix = &clonedValue8
+		clonedValue5 := *v.RoutePathPrefix
+		cloned.RoutePathPrefix = &clonedValue5
+	}
+	if v.Enabled != nil {
+		clonedValue6 := *v.Enabled
+		cloned.Enabled = &clonedValue6
 	}
 	return cloned
 }
@@ -827,6 +879,8 @@ type PortalSite struct {
 	WebMountPath string `json:"webMountPath"`
 	// FieldSources Field sources; only returned by get, create and update
 	FieldSources []FieldSource `json:"fieldSources"`
+	// Enabled Whether Hub publishes this site to Portal
+	Enabled bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -890,6 +944,8 @@ type PortalSiteCreation struct {
 	Cors *PortalCors `json:"cors"`
 	// WebName Web name
 	WebName string `json:"webName"`
+	// Enabled Whether Hub publishes this site to Portal
+	Enabled *bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -899,6 +955,10 @@ func (v PortalSiteCreation) Clone() PortalSiteCreation {
 		clonedValue0 := *v.Cors
 		clonedValue0 = (*v.Cors).Clone()
 		cloned.Cors = &clonedValue0
+	}
+	if v.Enabled != nil {
+		clonedValue1 := *v.Enabled
+		cloned.Enabled = &clonedValue1
 	}
 	return cloned
 }
@@ -923,6 +983,8 @@ type PortalSiteListItem struct {
 	WebName string `json:"webName"`
 	// WebMountPath Web mount path; empty means the Web is not limited to a path
 	WebMountPath string `json:"webMountPath"`
+	// Enabled Whether Hub publishes this site to Portal
+	Enabled bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -1018,6 +1080,8 @@ type PortalSiteUpdate struct {
 	Cors *PortalCors `json:"cors"`
 	// WebName Web name
 	WebName *string `json:"webName"`
+	// Enabled Whether Hub publishes this site to Portal
+	Enabled *bool `json:"enabled"`
 }
 
 // Clone returns a value-isolated copy of the generated data.
@@ -1047,6 +1111,10 @@ func (v PortalSiteUpdate) Clone() PortalSiteUpdate {
 	if v.WebName != nil {
 		clonedValue5 := *v.WebName
 		cloned.WebName = &clonedValue5
+	}
+	if v.Enabled != nil {
+		clonedValue6 := *v.Enabled
+		cloned.Enabled = &clonedValue6
 	}
 	return cloned
 }
@@ -1084,84 +1152,6 @@ type PortalStatusView struct {
 // Clone returns a value-isolated copy of the generated data.
 func (v PortalStatusView) Clone() PortalStatusView {
 	cloned := v
-	return cloned
-}
-
-// SeedEntityDiff Seed entity differences
-type SeedEntityDiff struct {
-	// Kind Entity type
-	Kind string `json:"kind"`
-	// Name Entity name
-	Name string `json:"name"`
-	// Exists Whether the entity currently exists
-	Exists bool `json:"exists"`
-	// Fields Field differences
-	Fields []SeedFieldDiff `json:"fields"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v SeedEntityDiff) Clone() SeedEntityDiff {
-	cloned := v
-	if v.Fields == nil {
-		cloned.Fields = nil
-	} else {
-		cloned.Fields = make([]SeedFieldDiff, len(v.Fields))
-		for index0 := range v.Fields {
-			cloned.Fields[index0] = v.Fields[index0].Clone()
-		}
-	}
-	return cloned
-}
-
-// SeedFieldDiff Seed field differences
-type SeedFieldDiff struct {
-	// Name Field name
-	Name string `json:"name"`
-	// CurrentValue Current value
-	CurrentValue string `json:"currentValue"`
-	// SeedValue Seed value
-	SeedValue string `json:"seedValue"`
-	// Changed Whether the values differ
-	Changed bool `json:"changed"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v SeedFieldDiff) Clone() SeedFieldDiff {
-	cloned := v
-	return cloned
-}
-
-// SeedItemSelection Seed entity selection
-type SeedItemSelection struct {
-	// Kind Entity type
-	Kind string `json:"kind"`
-	// Name Entity name
-	Name string `json:"name"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v SeedItemSelection) Clone() SeedItemSelection {
-	cloned := v
-	return cloned
-}
-
-// SeedPreview Seed preview
-type SeedPreview struct {
-	// Items Entity differences
-	Items []SeedEntityDiff `json:"items"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v SeedPreview) Clone() SeedPreview {
-	cloned := v
-	if v.Items == nil {
-		cloned.Items = nil
-	} else {
-		cloned.Items = make([]SeedEntityDiff, len(v.Items))
-		for index0 := range v.Items {
-			cloned.Items[index0] = v.Items[index0].Clone()
-		}
-	}
 	return cloned
 }
 

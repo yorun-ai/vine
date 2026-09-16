@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/util/vslice"
 )
@@ -69,58 +68,6 @@ func (s *portalSiteRepoSpy) Remove(id int) bool {
 // so tests only choose the repositories they exercise.
 func newPortalSiteCoreForTest(repo PortalSiteRepo) *PortalSiteCore {
 	return &PortalSiteCore{PortalSiteRepo: repo, SchemaRepo: &schemaRepoSpy{}}
-}
-
-func TestPortalSiteCoreUpdateBuiltInSite(t *testing.T) {
-	repo := &portalSiteRepoSpy{
-		entries: map[int]*PortalSite{
-			1: {Id: 1, Name: "vine.hub.admin.DashboardWeb-web", BuiltIn: true},
-		},
-	}
-	core := newPortalSiteCoreForTest(repo)
-
-	panicValue := capturePanic(func() {
-		core.Update(1, PortalSiteUpdate{})
-	})
-
-	err, ok := panicValue.(ex.Error)
-	require.True(t, ok)
-	assert.Equal(t, ex.OperationFailed, err.Code())
-	assert.Equal(t, []string{"GetById"}, repo.calls)
-}
-
-func TestPortalSiteCoreListSkipsBuiltInSites(t *testing.T) {
-	repo := &portalSiteRepoSpy{
-		entries: map[int]*PortalSite{
-			1: {Id: 1, Name: "vine.hub.admin.DashboardWeb-web", BuiltIn: true},
-			2: {Id: 2, Name: "demo-booker"},
-		},
-	}
-	core := newPortalSiteCoreForTest(repo)
-
-	entries := core.List()
-
-	require.Len(t, entries, 1)
-	assert.Equal(t, "demo-booker", entries[0].Name)
-	assert.Equal(t, []string{"List"}, repo.calls)
-}
-
-func TestPortalSiteCoreRemoveBuiltInSite(t *testing.T) {
-	repo := &portalSiteRepoSpy{
-		entries: map[int]*PortalSite{
-			1: {Id: 1, Name: "vine.hub.admin.DashboardWeb-web", BuiltIn: true},
-		},
-	}
-	core := newPortalSiteCoreForTest(repo)
-
-	panicValue := capturePanic(func() {
-		core.Remove(1)
-	})
-
-	err, ok := panicValue.(ex.Error)
-	require.True(t, ok)
-	assert.Equal(t, ex.OperationFailed, err.Code())
-	assert.Equal(t, []string{"GetById"}, repo.calls)
 }
 
 func TestMatchPortalSiteRpcgwServicesInDomainViewsIncludesVineSchemas(t *testing.T) {
@@ -203,7 +150,6 @@ func TestPortalSiteValidateWithoutStorage(t *testing.T) {
 	require.Equal(t, PortalCorsModeSameDomain, got.Cors.Mode)
 	for name, mutate := range map[string]func(*PortalSite){
 		"name":        func(s *PortalSite) { s.Name = " " },
-		"reserved":    func(s *PortalSite) { s.Name = DashboardWebSiteName },
 		"type":        func(s *PortalSite) { s.Type = "unknown" },
 		"actor":       func(s *PortalSite) { s.ActorSkelName = "" },
 		"via":         func(s *PortalSite) { s.ActorVia = "unknown" },
@@ -225,27 +171,9 @@ func TestPortalSiteSaveAndUpdateProtectIdentityAndValidate(t *testing.T) {
 	repo := &portalSiteRepoSpy{entries: map[int]*PortalSite{7: &site}}
 	target := newPortalSiteCoreForTest(repo)
 	incoming := testUserSite()
-	incoming.Id, incoming.BuiltIn = 99, true
+	incoming.Id = 99
 	got := target.Save(incoming)
 	require.Equal(t, 7, got.Id)
-	require.False(t, got.BuiltIn)
 	require.Panics(t, func() { target.Update(7, PortalSiteUpdate{WebName: new("")}) })
 	require.Equal(t, "demo.Web", repo.entries[7].WebName)
-	repo.entries[7].BuiltIn = true
-	require.Panics(t, func() { target.Save(incoming) })
-	require.True(t, repo.entries[7].BuiltIn)
-}
-
-func TestEnsureDashboardSitePreservesIdentity(t *testing.T) {
-	site := testUserSite()
-	site.Name, site.Id = DashboardWebSiteName, 7
-	repo := &portalSiteRepoSpy{entries: map[int]*PortalSite{7: &site}}
-	target := newPortalSiteCoreForTest(repo)
-	incoming := site
-	incoming.Id = 99
-	target.EnsureDashboardSite(incoming)
-	require.True(t, repo.entries[7].BuiltIn)
-	require.Len(t, repo.entries, 1)
-	require.Panics(t, func() { target.Save(site) })
-	require.Panics(t, func() { target.EnsureDashboardSite(testUserSite()) })
 }

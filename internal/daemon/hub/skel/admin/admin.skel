@@ -1,0 +1,9 @@
+domain vine.hub.admin
+
+@desc("Hub's Admin API service, called by the Dashboard")
+api service AdminApiService {
+    @desc("Whether Hub configuration is read-only")
+    method readOnly {
+        output bool
+    }
+}

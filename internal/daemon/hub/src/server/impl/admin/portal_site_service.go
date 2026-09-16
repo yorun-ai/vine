@@ -37,6 +37,7 @@ func (s *PortalSiteApiServiceServerImpl) Create(creation skeled.PortalSiteCreati
 		ActorVia:      creation.ActorVia,
 		Cors:          toCorePortalCors(creation.Cors),
 		WebName:       creation.WebName,
+		Enabled:       creation.Enabled,
 	})
 	return toServerPortalSite(entry, toServerFieldSources(entry.FieldSources))
 }
@@ -49,6 +50,7 @@ func (s *PortalSiteApiServiceServerImpl) Update(id int, update skeled.PortalSite
 		ActorVia:      update.ActorVia,
 		Cors:          toCorePortalCorsPointer(update.Cors),
 		WebName:       update.WebName,
+		Enabled:       update.Enabled,
 	})
 	return toServerPortalSite(entry, toServerFieldSources(entry.FieldSources))
 }
@@ -59,6 +61,7 @@ func (s *PortalSiteApiServiceServerImpl) Remove(id int) {
 
 func toServerPortalSite(entry *core.PortalSite, fieldSources []skeled.FieldSource) skeled.PortalSite {
 	return skeled.PortalSite{
+		Enabled:       entry.Enabled,
 		Id:            entry.Id,
 		Name:          entry.Name,
 		Type:          skeled.PortalSiteType(entry.Type),
@@ -77,6 +80,7 @@ func toServerPortalSite(entry *core.PortalSite, fieldSources []skeled.FieldSourc
 func toServerPortalSiteListItem(entry *core.PortalSite) skeled.PortalSiteListItem {
 	detail := toServerPortalSite(entry, nil)
 	return skeled.PortalSiteListItem{
+		Enabled:       detail.Enabled,
 		Id:            detail.Id,
 		Name:          detail.Name,
 		Type:          detail.Type,

@@ -16,13 +16,13 @@ func TestNewRuleBuildsSiteRule(t *testing.T) {
 	siteManager := newTestSiteManager("admin@demo.app")
 
 	rule, ok := newRule(watched.PortalRule{
-		Name:            "admin",
-		MatchScheme:     string(spec.SchemeHTTPS),
-		MatchHost:       "demo.local",
-		MatchPort:       8443,
-		MatchPathPrefix: "/admin",
-		RouteType:       routeTypeSite,
-		RouteSiteName:   "admin@demo.app",
+		Name:                    "admin",
+		MatchScheme:             string(spec.SchemeHTTPS),
+		MatchHost:               "demo.local",
+		MatchPort:               8443,
+		ResolvedMatchPathPrefix: "/admin",
+		RouteType:               routeTypeSite,
+		RouteSiteName:           "admin@demo.app",
 	}, siteManager)
 
 	assert.True(t, ok)
@@ -41,7 +41,7 @@ func TestNewRuleBuildsRedirectRule(t *testing.T) {
 		MatchScheme:             string(spec.SchemeHTTP),
 		MatchHost:               "demo.local",
 		MatchPort:               8080,
-		MatchPathPrefix:         "/old",
+		ResolvedMatchPathPrefix: "/old",
 		RouteType:               routeTypePermanentRedirect,
 		RouteRedirectionPattern: "https://demo.local/new",
 	}, newTestSiteManager())

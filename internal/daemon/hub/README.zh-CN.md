@@ -4,14 +4,13 @@
 
 配置与服务注册中心，大体遵循 DDD 分层设计，负责维护配置、应用状态与 Rpc 服务注册，并通过采用 Redis 协议的 Watch 服务对外提供读取与订阅能力。
 
-未指定数据库参数时，Hub 默认启用 `--no-db`，必须提供 `--seed-hub-data-file`。
+未指定数据库参数时，Hub 默认启用 `--no-db`，必须提供 `--seed-data-file`。
 每次启动将配置加载到独立的内存 SQLite，初始化完成后，repo 层禁止修改
-应用配置、Portal 站点、规则和证书。请编辑 seed 文件后重启 Hub。
+应用配置、Portal entry、站点、规则和证书。请编辑 seed 文件后重启 Hub。
 Dashboard 展示只读提示并禁用编辑入口；注册、schema 和租约仍可写。
 显式指定 `--db-sqlite-file` 或 `--db-postgres-url` 则保留可写持久化行为，
-它们与 `--no-db` 互斥。standalone 和 `vine dev` 也遵循这些规则。
-standalone 也可通过 `Option.SeedHubData` 传入内联 YAML，与 seed 文件互斥，
-使用相同的导入和只读机制。
+它们与 `--no-db` 互斥。standalone 也遵循这些规则，它还可通过
+`Option.SeedHubData` 传入内联 YAML，与 seed 文件互斥，使用相同的导入和只读机制。
 
 ## 目录结构
 
@@ -40,12 +39,12 @@ internal/daemon/hub/
 
 ## Dashboard 打包
 
-- 调试时使用 `VINE_HUB_DASHBOARD_DEV_PROXY` 环境变量，直接转发请求到启动的 `pnpm dev`。
+- 调试时设置 `VINE_HUB_DASHBOARD_DEV_PROXY`（非空即可），Dashboard 就由 `script/dev-hub-dashboard.sh` 在 `localhost:7098` 启动的 Vite 服务提供；该服务没在跑时 Hub 回落到内嵌构建。
 - 修改 Dashboard 源码后，在 `src/dashboard` 运行 `pnpm typecheck` 和 `pnpm build`。
 - Dashboard 源码或它所调用的 admin API 变化时，必须随该改动重新打包并提交嵌入的 `dashboard.tar.zst`：嵌入产物必须始终与它调用的 admin API 匹配。仓库使用 squash merge，分支只有最终产物会进入 main。
 - 面向用户的文案需要同步更新 `src/i18n/dictionaries/cn.ts` 和 `en.ts`。
 
-Dashboard 前端源码位于 `src/dashboard`，Hub 运行时读取的是嵌入在 `src/server/impl/admin/dashboard/assets/dashboard.tar.zst` 中的构建产物。
+Dashboard 前端源码位于 `src/dashboard`，Hub 运行时读取的是嵌入在 `src/server/mod/admin/assets/dashboard.tar.zst` 中的构建产物。
 
 必须用脚本重新打包，不要手工组装归档，也不要在冲突时直接选某一边：
 
@@ -72,6 +71,47 @@ Hub 的层次职责必须保持清晰：
 修改 Hub 时还应遵守：
 
 - Core 的 `Validate` 只做校验与归一化，不写存储。规则校验不再查询站点；Hub 随站点发布 Web 挂载路径元数据，由 Portal 生成实际生效的规则路径。
+- 应用配置、entry、站点、规则和证书的写入都经过各自的 Core。entry 拥有 Portal
+  监听的 scheme、host 和 port，规则只引用 entry，不再自行保存访问配置。
+  `PortalRuleCore` 按规则声明的访问配置解析 entry，因此访问配置相同的规则共用
+  同一个 entry。修改 entry 会改变它路由的全部规则，Hub 随即重新发布这些规则，
+  让 Portal 读到该 entry 当前服务的访问配置。
+- `PortalEntryCore` 为尚无用户 entry 的访问配置创建 entry，并允许删除没有路由
+  任何规则的 entry：规则属于用户，删除仍有规则的 entry 会报错，而不是让规则失去
+  访问配置。entry 列表会返回尚未路由规则的 entry，因为用户先建 entry、再添加使用
+  它的规则。
+- Hub 在 admin 模块自己的监听上提供 Admin API 与 Dashboard（`--admin-listen`，
+  默认 `127.0.0.1:7099`，与 Control API 的 `--control-listen` 对称）：该监听在 RPC
+  路径 `/api/invoke` 上响应 API（Dashboard 调用的就是该路径），其它路径
+  都返回内嵌的 Dashboard 构建产物，Dashboard 因此不再属于 Portal 配置——Hub 不为
+  它创建任何 entry、站点或规则，Portal 也不会路由 Dashboard。
+- Portal 站点、entry、规则与证书在库里都有 `enabled` 开关（默认启用），Dashboard
+  可编辑；seed 用 `disabled`（默认 false）声明同一个开关，只标出要停用的实体，
+  写 `enabled` 的 seed 会直接报错，避免被忽略后继续发布。Hub 会把停用的实体保留在
+  数据库里但停止发布到 Watch，Portal 因此完全看不到它：停用的规则、停用 entry 下
+  的规则、停用站点上的 SITE 规则以及停用的证书都会从发布内容中移除。早于该开关的
+  数据库中的实体保持启用。
+- entry 有自己的名称：seed 的 `portalEntries` 段声明 `name`、`scheme`、`host`、
+  `port`，并在规则之前应用，因此规则会加入服务其访问配置的 entry 并沿用该名称；
+  entry 也可以暂时不承载任何规则。Hub 只为它自行创建的 entry 推导
+  `scheme[:host]:port` 名称，所以没有显式声明 entry 时规则加入的 entry 以访问配置
+- Portal 各段是强类型的：实体声明了该段没有的字段时 Hub 直接报错，避免拼错或改名
+  后的字段被静默忽略、实体停留在默认值；Hub 自己不再创建任何实体。
+- name 只在同一类实体内唯一，所以站点、entry 与规则可以同名。
+- 规则加入 entry 有两种写法：用 `entryName` 指定名称，或直接声明该 entry 服务的
+  访问配置（`matchScheme` / `matchHost` / `matchPort`）。两者互斥：同一条规则不
+  能同时使用两种写法，同一份 seed 文档也只能全部使用其中一种；声明了
+  `portalEntries` 的 seed 必须用 `entryName` 引用这些 entry，而不是在规则上声明
+  访问配置。seed 必须自洽：规则只能引用同一份文档声明的 entry，Hub 不会用库里的
+  数据补全关系。访问配置属于 entry，Hub 会在写入任何内容之前拒绝这类文档。
+- Admin API 通过 entry 触达规则的访问配置：`PortalRuleCreation` 指定新规则属于哪个
+  entry，`PortalRuleUpdate` 完全不能修改访问配置。seed YAML 仍在规则上声明访问
+  配置，由 Hub 在应用 seed 时聚合为 entry。
+- 两条规则匹配同一个请求时行为是「报告」而不是「拒绝」：规则匹配的路径由 Web
+  声明的 mount 决定，而这些 schema 是应用在 Hub 启动之后才注册的，所以写入时
+  无法判断。Hub 在 schema 到位后审计并报出重复的请求（`no-db` 的只读配置直接
+  拒绝启动，因为没有可修复的界面；有数据库的配置继续运行，由操作者在 Dashboard
+  上解决）。只有访问配置迁移会自行消解这类冲突，因为已存储的数据不靠人工修改。
 - 数据库表结构必须同时更新 `src/server/repo/db/model/sql/sqlite` 和 `src/server/repo/db/model/sql/pgsql`。
 - Redis key、Redis value JSON 和事件格式属于 Hub、Link、Portal 之间的协议；修改时必须同步所有生产者、消费者和测试。
 - `watchserver` 是运行时分发层，不应成为绕过 Repo/Core 直接实现业务规则的第二套状态源。
@@ -100,9 +140,9 @@ Hub 的职责可以拆成四条主线：
 
 4. 分离的 API listener
    Control API listener 向 Link 和 Portal 暴露 `vine.hub.control` 域，其中
-   只包含 `InfoService` 与 `RegistryService`。Hub 主 listener 暴露
+   只包含 `InfoService` 与 `RegistryService`。admin listener 以明文暴露
    `vine.hub.admin` 域，其中包含 Dashboard Admin Rpc 服务和
-   `DashboardWeb`。二者共享同一个 Hub 进程和状态，但组件流量无法直接进入管理面。
+   `DashboardWeb`（浏览器不持有 mesh 证书）。二者共享同一个 Hub 进程和状态，但组件流量无法直接进入管理面。
 
 启用内嵌 NATS 时，server component 会使用内存存储预创建 `VINE_EVENTS` 和
 `VINE_TASKS` JetStream stream。外部 NATS 部署负责创建 stream 并决定存储策略；
@@ -115,16 +155,30 @@ Hub 当前支持两类数据库配置来源：
 - SQLite
 - PostgreSQL
 
-启动时可以通过 `--seed-hub-data-file` 让 `seeder` 从本地 YAML 文件一次性导入初始配置、站点规则和证书到数据库；导入后 Hub 仍然统一从数据库 repo 读取，再写入 Redis，对 Link 暴露一致的读取与订阅语义。
+启动时可以通过 `--seed-data-file` 让 `seeder` 从本地 YAML 文件一次性导入初始配置、站点规则和证书到数据库；导入后 Hub 仍然统一从数据库 repo 读取，再写入 Redis，对 Link 暴露一致的读取与订阅语义。
 
 数据库升级基线为 Vine `v0.15.7`，规则表应已具备 `match_*` / `route_*` 列。
 更早的数据库应先用 `v0.15.7` 启动完成迁移；当前 Hub 不再迁移旧 Portal rule 列。
+从把访问配置存在规则上的版本升级时，Hub 会原地迁移 `portal_rule`：建立
+`portal_entry`，把已存储的 `match_scheme`、`match_host`、`match_port` 归入
+entry。这些列保留到后续版本再删除：Hub 从
+升级后就不再读取它们，并会一直写入所属 entry 的访问配置，因为删除用户数据库
+上的列无法撤销。未设置的端口会迁移成 Portal 实际监听的端口。若两条规则此前只
+靠未设置的端口区分，迁移后落在同一 entry 的同一路径上，Hub 保留显式写了端口的
+那条，把使用默认端口的规则挪到 `/migrated` 路径，并逐条记录日志：升级不会要求
+用户手工修库，Hub 也会正常启动。退回旧版本后 Hub 仍能读写该数据库：它读取的访问
+列仍在，enabled 有"默认启用"的默认值，它插入的不带 entry 的规则会在下次升级时
+重新归入对应 entry。
 
-数据库 metadata 记录首次 seed 完成状态。后续启动跳过全部 seed、变量和来源输入，seed 条目不再提供 `override` 开关。无数据库模式每次建立新存储并导入 seed；内置 Dashboard 配置的维护独立于 seed 标记。
+数据库 metadata 记录首次 seed 完成状态。后续启动跳过全部 seed、变量和来源输入，seed 条目不再提供 `override` 开关。无数据库模式每次建立新存储并导入 seed。
 
 字段来源以 JSON 保存原始字段模板，并记录每次替换的相对路径、变量名、占位符、实际应用的 JSON 值和默认值使用标记。AppConfig 的嵌套替换归属 value 的一级 key；管理接口修改字段后清除旧模板和替换记录。管理 API 与 Dashboard 一同展示这些信息及字段来源。
 
-`mod/seeder` 负责 seed YAML 契约：`ParseSeedEntities` 把文档解码成它声明的领域实体供 Dashboard 导入使用，启动 seed 复用同一套解码器，payload 结构体保持包内私有。两者都接受旧规则字段并逐字段告警；同一条规则混用新旧字段会在导入前失败。YAML 不能替换内置的 Dashboard 站点或规则。
+`mod/seeder` 负责 seed YAML 契约：它把文档解码成 Hub 要应用的领域实体，payload 结构体与解析结果保持包内私有。它接受旧规则字段并逐字段告警；同一条规则混用新旧字段会在 Hub 写入任何内容之前失败。
+
+seed 仍在规则上声明 `matchScheme`、`matchHost` 和 `matchPort`。应用 seed 时 Hub
+会把声明的访问配置聚合为 entry，因此 seed 不会把同一份访问配置写到每条规则上。
+Portal 收到的规则仍携带其 entry 的访问配置；entry 是 Hub 侧状态，不是 Watch key。
 
 ## Admin 载荷约定
 
@@ -147,9 +201,8 @@ bash script/gen-skel.sh hub
 
 Hub 支持作为单进程内组件运行：
 
-- Hub Control API 注册在 `rpc+inproc://vine/hub`；Dashboard Admin Rpc 和 Web
-  handler 分别注册在 `rpc+inproc://vine/hub/admin` 与
-  `web+inproc://vine/hub/admin` 下，不再通过 HTTP 暴露。
+- Hub Control API 注册在 `rpc+inproc://vine/hub`；Admin API 只走自己的监听，
+  因此除非调用方声明了 admin 监听地址，进程内运行的 Hub 不提供 Admin API。
 - `watchserver` 不再启动对外 TCP 端口，只保留进程内 Redis server。
 - `vined` 中会保存这份进程内 Redis server 指针，供 inproc 模式下的 `WatchClient` 直接使用。
 
