@@ -298,27 +298,6 @@ export const en: Record<TranslationKey, string> = {
   'portalRule.forwardSiteDescription': 'Forward to Portal Site',
   'portalRule.permanentRedirectDescription': 'Return 308 redirect',
   'portalRule.temporaryRedirectDescription': 'Return 307 redirect',
-  'dashboardAccess.title': 'Dashboard Access',
-  'dashboardAccess.description':
-    'Change the Hub Dashboard access scheme, host, port, and path prefix.',
-  'dashboardAccess.locked':
-    'Dashboard access is fixed by the dashboard-url startup option and cannot be changed here.',
-  'dashboardAccess.hostRequired': 'Host is required when scheme is https',
-  'dashboardAccess.missingCert':
-    'No configured HTTPS certificate matches this host',
-  'dashboardPort.title': 'Dashboard Access',
-  'dashboardPort.description':
-    'Change the Hub Dashboard access scheme, host, port, and path prefix.',
-  'dashboardPort.portLabel': 'Port',
-  'dashboardPort.currentPort': 'Current page port: {port}',
-  'dashboardPort.defaultPort': 'default port',
-  'dashboardPort.updatedTitle': 'Dashboard Port Updated',
-  'dashboardPort.updatedDescription':
-    'This page will jump to the new port after the new site is available.',
-  'dashboardPort.notReady': 'New site not detected',
-  'dashboardPort.stay': 'Stay here',
-  'dashboardPort.jumpNow': 'Jump now',
-  'dashboardPort.invalid': 'Port must be empty or an integer from 1 to 65535',
   'dataUpdate.upload': 'Upload',
   'dataUpdate.selectYaml': 'Select YAML',
   'dataUpdate.confirm': 'Confirm',
@@ -427,8 +406,6 @@ export const en: Record<TranslationKey, string> = {
   'nav.skeletonEvent.description': 'View event definitions and fields.',
   'nav.skeletonTask.label': 'Task',
   'nav.skeletonTask.description': 'View background tasks and triggers.',
-  'nav.dashboardPort.label': 'Dashboard Access',
-  'nav.dashboardPort.description': 'Configure the dashboard access entry.',
   'nav.dataUpdate.label': 'Data Update',
   'nav.dataUpdate.description':
     'Import, export, and maintain Hub configuration.',

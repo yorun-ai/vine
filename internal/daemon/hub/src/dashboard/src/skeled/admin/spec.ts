@@ -65,8 +65,6 @@ export const PortalRuleApiServiceSpec = {
     create: 'create',
     update: 'update',
     remove: 'remove',
-    getDashboardAccess: 'getDashboardAccess',
-    updateDashboardAccess: 'updateDashboardAccess',
   },
 } as const;
 

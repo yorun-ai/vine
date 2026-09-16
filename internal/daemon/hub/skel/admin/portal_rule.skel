@@ -139,24 +139,6 @@ data PortalRuleUpdate {
     enabled: bool?
 }
 
-@desc("Hub Dashboard access entry")
-data PortalDashboardAccess {
-    @desc("Entry protocol")
-    scheme: string
-
-    @desc("Match Host, empty string means no restriction")
-    host: string
-
-    @desc("Entry port")
-    port: int
-
-    @desc("Match path prefix")
-    pathPrefix: string
-
-    @desc("Whether to allow modification of Dashboard access entry")
-    canUpdate: bool
-}
-
 @desc("Hub's Portal entry rule service, called by the Portal admin client")
 api service PortalRuleApiService {
     for AdminActor
@@ -210,25 +192,4 @@ api service PortalRuleApiService {
         }
     }
 
-    @desc("Get the Hub Dashboard access entry")
-    method getDashboardAccess {
-        @desc("Hub Dashboard access entry")
-        output PortalDashboardAccess
-    }
-
-    @desc("Modify Hub Dashboard access entry")
-    method updateDashboardAccess {
-        input {
-            @desc("Hub Dashboard entry protocol")
-            scheme: string
-            @desc("Hub Dashboard entry host")
-            host: string
-            @desc("Hub Dashboard entry port")
-            port: int
-            @desc("Hub Dashboard entry path prefix")
-            pathPrefix: string
-        }
-        @desc("Hub Dashboard entry rules")
-        output list<PortalRule>
-    }
 }

@@ -25,9 +25,6 @@ type Seeder struct {
 }
 
 func (s *Seeder) DIInit() {
-	// Keep built-in dashboard entry data current even when user seed has already run.
-	s.seedDashboard()
-
 	if s.MetadataRepo.IsSeeded() {
 		s.Logger.Info("skip hub seed: all configuration is loaded from the database")
 		return

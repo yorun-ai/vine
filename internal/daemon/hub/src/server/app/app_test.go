@@ -23,6 +23,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	adminimpl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin"
 	controlimpl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/control"
+	adminapi "go.yorun.ai/vine/internal/daemon/hub/src/server/mod/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/controlapi"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/initializer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/scheduler"
@@ -33,7 +34,6 @@ import (
 	repodb "go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/schema"
-	"go.yorun.ai/vine/util/vnet"
 )
 
 var (
@@ -55,14 +55,6 @@ func collectModuleTypes(spec *HubApp) []reflect.Type {
 		moduleTypes = append(moduleTypes, moduleType)
 	})
 	return moduleTypes
-}
-
-func collectServicerHandlerTypes(spec *HubApp) []reflect.Type {
-	var handlerTypes []reflect.Type
-	spec.ServicerInitHandlers(func(handlerType reflect.Type) {
-		handlerTypes = append(handlerTypes, handlerType)
-	})
-	return handlerTypes
 }
 
 func initTestConfigDatabase(component *repodb.HubDatabase) *rdb.DatabaseManager {
@@ -162,9 +154,14 @@ func TestHubAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 	assert.Equal(t, flag.MQModeEmbedded, spec.Flag.MQMode)
 }
 
-func TestHubAppMainServicerExcludesControlAPIHandlers(t *testing.T) {
-	handlerTypes := collectServicerHandlerTypes(new(HubApp))
+func TestHubAdminModuleServesOnlyAdminAPIHandlers(t *testing.T) {
+	// The Admin API moved off the application listener: Hub serves no routes of
+	// its own, and the admin module keeps the Admin API away from the Control
+	// API services.
+	assert.NotImplements(t, (*internalapp.ServicerSpec)(nil), new(HubApp))
+	assert.Contains(t, collectModuleTypes(new(HubApp)), internalapp.T[*adminapi.Server]())
 
+	handlerTypes := adminapi.HandlerTypes()
 	assert.NotContains(t, handlerTypes, internalapp.T[*controlimpl.InfoServiceServerImpl]())
 	assert.NotContains(t, handlerTypes, internalapp.T[*controlimpl.RegistryServiceServerImpl]())
 	assert.Contains(t, handlerTypes, internalapp.T[*adminimpl.AppConfigApiServiceServerImpl]())
@@ -185,6 +182,7 @@ func TestHubAppModuleTypesIncludesRuntimeModules(t *testing.T) {
 		internalapp.T[*scheduler.Scheduler](),
 		internalapp.T[*sweeper.Sweeper](),
 		internalapp.T[*controlapi.Server](),
+		internalapp.T[*adminapi.Server](),
 	}, collectModuleTypes(spec))
 }
 
@@ -288,10 +286,6 @@ func TestHubAppBindCommonProvidesSchemaRepo(t *testing.T) {
 	assert.IsType(t, &schema.SchemaRepo{}, schemaRepo)
 }
 
-func testDashboardURL() *vnet.HttpURL {
-	return vnet.MustParseHttpURL(flag.HubDefaultDashboardURL)
-}
-
 // TestInitializerResolvesFromCommonBindings is a composition smoke test: the
 // module graph of the initializer must be constructible from the bindings a Hub
 // application installs, without a running daemon.
@@ -312,7 +306,6 @@ func TestInitializerResolvesFromCommonBindings(t *testing.T) {
 		Flag: &flag.Flag{
 			Store:        flag.StoreSQLite,
 			AdminListen:  flag.HubDefaultAdminListen,
-			DashboardURL: testDashboardURL(),
 			DBSQLiteFile: sharedTestSQLitePath(t),
 			WatchListen:  flag.HubDefaultWatchListen,
 		},
@@ -435,8 +428,9 @@ func TestHubConfigurationLifecycle(t *testing.T) {
 			item, ok := appConfigRepo.GetByName("demo.Config")
 			require.True(t, ok)
 			require.Equal(t, `{"enabled":true}`, item.Value)
-			require.NotEmpty(t, siteRepo.List())
-			require.NotEmpty(t, ruleRepo.List())
+			// The seed declares no site or rule, so Hub stores none.
+			require.Empty(t, siteRepo.List())
+			require.Empty(t, ruleRepo.List())
 			actions := []struct {
 				name string
 				call func()

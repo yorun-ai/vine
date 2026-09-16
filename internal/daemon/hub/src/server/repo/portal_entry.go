@@ -43,13 +43,6 @@ func (s *PortalEntryRepo) GetByAccess(scheme string, host string, port int) (*co
 	return nil, false
 }
 
-func (s *PortalEntryRepo) GetBuiltIn() (*core.PortalEntry, bool) {
-	if row, ok := s.Dao.BuiltIn(); ok {
-		return toCorePortalEntry(row), true
-	}
-	return nil, false
-}
-
 func (s *PortalEntryRepo) Save(entry *core.PortalEntry) {
 	s.Access.CheckWrite()
 	row := toModelPortalEntry(entry)
@@ -69,15 +62,12 @@ func (s *PortalEntryRepo) Remove(id int) bool {
 }
 
 func toCorePortalEntry(row *model.PortalEntry) *core.PortalEntry {
-	// BuiltIn is carried through so the rule repository recognizes the rules of
-	// Hub's own entry; the entry list filters built-in entries out.
 	return &core.PortalEntry{
 		Id:      row.Id,
 		Name:    row.Name,
 		Scheme:  row.Scheme,
 		Host:    row.Host,
 		Port:    row.Port,
-		BuiltIn: row.BuiltIn,
 		Enabled: row.Enabled,
 	}
 }
@@ -89,7 +79,6 @@ func toModelPortalEntry(entry *core.PortalEntry) *model.PortalEntry {
 		Scheme:  entry.Scheme,
 		Host:    entry.Host,
 		Port:    entry.Port,
-		BuiltIn: entry.BuiltIn,
 		Enabled: entry.Enabled,
 	}
 }

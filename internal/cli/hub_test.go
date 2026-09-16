@@ -33,15 +33,6 @@ func TestRunHubServe(t *testing.T) {
 		if flags.SeedHubDataFile != "/tmp/hub.yaml" {
 			t.Fatalf("unexpected seed yaml path: %q", flags.SeedHubDataFile)
 		}
-		if flags.DashboardURLRaw != "https://hub.example.com:8443/admin" {
-			t.Fatalf("unexpected dashboard url raw: %q", flags.DashboardURLRaw)
-		}
-		if flags.DashboardURLSet {
-			t.Fatal("unexpected dashboard url set before normalize")
-		}
-		if flags.DashboardURL != nil {
-			t.Fatalf("unexpected dashboard url before normalize: %q", flags.DashboardURL)
-		}
 		if flags.MQNatsEndpoint != "nats://127.0.0.1:4222" {
 			t.Fatalf("unexpected mq endpoint: %q", flags.MQNatsEndpoint)
 		}
@@ -53,7 +44,7 @@ func TestRunHubServe(t *testing.T) {
 		}
 	}
 
-	result := run([]string{"hub", "serve", "--control-listen", ":9090", "--admin-listen", ":9092", "--watch-listen", "127.0.0.1:9091", "--mq-mode=nats", "--mq-nats-endpoint", "nats://127.0.0.1:4222", "--seed-hub-data-file", "/tmp/hub.yaml", "--dashboard-url", "https://hub.example.com:8443/admin", "--db-sqlite-file", "/tmp/hub.sqlite", "--mtls-ca-file", "/tmp/ca.pem", "--mtls-cert-file", "/tmp/hub.pem", "--mtls-key-file", "/tmp/hub-key.pem"})
+	result := run([]string{"hub", "serve", "--control-listen", ":9090", "--admin-listen", ":9092", "--watch-listen", "127.0.0.1:9091", "--mq-mode=nats", "--mq-nats-endpoint", "nats://127.0.0.1:4222", "--seed-hub-data-file", "/tmp/hub.yaml", "--db-sqlite-file", "/tmp/hub.sqlite", "--mtls-ca-file", "/tmp/ca.pem", "--mtls-cert-file", "/tmp/hub.pem", "--mtls-key-file", "/tmp/hub-key.pem"})
 
 	if result.exitCode != exitCodeSuccess {
 		t.Fatalf("unexpected exit code: %d, stderr=%q", result.exitCode, result.stderr)
@@ -149,9 +140,6 @@ func TestRunHubHelpShowsServeOptions(t *testing.T) {
 	if !strings.Contains(result.stdout, "--seed-hub-data-file") {
 		t.Fatalf("unexpected stdout: %q", result.stdout)
 	}
-	if !strings.Contains(result.stdout, "--dashboard-url") {
-		t.Fatalf("unexpected stdout: %q", result.stdout)
-	}
 	if !strings.Contains(result.stdout, "--db-sqlite-file") {
 		t.Fatalf("unexpected stdout: %q", result.stdout)
 	}
@@ -170,7 +158,6 @@ func TestRunHubServeFromEnv(t *testing.T) {
 	t.Setenv(EnvHubMQMode, "nats")
 	t.Setenv(EnvHubMQNatsEndpoint, "nats://127.0.0.1:4222")
 	t.Setenv(EnvSeedHubDataFile, "/tmp/env-hub.yaml")
-	t.Setenv(EnvHubDashboardURL, "http://:10099")
 	t.Setenv(EnvHubDBSQLiteFile, "/tmp/env-hub.sqlite")
 
 	called := false
@@ -190,15 +177,6 @@ func TestRunHubServeFromEnv(t *testing.T) {
 		}
 		if flags.SeedHubDataFile != "/tmp/env-hub.yaml" {
 			t.Fatalf("unexpected seed yaml path: %q", flags.SeedHubDataFile)
-		}
-		if flags.DashboardURLRaw != "http://:10099" {
-			t.Fatalf("unexpected dashboard url raw: %q", flags.DashboardURLRaw)
-		}
-		if flags.DashboardURLSet {
-			t.Fatal("unexpected dashboard url set before normalize")
-		}
-		if flags.DashboardURL != nil {
-			t.Fatalf("unexpected dashboard url before normalize: %q", flags.DashboardURL)
 		}
 		if flags.MQNatsEndpoint != "nats://127.0.0.1:4222" {
 			t.Fatalf("unexpected mq endpoint: %q", flags.MQNatsEndpoint)

@@ -11,7 +11,7 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "b838babb",
+	Hash:        "6b0db7ac",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
 		CompilerVersion: "v0.20.0",
@@ -1109,54 +1109,6 @@ var _DomainSchema = &skel.DomainSchema{
 							Kind:   skel.TypeKindScalar,
 							Scalar: skel.ScalarString,
 						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalDashboardAccess",
-			SkelName:    "vine.hub.admin.PortalDashboardAccess",
-			Description: "Hub Dashboard access entry",
-			Hash:        "86a9e817",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "scheme",
-					Description: "Entry protocol",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "host",
-					Description: "Match Host, empty string means no restriction",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "port",
-					Description: "Entry port",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "pathPrefix",
-					Description: "Match path prefix",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "canUpdate",
-					Description: "Whether to allow modification of Dashboard access entry",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
 					},
 				},
 			},
@@ -5652,7 +5604,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "PortalRuleApiService",
 			SkelName:    "vine.hub.admin.PortalRuleApiService",
 			Description: "Hub's Portal entry rule service, called by the Portal admin client",
-			Hash:        "04f2e38a",
+			Hash:        "e0235b86",
 			Pub:         false,
 			Api:         true,
 			AuthMode:    skel.AuthModeNoAuth,
@@ -5769,69 +5721,6 @@ var _DomainSchema = &skel.DomainSchema{
 								Kind:   skel.TypeKindScalar,
 								Scalar: skel.ScalarInt,
 							},
-						},
-					},
-				},
-				{
-					Name:              "getDashboardAccess",
-					SkelName:          "getDashboardAccess",
-					Description:       "Get the Hub Dashboard access entry",
-					Hash:              "97a97a8f",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Hub Dashboard access entry",
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalDashboardAccess",
-						SkelName: "vine.hub.admin.PortalDashboardAccess",
-					},
-				},
-				{
-					Name:              "updateDashboardAccess",
-					SkelName:          "updateDashboardAccess",
-					Description:       "Modify Hub Dashboard access entry",
-					Hash:              "b864cc64",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Hub Dashboard entry rules",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "scheme",
-							Description: "Hub Dashboard entry protocol",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name:        "host",
-							Description: "Hub Dashboard entry host",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name:        "port",
-							Description: "Hub Dashboard entry port",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarInt,
-							},
-						},
-						{
-							Name:        "pathPrefix",
-							Description: "Hub Dashboard entry path prefix",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "PortalRule",
-							SkelName: "vine.hub.admin.PortalRule",
 						},
 					},
 				},

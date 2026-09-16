@@ -98,20 +98,17 @@ func TestApplyOptionOverridesFlag(t *testing.T) {
 		SeedHubDataFile: "/tmp/cli-hub.yaml",
 		DBSQLiteFile:    "/tmp/cli-hub.sqlite",
 		DBPostgresURL:   "postgres://cli",
-		DashboardURLRaw: "http://:7099",
 	}
 
 	applyOption(flag, Option{
 		SeedHubDataFile: "/tmp/option-hub.yaml",
 		SQLiteFile:      "/tmp/option-hub.sqlite",
 		PostgresURL:     "postgres://demo:demo@127.0.0.1:5432/hub",
-		DashboardURL:    "https://hub.example.com:8443/admin",
 	})
 
 	assert.Equal(t, "/tmp/option-hub.yaml", flag.SeedHubDataFile)
 	assert.Equal(t, "/tmp/option-hub.sqlite", flag.DBSQLiteFile)
 	assert.Equal(t, "postgres://demo:demo@127.0.0.1:5432/hub", flag.DBPostgresURL)
-	assert.Equal(t, "https://hub.example.com:8443/admin", flag.DashboardURLRaw)
 }
 
 func TestApplyOptionKeepsUnsetFlagValues(t *testing.T) {
@@ -119,7 +116,6 @@ func TestApplyOptionKeepsUnsetFlagValues(t *testing.T) {
 		SeedHubDataFile: "/tmp/cli-hub.yaml",
 		DBSQLiteFile:    "/tmp/cli-hub.sqlite",
 		DBPostgresURL:   "postgres://cli",
-		DashboardURLRaw: "http://:7099",
 	}
 
 	applyOption(flag, Option{})
@@ -127,7 +123,6 @@ func TestApplyOptionKeepsUnsetFlagValues(t *testing.T) {
 	assert.Equal(t, "/tmp/cli-hub.yaml", flag.SeedHubDataFile)
 	assert.Equal(t, "/tmp/cli-hub.sqlite", flag.DBSQLiteFile)
 	assert.Equal(t, "postgres://cli", flag.DBPostgresURL)
-	assert.Equal(t, "http://:7099", flag.DashboardURLRaw)
 }
 
 type _NonStandaloneApp struct{}

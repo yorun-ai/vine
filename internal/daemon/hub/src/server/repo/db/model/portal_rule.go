@@ -48,7 +48,6 @@ type PortalRule struct {
 	RouteSiteName           string `gorm:"column:route_site_name"`
 	RouteRedirectionPattern string `gorm:"column:route_redirection_pattern"`
 	RoutePathPrefix         string `gorm:"column:route_path_prefix;not null;default:''"`
-	BuiltIn                 bool   `gorm:"column:built_in;not null;default:false"`
 	Enabled                 bool   `gorm:"column:enabled;not null"`
 }
 
@@ -62,7 +61,9 @@ type PortalRuleDao struct {
 
 func (d *PortalRuleDao) InitSchema() {
 	ex.PanicIfError(ensurePortalEntryTable(d.GormDB()))
+	legacyBuiltInAccesses := removeLegacyBuiltInEntities(d.GormDB())
 	d.migrateAccessColumns()
+	removeLegacyBuiltInAccessEntries(d.GormDB(), legacyBuiltInAccesses)
 	ensureEnabledColumn(d.GormDB(), "portal_rule")
 	sql := schemaSQL(d.GormDB(), createPortalRuleSQLiteSQL, createPortalRulePgSQL)
 	ex.PanicIfError(d.GormDB().Exec(sql).Error)
@@ -101,7 +102,6 @@ func (d *PortalRuleDao) Save(rule *PortalRule) *PortalRule {
 		"route_site_name":           rule.RouteSiteName,
 		"route_redirection_pattern": rule.RouteRedirectionPattern,
 		"route_path_prefix":         rule.RoutePathPrefix,
-		"built_in":                  rule.BuiltIn,
 		"enabled":                   rule.Enabled,
 	})
 	return row
@@ -210,8 +210,8 @@ func (d *PortalRuleDao) migrateAccessGroup(group _LegacyPortalRuleAccess) int {
 	}
 
 	ex.PanicIfError(db.Exec(
-		"INSERT INTO portal_entry (name, scheme, host, port, built_in, enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-		portalEntryName(scheme, host, port), scheme, host, port, false, true,
+		"INSERT INTO portal_entry (name, scheme, host, port, enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+		portalEntryName(scheme, host, port), scheme, host, port, true,
 	).Error)
 	ex.PanicIfError(db.Raw(
 		"SELECT id FROM portal_entry WHERE scheme = ? AND host = ? AND port = ? AND built_in = ?",

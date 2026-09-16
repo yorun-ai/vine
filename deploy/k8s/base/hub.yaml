@@ -21,7 +21,7 @@ spec:
       port: 7072
       targetPort: watch
     - name: admin
-      port: 7075
+      port: 7099
       targetPort: admin
 ---
 apiVersion: apps/v1
@@ -62,7 +62,7 @@ spec:
             - name: VINE_CONTROL_LISTEN
               value: 0.0.0.0:7071
             - name: VINE_ADMIN_LISTEN
-              value: 0.0.0.0:7075
+              value: 0.0.0.0:7099
             - name: VINE_WATCH_LISTEN
               value: 0.0.0.0:7072
             - name: VINE_DB_SQLITE_FILE
@@ -75,7 +75,7 @@ spec:
             - name: watch
               containerPort: 7072
             - name: admin
-              containerPort: 7075
+              containerPort: 7099
           startupProbe:
             tcpSocket:
               port: control

@@ -81,7 +81,6 @@ func toCorePortalRule(row *model.PortalRule, entry *core.PortalEntry) *core.Port
 		RouteSiteName:           row.RouteSiteName,
 		RouteRedirectionPattern: row.RouteRedirectionPattern,
 		RoutePathPrefix:         row.RoutePathPrefix,
-		BuiltIn:                 row.BuiltIn,
 		Enabled:                 row.Enabled,
 	}
 }
@@ -100,7 +99,6 @@ func toModelPortalRule(rule *core.PortalRule) *model.PortalRule {
 		RouteSiteName:           rule.RouteSiteName,
 		RouteRedirectionPattern: rule.RouteRedirectionPattern,
 		RoutePathPrefix:         rule.RoutePathPrefix,
-		BuiltIn:                 rule.BuiltIn,
 		Enabled:                 rule.Enabled,
 	}
 }

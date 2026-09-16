@@ -5,58 +5,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	"go.yorun.ai/vine/util/vslice"
 )
-
-func TestPortalRuleServiceGetDashboardAccessCanUpdate(t *testing.T) {
-	service := newTestPortalRuleApiService(false)
-
-	access := service.GetDashboardAccess()
-
-	assert.Equal(t, "http", access.Scheme)
-	assert.Equal(t, "", access.Host)
-	assert.Equal(t, 7099, access.Port)
-	assert.Equal(t, "/", access.PathPrefix)
-	assert.True(t, access.CanUpdate)
-}
-
-func TestPortalRuleServiceGetDashboardAccessLockedByFlag(t *testing.T) {
-	service := newTestPortalRuleApiService(true)
-
-	access := service.GetDashboardAccess()
-
-	assert.False(t, access.CanUpdate)
-}
-
-func TestPortalRuleServiceUpdateDashboardAccessRejectsLockedFlag(t *testing.T) {
-	service := newTestPortalRuleApiService(true)
-
-	panicValue := capturePanic(func() {
-		service.UpdateDashboardAccess("http", "", 8080, "/")
-	})
-
-	err, ok := panicValue.(ex.Error)
-	require.True(t, ok)
-	assert.Equal(t, ex.OperationFailed, err.Code())
-}
-
-func newTestPortalRuleApiService(dashboardURLSet bool) *PortalRuleApiServiceServerImpl {
-	return &PortalRuleApiServiceServerImpl{
-		PortalRuleCore: newTestPortalRuleCore(
-			&_PortalRuleRepoSpy{
-				rules: map[int]*core.PortalRule{
-					1: {Id: 1, Name: core.DashboardAdminApiRuleName, EntryId: 1, MatchScheme: "http", MatchPort: 7099, MatchPathPrefix: "/api", BuiltIn: true},
-					2: {Id: 2, Name: core.DashboardWebRuleName, EntryId: 1, MatchScheme: "http", MatchPort: 7099, MatchPathPrefix: "/", BuiltIn: true},
-				},
-			},
-			newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Name: "http:7099", Scheme: "http", Port: 7099, BuiltIn: true}),
-		),
-		Flag: &flag.Flag{DashboardURLSet: dashboardURLSet},
-	}
-}
 
 // newTestPortalSiteCore builds a site core with the repositories Hub injects.
 func newTestPortalSiteCore(siteRepo core.PortalSiteRepo) *core.PortalSiteCore {
@@ -173,9 +124,6 @@ func (s *_PortalEntryRepoSpy) GetById(id int) (*core.PortalEntry, bool) {
 
 func (s *_PortalEntryRepoSpy) GetByName(name string) (*core.PortalEntry, bool) {
 	for _, entry := range s.List() {
-		if entry.BuiltIn {
-			continue
-		}
 		if entry.Name == name {
 			return entry, true
 		}
@@ -185,19 +133,7 @@ func (s *_PortalEntryRepoSpy) GetByName(name string) (*core.PortalEntry, bool) {
 
 func (s *_PortalEntryRepoSpy) GetByAccess(scheme string, host string, port int) (*core.PortalEntry, bool) {
 	for _, entry := range s.List() {
-		if entry.BuiltIn {
-			continue
-		}
 		if entry.Scheme == scheme && entry.Host == host && entry.Port == port {
-			return entry, true
-		}
-	}
-	return nil, false
-}
-
-func (s *_PortalEntryRepoSpy) GetBuiltIn() (*core.PortalEntry, bool) {
-	for _, entry := range s.List() {
-		if entry.BuiltIn {
 			return entry, true
 		}
 	}

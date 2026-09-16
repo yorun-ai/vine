@@ -169,26 +169,26 @@ func TestPortalRuleInitSchemaMigratesRuleAccessToEntry(t *testing.T) {
 	entries := map[string]*PortalEntry{}
 	for _, entry := range stored {
 		entries[fmt.Sprintf("%s:%s:%d", entry.Scheme, entry.Host, entry.Port)] = entry
-		assert.False(t, entry.BuiltIn)
 	}
 	require.Contains(t, entries, "http::80")
 	require.Contains(t, entries, "http:demo.local:8080")
 	require.Contains(t, entries, "https::443")
 
 	rules := dao.ListOrdered()
-	require.Len(t, rules, 5)
+	// The built-in Dashboard rule an earlier release stored goes with the
+	// cleanup, so the migration only groups the access of operator rules.
+	require.Len(t, rules, 4)
 	byName := map[string]*PortalRule{}
 	for _, rule := range rules {
 		byName[rule.Name] = rule
 	}
+	assert.NotContains(t, byName, "vine.hub.dashboard-web")
 	// Rules keep their own columns and gain the entry that owns the access.
 	assert.Equal(t, entries["http::80"].Id, byName["web"].EntryId)
 	assert.Equal(t, entries["http::80"].Id, byName["api"].EntryId)
 	assert.Equal(t, entries["http:demo.local:8080"].Id, byName["hosted"].EntryId)
 	assert.Equal(t, entries["https::443"].Id, byName["secure"].EntryId)
-	assert.Equal(t, entries["https::443"].Id, byName["vine.hub.dashboard-web"].EntryId)
 	assert.Equal(t, "/", byName["web"].MatchPathPrefix)
-	assert.True(t, byName["vine.hub.dashboard-web"].BuiltIn)
 
 	// The access columns stay for one release, so Hub never drops a column of a
 	// database it does not own, and the rule that left the port unset keeps the

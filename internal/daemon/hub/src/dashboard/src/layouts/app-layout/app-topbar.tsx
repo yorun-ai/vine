@@ -36,7 +36,6 @@ export function AppTopbar({
     'portal-rule',
     'portal-site',
     'portal-cert',
-    'settings-dashboard-port',
     'maintenance',
   ].includes(activeItem.id)
   const SidebarIcon =

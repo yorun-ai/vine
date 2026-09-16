@@ -90,8 +90,6 @@ func TestPortalSitePublishesWebMountPath(t *testing.T) {
 		wire := vcode.MustMarshalJsonS(toWatchedPortalSite(site))
 		decoded := vcode.MustUnmarshalJsonS[watched.PortalSite](wire)
 		assert.Equal(t, mountPath, decoded.WebgwConfig.MountPath)
-		site.BuiltIn = true
-		assert.Empty(t, toWatchedPortalSite(site).WebgwConfig.MountPath, "built-in Dashboard access remains configurable")
 	}
 }
 

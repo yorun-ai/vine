@@ -72,87 +72,6 @@ func TestFlagNormalizeKeepsExplicitStore(t *testing.T) {
 	assert.Equal(t, HubDefaultControlListen, flags.ControlListen)
 	assert.Equal(t, HubDefaultAdminListen, flags.AdminListen)
 	assert.Equal(t, "127.0.0.1:7072", flags.WatchListen)
-	assert.Equal(t, HubDefaultDashboardURL, flags.DashboardURL.String())
-	assert.False(t, flags.DashboardURLSet)
-}
-
-func TestFlagNormalizeNormalizesDashboardURL(t *testing.T) {
-	flags := &Flag{
-		Store:           StoreSQLite,
-		DBSQLiteFile:    "/tmp/hub.sqlite",
-		MQMode:          MQModeEmbedded,
-		DashboardURLRaw: ":7099",
-	}
-
-	flags.Normalize(false)
-
-	assert.Equal(t, HubDefaultDashboardURL, flags.DashboardURL.String())
-	assert.True(t, flags.DashboardURLSet)
-}
-
-func TestFlagNormalizeUsesHTTPSDashboardDefaultWithMTLS(t *testing.T) {
-	flags := &Flag{
-		MTLS: mtls.Files{
-			CAFile:   "ca.pem",
-			CertFile: "cert.pem",
-			KeyFile:  "key.pem",
-		},
-		Store:        StoreSQLite,
-		DBSQLiteFile: "/tmp/hub.sqlite",
-		MQMode:       MQModeEmbedded,
-	}
-
-	flags.Normalize(false)
-
-	assert.Equal(t, HubMTLSDefaultDashboardURL, flags.DashboardURL.String())
-	assert.False(t, flags.DashboardURLSet)
-	assert.True(t, flags.DashboardURLMTLSDefault)
-}
-
-func TestFlagNormalizeKeepsExplicitHTTPDashboardURLWithMTLS(t *testing.T) {
-	flags := &Flag{
-		MTLS: mtls.Files{
-			CAFile:   "ca.pem",
-			CertFile: "cert.pem",
-			KeyFile:  "key.pem",
-		},
-		Store:           StoreSQLite,
-		DBSQLiteFile:    "/tmp/hub.sqlite",
-		MQMode:          MQModeEmbedded,
-		DashboardURLRaw: "http://:7099/",
-	}
-
-	flags.Normalize(false)
-
-	assert.Equal(t, HubDefaultDashboardURL, flags.DashboardURL.String())
-	assert.True(t, flags.DashboardURLSet)
-	assert.False(t, flags.DashboardURLMTLSDefault)
-}
-
-func TestFlagNormalizeAddsDashboardURLPath(t *testing.T) {
-	flags := &Flag{
-		Store:           StoreSQLite,
-		DBSQLiteFile:    "/tmp/hub.sqlite",
-		MQMode:          MQModeEmbedded,
-		DashboardURLRaw: "https://hub.example.com:8443",
-	}
-
-	flags.Normalize(false)
-
-	assert.Equal(t, "https://hub.example.com:8443/", flags.DashboardURL.String())
-}
-
-func TestFlagNormalizeRejectsInvalidDashboardURLScheme(t *testing.T) {
-	flags := &Flag{
-		Store:           StoreSQLite,
-		DBSQLiteFile:    "/tmp/hub.sqlite",
-		MQMode:          MQModeEmbedded,
-		DashboardURLRaw: "ftp://hub.example.com:8443/admin",
-	}
-
-	require.PanicsWithError(t, "parse DashboardURL failed: scheme must be http or https", func() {
-		flags.Normalize(false)
-	})
 }
 
 func TestFlagNormalizeAcceptsValidMQEndpoint(t *testing.T) {
@@ -217,7 +136,7 @@ func TestFlagNormalizeInprocClearsListenAndMQ(t *testing.T) {
 		Store:          StoreSQLite,
 		DBSQLiteFile:   "/tmp/hub.sqlite",
 		ControlListen:  "127.0.0.1:7071",
-		AdminListen:    "127.0.0.1:7075",
+		AdminListen:    "127.0.0.1:7099",
 		WatchListen:    "127.0.0.1:7072",
 		MQNatsEndpoint: "nats://127.0.0.1:4222",
 		DBPostgresURL:  "",

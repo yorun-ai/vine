@@ -26,7 +26,6 @@ type _DevOption struct {
 	SeedHubDataFile   string
 	SeedHubSourceFile string
 	SeedHubVarsFile   string
-	DashboardURL      string
 	NoDB              bool
 	DBSQLiteFile      string
 	DBPostgresURL     string
@@ -86,11 +85,6 @@ func newDevCommand() *ucli.Command {
 				Sources: ucli.EnvVars(EnvSeedHubVarsFile),
 				Usage:   "hub seed vars YAML file",
 			},
-			&ucli.StringFlag{
-				Name:    FlagHubDashboardURL,
-				Sources: ucli.EnvVars(EnvHubDashboardURL),
-				Usage:   "hub dashboard URL",
-			},
 		},
 		Action: func(_ context.Context, cmd *ucli.Command) error {
 			if cmd.Args().Len() > 0 {
@@ -102,7 +96,6 @@ func newDevCommand() *ucli.Command {
 				SeedHubDataFile:   cmd.String(FlagSeedHubDataFile),
 				SeedHubSourceFile: cmd.String(FlagSeedHubSourceFile),
 				SeedHubVarsFile:   cmd.String(FlagSeedHubVarsFile),
-				DashboardURL:      cmd.String(FlagHubDashboardURL),
 				NoDB:              cmd.Bool(FlagHubNoDB),
 				DBSQLiteFile:      cmd.String(FlagHubDBSQLiteFile),
 				DBPostgresURL:     cmd.String(FlagHubDBPostgresURL),
@@ -145,7 +138,6 @@ func prepareDevHubFlag(option _DevOption) (*hubflag.Flag, func()) {
 		SeedHubDataFile:   option.SeedHubDataFile,
 		SeedHubSourceFile: option.SeedHubSourceFile,
 		SeedHubVarsFile:   option.SeedHubVarsFile,
-		DashboardURLRaw:   option.DashboardURL,
 		NoDB:              option.NoDB,
 		DBSQLiteFile:      option.DBSQLiteFile,
 		DBPostgresURL:     option.DBPostgresURL,

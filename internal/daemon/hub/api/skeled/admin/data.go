@@ -563,26 +563,6 @@ func (v PortalCors) Clone() PortalCors {
 	return cloned
 }
 
-// PortalDashboardAccess Hub Dashboard access entry
-type PortalDashboardAccess struct {
-	// Scheme Entry protocol
-	Scheme string `json:"scheme"`
-	// Host Match Host, empty string means no restriction
-	Host string `json:"host"`
-	// Port Entry port
-	Port int `json:"port"`
-	// PathPrefix Match path prefix
-	PathPrefix string `json:"pathPrefix"`
-	// CanUpdate Whether to allow modification of Dashboard access entry
-	CanUpdate bool `json:"canUpdate"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalDashboardAccess) Clone() PortalDashboardAccess {
-	cloned := v
-	return cloned
-}
-
 // PortalEntry Portal access entry
 type PortalEntry struct {
 	// Name Entry name

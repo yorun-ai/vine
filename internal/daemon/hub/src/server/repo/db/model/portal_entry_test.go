@@ -51,7 +51,6 @@ func TestPortalEntryInitSchemaNamesEntriesFromAccess(t *testing.T) {
 	t.Cleanup(func() { _ = connection.Close() })
 	require.NoError(t, db.Exec(_legacyPortalEntrySchema).Error)
 	require.NoError(t, db.Exec(`INSERT INTO portal_entry (scheme, host, port, built_in) VALUES ('http', '', 80, FALSE)`).Error)
-	require.NoError(t, db.Exec(`INSERT INTO portal_entry (scheme, host, port, built_in) VALUES ('https', 'api.example.com', 8443, TRUE)`).Error)
 
 	dao := &PortalEntryDao{Dao: rdb.NewDao[*PortalEntry](db)}
 	dao.InitSchema()
@@ -60,9 +59,6 @@ func TestPortalEntryInitSchemaNamesEntriesFromAccess(t *testing.T) {
 	web, ok := dao.ByAccess("http", "", 80)
 	require.True(t, ok)
 	assert.Equal(t, "http:80", web.Name)
-	builtIn, ok := dao.BuiltIn()
-	require.True(t, ok)
-	assert.Equal(t, "https:api.example.com:8443", builtIn.Name)
 }
 
 func TestPortalEntryDaoCreateQueryAndRemove(t *testing.T) {
@@ -74,11 +70,6 @@ func TestPortalEntryDaoCreateQueryAndRemove(t *testing.T) {
 	byAccess, ok := dao.ByAccess("https", "demo.local", 8443)
 	require.True(t, ok)
 	assert.Equal(t, entry.Id, byAccess.Id)
-
-	// The built-in entry is not an access user rules join.
-	_, ok = dao.ByAccess("https", "demo.local", 8443)
-	require.True(t, ok)
-	assert.False(t, byAccess.BuiltIn)
 
 	updated := dao.Save(&PortalEntry{Id: entry.Id, Scheme: "https", Host: "demo.local", Port: 9443})
 	assert.Equal(t, entry.Id, updated.Id)
@@ -98,25 +89,16 @@ func TestPortalEntryDaoCreateQueryAndRemove(t *testing.T) {
 	assert.NotZero(t, recreated.Id)
 }
 
-func TestPortalEntryDaoBuiltInAccessIsSeparate(t *testing.T) {
+func TestPortalEntryDaoKeepsOneEntryPerAccess(t *testing.T) {
 	dao := newTestPortalEntryDao(t)
 
-	builtIn := dao.Save(&PortalEntry{Scheme: "http", Host: "", Port: 7099, BuiltIn: true})
-	_, ok := dao.BuiltIn()
-	require.True(t, ok)
-
-	// The Dashboard entry does not answer user access lookups.
-	_, ok = dao.ByAccess("http", "", 7099)
-	assert.False(t, ok)
-
-	// A user entry may serve the same access as the built-in entry.
 	user := dao.Save(&PortalEntry{Scheme: "http", Host: "", Port: 7099})
-	assert.NotEqual(t, builtIn.Id, user.Id)
+	require.NotZero(t, user.Id)
 	byAccess, ok := dao.ByAccess("http", "", 7099)
 	require.True(t, ok)
 	assert.Equal(t, user.Id, byAccess.Id)
 
-	// The same access cannot have two user entries.
+	// One access never has two entries.
 	require.Panics(t, func() {
 		dao.Save(&PortalEntry{Scheme: "http", Host: "", Port: 7099})
 	})

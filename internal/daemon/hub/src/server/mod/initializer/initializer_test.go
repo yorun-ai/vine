@@ -1,7 +1,6 @@
 package initializer
 
 import (
-	"strconv"
 	"strings"
 	"testing"
 
@@ -14,7 +13,6 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	hubflag "go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/seeder"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/schema"
 	"go.yorun.ai/vine/util/vcode"
@@ -70,11 +68,21 @@ func (r *testPortalEntryRepo) List() []*core.PortalEntry {
 	return r.entries
 }
 
-func (*testPortalEntryRepo) GetById(int) (*core.PortalEntry, bool) {
+func (r *testPortalEntryRepo) GetById(id int) (*core.PortalEntry, bool) {
+	for i := range r.entries {
+		if r.entries[i].Id == id {
+			return r.entries[i], true
+		}
+	}
 	return nil, false
 }
 
-func (*testPortalEntryRepo) GetByName(string) (*core.PortalEntry, bool) {
+func (r *testPortalEntryRepo) GetByName(name string) (*core.PortalEntry, bool) {
+	for i := range r.entries {
+		if r.entries[i].Name == name {
+			return r.entries[i], true
+		}
+	}
 	return nil, false
 }
 
@@ -82,13 +90,15 @@ func (*testPortalEntryRepo) GetByAccess(string, string, int) (*core.PortalEntry,
 	return nil, false
 }
 
-func (*testPortalEntryRepo) GetBuiltIn() (*core.PortalEntry, bool) {
-	return nil, false
-}
-
 func (*testPortalEntryRepo) Save(*core.PortalEntry) {}
 
-func (*testPortalEntryRepo) Remove(int) bool {
+func (r *testPortalEntryRepo) Remove(id int) bool {
+	for i := range r.entries {
+		if r.entries[i].Id == id {
+			r.entries = append(r.entries[:i], r.entries[i+1:]...)
+			return true
+		}
+	}
 	return false
 }
 
@@ -146,7 +156,13 @@ func (r *testPortalRuleRepo) Save(rule *core.PortalRule) {
 	r.rules = append(r.rules, rule)
 }
 
-func (*testPortalRuleRepo) Remove(int) bool {
+func (r *testPortalRuleRepo) Remove(id int) bool {
+	for i := range r.rules {
+		if r.rules[i].Id == id {
+			r.rules = append(r.rules[:i], r.rules[i+1:]...)
+			return true
+		}
+	}
 	return false
 }
 
@@ -196,7 +212,13 @@ func (r *testPortalSiteRepo) Save(entry *core.PortalSite) {
 	r.entries = append(r.entries, entry)
 }
 
-func (*testPortalSiteRepo) Remove(int) bool {
+func (r *testPortalSiteRepo) Remove(id int) bool {
+	for i := range r.entries {
+		if r.entries[i].Id == id {
+			r.entries = append(r.entries[:i], r.entries[i+1:]...)
+			return true
+		}
+	}
 	return false
 }
 
@@ -219,32 +241,6 @@ func testPortalSitePtrWithId(id int, site core.PortalSite) *core.PortalSite {
 func testPortalRuleWithId(id int, rule core.PortalRule) core.PortalRule {
 	rule.Id = id
 	return rule
-}
-
-func testDashboardApiRule() core.PortalRule {
-	return core.PortalRule{
-		Name:            core.DashboardAdminApiRuleName,
-		MatchScheme:     "http",
-		MatchPort:       7099,
-		MatchPathPrefix: "/api",
-		RouteType:       "SITE",
-		RouteSiteName:   seeder.DashboardRpcCoreEntry.Name,
-		BuiltIn:         true,
-		Enabled:         true,
-	}
-}
-
-func testDashboardWebRule() core.PortalRule {
-	return core.PortalRule{
-		Name:            core.DashboardWebRuleName,
-		MatchScheme:     "http",
-		MatchPort:       7099,
-		MatchPathPrefix: "/",
-		RouteType:       "SITE",
-		RouteSiteName:   seeder.DashboardWebCoreEntry.Name,
-		BuiltIn:         true,
-		Enabled:         true,
-	}
 }
 
 func testPortalSiteWithId(id int, site core.PortalSite) core.PortalSite {
@@ -270,8 +266,6 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 		PortalRuleRepo: &testPortalRuleRepo{
 			rules: []*core.PortalRule{
 				{Id: 1, Name: "demo-entry", MatchScheme: "https", MatchHost: "demo.local", MatchPathPrefix: "/admin", RouteType: "SITE", RouteSiteName: "admin@demo.app", Enabled: true},
-				testPortalRulePtrWithId(2, testDashboardApiRule()),
-				testPortalRulePtrWithId(3, testDashboardWebRule()),
 			},
 		},
 		PortalCertRepo: &testPortalCertRepo{
@@ -282,14 +276,12 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 		PortalSiteRepo: &testPortalSiteRepo{
 			entries: []*core.PortalSite{
 				{Id: 1, Name: "demo-entry", Type: core.PortalSiteTypeWEBGW, ActorSkelName: "demo.Actor", ActorVia: "client", WebName: "demo.Web", Enabled: true},
-				testPortalSitePtrWithId(2, seeder.DashboardRpcCoreEntry),
-				testPortalSitePtrWithId(3, seeder.DashboardWebCoreEntry),
 			},
 		},
 		SchemaRepo:   schemaRepo,
 		RegistryCore: &core.RegistryCore{SchemaRepo: schemaRepo},
 		InprocFlag:   &appcore.InternalInprocFlag{},
-		Flag:         &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
+		Flag:         &hubflag.Flag{AdminListen: "127.0.0.1:7099"},
 	}
 
 	p.DIInit()
@@ -307,67 +299,10 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, value, `"name":"demo-entry"`)
 
-	defaultRuleValue, err := db.Get(watched.FormatPortalRuleKey(core.DashboardAdminApiRuleName))
-	assert.NoError(t, err)
-	assert.Contains(t, defaultRuleValue, `"name":"vine.hub.admin-api"`)
-
-	defaultWebRuleValue, err := db.Get(watched.FormatPortalRuleKey(core.DashboardWebRuleName))
-	assert.NoError(t, err)
-	assert.Contains(t, defaultWebRuleValue, `"name":"vine.hub.dashboard-web"`)
-
-	defaultSiteValue, err := db.Get(watched.FormatPortalSiteKey(seeder.DashboardRpcCoreEntry.Name))
-	assert.NoError(t, err)
-	assert.Contains(t, defaultSiteValue, `"name":"vine.hub.admin.AdminActor-client-rpc"`)
-
-	defaultWebSiteValue, err := db.Get(watched.FormatPortalSiteKey(seeder.DashboardWebCoreEntry.Name))
-	assert.NoError(t, err)
-	assert.Contains(t, defaultWebSiteValue, `"name":"vine.hub.admin.DashboardWeb-web"`)
-
-	adminActorValue, err := db.Get(watched.FormatSchemaActorKey("vine.hub.admin.AdminActor"))
-	assert.NoError(t, err)
-	assert.Contains(t, adminActorValue, `"skelName":"vine.hub.admin.AdminActor"`)
-
-	skeletonServiceValue, err := db.Get(watched.FormatSchemaServiceKey("vine.hub.admin.SkeletonApiService"))
-	assert.NoError(t, err)
-	assert.Contains(t, skeletonServiceValue, `"authMode":"noauth"`)
-
 	siteKey := watched.FormatPortalSiteKey("demo-entry")
 	value, err = db.Get(siteKey)
 	assert.NoError(t, err)
 	assert.Contains(t, value, `"name":"demo-entry"`)
-
-	defaultWebRegistrationKey := watched.FormatWebRegistrationKey(seeder.DashboardWebCoreEntry.WebName, dashboardAppName, dashboardAppInstanceId)
-	defaultWebRegistrationValue, err := db.Get(defaultWebRegistrationKey)
-	assert.NoError(t, err)
-	expectedWebReg := dashboardWebRegistration
-	expectedWebReg.Endpoint = p.dashboardWebEndpoint()
-	assert.Equal(t, vcode.MustMarshalJsonS(expectedWebReg), defaultWebRegistrationValue)
-
-	entryRuleScan, err := db.ExecuteCommand("SCAN", "0", "MATCH", "portal:rule:*", "COUNT", strconv.Itoa(1000))
-	assert.NoError(t, err)
-	assert.Contains(t, string(entryRuleScan), watched.FormatPortalRuleKey(core.DashboardAdminApiRuleName))
-	assert.Contains(t, string(entryRuleScan), watched.FormatPortalRuleKey(core.DashboardWebRuleName))
-	siteScan, err := db.ExecuteCommand("SCAN", "0", "MATCH", "portal:site:*", "COUNT", strconv.Itoa(1000))
-	assert.NoError(t, err)
-	assert.Contains(t, string(siteScan), watched.FormatPortalSiteKey(seeder.DashboardRpcCoreEntry.Name))
-	assert.Contains(t, string(siteScan), watched.FormatPortalSiteKey(seeder.DashboardWebCoreEntry.Name))
-
-	webRegistrationScan, err := db.ExecuteCommand("SCAN", "0", "MATCH", "web:"+seeder.DashboardWebCoreEntry.WebName+":endpoint:*", "COUNT", strconv.Itoa(1000))
-	assert.NoError(t, err)
-	assert.Contains(t, string(webRegistrationScan), defaultWebRegistrationKey)
-
-	for _, serviceName := range seeder.DashboardRpcServices {
-		registrationKey := watched.FormatRpcServiceRegistrationKey(serviceName, dashboardAppName, dashboardAppInstanceId)
-		registrationValue, err := db.Get(registrationKey)
-		assert.NoError(t, err)
-		expectedReg := dashboardRpcRegistrations[serviceName]
-		expectedReg.Endpoint = p.dashboardRpcEndpoint()
-		assert.Equal(t, vcode.MustMarshalJsonS(expectedReg), registrationValue)
-
-		registrationScan, err := db.ExecuteCommand("SCAN", "0", "MATCH", formatTestWatchListPattern(watched.FormatRpcServiceRegistrationPrefix(serviceName)), "COUNT", strconv.Itoa(1000))
-		assert.NoError(t, err)
-		assert.Contains(t, string(registrationScan), registrationKey)
-	}
 
 	certKey := watched.FormatPortalCertKey("demo-cert")
 	value, err = db.Get(certKey)
@@ -375,92 +310,64 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 	assert.Contains(t, value, `"name":"demo-cert"`)
 }
 
-func TestInitializerDIInitWritesDashboardEntriesAndRulesFromRepo(t *testing.T) {
+func TestInitializerRemovesLegacyDashboard(t *testing.T) {
+	// Hub used to publish its own Dashboard through Portal. A Watch store an
+	// earlier release filled still carries those keys, and Hub removes them on
+	// startup.
 	watchServer := watchserver.NewServerForTest()
 	defer watchServer.AfterAppStop()
-	db := _WatchTestStore{watchServer}
+	ruleRepo := &testPortalRuleRepo{rules: []*core.PortalRule{
+		{Id: 1, Name: "demo.web", RouteType: "SITE", RouteSiteName: "demo.Web", Enabled: true},
+	}}
+	siteRepo := &testPortalSiteRepo{entries: []*core.PortalSite{
+		{Id: 1, Name: "demo.Web", Type: core.PortalSiteTypeWEBGW, ActorSkelName: "demo.Actor", ActorVia: "client", WebName: "demo.Web", Enabled: true},
+	}}
+	entryRepo := &testPortalEntryRepo{entries: []*core.PortalEntry{
+		{Id: 1, Name: "demo.web", Scheme: "http", Port: 80, Enabled: true},
+	}}
+	for _, name := range legacyDashboardRuleNames {
+		watchServer.Set(watched.FormatPortalRuleKey(name), "{}")
+	}
+	for _, name := range legacyDashboardSiteNames {
+		watchServer.Set(watched.FormatPortalSiteKey(name), "{}")
+	}
+	for _, serviceName := range legacyDashboardRpcServiceNames() {
+		watchServer.Set(watched.FormatRpcServiceRegistrationKey(serviceName, legacyDashboardAppName, legacyDashboardAppInstanceId), "{}")
+	}
+	watchServer.Set(watched.FormatWebRegistrationKey(legacyDashboardWebSkelName, legacyDashboardAppName, legacyDashboardAppInstanceId), "{}")
 
-	existingApiRule := core.PortalRule{
-		Id:              1,
-		Name:            core.DashboardAdminApiRuleName,
-		MatchScheme:     "http",
-		MatchPort:       8088,
-		MatchPathPrefix: "/custom-api",
-		RouteType:       "SITE",
-		RouteSiteName:   "custom-admin-entry",
-		BuiltIn:         true,
-		Enabled:         true,
-	}
-	existingWebRule := core.PortalRule{
-		Id:              2,
-		Name:            core.DashboardWebRuleName,
-		MatchScheme:     "http",
-		MatchPort:       8088,
-		MatchPathPrefix: "/custom-web",
-		RouteType:       "SITE",
-		RouteSiteName:   "custom-web-entry",
-		BuiltIn:         true,
-		Enabled:         true,
-	}
-	existingRpcSite := core.PortalSite{
-		Id:            1,
-		Name:          seeder.DashboardRpcCoreEntry.Name,
-		Type:          core.PortalSiteTypeRPCGW,
-		ActorSkelName: "custom.Actor",
-		ActorVia:      "client",
-		BuiltIn:       true,
-		Enabled:       true,
-	}
-	existingWebSite := core.PortalSite{
-		Id:            2,
-		Name:          seeder.DashboardWebCoreEntry.Name,
-		Type:          core.PortalSiteTypeWEBGW,
-		ActorSkelName: "custom.Actor",
-		ActorVia:      "client",
-		WebName:       "custom.Web",
-		BuiltIn:       true,
-		Enabled:       true,
-	}
-	ruleRepo := &testPortalRuleRepo{rules: []*core.PortalRule{&existingApiRule, &existingWebRule}}
-	entryRepo := &testPortalSiteRepo{entries: []*core.PortalSite{&existingRpcSite, &existingWebSite}}
 	p := &Initializer{
 		Syncer:          testSyncer(watchServer),
 		AppConfigRepo:   &testAppConfigRepo{},
-		PortalEntryRepo: &testPortalEntryRepo{},
+		PortalEntryRepo: entryRepo,
 		PortalRuleRepo:  ruleRepo,
 		PortalCertRepo:  &testPortalCertRepo{},
-		PortalSiteRepo:  entryRepo,
+		PortalSiteRepo:  siteRepo,
 		SchemaRepo:      &schema.SchemaRepo{},
 		RegistryCore:    &core.RegistryCore{SchemaRepo: &schema.SchemaRepo{}},
 		InprocFlag:      &appcore.InternalInprocFlag{},
-		Flag:            &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
+		Flag:            &hubflag.Flag{AdminListen: "127.0.0.1:7099"},
 	}
 
 	p.DIInit()
 
-	assert.Len(t, ruleRepo.rules, 2)
-	assert.Len(t, entryRepo.entries, 2)
-
-	value, err := db.Get(watched.FormatPortalRuleKey(core.DashboardAdminApiRuleName))
-	assert.NoError(t, err)
-	assert.Contains(t, value, `"matchPort":8088`)
-	assert.Contains(t, value, "/custom-api")
-
-	value, err = db.Get(watched.FormatPortalSiteKey(seeder.DashboardRpcCoreEntry.Name))
-	assert.NoError(t, err)
-	assert.Contains(t, value, "custom.Actor")
-
-	value, err = db.Get(watched.FormatPortalRuleKey(core.DashboardWebRuleName))
-	assert.NoError(t, err)
-	assert.Contains(t, value, `"matchPort":8088`)
-	assert.Contains(t, value, "/custom-web")
-
-	value, err = db.Get(watched.FormatPortalSiteKey(seeder.DashboardWebCoreEntry.Name))
-	assert.NoError(t, err)
-	assert.Contains(t, value, "custom.Web")
+	// Hub stores the entities its own seed declares and keeps the legacy
+	// Dashboard keys out of Watch. The stored built-in rows go with the model's
+	// cleanup, so they never reach this point.
+	for _, key := range []string{
+		watched.FormatPortalRuleKey("vine.hub.admin-api"),
+		watched.FormatPortalRuleKey("vine.hub.dashboard-web"),
+		watched.FormatPortalSiteKey("vine.hub.admin.AdminActor-client-rpc"),
+		watched.FormatWebRegistrationKey(legacyDashboardWebSkelName, legacyDashboardAppName, legacyDashboardAppInstanceId),
+	} {
+		_, ok := watchServer.Get(key)
+		assert.False(t, ok, key)
+	}
+	_, ok := watchServer.Get(watched.FormatPortalRuleKey("demo.web"))
+	assert.True(t, ok, "Hub publishes the rules it stores")
 }
 
-func TestDashboardRpcServicesDerivedFromRegisteredSchema(t *testing.T) {
+func TestLegacyDashboardRpcServiceNamesDerivedFromRegisteredSchema(t *testing.T) {
 	assert.Equal(t, []string{
 		"vine.hub.admin.AppConfigApiService",
 		"vine.hub.admin.AppStatusApiService",
@@ -474,7 +381,7 @@ func TestDashboardRpcServicesDerivedFromRegisteredSchema(t *testing.T) {
 		"vine.hub.admin.ServiceDebugApiService",
 		"vine.hub.admin.SkeletonApiService",
 		"vine.hub.admin.TaskDebugApiService",
-	}, seeder.DashboardRpcServices)
+	}, legacyDashboardRpcServiceNames())
 }
 
 func marshalTestConfigValue(name string, value string) string {
@@ -483,43 +390,6 @@ func marshalTestConfigValue(name string, value string) string {
 		Value: []byte(value),
 	})
 }
-
-func TestDashboardRpcEndpointUsesInprocWhenEnabled(t *testing.T) {
-	initializer := &Initializer{
-		InprocFlag: &appcore.InternalInprocFlag{Enabled: true},
-		Flag:       &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
-	}
-
-	assert.Equal(t, "rpc+inproc://vine/hub/admin/rpc/invoke", initializer.dashboardRpcEndpoint())
-}
-
-func TestDashboardWebEndpointUsesInprocWhenEnabled(t *testing.T) {
-	initializer := &Initializer{
-		InprocFlag: &appcore.InternalInprocFlag{Enabled: true},
-		Flag:       &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
-	}
-
-	assert.Equal(t, "web+inproc://vine/hub/admin/web/access/vine.hub.admin.DashboardWeb", initializer.dashboardWebEndpoint())
-}
-
-func TestDashboardRpcEndpointUsesHTTPListenOutsideInproc(t *testing.T) {
-	initializer := &Initializer{
-		InprocFlag: &appcore.InternalInprocFlag{},
-		Flag:       &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
-	}
-
-	assert.Equal(t, "http://127.0.0.1:7075/rpc/invoke", initializer.dashboardRpcEndpoint())
-}
-
-func TestDashboardWebEndpointUsesHTTPListenOutsideInproc(t *testing.T) {
-	initializer := &Initializer{
-		InprocFlag: &appcore.InternalInprocFlag{},
-		Flag:       &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
-	}
-
-	assert.Equal(t, "http://127.0.0.1:7075/web/access/vine.hub.admin.DashboardWeb", initializer.dashboardWebEndpoint())
-}
-
 func TestInitializerDIInitLoadsRegisteredSchemasIntoMemoryRepoInInprocMode(t *testing.T) {
 	watchServer := watchserver.NewServerForTest()
 	defer watchServer.AfterAppStop()
@@ -542,7 +412,7 @@ func TestInitializerDIInitLoadsRegisteredSchemasIntoMemoryRepoInInprocMode(t *te
 		SchemaRepo:      schemaRepo,
 		RegistryCore:    &core.RegistryCore{SchemaRepo: schemaRepo},
 		InprocFlag:      &appcore.InternalInprocFlag{Enabled: true},
-		Flag:            &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
+		Flag:            &hubflag.Flag{AdminListen: "127.0.0.1:7099"},
 	}
 
 	p.DIInit()
@@ -578,7 +448,7 @@ func TestInitializerDIInitLoadsHubSchemasIntoMemoryRepoInNormalMode(t *testing.T
 		SchemaRepo:      schemaRepo,
 		RegistryCore:    &core.RegistryCore{SchemaRepo: schemaRepo},
 		InprocFlag:      &appcore.InternalInprocFlag{},
-		Flag:            &hubflag.Flag{AdminListen: "127.0.0.1:7075"},
+		Flag:            &hubflag.Flag{AdminListen: "127.0.0.1:7099"},
 	}
 
 	p.DIInit()

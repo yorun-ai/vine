@@ -37,7 +37,6 @@ func TestRunDev(t *testing.T) {
 		"--link-api-listen", "127.0.0.1:8079",
 		"--db-sqlite-file", "/tmp/vine-dev.sqlite",
 		"--seed-hub-data-file", "/tmp/vine-dev.yaml",
-		"--dashboard-url", "http://:8099",
 	})
 
 	if result.exitCode != exitCodeSuccess {
@@ -51,9 +50,6 @@ func TestRunDev(t *testing.T) {
 	}
 	if got.SeedHubDataFile != "/tmp/vine-dev.yaml" {
 		t.Fatalf("unexpected seed YAML file: %q", got.SeedHubDataFile)
-	}
-	if got.DashboardURL != "http://:8099" {
-		t.Fatalf("unexpected dashboard URL: %q", got.DashboardURL)
 	}
 }
 
@@ -119,11 +115,9 @@ func TestDevRuntimeAcceptsNetworkAppRegistration(t *testing.T) {
 		t.Fatal(err)
 	}
 	linkListen := freeDevTestListenAddress(t)
-	portalListen := freeDevTestListenAddress(t)
 	runtime := newDevRuntime(_DevOption{
 		SeedHubDataFile: seedPath,
 		LinkAPIListen:   linkListen,
-		DashboardURL:    "http://" + portalListen + "/",
 	})
 	runtime.Start()
 	t.Cleanup(func() {

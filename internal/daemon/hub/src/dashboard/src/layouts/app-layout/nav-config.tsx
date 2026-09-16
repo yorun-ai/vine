@@ -313,24 +313,8 @@ export const APP_SCENES: Array<AppScene> = [
     descriptionKey: 'scene.settings.description',
     categoryKey: 'scene.category.vineHub',
     icon: Wrench,
-    defaultTo: '/settings/dashboard-port',
+    defaultTo: '/maintenance/data-update',
     groups: [
-      {
-        id: 'settings-group',
-        titleKey: 'nav.group.settings',
-        title: cnDictionary['nav.group.settings'],
-        items: [
-          {
-            id: 'settings-dashboard-port',
-            label: cnDictionary['nav.dashboardPort.label'],
-            labelKey: 'nav.dashboardPort.label',
-            description: cnDictionary['nav.dashboardPort.description'],
-            descriptionKey: 'nav.dashboardPort.description',
-            to: '/settings/dashboard-port',
-            icon: LayoutDashboard,
-          },
-        ],
-      },
       {
         id: 'maintenance-group',
         titleKey: 'nav.group.maintenance',

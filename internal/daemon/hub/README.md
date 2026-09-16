@@ -47,7 +47,7 @@ internal/daemon/hub/
 - Rebuild the embedded `dashboard.tar.zst` whenever the Dashboard source or the admin API it calls changes, and commit it with that change: the embedded bundle must always match the admin API it calls. Merges are squashed, so a branch contributes only its final bundle to main.
 - Keep user-facing text synchronized between `src/i18n/dictionaries/cn.ts` and `en.ts`.
 
-The Dashboard source lives in `src/dashboard`. At runtime, Hub serves the build embedded in `src/server/impl/admin/dashboard/assets/dashboard.tar.zst`.
+The Dashboard source lives in `src/dashboard`. At runtime, Hub serves the build embedded in `src/server/mod/admin/assets/dashboard.tar.zst`.
 
 Always rebuild the bundle with the script; never edit or assemble the archive by hand, and never resolve a conflict on it by picking a side:
 
@@ -100,8 +100,8 @@ before the rules that use it.
 
 Two rules may not match the same request. Portal resolves matching rules by their
 longest path prefix, so Hub rejects a rule whose access and `matchPathPrefix`
-already match another rule, including a built-in Dashboard rule, and reports the
-rule that serves that request. A seed or Dashboard import that declares the same
+already match another rule, and reports the rule that serves that request. A seed
+or Dashboard import that declares the same
 request twice fails the same way, so a seed never starts Hub through a silent
 rewrite: the seed is the data source, and the fix belongs there. Only the access
 migration separates rules on its own, because stored data is not edited by hand.
@@ -112,11 +112,12 @@ a database failure can still leave some entities saved. The YAML conversion
 layer maps configuration fields only; it does not assign database identity or
 manage versions.
 
-`PortalSiteCore.EnsureDashboardSite` and `PortalRuleCore.EnsureDashboardRule`
-own built-in Dashboard provisioning. The built-in Dashboard rules belong to
-their own entry, which Seeder maintains from the Dashboard URL through
-`PortalEntryCore.EnsureBuiltInAccess` and the user entry list excludes. The
-built-in rules name that entry and never declare an access. `RegistryCore` owns schema registration
+Hub serves the Admin API and the Dashboard on the admin module's own listener
+(`--admin-listen`, default `127.0.0.1:7099`), the way the Control API owns
+`--control-listen`: the listener
+answers the API Rpc path and serves the embedded Dashboard build for every other
+path, so the Dashboard is not part of the Portal configuration. Hub provisions no
+entry, site, or rule for it, and Portal never routes it. `RegistryCore` owns schema registration
 and expired-lease removal. Initializer and Sweeper coordinate runtime publication
 through Syncer. The seed-applied marker remains startup bookkeeping in Seeder.
 
@@ -203,13 +204,14 @@ entries before rules, so a rule joins the entry that serves its access and keeps
 the name the seed gave it; an entry may route no rule yet. Hub derives the name
 `scheme[:host]:port` only for the entry it creates on its own, which is why the
 entry a rule joins without a declared entry is named after its access. The
-built-in Dashboard entry has the reserved name `vine.hub.dashboard`.
-
 The Portal sections are typed: Hub rejects an entity that declares a field the
 section does not name, so a misspelled or renamed field fails instead of
 silently leaving the entity at its default. The built-in marker is not part of
-the seed: the built-in Dashboard site, entry, and rules belong to Hub, so a seed
-that declares `builtIn` fails instead of nominating an entity.
+the seed: Hub provisions no entity itself, and a field a Portal section does not
+declare fails instead of nominating an entity.
+
+Names stay unique per entity kind, which is why a site, an entry, and a rule may
+share one.
 
 A Portal rule joins an entry either by naming it with `entryName` or by declaring
 the access the entry serves. The two are mutually exclusive: a rule never does
@@ -230,8 +232,8 @@ The `mod/seeder` package owns the seed YAML contract. `ParseSeedEntities`
 decodes a document into the domain entities it declares for Dashboard imports,
 and the same decoder backs startup seeding; the payload structs stay private to
 the package. Both accept legacy rule fields with a warning per field; mixing old
-and new fields in one rule fails before applying imported data. YAML cannot
-replace built-in Dashboard sites or rules.
+and new fields in one rule fails before applying imported data. A Portal section
+declares only the fields Hub names for it.
 
 Admin API and Watch use only the new fields; upgrade Hub and Portal together.
 The database upgrade baseline is Vine v0.15.7, with `match_*` / `route_*`

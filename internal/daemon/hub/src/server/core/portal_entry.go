@@ -11,9 +11,6 @@ import (
 const (
 	portalEntryDefaultHTTPPort  = 80
 	portalEntryDefaultHTTPSPort = 443
-	// PortalEntryBuiltInName names the entry that carries the built-in Hub
-	// Dashboard rules. Hub maintains it, and it never takes a user name.
-	PortalEntryBuiltInName = "vine.hub.dashboard"
 )
 
 const (
@@ -34,9 +31,6 @@ type PortalEntry struct {
 	Scheme string
 	Host   string
 	Port   int
-	// BuiltIn marks the entry that carries the built-in Hub Dashboard rules.
-	// Hub maintains it, and it is not part of the user entry list.
-	BuiltIn bool
 	// Enabled decides whether Hub publishes the rules of the entry to Portal.
 	Enabled bool
 }
@@ -75,14 +69,10 @@ type PortalEntryRule struct {
 type PortalEntryRepo interface {
 	List() []*PortalEntry
 	GetById(id int) (*PortalEntry, bool)
-	// GetByName returns the user entry Hub labels with the name. It never returns
-	// the built-in Dashboard entry.
+	// GetByName returns the entry Hub labels with the name.
 	GetByName(name string) (*PortalEntry, bool)
-	// GetByAccess returns the entry user rules belong to. It never returns the
-	// built-in Dashboard entry, so user rules cannot join Hub's own entry.
+	// GetByAccess returns the entry rules belong to.
 	GetByAccess(scheme string, host string, port int) (*PortalEntry, bool)
-	// GetBuiltIn returns the entry carrying the built-in Hub Dashboard rules.
-	GetBuiltIn() (*PortalEntry, bool)
 	Save(entry *PortalEntry)
 	Remove(id int) bool
 }
@@ -93,17 +83,13 @@ type PortalEntryCore struct {
 	PortalSiteRepo  PortalSiteRepo  `inject:""`
 }
 
-// List returns the user entries with the rules they route, ordered by port,
-// scheme, and host. Built-in entries are omitted; an entry that routes no rule
-// is still listed, because an operator creates entries before the rules that
-// use them.
+// List returns the entries with the rules they route, ordered by port, scheme,
+// and host. An entry that routes no rule is still listed, because an operator
+// creates entries before the rules that use them.
 func (m *PortalEntryCore) List() []PortalEntryView {
 	rulesByEntry := m.rulesByEntry()
 	views := make([]PortalEntryView, 0, len(rulesByEntry))
 	for _, stored := range m.PortalEntryRepo.List() {
-		if stored.BuiltIn {
-			continue
-		}
 		entry := normalizePortalEntry(*stored)
 		views = append(views, PortalEntryView{
 			PortalEntry: entry,
@@ -145,8 +131,6 @@ func (m *PortalEntryCore) Create(creation PortalEntryCreation) PortalEntryView {
 func (*PortalEntryCore) Validate(entry PortalEntry) PortalEntry {
 	entry = normalizePortalEntry(entry)
 	ex.PanicNewIfNot(entry.Name != "", ex.OperationFailed, "portal entry name is required")
-	ex.PanicNewIfNot(entry.Name != PortalEntryBuiltInName, ex.OperationFailed,
-		ex.F("portal entry name %q is reserved", entry.Name))
 	return entry
 }
 
@@ -156,9 +140,7 @@ func (*PortalEntryCore) Validate(entry PortalEntry) PortalEntry {
 func (m *PortalEntryCore) Save(entry PortalEntry) *PortalEntry {
 	entry = m.Validate(entry)
 	entry.Id = 0
-	entry.BuiltIn = false
 	if current, ok := m.PortalEntryRepo.GetByName(entry.Name); ok {
-		ex.PanicNewIfNot(!current.BuiltIn, ex.OperationFailed, ex.F("built-in portal entry %q cannot be replaced", entry.Name))
 		entry.Id = current.Id
 	}
 	if current, ok := m.PortalEntryRepo.GetByAccess(entry.Scheme, entry.Host, entry.Port); ok && current.Id != entry.Id {
@@ -202,19 +184,7 @@ func (m *PortalEntryCore) Get(id int) *PortalEntry {
 	return entry
 }
 
-// FindBuiltIn returns the entry that carries the built-in Hub Dashboard rules.
-func (m *PortalEntryCore) FindBuiltIn() (*PortalEntry, bool) {
-	return m.PortalEntryRepo.GetBuiltIn()
-}
-
-// BuiltIn returns the entry that carries the built-in Hub Dashboard rules.
-func (m *PortalEntryCore) BuiltIn() *PortalEntry {
-	entry, ok := m.FindBuiltIn()
-	ex.PanicNewIfNot(ok, ex.OperationFailed, "built-in portal entry not found")
-	return entry
-}
-
-// FindByName returns the user entry Hub labels with the name.
+// FindByName returns the entry Hub labels with the name.
 func (m *PortalEntryCore) FindByName(name string) (*PortalEntry, bool) {
 	return m.PortalEntryRepo.GetByName(name)
 }
@@ -236,32 +206,6 @@ func (m *PortalEntryCore) EnsureAccess(scheme string, host string, port int) *Po
 	normalized.Name = PortalEntryName(normalized.Scheme, normalized.Host, normalized.Port)
 	m.PortalEntryRepo.Save(&normalized)
 	return &normalized
-}
-
-// EnsureBuiltInAccess returns the entry that carries the built-in Hub Dashboard
-// rules. Without refresh it keeps the access the entry already serves; the given
-// access applies when Hub creates the entry or the caller refreshes it for an
-// explicit Dashboard URL or a legacy default.
-func (m *PortalEntryCore) EnsureBuiltInAccess(scheme string, host string, port int, refresh bool) *PortalEntry {
-	current, ok := m.PortalEntryRepo.GetBuiltIn()
-	if ok && !refresh {
-		return current
-	}
-
-	entry := normalizePortalEntry(PortalEntry{
-		Name:    PortalEntryBuiltInName,
-		Scheme:  scheme,
-		Host:    host,
-		Port:    port,
-		BuiltIn: true,
-		// Hub publishes its own Dashboard rules, so the entry stays enabled.
-		Enabled: true,
-	})
-	if ok {
-		entry.Id = current.Id
-	}
-	m.PortalEntryRepo.Save(&entry)
-	return &entry
 }
 
 // UpdateAccess changes the access of the entry and republishes the rules it
@@ -385,7 +329,7 @@ func portalEntrySchemePort(scheme string, port int) int {
 func (m *PortalEntryCore) rulesByEntry() map[int][]PortalEntryRule {
 	rulesByEntry := map[int][]PortalEntryRule{}
 	for _, rule := range m.PortalRuleRepo.List() {
-		if rule.BuiltIn || !isPortalEntryRuleRouteType(rule.RouteType) {
+		if !isPortalEntryRuleRouteType(rule.RouteType) {
 			continue
 		}
 		rulesByEntry[rule.EntryId] = append(rulesByEntry[rule.EntryId], PortalEntryRule{

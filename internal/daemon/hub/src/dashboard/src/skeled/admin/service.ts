@@ -40,7 +40,6 @@ import type {
   PortalRule,
   PortalRuleCreation,
   PortalRuleUpdate,
-  PortalDashboardAccess,
   PortalSiteListItem,
   PortalSiteOptions,
   PortalSite,
@@ -596,45 +595,6 @@ export function createPortalRuleApiService(client: VrpcClient) {
       return client.invoke<void>({
         serviceName: PortalRuleApiServiceSpec.serviceName,
         methodName: PortalRuleApiServiceSpec.methods.remove,
-        params,
-        options,
-      });
-    },
-    /**
-     * Get the Hub Dashboard access entry.
-     * @param params - Request parameters, or null for methods without input
-     * @param options - Optional invocation options
-     * @returns PortalDashboardAccess - Hub Dashboard access entry
-     */
-    getDashboardAccess(
-      params: null,
-      options?: VrpcRequestOptions,
-    ) {
-      return client.invoke<PortalDashboardAccess>({
-        serviceName: PortalRuleApiServiceSpec.serviceName,
-        methodName: PortalRuleApiServiceSpec.methods.getDashboardAccess,
-        params,
-        options,
-      });
-    },
-    /**
-     * Modify Hub Dashboard access entry.
-     * @param params - Request parameters, or null for methods without input
-     * @param options - Optional invocation options
-     * @returns Array<PortalRule> - Hub Dashboard entry rules
-     */
-    updateDashboardAccess(
-      params: {
-        scheme: string;
-        host: string;
-        port: number;
-        pathPrefix: string;
-      },
-      options?: VrpcRequestOptions,
-    ) {
-      return client.invoke<Array<PortalRule>>({
-        serviceName: PortalRuleApiServiceSpec.serviceName,
-        methodName: PortalRuleApiServiceSpec.methods.updateDashboardAccess,
         params,
         options,
       });

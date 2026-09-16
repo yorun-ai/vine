@@ -1,10 +1,8 @@
 package admin
 
 import (
-	"go.yorun.ai/vine/internal/core/ex"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 )
 
 type PortalRuleApiServiceServerImpl struct {
@@ -12,7 +10,6 @@ type PortalRuleApiServiceServerImpl struct {
 
 	PortalRuleCore *core.PortalRuleCore `inject:""`
 	PortalSiteRepo core.PortalSiteRepo  `inject:""`
-	Flag           *flag.Flag           `inject:""`
 }
 
 func (s *PortalRuleApiServiceServerImpl) List() []skeled.PortalRuleListItem {
@@ -62,27 +59,6 @@ func (s *PortalRuleApiServiceServerImpl) Update(id int, update skeled.PortalRule
 
 func (s *PortalRuleApiServiceServerImpl) Remove(id int) {
 	s.PortalRuleCore.Remove(id)
-}
-
-func (s *PortalRuleApiServiceServerImpl) GetDashboardAccess() skeled.PortalDashboardAccess {
-	access := s.PortalRuleCore.DashboardAccess()
-	return skeled.PortalDashboardAccess{
-		Scheme:     access.Scheme,
-		Host:       access.Host,
-		Port:       access.Port,
-		PathPrefix: access.PathPrefix,
-		CanUpdate:  !s.Flag.DashboardURLSet,
-	}
-}
-
-func (s *PortalRuleApiServiceServerImpl) UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string) []skeled.PortalRule {
-	ex.PanicNewIfNot(!s.Flag.DashboardURLSet, ex.OperationFailed, "dashboard access is configured by dashboard-url")
-	rules := s.PortalRuleCore.UpdateDashboardAccess(scheme, host, port, pathPrefix)
-	ret := make([]skeled.PortalRule, 0, len(rules))
-	for _, rule := range rules {
-		ret = append(ret, s.toServerPortalRule(rule, nil))
-	}
-	return ret
 }
 
 func toServerPortalRule(rule *core.PortalRule, fieldSources []skeled.FieldSource) skeled.PortalRule {

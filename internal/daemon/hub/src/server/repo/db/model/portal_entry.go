@@ -23,7 +23,6 @@ type PortalEntry struct {
 	Scheme  string `gorm:"column:scheme"`
 	Host    string `gorm:"column:host"`
 	Port    int    `gorm:"column:port"`
-	BuiltIn bool   `gorm:"column:built_in;not null;default:false"`
 	Enabled bool   `gorm:"column:enabled;not null"`
 }
 
@@ -49,17 +48,13 @@ func (d *PortalEntryDao) ById(id int) (*PortalEntry, bool) {
 
 // ByName returns the user entry Hub labels with the name.
 func (d *PortalEntryDao) ByName(name string) (*PortalEntry, bool) {
-	return d.First("name = ? AND built_in = ?", name, false)
+	return d.First("name = ?", name)
 }
 
 // ByAccess returns the user entry that serves the access. The built-in
 // Dashboard entry is never returned, so user rules cannot join it.
 func (d *PortalEntryDao) ByAccess(scheme string, host string, port int) (*PortalEntry, bool) {
-	return d.First("scheme = ? AND host = ? AND port = ? AND built_in = ?", scheme, host, port, false)
-}
-
-func (d *PortalEntryDao) BuiltIn() (*PortalEntry, bool) {
-	return d.First("built_in = ?", true)
+	return d.First("scheme = ? AND host = ? AND port = ?", scheme, host, port)
 }
 
 func (d *PortalEntryDao) Save(entry *PortalEntry) *PortalEntry {
@@ -71,12 +66,11 @@ func (d *PortalEntryDao) Save(entry *PortalEntry) *PortalEntry {
 	row, ok := d.ById(entry.Id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", entry.Id))
 	d.Update(row, rdb.Patch{
-		"name":     entry.Name,
-		"scheme":   entry.Scheme,
-		"host":     entry.Host,
-		"port":     entry.Port,
-		"built_in": entry.BuiltIn,
-		"enabled":  entry.Enabled,
+		"name":    entry.Name,
+		"scheme":  entry.Scheme,
+		"host":    entry.Host,
+		"port":    entry.Port,
+		"enabled": entry.Enabled,
 	})
 	return row
 }

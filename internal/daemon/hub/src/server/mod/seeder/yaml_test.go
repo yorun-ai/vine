@@ -15,7 +15,6 @@ func TestPortalRuleSeedMapsWithoutDomainValidation(t *testing.T) {
 	seed := _PortalRule{Name: "mapped", RouteType: "SITE", RoutePathPrefix: "/internal/"}
 	rule := seed.toCorePortalRule()
 	assert.Zero(t, rule.Id)
-	assert.False(t, rule.BuiltIn)
 	assert.Equal(t, "/internal/", rule.RoutePathPrefix)
 	seed.RoutePathPrefix = ""
 	assert.Empty(t, seed.toCorePortalRule().RoutePathPrefix)

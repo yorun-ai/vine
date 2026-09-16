@@ -52,9 +52,6 @@ type Option struct {
 	SQLiteFile string
 	// PostgresURL selects PostgreSQL persistence and specifies its connection URL.
 	PostgresURL string
-
-	// DashboardURL is the optional URL from which Hub dashboard assets are loaded.
-	DashboardURL string
 }
 
 func (o Option) isZero() bool {
@@ -62,8 +59,7 @@ func (o Option) isZero() bool {
 		o.SeedHubData == "" && o.SeedHubSource == "" && o.SeedHubSourceFile == "" && o.SeedHubVarsFile == "" &&
 		!o.NoDB &&
 		o.SQLiteFile == "" &&
-		o.PostgresURL == "" &&
-		o.DashboardURL == ""
+		o.PostgresURL == ""
 }
 
 // New constructs an application with an in-process Hub, Portal, and Link.
@@ -130,12 +126,10 @@ const (
 	flagSQLiteFile      = vinecli.FlagHubDBSQLiteFile
 	flagPostgresURL     = vinecli.FlagHubDBPostgresURL
 	flagSeedHubDataFile = vinecli.FlagSeedHubDataFile
-	flagDashboardURL    = vinecli.FlagHubDashboardURL
 
 	envSQLiteFile      = vinecli.EnvHubDBSQLiteFile
 	envPostgresURL     = vinecli.EnvHubDBPostgresURL
 	envSeedHubDataFile = vinecli.EnvSeedHubDataFile
-	envDashboardURL    = vinecli.EnvHubDashboardURL
 )
 
 func (a *_App) initInfra() {
@@ -177,12 +171,6 @@ func (a *_App) initInfra() {
 			Usage:       "seed vars YAML file",
 			Destination: &flag.SeedHubVarsFile,
 		},
-		&ucli.StringFlag{
-			Name:        flagDashboardURL,
-			Sources:     ucli.EnvVars(envDashboardURL),
-			Usage:       "hub dashboard URL",
-			Destination: &flag.DashboardURLRaw,
-		},
 	)
 	applyOption(flag, a.option)
 
@@ -220,9 +208,6 @@ func applyOption(flag *hubflag.Flag, option Option) {
 	}
 	if option.SeedHubDataFile != "" {
 		flag.SeedHubDataFile = option.SeedHubDataFile
-	}
-	if option.DashboardURL != "" {
-		flag.DashboardURLRaw = option.DashboardURL
 	}
 }
 

@@ -45,7 +45,7 @@ internal/daemon/hub/
 - Dashboard 源码或它所调用的 admin API 变化时，必须随该改动重新打包并提交嵌入的 `dashboard.tar.zst`：嵌入产物必须始终与它调用的 admin API 匹配。仓库使用 squash merge，分支只有最终产物会进入 main。
 - 面向用户的文案需要同步更新 `src/i18n/dictionaries/cn.ts` 和 `en.ts`。
 
-Dashboard 前端源码位于 `src/dashboard`，Hub 运行时读取的是嵌入在 `src/server/impl/admin/dashboard/assets/dashboard.tar.zst` 中的构建产物。
+Dashboard 前端源码位于 `src/dashboard`，Hub 运行时读取的是嵌入在 `src/server/mod/admin/assets/dashboard.tar.zst` 中的构建产物。
 
 必须用脚本重新打包，不要手工组装归档，也不要在冲突时直接选某一边：
 
@@ -81,9 +81,11 @@ Hub 的层次职责必须保持清晰：
   任何规则的 entry：规则属于用户，删除仍有规则的 entry 会报错，而不是让规则失去
   访问配置。entry 列表会返回尚未路由规则的 entry，因为用户先建 entry、再添加使用
   它的规则。
-- 内置 Dashboard 规则同样走 entry 模式：它们只引用内置 entry `vine.hub.dashboard`，
-  由 Seeder 按 Dashboard URL 维护该 entry 的访问配置；没有显式 `--dashboard-url`
-  或旧默认值迁移时，Hub 保持它当前服务的访问配置。
+- Hub 在 admin 模块自己的监听上提供 Admin API 与 Dashboard（`--admin-listen`，
+  默认 `127.0.0.1:7099`，与 Control API 的 `--control-listen` 对称）：该监听在 RPC
+  路径上响应 API，其它路径
+  都返回内嵌的 Dashboard 构建产物，Dashboard 因此不再属于 Portal 配置——Hub 不为
+  它创建任何 entry、站点或规则，Portal 也不会路由 Dashboard。
 - Portal 站点、entry、规则与证书在库里都有 `enabled` 开关（默认启用），Dashboard
   可编辑；seed 用 `disabled`（默认 false）声明同一个开关，只标出要停用的实体，
   写 `enabled` 的 seed 会直接报错，避免被忽略后继续发布。Hub 会把停用的实体保留在
@@ -94,11 +96,9 @@ Hub 的层次职责必须保持清晰：
   `port`，并在规则之前应用，因此规则会加入服务其访问配置的 entry 并沿用该名称；
   entry 也可以暂时不承载任何规则。Hub 只为它自行创建的 entry 推导
   `scheme[:host]:port` 名称，所以没有显式声明 entry 时规则加入的 entry 以访问配置
-  命名。内置 Dashboard entry 使用保留名称 `vine.hub.dashboard`。
 - Portal 各段是强类型的：实体声明了该段没有的字段时 Hub 直接报错，避免拼错或改名
-  后的字段被静默忽略、实体停留在默认值。内置标记不属于 seed：内置 Dashboard
-  站点、entry 与规则由 Hub 自己维护，seed 里写 `builtIn` 会直接报错，而不是用来
-  指定某个实体是内置的。
+  后的字段被静默忽略、实体停留在默认值；Hub 自己不再创建任何实体。
+- name 只在同一类实体内唯一，所以站点、entry 与规则可以同名。
 - 规则加入 entry 有两种写法：用 `entryName` 指定名称，或直接声明该 entry 服务的
   访问配置（`matchScheme` / `matchHost` / `matchPort`）。两者互斥：同一条规则不
   能同时使用两种写法，同一份 seed 文档也只能全部使用其中一种；声明了
@@ -109,8 +109,8 @@ Hub 的层次职责必须保持清晰：
   entry，`PortalRuleUpdate` 完全不能修改访问配置。seed YAML 仍在规则上声明访问
   配置，由 Hub 在应用 seed 时聚合为 entry。
 - 两条规则不能匹配同一个请求。Portal 按最长路径前缀解析匹配规则，因此 Hub 会
-  拒绝访问配置与 `matchPathPrefix` 已被其他规则（包括内置 Dashboard 规则）占用
-  的规则，并报出已占用该请求的规则名。seed 或 Dashboard 导入重复声明同一请求时
+  拒绝访问配置与 `matchPathPrefix` 已被其他规则占用的规则，并报出已占用该请求的
+  规则名。seed 或 Dashboard 导入重复声明同一请求时
   同样报错，Hub 不会通过静默改写路径启动：seed 就是数据源，应在那里修正。只有
   访问配置迁移会自行消解这类冲突，因为已存储的数据不靠人工修改。
 - 数据库表结构必须同时更新 `src/server/repo/db/model/sql/sqlite` 和 `src/server/repo/db/model/sql/pgsql`。
@@ -171,7 +171,7 @@ entry，并按 entry 建立规则路径的唯一索引。这些列保留到后�
 列仍在，enabled 有"默认启用"的默认值，它插入的不带 entry 的规则会在下次升级时
 重新归入对应 entry。
 
-数据库 metadata 记录首次 seed 完成状态。后续启动跳过全部 seed、变量和来源输入，seed 条目不再提供 `override` 开关。无数据库模式每次建立新存储并导入 seed；内置 Dashboard 配置的维护独立于 seed 标记。
+数据库 metadata 记录首次 seed 完成状态。后续启动跳过全部 seed、变量和来源输入，seed 条目不再提供 `override` 开关。无数据库模式每次建立新存储并导入 seed。
 
 字段来源以 JSON 保存原始字段模板，并记录每次替换的相对路径、变量名、占位符、实际应用的 JSON 值和默认值使用标记。AppConfig 的嵌套替换归属 value 的一级 key；管理接口修改字段后清除旧模板和替换记录。管理 API 与 Dashboard 一同展示这些信息及字段来源。
 

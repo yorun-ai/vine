@@ -544,31 +544,6 @@ export type PortalCors = {
   allowedOrigins: Array<string>;
 }
 /**
- * Hub Dashboard access entry.
- */
-export type PortalDashboardAccess = {
-  /**
-   * Entry protocol.
-   */
-  scheme:     string;
-  /**
-   * Match Host, empty string means no restriction.
-   */
-  host:       string;
-  /**
-   * Entry port.
-   */
-  port:       number;
-  /**
-   * Match path prefix.
-   */
-  pathPrefix: string;
-  /**
-   * Whether to allow modification of Dashboard access entry.
-   */
-  canUpdate:  boolean;
-}
-/**
  * Portal access entry.
  */
 export type PortalEntry = {

@@ -53,6 +53,19 @@ are not part of the public compatibility commitment.
 
 ### Changed
 
+- Hub serves the Admin API on its own listener, the way it serves the Control
+  API: the `admin` module owns `--admin-listen`, which defaults to
+  `127.0.0.1:7099`, the port operators reached the Dashboard on before, and a Hub
+  application listens on no HTTP port of its own. Hub no longer publishes the
+  Dashboard through Portal,
+  so it provisions no built-in Dashboard entry, sites, or rules; an upgraded
+  database drops the entities an earlier release stored and their Watch keys, and
+  the entry the access migration left at the access those rules served;
+  `--dashboard-url` is gone with them. The admin listener also serves the
+  Dashboard build from Hub's embedded assets, so an operator reaches the
+  Dashboard on the same origin as the API it calls, and a path the build does not
+  carry answers with the entry document.
+
 - Hub stores Portal access entries instead of deriving from rules. An entry
   owns the scheme, host, and port Portal serves, and rules reference it, so
   changing an entry access updates one row rather than every rule that used it.

@@ -32,24 +32,9 @@ func TestPortalEntryRepoStoresAccessAndName(t *testing.T) {
 	assert.Equal(t, entry.Id, byName.Id)
 	_, ok = repo.GetByName("other")
 	assert.False(t, ok)
-	assert.False(t, got.BuiltIn)
 
 	_, ok = repo.GetById(entry.Id)
 	assert.True(t, ok)
-
-	// The built-in Dashboard entry is not the access user rules join.
-	builtIn := &core.PortalEntry{Name: "vine.hub.dashboard", Scheme: "https", Host: "demo.local", Port: 8443, BuiltIn: true}
-	repo.Save(builtIn)
-	got, ok = repo.GetByAccess("https", "demo.local", 8443)
-	require.True(t, ok)
-	assert.Equal(t, entry.Id, got.Id)
-	stored, ok := repo.GetBuiltIn()
-	require.True(t, ok)
-	assert.Equal(t, builtIn.Id, stored.Id)
-
-	assert.True(t, repo.Remove(builtIn.Id))
-	_, ok = repo.GetBuiltIn()
-	assert.False(t, ok)
 }
 
 func TestPortalEntryRepoRejectsReadOnlyWrites(t *testing.T) {

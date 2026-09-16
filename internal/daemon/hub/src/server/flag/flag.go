@@ -13,11 +13,11 @@ import (
 )
 
 const (
-	HubDefaultControlListen    = "127.0.0.1:7071"
-	HubDefaultWatchListen      = "127.0.0.1:7072"
-	HubDefaultAdminListen      = "127.0.0.1:7075"
-	HubDefaultDashboardURL     = "http://:7099/"
-	HubMTLSDefaultDashboardURL = "https://:7099/"
+	HubDefaultControlListen = "127.0.0.1:7071"
+	HubDefaultWatchListen   = "127.0.0.1:7072"
+	// HubDefaultAdminListen is the Dashboard port operators already know: the
+	// Dashboard reached Hub through Portal on 7099, and Hub serves it itself now.
+	HubDefaultAdminListen = "127.0.0.1:7099"
 
 	MQModeEmbedded = "embedded"
 	MQModeNATS     = "nats"
@@ -51,18 +51,12 @@ type Flag struct {
 	SeedHubSource     string
 	SeedHubSourceFile string
 	SeedHubVarsFile   string
-
-	DashboardURLRaw         string
-	DashboardURLSet         bool
-	DashboardURLMTLSDefault bool
-	DashboardURL            *vnet.HttpURL
 }
 
 func (f *Flag) Normalize(inproc bool) {
 	vpre.CheckNilError(f.MTLS.Validate(), "hub flag normalize failed")
 	f.normalizeSeed()
 	f.normalizeStore()
-	f.normalizeDashboardURL()
 
 	if inproc {
 		// Inproc hub is reached through rpc+inproc and uses in-process NATS,
@@ -172,24 +166,6 @@ func (f *Flag) AdminPort() int {
 
 func (f *Flag) WatchPort() int {
 	return vnet.MustParsePort(f.WatchListen)
-}
-
-func (f *Flag) normalizeDashboardURL() {
-	rawURL := f.DashboardURLRaw
-	if rawURL == "" {
-		if f.MTLS.Enabled() {
-			rawURL = HubMTLSDefaultDashboardURL
-			f.DashboardURLMTLSDefault = true
-		} else {
-			rawURL = HubDefaultDashboardURL
-		}
-	} else {
-		f.DashboardURLSet = true
-	}
-
-	parsed, err := vnet.ParseHttpURL(rawURL)
-	vpre.CheckNilError(err, "parse DashboardURL failed")
-	f.DashboardURL = parsed
 }
 
 func validateMQNatsEndpoint(endpoint string) error {

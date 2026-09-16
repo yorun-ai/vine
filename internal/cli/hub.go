@@ -35,7 +35,6 @@ const (
 	FlagSeedHubSourceFile = "seed-hub-source-file"
 	FlagSeedHubVarsFile   = "seed-hub-vars-file"
 	FlagSeedHubDataFile   = "seed-hub-data-file"
-	FlagHubDashboardURL   = "dashboard-url"
 	FlagHubNoDB           = "no-db"
 	FlagHubDBSQLiteFile   = "db-sqlite-file"
 	FlagHubDBPostgresURL  = "db-postgres-url"
@@ -59,7 +58,6 @@ const (
 	EnvSeedHubSourceFile = "VINE_SEED_HUB_SOURCE_FILE"
 	EnvSeedHubVarsFile   = "VINE_SEED_HUB_VARS_FILE"
 	EnvSeedHubDataFile   = "VINE_SEED_HUB_DATA_FILE"
-	EnvHubDashboardURL   = "VINE_DASHBOARD_URL"
 	EnvHubNoDB           = "VINE_NO_DB"
 	EnvHubDBSQLiteFile   = "VINE_DB_SQLITE_FILE"
 	EnvHubDBPostgresURL  = "VINE_DB_POSTGRES_URL"
@@ -96,7 +94,7 @@ func newHubServeFlags() []ucli.Flag {
 			Name:    FlagHubAdminListen,
 			Sources: ucli.EnvVars(EnvHubAdminListen),
 			Value:   hubflag.HubDefaultAdminListen,
-			Usage:   "hub admin API and Dashboard Web listen address",
+			Usage:   "hub admin API listen address",
 		},
 		&ucli.StringFlag{
 			Name:    FlagHubWatchListen,
@@ -172,11 +170,6 @@ func newHubServeFlags() []ucli.Flag {
 			Sources: ucli.EnvVars(EnvSeedHubVarsFile),
 			Usage:   "hub seed vars YAML file",
 		},
-		&ucli.StringFlag{
-			Name:    FlagHubDashboardURL,
-			Sources: ucli.EnvVars(EnvHubDashboardURL),
-			Usage:   "hub dashboard URL",
-		},
 	}, mtlsFlags()...)
 }
 
@@ -202,7 +195,6 @@ func newHubServeCommand() *ucli.Command {
 				SeedHubDataFile:   cmd.String(FlagSeedHubDataFile),
 				SeedHubSourceFile: cmd.String(FlagSeedHubSourceFile),
 				SeedHubVarsFile:   cmd.String(FlagSeedHubVarsFile),
-				DashboardURLRaw:   cmd.String(FlagHubDashboardURL),
 				NoDB:              cmd.Bool(FlagHubNoDB),
 				DBSQLiteFile:      cmd.String(FlagHubDBSQLiteFile),
 				DBPostgresURL:     cmd.String(FlagHubDBPostgresURL),

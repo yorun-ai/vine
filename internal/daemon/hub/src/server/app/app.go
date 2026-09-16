@@ -17,9 +17,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
-	impl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin/dashboard"
-	debugimpl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin/debug"
+	adminapi "go.yorun.ai/vine/internal/daemon/hub/src/server/mod/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/controlapi"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/initializer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/scheduler"
@@ -33,8 +31,6 @@ import (
 
 type HubApp struct {
 	app.InternalApplication
-	app.ServicerEnabled
-	app.WebberEnabled
 
 	Flag       *flag.Flag              `inject:""`
 	InprocFlag *app.InternalInprocFlag `inject:""`
@@ -62,10 +58,13 @@ func (a *HubApp) DIInit() {
 
 	appInfo := meta.MustNewAppWithRandomId(a.Name(), buildinfo.MustVineVersion())
 	a.InternalAttrs = app.InternalAttributes{
-		Info:              appInfo,
-		Linker:            link.NewInternalLinker(appInfo),
-		BackendIdentity:   identity,
-		DisableConsole:    true,
+		Info:            appInfo,
+		Linker:          link.NewInternalLinker(appInfo),
+		BackendIdentity: identity,
+		DisableConsole:  true,
+		// The Admin API runs on the admin module's own listener, so the
+		// application listener has nothing left to serve.
+		DisableHTTPServer: true,
 		ProtectHTTPServer: true,
 		HTTPServerClients: []mtls.SPIFFEPath{daemon.PortalIdentity.SPIFFEPath()},
 		InprocHostPath:    hubapp.HubAdminInprocHostPath,
@@ -91,6 +90,7 @@ func (a *HubApp) InitModules(addModule app.TypeAdder) {
 	// Keep Control API last so reverse lifecycle shutdown stops accepting Link
 	// and Portal requests before the rest of Hub begins to tear down.
 	addModule(app.T[*controlapi.Server]())
+	addModule(app.T[*adminapi.Server]())
 }
 
 func (a *HubApp) BindCommon(b *di.Binder) {
@@ -104,23 +104,4 @@ func (a *HubApp) BindCommon(b *di.Binder) {
 	b.Bind(di.T[core.SchemaRepo]()).ToInstance(a.schemaRepository())
 	b.Bind(di.T[core.RegistryRepo]()).ToImplementation(di.T[*repo.RegistryRepo]())
 	b.Bind(di.T[core.PortalInstanceRepo]()).ToImplementation(di.T[*repo.PortalInstanceRepo]())
-}
-
-func (*HubApp) ServicerInitHandlers(addHandler app.TypeAdder) {
-	addHandler(app.T[*debugimpl.ServiceDebugApiServiceServerImpl]())
-	addHandler(app.T[*debugimpl.TaskDebugApiServiceServerImpl]())
-	addHandler(app.T[*debugimpl.EventDebugApiServiceServerImpl]())
-	addHandler(app.T[*impl.SkeletonApiServiceServerImpl]())
-	addHandler(app.T[*impl.AppStatusApiServiceServerImpl]())
-	addHandler(app.T[*impl.PortalStatusApiServiceServerImpl]())
-	addHandler(app.T[*impl.AppConfigApiServiceServerImpl]())
-	addHandler(app.T[*impl.PortalCertApiServiceServerImpl]())
-	addHandler(app.T[*impl.PortalEntryApiServiceServerImpl]())
-	addHandler(app.T[*impl.PortalRuleApiServiceServerImpl]())
-	addHandler(app.T[*impl.MaintenanceApiServiceServerImpl]())
-	addHandler(app.T[*impl.PortalSiteApiServiceServerImpl]())
-}
-
-func (*HubApp) WebberInitHandlers(addHandler app.TypeAdder) {
-	addHandler(app.T[*dashboard.WebServerImpl]())
 }

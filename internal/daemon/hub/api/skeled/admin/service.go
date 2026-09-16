@@ -1410,7 +1410,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalRuleApiService",
 		SkelName:          "vine.hub.admin.PortalRuleApiService",
-		Hash:              "04f2e38a",
+		Hash:              "e0235b86",
 		ServerType:        reflect.TypeFor[PortalRuleApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalRuleApiServiceServer](),
 
@@ -1423,8 +1423,6 @@ var (
 			_PortalRuleApiServiceCreateSpec,
 			_PortalRuleApiServiceUpdateSpec,
 			_PortalRuleApiServiceRemoveSpec,
-			_PortalRuleApiServiceGetDashboardAccessSpec,
-			_PortalRuleApiServiceUpdateDashboardAccessSpec,
 		},
 	}
 	_PortalRuleApiServiceListSpec = &rpcspec.MethodSpec{
@@ -1552,59 +1550,6 @@ var (
 			PortalRuleApiServiceServerER.Remove,
 		},
 	}
-	_PortalRuleApiServiceGetDashboardAccessSpec = &rpcspec.MethodSpec{
-		Name:           "GetDashboardAccess",
-		SkelName:       "getDashboardAccess",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[PortalDashboardAccess](),
-		CloneResult: func(value any) any {
-			source := value.(PortalDashboardAccess)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
-		ArgumentsSensitive:          false,
-		ResultSensitive:             false,
-		ArgumentsContainsBinaryType: false,
-		ResultContainsBinaryType:    false,
-		MethodFuncs: []any{
-			PortalRuleApiServiceServer.GetDashboardAccess,
-			PortalRuleApiServiceServerER.GetDashboardAccess,
-		},
-	}
-	_PortalRuleApiServiceUpdateDashboardAccessSpec = &rpcspec.MethodSpec{
-		Name:          "UpdateDashboardAccess",
-		SkelName:      "updateDashboardAccess",
-		ArgumentsType: reflect.TypeFor[_PortalRuleApiServiceUpdateDashboardAccessArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_PortalRuleApiServiceUpdateDashboardAccessArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[[]PortalRule](),
-		CloneResult: func(value any) any {
-			source := value.([]PortalRule)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]PortalRule, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
-		ArgumentsSensitive:          false,
-		ResultSensitive:             false,
-		ArgumentsContainsBinaryType: false,
-		ResultContainsBinaryType:    false,
-		MethodFuncs: []any{
-			PortalRuleApiServiceServer.UpdateDashboardAccess,
-			PortalRuleApiServiceServerER.UpdateDashboardAccess,
-		},
-	}
 )
 
 // PortalRuleApiService / Arguments
@@ -1624,13 +1569,6 @@ type _PortalRuleApiServiceUpdateArguments struct {
 
 type _PortalRuleApiServiceRemoveArguments struct {
 	Id int `json:"id" skel:"index(0)"`
-}
-
-type _PortalRuleApiServiceUpdateDashboardAccessArguments struct {
-	Scheme     string `json:"scheme" skel:"index(0)"`
-	Host       string `json:"host" skel:"index(1)"`
-	Port       int    `json:"port" skel:"index(2)"`
-	PathPrefix string `json:"pathPrefix" skel:"index(3)"`
 }
 
 // PortalRuleApiService / Server
@@ -1655,16 +1593,6 @@ type PortalRuleApiServiceServer interface {
 	// Remove Delete Portal entry rules.
 	//   @param id - Rule ID
 	Remove(id int)
-	// GetDashboardAccess Get the Hub Dashboard access entry.
-	//   @returns PortalDashboardAccess - Hub Dashboard access entry
-	GetDashboardAccess() PortalDashboardAccess
-	// UpdateDashboardAccess Modify Hub Dashboard access entry.
-	//   @param scheme - Hub Dashboard entry protocol
-	//   @param host - Hub Dashboard entry host
-	//   @param port - Hub Dashboard entry port
-	//   @param pathPrefix - Hub Dashboard entry path prefix
-	//   @returns []PortalRule - Hub Dashboard entry rules
-	UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string) []PortalRule
 
 	mustBePortalRuleApiServiceServer()
 }
@@ -1697,16 +1625,6 @@ func (*DefaultPortalRuleApiServiceServer) Remove(int) {
 	ex.PanicNew(ex.InvalidRequest, "method remove is not implemented")
 }
 
-func (*DefaultPortalRuleApiServiceServer) GetDashboardAccess() PortalDashboardAccess {
-	ex.PanicNew(ex.InvalidRequest, "method getDashboardAccess is not implemented")
-	return PortalDashboardAccess{}
-}
-
-func (*DefaultPortalRuleApiServiceServer) UpdateDashboardAccess(string, string, int, string) []PortalRule {
-	ex.PanicNew(ex.InvalidRequest, "method updateDashboardAccess is not implemented")
-	return []PortalRule{}
-}
-
 func (*DefaultPortalRuleApiServiceServer) mustBePortalRuleApiServiceServer() {}
 
 // PortalRuleApiService / ERServer
@@ -1717,8 +1635,6 @@ type PortalRuleApiServiceServerER interface {
 	Create(creation PortalRuleCreation) (PortalRule, ex.Error)
 	Update(id int, update PortalRuleUpdate) (PortalRule, ex.Error)
 	Remove(id int) ex.Error
-	GetDashboardAccess() (PortalDashboardAccess, ex.Error)
-	UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string) ([]PortalRule, ex.Error)
 
 	mustBePortalRuleApiServiceServerER()
 }
@@ -1770,18 +1686,6 @@ func (service *_WrapperPortalRuleApiServiceServerER) Update(id int, update Porta
 func (service *_WrapperPortalRuleApiServiceServerER) Remove(id int) (err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	service.server().Remove(id)
-	return
-}
-
-func (service *_WrapperPortalRuleApiServiceServerER) GetDashboardAccess() (ret PortalDashboardAccess, err ex.Error) {
-	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().GetDashboardAccess()
-	return
-}
-
-func (service *_WrapperPortalRuleApiServiceServerER) UpdateDashboardAccess(scheme string, host string, port int, pathPrefix string) (ret []PortalRule, err ex.Error) {
-	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().UpdateDashboardAccess(scheme, host, port, pathPrefix)
 	return
 }
 

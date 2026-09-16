@@ -56,22 +56,6 @@ func TestPortalRuleRepoSaveUpdate(t *testing.T) {
 	assert.Equal(t, "console@demo.app", got.RouteSiteName)
 }
 
-func TestPortalRuleRepoSaveBuiltIn(t *testing.T) {
-	db, repo, _ := newTestPortalRuleRepo(t)
-
-	rule := testPortalRule(t, repo, "admin")
-	rule.BuiltIn = true
-	repo.Save(rule)
-
-	var row model.PortalRule
-	require.NoError(t, db.First(&row, "id = ?", rule.Id).Error)
-	assert.True(t, row.BuiltIn)
-
-	got, ok := repo.GetById(rule.Id)
-	require.True(t, ok)
-	assert.True(t, got.BuiltIn)
-}
-
 func TestPortalRuleRepoSaveKeepsDeprecatedAccessColumns(t *testing.T) {
 	db, repo, _ := newTestPortalRuleRepo(t)
 

@@ -33,9 +33,9 @@ func TestTemporaryWebCertificatesNormalizeServerName(t *testing.T) {
 	store, err := newTemporaryWebCertificates()
 	require.NoError(t, err)
 
-	first, err := store.Certificate("DASHBOARD.LOCAL.")
+	first, err := store.Certificate("portal.example.com.")
 	require.NoError(t, err)
-	second, err := store.Certificate("dashboard.local")
+	second, err := store.Certificate("portal.example.com")
 	require.NoError(t, err)
 
 	assert.Same(t, first, second)

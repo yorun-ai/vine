@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/core/ex"
 )
 
 func TestResolvePortalRulePaths(t *testing.T) {
@@ -40,230 +39,6 @@ func TestResolvePortalRulePaths(t *testing.T) {
 	match, route := ResolvePortalRulePaths(&redirect, &PortalSite{WebMountPath: "/app"})
 	assert.Equal(t, "/configured", match)
 	assert.Equal(t, "/backend", route)
-}
-
-func TestPortalRuleCoreUpdateBuiltInRule(t *testing.T) {
-	repo := &entryRuleRepoSpy{
-		rules: map[int]*PortalRule{
-			1: {Id: 1, Name: "vine.hub.dashboard-web", BuiltIn: true},
-		},
-	}
-	core := newPortalRuleCoreForTest(repo, nil)
-
-	panicValue := capturePanic(func() {
-		core.Update(1, PortalRuleUpdate{})
-	})
-
-	err, ok := panicValue.(ex.Error)
-	require.True(t, ok)
-	assert.Equal(t, ex.OperationFailed, err.Code())
-	assert.Equal(t, []string{"GetById"}, repo.calls)
-}
-
-func TestPortalRuleCoreRemoveBuiltInRule(t *testing.T) {
-	repo := &entryRuleRepoSpy{
-		rules: map[int]*PortalRule{
-			1: {Id: 1, Name: "vine.hub.dashboard-web", BuiltIn: true},
-		},
-	}
-	core := newPortalRuleCoreForTest(repo, nil)
-
-	panicValue := capturePanic(func() {
-		core.Remove(1)
-	})
-
-	err, ok := panicValue.(ex.Error)
-	require.True(t, ok)
-	assert.Equal(t, ex.OperationFailed, err.Code())
-	assert.Equal(t, []string{"GetById"}, repo.calls)
-}
-
-func TestPortalRuleCoreUpdateDashboardAccess(t *testing.T) {
-	repo := &entryRuleRepoSpy{
-		rules: map[int]*PortalRule{
-			1: {Id: 1, Name: DashboardAdminApiRuleName, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "dashboard", MatchPort: 7099, MatchPathPrefix: "/api", BuiltIn: true},
-			2: {Id: 2, Name: DashboardWebRuleName, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "dashboard", MatchPort: 7099, MatchPathPrefix: "/", BuiltIn: true},
-		},
-	}
-	certRepo := newTestPortalCertRepo()
-	certRepo.Save(&PortalCert{
-		Name:             "hub-cert",
-		Domains:          []string{"hub.example.com"},
-		PrivateKeyBase64: "pri",
-	})
-	core := newPortalRuleCoreForTest(repo, certRepo)
-
-	rules := core.UpdateDashboardAccess("https", "hub.example.com", 8443, "/hub")
-
-	require.Len(t, rules, 2)
-	assert.Equal(t, "https", rules[0].MatchScheme)
-	assert.Equal(t, "https", rules[1].MatchScheme)
-	assert.Equal(t, "hub.example.com", rules[0].MatchHost)
-	assert.Equal(t, "hub.example.com", rules[1].MatchHost)
-	assert.Equal(t, 8443, rules[0].MatchPort)
-	assert.Equal(t, 8443, rules[1].MatchPort)
-	assert.Equal(t, "/api", rules[0].MatchPathPrefix)
-	assert.Equal(t, "/hub", rules[1].MatchPathPrefix)
-	assert.Equal(t, "https", repo.rules[1].MatchScheme)
-	assert.Equal(t, "https", repo.rules[2].MatchScheme)
-	assert.Equal(t, "hub.example.com", repo.rules[1].MatchHost)
-	assert.Equal(t, "hub.example.com", repo.rules[2].MatchHost)
-	assert.Equal(t, 8443, repo.rules[1].MatchPort)
-	assert.Equal(t, 8443, repo.rules[2].MatchPort)
-	assert.Equal(t, "/api", repo.rules[1].MatchPathPrefix)
-	assert.Equal(t, "/hub", repo.rules[2].MatchPathPrefix)
-	assert.Equal(t, []string{
-		"GetByName:" + DashboardAdminApiRuleName,
-		"GetByName:" + DashboardWebRuleName,
-		"List",
-		"Save",
-		"Save",
-	}, repo.calls)
-}
-
-func TestPortalRuleCoreDashboardAccess(t *testing.T) {
-	repo := &entryRuleRepoSpy{
-		rules: map[int]*PortalRule{
-			1: {Id: 1, Name: DashboardAdminApiRuleName, EntryId: 4, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "dashboard", MatchScheme: "https", MatchHost: "hub.example.com", MatchPort: 8443, MatchPathPrefix: "/api", BuiltIn: true},
-			2: {Id: 2, Name: DashboardWebRuleName, EntryId: 4, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "dashboard", MatchScheme: "https", MatchHost: "hub.example.com", MatchPort: 8443, MatchPathPrefix: "/hub", BuiltIn: true},
-		},
-	}
-	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 4, Scheme: "https", Host: "hub.example.com", Port: 8443, BuiltIn: true})
-	core := newPortalRuleCoreWithEntriesForTest(repo, nil, entryRepo)
-
-	access := core.DashboardAccess()
-
-	assert.Equal(t, "https", access.Scheme)
-	assert.Equal(t, "hub.example.com", access.Host)
-	assert.Equal(t, 8443, access.Port)
-	assert.Equal(t, "/hub", access.PathPrefix)
-	assert.Equal(t, []string{
-		"GetByName:" + DashboardAdminApiRuleName,
-		"GetByName:" + DashboardWebRuleName,
-	}, repo.calls)
-	assert.Equal(t, []string{"GetById:4"}, entryRepo.calls)
-}
-
-func TestPortalRuleCoreListSkipsBuiltInRules(t *testing.T) {
-	repo := &entryRuleRepoSpy{
-		rules: map[int]*PortalRule{
-			1: {Id: 1, Name: DashboardAdminApiRuleName, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "dashboard", BuiltIn: true},
-			2: {Id: 2, Name: DashboardWebRuleName, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "dashboard", BuiltIn: true},
-			3: {Id: 3, Name: DashboardWebRuleName},
-			4: {Id: 4, Name: "demo", BuiltIn: true},
-		},
-	}
-	core := newPortalRuleCoreForTest(repo, newTestPortalCertRepo())
-
-	rules := core.List()
-
-	require.Len(t, rules, 1)
-	assert.Equal(t, 3, rules[0].Id)
-}
-
-func TestPortalRuleCoreUpdateDashboardAccessRejectsNormalRule(t *testing.T) {
-	repo := &entryRuleRepoSpy{
-		rules: map[int]*PortalRule{
-			1: {Id: 1, Name: DashboardAdminApiRuleName, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "dashboard", MatchPort: 7099, BuiltIn: true},
-			2: {Id: 2, Name: DashboardWebRuleName, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "dashboard", MatchPort: 7099},
-		},
-	}
-	core := newPortalRuleCoreForTest(repo, nil)
-
-	panicValue := capturePanic(func() {
-		core.UpdateDashboardAccess("http", "", 8080, "/")
-	})
-
-	err, ok := panicValue.(ex.Error)
-	require.True(t, ok)
-	assert.Equal(t, ex.OperationFailed, err.Code())
-	assert.Equal(t, 7099, repo.rules[1].MatchPort)
-	assert.Equal(t, 7099, repo.rules[2].MatchPort)
-	assert.Equal(t, []string{
-		"GetByName:" + DashboardAdminApiRuleName,
-		"GetByName:" + DashboardWebRuleName,
-	}, repo.calls)
-}
-
-func TestPortalRuleCoreUpdateDashboardAccessRejectsInvalidPort(t *testing.T) {
-	core := newPortalRuleCoreForTest(&entryRuleRepoSpy{}, newTestPortalCertRepo())
-
-	panicValue := capturePanic(func() {
-		core.UpdateDashboardAccess("http", "", -1, "/")
-	})
-
-	err, ok := panicValue.(ex.Error)
-	require.True(t, ok)
-	assert.Equal(t, ex.OperationFailed, err.Code())
-}
-
-func TestPortalRuleCoreUpdateDashboardAccessNormalizesInput(t *testing.T) {
-	repo := &entryRuleRepoSpy{
-		rules: map[int]*PortalRule{
-			1: {Id: 1, Name: DashboardAdminApiRuleName, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "dashboard", MatchPathPrefix: "/api", BuiltIn: true},
-			2: {Id: 2, Name: DashboardWebRuleName, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "dashboard", MatchPathPrefix: "/", BuiltIn: true},
-		},
-	}
-	core := newPortalRuleCoreForTest(repo, newTestPortalCertRepo())
-
-	rules := core.UpdateDashboardAccess(" HTTP ", " hub.example.com ", 8080, "hub")
-
-	require.Len(t, rules, 2)
-	assert.Equal(t, "http", rules[0].MatchScheme)
-	assert.Equal(t, "http", rules[1].MatchScheme)
-	assert.Equal(t, "hub.example.com", rules[0].MatchHost)
-	assert.Equal(t, "hub.example.com", rules[1].MatchHost)
-	assert.Equal(t, "/api", rules[0].MatchPathPrefix)
-	assert.Equal(t, "/hub", rules[1].MatchPathPrefix)
-}
-
-func TestPortalRuleCoreUpdateDashboardAccessRejectsInvalidScheme(t *testing.T) {
-	core := newPortalRuleCoreForTest(&entryRuleRepoSpy{}, newTestPortalCertRepo())
-
-	panicValue := capturePanic(func() {
-		core.UpdateDashboardAccess("ftp", "", 8080, "/")
-	})
-
-	err, ok := panicValue.(ex.Error)
-	require.True(t, ok)
-	assert.Equal(t, ex.OperationFailed, err.Code())
-}
-
-func TestPortalRuleCoreUpdateDashboardAccessRejectsHttpsWithoutHost(t *testing.T) {
-	core := newPortalRuleCoreForTest(&entryRuleRepoSpy{}, newTestPortalCertRepo())
-
-	panicValue := capturePanic(func() {
-		core.UpdateDashboardAccess("https", "", 8443, "/")
-	})
-
-	err, ok := panicValue.(ex.Error)
-	require.True(t, ok)
-	assert.Equal(t, ex.OperationFailed, err.Code())
-}
-
-func TestPortalRuleCoreUpdateDashboardAccessRejectsHttpsWithoutCertificate(t *testing.T) {
-	certRepo := newTestPortalCertRepo()
-	certRepo.Save(&PortalCert{
-		Name:             "other-cert",
-		Domains:          []string{"other.example.com"},
-		PrivateKeyBase64: "pri",
-	})
-	core := newPortalRuleCoreForTest(&entryRuleRepoSpy{}, certRepo)
-
-	panicValue := capturePanic(func() {
-		core.UpdateDashboardAccess("https", "hub.example.com", 8443, "/")
-	})
-
-	err, ok := panicValue.(ex.Error)
-	require.True(t, ok)
-	assert.Equal(t, ex.OperationFailed, err.Code())
-}
-
-func TestPortalCertDomainMatchesHost(t *testing.T) {
-	assert.True(t, portalCertDomainMatchesHost("hub.example.com", "hub.example.com"))
-	assert.True(t, portalCertDomainMatchesHost("*.example.com", "hub.example.com"))
-	assert.False(t, portalCertDomainMatchesHost("*.example.com", "deep.hub.example.com"))
-	assert.False(t, portalCertDomainMatchesHost("*.example.com", "example.com"))
 }
 
 func TestNormalizePortalRuleRoutePathPrefix(t *testing.T) {
@@ -376,41 +151,6 @@ func TestPortalRuleValidationAcrossCreateUpdateSave(t *testing.T) {
 	}
 }
 
-func TestPortalRuleCoreEnsureDashboardRuleUsesBuiltInEntry(t *testing.T) {
-	// Hub's own rules name the built-in entry, which owns the access the
-	// Dashboard URL configures.
-	entryRepo := newPortalEntryRepoSpy(&PortalEntry{
-		Id: 7, Name: PortalEntryBuiltInName, Scheme: "https", Host: "hub.example.com", Port: 8443, BuiltIn: true,
-	})
-	repo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		1: {Id: 1, Name: DashboardWebRuleName, EntryId: 7, MatchScheme: "https", MatchHost: "hub.example.com", MatchPort: 8443, MatchPathPrefix: "/custom", RouteType: PortalRuleRouteTypeSite, BuiltIn: true},
-	}}
-	core := newPortalRuleCoreWithEntriesForTest(repo, nil, entryRepo)
-
-	core.EnsureDashboardRule(PortalRule{
-		Name: DashboardWebRuleName, EntryName: PortalEntryBuiltInName, MatchPathPrefix: "/",
-		RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site",
-	}, false)
-
-	// The rule keeps the configured path prefix and takes the entry's access, and
-	// Hub always publishes the rules it provisions for its own Dashboard.
-	assert.True(t, repo.rules[1].Enabled)
-	assert.Equal(t, 7, repo.rules[1].EntryId)
-	assert.Equal(t, "/custom", repo.rules[1].MatchPathPrefix)
-	assert.Equal(t, "https", repo.rules[1].MatchScheme)
-	assert.Equal(t, 8443, repo.rules[1].MatchPort)
-	assert.Empty(t, repo.rules[1].EntryName)
-
-	require.PanicsWithError(t,
-		`dashboard rule "vine.hub.admin-api" must name the built-in portal entry type=APPLICATION code=OPERATION_FAILED`,
-		func() {
-			core.EnsureDashboardRule(PortalRule{
-				Name: DashboardAdminApiRuleName, MatchPathPrefix: "/api",
-				RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site",
-			}, true)
-		})
-}
-
 func TestPortalRuleCoreSaveJoinsNamedEntry(t *testing.T) {
 	// A seed may name the entry a rule joins instead of declaring an access.
 	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 4, Name: "web", Scheme: "https", Host: "app.example.com", Port: 8443})
@@ -471,10 +211,6 @@ func TestPortalRuleSaveIdentityAndPartialUpdate(t *testing.T) {
 	// A route transition must clear old fields and provide the new required fields.
 	updated = service.Update(17, PortalRuleUpdate{RouteType: new(PortalRuleRouteTypePermanentRedirect), RouteSiteName: new(""), RoutePathPrefix: new(""), RouteRedirectionPattern: new("https://example.com{uri}")})
 	require.Equal(t, PortalRuleRouteTypePermanentRedirect, updated.RouteType)
-	repo.rules[17].BuiltIn = true
-	repo.calls = nil
-	require.Panics(t, func() { service.Save(next) })
-	require.NotContains(t, repo.calls, "Save")
 }
 
 func TestPortalRuleValidHostsAndDefaultPort(t *testing.T) {
@@ -494,10 +230,6 @@ func TestPortalRuleCoreValidateKeepsRuleRepoUntouched(t *testing.T) {
 	normalized := service.Validate(rule)
 	require.Equal(t, "/internal", normalized.RoutePathPrefix)
 	require.Equal(t, "/internal/", rule.RoutePathPrefix)
-	for _, name := range []string{DashboardAdminApiRuleName, DashboardWebRuleName} {
-		rule.Name = name
-		require.Panics(t, func() { service.Validate(rule) })
-	}
 	require.Empty(t, repo.calls)
 }
 
@@ -506,13 +238,13 @@ func TestPortalRuleCoreRejectsRuleMatchingSameRequest(t *testing.T) {
 	// Hub rejects the second one even when it belongs to another entry.
 	repo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
 		1: {
-			Id: 1, Name: DashboardWebRuleName, EntryId: 9, MatchScheme: "http", MatchPort: 7099,
-			MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, BuiltIn: true,
+			Id: 1, Name: "vine", EntryId: 9, MatchScheme: "http", MatchPort: 7099,
+			MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite,
 		},
 	}}
 	entryRepo := newPortalEntryRepoSpy(
 		&PortalEntry{Id: 5, Scheme: "http", Port: 7099},
-		&PortalEntry{Id: 9, Scheme: "http", Port: 7099, BuiltIn: true},
+		&PortalEntry{Id: 9, Scheme: "http", Port: 7099},
 	)
 	core := newPortalRuleCoreWithEntriesForTest(repo, nil, entryRepo)
 
@@ -521,7 +253,7 @@ func TestPortalRuleCoreRejectsRuleMatchingSameRequest(t *testing.T) {
 		RouteType: PortalRuleRouteTypeSite, RouteSiteName: "demo-site",
 	}
 	require.PanicsWithError(t,
-		`portal rule "vine.hub.dashboard-web" already matches http://*:7099/ type=APPLICATION code=OPERATION_FAILED`,
+		`portal rule "vine" already matches http://*:7099/ type=APPLICATION code=OPERATION_FAILED`,
 		func() { core.Create(creation) })
 	require.NotContains(t, repo.calls, "Save")
 

@@ -24,7 +24,6 @@ type PortalSite struct {
 	CorsMode      string `gorm:"column:cors_mode"`
 	CorsOrigins   string `gorm:"column:cors_origins"`
 	WebName       string `gorm:"column:web_name"`
-	BuiltIn       bool   `gorm:"column:built_in;not null;default:false"`
 	Enabled       bool   `gorm:"column:enabled;not null"`
 }
 
@@ -73,7 +72,6 @@ func (d *PortalSiteDao) Save(entry *PortalSite) *PortalSite {
 		"cors_mode":       entry.CorsMode,
 		"cors_origins":    entry.CorsOrigins,
 		"web_name":        entry.WebName,
-		"built_in":        entry.BuiltIn,
 		"enabled":         entry.Enabled,
 	})
 	return row
