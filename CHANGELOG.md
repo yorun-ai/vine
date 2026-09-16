@@ -19,8 +19,7 @@ are not part of the public compatibility commitment.
   `name`, `scheme`, `host`, and `port`. Hub applies entries before rules, so a
   rule joins the entry that serves its access and keeps the name the seed gave
   it, and an entry may route no rule yet. Hub derives the name
-  `scheme[:host]:port` only for the entry it creates on its own, and the built-in
-  Dashboard entry keeps the reserved name `vine.hub.dashboard`.
+  `scheme[:host]:port` only for the entry it creates on its own.
 - A Portal rule joins an entry either by naming it with `entryName` or by
   declaring `matchScheme`, `matchHost`, and `matchPort`. One seed document uses
   one of the two styles for every rule it declares, and a rule never mixes them,
@@ -38,8 +37,6 @@ are not part of the public compatibility commitment.
   names the entry instead of repeating its protocol, host, and port. Portal site,
   rule, and certificate details render their values as text instead of
   input-like boxes, so a read-only field no longer looks editable.
-
-### Added
 
 - Portal sites, entries, rules, and certificates carry an `enabled` switch that
   the Dashboard edits and a seed declares as `disabled`, so a seed names only
@@ -109,10 +106,16 @@ are not part of the public compatibility commitment.
   Dashboard assets with this release: `PortalRuleCreation` and
   `PortalRuleUpdate` changed.
 
-- Hub's own Dashboard rules name the built-in entry `vine.hub.dashboard` instead
-  of carrying an access, so the Dashboard URL configures that entry. Hub keeps
-  the access it already serves unless an explicit `--dashboard-url` or the
-  legacy-default migration refreshes it.
+### Removed
+
+- The `vine dev` command is gone. It bundled Hub, Portal, and Link into the CLI
+  process for local application development, but it reached Hub over in-process
+  transports and therefore served no Admin API and no front-end asset, and its
+  default `--no-db` configuration was read-only: changing a value meant editing
+  the seed and restarting a runtime the application does not share. Use
+  `app/standalone` to run an application with an in-process Hub, Portal, and
+  Link, or run `vine hub serve`, `vine portal serve`, and `vine link serve` and
+  connect an application with `app.New` for a real App-to-Link boundary.
 
 ## [0.19.0] - 2026-09-16
 

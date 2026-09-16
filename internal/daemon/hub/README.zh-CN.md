@@ -9,9 +9,8 @@
 应用配置、Portal entry、站点、规则和证书。请编辑 seed 文件后重启 Hub。
 Dashboard 展示只读提示并禁用编辑入口；注册、schema 和租约仍可写。
 显式指定 `--db-sqlite-file` 或 `--db-postgres-url` 则保留可写持久化行为，
-它们与 `--no-db` 互斥。standalone 和 `vine dev` 也遵循这些规则。
-standalone 也可通过 `Option.SeedHubData` 传入内联 YAML，与 seed 文件互斥，
-使用相同的导入和只读机制。
+它们与 `--no-db` 互斥。standalone 也遵循这些规则，它还可通过
+`Option.SeedHubData` 传入内联 YAML，与 seed 文件互斥，使用相同的导入和只读机制。
 
 ## 目录结构
 
