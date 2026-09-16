@@ -18,7 +18,7 @@ func TestNormalizeRejectsPartialMTLSFiles(t *testing.T) {
 func TestFlagNormalizeRequiresSeedWithoutDatabase(t *testing.T) {
 	flags := &Flag{}
 
-	require.PanicsWithError(t, "no-db requires seed-hub-data-file or SeedHubData", func() {
+	require.PanicsWithError(t, "no-db requires seed-data-file or SeedHubData", func() {
 		flags.Normalize(false)
 	})
 }

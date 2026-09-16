@@ -207,11 +207,9 @@ func ToWatchedPortalRule(rule *core.PortalRule) *watched.PortalRule {
 		MatchScheme:             rule.MatchScheme,
 		MatchHost:               rule.MatchHost,
 		MatchPort:               rule.MatchPort,
-		MatchPathPrefix:         rule.MatchPathPrefix,
 		RouteType:               rule.RouteType,
 		RouteSiteName:           rule.RouteSiteName,
 		RouteRedirectionPattern: rule.RouteRedirectionPattern,
-		RoutePathPrefix:         rule.RoutePathPrefix,
 		ResolvedMatchPathPrefix: rule.MatchPathPrefix,
 		ResolvedRoutePathPrefix: rule.RoutePathPrefix,
 	}

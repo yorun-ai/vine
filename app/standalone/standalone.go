@@ -125,11 +125,11 @@ func (a *_App) StartAndWait() {
 const (
 	flagSQLiteFile      = vinecli.FlagHubDBSQLiteFile
 	flagPostgresURL     = vinecli.FlagHubDBPostgresURL
-	flagSeedHubDataFile = vinecli.FlagSeedHubDataFile
+	flagSeedHubDataFile = vinecli.FlagSeedDataFile
 
 	envSQLiteFile      = vinecli.EnvHubDBSQLiteFile
 	envPostgresURL     = vinecli.EnvHubDBPostgresURL
-	envSeedHubDataFile = vinecli.EnvSeedHubDataFile
+	envSeedHubDataFile = vinecli.EnvSeedDataFile
 )
 
 func (a *_App) initInfra() {
@@ -138,7 +138,7 @@ func (a *_App) initInfra() {
 		&ucli.BoolFlag{
 			Name:        vinecli.FlagHubNoDB,
 			Sources:     ucli.EnvVars(vinecli.EnvHubNoDB),
-			Usage:       "use no persistent database (default); requires seed-hub-data-file or Option.SeedHubData; configuration is read-only",
+			Usage:       "use no persistent database (default); requires seed-data-file or Option.SeedHubData; configuration is read-only",
 			Destination: &flag.NoDB,
 		},
 		&ucli.StringFlag{
@@ -160,14 +160,14 @@ func (a *_App) initInfra() {
 			Destination: &flag.SeedHubDataFile,
 		},
 		&ucli.StringFlag{
-			Name:        vinecli.FlagSeedHubSourceFile,
-			Sources:     ucli.EnvVars(vinecli.EnvSeedHubSourceFile),
+			Name:        vinecli.FlagSeedSourceFile,
+			Sources:     ucli.EnvVars(vinecli.EnvSeedSourceFile),
 			Usage:       "seed source YAML file",
 			Destination: &flag.SeedHubSourceFile,
 		},
 		&ucli.StringFlag{
-			Name:        vinecli.FlagSeedHubVarsFile,
-			Sources:     ucli.EnvVars(vinecli.EnvSeedHubVarsFile),
+			Name:        vinecli.FlagSeedVarsFile,
+			Sources:     ucli.EnvVars(vinecli.EnvSeedVarsFile),
 			Usage:       "seed vars YAML file",
 			Destination: &flag.SeedHubVarsFile,
 		},

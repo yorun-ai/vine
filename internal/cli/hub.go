@@ -6,7 +6,6 @@ import (
 
 	ucli "github.com/urfave/cli/v3"
 	"go.yorun.ai/vine/internal/app"
-	"go.yorun.ai/vine/internal/core/logger"
 	hublock "go.yorun.ai/vine/internal/daemon/hub/api/lock"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/src/server/app"
 	hubflag "go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
@@ -19,48 +18,36 @@ const (
 	FlagHubControlListen = "control-listen"
 	FlagHubAdminListen   = "admin-listen"
 	FlagHubWatchListen   = "watch-listen"
-	// Deprecated: use FlagHubWatchListen.
-	FlagHubRedisListen = "redis-listen"
 
 	FlagHubMQMode         = "mq-mode"
 	FlagHubMQNatsEndpoint = "mq-nats-endpoint"
-	// Deprecated: use FlagHubMQMode.
-	FlagHubMQEmbeddedNats = "mq-embedded-nats"
-	// Deprecated: use FlagHubMQNatsEndpoint.
-	FlagHubMQExternalNatsURL = "mq-external-nats-url"
 
 	FlagHubLockMode          = "lock-mode"
 	FlagHubLockRedisEndpoint = "lock-redis-endpoint"
 
-	FlagSeedHubSourceFile = "seed-hub-source-file"
-	FlagSeedHubVarsFile   = "seed-hub-vars-file"
-	FlagSeedHubDataFile   = "seed-hub-data-file"
-	FlagHubNoDB           = "no-db"
-	FlagHubDBSQLiteFile   = "db-sqlite-file"
-	FlagHubDBPostgresURL  = "db-postgres-url"
+	FlagSeedSourceFile   = "seed-source-file"
+	FlagSeedVarsFile     = "seed-vars-file"
+	FlagSeedDataFile     = "seed-data-file"
+	FlagHubNoDB          = "no-db"
+	FlagHubDBSQLiteFile  = "db-sqlite-file"
+	FlagHubDBPostgresURL = "db-postgres-url"
 
 	EnvHubControlListen = "VINE_CONTROL_LISTEN"
 	EnvHubAdminListen   = "VINE_ADMIN_LISTEN"
 	EnvHubWatchListen   = "VINE_WATCH_LISTEN"
-	// Deprecated: use EnvHubWatchListen.
-	EnvHubRedisListen = "VINE_REDIS_LISTEN"
 
 	EnvHubMQMode         = "VINE_MQ_MODE"
 	EnvHubMQNatsEndpoint = "VINE_MQ_NATS_ENDPOINT"
-	// Deprecated: use EnvHubMQMode.
-	EnvHubMQEmbeddedNats = "VINE_MQ_EMBEDDED_NATS"
-	// Deprecated: use EnvHubMQNatsEndpoint.
-	EnvHubMQExternalNatsURL = "VINE_MQ_EXTERNAL_NATS_URL"
 
 	EnvHubLockMode          = "VINE_LOCK_MODE"
 	EnvHubLockRedisEndpoint = "VINE_LOCK_REDIS_ENDPOINT"
 
-	EnvSeedHubSourceFile = "VINE_SEED_HUB_SOURCE_FILE"
-	EnvSeedHubVarsFile   = "VINE_SEED_HUB_VARS_FILE"
-	EnvSeedHubDataFile   = "VINE_SEED_HUB_DATA_FILE"
-	EnvHubNoDB           = "VINE_NO_DB"
-	EnvHubDBSQLiteFile   = "VINE_DB_SQLITE_FILE"
-	EnvHubDBPostgresURL  = "VINE_DB_POSTGRES_URL"
+	EnvSeedSourceFile   = "VINE_SEED_SOURCE_FILE"
+	EnvSeedVarsFile     = "VINE_SEED_VARS_FILE"
+	EnvSeedDataFile     = "VINE_SEED_DATA_FILE"
+	EnvHubNoDB          = "VINE_NO_DB"
+	EnvHubDBSQLiteFile  = "VINE_DB_SQLITE_FILE"
+	EnvHubDBPostgresURL = "VINE_DB_POSTGRES_URL"
 )
 
 // startHubApp is overridden in tests to assert parsed flags without starting the real app.
@@ -102,15 +89,10 @@ func newHubServeFlags() []ucli.Flag {
 			Value:   hubflag.HubDefaultWatchListen,
 			Usage:   "hub configuration and service discovery watch listen address",
 		},
-		&ucli.StringFlag{
-			Name:    FlagHubRedisListen,
-			Sources: ucli.EnvVars(EnvHubRedisListen),
-			Usage:   "deprecated: use --watch-listen or VINE_WATCH_LISTEN",
-		},
 		&ucli.BoolFlag{
 			Name:    FlagHubNoDB,
 			Sources: ucli.EnvVars(EnvHubNoDB),
-			Usage:   "use no persistent database (default); requires seed-hub-data-file; configuration is read-only",
+			Usage:   "use no persistent database (default); requires seed-data-file; configuration is read-only",
 		},
 		&ucli.StringFlag{
 			Name:    FlagHubDBSQLiteFile,
@@ -133,16 +115,6 @@ func newHubServeFlags() []ucli.Flag {
 			Sources: ucli.EnvVars(EnvHubMQNatsEndpoint),
 			Usage:   "external NATS URL, e.g. nats://127.0.0.1:4222",
 		},
-		&ucli.BoolFlag{
-			Name:    FlagHubMQEmbeddedNats,
-			Sources: ucli.EnvVars(EnvHubMQEmbeddedNats),
-			Usage:   "deprecated: use --mq-mode or VINE_MQ_MODE",
-		},
-		&ucli.StringFlag{
-			Name:    FlagHubMQExternalNatsURL,
-			Sources: ucli.EnvVars(EnvHubMQExternalNatsURL),
-			Usage:   "deprecated: use --mq-nats-endpoint or VINE_MQ_NATS_ENDPOINT",
-		},
 		&ucli.StringFlag{
 			Name:    FlagHubLockMode,
 			Sources: ucli.EnvVars(EnvHubLockMode),
@@ -156,18 +128,18 @@ func newHubServeFlags() []ucli.Flag {
 		},
 
 		&ucli.StringFlag{
-			Name:    FlagSeedHubDataFile,
-			Sources: ucli.EnvVars(EnvSeedHubDataFile),
+			Name:    FlagSeedDataFile,
+			Sources: ucli.EnvVars(EnvSeedDataFile),
 			Usage:   "hub seed YAML file",
 		},
 		&ucli.StringFlag{
-			Name:    FlagSeedHubSourceFile,
-			Sources: ucli.EnvVars(EnvSeedHubSourceFile),
+			Name:    FlagSeedSourceFile,
+			Sources: ucli.EnvVars(EnvSeedSourceFile),
 			Usage:   "hub seed source YAML file",
 		},
 		&ucli.StringFlag{
-			Name:    FlagSeedHubVarsFile,
-			Sources: ucli.EnvVars(EnvSeedHubVarsFile),
+			Name:    FlagSeedVarsFile,
+			Sources: ucli.EnvVars(EnvSeedVarsFile),
 			Usage:   "hub seed vars YAML file",
 		},
 	}, mtlsFlags()...)
@@ -183,18 +155,17 @@ func newHubServeCommand() *ucli.Command {
 				return fmt.Errorf("unexpected args for %s", commandHubServe)
 			}
 
-			mqMode, mqEndpoint := hubMQConfig(cmd)
 			flags := hubflag.Flag{
 				ControlListen:     cmd.String(FlagHubControlListen),
 				AdminListen:       cmd.String(FlagHubAdminListen),
-				WatchListen:       hubWatchListen(cmd),
-				MQMode:            mqMode,
-				MQNatsEndpoint:    mqEndpoint,
+				WatchListen:       cmd.String(FlagHubWatchListen),
+				MQMode:            cmd.String(FlagHubMQMode),
+				MQNatsEndpoint:    cmd.String(FlagHubMQNatsEndpoint),
 				LockMode:          cmd.String(FlagHubLockMode),
 				LockRedisEndpoint: cmd.String(FlagHubLockRedisEndpoint),
-				SeedHubDataFile:   cmd.String(FlagSeedHubDataFile),
-				SeedHubSourceFile: cmd.String(FlagSeedHubSourceFile),
-				SeedHubVarsFile:   cmd.String(FlagSeedHubVarsFile),
+				SeedHubDataFile:   cmd.String(FlagSeedDataFile),
+				SeedHubSourceFile: cmd.String(FlagSeedSourceFile),
+				SeedHubVarsFile:   cmd.String(FlagSeedVarsFile),
 				NoDB:              cmd.Bool(FlagHubNoDB),
 				DBSQLiteFile:      cmd.String(FlagHubDBSQLiteFile),
 				DBPostgresURL:     cmd.String(FlagHubDBPostgresURL),
@@ -204,42 +175,4 @@ func newHubServeCommand() *ucli.Command {
 			return nil
 		},
 	}
-}
-
-// hubWatchListen normalizes compatibility inputs before constructing Hub flags.
-func hubWatchListen(cmd *ucli.Command) string {
-	if cmd.IsSet(FlagHubRedisListen) {
-		logger.Warn("--redis-listen / VINE_REDIS_LISTEN is deprecated; use --watch-listen / VINE_WATCH_LISTEN")
-		if !cmd.IsSet(FlagHubWatchListen) {
-			return cmd.String(FlagHubRedisListen)
-		}
-	}
-	return cmd.String(FlagHubWatchListen)
-}
-
-// hubMQConfig translates only published compatibility inputs at the CLI boundary.
-func hubMQConfig(cmd *ucli.Command) (string, string) {
-	endpoint := cmd.String(FlagHubMQNatsEndpoint)
-	if cmd.IsSet(FlagHubMQExternalNatsURL) {
-		logger.Warn("--mq-external-nats-url / VINE_MQ_EXTERNAL_NATS_URL is deprecated; use --mq-mode=nats and --mq-nats-endpoint")
-		if !cmd.IsSet(FlagHubMQNatsEndpoint) {
-			endpoint = cmd.String(FlagHubMQExternalNatsURL)
-		}
-	}
-	if cmd.IsSet(FlagHubMQEmbeddedNats) {
-		logger.Warn("--mq-embedded-nats / VINE_MQ_EMBEDDED_NATS is deprecated; use --mq-mode")
-	}
-	mode := cmd.String(FlagHubMQMode)
-	if !cmd.IsSet(FlagHubMQMode) {
-		if cmd.IsSet(FlagHubMQEmbeddedNats) {
-			if cmd.Bool(FlagHubMQEmbeddedNats) {
-				mode = hubflag.MQModeEmbedded
-			} else {
-				mode = hubflag.MQModeNATS
-			}
-		} else if cmd.IsSet(FlagHubMQExternalNatsURL) && !cmd.IsSet(FlagHubMQNatsEndpoint) && endpoint != "" {
-			mode = hubflag.MQModeNATS
-		}
-	}
-	return mode, endpoint
 }

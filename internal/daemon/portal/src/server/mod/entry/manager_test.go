@@ -23,29 +23,29 @@ func TestManagerReconcileEntriesBindsPortAndRules(t *testing.T) {
 	}
 
 	manager.entryRulesByName["admin"] = watched.PortalRule{
-		Name:            "admin",
-		MatchScheme:     string(spec.SchemeHTTPS),
-		MatchHost:       "demo.local",
-		MatchPort:       8443,
-		MatchPathPrefix: "/admin",
-		RouteType:       "SITE",
-		RouteSiteName:   "admin@demo.app",
+		Name:                    "admin",
+		MatchScheme:             string(spec.SchemeHTTPS),
+		MatchHost:               "demo.local",
+		MatchPort:               8443,
+		ResolvedMatchPathPrefix: "/admin",
+		RouteType:               "SITE",
+		RouteSiteName:           "admin@demo.app",
 	}
 	manager.entryRulesByName["home"] = watched.PortalRule{
-		Name:            "home",
-		MatchScheme:     string(spec.SchemeHTTPS),
-		MatchHost:       "demo.local",
-		MatchPort:       8443,
-		MatchPathPrefix: "/",
-		RouteType:       "SITE",
-		RouteSiteName:   "home@demo.app",
+		Name:                    "home",
+		MatchScheme:             string(spec.SchemeHTTPS),
+		MatchHost:               "demo.local",
+		MatchPort:               8443,
+		ResolvedMatchPathPrefix: "/",
+		RouteType:               "SITE",
+		RouteSiteName:           "home@demo.app",
 	}
 	manager.entryRulesByName["redirect"] = watched.PortalRule{
 		Name:                    "redirect",
 		MatchScheme:             string(spec.SchemeHTTP),
 		MatchHost:               "demo.local",
 		MatchPort:               8080,
-		MatchPathPrefix:         "/old",
+		ResolvedMatchPathPrefix: "/old",
 		RouteType:               "PERMANENT_REDIRECT",
 		RouteRedirectionPattern: "https://demo.local/new",
 	}

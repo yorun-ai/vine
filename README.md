@@ -154,7 +154,7 @@ Common entry points:
 
 ```bash
 # Local Hub + Portal + Link; configuration comes from YAML and is read-only.
-vine dev --seed-hub-data-file ./hub.yaml
+vine dev --seed-data-file ./hub.yaml
 
 # Independently operated runtime services; run each in its own process.
 vine hub serve --db-sqlite-file ./hub.sqlite

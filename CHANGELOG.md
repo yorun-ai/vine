@@ -53,6 +53,23 @@ are not part of the public compatibility commitment.
 
 ### Changed
 
+- The Portal rule Hub publishes drops the deprecated `matchPathPrefix` and
+  `routePathPrefix` fields, and Portal reads the resolved prefixes only, so a
+  rule no longer carries the configured prefix beside the effective one. Portal
+  has read the resolved prefixes since 0.19.0, so a rolling upgrade is
+  unrestricted: a 0.19.0 Portal works against a Hub that publishes only the
+  resolved fields, and this Portal works against a 0.19.0 Hub, which publishes
+  both. A Portal that predates 0.19.0 reads the removed fields and needs the
+  matching Hub, which is why it must upgrade with or before this release.
+
+- Hub's CLI drops the deprecated compatibility inputs: `--redis-listen` /
+  `VINE_REDIS_LISTEN`, `--mq-embedded-nats` / `VINE_MQ_EMBEDDED_NATS`, and
+  `--mq-external-nats-url` / `VINE_MQ_EXTERNAL_NATS_URL` are gone; Hub uses
+  `--watch-listen`, `--mq-mode`, and `--mq-nats-endpoint` only. The seed flags
+  drop the redundant `hub` from their names, because they belong to Hub's own
+  command: `--seed-data-file`, `--seed-source-file`, and `--seed-vars-file`, with
+  `VINE_SEED_DATA_FILE`, `VINE_SEED_SOURCE_FILE`, and `VINE_SEED_VARS_FILE`.
+
 - Hub serves the Admin API on its own listener, the way it serves the Control
   API: the `admin` module owns `--admin-listen`, which defaults to
   `127.0.0.1:7099`, the port operators reached the Dashboard on before, and a Hub

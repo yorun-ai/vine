@@ -58,7 +58,7 @@ func newDevCommand() *ucli.Command {
 			&ucli.BoolFlag{
 				Name:    FlagHubNoDB,
 				Sources: ucli.EnvVars(EnvHubNoDB),
-				Usage:   "use no persistent database (default); requires seed-hub-data-file; configuration is read-only",
+				Usage:   "use no persistent database (default); requires seed-data-file; configuration is read-only",
 			},
 			&ucli.StringFlag{
 				Name:    FlagHubDBSQLiteFile,
@@ -71,18 +71,18 @@ func newDevCommand() *ucli.Command {
 				Usage:   "hub PostgreSQL database URL",
 			},
 			&ucli.StringFlag{
-				Name:    FlagSeedHubDataFile,
-				Sources: ucli.EnvVars(EnvSeedHubDataFile),
+				Name:    FlagSeedDataFile,
+				Sources: ucli.EnvVars(EnvSeedDataFile),
 				Usage:   "hub seed YAML file",
 			},
 			&ucli.StringFlag{
-				Name:    FlagSeedHubSourceFile,
-				Sources: ucli.EnvVars(EnvSeedHubSourceFile),
+				Name:    FlagSeedSourceFile,
+				Sources: ucli.EnvVars(EnvSeedSourceFile),
 				Usage:   "hub seed source YAML file",
 			},
 			&ucli.StringFlag{
-				Name:    FlagSeedHubVarsFile,
-				Sources: ucli.EnvVars(EnvSeedHubVarsFile),
+				Name:    FlagSeedVarsFile,
+				Sources: ucli.EnvVars(EnvSeedVarsFile),
 				Usage:   "hub seed vars YAML file",
 			},
 		},
@@ -93,9 +93,9 @@ func newDevCommand() *ucli.Command {
 
 			startDevRuntime(_DevOption{
 				LinkAPIListen:     cmd.String(flagDevLinkAPIListen),
-				SeedHubDataFile:   cmd.String(FlagSeedHubDataFile),
-				SeedHubSourceFile: cmd.String(FlagSeedHubSourceFile),
-				SeedHubVarsFile:   cmd.String(FlagSeedHubVarsFile),
+				SeedHubDataFile:   cmd.String(FlagSeedDataFile),
+				SeedHubSourceFile: cmd.String(FlagSeedSourceFile),
+				SeedHubVarsFile:   cmd.String(FlagSeedVarsFile),
 				NoDB:              cmd.Bool(FlagHubNoDB),
 				DBSQLiteFile:      cmd.String(FlagHubDBSQLiteFile),
 				DBPostgresURL:     cmd.String(FlagHubDBPostgresURL),

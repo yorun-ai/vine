@@ -13,20 +13,18 @@ const (
 )
 
 type PortalRule struct {
-	Name        string `json:"name"`
-	MatchScheme string `json:"matchScheme"`
-	MatchHost   string `json:"matchHost"`
-	MatchPort   int    `json:"matchPort"`
-	// Deprecated: Portal uses ResolvedMatchPathPrefix. TODO: remove after all
-	// watched PortalRule consumers have migrated to the resolved field.
-	MatchPathPrefix         string `json:"matchPathPrefix"`
+	Name                    string `json:"name"`
+	MatchScheme             string `json:"matchScheme"`
+	MatchHost               string `json:"matchHost"`
+	MatchPort               int    `json:"matchPort"`
 	RouteType               string `json:"routeType"`
 	RouteSiteName           string `json:"routeSiteName"`
 	RouteRedirectionPattern string `json:"routeRedirectionPattern"`
-	// Deprecated: Portal uses ResolvedRoutePathPrefix. TODO: remove after all
-	// watched PortalRule consumers have migrated to the resolved field.
-	RoutePathPrefix         string `json:"routePathPrefix"`
+	// ResolvedMatchPathPrefix is the effective match path prefix after the
+	// target site mount path has been applied.
 	ResolvedMatchPathPrefix string `json:"resolvedMatchPathPrefix"`
+	// ResolvedRoutePathPrefix is the effective target site path prefix after
+	// the target site mount path has been applied.
 	ResolvedRoutePathPrefix string `json:"resolvedRoutePathPrefix"`
 }
 

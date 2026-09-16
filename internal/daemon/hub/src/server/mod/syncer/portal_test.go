@@ -77,9 +77,11 @@ func TestPortalRuleTargetPathWatchRoundTrip(t *testing.T) {
 	rule := &core.PortalRule{Name: "mapped", RouteType: "SITE", MatchPathPrefix: "/api", RoutePathPrefix: "/internal"}
 	wire := vcode.MustMarshalJsonS(ToWatchedPortalRule(rule))
 	decoded := vcode.MustUnmarshalJsonS[*watched.PortalRule](wire)
-	assert.Equal(t, "/internal", decoded.RoutePathPrefix)
-	assert.Contains(t, wire, `"routePathPrefix":"/internal"`)
-	assert.Contains(t, wire, `"matchPathPrefix":"/api"`)
+	assert.Equal(t, "/internal", decoded.ResolvedRoutePathPrefix)
+	assert.Contains(t, wire, `"resolvedRoutePathPrefix":"/internal"`)
+	assert.Contains(t, wire, `"resolvedMatchPathPrefix":"/api"`)
+	assert.NotContains(t, wire, `"routePathPrefix"`)
+	assert.NotContains(t, wire, `"matchPathPrefix"`)
 	assert.NotContains(t, wire, `"targetPath"`)
 	assert.NotContains(t, wire, `"targetType"`)
 }
@@ -113,8 +115,6 @@ func TestPortalRuleResolvedPrefixesFollowWebMountPath(t *testing.T) {
 			got := target.toWatchedPortalRule(rule, site)
 			assert.Equal(t, tt.match, got.ResolvedMatchPathPrefix)
 			assert.Equal(t, tt.route, got.ResolvedRoutePathPrefix)
-			assert.Equal(t, "/configured", got.MatchPathPrefix)
-			assert.Equal(t, "/backend", got.RoutePathPrefix)
 		})
 	}
 	target.WatchServer.AfterAppStop()
@@ -145,6 +145,4 @@ func TestPortalSiteUpdateRepublishesResolvedRule(t *testing.T) {
 	resolved := vcode.MustUnmarshalJsonS[*watched.PortalRule](value)
 	assert.Equal(t, "/new", resolved.ResolvedMatchPathPrefix)
 	assert.Equal(t, "/new", resolved.ResolvedRoutePathPrefix)
-	assert.Equal(t, "/configured", resolved.MatchPathPrefix)
-	assert.Equal(t, "/backend", resolved.RoutePathPrefix)
 }

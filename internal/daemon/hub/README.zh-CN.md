@@ -4,7 +4,7 @@
 
 配置与服务注册中心，大体遵循 DDD 分层设计，负责维护配置、应用状态与 Rpc 服务注册，并通过采用 Redis 协议的 Watch 服务对外提供读取与订阅能力。
 
-未指定数据库参数时，Hub 默认启用 `--no-db`，必须提供 `--seed-hub-data-file`。
+未指定数据库参数时，Hub 默认启用 `--no-db`，必须提供 `--seed-data-file`。
 每次启动将配置加载到独立的内存 SQLite，初始化完成后，repo 层禁止修改
 应用配置、Portal entry、站点、规则和证书。请编辑 seed 文件后重启 Hub。
 Dashboard 展示只读提示并禁用编辑入口；注册、schema 和租约仍可写。
@@ -156,7 +156,7 @@ Hub 当前支持两类数据库配置来源：
 - SQLite
 - PostgreSQL
 
-启动时可以通过 `--seed-hub-data-file` 让 `seeder` 从本地 YAML 文件一次性导入初始配置、站点规则和证书到数据库；导入后 Hub 仍然统一从数据库 repo 读取，再写入 Redis，对 Link 暴露一致的读取与订阅语义。
+启动时可以通过 `--seed-data-file` 让 `seeder` 从本地 YAML 文件一次性导入初始配置、站点规则和证书到数据库；导入后 Hub 仍然统一从数据库 repo 读取，再写入 Redis，对 Link 暴露一致的读取与订阅语义。
 
 数据库升级基线为 Vine `v0.15.7`，规则表应已具备 `match_*` / `route_*` 列。
 更早的数据库应先用 `v0.15.7` 启动完成迁移；当前 Hub 不再迁移旧 Portal rule 列。

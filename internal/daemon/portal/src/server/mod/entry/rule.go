@@ -50,8 +50,8 @@ func newRule(rule watched.PortalRule, siteManager *site.Manager) (*_Rule, bool) 
 		matchScheme:     scheme,
 		matchHost:       entryRuleHost(rule.MatchHost),
 		matchPort:       entryRulePort(scheme, rule.MatchPort),
-		matchPathPrefix: rule.MatchPathPrefix,
-		routePathPrefix: strings.TrimRight(rule.RoutePathPrefix, "/"),
+		matchPathPrefix: rule.ResolvedMatchPathPrefix,
+		routePathPrefix: strings.TrimRight(rule.ResolvedRoutePathPrefix, "/"),
 	}
 
 	if isRedirection {

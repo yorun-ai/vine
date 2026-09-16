@@ -89,11 +89,11 @@ func (f *Flag) normalizeListen() {
 }
 
 func (f *Flag) normalizeSeed() {
-	vpre.CheckNot(f.SeedHubSource != "" && f.SeedHubSourceFile != "", "SeedHubSource and seed-hub-source-file are mutually exclusive")
+	vpre.CheckNot(f.SeedHubSource != "" && f.SeedHubSourceFile != "", "SeedHubSource and seed-source-file are mutually exclusive")
 	vpre.CheckNot((f.SeedHubSource != "" || f.SeedHubSourceFile != "" || f.SeedHubVarsFile != "") && f.SeedHubData == "" && f.SeedHubDataFile == "", "seed source and variables require seed YAML")
-	vpre.CheckNot(f.SeedHubDataFile != "" && f.SeedHubData != "", "SeedHubData and seed-hub-data-file are mutually exclusive")
+	vpre.CheckNot(f.SeedHubDataFile != "" && f.SeedHubData != "", "SeedHubData and seed-data-file are mutually exclusive")
 	vpre.CheckNot(f.SeedHubSource != "" && f.SeedHubData == "", "SeedHubSource requires inline SeedHubData")
-	vpre.CheckNot(f.SeedHubSourceFile != "" && f.SeedHubDataFile == "", "seed-hub-source-file requires seed-hub-data-file")
+	vpre.CheckNot(f.SeedHubSourceFile != "" && f.SeedHubDataFile == "", "seed-source-file requires seed-data-file")
 }
 
 func (f *Flag) normalizeStore() {
@@ -109,7 +109,7 @@ func (f *Flag) normalizeStore() {
 	switch kind {
 	case StoreMemory:
 		f.NoDB = true
-		vpre.Check(f.SeedHubDataFile != "" || f.SeedHubData != "", "no-db requires seed-hub-data-file or SeedHubData")
+		vpre.Check(f.SeedHubDataFile != "" || f.SeedHubData != "", "no-db requires seed-data-file or SeedHubData")
 	case StoreSQLite:
 		vpre.CheckNotEmpty(f.DBSQLiteFile, "DBSQLiteFile is empty")
 	case StorePostgreSQL:

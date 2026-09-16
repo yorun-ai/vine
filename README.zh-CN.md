@@ -144,7 +144,7 @@ vine --help
 
 ```bash
 # 本地 Hub + Portal + Link；从 YAML 加载只读配置。
-vine dev --seed-hub-data-file ./hub.yaml
+vine dev --seed-data-file ./hub.yaml
 
 # 独立运行的运行时服务；每条命令分别在独立进程中执行。
 vine hub serve --db-sqlite-file ./hub.sqlite

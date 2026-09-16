@@ -167,7 +167,7 @@ func TestInlineSeedConflictsWithFile(t *testing.T) {
 			option.SeedHubDataFile = "seed.yaml"
 		}
 		applyOption(flags, option)
-		assert.PanicsWithError(t, "SeedHubData and seed-hub-data-file are mutually exclusive", func() {
+		assert.PanicsWithError(t, "SeedHubData and seed-data-file are mutually exclusive", func() {
 			flags.Normalize(true)
 		})
 	}

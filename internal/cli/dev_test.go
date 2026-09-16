@@ -36,7 +36,7 @@ func TestRunDev(t *testing.T) {
 		"dev",
 		"--link-api-listen", "127.0.0.1:8079",
 		"--db-sqlite-file", "/tmp/vine-dev.sqlite",
-		"--seed-hub-data-file", "/tmp/vine-dev.yaml",
+		"--seed-data-file", "/tmp/vine-dev.yaml",
 	})
 
 	if result.exitCode != exitCodeSuccess {
