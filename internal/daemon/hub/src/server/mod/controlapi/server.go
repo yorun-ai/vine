@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 
 	"go.yorun.ai/vine/internal/app"
 	coreapp "go.yorun.ai/vine/internal/core/app"
@@ -111,7 +110,8 @@ func (s *Server) startHTTP() error {
 		}
 		serve = func(listener net.Listener) error { return server.ServeTLS(listener, "", "") }
 	} else {
-		server.Handler = h2c.NewHandler(s, &http2.Server{})
+		server.Handler = s
+		server.Protocols = httputil.UnencryptedHTTP2Protocols()
 	}
 	s.httpServer = server
 

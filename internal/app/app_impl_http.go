@@ -13,7 +13,6 @@ import (
 	"go.yorun.ai/vine/internal/util/httputil"
 	"go.yorun.ai/vine/util/vpre"
 	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
 const (
@@ -48,7 +47,8 @@ func (a *_AppImpl) startHTTPServer() {
 			return a.httpServer.ServeTLS(listener, "", "")
 		}
 	} else {
-		a.httpServer.Handler = h2c.NewHandler(a.httpHandler(), &http2.Server{})
+		a.httpServer.Handler = a.httpHandler()
+		a.httpServer.Protocols = httputil.UnencryptedHTTP2Protocols()
 	}
 
 	a.httpWG.Go(func() {

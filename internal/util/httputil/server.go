@@ -20,6 +20,16 @@ func NewServer(addr string, handler http.Handler) *http.Server {
 	}
 }
 
+// UnencryptedHTTP2Protocols returns the protocols an endpoint serves in the
+// clear: HTTP/1 and unencrypted HTTP/2 on one address and port, which is how a
+// Vine client reaches a component over h2c prior knowledge.
+func UnencryptedHTTP2Protocols() *http.Protocols {
+	protocols := new(http.Protocols)
+	protocols.SetHTTP1(true)
+	protocols.SetUnencryptedHTTP2(true)
+	return protocols
+}
+
 // ShutdownServer gracefully stops server and force-closes its active
 // connections when the graceful-shutdown context expires or otherwise fails.
 func ShutdownServer(server *http.Server, ctx context.Context) error {

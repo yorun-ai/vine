@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 
 	"go.yorun.ai/vine/internal/app"
 	corelink "go.yorun.ai/vine/internal/core/link"
@@ -99,7 +98,8 @@ func (g *Ingress) startHTTPServer() {
 		vpre.CheckNilError(http2.ConfigureServer(server, &http2.Server{}), "link ingress HTTP/2 configure failed")
 		serve = func(listener net.Listener) error { return server.ServeTLS(listener, "", "") }
 	} else {
-		server.Handler = h2c.NewHandler(g.httpHandler(), &http2.Server{})
+		server.Handler = g.httpHandler()
+		server.Protocols = httputil.UnencryptedHTTP2Protocols()
 	}
 	host := g.mustDetectHost()
 
