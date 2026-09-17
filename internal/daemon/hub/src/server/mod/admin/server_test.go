@@ -97,8 +97,8 @@ func TestServerShutdownEndsAStalledDashboardRequest(t *testing.T) {
 	server := &Server{
 		Context:           context.Background(),
 		rpcHTTPHandler:    http.NotFoundHandler(),
-		dashboardHandler:  DashboardHandler(),
-		dashboardDevProxy: DashboardDevProxy(),
+		dashboardHandler:  dashboardHandler(),
+		dashboardDevProxy: dashboardDevProxy(),
 	}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -142,7 +142,7 @@ func TestServerServesAdminAPIAndDashboardBuild(t *testing.T) {
 			apiPath = request.URL.Path
 			writer.WriteHeader(http.StatusOK)
 		}),
-		dashboardHandler: DashboardHandler(),
+		dashboardHandler: dashboardHandler(),
 	}
 
 	response := httptest.NewRecorder()

@@ -14,7 +14,6 @@ import (
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/logger"
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
-	"go.yorun.ai/vine/internal/core/web/proxy"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	impl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin"
 	debugimpl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin/debug"
@@ -47,7 +46,7 @@ type Server struct {
 	rpcHTTPHandler    http.Handler
 	rpcHandler        rpcspec.RpcHandler
 	dashboardHandler  http.Handler
-	dashboardDevProxy *proxy.ReverseProxy
+	dashboardDevProxy *_DashboardDevProxy
 	httpServer        *http.Server
 	wg                sync.WaitGroup
 }
@@ -58,8 +57,8 @@ func (s *Server) BeforeAppStart() error {
 		return nil
 	}
 	s.rpcHTTPHandler, s.rpcHandler = s.InternalRuntime.AdditionalServicer(HandlerTypes()...)
-	s.dashboardHandler = DashboardHandler()
-	s.dashboardDevProxy = DashboardDevProxy()
+	s.dashboardHandler = dashboardHandler()
+	s.dashboardDevProxy = dashboardDevProxy()
 
 	return s.startHTTP()
 }

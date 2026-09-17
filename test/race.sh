@@ -24,7 +24,6 @@ case "${scope}" in
       ./internal/core/task
       ./internal/core/web/assets
       ./internal/core/web/inproc
-      ./internal/core/web/proxy
       ./internal/daemon/hub/api/nats
       ./internal/daemon/hub/api/watch
       ./internal/daemon/hub/src/server/app
