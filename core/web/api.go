@@ -46,7 +46,9 @@ type WebSpec = internalspec.WebSpec
 // AssetsAccessor opens files from an embedded or archived asset set.
 type AssetsAccessor = internalassets.Accessor
 
-// AssetsServer serves files from an AssetsAccessor.
+// AssetsServer serves files from an AssetsAccessor. Embed it by value in a Web
+// handler, set its accessor in DIInit, and delegate Routes to AssetsServer.Routes.
+// Its GinCtx is injected for each execution; Serve is promoted to the Web handler.
 type AssetsServer = internalassets.Server
 
 // ProxyOption configures a reverse proxy.

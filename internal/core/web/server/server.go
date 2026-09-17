@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"reflect"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -97,15 +98,72 @@ func (s *Server) initEngine() {
 	restoreGinRoutePrinter := s.overrideGinDebugRoutePrinter()
 	defer restoreGinRoutePrinter()
 
+	// Every Web owns a Gin group under its own name, so whatever Vine wires for one
+	// Web stays with the routes of that Web. All groups share the engine, and with
+	// it the logging and recovery chain above.
+	groupByHandlerType := map[reflect.Type]*gin.RouterGroup{}
 	for _, route := range s.routes {
-		s.ginHandler(route)
+		s.ginHandler(s.webGroup(groupByHandlerType, route), route)
 	}
 }
 
-func (s *Server) ginHandler(route spec.Route) {
-	s.ginEngine.Handle(route.Method(), route.Path(), func(ginCtx *gin.Context) {
+// webGroup returns the Gin group of a Web, creating it on first use.
+func (s *Server) webGroup(groups map[reflect.Type]*gin.RouterGroup, route spec.Route) *gin.RouterGroup {
+	handlerType := route.HandlerType()
+	if group, ok := groups[handlerType]; ok {
+		return group
+	}
+	basePath := webGroupPath(spec.GetWebInfo(handlerType).SkelName())
+	group := s.ginEngine.Group(basePath, stripWebName(basePath))
+	groups[handlerType] = group
+	return group
+}
+
+// webGroupPath is the route prefix one Web owns: the Web name routes carry.
+func webGroupPath(skelName string) string {
+	return "/" + skelName
+}
+
+// stripWebName drops the Web name from the path a Web handler reads. The name
+// belongs to the dispatch Link and the application share, so a handler sees the
+// path its Web serves: the mount when the Web declares one, and what follows it.
+func stripWebName(basePath string) gin.HandlerFunc {
+	return func(ginCtx *gin.Context) {
+		request := ginCtx.Request
+		path := strings.TrimPrefix(request.URL.Path, basePath)
+		if path == "" {
+			path = "/"
+		}
+		request.URL.Path = path
+		if request.URL.RawPath != "" {
+			// Keep the escaped suffix only when the dispatch prefix matches too.
+			// Otherwise let URL reconstruct a valid encoding from Path.
+			rawPath, ok := strings.CutPrefix(request.URL.RawPath, basePath)
+			request.URL.RawPath = ""
+			if ok {
+				request.URL.RawPath = rawPath
+			}
+		}
+		request.RequestURI = request.URL.RequestURI()
+	}
+}
+
+func (s *Server) ginHandler(group *gin.RouterGroup, route spec.Route) {
+	group.Handle(route.Method(), groupRelativePath(group.BasePath(), route), func(ginCtx *gin.Context) {
 		s.executor.Execute(route, ginCtx)
 	})
+}
+
+// groupRelativePath is the route path inside the Web group: the collected path
+// without the Web name the group already carries.
+func groupRelativePath(basePath string, route spec.Route) string {
+	vpre.Check(route.Path() == basePath || strings.HasPrefix(route.Path(), basePath+"/"),
+		"web route %s %s is outside the group %s of its Web", route.Method(), route.Path(), basePath)
+	path := strings.TrimPrefix(route.Path(), basePath)
+	if path == "" {
+		return "/"
+	}
+	return path
 }
 
 func (s *Server) ginLogger() gin.HandlerFunc {
