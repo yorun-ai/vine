@@ -113,14 +113,12 @@ type MethodInfo interface {
 	ArgumentsSensitive() bool
 	ArgumentsContainsBinaryType() bool
 	PositionArguments(arguments any) []any
-	CloneArguments(any) any
 
 	HasResult() bool
 	NewResult() any
 	ResultType() reflect.Type
 	ResultSensitive() bool
 	ResultContainsBinaryType() bool
-	CloneResult(any) any
 }
 
 type _MethodInfo struct {
@@ -134,12 +132,10 @@ type _MethodInfo struct {
 	argumentsSensitive          bool
 	argumentsContainsBinaryType bool
 	argumentFieldInfos          []_ArgumentFieldInfo
-	cloneArguments              func(any) any
 
 	resultType               reflect.Type
 	resultSensitive          bool
 	resultContainsBinaryType bool
-	cloneResult              func(any) any
 }
 
 func (mi *_MethodInfo) Name() string {
@@ -191,10 +187,6 @@ func (mi *_MethodInfo) PositionArguments(arguments any) []any {
 	return positionalArguments
 }
 
-func (mi *_MethodInfo) CloneArguments(arguments any) any {
-	return mi.cloneArguments(arguments)
-}
-
 func (mi *_MethodInfo) HasResult() bool {
 	return mi.resultType != nil
 }
@@ -213,10 +205,6 @@ func (mi *_MethodInfo) ResultSensitive() bool {
 
 func (mi *_MethodInfo) ResultContainsBinaryType() bool {
 	return mi.resultContainsBinaryType
-}
-
-func (mi *_MethodInfo) CloneResult(result any) any {
-	return mi.cloneResult(result)
 }
 
 type EmptyArguments struct{}

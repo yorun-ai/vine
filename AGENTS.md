@@ -90,10 +90,11 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
   do not reintroduce the v1 `encoding/json` implementation.
 - Encode Rpc, Event, and Task Skel payloads with the shared `vcode` encoder.
   Supported schemas use empty arrays/maps for nil collections.
-- Rpc methods must provide `CloneArguments` when they have arguments and
-  `CloneResult` when they have results. Generated code obtains these hooks from
-  a supported skelc; manually constructed `MethodSpec` values must supply them,
-  and the runtime must not restore serialization-based clone fallbacks.
+- The runtime isolates in-process Rpc arguments and results by cloning them from
+  the declared Go types with `util/vbean`. Skel contracts carry only generated
+  scalars, lists, maps, nullable values and beans, so reflection covers them.
+  `MethodSpec.CloneArguments` and `CloneResult` are deprecated and ignored, and
+  the runtime must not restore serialization-based clone fallbacks.
 
 ## Documentation
 

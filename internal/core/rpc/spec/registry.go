@@ -179,8 +179,6 @@ func (r *Registry) initMethodInfos(serviceSpec *ServiceSpec, serviceInfo *_Servi
 			resultSensitive:             methodSpec.ResultSensitive,
 			argumentsContainsBinaryType: methodSpec.ArgumentsContainsBinaryType,
 			resultContainsBinaryType:    methodSpec.ResultContainsBinaryType,
-			cloneArguments:              methodSpec.CloneArguments,
-			cloneResult:                 methodSpec.CloneResult,
 		}
 		if methodInfo.HasArguments() {
 			methodInfo.argumentFieldInfos = buildArgumentFieldInfos(methodInfo.argumentsType)
