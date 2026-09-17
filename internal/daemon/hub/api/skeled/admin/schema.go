@@ -13,6178 +13,815 @@ var _DomainSchema = &skel.DomainSchema{
 	Description: "Hub admin API for Dashboard",
 	Hash:        "6c65a971",
 	Full:        true,
-	Generated: &skel.GeneratedInfo{
-		CompilerVersion: "v0.20.0",
-	},
+	Generated:   &skel.GeneratedInfo{CompilerVersion: "v0.21.0"},
 
 	Enums: []*skel.EnumSchema{
-		{
-			Name:        "PortalCorsMode",
-			SkelName:    "vine.hub.admin.PortalCorsMode",
-			Description: "Portal site CORS mode",
-			Hash:        "b5d6b511",
-			Items: []*skel.EnumItemSchema{
-				{
-					Name:        "DISABLED",
-					Description: "Disable CORS",
-				},
-				{
-					Name:        "SAME_DOMAIN",
-					Description: "Allow origins in the same domain as the entry rule",
-				},
-				{
-					Name:        "STRICT",
-					Description: "Only allow Origins in the configuration list",
-				},
-			},
-		},
-		{
-			Name:        "PortalSiteType",
-			SkelName:    "vine.hub.admin.PortalSiteType",
-			Description: "Portal target site type",
-			Hash:        "4a5c08e3",
-			Items: []*skel.EnumItemSchema{
-				{
-					Name:        "RPCGW",
-					Description: "Rpc gateway",
-				},
-				{
-					Name:        "WEBGW",
-					Description: "Web gateway",
-				},
-			},
-		},
+		{Name: "PortalCorsMode", SkelName: "vine.hub.admin.PortalCorsMode", Description: "Portal site CORS mode", Hash: "b5d6b511", Items: []*skel.EnumItemSchema{
+			{Name: "DISABLED", Description: "Disable CORS"},
+			{Name: "SAME_DOMAIN", Description: "Allow origins in the same domain as the entry rule"},
+			{Name: "STRICT", Description: "Only allow Origins in the configuration list"},
+		}},
+		{Name: "PortalSiteType", SkelName: "vine.hub.admin.PortalSiteType", Description: "Portal target site type", Hash: "4a5c08e3", Items: []*skel.EnumItemSchema{
+			{Name: "RPCGW", Description: "Rpc gateway"},
+			{Name: "WEBGW", Description: "Web gateway"},
+		}},
 	},
 
 	Data: []*skel.DataSchema{
-		{
-			Name:        "AppConfigCreation",
-			SkelName:    "vine.hub.admin.AppConfigCreation",
-			Description: "Configuration creation parameters",
-			Hash:        "da9a7e54",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "skelName",
-					Description: "Configuration Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "value",
-					Description: "Configuration JSON",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "AppConfigItem",
-			SkelName:    "vine.hub.admin.AppConfigItem",
-			Description: "Configuration items",
-			Hash:        "c29db5d5",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "id",
-					Description: "Configuration ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "key",
-					Description: "Configuration key",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "status",
-					Description: "Configuration status",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "lifecycle",
-					Description: "Configuration lifecycle",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "value",
-					Description: "Configuration JSON",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schema",
-					Description: "Configuration schema",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "AppConfigSchema",
-						SkelName: "vine.hub.admin.AppConfigSchema",
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "fieldSources",
-					Description: "Field sources; only returned by get, create and update",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "FieldSource",
-							SkelName: "vine.hub.admin.FieldSource",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "AppConfigListItem",
-			SkelName:    "vine.hub.admin.AppConfigListItem",
-			Description: "Configuration item list item",
-			Hash:        "093a335b",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "id",
-					Description: "Configuration ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "key",
-					Description: "Configuration key",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "status",
-					Description: "Configuration status",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "lifecycle",
-					Description: "Configuration lifecycle",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaName",
-					Description: "Configuration schema name; empty when no schema matches",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaSkelName",
-					Description: "Configuration schema Skel name; empty when no schema matches",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "AppConfigSchema",
-			SkelName:    "vine.hub.admin.AppConfigSchema",
-			Description: "Configuration schema items",
-			Hash:        "24585ab7",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "skelName",
-					Description: "Configuration Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "name",
-					Description: "Configuration name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Configuration description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the configuration is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Configuration deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "lifecycle",
-					Description: "Configuration lifecycle",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "fields",
-					Description: "Configuration field list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "AppConfigSchemaField",
-							SkelName: "vine.hub.admin.AppConfigSchemaField",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "AppConfigSchemaEnumItem",
-			SkelName:    "vine.hub.admin.AppConfigSchemaEnumItem",
-			Description: "Configuration schema enumeration options",
-			Hash:        "e326a9c1",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Enum option name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Enumeration options description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the enumeration option is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Enumeration option deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "AppConfigSchemaField",
-			SkelName:    "vine.hub.admin.AppConfigSchemaField",
-			Description: "Configuration schema fields",
-			Hash:        "006cd1a8",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Field name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "type",
-					Description: "Field type",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Field description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the field is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Field deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "enumItems",
-					Description: "Enumeration options list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "AppConfigSchemaEnumItem",
-							SkelName: "vine.hub.admin.AppConfigSchemaEnumItem",
-						},
-					},
-				},
-				{
-					Name:        "mapKeyEnumItems",
-					Description: "Map key enumeration options",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "AppConfigSchemaEnumItem",
-							SkelName: "vine.hub.admin.AppConfigSchemaEnumItem",
-						},
-					},
-				},
-				{
-					Name:        "mapValueEnumItems",
-					Description: "Map value enumeration options",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "AppConfigSchemaEnumItem",
-							SkelName: "vine.hub.admin.AppConfigSchemaEnumItem",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "AppConfigUpdate",
-			SkelName:    "vine.hub.admin.AppConfigUpdate",
-			Description: "Configuration update parameters",
-			Hash:        "76a0e2d9",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "value",
-					Description: "Configuration JSON",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-			},
-		},
-		{
-			Name:        "AppStatusView",
-			SkelName:    "vine.hub.admin.AppStatusView",
-			Description: "Application instance status view for Dashboard display",
-			Hash:        "9aeded89",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Application name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "instanceId",
-					Description: "Application instance ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "version",
-					Description: "Application version",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "endpoint",
-					Description: "Application access address",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "serviceHandlers",
-					Description: "List of Rpc service processing capabilities provided by the application",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "ServiceHandlerRegistration",
-							SkelName: "vine.hub.admin.ServiceHandlerRegistration",
-						},
-					},
-				},
-				{
-					Name:        "webHandlers",
-					Description: "List of web processing capabilities provided by the application",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "WebHandlerRegistration",
-							SkelName: "vine.hub.admin.WebHandlerRegistration",
-						},
-					},
-				},
-				{
-					Name:        "eventListeners",
-					Description: "List of event listening capabilities provided by the application",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "EventListenerRegistration",
-							SkelName: "vine.hub.admin.EventListenerRegistration",
-						},
-					},
-				},
-				{
-					Name:        "taskRunners",
-					Description: "List of task execution capabilities provided by the application",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "TaskRunnerRegistration",
-							SkelName: "vine.hub.admin.TaskRunnerRegistration",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "EventDebugDefaultEmitRequest",
-			SkelName:    "vine.hub.admin.EventDebugDefaultEmitRequest",
-			Description: "Default Event Debug send request",
-			Hash:        "b6e87955",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "traceId",
-					Description: "Trace ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "spanId",
-					Description: "Span ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "eventJson",
-					Description: "Default event JSON",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarJson,
-					},
-				},
-			},
-		},
-		{
-			Name:        "EventDebugEmitRequest",
-			SkelName:    "vine.hub.admin.EventDebugEmitRequest",
-			Description: "Event Debug send request",
-			Hash:        "b962d5b1",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "eventSkelName",
-					Description: "Event Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Event schema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "eventJson",
-					Description: "Event JSON",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarJson,
-					},
-				},
-				{
-					Name:        "traceId",
-					Description: "Trace ID",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "spanId",
-					Description: "Span ID",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-			},
-		},
-		{
-			Name:        "EventDebugEventItem",
-			SkelName:    "vine.hub.admin.EventDebugEventItem",
-			Description: "Event called by Event Debug",
-			Hash:        "a952531e",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Event name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "eventSkelName",
-					Description: "Event Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Event schema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Event description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the Event is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Event deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "fields",
-					Description: "Field list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonField",
-							SkelName: "vine.hub.admin.SkeletonField",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "EventListenerRegistration",
-			SkelName:    "vine.hub.admin.EventListenerRegistration",
-			Description: "Event listening capability registration information provided by the application",
-			Hash:        "a71ebf1f",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "eventSkelName",
-					Description: "Event Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Event schema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "timeoutMs",
-					Description: "Execution timeout, in milliseconds",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "concurrency",
-					Description: "Maximum concurrency",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "noRetry",
-					Description: "Whether to disallow retrying after failure",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "FieldSource",
-			SkelName:    "vine.hub.admin.FieldSource",
-			Description: "Layers that supplied an entity field",
-			Hash:        "db44a5d8",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "path",
-					Description: "Field JSON pointer",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "source",
-					Description: "Seed source",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "define",
-					Description: "Seed definition name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "override",
-					Description: "Seed override name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "variables",
-					Description: "Referenced seed variables",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:   skel.TypeKindScalar,
-							Scalar: skel.ScalarString,
-						},
-					},
-				},
-				{
-					Name:        "template",
-					Description: "Seed template",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarJson,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "bindings",
-					Description: "Resolved variable bindings",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "FieldSourceBinding",
-							SkelName: "vine.hub.admin.FieldSourceBinding",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "FieldSourceBinding",
-			SkelName:    "vine.hub.admin.FieldSourceBinding",
-			Description: "A resolved variable reference within a field template",
-			Hash:        "3fb43b20",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "path",
-					Description: "Template JSON pointer",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "variable",
-					Description: "Variable name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "reference",
-					Description: "Variable reference",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "value",
-					Description: "Resolved value",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarJson,
-					},
-				},
-				{
-					Name:        "defaultUsed",
-					Description: "Whether the default was used",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalCert",
-			SkelName:    "vine.hub.admin.PortalCert",
-			Description: "Portal site certificate",
-			Hash:        "6d989af0",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "id",
-					Description: "Certificate ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "name",
-					Description: "Certificate name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "issuer",
-					Description: "Certificate issuer",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "domains",
-					Description: "Certificate domain name",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:   skel.TypeKindScalar,
-							Scalar: skel.ScalarString,
-						},
-					},
-				},
-				{
-					Name:        "publicKeyBase64",
-					Description: "Certificate Base64",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "privateKeyConfigured",
-					Description: "Whether the private key has been configured",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "validFrom",
-					Description: "Validity start time",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarTimestamp,
-					},
-				},
-				{
-					Name:        "validTo",
-					Description: "Validity end time",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarTimestamp,
-					},
-				},
-				{
-					Name:        "fieldSources",
-					Description: "Field sources; only returned by get, create and update",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "FieldSource",
-							SkelName: "vine.hub.admin.FieldSource",
-						},
-					},
-				},
-				{
-					Name:        "enabled",
-					Description: "Whether Hub publishes this certificate to Portal",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalCertCreation",
-			SkelName:    "vine.hub.admin.PortalCertCreation",
-			Description: "Portal site certificate creation parameters",
-			Hash:        "3f078e11",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Certificate name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "publicKeyBase64",
-					Description: "Certificate Base64",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "privateKeyBase64",
-					Description: "Private key Base64",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "enabled",
-					Description: "Whether Hub publishes this certificate to Portal",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarBool,
-						Nullable: true,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalCertListItem",
-			SkelName:    "vine.hub.admin.PortalCertListItem",
-			Description: "Portal site certificate list item",
-			Hash:        "51cc73e7",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "id",
-					Description: "Certificate ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "name",
-					Description: "Certificate name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "issuer",
-					Description: "Certificate issuer",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "domains",
-					Description: "Certificate domain name",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:   skel.TypeKindScalar,
-							Scalar: skel.ScalarString,
-						},
-					},
-				},
-				{
-					Name:        "publicKeyBase64",
-					Description: "Certificate Base64",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "privateKeyConfigured",
-					Description: "Whether the private key has been configured",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "validFrom",
-					Description: "Validity start time",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarTimestamp,
-					},
-				},
-				{
-					Name:        "validTo",
-					Description: "Validity end time",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarTimestamp,
-					},
-				},
-				{
-					Name:        "enabled",
-					Description: "Whether Hub publishes this certificate to Portal",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalCertUpdate",
-			SkelName:    "vine.hub.admin.PortalCertUpdate",
-			Description: "Portal site certificate update parameters",
-			Hash:        "9d894b41",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Certificate name",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "publicKeyBase64",
-					Description: "Certificate Base64",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "privateKeyBase64",
-					Description: "Private key Base64",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "enabled",
-					Description: "Whether Hub publishes this certificate to Portal",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarBool,
-						Nullable: true,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalCors",
-			SkelName:    "vine.hub.admin.PortalCors",
-			Description: "Portal site CORS configuration",
-			Hash:        "2f35d440",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "mode",
-					Description: "CORS mode: DISABLED/SAME_DOMAIN/STRICT",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindEnum,
-						Name:     "PortalCorsMode",
-						SkelName: "vine.hub.admin.PortalCorsMode",
-					},
-				},
-				{
-					Name:        "allowedOrigins",
-					Description: "List of origins allowed in strict mode",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:   skel.TypeKindScalar,
-							Scalar: skel.ScalarString,
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalEntry",
-			SkelName:    "vine.hub.admin.PortalEntry",
-			Description: "Portal access entry",
-			Hash:        "c853379b",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "id",
-					Description: "Entry ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "name",
-					Description: "Entry name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "scheme",
-					Description: "Entry protocol",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "host",
-					Description: "Match Host, empty string means no restriction",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "port",
-					Description: "Entry port",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "rules",
-					Description: "Entry rule list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "PortalEntryRule",
-							SkelName: "vine.hub.admin.PortalEntryRule",
-						},
-					},
-				},
-				{
-					Name:        "enabled",
-					Description: "Whether Hub publishes the rules of this entry to Portal",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalEntryCreation",
-			SkelName:    "vine.hub.admin.PortalEntryCreation",
-			Description: "Portal access entry creation parameters",
-			Hash:        "519d6a0d",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Entry name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "scheme",
-					Description: "Entry protocol",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "host",
-					Description: "Match Host, empty string means no restriction",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "port",
-					Description: "Entry port",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "enabled",
-					Description: "Whether Hub publishes the rules of this entry to Portal; defaults to true",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarBool,
-						Nullable: true,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalEntryRule",
-			SkelName:    "vine.hub.admin.PortalEntryRule",
-			Description: "Portal access entry rules",
-			Hash:        "135a721b",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "rule",
-					Description: "Entry rules",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalRuleListItem",
-						SkelName: "vine.hub.admin.PortalRuleListItem",
-					},
-				},
-				{
-					Name:        "site",
-					Description: "Target site",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalSiteListItem",
-						SkelName: "vine.hub.admin.PortalSiteListItem",
-						Nullable: true,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalEntryUpdate",
-			SkelName:    "vine.hub.admin.PortalEntryUpdate",
-			Description: "Portal access entry update parameters",
-			Hash:        "ea6ae4ec",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Entry name",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "scheme",
-					Description: "Entry protocol",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "host",
-					Description: "Match Host, empty string means no restriction",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "port",
-					Description: "Entry port",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarInt,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "enabled",
-					Description: "Whether Hub publishes the rules of this entry to Portal",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarBool,
-						Nullable: true,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalRule",
-			SkelName:    "vine.hub.admin.PortalRule",
-			Description: "Portal entry rules",
-			Hash:        "145b7553",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "id",
-					Description: "Rule ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "name",
-					Description: "Rule name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "matchScheme",
-					Description: "Matching protocol",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "matchHost",
-					Description: "Match Host, empty string means no restriction",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "matchPort",
-					Description: "Match matchPort, 0 means no restriction",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "matchPathPrefix",
-					Description: "Match path prefix, empty string means match all paths",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "routeType",
-					Description: "Target type",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "routeSiteName",
-					Description: "Site name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "routeRedirectionPattern",
-					Description: "Redirect Pattern",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "routePathPrefix",
-					Description: "Target site path prefix; empty means strip the matching prefix only",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "resolvedMatchPathPrefix",
-					Description: "Effective match path prefix after site mount path resolution",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "resolvedRoutePathPrefix",
-					Description: "Effective route path prefix after site mount path resolution",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "fieldSources",
-					Description: "Field sources; only returned by get, create and update",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "FieldSource",
-							SkelName: "vine.hub.admin.FieldSource",
-						},
-					},
-				},
-				{
-					Name:        "enabled",
-					Description: "Whether Hub publishes this rule to Portal",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalRuleConflict",
-			SkelName:    "vine.hub.admin.PortalRuleConflict",
-			Description: "Portal entry rules that match the same request",
-			Hash:        "1182f80b",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "ruleId",
-					Description: "Rule ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "rule",
-					Description: "Rule name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "conflictRuleId",
-					Description: "ID of the rule that already matches the request",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "conflictRule",
-					Description: "Name of the rule that already matches the request",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "entry",
-					Description: "Name of the Portal entry the rules belong to",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "match",
-					Description: "Request both rules match",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "publishedRuleId",
-					Description: "ID of the rule Hub publishes for the request",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "publishedRule",
-					Description: "Name of the rule Hub publishes for the request",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "suppressedRuleId",
-					Description: "ID of the rule Hub leaves out, because the published rule sorts first",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "suppressedRule",
-					Description: "Name of the rule Hub leaves out, because the published rule sorts first",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalRuleCreation",
-			SkelName:    "vine.hub.admin.PortalRuleCreation",
-			Description: "Portal entry rule creation parameters",
-			Hash:        "6bb91e43",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Rule name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "entryName",
-					Description: "Name of the Portal access entry the rule belongs to",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "matchPathPrefix",
-					Description: "Match path prefix, empty string means match all paths",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "routeType",
-					Description: "Target type",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "routeSiteName",
-					Description: "Site name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "routeRedirectionPattern",
-					Description: "Redirect Pattern",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "routePathPrefix",
-					Description: "Target site path prefix; empty means strip the matching prefix only",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "enabled",
-					Description: "Whether Hub publishes this rule to Portal",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarBool,
-						Nullable: true,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalRuleListItem",
-			SkelName:    "vine.hub.admin.PortalRuleListItem",
-			Description: "Portal entry rule list item",
-			Hash:        "5747eb4b",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "id",
-					Description: "Rule ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "name",
-					Description: "Rule name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "matchScheme",
-					Description: "Matching protocol",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "matchHost",
-					Description: "Match Host, empty string means no restriction",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "matchPort",
-					Description: "Match matchPort, 0 means no restriction",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "matchPathPrefix",
-					Description: "Match path prefix, empty string means match all paths",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "routeType",
-					Description: "Target type",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "routeSiteName",
-					Description: "Site name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "routeRedirectionPattern",
-					Description: "Redirect Pattern",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "routePathPrefix",
-					Description: "Target site path prefix; empty means strip the matching prefix only",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "resolvedMatchPathPrefix",
-					Description: "Effective match path prefix after site mount path resolution",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "resolvedRoutePathPrefix",
-					Description: "Effective route path prefix after site mount path resolution",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "enabled",
-					Description: "Whether Hub publishes this rule to Portal",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalRuleUpdate",
-			SkelName:    "vine.hub.admin.PortalRuleUpdate",
-			Description: "Portal entry rule update parameters",
-			Hash:        "69e44725",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Rule name",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "matchPathPrefix",
-					Description: "Match path prefix, empty string means match all paths",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "routeType",
-					Description: "Target type",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "routeSiteName",
-					Description: "Site name",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "routeRedirectionPattern",
-					Description: "Redirect Pattern",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "routePathPrefix",
-					Description: "Target site path prefix; empty means strip the matching prefix only",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "enabled",
-					Description: "Whether Hub publishes this rule to Portal",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarBool,
-						Nullable: true,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalSite",
-			SkelName:    "vine.hub.admin.PortalSite",
-			Description: "Portal target site",
-			Hash:        "1c882c65",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "id",
-					Description: "Target site id",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "name",
-					Description: "Target site name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "type",
-					Description: "Target site type",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindEnum,
-						Name:     "PortalSiteType",
-						SkelName: "vine.hub.admin.PortalSiteType",
-					},
-				},
-				{
-					Name:        "actorSkelName",
-					Description: "Actor Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "actorVia",
-					Description: "Actor access method",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "rpcgwServices",
-					Description: "Rpc gateway service Skel name list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:   skel.TypeKindScalar,
-							Scalar: skel.ScalarString,
-						},
-					},
-				},
-				{
-					Name:        "cors",
-					Description: "CORS configuration",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalCors",
-						SkelName: "vine.hub.admin.PortalCors",
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "webName",
-					Description: "Web name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "webMountPath",
-					Description: "Web mount path; empty means the Web is not limited to a path",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "fieldSources",
-					Description: "Field sources; only returned by get, create and update",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "FieldSource",
-							SkelName: "vine.hub.admin.FieldSource",
-						},
-					},
-				},
-				{
-					Name:        "enabled",
-					Description: "Whether Hub publishes this site to Portal",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalSiteActorOption",
-			SkelName:    "vine.hub.admin.PortalSiteActorOption",
-			Description: "Portal target site Actor options",
-			Hash:        "1831dcc8",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Actor name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "skelName",
-					Description: "Actor Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "actorVias",
-					Description: "Actor access method list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:   skel.TypeKindScalar,
-							Scalar: skel.ScalarString,
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalSiteCreation",
-			SkelName:    "vine.hub.admin.PortalSiteCreation",
-			Description: "Portal target site creation parameters",
-			Hash:        "d52bf710",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Target site name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "type",
-					Description: "Target site type",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindEnum,
-						Name:     "PortalSiteType",
-						SkelName: "vine.hub.admin.PortalSiteType",
-					},
-				},
-				{
-					Name:        "actorSkelName",
-					Description: "Actor Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "actorVia",
-					Description: "Actor access method",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "cors",
-					Description: "CORS configuration",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalCors",
-						SkelName: "vine.hub.admin.PortalCors",
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "webName",
-					Description: "Web name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "enabled",
-					Description: "Whether Hub publishes this site to Portal",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarBool,
-						Nullable: true,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalSiteListItem",
-			SkelName:    "vine.hub.admin.PortalSiteListItem",
-			Description: "Portal target site list item",
-			Hash:        "88a1a264",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "id",
-					Description: "Target site id",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "name",
-					Description: "Target site name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "type",
-					Description: "Target site type",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindEnum,
-						Name:     "PortalSiteType",
-						SkelName: "vine.hub.admin.PortalSiteType",
-					},
-				},
-				{
-					Name:        "actorSkelName",
-					Description: "Actor Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "actorVia",
-					Description: "Actor access method",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "rpcgwServices",
-					Description: "Rpc gateway service Skel name list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:   skel.TypeKindScalar,
-							Scalar: skel.ScalarString,
-						},
-					},
-				},
-				{
-					Name:        "cors",
-					Description: "CORS configuration",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalCors",
-						SkelName: "vine.hub.admin.PortalCors",
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "webName",
-					Description: "Web name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "webMountPath",
-					Description: "Web mount path; empty means the Web is not limited to a path",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "enabled",
-					Description: "Whether Hub publishes this site to Portal",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalSiteOptions",
-			SkelName:    "vine.hub.admin.PortalSiteOptions",
-			Description: "Portal target site form options",
-			Hash:        "918bdbcf",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "actors",
-					Description: "Actor options",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "PortalSiteActorOption",
-							SkelName: "vine.hub.admin.PortalSiteActorOption",
-						},
-					},
-				},
-				{
-					Name:        "services",
-					Description: "Rpc service options",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "PortalSiteServiceOption",
-							SkelName: "vine.hub.admin.PortalSiteServiceOption",
-						},
-					},
-				},
-				{
-					Name:        "webs",
-					Description: "Web options",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "PortalSiteWebOption",
-							SkelName: "vine.hub.admin.PortalSiteWebOption",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalSiteServiceOption",
-			SkelName:    "vine.hub.admin.PortalSiteServiceOption",
-			Description: "Portal target site service options",
-			Hash:        "4821fd0b",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Service name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "skelName",
-					Description: "Service Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "actorSkelNames",
-					Description: "Actor Skel name list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:   skel.TypeKindScalar,
-							Scalar: skel.ScalarString,
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalSiteUpdate",
-			SkelName:    "vine.hub.admin.PortalSiteUpdate",
-			Description: "Portal target site update parameters",
-			Hash:        "4bd9424e",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Target site name",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "type",
-					Description: "Target site type",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindEnum,
-						Name:     "PortalSiteType",
-						SkelName: "vine.hub.admin.PortalSiteType",
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "actorSkelName",
-					Description: "Actor Skel name",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "actorVia",
-					Description: "Actor access method",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "cors",
-					Description: "CORS configuration",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalCors",
-						SkelName: "vine.hub.admin.PortalCors",
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "webName",
-					Description: "Web name",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "enabled",
-					Description: "Whether Hub publishes this site to Portal",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarBool,
-						Nullable: true,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalSiteWebOption",
-			SkelName:    "vine.hub.admin.PortalSiteWebOption",
-			Description: "Portal target site web options",
-			Hash:        "a52d41e6",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Web name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "skelName",
-					Description: "Web Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "actorSkelNames",
-					Description: "Actor Skel name list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:   skel.TypeKindScalar,
-							Scalar: skel.ScalarString,
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalStatusView",
-			SkelName:    "vine.hub.admin.PortalStatusView",
-			Description: "Portal instance status view for Dashboard display",
-			Hash:        "126d087a",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "instanceId",
-					Description: "Portal instance ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "version",
-					Description: "Portal version",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "ServiceDebugActorItem",
-			SkelName:    "vine.hub.admin.ServiceDebugActorItem",
-			Description: "Service Debug Actor options",
-			Hash:        "50151449",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Actor name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "skelName",
-					Description: "Actor Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "infoSkelName",
-					Description: "Actor Info Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "actorInfoJson",
-					Description: "Default Actor Info JSON",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarJson,
-					},
-				},
-			},
-		},
-		{
-			Name:        "ServiceDebugAppInstance",
-			SkelName:    "vine.hub.admin.ServiceDebugAppInstance",
-			Description: "Application instance called by Service Debug",
-			Hash:        "e6db1438",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "appName",
-					Description: "Application name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "appInstanceId",
-					Description: "Application instance ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "appVersion",
-					Description: "Application version",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "endpoint",
-					Description: "Application access address",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "ServiceDebugDefaultInvokeRequest",
-			SkelName:    "vine.hub.admin.ServiceDebugDefaultInvokeRequest",
-			Description: "Service Debug default call request",
-			Hash:        "6c94b537",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "traceId",
-					Description: "Trace ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "spanId",
-					Description: "Span ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "actors",
-					Description: "Actor options",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "ServiceDebugActorItem",
-							SkelName: "vine.hub.admin.ServiceDebugActorItem",
-						},
-					},
-				},
-				{
-					Name:        "actorSkelName",
-					Description: "Default Actor Skel name",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "actorInfoJson",
-					Description: "Default Actor Info JSON",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarJson,
-					},
-				},
-				{
-					Name:        "paramsJson",
-					Description: "Default request parameters JSON",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarJson,
-					},
-				},
-			},
-		},
-		{
-			Name:        "ServiceDebugInvokeRequest",
-			SkelName:    "vine.hub.admin.ServiceDebugInvokeRequest",
-			Description: "Service Debug call request",
-			Hash:        "1f9b8f8b",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "appName",
-					Description: "Application name",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "appInstanceId",
-					Description: "Application instance ID",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "serviceSkelName",
-					Description: "Service Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Service schema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "methodSkelName",
-					Description: "Method Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "paramsJson",
-					Description: "Request parameters JSON",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarJson,
-					},
-				},
-				{
-					Name:        "timeoutSeconds",
-					Description: "Call timeout, in seconds",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "traceId",
-					Description: "Trace ID",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "spanId",
-					Description: "Span ID",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "actorSkelName",
-					Description: "Actor Skel name",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "actorInfoJson",
-					Description: "Actor Info JSON",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarJson,
-					},
-				},
-			},
-		},
-		{
-			Name:        "ServiceDebugInvokeResponse",
-			SkelName:    "vine.hub.admin.ServiceDebugInvokeResponse",
-			Description: "Service Debug call response",
-			Hash:        "aace2e9d",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "httpStatus",
-					Description: "HTTP status code",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "rpcStatus",
-					Description: "Rpc status code",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "headersJson",
-					Description: "Response header JSON",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarJson,
-					},
-				},
-				{
-					Name:        "bodyJson",
-					Description: "Response body JSON",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarJson,
-					},
-				},
-			},
-		},
-		{
-			Name:        "ServiceDebugMethodItem",
-			SkelName:    "vine.hub.admin.ServiceDebugMethodItem",
-			Description: "Method called by Service Debug",
-			Hash:        "cbe110e0",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Method name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "skelName",
-					Description: "Method Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Method description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the method is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Method deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "inputDescription",
-					Description: "Input description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "outputDescription",
-					Description: "Output description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "example",
-					Description: "Input example",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "outputExample",
-					Description: "Output example",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "arguments",
-					Description: "Parameter list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonField",
-							SkelName: "vine.hub.admin.SkeletonField",
-						},
-					},
-				},
-				{
-					Name:        "resultType",
-					Description: "Return type",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "ServiceDebugServiceItem",
-			SkelName:    "vine.hub.admin.ServiceDebugServiceItem",
-			Description: "Service called by Service Debug",
-			Hash:        "28303711",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "serviceSkelName",
-					Description: "Service Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Service schema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name: "api",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the Service is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Service deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "ServiceHandlerRegistration",
-			SkelName:    "vine.hub.admin.ServiceHandlerRegistration",
-			Description: "Rpc service processing capability registration information provided by the application",
-			Hash:        "c3c3acff",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "serviceSkelName",
-					Description: "Service Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Service schema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "endpoint",
-					Description: "Service agent access address",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonActorItem",
-			SkelName:    "vine.hub.admin.SkeletonActorItem",
-			Description: "SkeletonActor",
-			Hash:        "45f1805b",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "domain",
-					Description: "Domain",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Skeleton item hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "mainSchemaHash",
-					Description: "Primary skeleton item hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "isMultiVersion",
-					Description: "Whether there are multiple valid versions of the skeleton item",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "isMain",
-					Description: "Whether it is the main version of the skeleton item",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "domainSchemaHash",
-					Description: "Owning DomainSchema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "name",
-					Description: "Actor name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "skelName",
-					Description: "Actor Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Actor description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the Actor is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Actor deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "actorVias",
-					Description: "Actor access method list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:   skel.TypeKindScalar,
-							Scalar: skel.ScalarString,
-						},
-					},
-				},
-				{
-					Name:        "authEnabled",
-					Description: "Whether to enable authentication",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "identifierField",
-					Description: "Actor identifier field in Info",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "credential",
-					Description: "Authentication credentials",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "SkeletonData",
-						SkelName: "vine.hub.admin.SkeletonData",
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "info",
-					Description: "Authentication information",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "SkeletonData",
-						SkelName: "vine.hub.admin.SkeletonData",
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "authService",
-					Description: "Authentication services",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "SkeletonServiceItem",
-						SkelName: "vine.hub.admin.SkeletonServiceItem",
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "permEnabled",
-					Description: "Whether to enable permissions",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "permService",
-					Description: "Permission service",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "SkeletonServiceItem",
-						SkelName: "vine.hub.admin.SkeletonServiceItem",
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "permMethod",
-					Description: "Permission method",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "SkeletonMethod",
-						SkelName: "vine.hub.admin.SkeletonMethod",
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "services",
-					Description: "Accessible Service List",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonServiceItem",
-							SkelName: "vine.hub.admin.SkeletonServiceItem",
-						},
-					},
-				},
-				{
-					Name:        "webs",
-					Description: "Accessible web list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonWebItem",
-							SkelName: "vine.hub.admin.SkeletonWebItem",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonActorRef",
-			SkelName:    "vine.hub.admin.SkeletonActorRef",
-			Description: "Skeleton Actor Reference",
-			Hash:        "6bc3e89c",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Actor name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "skelName",
-					Description: "Actor Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "via",
-					Description: "Access method",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonConfigItem",
-			SkelName:    "vine.hub.admin.SkeletonConfigItem",
-			Description: "SkeletonConfig",
-			Hash:        "b9ac2803",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "domain",
-					Description: "Domain",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Skeleton item hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "mainSchemaHash",
-					Description: "Primary skeleton item hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "isMultiVersion",
-					Description: "Whether there are multiple valid versions of the skeleton item",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "isMain",
-					Description: "Whether it is the main version of the skeleton item",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "domainSchemaHash",
-					Description: "Owning DomainSchema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "name",
-					Description: "Config name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "skelName",
-					Description: "Config Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Config description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the Config is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Config deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "pub",
-					Description: "Whether the item is public",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "sensitive",
-					Description: "Whether the config value is sensitive",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "lifecycle",
-					Description: "Config lifecycle",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "fields",
-					Description: "Field list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonField",
-							SkelName: "vine.hub.admin.SkeletonField",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonData",
-			SkelName:    "vine.hub.admin.SkeletonData",
-			Description: "SkeletonData",
-			Hash:        "9ea3981d",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "domain",
-					Description: "Domain",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Skeleton item hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "mainSchemaHash",
-					Description: "Primary skeleton item hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "isMultiVersion",
-					Description: "Whether there are multiple valid versions of the skeleton item",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "isMain",
-					Description: "Whether it is the main version of the skeleton item",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "domainSchemaHash",
-					Description: "Owning DomainSchema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "name",
-					Description: "Data name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "skelName",
-					Description: "Data Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Data description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the Data or Enum is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Data or Enum deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "enum",
-					Description: "Whether it is Enum",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "sensitive",
-					Description: "Whether the data is sensitive",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "typeParameters",
-					Description: "Type parameter list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:   skel.TypeKindScalar,
-							Scalar: skel.ScalarString,
-						},
-					},
-				},
-				{
-					Name:        "fields",
-					Description: "Field list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonField",
-							SkelName: "vine.hub.admin.SkeletonField",
-						},
-					},
-				},
-				{
-					Name:        "enumItems",
-					Description: "List of enumeration items",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonEnumItem",
-							SkelName: "vine.hub.admin.SkeletonEnumItem",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonDomain",
-			SkelName:    "vine.hub.admin.SkeletonDomain",
-			Description: "Domain skeleton version",
-			Hash:        "816f84b1",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "domain",
-					Description: "Domain name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "DomainSchema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "mainSchemaHash",
-					Description: "Primary DomainSchema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "isMultiVersion",
-					Description: "Whether multiple active versions exist",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "isMain",
-					Description: "Whether this is the primary version",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "total",
-					Description: "Total number of skeleton items",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "actors",
-					Description: "Actor list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonActorItem",
-							SkelName: "vine.hub.admin.SkeletonActorItem",
-						},
-					},
-				},
-				{
-					Name:        "services",
-					Description: "Service list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonServiceItem",
-							SkelName: "vine.hub.admin.SkeletonServiceItem",
-						},
-					},
-				},
-				{
-					Name:        "resources",
-					Description: "Resource list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonResourceItem",
-							SkelName: "vine.hub.admin.SkeletonResourceItem",
-						},
-					},
-				},
-				{
-					Name:        "data",
-					Description: "Data list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonData",
-							SkelName: "vine.hub.admin.SkeletonData",
-						},
-					},
-				},
-				{
-					Name:        "configs",
-					Description: "Config list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonConfigItem",
-							SkelName: "vine.hub.admin.SkeletonConfigItem",
-						},
-					},
-				},
-				{
-					Name:        "webs",
-					Description: "Web list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonWebItem",
-							SkelName: "vine.hub.admin.SkeletonWebItem",
-						},
-					},
-				},
-				{
-					Name:        "tasks",
-					Description: "Task list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonTask",
-							SkelName: "vine.hub.admin.SkeletonTask",
-						},
-					},
-				},
-				{
-					Name:        "events",
-					Description: "Event list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonEventItem",
-							SkelName: "vine.hub.admin.SkeletonEventItem",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonEnumItem",
-			SkelName:    "vine.hub.admin.SkeletonEnumItem",
-			Description: "Skeleton enumeration items",
-			Hash:        "8b5c74a4",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Enumeration item name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Enumeration item description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the enumeration item is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Enumeration item deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonEventItem",
-			SkelName:    "vine.hub.admin.SkeletonEventItem",
-			Description: "Skeleton event",
-			Hash:        "cf41289c",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "domain",
-					Description: "Domain",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Skeleton item hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "mainSchemaHash",
-					Description: "Primary skeleton item hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "isMultiVersion",
-					Description: "Whether there are multiple valid versions of the skeleton item",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "isMain",
-					Description: "Whether it is the main version of the skeleton item",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "domainSchemaHash",
-					Description: "Owning DomainSchema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "name",
-					Description: "Event name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "skelName",
-					Description: "Event Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Event description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the Event is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Event deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "pub",
-					Description: "Whether the item is public",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "sensitive",
-					Description: "Whether the event payload is sensitive",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "fields",
-					Description: "Field list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonField",
-							SkelName: "vine.hub.admin.SkeletonField",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonField",
-			SkelName:    "vine.hub.admin.SkeletonField",
-			Description: "Skeleton field",
-			Hash:        "02833a63",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Field name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "type",
-					Description: "Field type",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Field description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the field is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Field deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "example",
-					Description: "Field example",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "sensitive",
-					Description: "Whether the field is sensitive",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonMethod",
-			SkelName:    "vine.hub.admin.SkeletonMethod",
-			Description: "Skeleton method",
-			Hash:        "f3be138b",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Method name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "skelName",
-					Description: "Method Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Method description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the method is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Method deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "inputDescription",
-					Description: "Input description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "outputDescription",
-					Description: "Output description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "example",
-					Description: "Input example",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "authMode",
-					Description: "Authentication mode",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "require",
-					Description: "Permission requirements",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "SkeletonPermExpr",
-						SkelName: "vine.hub.admin.SkeletonPermExpr",
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "outputExample",
-					Description: "Output example",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "arguments",
-					Description: "Parameter list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonField",
-							SkelName: "vine.hub.admin.SkeletonField",
-						},
-					},
-				},
-				{
-					Name:        "argumentsSensitive",
-					Description: "Whether all input arguments are sensitive",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "resultType",
-					Description: "Return type",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "resultSensitive",
-					Description: "Whether the result is sensitive",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonPermCheck",
-			SkelName:    "vine.hub.admin.SkeletonPermCheck",
-			Description: "Skeleton permission verification call",
-			Hash:        "99022e1f",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "resourceSkelName",
-					Description: "Resource Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "actionName",
-					Description: "Action name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "checkName",
-					Description: "Check name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "serviceSkelName",
-					Description: "Check Service Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "methodSkelName",
-					Description: "Check Method Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "arguments",
-					Description: "Parameter list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonPermCheckArgument",
-							SkelName: "vine.hub.admin.SkeletonPermCheckArgument",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonPermCheckArgument",
-			SkelName:    "vine.hub.admin.SkeletonPermCheckArgument",
-			Description: "Skeleton permission verification parameters",
-			Hash:        "aebed531",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Parameter name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "jsonPath",
-					Description: "Parameter JSON path",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "type",
-					Description: "Parameter type",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonPermExpr",
-			SkelName:    "vine.hub.admin.SkeletonPermExpr",
-			Description: "Skeleton permission expression",
-			Hash:        "8273aed2",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "mode",
-					Description: "Permission expression pattern",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "code",
-					Description: "Permission code",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "check",
-					Description: "Permission verification call",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "SkeletonPermCheck",
-						SkelName: "vine.hub.admin.SkeletonPermCheck",
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "children",
-					Description: "Subexpression",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonPermExpr",
-							SkelName: "vine.hub.admin.SkeletonPermExpr",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonResourceAction",
-			SkelName:    "vine.hub.admin.SkeletonResourceAction",
-			Description: "SkeletonResource Action",
-			Hash:        "424f1bd5",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Action name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "permissionCode",
-					Description: "Permission code",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Action description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the Action is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Action deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "checks",
-					Description: "Check list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonResourceCheck",
-							SkelName: "vine.hub.admin.SkeletonResourceCheck",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonResourceCheck",
-			SkelName:    "vine.hub.admin.SkeletonResourceCheck",
-			Description: "SkeletonResource Check",
-			Hash:        "5c8943a3",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Check name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the Check is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Check deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "methodName",
-					Description: "Check method name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "methodSkelName",
-					Description: "Check method Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "arguments",
-					Description: "Parameter list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonField",
-							SkelName: "vine.hub.admin.SkeletonField",
-						},
-					},
-				},
-				{
-					Name:        "argumentsSensitive",
-					Description: "Whether all input arguments are sensitive",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonResourceItem",
-			SkelName:    "vine.hub.admin.SkeletonResourceItem",
-			Description: "Skeleton Resource item",
-			Hash:        "9edb5c76",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "domain",
-					Description: "Domain",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Skeleton item hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "mainSchemaHash",
-					Description: "Primary skeleton item hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "isMultiVersion",
-					Description: "Whether there are multiple valid versions of the skeleton item",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "isMain",
-					Description: "Whether it is the main version of the skeleton item",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "domainSchemaHash",
-					Description: "Owning DomainSchema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "name",
-					Description: "Resource name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "skelName",
-					Description: "Resource Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Resource description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the Resource is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Resource deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "checks",
-					Description: "Resource level Check list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonResourceCheck",
-							SkelName: "vine.hub.admin.SkeletonResourceCheck",
-						},
-					},
-				},
-				{
-					Name:        "actions",
-					Description: "Action list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonResourceAction",
-							SkelName: "vine.hub.admin.SkeletonResourceAction",
-						},
-					},
-				},
-				{
-					Name:        "checkService",
-					Description: "Check service",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "SkeletonServiceItem",
-						SkelName: "vine.hub.admin.SkeletonServiceItem",
-						Nullable: true,
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonServiceItem",
-			SkelName:    "vine.hub.admin.SkeletonServiceItem",
-			Description: "Skeleton service items",
-			Hash:        "6616595f",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "domain",
-					Description: "Domain",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Skeleton item hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "mainSchemaHash",
-					Description: "Primary skeleton item hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "isMultiVersion",
-					Description: "Whether there are multiple valid versions of the skeleton item",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "isMain",
-					Description: "Whether it is the main version of the skeleton item",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "domainSchemaHash",
-					Description: "Owning DomainSchema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "name",
-					Description: "Service name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "skelName",
-					Description: "Service Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Service Description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the Service is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Service deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "pub",
-					Description: "Whether the item is public",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name: "api",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "authMode",
-					Description: "Authentication mode",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "require",
-					Description: "Permission requirements",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "SkeletonPermExpr",
-						SkelName: "vine.hub.admin.SkeletonPermExpr",
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "actors",
-					Description: "Accessible Actor List",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonActorRef",
-							SkelName: "vine.hub.admin.SkeletonActorRef",
-						},
-					},
-				},
-				{
-					Name:        "methods",
-					Description: "Method list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonMethod",
-							SkelName: "vine.hub.admin.SkeletonMethod",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonTask",
-			SkelName:    "vine.hub.admin.SkeletonTask",
-			Description: "Skeleton task",
-			Hash:        "de6c3c97",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "domain",
-					Description: "Domain",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Skeleton item hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "mainSchemaHash",
-					Description: "Primary skeleton item hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "isMultiVersion",
-					Description: "Whether there are multiple valid versions of the skeleton item",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "isMain",
-					Description: "Whether it is the main version of the skeleton item",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "domainSchemaHash",
-					Description: "Owning DomainSchema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "name",
-					Description: "Task name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "skelName",
-					Description: "Task Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Task description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the Task is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Task deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "triggers",
-					Description: "Trigger list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonTrigger",
-							SkelName: "vine.hub.admin.SkeletonTrigger",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonTrigger",
-			SkelName:    "vine.hub.admin.SkeletonTrigger",
-			Description: "Skeleton task trigger",
-			Hash:        "8f4e55b5",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Trigger name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "skelName",
-					Description: "Trigger Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Trigger description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the Trigger is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Trigger deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "inputDescription",
-					Description: "Input description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "example",
-					Description: "Input example",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "arguments",
-					Description: "Parameter list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonField",
-							SkelName: "vine.hub.admin.SkeletonField",
-						},
-					},
-				},
-				{
-					Name:        "argumentsSensitive",
-					Description: "Whether all input arguments are sensitive",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonWebItem",
-			SkelName:    "vine.hub.admin.SkeletonWebItem",
-			Description: "Skeleton web page",
-			Hash:        "a831714a",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "domain",
-					Description: "Domain",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Skeleton item hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "mainSchemaHash",
-					Description: "Primary skeleton item hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "isMultiVersion",
-					Description: "Whether there are multiple valid versions of the skeleton item",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "isMain",
-					Description: "Whether it is the main version of the skeleton item",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "domainSchemaHash",
-					Description: "Owning DomainSchema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "name",
-					Description: "Web page name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "skelName",
-					Description: "Web Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Web page description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the Web is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Web deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "actors",
-					Description: "Accessible Actor List",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonActorRef",
-							SkelName: "vine.hub.admin.SkeletonActorRef",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "TaskDebugDefaultLaunchRequest",
-			SkelName:    "vine.hub.admin.TaskDebugDefaultLaunchRequest",
-			Description: "Task Debug initiates a request by default",
-			Hash:        "196bd2e9",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "traceId",
-					Description: "Trace ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "spanId",
-					Description: "Span ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "argumentsJson",
-					Description: "Default task parameters JSON",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarJson,
-					},
-				},
-			},
-		},
-		{
-			Name:        "TaskDebugLaunchRequest",
-			SkelName:    "vine.hub.admin.TaskDebugLaunchRequest",
-			Description: "Task Debug initiates a request",
-			Hash:        "0017f3f2",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "taskSkelName",
-					Description: "Task Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Task schema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "triggerSkelName",
-					Description: "Trigger Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "argumentsJson",
-					Description: "Task parameters JSON",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarJson,
-					},
-				},
-				{
-					Name:        "traceId",
-					Description: "Trace ID",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-				{
-					Name:        "spanId",
-					Description: "Span ID",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarString,
-						Nullable: true,
-					},
-				},
-			},
-		},
-		{
-			Name:        "TaskDebugTaskItem",
-			SkelName:    "vine.hub.admin.TaskDebugTaskItem",
-			Description: "Task called by Task Debug",
-			Hash:        "2302d2f6",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Task name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "taskSkelName",
-					Description: "Task Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Task schema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Task description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the Task is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Task deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "TaskDebugTriggerItem",
-			SkelName:    "vine.hub.admin.TaskDebugTriggerItem",
-			Description: "Trigger called by Task Debug",
-			Hash:        "4f9a8d5e",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Trigger name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "skelName",
-					Description: "Trigger Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "description",
-					Description: "Trigger description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "deprecated",
-					Description: "Whether the Trigger is deprecated",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "deprecatedReason",
-					Description: "Trigger deprecation reason",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "inputDescription",
-					Description: "Input description",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "example",
-					Description: "Input example",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "arguments",
-					Description: "Parameter list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonField",
-							SkelName: "vine.hub.admin.SkeletonField",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "TaskRunnerCronScheduler",
-			SkelName:    "vine.hub.admin.TaskRunnerCronScheduler",
-			Description: "Task execution Cron schedule",
-			Hash:        "cea0f982",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "triggerSkelName",
-					Description: "Trigger Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "cronExpr",
-					Description: "Cron expression",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "TaskRunnerRegistration",
-			SkelName:    "vine.hub.admin.TaskRunnerRegistration",
-			Description: "Task execution capability registration information provided by the application",
-			Hash:        "0f79f56c",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "taskSkelName",
-					Description: "Task Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Task schema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "timeoutMs",
-					Description: "Execution timeout, in milliseconds",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "concurrency",
-					Description: "Maximum concurrency",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "noRetry",
-					Description: "Whether to disallow retrying after failure",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "cronSchedulers",
-					Description: "Cron schedule list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "TaskRunnerCronScheduler",
-							SkelName: "vine.hub.admin.TaskRunnerCronScheduler",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "WebHandlerRegistration",
-			SkelName:    "vine.hub.admin.WebHandlerRegistration",
-			Description: "Web processing capability registration information provided by the application",
-			Hash:        "053e7a3a",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "webSkelName",
-					Description: "Web Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Web schema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "endpoint",
-					Description: "Web proxy access address",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
+		{Name: "AppConfigCreation", SkelName: "vine.hub.admin.AppConfigCreation", Description: "Configuration creation parameters", Hash: "da9a7e54", Members: []*skel.MemberSchema{
+			{Name: "skelName", Description: "Configuration Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "value", Description: "Configuration JSON", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
+		{Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem", Description: "Configuration items", Hash: "c29db5d5", Members: []*skel.MemberSchema{
+			{Name: "id", Description: "Configuration ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "key", Description: "Configuration key", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "status", Description: "Configuration status", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "lifecycle", Description: "Configuration lifecycle", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "value", Description: "Configuration JSON", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schema", Description: "Configuration schema", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigSchema", SkelName: "vine.hub.admin.AppConfigSchema", Nullable: true}},
+			{Name: "fieldSources", Description: "Field sources; only returned by get, create and update", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "FieldSource", SkelName: "vine.hub.admin.FieldSource"}}},
+		}},
+		{Name: "AppConfigListItem", SkelName: "vine.hub.admin.AppConfigListItem", Description: "Configuration item list item", Hash: "093a335b", Members: []*skel.MemberSchema{
+			{Name: "id", Description: "Configuration ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "key", Description: "Configuration key", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "status", Description: "Configuration status", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "lifecycle", Description: "Configuration lifecycle", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaName", Description: "Configuration schema name; empty when no schema matches", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaSkelName", Description: "Configuration schema Skel name; empty when no schema matches", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
+		{Name: "AppConfigSchema", SkelName: "vine.hub.admin.AppConfigSchema", Description: "Configuration schema items", Hash: "24585ab7", Members: []*skel.MemberSchema{
+			{Name: "skelName", Description: "Configuration Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "name", Description: "Configuration name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Configuration description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the configuration is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Configuration deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "lifecycle", Description: "Configuration lifecycle", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "fields", Description: "Configuration field list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigSchemaField", SkelName: "vine.hub.admin.AppConfigSchemaField"}}},
+		}},
+		{Name: "AppConfigSchemaEnumItem", SkelName: "vine.hub.admin.AppConfigSchemaEnumItem", Description: "Configuration schema enumeration options", Hash: "e326a9c1", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Enum option name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Enumeration options description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the enumeration option is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Enumeration option deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
+		{Name: "AppConfigSchemaField", SkelName: "vine.hub.admin.AppConfigSchemaField", Description: "Configuration schema fields", Hash: "006cd1a8", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Field name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "type", Description: "Field type", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Field description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the field is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Field deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "enumItems", Description: "Enumeration options list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigSchemaEnumItem", SkelName: "vine.hub.admin.AppConfigSchemaEnumItem"}}},
+			{Name: "mapKeyEnumItems", Description: "Map key enumeration options", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigSchemaEnumItem", SkelName: "vine.hub.admin.AppConfigSchemaEnumItem"}}},
+			{Name: "mapValueEnumItems", Description: "Map value enumeration options", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigSchemaEnumItem", SkelName: "vine.hub.admin.AppConfigSchemaEnumItem"}}},
+		}},
+		{Name: "AppConfigUpdate", SkelName: "vine.hub.admin.AppConfigUpdate", Description: "Configuration update parameters", Hash: "76a0e2d9", Members: []*skel.MemberSchema{
+			{Name: "value", Description: "Configuration JSON", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+		}},
+		{Name: "AppStatusView", SkelName: "vine.hub.admin.AppStatusView", Description: "Application instance status view for Dashboard display", Hash: "9aeded89", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Application name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "instanceId", Description: "Application instance ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "version", Description: "Application version", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "endpoint", Description: "Application access address", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "serviceHandlers", Description: "List of Rpc service processing capabilities provided by the application", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "ServiceHandlerRegistration", SkelName: "vine.hub.admin.ServiceHandlerRegistration"}}},
+			{Name: "webHandlers", Description: "List of web processing capabilities provided by the application", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "WebHandlerRegistration", SkelName: "vine.hub.admin.WebHandlerRegistration"}}},
+			{Name: "eventListeners", Description: "List of event listening capabilities provided by the application", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "EventListenerRegistration", SkelName: "vine.hub.admin.EventListenerRegistration"}}},
+			{Name: "taskRunners", Description: "List of task execution capabilities provided by the application", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "TaskRunnerRegistration", SkelName: "vine.hub.admin.TaskRunnerRegistration"}}},
+		}},
+		{Name: "EventDebugDefaultEmitRequest", SkelName: "vine.hub.admin.EventDebugDefaultEmitRequest", Description: "Default Event Debug send request", Hash: "b6e87955", Members: []*skel.MemberSchema{
+			{Name: "traceId", Description: "Trace ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "spanId", Description: "Span ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "eventJson", Description: "Default event JSON", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarJson}},
+		}},
+		{Name: "EventDebugEmitRequest", SkelName: "vine.hub.admin.EventDebugEmitRequest", Description: "Event Debug send request", Hash: "b962d5b1", Members: []*skel.MemberSchema{
+			{Name: "eventSkelName", Description: "Event Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Event schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "eventJson", Description: "Event JSON", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarJson}},
+			{Name: "traceId", Description: "Trace ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "spanId", Description: "Span ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+		}},
+		{Name: "EventDebugEventItem", SkelName: "vine.hub.admin.EventDebugEventItem", Description: "Event called by Event Debug", Hash: "a952531e", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Event name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "eventSkelName", Description: "Event Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Event schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Event description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the Event is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Event deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "fields", Description: "Field list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonField", SkelName: "vine.hub.admin.SkeletonField"}}},
+		}},
+		{Name: "EventListenerRegistration", SkelName: "vine.hub.admin.EventListenerRegistration", Description: "Event listening capability registration information provided by the application", Hash: "a71ebf1f", Members: []*skel.MemberSchema{
+			{Name: "eventSkelName", Description: "Event Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Event schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "timeoutMs", Description: "Execution timeout, in milliseconds", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "concurrency", Description: "Maximum concurrency", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "noRetry", Description: "Whether to disallow retrying after failure", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+		}},
+		{Name: "FieldSource", SkelName: "vine.hub.admin.FieldSource", Description: "Layers that supplied an entity field", Hash: "db44a5d8", Members: []*skel.MemberSchema{
+			{Name: "path", Description: "Field JSON pointer", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "source", Description: "Seed source", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "define", Description: "Seed definition name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "override", Description: "Seed override name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "variables", Description: "Referenced seed variables", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}}},
+			{Name: "template", Description: "Seed template", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarJson, Nullable: true}},
+			{Name: "bindings", Description: "Resolved variable bindings", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "FieldSourceBinding", SkelName: "vine.hub.admin.FieldSourceBinding"}}},
+		}},
+		{Name: "FieldSourceBinding", SkelName: "vine.hub.admin.FieldSourceBinding", Description: "A resolved variable reference within a field template", Hash: "3fb43b20", Members: []*skel.MemberSchema{
+			{Name: "path", Description: "Template JSON pointer", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "variable", Description: "Variable name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "reference", Description: "Variable reference", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "value", Description: "Resolved value", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarJson}},
+			{Name: "defaultUsed", Description: "Whether the default was used", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+		}},
+		{Name: "PortalCert", SkelName: "vine.hub.admin.PortalCert", Description: "Portal site certificate", Hash: "6d989af0", Members: []*skel.MemberSchema{
+			{Name: "id", Description: "Certificate ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "name", Description: "Certificate name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "issuer", Description: "Certificate issuer", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "domains", Description: "Certificate domain name", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}}},
+			{Name: "publicKeyBase64", Description: "Certificate Base64", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "privateKeyConfigured", Description: "Whether the private key has been configured", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "validFrom", Description: "Validity start time", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarTimestamp}},
+			{Name: "validTo", Description: "Validity end time", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarTimestamp}},
+			{Name: "fieldSources", Description: "Field sources; only returned by get, create and update", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "FieldSource", SkelName: "vine.hub.admin.FieldSource"}}},
+			{Name: "enabled", Description: "Whether Hub publishes this certificate to Portal", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+		}},
+		{Name: "PortalCertCreation", SkelName: "vine.hub.admin.PortalCertCreation", Description: "Portal site certificate creation parameters", Hash: "3f078e11", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Certificate name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "publicKeyBase64", Description: "Certificate Base64", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "privateKeyBase64", Description: "Private key Base64", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "enabled", Description: "Whether Hub publishes this certificate to Portal", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool, Nullable: true}},
+		}},
+		{Name: "PortalCertListItem", SkelName: "vine.hub.admin.PortalCertListItem", Description: "Portal site certificate list item", Hash: "51cc73e7", Members: []*skel.MemberSchema{
+			{Name: "id", Description: "Certificate ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "name", Description: "Certificate name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "issuer", Description: "Certificate issuer", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "domains", Description: "Certificate domain name", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}}},
+			{Name: "publicKeyBase64", Description: "Certificate Base64", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "privateKeyConfigured", Description: "Whether the private key has been configured", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "validFrom", Description: "Validity start time", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarTimestamp}},
+			{Name: "validTo", Description: "Validity end time", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarTimestamp}},
+			{Name: "enabled", Description: "Whether Hub publishes this certificate to Portal", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+		}},
+		{Name: "PortalCertUpdate", SkelName: "vine.hub.admin.PortalCertUpdate", Description: "Portal site certificate update parameters", Hash: "9d894b41", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Certificate name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "publicKeyBase64", Description: "Certificate Base64", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "privateKeyBase64", Description: "Private key Base64", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "enabled", Description: "Whether Hub publishes this certificate to Portal", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool, Nullable: true}},
+		}},
+		{Name: "PortalCors", SkelName: "vine.hub.admin.PortalCors", Description: "Portal site CORS configuration", Hash: "2f35d440", Members: []*skel.MemberSchema{
+			{Name: "mode", Description: "CORS mode: DISABLED/SAME_DOMAIN/STRICT", Type: &skel.TypeSchema{Kind: skel.TypeKindEnum, Name: "PortalCorsMode", SkelName: "vine.hub.admin.PortalCorsMode"}},
+			{Name: "allowedOrigins", Description: "List of origins allowed in strict mode", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}}},
+		}},
+		{Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry", Description: "Portal access entry", Hash: "c853379b", Members: []*skel.MemberSchema{
+			{Name: "id", Description: "Entry ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "name", Description: "Entry name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "scheme", Description: "Entry protocol", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "host", Description: "Match Host, empty string means no restriction", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "port", Description: "Entry port", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "rules", Description: "Entry rule list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalEntryRule", SkelName: "vine.hub.admin.PortalEntryRule"}}},
+			{Name: "enabled", Description: "Whether Hub publishes the rules of this entry to Portal", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+		}},
+		{Name: "PortalEntryCreation", SkelName: "vine.hub.admin.PortalEntryCreation", Description: "Portal access entry creation parameters", Hash: "519d6a0d", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Entry name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "scheme", Description: "Entry protocol", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "host", Description: "Match Host, empty string means no restriction", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "port", Description: "Entry port", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "enabled", Description: "Whether Hub publishes the rules of this entry to Portal; defaults to true", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool, Nullable: true}},
+		}},
+		{Name: "PortalEntryRule", SkelName: "vine.hub.admin.PortalEntryRule", Description: "Portal access entry rules", Hash: "135a721b", Members: []*skel.MemberSchema{
+			{Name: "rule", Description: "Entry rules", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalRuleListItem", SkelName: "vine.hub.admin.PortalRuleListItem"}},
+			{Name: "site", Description: "Target site", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalSiteListItem", SkelName: "vine.hub.admin.PortalSiteListItem", Nullable: true}},
+		}},
+		{Name: "PortalEntryUpdate", SkelName: "vine.hub.admin.PortalEntryUpdate", Description: "Portal access entry update parameters", Hash: "ea6ae4ec", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Entry name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "scheme", Description: "Entry protocol", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "host", Description: "Match Host, empty string means no restriction", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "port", Description: "Entry port", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt, Nullable: true}},
+			{Name: "enabled", Description: "Whether Hub publishes the rules of this entry to Portal", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool, Nullable: true}},
+		}},
+		{Name: "PortalRule", SkelName: "vine.hub.admin.PortalRule", Description: "Portal entry rules", Hash: "145b7553", Members: []*skel.MemberSchema{
+			{Name: "id", Description: "Rule ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "name", Description: "Rule name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "matchScheme", Description: "Matching protocol", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "matchHost", Description: "Match Host, empty string means no restriction", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "matchPort", Description: "Match matchPort, 0 means no restriction", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "matchPathPrefix", Description: "Match path prefix, empty string means match all paths", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "routeType", Description: "Target type", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "routeSiteName", Description: "Site name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "routeRedirectionPattern", Description: "Redirect Pattern", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "routePathPrefix", Description: "Target site path prefix; empty means strip the matching prefix only", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "resolvedMatchPathPrefix", Description: "Effective match path prefix after site mount path resolution", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "resolvedRoutePathPrefix", Description: "Effective route path prefix after site mount path resolution", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "fieldSources", Description: "Field sources; only returned by get, create and update", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "FieldSource", SkelName: "vine.hub.admin.FieldSource"}}},
+			{Name: "enabled", Description: "Whether Hub publishes this rule to Portal", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+		}},
+		{Name: "PortalRuleConflict", SkelName: "vine.hub.admin.PortalRuleConflict", Description: "Portal entry rules that match the same request", Hash: "1182f80b", Members: []*skel.MemberSchema{
+			{Name: "ruleId", Description: "Rule ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "rule", Description: "Rule name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "conflictRuleId", Description: "ID of the rule that already matches the request", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "conflictRule", Description: "Name of the rule that already matches the request", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "entry", Description: "Name of the Portal entry the rules belong to", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "match", Description: "Request both rules match", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "publishedRuleId", Description: "ID of the rule Hub publishes for the request", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "publishedRule", Description: "Name of the rule Hub publishes for the request", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "suppressedRuleId", Description: "ID of the rule Hub leaves out, because the published rule sorts first", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "suppressedRule", Description: "Name of the rule Hub leaves out, because the published rule sorts first", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
+		{Name: "PortalRuleCreation", SkelName: "vine.hub.admin.PortalRuleCreation", Description: "Portal entry rule creation parameters", Hash: "6bb91e43", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Rule name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "entryName", Description: "Name of the Portal access entry the rule belongs to", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "matchPathPrefix", Description: "Match path prefix, empty string means match all paths", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "routeType", Description: "Target type", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "routeSiteName", Description: "Site name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "routeRedirectionPattern", Description: "Redirect Pattern", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "routePathPrefix", Description: "Target site path prefix; empty means strip the matching prefix only", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "enabled", Description: "Whether Hub publishes this rule to Portal", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool, Nullable: true}},
+		}},
+		{Name: "PortalRuleListItem", SkelName: "vine.hub.admin.PortalRuleListItem", Description: "Portal entry rule list item", Hash: "5747eb4b", Members: []*skel.MemberSchema{
+			{Name: "id", Description: "Rule ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "name", Description: "Rule name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "matchScheme", Description: "Matching protocol", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "matchHost", Description: "Match Host, empty string means no restriction", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "matchPort", Description: "Match matchPort, 0 means no restriction", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "matchPathPrefix", Description: "Match path prefix, empty string means match all paths", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "routeType", Description: "Target type", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "routeSiteName", Description: "Site name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "routeRedirectionPattern", Description: "Redirect Pattern", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "routePathPrefix", Description: "Target site path prefix; empty means strip the matching prefix only", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "resolvedMatchPathPrefix", Description: "Effective match path prefix after site mount path resolution", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "resolvedRoutePathPrefix", Description: "Effective route path prefix after site mount path resolution", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "enabled", Description: "Whether Hub publishes this rule to Portal", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+		}},
+		{Name: "PortalRuleUpdate", SkelName: "vine.hub.admin.PortalRuleUpdate", Description: "Portal entry rule update parameters", Hash: "69e44725", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Rule name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "matchPathPrefix", Description: "Match path prefix, empty string means match all paths", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "routeType", Description: "Target type", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "routeSiteName", Description: "Site name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "routeRedirectionPattern", Description: "Redirect Pattern", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "routePathPrefix", Description: "Target site path prefix; empty means strip the matching prefix only", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "enabled", Description: "Whether Hub publishes this rule to Portal", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool, Nullable: true}},
+		}},
+		{Name: "PortalSite", SkelName: "vine.hub.admin.PortalSite", Description: "Portal target site", Hash: "1c882c65", Members: []*skel.MemberSchema{
+			{Name: "id", Description: "Target site id", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "name", Description: "Target site name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "type", Description: "Target site type", Type: &skel.TypeSchema{Kind: skel.TypeKindEnum, Name: "PortalSiteType", SkelName: "vine.hub.admin.PortalSiteType"}},
+			{Name: "actorSkelName", Description: "Actor Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "actorVia", Description: "Actor access method", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "rpcgwServices", Description: "Rpc gateway service Skel name list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}}},
+			{Name: "cors", Description: "CORS configuration", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCors", SkelName: "vine.hub.admin.PortalCors", Nullable: true}},
+			{Name: "webName", Description: "Web name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "webMountPath", Description: "Web mount path; empty means the Web is not limited to a path", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "fieldSources", Description: "Field sources; only returned by get, create and update", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "FieldSource", SkelName: "vine.hub.admin.FieldSource"}}},
+			{Name: "enabled", Description: "Whether Hub publishes this site to Portal", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+		}},
+		{Name: "PortalSiteActorOption", SkelName: "vine.hub.admin.PortalSiteActorOption", Description: "Portal target site Actor options", Hash: "1831dcc8", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Actor name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "skelName", Description: "Actor Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "actorVias", Description: "Actor access method list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}}},
+		}},
+		{Name: "PortalSiteCreation", SkelName: "vine.hub.admin.PortalSiteCreation", Description: "Portal target site creation parameters", Hash: "d52bf710", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Target site name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "type", Description: "Target site type", Type: &skel.TypeSchema{Kind: skel.TypeKindEnum, Name: "PortalSiteType", SkelName: "vine.hub.admin.PortalSiteType"}},
+			{Name: "actorSkelName", Description: "Actor Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "actorVia", Description: "Actor access method", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "cors", Description: "CORS configuration", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCors", SkelName: "vine.hub.admin.PortalCors", Nullable: true}},
+			{Name: "webName", Description: "Web name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "enabled", Description: "Whether Hub publishes this site to Portal", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool, Nullable: true}},
+		}},
+		{Name: "PortalSiteListItem", SkelName: "vine.hub.admin.PortalSiteListItem", Description: "Portal target site list item", Hash: "88a1a264", Members: []*skel.MemberSchema{
+			{Name: "id", Description: "Target site id", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "name", Description: "Target site name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "type", Description: "Target site type", Type: &skel.TypeSchema{Kind: skel.TypeKindEnum, Name: "PortalSiteType", SkelName: "vine.hub.admin.PortalSiteType"}},
+			{Name: "actorSkelName", Description: "Actor Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "actorVia", Description: "Actor access method", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "rpcgwServices", Description: "Rpc gateway service Skel name list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}}},
+			{Name: "cors", Description: "CORS configuration", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCors", SkelName: "vine.hub.admin.PortalCors", Nullable: true}},
+			{Name: "webName", Description: "Web name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "webMountPath", Description: "Web mount path; empty means the Web is not limited to a path", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "enabled", Description: "Whether Hub publishes this site to Portal", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+		}},
+		{Name: "PortalSiteOptions", SkelName: "vine.hub.admin.PortalSiteOptions", Description: "Portal target site form options", Hash: "918bdbcf", Members: []*skel.MemberSchema{
+			{Name: "actors", Description: "Actor options", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalSiteActorOption", SkelName: "vine.hub.admin.PortalSiteActorOption"}}},
+			{Name: "services", Description: "Rpc service options", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalSiteServiceOption", SkelName: "vine.hub.admin.PortalSiteServiceOption"}}},
+			{Name: "webs", Description: "Web options", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalSiteWebOption", SkelName: "vine.hub.admin.PortalSiteWebOption"}}},
+		}},
+		{Name: "PortalSiteServiceOption", SkelName: "vine.hub.admin.PortalSiteServiceOption", Description: "Portal target site service options", Hash: "4821fd0b", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Service name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "skelName", Description: "Service Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "actorSkelNames", Description: "Actor Skel name list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}}},
+		}},
+		{Name: "PortalSiteUpdate", SkelName: "vine.hub.admin.PortalSiteUpdate", Description: "Portal target site update parameters", Hash: "4bd9424e", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Target site name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "type", Description: "Target site type", Type: &skel.TypeSchema{Kind: skel.TypeKindEnum, Name: "PortalSiteType", SkelName: "vine.hub.admin.PortalSiteType", Nullable: true}},
+			{Name: "actorSkelName", Description: "Actor Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "actorVia", Description: "Actor access method", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "cors", Description: "CORS configuration", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCors", SkelName: "vine.hub.admin.PortalCors", Nullable: true}},
+			{Name: "webName", Description: "Web name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "enabled", Description: "Whether Hub publishes this site to Portal", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool, Nullable: true}},
+		}},
+		{Name: "PortalSiteWebOption", SkelName: "vine.hub.admin.PortalSiteWebOption", Description: "Portal target site web options", Hash: "a52d41e6", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Web name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "skelName", Description: "Web Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "actorSkelNames", Description: "Actor Skel name list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}}},
+		}},
+		{Name: "PortalStatusView", SkelName: "vine.hub.admin.PortalStatusView", Description: "Portal instance status view for Dashboard display", Hash: "126d087a", Members: []*skel.MemberSchema{
+			{Name: "instanceId", Description: "Portal instance ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "version", Description: "Portal version", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
+		{Name: "ServiceDebugActorItem", SkelName: "vine.hub.admin.ServiceDebugActorItem", Description: "Service Debug Actor options", Hash: "50151449", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Actor name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "skelName", Description: "Actor Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "infoSkelName", Description: "Actor Info Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "actorInfoJson", Description: "Default Actor Info JSON", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarJson}},
+		}},
+		{Name: "ServiceDebugAppInstance", SkelName: "vine.hub.admin.ServiceDebugAppInstance", Description: "Application instance called by Service Debug", Hash: "e6db1438", Members: []*skel.MemberSchema{
+			{Name: "appName", Description: "Application name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "appInstanceId", Description: "Application instance ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "appVersion", Description: "Application version", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "endpoint", Description: "Application access address", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
+		{Name: "ServiceDebugDefaultInvokeRequest", SkelName: "vine.hub.admin.ServiceDebugDefaultInvokeRequest", Description: "Service Debug default call request", Hash: "6c94b537", Members: []*skel.MemberSchema{
+			{Name: "traceId", Description: "Trace ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "spanId", Description: "Span ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "actors", Description: "Actor options", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "ServiceDebugActorItem", SkelName: "vine.hub.admin.ServiceDebugActorItem"}}},
+			{Name: "actorSkelName", Description: "Default Actor Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "actorInfoJson", Description: "Default Actor Info JSON", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarJson}},
+			{Name: "paramsJson", Description: "Default request parameters JSON", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarJson}},
+		}},
+		{Name: "ServiceDebugInvokeRequest", SkelName: "vine.hub.admin.ServiceDebugInvokeRequest", Description: "Service Debug call request", Hash: "1f9b8f8b", Members: []*skel.MemberSchema{
+			{Name: "appName", Description: "Application name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "appInstanceId", Description: "Application instance ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "serviceSkelName", Description: "Service Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Service schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "methodSkelName", Description: "Method Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "paramsJson", Description: "Request parameters JSON", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarJson}},
+			{Name: "timeoutSeconds", Description: "Call timeout, in seconds", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "traceId", Description: "Trace ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "spanId", Description: "Span ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "actorSkelName", Description: "Actor Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "actorInfoJson", Description: "Actor Info JSON", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarJson}},
+		}},
+		{Name: "ServiceDebugInvokeResponse", SkelName: "vine.hub.admin.ServiceDebugInvokeResponse", Description: "Service Debug call response", Hash: "aace2e9d", Members: []*skel.MemberSchema{
+			{Name: "httpStatus", Description: "HTTP status code", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "rpcStatus", Description: "Rpc status code", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "headersJson", Description: "Response header JSON", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarJson}},
+			{Name: "bodyJson", Description: "Response body JSON", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarJson}},
+		}},
+		{Name: "ServiceDebugMethodItem", SkelName: "vine.hub.admin.ServiceDebugMethodItem", Description: "Method called by Service Debug", Hash: "cbe110e0", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Method name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "skelName", Description: "Method Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Method description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the method is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Method deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "inputDescription", Description: "Input description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "outputDescription", Description: "Output description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "example", Description: "Input example", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "outputExample", Description: "Output example", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "arguments", Description: "Parameter list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonField", SkelName: "vine.hub.admin.SkeletonField"}}},
+			{Name: "resultType", Description: "Return type", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
+		{Name: "ServiceDebugServiceItem", SkelName: "vine.hub.admin.ServiceDebugServiceItem", Description: "Service called by Service Debug", Hash: "28303711", Members: []*skel.MemberSchema{
+			{Name: "serviceSkelName", Description: "Service Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Service schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "api", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecated", Description: "Whether the Service is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Service deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
+		{Name: "ServiceHandlerRegistration", SkelName: "vine.hub.admin.ServiceHandlerRegistration", Description: "Rpc service processing capability registration information provided by the application", Hash: "c3c3acff", Members: []*skel.MemberSchema{
+			{Name: "serviceSkelName", Description: "Service Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Service schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "endpoint", Description: "Service agent access address", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
+		{Name: "SkeletonActorItem", SkelName: "vine.hub.admin.SkeletonActorItem", Description: "SkeletonActor", Hash: "45f1805b", Members: []*skel.MemberSchema{
+			{Name: "domain", Description: "Domain", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "mainSchemaHash", Description: "Primary skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "isMultiVersion", Description: "Whether there are multiple valid versions of the skeleton item", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "isMain", Description: "Whether it is the main version of the skeleton item", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "domainSchemaHash", Description: "Owning DomainSchema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "name", Description: "Actor name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "skelName", Description: "Actor Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Actor description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the Actor is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Actor deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "actorVias", Description: "Actor access method list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}}},
+			{Name: "authEnabled", Description: "Whether to enable authentication", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "identifierField", Description: "Actor identifier field in Info", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "credential", Description: "Authentication credentials", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonData", SkelName: "vine.hub.admin.SkeletonData", Nullable: true}},
+			{Name: "info", Description: "Authentication information", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonData", SkelName: "vine.hub.admin.SkeletonData", Nullable: true}},
+			{Name: "authService", Description: "Authentication services", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonServiceItem", SkelName: "vine.hub.admin.SkeletonServiceItem", Nullable: true}},
+			{Name: "permEnabled", Description: "Whether to enable permissions", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "permService", Description: "Permission service", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonServiceItem", SkelName: "vine.hub.admin.SkeletonServiceItem", Nullable: true}},
+			{Name: "permMethod", Description: "Permission method", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonMethod", SkelName: "vine.hub.admin.SkeletonMethod", Nullable: true}},
+			{Name: "services", Description: "Accessible Service List", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonServiceItem", SkelName: "vine.hub.admin.SkeletonServiceItem"}}},
+			{Name: "webs", Description: "Accessible web list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonWebItem", SkelName: "vine.hub.admin.SkeletonWebItem"}}},
+		}},
+		{Name: "SkeletonActorRef", SkelName: "vine.hub.admin.SkeletonActorRef", Description: "Skeleton Actor Reference", Hash: "6bc3e89c", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Actor name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "skelName", Description: "Actor Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "via", Description: "Access method", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
+		{Name: "SkeletonConfigItem", SkelName: "vine.hub.admin.SkeletonConfigItem", Description: "SkeletonConfig", Hash: "b9ac2803", Members: []*skel.MemberSchema{
+			{Name: "domain", Description: "Domain", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "mainSchemaHash", Description: "Primary skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "isMultiVersion", Description: "Whether there are multiple valid versions of the skeleton item", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "isMain", Description: "Whether it is the main version of the skeleton item", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "domainSchemaHash", Description: "Owning DomainSchema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "name", Description: "Config name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "skelName", Description: "Config Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Config description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the Config is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Config deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "pub", Description: "Whether the item is public", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "sensitive", Description: "Whether the config value is sensitive", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "lifecycle", Description: "Config lifecycle", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "fields", Description: "Field list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonField", SkelName: "vine.hub.admin.SkeletonField"}}},
+		}},
+		{Name: "SkeletonData", SkelName: "vine.hub.admin.SkeletonData", Description: "SkeletonData", Hash: "9ea3981d", Members: []*skel.MemberSchema{
+			{Name: "domain", Description: "Domain", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "mainSchemaHash", Description: "Primary skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "isMultiVersion", Description: "Whether there are multiple valid versions of the skeleton item", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "isMain", Description: "Whether it is the main version of the skeleton item", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "domainSchemaHash", Description: "Owning DomainSchema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "name", Description: "Data name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "skelName", Description: "Data Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Data description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the Data or Enum is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Data or Enum deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "enum", Description: "Whether it is Enum", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "sensitive", Description: "Whether the data is sensitive", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "typeParameters", Description: "Type parameter list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}}},
+			{Name: "fields", Description: "Field list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonField", SkelName: "vine.hub.admin.SkeletonField"}}},
+			{Name: "enumItems", Description: "List of enumeration items", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonEnumItem", SkelName: "vine.hub.admin.SkeletonEnumItem"}}},
+		}},
+		{Name: "SkeletonDomain", SkelName: "vine.hub.admin.SkeletonDomain", Description: "Domain skeleton version", Hash: "816f84b1", Members: []*skel.MemberSchema{
+			{Name: "domain", Description: "Domain name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "DomainSchema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "mainSchemaHash", Description: "Primary DomainSchema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "isMultiVersion", Description: "Whether multiple active versions exist", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "isMain", Description: "Whether this is the primary version", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "total", Description: "Total number of skeleton items", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "actors", Description: "Actor list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonActorItem", SkelName: "vine.hub.admin.SkeletonActorItem"}}},
+			{Name: "services", Description: "Service list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonServiceItem", SkelName: "vine.hub.admin.SkeletonServiceItem"}}},
+			{Name: "resources", Description: "Resource list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonResourceItem", SkelName: "vine.hub.admin.SkeletonResourceItem"}}},
+			{Name: "data", Description: "Data list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonData", SkelName: "vine.hub.admin.SkeletonData"}}},
+			{Name: "configs", Description: "Config list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonConfigItem", SkelName: "vine.hub.admin.SkeletonConfigItem"}}},
+			{Name: "webs", Description: "Web list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonWebItem", SkelName: "vine.hub.admin.SkeletonWebItem"}}},
+			{Name: "tasks", Description: "Task list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonTask", SkelName: "vine.hub.admin.SkeletonTask"}}},
+			{Name: "events", Description: "Event list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonEventItem", SkelName: "vine.hub.admin.SkeletonEventItem"}}},
+		}},
+		{Name: "SkeletonEnumItem", SkelName: "vine.hub.admin.SkeletonEnumItem", Description: "Skeleton enumeration items", Hash: "8b5c74a4", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Enumeration item name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Enumeration item description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the enumeration item is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Enumeration item deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
+		{Name: "SkeletonEventItem", SkelName: "vine.hub.admin.SkeletonEventItem", Description: "Skeleton event", Hash: "cf41289c", Members: []*skel.MemberSchema{
+			{Name: "domain", Description: "Domain", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "mainSchemaHash", Description: "Primary skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "isMultiVersion", Description: "Whether there are multiple valid versions of the skeleton item", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "isMain", Description: "Whether it is the main version of the skeleton item", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "domainSchemaHash", Description: "Owning DomainSchema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "name", Description: "Event name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "skelName", Description: "Event Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Event description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the Event is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Event deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "pub", Description: "Whether the item is public", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "sensitive", Description: "Whether the event payload is sensitive", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "fields", Description: "Field list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonField", SkelName: "vine.hub.admin.SkeletonField"}}},
+		}},
+		{Name: "SkeletonField", SkelName: "vine.hub.admin.SkeletonField", Description: "Skeleton field", Hash: "02833a63", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Field name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "type", Description: "Field type", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Field description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the field is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Field deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "example", Description: "Field example", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "sensitive", Description: "Whether the field is sensitive", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+		}},
+		{Name: "SkeletonMethod", SkelName: "vine.hub.admin.SkeletonMethod", Description: "Skeleton method", Hash: "f3be138b", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Method name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "skelName", Description: "Method Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Method description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the method is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Method deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "inputDescription", Description: "Input description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "outputDescription", Description: "Output description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "example", Description: "Input example", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "authMode", Description: "Authentication mode", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "require", Description: "Permission requirements", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonPermExpr", SkelName: "vine.hub.admin.SkeletonPermExpr", Nullable: true}},
+			{Name: "outputExample", Description: "Output example", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "arguments", Description: "Parameter list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonField", SkelName: "vine.hub.admin.SkeletonField"}}},
+			{Name: "argumentsSensitive", Description: "Whether all input arguments are sensitive", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "resultType", Description: "Return type", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "resultSensitive", Description: "Whether the result is sensitive", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+		}},
+		{Name: "SkeletonPermCheck", SkelName: "vine.hub.admin.SkeletonPermCheck", Description: "Skeleton permission verification call", Hash: "99022e1f", Members: []*skel.MemberSchema{
+			{Name: "resourceSkelName", Description: "Resource Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "actionName", Description: "Action name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "checkName", Description: "Check name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "serviceSkelName", Description: "Check Service Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "methodSkelName", Description: "Check Method Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "arguments", Description: "Parameter list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonPermCheckArgument", SkelName: "vine.hub.admin.SkeletonPermCheckArgument"}}},
+		}},
+		{Name: "SkeletonPermCheckArgument", SkelName: "vine.hub.admin.SkeletonPermCheckArgument", Description: "Skeleton permission verification parameters", Hash: "aebed531", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Parameter name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "jsonPath", Description: "Parameter JSON path", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "type", Description: "Parameter type", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
+		{Name: "SkeletonPermExpr", SkelName: "vine.hub.admin.SkeletonPermExpr", Description: "Skeleton permission expression", Hash: "8273aed2", Members: []*skel.MemberSchema{
+			{Name: "mode", Description: "Permission expression pattern", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "code", Description: "Permission code", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "check", Description: "Permission verification call", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonPermCheck", SkelName: "vine.hub.admin.SkeletonPermCheck", Nullable: true}},
+			{Name: "children", Description: "Subexpression", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonPermExpr", SkelName: "vine.hub.admin.SkeletonPermExpr"}}},
+		}},
+		{Name: "SkeletonResourceAction", SkelName: "vine.hub.admin.SkeletonResourceAction", Description: "SkeletonResource Action", Hash: "424f1bd5", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Action name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "permissionCode", Description: "Permission code", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Action description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the Action is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Action deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "checks", Description: "Check list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonResourceCheck", SkelName: "vine.hub.admin.SkeletonResourceCheck"}}},
+		}},
+		{Name: "SkeletonResourceCheck", SkelName: "vine.hub.admin.SkeletonResourceCheck", Description: "SkeletonResource Check", Hash: "5c8943a3", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Check name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the Check is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Check deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "methodName", Description: "Check method name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "methodSkelName", Description: "Check method Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "arguments", Description: "Parameter list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonField", SkelName: "vine.hub.admin.SkeletonField"}}},
+			{Name: "argumentsSensitive", Description: "Whether all input arguments are sensitive", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+		}},
+		{Name: "SkeletonResourceItem", SkelName: "vine.hub.admin.SkeletonResourceItem", Description: "Skeleton Resource item", Hash: "9edb5c76", Members: []*skel.MemberSchema{
+			{Name: "domain", Description: "Domain", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "mainSchemaHash", Description: "Primary skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "isMultiVersion", Description: "Whether there are multiple valid versions of the skeleton item", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "isMain", Description: "Whether it is the main version of the skeleton item", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "domainSchemaHash", Description: "Owning DomainSchema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "name", Description: "Resource name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "skelName", Description: "Resource Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Resource description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the Resource is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Resource deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "checks", Description: "Resource level Check list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonResourceCheck", SkelName: "vine.hub.admin.SkeletonResourceCheck"}}},
+			{Name: "actions", Description: "Action list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonResourceAction", SkelName: "vine.hub.admin.SkeletonResourceAction"}}},
+			{Name: "checkService", Description: "Check service", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonServiceItem", SkelName: "vine.hub.admin.SkeletonServiceItem", Nullable: true}},
+		}},
+		{Name: "SkeletonServiceItem", SkelName: "vine.hub.admin.SkeletonServiceItem", Description: "Skeleton service items", Hash: "6616595f", Members: []*skel.MemberSchema{
+			{Name: "domain", Description: "Domain", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "mainSchemaHash", Description: "Primary skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "isMultiVersion", Description: "Whether there are multiple valid versions of the skeleton item", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "isMain", Description: "Whether it is the main version of the skeleton item", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "domainSchemaHash", Description: "Owning DomainSchema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "name", Description: "Service name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "skelName", Description: "Service Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Service Description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the Service is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Service deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "pub", Description: "Whether the item is public", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "api", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "authMode", Description: "Authentication mode", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "require", Description: "Permission requirements", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonPermExpr", SkelName: "vine.hub.admin.SkeletonPermExpr", Nullable: true}},
+			{Name: "actors", Description: "Accessible Actor List", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonActorRef", SkelName: "vine.hub.admin.SkeletonActorRef"}}},
+			{Name: "methods", Description: "Method list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonMethod", SkelName: "vine.hub.admin.SkeletonMethod"}}},
+		}},
+		{Name: "SkeletonTask", SkelName: "vine.hub.admin.SkeletonTask", Description: "Skeleton task", Hash: "de6c3c97", Members: []*skel.MemberSchema{
+			{Name: "domain", Description: "Domain", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "mainSchemaHash", Description: "Primary skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "isMultiVersion", Description: "Whether there are multiple valid versions of the skeleton item", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "isMain", Description: "Whether it is the main version of the skeleton item", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "domainSchemaHash", Description: "Owning DomainSchema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "name", Description: "Task name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "skelName", Description: "Task Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Task description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the Task is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Task deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "triggers", Description: "Trigger list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonTrigger", SkelName: "vine.hub.admin.SkeletonTrigger"}}},
+		}},
+		{Name: "SkeletonTrigger", SkelName: "vine.hub.admin.SkeletonTrigger", Description: "Skeleton task trigger", Hash: "8f4e55b5", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Trigger name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "skelName", Description: "Trigger Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Trigger description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the Trigger is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Trigger deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "inputDescription", Description: "Input description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "example", Description: "Input example", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "arguments", Description: "Parameter list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonField", SkelName: "vine.hub.admin.SkeletonField"}}},
+			{Name: "argumentsSensitive", Description: "Whether all input arguments are sensitive", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+		}},
+		{Name: "SkeletonWebItem", SkelName: "vine.hub.admin.SkeletonWebItem", Description: "Skeleton web page", Hash: "a831714a", Members: []*skel.MemberSchema{
+			{Name: "domain", Description: "Domain", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "mainSchemaHash", Description: "Primary skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "isMultiVersion", Description: "Whether there are multiple valid versions of the skeleton item", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "isMain", Description: "Whether it is the main version of the skeleton item", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "domainSchemaHash", Description: "Owning DomainSchema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "name", Description: "Web page name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "skelName", Description: "Web Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Web page description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the Web is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Web deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "actors", Description: "Accessible Actor List", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonActorRef", SkelName: "vine.hub.admin.SkeletonActorRef"}}},
+		}},
+		{Name: "TaskDebugDefaultLaunchRequest", SkelName: "vine.hub.admin.TaskDebugDefaultLaunchRequest", Description: "Task Debug initiates a request by default", Hash: "196bd2e9", Members: []*skel.MemberSchema{
+			{Name: "traceId", Description: "Trace ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "spanId", Description: "Span ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "argumentsJson", Description: "Default task parameters JSON", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarJson}},
+		}},
+		{Name: "TaskDebugLaunchRequest", SkelName: "vine.hub.admin.TaskDebugLaunchRequest", Description: "Task Debug initiates a request", Hash: "0017f3f2", Members: []*skel.MemberSchema{
+			{Name: "taskSkelName", Description: "Task Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Task schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "triggerSkelName", Description: "Trigger Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "argumentsJson", Description: "Task parameters JSON", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarJson}},
+			{Name: "traceId", Description: "Trace ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "spanId", Description: "Span ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+		}},
+		{Name: "TaskDebugTaskItem", SkelName: "vine.hub.admin.TaskDebugTaskItem", Description: "Task called by Task Debug", Hash: "2302d2f6", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Task name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "taskSkelName", Description: "Task Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Task schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Task description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the Task is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Task deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
+		{Name: "TaskDebugTriggerItem", SkelName: "vine.hub.admin.TaskDebugTriggerItem", Description: "Trigger called by Task Debug", Hash: "4f9a8d5e", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Trigger name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "skelName", Description: "Trigger Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Description: "Trigger description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Description: "Whether the Trigger is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Description: "Trigger deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "inputDescription", Description: "Input description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "example", Description: "Input example", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "arguments", Description: "Parameter list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonField", SkelName: "vine.hub.admin.SkeletonField"}}},
+		}},
+		{Name: "TaskRunnerCronScheduler", SkelName: "vine.hub.admin.TaskRunnerCronScheduler", Description: "Task execution Cron schedule", Hash: "cea0f982", Members: []*skel.MemberSchema{
+			{Name: "triggerSkelName", Description: "Trigger Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "cronExpr", Description: "Cron expression", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
+		{Name: "TaskRunnerRegistration", SkelName: "vine.hub.admin.TaskRunnerRegistration", Description: "Task execution capability registration information provided by the application", Hash: "0f79f56c", Members: []*skel.MemberSchema{
+			{Name: "taskSkelName", Description: "Task Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Task schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "timeoutMs", Description: "Execution timeout, in milliseconds", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "concurrency", Description: "Maximum concurrency", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "noRetry", Description: "Whether to disallow retrying after failure", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "cronSchedulers", Description: "Cron schedule list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "TaskRunnerCronScheduler", SkelName: "vine.hub.admin.TaskRunnerCronScheduler"}}},
+		}},
+		{Name: "WebHandlerRegistration", SkelName: "vine.hub.admin.WebHandlerRegistration", Description: "Web processing capability registration information provided by the application", Hash: "053e7a3a", Members: []*skel.MemberSchema{
+			{Name: "webSkelName", Description: "Web Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Web schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "endpoint", Description: "Web proxy access address", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
 	},
 
 	Services: []*skel.ServiceSchema{
-		{
-			Name:        "AdminApiService",
-			SkelName:    "vine.hub.admin.AdminApiService",
-			Description: "Hub's Admin API service, called by the Dashboard",
-			Hash:        "67c3e840",
-			Pub:         false,
-			Api:         true,
-			AuthMode:    skel.AuthModeUnset,
-			Methods: []*skel.MethodSchema{
-				{
-					Name:        "readOnly",
-					SkelName:    "readOnly",
-					Description: "Whether Hub configuration is read-only",
-					Hash:        "af56a296",
-					AuthMode:    skel.AuthModeUnset,
-					ResultType: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "AppConfigApiService",
-			SkelName:    "vine.hub.admin.AppConfigApiService",
-			Description: "Hub's application configuration service, called by Client",
-			Hash:        "97ae8434",
-			Pub:         false,
-			Api:         true,
-			AuthMode:    skel.AuthModeUnset,
-			Methods: []*skel.MethodSchema{
-				{
-					Name:              "list",
-					SkelName:          "list",
-					Description:       "List configuration items",
-					Hash:              "6f9fa5a7",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Configuration item list",
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "AppConfigListItem",
-							SkelName: "vine.hub.admin.AppConfigListItem",
-						},
-					},
-				},
-				{
-					Name:              "get",
-					SkelName:          "get",
-					Description:       "Read configuration",
-					Hash:              "d30075c8",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Configuration items",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "key",
-							Description: "Configuration key",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "AppConfigItem",
-						SkelName: "vine.hub.admin.AppConfigItem",
-					},
-				},
-				{
-					Name:              "update",
-					SkelName:          "update",
-					Description:       "Modify configuration",
-					Hash:              "22647baf",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Configuration items",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "id",
-							Description: "Configuration ID",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarInt,
-							},
-						},
-						{
-							Name:        "update",
-							Description: "Configuration update parameters",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
-								Name:     "AppConfigUpdate",
-								SkelName: "vine.hub.admin.AppConfigUpdate",
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "AppConfigItem",
-						SkelName: "vine.hub.admin.AppConfigItem",
-					},
-				},
-				{
-					Name:              "create",
-					SkelName:          "create",
-					Description:       "Create configuration",
-					Hash:              "8c9c9ed0",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Configuration items",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "creation",
-							Description: "Configuration creation parameters",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
-								Name:     "AppConfigCreation",
-								SkelName: "vine.hub.admin.AppConfigCreation",
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "AppConfigItem",
-						SkelName: "vine.hub.admin.AppConfigItem",
-					},
-				},
-				{
-					Name:              "remove",
-					SkelName:          "remove",
-					Description:       "Delete unused configuration",
-					Hash:              "8a48c541",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Whether deletion succeeded",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "id",
-							Description: "Configuration ID",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarInt,
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "AppStatusApiService",
-			SkelName:    "vine.hub.admin.AppStatusApiService",
-			Description: "Hub Dashboard's application status service",
-			Hash:        "5869e9a5",
-			Pub:         false,
-			Api:         true,
-			AuthMode:    skel.AuthModeUnset,
-			Methods: []*skel.MethodSchema{
-				{
-					Name:        "list",
-					SkelName:    "list",
-					Description: "List application instance statuses",
-					Hash:        "ba8cd3fb",
-					AuthMode:    skel.AuthModeUnset,
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "AppStatusView",
-							SkelName: "vine.hub.admin.AppStatusView",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "EventDebugApiService",
-			SkelName:    "vine.hub.admin.EventDebugApiService",
-			Description: "Hub Dashboard Event Debugging Service",
-			Hash:        "70021469",
-			Pub:         false,
-			Api:         true,
-			AuthMode:    skel.AuthModeUnset,
-			Methods: []*skel.MethodSchema{
-				{
-					Name:        "listEvents",
-					SkelName:    "listEvents",
-					Description: "List the events monitored by the application instance",
-					Hash:        "bf56d012",
-					AuthMode:    skel.AuthModeUnset,
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "EventDebugEventItem",
-							SkelName: "vine.hub.admin.EventDebugEventItem",
-						},
-					},
-				},
-				{
-					Name:        "buildDefaultEmitRequest",
-					SkelName:    "buildDefaultEmitRequest",
-					Description: "Generate a default Event send request",
-					Hash:        "b697b22d",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "eventSkelName",
-							Description: "Event Skel name",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name:        "schemaHash",
-							Description: "Event schema hash",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "EventDebugDefaultEmitRequest",
-						SkelName: "vine.hub.admin.EventDebugDefaultEmitRequest",
-					},
-				},
-				{
-					Name:        "emitEvent",
-					SkelName:    "emitEvent",
-					Description: "Send Event",
-					Hash:        "0e80d632",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "request",
-							Description: "Debug send request",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
-								Name:     "EventDebugEmitRequest",
-								SkelName: "vine.hub.admin.EventDebugEmitRequest",
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalCertApiService",
-			SkelName:    "vine.hub.admin.PortalCertApiService",
-			Description: "Hub's Portal site certificate service, called by the Portal admin client",
-			Hash:        "9d1673c5",
-			Pub:         false,
-			Api:         true,
-			AuthMode:    skel.AuthModeUnset,
-			Methods: []*skel.MethodSchema{
-				{
-					Name:              "list",
-					SkelName:          "list",
-					Description:       "List Portal site certificates",
-					Hash:              "603743bd",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Portal site certificate list",
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "PortalCertListItem",
-							SkelName: "vine.hub.admin.PortalCertListItem",
-						},
-					},
-				},
-				{
-					Name:              "get",
-					SkelName:          "get",
-					Description:       "Read the Portal site certificate",
-					Hash:              "8a48b8be",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Portal site certificate",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "id",
-							Description: "Certificate ID",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarInt,
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalCert",
-						SkelName: "vine.hub.admin.PortalCert",
-					},
-				},
-				{
-					Name:              "create",
-					SkelName:          "create",
-					Description:       "Create Portal site certificate",
-					Hash:              "8b9401cf",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Portal site certificate",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "creation",
-							Description: "Portal site certificate creation parameters",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
-								Name:     "PortalCertCreation",
-								SkelName: "vine.hub.admin.PortalCertCreation",
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalCert",
-						SkelName: "vine.hub.admin.PortalCert",
-					},
-				},
-				{
-					Name:              "update",
-					SkelName:          "update",
-					Description:       "Modify Portal site certificate",
-					Hash:              "009c8e7b",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Portal site certificate",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "id",
-							Description: "Certificate ID",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarInt,
-							},
-						},
-						{
-							Name:        "update",
-							Description: "Portal site certificate update parameters",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
-								Name:     "PortalCertUpdate",
-								SkelName: "vine.hub.admin.PortalCertUpdate",
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalCert",
-						SkelName: "vine.hub.admin.PortalCert",
-					},
-				},
-				{
-					Name:        "remove",
-					SkelName:    "remove",
-					Description: "Delete Portal site certificate",
-					Hash:        "43f54e86",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "id",
-							Description: "Certificate ID",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarInt,
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalEntryApiService",
-			SkelName:    "vine.hub.admin.PortalEntryApiService",
-			Description: "Hub's Portal access entry service, called by the Portal admin client",
-			Hash:        "8e77e8b3",
-			Pub:         false,
-			Api:         true,
-			AuthMode:    skel.AuthModeUnset,
-			Methods: []*skel.MethodSchema{
-				{
-					Name:              "list",
-					SkelName:          "list",
-					Description:       "List Portal access entries",
-					Hash:              "ebaf8bcf",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Portal access entry list",
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "PortalEntry",
-							SkelName: "vine.hub.admin.PortalEntry",
-						},
-					},
-				},
-				{
-					Name:              "create",
-					SkelName:          "create",
-					Description:       "Create a Portal access entry",
-					Hash:              "364f1477",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Portal access entry",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "creation",
-							Description: "Portal access entry creation parameters",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
-								Name:     "PortalEntryCreation",
-								SkelName: "vine.hub.admin.PortalEntryCreation",
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalEntry",
-						SkelName: "vine.hub.admin.PortalEntry",
-					},
-				},
-				{
-					Name:              "update",
-					SkelName:          "update",
-					Description:       "Modify a Portal access entry",
-					Hash:              "07445e9e",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Portal access entry",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "id",
-							Description: "Entry ID",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarInt,
-							},
-						},
-						{
-							Name:        "update",
-							Description: "Portal access entry update parameters",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
-								Name:     "PortalEntryUpdate",
-								SkelName: "vine.hub.admin.PortalEntryUpdate",
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalEntry",
-						SkelName: "vine.hub.admin.PortalEntry",
-					},
-				},
-				{
-					Name:        "remove",
-					SkelName:    "remove",
-					Description: "Delete a Portal access entry that routes no rule",
-					Hash:        "c28170ea",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "id",
-							Description: "Entry ID",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarInt,
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalRuleApiService",
-			SkelName:    "vine.hub.admin.PortalRuleApiService",
-			Description: "Hub's Portal entry rule service, called by the Portal admin client",
-			Hash:        "b736159f",
-			Pub:         false,
-			Api:         true,
-			AuthMode:    skel.AuthModeUnset,
-			Methods: []*skel.MethodSchema{
-				{
-					Name:              "listConflicts",
-					SkelName:          "listConflicts",
-					Description:       "List Portal entry rules that match the same request",
-					Hash:              "440c6508",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Portal entry rule conflicts",
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "PortalRuleConflict",
-							SkelName: "vine.hub.admin.PortalRuleConflict",
-						},
-					},
-				},
-				{
-					Name:              "list",
-					SkelName:          "list",
-					Description:       "List Portal entry rules",
-					Hash:              "596d7b51",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Portal entry rule list",
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "PortalRuleListItem",
-							SkelName: "vine.hub.admin.PortalRuleListItem",
-						},
-					},
-				},
-				{
-					Name:              "get",
-					SkelName:          "get",
-					Description:       "Read Portal entry rules",
-					Hash:              "fb271c57",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Portal entry rules",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "id",
-							Description: "Rule ID",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarInt,
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalRule",
-						SkelName: "vine.hub.admin.PortalRule",
-					},
-				},
-				{
-					Name:              "create",
-					SkelName:          "create",
-					Description:       "Create Portal entry rules",
-					Hash:              "9518da5e",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Portal entry rules",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "creation",
-							Description: "Portal entry rule creation parameters",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
-								Name:     "PortalRuleCreation",
-								SkelName: "vine.hub.admin.PortalRuleCreation",
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalRule",
-						SkelName: "vine.hub.admin.PortalRule",
-					},
-				},
-				{
-					Name:              "update",
-					SkelName:          "update",
-					Description:       "Modify Portal entry rules",
-					Hash:              "f9f53f2b",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Portal entry rules",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "id",
-							Description: "Rule ID",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarInt,
-							},
-						},
-						{
-							Name:        "update",
-							Description: "Portal entry rule update parameters",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
-								Name:     "PortalRuleUpdate",
-								SkelName: "vine.hub.admin.PortalRuleUpdate",
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalRule",
-						SkelName: "vine.hub.admin.PortalRule",
-					},
-				},
-				{
-					Name:        "remove",
-					SkelName:    "remove",
-					Description: "Delete Portal entry rules",
-					Hash:        "2a299015",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "id",
-							Description: "Rule ID",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarInt,
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalSiteApiService",
-			SkelName:    "vine.hub.admin.PortalSiteApiService",
-			Description: "Hub's Portal target site service, called by the Portal admin client",
-			Hash:        "f713a78d",
-			Pub:         false,
-			Api:         true,
-			AuthMode:    skel.AuthModeUnset,
-			Methods: []*skel.MethodSchema{
-				{
-					Name:              "list",
-					SkelName:          "list",
-					Description:       "List Portal target sites",
-					Hash:              "a674394c",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Portal target site list",
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "PortalSiteListItem",
-							SkelName: "vine.hub.admin.PortalSiteListItem",
-						},
-					},
-				},
-				{
-					Name:              "listOptions",
-					SkelName:          "listOptions",
-					Description:       "List Portal target site form options",
-					Hash:              "89d0bfb6",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Portal target site form options",
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalSiteOptions",
-						SkelName: "vine.hub.admin.PortalSiteOptions",
-					},
-				},
-				{
-					Name:              "get",
-					SkelName:          "get",
-					Description:       "Read the Portal target site",
-					Hash:              "dbf4e113",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Portal target site",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "id",
-							Description: "Target site id",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarInt,
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalSite",
-						SkelName: "vine.hub.admin.PortalSite",
-					},
-				},
-				{
-					Name:              "create",
-					SkelName:          "create",
-					Description:       "Create Portal target site",
-					Hash:              "580d8216",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Portal target site",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "creation",
-							Description: "Portal target site creation parameters",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
-								Name:     "PortalSiteCreation",
-								SkelName: "vine.hub.admin.PortalSiteCreation",
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalSite",
-						SkelName: "vine.hub.admin.PortalSite",
-					},
-				},
-				{
-					Name:              "update",
-					SkelName:          "update",
-					Description:       "Modify Portal target site",
-					Hash:              "d7400356",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Portal target site",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "id",
-							Description: "Target site id",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarInt,
-							},
-						},
-						{
-							Name:        "update",
-							Description: "Portal target site update parameters",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
-								Name:     "PortalSiteUpdate",
-								SkelName: "vine.hub.admin.PortalSiteUpdate",
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "PortalSite",
-						SkelName: "vine.hub.admin.PortalSite",
-					},
-				},
-				{
-					Name:        "remove",
-					SkelName:    "remove",
-					Description: "Delete Portal target site",
-					Hash:        "a061405c",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "id",
-							Description: "Target site id",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarInt,
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalStatusApiService",
-			SkelName:    "vine.hub.admin.PortalStatusApiService",
-			Description: "Hub Dashboard's Portal instance status service",
-			Hash:        "49b2f739",
-			Pub:         false,
-			Api:         true,
-			AuthMode:    skel.AuthModeUnset,
-			Methods: []*skel.MethodSchema{
-				{
-					Name:        "list",
-					SkelName:    "list",
-					Description: "List Portal instance statuses",
-					Hash:        "2916f955",
-					AuthMode:    skel.AuthModeUnset,
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "PortalStatusView",
-							SkelName: "vine.hub.admin.PortalStatusView",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "ServiceDebugApiService",
-			SkelName:    "vine.hub.admin.ServiceDebugApiService",
-			Description: "Hub Dashboard Service debugging service",
-			Hash:        "7bbd9cf0",
-			Pub:         false,
-			Api:         true,
-			AuthMode:    skel.AuthModeUnset,
-			Methods: []*skel.MethodSchema{
-				{
-					Name:        "listAppInstances",
-					SkelName:    "listAppInstances",
-					Description: "List application instances",
-					Hash:        "213565dd",
-					AuthMode:    skel.AuthModeUnset,
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "ServiceDebugAppInstance",
-							SkelName: "vine.hub.admin.ServiceDebugAppInstance",
-						},
-					},
-				},
-				{
-					Name:        "listServices",
-					SkelName:    "listServices",
-					Description: "List the services provided by the application instance",
-					Hash:        "964d0bc0",
-					AuthMode:    skel.AuthModeUnset,
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "ServiceDebugServiceItem",
-							SkelName: "vine.hub.admin.ServiceDebugServiceItem",
-						},
-					},
-				},
-				{
-					Name:        "listServiceAppInstances",
-					SkelName:    "listServiceAppInstances",
-					Description: "List application instances that provide the specified service",
-					Hash:        "bd1f5b3d",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "serviceSkelName",
-							Description: "Service Skel name",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name:        "schemaHash",
-							Description: "Service schema hash",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "ServiceDebugAppInstance",
-							SkelName: "vine.hub.admin.ServiceDebugAppInstance",
-						},
-					},
-				},
-				{
-					Name:        "listMethods",
-					SkelName:    "listMethods",
-					Description: "List Service methods",
-					Hash:        "cb02bafd",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "serviceSkelName",
-							Description: "Service Skel name",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name:        "schemaHash",
-							Description: "Service schema hash",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "ServiceDebugMethodItem",
-							SkelName: "vine.hub.admin.ServiceDebugMethodItem",
-						},
-					},
-				},
-				{
-					Name:        "buildDefaultInvokeRequest",
-					SkelName:    "buildDefaultInvokeRequest",
-					Description: "Generate default Service call request",
-					Hash:        "cb587d74",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "serviceSkelName",
-							Description: "Service Skel name",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name:        "schemaHash",
-							Description: "Service schema hash",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name:        "methodSkelName",
-							Description: "Method Skel name",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "ServiceDebugDefaultInvokeRequest",
-						SkelName: "vine.hub.admin.ServiceDebugDefaultInvokeRequest",
-					},
-				},
-				{
-					Name:        "invokeService",
-					SkelName:    "invokeService",
-					Description: "Call Service method",
-					Hash:        "b4a5ec7b",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "request",
-							Description: "Debug call request",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
-								Name:     "ServiceDebugInvokeRequest",
-								SkelName: "vine.hub.admin.ServiceDebugInvokeRequest",
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "ServiceDebugInvokeResponse",
-						SkelName: "vine.hub.admin.ServiceDebugInvokeResponse",
-					},
-				},
-			},
-		},
-		{
-			Name:        "SkeletonApiService",
-			SkelName:    "vine.hub.admin.SkeletonApiService",
-			Description: "Hub's skeleton service, called by the Portal admin client",
-			Hash:        "53e522bd",
-			Pub:         false,
-			Api:         true,
-			AuthMode:    skel.AuthModeUnset,
-			Methods: []*skel.MethodSchema{
-				{
-					Name:              "listDomains",
-					SkelName:          "listDomains",
-					Description:       "List Domain skeleton",
-					Hash:              "2fe2ddcd",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Domain skeleton list",
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonDomain",
-							SkelName: "vine.hub.admin.SkeletonDomain",
-						},
-					},
-				},
-				{
-					Name:              "listActors",
-					SkelName:          "listActors",
-					Description:       "List Actor Skeleton",
-					Hash:              "cdec4f9c",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Actor skeleton list",
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonActorItem",
-							SkelName: "vine.hub.admin.SkeletonActorItem",
-						},
-					},
-				},
-				{
-					Name:              "listServices",
-					SkelName:          "listServices",
-					Description:       "List Service skeleton",
-					Hash:              "0e40bb1c",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Service skeleton list",
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonServiceItem",
-							SkelName: "vine.hub.admin.SkeletonServiceItem",
-						},
-					},
-				},
-				{
-					Name:              "listResources",
-					SkelName:          "listResources",
-					Description:       "List Resource skeleton",
-					Hash:              "63d63a4d",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Resource skeleton list",
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonResourceItem",
-							SkelName: "vine.hub.admin.SkeletonResourceItem",
-						},
-					},
-				},
-				{
-					Name:              "listWebs",
-					SkelName:          "listWebs",
-					Description:       "List Web Skeletons",
-					Hash:              "1a5e7855",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Web skeleton list",
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonWebItem",
-							SkelName: "vine.hub.admin.SkeletonWebItem",
-						},
-					},
-				},
-				{
-					Name:              "listTasks",
-					SkelName:          "listTasks",
-					Description:       "List Task skeleton",
-					Hash:              "1c8182b7",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Task skeleton list",
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonTask",
-							SkelName: "vine.hub.admin.SkeletonTask",
-						},
-					},
-				},
-				{
-					Name:              "listEvents",
-					SkelName:          "listEvents",
-					Description:       "List Event skeletons",
-					Hash:              "685c55b6",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Event skeleton list",
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonEventItem",
-							SkelName: "vine.hub.admin.SkeletonEventItem",
-						},
-					},
-				},
-				{
-					Name:              "listData",
-					SkelName:          "listData",
-					Description:       "List Data skeleton",
-					Hash:              "f5aa55bd",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Data skeleton list, including Enum",
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonData",
-							SkelName: "vine.hub.admin.SkeletonData",
-						},
-					},
-				},
-				{
-					Name:              "listConfigs",
-					SkelName:          "listConfigs",
-					Description:       "List Config skeleton",
-					Hash:              "63234eff",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Config skeleton list",
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "SkeletonConfigItem",
-							SkelName: "vine.hub.admin.SkeletonConfigItem",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "TaskDebugApiService",
-			SkelName:    "vine.hub.admin.TaskDebugApiService",
-			Description: "Hub Dashboard Task Debugging Service",
-			Hash:        "3040e825",
-			Pub:         false,
-			Api:         true,
-			AuthMode:    skel.AuthModeUnset,
-			Methods: []*skel.MethodSchema{
-				{
-					Name:        "listTasks",
-					SkelName:    "listTasks",
-					Description: "List the tasks provided by the application instance",
-					Hash:        "64ec80ce",
-					AuthMode:    skel.AuthModeUnset,
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "TaskDebugTaskItem",
-							SkelName: "vine.hub.admin.TaskDebugTaskItem",
-						},
-					},
-				},
-				{
-					Name:        "listTriggers",
-					SkelName:    "listTriggers",
-					Description: "List Task triggers",
-					Hash:        "e559ea60",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "taskSkelName",
-							Description: "Task Skel name",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name:        "schemaHash",
-							Description: "Task schema hash",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "TaskDebugTriggerItem",
-							SkelName: "vine.hub.admin.TaskDebugTriggerItem",
-						},
-					},
-				},
-				{
-					Name:        "buildDefaultLaunchRequest",
-					SkelName:    "buildDefaultLaunchRequest",
-					Description: "Generate a default Task launch request",
-					Hash:        "9cbec7e4",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "taskSkelName",
-							Description: "Task Skel name",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name:        "schemaHash",
-							Description: "Task schema hash",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name:        "triggerSkelName",
-							Description: "Trigger Skel name",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "TaskDebugDefaultLaunchRequest",
-						SkelName: "vine.hub.admin.TaskDebugDefaultLaunchRequest",
-					},
-				},
-				{
-					Name:        "launchTask",
-					SkelName:    "launchTask",
-					Description: "Initiate Task",
-					Hash:        "74146892",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "request",
-							Description: "Debug launch request",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
-								Name:     "TaskDebugLaunchRequest",
-								SkelName: "vine.hub.admin.TaskDebugLaunchRequest",
-							},
-						},
-					},
-				},
-			},
-		},
+		{Name: "AdminApiService", SkelName: "vine.hub.admin.AdminApiService", Description: "Hub's Admin API service, called by the Dashboard", Hash: "67c3e840", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+			{Name: "readOnly", SkelName: "readOnly", Description: "Whether Hub configuration is read-only", Hash: "af56a296", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+		}},
+		{Name: "AppConfigApiService", SkelName: "vine.hub.admin.AppConfigApiService", Description: "Hub's application configuration service, called by Client", Hash: "97ae8434", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+			{Name: "list", SkelName: "list", Description: "List configuration items", Hash: "6f9fa5a7", AuthMode: skel.AuthModeUnset, OutputDescription: "Configuration item list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigListItem", SkelName: "vine.hub.admin.AppConfigListItem"}}},
+			{Name: "get", SkelName: "get", Description: "Read configuration", Hash: "d30075c8", AuthMode: skel.AuthModeUnset, OutputDescription: "Configuration items", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem"}, Arguments: []*skel.MemberSchema{
+				{Name: "key", Description: "Configuration key", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			}},
+			{Name: "update", SkelName: "update", Description: "Modify configuration", Hash: "22647baf", AuthMode: skel.AuthModeUnset, OutputDescription: "Configuration items", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem"}, Arguments: []*skel.MemberSchema{
+				{Name: "id", Description: "Configuration ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+				{Name: "update", Description: "Configuration update parameters", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigUpdate", SkelName: "vine.hub.admin.AppConfigUpdate"}},
+			}},
+			{Name: "create", SkelName: "create", Description: "Create configuration", Hash: "8c9c9ed0", AuthMode: skel.AuthModeUnset, OutputDescription: "Configuration items", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem"}, Arguments: []*skel.MemberSchema{
+				{Name: "creation", Description: "Configuration creation parameters", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigCreation", SkelName: "vine.hub.admin.AppConfigCreation"}},
+			}},
+			{Name: "remove", SkelName: "remove", Description: "Delete unused configuration", Hash: "8a48c541", AuthMode: skel.AuthModeUnset, OutputDescription: "Whether deletion succeeded", ResultType: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}, Arguments: []*skel.MemberSchema{
+				{Name: "id", Description: "Configuration ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			}},
+		}},
+		{Name: "AppStatusApiService", SkelName: "vine.hub.admin.AppStatusApiService", Description: "Hub Dashboard's application status service", Hash: "5869e9a5", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+			{Name: "list", SkelName: "list", Description: "List application instance statuses", Hash: "ba8cd3fb", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppStatusView", SkelName: "vine.hub.admin.AppStatusView"}}},
+		}},
+		{Name: "EventDebugApiService", SkelName: "vine.hub.admin.EventDebugApiService", Description: "Hub Dashboard Event Debugging Service", Hash: "70021469", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+			{Name: "listEvents", SkelName: "listEvents", Description: "List the events monitored by the application instance", Hash: "bf56d012", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "EventDebugEventItem", SkelName: "vine.hub.admin.EventDebugEventItem"}}},
+			{Name: "buildDefaultEmitRequest", SkelName: "buildDefaultEmitRequest", Description: "Generate a default Event send request", Hash: "b697b22d", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "EventDebugDefaultEmitRequest", SkelName: "vine.hub.admin.EventDebugDefaultEmitRequest"}, Arguments: []*skel.MemberSchema{
+				{Name: "eventSkelName", Description: "Event Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+				{Name: "schemaHash", Description: "Event schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			}},
+			{Name: "emitEvent", SkelName: "emitEvent", Description: "Send Event", Hash: "0e80d632", AuthMode: skel.AuthModeUnset, Arguments: []*skel.MemberSchema{
+				{Name: "request", Description: "Debug send request", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "EventDebugEmitRequest", SkelName: "vine.hub.admin.EventDebugEmitRequest"}},
+			}},
+		}},
+		{Name: "PortalCertApiService", SkelName: "vine.hub.admin.PortalCertApiService", Description: "Hub's Portal site certificate service, called by the Portal admin client", Hash: "9d1673c5", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+			{Name: "list", SkelName: "list", Description: "List Portal site certificates", Hash: "603743bd", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal site certificate list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCertListItem", SkelName: "vine.hub.admin.PortalCertListItem"}}},
+			{Name: "get", SkelName: "get", Description: "Read the Portal site certificate", Hash: "8a48b8be", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal site certificate", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCert", SkelName: "vine.hub.admin.PortalCert"}, Arguments: []*skel.MemberSchema{
+				{Name: "id", Description: "Certificate ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			}},
+			{Name: "create", SkelName: "create", Description: "Create Portal site certificate", Hash: "8b9401cf", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal site certificate", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCert", SkelName: "vine.hub.admin.PortalCert"}, Arguments: []*skel.MemberSchema{
+				{Name: "creation", Description: "Portal site certificate creation parameters", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCertCreation", SkelName: "vine.hub.admin.PortalCertCreation"}},
+			}},
+			{Name: "update", SkelName: "update", Description: "Modify Portal site certificate", Hash: "009c8e7b", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal site certificate", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCert", SkelName: "vine.hub.admin.PortalCert"}, Arguments: []*skel.MemberSchema{
+				{Name: "id", Description: "Certificate ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+				{Name: "update", Description: "Portal site certificate update parameters", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCertUpdate", SkelName: "vine.hub.admin.PortalCertUpdate"}},
+			}},
+			{Name: "remove", SkelName: "remove", Description: "Delete Portal site certificate", Hash: "43f54e86", AuthMode: skel.AuthModeUnset, Arguments: []*skel.MemberSchema{
+				{Name: "id", Description: "Certificate ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			}},
+		}},
+		{Name: "PortalEntryApiService", SkelName: "vine.hub.admin.PortalEntryApiService", Description: "Hub's Portal access entry service, called by the Portal admin client", Hash: "8e77e8b3", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+			{Name: "list", SkelName: "list", Description: "List Portal access entries", Hash: "ebaf8bcf", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal access entry list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry"}}},
+			{Name: "create", SkelName: "create", Description: "Create a Portal access entry", Hash: "364f1477", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal access entry", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry"}, Arguments: []*skel.MemberSchema{
+				{Name: "creation", Description: "Portal access entry creation parameters", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalEntryCreation", SkelName: "vine.hub.admin.PortalEntryCreation"}},
+			}},
+			{Name: "update", SkelName: "update", Description: "Modify a Portal access entry", Hash: "07445e9e", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal access entry", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry"}, Arguments: []*skel.MemberSchema{
+				{Name: "id", Description: "Entry ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+				{Name: "update", Description: "Portal access entry update parameters", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalEntryUpdate", SkelName: "vine.hub.admin.PortalEntryUpdate"}},
+			}},
+			{Name: "remove", SkelName: "remove", Description: "Delete a Portal access entry that routes no rule", Hash: "c28170ea", AuthMode: skel.AuthModeUnset, Arguments: []*skel.MemberSchema{
+				{Name: "id", Description: "Entry ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			}},
+		}},
+		{Name: "PortalRuleApiService", SkelName: "vine.hub.admin.PortalRuleApiService", Description: "Hub's Portal entry rule service, called by the Portal admin client", Hash: "b736159f", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+			{Name: "listConflicts", SkelName: "listConflicts", Description: "List Portal entry rules that match the same request", Hash: "440c6508", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal entry rule conflicts", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalRuleConflict", SkelName: "vine.hub.admin.PortalRuleConflict"}}},
+			{Name: "list", SkelName: "list", Description: "List Portal entry rules", Hash: "596d7b51", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal entry rule list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalRuleListItem", SkelName: "vine.hub.admin.PortalRuleListItem"}}},
+			{Name: "get", SkelName: "get", Description: "Read Portal entry rules", Hash: "fb271c57", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal entry rules", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalRule", SkelName: "vine.hub.admin.PortalRule"}, Arguments: []*skel.MemberSchema{
+				{Name: "id", Description: "Rule ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			}},
+			{Name: "create", SkelName: "create", Description: "Create Portal entry rules", Hash: "9518da5e", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal entry rules", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalRule", SkelName: "vine.hub.admin.PortalRule"}, Arguments: []*skel.MemberSchema{
+				{Name: "creation", Description: "Portal entry rule creation parameters", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalRuleCreation", SkelName: "vine.hub.admin.PortalRuleCreation"}},
+			}},
+			{Name: "update", SkelName: "update", Description: "Modify Portal entry rules", Hash: "f9f53f2b", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal entry rules", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalRule", SkelName: "vine.hub.admin.PortalRule"}, Arguments: []*skel.MemberSchema{
+				{Name: "id", Description: "Rule ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+				{Name: "update", Description: "Portal entry rule update parameters", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalRuleUpdate", SkelName: "vine.hub.admin.PortalRuleUpdate"}},
+			}},
+			{Name: "remove", SkelName: "remove", Description: "Delete Portal entry rules", Hash: "2a299015", AuthMode: skel.AuthModeUnset, Arguments: []*skel.MemberSchema{
+				{Name: "id", Description: "Rule ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			}},
+		}},
+		{Name: "PortalSiteApiService", SkelName: "vine.hub.admin.PortalSiteApiService", Description: "Hub's Portal target site service, called by the Portal admin client", Hash: "f713a78d", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+			{Name: "list", SkelName: "list", Description: "List Portal target sites", Hash: "a674394c", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal target site list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalSiteListItem", SkelName: "vine.hub.admin.PortalSiteListItem"}}},
+			{Name: "listOptions", SkelName: "listOptions", Description: "List Portal target site form options", Hash: "89d0bfb6", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal target site form options", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalSiteOptions", SkelName: "vine.hub.admin.PortalSiteOptions"}},
+			{Name: "get", SkelName: "get", Description: "Read the Portal target site", Hash: "dbf4e113", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal target site", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalSite", SkelName: "vine.hub.admin.PortalSite"}, Arguments: []*skel.MemberSchema{
+				{Name: "id", Description: "Target site id", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			}},
+			{Name: "create", SkelName: "create", Description: "Create Portal target site", Hash: "580d8216", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal target site", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalSite", SkelName: "vine.hub.admin.PortalSite"}, Arguments: []*skel.MemberSchema{
+				{Name: "creation", Description: "Portal target site creation parameters", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalSiteCreation", SkelName: "vine.hub.admin.PortalSiteCreation"}},
+			}},
+			{Name: "update", SkelName: "update", Description: "Modify Portal target site", Hash: "d7400356", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal target site", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalSite", SkelName: "vine.hub.admin.PortalSite"}, Arguments: []*skel.MemberSchema{
+				{Name: "id", Description: "Target site id", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+				{Name: "update", Description: "Portal target site update parameters", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalSiteUpdate", SkelName: "vine.hub.admin.PortalSiteUpdate"}},
+			}},
+			{Name: "remove", SkelName: "remove", Description: "Delete Portal target site", Hash: "a061405c", AuthMode: skel.AuthModeUnset, Arguments: []*skel.MemberSchema{
+				{Name: "id", Description: "Target site id", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			}},
+		}},
+		{Name: "PortalStatusApiService", SkelName: "vine.hub.admin.PortalStatusApiService", Description: "Hub Dashboard's Portal instance status service", Hash: "49b2f739", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+			{Name: "list", SkelName: "list", Description: "List Portal instance statuses", Hash: "2916f955", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalStatusView", SkelName: "vine.hub.admin.PortalStatusView"}}},
+		}},
+		{Name: "ServiceDebugApiService", SkelName: "vine.hub.admin.ServiceDebugApiService", Description: "Hub Dashboard Service debugging service", Hash: "7bbd9cf0", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+			{Name: "listAppInstances", SkelName: "listAppInstances", Description: "List application instances", Hash: "213565dd", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "ServiceDebugAppInstance", SkelName: "vine.hub.admin.ServiceDebugAppInstance"}}},
+			{Name: "listServices", SkelName: "listServices", Description: "List the services provided by the application instance", Hash: "964d0bc0", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "ServiceDebugServiceItem", SkelName: "vine.hub.admin.ServiceDebugServiceItem"}}},
+			{Name: "listServiceAppInstances", SkelName: "listServiceAppInstances", Description: "List application instances that provide the specified service", Hash: "bd1f5b3d", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "ServiceDebugAppInstance", SkelName: "vine.hub.admin.ServiceDebugAppInstance"}}, Arguments: []*skel.MemberSchema{
+				{Name: "serviceSkelName", Description: "Service Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+				{Name: "schemaHash", Description: "Service schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			}},
+			{Name: "listMethods", SkelName: "listMethods", Description: "List Service methods", Hash: "cb02bafd", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "ServiceDebugMethodItem", SkelName: "vine.hub.admin.ServiceDebugMethodItem"}}, Arguments: []*skel.MemberSchema{
+				{Name: "serviceSkelName", Description: "Service Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+				{Name: "schemaHash", Description: "Service schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			}},
+			{Name: "buildDefaultInvokeRequest", SkelName: "buildDefaultInvokeRequest", Description: "Generate default Service call request", Hash: "cb587d74", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "ServiceDebugDefaultInvokeRequest", SkelName: "vine.hub.admin.ServiceDebugDefaultInvokeRequest"}, Arguments: []*skel.MemberSchema{
+				{Name: "serviceSkelName", Description: "Service Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+				{Name: "schemaHash", Description: "Service schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+				{Name: "methodSkelName", Description: "Method Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			}},
+			{Name: "invokeService", SkelName: "invokeService", Description: "Call Service method", Hash: "b4a5ec7b", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "ServiceDebugInvokeResponse", SkelName: "vine.hub.admin.ServiceDebugInvokeResponse"}, Arguments: []*skel.MemberSchema{
+				{Name: "request", Description: "Debug call request", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "ServiceDebugInvokeRequest", SkelName: "vine.hub.admin.ServiceDebugInvokeRequest"}},
+			}},
+		}},
+		{Name: "SkeletonApiService", SkelName: "vine.hub.admin.SkeletonApiService", Description: "Hub's skeleton service, called by the Portal admin client", Hash: "53e522bd", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+			{Name: "listDomains", SkelName: "listDomains", Description: "List Domain skeleton", Hash: "2fe2ddcd", AuthMode: skel.AuthModeUnset, OutputDescription: "Domain skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonDomain", SkelName: "vine.hub.admin.SkeletonDomain"}}},
+			{Name: "listActors", SkelName: "listActors", Description: "List Actor Skeleton", Hash: "cdec4f9c", AuthMode: skel.AuthModeUnset, OutputDescription: "Actor skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonActorItem", SkelName: "vine.hub.admin.SkeletonActorItem"}}},
+			{Name: "listServices", SkelName: "listServices", Description: "List Service skeleton", Hash: "0e40bb1c", AuthMode: skel.AuthModeUnset, OutputDescription: "Service skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonServiceItem", SkelName: "vine.hub.admin.SkeletonServiceItem"}}},
+			{Name: "listResources", SkelName: "listResources", Description: "List Resource skeleton", Hash: "63d63a4d", AuthMode: skel.AuthModeUnset, OutputDescription: "Resource skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonResourceItem", SkelName: "vine.hub.admin.SkeletonResourceItem"}}},
+			{Name: "listWebs", SkelName: "listWebs", Description: "List Web Skeletons", Hash: "1a5e7855", AuthMode: skel.AuthModeUnset, OutputDescription: "Web skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonWebItem", SkelName: "vine.hub.admin.SkeletonWebItem"}}},
+			{Name: "listTasks", SkelName: "listTasks", Description: "List Task skeleton", Hash: "1c8182b7", AuthMode: skel.AuthModeUnset, OutputDescription: "Task skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonTask", SkelName: "vine.hub.admin.SkeletonTask"}}},
+			{Name: "listEvents", SkelName: "listEvents", Description: "List Event skeletons", Hash: "685c55b6", AuthMode: skel.AuthModeUnset, OutputDescription: "Event skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonEventItem", SkelName: "vine.hub.admin.SkeletonEventItem"}}},
+			{Name: "listData", SkelName: "listData", Description: "List Data skeleton", Hash: "f5aa55bd", AuthMode: skel.AuthModeUnset, OutputDescription: "Data skeleton list, including Enum", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonData", SkelName: "vine.hub.admin.SkeletonData"}}},
+			{Name: "listConfigs", SkelName: "listConfigs", Description: "List Config skeleton", Hash: "63234eff", AuthMode: skel.AuthModeUnset, OutputDescription: "Config skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonConfigItem", SkelName: "vine.hub.admin.SkeletonConfigItem"}}},
+		}},
+		{Name: "TaskDebugApiService", SkelName: "vine.hub.admin.TaskDebugApiService", Description: "Hub Dashboard Task Debugging Service", Hash: "3040e825", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+			{Name: "listTasks", SkelName: "listTasks", Description: "List the tasks provided by the application instance", Hash: "64ec80ce", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "TaskDebugTaskItem", SkelName: "vine.hub.admin.TaskDebugTaskItem"}}},
+			{Name: "listTriggers", SkelName: "listTriggers", Description: "List Task triggers", Hash: "e559ea60", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "TaskDebugTriggerItem", SkelName: "vine.hub.admin.TaskDebugTriggerItem"}}, Arguments: []*skel.MemberSchema{
+				{Name: "taskSkelName", Description: "Task Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+				{Name: "schemaHash", Description: "Task schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			}},
+			{Name: "buildDefaultLaunchRequest", SkelName: "buildDefaultLaunchRequest", Description: "Generate a default Task launch request", Hash: "9cbec7e4", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "TaskDebugDefaultLaunchRequest", SkelName: "vine.hub.admin.TaskDebugDefaultLaunchRequest"}, Arguments: []*skel.MemberSchema{
+				{Name: "taskSkelName", Description: "Task Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+				{Name: "schemaHash", Description: "Task schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+				{Name: "triggerSkelName", Description: "Trigger Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			}},
+			{Name: "launchTask", SkelName: "launchTask", Description: "Initiate Task", Hash: "74146892", AuthMode: skel.AuthModeUnset, Arguments: []*skel.MemberSchema{
+				{Name: "request", Description: "Debug launch request", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "TaskDebugLaunchRequest", SkelName: "vine.hub.admin.TaskDebugLaunchRequest"}},
+			}},
+		}},
 	},
 }

@@ -14,13 +14,6 @@ type EventOn struct {
 	EventJson string `json:"eventJson"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v EventOn) Clone() EventOn {
-	cloned := v
-	cloned.Metadata = v.Metadata.Clone()
-	return cloned
-}
-
 // EventOnMeta Link triggers event processing meta-information to the App
 type EventOnMeta struct {
 	// TraceId Trace ID of the current calling link
@@ -37,12 +30,6 @@ type EventOnMeta struct {
 	EmittedAt skel.Timestamp `json:"emittedAt"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v EventOnMeta) Clone() EventOnMeta {
-	cloned := v
-	return cloned
-}
-
 // TaskRun Link triggers task execution information to the App
 type TaskRun struct {
 	// Metadata Task trigger meta information
@@ -53,13 +40,6 @@ type TaskRun struct {
 	TriggerSkelName string `json:"triggerSkelName"`
 	// ArgumentsJson Task parameters JSON
 	ArgumentsJson string `json:"argumentsJson"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v TaskRun) Clone() TaskRun {
-	cloned := v
-	cloned.Metadata = v.Metadata.Clone()
-	return cloned
 }
 
 // TaskRunMeta Link triggers meta-information of task execution to App
@@ -76,10 +56,4 @@ type TaskRunMeta struct {
 	AppInstanceId skel.UUID `json:"appInstanceId"`
 	// LaunchedAt Task launch time
 	LaunchedAt skel.Timestamp `json:"launchedAt"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v TaskRunMeta) Clone() TaskRunMeta {
-	cloned := v
-	return cloned
 }

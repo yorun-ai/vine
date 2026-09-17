@@ -65,9 +65,7 @@ import type {
   TaskDebugDefaultLaunchRequest,
   TaskDebugLaunchRequest,
 } from './data';
-/**
- * Hub's Admin API service, called by the Dashboard
- */
+/** Hub's Admin API service, called by the Dashboard */
 export function createAdminApiService(client: VrpcClient) {
   return {
     /**
@@ -89,9 +87,7 @@ export function createAdminApiService(client: VrpcClient) {
     },
   };
 }
-/**
- * Hub's application configuration service, called by Client
- */
+/** Hub's application configuration service, called by Client */
 export function createAppConfigApiService(client: VrpcClient) {
   return {
     /**
@@ -190,9 +186,7 @@ export function createAppConfigApiService(client: VrpcClient) {
     },
   };
 }
-/**
- * Hub Dashboard's application status service
- */
+/** Hub Dashboard's application status service */
 export function createAppStatusApiService(client: VrpcClient) {
   return {
     /**
@@ -214,9 +208,7 @@ export function createAppStatusApiService(client: VrpcClient) {
     },
   };
 }
-/**
- * Hub Dashboard Event Debugging Service
- */
+/** Hub Dashboard Event Debugging Service */
 export function createEventDebugApiService(client: VrpcClient) {
   return {
     /**
@@ -276,9 +268,7 @@ export function createEventDebugApiService(client: VrpcClient) {
     },
   };
 }
-/**
- * Hub's Portal site certificate service, called by the Portal admin client
- */
+/** Hub's Portal site certificate service, called by the Portal admin client */
 export function createPortalCertApiService(client: VrpcClient) {
   return {
     /**
@@ -376,9 +366,7 @@ export function createPortalCertApiService(client: VrpcClient) {
     },
   };
 }
-/**
- * Hub's Portal access entry service, called by the Portal admin client
- */
+/** Hub's Portal access entry service, called by the Portal admin client */
 export function createPortalEntryApiService(client: VrpcClient) {
   return {
     /**
@@ -457,9 +445,7 @@ export function createPortalEntryApiService(client: VrpcClient) {
     },
   };
 }
-/**
- * Hub's Portal entry rule service, called by the Portal admin client
- */
+/** Hub's Portal entry rule service, called by the Portal admin client */
 export function createPortalRuleApiService(client: VrpcClient) {
   return {
     /**
@@ -574,9 +560,7 @@ export function createPortalRuleApiService(client: VrpcClient) {
     },
   };
 }
-/**
- * Hub's Portal target site service, called by the Portal admin client
- */
+/** Hub's Portal target site service, called by the Portal admin client */
 export function createPortalSiteApiService(client: VrpcClient) {
   return {
     /**
@@ -691,9 +675,7 @@ export function createPortalSiteApiService(client: VrpcClient) {
     },
   };
 }
-/**
- * Hub Dashboard's Portal instance status service
- */
+/** Hub Dashboard's Portal instance status service */
 export function createPortalStatusApiService(client: VrpcClient) {
   return {
     /**
@@ -715,9 +697,7 @@ export function createPortalStatusApiService(client: VrpcClient) {
     },
   };
 }
-/**
- * Hub Dashboard Service debugging service
- */
+/** Hub Dashboard Service debugging service */
 export function createServiceDebugApiService(client: VrpcClient) {
   return {
     /**
@@ -836,9 +816,7 @@ export function createServiceDebugApiService(client: VrpcClient) {
     },
   };
 }
-/**
- * Hub's skeleton service, called by the Portal admin client
- */
+/** Hub's skeleton service, called by the Portal admin client */
 export function createSkeletonApiService(client: VrpcClient) {
   return {
     /**
@@ -996,9 +974,7 @@ export function createSkeletonApiService(client: VrpcClient) {
     },
   };
 }
-/**
- * Hub Dashboard Task Debugging Service
- */
+/** Hub Dashboard Task Debugging Service */
 export function createTaskDebugApiService(client: VrpcClient) {
   return {
     /**

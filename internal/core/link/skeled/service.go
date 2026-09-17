@@ -44,17 +44,10 @@ var (
 		},
 	}
 	_BootServiceGetInfoSpec = &rpcspec.MethodSpec{
-		Name:           "GetInfo",
-		SkelName:       "getInfo",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[BootInfo](),
-		CloneResult: func(value any) any {
-			source := value.(BootInfo)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "GetInfo",
+		SkelName:                    "getInfo",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[BootInfo](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -198,20 +191,10 @@ var (
 		},
 	}
 	_ConfigServiceGetEternalSpec = &rpcspec.MethodSpec{
-		Name:          "GetEternal",
-		SkelName:      "getEternal",
-		ArgumentsType: reflect.TypeFor[_ConfigServiceGetEternalArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_ConfigServiceGetEternalArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[string](),
-		CloneResult: func(value any) any {
-			source := value.(string)
-			cloned := source
-			return cloned
-		},
+		Name:                        "GetEternal",
+		SkelName:                    "getEternal",
+		ArgumentsType:               reflect.TypeFor[_ConfigServiceGetEternalArguments](),
+		ResultType:                  reflect.TypeFor[string](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -224,20 +207,10 @@ var (
 		},
 	}
 	_ConfigServiceGetInstantSpec = &rpcspec.MethodSpec{
-		Name:          "GetInstant",
-		SkelName:      "getInstant",
-		ArgumentsType: reflect.TypeFor[_ConfigServiceGetInstantArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_ConfigServiceGetInstantArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[string](),
-		CloneResult: func(value any) any {
-			source := value.(string)
-			cloned := source
-			return cloned
-		},
+		Name:                        "GetInstant",
+		SkelName:                    "getInstant",
+		ArgumentsType:               reflect.TypeFor[_ConfigServiceGetInstantArguments](),
+		ResultType:                  reflect.TypeFor[string](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -434,17 +407,10 @@ var (
 		},
 	}
 	_EventServiceEmitEventSpec = &rpcspec.MethodSpec{
-		Name:          "EmitEvent",
-		SkelName:      "emitEvent",
-		ArgumentsType: reflect.TypeFor[_EventServiceEmitEventArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_EventServiceEmitEventArguments)
-			cloned := *source
-			cloned.Emission = source.Emission.Clone()
-			return &cloned
-		},
+		Name:                        "EmitEvent",
+		SkelName:                    "emitEvent",
+		ArgumentsType:               reflect.TypeFor[_EventServiceEmitEventArguments](),
 		ResultType:                  nil,
-		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -599,20 +565,10 @@ var (
 		},
 	}
 	_LockServiceAcquireSpec = &rpcspec.MethodSpec{
-		Name:          "Acquire",
-		SkelName:      "acquire",
-		ArgumentsType: reflect.TypeFor[_LockServiceAcquireArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_LockServiceAcquireArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[bool](),
-		CloneResult: func(value any) any {
-			source := value.(bool)
-			cloned := source
-			return cloned
-		},
+		Name:                        "Acquire",
+		SkelName:                    "acquire",
+		ArgumentsType:               reflect.TypeFor[_LockServiceAcquireArguments](),
+		ResultType:                  reflect.TypeFor[bool](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -625,20 +581,10 @@ var (
 		},
 	}
 	_LockServiceRenewSpec = &rpcspec.MethodSpec{
-		Name:          "Renew",
-		SkelName:      "renew",
-		ArgumentsType: reflect.TypeFor[_LockServiceRenewArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_LockServiceRenewArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[bool](),
-		CloneResult: func(value any) any {
-			source := value.(bool)
-			cloned := source
-			return cloned
-		},
+		Name:                        "Renew",
+		SkelName:                    "renew",
+		ArgumentsType:               reflect.TypeFor[_LockServiceRenewArguments](),
+		ResultType:                  reflect.TypeFor[bool](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -651,20 +597,10 @@ var (
 		},
 	}
 	_LockServiceReleaseSpec = &rpcspec.MethodSpec{
-		Name:          "Release",
-		SkelName:      "release",
-		ArgumentsType: reflect.TypeFor[_LockServiceReleaseArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_LockServiceReleaseArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[bool](),
-		CloneResult: func(value any) any {
-			source := value.(bool)
-			cloned := source
-			return cloned
-		},
+		Name:                        "Release",
+		SkelName:                    "release",
+		ArgumentsType:               reflect.TypeFor[_LockServiceReleaseArguments](),
+		ResultType:                  reflect.TypeFor[bool](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -894,17 +830,10 @@ var (
 		},
 	}
 	_RegistryServiceRegisterSpec = &rpcspec.MethodSpec{
-		Name:          "Register",
-		SkelName:      "register",
-		ArgumentsType: reflect.TypeFor[_RegistryServiceRegisterArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_RegistryServiceRegisterArguments)
-			cloned := *source
-			cloned.Registration = source.Registration.Clone()
-			return &cloned
-		},
+		Name:                        "Register",
+		SkelName:                    "register",
+		ArgumentsType:               reflect.TypeFor[_RegistryServiceRegisterArguments](),
 		ResultType:                  nil,
-		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -920,9 +849,7 @@ var (
 		Name:                        "Unregister",
 		SkelName:                    "unregister",
 		ArgumentsType:               nil,
-		CloneArguments:              nil,
 		ResultType:                  nil,
-		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1102,17 +1029,10 @@ var (
 		},
 	}
 	_TaskServiceLaunchTaskSpec = &rpcspec.MethodSpec{
-		Name:          "LaunchTask",
-		SkelName:      "launchTask",
-		ArgumentsType: reflect.TypeFor[_TaskServiceLaunchTaskArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_TaskServiceLaunchTaskArguments)
-			cloned := *source
-			cloned.Launch = source.Launch.Clone()
-			return &cloned
-		},
+		Name:                        "LaunchTask",
+		SkelName:                    "launchTask",
+		ArgumentsType:               reflect.TypeFor[_TaskServiceLaunchTaskArguments](),
 		ResultType:                  nil,
-		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
