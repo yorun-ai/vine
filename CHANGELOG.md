@@ -6,7 +6,7 @@ The project follows [Semantic Versioning](https://semver.org/). The public
 version history starts at `v0.9.0`; versions from the former private repository
 are not part of the public compatibility commitment.
 
-## [Unreleased]
+## [0.20.0] - 2026-09-17
 
 ### Added
 
@@ -37,7 +37,6 @@ are not part of the public compatibility commitment.
   names the entry instead of repeating its protocol, host, and port. Portal site,
   rule, and certificate details render their values as text instead of
   input-like boxes, so a read-only field no longer looks editable.
-
 - Portal sites, entries, rules, and certificates carry an `enabled` switch that
   the Dashboard edits and a seed declares as `disabled`, so a seed names only
   the entities it turns off. Hub keeps a disabled entity in its database and
@@ -50,11 +49,10 @@ are not part of the public compatibility commitment.
 - Standalone can serve the in-process Hub's Admin API and Dashboard on a listener
   of its own through `--hub-admin-listen` and `standalone.Option.AdminListen`,
   and the Hub keeps the address in inproc mode for this purpose. The address is
-  empty by default: the Admin API carries no authentication, so an address
-  another host can reach exposes configuration writes to it. Every other Hub and
-  Link surface stays in-process, and an in-process Hub that declares no admin
-  address serves no Admin API at all.
-
+  empty by default, so an in-process Hub that declares none serves no Admin API;
+  an address another host can reach exposes configuration writes to it, because
+  the Admin API carries no authentication. Every other Hub and Link surface
+  stays in-process.
 - The Dashboard shows the rules that match the same request.
   `PortalRuleApiService.listConflicts` reports the request, the entry, both
   rules, and which of them Hub publishes, and the rule page marks them with a
@@ -89,6 +87,13 @@ are not part of the public compatibility commitment.
   for a browser, which never speaks it. Hub's Control API, Watch, and MQ keep
   requiring mTLS, and a Go client still reaches the Control API over h2c.
 
+- The Hub and Portal images and the stable manifests follow those listeners: Hub
+  serves the Admin API and the Dashboard on `7099` in place of `7075` and
+  defaults `VINE_WATCH_LISTEN` and `VINE_SEED_DATA_FILE` in place of the
+  deprecated inputs, while the Portal image and manifests stop publishing `7099`
+  and the probes that watched it, because Portal serves the access of every
+  entry Hub publishes and has no port that always exists.
+
 - A Portal rule owns its entry and nothing else: the rule entity, the rows Hub
   reads and writes, and the rule Hub publishes all take the scheme, host, and
   port from the `portal_entry` the rule belongs to, and the Admin API rule
@@ -97,12 +102,12 @@ are not part of the public compatibility commitment.
   names the entry it joins; the layer that reads the declaration resolves the
   entry. Whether two rules match one request depends on the Web mount paths Hub
   reads once the applications register their schemas, so no write decides it: Hub
-  stores what a seed or an Admin call declares, publishes one rule per request,
-  and reports the requests two rules match from the schemas it holds. Hub keeps
-  the rule whose name sorts first, so the choice never depends on the order it
-  applied them, and the rule that lost comes back on its own when the winner
-  stops serving the request. A rule that leaves `matchPort` unset reports the
-  port Portal serves (`80` or `443`) in Admin API responses instead of `0`.
+  stores what a seed or an Admin call declares and publishes one rule per
+  request. Hub keeps the rule whose name sorts first, so the choice never depends
+  on the order it applied them, and the rule that lost comes back on its own
+  when the winner stops serving the request. A rule that leaves `matchPort`
+  unset reports the port Portal serves (`80` or `443`) in Admin API responses
+  instead of `0`.
 
 - Upgrading a database groups the stored rule access into entries and leaves the
   rule access columns in place: Hub no longer reads them, keeps them filled with
@@ -140,6 +145,26 @@ are not part of the public compatibility commitment.
   `--link-mtls-cert-file`, and `--link-mtls-key-file` under `VINE_LINK_*`. The
   Hub validation messages no longer name a flag the caller may not have.
 
+- A Web handler reads the path its Web serves: each Web owns a Gin group under
+  its name, so the request it handles drops that name and starts at the mount
+  the Web declares, while the `*path` parameter keeps its meaning for an assets
+  server that resolves files below the mount. `web.AssetsServer.Routes` also
+  answers the mount root, so a mounted Web serves its index instead of
+  redirecting to the path the application keeps inside. Regenerate a Web handler
+  with the matching compiler and rebuild it: the generated handler embeds the
+  assets server by value, delegates `Routes` to it, and lets its context arrive
+  per execution, so `Serve` must belong to the registered handler type. A
+  handler that read the Web name from `Request.URL.Path` must read it again.
+
+- Vine serves cleartext HTTP/2 through `net/http`'s protocol setting instead of
+  the deprecated `golang.org/x/net/http2/h2c` handler: the application HTTP
+  server, the Hub Control API, and the Link ingress each answer HTTP/1 and
+  unencrypted HTTP/2 on the same address, so no endpoint loses a protocol it
+  served. The HTTP/1.1 `Upgrade: h2c` handshake is no longer upgraded, because
+  `net/http` accepts unencrypted HTTP/2 by prior knowledge only; a Vine client,
+  gateway, or proxy reaches these endpoints with prior knowledge today, and
+  every TLS listener is unchanged.
+
 ### Removed
 
 - The Dashboard no longer imports a seed document. The Admin API service keeps
@@ -151,14 +176,9 @@ are not part of the public compatibility commitment.
 - The admin domain declares no actor and no Web. `vine.hub.admin.AdminActor` and
   `vine.hub.admin.DashboardWeb` existed so Portal could route the Dashboard and
   its services, and `noauth` told that path to call them as an anonymous actor;
-  Hub serves the Admin API and the build on its own listener now, which resolves
-  no actor, so the schema names neither a Web nor an audience and the services
-  declare no auth mode. A Portal site that names one of them is refused, because
-  the service allows no audience. The startup cleanup that removed the Watch keys
-  an earlier release published for the Dashboard goes with it: Hub serves Watch
-  from memory in its own process, so a registration only exists while the release
-  that wrote it runs, and a stored built-in entity is removed from the database
-  instead.
+  the admin listener resolves no actor, so the schema names neither a Web nor an
+  audience and the services declare no auth mode. A Portal site that names one of
+  them is refused, because the service allows no audience.
 
 - The `vine dev` command is gone. It bundled Hub, Portal, and Link into the CLI
   process for local application development, but it reached Hub over in-process
