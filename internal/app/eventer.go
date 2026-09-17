@@ -18,7 +18,6 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcserver "go.yorun.ai/vine/internal/core/rpc/server"
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
-	"go.yorun.ai/vine/internal/core/runtime"
 )
 
 type EventerSpec interface {
@@ -35,7 +34,7 @@ func (*EventerEnabled) EventerInitFilters(TypeAdder)           {}
 
 type _Eventer struct {
 	spec        EventerSpec
-	appInfo     runtime.App
+	currentApp  meta.CurrentApp
 	bindAppDeps di.BindApplier
 
 	listeners   []_ListenerTypeEntry
@@ -43,10 +42,10 @@ type _Eventer struct {
 	rpcServer   *rpcserver.Server
 }
 
-func newEventer(spec EventerSpec, info runtime.App, deps di.BindApplier) *_Eventer {
+func newEventer(spec EventerSpec, currentApp meta.CurrentApp, deps di.BindApplier) *_Eventer {
 	eventer := &_Eventer{
 		spec:        spec,
-		appInfo:     info,
+		currentApp:  currentApp,
 		bindAppDeps: deps,
 	}
 	eventer.init()
@@ -63,13 +62,13 @@ func (e *_Eventer) init() {
 
 	e.listeners = e.collectListeners()
 	e.eventServer = event.NewServer(event.Option{
-		App:               e.appInfo,
+		App:               e.currentApp,
 		ListenerImplTypes: e.listenerTypes(),
 		Executor:          event.NewContainerExecutor(e.filterTypes(), bindAppliers),
 	})
 
 	e.rpcServer = rpcserver.New(rpcserver.Option{
-		App:          e.appInfo,
+		App:          e.currentApp,
 		HandlerTypes: []reflect.Type{T[*_AppEventServiceServerImpl]()},
 		Executor:     rpcserver.NewDefaultExecutor(rpcserver.With(e.eventServer)),
 	})
@@ -120,14 +119,14 @@ func (e *_Eventer) bindLogger(b *di.Binder) {
 				slog.String("eventSkelName", eventInfo.SkelName()),
 			)
 		}
-		if e.appInfo != nil {
+		if e.currentApp != nil {
 			fields = append(fields,
-				slog.String("name", e.appInfo.Name()),
-				slog.String("version", e.appInfo.Version()),
-				slog.String("instanceId", e.appInfo.InstanceId()),
+				slog.String("name", e.currentApp.Name()),
+				slog.String("version", e.currentApp.Version()),
+				slog.String("instanceId", e.currentApp.InstanceId()),
 			)
 		}
-		return newAppLogger(e.appInfo.Name()).With(fields...)
+		return newAppLogger(e.currentApp.Name()).With(fields...)
 	})
 }
 

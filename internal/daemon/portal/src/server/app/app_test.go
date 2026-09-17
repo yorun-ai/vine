@@ -42,7 +42,7 @@ func TestPortalAppDIInitSetsRunFlagListenAddr(t *testing.T) {
 
 	spec.DIInit()
 
-	if got, want := spec.InternalAttrs.Info.Version(), buildinfo.MustVineVersion(); got != want {
+	if got, want := spec.InternalAttrs.CurrentApp.Version(), buildinfo.MustVineVersion(); got != want {
 		t.Fatalf("unexpected daemon version: got %q, want Vine version %q", got, want)
 	}
 
@@ -75,14 +75,14 @@ func TestPortalAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 
 	spec.DIInit()
 
-	if got, want := spec.InternalAttrs.Info.Version(), buildinfo.MustVineVersion(); got != want {
+	if got, want := spec.InternalAttrs.CurrentApp.Version(), buildinfo.MustVineVersion(); got != want {
 		t.Fatalf("unexpected daemon version: got %q, want Vine version %q", got, want)
 	}
 
 	if got := spec.Name(); got != "vine.portal" {
 		t.Fatalf("unexpected spec name: %s", got)
 	}
-	if got := spec.InternalAttrs.Info.Name(); got != "vine.portal" {
+	if got := spec.InternalAttrs.CurrentApp.Name(); got != "vine.portal" {
 		t.Fatalf("unexpected app info name: %s", got)
 	}
 }

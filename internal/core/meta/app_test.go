@@ -17,9 +17,23 @@ func TestNewAppAcceptsValidValues(t *testing.T) {
 }
 
 func TestNewAppRejectsInvalidName(t *testing.T) {
-	for _, name := range []string{"DemoService", "demo.worker@demo.runtime"} {
+	for _, name := range []string{"DemoService", "demo.worker@demo.runtime", "2worker", "user-service", ".worker", "demo..worker"} {
 		if _, err := NewApp(name, "1.2.3", "123e4567-e89b-12d3-a456-426614174000"); err == nil {
 			t.Fatalf("expected invalid name error for %q", name)
+		}
+	}
+}
+
+// A Plot domain name becomes the name of the application that serves it, so
+// application names accept the digits a domain name allows.
+func TestNewAppAcceptsDigitsInNameSegments(t *testing.T) {
+	for _, name := range []string{"worker2", "shop.orders", "team1.app2", "order2.items"} {
+		app, err := NewApp(name, "1.2.3", "123e4567-e89b-12d3-a456-426614174000")
+		if err != nil {
+			t.Fatalf("unexpected error for %q: %v", name, err)
+		}
+		if app.Name() != name {
+			t.Fatalf("unexpected app name: %q", app.Name())
 		}
 	}
 }

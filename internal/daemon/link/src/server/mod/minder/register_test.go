@@ -43,7 +43,7 @@ func TestRegisterHubInstancePublishesRegistration(t *testing.T) {
 	minder := &AppMinder{
 		Context:               context.Background(),
 		Flag:                  &flag.Flag{},
-		App:                   appInfo,
+		CurrentApp:            appInfo,
 		InprocFlag:            &app.InternalInprocFlag{},
 		RegistryServiceClient: client,
 		HubInfo:               newTestHubInfo(new(_TestInfoServiceClient)),
@@ -90,7 +90,7 @@ func TestUnregisterHubInstancePublishesUnregister(t *testing.T) {
 	minder := &AppMinder{
 		Context:               context.Background(),
 		Flag:                  &flag.Flag{},
-		App:                   appInfo,
+		CurrentApp:            appInfo,
 		InprocFlag:            &app.InternalInprocFlag{},
 		RegistryServiceClient: client,
 		HubInfo:               newTestHubInfo(new(_TestInfoServiceClient)),

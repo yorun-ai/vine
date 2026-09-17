@@ -11,9 +11,9 @@ import (
 
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/logger"
+	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
-	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
@@ -29,7 +29,7 @@ type RpcProxy struct {
 
 	Context     context.Context   `inject:""`
 	WatchClient *hubwatch.Client  `inject:""`
-	App         runtime.App       `inject:""`
+	CurrentApp  meta.CurrentApp   `inject:""`
 	Logger      *logger.Logger    `inject:""`
 	AppMinder   *minder.AppMinder `inject:""`
 	Identity    *mtls.Identity    `inject:""`
@@ -46,7 +46,7 @@ type RpcProxy struct {
 // _AppState is immutable after it is published in appStateByInstanceID.
 type _AppState struct {
 	instance        *minder.AppInstance
-	appInfo         runtime.App
+	appInfo         meta.App
 	serviceEndpoint string
 	serviceNames    map[string]struct{}
 	draining        bool

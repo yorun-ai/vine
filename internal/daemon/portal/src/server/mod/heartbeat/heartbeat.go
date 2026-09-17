@@ -7,7 +7,7 @@ import (
 
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/logger"
-	"go.yorun.ai/vine/internal/core/runtime"
+	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/skel"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubinfo"
@@ -32,7 +32,7 @@ type Heartbeat struct {
 
 	Context              context.Context                    `inject:""`
 	Flag                 *flag.Flag                         `inject:""`
-	App                  runtime.App                        `inject:""`
+	CurrentApp           meta.CurrentApp                    `inject:""`
 	HubInfo              *hubinfo.HubInfo                   `inject:""`
 	PortalRegistryClient skeled.PortalRegistryServiceClient `inject:""`
 
@@ -41,7 +41,7 @@ type Heartbeat struct {
 }
 
 func (h *Heartbeat) AfterAppStart() {
-	h.instanceId = skel.NewUUID(uuid.MustParse(h.App.InstanceId()))
+	h.instanceId = skel.NewUUID(uuid.MustParse(h.CurrentApp.InstanceId()))
 	h.register()
 
 	if h.Flag.HubInprocMode {
@@ -93,7 +93,7 @@ func (h *Heartbeat) register() {
 	}, func() {
 		h.PortalRegistryClient.Register(skeled.PortalRegistration{
 			InstanceId: h.instanceId,
-			Version:    h.App.Version(),
+			Version:    h.CurrentApp.Version(),
 		})
 	})
 }

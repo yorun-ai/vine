@@ -57,7 +57,7 @@ func (a *HubApp) DIInit() {
 
 	appInfo := meta.MustNewAppWithRandomId(a.Name(), buildinfo.MustVineVersion())
 	a.InternalAttrs = app.InternalAttributes{
-		Info:            appInfo,
+		CurrentApp:      appInfo,
 		Linker:          link.NewInternalLinker(appInfo),
 		BackendIdentity: identity,
 		DisableConsole:  true,

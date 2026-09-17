@@ -16,7 +16,6 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcserver "go.yorun.ai/vine/internal/core/rpc/server"
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
-	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/internal/core/task"
 	taskspec "go.yorun.ai/vine/internal/core/task/spec"
 	"go.yorun.ai/vine/util/vpre"
@@ -36,7 +35,7 @@ func (*TaskerEnabled) TaskerInitFilters(TypeAdder)       {}
 
 type _Tasker struct {
 	spec        TaskerSpec
-	appInfo     runtime.App
+	currentApp  meta.CurrentApp
 	bindAppDeps di.BindApplier
 
 	runners    []_RunnerTypeEntry
@@ -44,10 +43,10 @@ type _Tasker struct {
 	rpcServer  *rpcserver.Server
 }
 
-func newTasker(spec TaskerSpec, info runtime.App, deps di.BindApplier) *_Tasker {
+func newTasker(spec TaskerSpec, currentApp meta.CurrentApp, deps di.BindApplier) *_Tasker {
 	t := &_Tasker{
 		spec:        spec,
-		appInfo:     info,
+		currentApp:  currentApp,
 		bindAppDeps: deps,
 	}
 	t.init()
@@ -64,13 +63,13 @@ func (t *_Tasker) init() {
 
 	t.runners = t.collectRunners()
 	t.taskServer = task.NewServer(task.Option{
-		App:       t.appInfo,
+		App:       t.currentApp,
 		ImplTypes: t.runnerTypes(),
 		Executor:  task.NewContainerExecutor(t.filterTypes(), bindAppliers),
 	})
 
 	t.rpcServer = rpcserver.New(rpcserver.Option{
-		App:          t.appInfo,
+		App:          t.currentApp,
 		HandlerTypes: []reflect.Type{T[*_AppTaskServiceServerImpl]()},
 		Executor:     rpcserver.NewDefaultExecutor(rpcserver.With(t.taskServer)),
 	})
@@ -123,14 +122,14 @@ func (t *_Tasker) bindLogger(b *di.Binder) {
 				slog.String("taskTriggerSkelName", triggerInfo.SkelName()),
 			)
 		}
-		if t.appInfo != nil {
+		if t.currentApp != nil {
 			fields = append(fields,
-				slog.String("name", t.appInfo.Name()),
-				slog.String("version", t.appInfo.Version()),
-				slog.String("instanceId", t.appInfo.InstanceId()),
+				slog.String("name", t.currentApp.Name()),
+				slog.String("version", t.currentApp.Version()),
+				slog.String("instanceId", t.currentApp.InstanceId()),
 			)
 		}
-		return newAppLogger(t.appInfo.Name()).With(fields...)
+		return newAppLogger(t.currentApp.Name()).With(fields...)
 	})
 }
 

@@ -13,7 +13,6 @@ import (
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
-	"go.yorun.ai/vine/internal/core/runtime"
 	taskspec "go.yorun.ai/vine/internal/core/task/spec"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 	"go.yorun.ai/vine/util/vcode"
@@ -22,7 +21,7 @@ import (
 
 var taskLogger = logger.New("daemon:link:task")
 
-var newAppTaskServiceClient = func(ctx context.Context, clientApp runtime.App, endpoint string, msg taskspec.NATSMessage) appskeled.TaskServiceClientER {
+var newAppTaskServiceClient = func(ctx context.Context, clientApp meta.App, endpoint string, msg taskspec.NATSMessage) appskeled.TaskServiceClientER {
 	trace, err := meta.NewTrace(msg.Metadata.TraceId, msg.Metadata.TraceSpan)
 	ex.PanicIfError(err)
 	actor := meta.NewAbsentActor()
@@ -159,7 +158,7 @@ func (m *Manager) runTask(runner *_TaskRunnerState, msg taskspec.NATSMessage) ex
 		<-runner.semaphore
 	}()
 
-	client := newAppTaskServiceClient(m.Context, m.App, runner.taskEndpoint, msg)
+	client := newAppTaskServiceClient(m.Context, m.CurrentApp, runner.taskEndpoint, msg)
 	run := appskeled.TaskRun{
 		Metadata: appskeled.TaskRunMeta{
 			TraceId:       msg.Metadata.TraceId,

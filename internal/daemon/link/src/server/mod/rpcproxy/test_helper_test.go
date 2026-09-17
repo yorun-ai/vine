@@ -68,7 +68,7 @@ func newTestRpcProxy(t *testing.T, watchClient *hubwatch.Client) *RpcProxy {
 	minder := &minder.AppMinder{
 		Context:               context.Background(),
 		Flag:                  &flag.Flag{HubInprocMode: true},
-		App:                   mustMetaApp(t, "proxy.app", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+		CurrentApp:            mustMetaApp(t, "proxy.app", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
 		InprocFlag:            &internalapp.InternalInprocFlag{Enabled: true},
 		RegistryServiceClient: &_TestRegistryServiceClient{},
 	}
@@ -77,7 +77,7 @@ func newTestRpcProxy(t *testing.T, watchClient *hubwatch.Client) *RpcProxy {
 	proxy := &RpcProxy{
 		Context:     context.Background(),
 		WatchClient: watchClient,
-		App:         mustMetaApp(t, "proxy.app", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+		CurrentApp:  mustMetaApp(t, "proxy.app", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
 		Logger:      logger.New("vine:test"),
 		AppMinder:   minder,
 	}

@@ -20,7 +20,7 @@ func newTestMinderWithHubClient(client *_RegistryServiceClient, infoClient *_Tes
 	minder := &AppMinder{
 		Context:               context.Background(),
 		Flag:                  &flag.Flag{},
-		App:                   mustTestMetaApp(),
+		CurrentApp:            mustTestMetaApp(),
 		InprocFlag:            &app.InternalInprocFlag{},
 		RegistryServiceClient: client,
 		HubInfo:               newTestHubInfo(infoClient),
@@ -95,7 +95,7 @@ func TestStartHeartbeatSkipsWhenHubInprocModeEnabled(t *testing.T) {
 	minder := &AppMinder{
 		Context:               context.Background(),
 		Flag:                  &flag.Flag{HubInprocMode: true},
-		App:                   appInfo,
+		CurrentApp:            appInfo,
 		InprocFlag:            &app.InternalInprocFlag{},
 		RegistryServiceClient: client,
 		HubInfo:               newTestHubInfo(new(_TestInfoServiceClient)),

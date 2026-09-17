@@ -169,10 +169,10 @@ func newTestSiteManager(names ...string) *site.Manager {
 	}
 	epmgrManager.DIInit()
 	manager := &site.Manager{
-		App:     meta.MustNewApp("vine.portal", "0.0.0", "123e4567-e89b-12d3-a456-426614174099"),
-		Context: context.Background(),
-		Watch:   hubwatch.NewTestClient(valuesByKey),
-		Epmgr:   epmgrManager,
+		CurrentApp: meta.MustNewApp("vine.portal", "0.0.0", "123e4567-e89b-12d3-a456-426614174099"),
+		Context:    context.Background(),
+		Watch:      hubwatch.NewTestClient(valuesByKey),
+		Epmgr:      epmgrManager,
 	}
 	manager.DIInit()
 	return manager

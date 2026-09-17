@@ -149,9 +149,9 @@ func TestNewEventerInitBuildsServers(t *testing.T) {
 	app := newTestAppImpl()
 	spec := &testEventerSpec{}
 
-	eventer := newEventer(spec, app.info, app.bindAppDeps)
+	eventer := newEventer(spec, app.currentApp, app.bindAppDeps)
 
-	assert.Equal(t, app.info, eventer.appInfo)
+	assert.Equal(t, app.currentApp, eventer.currentApp)
 	assert.Same(t, spec, eventer.spec)
 	assert.NotNil(t, eventer.eventServer)
 	assert.NotNil(t, eventer.rpcServer)
@@ -169,7 +169,7 @@ func TestNewEventerUsesDefaultListenerOptions(t *testing.T) {
 	app := newTestAppImpl()
 	spec := &testFullSpec{}
 
-	eventer := newEventer(spec, app.info, app.bindAppDeps)
+	eventer := newEventer(spec, app.currentApp, app.bindAppDeps)
 
 	assert.Len(t, eventer.listeners, 1)
 	assert.Equal(t, 30*time.Second, eventer.listeners[0].options.Timeout)
@@ -182,7 +182,7 @@ func TestAppEventServiceServerOnEventForwardsToEventServer(t *testing.T) {
 	testEventerOnGroupID = 0
 
 	app := newTestAppImpl()
-	eventer := newEventer(&testEventerSpec{}, app.info, app.bindAppDeps)
+	eventer := newEventer(&testEventerSpec{}, app.currentApp, app.bindAppDeps)
 	actor := meta.NewAbsentActor()
 	service := &_AppEventServiceServerImpl{
 		Context:     rpcspec.NewContext(context.Background(), meta.InitialTrace(), nil, nil, actor),

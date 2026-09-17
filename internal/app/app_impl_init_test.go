@@ -212,6 +212,14 @@ type testInternalRuntimeConsumer struct {
 	Runtime InternalRuntime `inject:""`
 }
 
+type testCurrentAppConsumer struct {
+	CurrentApp meta.CurrentApp `inject:""`
+}
+
+type testAppConsumer struct {
+	App meta.App `inject:""`
+}
+
 type testDepsAppSpec struct {
 	Application
 	ServicerEnabled
@@ -497,6 +505,34 @@ func TestBindRuntimeProvidesInternalRuntimeOnlyForInternalApplications(t *testin
 	consumer := internalInjector.Get(T[*testInternalRuntimeConsumer]()).Interface().(*testInternalRuntimeConsumer)
 
 	assert.Same(t, internalApp, consumer.Runtime)
+}
+
+// The current application is bound as CurrentApp; the generic App type carries
+// identities of other applications and stays unbound by the runtime.
+func TestBindRuntimeProvidesCurrentAppIdentity(t *testing.T) {
+	app := newTestAppImpl()
+
+	injector := di.NewInjector(
+		app.bindRuntime,
+		func(b *di.Binder) {
+			b.Bind(T[*testCurrentAppConsumer]()).In(di.TransientScope)
+		},
+	)
+
+	consumer := injector.Get(T[*testCurrentAppConsumer]()).Interface().(*testCurrentAppConsumer)
+	assert.NotNil(t, consumer.CurrentApp)
+	assert.Equal(t, app.currentApp.Name(), consumer.CurrentApp.Name())
+	assert.Equal(t, app.currentApp.Version(), consumer.CurrentApp.Version())
+	assert.Equal(t, app.currentApp.InstanceId(), consumer.CurrentApp.InstanceId())
+
+	assert.Panics(t, func() {
+		di.NewInjector(
+			app.bindRuntime,
+			func(b *di.Binder) {
+				b.Bind(T[*testAppConsumer]()).In(di.TransientScope)
+			},
+		)
+	})
 }
 
 func TestInitModulesProvidesDomainBindings(t *testing.T) {

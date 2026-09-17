@@ -81,7 +81,7 @@ func newTestManagers(t *testing.T, count int) ([]*Manager, func()) {
 		appMinder := &minder.AppMinder{
 			Context:               context.Background(),
 			Flag:                  &flag.Flag{HubInprocMode: true},
-			App:                   appInfo,
+			CurrentApp:            appInfo,
 			InprocFlag:            &internalapp.InternalInprocFlag{Enabled: true},
 			RegistryServiceClient: &_ManagerRegistryServiceClient{},
 		}
@@ -89,7 +89,7 @@ func newTestManagers(t *testing.T, count int) ([]*Manager, func()) {
 
 		manager := &Manager{
 			Context:    context.Background(),
-			App:        appInfo,
+			CurrentApp: appInfo,
 			NATSClient: natsClient,
 			AppMinder:  appMinder,
 		}

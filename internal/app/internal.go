@@ -5,9 +5,9 @@ import (
 	"reflect"
 
 	"go.yorun.ai/vine/internal/core/link"
+	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/mtls"
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
-	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -24,7 +24,7 @@ type InternalApplication struct {
 }
 
 type InternalAttributes struct {
-	Info              runtime.App
+	CurrentApp        meta.CurrentApp
 	Linker            link.Linker
 	BackendIdentity   *mtls.Identity
 	RPCTransport      http.RoundTripper
@@ -78,7 +78,7 @@ type InternalRuntime interface {
 
 func (a *_AppImpl) AdditionalServicer(handlerTypes ...reflect.Type) (http.Handler, rpcspec.RpcHandler) {
 	servicer := &_Servicer{
-		appInfo:      a.info,
+		currentApp:   a.currentApp,
 		handlerTypes: append([]reflect.Type(nil), handlerTypes...),
 		bindAppDeps:  a.bindAppDeps,
 	}

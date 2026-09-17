@@ -44,7 +44,7 @@ func newTestAppMinder(t *testing.T, app meta.App, client *_LinkRegistryRegistryS
 	appMinder := &minder.AppMinder{
 		Context:               context.Background(),
 		Flag:                  &flag.Flag{HubInprocMode: true},
-		App:                   app,
+		CurrentApp:            app,
 		InprocFlag:            &internalapp.InternalInprocFlag{},
 		RegistryServiceClient: client,
 	}

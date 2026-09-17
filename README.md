@@ -189,7 +189,7 @@ Vine keeps its public API in a small set of facade packages. Packages under
 | [`core/conf`](core/conf) | Eternal configuration snapshots and instant configuration updates |
 | [`core/skel`](core/skel) | Skel runtime scalar types, schema registration, and generator compatibility checks |
 | [`core/meta`](core/meta), [`core/logger`](core/logger), [`core/ex`](core/ex), [`core/redact`](core/redact) | Request metadata, structured logging, system errors, and sensitive-data redaction |
-| [`core/runtime`](core/runtime) | Application identity, version, instance ID, and build metadata |
+| [`buildinfo`](buildinfo) | Linker-injected executable name, version, commit, builder, and build time |
 | [`infra/redis`](infra/redis), [`infra/rdb`](infra/rdb) | Managed Redis and relational database integration |
 | [`util`](util) | Reusable encoding, file, collection, math, network, validation, and string helpers |
 

@@ -94,7 +94,7 @@ func newTestHeartbeat(client *_TestPortalRegistryClient, infoClient *_TestInfoSe
 	return &Heartbeat{
 		Context:              context.Background(),
 		Flag:                 flags,
-		App:                  appInfo,
+		CurrentApp:           appInfo,
 		HubInfo:              &hubinfo.HubInfo{Flag: flags, InfoServiceClient: infoClient},
 		PortalRegistryClient: client,
 	}

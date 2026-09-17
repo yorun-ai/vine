@@ -98,7 +98,7 @@ func newTestMinder(flagValue *flag.Flag, inprocFlag *app.InternalInprocFlag, cli
 	minder := &AppMinder{
 		Context:               context.Background(),
 		Flag:                  flagValue,
-		App:                   mustTestMetaApp(),
+		CurrentApp:            mustTestMetaApp(),
 		InprocFlag:            inprocFlag,
 		RegistryServiceClient: client,
 		HubInfo:               newTestHubInfo(new(_TestInfoServiceClient)),

@@ -170,9 +170,9 @@ func TestNewTaskerInitBuildsServers(t *testing.T) {
 	app := newTestAppImpl()
 	spec := &testTaskerRunnerSpec{}
 
-	tasker := newTasker(spec, app.info, app.bindAppDeps)
+	tasker := newTasker(spec, app.currentApp, app.bindAppDeps)
 
-	assert.Equal(t, app.info, tasker.appInfo)
+	assert.Equal(t, app.currentApp, tasker.currentApp)
 	assert.Same(t, spec, tasker.spec)
 	assert.NotNil(t, tasker.taskServer)
 	assert.NotNil(t, tasker.rpcServer)
@@ -190,7 +190,7 @@ func TestNewTaskerUsesDefaultRunnerOptions(t *testing.T) {
 	app := newTestAppImpl()
 	spec := &testFullSpec{}
 
-	tasker := newTasker(spec, app.info, app.bindAppDeps)
+	tasker := newTasker(spec, app.currentApp, app.bindAppDeps)
 
 	assert.Len(t, tasker.runners, 1)
 	assert.Equal(t, 30*time.Second, tasker.runners[0].options.Timeout)
@@ -219,7 +219,7 @@ func TestTaskerTaskRunnerRegistrationsIncludesCronScheduler(t *testing.T) {
 	ensureTaskerTaskRegistered()
 
 	app := newTestAppImpl()
-	tasker := newTasker(&testTaskerRunnerCronSchedulerSpec{}, app.info, app.bindAppDeps)
+	tasker := newTasker(&testTaskerRunnerCronSchedulerSpec{}, app.currentApp, app.bindAppDeps)
 
 	registrations := tasker.taskRunnerRegistrations()
 
@@ -251,7 +251,7 @@ func TestTaskerTaskRunnerRegistrationsPanicsWhenCronSchedulerTriggerHasArguments
 	ensureTaskerTaskRegistered()
 
 	app := newTestAppImpl()
-	tasker := newTasker(&testTaskerRunnerArgumentCronSchedulerSpec{}, app.info, app.bindAppDeps)
+	tasker := newTasker(&testTaskerRunnerArgumentCronSchedulerSpec{}, app.currentApp, app.bindAppDeps)
 
 	assert.Panics(t, func() {
 		tasker.taskRunnerRegistrations()
@@ -269,7 +269,7 @@ func TestAppTaskServiceServerRunTaskForwardsToTaskServer(t *testing.T) {
 	testTaskerRunGroupID = 0
 
 	app := newTestAppImpl()
-	tasker := newTasker(&testTaskerRunnerSpec{}, app.info, app.bindAppDeps)
+	tasker := newTasker(&testTaskerRunnerSpec{}, app.currentApp, app.bindAppDeps)
 	actor := meta.NewAbsentActor()
 	service := &_AppTaskServiceServerImpl{
 		Context:    rpcspec.NewContext(context.Background(), meta.InitialTrace(), nil, nil, actor),

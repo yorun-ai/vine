@@ -10,7 +10,6 @@ import (
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
-	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/internal/util/goutil"
 )
 
@@ -22,7 +21,7 @@ var (
 )
 
 // newConsoleServiceClient is replaced in tests to stub app console health checks.
-var newConsoleServiceClient = func(ctx context.Context, app runtime.App, endpoint string) appskeled.ConsoleServiceClientER {
+var newConsoleServiceClient = func(ctx context.Context, app meta.App, endpoint string) appskeled.ConsoleServiceClientER {
 	trace := meta.InitialTrace()
 	actor := meta.NewAbsentActor()
 	rpcCtx := meta.NewContext(ctx, trace, nil, actor)
@@ -50,7 +49,7 @@ func (i *AppInstance) startHealthcheck(onFailure func()) {
 
 	failedCount := 0
 	consoleEndpoint := i.ConsoleEndpoint
-	consoleServiceClient := newConsoleServiceClient(checkCtx, i.minder.App, consoleEndpoint)
+	consoleServiceClient := newConsoleServiceClient(checkCtx, i.minder.CurrentApp, consoleEndpoint)
 	safeTicker := goutil.NewSafeTicker(checkCtx, healthcheckInterval, nil)
 	safeTicker.Go(func() {
 		err := consoleServiceClient.Ping(rpcclient.WithTimeout(healthcheckPingTimeout))

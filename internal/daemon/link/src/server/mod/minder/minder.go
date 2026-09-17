@@ -7,7 +7,7 @@ import (
 
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/link/skeled"
-	"go.yorun.ai/vine/internal/core/runtime"
+	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/skel"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubinfo"
@@ -30,7 +30,7 @@ type AppMinder struct {
 
 	Context               context.Context                 `inject:""`
 	Flag                  *flag.Flag                      `inject:""`
-	App                   runtime.App                     `inject:""`
+	CurrentApp            meta.CurrentApp                 `inject:""`
 	InprocFlag            *app.InternalInprocFlag         `inject:""`
 	HubInfo               *hubinfo.HubInfo                `inject:""`
 	RegistryServiceClient hubskeled.RegistryServiceClient `inject:""`
@@ -52,7 +52,7 @@ func (m *AppMinder) AfterAppStop() {
 }
 
 type AppRegistration struct {
-	AppInfo           runtime.App
+	AppInfo           meta.App
 	ConsoleEndpoint   string
 	ServiceEndpoint   string
 	WebEndpointPrefix string

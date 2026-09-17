@@ -81,7 +81,7 @@ func newTestAppImpl() *_AppImpl {
 	flags.InitInprocFlag(false)
 	app := &_AppImpl{
 		spec: &testHelperAppSpec{},
-		info: testRuntimeApp{
+		currentApp: testRuntimeApp{
 			name:       "test.app",
 			version:    "1.2.3",
 			instanceID: "00000000-0000-0000-0000-000000000123",
@@ -91,7 +91,7 @@ func newTestAppImpl() *_AppImpl {
 		flags:  flags,
 	}
 	app.inprocFlag = app.flags.InprocFlag()
-	app.linker = link.NewRedirectedInternalLinker(app.info, "http://test.local:7071")
+	app.linker = link.NewRedirectedInternalLinker(app.currentApp, "http://test.local:7071")
 	app.initInjector()
 	app.initServers()
 	return app

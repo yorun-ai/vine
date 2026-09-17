@@ -14,14 +14,13 @@ import (
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
-	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 	"go.yorun.ai/vine/util/vcode"
 )
 
 var eventLogger = logger.New("daemon:link:event")
 
-var newAppEventServiceClient = func(ctx context.Context, clientApp runtime.App, endpoint string, msg eventspec.NATSMessage) appskeled.EventServiceClientER {
+var newAppEventServiceClient = func(ctx context.Context, clientApp meta.App, endpoint string, msg eventspec.NATSMessage) appskeled.EventServiceClientER {
 	trace, err := meta.NewTrace(msg.Metadata.TraceId, msg.Metadata.TraceSpan)
 	ex.PanicIfError(err)
 	actor := meta.NewAbsentActor()
@@ -106,7 +105,7 @@ func (m *Manager) runEvent(listener *_EventListenerState, msg eventspec.NATSMess
 		<-listener.semaphore
 	}()
 
-	client := newAppEventServiceClient(m.Context, m.App, listener.eventEndpoint, msg)
+	client := newAppEventServiceClient(m.Context, m.CurrentApp, listener.eventEndpoint, msg)
 	on := appskeled.EventOn{
 		Metadata: appskeled.EventOnMeta{
 			TraceId:       msg.Metadata.TraceId,

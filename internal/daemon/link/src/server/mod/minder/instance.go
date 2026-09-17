@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"go.yorun.ai/vine/internal/core/link/skeled"
-	"go.yorun.ai/vine/internal/core/runtime"
+	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/skel"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/util/vslice"
@@ -15,7 +15,7 @@ type AppInstance struct {
 	minder *AppMinder
 	mutex  sync.Mutex
 
-	AppInfo            runtime.App
+	AppInfo            meta.App
 	ConsoleEndpoint    string
 	ServiceEndpoint    string
 	WebEndpointPrefix  string

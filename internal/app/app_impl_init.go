@@ -18,7 +18,6 @@ import (
 	"go.yorun.ai/vine/internal/core/rpc/client"
 	"go.yorun.ai/vine/internal/core/rpc/server"
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
-	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/internal/core/task"
 	taskspec "go.yorun.ai/vine/internal/core/task/spec"
 	"go.yorun.ai/vine/internal/util/reflectutil"
@@ -26,7 +25,7 @@ import (
 )
 
 func (a *_AppImpl) bindRuntime(b *di.Binder) {
-	b.Bind(T[runtime.App]()).ToInstance(a.info)
+	b.Bind(T[meta.CurrentApp]()).ToInstance(a.currentApp)
 	if a.isInternalApplication() {
 		b.Bind(T[InternalRuntime]()).ToInstance(a)
 		b.BindInstance(a.identity)
@@ -50,7 +49,7 @@ func (a *_AppImpl) initInjector() {
 		func(b *di.Binder) {
 			b.Bind(T[context.Context]()).ToInstance(a.ctx)
 			b.Bind(T[meta.Context]()).ToInstance(newMetaContext(a.ctx))
-			b.BindInstance(newAppLogger(a.info.Name()))
+			b.BindInstance(newAppLogger(a.currentApp.Name()))
 		})
 }
 
@@ -63,7 +62,7 @@ func newMetaContext(ctx context.Context) meta.Context {
 
 func (a *_AppImpl) bindClients(b *di.Binder) {
 	b.BindFactory(func(ctx meta.Context) *corelock.Locker {
-		return corelock.NewLocker(a.linker.LockClient(), ctx, a.info.Name())
+		return corelock.NewLocker(a.linker.LockClient(), ctx, a.currentApp.Name())
 	})
 	b.BindFactory(func(ctx meta.Context) *corelock.UniversalLocker {
 		return corelock.NewUniversalLocker(a.linker.LockClient(), ctx)
@@ -72,8 +71,8 @@ func (a *_AppImpl) bindClients(b *di.Binder) {
 	b.BindFactory(func(ctx meta.Context) *client.Client {
 		return client.New(client.Option{
 			Context:        ctx,
-			ClientApp:      a.info,
-			Logger:         newAppLogger(a.info.Name(), "rpc", "client"),
+			ClientApp:      a.currentApp,
+			Logger:         newAppLogger(a.currentApp.Name(), "rpc", "client"),
 			ServerEndpoint: a.linker.RpcProxyEndpoint(),
 			Transport:      a.rpcTransport,
 		})
@@ -91,9 +90,9 @@ func (a *_AppImpl) bindEmitters(b *di.Binder) {
 	b.BindFactory(func(ctx meta.Context) *event.Emitter {
 		return event.NewEmitter(event.EmitterOption{
 			Context:   ctx,
-			ClientApp: a.info,
-			Logger: newAppLogger(a.info.Name(), "event").
-				With(buildLoggerFields(ctx, nil, a.info)...),
+			ClientApp: a.currentApp,
+			Logger: newAppLogger(a.currentApp.Name(), "event").
+				With(buildLoggerFields(ctx, nil, a.currentApp)...),
 			EventClient: a.linker.EventClient(),
 		})
 	})
@@ -110,9 +109,9 @@ func (a *_AppImpl) bindLaunchers(b *di.Binder) {
 	b.BindFactory(func(ctx meta.Context) *task.Launcher {
 		return task.NewLauncher(task.LauncherOption{
 			Context:   ctx,
-			ClientApp: a.info,
-			Logger: newAppLogger(a.info.Name(), "task").
-				With(buildLoggerFields(ctx, nil, a.info)...),
+			ClientApp: a.currentApp,
+			Logger: newAppLogger(a.currentApp.Name(), "task").
+				With(buildLoggerFields(ctx, nil, a.currentApp)...),
 			TaskClient: a.linker.TaskClient(),
 		})
 	})
@@ -305,7 +304,7 @@ func checkComponentTypes(componentTypes []reflect.Type) {
 func (a *_AppImpl) initServers() {
 	if a.shouldEnableConsole() {
 		a.consoleServer = server.New(server.Option{
-			App:            a.info,
+			App:            a.currentApp,
 			MuteVerboseLog: true,
 			HandlerTypes:   []reflect.Type{T[*ConsoleServiceServerImpl]()},
 		})
@@ -313,22 +312,22 @@ func (a *_AppImpl) initServers() {
 	}
 
 	if servicerSpec, ok := a.spec.(ServicerSpec); ok {
-		a.servicer = newServicer(servicerSpec, a.info, a.bindAppDeps)
+		a.servicer = newServicer(servicerSpec, a.currentApp, a.bindAppDeps)
 		a.appendRoute(coreapp.PathRpcInvoke, a.servicer.httpHandler(), a.servicer.rpcHandler())
 	}
 
 	if webberSpec, ok := a.spec.(WebberSpec); ok {
-		a.webber = newWebber(webberSpec, a.info, a.bindAppDeps)
+		a.webber = newWebber(webberSpec, a.currentApp, a.bindAppDeps)
 		a.appendRoute(coreapp.PathWebAccess, a.webber.httpHandler(), nil)
 	}
 
 	if eventerSpec, ok := a.spec.(EventerSpec); ok {
-		a.eventer = newEventer(eventerSpec, a.info, a.bindAppDeps)
+		a.eventer = newEventer(eventerSpec, a.currentApp, a.bindAppDeps)
 		a.appendRoute(coreapp.PathEvent, a.eventer.httpHandler(), a.eventer.rpcHandler())
 	}
 
 	if taskerSpec, ok := a.spec.(TaskerSpec); ok {
-		a.tasker = newTasker(taskerSpec, a.info, a.bindAppDeps)
+		a.tasker = newTasker(taskerSpec, a.currentApp, a.bindAppDeps)
 		a.appendRoute(coreapp.PathTask, a.tasker.httpHandler(), a.tasker.rpcHandler())
 	}
 

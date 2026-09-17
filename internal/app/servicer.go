@@ -11,7 +11,6 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcserver "go.yorun.ai/vine/internal/core/rpc/server"
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
-	"go.yorun.ai/vine/internal/core/runtime"
 )
 
 type ServicerSpec interface {
@@ -27,7 +26,7 @@ func (*ServicerEnabled) ServicerInitHandlers(addHandler TypeAdder) {}
 func (*ServicerEnabled) ServicerInitFilters(addFilter TypeAdder)   {}
 
 type _Servicer struct {
-	appInfo          runtime.App
+	currentApp       meta.CurrentApp
 	handlerTypes     []reflect.Type
 	filterTypes      []reflect.Type
 	bindAppDeps      di.BindApplier
@@ -36,7 +35,7 @@ type _Servicer struct {
 	server *rpcserver.Server
 }
 
-func newServicer(spec ServicerSpec, info runtime.App, deps di.BindApplier) *_Servicer {
+func newServicer(spec ServicerSpec, currentApp meta.CurrentApp, deps di.BindApplier) *_Servicer {
 	var handlerTypes []reflect.Type
 	spec.ServicerInitHandlers(func(handlerType reflect.Type) {
 		handlerTypes = append(handlerTypes, handlerType)
@@ -46,7 +45,7 @@ func newServicer(spec ServicerSpec, info runtime.App, deps di.BindApplier) *_Ser
 		filterTypes = append(filterTypes, filterType)
 	})
 	servicer := &_Servicer{
-		appInfo:          info,
+		currentApp:       currentApp,
 		handlerTypes:     handlerTypes,
 		filterTypes:      filterTypes,
 		bindAppDeps:      deps,
@@ -67,7 +66,7 @@ func (s *_Servicer) init() {
 	}
 
 	s.server = rpcserver.New(rpcserver.Option{
-		App:          s.appInfo,
+		App:          s.currentApp,
 		HandlerTypes: s.handlerTypes,
 		Executor:     rpcserver.NewContainerExecutor(s.filterTypes, bindAppliers),
 	})
@@ -85,7 +84,7 @@ func (*_Servicer) bindContext(b *di.Binder) {
 
 func (s *_Servicer) bindLogger(b *di.Binder) {
 	b.BindFactory(func(ctx rpcspec.Context, method rpcspec.MethodInfo) *logger.Logger {
-		return newAppLogger(s.appInfo.Name()).With(buildLoggerFields(ctx, method, s.appInfo)...)
+		return newAppLogger(s.currentApp.Name()).With(buildLoggerFields(ctx, method, s.currentApp)...)
 	})
 }
 

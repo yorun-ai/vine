@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/runtime"
 	web "go.yorun.ai/vine/internal/core/web/spec"
 )
 
@@ -236,8 +235,8 @@ func TestWebberBindContextMapsWebContextToCommonTypes(t *testing.T) {
 
 	recorder := &testWebberContextRecorder{}
 	w := &_Webber{
-		appInfo: runtime.App(meta.MustNewApp("demo.service", "1.2.3", "123e4567-e89b-12d3-a456-426614174000")),
-		spec:    &testWebberContextSpec{},
+		currentApp: meta.CurrentApp(meta.MustNewApp("demo.service", "1.2.3", "123e4567-e89b-12d3-a456-426614174000")),
+		spec:       &testWebberContextSpec{},
 		bindAppDeps: func(b *di.Binder) {
 			b.Bind(di.T[*testWebberContextRecorder]()).ToInstance(recorder)
 		},

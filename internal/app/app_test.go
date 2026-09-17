@@ -5,8 +5,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.yorun.ai/vine/buildinfo"
 	"go.yorun.ai/vine/internal/core/link"
-	"go.yorun.ai/vine/internal/core/runtime"
+	"go.yorun.ai/vine/internal/core/meta"
 )
 
 type testAppSpec struct {
@@ -29,14 +30,6 @@ type testInjectedAppSpec struct {
 
 func (*testInjectedAppSpec) Name() string {
 	return "test.injected.app"
-}
-
-type testRuntimeNamedAppSpec struct {
-	Application
-}
-
-func (*testRuntimeNamedAppSpec) Name() string {
-	return runtime.Application().Name()
 }
 
 type testNamedAppSpec struct {
@@ -73,13 +66,13 @@ func (*testInternalAppSpec) Name() string {
 }
 
 func (s *testInternalAppSpec) DIInit() {
-	info := testRuntimeApp{
+	currentApp := testRuntimeApp{
 		name:       "internal." + s.Flag.Value,
 		version:    "1.2.3",
 		instanceID: "00000000-0000-0000-0000-000000000321",
 	}
-	s.InternalAttrs.Info = info
-	s.InternalAttrs.Linker = link.NewRedirectedInternalLinker(info, "http://"+s.Flag.Value+".local:7071")
+	s.InternalAttrs.CurrentApp = currentApp
+	s.InternalAttrs.Linker = link.NewRedirectedInternalLinker(currentApp, "http://"+s.Flag.Value+".local:7071")
 }
 
 func TestNewPanicsWhenAppAlreadyCreated(t *testing.T) {
@@ -144,7 +137,7 @@ func TestNewInprocEnablesInprocMode(t *testing.T) {
 
 	assert.NotNil(t, app1.inprocFlag)
 	assert.True(t, app1.inprocFlag.Enabled)
-	assert.Equal(t, coreapp.InprocHostPath(app1.info.InstanceId()), app1.inprocFlag.HostPath)
+	assert.Equal(t, coreapp.InprocHostPath(app1.currentApp.InstanceId()), app1.inprocFlag.HostPath)
 }
 
 func TestNewInjectsProvidedFlagIntoAppSpec(t *testing.T) {
@@ -157,35 +150,26 @@ func TestNewInjectsProvidedFlagIntoAppSpec(t *testing.T) {
 	assert.Equal(t, "demo", spec.Flag.Value)
 }
 
-func TestNewUsesRuntimeApplicationInfoWhenSpecNameMatchesRuntime(t *testing.T) {
-	restoreAppRegistry(t)
-
-	app := New[*testRuntimeNamedAppSpec]().(*_AppImpl)
-	runtimeApp := runtime.Application()
-
-	assert.Same(t, runtimeApp, app.info)
-}
-
-func TestNewInprocDerivesDedicatedAppInfoWhenSpecNameMatchesRuntime(t *testing.T) {
-	restoreAppRegistry(t)
-
-	app := NewInproc[*testRuntimeNamedAppSpec]().(*_AppImpl)
-	runtimeApp := runtime.Application()
-
-	assert.Equal(t, runtimeApp.Name(), app.info.Name())
-	assert.Equal(t, runtimeApp.Version(), app.info.Version())
-	assert.NotEqual(t, runtimeApp.InstanceId(), app.info.InstanceId())
-}
-
-func TestNewDerivesDedicatedAppInfoWhenSpecNameDiffersFromRuntime(t *testing.T) {
+// Every application derives its own identity from the declared name and the
+// version linked into the binary.
+func TestNewDerivesAppInfoFromSpecNameAndBuildVersion(t *testing.T) {
 	restoreAppRegistry(t)
 
 	app := New[*testNamedAppSpec]().(*_AppImpl)
-	runtimeApp := runtime.Application()
+	version := buildinfo.Version()
 
-	assert.Equal(t, "demo.worker", app.info.Name())
-	assert.Equal(t, runtimeApp.Version(), app.info.Version())
-	assert.NotEqual(t, runtimeApp.InstanceId(), app.info.InstanceId())
+	assert.Equal(t, "demo.worker", app.currentApp.Name())
+	assert.Equal(t, version, app.currentApp.Version())
+	assert.True(t, meta.IsValidInstanceId(app.currentApp.InstanceId()))
+}
+
+func TestNewGivesEachApplicationItsOwnInstanceID(t *testing.T) {
+	restoreAppRegistry(t)
+
+	first := New[*testAppSpec]().(*_AppImpl)
+	second := New[*testNamedAppSpec]().(*_AppImpl)
+
+	assert.NotEqual(t, first.currentApp.InstanceId(), second.currentApp.InstanceId())
 }
 
 func TestNewUsesInternalAttrsInfoAndLinker(t *testing.T) {
@@ -197,7 +181,7 @@ func TestNewUsesInternalAttrsInfoAndLinker(t *testing.T) {
 		name:       "internal.demo",
 		version:    "1.2.3",
 		instanceID: "00000000-0000-0000-0000-000000000321",
-	}, app.info)
+	}, app.currentApp)
 	assert.Equal(t, "http://demo.local:7071/rpc/invoke", app.linker.RpcProxyEndpoint())
 }
 

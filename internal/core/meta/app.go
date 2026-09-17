@@ -22,11 +22,15 @@ type _App struct {
 	instanceId string
 }
 
-var applicationNamePattern = regexp.MustCompile(`^[a-z]+(?:\.[a-z]+)*$`)
+// applicationNamePattern matches an application name: lowercase letters and
+// digits in dot-separated segments, each starting with a letter. It is the same
+// shape a Plot domain name has, because a domain name becomes the name of the
+// application that serves it.
+var applicationNamePattern = regexp.MustCompile(`^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)*$`)
 
 func NewApp(name string, version string, instanceId string) (App, error) {
 	if !IsValidName(name) {
-		return nil, fmt.Errorf("invalid name, lowercase letters and dots expected")
+		return nil, fmt.Errorf("invalid name, lowercase letters, digits and dots expected")
 	}
 	if !IsValidVersion(version) {
 		return nil, fmt.Errorf("invalid version, semantic expected")

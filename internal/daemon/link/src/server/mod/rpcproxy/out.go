@@ -73,7 +73,7 @@ func (p *RpcProxy) serveRpcOut(rpcRequest spec.Request) spec.Response {
 	target, exErr := p.resolveOutboundTarget(serviceName, rpcRequest.Client(), rpcRequest.Destination())
 	if exErr != nil {
 		return &spec.ResponseImpl{
-			ServerValue: p.App,
+			ServerValue: p.CurrentApp,
 			MethodValue: rpcRequest.MethodInfo(),
 			ErrorValue:  exErr,
 		}
@@ -82,7 +82,7 @@ func (p *RpcProxy) serveRpcOut(rpcRequest spec.Request) spec.Response {
 	rpcResponse, exErr := p.roundTripWithTransport(target.endpoint, spec.WithoutDestination(rpcRequest), target.transport)
 	if exErr != nil {
 		return &spec.ResponseImpl{
-			ServerValue: p.App,
+			ServerValue: p.CurrentApp,
 			MethodValue: rpcRequest.MethodInfo(),
 			ErrorValue:  exErr,
 		}

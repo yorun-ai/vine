@@ -6,7 +6,7 @@ import (
 
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/link/skeled"
-	"go.yorun.ai/vine/internal/core/runtime"
+	"go.yorun.ai/vine/internal/core/meta"
 	linknats "go.yorun.ai/vine/internal/daemon/link/src/server/comp/nats"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 )
@@ -15,7 +15,7 @@ type Manager struct {
 	app.BaseModule
 
 	Context    context.Context   `inject:""`
-	App        runtime.App       `inject:""`
+	CurrentApp meta.CurrentApp   `inject:""`
 	NATSClient *linknats.Client  `inject:""`
 	AppMinder  *minder.AppMinder `inject:""`
 
