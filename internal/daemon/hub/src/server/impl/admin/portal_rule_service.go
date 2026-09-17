@@ -161,7 +161,7 @@ func (s *PortalRuleApiServiceServerImpl) ListConflicts() []skeled.PortalRuleConf
 			Rule:             conflict.Rule,
 			ConflictRuleId:   conflict.ConflictId,
 			ConflictRule:     conflict.Conflict,
-			Entry:            conflict.Access.Name,
+			Entry:            conflict.Entry.Name,
 			Match:            conflict.MatchText(),
 			PublishedRuleId:  publishedId,
 			PublishedRule:    conflict.Published,

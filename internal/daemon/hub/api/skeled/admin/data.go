@@ -565,6 +565,8 @@ func (v PortalCors) Clone() PortalCors {
 
 // PortalEntry Portal access entry
 type PortalEntry struct {
+	// Id Entry ID
+	Id int `json:"id"`
 	// Name Entry name
 	Name string `json:"name"`
 	// Scheme Entry protocol
@@ -589,28 +591,6 @@ func (v PortalEntry) Clone() PortalEntry {
 		for index0 := range v.Rules {
 			cloned.Rules[index0] = v.Rules[index0].Clone()
 		}
-	}
-	return cloned
-}
-
-// PortalEntryAccessUpdate Portal access entry configuration update parameters
-type PortalEntryAccessUpdate struct {
-	// Scheme Entry protocol
-	Scheme string `json:"scheme"`
-	// Host Match Host, empty string means no restriction
-	Host string `json:"host"`
-	// Port Entry port
-	Port int `json:"port"`
-	// Enabled Whether Hub publishes the rules of this entry to Portal
-	Enabled *bool `json:"enabled"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalEntryAccessUpdate) Clone() PortalEntryAccessUpdate {
-	cloned := v
-	if v.Enabled != nil {
-		clonedValue0 := *v.Enabled
-		cloned.Enabled = &clonedValue0
 	}
 	return cloned
 }
@@ -655,6 +635,46 @@ func (v PortalEntryRule) Clone() PortalEntryRule {
 		clonedValue0 := *v.Site
 		clonedValue0 = (*v.Site).Clone()
 		cloned.Site = &clonedValue0
+	}
+	return cloned
+}
+
+// PortalEntryUpdate Portal access entry update parameters
+type PortalEntryUpdate struct {
+	// Name Entry name
+	Name *string `json:"name"`
+	// Scheme Entry protocol
+	Scheme *string `json:"scheme"`
+	// Host Match Host, empty string means no restriction
+	Host *string `json:"host"`
+	// Port Entry port
+	Port *int `json:"port"`
+	// Enabled Whether Hub publishes the rules of this entry to Portal
+	Enabled *bool `json:"enabled"`
+}
+
+// Clone returns a value-isolated copy of the generated data.
+func (v PortalEntryUpdate) Clone() PortalEntryUpdate {
+	cloned := v
+	if v.Name != nil {
+		clonedValue0 := *v.Name
+		cloned.Name = &clonedValue0
+	}
+	if v.Scheme != nil {
+		clonedValue1 := *v.Scheme
+		cloned.Scheme = &clonedValue1
+	}
+	if v.Host != nil {
+		clonedValue2 := *v.Host
+		cloned.Host = &clonedValue2
+	}
+	if v.Port != nil {
+		clonedValue3 := *v.Port
+		cloned.Port = &clonedValue3
+	}
+	if v.Enabled != nil {
+		clonedValue4 := *v.Enabled
+		cloned.Enabled = &clonedValue4
 	}
 	return cloned
 }

@@ -20,8 +20,9 @@ func (s *PortalEntryApiServiceServerImpl) List() []skeled.PortalEntry {
 	return ret
 }
 
-func (s *PortalEntryApiServiceServerImpl) UpdateAccess(scheme string, host string, port int, update skeled.PortalEntryAccessUpdate) skeled.PortalEntry {
-	entry := s.PortalEntryCore.UpdateAccess(scheme, host, port, core.PortalEntryAccessUpdate{
+func (s *PortalEntryApiServiceServerImpl) Update(id int, update skeled.PortalEntryUpdate) skeled.PortalEntry {
+	entry := s.PortalEntryCore.Update(id, core.PortalEntryUpdate{
+		Name:    update.Name,
 		Scheme:  update.Scheme,
 		Host:    update.Host,
 		Port:    update.Port,
@@ -41,8 +42,8 @@ func (s *PortalEntryApiServiceServerImpl) Create(creation skeled.PortalEntryCrea
 	return s.toServerPortalEntry(entry)
 }
 
-func (s *PortalEntryApiServiceServerImpl) Remove(scheme string, host string, port int) {
-	s.PortalEntryCore.Remove(scheme, host, port)
+func (s *PortalEntryApiServiceServerImpl) Remove(id int) {
+	s.PortalEntryCore.Remove(id)
 }
 
 func (s *PortalEntryApiServiceServerImpl) toServerPortalEntry(entry core.PortalEntryView) skeled.PortalEntry {
@@ -51,6 +52,7 @@ func (s *PortalEntryApiServiceServerImpl) toServerPortalEntry(entry core.PortalE
 		rules = append(rules, s.toServerPortalEntryRule(entry.PortalEntry, rule))
 	}
 	return skeled.PortalEntry{
+		Id:      entry.Id,
 		Name:    entry.Name,
 		Scheme:  entry.Scheme,
 		Host:    entry.Host,

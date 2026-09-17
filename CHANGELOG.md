@@ -10,6 +10,14 @@ are not part of the public compatibility commitment.
 
 ### Added
 
+- The Admin API addresses a Portal entry by `id` and lets an operator rename it,
+  the way it addresses a rule and a site. `PortalEntryUpdate` carries the label
+  beside the access and the enable switch, and the Dashboard edits the name
+  beside the access it already edits. `PortalEntry` carries the `id` it is
+  addressed by. Regenerate custom Admin clients and deploy the matching
+  Dashboard assets with this release: `updateAccess` is now `update`, and
+  `remove` takes an `id` instead of an access.
+
 - Hub's Portal entry service can create an entry for an access and delete an
   entry that routes no rule, and the entry list returns an entry that routes no
   rule so it stays selectable while the operator adds the rules that use it. The

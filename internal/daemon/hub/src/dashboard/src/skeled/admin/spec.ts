@@ -50,7 +50,7 @@ export const PortalEntryApiServiceSpec = {
   methods: {
     list: 'list',
     create: 'create',
-    updateAccess: 'updateAccess',
+    update: 'update',
     remove: 'remove',
   },
 } as const;

@@ -109,7 +109,7 @@ func (r *testPortalEntryRepo) GetByName(name string) (*core.PortalEntry, bool) {
 	return nil, false
 }
 
-func (*testPortalEntryRepo) GetByAccess(string, string, int) (*core.PortalEntry, bool) {
+func (*testPortalEntryRepo) GetBySchemeHostPort(string, string, int) (*core.PortalEntry, bool) {
 	return nil, false
 }
 

@@ -243,9 +243,9 @@ function ruleFormTargetValue(value: PortalRuleFormValue) {
 
 function formValueToCreation(
   value: PortalRuleFormValue,
-  accessEntries: Array<PortalEntry>,
+  portalEntries: Array<PortalEntry>,
 ): PortalRuleCreation {
-  const entry = portalRuleFormAccessEntry(value, accessEntries)
+  const entry = portalRuleFormEntry(value, portalEntries)
 
   return {
     ...ruleFormTargetValue(value),
@@ -281,7 +281,7 @@ function isRedirectTarget(routeType: string) {
 
 function validateFormValue(
   value: PortalRuleFormValue,
-  accessEntries: Array<PortalEntry>,
+  portalEntries: Array<PortalEntry>,
   t: ReturnType<typeof useLocale>['t'],
 ) {
   const errors: PortalRuleFormErrors = {}
@@ -292,7 +292,7 @@ function validateFormValue(
 
   // The rule matches the access of its Portal entry, so a rule without an entry
   // has no request to match.
-  if (portalRuleFormAccessEntry(value, accessEntries) === null) {
+  if (portalRuleFormEntry(value, portalEntries) === null) {
     errors.matchScheme = t('portalRule.entryRequired')
   }
 
@@ -342,15 +342,16 @@ function portalEntryPath(name: string) {
 
 const portalEntryListPath = '/portal/entry'
 
-// portalRuleAccessEntry returns the entry that owns the access a rule matches.
+// portalRuleEntry returns the entry a rule belongs to: the entry that serves the
+// scheme, host, and port the rule carries.
 // Protocol, host, and port belong to the entry, so the rule page displays them
 // and links to the entry instead of editing them here.
-function portalRuleAccessEntry(
+function portalRuleEntry(
   rule: PortalRuleListItem,
-  accessEntries: Array<PortalEntry>,
+  portalEntries: Array<PortalEntry>,
 ) {
   return (
-    accessEntries.find(
+    portalEntries.find(
       (entry) =>
         entry.scheme === rule.matchScheme &&
         entry.host === rule.matchHost &&
@@ -359,13 +360,13 @@ function portalRuleAccessEntry(
   )
 }
 
-function portalRuleFormAccessEntry(
+function portalRuleFormEntry(
   value: PortalRuleFormValue,
-  accessEntries: Array<PortalEntry>,
+  portalEntries: Array<PortalEntry>,
 ) {
   const port = Number(value.matchPort)
   return (
-    accessEntries.find(
+    portalEntries.find(
       (entry) =>
         entry.scheme === value.matchScheme &&
         entry.host === value.matchHost &&
@@ -557,14 +558,14 @@ function PortalRuleInlineEditor({
   rule,
   saving,
   entries,
-  accessEntries,
+  portalEntries,
   onCancel,
   onSubmit,
 }: {
   rule: PortalRuleListItem | null
   saving: boolean
   entries: Array<PortalSiteListItem>
-  accessEntries: Array<PortalEntry>
+  portalEntries: Array<PortalEntry>
   onCancel: () => void
   onSubmit: (value: PortalRuleFormValue) => Promise<void>
 }) {
@@ -581,13 +582,13 @@ function PortalRuleInlineEditor({
   const [formError, setFormError] = React.useState<string | null>(null)
   // Protocol, host, and port belong to the entry, so the editor only chooses an
   // entry: a new rule picks one, and an existing rule shows the entry it has.
-  const accessEntry = React.useMemo(
-    () => portalRuleFormAccessEntry(formValue, accessEntries),
-    [accessEntries, formValue],
+  const matchedEntry = React.useMemo(
+    () => portalRuleFormEntry(formValue, portalEntries),
+    [portalEntries, formValue],
   )
-  const selectAccessEntry = React.useCallback(
+  const selectPortalEntry = React.useCallback(
     (name: string) => {
-      const entry = accessEntries.find((item) => item.name === name)
+      const entry = portalEntries.find((item) => item.name === name)
       if (entry === undefined) {
         return
       }
@@ -612,7 +613,7 @@ function PortalRuleInlineEditor({
         return updatePortalRuleField(withHost, 'matchPort', String(entry.port))
       })
     },
-    [accessEntries],
+    [portalEntries],
   )
   const entryOptions = React.useMemo(() => {
     if (
@@ -680,7 +681,7 @@ function PortalRuleInlineEditor({
         ...formValue,
         name: formValue.name.trim() || derivePortalRuleName(formValue),
       }
-      const errors = validateFormValue(nextValue, accessEntries, t)
+      const errors = validateFormValue(nextValue, portalEntries, t)
       if (hasFormErrors(errors)) {
         setFieldErrors(errors)
         return
@@ -706,7 +707,7 @@ function PortalRuleInlineEditor({
         </Alert>
       ) : null}
 
-      {rule === null && accessEntries.length === 0 ? (
+      {rule === null && portalEntries.length === 0 ? (
         <Alert>
           <AlertDescription>
             {t('portalRule.noEntry')}{' '}
@@ -746,10 +747,10 @@ function PortalRuleInlineEditor({
           <Field label={t('portalRule.entry')} error={fieldErrors.matchScheme}>
             {rule === null ? (
               <Select
-                value={accessEntry?.name ?? ''}
+                value={matchedEntry?.name ?? ''}
                 onValueChange={(value) => {
                   if (value) {
-                    selectAccessEntry(value)
+                    selectPortalEntry(value)
                   }
                 }}
               >
@@ -760,7 +761,7 @@ function PortalRuleInlineEditor({
                   <SelectValue placeholder={t('portalRule.selectEntry')} />
                 </SelectTrigger>
                 <SelectContent align="start">
-                  {accessEntries.map((entry) => (
+                  {portalEntries.map((entry) => (
                     <SelectItem key={entry.name} value={entry.name}>
                       <span className="flex flex-col">
                         <span>{entry.name}</span>
@@ -777,21 +778,21 @@ function PortalRuleInlineEditor({
               </Select>
             ) : (
               <div className="font-mono text-sm">
-                {accessEntry?.name ?? t('portalRule.entryMissing')}
+                {matchedEntry?.name ?? t('portalRule.entryMissing')}
               </div>
             )}
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span>{t('portalRule.entryHelp')}</span>
-              {accessEntry === null ? null : (
+              {matchedEntry === null ? null : (
                 <a
-                  href={portalEntryPath(accessEntry.name)}
+                  href={portalEntryPath(matchedEntry.name)}
                   className="inline-flex items-center gap-1 text-primary hover:underline"
                   onClick={(event) => {
                     if (shouldUseBrowserNavigation(event)) {
                       return
                     }
                     event.preventDefault()
-                    void navigate({ to: portalEntryPath(accessEntry.name) })
+                    void navigate({ to: portalEntryPath(matchedEntry.name) })
                   }}
                 >
                   <Boxes className="size-3.5" />
@@ -965,7 +966,7 @@ export function PortalRulePage() {
   })
   const [rules, setRules] = React.useState<Array<PortalRuleListItem>>([])
   const [entries, setEntries] = React.useState<Array<PortalSiteListItem>>([])
-  const [accessEntries, setAccessEntries] = React.useState<Array<PortalEntry>>(
+  const [portalEntries, setPortalEntries] = React.useState<Array<PortalEntry>>(
     [],
   )
   const [query, setQuery] = React.useState('')
@@ -989,14 +990,14 @@ export function PortalRulePage() {
     setLoading(true)
 
     try {
-      const [nextRules, nextEntries, nextAccessEntries] = await Promise.all([
+      const [nextRules, nextEntries, nextPortalEntries] = await Promise.all([
         portalRuleService.list(null),
         portalSiteService.list(null),
         portalEntryService.list(null),
       ])
       setRules(nextRules)
       setEntries(nextEntries)
-      setAccessEntries(nextAccessEntries)
+      setPortalEntries(nextPortalEntries)
     } catch (error) {
       toast.error(getErrorMessage(error))
     } finally {
@@ -1064,12 +1065,12 @@ export function PortalRulePage() {
 
   // Protocol, host, and port belong to the Portal entry that owns the access, so
   // the detail view links to it instead of offering an edit here.
-  const selectedAccessEntry = React.useMemo(
+  const selectedEntry = React.useMemo(
     () =>
       selectedRule === null
         ? null
-        : portalRuleAccessEntry(selectedRule, accessEntries),
-    [accessEntries, selectedRule],
+        : portalRuleEntry(selectedRule, portalEntries),
+    [portalEntries, selectedRule],
   )
 
   const selectedMountPath = selectedRule
@@ -1163,7 +1164,7 @@ export function PortalRulePage() {
 
       try {
         const created = await portalRuleService.create({
-          creation: formValueToCreation(value, accessEntries),
+          creation: formValueToCreation(value, portalEntries),
         })
         toast.success(t('portalRule.created'))
         setIsCreating(false)
@@ -1177,7 +1178,7 @@ export function PortalRulePage() {
         setSaving(false)
       }
     },
-    [accessEntries, selectRule],
+    [portalEntries, selectRule],
   )
 
   const handleUpdate = React.useCallback(
@@ -1425,7 +1426,7 @@ export function PortalRulePage() {
                     rule={null}
                     saving={saving}
                     entries={entries}
-                    accessEntries={accessEntries}
+                    portalEntries={portalEntries}
                     onCancel={() => setIsCreating(false)}
                     onSubmit={handleCreate}
                   />
@@ -1504,7 +1505,7 @@ export function PortalRulePage() {
                       rule={rawSelectedRule ?? selectedRule}
                       saving={saving}
                       entries={entries}
-                      accessEntries={accessEntries}
+                      portalEntries={portalEntries}
                       onCancel={() => setEditingRule(null)}
                       onSubmit={handleUpdate}
                     />
@@ -1561,13 +1562,13 @@ export function PortalRulePage() {
                           description={t('portalRule.matchDescription')}
                         >
                           <div className="flex flex-wrap items-center gap-2">
-                            {selectedAccessEntry === null ? (
+                            {selectedEntry === null ? (
                               <span className="font-mono text-xs">
                                 {t('portalRule.entryMissing')}
                               </span>
                             ) : (
                               <a
-                                href={portalEntryPath(selectedAccessEntry.name)}
+                                href={portalEntryPath(selectedEntry.name)}
                                 className="inline-flex items-center gap-1.5 rounded-md border bg-muted/30 px-2.5 py-1.5 font-mono text-xs transition-colors hover:text-primary hover:underline"
                                 onClick={(event) => {
                                   if (shouldUseBrowserNavigation(event)) {
@@ -1575,15 +1576,15 @@ export function PortalRulePage() {
                                   }
                                   event.preventDefault()
                                   void navigate({
-                                    to: portalEntryPath(selectedAccessEntry.name),
+                                    to: portalEntryPath(selectedEntry.name),
                                   })
                                 }}
                               >
                                 <Boxes className="size-3.5" />
-                                {selectedAccessEntry.name}
+                                {selectedEntry.name}
                               </a>
                             )}
-                            {selectedAccessEntry?.enabled === false ? (
+                            {selectedEntry?.enabled === false ? (
                               <Badge variant="secondary">
                                 {t('common.disabled')}
                               </Badge>

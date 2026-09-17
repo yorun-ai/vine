@@ -64,8 +64,8 @@ import { cn } from '@/lib/utils'
 import { createPortalEntryApiService } from '@/skeled/admin'
 import type {
   PortalEntry,
-  PortalEntryAccessUpdate,
   PortalEntryRule,
+  PortalEntryUpdate,
   PortalRuleListItem,
 } from '@/skeled/admin'
 
@@ -142,10 +142,11 @@ function portalEntryToFormValue(entry: PortalEntry): PortalEntryFormValue {
   }
 }
 
-function portalEntryFormValueToAccess(
+function portalEntryFormValueToUpdate(
   value: PortalEntryFormValue,
-): PortalEntryAccessUpdate {
+): PortalEntryUpdate {
   return {
+    name: value.name.trim(),
     scheme: value.scheme,
     host: value.host.trim(),
     port: Number(value.port),
@@ -294,7 +295,7 @@ function PortalEntryInlineEditor({
       event.preventDefault()
 
       const errors: PortalEntryFormErrors = {}
-      if (entry == null && formValue.name.trim() === '') {
+      if (formValue.name.trim() === '') {
         errors.name = t('portalEntry.nameRequired')
       }
       if (!isValidPort(formValue.port)) {
@@ -323,16 +324,14 @@ function PortalEntryInlineEditor({
         </Alert>
       ) : null}
 
-      {entry == null ? (
-        <Field label={t('portalEntry.name')} error={fieldErrors.name}>
-          <Input
-            aria-invalid={Boolean(fieldErrors.name)}
-            value={formValue.name}
-            placeholder={derivePortalEntryName(formValue)}
-            onChange={(event) => setField('name', event.target.value)}
-          />
-        </Field>
-      ) : null}
+      <Field label={t('portalEntry.name')} error={fieldErrors.name}>
+        <Input
+          aria-invalid={Boolean(fieldErrors.name)}
+          value={formValue.name}
+          placeholder={derivePortalEntryName(formValue)}
+          onChange={(event) => setField('name', event.target.value)}
+        />
+      </Field>
       <Field label={t('portalEntry.scheme')} error={fieldErrors.scheme}>
         <Select
           value={formValue.scheme}
@@ -575,7 +574,10 @@ export function PortalEntryPage() {
         const created = await portalEntryService.create({
           creation: {
             name: value.name.trim(),
-            ...portalEntryFormValueToAccess(value),
+            scheme: value.scheme,
+            host: value.host.trim(),
+            port: Number(value.port),
+            enabled: value.enabled,
           },
         })
         toast.success(t('portalEntry.createSuccess'))
@@ -597,11 +599,9 @@ export function PortalEntryPage() {
       }
       setSaving(true)
       try {
-        const updated = await portalEntryService.updateAccess({
-          scheme: editingEntry.scheme,
-          host: editingEntry.host,
-          port: editingEntry.port,
-          update: portalEntryFormValueToAccess(value),
+        const updated = await portalEntryService.update({
+          id: editingEntry.id,
+          update: portalEntryFormValueToUpdate(value),
         })
         toast.success(t('portalEntry.updateSuccess'))
         setEditingEntry(null)
@@ -622,9 +622,7 @@ export function PortalEntryPage() {
     setDeleting(true)
     try {
       await portalEntryService.remove({
-        scheme: deletingEntry.scheme,
-        host: deletingEntry.host,
-        port: deletingEntry.port,
+        id: deletingEntry.id,
       })
       toast.success(t('portalEntry.deleteSuccess'))
       setDeletingEntry(null)

@@ -42,6 +42,7 @@ func TestPortalEntryServiceMapsRulesAndTargetSites(t *testing.T) {
 	entries := service.List()
 
 	require.Len(t, entries, 1)
+	assert.Equal(t, 1, entries[0].Id)
 	assert.Equal(t, "http:8080", entries[0].Name)
 	require.Len(t, entries[0].Rules, 1)
 
@@ -64,14 +65,19 @@ func TestPortalEntryServiceCreatesAndRemovesEntry(t *testing.T) {
 	created := service.Create(skeled.PortalEntryCreation{Name: "web", Scheme: "http", Host: "", Port: 8080})
 
 	// An entry routes no rule when the operator creates it.
+	require.NotZero(t, created.Id)
 	assert.Equal(t, "web", created.Name)
 	assert.Equal(t, "http", created.Scheme)
 	assert.Equal(t, 8080, created.Port)
 	assert.Empty(t, created.Rules)
 
+	updated := service.Update(created.Id, skeled.PortalEntryUpdate{Name: new("console")})
+	assert.Equal(t, "console", updated.Name)
+	assert.Equal(t, 8080, updated.Port)
+
 	assert.Len(t, service.List(), 1)
 
-	service.Remove("http", "", 8080)
+	service.Remove(created.Id)
 
 	assert.Empty(t, service.List())
 }

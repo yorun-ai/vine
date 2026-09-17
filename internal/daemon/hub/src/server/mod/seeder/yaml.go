@@ -90,20 +90,22 @@ type seedEntities struct {
 }
 
 // seedRule is one Portal rule a seed declares together with the entry it joins:
-// the entry the document names, or the access the rule declares and Hub ensures
-// when it applies the rule.
+// the entry the document names, or the scheme, host, and port the rule declares
+// and Hub ensures when it applies the rule.
 type seedRule struct {
 	Rule *core.PortalRule
 	// EntryName names a Portal entry the same document declares. Empty means the
-	// rule declares the access it joins.
+	// rule declares the scheme, host, and port of the entry it joins.
 	EntryName string
-	// Access is the access the rule declares, used when EntryName is empty.
-	Access core.PortalEntry
+	// Entry holds the scheme, host, and port the rule declares, used when
+	// EntryName is empty.
+	Entry core.PortalEntry
 }
 
 // resolveSeedRule points a seed rule at the entry it joins: the entry the seed
-// names, or the entry that serves the access the rule declares. Hub ensures the
-// latter, the way it does for any rule whose access no entry serves yet.
+// names, or the entry that serves the scheme, host, and port the rule declares.
+// Hub ensures the latter, the way it does for any rule whose fields no entry
+// serves yet.
 func resolveSeedRule(entryCore *core.PortalEntryCore, rule *seedRule) *core.PortalRule {
 	resolved := *rule.Rule
 	if rule.EntryName != "" {
@@ -112,7 +114,7 @@ func resolveSeedRule(entryCore *core.PortalEntryCore, rule *seedRule) *core.Port
 		resolved.EntryId = entry.Id
 		return &resolved
 	}
-	resolved.EntryId = entryCore.EnsureAccess(rule.Access.Scheme, rule.Access.Host, rule.Access.Port).Id
+	resolved.EntryId = entryCore.EnsureEntry(rule.Entry.Scheme, rule.Entry.Host, rule.Entry.Port).Id
 	return &resolved
 }
 
@@ -334,7 +336,7 @@ func (r _PortalRule) toSeedRule() *seedRule {
 			Enabled:                 !r.Disabled,
 		},
 		EntryName: r.EntryName,
-		Access: core.PortalEntry{
+		Entry: core.PortalEntry{
 			Scheme: r.MatchScheme,
 			Host:   r.MatchHost,
 			Port:   r.MatchPort,

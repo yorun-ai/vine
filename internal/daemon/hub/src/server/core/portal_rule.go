@@ -17,8 +17,8 @@ type PortalRule struct {
 	FieldSources FieldSources
 	Id           int
 	Name         string
-	// EntryId identifies the Portal entry that owns the access configuration.
-	// The entry stores the access, so a rule never carries one of its own.
+	// EntryId identifies the Portal entry a rule belongs to: the entry stores the
+	// scheme, host, and port, so a rule never carries them itself.
 	EntryId int
 
 	MatchPathPrefix         string
@@ -95,7 +95,7 @@ func (m *PortalRuleCore) Get(id int) *PortalRule {
 
 // Create stores a new rule under the entry it belongs to. The caller resolves
 // the entry, because only it knows whether the rule names an entry or declares
-// the access Hub ensures.
+// the scheme, host, and port of the entry Hub ensures.
 func (m *PortalRuleCore) Create(rule PortalRule) *PortalRule {
 	_, ok := m.PortalRuleRepo.GetByName(rule.Name)
 	ex.PanicNewIfNot(!ok, ex.OperationFailed, ex.F("entry rule %q already exists", rule.Name))
@@ -218,15 +218,15 @@ func (*PortalRuleCore) Validate(rule PortalRule) PortalRule {
 	return rule
 }
 
-// portalEntryMatchKey identifies the requests one access and path prefix match.
-func portalEntryMatchKey(access PortalEntry, matchPathPrefix string) string {
-	return access.Scheme + "\x00" + access.Host + "\x00" + strconv.Itoa(access.Port) + "\x00" + matchPathPrefix
+// portalEntryMatchKey identifies the requests one entry and path prefix match.
+func portalEntryMatchKey(entry PortalEntry, matchPathPrefix string) string {
+	return entry.Scheme + "\x00" + entry.Host + "\x00" + strconv.Itoa(entry.Port) + "\x00" + matchPathPrefix
 }
 
 // PortalRuleConflict names two published rules that match the same request: the
-// access their entries serve and the match path prefix their sites resolve.
+// entry they belong to and the match path prefix their sites resolve.
 type PortalRuleConflict struct {
-	Access          PortalEntry
+	Entry           PortalEntry
 	MatchPathPrefix string
 	Rule            string
 	RuleId          int
@@ -252,11 +252,11 @@ func PortalRuleConflictWinner(rule string, conflict string) (published string, s
 
 // MatchText renders the request both rules match.
 func (c PortalRuleConflict) MatchText() string {
-	host := c.Access.Host
+	host := c.Entry.Host
 	if host == "" {
 		host = "*"
 	}
-	return fmt.Sprintf("%s://%s:%d%s", c.Access.Scheme, host, c.Access.Port, c.MatchPathPrefix)
+	return fmt.Sprintf("%s://%s:%d%s", c.Entry.Scheme, host, c.Entry.Port, c.MatchPathPrefix)
 }
 
 // Save creates or replaces a complete user rule by name, preserving an existing
@@ -314,7 +314,7 @@ func (m *PortalRuleCore) Conflicts() []PortalRuleConflict {
 		}
 		published, suppressed := PortalRuleConflictWinner(rule.Name, matchedRule.name)
 		conflicts = append(conflicts, PortalRuleConflict{
-			Access:          *entry,
+			Entry:           *entry,
 			MatchPathPrefix: matchPathPrefix,
 			Rule:            rule.Name,
 			RuleId:          rule.Id,

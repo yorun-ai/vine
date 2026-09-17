@@ -33,7 +33,7 @@ import type {
   PortalCertUpdate,
   PortalEntry,
   PortalEntryCreation,
-  PortalEntryAccessUpdate,
+  PortalEntryUpdate,
   PortalRuleConflict,
   PortalRuleListItem,
   PortalRule,
@@ -418,23 +418,21 @@ export function createPortalEntryApiService(client: VrpcClient) {
       });
     },
     /**
-     * Modify Portal access configuration.
+     * Modify a Portal access entry.
      * @param params - Request parameters, or null for methods without input
      * @param options - Optional invocation options
      * @returns PortalEntry - Portal access entry
      */
-    updateAccess(
+    update(
       params: {
-        scheme: string;
-        host: string;
-        port: number;
-        update: PortalEntryAccessUpdate;
+        id: number;
+        update: PortalEntryUpdate;
       },
       options?: VrpcRequestOptions,
     ) {
       return client.invoke<PortalEntry>({
         serviceName: PortalEntryApiServiceSpec.serviceName,
-        methodName: PortalEntryApiServiceSpec.methods.updateAccess,
+        methodName: PortalEntryApiServiceSpec.methods.update,
         params,
         options,
       });
@@ -446,9 +444,7 @@ export function createPortalEntryApiService(client: VrpcClient) {
      */
     remove(
       params: {
-        scheme: string;
-        host: string;
-        port: number;
+        id: number;
       },
       options?: VrpcRequestOptions,
     ) {

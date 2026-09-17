@@ -45,10 +45,14 @@ type PortalEntryView struct {
 	Rules []PortalEntryRule
 }
 
-type PortalEntryAccessUpdate struct {
-	Scheme string
-	Host   string
-	Port   int
+type PortalEntryUpdate struct {
+	// Name is optional and keeps the stored label when it is nil.
+	Name *string
+	// Scheme, Host, and Port are optional and keep the stored access when they
+	// are nil.
+	Scheme *string
+	Host   *string
+	Port   *int
 	// Enabled is optional and keeps the stored switch when it is nil.
 	Enabled *bool
 }
@@ -74,8 +78,9 @@ type PortalEntryRepo interface {
 	GetById(id int) (*PortalEntry, bool)
 	// GetByName returns the entry Hub labels with the name.
 	GetByName(name string) (*PortalEntry, bool)
-	// GetByAccess returns the entry rules belong to.
-	GetByAccess(scheme string, host string, port int) (*PortalEntry, bool)
+	// GetBySchemeHostPort returns the entry that serves the scheme, host, and
+	// port, which is how a rule joins the entry it belongs to.
+	GetBySchemeHostPort(scheme string, host string, port int) (*PortalEntry, bool)
 	Save(entry *PortalEntry)
 	Remove(id int) bool
 }
@@ -122,9 +127,9 @@ func (m *PortalEntryCore) Create(creation PortalEntryCreation) PortalEntryView {
 	})
 	_, ok := m.PortalEntryRepo.GetByName(entry.Name)
 	ex.PanicNewIfNot(!ok, ex.OperationFailed, ex.F("portal entry %q already exists", entry.Name))
-	if current, ok := m.PortalEntryRepo.GetByAccess(entry.Scheme, entry.Host, entry.Port); ok {
+	if current, ok := m.PortalEntryRepo.GetBySchemeHostPort(entry.Scheme, entry.Host, entry.Port); ok {
 		ex.PanicNew(ex.OperationFailed,
-			ex.F("portal entry %q already serves %s", current.Name, portalEntryAccessText(entry)))
+			ex.F("portal entry %q already serves %s", current.Name, portalEntryAddress(entry)))
 	}
 	m.PortalEntryRepo.Save(&entry)
 	return PortalEntryView{PortalEntry: entry}
@@ -137,11 +142,12 @@ func (*PortalEntryCore) Validate(entry PortalEntry) PortalEntry {
 	return entry
 }
 
-// ValidateAccess checks and normalizes the access a caller declares for an entry
-// without accessing storage, so a seed fails on a bad access before Hub applies
-// the rule that declares it.
-func (*PortalEntryCore) ValidateAccess(access PortalEntry) PortalEntry {
-	return normalizePortalEntry(access)
+// Normalize checks and normalizes the fields of an entry a caller declares
+// without accessing storage, so a seed fails on a bad scheme, host, or port
+// before Hub applies the rule that declares them. The name stays optional here,
+// because Hub derives the name of an entry it creates on its own.
+func (*PortalEntryCore) Normalize(entry PortalEntry) PortalEntry {
+	return normalizePortalEntry(entry)
 }
 
 // Save creates or replaces a complete user entry by name, preserving an existing
@@ -153,26 +159,20 @@ func (m *PortalEntryCore) Save(entry PortalEntry) *PortalEntry {
 	if current, ok := m.PortalEntryRepo.GetByName(entry.Name); ok {
 		entry.Id = current.Id
 	}
-	if current, ok := m.PortalEntryRepo.GetByAccess(entry.Scheme, entry.Host, entry.Port); ok && current.Id != entry.Id {
+	if current, ok := m.PortalEntryRepo.GetBySchemeHostPort(entry.Scheme, entry.Host, entry.Port); ok && current.Id != entry.Id {
 		ex.PanicNew(ex.OperationFailed,
-			ex.F("portal entry %q already serves %s", current.Name, portalEntryAccessText(entry)))
+			ex.F("portal entry %q already serves %s", current.Name, portalEntryAddress(entry)))
 	}
 	m.PortalEntryRepo.Save(&entry)
 	m.saveRules(entry.Id, entry.Id)
 	return &entry
 }
 
-// Remove deletes the user entry for an access that routes no rule. Hub keeps the
-// rules of an entry, so the operator moves or removes them first.
-func (m *PortalEntryCore) Remove(scheme string, host string, port int) {
-	access := normalizePortalEntry(PortalEntry{
-		Scheme: scheme,
-		Host:   host,
-		Port:   port,
-	})
-	entry, ok := m.PortalEntryRepo.GetByAccess(access.Scheme, access.Host, access.Port)
-	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %s not found", portalEntryAccessText(access)))
-
+// Remove deletes the entry that routes no rule. Hub keeps the rules of an entry,
+// so the operator moves or removes them first.
+func (m *PortalEntryCore) Remove(id int) {
+	entry, ok := m.PortalEntryRepo.GetById(id)
+	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", id))
 	rules := 0
 	for _, rule := range m.PortalRuleRepo.List() {
 		if rule.EntryId == entry.Id {
@@ -181,7 +181,7 @@ func (m *PortalEntryCore) Remove(scheme string, host string, port int) {
 	}
 	ex.PanicNewIfNot(rules == 0, ex.OperationFailed,
 		ex.F("portal entry %q still routes %d rules; remove them first", entry.Name, rules))
-	ex.PanicNewIfNot(m.PortalEntryRepo.Remove(entry.Id), ex.OperationFailed, ex.F("portal entry %s not found", portalEntryAccessText(access)))
+	ex.PanicNewIfNot(m.PortalEntryRepo.Remove(entry.Id), ex.OperationFailed, ex.F("portal entry %d not found", id))
 }
 
 // Get returns the entry with the id.
@@ -201,15 +201,9 @@ func (m *PortalEntryCore) FindById(id int) (*PortalEntry, bool) {
 	return m.PortalEntryRepo.GetById(id)
 }
 
-// FindByAccess returns the entry that serves the access.
-func (m *PortalEntryCore) FindByAccess(scheme string, host string, port int) (*PortalEntry, bool) {
-	access := normalizePortalEntry(PortalEntry{Scheme: scheme, Host: host, Port: port})
-	return m.PortalEntryRepo.GetByAccess(access.Scheme, access.Host, access.Port)
-}
-
-// EnsureAccess returns the user entry rules with this access belong to, and
-// creates it when no entry serves that access yet.
-func (m *PortalEntryCore) EnsureAccess(scheme string, host string, port int) *PortalEntry {
+// EnsureEntry returns the entry rules with this scheme, host, and port belong
+// to, and creates it when no entry serves them yet.
+func (m *PortalEntryCore) EnsureEntry(scheme string, host string, port int) *PortalEntry {
 	normalized := normalizePortalEntry(PortalEntry{
 		Scheme: scheme,
 		Host:   host,
@@ -218,7 +212,7 @@ func (m *PortalEntryCore) EnsureAccess(scheme string, host string, port int) *Po
 		// that names an entry Hub already stores does.
 		Enabled: true,
 	})
-	if current, ok := m.PortalEntryRepo.GetByAccess(normalized.Scheme, normalized.Host, normalized.Port); ok {
+	if current, ok := m.PortalEntryRepo.GetBySchemeHostPort(normalized.Scheme, normalized.Host, normalized.Port); ok {
 		return current
 	}
 	normalized.Name = PortalEntryName(normalized.Scheme, normalized.Host, normalized.Port)
@@ -226,45 +220,55 @@ func (m *PortalEntryCore) EnsureAccess(scheme string, host string, port int) *Po
 	return &normalized
 }
 
-// UpdateAccess changes the access of the entry and republishes the rules it
-// routes. When another entry already serves the target access, the rules move
+// Update changes the label and the access of the entry and republishes the rules
+// it routes. When another entry already serves the target access, the rules move
 // to that entry and the emptied one is removed, so one access never has two
-// user entries.
-func (m *PortalEntryCore) UpdateAccess(scheme string, host string, port int, update PortalEntryAccessUpdate) PortalEntryView {
-	// Callers address the entry the way Admin reports it, so normalize the
-	// lookup before matching stored access.
-	access := normalizePortalEntry(PortalEntry{
-		Name:   PortalEntryName(scheme, host, port),
-		Scheme: scheme,
-		Host:   host,
-		Port:   port,
-	})
-	current, ok := m.PortalEntryRepo.GetByAccess(access.Scheme, access.Host, access.Port)
-	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %s not found", portalEntryAccessText(access)))
+// entries.
+func (m *PortalEntryCore) Update(id int, update PortalEntryUpdate) PortalEntryView {
+	current, ok := m.PortalEntryRepo.GetById(id)
+	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", id))
 
-	next := normalizePortalEntry(PortalEntry{
-		Name:    current.Name,
-		Scheme:  update.Scheme,
-		Host:    update.Host,
-		Port:    update.Port,
-		Enabled: current.Enabled,
-	})
+	next := *current
+	if update.Name != nil {
+		next.Name = *update.Name
+	}
+	if update.Scheme != nil {
+		next.Scheme = *update.Scheme
+	}
+	if update.Host != nil {
+		next.Host = *update.Host
+	}
+	if update.Port != nil {
+		next.Port = *update.Port
+	}
 	if update.Enabled != nil {
 		next.Enabled = *update.Enabled
 	}
-	if target, ok := m.PortalEntryRepo.GetByAccess(next.Scheme, next.Host, next.Port); ok && target.Id != current.Id {
-		m.saveRules(current.Id, target.Id)
-		m.PortalEntryRepo.Remove(current.Id)
-		return m.view(*target)
+	next = normalizePortalEntry(m.Validate(next))
+	if current.Name != next.Name {
+		if other, ok := m.PortalEntryRepo.GetByName(next.Name); ok && other.Id != current.Id {
+			ex.PanicNew(ex.OperationFailed, ex.F("portal entry %q already exists", next.Name))
+		}
 	}
-
-	if current.Scheme == next.Scheme && current.Host == next.Host && current.Port == next.Port {
+	accessChanged := next.Scheme != current.Scheme || next.Host != current.Host || next.Port != current.Port
+	if accessChanged {
+		if target, ok := m.PortalEntryRepo.GetBySchemeHostPort(next.Scheme, next.Host, next.Port); ok && target.Id != current.Id {
+			m.saveRules(current.Id, target.Id)
+			m.PortalEntryRepo.Remove(current.Id)
+			return m.view(*target)
+		}
+	}
+	if !accessChanged && next.Name == current.Name && next.Enabled == current.Enabled {
 		return m.view(*current)
 	}
 
 	next.Id = current.Id
 	m.PortalEntryRepo.Save(&next)
-	m.saveRules(next.Id, next.Id)
+	// Portal reaches the entry through its rules, so only an access change has to
+	// republish them.
+	if accessChanged {
+		m.saveRules(next.Id, next.Id)
+	}
 	return m.view(next)
 }
 
@@ -277,17 +281,17 @@ func PortalEntryName(scheme string, host string, port int) string {
 	return fmt.Sprintf("%s:%s:%d", scheme, host, port)
 }
 
-// portalEntryAccessText renders the access an entry serves for error messages.
-func portalEntryAccessText(entry PortalEntry) string {
+// portalEntryAddress renders the access an entry serves for error messages.
+func portalEntryAddress(entry PortalEntry) string {
 	if entry.Host == "" {
 		return fmt.Sprintf("%s:%d", entry.Scheme, entry.Port)
 	}
 	return fmt.Sprintf("%s:%s:%d", entry.Scheme, entry.Host, entry.Port)
 }
 
-// normalizePortalEntry returns the entry with the name and access Hub stores: a
-// trimmed name, a lowercase scheme, a trimmed host, and the port Portal listens
-// on. The name stays empty when the caller does not name the entry.
+// normalizePortalEntry returns the entry the way Hub stores it: a trimmed name,
+// a lowercase scheme, a trimmed host, and the port Portal listens on. The name
+// stays empty when the caller does not name the entry.
 func normalizePortalEntry(entry PortalEntry) PortalEntry {
 	entry.Name = strings.TrimSpace(entry.Name)
 	entry.Scheme = strings.ToLower(strings.TrimSpace(entry.Scheme))
