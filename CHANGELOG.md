@@ -8,6 +8,37 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.21.1] - 2026-09-18
+
+### Added
+
+- `web.DevProxyServer` serves a Web from the development server a state file
+  names: embed it by value in the Web handler of a development build, set the
+  state file in `DIInit`, and delegate `Routes` to it. The server it follows
+  outlives the request that reads the file, so a frontend that restarts on another
+  port keeps answering, a state file that cannot be read keeps the server already
+  followed, and a request the development server does not answer is reported as
+  502. The path the Web received reaches the development server with the escaping
+  the client sent.
+
+### Removed
+
+- `web.ReverseProxy`, `web.ProxyOption`, and `web.NewReverseProxy` are gone, and
+  `internal/core/web/proxy` with them. Only the Dashboard development proxy needed
+  the availability answer that decided whether a request was forwarded, so each
+  component forwards through `net/http/httputil` and keeps its own check. An
+  application whose development Web handler embeds `web.ReverseProxy` must be
+  regenerated with a Plot release that embeds `web.DevProxyServer`.
+
+### Changed
+
+- The Hub Dashboard development proxy keeps its own check of the development
+  server and reports the changes: the line that enables it carries whether that
+  server answers, and each restart of the answer logs one line. An upgraded stream
+  no longer has an idle timeout, a percent-encoded path reaches the development
+  server as the client sent it instead of being re-encoded from the path the
+  handler read, and the per-request `reverse proxy request` debug line is gone.
+
 ## [0.21.0] - 2026-09-17
 
 ### Removed
