@@ -125,11 +125,14 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
 
 - Follow `CONTRIBUTING.md` for Kubernetes image tags and validation, Dashboard
   asset rebuilding, and generated contracts; follow `.github/CI.md` for publication.
-- Compare commits since the previous tag against `CHANGELOG.md`, move completed
-  entries to a dated release heading, and retain an empty `[Unreleased]` section.
-- Record notable user-visible and contract changes under `[Unreleased]` in the
-  change that introduces them, so release preparation only moves entries to the
-  dated heading.
+- Write `CHANGELOG.md` only in the release-preparation change: compare the commits
+  since the previous tag, add the dated release heading with its entries, and
+  retain an empty `[Unreleased]` section.
+- Do not touch `CHANGELOG.md` in feature, fix, refactor, or CI commits. A change
+  made early in a release cycle can be reverted before it ships, which leaves
+  entries that never matched the released code; describe the user-visible effect
+  in the change itself and in its pull request, and let release preparation
+  collect it.
 - After Go dependency changes, run `bash script/gen-third-party-licenses.sh`
   and commit inventory changes. Regenerate contracts with `bash script/gen-skel.sh all`
   and inspect drift. Build Dashboard archives only with the documented script.
