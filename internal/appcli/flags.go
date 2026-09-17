@@ -2,12 +2,18 @@ package appcli
 
 import (
 	"maps"
+	"regexp"
 	"slices"
 	"strings"
 
 	ucli "github.com/urfave/cli/v3"
 	"go.yorun.ai/vine/util/vpre"
 )
+
+// flagNamePattern matches the name of one flag: lowercase letters and digits with
+// dashes between them. It is the shape the declared names use, and the shape whose
+// derived environment variable a shell can set.
+var flagNamePattern = regexp.MustCompile(`^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`)
 
 // FlagNames describes how an application presents the flags it declares: the
 // names it accepts and discards, and the names it accepts under a different name.
@@ -91,6 +97,8 @@ func (n *FlagNames) resolve(canonical string, env string) (name string, envName 
 
 	// A name the command line already carries cannot be declared again, and two
 	// flags sharing a name leave one of them unreachable.
+	vpre.Check(flagNamePattern.MatchString(name),
+		"invalid flag name %q: lowercase letters and digits with dashes between them expected", name)
 	vpre.Check(name != flagLogLevel && name != flagLogRule,
 		"flag %q cannot be named %q: the application command line owns it", canonical, name)
 	if owner, ok := n.registered[name]; ok {
