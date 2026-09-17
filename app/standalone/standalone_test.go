@@ -55,7 +55,7 @@ func TestNewBundledPanicsForEmptyApps(t *testing.T) {
 func TestNewBundledPanicsForAppWithOption(t *testing.T) {
 	assert.PanicsWithError(t, "bundled standalone app must not have option", func() {
 		NewBundled(
-			NewWithOption[*_TestAppSpec](Option{SQLiteFile: "/tmp/hub.sqlite"}),
+			NewWithOption[*_TestAppSpec](Option{HubDBSQLiteFile: "/tmp/hub.sqlite"}),
 		)
 	})
 }
@@ -64,7 +64,7 @@ func TestNewBundledPanicsForBundleWithOption(t *testing.T) {
 	assert.PanicsWithError(t, "bundled standalone app must not have option", func() {
 		NewBundled(
 			NewBundledWithOption(
-				Option{SQLiteFile: "/tmp/hub.sqlite"},
+				Option{HubDBSQLiteFile: "/tmp/hub.sqlite"},
 				New[*_BundledTestAppSpec](),
 			),
 		)
@@ -117,9 +117,9 @@ func TestApplyOptionOverridesFlag(t *testing.T) {
 	}
 
 	applyOption(flag, Option{
-		SeedHubDataFile: "/tmp/option-hub.yaml",
-		SQLiteFile:      "/tmp/option-hub.sqlite",
-		PostgresURL:     "postgres://demo:demo@127.0.0.1:5432/hub",
+		HubSeedDataFile:  "/tmp/option-hub.yaml",
+		HubDBSQLiteFile:  "/tmp/option-hub.sqlite",
+		HubDBPostgresURL: "postgres://demo:demo@127.0.0.1:5432/hub",
 	})
 
 	assert.Equal(t, "/tmp/option-hub.yaml", flag.SeedHubDataFile)
@@ -164,23 +164,23 @@ func (_RecordingApp) StartAndWait() {}
 
 func TestInlineSeedOption(t *testing.T) {
 	flags := new(hubflag.Flag{})
-	applyOption(flags, Option{SeedHubData: "{}"})
+	applyOption(flags, Option{HubSeedData: "{}"})
 	flags.Normalize(true)
 	assert.Equal(t, "{}", flags.SeedHubData)
 	assert.True(t, flags.NoDB)
 	assert.PanicsWithError(t, "bundled standalone app must not have option", func() {
-		NewBundled(new(_App{option: Option{SeedHubData: "{}"}}))
+		NewBundled(new(_App{option: Option{HubSeedData: "{}"}}))
 	})
 }
 
 func TestInlineSeedConflictsWithFile(t *testing.T) {
 	for _, fromCLI := range []bool{false, true} {
 		flags := new(hubflag.Flag{})
-		option := Option{SeedHubData: "{}"}
+		option := Option{HubSeedData: "{}"}
 		if fromCLI {
 			flags.SeedHubDataFile = "seed.yaml"
 		} else {
-			option.SeedHubDataFile = "seed.yaml"
+			option.HubSeedDataFile = "seed.yaml"
 		}
 		applyOption(flags, option)
 		assert.PanicsWithError(t, "SeedHubData and the seed data file are mutually exclusive", func() {
@@ -191,11 +191,11 @@ func TestInlineSeedConflictsWithFile(t *testing.T) {
 
 func TestApplySeedTemplateOptions(t *testing.T) {
 	flags := new(hubflag.Flag)
-	applyOption(flags, Option{SeedHubData: "{}", SeedHubSource: "source", SeedHubVarsFile: "vars.yaml"})
+	applyOption(flags, Option{HubSeedData: "{}", HubSeedSource: "source", HubSeedVarsFile: "vars.yaml"})
 	assert.Equal(t, "source", flags.SeedHubSource)
 	assert.Equal(t, "vars.yaml", flags.SeedHubVarsFile)
-	assert.False(t, Option{SeedHubSourceFile: "source.yaml"}.isZero())
-	assert.False(t, Option{SeedHubVarsFile: "vars.yaml"}.isZero())
+	assert.False(t, Option{HubSeedSourceFile: "source.yaml"}.isZero())
+	assert.False(t, Option{HubSeedVarsFile: "vars.yaml"}.isZero())
 }
 
 func TestFlagsParseInProcessHubParameters(t *testing.T) {
@@ -226,10 +226,33 @@ func TestFlagsParseInProcessHubParameters(t *testing.T) {
 
 func TestAdminListenOptionOverridesFlag(t *testing.T) {
 	flag := &hubflag.Flag{AdminListen: "127.0.0.1:7098"}
-	applyOption(flag, Option{AdminListen: "127.0.0.1:7099"})
+	applyOption(flag, Option{HubAdminListen: "127.0.0.1:7099"})
 
 	assert.Equal(t, "127.0.0.1:7099", flag.AdminListen)
-	assert.False(t, Option{AdminListen: "127.0.0.1:7099"}.isZero())
+	assert.False(t, Option{HubAdminListen: "127.0.0.1:7099"}.isZero())
+}
+
+// An ignored flag keeps parsing so the rest of the command line still applies,
+// but neither the flag nor its environment variable reaches the runtime.
+func TestIgnoredFlagAndItsEnvironmentAreDropped(t *testing.T) {
+	prevArgs := os.Args
+	t.Cleanup(func() { os.Args = prevArgs })
+	os.Args = []string{
+		"/tmp/app",
+		"--hub-admin-listen", "127.0.0.1:7099",
+		"--hub-seed-data-file", "/tmp/seed.yaml",
+	}
+	t.Setenv(EnvHubAdminListen, "127.0.0.1:7098")
+
+	flag := &hubflag.Flag{}
+	appcli.Handle(flags(flag, FlagHubAdminListen)...)
+
+	assert.Empty(t, flag.AdminListen)
+	assert.Equal(t, "/tmp/seed.yaml", flag.SeedHubDataFile)
+}
+
+func TestUnknownIgnoredFlagPanics(t *testing.T) {
+	assert.Panics(t, func() { flags(&hubflag.Flag{}, "hub-unknown") })
 }
 
 func TestStandaloneServesDashboardOnAdminListen(t *testing.T) {
@@ -238,8 +261,8 @@ func TestStandaloneServesDashboardOnAdminListen(t *testing.T) {
 	require.NoError(t, os.WriteFile(seedPath, []byte("{}\n"), 0600))
 
 	application := NewWithOption[*_AdminListenTestAppSpec](Option{
-		SeedHubDataFile: seedPath,
-		AdminListen:     address,
+		HubSeedDataFile: seedPath,
+		HubAdminListen:  address,
 	})
 	application.Start()
 	t.Cleanup(application.StopGracefully)

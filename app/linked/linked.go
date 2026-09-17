@@ -81,7 +81,7 @@ func (a *_App) StartAndWait() {
 
 func startLink(option Option) app.App {
 	flag := &linkflag.Flag{}
-	appcli.Handle(flags(flag)...)
+	appcli.Handle(flags(flag, option.IgnoredFlags...)...)
 	applyOption(flag, option)
 
 	link := internalapp.NewInternalInproc[*linkapp.LinkApp](internalapp.With(flag))

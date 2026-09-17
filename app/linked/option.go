@@ -2,29 +2,37 @@ package linked
 
 import (
 	ucli "github.com/urfave/cli/v3"
+	"go.yorun.ai/vine/internal/appcli"
 	linkflag "go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 )
 
 // Option configures the Hub connection and ingress listener for linked mode.
 type Option struct {
-	// HubEndpoint is the API endpoint of the external Hub.
-	HubEndpoint string
-	// IngressListen is the address on which the in-process Link accepts application traffic.
-	IngressListen string
-	// MTLSCAFile is the CA certificate used to authenticate Vine backend components.
-	MTLSCAFile string
-	// MTLSCertFile is the in-process Link's X.509-SVID certificate.
-	MTLSCertFile string
-	// MTLSKeyFile is the private key for the in-process Link's certificate.
-	MTLSKeyFile string
+	// LinkHubEndpoint is the API endpoint of the external Hub.
+	LinkHubEndpoint string
+	// LinkIngressListen is the address on which the in-process Link accepts application traffic.
+	LinkIngressListen string
+	// LinkMTLSCAFile is the CA certificate used to authenticate Vine backend components.
+	LinkMTLSCAFile string
+	// LinkMTLSCertFile is the in-process Link's X.509-SVID certificate.
+	LinkMTLSCertFile string
+	// LinkMTLSKeyFile is the private key for the in-process Link's certificate.
+	LinkMTLSKeyFile string
+
+	// IgnoredFlags lists the flags the binary accepts but discards, named with the
+	// Flag constants of this package. The named flags and their environment
+	// variables stop reaching the runtime, so an embedding program can own that
+	// parameter; setting the matching Option field still applies it.
+	IgnoredFlags []string
 }
 
 func (o Option) isZero() bool {
-	return o.HubEndpoint == "" &&
-		o.IngressListen == "" &&
-		o.MTLSCAFile == "" &&
-		o.MTLSCertFile == "" &&
-		o.MTLSKeyFile == ""
+	return o.LinkHubEndpoint == "" &&
+		o.LinkIngressListen == "" &&
+		o.LinkMTLSCAFile == "" &&
+		o.LinkMTLSCertFile == "" &&
+		o.LinkMTLSKeyFile == "" &&
+		len(o.IgnoredFlags) == 0
 }
 
 const (
@@ -45,58 +53,40 @@ const (
 	EnvMTLSKeyFile   = "VINE_LINK_MTLS_KEY_FILE"
 )
 
-// flags lists the Link parameters the business binary accepts.
-func flags(flag *linkflag.Flag) []ucli.Flag {
-	return []ucli.Flag{
-		&ucli.StringFlag{
-			Name:        FlagHubEndpoint,
-			Sources:     ucli.EnvVars(EnvHubEndpoint),
-			Usage:       "Hub API endpoint",
-			Destination: &flag.HubEndpoint,
-		},
-		&ucli.StringFlag{
-			Name:        FlagIngressListen,
-			Sources:     ucli.EnvVars(EnvIngressListen),
-			Usage:       "in-process Link ingress listen address",
-			Destination: &flag.IngressListen,
-		},
-		&ucli.StringFlag{
-			Name:        FlagMTLSCAFile,
-			Sources:     ucli.EnvVars(EnvMTLSCAFile),
-			Usage:       "Vine backend mTLS CA certificate file for the in-process Link",
-			Destination: &flag.MTLS.CAFile,
-		},
-		&ucli.StringFlag{
-			Name:        FlagMTLSCertFile,
-			Sources:     ucli.EnvVars(EnvMTLSCertFile),
-			Usage:       "the in-process Link's mTLS certificate file",
-			Destination: &flag.MTLS.CertFile,
-		},
-		&ucli.StringFlag{
-			Name:        FlagMTLSKeyFile,
-			Sources:     ucli.EnvVars(EnvMTLSKeyFile),
-			Usage:       "the in-process Link's mTLS private key file",
-			Destination: &flag.MTLS.KeyFile,
-		},
+// flags lists the Link parameters the business binary accepts. A name the option
+// ignores keeps its command line and environment source, but the parsed value
+// stays in the flag instead of reaching the runtime.
+func flags(flag *linkflag.Flag, ignore ...string) []ucli.Flag {
+	ignored := appcli.IgnoredFlagNames(ignore)
+
+	list := []ucli.Flag{
+		appcli.StringFlag(FlagHubEndpoint, EnvHubEndpoint, ignored, &flag.HubEndpoint, "Hub API endpoint"),
+		appcli.StringFlag(FlagIngressListen, EnvIngressListen, ignored, &flag.IngressListen, "in-process Link ingress listen address"),
+		appcli.StringFlag(FlagMTLSCAFile, EnvMTLSCAFile, ignored, &flag.MTLS.CAFile, "Vine backend mTLS CA certificate file for the in-process Link"),
+		appcli.StringFlag(FlagMTLSCertFile, EnvMTLSCertFile, ignored, &flag.MTLS.CertFile, "the in-process Link's mTLS certificate file"),
+		appcli.StringFlag(FlagMTLSKeyFile, EnvMTLSKeyFile, ignored, &flag.MTLS.KeyFile, "the in-process Link's mTLS private key file"),
 	}
+
+	appcli.ValidateIgnoredFlags(ignored, list...)
+	return list
 }
 
 // applyOption copies the declared option over the parsed flags: a value the
 // program sets wins over the command line and the environment.
 func applyOption(flag *linkflag.Flag, option Option) {
-	if option.HubEndpoint != "" {
-		flag.HubEndpoint = option.HubEndpoint
+	if option.LinkHubEndpoint != "" {
+		flag.HubEndpoint = option.LinkHubEndpoint
 	}
-	if option.IngressListen != "" {
-		flag.IngressListen = option.IngressListen
+	if option.LinkIngressListen != "" {
+		flag.IngressListen = option.LinkIngressListen
 	}
-	if option.MTLSCAFile != "" {
-		flag.MTLS.CAFile = option.MTLSCAFile
+	if option.LinkMTLSCAFile != "" {
+		flag.MTLS.CAFile = option.LinkMTLSCAFile
 	}
-	if option.MTLSCertFile != "" {
-		flag.MTLS.CertFile = option.MTLSCertFile
+	if option.LinkMTLSCertFile != "" {
+		flag.MTLS.CertFile = option.LinkMTLSCertFile
 	}
-	if option.MTLSKeyFile != "" {
-		flag.MTLS.KeyFile = option.MTLSKeyFile
+	if option.LinkMTLSKeyFile != "" {
+		flag.MTLS.KeyFile = option.LinkMTLSKeyFile
 	}
 }

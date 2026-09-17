@@ -110,8 +110,8 @@ func prepareStandaloneOption(t testing.TB, option Option) (standalone.Option, fu
 	}
 
 	return standalone.Option{
-		SeedHubDataFile: seedYAMLFile,
-		SQLiteFile:      standaloneSQLiteFile(t),
+		HubSeedDataFile: seedYAMLFile,
+		HubDBSQLiteFile: standaloneSQLiteFile(t),
 	}, cleanup
 }
 

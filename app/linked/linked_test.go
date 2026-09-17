@@ -41,11 +41,11 @@ func TestApplyOptionOverridesFlag(t *testing.T) {
 	}
 
 	applyOption(flag, Option{
-		HubEndpoint:   "http://option-hub.local:7071",
-		IngressListen: "127.0.0.1:9090",
-		MTLSCAFile:    "/tmp/option-ca.pem",
-		MTLSCertFile:  "/tmp/option-link.pem",
-		MTLSKeyFile:   "/tmp/option-link-key.pem",
+		LinkHubEndpoint:   "http://option-hub.local:7071",
+		LinkIngressListen: "127.0.0.1:9090",
+		LinkMTLSCAFile:    "/tmp/option-ca.pem",
+		LinkMTLSCertFile:  "/tmp/option-link.pem",
+		LinkMTLSKeyFile:   "/tmp/option-link-key.pem",
 	})
 
 	assert.Equal(t, "http://option-hub.local:7071", flag.HubEndpoint)
@@ -53,6 +53,29 @@ func TestApplyOptionOverridesFlag(t *testing.T) {
 	assert.Equal(t, "/tmp/option-ca.pem", flag.MTLS.CAFile)
 	assert.Equal(t, "/tmp/option-link.pem", flag.MTLS.CertFile)
 	assert.Equal(t, "/tmp/option-link-key.pem", flag.MTLS.KeyFile)
+}
+
+// An ignored flag keeps parsing so the rest of the command line still applies,
+// but neither the flag nor its environment variable reaches the runtime.
+func TestIgnoredFlagAndItsEnvironmentAreDropped(t *testing.T) {
+	prevArgs := os.Args
+	t.Cleanup(func() { os.Args = prevArgs })
+	os.Args = []string{
+		"/tmp/app",
+		"--link-mtls-key-file", "/tmp/cli-link-key.pem",
+		"--link-hub-endpoint", "http://cli-hub.local:7071",
+	}
+	t.Setenv(EnvMTLSKeyFile, "/tmp/env-link-key.pem")
+
+	flag := &linkflag.Flag{}
+	appcli.Handle(flags(flag, FlagMTLSKeyFile)...)
+
+	assert.Empty(t, flag.MTLS.KeyFile)
+	assert.Equal(t, "http://cli-hub.local:7071", flag.HubEndpoint)
+}
+
+func TestUnknownIgnoredFlagPanics(t *testing.T) {
+	assert.Panics(t, func() { flags(&linkflag.Flag{}, "link-unknown") })
 }
 
 func TestApplyOptionKeepsUnsetFlagValues(t *testing.T) {
