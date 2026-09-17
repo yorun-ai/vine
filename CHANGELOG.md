@@ -8,6 +8,21 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.20.2] - 2026-09-17
+
+### Changed
+
+- In-process Rpc isolation clones arguments and results in the runtime instead
+  of calling the clone hooks a generated spec declares. The runtime derives the
+  copy from the declared Go types, which covers the generated scalars, lists,
+  maps, nullable values and beans that a Skel contract can carry.
+  `MethodSpec.CloneArguments` and `MethodSpec.CloneResult` are deprecated and
+  ignored, and `MethodInfo.CloneArguments` and `MethodInfo.CloneResult` are
+  removed. Generated code needs no regeneration and keeps its isolation
+  behavior, and a manually constructed `MethodSpec` no longer needs clone
+  hooks. Cloning data-heavy in-process payloads costs slightly more than the
+  generated code it replaces.
+
 ## [0.20.1] - 2026-09-17
 
 ### Added
