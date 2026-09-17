@@ -137,6 +137,14 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
 - After Go dependency changes, run `bash script/gen-third-party-licenses.sh`
   and commit inventory changes. Regenerate contracts with `bash script/gen-skel.sh all`
   and inspect drift. Build Dashboard archives only with the documented script.
+- Confirm the embedded Dashboard bundle matches the Dashboard sources before
+  tagging: rebuild it with `bash script/build-dashboard-assets.sh` using the
+  Node.js and pnpm versions pinned in `.github/workflows/ci-dashboard.yml`, then
+  compare the extracted archive contents against the committed
+  `internal/daemon/hub/src/server/mod/admin/assets/dashboard.tar.zst`. The
+  archive embeds file timestamps, so compare extracted files rather than archive
+  bytes, and commit the rebuilt archive in the release-preparation change when
+  the contents differ.
 - Versions come from release tags and build-time `ldflags`, not source constants.
 
 ## Tests
