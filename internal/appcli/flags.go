@@ -14,9 +14,10 @@ import (
 // Every declared flag registers here, so Validate can report a name that no
 // declared flag carries.
 type FlagNames struct {
-	declared map[string]bool
-	ignored  map[string]bool
-	renamed  map[string]string
+	declared   map[string]bool
+	ignored    map[string]bool
+	renamed    map[string]string
+	registered map[string]string
 }
 
 // NewFlagNames describes the flags an application declares. ignored lists names
@@ -27,9 +28,10 @@ type FlagNames struct {
 // flag cannot also be ignored.
 func NewFlagNames(ignored []string, renamed map[string]string) *FlagNames {
 	names := &FlagNames{
-		declared: make(map[string]bool),
-		ignored:  make(map[string]bool, len(ignored)),
-		renamed:  make(map[string]string, len(renamed)),
+		declared:   make(map[string]bool),
+		ignored:    make(map[string]bool, len(ignored)),
+		renamed:    make(map[string]string, len(renamed)),
+		registered: make(map[string]string),
 	}
 	for _, name := range ignored {
 		names.ignored[name] = true
@@ -81,8 +83,26 @@ func (n *FlagNames) Validate() {
 // VINE_ followed by the upper-case name with dashes as underscores.
 func (n *FlagNames) resolve(canonical string, env string) (name string, envName string) {
 	n.declared[canonical] = true
+
+	name, envName = canonical, env
 	if renamed, ok := n.renamed[canonical]; ok {
-		return renamed, "VINE_" + strings.ToUpper(strings.ReplaceAll(renamed, "-", "_"))
+		name, envName = renamed, envFromName(renamed)
 	}
-	return canonical, env
+
+	// A name the command line already carries cannot be declared again, and two
+	// flags sharing a name leave one of them unreachable.
+	vpre.Check(name != flagLogLevel && name != flagLogRule,
+		"flag %q cannot be named %q: the application command line owns it", canonical, name)
+	if owner, ok := n.registered[name]; ok {
+		vpre.Panicf("flag %q is registered for both %q and %q", name, owner, canonical)
+	}
+	n.registered[name] = canonical
+	return name, envName
+}
+
+// envFromName derives the environment variable of a flag name: VINE_ followed by
+// the upper-case name with dashes as underscores, the spelling the declared
+// variables use.
+func envFromName(name string) string {
+	return "VINE_" + strings.ToUpper(strings.ReplaceAll(name, "-", "_"))
 }
