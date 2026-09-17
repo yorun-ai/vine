@@ -3,53 +3,86 @@ package appcli
 import (
 	"maps"
 	"slices"
+	"strings"
 
 	ucli "github.com/urfave/cli/v3"
 	"go.yorun.ai/vine/util/vpre"
 )
 
-// IgnoredFlagNames turns the flag names an application accepts and discards into
-// the set the flag constructors consult.
-func IgnoredFlagNames(names []string) map[string]bool {
-	ignored := make(map[string]bool, len(names))
-	for _, name := range names {
-		ignored[name] = true
-	}
-	return ignored
+// FlagNames describes how an application presents the flags it declares: the
+// names it accepts and discards, and the names it accepts under a different name.
+// Every declared flag registers here, so Validate can report a name that no
+// declared flag carries.
+type FlagNames struct {
+	declared map[string]bool
+	ignored  map[string]bool
+	renamed  map[string]string
 }
 
-// StringFlag declares one string flag bound to target. A name in ignored leaves
-// the flag unbound: urfave/cli reads the environment after a successful parse, so
-// an unbound flag keeps both its argument and its environment variable out of the
-// application.
-func StringFlag(name string, env string, ignored map[string]bool, target *string, usage string) *ucli.StringFlag {
+// NewFlagNames describes the flags an application declares. ignored lists names
+// the application accepts and discards, so an embedding program can own that
+// parameter; renamed maps a declared name to the name the flag is registered
+// under. A renamed flag drops the name and the environment variable it declared:
+// the new name carries the environment variable derived from it, and a renamed
+// flag cannot also be ignored.
+func NewFlagNames(ignored []string, renamed map[string]string) *FlagNames {
+	names := &FlagNames{
+		declared: make(map[string]bool),
+		ignored:  make(map[string]bool, len(ignored)),
+		renamed:  make(map[string]string, len(renamed)),
+	}
+	for _, name := range ignored {
+		names.ignored[name] = true
+	}
+	for from, to := range renamed {
+		names.renamed[from] = to
+	}
+	return names
+}
+
+// String declares one string flag bound to target. A renamed name is registered
+// under its new name, and a name in ignored stays unbound: urfave/cli reads the
+// environment after a successful parse, so an unbound flag keeps both its argument
+// and its environment variable out of the application.
+func (n *FlagNames) String(canonical string, env string, target *string, usage string) *ucli.StringFlag {
+	name, env := n.resolve(canonical, env)
 	flag := &ucli.StringFlag{Name: name, Sources: ucli.EnvVars(env), Usage: usage}
-	if !ignored[name] {
+	if !n.ignored[canonical] {
 		flag.Destination = target
 	}
 	return flag
 }
 
-// BoolFlag declares one boolean flag bound to target, or unbound when the name is
-// ignored.
-func BoolFlag(name string, env string, ignored map[string]bool, target *bool, usage string) *ucli.BoolFlag {
+// Bool declares one boolean flag bound to target, with the same rules as String.
+func (n *FlagNames) Bool(canonical string, env string, target *bool, usage string) *ucli.BoolFlag {
+	name, env := n.resolve(canonical, env)
 	flag := &ucli.BoolFlag{Name: name, Sources: ucli.EnvVars(env), Usage: usage}
-	if !ignored[name] {
+	if !n.ignored[canonical] {
 		flag.Destination = target
 	}
 	return flag
 }
 
-// ValidateIgnoredFlags panics for an ignored name no declared flag carries, so an
-// application cannot name a flag that does not exist.
-func ValidateIgnoredFlags(ignored map[string]bool, flags ...ucli.Flag) {
-	known := make(map[string]bool, len(flags))
-	for _, flag := range flags {
-		for _, name := range flag.Names() {
-			known[name] = true
-		}
+// Validate reports a name that no declared flag carries, and a flag that is both
+// renamed and ignored.
+func (n *FlagNames) Validate() {
+	for _, name := range slices.Sorted(maps.Keys(n.ignored)) {
+		vpre.Check(n.declared[name], "unknown flag to ignore: %q", name)
 	}
-	for _, name := range slices.Sorted(maps.Keys(ignored)) {
-		vpre.Check(known[name], "unknown flag to ignore: %q", name)
+	for _, name := range slices.Sorted(maps.Keys(n.renamed)) {
+		vpre.Check(n.declared[name], "unknown flag to rename: %q", name)
+		vpre.Check(!n.ignored[name], "flag %q cannot be renamed and ignored", name)
 	}
+}
+
+// resolve records the declared name and reports the name the flag is registered
+// under with the environment variable it reads. A renamed flag carries the
+// variable derived from its new name, spelled the way the declared names are:
+// VINE_ followed by the upper-case name with dashes as underscores.
+func (n *FlagNames) resolve(canonical string, env string) (name string, envName string) {
+	n.declared[canonical] = true
+	if renamed, ok := n.renamed[canonical]; ok {
+		return renamed, "VINE_" + strings.ToUpper(strings.ReplaceAll(renamed, "-", "_"))
+	}
+	return canonical, env
 }

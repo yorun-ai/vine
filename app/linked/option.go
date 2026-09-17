@@ -24,6 +24,12 @@ type Option struct {
 	// variables stop reaching the runtime, so an embedding program can own that
 	// parameter; setting the matching Option field still applies it.
 	IgnoredFlags []string
+
+	// RenamedFlags maps a declared flag name, such as FlagMTLSKeyFile, to the name
+	// the binary registers it under. The declared flag and its environment variable
+	// are dropped: the new name carries the environment variable derived from it. A
+	// renamed flag cannot also be ignored.
+	RenamedFlags map[string]string
 }
 
 func (o Option) isZero() bool {
@@ -32,7 +38,8 @@ func (o Option) isZero() bool {
 		o.LinkMTLSCAFile == "" &&
 		o.LinkMTLSCertFile == "" &&
 		o.LinkMTLSKeyFile == "" &&
-		len(o.IgnoredFlags) == 0
+		len(o.IgnoredFlags) == 0 &&
+		len(o.RenamedFlags) == 0
 }
 
 const (
@@ -53,21 +60,22 @@ const (
 	EnvMTLSKeyFile   = "VINE_LINK_MTLS_KEY_FILE"
 )
 
-// flags lists the Link parameters the business binary accepts. A name the option
-// ignores keeps its command line and environment source, but the parsed value
-// stays in the flag instead of reaching the runtime.
-func flags(flag *linkflag.Flag, ignore ...string) []ucli.Flag {
-	ignored := appcli.IgnoredFlagNames(ignore)
+// flags lists the Link parameters the business binary accepts, as the option
+// presents them: a name it ignores keeps its command line and environment source
+// but stops reaching the runtime, and a name it renames answers to the new name
+// alone.
+func flags(flag *linkflag.Flag, option Option) []ucli.Flag {
+	names := appcli.NewFlagNames(option.IgnoredFlags, option.RenamedFlags)
 
 	list := []ucli.Flag{
-		appcli.StringFlag(FlagHubEndpoint, EnvHubEndpoint, ignored, &flag.HubEndpoint, "Hub API endpoint"),
-		appcli.StringFlag(FlagIngressListen, EnvIngressListen, ignored, &flag.IngressListen, "in-process Link ingress listen address"),
-		appcli.StringFlag(FlagMTLSCAFile, EnvMTLSCAFile, ignored, &flag.MTLS.CAFile, "Vine backend mTLS CA certificate file for the in-process Link"),
-		appcli.StringFlag(FlagMTLSCertFile, EnvMTLSCertFile, ignored, &flag.MTLS.CertFile, "the in-process Link's mTLS certificate file"),
-		appcli.StringFlag(FlagMTLSKeyFile, EnvMTLSKeyFile, ignored, &flag.MTLS.KeyFile, "the in-process Link's mTLS private key file"),
+		names.String(FlagHubEndpoint, EnvHubEndpoint, &flag.HubEndpoint, "Hub API endpoint"),
+		names.String(FlagIngressListen, EnvIngressListen, &flag.IngressListen, "in-process Link ingress listen address"),
+		names.String(FlagMTLSCAFile, EnvMTLSCAFile, &flag.MTLS.CAFile, "Vine backend mTLS CA certificate file for the in-process Link"),
+		names.String(FlagMTLSCertFile, EnvMTLSCertFile, &flag.MTLS.CertFile, "the in-process Link's mTLS certificate file"),
+		names.String(FlagMTLSKeyFile, EnvMTLSKeyFile, &flag.MTLS.KeyFile, "the in-process Link's mTLS private key file"),
 	}
 
-	appcli.ValidateIgnoredFlags(ignored, list...)
+	names.Validate()
 	return list
 }
 

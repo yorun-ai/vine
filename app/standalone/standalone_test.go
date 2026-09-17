@@ -213,7 +213,7 @@ func TestFlagsParseInProcessHubParameters(t *testing.T) {
 	}
 
 	flag := &hubflag.Flag{}
-	appcli.Handle(flags(flag)...)
+	appcli.Handle(flags(flag, Option{})...)
 
 	assert.True(t, flag.NoDB)
 	assert.Equal(t, "/tmp/hub.sqlite", flag.DBSQLiteFile)
@@ -245,14 +245,54 @@ func TestIgnoredFlagAndItsEnvironmentAreDropped(t *testing.T) {
 	t.Setenv(EnvHubAdminListen, "127.0.0.1:7098")
 
 	flag := &hubflag.Flag{}
-	appcli.Handle(flags(flag, FlagHubAdminListen)...)
+	appcli.Handle(flags(flag, Option{IgnoredFlags: []string{FlagHubAdminListen}})...)
 
 	assert.Empty(t, flag.AdminListen)
 	assert.Equal(t, "/tmp/seed.yaml", flag.SeedHubDataFile)
 }
 
 func TestUnknownIgnoredFlagPanics(t *testing.T) {
-	assert.Panics(t, func() { flags(&hubflag.Flag{}, "hub-unknown") })
+	assert.Panics(t, func() { flags(&hubflag.Flag{}, Option{IgnoredFlags: []string{"hub-unknown"}}) })
+}
+
+// A renamed flag answers to the new name alone: the declared name and the
+// environment variable derived from it replace the declared variable.
+func TestRenamedFlagUsesTheDerivedNameAndEnvironment(t *testing.T) {
+	prevArgs := os.Args
+	t.Cleanup(func() { os.Args = prevArgs })
+
+	renamed := Option{RenamedFlags: map[string]string{FlagHubAdminListen: "admin-listen"}}
+
+	os.Args = []string{"/tmp/app", "--admin-listen", "127.0.0.1:7099"}
+	fromFlag := &hubflag.Flag{}
+	appcli.Handle(flags(fromFlag, renamed)...)
+	assert.Equal(t, "127.0.0.1:7099", fromFlag.AdminListen)
+
+	os.Args = []string{"/tmp/app"}
+	t.Setenv(EnvHubAdminListen, "127.0.0.1:7098")
+	declaredEnv := &hubflag.Flag{}
+	appcli.Handle(flags(declaredEnv, renamed)...)
+	assert.Empty(t, declaredEnv.AdminListen)
+
+	t.Setenv("VINE_ADMIN_LISTEN", "127.0.0.1:7097")
+	derivedEnv := &hubflag.Flag{}
+	appcli.Handle(flags(derivedEnv, renamed)...)
+	assert.Equal(t, "127.0.0.1:7097", derivedEnv.AdminListen)
+}
+
+func TestRenamedFlagCannotBeIgnored(t *testing.T) {
+	assert.Panics(t, func() {
+		flags(&hubflag.Flag{}, Option{
+			IgnoredFlags: []string{FlagHubAdminListen},
+			RenamedFlags: map[string]string{FlagHubAdminListen: "admin-listen"},
+		})
+	})
+}
+
+func TestUnknownRenamedFlagPanics(t *testing.T) {
+	assert.Panics(t, func() {
+		flags(&hubflag.Flag{}, Option{RenamedFlags: map[string]string{"hub-unknown": "admin-listen"}})
+	})
 }
 
 func TestStandaloneServesDashboardOnAdminListen(t *testing.T) {

@@ -41,6 +41,12 @@ type Option struct {
 	// variables stop reaching the runtime, so an embedding program can own that
 	// parameter; setting the matching Option field still applies it.
 	IgnoredFlags []string
+
+	// RenamedFlags maps a declared flag name, such as FlagHubAdminListen, to the
+	// name the binary registers it under. The declared flag and its environment
+	// variable are dropped: the new name carries the environment variable derived
+	// from it. A renamed flag cannot also be ignored.
+	RenamedFlags map[string]string
 }
 
 func (o Option) isZero() bool {
@@ -53,7 +59,8 @@ func (o Option) isZero() bool {
 		o.HubSeedSource == "" &&
 		o.HubSeedSourceFile == "" &&
 		o.HubSeedVarsFile == "" &&
-		len(o.IgnoredFlags) == 0
+		len(o.IgnoredFlags) == 0 &&
+		len(o.RenamedFlags) == 0
 }
 
 const (
@@ -78,25 +85,26 @@ const (
 	EnvHubSeedVarsFile   = "VINE_HUB_SEED_VARS_FILE"
 )
 
-// flags lists the Hub parameters the business binary accepts. A name the option
-// ignores keeps its command line and environment source, but the parsed value
-// stays in the flag instead of reaching the runtime.
-func flags(flag *hubflag.Flag, ignore ...string) []ucli.Flag {
-	ignored := appcli.IgnoredFlagNames(ignore)
+// flags lists the Hub parameters the business binary accepts, as the option
+// presents them: a name it ignores keeps its command line and environment source
+// but stops reaching the runtime, and a name it renames answers to the new name
+// alone.
+func flags(flag *hubflag.Flag, option Option) []ucli.Flag {
+	names := appcli.NewFlagNames(option.IgnoredFlags, option.RenamedFlags)
 
 	list := []ucli.Flag{
-		appcli.StringFlag(FlagHubAdminListen, EnvHubAdminListen, ignored, &flag.AdminListen,
+		names.String(FlagHubAdminListen, EnvHubAdminListen, &flag.AdminListen,
 			"in-process Hub Admin API and Dashboard listen address; unauthenticated, so loopback unless the network is trusted"),
-		appcli.BoolFlag(FlagHubNoDB, EnvHubNoDB, ignored, &flag.NoDB,
+		names.Bool(FlagHubNoDB, EnvHubNoDB, &flag.NoDB,
 			"use no persistent database (default); requires the seed data file or Option.HubSeedData; configuration is read-only"),
-		appcli.StringFlag(FlagHubDBSQLiteFile, EnvHubDBSQLiteFile, ignored, &flag.DBSQLiteFile, "in-process Hub SQLite database file"),
-		appcli.StringFlag(FlagHubDBPostgresURL, EnvHubDBPostgresURL, ignored, &flag.DBPostgresURL, "in-process Hub PostgreSQL database URL"),
-		appcli.StringFlag(FlagHubSeedDataFile, EnvHubSeedDataFile, ignored, &flag.SeedHubDataFile, "in-process Hub seed YAML file"),
-		appcli.StringFlag(FlagHubSeedSourceFile, EnvHubSeedSourceFile, ignored, &flag.SeedHubSourceFile, "in-process Hub seed source YAML file"),
-		appcli.StringFlag(FlagHubSeedVarsFile, EnvHubSeedVarsFile, ignored, &flag.SeedHubVarsFile, "in-process Hub seed vars YAML file"),
+		names.String(FlagHubDBSQLiteFile, EnvHubDBSQLiteFile, &flag.DBSQLiteFile, "in-process Hub SQLite database file"),
+		names.String(FlagHubDBPostgresURL, EnvHubDBPostgresURL, &flag.DBPostgresURL, "in-process Hub PostgreSQL database URL"),
+		names.String(FlagHubSeedDataFile, EnvHubSeedDataFile, &flag.SeedHubDataFile, "in-process Hub seed YAML file"),
+		names.String(FlagHubSeedSourceFile, EnvHubSeedSourceFile, &flag.SeedHubSourceFile, "in-process Hub seed source YAML file"),
+		names.String(FlagHubSeedVarsFile, EnvHubSeedVarsFile, &flag.SeedHubVarsFile, "in-process Hub seed vars YAML file"),
 	}
 
-	appcli.ValidateIgnoredFlags(ignored, list...)
+	names.Validate()
 	return list
 }
 

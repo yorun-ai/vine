@@ -87,7 +87,7 @@ func (a *_App) StartAndWait() {
 
 func (a *_App) initInfra() {
 	flag := &hubflag.Flag{}
-	appcli.Handle(flags(flag, a.option.IgnoredFlags...)...)
+	appcli.Handle(flags(flag, a.option)...)
 	applyOption(flag, a.option)
 
 	a.hub = internalapp.NewInternalInproc[*hubapp.HubApp](internalapp.With(flag))
