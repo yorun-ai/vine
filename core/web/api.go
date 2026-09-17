@@ -8,7 +8,7 @@ import (
 	"go.yorun.ai/vine/core/di"
 	"go.yorun.ai/vine/core/meta"
 	internalassets "go.yorun.ai/vine/internal/core/web/assets"
-	internalproxy "go.yorun.ai/vine/internal/core/web/proxy"
+	internaldevproxy "go.yorun.ai/vine/internal/core/web/devproxy"
 	internalserver "go.yorun.ai/vine/internal/core/web/server"
 	internalspec "go.yorun.ai/vine/internal/core/web/spec"
 )
@@ -51,11 +51,12 @@ type AssetsAccessor = internalassets.Accessor
 // Its GinCtx is injected for each execution; Serve is promoted to the Web handler.
 type AssetsServer = internalassets.Server
 
-// ProxyOption configures a reverse proxy.
-type ProxyOption = internalproxy.Option
-
-// ReverseProxy forwards Web requests to an upstream server.
-type ReverseProxy = internalproxy.ReverseProxy
+// DevProxyServer serves a Web from the development server named by a state file,
+// so a development run serves the frontend from its sources while the rest of the
+// Web handler stays the generated one. Embed it by value in the Web handler of a
+// development build, set the state file in DIInit, and delegate Routes to
+// DevProxyServer.Routes.
+type DevProxyServer = internaldevproxy.Server
 
 // NewContext creates a Web execution context from Gin and Vine metadata.
 func NewContext(ginCtx *gin.Context, route Route, trace meta.Trace, initiator meta.Initiator, actor meta.Actor) Context {
@@ -75,11 +76,6 @@ func NewContainerExecutor(filterTypes []reflect.Type, bindAppliers []di.BindAppl
 // NewAssetsServer creates a server for accessor.
 func NewAssetsServer(accessor AssetsAccessor) AssetsServer {
 	return internalassets.NewServer(accessor)
-}
-
-// NewReverseProxy creates a reverse proxy from opt.
-func NewReverseProxy(opt ProxyOption) *ReverseProxy {
-	return internalproxy.NewReverseProxy(opt)
 }
 
 // NewEmbedAssetsAccessor creates an accessor rooted at root within fsys.

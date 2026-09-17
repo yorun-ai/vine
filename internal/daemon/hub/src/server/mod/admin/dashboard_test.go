@@ -50,7 +50,7 @@ func TestDashboardHandlerFallsBackToIndexForMissingFile(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "http://hub.local/assets/missing.js", nil)
 	response := httptest.NewRecorder()
 
-	DashboardHandler().ServeHTTP(response, request)
+	dashboardHandler().ServeHTTP(response, request)
 
 	if response.Code != http.StatusOK {
 		t.Fatalf("unexpected status code: %d", response.Code)
@@ -60,7 +60,7 @@ func TestDashboardHandlerFallsBackToIndexForMissingFile(t *testing.T) {
 	}
 }
 
-// DashboardDevProxy serves a development server beside Hub when a developer asks
+// dashboardDevProxy serves a development server beside Hub when a developer asks
 // for one, so a Dashboard source change needs no build, and Hub serves the
 // embedded build while that server is not running.
 func TestDashboardDevProxyServesTheDevelopmentServer(t *testing.T) {
@@ -72,9 +72,9 @@ func TestDashboardDevProxyServesTheDevelopmentServer(t *testing.T) {
 	dashboardDevServerURL = devServer.URL
 
 	t.Setenv(dashboardDevProxyEnv, "1")
-	devProxy := DashboardDevProxy()
+	devProxy := dashboardDevProxy()
 	t.Cleanup(devProxy.Close)
-	server := &Server{rpcHTTPHandler: http.NotFoundHandler(), dashboardHandler: DashboardHandler(), dashboardDevProxy: devProxy}
+	server := &Server{rpcHTTPHandler: http.NotFoundHandler(), dashboardHandler: dashboardHandler(), dashboardDevProxy: devProxy}
 
 	response := httptest.NewRecorder()
 	server.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "http://hub.local/app/config", nil))
@@ -99,9 +99,9 @@ func TestDashboardDevProxyFallsBackToTheEmbeddedBuild(t *testing.T) {
 	dashboardDevServerURL = "http://127.0.0.1:1"
 
 	t.Setenv(dashboardDevProxyEnv, "1")
-	devProxy := DashboardDevProxy()
+	devProxy := dashboardDevProxy()
 	t.Cleanup(devProxy.Close)
-	server := &Server{rpcHTTPHandler: http.NotFoundHandler(), dashboardHandler: DashboardHandler(), dashboardDevProxy: devProxy}
+	server := &Server{rpcHTTPHandler: http.NotFoundHandler(), dashboardHandler: dashboardHandler(), dashboardDevProxy: devProxy}
 
 	response := httptest.NewRecorder()
 	server.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "http://hub.local/app/config", nil))
@@ -114,7 +114,7 @@ func TestDashboardDevProxyFallsBackToTheEmbeddedBuild(t *testing.T) {
 // runs on the development port.
 func TestDashboardDevProxyIsOffByDefault(t *testing.T) {
 	t.Setenv(dashboardDevProxyEnv, "")
-	if DashboardDevProxy() != nil {
+	if dashboardDevProxy() != nil {
 		t.Fatal("expected no development proxy")
 	}
 }
@@ -149,6 +149,6 @@ func dashboardScriptPath(index string) string {
 func getAsset(target string) *httptest.ResponseRecorder {
 	request := httptest.NewRequest(http.MethodGet, "http://hub.local"+target, nil)
 	response := httptest.NewRecorder()
-	DashboardHandler().ServeHTTP(response, request)
+	dashboardHandler().ServeHTTP(response, request)
 	return response
 }
