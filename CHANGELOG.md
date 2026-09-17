@@ -8,6 +8,66 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-09-17
+
+### Removed
+
+- `core/runtime` and `internal/core/runtime` are gone, and the process identity
+  no longer takes part in application identity: `Application`, `SetName`,
+  `SetVersion`, `SetInstanceId`, `Inspect`, `GitCommit`, `BuiltBy`, `BuiltTime`,
+  `GolangVersion`, `GolangCompiler`, `GolangPlatform`, and the `runtime.App`
+  interface have no replacement in that package. Read the linked identity from
+  `buildinfo`, where `Inspect` now lives and where `GoVersion`, `GoCompiler`, and
+  `GoPlatform` report the toolchain. An application identity resolves from the
+  declared application name and the linked version, so each instance gets its own
+  UUID v7 instead of reusing a process instance ID, and a component that injects
+  the application it belongs to declares `CurrentApp meta.CurrentApp`.
+
+### Added
+
+- `buildinfo.IsValidName` and `buildinfo.IsValidVersion` report the rules a build
+  must satisfy before linking. The executable name accepts lowercase letters and
+  digits in segments separated by dots, with dashes allowed between letters and
+  digits, so `user.service`, `user-service`, and `demo.worker-2` are usable while
+  `User`, `2app`, `user_service`, and `app-` are not. The version is a full
+  semantic version that may carry the Go module `v` prefix. A binary that links a
+  name or version the framework cannot use now panics while the process starts,
+  instead of serving application metadata no Hub accepts.
+- `standalone.Option` and `linked.Option` accept `IgnoredFlags`, the flags the
+  binary keeps on its command line but never applies: the parsed value and the
+  environment variable that feeds it stay in the flag, so an embedding program can
+  own the parameter. Both options also accept `RenamedFlags`, mapping a declared
+  flag to the name it registers under together with the environment variable
+  derived from it; the declared name and its variable stop being accepted, and a
+  flag cannot be both renamed and ignored. The flag and environment names moved to
+  the packages that accept them, exported as `standalone.FlagHub*` and
+  `standalone.EnvHub*`, and `linked.Flag*` and `linked.Env*`.
+
+### Changed
+
+- An application name accepts digits, matching the Plot domain name that produces
+  it: `^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)*$`. `worker2` and `shop.orders` build
+  and run where they previously panicked at application construction, and the
+  rejection message names the digits it accepts.
+- `standalone.Option` and `linked.Option` name their fields after the flags they
+  configure: `HubAdminListen`, `HubNoDB`, `HubDBSQLiteFile`, `HubDBPostgresURL`,
+  `HubSeedData`, `HubSeedDataFile`, `HubSeedSource`, `HubSeedSourceFile`,
+  `HubSeedVarsFile`, and `LinkHubEndpoint`, `LinkIngressListen`,
+  `LinkMTLSCAFile`, `LinkMTLSCertFile`, `LinkMTLSKeyFile`.
+- `buildinfo.Name`, `Version`, `GitCommit`, `BuiltBy`, and `BuiltTime` return a
+  plain string. A commit, builder, or build time that a build did not link is
+  empty, and `Inspect` renders it as `NotAvailable` where it used to report the
+  value together with a boolean.
+- A binary keeps its configuration when a launcher passes arguments it does not
+  declare, such as the `-test.*` flags of `go test`. urfave/cli stops at the first
+  flag it does not know and reads the environment only after a successful parse,
+  so those arguments used to silence every `VINE_*` variable, apply no log rule,
+  and skip the `version` and `help` arguments. Unknown arguments are now dropped
+  before parsing, together with the value of an unknown flag that does not carry
+  it, and declaring an ignored or renamed flag reports a name no declared flag
+  carries, two flags that would share a name, and a name that would take over
+  `--log-level` or `--log-rule`.
+
 ## [0.20.2] - 2026-09-17
 
 ### Changed
