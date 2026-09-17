@@ -1,11 +1,9 @@
 package standalone
 
 import (
-	ucli "github.com/urfave/cli/v3"
 	"go.yorun.ai/vine/app"
 	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/appcli"
-	vinecli "go.yorun.ai/vine/internal/cli"
 	"go.yorun.ai/vine/internal/core/logger"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/src/server/app"
 	hubflag "go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
@@ -23,47 +21,6 @@ type _App struct {
 	portal app.App
 	link   app.App
 	apps   []app.App
-}
-
-// Option configures the infrastructure started by standalone mode.
-type Option struct {
-	// SeedHubDataFile is the Hub seed configuration file, mutually exclusive with SeedHubData.
-	SeedHubDataFile string
-
-	// SeedHubData contains inline Hub seed YAML, mutually exclusive with SeedHubDataFile.
-	// No-db mode requires one seed source; use "{}" for empty configuration.
-	SeedHubData string
-
-	// SeedHubSource contains an embedded seed source map and requires SeedHubData.
-	SeedHubSource string
-	// SeedHubSourceFile is the optional field source map and requires SeedHubDataFile.
-	SeedHubSourceFile string
-	// SeedHubVarsFile supplies a YAML mapping for ${path} and ${path:default} references.
-	// Paths use camelCase segments separated by dots. Defaults apply only to
-	// missing keys; existing null and zero values are preserved until use.
-	// Importing skeled/app registers app.Vars for type checking; unused fields
-	// are not required. Values inserted from this file are never re-expanded.
-	SeedHubVarsFile string
-
-	// NoDB loads read-only configuration from the seed YAML into memory. This is
-	// the default when neither SQLiteFile nor PostgresURL is supplied.
-	NoDB bool
-	// SQLiteFile selects SQLite persistence and specifies its database file.
-	SQLiteFile string
-	// PostgresURL selects PostgreSQL persistence and specifies its connection URL.
-	PostgresURL string
-	// AdminListen is the in-process Hub's Admin API and Dashboard address. Empty
-	// serves no Admin API; the API carries no authentication.
-	AdminListen string
-}
-
-func (o Option) isZero() bool {
-	return o.SeedHubDataFile == "" &&
-		o.SeedHubData == "" && o.SeedHubSource == "" && o.SeedHubSourceFile == "" && o.SeedHubVarsFile == "" &&
-		!o.NoDB &&
-		o.SQLiteFile == "" &&
-		o.PostgresURL == "" &&
-		o.AdminListen == ""
 }
 
 // New constructs an application with an in-process Hub, Portal, and Link.
@@ -98,8 +55,10 @@ func NewBundledWithOption(option Option, apps ...app.App) app.App {
 	return bundle
 }
 
+// Name reports the mode this bundle starts: the applications it holds keep their
+// own names.
 func (*_App) Name() string {
-	return ""
+	return "standalone"
 }
 
 func (a *_App) Start() {
@@ -126,19 +85,9 @@ func (a *_App) StartAndWait() {
 	a.StopGracefully()
 }
 
-const (
-	flagSQLiteFile      = vinecli.FlagStandaloneHubDBSQLiteFile
-	flagPostgresURL     = vinecli.FlagStandaloneHubDBPostgresURL
-	flagSeedHubDataFile = vinecli.FlagStandaloneHubSeedDataFile
-
-	envSQLiteFile      = vinecli.EnvStandaloneHubDBSQLiteFile
-	envPostgresURL     = vinecli.EnvStandaloneHubDBPostgresURL
-	envSeedHubDataFile = vinecli.EnvStandaloneHubSeedDataFile
-)
-
 func (a *_App) initInfra() {
 	flag := &hubflag.Flag{}
-	appcli.Handle(flags(flag)...)
+	appcli.Handle(flags(flag, a.option)...)
 	applyOption(flag, a.option)
 
 	a.hub = internalapp.NewInternalInproc[*hubapp.HubApp](internalapp.With(flag))
@@ -148,85 +97,6 @@ func (a *_App) initInfra() {
 	a.portal = internalapp.NewInternalInproc[*portalapp.PortalApp](internalapp.With(&portalflag.Flag{
 		HubInprocMode: true,
 	}))
-}
-
-// flags lists the Hub parameters the business binary accepts.
-func flags(flag *hubflag.Flag) []ucli.Flag {
-	return []ucli.Flag{
-		&ucli.BoolFlag{
-			Name:        vinecli.FlagStandaloneHubNoDB,
-			Sources:     ucli.EnvVars(vinecli.EnvStandaloneHubNoDB),
-			Usage:       "use no persistent database (default); requires the seed data file or Option.SeedHubData; configuration is read-only",
-			Destination: &flag.NoDB,
-		},
-		&ucli.StringFlag{
-			Name:        flagSQLiteFile,
-			Sources:     ucli.EnvVars(envSQLiteFile),
-			Usage:       "in-process Hub SQLite database file",
-			Destination: &flag.DBSQLiteFile,
-		},
-		&ucli.StringFlag{
-			Name:        flagPostgresURL,
-			Sources:     ucli.EnvVars(envPostgresURL),
-			Usage:       "in-process Hub PostgreSQL database URL",
-			Destination: &flag.DBPostgresURL,
-		},
-		&ucli.StringFlag{
-			Name:        flagSeedHubDataFile,
-			Sources:     ucli.EnvVars(envSeedHubDataFile),
-			Usage:       "in-process Hub seed YAML file",
-			Destination: &flag.SeedHubDataFile,
-		},
-		&ucli.StringFlag{
-			Name:        vinecli.FlagStandaloneHubSeedSourceFile,
-			Sources:     ucli.EnvVars(vinecli.EnvStandaloneHubSeedSourceFile),
-			Usage:       "in-process Hub seed source YAML file",
-			Destination: &flag.SeedHubSourceFile,
-		},
-		&ucli.StringFlag{
-			Name:        vinecli.FlagStandaloneHubSeedVarsFile,
-			Sources:     ucli.EnvVars(vinecli.EnvStandaloneHubSeedVarsFile),
-			Usage:       "in-process Hub seed vars YAML file",
-			Destination: &flag.SeedHubVarsFile,
-		},
-		&ucli.StringFlag{
-			Name:        vinecli.FlagStandaloneHubAdminListen,
-			Sources:     ucli.EnvVars(vinecli.EnvStandaloneHubAdminListen),
-			Usage:       "in-process Hub Admin API and Dashboard listen address; unauthenticated, so loopback unless the network is trusted",
-			Destination: &flag.AdminListen,
-		},
-	}
-}
-
-func applyOption(flag *hubflag.Flag, option Option) {
-	if option.SeedHubSource != "" {
-		flag.SeedHubSource = option.SeedHubSource
-	}
-	if option.SeedHubSourceFile != "" {
-		flag.SeedHubSourceFile = option.SeedHubSourceFile
-	}
-	if option.SeedHubVarsFile != "" {
-		flag.SeedHubVarsFile = option.SeedHubVarsFile
-	}
-
-	if option.NoDB {
-		flag.NoDB = true
-	}
-	if option.SQLiteFile != "" {
-		flag.DBSQLiteFile = option.SQLiteFile
-	}
-	if option.PostgresURL != "" {
-		flag.DBPostgresURL = option.PostgresURL
-	}
-	if option.AdminListen != "" {
-		flag.AdminListen = option.AdminListen
-	}
-	if option.SeedHubData != "" {
-		flag.SeedHubData = option.SeedHubData
-	}
-	if option.SeedHubDataFile != "" {
-		flag.SeedHubDataFile = option.SeedHubDataFile
-	}
 }
 
 func (a *_App) startInfra() {
