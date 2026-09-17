@@ -81,7 +81,7 @@ func (s *Seeder) loadSeedYAML() {
 	for _, rule := range entities.PortalRules {
 		s.RuleCore.Validate(*rule.Rule)
 		if rule.EntryName == "" {
-			s.EntryCore.ValidateAccess(rule.Access)
+			s.EntryCore.Normalize(rule.Entry)
 		}
 	}
 	for _, cert := range entities.PortalCerts {

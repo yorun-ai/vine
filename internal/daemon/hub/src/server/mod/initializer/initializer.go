@@ -87,7 +87,7 @@ func (i *Initializer) checkPortalRuleConflicts() {
 		i.Logger.Error("two portal rules match the same request",
 			"rule", conflict.Rule,
 			"conflict", conflict.Conflict,
-			"entry", conflict.Access.Name,
+			"entry", conflict.Entry.Name,
 			"match", conflict.MatchText())
 	}
 }

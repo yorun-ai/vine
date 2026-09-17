@@ -10,11 +10,15 @@ are not part of the public compatibility commitment.
 
 ### Added
 
-- Hub's Portal entry service can create an entry for an access and delete an
-  entry that routes no rule, and the entry list returns an entry that routes no
-  rule so it stays selectable while the operator adds the rules that use it. The
-  Dashboard Portal entry page gains New and Delete actions and shows an entry
-  that routes nothing.
+- Hub stores a Portal entry, the scheme, host, and port Portal serves, and
+  addresses it by `id` the way it addresses a rule and a site: the entry service
+  creates an entry, renames it, changes the access it serves or its enable
+  switch, and deletes an entry that routes no rule. The entry list keeps an entry
+  that routes no rule so it stays selectable while the operator adds the rules
+  that use it, and the Dashboard Portal entry page edits the label beside the
+  access. Regenerate custom Admin clients and deploy the matching Dashboard
+  assets with this release: the entry service replaced `updateAccess` and
+  addresses an entry by `id`.
 - Seed YAML declares named Portal entries in a `portalEntries` section with
   `name`, `scheme`, `host`, and `port`. Hub applies entries before rules, so a
   rule joins the entry that serves its access and keeps the name the seed gave
@@ -22,17 +26,13 @@ are not part of the public compatibility commitment.
   `scheme[:host]:port` only for the entry it creates on its own.
 - A Portal rule joins an entry either by naming it with `entryName` or by
   declaring `matchScheme`, `matchHost`, and `matchPort`. One seed document uses
-  one of the two styles for every rule it declares, and a rule never mixes them,
-  because the entry owns the access. A seed that declares `portalEntries` names
-  them, so its rules reference the entry with `entryName` instead of declaring an
-  access. A seed is self-contained: a rule never references an entry the same
-  document does not declare, so Hub never completes the relationship from stored
-  data. Hub rejects a document that breaks any of these rules before it writes
-  anything.
-- The Portal rule interface no longer carries an access: `PortalRuleCreation`
-  names the Portal entry a rule belongs to, and `PortalRuleUpdate` has no
-  protocol, host, or port at all, so only the entry page changes an access. The
-  Dashboard rule editor selects an entry when it creates a rule, displays the
+  one of the two styles for every rule it declares, and a rule never mixes them.
+  A seed that declares `portalEntries` names them, so its rules reference the
+  entry with `entryName` instead of declaring an access. A seed is self-contained:
+  a rule never references an entry the same document does not declare, so Hub
+  never completes the relationship from stored data, and Hub rejects a document
+  that breaks any of these rules before it writes anything.
+- The Dashboard rule editor selects an entry when it creates a rule, displays the
   entry while editing, and links to the entry page from the rule detail, which
   names the entry instead of repeating its protocol, host, and port. Portal site,
   rule, and certificate details render their values as text instead of
@@ -52,68 +52,68 @@ are not part of the public compatibility commitment.
   and the Hub keeps the address in inproc mode for this purpose. The address is
   empty by default: the Admin API carries no authentication, so an address
   another host can reach exposes configuration writes to it. Every other Hub and
-  Link surface stays in-process.
-
-- The Admin API answers its listener only. It used to register a second handler
-  at `rpc+inproc://vine/hub/admin`, which nothing called once the Dashboard moved
-  to Hub, so an in-process Hub that declares no admin address now serves no Admin
-  API at all, instead of an address no client reaches.
+  Link surface stays in-process, and an in-process Hub that declares no admin
+  address serves no Admin API at all.
 
 - The Dashboard shows the rules that match the same request.
-  `PortalRuleApiService.listConflicts` reports the request, the entry, and both
-  rules, and the rule page marks them with a conflict badge next to the rule it
-  names, so an operator sees what Portal cannot order on its own and resolves it
-  by disabling a rule, moving it to another entry, or changing the mount path of
-  its site. Hub answers from the schemas it holds, so the list is current
-  whenever a rule, an entry, or a site changes, and a write no longer has to
-  decide it. The rules listed under an entry and the entry or site a rule targets
+  `PortalRuleApiService.listConflicts` reports the request, the entry, both
+  rules, and which of them Hub publishes, and the rule page marks them with a
+  conflict badge next to the rule it names, so an operator sees what Portal
+  cannot order on its own and resolves it by disabling a rule, moving it to
+  another entry, or changing the mount path of its site. Hub answers from the
+  schemas it holds, so the list is current whenever a rule, an entry, or a site
+  changes. The rules listed under an entry and the entry or site a rule targets
   also show the switch Hub stores, so a rule that a disabled entity keeps out of
   Portal says so where the operator reads it.
 
-- Hub publishes one rule for a request Portal cannot order: `PortalRuleApiService.listConflicts`
-  also names the rule Hub publishes and the one it leaves out, and the rule page
-  offers to disable the unpublished rule in one step. Hub keeps the rule whose
-  name sorts first, so the choice never depends on the order it applied them, and
-  the rule that lost comes back on its own when the winner stops serving the
-  request.
-
 ### Changed
 
-- The admin listener serves a Dashboard development server again, the way the
-  Portal-routed Dashboard did: `VINE_HUB_DASHBOARD_DEV_PROXY` (any non-empty
-  value) forwards every path outside `/api/invoke` to the Vite server
-  `script/dev-hub-dashboard.sh` starts on `localhost:7098`, and Hub serves the
-  embedded build whenever that server is not running. A Dashboard source change
-  needs no build while a developer works on it. Closing the proxy cancels the
-  requests it forwarded, so a development server that does not answer a request
-  cannot hold the listener open past its shutdown deadline.
-
-- The admin listener answers the Admin API on `/api/invoke`, the path beside the
-  Dashboard build it serves, and the Dashboard calls that path with a direct
-  trace, because Hub serves the build itself instead of a Portal entry carrying
-  it. Hub answered everything outside the runtime path from the Dashboard build,
-  so the API call came back as the entry document and every page that loads
-  configuration failed, and an API call without the trace span a Portal entry
-  used to open was rejected. Rebuild the Dashboard assets with
-  `script/build-dashboard-assets.sh`: the embedded build and the listener it
-  reaches ship together.
+- Hub serves the Admin API and the Dashboard on the admin module's own listener
+  and no longer publishes the Dashboard through Portal: the `admin` module owns
+  `--admin-listen`, which defaults to `127.0.0.1:7099`, the port operators
+  reached the Dashboard on before, and a Hub application listens on no HTTP port
+  of its own. The listener answers the API on `/api/invoke` and every other path
+  from the Dashboard build Hub embeds, so the Dashboard reaches the API on one
+  origin and a path the build does not carry answers with the entry document.
+  `VINE_HUB_DASHBOARD_DEV_PROXY` (any non-empty value) forwards those paths to
+  the Vite server `script/dev-hub-dashboard.sh` starts on `localhost:7098`
+  instead, and closing the proxy cancels the requests it forwarded, so a
+  development server that does not answer cannot hold the listener open past its
+  shutdown deadline. Hub provisions no built-in Dashboard entry, sites, or rules,
+  and an upgraded database drops the entities an earlier release stored and the
+  entry the access migration left at the access those rules served;
+  `--dashboard-url` is gone with them. The listener serves
+  cleartext HTTP/1.1 whatever Hub's backend mTLS configuration is: it used to
+  demand a certificate the mesh CA issued, which no browser holds, so enabling
+  backend mTLS left the Dashboard unreachable, and cleartext HTTP/2 buys nothing
+  for a browser, which never speaks it. Hub's Control API, Watch, and MQ keep
+  requiring mTLS, and a Go client still reaches the Control API over h2c.
 
 - A Portal rule owns its entry and nothing else: the rule entity, the rows Hub
-  reads and writes, and the rule Hub publishes all take the access from the
-  `portal_entry` the rule belongs to. A seed still declares `matchScheme`,
-  `matchHost`, and `matchPort` on a rule, and an Admin call still names the entry
-  it joins; the layer that reads the declaration resolves the entry, the way the
-  entry owns the access. Hub drops the unique index on `entry_id` and
-  `match_path_prefix` with it: whether two rules match one request depends on the
-  Web mount paths Hub reads once the applications register their schemas, so the
-  storage layer cannot decide it.
+  reads and writes, and the rule Hub publishes all take the scheme, host, and
+  port from the `portal_entry` the rule belongs to, and the Admin API rule
+  creation and update payloads carry no access at all. A seed still declares
+  `matchScheme`, `matchHost`, and `matchPort` on a rule, and an Admin call still
+  names the entry it joins; the layer that reads the declaration resolves the
+  entry. Whether two rules match one request depends on the Web mount paths Hub
+  reads once the applications register their schemas, so no write decides it: Hub
+  stores what a seed or an Admin call declares, publishes one rule per request,
+  and reports the requests two rules match from the schemas it holds. Hub keeps
+  the rule whose name sorts first, so the choice never depends on the order it
+  applied them, and the rule that lost comes back on its own when the winner
+  stops serving the request. A rule that leaves `matchPort` unset reports the
+  port Portal serves (`80` or `443`) in Admin API responses instead of `0`.
 
-- The Admin API serves cleartext HTTP on its own listener whatever Hub's backend
-  mTLS configuration is. It used to demand a certificate the mesh CA issued,
-  which no browser holds, so enabling backend mTLS left the Dashboard
-  unreachable. The listener answers HTTP/1.1: cleartext HTTP/2 buys nothing for a
-  browser, which never speaks it. Hub's Control API, Watch, and MQ keep requiring
-  mTLS, and a Go client still reaches the Control API over h2c.
+- Upgrading a database groups the stored rule access into entries and leaves the
+  rule access columns in place: Hub no longer reads them, keeps them filled with
+  the entry a rule belongs to, and removes them in a later release, because
+  dropping a column of a database Hub does not own cannot be undone. A Hub that
+  predates entries still reads and writes such a database: the switch of a row it
+  inserts defaults to published, and a rule it inserts without an entry joins one
+  again on the next upgrade. Two stored rules that only differed by an unset port
+  can now share an entry and a path, so Hub keeps the rule with the explicit port
+  on its path and moves the rule that used the default port to a `/migrated`
+  path, logging each move instead of refusing to start on stored data.
 
 - The Portal rule Hub publishes drops the deprecated `matchPathPrefix` and
   `routePathPrefix` fields, and Portal reads the resolved prefixes only, so a
@@ -130,9 +130,8 @@ are not part of the public compatibility commitment.
   `--watch-listen`, `--mq-mode`, and `--mq-nats-endpoint` only. The seed flags
   drop the redundant `hub` from their names, because they belong to Hub's own
   command: `--seed-data-file`, `--seed-source-file`, and `--seed-vars-file`, with
-  `VINE_SEED_DATA_FILE`, `VINE_SEED_SOURCE_FILE`, and `VINE_SEED_VARS_FILE`.
-
-- A business binary that runs the runtime in its own process names the component
+  `VINE_SEED_DATA_FILE`, `VINE_SEED_SOURCE_FILE`, and `VINE_SEED_VARS_FILE`. A
+  business binary that runs the runtime in its own process names the component
   its parameters configure, because it has no serve command to scope them:
   standalone accepts `--hub-no-db`, `--hub-db-sqlite-file`,
   `--hub-db-postgres-url`, `--hub-seed-data-file`, `--hub-seed-source-file`, and
@@ -140,47 +139,6 @@ are not part of the public compatibility commitment.
   `--link-hub-endpoint`, `--link-ingress-listen`, `--link-mtls-ca-file`,
   `--link-mtls-cert-file`, and `--link-mtls-key-file` under `VINE_LINK_*`. The
   Hub validation messages no longer name a flag the caller may not have.
-
-- Hub serves the Admin API on its own listener, the way it serves the Control
-  API: the `admin` module owns `--admin-listen`, which defaults to
-  `127.0.0.1:7099`, the port operators reached the Dashboard on before, and a Hub
-  application listens on no HTTP port of its own. Hub no longer publishes the
-  Dashboard through Portal,
-  so it provisions no built-in Dashboard entry, sites, or rules; an upgraded
-  database drops the entities an earlier release stored and their Watch keys, and
-  the entry the access migration left at the access those rules served;
-  `--dashboard-url` is gone with them. The admin listener also serves the
-  Dashboard build from Hub's embedded assets, so an operator reaches the
-  Dashboard on the same origin as the API it calls, and a path the build does not
-  carry answers with the entry document.
-
-- Hub stores Portal access entries instead of deriving from rules. An entry
-  owns the scheme, host, and port Portal serves, and rules reference it, so
-  changing an entry access updates one row rather than every rule that used it.
-  Portal continues to receive rules carrying the access of their entry, and seed
-  YAML keeps declaring `matchScheme`, `matchHost`, and `matchPort` on rules; Hub
-  aggregates the declared access into entries while it applies the seed.
-  Upgrading a database groups the stored rule access into entries and leaves the
-  rule access columns in place: Hub no longer reads them, keeps them filled with
-  the access of the entry, and removes them in a later release, because dropping
-  a column of a database Hub does not own cannot be undone. A Hub that predates
-  entries still reads and writes such a database: the switch of a row it inserts
-  defaults to published, and a rule it inserts without an entry joins one again
-  on the next upgrade. Rules that only
-  differed by an unset port can now share an entry and a path, so Hub keeps the
-  rule with the explicit port on its path and moves the rule that used the
-  default port to a `/migrated` path, logging each move instead of refusing to
-  start on stored data. Whether two rules match the same request is a question
-  about the Web mount paths Hub reads from the schemas an application registers
-  after Hub starts, so no write answers it: Hub stores what a seed, a Dashboard
-  import, or an Admin call declares, and reports the requests two published rules
-  match once the schemas arrive. A read-only Hub refuses to serve such a seed
-  instead of picking one rule, and a stored configuration keeps both rules until
-  the operator resolves the request from the Dashboard. A rule that leaves
-  `matchPort` unset reports the port Portal serves (`80` or `443`) in Admin API responses
-  instead of `0`. Regenerate custom Admin clients and deploy the matching
-  Dashboard assets with this release: `PortalRuleCreation` and
-  `PortalRuleUpdate` changed.
 
 ### Removed
 

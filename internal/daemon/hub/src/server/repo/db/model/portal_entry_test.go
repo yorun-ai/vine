@@ -35,15 +35,15 @@ func TestPortalEntryDaoCreateQueryAndRemove(t *testing.T) {
 	entry := dao.Save(&PortalEntry{Scheme: "https", Host: "demo.local", Port: 8443})
 	require.NotZero(t, entry.Id)
 
-	byAccess, ok := dao.ByAccess("https", "demo.local", 8443)
+	byAccess, ok := dao.BySchemeHostPort("https", "demo.local", 8443)
 	require.True(t, ok)
 	assert.Equal(t, entry.Id, byAccess.Id)
 
 	updated := dao.Save(&PortalEntry{Id: entry.Id, Scheme: "https", Host: "demo.local", Port: 9443})
 	assert.Equal(t, entry.Id, updated.Id)
-	_, ok = dao.ByAccess("https", "demo.local", 8443)
+	_, ok = dao.BySchemeHostPort("https", "demo.local", 8443)
 	assert.False(t, ok)
-	_, ok = dao.ByAccess("https", "demo.local", 9443)
+	_, ok = dao.BySchemeHostPort("https", "demo.local", 9443)
 	assert.True(t, ok)
 
 	_, ok = dao.DeleteById(entry.Id)
@@ -62,7 +62,7 @@ func TestPortalEntryDaoKeepsOneEntryPerAccess(t *testing.T) {
 
 	user := dao.Save(&PortalEntry{Scheme: "http", Host: "", Port: 7099})
 	require.NotZero(t, user.Id)
-	byAccess, ok := dao.ByAccess("http", "", 7099)
+	byAccess, ok := dao.BySchemeHostPort("http", "", 7099)
 	require.True(t, ok)
 	assert.Equal(t, user.Id, byAccess.Id)
 

@@ -194,7 +194,7 @@ func sharedTestPortalRuleRepoDB(t *testing.T) *gorm.DB {
 func testPortalRule(t *testing.T, repo *PortalRuleRepo, name string) *core.PortalRule {
 	t.Helper()
 
-	entry, ok := repo.PortalEntryRepo.GetByAccess("https", "demo.local", 443)
+	entry, ok := repo.PortalEntryRepo.GetBySchemeHostPort("https", "demo.local", 443)
 	if !ok {
 		entry = &core.PortalEntry{Scheme: "https", Host: "demo.local", Port: 443, Enabled: true}
 		repo.PortalEntryRepo.Save(entry)

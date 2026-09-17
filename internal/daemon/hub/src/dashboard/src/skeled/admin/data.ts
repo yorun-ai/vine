@@ -548,6 +548,10 @@ export type PortalCors = {
  */
 export type PortalEntry = {
   /**
+   * Entry ID.
+   */
+  id:      number;
+  /**
    * Entry name.
    */
   name:    string;
@@ -571,27 +575,6 @@ export type PortalEntry = {
    * Whether Hub publishes the rules of this entry to Portal.
    */
   enabled: boolean;
-}
-/**
- * Portal access entry configuration update parameters.
- */
-export type PortalEntryAccessUpdate = {
-  /**
-   * Entry protocol.
-   */
-  scheme:  string;
-  /**
-   * Match Host, empty string means no restriction.
-   */
-  host:    string;
-  /**
-   * Entry port.
-   */
-  port:    number;
-  /**
-   * Whether Hub publishes the rules of this entry to Portal.
-   */
-  enabled: boolean | null;
 }
 /**
  * Portal access entry creation parameters.
@@ -630,6 +613,31 @@ export type PortalEntryRule = {
    * Target site.
    */
   site: PortalSiteListItem | null;
+}
+/**
+ * Portal access entry update parameters.
+ */
+export type PortalEntryUpdate = {
+  /**
+   * Entry name.
+   */
+  name:    string | null;
+  /**
+   * Entry protocol.
+   */
+  scheme:  string | null;
+  /**
+   * Match Host, empty string means no restriction.
+   */
+  host:    string | null;
+  /**
+   * Entry port.
+   */
+  port:    number | null;
+  /**
+   * Whether Hub publishes the rules of this entry to Portal.
+   */
+  enabled: boolean | null;
 }
 /**
  * Portal entry rules.

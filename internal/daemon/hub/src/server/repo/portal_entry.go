@@ -36,8 +36,8 @@ func (s *PortalEntryRepo) GetByName(name string) (*core.PortalEntry, bool) {
 	return nil, false
 }
 
-func (s *PortalEntryRepo) GetByAccess(scheme string, host string, port int) (*core.PortalEntry, bool) {
-	if row, ok := s.Dao.ByAccess(scheme, host, port); ok {
+func (s *PortalEntryRepo) GetBySchemeHostPort(scheme string, host string, port int) (*core.PortalEntry, bool) {
+	if row, ok := s.Dao.BySchemeHostPort(scheme, host, port); ok {
 		return toCorePortalEntry(row), true
 	}
 	return nil, false

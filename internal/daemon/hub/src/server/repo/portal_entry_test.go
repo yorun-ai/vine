@@ -22,7 +22,7 @@ func TestPortalEntryRepoStoresAccessAndName(t *testing.T) {
 	repo.Save(entry)
 	require.NotZero(t, entry.Id)
 
-	got, ok := repo.GetByAccess("https", "demo.local", 8443)
+	got, ok := repo.GetBySchemeHostPort("https", "demo.local", 8443)
 	require.True(t, ok)
 	assert.Equal(t, entry.Id, got.Id)
 	// An entry keeps the name it was stored with.

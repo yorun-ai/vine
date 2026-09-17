@@ -1048,7 +1048,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalEntryApiService",
 		SkelName:          "vine.hub.admin.PortalEntryApiService",
-		Hash:              "e6e9d06b",
+		Hash:              "8e77e8b3",
 		ServerType:        reflect.TypeFor[PortalEntryApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalEntryApiServiceServer](),
 
@@ -1058,7 +1058,7 @@ var (
 		Methods: []*rpcspec.MethodSpec{
 			_PortalEntryApiServiceListSpec,
 			_PortalEntryApiServiceCreateSpec,
-			_PortalEntryApiServiceUpdateAccessSpec,
+			_PortalEntryApiServiceUpdateSpec,
 			_PortalEntryApiServiceRemoveSpec,
 		},
 	}
@@ -1116,12 +1116,12 @@ var (
 			PortalEntryApiServiceServerER.Create,
 		},
 	}
-	_PortalEntryApiServiceUpdateAccessSpec = &rpcspec.MethodSpec{
-		Name:          "UpdateAccess",
-		SkelName:      "updateAccess",
-		ArgumentsType: reflect.TypeFor[_PortalEntryApiServiceUpdateAccessArguments](),
+	_PortalEntryApiServiceUpdateSpec = &rpcspec.MethodSpec{
+		Name:          "Update",
+		SkelName:      "update",
+		ArgumentsType: reflect.TypeFor[_PortalEntryApiServiceUpdateArguments](),
 		CloneArguments: func(value any) any {
-			source := value.(*_PortalEntryApiServiceUpdateAccessArguments)
+			source := value.(*_PortalEntryApiServiceUpdateArguments)
 			cloned := *source
 			cloned.Update = source.Update.Clone()
 			return &cloned
@@ -1138,8 +1138,8 @@ var (
 		ArgumentsContainsBinaryType: false,
 		ResultContainsBinaryType:    false,
 		MethodFuncs: []any{
-			PortalEntryApiServiceServer.UpdateAccess,
-			PortalEntryApiServiceServerER.UpdateAccess,
+			PortalEntryApiServiceServer.Update,
+			PortalEntryApiServiceServerER.Update,
 		},
 	}
 	_PortalEntryApiServiceRemoveSpec = &rpcspec.MethodSpec{
@@ -1170,17 +1170,13 @@ type _PortalEntryApiServiceCreateArguments struct {
 	Creation PortalEntryCreation `json:"creation" skel:"index(0)"`
 }
 
-type _PortalEntryApiServiceUpdateAccessArguments struct {
-	Scheme string                  `json:"scheme" skel:"index(0)"`
-	Host   string                  `json:"host" skel:"index(1)"`
-	Port   int                     `json:"port" skel:"index(2)"`
-	Update PortalEntryAccessUpdate `json:"update" skel:"index(3)"`
+type _PortalEntryApiServiceUpdateArguments struct {
+	Id     int               `json:"id" skel:"index(0)"`
+	Update PortalEntryUpdate `json:"update" skel:"index(1)"`
 }
 
 type _PortalEntryApiServiceRemoveArguments struct {
-	Scheme string `json:"scheme" skel:"index(0)"`
-	Host   string `json:"host" skel:"index(1)"`
-	Port   int    `json:"port" skel:"index(2)"`
+	Id int `json:"id" skel:"index(0)"`
 }
 
 // PortalEntryApiService / Server
@@ -1193,18 +1189,14 @@ type PortalEntryApiServiceServer interface {
 	//   @param creation - Portal access entry creation parameters
 	//   @returns PortalEntry - Portal access entry
 	Create(creation PortalEntryCreation) PortalEntry
-	// UpdateAccess Modify Portal access configuration.
-	//   @param scheme - Entry protocol
-	//   @param host - Match Host, empty string means no restriction
-	//   @param port - Entry port
-	//   @param update - Portal access entry configuration update parameters
+	// Update Modify a Portal access entry.
+	//   @param id - Entry ID
+	//   @param update - Portal access entry update parameters
 	//   @returns PortalEntry - Portal access entry
-	UpdateAccess(scheme string, host string, port int, update PortalEntryAccessUpdate) PortalEntry
+	Update(id int, update PortalEntryUpdate) PortalEntry
 	// Remove Delete a Portal access entry that routes no rule.
-	//   @param scheme - Entry protocol
-	//   @param host - Match Host, empty string means no restriction
-	//   @param port - Entry port
-	Remove(scheme string, host string, port int)
+	//   @param id - Entry ID
+	Remove(id int)
 
 	mustBePortalEntryApiServiceServer()
 }
@@ -1223,12 +1215,12 @@ func (*DefaultPortalEntryApiServiceServer) Create(PortalEntryCreation) PortalEnt
 	return PortalEntry{}
 }
 
-func (*DefaultPortalEntryApiServiceServer) UpdateAccess(string, string, int, PortalEntryAccessUpdate) PortalEntry {
-	ex.PanicNew(ex.InvalidRequest, "method updateAccess is not implemented")
+func (*DefaultPortalEntryApiServiceServer) Update(int, PortalEntryUpdate) PortalEntry {
+	ex.PanicNew(ex.InvalidRequest, "method update is not implemented")
 	return PortalEntry{}
 }
 
-func (*DefaultPortalEntryApiServiceServer) Remove(string, string, int) {
+func (*DefaultPortalEntryApiServiceServer) Remove(int) {
 	ex.PanicNew(ex.InvalidRequest, "method remove is not implemented")
 }
 
@@ -1239,8 +1231,8 @@ func (*DefaultPortalEntryApiServiceServer) mustBePortalEntryApiServiceServer() {
 type PortalEntryApiServiceServerER interface {
 	List() ([]PortalEntry, ex.Error)
 	Create(creation PortalEntryCreation) (PortalEntry, ex.Error)
-	UpdateAccess(scheme string, host string, port int, update PortalEntryAccessUpdate) (PortalEntry, ex.Error)
-	Remove(scheme string, host string, port int) ex.Error
+	Update(id int, update PortalEntryUpdate) (PortalEntry, ex.Error)
+	Remove(id int) ex.Error
 
 	mustBePortalEntryApiServiceServerER()
 }
@@ -1277,15 +1269,15 @@ func (service *_WrapperPortalEntryApiServiceServerER) Create(creation PortalEntr
 	return
 }
 
-func (service *_WrapperPortalEntryApiServiceServerER) UpdateAccess(scheme string, host string, port int, update PortalEntryAccessUpdate) (ret PortalEntry, err ex.Error) {
+func (service *_WrapperPortalEntryApiServiceServerER) Update(id int, update PortalEntryUpdate) (ret PortalEntry, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().UpdateAccess(scheme, host, port, update)
+	ret = service.server().Update(id, update)
 	return
 }
 
-func (service *_WrapperPortalEntryApiServiceServerER) Remove(scheme string, host string, port int) (err ex.Error) {
+func (service *_WrapperPortalEntryApiServiceServerER) Remove(id int) (err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
-	service.server().Remove(scheme, host, port)
+	service.server().Remove(id)
 	return
 }
 

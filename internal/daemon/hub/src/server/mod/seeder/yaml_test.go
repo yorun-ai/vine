@@ -31,7 +31,7 @@ func TestSeedPortalRuleFieldNames(t *testing.T) {
 		payload, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload](content)
 		require.NoError(t, err)
 		seedRule := payload.PortalRules[0].toSeedRule()
-		assert.Equal(t, "http", seedRule.Access.Scheme)
+		assert.Equal(t, "http", seedRule.Entry.Scheme)
 		assert.Equal(t, "/internal", seedRule.Rule.RoutePathPrefix)
 	}
 	_, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload]("portalRules:\n  - scheme: http\n    routeType: SITE")

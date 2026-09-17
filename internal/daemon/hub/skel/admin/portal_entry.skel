@@ -2,6 +2,9 @@ domain vine.hub.admin
 
 @desc("Portal access entry")
 data PortalEntry {
+    @desc("Entry ID")
+    id: int
+
     @desc("Entry name")
     name: string
 
@@ -22,16 +25,19 @@ data PortalEntry {
 
 }
 
-@desc("Portal access entry configuration update parameters")
-data PortalEntryAccessUpdate {
+@desc("Portal access entry update parameters")
+data PortalEntryUpdate {
+    @desc("Entry name")
+    name: string?
+
     @desc("Entry protocol")
-    scheme: string
+    scheme: string?
 
     @desc("Match Host, empty string means no restriction")
-    host: string
+    host: string?
 
     @desc("Entry port")
-    port: int
+    port: int?
 
     @desc("Whether Hub publishes the rules of this entry to Portal")
     enabled: bool?
@@ -82,20 +88,14 @@ api service PortalEntryApiService {
         output PortalEntry
     }
 
-    @desc("Modify Portal access configuration")
-    method updateAccess {
+    @desc("Modify a Portal access entry")
+    method update {
         input {
-            @desc("Entry protocol")
-            scheme: string
+            @desc("Entry ID")
+            id: int
 
-            @desc("Match Host, empty string means no restriction")
-            host: string
-
-            @desc("Entry port")
-            port: int
-
-            @desc("Portal access entry configuration update parameters")
-            update: PortalEntryAccessUpdate
+            @desc("Portal access entry update parameters")
+            update: PortalEntryUpdate
         }
         @desc("Portal access entry")
         output PortalEntry
@@ -104,14 +104,8 @@ api service PortalEntryApiService {
     @desc("Delete a Portal access entry that routes no rule")
     method remove {
         input {
-            @desc("Entry protocol")
-            scheme: string
-
-            @desc("Match Host, empty string means no restriction")
-            host: string
-
-            @desc("Entry port")
-            port: int
+            @desc("Entry ID")
+            id: int
         }
     }
 }

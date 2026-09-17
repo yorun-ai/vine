@@ -123,8 +123,8 @@ func (s *portalEntryRepoSpy) GetByName(name string) (*PortalEntry, bool) {
 	return nil, false
 }
 
-func (s *portalEntryRepoSpy) GetByAccess(scheme string, host string, port int) (*PortalEntry, bool) {
-	s.calls = append(s.calls, fmt.Sprintf("GetByAccess:%s:%s:%d", scheme, host, port))
+func (s *portalEntryRepoSpy) GetBySchemeHostPort(scheme string, host string, port int) (*PortalEntry, bool) {
+	s.calls = append(s.calls, fmt.Sprintf("GetBySchemeHostPort:%s:%s:%d", scheme, host, port))
 	for _, entry := range s.entries {
 		if entry.Scheme == scheme && entry.Host == host && entry.Port == port {
 			value := *entry
@@ -288,7 +288,7 @@ func TestPortalEntryCoreCreate(t *testing.T) {
 	assert.Equal(t, 443, entry.Port)
 	assert.Empty(t, entry.Rules)
 	require.Len(t, entryRepo.entries, 1)
-	assert.Equal(t, []string{"GetByName:web", "GetByAccess:https:demo.local:443", "Save"}, entryRepo.calls)
+	assert.Equal(t, []string{"GetByName:web", "GetBySchemeHostPort:https:demo.local:443", "Save"}, entryRepo.calls)
 
 	// The name identifies one entry, and an access serves one user entry.
 	require.PanicsWithError(t,
@@ -322,16 +322,16 @@ func TestPortalEntryCoreRemove(t *testing.T) {
 	// An entry keeps its rules: Hub refuses to leave them without an access.
 	require.PanicsWithError(t,
 		`portal entry "http:7088" still routes 1 rules; remove them first type=APPLICATION code=OPERATION_FAILED`,
-		func() { core.Remove("http", "", 7088) })
+		func() { core.Remove(1) })
 	assert.Contains(t, entryRepo.entries, 1)
 
 	// An entry that routes nothing is removed.
 	core.Create(PortalEntryCreation{Name: "idle", Scheme: "http", Port: 8080})
-	created, ok := entryRepo.GetByAccess("http", "", 8080)
+	created, ok := entryRepo.GetBySchemeHostPort("http", "", 8080)
 	require.True(t, ok)
 	assert.Equal(t, "idle", created.Name)
-	core.Remove(" HTTP ", " ", 8080)
-	_, ok = entryRepo.GetByAccess("http", "", 8080)
+	core.Remove(created.Id)
+	_, ok = entryRepo.GetBySchemeHostPort("http", "", 8080)
 	assert.False(t, ok)
 	assert.Contains(t, entryRepo.removed, created.Id)
 }
@@ -352,7 +352,7 @@ func TestPortalEntryCoreListRejectsUnknownScheme(t *testing.T) {
 	assert.Equal(t, ex.OperationFailed, err.Code())
 }
 
-func TestPortalEntryCoreUpdateAccessSavesEntryAndRepublishesRules(t *testing.T) {
+func TestPortalEntryCoreUpdateSavesEntryAndRepublishesRules(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(
 		&PortalEntry{Id: 1, Scheme: "http", Port: 7088},
 		&PortalEntry{Id: 2, Scheme: "http", Host: "demo.local", Port: 7088},
@@ -365,10 +365,10 @@ func TestPortalEntryCoreUpdateAccessSavesEntryAndRepublishesRules(t *testing.T) 
 	}}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
-	entry := core.UpdateAccess("http", "", 7088, PortalEntryAccessUpdate{
-		Scheme: "https",
-		Host:   "app.example.com",
-		Port:   8443,
+	entry := core.Update(1, PortalEntryUpdate{
+		Scheme: new("https"),
+		Host:   new("app.example.com"),
+		Port:   new(8443),
 	})
 
 	// The access is one stored row: Hub no longer rewrites it per rule.
@@ -383,8 +383,8 @@ func TestPortalEntryCoreUpdateAccessSavesEntryAndRepublishesRules(t *testing.T) 
 	assert.Equal(t, "app.example.com", entryRepo.entries[1].Host)
 	assert.Equal(t, 8443, entryRepo.entries[1].Port)
 	assert.Equal(t, []string{
-		"GetByAccess:http::7088",
-		"GetByAccess:https:app.example.com:8443",
+		"GetById:1",
+		"GetBySchemeHostPort:https:app.example.com:8443",
 		"Save",
 	}, entryRepo.calls)
 	// The access change republishes the rules of the entry.
@@ -400,7 +400,7 @@ func TestPortalEntryCoreUpdateAccessSavesEntryAndRepublishesRules(t *testing.T) 
 	assert.Equal(t, "demo.local", entryRepo.entries[2].Host)
 }
 
-func TestPortalEntryCoreUpdateAccessMergesIntoExistingEntry(t *testing.T) {
+func TestPortalEntryCoreUpdateMergesIntoExistingEntry(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(
 		&PortalEntry{Id: 1, Scheme: "http", Port: 7088},
 		&PortalEntry{Id: 2, Scheme: "https", Host: "demo.local", Port: 8443},
@@ -411,10 +411,10 @@ func TestPortalEntryCoreUpdateAccessMergesIntoExistingEntry(t *testing.T) {
 	}}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
-	entry := core.UpdateAccess("http", "", 7088, PortalEntryAccessUpdate{
-		Scheme: "https",
-		Host:   "demo.local",
-		Port:   8443,
+	entry := core.Update(1, PortalEntryUpdate{
+		Scheme: new("https"),
+		Host:   new("demo.local"),
+		Port:   new(8443),
 	})
 
 	assert.Equal(t, 2, entry.Id)
@@ -427,62 +427,104 @@ func TestPortalEntryCoreUpdateAccessMergesIntoExistingEntry(t *testing.T) {
 	assert.Equal(t, "demo.local", entryRepo.entries[2].Host)
 }
 
-func TestPortalEntryCoreUpdateAccessRejectsMissingEntry(t *testing.T) {
+func TestPortalEntryCoreUpdateRejectsMissingEntry(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Scheme: "http", Port: 7088})
 	core := newPortalEntryCoreForTest(&entryRuleRepoSpy{}, entryRepo, nil)
 
 	panicValue := capturePanic(func() {
-		core.UpdateAccess("http", "missing.local", 7088, PortalEntryAccessUpdate{Scheme: "http", Port: 8080})
+		core.Update(99, PortalEntryUpdate{Scheme: new("http"), Port: new(8080)})
 	})
 
 	err, ok := panicValue.(ex.Error)
 	require.True(t, ok)
 	assert.Equal(t, ex.OperationFailed, err.Code())
-	assert.Empty(t, entryRepo.calls[1:])
+	assert.Equal(t, []string{"GetById:99"}, entryRepo.calls)
 }
 
-func TestPortalEntryCoreUpdateAccessNormalizesLookup(t *testing.T) {
+func TestPortalEntryCoreUpdateNormalizesPatch(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 2, Scheme: "http", Port: 80})
 	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
 		1: {Id: 1, Name: "web", EntryId: 2, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
 	}}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
-	entry := core.UpdateAccess(" HTTP ", " ", 0, PortalEntryAccessUpdate{Scheme: "https", Host: "demo.local", Port: 0})
+	entry := core.Update(2, PortalEntryUpdate{
+		Scheme: new(" HTTPS "),
+		Host:   new(" demo.local "),
+		Port:   new(0),
+	})
 
 	assert.Equal(t, 2, entry.Id)
 	assert.Equal(t, "http:80", entry.Name)
-	assert.Equal(t, []string{"GetByAccess:http::80", "GetByAccess:https:demo.local:443", "Save"}, entryRepo.calls)
+	assert.Equal(t, "https", entry.Scheme)
+	assert.Equal(t, "demo.local", entry.Host)
+	assert.Equal(t, 443, entry.Port)
+	assert.Equal(t, []string{
+		"GetById:2",
+		"GetBySchemeHostPort:https:demo.local:443",
+		"Save",
+	}, entryRepo.calls)
+	assert.Equal(t, []string{"List", "Save", "List"}, ruleRepo.calls)
 }
 
-func TestPortalEntryCoreUpdateAccessKeepsEntryOnUnchangedAccess(t *testing.T) {
+func TestPortalEntryCoreUpdateKeepsEntryOnUnchangedPatch(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Scheme: "http", Port: 7088})
 	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
 		1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
 	}}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
-	entry := core.UpdateAccess("http", "", 7088, PortalEntryAccessUpdate{Scheme: "http", Port: 7088})
+	entry := core.Update(1, PortalEntryUpdate{Scheme: new("http"), Port: new(7088)})
 
-	// Hub writes nothing when the access already matches.
+	// Hub writes nothing when the patch changes nothing.
 	assert.Equal(t, 1, entry.Id)
 	assert.Equal(t, "http:7088", entry.Name)
 	require.Len(t, entry.Rules, 1)
 	assert.Equal(t, "web", entry.Rules[0].Rule.Name)
-	assert.Equal(t, []string{"GetByAccess:http::7088", "GetByAccess:http::7088"}, entryRepo.calls)
+	assert.Equal(t, []string{"GetById:1"}, entryRepo.calls)
+	assert.Equal(t, []string{"List"}, ruleRepo.calls)
+}
+
+func TestPortalEntryCoreUpdateRenamesEntry(t *testing.T) {
+	entryRepo := newPortalEntryRepoSpy(
+		&PortalEntry{Id: 1, Name: "web", Scheme: "http", Port: 7088},
+		&PortalEntry{Id: 2, Name: "api", Scheme: "http", Host: "demo.local", Port: 7088},
+	)
+	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
+		1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+	}}
+	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
+
+	entry := core.Update(1, PortalEntryUpdate{Name: new("web-console")})
+
+	// A rename keeps the access: Portal reaches the entry through its rules, so
+	// the rules stay where they are and Hub republishes none of them.
+	assert.Equal(t, 1, entry.Id)
+	assert.Equal(t, "web-console", entry.Name)
+	assert.Equal(t, "http", entry.Scheme)
+	assert.Equal(t, 7088, entry.Port)
+	require.Len(t, entry.Rules, 1)
+	assert.Equal(t, 1, ruleRepo.rules[1].EntryId)
+	assert.Equal(t, []string{"GetById:1", "GetByName:web-console", "Save"}, entryRepo.calls)
+	assert.Equal(t, []string{"List"}, ruleRepo.calls)
+
+	// Two entries never share a label.
+	require.PanicsWithError(t, `portal entry "api" already exists type=APPLICATION code=OPERATION_FAILED`, func() {
+		core.Update(1, PortalEntryUpdate{Name: new("api")})
+	})
 }
 
 func TestPortalEntryCoreEnsureAccessNormalizesAndReusesEntry(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 3, Scheme: "http", Port: 80})
 	core := newPortalEntryCoreForTest(&entryRuleRepoSpy{}, entryRepo, nil)
 
-	entry := core.EnsureAccess(" HTTP ", " ", 0)
+	entry := core.EnsureEntry(" HTTP ", " ", 0)
 
 	// " HTTP " and an unset port address the entry Portal already serves.
 	assert.Equal(t, 3, entry.Id)
 	assert.Empty(t, entryRepo.calls[1:])
 
-	created := core.EnsureAccess("HTTPS", " demo.local ", 0)
+	created := core.EnsureEntry("HTTPS", " demo.local ", 0)
 	assert.Equal(t, "https", created.Scheme)
 	assert.Equal(t, "demo.local", created.Host)
 	assert.Equal(t, 443, created.Port)

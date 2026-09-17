@@ -831,7 +831,7 @@ func newTestSeederRepos(t *testing.T) (*repo.AppConfigRepo, *repo.PortalRuleRepo
 func saveTestPortalRule(t *testing.T, ruleRepo *repo.PortalRuleRepo, rule *core.PortalRule, access core.PortalEntry) {
 	t.Helper()
 
-	entry, ok := ruleRepo.PortalEntryRepo.GetByAccess(access.Scheme, access.Host, access.Port)
+	entry, ok := ruleRepo.PortalEntryRepo.GetBySchemeHostPort(access.Scheme, access.Host, access.Port)
 	if !ok {
 		entry = &core.PortalEntry{Scheme: access.Scheme, Host: access.Host, Port: access.Port, Enabled: true}
 		ruleRepo.PortalEntryRepo.Save(entry)

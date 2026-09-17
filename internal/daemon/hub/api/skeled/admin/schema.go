@@ -11,7 +11,7 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "8ce53a7d",
+	Hash:        "6c65a971",
 	Full:        true,
 	Generated: &skel.GeneratedInfo{
 		CompilerVersion: "v0.20.0",
@@ -1117,8 +1117,16 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "PortalEntry",
 			SkelName:    "vine.hub.admin.PortalEntry",
 			Description: "Portal access entry",
-			Hash:        "45663fb7",
+			Hash:        "c853379b",
 			Members: []*skel.MemberSchema{
+				{
+					Name:        "id",
+					Description: "Entry ID",
+					Type: &skel.TypeSchema{
+						Kind:   skel.TypeKindScalar,
+						Scalar: skel.ScalarInt,
+					},
+				},
 				{
 					Name:        "name",
 					Description: "Entry name",
@@ -1169,47 +1177,6 @@ var _DomainSchema = &skel.DomainSchema{
 					Type: &skel.TypeSchema{
 						Kind:   skel.TypeKindScalar,
 						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalEntryAccessUpdate",
-			SkelName:    "vine.hub.admin.PortalEntryAccessUpdate",
-			Description: "Portal access entry configuration update parameters",
-			Hash:        "a55c1451",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "scheme",
-					Description: "Entry protocol",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "host",
-					Description: "Match Host, empty string means no restriction",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "port",
-					Description: "Entry port",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "enabled",
-					Description: "Whether Hub publishes the rules of this entry to Portal",
-					Type: &skel.TypeSchema{
-						Kind:     skel.TypeKindScalar,
-						Scalar:   skel.ScalarBool,
-						Nullable: true,
 					},
 				},
 			},
@@ -1285,6 +1252,59 @@ var _DomainSchema = &skel.DomainSchema{
 						Kind:     skel.TypeKindData,
 						Name:     "PortalSiteListItem",
 						SkelName: "vine.hub.admin.PortalSiteListItem",
+						Nullable: true,
+					},
+				},
+			},
+		},
+		{
+			Name:        "PortalEntryUpdate",
+			SkelName:    "vine.hub.admin.PortalEntryUpdate",
+			Description: "Portal access entry update parameters",
+			Hash:        "ea6ae4ec",
+			Members: []*skel.MemberSchema{
+				{
+					Name:        "name",
+					Description: "Entry name",
+					Type: &skel.TypeSchema{
+						Kind:     skel.TypeKindScalar,
+						Scalar:   skel.ScalarString,
+						Nullable: true,
+					},
+				},
+				{
+					Name:        "scheme",
+					Description: "Entry protocol",
+					Type: &skel.TypeSchema{
+						Kind:     skel.TypeKindScalar,
+						Scalar:   skel.ScalarString,
+						Nullable: true,
+					},
+				},
+				{
+					Name:        "host",
+					Description: "Match Host, empty string means no restriction",
+					Type: &skel.TypeSchema{
+						Kind:     skel.TypeKindScalar,
+						Scalar:   skel.ScalarString,
+						Nullable: true,
+					},
+				},
+				{
+					Name:        "port",
+					Description: "Entry port",
+					Type: &skel.TypeSchema{
+						Kind:     skel.TypeKindScalar,
+						Scalar:   skel.ScalarInt,
+						Nullable: true,
+					},
+				},
+				{
+					Name:        "enabled",
+					Description: "Whether Hub publishes the rules of this entry to Portal",
+					Type: &skel.TypeSchema{
+						Kind:     skel.TypeKindScalar,
+						Scalar:   skel.ScalarBool,
 						Nullable: true,
 					},
 				},
@@ -5331,7 +5351,7 @@ var _DomainSchema = &skel.DomainSchema{
 			Name:        "PortalEntryApiService",
 			SkelName:    "vine.hub.admin.PortalEntryApiService",
 			Description: "Hub's Portal access entry service, called by the Portal admin client",
-			Hash:        "e6e9d06b",
+			Hash:        "8e77e8b3",
 			Pub:         false,
 			Api:         true,
 			AuthMode:    skel.AuthModeUnset,
@@ -5340,7 +5360,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "list",
 					SkelName:          "list",
 					Description:       "List Portal access entries",
-					Hash:              "6a5a2f94",
+					Hash:              "ebaf8bcf",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Portal access entry list",
 					ResultType: &skel.TypeSchema{
@@ -5356,7 +5376,7 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:              "create",
 					SkelName:          "create",
 					Description:       "Create a Portal access entry",
-					Hash:              "94e257bb",
+					Hash:              "364f1477",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Portal access entry",
 					Arguments: []*skel.MemberSchema{
@@ -5377,32 +5397,16 @@ var _DomainSchema = &skel.DomainSchema{
 					},
 				},
 				{
-					Name:              "updateAccess",
-					SkelName:          "updateAccess",
-					Description:       "Modify Portal access configuration",
-					Hash:              "47dc8685",
+					Name:              "update",
+					SkelName:          "update",
+					Description:       "Modify a Portal access entry",
+					Hash:              "07445e9e",
 					AuthMode:          skel.AuthModeUnset,
 					OutputDescription: "Portal access entry",
 					Arguments: []*skel.MemberSchema{
 						{
-							Name:        "scheme",
-							Description: "Entry protocol",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name:        "host",
-							Description: "Match Host, empty string means no restriction",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name:        "port",
-							Description: "Entry port",
+							Name:        "id",
+							Description: "Entry ID",
 							Type: &skel.TypeSchema{
 								Kind:   skel.TypeKindScalar,
 								Scalar: skel.ScalarInt,
@@ -5410,11 +5414,11 @@ var _DomainSchema = &skel.DomainSchema{
 						},
 						{
 							Name:        "update",
-							Description: "Portal access entry configuration update parameters",
+							Description: "Portal access entry update parameters",
 							Type: &skel.TypeSchema{
 								Kind:     skel.TypeKindData,
-								Name:     "PortalEntryAccessUpdate",
-								SkelName: "vine.hub.admin.PortalEntryAccessUpdate",
+								Name:     "PortalEntryUpdate",
+								SkelName: "vine.hub.admin.PortalEntryUpdate",
 							},
 						},
 					},
@@ -5428,28 +5432,12 @@ var _DomainSchema = &skel.DomainSchema{
 					Name:        "remove",
 					SkelName:    "remove",
 					Description: "Delete a Portal access entry that routes no rule",
-					Hash:        "11ee265b",
+					Hash:        "c28170ea",
 					AuthMode:    skel.AuthModeUnset,
 					Arguments: []*skel.MemberSchema{
 						{
-							Name:        "scheme",
-							Description: "Entry protocol",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name:        "host",
-							Description: "Match Host, empty string means no restriction",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name:        "port",
-							Description: "Entry port",
+							Name:        "id",
+							Description: "Entry ID",
 							Type: &skel.TypeSchema{
 								Kind:   skel.TypeKindScalar,
 								Scalar: skel.ScalarInt,

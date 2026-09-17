@@ -78,7 +78,7 @@ corresponding Core. `Validate` checks and normalizes a complete entity without
 writing. Rule validation does not resolve sites: Portal derives effective rule
 paths from Web mount-path metadata published with sites. `Save`
 creates or replaces by name and owns identity handling, along with versioning and
-built-in protection where applicable. API updates merge provided fields into the
+field sources where applicable. API updates merge provided fields into the
 existing entity before validation.
 
 An entry owns the scheme, host, and port Portal serves; rules reference the entry
@@ -92,11 +92,12 @@ names the entry a new rule belongs to, and `PortalRuleUpdate` cannot change an
 access at all. Seed YAML keeps declaring the access on the rule, because Hub
 aggregates the declared access into entries while it applies the seed.
 
-`PortalEntryCore` creates an entry for an access no user entry serves, and
-removes an entry that routes no rule: rules belong to the operator, so deleting
-their entry fails instead of leaving them without an access. The entry list
-returns an entry that routes nothing, because an operator creates the entry
-before the rules that use it.
+`PortalEntryCore` creates an entry for an access no user entry serves, addresses
+it by `id` afterwards, so the Admin API and the Dashboard rename it, change the
+access it serves, or flip its switch, and removes an entry that routes no rule:
+rules belong to the operator, so deleting their entry fails instead of leaving
+them without an access. The entry list returns an entry that routes nothing,
+because an operator creates the entry before the rules that use it.
 
 Two rules that match the same request are reported, not rejected: the path a rule
 matches comes from the Web mount path its site declares, and Hub reads those

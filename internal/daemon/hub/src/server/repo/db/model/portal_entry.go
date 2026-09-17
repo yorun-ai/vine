@@ -50,8 +50,8 @@ func (d *PortalEntryDao) ByName(name string) (*PortalEntry, bool) {
 	return d.First("name = ?", name)
 }
 
-// ByAccess returns the entry that serves the access.
-func (d *PortalEntryDao) ByAccess(scheme string, host string, port int) (*PortalEntry, bool) {
+// BySchemeHostPort returns the entry that serves the access.
+func (d *PortalEntryDao) BySchemeHostPort(scheme string, host string, port int) (*PortalEntry, bool) {
 	return d.First("scheme = ? AND host = ? AND port = ?", scheme, host, port)
 }
 

@@ -133,7 +133,7 @@ func (s *_PortalEntryRepoSpy) GetByName(name string) (*core.PortalEntry, bool) {
 	return nil, false
 }
 
-func (s *_PortalEntryRepoSpy) GetByAccess(scheme string, host string, port int) (*core.PortalEntry, bool) {
+func (s *_PortalEntryRepoSpy) GetBySchemeHostPort(scheme string, host string, port int) (*core.PortalEntry, bool) {
 	for _, entry := range s.List() {
 		if entry.Scheme == scheme && entry.Host == host && entry.Port == port {
 			return entry, true

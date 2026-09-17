@@ -76,10 +76,11 @@ Hub 的层次职责必须保持清晰：
   `PortalRuleCore` 按规则声明的访问配置解析 entry，因此访问配置相同的规则共用
   同一个 entry。修改 entry 会改变它路由的全部规则，Hub 随即重新发布这些规则，
   让 Portal 读到该 entry 当前服务的访问配置。
-- `PortalEntryCore` 为尚无用户 entry 的访问配置创建 entry，并允许删除没有路由
-  任何规则的 entry：规则属于用户，删除仍有规则的 entry 会报错，而不是让规则失去
-  访问配置。entry 列表会返回尚未路由规则的 entry，因为用户先建 entry、再添加使用
-  它的规则。
+- `PortalEntryCore` 为尚无用户 entry 的访问配置创建 entry，之后按 `id` 寻址，
+  因此 Admin API 与 Dashboard 可以改名、修改它服务的访问配置或切换开关；并允许
+  删除没有路由任何规则的 entry：规则属于用户，删除仍有规则的 entry 会报错，而不是
+  让规则失去访问配置。entry 列表会返回尚未路由规则的 entry，因为用户先建 entry、
+  再添加使用它的规则。
 - Hub 在 admin 模块自己的监听上提供 Admin API 与 Dashboard（`--admin-listen`，
   默认 `127.0.0.1:7099`，与 Control API 的 `--control-listen` 对称）：该监听在 RPC
   路径 `/api/invoke` 上响应 API（Dashboard 调用的就是该路径），其它路径
