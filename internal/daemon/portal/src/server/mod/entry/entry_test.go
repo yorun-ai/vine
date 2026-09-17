@@ -9,8 +9,6 @@ import (
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/util/vcode"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -187,7 +185,9 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 				ingressinproc.Register(endpoint, backend)
 				t.Cleanup(func() { ingressinproc.Unregister(endpoint) })
 			} else {
-				server := httptest.NewServer(h2c.NewHandler(backend, new(http2.Server)))
+				server := httptest.NewUnstartedServer(backend)
+				server.Config.Protocols = httputil.UnencryptedHTTP2Protocols()
+				server.Start()
 				t.Cleanup(server.Close)
 				endpoint = server.URL
 			}

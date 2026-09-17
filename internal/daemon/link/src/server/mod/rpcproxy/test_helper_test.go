@@ -9,9 +9,6 @@ import (
 	"sync"
 	"testing"
 
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-
 	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/link/skeled"
@@ -27,6 +24,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
+	"go.yorun.ai/vine/internal/util/httputil"
 	"go.yorun.ai/vine/util/vcode"
 )
 
@@ -171,7 +169,8 @@ func newH2CTestServer(t *testing.T, handler http.Handler) *_H2CTestServer {
 		t.Fatalf("listen failed: %v", err)
 	}
 	server := &http.Server{
-		Handler: h2c.NewHandler(handler, &http2.Server{}),
+		Handler:   handler,
+		Protocols: httputil.UnencryptedHTTP2Protocols(),
 	}
 	go func() {
 		_ = server.Serve(listener)
