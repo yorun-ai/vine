@@ -147,6 +147,19 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
   the contents differ.
 - Versions come from release tags and build-time `ldflags`, not source constants.
 
+## Commits and Delivery
+
+- Work in the working tree by default: change the code, run the validation this
+  repository requires, and hand the diff and the result to the user for review.
+- `git add`, `commit`, `push`, creating a PR, merging a PR, tagging, and publishing
+  a release are never default actions: each needs the user to ask for that step on
+  that change. One instruction covers only what it names, so asking for a PR does
+  not authorize a merge, and an instruction for one change or one repository never
+  carries over to another change or another repository.
+- When the user asks to move changes back into the working tree, undo the local
+  commit and leave the changes uncommitted; do not clean up remote branches, pull
+  requests, or other remote state in the same request.
+
 ## Tests
 
 - Keep implementation tests paired with their source files. For example, tests
