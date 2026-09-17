@@ -21,19 +21,6 @@ const (
 	EnvLinkAPIListen     = "VINE_API_LISTEN"
 	EnvLinkIngressListen = "VINE_INGRESS_LISTEN"
 	EnvLinkHubEndpoint   = "VINE_HUB_ENDPOINT"
-
-	// Linked has no command to scope these, so they carry the prefix.
-	FlagLinkedHubEndpoint   = "link-hub-endpoint"
-	FlagLinkedIngressListen = "link-ingress-listen"
-	FlagLinkedMTLSCAFile    = "link-mtls-ca-file"
-	FlagLinkedMTLSCertFile  = "link-mtls-cert-file"
-	FlagLinkedMTLSKeyFile   = "link-mtls-key-file"
-
-	EnvLinkedHubEndpoint   = "VINE_LINK_HUB_ENDPOINT"
-	EnvLinkedIngressListen = "VINE_LINK_INGRESS_LISTEN"
-	EnvLinkedMTLSCAFile    = "VINE_LINK_MTLS_CA_FILE"
-	EnvLinkedMTLSCertFile  = "VINE_LINK_MTLS_CERT_FILE"
-	EnvLinkedMTLSKeyFile   = "VINE_LINK_MTLS_KEY_FILE"
 )
 
 // startLinkApp is overridden in tests to assert parsed flags without starting the real app.

@@ -5,7 +5,6 @@ import (
 	"go.yorun.ai/vine/app"
 	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/appcli"
-	vinecli "go.yorun.ai/vine/internal/cli"
 	"go.yorun.ai/vine/internal/core/logger"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/src/server/app"
 	hubflag "go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
@@ -52,6 +51,7 @@ type Option struct {
 	SQLiteFile string
 	// PostgresURL selects PostgreSQL persistence and specifies its connection URL.
 	PostgresURL string
+
 	// AdminListen is the in-process Hub's Admin API and Dashboard address. Empty
 	// serves no Admin API; the API carries no authentication.
 	AdminListen string
@@ -127,13 +127,23 @@ func (a *_App) StartAndWait() {
 }
 
 const (
-	flagSQLiteFile      = vinecli.FlagStandaloneHubDBSQLiteFile
-	flagPostgresURL     = vinecli.FlagStandaloneHubDBPostgresURL
-	flagSeedHubDataFile = vinecli.FlagStandaloneHubSeedDataFile
+	// The business binary carries no command that could scope the Hub parameters
+	// it accepts, so its flags and environment variables name the hub explicitly.
+	flagHubNoDB           = "hub-no-db"
+	flagHubDBSQLiteFile   = "hub-db-sqlite-file"
+	flagHubDBPostgresURL  = "hub-db-postgres-url"
+	flagHubSeedDataFile   = "hub-seed-data-file"
+	flagHubSeedSourceFile = "hub-seed-source-file"
+	flagHubSeedVarsFile   = "hub-seed-vars-file"
+	flagHubAdminListen    = "hub-admin-listen"
 
-	envSQLiteFile      = vinecli.EnvStandaloneHubDBSQLiteFile
-	envPostgresURL     = vinecli.EnvStandaloneHubDBPostgresURL
-	envSeedHubDataFile = vinecli.EnvStandaloneHubSeedDataFile
+	envHubNoDB           = "VINE_HUB_NO_DB"
+	envHubDBSQLiteFile   = "VINE_HUB_DB_SQLITE_FILE"
+	envHubDBPostgresURL  = "VINE_HUB_DB_POSTGRES_URL"
+	envHubSeedDataFile   = "VINE_HUB_SEED_DATA_FILE"
+	envHubSeedSourceFile = "VINE_HUB_SEED_SOURCE_FILE"
+	envHubSeedVarsFile   = "VINE_HUB_SEED_VARS_FILE"
+	envHubAdminListen    = "VINE_HUB_ADMIN_LISTEN"
 )
 
 func (a *_App) initInfra() {
@@ -154,44 +164,44 @@ func (a *_App) initInfra() {
 func flags(flag *hubflag.Flag) []ucli.Flag {
 	return []ucli.Flag{
 		&ucli.BoolFlag{
-			Name:        vinecli.FlagStandaloneHubNoDB,
-			Sources:     ucli.EnvVars(vinecli.EnvStandaloneHubNoDB),
+			Name:        flagHubNoDB,
+			Sources:     ucli.EnvVars(envHubNoDB),
 			Usage:       "use no persistent database (default); requires the seed data file or Option.SeedHubData; configuration is read-only",
 			Destination: &flag.NoDB,
 		},
 		&ucli.StringFlag{
-			Name:        flagSQLiteFile,
-			Sources:     ucli.EnvVars(envSQLiteFile),
+			Name:        flagHubDBSQLiteFile,
+			Sources:     ucli.EnvVars(envHubDBSQLiteFile),
 			Usage:       "in-process Hub SQLite database file",
 			Destination: &flag.DBSQLiteFile,
 		},
 		&ucli.StringFlag{
-			Name:        flagPostgresURL,
-			Sources:     ucli.EnvVars(envPostgresURL),
+			Name:        flagHubDBPostgresURL,
+			Sources:     ucli.EnvVars(envHubDBPostgresURL),
 			Usage:       "in-process Hub PostgreSQL database URL",
 			Destination: &flag.DBPostgresURL,
 		},
 		&ucli.StringFlag{
-			Name:        flagSeedHubDataFile,
-			Sources:     ucli.EnvVars(envSeedHubDataFile),
+			Name:        flagHubSeedDataFile,
+			Sources:     ucli.EnvVars(envHubSeedDataFile),
 			Usage:       "in-process Hub seed YAML file",
 			Destination: &flag.SeedHubDataFile,
 		},
 		&ucli.StringFlag{
-			Name:        vinecli.FlagStandaloneHubSeedSourceFile,
-			Sources:     ucli.EnvVars(vinecli.EnvStandaloneHubSeedSourceFile),
+			Name:        flagHubSeedSourceFile,
+			Sources:     ucli.EnvVars(envHubSeedSourceFile),
 			Usage:       "in-process Hub seed source YAML file",
 			Destination: &flag.SeedHubSourceFile,
 		},
 		&ucli.StringFlag{
-			Name:        vinecli.FlagStandaloneHubSeedVarsFile,
-			Sources:     ucli.EnvVars(vinecli.EnvStandaloneHubSeedVarsFile),
+			Name:        flagHubSeedVarsFile,
+			Sources:     ucli.EnvVars(envHubSeedVarsFile),
 			Usage:       "in-process Hub seed vars YAML file",
 			Destination: &flag.SeedHubVarsFile,
 		},
 		&ucli.StringFlag{
-			Name:        vinecli.FlagStandaloneHubAdminListen,
-			Sources:     ucli.EnvVars(vinecli.EnvStandaloneHubAdminListen),
+			Name:        flagHubAdminListen,
+			Sources:     ucli.EnvVars(envHubAdminListen),
 			Usage:       "in-process Hub Admin API and Dashboard listen address; unauthenticated, so loopback unless the network is trusted",
 			Destination: &flag.AdminListen,
 		},

@@ -5,7 +5,6 @@ import (
 	"go.yorun.ai/vine/app"
 	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/appcli"
-	vinecli "go.yorun.ai/vine/internal/cli"
 	"go.yorun.ai/vine/internal/core/logger"
 	linkapp "go.yorun.ai/vine/internal/daemon/link/src/server/app"
 	linkflag "go.yorun.ai/vine/internal/daemon/link/src/server/flag"
@@ -102,16 +101,19 @@ func (a *_App) StartAndWait() {
 }
 
 const (
-	flagHubEndpoint   = vinecli.FlagLinkedHubEndpoint
-	flagIngressListen = vinecli.FlagLinkedIngressListen
-	flagMTLSCAFile    = vinecli.FlagLinkedMTLSCAFile
-	flagMTLSCertFile  = vinecli.FlagLinkedMTLSCertFile
-	flagMTLSKeyFile   = vinecli.FlagLinkedMTLSKeyFile
-	envHubEndpoint    = vinecli.EnvLinkedHubEndpoint
-	envIngressListen  = vinecli.EnvLinkedIngressListen
-	envMTLSCAFile     = vinecli.EnvLinkedMTLSCAFile
-	envMTLSCertFile   = vinecli.EnvLinkedMTLSCertFile
-	envMTLSKeyFile    = vinecli.EnvLinkedMTLSKeyFile
+	// The business binary carries no command that could scope the Link parameters
+	// it accepts, so its flags and environment variables name the link explicitly.
+	flagHubEndpoint   = "link-hub-endpoint"
+	flagIngressListen = "link-ingress-listen"
+	flagMTLSCAFile    = "link-mtls-ca-file"
+	flagMTLSCertFile  = "link-mtls-cert-file"
+	flagMTLSKeyFile   = "link-mtls-key-file"
+
+	envHubEndpoint   = "VINE_LINK_HUB_ENDPOINT"
+	envIngressListen = "VINE_LINK_INGRESS_LISTEN"
+	envMTLSCAFile    = "VINE_LINK_MTLS_CA_FILE"
+	envMTLSCertFile  = "VINE_LINK_MTLS_CERT_FILE"
+	envMTLSKeyFile   = "VINE_LINK_MTLS_KEY_FILE"
 )
 
 func startLink(option Option) app.App {
