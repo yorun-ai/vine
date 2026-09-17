@@ -44,7 +44,7 @@ func (p *RpcProxy) forwardWithTransport(reqCtx context.Context, req *http.Reques
 }
 
 func (p *RpcProxy) writeGatewayError(w http.ResponseWriter, r *http.Request, err ex.Error) {
-	_ = rpchttp.WriteRequestErrorResponse(w, r, p.App, mapGatewayResponseError(err))
+	_ = rpchttp.WriteRequestErrorResponse(w, r, p.CurrentApp, mapGatewayResponseError(err))
 }
 
 func mapGatewayResponseError(err ex.Error) ex.Error {

@@ -17,7 +17,6 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 )
@@ -36,7 +35,7 @@ func TestManagerRegistersListenerAndDispatchesEvent(t *testing.T) {
 	}()
 
 	hooks := &_ManagerDispatchHooks{completed: make(chan struct{}, 1)}
-	newAppEventServiceClient = func(context.Context, runtime.App, string, eventspec.NATSMessage) appskeled.EventServiceClientER {
+	newAppEventServiceClient = func(context.Context, meta.App, string, eventspec.NATSMessage) appskeled.EventServiceClientER {
 		return &_ManagerAppEventClient{
 			onEvent: func(on appskeled.EventOn) error {
 				hooks.mutex.Lock()
@@ -104,7 +103,7 @@ func TestManagerLimitsDispatchConcurrency(t *testing.T) {
 			startedChan: make(chan struct{}, 2),
 			releaseChan: make(chan struct{}),
 		}
-		newAppEventServiceClient = func(context.Context, runtime.App, string, eventspec.NATSMessage) appskeled.EventServiceClientER {
+		newAppEventServiceClient = func(context.Context, meta.App, string, eventspec.NATSMessage) appskeled.EventServiceClientER {
 			return &_ManagerAppEventClient{
 				onEvent: func(on appskeled.EventOn) error {
 					hooks.mutex.Lock()
@@ -126,8 +125,8 @@ func TestManagerLimitsDispatchConcurrency(t *testing.T) {
 		}
 
 		manager := &Manager{
-			Context: context.Background(),
-			App:     meta.MustNewApp("vine.link", "1.0.0", "22222222-2222-2222-2222-222222222222"),
+			Context:    context.Background(),
+			CurrentApp: meta.MustNewApp("vine.link", "1.0.0", "22222222-2222-2222-2222-222222222222"),
 		}
 		listener := &_EventListenerState{
 			eventEndpoint: testLocalAppEndpoint(8080) + testPathEvent,
@@ -186,7 +185,7 @@ func TestManagerFansOutByAppName(t *testing.T) {
 
 	firstHooks := &_ManagerDispatchHooks{completed: make(chan struct{}, 1)}
 	secondHooks := &_ManagerDispatchHooks{completed: make(chan struct{}, 1)}
-	newAppEventServiceClient = func(_ context.Context, _ runtime.App, endpoint string, _ eventspec.NATSMessage) appskeled.EventServiceClientER {
+	newAppEventServiceClient = func(_ context.Context, _ meta.App, endpoint string, _ eventspec.NATSMessage) appskeled.EventServiceClientER {
 		targetHooks := secondHooks
 		if strings.Contains(endpoint, ":8080") {
 			targetHooks = firstHooks
@@ -261,7 +260,7 @@ func TestManagerCompetesAcrossSameAppNameInstances(t *testing.T) {
 
 	firstHooks := &_ManagerDispatchHooks{completed: make(chan struct{}, 1)}
 	secondHooks := &_ManagerDispatchHooks{completed: make(chan struct{}, 1)}
-	newAppEventServiceClient = func(_ context.Context, _ runtime.App, endpoint string, _ eventspec.NATSMessage) appskeled.EventServiceClientER {
+	newAppEventServiceClient = func(_ context.Context, _ meta.App, endpoint string, _ eventspec.NATSMessage) appskeled.EventServiceClientER {
 		targetHooks := secondHooks
 		if strings.Contains(endpoint, ":8080") {
 			targetHooks = firstHooks

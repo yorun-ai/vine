@@ -11,8 +11,8 @@ import (
 	"sync"
 
 	ucli "github.com/urfave/cli/v3"
+	"go.yorun.ai/vine/buildinfo"
 	"go.yorun.ai/vine/core/logger"
-	"go.yorun.ai/vine/internal/core/runtime"
 )
 
 var argsStdout io.Writer = os.Stdout
@@ -135,7 +135,7 @@ func newArgsCommand(args []string, setShouldExit func(), flags ...ucli.Flag) *uc
 			switch arg {
 			case "version":
 				setShouldExit()
-				_, _ = fmt.Fprint(cmd.Root().Writer, runtime.Inspect())
+				_, _ = fmt.Fprint(cmd.Root().Writer, buildinfo.Inspect())
 				return nil
 			case "help":
 				setShouldExit()

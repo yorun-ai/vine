@@ -176,7 +176,7 @@ Vine 将公开 API 保持在少量 facade 包中。`internal` 下的包属于实
 | [`core/conf`](core/conf) | eternal 配置快照和 instant 配置更新 |
 | [`core/skel`](core/skel) | Skel 运行时标量类型、schema 注册和生成器兼容性检查 |
 | [`core/meta`](core/meta)、[`core/logger`](core/logger)、[`core/ex`](core/ex)、[`core/redact`](core/redact) | 请求元数据、结构化日志、系统错误和敏感数据脱敏 |
-| [`core/runtime`](core/runtime) | 应用标识、版本、实例 ID 和构建元数据 |
+| [`buildinfo`](buildinfo) | linker 注入的可执行文件名、版本、commit、构建者和构建时间 |
 | [`infra/redis`](infra/redis)、[`infra/rdb`](infra/rdb) | 托管 Redis 与关系型数据库集成 |
 | [`util`](util) | 可复用的编码、文件、集合、数学、网络、校验与字符串辅助能力 |
 

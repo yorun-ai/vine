@@ -35,7 +35,7 @@ func (a *PortalApp) DIInit() {
 
 	appInfo := meta.MustNewAppWithRandomId(a.Name(), buildinfo.MustVineVersion())
 	a.InternalAttrs = app.InternalAttributes{
-		Info:              appInfo,
+		CurrentApp:        appInfo,
 		Linker:            link.NewRedirectedInternalLinker(appInfo, a.Flag.HubEndpoint),
 		BackendIdentity:   identity,
 		RPCTransport:      identity.HTTPTransport(daemon.HubIdentity.SPIFFEPath()),

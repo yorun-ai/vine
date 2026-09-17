@@ -1,46 +1,46 @@
 package buildinfo
 
-// This file exposes ldflags-injected runtime identity for applications that
-// depend on the Vine framework. The internal core runtime uses these values as
-// application metadata for registration, RPC/event/task headers, and other
-// framework runtime behavior.
+// This file exposes the values a build links into a binary that depends on the
+// Vine framework: the executable name, the version applications report, and the
+// commit, builder, and build time of the build.
+//
+// Every variable below is replaced with
+// -X go.yorun.ai/vine/buildinfo.<name>=<value> when the binary is built. A
+// build that links no value keeps the corresponding default; the getters in
+// info.go report a default as unavailable.
+
+// Defaults for the values a build does not link. The remaining variables default
+// to the empty string.
+const (
+	defaultName    = "vined"
+	defaultVersion = "0.0.0"
+)
 
 var (
-	// WILL BE MODIFIED BY LDFLAGS when building
-	ldName      = defaultName
-	ldVersion   = defaultVersion // must be semver
-	ldGitCommit = defaultBuildText
-	ldBuiltBy   = defaultBuildText
-	ldBuiltTime = defaultBuildText
+	// ldName is the executable name, injected as ldName. Dot-separated segments
+	// carry lowercase letters and digits with dashes between them, for example
+	// user.service or demo.worker-2; an unusable name panics when the process
+	// starts. Default: "vined".
+	ldName = defaultName
+
+	// ldVersion is the application version, injected as ldVersion. It must be a
+	// full semantic version and may carry the Go module "v" prefix, for example
+	// v1.2.3; an unusable version panics when Version reads it.
+	// Default: "0.0.0".
+	ldVersion = defaultVersion
+
+	// ldGitCommit identifies the commit the binary was built from, injected as
+	// ldGitCommit. It carries no format requirement; Plot links the short SHA
+	// and marks a dirty workspace with a "-dirty" suffix. Empty when the build
+	// links no commit.
+	ldGitCommit string
+
+	// ldBuiltBy names the tool that built the binary, injected as ldBuiltBy. It
+	// carries no format requirement; Plot links plot/<version>. Empty when the
+	// build links no builder.
+	ldBuiltBy string
+
+	// ldBuiltTime records when the binary was built, injected as ldBuiltTime.
+	// It carries no format requirement. Empty when the build links no time.
+	ldBuiltTime string
 )
-
-const (
-	defaultName      = "vined"
-	defaultVersion   = "0.0.0"
-	defaultBuildText = "NotAvailable"
-)
-
-// Name returns the linker-injected executable name and whether it differs from the default.
-func Name() (string, bool) {
-	return ldName, ldName != defaultName
-}
-
-// Version returns the linker-injected version and whether it differs from the default.
-func Version() (string, bool) {
-	return ldVersion, ldVersion != defaultVersion
-}
-
-// GitCommit returns the linker-injected commit and whether it is available.
-func GitCommit() (string, bool) {
-	return ldGitCommit, ldGitCommit != defaultBuildText
-}
-
-// BuiltBy returns the linker-injected builder and whether it is available.
-func BuiltBy() (string, bool) {
-	return ldBuiltBy, ldBuiltBy != defaultBuildText
-}
-
-// BuiltTime returns the linker-injected build time and whether it is available.
-func BuiltTime() (string, bool) {
-	return ldBuiltTime, ldBuiltTime != defaultBuildText
-}

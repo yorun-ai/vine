@@ -27,7 +27,7 @@ for scope in "$@"; do
         ./internal/core/conf
         ./internal/core/ctr
         ./internal/core/di
-        ./internal/core/runtime
+        ./buildinfo
       )
       ;;
     cli)

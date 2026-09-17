@@ -11,6 +11,7 @@ import (
 
 	coreapp "go.yorun.ai/vine/internal/core/app"
 
+	"go.yorun.ai/vine/buildinfo"
 	"go.yorun.ai/vine/core/skel"
 	"go.yorun.ai/vine/internal/core/conf"
 	"go.yorun.ai/vine/internal/core/di"
@@ -22,7 +23,6 @@ import (
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
 	"go.yorun.ai/vine/internal/core/rpc/server"
 	rpcinproc "go.yorun.ai/vine/internal/core/rpc/transport/inproc"
-	"go.yorun.ai/vine/internal/core/runtime"
 	webinproc "go.yorun.ai/vine/internal/core/web/inproc"
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
 	"go.yorun.ai/vine/util/vcode"
@@ -36,11 +36,11 @@ import (
 const unregisterTimeout = time.Minute
 
 type _AppImpl struct {
-	spec   ApplicationSpec
-	info   runtime.App
-	ctx    context.Context
-	cancel context.CancelFunc
-	flags  _Flags
+	spec       ApplicationSpec
+	currentApp meta.CurrentApp
+	ctx        context.Context
+	cancel     context.CancelFunc
+	flags      _Flags
 
 	listenAddr        string
 	linker            link.Linker
@@ -106,8 +106,8 @@ func (a *_AppImpl) init() {
 
 	a.inprocFlag = a.flags.InprocFlag()
 	if !a.initByInternalAttrs() {
-		a.info = a.newAppInfo()
-		a.inprocFlag.HostPath = coreapp.InprocHostPath(a.info.InstanceId())
+		a.currentApp = a.newCurrentApp()
+		a.inprocFlag.HostPath = coreapp.InprocHostPath(a.currentApp.InstanceId())
 	}
 
 	a.listenAddr = a.flags.ListenAddr()
@@ -124,9 +124,9 @@ func (a *_AppImpl) initByInternalAttrs() bool {
 	}
 
 	internalAttrs := a.spec.(InternalApplicationSpec).internalAttrs()
-	vpre.CheckNotNil(internalAttrs.Info, "internal application info must not be nil")
+	vpre.CheckNotNil(internalAttrs.CurrentApp, "internal application info must not be nil")
 	vpre.CheckNotNil(internalAttrs.Linker, "internal application linker must not be nil")
-	a.info = internalAttrs.Info
+	a.currentApp = internalAttrs.CurrentApp
 	a.linker = internalAttrs.Linker
 	a.identity = internalAttrs.BackendIdentity
 	if a.identity == nil {
@@ -140,17 +140,14 @@ func (a *_AppImpl) initByInternalAttrs() bool {
 	return true
 }
 
-func (a *_AppImpl) newAppInfo() runtime.App {
-	runtimeApp := runtime.Application()
-	if !a.inprocFlag.Enabled && a.spec.Name() == runtimeApp.Name() {
-		return runtimeApp
-	}
-	return meta.MustNewAppWithRandomId(a.spec.Name(), runtimeApp.Version())
+func (a *_AppImpl) newCurrentApp() meta.CurrentApp {
+	version := buildinfo.Version()
+	return meta.MustNewAppWithRandomId(a.spec.Name(), version)
 }
 
 func (a *_AppImpl) initLinking() {
 	if !a.isInternalApplication() {
-		a.linker = link.NewLinker(a.info, a.inprocFlag.Enabled, a.flags.LinkEndpoint())
+		a.linker = link.NewLinker(a.currentApp, a.inprocFlag.Enabled, a.flags.LinkEndpoint())
 	}
 	a.reader = conf.NewReader(a.linker)
 }
@@ -353,7 +350,7 @@ func (a *_AppImpl) unregisterApp() {
 		// Link unregistration is remote, best-effort cleanup. A failure here must
 		// not strand local servers, the application context, or shutdown hooks.
 		logger.Error(a.spec.Name()+" application unregister failed",
-			"instanceId", a.info.InstanceId(),
+			"instanceId", a.currentApp.InstanceId(),
 			"error", err,
 		)
 	}

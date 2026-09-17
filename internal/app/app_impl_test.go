@@ -503,7 +503,7 @@ func TestAppImplInitConsoleServerSkipsWhenDisabledByInternalAttrs(t *testing.T) 
 	app := newApp(&testInternalOnlyAppSpec{
 		AppFlag: &RunFlag{},
 		InternalAttrs: InternalAttributes{
-			Info: testRuntimeApp{
+			CurrentApp: testRuntimeApp{
 				name:       "test.app",
 				version:    "1.2.3",
 				instanceID: "00000000-0000-0000-0000-000000000123",
@@ -543,7 +543,7 @@ func TestNewAppPanicsWhenApplicationNameIsEmpty(t *testing.T) {
 		_ = newApp(&testEmptyNameInternalOnlyAppSpec{
 			AppFlag: &RunFlag{},
 			InternalAttrs: InternalAttributes{
-				Info: testRuntimeApp{
+				CurrentApp: testRuntimeApp{
 					name:       "test.app",
 					version:    "1.2.3",
 					instanceID: "00000000-0000-0000-0000-000000000123",
@@ -598,7 +598,7 @@ func TestNewAppEnablesInprocModeWhenFlagProvided(t *testing.T) {
 
 	assert.NotNil(t, app.inprocFlag)
 	assert.True(t, app.inprocFlag.Enabled)
-	assert.Equal(t, coreapp.InprocHostPath(app.info.InstanceId()), app.inprocFlag.HostPath)
+	assert.Equal(t, coreapp.InprocHostPath(app.currentApp.InstanceId()), app.inprocFlag.HostPath)
 }
 
 func TestNewAppUsesRunFlagListenAddrMutatedInDIInit(t *testing.T) {
@@ -757,7 +757,7 @@ func TestAppImplStartInprocModeSkipsHTTPServerAndLinkerRegistration(t *testing.T
 	app := newApp(&testInternalServicerSpec{
 		AppFlag: &RunFlag{},
 		InternalAttrs: InternalAttributes{
-			Info: testRuntimeApp{
+			CurrentApp: testRuntimeApp{
 				name:       "test.app",
 				version:    "1.2.3",
 				instanceID: "00000000-0000-0000-0000-000000000123",
@@ -792,7 +792,7 @@ func TestAppImplStartWithDisableHTTPServerDoesNotRegisterInternalApp(t *testing.
 	app := newApp(&testInternalServicerSpec{
 		AppFlag: &RunFlag{},
 		InternalAttrs: InternalAttributes{
-			Info: testRuntimeApp{
+			CurrentApp: testRuntimeApp{
 				name:       "test.app",
 				version:    "1.2.3",
 				instanceID: "00000000-0000-0000-0000-000000000123",
@@ -824,7 +824,7 @@ func TestAppImplStartDoesNotRegisterInternalUniqueWebberApp(t *testing.T) {
 	app := newApp(&testUniqueWebberRegisterSpec{
 		AppFlag: &RunFlag{},
 		InternalAttrs: InternalAttributes{
-			Info: testRuntimeApp{
+			CurrentApp: testRuntimeApp{
 				name:       "test.app",
 				version:    "1.2.3",
 				instanceID: "00000000-0000-0000-0000-000000000123",
@@ -855,12 +855,12 @@ func TestAppImplStartRegistersWebberOnlyAppWithNonNilEmptyCapabilities(t *testin
 		AppFlag:       &RunFlag{},
 		WebberEnabled: WebberEnabled{},
 	}, flags)
-	app.info = testRuntimeApp{
+	app.currentApp = testRuntimeApp{
 		name:       "test.app",
 		version:    "1.2.3",
 		instanceID: "00000000-0000-0000-0000-000000000123",
 	}
-	app.inprocFlag.HostPath = coreapp.InprocHostPath(app.info.InstanceId())
+	app.inprocFlag.HostPath = coreapp.InprocHostPath(app.currentApp.InstanceId())
 
 	app.Start()
 	app.StopGracefully()
@@ -890,17 +890,17 @@ func TestAppImplStartRegistersEventerAndTasker(t *testing.T) {
 		EventerEnabled: EventerEnabled{},
 		TaskerEnabled:  TaskerEnabled{},
 	}, flags)
-	app.info = testRuntimeApp{
+	app.currentApp = testRuntimeApp{
 		name:       "test.app",
 		version:    "1.2.3",
 		instanceID: "00000000-0000-0000-0000-000000000123",
 	}
-	app.inprocFlag.HostPath = coreapp.InprocHostPath(app.info.InstanceId())
+	app.inprocFlag.HostPath = coreapp.InprocHostPath(app.currentApp.InstanceId())
 
 	app.Start()
 	app.StopGracefully()
 
-	assert.Equal(t, "rpc+inproc://"+coreapp.InprocHostPath(app.info.InstanceId())+coreapp.PathRpcInvoke, linker.RegisterServiceEndpoint)
+	assert.Equal(t, "rpc+inproc://"+coreapp.InprocHostPath(app.currentApp.InstanceId())+coreapp.PathRpcInvoke, linker.RegisterServiceEndpoint)
 	assert.Empty(t, linker.RegisterServiceHandlers)
 	assert.Empty(t, linker.RegisterWebHandlers)
 	assert.Equal(t, []linkskeled.EventListenerRegistration{{
@@ -933,7 +933,7 @@ func TestAppImplStartSkipsDomainSchemasWhenSkipDomainSchemasEnabled(t *testing.T
 		EventerEnabled: EventerEnabled{},
 		TaskerEnabled:  TaskerEnabled{},
 	}, flags)
-	app.info = testRuntimeApp{
+	app.currentApp = testRuntimeApp{
 		name:       "test.app",
 		version:    "1.2.3",
 		instanceID: "00000000-0000-0000-0000-000000000123",
@@ -953,7 +953,7 @@ func TestAppImplStopGracefullyStopsInprocMode(t *testing.T) {
 		app := newApp(&testInternalServicerSpec{
 			AppFlag: &RunFlag{},
 			InternalAttrs: InternalAttributes{
-				Info: testRuntimeApp{
+				CurrentApp: testRuntimeApp{
 					name:       "test.app",
 					version:    "1.2.3",
 					instanceID: "00000000-0000-0000-0000-000000000123",
@@ -988,7 +988,7 @@ func TestAppImplStopUnregistersInprocRoutes(t *testing.T) {
 		return newApp(&testInternalServicerSpec{
 			AppFlag: &RunFlag{},
 			InternalAttrs: InternalAttributes{
-				Info: testRuntimeApp{
+				CurrentApp: testRuntimeApp{
 					name:       "test.app",
 					version:    "1.2.3",
 					instanceID: "00000000-0000-0000-0000-000000000123",

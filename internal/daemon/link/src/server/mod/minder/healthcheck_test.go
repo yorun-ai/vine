@@ -12,8 +12,8 @@ import (
 
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/ex"
+	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
-	"go.yorun.ai/vine/internal/core/runtime"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 )
 
@@ -40,7 +40,7 @@ func newTestHealthcheckMinder(ctx context.Context) *AppMinder {
 	minder := &AppMinder{
 		Context:               ctx,
 		Flag:                  &flag.Flag{},
-		App:                   mustTestMetaApp(),
+		CurrentApp:            mustTestMetaApp(),
 		InprocFlag:            &app.InternalInprocFlag{},
 		RegistryServiceClient: &_RegistryServiceClient{},
 		HubInfo:               newTestHubInfo(new(_TestInfoServiceClient)),
@@ -56,7 +56,7 @@ func TestHealthcheckAutoUnregistersAfterConsecutiveFailures(t *testing.T) {
 			newConsoleServiceClient = oldFactory
 		}()
 
-		newConsoleServiceClient = func(context.Context, runtime.App, string) appskeled.ConsoleServiceClientER {
+		newConsoleServiceClient = func(context.Context, meta.App, string) appskeled.ConsoleServiceClientER {
 			return &_HealthcheckConsoleClient{
 				ping: func() ex.Error {
 					return ex.New(ex.ServerUnreachable, "down")
@@ -98,7 +98,7 @@ func TestHealthcheckIgnoresPingTimeout(t *testing.T) {
 			newConsoleServiceClient = oldFactory
 		}()
 
-		newConsoleServiceClient = func(context.Context, runtime.App, string) appskeled.ConsoleServiceClientER {
+		newConsoleServiceClient = func(context.Context, meta.App, string) appskeled.ConsoleServiceClientER {
 			return &_HealthcheckConsoleClient{
 				ping: func() ex.Error {
 					return ex.New(ex.InvocationTimeout, "timeout")
@@ -141,7 +141,7 @@ func TestStartHealthcheckSkipsWhenInprocModeEnabled(t *testing.T) {
 	}()
 
 	called := false
-	newConsoleServiceClient = func(context.Context, runtime.App, string) appskeled.ConsoleServiceClientER {
+	newConsoleServiceClient = func(context.Context, meta.App, string) appskeled.ConsoleServiceClientER {
 		called = true
 		return &_HealthcheckConsoleClient{
 			ping: func() ex.Error {

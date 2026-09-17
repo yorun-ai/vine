@@ -8,7 +8,6 @@ import (
 	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/runtime"
 	webserver "go.yorun.ai/vine/internal/core/web/server"
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
 )
@@ -27,16 +26,16 @@ func (*WebberEnabled) WebberInitFilters(addFilter TypeAdder)   {}
 
 type _Webber struct {
 	spec        WebberSpec
-	appInfo     runtime.App
+	currentApp  meta.CurrentApp
 	bindAppDeps di.BindApplier
 
 	server *webserver.Server
 }
 
-func newWebber(spec WebberSpec, info runtime.App, deps di.BindApplier) *_Webber {
+func newWebber(spec WebberSpec, currentApp meta.CurrentApp, deps di.BindApplier) *_Webber {
 	webber := &_Webber{
 		spec:        spec,
-		appInfo:     info,
+		currentApp:  currentApp,
 		bindAppDeps: deps,
 	}
 	webber.init()
@@ -85,7 +84,7 @@ func (*_Webber) bindContext(b *di.Binder) {
 
 func (w *_Webber) bindLogger(b *di.Binder) {
 	b.BindFactory(func(ctx meta.Context) *logger.Logger {
-		return newAppLogger(w.appInfo.Name()).With(buildLoggerFields(ctx, nil, w.appInfo)...)
+		return newAppLogger(w.currentApp.Name()).With(buildLoggerFields(ctx, nil, w.currentApp)...)
 	})
 }
 

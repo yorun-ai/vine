@@ -88,7 +88,7 @@ func TestHubAppDIInitNormalizesFlagAndSetsRunFlag(t *testing.T) {
 
 	spec.DIInit()
 
-	if got, want := spec.InternalAttrs.Info.Version(), buildinfo.MustVineVersion(); got != want {
+	if got, want := spec.InternalAttrs.CurrentApp.Version(), buildinfo.MustVineVersion(); got != want {
 		t.Fatalf("unexpected daemon version: got %q, want Vine version %q", got, want)
 	}
 
@@ -116,7 +116,7 @@ func TestHubAppDIInitKeepsPGConnUrl(t *testing.T) {
 
 	spec.DIInit()
 
-	if got, want := spec.InternalAttrs.Info.Version(), buildinfo.MustVineVersion(); got != want {
+	if got, want := spec.InternalAttrs.CurrentApp.Version(), buildinfo.MustVineVersion(); got != want {
 		t.Fatalf("unexpected daemon version: got %q, want Vine version %q", got, want)
 	}
 
@@ -140,12 +140,12 @@ func TestHubAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 
 	spec.DIInit()
 
-	if got, want := spec.InternalAttrs.Info.Version(), buildinfo.MustVineVersion(); got != want {
+	if got, want := spec.InternalAttrs.CurrentApp.Version(), buildinfo.MustVineVersion(); got != want {
 		t.Fatalf("unexpected daemon version: got %q, want Vine version %q", got, want)
 	}
 
 	assert.Equal(t, "vine.hub", spec.Name())
-	assert.Equal(t, "vine.hub", spec.InternalAttrs.Info.Name())
+	assert.Equal(t, "vine.hub", spec.InternalAttrs.CurrentApp.Name())
 	assert.Empty(t, spec.AppFlag.ListenAddr)
 	assert.Empty(t, spec.Flag.ControlListen)
 	assert.Empty(t, spec.Flag.AdminListen)

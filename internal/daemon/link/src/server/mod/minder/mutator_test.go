@@ -40,7 +40,7 @@ func TestDrainAndDestroyNotifyMutatorsOnce(t *testing.T) {
 	minder := &AppMinder{
 		Context:               context.Background(),
 		Flag:                  &flag.Flag{},
-		App:                   mustTestMetaApp(),
+		CurrentApp:            mustTestMetaApp(),
 		InprocFlag:            &app.InternalInprocFlag{},
 		RegistryServiceClient: &_RegistryServiceClient{},
 		HubInfo:               newTestHubInfo(new(_TestInfoServiceClient)),
@@ -68,7 +68,7 @@ func TestAddInstanceRejectsDuplicateInstanceID(t *testing.T) {
 	minder := &AppMinder{
 		Context:               context.Background(),
 		Flag:                  &flag.Flag{},
-		App:                   mustTestMetaApp(),
+		CurrentApp:            mustTestMetaApp(),
 		InprocFlag:            &app.InternalInprocFlag{},
 		RegistryServiceClient: &_RegistryServiceClient{},
 		HubInfo:               newTestHubInfo(new(_TestInfoServiceClient)),

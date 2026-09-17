@@ -214,11 +214,11 @@ func testContext(recorder http.ResponseWriter, request *http.Request) *spec.Cont
 func newTestManager(valuesByKey map[string]string) *Manager {
 	epmgrManager := newTestEpmgr(valuesByKey)
 	manager := &Manager{
-		Context: context.Background(),
-		App:     meta.MustNewApp("vine.portal", "0.0.0", "123e4567-e89b-12d3-a456-426614174099"),
-		Watch:   hubwatch.NewTestClient(valuesByKey),
-		Access:  newTestAccess(),
-		Epmgr:   epmgrManager,
+		Context:    context.Background(),
+		CurrentApp: meta.MustNewApp("vine.portal", "0.0.0", "123e4567-e89b-12d3-a456-426614174099"),
+		Watch:      hubwatch.NewTestClient(valuesByKey),
+		Access:     newTestAccess(),
+		Epmgr:      epmgrManager,
 	}
 	manager.DIInit()
 	return manager

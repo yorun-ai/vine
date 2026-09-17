@@ -8,8 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	ucli "github.com/urfave/cli/v3"
+	"go.yorun.ai/vine/buildinfo"
 	"go.yorun.ai/vine/core/logger"
-	"go.yorun.ai/vine/internal/core/runtime"
 )
 
 func resetArgsForTest(t *testing.T) {
@@ -87,7 +87,7 @@ func TestHandlePrintsVersionAndExits(t *testing.T) {
 	argsExit = func(code int) { panic(fmt.Sprintf("exit:%d", code)) }
 
 	assert.PanicsWithValue(t, "exit:0", func() { Handle() })
-	assert.Equal(t, runtime.Inspect(), stdout.String())
+	assert.Equal(t, buildinfo.Inspect(), stdout.String())
 	assert.Empty(t, stderr.String())
 }
 

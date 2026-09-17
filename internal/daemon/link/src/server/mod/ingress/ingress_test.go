@@ -241,7 +241,7 @@ func newTestIngressAppMinder() *minder.AppMinder {
 	minder := &minder.AppMinder{
 		Context:               context.Background(),
 		Flag:                  &flag.Flag{HubInprocMode: true},
-		App:                   appInfo,
+		CurrentApp:            appInfo,
 		InprocFlag:            &internalapp.InternalInprocFlag{Enabled: true},
 		RegistryServiceClient: &_IngressRegistryServiceClient{},
 	}

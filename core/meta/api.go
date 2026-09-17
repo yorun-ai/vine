@@ -9,6 +9,11 @@ import (
 // App identifies one running application instance.
 type App = internalmeta.App
 
+// CurrentApp identifies the application instance that owns the component graph
+// it is injected into. APIs that accept any application identity take App
+// instead.
+type CurrentApp = internalmeta.CurrentApp
+
 // Context combines a Go context with Vine trace, initiator, and actor metadata.
 type Context = internalmeta.Context
 

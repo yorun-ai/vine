@@ -27,7 +27,7 @@ func TestAppImplStartInprocServerAllowsEmptyEndpointWithoutInprocRoutes(t *testi
 	app := newApp(&testInternalAppSpec{
 		AppFlag: &RunFlag{},
 		InternalAttrs: InternalAttributes{
-			Info: testRuntimeApp{
+			CurrentApp: testRuntimeApp{
 				name:       "test.portal",
 				version:    "1.2.3",
 				instanceID: "00000000-0000-0000-0000-000000000123",
@@ -85,7 +85,7 @@ func TestAppImplStartRegistersWebberInprocRoutes(t *testing.T) {
 		app.stopInprocServer()
 	})
 
-	endpoint := webinproc.Endpoint(coreapp.InprocHostPath(app.info.InstanceId()), "/web/access")
+	endpoint := webinproc.Endpoint(coreapp.InprocHostPath(app.currentApp.InstanceId()), "/web/access")
 	req := newTestWebRequest("/web/access/demo.user.TestUniqueRouteWeb/ping")
 	resp, err := webinproc.RoundTrip(endpoint, req)
 	if err != nil {
@@ -113,7 +113,7 @@ func TestAppImplStopUnregistersWebberInprocRoutes(t *testing.T) {
 	app.initInjector()
 	app.initServers()
 	app.startInprocServer()
-	endpoint := webinproc.Endpoint(coreapp.InprocHostPath(app.info.InstanceId()), "/web/access")
+	endpoint := webinproc.Endpoint(coreapp.InprocHostPath(app.currentApp.InstanceId()), "/web/access")
 	app.stopInprocServer()
 
 	req := httptest.NewRequest(http.MethodGet, "/web/access/demo.user.TestUniqueRouteWeb/ping", nil)
@@ -137,7 +137,7 @@ func TestAppImplStartInprocServerRegistersConsoleInprocRoute(t *testing.T) {
 		app.stopInprocServer()
 	})
 
-	endpoint := rpcinproc.Endpoint(coreapp.InprocHostPath(app.info.InstanceId()), coreapp.PathConsole)
+	endpoint := rpcinproc.Endpoint(coreapp.InprocHostPath(app.currentApp.InstanceId()), coreapp.PathConsole)
 	client := appskeled.NewConsoleServiceClientER(newTestInprocRpcClient(app, endpoint))
 	if err := client.Ping(); err != nil {
 		t.Fatalf("Ping() error = %v", err)
@@ -162,7 +162,7 @@ func TestAppImplStartInprocServerRegistersEventerInprocRoute(t *testing.T) {
 		app.stopInprocServer()
 	})
 
-	endpoint := rpcinproc.Endpoint(coreapp.InprocHostPath(app.info.InstanceId()), coreapp.PathEvent)
+	endpoint := rpcinproc.Endpoint(coreapp.InprocHostPath(app.currentApp.InstanceId()), coreapp.PathEvent)
 	client := appskeled.NewEventServiceClientER(newTestInprocRpcClient(app, endpoint))
 	err := client.OnEvent(appskeled.EventOn{
 		Metadata: appskeled.EventOnMeta{
@@ -201,7 +201,7 @@ func TestAppImplStartInprocServerRegistersTaskerInprocRoute(t *testing.T) {
 		app.stopInprocServer()
 	})
 
-	endpoint := rpcinproc.Endpoint(coreapp.InprocHostPath(app.info.InstanceId()), coreapp.PathTask)
+	endpoint := rpcinproc.Endpoint(coreapp.InprocHostPath(app.currentApp.InstanceId()), coreapp.PathTask)
 	client := appskeled.NewTaskServiceClientER(newTestInprocRpcClient(app, endpoint))
 	err := client.RunTask(appskeled.TaskRun{
 		Metadata: appskeled.TaskRunMeta{
@@ -227,7 +227,7 @@ func newTestInprocRpcClient(app *_AppImpl, endpoint string) *rpcclient.Client {
 	actor := meta.NewAbsentActor()
 	return rpcclient.New(rpcclient.Option{
 		Context:        meta.NewContext(context.Background(), meta.InitialTrace(), nil, actor),
-		ClientApp:      app.info,
+		ClientApp:      app.currentApp,
 		Logger:         logger.New("vine:test"),
 		ServerEndpoint: endpoint,
 	})
