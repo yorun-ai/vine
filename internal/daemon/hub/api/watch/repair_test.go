@@ -25,19 +25,19 @@ func (c *_EndpointTestClient) InitOption(option *watch.Option) {
 	option.Password = watch.LinkPassword
 }
 
-type _eventLog struct {
+type _EventLog struct {
 	mutex  sync.Mutex
 	events []watch.Event
 }
 
-func (l *_eventLog) append(event watch.Event) {
+func (l *_EventLog) append(event watch.Event) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
 	l.events = append(l.events, event)
 }
 
-func (l *_eventLog) has(kind string, key string, value string) func() bool {
+func (l *_EventLog) has(kind string, key string, value string) func() bool {
 	return func() bool {
 		l.mutex.Lock()
 		defer l.mutex.Unlock()
@@ -78,7 +78,7 @@ func TestRepairEndpointResubscribesWatchersToNewHub(t *testing.T) {
 	manager.InitComponent(client)
 	t.Cleanup(manager.AfterAppStop)
 
-	events := new(_eventLog)
+	events := new(_EventLog)
 	valuesByKey, subscription := client.LoadListAndSubscribe(t.Context(), "rpc:test:endpoint", events.append)
 	subscription.Start()
 	assert.Empty(t, valuesByKey)
@@ -111,7 +111,7 @@ func TestRepairFailureKeepsSubscriptionsAndCanRetry(t *testing.T) {
 	manager := &watch.ClientManager{Context: t.Context()}
 	manager.InitComponent(client)
 	t.Cleanup(manager.AfterAppStop)
-	events := new(_eventLog)
+	events := new(_EventLog)
 	_, sub := client.LoadListAndSubscribe(t.Context(), "rpc:test:endpoint", events.append)
 	sub.Start()
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
@@ -135,10 +135,10 @@ func TestSubscribeDuringEndpointReplacement(t *testing.T) {
 	manager := &watch.ClientManager{Context: t.Context()}
 	manager.InitComponent(client)
 	t.Cleanup(manager.AfterAppStop)
-	logs := make([]*_eventLog, 20)
+	logs := make([]*_EventLog, 20)
 	var group sync.WaitGroup
 	for i := range logs {
-		logs[i] = new(_eventLog)
+		logs[i] = new(_EventLog)
 		group.Go(func() {
 			_, subscription := client.LoadListAndSubscribe(t.Context(), "rpc:test:endpoint", logs[i].append)
 			subscription.Start()

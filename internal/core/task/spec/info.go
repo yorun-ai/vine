@@ -35,7 +35,7 @@ type TriggerInfo interface {
 	ValidateArguments(arguments any) error
 }
 
-type _emptyArguments struct{}
+type _EmptyArguments struct{}
 
 type TaskSpec struct {
 	Name     string
@@ -188,7 +188,7 @@ func (ti *_TriggerInfo) HasArguments() bool {
 
 func (ti *_TriggerInfo) NewArguments() any {
 	if !ti.HasArguments() {
-		return &_emptyArguments{}
+		return &_EmptyArguments{}
 	}
 	return reflect.New(ti.argumentsType).Interface()
 }

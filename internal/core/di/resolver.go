@@ -150,7 +150,7 @@ func (r *_TransientResolver) GetInstance(stack _BuildStack, requestedType reflec
 	return instance, r.bound.BuildDisposeFunc(instance)
 }
 
-type _abstractPersistedEntry struct {
+type _AbstractPersistedEntry struct {
 	once        goutil.RecoverableOnce
 	disposeOnce sync.Once
 	instance    reflect.Value
@@ -159,7 +159,7 @@ type _abstractPersistedEntry struct {
 
 type _AbstractResolver struct {
 	bound   *_Bound
-	storage *vmap.MutexMap[reflect.Type, *_abstractPersistedEntry]
+	storage *vmap.MutexMap[reflect.Type, *_AbstractPersistedEntry]
 
 	fallbackScope   Scope
 	instantiateFunc _InstantiateFunc
@@ -168,7 +168,7 @@ type _AbstractResolver struct {
 func newAbstractResolver(bound *_Bound, injector *_BaseInjector, fallbackScope Scope) *_AbstractResolver {
 	return &_AbstractResolver{
 		bound:           bound,
-		storage:         vmap.NewMutexMap[reflect.Type, *_abstractPersistedEntry](),
+		storage:         vmap.NewMutexMap[reflect.Type, *_AbstractPersistedEntry](),
 		fallbackScope:   fallbackScope,
 		instantiateFunc: bound.BuildInstantiateFunc(injector),
 	}
@@ -195,12 +195,12 @@ func (r *_AbstractResolver) GetInstance(stack _BuildStack, requestedType reflect
 	return reflect.Value{}, emptyDispose
 }
 
-func (r *_AbstractResolver) getEntry(requestedType reflect.Type) *_abstractPersistedEntry {
-	entry, _ := r.storage.LoadOrStore(requestedType, &_abstractPersistedEntry{})
+func (r *_AbstractResolver) getEntry(requestedType reflect.Type) *_AbstractPersistedEntry {
+	entry, _ := r.storage.LoadOrStore(requestedType, &_AbstractPersistedEntry{})
 	return entry
 }
 
-func (e *_abstractPersistedEntry) dispose() {
+func (e *_AbstractPersistedEntry) dispose() {
 	e.disposeOnce.Do(func() {
 		if e.disposeFunc != nil {
 			e.disposeFunc()
