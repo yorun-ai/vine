@@ -63,7 +63,12 @@ func (s *Server) SetAccessor(accessor Accessor) {
 	s.accessor = accessor
 }
 
+// Routes serves the mount root and every path below it. Embed Server by value
+// in the Web handler so its Serve method belongs to the registered handler type.
 func (s *Server) Routes(r *spec.Router) {
+	if r.BasePath() != "/" {
+		r.ANY("", s.Serve)
+	}
 	r.ANY("/*path", s.Serve)
 }
 
