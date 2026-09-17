@@ -52,14 +52,14 @@ type MethodSpec struct {
 	SkelName string
 
 	ArgumentsType reflect.Type
-	// CloneArguments returns a value-isolated copy of generated arguments for
-	// in-process Rpc. It need not reproduce transport encoding, normalization,
-	// or custom marshaling behavior. It is required when ArgumentsType is set.
+	// Deprecated: the runtime clones in-process arguments from ArgumentsType,
+	// and it ignores this hook. Generated code may still set it until skelc
+	// stops emitting clone hooks.
 	CloneArguments func(any) any
 	ResultType     reflect.Type
-	// CloneResult returns a value-isolated copy of a generated result for
-	// in-process Rpc. It need not reproduce transport encoding, normalization,
-	// or custom marshaling behavior. It is required when ResultType is set.
+	// Deprecated: the runtime clones in-process results from ResultType, and it
+	// ignores this hook. Generated code may still set it until skelc stops
+	// emitting clone hooks.
 	CloneResult                 func(any) any
 	ArgumentsSensitive          bool
 	ResultSensitive             bool

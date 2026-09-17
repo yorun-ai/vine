@@ -13,7 +13,7 @@ type inprocCloneArguments struct {
 	Payload inprocClonePayload `json:"payload" skel:"index(0)"`
 }
 
-func TestCloneInprocRequestArgumentsUsesMethodClone(t *testing.T) {
+func TestCloneInprocRequestArgumentsIgnoresMethodClone(t *testing.T) {
 	cloneCalls := 0
 	methodInfo := ConvertSpecToInfoForTest(new(ServiceSpec{
 		Name:     "InprocCloneService",
@@ -24,10 +24,7 @@ func TestCloneInprocRequestArgumentsUsesMethodClone(t *testing.T) {
 			ArgumentsType: reflect.TypeFor[inprocCloneArguments](),
 			CloneArguments: func(value any) any {
 				cloneCalls++
-				arguments := value.(*inprocCloneArguments)
-				return &inprocCloneArguments{
-					Payload: inprocClonePayload{Names: append([]string(nil), arguments.Payload.Names...)},
-				}
+				return value
 			},
 		}},
 	})).Methods()[0]
@@ -35,16 +32,19 @@ func TestCloneInprocRequestArgumentsUsesMethodClone(t *testing.T) {
 
 	cloned := CloneInprocRequestArguments(arguments, methodInfo).(*inprocCloneArguments)
 
-	if cloneCalls != 1 {
-		t.Fatalf("CloneArguments call count = %d, want 1", cloneCalls)
+	if cloneCalls != 0 {
+		t.Fatalf("CloneArguments call count = %d, want 0", cloneCalls)
+	}
+	if cloned == arguments {
+		t.Fatal("runtime clone returned the caller-owned value")
 	}
 	cloned.Payload.Names[0] = "changed"
 	if arguments.Payload.Names[0] != "vine" {
-		t.Fatalf("generated clone did not isolate arguments: %#v", arguments.Payload.Names)
+		t.Fatalf("runtime clone did not isolate arguments: %#v", arguments.Payload.Names)
 	}
 }
 
-func TestCloneInprocResponseResultUsesMethodClone(t *testing.T) {
+func TestCloneInprocResponseResultIgnoresMethodClone(t *testing.T) {
 	cloneCalls := 0
 	methodInfo := ConvertSpecToInfoForTest(new(ServiceSpec{
 		Name:     "InprocCloneService",
@@ -55,8 +55,7 @@ func TestCloneInprocResponseResultUsesMethodClone(t *testing.T) {
 			ResultType: reflect.TypeFor[inprocClonePayload](),
 			CloneResult: func(value any) any {
 				cloneCalls++
-				result := value.(inprocClonePayload)
-				return inprocClonePayload{Names: append([]string(nil), result.Names...)}
+				return value
 			},
 		}},
 	})).Methods()[0]
@@ -64,11 +63,11 @@ func TestCloneInprocResponseResultUsesMethodClone(t *testing.T) {
 
 	cloned := CloneInprocResponseResult(result, methodInfo).(inprocClonePayload)
 
-	if cloneCalls != 1 {
-		t.Fatalf("CloneResult call count = %d, want 1", cloneCalls)
+	if cloneCalls != 0 {
+		t.Fatalf("CloneResult call count = %d, want 0", cloneCalls)
 	}
 	cloned.Names[0] = "changed"
 	if result.Names[0] != "vine" {
-		t.Fatalf("generated clone did not isolate result: %#v", result.Names)
+		t.Fatalf("runtime clone did not isolate result: %#v", result.Names)
 	}
 }
