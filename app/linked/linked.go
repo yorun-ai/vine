@@ -1,7 +1,6 @@
 package linked
 
 import (
-	ucli "github.com/urfave/cli/v3"
 	"go.yorun.ai/vine/app"
 	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/appcli"
@@ -16,28 +15,6 @@ type _App struct {
 
 	link app.App
 	apps []app.App
-}
-
-// Option configures the Hub connection and ingress listener for linked mode.
-type Option struct {
-	// HubEndpoint is the API endpoint of the external Hub.
-	HubEndpoint string
-	// IngressListen is the address on which the in-process Link accepts application traffic.
-	IngressListen string
-	// MTLSCAFile is the CA certificate used to authenticate Vine backend components.
-	MTLSCAFile string
-	// MTLSCertFile is the in-process Link's X.509-SVID certificate.
-	MTLSCertFile string
-	// MTLSKeyFile is the private key for the in-process Link's certificate.
-	MTLSKeyFile string
-}
-
-func (o Option) isZero() bool {
-	return o.HubEndpoint == "" &&
-		o.IngressListen == "" &&
-		o.MTLSCAFile == "" &&
-		o.MTLSCertFile == "" &&
-		o.MTLSKeyFile == ""
 }
 
 // New constructs an application and an in-process Link connected to an external Hub.
@@ -72,8 +49,10 @@ func NewBundledWithOption(option Option, apps ...app.App) app.App {
 	return bundle
 }
 
+// Name reports the mode this bundle starts: the applications it holds keep their
+// own names.
 func (*_App) Name() string {
-	return ""
+	return "linked"
 }
 
 func (a *_App) Start() {
@@ -100,22 +79,6 @@ func (a *_App) StartAndWait() {
 	a.StopGracefully()
 }
 
-const (
-	// The business binary carries no command that could scope the Link parameters
-	// it accepts, so its flags and environment variables name the link explicitly.
-	flagHubEndpoint   = "link-hub-endpoint"
-	flagIngressListen = "link-ingress-listen"
-	flagMTLSCAFile    = "link-mtls-ca-file"
-	flagMTLSCertFile  = "link-mtls-cert-file"
-	flagMTLSKeyFile   = "link-mtls-key-file"
-
-	envHubEndpoint   = "VINE_LINK_HUB_ENDPOINT"
-	envIngressListen = "VINE_LINK_INGRESS_LISTEN"
-	envMTLSCAFile    = "VINE_LINK_MTLS_CA_FILE"
-	envMTLSCertFile  = "VINE_LINK_MTLS_CERT_FILE"
-	envMTLSKeyFile   = "VINE_LINK_MTLS_KEY_FILE"
-)
-
 func startLink(option Option) app.App {
 	flag := &linkflag.Flag{}
 	appcli.Handle(flags(flag)...)
@@ -124,57 +87,4 @@ func startLink(option Option) app.App {
 	link := internalapp.NewInternalInproc[*linkapp.LinkApp](internalapp.With(flag))
 	link.Start()
 	return link
-}
-
-func flags(flag *linkflag.Flag) []ucli.Flag {
-	return []ucli.Flag{
-		&ucli.StringFlag{
-			Name:        flagHubEndpoint,
-			Sources:     ucli.EnvVars(envHubEndpoint),
-			Usage:       "Hub API endpoint",
-			Destination: &flag.HubEndpoint,
-		},
-		&ucli.StringFlag{
-			Name:        flagIngressListen,
-			Sources:     ucli.EnvVars(envIngressListen),
-			Usage:       "in-process Link ingress listen address",
-			Destination: &flag.IngressListen,
-		},
-		&ucli.StringFlag{
-			Name:        flagMTLSCAFile,
-			Sources:     ucli.EnvVars(envMTLSCAFile),
-			Usage:       "Vine backend mTLS CA certificate file for the in-process Link",
-			Destination: &flag.MTLS.CAFile,
-		},
-		&ucli.StringFlag{
-			Name:        flagMTLSCertFile,
-			Sources:     ucli.EnvVars(envMTLSCertFile),
-			Usage:       "the in-process Link's mTLS certificate file",
-			Destination: &flag.MTLS.CertFile,
-		},
-		&ucli.StringFlag{
-			Name:        flagMTLSKeyFile,
-			Sources:     ucli.EnvVars(envMTLSKeyFile),
-			Usage:       "the in-process Link's mTLS private key file",
-			Destination: &flag.MTLS.KeyFile,
-		},
-	}
-}
-
-func applyOption(flag *linkflag.Flag, option Option) {
-	if option.HubEndpoint != "" {
-		flag.HubEndpoint = option.HubEndpoint
-	}
-	if option.IngressListen != "" {
-		flag.IngressListen = option.IngressListen
-	}
-	if option.MTLSCAFile != "" {
-		flag.MTLS.CAFile = option.MTLSCAFile
-	}
-	if option.MTLSCertFile != "" {
-		flag.MTLS.CertFile = option.MTLSCertFile
-	}
-	if option.MTLSKeyFile != "" {
-		flag.MTLS.KeyFile = option.MTLSKeyFile
-	}
 }

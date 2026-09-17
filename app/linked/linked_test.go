@@ -101,11 +101,11 @@ func TestFlagsParseHubEndpointAndIngressListenFromEnv(t *testing.T) {
 	prevArgs := os.Args
 	t.Cleanup(func() { os.Args = prevArgs })
 	os.Args = []string{"/tmp/vine"}
-	t.Setenv(envHubEndpoint, "http://10.0.0.9:7071")
-	t.Setenv(envIngressListen, "127.0.0.1:9090")
-	t.Setenv(envMTLSCAFile, "/tmp/env-ca.pem")
-	t.Setenv(envMTLSCertFile, "/tmp/env-link.pem")
-	t.Setenv(envMTLSKeyFile, "/tmp/env-link-key.pem")
+	t.Setenv(EnvHubEndpoint, "http://10.0.0.9:7071")
+	t.Setenv(EnvIngressListen, "127.0.0.1:9090")
+	t.Setenv(EnvMTLSCAFile, "/tmp/env-ca.pem")
+	t.Setenv(EnvMTLSCertFile, "/tmp/env-link.pem")
+	t.Setenv(EnvMTLSKeyFile, "/tmp/env-link-key.pem")
 
 	flag := &linkflag.Flag{}
 	appcli.Handle(flags(flag)...)
