@@ -6,6 +6,21 @@ The project follows [Semantic Versioning](https://semver.org/). The public
 version history starts at `v0.9.0`; versions from the former private repository
 are not part of the public compatibility commitment.
 
+## [Unreleased]
+
+## [0.20.1] - 2026-09-17
+
+### Added
+
+- `util/vbean.DeepClone` returns a copy of a generated data bean whose exported
+  reference fields are isolated from the source value. Pointers are reallocated,
+  slices, arrays, maps and nested beans are deep copied, nil pointers, slices,
+  maps and interfaces stay nil, and non-nil empty collections stay empty.
+  Scalars, enums and beans without reference fields copy as plain values.
+  Unexported fields follow Go assignment semantics and stay shared with the
+  source, and values with pointer cycles are copied as-is. Clone plans are
+  cached per Go type, so repeated clones of the same type pay no type analysis.
+
 ## [0.20.0] - 2026-09-17
 
 ### Added
