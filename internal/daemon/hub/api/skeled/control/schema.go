@@ -13,747 +13,117 @@ var _DomainSchema = &skel.DomainSchema{
 	Description: "Internal control API for Link and Portal",
 	Hash:        "4529348e",
 	Full:        true,
-	Generated: &skel.GeneratedInfo{
-		CompilerVersion: "v0.20.0",
-	},
+	Generated:   &skel.GeneratedInfo{CompilerVersion: "v0.21.0"},
 
 	Data: []*skel.DataSchema{
-		{
-			Name:        "AppRegistration",
-			SkelName:    "vine.hub.control.AppRegistration",
-			Description: "Link application instance information registered with Hub",
-			Hash:        "2569befb",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Application name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "instanceId",
-					Description: "Application instance ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarUuid,
-					},
-				},
-				{
-					Name:        "version",
-					Description: "Application version",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "endpoint",
-					Description: "Application access address",
-					Example:     "\"http://10.1.2.3:23001\"",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "serviceHandlers",
-					Description: "List of Rpc service processing capabilities provided by the application",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "ServiceHandlerRegistration",
-							SkelName: "vine.hub.control.ServiceHandlerRegistration",
-						},
-					},
-				},
-				{
-					Name:        "webHandlers",
-					Description: "List of web processing capabilities provided by the application",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "WebHandlerRegistration",
-							SkelName: "vine.hub.control.WebHandlerRegistration",
-						},
-					},
-				},
-				{
-					Name:        "eventListeners",
-					Description: "List of event listening capabilities provided by the application",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "EventListenerRegistration",
-							SkelName: "vine.hub.control.EventListenerRegistration",
-						},
-					},
-				},
-				{
-					Name:        "taskRunners",
-					Description: "List of task execution capabilities provided by the application",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "TaskRunnerRegistration",
-							SkelName: "vine.hub.control.TaskRunnerRegistration",
-						},
-					},
-				},
-				{
-					Name:        "domainSchemas",
-					Description: "List of all DomainSchemas registered by the application",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:   skel.TypeKindScalar,
-							Scalar: skel.ScalarJson,
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "AppStatus",
-			SkelName:    "vine.hub.control.AppStatus",
-			Description: "Application instance status information, used for heartbeat refresh",
-			Hash:        "72939602",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "name",
-					Description: "Application name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "instanceId",
-					Description: "Application instance ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarUuid,
-					},
-				},
-			},
-		},
-		{
-			Name:        "EventListenerRegistration",
-			SkelName:    "vine.hub.control.EventListenerRegistration",
-			Description: "Event listening capability registration information provided by the application",
-			Hash:        "690c1407",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "eventSkelName",
-					Description: "Event Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Event schema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "timeoutMs",
-					Description: "Execution timeout, in milliseconds",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "concurrency",
-					Description: "Maximum concurrency",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "noRetry",
-					Description: "Whether to disallow retrying after failure",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "Info",
-			SkelName:    "vine.hub.control.Info",
-			Description: "Hub information",
-			Hash:        "64a3f6c4",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "version",
-					Description: "Hub Vine runtime version",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "apiPort",
-					Description: "Control API service port",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "watchPort",
-					Description: "Configuration and service discovery watch port",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "mqEmbedded",
-					Description: "Whether MQ is embedded in Hub",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "mqNatsPort",
-					Description: "Embedded NATS service port",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "mqNatsEndpoint",
-					Description: "External NATS service endpoint",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "lockMode",
-					Description: "Lock mode: embedded, redis or disable",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "lockRedisEndpoint",
-					Description: "External Redis endpoint for locks",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:             "redisPort",
-					Description:      "Redis service port",
-					Deprecated:       true,
-					DeprecatedReason: "Use watchPort instead",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:             "natsPort",
-					Description:      "NATS service port",
-					Deprecated:       true,
-					DeprecatedReason: "Use mqNatsPort instead",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:             "mqEndpoint",
-					Description:      "External NATS service endpoint",
-					Deprecated:       true,
-					DeprecatedReason: "Use mqNatsEndpoint instead",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalRegistration",
-			SkelName:    "vine.hub.control.PortalRegistration",
-			Description: "Portal instance registration information provided by Portal",
-			Hash:        "5a987267",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "instanceId",
-					Description: "Portal instance ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarUuid,
-					},
-				},
-				{
-					Name:        "version",
-					Description: "Portal Vine runtime version",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalStatus",
-			SkelName:    "vine.hub.control.PortalStatus",
-			Description: "Portal instance status information, used for heartbeat refresh",
-			Hash:        "e8c669a5",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "instanceId",
-					Description: "Portal instance ID",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarUuid,
-					},
-				},
-			},
-		},
-		{
-			Name:        "ServiceHandlerRegistration",
-			SkelName:    "vine.hub.control.ServiceHandlerRegistration",
-			Description: "Rpc service processing capability registration information provided by the application",
-			Hash:        "3928d52a",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "serviceSkelName",
-					Description: "Service Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Service schema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "endpoint",
-					Description: "Service agent access address",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "TaskRunnerCronScheduler",
-			SkelName:    "vine.hub.control.TaskRunnerCronScheduler",
-			Description: "Task execution Cron schedule",
-			Hash:        "d39e62de",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "triggerSkelName",
-					Description: "Trigger Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "cronExpr",
-					Description: "Cron expression",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
-		{
-			Name:        "TaskRunnerRegistration",
-			SkelName:    "vine.hub.control.TaskRunnerRegistration",
-			Description: "Task execution capability registration information provided by the application",
-			Hash:        "84566b62",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "taskSkelName",
-					Description: "Task Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Task schema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "timeoutMs",
-					Description: "Execution timeout, in milliseconds",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "concurrency",
-					Description: "Maximum concurrency",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarInt,
-					},
-				},
-				{
-					Name:        "noRetry",
-					Description: "Whether to disallow retrying after failure",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "cronSchedulers",
-					Description: "Cron schedule list",
-					Type: &skel.TypeSchema{
-						Kind: skel.TypeKindList,
-						Element: &skel.TypeSchema{
-							Kind:     skel.TypeKindData,
-							Name:     "TaskRunnerCronScheduler",
-							SkelName: "vine.hub.control.TaskRunnerCronScheduler",
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "WebHandlerRegistration",
-			SkelName:    "vine.hub.control.WebHandlerRegistration",
-			Description: "Web processing capability registration information provided by the application",
-			Hash:        "14bd9ab2",
-			Members: []*skel.MemberSchema{
-				{
-					Name:        "webSkelName",
-					Description: "Web Skel name",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "schemaHash",
-					Description: "Web schema hash",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-				{
-					Name:        "endpoint",
-					Description: "Web proxy access address",
-					Type: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarString,
-					},
-				},
-			},
-		},
+		{Name: "AppRegistration", SkelName: "vine.hub.control.AppRegistration", Description: "Link application instance information registered with Hub", Hash: "2569befb", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Application name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "instanceId", Description: "Application instance ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarUuid}},
+			{Name: "version", Description: "Application version", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "endpoint", Description: "Application access address", Example: "\"http://10.1.2.3:23001\"", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "serviceHandlers", Description: "List of Rpc service processing capabilities provided by the application", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "ServiceHandlerRegistration", SkelName: "vine.hub.control.ServiceHandlerRegistration"}}},
+			{Name: "webHandlers", Description: "List of web processing capabilities provided by the application", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "WebHandlerRegistration", SkelName: "vine.hub.control.WebHandlerRegistration"}}},
+			{Name: "eventListeners", Description: "List of event listening capabilities provided by the application", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "EventListenerRegistration", SkelName: "vine.hub.control.EventListenerRegistration"}}},
+			{Name: "taskRunners", Description: "List of task execution capabilities provided by the application", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "TaskRunnerRegistration", SkelName: "vine.hub.control.TaskRunnerRegistration"}}},
+			{Name: "domainSchemas", Description: "List of all DomainSchemas registered by the application", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarJson}}},
+		}},
+		{Name: "AppStatus", SkelName: "vine.hub.control.AppStatus", Description: "Application instance status information, used for heartbeat refresh", Hash: "72939602", Members: []*skel.MemberSchema{
+			{Name: "name", Description: "Application name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "instanceId", Description: "Application instance ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarUuid}},
+		}},
+		{Name: "EventListenerRegistration", SkelName: "vine.hub.control.EventListenerRegistration", Description: "Event listening capability registration information provided by the application", Hash: "690c1407", Members: []*skel.MemberSchema{
+			{Name: "eventSkelName", Description: "Event Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Event schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "timeoutMs", Description: "Execution timeout, in milliseconds", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "concurrency", Description: "Maximum concurrency", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "noRetry", Description: "Whether to disallow retrying after failure", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+		}},
+		{Name: "Info", SkelName: "vine.hub.control.Info", Description: "Hub information", Hash: "64a3f6c4", Members: []*skel.MemberSchema{
+			{Name: "version", Description: "Hub Vine runtime version", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "apiPort", Description: "Control API service port", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "watchPort", Description: "Configuration and service discovery watch port", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "mqEmbedded", Description: "Whether MQ is embedded in Hub", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "mqNatsPort", Description: "Embedded NATS service port", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "mqNatsEndpoint", Description: "External NATS service endpoint", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "lockMode", Description: "Lock mode: embedded, redis or disable", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "lockRedisEndpoint", Description: "External Redis endpoint for locks", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "redisPort", Description: "Redis service port", Deprecated: true, DeprecatedReason: "Use watchPort instead", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "natsPort", Description: "NATS service port", Deprecated: true, DeprecatedReason: "Use mqNatsPort instead", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "mqEndpoint", Description: "External NATS service endpoint", Deprecated: true, DeprecatedReason: "Use mqNatsEndpoint instead", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
+		{Name: "PortalRegistration", SkelName: "vine.hub.control.PortalRegistration", Description: "Portal instance registration information provided by Portal", Hash: "5a987267", Members: []*skel.MemberSchema{
+			{Name: "instanceId", Description: "Portal instance ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarUuid}},
+			{Name: "version", Description: "Portal Vine runtime version", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
+		{Name: "PortalStatus", SkelName: "vine.hub.control.PortalStatus", Description: "Portal instance status information, used for heartbeat refresh", Hash: "e8c669a5", Members: []*skel.MemberSchema{
+			{Name: "instanceId", Description: "Portal instance ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarUuid}},
+		}},
+		{Name: "ServiceHandlerRegistration", SkelName: "vine.hub.control.ServiceHandlerRegistration", Description: "Rpc service processing capability registration information provided by the application", Hash: "3928d52a", Members: []*skel.MemberSchema{
+			{Name: "serviceSkelName", Description: "Service Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Service schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "endpoint", Description: "Service agent access address", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
+		{Name: "TaskRunnerCronScheduler", SkelName: "vine.hub.control.TaskRunnerCronScheduler", Description: "Task execution Cron schedule", Hash: "d39e62de", Members: []*skel.MemberSchema{
+			{Name: "triggerSkelName", Description: "Trigger Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "cronExpr", Description: "Cron expression", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
+		{Name: "TaskRunnerRegistration", SkelName: "vine.hub.control.TaskRunnerRegistration", Description: "Task execution capability registration information provided by the application", Hash: "84566b62", Members: []*skel.MemberSchema{
+			{Name: "taskSkelName", Description: "Task Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Task schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "timeoutMs", Description: "Execution timeout, in milliseconds", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "concurrency", Description: "Maximum concurrency", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "noRetry", Description: "Whether to disallow retrying after failure", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "cronSchedulers", Description: "Cron schedule list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "TaskRunnerCronScheduler", SkelName: "vine.hub.control.TaskRunnerCronScheduler"}}},
+		}},
+		{Name: "WebHandlerRegistration", SkelName: "vine.hub.control.WebHandlerRegistration", Description: "Web processing capability registration information provided by the application", Hash: "14bd9ab2", Members: []*skel.MemberSchema{
+			{Name: "webSkelName", Description: "Web Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "schemaHash", Description: "Web schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "endpoint", Description: "Web proxy access address", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+		}},
 	},
 
 	Services: []*skel.ServiceSchema{
-		{
-			Name:        "InfoService",
-			SkelName:    "vine.hub.control.InfoService",
-			Description: "Hub's information service, called by Link",
-			Hash:        "1c4fd8ce",
-			Pub:         true,
-			AuthMode:    skel.AuthModeUnset,
-			Methods: []*skel.MethodSchema{
-				{
-					Name:              "getInfo",
-					SkelName:          "getInfo",
-					Description:       "Read Hub information",
-					Hash:              "7d949d6d",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Hub information",
-					ResultType: &skel.TypeSchema{
-						Kind:     skel.TypeKindData,
-						Name:     "Info",
-						SkelName: "vine.hub.control.Info",
-					},
-				},
-			},
-		},
-		{
-			Name:        "LockService",
-			SkelName:    "vine.hub.control.LockService",
-			Description: "Distributed lease lock service",
-			Hash:        "19321bbe",
-			Pub:         true,
-			AuthMode:    skel.AuthModeUnset,
-			Methods: []*skel.MethodSchema{
-				{
-					Name:        "acquire",
-					SkelName:    "acquire",
-					Description: "Acquire a lock using a unique attempt token",
-					Hash:        "f085a1e5",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name: "key",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name: "token",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name: "ttlMillis",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarInt,
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "renew",
-					SkelName:    "renew",
-					Description: "Renew a lock owned by the token",
-					Hash:        "1b8b3625",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name: "key",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name: "token",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name: "ttlMillis",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarInt,
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-				{
-					Name:        "release",
-					SkelName:    "release",
-					Description: "Release a lock owned by the token",
-					Hash:        "2da2617f",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name: "key",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name: "token",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "PortalRegistryService",
-			SkelName:    "vine.hub.control.PortalRegistryService",
-			Description: "Hub's Portal registration service, called by Portal",
-			Hash:        "d3a88a51",
-			Pub:         true,
-			AuthMode:    skel.AuthModeUnset,
-			Methods: []*skel.MethodSchema{
-				{
-					Name:        "register",
-					SkelName:    "register",
-					Description: "Register a Portal instance",
-					Hash:        "661d736c",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "registration",
-							Description: "Portal instance registration information",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
-								Name:     "PortalRegistration",
-								SkelName: "vine.hub.control.PortalRegistration",
-							},
-						},
-					},
-				},
-				{
-					Name:        "unregister",
-					SkelName:    "unregister",
-					Description: "Unregister a Portal instance",
-					Hash:        "9d4d34bf",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "instanceId",
-							Description: "Portal instance ID",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarUuid,
-							},
-						},
-					},
-				},
-				{
-					Name:              "heartbeat",
-					SkelName:          "heartbeat",
-					Description:       "Portal instance heartbeat",
-					Hash:              "f5ae4f0f",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Whether the current Portal instance is still registered in the Hub",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "status",
-							Description: "Portal instance status",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
-								Name:     "PortalStatus",
-								SkelName: "vine.hub.control.PortalStatus",
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
-		{
-			Name:        "RegistryService",
-			SkelName:    "vine.hub.control.RegistryService",
-			Description: "Hub's application registration service, called by Link",
-			Hash:        "bde422d8",
-			Pub:         true,
-			AuthMode:    skel.AuthModeUnset,
-			Methods: []*skel.MethodSchema{
-				{
-					Name:        "register",
-					SkelName:    "register",
-					Description: "Register application instance",
-					Hash:        "1f651461",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "registration",
-							Description: "Application instance registration information",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
-								Name:     "AppRegistration",
-								SkelName: "vine.hub.control.AppRegistration",
-							},
-						},
-					},
-				},
-				{
-					Name:        "unregister",
-					SkelName:    "unregister",
-					Description: "Unregister an application instance",
-					Hash:        "252099ac",
-					AuthMode:    skel.AuthModeUnset,
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "name",
-							Description: "Application name",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarString,
-							},
-						},
-						{
-							Name:        "instanceId",
-							Description: "Application instance ID",
-							Type: &skel.TypeSchema{
-								Kind:   skel.TypeKindScalar,
-								Scalar: skel.ScalarUuid,
-							},
-						},
-					},
-				},
-				{
-					Name:              "heartbeat",
-					SkelName:          "heartbeat",
-					Description:       "Application instance heartbeat",
-					Hash:              "1f40e708",
-					AuthMode:          skel.AuthModeUnset,
-					OutputDescription: "Whether the current instance is still registered in the Hub",
-					Arguments: []*skel.MemberSchema{
-						{
-							Name:        "status",
-							Description: "Application instance ID",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
-								Name:     "AppStatus",
-								SkelName: "vine.hub.control.AppStatus",
-							},
-						},
-					},
-					ResultType: &skel.TypeSchema{
-						Kind:   skel.TypeKindScalar,
-						Scalar: skel.ScalarBool,
-					},
-				},
-			},
-		},
+		{Name: "InfoService", SkelName: "vine.hub.control.InfoService", Description: "Hub's information service, called by Link", Hash: "1c4fd8ce", Pub: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+			{Name: "getInfo", SkelName: "getInfo", Description: "Read Hub information", Hash: "7d949d6d", AuthMode: skel.AuthModeUnset, OutputDescription: "Hub information", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "Info", SkelName: "vine.hub.control.Info"}},
+		}},
+		{Name: "LockService", SkelName: "vine.hub.control.LockService", Description: "Distributed lease lock service", Hash: "19321bbe", Pub: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+			{Name: "acquire", SkelName: "acquire", Description: "Acquire a lock using a unique attempt token", Hash: "f085a1e5", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}, Arguments: []*skel.MemberSchema{
+				{Name: "key", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+				{Name: "token", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+				{Name: "ttlMillis", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			}},
+			{Name: "renew", SkelName: "renew", Description: "Renew a lock owned by the token", Hash: "1b8b3625", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}, Arguments: []*skel.MemberSchema{
+				{Name: "key", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+				{Name: "token", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+				{Name: "ttlMillis", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			}},
+			{Name: "release", SkelName: "release", Description: "Release a lock owned by the token", Hash: "2da2617f", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}, Arguments: []*skel.MemberSchema{
+				{Name: "key", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+				{Name: "token", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			}},
+		}},
+		{Name: "PortalRegistryService", SkelName: "vine.hub.control.PortalRegistryService", Description: "Hub's Portal registration service, called by Portal", Hash: "d3a88a51", Pub: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+			{Name: "register", SkelName: "register", Description: "Register a Portal instance", Hash: "661d736c", AuthMode: skel.AuthModeUnset, Arguments: []*skel.MemberSchema{
+				{Name: "registration", Description: "Portal instance registration information", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalRegistration", SkelName: "vine.hub.control.PortalRegistration"}},
+			}},
+			{Name: "unregister", SkelName: "unregister", Description: "Unregister a Portal instance", Hash: "9d4d34bf", AuthMode: skel.AuthModeUnset, Arguments: []*skel.MemberSchema{
+				{Name: "instanceId", Description: "Portal instance ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarUuid}},
+			}},
+			{Name: "heartbeat", SkelName: "heartbeat", Description: "Portal instance heartbeat", Hash: "f5ae4f0f", AuthMode: skel.AuthModeUnset, OutputDescription: "Whether the current Portal instance is still registered in the Hub", ResultType: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}, Arguments: []*skel.MemberSchema{
+				{Name: "status", Description: "Portal instance status", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalStatus", SkelName: "vine.hub.control.PortalStatus"}},
+			}},
+		}},
+		{Name: "RegistryService", SkelName: "vine.hub.control.RegistryService", Description: "Hub's application registration service, called by Link", Hash: "bde422d8", Pub: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+			{Name: "register", SkelName: "register", Description: "Register application instance", Hash: "1f651461", AuthMode: skel.AuthModeUnset, Arguments: []*skel.MemberSchema{
+				{Name: "registration", Description: "Application instance registration information", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppRegistration", SkelName: "vine.hub.control.AppRegistration"}},
+			}},
+			{Name: "unregister", SkelName: "unregister", Description: "Unregister an application instance", Hash: "252099ac", AuthMode: skel.AuthModeUnset, Arguments: []*skel.MemberSchema{
+				{Name: "name", Description: "Application name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+				{Name: "instanceId", Description: "Application instance ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarUuid}},
+			}},
+			{Name: "heartbeat", SkelName: "heartbeat", Description: "Application instance heartbeat", Hash: "1f40e708", AuthMode: skel.AuthModeUnset, OutputDescription: "Whether the current instance is still registered in the Hub", ResultType: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}, Arguments: []*skel.MemberSchema{
+				{Name: "status", Description: "Application instance ID", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppStatus", SkelName: "vine.hub.control.AppStatus"}},
+			}},
+		}},
 	},
 }

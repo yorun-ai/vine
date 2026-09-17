@@ -44,9 +44,7 @@ var (
 		Name:                        "Ping",
 		SkelName:                    "ping",
 		ArgumentsType:               nil,
-		CloneArguments:              nil,
 		ResultType:                  nil,
-		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -188,17 +186,10 @@ var (
 		},
 	}
 	_EventServiceOnEventSpec = &rpcspec.MethodSpec{
-		Name:          "OnEvent",
-		SkelName:      "onEvent",
-		ArgumentsType: reflect.TypeFor[_EventServiceOnEventArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_EventServiceOnEventArguments)
-			cloned := *source
-			cloned.On = source.On.Clone()
-			return &cloned
-		},
+		Name:                        "OnEvent",
+		SkelName:                    "onEvent",
+		ArgumentsType:               reflect.TypeFor[_EventServiceOnEventArguments](),
 		ResultType:                  nil,
-		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -351,17 +342,10 @@ var (
 		},
 	}
 	_TaskServiceRunTaskSpec = &rpcspec.MethodSpec{
-		Name:          "RunTask",
-		SkelName:      "runTask",
-		ArgumentsType: reflect.TypeFor[_TaskServiceRunTaskArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_TaskServiceRunTaskArguments)
-			cloned := *source
-			cloned.Run = source.Run.Clone()
-			return &cloned
-		},
+		Name:                        "RunTask",
+		SkelName:                    "runTask",
+		ArgumentsType:               reflect.TypeFor[_TaskServiceRunTaskArguments](),
 		ResultType:                  nil,
-		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,

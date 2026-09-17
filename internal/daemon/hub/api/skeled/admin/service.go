@@ -45,16 +45,10 @@ var (
 		},
 	}
 	_AdminApiServiceReadOnlySpec = &rpcspec.MethodSpec{
-		Name:           "ReadOnly",
-		SkelName:       "readOnly",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[bool](),
-		CloneResult: func(value any) any {
-			source := value.(bool)
-			cloned := source
-			return cloned
-		},
+		Name:                        "ReadOnly",
+		SkelName:                    "readOnly",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[bool](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -153,24 +147,10 @@ var (
 		},
 	}
 	_AppConfigApiServiceListSpec = &rpcspec.MethodSpec{
-		Name:           "List",
-		SkelName:       "list",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]AppConfigListItem](),
-		CloneResult: func(value any) any {
-			source := value.([]AppConfigListItem)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]AppConfigListItem, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "List",
+		SkelName:                    "list",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]AppConfigListItem](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -181,21 +161,10 @@ var (
 		},
 	}
 	_AppConfigApiServiceGetSpec = &rpcspec.MethodSpec{
-		Name:          "Get",
-		SkelName:      "get",
-		ArgumentsType: reflect.TypeFor[_AppConfigApiServiceGetArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_AppConfigApiServiceGetArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[AppConfigItem](),
-		CloneResult: func(value any) any {
-			source := value.(AppConfigItem)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "Get",
+		SkelName:                    "get",
+		ArgumentsType:               reflect.TypeFor[_AppConfigApiServiceGetArguments](),
+		ResultType:                  reflect.TypeFor[AppConfigItem](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -206,22 +175,10 @@ var (
 		},
 	}
 	_AppConfigApiServiceUpdateSpec = &rpcspec.MethodSpec{
-		Name:          "Update",
-		SkelName:      "update",
-		ArgumentsType: reflect.TypeFor[_AppConfigApiServiceUpdateArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_AppConfigApiServiceUpdateArguments)
-			cloned := *source
-			cloned.Update = source.Update.Clone()
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[AppConfigItem](),
-		CloneResult: func(value any) any {
-			source := value.(AppConfigItem)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "Update",
+		SkelName:                    "update",
+		ArgumentsType:               reflect.TypeFor[_AppConfigApiServiceUpdateArguments](),
+		ResultType:                  reflect.TypeFor[AppConfigItem](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -232,22 +189,10 @@ var (
 		},
 	}
 	_AppConfigApiServiceCreateSpec = &rpcspec.MethodSpec{
-		Name:          "Create",
-		SkelName:      "create",
-		ArgumentsType: reflect.TypeFor[_AppConfigApiServiceCreateArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_AppConfigApiServiceCreateArguments)
-			cloned := *source
-			cloned.Creation = source.Creation.Clone()
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[AppConfigItem](),
-		CloneResult: func(value any) any {
-			source := value.(AppConfigItem)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "Create",
+		SkelName:                    "create",
+		ArgumentsType:               reflect.TypeFor[_AppConfigApiServiceCreateArguments](),
+		ResultType:                  reflect.TypeFor[AppConfigItem](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -258,20 +203,10 @@ var (
 		},
 	}
 	_AppConfigApiServiceRemoveSpec = &rpcspec.MethodSpec{
-		Name:          "Remove",
-		SkelName:      "remove",
-		ArgumentsType: reflect.TypeFor[_AppConfigApiServiceRemoveArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_AppConfigApiServiceRemoveArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[bool](),
-		CloneResult: func(value any) any {
-			source := value.(bool)
-			cloned := source
-			return cloned
-		},
+		Name:                        "Remove",
+		SkelName:                    "remove",
+		ArgumentsType:               reflect.TypeFor[_AppConfigApiServiceRemoveArguments](),
+		ResultType:                  reflect.TypeFor[bool](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -451,24 +386,10 @@ var (
 		},
 	}
 	_AppStatusApiServiceListSpec = &rpcspec.MethodSpec{
-		Name:           "List",
-		SkelName:       "list",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]AppStatusView](),
-		CloneResult: func(value any) any {
-			source := value.([]AppStatusView)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]AppStatusView, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "List",
+		SkelName:                    "list",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]AppStatusView](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -565,24 +486,10 @@ var (
 		},
 	}
 	_EventDebugApiServiceListEventsSpec = &rpcspec.MethodSpec{
-		Name:           "ListEvents",
-		SkelName:       "listEvents",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]EventDebugEventItem](),
-		CloneResult: func(value any) any {
-			source := value.([]EventDebugEventItem)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]EventDebugEventItem, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "ListEvents",
+		SkelName:                    "listEvents",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]EventDebugEventItem](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -593,21 +500,10 @@ var (
 		},
 	}
 	_EventDebugApiServiceBuildDefaultEmitRequestSpec = &rpcspec.MethodSpec{
-		Name:          "BuildDefaultEmitRequest",
-		SkelName:      "buildDefaultEmitRequest",
-		ArgumentsType: reflect.TypeFor[_EventDebugApiServiceBuildDefaultEmitRequestArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_EventDebugApiServiceBuildDefaultEmitRequestArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[EventDebugDefaultEmitRequest](),
-		CloneResult: func(value any) any {
-			source := value.(EventDebugDefaultEmitRequest)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "BuildDefaultEmitRequest",
+		SkelName:                    "buildDefaultEmitRequest",
+		ArgumentsType:               reflect.TypeFor[_EventDebugApiServiceBuildDefaultEmitRequestArguments](),
+		ResultType:                  reflect.TypeFor[EventDebugDefaultEmitRequest](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -618,17 +514,10 @@ var (
 		},
 	}
 	_EventDebugApiServiceEmitEventSpec = &rpcspec.MethodSpec{
-		Name:          "EmitEvent",
-		SkelName:      "emitEvent",
-		ArgumentsType: reflect.TypeFor[_EventDebugApiServiceEmitEventArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_EventDebugApiServiceEmitEventArguments)
-			cloned := *source
-			cloned.Request = source.Request.Clone()
-			return &cloned
-		},
+		Name:                        "EmitEvent",
+		SkelName:                    "emitEvent",
+		ArgumentsType:               reflect.TypeFor[_EventDebugApiServiceEmitEventArguments](),
 		ResultType:                  nil,
-		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -768,24 +657,10 @@ var (
 		},
 	}
 	_PortalCertApiServiceListSpec = &rpcspec.MethodSpec{
-		Name:           "List",
-		SkelName:       "list",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]PortalCertListItem](),
-		CloneResult: func(value any) any {
-			source := value.([]PortalCertListItem)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]PortalCertListItem, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "List",
+		SkelName:                    "list",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]PortalCertListItem](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -796,21 +671,10 @@ var (
 		},
 	}
 	_PortalCertApiServiceGetSpec = &rpcspec.MethodSpec{
-		Name:          "Get",
-		SkelName:      "get",
-		ArgumentsType: reflect.TypeFor[_PortalCertApiServiceGetArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_PortalCertApiServiceGetArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[PortalCert](),
-		CloneResult: func(value any) any {
-			source := value.(PortalCert)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "Get",
+		SkelName:                    "get",
+		ArgumentsType:               reflect.TypeFor[_PortalCertApiServiceGetArguments](),
+		ResultType:                  reflect.TypeFor[PortalCert](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -821,22 +685,10 @@ var (
 		},
 	}
 	_PortalCertApiServiceCreateSpec = &rpcspec.MethodSpec{
-		Name:          "Create",
-		SkelName:      "create",
-		ArgumentsType: reflect.TypeFor[_PortalCertApiServiceCreateArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_PortalCertApiServiceCreateArguments)
-			cloned := *source
-			cloned.Creation = source.Creation.Clone()
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[PortalCert](),
-		CloneResult: func(value any) any {
-			source := value.(PortalCert)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "Create",
+		SkelName:                    "create",
+		ArgumentsType:               reflect.TypeFor[_PortalCertApiServiceCreateArguments](),
+		ResultType:                  reflect.TypeFor[PortalCert](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -847,22 +699,10 @@ var (
 		},
 	}
 	_PortalCertApiServiceUpdateSpec = &rpcspec.MethodSpec{
-		Name:          "Update",
-		SkelName:      "update",
-		ArgumentsType: reflect.TypeFor[_PortalCertApiServiceUpdateArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_PortalCertApiServiceUpdateArguments)
-			cloned := *source
-			cloned.Update = source.Update.Clone()
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[PortalCert](),
-		CloneResult: func(value any) any {
-			source := value.(PortalCert)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "Update",
+		SkelName:                    "update",
+		ArgumentsType:               reflect.TypeFor[_PortalCertApiServiceUpdateArguments](),
+		ResultType:                  reflect.TypeFor[PortalCert](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -873,16 +713,10 @@ var (
 		},
 	}
 	_PortalCertApiServiceRemoveSpec = &rpcspec.MethodSpec{
-		Name:          "Remove",
-		SkelName:      "remove",
-		ArgumentsType: reflect.TypeFor[_PortalCertApiServiceRemoveArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_PortalCertApiServiceRemoveArguments)
-			cloned := *source
-			return &cloned
-		},
+		Name:                        "Remove",
+		SkelName:                    "remove",
+		ArgumentsType:               reflect.TypeFor[_PortalCertApiServiceRemoveArguments](),
 		ResultType:                  nil,
-		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1063,24 +897,10 @@ var (
 		},
 	}
 	_PortalEntryApiServiceListSpec = &rpcspec.MethodSpec{
-		Name:           "List",
-		SkelName:       "list",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]PortalEntry](),
-		CloneResult: func(value any) any {
-			source := value.([]PortalEntry)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]PortalEntry, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "List",
+		SkelName:                    "list",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]PortalEntry](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1091,22 +911,10 @@ var (
 		},
 	}
 	_PortalEntryApiServiceCreateSpec = &rpcspec.MethodSpec{
-		Name:          "Create",
-		SkelName:      "create",
-		ArgumentsType: reflect.TypeFor[_PortalEntryApiServiceCreateArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_PortalEntryApiServiceCreateArguments)
-			cloned := *source
-			cloned.Creation = source.Creation.Clone()
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[PortalEntry](),
-		CloneResult: func(value any) any {
-			source := value.(PortalEntry)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "Create",
+		SkelName:                    "create",
+		ArgumentsType:               reflect.TypeFor[_PortalEntryApiServiceCreateArguments](),
+		ResultType:                  reflect.TypeFor[PortalEntry](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1117,22 +925,10 @@ var (
 		},
 	}
 	_PortalEntryApiServiceUpdateSpec = &rpcspec.MethodSpec{
-		Name:          "Update",
-		SkelName:      "update",
-		ArgumentsType: reflect.TypeFor[_PortalEntryApiServiceUpdateArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_PortalEntryApiServiceUpdateArguments)
-			cloned := *source
-			cloned.Update = source.Update.Clone()
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[PortalEntry](),
-		CloneResult: func(value any) any {
-			source := value.(PortalEntry)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "Update",
+		SkelName:                    "update",
+		ArgumentsType:               reflect.TypeFor[_PortalEntryApiServiceUpdateArguments](),
+		ResultType:                  reflect.TypeFor[PortalEntry](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1143,16 +939,10 @@ var (
 		},
 	}
 	_PortalEntryApiServiceRemoveSpec = &rpcspec.MethodSpec{
-		Name:          "Remove",
-		SkelName:      "remove",
-		ArgumentsType: reflect.TypeFor[_PortalEntryApiServiceRemoveArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_PortalEntryApiServiceRemoveArguments)
-			cloned := *source
-			return &cloned
-		},
+		Name:                        "Remove",
+		SkelName:                    "remove",
+		ArgumentsType:               reflect.TypeFor[_PortalEntryApiServiceRemoveArguments](),
 		ResultType:                  nil,
-		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1315,24 +1105,10 @@ var (
 		},
 	}
 	_PortalRuleApiServiceListConflictsSpec = &rpcspec.MethodSpec{
-		Name:           "ListConflicts",
-		SkelName:       "listConflicts",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]PortalRuleConflict](),
-		CloneResult: func(value any) any {
-			source := value.([]PortalRuleConflict)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]PortalRuleConflict, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "ListConflicts",
+		SkelName:                    "listConflicts",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]PortalRuleConflict](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1343,24 +1119,10 @@ var (
 		},
 	}
 	_PortalRuleApiServiceListSpec = &rpcspec.MethodSpec{
-		Name:           "List",
-		SkelName:       "list",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]PortalRuleListItem](),
-		CloneResult: func(value any) any {
-			source := value.([]PortalRuleListItem)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]PortalRuleListItem, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "List",
+		SkelName:                    "list",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]PortalRuleListItem](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1371,21 +1133,10 @@ var (
 		},
 	}
 	_PortalRuleApiServiceGetSpec = &rpcspec.MethodSpec{
-		Name:          "Get",
-		SkelName:      "get",
-		ArgumentsType: reflect.TypeFor[_PortalRuleApiServiceGetArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_PortalRuleApiServiceGetArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[PortalRule](),
-		CloneResult: func(value any) any {
-			source := value.(PortalRule)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "Get",
+		SkelName:                    "get",
+		ArgumentsType:               reflect.TypeFor[_PortalRuleApiServiceGetArguments](),
+		ResultType:                  reflect.TypeFor[PortalRule](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1396,22 +1147,10 @@ var (
 		},
 	}
 	_PortalRuleApiServiceCreateSpec = &rpcspec.MethodSpec{
-		Name:          "Create",
-		SkelName:      "create",
-		ArgumentsType: reflect.TypeFor[_PortalRuleApiServiceCreateArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_PortalRuleApiServiceCreateArguments)
-			cloned := *source
-			cloned.Creation = source.Creation.Clone()
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[PortalRule](),
-		CloneResult: func(value any) any {
-			source := value.(PortalRule)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "Create",
+		SkelName:                    "create",
+		ArgumentsType:               reflect.TypeFor[_PortalRuleApiServiceCreateArguments](),
+		ResultType:                  reflect.TypeFor[PortalRule](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1422,22 +1161,10 @@ var (
 		},
 	}
 	_PortalRuleApiServiceUpdateSpec = &rpcspec.MethodSpec{
-		Name:          "Update",
-		SkelName:      "update",
-		ArgumentsType: reflect.TypeFor[_PortalRuleApiServiceUpdateArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_PortalRuleApiServiceUpdateArguments)
-			cloned := *source
-			cloned.Update = source.Update.Clone()
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[PortalRule](),
-		CloneResult: func(value any) any {
-			source := value.(PortalRule)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "Update",
+		SkelName:                    "update",
+		ArgumentsType:               reflect.TypeFor[_PortalRuleApiServiceUpdateArguments](),
+		ResultType:                  reflect.TypeFor[PortalRule](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1448,16 +1175,10 @@ var (
 		},
 	}
 	_PortalRuleApiServiceRemoveSpec = &rpcspec.MethodSpec{
-		Name:          "Remove",
-		SkelName:      "remove",
-		ArgumentsType: reflect.TypeFor[_PortalRuleApiServiceRemoveArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_PortalRuleApiServiceRemoveArguments)
-			cloned := *source
-			return &cloned
-		},
+		Name:                        "Remove",
+		SkelName:                    "remove",
+		ArgumentsType:               reflect.TypeFor[_PortalRuleApiServiceRemoveArguments](),
 		ResultType:                  nil,
-		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1655,24 +1376,10 @@ var (
 		},
 	}
 	_PortalSiteApiServiceListSpec = &rpcspec.MethodSpec{
-		Name:           "List",
-		SkelName:       "list",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]PortalSiteListItem](),
-		CloneResult: func(value any) any {
-			source := value.([]PortalSiteListItem)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]PortalSiteListItem, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "List",
+		SkelName:                    "list",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]PortalSiteListItem](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1683,17 +1390,10 @@ var (
 		},
 	}
 	_PortalSiteApiServiceListOptionsSpec = &rpcspec.MethodSpec{
-		Name:           "ListOptions",
-		SkelName:       "listOptions",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[PortalSiteOptions](),
-		CloneResult: func(value any) any {
-			source := value.(PortalSiteOptions)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "ListOptions",
+		SkelName:                    "listOptions",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[PortalSiteOptions](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1704,21 +1404,10 @@ var (
 		},
 	}
 	_PortalSiteApiServiceGetSpec = &rpcspec.MethodSpec{
-		Name:          "Get",
-		SkelName:      "get",
-		ArgumentsType: reflect.TypeFor[_PortalSiteApiServiceGetArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_PortalSiteApiServiceGetArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[PortalSite](),
-		CloneResult: func(value any) any {
-			source := value.(PortalSite)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "Get",
+		SkelName:                    "get",
+		ArgumentsType:               reflect.TypeFor[_PortalSiteApiServiceGetArguments](),
+		ResultType:                  reflect.TypeFor[PortalSite](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1729,22 +1418,10 @@ var (
 		},
 	}
 	_PortalSiteApiServiceCreateSpec = &rpcspec.MethodSpec{
-		Name:          "Create",
-		SkelName:      "create",
-		ArgumentsType: reflect.TypeFor[_PortalSiteApiServiceCreateArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_PortalSiteApiServiceCreateArguments)
-			cloned := *source
-			cloned.Creation = source.Creation.Clone()
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[PortalSite](),
-		CloneResult: func(value any) any {
-			source := value.(PortalSite)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "Create",
+		SkelName:                    "create",
+		ArgumentsType:               reflect.TypeFor[_PortalSiteApiServiceCreateArguments](),
+		ResultType:                  reflect.TypeFor[PortalSite](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1755,22 +1432,10 @@ var (
 		},
 	}
 	_PortalSiteApiServiceUpdateSpec = &rpcspec.MethodSpec{
-		Name:          "Update",
-		SkelName:      "update",
-		ArgumentsType: reflect.TypeFor[_PortalSiteApiServiceUpdateArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_PortalSiteApiServiceUpdateArguments)
-			cloned := *source
-			cloned.Update = source.Update.Clone()
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[PortalSite](),
-		CloneResult: func(value any) any {
-			source := value.(PortalSite)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "Update",
+		SkelName:                    "update",
+		ArgumentsType:               reflect.TypeFor[_PortalSiteApiServiceUpdateArguments](),
+		ResultType:                  reflect.TypeFor[PortalSite](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1781,16 +1446,10 @@ var (
 		},
 	}
 	_PortalSiteApiServiceRemoveSpec = &rpcspec.MethodSpec{
-		Name:          "Remove",
-		SkelName:      "remove",
-		ArgumentsType: reflect.TypeFor[_PortalSiteApiServiceRemoveArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_PortalSiteApiServiceRemoveArguments)
-			cloned := *source
-			return &cloned
-		},
+		Name:                        "Remove",
+		SkelName:                    "remove",
+		ArgumentsType:               reflect.TypeFor[_PortalSiteApiServiceRemoveArguments](),
 		ResultType:                  nil,
-		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -1983,24 +1642,10 @@ var (
 		},
 	}
 	_PortalStatusApiServiceListSpec = &rpcspec.MethodSpec{
-		Name:           "List",
-		SkelName:       "list",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]PortalStatusView](),
-		CloneResult: func(value any) any {
-			source := value.([]PortalStatusView)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]PortalStatusView, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "List",
+		SkelName:                    "list",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]PortalStatusView](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2100,24 +1745,10 @@ var (
 		},
 	}
 	_ServiceDebugApiServiceListAppInstancesSpec = &rpcspec.MethodSpec{
-		Name:           "ListAppInstances",
-		SkelName:       "listAppInstances",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]ServiceDebugAppInstance](),
-		CloneResult: func(value any) any {
-			source := value.([]ServiceDebugAppInstance)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]ServiceDebugAppInstance, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "ListAppInstances",
+		SkelName:                    "listAppInstances",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]ServiceDebugAppInstance](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2128,24 +1759,10 @@ var (
 		},
 	}
 	_ServiceDebugApiServiceListServicesSpec = &rpcspec.MethodSpec{
-		Name:           "ListServices",
-		SkelName:       "listServices",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]ServiceDebugServiceItem](),
-		CloneResult: func(value any) any {
-			source := value.([]ServiceDebugServiceItem)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]ServiceDebugServiceItem, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "ListServices",
+		SkelName:                    "listServices",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]ServiceDebugServiceItem](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2156,28 +1773,10 @@ var (
 		},
 	}
 	_ServiceDebugApiServiceListServiceAppInstancesSpec = &rpcspec.MethodSpec{
-		Name:          "ListServiceAppInstances",
-		SkelName:      "listServiceAppInstances",
-		ArgumentsType: reflect.TypeFor[_ServiceDebugApiServiceListServiceAppInstancesArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_ServiceDebugApiServiceListServiceAppInstancesArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[[]ServiceDebugAppInstance](),
-		CloneResult: func(value any) any {
-			source := value.([]ServiceDebugAppInstance)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]ServiceDebugAppInstance, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "ListServiceAppInstances",
+		SkelName:                    "listServiceAppInstances",
+		ArgumentsType:               reflect.TypeFor[_ServiceDebugApiServiceListServiceAppInstancesArguments](),
+		ResultType:                  reflect.TypeFor[[]ServiceDebugAppInstance](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2188,28 +1787,10 @@ var (
 		},
 	}
 	_ServiceDebugApiServiceListMethodsSpec = &rpcspec.MethodSpec{
-		Name:          "ListMethods",
-		SkelName:      "listMethods",
-		ArgumentsType: reflect.TypeFor[_ServiceDebugApiServiceListMethodsArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_ServiceDebugApiServiceListMethodsArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[[]ServiceDebugMethodItem](),
-		CloneResult: func(value any) any {
-			source := value.([]ServiceDebugMethodItem)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]ServiceDebugMethodItem, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "ListMethods",
+		SkelName:                    "listMethods",
+		ArgumentsType:               reflect.TypeFor[_ServiceDebugApiServiceListMethodsArguments](),
+		ResultType:                  reflect.TypeFor[[]ServiceDebugMethodItem](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2220,21 +1801,10 @@ var (
 		},
 	}
 	_ServiceDebugApiServiceBuildDefaultInvokeRequestSpec = &rpcspec.MethodSpec{
-		Name:          "BuildDefaultInvokeRequest",
-		SkelName:      "buildDefaultInvokeRequest",
-		ArgumentsType: reflect.TypeFor[_ServiceDebugApiServiceBuildDefaultInvokeRequestArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_ServiceDebugApiServiceBuildDefaultInvokeRequestArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[ServiceDebugDefaultInvokeRequest](),
-		CloneResult: func(value any) any {
-			source := value.(ServiceDebugDefaultInvokeRequest)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "BuildDefaultInvokeRequest",
+		SkelName:                    "buildDefaultInvokeRequest",
+		ArgumentsType:               reflect.TypeFor[_ServiceDebugApiServiceBuildDefaultInvokeRequestArguments](),
+		ResultType:                  reflect.TypeFor[ServiceDebugDefaultInvokeRequest](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2245,22 +1815,10 @@ var (
 		},
 	}
 	_ServiceDebugApiServiceInvokeServiceSpec = &rpcspec.MethodSpec{
-		Name:          "InvokeService",
-		SkelName:      "invokeService",
-		ArgumentsType: reflect.TypeFor[_ServiceDebugApiServiceInvokeServiceArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_ServiceDebugApiServiceInvokeServiceArguments)
-			cloned := *source
-			cloned.Request = source.Request.Clone()
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[ServiceDebugInvokeResponse](),
-		CloneResult: func(value any) any {
-			source := value.(ServiceDebugInvokeResponse)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "InvokeService",
+		SkelName:                    "invokeService",
+		ArgumentsType:               reflect.TypeFor[_ServiceDebugApiServiceInvokeServiceArguments](),
+		ResultType:                  reflect.TypeFor[ServiceDebugInvokeResponse](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2463,24 +2021,10 @@ var (
 		},
 	}
 	_SkeletonApiServiceListDomainsSpec = &rpcspec.MethodSpec{
-		Name:           "ListDomains",
-		SkelName:       "listDomains",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]SkeletonDomain](),
-		CloneResult: func(value any) any {
-			source := value.([]SkeletonDomain)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]SkeletonDomain, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "ListDomains",
+		SkelName:                    "listDomains",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]SkeletonDomain](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2491,24 +2035,10 @@ var (
 		},
 	}
 	_SkeletonApiServiceListActorsSpec = &rpcspec.MethodSpec{
-		Name:           "ListActors",
-		SkelName:       "listActors",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]SkeletonActorItem](),
-		CloneResult: func(value any) any {
-			source := value.([]SkeletonActorItem)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]SkeletonActorItem, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "ListActors",
+		SkelName:                    "listActors",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]SkeletonActorItem](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2519,24 +2049,10 @@ var (
 		},
 	}
 	_SkeletonApiServiceListServicesSpec = &rpcspec.MethodSpec{
-		Name:           "ListServices",
-		SkelName:       "listServices",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]SkeletonServiceItem](),
-		CloneResult: func(value any) any {
-			source := value.([]SkeletonServiceItem)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]SkeletonServiceItem, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "ListServices",
+		SkelName:                    "listServices",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]SkeletonServiceItem](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2547,24 +2063,10 @@ var (
 		},
 	}
 	_SkeletonApiServiceListResourcesSpec = &rpcspec.MethodSpec{
-		Name:           "ListResources",
-		SkelName:       "listResources",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]SkeletonResourceItem](),
-		CloneResult: func(value any) any {
-			source := value.([]SkeletonResourceItem)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]SkeletonResourceItem, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "ListResources",
+		SkelName:                    "listResources",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]SkeletonResourceItem](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2575,24 +2077,10 @@ var (
 		},
 	}
 	_SkeletonApiServiceListWebsSpec = &rpcspec.MethodSpec{
-		Name:           "ListWebs",
-		SkelName:       "listWebs",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]SkeletonWebItem](),
-		CloneResult: func(value any) any {
-			source := value.([]SkeletonWebItem)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]SkeletonWebItem, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "ListWebs",
+		SkelName:                    "listWebs",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]SkeletonWebItem](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2603,24 +2091,10 @@ var (
 		},
 	}
 	_SkeletonApiServiceListTasksSpec = &rpcspec.MethodSpec{
-		Name:           "ListTasks",
-		SkelName:       "listTasks",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]SkeletonTask](),
-		CloneResult: func(value any) any {
-			source := value.([]SkeletonTask)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]SkeletonTask, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "ListTasks",
+		SkelName:                    "listTasks",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]SkeletonTask](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2631,24 +2105,10 @@ var (
 		},
 	}
 	_SkeletonApiServiceListEventsSpec = &rpcspec.MethodSpec{
-		Name:           "ListEvents",
-		SkelName:       "listEvents",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]SkeletonEventItem](),
-		CloneResult: func(value any) any {
-			source := value.([]SkeletonEventItem)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]SkeletonEventItem, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "ListEvents",
+		SkelName:                    "listEvents",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]SkeletonEventItem](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2659,24 +2119,10 @@ var (
 		},
 	}
 	_SkeletonApiServiceListDataSpec = &rpcspec.MethodSpec{
-		Name:           "ListData",
-		SkelName:       "listData",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]SkeletonData](),
-		CloneResult: func(value any) any {
-			source := value.([]SkeletonData)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]SkeletonData, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "ListData",
+		SkelName:                    "listData",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]SkeletonData](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2687,24 +2133,10 @@ var (
 		},
 	}
 	_SkeletonApiServiceListConfigsSpec = &rpcspec.MethodSpec{
-		Name:           "ListConfigs",
-		SkelName:       "listConfigs",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]SkeletonConfigItem](),
-		CloneResult: func(value any) any {
-			source := value.([]SkeletonConfigItem)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]SkeletonConfigItem, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "ListConfigs",
+		SkelName:                    "listConfigs",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]SkeletonConfigItem](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2923,24 +2355,10 @@ var (
 		},
 	}
 	_TaskDebugApiServiceListTasksSpec = &rpcspec.MethodSpec{
-		Name:           "ListTasks",
-		SkelName:       "listTasks",
-		ArgumentsType:  nil,
-		CloneArguments: nil,
-		ResultType:     reflect.TypeFor[[]TaskDebugTaskItem](),
-		CloneResult: func(value any) any {
-			source := value.([]TaskDebugTaskItem)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]TaskDebugTaskItem, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "ListTasks",
+		SkelName:                    "listTasks",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]TaskDebugTaskItem](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2951,28 +2369,10 @@ var (
 		},
 	}
 	_TaskDebugApiServiceListTriggersSpec = &rpcspec.MethodSpec{
-		Name:          "ListTriggers",
-		SkelName:      "listTriggers",
-		ArgumentsType: reflect.TypeFor[_TaskDebugApiServiceListTriggersArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_TaskDebugApiServiceListTriggersArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[[]TaskDebugTriggerItem](),
-		CloneResult: func(value any) any {
-			source := value.([]TaskDebugTriggerItem)
-			cloned := source
-			if source == nil {
-				cloned = nil
-			} else {
-				cloned = make([]TaskDebugTriggerItem, len(source))
-				for index0 := range source {
-					cloned[index0] = source[index0].Clone()
-				}
-			}
-			return cloned
-		},
+		Name:                        "ListTriggers",
+		SkelName:                    "listTriggers",
+		ArgumentsType:               reflect.TypeFor[_TaskDebugApiServiceListTriggersArguments](),
+		ResultType:                  reflect.TypeFor[[]TaskDebugTriggerItem](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -2983,21 +2383,10 @@ var (
 		},
 	}
 	_TaskDebugApiServiceBuildDefaultLaunchRequestSpec = &rpcspec.MethodSpec{
-		Name:          "BuildDefaultLaunchRequest",
-		SkelName:      "buildDefaultLaunchRequest",
-		ArgumentsType: reflect.TypeFor[_TaskDebugApiServiceBuildDefaultLaunchRequestArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_TaskDebugApiServiceBuildDefaultLaunchRequestArguments)
-			cloned := *source
-			return &cloned
-		},
-		ResultType: reflect.TypeFor[TaskDebugDefaultLaunchRequest](),
-		CloneResult: func(value any) any {
-			source := value.(TaskDebugDefaultLaunchRequest)
-			cloned := source
-			cloned = source.Clone()
-			return cloned
-		},
+		Name:                        "BuildDefaultLaunchRequest",
+		SkelName:                    "buildDefaultLaunchRequest",
+		ArgumentsType:               reflect.TypeFor[_TaskDebugApiServiceBuildDefaultLaunchRequestArguments](),
+		ResultType:                  reflect.TypeFor[TaskDebugDefaultLaunchRequest](),
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,
@@ -3008,17 +2397,10 @@ var (
 		},
 	}
 	_TaskDebugApiServiceLaunchTaskSpec = &rpcspec.MethodSpec{
-		Name:          "LaunchTask",
-		SkelName:      "launchTask",
-		ArgumentsType: reflect.TypeFor[_TaskDebugApiServiceLaunchTaskArguments](),
-		CloneArguments: func(value any) any {
-			source := value.(*_TaskDebugApiServiceLaunchTaskArguments)
-			cloned := *source
-			cloned.Request = source.Request.Clone()
-			return &cloned
-		},
+		Name:                        "LaunchTask",
+		SkelName:                    "launchTask",
+		ArgumentsType:               reflect.TypeFor[_TaskDebugApiServiceLaunchTaskArguments](),
 		ResultType:                  nil,
-		CloneResult:                 nil,
 		ArgumentsSensitive:          false,
 		ResultSensitive:             false,
 		ArgumentsContainsBinaryType: false,

@@ -12,12 +12,6 @@ type AppConfigCreation struct {
 	Value string `json:"value"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v AppConfigCreation) Clone() AppConfigCreation {
-	cloned := v
-	return cloned
-}
-
 // AppConfigItem Configuration items
 type AppConfigItem struct {
 	// Id Configuration ID
@@ -36,25 +30,6 @@ type AppConfigItem struct {
 	FieldSources []FieldSource `json:"fieldSources"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v AppConfigItem) Clone() AppConfigItem {
-	cloned := v
-	if v.Schema != nil {
-		clonedValue0 := *v.Schema
-		clonedValue0 = (*v.Schema).Clone()
-		cloned.Schema = &clonedValue0
-	}
-	if v.FieldSources == nil {
-		cloned.FieldSources = nil
-	} else {
-		cloned.FieldSources = make([]FieldSource, len(v.FieldSources))
-		for index1 := range v.FieldSources {
-			cloned.FieldSources[index1] = v.FieldSources[index1].Clone()
-		}
-	}
-	return cloned
-}
-
 // AppConfigListItem Configuration item list item
 type AppConfigListItem struct {
 	// Id Configuration ID
@@ -69,12 +44,6 @@ type AppConfigListItem struct {
 	SchemaName string `json:"schemaName"`
 	// SchemaSkelName Configuration schema Skel name; empty when no schema matches
 	SchemaSkelName string `json:"schemaSkelName"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v AppConfigListItem) Clone() AppConfigListItem {
-	cloned := v
-	return cloned
 }
 
 // AppConfigSchema Configuration schema items
@@ -95,20 +64,6 @@ type AppConfigSchema struct {
 	Fields []AppConfigSchemaField `json:"fields"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v AppConfigSchema) Clone() AppConfigSchema {
-	cloned := v
-	if v.Fields == nil {
-		cloned.Fields = nil
-	} else {
-		cloned.Fields = make([]AppConfigSchemaField, len(v.Fields))
-		for index0 := range v.Fields {
-			cloned.Fields[index0] = v.Fields[index0].Clone()
-		}
-	}
-	return cloned
-}
-
 // AppConfigSchemaEnumItem Configuration schema enumeration options
 type AppConfigSchemaEnumItem struct {
 	// Name Enum option name
@@ -119,12 +74,6 @@ type AppConfigSchemaEnumItem struct {
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Enumeration option deprecation reason
 	DeprecatedReason string `json:"deprecatedReason"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v AppConfigSchemaEnumItem) Clone() AppConfigSchemaEnumItem {
-	cloned := v
-	return cloned
 }
 
 // AppConfigSchemaField Configuration schema fields
@@ -147,50 +96,10 @@ type AppConfigSchemaField struct {
 	MapValueEnumItems []AppConfigSchemaEnumItem `json:"mapValueEnumItems"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v AppConfigSchemaField) Clone() AppConfigSchemaField {
-	cloned := v
-	if v.EnumItems == nil {
-		cloned.EnumItems = nil
-	} else {
-		cloned.EnumItems = make([]AppConfigSchemaEnumItem, len(v.EnumItems))
-		for index0 := range v.EnumItems {
-			cloned.EnumItems[index0] = v.EnumItems[index0].Clone()
-		}
-	}
-	if v.MapKeyEnumItems == nil {
-		cloned.MapKeyEnumItems = nil
-	} else {
-		cloned.MapKeyEnumItems = make([]AppConfigSchemaEnumItem, len(v.MapKeyEnumItems))
-		for index1 := range v.MapKeyEnumItems {
-			cloned.MapKeyEnumItems[index1] = v.MapKeyEnumItems[index1].Clone()
-		}
-	}
-	if v.MapValueEnumItems == nil {
-		cloned.MapValueEnumItems = nil
-	} else {
-		cloned.MapValueEnumItems = make([]AppConfigSchemaEnumItem, len(v.MapValueEnumItems))
-		for index2 := range v.MapValueEnumItems {
-			cloned.MapValueEnumItems[index2] = v.MapValueEnumItems[index2].Clone()
-		}
-	}
-	return cloned
-}
-
 // AppConfigUpdate Configuration update parameters
 type AppConfigUpdate struct {
 	// Value Configuration JSON
 	Value *string `json:"value"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v AppConfigUpdate) Clone() AppConfigUpdate {
-	cloned := v
-	if v.Value != nil {
-		clonedValue0 := *v.Value
-		cloned.Value = &clonedValue0
-	}
-	return cloned
 }
 
 // AppStatusView Application instance status view for Dashboard display
@@ -213,44 +122,6 @@ type AppStatusView struct {
 	TaskRunners []TaskRunnerRegistration `json:"taskRunners"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v AppStatusView) Clone() AppStatusView {
-	cloned := v
-	if v.ServiceHandlers == nil {
-		cloned.ServiceHandlers = nil
-	} else {
-		cloned.ServiceHandlers = make([]ServiceHandlerRegistration, len(v.ServiceHandlers))
-		for index0 := range v.ServiceHandlers {
-			cloned.ServiceHandlers[index0] = v.ServiceHandlers[index0].Clone()
-		}
-	}
-	if v.WebHandlers == nil {
-		cloned.WebHandlers = nil
-	} else {
-		cloned.WebHandlers = make([]WebHandlerRegistration, len(v.WebHandlers))
-		for index1 := range v.WebHandlers {
-			cloned.WebHandlers[index1] = v.WebHandlers[index1].Clone()
-		}
-	}
-	if v.EventListeners == nil {
-		cloned.EventListeners = nil
-	} else {
-		cloned.EventListeners = make([]EventListenerRegistration, len(v.EventListeners))
-		for index2 := range v.EventListeners {
-			cloned.EventListeners[index2] = v.EventListeners[index2].Clone()
-		}
-	}
-	if v.TaskRunners == nil {
-		cloned.TaskRunners = nil
-	} else {
-		cloned.TaskRunners = make([]TaskRunnerRegistration, len(v.TaskRunners))
-		for index3 := range v.TaskRunners {
-			cloned.TaskRunners[index3] = v.TaskRunners[index3].Clone()
-		}
-	}
-	return cloned
-}
-
 // EventDebugDefaultEmitRequest Default Event Debug send request
 type EventDebugDefaultEmitRequest struct {
 	// TraceId Trace ID
@@ -259,12 +130,6 @@ type EventDebugDefaultEmitRequest struct {
 	SpanId string `json:"spanId"`
 	// EventJson Default event JSON
 	EventJson skel.JSON `json:"eventJson"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v EventDebugDefaultEmitRequest) Clone() EventDebugDefaultEmitRequest {
-	cloned := v
-	return cloned
 }
 
 // EventDebugEmitRequest Event Debug send request
@@ -279,20 +144,6 @@ type EventDebugEmitRequest struct {
 	TraceId *string `json:"traceId"`
 	// SpanId Span ID
 	SpanId *string `json:"spanId"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v EventDebugEmitRequest) Clone() EventDebugEmitRequest {
-	cloned := v
-	if v.TraceId != nil {
-		clonedValue0 := *v.TraceId
-		cloned.TraceId = &clonedValue0
-	}
-	if v.SpanId != nil {
-		clonedValue1 := *v.SpanId
-		cloned.SpanId = &clonedValue1
-	}
-	return cloned
 }
 
 // EventDebugEventItem Event called by Event Debug
@@ -313,20 +164,6 @@ type EventDebugEventItem struct {
 	Fields []SkeletonField `json:"fields"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v EventDebugEventItem) Clone() EventDebugEventItem {
-	cloned := v
-	if v.Fields == nil {
-		cloned.Fields = nil
-	} else {
-		cloned.Fields = make([]SkeletonField, len(v.Fields))
-		for index0 := range v.Fields {
-			cloned.Fields[index0] = v.Fields[index0].Clone()
-		}
-	}
-	return cloned
-}
-
 // EventListenerRegistration Event listening capability registration information provided by the application
 type EventListenerRegistration struct {
 	// EventSkelName Event Skel name
@@ -339,12 +176,6 @@ type EventListenerRegistration struct {
 	Concurrency int `json:"concurrency"`
 	// NoRetry Whether to disallow retrying after failure
 	NoRetry bool `json:"noRetry"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v EventListenerRegistration) Clone() EventListenerRegistration {
-	cloned := v
-	return cloned
 }
 
 // FieldSource Layers that supplied an entity field
@@ -365,30 +196,6 @@ type FieldSource struct {
 	Bindings []FieldSourceBinding `json:"bindings"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v FieldSource) Clone() FieldSource {
-	cloned := v
-	if v.Variables == nil {
-		cloned.Variables = nil
-	} else {
-		cloned.Variables = make([]string, len(v.Variables))
-		copy(cloned.Variables, v.Variables)
-	}
-	if v.Template != nil {
-		clonedValue1 := *v.Template
-		cloned.Template = &clonedValue1
-	}
-	if v.Bindings == nil {
-		cloned.Bindings = nil
-	} else {
-		cloned.Bindings = make([]FieldSourceBinding, len(v.Bindings))
-		for index2 := range v.Bindings {
-			cloned.Bindings[index2] = v.Bindings[index2].Clone()
-		}
-	}
-	return cloned
-}
-
 // FieldSourceBinding A resolved variable reference within a field template
 type FieldSourceBinding struct {
 	// Path Template JSON pointer
@@ -401,12 +208,6 @@ type FieldSourceBinding struct {
 	Value skel.JSON `json:"value"`
 	// DefaultUsed Whether the default was used
 	DefaultUsed bool `json:"defaultUsed"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v FieldSourceBinding) Clone() FieldSourceBinding {
-	cloned := v
-	return cloned
 }
 
 // PortalCert Portal site certificate
@@ -433,26 +234,6 @@ type PortalCert struct {
 	Enabled bool `json:"enabled"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalCert) Clone() PortalCert {
-	cloned := v
-	if v.Domains == nil {
-		cloned.Domains = nil
-	} else {
-		cloned.Domains = make([]string, len(v.Domains))
-		copy(cloned.Domains, v.Domains)
-	}
-	if v.FieldSources == nil {
-		cloned.FieldSources = nil
-	} else {
-		cloned.FieldSources = make([]FieldSource, len(v.FieldSources))
-		for index1 := range v.FieldSources {
-			cloned.FieldSources[index1] = v.FieldSources[index1].Clone()
-		}
-	}
-	return cloned
-}
-
 // PortalCertCreation Portal site certificate creation parameters
 type PortalCertCreation struct {
 	// Name Certificate name
@@ -463,16 +244,6 @@ type PortalCertCreation struct {
 	PrivateKeyBase64 string `json:"privateKeyBase64"`
 	// Enabled Whether Hub publishes this certificate to Portal
 	Enabled *bool `json:"enabled"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalCertCreation) Clone() PortalCertCreation {
-	cloned := v
-	if v.Enabled != nil {
-		clonedValue0 := *v.Enabled
-		cloned.Enabled = &clonedValue0
-	}
-	return cloned
 }
 
 // PortalCertListItem Portal site certificate list item
@@ -497,18 +268,6 @@ type PortalCertListItem struct {
 	Enabled bool `json:"enabled"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalCertListItem) Clone() PortalCertListItem {
-	cloned := v
-	if v.Domains == nil {
-		cloned.Domains = nil
-	} else {
-		cloned.Domains = make([]string, len(v.Domains))
-		copy(cloned.Domains, v.Domains)
-	}
-	return cloned
-}
-
 // PortalCertUpdate Portal site certificate update parameters
 type PortalCertUpdate struct {
 	// Name Certificate name
@@ -521,46 +280,12 @@ type PortalCertUpdate struct {
 	Enabled *bool `json:"enabled"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalCertUpdate) Clone() PortalCertUpdate {
-	cloned := v
-	if v.Name != nil {
-		clonedValue0 := *v.Name
-		cloned.Name = &clonedValue0
-	}
-	if v.PublicKeyBase64 != nil {
-		clonedValue1 := *v.PublicKeyBase64
-		cloned.PublicKeyBase64 = &clonedValue1
-	}
-	if v.PrivateKeyBase64 != nil {
-		clonedValue2 := *v.PrivateKeyBase64
-		cloned.PrivateKeyBase64 = &clonedValue2
-	}
-	if v.Enabled != nil {
-		clonedValue3 := *v.Enabled
-		cloned.Enabled = &clonedValue3
-	}
-	return cloned
-}
-
 // PortalCors Portal site CORS configuration
 type PortalCors struct {
 	// Mode CORS mode: DISABLED/SAME_DOMAIN/STRICT
 	Mode PortalCorsMode `json:"mode"`
 	// AllowedOrigins List of origins allowed in strict mode
 	AllowedOrigins []string `json:"allowedOrigins"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalCors) Clone() PortalCors {
-	cloned := v
-	if v.AllowedOrigins == nil {
-		cloned.AllowedOrigins = nil
-	} else {
-		cloned.AllowedOrigins = make([]string, len(v.AllowedOrigins))
-		copy(cloned.AllowedOrigins, v.AllowedOrigins)
-	}
-	return cloned
 }
 
 // PortalEntry Portal access entry
@@ -581,20 +306,6 @@ type PortalEntry struct {
 	Enabled bool `json:"enabled"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalEntry) Clone() PortalEntry {
-	cloned := v
-	if v.Rules == nil {
-		cloned.Rules = nil
-	} else {
-		cloned.Rules = make([]PortalEntryRule, len(v.Rules))
-		for index0 := range v.Rules {
-			cloned.Rules[index0] = v.Rules[index0].Clone()
-		}
-	}
-	return cloned
-}
-
 // PortalEntryCreation Portal access entry creation parameters
 type PortalEntryCreation struct {
 	// Name Entry name
@@ -609,34 +320,12 @@ type PortalEntryCreation struct {
 	Enabled *bool `json:"enabled"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalEntryCreation) Clone() PortalEntryCreation {
-	cloned := v
-	if v.Enabled != nil {
-		clonedValue0 := *v.Enabled
-		cloned.Enabled = &clonedValue0
-	}
-	return cloned
-}
-
 // PortalEntryRule Portal access entry rules
 type PortalEntryRule struct {
 	// Rule Entry rules
 	Rule PortalRuleListItem `json:"rule"`
 	// Site Target site
 	Site *PortalSiteListItem `json:"site"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalEntryRule) Clone() PortalEntryRule {
-	cloned := v
-	cloned.Rule = v.Rule.Clone()
-	if v.Site != nil {
-		clonedValue0 := *v.Site
-		clonedValue0 = (*v.Site).Clone()
-		cloned.Site = &clonedValue0
-	}
-	return cloned
 }
 
 // PortalEntryUpdate Portal access entry update parameters
@@ -651,32 +340,6 @@ type PortalEntryUpdate struct {
 	Port *int `json:"port"`
 	// Enabled Whether Hub publishes the rules of this entry to Portal
 	Enabled *bool `json:"enabled"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalEntryUpdate) Clone() PortalEntryUpdate {
-	cloned := v
-	if v.Name != nil {
-		clonedValue0 := *v.Name
-		cloned.Name = &clonedValue0
-	}
-	if v.Scheme != nil {
-		clonedValue1 := *v.Scheme
-		cloned.Scheme = &clonedValue1
-	}
-	if v.Host != nil {
-		clonedValue2 := *v.Host
-		cloned.Host = &clonedValue2
-	}
-	if v.Port != nil {
-		clonedValue3 := *v.Port
-		cloned.Port = &clonedValue3
-	}
-	if v.Enabled != nil {
-		clonedValue4 := *v.Enabled
-		cloned.Enabled = &clonedValue4
-	}
-	return cloned
 }
 
 // PortalRule Portal entry rules
@@ -711,20 +374,6 @@ type PortalRule struct {
 	Enabled bool `json:"enabled"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalRule) Clone() PortalRule {
-	cloned := v
-	if v.FieldSources == nil {
-		cloned.FieldSources = nil
-	} else {
-		cloned.FieldSources = make([]FieldSource, len(v.FieldSources))
-		for index0 := range v.FieldSources {
-			cloned.FieldSources[index0] = v.FieldSources[index0].Clone()
-		}
-	}
-	return cloned
-}
-
 // PortalRuleConflict Portal entry rules that match the same request
 type PortalRuleConflict struct {
 	// RuleId Rule ID
@@ -749,12 +398,6 @@ type PortalRuleConflict struct {
 	SuppressedRule string `json:"suppressedRule"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalRuleConflict) Clone() PortalRuleConflict {
-	cloned := v
-	return cloned
-}
-
 // PortalRuleCreation Portal entry rule creation parameters
 type PortalRuleCreation struct {
 	// Name Rule name
@@ -773,20 +416,6 @@ type PortalRuleCreation struct {
 	RoutePathPrefix *string `json:"routePathPrefix"`
 	// Enabled Whether Hub publishes this rule to Portal
 	Enabled *bool `json:"enabled"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalRuleCreation) Clone() PortalRuleCreation {
-	cloned := v
-	if v.RoutePathPrefix != nil {
-		clonedValue0 := *v.RoutePathPrefix
-		cloned.RoutePathPrefix = &clonedValue0
-	}
-	if v.Enabled != nil {
-		clonedValue1 := *v.Enabled
-		cloned.Enabled = &clonedValue1
-	}
-	return cloned
 }
 
 // PortalRuleListItem Portal entry rule list item
@@ -819,12 +448,6 @@ type PortalRuleListItem struct {
 	Enabled bool `json:"enabled"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalRuleListItem) Clone() PortalRuleListItem {
-	cloned := v
-	return cloned
-}
-
 // PortalRuleUpdate Portal entry rule update parameters
 type PortalRuleUpdate struct {
 	// Name Rule name
@@ -841,40 +464,6 @@ type PortalRuleUpdate struct {
 	RoutePathPrefix *string `json:"routePathPrefix"`
 	// Enabled Whether Hub publishes this rule to Portal
 	Enabled *bool `json:"enabled"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalRuleUpdate) Clone() PortalRuleUpdate {
-	cloned := v
-	if v.Name != nil {
-		clonedValue0 := *v.Name
-		cloned.Name = &clonedValue0
-	}
-	if v.MatchPathPrefix != nil {
-		clonedValue1 := *v.MatchPathPrefix
-		cloned.MatchPathPrefix = &clonedValue1
-	}
-	if v.RouteType != nil {
-		clonedValue2 := *v.RouteType
-		cloned.RouteType = &clonedValue2
-	}
-	if v.RouteSiteName != nil {
-		clonedValue3 := *v.RouteSiteName
-		cloned.RouteSiteName = &clonedValue3
-	}
-	if v.RouteRedirectionPattern != nil {
-		clonedValue4 := *v.RouteRedirectionPattern
-		cloned.RouteRedirectionPattern = &clonedValue4
-	}
-	if v.RoutePathPrefix != nil {
-		clonedValue5 := *v.RoutePathPrefix
-		cloned.RoutePathPrefix = &clonedValue5
-	}
-	if v.Enabled != nil {
-		clonedValue6 := *v.Enabled
-		cloned.Enabled = &clonedValue6
-	}
-	return cloned
 }
 
 // PortalSite Portal target site
@@ -903,31 +492,6 @@ type PortalSite struct {
 	Enabled bool `json:"enabled"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalSite) Clone() PortalSite {
-	cloned := v
-	if v.RpcgwServices == nil {
-		cloned.RpcgwServices = nil
-	} else {
-		cloned.RpcgwServices = make([]string, len(v.RpcgwServices))
-		copy(cloned.RpcgwServices, v.RpcgwServices)
-	}
-	if v.Cors != nil {
-		clonedValue1 := *v.Cors
-		clonedValue1 = (*v.Cors).Clone()
-		cloned.Cors = &clonedValue1
-	}
-	if v.FieldSources == nil {
-		cloned.FieldSources = nil
-	} else {
-		cloned.FieldSources = make([]FieldSource, len(v.FieldSources))
-		for index2 := range v.FieldSources {
-			cloned.FieldSources[index2] = v.FieldSources[index2].Clone()
-		}
-	}
-	return cloned
-}
-
 // PortalSiteActorOption Portal target site Actor options
 type PortalSiteActorOption struct {
 	// Name Actor name
@@ -936,18 +500,6 @@ type PortalSiteActorOption struct {
 	SkelName string `json:"skelName"`
 	// ActorVias Actor access method list
 	ActorVias []string `json:"actorVias"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalSiteActorOption) Clone() PortalSiteActorOption {
-	cloned := v
-	if v.ActorVias == nil {
-		cloned.ActorVias = nil
-	} else {
-		cloned.ActorVias = make([]string, len(v.ActorVias))
-		copy(cloned.ActorVias, v.ActorVias)
-	}
-	return cloned
 }
 
 // PortalSiteCreation Portal target site creation parameters
@@ -966,21 +518,6 @@ type PortalSiteCreation struct {
 	WebName string `json:"webName"`
 	// Enabled Whether Hub publishes this site to Portal
 	Enabled *bool `json:"enabled"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalSiteCreation) Clone() PortalSiteCreation {
-	cloned := v
-	if v.Cors != nil {
-		clonedValue0 := *v.Cors
-		clonedValue0 = (*v.Cors).Clone()
-		cloned.Cors = &clonedValue0
-	}
-	if v.Enabled != nil {
-		clonedValue1 := *v.Enabled
-		cloned.Enabled = &clonedValue1
-	}
-	return cloned
 }
 
 // PortalSiteListItem Portal target site list item
@@ -1007,23 +544,6 @@ type PortalSiteListItem struct {
 	Enabled bool `json:"enabled"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalSiteListItem) Clone() PortalSiteListItem {
-	cloned := v
-	if v.RpcgwServices == nil {
-		cloned.RpcgwServices = nil
-	} else {
-		cloned.RpcgwServices = make([]string, len(v.RpcgwServices))
-		copy(cloned.RpcgwServices, v.RpcgwServices)
-	}
-	if v.Cors != nil {
-		clonedValue1 := *v.Cors
-		clonedValue1 = (*v.Cors).Clone()
-		cloned.Cors = &clonedValue1
-	}
-	return cloned
-}
-
 // PortalSiteOptions Portal target site form options
 type PortalSiteOptions struct {
 	// Actors Actor options
@@ -1034,36 +554,6 @@ type PortalSiteOptions struct {
 	Webs []PortalSiteWebOption `json:"webs"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalSiteOptions) Clone() PortalSiteOptions {
-	cloned := v
-	if v.Actors == nil {
-		cloned.Actors = nil
-	} else {
-		cloned.Actors = make([]PortalSiteActorOption, len(v.Actors))
-		for index0 := range v.Actors {
-			cloned.Actors[index0] = v.Actors[index0].Clone()
-		}
-	}
-	if v.Services == nil {
-		cloned.Services = nil
-	} else {
-		cloned.Services = make([]PortalSiteServiceOption, len(v.Services))
-		for index1 := range v.Services {
-			cloned.Services[index1] = v.Services[index1].Clone()
-		}
-	}
-	if v.Webs == nil {
-		cloned.Webs = nil
-	} else {
-		cloned.Webs = make([]PortalSiteWebOption, len(v.Webs))
-		for index2 := range v.Webs {
-			cloned.Webs[index2] = v.Webs[index2].Clone()
-		}
-	}
-	return cloned
-}
-
 // PortalSiteServiceOption Portal target site service options
 type PortalSiteServiceOption struct {
 	// Name Service name
@@ -1072,18 +562,6 @@ type PortalSiteServiceOption struct {
 	SkelName string `json:"skelName"`
 	// ActorSkelNames Actor Skel name list
 	ActorSkelNames []string `json:"actorSkelNames"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalSiteServiceOption) Clone() PortalSiteServiceOption {
-	cloned := v
-	if v.ActorSkelNames == nil {
-		cloned.ActorSkelNames = nil
-	} else {
-		cloned.ActorSkelNames = make([]string, len(v.ActorSkelNames))
-		copy(cloned.ActorSkelNames, v.ActorSkelNames)
-	}
-	return cloned
 }
 
 // PortalSiteUpdate Portal target site update parameters
@@ -1104,41 +582,6 @@ type PortalSiteUpdate struct {
 	Enabled *bool `json:"enabled"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalSiteUpdate) Clone() PortalSiteUpdate {
-	cloned := v
-	if v.Name != nil {
-		clonedValue0 := *v.Name
-		cloned.Name = &clonedValue0
-	}
-	if v.Type != nil {
-		clonedValue1 := *v.Type
-		cloned.Type = &clonedValue1
-	}
-	if v.ActorSkelName != nil {
-		clonedValue2 := *v.ActorSkelName
-		cloned.ActorSkelName = &clonedValue2
-	}
-	if v.ActorVia != nil {
-		clonedValue3 := *v.ActorVia
-		cloned.ActorVia = &clonedValue3
-	}
-	if v.Cors != nil {
-		clonedValue4 := *v.Cors
-		clonedValue4 = (*v.Cors).Clone()
-		cloned.Cors = &clonedValue4
-	}
-	if v.WebName != nil {
-		clonedValue5 := *v.WebName
-		cloned.WebName = &clonedValue5
-	}
-	if v.Enabled != nil {
-		clonedValue6 := *v.Enabled
-		cloned.Enabled = &clonedValue6
-	}
-	return cloned
-}
-
 // PortalSiteWebOption Portal target site web options
 type PortalSiteWebOption struct {
 	// Name Web name
@@ -1149,30 +592,12 @@ type PortalSiteWebOption struct {
 	ActorSkelNames []string `json:"actorSkelNames"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalSiteWebOption) Clone() PortalSiteWebOption {
-	cloned := v
-	if v.ActorSkelNames == nil {
-		cloned.ActorSkelNames = nil
-	} else {
-		cloned.ActorSkelNames = make([]string, len(v.ActorSkelNames))
-		copy(cloned.ActorSkelNames, v.ActorSkelNames)
-	}
-	return cloned
-}
-
 // PortalStatusView Portal instance status view for Dashboard display
 type PortalStatusView struct {
 	// InstanceId Portal instance ID
 	InstanceId string `json:"instanceId"`
 	// Version Portal version
 	Version string `json:"version"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v PortalStatusView) Clone() PortalStatusView {
-	cloned := v
-	return cloned
 }
 
 // ServiceDebugActorItem Service Debug Actor options
@@ -1187,12 +612,6 @@ type ServiceDebugActorItem struct {
 	ActorInfoJson skel.JSON `json:"actorInfoJson"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v ServiceDebugActorItem) Clone() ServiceDebugActorItem {
-	cloned := v
-	return cloned
-}
-
 // ServiceDebugAppInstance Application instance called by Service Debug
 type ServiceDebugAppInstance struct {
 	// AppName Application name
@@ -1203,12 +622,6 @@ type ServiceDebugAppInstance struct {
 	AppVersion string `json:"appVersion"`
 	// Endpoint Application access address
 	Endpoint string `json:"endpoint"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v ServiceDebugAppInstance) Clone() ServiceDebugAppInstance {
-	cloned := v
-	return cloned
 }
 
 // ServiceDebugDefaultInvokeRequest Service Debug default call request
@@ -1225,24 +638,6 @@ type ServiceDebugDefaultInvokeRequest struct {
 	ActorInfoJson skel.JSON `json:"actorInfoJson"`
 	// ParamsJson Default request parameters JSON
 	ParamsJson skel.JSON `json:"paramsJson"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v ServiceDebugDefaultInvokeRequest) Clone() ServiceDebugDefaultInvokeRequest {
-	cloned := v
-	if v.Actors == nil {
-		cloned.Actors = nil
-	} else {
-		cloned.Actors = make([]ServiceDebugActorItem, len(v.Actors))
-		for index0 := range v.Actors {
-			cloned.Actors[index0] = v.Actors[index0].Clone()
-		}
-	}
-	if v.ActorSkelName != nil {
-		clonedValue1 := *v.ActorSkelName
-		cloned.ActorSkelName = &clonedValue1
-	}
-	return cloned
 }
 
 // ServiceDebugInvokeRequest Service Debug call request
@@ -1271,32 +666,6 @@ type ServiceDebugInvokeRequest struct {
 	ActorInfoJson skel.JSON `json:"actorInfoJson"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v ServiceDebugInvokeRequest) Clone() ServiceDebugInvokeRequest {
-	cloned := v
-	if v.AppName != nil {
-		clonedValue0 := *v.AppName
-		cloned.AppName = &clonedValue0
-	}
-	if v.AppInstanceId != nil {
-		clonedValue1 := *v.AppInstanceId
-		cloned.AppInstanceId = &clonedValue1
-	}
-	if v.TraceId != nil {
-		clonedValue2 := *v.TraceId
-		cloned.TraceId = &clonedValue2
-	}
-	if v.SpanId != nil {
-		clonedValue3 := *v.SpanId
-		cloned.SpanId = &clonedValue3
-	}
-	if v.ActorSkelName != nil {
-		clonedValue4 := *v.ActorSkelName
-		cloned.ActorSkelName = &clonedValue4
-	}
-	return cloned
-}
-
 // ServiceDebugInvokeResponse Service Debug call response
 type ServiceDebugInvokeResponse struct {
 	// HttpStatus HTTP status code
@@ -1307,12 +676,6 @@ type ServiceDebugInvokeResponse struct {
 	HeadersJson skel.JSON `json:"headersJson"`
 	// BodyJson Response body JSON
 	BodyJson skel.JSON `json:"bodyJson"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v ServiceDebugInvokeResponse) Clone() ServiceDebugInvokeResponse {
-	cloned := v
-	return cloned
 }
 
 // ServiceDebugMethodItem Method called by Service Debug
@@ -1341,20 +704,6 @@ type ServiceDebugMethodItem struct {
 	ResultType string `json:"resultType"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v ServiceDebugMethodItem) Clone() ServiceDebugMethodItem {
-	cloned := v
-	if v.Arguments == nil {
-		cloned.Arguments = nil
-	} else {
-		cloned.Arguments = make([]SkeletonField, len(v.Arguments))
-		for index0 := range v.Arguments {
-			cloned.Arguments[index0] = v.Arguments[index0].Clone()
-		}
-	}
-	return cloned
-}
-
 // ServiceDebugServiceItem Service called by Service Debug
 type ServiceDebugServiceItem struct {
 	// ServiceSkelName Service Skel name
@@ -1368,12 +717,6 @@ type ServiceDebugServiceItem struct {
 	DeprecatedReason string `json:"deprecatedReason"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v ServiceDebugServiceItem) Clone() ServiceDebugServiceItem {
-	cloned := v
-	return cloned
-}
-
 // ServiceHandlerRegistration Rpc service processing capability registration information provided by the application
 type ServiceHandlerRegistration struct {
 	// ServiceSkelName Service Skel name
@@ -1382,12 +725,6 @@ type ServiceHandlerRegistration struct {
 	SchemaHash string `json:"schemaHash"`
 	// Endpoint Service agent access address
 	Endpoint string `json:"endpoint"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v ServiceHandlerRegistration) Clone() ServiceHandlerRegistration {
-	cloned := v
-	return cloned
 }
 
 // SkeletonActorItem SkeletonActor
@@ -1438,59 +775,6 @@ type SkeletonActorItem struct {
 	Webs []SkeletonWebItem `json:"webs"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonActorItem) Clone() SkeletonActorItem {
-	cloned := v
-	if v.ActorVias == nil {
-		cloned.ActorVias = nil
-	} else {
-		cloned.ActorVias = make([]string, len(v.ActorVias))
-		copy(cloned.ActorVias, v.ActorVias)
-	}
-	if v.Credential != nil {
-		clonedValue1 := *v.Credential
-		clonedValue1 = (*v.Credential).Clone()
-		cloned.Credential = &clonedValue1
-	}
-	if v.Info != nil {
-		clonedValue2 := *v.Info
-		clonedValue2 = (*v.Info).Clone()
-		cloned.Info = &clonedValue2
-	}
-	if v.AuthService != nil {
-		clonedValue3 := *v.AuthService
-		clonedValue3 = (*v.AuthService).Clone()
-		cloned.AuthService = &clonedValue3
-	}
-	if v.PermService != nil {
-		clonedValue4 := *v.PermService
-		clonedValue4 = (*v.PermService).Clone()
-		cloned.PermService = &clonedValue4
-	}
-	if v.PermMethod != nil {
-		clonedValue5 := *v.PermMethod
-		clonedValue5 = (*v.PermMethod).Clone()
-		cloned.PermMethod = &clonedValue5
-	}
-	if v.Services == nil {
-		cloned.Services = nil
-	} else {
-		cloned.Services = make([]SkeletonServiceItem, len(v.Services))
-		for index6 := range v.Services {
-			cloned.Services[index6] = v.Services[index6].Clone()
-		}
-	}
-	if v.Webs == nil {
-		cloned.Webs = nil
-	} else {
-		cloned.Webs = make([]SkeletonWebItem, len(v.Webs))
-		for index7 := range v.Webs {
-			cloned.Webs[index7] = v.Webs[index7].Clone()
-		}
-	}
-	return cloned
-}
-
 // SkeletonActorRef Skeleton Actor Reference
 type SkeletonActorRef struct {
 	// Name Actor name
@@ -1499,12 +783,6 @@ type SkeletonActorRef struct {
 	SkelName string `json:"skelName"`
 	// Via Access method
 	Via string `json:"via"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonActorRef) Clone() SkeletonActorRef {
-	cloned := v
-	return cloned
 }
 
 // SkeletonConfigItem SkeletonConfig
@@ -1539,20 +817,6 @@ type SkeletonConfigItem struct {
 	Lifecycle string `json:"lifecycle"`
 	// Fields Field list
 	Fields []SkeletonField `json:"fields"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonConfigItem) Clone() SkeletonConfigItem {
-	cloned := v
-	if v.Fields == nil {
-		cloned.Fields = nil
-	} else {
-		cloned.Fields = make([]SkeletonField, len(v.Fields))
-		for index0 := range v.Fields {
-			cloned.Fields[index0] = v.Fields[index0].Clone()
-		}
-	}
-	return cloned
 }
 
 // SkeletonData SkeletonData
@@ -1591,34 +855,6 @@ type SkeletonData struct {
 	EnumItems []SkeletonEnumItem `json:"enumItems"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonData) Clone() SkeletonData {
-	cloned := v
-	if v.TypeParameters == nil {
-		cloned.TypeParameters = nil
-	} else {
-		cloned.TypeParameters = make([]string, len(v.TypeParameters))
-		copy(cloned.TypeParameters, v.TypeParameters)
-	}
-	if v.Fields == nil {
-		cloned.Fields = nil
-	} else {
-		cloned.Fields = make([]SkeletonField, len(v.Fields))
-		for index1 := range v.Fields {
-			cloned.Fields[index1] = v.Fields[index1].Clone()
-		}
-	}
-	if v.EnumItems == nil {
-		cloned.EnumItems = nil
-	} else {
-		cloned.EnumItems = make([]SkeletonEnumItem, len(v.EnumItems))
-		for index2 := range v.EnumItems {
-			cloned.EnumItems[index2] = v.EnumItems[index2].Clone()
-		}
-	}
-	return cloned
-}
-
 // SkeletonDomain Domain skeleton version
 type SkeletonDomain struct {
 	// Domain Domain name
@@ -1651,76 +887,6 @@ type SkeletonDomain struct {
 	Events []SkeletonEventItem `json:"events"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonDomain) Clone() SkeletonDomain {
-	cloned := v
-	if v.Actors == nil {
-		cloned.Actors = nil
-	} else {
-		cloned.Actors = make([]SkeletonActorItem, len(v.Actors))
-		for index0 := range v.Actors {
-			cloned.Actors[index0] = v.Actors[index0].Clone()
-		}
-	}
-	if v.Services == nil {
-		cloned.Services = nil
-	} else {
-		cloned.Services = make([]SkeletonServiceItem, len(v.Services))
-		for index1 := range v.Services {
-			cloned.Services[index1] = v.Services[index1].Clone()
-		}
-	}
-	if v.Resources == nil {
-		cloned.Resources = nil
-	} else {
-		cloned.Resources = make([]SkeletonResourceItem, len(v.Resources))
-		for index2 := range v.Resources {
-			cloned.Resources[index2] = v.Resources[index2].Clone()
-		}
-	}
-	if v.Data == nil {
-		cloned.Data = nil
-	} else {
-		cloned.Data = make([]SkeletonData, len(v.Data))
-		for index3 := range v.Data {
-			cloned.Data[index3] = v.Data[index3].Clone()
-		}
-	}
-	if v.Configs == nil {
-		cloned.Configs = nil
-	} else {
-		cloned.Configs = make([]SkeletonConfigItem, len(v.Configs))
-		for index4 := range v.Configs {
-			cloned.Configs[index4] = v.Configs[index4].Clone()
-		}
-	}
-	if v.Webs == nil {
-		cloned.Webs = nil
-	} else {
-		cloned.Webs = make([]SkeletonWebItem, len(v.Webs))
-		for index5 := range v.Webs {
-			cloned.Webs[index5] = v.Webs[index5].Clone()
-		}
-	}
-	if v.Tasks == nil {
-		cloned.Tasks = nil
-	} else {
-		cloned.Tasks = make([]SkeletonTask, len(v.Tasks))
-		for index6 := range v.Tasks {
-			cloned.Tasks[index6] = v.Tasks[index6].Clone()
-		}
-	}
-	if v.Events == nil {
-		cloned.Events = nil
-	} else {
-		cloned.Events = make([]SkeletonEventItem, len(v.Events))
-		for index7 := range v.Events {
-			cloned.Events[index7] = v.Events[index7].Clone()
-		}
-	}
-	return cloned
-}
-
 // SkeletonEnumItem Skeleton enumeration items
 type SkeletonEnumItem struct {
 	// Name Enumeration item name
@@ -1731,12 +897,6 @@ type SkeletonEnumItem struct {
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Enumeration item deprecation reason
 	DeprecatedReason string `json:"deprecatedReason"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonEnumItem) Clone() SkeletonEnumItem {
-	cloned := v
-	return cloned
 }
 
 // SkeletonEventItem Skeleton event
@@ -1771,20 +931,6 @@ type SkeletonEventItem struct {
 	Fields []SkeletonField `json:"fields"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonEventItem) Clone() SkeletonEventItem {
-	cloned := v
-	if v.Fields == nil {
-		cloned.Fields = nil
-	} else {
-		cloned.Fields = make([]SkeletonField, len(v.Fields))
-		for index0 := range v.Fields {
-			cloned.Fields[index0] = v.Fields[index0].Clone()
-		}
-	}
-	return cloned
-}
-
 // SkeletonField Skeleton field
 type SkeletonField struct {
 	// Name Field name
@@ -1801,12 +947,6 @@ type SkeletonField struct {
 	Example string `json:"example"`
 	// Sensitive Whether the field is sensitive
 	Sensitive bool `json:"sensitive"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonField) Clone() SkeletonField {
-	cloned := v
-	return cloned
 }
 
 // SkeletonMethod Skeleton method
@@ -1843,25 +983,6 @@ type SkeletonMethod struct {
 	ResultSensitive bool `json:"resultSensitive"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonMethod) Clone() SkeletonMethod {
-	cloned := v
-	if v.Require != nil {
-		clonedValue0 := *v.Require
-		clonedValue0 = (*v.Require).Clone()
-		cloned.Require = &clonedValue0
-	}
-	if v.Arguments == nil {
-		cloned.Arguments = nil
-	} else {
-		cloned.Arguments = make([]SkeletonField, len(v.Arguments))
-		for index1 := range v.Arguments {
-			cloned.Arguments[index1] = v.Arguments[index1].Clone()
-		}
-	}
-	return cloned
-}
-
 // SkeletonPermCheck Skeleton permission verification call
 type SkeletonPermCheck struct {
 	// ResourceSkelName Resource Skel name
@@ -1878,20 +999,6 @@ type SkeletonPermCheck struct {
 	Arguments []SkeletonPermCheckArgument `json:"arguments"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonPermCheck) Clone() SkeletonPermCheck {
-	cloned := v
-	if v.Arguments == nil {
-		cloned.Arguments = nil
-	} else {
-		cloned.Arguments = make([]SkeletonPermCheckArgument, len(v.Arguments))
-		for index0 := range v.Arguments {
-			cloned.Arguments[index0] = v.Arguments[index0].Clone()
-		}
-	}
-	return cloned
-}
-
 // SkeletonPermCheckArgument Skeleton permission verification parameters
 type SkeletonPermCheckArgument struct {
 	// Name Parameter name
@@ -1900,12 +1007,6 @@ type SkeletonPermCheckArgument struct {
 	JsonPath string `json:"jsonPath"`
 	// Type Parameter type
 	Type string `json:"type"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonPermCheckArgument) Clone() SkeletonPermCheckArgument {
-	cloned := v
-	return cloned
 }
 
 // SkeletonPermExpr Skeleton permission expression
@@ -1918,25 +1019,6 @@ type SkeletonPermExpr struct {
 	Check *SkeletonPermCheck `json:"check"`
 	// Children Subexpression
 	Children []SkeletonPermExpr `json:"children"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonPermExpr) Clone() SkeletonPermExpr {
-	cloned := v
-	if v.Check != nil {
-		clonedValue0 := *v.Check
-		clonedValue0 = (*v.Check).Clone()
-		cloned.Check = &clonedValue0
-	}
-	if v.Children == nil {
-		cloned.Children = nil
-	} else {
-		cloned.Children = make([]SkeletonPermExpr, len(v.Children))
-		for index1 := range v.Children {
-			cloned.Children[index1] = v.Children[index1].Clone()
-		}
-	}
-	return cloned
 }
 
 // SkeletonResourceAction SkeletonResource Action
@@ -1955,20 +1037,6 @@ type SkeletonResourceAction struct {
 	Checks []SkeletonResourceCheck `json:"checks"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonResourceAction) Clone() SkeletonResourceAction {
-	cloned := v
-	if v.Checks == nil {
-		cloned.Checks = nil
-	} else {
-		cloned.Checks = make([]SkeletonResourceCheck, len(v.Checks))
-		for index0 := range v.Checks {
-			cloned.Checks[index0] = v.Checks[index0].Clone()
-		}
-	}
-	return cloned
-}
-
 // SkeletonResourceCheck SkeletonResource Check
 type SkeletonResourceCheck struct {
 	// Name Check name
@@ -1985,20 +1053,6 @@ type SkeletonResourceCheck struct {
 	Arguments []SkeletonField `json:"arguments"`
 	// ArgumentsSensitive Whether all input arguments are sensitive
 	ArgumentsSensitive bool `json:"argumentsSensitive"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonResourceCheck) Clone() SkeletonResourceCheck {
-	cloned := v
-	if v.Arguments == nil {
-		cloned.Arguments = nil
-	} else {
-		cloned.Arguments = make([]SkeletonField, len(v.Arguments))
-		for index0 := range v.Arguments {
-			cloned.Arguments[index0] = v.Arguments[index0].Clone()
-		}
-	}
-	return cloned
 }
 
 // SkeletonResourceItem Skeleton Resource item
@@ -2031,33 +1085,6 @@ type SkeletonResourceItem struct {
 	Actions []SkeletonResourceAction `json:"actions"`
 	// CheckService Check service
 	CheckService *SkeletonServiceItem `json:"checkService"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonResourceItem) Clone() SkeletonResourceItem {
-	cloned := v
-	if v.Checks == nil {
-		cloned.Checks = nil
-	} else {
-		cloned.Checks = make([]SkeletonResourceCheck, len(v.Checks))
-		for index0 := range v.Checks {
-			cloned.Checks[index0] = v.Checks[index0].Clone()
-		}
-	}
-	if v.Actions == nil {
-		cloned.Actions = nil
-	} else {
-		cloned.Actions = make([]SkeletonResourceAction, len(v.Actions))
-		for index1 := range v.Actions {
-			cloned.Actions[index1] = v.Actions[index1].Clone()
-		}
-	}
-	if v.CheckService != nil {
-		clonedValue2 := *v.CheckService
-		clonedValue2 = (*v.CheckService).Clone()
-		cloned.CheckService = &clonedValue2
-	}
-	return cloned
 }
 
 // SkeletonServiceItem Skeleton service items
@@ -2097,33 +1124,6 @@ type SkeletonServiceItem struct {
 	Methods []SkeletonMethod `json:"methods"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonServiceItem) Clone() SkeletonServiceItem {
-	cloned := v
-	if v.Require != nil {
-		clonedValue0 := *v.Require
-		clonedValue0 = (*v.Require).Clone()
-		cloned.Require = &clonedValue0
-	}
-	if v.Actors == nil {
-		cloned.Actors = nil
-	} else {
-		cloned.Actors = make([]SkeletonActorRef, len(v.Actors))
-		for index1 := range v.Actors {
-			cloned.Actors[index1] = v.Actors[index1].Clone()
-		}
-	}
-	if v.Methods == nil {
-		cloned.Methods = nil
-	} else {
-		cloned.Methods = make([]SkeletonMethod, len(v.Methods))
-		for index2 := range v.Methods {
-			cloned.Methods[index2] = v.Methods[index2].Clone()
-		}
-	}
-	return cloned
-}
-
 // SkeletonTask Skeleton task
 type SkeletonTask struct {
 	// Domain Domain
@@ -2152,20 +1152,6 @@ type SkeletonTask struct {
 	Triggers []SkeletonTrigger `json:"triggers"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonTask) Clone() SkeletonTask {
-	cloned := v
-	if v.Triggers == nil {
-		cloned.Triggers = nil
-	} else {
-		cloned.Triggers = make([]SkeletonTrigger, len(v.Triggers))
-		for index0 := range v.Triggers {
-			cloned.Triggers[index0] = v.Triggers[index0].Clone()
-		}
-	}
-	return cloned
-}
-
 // SkeletonTrigger Skeleton task trigger
 type SkeletonTrigger struct {
 	// Name Trigger name
@@ -2186,20 +1172,6 @@ type SkeletonTrigger struct {
 	Arguments []SkeletonField `json:"arguments"`
 	// ArgumentsSensitive Whether all input arguments are sensitive
 	ArgumentsSensitive bool `json:"argumentsSensitive"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonTrigger) Clone() SkeletonTrigger {
-	cloned := v
-	if v.Arguments == nil {
-		cloned.Arguments = nil
-	} else {
-		cloned.Arguments = make([]SkeletonField, len(v.Arguments))
-		for index0 := range v.Arguments {
-			cloned.Arguments[index0] = v.Arguments[index0].Clone()
-		}
-	}
-	return cloned
 }
 
 // SkeletonWebItem Skeleton web page
@@ -2230,20 +1202,6 @@ type SkeletonWebItem struct {
 	Actors []SkeletonActorRef `json:"actors"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v SkeletonWebItem) Clone() SkeletonWebItem {
-	cloned := v
-	if v.Actors == nil {
-		cloned.Actors = nil
-	} else {
-		cloned.Actors = make([]SkeletonActorRef, len(v.Actors))
-		for index0 := range v.Actors {
-			cloned.Actors[index0] = v.Actors[index0].Clone()
-		}
-	}
-	return cloned
-}
-
 // TaskDebugDefaultLaunchRequest Task Debug initiates a request by default
 type TaskDebugDefaultLaunchRequest struct {
 	// TraceId Trace ID
@@ -2252,12 +1210,6 @@ type TaskDebugDefaultLaunchRequest struct {
 	SpanId string `json:"spanId"`
 	// ArgumentsJson Default task parameters JSON
 	ArgumentsJson skel.JSON `json:"argumentsJson"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v TaskDebugDefaultLaunchRequest) Clone() TaskDebugDefaultLaunchRequest {
-	cloned := v
-	return cloned
 }
 
 // TaskDebugLaunchRequest Task Debug initiates a request
@@ -2276,20 +1228,6 @@ type TaskDebugLaunchRequest struct {
 	SpanId *string `json:"spanId"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v TaskDebugLaunchRequest) Clone() TaskDebugLaunchRequest {
-	cloned := v
-	if v.TraceId != nil {
-		clonedValue0 := *v.TraceId
-		cloned.TraceId = &clonedValue0
-	}
-	if v.SpanId != nil {
-		clonedValue1 := *v.SpanId
-		cloned.SpanId = &clonedValue1
-	}
-	return cloned
-}
-
 // TaskDebugTaskItem Task called by Task Debug
 type TaskDebugTaskItem struct {
 	// Name Task name
@@ -2304,12 +1242,6 @@ type TaskDebugTaskItem struct {
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Task deprecation reason
 	DeprecatedReason string `json:"deprecatedReason"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v TaskDebugTaskItem) Clone() TaskDebugTaskItem {
-	cloned := v
-	return cloned
 }
 
 // TaskDebugTriggerItem Trigger called by Task Debug
@@ -2332,32 +1264,12 @@ type TaskDebugTriggerItem struct {
 	Arguments []SkeletonField `json:"arguments"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v TaskDebugTriggerItem) Clone() TaskDebugTriggerItem {
-	cloned := v
-	if v.Arguments == nil {
-		cloned.Arguments = nil
-	} else {
-		cloned.Arguments = make([]SkeletonField, len(v.Arguments))
-		for index0 := range v.Arguments {
-			cloned.Arguments[index0] = v.Arguments[index0].Clone()
-		}
-	}
-	return cloned
-}
-
 // TaskRunnerCronScheduler Task execution Cron schedule
 type TaskRunnerCronScheduler struct {
 	// TriggerSkelName Trigger Skel name
 	TriggerSkelName string `json:"triggerSkelName"`
 	// CronExpr Cron expression
 	CronExpr string `json:"cronExpr"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v TaskRunnerCronScheduler) Clone() TaskRunnerCronScheduler {
-	cloned := v
-	return cloned
 }
 
 // TaskRunnerRegistration Task execution capability registration information provided by the application
@@ -2376,20 +1288,6 @@ type TaskRunnerRegistration struct {
 	CronSchedulers []TaskRunnerCronScheduler `json:"cronSchedulers"`
 }
 
-// Clone returns a value-isolated copy of the generated data.
-func (v TaskRunnerRegistration) Clone() TaskRunnerRegistration {
-	cloned := v
-	if v.CronSchedulers == nil {
-		cloned.CronSchedulers = nil
-	} else {
-		cloned.CronSchedulers = make([]TaskRunnerCronScheduler, len(v.CronSchedulers))
-		for index0 := range v.CronSchedulers {
-			cloned.CronSchedulers[index0] = v.CronSchedulers[index0].Clone()
-		}
-	}
-	return cloned
-}
-
 // WebHandlerRegistration Web processing capability registration information provided by the application
 type WebHandlerRegistration struct {
 	// WebSkelName Web Skel name
@@ -2398,10 +1296,4 @@ type WebHandlerRegistration struct {
 	SchemaHash string `json:"schemaHash"`
 	// Endpoint Web proxy access address
 	Endpoint string `json:"endpoint"`
-}
-
-// Clone returns a value-isolated copy of the generated data.
-func (v WebHandlerRegistration) Clone() WebHandlerRegistration {
-	cloned := v
-	return cloned
 }
