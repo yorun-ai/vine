@@ -148,6 +148,30 @@ func TestAssetsServerServesAcceptedEncoding(t *testing.T) {
 	}
 }
 
+func TestAssetsServerServesAcceptedBrotliEncoding(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	server := NewServer(NewEmbedAccessor(testEmbedFS(t, map[string][]byte{
+		"dist/index.html.br": testBr(t, `<div id="app"></div>`),
+	}), "dist"))
+
+	recorder, ginCtx := newStaticTestContext(http.MethodGet, "/portal/site")
+	ginCtx.Params = gin.Params{{Key: "path", Value: "/portal/site"}}
+	ginCtx.Request.Header.Set("Accept", "text/html")
+	ginCtx.Request.Header.Set("Accept-Encoding", "gzip, zstd, br")
+	server.SetContext(ginCtx)
+	server.Serve()
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status code: %d", recorder.Code)
+	}
+	if encoding := recorder.Header().Get("Content-Encoding"); encoding != string(encodingBr) {
+		t.Fatalf("unexpected content encoding: %s", encoding)
+	}
+	if recorder.Body.String() == `<div id="app"></div>` {
+		t.Fatal("expected encoded response body")
+	}
+}
+
 func TestAssetsServerEncodesPlainAssetWithPreferredEncoding(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	server := NewServer(NewEmbedAccessor(testEmbedFS(t, map[string][]byte{
@@ -156,18 +180,18 @@ func TestAssetsServerEncodesPlainAssetWithPreferredEncoding(t *testing.T) {
 
 	recorder, ginCtx := newStaticTestContext(http.MethodGet, "/assets/app.js")
 	ginCtx.Params = gin.Params{{Key: "path", Value: "/assets/app.js"}}
-	ginCtx.Request.Header.Set("Accept-Encoding", "gzip, zstd")
+	ginCtx.Request.Header.Set("Accept-Encoding", "gzip, zstd, br")
 	server.SetContext(ginCtx)
 	server.Serve()
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("unexpected status code: %d", recorder.Code)
 	}
-	if encoding := recorder.Header().Get("Content-Encoding"); encoding != string(encodingZstd) {
+	if encoding := recorder.Header().Get("Content-Encoding"); encoding != string(encodingBr) {
 		t.Fatalf("unexpected content encoding: %s", encoding)
 	}
 	if recorder.Body.String() == `console.log("vine")` {
-		t.Fatal("expected zstd response body")
+		t.Fatal("expected brotli response body")
 	}
 }
 

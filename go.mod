@@ -5,6 +5,7 @@ go 1.27.0
 require (
 	cloud.google.com/go v0.123.0
 	github.com/Masterminds/semver/v3 v3.5.0
+	github.com/andybalholm/brotli v1.2.4
 	github.com/fxamacker/cbor/v2 v2.9.3
 	github.com/gin-gonic/gin v1.12.0
 	github.com/glebarez/go-sqlite v1.23.0

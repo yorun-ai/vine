@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/andybalholm/brotli"
 	"github.com/gin-gonic/gin"
 	"github.com/klauspost/compress/zstd"
 	"go.yorun.ai/vine/internal/core/web/spec"
@@ -19,9 +20,10 @@ import (
 type _Encoding string
 
 const (
-	encodingNone _Encoding = "none"
-	encodingGzip _Encoding = "gzip"
+	encodingBr   _Encoding = "br"
 	encodingZstd _Encoding = "zstd"
+	encodingGzip _Encoding = "gzip"
+	encodingNone _Encoding = "none"
 
 	indexPath = "/index.html"
 )
@@ -142,7 +144,9 @@ func acceptAssetEncodings(header string) []_Encoding {
 			continue
 		}
 
-		if encoding == string(encodingZstd) {
+		if encoding == string(encodingBr) {
+			encodings = append(encodings, encodingBr)
+		} else if encoding == string(encodingZstd) {
 			encodings = append(encodings, encodingZstd)
 		} else if encoding == string(encodingGzip) {
 			encodings = append(encodings, encodingGzip)
@@ -168,6 +172,9 @@ func (s *Server) encodeResponse() {
 	}
 
 	switch preferredEncoding(s.acceptEncoding) {
+	case encodingBr:
+		s.responseEncoding = encodingBr
+		s.responseContent = encodeBr(s.assetFile.Content)
 	case encodingZstd:
 		s.responseEncoding = encodingZstd
 		s.responseContent = encodeZst(s.assetFile.Content)
@@ -178,6 +185,9 @@ func (s *Server) encodeResponse() {
 }
 
 func preferredEncoding(encodings []_Encoding) _Encoding {
+	if acceptsEncoding(encodings, encodingBr) {
+		return encodingBr
+	}
 	if acceptsEncoding(encodings, encodingZstd) {
 		return encodingZstd
 	}
@@ -185,6 +195,16 @@ func preferredEncoding(encodings []_Encoding) _Encoding {
 		return encodingGzip
 	}
 	return encodingNone
+}
+
+func encodeBr(content []byte) []byte {
+	var buffer bytes.Buffer
+	writer := brotli.NewWriter(&buffer)
+	_, err := writer.Write(content)
+	vpre.CheckNilError(err, "write embedded static brotli failed")
+	err = writer.Close()
+	vpre.CheckNilError(err, "close embedded static brotli failed")
+	return buffer.Bytes()
 }
 
 func encodeZst(content []byte) []byte {
