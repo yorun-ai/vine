@@ -8,6 +8,7 @@ import (
 	"path"
 	"sync"
 
+	"github.com/andybalholm/brotli"
 	"github.com/klauspost/compress/zstd"
 	"go.yorun.ai/vine/util/vpre"
 )
@@ -33,8 +34,15 @@ func (a *_EmbedAccessor) Open(filename string, encodings []_Encoding) (*_File, b
 		return a.open(cachedFilename, acceptedFileEncoding(cachedFilename, encodings))
 	}
 
+	brFilename := filename + ".br"
+	asset, ok := a.open(brFilename, acceptedFileEncoding(brFilename, encodings))
+	if ok {
+		a.cacheFilename(filename, brFilename)
+		return asset, true
+	}
+
 	zstdFilename := filename + ".zst"
-	asset, ok := a.open(zstdFilename, acceptedFileEncoding(zstdFilename, encodings))
+	asset, ok = a.open(zstdFilename, acceptedFileEncoding(zstdFilename, encodings))
 	if ok {
 		a.cacheFilename(filename, zstdFilename)
 		return asset, true
@@ -80,6 +88,8 @@ func (a *_EmbedAccessor) open(filename string, encoding _Encoding) (*_File, bool
 		switch path.Ext(filePath) {
 		case ".zst":
 			content = decodeZst(content, filePath)
+		case ".br":
+			content = decodeBr(content, filePath)
 		case ".gz":
 			content = decodeGzip(content, filePath)
 		}
@@ -93,6 +103,10 @@ func (a *_EmbedAccessor) open(filename string, encoding _Encoding) (*_File, bool
 
 func acceptedFileEncoding(filename string, encodings []_Encoding) _Encoding {
 	switch path.Ext(filename) {
+	case ".br":
+		if acceptsEncoding(encodings, encodingBr) {
+			return encodingBr
+		}
 	case ".zst":
 		if acceptsEncoding(encodings, encodingZstd) {
 			return encodingZstd
@@ -103,6 +117,13 @@ func acceptedFileEncoding(filename string, encodings []_Encoding) _Encoding {
 		}
 	}
 	return encodingNone
+}
+
+func decodeBr(content []byte, filename string) []byte {
+	reader := brotli.NewReader(bytes.NewReader(content))
+	decoded, err := io.ReadAll(reader)
+	vpre.CheckNilError(err, "read embedded static brotli %s failed", filename)
+	return decoded
 }
 
 func decodeZst(content []byte, filename string) []byte {
