@@ -13,8 +13,6 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-const randomLocalWatchListen = "127.0.0.1:0"
-
 func waitRedisReady(listenAddr string, timeout time.Duration, tlsConfig *tls.Config) error {
 	targetAddr, err := redisDialAddr(listenAddr)
 	if err != nil {

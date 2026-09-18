@@ -49,15 +49,11 @@ func (c *_ManagerAppTaskClient) RunTask(run appskeled.TaskRun, _ ...rpcclient.In
 }
 
 type _ManagerDispatchHooks struct {
-	mutex       sync.Mutex
-	runs        []appskeled.TaskRun
-	timeout     time.Duration
-	callCount   int
-	active      int
-	maxActive   int
-	startedChan chan struct{}
-	completed   chan struct{}
-	releaseChan chan struct{}
+	mutex     sync.Mutex
+	runs      []appskeled.TaskRun
+	timeout   time.Duration
+	callCount int
+	completed chan struct{}
 }
 
 func newTestManager(t *testing.T) (*Manager, func()) {

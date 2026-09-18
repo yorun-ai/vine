@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/infra/rdb"
 	"go.yorun.ai/vine/internal/core/logger"
-	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
@@ -141,20 +140,6 @@ func newTestSeederFlag(seedYAMLPath string) *flag.Flag {
 		Store:           flag.StoreSQLite,
 		DBSQLiteFile:    "/tmp/hub.sqlite",
 		SeedHubDataFile: seedYAMLPath,
-	}
-	flags.Normalize(true)
-	return flags
-}
-
-func newTestSeederMTLSFlag() *flag.Flag {
-	flags := &flag.Flag{
-		MTLS: mtls.Files{
-			CAFile:   "ca.pem",
-			CertFile: "cert.pem",
-			KeyFile:  "key.pem",
-		},
-		Store:        flag.StoreSQLite,
-		DBSQLiteFile: "/tmp/hub.sqlite",
 	}
 	flags.Normalize(true)
 	return flags

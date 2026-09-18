@@ -45,10 +45,6 @@ func withTestAudit(p *Initializer) *Initializer {
 	return p
 }
 
-func formatTestWatchListPattern(prefix string) string {
-	return strings.TrimSuffix(prefix, ":") + ":*"
-}
-
 func (s _WatchTestStore) Get(key string) (string, error) {
 	value, _ := s.server.Get(key)
 	return value, nil
@@ -249,26 +245,6 @@ func testSyncer(watchServer *watchserver.Server) *syncer.Syncer {
 	target := &syncer.Syncer{WatchServer: watchServer}
 	target.DIInit()
 	return target
-}
-
-func testPortalRulePtrWithId(id int, rule core.PortalRule) *core.PortalRule {
-	value := testPortalRuleWithId(id, rule)
-	return &value
-}
-
-func testPortalSitePtrWithId(id int, site core.PortalSite) *core.PortalSite {
-	value := testPortalSiteWithId(id, site)
-	return &value
-}
-
-func testPortalRuleWithId(id int, rule core.PortalRule) core.PortalRule {
-	rule.Id = id
-	return rule
-}
-
-func testPortalSiteWithId(id int, site core.PortalSite) core.PortalSite {
-	site.Id = id
-	return site
 }
 
 func TestInitializerDIInitWritesRepoItems(t *testing.T) {
