@@ -61,6 +61,7 @@ type _Client struct {
 	jetStream     jetstream.JetStream
 	ensuredStream map[string]struct{}
 	consumers     map[*_ConsumeContext]struct{}
+	messages      map[*_MessagesContext]struct{}
 	mutex         sync.Mutex
 	recoverMutex  sync.Mutex
 }
@@ -83,6 +84,9 @@ func (c *_Client) setConn(conn *gonats.Conn) {
 	c.ensuredStream = map[string]struct{}{}
 	if c.consumers == nil {
 		c.consumers = map[*_ConsumeContext]struct{}{}
+	}
+	if c.messages == nil {
+		c.messages = map[*_MessagesContext]struct{}{}
 	}
 }
 
@@ -107,6 +111,7 @@ func (c *_Client) recoverJetStream(ctx context.Context) {
 
 	c.clearEnsuredStreams()
 	c.restartConsumers()
+	c.restartMessages()
 }
 
 func (c *_Client) clearEnsuredStreams() {

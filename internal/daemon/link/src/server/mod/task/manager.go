@@ -30,12 +30,18 @@ type _TaskRunnerState struct {
 	taskEndpoint  string
 	registration  skeled.TaskRunnerRegistration
 	semaphore     chan struct{}
+	readContext   context.Context
+	cancelRead    context.CancelFunc
+	subscription  *_TaskSubscription
 }
 
 type _TaskSubscription struct {
-	consumeContext linknats.ConsumeContext
-	runnerByApp    map[string]*_TaskRunnerState
-	nextRunner     int
+	messages    linknats.MessagesContext
+	runnerByApp map[string]*_TaskRunnerState
+	nextRunner  int
+	changed     chan struct{}
+	stopped     bool
+	done        chan struct{}
 }
 
 func (m *Manager) DIInit() {
@@ -46,15 +52,29 @@ func (m *Manager) DIInit() {
 
 func (m *Manager) AfterAppStop() {
 	m.mutex.Lock()
-	consumeContexts := make([]linknats.ConsumeContext, 0, len(m.subscriptionByTaskSkelName))
+	states := make([]*_TaskSubscription, 0, len(m.subscriptionByTaskSkelName))
 	for _, state := range m.subscriptionByTaskSkelName {
-		consumeContexts = append(consumeContexts, state.consumeContext)
+		for _, runner := range state.runnerByApp {
+			runner.cancelRead()
+		}
+		m.stopSubscriptionLocked(state)
+		states = append(states, state)
 	}
 	m.runnerByAppInstanceID = map[string]map[string]*_TaskRunnerState{}
 	m.subscriptionByTaskSkelName = map[string]*_TaskSubscription{}
 	m.mutex.Unlock()
-
-	for _, consumeContext := range consumeContexts {
-		consumeContext.Stop()
+	for _, state := range states {
+		<-state.done
 	}
+}
+
+func (m *Manager) stopSubscriptionLocked(state *_TaskSubscription) {
+	state.stopped = true
+	m.notifyCapacityLocked(state)
+	state.messages.Stop()
+}
+
+func (m *Manager) notifyCapacityLocked(state *_TaskSubscription) {
+	close(state.changed)
+	state.changed = make(chan struct{})
 }
