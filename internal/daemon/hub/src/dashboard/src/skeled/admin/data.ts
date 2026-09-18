@@ -210,6 +210,36 @@ export type FieldSourceBinding = {
   /** Whether the default was used. */
   defaultUsed: boolean;
 }
+/** JetStream consumer snapshot; unacknowledged messages are not necessarily executing. */
+export type MessageQueueConsumer = {
+  name:           string;
+  filterSubjects: Array<string>;
+  /** Undelivered message count as a decimal string. */
+  pending:        string;
+  ackPending:     number;
+  /** Distinct redelivered messages still unacknowledged, not cumulative retries. */
+  redelivered:    number;
+  /** Outstanding pull requests, not waiting messages. */
+  waiting:        number;
+}
+/** Task or Event stream snapshot. */
+export type MessageQueueStatusView = {
+  kind:      string;
+  stream:    string;
+  exists:    boolean;
+  /** Stored message count as a decimal string. */
+  messages:  string;
+  /** Stored bytes as a decimal string. */
+  bytes:     string;
+  subjects:  Array<MessageQueueSubject>;
+  consumers: Array<MessageQueueConsumer>;
+}
+/** Stored messages for a subject, including subjects without consumers. */
+export type MessageQueueSubject = {
+  subject:  string;
+  /** Message count as a decimal string. */
+  messages: string;
+}
 /** Portal site certificate. */
 export type PortalCert = {
   /** Certificate ID. */

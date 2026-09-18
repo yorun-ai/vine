@@ -14,6 +14,7 @@ func init() {
 	rpcspec.Register(_AppConfigApiServiceSpec)
 	rpcspec.Register(_AppStatusApiServiceSpec)
 	rpcspec.Register(_EventDebugApiServiceSpec)
+	rpcspec.Register(_MessageQueueStatusApiServiceSpec)
 	rpcspec.Register(_PortalCertApiServiceSpec)
 	rpcspec.Register(_PortalEntryApiServiceSpec)
 	rpcspec.Register(_PortalRuleApiServiceSpec)
@@ -630,6 +631,104 @@ func (*_WrapperEventDebugApiServiceServerER) mustBeEventDebugApiServiceServerER(
 
 type DefaultEventDebugApiServiceServerER struct {
 	_WrapperEventDebugApiServiceServerER
+}
+
+// MessageQueueStatusApiServiceServer Hub Dashboard message queue status service
+
+// MessageQueueStatusApiService / Spec
+
+var (
+	_MessageQueueStatusApiServiceSpec = &rpcspec.ServiceSpec{
+		Type:              rpcspec.ServiceSpecTypeServer,
+		Name:              "MessageQueueStatusApiService",
+		SkelName:          "vine.hub.admin.MessageQueueStatusApiService",
+		Hash:              "2e40eb39",
+		ServerType:        reflect.TypeFor[MessageQueueStatusApiServiceServer](),
+		DefaultServerType: reflect.TypeFor[*DefaultMessageQueueStatusApiServiceServer](),
+
+		ERServerType:        reflect.TypeFor[MessageQueueStatusApiServiceServerER](),
+		WrapperERServerCtor: _NewWrapperMessageQueueStatusApiServiceServerER,
+		DefaultERServerType: reflect.TypeFor[*DefaultMessageQueueStatusApiServiceServerER](),
+		Methods: []*rpcspec.MethodSpec{
+			_MessageQueueStatusApiServiceListSpec,
+		},
+	}
+	_MessageQueueStatusApiServiceListSpec = &rpcspec.MethodSpec{
+		Name:                        "List",
+		SkelName:                    "list",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[[]MessageQueueStatusView](),
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
+		ArgumentsContainsBinaryType: false,
+		ResultContainsBinaryType:    false,
+		MethodFuncs: []any{
+			MessageQueueStatusApiServiceServer.List,
+			MessageQueueStatusApiServiceServerER.List,
+		},
+	}
+)
+
+// MessageQueueStatusApiService / Server
+
+type MessageQueueStatusApiServiceServer interface {
+	// List Read Task and Event streams without consuming messages.
+	List() []MessageQueueStatusView
+
+	mustBeMessageQueueStatusApiServiceServer()
+}
+
+// MessageQueueStatusApiService / Server / DefaultServer
+
+type DefaultMessageQueueStatusApiServiceServer struct{}
+
+func (*DefaultMessageQueueStatusApiServiceServer) List() []MessageQueueStatusView {
+	ex.PanicNew(ex.InvalidRequest, "method list is not implemented")
+	return []MessageQueueStatusView{}
+}
+
+func (*DefaultMessageQueueStatusApiServiceServer) mustBeMessageQueueStatusApiServiceServer() {}
+
+// MessageQueueStatusApiService / ERServer
+
+type MessageQueueStatusApiServiceServerER interface {
+	List() ([]MessageQueueStatusView, ex.Error)
+
+	mustBeMessageQueueStatusApiServiceServerER()
+}
+
+// MessageQueueStatusApiService / ERServer / WrapperERServer
+
+type _WrapperMessageQueueStatusApiServiceServerER struct {
+	DefaultMessageQueueStatusApiServiceServer
+	serverImpl MessageQueueStatusApiServiceServer
+}
+
+func _NewWrapperMessageQueueStatusApiServiceServerER(serverImpl MessageQueueStatusApiServiceServer) MessageQueueStatusApiServiceServerER {
+	return &_WrapperMessageQueueStatusApiServiceServerER{
+		serverImpl: serverImpl,
+	}
+}
+
+func (service *_WrapperMessageQueueStatusApiServiceServerER) server() MessageQueueStatusApiServiceServer {
+	if service.serverImpl == nil {
+		return &service.DefaultMessageQueueStatusApiServiceServer
+	}
+	return service.serverImpl
+}
+
+func (service *_WrapperMessageQueueStatusApiServiceServerER) List() (ret []MessageQueueStatusView, err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	ret = service.server().List()
+	return
+}
+
+func (*_WrapperMessageQueueStatusApiServiceServerER) mustBeMessageQueueStatusApiServiceServerER() {}
+
+// MessageQueueStatusApiService / ERServer / DefaultERServer
+
+type DefaultMessageQueueStatusApiServiceServerER struct {
+	_WrapperMessageQueueStatusApiServiceServerER
 }
 
 // PortalCertApiServiceServer Hub's Portal site certificate service, called by the Portal admin client

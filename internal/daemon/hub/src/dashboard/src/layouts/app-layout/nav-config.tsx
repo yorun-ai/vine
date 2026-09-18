@@ -171,6 +171,15 @@ export const APP_SCENES: Array<AppScene> = [
             icon: Activity,
           },
           {
+            id: 'message-queue',
+            label: cnDictionary['nav.messageQueue.label'],
+            labelKey: 'nav.messageQueue.label',
+            description: cnDictionary['nav.messageQueue.description'],
+            descriptionKey: 'nav.messageQueue.description',
+            to: '/status/message-queue',
+            icon: Radio,
+          },
+          {
             id: 'portal-instance',
             label: cnDictionary['nav.portalInstance.label'],
             labelKey: 'nav.portalInstance.label',

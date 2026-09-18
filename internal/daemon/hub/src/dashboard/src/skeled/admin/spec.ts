@@ -34,6 +34,13 @@ export const EventDebugApiServiceSpec = {
   },
 } as const;
 
+export const MessageQueueStatusApiServiceSpec = {
+  serviceName: 'vine.hub.admin.MessageQueueStatusApiService',
+  methods: {
+    list: 'list',
+  },
+} as const;
+
 export const PortalCertApiServiceSpec = {
   serviceName: 'vine.hub.admin.PortalCertApiService',
   methods: {

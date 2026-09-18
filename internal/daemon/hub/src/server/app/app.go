@@ -92,6 +92,7 @@ func (a *HubApp) InitModules(addModule app.TypeAdder) {
 }
 
 func (a *HubApp) BindCommon(b *di.Binder) {
+	b.Bind(di.T[core.MessageQueueRepo]()).ToImplementation(di.T[*repo.MessageQueueRepo]())
 	b.Bind(di.T[core.AppConfigRepo]()).ToImplementation(di.T[*repo.AppConfigRepo]())
 	b.Bind(di.T[core.PortalCertRepo]()).ToImplementation(di.T[*repo.PortalCertRepo]())
 	b.Bind(di.T[core.PortalEntryRepo]()).ToImplementation(di.T[*repo.PortalEntryRepo]())
