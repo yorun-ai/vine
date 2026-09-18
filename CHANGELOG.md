@@ -8,6 +8,26 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.21.2] - 2026-09-18
+
+### Added
+
+- Hub Dashboard now includes **Status → Message Queues** for Task and Event
+  streams on embedded NATS (TCP, mTLS, and inproc) and external NATS. It shows
+  stored messages by subject and each consumer's undelivered, unacknowledged,
+  redelivered-unacknowledged, and waiting-pull counts, with search, manual
+  refresh, and automatic refresh every five seconds while the page is visible.
+  Query failures retain the last successful data and show an error. External
+  NATS requires provisioned Vine streams and JetStream query permissions.
+
+### Fixed
+
+- Task dispatch reserves a runner's concurrency slot before reading the next
+  message, preventing a large backlog from creating an unbounded number of
+  waiting goroutines and decoded messages in Link. Running tasks renew their
+  acknowledgement deadline, and message reads recover after connection
+  replacement and stop when runners drain.
+
 ## [0.21.1] - 2026-09-18
 
 ### Added
@@ -1112,3 +1132,6 @@ Initial public release.
 - Rpc, Web, Event, Task, configuration, Redis, and relational database support
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
+
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.21.2...HEAD
+[0.21.2]: https://github.com/yorun-ai/vine/compare/v0.21.1...v0.21.2
