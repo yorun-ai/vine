@@ -39,20 +39,35 @@ internal/daemon/hub/
 
 ## Dashboard 打包
 
-- 调试时设置 `VINE_HUB_DASHBOARD_DEV_PROXY`（非空即可），Dashboard 就由 `script/dev-hub-dashboard.sh` 在 `localhost:7098` 启动的 Vite 服务提供；该服务没在跑时 Hub 回落到内嵌构建。
+- 内嵌目录只有空占位文件 `.gitkeep` 时，会自动探测 `script/dev-hub-dashboard.sh` 在 `localhost:7098` 启动的 Vite 服务。Vite 未启动时，Hub 返回 404，并提示运行该脚本。
 - 修改 Dashboard 源码后，在 `src/dashboard` 运行 `pnpm typecheck` 和 `pnpm build`。
-- Dashboard 源码或它所调用的 admin API 变化时，必须随该改动重新打包并提交嵌入的 `dashboard.tar.zst`：嵌入产物必须始终与它调用的 admin API 匹配。仓库使用 squash merge，分支只有最终产物会进入 main。
+- 容器和 Release 构建会在编译 Vine 前生成 `src/server/mod/admin/assets/dashboard/`。生成文件被忽略，仅保留纳入 Git 的空文件 `.gitkeep`。
 - 面向用户的文案需要同步更新 `src/i18n/dictionaries/cn.ts` 和 `en.ts`。
 
-Dashboard 前端源码位于 `src/dashboard`，Hub 运行时读取的是嵌入在 `src/server/mod/admin/assets/dashboard.tar.zst` 中的构建产物。
+Dashboard 前端源码位于 `src/dashboard`。Release 和容器构建把 Dashboard 编进 Vine；没有内嵌 `index.html` 或 `index.html.br` 时使用本地 Vite 服务。本地构建也会内嵌之前打包留下的资源。
 
-必须用脚本重新打包，不要手工组装归档，也不要在冲突时直接选某一边：
+使用脚本生成内嵌资源，不要手工编辑生成文件：
 
 ```bash
 bash script/build-dashboard-assets.sh
+GOWORK=off go build -o bin/vine ./cmd/vine
 ```
 
-该脚本会进入 `src/dashboard` 执行 `pnpm run build`，为 Dashboard bundle 中实际包含的依赖生成 `THIRD_PARTY_LICENSES.md`，再把 `dist` 打包为新的 `dashboard.tar.zst`。发布准备同样会重新打包，保证发布产物与其许可证清单对应发布的源码。
+脚本先做类型检查，将前端构建到临时目录，再按原路径逐文件处理：文本仅在 Brotli
+压缩后更小时保存为 `.br`，图片、字体等保留原文件。每个文件只保留一种形式，全部
+成功后替换整个 assets 目录，避免残留旧文件。临时 Vite 报告收集实际打包的 JS 依赖声明，
+再补充导入的 CSS、字体及已维护的 uiw 许可证。打包先与根目录
+`THIRD_PARTY_LICENSES.txt` 的 Dashboard 部分比较，再移除临时报告。
+打包依赖变化后，用 `bash script/gen-third-party-licenses.sh` 更新统一清单。
+不分发归档、Go 字节数组或独立的 Dashboard 许可证文件。Release 归档携带统一清单，
+三个镜像均在 `/usr/share/licenses/vine/` 下携带清单和 `LICENSE`。
+所有 Go 构建都通过 `go:embed` 内嵌该目录，无需构建标签。
+打包保留纳入 Git 的空文件 `.gitkeep`，避免使 Release 工作区变脏；HTTP 不提供该文件。
+本地打包后如需切回 Vite，删除生成资源、保留 `.gitkeep`，再重新编译 Go。
+
+Dashboard 通过共享的 Asset Server 处理 MIME、HEAD 和压缩协商。客户端接受 Brotli
+时直接发送 `.br` 内容，否则解压或转换为客户端支持的格式。已压缩的图片和字体不再
+动态压缩。HTML 页面导航回退到 `index.html`，缺失的静态文件返回 404。
 
 ## 分层与变更约束
 

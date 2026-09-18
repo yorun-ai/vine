@@ -27,12 +27,12 @@ fail the gate.
 | Go production source, module files, backend resources or test fixtures | Full ordinary Go tests and leak checks, static checks including Linux static compilation, targeted race; module files also select Hub image build |
 | Shared Dashboard/Go test data | Go tests and targeted race checks, plus Dashboard tests/build |
 | Go test files only | Full ordinary Go tests and leak checks, targeted race |
-| Non-test Go source or module files | Also regenerate and check the CLI license inventory |
+| Non-test Go source or module files | Regenerate and check the Go section of the unified license inventory |
 | Go test shell scripts | Go checks and workflow checks |
-| Dashboard source/dependencies or packaging script | Dashboard editor tests and build, including type checking; shell scripts also select workflow checks |
+| Dashboard source/dependencies or packaging script | Dashboard tests, asset packaging/type checking, bundled license validation and embedded Go handler tests; shell scripts also select workflow checks |
 | Dockerfile or Docker ignore rules | Hub image build |
 | Kubernetes manifests or their validation script | Render and validate Kubernetes overlays; shell scripts also select workflow checks |
-| License inventory or its generator | License checks; the generator also selects workflow checks |
+| License inventory or its generator | Go license checks and Dashboard packaging/license checks; the generator also selects workflow checks |
 | CI/cache orchestration workflows or local actions | All optional checks, to validate job wiring |
 | Dashboard/Kubernetes reusable workflow | Its corresponding check and workflow lint |
 | Classification helpers | All optional checks, to validate the gate and its wiring |
@@ -41,9 +41,8 @@ fail the gate.
 
 Go tests cover all packages when selected; PRs do not maintain a dependency-based
 package filter. Test-only Go changes select Go test and targeted race checks but
-skip static checks. Backend resource changes include embedded SQL, Dashboard
-archives, and test fixtures. Frontend source and Markdown do not select Go checks
-by themselves.
+skip static checks. Backend resource changes include embedded SQL and test
+fixtures. Frontend source and Markdown do not select Go checks by themselves.
 
 The ordinary Go test job also runs the separate build-tagged goroutine leak tests.
 PRs run ordinary tests and targeted race checks. Full shuffled and race suites are
@@ -53,6 +52,16 @@ because the Go checks job runs full vet once. Static checks and license validati
 share one job and Go setup, but retain independent step conditions. License-only
 changes do not run vet or module tidiness checks.
 
+`THIRD_PARTY_LICENSES.txt` combines Go and Dashboard notices. Go checks use
+`script/gen-third-party-licenses.sh --check-go` without installing frontend
+dependencies. Dashboard packaging compares bundled JS and imported CSS/font
+notices with its section of the committed inventory before embedding assets.
+Editing the inventory or generator selects both checks. Regenerate both sections
+locally with `script/gen-third-party-licenses.sh` and installed Dashboard packages.
+The temporary frontend report never becomes a Dashboard asset. Release archives
+include the unified inventory, and all images copy it with `LICENSE` into
+`/usr/share/licenses/vine/`.
+
 Go module, Dockerfile, Docker ignore, and image workflow changes validate the
 Hub image in the PR. Ordinary Go source and backend resource changes instead
 compile `cmd/vine` in the Go checks job with the image build's pinned Go version,
@@ -60,8 +69,9 @@ compile `cmd/vine` in the Go checks job with the image build's pinned Go version
 static compilation failures without rebuilding the container. The image check
 only builds the image; it does not test service startup.
 Main runs cache warmup only; tags do not run CI. PR image builds read the shared
-cache without exporting it. Pure frontend changes select the Dashboard build, not a rebuild of the unchanged
-embedded archive. Dashboard and Kubernetes steps live in reusable workflows; changes to either
+cache without exporting it. Pure frontend changes select Dashboard packaging and
+embedded handler tests, not a Go image build. Dashboard and Kubernetes steps live
+in reusable workflows; changes to either
 select that check. The orchestration workflow and classification helpers still
 select all jobs to exercise their wiring and the complete gate.
 

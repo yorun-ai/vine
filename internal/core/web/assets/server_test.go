@@ -218,6 +218,54 @@ func TestAssetsServerEncodesPlainAssetWithGzip(t *testing.T) {
 	}
 }
 
+func TestAssetsServerLeavesCompressedFormatsUnchanged(t *testing.T) {
+	for _, filename := range []string{"logo.png", "photo.jpg", "photo.webp", "font.woff2"} {
+		t.Run(filename, func(t *testing.T) {
+			content := []byte("already compressed asset")
+			server := NewServer(NewEmbedAccessor(testEmbedFS(t, map[string][]byte{
+				"dist/" + filename: content,
+			}), "dist"))
+			recorder, ctx := newStaticTestContext(http.MethodGet, "/"+filename)
+			ctx.Params = gin.Params{{Key: "path", Value: "/" + filename}}
+			ctx.Request.Header.Set("Accept-Encoding", "br, gzip, zstd")
+			server.SetContext(ctx)
+			server.Serve()
+			if recorder.Code != http.StatusOK || !bytes.Equal(recorder.Body.Bytes(), content) {
+				t.Fatalf("unexpected response: %d %q", recorder.Code, recorder.Body.Bytes())
+			}
+			if recorder.Header().Get("Content-Encoding") != "" {
+				t.Fatal("already compressed formats must not be dynamically compressed")
+			}
+		})
+	}
+}
+
+func TestAssetsServerDecodesBrotliForIdentityAndGzip(t *testing.T) {
+	content := []byte("<html>Dashboard</html>")
+	accessor := NewEmbedAccessor(testEmbedFS(t, map[string][]byte{
+		"dist/index.html.br": testBr(t, string(content)),
+	}), "dist")
+	for _, encoding := range []string{"", "gzip"} {
+		t.Run(encoding, func(t *testing.T) {
+			server := NewServer(accessor)
+			recorder, ctx := newStaticTestContext(http.MethodGet, "/")
+			ctx.Request.Header.Set("Accept-Encoding", encoding)
+			server.SetContext(ctx)
+			server.Serve()
+			if recorder.Code != http.StatusOK || recorder.Header().Get("Content-Encoding") != encoding {
+				t.Fatalf("unexpected response: %d %v", recorder.Code, recorder.Header())
+			}
+			decoded := recorder.Body.Bytes()
+			if encoding == "gzip" {
+				decoded = decodeGzip(decoded, "index.html.gz")
+			}
+			if !bytes.Equal(decoded, content) || recorder.Header().Get("Vary") != "Accept-Encoding" {
+				t.Fatalf("unexpected decoded response: %q %v", decoded, recorder.Header())
+			}
+		})
+	}
+}
+
 func newStaticTestContext(method string, path string) (*httptest.ResponseRecorder, *gin.Context) {
 	recorder := httptest.NewRecorder()
 	ginCtx, _ := gin.CreateTestContext(recorder)

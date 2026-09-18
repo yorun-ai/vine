@@ -102,9 +102,7 @@ jobs:
 
       - name: Check third-party licenses
         if: needs.changes.outputs.licenses == 'true'
-        run: |
-          bash script/gen-third-party-licenses.sh
-          git diff --exit-code -- THIRD_PARTY_LICENSES.txt
+        run: bash script/gen-third-party-licenses.sh --check-go
 
   go-race:
     name: Go race

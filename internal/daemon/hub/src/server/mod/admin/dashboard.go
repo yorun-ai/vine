@@ -1,33 +1,40 @@
 package admin
 
 import (
-	"bytes"
 	"context"
-	_ "embed"
+	"embed"
+	"io/fs"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"os"
 	"path"
 	"sync/atomic"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"go.yorun.ai/vine/internal/core/web/assets"
 )
 
-//go:embed assets/dashboard.tar.zst
-var dashboardTarZst []byte
+// The empty .gitkeep keeps source-only builds valid. Packaging preserves it so
+// generating assets does not modify tracked files or release VCS metadata.
+//
+//go:embed all:assets/dashboard
+var dashboardFS embed.FS
 
-var dashboardAssets = assets.NewTarZstAccessor(dashboardTarZst)
+var dashboardAssets = newDashboardAssets(dashboardFS)
+
+func newDashboardAssets(fsys fs.FS) assets.Accessor {
+	const root = "assets/dashboard"
+	for _, index := range []string{"index.html", "index.html.br"} {
+		if info, err := fs.Stat(fsys, root+"/"+index); err == nil && info.Mode().IsRegular() {
+			return assets.NewEmbedAccessor(fsys, root)
+		}
+	}
+	return nil
+}
 
 const (
-	// dashboardIndexPath is the entry document of the embedded build, and the
-	// document a path the build does not carry answers with.
-	dashboardIndexPath = "/index.html"
-	// dashboardDevProxyEnv starts Hub against a Dashboard development server
-	// instead of the embedded build, so a Dashboard source change needs no build.
-	dashboardDevProxyEnv = "VINE_HUB_DASHBOARD_DEV_PROXY"
 	// dashboardDevProxyProbeInterval is how often the development server is
 	// checked for an answer: the Dashboard asks for its build often, so the check
 	// runs beside the requests and a request only reads its result.
@@ -41,10 +48,11 @@ const (
 // server the script started.
 var dashboardDevServerURL = "http://localhost:7098"
 
-// dashboardDevProxy returns the development server a development Hub serves the
-// Dashboard through, or nil when no development server was asked for.
+// dashboardDevProxy returns a development proxy only when this build has no
+// embedded Dashboard entry document. A placeholder-only build probes Vite;
+// compiling after packaging automatically uses the embedded Dashboard.
 func dashboardDevProxy() *_DashboardDevProxy {
-	if os.Getenv(dashboardDevProxyEnv) == "" {
+	if dashboardAssets != nil {
 		return nil
 	}
 	target, err := url.Parse(dashboardDevServerURL)
@@ -55,13 +63,13 @@ func dashboardDevProxy() *_DashboardDevProxy {
 	}
 	devProxy := newDashboardDevProxy(target)
 	adminLogger.Info("dashboard development proxy enabled",
-		"target", dashboardDevServerURL, "env", dashboardDevProxyEnv, "answering", devProxy.available.Load())
+		"target", dashboardDevServerURL, "answering", devProxy.available.Load())
 	return devProxy
 }
 
 // _DashboardDevProxy serves the Dashboard from the development server a developer
-// runs beside Hub, and reports the requests it did not answer, so Hub serves them
-// from the embedded build instead. A check beside the requests keeps its answer
+// runs beside Hub, and reports the requests it did not answer, so Hub returns
+// the development command instead. A check beside the requests keeps its answer
 // current, so a request never waits for a connection of its own.
 type _DashboardDevProxy struct {
 	target *url.URL
@@ -133,8 +141,7 @@ func (p *_DashboardDevProxy) watch() {
 }
 
 // refreshAvailable records whether the development server answers, and reports the
-// change: a developer who sees the embedded build wants to know the development
-// server stopped answering, and the other way around.
+// change so developers know when the local Dashboard becomes available.
 func (p *_DashboardDevProxy) refreshAvailable() {
 	available := p.detectAvailable()
 	if p.available.Swap(available) == available {
@@ -144,7 +151,7 @@ func (p *_DashboardDevProxy) refreshAvailable() {
 		adminLogger.Info("dashboard development proxy is serving the development server", "target", p.target.String())
 		return
 	}
-	adminLogger.Info("dashboard development proxy is not answering, Hub serves the embedded Dashboard", "target", p.target.String())
+	adminLogger.Info("dashboard development server is unavailable; run script/dev-hub-dashboard.sh", "target", p.target.String())
 }
 
 // detectAvailable reports whether the development server accepts a connection.
@@ -161,26 +168,22 @@ func (p *_DashboardDevProxy) detectAvailable() bool {
 // which also serves the Admin API, so the Dashboard reaches Hub on one origin
 // instead of another component's route.
 func dashboardHandler() http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		name := path.Clean("/" + request.URL.Path)
-		if file, ok := dashboardAssets.Open(name, nil); ok {
-			serveDashboardFile(writer, request, name, file.ModTime, file.Content)
-			return
-		}
-		// The Dashboard is a single-page app: a path the build does not carry is
-		// one of its own routes, so Hub answers with the entry document and lets
-		// the app resolve it.
-		file, ok := dashboardAssets.Open(dashboardIndexPath, nil)
-		if !ok {
-			http.NotFound(writer, request)
-			return
-		}
-		serveDashboardFile(writer, request, dashboardIndexPath, file.ModTime, file.Content)
-	})
-}
+	if dashboardAssets == nil {
+		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			http.Error(writer, "Hub Dashboard assets are not embedded; run bash script/dev-hub-dashboard.sh for local development.", http.StatusNotFound)
+		})
+	}
 
-func serveDashboardFile(writer http.ResponseWriter, request *http.Request, name string, modTime time.Time, content []byte) {
-	// ServeContent deduces the content type from the name and answers HEAD and
-	// conditional requests.
-	http.ServeContent(writer, request, path.Base(name), modTime, bytes.NewReader(content))
+	router := gin.New()
+	router.Any("/*path", func(ctx *gin.Context) {
+		if path.Clean("/"+ctx.Param("path")) == "/.gitkeep" {
+			ctx.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+		// Asset Server stores request state, while the accessor can be shared.
+		server := assets.NewServer(dashboardAssets)
+		server.SetContext(ctx)
+		server.Serve()
+	})
+	return router
 }

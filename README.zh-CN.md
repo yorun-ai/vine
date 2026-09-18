@@ -274,9 +274,11 @@ Vine 遵循[语义化版本](https://semver.org/lang/zh-CN/)。在 `v1.0.0` 之�
 ## 许可证
 
 Vine 使用 [Apache License 2.0](LICENSE) 开源。二进制发布包必须同时包含 `LICENSE` 和
-[`THIRD_PARTY_LICENSES.txt`](THIRD_PARTY_LICENSES.txt)。依赖发生变化后，使用以下
-命令重新生成第三方许可证文件：
+[`THIRD_PARTY_LICENSES.txt`](THIRD_PARTY_LICENSES.txt)。统一清单覆盖 Go 依赖以及
+Dashboard 打包的 JavaScript、CSS 和字体。Release 归档携带这两个文件，容器镜像
+将它们放在 `/usr/share/licenses/vine/`。依赖变化后，在安装 Node.js 和 pnpm 的环境中运行：
 
 ```bash
+pnpm --dir internal/daemon/hub/src/dashboard install --frozen-lockfile
 bash script/gen-third-party-licenses.sh
 ```

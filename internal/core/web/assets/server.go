@@ -122,10 +122,14 @@ func (s *Server) writeResponse() {
 	if contentType != "" {
 		s.GinCtx.Writer.Header().Set("Content-Type", contentType)
 	}
+	// Identity responses also vary by encoding: a cache must not reuse them
+	// for a client that accepts a compressed representation, or vice versa.
+	if !isCompressedAsset(s.requestPath) || s.responseEncoding != encodingNone {
+		s.GinCtx.Writer.Header().Add("Vary", "Accept-Encoding")
+	}
 
 	if s.responseEncoding != encodingNone {
 		s.GinCtx.Writer.Header().Set("Content-Encoding", string(s.responseEncoding))
-		s.GinCtx.Writer.Header().Add("Vary", "Accept-Encoding")
 	}
 
 	http.ServeContent(
@@ -167,7 +171,7 @@ func (s *Server) encodeResponse() {
 
 	s.responseEncoding = s.assetFile.Encoding
 	s.responseContent = s.assetFile.Content
-	if s.responseEncoding != encodingNone {
+	if s.responseEncoding != encodingNone || isCompressedAsset(s.requestPath) {
 		return
 	}
 
@@ -181,6 +185,17 @@ func (s *Server) encodeResponse() {
 	case encodingGzip:
 		s.responseEncoding = encodingGzip
 		s.responseContent = encodeGzip(s.assetFile.Content)
+	}
+}
+
+func isCompressedAsset(filename string) bool {
+	switch strings.ToLower(path.Ext(filename)) {
+	case ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".ico",
+		".woff", ".woff2", ".mp3", ".mp4", ".webm", ".ogg",
+		".zip", ".gz", ".br", ".zst":
+		return true
+	default:
+		return false
 	}
 }
 

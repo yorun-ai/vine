@@ -12,7 +12,8 @@ classify_changes() {
         ((startswith("test/") or startswith("script/")) and endswith(".sh"))) and
         (test("\\.(md|mdx)$") | not)) as $workflow |
       any(.[]; startswith("internal/daemon/hub/src/dashboard/") and (test("\\.(md|mdx)$") | not)) as $frontend |
-      ($ci or $frontend or any(.[]; . == "script/build-dashboard-assets.sh" or . == ".github/workflows/ci-dashboard.yml")) as $dashboard |
+      ($ci or $frontend or any(.[]; . == "script/build-dashboard-assets.sh" or . == ".github/workflows/ci-dashboard.yml" or
+        . == "THIRD_PARTY_LICENSES.txt" or . == "script/gen-third-party-licenses.sh")) as $dashboard |
       any(.[]; . == "go.mod" or . == "go.sum") as $dependencies |
       any(.[]; endswith(".go")) as $go_files |
       any(.[]; endswith(".go") and (endswith("_test.go") | not)) as $go_source |
