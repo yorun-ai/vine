@@ -8,6 +8,39 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.21.3] - 2026-09-18
+
+### Added
+
+- Asset Server supports Brotli negotiation, direct serving of per-file `.br`
+  resources, and decoding for clients without Brotli support. Already compressed
+  images and fonts are served without additional dynamic compression.
+
+### Changed
+
+- Hub Dashboard splits message queues into **Task Queues** and **Event Queues**,
+  each with subject inventory and consumer tabs, tables that fill the available
+  height with internal scrolling, and sorting by subject or message counts.
+- Dashboard assets are generated from source when building container images and
+  release binaries, then embedded as individual files. Text uses Brotli only
+  when smaller; images and fonts retain their original bytes. Generated bundles
+  are no longer stored in Git.
+- A Hub build without an embedded Dashboard entry document automatically probes
+  the local Vite server. When unavailable, Dashboard requests return 404 with the
+  command to run `bash script/dev-hub-dashboard.sh`. Local builds that retain
+  packaged assets continue to serve that embedded Dashboard.
+- The unified `THIRD_PARTY_LICENSES.txt` includes bundled Dashboard JavaScript,
+  CSS, and font notices. Release archives include the inventory; Hub, Link, and
+  Portal images include it with `LICENSE` in `/usr/share/licenses/vine/`.
+  Packaging rejects an outdated Dashboard license inventory.
+
+### Removed
+
+- The `/status/message-queue` Dashboard route is replaced by
+  `/status/task-queue` and `/status/event-queue` without a redirect.
+- `VINE_HUB_DASHBOARD_DEV_PROXY` is no longer needed or read; embedded resource
+  detection selects Dashboard serving or local development automatically.
+
 ## [0.21.2] - 2026-09-18
 
 ### Added
@@ -1133,5 +1166,6 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.21.2...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.21.3...HEAD
+[0.21.3]: https://github.com/yorun-ai/vine/compare/v0.21.2...v0.21.3
 [0.21.2]: https://github.com/yorun-ai/vine/compare/v0.21.1...v0.21.2
