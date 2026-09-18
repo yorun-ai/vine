@@ -34,12 +34,19 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
   in `internal/core/skel/version.go`. Do not regenerate with an older compiler.
 - Keep the import rewriting and formatting performed by `script/gen-skel.sh`.
   Generated runtime code intentionally imports internal packages.
-- Treat the embedded Hub Dashboard bundle
-  (`internal/daemon/hub/src/server/mod/admin/assets/dashboard.tar.zst`)
-  as generated: rebuild it with `bash script/build-dashboard-assets.sh` whenever
-  Dashboard source or the admin API it calls changes, and commit it with that
-  change. Never assemble the archive by hand, and never resolve a conflict on it
-  by picking one side; rebuild it from the merged source.
+- Dashboard assets under
+  `internal/daemon/hub/src/server/mod/admin/assets/dashboard/` are generated and
+  ignored except for the tracked empty `.gitkeep`. Docker and Release run
+  `bash script/build-dashboard-assets.sh` before compiling; `go:embed` includes
+  the directory without a build tag. Keep `.gitkeep` empty and preserve it when
+  packaging so tracked files and release VCS metadata stay unchanged.
+- Hub serves embedded assets when `index.html` or `index.html.br` exists in the
+  embedded directory; otherwise it probes the local Dashboard development server.
+  Local Go builds also embed any assets left from previous packaging.
+- Packaging builds the frontend in a temporary directory and replaces the asset
+  directory only after all files are ready. Text uses Brotli only when smaller;
+  already compressed images and fonts retain their original bytes. Never commit
+  or manually edit generated assets.
 
 ## Public API Boundaries
 
@@ -134,17 +141,18 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
   entries that never matched the released code; describe the user-visible effect
   in the change itself and in its pull request, and let release preparation
   collect it.
-- After Go dependency changes, run `bash script/gen-third-party-licenses.sh`
-  and commit inventory changes. Regenerate contracts with `bash script/gen-skel.sh all`
-  and inspect drift. Build Dashboard archives only with the documented script.
-- Confirm the embedded Dashboard bundle matches the Dashboard sources before
-  tagging: rebuild it with `bash script/build-dashboard-assets.sh` using the
-  Node.js and pnpm versions pinned in `.github/workflows/ci-dashboard.yml`, then
-  compare the extracted archive contents against the committed
-  `internal/daemon/hub/src/server/mod/admin/assets/dashboard.tar.zst`. The
-  archive embeds file timestamps, so compare extracted files rather than archive
-  bytes, and commit the rebuilt archive in the release-preparation change when
-  the contents differ.
+- After Go dependency or Dashboard bundled JS/CSS/font dependency changes,
+  install Dashboard dependencies with
+  `pnpm --dir internal/daemon/hub/src/dashboard install --frozen-lockfile`,
+  then run `bash script/gen-third-party-licenses.sh`
+  and include the unified `THIRD_PARTY_LICENSES.txt` in the change. This inventory
+  covers Go and Dashboard; do not ship a separate license file in Dashboard assets.
+  Packaging checks the frontend section; Go CI checks only the Go section.
+- Regenerate contracts with `bash script/gen-skel.sh all` and inspect drift.
+  Generate embedded Dashboard assets only with the documented script.
+- Confirm Docker and Release build the embedded Dashboard with the Node.js and
+  pnpm versions pinned in `.github/workflows/ci-dashboard.yml`; the generated
+  assets are ignored and must not enter release or feature commits.
 - Versions come from release tags and build-time `ldflags`, not source constants.
 
 ## Tests

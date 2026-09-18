@@ -16,6 +16,9 @@ import (
 )
 
 func TestServerOpensAdminListenerForInprocHub(t *testing.T) {
+	originalURL := dashboardDevServerURL
+	dashboardDevServerURL = "http://127.0.0.1:1"
+	t.Cleanup(func() { dashboardDevServerURL = originalURL })
 	prev := listenTCP
 	listenTCP = func(_, _ string) (net.Listener, error) { return net.Listen("tcp", "127.0.0.1:0") }
 	t.Cleanup(func() { listenTCP = prev })
@@ -51,7 +54,11 @@ func TestServerOpensAdminListenerForInprocHub(t *testing.T) {
 				t.Fatalf("reach the admin listener: %v", err)
 			}
 			defer func() { _ = response.Body.Close() }()
-			if response.StatusCode != http.StatusOK {
+			wantStatus := http.StatusOK
+			if dashboardAssets == nil {
+				wantStatus = http.StatusNotFound
+			}
+			if response.StatusCode != wantStatus {
 				t.Fatalf("unexpected dashboard status code: %d", response.StatusCode)
 			}
 		})
@@ -75,6 +82,9 @@ func (_InternalRuntimeStub) AdditionalServicer(...reflect.Type) (http.Handler, r
 // requests it proxies, because a development server that does not answer must not
 // hold Hub open the way a request Hub serves itself cannot.
 func TestServerShutdownEndsAStalledDashboardRequest(t *testing.T) {
+	if dashboardAssets != nil {
+		t.Skip("embedded builds do not probe a development server")
+	}
 	release := make(chan struct{})
 	t.Cleanup(func() { close(release) })
 	proxied := make(chan struct{}, 1)
@@ -88,7 +98,6 @@ func TestServerShutdownEndsAStalledDashboardRequest(t *testing.T) {
 	t.Cleanup(devServer.Close)
 	t.Cleanup(func() { dashboardDevServerURL = "http://localhost:7098" })
 	dashboardDevServerURL = devServer.URL
-	t.Setenv(dashboardDevProxyEnv, "1")
 
 	originalTimeout := shutdownTimeout
 	shutdownTimeout = 5 * time.Second
@@ -155,11 +164,20 @@ func TestServerServesAdminAPIAndDashboardBuild(t *testing.T) {
 	}
 
 	response = httptest.NewRecorder()
-	server.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "http://hub.local/portal/site", nil))
-	if response.Code != http.StatusOK {
+	request := httptest.NewRequest(http.MethodGet, "http://hub.local/portal/site", nil)
+	request.Header.Set("Accept", "text/html")
+	server.ServeHTTP(response, request)
+	wantStatus := http.StatusNotFound
+	if dashboardAssets != nil {
+		wantStatus = http.StatusOK
+	}
+	if response.Code != wantStatus {
 		t.Fatalf("unexpected dashboard status code: %d", response.Code)
 	}
-	if !strings.Contains(response.Body.String(), `<div id="app"></div>`) {
-		t.Fatalf("expected the Dashboard build, got: %s", response.Body.String())
+	if dashboardAssets == nil && !strings.Contains(response.Body.String(), "script/dev-hub-dashboard.sh") {
+		t.Fatalf("expected the development hint, got: %s", response.Body.String())
+	}
+	if dashboardAssets != nil && !strings.Contains(response.Body.String(), `<div id="app"></div>`) {
+		t.Fatalf("expected the embedded Dashboard, got: %s", response.Body.String())
 	}
 }

@@ -302,9 +302,12 @@ commitment.
 
 Vine is open source under the [Apache License 2.0](LICENSE). Binary
 distributions must include both `LICENSE` and
-[`THIRD_PARTY_LICENSES.txt`](THIRD_PARTY_LICENSES.txt). Regenerate the
-third-party file after dependency changes with:
+[`THIRD_PARTY_LICENSES.txt`](THIRD_PARTY_LICENSES.txt), which covers Go dependencies
+and the Dashboard's bundled JavaScript, CSS, and fonts. Release archives include
+both files; container images include them in `/usr/share/licenses/vine/`.
+With Node.js and pnpm installed, regenerate the inventory after dependency changes:
 
 ```bash
+pnpm --dir internal/daemon/hub/src/dashboard install --frozen-lockfile
 bash script/gen-third-party-licenses.sh
 ```

@@ -25,9 +25,8 @@ The runtime-specific guides are:
 The Go module targets Go 1.27. Depending on the area being changed, development
 may also require:
 
-- Node.js 20 or later and pnpm for the documentation site and Hub Dashboard
+- Node.js 24.11.0 and pnpm 11.15.0 for the documentation site and Hub Dashboard
 - `skelc` for regenerating Skel contracts
-- `zstd` when rebuilding the embedded Hub Dashboard release asset
 
 Download Go dependencies and run the baseline test suite with:
 
@@ -161,8 +160,10 @@ bash script/dev-hub-dashboard.sh
 
 The script starts Vite on port 7098 and forwards additional arguments to Vite.
 It fails if the port is occupied so Hub's development proxy keeps targeting the
-correct server. Start Hub separately with `VINE_HUB_DASHBOARD_DEV_PROXY=1` and
-open its Dashboard URL to use the development frontend with Hub's admin APIs.
+correct server. Start Hub separately and open its Dashboard URL; when the local
+binary has no embedded assets, it automatically probes Vite at `localhost:7098`.
+If Vite is not running, the Dashboard returns 404 and tells you to run
+`script/dev-hub-dashboard.sh`.
 
 For Dashboard source changes, run:
 
@@ -176,15 +177,38 @@ pnpm build
 Keep user-facing strings synchronized between `src/i18n/dictionaries/cn.ts` and
 `en.ts`.
 
-Do not rebuild the embedded `dashboard.tar.zst` during ordinary development.
-When a task explicitly includes updating release assets, run the following from
-the repository root and commit the resulting archive:
+A fresh checkout has only an empty `.gitkeep` in the assets directory, so Hub
+probes Vite. If `index.html` or `index.html.br` is present when Go compiles, Hub
+serves that embedded Dashboard instead. Local builds also use previously packaged
+assets; remove generated files while keeping `.gitkeep` to return to Vite.
+Docker and Release build the frontend before compiling Vine.
+To build an embedded Dashboard locally, run from the repository root:
 
 ```bash
 bash script/build-dashboard-assets.sh
+GOWORK=off go build -o bin/vine ./cmd/vine
 ```
 
-Do not assemble the archive manually.
+The script type-checks and builds the frontend in a temporary directory. It
+writes text as Brotli only when smaller and copies other files unchanged into
+`internal/daemon/hub/src/server/mod/admin/assets/dashboard/`, preserving paths.
+Each file has one representation. The complete directory replaces the previous
+build, so old hashed files cannot survive. Generated files are ignored by Git;
+the empty tracked `.gitkeep` is preserved and is never served over HTTP.
+No archive or Go byte array is generated. A temporary Vite dependency report,
+plus imported CSS and font notices, is checked against the Dashboard section of
+`THIRD_PARTY_LICENSES.txt` before assets are replaced. The report is removed before
+packaging; no separate license file is shipped inside the Dashboard.
+
+After bundled dependency changes, run `bash script/gen-third-party-licenses.sh`
+with Dashboard dependencies installed and include the updated unified inventory
+in the change. Release archives include it beside the binary; all three images
+include it and `LICENSE` in `/usr/share/licenses/vine/`.
+
+All builds use `go:embed` with no build tag. A fresh checkout needs no frontend
+output or Node.js toolchain. Asset Server serves precompressed Brotli directly
+when accepted by the client and decodes it otherwise. Missing static files
+return 404; HTML navigation falls back to `index.html`.
 
 ## Kubernetes Manifests
 

@@ -42,20 +42,41 @@ internal/daemon/hub/
 
 ## Dashboard Packaging
 
-- During development, set `VINE_HUB_DASHBOARD_DEV_PROXY` (any non-empty value) to serve the Dashboard from the Vite server `script/dev-hub-dashboard.sh` starts on `localhost:7098`; Hub serves the embedded build whenever that server is not running.
+- Builds containing only the empty `.gitkeep` placeholder automatically probe the Vite server that `script/dev-hub-dashboard.sh` starts on `localhost:7098`. If it is not running, Hub returns 404 with the command to start it.
 - After changing Dashboard source, run `pnpm typecheck` and `pnpm build` in `src/dashboard`.
-- Rebuild the embedded `dashboard.tar.zst` whenever the Dashboard source or the admin API it calls changes, and commit it with that change: the embedded bundle must always match the admin API it calls. Merges are squashed, so a branch contributes only its final bundle to main.
+- Container and release builds generate `src/server/mod/admin/assets/dashboard/` immediately before compiling Vine. Generated files are ignored; the empty tracked `.gitkeep` is preserved.
 - Keep user-facing text synchronized between `src/i18n/dictionaries/cn.ts` and `en.ts`.
 
-The Dashboard source lives in `src/dashboard`. At runtime, Hub serves the build embedded in `src/server/mod/admin/assets/dashboard.tar.zst`.
+The Dashboard source lives in `src/dashboard`. At runtime, release and container builds serve the Dashboard embedded in the Vine binary. A build without an embedded `index.html` or `index.html.br` uses the local Vite server. Local builds also embed previously packaged assets.
 
-Always rebuild the bundle with the script; never edit or assemble the archive by hand, and never resolve a conflict on it by picking a side:
+Generate embedded assets with the script; do not edit generated files by hand:
 
 ```bash
 bash script/build-dashboard-assets.sh
+GOWORK=off go build -o bin/vine ./cmd/vine
 ```
 
-The script runs `pnpm run build` in `src/dashboard` and packages `dist` as a new `dashboard.tar.zst`. The build generates `THIRD_PARTY_LICENSES.md` for dependencies included in the Dashboard bundle and includes it in the archive. Release preparation rebuilds the archive as well, so the released bundle and its license inventory match the released source.
+The script type-checks and builds into a temporary directory, then preserves the
+output paths while choosing one representation per file: Brotli for text when
+smaller, original bytes for images, fonts, and other files. It replaces the
+complete assets directory only after packaging succeeds. A temporary Vite report
+collects bundled JS licenses; imported CSS/font packages and the maintained uiw
+notice supplement it. Packaging checks these against the Dashboard section of
+root `THIRD_PARTY_LICENSES.txt`, then removes the report. Regenerate the unified
+inventory with `bash script/gen-third-party-licenses.sh` after changing bundled
+dependencies. No archive, Go byte array, or separate Dashboard license file is
+shipped. Release archives include the unified inventory; all three images include
+it and `LICENSE` in `/usr/share/licenses/vine/`. Every Go build embeds the directory
+through `go:embed`, without a build tag. Packaging preserves the tracked empty
+`.gitkeep` so it does not make the release checkout dirty; HTTP never serves it.
+To switch a previously packaged local checkout back to Vite, remove generated
+assets while keeping `.gitkeep`, then rebuild Go.
+
+Dashboard uses the shared Asset Server for MIME types, HEAD, and compression
+negotiation. Accepted Brotli files are sent directly; clients without Brotli
+support receive a decoded or negotiated representation. Already compressed
+images and fonts bypass dynamic compression. HTML navigation falls back to
+`index.html`; missing static files return 404.
 
 ## Layering and Change Constraints
 

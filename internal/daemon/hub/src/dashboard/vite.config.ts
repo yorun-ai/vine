@@ -18,14 +18,6 @@ const config = defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 1000,
-    license: {
-      fileName: 'THIRD_PARTY_LICENSES.md',
-    },
-    rolldownOptions: {
-      output: {
-        postBanner: '/* Third-party licenses: /THIRD_PARTY_LICENSES.md */',
-      },
-    },
   },
   plugins: [
     devtools(),

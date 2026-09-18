@@ -30,7 +30,7 @@ done
 check_paths pull_request "go-test go-race" internal/app/example_test.go
 check_paths pull_request "go-test go-race" core/skel/api_test.go
 check_paths pull_request "$go_jobs licenses" internal/app/example_test.go internal/app/example.go
-for file in internal/daemon/hub/src/server/repo/db/model/sql/sqlite/create_portal_rule.sql internal/daemon/hub/src/server/impl/admin/dashboard/assets/dashboard.tar.zst internal/testdata/input.json; do
+for file in internal/daemon/hub/src/server/repo/db/model/sql/sqlite/create_portal_rule.sql internal/testdata/input.json; do
   check_paths pull_request "$go_jobs" "$file"
   check_paths push "$go_jobs container" "$file"
 done
@@ -59,10 +59,10 @@ for file in test/test.sh test/race.sh test/shuffle.sh test/goroutineleak.sh; do
 done
 check_paths pull_request 'k8s workflow' test/k8s.sh
 check_paths pull_request k8s deploy/k8s/overlays/stable/kustomization.yaml
-check_paths pull_request licenses THIRD_PARTY_LICENSES.txt
-check_paths pull_request 'licenses workflow' script/gen-third-party-licenses.sh
+check_paths pull_request 'licenses dashboard' THIRD_PARTY_LICENSES.txt
+check_paths pull_request 'licenses dashboard workflow' script/gen-third-party-licenses.sh
 check_paths pull_request 'dashboard workflow' script/build-dashboard-assets.sh
-for file in src/App.tsx package.json pnpm-lock.yaml; do
+for file in src/App.tsx package.json pnpm-lock.yaml scripts/dashboard-licenses.mjs scripts/build-dashboard.mjs licenses/uiw-react-codemirror-MIT.txt; do
   check_paths pull_request dashboard "internal/daemon/hub/src/dashboard/$file"
 done
 for event in pull_request push; do

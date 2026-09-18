@@ -312,8 +312,14 @@ func TestStandaloneServesDashboardOnAdminListen(t *testing.T) {
 	defer func() { _ = response.Body.Close() }()
 	body, err := io.ReadAll(response.Body)
 	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, response.StatusCode)
-	require.Contains(t, string(body), `<div id="app"></div>`)
+	// Source-only and packaged binaries expose the same admin listener.
+	// The admin package separately pins resource detection for both layouts.
+	if response.StatusCode == http.StatusNotFound {
+		require.Contains(t, string(body), "script/dev-hub-dashboard.sh")
+	} else {
+		require.Equal(t, http.StatusOK, response.StatusCode)
+		require.Contains(t, string(body), `<div id="app"></div>`)
+	}
 }
 
 func freeListenAddress(t *testing.T) string {

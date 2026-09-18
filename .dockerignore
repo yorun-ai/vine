@@ -28,3 +28,8 @@ node_modules
 *.sqlite3
 *.db
 *.log
+
+# Build embedded Dashboard assets from source inside Docker.
+internal/daemon/hub/src/server/mod/admin/assets/dashboard/*
+!internal/daemon/hub/src/server/mod/admin/assets/dashboard/.gitkeep
+internal/daemon/hub/src/server/mod/admin/assets/.dashboard-*/

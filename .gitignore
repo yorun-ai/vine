@@ -15,6 +15,11 @@ bin/
 *.test
 *.out
 *.prof
+
+# Dashboard assets are generated for release/container builds.
+internal/daemon/hub/src/server/mod/admin/assets/dashboard/*
+!internal/daemon/hub/src/server/mod/admin/assets/dashboard/.gitkeep
+internal/daemon/hub/src/server/mod/admin/assets/.dashboard-*/
 coverage/
 coverage.*
 
