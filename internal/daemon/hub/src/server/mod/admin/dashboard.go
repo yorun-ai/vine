@@ -174,6 +174,9 @@ func dashboardHandler() http.Handler {
 		})
 	}
 
+	// Dashboard is served by its own Gin router instead of Vine's shared Web
+	// server, so apply the same production mode before registering routes.
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Any("/*path", func(ctx *gin.Context) {
 		if path.Clean("/"+ctx.Param("path")) == "/.gitkeep" {
