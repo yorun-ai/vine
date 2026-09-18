@@ -154,7 +154,7 @@ jobs:
     uses: ./.github/workflows/ci-dashboard.yml
 
   container:
-    name: Build hub image
+    name: Build images
     needs: changes
     if: needs.changes.outputs.container == 'true'
     runs-on: ubuntu-latest
@@ -174,6 +174,15 @@ jobs:
             GO_VERSION=${{ env.BUILD_GO_VERSION }}
             VERSION=v0.0.0-dev
           cache-from: type=gha,scope=vine-hub
+
+      - name: Validate Link and Portal using the shared build layers
+        run: |
+          for target in link portal; do
+            docker buildx build --file Dockerfile --target "$target" \
+              --platform linux/amd64 \
+              --build-arg GO_VERSION="$BUILD_GO_VERSION" \
+              --build-arg VERSION=v0.0.0-dev .
+          done
 
   workflow:
     name: Workflow checks

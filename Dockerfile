@@ -7,7 +7,7 @@ FROM --platform=$BUILDPLATFORM node:24.11.0-slim AS dashboard
 WORKDIR /src
 RUN corepack enable \
     && corepack prepare pnpm@11.15.0 --activate
-COPY internal/daemon/hub/src/dashboard/package.json internal/daemon/hub/src/dashboard/pnpm-lock.yaml ./internal/daemon/hub/src/dashboard/
+COPY internal/daemon/hub/src/dashboard/package.json internal/daemon/hub/src/dashboard/pnpm-lock.yaml internal/daemon/hub/src/dashboard/pnpm-workspace.yaml ./internal/daemon/hub/src/dashboard/
 RUN pnpm --dir internal/daemon/hub/src/dashboard install --frozen-lockfile
 COPY internal/daemon/hub/src/dashboard/ ./internal/daemon/hub/src/dashboard/
 COPY script/build-dashboard-assets.sh ./script/build-dashboard-assets.sh
