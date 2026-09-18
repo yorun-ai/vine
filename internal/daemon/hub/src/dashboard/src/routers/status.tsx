@@ -40,14 +40,21 @@ export function createStatusRoutes<TParent extends AnyRoute>(
     component: PortalInstancePage,
   })
 
-  const MessageQueueRoute = createRoute({
+  const TaskQueueRoute = createRoute({
     getParentRoute: () => StatusRoute,
-    path: 'message-queue',
-    component: MessageQueuePage,
+    path: 'task-queue',
+    component: () => <MessageQueuePage key="task" kind="task" />,
+  })
+
+  const EventQueueRoute = createRoute({
+    getParentRoute: () => StatusRoute,
+    path: 'event-queue',
+    component: () => <MessageQueuePage key="event" kind="event" />,
   })
 
   return StatusRoute.addChildren([
-    MessageQueueRoute,
+    TaskQueueRoute,
+    EventQueueRoute,
     StatusAppRoute.addChildren([StatusAppInstanceRoute]),
     StatusPortalRoute.addChildren([StatusPortalInstanceRoute]),
   ])

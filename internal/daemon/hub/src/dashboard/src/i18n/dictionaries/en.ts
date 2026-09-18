@@ -1,8 +1,13 @@
 import type { TranslationKey } from './cn'
 
 export const en: Record<TranslationKey, string> = {
-  'nav.messageQueue.label': 'Message Queues',
-  'nav.messageQueue.description': 'Inspect Task and Event messages, backlog, and acknowledgements.',
+  'nav.taskQueue.label': 'Task Queues',
+  'nav.taskQueue.description': 'Inspect Task messages, backlog, and acknowledgements.',
+  'nav.eventQueue.label': 'Event Queues',
+  'nav.eventQueue.description': 'Inspect Event messages and delivery to each consumer.',
+  'queue.views': 'Queue views',
+  'queue.sortHint': 'Click a column header to change sort order',
+  'queue.metricHelp': 'Metric definitions',
   'queue.stored': 'Stored messages',
   'queue.consumers': 'Consumers',
   'queue.subjects': 'Stored subjects',
@@ -13,9 +18,9 @@ export const en: Record<TranslationKey, string> = {
   'queue.missing': 'Stream not created',
   'queue.missingHelp': 'This stream does not exist. External NATS deployments must provision the Vine streams.',
   'queue.noSubjects': 'No messages currently stored.',
-  'queue.noConsumers': 'No consumers. Retained messages are still shown above.',
+  'queue.noConsumers': 'No consumers. View retained messages in the Stored subjects tab.',
   'queue.noMatch': 'No matches.',
-  'queue.search': 'Search Task, Event, Subject, or Consumer',
+  'queue.search': 'Search Subject or Consumer',
   'queue.refreshHint': 'Refreshes every 5 seconds',
   'queue.error': 'Unable to read queues. Check the Hub connection and JetStream query permissions. Any data below is the last successful snapshot.',
   'queue.loading': 'Reading message queues…',
