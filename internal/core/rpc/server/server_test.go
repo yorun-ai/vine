@@ -102,17 +102,6 @@ type _ServerTestExecutor struct {
 	profileLabels map[string]string
 }
 
-type serverNestedInvokeInnerExecutor struct {
-	executionTrace meta.Trace
-}
-
-func (*serverNestedInvokeInnerExecutor) Init(spec.ImplDict) {}
-
-func (e *serverNestedInvokeInnerExecutor) Execute(rpcContext spec.Context, methodImpl spec.MethodImpl, arguments []any) (any, ex.Error) {
-	e.executionTrace = rpcContext.Trace()
-	return nil, nil
-}
-
 var (
 	serverTestRegisterOnce sync.Once
 	serverTestServiceInfo  = &spec.ServiceSpec{

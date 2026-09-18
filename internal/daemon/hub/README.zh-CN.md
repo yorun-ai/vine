@@ -174,7 +174,10 @@ Hub 当前支持两类数据库配置来源：
 启动时可以通过 `--seed-data-file` 让 `seeder` 从本地 YAML 文件一次性导入初始配置、站点规则和证书到数据库；导入后 Hub 仍然统一从数据库 repo 读取，再写入 Redis，对 Link 暴露一致的读取与订阅语义。
 
 数据库升级基线为 Vine `v0.15.7`，规则表应已具备 `match_*` / `route_*` 列。
-更早的数据库应先用 `v0.15.7` 启动完成迁移；当前 Hub 不再迁移旧 Portal rule 列。
+更早的数据库应先用 `v0.15.7` 启动完成迁移。当前 Hub 不再执行该基线之前的
+Portal rule 列重命名和路由路径列迁移；仍会按下文所述，把 `match_scheme`、
+`match_host`、`match_port` 中的规则访问配置迁移到 `portal_entry`。
+
 从把访问配置存在规则上的版本升级时，Hub 会原地迁移 `portal_rule`：建立
 `portal_entry`，把已存储的 `match_scheme`、`match_host`、`match_port` 归入
 entry。这些列保留到后续版本再删除：Hub 从

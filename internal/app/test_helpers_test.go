@@ -29,13 +29,6 @@ func (a testRuntimeApp) InstanceId() string {
 	return a.instanceID
 }
 
-type stubApp struct{}
-
-func (stubApp) Name() string    { return "stub" }
-func (stubApp) Start()          {}
-func (stubApp) StopGracefully() {}
-func (stubApp) StartAndWait()   {}
-
 type testHelperAppSpec struct {
 	Application
 }

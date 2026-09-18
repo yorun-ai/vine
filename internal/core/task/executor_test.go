@@ -64,15 +64,6 @@ type defaultTestContainerExecutorRunnerER struct {
 	_WrapperTestContainerExecutorRunnerER
 }
 
-type testContainerExecutorImpl struct {
-	defaultTestContainerExecutorRunner
-	Recorder *_ExecutorRecorder `inject:""`
-}
-
-func (r *testContainerExecutorImpl) RunForGroup(testContainerExecutorArguments) {
-	r.Recorder.TriggerInfo = nil
-}
-
 type testContainerExecutorImplWithSeed struct {
 	defaultTestContainerExecutorRunner
 	Recorder *_ExecutorRecorder `inject:""`

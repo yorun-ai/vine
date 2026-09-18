@@ -261,7 +261,10 @@ anything. A Portal section declares only the fields Hub names for it.
 Admin API and Watch use only the new fields; upgrade Hub and Portal together.
 The database upgrade baseline is Vine v0.15.7, with `match_*` / `route_*`
 columns already present. Start older databases with v0.15.7 to complete migration
-before upgrading; current Hub no longer migrates legacy Portal rule columns.
+before upgrading. Current Hub no longer performs the pre-baseline Portal rule
+column renaming or route-path column migration. It still migrates rule access
+from `match_scheme`, `match_host`, and `match_port` into `portal_entry`, as
+described below.
 
 Upgrading Hub from a release that stored rule access migrates `portal_rule` in
 place: Hub creates `portal_entry`, groups the stored `match_scheme`,

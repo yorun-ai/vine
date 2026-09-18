@@ -9,11 +9,6 @@ import (
 	"go.yorun.ai/vine/util/vslice"
 )
 
-// newTestPortalSiteCore builds a site core with the repositories Hub injects.
-func newTestPortalSiteCore(siteRepo core.PortalSiteRepo) *core.PortalSiteCore {
-	return &core.PortalSiteCore{PortalSiteRepo: siteRepo, SchemaRepo: &_SkeletonServiceSchemaRepo{}}
-}
-
 // _PortalCertRepoSpy is a map-backed certificate repository.
 type _PortalCertRepoSpy struct {
 	items map[string]*core.PortalCert
@@ -56,11 +51,6 @@ func (r *_PortalCertRepoSpy) Remove(id int) bool {
 		}
 	}
 	return false
-}
-
-// newTestPortalCertCore builds a certificate core with an empty repository.
-func newTestPortalCertCore() *core.PortalCertCore {
-	return &core.PortalCertCore{PortalCertRepo: &_PortalCertRepoSpy{}}
 }
 
 // newTestPortalRuleCore builds a rule core with the chosen rule repository and
@@ -206,14 +196,6 @@ func (s *_PortalRuleRepoSpy) Remove(id int) bool {
 	}
 	delete(s.rules, id)
 	return true
-}
-
-func capturePanic(fn func()) (got any) {
-	defer func() {
-		got = recover()
-	}()
-	fn()
-	return nil
 }
 
 func TestPortalRuleServiceGetReturnsFieldSources(t *testing.T) {

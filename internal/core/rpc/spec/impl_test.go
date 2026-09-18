@@ -40,27 +40,13 @@ type implERServerImpl struct {
 
 type testImplPubServer interface {
 	Ping()
-
 	mustBeTestImplPubServer()
 }
 
-type defaultTestImplPubServer struct{}
-
-func (*defaultTestImplPubServer) Ping() {}
-
-func (*defaultTestImplPubServer) mustBeTestImplPubServer() {}
-
 type testImplPubServerER interface {
 	Ping() error
-
 	mustBeTestImplPubServerER()
 }
-
-type defaultTestImplPubServerER struct{}
-
-func (*defaultTestImplPubServerER) Ping() error { return nil }
-
-func (*defaultTestImplPubServerER) mustBeTestImplPubServerER() {}
 
 type _InvalidImplValueType struct {
 	defaultTestImplServer

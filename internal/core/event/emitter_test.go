@@ -14,24 +14,6 @@ import (
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
 )
 
-type testMessageRuntimeApp struct {
-	name       string
-	version    string
-	instanceID string
-}
-
-func (a testMessageRuntimeApp) Name() string {
-	return a.name
-}
-
-func (a testMessageRuntimeApp) Version() string {
-	return a.version
-}
-
-func (a testMessageRuntimeApp) InstanceId() string {
-	return a.instanceID
-}
-
 type testEmitterEvent struct {
 	GroupId int `json:"groupId"`
 }

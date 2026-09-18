@@ -171,10 +171,3 @@ func enumValueExists(value string, typeSchema *skel.TypeSchema, enumSchemas []*s
 	}
 	return true
 }
-
-func configItemLifecycle(schema *skel.ConfigSchema) string {
-	if schema == nil {
-		return ""
-	}
-	return schema.Lifecycle
-}

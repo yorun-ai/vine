@@ -120,83 +120,6 @@ func (r *_AppConfigServiceAppConfigRepo) Remove(id int) bool {
 	return false
 }
 
-type _AppConfigServiceSchemaRepo struct {
-	configSchemas []*skel.ConfigSchema
-	enumSchemas   []*skel.EnumSchema
-}
-
-func (*_AppConfigServiceSchemaRepo) SaveDomainSchemas(string, string, []*skel.DomainSchema) {
-}
-
-func (*_AppConfigServiceSchemaRepo) SaveDomainSchemasJSON(string, string, []skel.JSON) {
-}
-
-func (*_AppConfigServiceSchemaRepo) ReleaseDomainSchemas(string, string) {}
-
-func (*_AppConfigServiceSchemaRepo) ListDomainSchemaViews() []core.DomainSchemaView {
-	return nil
-}
-
-func (*_AppConfigServiceSchemaRepo) ListVineHubSchemaViews() []core.DomainSchemaView {
-	return nil
-}
-
-func (*_AppConfigServiceSchemaRepo) ListActorSchemaVersions() []core.SchemaVersion[*skel.ActorSchema] {
-	return nil
-}
-
-func (*_AppConfigServiceSchemaRepo) ListConfigSchemaVersions() []core.SchemaVersion[*skel.ConfigSchema] {
-	return nil
-}
-
-func (*_AppConfigServiceSchemaRepo) ListDataSchemaVersions() []core.SchemaVersion[*skel.DataSchema] {
-	return nil
-}
-
-func (*_AppConfigServiceSchemaRepo) ListEnumSchemaVersions() []core.SchemaVersion[*skel.EnumSchema] {
-	return nil
-}
-
-func (*_AppConfigServiceSchemaRepo) ListEventSchemaVersions() []core.SchemaVersion[*skel.EventSchema] {
-	return nil
-}
-
-func (*_AppConfigServiceSchemaRepo) ListResourceSchemaVersions() []core.SchemaVersion[*skel.ResourceSchema] {
-	return nil
-}
-
-func (*_AppConfigServiceSchemaRepo) ListServiceSchemaVersions() []core.SchemaVersion[*skel.ServiceSchema] {
-	return nil
-}
-
-func (*_AppConfigServiceSchemaRepo) ListTaskSchemaVersions() []core.SchemaVersion[*skel.TaskSchema] {
-	return nil
-}
-
-func (*_AppConfigServiceSchemaRepo) ListWebSchemaVersions() []core.SchemaVersion[*skel.WebSchema] {
-	return nil
-}
-
-func (r *_AppConfigServiceSchemaRepo) ListAppConfigSchemas() []*skel.ConfigSchema {
-	return r.configSchemas
-}
-
-func (*_AppConfigServiceSchemaRepo) ListActorSchemas() []*skel.ActorSchema {
-	return nil
-}
-
-func (r *_AppConfigServiceSchemaRepo) ListEnumSchemas() []*skel.EnumSchema {
-	return r.enumSchemas
-}
-
-func (*_AppConfigServiceSchemaRepo) ListServiceSchemas() []*skel.ServiceSchema {
-	return nil
-}
-
-func (*_AppConfigServiceSchemaRepo) ListWebSchemas() []*skel.WebSchema {
-	return nil
-}
-
 func TestAppConfigServiceCreateConfig(t *testing.T) {
 	repo := &_AppConfigServiceAppConfigRepo{
 		schemas: []*skel.ConfigSchema{{
@@ -272,15 +195,6 @@ func TestAppConfigServiceRemoveOnlyAllowsUnusedConfig(t *testing.T) {
 	})
 }
 
-func findAppConfigItemForTest(items []skeled.AppConfigListItem, key string) *skeled.AppConfigListItem {
-	for i := range items {
-		if items[i].Key == key {
-			return &items[i]
-		}
-	}
-	return nil
-}
-
 func TestEditorScalarFormatsMatchRuntime(t *testing.T) {
 	data, err := os.ReadFile("../../../dashboard/src/features/app/testdata/config-scalar.json")
 	require.NoError(t, err)
@@ -315,15 +229,6 @@ func TestEditorScalarFormatsMatchRuntime(t *testing.T) {
 			require.Equal(t, item.Valid, err == nil, "decode error: %v", err)
 		})
 	}
-}
-
-func (r *_AppConfigServiceSchemaRepo) GetWebSchema(skelName string) *skel.WebSchema {
-	for _, schema := range r.ListWebSchemas() {
-		if schema.SkelName == skelName {
-			return schema
-		}
-	}
-	return nil
 }
 
 func TestAppConfigServiceGetReturnsFieldSourcesAndDeclaredSlots(t *testing.T) {
