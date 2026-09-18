@@ -210,6 +210,39 @@ type FieldSourceBinding struct {
 	DefaultUsed bool `json:"defaultUsed"`
 }
 
+// MessageQueueConsumer JetStream consumer snapshot; unacknowledged messages are not necessarily executing
+type MessageQueueConsumer struct {
+	Name           string   `json:"name"`
+	FilterSubjects []string `json:"filterSubjects"`
+	// Pending Undelivered message count as a decimal string
+	Pending    string `json:"pending"`
+	AckPending int    `json:"ackPending"`
+	// Redelivered Distinct redelivered messages still unacknowledged, not cumulative retries
+	Redelivered int `json:"redelivered"`
+	// Waiting Outstanding pull requests, not waiting messages
+	Waiting int `json:"waiting"`
+}
+
+// MessageQueueStatusView Task or Event stream snapshot
+type MessageQueueStatusView struct {
+	Kind   string `json:"kind"`
+	Stream string `json:"stream"`
+	Exists bool   `json:"exists"`
+	// Messages Stored message count as a decimal string
+	Messages string `json:"messages"`
+	// Bytes Stored bytes as a decimal string
+	Bytes     string                 `json:"bytes"`
+	Subjects  []MessageQueueSubject  `json:"subjects"`
+	Consumers []MessageQueueConsumer `json:"consumers"`
+}
+
+// MessageQueueSubject Stored messages for a subject, including subjects without consumers
+type MessageQueueSubject struct {
+	Subject string `json:"subject"`
+	// Messages Message count as a decimal string
+	Messages string `json:"messages"`
+}
+
 // PortalCert Portal site certificate
 type PortalCert struct {
 	// Id Certificate ID

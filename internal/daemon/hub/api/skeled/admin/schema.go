@@ -11,7 +11,7 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "6c65a971",
+	Hash:        "f238dfaf",
 	Full:        true,
 	Generated:   &skel.GeneratedInfo{CompilerVersion: "v0.21.0"},
 
@@ -130,6 +130,27 @@ var _DomainSchema = &skel.DomainSchema{
 			{Name: "reference", Description: "Variable reference", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "value", Description: "Resolved value", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarJson}},
 			{Name: "defaultUsed", Description: "Whether the default was used", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+		}},
+		{Name: "MessageQueueConsumer", SkelName: "vine.hub.admin.MessageQueueConsumer", Description: "JetStream consumer snapshot; unacknowledged messages are not necessarily executing", Hash: "c4f2888d", Members: []*skel.MemberSchema{
+			{Name: "name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "filterSubjects", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}}},
+			{Name: "pending", Description: "Undelivered message count as a decimal string", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "ackPending", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "redelivered", Description: "Distinct redelivered messages still unacknowledged, not cumulative retries", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+			{Name: "waiting", Description: "Outstanding pull requests, not waiting messages", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
+		}},
+		{Name: "MessageQueueStatusView", SkelName: "vine.hub.admin.MessageQueueStatusView", Description: "Task or Event stream snapshot", Hash: "28f2dcaf", Members: []*skel.MemberSchema{
+			{Name: "kind", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "stream", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "exists", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "messages", Description: "Stored message count as a decimal string", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "bytes", Description: "Stored bytes as a decimal string", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "subjects", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "MessageQueueSubject", SkelName: "vine.hub.admin.MessageQueueSubject"}}},
+			{Name: "consumers", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "MessageQueueConsumer", SkelName: "vine.hub.admin.MessageQueueConsumer"}}},
+		}},
+		{Name: "MessageQueueSubject", SkelName: "vine.hub.admin.MessageQueueSubject", Description: "Stored messages for a subject, including subjects without consumers", Hash: "24191e4b", Members: []*skel.MemberSchema{
+			{Name: "subject", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "messages", Description: "Message count as a decimal string", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 		}},
 		{Name: "PortalCert", SkelName: "vine.hub.admin.PortalCert", Description: "Portal site certificate", Hash: "6d989af0", Members: []*skel.MemberSchema{
 			{Name: "id", Description: "Certificate ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
@@ -710,6 +731,9 @@ var _DomainSchema = &skel.DomainSchema{
 			{Name: "emitEvent", SkelName: "emitEvent", Description: "Send Event", Hash: "0e80d632", AuthMode: skel.AuthModeUnset, Arguments: []*skel.MemberSchema{
 				{Name: "request", Description: "Debug send request", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "EventDebugEmitRequest", SkelName: "vine.hub.admin.EventDebugEmitRequest"}},
 			}},
+		}},
+		{Name: "MessageQueueStatusApiService", SkelName: "vine.hub.admin.MessageQueueStatusApiService", Description: "Hub Dashboard message queue status service", Hash: "2e40eb39", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+			{Name: "list", SkelName: "list", Description: "Read Task and Event streams without consuming messages", Hash: "1633ffbd", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "MessageQueueStatusView", SkelName: "vine.hub.admin.MessageQueueStatusView"}}},
 		}},
 		{Name: "PortalCertApiService", SkelName: "vine.hub.admin.PortalCertApiService", Description: "Hub's Portal site certificate service, called by the Portal admin client", Hash: "9d1673c5", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
 			{Name: "list", SkelName: "list", Description: "List Portal site certificates", Hash: "603743bd", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal site certificate list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCertListItem", SkelName: "vine.hub.admin.PortalCertListItem"}}},

@@ -1,6 +1,7 @@
 import { createRoute } from '@tanstack/react-router'
 import type { AnyRoute } from '@tanstack/react-router'
 
+import { MessageQueuePage } from '@/features/status/message-queue-page'
 import { AppStatusPage } from '@/features/status/app-page'
 import { PortalInstancePage } from '@/features/status/portal-page'
 
@@ -39,7 +40,14 @@ export function createStatusRoutes<TParent extends AnyRoute>(
     component: PortalInstancePage,
   })
 
+  const MessageQueueRoute = createRoute({
+    getParentRoute: () => StatusRoute,
+    path: 'message-queue',
+    component: MessageQueuePage,
+  })
+
   return StatusRoute.addChildren([
+    MessageQueueRoute,
     StatusAppRoute.addChildren([StatusAppInstanceRoute]),
     StatusPortalRoute.addChildren([StatusPortalInstanceRoute]),
   ])

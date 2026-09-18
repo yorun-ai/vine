@@ -72,6 +72,7 @@ func HandlerTypes() []reflect.Type {
 		app.T[*debugimpl.EventDebugApiServiceServerImpl](),
 		app.T[*impl.SkeletonApiServiceServerImpl](),
 		app.T[*impl.AppStatusApiServiceServerImpl](),
+		app.T[*impl.MessageQueueStatusApiServiceServerImpl](),
 		app.T[*impl.PortalStatusApiServiceServerImpl](),
 		app.T[*impl.AppConfigApiServiceServerImpl](),
 		app.T[*impl.PortalCertApiServiceServerImpl](),

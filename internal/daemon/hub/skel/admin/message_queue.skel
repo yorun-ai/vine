@@ -1,0 +1,42 @@
+domain vine.hub.admin
+
+@desc("Stored messages for a subject, including subjects without consumers")
+data MessageQueueSubject {
+    subject: string
+    @desc("Message count as a decimal string")
+    messages: string
+}
+
+@desc("JetStream consumer snapshot; unacknowledged messages are not necessarily executing")
+data MessageQueueConsumer {
+    name: string
+    filterSubjects: list<string>
+    @desc("Undelivered message count as a decimal string")
+    pending: string
+    ackPending: int
+    @desc("Distinct redelivered messages still unacknowledged, not cumulative retries")
+    redelivered: int
+    @desc("Outstanding pull requests, not waiting messages")
+    waiting: int
+}
+
+@desc("Task or Event stream snapshot")
+data MessageQueueStatusView {
+    kind: string
+    stream: string
+    exists: bool
+    @desc("Stored message count as a decimal string")
+    messages: string
+    @desc("Stored bytes as a decimal string")
+    bytes: string
+    subjects: list<MessageQueueSubject>
+    consumers: list<MessageQueueConsumer>
+}
+
+@desc("Hub Dashboard message queue status service")
+api service MessageQueueStatusApiService {
+    @desc("Read Task and Event streams without consuming messages")
+    method list {
+        output list<MessageQueueStatusView>
+    }
+}

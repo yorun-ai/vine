@@ -9,6 +9,7 @@ import {
   AppConfigApiServiceSpec,
   AppStatusApiServiceSpec,
   EventDebugApiServiceSpec,
+  MessageQueueStatusApiServiceSpec,
   PortalCertApiServiceSpec,
   PortalEntryApiServiceSpec,
   PortalRuleApiServiceSpec,
@@ -27,6 +28,7 @@ import type {
   EventDebugEventItem,
   EventDebugDefaultEmitRequest,
   EventDebugEmitRequest,
+  MessageQueueStatusView,
   PortalCertListItem,
   PortalCert,
   PortalCertCreation,
@@ -262,6 +264,28 @@ export function createEventDebugApiService(client: VrpcClient) {
       return client.invoke<void>({
         serviceName: EventDebugApiServiceSpec.serviceName,
         methodName: EventDebugApiServiceSpec.methods.emitEvent,
+        params,
+        options,
+      });
+    },
+  };
+}
+/** Hub Dashboard message queue status service */
+export function createMessageQueueStatusApiService(client: VrpcClient) {
+  return {
+    /**
+     * Read Task and Event streams without consuming messages.
+     * @param params - Request parameters, or null for methods without input
+     * @param options - Optional invocation options
+     * @returns Array<MessageQueueStatusView> -
+     */
+    list(
+      params: null,
+      options?: VrpcRequestOptions,
+    ) {
+      return client.invoke<Array<MessageQueueStatusView>>({
+        serviceName: MessageQueueStatusApiServiceSpec.serviceName,
+        methodName: MessageQueueStatusApiServiceSpec.methods.list,
         params,
         options,
       });
