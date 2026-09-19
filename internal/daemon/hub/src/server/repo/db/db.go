@@ -28,9 +28,9 @@ func (d *HubDatabase) InitOption(option *rdb.Option) {
 
 func (*HubDatabase) InitDao(addDao rdb.TypeAdder) {
 	addDao(rdb.T[*model.AppConfigDao]())
-	addDao(rdb.T[*model.PortalSiteDao]())
+	addDao(rdb.T[*model.PortalCertDao]())
 	addDao(rdb.T[*model.PortalEntryDao]())
 	addDao(rdb.T[*model.PortalRuleDao]())
-	addDao(rdb.T[*model.PortalCertDao]())
 	addDao(rdb.T[*model.MetadataDao]())
+	addDao(rdb.T[*model.PortalSiteDao]())
 }
