@@ -36,6 +36,10 @@ func (d *Dao[M]) GormDB() *gorm.DB {
 	return d.gormDB
 }
 
+// EnsureSchema initializes the schema owned by this DAO. The default
+// implementation does nothing; a concrete DAO may override it.
+func (d *Dao[M]) EnsureSchema() {}
+
 func (d *Dao[M]) Query(conditions ...any) *Query[M] {
 	return &Query[M]{
 		gormDB:     d.gormDB,

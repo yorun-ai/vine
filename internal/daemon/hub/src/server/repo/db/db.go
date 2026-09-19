@@ -6,7 +6,6 @@ import (
 	"go.yorun.ai/vine/infra/rdb"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
-	"gorm.io/gorm"
 )
 
 type HubDatabase struct {
@@ -29,18 +28,9 @@ func (d *HubDatabase) InitOption(option *rdb.Option) {
 
 func (*HubDatabase) InitDao(addDao rdb.TypeAdder) {
 	addDao(rdb.T[*model.AppConfigDao]())
-	addDao(rdb.T[*model.PortalCertDao]())
+	addDao(rdb.T[*model.PortalSiteDao]())
 	addDao(rdb.T[*model.PortalEntryDao]())
 	addDao(rdb.T[*model.PortalRuleDao]())
+	addDao(rdb.T[*model.PortalCertDao]())
 	addDao(rdb.T[*model.MetadataDao]())
-	addDao(rdb.T[*model.PortalSiteDao]())
-}
-
-func (*HubDatabase) InitSchema(db *gorm.DB) {
-	(&model.AppConfigDao{Dao: rdb.NewDao[*model.AppConfig](db)}).InitSchema()
-	(&model.PortalSiteDao{Dao: rdb.NewDao[*model.PortalSite](db)}).InitSchema()
-	(&model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](db)}).InitSchema()
-	(&model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](db)}).InitSchema()
-	(&model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](db)}).InitSchema()
-	(&model.MetadataDao{Dao: rdb.NewDao[*model.Metadata](db)}).InitSchema()
 }

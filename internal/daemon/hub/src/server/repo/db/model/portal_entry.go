@@ -33,7 +33,7 @@ type PortalEntryDao struct {
 	rdb.Dao[*PortalEntry]
 }
 
-func (d *PortalEntryDao) InitSchema() {
+func (d *PortalEntryDao) EnsureSchema() {
 	ex.PanicIfError(ensurePortalEntryTable(d.GormDB()))
 }
 

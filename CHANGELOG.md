@@ -8,6 +8,19 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.21.4] - 2026-09-19
+
+### Added
+
+- Relational database components automatically call each registered DAO's
+  `EnsureSchema` hook after opening the connection and before exposing DAOs.
+  The embedded `rdb.Dao[M]` implementation is empty by default, so concrete
+  DAOs can own repeatable schema creation and migrations.
+
+### Fixed
+
+- Hub Dashboard Gin runs in release mode in release builds.
+
 ## [0.21.3] - 2026-09-18
 
 ### Added
@@ -1166,6 +1179,7 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.21.3...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.21.4...HEAD
+[0.21.4]: https://github.com/yorun-ai/vine/compare/v0.21.3...v0.21.4
 [0.21.3]: https://github.com/yorun-ai/vine/compare/v0.21.2...v0.21.3
 [0.21.2]: https://github.com/yorun-ai/vine/compare/v0.21.1...v0.21.2

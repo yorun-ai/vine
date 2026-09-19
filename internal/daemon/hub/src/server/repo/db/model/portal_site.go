@@ -35,7 +35,7 @@ type PortalSiteDao struct {
 	rdb.Dao[*PortalSite]
 }
 
-func (d *PortalSiteDao) InitSchema() {
+func (d *PortalSiteDao) EnsureSchema() {
 	ensureEnabledColumn(d.GormDB(), "portal_site")
 	sql := schemaSQL(d.GormDB(), createPortalSiteSQLiteSQL, createPortalSitePgSQL)
 	err := d.GormDB().Exec(sql).Error

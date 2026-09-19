@@ -65,6 +65,6 @@ func newTestPortalEntryRepoDB(t *testing.T) *PortalEntryRepo {
 		Syncer: testSyncer(watchServer),
 		Access: new(configaccess.Access),
 	}
-	repo.Dao.InitSchema()
+	repo.Dao.EnsureSchema()
 	return repo
 }

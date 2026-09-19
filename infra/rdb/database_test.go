@@ -2,7 +2,6 @@ package rdb
 
 import (
 	"context"
-	"gorm.io/gorm"
 	"reflect"
 	"testing"
 
@@ -117,20 +116,22 @@ func TestDatabaseAfterAppStopReleasesSharedConnection(t *testing.T) {
 	assert.False(t, ok)
 }
 
-type schemaDatabaseTestComponent struct {
-	databaseTestComponent
-	calls int
-	fail  bool
+type schemaDatabaseTestDAO struct {
+	Dao[*databaseTestModel]
 }
 
-func (d *schemaDatabaseTestComponent) InitSchema(db *gorm.DB) {
-	d.calls++
-	if d.fail {
-		panic("schema failed")
-	}
-	if err := db.AutoMigrate(&databaseTestModel{}); err != nil {
+func (d *schemaDatabaseTestDAO) EnsureSchema() {
+	if err := d.GormDB().AutoMigrate(&databaseTestModel{}); err != nil {
 		panic(err)
 	}
+}
+
+type schemaDatabaseTestComponent struct {
+	databaseTestComponent
+}
+
+func (*schemaDatabaseTestComponent) InitDao(addDao TypeAdder) {
+	addDao(T[*schemaDatabaseTestDAO]())
 }
 
 func TestDatabaseInitializesSchemaBeforeBindingDAOs(t *testing.T) {
@@ -143,13 +144,28 @@ func TestDatabaseInitializesSchemaBeforeBindingDAOs(t *testing.T) {
 		b.BindInstance(logger.New("test:schema"))
 		manager.Bind(b)
 	})
-	require.NotNil(t, injector.Get(T[*databaseTestDAO]()))
-	require.Equal(t, 1, component.calls)
+	require.NotNil(t, injector.Get(T[*schemaDatabaseTestDAO]()))
+}
+
+type failingSchemaTestDAO struct {
+	Dao[*databaseTestModel]
+}
+
+func (*failingSchemaTestDAO) EnsureSchema() {
+	panic("schema failed")
+}
+
+type failingSchemaTestComponent struct {
+	databaseTestComponent
+}
+
+func (*failingSchemaTestComponent) InitDao(addDao TypeAdder) {
+	addDao(T[*failingSchemaTestDAO]())
 }
 
 func TestDatabaseSchemaFailureReleasesConnection(t *testing.T) {
 	url := "sqlite://" + t.TempDir() + "/schema.sqlite"
-	component := &schemaDatabaseTestComponent{databaseTestComponent: databaseTestComponent{connURL: url}, fail: true}
+	component := &failingSchemaTestComponent{databaseTestComponent: databaseTestComponent{connURL: url}}
 	require.PanicsWithValue(t, "schema failed", func() { initTestDatabase(component) })
 	sharedGormDBsMu.Lock()
 	_, exists := sharedGormDBs[url]

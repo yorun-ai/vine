@@ -36,7 +36,7 @@ type PortalCertDao struct {
 	rdb.Dao[*PortalCert]
 }
 
-func (d *PortalCertDao) InitSchema() {
+func (d *PortalCertDao) EnsureSchema() {
 	ensureEnabledColumn(d.GormDB(), "portal_cert")
 	sql := schemaSQL(d.GormDB(), createPortalCertSQLiteSQL, createPortalCertPgSQL)
 	err := d.GormDB().Exec(sql).Error

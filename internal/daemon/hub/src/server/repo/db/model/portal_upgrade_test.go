@@ -100,10 +100,10 @@ func TestPostgresUpgradeFrom019(t *testing.T) {
 	require.NoError(t, tx.Exec(rule, "demo.default", "https", "", 0, "/").Error)
 	require.NoError(t, tx.Exec(rule, "demo.app", "http", "demo.local", 8080, "/app").Error)
 
-	(&PortalSiteDao{Dao: rdb.NewDao[*PortalSite](tx)}).InitSchema()
-	(&PortalEntryDao{Dao: rdb.NewDao[*PortalEntry](tx)}).InitSchema()
-	(&PortalRuleDao{Dao: rdb.NewDao[*PortalRule](tx)}).InitSchema()
-	(&PortalCertDao{Dao: rdb.NewDao[*PortalCert](tx)}).InitSchema()
+	(&PortalSiteDao{Dao: rdb.NewDao[*PortalSite](tx)}).EnsureSchema()
+	(&PortalEntryDao{Dao: rdb.NewDao[*PortalEntry](tx)}).EnsureSchema()
+	(&PortalRuleDao{Dao: rdb.NewDao[*PortalRule](tx)}).EnsureSchema()
+	(&PortalCertDao{Dao: rdb.NewDao[*PortalCert](tx)}).EnsureSchema()
 
 	// Rules with the same access share one entry, and the rule that named the
 	// default port keeps its path while the one that left it unset moves.
