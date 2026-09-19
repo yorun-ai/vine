@@ -81,7 +81,7 @@ func newTestPortalEntryDao(t *testing.T) *PortalEntryDao {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = connection.Close() })
 	dao := &PortalEntryDao{Dao: rdb.NewDao[*PortalEntry](db)}
-	dao.InitSchema()
-	dao.InitSchema()
+	dao.EnsureSchema()
+	dao.EnsureSchema()
 	return dao
 }

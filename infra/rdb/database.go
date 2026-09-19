@@ -26,8 +26,12 @@ func defaultOption() *Option {
 // TypeAdder adds a model type to a database specification.
 type TypeAdder func(daoType reflect.Type)
 
-// DatabaseSpec declares database options and DAOs. A spec may additionally
-// implement InitSchema(*gorm.DB), which runs before DAOs are exposed.
+type _SchemaDao interface {
+	_GormDBSetter
+	EnsureSchema()
+}
+
+// DatabaseSpec declares database options and DAOs.
 type DatabaseSpec interface {
 	InitOption(option *Option)
 	InitDao(add TypeAdder)
@@ -77,10 +81,18 @@ func (m *DatabaseManager) InitComponent(component app.ManagedComponent) {
 		}
 	}()
 	m.gormDB = gormDB
-	if initializer, ok := m.database.(interface{ InitSchema(*gorm.DB) }); ok {
-		initializer.InitSchema(gormDB)
+	for _, daoType := range m.daoTypes {
+		m.ensureDaoSchema(daoType)
 	}
 	initialized = true
+}
+
+func (m *DatabaseManager) ensureDaoSchema(daoType reflect.Type) {
+	daoValue := reflect.New(daoType.Elem())
+	dao, ok := daoValue.Interface().(_SchemaDao)
+	vpre.Check(ok, "dao type %s must embed rdb.Dao[...] to receive gorm db", daoType)
+	dao.setGormDB(m.gormDB)
+	dao.EnsureSchema()
 }
 
 func (m *DatabaseManager) Component() app.ManagedComponent {

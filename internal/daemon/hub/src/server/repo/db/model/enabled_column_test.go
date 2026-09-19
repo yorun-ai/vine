@@ -23,10 +23,10 @@ func TestPortalSchemaAdmitsAnOlderHub(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = connection.Close() })
 
-	(&PortalEntryDao{Dao: rdb.NewDao[*PortalEntry](db)}).InitSchema()
-	(&PortalSiteDao{Dao: rdb.NewDao[*PortalSite](db)}).InitSchema()
-	(&PortalRuleDao{Dao: rdb.NewDao[*PortalRule](db)}).InitSchema()
-	(&PortalCertDao{Dao: rdb.NewDao[*PortalCert](db)}).InitSchema()
+	(&PortalEntryDao{Dao: rdb.NewDao[*PortalEntry](db)}).EnsureSchema()
+	(&PortalSiteDao{Dao: rdb.NewDao[*PortalSite](db)}).EnsureSchema()
+	(&PortalRuleDao{Dao: rdb.NewDao[*PortalRule](db)}).EnsureSchema()
+	(&PortalCertDao{Dao: rdb.NewDao[*PortalCert](db)}).EnsureSchema()
 
 	for _, table := range []string{"portal_entry", "portal_site", "portal_rule", "portal_cert"} {
 		assert.NotNil(t, columnDefault(t, db, table, "enabled"), table+" publishes what an older Hub inserts")

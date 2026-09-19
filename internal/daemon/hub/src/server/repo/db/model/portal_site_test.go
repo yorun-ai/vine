@@ -43,7 +43,7 @@ CREATE TABLE portal_site (
 );
 `
 
-func TestPortalSiteInitSchemaAddsEnabled(t *testing.T) {
+func TestPortalSiteEnsureSchemaAddsEnabled(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "legacy-site.sqlite")), &gorm.Config{})
 	require.NoError(t, err)
 	connection, err := db.DB()
@@ -53,7 +53,7 @@ func TestPortalSiteInitSchemaAddsEnabled(t *testing.T) {
 	require.NoError(t, db.Exec(`INSERT INTO portal_site (name, type, actor_skel_name, actor_via, web_name) VALUES ('web', 'WEBGW', 'demo.Actor', 'client', 'demo.Web')`).Error)
 
 	dao := &PortalSiteDao{Dao: rdb.NewDao[*PortalSite](db)}
-	dao.InitSchema()
+	dao.EnsureSchema()
 
 	// A site Hub already stores stays enabled.
 	site, ok := dao.ByName("web")
@@ -70,7 +70,7 @@ func newTestPortalSiteDao(t *testing.T) *PortalSiteDao {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = connection.Close() })
 	dao := &PortalSiteDao{Dao: rdb.NewDao[*PortalSite](db)}
-	dao.InitSchema()
-	dao.InitSchema()
+	dao.EnsureSchema()
+	dao.EnsureSchema()
 	return dao
 }

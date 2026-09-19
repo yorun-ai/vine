@@ -30,7 +30,7 @@ type AppConfigDao struct {
 	rdb.Dao[*AppConfig]
 }
 
-func (d *AppConfigDao) InitSchema() {
+func (d *AppConfigDao) EnsureSchema() {
 	sql := schemaSQL(d.GormDB(), createAppConfigSQLiteSQL, createAppConfigPgSQL)
 	err := d.GormDB().Exec(sql).Error
 	ex.PanicIfError(err)

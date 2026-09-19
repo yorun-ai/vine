@@ -114,7 +114,7 @@ func newTestPortalSiteRepo(t *testing.T) (*gorm.DB, *PortalSiteRepo, *watchserve
 		Syncer:     testSyncer(watchServer),
 		Access:     new(configaccess.Access),
 	}
-	repo.Dao.InitSchema()
+	repo.Dao.EnsureSchema()
 	require.NoError(t, db.Exec("DELETE FROM portal_site").Error)
 
 	return db, repo, watchServer

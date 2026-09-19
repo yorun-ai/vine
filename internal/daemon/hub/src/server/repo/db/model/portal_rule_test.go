@@ -98,7 +98,7 @@ func newTestPortalRuleDao(t *testing.T) *PortalRuleDao {
 	dao := &PortalRuleDao{
 		Dao: rdb.NewDao[*PortalRule](db),
 	}
-	dao.InitSchema()
+	dao.EnsureSchema()
 	require.NoError(t, db.Exec("DELETE FROM portal_rule").Error)
 	return dao
 }
@@ -116,7 +116,7 @@ func sharedTestPortalRuleDB(t *testing.T) *gorm.DB {
 	return testPortalRuleDB
 }
 
-func TestPortalRuleInitSchemaOnCurrentSchema(t *testing.T) {
+func TestPortalRuleEnsureSchemaOnCurrentSchema(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "current.sqlite")), &gorm.Config{})
 	require.NoError(t, err)
 	connection, err := db.DB()
@@ -125,8 +125,8 @@ func TestPortalRuleInitSchemaOnCurrentSchema(t *testing.T) {
 	require.NoError(t, db.Exec(createPortalEntrySQLiteSQL).Error)
 	require.NoError(t, db.Exec(createPortalRuleSQLiteSQL).Error)
 	dao := &PortalRuleDao{Dao: rdb.NewDao[*PortalRule](db)}
-	dao.InitSchema()
-	dao.InitSchema()
+	dao.EnsureSchema()
+	dao.EnsureSchema()
 }
 
 // _legacyPortalRuleSchema is the rule table before entries existed, when every
@@ -156,12 +156,12 @@ CREATE UNIQUE INDEX uk_portal_rule_name
     ON portal_rule(name);
 `
 
-func TestPortalRuleInitSchemaMigratesRuleAccessToEntry(t *testing.T) {
+func TestPortalRuleEnsureSchemaMigratesRuleAccessToEntry(t *testing.T) {
 	db := newTestLegacyPortalRuleDB(t)
 	dao := &PortalRuleDao{Dao: rdb.NewDao[*PortalRule](db)}
 
-	dao.InitSchema()
-	dao.InitSchema()
+	dao.EnsureSchema()
+	dao.EnsureSchema()
 
 	// One entry per stored access, with the effective port Portal serves.
 	stored := (&PortalEntryDao{Dao: rdb.NewDao[*PortalEntry](db)}).ListOrdered()
@@ -208,7 +208,7 @@ func TestPortalRuleInitSchemaMigratesRuleAccessToEntry(t *testing.T) {
 	assert.False(t, db.Migrator().HasIndex("portal_rule", "uk_portal_rule_entry_path"))
 }
 
-func TestPortalRuleInitSchemaMovesDefaultPortRuleToMigratedPath(t *testing.T) {
+func TestPortalRuleEnsureSchemaMovesDefaultPortRuleToMigratedPath(t *testing.T) {
 	// The stored port kept these rules apart, but all three resolve to the same
 	// access and share a path, so the migration must separate them instead of
 	// refusing to start on data the operator cannot edit.
@@ -222,7 +222,7 @@ func TestPortalRuleInitSchemaMovesDefaultPortRuleToMigratedPath(t *testing.T) {
 	)
 	dao := &PortalRuleDao{Dao: rdb.NewDao[*PortalRule](db)}
 
-	dao.InitSchema()
+	dao.EnsureSchema()
 
 	byName := map[string]*PortalRule{}
 	for _, rule := range dao.ListOrdered() {

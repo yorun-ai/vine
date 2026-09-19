@@ -152,7 +152,7 @@ func newTestPortalRuleRepo(t *testing.T) (*gorm.DB, *PortalRuleRepo, *watchserve
 	// single one: a rule publishes the access of the entry it belongs to.
 	sync := testSyncer(watchServer)
 	entryRepo := newTestPortalEntryRepo(db, sync)
-	entryRepo.Dao.InitSchema()
+	entryRepo.Dao.EnsureSchema()
 	repo := &PortalRuleRepo{
 		Dao: &model.PortalRuleDao{
 			Dao: rdb.NewDao[*model.PortalRule](db),
@@ -161,7 +161,7 @@ func newTestPortalRuleRepo(t *testing.T) (*gorm.DB, *PortalRuleRepo, *watchserve
 		Access:          new(configaccess.Access),
 		PortalEntryRepo: entryRepo,
 	}
-	repo.Dao.InitSchema()
+	repo.Dao.EnsureSchema()
 	require.NoError(t, db.Exec("DELETE FROM portal_rule").Error)
 	require.NoError(t, db.Exec("DELETE FROM portal_entry").Error)
 

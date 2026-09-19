@@ -121,7 +121,7 @@ func newTestAppConfigRepo(t *testing.T) (*gorm.DB, *AppConfigRepo, *watchserver.
 		Syncer:     testSyncer(watchServer),
 		Access:     new(configaccess.Access),
 	}
-	repo.Dao.InitSchema()
+	repo.Dao.EnsureSchema()
 	require.NoError(t, db.Exec("DELETE FROM app_config").Error)
 
 	return db, repo, watchServer

@@ -60,8 +60,8 @@ func TestFieldSourceSaveIsolationAndRollback(t *testing.T) {
 	db := sourceTestDB(t)
 	configs := &AppConfigDao{Dao: rdb.NewDao[*AppConfig](db)}
 	sites := &PortalSiteDao{Dao: rdb.NewDao[*PortalSite](db)}
-	configs.InitSchema()
-	sites.InitSchema()
+	configs.EnsureSchema()
+	sites.EnsureSchema()
 	require.False(t, db.Migrator().HasColumn("app_config", "field_sources"))
 	config := configs.Save(&AppConfig{Name: "config", Value: "{}", Version: 1, FieldSources: testSourceFields})
 	site := sites.Save(&PortalSite{Id: 0, Name: "site", FieldSources: `{"/name":{"source":"domain/site","define":"domain/site"}}`})

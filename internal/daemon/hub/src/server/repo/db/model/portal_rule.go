@@ -59,7 +59,7 @@ type PortalRuleDao struct {
 	rdb.Dao[*PortalRule]
 }
 
-func (d *PortalRuleDao) InitSchema() {
+func (d *PortalRuleDao) EnsureSchema() {
 	ex.PanicIfError(ensurePortalEntryTable(d.GormDB()))
 	removeLegacyBuiltInEntities(d.GormDB())
 	d.migrateAccessColumns()

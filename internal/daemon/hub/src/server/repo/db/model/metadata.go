@@ -27,7 +27,7 @@ type MetadataDao struct {
 	rdb.Dao[*Metadata]
 }
 
-func (d *MetadataDao) InitSchema() {
+func (d *MetadataDao) EnsureSchema() {
 	sql := schemaSQL(d.GormDB(), createMetadataSQLiteSQL, createMetadataPgSQL)
 	err := d.GormDB().Exec(sql).Error
 	ex.PanicIfError(err)

@@ -97,7 +97,7 @@ func newTestPortalCertDao(t *testing.T) *PortalCertDao {
 	dao := &PortalCertDao{
 		Dao: rdb.NewDao[*PortalCert](db),
 	}
-	dao.InitSchema()
+	dao.EnsureSchema()
 	require.NoError(t, db.Exec("DELETE FROM portal_cert").Error)
 	return dao
 }

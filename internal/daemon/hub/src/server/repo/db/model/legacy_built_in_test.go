@@ -8,16 +8,16 @@ import (
 	"go.yorun.ai/vine/infra/rdb"
 )
 
-// TestPortalRuleInitSchemaRemovesLegacyBuiltInEntities pins the cleanup of the
+// TestPortalRuleEnsureSchemaRemovesLegacyBuiltInEntities pins the cleanup of the
 // Dashboard entities an earlier release provisioned for Portal: Hub deletes the
 // stored built-in rows and keeps everything an operator stores.
-func TestPortalRuleInitSchemaRemovesLegacyBuiltInEntities(t *testing.T) {
+func TestPortalRuleEnsureSchemaRemovesLegacyBuiltInEntities(t *testing.T) {
 	db := newTestLegacyPortalRuleDB(t,
 		`INSERT INTO portal_rule (name, match_scheme, match_host, match_port, match_path_prefix, route_type, route_site_name, route_redirection_pattern)
 		 VALUES ('demo.web', 'http', '', 8080, '/', 'SITE', 'demo.Web', '')`,
 	)
 	entryDao := &PortalEntryDao{Dao: rdb.NewDao[*PortalEntry](db)}
-	entryDao.InitSchema()
+	entryDao.EnsureSchema()
 	require.NoError(t, db.Exec(`INSERT INTO portal_rule (name, match_scheme, match_host, match_port, match_path_prefix, route_type, route_site_name, route_redirection_pattern, built_in)
 		VALUES ('vine.hub.admin-api', 'http', '', 7099, '/api', 'SITE', 'vine.hub.admin.AdminActor-client-rpc', '', TRUE)`).Error)
 	require.NoError(t, db.Exec(_legacyPortalSiteSchema).Error)
@@ -25,9 +25,9 @@ func TestPortalRuleInitSchemaRemovesLegacyBuiltInEntities(t *testing.T) {
 		VALUES ('vine.hub.admin.DashboardWeb-web', 'WEBGW', 'vine.hub.admin.DashboardActor', 'client', 'vine.hub.admin.DashboardWeb', TRUE)`).Error)
 
 	dao := &PortalRuleDao{Dao: rdb.NewDao[*PortalRule](db)}
-	dao.InitSchema()
+	dao.EnsureSchema()
 	siteDao := &PortalSiteDao{Dao: rdb.NewDao[*PortalSite](db)}
-	siteDao.InitSchema()
+	siteDao.EnsureSchema()
 
 	rules := dao.ListOrdered()
 	require.Len(t, rules, 1)
