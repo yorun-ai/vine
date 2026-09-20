@@ -1,6 +1,7 @@
 package syncer
 
 import (
+	"encoding/base64"
 	"strconv"
 	"strings"
 
@@ -280,10 +281,14 @@ func ToWatchedPortalRule(rule *core.PortalRule, entry *core.PortalEntry) *watche
 
 func ToWatchedPortalCert(cert *core.PortalCert) *watched.PortalCert {
 	return &watched.PortalCert{
-		Name:             cert.Name,
+		Name: cert.Name,
+		// TODO: Remove Base64 dual publication and the corresponding watched fields
+		// once older Portal instances are no longer supported.
+		PublicKeyBase64:  base64.StdEncoding.EncodeToString([]byte(cert.Certificate)),
+		PrivateKeyBase64: base64.StdEncoding.EncodeToString([]byte(cert.PrivateKey)),
 		Issuer:           cert.Issuer,
-		PublicKeyBase64:  cert.PublicKeyBase64,
-		PrivateKeyBase64: cert.PrivateKeyBase64,
+		Certificate:      cert.Certificate,
+		PrivateKey:       cert.PrivateKey,
 		ValidFrom:        cert.ValidFrom,
 		ValidTo:          cert.ValidTo,
 	}

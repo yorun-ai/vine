@@ -41,12 +41,12 @@ func newTestPortalCert(t *testing.T, name string, domains []string) *watched.Por
 
 	certPEM, keyPEM := newTestCertificatePEM(t, domains)
 	return &watched.PortalCert{
-		Name:             name,
-		Issuer:           "test",
-		PublicKeyBase64:  base64.StdEncoding.EncodeToString(certPEM),
-		PrivateKeyBase64: base64.StdEncoding.EncodeToString(keyPEM),
-		ValidFrom:        time.Now().Add(-time.Hour),
-		ValidTo:          time.Now().Add(time.Hour),
+		Name:        name,
+		Issuer:      "test",
+		Certificate: string(certPEM),
+		PrivateKey:  string(keyPEM),
+		ValidFrom:   time.Now().Add(-time.Hour),
+		ValidTo:     time.Now().Add(time.Hour),
 	}
 }
 
@@ -75,4 +75,18 @@ func newTestCertificatePEM(t *testing.T, domains []string) ([]byte, []byte) {
 	require.NoError(t, err)
 	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes})
 	return certPEM, keyPEM
+}
+
+func TestCertificateOnlyReadsPEMFields(t *testing.T) {
+	cert := newTestPortalCert(t, "pem", []string{"demo.local"})
+	cert.PublicKeyBase64 = "invalid legacy certificate"
+	cert.PrivateKeyBase64 = "invalid legacy key"
+	_, err := newCertificate(cert)
+	require.NoError(t, err)
+	cert.PublicKeyBase64 = base64.StdEncoding.EncodeToString([]byte(cert.Certificate))
+	cert.PrivateKeyBase64 = base64.StdEncoding.EncodeToString([]byte(cert.PrivateKey))
+	cert.Certificate = ""
+	cert.PrivateKey = ""
+	_, err = newCertificate(cert)
+	require.Error(t, err, "new Portal must not fall back to Base64 fields")
 }

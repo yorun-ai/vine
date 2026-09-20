@@ -11,7 +11,7 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "f238dfaf",
+	Hash:        "718cf908",
 	Full:        true,
 	Generated:   &skel.GeneratedInfo{CompilerVersion: "v0.21.0"},
 
@@ -152,39 +152,39 @@ var _DomainSchema = &skel.DomainSchema{
 			{Name: "subject", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "messages", Description: "Message count as a decimal string", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 		}},
-		{Name: "PortalCert", SkelName: "vine.hub.admin.PortalCert", Description: "Portal site certificate", Hash: "6d989af0", Members: []*skel.MemberSchema{
+		{Name: "PortalCert", SkelName: "vine.hub.admin.PortalCert", Description: "Portal site certificate", Hash: "5506ddd6", Members: []*skel.MemberSchema{
 			{Name: "id", Description: "Certificate ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
 			{Name: "name", Description: "Certificate name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "issuer", Description: "Certificate issuer", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "domains", Description: "Certificate domain name", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}}},
-			{Name: "publicKeyBase64", Description: "Certificate Base64", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "certificate", Description: "PEM certificate chain", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "privateKeyConfigured", Description: "Whether the private key has been configured", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
 			{Name: "validFrom", Description: "Validity start time", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarTimestamp}},
 			{Name: "validTo", Description: "Validity end time", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarTimestamp}},
 			{Name: "fieldSources", Description: "Field sources; only returned by get, create and update", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "FieldSource", SkelName: "vine.hub.admin.FieldSource"}}},
 			{Name: "enabled", Description: "Whether Hub publishes this certificate to Portal", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
 		}},
-		{Name: "PortalCertCreation", SkelName: "vine.hub.admin.PortalCertCreation", Description: "Portal site certificate creation parameters", Hash: "3f078e11", Members: []*skel.MemberSchema{
+		{Name: "PortalCertCreation", SkelName: "vine.hub.admin.PortalCertCreation", Description: "Portal site certificate creation parameters", Hash: "8f2c7208", Members: []*skel.MemberSchema{
 			{Name: "name", Description: "Certificate name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
-			{Name: "publicKeyBase64", Description: "Certificate Base64", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
-			{Name: "privateKeyBase64", Description: "Private key Base64", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "certificate", Description: "PEM certificate chain", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "privateKey", Description: "PEM private key", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "enabled", Description: "Whether Hub publishes this certificate to Portal", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool, Nullable: true}},
 		}},
-		{Name: "PortalCertListItem", SkelName: "vine.hub.admin.PortalCertListItem", Description: "Portal site certificate list item", Hash: "51cc73e7", Members: []*skel.MemberSchema{
+		{Name: "PortalCertListItem", SkelName: "vine.hub.admin.PortalCertListItem", Description: "Portal site certificate list item", Hash: "ce158d1b", Members: []*skel.MemberSchema{
 			{Name: "id", Description: "Certificate ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
 			{Name: "name", Description: "Certificate name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "issuer", Description: "Certificate issuer", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "domains", Description: "Certificate domain name", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}}},
-			{Name: "publicKeyBase64", Description: "Certificate Base64", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "certificate", Description: "PEM certificate chain", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "privateKeyConfigured", Description: "Whether the private key has been configured", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
 			{Name: "validFrom", Description: "Validity start time", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarTimestamp}},
 			{Name: "validTo", Description: "Validity end time", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarTimestamp}},
 			{Name: "enabled", Description: "Whether Hub publishes this certificate to Portal", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
 		}},
-		{Name: "PortalCertUpdate", SkelName: "vine.hub.admin.PortalCertUpdate", Description: "Portal site certificate update parameters", Hash: "9d894b41", Members: []*skel.MemberSchema{
+		{Name: "PortalCertUpdate", SkelName: "vine.hub.admin.PortalCertUpdate", Description: "Portal site certificate update parameters", Hash: "df1615e7", Members: []*skel.MemberSchema{
 			{Name: "name", Description: "Certificate name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
-			{Name: "publicKeyBase64", Description: "Certificate Base64", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
-			{Name: "privateKeyBase64", Description: "Private key Base64", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "certificate", Description: "PEM certificate chain", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
+			{Name: "privateKey", Description: "PEM private key", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
 			{Name: "enabled", Description: "Whether Hub publishes this certificate to Portal", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool, Nullable: true}},
 		}},
 		{Name: "PortalCors", SkelName: "vine.hub.admin.PortalCors", Description: "Portal site CORS configuration", Hash: "2f35d440", Members: []*skel.MemberSchema{
@@ -735,15 +735,15 @@ var _DomainSchema = &skel.DomainSchema{
 		{Name: "MessageQueueStatusApiService", SkelName: "vine.hub.admin.MessageQueueStatusApiService", Description: "Hub Dashboard message queue status service", Hash: "2e40eb39", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
 			{Name: "list", SkelName: "list", Description: "Read Task and Event streams without consuming messages", Hash: "1633ffbd", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "MessageQueueStatusView", SkelName: "vine.hub.admin.MessageQueueStatusView"}}},
 		}},
-		{Name: "PortalCertApiService", SkelName: "vine.hub.admin.PortalCertApiService", Description: "Hub's Portal site certificate service, called by the Portal admin client", Hash: "9d1673c5", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
-			{Name: "list", SkelName: "list", Description: "List Portal site certificates", Hash: "603743bd", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal site certificate list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCertListItem", SkelName: "vine.hub.admin.PortalCertListItem"}}},
-			{Name: "get", SkelName: "get", Description: "Read the Portal site certificate", Hash: "8a48b8be", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal site certificate", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCert", SkelName: "vine.hub.admin.PortalCert"}, Arguments: []*skel.MemberSchema{
+		{Name: "PortalCertApiService", SkelName: "vine.hub.admin.PortalCertApiService", Description: "Hub's Portal site certificate service, called by the Portal admin client", Hash: "93dd2cc6", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+			{Name: "list", SkelName: "list", Description: "List Portal site certificates", Hash: "4cb16c1b", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal site certificate list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCertListItem", SkelName: "vine.hub.admin.PortalCertListItem"}}},
+			{Name: "get", SkelName: "get", Description: "Read the Portal site certificate", Hash: "379dc981", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal site certificate", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCert", SkelName: "vine.hub.admin.PortalCert"}, Arguments: []*skel.MemberSchema{
 				{Name: "id", Description: "Certificate ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
 			}},
-			{Name: "create", SkelName: "create", Description: "Create Portal site certificate", Hash: "8b9401cf", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal site certificate", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCert", SkelName: "vine.hub.admin.PortalCert"}, Arguments: []*skel.MemberSchema{
+			{Name: "create", SkelName: "create", Description: "Create Portal site certificate", Hash: "74cd8053", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal site certificate", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCert", SkelName: "vine.hub.admin.PortalCert"}, Arguments: []*skel.MemberSchema{
 				{Name: "creation", Description: "Portal site certificate creation parameters", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCertCreation", SkelName: "vine.hub.admin.PortalCertCreation"}},
 			}},
-			{Name: "update", SkelName: "update", Description: "Modify Portal site certificate", Hash: "009c8e7b", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal site certificate", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCert", SkelName: "vine.hub.admin.PortalCert"}, Arguments: []*skel.MemberSchema{
+			{Name: "update", SkelName: "update", Description: "Modify Portal site certificate", Hash: "fd03ea4d", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal site certificate", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCert", SkelName: "vine.hub.admin.PortalCert"}, Arguments: []*skel.MemberSchema{
 				{Name: "id", Description: "Certificate ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
 				{Name: "update", Description: "Portal site certificate update parameters", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCertUpdate", SkelName: "vine.hub.admin.PortalCertUpdate"}},
 			}},

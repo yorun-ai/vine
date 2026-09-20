@@ -7,7 +7,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/base64"
+	"encoding/pem"
 	"fmt"
 	"math/big"
 	"os"
@@ -68,8 +68,7 @@ portalCerts:
     issuer: ignored
     domains:
       - ignored.local
-    publicKeyBase64: ` + testSeederCertificate(t) + `
-    privateKeyBase64: pri
+    ` + testSeederCertificate(t) + `
     validFrom: 2026-01-01T00:00:00Z
     validTo: 2027-01-01T00:00:00Z
 `
@@ -219,8 +218,7 @@ portalCerts:
     issuer: ignored
     domains:
       - ignored.local
-    publicKeyBase64: `+testSeederCertificate(t)+`
-    privateKeyBase64: pri
+    `+testSeederCertificate(t)+`
     validFrom: 2026-01-01T00:00:00Z
     validTo: 2027-01-01T00:00:00Z
 `))
@@ -229,7 +227,7 @@ portalCerts:
 	configRepo.Save(&core.AppConfig{Name: "feature.keep", Value: `{"enabled":true}`, Version: 3})
 	entryRepo.Save(&core.PortalSite{Name: "admin@demo.app", Type: core.PortalSiteTypeWEBGW, ActorSkelName: "old.Actor", ActorVia: "client", WebName: "old.Web"})
 	saveTestPortalRule(t, ruleRepo, &core.PortalRule{Name: "admin", MatchPathPrefix: "/old", RouteType: "SITE", RouteSiteName: "old-site"}, core.PortalEntry{Scheme: "http", Port: 80})
-	certRepo.Save(&core.PortalCert{Name: "admin-cert", Issuer: "old", Domains: []string{"old.local"}, PublicKeyBase64: "old-pub", PrivateKeyBase64: "old-pri"})
+	certRepo.Save(&core.PortalCert{Name: "admin-cert", Issuer: "old", Domains: []string{"old.local"}, Certificate: "old-pub", PrivateKey: "old-pri"})
 	metadataRepo.MarkSeeded()
 
 	seeder := &Seeder{
@@ -548,8 +546,7 @@ portalRules:
     disabled: true
 portalCerts:
   - name: demo-cert
-    publicKeyBase64: `+testSeederCertificate(t)+`
-    privateKeyBase64: pri
+    `+testSeederCertificate(t)+`
     disabled: true
 `))
 	seeder := &Seeder{
@@ -888,13 +885,17 @@ func testSeederCertificate(t *testing.T) string {
 	cert := &x509.Certificate{SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "manual"}, DNSNames: []string{"admin.local"}, NotBefore: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), NotAfter: time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC)}
 	der, err := x509.CreateCertificate(rand.Reader, cert, cert, &key.PublicKey, key)
 	require.NoError(t, err)
-	return base64.StdEncoding.EncodeToString(der)
+	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
+	keyDER, err := x509.MarshalECPrivateKey(key)
+	require.NoError(t, err)
+	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyDER})
+	return "certificate: |\n      " + strings.ReplaceAll(strings.TrimSpace(string(certPEM)), "\n", "\n      ") + "\n    privateKey: |\n      " + strings.ReplaceAll(strings.TrimSpace(string(keyPEM)), "\n", "\n      ")
 }
 
 func TestSeederPreflightsSitesAndCertificatesBeforeWriting(t *testing.T) {
 	for name, invalid := range map[string]string{
 		"site":        "portalSites:\n  - name: invalid\n    type: WEBGW\n    actorSkelName: demo.Actor\n    actorVia: client\n",
-		"certificate": "portalCerts:\n  - name: invalid\n    publicKeyBase64: invalid\n",
+		"certificate": "portalCerts:\n  - name: invalid\n    certificate: invalid\n",
 	} {
 		t.Run(name, func(t *testing.T) {
 			configs, rules, certs, sites, metadata, _ := newTestSeederRepos(t)
@@ -1081,5 +1082,12 @@ func TestSeederWildcardWebOnly(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestSeederRejectsLegacyCertificateFields(t *testing.T) {
+	for _, field := range []string{"publicKeyBase64", "privateKeyBase64"} {
+		target := &Seeder{Flag: &flag.Flag{SeedHubData: "portalCerts:\n  - name: legacy\n    " + field + ": old"}}
+		require.Panics(t, target.loadSeedYAML)
 	}
 }

@@ -428,14 +428,14 @@ func (s _PortalSite) toCorePortalSite() *core.PortalSite {
 // Portal cert
 
 type _PortalCert struct {
-	Sources          core.FieldSources `yaml:"-"`
-	Name             string            `yaml:"name"`
-	Issuer           string            `yaml:"issuer"`
-	Domains          []string          `yaml:"domains"`
-	PublicKeyBase64  string            `yaml:"publicKeyBase64"`
-	PrivateKeyBase64 string            `yaml:"privateKeyBase64"`
-	ValidFrom        time.Time         `yaml:"validFrom"`
-	ValidTo          time.Time         `yaml:"validTo"`
+	Sources     core.FieldSources `yaml:"-"`
+	Name        string            `yaml:"name"`
+	Issuer      string            `yaml:"issuer"`
+	Domains     []string          `yaml:"domains"`
+	Certificate string            `yaml:"certificate"`
+	PrivateKey  string            `yaml:"privateKey"`
+	ValidFrom   time.Time         `yaml:"validFrom"`
+	ValidTo     time.Time         `yaml:"validTo"`
 	// Disabled is optional and defaults to false. A seed declares the exception,
 	// so Hub keeps the positive spelling of the switch it stores: enabled.
 	Disabled bool `yaml:"disabled"`
@@ -455,10 +455,10 @@ func (c *_PortalCert) UnmarshalYAML(node *yaml.Node) error {
 
 func (c _PortalCert) toCorePortalCert() *core.PortalCert {
 	cert := &core.PortalCert{FieldSources: c.Sources,
-		Name:             c.Name,
-		PublicKeyBase64:  c.PublicKeyBase64,
-		PrivateKeyBase64: c.PrivateKeyBase64,
-		Enabled:          !c.Disabled,
+		Name:        c.Name,
+		Certificate: c.Certificate,
+		PrivateKey:  c.PrivateKey,
+		Enabled:     !c.Disabled,
 	}
 	return cert
 }

@@ -326,3 +326,15 @@ Hub handles registrations differently in normal and inproc modes:
   - State remains valid until explicit unregister removes it.
 
 This removes the need for heartbeat-based lease maintenance in single-process mode.
+
+### Certificate representation
+
+Hub's domain, Admin API, Dashboard and seed use PEM `certificate` and `privateKey`
+fields. The DAO adds `certificate` and `private_key` columns and migrates legacy
+Base64 (or directly stored PEM) material transactionally before publication.
+The old columns remain for migration only; new writes use PEM. Field-source paths
+move to the new field names while retaining their historical provenance.
+Syncer publishes both PEM and derived legacy Base64 fields to Watch. Upgrade Hub
+first: the new Portal reads only the PEM fields, while old Portal instances can
+consume the legacy fields. Validate certificate/key pairs before persistence and
+never expose private key values through Admin API provenance.

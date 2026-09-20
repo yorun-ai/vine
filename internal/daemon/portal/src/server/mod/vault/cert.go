@@ -3,7 +3,6 @@ package vault
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
 	"strings"
 	"time"
 
@@ -19,16 +18,7 @@ type _Certificate struct {
 }
 
 func newCertificate(cert *watched.PortalCert) (*_Certificate, error) {
-	publicKeyPEM, err := base64.StdEncoding.DecodeString(cert.PublicKeyBase64)
-	if err != nil {
-		return nil, err
-	}
-	privateKeyPEM, err := base64.StdEncoding.DecodeString(cert.PrivateKeyBase64)
-	if err != nil {
-		return nil, err
-	}
-
-	tlsCert, err := tls.X509KeyPair(publicKeyPEM, privateKeyPEM)
+	tlsCert, err := tls.X509KeyPair([]byte(cert.Certificate), []byte(cert.PrivateKey))
 	if err != nil {
 		return nil, err
 	}

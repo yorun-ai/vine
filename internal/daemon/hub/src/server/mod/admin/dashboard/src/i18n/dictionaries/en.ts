@@ -220,10 +220,10 @@ export const en: Record<TranslationKey, string> = {
   'portalCert.deleteDescription':
     'After deletion, Portal can no longer use this certificate.',
   'portalCert.name': 'Cert Name',
-  'portalCert.publicKeyBase64': 'Certificate Base64',
-  'portalCert.privateKeyBase64': 'Private Key Base64',
+  'portalCert.certificate': 'Certificate PEM',
+  'portalCert.privateKey': 'Private Key PEM',
   'portalCert.privateKeyCreatePlaceholder':
-    'Paste the private key Base64. It will not be shown after saving.',
+    'Paste the private key PEM. It will not be shown after saving.',
   'portalCert.privateKeyEditPlaceholder':
     'Existing private key is hidden. Leave empty to keep it, or enter a new one to replace it.',
   'portalCert.privateKeyCreateHelp':
@@ -450,8 +450,8 @@ export const en: Record<TranslationKey, string> = {
   'appConfig.jsonCopied': 'JSON copied',
   'appConfig.resizeList': 'Resize configuration list',
   'portalCert.nameRequired': 'Enter a certificate name',
-  'portalCert.publicKeyRequired': 'Enter the certificate Base64',
-  'portalCert.privateKeyRequired': 'Enter the private key Base64',
+  'portalCert.certificateRequired': 'Enter the certificate PEM',
+  'portalCert.privateKeyRequired': 'Enter the private key PEM',
   'portalCert.created': 'HTTPS certificate created',
   'portalCert.saved': 'HTTPS certificate saved',
   'portalCert.deleted': 'HTTPS certificate deleted',

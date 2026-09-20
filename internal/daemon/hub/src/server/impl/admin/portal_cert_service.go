@@ -23,27 +23,27 @@ func (s *PortalCertApiServiceServerImpl) List() []skeled.PortalCertListItem {
 
 func (s *PortalCertApiServiceServerImpl) Get(id int) skeled.PortalCert {
 	cert := s.PortalCertCore.Get(id)
-	return toServerPortalCert(cert, toServerFieldSources(cert.FieldSources))
+	return toServerPortalCert(cert, portalCertFieldSources(cert.FieldSources))
 }
 
 func (s *PortalCertApiServiceServerImpl) Create(creation skeled.PortalCertCreation) skeled.PortalCert {
 	cert := s.PortalCertCore.Create(core.PortalCertCreation{
-		Name:             creation.Name,
-		PublicKeyBase64:  creation.PublicKeyBase64,
-		PrivateKeyBase64: creation.PrivateKeyBase64,
-		Enabled:          creation.Enabled,
+		Name:        creation.Name,
+		Certificate: creation.Certificate,
+		PrivateKey:  creation.PrivateKey,
+		Enabled:     creation.Enabled,
 	})
-	return toServerPortalCert(cert, toServerFieldSources(cert.FieldSources))
+	return toServerPortalCert(cert, portalCertFieldSources(cert.FieldSources))
 }
 
 func (s *PortalCertApiServiceServerImpl) Update(id int, update skeled.PortalCertUpdate) skeled.PortalCert {
 	cert := s.PortalCertCore.Update(id, core.PortalCertUpdate{
-		Name:             update.Name,
-		PublicKeyBase64:  update.PublicKeyBase64,
-		PrivateKeyBase64: update.PrivateKeyBase64,
-		Enabled:          update.Enabled,
+		Name:        update.Name,
+		Certificate: update.Certificate,
+		PrivateKey:  update.PrivateKey,
+		Enabled:     update.Enabled,
 	})
-	return toServerPortalCert(cert, toServerFieldSources(cert.FieldSources))
+	return toServerPortalCert(cert, portalCertFieldSources(cert.FieldSources))
 }
 
 func (s *PortalCertApiServiceServerImpl) Remove(id int) {
@@ -57,8 +57,8 @@ func toServerPortalCert(cert *core.PortalCert, fieldSources []skeled.FieldSource
 		Name:                 cert.Name,
 		Issuer:               cert.Issuer,
 		Domains:              cert.Domains,
-		PublicKeyBase64:      cert.PublicKeyBase64,
-		PrivateKeyConfigured: cert.PrivateKeyBase64 != "",
+		Certificate:          cert.Certificate,
+		PrivateKeyConfigured: cert.PrivateKey != "",
 		ValidFrom:            skel.NewTimestamp(cert.ValidFrom),
 		ValidTo:              skel.NewTimestamp(cert.ValidTo),
 		FieldSources:         fieldSources,
@@ -75,9 +75,24 @@ func toServerPortalCertListItem(cert *core.PortalCert) skeled.PortalCertListItem
 		Name:                 detail.Name,
 		Issuer:               detail.Issuer,
 		Domains:              detail.Domains,
-		PublicKeyBase64:      detail.PublicKeyBase64,
+		Certificate:          detail.Certificate,
 		PrivateKeyConfigured: detail.PrivateKeyConfigured,
 		ValidFrom:            detail.ValidFrom,
 		ValidTo:              detail.ValidTo,
 	}
+}
+
+// Certificate provenance may contain a private key in a seed template or binding.
+// Keep its source labels, but never return those values through the Admin API.
+func portalCertFieldSources(sources core.FieldSources) []skeled.FieldSource {
+	fields := toServerFieldSources(sources)
+	for i := range fields {
+		// TODO: Remove only the legacy /privateKeyBase64 branch when provenance
+		// migration support is retired; keep PEM private-key redaction.
+		if fields[i].Path == "/privateKey" || fields[i].Path == "/privateKeyBase64" {
+			fields[i].Template = nil
+			fields[i].Bindings = nil
+		}
+	}
+	return fields
 }

@@ -129,14 +129,14 @@ func sharedTestPortalCertRepoDB(t *testing.T) *gorm.DB {
 
 func testPortalCert(name string) *core.PortalCert {
 	return &core.PortalCert{
-		Name:             name,
-		Issuer:           "letsencrypt",
-		Domains:          []string{"demo.local", "*.demo.local"},
-		PublicKeyBase64:  "pub",
-		PrivateKeyBase64: "pri",
-		ValidFrom:        time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
-		ValidTo:          time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC),
-		Enabled:          true,
+		Name:        name,
+		Issuer:      "letsencrypt",
+		Domains:     []string{"demo.local", "*.demo.local"},
+		Certificate: "pub",
+		PrivateKey:  "pri",
+		ValidFrom:   time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+		ValidTo:     time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC),
+		Enabled:     true,
 	}
 }
 

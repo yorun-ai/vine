@@ -1,6 +1,8 @@
 package admin
 
 import (
+	"go.yorun.ai/vine/internal/core/skel"
+	"go.yorun.ai/vine/util/vcode"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,13 +13,13 @@ import (
 func TestPortalCertServiceMapsListItemsAndDetail(t *testing.T) {
 	repo := &_PortalCertRepoSpy{items: map[string]*core.PortalCert{
 		"demo-cert": {
-			Id:               5,
-			Name:             "demo-cert",
-			Issuer:           "letsencrypt",
-			Domains:          []string{"demo.local"},
-			PublicKeyBase64:  "pub",
-			PrivateKeyBase64: "pri",
-			FieldSources:     core.FieldSources{"/publicKeyBase64": {Source: "app/default", Override: "hub"}},
+			Id:           5,
+			Name:         "demo-cert",
+			Issuer:       "letsencrypt",
+			Domains:      []string{"demo.local"},
+			Certificate:  "pub",
+			PrivateKey:   "pri",
+			FieldSources: core.FieldSources{"/certificate": {Source: "app/default", Override: "hub"}},
 		},
 	}}
 	service := &PortalCertApiServiceServerImpl{PortalCertCore: &core.PortalCertCore{PortalCertRepo: repo}}
@@ -33,6 +35,20 @@ func TestPortalCertServiceMapsListItemsAndDetail(t *testing.T) {
 	detail := service.Get(5)
 
 	require.Len(t, detail.FieldSources, 1)
-	assert.Equal(t, "/publicKeyBase64", detail.FieldSources[0].Path)
+	assert.Equal(t, "/certificate", detail.FieldSources[0].Path)
 	assert.Equal(t, "app/default", detail.FieldSources[0].Source)
+}
+
+func TestPortalCertServiceDoesNotReturnPrivateKeyProvenanceValues(t *testing.T) {
+	secret := skel.JSON(`"private PEM content"`)
+	sources := core.FieldSources{
+		"/privateKey": {Source: "seed", Template: &secret, Bindings: []core.FieldSourceBinding{{Variable: "key", Value: secret}}},
+	}
+	fields := portalCertFieldSources(sources)
+	require.Len(t, fields, 1)
+	assert.Equal(t, "seed", fields[0].Source)
+	assert.Nil(t, fields[0].Template)
+	assert.Empty(t, fields[0].Bindings)
+	assert.NotContains(t, vcode.MustMarshalJsonS(fields), "private PEM content")
+	assert.NotNil(t, sources["/privateKey"].Template, "response redaction must not mutate stored provenance")
 }

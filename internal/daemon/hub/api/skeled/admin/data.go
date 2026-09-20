@@ -253,8 +253,8 @@ type PortalCert struct {
 	Issuer string `json:"issuer"`
 	// Domains Certificate domain name
 	Domains []string `json:"domains"`
-	// PublicKeyBase64 Certificate Base64
-	PublicKeyBase64 string `json:"publicKeyBase64"`
+	// Certificate PEM certificate chain
+	Certificate string `json:"certificate"`
 	// PrivateKeyConfigured Whether the private key has been configured
 	PrivateKeyConfigured bool `json:"privateKeyConfigured"`
 	// ValidFrom Validity start time
@@ -271,10 +271,10 @@ type PortalCert struct {
 type PortalCertCreation struct {
 	// Name Certificate name
 	Name string `json:"name"`
-	// PublicKeyBase64 Certificate Base64
-	PublicKeyBase64 string `json:"publicKeyBase64"`
-	// PrivateKeyBase64 Private key Base64
-	PrivateKeyBase64 string `json:"privateKeyBase64"`
+	// Certificate PEM certificate chain
+	Certificate string `json:"certificate"`
+	// PrivateKey PEM private key
+	PrivateKey string `json:"privateKey"`
 	// Enabled Whether Hub publishes this certificate to Portal
 	Enabled *bool `json:"enabled"`
 }
@@ -289,8 +289,8 @@ type PortalCertListItem struct {
 	Issuer string `json:"issuer"`
 	// Domains Certificate domain name
 	Domains []string `json:"domains"`
-	// PublicKeyBase64 Certificate Base64
-	PublicKeyBase64 string `json:"publicKeyBase64"`
+	// Certificate PEM certificate chain
+	Certificate string `json:"certificate"`
 	// PrivateKeyConfigured Whether the private key has been configured
 	PrivateKeyConfigured bool `json:"privateKeyConfigured"`
 	// ValidFrom Validity start time
@@ -305,10 +305,10 @@ type PortalCertListItem struct {
 type PortalCertUpdate struct {
 	// Name Certificate name
 	Name *string `json:"name"`
-	// PublicKeyBase64 Certificate Base64
-	PublicKeyBase64 *string `json:"publicKeyBase64"`
-	// PrivateKeyBase64 Private key Base64
-	PrivateKeyBase64 *string `json:"privateKeyBase64"`
+	// Certificate PEM certificate chain
+	Certificate *string `json:"certificate"`
+	// PrivateKey PEM private key
+	PrivateKey *string `json:"privateKey"`
 	// Enabled Whether Hub publishes this certificate to Portal
 	Enabled *bool `json:"enabled"`
 }

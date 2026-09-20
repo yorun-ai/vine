@@ -210,10 +210,10 @@ export const cn = {
     '管理 Portal HTTPS 使用的证书和私钥，域名与有效期由证书解析。',
   'portalCert.deleteDescription': '删除后 Portal 将无法继续使用这份证书。',
   'portalCert.name': '证书名称',
-  'portalCert.publicKeyBase64': '证书 Base64',
-  'portalCert.privateKeyBase64': '私钥 Base64',
+  'portalCert.certificate': '证书 PEM',
+  'portalCert.privateKey': '私钥 PEM',
   'portalCert.privateKeyCreatePlaceholder':
-    '粘贴私钥 Base64，保存后不会在页面中回显',
+    '粘贴私钥 PEM，保存后不会在页面中回显',
   'portalCert.privateKeyEditPlaceholder':
     '已有私钥不会显示；留空表示沿用当前私钥，填写则替换',
   'portalCert.privateKeyCreateHelp':
@@ -426,8 +426,8 @@ export const cn = {
   'appConfig.jsonCopied': 'JSON 已复制',
   'appConfig.resizeList': '调整配置列表宽度',
   'portalCert.nameRequired': '请填写证书名称',
-  'portalCert.publicKeyRequired': '请填写证书 Base64',
-  'portalCert.privateKeyRequired': '请填写私钥 Base64',
+  'portalCert.certificateRequired': '请填写证书 PEM',
+  'portalCert.privateKeyRequired': '请填写私钥 PEM',
   'portalCert.created': 'HTTPS证书已创建',
   'portalCert.saved': 'HTTPS证书已保存',
   'portalCert.deleted': 'HTTPS证书已删除',

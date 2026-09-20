@@ -1,6 +1,8 @@
 package syncer
 
 import (
+	"encoding/base64"
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -193,4 +195,27 @@ func TestSyncerWithdrawsWildcardRuleWhenSiteBecomesRpc(t *testing.T) {
 	target.RemovePortalSite(site)
 	_, ok = watchServer.Get(watched.FormatPortalRuleKey("wildcard"))
 	assert.False(t, ok)
+}
+
+func TestSyncerPublishesPEMAndLegacyCertificateFields(t *testing.T) {
+	server := watchserver.NewServerForTest()
+	t.Cleanup(server.AfterAppStop)
+	target := testSyncer(server)
+	cert := &core.PortalCert{Id: 1, Name: "pem", Certificate: "certificate PEM\n", PrivateKey: "private key PEM\n", Enabled: true}
+	for _, suffix := range []string{"", "updated\n"} {
+		cert.Certificate += suffix
+		cert.PrivateKey += suffix
+		target.SyncPortalCert(cert)
+		value, ok := server.Get(watched.FormatPortalCertKey(cert.Name))
+		require.True(t, ok)
+		published := vcode.MustUnmarshalJsonS[watched.PortalCert](value)
+		require.Equal(t, cert.Certificate, published.Certificate)
+		require.Equal(t, cert.PrivateKey, published.PrivateKey)
+		legacyCert, err := base64.StdEncoding.DecodeString(published.PublicKeyBase64)
+		require.NoError(t, err)
+		legacyKey, err := base64.StdEncoding.DecodeString(published.PrivateKeyBase64)
+		require.NoError(t, err)
+		require.Equal(t, cert.Certificate, string(legacyCert))
+		require.Equal(t, cert.PrivateKey, string(legacyKey))
+	}
 }

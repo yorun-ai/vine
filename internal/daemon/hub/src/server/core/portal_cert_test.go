@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/base64"
+	"encoding/pem"
 	"math/big"
 	"net"
 	"testing"
@@ -21,10 +22,11 @@ func TestPortalCertCoreCreateDerivesMetadata(t *testing.T) {
 	validFrom := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	validTo := time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC)
 
+	certificate, privateKey := testPortalCertPEM(t, "letsencrypt", []string{"demo.local", "*.demo.local"}, []net.IP{net.ParseIP("127.0.0.1")}, validFrom, validTo)
 	cert := core.Create(PortalCertCreation{
-		Name:             "demo-cert",
-		PublicKeyBase64:  testPortalCertBase64(t, "letsencrypt", []string{"demo.local", "*.demo.local"}, []net.IP{net.ParseIP("127.0.0.1")}, validFrom, validTo),
-		PrivateKeyBase64: "pri",
+		Name:        "demo-cert",
+		Certificate: certificate,
+		PrivateKey:  privateKey,
 	})
 
 	assert.Equal(t, "letsencrypt", cert.Issuer)
@@ -38,17 +40,19 @@ func TestPortalCertCoreUpdateDerivesMetadataWhenPublicKeyChanges(t *testing.T) {
 	core := &PortalCertCore{PortalCertRepo: repo}
 	validFrom := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	validTo := time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC)
+	certificate, privateKey := testPortalCertPEM(t, "letsencrypt", []string{"demo.local"}, nil, validFrom, validTo)
 	cert := core.Create(PortalCertCreation{
-		Name:             "demo-cert",
-		PublicKeyBase64:  testPortalCertBase64(t, "letsencrypt", []string{"demo.local"}, nil, validFrom, validTo),
-		PrivateKeyBase64: "pri",
+		Name:        "demo-cert",
+		Certificate: certificate,
+		PrivateKey:  privateKey,
 	})
 	nextFrom := time.Date(2027, 2, 1, 0, 0, 0, 0, time.UTC)
 	nextTo := time.Date(2028, 2, 1, 0, 0, 0, 0, time.UTC)
-	nextPublicKey := testPortalCertBase64(t, "next-ca", []string{"next.local"}, nil, nextFrom, nextTo)
+	nextPublicKey, nextPrivateKey := testPortalCertPEM(t, "next-ca", []string{"next.local"}, nil, nextFrom, nextTo)
 
 	got := core.Update(cert.Id, PortalCertUpdate{
-		PublicKeyBase64: &nextPublicKey,
+		Certificate: &nextPublicKey,
+		PrivateKey:  &nextPrivateKey,
 	})
 
 	assert.Equal(t, "next-ca", got.Issuer)
@@ -116,7 +120,7 @@ func (r *_TestPortalCertRepo) Remove(id int) bool {
 	return true
 }
 
-func testPortalCertBase64(t *testing.T, issuer string, dnsNames []string, ipAddresses []net.IP, validFrom time.Time, validTo time.Time) string {
+func testPortalCertPEM(t *testing.T, issuer string, dnsNames []string, ipAddresses []net.IP, validFrom time.Time, validTo time.Time) (string, string) {
 	t.Helper()
 
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
@@ -142,7 +146,7 @@ func testPortalCertBase64(t *testing.T, issuer string, dnsNames []string, ipAddr
 	}
 	der, err := x509.CreateCertificate(rand.Reader, template, parent, &key.PublicKey, key)
 	require.NoError(t, err)
-	return base64.StdEncoding.EncodeToString(der)
+	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})), string(pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)}))
 }
 
 func TestPortalCertSaveDerivesMetadataAndPreservesIdentity(t *testing.T) {
@@ -150,7 +154,8 @@ func TestPortalCertSaveDerivesMetadataAndPreservesIdentity(t *testing.T) {
 	target := &PortalCertCore{PortalCertRepo: repo}
 	from := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := from.AddDate(1, 0, 0)
-	cert := PortalCert{Id: 99, Name: "demo", Issuer: "forged", Domains: []string{"forged.local"}, PublicKeyBase64: testPortalCertBase64(t, "actual", []string{"demo.local"}, nil, from, to), PrivateKeyBase64: "pri"}
+	certificate, privateKey := testPortalCertPEM(t, "actual", []string{"demo.local"}, nil, from, to)
+	cert := PortalCert{Id: 99, Name: "demo", Issuer: "forged", Domains: []string{"forged.local"}, Certificate: certificate, PrivateKey: privateKey}
 	got := target.Save(cert)
 	require.NotEqual(t, 99, got.Id)
 	require.Equal(t, "actual", got.Issuer)
@@ -159,8 +164,29 @@ func TestPortalCertSaveDerivesMetadataAndPreservesIdentity(t *testing.T) {
 	require.Equal(t, to, got.ValidTo)
 	require.Equal(t, got.Id, target.Save(cert).Id)
 	require.Len(t, repo.certs, 1)
-	cert.PublicKeyBase64 = "invalid"
+	cert.Certificate = "invalid"
 	require.Panics(t, func() { target.Save(cert) })
-	require.Equal(t, got.PublicKeyBase64, repo.certs[got.Id].PublicKeyBase64)
+	require.Equal(t, got.Certificate, repo.certs[got.Id].Certificate)
 	require.NotPanics(t, func() { (&PortalCertCore{}).Validate(*got) })
+}
+
+func TestPortalCertPEMValidationAndUpdates(t *testing.T) {
+	from := time.Now().Add(-time.Hour)
+	certificate, key := testPortalCertPEM(t, "issuer", []string{"demo.local"}, nil, from, from.Add(2*time.Hour))
+	_, otherKey := testPortalCertPEM(t, "other", []string{"other.local"}, nil, from, from.Add(2*time.Hour))
+	target := &PortalCertCore{PortalCertRepo: newTestPortalCertRepo()}
+	chain := certificate + certificate
+	stored := target.Create(PortalCertCreation{Name: "chain", Certificate: chain, PrivateKey: key})
+	require.Equal(t, chain, stored.Certificate)
+	updated := target.Update(stored.Id, PortalCertUpdate{Certificate: &certificate})
+	require.Equal(t, key, updated.PrivateKey, "omitted key keeps the stored key")
+	for _, change := range []PortalCertUpdate{
+		{PrivateKey: &otherKey}, {PrivateKey: new("")},
+		{Certificate: new(base64.StdEncoding.EncodeToString([]byte(certificate)))},
+		{Certificate: new(certificate + string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: []byte("bad DER")})))},
+	} {
+		require.Panics(t, func() { target.Update(stored.Id, change) })
+		require.Equal(t, key, target.Get(stored.Id).PrivateKey)
+		require.Equal(t, certificate, target.Get(stored.Id).Certificate)
+	}
 }

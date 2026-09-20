@@ -66,8 +66,8 @@ const PORTAL_CERT_LIST_DEFAULT_WIDTH = 352
 
 interface PortalCertFormValue {
   name: string
-  publicKeyBase64: string
-  privateKeyBase64: string
+  certificate: string
+  privateKey: string
   enabled: boolean
 }
 
@@ -75,8 +75,8 @@ type PortalCertFormErrors = Partial<Record<keyof PortalCertFormValue, string>>
 
 const emptyFormValue: PortalCertFormValue = {
   name: '',
-  publicKeyBase64: '',
-  privateKeyBase64: '',
+  certificate: '',
+  privateKey: '',
   enabled: true,
 }
 
@@ -134,8 +134,8 @@ function formatDateTime(value: string) {
 function certToFormValue(cert: PortalCertListItem): PortalCertFormValue {
   return {
     name: cert.name,
-    publicKeyBase64: cert.publicKeyBase64,
-    privateKeyBase64: '',
+    certificate: cert.certificate,
+    privateKey: '',
     enabled: cert.enabled,
   }
 }
@@ -143,20 +143,20 @@ function certToFormValue(cert: PortalCertListItem): PortalCertFormValue {
 function formValueToCreation(value: PortalCertFormValue): PortalCertCreation {
   return {
     name: value.name.trim(),
-    publicKeyBase64: value.publicKeyBase64.trim(),
-    privateKeyBase64: value.privateKeyBase64.trim(),
+    certificate: value.certificate.trim(),
+    privateKey: value.privateKey.trim(),
     enabled: value.enabled,
   }
 }
 
 function formValueToUpdate(value: PortalCertFormValue): PortalCertUpdate {
   const creation = formValueToCreation(value)
-  const privateKeyBase64 = value.privateKeyBase64.trim()
+  const privateKey = value.privateKey.trim()
 
   return {
     name: creation.name,
-    publicKeyBase64: creation.publicKeyBase64,
-    privateKeyBase64: privateKeyBase64 === '' ? null : privateKeyBase64,
+    certificate: creation.certificate,
+    privateKey: privateKey === '' ? null : privateKey,
     enabled: value.enabled,
   }
 }
@@ -172,12 +172,12 @@ function validateFormValue(
     errors.name = t('portalCert.nameRequired')
   }
 
-  if (value.publicKeyBase64.trim() === '') {
-    errors.publicKeyBase64 = t('portalCert.publicKeyRequired')
+  if (value.certificate.trim() === '') {
+    errors.certificate = t('portalCert.certificateRequired')
   }
 
-  if (isCreate && value.privateKeyBase64.trim() === '') {
-    errors.privateKeyBase64 = t('portalCert.privateKeyRequired')
+  if (isCreate && value.privateKey.trim() === '') {
+    errors.privateKey = t('portalCert.privateKeyRequired')
   }
 
   return errors
@@ -309,26 +309,26 @@ function PortalCertDialog({
           </Field>
 
           <Field
-            label={t('portalCert.publicKeyBase64')}
-            error={fieldErrors.publicKeyBase64}
+            label={t('portalCert.certificate')}
+            error={fieldErrors.certificate}
           >
             <Textarea
-              aria-invalid={Boolean(fieldErrors.publicKeyBase64)}
-              value={formValue.publicKeyBase64}
+              aria-invalid={Boolean(fieldErrors.certificate)}
+              value={formValue.certificate}
               className="h-36 resize-none overflow-y-auto font-mono text-xs"
               onChange={(event) =>
-                setField('publicKeyBase64', event.target.value)
+                setField('certificate', event.target.value)
               }
             />
           </Field>
 
           <Field
-            label={t('portalCert.privateKeyBase64')}
-            error={fieldErrors.privateKeyBase64}
+            label={t('portalCert.privateKey')}
+            error={fieldErrors.privateKey}
           >
             <Textarea
-              aria-invalid={Boolean(fieldErrors.privateKeyBase64)}
-              value={formValue.privateKeyBase64}
+              aria-invalid={Boolean(fieldErrors.privateKey)}
+              value={formValue.privateKey}
               className="h-36 resize-none overflow-y-auto font-mono text-xs"
               placeholder={
                 isCreate
@@ -336,7 +336,7 @@ function PortalCertDialog({
                   : t('portalCert.privateKeyEditPlaceholder')
               }
               onChange={(event) =>
-                setField('privateKeyBase64', event.target.value)
+                setField('privateKey', event.target.value)
               }
             />
             <p className="text-xs leading-5 text-muted-foreground">
@@ -540,31 +540,31 @@ function PortalCertInlineEditor({
       </Field>
 
       <Field
-        label={t('portalCert.publicKeyBase64')}
-        error={fieldErrors.publicKeyBase64}
+        label={t('portalCert.certificate')}
+        error={fieldErrors.certificate}
       >
         <Textarea
-          aria-invalid={Boolean(fieldErrors.publicKeyBase64)}
-          value={formValue.publicKeyBase64}
+          aria-invalid={Boolean(fieldErrors.certificate)}
+          value={formValue.certificate}
           className="h-36 resize-none overflow-y-auto font-mono text-xs"
-          onChange={(event) => setField('publicKeyBase64', event.target.value)}
+          onChange={(event) => setField('certificate', event.target.value)}
         />
       </Field>
 
       <Field
-        label={t('portalCert.privateKeyBase64')}
-        error={fieldErrors.privateKeyBase64}
+        label={t('portalCert.privateKey')}
+        error={fieldErrors.privateKey}
       >
         <Textarea
-          aria-invalid={Boolean(fieldErrors.privateKeyBase64)}
-          value={formValue.privateKeyBase64}
+          aria-invalid={Boolean(fieldErrors.privateKey)}
+          value={formValue.privateKey}
           className="h-36 resize-none overflow-y-auto font-mono text-xs"
           placeholder={
             isCreate
               ? t('portalCert.privateKeyCreatePlaceholder')
               : t('portalCert.privateKeyEditPlaceholder')
           }
-          onChange={(event) => setField('privateKeyBase64', event.target.value)}
+          onChange={(event) => setField('privateKey', event.target.value)}
         />
         <p className="text-xs leading-5 text-muted-foreground">
           {isCreate
@@ -1028,10 +1028,10 @@ export function PortalCertPage() {
                         {selectedCert.name}
                       </ReadonlyField>
                       <div className="grid gap-4 sm:grid-cols-2">
-                        <ReadonlyField source={<FieldSourceInfo fields={selectedCertFields} path="/publicKeyBase64" />} label={t('portalCert.issuer')}>
+                        <ReadonlyField source={<FieldSourceInfo fields={selectedCertFields} path="/certificate" />} label={t('portalCert.issuer')}>
                           {selectedCert.issuer || t('portalCert.unparsed')}
                         </ReadonlyField>
-                        <ReadonlyField source={<FieldSourceInfo fields={selectedCertFields} path="/publicKeyBase64" />} label={t('portalCert.validity')}>
+                        <ReadonlyField source={<FieldSourceInfo fields={selectedCertFields} path="/certificate" />} label={t('portalCert.validity')}>
                           <span className="text-muted-foreground">
                             {formatDateTime(selectedCert.validFrom)}{' '}
                             {t('common.to')}{' '}
@@ -1057,18 +1057,18 @@ export function PortalCertPage() {
                           )}
                         </div>
                       </ReadonlyField>
-                      <ReadonlyField source={<FieldSourceInfo fields={selectedCertFields} path="/publicKeyBase64" />}
-                        label={t('portalCert.publicKeyBase64')}
+                      <ReadonlyField source={<FieldSourceInfo fields={selectedCertFields} path="/certificate" />}
+                        label={t('portalCert.certificate')}
                         className="h-36 overflow-y-auto whitespace-pre-wrap break-all font-mono text-xs"
                       >
-                        {selectedCert.publicKeyBase64 || (
+                        {selectedCert.certificate || (
                           <span className="font-sans text-sm text-muted-foreground">
                             {t('status.unconfigured')}
                           </span>
                         )}
                       </ReadonlyField>
-                      <ReadonlyField source={<FieldSourceInfo fields={selectedCertFields} path="/privateKeyBase64" />}
-                        label={t('portalCert.privateKeyBase64')}
+                      <ReadonlyField source={<FieldSourceInfo fields={selectedCertFields} path="/privateKey" />}
+                        label={t('portalCert.privateKey')}
                         className="min-h-20"
                       >
                         <div className="grid gap-2">

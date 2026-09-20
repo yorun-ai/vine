@@ -58,30 +58,30 @@ func (s *PortalCertRepo) Remove(id int) bool {
 
 func toCorePortalCert(row *model.PortalCert) *core.PortalCert {
 	return &core.PortalCert{
-		FieldSources:     decodeFieldSources(row.FieldSources),
-		Id:               row.Id,
-		Name:             row.Name,
-		Issuer:           row.Issuer,
-		Domains:          vcode.MustUnmarshalJsonS[[]string](row.Domains),
-		PublicKeyBase64:  row.PublicKeyBase64,
-		PrivateKeyBase64: row.PrivateKeyBase64,
-		ValidFrom:        row.ValidFrom,
-		ValidTo:          row.ValidTo,
-		Enabled:          row.Enabled,
+		FieldSources: decodeFieldSources(row.FieldSources),
+		Id:           row.Id,
+		Name:         row.Name,
+		Issuer:       row.Issuer,
+		Domains:      vcode.MustUnmarshalJsonS[[]string](row.Domains),
+		Certificate:  row.Certificate,
+		PrivateKey:   row.PrivateKey,
+		ValidFrom:    row.ValidFrom,
+		ValidTo:      row.ValidTo,
+		Enabled:      row.Enabled,
 	}
 }
 
 func toModelPortalCert(cert *core.PortalCert) *model.PortalCert {
 	return &model.PortalCert{
-		FieldSources:     encodeFieldSources(cert.FieldSources),
-		Id:               cert.Id,
-		Name:             cert.Name,
-		Issuer:           cert.Issuer,
-		Domains:          vcode.MustMarshalJsonS(cert.Domains),
-		PublicKeyBase64:  cert.PublicKeyBase64,
-		PrivateKeyBase64: cert.PrivateKeyBase64,
-		ValidFrom:        cert.ValidFrom,
-		ValidTo:          cert.ValidTo,
-		Enabled:          cert.Enabled,
+		FieldSources: encodeFieldSources(cert.FieldSources),
+		Id:           cert.Id,
+		Name:         cert.Name,
+		Issuer:       cert.Issuer,
+		Domains:      vcode.MustMarshalJsonS(cert.Domains),
+		Certificate:  cert.Certificate,
+		PrivateKey:   cert.PrivateKey,
+		ValidFrom:    cert.ValidFrom,
+		ValidTo:      cert.ValidTo,
+		Enabled:      cert.Enabled,
 	}
 }
