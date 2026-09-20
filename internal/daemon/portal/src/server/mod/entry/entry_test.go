@@ -208,21 +208,24 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 			entry := newEntry(spec.SchemeHTTP, 80, nil)
 			public := httptest.NewServer(entry)
 			t.Cleanup(public.Close)
-			for _, targetPath := range []string{"/internal", "/v2", ""} {
-				rule, ok := newRule(watched.PortalRule{Name: "rule", MatchScheme: "http", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: targetPath, RouteType: "SITE", RouteSiteName: "web"}, sites)
-				require.True(t, ok)
-				entry.SetOrUpdateRules([]*_Rule{rule})
-				request, err := http.NewRequest(http.MethodPost, public.URL+"/api/a%2Fb/?q=%2F", strings.NewReader("payload"))
-				require.NoError(t, err)
-				response, err := public.Client().Do(request)
-				require.NoError(t, err)
-				body, err := io.ReadAll(response.Body)
-				_ = response.Body.Close()
-				require.NoError(t, err)
-				require.Equal(t, http.StatusOK, response.StatusCode, string(body))
-				assert.Equal(t, "/web/proxy/in/instance/demo.Web"+targetPath+"/a%2Fb/?q=%2F", string(body))
-				assert.Equal(t, "POST", response.Header.Get("X-Received-Method"))
-				assert.Equal(t, "payload", response.Header.Get("X-Received-Body"))
+			for _, hostPattern := range []string{"shop.example.com", "*.example.com"} {
+				for _, targetPath := range []string{"/internal", "/v2", ""} {
+					rule, ok := newRule(watched.PortalRule{Name: "rule", MatchScheme: "http", MatchHost: hostPattern, ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: targetPath, RouteType: "SITE", RouteSiteName: "web"}, sites)
+					require.True(t, ok)
+					entry.SetOrUpdateRules([]*_Rule{rule})
+					request, err := http.NewRequest(http.MethodPost, public.URL+"/api/a%2Fb/?q=%2F", strings.NewReader("payload"))
+					require.NoError(t, err)
+					request.Host = "shop.example.com"
+					response, err := public.Client().Do(request)
+					require.NoError(t, err)
+					body, err := io.ReadAll(response.Body)
+					_ = response.Body.Close()
+					require.NoError(t, err)
+					require.Equal(t, http.StatusOK, response.StatusCode, string(body))
+					assert.Equal(t, "/web/proxy/in/instance/demo.Web"+targetPath+"/a%2Fb/?q=%2F", string(body))
+					assert.Equal(t, "POST", response.Header.Get("X-Received-Method"))
+					assert.Equal(t, "payload", response.Header.Get("X-Received-Body"))
+				}
 			}
 		})
 	}
@@ -237,4 +240,19 @@ func TestEntryTargetPathDispatchesWithinRpcGateway(t *testing.T) {
 	entry.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api", nil))
 	assert.Contains(t, response.Body.String(), "rpcgw inspect is not implemented")
 	assert.NotContains(t, response.Body.String(), "rpcgw path is not found")
+}
+
+func TestEntryWildcardHostPrecedence(t *testing.T) {
+	e := newEntry(spec.SchemeHTTP, 80, nil)
+	e.SetOrUpdateRules([]*_Rule{
+		{name: "fallback", matchPathPrefix: "/deep/path"},
+		{name: "wildcard", matchHost: "*.example.com", matchPathPrefix: "/deep"},
+		{name: "exact", matchHost: "a.example.com", matchPathPrefix: "/"},
+		{name: "wildcard-long", matchHost: "*.example.com", matchPathPrefix: "/deep/path"},
+	})
+	for host, want := range map[string]string{"a.example.com": "exact", "b.example.com": "wildcard-long", "example.net": "fallback"} {
+		rule, ok := e.route(httptest.NewRequest("GET", "http://"+host+"/deep/path", nil))
+		require.True(t, ok)
+		assert.Equal(t, want, rule.name)
+	}
 }

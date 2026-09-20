@@ -91,7 +91,10 @@ Keep Hub's layer responsibilities distinct:
 
 Configuration, entry, site, rule, and certificate writes go through their
 corresponding Core. `Validate` checks and normalizes a complete entity without
-writing. Rule validation does not resolve sites: Portal derives effective rule
+writing. Structural rule validation does not resolve sites. Saving a rule under a wildcard
+host requires an existing WEBGW site; entry access changes check every attached
+rule. Hub withdraws wildcard rules if their site is removed or becomes non-Web,
+and Portal also checks the target type before forwarding. Portal derives effective rule
 paths from Web mount-path metadata published with sites. `Save`
 creates or replaces by name and owns identity handling, along with versioning and
 field sources where applicable. API updates merge provided fields into the

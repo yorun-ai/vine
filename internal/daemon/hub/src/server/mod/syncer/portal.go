@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"strconv"
+	"strings"
 
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
@@ -199,8 +200,13 @@ func (s *Syncer) publishesPortalRuleLocked(rule *core.PortalRule, site *core.Por
 	}
 	// Hub publishes a rule when it cannot resolve the entry it belongs to, so a
 	// partial startup never hides configuration from Portal.
-	if entry, ok := s.portalEntriesById[rule.EntryId]; ok && !entry.Enabled {
-		return false
+	if entry, ok := s.portalEntriesById[rule.EntryId]; ok {
+		if !entry.Enabled {
+			return false
+		}
+		if strings.HasPrefix(entry.Host, "*.") && (rule.RouteType != core.PortalRuleRouteTypeSite || site == nil || site.Type != core.PortalSiteTypeWEBGW) {
+			return false
+		}
 	}
 	if rule.RouteType == core.PortalRuleRouteTypeSite && site != nil && !site.Enabled {
 		return false

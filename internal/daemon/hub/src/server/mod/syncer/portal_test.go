@@ -171,3 +171,26 @@ func TestPortalSiteUpdateRepublishesResolvedRule(t *testing.T) {
 	assert.Equal(t, "/new", resolved.ResolvedMatchPathPrefix)
 	assert.Equal(t, "/new", resolved.ResolvedRoutePathPrefix)
 }
+
+func TestSyncerWithdrawsWildcardRuleWhenSiteBecomesRpc(t *testing.T) {
+	watchServer := watchserver.NewServerForTest()
+	t.Cleanup(watchServer.AfterAppStop)
+	target := testSyncer(watchServer)
+	target.SyncPortalEntry(&core.PortalEntry{Id: 1, Name: "wildcard", Scheme: "http", Host: "*.example.com", Port: 80, Enabled: true})
+	site := &core.PortalSite{Id: 1, Name: "target", Type: core.PortalSiteTypeWEBGW, WebName: "demo.Web", Enabled: true}
+	target.SyncPortalSite(site)
+	target.SyncPortalRule(&core.PortalRule{Id: 1, Name: "wildcard", EntryId: 1, RouteType: "SITE", RouteSiteName: "target", Enabled: true})
+	_, ok := watchServer.Get(watched.FormatPortalRuleKey("wildcard"))
+	assert.True(t, ok)
+	site.Type = core.PortalSiteTypeRPCGW
+	target.SyncPortalSite(site)
+	_, ok = watchServer.Get(watched.FormatPortalRuleKey("wildcard"))
+	assert.False(t, ok)
+	site.Type = core.PortalSiteTypeWEBGW
+	target.SyncPortalSite(site)
+	_, ok = watchServer.Get(watched.FormatPortalRuleKey("wildcard"))
+	assert.True(t, ok)
+	target.RemovePortalSite(site)
+	_, ok = watchServer.Get(watched.FormatPortalRuleKey("wildcard"))
+	assert.False(t, ok)
+}

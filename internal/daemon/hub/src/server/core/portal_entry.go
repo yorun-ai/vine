@@ -163,6 +163,7 @@ func (m *PortalEntryCore) Save(entry PortalEntry) *PortalEntry {
 		ex.PanicNew(ex.OperationFailed,
 			ex.F("portal entry %q already serves %s", current.Name, portalEntryAddress(entry)))
 	}
+	m.validateWildcardRules(entry, entry.Id)
 	m.PortalEntryRepo.Save(&entry)
 	m.saveRules(entry.Id, entry.Id)
 	return &entry
@@ -250,6 +251,7 @@ func (m *PortalEntryCore) Update(id int, update PortalEntryUpdate) PortalEntryVi
 			ex.PanicNew(ex.OperationFailed, ex.F("portal entry %q already exists", next.Name))
 		}
 	}
+	m.validateWildcardRules(next, current.Id)
 	accessChanged := next.Scheme != current.Scheme || next.Host != current.Host || next.Port != current.Port
 	if accessChanged {
 		if target, ok := m.PortalEntryRepo.GetBySchemeHostPort(next.Scheme, next.Host, next.Port); ok && target.Id != current.Id {
@@ -296,9 +298,12 @@ func normalizePortalEntry(entry PortalEntry) PortalEntry {
 	entry.Name = strings.TrimSpace(entry.Name)
 	entry.Scheme = strings.ToLower(strings.TrimSpace(entry.Scheme))
 	entry.Host = strings.TrimSpace(entry.Host)
+	if strings.HasPrefix(entry.Host, "*.") {
+		entry.Host = strings.ToLower(entry.Host)
+	}
 	ex.PanicNewIfNot(entry.Scheme == "http" || entry.Scheme == "https", ex.OperationFailed, ex.F("unknown portal entry scheme: %s", entry.Scheme))
 	ex.PanicNewIfNot(entry.Port >= 0 && entry.Port <= 65535, ex.OperationFailed, "portal entry port must be between 0 and 65535")
-	ex.PanicNewIfNot(portalEntryHostAccepted(entry.Host), ex.OperationFailed, "portal entry host must be a hostname or IP without a port")
+	ex.PanicNewIfNot(portalEntryHostAccepted(entry.Host), ex.OperationFailed, "portal entry host must be a hostname, IP or leading *. wildcard without a port")
 	entry.Port = portalEntrySchemePort(entry.Scheme, entry.Port)
 	return entry
 }
@@ -309,6 +314,23 @@ func normalizePortalEntry(entry PortalEntry) PortalEntry {
 func portalEntryHostAccepted(host string) bool {
 	if host == "" {
 		return true
+	}
+	if strings.HasPrefix(host, "*.") {
+		suffix := host[2:]
+		if suffix == "" || net.ParseIP(suffix) != nil {
+			return false
+		}
+		for _, label := range strings.Split(suffix, ".") {
+			if label == "" || len(label) > 63 || label[0] == '-' || label[len(label)-1] == '-' {
+				return false
+			}
+			for _, c := range label {
+				if !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-') {
+					return false
+				}
+			}
+		}
+		return len(suffix) <= 253
 	}
 	if strings.ContainsAny(host, "/?#@*\\") || strings.IndexFunc(host, unicode.IsSpace) >= 0 || strings.IndexFunc(host, unicode.IsControl) >= 0 {
 		return false
@@ -395,4 +417,16 @@ func sortedPortalEntryRules(rules []PortalEntryRule) []PortalEntryRule {
 		}
 		return cmpString(a.Rule.Name, b.Rule.Name) < 0
 	})
+}
+
+// validateWildcardRules also covers entry access changes and entry merges.
+func (m *PortalEntryCore) validateWildcardRules(entry PortalEntry, ruleEntryId int) {
+	if !strings.HasPrefix(entry.Host, "*.") {
+		return
+	}
+	for _, rule := range m.PortalRuleRepo.List() {
+		if rule.EntryId == ruleEntryId {
+			rule.ValidateWildcardTarget(entry, m.portalRuleSite(rule))
+		}
+	}
 }

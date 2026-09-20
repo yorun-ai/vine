@@ -45,6 +45,9 @@ func (g *WebGateway) init(config watched.PortalSite) {
 }
 
 func (g *WebGateway) Update(config watched.PortalSite) bool {
+	if config.Type != "WEBGW" {
+		return false
+	}
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 

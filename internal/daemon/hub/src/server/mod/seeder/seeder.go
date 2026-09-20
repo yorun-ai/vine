@@ -1,6 +1,8 @@
 package seeder
 
 import (
+	"strings"
+
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/logger"
@@ -75,13 +77,36 @@ func (s *Seeder) loadSeedYAML() {
 	for _, site := range entities.PortalSites {
 		s.SiteCore.Validate(*site)
 	}
+	entries := map[string]*core.PortalEntry{}
 	for _, entry := range entities.PortalEntries {
-		s.EntryCore.Validate(*entry)
+		normalized := s.EntryCore.Validate(*entry)
+		entries[normalized.Name] = &normalized
+	}
+	sites := map[string]*core.PortalSite{}
+	for _, site := range entities.PortalSites {
+		sites[site.Name] = site
 	}
 	for _, rule := range entities.PortalRules {
 		s.RuleCore.Validate(*rule.Rule)
 		if rule.EntryName == "" {
 			s.EntryCore.Normalize(rule.Entry)
+		}
+		entry := rule.Entry
+		if rule.EntryName != "" {
+			declared, ok := entries[rule.EntryName]
+			if !ok {
+				declared, ok = s.EntryCore.FindByName(rule.EntryName)
+			}
+			ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %s not found", rule.EntryName))
+			entry = *declared
+		}
+		if strings.HasPrefix(strings.TrimSpace(entry.Host), "*.") {
+			entry = s.EntryCore.Normalize(entry)
+			site, ok := sites[rule.Rule.RouteSiteName]
+			if !ok {
+				site, _ = s.SiteCore.FindByName(rule.Rule.RouteSiteName)
+			}
+			rule.Rule.ValidateWildcardTarget(entry, site)
 		}
 	}
 	for _, cert := range entities.PortalCerts {

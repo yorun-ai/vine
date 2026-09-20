@@ -9,6 +9,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/webgw"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -39,7 +40,7 @@ type _Rule struct {
 func newRule(rule watched.PortalRule, siteManager *site.Manager) (*_Rule, bool) {
 	isRedirection := rule.RouteType == routeTypePermanentRedirect || rule.RouteType == routeTypeTemporaryRedirect
 	isEntry := rule.RouteType == routeTypeSite
-	if !isRedirection && !isEntry {
+	if (!isRedirection && !isEntry) || (strings.HasPrefix(rule.MatchHost, "*.") && !isEntry) {
 		entryLogger.Warn("vine.portal entry rule target type is not supported", "rule", rule.Name, "routeType", rule.RouteType)
 		return nil, false
 	}
@@ -104,6 +105,13 @@ func (r _Rule) matchesHost(host string) bool {
 	if r.matchHost == "" {
 		return true
 	}
+	if strings.HasPrefix(r.matchHost, "*.") {
+		suffix := r.matchHost[1:]
+		host = strings.ToLower(host)
+		suffix = strings.ToLower(suffix)
+		label, ok := strings.CutSuffix(host, suffix)
+		return ok && label != "" && !strings.Contains(label, ".")
+	}
 	return r.matchHost == host
 }
 
@@ -124,10 +132,18 @@ func (r _Rule) Serve(ctx *spec.Context) {
 	}
 
 	if targetSite, ok := r.siteManager.Site(r.routeSiteName); ok {
+		originHost := r.matchHost
+		if strings.HasPrefix(r.matchHost, "*.") {
+			if _, web := targetSite.(*webgw.WebGateway); !web {
+				http.Error(ctx.ResponseWriter, "wildcard hosts can only target a WEBGW site", http.StatusServiceUnavailable)
+				return
+			}
+			originHost = requestHost(ctx.Request)
+		}
 		ctx.Request = r.rewritePath(ctx.Request)
 		ctx.EntryOrigin = spec.EntryOrigin{
 			Scheme: r.matchScheme,
-			Host:   r.matchHost,
+			Host:   originHost,
 			Port:   r.matchPort,
 		}
 		targetSite.Serve(ctx)
@@ -173,4 +189,14 @@ func requestHost(request *http.Request) string {
 		return host
 	}
 	return request.Host
+}
+
+func (r _Rule) hostPriority() int {
+	if r.matchHost == "" {
+		return 0
+	}
+	if strings.HasPrefix(r.matchHost, "*.") {
+		return 1
+	}
+	return 2
 }

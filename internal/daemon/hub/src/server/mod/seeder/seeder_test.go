@@ -1048,3 +1048,38 @@ func writeSeedHubVarsFile(t *testing.T, content string) string {
 	require.NoError(t, os.WriteFile(path, []byte(content), 0600))
 	return path
 }
+
+func TestSeederWildcardWebOnly(t *testing.T) {
+	for _, kind := range []string{"WEBGW", "RPCGW"} {
+		for _, named := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/named=%t", kind, named), func(t *testing.T) {
+				configRepo, ruleRepo, certRepo, siteRepo, metadataRepo, watchServer := newTestSeederRepos(t)
+				access := "    matchScheme: http\n    matchHost: '*.example.com'\n"
+				entries := ""
+				if named {
+					entries = "portalEntries:\n  - name: wildcard\n    scheme: http\n    host: '*.example.com'\n"
+					access = "    entryName: wildcard\n"
+				}
+				seed := entries + "portalSites:\n  - name: target\n    type: " + kind + "\n    actorSkelName: demo.Actor\n    actorVia: client\n    webName: demo.Web\nportalRules:\n  - name: wildcard\n" + access + "    routeType: SITE\n    routeSiteName: target\n"
+				seedPath := filepath.Join(t.TempDir(), "hub.yaml")
+				require.NoError(t, vfile.WriteString(seedPath, seed))
+				target := &Seeder{
+					Flag: newTestSeederFlag(seedPath), AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
+					MetadataRepo: metadataRepo, Logger: logger.New("vine:test"),
+					EntryCore: newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo),
+					RuleCore:  newTestRuleCore(ruleRepo, siteRepo), CertCore: &core.PortalCertCore{PortalCertRepo: certRepo}, SiteCore: newTestSiteCore(siteRepo),
+				}
+				if kind == "WEBGW" {
+					require.NotPanics(t, target.DIInit)
+					_, ok := watchServer.Get(watched.FormatPortalRuleKey("wildcard"))
+					assert.True(t, ok)
+				} else {
+					require.PanicsWithError(t, "portal rule \"wildcard\": wildcard hosts can only target a WEBGW site type=APPLICATION code=OPERATION_FAILED", target.DIInit)
+					assert.Empty(t, siteRepo.List(), "invalid wildcard seed must fail before writes")
+					assert.Empty(t, ruleRepo.List())
+					assert.False(t, metadataRepo.IsSeeded())
+				}
+			})
+		}
+	}
+}

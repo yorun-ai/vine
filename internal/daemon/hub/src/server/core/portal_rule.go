@@ -274,8 +274,11 @@ func (m *PortalRuleCore) Save(rule PortalRule) *PortalRule {
 func (m *PortalRuleCore) save(rule PortalRule) *PortalRule {
 	ex.PanicNewIfNot(rule.EntryId != 0, ex.OperationFailed,
 		ex.F("portal rule %q: the entry it belongs to is required", rule.Name))
-	m.PortalEntryCore.Get(rule.EntryId)
+	entry := m.PortalEntryCore.Get(rule.EntryId)
 	rule = m.Validate(rule)
+	if strings.HasPrefix(entry.Host, "*.") {
+		rule.ValidateWildcardTarget(*entry, m.ruleSite(&rule))
+	}
 	m.PortalRuleRepo.Save(&rule)
 	return &rule
 }
@@ -338,4 +341,14 @@ func (m *PortalRuleCore) ruleSite(rule *PortalRule) *PortalSite {
 		return nil
 	}
 	return site
+}
+
+// ValidateWildcardTarget restricts wildcard entries to existing Web sites.
+// Callers provide the effective entry and site, including seed declarations.
+func (r *PortalRule) ValidateWildcardTarget(entry PortalEntry, site *PortalSite) {
+	if !strings.HasPrefix(entry.Host, "*.") {
+		return
+	}
+	ex.PanicNewIfNot(r.RouteType == PortalRuleRouteTypeSite && site != nil && site.Type == PortalSiteTypeWEBGW,
+		ex.OperationFailed, ex.F("portal rule %q: wildcard hosts can only target a WEBGW site", r.Name))
 }
