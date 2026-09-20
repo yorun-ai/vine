@@ -1,43 +1,41 @@
 package core
 
 import (
+	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
-	"encoding/pem"
 	"strings"
 	"time"
-	"unicode"
 
 	"go.yorun.ai/vine/internal/core/ex"
 )
 
 type PortalCert struct {
-	FieldSources     FieldSources
-	Id               int
-	Name             string
-	Issuer           string
-	Domains          []string
-	PublicKeyBase64  string
-	PrivateKeyBase64 string
-	ValidFrom        time.Time
-	ValidTo          time.Time
+	FieldSources FieldSources
+	Id           int
+	Name         string
+	Issuer       string
+	Domains      []string
+	Certificate  string
+	PrivateKey   string
+	ValidFrom    time.Time
+	ValidTo      time.Time
 	// Enabled decides whether Hub publishes the certificate to Portal.
 	Enabled bool
 }
 
 type PortalCertCreation struct {
-	Name             string
-	PublicKeyBase64  string
-	PrivateKeyBase64 string
+	Name        string
+	Certificate string
+	PrivateKey  string
 	// Enabled is optional and defaults to true.
 	Enabled *bool
 }
 
 type PortalCertUpdate struct {
-	Name             *string
-	PublicKeyBase64  *string
-	PrivateKeyBase64 *string
-	Enabled          *bool
+	Name        *string
+	Certificate *string
+	PrivateKey  *string
+	Enabled     *bool
 }
 
 // PortalCertRepo stores Portal certificates. List and the lookups return entities
@@ -74,10 +72,10 @@ func (m *PortalCertCore) Create(creation PortalCertCreation) *PortalCert {
 	ex.PanicNewIfNot(!ok, ex.OperationFailed, ex.F("entry cert %q already exists", creation.Name))
 
 	cert := new(m.Validate(PortalCert{
-		Name:             creation.Name,
-		PublicKeyBase64:  creation.PublicKeyBase64,
-		PrivateKeyBase64: creation.PrivateKeyBase64,
-		Enabled:          EnabledOrDefault(creation.Enabled),
+		Name:        creation.Name,
+		Certificate: creation.Certificate,
+		PrivateKey:  creation.PrivateKey,
+		Enabled:     EnabledOrDefault(creation.Enabled),
 	}))
 	m.PortalCertRepo.Save(cert)
 	return cert
@@ -88,16 +86,16 @@ func (m *PortalCertCore) Update(id int, update PortalCertUpdate) *PortalCert {
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("entry cert %d not found", id))
 
 	next := &PortalCert{
-		FieldSources:     cloneFieldSources(cert.FieldSources),
-		Id:               cert.Id,
-		Name:             cert.Name,
-		Issuer:           cert.Issuer,
-		Domains:          cert.Domains,
-		PublicKeyBase64:  cert.PublicKeyBase64,
-		PrivateKeyBase64: cert.PrivateKeyBase64,
-		ValidFrom:        cert.ValidFrom,
-		ValidTo:          cert.ValidTo,
-		Enabled:          cert.Enabled,
+		FieldSources: cloneFieldSources(cert.FieldSources),
+		Id:           cert.Id,
+		Name:         cert.Name,
+		Issuer:       cert.Issuer,
+		Domains:      cert.Domains,
+		Certificate:  cert.Certificate,
+		PrivateKey:   cert.PrivateKey,
+		ValidFrom:    cert.ValidFrom,
+		ValidTo:      cert.ValidTo,
+		Enabled:      cert.Enabled,
 	}
 	if update.Name != nil {
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/name")
@@ -107,13 +105,13 @@ func (m *PortalCertCore) Update(id int, update PortalCertUpdate) *PortalCert {
 		}
 		next.Name = *update.Name
 	}
-	if update.PublicKeyBase64 != nil {
-		next.FieldSources = overrideFieldSource(next.FieldSources, "/publicKeyBase64")
-		next.PublicKeyBase64 = *update.PublicKeyBase64
+	if update.Certificate != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/certificate")
+		next.Certificate = *update.Certificate
 	}
-	if update.PrivateKeyBase64 != nil {
-		next.FieldSources = overrideFieldSource(next.FieldSources, "/privateKeyBase64")
-		next.PrivateKeyBase64 = *update.PrivateKeyBase64
+	if update.PrivateKey != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/privateKey")
+		next.PrivateKey = *update.PrivateKey
 	}
 	if update.Enabled != nil {
 		// A seed declares the switch as disabled, so it owns that source path.
@@ -138,10 +136,7 @@ type _PortalCertMetadata struct {
 	ValidTo   time.Time
 }
 
-func parsePortalCertMetadata(publicKeyBase64 string) _PortalCertMetadata {
-	cert, err := parsePortalCert(publicKeyBase64)
-	ex.PanicNewIfNot(err == nil, ex.OperationFailed, ex.F("invalid entry cert certificate: %v", err))
-
+func parsePortalCertMetadata(cert *x509.Certificate) _PortalCertMetadata {
 	issuer := cert.Issuer.CommonName
 	if issuer == "" {
 		issuer = cert.Issuer.String()
@@ -164,36 +159,21 @@ func parsePortalCertMetadata(publicKeyBase64 string) _PortalCertMetadata {
 	}
 }
 
-func parsePortalCert(publicKeyBase64 string) (*x509.Certificate, error) {
-	value := strings.TrimSpace(publicKeyBase64)
-	if block, _ := pem.Decode([]byte(value)); block != nil {
-		return x509.ParseCertificate(block.Bytes)
-	}
-
-	compact := strings.Map(func(r rune) rune {
-		if unicode.IsSpace(r) {
-			return -1
-		}
-		return r
-	}, value)
-	der, err := base64.StdEncoding.DecodeString(compact)
-	if err != nil {
-		der, err = base64.RawStdEncoding.DecodeString(compact)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if block, _ := pem.Decode(der); block != nil {
-		return x509.ParseCertificate(block.Bytes)
-	}
-	return x509.ParseCertificate(der)
-}
-
 // Validate parses the certificate and derives metadata without accessing storage.
 func (*PortalCertCore) Validate(cert PortalCert) PortalCert {
 	ex.PanicNewIfNot(strings.TrimSpace(cert.Name) != "", ex.OperationFailed, "certificate name is required")
-	metadata := parsePortalCertMetadata(cert.PublicKeyBase64)
+	pair, err := tls.X509KeyPair([]byte(cert.Certificate), []byte(cert.PrivateKey))
+	ex.PanicNewIfNot(err == nil, ex.OperationFailed, "certificate and privateKey must be a matching PEM certificate chain and private key")
+	for i, der := range pair.Certificate {
+		parsed, err := x509.ParseCertificate(der)
+		ex.PanicNewIfNot(err == nil, ex.OperationFailed, "certificate contains an invalid X.509 certificate")
+		if i == 0 {
+			pair.Leaf = parsed
+		}
+	}
+	cert.Certificate = strings.TrimSpace(cert.Certificate) + "\n"
+	cert.PrivateKey = strings.TrimSpace(cert.PrivateKey) + "\n"
+	metadata := parsePortalCertMetadata(pair.Leaf)
 	cert.Issuer = metadata.Issuer
 	cert.Domains = metadata.Domains
 	cert.ValidFrom = metadata.ValidFrom

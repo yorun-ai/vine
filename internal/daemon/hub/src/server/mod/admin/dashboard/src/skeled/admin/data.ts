@@ -250,8 +250,8 @@ export type PortalCert = {
   issuer:               string;
   /** Certificate domain name. */
   domains:              Array<string>;
-  /** Certificate Base64. */
-  publicKeyBase64:      string;
+  /** PEM certificate chain. */
+  certificate:          string;
   /** Whether the private key has been configured. */
   privateKeyConfigured: boolean;
   /** Validity start time. */
@@ -266,13 +266,13 @@ export type PortalCert = {
 /** Portal site certificate creation parameters. */
 export type PortalCertCreation = {
   /** Certificate name. */
-  name:             string;
-  /** Certificate Base64. */
-  publicKeyBase64:  string;
-  /** Private key Base64. */
-  privateKeyBase64: string;
+  name:        string;
+  /** PEM certificate chain. */
+  certificate: string;
+  /** PEM private key. */
+  privateKey:  string;
   /** Whether Hub publishes this certificate to Portal. */
-  enabled:          boolean | null;
+  enabled:     boolean | null;
 }
 /** Portal site certificate list item. */
 export type PortalCertListItem = {
@@ -284,8 +284,8 @@ export type PortalCertListItem = {
   issuer:               string;
   /** Certificate domain name. */
   domains:              Array<string>;
-  /** Certificate Base64. */
-  publicKeyBase64:      string;
+  /** PEM certificate chain. */
+  certificate:          string;
   /** Whether the private key has been configured. */
   privateKeyConfigured: boolean;
   /** Validity start time. */
@@ -298,13 +298,13 @@ export type PortalCertListItem = {
 /** Portal site certificate update parameters. */
 export type PortalCertUpdate = {
   /** Certificate name. */
-  name:             string | null;
-  /** Certificate Base64. */
-  publicKeyBase64:  string | null;
-  /** Private key Base64. */
-  privateKeyBase64: string | null;
+  name:        string | null;
+  /** PEM certificate chain. */
+  certificate: string | null;
+  /** PEM private key. */
+  privateKey:  string | null;
   /** Whether Hub publishes this certificate to Portal. */
-  enabled:          boolean | null;
+  enabled:     boolean | null;
 }
 /** Portal site CORS configuration. */
 export type PortalCors = {

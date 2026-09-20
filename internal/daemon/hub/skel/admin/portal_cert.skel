@@ -5,11 +5,11 @@ data PortalCertCreation {
     @desc("Certificate name")
     name: string
 
-    @desc("Certificate Base64")
-    publicKeyBase64: string
+    @desc("PEM certificate chain")
+    certificate: string
 
-    @desc("Private key Base64")
-    privateKeyBase64: string
+    @desc("PEM private key")
+    privateKey: string
 
     @desc("Whether Hub publishes this certificate to Portal")
     enabled: bool?
@@ -29,8 +29,8 @@ data PortalCert {
     @desc("Certificate domain name")
     domains: list<string>
 
-    @desc("Certificate Base64")
-    publicKeyBase64: string
+    @desc("PEM certificate chain")
+    certificate: string
 
     @desc("Whether the private key has been configured")
     privateKeyConfigured: bool
@@ -62,8 +62,8 @@ data PortalCertListItem {
     @desc("Certificate domain name")
     domains: list<string>
 
-    @desc("Certificate Base64")
-    publicKeyBase64: string
+    @desc("PEM certificate chain")
+    certificate: string
 
     @desc("Whether the private key has been configured")
     privateKeyConfigured: bool
@@ -83,11 +83,11 @@ data PortalCertUpdate {
     @desc("Certificate name")
     name: string?
 
-    @desc("Certificate Base64")
-    publicKeyBase64: string?
+    @desc("PEM certificate chain")
+    certificate: string?
 
-    @desc("Private key Base64")
-    privateKeyBase64: string?
+    @desc("PEM private key")
+    privateKey: string?
 
     @desc("Whether Hub publishes this certificate to Portal")
     enabled: bool?

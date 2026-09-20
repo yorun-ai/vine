@@ -230,3 +230,12 @@ Hub 在普通模式和 inproc 模式下，对注册信息的处理不同：
 这使得单进程模式下不再需要 heartbeat 维持注册状态。
 
 `dashboard/dist` 的真实构建产物随源码提交；随源码变更运行 `bash script/build-dashboard-assets.sh` 更新，不放占位文件。
+
+### 证书表示
+
+Hub 领域、Admin API、Dashboard 和 seed 统一使用 PEM `certificate`、`privateKey`
+字段。DAO 增加 `certificate`、`private_key` 列，在发布前以事务迁移旧 Base64 或已存的
+PEM 数据。旧列仅用于迁移，新写入使用 PEM。字段来源路径改用新名称，保留历史溯源信息。
+Syncer 向 Watch 同时发布 PEM 及其派生的旧 Base64 字段。升级时先升级 Hub：新 Portal
+只读 PEM 字段，旧 Portal 仍可消费旧字段。持久化前校验证书与私钥配对，Admin API 的
+来源信息也不得泄露私钥值。

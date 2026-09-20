@@ -276,7 +276,7 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 		PortalRuleRepo:  ruleRepo,
 		PortalCertRepo: &testPortalCertRepo{
 			certs: []*core.PortalCert{
-				{Id: 1, Name: "demo-cert", Issuer: "letsencrypt", Domains: []string{"demo.local"}, PublicKeyBase64: "pub", PrivateKeyBase64: "pri", Enabled: true},
+				{Id: 1, Name: "demo-cert", Issuer: "letsencrypt", Domains: []string{"demo.local"}, Certificate: "pub", PrivateKey: "pri", Enabled: true},
 			},
 		},
 		PortalSiteRepo: siteRepo,

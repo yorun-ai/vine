@@ -103,9 +103,16 @@ const (
 )
 
 type PortalCert struct {
-	Name             string    `json:"name"`
-	Issuer           string    `json:"issuer"`
-	PublicKeyBase64  string    `json:"publicKeyBase64"`
+	Name        string `json:"name"`
+	Issuer      string `json:"issuer"`
+	Certificate string `json:"certificate"`
+	PrivateKey  string `json:"privateKey"`
+	// TODO: Once older Portal instances are no longer supported, remove both Base64
+	// fields together with Syncer dual publication and its compatibility tests.
+	//
+	// Deprecated: use Certificate. Hub publishes this field only for older Portal instances.
+	PublicKeyBase64 string `json:"publicKeyBase64"`
+	// Deprecated: use PrivateKey. Hub publishes this field only for older Portal instances.
 	PrivateKeyBase64 string    `json:"privateKeyBase64"`
 	ValidFrom        time.Time `json:"validFrom"`
 	ValidTo          time.Time `json:"validTo"`
