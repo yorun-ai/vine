@@ -45,7 +45,7 @@ func (s *PortalRuleRepo) Save(rule *core.PortalRule) {
 	entry := s.entryById(rule.EntryId)
 	ex.PanicNewIfNot(entry != nil, ex.OperationFailed,
 		ex.F("portal rule %q references missing portal entry %d", rule.Name, rule.EntryId))
-	row := toModelPortalRule(rule, entry)
+	row := toModelPortalRule(rule)
 	s.Dao.Save(row)
 	rule.Id = row.Id
 	s.Syncer.SyncPortalRule(rule)
@@ -80,16 +80,12 @@ func toCorePortalRule(row *model.PortalRule, entry *core.PortalEntry) *core.Port
 	}
 }
 
-// toModelPortalRule fills the access columns older Hub versions still read.
-func toModelPortalRule(rule *core.PortalRule, entry *core.PortalEntry) *model.PortalRule {
+func toModelPortalRule(rule *core.PortalRule) *model.PortalRule {
 	return &model.PortalRule{
 		FieldSources:            encodeFieldSources(rule.FieldSources),
 		Id:                      rule.Id,
 		Name:                    rule.Name,
 		EntryId:                 rule.EntryId,
-		MatchScheme:             entry.Scheme,
-		MatchHost:               entry.Host,
-		MatchPort:               entry.Port,
 		MatchPathPrefix:         rule.MatchPathPrefix,
 		RouteType:               rule.RouteType,
 		RouteSiteName:           rule.RouteSiteName,

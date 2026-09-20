@@ -56,21 +56,6 @@ func TestPortalRuleRepoSaveUpdate(t *testing.T) {
 	assert.Equal(t, "console@demo.app", got.RouteSiteName)
 }
 
-func TestPortalRuleRepoSaveKeepsDeprecatedAccessColumns(t *testing.T) {
-	db, repo, _ := newTestPortalRuleRepo(t)
-
-	// The rule reads its access from the entry, and the deprecated columns stay
-	// filled with that access until Hub removes them.
-	rule := testPortalRule(t, repo, "admin")
-	repo.Save(rule)
-
-	var row model.PortalRule
-	require.NoError(t, db.First(&row, "id = ?", rule.Id).Error)
-	assert.Equal(t, "https", row.MatchScheme)
-	assert.Equal(t, "demo.local", row.MatchHost)
-	assert.Equal(t, 443, row.MatchPort)
-}
-
 func TestPortalRuleRepoSaveRename(t *testing.T) {
 	_, repo, watchServer := newTestPortalRuleRepo(t)
 

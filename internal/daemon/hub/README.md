@@ -121,8 +121,7 @@ schemas only after an application registers them, which happens after Hub starts
 Hub audits the requests its published rules match once the schemas arrive: a
 read-only Hub refuses to serve such a configuration, because it has no surface to
 fix it from, and a stored configuration keeps both rules until the operator
-resolves the request from the Dashboard. Only the access migration separates
-rules on its own, because stored data is not edited by hand.
+resolves the request from the Dashboard.
 
 Seeder validates every entity the document declares before it writes anything,
 and then calls Core `Save` per entity. Validation does not make an entire seed
@@ -254,27 +253,12 @@ field, and mixing old and new fields in one rule fails before Hub writes
 anything. A Portal section declares only the fields Hub names for it.
 
 Admin API and Watch use only the new fields; upgrade Hub and Portal together.
-The database upgrade baseline is Vine v0.15.7, with `match_*` / `route_*`
-columns already present. Start older databases with v0.15.7 to complete migration
-before upgrading. Current Hub no longer performs the pre-baseline Portal rule
-column renaming or route-path column migration. It still migrates rule access
-from `match_scheme`, `match_host`, and `match_port` into `portal_entry`, as
-described below.
-
-Upgrading Hub from a release that stored rule access migrates `portal_rule` in
-place: Hub creates `portal_entry`, groups the stored `match_scheme`,
-`match_host`, and `match_port` values into entries, and indexes the rule path
-within its entry. Hub stops reading those columns here and removes them in a
-later release, because dropping a column of a database Hub does not own cannot
-be undone; until then Hub keeps them filled with the entry access. An unset port
-migrates to the port Portal serves. Two rules that only differed by an unset port
-can share an entry and a path after the upgrade; Hub keeps the rule with the
-explicit port and moves the rule that used the default port to a `/migrated`
-path, and logs every move. An upgraded database is therefore never corrected by
-hand, and Hub starts. A Hub rolled back to the release that predates entries
-keeps reading and writing that database: the access columns it reads are still
-there, the enable switch defaults to published, and a rule it inserts without an
-entry joins its entry again on the next upgrade.
+Existing databases must already have completed the Portal Entry migration.
+Hub removes the retired `portal_rule.match_scheme`, `match_host`, `match_port`,
+and the `built_in` columns on rules and sites during schema initialization.
+The existing entry relationships and rule paths are preserved; Hub no longer
+converts pre-Entry databases or rewrites paths during startup. After these
+columns are removed, older Hub versions that require them cannot use the database.
 
 ## Admin Display Strings
 

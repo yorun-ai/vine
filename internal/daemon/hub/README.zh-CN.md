@@ -122,7 +122,7 @@ Hub 的层次职责必须保持清晰：
   声明的 mount 决定，而这些 schema 是应用在 Hub 启动之后才注册的，所以写入时
   无法判断。Hub 在 schema 到位后审计并报出重复的请求（`no-db` 的只读配置直接
   拒绝启动，因为没有可修复的界面；有数据库的配置继续运行，由操作者在 Dashboard
-  上解决）。只有访问配置迁移会自行消解这类冲突，因为已存储的数据不靠人工修改。
+  上解决）。
 - 数据库表结构必须同时更新 `src/server/repo/db/model/sql/sqlite` 和 `src/server/repo/db/model/sql/pgsql`。
 - Redis key、Redis value JSON 和事件格式属于 Hub、Link、Portal 之间的协议；修改时必须同步所有生产者、消费者和测试。
 - `watchserver` 是运行时分发层，不应成为绕过 Repo/Core 直接实现业务规则的第二套状态源。
@@ -168,21 +168,10 @@ Hub 当前支持两类数据库配置来源：
 
 启动时可以通过 `--seed-data-file` 让 `seeder` 从本地 YAML 文件一次性导入初始配置、站点规则和证书到数据库；导入后 Hub 仍然统一从数据库 repo 读取，再写入 Redis，对 Link 暴露一致的读取与订阅语义。
 
-数据库升级基线为 Vine `v0.15.7`，规则表应已具备 `match_*` / `route_*` 列。
-更早的数据库应先用 `v0.15.7` 启动完成迁移。当前 Hub 不再执行该基线之前的
-Portal rule 列重命名和路由路径列迁移；仍会按下文所述，把 `match_scheme`、
-`match_host`、`match_port` 中的规则访问配置迁移到 `portal_entry`。
-
-从把访问配置存在规则上的版本升级时，Hub 会原地迁移 `portal_rule`：建立
-`portal_entry`，把已存储的 `match_scheme`、`match_host`、`match_port` 归入
-entry。这些列保留到后续版本再删除：Hub 从
-升级后就不再读取它们，并会一直写入所属 entry 的访问配置，因为删除用户数据库
-上的列无法撤销。未设置的端口会迁移成 Portal 实际监听的端口。若两条规则此前只
-靠未设置的端口区分，迁移后落在同一 entry 的同一路径上，Hub 保留显式写了端口的
-那条，把使用默认端口的规则挪到 `/migrated` 路径，并逐条记录日志：升级不会要求
-用户手工修库，Hub 也会正常启动。退回旧版本后 Hub 仍能读写该数据库：它读取的访问
-列仍在，enabled 有"默认启用"的默认值，它插入的不带 entry 的规则会在下次升级时
-重新归入对应 entry。
+现有数据库必须已经完成 Portal Entry 迁移。Hub 在初始化表结构时删除规则表的
+`match_scheme`、`match_host`、`match_port`，以及规则表和站点表的 `built_in` 列。
+现有 entry 关系和规则路径保持不变；启动时不再转换 Entry 之前的数据库，也不再
+改写规则路径。删除这些列后，依赖它们的旧版 Hub 无法再使用该数据库。
 
 数据库 metadata 记录首次 seed 完成状态。后续启动跳过全部 seed、变量和来源输入，seed 条目不再提供 `override` 开关。无数据库模式每次建立新存储并导入 seed。
 

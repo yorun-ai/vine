@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS portal_cert (
     private_key_base64 TEXT NOT NULL,   -- Private key in base64 format
     valid_from TIMESTAMPTZ,             -- Certificate valid from
     valid_to TIMESTAMPTZ,               -- Certificate valid to
-    enabled BOOLEAN NOT NULL DEFAULT TRUE -- Whether Hub publishes this certificate; an older Hub leaves the default
+    enabled BOOLEAN NOT NULL DEFAULT TRUE -- Whether Hub publishes this certificate
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_cert_name
