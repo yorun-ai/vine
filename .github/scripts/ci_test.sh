@@ -63,13 +63,13 @@ check_paths pull_request 'licenses dashboard' THIRD_PARTY_LICENSES.txt
 check_paths pull_request 'licenses dashboard workflow' script/gen-third-party-licenses.sh
 check_paths pull_request 'dashboard workflow' script/build-dashboard-assets.sh
 for file in src/App.tsx package.json pnpm-lock.yaml scripts/dashboard-licenses.mjs scripts/build-dashboard.mjs licenses/uiw-react-codemirror-MIT.txt; do
-  check_paths pull_request dashboard "internal/daemon/hub/src/dashboard/$file"
+  check_paths pull_request dashboard "internal/daemon/hub/src/server/mod/admin/dashboard/$file"
 done
 for event in pull_request push; do
-  check_paths "$event" "go-test go-race dashboard" internal/daemon/hub/src/dashboard/src/features/app/testdata/config-scalar.json
+  check_paths "$event" "go-test go-race dashboard" internal/daemon/hub/src/server/mod/admin/dashboard/src/features/app/testdata/config-scalar.json
 done
-check_paths pull_request '' internal/daemon/hub/src/dashboard/README.md
-check_paths pull_request "$go_jobs licenses container dashboard" README.md go.sum internal/daemon/hub/src/dashboard/src/App.tsx
+check_paths pull_request '' internal/daemon/hub/src/server/mod/admin/dashboard/README.md
+check_paths pull_request "$go_jobs licenses container dashboard" README.md go.sum internal/daemon/hub/src/server/mod/admin/dashboard/src/App.tsx
 
 # Build independent gate fixtures. Cover both halves of the merged Go job without
 # repeating every failure mutation for every selection combination.

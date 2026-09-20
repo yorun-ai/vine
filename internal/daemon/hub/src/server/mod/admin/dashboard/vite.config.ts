@@ -18,6 +18,14 @@ const config = defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 1000,
+    rolldownOptions: {
+      output: {
+        assetFileNames: (asset) => {
+          const isFont = asset.names.some((name) => /\.(woff2?|ttf|otf|eot)$/i.test(name))
+          return isFont ? 'fonts/[name]-[hash][extname]' : 'assets/[name]-[hash][extname]'
+        },
+      },
+    },
   },
   plugins: [
     devtools(),

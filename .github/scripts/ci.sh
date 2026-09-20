@@ -11,15 +11,15 @@ classify_changes() {
       any(.[]; (startswith(".github/workflows/") or startswith(".github/scripts/") or startswith(".github/actions/") or
         ((startswith("test/") or startswith("script/")) and endswith(".sh"))) and
         (test("\\.(md|mdx)$") | not)) as $workflow |
-      any(.[]; startswith("internal/daemon/hub/src/dashboard/") and (test("\\.(md|mdx)$") | not)) as $frontend |
+      any(.[]; startswith("internal/daemon/hub/src/server/mod/admin/dashboard/") and (test("\\.(md|mdx)$") | not)) as $frontend |
       ($ci or $frontend or any(.[]; . == "script/build-dashboard-assets.sh" or . == ".github/workflows/ci-dashboard.yml" or
         . == "THIRD_PARTY_LICENSES.txt" or . == "script/gen-third-party-licenses.sh")) as $dashboard |
       any(.[]; . == "go.mod" or . == "go.sum") as $dependencies |
       any(.[]; endswith(".go")) as $go_files |
       any(.[]; endswith(".go") and (endswith("_test.go") | not)) as $go_source |
       any(.[]; test("^(app|buildinfo|cmd|core|infra|internal|util)/") and
-        (startswith("internal/daemon/hub/src/dashboard/") | not) and (test("\\.(md|mdx)$") | not) and (endswith("_test.go") | not)) as $runtime |
-      any(.[]; startswith("internal/daemon/hub/src/dashboard/src/features/app/testdata/")) as $shared_testdata |
+        (startswith("internal/daemon/hub/src/server/mod/admin/dashboard/") | not) and (test("\\.(md|mdx)$") | not) and (endswith("_test.go") | not)) as $runtime |
+      any(.[]; startswith("internal/daemon/hub/src/server/mod/admin/dashboard/src/features/app/testdata/")) as $shared_testdata |
       ($ci or $dependencies or $go_files or $runtime or $shared_testdata or
         any(.[]; startswith("test/") and endswith(".sh") and . != "test/k8s.sh")) as $go |
       ($ci or any(.[]; . == "Dockerfile" or . == ".dockerignore" or

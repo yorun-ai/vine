@@ -29,7 +29,7 @@ node_modules
 *.db
 *.log
 
-# Build embedded Dashboard assets from source inside Docker.
-internal/daemon/hub/src/server/mod/admin/assets/dashboard/*
-!internal/daemon/hub/src/server/mod/admin/assets/dashboard/.gitkeep
-internal/daemon/hub/src/server/mod/admin/assets/.dashboard-*/
+# Only committed build output is needed from the Dashboard frontend.
+internal/daemon/hub/src/server/mod/admin/dashboard/*
+!internal/daemon/hub/src/server/mod/admin/dashboard/dist/
+!internal/daemon/hub/src/server/mod/admin/dashboard/dist/**

@@ -8,17 +8,12 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
-	"go.yorun.ai/vine/internal/util/httputil"
 )
 
 func TestServerOpensAdminListenerForInprocHub(t *testing.T) {
-	originalURL := dashboardDevServerURL
-	dashboardDevServerURL = "http://127.0.0.1:1"
-	t.Cleanup(func() { dashboardDevServerURL = originalURL })
 	prev := listenTCP
 	listenTCP = func(_, _ string) (net.Listener, error) { return net.Listen("tcp", "127.0.0.1:0") }
 	t.Cleanup(func() { listenTCP = prev })
@@ -54,11 +49,7 @@ func TestServerOpensAdminListenerForInprocHub(t *testing.T) {
 				t.Fatalf("reach the admin listener: %v", err)
 			}
 			defer func() { _ = response.Body.Close() }()
-			wantStatus := http.StatusOK
-			if dashboardAssets == nil {
-				wantStatus = http.StatusNotFound
-			}
-			if response.StatusCode != wantStatus {
+			if response.StatusCode != http.StatusOK {
 				t.Fatalf("unexpected dashboard status code: %d", response.StatusCode)
 			}
 		})
@@ -77,73 +68,6 @@ func (_InternalRuntimeStub) AdditionalServicer(...reflect.Type) (http.Handler, r
 // TestServerServesAdminAPIAndDashboardBuild pins the routing of the admin
 // listener: the Admin API answers its own path, and every other path serves the
 // embedded Dashboard build.
-// TestServerShutdownEndsAStalledDashboardRequest pins what stops the listener
-// while the Dashboard development server holds a request open: Hub cancels the
-// requests it proxies, because a development server that does not answer must not
-// hold Hub open the way a request Hub serves itself cannot.
-func TestServerShutdownEndsAStalledDashboardRequest(t *testing.T) {
-	if dashboardAssets != nil {
-		t.Skip("embedded builds do not probe a development server")
-	}
-	release := make(chan struct{})
-	t.Cleanup(func() { close(release) })
-	proxied := make(chan struct{}, 1)
-	devServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		proxied <- struct{}{}
-		select {
-		case <-release:
-		case <-request.Context().Done():
-		}
-	}))
-	t.Cleanup(devServer.Close)
-	t.Cleanup(func() { dashboardDevServerURL = "http://localhost:7098" })
-	dashboardDevServerURL = devServer.URL
-
-	originalTimeout := shutdownTimeout
-	shutdownTimeout = 5 * time.Second
-	t.Cleanup(func() { shutdownTimeout = originalTimeout })
-
-	server := &Server{
-		Context:           context.Background(),
-		rpcHTTPHandler:    http.NotFoundHandler(),
-		dashboardHandler:  dashboardHandler(),
-		dashboardDevProxy: dashboardDevProxy(),
-	}
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	server.httpServer = httputil.NewServer(listener.Addr().String(), server)
-	go func() { _ = server.httpServer.Serve(listener) }()
-
-	// The request stays in flight: the development server never answers it.
-	stalled := make(chan error, 1)
-	go func() {
-		response, err := http.Get("http://" + listener.Addr().String() + "/app/config")
-		stalled <- err
-		if err == nil {
-			_ = response.Body.Close()
-		}
-	}()
-	select {
-	case <-proxied:
-	case <-time.After(5 * time.Second):
-		t.Fatal("the Dashboard request did not reach the development server")
-	}
-
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		server.BeforeAppStop()
-	}()
-	select {
-	case <-done:
-	case <-time.After(time.Second):
-		t.Fatal("shutdown waited for the stalled Dashboard request")
-	}
-	<-stalled
-}
-
 func TestServerServesAdminAPIAndDashboardBuild(t *testing.T) {
 	apiPath := ""
 	server := &Server{
@@ -167,17 +91,10 @@ func TestServerServesAdminAPIAndDashboardBuild(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "http://hub.local/portal/site", nil)
 	request.Header.Set("Accept", "text/html")
 	server.ServeHTTP(response, request)
-	wantStatus := http.StatusNotFound
-	if dashboardAssets != nil {
-		wantStatus = http.StatusOK
-	}
-	if response.Code != wantStatus {
+	if response.Code != http.StatusOK {
 		t.Fatalf("unexpected dashboard status code: %d", response.Code)
 	}
-	if dashboardAssets == nil && !strings.Contains(response.Body.String(), "script/dev-hub-dashboard.sh") {
-		t.Fatalf("expected the development hint, got: %s", response.Body.String())
-	}
-	if dashboardAssets != nil && !strings.Contains(response.Body.String(), `<div id="app"></div>`) {
+	if !strings.Contains(response.Body.String(), `<div id="app"></div>`) {
 		t.Fatalf("expected the embedded Dashboard, got: %s", response.Body.String())
 	}
 }

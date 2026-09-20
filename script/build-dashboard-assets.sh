@@ -4,8 +4,8 @@ set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 repo_dir="$(cd -- "${script_dir}/.." && pwd -P)"
-dashboard_dir="${repo_dir}/internal/daemon/hub/src/dashboard"
-assets_dir="${repo_dir}/internal/daemon/hub/src/server/mod/admin/assets/dashboard"
+dashboard_dir="${repo_dir}/internal/daemon/hub/src/server/mod/admin/dashboard"
+assets_dir="${repo_dir}/internal/daemon/hub/src/server/mod/admin/dashboard/dist"
 build_dir="$(mktemp -d "${TMPDIR:-/tmp}/vine-dashboard.XXXXXXXX")"
 trap 'rm -rf -- "$build_dir"' EXIT
 

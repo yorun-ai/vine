@@ -3,12 +3,11 @@ package admin
 import (
 	"context"
 	"embed"
-	"io/fs"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"path"
+	"os"
 	"sync/atomic"
 	"time"
 
@@ -16,25 +15,16 @@ import (
 	"go.yorun.ai/vine/internal/core/web/assets"
 )
 
-// The empty .gitkeep keeps source-only builds valid. Packaging preserves it so
-// generating assets does not modify tracked files or release VCS metadata.
+// Build Dashboard resources before compiling; dist must contain real assets.
 //
-//go:embed all:assets/dashboard
+//go:embed all:dashboard/dist
 var dashboardFS embed.FS
 
-var dashboardAssets = newDashboardAssets(dashboardFS)
-
-func newDashboardAssets(fsys fs.FS) assets.Accessor {
-	const root = "assets/dashboard"
-	for _, index := range []string{"index.html", "index.html.br"} {
-		if info, err := fs.Stat(fsys, root+"/"+index); err == nil && info.Mode().IsRegular() {
-			return assets.NewEmbedAccessor(fsys, root)
-		}
-	}
-	return nil
-}
+var dashboardAssets = assets.NewEmbedAccessor(dashboardFS, "dashboard/dist")
 
 const (
+	// dashboardDevProxyEnv enables probing and preferring the local Dashboard server.
+	dashboardDevProxyEnv = "VINE_HUB_DASHBOARD_DEV_PROXY"
 	// dashboardDevProxyProbeInterval is how often the development server is
 	// checked for an answer: the Dashboard asks for its build often, so the check
 	// runs beside the requests and a request only reads its result.
@@ -48,11 +38,9 @@ const (
 // server the script started.
 var dashboardDevServerURL = "http://localhost:7098"
 
-// dashboardDevProxy returns a development proxy only when this build has no
-// embedded Dashboard entry document. A placeholder-only build probes Vite;
-// compiling after packaging automatically uses the embedded Dashboard.
+// dashboardDevProxy starts probing only when explicitly enabled by the environment.
 func dashboardDevProxy() *_DashboardDevProxy {
-	if dashboardAssets != nil {
+	if os.Getenv(dashboardDevProxyEnv) == "" {
 		return nil
 	}
 	target, err := url.Parse(dashboardDevServerURL)
@@ -68,8 +56,8 @@ func dashboardDevProxy() *_DashboardDevProxy {
 }
 
 // _DashboardDevProxy serves the Dashboard from the development server a developer
-// runs beside Hub, and reports the requests it did not answer, so Hub returns
-// the development command instead. A check beside the requests keeps its answer
+// runs beside Hub, and reports the requests it did not answer, so Hub serves
+// the embedded build instead. A check beside the requests keeps its answer
 // current, so a request never waits for a connection of its own.
 type _DashboardDevProxy struct {
 	target *url.URL
@@ -168,21 +156,12 @@ func (p *_DashboardDevProxy) detectAvailable() bool {
 // which also serves the Admin API, so the Dashboard reaches Hub on one origin
 // instead of another component's route.
 func dashboardHandler() http.Handler {
-	if dashboardAssets == nil {
-		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			http.Error(writer, "Hub Dashboard assets are not embedded; run bash script/dev-hub-dashboard.sh for local development.", http.StatusNotFound)
-		})
-	}
 
 	// Dashboard is served by its own Gin router instead of Vine's shared Web
 	// server, so apply the same production mode before registering routes.
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Any("/*path", func(ctx *gin.Context) {
-		if path.Clean("/"+ctx.Param("path")) == "/.gitkeep" {
-			ctx.AbortWithStatus(http.StatusNotFound)
-			return
-		}
 		// Asset Server stores request state, while the accessor can be shared.
 		server := assets.NewServer(dashboardAssets)
 		server.SetContext(ctx)

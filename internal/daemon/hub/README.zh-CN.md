@@ -39,12 +39,11 @@ internal/daemon/hub/
 
 ## Dashboard 打包
 
-- 内嵌目录只有空占位文件 `.gitkeep` 时，会自动探测 `script/dev-hub-dashboard.sh` 在 `localhost:7098` 启动的 Vite 服务。Vite 未启动时，Hub 返回 404，并提示运行该脚本。
-- 修改 Dashboard 源码后，在 `src/dashboard` 运行 `pnpm typecheck` 和 `pnpm build`。
-- 容器和 Release 构建会在编译 Vine 前生成 `src/server/mod/admin/assets/dashboard/`。生成文件被忽略，仅保留纳入 Git 的空文件 `.gitkeep`。
+- 修改 Dashboard 源码后，在 `src/server/mod/admin/dashboard` 运行 `pnpm typecheck` 和 `pnpm build`。
+- 容器和 Release 二进制构建直接内嵌已提交的 `src/server/mod/admin/dashboard/dist/`，不重新构建前端；随源码变更更新并提交这些资源，PR CI 要求重建结果与提交内容完全一致。
 - 面向用户的文案需要同步更新 `src/i18n/dictionaries/cn.ts` 和 `en.ts`。
 
-Dashboard 前端源码位于 `src/dashboard`。Release 和容器构建把 Dashboard 编进 Vine；没有内嵌 `index.html` 或 `index.html.br` 时使用本地 Vite 服务。本地构建也会内嵌之前打包留下的资源。
+Dashboard 前端源码位于 `src/server/mod/admin/dashboard`。Release 和容器构建把 Dashboard 编进 Vine；本地构建同样内嵌已提交的 `dashboard/dist` 目录。启动 Hub 时设置 `VINE_HUB_DASHBOARD_DEV_PROXY=1`，会探测 `localhost:7098` 的 Vite 服务，可用时优先代理，否则使用内嵌资源。环境变量未设置或为空时不探测；Admin API 请求始终由 Hub 处理。
 
 使用脚本生成内嵌资源，不要手工编辑生成文件：
 
@@ -53,21 +52,17 @@ bash script/build-dashboard-assets.sh
 GOWORK=off go build -o bin/vine ./cmd/vine
 ```
 
-脚本先做类型检查，将前端构建到临时目录，再按原路径逐文件处理：文本仅在 Brotli
-压缩后更小时保存为 `.br`，图片、字体等保留原文件。每个文件只保留一种形式，全部
-成功后替换整个 assets 目录，避免残留旧文件。临时 Vite 报告收集实际打包的 JS 依赖声明，
+脚本先做类型检查，将前端构建到临时目录，再按原路径保留全部构建文件，不额外压缩。
+全部成功后替换整个 dist 目录，避免残留旧文件。临时 Vite 报告收集实际打包的 JS 依赖声明，
 再补充导入的 CSS、字体及已维护的 uiw 许可证。打包先与根目录
 `THIRD_PARTY_LICENSES.txt` 的 Dashboard 部分比较，再移除临时报告。
 打包依赖变化后，用 `bash script/gen-third-party-licenses.sh` 更新统一清单。
 不分发归档、Go 字节数组或独立的 Dashboard 许可证文件。Release 归档携带统一清单，
 三个镜像均在 `/usr/share/licenses/vine/` 下携带清单和 `LICENSE`。
 所有 Go 构建都通过 `go:embed` 内嵌该目录，无需构建标签。
-打包保留纳入 Git 的空文件 `.gitkeep`，避免使 Release 工作区变脏；HTTP 不提供该文件。
-本地打包后如需切回 Vite，删除生成资源、保留 `.gitkeep`，再重新编译 Go。
 
-Dashboard 通过共享的 Asset Server 处理 MIME、HEAD 和压缩协商。客户端接受 Brotli
-时直接发送 `.br` 内容，否则解压或转换为客户端支持的格式。已压缩的图片和字体不再
-动态压缩。HTML 页面导航回退到 `index.html`，缺失的静态文件返回 404。
+Dashboard 通过共享的 Asset Server 处理 MIME、HEAD 和压缩协商。文本响应根据客户端
+支持的格式动态压缩。已压缩的图片和字体不再动态压缩。HTML 页面导航回退到 `index.html`，缺失的静态文件返回 404。
 
 ## 分层与变更约束
 
@@ -207,7 +202,7 @@ Admin 的 list 方法返回 `*ListItem`：只包含 Dashboard 列表需要展示
 
 Hub 在 `skel/control` 与 `skel/admin` 中分别维护两套契约。Go 代码生成到
 对应的 `api/skeled/control` 与 `api/skeled/admin` package，TypeScript
-仅为 admin 生成代码，输出到 `src/dashboard/src/skeled/admin`。统一使用顶层脚本：
+仅为 admin 生成代码，输出到 `src/server/mod/admin/dashboard/src/skeled/admin`。统一使用顶层脚本：
 
 ```bash
 bash script/gen-skel.sh hub
@@ -244,3 +239,5 @@ Hub 在普通模式和 inproc 模式下，对注册信息的处理不同：
   - 状态改为长期有效，依赖显式 unregister 清理。
 
 这使得单进程模式下不再需要 heartbeat 维持注册状态。
+
+`dashboard/dist` 的真实构建产物随源码提交；随源码变更运行 `bash script/build-dashboard-assets.sh` 更新，不放占位文件。

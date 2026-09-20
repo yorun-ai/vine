@@ -308,6 +308,6 @@ both files; container images include them in `/usr/share/licenses/vine/`.
 With Node.js and pnpm installed, regenerate the inventory after dependency changes:
 
 ```bash
-pnpm --dir internal/daemon/hub/src/dashboard install --frozen-lockfile
+pnpm --dir internal/daemon/hub/src/server/mod/admin/dashboard install --frozen-lockfile
 bash script/gen-third-party-licenses.sh
 ```

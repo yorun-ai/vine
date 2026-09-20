@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 15
     defaults:
       run:
-        working-directory: internal/daemon/hub/src/dashboard
+        working-directory: internal/daemon/hub/src/server/mod/admin/dashboard
 
     steps:
       - name: Check out repository
@@ -29,18 +29,29 @@ jobs:
         with:
           node-version: 24.11.0
           cache: pnpm
-          cache-dependency-path: internal/daemon/hub/src/dashboard/pnpm-lock.yaml
+          cache-dependency-path: internal/daemon/hub/src/server/mod/admin/dashboard/pnpm-lock.yaml
           registry-url: https://registry.npmjs.org/
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Test configuration editor
+      - name: Test Dashboard
         run: pnpm test
 
       - name: Build embedded assets
         working-directory: .
         run: bash script/build-dashboard-assets.sh
+
+      - name: Verify committed Dashboard assets
+        working-directory: .
+        run: |
+          assets_dir=internal/daemon/hub/src/server/mod/admin/dashboard/dist
+          changes=$(git status --porcelain --untracked-files=all -- "$assets_dir")
+          if [[ -n "$changes" ]]; then
+            printf '%s\n' "$changes"
+            echo "Dashboard dist is out of date. Run bash script/build-dashboard-assets.sh and commit the generated assets."
+            exit 1
+          fi
 
       - name: Restore Go cache
         uses: ./.github/actions/go-cache
