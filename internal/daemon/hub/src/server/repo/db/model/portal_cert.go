@@ -27,11 +27,11 @@ var createPortalCertPgSQL string
 type PortalCert struct {
 	FieldSources string `gorm:"-"`
 	rdb.Model
-	Certificate string `gorm:"column:certificate"`
-	PrivateKey  string `gorm:"column:private_key"`
 	Name        string `gorm:"column:name"`
 	Issuer      string `gorm:"column:issuer"`
 	Domains     string `gorm:"column:domains"`
+	Certificate string `gorm:"column:certificate"`
+	PrivateKey  string `gorm:"column:private_key"`
 	// TODO: After the legacy database upgrade window closes, remove both Base64
 	// fields and SQL columns together with the PEM migration below.
 	//
