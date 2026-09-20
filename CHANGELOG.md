@@ -8,6 +8,33 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-09-21
+
+### Added
+
+- Portal entries support wildcard hosts such as `*.example.com` for WEBGW
+  sites. Wildcards match exactly one subdomain label and cannot target Rpc
+  sites or redirects. Seed and Admin API validation enforce the restriction;
+  rules stop serving when their target site is removed or becomes non-Web.
+
+### Changed
+
+- **Breaking:** Portal matches exact hosts before wildcard hosts, then empty-host
+  fallback rules. Longer path prefixes take precedence within each host group.
+  Existing exact-host rules now win over empty-host rules even when the latter
+  have longer path prefixes. Review overlapping host/path rules before upgrading.
+- Hub removes retired Portal access and built-in database columns, along with
+  legacy schema migration code. Existing v0.21.5 entries, rules, sites, enabled
+  switches, and field sources are preserved. Older persisted databases must
+  first be upgraded with v0.21.5 to complete its migrations. Back up persistent
+  Hub databases before upgrading; rollback requires restoring the backup.
+
+### Fixed
+
+- Portal safely replaces Web and Rpc gateways when a site's type changes.
+- Dashboard Event and Task debug selectors remain controlled when no value is
+  selected, keeping empty selections consistent.
+
 ## [0.21.5] - 2026-09-20
 
 ### Changed
@@ -1199,7 +1226,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.21.5...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.22.0...HEAD
+[0.22.0]: https://github.com/yorun-ai/vine/compare/v0.21.5...v0.22.0
 [0.21.5]: https://github.com/yorun-ai/vine/compare/v0.21.4...v0.21.5
 [0.21.4]: https://github.com/yorun-ai/vine/compare/v0.21.3...v0.21.4
 [0.21.3]: https://github.com/yorun-ai/vine/compare/v0.21.2...v0.21.3
