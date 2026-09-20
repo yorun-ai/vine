@@ -61,6 +61,9 @@ func (e *_Entry) SetOrUpdateRules(rules []*_Rule) {
 	sort.SliceStable(rules, func(i int, j int) bool {
 		left := rules[i]
 		right := rules[j]
+		if left.hostPriority() != right.hostPriority() {
+			return left.hostPriority() > right.hostPriority()
+		}
 		if len(left.matchPathPrefix) != len(right.matchPathPrefix) {
 			return len(left.matchPathPrefix) > len(right.matchPathPrefix)
 		}

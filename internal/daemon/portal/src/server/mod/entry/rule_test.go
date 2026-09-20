@@ -119,3 +119,24 @@ func TestRuleRewritePath(t *testing.T) {
 		})
 	}
 }
+
+func TestWildcardHostMatchesOneLabel(t *testing.T) {
+	rule := _Rule{matchHost: "*.example.com"}
+	for _, host := range []string{"a.example.com", "b.example.com:8080", "A.EXAMPLE.COM"} {
+		assert.True(t, rule.Matches(httptest.NewRequest("GET", "http://"+host+"/", nil)), host)
+	}
+	for _, host := range []string{"example.com", "a.b.example.com", ".example.com", "evil-example.com", "a.example.com.evil"} {
+		assert.False(t, rule.matchesHost(host), host)
+	}
+}
+
+func TestWildcardRuleRejectsRpcAndRedirect(t *testing.T) {
+	rule, ok := newRule(watched.PortalRule{Name: "wildcard", MatchScheme: "http", MatchHost: "*.example.com", RouteType: "SITE", RouteSiteName: "rpc"}, newTestSiteManager("rpc"))
+	require.True(t, ok)
+	w := httptest.NewRecorder()
+	rule.Serve(&spec.Context{Request: httptest.NewRequest("GET", "http://a.example.com/inspect", nil), ResponseWriter: w})
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+	assert.Contains(t, w.Body.String(), "WEBGW")
+	_, ok = newRule(watched.PortalRule{Name: "redirect", MatchScheme: "http", MatchHost: "*.example.com", RouteType: "TEMPORARY_REDIRECT"}, nil)
+	assert.False(t, ok)
+}

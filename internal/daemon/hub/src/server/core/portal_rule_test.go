@@ -308,3 +308,35 @@ func newPortalRuleCoreWithEntriesForTest(ruleRepo PortalRuleRepo, certRepo Porta
 		PortalSiteRepo:  &portalSiteRepoSpy{},
 	}
 }
+
+func TestWildcardRulesOnlyTargetWebSites(t *testing.T) {
+	for _, route := range []string{"SITE", "PERMANENT_REDIRECT", "TEMPORARY_REDIRECT"} {
+		for _, kind := range []PortalSiteType{PortalSiteTypeWEBGW, PortalSiteTypeRPCGW, ""} {
+			t.Run(route+string(kind), func(t *testing.T) {
+				repo := &entryRuleRepoSpy{}
+				entries := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Name: "wildcard", Scheme: "http", Host: "*.example.com", Port: 80})
+				target := newPortalRuleCoreWithEntriesForTest(repo, nil, entries)
+				sites := &portalSiteRepoSpy{}
+				if kind != "" {
+					sites.entries = map[int]*PortalSite{1: {Id: 1, Name: "target", Type: kind}}
+				}
+				target.PortalSiteRepo = sites
+				rule := PortalRule{Name: "rule", EntryId: 1, RouteType: route}
+				if route == "SITE" {
+					rule.RouteSiteName = "target"
+				} else {
+					rule.RouteRedirectionPattern = "https://example.com"
+				}
+				if route == "SITE" && kind == PortalSiteTypeWEBGW {
+					created := target.Create(rule)
+					assert.Panics(t, func() { target.Update(created.Id, PortalRuleUpdate{RouteSiteName: new("missing")}) })
+					assert.NotPanics(t, func() { target.Save(rule) })
+				} else {
+					assert.Panics(t, func() { target.Create(rule) })
+					assert.Panics(t, func() { target.Save(rule) })
+					assert.Empty(t, repo.rules)
+				}
+			})
+		}
+	}
+}

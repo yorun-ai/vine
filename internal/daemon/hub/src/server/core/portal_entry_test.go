@@ -545,3 +545,30 @@ func TestPortalEntryCoreGetRejectsMissingEntry(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, ex.OperationFailed, err.Code())
 }
+
+func TestPortalEntryWildcardHostValidation(t *testing.T) {
+	for _, host := range []string{"*.example.com", "*.EXAMPLE.com", "*.dev"} {
+		assert.True(t, portalEntryHostAccepted(host), host)
+	}
+	for _, host := range []string{"*", "*example.com", "foo*.example.com", "*.*.example.com", "*.", "*.example..com", "*.127.0.0.1", "*.example.com:80", "*.-bad.com"} {
+		assert.False(t, portalEntryHostAccepted(host), host)
+	}
+}
+
+func TestPortalEntryWildcardChangeRejectsNonWebRules(t *testing.T) {
+	for _, save := range []bool{false, true} {
+		repo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Name: "entry", Scheme: "http", Host: "api.example.com", Port: 80})
+		rules := &entryRuleRepoSpy{rules: map[int]*PortalRule{1: {Id: 1, Name: "rpc", EntryId: 1, RouteType: "SITE", RouteSiteName: "rpc"}}}
+		sites := &portalSiteRepoSpy{entries: map[int]*PortalSite{1: {Id: 1, Name: "rpc", Type: PortalSiteTypeRPCGW}}}
+		target := newPortalEntryCoreForTest(rules, repo, sites)
+		assert.Panics(t, func() {
+			if save {
+				target.Save(PortalEntry{Name: "entry", Scheme: "http", Host: "*.example.com", Port: 80})
+			} else {
+				target.Update(1, PortalEntryUpdate{Host: new("*.example.com")})
+			}
+		})
+		entry, _ := repo.GetById(1)
+		assert.Equal(t, "api.example.com", entry.Host)
+	}
+}

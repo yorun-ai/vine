@@ -59,6 +59,9 @@ func (g *RpcGateway) init(config watched.PortalSite) {
 }
 
 func (g *RpcGateway) Update(config watched.PortalSite) bool {
+	if config.Type != "RPCGW" {
+		return false
+	}
 	serviceNames := map[string]struct{}{}
 	for _, service := range config.RpcgwConfig.Services {
 		serviceNames[service.SkelName] = struct{}{}
