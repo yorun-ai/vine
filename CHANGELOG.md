@@ -8,6 +8,32 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.22.1] - 2026-09-21
+
+### Changed
+
+- Portal certificates use raw PEM `certificate` and `privateKey` fields throughout
+  Hub, Portal, seed files, and the Dashboard. The Dashboard accepts and displays
+  PEM certificates and never returns private-key contents.
+- Hub migrates existing SQLite and PostgreSQL certificate records to PEM on
+  startup. Watch publishes both new PEM fields and deprecated Base64 fields so
+  older Portal instances can continue receiving certificates during upgrades.
+
+### Upgrade Notes
+
+- **Breaking configuration/API change:** rename seed and Admin API fields
+  `publicKeyBase64` to `certificate` and `privateKeyBase64` to `privateKey`, and
+  supply PEM text instead of Base64. Decode existing Base64 values before writing
+  the new fields; preserve the entire certificate chain and matching private key.
+  Seed variable providers must supply PEM as well. Regenerate Admin API clients.
+- Upgrade Hub before Portal. New Portal instances read only the PEM Watch fields;
+  old Hub instances cannot supply them. Hub automatically migrates stored data,
+  including soft-deleted records, and stops startup if a legacy certificate/key
+  pair cannot be decoded or validated. Correct invalid data before retrying.
+- Back up persistent Hub databases before upgrading. Legacy database columns are
+  retained for migration but are not kept in sync with edits to the PEM fields;
+  rollback requires restoring the backup and the matching old seed/configuration.
+
 ## [0.22.0] - 2026-09-21
 
 ### Added
@@ -1226,7 +1252,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.22.0...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.22.1...HEAD
+[0.22.1]: https://github.com/yorun-ai/vine/compare/v0.22.0...v0.22.1
 [0.22.0]: https://github.com/yorun-ai/vine/compare/v0.21.5...v0.22.0
 [0.21.5]: https://github.com/yorun-ai/vine/compare/v0.21.4...v0.21.5
 [0.21.4]: https://github.com/yorun-ai/vine/compare/v0.21.3...v0.21.4
