@@ -82,8 +82,7 @@ func (d *PortalEntryDao) DeleteById(id int) (*PortalEntry, bool) {
 	return row, true
 }
 
-// ensurePortalEntryTable creates the entry table and its indexes. The rule DAO
-// calls it before migrating rule access columns into entries.
+// ensurePortalEntryTable creates the entry table and its indexes.
 func ensurePortalEntryTable(db *gorm.DB) error {
 	return db.Exec(schemaSQL(db, createPortalEntrySQLiteSQL, createPortalEntryPgSQL)).Error
 }
