@@ -353,7 +353,7 @@ export function EventEmitterPage() {
             <Select
               open={eventSelectOpen}
               onOpenChange={setEventSelectOpen}
-              value={selectedEventKey ?? undefined}
+              value={selectedEventKey}
               onValueChange={(value) => {
                 const nextEvent = events.find((item) => eventKey(item) === value)
                 if (nextEvent) {

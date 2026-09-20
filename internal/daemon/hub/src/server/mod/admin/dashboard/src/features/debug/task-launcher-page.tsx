@@ -443,7 +443,7 @@ export function TaskLauncherPage() {
             <Select
               open={taskSelectOpen}
               onOpenChange={setTaskSelectOpen}
-              value={selectedTaskKey ?? undefined}
+              value={selectedTaskKey}
               onValueChange={(value) => {
                 const nextTask = tasks.find((item) => taskKey(item) === value)
                 if (nextTask) {
@@ -518,7 +518,7 @@ export function TaskLauncherPage() {
               Trigger
             </span>
             <Select
-              value={selectedTriggerKey ?? undefined}
+              value={selectedTriggerKey}
               onValueChange={(value) => {
                 const nextTrigger = triggers.find(
                   (item) => item.skelName === value,
