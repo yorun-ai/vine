@@ -43,7 +43,7 @@ internal/daemon/hub/
 ## Dashboard Packaging
 
 - After changing Dashboard source, run `pnpm typecheck` and `pnpm build` in `src/server/mod/admin/dashboard`.
-- Container builds embed the committed `src/server/mod/admin/dashboard/dist/` directly without rebuilding the frontend. Refresh these assets during release preparation. Release binary builds currently rebuild them before compiling Vine.
+- Container and release binary builds embed the committed `src/server/mod/admin/dashboard/dist/` directly without rebuilding the frontend. Refresh and commit these assets with source changes; PR CI requires the rebuilt dist to match the commit.
 - Keep user-facing text synchronized between `src/i18n/dictionaries/cn.ts` and `en.ts`.
 
 The Dashboard source lives in `src/server/mod/admin/dashboard`. At runtime, release and container builds serve the Dashboard embedded in the Vine binary. Local builds embed the same committed `dashboard/dist` directory. Set `VINE_HUB_DASHBOARD_DEV_PROXY=1` on Hub to probe Vite at `localhost:7098` and prefer it while available; otherwise Hub serves embedded assets. An unset or empty value disables probing. Admin API requests always stay on Hub.
@@ -65,7 +65,7 @@ inventory with `bash script/gen-third-party-licenses.sh` after changing bundled
 dependencies. No archive, Go byte array, or separate Dashboard license file is
 shipped. Release archives include the unified inventory; all three images include
 it and `LICENSE` in `/usr/share/licenses/vine/`. Every Go build embeds the directory
-through `go:embed`, without a build tag. The committed directory contains real assets and is refreshed during release preparation.
+through `go:embed`, without a build tag. The committed directory contains real assets and is refreshed with source changes.
 
 Dashboard uses the shared Asset Server for MIME types, HEAD, and compression
 negotiation. Text responses are compressed dynamically according to client

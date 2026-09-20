@@ -12,6 +12,8 @@
 
 # Go build / test artifacts
 bin/
+# Release archives at the repository root; Dashboard dist remains tracked.
+/dist/
 *.test
 *.out
 *.prof

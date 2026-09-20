@@ -37,7 +37,7 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
 - Dashboard assets under
   `internal/daemon/hub/src/server/mod/admin/dashboard/dist/` are generated and
   committed with the source. Refresh them with
-  `bash script/build-dashboard-assets.sh` during release preparation.
+  `bash script/build-dashboard-assets.sh` whenever build inputs change.
   The directory must contain real assets; do not add placeholder files.
 - Hub serves the Dashboard assets embedded from `dashboard/dist` directly.
   Local Go builds embed the same directory. A non-empty
@@ -45,7 +45,7 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
   development server priority over embedded assets.
 - Packaging builds the frontend in a temporary directory and replaces the asset
   directory only after all files are ready. All files retain their build output
-  bytes without additional compression. Commit generated assets during release preparation; do not manually edit them.
+  bytes without additional compression. Commit generated assets with the corresponding source changes; do not manually edit them.
 
 ## Public API Boundaries
 
@@ -149,10 +149,10 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
   Packaging checks the frontend section; Go CI checks only the Go section.
 - Regenerate contracts with `bash script/gen-skel.sh all` and inspect drift.
   Generate embedded Dashboard assets only with the documented script.
-- Docker builds embed the committed Dashboard dist directly and do not install
-  Node.js or rebuild the frontend. Dashboard packaging and Release binary builds
-  use the Node.js and pnpm versions pinned in `.github/workflows/ci-dashboard.yml`;
-  generated assets are committed in release-preparation PRs, not ordinary feature PRs.
+- Docker and Release binary builds embed the committed Dashboard dist directly
+  and do not install Node.js or rebuild the frontend. Dashboard packaging uses
+  the Node.js and pnpm versions pinned in `.github/workflows/ci-dashboard.yml`;
+  PR Dashboard checks require rebuilt assets to match the committed dist exactly.
 - Versions come from release tags and build-time `ldflags`, not source constants.
 
 ## Tests

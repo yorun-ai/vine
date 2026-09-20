@@ -40,7 +40,7 @@ internal/daemon/hub/
 ## Dashboard 打包
 
 - 修改 Dashboard 源码后，在 `src/server/mod/admin/dashboard` 运行 `pnpm typecheck` 和 `pnpm build`。
-- 容器构建直接内嵌已提交的 `src/server/mod/admin/dashboard/dist/`，不重新构建前端；发布准备时更新这些资源。Release 二进制构建目前仍会重新构建前端。
+- 容器和 Release 二进制构建直接内嵌已提交的 `src/server/mod/admin/dashboard/dist/`，不重新构建前端；随源码变更更新并提交这些资源，PR CI 要求重建结果与提交内容完全一致。
 - 面向用户的文案需要同步更新 `src/i18n/dictionaries/cn.ts` 和 `en.ts`。
 
 Dashboard 前端源码位于 `src/server/mod/admin/dashboard`。Release 和容器构建把 Dashboard 编进 Vine；本地构建同样内嵌已提交的 `dashboard/dist` 目录。启动 Hub 时设置 `VINE_HUB_DASHBOARD_DEV_PROXY=1`，会探测 `localhost:7098` 的 Vite 服务，可用时优先代理，否则使用内嵌资源。环境变量未设置或为空时不探测；Admin API 请求始终由 Hub 处理。
@@ -240,4 +240,4 @@ Hub 在普通模式和 inproc 模式下，对注册信息的处理不同：
 
 这使得单进程模式下不再需要 heartbeat 维持注册状态。
 
-`dashboard/dist` 的真实构建产物随源码提交；发布准备时运行 `bash script/build-dashboard-assets.sh` 更新，不放占位文件。
+`dashboard/dist` 的真实构建产物随源码提交；随源码变更运行 `bash script/build-dashboard-assets.sh` 更新，不放占位文件。

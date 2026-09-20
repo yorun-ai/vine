@@ -3,6 +3,9 @@
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/geist';
 
+/* Committed build output must not become input to the next build. */
+@source not '../dist';
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

@@ -29,7 +29,7 @@ fail the gate.
 | Go test files only | Full ordinary Go tests and leak checks, targeted race |
 | Non-test Go source or module files | Regenerate and check the Go section of the unified license inventory |
 | Go test shell scripts | Go checks and workflow checks |
-| Dashboard source/dependencies or packaging script | Dashboard tests, asset packaging/type checking, bundled license validation and embedded Go handler tests; shell scripts also select workflow checks |
+| Dashboard source/dependencies or packaging script | Dashboard tests, asset packaging/type checking, committed dist consistency, bundled license validation and embedded Go handler tests; shell scripts also select workflow checks |
 | Dockerfile or Docker ignore rules | Hub, Link and Portal image builds |
 | Kubernetes manifests or their validation script | Render and validate Kubernetes overlays; shell scripts also select workflow checks |
 | License inventory or its generator | Go license checks and Dashboard packaging/license checks; the generator also selects workflow checks |
@@ -38,6 +38,12 @@ fail the gate.
 | Classification helpers | All optional checks, to validate the gate and its wiring |
 | Release workflow/helpers | Workflow checks, release policy/metadata checks and image builds |
 | Other workflow or shell scripts | Workflow checks |
+
+Dashboard PR checks use `pnpm install --frozen-lockfile`, rebuild the assets,
+and require `dashboard/dist` to match the committed files exactly. Modified,
+deleted, and untracked output files all fail the check and therefore the required
+gate. Commit regenerated assets with the corresponding source changes; this
+applies to ordinary PRs as well as release preparation.
 
 Go tests cover all packages when selected; PRs do not maintain a dependency-based
 package filter. Test-only Go changes select Go test and targeted race checks but
@@ -140,7 +146,10 @@ selected by the change policy.
 1. Prepare the dated changelog in a PR, pass CI, and merge it.
 2. Create the version tag at that commit, then publish its GitHub Release.
 3. Shared validation checks tag, changelog, and main ancestry.
-4. Binaries and all three images publish independently after validation.
+4. Binaries and all three images publish independently after validation. Both
+   embed the Dashboard dist committed in the release tag; publication does not
+   install frontend dependencies or rebuild Dashboard assets. PR CI verifies
+   that the committed assets match the frontend build.
 6. Completion verifies four archive checksums, anonymous access to all three
    images, Linux AMD64/ARM64, and release version/source/revision labels.
    Only then may the current non-prerelease update image `latest` tags.

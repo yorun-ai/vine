@@ -179,9 +179,11 @@ Keep user-facing strings synchronized between `src/i18n/dictionaries/cn.ts` and
 `en.ts`.
 
 Dashboard resources in `dashboard/dist` are committed with the source.
-Refresh them during release preparation using the packaging script.
-Docker embeds the committed dist directly, without a frontend build or Node.js
-toolchain. Release binary builds currently rebuild the frontend before compiling Vine.
+Refresh them with source changes using the packaging script. PR CI installs
+locked dependencies, rebuilds, and rejects any added, modified, or deleted dist
+files compared with the commit.
+Docker and Release binary builds embed the committed dist directly, without a
+frontend build or Node.js toolchain.
 To build an embedded Dashboard locally, run from the repository root:
 
 ```bash
@@ -193,7 +195,7 @@ The script type-checks and builds the frontend in a temporary directory. It
 copies all build output files unchanged into
 `internal/daemon/hub/src/server/mod/admin/dashboard/dist/`, preserving paths.
 Each file has one representation. The complete directory replaces the previous
-build, so old hashed files cannot survive. Generated files are committed during release preparation;
+build, so old hashed files cannot survive. Generated files are committed with the corresponding source changes;
 no placeholder files are generated.
 No archive or Go byte array is generated. A temporary Vite dependency report,
 plus imported CSS and font notices, is checked against the Dashboard section of
