@@ -8,6 +8,26 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.21.5] - 2026-09-20
+
+### Changed
+
+- Hub Dashboard build output is committed with the source and embedded directly
+  in local Go builds, release binaries, and container images. Building Vine no
+  longer requires installing frontend dependencies or rebuilding the Dashboard.
+- Dashboard sources and assets live together under the admin module. Build output
+  is stored without Brotli precompression, with fonts in a separate directory.
+  HTTP response compression remains available.
+- Dashboard PR checks rebuild with locked dependencies and reject differences
+  from committed assets. Tailwind excludes dist from source scanning to keep
+  repeated builds consistent.
+
+### Fixed
+
+- Restore `VINE_HUB_DASHBOARD_DEV_PROXY`: a non-empty value enables probing the
+  local Vite server and gives it priority while available. Otherwise Hub serves
+  embedded assets; Admin API requests always remain on Hub.
+
 ## [0.21.4] - 2026-09-19
 
 ### Added
@@ -1179,7 +1199,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.21.4...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.21.5...HEAD
+[0.21.5]: https://github.com/yorun-ai/vine/compare/v0.21.4...v0.21.5
 [0.21.4]: https://github.com/yorun-ai/vine/compare/v0.21.3...v0.21.4
 [0.21.3]: https://github.com/yorun-ai/vine/compare/v0.21.2...v0.21.3
 [0.21.2]: https://github.com/yorun-ai/vine/compare/v0.21.1...v0.21.2
