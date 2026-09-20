@@ -27,7 +27,7 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
 
 - Do not manually edit files under `internal/core/*/skeled`,
   `internal/daemon/hub/api/skeled`, or
-  `internal/daemon/hub/src/dashboard/src/skeled`.
+  `internal/daemon/hub/src/server/mod/admin/dashboard/src/skeled`.
 - Modify the corresponding `.skel` source and regenerate code with
   `bash script/gen-skel.sh [app|hub|link]`.
 - Before regenerating, verify that `skelc version` satisfies the current minimum
@@ -35,18 +35,17 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
 - Keep the import rewriting and formatting performed by `script/gen-skel.sh`.
   Generated runtime code intentionally imports internal packages.
 - Dashboard assets under
-  `internal/daemon/hub/src/server/mod/admin/assets/dashboard/` are generated and
-  ignored except for the tracked empty `.gitkeep`. Docker and Release run
-  `bash script/build-dashboard-assets.sh` before compiling; `go:embed` includes
-  the directory without a build tag. Keep `.gitkeep` empty and preserve it when
-  packaging so tracked files and release VCS metadata stay unchanged.
-- Hub serves embedded assets when `index.html` or `index.html.br` exists in the
-  embedded directory; otherwise it probes the local Dashboard development server.
-  Local Go builds also embed any assets left from previous packaging.
+  `internal/daemon/hub/src/server/mod/admin/dashboard/dist/` are generated and
+  committed with the source. Refresh them with
+  `bash script/build-dashboard-assets.sh` during release preparation.
+  The directory must contain real assets; do not add placeholder files.
+- Hub serves the Dashboard assets embedded from `dashboard/dist` directly.
+  Local Go builds embed the same directory. A non-empty
+  `VINE_HUB_DASHBOARD_DEV_PROXY` enables local Vite probing and gives an available
+  development server priority over embedded assets.
 - Packaging builds the frontend in a temporary directory and replaces the asset
-  directory only after all files are ready. Text uses Brotli only when smaller;
-  already compressed images and fonts retain their original bytes. Never commit
-  or manually edit generated assets.
+  directory only after all files are ready. All files retain their build output
+  bytes without additional compression. Commit generated assets during release preparation; do not manually edit them.
 
 ## Public API Boundaries
 
@@ -143,16 +142,17 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
   collect it.
 - After Go dependency or Dashboard bundled JS/CSS/font dependency changes,
   install Dashboard dependencies with
-  `pnpm --dir internal/daemon/hub/src/dashboard install --frozen-lockfile`,
+  `pnpm --dir internal/daemon/hub/src/server/mod/admin/dashboard install --frozen-lockfile`,
   then run `bash script/gen-third-party-licenses.sh`
   and include the unified `THIRD_PARTY_LICENSES.txt` in the change. This inventory
   covers Go and Dashboard; do not ship a separate license file in Dashboard assets.
   Packaging checks the frontend section; Go CI checks only the Go section.
 - Regenerate contracts with `bash script/gen-skel.sh all` and inspect drift.
   Generate embedded Dashboard assets only with the documented script.
-- Confirm Docker and Release build the embedded Dashboard with the Node.js and
-  pnpm versions pinned in `.github/workflows/ci-dashboard.yml`; the generated
-  assets are ignored and must not enter release or feature commits.
+- Docker builds embed the committed Dashboard dist directly and do not install
+  Node.js or rebuild the frontend. Dashboard packaging and Release binary builds
+  use the Node.js and pnpm versions pinned in `.github/workflows/ci-dashboard.yml`;
+  generated assets are committed in release-preparation PRs, not ordinary feature PRs.
 - Versions come from release tags and build-time `ldflags`, not source constants.
 
 ## Tests

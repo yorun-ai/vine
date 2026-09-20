@@ -279,6 +279,6 @@ Dashboard 打包的 JavaScript、CSS 和字体。Release 归档携带这两个�
 将它们放在 `/usr/share/licenses/vine/`。依赖变化后，在安装 Node.js 和 pnpm 的环境中运行：
 
 ```bash
-pnpm --dir internal/daemon/hub/src/dashboard install --frozen-lockfile
+pnpm --dir internal/daemon/hub/src/server/mod/admin/dashboard install --frozen-lockfile
 bash script/gen-third-party-licenses.sh
 ```

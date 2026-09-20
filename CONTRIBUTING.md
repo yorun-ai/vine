@@ -112,7 +112,7 @@ Do not manually edit generated files under:
 
 - `internal/core/*/skeled`
 - `internal/daemon/hub/api/skeled`
-- `internal/daemon/hub/src/dashboard/src/skeled`
+- `internal/daemon/hub/src/server/mod/admin/dashboard/src/skeled`
 
 Modify the corresponding `.skel` contracts and run the repository script from
 the repository root:
@@ -154,21 +154,22 @@ versions and keep their language-switch links intact.
 To start the Dashboard development server from the repository root:
 
 ```bash
-pnpm --dir internal/daemon/hub/src/dashboard install
+pnpm --dir internal/daemon/hub/src/server/mod/admin/dashboard install
 bash script/dev-hub-dashboard.sh
 ```
 
 The script starts Vite on port 7098 and forwards additional arguments to Vite.
 It fails if the port is occupied so Hub's development proxy keeps targeting the
-correct server. Start Hub separately and open its Dashboard URL; when the local
-binary has no embedded assets, it automatically probes Vite at `localhost:7098`.
-If Vite is not running, the Dashboard returns 404 and tells you to run
-`script/dev-hub-dashboard.sh`.
+correct server. Start Hub separately with `VINE_HUB_DASHBOARD_DEV_PROXY=1`
+and open its Dashboard URL. A non-empty value enables probing Vite at
+`localhost:7098`; while available it takes priority over embedded assets.
+Otherwise Hub serves the embedded Dashboard. An unset or empty value disables
+probing. Admin API requests always stay on Hub.
 
 For Dashboard source changes, run:
 
 ```bash
-cd internal/daemon/hub/src/dashboard
+cd internal/daemon/hub/src/server/mod/admin/dashboard
 pnpm install
 pnpm typecheck
 pnpm build
@@ -177,11 +178,10 @@ pnpm build
 Keep user-facing strings synchronized between `src/i18n/dictionaries/cn.ts` and
 `en.ts`.
 
-A fresh checkout has only an empty `.gitkeep` in the assets directory, so Hub
-probes Vite. If `index.html` or `index.html.br` is present when Go compiles, Hub
-serves that embedded Dashboard instead. Local builds also use previously packaged
-assets; remove generated files while keeping `.gitkeep` to return to Vite.
-Docker and Release build the frontend before compiling Vine.
+Dashboard resources in `dashboard/dist` are committed with the source.
+Refresh them during release preparation using the packaging script.
+Docker embeds the committed dist directly, without a frontend build or Node.js
+toolchain. Release binary builds currently rebuild the frontend before compiling Vine.
 To build an embedded Dashboard locally, run from the repository root:
 
 ```bash
@@ -190,11 +190,11 @@ GOWORK=off go build -o bin/vine ./cmd/vine
 ```
 
 The script type-checks and builds the frontend in a temporary directory. It
-writes text as Brotli only when smaller and copies other files unchanged into
-`internal/daemon/hub/src/server/mod/admin/assets/dashboard/`, preserving paths.
+copies all build output files unchanged into
+`internal/daemon/hub/src/server/mod/admin/dashboard/dist/`, preserving paths.
 Each file has one representation. The complete directory replaces the previous
-build, so old hashed files cannot survive. Generated files are ignored by Git;
-the empty tracked `.gitkeep` is preserved and is never served over HTTP.
+build, so old hashed files cannot survive. Generated files are committed during release preparation;
+no placeholder files are generated.
 No archive or Go byte array is generated. A temporary Vite dependency report,
 plus imported CSS and font notices, is checked against the Dashboard section of
 `THIRD_PARTY_LICENSES.txt` before assets are replaced. The report is removed before
@@ -206,8 +206,8 @@ in the change. Release archives include it beside the binary; all three images
 include it and `LICENSE` in `/usr/share/licenses/vine/`.
 
 All builds use `go:embed` with no build tag. A fresh checkout needs no frontend
-output or Node.js toolchain. Asset Server serves precompressed Brotli directly
-when accepted by the client and decodes it otherwise. Missing static files
+build or Node.js toolchain because Dashboard assets are committed. Asset Server
+compresses text responses dynamically according to client support. Missing static files
 return 404; HTML navigation falls back to `index.html`.
 
 ## Kubernetes Manifests

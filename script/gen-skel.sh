@@ -181,7 +181,7 @@ generate_hub_skel() {
   generate_hub_skel_domain \
     "${repo_dir}/internal/daemon/hub/skel/admin" \
     "${repo_dir}/internal/daemon/hub/api/skeled/admin" \
-    "${repo_dir}/internal/daemon/hub/src/dashboard/src/skeled/admin"
+    "${repo_dir}/internal/daemon/hub/src/server/mod/admin/dashboard/src/skeled/admin"
 }
 
 generate_link_skel() {

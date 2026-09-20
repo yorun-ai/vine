@@ -42,12 +42,11 @@ internal/daemon/hub/
 
 ## Dashboard Packaging
 
-- Builds containing only the empty `.gitkeep` placeholder automatically probe the Vite server that `script/dev-hub-dashboard.sh` starts on `localhost:7098`. If it is not running, Hub returns 404 with the command to start it.
-- After changing Dashboard source, run `pnpm typecheck` and `pnpm build` in `src/dashboard`.
-- Container and release builds generate `src/server/mod/admin/assets/dashboard/` immediately before compiling Vine. Generated files are ignored; the empty tracked `.gitkeep` is preserved.
+- After changing Dashboard source, run `pnpm typecheck` and `pnpm build` in `src/server/mod/admin/dashboard`.
+- Container builds embed the committed `src/server/mod/admin/dashboard/dist/` directly without rebuilding the frontend. Refresh these assets during release preparation. Release binary builds currently rebuild them before compiling Vine.
 - Keep user-facing text synchronized between `src/i18n/dictionaries/cn.ts` and `en.ts`.
 
-The Dashboard source lives in `src/dashboard`. At runtime, release and container builds serve the Dashboard embedded in the Vine binary. A build without an embedded `index.html` or `index.html.br` uses the local Vite server. Local builds also embed previously packaged assets.
+The Dashboard source lives in `src/server/mod/admin/dashboard`. At runtime, release and container builds serve the Dashboard embedded in the Vine binary. Local builds embed the same committed `dashboard/dist` directory. Set `VINE_HUB_DASHBOARD_DEV_PROXY=1` on Hub to probe Vite at `localhost:7098` and prefer it while available; otherwise Hub serves embedded assets. An unset or empty value disables probing. Admin API requests always stay on Hub.
 
 Generate embedded assets with the script; do not edit generated files by hand:
 
@@ -57,8 +56,7 @@ GOWORK=off go build -o bin/vine ./cmd/vine
 ```
 
 The script type-checks and builds into a temporary directory, then preserves the
-output paths while choosing one representation per file: Brotli for text when
-smaller, original bytes for images, fonts, and other files. It replaces the
+output paths and bytes without additional compression. It replaces the
 complete assets directory only after packaging succeeds. A temporary Vite report
 collects bundled JS licenses; imported CSS/font packages and the maintained uiw
 notice supplement it. Packaging checks these against the Dashboard section of
@@ -67,14 +65,11 @@ inventory with `bash script/gen-third-party-licenses.sh` after changing bundled
 dependencies. No archive, Go byte array, or separate Dashboard license file is
 shipped. Release archives include the unified inventory; all three images include
 it and `LICENSE` in `/usr/share/licenses/vine/`. Every Go build embeds the directory
-through `go:embed`, without a build tag. Packaging preserves the tracked empty
-`.gitkeep` so it does not make the release checkout dirty; HTTP never serves it.
-To switch a previously packaged local checkout back to Vite, remove generated
-assets while keeping `.gitkeep`, then rebuild Go.
+through `go:embed`, without a build tag. The committed directory contains real assets and is refreshed during release preparation.
 
 Dashboard uses the shared Asset Server for MIME types, HEAD, and compression
-negotiation. Accepted Brotli files are sent directly; clients without Brotli
-support receive a decoded or negotiated representation. Already compressed
+negotiation. Text responses are compressed dynamically according to client
+support. Already compressed
 images and fonts bypass dynamic compression. HTML navigation falls back to
 `index.html`; missing static files return 404.
 
@@ -304,7 +299,7 @@ without a value; `update` and `remove` keep addressing the stored row by `id`.
 Hub maintains independent Skel source directories at `skel/control` and
 `skel/admin`. Go code is generated into the matching
 `api/skeled/control` and `api/skeled/admin` packages; TypeScript code is
-generated only for admin into `src/dashboard/src/skeled/admin`. Use the
+generated only for admin into `src/server/mod/admin/dashboard/src/skeled/admin`. Use the
 top-level script:
 
 ```bash

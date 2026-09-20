@@ -1,0 +1,15 @@
+# Dependencies and development caches
+node_modules/
+.pnpm-store/
+.vite/
+.tanstack/
+
+# Temporary packaging directories (dist is committed)
+.dashboard-*/
+
+# Local environment and system files
+.DS_Store
+*.local
+.env
+.env.*
+!.env.example

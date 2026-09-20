@@ -196,7 +196,7 @@ func TestAppConfigServiceRemoveOnlyAllowsUnusedConfig(t *testing.T) {
 }
 
 func TestEditorScalarFormatsMatchRuntime(t *testing.T) {
-	data, err := os.ReadFile("../../../dashboard/src/features/app/testdata/config-scalar.json")
+	data, err := os.ReadFile("../../mod/admin/dashboard/src/features/app/testdata/config-scalar.json")
 	require.NoError(t, err)
 	var cases []struct {
 		Type  string         `json:"type"`

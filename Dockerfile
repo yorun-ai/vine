@@ -2,18 +2,6 @@
 
 ARG GO_VERSION=1.27.0
 
-FROM --platform=$BUILDPLATFORM node:24.11.0-slim AS dashboard
-
-WORKDIR /src
-RUN corepack enable \
-    && corepack prepare pnpm@11.15.0 --activate
-COPY internal/daemon/hub/src/dashboard/package.json internal/daemon/hub/src/dashboard/pnpm-lock.yaml internal/daemon/hub/src/dashboard/pnpm-workspace.yaml ./internal/daemon/hub/src/dashboard/
-RUN pnpm --dir internal/daemon/hub/src/dashboard install --frozen-lockfile
-COPY internal/daemon/hub/src/dashboard/ ./internal/daemon/hub/src/dashboard/
-COPY script/build-dashboard-assets.sh ./script/build-dashboard-assets.sh
-COPY THIRD_PARTY_LICENSES.txt ./THIRD_PARTY_LICENSES.txt
-RUN bash script/build-dashboard-assets.sh
-
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION} AS build
 
 ARG TARGETOS=linux
@@ -27,8 +15,8 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 
+# The committed Dashboard dist is embedded directly by the Go build.
 COPY . .
-COPY --from=dashboard /src/internal/daemon/hub/src/server/mod/admin/assets/dashboard/ internal/daemon/hub/src/server/mod/admin/assets/dashboard/
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -trimpath -ldflags="-s -w -X go.yorun.ai/vine/buildinfo.ldModuleVersion=${VERSION}" \
     -o /out/vine ./cmd/vine

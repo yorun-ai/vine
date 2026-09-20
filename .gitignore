@@ -16,25 +16,8 @@ bin/
 *.out
 *.prof
 
-# Dashboard assets are generated for release/container builds.
-internal/daemon/hub/src/server/mod/admin/assets/dashboard/*
-!internal/daemon/hub/src/server/mod/admin/assets/dashboard/.gitkeep
-internal/daemon/hub/src/server/mod/admin/assets/.dashboard-*/
 coverage/
 coverage.*
-
-# Node / frontend artifacts
-node_modules/
-dist/
-build/
-.vite/
-.turbo/
-.next/
-.nuxt/
-
-# Local package manager caches
-.cache/
-.pnpm-store/
 
 # Runtime data
 *.sqlite

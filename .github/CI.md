@@ -67,7 +67,8 @@ Hub, Link and Portal images in the PR. Ordinary Go source and backend resource c
 compile `cmd/vine` in the Go checks job with the image build's pinned Go version,
 `CGO_ENABLED=0`, Linux AMD64 target, trimpath, and linker flags. This catches
 static compilation failures without rebuilding the container. The image check builds all three targets on one builder, reusing the shared
-Dashboard, Go and runtime layers; it does not test service startup.
+Go and runtime layers; it does not test service startup. Images embed the
+committed Dashboard dist directly, without rebuilding the frontend.
 Main runs cache warmup only; tags do not run CI. PR image builds read the shared
 cache without exporting it. Pure frontend changes select Dashboard packaging and
 embedded handler tests, not a Go image build. Dashboard and Kubernetes steps live
@@ -126,7 +127,7 @@ Dependabot owns dependency vulnerability alerts and automated security update
 PRs for Go and Dashboard dependencies. Keep the dependency graph, Dependabot
 alerts, and Dependabot security updates enabled in GitHub repository settings.
 Verify that the graph recognizes `go.mod` and
-`internal/daemon/hub/src/dashboard/pnpm-lock.yaml`.
+`internal/daemon/hub/src/server/mod/admin/dashboard/pnpm-lock.yaml`.
 
 CI does not run `pnpm audit` or `govulncheck`, and there is no scheduled or
 manual audit workflow. Dependabot alerts monitor the default branch rather than

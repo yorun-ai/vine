@@ -9,19 +9,12 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"testing/fstest"
 
 	coreapp "go.yorun.ai/vine/internal/core/app"
 )
 
 func TestDashboardHandlerServesEmbeddedIndex(t *testing.T) {
 	response := getAsset("/")
-	if dashboardAssets == nil {
-		if response.Code != http.StatusNotFound || !strings.Contains(response.Body.String(), "script/dev-hub-dashboard.sh") {
-			t.Fatalf("expected development hint, got %d: %s", response.Code, response.Body.String())
-		}
-		return
-	}
 	if response.Code != http.StatusOK {
 		t.Fatalf("unexpected status code: %d", response.Code)
 	}
@@ -32,12 +25,6 @@ func TestDashboardHandlerServesEmbeddedIndex(t *testing.T) {
 
 func TestDashboardHandlerServesEmbeddedAsset(t *testing.T) {
 	response := getAsset("/brand/vinehub.png")
-	if dashboardAssets == nil {
-		if response.Code != http.StatusNotFound {
-			t.Fatalf("unexpected status code: %d", response.Code)
-		}
-		return
-	}
 
 	if response.Code != http.StatusOK {
 		t.Fatalf("unexpected status code: %d", response.Code)
@@ -52,12 +39,6 @@ func TestDashboardHandlerServesEmbeddedAsset(t *testing.T) {
 
 func TestDashboardHandlerFallsBackToIndexForSpaRoute(t *testing.T) {
 	response := getAsset("/settings/dashboard-port")
-	if dashboardAssets == nil {
-		if response.Code != http.StatusNotFound {
-			t.Fatalf("unexpected status code: %d", response.Code)
-		}
-		return
-	}
 
 	if response.Code != http.StatusOK {
 		t.Fatalf("unexpected status code: %d", response.Code)
@@ -77,81 +58,11 @@ func TestDashboardHandlerReturnsNotFoundForMissingFile(t *testing.T) {
 	}
 }
 
-// dashboardDevProxy serves a development server beside Hub when a developer runs
-// the local Dashboard script, so a Dashboard source change needs no build.
-func TestDashboardDevProxyServesTheDevelopmentServer(t *testing.T) {
-	if dashboardAssets != nil {
-		t.Skip("embedded builds do not probe a development server")
-	}
-	devServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		_, _ = writer.Write([]byte("development build " + request.URL.Path))
-	}))
-	t.Cleanup(devServer.Close)
-	t.Cleanup(func() { dashboardDevServerURL = "http://localhost:7098" })
-	dashboardDevServerURL = devServer.URL
-
-	devProxy := dashboardDevProxy()
-	t.Cleanup(devProxy.Close)
-	server := &Server{rpcHTTPHandler: http.NotFoundHandler(), dashboardHandler: dashboardHandler(), dashboardDevProxy: devProxy}
-
-	response := httptest.NewRecorder()
-	server.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "http://hub.local/app/config", nil))
-	if response.Code != http.StatusOK {
-		t.Fatalf("unexpected status code: %d", response.Code)
-	}
-	if body := response.Body.String(); body != "development build /app/config" {
-		t.Fatalf("expected the development server response, got: %s", body)
-	}
-
-	// The Admin API keeps answering Hub, not the development server.
-	response = httptest.NewRecorder()
-	server.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "http://hub.local/api/invoke/InfoService/GetInfo", nil))
-	if response.Code != http.StatusNotFound {
-		t.Fatalf("unexpected api status code: %d", response.Code)
-	}
-}
-
-func TestDashboardDevProxyReturnsDevelopmentHintWhenUnavailable(t *testing.T) {
-	if dashboardAssets != nil {
-		t.Skip("embedded builds do not probe a development server")
-	}
-	t.Cleanup(func() { dashboardDevServerURL = "http://localhost:7098" })
-	// Nothing listens on the port the development server script would use.
-	dashboardDevServerURL = "http://127.0.0.1:1"
-
-	devProxy := dashboardDevProxy()
-	t.Cleanup(devProxy.Close)
-	server := &Server{rpcHTTPHandler: http.NotFoundHandler(), dashboardHandler: dashboardHandler(), dashboardDevProxy: devProxy}
-
-	response := httptest.NewRecorder()
-	server.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "http://hub.local/app/config", nil))
-	if response.Code != http.StatusNotFound || !strings.Contains(response.Body.String(), "script/dev-hub-dashboard.sh") {
-		t.Fatalf("expected the development hint, got: %d %s", response.Code, response.Body.String())
-	}
-}
-
-func TestDashboardDevProxyIsAutomaticWithoutEmbeddedBuild(t *testing.T) {
-	if dashboardAssets != nil {
-		if dashboardDevProxy() != nil {
-			t.Fatal("embedded builds must not probe the development server")
-		}
-		return
-	}
-	devProxy := dashboardDevProxy()
-	if devProxy == nil {
-		t.Fatal("expected automatic development proxy")
-	}
-	t.Cleanup(devProxy.Close)
-}
-
 // TestDashboardBuildCallsTheAdminApiPath guards the path the listener serves: the
 // Admin API answers one path there and the Dashboard build on every other, so the
 // build Hub hands the browser has to call the API path. A build that called
 // another path would reach the entry document instead of the API.
 func TestDashboardBuildCallsTheAdminApiPath(t *testing.T) {
-	if dashboardAssets == nil {
-		t.Skip("Dashboard assets are generated for embedded builds")
-	}
 	script := dashboardScriptPath(getAsset("/").Body.String())
 	if script == "" {
 		t.Fatal("expected the index to load a build script")
@@ -182,46 +93,8 @@ func getAsset(target string) *httptest.ResponseRecorder {
 	return response
 }
 
-func TestDashboardAssetsRequireAnEntryDocument(t *testing.T) {
-	for _, tc := range []struct {
-		name string
-		file string
-		mode fs.FileMode
-		want bool
-	}{
-		{name: "placeholder only", file: ".gitkeep"},
-		{name: "leftover asset", file: "assets/old.js"},
-		{name: "directory is not an entry document", file: "index.html", mode: fs.ModeDir},
-		{name: "plain entry", file: "index.html", want: true},
-		{name: "Brotli entry", file: "index.html.br", want: true},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			files := fstest.MapFS{
-				"assets/dashboard/.gitkeep": &fstest.MapFile{},
-			}
-			files["assets/dashboard/"+tc.file] = &fstest.MapFile{Mode: tc.mode}
-			if got := newDashboardAssets(files) != nil; got != tc.want {
-				t.Fatalf("embedded Dashboard detected = %v, want %v", got, tc.want)
-			}
-		})
-	}
-}
-
-func TestDashboardDoesNotServePlaceholder(t *testing.T) {
-	request := httptest.NewRequest(http.MethodGet, "http://hub.local/.gitkeep", nil)
-	request.Header.Set("Accept", "text/html")
-	response := httptest.NewRecorder()
-	dashboardHandler().ServeHTTP(response, request)
-	if response.Code != http.StatusNotFound {
-		t.Fatalf("placeholder status = %d, want 404", response.Code)
-	}
-}
-
-func TestDashboardServesEmbeddedBrotliWithoutRecompression(t *testing.T) {
-	if dashboardAssets == nil {
-		t.Skip("Dashboard assets have not been built")
-	}
-	compressed, err := dashboardFS.ReadFile("assets/dashboard/index.html.br")
+func TestDashboardServesEmbeddedBuildOutput(t *testing.T) {
+	content, err := dashboardFS.ReadFile("dashboard/dist/index.html")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -229,15 +102,14 @@ func TestDashboardServesEmbeddedBrotliWithoutRecompression(t *testing.T) {
 	for _, method := range []string{http.MethodGet, http.MethodHead} {
 		request := httptest.NewRequest(method, "http://hub.local/status/task-queue", nil)
 		request.Header.Set("Accept", "text/html")
-		request.Header.Set("Accept-Encoding", "br")
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)
-		if response.Code != http.StatusOK || response.Header().Get("Content-Encoding") != "br" ||
+		if response.Code != http.StatusOK || response.Header().Get("Content-Encoding") != "" ||
 			response.Header().Get("Vary") != "Accept-Encoding" || !strings.HasPrefix(response.Header().Get("Content-Type"), "text/html") {
 			t.Fatalf("unexpected %s response: %d %v", method, response.Code, response.Header())
 		}
-		if method == http.MethodGet && !bytes.Equal(response.Body.Bytes(), compressed) {
-			t.Fatal("response must contain the exact embedded Brotli bytes")
+		if method == http.MethodGet && !bytes.Equal(response.Body.Bytes(), content) {
+			t.Fatal("response must contain the exact embedded HTML bytes")
 		}
 		if method == http.MethodHead && response.Body.Len() != 0 {
 			t.Fatal("HEAD response must have no body")
@@ -261,8 +133,8 @@ func TestDashboardServesEmbeddedBrotliWithoutRecompression(t *testing.T) {
 	wg.Wait()
 }
 
-func TestDashboardBundleContainsOneRepresentationPerFile(t *testing.T) {
-	err := fs.WalkDir(dashboardFS, "assets/dashboard", func(filename string, entry fs.DirEntry, err error) error {
+func TestDashboardBundleExcludesLicenseReports(t *testing.T) {
+	err := fs.WalkDir(dashboardFS, "dashboard/dist", func(filename string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -272,14 +144,58 @@ func TestDashboardBundleContainsOneRepresentationPerFile(t *testing.T) {
 		if strings.Contains(filename, "THIRD_PARTY_LICENSES") {
 			t.Errorf("unexpected generated license file: %s", filename)
 		}
-		if strings.HasSuffix(filename, ".br") {
-			if _, err := fs.Stat(dashboardFS, strings.TrimSuffix(filename, ".br")); err == nil {
-				t.Errorf("both original and Brotli embedded: %s", filename)
-			}
-		}
 		return nil
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestDashboardDevProxyRequiresEnvironment(t *testing.T) {
+	t.Setenv(dashboardDevProxyEnv, "")
+	if proxy := dashboardDevProxy(); proxy != nil {
+		proxy.Close()
+		t.Fatal("empty environment must disable development server probing")
+	}
+}
+
+func TestDashboardDevProxyPrefersAvailableServer(t *testing.T) {
+	t.Setenv(dashboardDevProxyEnv, "1")
+	devServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		_, _ = writer.Write([]byte("development " + request.URL.Path))
+	}))
+	t.Cleanup(devServer.Close)
+	originalURL := dashboardDevServerURL
+	dashboardDevServerURL = devServer.URL
+	t.Cleanup(func() { dashboardDevServerURL = originalURL })
+	proxy := dashboardDevProxy()
+	if proxy == nil {
+		t.Fatal("environment must enable probing even with embedded assets")
+	}
+	t.Cleanup(proxy.Close)
+	server := &Server{
+		rpcHTTPHandler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			_, _ = writer.Write([]byte("admin api"))
+		}),
+		dashboardHandler:  dashboardHandler(),
+		dashboardDevProxy: proxy,
+	}
+	get := func(path string) *httptest.ResponseRecorder {
+		request := httptest.NewRequest(http.MethodGet, "http://hub.local"+path, nil)
+		request.Header.Set("Accept", "text/html")
+		response := httptest.NewRecorder()
+		server.ServeHTTP(response, request)
+		return response
+	}
+	if response := get("/app/config"); response.Code != http.StatusOK || response.Body.String() != "development /app/config" {
+		t.Fatalf("expected development server priority: %d %s", response.Code, response.Body.String())
+	}
+	if response := get("/api/invoke/InfoService/GetInfo"); response.Body.String() != "admin api" {
+		t.Fatalf("Admin API must stay on Hub: %s", response.Body.String())
+	}
+	devServer.Close()
+	proxy.refreshAvailable()
+	if response := get("/app/config"); response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `<div id="app"></div>`) {
+		t.Fatalf("expected embedded fallback: %d %s", response.Code, response.Body.String())
 	}
 }

@@ -102,12 +102,12 @@ jobs:
         with:
           node-version: 24.11.0
           cache: pnpm
-          cache-dependency-path: source/internal/daemon/hub/src/dashboard/pnpm-lock.yaml
+          cache-dependency-path: source/internal/daemon/hub/src/server/mod/admin/dashboard/pnpm-lock.yaml
 
       - name: Build embedded Dashboard assets
         working-directory: source
         run: |
-          pnpm --dir internal/daemon/hub/src/dashboard install --frozen-lockfile
+          pnpm --dir internal/daemon/hub/src/server/mod/admin/dashboard install --frozen-lockfile
           bash script/build-dashboard-assets.sh
 
       - name: Build archives
