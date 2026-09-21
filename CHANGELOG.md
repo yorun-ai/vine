@@ -8,6 +8,15 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.22.2] - 2026-09-21
+
+### Fixed
+
+- Portal Web sites preserve native `Authorization` credentials when the configured
+  actor has no auth block, allowing Web handlers to authenticate requests themselves.
+  Vine actor metadata is set to anonymous. Actors with auth enabled continue to
+  validate credentials through Vine and reject authentication failures.
+
 ## [0.22.1] - 2026-09-21
 
 ### Changed
@@ -1252,7 +1261,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.22.1...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.22.2...HEAD
+[0.22.2]: https://github.com/yorun-ai/vine/compare/v0.22.1...v0.22.2
 [0.22.1]: https://github.com/yorun-ai/vine/compare/v0.22.0...v0.22.1
 [0.22.0]: https://github.com/yorun-ai/vine/compare/v0.21.5...v0.22.0
 [0.21.5]: https://github.com/yorun-ai/vine/compare/v0.21.4...v0.21.5
