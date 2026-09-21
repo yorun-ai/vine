@@ -129,6 +129,9 @@ func MustGetActorInfo[T any](metaActor Actor) T {
 }
 
 func GetActorInfoByType(metaActor Actor, kind reflect.Type) (any, bool) {
+	if metaActor == nil {
+		return nil, false
+	}
 	actor := metaActor.(*_Actor)
 	if actor.kind != ActorTypeAuthenticated {
 		return nil, false

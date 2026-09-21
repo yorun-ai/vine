@@ -212,6 +212,26 @@ func TestGetActorInfoByType(t *testing.T) {
 	}
 }
 
+func TestGetActorInfoWithoutAuthenticatedActor(t *testing.T) {
+	for name, actor := range map[string]Actor{
+		"nil":            nil,
+		"absent":         NewAbsentActor(),
+		"anonymous":      NewAnonymousActor(),
+		"authenticating": NewAuthenticatingActor(),
+	} {
+		t.Run(name, func(t *testing.T) {
+			info, ok := GetActorInfoByType(actor, reflect.TypeFor[*_TestActorInfo]())
+			if ok || info != nil {
+				t.Fatalf("expected no actor info, got %#v, %v", info, ok)
+			}
+			typedInfo, ok := GetActorInfo[*_TestActorInfo](actor)
+			if ok || typedInfo != nil {
+				t.Fatalf("expected no typed actor info, got %#v, %v", typedInfo, ok)
+			}
+		})
+	}
+}
+
 func TestActorBase64RoundTripWithImpersonatedTypePanics(t *testing.T) {
 	actor := &_Actor{kind: ActorTypeImpersonated}
 

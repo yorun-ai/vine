@@ -70,3 +70,19 @@ func TestBindActorAllowsNullableUnmatchedActorInfos(t *testing.T) {
 		t.Fatalf("unexpected actor info B: %#v", consumer.B)
 	}
 }
+
+func TestBindActorAllowsMissingActorInfo(t *testing.T) {
+	ensureUtilTestActorsRegistered()
+	ctx := meta.NewContext(context.Background(), nil, nil, nil)
+	injector := di.NewInjector(func(b *di.Binder) {
+		b.Bind(di.T[meta.Context]()).ToInstance(ctx)
+		bindActor(b)
+		b.Bind(di.T[*_UtilTestActorInfoConsumer]())
+	})
+
+	var consumer *_UtilTestActorInfoConsumer
+	injector.Resolve(&consumer)
+	if consumer.A != nil || consumer.B != nil {
+		t.Fatalf("expected nil actor infos, got %#v", consumer)
+	}
+}
