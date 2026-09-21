@@ -100,8 +100,10 @@ func (a *Access) AuthWeb(operation *WebOperation) bool {
 	operation.actorSchema = actorSchema
 
 	if !operation.actorSchema.AuthEnabled {
-		operation.writeError(ex.ClientForbidden, "web actor auth is not enabled")
-		return false
+		// This actor does not delegate authentication to Vine. Leave native
+		// credentials for the Web handler and replace untrusted actor metadata.
+		operation.setActor(meta.NewAnonymousActor())
+		return true
 	}
 
 	return operation.Auth()

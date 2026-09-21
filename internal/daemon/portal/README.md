@@ -73,4 +73,6 @@ In inproc and standalone modes:
 
 Use normal process mode to validate real network entries, TLS listeners, cross-process endpoint reachability, or registration lease expiry.
 
+A WEBGW site requires both `actorSkelName` and `actorVia`. When the actor has authentication disabled, Portal preserves the native Authorization header and replaces inbound actor metadata with an anonymous actor. When actor authentication is enabled, Portal validates supplied credentials through Vine and rejects failures without falling back to native authentication. An unknown configured actor is still rejected when credentials are supplied. RPCGW authentication is unchanged.
+
 When changing entry, discovery, authentication, or forwarding behavior, validate standalone/inproc and normal network deployments separately. Inproc mode establishes routing and subscription semantics only; it does not establish correct real-listener, TLS, disconnection, or lease behavior.
