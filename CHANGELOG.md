@@ -8,6 +8,13 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.22.3] - 2026-09-21
+
+### Fixed
+
+- Actor-info injection no longer panics when an Rpc call has no actor, such as
+  calls originating from background tasks. Nullable actor-info fields receive nil.
+
 ## [0.22.2] - 2026-09-21
 
 ### Fixed
@@ -1261,7 +1268,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.22.2...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.22.3...HEAD
+[0.22.3]: https://github.com/yorun-ai/vine/compare/v0.22.2...v0.22.3
 [0.22.2]: https://github.com/yorun-ai/vine/compare/v0.22.1...v0.22.2
 [0.22.1]: https://github.com/yorun-ai/vine/compare/v0.22.0...v0.22.1
 [0.22.0]: https://github.com/yorun-ai/vine/compare/v0.21.5...v0.22.0
