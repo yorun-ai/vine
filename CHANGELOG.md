@@ -8,6 +8,35 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-09-23
+
+### Added
+
+- Redis components support `redis+memory://name[/dbIndex]` for process-local
+  caches and locks without an external server. Named instances share data within
+  one process, support databases 0–15, and expire keys using wall-clock time.
+  Idle expired data is reclaimed every 60 seconds; the final reference release
+  stops the instance and discards its data.
+
+### Changed
+
+- External Redis components with identical endpoint strings share a reference-counted
+  client pool. Memory Redis components share pools by instance name and database.
+  Pools close only after their last component reference is released.
+- Redis clients reject `SELECT` commands targeting a database other than the one
+  configured in their endpoint. Pipelines containing such commands are rejected
+  before any command in the batch executes.
+- Modernize Go implementations and generated enum JSON formatting while preserving
+  existing serialization output.
+
+### Upgrade Notes
+
+- Use separate Redis endpoints to access different databases instead of issuing
+  `SELECT` to change a shared client's database.
+- Memory Redis is ephemeral and process-local. Identical URLs in separate processes
+  do not share cached data or coordinate locks; use external Redis for multi-process
+  deployments that require shared state or locking.
+
 ## [0.22.3] - 2026-09-21
 
 ### Fixed
@@ -1268,7 +1297,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.22.3...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.23.0...HEAD
+[0.23.0]: https://github.com/yorun-ai/vine/compare/v0.22.3...v0.23.0
 [0.22.3]: https://github.com/yorun-ai/vine/compare/v0.22.2...v0.22.3
 [0.22.2]: https://github.com/yorun-ai/vine/compare/v0.22.1...v0.22.2
 [0.22.1]: https://github.com/yorun-ai/vine/compare/v0.22.0...v0.22.1
