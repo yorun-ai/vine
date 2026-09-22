@@ -88,3 +88,26 @@ func TestRedisManagerBindProvidesRedis(t *testing.T) {
 	assert.Same(t, component, consumer.Redis)
 	assert.Same(t, manager.client, consumer.Redis.Cmdable)
 }
+
+type memoryRedis struct{ Redis }
+
+func (*memoryRedis) InitOption(option *Option) { option.Endpoint = "redis+memory://cache" }
+
+func TestMemoryRedisComponentsShareClient(t *testing.T) {
+	first, second := new(memoryRedis), new(memoryRedis)
+	a, b := new(RedisManager), new(RedisManager)
+	a.InitComponent(first)
+	defer a.AfterAppStop()
+	b.InitComponent(second)
+	defer b.AfterAppStop()
+	require.Same(t, a.client, b.client)
+	require.NoError(t, first.Set(t.Context(), "shared", "value", 0).Err())
+	a.AfterAppStop()
+	require.Equal(t, "value", second.Get(t.Context(), "shared").Val())
+	b.AfterAppStop()
+	c := new(RedisManager)
+	c.InitComponent(new(memoryRedis))
+	defer c.AfterAppStop()
+	require.NotSame(t, b.client, c.client)
+	require.EqualValues(t, 0, c.client.Exists(t.Context(), "shared").Val())
+}

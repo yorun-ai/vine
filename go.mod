@@ -5,6 +5,9 @@ go 1.27.0
 require (
 	cloud.google.com/go v0.123.0
 	github.com/Masterminds/semver/v3 v3.5.0
+	// TODO: Upgrade miniredis to a stable release containing Dial and ClockTTL.
+	// Recheck the cleanupLoop implementation-dependent trick in infra/redis/memory.go.
+	github.com/alicebob/miniredis/v2 v2.39.1-0.20260919065521-ee67e4deb7b4
 	github.com/andybalholm/brotli v1.2.4
 	github.com/fxamacker/cbor/v2 v2.9.3
 	github.com/gin-gonic/gin v1.12.0
@@ -73,6 +76,7 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.3.2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
+	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.mongodb.org/mongo-driver/v2 v2.5.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect

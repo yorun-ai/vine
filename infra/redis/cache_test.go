@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	goredis "github.com/redis/go-redis/v9"
@@ -398,5 +399,28 @@ func TestCacheDeletePanicsOnRedisError(t *testing.T) {
 
 	assert.Panics(t, func() {
 		cache.Delete("1")
+	})
+}
+
+func TestMemoryCache(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		component := new(memoryRedis)
+		manager := new(RedisManager)
+		manager.InitComponent(component)
+		defer manager.AfterAppStop()
+		cache := component.NewCache[string](ctx, "test")
+		cache.Set("key", "value", time.Second)
+		value, ok := cache.Get("key")
+		require.True(t, ok)
+		require.Equal(t, "value", value)
+		time.Sleep(2 * time.Second)
+		_, ok = cache.Get("key")
+		require.False(t, ok)
+		cache.Set("key", "value", 0)
+		cache.Delete("key")
+		_, ok = cache.Get("key")
+		require.False(t, ok)
+
 	})
 }

@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"reflect"
+	"strings"
 
 	goredis "github.com/redis/go-redis/v9"
 	"go.yorun.ai/vine/app"
@@ -12,6 +13,9 @@ import (
 
 // Option configures a Redis component.
 type Option struct {
+	// Endpoint accepts a Redis URL or host:port.
+	// redis+memory://name[/dbIndex] selects a process-shared, ephemeral instance.
+	// The memory database index must be between 0 and 15 and defaults to zero.
 	Endpoint string
 }
 
@@ -65,6 +69,7 @@ type RedisManager struct {
 	component   app.ManagedComponent
 	option      *Option
 	client      *goredis.Client
+	release     func()
 	lockerTypes []reflect.Type
 	cacheTypes  []reflect.Type
 }
@@ -86,7 +91,12 @@ func (m *RedisManager) InitComponent(component app.ManagedComponent) {
 		m.cacheTypes = append(m.cacheTypes, cacheType)
 	})
 
-	m.client = newRedisClient(m.option)
+	if strings.HasPrefix(strings.ToLower(m.option.Endpoint), "redis+memory:") {
+		m.client, m.release = acquireMemoryClient(m.option.Endpoint)
+	} else {
+		m.client = newRedisClient(m.option)
+		m.release = func() { _ = m.client.Close() }
+	}
 	component.(_RedisAccessor).setCmdable(m.client)
 }
 
@@ -110,7 +120,7 @@ func (m *RedisManager) Bind(b *di.Binder) {
 }
 
 func (m *RedisManager) AfterAppStop() {
-	_ = m.client.Close()
+	m.release()
 }
 
 var newRedisClient = func(opt *Option) *goredis.Client {
