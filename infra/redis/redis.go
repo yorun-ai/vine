@@ -12,6 +12,13 @@ import (
 
 // Option configures a Redis component.
 type Option struct {
+	// Endpoint accepts a Redis URL or host:port. Identical external endpoint
+	// strings share one client pool within the process, until all users stop.
+	// redis+memory://name[/dbIndex] selects an ephemeral instance shared only within
+	// the current process. Identical URLs in different processes create independent
+	// instances: they cannot share cached data or coordinate locks. Use external
+	// Redis for cross-process sharing or locking.
+	// The memory database index must be between 0 and 15 and defaults to zero.
 	Endpoint string
 }
 
@@ -37,6 +44,8 @@ type _RedisAccessor interface {
 }
 
 // Redis wraps a Redis client for Vine-managed execution contexts.
+// SELECT may only select the configured database; use another endpoint to access
+// a different database. Pipelines containing a forbidden SELECT are not executed.
 type Redis struct {
 	app.BaseManagedComponent[*RedisManager]
 	goredis.Cmdable
@@ -65,6 +74,7 @@ type RedisManager struct {
 	component   app.ManagedComponent
 	option      *Option
 	client      *goredis.Client
+	release     func()
 	lockerTypes []reflect.Type
 	cacheTypes  []reflect.Type
 }
@@ -86,7 +96,7 @@ func (m *RedisManager) InitComponent(component app.ManagedComponent) {
 		m.cacheTypes = append(m.cacheTypes, cacheType)
 	})
 
-	m.client = newRedisClient(m.option)
+	m.client, m.release = acquireRedisClient(m.option)
 	component.(_RedisAccessor).setCmdable(m.client)
 }
 
@@ -110,7 +120,7 @@ func (m *RedisManager) Bind(b *di.Binder) {
 }
 
 func (m *RedisManager) AfterAppStop() {
-	_ = m.client.Close()
+	m.release()
 }
 
 var newRedisClient = func(opt *Option) *goredis.Client {

@@ -516,3 +516,37 @@ func newHeldTestLock(cmdable goredis.Cmdable, timeout time.Duration) *Lock {
 	lock.lockCtx, lock.lockCancel = context.WithCancelCause(ctx)
 	return lock
 }
+
+func TestMemoryLock(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		component := new(memoryRedis)
+		manager := new(RedisManager)
+		manager.InitComponent(component)
+		defer manager.AfterAppStop()
+		locker := component.NewLocker(ctx, "test")
+		lease, ok := locker.Lock("job")
+		require.True(t, ok)
+		_, ok = locker.Lock("job")
+		require.False(t, ok)
+		time.Sleep(35 * time.Second)
+		require.False(t, lease.IsBroken())
+		_, ok = locker.Lock("job")
+		require.False(t, ok, "renewal must keep the lock held beyond its original TTL")
+		require.True(t, lease.TryUnlock())
+		old, ok := locker.Lock("job", WithTimeout(time.Second))
+		require.True(t, ok)
+		time.Sleep(2 * time.Second)
+		next, ok := locker.Lock("job")
+		require.True(t, ok)
+		require.False(t, old.TryUnlock())
+		_, ok = locker.Lock("job")
+		require.False(t, ok)
+		require.True(t, next.TryUnlock())
+		stale, ok := locker.Lock("job")
+		require.True(t, ok)
+		require.NoError(t, component.Set(ctx, joinLockKey("test", "job"), "replacement-token", time.Minute).Err())
+		require.False(t, stale.TryUnlock(), "token mismatch must not delete the replacement lock")
+		require.Equal(t, "replacement-token", component.Get(ctx, joinLockKey("test", "job")).Val())
+	})
+}
