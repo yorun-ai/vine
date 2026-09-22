@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -51,14 +52,12 @@ func (h _SelectHook) ProcessHook(next goredis.ProcessHook) goredis.ProcessHook {
 
 func (h _SelectHook) ProcessPipelineHook(next goredis.ProcessPipelineHook) goredis.ProcessPipelineHook {
 	return func(ctx context.Context, cmds []goredis.Cmder) error {
-		for _, cmd := range cmds {
-			if h.rejects(cmd) {
-				// No command is sent, so all queued results must report the rejection.
-				for _, queued := range cmds {
-					queued.SetErr(errSelectDatabase)
-				}
-				return errSelectDatabase
+		if slices.ContainsFunc(cmds, h.rejects) {
+			// No command is sent, so all queued results must report the rejection.
+			for _, queued := range cmds {
+				queued.SetErr(errSelectDatabase)
 			}
+			return errSelectDatabase
 		}
 		return next(ctx, cmds)
 	}

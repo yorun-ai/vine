@@ -74,16 +74,16 @@ func splitWebInprocEndpoint(endpoint string, requestPath string) (string, string
 }
 
 func joinWebPath(paths ...string) string {
-	joined := ""
+	var joined strings.Builder
 	for _, path := range paths {
 		path = strings.Trim(path, "/")
 		if path == "" {
 			continue
 		}
-		joined += "/" + path
+		joined.WriteString("/" + path)
 	}
-	if joined == "" {
+	if joined.Len() == 0 {
 		return "/"
 	}
-	return joined
+	return joined.String()
 }

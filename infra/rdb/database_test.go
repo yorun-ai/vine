@@ -135,7 +135,7 @@ func (*schemaDatabaseTestComponent) InitDao(addDao TypeAdder) {
 }
 
 func TestDatabaseInitializesSchemaBeforeBindingDAOs(t *testing.T) {
-	component := &schemaDatabaseTestComponent{databaseTestComponent: databaseTestComponent{connURL: "sqlite://" + t.TempDir() + "/schema.sqlite"}}
+	component := &schemaDatabaseTestComponent{connURL: "sqlite://" + t.TempDir() + "/schema.sqlite"}
 	manager := initTestDatabase(component)
 	t.Cleanup(manager.AfterAppStop)
 	require.True(t, manager.gormDB.Migrator().HasTable(&databaseTestModel{}))
@@ -165,7 +165,7 @@ func (*failingSchemaTestComponent) InitDao(addDao TypeAdder) {
 
 func TestDatabaseSchemaFailureReleasesConnection(t *testing.T) {
 	url := "sqlite://" + t.TempDir() + "/schema.sqlite"
-	component := &failingSchemaTestComponent{databaseTestComponent: databaseTestComponent{connURL: url}}
+	component := &failingSchemaTestComponent{connURL: url}
 	require.PanicsWithValue(t, "schema failed", func() { initTestDatabase(component) })
 	sharedGormDBsMu.Lock()
 	_, exists := sharedGormDBs[url]

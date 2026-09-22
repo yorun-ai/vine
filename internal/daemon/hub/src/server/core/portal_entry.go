@@ -320,7 +320,7 @@ func portalEntryHostAccepted(host string) bool {
 		if suffix == "" || net.ParseIP(suffix) != nil {
 			return false
 		}
-		for _, label := range strings.Split(suffix, ".") {
+		for label := range strings.SplitSeq(suffix, ".") {
 			if label == "" || len(label) > 63 || label[0] == '-' || label[len(label)-1] == '-' {
 				return false
 			}

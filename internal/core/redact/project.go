@@ -55,7 +55,7 @@ func (s *_ProjectionState) project(value reflect.Value, depth int) (any, error) 
 		value = value.Elem()
 	}
 	if !s.option.RevealSensitive && value.CanInterface() {
-		if _, sensitive := value.Interface().(skel.Sensitive); sensitive {
+		if _, sensitive := reflect.TypeAssert[skel.Sensitive](value); sensitive {
 			s.redacted = true
 			return redactedValue, nil
 		}
@@ -78,7 +78,7 @@ func (s *_ProjectionState) project(value reflect.Value, depth int) (any, error) 
 			return s.projectList(value, depth)
 		}
 	}
-	if raw, ok := value.Interface().(jsontext.Value); ok && raw.Kind() == jsontext.KindNumber {
+	if raw, ok := reflect.TypeAssert[jsontext.Value](value); ok && raw.Kind() == jsontext.KindNumber {
 		return raw, nil
 	}
 	if isBinary(value) {

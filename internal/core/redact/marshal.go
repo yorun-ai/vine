@@ -58,22 +58,22 @@ func marshalValue(value reflect.Value, maxJSONBytes int) (any, int, bool, error)
 }
 
 func jsonMarshaler(value reflect.Value) (json.Marshaler, bool) {
-	if marshaler, ok := value.Interface().(json.Marshaler); ok {
+	if marshaler, ok := reflect.TypeAssert[json.Marshaler](value); ok {
 		return marshaler, true
 	}
 	if value.CanAddr() {
-		marshaler, ok := value.Addr().Interface().(json.Marshaler)
+		marshaler, ok := reflect.TypeAssert[json.Marshaler](value.Addr())
 		return marshaler, ok
 	}
 	return nil, false
 }
 
 func textMarshaler(value reflect.Value) (encoding.TextMarshaler, bool) {
-	if marshaler, ok := value.Interface().(encoding.TextMarshaler); ok {
+	if marshaler, ok := reflect.TypeAssert[encoding.TextMarshaler](value); ok {
 		return marshaler, true
 	}
 	if value.CanAddr() {
-		marshaler, ok := value.Addr().Interface().(encoding.TextMarshaler)
+		marshaler, ok := reflect.TypeAssert[encoding.TextMarshaler](value.Addr())
 		return marshaler, ok
 	}
 	return nil, false
@@ -86,8 +86,8 @@ func isBinary(value reflect.Value) bool {
 	if value.Kind() != reflect.Array || value.Type().Elem().Kind() != reflect.Uint8 {
 		return false
 	}
-	_, jsonMarshaler := value.Interface().(json.Marshaler)
-	_, textMarshaler := value.Interface().(encoding.TextMarshaler)
+	_, jsonMarshaler := reflect.TypeAssert[json.Marshaler](value)
+	_, textMarshaler := reflect.TypeAssert[encoding.TextMarshaler](value)
 	return !jsonMarshaler && !textMarshaler
 }
 

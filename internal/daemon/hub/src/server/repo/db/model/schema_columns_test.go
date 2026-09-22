@@ -59,7 +59,7 @@ func testRetiredPortalColumns(t *testing.T, db *gorm.DB, dialect string) {
 	require.NoError(t, db.Exec(`INSERT INTO portal_site (name, type, actor_skel_name, actor_via, web_name, enabled) VALUES ('site', 'WEBGW', 'demo.Actor', 'client', 'demo.Web', FALSE)`).Error)
 	ruleDao := &PortalRuleDao{Dao: rdb.NewDao[*PortalRule](db)}
 	siteDao := &PortalSiteDao{Dao: rdb.NewDao[*PortalSite](db)}
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		ruleDao.EnsureSchema()
 		siteDao.EnsureSchema()
 	}

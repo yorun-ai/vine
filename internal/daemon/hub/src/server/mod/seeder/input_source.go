@@ -112,8 +112,7 @@ func entityFieldSources(all core.FieldSources, kind string, index int) core.Fiel
 	result := core.FieldSources{}
 	prefix := "/" + kind + "/" + strconv.Itoa(index) + "/"
 	for path, origin := range all {
-		if strings.HasPrefix(path, prefix) {
-			field := strings.TrimPrefix(path, prefix)
+		if field, ok := strings.CutPrefix(path, prefix); ok {
 			if kind == "portalRules" {
 				if canonical, ok := portalRuleAliases[field]; ok {
 					field = canonical

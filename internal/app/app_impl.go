@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -397,11 +398,12 @@ func (a *_AppImpl) httpEndpoint(paths ...string) string {
 	if a.shouldProtectHTTPServer() {
 		scheme = "https"
 	}
-	endpoint := fmt.Sprintf("%s://%s:%d", scheme, a.endpointHost(), a.httpPort)
+	var endpoint strings.Builder
+	endpoint.WriteString(fmt.Sprintf("%s://%s:%d", scheme, a.endpointHost(), a.httpPort))
 	for _, path := range paths {
-		endpoint += path
+		endpoint.WriteString(path)
 	}
-	return endpoint
+	return endpoint.String()
 }
 
 func (a *_AppImpl) endpointHost() string {

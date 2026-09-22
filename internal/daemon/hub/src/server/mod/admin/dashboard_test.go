@@ -118,7 +118,7 @@ func TestDashboardServesEmbeddedBuildOutput(t *testing.T) {
 
 	// The same handler must keep independent state for concurrent requests.
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		wg.Go(func() {
 			request := httptest.NewRequest(http.MethodGet, "http://hub.local/brand/vinehub.png", nil)
 			request.Header.Set("Accept-Encoding", "br")

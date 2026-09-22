@@ -86,7 +86,7 @@ func (s *_VarsSchema) variableType(path string) (*skel.TypeSchema, error) {
 	}
 	kind := new(skel.TypeSchema{Kind: skel.TypeKindData, SkelName: "app.Vars"})
 	var err error
-	for _, segment := range strings.Split(path, ".") {
+	for segment := range strings.SplitSeq(path, ".") {
 		kind, err = s.childType(kind, segment)
 		if err != nil {
 			return nil, err
@@ -97,7 +97,7 @@ func (s *_VarsSchema) variableType(path string) (*skel.TypeSchema, error) {
 
 func lookupSeedVariable(dictionary *yaml.Node, path string) (*yaml.Node, bool, error) {
 	current := dictionary
-	for _, segment := range strings.Split(path, ".") {
+	for segment := range strings.SplitSeq(path, ".") {
 		if current == nil {
 			return nil, false, nil
 		}

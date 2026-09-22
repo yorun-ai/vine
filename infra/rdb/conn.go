@@ -105,8 +105,7 @@ func configurePool(gormDB *gorm.DB, config Option) error {
 	sqlDB.SetMaxOpenConns(maxOpenConns)
 	sqlDB.SetConnMaxIdleTime(connMaxIdleTime)
 	sqlDB.SetConnMaxLifetime(connMaxLifeTime)
-	if strings.HasPrefix(config.ConnURL, "sqlite://") {
-		dsn := strings.TrimPrefix(config.ConnURL, "sqlite://")
+	if dsn, ok := strings.CutPrefix(config.ConnURL, "sqlite://"); ok {
 		_, query, _ := strings.Cut(dsn, "?")
 		params, _ := url.ParseQuery(query)
 		if dsn == ":memory:" || params.Get("mode") == "memory" {
