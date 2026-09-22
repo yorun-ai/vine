@@ -36,8 +36,7 @@ var seedStringFields = map[string]map[string]bool{
 func stringFieldsOf(payload any) map[string]bool {
 	fields := map[string]bool{}
 	payloadType := reflect.TypeOf(payload)
-	for index := range payloadType.NumField() {
-		field := payloadType.Field(index)
+	for field := range payloadType.Fields() {
 		name := field.Tag.Get("yaml")
 		if field.Type.Kind() != reflect.String || name == "" || name == "-" {
 			continue
@@ -64,8 +63,7 @@ var seedSectionFields = map[string]map[string]bool{
 func yamlFieldsOf(payload any, extra ...map[string]string) map[string]bool {
 	fields := map[string]bool{}
 	payloadType := reflect.TypeOf(payload)
-	for index := range payloadType.NumField() {
-		field := payloadType.Field(index)
+	for field := range payloadType.Fields() {
 		name := field.Tag.Get("yaml")
 		if name == "" || name == "-" {
 			continue

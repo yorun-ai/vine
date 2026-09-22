@@ -42,9 +42,7 @@ func NewFlagNames(ignored []string, renamed map[string]string) *FlagNames {
 	for _, name := range ignored {
 		names.ignored[name] = true
 	}
-	for from, to := range renamed {
-		names.renamed[from] = to
-	}
+	maps.Copy(names.renamed, renamed)
 	return names
 }
 

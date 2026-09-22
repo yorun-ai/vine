@@ -89,7 +89,7 @@ func (m *DatabaseManager) InitComponent(component app.ManagedComponent) {
 
 func (m *DatabaseManager) ensureDaoSchema(daoType reflect.Type) {
 	daoValue := reflect.New(daoType.Elem())
-	dao, ok := daoValue.Interface().(_SchemaDao)
+	dao, ok := reflect.TypeAssert[_SchemaDao](daoValue)
 	vpre.Check(ok, "dao type %s must embed rdb.Dao[...] to receive gorm db", daoType)
 	dao.setGormDB(m.gormDB)
 	dao.EnsureSchema()
@@ -109,7 +109,7 @@ func (m *DatabaseManager) Bind(b *di.Binder) {
 
 func (m *DatabaseManager) instantiateDao(daoType reflect.Type, ctx context.Context, logger *logger.Logger) any {
 	daoValue := reflect.New(daoType.Elem())
-	dao, ok := daoValue.Interface().(_GormDBSetter)
+	dao, ok := reflect.TypeAssert[_GormDBSetter](daoValue)
 	vpre.Check(ok, "dao type %s must embed rdb.Dao[...] to receive gorm db", daoType)
 	dao.setGormDB(m.gormDB.WithContext(contextWithLogger(ctx, logger)))
 	return daoValue.Interface()

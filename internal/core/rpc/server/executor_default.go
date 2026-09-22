@@ -73,7 +73,7 @@ func (e *_DefaultExecutor) Execute(rpcContext spec.Context, methodImpl spec.Meth
 	e.inject(methodValue, rpcContext)
 	results := methodImpl.Method().Func.Call(methodArgs)
 	if methodImpl.IsERType() {
-		if err, _ := results[len(results)-1].Interface().(ex.Error); err != nil {
+		if err, _ := reflect.TypeAssert[ex.Error](results[len(results)-1]); err != nil {
 			return nil, err
 		}
 	}

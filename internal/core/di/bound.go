@@ -213,7 +213,7 @@ func initInstance(instance reflect.Value) {
 		return
 	}
 
-	if initializer, ok := instance.Interface().(InitDefinition); ok {
+	if initializer, ok := reflect.TypeAssert[InitDefinition](instance); ok {
 		initializer.DIInit()
 	}
 }
@@ -223,7 +223,7 @@ func (b *_Bound) BuildDisposeFunc(instance reflect.Value) _DisposeFunc {
 		return emptyDispose
 	}
 
-	_, hasDisposeMethod := instance.Interface().(DisposeDefinition)
+	_, hasDisposeMethod := reflect.TypeAssert[DisposeDefinition](instance)
 	if b.binding.disposer == nil && !hasDisposeMethod {
 		return emptyDispose
 	}

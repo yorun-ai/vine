@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -211,7 +212,7 @@ func TestServerRoutesServeTheMountRootAndEveryPath(t *testing.T) {
 				if !strings.HasSuffix(route.HandlerName(), ".Serve") {
 					t.Fatalf("unexpected handler: %s", route.HandlerName())
 				}
-				if !containsString(paths, route.Path()) {
+				if !slices.Contains(paths, route.Path()) {
 					paths = append(paths, route.Path())
 				}
 			}
@@ -322,13 +323,4 @@ func closedDevelopmentServerAddress(t *testing.T) (string, int) {
 		t.Fatalf("close listener: %v", err)
 	}
 	return "127.0.0.1", address.Port
-}
-
-func containsString(values []string, value string) bool {
-	for _, candidate := range values {
-		if candidate == value {
-			return true
-		}
-	}
-	return false
 }

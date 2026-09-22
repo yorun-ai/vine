@@ -166,7 +166,7 @@ type _SeedSubstitution struct {
 func (r *_SeedResolver) substitute(substitution *_SeedSubstitution, match []string) error {
 	location := substitution.location
 	name, fallback, hasDefault := strings.Cut(match[1], ":")
-	for _, segment := range strings.Split(name, ".") {
+	for segment := range strings.SplitSeq(name, ".") {
 		if !seedVariableSegment.MatchString(segment) {
 			return fmt.Errorf("seed variable %s must use camelCase path segments at %s", name, location)
 		}

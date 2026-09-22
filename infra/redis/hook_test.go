@@ -30,7 +30,7 @@ func TestSelectHook(t *testing.T) {
 				require.ErrorIs(t, client.Process(ctx, cmd), errSelectDatabase)
 				require.ErrorIs(t, cmd.Err(), errSelectDatabase)
 				require.NoError(t, client.Do(ctx, "SELECT", dbIndex).Err())
-				require.NoError(t, client.Do(ctx, "SELECT", []byte(fmt.Sprint(dbIndex))).Err())
+				require.NoError(t, client.Do(ctx, "SELECT", fmt.Append(nil, dbIndex)).Err())
 				require.ErrorIs(t, client.Do(ctx, "SELECT", "invalid").Err(), errSelectDatabase)
 
 				conn := client.Conn()

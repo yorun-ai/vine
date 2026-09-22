@@ -18,7 +18,7 @@ const (
 )
 
 func (portalCorsMode PortalCorsMode) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("\"%s\"", portalCorsMode)), nil
+	return fmt.Appendf(nil, "\"%s\"", portalCorsMode), nil
 }
 
 func (portalCorsMode *PortalCorsMode) UnmarshalJSON(data []byte) error {
@@ -50,7 +50,7 @@ const (
 )
 
 func (portalSiteType PortalSiteType) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("\"%s\"", portalSiteType)), nil
+	return fmt.Appendf(nil, "\"%s\"", portalSiteType), nil
 }
 
 func (portalSiteType *PortalSiteType) UnmarshalJSON(data []byte) error {

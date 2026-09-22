@@ -68,11 +68,9 @@ func TestRpcOperationReadRequestBodyClosesAndResetsBody(t *testing.T) {
 	request.Body = originalBody
 	request.ContentLength = -1
 	operation := &RpcOperation{
-		Auther: Auther{
-			Request:  request,
-			Response: httptest.NewRecorder(),
-		},
-		Server: testServerApp(),
+		Request:  request,
+		Response: httptest.NewRecorder(),
+		Server:   testServerApp(),
 	}
 
 	if !operation.readRequestBody() {

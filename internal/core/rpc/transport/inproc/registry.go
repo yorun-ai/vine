@@ -66,9 +66,10 @@ func IsEndpoint(endpoint string) bool {
 
 // Endpoint builds a rpc+inproc endpoint from a scheme-less host path and route paths.
 func Endpoint(hostPath string, paths ...string) string {
-	endpoint := EndpointScheme + hostPath
+	var endpoint strings.Builder
+	endpoint.WriteString(EndpointScheme + hostPath)
 	for _, path := range paths {
-		endpoint += path
+		endpoint.WriteString(path)
 	}
-	return endpoint
+	return endpoint.String()
 }
