@@ -47,6 +47,9 @@ func acquireMemoryClient(endpoint string) (*goredis.Client, func()) {
 	return redis.Acquire(dbIndex)
 }
 
+// _MemoryRedis is local to this process; it cannot serve as a shared cache or lock
+// service across processes. Identical instance names in separate processes create
+// independent data and locks. Cross-process coordination requires external Redis.
 // Serializing Dial and close prevents miniredis.Dial from restarting a closed server.
 type _MemoryRedis struct {
 	endpoint    string
@@ -98,7 +101,7 @@ func (i *_MemoryRedis) release(dbIndex int) {
 }
 
 func (i *_MemoryRedis) newClient(dbIndex int) *goredis.Client {
-	return goredis.NewClient(&goredis.Options{
+	client := goredis.NewClient(&goredis.Options{
 		// A numeric address avoids client-side DNS; Dialer uses only the memory pipe.
 		Addr:            "127.0.0.1:0",
 		Protocol:        2,
@@ -111,6 +114,8 @@ func (i *_MemoryRedis) newClient(dbIndex int) *goredis.Client {
 			return i.dial()
 		},
 	})
+	client.AddHook(_SelectHook{dbIndex: dbIndex})
+	return client
 }
 
 func (i *_MemoryRedis) dial() (net.Conn, error) {

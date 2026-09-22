@@ -111,3 +111,21 @@ func TestMemoryRedisComponentsShareClient(t *testing.T) {
 	require.NotSame(t, b.client, c.client)
 	require.EqualValues(t, 0, c.client.Exists(t.Context(), "shared").Val())
 }
+
+func TestExternalRedisComponentsShareClient(t *testing.T) {
+	first := initTestRedis(new(testRedis))
+	defer first.AfterAppStop()
+	second := initTestRedis(new(testRedis))
+	defer second.AfterAppStop()
+	require.Same(t, first.client, second.client)
+	first.AfterAppStop()
+	first.AfterAppStop()
+	third := initTestRedis(new(testRedis))
+	defer third.AfterAppStop()
+	require.Same(t, second.client, third.client)
+	second.AfterAppStop()
+	third.AfterAppStop()
+	fresh := initTestRedis(new(testRedis))
+	defer fresh.AfterAppStop()
+	require.NotSame(t, first.client, fresh.client)
+}

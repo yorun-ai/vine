@@ -3,7 +3,6 @@ package redis
 import (
 	"context"
 	"reflect"
-	"strings"
 
 	goredis "github.com/redis/go-redis/v9"
 	"go.yorun.ai/vine/app"
@@ -13,8 +12,12 @@ import (
 
 // Option configures a Redis component.
 type Option struct {
-	// Endpoint accepts a Redis URL or host:port.
-	// redis+memory://name[/dbIndex] selects a process-shared, ephemeral instance.
+	// Endpoint accepts a Redis URL or host:port. Identical external endpoint
+	// strings share one client pool within the process, until all users stop.
+	// redis+memory://name[/dbIndex] selects an ephemeral instance shared only within
+	// the current process. Identical URLs in different processes create independent
+	// instances: they cannot share cached data or coordinate locks. Use external
+	// Redis for cross-process sharing or locking.
 	// The memory database index must be between 0 and 15 and defaults to zero.
 	Endpoint string
 }
@@ -41,6 +44,8 @@ type _RedisAccessor interface {
 }
 
 // Redis wraps a Redis client for Vine-managed execution contexts.
+// SELECT may only select the configured database; use another endpoint to access
+// a different database. Pipelines containing a forbidden SELECT are not executed.
 type Redis struct {
 	app.BaseManagedComponent[*RedisManager]
 	goredis.Cmdable
@@ -91,12 +96,7 @@ func (m *RedisManager) InitComponent(component app.ManagedComponent) {
 		m.cacheTypes = append(m.cacheTypes, cacheType)
 	})
 
-	if strings.HasPrefix(strings.ToLower(m.option.Endpoint), "redis+memory:") {
-		m.client, m.release = acquireMemoryClient(m.option.Endpoint)
-	} else {
-		m.client = newRedisClient(m.option)
-		m.release = func() { _ = m.client.Close() }
-	}
+	m.client, m.release = acquireRedisClient(m.option)
 	component.(_RedisAccessor).setCmdable(m.client)
 }
 
