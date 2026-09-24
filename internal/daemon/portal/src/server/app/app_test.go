@@ -1,11 +1,16 @@
 package app
 
 import (
-	"go.yorun.ai/vine/buildinfo"
+	"log"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
+	"go.yorun.ai/vine/buildinfo"
 	internalapp "go.yorun.ai/vine/internal/app"
+	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubinfo"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/flag"
@@ -16,6 +21,44 @@ import (
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/vault"
 )
+
+func TestPortalAppFiltersOnlyTLSHandshakeEOF(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "stdlog.jsonl")
+	logger.SetDefault(logger.New("vine:test", logger.WithOption{
+		Format:     logger.FormatJSON,
+		Level:      logger.LevelInfo,
+		OutputPath: path,
+	}))
+	t.Cleanup(func() {
+		logger.SetDefault(logger.New("vine:default"))
+	})
+
+	dropped := "http: TLS handshake error from 127.0.0.1:1234: EOF"
+	retained := []string{
+		"http: TLS handshake error from 127.0.0.1:1234: remote error: tls: bad certificate",
+		"http: TLS handshake error from 127.0.0.1:1234: tls: first record does not look like a TLS handshake",
+		"http: TLS handshake error from 127.0.0.1:1234: i/o timeout",
+		"http: TLS handshake error from 127.0.0.1:1234: EOF: extra detail",
+		"unrelated standard library INFO",
+	}
+	log.Print(dropped)
+	for _, message := range retained {
+		log.Print(message)
+	}
+
+	output, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(output), `"msg":"`+dropped+`"`) {
+		t.Fatalf("handshake EOF was logged: %s", output)
+	}
+	for _, message := range retained {
+		if !strings.Contains(string(output), message) {
+			t.Errorf("standard log message missing: %q", message)
+		}
+	}
+}
 
 func collectComponentTypes(spec *PortalApp) []reflect.Type {
 	var componentTypes []reflect.Type
