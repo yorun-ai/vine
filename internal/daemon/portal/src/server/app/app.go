@@ -4,6 +4,7 @@ import (
 	"go.yorun.ai/vine/buildinfo"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/link"
+	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/daemon"
@@ -17,6 +18,13 @@ import (
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/vault"
 )
+
+func init() {
+	logger.ConfigureStdLogProcessors(
+		"portal-tls-eof",
+		logger.StdLogRegexpFilterProcessor(`^http: TLS handshake error from .*: EOF$`),
+	)
+}
 
 type PortalApp struct {
 	app.InternalApplication
