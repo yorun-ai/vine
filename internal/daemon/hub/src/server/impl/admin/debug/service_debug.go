@@ -20,6 +20,7 @@ import (
 type ServiceDebugApiServiceServerImpl struct {
 	skeled.DefaultServiceDebugApiServiceServer
 
+	CurrentApp   meta.CurrentApp   `inject:""`
 	RegistryRepo core.RegistryRepo `inject:""`
 	SchemaRepo   core.SchemaRepo   `inject:""`
 	Identity     *mtls.Identity    `inject:""`
@@ -147,7 +148,7 @@ func (s *ServiceDebugApiServiceServerImpl) InvokeService(request skeled.ServiceD
 		MethodSkelName:  request.MethodSkelName,
 		Params:          params,
 		Trace:           trace,
-		Client:          debugClient(),
+		Client:          s.CurrentApp,
 		Actor:           actor,
 	})
 

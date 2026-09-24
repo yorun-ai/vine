@@ -86,7 +86,8 @@ func TestEnsureWebInitiatorCreatesInitiatorHeader(t *testing.T) {
 	request.Header.Set("User-Agent", "web-test")
 	request.Header.Set(webspec.HeaderWebInitiator, "existing-initiator")
 
-	got, err := ensureWebInitiator(request, "192.0.2.1")
+	appInfo := meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099")
+	got, err := ensureWebInitiator(request, appInfo, "192.0.2.1")
 	if err != nil {
 		t.Fatalf("ensureWebInitiator() error = %v", err)
 	}
@@ -95,9 +96,9 @@ func TestEnsureWebInitiatorCreatesInitiatorHeader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("DecodeInitiatorFromBase64() error = %v", err)
 	}
-	if initiator.Name() != defaultWebInitiatorName ||
-		initiator.Version() != defaultWebInitiatorVersion ||
-		initiator.InstanceId() != defaultWebInitiatorInstanceId {
+	if initiator.Name() != appInfo.Name() ||
+		initiator.Version() != appInfo.Version() ||
+		initiator.InstanceId() != appInfo.InstanceId() {
 		t.Fatalf("unexpected initiator app")
 	}
 	if initiator.Dialer() != "web-test" {
@@ -126,7 +127,8 @@ func TestEnsureWebTraceRejectsInvalidTrace(t *testing.T) {
 func TestEnsureWebInitiatorRejectsInvalidInitiatorIP(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/hello", nil)
 
-	if _, err := ensureWebInitiator(request, "bad-ip"); err == nil {
+	appInfo := meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099")
+	if _, err := ensureWebInitiator(request, appInfo, "bad-ip"); err == nil {
 		t.Fatal("expected invalid ip to be rejected")
 	}
 }

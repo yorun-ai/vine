@@ -112,13 +112,3 @@ func (s *ServiceDebugApiServiceServerImpl) debugActor(actorSkelName *string, act
 	}
 	return meta.NewAuthenticatedActorWithRawInfo(actor.SkelName, identifier, actor.AuthInfo.SkelName, info)
 }
-
-const (
-	debugClientName       = "vine.hub.debug"
-	debugClientVersion    = "0.0.0"
-	debugClientInstanceId = "00000000-0000-0000-0000-000000000000"
-)
-
-func debugClient() meta.App {
-	return meta.MustNewApp(debugClientName, debugClientVersion, debugClientInstanceId)
-}

@@ -533,7 +533,7 @@ func newTestWebGateway(valuesByKey map[string]string) *WebGateway {
 }
 
 func newTestWebGatewayWithCors(valuesByKey map[string]string, cors watched.PortalCors) *WebGateway {
-	return New(context.Background(), new(access.Access), newTestEpmgr(valuesByKey), watched.PortalSite{
+	return New(context.Background(), meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"), new(access.Access), newTestEpmgr(valuesByKey), watched.PortalSite{
 		Name: "demo-web",
 		Type: "WEBGW",
 		Cors: cors,

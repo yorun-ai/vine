@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
+	"go.yorun.ai/vine/internal/core/meta"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	"go.yorun.ai/vine/internal/core/skel"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
@@ -37,6 +38,7 @@ func TestInvokeServicePropagatesTimeoutAsRpcOptions(t *testing.T) {
 	ingressEndpoint := "link+inproc://vine/hub-debug-timeout-test"
 	ingressinproc.Register(ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Debug-Rpc-Options", r.Header.Get(rpchttp.HeaderRpcOptions))
+		w.Header().Set("X-Debug-Rpc-Client", r.Header.Get(rpchttp.HeaderRpcClient))
 		w.WriteHeader(http.StatusAccepted)
 		_, _ = w.Write([]byte(`{"ok":true}`))
 	}))
@@ -45,6 +47,7 @@ func TestInvokeServicePropagatesTimeoutAsRpcOptions(t *testing.T) {
 	appName := "demo.app"
 	appInstanceId := "instance-1"
 	target := &ServiceDebugApiServiceServerImpl{
+		CurrentApp: meta.MustNewApp("vine.hub", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"),
 		RegistryRepo: &_ServiceDebugRegistryRepo{
 			status: &core.AppStatus{
 				Name:       appName,
@@ -76,6 +79,15 @@ func TestInvokeServicePropagatesTimeoutAsRpcOptions(t *testing.T) {
 		t.Fatalf("Unmarshal headers error = %v", err)
 	}
 	options := mustDecodeDebugRpcOptions(t, header.Get("X-Debug-Rpc-Options"))
+	clientHeader := http.Header{}
+	clientHeader.Set(rpchttp.HeaderRpcClient, header.Get("X-Debug-Rpc-Client"))
+	client, err := rpchttp.DecodeClientFromHeader(clientHeader)
+	if err != nil {
+		t.Fatalf("DecodeClientFromHeader() error = %v", err)
+	}
+	if client.Name() != target.CurrentApp.Name() || client.Version() != target.CurrentApp.Version() || client.InstanceId() != target.CurrentApp.InstanceId() {
+		t.Fatalf("debug RPC client = %s/%s/%s, want Hub app identity", client.Name(), client.Version(), client.InstanceId())
+	}
 	if options.Timeout <= 0 || options.Timeout > 5*time.Second {
 		t.Fatalf("timeout = %s, want within 5s", options.Timeout)
 	}
