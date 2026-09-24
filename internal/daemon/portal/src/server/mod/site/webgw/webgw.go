@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
@@ -17,6 +18,7 @@ type WebGateway struct {
 
 	context context.Context
 	cancel  context.CancelFunc
+	app     meta.CurrentApp
 	access  *access.Access
 	epmgr   *epmgr.Manager
 
@@ -24,11 +26,12 @@ type WebGateway struct {
 	watcher *epmgr.Watcher
 }
 
-func New(ctx context.Context, accessManager *access.Access, epmgrManager *epmgr.Manager, config watched.PortalSite) *WebGateway {
+func New(ctx context.Context, appInfo meta.CurrentApp, accessManager *access.Access, epmgrManager *epmgr.Manager, config watched.PortalSite) *WebGateway {
 	gatewayCtx, cancel := context.WithCancel(ctx)
 	gateway := &WebGateway{
 		context: gatewayCtx,
 		cancel:  cancel,
+		app:     appInfo,
 		access:  accessManager,
 		epmgr:   epmgrManager,
 	}

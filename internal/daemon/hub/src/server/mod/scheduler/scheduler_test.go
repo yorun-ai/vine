@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/skel"
 	taskspec "go.yorun.ai/vine/internal/core/task/spec"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
@@ -122,7 +123,9 @@ func TestSchedulerPublishSchedulePublishesTaskMessage(t *testing.T) {
 	target.publishSchedule(newTestScheduleConfig())
 
 	require.Len(t, publisher.messages, 1)
-	assert.Equal(t, schedulerClientName, publisher.messages[0].Metadata.AppName)
+	assert.Equal(t, target.CurrentApp.Name(), publisher.messages[0].Metadata.AppName)
+	assert.Equal(t, target.CurrentApp.Version(), publisher.messages[0].Metadata.AppVersion)
+	assert.Equal(t, target.CurrentApp.InstanceId(), publisher.messages[0].Metadata.AppInstanceId.String())
 	assert.Equal(t, "demo.booker.RebuildCatalogIndexTask", publisher.messages[0].TaskSkelName)
 	assert.Equal(t, "rebuild", publisher.messages[0].TriggerSkelName)
 	assert.Equal(t, "{}", publisher.messages[0].ArgumentsJson)
@@ -276,6 +279,7 @@ func newTestScheduler(statuses []*core.AppStatus, publisher *_SchedulerTaskPubli
 
 func newTestSchedulerWithRegistry(registryRepo *_SchedulerRegistryRepo, publisher *_SchedulerTaskPublisher) *Scheduler {
 	target := &Scheduler{
+		CurrentApp:   meta.MustNewApp("vine.hub", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"),
 		RegistryRepo: registryRepo,
 		SchemaRepo: &_SchedulerSchemaRepo{taskVersions: []core.SchemaVersion[*skel.TaskSchema]{{
 			SchemaHash: "task-hash",

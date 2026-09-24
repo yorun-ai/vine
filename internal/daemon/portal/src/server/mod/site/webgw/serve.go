@@ -10,12 +10,6 @@ import (
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 )
 
-const (
-	defaultWebInitiatorName       = "vine.portal"
-	defaultWebInitiatorVersion    = "0.0.0"
-	defaultWebInitiatorInstanceId = "00000000-0000-0000-0000-000000000001"
-)
-
 var optionsAllowedMethods = []string{
 	http.MethodGet,
 	http.MethodHead,
@@ -64,7 +58,7 @@ func (g *WebGateway) Serve(ctx *spec.Context) {
 		return
 	}
 
-	initiator, err := ensureWebInitiator(request, ctx.RemoteAddr)
+	initiator, err := ensureWebInitiator(request, g.app, ctx.RemoteAddr)
 	if err != nil {
 		http.Error(ctx.ResponseWriter, "web request meta cannot be created: "+err.Error(), http.StatusBadRequest)
 		return
@@ -114,11 +108,11 @@ func webTraceIdOrNew(header http.Header) string {
 	return trace.Id()
 }
 
-func ensureWebInitiator(request *http.Request, remoteAddr string) (meta.Initiator, error) {
+func ensureWebInitiator(request *http.Request, appInfo meta.CurrentApp, remoteAddr string) (meta.Initiator, error) {
 	initiator, err := meta.NewInitiator(
-		defaultWebInitiatorName,
-		defaultWebInitiatorVersion,
-		defaultWebInitiatorInstanceId,
+		appInfo.Name(),
+		appInfo.Version(),
+		appInfo.InstanceId(),
 		request.UserAgent(),
 		remoteAddr,
 	)

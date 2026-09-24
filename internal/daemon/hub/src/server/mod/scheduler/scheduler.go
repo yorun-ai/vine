@@ -22,15 +22,10 @@ import (
 
 const schedulerRefreshInterval = 5 * time.Second
 
-const (
-	schedulerClientName       = "vine.hub.scheduler"
-	schedulerClientVersion    = "0.0.0"
-	schedulerClientInstanceId = "00000000-0000-0000-0000-000000000000"
-)
-
 type Scheduler struct {
 	app.BaseModule
 
+	CurrentApp   meta.CurrentApp        `inject:""`
 	RegistryRepo core.RegistryRepo      `inject:""`
 	SchemaRepo   core.SchemaRepo        `inject:""`
 	NATSServer   *natsserver.NATSServer `inject:""`
@@ -229,9 +224,9 @@ func (s *Scheduler) publishSchedule(config _ScheduleConfig) {
 		Metadata: taskspec.NATSMessageMeta{
 			TraceId:       trace.Id(),
 			TraceSpan:     trace.Span(),
-			AppName:       schedulerClientName,
-			AppVersion:    schedulerClientVersion,
-			AppInstanceId: skel.NewUUID(uuid.MustParse(schedulerClientInstanceId)),
+			AppName:       s.CurrentApp.Name(),
+			AppVersion:    s.CurrentApp.Version(),
+			AppInstanceId: skel.NewUUID(uuid.MustParse(s.CurrentApp.InstanceId())),
 			LaunchedAt:    skel.NewTimestampNow(),
 		},
 		TaskSkelName:    config.TaskSkelName,

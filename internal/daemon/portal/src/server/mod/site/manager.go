@@ -122,7 +122,7 @@ func (m *Manager) newSite(config watched.PortalSite) spec.Site {
 	case siteTypeRpcgw:
 		return rpcgw.New(m.Context, m.CurrentApp, m.Access, m.Epmgr, config)
 	case siteTypeWebgw:
-		return webgw.New(m.Context, m.Access, m.Epmgr, config)
+		return webgw.New(m.Context, m.CurrentApp, m.Access, m.Epmgr, config)
 	default:
 		return newUnknownSite(config.Name, config.Type)
 	}

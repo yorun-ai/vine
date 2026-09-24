@@ -19,6 +19,7 @@ import (
 type EventDebugApiServiceServerImpl struct {
 	skeled.DefaultEventDebugApiServiceServer
 
+	CurrentApp   meta.CurrentApp        `inject:""`
 	RegistryRepo core.RegistryRepo      `inject:""`
 	SchemaRepo   core.SchemaRepo        `inject:""`
 	NATSServer   *natsserver.NATSServer `inject:""`
@@ -77,9 +78,9 @@ func (s *EventDebugApiServiceServerImpl) EmitEvent(request skeled.EventDebugEmit
 		Metadata: eventspec.NATSMessageMeta{
 			TraceId:       trace.Id(),
 			TraceSpan:     trace.Span(),
-			AppName:       debugClientName,
-			AppVersion:    debugClientVersion,
-			AppInstanceId: skel.NewUUID(uuid.MustParse(debugClientInstanceId)),
+			AppName:       s.CurrentApp.Name(),
+			AppVersion:    s.CurrentApp.Version(),
+			AppInstanceId: skel.NewUUID(uuid.MustParse(s.CurrentApp.InstanceId())),
 			EmittedAt:     skel.NewTimestampNow(),
 		},
 		EventSkelName: request.EventSkelName,
