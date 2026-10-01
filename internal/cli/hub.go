@@ -6,6 +6,7 @@ import (
 
 	ucli "github.com/urfave/cli/v3"
 	"go.yorun.ai/vine/internal/app"
+	"go.yorun.ai/vine/internal/appcli"
 	hublock "go.yorun.ai/vine/internal/daemon/hub/api/lock"
 	hubapp "go.yorun.ai/vine/internal/daemon/hub/src/server/app"
 	hubflag "go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
@@ -26,6 +27,7 @@ const (
 	FlagHubLockRedisEndpoint = "lock-redis-endpoint"
 
 	FlagSeedSourceFile   = "seed-source-file"
+	FlagSeedVar          = "seed-var"
 	FlagSeedVarsFile     = "seed-vars-file"
 	FlagSeedDataFile     = "seed-data-file"
 	FlagHubNoDB          = "no-db"
@@ -43,6 +45,7 @@ const (
 	EnvHubLockRedisEndpoint = "VINE_LOCK_REDIS_ENDPOINT"
 
 	EnvSeedSourceFile   = "VINE_SEED_SOURCE_FILE"
+	EnvSeedVar          = "VINE_SEED_VAR"
 	EnvSeedVarsFile     = "VINE_SEED_VARS_FILE"
 	EnvSeedDataFile     = "VINE_SEED_DATA_FILE"
 	EnvHubNoDB          = "VINE_NO_DB"
@@ -137,6 +140,7 @@ func newHubServeFlags() []ucli.Flag {
 			Sources: ucli.EnvVars(EnvSeedSourceFile),
 			Usage:   "hub seed source YAML file",
 		},
+		appcli.NewRepeatedStringFlag(FlagSeedVar, EnvSeedVar, new([]string), "hub seed variable path=YAML; repeatable; overrides vars file"),
 		&ucli.StringFlag{
 			Name:    FlagSeedVarsFile,
 			Sources: ucli.EnvVars(EnvSeedVarsFile),
@@ -165,6 +169,7 @@ func newHubServeCommand() *ucli.Command {
 				LockRedisEndpoint: cmd.String(FlagHubLockRedisEndpoint),
 				SeedHubDataFile:   cmd.String(FlagSeedDataFile),
 				SeedHubSourceFile: cmd.String(FlagSeedSourceFile),
+				SeedHubVars:       cmd.StringSlice(FlagSeedVar),
 				SeedHubVarsFile:   cmd.String(FlagSeedVarsFile),
 				NoDB:              cmd.Bool(FlagHubNoDB),
 				DBSQLiteFile:      cmd.String(FlagHubDBSQLiteFile),

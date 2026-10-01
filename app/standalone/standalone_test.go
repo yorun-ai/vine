@@ -331,3 +331,84 @@ func freeListenAddress(t *testing.T) string {
 	require.NoError(t, listener.Close())
 	return address
 }
+
+func TestSeedVariableAssignmentsFlagsAndOptions(t *testing.T) {
+	previous := os.Args
+	t.Cleanup(func() { os.Args = previous })
+	t.Setenv(EnvHubSeedVar, "text=environment")
+	os.Args = []string{"app", "--hub-seed-var", "database.port=5432", "--hub-seed-var", `origins=["a","b"]`}
+	parsed := new(hubflag.Flag)
+	appcli.Handle(flags(parsed, Option{})...)
+	assert.Equal(t, []string{"database.port=5432", `origins=["a","b"]`}, parsed.SeedHubVars)
+
+	option := Option{HubSeedVars: []string{"text=code"}}
+	assert.False(t, option.isZero())
+	applyOption(parsed, option)
+	assert.Equal(t, []string{"text=code"}, parsed.SeedHubVars)
+	parsed.SeedHubVars[0] = "text=changed"
+	assert.Equal(t, "text=code", option.HubSeedVars[0])
+
+	ignored := new(hubflag.Flag)
+	appcli.Handle(flags(ignored, Option{IgnoredFlags: []string{FlagHubSeedVar}})...)
+	assert.Empty(t, ignored.SeedHubVars)
+	os.Args = []string{"app"}
+	ignoredEnv := new(hubflag.Flag)
+	appcli.Handle(flags(ignoredEnv, Option{IgnoredFlags: []string{FlagHubSeedVar}})...)
+	assert.Empty(t, ignoredEnv.SeedHubVars)
+
+	renamed := Option{RenamedFlags: map[string]string{FlagHubSeedVar: "var"}}
+	oldEnv := new(hubflag.Flag)
+	appcli.Handle(flags(oldEnv, renamed)...)
+	assert.Empty(t, oldEnv.SeedHubVars)
+	t.Setenv("VINE_VAR", "text=renamed-env")
+	newEnv := new(hubflag.Flag)
+	appcli.Handle(flags(newEnv, renamed)...)
+	assert.Equal(t, []string{"text=renamed-env"}, newEnv.SeedHubVars)
+	os.Args = []string{"app", "--var", "text=renamed", "--var", "database.port=5433"}
+	newFlag := new(hubflag.Flag)
+	appcli.Handle(flags(newFlag, renamed)...)
+	assert.Equal(t, []string{"text=renamed", "database.port=5433"}, newFlag.SeedHubVars)
+}
+
+func TestVarFlagsWireAssignmentsAndOptionPrecedence(t *testing.T) {
+	previous := os.Args
+	t.Cleanup(func() { os.Args = previous })
+	t.Setenv(EnvHubSeedVar, "")
+	t.Setenv("DB_HOST", "env")
+	t.Setenv("DB_PORT", "5432")
+	option := Option{VarFlags: map[string]string{"database.host": "db-host", "database.port": "db-port"}}
+	require.False(t, option.isZero())
+	os.Args = []string{"app", "--db-host", "cli", "--hub-seed-var", "database.host=last"}
+	parsed := new(hubflag.Flag)
+	appcli.Handle(flags(parsed, option)...)
+	require.Equal(t, []string{"database.port=5432", "database.host=cli", "database.host=last"}, parsed.SeedHubVars)
+	option.HubSeedVars = []string{"database.host=code"}
+	applyOption(parsed, option)
+	require.Equal(t, []string{"database.host=code"}, parsed.SeedHubVars)
+
+	require.Panics(t, func() {
+		flags(new(hubflag.Flag), Option{VarFlags: map[string]string{"database.host": "hub-admin-listen"}})
+	})
+	require.Panics(t, func() {
+		flags(new(hubflag.Flag), Option{
+			RenamedFlags: map[string]string{FlagHubAdminListen: "db-host"},
+			VarFlags:     map[string]string{"database.host": "db-host"},
+		})
+	})
+}
+
+func TestVarFlagsRejectBuiltInEnvironmentCollisions(t *testing.T) {
+	for _, name := range []string{"vine-hub-seed-var", "vine-hub-admin-listen", "vine-log-level", "vine-log-rules"} {
+		t.Run(name, func(t *testing.T) {
+			require.Panics(t, func() {
+				flags(new(hubflag.Flag), Option{VarFlags: map[string]string{"database.host": name}})
+			})
+		})
+	}
+	require.Panics(t, func() {
+		flags(new(hubflag.Flag), Option{
+			RenamedFlags: map[string]string{FlagHubAdminListen: "admin"},
+			VarFlags:     map[string]string{"database.host": "vine-admin"},
+		})
+	})
+}

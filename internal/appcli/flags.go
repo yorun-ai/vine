@@ -20,10 +20,11 @@ var flagNamePattern = regexp.MustCompile(`^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`)
 // Every declared flag registers here, so Validate can report a name that no
 // declared flag carries.
 type FlagNames struct {
-	declared   map[string]bool
-	ignored    map[string]bool
-	renamed    map[string]string
-	registered map[string]string
+	declared      map[string]bool
+	ignored       map[string]bool
+	renamed       map[string]string
+	registered    map[string]string
+	registeredEnv map[string]string
 }
 
 // NewFlagNames describes the flags an application declares. ignored lists names
@@ -34,10 +35,11 @@ type FlagNames struct {
 // flag cannot also be ignored.
 func NewFlagNames(ignored []string, renamed map[string]string) *FlagNames {
 	names := &FlagNames{
-		declared:   make(map[string]bool),
-		ignored:    make(map[string]bool, len(ignored)),
-		renamed:    make(map[string]string, len(renamed)),
-		registered: make(map[string]string),
+		declared:      make(map[string]bool),
+		ignored:       make(map[string]bool, len(ignored)),
+		renamed:       make(map[string]string, len(renamed)),
+		registered:    make(map[string]string),
+		registeredEnv: map[string]string{envLogLevel: flagLogLevel, envLogRules: flagLogRule},
 	}
 	for _, name := range ignored {
 		names.ignored[name] = true
@@ -57,6 +59,16 @@ func (n *FlagNames) String(canonical string, env string, target *string, usage s
 		flag.Destination = target
 	}
 	return flag
+}
+
+// StringSlice declares a repeatable string flag without splitting its values.
+// Ignored and renamed flags follow the same rules as String.
+func (n *FlagNames) StringSlice(canonical string, env string, target *[]string, usage string) *RepeatedStringFlag {
+	name, env := n.resolve(canonical, env)
+	if n.ignored[canonical] {
+		target = new([]string)
+	}
+	return NewRepeatedStringFlag(name, env, target, usage)
 }
 
 // Bool declares one boolean flag bound to target, with the same rules as String.
@@ -93,6 +105,12 @@ func (n *FlagNames) resolve(canonical string, env string) (name string, envName 
 		name, envName = renamed, envFromName(renamed)
 	}
 
+	n.register(canonical, name, envName)
+	return name, envName
+}
+
+// register checks the shared command-line and environment namespaces.
+func (n *FlagNames) register(canonical string, name string, env string) {
 	// A name the command line already carries cannot be declared again, and two
 	// flags sharing a name leave one of them unreachable.
 	vpre.Check(flagNamePattern.MatchString(name),
@@ -102,8 +120,13 @@ func (n *FlagNames) resolve(canonical string, env string) (name string, envName 
 	if owner, ok := n.registered[name]; ok {
 		vpre.Panicf("flag %q is registered for both %q and %q", name, owner, canonical)
 	}
+	if env != "" {
+		if owner, ok := n.registeredEnv[env]; ok {
+			vpre.Panicf("environment variable %q is registered for both flags %q and %q", env, owner, name)
+		}
+		n.registeredEnv[env] = name
+	}
 	n.registered[name] = canonical
-	return name, envName
 }
 
 // envFromName derives the environment variable of a flag name: VINE_ followed by

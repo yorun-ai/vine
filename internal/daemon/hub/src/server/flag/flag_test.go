@@ -226,6 +226,7 @@ func TestSeedSupplementInputsRequireTemplateAndAreExclusive(t *testing.T) {
 		{SeedHubDataFile: "seed.yaml", SeedHubSource: "{}"},
 		{DBSQLiteFile: "hub.sqlite", SeedHubSourceFile: "source.yaml"},
 		{DBSQLiteFile: "hub.sqlite", SeedHubVarsFile: "vars.yaml"},
+		{DBSQLiteFile: "hub.sqlite", SeedHubVars: []string{"value=1"}},
 	} {
 		require.Panics(t, func() { flags.Normalize(true) })
 	}
@@ -233,6 +234,8 @@ func TestSeedSupplementInputsRequireTemplateAndAreExclusive(t *testing.T) {
 		{SeedHubData: "{}", SeedHubSource: "{}", SeedHubVarsFile: "vars.yaml"},
 		{SeedHubDataFile: "seed.yaml", SeedHubSourceFile: "source.yaml", SeedHubVarsFile: "vars.yaml"},
 		{SeedHubData: "{}", SeedHubVarsFile: "vars.yaml"},
+		{SeedHubData: "{}", SeedHubVars: []string{"value=1"}},
+		{SeedHubDataFile: "seed.yaml", SeedHubVarsFile: "vars.yaml", SeedHubVars: []string{"value=1"}},
 		{SeedHubDataFile: "seed.yaml", SeedHubVarsFile: "vars.yaml"},
 	} {
 		require.NotPanics(t, func() { valid.Normalize(true) })

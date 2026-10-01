@@ -14,12 +14,12 @@ import (
 
 // resolveSeedInput preserves YAML types for whole-field references. Substituted
 // variable values are literal data, not recursively evaluated templates.
-func resolveSeedInput(template []byte, variables []byte, source []byte) (*yaml.Node, core.FieldSources, error) {
-	return resolveSeedInputWithSchemas(template, variables, source, skel.RegisteredDomainSchemas())
+func resolveSeedInput(template []byte, variables []byte, source []byte, overrides ...string) (*yaml.Node, core.FieldSources, error) {
+	return resolveSeedInputWithSchemas(template, variables, source, skel.RegisteredDomainSchemas(), overrides...)
 }
 
-func resolveSeedInputWithSchemas(template []byte, variables []byte, source []byte, domains []*skel.DomainSchema) (*yaml.Node, core.FieldSources, error) {
-	resolver, err := newSeedResolver(template, variables, source, domains)
+func resolveSeedInputWithSchemas(template []byte, variables []byte, source []byte, domains []*skel.DomainSchema, overrides ...string) (*yaml.Node, core.FieldSources, error) {
+	resolver, err := newSeedResolver(template, variables, source, domains, overrides...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -41,7 +41,7 @@ type _SeedResolver struct {
 	dictionary *yaml.Node
 }
 
-func newSeedResolver(template []byte, variables []byte, source []byte, domains []*skel.DomainSchema) (*_SeedResolver, error) {
+func newSeedResolver(template []byte, variables []byte, source []byte, domains []*skel.DomainSchema, overrides ...string) (*_SeedResolver, error) {
 	root, err := parseSeedNode(template)
 	if err != nil {
 		return nil, err
@@ -63,6 +63,10 @@ func newSeedResolver(template []byte, variables []byte, source []byte, domains [
 		if err != nil {
 			return nil, fmt.Errorf("seed variables: %w", err)
 		}
+	}
+	dictionary, err = applySeedVariables(dictionary, overrides)
+	if err != nil {
+		return nil, err
 	}
 	return &_SeedResolver{
 		root:       root,

@@ -52,7 +52,7 @@ func (s *Seeder) loadSeedYAML() {
 	ex.PanicIfError(err)
 	source, err := readSeedInput(s.Flag.SeedHubSource, s.Flag.SeedHubSourceFile)
 	ex.PanicIfError(err)
-	node, sources, err := resolveSeedInput(template, variables, source)
+	node, sources, err := resolveSeedInput(template, variables, source, s.Flag.SeedHubVars...)
 	ex.PanicIfError(err)
 	payload := new(_SettingsYAMLPayload)
 	ex.PanicIfError(node.Decode(payload))
