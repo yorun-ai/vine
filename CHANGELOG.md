@@ -8,6 +8,24 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.23.1] - 2026-10-01
+
+### Added
+
+- RDB `Dao.Filter` updates or deletes matching records without loading models
+  and returns affected row counts. `Dao.One` rolls back and panics unless a write
+  affects exactly one row, including inside an existing transaction.
+- RDB `Dao.Exists` and `Query.Exists` check for matching records without loading
+  models or invoking `AfterFind` hooks, preserving UUID conditions and soft
+  deletion scopes.
+
+### Fixed
+
+- Portal suppresses TLS handshake EOF messages from connections closed before
+  completing the handshake.
+- Portal Web gateway requests, Hub scheduled tasks, and Dashboard debug calls
+  propagate the current application's actual version and instance identity.
+
 ## [0.23.0] - 2026-09-23
 
 ### Added
@@ -1297,7 +1315,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.23.0...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.23.1...HEAD
+[0.23.1]: https://github.com/yorun-ai/vine/compare/v0.23.0...v0.23.1
 [0.23.0]: https://github.com/yorun-ai/vine/compare/v0.22.3...v0.23.0
 [0.22.3]: https://github.com/yorun-ai/vine/compare/v0.22.2...v0.22.3
 [0.22.2]: https://github.com/yorun-ai/vine/compare/v0.22.1...v0.22.2
