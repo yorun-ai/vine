@@ -97,7 +97,12 @@ func TestRenamedFlagUsesTheDerivedNameAndEnvironment(t *testing.T) {
 	appcli.Handle(flags(declaredEnv, renamed)...)
 	assert.Empty(t, declaredEnv.MTLS.CAFile)
 
-	t.Setenv("VINE_CA_FILE", "/tmp/derived-ca.pem")
+	t.Setenv("VINE_CA_FILE", "/tmp/unused-ca.pem")
+	prefixedEnv := &linkflag.Flag{}
+	appcli.Handle(flags(prefixedEnv, renamed)...)
+	assert.Empty(t, prefixedEnv.MTLS.CAFile)
+
+	t.Setenv("CA_FILE", "/tmp/derived-ca.pem")
 	derivedEnv := &linkflag.Flag{}
 	appcli.Handle(flags(derivedEnv, renamed)...)
 	assert.Equal(t, "/tmp/derived-ca.pem", derivedEnv.MTLS.CAFile)

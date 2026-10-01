@@ -274,7 +274,12 @@ func TestRenamedFlagUsesTheDerivedNameAndEnvironment(t *testing.T) {
 	appcli.Handle(flags(declaredEnv, renamed)...)
 	assert.Empty(t, declaredEnv.AdminListen)
 
-	t.Setenv("VINE_ADMIN_LISTEN", "127.0.0.1:7097")
+	t.Setenv("VINE_ADMIN_LISTEN", "127.0.0.1:7096")
+	prefixedEnv := &hubflag.Flag{}
+	appcli.Handle(flags(prefixedEnv, renamed)...)
+	assert.Empty(t, prefixedEnv.AdminListen)
+
+	t.Setenv("ADMIN_LISTEN", "127.0.0.1:7097")
 	derivedEnv := &hubflag.Flag{}
 	appcli.Handle(flags(derivedEnv, renamed)...)
 	assert.Equal(t, "127.0.0.1:7097", derivedEnv.AdminListen)
@@ -360,7 +365,7 @@ func TestSeedVariableAssignmentsFlagsAndOptions(t *testing.T) {
 	oldEnv := new(hubflag.Flag)
 	appcli.Handle(flags(oldEnv, renamed)...)
 	assert.Empty(t, oldEnv.SeedHubVars)
-	t.Setenv("VINE_VAR", "text=renamed-env")
+	t.Setenv("VAR", "text=renamed-env")
 	newEnv := new(hubflag.Flag)
 	appcli.Handle(flags(newEnv, renamed)...)
 	assert.Equal(t, []string{"text=renamed-env"}, newEnv.SeedHubVars)
@@ -405,7 +410,7 @@ func TestVarFlagsRejectBuiltInEnvironmentCollisions(t *testing.T) {
 			})
 		})
 	}
-	require.Panics(t, func() {
+	require.NotPanics(t, func() {
 		flags(new(hubflag.Flag), Option{
 			RenamedFlags: map[string]string{FlagHubAdminListen: "admin"},
 			VarFlags:     map[string]string{"database.host": "vine-admin"},

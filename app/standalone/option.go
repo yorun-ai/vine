@@ -61,7 +61,8 @@ type Option struct {
 	// RenamedFlags maps a declared flag name, such as FlagHubAdminListen, to the
 	// name the binary registers it under. The declared flag and its environment
 	// variable are dropped: the new name carries the environment variable derived
-	// from it. A renamed flag cannot also be ignored.
+	// from it: upper-case with dashes as underscores, without a VINE_ prefix.
+	// A renamed flag cannot also be ignored.
 	RenamedFlags map[string]string
 }
 

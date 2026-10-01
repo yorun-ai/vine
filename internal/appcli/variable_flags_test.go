@@ -117,7 +117,8 @@ func TestVariableFlagsRejectEnvironmentCollisions(t *testing.T) {
 			})
 		})
 	}
-	require.Panics(t, func() {
+	// Renaming no longer reserves the automatically prefixed business name.
+	require.NotPanics(t, func() {
 		variableFlagsForTest(new([]string), nil, map[string]string{"hub-seed-var": "var"},
 			map[string]string{"database.host": "vine-var"})
 	})
@@ -238,7 +239,7 @@ func TestBooleanVariableWorksWithIgnoredOrRenamedSeedFlag(t *testing.T) {
 	require.Equal(t, []string{"enabled=true"}, assignments)
 
 	assignments = nil
-	t.Setenv("VINE_VAR", "")
+	t.Setenv("VAR", "")
 	_, err = parseArgs([]string{"app", "--enabled", "--var", "enabled=false"}, variableBoolFlagsForTest(&assignments,
 		nil, map[string]string{"hub-seed-var": "var"}, map[string]string{"enabled": "enabled"})...)
 	require.NoError(t, err)
