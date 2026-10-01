@@ -33,4 +33,15 @@
 // []uuid.UUID; a single UUID must not be used in place of the list.
 // DAO equivalents such as dao.First(id) and dao.Query(map[string]any{"id": id})
 // normalize UUID arguments automatically.
+// Dao.Exists and Query.Exists check for a matching record by selecting a constant
+// with a limit of one, without loading a model or invoking AfterFind hooks.
+// Query.Exists applies offset and order; database failures panic.
+// Dao.Filter uses the same condition normalization for conditional Update and Delete.
+// These writes execute without fetching records, return int affected row counts,
+// and panic on database errors. Update accepts Patch values including nil, zero
+// values, and GORM expressions. Delete follows the model's soft deletion behavior.
+// Dao.Filter requires at least one condition;
+// Query remains the read-only builder with ordering and paging support.
+// Dao.One reuses Filtered for transactional writes that must affect exactly one
+// row. Update and Delete return 1 on success; other counts roll back and panic.
 package rdb

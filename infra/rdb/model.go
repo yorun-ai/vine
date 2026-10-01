@@ -9,7 +9,7 @@ import (
 
 // Constraint
 
-// ModelConstraint is the generic model contract used by Dao and Query.
+// ModelConstraint is the generic model contract used by Dao, Query, and Filtered.
 type ModelConstraint interface {
 	mustBeModel()
 }

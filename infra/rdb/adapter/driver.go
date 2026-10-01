@@ -25,6 +25,7 @@ func init() {
 
 type _Driver struct{ driver.Driver }
 
+// Open opens a connection and wraps it with UUID parameter conversion.
 func (d *_Driver) Open(name string) (driver.Conn, error) {
 	conn, err := d.Driver.Open(name)
 	if err != nil {
@@ -33,6 +34,8 @@ func (d *_Driver) Open(name string) (driver.Conn, error) {
 	return &_Conn{Conn: conn}, nil
 }
 
+// OpenConnector wraps the underlying connector, falling back to Open
+// when the driver does not implement driver.DriverContext.
 func (d *_Driver) OpenConnector(name string) (driver.Connector, error) {
 	if dc, ok := d.Driver.(driver.DriverContext); ok {
 		connector, err := dc.OpenConnector(name)
@@ -50,7 +53,11 @@ type _Connector struct {
 	name   string
 }
 
+// Driver returns the UUID-aware driver for this connector.
 func (c *_Connector) Driver() driver.Driver { return c.driver }
+
+// Connect opens a wrapped connection through the underlying connector
+// or falls back to the driver's Open method.
 func (c *_Connector) Connect(ctx context.Context) (driver.Conn, error) {
 	if c.Connector == nil {
 		return c.driver.Open(c.name)
@@ -77,6 +84,8 @@ func convertUUIDParameter(value *driver.NamedValue) {
 
 type _Conn struct{ driver.Conn }
 
+// CheckNamedValue converts UUID parameters before delegating validation
+// to the underlying connection; otherwise it returns driver.ErrSkip.
 func (c *_Conn) CheckNamedValue(value *driver.NamedValue) error {
 	convertUUIDParameter(value)
 	if checker, ok := c.Conn.(driver.NamedValueChecker); ok {
@@ -85,6 +94,7 @@ func (c *_Conn) CheckNamedValue(value *driver.NamedValue) error {
 	return driver.ErrSkip
 }
 
+// Prepare prepares SQL and wraps the statement with UUID parameter conversion.
 func (c *_Conn) Prepare(query string) (driver.Stmt, error) {
 	stmt, err := c.Conn.Prepare(query)
 	if err != nil {
@@ -93,6 +103,8 @@ func (c *_Conn) Prepare(query string) (driver.Stmt, error) {
 	return &_Stmt{Stmt: stmt, conn: c}, nil
 }
 
+// PrepareContext delegates context-aware preparation when supported.
+// The fallback checks cancellation before calling Prepare.
 func (c *_Conn) PrepareContext(ctx context.Context, query string) (driver.Stmt, error) {
 	if preparer, ok := c.Conn.(driver.ConnPrepareContext); ok {
 		stmt, err := preparer.PrepareContext(ctx, query)
@@ -107,6 +119,8 @@ func (c *_Conn) PrepareContext(ctx context.Context, query string) (driver.Stmt, 
 	return c.Prepare(query)
 }
 
+// BeginTx delegates transaction options when supported.
+// The fallback rejects non-default options and checks cancellation before beginning.
 func (c *_Conn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, error) {
 	if beginner, ok := c.Conn.(driver.ConnBeginTx); ok {
 		return beginner.BeginTx(ctx, opts)
@@ -120,6 +134,8 @@ func (c *_Conn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, 
 	return c.Conn.Begin()
 }
 
+// ExecContext delegates direct execution when supported, or returns driver.ErrSkip
+// so database/sql can fall back to a prepared statement.
 func (c *_Conn) ExecContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Result, error) {
 	if executor, ok := c.Conn.(driver.ExecerContext); ok {
 		return executor.ExecContext(ctx, query, args)
@@ -127,6 +143,8 @@ func (c *_Conn) ExecContext(ctx context.Context, query string, args []driver.Nam
 	return nil, driver.ErrSkip
 }
 
+// QueryContext delegates direct queries when supported, or returns driver.ErrSkip
+// so database/sql can fall back to a prepared statement.
 func (c *_Conn) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
 	if querier, ok := c.Conn.(driver.QueryerContext); ok {
 		return querier.QueryContext(ctx, query, args)
@@ -134,6 +152,8 @@ func (c *_Conn) QueryContext(ctx context.Context, query string, args []driver.Na
 	return nil, driver.ErrSkip
 }
 
+// Ping delegates connection health checks when supported; otherwise it returns
+// the context error without issuing a database operation.
 func (c *_Conn) Ping(ctx context.Context) error {
 	if pinger, ok := c.Conn.(driver.Pinger); ok {
 		return pinger.Ping(ctx)
@@ -141,6 +161,8 @@ func (c *_Conn) Ping(ctx context.Context) error {
 	return ctx.Err()
 }
 
+// ResetSession delegates session reset when supported; otherwise it returns
+// the context error without changing the connection.
 func (c *_Conn) ResetSession(ctx context.Context) error {
 	if resetter, ok := c.Conn.(driver.SessionResetter); ok {
 		return resetter.ResetSession(ctx)
@@ -148,6 +170,7 @@ func (c *_Conn) ResetSession(ctx context.Context) error {
 	return ctx.Err()
 }
 
+// IsValid delegates connection validation when supported; otherwise it returns true.
 func (c *_Conn) IsValid() bool {
 	if validator, ok := c.Conn.(driver.Validator); ok {
 		return validator.IsValid()
@@ -160,6 +183,8 @@ type _Stmt struct {
 	conn *_Conn
 }
 
+// CheckNamedValue converts UUID parameters and delegates to the statement
+// checker, falling back to the connection checker.
 func (s *_Stmt) CheckNamedValue(value *driver.NamedValue) error {
 	convertUUIDParameter(value)
 	if checker, ok := s.Stmt.(driver.NamedValueChecker); ok {
@@ -168,6 +193,8 @@ func (s *_Stmt) CheckNamedValue(value *driver.NamedValue) error {
 	return s.conn.CheckNamedValue(value)
 }
 
+// ColumnConverter returns the underlying statement converter when supported,
+// or the default SQL parameter converter.
 func (s *_Stmt) ColumnConverter(index int) driver.ValueConverter {
 	if converter, ok := s.Stmt.(driver.ColumnConverter); ok {
 		return converter.ColumnConverter(index)
@@ -175,6 +202,8 @@ func (s *_Stmt) ColumnConverter(index int) driver.ValueConverter {
 	return driver.DefaultParameterConverter
 }
 
+// ExecContext delegates context-aware execution when supported.
+// The fallback checks cancellation, rejects named parameters, and executes positional values.
 func (s *_Stmt) ExecContext(ctx context.Context, args []driver.NamedValue) (driver.Result, error) {
 	if executor, ok := s.Stmt.(driver.StmtExecContext); ok {
 		return executor.ExecContext(ctx, args)
@@ -186,6 +215,8 @@ func (s *_Stmt) ExecContext(ctx context.Context, args []driver.NamedValue) (driv
 	return s.Stmt.Exec(values)
 }
 
+// QueryContext delegates context-aware queries when supported.
+// The fallback checks cancellation, rejects named parameters, and queries positional values.
 func (s *_Stmt) QueryContext(ctx context.Context, args []driver.NamedValue) (driver.Rows, error) {
 	if querier, ok := s.Stmt.(driver.StmtQueryContext); ok {
 		return querier.QueryContext(ctx, args)

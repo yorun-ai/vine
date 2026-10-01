@@ -15,6 +15,8 @@ func init() {
 
 type _UUIDSerializer struct{}
 
+// Scan decodes SQL text or bytes into a UUID field.
+// SQL NULL becomes a zero UUID value or a nil UUID pointer; invalid values return an error.
 func (_UUIDSerializer) Scan(ctx context.Context, field *schema.Field, dst reflect.Value, value any) error {
 	var id uuid.UUID
 	var err error
@@ -46,6 +48,8 @@ func (_UUIDSerializer) Scan(ctx context.Context, field *schema.Field, dst reflec
 	return nil
 }
 
+// Value encodes UUID values as strings and nil pointers as SQL NULL.
+// Unsupported field values return an error.
 func (_UUIDSerializer) Value(_ context.Context, _ *schema.Field, _ reflect.Value, value any) (any, error) {
 	switch id := value.(type) {
 	case nil:
