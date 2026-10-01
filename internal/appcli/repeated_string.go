@@ -1,6 +1,8 @@
 package appcli
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 
 	ucli "github.com/urfave/cli/v3"
@@ -22,6 +24,16 @@ func NewRepeatedStringFlag(name string, env string, target *[]string, usage stri
 		GenericFlag: new(ucli.GenericFlag{Name: name, Sources: ucli.EnvVars(env), Usage: usage, Value: value}),
 		value:       value,
 	})
+}
+
+// IsBoolFlag reports whether a registered variable schema selected a bool flag.
+func (f *RepeatedStringFlag) IsBoolFlag() bool {
+	return f.value.boolean
+}
+
+// TakesValue reports whether the flag requires an explicit value.
+func (f *RepeatedStringFlag) TakesValue() bool {
+	return !f.value.boolean
 }
 
 // PostParse loads environment values before the collected command-line values.
@@ -51,9 +63,18 @@ type _RepeatedString struct {
 	prefix      string
 	assignments *_VariableAssignments
 	environment bool
+	boolean     bool
+	nullable    bool
 }
 
 func (v *_RepeatedString) Set(value string) error {
+	if v.boolean && !(v.nullable && value == "null") {
+		parsed, err := strconv.ParseBool(value)
+		if err != nil {
+			return fmt.Errorf("expected boolean value")
+		}
+		value = strconv.FormatBool(parsed)
+	}
 	value = v.prefix + value
 	*v.values = append(*v.values, value)
 	if v.assignments != nil {
@@ -73,4 +94,8 @@ func (v *_RepeatedString) Get() any {
 
 func (v *_RepeatedString) String() string {
 	return strings.Join(*v.values, ", ")
+}
+
+func (v *_RepeatedString) IsBoolFlag() bool {
+	return v.boolean
 }
