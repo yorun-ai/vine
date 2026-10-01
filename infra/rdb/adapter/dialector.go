@@ -33,6 +33,7 @@ func NewDialector(connURL string) gorm.Dialector {
 // _SQLiteDialector stores UUID columns as text because SQLite has no UUID type.
 type _SQLiteDialector struct{ *sqlite.Dialector }
 
+// DataTypeOf maps UUID fields to text and delegates other types to SQLite.
 func (d *_SQLiteDialector) DataTypeOf(field *schema.Field) string {
 	if field.DataType == "uuid" || automaticUUIDField(field) {
 		return "text"
@@ -40,12 +41,14 @@ func (d *_SQLiteDialector) DataTypeOf(field *schema.Field) string {
 	return d.Dialector.DataTypeOf(field)
 }
 
+// Migrator returns a SQLite migrator using this dialector's UUID type mapping.
 func (d *_SQLiteDialector) Migrator(db *gorm.DB) gorm.Migrator {
 	m := d.Dialector.Migrator(db).(sqlite.Migrator)
 	m.Dialector = d
 	return m
 }
 
+// Initialize initializes SQLite and registers UUID primary-key generation.
 func (d *_SQLiteDialector) Initialize(db *gorm.DB) error {
 	if err := d.Dialector.Initialize(db); err != nil {
 		return err
@@ -58,6 +61,8 @@ type _PostgresDialector struct{ *postgres.Dialector }
 // Match GORM's PostgreSQL DSN handling, including timestamp scan locations.
 var postgresTimeZoneMatcher = regexp.MustCompile(`(time_zone|TimeZone|timezone)=(.*?)($|&| )`)
 
+// Initialize configures the UUID-aware PostgreSQL connector and creation callbacks,
+// preserving GORM DSN options and timestamp scan locations.
 func (d *_PostgresDialector) Initialize(db *gorm.DB) error {
 	config := *d.Config
 	var pool *sql.DB
@@ -117,6 +122,8 @@ func automaticUUIDField(field *schema.Field) bool {
 		field.TagSettings["TYPE"] == "" && field.Serializer == nil
 }
 
+// DataTypeOf infers PostgreSQL uuid for untagged UUID fields
+// and delegates explicit types and other fields to PostgreSQL.
 func (d *_PostgresDialector) DataTypeOf(field *schema.Field) string {
 	if automaticUUIDField(field) {
 		return "uuid"
@@ -124,6 +131,7 @@ func (d *_PostgresDialector) DataTypeOf(field *schema.Field) string {
 	return d.Dialector.DataTypeOf(field)
 }
 
+// Migrator returns a PostgreSQL migrator using this dialector's UUID type mapping.
 func (d *_PostgresDialector) Migrator(db *gorm.DB) gorm.Migrator {
 	m := d.Dialector.Migrator(db).(postgres.Migrator)
 	m.Dialector = d

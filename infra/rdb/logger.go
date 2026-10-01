@@ -25,22 +25,28 @@ func contextWithLogger(ctx context.Context, requestLogger *logger.Logger) contex
 	return context.WithValue(ctx, _GormLogKey{}, requestLogger)
 }
 
+// LogMode returns the adapter; logging levels are controlled by the Vine logger
+// rather than the requested GORM level.
 func (_GormLoggerAdapter) LogMode(level gormLogger.LogLevel) gormLogger.Interface {
 	return _GormLoggerAdapter{}
 }
 
+// Info writes a formatted GORM informational message at Vine debug level.
 func (_GormLoggerAdapter) Info(ctx context.Context, msg string, data ...any) {
 	getLogger(ctx).Debug(formatMessage(msg, data...))
 }
 
+// Warn writes a formatted GORM warning using the context logger.
 func (_GormLoggerAdapter) Warn(ctx context.Context, msg string, data ...any) {
 	getLogger(ctx).Warn(formatMessage(msg, data...))
 }
 
+// Error writes a formatted GORM error using the context logger.
 func (_GormLoggerAdapter) Error(ctx context.Context, msg string, data ...any) {
 	getLogger(ctx).Error(formatMessage(msg, data...))
 }
 
+// Trace logs SQL, affected rows, elapsed time, and any error at Vine debug level.
 func (_GormLoggerAdapter) Trace(ctx context.Context, begin time.Time, sqlBuilder func() (string, int64), err error) {
 	requestLogger := getLogger(ctx)
 	if err != nil {

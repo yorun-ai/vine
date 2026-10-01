@@ -2,6 +2,7 @@ package rdb
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 	"testing"
@@ -126,6 +127,52 @@ func TestQueryLimitOffsetAndOrder(t *testing.T) {
 
 	require.Len(t, list, 1)
 	assert.Equal(t, "beta", list[0].Name)
+}
+
+type queryExistsTestModel struct {
+	UModel
+	Name string
+}
+
+func (*queryExistsTestModel) AfterFind(_ *gorm.DB) error {
+	return errors.New("Exists must not invoke AfterFind")
+}
+
+func TestQueryExists(t *testing.T) {
+	connURL := "sqlite://" + t.TempDir() + "/exists.sqlite"
+	db, err := openConnection(Option{ConnURL: connURL})
+	require.NoError(t, err)
+	t.Cleanup(func() { closeConnection(connURL) })
+	require.NoError(t, db.AutoMigrate(new(queryExistsTestModel)))
+	sqlLogger := new(_QuerySQLLogger)
+	dao := NewDao[*queryExistsTestModel](db.Session(new(gorm.Session{Logger: sqlLogger})))
+	assert.False(t, dao.Query().Exists())
+	first := dao.Create(new(queryExistsTestModel{Name: "alpha"}))
+	dao.Create(new(queryExistsTestModel{Name: "beta"}))
+
+	query := dao.Query("name = ?", "alpha").Limit(5).Order("name").Offset(0)
+	assert.True(t, query.Exists())
+	sql := strings.ToLower(sqlLogger.LastSQL())
+	assert.Contains(t, sql, "select 1 from")
+	assert.Contains(t, sql, "limit 1")
+	assert.NotContains(t, sql, "count(")
+	assert.NotContains(t, sql, "select *")
+	assert.Equal(t, 5, *query.limit)
+	assert.False(t, query.Offset(1).Exists())
+	assert.True(t, query.Offset(0).Exists())
+	assert.True(t, dao.Query().Offset(1).Exists())
+	assert.False(t, dao.Query().Offset(2).Exists())
+	assert.False(t, dao.Query("name = ?", "missing").Exists())
+
+	dao.Delete(first)
+	assert.False(t, dao.Query(first.Id).Exists())
+	unscoped := NewDao[*queryExistsTestModel](db.Unscoped())
+	assert.True(t, unscoped.Query(first.Id).Exists())
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	canceled := NewDao[*queryExistsTestModel](db.WithContext(ctx))
+	require.Panics(t, func() { canceled.Query().Exists() })
 }
 
 type _QuerySQLLogger struct {

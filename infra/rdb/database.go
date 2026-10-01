@@ -23,7 +23,7 @@ func defaultOption() *Option {
 	}
 }
 
-// TypeAdder adds a model type to a database specification.
+// TypeAdder registers a DAO pointer type with a database specification.
 type TypeAdder func(daoType reflect.Type)
 
 type _SchemaDao interface {
@@ -33,19 +33,25 @@ type _SchemaDao interface {
 
 // DatabaseSpec declares database options and DAOs.
 type DatabaseSpec interface {
+	// InitOption configures the connection URL and pool options before opening it.
 	InitOption(option *Option)
+	// InitDao registers DAO pointer types to initialize and bind.
 	InitDao(add TypeAdder)
 
 	mustBeDatabase()
 }
 
-// Database exposes the underlying GORM connection and transaction helpers.
+// Database provides database component lifecycle and DAO registration hooks.
 type Database struct {
 	app.BaseManagedComponent[*DatabaseManager]
 }
 
+// InitOption is the default configuration hook and leaves the defaults unchanged.
+// Override it on the embedding component to set ConnURL and pool options.
 func (*Database) InitOption(option *Option) {}
 
+// InitDao is the default DAO registration hook and registers no DAOs.
+// Override it on the embedding component to register DAO pointer types with addDao.
 func (*Database) InitDao(addDao TypeAdder) {}
 
 func (*Database) mustBeDatabase() {}
@@ -60,6 +66,8 @@ type DatabaseManager struct {
 	gormDB   *gorm.DB
 }
 
+// InitComponent reads the component specification, opens or reuses its connection,
+// and initializes each registered DAO schema before binding. Initialization failures panic.
 func (m *DatabaseManager) InitComponent(component app.ManagedComponent) {
 	m.database = component
 	m.option = defaultOption()
@@ -95,10 +103,13 @@ func (m *DatabaseManager) ensureDaoSchema(daoType reflect.Type) {
 	dao.EnsureSchema()
 }
 
+// Component returns the managed database component.
 func (m *DatabaseManager) Component() app.ManagedComponent {
 	return m.database
 }
 
+// Bind registers DAO factories with the dependency container.
+// Each resolved DAO uses the injected context and logger on the shared connection.
 func (m *DatabaseManager) Bind(b *di.Binder) {
 	for _, daoType := range m.daoTypes {
 		b.Bind(daoType).ToFactory(func(ctx context.Context, logger *logger.Logger) any {
@@ -115,6 +126,8 @@ func (m *DatabaseManager) instantiateDao(daoType reflect.Type, ctx context.Conte
 	return daoValue.Interface()
 }
 
+// AfterAppStop releases this component's connection reference.
+// The connection closes when the last component sharing its URL releases it.
 func (m *DatabaseManager) AfterAppStop() {
 	closeConnection(m.option.ConnURL)
 }
