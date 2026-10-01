@@ -221,12 +221,17 @@ func TestHubSeedInputs(t *testing.T) {
 	t.Cleanup(func() { startHubApp = original })
 	for _, fromEnv := range []bool{false, true} {
 		t.Run(fmt.Sprint(fromEnv), func(t *testing.T) {
-			for _, name := range []string{EnvSeedDataFile, EnvSeedSourceFile, EnvSeedVarsFile} {
+			for _, name := range []string{EnvSeedDataFile, EnvSeedSourceFile, EnvSeedVarsFile, EnvSeedVar} {
 				t.Setenv(name, "")
 			}
 			called := false
 			startHubApp = func(flags hubconf.Flag) {
 				called = true
+				if fromEnv {
+					require.Equal(t, []string{"database={host: localhost, port: 5432}"}, flags.SeedHubVars)
+				} else {
+					require.Equal(t, []string{"database.host=old", "database={host: localhost, port: 5432}"}, flags.SeedHubVars)
+				}
 				if flags.SeedHubDataFile != "data.yaml" || flags.SeedHubSourceFile != "source.yaml" || flags.SeedHubVarsFile != "vars.yaml" {
 					t.Fatalf("incorrect input mapping: %#v", flags)
 				}
@@ -236,8 +241,9 @@ func TestHubSeedInputs(t *testing.T) {
 				t.Setenv(EnvSeedDataFile, "data.yaml")
 				t.Setenv(EnvSeedSourceFile, "source.yaml")
 				t.Setenv(EnvSeedVarsFile, "vars.yaml")
+				t.Setenv(EnvSeedVar, "database={host: localhost, port: 5432}")
 			} else {
-				args = append(args, "--seed-data-file", "data.yaml", "--seed-source-file", "source.yaml", "--seed-vars-file", "vars.yaml")
+				args = append(args, "--seed-data-file", "data.yaml", "--seed-source-file", "source.yaml", "--seed-vars-file", "vars.yaml", "--seed-var", "database.host=old", "--seed-var", "database={host: localhost, port: 5432}")
 			}
 			result := run(args)
 			if result.exitCode != exitCodeSuccess || !called {

@@ -49,3 +49,33 @@ func TestFlagNamesRejectsMalformedNames(t *testing.T) {
 		})
 	}
 }
+
+func TestFlagNamesRejectsCollidingEnvironmentVariables(t *testing.T) {
+	for _, ignored := range []bool{false, true} {
+		var ignore []string
+		if ignored {
+			ignore = []string{"first"}
+		}
+		names := NewFlagNames(ignore, nil)
+		names.String("first", "SHARED", new(string), "first")
+		assert.PanicsWithError(t, `environment variable "SHARED" is registered for both flags "first" and "second"`, func() {
+			names.Bool("second", "SHARED", new(bool), "second")
+		})
+	}
+}
+
+func TestRenamedFlagEnvironmentIsRegistered(t *testing.T) {
+	names := NewFlagNames(nil, map[string]string{"original": "renamed"})
+	names.String("original", "OLD_ENV", new(string), "original")
+	assert.NotPanics(t, func() { names.String("other", "OLD_ENV", new(string), "other") })
+	assert.PanicsWithError(t, `environment variable "VINE_RENAMED" is registered for both flags "renamed" and "third"`, func() {
+		names.StringSlice("third", "VINE_RENAMED", new([]string), "third")
+	})
+}
+
+func TestFlagNamesReservesLoggingEnvironmentVariables(t *testing.T) {
+	for _, env := range []string{envLogLevel, envLogRules} {
+		names := NewFlagNames(nil, nil)
+		assert.Panics(t, func() { names.String("other", env, new(string), "other") })
+	}
+}

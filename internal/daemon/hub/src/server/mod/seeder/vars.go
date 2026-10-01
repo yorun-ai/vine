@@ -173,23 +173,28 @@ func parseSeedDefault(value string, kind *skel.TypeSchema) (*yaml.Node, error) {
 	if kind != nil && (kind.Kind == skel.TypeKindEnum || (kind.Kind == skel.TypeKindScalar && seedStringScalar(kind.Scalar))) {
 		return new(yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value}), nil
 	}
+	return parseSeedValue(value)
+}
+
+// parseSeedValue preserves the native YAML type of one literal value.
+func parseSeedValue(value string) (*yaml.Node, error) {
 	if value == "" {
 		return new(yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: ""}), nil
 	}
 	var doc yaml.Node
 	decoder := yaml.NewDecoder(strings.NewReader(value))
 	if err := decoder.Decode(&doc); err != nil {
-		return nil, fmt.Errorf("invalid seed default")
+		return nil, fmt.Errorf("invalid seed value")
 	}
 	var extra yaml.Node
 	if err := decoder.Decode(&extra); err != io.EOF {
-		return nil, fmt.Errorf("seed default must contain one YAML value")
+		return nil, fmt.Errorf("seed value must contain one YAML value")
 	}
 	if len(doc.Content) != 1 {
-		return nil, fmt.Errorf("invalid seed default")
+		return nil, fmt.Errorf("invalid seed value")
 	}
 	if err := checkSeedYAMLSyntax(&doc); err != nil {
-		return nil, fmt.Errorf("invalid seed default syntax")
+		return nil, fmt.Errorf("invalid seed value syntax")
 	}
 	return doc.Content[0], nil
 }

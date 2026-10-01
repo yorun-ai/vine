@@ -29,12 +29,26 @@ type Option struct {
 	HubSeedSource string
 	// HubSeedSourceFile is the optional field source map and requires HubSeedDataFile.
 	HubSeedSourceFile string
+	// HubSeedVars supplies path=YAML assignments applied over HubSeedVarsFile.
+	// Paths use camelCase segments separated by dots; later assignments win.
+	// Values retain YAML scalar, list and object types and are never re-expanded.
+	// A non-empty slice replaces assignments from flags or the environment.
+	HubSeedVars []string
 	// HubSeedVarsFile supplies a YAML mapping for ${path} and ${path:default} references.
 	// Paths use camelCase segments separated by dots. Defaults apply only to
 	// missing keys; existing null and zero values are preserved until use.
 	// Importing skeled/app registers app.Vars for type checking; unused fields
 	// are not required. Values inserted from this file are never re-expanded.
 	HubSeedVarsFile string
+
+	// VarFlags maps seed variable paths to application flag names, for example
+	// "database.host": "db-host". Each flag accepts a repeatable YAML value and
+	// reads its upper-case flag name with dashes as underscores (without a prefix).
+	// Environment assignments precede command-line assignments, which retain
+	// their occurrence order across these flags and FlagHubSeedVar. These flags
+	// remain active when FlagHubSeedVar is ignored. Flag names and environment
+	// names must not collide with any other registered parameter.
+	VarFlags map[string]string
 
 	// IgnoredFlags lists the flags the binary accepts but discards, named with the
 	// Flag constants of this package. The named flags and their environment
@@ -58,7 +72,9 @@ func (o Option) isZero() bool {
 		o.HubSeedDataFile == "" &&
 		o.HubSeedSource == "" &&
 		o.HubSeedSourceFile == "" &&
+		len(o.HubSeedVars) == 0 &&
 		o.HubSeedVarsFile == "" &&
+		len(o.VarFlags) == 0 &&
 		len(o.IgnoredFlags) == 0 &&
 		len(o.RenamedFlags) == 0
 }
@@ -74,7 +90,9 @@ const (
 	FlagHubDBPostgresURL  = "hub-db-postgres-url"
 	FlagHubSeedDataFile   = "hub-seed-data-file"
 	FlagHubSeedSourceFile = "hub-seed-source-file"
-	FlagHubSeedVarsFile   = "hub-seed-vars-file"
+	// FlagHubSeedVar accepts repeatable path=YAML seed variable assignments.
+	FlagHubSeedVar      = "hub-seed-var"
+	FlagHubSeedVarsFile = "hub-seed-vars-file"
 
 	EnvHubAdminListen    = "VINE_HUB_ADMIN_LISTEN"
 	EnvHubNoDB           = "VINE_HUB_NO_DB"
@@ -82,7 +100,9 @@ const (
 	EnvHubDBPostgresURL  = "VINE_HUB_DB_POSTGRES_URL"
 	EnvHubSeedDataFile   = "VINE_HUB_SEED_DATA_FILE"
 	EnvHubSeedSourceFile = "VINE_HUB_SEED_SOURCE_FILE"
-	EnvHubSeedVarsFile   = "VINE_HUB_SEED_VARS_FILE"
+	// EnvHubSeedVar supplies one path=YAML seed variable assignment.
+	EnvHubSeedVar      = "VINE_HUB_SEED_VAR"
+	EnvHubSeedVarsFile = "VINE_HUB_SEED_VARS_FILE"
 )
 
 // flags lists the Hub parameters the business binary accepts, as the option
@@ -92,6 +112,7 @@ const (
 func flags(flag *hubflag.Flag, option Option) []ucli.Flag {
 	names := appcli.NewFlagNames(option.IgnoredFlags, option.RenamedFlags)
 
+	seedVar := names.StringSlice(FlagHubSeedVar, EnvHubSeedVar, &flag.SeedHubVars, "in-process Hub seed variable path=YAML; repeatable; overrides vars file")
 	list := []ucli.Flag{
 		names.String(FlagHubAdminListen, EnvHubAdminListen, &flag.AdminListen,
 			"in-process Hub Admin API and Dashboard listen address; unauthenticated, so loopback unless the network is trusted"),
@@ -101,9 +122,13 @@ func flags(flag *hubflag.Flag, option Option) []ucli.Flag {
 		names.String(FlagHubDBPostgresURL, EnvHubDBPostgresURL, &flag.DBPostgresURL, "in-process Hub PostgreSQL database URL"),
 		names.String(FlagHubSeedDataFile, EnvHubSeedDataFile, &flag.SeedHubDataFile, "in-process Hub seed YAML file"),
 		names.String(FlagHubSeedSourceFile, EnvHubSeedSourceFile, &flag.SeedHubSourceFile, "in-process Hub seed source YAML file"),
+		seedVar,
 		names.String(FlagHubSeedVarsFile, EnvHubSeedVarsFile, &flag.SeedHubVarsFile, "in-process Hub seed vars YAML file"),
 	}
 
+	if len(option.VarFlags) > 0 {
+		list = append(list, names.VariableFlags(option.VarFlags, &flag.SeedHubVars, seedVar)...)
+	}
 	names.Validate()
 	return list
 }
@@ -134,6 +159,9 @@ func applyOption(flag *hubflag.Flag, option Option) {
 	}
 	if option.HubSeedSourceFile != "" {
 		flag.SeedHubSourceFile = option.HubSeedSourceFile
+	}
+	if len(option.HubSeedVars) > 0 {
+		flag.SeedHubVars = append([]string(nil), option.HubSeedVars...)
 	}
 	if option.HubSeedVarsFile != "" {
 		flag.SeedHubVarsFile = option.HubSeedVarsFile

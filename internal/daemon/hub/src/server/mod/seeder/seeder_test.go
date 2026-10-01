@@ -1091,3 +1091,34 @@ func TestSeederRejectsLegacyCertificateFields(t *testing.T) {
 		require.Panics(t, target.loadSeedYAML)
 	}
 }
+
+func TestSeederAppliesVariableAssignmentsWithAndWithoutFile(t *testing.T) {
+	for _, withFile := range []bool{false, true} {
+		t.Run(fmt.Sprint(withFile), func(t *testing.T) {
+			configs, rules, certs, sites, metadata, _ := newTestSeederRepos(t)
+			flags := new(flag.Flag{
+				SeedHubData: "appConfigs: [{name: example.config, value: '${database}'}]",
+				SeedHubVars: []string{"database={host: localhost, port: 5432}", "database.host=cli"},
+			})
+			if withFile {
+				flags.SeedHubVarsFile = writeSeedHubVarsFile(t, "database: {host: file, stale: true}")
+			}
+			s := new(Seeder{
+				Flag: flags, MetadataRepo: metadata, Logger: logger.New("seed-vars-test"),
+				AppConfigCore: new(core.AppConfigCore{AppConfigRepo: configs}),
+				EntryCore:     newTestEntryCore(rules.PortalEntryRepo, rules, sites),
+				RuleCore:      newTestRuleCore(rules, sites), SiteCore: newTestSiteCore(sites),
+				CertCore: new(core.PortalCertCore{PortalCertRepo: certs}),
+			})
+			s.Flag.Normalize(true)
+			s.DIInit()
+			config, exists := configs.GetByName("example.config")
+			require.True(t, exists)
+			require.JSONEq(t, `{"host":"cli","port":5432}`, config.Value)
+			require.Equal(t, []string{"database"}, config.FieldSources["/value"].Variables)
+			// A persisted seed skips all inputs on subsequent initialization.
+			s.Flag.SeedHubVars = []string{"invalid"}
+			require.NotPanics(t, s.DIInit)
+		})
+	}
+}

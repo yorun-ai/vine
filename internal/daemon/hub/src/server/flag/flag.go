@@ -50,6 +50,7 @@ type Flag struct {
 	SeedHubDataFile   string
 	SeedHubSource     string
 	SeedHubSourceFile string
+	SeedHubVars       []string
 	SeedHubVarsFile   string
 }
 
@@ -90,7 +91,7 @@ func (f *Flag) normalizeListen() {
 
 func (f *Flag) normalizeSeed() {
 	vpre.CheckNot(f.SeedHubSource != "" && f.SeedHubSourceFile != "", "SeedHubSource and the seed source file are mutually exclusive")
-	vpre.CheckNot((f.SeedHubSource != "" || f.SeedHubSourceFile != "" || f.SeedHubVarsFile != "") && f.SeedHubData == "" && f.SeedHubDataFile == "", "seed source and variables require seed YAML")
+	vpre.CheckNot((f.SeedHubSource != "" || f.SeedHubSourceFile != "" || f.SeedHubVarsFile != "" || len(f.SeedHubVars) > 0) && f.SeedHubData == "" && f.SeedHubDataFile == "", "seed source and variables require seed YAML")
 	vpre.CheckNot(f.SeedHubDataFile != "" && f.SeedHubData != "", "SeedHubData and the seed data file are mutually exclusive")
 	vpre.CheckNot(f.SeedHubSource != "" && f.SeedHubData == "", "SeedHubSource requires inline SeedHubData")
 	vpre.CheckNot(f.SeedHubSourceFile != "" && f.SeedHubDataFile == "", "a seed source file requires a seed data file")
