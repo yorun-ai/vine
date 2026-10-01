@@ -42,8 +42,10 @@ type Option struct {
 	HubSeedVarsFile string
 
 	// VarFlags maps seed variable paths to application flag names, for example
-	// "database.host": "db-host". Each flag accepts a repeatable YAML value and
-	// reads its upper-case flag name with dashes as underscores (without a prefix).
+	// "database.host": "db-host". Registered app.Vars bool paths accept bare
+	// flags (true) or --flag=false; other paths require a YAML value. Flags can
+	// be repeated. Environment names use upper-case flag names with dashes as
+	// underscores, without a prefix.
 	// Environment assignments precede command-line assignments, which retain
 	// their occurrence order across these flags and FlagHubSeedVar. These flags
 	// remain active when FlagHubSeedVar is ignored. Flag names and environment

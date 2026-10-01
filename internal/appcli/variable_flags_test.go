@@ -1,6 +1,7 @@
 package appcli
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -146,4 +147,136 @@ func TestVariableFlagPreservesEmptyEnvironmentValue(t *testing.T) {
 		[]string{"hub-seed-var"}, nil, map[string]string{"database.host": "db-host"})...)
 	require.NoError(t, err)
 	require.Equal(t, []string{"database.host=cli"}, assignments)
+}
+
+func variableBoolFlagsForTest(target *[]string, ignored []string, renamed map[string]string, paths map[string]string) []ucli.Flag {
+	names := NewFlagNames(ignored, renamed)
+	seed := names.StringSlice("hub-seed-var", "VINE_TEST_SEED_VAR", target, "seed variable")
+	list := append([]ucli.Flag{seed}, names.variableFlags(paths, target, seed, variableFlagTestSchemas())...)
+	names.Validate()
+	return list
+}
+
+func unsetVariableBoolEnv(t *testing.T, name string) {
+	t.Helper()
+	t.Setenv(name, "")
+	require.NoError(t, os.Unsetenv(name))
+}
+
+func TestBooleanVariableFlagsPresenceAndRepeats(t *testing.T) {
+	unsetVariableBoolEnv(t, "ENABLED")
+	t.Setenv("VINE_TEST_SEED_VAR", "")
+	for _, test := range []struct {
+		name string
+		args []string
+		want []string
+	}{
+		{name: "absent"},
+		{name: "bare", args: []string{"--enabled"}, want: []string{"enabled=true"}},
+		{name: "false", args: []string{"--enabled=false"}, want: []string{"enabled=false"}},
+		{name: "repeat", args: []string{"--enabled=false", "--enabled", "--enabled=true"}, want: []string{"enabled=false", "enabled=true", "enabled=true"}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			var assignments []string
+			_, err := parseArgs(append([]string{"app"}, test.args...), variableBoolFlagsForTest(&assignments,
+				nil, nil, map[string]string{"enabled": "enabled"})...)
+			require.NoError(t, err)
+			require.Equal(t, test.want, assignments)
+		})
+	}
+}
+
+func TestBooleanVariableEnvironment(t *testing.T) {
+	t.Setenv("VINE_TEST_SEED_VAR", "")
+	for _, value := range []string{"true", "false"} {
+		t.Run(value, func(t *testing.T) {
+			t.Setenv("ENABLED", value)
+			var assignments []string
+			_, err := parseArgs([]string{"app"}, variableBoolFlagsForTest(&assignments,
+				nil, nil, map[string]string{"enabled": "enabled"})...)
+			require.NoError(t, err)
+			require.Equal(t, []string{"enabled=" + value}, assignments)
+		})
+	}
+	for _, value := range []string{"", "wrong", "null"} {
+		t.Run("invalid-"+value, func(t *testing.T) {
+			t.Setenv("ENABLED", value)
+			var assignments []string
+			_, err := parseArgs([]string{"app"}, variableBoolFlagsForTest(&assignments,
+				nil, nil, map[string]string{"enabled": "enabled"})...)
+			require.ErrorContains(t, err, "expected boolean value")
+			require.Empty(t, assignments)
+		})
+	}
+}
+
+func TestBooleanVariableOrderAndEnvironmentOverride(t *testing.T) {
+	t.Setenv("ENABLED", "invalid-but-overridden")
+	t.Setenv("VINE_TEST_SEED_VAR", "")
+	unsetVariableBoolEnv(t, "TEXT")
+	var assignments []string
+	_, err := parseArgs([]string{"app", "--enabled", "--text", "next", "--hub-seed-var", "enabled=false", "--enabled=false"},
+		variableBoolFlagsForTest(&assignments, nil, nil, map[string]string{"enabled": "enabled", "text": "text"})...)
+	require.NoError(t, err)
+	require.Equal(t, []string{"enabled=true", "text=next", "enabled=false", "enabled=false"}, assignments)
+
+	assignments = nil
+	t.Setenv("ENABLED", "true")
+	_, err = parseArgs([]string{"app", "--hub-seed-var", "enabled=false"},
+		variableBoolFlagsForTest(&assignments, nil, nil, map[string]string{"enabled": "enabled"})...)
+	require.NoError(t, err)
+	require.Equal(t, []string{"enabled=true", "enabled=false"}, assignments)
+}
+
+func TestBooleanVariableWorksWithIgnoredOrRenamedSeedFlag(t *testing.T) {
+	unsetVariableBoolEnv(t, "ENABLED")
+	t.Setenv("VINE_TEST_SEED_VAR", "")
+	var assignments []string
+	_, err := parseArgs([]string{"app", "--enabled"}, variableBoolFlagsForTest(&assignments,
+		[]string{"hub-seed-var"}, nil, map[string]string{"enabled": "enabled"})...)
+	require.NoError(t, err)
+	require.Equal(t, []string{"enabled=true"}, assignments)
+
+	assignments = nil
+	t.Setenv("VINE_VAR", "")
+	_, err = parseArgs([]string{"app", "--enabled", "--var", "enabled=false"}, variableBoolFlagsForTest(&assignments,
+		nil, map[string]string{"hub-seed-var": "var"}, map[string]string{"enabled": "enabled"})...)
+	require.NoError(t, err)
+	require.Equal(t, []string{"enabled=true", "enabled=false"}, assignments)
+}
+
+func TestNullableBooleanVariableAcceptsExplicitNull(t *testing.T) {
+	t.Setenv("VINE_TEST_SEED_VAR", "")
+	t.Setenv("OPTIONAL", "null")
+	var assignments []string
+	_, err := parseArgs([]string{"app"}, variableBoolFlagsForTest(&assignments,
+		nil, nil, map[string]string{"optional": "optional"})...)
+	require.NoError(t, err)
+	require.Equal(t, []string{"optional=null"}, assignments)
+	assignments = nil
+	_, err = parseArgs([]string{"app", "--optional", "--optional=null"}, variableBoolFlagsForTest(&assignments,
+		nil, nil, map[string]string{"optional": "optional"})...)
+	require.NoError(t, err)
+	require.Equal(t, []string{"optional=true", "optional=null"}, assignments)
+}
+
+func TestVariableFlagBooleanSelectionAndFallback(t *testing.T) {
+	var assignments []string
+	flags := variableBoolFlagsForTest(&assignments, nil, nil, map[string]string{
+		"feature.enabled": "feature-enabled", "text": "text", "unknown": "unknown",
+	})
+	for _, flag := range flags[1:] {
+		takesValue := flag.(interface{ TakesValue() bool }).TakesValue()
+		require.Equal(t, flag.Names()[0] != "feature-enabled", takesValue)
+	}
+	// Without app.Vars, even a bool-looking path still requires a YAML value.
+	_, err := parseArgs([]string{"app", "--enabled"}, variableFlagsForTest(&assignments,
+		nil, nil, map[string]string{"enabled": "enabled"})...)
+	require.Error(t, err)
+	_, err = parseArgs([]string{"app", "--unknown"}, variableBoolFlagsForTest(&assignments,
+		nil, nil, map[string]string{"unknown": "unknown"})...)
+	require.Error(t, err)
+	_, err = parseArgs([]string{"app", "--enabled=wrong"}, variableBoolFlagsForTest(&assignments,
+		nil, nil, map[string]string{"enabled": "enabled"})...)
+	require.ErrorContains(t, err, "expected boolean value")
 }
