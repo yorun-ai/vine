@@ -212,3 +212,10 @@ func (r *SchemaRepo) GetWebSchema(skelName string) *skel.WebSchema {
 
 	return r.snapshot.Webs.Get(skelName)
 }
+
+// ListAppConfigTypeSchemas returns config declarations and their value types from one snapshot.
+func (r *SchemaRepo) ListAppConfigTypeSchemas() ([]*skel.ConfigSchema, []*skel.EnumSchema, []*skel.DataSchema) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.snapshot.Configs.Selected(), r.snapshot.Enums.Selected(), r.snapshot.Data.Selected()
+}

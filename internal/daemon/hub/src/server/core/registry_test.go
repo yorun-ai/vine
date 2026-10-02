@@ -386,3 +386,7 @@ func (r *schemaRepoSpy) GetWebSchema(skelName string) *skel.WebSchema {
 	}
 	return nil
 }
+
+func (r *schemaRepoSpy) ListAppConfigTypeSchemas() ([]*skel.ConfigSchema, []*skel.EnumSchema, []*skel.DataSchema) {
+	return r.ListAppConfigSchemas(), r.ListEnumSchemas(), nil
+}

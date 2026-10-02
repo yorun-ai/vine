@@ -33,6 +33,7 @@ type _PortalSiteSchemaRepo struct {
 	views         []core.DomainSchemaView
 	configSchemas []*skel.ConfigSchema
 	enumSchemas   []*skel.EnumSchema
+	dataSchemas   []*skel.DataSchema
 }
 
 func (r *_PortalSiteSchemaRepo) ListAppConfigSchemas() []*skel.ConfigSchema { return r.configSchemas }
@@ -231,4 +232,8 @@ func TestPortalSiteRepoLeavesDerivedValuesEmptyWithoutSchemas(t *testing.T) {
 	require.True(t, ok)
 	assert.Empty(t, got.WebMountPath)
 	assert.Empty(t, got.RpcgwServices)
+}
+
+func (r *_PortalSiteSchemaRepo) ListAppConfigTypeSchemas() ([]*skel.ConfigSchema, []*skel.EnumSchema, []*skel.DataSchema) {
+	return r.ListAppConfigSchemas(), r.ListEnumSchemas(), r.dataSchemas
 }

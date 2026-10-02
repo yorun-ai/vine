@@ -1,7 +1,14 @@
 import JSON5 from 'json5'
+import type { ConfigSchemaType, ConfigSchemaData } from './config-structured-schema.ts'
 
 export interface ConfigJsonField {
   name: string
+  valueType?: ConfigSchemaType | null
+  dataTypes?: ReadonlyArray<ConfigSchemaData>
+  sensitive?: boolean
+  example?: string
+  deprecated?: boolean
+  deprecatedReason?: string
   type: string
   description: string
   commentTags?: ReadonlyArray<string>

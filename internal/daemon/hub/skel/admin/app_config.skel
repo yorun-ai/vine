@@ -47,6 +47,10 @@ data AppConfigListItem {
 
 @desc("Configuration schema fields")
 data AppConfigSchemaField {
+    valueType: AppConfigSchemaType?
+    sensitive: bool
+    example: string
+
     @desc("Field name")
     name: string
 
@@ -89,6 +93,9 @@ data AppConfigSchemaEnumItem {
 
 @desc("Configuration schema items")
 data AppConfigSchema {
+    sensitive: bool
+    dataTypes: list<AppConfigSchemaData>
+
     @desc("Configuration Skel name")
     skelName: string
 
@@ -176,4 +183,28 @@ api service AppConfigApiService {
         @desc("Whether deletion succeeded")
         output bool
     }
+}
+
+@desc("Structured configuration value type")
+data AppConfigSchemaType {
+    kind: string
+    nullable: bool
+    name: string
+    typeArguments: list<AppConfigSchemaType>
+    element: AppConfigSchemaType?
+    key: AppConfigSchemaType?
+    value: AppConfigSchemaType?
+    enumItems: list<AppConfigSchemaEnumItem>
+}
+
+@desc("Reusable data declaration reachable from a configuration")
+data AppConfigSchemaData {
+    name: string
+    skelName: string
+    description: string
+    deprecated: bool
+    deprecatedReason: string
+    sensitive: bool
+    typeParameters: list<string>
+    fields: list<AppConfigSchemaField>
 }

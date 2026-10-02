@@ -1085,3 +1085,7 @@ func (r *_SkeletonServiceSchemaRepo) GetWebSchema(skelName string) *skel.WebSche
 	}
 	return nil
 }
+
+func (r *_SkeletonServiceSchemaRepo) ListAppConfigTypeSchemas() ([]*skel.ConfigSchema, []*skel.EnumSchema, []*skel.DataSchema) {
+	return r.ListAppConfigSchemas(), r.ListEnumSchemas(), nil
+}

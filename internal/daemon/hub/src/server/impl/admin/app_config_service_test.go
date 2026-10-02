@@ -29,11 +29,11 @@ func (r *_AppConfigServiceAppConfigRepo) assemble(item *core.AppConfig) *core.Ap
 			break
 		}
 	}
-	item.Definition = core.NewAppConfigDefinition(schema, r.enums)
+	item.Definition = core.NewAppConfigDefinition(schema, r.enums, nil)
 	item.Configured = item.Id != 0
 	item.Lifecycle = core.AppConfigLifecycleFor(schema)
 	if item.Configured {
-		item.Status = core.AppConfigStatusFor(schema, item.Value, r.enums)
+		item.Status = core.AppConfigStatusFor(schema, item.Value, r.enums, nil)
 	} else {
 		item.Status = core.AppConfigStatusUnconfigured
 	}
@@ -276,4 +276,18 @@ func TestAppConfigServiceGetReturnsFieldSourcesAndDeclaredSlots(t *testing.T) {
 		statuses[item.Key] = item.Status
 	}
 	assert.Equal(t, map[string]string{"demo.FeatureConfig": "NORMAL", "demo.OtherConfig": "UNCONFIGURED"}, statuses)
+}
+
+func TestStructuredConfigSchemaMapping(t *testing.T) {
+	kind := &skel.TypeSchema{Kind: skel.TypeKindData, SkelName: "demo.Box", TypeArguments: []*skel.TypeSchema{{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBinary}}}
+	definition := core.NewAppConfigDefinition(&skel.ConfigSchema{Sensitive: true, Members: []*skel.MemberSchema{{Name: "box", Type: kind}}}, nil,
+		[]*skel.DataSchema{{SkelName: "demo.Box", TypeParameters: []string{"T"}, Sensitive: true, Members: []*skel.MemberSchema{{Name: "value", Sensitive: true, Example: "aGVsbG8=", Type: &skel.TypeSchema{Kind: skel.TypeKindTypeParameter, Name: "T"}}}}})
+	result := toServerAppConfigSchema(definition)
+	require.True(t, result.Sensitive)
+	require.Len(t, result.DataTypes, 1)
+	require.True(t, result.DataTypes[0].Sensitive)
+	require.Equal(t, []string{"T"}, result.DataTypes[0].TypeParameters)
+	require.Equal(t, "aGVsbG8=", result.DataTypes[0].Fields[0].Example)
+	require.True(t, result.DataTypes[0].Fields[0].Sensitive)
+	require.Equal(t, "binary", result.Fields[0].ValueType.TypeArguments[0].Name)
 }

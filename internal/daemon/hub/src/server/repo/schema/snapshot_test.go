@@ -66,3 +66,15 @@ func TestSchemaRepoListsLatestDomainSchemaByDomain(t *testing.T) {
 	assert.Equal(t, "demo.user.UserActor", actors[0].SkelName)
 	assert.Len(t, repo.byHash, 2)
 }
+
+func TestSchemaRepoConfigTypeSnapshot(t *testing.T) {
+	repo := new(SchemaRepo)
+	schema := testDomainSchema()
+	schema.Data = []*skel.DataSchema{{SkelName: "demo.user.Settings"}}
+	schema.Enums = []*skel.EnumSchema{{SkelName: "demo.user.Mode"}}
+	repo.SaveDomainSchemas("demo.app", "instance-1", []*skel.DomainSchema{schema})
+	configs, enums, data := repo.ListAppConfigTypeSchemas()
+	require.Equal(t, schema.Configs, configs)
+	require.Equal(t, schema.Enums, enums)
+	require.Equal(t, schema.Data, data)
+}

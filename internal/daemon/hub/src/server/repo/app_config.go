@@ -16,17 +16,15 @@ type AppConfigRepo struct {
 }
 
 func (s *AppConfigRepo) List() []*core.AppConfig {
-	schemas := s.schemas()
-	enumSchemas := s.SchemaRepo.ListEnumSchemas()
-	return s.listItems(schemas, enumSchemas)
+	schemas, enumSchemas, dataSchemas := s.SchemaRepo.ListAppConfigTypeSchemas()
+	return s.listItems(schemas, enumSchemas, dataSchemas)
 }
 
 // ListSlots returns the configuration surface: the stored values plus the
 // configurations registered applications declare without a value.
 func (s *AppConfigRepo) ListSlots() []*core.AppConfig {
-	schemas := s.schemas()
-	enumSchemas := s.SchemaRepo.ListEnumSchemas()
-	slots := s.listItems(schemas, enumSchemas)
+	schemas, enumSchemas, dataSchemas := s.SchemaRepo.ListAppConfigTypeSchemas()
+	slots := s.listItems(schemas, enumSchemas, dataSchemas)
 	declared := make(map[string]struct{}, len(slots))
 	for _, slot := range slots {
 		declared[slot.Name] = struct{}{}
@@ -35,44 +33,43 @@ func (s *AppConfigRepo) ListSlots() []*core.AppConfig {
 		if _, ok := declared[schema.SkelName]; ok {
 			continue
 		}
-		slots = append(slots, s.toCoreAppConfig(&core.AppConfig{Name: schema.SkelName}, schemas, enumSchemas))
+		slots = append(slots, s.toCoreAppConfig(&core.AppConfig{Name: schema.SkelName}, schemas, enumSchemas, dataSchemas))
 	}
 	return slots
 }
 
-func (s *AppConfigRepo) listItems(schemas []*skel.ConfigSchema, enumSchemas []*skel.EnumSchema) []*core.AppConfig {
+func (s *AppConfigRepo) listItems(schemas []*skel.ConfigSchema, enumSchemas []*skel.EnumSchema, dataSchemas []*skel.DataSchema) []*core.AppConfig {
 	rows := s.Dao.ListOrdered()
 	items := make([]*core.AppConfig, 0, len(rows))
 	for _, row := range rows {
-		items = append(items, s.toCoreAppConfig(mapAppConfig(row), schemas, enumSchemas))
+		items = append(items, s.toCoreAppConfig(mapAppConfig(row), schemas, enumSchemas, dataSchemas))
 	}
 	return items
 }
 
 // FindByName returns the configuration with the name, stored or declared.
 func (s *AppConfigRepo) FindByName(name string) (*core.AppConfig, bool) {
-	schemas := s.schemas()
-	enumSchemas := s.SchemaRepo.ListEnumSchemas()
+	schemas, enumSchemas, dataSchemas := s.SchemaRepo.ListAppConfigTypeSchemas()
 	if row, ok := s.Dao.LatestByName(name); ok {
-		return s.toCoreAppConfig(mapAppConfig(row), schemas, enumSchemas), true
+		return s.toCoreAppConfig(mapAppConfig(row), schemas, enumSchemas, dataSchemas), true
 	}
 	schema := findAppConfigSchema(name, schemas)
 	if schema == nil {
 		return nil, false
 	}
-	return s.toCoreAppConfig(&core.AppConfig{Name: name}, schemas, enumSchemas), true
+	return s.toCoreAppConfig(&core.AppConfig{Name: name}, schemas, enumSchemas, dataSchemas), true
 }
 
 func (s *AppConfigRepo) GetById(id int) (*core.AppConfig, bool) {
 	if row, ok := s.Dao.ById(id); ok {
-		return s.toCoreAppConfig(mapAppConfig(row), s.schemas(), s.SchemaRepo.ListEnumSchemas()), true
+		return s.resolveAppConfig(mapAppConfig(row)), true
 	}
 	return nil, false
 }
 
 func (s *AppConfigRepo) GetByName(name string) (*core.AppConfig, bool) {
 	if row, ok := s.Dao.LatestByName(name); ok {
-		return s.toCoreAppConfig(mapAppConfig(row), s.schemas(), s.SchemaRepo.ListEnumSchemas()), true
+		return s.resolveAppConfig(mapAppConfig(row)), true
 	}
 	return nil, false
 }
@@ -87,7 +84,7 @@ func (s *AppConfigRepo) Save(item *core.AppConfig) {
 		Version:      item.Version,
 	})
 
-	saved := s.toCoreAppConfig(mapAppConfig(row), s.schemas(), s.SchemaRepo.ListEnumSchemas())
+	saved := s.resolveAppConfig(mapAppConfig(row))
 	*item = *saved
 	s.Syncer.SyncAppConfig(saved)
 }
@@ -98,23 +95,24 @@ func (s *AppConfigRepo) Remove(id int) bool {
 	if !ok {
 		return false
 	}
-	s.Syncer.RemoveAppConfig(s.toCoreAppConfig(mapAppConfig(item), s.schemas(), s.SchemaRepo.ListEnumSchemas()))
+	s.Syncer.RemoveAppConfig(s.resolveAppConfig(mapAppConfig(item)))
 	return true
 }
 
-func (s *AppConfigRepo) schemas() []*skel.ConfigSchema {
-	return s.SchemaRepo.ListAppConfigSchemas()
+func (s *AppConfigRepo) resolveAppConfig(item *core.AppConfig) *core.AppConfig {
+	schemas, enums, data := s.SchemaRepo.ListAppConfigTypeSchemas()
+	return s.toCoreAppConfig(item, schemas, enums, data)
 }
 
 // toCoreAppConfig assembles a configuration slot from its stored value and the
 // declaration of the application that owns it.
-func (s *AppConfigRepo) toCoreAppConfig(item *core.AppConfig, schemas []*skel.ConfigSchema, enumSchemas []*skel.EnumSchema) *core.AppConfig {
+func (s *AppConfigRepo) toCoreAppConfig(item *core.AppConfig, schemas []*skel.ConfigSchema, enumSchemas []*skel.EnumSchema, dataSchemas []*skel.DataSchema) *core.AppConfig {
 	schema := findAppConfigSchema(item.Name, schemas)
-	item.Definition = core.NewAppConfigDefinition(schema, enumSchemas)
+	item.Definition = core.NewAppConfigDefinition(schema, enumSchemas, dataSchemas)
 	item.Configured = item.Id != 0
 	item.Lifecycle = core.AppConfigLifecycleFor(schema)
 	if item.Configured {
-		item.Status = core.AppConfigStatusFor(schema, item.Value, enumSchemas)
+		item.Status = core.AppConfigStatusFor(schema, item.Value, enumSchemas, dataSchemas)
 	} else {
 		item.Status = core.AppConfigStatusUnconfigured
 	}

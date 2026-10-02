@@ -59,6 +59,8 @@ export type AppConfigListItem = {
 }
 /** Configuration schema items. */
 export type AppConfigSchema = {
+  sensitive:        boolean;
+  dataTypes:        Array<AppConfigSchemaData>;
   /** Configuration Skel name. */
   skelName:         string;
   /** Configuration name. */
@@ -74,6 +76,17 @@ export type AppConfigSchema = {
   /** Configuration field list. */
   fields:           Array<AppConfigSchemaField>;
 }
+/** Reusable data declaration reachable from a configuration. */
+export type AppConfigSchemaData = {
+  name:             string;
+  skelName:         string;
+  description:      string;
+  deprecated:       boolean;
+  deprecatedReason: string;
+  sensitive:        boolean;
+  typeParameters:   Array<string>;
+  fields:           Array<AppConfigSchemaField>;
+}
 /** Configuration schema enumeration options. */
 export type AppConfigSchemaEnumItem = {
   /** Enum option name. */
@@ -87,6 +100,9 @@ export type AppConfigSchemaEnumItem = {
 }
 /** Configuration schema fields. */
 export type AppConfigSchemaField = {
+  valueType:         AppConfigSchemaType | null;
+  sensitive:         boolean;
+  example:           string;
   /** Field name. */
   name:              string;
   /** Field type. */
@@ -103,6 +119,17 @@ export type AppConfigSchemaField = {
   mapKeyEnumItems:   Array<AppConfigSchemaEnumItem>;
   /** Map value enumeration options. */
   mapValueEnumItems: Array<AppConfigSchemaEnumItem>;
+}
+/** Structured configuration value type. */
+export type AppConfigSchemaType = {
+  kind:          string;
+  nullable:      boolean;
+  name:          string;
+  typeArguments: Array<AppConfigSchemaType>;
+  element:       AppConfigSchemaType | null;
+  key:           AppConfigSchemaType | null;
+  value:         AppConfigSchemaType | null;
+  enumItems:     Array<AppConfigSchemaEnumItem>;
 }
 /** Configuration update parameters. */
 export type AppConfigUpdate = {
