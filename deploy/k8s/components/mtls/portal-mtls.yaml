@@ -13,13 +13,13 @@ spec:
       containers:
         - name: portal
           env:
-            - name: VINE_HUB_ENDPOINT
+            - name: VINE_PORTAL_HUB_ENDPOINT
               value: https://hub:7071
-            - name: VINE_MTLS_CA_FILE
+            - name: VINE_PORTAL_MTLS_CA_FILE
               value: /run/vine/mtls/ca.pem
-            - name: VINE_MTLS_CERT_FILE
+            - name: VINE_PORTAL_MTLS_CERT_FILE
               value: /run/vine/mtls/cert.pem
-            - name: VINE_MTLS_KEY_FILE
+            - name: VINE_PORTAL_MTLS_KEY_FILE
               value: /run/vine/mtls/key.pem
           volumeMounts:
             - name: mtls

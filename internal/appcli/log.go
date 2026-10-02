@@ -22,6 +22,16 @@ type _LogFlags struct {
 	rules []string
 }
 
+// LoggingFlags creates process logging flags with the supplied environment names.
+// The returned function applies validated values after command-line parsing.
+func LoggingFlags(levelEnv string, rulesEnv string) ([]ucli.Flag, func() error) {
+	log := new(_LogFlags)
+	flags := log.flags()
+	flags[0].(*ucli.StringFlag).Sources = ucli.EnvVars(levelEnv)
+	flags[1].(*ucli.StringSliceFlag).Sources = ucli.EnvVars(rulesEnv)
+	return flags, log.apply
+}
+
 func (l *_LogFlags) flags() []ucli.Flag {
 	return []ucli.Flag{
 		new(ucli.StringFlag{

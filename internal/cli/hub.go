@@ -26,31 +26,36 @@ const (
 	FlagHubLockMode          = "lock-mode"
 	FlagHubLockRedisEndpoint = "lock-redis-endpoint"
 
-	FlagSeedSourceFile   = "seed-source-file"
-	FlagSeedVar          = "seed-var"
-	FlagSeedVarsFile     = "seed-vars-file"
-	FlagSeedDataFile     = "seed-data-file"
+	FlagHubSeedSourceFile = "seed-source-file"
+	FlagHubSeedVar        = "seed-var"
+	FlagHubSeedVarsFile   = "seed-vars-file"
+	FlagHubSeedDataFile   = "seed-data-file"
+
 	FlagHubNoDB          = "no-db"
 	FlagHubDBSQLiteFile  = "db-sqlite-file"
 	FlagHubDBPostgresURL = "db-postgres-url"
 
-	EnvHubControlListen = "VINE_CONTROL_LISTEN"
-	EnvHubAdminListen   = "VINE_ADMIN_LISTEN"
-	EnvHubWatchListen   = "VINE_WATCH_LISTEN"
+	EnvHubControlListen = "VINE_HUB_CONTROL_LISTEN"
+	EnvHubAdminListen   = "VINE_HUB_ADMIN_LISTEN"
+	EnvHubWatchListen   = "VINE_HUB_WATCH_LISTEN"
 
-	EnvHubMQMode         = "VINE_MQ_MODE"
-	EnvHubMQNatsEndpoint = "VINE_MQ_NATS_ENDPOINT"
+	EnvHubMQMode         = "VINE_HUB_MQ_MODE"
+	EnvHubMQNatsEndpoint = "VINE_HUB_MQ_NATS_ENDPOINT"
 
-	EnvHubLockMode          = "VINE_LOCK_MODE"
-	EnvHubLockRedisEndpoint = "VINE_LOCK_REDIS_ENDPOINT"
+	EnvHubLockMode          = "VINE_HUB_LOCK_MODE"
+	EnvHubLockRedisEndpoint = "VINE_HUB_LOCK_REDIS_ENDPOINT"
 
-	EnvSeedSourceFile   = "VINE_SEED_SOURCE_FILE"
-	EnvSeedVar          = "VINE_SEED_VAR"
-	EnvSeedVarsFile     = "VINE_SEED_VARS_FILE"
-	EnvSeedDataFile     = "VINE_SEED_DATA_FILE"
-	EnvHubNoDB          = "VINE_NO_DB"
-	EnvHubDBSQLiteFile  = "VINE_DB_SQLITE_FILE"
-	EnvHubDBPostgresURL = "VINE_DB_POSTGRES_URL"
+	EnvHubSeedSourceFile = "VINE_HUB_SEED_SOURCE_FILE"
+	EnvHubSeedVar        = "VINE_HUB_SEED_VAR"
+	EnvHubSeedVarsFile   = "VINE_HUB_SEED_VARS_FILE"
+	EnvHubSeedDataFile   = "VINE_HUB_SEED_DATA_FILE"
+
+	EnvHubNoDB          = "VINE_HUB_NO_DB"
+	EnvHubDBSQLiteFile  = "VINE_HUB_DB_SQLITE_FILE"
+	EnvHubDBPostgresURL = "VINE_HUB_DB_POSTGRES_URL"
+
+	EnvHubLogLevel = "VINE_HUB_LOG_LEVEL"
+	EnvHubLogRules = "VINE_HUB_LOG_RULES"
 )
 
 // startHubApp is overridden in tests to assert parsed flags without starting the real app.
@@ -73,6 +78,7 @@ func newHubCommand() *ucli.Command {
 }
 
 func newHubServeFlags() []ucli.Flag {
+	seed := appcli.NewRepeatedStringFlag(FlagHubSeedVar, EnvHubSeedVar, new([]string), "hub seed variable path=YAML; repeatable; overrides vars file")
 	return append([]ucli.Flag{
 		&ucli.StringFlag{
 			Name:    FlagHubControlListen,
@@ -131,30 +137,34 @@ func newHubServeFlags() []ucli.Flag {
 		},
 
 		&ucli.StringFlag{
-			Name:    FlagSeedDataFile,
-			Sources: ucli.EnvVars(EnvSeedDataFile),
+			Name:    FlagHubSeedDataFile,
+			Sources: ucli.EnvVars(EnvHubSeedDataFile),
 			Usage:   "hub seed YAML file",
 		},
 		&ucli.StringFlag{
-			Name:    FlagSeedSourceFile,
-			Sources: ucli.EnvVars(EnvSeedSourceFile),
+			Name:    FlagHubSeedSourceFile,
+			Sources: ucli.EnvVars(EnvHubSeedSourceFile),
 			Usage:   "hub seed source YAML file",
 		},
-		appcli.NewRepeatedStringFlag(FlagSeedVar, EnvSeedVar, new([]string), "hub seed variable path=YAML; repeatable; overrides vars file"),
+		seed,
 		&ucli.StringFlag{
-			Name:    FlagSeedVarsFile,
-			Sources: ucli.EnvVars(EnvSeedVarsFile),
+			Name:    FlagHubSeedVarsFile,
+			Sources: ucli.EnvVars(EnvHubSeedVarsFile),
 			Usage:   "hub seed vars YAML file",
 		},
-	}, mtlsFlags()...)
+	}, mtlsFlags(commandHub)...)
 }
 
 func newHubServeCommand() *ucli.Command {
+	logFlags, applyLog := appcli.LoggingFlags(EnvHubLogLevel, EnvHubLogRules)
 	return &ucli.Command{
 		Name:  commandHubServe,
 		Usage: "start the hub service",
-		Flags: newHubServeFlags(),
+		Flags: append(newHubServeFlags(), logFlags...),
 		Action: func(_ context.Context, cmd *ucli.Command) error {
+			if err := applyLog(); err != nil {
+				return err
+			}
 			if cmd.Args().Len() > 0 {
 				return fmt.Errorf("unexpected args for %s", commandHubServe)
 			}
@@ -167,10 +177,10 @@ func newHubServeCommand() *ucli.Command {
 				MQNatsEndpoint:    cmd.String(FlagHubMQNatsEndpoint),
 				LockMode:          cmd.String(FlagHubLockMode),
 				LockRedisEndpoint: cmd.String(FlagHubLockRedisEndpoint),
-				SeedHubDataFile:   cmd.String(FlagSeedDataFile),
-				SeedHubSourceFile: cmd.String(FlagSeedSourceFile),
-				SeedHubVars:       cmd.StringSlice(FlagSeedVar),
-				SeedHubVarsFile:   cmd.String(FlagSeedVarsFile),
+				SeedHubDataFile:   cmd.String(FlagHubSeedDataFile),
+				SeedHubSourceFile: cmd.String(FlagHubSeedSourceFile),
+				SeedHubVars:       cmd.StringSlice(FlagHubSeedVar),
+				SeedHubVarsFile:   cmd.String(FlagHubSeedVarsFile),
 				NoDB:              cmd.Bool(FlagHubNoDB),
 				DBSQLiteFile:      cmd.String(FlagHubDBSQLiteFile),
 				DBPostgresURL:     cmd.String(FlagHubDBPostgresURL),

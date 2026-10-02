@@ -48,15 +48,15 @@ check_render() {
       all($pod.containers[];
         envmap as $env |
         (if $role != "hub" then
-          $env.VINE_HUB_ENDPOINT == (if $mtls then "https://hub:7071" else "http://hub:7071" end)
+          $env["VINE_" + ($role | ascii_upcase) + "_HUB_ENDPOINT"] == (if $mtls then "https://hub:7071" else "http://hub:7071" end)
         else true end) and
         (if $mtls then
-          $env.VINE_MTLS_CA_FILE == "/run/vine/mtls/ca.pem" and
-          $env.VINE_MTLS_CERT_FILE == "/run/vine/mtls/cert.pem" and
-          $env.VINE_MTLS_KEY_FILE == "/run/vine/mtls/key.pem" and
+          $env["VINE_" + ($role | ascii_upcase) + "_MTLS_CA_FILE"] == "/run/vine/mtls/ca.pem" and
+          $env["VINE_" + ($role | ascii_upcase) + "_MTLS_CERT_FILE"] == "/run/vine/mtls/cert.pem" and
+          $env["VINE_" + ($role | ascii_upcase) + "_MTLS_KEY_FILE"] == "/run/vine/mtls/key.pem" and
           any(.volumeMounts[]; .name == "mtls" and .readOnly == true) and
           any($pod.volumes[]; .name == "mtls" and .secret.secretName == ("vine-" + $role + "-mtls"))
-        else ($env | has("VINE_MTLS_CA_FILE") | not) end))))
+        else ($env | has("VINE_" + ($role | ascii_upcase) + "_MTLS_CA_FILE") | not) end))))
     | if . then true else error("Invalid deployment resources, image versions, pull policy, or mTLS configuration") end
   ' >/dev/null
   echo "Validated $path ($version, mTLS=$mtls)"

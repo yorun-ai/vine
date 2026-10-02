@@ -43,19 +43,13 @@ ENTRYPOINT ["/usr/local/bin/vine"]
 # Backend mTLS is enabled when all three file variables are supplied at
 # runtime. Certificate material stays outside the image and should be mounted
 # read-only by Docker or Kubernetes.
-ENV VINE_MTLS_CA_FILE="" \
-    VINE_MTLS_CERT_FILE="" \
-    VINE_MTLS_KEY_FILE=""
 
 # Build with --target hub to produce the Hub image.
 FROM runtime AS hub
 
-ENV VINE_CONTROL_LISTEN=0.0.0.0:7071 \
-    VINE_ADMIN_LISTEN=0.0.0.0:7099 \
-    VINE_WATCH_LISTEN=0.0.0.0:7072 \
-    VINE_DB_SQLITE_FILE="" \
-    VINE_DB_POSTGRES_URL="" \
-    VINE_SEED_DATA_FILE=""
+ENV VINE_HUB_CONTROL_LISTEN=0.0.0.0:7071 \
+    VINE_HUB_ADMIN_LISTEN=0.0.0.0:7099 \
+    VINE_HUB_WATCH_LISTEN=0.0.0.0:7072
 
 EXPOSE 7071 7072 7099
 CMD ["hub", "serve"]
@@ -63,7 +57,7 @@ CMD ["hub", "serve"]
 # Build with --target portal to produce the Portal image.
 FROM runtime AS portal
 
-ENV VINE_HUB_ENDPOINT=http://hub:7071
+ENV VINE_PORTAL_HUB_ENDPOINT=http://hub:7071
 
 # Portal creates HTTP/HTTPS listeners from the rules stored in Hub. These are
 # the default entry ports; additional configured entry ports can also be used.
@@ -73,9 +67,9 @@ CMD ["portal", "serve"]
 # Build with --target link to produce the Link image.
 FROM runtime AS link
 
-ENV VINE_HUB_ENDPOINT=http://hub:7071 \
-    VINE_API_LISTEN=0.0.0.0:7079 \
-    VINE_INGRESS_LISTEN=0.0.0.0:7082
+ENV VINE_LINK_HUB_ENDPOINT=http://hub:7071 \
+    VINE_LINK_API_LISTEN=0.0.0.0:7079 \
+    VINE_LINK_INGRESS_LISTEN=0.0.0.0:7082
 
 EXPOSE 7079 7082
 CMD ["link", "serve"]

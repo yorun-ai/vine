@@ -157,7 +157,7 @@ func TestRunHubServeFromEnv(t *testing.T) {
 	t.Setenv(EnvHubWatchListen, "127.0.0.1:10091")
 	t.Setenv(EnvHubMQMode, "nats")
 	t.Setenv(EnvHubMQNatsEndpoint, "nats://127.0.0.1:4222")
-	t.Setenv(EnvSeedDataFile, "/tmp/env-hub.yaml")
+	t.Setenv(EnvHubSeedDataFile, "/tmp/env-hub.yaml")
 	t.Setenv(EnvHubDBSQLiteFile, "/tmp/env-hub.sqlite")
 
 	called := false
@@ -221,7 +221,7 @@ func TestHubSeedInputs(t *testing.T) {
 	t.Cleanup(func() { startHubApp = original })
 	for _, fromEnv := range []bool{false, true} {
 		t.Run(fmt.Sprint(fromEnv), func(t *testing.T) {
-			for _, name := range []string{EnvSeedDataFile, EnvSeedSourceFile, EnvSeedVarsFile, EnvSeedVar} {
+			for _, name := range []string{EnvHubSeedDataFile, EnvHubSeedSourceFile, EnvHubSeedVarsFile, EnvHubSeedVar} {
 				t.Setenv(name, "")
 			}
 			called := false
@@ -238,10 +238,10 @@ func TestHubSeedInputs(t *testing.T) {
 			}
 			args := []string{"hub", "serve"}
 			if fromEnv {
-				t.Setenv(EnvSeedDataFile, "data.yaml")
-				t.Setenv(EnvSeedSourceFile, "source.yaml")
-				t.Setenv(EnvSeedVarsFile, "vars.yaml")
-				t.Setenv(EnvSeedVar, "database={host: localhost, port: 5432}")
+				t.Setenv(EnvHubSeedDataFile, "data.yaml")
+				t.Setenv(EnvHubSeedSourceFile, "source.yaml")
+				t.Setenv(EnvHubSeedVarsFile, "vars.yaml")
+				t.Setenv(EnvHubSeedVar, "database={host: localhost, port: 5432}")
 			} else {
 				args = append(args, "--seed-data-file", "data.yaml", "--seed-source-file", "source.yaml", "--seed-vars-file", "vars.yaml", "--seed-var", "database.host=old", "--seed-var", "database={host: localhost, port: 5432}")
 			}
