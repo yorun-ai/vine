@@ -8,7 +8,7 @@ import (
 )
 
 func TestHasTagFlagMatchesIndependentFlags(t *testing.T) {
-	for _, value := range []string{"sensitive", "index(0),sensitive", " sensitive , noTrim "} {
+	for _, value := range []string{"sensitive", "index(0),sensitive", " sensitive , unknownFlag "} {
 		tag := reflect.StructTag(`skel:"` + value + `"`)
 		require.True(t, HasTagFlag(tag, "sensitive"))
 	}
