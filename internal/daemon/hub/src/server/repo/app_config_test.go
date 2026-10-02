@@ -241,3 +241,36 @@ func TestAppConfigRepoSlotsAssembleDeclaredAndStoredConfigs(t *testing.T) {
 	_, ok = repo.FindByName("demo.Missing")
 	assert.False(t, ok)
 }
+
+func TestAppConfigRepoStructuredValuesStayWhole(t *testing.T) {
+	_, repo, watchServer := newTestAppConfigRepo(t)
+	schemas := repo.SchemaRepo.(*_PortalSiteSchemaRepo)
+	schemas.dataSchemas = []*skel.DataSchema{{SkelName: "demo.Credentials", Sensitive: true, Members: []*skel.MemberSchema{
+		{Name: "certificate", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBinary}},
+		{Name: "label", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+	}}}
+	schemas.configSchemas = []*skel.ConfigSchema{{SkelName: "demo.AppConfig", Lifecycle: "INSTANT", Members: []*skel.MemberSchema{
+		{Name: "credentials", Type: &skel.TypeSchema{Kind: skel.TypeKindData, SkelName: "demo.Credentials"}},
+	}}}
+	value := `{"credentials":{"certificate":"aG\r\nVsbG8=","label":"  hello  "}}`
+	item := testAppConfig("demo.AppConfig", value, 1)
+	repo.Save(item)
+	require.Equal(t, core.AppConfigStatusNormal, item.Status)
+	require.Len(t, item.Definition.DataTypes, 1)
+	require.True(t, item.Definition.DataTypes[0].Sensitive)
+	require.Equal(t, value, item.Value)
+	read, ok := repo.FindByName(item.Name)
+	require.True(t, ok)
+	require.Equal(t, core.AppConfigStatusNormal, read.Status)
+	raw, ok := watchServer.Get(watched.FormatConfigKey(item.Name))
+	require.True(t, ok)
+	require.Equal(t, value, string(vcode.MustUnmarshalJsonS[*watched.ConfigValue](raw).Value))
+	// Mismatch remains a status; the stored and watched document is still updated.
+	item.Value = `{"credentials":{"certificate":"%%%","label":" unchanged "}}`
+	item.Version++
+	repo.Save(item)
+	require.Equal(t, core.AppConfigStatusMismatch, item.Status)
+	raw, ok = watchServer.Get(watched.FormatConfigKey(item.Name))
+	require.True(t, ok)
+	require.Equal(t, item.Value, string(vcode.MustUnmarshalJsonS[*watched.ConfigValue](raw).Value))
+}

@@ -1,3 +1,4 @@
+import { configSchemaHints, configSchemaCompletions } from './config-schema-hints'
 import { createConfigMapEnumExtension } from './config-map-enum-widget'
 import { yamlLanguage } from '@codemirror/lang-yaml'
 import { createConfigYamlDocument, normalizeConfigYaml, getConfigYamlErrors, getConfigYamlPropertyRanges } from './config-yaml-document'
@@ -193,6 +194,39 @@ export function ConfigJsonEditor({
             },
           }
         }, { hoverTime: 1, hideOnChange: true }),
+        hoverTooltip((view, pos) => {
+          const hint = configSchemaHints(view.state.doc.toString(), fields, isYaml).find((item) => pos >= item.from && pos <= item.to)
+          if (!hint) return null
+          return { pos: hint.from, end: hint.to, above: true, create: () => {
+            const dom = view.dom.ownerDocument.createElement('div')
+            dom.className = 'cm-config-error-tooltip'
+            dom.style.whiteSpace = 'pre-wrap'
+            dom.textContent = hint.text
+            if (hint.skelName && typeIndex.has(hint.skelName)) {
+              const link = view.dom.ownerDocument.createElement('a')
+              link.className = 'cm-config-type-link'
+              link.dataset.skelName = hint.skelName
+              link.href = '#'
+              link.textContent = hint.skelName
+              link.onclick = (event) => { event.preventDefault(); onTypeClick(hint.skelName!) }
+              dom.append(view.dom.ownerDocument.createElement('br'), link)
+            }
+            return { dom }
+          } }
+        }, { hideOnChange: true }),
+        language.data.of({ autocomplete: (context: {
+          state: { doc: { toString(): string } }; pos: number; explicit: boolean;
+          matchBefore(expression: RegExp): { from: number; to: number; text: string } | null;
+        }) => {
+          if (readOnly) return null
+          const word = context.matchBefore(/["']?[\w.]*["']?/)
+          if (!context.explicit && (!word || word.from === word.to)) return null
+          const doc = context.state.doc.toString()
+          const options = configSchemaCompletions(doc, context.pos, fields, isYaml)
+          const quote = word?.text[0]
+          const to = (quote === '"' || quote === "'") && doc[context.pos] === quote ? context.pos + 1 : context.pos
+          return options.length ? { from: word?.from ?? context.pos, to, options } : null
+        } }),
         createConfigChoiceExtension(fields, readOnly, ranges, mismatchMessages, durationLabels, dirtyFields, isYaml),
         ...createConfigMapEnumExtension(fields, ranges, readOnly, isYaml, mismatchMessages, dirtyFields),
         gutterLineClass.compute([ranges], (state) => {

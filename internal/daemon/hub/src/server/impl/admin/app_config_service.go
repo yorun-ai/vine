@@ -122,6 +122,8 @@ func toServerAppConfigSchema(definition *core.AppConfigDefinition) *skeled.AppCo
 		Deprecated:       definition.Deprecated,
 		DeprecatedReason: definition.DeprecatedReason,
 		Lifecycle:        definition.Lifecycle,
+		Sensitive:        definition.Sensitive,
+		DataTypes:        toServerAppConfigDataTypes(definition.DataTypes),
 		Fields:           toServerAppConfigSchemaFields(definition.Fields),
 	}
 }
@@ -131,6 +133,9 @@ func toServerAppConfigSchemaFields(fields []core.AppConfigField) []skeled.AppCon
 	for _, field := range fields {
 		ret = append(ret, skeled.AppConfigSchemaField{
 			Name:              field.Name,
+			ValueType:         toServerAppConfigType(field.ValueType),
+			Sensitive:         field.Sensitive,
+			Example:           field.Example,
 			Type:              field.Type,
 			Description:       field.Description,
 			Deprecated:        field.Deprecated,
@@ -188,4 +193,29 @@ func isSkelIdentifierSegment(segment string) bool {
 		}
 	}
 	return segment != ""
+}
+
+func toServerAppConfigType(kind *core.AppConfigType) *skeled.AppConfigSchemaType {
+	if kind == nil {
+		return nil
+	}
+	args := make([]skeled.AppConfigSchemaType, 0, len(kind.TypeArguments))
+	for _, arg := range kind.TypeArguments {
+		args = append(args, *toServerAppConfigType(arg))
+	}
+	return &skeled.AppConfigSchemaType{Kind: kind.Kind, Name: kind.Name, Nullable: kind.Nullable,
+		TypeArguments: args, Element: toServerAppConfigType(kind.Element), Key: toServerAppConfigType(kind.Key), Value: toServerAppConfigType(kind.Value),
+		EnumItems: toServerAppConfigSchemaEnumItems(kind.EnumItems)}
+}
+
+func toServerAppConfigDataTypes(data []core.AppConfigData) []skeled.AppConfigSchemaData {
+	result := make([]skeled.AppConfigSchemaData, 0, len(data))
+	for _, declaration := range data {
+		result = append(result, skeled.AppConfigSchemaData{
+			Name: declaration.Name, SkelName: declaration.SkelName, Description: declaration.Description,
+			Deprecated: declaration.Deprecated, DeprecatedReason: declaration.DeprecatedReason,
+			Sensitive: declaration.Sensitive, TypeParameters: declaration.TypeParameters, Fields: toServerAppConfigSchemaFields(declaration.Fields),
+		})
+	}
+	return result
 }

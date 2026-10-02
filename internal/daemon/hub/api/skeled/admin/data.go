@@ -48,6 +48,8 @@ type AppConfigListItem struct {
 
 // AppConfigSchema Configuration schema items
 type AppConfigSchema struct {
+	Sensitive bool                  `json:"sensitive"`
+	DataTypes []AppConfigSchemaData `json:"dataTypes"`
 	// SkelName Configuration Skel name
 	SkelName string `json:"skelName"`
 	// Name Configuration name
@@ -64,6 +66,18 @@ type AppConfigSchema struct {
 	Fields []AppConfigSchemaField `json:"fields"`
 }
 
+// AppConfigSchemaData Reusable data declaration reachable from a configuration
+type AppConfigSchemaData struct {
+	Name             string                 `json:"name"`
+	SkelName         string                 `json:"skelName"`
+	Description      string                 `json:"description"`
+	Deprecated       bool                   `json:"deprecated"`
+	DeprecatedReason string                 `json:"deprecatedReason"`
+	Sensitive        bool                   `json:"sensitive"`
+	TypeParameters   []string               `json:"typeParameters"`
+	Fields           []AppConfigSchemaField `json:"fields"`
+}
+
 // AppConfigSchemaEnumItem Configuration schema enumeration options
 type AppConfigSchemaEnumItem struct {
 	// Name Enum option name
@@ -78,6 +92,9 @@ type AppConfigSchemaEnumItem struct {
 
 // AppConfigSchemaField Configuration schema fields
 type AppConfigSchemaField struct {
+	ValueType *AppConfigSchemaType `json:"valueType"`
+	Sensitive bool                 `json:"sensitive"`
+	Example   string               `json:"example"`
 	// Name Field name
 	Name string `json:"name"`
 	// Type Field type
@@ -94,6 +111,18 @@ type AppConfigSchemaField struct {
 	MapKeyEnumItems []AppConfigSchemaEnumItem `json:"mapKeyEnumItems"`
 	// MapValueEnumItems Map value enumeration options
 	MapValueEnumItems []AppConfigSchemaEnumItem `json:"mapValueEnumItems"`
+}
+
+// AppConfigSchemaType Structured configuration value type
+type AppConfigSchemaType struct {
+	Kind          string                    `json:"kind"`
+	Nullable      bool                      `json:"nullable"`
+	Name          string                    `json:"name"`
+	TypeArguments []AppConfigSchemaType     `json:"typeArguments"`
+	Element       *AppConfigSchemaType      `json:"element"`
+	Key           *AppConfigSchemaType      `json:"key"`
+	Value         *AppConfigSchemaType      `json:"value"`
+	EnumItems     []AppConfigSchemaEnumItem `json:"enumItems"`
 }
 
 // AppConfigUpdate Configuration update parameters

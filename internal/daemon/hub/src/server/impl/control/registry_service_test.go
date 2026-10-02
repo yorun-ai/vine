@@ -281,3 +281,7 @@ func (r *_RegistryServiceSchemaRepo) GetWebSchema(skelName string) *skel.WebSche
 	}
 	return nil
 }
+
+func (r *_RegistryServiceSchemaRepo) ListAppConfigTypeSchemas() ([]*skel.ConfigSchema, []*skel.EnumSchema, []*skel.DataSchema) {
+	return r.ListAppConfigSchemas(), r.ListEnumSchemas(), nil
+}

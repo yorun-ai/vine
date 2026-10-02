@@ -169,4 +169,5 @@ type SchemaRepo interface {
 
 	ListAppConfigSchemas() []*skel.ConfigSchema
 	ListEnumSchemas() []*skel.EnumSchema
+	ListAppConfigTypeSchemas() ([]*skel.ConfigSchema, []*skel.EnumSchema, []*skel.DataSchema)
 }

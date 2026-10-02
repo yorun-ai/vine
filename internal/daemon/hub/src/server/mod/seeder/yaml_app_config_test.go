@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.yorun.ai/vine/internal/core/skel"
 	"gopkg.in/yaml.v3"
 )
 
@@ -97,4 +98,18 @@ func TestAppConfigYAMLRejectsValuesWithoutJSONRepresentation(t *testing.T) {
 			require.Contains(t, err.Error(), "demo.Config")
 		})
 	}
+}
+
+func TestAppConfigBinaryLiteralYAML(t *testing.T) {
+	var item _AppConfig
+	require.NoError(t, yaml.Unmarshal([]byte("name: demo.Config\nvalue:\n  nested:\n    bytes: |\n      aG\n      VsbG8=\n    label: '  hello  '\n"), &item))
+	var decoded struct {
+		Nested struct {
+			Bytes skel.Binary `json:"bytes"`
+			Label string      `json:"label"`
+		} `json:"nested"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(item.Value), &decoded))
+	require.Equal(t, "hello", string(decoded.Nested.Bytes))
+	require.Equal(t, "  hello  ", decoded.Nested.Label)
 }

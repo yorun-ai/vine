@@ -1,3 +1,4 @@
+import { defaultStructuredConfigValue } from './config-structured-schema'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu'
 import { configSourceComment } from './config-source-comments'
 import { configValueIssues } from './config-value-validation'
@@ -292,7 +293,7 @@ function defaultConfigObject(schema: AppConfigSchema | null) {
   const ret: Record<string, unknown> = {}
 
   for (const field of schema?.fields ?? []) {
-    ret[field.name] = defaultConfigFieldValue(field.type, field.enumItems)
+    ret[field.name] = field.valueType ? defaultStructuredConfigValue(field.valueType, schema?.dataTypes ?? []) : defaultConfigFieldValue(field.type, field.enumItems)
   }
 
   return ret
@@ -341,7 +342,7 @@ function collectConfigMismatchIssues(
     }
 
     const fieldValue = parsed[field.name]
-    for (const issue of configValueIssues(fieldValue, field)) {
+    for (const issue of configValueIssues(fieldValue, { ...field, sensitive: schema.sensitive || field.sensitive }, schema.dataTypes)) {
       issues.push({
         fieldName: field.name,
         text: t(issue.part === 'key' ? 'appConfig.mapEnumKeyMismatch' : 'appConfig.typeMismatch')
@@ -501,7 +502,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
   const editorFields = React.useMemo(() => {
     const sources = sourceResult?.key === selectedAppConfig?.key ? sourceResult?.fields ?? [] : []
     return (selectedSchema?.fields ?? []).map((field) => ({
-      ...field, commentTags, sourceComment: configSourceComment(field.name, sources),
+      ...field, sensitive: selectedSchema?.sensitive || field.sensitive, dataTypes: selectedSchema?.dataTypes ?? [], commentTags, sourceComment: configSourceComment(field.name, sources),
     }))
   }, [selectedSchema, selectedAppConfig?.key, sourceResult, commentTags])
   const typeIndex = React.useMemo(

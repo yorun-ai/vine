@@ -378,3 +378,36 @@ func TestReaderRejectsInvalidBinary(t *testing.T) {
 		}
 	}
 }
+
+type readerOptionalEntry[TValue any] struct {
+	Value *TValue `json:"value"`
+}
+
+type readerOptionalGenericConfig struct {
+	ConfigModel
+	Binary         []readerOptionalEntry[skel.Binary]  `json:"binary"`
+	NullableBinary []readerOptionalEntry[*skel.Binary] `json:"nullableBinary"`
+	Lists          []readerOptionalEntry[[]string]     `json:"lists"`
+}
+
+func TestReaderNullableGenericParameterReferences(t *testing.T) {
+	const key = "demo.OptionalGenericConfig"
+	const raw = `{"binary":[{"value":null},{"value":""},{"value":"aGVsbG8="}],"nullableBinary":[{"value":null},{"value":"aGVsbG8="}],"lists":[{"value":null},{"value":[]}]}`
+	for _, lifecycle := range []Lifecycle{LifecycleEternal, LifecycleInstant} {
+		t.Run(string(lifecycle), func(t *testing.T) {
+			registry := NewRegistry()
+			registry.Register(ConfigSpec{SkelName: key, Lifecycle: lifecycle, Type: reflect.TypeFor[*readerOptionalGenericConfig]()})
+			reader := newReader(&corelink.TestLinker{EternalConfigByKey: map[string]string{key: raw}, InstantConfigByKey: map[string]string{key: raw}}, registry)
+			config := reader.GetByType(reflect.TypeFor[*readerOptionalGenericConfig]()).(*readerOptionalGenericConfig)
+			require.Nil(t, config.Binary[0].Value)
+			require.NotNil(t, config.Binary[1].Value)
+			require.Empty(t, *config.Binary[1].Value)
+			require.Equal(t, skel.Binary("hello"), *config.Binary[2].Value)
+			require.Nil(t, config.NullableBinary[0].Value)
+			require.Equal(t, skel.Binary("hello"), **config.NullableBinary[1].Value)
+			require.Nil(t, config.Lists[0].Value)
+			require.NotNil(t, config.Lists[1].Value)
+			require.Empty(t, *config.Lists[1].Value)
+		})
+	}
+}

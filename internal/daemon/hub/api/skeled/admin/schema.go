@@ -11,9 +11,9 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "718cf908",
+	Hash:        "d2fa27bd",
 	Full:        true,
-	Generated:   &skel.GeneratedInfo{CompilerVersion: "v0.21.0"},
+	Generated:   &skel.GeneratedInfo{CompilerVersion: "v0.22.1"},
 
 	Enums: []*skel.EnumSchema{
 		{Name: "PortalCorsMode", SkelName: "vine.hub.admin.PortalCorsMode", Description: "Portal site CORS mode", Hash: "b5d6b511", Items: []*skel.EnumItemSchema{
@@ -32,7 +32,7 @@ var _DomainSchema = &skel.DomainSchema{
 			{Name: "skelName", Description: "Configuration Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "value", Description: "Configuration JSON", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 		}},
-		{Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem", Description: "Configuration items", Hash: "c29db5d5", Members: []*skel.MemberSchema{
+		{Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem", Description: "Configuration items", Hash: "ce1b05ee", Members: []*skel.MemberSchema{
 			{Name: "id", Description: "Configuration ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
 			{Name: "key", Description: "Configuration key", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "status", Description: "Configuration status", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
@@ -49,7 +49,9 @@ var _DomainSchema = &skel.DomainSchema{
 			{Name: "schemaName", Description: "Configuration schema name; empty when no schema matches", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "schemaSkelName", Description: "Configuration schema Skel name; empty when no schema matches", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 		}},
-		{Name: "AppConfigSchema", SkelName: "vine.hub.admin.AppConfigSchema", Description: "Configuration schema items", Hash: "24585ab7", Members: []*skel.MemberSchema{
+		{Name: "AppConfigSchema", SkelName: "vine.hub.admin.AppConfigSchema", Description: "Configuration schema items", Hash: "e19e7674", Members: []*skel.MemberSchema{
+			{Name: "sensitive", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "dataTypes", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigSchemaData", SkelName: "vine.hub.admin.AppConfigSchemaData"}}},
 			{Name: "skelName", Description: "Configuration Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "name", Description: "Configuration name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "description", Description: "Configuration description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
@@ -58,13 +60,26 @@ var _DomainSchema = &skel.DomainSchema{
 			{Name: "lifecycle", Description: "Configuration lifecycle", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "fields", Description: "Configuration field list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigSchemaField", SkelName: "vine.hub.admin.AppConfigSchemaField"}}},
 		}},
+		{Name: "AppConfigSchemaData", SkelName: "vine.hub.admin.AppConfigSchemaData", Description: "Reusable data declaration reachable from a configuration", Hash: "ab1bb81f", Members: []*skel.MemberSchema{
+			{Name: "name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "skelName", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "deprecatedReason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "sensitive", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "typeParameters", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}}},
+			{Name: "fields", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigSchemaField", SkelName: "vine.hub.admin.AppConfigSchemaField"}}},
+		}},
 		{Name: "AppConfigSchemaEnumItem", SkelName: "vine.hub.admin.AppConfigSchemaEnumItem", Description: "Configuration schema enumeration options", Hash: "e326a9c1", Members: []*skel.MemberSchema{
 			{Name: "name", Description: "Enum option name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "description", Description: "Enumeration options description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "deprecated", Description: "Whether the enumeration option is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
 			{Name: "deprecatedReason", Description: "Enumeration option deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 		}},
-		{Name: "AppConfigSchemaField", SkelName: "vine.hub.admin.AppConfigSchemaField", Description: "Configuration schema fields", Hash: "006cd1a8", Members: []*skel.MemberSchema{
+		{Name: "AppConfigSchemaField", SkelName: "vine.hub.admin.AppConfigSchemaField", Description: "Configuration schema fields", Hash: "8e2d03d1", Members: []*skel.MemberSchema{
+			{Name: "valueType", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigSchemaType", SkelName: "vine.hub.admin.AppConfigSchemaType", Nullable: true}},
+			{Name: "sensitive", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "example", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "name", Description: "Field name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "type", Description: "Field type", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "description", Description: "Field description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
@@ -73,6 +88,16 @@ var _DomainSchema = &skel.DomainSchema{
 			{Name: "enumItems", Description: "Enumeration options list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigSchemaEnumItem", SkelName: "vine.hub.admin.AppConfigSchemaEnumItem"}}},
 			{Name: "mapKeyEnumItems", Description: "Map key enumeration options", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigSchemaEnumItem", SkelName: "vine.hub.admin.AppConfigSchemaEnumItem"}}},
 			{Name: "mapValueEnumItems", Description: "Map value enumeration options", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigSchemaEnumItem", SkelName: "vine.hub.admin.AppConfigSchemaEnumItem"}}},
+		}},
+		{Name: "AppConfigSchemaType", SkelName: "vine.hub.admin.AppConfigSchemaType", Description: "Structured configuration value type", Hash: "b9a11456", Members: []*skel.MemberSchema{
+			{Name: "kind", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "nullable", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+			{Name: "name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "typeArguments", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigSchemaType", SkelName: "vine.hub.admin.AppConfigSchemaType"}}},
+			{Name: "element", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigSchemaType", SkelName: "vine.hub.admin.AppConfigSchemaType", Nullable: true}},
+			{Name: "key", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigSchemaType", SkelName: "vine.hub.admin.AppConfigSchemaType", Nullable: true}},
+			{Name: "value", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigSchemaType", SkelName: "vine.hub.admin.AppConfigSchemaType", Nullable: true}},
+			{Name: "enumItems", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigSchemaEnumItem", SkelName: "vine.hub.admin.AppConfigSchemaEnumItem"}}},
 		}},
 		{Name: "AppConfigUpdate", SkelName: "vine.hub.admin.AppConfigUpdate", Description: "Configuration update parameters", Hash: "76a0e2d9", Members: []*skel.MemberSchema{
 			{Name: "value", Description: "Configuration JSON", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}},
@@ -703,16 +728,16 @@ var _DomainSchema = &skel.DomainSchema{
 		{Name: "AdminApiService", SkelName: "vine.hub.admin.AdminApiService", Description: "Hub's Admin API service, called by the Dashboard", Hash: "67c3e840", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
 			{Name: "readOnly", SkelName: "readOnly", Description: "Whether Hub configuration is read-only", Hash: "af56a296", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
 		}},
-		{Name: "AppConfigApiService", SkelName: "vine.hub.admin.AppConfigApiService", Description: "Hub's application configuration service, called by Client", Hash: "97ae8434", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+		{Name: "AppConfigApiService", SkelName: "vine.hub.admin.AppConfigApiService", Description: "Hub's application configuration service, called by Client", Hash: "d7463c7a", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
 			{Name: "list", SkelName: "list", Description: "List configuration items", Hash: "6f9fa5a7", AuthMode: skel.AuthModeUnset, OutputDescription: "Configuration item list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigListItem", SkelName: "vine.hub.admin.AppConfigListItem"}}},
-			{Name: "get", SkelName: "get", Description: "Read configuration", Hash: "d30075c8", AuthMode: skel.AuthModeUnset, OutputDescription: "Configuration items", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem"}, Arguments: []*skel.MemberSchema{
+			{Name: "get", SkelName: "get", Description: "Read configuration", Hash: "68cd7944", AuthMode: skel.AuthModeUnset, OutputDescription: "Configuration items", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem"}, Arguments: []*skel.MemberSchema{
 				{Name: "key", Description: "Configuration key", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			}},
-			{Name: "update", SkelName: "update", Description: "Modify configuration", Hash: "22647baf", AuthMode: skel.AuthModeUnset, OutputDescription: "Configuration items", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem"}, Arguments: []*skel.MemberSchema{
+			{Name: "update", SkelName: "update", Description: "Modify configuration", Hash: "846ab99a", AuthMode: skel.AuthModeUnset, OutputDescription: "Configuration items", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem"}, Arguments: []*skel.MemberSchema{
 				{Name: "id", Description: "Configuration ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
 				{Name: "update", Description: "Configuration update parameters", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigUpdate", SkelName: "vine.hub.admin.AppConfigUpdate"}},
 			}},
-			{Name: "create", SkelName: "create", Description: "Create configuration", Hash: "8c9c9ed0", AuthMode: skel.AuthModeUnset, OutputDescription: "Configuration items", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem"}, Arguments: []*skel.MemberSchema{
+			{Name: "create", SkelName: "create", Description: "Create configuration", Hash: "ecfed9d6", AuthMode: skel.AuthModeUnset, OutputDescription: "Configuration items", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem"}, Arguments: []*skel.MemberSchema{
 				{Name: "creation", Description: "Configuration creation parameters", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigCreation", SkelName: "vine.hub.admin.AppConfigCreation"}},
 			}},
 			{Name: "remove", SkelName: "remove", Description: "Delete unused configuration", Hash: "8a48c541", AuthMode: skel.AuthModeUnset, OutputDescription: "Whether deletion succeeded", ResultType: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}, Arguments: []*skel.MemberSchema{
