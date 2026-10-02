@@ -95,8 +95,8 @@ func (n *FlagNames) Validate() {
 
 // resolve records the declared name and reports the name the flag is registered
 // under with the environment variable it reads. A renamed flag carries the
-// variable derived from its new name, spelled the way the declared names are:
-// VINE_ followed by the upper-case name with dashes as underscores.
+// variable derived from its new name: upper-case with dashes as underscores,
+// without an automatic prefix.
 func (n *FlagNames) resolve(canonical string, env string) (name string, envName string) {
 	n.declared[canonical] = true
 
@@ -129,9 +129,8 @@ func (n *FlagNames) register(canonical string, name string, env string) {
 	n.registered[name] = canonical
 }
 
-// envFromName derives the environment variable of a flag name: VINE_ followed by
-// the upper-case name with dashes as underscores, the spelling the declared
-// variables use.
+// envFromName derives an application-owned environment variable: upper-case
+// with dashes as underscores, without an automatic prefix.
 func envFromName(name string) string {
-	return "VINE_" + strings.ToUpper(strings.ReplaceAll(name, "-", "_"))
+	return strings.ToUpper(strings.ReplaceAll(name, "-", "_"))
 }

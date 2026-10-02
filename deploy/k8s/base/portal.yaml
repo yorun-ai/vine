@@ -62,7 +62,7 @@ spec:
           image: ghcr.io/yorun-ai/vine-portal
           imagePullPolicy: IfNotPresent
           env:
-            - name: VINE_HUB_ENDPOINT
+            - name: VINE_PORTAL_HUB_ENDPOINT
               value: http://hub:7071
           ports:
             - name: http

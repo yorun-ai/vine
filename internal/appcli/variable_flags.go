@@ -33,7 +33,7 @@ func (n *FlagNames) variableFlags(paths map[string]string, target *[]string, see
 			vpre.Check(variablePathSegment.MatchString(segment), "seed variable %q must use camelCase path segments", path)
 		}
 		name := paths[path]
-		env := strings.ToUpper(strings.ReplaceAll(name, "-", "_"))
+		env := envFromName(name)
 		n.register(path, name, env)
 		flag := NewRepeatedStringFlag(name, env, new([]string), "seed variable "+path+" as YAML; repeatable")
 		kind := schema.variableType(path)

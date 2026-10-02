@@ -13,11 +13,11 @@ spec:
       containers:
         - name: hub
           env:
-            - name: VINE_MTLS_CA_FILE
+            - name: VINE_HUB_MTLS_CA_FILE
               value: /run/vine/mtls/ca.pem
-            - name: VINE_MTLS_CERT_FILE
+            - name: VINE_HUB_MTLS_CERT_FILE
               value: /run/vine/mtls/cert.pem
-            - name: VINE_MTLS_KEY_FILE
+            - name: VINE_HUB_MTLS_KEY_FILE
               value: /run/vine/mtls/key.pem
           volumeMounts:
             - name: mtls
