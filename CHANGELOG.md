@@ -8,6 +8,60 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-10-02
+
+### Added
+
+- Standalone `VarFlags` recognizes bool paths in registered `app.Vars` schemas
+  and supports native switches such as `--enabled`, `--enabled=true`, and
+  `--enabled=false`. Nullable bools accept explicit `null`; omitted flags and
+  environment variables preserve vars-file values and defaults. Other and
+  unresolved types continue to accept explicit YAML values.
+- Independent Hub, Link, and Portal commands accept `--log-level` and repeatable
+  `--log-rule` with component-specific environment variables.
+
+### Changed
+
+- Independent service environment variables consistently use `VINE_HUB_*`,
+  `VINE_LINK_*`, and `VINE_PORTAL_*`, matching corresponding embedded runtime
+  settings. Backend mTLS and process logging also use these component prefixes.
+  Previous standalone names are no longer read. Docker defaults and Kubernetes
+  manifests use the new names; CLI parameter names are unchanged.
+- `RenamedFlags` derives environment variables from application-owned flag names
+  without automatically adding `VINE_`. For example, `vars-file` reads
+  `VARS_FILE`. Flag and environment collision checks remain enforced.
+
+### Upgrade Notes
+
+- Update independent Hub environment variables to include `HUB_` after `VINE_`:
+  `VINE_CONTROL_LISTEN`, `VINE_ADMIN_LISTEN`, `VINE_WATCH_LISTEN`,
+  `VINE_NO_DB`, `VINE_DB_SQLITE_FILE`, `VINE_DB_POSTGRES_URL`, `VINE_MQ_MODE`,
+  `VINE_MQ_NATS_ENDPOINT`, `VINE_LOCK_MODE`, `VINE_LOCK_REDIS_ENDPOINT`,
+  `VINE_SEED_DATA_FILE`, `VINE_SEED_SOURCE_FILE`, `VINE_SEED_VAR`, and
+  `VINE_SEED_VARS_FILE`. For example, use `VINE_HUB_ADMIN_LISTEN` and
+  `VINE_HUB_SEED_VAR`.
+- Link now reads `VINE_LINK_API_LISTEN`, `VINE_LINK_INGRESS_LISTEN`, and
+  `VINE_LINK_HUB_ENDPOINT` instead of `VINE_API_LISTEN`, `VINE_INGRESS_LISTEN`,
+  and `VINE_HUB_ENDPOINT`. Portal reads `VINE_PORTAL_HUB_ENDPOINT` instead of
+  `VINE_HUB_ENDPOINT`.
+- Replace independent-service `VINE_MTLS_CA_FILE`, `VINE_MTLS_CERT_FILE`, and
+  `VINE_MTLS_KEY_FILE` with `VINE_HUB_MTLS_*`, `VINE_LINK_MTLS_*`, or
+  `VINE_PORTAL_MTLS_*` for the respective component. Component certificates
+  and private keys represent separate service identities; CA files may be shared.
+- Independent services use `VINE_HUB_LOG_LEVEL` / `VINE_HUB_LOG_RULES`,
+  `VINE_LINK_LOG_LEVEL` / `VINE_LINK_LOG_RULES`, or
+  `VINE_PORTAL_LOG_LEVEL` / `VINE_PORTAL_LOG_RULES`. Embedded applications
+  retain process-wide `VINE_LOG_LEVEL` and `VINE_LOG_RULES`; their built-in
+  runtime environment names are otherwise unchanged.
+- Applications using `RenamedFlags` must remove the automatic product prefix
+  from the renamed environment variable, for example `VINE_VARS_FILE` becomes
+  `VARS_FILE`. Declared old flag names and their original environments remain
+  inactive after renaming.
+- Registered bool variable flags follow native CLI syntax: use
+  `--enabled=false` rather than `--enabled false`. Strings and unresolved
+  variable types retain explicit YAML-valued flag syntax. Without a registered
+  `app.Vars` schema, named variable flags keep their previous behavior.
+
 ## [0.23.2] - 2026-10-01
 
 ### Added
@@ -1334,7 +1388,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.23.2...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.24.0...HEAD
+[0.24.0]: https://github.com/yorun-ai/vine/compare/v0.23.2...v0.24.0
 [0.23.2]: https://github.com/yorun-ai/vine/compare/v0.23.1...v0.23.2
 [0.23.1]: https://github.com/yorun-ai/vine/compare/v0.23.0...v0.23.1
 [0.23.0]: https://github.com/yorun-ai/vine/compare/v0.22.3...v0.23.0
