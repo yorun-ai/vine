@@ -8,6 +8,36 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-10-02
+
+### Added
+
+- Hub config definitions expose reachable data declarations, generic arguments,
+  nested enum options, sensitive metadata, descriptions and examples.
+- Hub validates nested data, generic bindings, nullable containers and binary
+  base64 values recursively while preserving integer precision.
+- Dashboard generates structured config defaults and provides nested JSON5/YAML
+  field hints, completion and diagnostics. Sensitive diagnostics redact values
+  and map keys, including inherited sensitive data declarations.
+
+### Changed
+
+- Fx config readers preserve original string whitespace for both eternal and
+  instant configurations instead of automatically trimming string values.
+- Stable Kubernetes overlays use v0.25.0 for Hub, Link and Portal images.
+
+### Upgrade Notes
+
+- Applications that relied on automatic config trimming must trim explicitly.
+  Existing noTrim tags remain harmless and require no Vine runtime migration.
+- Use skelc v0.23.0 to declare structured configs and generate nullable generic
+  fields correctly. When regenerating `TValue?` fields, adapt Go code to pointers.
+- Binary config values use padded base64 strings, including CR/LF in YAML literal
+  blocks. Spaces, tabs and YAML `!!binary` tags are not supported. Dashboard
+  editing retains its JavaScript safe-integer limit; backend validation supports
+  the full int64 range.
+- Complete JSON persistence, lifecycle and Link/Portal distribution are unchanged.
+
 ## [0.24.0] - 2026-10-02
 
 ### Added
@@ -1388,7 +1418,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.24.0...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.25.0...HEAD
+[0.25.0]: https://github.com/yorun-ai/vine/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/yorun-ai/vine/compare/v0.23.2...v0.24.0
 [0.23.2]: https://github.com/yorun-ai/vine/compare/v0.23.1...v0.23.2
 [0.23.1]: https://github.com/yorun-ai/vine/compare/v0.23.0...v0.23.1
