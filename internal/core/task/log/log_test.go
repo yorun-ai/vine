@@ -3,6 +3,7 @@ package log
 import (
 	"encoding/json/v2"
 	"errors"
+	"go.yorun.ai/vine/internal/utilfortest/spectest"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -50,9 +51,11 @@ func (taskFailingMarshaler) MarshalJSON() ([]byte, error) {
 func TestRunnerStartedLogsRedactedArgumentsOnlyOnce(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "task-arguments.jsonl")
 	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
-	taskInfo := spec.ConvertSpecToInfoForTest(new(spec.TaskSpec{
-		Name:     "SecretTask",
-		SkelName: "test.task.Secret",
+	taskInfo := spectest.Task(new(spec.TaskSpec{
+		DefaultRunnerType:   reflect.TypeFor[*taskLogDefaultRunner](),
+		DefaultERRunnerType: reflect.TypeFor[*taskLogDefaultERRunner](),
+		Name:                "SecretTask",
+		SkelName:            "test.task.Secret",
 		Triggers: []*spec.TriggerSpec{{
 			Name:               "Run",
 			SkelName:           "run",
@@ -100,9 +103,11 @@ func TestTaskRedactFailureOmitsPayload(t *testing.T) {
 func TestRunnerFailureIncludesSourceStack(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "task-error.jsonl")
 	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
-	taskInfo := spec.ConvertSpecToInfoForTest(new(spec.TaskSpec{
-		Name:     "RebuildIndex",
-		SkelName: "test.task.RebuildIndex",
+	taskInfo := spectest.Task(new(spec.TaskSpec{
+		DefaultRunnerType:   reflect.TypeFor[*taskLogDefaultRunner](),
+		DefaultERRunnerType: reflect.TypeFor[*taskLogDefaultERRunner](),
+		Name:                "RebuildIndex",
+		SkelName:            "test.task.RebuildIndex",
 		Triggers: []*spec.TriggerSpec{{
 			Name:               "Nightly",
 			SkelName:           "nightly",
@@ -155,3 +160,6 @@ func readTaskLogRecords(t *testing.T, path string) []map[string]any {
 	}
 	return records
 }
+
+type taskLogDefaultRunner struct{}
+type taskLogDefaultERRunner struct{}

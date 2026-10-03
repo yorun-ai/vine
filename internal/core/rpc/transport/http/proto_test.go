@@ -2,155 +2,12 @@ package http
 
 import (
 	"net/http"
-	"reflect"
 	"testing"
-	"time"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/util/vcode"
 )
-
-func testProtoRequestHeaders(t *testing.T) http.Header {
-	t.Helper()
-
-	trace := meta.InitialTrace()
-	if trace == nil {
-		t.Fatalf("expected initial trace")
-	}
-	client, err := meta.NewApp("demo", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
-	if err != nil {
-		t.Fatalf("NewApp() error = %v", err)
-	}
-
-	header := http.Header{}
-	EncodeContentTypeHeadersToHeaderByMethod(header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, false))
-	EncodeTraceToHeader(header, trace)
-	EncodeClientToHeader(header, client)
-	return header
-}
-
-func testProtoResponseHeaders(t *testing.T) http.Header {
-	t.Helper()
-
-	trace := meta.InitialTrace()
-	if trace == nil {
-		t.Fatalf("expected initial trace")
-	}
-	server, err := meta.NewApp("server", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
-	if err != nil {
-		t.Fatalf("NewApp() error = %v", err)
-	}
-
-	header := http.Header{}
-	EncodeContentTypeHeadersToHeader(header, ContentTypeJson)
-	EncodeTraceToHeader(header, trace)
-	EncodeStatusCodeToHeader(header, ex.OK)
-	EncodeServerToHeader(header, server)
-	return header
-}
-
-func TestCheckRequestMethod(t *testing.T) {
-	req, err := http.NewRequest(RequestMethod, "http://localhost", nil)
-	if err != nil {
-		t.Fatalf("NewRequest() error = %v", err)
-	}
-	if err := CheckRequestMethod(req); err != nil {
-		t.Fatalf("CheckRequestMethod() error = %v", err)
-	}
-
-	req.Method = http.MethodGet
-	if err := CheckRequestMethod(req); err == nil {
-		t.Fatalf("expected invalid method to be rejected")
-	}
-}
-
-func TestCheckRequestHeaders(t *testing.T) {
-	header := testProtoRequestHeaders(t)
-	header.Set(HeaderAccept, "application/json, "+ContentTypeJson)
-
-	if err := CheckRequestHeaders(header); err != nil {
-		t.Fatalf("CheckRequestHeaders() error = %v", err)
-	}
-
-	header = testProtoRequestHeaders(t)
-	header.Add(HeaderRpcTrace, "duplicated")
-	if err := CheckRequestHeaders(header); err == nil {
-		t.Fatalf("expected duplicated request header to be rejected")
-	}
-
-	header = testProtoRequestHeaders(t)
-	header.Set(HeaderContentType, "application/json")
-	if err := CheckRequestHeaders(header); err == nil {
-		t.Fatalf("expected invalid request content-type to be rejected")
-	}
-
-	header = testProtoRequestHeaders(t)
-	header.Set(HeaderAccept, "application/json, "+ContentTypeCbor+";q=1, "+ContentTypeJson+";q=0.8")
-	header.Set(HeaderContentType, ContentTypeJson+"; charset=utf-8")
-	if err := CheckRequestHeaders(header); err != nil {
-		t.Fatalf("expected vrpc media type with params to be accepted, got %v", err)
-	}
-}
-
-func TestCheckRequestContentTypeHeader(t *testing.T) {
-	header := http.Header{}
-	header.Set(HeaderContentType, ContentTypeCbor+"; charset=utf-8")
-	if err := CheckRequestContentTypeHeader(header); err != nil {
-		t.Fatalf("CheckRequestContentTypeHeader() error = %v", err)
-	}
-
-	header = http.Header{}
-	if err := CheckRequestContentTypeHeader(header); err == nil {
-		t.Fatalf("expected missing content-type to be rejected")
-	}
-
-	header = http.Header{}
-	header.Set(HeaderContentType, "application/json")
-	if err := CheckRequestContentTypeHeader(header); err == nil {
-		t.Fatalf("expected invalid content-type to be rejected")
-	}
-}
-
-func TestCheckResponseHeaders(t *testing.T) {
-	header := testProtoResponseHeaders(t)
-	if err := CheckResponseHeaders(header); err != nil {
-		t.Fatalf("CheckResponseHeaders() error = %v", err)
-	}
-
-	header = testProtoResponseHeaders(t)
-	header.Del(HeaderRpcStatus)
-	if err := CheckResponseHeaders(header); err == nil {
-		t.Fatalf("expected missing response header to be rejected")
-	}
-}
-
-func TestEncodeFixedRequestAndResponseHeaders(t *testing.T) {
-	requestHeader := http.Header{}
-	EncodeContentTypeHeadersToHeaderByMethod(requestHeader, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, false))
-	if requestHeader.Get(HeaderAccept) != ContentTypeJson {
-		t.Fatalf("unexpected accept header: %s", requestHeader.Get(HeaderAccept))
-	}
-	if requestHeader.Get(HeaderContentType) != ContentTypeJson {
-		t.Fatalf("unexpected request content-type: %s", requestHeader.Get(HeaderContentType))
-	}
-
-	responseHeader := http.Header{}
-	EncodeContentTypeHeadersToHeader(responseHeader, ContentTypeJson)
-	if responseHeader.Get(HeaderContentType) != ContentTypeJson {
-		t.Fatalf("unexpected response content-type: %s", responseHeader.Get(HeaderContentType))
-	}
-}
-
-func TestAcceptsContentTypeIgnoresParameters(t *testing.T) {
-	value := "application/json, " + ContentTypeCbor + ";q=1, " + ContentTypeJson + ";q=0.8"
-	if !AcceptsContentType(value, ContentTypeCbor) {
-		t.Fatalf("expected cbor accept with parameters to be matched")
-	}
-	if !AcceptsContentType(value, ContentTypeJson) {
-		t.Fatalf("expected json accept with parameters to be matched")
-	}
-}
 
 func TestTraceHeaderRoundTrip(t *testing.T) {
 	header := http.Header{}
@@ -169,50 +26,6 @@ func TestTraceHeaderRoundTrip(t *testing.T) {
 	}
 	if got.Id() != trace.Id() || got.Span() != trace.Span() {
 		t.Fatalf("unexpected trace: got=%s/%s want=%s/%s", got.Id(), got.Span(), trace.Id(), trace.Span())
-	}
-}
-
-func TestOptionsHeaderRoundTrip(t *testing.T) {
-	header := http.Header{}
-
-	EncodeOptionsToHeader(header, &Options{Timeout: time.Second})
-	if got := header.Get(HeaderRpcOptions); got != "timeout=1s" {
-		t.Fatalf("unexpected options header: %s", got)
-	}
-
-	got, err := DecodeOptionsFromHeader(header)
-	if err != nil {
-		t.Fatalf("DecodeOptionsFromHeader() error = %v", err)
-	}
-	if got.Timeout != time.Second {
-		t.Fatalf("unexpected timeout: got %s want %s", got.Timeout, time.Second)
-	}
-}
-
-func TestDecodeOptionsFromHeaderDefaultsToEmpty(t *testing.T) {
-	got, err := DecodeOptionsFromHeader(http.Header{})
-	if err != nil {
-		t.Fatalf("DecodeOptionsFromHeader() error = %v", err)
-	}
-	if got.Timeout != 0 {
-		t.Fatalf("unexpected timeout: %s", got.Timeout)
-	}
-}
-
-func TestDecodeOptionsFromHeaderRejectsInvalidValue(t *testing.T) {
-	tests := []string{
-		"timeout=bad",
-		"timeout=0s",
-		"deadline=2026-07-16T10:20:30Z",
-		"timeout=1s,wait=async",
-	}
-
-	for _, value := range tests {
-		header := http.Header{}
-		header.Set(HeaderRpcOptions, value)
-		if _, err := DecodeOptionsFromHeader(header); err == nil {
-			t.Fatalf("expected invalid options header to be rejected: %s", value)
-		}
 	}
 }
 
@@ -282,33 +95,6 @@ func TestDecodeClientFromHeaderAcceptsGoVersionPrefix(t *testing.T) {
 	}
 	if got.Name() != "vine.hub" || got.Version() != "v0.15.8" {
 		t.Fatalf("unexpected client app: %s %s", got.Name(), got.Version())
-	}
-}
-
-func TestDecodeClientFromHeaderExported(t *testing.T) {
-	client, err := meta.NewApp("client", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
-	if err != nil {
-		t.Fatalf("NewApp(client) error = %v", err)
-	}
-	header := http.Header{}
-	EncodeClientToHeader(header, client)
-
-	got, err := DecodeClientFromHeader(header)
-	if err != nil {
-		t.Fatalf("DecodeClientFromHeader() error = %v", err)
-	}
-	if got.Name() != client.Name() || got.Version() != client.Version() || got.InstanceId() != client.InstanceId() {
-		t.Fatalf("unexpected client app")
-	}
-}
-
-func TestParseServiceAndMethodFromPath(t *testing.T) {
-	serviceName, methodName, err := ParseServiceAndMethodFromPath("/demo.service/Ping")
-	if err != nil {
-		t.Fatalf("ParseServiceAndMethodFromPath() error = %v", err)
-	}
-	if serviceName != "demo.service" || methodName != "Ping" {
-		t.Fatalf("unexpected path parts: %s %s", serviceName, methodName)
 	}
 }
 
@@ -405,23 +191,5 @@ func TestDecodeServiceAndMethodFromPath(t *testing.T) {
 
 	if _, _, err := ParseServiceAndMethodFromPath("/bad/path/extra"); err == nil {
 		t.Fatalf("expected invalid path to be rejected")
-	}
-}
-
-func TestReadRequestAndResponseBodyLimits(t *testing.T) {
-	request := &http.Request{
-		Body:          http.NoBody,
-		ContentLength: MaxRequestBodyBytes + 1,
-	}
-	if _, err := ReadRequestBody(request); err == nil {
-		t.Fatal("ReadRequestBody() error = nil")
-	}
-
-	response := &http.Response{
-		Body:          http.NoBody,
-		ContentLength: MaxResponseBodyBytes + 1,
-	}
-	if _, err := ReadResponseBody(response); err == nil {
-		t.Fatal("ReadResponseBody() error = nil")
 	}
 }

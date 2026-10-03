@@ -17,11 +17,11 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
-	portalhubwatch "go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/computil"
+	"go.yorun.ai/vine/internal/utilfortest/watchtest"
 	"go.yorun.ai/vine/util/vcode"
 )
 
@@ -34,7 +34,7 @@ func TestWebGatewayForwardsToRegistrationEndpoint(t *testing.T) {
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
-	target := newTestWebGateway(map[string]string{
+	target := newTestWebGateway(t, map[string]string{
 		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      ingressEndpoint + "/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
@@ -85,7 +85,7 @@ func TestWebGatewayForwardsAnonymousActorWithoutAuthorization(t *testing.T) {
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
-	target := newTestWebGateway(map[string]string{
+	target := newTestWebGateway(t, map[string]string{
 		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      ingressEndpoint + "/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
@@ -111,7 +111,7 @@ func TestWebGatewayCreatesForwardTrace(t *testing.T) {
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
-	target := newTestWebGateway(map[string]string{
+	target := newTestWebGateway(t, map[string]string{
 		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      ingressEndpoint + "/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
@@ -142,7 +142,7 @@ func TestWebGatewayAddsDefaultOptionsTimeoutBeforeForward(t *testing.T) {
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
-	target := newTestWebGateway(map[string]string{
+	target := newTestWebGateway(t, map[string]string{
 		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      ingressEndpoint + "/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
@@ -232,7 +232,7 @@ func TestWebGatewayIgnoresClientCancelAfterRequestIsAccepted(t *testing.T) {
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
-	target := newTestWebGateway(map[string]string{
+	target := newTestWebGateway(t, map[string]string{
 		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      ingressEndpoint + "/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
@@ -263,7 +263,7 @@ func TestWebGatewayForwardsRemainingOptionsTimeout(t *testing.T) {
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
-	target := newTestWebGateway(map[string]string{
+	target := newTestWebGateway(t, map[string]string{
 		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      ingressEndpoint + "/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
@@ -284,7 +284,7 @@ func TestWebGatewayForwardsRemainingOptionsTimeout(t *testing.T) {
 }
 
 func TestWebGatewayRejectsOptionsTimeoutOverMax(t *testing.T) {
-	target := newTestWebGateway(nil)
+	target := newTestWebGateway(t, nil)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/ping", nil)
 	request.Header.Set(webspec.HeaderWebOptions, "timeout=121s")
@@ -306,7 +306,7 @@ func TestWebGatewayReturnsRequestTraceId(t *testing.T) {
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
-	target := newTestWebGateway(map[string]string{
+	target := newTestWebGateway(t, map[string]string{
 		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      ingressEndpoint + "/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
@@ -329,7 +329,7 @@ func TestWebGatewayReturnsRequestTraceId(t *testing.T) {
 }
 
 func TestWebGatewayReturnsGeneratedTraceIdWhenRequestTraceIsInvalid(t *testing.T) {
-	target := newTestWebGateway(map[string]string{
+	target := newTestWebGateway(t, map[string]string{
 		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      "http://127.0.0.1:23001/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
@@ -360,7 +360,7 @@ func TestWebGatewayCompressesLargeTextResponse(t *testing.T) {
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
-	target := newTestWebGateway(map[string]string{
+	target := newTestWebGateway(t, map[string]string{
 		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      ingressEndpoint + "/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
@@ -387,7 +387,7 @@ func TestWebGatewayCompressesLargeTextResponse(t *testing.T) {
 }
 
 func TestWebGatewayReturnsUnavailableWhenNoEndpoint(t *testing.T) {
-	target := newTestWebGateway(nil)
+	target := newTestWebGateway(t, nil)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/ping", nil)
 
@@ -399,7 +399,7 @@ func TestWebGatewayReturnsUnavailableWhenNoEndpoint(t *testing.T) {
 }
 
 func TestWebGatewayAllowsOptionsFromSameEntryDomain(t *testing.T) {
-	target := newTestWebGateway(nil)
+	target := newTestWebGateway(t, nil)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodOptions, "http://api.example.com/ping", nil)
 	request.Header.Set("Origin", "https://console.example.com")
@@ -414,7 +414,7 @@ func TestWebGatewayAllowsOptionsFromSameEntryDomain(t *testing.T) {
 }
 
 func TestWebGatewayDoesNotAllowOptionsForWildcardEntryOrigin(t *testing.T) {
-	target := newTestWebGateway(nil)
+	target := newTestWebGateway(t, nil)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodOptions, "http://api.example.com/ping", nil)
 	request.Header.Set("Origin", "https://console.example.com")
@@ -425,7 +425,7 @@ func TestWebGatewayDoesNotAllowOptionsForWildcardEntryOrigin(t *testing.T) {
 }
 
 func TestWebGatewayAllowsOptionsFromStrictAllowedOrigin(t *testing.T) {
-	target := newTestWebGatewayWithCors(nil, watched.PortalCors{
+	target := newTestWebGatewayWithCors(t, nil, watched.PortalCors{
 		Mode: watched.PortalCorsModeStrict,
 		AllowedOrigins: []string{
 			"https://console.example.com",
@@ -441,7 +441,7 @@ func TestWebGatewayAllowsOptionsFromStrictAllowedOrigin(t *testing.T) {
 }
 
 func TestWebGatewayDoesNotAllowOptionsWhenCorsDisabled(t *testing.T) {
-	target := newTestWebGatewayWithCors(nil, watched.PortalCors{
+	target := newTestWebGatewayWithCors(t, nil, watched.PortalCors{
 		Mode: watched.PortalCorsModeDisabled,
 	})
 	recorder := httptest.NewRecorder()
@@ -454,7 +454,7 @@ func TestWebGatewayDoesNotAllowOptionsWhenCorsDisabled(t *testing.T) {
 }
 
 func TestWebGatewayUpdateKeepsRegistrationWhenWebNameDoesNotChange(t *testing.T) {
-	target := newTestWebGateway(map[string]string{
+	target := newTestWebGateway(t, map[string]string{
 		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      "http://127.0.0.1:23001/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
@@ -477,7 +477,7 @@ func TestWebGatewayUpdateKeepsRegistrationWhenWebNameDoesNotChange(t *testing.T)
 }
 
 func TestWebGatewayUpdateSwitchesWebName(t *testing.T) {
-	target := newTestWebGateway(map[string]string{
+	target := newTestWebGateway(t, map[string]string{
 		watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
 			Endpoint:      "http://127.0.0.1:23001/web/proxy/in/instance-1/admin@demo.app",
 			WebSkelName:   "admin@demo.app",
@@ -526,14 +526,14 @@ func testContextWithEntryOrigin(recorder http.ResponseWriter, request *http.Requ
 	}
 }
 
-func newTestWebGateway(valuesByKey map[string]string) *WebGateway {
-	return newTestWebGatewayWithCors(valuesByKey, watched.PortalCors{
+func newTestWebGateway(t *testing.T, valuesByKey map[string]string) *WebGateway {
+	return newTestWebGatewayWithCors(t, valuesByKey, watched.PortalCors{
 		Mode: watched.PortalCorsModeSameDomain,
 	})
 }
 
-func newTestWebGatewayWithCors(valuesByKey map[string]string, cors watched.PortalCors) *WebGateway {
-	return New(context.Background(), meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"), new(access.Access), newTestEpmgr(valuesByKey), watched.PortalSite{
+func newTestWebGatewayWithCors(t *testing.T, valuesByKey map[string]string, cors watched.PortalCors) *WebGateway {
+	return New(context.Background(), meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"), new(access.Access), newTestEpmgr(t, valuesByKey), watched.PortalSite{
 		Name: "demo-web",
 		Type: "WEBGW",
 		Cors: cors,
@@ -543,10 +543,10 @@ func newTestWebGatewayWithCors(valuesByKey map[string]string, cors watched.Porta
 	})
 }
 
-func newTestEpmgr(valuesByKey map[string]string) *epmgr.Manager {
+func newTestEpmgr(t *testing.T, valuesByKey map[string]string) *epmgr.Manager {
 	manager := &epmgr.Manager{
 		Context: context.Background(),
-		Watch:   portalhubwatch.NewTestClient(valuesByKey),
+		Watch:   watchtest.New(t, valuesByKey),
 	}
 	manager.DIInit()
 	return manager

@@ -204,11 +204,14 @@ func newTestNATSServer(t *testing.T) *natsserver.Server {
 	if err != nil {
 		t.Fatalf("new nats server failed: %v", err)
 	}
+	t.Cleanup(func() {
+		server.Shutdown()
+		server.WaitForShutdown()
+	})
 	go server.Start()
 	if !server.ReadyForConnections(2 * time.Second) {
 		t.Fatalf("nats server not ready")
 	}
-	t.Cleanup(server.Shutdown)
 
 	conn, err := gonats.Connect("", gonats.InProcessServer(server))
 	if err != nil {
@@ -237,6 +240,7 @@ func connectTestNATS(t *testing.T, endpoint string) *gonats.Conn {
 	if err != nil {
 		t.Fatalf("connect nats failed: %v", err)
 	}
+	t.Cleanup(conn.Close)
 	return conn
 }
 

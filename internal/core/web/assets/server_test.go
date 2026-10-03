@@ -16,10 +16,10 @@ import (
 
 func TestAssetsServerServeAsset(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	server := NewServer(NewTarZstAccessor(testTarZst(t, map[string]string{
-		"index.html":    `<div id="app"></div>`,
-		"assets/app.js": `console.log("vine")`,
-	})))
+	server := NewServer(NewEmbedAccessor(fstest.MapFS{
+		"index.html":    {Data: []byte(`<div id="app"></div>`)},
+		"assets/app.js": {Data: []byte(`console.log("vine")`)},
+	}, "."))
 
 	recorder, ginCtx := newStaticTestContext(http.MethodGet, "/assets/app.js")
 	ginCtx.Params = gin.Params{{Key: "path", Value: "/assets/app.js"}}
@@ -39,10 +39,10 @@ func TestAssetsServerServeAsset(t *testing.T) {
 
 func TestAssetsServerServeAssetsUsesRoutePath(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	server := NewServer(NewTarZstAccessor(testTarZst(t, map[string]string{
-		"app.js":     `console.log("vine")`,
-		"index.html": `<div id="app"></div>`,
-	})))
+	server := NewServer(NewEmbedAccessor(fstest.MapFS{
+		"app.js":     {Data: []byte(`console.log("vine")`)},
+		"index.html": {Data: []byte(`<div id="app"></div>`)},
+	}, "."))
 
 	recorder, ginCtx := newStaticTestContext(http.MethodGet, "/assets/../app.js")
 	ginCtx.Params = gin.Params{{Key: "path", Value: "/assets/../app.js"}}
@@ -78,9 +78,9 @@ func TestAssetsServerServesArchiveDotSlashFilenames(t *testing.T) {
 
 func TestAssetsServerFallbackAndErrors(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	server := NewServer(NewTarZstAccessor(testTarZst(t, map[string]string{
-		"index.html": `<div id="app"></div>`,
-	})))
+	server := NewServer(NewEmbedAccessor(fstest.MapFS{
+		"index.html": {Data: []byte(`<div id="app"></div>`)},
+	}, "."))
 
 	recorder, ginCtx := newStaticTestContext(http.MethodGet, "/portal/site")
 	ginCtx.Params = gin.Params{{Key: "path", Value: "/portal/site"}}
@@ -110,9 +110,9 @@ func TestAssetsServerFallbackAndErrors(t *testing.T) {
 
 func TestAssetsServerFallbackMissingIndex(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	server := NewServer(NewTarZstAccessor(testTarZst(t, map[string]string{
-		"assets/app.js": `console.log("vine")`,
-	})))
+	server := NewServer(NewEmbedAccessor(fstest.MapFS{
+		"assets/app.js": {Data: []byte(`console.log("vine")`)},
+	}, "."))
 
 	recorder, ginCtx := newStaticTestContext(http.MethodGet, "/portal/site")
 	ginCtx.Params = gin.Params{{Key: "path", Value: "/portal/site"}}

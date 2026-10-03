@@ -15,7 +15,7 @@ func TestGetInstantConcurrentWithEventUpdate(t *testing.T) {
 		firstValue    = `{"enabled":true}`
 		secondValue   = `{"enabled":false}`
 	)
-	reader := newTestReader(map[string]watched.ConfigValue{
+	reader := newTestReader(t, map[string]watched.ConfigValue{
 		configName: {
 			Name:  configName,
 			Value: []byte(firstValue),

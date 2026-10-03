@@ -8,7 +8,6 @@ import (
 	"go.yorun.ai/vine/internal/app"
 	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/vault"
 	"go.yorun.ai/vine/util/vcode"
@@ -23,10 +22,10 @@ const (
 type Manager struct {
 	app.BaseModule
 
-	Context     context.Context  `inject:""`
-	SiteManager *site.Manager    `inject:""`
-	Vault       *vault.Vault     `inject:""`
-	Watch       *hubwatch.Client `inject:""`
+	Context     context.Context       `inject:""`
+	SiteManager *site.Manager         `inject:""`
+	Vault       *vault.Vault          `inject:""`
+	Watch       hubapiwatch.ClientOps `inject:""`
 
 	mutex            sync.Mutex
 	entryRulesByName map[string]watched.PortalRule

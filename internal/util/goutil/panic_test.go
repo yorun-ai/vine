@@ -7,48 +7,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWrapWithOnPanic(t *testing.T) {
-	t.Run("runs function without panic handler when no panic occurs", func(t *testing.T) {
-		called := false
-		panicHandled := false
+func TestOnPanicHelpers(t *testing.T) {
+	for name, run := range map[string]func(func(), func()){
+		"wrapped": func(fn func(), onPanic func()) { WrapWithOnPanic(fn, onPanic)() },
+		"direct":  RunWithOnPanic,
+	} {
+		t.Run(name, func(t *testing.T) {
+			called, panicHandled := false, false
+			onPanic := func() { panicHandled = true }
+			run(func() { called = true }, onPanic)
+			assert.True(t, called)
+			assert.False(t, panicHandled)
 
-		WrapWithOnPanic(func() {
-			called = true
-		}, func() {
-			panicHandled = true
-		})()
-
-		assert.True(t, called)
-		assert.False(t, panicHandled)
-	})
-
-	t.Run("invokes panic handler and preserves panic", func(t *testing.T) {
-		panicHandled := false
-
-		assert.PanicsWithValue(t, "boom", func() {
-			WrapWithOnPanic(func() {
-				panic("boom")
-			}, func() {
-				panicHandled = true
-			})()
+			assert.PanicsWithValue(t, "boom", func() {
+				run(func() { panic("boom") }, onPanic)
+			})
+			assert.True(t, panicHandled)
 		})
-
-		assert.True(t, panicHandled)
-	})
-}
-
-func TestRunWithOnPanic(t *testing.T) {
-	panicHandled := false
-
-	assert.PanicsWithValue(t, "boom", func() {
-		RunWithOnPanic(func() {
-			panic("boom")
-		}, func() {
-			panicHandled = true
-		})
-	})
-
-	assert.True(t, panicHandled)
+	}
 }
 
 func TestRunWithRecover(t *testing.T) {

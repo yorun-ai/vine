@@ -21,10 +21,10 @@ import (
 	"go.yorun.ai/vine/internal/core/skel"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
-	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 	"go.yorun.ai/vine/internal/util/httputil"
+	"go.yorun.ai/vine/internal/utilfortest/watchtest"
 	"go.yorun.ai/vine/util/vcode"
 )
 
@@ -60,10 +60,10 @@ func (*_TestRegistryServiceClient) Heartbeat(hubskeled.AppStatus, ...client.Invo
 	return true
 }
 
-func newTestRpcProxy(t *testing.T, watchClient *hubwatch.Client) *RpcProxy {
+func newTestRpcProxy(t *testing.T, watchClient *watchtest.Client) *RpcProxy {
 	t.Helper()
 	if watchClient == nil {
-		watchClient = hubwatch.NewClientForTest(nil)
+		watchClient = watchtest.New(t, nil)
 	}
 	minder := &minder.AppMinder{
 		Context:               context.Background(),
@@ -100,7 +100,7 @@ func registerLocalApp(proxy *RpcProxy, appInfo meta.App, serviceEndpoint string,
 	})
 }
 
-func newTestHubWatchClient(serviceEndpointsByName map[string][]watched.RpcServiceRegistration) *hubwatch.Client {
+func newTestHubWatchClient(t *testing.T, serviceEndpointsByName map[string][]watched.RpcServiceRegistration) *watchtest.Client {
 	valuesByKey := map[string]string{}
 	for _, registrations := range serviceEndpointsByName {
 		for _, registration := range registrations {
@@ -108,7 +108,7 @@ func newTestHubWatchClient(serviceEndpointsByName map[string][]watched.RpcServic
 			valuesByKey[key] = vcode.MustMarshalJsonS(registration)
 		}
 	}
-	return hubwatch.NewClientForTest(valuesByKey)
+	return watchtest.New(t, valuesByKey)
 }
 
 func mustMetaApp(t *testing.T, name string, instanceID string) meta.App {

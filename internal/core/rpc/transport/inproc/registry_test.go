@@ -3,6 +3,7 @@ package inproc
 import (
 	"context"
 	"fmt"
+	"go.yorun.ai/vine/internal/utilfortest/spectest"
 	"strings"
 	"sync"
 	"testing"
@@ -47,7 +48,8 @@ func registryTestRequest(t *testing.T) spec.Request {
 		ContextValue: context.Background(),
 		TraceValue:   meta.InitialTrace(),
 		ClientValue:  app,
-		MethodInfoValue: spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
+		MethodInfoValue: spectest.RpcService(&spec.ServiceSpec{
+			Type:     spec.ServiceSpecTypeBoth,
 			Name:     "RegistryTestService",
 			SkelName: "registry.test.service",
 			Methods: []*spec.MethodSpec{{

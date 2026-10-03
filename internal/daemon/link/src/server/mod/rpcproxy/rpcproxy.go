@@ -14,8 +14,8 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
+	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
-	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 )
 
@@ -27,12 +27,12 @@ const (
 type RpcProxy struct {
 	app.BaseModule
 
-	Context     context.Context   `inject:""`
-	WatchClient *hubwatch.Client  `inject:""`
-	CurrentApp  meta.CurrentApp   `inject:""`
-	Logger      *logger.Logger    `inject:""`
-	AppMinder   *minder.AppMinder `inject:""`
-	Identity    *mtls.Identity    `inject:""`
+	Context     context.Context       `inject:""`
+	WatchClient hubapiwatch.ClientOps `inject:""`
+	CurrentApp  meta.CurrentApp       `inject:""`
+	Logger      *logger.Logger        `inject:""`
+	AppMinder   *minder.AppMinder     `inject:""`
+	Identity    *mtls.Identity        `inject:""`
 
 	transport http.RoundTripper
 

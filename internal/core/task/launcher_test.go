@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"encoding/json/v2"
+	"go.yorun.ai/vine/internal/utilfortest/spectest"
 	"reflect"
 	"testing"
 	"time"
@@ -89,7 +90,7 @@ type defaultTestLauncherTaskRunnerER struct {
 }
 
 func testLauncherTriggerInfo() spec.TriggerInfo {
-	return spec.ConvertSpecToInfoForTest(&spec.TaskSpec{
+	return spectest.Task(&spec.TaskSpec{
 		Name:                "LauncherTask",
 		SkelName:            "launcher.task",
 		RunnerType:          reflect.TypeFor[testLauncherTaskRunner](),

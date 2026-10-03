@@ -21,16 +21,16 @@ import (
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
-	portalhubwatch "go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/computil"
+	"go.yorun.ai/vine/internal/utilfortest/watchtest"
 	"go.yorun.ai/vine/util/vcode"
 )
 
 func TestRpcGatewayRejectsPlaintextRegistrationWithMTLS(t *testing.T) {
-	target := newTestRpcGateway(map[string]string{
+	target := newTestRpcGateway(t, map[string]string{
 		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:       "http://link.local/rpc/proxy/in/instance-1",
 			ServerIdentity: daemon.LinkIdentity,
@@ -66,7 +66,7 @@ func TestRpcGatewayForwardsConfiguredServiceToRegistrationEndpoint(t *testing.T)
 		_, _ = w.Write([]byte("forwarded"))
 	}))
 
-	target := newTestRpcGateway(map[string]string{
+	target := newTestRpcGateway(t, map[string]string{
 		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
@@ -137,7 +137,7 @@ func TestRpcGatewayClearsAcceptEncodingBeforeForward(t *testing.T) {
 		_, _ = w.Write([]byte("forwarded"))
 	}))
 
-	target := newTestRpcGateway(map[string]string{
+	target := newTestRpcGateway(t, map[string]string{
 		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
@@ -164,7 +164,7 @@ func TestRpcGatewayAddsDefaultRpcOptionsTimeoutBeforeForward(t *testing.T) {
 		_, _ = w.Write([]byte("forwarded"))
 	}))
 
-	target := newTestRpcGateway(map[string]string{
+	target := newTestRpcGateway(t, map[string]string{
 		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
@@ -192,7 +192,7 @@ func TestRpcGatewayIgnoresClientCancelAfterRequestIsAccepted(t *testing.T) {
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
-	target := newTestRpcGateway(map[string]string{
+	target := newTestRpcGateway(t, map[string]string{
 		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
@@ -223,7 +223,7 @@ func TestRpcGatewayForwardsRemainingRpcOptionsTimeout(t *testing.T) {
 		_, _ = w.Write([]byte("forwarded"))
 	}))
 
-	target := newTestRpcGateway(map[string]string{
+	target := newTestRpcGateway(t, map[string]string{
 		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
@@ -245,7 +245,7 @@ func TestRpcGatewayForwardsRemainingRpcOptionsTimeout(t *testing.T) {
 }
 
 func TestRpcGatewayRejectsRpcOptionsTimeoutOverMax(t *testing.T) {
-	target := newTestRpcGateway(map[string]string{
+	target := newTestRpcGateway(t, map[string]string{
 		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      "http://127.0.0.1:23001/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
@@ -264,7 +264,7 @@ func TestRpcGatewayRejectsRpcOptionsTimeoutOverMax(t *testing.T) {
 }
 
 func TestRpcGatewayRejectsOversizedRequestBodyAsInvalidRequest(t *testing.T) {
-	target := newTestRpcGateway(nil)
+	target := newTestRpcGateway(t, nil)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/invoke/demo.UserService/Get", nil)
 	setTestAuthHeaders(request)
@@ -282,7 +282,7 @@ func TestRpcGatewayGeneratesMissingRpcSpanBeforeForward(t *testing.T) {
 		_, _ = w.Write([]byte("forwarded"))
 	}))
 
-	target := newTestRpcGateway(map[string]string{
+	target := newTestRpcGateway(t, map[string]string{
 		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
@@ -319,7 +319,7 @@ func TestRpcGatewayMapsForwardedRpcErrorToHTTPStatusCode(t *testing.T) {
 		}
 	}))
 
-	target := newTestRpcGateway(map[string]string{
+	target := newTestRpcGateway(t, map[string]string{
 		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
@@ -377,7 +377,7 @@ func TestRpcGatewayCreatesForwardSpan(t *testing.T) {
 		w.WriteHeader(http.StatusAccepted)
 	}))
 
-	target := newTestRpcGateway(map[string]string{
+	target := newTestRpcGateway(t, map[string]string{
 		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
@@ -412,7 +412,7 @@ func TestRpcGatewayOverwritesExistingRpcInitiator(t *testing.T) {
 		w.WriteHeader(http.StatusAccepted)
 	}))
 
-	target := newTestRpcGateway(map[string]string{
+	target := newTestRpcGateway(t, map[string]string{
 		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
@@ -442,7 +442,7 @@ func TestRpcGatewayOverwritesExistingRpcInitiator(t *testing.T) {
 }
 
 func TestRpcGatewayRejectsMissingRpcClient(t *testing.T) {
-	target := newTestRpcGateway(map[string]string{
+	target := newTestRpcGateway(t, map[string]string{
 		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      "http://127.0.0.1:23001/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
@@ -461,7 +461,7 @@ func TestRpcGatewayRejectsMissingRpcClient(t *testing.T) {
 }
 
 func TestRpcGatewayRejectsMissingRpcTrace(t *testing.T) {
-	target := newTestRpcGateway(map[string]string{
+	target := newTestRpcGateway(t, map[string]string{
 		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      "http://127.0.0.1:23001/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
@@ -480,7 +480,7 @@ func TestRpcGatewayRejectsMissingRpcTrace(t *testing.T) {
 }
 
 func TestRpcGatewayRejectsInvalidContentType(t *testing.T) {
-	target := newTestRpcGateway(map[string]string{
+	target := newTestRpcGateway(t, map[string]string{
 		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      "http://127.0.0.1:23001/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
@@ -505,7 +505,7 @@ func TestRpcGatewayOverwritesExistingRpcActor(t *testing.T) {
 		w.WriteHeader(http.StatusAccepted)
 	}))
 
-	target := newTestRpcGateway(map[string]string{
+	target := newTestRpcGateway(t, map[string]string{
 		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
@@ -513,7 +513,7 @@ func TestRpcGatewayOverwritesExistingRpcActor(t *testing.T) {
 			AppInstanceId: "instance-1",
 		}),
 	})
-	actor := meta.NewAuthenticatedActorForTest()
+	actor := meta.NewAuthenticatedActorWithRawInfo("test.realm", "test", "test.ActorInfo", []byte(`{"Id":"test"}`))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/invoke/demo.UserService/Get", nil)
 	setTestAuthHeaders(request)
@@ -531,7 +531,7 @@ func TestRpcGatewayOverwritesExistingRpcActor(t *testing.T) {
 }
 
 func TestRpcGatewayReturnsNotFoundOutsideInvokePath(t *testing.T) {
-	target := newTestRpcGateway(nil)
+	target := newTestRpcGateway(t, nil)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 
@@ -541,7 +541,7 @@ func TestRpcGatewayReturnsNotFoundOutsideInvokePath(t *testing.T) {
 }
 
 func TestRpcGatewayDispatchesInspectPath(t *testing.T) {
-	target := newTestRpcGateway(nil)
+	target := newTestRpcGateway(t, nil)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/inspect", nil)
 
@@ -551,7 +551,7 @@ func TestRpcGatewayDispatchesInspectPath(t *testing.T) {
 }
 
 func TestRpcGatewayAllowsOptionsFromSameEntryDomain(t *testing.T) {
-	target := newTestRpcGateway(nil)
+	target := newTestRpcGateway(t, nil)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodOptions, "http://api.example.com/invoke/demo.UserService/Get", nil)
 	request.Header.Set("Origin", "https://console.example.com")
@@ -566,7 +566,7 @@ func TestRpcGatewayAllowsOptionsFromSameEntryDomain(t *testing.T) {
 }
 
 func TestRpcGatewayDoesNotAllowOptionsForWildcardEntryOrigin(t *testing.T) {
-	target := newTestRpcGateway(nil)
+	target := newTestRpcGateway(t, nil)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodOptions, "http://api.example.com/invoke/demo.UserService/Get", nil)
 	request.Header.Set("Origin", "https://console.example.com")
@@ -577,7 +577,7 @@ func TestRpcGatewayDoesNotAllowOptionsForWildcardEntryOrigin(t *testing.T) {
 }
 
 func TestRpcGatewayAllowsOptionsFromStrictAllowedOrigin(t *testing.T) {
-	target := newTestRpcGatewayWithCors(nil, watched.PortalCors{
+	target := newTestRpcGatewayWithCors(t, nil, watched.PortalCors{
 		Mode: watched.PortalCorsModeStrict,
 		AllowedOrigins: []string{
 			"https://console.example.com",
@@ -593,7 +593,7 @@ func TestRpcGatewayAllowsOptionsFromStrictAllowedOrigin(t *testing.T) {
 }
 
 func TestRpcGatewayDoesNotAllowOptionsWhenCorsDisabled(t *testing.T) {
-	target := newTestRpcGatewayWithCors(nil, watched.PortalCors{
+	target := newTestRpcGatewayWithCors(t, nil, watched.PortalCors{
 		Mode: watched.PortalCorsModeDisabled,
 	})
 	recorder := httptest.NewRecorder()
@@ -606,7 +606,7 @@ func TestRpcGatewayDoesNotAllowOptionsWhenCorsDisabled(t *testing.T) {
 }
 
 func TestRpcGatewayReturnsUnavailableWhenServiceHasNoEndpoint(t *testing.T) {
-	target := newTestRpcGateway(nil)
+	target := newTestRpcGateway(t, nil)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/invoke/demo.UserService/Get", nil)
 	setTestAuthHeaders(request)
@@ -617,7 +617,7 @@ func TestRpcGatewayReturnsUnavailableWhenServiceHasNoEndpoint(t *testing.T) {
 }
 
 func TestRpcGatewayRejectsServiceOutsideConfiguredList(t *testing.T) {
-	target := newTestRpcGateway(map[string]string{
+	target := newTestRpcGateway(t, map[string]string{
 		watched.FormatRpcServiceRegistrationKey("demo.OrderService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      "http://127.0.0.1:23001/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.OrderService",
@@ -678,14 +678,14 @@ func testCredentialSchema() *skel.DataSchema {
 	}
 }
 
-func newTestRpcGateway(valuesByKey map[string]string) *RpcGateway {
-	return newTestRpcGatewayWithCors(valuesByKey, watched.PortalCors{
+func newTestRpcGateway(t *testing.T, valuesByKey map[string]string) *RpcGateway {
+	return newTestRpcGatewayWithCors(t, valuesByKey, watched.PortalCors{
 		Mode: watched.PortalCorsModeSameDomain,
 	})
 }
 
-func newTestRpcGatewayWithCors(valuesByKey map[string]string, cors watched.PortalCors) *RpcGateway {
-	return New(context.Background(), testServerApp(), newTestAccess(), newTestEpmgr(valuesByKey), watched.PortalSite{
+func newTestRpcGatewayWithCors(t *testing.T, valuesByKey map[string]string, cors watched.PortalCors) *RpcGateway {
+	return New(context.Background(), testServerApp(), newTestAccess(t), newTestEpmgr(t, valuesByKey), watched.PortalSite{
 		Name: "demo-api",
 		Type: "RPCGW",
 		ActorVia: watched.PortalActorVia{
@@ -771,17 +771,17 @@ func testServerApp() meta.App {
 	return meta.MustNewApp("vine.portal", "0.0.0", "123e4567-e89b-12d3-a456-426614174099")
 }
 
-func newTestEpmgr(valuesByKey map[string]string) *epmgr.Manager {
+func newTestEpmgr(t *testing.T, valuesByKey map[string]string) *epmgr.Manager {
 	manager := &epmgr.Manager{
 		Context: context.Background(),
-		Watch:   portalhubwatch.NewTestClient(valuesByKey),
+		Watch:   watchtest.New(t, valuesByKey),
 	}
 	manager.DIInit()
 	return manager
 }
 
-func newTestAccess() *access.Access {
-	watchClient := newTestSchemaWatch()
+func newTestAccess(t *testing.T) *access.Access {
+	watchClient := newTestSchemaWatch(t)
 	epmgrManager := &epmgr.Manager{
 		Context: context.Background(),
 		Watch:   watchClient,
@@ -796,8 +796,8 @@ func newTestAccess() *access.Access {
 	return manager
 }
 
-func newTestSchemaWatch() *portalhubwatch.Client {
-	watchClient := portalhubwatch.NewTestClient(map[string]string{
+func newTestSchemaWatch(t *testing.T) *watchtest.Client {
+	watchClient := watchtest.New(t, map[string]string{
 		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.SchemaActor{
 			SkelName:       "demo.UserActor",
 			AuthCredential: testCredentialSchema(),
@@ -831,7 +831,7 @@ func serveTestRpcGatewayCompressedResponse(t *testing.T, body string, acceptEnco
 		_, _ = w.Write([]byte(body))
 	}))
 
-	target := newTestRpcGateway(map[string]string{
+	target := newTestRpcGateway(t, map[string]string{
 		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",

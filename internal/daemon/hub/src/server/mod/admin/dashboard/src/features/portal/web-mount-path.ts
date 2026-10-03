@@ -37,24 +37,3 @@ export function effectiveWebMountPrefixes(mountPath: string): {
     routePathPrefix: prefix,
   }
 }
-
-export function lockWebMountPath<
-  T extends { matchPathPrefix: string; routePathPrefix: string },
->(value: T, mountPath: string | null): T {
-  if (
-    mountPath === null ||
-    (value.matchPathPrefix === mountPath &&
-      value.routePathPrefix === mountPath)
-  ) {
-    return value
-  }
-
-  return { ...value, matchPathPrefix: mountPath, routePathPrefix: mountPath }
-}
-
-// Do not persist the displayed Web path as a second configuration source.
-export function rulePathsForSave<
-  T extends { matchPathPrefix: string; routePathPrefix: string },
->(value: T, _mountPath: string | null): T {
-  return value
-}

@@ -87,7 +87,8 @@ bash test/test.sh
 The ordinary test script reuses cached results. Run `bash test/shuffle.sh` for
 targeted order checks or `VINE_SHUFFLE_SCOPE=all bash test/shuffle.sh` for the full
 suite. Shuffle prints a seed that can be reproduced with `go test -shuffle=<seed>`.
-Main CI uses the full shuffled suite instead of a second ordinary test pass.
+PR CI runs ordinary tests, goroutine lifecycle checks, and targeted race checks.
+Full shuffled and race suites are available for local release validation.
 
 Also run `go vet ./...` after changes involving public APIs, concurrency,
 reflection, or runtime wiring.

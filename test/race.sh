@@ -9,6 +9,7 @@ scope="${VINE_RACE_SCOPE:-targeted}"
 case "${scope}" in
   targeted)
     packages=(
+      ./app/linked
       ./app/testkit
       ./internal/app
       ./internal/core/di
@@ -31,6 +32,7 @@ case "${scope}" in
       ./internal/daemon/hub/src/server/comp/lockserver
       ./internal/daemon/hub/src/server/comp/watchserver
       ./internal/daemon/hub/src/server/comp/watchserver/embedded
+      ./internal/daemon/hub/src/server/impl/admin/debug
       ./internal/daemon/hub/src/server/core
       ./internal/daemon/hub/src/server/mod/scheduler
       ./internal/daemon/hub/src/server/repo/...
@@ -53,6 +55,7 @@ case "${scope}" in
       ./internal/daemon/portal/src/server/mod/vault
       ./infra/rdb
       ./infra/redis
+      ./internal/utilfortest/watchtest
       ./internal/util/goutil
       ./internal/util/httputil
       ./util/vmap

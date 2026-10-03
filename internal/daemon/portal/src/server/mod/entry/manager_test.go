@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
+	"go.yorun.ai/vine/internal/utilfortest/watchtest"
 	"go.yorun.ai/vine/util/vcode"
 )
 
@@ -19,7 +19,7 @@ func TestManagerReconcileEntriesBindsPortAndRules(t *testing.T) {
 	manager := &Manager{
 		entryRulesByName: map[string]watched.PortalRule{},
 		entriesByKey:     map[_Key]*_Entry{},
-		SiteManager:      newTestSiteManager("admin@demo.app", "home@demo.app"),
+		SiteManager:      newTestSiteManager(t, "admin@demo.app", "home@demo.app"),
 	}
 
 	manager.entryRulesByName["admin"] = watched.PortalRule{
@@ -65,7 +65,7 @@ func TestManagerReconcileEntriesDeduplicatesBySchemeAndPort(t *testing.T) {
 	manager := &Manager{
 		entryRulesByName: map[string]watched.PortalRule{},
 		entriesByKey:     map[_Key]*_Entry{},
-		SiteManager:      newTestSiteManager("admin@demo.app", "home@demo.app"),
+		SiteManager:      newTestSiteManager(t, "admin@demo.app", "home@demo.app"),
 	}
 
 	manager.entryRulesByName["admin"] = watched.PortalRule{
@@ -100,7 +100,7 @@ func TestManagerReconcileEntriesUpdatesExistingPortalRules(t *testing.T) {
 		entriesByKey: map[_Key]*_Entry{
 			{scheme: spec.SchemeHTTPS, port: 8443}: existing,
 		},
-		SiteManager: newTestSiteManager("admin@demo.app"),
+		SiteManager: newTestSiteManager(t, "admin@demo.app"),
 	}
 
 	manager.entryRulesByName["admin"] = watched.PortalRule{
@@ -143,7 +143,7 @@ func TestManagerAfterAppStartStartsEntriesCreatedBeforeStart(t *testing.T) {
 		entriesByKey: map[_Key]*_Entry{
 			{scheme: spec.SchemeHTTP, port: 8080}: existing,
 		},
-		SiteManager: newTestSiteManager("admin@demo.app"),
+		SiteManager: newTestSiteManager(t, "admin@demo.app"),
 	}
 
 	manager.AfterAppStart()
@@ -152,7 +152,7 @@ func TestManagerAfterAppStartStartsEntriesCreatedBeforeStart(t *testing.T) {
 	assert.Equal(t, "0.0.0.0:8080", listenAddress)
 }
 
-func newTestSiteManager(names ...string) *site.Manager {
+func newTestSiteManager(t *testing.T, names ...string) *site.Manager {
 	valuesByKey := map[string]string{}
 	for _, name := range names {
 		valuesByKey[watched.FormatPortalSiteKey(name)] = vcode.MustMarshalJsonS(watched.PortalSite{
@@ -165,13 +165,13 @@ func newTestSiteManager(names ...string) *site.Manager {
 	}
 	epmgrManager := &epmgr.Manager{
 		Context: context.Background(),
-		Watch:   hubwatch.NewTestClient(valuesByKey),
+		Watch:   watchtest.New(t, valuesByKey),
 	}
 	epmgrManager.DIInit()
 	manager := &site.Manager{
 		CurrentApp: meta.MustNewApp("vine.portal", "0.0.0", "123e4567-e89b-12d3-a456-426614174099"),
 		Context:    context.Background(),
-		Watch:      hubwatch.NewTestClient(valuesByKey),
+		Watch:      watchtest.New(t, valuesByKey),
 		Epmgr:      epmgrManager,
 	}
 	manager.DIInit()

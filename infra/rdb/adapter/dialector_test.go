@@ -2,15 +2,20 @@ package adapter
 
 import (
 	"context"
+	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"uuid"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 // Opt in with a timezone-free PostgreSQL DSN. This test only runs SELECTs.
@@ -25,10 +30,7 @@ func TestPostgresTimestampCompatibility(t *testing.T) {
 			name = "default"
 		}
 		t.Run(name, func(t *testing.T) {
-			config := dsn
-			if zone != "" {
-				config += " TimeZone=" + zone
-			}
+			config := postgresTestDSNWithZone(t, dsn, zone)
 			var timestamps [2]time.Time
 			for i, dialect := range []gorm.Dialector{postgres.Open(config), NewDialector(config)} {
 				db, err := gorm.Open(dialect, &gorm.Config{})
@@ -146,4 +148,77 @@ func TestAutomaticUUIDFields(t *testing.T) {
 			require.Equal(t, []uuid.UUID{row.ID}, ids)
 		})
 	}
+}
+
+// Keep zone slashes literal, as GORM also extracts the scan location from the DSN.
+func postgresTestDSNWithZone(t *testing.T, dsn string, zone string) string {
+	t.Helper()
+	if zone == "" {
+		return dsn
+	}
+	if strings.HasPrefix(dsn, "postgres://") || strings.HasPrefix(dsn, "postgresql://") {
+		address, err := url.Parse(dsn)
+		require.NoError(t, err)
+		values := address.Query()
+		values.Set("timezone", zone)
+		address.RawQuery = strings.ReplaceAll(values.Encode(), "%2F", "/")
+		return address.String()
+	}
+	return dsn + " timezone=" + zone
+}
+
+func TestPostgresTestDSNWithZone(t *testing.T) {
+	for _, dsn := range []string{
+		"postgres://tester:secret@127.0.0.1/example",
+		"postgresql://tester:secret@[::1]/example?sslmode=disable&application_name=vine",
+		"host=127.0.0.1 user=tester password=secret dbname=example",
+	} {
+		t.Run(dsn, func(t *testing.T) {
+			assert.Equal(t, dsn, postgresTestDSNWithZone(t, dsn, ""))
+			original, err := pgx.ParseConfig(dsn)
+			require.NoError(t, err)
+			for _, zone := range []string{"UTC", "Asia/Shanghai"} {
+				configured := postgresTestDSNWithZone(t, dsn, zone)
+				parsed, err := pgx.ParseConfig(configured)
+				require.NoError(t, err)
+				assert.Equal(t, original.Host, parsed.Host)
+				assert.Equal(t, original.Database, parsed.Database)
+				assert.Equal(t, original.User, parsed.User)
+				assert.Equal(t, original.Password, parsed.Password)
+				assert.Equal(t, original.RuntimeParams["application_name"], parsed.RuntimeParams["application_name"])
+				assert.Equal(t, zone, parsed.RuntimeParams["timezone"])
+				match := postgresTimeZoneMatcher.FindStringSubmatch(configured)
+				require.Len(t, match, 4)
+				assert.Equal(t, zone, match[2])
+			}
+		})
+	}
+}
+
+func TestPostgresUUIDMappingWithoutConnection(t *testing.T) {
+	// Opening the pool is lazy. Both settings prevent GORM from using a connection.
+	dialect := NewDialector("host=127.0.0.1 user=unused dbname=unused").(*_PostgresDialector)
+	db, err := gorm.Open(dialect, &gorm.Config{DisableAutomaticPing: true, DryRun: true, SkipDefaultTransaction: true})
+	require.NoError(t, err)
+	pool, err := db.DB()
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, pool.Close()) })
+	parsed, err := schema.Parse(new(automaticUUIDModel), new(sync.Map), schema.NamingStrategy{})
+	require.NoError(t, err)
+	migrator := dialect.Migrator(db).(postgres.Migrator)
+	for name, expected := range map[string]string{"ID": "uuid", "Ref": "uuid", "Optional": "uuid", "Text": "text", "Serialized": "text"} {
+		field := parsed.LookUpField(name)
+		before := field.DataType
+		serializer := field.Serializer
+		assert.Equal(t, expected, dialect.DataTypeOf(field), name)
+		assert.Equal(t, expected, migrator.FullDataTypeOf(field).SQL, name)
+		assert.Equal(t, before, field.DataType, "cached schema must remain unchanged")
+		assert.Equal(t, serializer, field.Serializer, "explicit serializer must remain unchanged")
+	}
+	row := new(automaticUUIDModel)
+	created := db.Omit("Children").Create(row)
+	require.NoError(t, created.Error)
+	assert.NotEqual(t, uuid.Nil(), row.ID, "the PostgreSQL initialization must install UUID generation")
+	assert.Contains(t, created.Statement.SQL.String(), "$1")
+	require.Zero(t, pool.Stats().OpenConnections)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.yorun.ai/vine/internal/utilfortest/spectest"
 	"reflect"
 	"sync/atomic"
 	"testing"
@@ -29,7 +30,8 @@ func testMethodInfo() spec.MethodInfo {
 }
 
 func newInvokerTestMethodInfo(name string, skelName string, argumentsType reflect.Type, resultType reflect.Type) spec.MethodInfo {
-	return spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
+	return spectest.RpcService(&spec.ServiceSpec{
+		Type:     spec.ServiceSpecTypeBoth,
 		Name:     "InvokerTestService",
 		SkelName: fmt.Sprintf("invoker.test.service.%s.%d", skelName, invokerTestMethodCounter.Add(1)),
 		Methods: []*spec.MethodSpec{{

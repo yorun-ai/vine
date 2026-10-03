@@ -51,7 +51,8 @@ type testGapArgumentIndexInput struct {
 }
 
 func newInitializedMethodInfo(argumentsType reflect.Type, resultType reflect.Type, argumentsContainsBinaryType bool, resultContainsBinaryType bool) *_MethodInfo {
-	service := ConvertSpecToInfoForTest(&ServiceSpec{
+	service := registerTestService(&ServiceSpec{
+		Type:     ServiceSpecTypeBoth,
 		Name:     "UserService",
 		SkelName: fmt.Sprintf("user.service.%d", initializedMethodInfoCounter.Add(1)),
 		Methods: []*MethodSpec{{

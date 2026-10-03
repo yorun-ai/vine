@@ -8,13 +8,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
+	"go.yorun.ai/vine/internal/utilfortest/watchtest"
 	"go.yorun.ai/vine/util/vcode"
 )
 
 func TestManagerLoadsActorAndServiceSchemas(t *testing.T) {
-	manager := testManager(map[string]string{
+	manager := testManager(t, map[string]string{
 		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.SchemaActor{
 			SkelName: "demo.UserActor",
 			Hash:     "actor-main",
@@ -36,8 +36,8 @@ func TestManagerLoadsActorAndServiceSchemas(t *testing.T) {
 	assert.Equal(t, skel.AuthModeAuth, service.AuthMode)
 }
 
-func testManager(valuesByKey map[string]string) *Access {
-	watchClient := hubwatch.NewTestClient(valuesByKey)
+func testManager(t *testing.T, valuesByKey map[string]string) *Access {
+	watchClient := watchtest.New(t, valuesByKey)
 	epmgrManager := &epmgr.Manager{
 		Context: context.Background(),
 		Watch:   watchClient,

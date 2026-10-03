@@ -58,7 +58,7 @@ func TestDecodeRequestRejectsMissingBody(t *testing.T) {
 	if err != nil {
 		t.Fatalf("http.NewRequest() error = %v", err)
 	}
-	EncodeContentTypeHeadersToHeaderByMethod(req.Header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, false))
+	setTestRequestContentTypeHeaders(req.Header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, false))
 	EncodeTraceToHeader(req.Header, testContext().Trace())
 	EncodeClientToHeader(req.Header, testContext().Client())
 
@@ -89,7 +89,7 @@ func TestDecodeRequestWithoutArgumentsAcceptsEmptyBody(t *testing.T) {
 	if err != nil {
 		t.Fatalf("http.NewRequest() error = %v", err)
 	}
-	EncodeContentTypeHeadersToHeaderByMethod(req.Header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, false))
+	setTestRequestContentTypeHeaders(req.Header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, false))
 	EncodeTraceToHeader(req.Header, testContext().Trace())
 	EncodeClientToHeader(req.Header, testContext().Client())
 
@@ -130,7 +130,7 @@ func TestDecodeRequestRejectsInvalidJSONBody(t *testing.T) {
 	if err != nil {
 		t.Fatalf("http.NewRequest() error = %v", err)
 	}
-	EncodeContentTypeHeadersToHeaderByMethod(req.Header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, false))
+	setTestRequestContentTypeHeaders(req.Header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, false))
 	EncodeTraceToHeader(req.Header, testContext().Trace())
 	EncodeClientToHeader(req.Header, testContext().Client())
 
@@ -218,7 +218,7 @@ func TestDecodeRequestAppliesTimeoutOption(t *testing.T) {
 	if err != nil {
 		t.Fatalf("http.NewRequest() error = %v", err)
 	}
-	EncodeContentTypeHeadersToHeaderByMethod(req.Header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, false))
+	setTestRequestContentTypeHeaders(req.Header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), false, false))
 	EncodeOptionsToHeader(req.Header, &Options{Timeout: time.Second})
 	EncodeTraceToHeader(req.Header, testContext().Trace())
 	EncodeClientToHeader(req.Header, testContext().Client())
@@ -248,7 +248,7 @@ func TestDecodeRequestParsesCborBody(t *testing.T) {
 	if err != nil {
 		t.Fatalf("http.NewRequest() error = %v", err)
 	}
-	EncodeContentTypeHeadersToHeaderByMethod(req.Header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), true, false))
+	setTestRequestContentTypeHeaders(req.Header, newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), true, false))
 	EncodeTraceToHeader(req.Header, testContext().Trace())
 	EncodeClientToHeader(req.Header, testContext().Client())
 

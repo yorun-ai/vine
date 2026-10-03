@@ -7,6 +7,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"go.yorun.ai/vine/internal/app"
+	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -140,4 +141,9 @@ func redisAddr(endpoint string) string {
 	parts := strings.SplitN(endpoint, "://", 2)
 	vpre.Check(len(parts) == 2 && parts[1] != "", "watch endpoint host is empty")
 	return parts[1]
+}
+
+// Bind publishes the initialized client operations to dependent modules.
+func (m *ClientManager) Bind(b *di.Binder) {
+	b.Bind(di.T[ClientOps]()).ToInstance(m.client)
 }

@@ -8,7 +8,6 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/rpcgw"
@@ -25,11 +24,11 @@ const (
 type Manager struct {
 	app.BaseModule
 
-	Context    context.Context  `inject:""`
-	CurrentApp meta.CurrentApp  `inject:""`
-	Watch      *hubwatch.Client `inject:""`
-	Access     *access.Access   `inject:""`
-	Epmgr      *epmgr.Manager   `inject:""`
+	Context    context.Context       `inject:""`
+	CurrentApp meta.CurrentApp       `inject:""`
+	Watch      hubapiwatch.ClientOps `inject:""`
+	Access     *access.Access        `inject:""`
+	Epmgr      *epmgr.Manager        `inject:""`
 
 	mutex       sync.RWMutex
 	sitesByKey  map[string]spec.Site

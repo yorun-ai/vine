@@ -4,6 +4,7 @@ import (
 	"encoding/json/v2"
 	"errors"
 	"fmt"
+	"go.yorun.ai/vine/internal/utilfortest/spectest"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -105,7 +106,8 @@ func TestStartServerHandleMutesSuccessLogWhenMethodMuteSuccessLog(t *testing.T) 
 }
 
 func testRpcLogMethodInfo() spec.MethodInfo {
-	return spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
+	return spectest.RpcService(&spec.ServiceSpec{
+		Type:     spec.ServiceSpecTypeBoth,
 		Name:     "RpcLogTraceTestService",
 		SkelName: "rpc.log.trace.test",
 		Methods: []*spec.MethodSpec{{
@@ -116,7 +118,8 @@ func testRpcLogMethodInfo() spec.MethodInfo {
 }
 
 func TestRenderRpcPayloadUsesWholeSensitiveMetadata(t *testing.T) {
-	method := spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
+	method := spectest.RpcService(&spec.ServiceSpec{
+		Type:     spec.ServiceSpecTypeBoth,
 		Name:     "SensitiveService",
 		SkelName: "rpc.log.sensitive",
 		Methods: []*spec.MethodSpec{{
@@ -260,7 +263,8 @@ func TestMuteSuccessSpanStillLogsError(t *testing.T) {
 }
 
 func TestServerLifecycleLogsSafePayloadAndDebugFinished(t *testing.T) {
-	method := spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
+	method := spectest.RpcService(&spec.ServiceSpec{
+		Type:     spec.ServiceSpecTypeBoth,
 		Name:     "LifecycleService",
 		SkelName: "test.lifecycle.Service",
 		Methods: []*spec.MethodSpec{{
@@ -485,7 +489,8 @@ func (m _CountingMarshaler) MarshalJSON() ([]byte, error) {
 }
 
 func TestDisabledDebugDoesNotRenderPayload(t *testing.T) {
-	method := spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
+	method := spectest.RpcService(&spec.ServiceSpec{
+		Type:     spec.ServiceSpecTypeBoth,
 		Name:     "LazyPayloadService",
 		SkelName: "rpc.log.test.lazy.payload",
 		Methods: []*spec.MethodSpec{{
@@ -507,7 +512,8 @@ func TestDisabledDebugDoesNotRenderPayload(t *testing.T) {
 }
 
 func TestInternalTaskEventTransportNeverLogsRpcPayload(t *testing.T) {
-	method := spec.ConvertSpecToInfoForTest(new(spec.ServiceSpec{
+	method := spectest.RpcService(new(spec.ServiceSpec{
+		Type:     spec.ServiceSpecTypeBoth,
 		Name:     "EventService",
 		SkelName: "vine.app.EventService",
 		Methods: []*spec.MethodSpec{{

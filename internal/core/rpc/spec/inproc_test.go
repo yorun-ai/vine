@@ -15,7 +15,8 @@ type inprocCloneArguments struct {
 
 func TestCloneInprocRequestArgumentsIgnoresMethodClone(t *testing.T) {
 	cloneCalls := 0
-	methodInfo := ConvertSpecToInfoForTest(new(ServiceSpec{
+	methodInfo := registerTestService(new(ServiceSpec{
+		Type:     ServiceSpecTypeBoth,
 		Name:     "InprocCloneService",
 		SkelName: "test.inproc.clone.arguments",
 		Methods: []*MethodSpec{{
@@ -46,7 +47,8 @@ func TestCloneInprocRequestArgumentsIgnoresMethodClone(t *testing.T) {
 
 func TestCloneInprocResponseResultIgnoresMethodClone(t *testing.T) {
 	cloneCalls := 0
-	methodInfo := ConvertSpecToInfoForTest(new(ServiceSpec{
+	methodInfo := registerTestService(new(ServiceSpec{
+		Type:     ServiceSpecTypeBoth,
 		Name:     "InprocCloneService",
 		SkelName: "test.inproc.clone.result",
 		Methods: []*MethodSpec{{
