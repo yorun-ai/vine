@@ -25,11 +25,11 @@ import (
 func runTestNATSServerDIInit(t *testing.T, server *NATSServer) {
 	t.Helper()
 
-	defer func() {
-		if re := recover(); re != nil {
-			t.Skipf("embedded nats server did not start in current environment: %v", re)
-		}
-	}()
+	previous := hubnats.InprocServer()
+	t.Cleanup(func() {
+		server.AfterAppStop()
+		hubnats.SetInprocServer(previous)
+	})
 	server.DIInit()
 }
 
@@ -40,7 +40,6 @@ func TestNATSServerDIInitRegistersInprocServer(t *testing.T) {
 	}
 
 	runTestNATSServerDIInit(t, server)
-	t.Cleanup(server.AfterAppStop)
 
 	if hubnats.InprocServer() != server.server {
 		t.Fatalf("unexpected inproc nats server")
@@ -57,7 +56,6 @@ func TestNATSServerCreatesMemoryStreams(t *testing.T) {
 	}
 
 	runTestNATSServerDIInit(t, server)
-	t.Cleanup(server.AfterAppStop)
 
 	conn := hubnats.ConnectInproc()
 	defer conn.Close()

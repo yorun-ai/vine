@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"go.yorun.ai/vine/internal/utilfortest/linktest"
 	"os"
 	"testing"
 
@@ -9,7 +10,7 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 )
 
-type testLinker = link.TestLinker
+type testLinker = linktest.Linker
 
 type testRuntimeApp struct {
 	name       string

@@ -78,7 +78,7 @@ func newContainerExecutorTestServer(recorder *_ContainerExecutorRecorder) *Serve
 func TestContainerExecutorInjectsExecutionScopeValuesWithActorHeader(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	actor := meta.NewAuthenticatedActorForTest()
+	actor := meta.NewAuthenticatedActor(new(executorTestActorInfo{Id: "test"}))
 	initiator, err := meta.NewInitiator("portal.app", "1.2.3", "123e4567-e89b-12d3-a456-426614174000", "https", "127.0.0.1")
 	if err != nil {
 		t.Fatalf("NewInitiator() error = %v", err)
@@ -196,7 +196,7 @@ func TestContainerExecutorReturnsBadRequestWhenRequestMetaInvalid(t *testing.T) 
 func TestContainerExecutorAppliesWebOptionsTimeout(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	actor := meta.NewAuthenticatedActorForTest()
+	actor := meta.NewAuthenticatedActor(new(executorTestActorInfo{Id: "test"}))
 	initiator, err := meta.NewInitiator("portal.app", "1.2.3", "123e4567-e89b-12d3-a456-426614174000", "https", "127.0.0.1")
 	if err != nil {
 		t.Fatalf("NewInitiator() error = %v", err)
@@ -231,4 +231,14 @@ func encodeTestInitiatorToHeader(header http.Header, initiator meta.Initiator) {
 
 func encodeTestActorToHeader(header http.Header, actor meta.Actor) {
 	header.Set(spec.HeaderWebActor, meta.EncodeActorToBase64(actor))
+}
+
+// Header decoding uses a registered actor schema, just as generated application actors do.
+type executorTestActorInfo struct{ Id string }
+
+func init() {
+	meta.RegisterActor(meta.ActorSpec{
+		Name: "ExecutorTestActor", SkelName: "test.web.ExecutorActor",
+		InfoSkelName: "test.web.ExecutorActorInfo", InfoType: reflect.TypeFor[*executorTestActorInfo](),
+	})
 }

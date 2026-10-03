@@ -13,7 +13,7 @@ import (
 )
 
 func TestNewRuleBuildsSiteRule(t *testing.T) {
-	siteManager := newTestSiteManager("admin@demo.app")
+	siteManager := newTestSiteManager(t, "admin@demo.app")
 
 	rule, ok := newRule(watched.PortalRule{
 		Name:                    "admin",
@@ -44,7 +44,7 @@ func TestNewRuleBuildsRedirectRule(t *testing.T) {
 		ResolvedMatchPathPrefix: "/old",
 		RouteType:               routeTypePermanentRedirect,
 		RouteRedirectionPattern: "https://demo.local/new",
-	}, newTestSiteManager())
+	}, newTestSiteManager(t))
 
 	assert.True(t, ok)
 	assert.Equal(t, "redirect", rule.name)
@@ -61,7 +61,7 @@ func TestNewRuleBuildsSiteRuleWithMissingSiteName(t *testing.T) {
 		MatchScheme:   string(spec.SchemeHTTPS),
 		RouteType:     routeTypeSite,
 		RouteSiteName: "missing@demo.app",
-	}, newTestSiteManager())
+	}, newTestSiteManager(t))
 
 	assert.True(t, ok)
 	assert.Equal(t, "missing@demo.app", rule.routeSiteName)
@@ -73,7 +73,7 @@ func TestNewRuleSkipsUnknownTargetType(t *testing.T) {
 		MatchScheme:   "tcp",
 		RouteType:     "BROKEN",
 		RouteSiteName: "admin@demo.app",
-	}, newTestSiteManager("admin@demo.app"))
+	}, newTestSiteManager(t, "admin@demo.app"))
 
 	assert.False(t, ok)
 	assert.Nil(t, rule)
@@ -131,7 +131,7 @@ func TestWildcardHostMatchesOneLabel(t *testing.T) {
 }
 
 func TestWildcardRuleRejectsRpcAndRedirect(t *testing.T) {
-	rule, ok := newRule(watched.PortalRule{Name: "wildcard", MatchScheme: "http", MatchHost: "*.example.com", RouteType: "SITE", RouteSiteName: "rpc"}, newTestSiteManager("rpc"))
+	rule, ok := newRule(watched.PortalRule{Name: "wildcard", MatchScheme: "http", MatchHost: "*.example.com", RouteType: "SITE", RouteSiteName: "rpc"}, newTestSiteManager(t, "rpc"))
 	require.True(t, ok)
 	w := httptest.NewRecorder()
 	rule.Serve(&spec.Context{Request: httptest.NewRequest("GET", "http://a.example.com/inspect", nil), ResponseWriter: w})

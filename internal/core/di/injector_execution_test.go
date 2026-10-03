@@ -2,7 +2,9 @@ package di
 
 import (
 	"reflect"
+	"sync"
 	"testing"
+	"testing/synctest"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -73,74 +75,84 @@ func TestExecutionInjectorRejectsSeedAfterCompletion(t *testing.T) {
 }
 
 func TestExecutionInjectorConcurrentCompleteWaitsForCleanup(t *testing.T) {
-	disposeStarted := make(chan struct{})
-	releaseDispose := make(chan struct{})
-	injector := NewInjector(func(b *Binder) {
-		b.Bind(T[*_ExecutionCompletedResource]()).WithDisposer(func(*_ExecutionCompletedResource) {
-			close(disposeStarted)
-			<-releaseDispose
+	synctest.Test(t, func(t *testing.T) {
+		disposeStarted := make(chan struct{})
+		releaseDispose := make(chan struct{})
+		releaseBlocked := sync.OnceFunc(func() { close(releaseDispose) })
+		defer releaseBlocked()
+		injector := NewInjector(func(b *Binder) {
+			b.Bind(T[*_ExecutionCompletedResource]()).WithDisposer(func(*_ExecutionCompletedResource) {
+				close(disposeStarted)
+				<-releaseDispose
+			})
 		})
+		execution := injector.StartExecution()
+		execution.Get(T[*_ExecutionCompletedResource]())
+
+		firstCompleted := make(chan struct{})
+		go func() {
+			defer close(firstCompleted)
+			execution.CompleteExecution()
+		}()
+		<-disposeStarted
+
+		secondCompleted := make(chan struct{})
+		go func() {
+			defer close(secondCompleted)
+			execution.CompleteExecution()
+		}()
+		synctest.Wait()
+		select {
+		case <-secondCompleted:
+			t.Fatal("concurrent completion returned before cleanup finished")
+		default:
+		}
+
+		releaseBlocked()
+		<-firstCompleted
+		<-secondCompleted
 	})
-	execution := injector.StartExecution()
-	execution.Get(T[*_ExecutionCompletedResource]())
-
-	firstCompleted := make(chan struct{})
-	go func() {
-		defer close(firstCompleted)
-		execution.CompleteExecution()
-	}()
-	<-disposeStarted
-
-	secondCompleted := make(chan struct{})
-	go func() {
-		defer close(secondCompleted)
-		execution.CompleteExecution()
-	}()
-	select {
-	case <-secondCompleted:
-		t.Fatal("concurrent completion returned before cleanup finished")
-	default:
-	}
-
-	close(releaseDispose)
-	<-firstCompleted
-	<-secondCompleted
 }
 
 func TestExecutionInjectorWaitsForActiveOperationBeforeDisposal(t *testing.T) {
-	started := make(chan struct{})
-	release := make(chan struct{})
-	disposed := make(chan struct{})
-	injector := NewInjector(func(b *Binder) {
-		b.BindFactory(func() *_ExecutionCompletedResource {
-			close(started)
-			<-release
-			return &_ExecutionCompletedResource{}
-		}).In(ExecutionScope).WithDisposer(func(*_ExecutionCompletedResource) {
-			close(disposed)
+	synctest.Test(t, func(t *testing.T) {
+		started := make(chan struct{})
+		release := make(chan struct{})
+		releaseBlocked := sync.OnceFunc(func() { close(release) })
+		defer releaseBlocked()
+		disposed := make(chan struct{})
+		injector := NewInjector(func(b *Binder) {
+			b.BindFactory(func() *_ExecutionCompletedResource {
+				close(started)
+				<-release
+				return &_ExecutionCompletedResource{}
+			}).In(ExecutionScope).WithDisposer(func(*_ExecutionCompletedResource) {
+				close(disposed)
+			})
 		})
+		execution := injector.StartExecution()
+		resolved := make(chan struct{})
+		go func() {
+			defer close(resolved)
+			execution.Get(reflect.TypeFor[*_ExecutionCompletedResource]())
+		}()
+		<-started
+
+		completed := make(chan struct{})
+		go func() {
+			defer close(completed)
+			execution.CompleteExecution()
+		}()
+		synctest.Wait()
+		select {
+		case <-completed:
+			t.Fatal("execution completed before active resolution finished")
+		default:
+		}
+
+		releaseBlocked()
+		<-resolved
+		<-completed
+		<-disposed
 	})
-	execution := injector.StartExecution()
-	resolved := make(chan struct{})
-	go func() {
-		defer close(resolved)
-		execution.Get(reflect.TypeFor[*_ExecutionCompletedResource]())
-	}()
-	<-started
-
-	completed := make(chan struct{})
-	go func() {
-		defer close(completed)
-		execution.CompleteExecution()
-	}()
-	select {
-	case <-completed:
-		t.Fatal("execution completed before active resolution finished")
-	default:
-	}
-
-	close(release)
-	<-resolved
-	<-completed
-	<-disposed
 }

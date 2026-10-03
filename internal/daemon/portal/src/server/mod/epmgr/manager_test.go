@@ -2,13 +2,14 @@ package epmgr
 
 import (
 	"context"
-	"testing"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
+	"go.yorun.ai/vine/internal/utilfortest/watchtest"
 	"go.yorun.ai/vine/util/vcode"
+	"testing"
+	"time"
 )
 
 func TestManagerNextEndpointRoundRobins(t *testing.T) {
@@ -49,7 +50,7 @@ func TestManagerNextEndpointRoundRobins(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			manager := newTestManager(test.valuesByKey)
+			manager := newTestManager(t, test.valuesByKey)
 			watcher := test.watch(manager)
 			t.Cleanup(watcher.Release)
 
@@ -70,7 +71,7 @@ func TestManagerNextEndpointRoundRobins(t *testing.T) {
 }
 
 func TestManagerNextRpcEndpointReturnsConfiguredWithoutEndpoint(t *testing.T) {
-	manager := newTestManager(map[string]string{})
+	manager := newTestManager(t, map[string]string{})
 	watcher := manager.WatchRpc("demo.UserService")
 	t.Cleanup(watcher.Release)
 
@@ -80,7 +81,7 @@ func TestManagerNextRpcEndpointReturnsConfiguredWithoutEndpoint(t *testing.T) {
 }
 
 func TestManagerNextWebEndpointReturnsConfiguredWithoutEndpoint(t *testing.T) {
-	manager := newTestManager(map[string]string{})
+	manager := newTestManager(t, map[string]string{})
 	watcher := manager.WatchWeb("admin@demo.app")
 	t.Cleanup(watcher.Release)
 
@@ -89,10 +90,10 @@ func TestManagerNextWebEndpointReturnsConfiguredWithoutEndpoint(t *testing.T) {
 	assert.Nil(t, endpoint)
 }
 
-func newTestManager(valuesByKey map[string]string) *Manager {
+func newTestManager(t *testing.T, valuesByKey map[string]string) *Manager {
 	manager := &Manager{
 		Context: context.Background(),
-		Watch:   hubwatch.NewTestClient(valuesByKey),
+		Watch:   watchtest.New(t, valuesByKey),
 	}
 	manager.DIInit()
 	return manager
@@ -122,4 +123,25 @@ func testWebRegistrationValue(webName string, instanceId string, endpoint string
 		AppName:       "demo.app",
 		AppInstanceId: instanceId,
 	})
+}
+
+func TestEndpointDiscoveryThroughHubWatch(t *testing.T) {
+	server, client := watchtest.NewServer(t, watch.PortalUsername)
+	manager := &Manager{Context: t.Context(), Watch: client}
+	manager.DIInit()
+	subscription := manager.WatchRpc("demo.Service")
+	t.Cleanup(subscription.Release)
+	key := testRpcRegistrationKey("demo.Service", "instance")
+	server.SetAndNotify(key, testRpcRegistrationValue("demo.Service", "instance", "http://127.0.0.1:7082"))
+	require.Eventually(t, func() bool {
+		endpoint, _ := manager.NextRpcEndpoint("demo.Service")
+		return endpoint != nil && endpoint.Endpoint == "http://127.0.0.1:7082"
+	}, 2*time.Second, time.Millisecond)
+	server.DeleteAndNotify(key)
+	require.Eventually(t, func() bool { endpoint, _ := manager.NextRpcEndpoint("demo.Service"); return endpoint == nil }, 2*time.Second, time.Millisecond)
+	_, configured := manager.NextRpcEndpoint("demo.Service")
+	assert.True(t, configured)
+	subscription.Release()
+	_, configured = manager.NextRpcEndpoint("demo.Service")
+	assert.False(t, configured)
 }

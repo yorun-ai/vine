@@ -11,7 +11,7 @@ import (
 
 func TestManagerRpcWatchUsesRefCount(t *testing.T) {
 	prefix := watched.FormatRpcServiceRegistrationPrefix("demo.UserService")
-	manager := newTestManager(map[string]string{
+	manager := newTestManager(t, map[string]string{
 		testRpcRegistrationKey("demo.UserService", "instance-1"): testRpcRegistrationValue("demo.UserService", "instance-1", "http://127.0.0.1:23001"),
 	})
 
@@ -37,7 +37,7 @@ func TestManagerRpcWatchUsesRefCount(t *testing.T) {
 
 func TestManagerHandlesRpcRegistrationEvents(t *testing.T) {
 	prefix := watched.FormatRpcServiceRegistrationPrefix("demo.UserService")
-	manager := newTestManager(map[string]string{})
+	manager := newTestManager(t, map[string]string{})
 	watcher := manager.WatchRpc("demo.UserService")
 	t.Cleanup(watcher.Release)
 
@@ -64,7 +64,7 @@ func TestManagerHandlesRpcRegistrationEvents(t *testing.T) {
 
 func TestManagerWebWatchUsesRefCount(t *testing.T) {
 	prefix := watched.FormatWebRegistrationPrefix("admin@demo.app")
-	manager := newTestManager(map[string]string{
+	manager := newTestManager(t, map[string]string{
 		testWebRegistrationKey("admin@demo.app", "instance-1"): testWebRegistrationValue("admin@demo.app", "instance-1", "http://127.0.0.1:23001"),
 	})
 
@@ -90,7 +90,7 @@ func TestManagerWebWatchUsesRefCount(t *testing.T) {
 
 func TestManagerHandlesWebRegistrationEvents(t *testing.T) {
 	prefix := watched.FormatWebRegistrationPrefix("admin@demo.app")
-	manager := newTestManager(map[string]string{})
+	manager := newTestManager(t, map[string]string{})
 	watcher := manager.WatchWeb("admin@demo.app")
 	t.Cleanup(watcher.Release)
 

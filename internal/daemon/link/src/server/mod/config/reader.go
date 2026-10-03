@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"go.yorun.ai/vine/internal/app"
-	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubwatch"
+	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 )
 
@@ -18,9 +18,9 @@ type _InstantConfigState struct {
 type Reader struct {
 	app.BaseModule
 
-	Context   context.Context   `inject:""`
-	Client    *hubwatch.Client  `inject:""`
-	AppMinder *minder.AppMinder `inject:""`
+	Context   context.Context       `inject:""`
+	Client    hubapiwatch.ClientOps `inject:""`
+	AppMinder *minder.AppMinder     `inject:""`
 
 	mutex                       sync.RWMutex
 	instantConfigStatesByKey    map[string]*_InstantConfigState

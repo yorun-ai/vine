@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.yorun.ai/vine/internal/app"
+	hubnats "go.yorun.ai/vine/internal/daemon/hub/api/nats"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
@@ -16,11 +17,11 @@ import (
 func runTestNATSServerDIInit(t *testing.T, server *natsserver.NATSServer) {
 	t.Helper()
 
-	defer func() {
-		if re := recover(); re != nil {
-			t.Skipf("embedded nats server did not start in current environment: %v", re)
-		}
-	}()
+	previous := hubnats.InprocServer()
+	t.Cleanup(func() {
+		server.AfterAppStop()
+		hubnats.SetInprocServer(previous)
+	})
 	server.DIInit()
 }
 
@@ -63,7 +64,6 @@ func TestHubInfoServiceReturnsNATSServerPortWhenEnabled(t *testing.T) {
 	}
 
 	runTestNATSServerDIInit(t, service.NATSServer)
-	t.Cleanup(service.NATSServer.AfterAppStop)
 
 	info := service.GetInfo()
 

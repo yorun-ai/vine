@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"testing/synctest"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -13,15 +14,15 @@ import (
 	"go.yorun.ai/vine/internal/core/skel"
 	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
+	"go.yorun.ai/vine/internal/utilfortest/watchtest"
 	"go.yorun.ai/vine/util/vcode"
 )
 
 func TestManagerLoadsRpcgwSiteFromWatch(t *testing.T) {
-	manager := newTestManager(map[string]string{
+	manager := newTestManager(t, map[string]string{
 		watched.FormatPortalSiteKey("demo-api"): vcode.MustMarshalJsonS(watched.PortalSite{
 			Name: "demo-api",
 			Type: siteTypeRpcgw,
@@ -59,7 +60,7 @@ func TestManagerLoadsRpcgwSiteFromWatch(t *testing.T) {
 }
 
 func TestManagerDoesNotLoadPortalRulesAsSites(t *testing.T) {
-	manager := newTestManager(map[string]string{
+	manager := newTestManager(t, map[string]string{
 		watched.FormatPortalSiteKey("demo-web"): vcode.MustMarshalJsonS(watched.PortalSite{
 			Name: "demo-web",
 			Type: siteTypeWebgw,
@@ -87,7 +88,7 @@ func TestManagerDoesNotLoadPortalRulesAsSites(t *testing.T) {
 }
 
 func TestManagerSiteReturnsFalseForUnknownSite(t *testing.T) {
-	manager := newTestManager(nil)
+	manager := newTestManager(t, nil)
 
 	_, ok := manager.Site("missing-site")
 	if ok {
@@ -96,34 +97,39 @@ func TestManagerSiteReturnsFalseForUnknownSite(t *testing.T) {
 }
 
 func TestManagerHandlesSiteEvents(t *testing.T) {
-	manager := newTestManager(nil)
+	synctest.Test(t, func(t *testing.T) {
+		manager := newTestManager(t, nil)
 
-	manager.handleSiteEvent(hubapiwatch.Event{
-		Kind: hubapiwatch.EventKindUpsert,
-		Key:  watched.FormatPortalSiteKey("demo-web"),
-		Value: vcode.MustMarshalJsonS(watched.PortalSite{
-			Name: "demo-web",
-			Type: siteTypeWebgw,
-			WebgwConfig: &watched.PortalWebgwConfig{
-				WebName: "admin@demo.app",
-			},
-		}),
-	})
-	if _, ok := manager.Site("demo-web"); !ok {
-		t.Fatal("expected demo-web site")
-	}
+		manager.Watch.(*watchtest.Client).Publish(hubapiwatch.Event{
+			Kind: hubapiwatch.EventKindUpsert,
+			Key:  watched.FormatPortalSiteKey("demo-web"),
+			Value: vcode.MustMarshalJsonS(watched.PortalSite{
+				Name: "demo-web",
+				Type: siteTypeWebgw,
+				WebgwConfig: &watched.PortalWebgwConfig{
+					WebName: "admin@demo.app",
+				},
+			}),
+		})
+		synctest.Wait()
+		if _, ok := manager.Site("demo-web"); !ok {
+			t.Fatal("expected demo-web site")
+		}
 
-	manager.handleSiteEvent(hubapiwatch.Event{
-		Kind: hubapiwatch.EventKindDelete,
-		Key:  watched.FormatPortalSiteKey("demo-web"),
+		manager.Watch.(*watchtest.Client).Publish(hubapiwatch.Event{
+			Kind: hubapiwatch.EventKindDelete,
+			Key:  watched.FormatPortalSiteKey("demo-web"),
+		})
+		synctest.Wait()
+		if _, ok := manager.Site("demo-web"); ok {
+			t.Fatal("expected deleted demo-web site")
+		}
+
 	})
-	if _, ok := manager.Site("demo-web"); ok {
-		t.Fatal("expected deleted demo-web site")
-	}
 }
 
 func TestManagerUpsertReplacesSiteWithoutRemovingName(t *testing.T) {
-	manager := newTestManager(nil)
+	manager := newTestManager(t, nil)
 	oldSite := &_TestSite{name: "demo-api"}
 	newSite := &_TestSite{name: "demo-api"}
 	manager.sitesByKey[watched.FormatPortalSiteKey("demo-api")] = oldSite
@@ -144,7 +150,7 @@ func TestManagerUpsertReplacesSiteWithoutRemovingName(t *testing.T) {
 }
 
 func TestManagerUpsertUpdatesSameSiteTypeInPlace(t *testing.T) {
-	manager := newTestManager(map[string]string{
+	manager := newTestManager(t, map[string]string{
 		watched.FormatPortalSiteKey("demo-api"): vcode.MustMarshalJsonS(watched.PortalSite{
 			Name: "demo-api",
 			Type: siteTypeRpcgw,
@@ -180,7 +186,7 @@ func TestManagerUpsertUpdatesSameSiteTypeInPlace(t *testing.T) {
 }
 
 func TestManagerSiteReturnsRegisteredUnknownKindSite(t *testing.T) {
-	manager := newTestManager(map[string]string{
+	manager := newTestManager(t, map[string]string{
 		watched.FormatPortalSiteKey("demo-unknown"): vcode.MustMarshalJsonS(watched.PortalSite{
 			Name: "demo-unknown",
 			Type: "unknown",
@@ -211,30 +217,30 @@ func testContext(recorder http.ResponseWriter, request *http.Request) *spec.Cont
 	}
 }
 
-func newTestManager(valuesByKey map[string]string) *Manager {
-	epmgrManager := newTestEpmgr(valuesByKey)
+func newTestManager(t *testing.T, valuesByKey map[string]string) *Manager {
+	epmgrManager := newTestEpmgr(t, valuesByKey)
 	manager := &Manager{
 		Context:    context.Background(),
 		CurrentApp: meta.MustNewApp("vine.portal", "0.0.0", "123e4567-e89b-12d3-a456-426614174099"),
-		Watch:      hubwatch.NewTestClient(valuesByKey),
-		Access:     newTestAccess(),
+		Watch:      watchtest.New(t, valuesByKey),
+		Access:     newTestAccess(t),
 		Epmgr:      epmgrManager,
 	}
 	manager.DIInit()
 	return manager
 }
 
-func newTestEpmgr(valuesByKey map[string]string) *epmgr.Manager {
+func newTestEpmgr(t *testing.T, valuesByKey map[string]string) *epmgr.Manager {
 	manager := &epmgr.Manager{
 		Context: context.Background(),
-		Watch:   hubwatch.NewTestClient(valuesByKey),
+		Watch:   watchtest.New(t, valuesByKey),
 	}
 	manager.DIInit()
 	return manager
 }
 
-func newTestAccess() *access.Access {
-	watchClient := newTestSchemaWatch()
+func newTestAccess(t *testing.T) *access.Access {
+	watchClient := newTestSchemaWatch(t)
 	epmgrManager := &epmgr.Manager{
 		Context: context.Background(),
 		Watch:   watchClient,
@@ -249,8 +255,8 @@ func newTestAccess() *access.Access {
 	return manager
 }
 
-func newTestSchemaWatch() *hubwatch.Client {
-	watchClient := hubwatch.NewTestClient(map[string]string{
+func newTestSchemaWatch(t *testing.T) *watchtest.Client {
+	watchClient := watchtest.New(t, map[string]string{
 		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.SchemaActor{
 			SkelName: "demo.UserActor",
 			AuthCredential: &skel.DataSchema{
@@ -299,7 +305,7 @@ func TestManagerReplacesSiteWhenTypeChanges(t *testing.T) {
 	key := watched.FormatPortalSiteKey("changing")
 	web := watched.PortalSite{Name: "changing", Type: siteTypeWebgw, WebgwConfig: &watched.PortalWebgwConfig{WebName: "demo.Web"}}
 	rpc := watched.PortalSite{Name: "changing", Type: siteTypeRpcgw, RpcgwConfig: &watched.PortalRpcgwConfig{}}
-	manager := newTestManager(map[string]string{key: vcode.MustMarshalJsonS(web)})
+	manager := newTestManager(t, map[string]string{key: vcode.MustMarshalJsonS(web)})
 	before, _ := manager.Site("changing")
 	for _, config := range []watched.PortalSite{rpc, web} {
 		manager.handleSiteEvent(hubapiwatch.Event{Kind: hubapiwatch.EventKindUpsert, Key: key, Value: vcode.MustMarshalJsonS(config)})

@@ -2,13 +2,14 @@ package config
 
 import (
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/utilfortest/watchtest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetInstantLoadsAndGetsValue(t *testing.T) {
-	reader := newTestReader(map[string]watched.ConfigValue{
+	reader := newTestReader(t, map[string]watched.ConfigValue{
 		"demo.FeatureConfig": {
 			Name:  "demo.FeatureConfig",
 			Value: []byte(`{"enabled":true}`),
@@ -21,16 +22,16 @@ func TestGetInstantLoadsAndGetsValue(t *testing.T) {
 }
 
 func TestGetInstantReturnsEmptyWhenConfigDoesNotExist(t *testing.T) {
-	reader := newTestReader(nil)
+	reader := newTestReader(t, nil)
 	registerTestAppInstance(reader, "11111111-1111-1111-1111-111111111111")
 	value := reader.GetInstant("11111111-1111-1111-1111-111111111111", "demo.FeatureConfig")
 	assert.Equal(t, "", value)
 }
 
 func TestGetInstantReturnsEmptyWhenStoredValueIsInvalid(t *testing.T) {
-	reader := newTestReader(nil)
+	reader := newTestReader(t, nil)
 	registerTestAppInstance(reader, "11111111-1111-1111-1111-111111111111")
-	reader.Client.SetValue(watched.FormatConfigKey("demo.FeatureConfig"), "not-a-config-value")
+	reader.Client.(*watchtest.Client).SetValue(watched.FormatConfigKey("demo.FeatureConfig"), "not-a-config-value")
 
 	value := reader.GetInstant("11111111-1111-1111-1111-111111111111", "demo.FeatureConfig")
 
@@ -39,7 +40,7 @@ func TestGetInstantReturnsEmptyWhenStoredValueIsInvalid(t *testing.T) {
 }
 
 func TestGetEternalDoesNotStartWatcher(t *testing.T) {
-	reader := newTestReader(map[string]watched.ConfigValue{
+	reader := newTestReader(t, map[string]watched.ConfigValue{
 		"demo.FeatureConfig": {
 			Name:  "demo.FeatureConfig",
 			Value: []byte(`{"enabled":true}`),
@@ -57,7 +58,7 @@ func TestGetEternalDoesNotStartWatcher(t *testing.T) {
 }
 
 func TestGetInstantCreatesSharedStateForMultipleApps(t *testing.T) {
-	reader := newTestReader(map[string]watched.ConfigValue{
+	reader := newTestReader(t, map[string]watched.ConfigValue{
 		"demo.FeatureConfig": {
 			Name:  "demo.FeatureConfig",
 			Value: []byte(`{"enabled":true}`),
@@ -84,7 +85,7 @@ func TestGetInstantCreatesSharedStateForMultipleApps(t *testing.T) {
 }
 
 func TestGetInstantReturnsRetainedSnapshot(t *testing.T) {
-	reader := newTestReader(map[string]watched.ConfigValue{
+	reader := newTestReader(t, map[string]watched.ConfigValue{
 		"demo.FeatureConfig": {
 			Name:  "demo.FeatureConfig",
 			Value: []byte(`{"enabled":true}`),
@@ -93,7 +94,7 @@ func TestGetInstantReturnsRetainedSnapshot(t *testing.T) {
 	appInstanceID := "11111111-1111-1111-1111-111111111111"
 	registerTestAppInstance(reader, appInstanceID)
 	reader.GetInstant(appInstanceID, "demo.FeatureConfig")
-	reader.Client.SetValue(
+	reader.Client.(*watchtest.Client).SetValue(
 		watched.FormatConfigKey("demo.FeatureConfig"),
 		marshalTestConfigValue("demo.FeatureConfig", `{"enabled":false}`),
 	)
@@ -102,7 +103,7 @@ func TestGetInstantReturnsRetainedSnapshot(t *testing.T) {
 }
 
 func TestGetEternalReloadsValuePerAppInstance(t *testing.T) {
-	reader := newTestReader(map[string]watched.ConfigValue{
+	reader := newTestReader(t, map[string]watched.ConfigValue{
 		"demo.FeatureConfig": {
 			Name:  "demo.FeatureConfig",
 			Value: []byte(`{"enabled":true}`),
@@ -114,7 +115,7 @@ func TestGetEternalReloadsValuePerAppInstance(t *testing.T) {
 	registerTestAppInstance(reader, firstAppInstanceID)
 	registerTestAppInstance(reader, secondAppInstanceID)
 	reader.GetEternal(firstAppInstanceID, "demo.FeatureConfig")
-	reader.Client.SetValue(
+	reader.Client.(*watchtest.Client).SetValue(
 		watched.FormatConfigKey("demo.FeatureConfig"),
 		marshalTestConfigValue("demo.FeatureConfig", `{"enabled":false}`),
 	)
@@ -125,12 +126,12 @@ func TestGetEternalReloadsValuePerAppInstance(t *testing.T) {
 }
 
 func TestGetEternalRetriesAfterMissingConfig(t *testing.T) {
-	reader := newTestReader(nil)
+	reader := newTestReader(t, nil)
 	appInstanceID := "11111111-1111-1111-1111-111111111111"
 	registerTestAppInstance(reader, appInstanceID)
 
 	assert.Equal(t, "", reader.GetEternal(appInstanceID, "demo.FeatureConfig"))
-	reader.Client.SetValue(
+	reader.Client.(*watchtest.Client).SetValue(
 		watched.FormatConfigKey("demo.FeatureConfig"),
 		marshalTestConfigValue("demo.FeatureConfig", `{"enabled":true}`),
 	)
@@ -139,13 +140,13 @@ func TestGetEternalRetriesAfterMissingConfig(t *testing.T) {
 }
 
 func TestGetEternalRetriesAfterInvalidConfig(t *testing.T) {
-	reader := newTestReader(nil)
+	reader := newTestReader(t, nil)
 	appInstanceID := "11111111-1111-1111-1111-111111111111"
 	registerTestAppInstance(reader, appInstanceID)
-	reader.Client.SetValue(watched.FormatConfigKey("demo.FeatureConfig"), "not-a-config-value")
+	reader.Client.(*watchtest.Client).SetValue(watched.FormatConfigKey("demo.FeatureConfig"), "not-a-config-value")
 
 	assert.Equal(t, "", reader.GetEternal(appInstanceID, "demo.FeatureConfig"))
-	reader.Client.SetValue(
+	reader.Client.(*watchtest.Client).SetValue(
 		watched.FormatConfigKey("demo.FeatureConfig"),
 		marshalTestConfigValue("demo.FeatureConfig", `{"enabled":true}`),
 	)
@@ -154,7 +155,7 @@ func TestGetEternalRetriesAfterInvalidConfig(t *testing.T) {
 }
 
 func TestGetEternalKeepsSnapshotAfterDeleteForExistingInstance(t *testing.T) {
-	reader := newTestReader(map[string]watched.ConfigValue{
+	reader := newTestReader(t, map[string]watched.ConfigValue{
 		"demo.FeatureConfig": {
 			Name:  "demo.FeatureConfig",
 			Value: []byte(`{"enabled":true}`),
@@ -167,7 +168,7 @@ func TestGetEternalKeepsSnapshotAfterDeleteForExistingInstance(t *testing.T) {
 	registerTestAppInstance(reader, secondAppInstanceID)
 
 	assert.Equal(t, `{"enabled":true}`, reader.GetEternal(firstAppInstanceID, "demo.FeatureConfig"))
-	reader.Client.SetValue(watched.FormatConfigKey("demo.FeatureConfig"), "")
+	reader.Client.(*watchtest.Client).SetValue(watched.FormatConfigKey("demo.FeatureConfig"), "")
 
 	assert.Equal(t, `{"enabled":true}`, reader.GetEternal(firstAppInstanceID, "demo.FeatureConfig"))
 	assert.Equal(t, "", reader.GetEternal(secondAppInstanceID, "demo.FeatureConfig"))

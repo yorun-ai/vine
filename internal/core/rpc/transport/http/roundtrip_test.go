@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"fmt"
+	"go.yorun.ai/vine/internal/utilfortest/spectest"
 	nethttp "net/http"
 	"net/http/httptest"
 	"reflect"
@@ -51,7 +52,8 @@ func testMethodInfo() *spec.MethodSpec {
 }
 
 func newStandaloneMethodInfo(argumentsType reflect.Type, resultType reflect.Type, argumentsContainsBinaryType bool, resultContainsBinaryType bool) spec.MethodInfo {
-	serviceInfo := spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
+	serviceInfo := spectest.RpcService(&spec.ServiceSpec{
+		Type:     spec.ServiceSpecTypeBoth,
 		Name:     "StandaloneService",
 		SkelName: fmt.Sprintf("test.standalone.%d", standaloneMethodInfoCounter.Add(1)),
 		Methods: []*spec.MethodSpec{{

@@ -86,7 +86,7 @@ func TestAuthPropagatesIdentifierAndRejectsInvalidResponse(t *testing.T) {
 			schema.IdentifierField = "userId"
 			schema.AuthInfo.Members = []*skel.MemberSchema{{Name: "userId", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}}}
 			values[watched.FormatSchemaActorKey("demo.UserActor")] = vcode.MustMarshalJsonS(schema)
-			manager := testManager(values)
+			manager := testManager(t, values)
 			for _, web := range []bool{false, true} {
 				recorder := httptest.NewRecorder()
 				request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
@@ -207,7 +207,7 @@ func TestOptionalCredentialAuthForwarding(t *testing.T) {
 					schema.AuthCredential.Members[1].Type = &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}
 					values := testAuthValues(endpoint)
 					values[watched.FormatSchemaActorKey("demo.UserActor")] = vcode.MustMarshalJsonS(schema)
-					manager := testManager(values)
+					manager := testManager(t, values)
 					recorder := httptest.NewRecorder()
 					request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 					setTestRequestHeaders(t, request)

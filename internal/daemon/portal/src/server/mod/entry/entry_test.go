@@ -6,9 +6,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
+	"go.yorun.ai/vine/internal/utilfortest/watchtest"
 	"go.yorun.ai/vine/util/vcode"
 	"io"
 	"net/http"
@@ -202,9 +202,9 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 					Endpoint: endpoint + "/web/proxy/in/instance/demo.Web", WebSkelName: "demo.Web", AppName: "demo", AppInstanceId: "instance",
 				}),
 			}
-			endpoints := &epmgr.Manager{Context: ctx, Watch: hubwatch.NewTestClient(values)}
+			endpoints := &epmgr.Manager{Context: ctx, Watch: watchtest.New(t, values)}
 			endpoints.DIInit()
-			sites := &site.Manager{Context: ctx, CurrentApp: meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"), Watch: hubwatch.NewTestClient(values), Epmgr: endpoints, Access: new(access.Access)}
+			sites := &site.Manager{Context: ctx, CurrentApp: meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"), Watch: watchtest.New(t, values), Epmgr: endpoints, Access: new(access.Access)}
 			sites.DIInit()
 			entry := newEntry(spec.SchemeHTTP, 80, nil)
 			public := httptest.NewServer(entry)
@@ -233,7 +233,7 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 }
 
 func TestEntryTargetPathDispatchesWithinRpcGateway(t *testing.T) {
-	rule, ok := newRule(watched.PortalRule{Name: "rpc", MatchScheme: "http", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: "/inspect", RouteType: "SITE", RouteSiteName: "rpc"}, newTestSiteManager("rpc"))
+	rule, ok := newRule(watched.PortalRule{Name: "rpc", MatchScheme: "http", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: "/inspect", RouteType: "SITE", RouteSiteName: "rpc"}, newTestSiteManager(t, "rpc"))
 	require.True(t, ok)
 	entry := newEntry(spec.SchemeHTTP, 80, nil)
 	entry.SetOrUpdateRules([]*_Rule{rule})

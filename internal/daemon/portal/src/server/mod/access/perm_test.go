@@ -14,8 +14,8 @@ import (
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
+	"go.yorun.ai/vine/internal/utilfortest/watchtest"
 	"go.yorun.ai/vine/util/vcode"
 )
 
@@ -35,7 +35,7 @@ func TestCheckActorPermissionsRejectsMissingCodeResult(t *testing.T) {
 	}))
 	permissionServer.Start()
 
-	manager := newAccessTestEndpointManager("app.UserActorPermissionService", permissionServer.URL)
+	manager := newAccessTestEndpointManager(t, "app.UserActorPermissionService", permissionServer.URL)
 	watcher := manager.WatchRpc("app.UserActorPermissionService")
 	t.Cleanup(watcher.Release)
 
@@ -197,10 +197,10 @@ func TestExtractCheckParamsRejectsTrailingWildcardPath(t *testing.T) {
 	}
 }
 
-func newAccessTestEndpointManager(serviceName string, endpoint string) *epmgr.Manager {
+func newAccessTestEndpointManager(t *testing.T, serviceName string, endpoint string) *epmgr.Manager {
 	manager := &epmgr.Manager{
 		Context: context.Background(),
-		Watch: hubwatch.NewTestClient(map[string]string{
+		Watch: watchtest.New(t, map[string]string{
 			watched.FormatRpcServiceRegistrationKey(serviceName, "perm.test", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 				Endpoint:      endpoint,
 				ServiceName:   serviceName,
@@ -252,7 +252,7 @@ func TestCheckPreservesPermissionErrorReason(t *testing.T) {
 			server.Config.Protocols = new(http.Protocols)
 			server.Config.Protocols.SetUnencryptedHTTP2(true)
 			server.Start()
-			manager := newAccessTestEndpointManager(serviceName, server.URL)
+			manager := newAccessTestEndpointManager(t, serviceName, server.URL)
 			watcher := manager.WatchRpc(serviceName)
 			t.Cleanup(watcher.Release)
 			request := httptest.NewRequest(http.MethodPost, "/app.UserService/update", nil)

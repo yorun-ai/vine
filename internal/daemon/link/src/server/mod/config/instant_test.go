@@ -9,7 +9,7 @@ import (
 )
 
 func TestHandleInstantConfigEventIgnoresInvalidConfigValue(t *testing.T) {
-	reader := newTestReader(map[string]watched.ConfigValue{
+	reader := newTestReader(t, map[string]watched.ConfigValue{
 		"demo.FeatureConfig": {
 			Name:  "demo.FeatureConfig",
 			Value: []byte(`{"enabled":true}`),
@@ -28,7 +28,7 @@ func TestHandleInstantConfigEventIgnoresInvalidConfigValue(t *testing.T) {
 }
 
 func TestHandleInstantConfigEventRefreshesInstantValueForAllInstances(t *testing.T) {
-	reader := newTestReader(map[string]watched.ConfigValue{
+	reader := newTestReader(t, map[string]watched.ConfigValue{
 		"demo.FeatureConfig": {
 			Name:  "demo.FeatureConfig",
 			Value: []byte(`{"enabled":true}`),
@@ -52,7 +52,7 @@ func TestHandleInstantConfigEventRefreshesInstantValueForAllInstances(t *testing
 }
 
 func TestGetInstantInitializesNewSnapshotFromStateValue(t *testing.T) {
-	reader := newTestReader(map[string]watched.ConfigValue{
+	reader := newTestReader(t, map[string]watched.ConfigValue{
 		"demo.FeatureConfig": {
 			Name:  "demo.FeatureConfig",
 			Value: []byte(`{"enabled":true}`),
@@ -72,7 +72,7 @@ func TestGetInstantInitializesNewSnapshotFromStateValue(t *testing.T) {
 }
 
 func TestHandleInstantConfigEventDeletesInstantValueOnDeleteEvent(t *testing.T) {
-	reader := newTestReader(nil)
+	reader := newTestReader(t, nil)
 	appInstanceID := "11111111-1111-1111-1111-111111111111"
 	registerTestAppInstance(reader, appInstanceID)
 	reader.GetInstant(appInstanceID, "demo.FeatureConfig")
@@ -87,7 +87,7 @@ func TestHandleInstantConfigEventDeletesInstantValueOnDeleteEvent(t *testing.T) 
 }
 
 func TestHandleInstantConfigEventRecoversValueAfterInitialMiss(t *testing.T) {
-	reader := newTestReader(nil)
+	reader := newTestReader(t, nil)
 	appInstanceID := "11111111-1111-1111-1111-111111111111"
 	registerTestAppInstance(reader, appInstanceID)
 
@@ -102,7 +102,7 @@ func TestHandleInstantConfigEventRecoversValueAfterInitialMiss(t *testing.T) {
 }
 
 func TestReleaseInstantConfigStateByInstanceRemovesRetainedRef(t *testing.T) {
-	reader := newTestReader(map[string]watched.ConfigValue{
+	reader := newTestReader(t, map[string]watched.ConfigValue{
 		"demo.FeatureConfig": {
 			Name:  "demo.FeatureConfig",
 			Value: []byte(`{"enabled":true}`),
@@ -121,7 +121,7 @@ func TestReleaseInstantConfigStateByInstanceRemovesRetainedRef(t *testing.T) {
 }
 
 func TestReleaseInstantConfigStateByInstanceKeepsConfigWhileRetainedByAnotherApp(t *testing.T) {
-	reader := newTestReader(map[string]watched.ConfigValue{
+	reader := newTestReader(t, map[string]watched.ConfigValue{
 		"demo.FeatureConfig": {
 			Name:  "demo.FeatureConfig",
 			Value: []byte(`{"enabled":true}`),

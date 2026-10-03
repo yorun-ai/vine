@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json/v2"
+	"go.yorun.ai/vine/internal/utilfortest/spectest"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -206,7 +207,8 @@ func TestServerHandleWithoutArgumentsReturnsNoErrorResponse(t *testing.T) {
 }
 
 func TestServerHandleAddsProfileLabels(t *testing.T) {
-	method := spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
+	method := spectest.RpcService(&spec.ServiceSpec{
+		Type:     spec.ServiceSpecTypeBoth,
 		Name:     "ProfileService",
 		SkelName: "test.service.profile",
 		Methods:  []*spec.MethodSpec{{Name: "Ping", SkelName: "ping"}},
@@ -265,7 +267,8 @@ func TestServerRpcHandlerClonesArguments(t *testing.T) {
 }
 
 func TestServerHandlePreservesExecutorError(t *testing.T) {
-	method := spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
+	method := spectest.RpcService(&spec.ServiceSpec{
+		Type:     spec.ServiceSpecTypeBoth,
 		Name:     "TestService",
 		SkelName: "test.service.handle.error",
 		Methods:  []*spec.MethodSpec{{Name: "Ping", SkelName: "ping"}},
@@ -359,7 +362,8 @@ func TestServerHTTPHandlerReturnsStandardVrpcErrorForInvalidRequest(t *testing.T
 }
 
 func TestServerHandleConvertsRecoveredPanicToInternalError(t *testing.T) {
-	method := spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
+	method := spectest.RpcService(&spec.ServiceSpec{
+		Type:     spec.ServiceSpecTypeBoth,
 		Name:     "TestService",
 		SkelName: "test.service.handle.panic",
 		Methods:  []*spec.MethodSpec{{Name: "Ping", SkelName: "ping"}},
@@ -390,7 +394,8 @@ func TestServerHandleConvertsRecoveredPanicToInternalError(t *testing.T) {
 }
 
 func TestServerHandleDoesNotTreatPanickedOKErrorAsSuccess(t *testing.T) {
-	method := spec.ConvertSpecToInfoForTest(new(spec.ServiceSpec{
+	method := spectest.RpcService(new(spec.ServiceSpec{
+		Type:     spec.ServiceSpecTypeBoth,
 		Name:     "TestService",
 		SkelName: "test.service.handle.ok-panic",
 		Methods:  []*spec.MethodSpec{{Name: "Ping", SkelName: "ping"}},

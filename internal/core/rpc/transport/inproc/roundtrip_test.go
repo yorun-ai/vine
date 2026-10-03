@@ -3,6 +3,7 @@ package inproc
 import (
 	"context"
 	"fmt"
+	"go.yorun.ai/vine/internal/utilfortest/spectest"
 	"sync/atomic"
 	"testing"
 	"testing/synctest"
@@ -47,7 +48,8 @@ func testRequest(t *testing.T) spec.Request {
 		ContextValue: context.Background(),
 		TraceValue:   trace,
 		ClientValue:  client,
-		MethodInfoValue: spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
+		MethodInfoValue: spectest.RpcService(&spec.ServiceSpec{
+			Type:     spec.ServiceSpecTypeBoth,
 			Name:     "DemoService",
 			SkelName: fmt.Sprintf("demo.service.%d", inprocTestRequestCounter.Add(1)),
 			Methods: []*spec.MethodSpec{{
@@ -145,7 +147,8 @@ func TestRoundTripReturnsContextError(t *testing.T) {
 	req := &spec.RequestImpl{
 		ContextValue: ctx,
 		TraceValue:   meta.InitialTrace(),
-		MethodInfoValue: spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
+		MethodInfoValue: spectest.RpcService(&spec.ServiceSpec{
+			Type:     spec.ServiceSpecTypeBoth,
 			Name:     "DemoService",
 			SkelName: fmt.Sprintf("demo.service.%d", inprocTestRequestCounter.Add(1)),
 			Methods: []*spec.MethodSpec{{

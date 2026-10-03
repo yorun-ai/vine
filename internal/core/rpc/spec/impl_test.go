@@ -191,7 +191,8 @@ func TestImplDictGetMethodImplReturnsErrors(t *testing.T) {
 		t.Fatalf("unexpected nil method info error: %v", err)
 	}
 
-	_, err = dict.GetMethodImplByInfo(ConvertSpecToInfoForTest(&ServiceSpec{
+	_, err = dict.GetMethodImplByInfo(registerTestService(&ServiceSpec{
+		Type:     ServiceSpecTypeBoth,
 		Name:     "MissingService",
 		SkelName: "missing.service",
 		Methods: []*MethodSpec{{

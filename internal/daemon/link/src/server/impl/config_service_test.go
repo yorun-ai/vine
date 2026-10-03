@@ -8,9 +8,9 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
-	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/config"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
+	"go.yorun.ai/vine/internal/utilfortest/watchtest"
 	"go.yorun.ai/vine/util/vcode"
 )
 
@@ -25,7 +25,7 @@ func TestConfigServiceReturnsInstantValue(t *testing.T) {
 	appMinder.DIInit()
 	reader := &config.Reader{
 		Context: context.Background(),
-		Client: hubwatch.NewClientForTest(map[string]string{
+		Client: watchtest.New(t, map[string]string{
 			watched.FormatConfigKey("demo.FeatureConfig"): marshalTestConfigValue("demo.FeatureConfig", `{"enabled":true}`),
 		}),
 		AppMinder: appMinder,
@@ -56,7 +56,7 @@ func TestConfigServiceReturnsEternalValue(t *testing.T) {
 	appMinder.DIInit()
 	reader := &config.Reader{
 		Context: context.Background(),
-		Client: hubwatch.NewClientForTest(map[string]string{
+		Client: watchtest.New(t, map[string]string{
 			watched.FormatConfigKey("demo.FeatureConfig"): marshalTestConfigValue("demo.FeatureConfig", `{"enabled":true}`),
 		}),
 		AppMinder: appMinder,

@@ -15,7 +15,6 @@ import (
 	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/cacheutil"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/util/vcode"
 	"go.yorun.ai/vine/util/vpre"
 )
@@ -29,9 +28,9 @@ var vaultLogger = logger.New("daemon:portal:vault")
 type Vault struct {
 	app.BaseModule
 
-	Watch    *hubwatch.Client `inject:""`
-	Context  context.Context  `inject:""`
-	Identity *mtls.Identity   `inject:""`
+	Watch    hubapiwatch.ClientOps `inject:""`
+	Context  context.Context       `inject:""`
+	Identity *mtls.Identity        `inject:""`
 
 	mutex      sync.RWMutex
 	certs      map[string]*_Certificate

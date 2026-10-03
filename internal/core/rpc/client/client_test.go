@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json/v2"
 	"fmt"
+	"go.yorun.ai/vine/internal/utilfortest/spectest"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -36,7 +37,8 @@ func testClientLogger() *logger.Logger {
 var testClientMethodCounter atomic.Uint64
 
 func testClientMethodInfo() spec.MethodInfo {
-	return spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
+	return spectest.RpcService(&spec.ServiceSpec{
+		Type:     spec.ServiceSpecTypeBoth,
 		Name:     "ClientTestService",
 		SkelName: fmt.Sprintf("client.test.service.%d", testClientMethodCounter.Add(1)),
 		Methods: []*spec.MethodSpec{{
@@ -215,7 +217,8 @@ func TestNewPanicsWhenLoggerIsNil(t *testing.T) {
 }
 
 func TestInvokeEncodingFailureLogsRejectedWithoutStarted(t *testing.T) {
-	method := spec.ConvertSpecToInfoForTest(&spec.ServiceSpec{
+	method := spectest.RpcService(&spec.ServiceSpec{
+		Type:     spec.ServiceSpecTypeBoth,
 		Name:     "EncodingService",
 		SkelName: "client.test.encoding",
 		Methods: []*spec.MethodSpec{{

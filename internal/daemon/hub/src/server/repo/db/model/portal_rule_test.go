@@ -1,9 +1,7 @@
 package model
 
 import (
-	"os"
 	"path/filepath"
-	"sync"
 	"testing"
 
 	"github.com/glebarez/sqlite"
@@ -11,11 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/infra/rdb"
 	"gorm.io/gorm"
-)
-
-var (
-	testPortalRuleDB     *gorm.DB
-	testPortalRuleDBOnce sync.Once
 )
 
 func TestPortalRuleDaoCreateAndQuery(t *testing.T) {
@@ -53,26 +46,12 @@ func TestPortalRuleDaoListOrdered(t *testing.T) {
 func newTestPortalRuleDao(t *testing.T) *PortalRuleDao {
 	t.Helper()
 
-	db := sharedTestPortalRuleDB(t)
+	db := newModelTestDB(t, "portal-rule.sqlite")
 	dao := &PortalRuleDao{
 		Dao: rdb.NewDao[*PortalRule](db),
 	}
 	dao.EnsureSchema()
-	require.NoError(t, db.Exec("DELETE FROM portal_rule").Error)
 	return dao
-}
-
-func sharedTestPortalRuleDB(t *testing.T) *gorm.DB {
-	t.Helper()
-
-	testPortalRuleDBOnce.Do(func() {
-		root, err := os.MkdirTemp("", "vine-portal-rule-*")
-		require.NoError(t, err)
-		db, err := gorm.Open(sqlite.Open(filepath.Join(root, "portal-rule.sqlite")), &gorm.Config{})
-		require.NoError(t, err)
-		testPortalRuleDB = db
-	})
-	return testPortalRuleDB
 }
 
 func TestPortalRuleEnsureSchemaOnCurrentSchema(t *testing.T) {

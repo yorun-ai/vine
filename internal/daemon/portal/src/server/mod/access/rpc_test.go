@@ -25,7 +25,7 @@ import (
 func TestAccessAllowRpcParsesTargetRpc(t *testing.T) {
 	registerTestActorInfo()
 	authEndpoint := registerTestAuthService(t, http.StatusOK, "OK", `{"userId":"u1"}`)
-	access := testManager(testAuthValues(authEndpoint))
+	access := testManager(t, testAuthValues(authEndpoint))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 	setTestRequestHeaders(t, request)
@@ -95,7 +95,7 @@ func (b *requestCloseTrackingBody) Close() error {
 }
 
 func TestAccessAllowRpcReturnsServiceUnavailableWhenAuthServiceHasNoEndpoint(t *testing.T) {
-	access := testManager(testAuthValues(""))
+	access := testManager(t, testAuthValues(""))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 	setTestRequestHeaders(t, request)
@@ -115,7 +115,7 @@ func TestAccessAllowRpcReturnsServiceUnavailableWhenAuthServiceHasNoEndpoint(t *
 
 func TestAccessAllowRpcMapsAuthServiceStatus(t *testing.T) {
 	authEndpoint := registerTestAuthService(t, http.StatusOK, "UNAUTHORIZED", `null`)
-	access := testManager(testAuthValues(authEndpoint))
+	access := testManager(t, testAuthValues(authEndpoint))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 	setTestRequestHeaders(t, request)
@@ -137,7 +137,7 @@ func TestAccessAllowRpcSendsCredentialToAuthService(t *testing.T) {
 		writeTestAuthResponse(w, r, http.StatusOK, "OK", `{"userId":"u1"}`)
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(authEndpoint) })
-	access := testManager(testAuthValues(authEndpoint))
+	access := testManager(t, testAuthValues(authEndpoint))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 	setTestRequestHeaders(t, request)
@@ -158,7 +158,7 @@ func TestAccessAllowRpcForwardsTimeoutToAuthService(t *testing.T) {
 		writeTestAuthResponse(w, r, http.StatusOK, "OK", `{"userId":"u1"}`)
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(authEndpoint) })
-	access := testManager(testAuthValues(authEndpoint))
+	access := testManager(t, testAuthValues(authEndpoint))
 	recorder := httptest.NewRecorder()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -181,7 +181,7 @@ func TestAccessAllowRpcCreatesTraceChildForAuthService(t *testing.T) {
 		writeTestAuthResponse(w, r, http.StatusOK, "OK", `{"userId":"u1"}`)
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(authEndpoint) })
-	access := testManager(testAuthValues(authEndpoint))
+	access := testManager(t, testAuthValues(authEndpoint))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 	setTestRequestHeaders(t, request)
@@ -306,7 +306,7 @@ func registerTestActorInfo() {
 }
 
 func TestAccessAllowRpcRejectsMissingServiceSchema(t *testing.T) {
-	access := testManager(map[string]string{
+	access := testManager(t, map[string]string{
 		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorSchema()),
 	})
 	recorder := httptest.NewRecorder()
@@ -319,7 +319,7 @@ func TestAccessAllowRpcRejectsMissingServiceSchema(t *testing.T) {
 }
 
 func TestAccessAllowRpcRejectsMissingMethodSchema(t *testing.T) {
-	access := testManager(map[string]string{
+	access := testManager(t, map[string]string{
 		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorSchema()),
 		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
 			SkelName:  "demo.UserService",
@@ -339,7 +339,7 @@ func TestAccessAllowRpcRejectsMissingMethodSchema(t *testing.T) {
 }
 
 func TestAccessAllowRpcRejectsMissingActorSchema(t *testing.T) {
-	access := testManager(map[string]string{
+	access := testManager(t, map[string]string{
 		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
 			SkelName:  "demo.UserService",
 			Audiences: testUserActorAudiences(),
@@ -358,7 +358,7 @@ func TestAccessAllowRpcRejectsMissingActorSchema(t *testing.T) {
 }
 
 func TestAccessAllowRpcRejectsActorWithoutCredentialSchema(t *testing.T) {
-	access := testManager(map[string]string{
+	access := testManager(t, map[string]string{
 		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.SchemaActor{
 			SkelName:    "demo.UserActor",
 			AuthEnabled: true,
@@ -381,7 +381,7 @@ func TestAccessAllowRpcRejectsActorWithoutCredentialSchema(t *testing.T) {
 }
 
 func TestAccessAllowRpcRejectsActorWithoutInfoSchema(t *testing.T) {
-	access := testManager(map[string]string{
+	access := testManager(t, map[string]string{
 		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.SchemaActor{
 			SkelName:       "demo.UserActor",
 			AuthEnabled:    true,
@@ -426,7 +426,7 @@ func TestRpcAccessOperationParseAuthMode(t *testing.T) {
 }
 
 func TestAccessAllowRpcInjectsActorAndServiceSchemas(t *testing.T) {
-	access := testManager(map[string]string{
+	access := testManager(t, map[string]string{
 		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorSchema()),
 		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
 			SkelName:  "demo.UserService",
@@ -453,7 +453,7 @@ func TestAccessAllowRpcInjectsActorAndServiceSchemas(t *testing.T) {
 }
 
 func TestAccessAllowRpcRejectsDifferentActorVia(t *testing.T) {
-	access := testManager(map[string]string{
+	access := testManager(t, map[string]string{
 		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorSchema()),
 		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
 			SkelName: "demo.UserService",
@@ -563,7 +563,7 @@ func TestAccessAllowRpcPreservesAuthErrorReason(t *testing.T) {
 		_, _ = w.Write([]byte(`{"error":{"message":"pending review","reason":"USER_PENDING_REVIEW"}}`))
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(endpoint) })
-	manager := testManager(testAuthValues(endpoint))
+	manager := testManager(t, testAuthValues(endpoint))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 	setTestRequestHeaders(t, request)

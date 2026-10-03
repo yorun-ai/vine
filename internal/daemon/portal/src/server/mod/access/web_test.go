@@ -20,7 +20,7 @@ import (
 )
 
 func TestAuthWebUsesAnonymousActorWithoutAuthorization(t *testing.T) {
-	access := testManager(nil)
+	access := testManager(t, nil)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/ping", nil)
 	setTestWebRequestHeaders(t, request)
@@ -36,7 +36,7 @@ func TestAuthWebUsesAnonymousActorWithoutAuthorization(t *testing.T) {
 func TestAuthWebParsesAuthorization(t *testing.T) {
 	registerTestActorInfo()
 	authEndpoint := registerTestAuthService(t, http.StatusOK, "OK", `{"userId":"u1"}`)
-	access := testManager(testAuthValues(authEndpoint))
+	access := testManager(t, testAuthValues(authEndpoint))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/ping", nil)
 	setTestWebRequestHeaders(t, request)
@@ -52,7 +52,7 @@ func TestAuthWebParsesAuthorization(t *testing.T) {
 }
 
 func TestAuthWebRejectsBadAuthorizationAsUnauthorized(t *testing.T) {
-	access := testManager(testAuthValues(""))
+	access := testManager(t, testAuthValues(""))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/ping", nil)
 	setTestWebRequestHeaders(t, request)
@@ -67,7 +67,7 @@ func TestAuthWebRejectsBadAuthorizationAsUnauthorized(t *testing.T) {
 
 func TestAuthWebMapsAuthServiceStatus(t *testing.T) {
 	authEndpoint := registerTestAuthService(t, http.StatusOK, "UNAUTHORIZED", `null`)
-	access := testManager(testAuthValues(authEndpoint))
+	access := testManager(t, testAuthValues(authEndpoint))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/ping", nil)
 	setTestWebRequestHeaders(t, request)
@@ -90,7 +90,7 @@ func TestAuthWebForwardsTimeoutToAuthService(t *testing.T) {
 		writeTestAuthResponse(w, r, http.StatusOK, "OK", `{"userId":"u1"}`)
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(authEndpoint) })
-	access := testManager(testAuthValues(authEndpoint))
+	access := testManager(t, testAuthValues(authEndpoint))
 	recorder := httptest.NewRecorder()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -130,7 +130,7 @@ func testWebAuthContext(t *testing.T, actorVia watched.PortalActorVia, request *
 
 func TestAuthWebPreservesNativeAuthorizationWithoutActorAuth(t *testing.T) {
 	schema := &watched.SchemaActor{SkelName: "demo.NativeActor"}
-	manager := testManager(map[string]string{
+	manager := testManager(t, map[string]string{
 		watched.FormatSchemaActorKey(schema.SkelName): vcode.MustMarshalJsonS(schema),
 	})
 	for _, header := range []string{"", "Bearer native-token", "Basic dXNlcjpwdw==", "custom native-credential"} {
@@ -150,7 +150,7 @@ func TestAuthWebPreservesNativeAuthorizationWithoutActorAuth(t *testing.T) {
 }
 
 func TestAuthWebRejectsUnknownActorWithAuthorization(t *testing.T) {
-	manager := testManager(nil)
+	manager := testManager(t, nil)
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/ping", nil)
 	setTestWebRequestHeaders(t, request)
 	request.Header.Set(headerAuthorization, "Bearer native-token")
@@ -163,7 +163,7 @@ func TestAuthWebRejectsUnknownActorWithAuthorization(t *testing.T) {
 // listeners, including a Web handler that owns its native authentication.
 func TestAuthWebNativeCredentialsReachBackend(t *testing.T) {
 	schema := &watched.SchemaActor{SkelName: "demo.NativeActor"}
-	manager := testManager(map[string]string{
+	manager := testManager(t, map[string]string{
 		watched.FormatSchemaActorKey(schema.SkelName): vcode.MustMarshalJsonS(schema),
 	})
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

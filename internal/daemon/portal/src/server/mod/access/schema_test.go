@@ -12,7 +12,7 @@ import (
 )
 
 func TestManagerHandlesActorSchemaEvents(t *testing.T) {
-	manager := testManager(map[string]string{})
+	manager := testManager(t, map[string]string{})
 
 	key := watched.FormatSchemaActorKey("demo.UserActor")
 	manager.handleActorEvent(hubwatch.Event{
@@ -48,7 +48,7 @@ func TestManagerHandlesActorSchemaEvents(t *testing.T) {
 }
 
 func TestManagerHandlesServiceSchemaEvents(t *testing.T) {
-	manager := testManager(map[string]string{})
+	manager := testManager(t, map[string]string{})
 
 	key := watched.FormatSchemaServiceKey("demo.UserService")
 	manager.handleServiceEvent(hubwatch.Event{

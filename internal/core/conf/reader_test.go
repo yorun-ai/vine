@@ -1,11 +1,11 @@
 package conf
 
 import (
+	"go.yorun.ai/vine/internal/utilfortest/linktest"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	corelink "go.yorun.ai/vine/internal/core/link"
 	"go.yorun.ai/vine/internal/core/redact"
 	"go.yorun.ai/vine/internal/core/skel"
 )
@@ -42,7 +42,7 @@ func TestReaderPreservesSensitiveStringValues(t *testing.T) {
 		t.Run(string(lifecycle), func(t *testing.T) {
 			registry := NewRegistry()
 			registry.Register(ConfigSpec{SkelName: key, Lifecycle: lifecycle, Type: reflect.TypeFor[*readerSensitiveConfig]()})
-			reader := newReader(&corelink.TestLinker{
+			reader := newReader(&linktest.Linker{
 				EternalConfigByKey: map[string]string{key: raw}, InstantConfigByKey: map[string]string{key: raw},
 			}, registry)
 			value := reader.GetByType(reflect.TypeFor[*readerSensitiveConfig]()).(*readerSensitiveConfig)
@@ -107,7 +107,7 @@ func TestReaderPreservesValuesAndIsolatesSnapshots(t *testing.T) {
 				Name: "ReaderValueConfig", SkelName: key, Lifecycle: lifecycle,
 				Type: reflect.TypeFor[*readerValueConfig](),
 			})
-			linker := &corelink.TestLinker{
+			linker := &linktest.Linker{
 				EternalConfigByKey: map[string]string{key: raw},
 				InstantConfigByKey: map[string]string{key: raw},
 			}
@@ -152,7 +152,7 @@ func TestReaderGetByTypeDecodesLinkConfig(t *testing.T) {
 		Type:      reflect.TypeFor[*readerTestConfig](),
 	})
 
-	reader := newReader(&corelink.TestLinker{
+	reader := newReader(&linktest.Linker{
 		EternalConfigByKey: map[string]string{
 			"demo.user.ReaderTestConfig": `{"name":"demo"}`,
 		},
@@ -177,7 +177,7 @@ func TestReaderGetByTypeUsesLocalLifecycle(t *testing.T) {
 		Type:      reflect.TypeFor[*readerTestInstantConfig](),
 	})
 
-	reader := newReader(&corelink.TestLinker{
+	reader := newReader(&linktest.Linker{
 		EternalConfigByKey: map[string]string{
 			"demo.user.ReaderTestInstantConfig": `{"name":"eternal"}`,
 		},
@@ -205,7 +205,7 @@ func TestReaderGetByTypePanicsWhenConfigJSONIsEmpty(t *testing.T) {
 		Type:      reflect.TypeFor[*readerTestConfig](),
 	})
 
-	reader := newReader(&corelink.TestLinker{
+	reader := newReader(&linktest.Linker{
 		EternalConfigByKey: map[string]string{
 			"demo.user.ReaderTestConfig": "",
 		},
@@ -226,7 +226,7 @@ func TestReaderGetByTypePanicsWhenConfigJSONIsInvalid(t *testing.T) {
 		Type:      reflect.TypeFor[*readerTestConfig](),
 	})
 
-	reader := newReader(&corelink.TestLinker{
+	reader := newReader(&linktest.Linker{
 		EternalConfigByKey: map[string]string{
 			"demo.user.ReaderTestConfig": `{"name":`,
 		},
@@ -253,7 +253,7 @@ func TestReaderEnumMapKeysAndValues(t *testing.T) {
 			registry.Register(ConfigSpec{
 				SkelName: key, Lifecycle: lifecycle, Type: reflect.TypeFor[*readerEnumMapConfig](),
 			})
-			reader := newReader(new(corelink.TestLinker{
+			reader := newReader(new(linktest.Linker{
 				EternalConfigByKey: map[string]string{key: raw},
 				InstantConfigByKey: map[string]string{key: raw},
 			}), registry)
@@ -308,7 +308,7 @@ func TestReaderStructuredValuesAndRedaction(t *testing.T) {
 		t.Run(string(lifecycle), func(t *testing.T) {
 			registry := NewRegistry()
 			registry.Register(ConfigSpec{SkelName: key, Lifecycle: lifecycle, Type: reflect.TypeFor[*readerStructuredConfig]()})
-			linker := new(corelink.TestLinker{
+			linker := new(linktest.Linker{
 				EternalConfigByKey: map[string]string{key: raw},
 				InstantConfigByKey: map[string]string{key: raw},
 			})
@@ -369,7 +369,7 @@ func TestReaderRejectsInvalidBinary(t *testing.T) {
 			t.Run(string(lifecycle)+"/"+raw, func(t *testing.T) {
 				registry := NewRegistry()
 				registry.Register(ConfigSpec{SkelName: key, Lifecycle: lifecycle, Type: reflect.TypeFor[*readerStructuredConfig]()})
-				reader := newReader(new(corelink.TestLinker{
+				reader := newReader(new(linktest.Linker{
 					EternalConfigByKey: map[string]string{key: raw},
 					InstantConfigByKey: map[string]string{key: raw},
 				}), registry)
@@ -397,7 +397,7 @@ func TestReaderNullableGenericParameterReferences(t *testing.T) {
 		t.Run(string(lifecycle), func(t *testing.T) {
 			registry := NewRegistry()
 			registry.Register(ConfigSpec{SkelName: key, Lifecycle: lifecycle, Type: reflect.TypeFor[*readerOptionalGenericConfig]()})
-			reader := newReader(&corelink.TestLinker{EternalConfigByKey: map[string]string{key: raw}, InstantConfigByKey: map[string]string{key: raw}}, registry)
+			reader := newReader(&linktest.Linker{EternalConfigByKey: map[string]string{key: raw}, InstantConfigByKey: map[string]string{key: raw}}, registry)
 			config := reader.GetByType(reflect.TypeFor[*readerOptionalGenericConfig]()).(*readerOptionalGenericConfig)
 			require.Nil(t, config.Binary[0].Value)
 			require.NotNil(t, config.Binary[1].Value)

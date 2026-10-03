@@ -6,15 +6,15 @@ import (
 	"sync"
 
 	"go.yorun.ai/vine/internal/app"
+	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 )
 
 type Manager struct {
 	app.BaseModule
 
-	Context context.Context  `inject:""`
-	Watch   *hubwatch.Client `inject:""`
+	Context context.Context       `inject:""`
+	Watch   hubapiwatch.ClientOps `inject:""`
 
 	mutex          sync.Mutex
 	routesByPrefix map[string]*_Route

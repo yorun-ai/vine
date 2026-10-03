@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"testing"
 
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 
@@ -10,23 +11,24 @@ import (
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
 	"go.yorun.ai/vine/internal/core/skel"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
-	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
+	"go.yorun.ai/vine/internal/utilfortest/watchtest"
 	"go.yorun.ai/vine/util/vcode"
 )
 
-func newTestReader(configValuesByName map[string]watched.ConfigValue) *Reader {
+func newTestReader(t *testing.T, configValuesByName map[string]watched.ConfigValue) *Reader {
 	valuesByKey := map[string]string{}
 	for key, value := range configValuesByName {
 		valuesByKey[watched.FormatConfigKey(key)] = marshalTestConfigValue(key, string(value.Value))
 	}
 	reader := &Reader{
 		Context:   context.Background(),
-		Client:    hubwatch.NewClientForTest(valuesByKey),
+		Client:    watchtest.New(t, valuesByKey),
 		AppMinder: newTestMinder(),
 	}
 	reader.DIInit()
+	t.Cleanup(reader.AfterAppStop)
 	return reader
 }
 

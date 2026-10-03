@@ -9,18 +9,18 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/skel"
+	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 )
 
 type Access struct {
 	app.BaseModule
 
-	Context  context.Context  `inject:""`
-	Watch    *hubwatch.Client `inject:""`
-	Epmgr    *epmgr.Manager   `inject:""`
-	Identity *mtls.Identity   `inject:""`
+	Context  context.Context       `inject:""`
+	Watch    hubapiwatch.ClientOps `inject:""`
+	Epmgr    *epmgr.Manager        `inject:""`
+	Identity *mtls.Identity        `inject:""`
 
 	mutex                             sync.RWMutex
 	actorNamesByKey                   map[string]string

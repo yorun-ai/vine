@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-func TestConvertSpecToInfoForTestBuildsTriggerInfo(t *testing.T) {
-	taskInfo := ConvertSpecToInfoForTest(&TaskSpec{
+func TestRegisterBuildsTriggerInfo(t *testing.T) {
+	taskSpec := &TaskSpec{
 		Name:                "RebuildTask",
 		SkelName:            "demo.RebuildTask",
 		RunnerType:          reflect.TypeFor[testInfoTaskRunner](),
@@ -23,7 +23,10 @@ func TestConvertSpecToInfoForTestBuildsTriggerInfo(t *testing.T) {
 			ArgumentsType:      reflect.TypeFor[testInfoTaskArguments](),
 			ArgumentsSensitive: true,
 		}},
-	})
+	}
+	registry := NewRegistry()
+	registry.Register(taskSpec)
+	taskInfo := taskSpec.Info()
 
 	if taskInfo.Name() != "RebuildTask" || taskInfo.SkelName() != "demo.RebuildTask" {
 		t.Fatalf("unexpected task info: %+v", taskInfo)
