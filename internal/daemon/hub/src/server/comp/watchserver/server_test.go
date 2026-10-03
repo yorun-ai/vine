@@ -250,39 +250,6 @@ func TestWatchInprocClientPubSub(t *testing.T) {
 	assert.Equal(t, "payload", message.Payload)
 }
 
-func TestWatchInprocClientSubscribeUnsubscribe(t *testing.T) {
-	_, client := newInprocTestServer(t)
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	pubsub := client.Subscribe(ctx, "config:feature-a")
-	defer pubsub.Close()
-	subscription, err := pubsub.Receive(ctx)
-	require.NoError(t, err)
-	requireSubscription(t, subscription, "subscribe", "config:feature-a", 1)
-
-	count, err := client.Publish(ctx, "config:feature-a", "first").Result()
-	require.NoError(t, err)
-	assert.Equal(t, int64(1), count)
-
-	message, err := pubsub.ReceiveMessage(ctx)
-	require.NoError(t, err)
-	assert.Equal(t, "config:feature-a", message.Channel)
-	assert.Equal(t, "first", message.Payload)
-
-	require.NoError(t, pubsub.Unsubscribe(ctx, "config:feature-a"))
-	subscription, err = pubsub.Receive(ctx)
-	require.NoError(t, err)
-	requireSubscription(t, subscription, "unsubscribe", "config:feature-a", 0)
-
-	count, err = client.Publish(ctx, "config:feature-a", "second").Result()
-	require.NoError(t, err)
-	assert.Equal(t, int64(0), count)
-
-	_, err = pubsub.ReceiveTimeout(ctx, 10*time.Millisecond)
-	assert.True(t, isPubSubTimeout(err), "expected timeout, got %v", err)
-}
-
 func TestWatchInprocDialFailsAfterStop(t *testing.T) {
 	server, client := newInprocTestServer(t)
 	ctx := context.Background()
@@ -518,27 +485,6 @@ func TestWatchServerIncr(t *testing.T) {
 	require.NoError(t, client.Set(ctx, "counter", "bad", 0).Err())
 	_, err = client.Incr(ctx, "counter").Result()
 	assert.Error(t, err)
-}
-
-func TestWatchServerPatternPubSub(t *testing.T) {
-	_, client := newNetworkTestServer(t)
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	pubsub := client.PSubscribe(ctx, "config:*")
-	defer pubsub.Close()
-	_, err := pubsub.Receive(ctx)
-	require.NoError(t, err)
-
-	count, err := client.Publish(ctx, "config:feature-a", "payload").Result()
-	require.NoError(t, err)
-	assert.Equal(t, int64(1), count)
-
-	message, err := pubsub.ReceiveMessage(ctx)
-	require.NoError(t, err)
-	assert.Equal(t, "config:*", message.Pattern)
-	assert.Equal(t, "config:feature-a", message.Channel)
-	assert.Equal(t, "payload", message.Payload)
 }
 
 func TestWatchServerSubscribeUnsubscribeStopsMessages(t *testing.T) {

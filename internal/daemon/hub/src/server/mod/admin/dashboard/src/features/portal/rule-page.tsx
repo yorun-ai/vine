@@ -5,7 +5,6 @@ import { RulePathPreview } from './rule-path-preview'
 import {
   effectiveWebMountPrefixes,
   lockedWebMountPath,
-  rulePathsForSave,
 } from './web-mount-path'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
 import { SearchInput } from '@/components/ui/search-input'
@@ -691,7 +690,7 @@ function PortalRuleInlineEditor({
       setFormError(null)
 
       try {
-        await onSubmit(rulePathsForSave(nextValue, lockedMountPath))
+        await onSubmit(nextValue)
       } catch (error) {
         setFormError(getErrorMessage(error))
       }

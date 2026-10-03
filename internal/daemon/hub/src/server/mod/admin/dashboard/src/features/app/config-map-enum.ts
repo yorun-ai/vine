@@ -61,20 +61,3 @@ export function configMapEntries(doc: string, range: ConfigValueRange, yaml: boo
   })
   return entries
 }
-
-export function configMapEnumIssues(value: unknown, field: ConfigJsonField) {
-  if (!configMapTypes(field.type) || value === null || typeof value !== 'object' || Array.isArray(value)) {
-    return []
-  }
-  const enums = configMapEnums(field)
-  return Object.entries(value).flatMap(([key, item]) => {
-    const issues: Array<{ key: string; part: 'key' | 'value'; expected: string; actual: string }> = []
-    if (enums.key.length && !enums.key.some((option) => option.name === key)) {
-      issues.push({ key, part: 'key', expected: enums.key.map((option) => option.name).join(' | '), actual: JSON.stringify(key) })
-    }
-    if (enums.value.length && !(item === null && configMapTypes(field.type)!.value.endsWith('?')) && !enums.value.some((option) => option.name === item)) {
-      issues.push({ key, part: 'value', expected: enums.value.map((option) => option.name).join(' | '), actual: JSON.stringify(item) })
-    }
-    return issues
-  })
-}

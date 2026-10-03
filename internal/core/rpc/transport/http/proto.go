@@ -84,11 +84,6 @@ func responseBodyContentType(req *http.Request, methodInfo spec.MethodInfo) stri
 	return ContentTypeJson
 }
 
-func EncodeContentTypeHeadersToHeaderByMethod(header http.Header, methodInfo spec.MethodInfo) {
-	header.Set(HeaderAccept, requestAcceptContentType(methodInfo))
-	header.Set(HeaderContentType, requestBodyContentType(methodInfo))
-}
-
 func EncodeContentTypeHeadersToHeader(header http.Header, contentType string) {
 	header.Set(HeaderContentType, contentType)
 }
