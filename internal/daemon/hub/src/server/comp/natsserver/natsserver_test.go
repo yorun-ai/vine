@@ -2,6 +2,7 @@ package natsserver
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -68,6 +69,42 @@ func TestNATSServerCreatesMemoryStreams(t *testing.T) {
 		info, err := stream.Info(context.Background())
 		require.NoError(t, err)
 		assert.Equal(t, jetstream.MemoryStorage, info.Config.Storage)
+	}
+}
+
+func TestNATSServerUsesDefaultConsumerLimit(t *testing.T) {
+	for _, isInproc := range []bool{true, false} {
+		t.Run(fmt.Sprintf("inproc=%t", isInproc), func(t *testing.T) {
+			component := &NATSServer{}
+			server, storeDir := component.newServer(component.serverOptions(isInproc))
+			t.Cleanup(func() {
+				server.Shutdown()
+				server.WaitForShutdown()
+				_ = os.RemoveAll(storeDir)
+			})
+			conn, err := gonats.Connect("", gonats.InProcessServer(server))
+			require.NoError(t, err)
+			t.Cleanup(conn.Close)
+			js, err := jetstream.New(conn)
+			require.NoError(t, err)
+			for i := range 1000 {
+				_, err := js.CreateConsumer(t.Context(), eventspec.NATSStreamName, jetstream.ConsumerConfig{
+					Durable:   fmt.Sprintf("reader_%04d", i),
+					AckPolicy: jetstream.AckExplicitPolicy,
+				})
+				require.NoError(t, err, "consumer %d", i)
+			}
+			_, err = js.CreateConsumer(t.Context(), eventspec.NATSStreamName, jetstream.ConsumerConfig{
+				Durable:   "reader_over_limit",
+				AckPolicy: jetstream.AckExplicitPolicy,
+			})
+			require.ErrorContains(t, err, "maximum consumers limit reached")
+			stream, err := js.Stream(t.Context(), eventspec.NATSStreamName)
+			require.NoError(t, err)
+			info, err := stream.Info(t.Context())
+			require.NoError(t, err)
+			assert.Equal(t, 1000, info.State.Consumers)
+		})
 	}
 }
 
