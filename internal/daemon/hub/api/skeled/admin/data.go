@@ -1264,6 +1264,8 @@ type SkeletonWebItem struct {
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Web deprecation reason
 	DeprecatedReason string `json:"deprecatedReason"`
+	// AuthMode Authentication mode
+	AuthMode string `json:"authMode"`
 	// Actors Accessible Actor List
 	Actors []SkeletonActorRef `json:"actors"`
 }

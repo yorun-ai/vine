@@ -72,14 +72,16 @@ type ConfigSchema struct {
 }
 
 type WebSchema struct {
-	Name             string                 `json:"name"`
-	SkelName         string                 `json:"skelName"`
-	Description      string                 `json:"description,omitempty"`
-	Deprecated       bool                   `json:"deprecated,omitzero"`
-	DeprecatedReason string                 `json:"deprecatedReason,omitempty"`
-	Hash             string                 `json:"hash"`
-	Audiences        []*ActorAudienceSchema `json:"audiences"`
-	MountPath        string                 `json:"mountPath"`
+	Name             string `json:"name"`
+	SkelName         string `json:"skelName"`
+	Description      string `json:"description,omitempty"`
+	Deprecated       bool   `json:"deprecated,omitzero"`
+	DeprecatedReason string `json:"deprecatedReason,omitempty"`
+	Hash             string `json:"hash"`
+	// AuthMode leaves legacy Web behavior intact when omitted.
+	AuthMode  AuthMode               `json:"authMode,omitzero"`
+	Audiences []*ActorAudienceSchema `json:"audiences"`
+	MountPath string                 `json:"mountPath"`
 }
 
 type EventSchema struct {
@@ -362,6 +364,7 @@ func (r *Registry) RegisterDomainSchema(schema *DomainSchema) {
 
 	registered, ok := r.schemasByDomain[schema.Domain]
 	if !ok {
+		ConvertLegacyAuthModes(schema)
 		r.schemasByDomain[schema.Domain] = schema
 		return
 	}
@@ -370,6 +373,7 @@ func (r *Registry) RegisterDomainSchema(schema *DomainSchema) {
 	// package import chain. The later regular full schema is the only duplicate
 	// registration that should replace an existing schema for the same domain.
 	if !registered.Full && schema.Full {
+		ConvertLegacyAuthModes(schema)
 		r.schemasByDomain[schema.Domain] = schema
 		return
 	}

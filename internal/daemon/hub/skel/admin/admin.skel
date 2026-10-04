@@ -1,7 +1,15 @@
 domain vine.hub.admin
 
+@desc("Hub operator using the Dashboard on the admin listener")
+actor AdminActor {
+    via client {}
+}
+
 @desc("Hub's Admin API service, called by the Dashboard")
 api service AdminApiService {
+    for AdminActor via client
+    noauth
+
     @desc("Whether Hub configuration is read-only")
     method readOnly {
         output bool

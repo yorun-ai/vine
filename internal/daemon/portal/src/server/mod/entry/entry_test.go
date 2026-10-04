@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/core/meta"
+	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/utilfortest/watchtest"
@@ -176,6 +177,7 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 		t.Run(fmt.Sprintf("inproc=%t", inproc), func(t *testing.T) {
 			backend := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, _ := io.ReadAll(r.Body)
+				w.Header().Set("X-Received-Authorization", r.Header.Get("Authorization"))
 				w.Header().Set("X-Received-Method", r.Method)
 				w.Header().Set("X-Received-Body", string(body))
 				_, _ = io.WriteString(w, r.URL.RequestURI())
@@ -195,8 +197,10 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
 			values := map[string]string{
+				watched.FormatSchemaWebKey("demo.Web"):     vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: "demo.Web", AuthMode: skel.AuthModeOff}),
+				watched.FormatSchemaActorKey("demo.Actor"): vcode.MustMarshalJsonS(watched.SchemaActor{SkelName: "demo.Actor"}),
 				watched.FormatPortalSiteKey("web"): vcode.MustMarshalJsonS(watched.PortalSite{
-					Name: "web", Type: "WEBGW", WebgwConfig: &watched.PortalWebgwConfig{WebName: "demo.Web"},
+					Name: "web", Type: "WEBGW", ActorVia: watched.PortalActorVia{ActorSkelName: "demo.Actor"}, WebgwConfig: &watched.PortalWebgwConfig{WebName: "demo.Web"},
 				}),
 				watched.FormatWebRegistrationKey("demo.Web", "demo", "instance"): vcode.MustMarshalJsonS(watched.WebRegistration{
 					Endpoint: endpoint + "/web/proxy/in/instance/demo.Web", WebSkelName: "demo.Web", AppName: "demo", AppInstanceId: "instance",
@@ -204,7 +208,9 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 			}
 			endpoints := &epmgr.Manager{Context: ctx, Watch: watchtest.New(t, values)}
 			endpoints.DIInit()
-			sites := &site.Manager{Context: ctx, CurrentApp: meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"), Watch: watchtest.New(t, values), Epmgr: endpoints, Access: new(access.Access)}
+			accessManager := &access.Access{Context: ctx, Watch: watchtest.New(t, values), Epmgr: endpoints}
+			accessManager.DIInit()
+			sites := &site.Manager{Context: ctx, CurrentApp: meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"), Watch: watchtest.New(t, values), Epmgr: endpoints, Access: accessManager}
 			sites.DIInit()
 			entry := newEntry(spec.SchemeHTTP, 80, nil)
 			public := httptest.NewServer(entry)
@@ -216,6 +222,7 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 					entry.SetOrUpdateRules([]*_Rule{rule})
 					request, err := http.NewRequest(http.MethodPost, public.URL+"/api/a%2Fb/?q=%2F", strings.NewReader("payload"))
 					require.NoError(t, err)
+					request.Header.Set("Authorization", "Bearer native-token")
 					request.Host = "shop.example.com"
 					response, err := public.Client().Do(request)
 					require.NoError(t, err)
@@ -224,6 +231,7 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 					require.NoError(t, err)
 					require.Equal(t, http.StatusOK, response.StatusCode, string(body))
 					assert.Equal(t, "/web/proxy/in/instance/demo.Web"+targetPath+"/a%2Fb/?q=%2F", string(body))
+					assert.Equal(t, "Bearer native-token", response.Header.Get("X-Received-Authorization"))
 					assert.Equal(t, "POST", response.Header.Get("X-Received-Method"))
 					assert.Equal(t, "payload", response.Header.Get("X-Received-Body"))
 				}

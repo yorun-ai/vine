@@ -14,6 +14,8 @@ type RegistryCore struct {
 }
 
 func (m *RegistryCore) Register(reg AppRegistration) {
+	// Reject invalid schemas before publishing application status or endpoints.
+	m.SchemaRepo.SaveDomainSchemasJSON(reg.Name, reg.InstanceId, reg.DomainSchemas)
 	m.RegistryRepo.SaveAppStatus(&AppStatus{
 		Name:            reg.Name,
 		InstanceId:      reg.InstanceId,
@@ -54,7 +56,6 @@ func (m *RegistryCore) Register(reg AppRegistration) {
 			AppInstanceId:  reg.InstanceId,
 		})
 	}
-	m.SchemaRepo.SaveDomainSchemasJSON(reg.Name, reg.InstanceId, reg.DomainSchemas)
 }
 
 func (m *RegistryCore) Unregister(appName string, instanceId string) {

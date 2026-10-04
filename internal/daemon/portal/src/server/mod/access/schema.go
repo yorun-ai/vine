@@ -202,3 +202,53 @@ func (a *Access) releaseResourceCheckServiceLocked(key string) {
 func decodeResource(value string) *watched.SchemaResource {
 	return vcode.MustUnmarshalJsonS[*watched.SchemaResource](value)
 }
+
+// Web
+
+func (a *Access) webSchema(webSkelName string) (*watched.SchemaWeb, bool) {
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+
+	web, ok := a.websBySkelName[webSkelName]
+	return web, ok
+}
+
+func (a *Access) loadWebs() {
+	valuesByKey, subscription := a.Watch.LoadListAndSubscribe(a.Context, watched.FormatSchemaWebPrefix(), a.handleWebEvent)
+
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	for key, value := range valuesByKey {
+		a.setWebLocked(key, decodeWeb(value))
+	}
+	subscription.Start()
+}
+
+func (a *Access) handleWebEvent(event hubwatch.Event) {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	if event.Kind == hubwatch.EventKindDelete {
+		a.removeWebLocked(event.Key)
+		return
+	}
+	a.setWebLocked(event.Key, decodeWeb(event.Value))
+}
+
+func (a *Access) setWebLocked(key string, web *watched.SchemaWeb) {
+	a.removeWebLocked(key)
+	a.webNamesByKey[key] = web.SkelName
+	a.websBySkelName[web.SkelName] = web
+}
+
+func (a *Access) removeWebLocked(key string) {
+	if name, ok := a.webNamesByKey[key]; ok {
+		delete(a.websBySkelName, name)
+		delete(a.webNamesByKey, key)
+	}
+}
+
+func decodeWeb(value string) *watched.SchemaWeb {
+	return vcode.MustUnmarshalJsonS[*watched.SchemaWeb](value)
+}

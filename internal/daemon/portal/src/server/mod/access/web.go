@@ -13,10 +13,15 @@ type WebOperation struct {
 	Auther
 
 	ActorVia watched.PortalActorVia
+	WebName  string
 }
 
 func (o *WebOperation) Auth() bool {
-	return o.auth(o.writeError, o.setActor)
+	if !o.auth(o.writeError, o.setActor) {
+		return false
+	}
+	o.Request.Header.Del(headerAuthorization)
+	return true
 }
 
 func (o *WebOperation) setActor(actor meta.Actor) {

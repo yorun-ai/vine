@@ -17,6 +17,8 @@ const (
 	schemaResourceKeyFormat = schemaResourcePrefix + ":%s"
 )
 
+type SchemaWeb = skel.WebSchema
+
 type SchemaActor = skel.ActorSchema
 type SchemaService = skel.ServiceSchema
 type SchemaResource = skel.ResourceSchema
@@ -44,3 +46,9 @@ func FormatSchemaResourceKey(resourceSkelName string) string {
 func FormatSchemaResourcePrefix() string {
 	return schemaResourcePrefix
 }
+
+func FormatSchemaWebKey(webSkelName string) string {
+	return fmt.Sprintf("schema:web:%s", webSkelName)
+}
+
+func FormatSchemaWebPrefix() string { return "schema:web" }

@@ -53,6 +53,7 @@ rewrite_actor_imports() {
 
   perl -0pi -e '
     s#"go\.yorun\.ai/vine/core/skel"#"go.yorun.ai/vine/internal/core/skel"#g;
+    s#"go\.yorun\.ai/vine/core/meta"#"go.yorun.ai/vine/internal/core/meta"#g;
   ' "${target_dir}/actor.go"
 }
 

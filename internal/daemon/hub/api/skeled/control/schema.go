@@ -13,7 +13,7 @@ var _DomainSchema = &skel.DomainSchema{
 	Description: "Internal control API for Link and Portal",
 	Hash:        "4529348e",
 	Full:        true,
-	Generated:   &skel.GeneratedInfo{CompilerVersion: "v0.21.0"},
+	Generated:   &skel.GeneratedInfo{CompilerVersion: "v0.24.2"},
 
 	Data: []*skel.DataSchema{
 		{Name: "AppRegistration", SkelName: "vine.hub.control.AppRegistration", Description: "Link application instance information registered with Hub", Hash: "2569befb", Members: []*skel.MemberSchema{

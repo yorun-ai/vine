@@ -3,6 +3,7 @@ package access
 import (
 	"encoding/base64"
 	"encoding/json/v2"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
+	"go.yorun.ai/vine/internal/core/meta"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	"go.yorun.ai/vine/internal/core/skel"
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
@@ -228,5 +230,122 @@ func TestOptionalCredentialAuthForwarding(t *testing.T) {
 				})
 			}
 		})
+	}
+}
+
+func TestPortalAuthModes(t *testing.T) {
+	registerTestActorInfo()
+	for _, protocol := range []string{"rpc", "web"} {
+		t.Run(protocol, func(t *testing.T) {
+			for _, mode := range []skel.AuthMode{skel.AuthModeRequired, skel.AuthModeOptional, skel.AuthModeGuest, skel.AuthModeOff, "unknown"} {
+				t.Run(string(mode), func(t *testing.T) {
+					for _, credential := range []string{"missing", "valid", "malformed", "rejected", "unavailable"} {
+						t.Run(credential, func(t *testing.T) {
+							code := "OK"
+							if credential == "rejected" {
+								code = "UNAUTHORIZED"
+							}
+							if credential == "unavailable" {
+								code = "SERVICE_UNAVAILABLE"
+							}
+							endpoint := registerTestAuthService(t, http.StatusOK, code, `{"userId":"u1"}`)
+							values := testAuthValues(endpoint)
+							values[watched.FormatSchemaServiceKey("demo.UserService")] = vcode.MustMarshalJsonS(watched.SchemaService{
+								SkelName: "demo.UserService", Audiences: testUserActorAudiences(), AuthMode: mode,
+								Methods: []*skel.MethodSchema{{SkelName: "Get"}},
+							})
+							values[watched.FormatSchemaWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: "demo.Web", AuthMode: mode})
+							manager := testManager(t, values)
+							request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
+							authorization := "Key1 token123, key2 dXNlcjpwd2Q="
+							if credential == "missing" {
+								authorization = ""
+							}
+							if credential == "malformed" {
+								authorization = "Bearer invalid"
+							}
+							if credential != "missing" {
+								request.Header.Set(headerAuthorization, authorization)
+							}
+							response := httptest.NewRecorder()
+							var ok bool
+							var actor meta.Actor
+							if protocol == "rpc" {
+								setTestRequestHeaders(t, request)
+								operation := testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response)
+								ok = manager.AllowRpc(operation)
+								actor = operation.actor
+							} else {
+								setTestWebRequestHeaders(t, request)
+								operation := testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response)
+								operation.WebName = "demo.Web"
+								ok = manager.AuthWeb(operation)
+								actor = operation.actor
+							}
+							canonical := mode
+							want := (protocol == "web" && canonical == skel.AuthModeOff) ||
+								(credential == "missing" && (canonical == skel.AuthModeOptional || canonical == skel.AuthModeGuest)) ||
+								(credential == "valid" && (canonical == skel.AuthModeRequired || canonical == skel.AuthModeOptional))
+							require.Equal(t, want, ok, response.Body.String())
+							if canonical == skel.AuthModeGuest && credential == "valid" {
+								require.Contains(t, response.Body.String(), "endpoint only allows guests")
+								require.True(t, actor.IsAuthenticated(), "guest admission must follow successful authentication")
+							}
+							if ok {
+								require.Equal(t, canonical == skel.AuthModeOff || credential == "missing", actor.IsAnonymous())
+							}
+							if ok && (protocol == "rpc" || canonical != skel.AuthModeOff) {
+								require.NotContains(t, request.Header, headerAuthorization)
+							}
+							if protocol == "web" && (!ok || canonical == skel.AuthModeOff) {
+								require.Equal(t, authorization, request.Header.Get(headerAuthorization))
+							}
+						})
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestPortalRejectsEmptyAndDuplicateAuthorization(t *testing.T) {
+	for _, protocol := range []string{"rpc", "web"} {
+		for _, mode := range []skel.AuthMode{skel.AuthModeRequired, skel.AuthModeOptional, skel.AuthModeGuest, skel.AuthModeUnset, skel.AuthModeOff} {
+			if protocol == "rpc" && mode == skel.AuthModeOff {
+				continue
+			}
+			for _, headers := range [][]string{{""}, {"", "Bearer invalid"}, {"Key1 token, key2 token", "Bearer invalid"}, {"Key1 token, key2 token", "Key1 token, key2 token"}} {
+				t.Run(fmt.Sprintf("%s/%s/%q", protocol, mode, headers), func(t *testing.T) {
+					values := testAuthValues("")
+					values[watched.FormatSchemaWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: "demo.Web", AuthMode: mode})
+					values[watched.FormatSchemaServiceKey("demo.UserService")] = vcode.MustMarshalJsonS(watched.SchemaService{SkelName: "demo.UserService", AuthMode: mode, Audiences: testUserActorAudiences(), Methods: []*skel.MethodSchema{{SkelName: "Get"}}})
+					manager := testManager(t, values)
+					request := httptest.NewRequest(http.MethodPost, "http://demo.local", nil)
+					request.Header[headerAuthorization] = append([]string(nil), headers...)
+					response := httptest.NewRecorder()
+					var ok bool
+					if protocol == "web" {
+						setTestWebRequestHeaders(t, request)
+						operation := testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response)
+						operation.WebName = "demo.Web"
+						ok = manager.AuthWeb(operation)
+					} else {
+						setTestRequestHeaders(t, request)
+						ok = manager.AllowRpc(testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response))
+					}
+					if mode == skel.AuthModeOff {
+						require.True(t, ok)
+						require.Equal(t, headers, request.Header.Values(headerAuthorization))
+					} else {
+						require.False(t, ok)
+						if protocol == "rpc" {
+							require.Equal(t, "UNAUTHORIZED", response.Header().Get(rpchttp.HeaderRpcStatus), response.Body.String())
+						} else {
+							require.Equal(t, http.StatusUnauthorized, response.Code, response.Body.String())
+						}
+					}
+				})
+			}
+		}
 	}
 }

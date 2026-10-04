@@ -58,7 +58,7 @@ func TestManagerHandlesServiceSchemaEvents(t *testing.T) {
 			SkelName: "demo.UserService",
 			Hash:     "service-main",
 			Methods: []*skel.MethodSchema{
-				{SkelName: "Get", AuthMode: skel.AuthModeAuth},
+				{SkelName: "Get", AuthMode: skel.AuthModeRequired},
 			},
 		}),
 	})
@@ -66,7 +66,7 @@ func TestManagerHandlesServiceSchemaEvents(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "service-main", service.Hash)
 	require.Len(t, service.Methods, 1)
-	assert.Equal(t, skel.AuthModeAuth, service.Methods[0].AuthMode)
+	assert.Equal(t, skel.AuthModeRequired, service.Methods[0].AuthMode)
 
 	manager.handleServiceEvent(hubwatch.Event{
 		Kind: hubwatch.EventKindDelete,
@@ -74,4 +74,21 @@ func TestManagerHandlesServiceSchemaEvents(t *testing.T) {
 	})
 	_, ok = manager.serviceSchema("demo.UserService")
 	assert.False(t, ok)
+}
+
+func TestManagerHandlesWebSchemaEvents(t *testing.T) {
+	key := watched.FormatSchemaWebKey("demo.Web")
+	manager := testManager(t, map[string]string{key: vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: "demo.Web", AuthMode: skel.AuthModeRequired})})
+	schema, ok := manager.webSchema("demo.Web")
+	require.True(t, ok)
+	require.Equal(t, skel.AuthModeRequired, schema.AuthMode)
+	manager.handleWebEvent(hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: key,
+		Value: vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: "demo.Web", AuthMode: skel.AuthModeGuest}),
+	})
+	schema, ok = manager.webSchema("demo.Web")
+	require.True(t, ok)
+	require.Equal(t, skel.AuthModeGuest, schema.AuthMode)
+	manager.handleWebEvent(hubwatch.Event{Kind: hubwatch.EventKindDelete, Key: key})
+	_, ok = manager.webSchema("demo.Web")
+	require.False(t, ok)
 }

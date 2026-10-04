@@ -28,6 +28,7 @@ type Syncer struct {
 	schemaActorHashes    map[string]string
 	schemaResourceHashes map[string]string
 	schemaServiceHashes  map[string]string
+	schemaWebHashes      map[string]string
 }
 
 func (s *Syncer) DIInit() {
@@ -41,6 +42,7 @@ func (s *Syncer) DIInit() {
 	s.schemaActorHashes = map[string]string{}
 	s.schemaResourceHashes = map[string]string{}
 	s.schemaServiceHashes = map[string]string{}
+	s.schemaWebHashes = map[string]string{}
 }
 
 func (s *Syncer) SyncAppConfig(item *core.AppConfig) {

@@ -14,6 +14,7 @@ func (s *Syncer) SyncSchemas(domainViews []core.DomainSchemaView) {
 	nextActorHashes := map[string]string{}
 	nextResourceHashes := map[string]string{}
 	nextServiceHashes := map[string]string{}
+	nextWebHashes := map[string]string{}
 	for _, view := range domainViews {
 		for _, actorVersion := range view.Actors {
 			if !actorVersion.Main {
@@ -48,6 +49,16 @@ func (s *Syncer) SyncSchemas(domainViews []core.DomainSchemaView) {
 			}
 			nextServiceHashes[service.SkelName] = service.Hash
 		}
+		for _, webVersion := range view.Webs {
+			if !webVersion.Main {
+				continue
+			}
+			web := webVersion.Schema
+			if oldHash, ok := s.schemaWebHashes[web.SkelName]; !ok || oldHash != web.Hash {
+				batch.Set(watched.FormatSchemaWebKey(web.SkelName), vcode.MustMarshalJsonS(web))
+			}
+			nextWebHashes[web.SkelName] = web.Hash
+		}
 	}
 	for actorSkelName := range s.schemaActorHashes {
 		if _, ok := nextActorHashes[actorSkelName]; !ok {
@@ -64,10 +75,16 @@ func (s *Syncer) SyncSchemas(domainViews []core.DomainSchemaView) {
 			batch.Delete(watched.FormatSchemaServiceKey(serviceSkelName))
 		}
 	}
+	for webSkelName := range s.schemaWebHashes {
+		if _, ok := nextWebHashes[webSkelName]; !ok {
+			batch.Delete(watched.FormatSchemaWebKey(webSkelName))
+		}
+	}
 	batch.Notify()
 	s.schemaActorHashes = nextActorHashes
 	s.schemaResourceHashes = nextResourceHashes
 	s.schemaServiceHashes = nextServiceHashes
+	s.schemaWebHashes = nextWebHashes
 }
 
 // WriteSchemas only writes schema keys and does not join the diff/delete lifecycle.
@@ -99,6 +116,13 @@ func (s *Syncer) WriteSchemas(domainViews []core.DomainSchemaView) {
 				continue
 			}
 			s.WatchServer.SetAndNotify(watched.FormatSchemaServiceKey(service.SkelName), vcode.MustMarshalJsonS(service))
+		}
+		for _, webVersion := range view.Webs {
+			if !webVersion.Main {
+				continue
+			}
+			web := webVersion.Schema
+			s.WatchServer.SetAndNotify(watched.FormatSchemaWebKey(web.SkelName), vcode.MustMarshalJsonS(web))
 		}
 	}
 }

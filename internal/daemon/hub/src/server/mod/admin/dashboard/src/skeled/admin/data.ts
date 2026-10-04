@@ -1210,6 +1210,8 @@ export type SkeletonWebItem = {
   deprecated:       boolean;
   /** Web deprecation reason. */
   deprecatedReason: string;
+  /** Authentication mode. */
+  authMode:         string;
   /** Accessible Actor List. */
   actors:           Array<SkeletonActorRef>;
 }

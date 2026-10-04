@@ -2,6 +2,7 @@ package access
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
@@ -49,6 +50,7 @@ func TestAuthWebParsesAuthorization(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, actor.IsAuthenticated())
 	assert.JSONEq(t, `{"userId":"u1"}`, actor.RawInfo())
+	require.NotContains(t, request.Header, headerAuthorization)
 }
 
 func TestAuthWebRejectsBadAuthorizationAsUnauthorized(t *testing.T) {
@@ -205,5 +207,40 @@ func TestAuthWebNativeCredentialsReachBackend(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, response.Body.Close())
 		require.Equal(t, tc.status, response.StatusCode)
+	}
+}
+
+func TestAuthWebRejectsMissingNamedSchema(t *testing.T) {
+	manager := testManager(t, nil)
+	request := httptest.NewRequest(http.MethodGet, "http://demo.local/", nil)
+	response := httptest.NewRecorder()
+	operation := &WebOperation{Auther: Auther{Request: request, Response: response}, WebName: "demo.Missing"}
+	require.False(t, manager.AuthWeb(operation))
+	require.Equal(t, http.StatusServiceUnavailable, response.Code)
+}
+
+func TestAuthWebLegacySchemaPreservesDefaultBehavior(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		t.Run(fmt.Sprint(enabled), func(t *testing.T) {
+			values := testAuthValues("")
+			actor := testAuthActorSchema()
+			actor.AuthEnabled = enabled
+			values[watched.FormatSchemaActorKey(actor.SkelName)] = vcode.MustMarshalJsonS(actor)
+			// Previously generated Web schemas have no authMode field.
+			values[watched.FormatSchemaWebKey("demo.Web")] = `{"skelName":"demo.Web","audiences":[]}`
+			manager := testManager(t, values)
+			for _, authorization := range []string{"", "Bearer malformed"} {
+				request := httptest.NewRequest(http.MethodGet, "http://demo.local/", nil)
+				setTestWebRequestHeaders(t, request)
+				if authorization != "" {
+					request.Header.Set(headerAuthorization, authorization)
+				}
+				response := httptest.NewRecorder()
+				operation := testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: actor.SkelName}, request, response)
+				operation.WebName = "demo.Web"
+				require.Equal(t, authorization == "" || !enabled, manager.AuthWeb(operation))
+				require.Equal(t, authorization, request.Header.Get(headerAuthorization))
+			}
+		})
 	}
 }

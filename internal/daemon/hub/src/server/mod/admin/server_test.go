@@ -9,8 +9,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"go.yorun.ai/vine/internal/core/meta"
+	rpcserver "go.yorun.ai/vine/internal/core/rpc/server"
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
+	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
+	"go.yorun.ai/vine/internal/core/skel"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
+	impl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin"
 )
 
 func TestServerOpensAdminListenerForInprocHub(t *testing.T) {
@@ -97,4 +104,44 @@ func TestServerServesAdminAPIAndDashboardBuild(t *testing.T) {
 	if !strings.Contains(response.Body.String(), `<div id="app"></div>`) {
 		t.Fatalf("expected the embedded Dashboard, got: %s", response.Body.String())
 	}
+}
+
+func TestAdminApiAudienceAndAuthenticationContract(t *testing.T) {
+	for _, domain := range skel.RegisteredDomainSchemas() {
+		if domain.Domain != "vine.hub.admin" {
+			continue
+		}
+		require.Len(t, domain.Actors, 1)
+		actor := domain.Actors[0]
+		require.Equal(t, "vine.hub.admin.AdminActor", actor.SkelName)
+		require.Equal(t, []skel.ActorVia{skel.ActorViaClient}, actor.Vias)
+		require.False(t, actor.AuthEnabled, "the admin listener has no actor login service")
+		require.Len(t, domain.Services, len(HandlerTypes()))
+		for _, service := range domain.Services {
+			require.True(t, service.Api, service.SkelName)
+			require.Len(t, service.Audiences, 1, service.SkelName)
+			require.True(t, service.HasAudience(actor.SkelName, skel.ActorViaClient), service.SkelName)
+			require.Equal(t, skel.AuthModeOptional, service.AuthMode, service.SkelName)
+		}
+		return
+	}
+	t.Fatal("missing generated Hub admin schema")
+}
+
+func TestAdminApiRemainsCallableFromDashboardWithoutCredentials(t *testing.T) {
+	backend := rpcserver.New(rpcserver.Option{
+		App:          meta.MustNewApp("vine.hub", "0.0.0", "123e4567-e89b-12d3-a456-426614174001"),
+		HandlerTypes: []reflect.Type{reflect.TypeFor[*impl.AdminApiServiceServerImpl]()},
+		Executor:     rpcserver.NewDefaultExecutor(rpcserver.With(new(configaccess.Access))),
+	})
+	server := new(Server{rpcHTTPHandler: backend.HTTPHandler()})
+	request := httptest.NewRequest(http.MethodPost, "http://hub.local/api/invoke/vine.hub.admin.AdminApiService/readOnly", strings.NewReader(`{"arguments":null}`))
+	request.Header.Set(rpchttp.HeaderContentType, rpchttp.ContentTypeJson)
+	request.Header.Set(rpchttp.HeaderAccept, rpchttp.ContentTypeJson)
+	rpchttp.EncodeTraceToHeader(request.Header, meta.InitialTrace())
+	rpchttp.EncodeClientToHeader(request.Header, meta.MustNewApp("vine.hub.dashboard", "0.0.1", "123e4567-e89b-12d3-a456-426614174002"))
+	response := httptest.NewRecorder()
+	server.ServeHTTP(response, request)
+	require.Equal(t, "OK", response.Header().Get(rpchttp.HeaderRpcStatus), response.Body.String())
+	require.Contains(t, response.Body.String(), `"result":false`)
 }
