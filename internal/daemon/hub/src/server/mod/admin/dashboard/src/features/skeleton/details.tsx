@@ -535,9 +535,7 @@ function MethodList({
               />
             </code>
             {method.authMode ? (
-              <Badge
-                variant={method.authMode === 'noauth' ? 'secondary' : 'outline'}
-              >
+              <Badge variant="outline">
                 {method.authMode}
               </Badge>
             ) : null}
@@ -911,7 +909,7 @@ export function SkeletonItemBadges({
         <Badge variant="outline">public</Badge>
       ) : null}
       {'authMode' in item && item.authMode ? (
-        <Badge variant={item.authMode === 'noauth' ? 'secondary' : 'outline'}>
+        <Badge variant="outline">
           {item.authMode}
         </Badge>
       ) : null}

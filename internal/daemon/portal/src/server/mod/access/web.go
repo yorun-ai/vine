@@ -16,14 +16,6 @@ type WebOperation struct {
 	WebName  string
 }
 
-func (o *WebOperation) Auth() bool {
-	if !o.auth(o.writeError, o.setActor) {
-		return false
-	}
-	o.Request.Header.Del(headerAuthorization)
-	return true
-}
-
 func (o *WebOperation) setActor(actor meta.Actor) {
 	o.actor = actor
 	o.Request.Header.Set(webspec.HeaderWebActor, meta.EncodeActorToBase64(actor))

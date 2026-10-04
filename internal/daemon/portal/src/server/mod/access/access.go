@@ -6,7 +6,6 @@ import (
 
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/ex"
-	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/mtls"
 	"go.yorun.ai/vine/internal/core/skel"
 	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
@@ -92,6 +91,7 @@ func (a *Access) AuthWeb(operation *WebOperation) bool {
 	operation.endpointManager = a.Epmgr
 	operation.identity = a.Identity
 
+	mode := defaultAuthMode
 	if operation.WebName != "" {
 		schema, ok := a.webSchema(operation.WebName)
 		if !ok {
@@ -99,34 +99,14 @@ func (a *Access) AuthWeb(operation *WebOperation) bool {
 			return false
 		}
 		if schema.AuthMode != "" && schema.AuthMode != skel.AuthModeUnset {
-			actorSchema, ok := a.actorSchema(operation.ActorVia.ActorSkelName)
-			if !ok {
-				operation.writeError(ex.ClientForbidden, "not allowed")
-				return false
-			}
-			operation.actorSchema = actorSchema
-			return operation.authenticate(schema.AuthMode, operation.writeError, operation.setActor)
+			mode = schema.AuthMode
 		}
 	}
-
-	if len(operation.Request.Header.Values(headerAuthorization)) == 0 {
-		operation.setActor(meta.NewAnonymousActor())
-		return true
-	}
-
 	actorSchema, ok := a.actorSchema(operation.ActorVia.ActorSkelName)
 	if !ok {
 		operation.writeError(ex.ClientForbidden, "not allowed")
 		return false
 	}
 	operation.actorSchema = actorSchema
-
-	if !operation.actorSchema.AuthEnabled {
-		// This actor does not delegate authentication to Vine. Leave native
-		// credentials for the Web handler and replace untrusted actor metadata.
-		operation.setActor(meta.NewAnonymousActor())
-		return true
-	}
-
-	return operation.Auth()
+	return operation.authenticate(mode, operation.writeError, operation.setActor)
 }
