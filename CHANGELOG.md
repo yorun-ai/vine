@@ -8,6 +8,33 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.25.1] - 2026-10-04
+
+### Added
+
+- Runtime service and event schemas retain extension-contract metadata.
+- Hub skeleton APIs expose extension markers; Dashboard lists, details and
+  domain cards distinguish extension contracts from ordinary public contracts.
+
+### Fixed
+
+- Extension services no longer enter Portal API classification through legacy
+  actor, authentication or permission rules.
+
+### Changed
+
+- Upgrade Go dependencies and their required transitive versions. Embedded NATS
+  follows NATS 2.15's default limit of 1000 consumers per stream.
+- Stable Kubernetes overlays use v0.25.1 for Hub, Link and Portal images.
+
+### Upgrade Notes
+
+- Existing generated contracts keep their behavior when extension markers are
+  absent. Regenerate extension contracts with an ext-capable skelc and compile
+  against this Vine release to preserve the markers.
+- Deployments needing more than 1000 consumers per embedded NATS stream must
+  account for the updated default limit.
+
 ## [0.25.0] - 2026-10-02
 
 ### Added
@@ -1418,7 +1445,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.25.0...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.25.1...HEAD
+[0.25.1]: https://github.com/yorun-ai/vine/compare/v0.25.0...v0.25.1
 [0.25.0]: https://github.com/yorun-ai/vine/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/yorun-ai/vine/compare/v0.23.2...v0.24.0
 [0.23.2]: https://github.com/yorun-ai/vine/compare/v0.23.1...v0.23.2
