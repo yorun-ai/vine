@@ -412,6 +412,7 @@ func toServerSkeletonServiceItem(version _SkeletonVersionFields, schema *skel.Se
 		DeprecatedReason: schema.DeprecatedReason,
 		Pub:              schema.Pub,
 		Api:              schema.Api,
+		Ext:              schema.Ext,
 		AuthMode:         string(schema.AuthMode),
 		Require:          toServerSkeletonPermExpr(schema.Require),
 		Actors:           toServerSkeletonActorRefs(schema.Audiences),
@@ -527,6 +528,7 @@ func toServerSkeletonEventItem(version _SkeletonVersionFields, schema *skel.Even
 		Deprecated:       schema.Deprecated,
 		DeprecatedReason: schema.DeprecatedReason,
 		Pub:              schema.Pub,
+		Ext:              schema.Ext,
 		Sensitive:        schema.Sensitive,
 		Fields:           toServerSkeletonFields(schema.Members),
 	}

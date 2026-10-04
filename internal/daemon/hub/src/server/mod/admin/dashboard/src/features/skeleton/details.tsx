@@ -904,7 +904,10 @@ export function SkeletonItemBadges({
       {'api' in item && item.api ? (
         <Badge variant="outline">api</Badge>
       ) : null}
-      {'pub' in item && item.pub ? (
+      {'ext' in item && item.ext ? (
+        <Badge variant="outline">ext</Badge>
+      ) : null}
+      {'pub' in item && item.pub && !('ext' in item && item.ext) ? (
         <Badge variant="outline">public</Badge>
       ) : null}
       {'authMode' in item && item.authMode ? (

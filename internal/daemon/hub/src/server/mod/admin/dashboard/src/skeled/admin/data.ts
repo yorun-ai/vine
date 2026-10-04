@@ -945,6 +945,8 @@ export type SkeletonEventItem = {
   deprecatedReason: string;
   /** Whether the item is public. */
   pub:              boolean;
+  /** Whether the event is an extension contract. */
+  ext:              boolean;
   /** Whether the event payload is sensitive. */
   sensitive:        boolean;
   /** Field list. */
@@ -1125,6 +1127,8 @@ export type SkeletonServiceItem = {
   /** Whether the item is public. */
   pub:              boolean;
   api:              boolean;
+  /** Whether the service is an extension contract. */
+  ext:              boolean;
   /** Authentication mode. */
   authMode:         string;
   /** Permission requirements. */

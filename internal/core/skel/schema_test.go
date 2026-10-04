@@ -221,6 +221,27 @@ func TestServiceSchemaHasAudienceMatchesActorVia(t *testing.T) {
 	}
 }
 
+func TestServiceSchemaClientApiExcludesExtensions(t *testing.T) {
+	for name, service := range map[string]*ServiceSchema{
+		"explicit api":          {Api: true},
+		"audience":              {Audiences: []*ActorAudienceSchema{{SkelName: "demo.user.UserActor"}}},
+		"authentication":        {AuthMode: AuthModeNoAuth},
+		"permission":            {Require: &PermRequire{}},
+		"method authentication": {Methods: []*MethodSchema{{AuthMode: AuthModeAuth}}},
+		"method permission":     {Methods: []*MethodSchema{{Require: &PermRequire{}}}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if !service.ClientApi() {
+				t.Fatal("expected existing API classification")
+			}
+			service.Ext = true
+			if service.ClientApi() {
+				t.Fatal("extension must be excluded from API classification")
+			}
+		})
+	}
+}
+
 func TestRegisterDomainSchemaPanicsOnDuplicateFullDomain(t *testing.T) {
 	registry := NewRegistry()
 

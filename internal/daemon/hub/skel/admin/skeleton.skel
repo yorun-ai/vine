@@ -193,6 +193,9 @@ data SkeletonServiceItem {
 
     api: bool
 
+    @desc("Whether the service is an extension contract")
+    ext: bool
+
     @desc("Authentication mode")
     authMode: string
 
@@ -489,6 +492,9 @@ data SkeletonEventItem {
 
     @desc("Whether the item is public")
     pub: bool
+
+    @desc("Whether the event is an extension contract")
+    ext: bool
 
     @desc("Whether the event payload is sensitive")
     sensitive: bool
