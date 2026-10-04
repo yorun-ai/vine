@@ -70,7 +70,7 @@ func (o *RpcOperation) loadMethodSchema() bool {
 
 func (o *RpcOperation) authMode() skel.AuthMode {
 	authMode := o.methodSchema.AuthMode
-	if authMode == "" || authMode == skel.AuthModeUnset {
+	if authMode == "" || authMode == skel.AuthModeUnset || authMode == skel.AuthModeInherit {
 		authMode = o.serviceSchema.AuthMode
 	}
 	if authMode == "" || authMode == skel.AuthModeUnset {

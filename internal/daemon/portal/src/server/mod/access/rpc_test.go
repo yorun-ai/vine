@@ -411,6 +411,7 @@ func TestRpcAccessOperationParseAuthMode(t *testing.T) {
 		want        skel.AuthMode
 	}{
 		{"method overrides service", skel.AuthModeOptional, skel.AuthModeRequired, skel.AuthModeRequired},
+		{"inherits service", skel.AuthModeOptional, skel.AuthModeInherit, skel.AuthModeOptional},
 		{"falls back to service", skel.AuthModeOptional, skel.AuthModeUnset, skel.AuthModeOptional},
 		{"defaults to required", skel.AuthModeUnset, skel.AuthModeUnset, skel.AuthModeRequired},
 		{"empty method inherits service", skel.AuthModeOptional, "", skel.AuthModeOptional},

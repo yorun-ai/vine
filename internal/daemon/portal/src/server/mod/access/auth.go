@@ -154,7 +154,7 @@ func (o *Auther) authenticate(mode skel.AuthMode, writeError _AuthErrorWriter, s
 	case skel.AuthModeOff:
 		setActor(meta.NewAnonymousActor())
 		return true
-	case skel.AuthModeOptional, skel.AuthModeGuest:
+	case skel.AuthModeOptional, skel.AuthModeAnonymous:
 		if len(o.Request.Header.Values(headerAuthorization)) == 0 {
 			setActor(meta.NewAnonymousActor())
 			o.Request.Header.Del(headerAuthorization)
@@ -172,8 +172,8 @@ func (o *Auther) authenticate(mode skel.AuthMode, writeError _AuthErrorWriter, s
 	if !o.auth(writeError, setActor) {
 		return false
 	}
-	if mode == skel.AuthModeGuest {
-		writeError(ex.ClientForbidden, "endpoint only allows guests")
+	if mode == skel.AuthModeAnonymous {
+		writeError(ex.ClientForbidden, "endpoint only allows anonymous access")
 		return false
 	}
 	// Portal forwards the admitted actor without the client's credentials.

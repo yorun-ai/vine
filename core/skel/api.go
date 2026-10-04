@@ -137,19 +137,24 @@ const (
 	// ActorViaOpenAPI indicates that an actor came through an OpenAPI entry.
 	ActorViaOpenAPI = internalskel.ActorViaOpenAPI
 
-	// AuthModeUnset inherits authentication from the enclosing context or uses its default behavior.
-	AuthModeUnset = internalskel.AuthModeUnset
+	// AuthModeInherit uses the enclosing service authentication mode and is valid only on methods.
+	AuthModeInherit = internalskel.AuthModeInherit
 	// AuthModeRequired requires valid credentials.
 	AuthModeRequired = internalskel.AuthModeRequired
 	// AuthModeOptional permits missing credentials but rejects invalid credentials.
 	AuthModeOptional = internalskel.AuthModeOptional
-	// AuthModeGuest permits only requests without credentials.
-	AuthModeGuest = internalskel.AuthModeGuest
-	// AuthModeOff skips Portal authentication for Web, preserving native credentials.
+	// AuthModeAnonymous permits only requests without credentials.
+	AuthModeAnonymous = internalskel.AuthModeAnonymous
+	// AuthModeOff skips portal authentication for web, preserving native credentials.
 	// Rpc services and methods cannot use this mode.
 	AuthModeOff = internalskel.AuthModeOff
 
 	// Legacy authentication values remain supported for previously generated contracts.
+
+	// AuthModeUnset is the legacy unspecified authentication mode.
+	//
+	// Deprecated: Use AuthModeInherit for methods or AuthModeRequired for services and web.
+	AuthModeUnset = internalskel.AuthModeUnset
 
 	// AuthModeAuth is the legacy spelling of AuthModeRequired.
 	//

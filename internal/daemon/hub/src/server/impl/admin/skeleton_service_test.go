@@ -1129,7 +1129,7 @@ func (r *_SkeletonServiceSchemaRepo) ListAppConfigTypeSchemas() ([]*skel.ConfigS
 }
 
 func TestSkeletonWebAuthModes(t *testing.T) {
-	for _, mode := range []skel.AuthMode{"", skel.AuthModeUnset, skel.AuthModeRequired, skel.AuthModeOptional, skel.AuthModeGuest, skel.AuthModeOff} {
+	for _, mode := range []skel.AuthMode{"", skel.AuthModeUnset, skel.AuthModeRequired, skel.AuthModeOptional, skel.AuthModeAnonymous, skel.AuthModeOff} {
 		t.Run(string(mode), func(t *testing.T) {
 			item := toServerSkeletonWebItem(_SkeletonVersionFields{}, new(skel.WebSchema{SkelName: "demo.Web", AuthMode: mode}))
 			require.Equal(t, string(mode), item.AuthMode)

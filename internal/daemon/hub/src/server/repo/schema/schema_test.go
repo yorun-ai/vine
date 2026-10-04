@@ -84,8 +84,10 @@ func TestSchemaRepoConvertsLegacyAuthModesAtBothInputs(t *testing.T) {
 		t.Run(input, func(t *testing.T) {
 			source := testDomainSchema()
 			source.Services[0].AuthMode = skel.AuthModeAuth
+			source.Services = append(source.Services, new(skel.ServiceSchema{SkelName: "demo.EmptyService"}), new(skel.ServiceSchema{SkelName: "demo.UnsetService", AuthMode: skel.AuthModeUnset}))
 			source.Services[0].Methods = []*skel.MethodSchema{{SkelName: "get", Hash: "method", AuthMode: skel.AuthModeNoAuth}, {SkelName: "list", Hash: "list", AuthMode: skel.AuthModeUnset}}
 			source.Webs[0].AuthMode = skel.AuthModeNoAuth
+			source.Webs = append(source.Webs, new(skel.WebSchema{SkelName: "demo.EmptyWeb", Hash: "empty-web"}), new(skel.WebSchema{SkelName: "demo.UnsetWeb", Hash: "unset-web", AuthMode: skel.AuthModeUnset}))
 			repo := new(SchemaRepo)
 			if input == "json" {
 				repo.SaveDomainSchemasJSON("demo", "instance", []skel.JSON{skel.JSON(vcode.MustMarshalJsonS(source))})
@@ -94,9 +96,15 @@ func TestSchemaRepoConvertsLegacyAuthModesAtBothInputs(t *testing.T) {
 			}
 			registered := repo.byHash[source.Hash].Schema
 			require.Equal(t, skel.AuthModeRequired, registered.Services[0].AuthMode)
+			require.Equal(t, skel.AuthModeRequired, registered.Services[1].AuthMode)
+			require.Equal(t, skel.AuthModeRequired, registered.Services[2].AuthMode)
 			require.Equal(t, skel.AuthModeOptional, registered.Services[0].Methods[0].AuthMode)
-			require.Equal(t, skel.AuthModeUnset, registered.Services[0].Methods[1].AuthMode)
+			require.Equal(t, skel.AuthModeInherit, registered.Services[0].Methods[1].AuthMode)
 			require.Equal(t, skel.AuthModeOff, registered.Webs[0].AuthMode)
+			require.Equal(t, skel.AuthModeRequired, registered.Webs[1].AuthMode)
+			require.Equal(t, skel.AuthModeRequired, registered.Webs[2].AuthMode)
+			require.Equal(t, "empty-web", registered.Webs[1].Hash)
+			require.Equal(t, "unset-web", registered.Webs[2].Hash)
 			require.Equal(t, source.Hash, registered.Hash)
 		})
 	}

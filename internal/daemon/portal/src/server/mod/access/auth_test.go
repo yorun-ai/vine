@@ -237,7 +237,7 @@ func TestPortalAuthModes(t *testing.T) {
 	registerTestActorInfo()
 	for _, protocol := range []string{"rpc", "web"} {
 		t.Run(protocol, func(t *testing.T) {
-			for _, mode := range []skel.AuthMode{skel.AuthModeRequired, skel.AuthModeOptional, skel.AuthModeGuest, skel.AuthModeOff, "unknown"} {
+			for _, mode := range []skel.AuthMode{skel.AuthModeRequired, skel.AuthModeOptional, skel.AuthModeAnonymous, skel.AuthModeOff, "unknown"} {
 				t.Run(string(mode), func(t *testing.T) {
 					for _, credential := range []string{"missing", "valid", "malformed", "rejected", "unavailable"} {
 						t.Run(credential, func(t *testing.T) {
@@ -284,12 +284,12 @@ func TestPortalAuthModes(t *testing.T) {
 							}
 							canonical := mode
 							want := (protocol == "web" && canonical == skel.AuthModeOff) ||
-								(credential == "missing" && (canonical == skel.AuthModeOptional || canonical == skel.AuthModeGuest)) ||
+								(credential == "missing" && (canonical == skel.AuthModeOptional || canonical == skel.AuthModeAnonymous)) ||
 								(credential == "valid" && (canonical == skel.AuthModeRequired || canonical == skel.AuthModeOptional))
 							require.Equal(t, want, ok, response.Body.String())
-							if canonical == skel.AuthModeGuest && credential == "valid" {
-								require.Contains(t, response.Body.String(), "endpoint only allows guests")
-								require.True(t, actor.IsAuthenticated(), "guest admission must follow successful authentication")
+							if canonical == skel.AuthModeAnonymous && credential == "valid" {
+								require.Contains(t, response.Body.String(), "endpoint only allows anonymous access")
+								require.True(t, actor.IsAuthenticated(), "anonymous admission must follow successful authentication")
 							}
 							if ok {
 								require.Equal(t, canonical == skel.AuthModeOff || credential == "missing", actor.IsAnonymous())
@@ -310,7 +310,7 @@ func TestPortalAuthModes(t *testing.T) {
 
 func TestPortalRejectsEmptyAndDuplicateAuthorization(t *testing.T) {
 	for _, protocol := range []string{"rpc", "web"} {
-		for _, mode := range []skel.AuthMode{skel.AuthModeRequired, skel.AuthModeOptional, skel.AuthModeGuest, skel.AuthModeUnset, skel.AuthModeOff} {
+		for _, mode := range []skel.AuthMode{skel.AuthModeRequired, skel.AuthModeOptional, skel.AuthModeAnonymous, skel.AuthModeUnset, skel.AuthModeOff} {
 			if protocol == "rpc" && mode == skel.AuthModeOff {
 				continue
 			}

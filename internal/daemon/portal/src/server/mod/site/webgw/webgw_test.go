@@ -15,6 +15,7 @@ import (
 
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/core/meta"
+	"go.yorun.ai/vine/internal/core/skel"
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
@@ -539,16 +540,18 @@ func newTestWebGatewayWithCors(t *testing.T, valuesByKey map[string]string, cors
 	for _, name := range []string{"admin@demo.app", "home@demo.app"} {
 		key := watched.FormatSchemaWebKey(name)
 		if _, exists := valuesByKey[key]; !exists {
-			valuesByKey[key] = vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: name})
+			valuesByKey[key] = vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: name, AuthMode: skel.AuthModeOptional})
 		}
 	}
+	valuesByKey[watched.FormatSchemaActorKey("demo.ClientActor")] = vcode.MustMarshalJsonS(watched.SchemaActor{SkelName: "demo.ClientActor"})
 	epmgrManager := newTestEpmgr(t, valuesByKey)
 	accessManager := &access.Access{Context: context.Background(), Watch: watchtest.New(t, valuesByKey), Epmgr: epmgrManager}
 	accessManager.DIInit()
 	return New(context.Background(), meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"), accessManager, epmgrManager, watched.PortalSite{
-		Name: "demo-web",
-		Type: "WEBGW",
-		Cors: cors,
+		Name:     "demo-web",
+		Type:     "WEBGW",
+		Cors:     cors,
+		ActorVia: watched.PortalActorVia{ActorSkelName: "demo.ClientActor", ActorVia: "client"},
 		WebgwConfig: &watched.PortalWebgwConfig{
 			WebName: "admin@demo.app",
 		},

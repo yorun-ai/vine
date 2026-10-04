@@ -73,25 +73,29 @@ In inproc and standalone modes:
 
 Use normal process mode to validate real network entries, TLS listeners, cross-process endpoint reachability, or registration lease expiry.
 
-Rpc service/method modes are `required`, `optional`, and `guest`; Web also supports
+Method `inherit` uses the service authentication mode. Registration converts
+empty and legacy `unset` method modes to `inherit`; services and web cannot use
+`inherit`.
+
+Rpc service/method modes are `required`, `optional`, and `anonymous`; Web also supports
 `off`. Local registration and Hub reject explicit Rpc `off`. Schema registration
 converts legacy `auth` to `required`, and `noauth` to `optional` for Rpc or `off` for Web. Rpc methods inherit the service mode, then default to
-`required` when both are omitted or `unset`. Web schemas without a mode retain
-the actor-dependent legacy behavior described below. Invalid supplied
+`required` when both are omitted or `unset`. Web empty and `unset` modes become `required` at schema registration. Invalid supplied
 credentials and auth-service errors never fall back to anonymous access when
 Portal authentication is enabled. Web `off` uses an anonymous actor and preserves
 Authorization for native authentication. Rpc and Web `required`, `optional`, and
-`guest` remove Authorization after admission, forwarding only the admitted actor.
-Legacy Web requests also remove Authorization after successful Vine authentication.
+`anonymous` remove Authorization after admission, forwarding only the admitted actor.
 
 Hub publishes selected Web schemas under `schema:web:*`; Portal subscribes to
 updates and deletes and rejects named Web requests when the schema is unavailable.
 Deploy matching Hub and Portal versions together: older Portal versions do not
 recognize the canonical `optional` and `off` values published by the upgraded Hub.
-Previously generated application contracts require no regeneration. Old Rpc `noauth`
+Previously generated web contracts now require authentication by default. To allow
+anonymous access or native authentication, explicitly select `optional` or `off`
+and regenerate the contracts. Old Rpc `noauth`
 now authenticates supplied credentials and rejects invalid credentials instead of
 silently admitting the request anonymously.
 
-A WEBGW site requires both `actorSkelName` and `actorVia`. When the actor has authentication disabled, Portal preserves the native Authorization header and replaces inbound actor metadata with an anonymous actor. When actor authentication is enabled, Portal validates supplied credentials through Vine and rejects failures without falling back to native authentication. An unknown configured actor is still rejected when credentials are supplied. Explicit Web modes override this legacy default.
+A WEBGW site requires both `actorSkelName` and `actorVia`. The configured actor must exist. Web authentication follows the declared mode; `required` rejects requests when the actor has no authentication configured. Only `off` preserves native Authorization credentials for the handler.
 
 When changing entry, discovery, authentication, or forwarding behavior, validate standalone/inproc and normal network deployments separately. Inproc mode establishes routing and subscription semantics only; it does not establish correct real-listener, TLS, disconnection, or lease behavior.

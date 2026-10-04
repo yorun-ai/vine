@@ -75,16 +75,19 @@ Inproc/standalone 模式下需要注意：
 
 修改入口、发现、认证或转发逻辑时，应分别验证 standalone/inproc 和普通网络部署。inproc 模式只保证路由与订阅语义，不代表真实监听、TLS、断连和租约行为已经覆盖。
 
-RPC service/method 支持 `required`、`optional`、`guest`，Web 另支持 `off`。
+
+method 的 `inherit` 表示继承 service 的认证模式。注册时将 method 的空值和旧 `unset`
+转为 `inherit`；service 和 web 不允许使用 `inherit`。
+
+RPC service/method 支持 `required`、`optional`、`anonymous`，Web 另支持 `off`。
 本地注册和 Hub 接收入口均拒绝 RPC 显式使用 `off`。旧值 `auth` 转为 `required`，
 RPC 的 `noauth` 转为 `optional`，Web 的 `noauth` 转为 `off`，Portal 只消费新值。RPC method 先继承 service，
-两者都省略或为 `unset` 时默认为 `required`。Web 未声明模式时保留原有依 actor 配置
-决定认证行为的默认值，显式模式覆盖默认值。启用 Portal 认证时，无效凭证和认证服务
+两者都省略或为 `unset` 时默认为 `required`。web 的空值和 `unset` 在注册入口转为 `required`。启用 Portal 认证时，无效凭证和认证服务
 错误均拒绝，不退回匿名。Web `off` 使用匿名 actor 并保留 Authorization，供 handler 自行认证。
-RPC 和 Web 的 `required`、`optional`、`guest` 在准入通过后删除 Authorization，
-仅向下传递已准入的 actor。旧 Web 请求通过 Vine 认证后也删除 Authorization。
+RPC 和 Web 的 `required`、`optional`、`anonymous` 在准入通过后删除 Authorization，
+仅向下传递已准入的 actor。
 
 Hub 在 `schema:web:*` 发布选中的 Web schema，Portal 订阅更新及删除事件；
 具名 Web 请求缺少 schema 时拒绝。Hub 与 Portal 必须配套升级：旧 Portal 不识别
-升级后 Hub 发布的 `optional`、`off` 值。旧应用生成的契约无需重新生成；旧 RPC
+升级后 Hub 发布的 `optional`、`off` 值。旧 web 契约现在默认要求认证；需要匿名访问或原生认证时，必须显式选择 `optional` 或 `off` 并重新生成。旧 RPC
 `noauth` 现在会认证提供的凭证，无效凭证会报错，不再隐式匿名放行。

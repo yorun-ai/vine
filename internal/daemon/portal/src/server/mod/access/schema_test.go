@@ -83,11 +83,11 @@ func TestManagerHandlesWebSchemaEvents(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, skel.AuthModeRequired, schema.AuthMode)
 	manager.handleWebEvent(hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: key,
-		Value: vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: "demo.Web", AuthMode: skel.AuthModeGuest}),
+		Value: vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: "demo.Web", AuthMode: skel.AuthModeAnonymous}),
 	})
 	schema, ok = manager.webSchema("demo.Web")
 	require.True(t, ok)
-	require.Equal(t, skel.AuthModeGuest, schema.AuthMode)
+	require.Equal(t, skel.AuthModeAnonymous, schema.AuthMode)
 	manager.handleWebEvent(hubwatch.Event{Kind: hubwatch.EventKindDelete, Key: key})
 	_, ok = manager.webSchema("demo.Web")
 	require.False(t, ok)

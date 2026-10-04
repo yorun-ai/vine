@@ -15,23 +15,19 @@ import (
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
+	"go.yorun.ai/vine/internal/core/skel"
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/util/vcode"
 )
 
-func TestAuthWebUsesAnonymousActorWithoutAuthorization(t *testing.T) {
-	access := testManager(t, nil)
+func TestAuthWebRequiresAuthorizationByDefault(t *testing.T) {
+	access := testManager(t, testAuthValues(""))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/ping", nil)
 	setTestWebRequestHeaders(t, request)
-
-	ok := access.AuthWeb(testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "missing.Actor"}, request, recorder))
-
-	require.True(t, ok)
-	actor, err := meta.DecodeActorFromBase64(request.Header.Get(webspec.HeaderWebActor))
-	require.NoError(t, err)
-	assert.True(t, actor.IsAnonymous())
+	require.False(t, access.AuthWeb(testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder)))
+	require.Equal(t, http.StatusUnauthorized, recorder.Code)
 }
 
 func TestAuthWebParsesAuthorization(t *testing.T) {
@@ -130,10 +126,11 @@ func testWebAuthContext(t *testing.T, actorVia watched.PortalActorVia, request *
 	}
 }
 
-func TestAuthWebPreservesNativeAuthorizationWithoutActorAuth(t *testing.T) {
+func TestAuthWebOffPreservesNativeAuthorizationWithoutActorAuth(t *testing.T) {
 	schema := &watched.SchemaActor{SkelName: "demo.NativeActor"}
 	manager := testManager(t, map[string]string{
 		watched.FormatSchemaActorKey(schema.SkelName): vcode.MustMarshalJsonS(schema),
+		watched.FormatSchemaWebKey("demo.NativeWeb"):  vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: "demo.NativeWeb", AuthMode: skel.AuthModeOff}),
 	})
 	for _, header := range []string{"", "Bearer native-token", "Basic dXNlcjpwdw==", "custom native-credential"} {
 		t.Run(header, func(t *testing.T) {
@@ -142,7 +139,9 @@ func TestAuthWebPreservesNativeAuthorizationWithoutActorAuth(t *testing.T) {
 			request.Header.Set(headerAuthorization, header)
 			request.Header.Set(webspec.HeaderWebActor, "untrusted actor metadata")
 			response := httptest.NewRecorder()
-			require.True(t, manager.AuthWeb(testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: schema.SkelName, ActorVia: "client"}, request, response)))
+			operation := testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: schema.SkelName, ActorVia: "client"}, request, response)
+			operation.WebName = "demo.NativeWeb"
+			require.True(t, manager.AuthWeb(operation))
 			require.Equal(t, header, request.Header.Get(headerAuthorization))
 			actor, err := meta.DecodeActorFromBase64(request.Header.Get(webspec.HeaderWebActor))
 			require.NoError(t, err)
@@ -167,6 +166,7 @@ func TestAuthWebNativeCredentialsReachBackend(t *testing.T) {
 	schema := &watched.SchemaActor{SkelName: "demo.NativeActor"}
 	manager := testManager(t, map[string]string{
 		watched.FormatSchemaActorKey(schema.SkelName): vcode.MustMarshalJsonS(schema),
+		watched.FormatSchemaWebKey("demo.NativeWeb"):  vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: "demo.NativeWeb", AuthMode: skel.AuthModeOff}),
 	})
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		actor, err := meta.DecodeActorFromBase64(r.Header.Get(webspec.HeaderWebActor))
@@ -187,6 +187,7 @@ func TestAuthWebNativeCredentialsReachBackend(t *testing.T) {
 	gateway := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		setTestWebRequestHeaders(t, r)
 		operation := testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: schema.SkelName, ActorVia: "client"}, r, w)
+		operation.WebName = "demo.NativeWeb"
 		if manager.AuthWeb(operation) {
 			proxy.ServeHTTP(w, r)
 		}
@@ -219,28 +220,42 @@ func TestAuthWebRejectsMissingNamedSchema(t *testing.T) {
 	require.Equal(t, http.StatusServiceUnavailable, response.Code)
 }
 
-func TestAuthWebLegacySchemaPreservesDefaultBehavior(t *testing.T) {
-	for _, enabled := range []bool{false, true} {
-		t.Run(fmt.Sprint(enabled), func(t *testing.T) {
-			values := testAuthValues("")
-			actor := testAuthActorSchema()
-			actor.AuthEnabled = enabled
-			values[watched.FormatSchemaActorKey(actor.SkelName)] = vcode.MustMarshalJsonS(actor)
-			// Previously generated Web schemas have no authMode field.
-			values[watched.FormatSchemaWebKey("demo.Web")] = `{"skelName":"demo.Web","audiences":[]}`
-			manager := testManager(t, values)
-			for _, authorization := range []string{"", "Bearer malformed"} {
-				request := httptest.NewRequest(http.MethodGet, "http://demo.local/", nil)
-				setTestWebRequestHeaders(t, request)
-				if authorization != "" {
-					request.Header.Set(headerAuthorization, authorization)
-				}
-				response := httptest.NewRecorder()
-				operation := testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: actor.SkelName}, request, response)
-				operation.WebName = "demo.Web"
-				require.Equal(t, authorization == "" || !enabled, manager.AuthWeb(operation))
-				require.Equal(t, authorization, request.Header.Get(headerAuthorization))
+func TestAuthWebLegacySchemaDefaultsToRequired(t *testing.T) {
+	registerTestActorInfo()
+	endpoint := registerTestAuthService(t, http.StatusOK, "OK", `{"userId":"u1"}`)
+	for _, mode := range []skel.AuthMode{"", skel.AuthModeUnset} {
+		for _, enabled := range []bool{false, true} {
+			for _, credential := range []string{"", "Bearer malformed", "Key1 token, key2 token"} {
+				t.Run(fmt.Sprintf("%s/enabled=%t/%s", mode, enabled, credential), func(t *testing.T) {
+					values := testAuthValues(endpoint)
+					actor := testAuthActorSchema()
+					actor.AuthEnabled = enabled
+					values[watched.FormatSchemaActorKey(actor.SkelName)] = vcode.MustMarshalJsonS(actor)
+					values[watched.FormatSchemaWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: "demo.Web", AuthMode: mode})
+					manager := testManager(t, values)
+					request := httptest.NewRequest(http.MethodGet, "http://demo.local/", nil)
+					setTestWebRequestHeaders(t, request)
+					if credential != "" {
+						request.Header.Set(headerAuthorization, credential)
+					}
+					response := httptest.NewRecorder()
+					operation := testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: actor.SkelName}, request, response)
+					operation.WebName = "demo.Web"
+					want := enabled && credential == "Key1 token, key2 token"
+					require.Equal(t, want, manager.AuthWeb(operation))
+					if want {
+						require.NotContains(t, request.Header, headerAuthorization)
+						admitted, err := meta.DecodeActorFromBase64(request.Header.Get(webspec.HeaderWebActor))
+						require.NoError(t, err)
+						require.True(t, admitted.IsAuthenticated())
+					} else if !enabled {
+						require.Equal(t, http.StatusForbidden, response.Code)
+						require.Contains(t, response.Body.String(), "actor auth not enabled")
+					} else {
+						require.Equal(t, http.StatusUnauthorized, response.Code)
+					}
+				})
 			}
-		})
+		}
 	}
 }
