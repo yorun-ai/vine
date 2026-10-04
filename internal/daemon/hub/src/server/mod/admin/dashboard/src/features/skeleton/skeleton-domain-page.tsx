@@ -686,6 +686,9 @@ export function SkeletonDomainPage() {
                             <span className="truncate text-sm font-medium">
                               {displayItemName(item)}
                             </span>
+                            {'ext' in item && item.ext ? (
+                              <Badge variant="outline">ext</Badge>
+                            ) : null}
                             {'api' in item && item.api ? (
                               <Badge variant="outline">api</Badge>
                             ) : null}

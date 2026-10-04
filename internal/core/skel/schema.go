@@ -83,15 +83,17 @@ type WebSchema struct {
 }
 
 type EventSchema struct {
-	Name             string          `json:"name"`
-	SkelName         string          `json:"skelName"`
-	Description      string          `json:"description,omitempty"`
-	Deprecated       bool            `json:"deprecated,omitzero"`
-	DeprecatedReason string          `json:"deprecatedReason,omitempty"`
-	Hash             string          `json:"hash"`
-	Pub              bool            `json:"pub"`
-	Sensitive        bool            `json:"sensitive,omitzero"`
-	Members          []*MemberSchema `json:"members,omitempty"`
+	Name             string `json:"name"`
+	SkelName         string `json:"skelName"`
+	Description      string `json:"description,omitempty"`
+	Deprecated       bool   `json:"deprecated,omitzero"`
+	DeprecatedReason string `json:"deprecatedReason,omitempty"`
+	Hash             string `json:"hash"`
+	Pub              bool   `json:"pub"`
+	// Ext exports the emitter contract for use by other domains.
+	Ext       bool            `json:"ext,omitzero"`
+	Sensitive bool            `json:"sensitive,omitzero"`
+	Members   []*MemberSchema `json:"members,omitempty"`
 }
 
 type ActorSchema struct {
@@ -128,7 +130,9 @@ type ServiceSchema struct {
 	Hash             string `json:"hash"`
 	Pub              bool   `json:"pub"`
 	// Api restricts calls to the Portal client path.
-	Api       bool                   `json:"api,omitzero"`
+	Api bool `json:"api,omitzero"`
+	// Ext exports the server contract for implementation by other domains.
+	Ext       bool                   `json:"ext,omitzero"`
 	AuthMode  AuthMode               `json:"authMode"`
 	Audiences []*ActorAudienceSchema `json:"audiences,omitempty"`
 
@@ -136,9 +140,12 @@ type ServiceSchema struct {
 	Methods []*MethodSchema `json:"methods"`
 }
 
-// ClientApi includes explicit API services and legacy contracts with client rules.
+// ClientApi includes explicit API services and legacy contracts with client rules, excluding extension contracts.
 // TODO: Remove this method and use Api directly when support for legacy generated code ends.
 func (s *ServiceSchema) ClientApi() bool {
+	if s.Ext {
+		return false
+	}
 	if s.Api || len(s.Audiences) > 0 || (s.AuthMode != "" && s.AuthMode != AuthModeUnset) || s.Require != nil {
 		return true
 	}

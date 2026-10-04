@@ -2,6 +2,7 @@ package admin
 
 import (
 	"cmp"
+	"encoding/json/v2"
 	"strings"
 	"testing"
 
@@ -11,6 +12,43 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vslice"
 )
+
+func TestSkeletonApiPreservesExtensionMarkers(t *testing.T) {
+	for _, ext := range []bool{false, true} {
+		name := "public"
+		if ext {
+			name = "extension"
+		}
+		t.Run(name, func(t *testing.T) {
+			service := &SkeletonApiServiceServerImpl{SchemaRepo: &_SkeletonServiceSchemaRepo{
+				domainSchemas: []*skel.DomainSchema{{Domain: "demo.audit", Hash: "domain-hash",
+					Services: []*skel.ServiceSchema{{Name: "AuditService", SkelName: "demo.audit.AuditService", Hash: "service-hash", Pub: true, Ext: ext}},
+					Events:   []*skel.EventSchema{{Name: "AuditRecordedEvent", SkelName: "demo.audit.AuditRecordedEvent", Hash: "event-hash", Pub: true, Ext: ext}},
+				}},
+			}}
+			services := service.ListServices()
+			events := service.ListEvents()
+			domains := service.ListDomains()
+			require.Len(t, services, 1)
+			require.Len(t, events, 1)
+			require.Len(t, domains, 1)
+			require.Len(t, domains[0].Services, 1)
+			require.Len(t, domains[0].Events, 1)
+			assert.Equal(t, ext, services[0].Ext)
+			assert.Equal(t, ext, events[0].Ext)
+			assert.Equal(t, ext, domains[0].Services[0].Ext)
+			assert.Equal(t, ext, domains[0].Events[0].Ext)
+			for _, items := range []any{services, events} {
+				encoded, err := json.Marshal(items)
+				require.NoError(t, err)
+				var decoded []map[string]any
+				require.NoError(t, json.Unmarshal(encoded, &decoded))
+				assert.Equal(t, ext, decoded[0]["ext"])
+				assert.Equal(t, true, decoded[0]["pub"])
+			}
+		})
+	}
+}
 
 type _TestSchemaRef[T any] struct {
 	SkelName string

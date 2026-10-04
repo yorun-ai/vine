@@ -2,6 +2,7 @@ package skel
 
 import (
 	"encoding/json/v2"
+	"strings"
 	"testing"
 	"time"
 	"uuid"
@@ -10,11 +11,59 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+func TestExtensionServiceSchemaJSON(t *testing.T) {
+	var service ServiceSchema
+	if err := json.Unmarshal([]byte(`{"ext":true,"authMode":"noauth"}`), &service); err != nil {
+		t.Fatal(err)
+	}
+	if !service.Ext || service.ClientApi() {
+		t.Fatalf("extension lost its direction or was classified as an API: %+v", service)
+	}
+	encoded, err := json.Marshal(service)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(encoded), `"ext":true`) {
+		t.Fatalf("extension flag lost in JSON: %s", encoded)
+	}
+	encoded, err = json.Marshal(ServiceSchema{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(encoded), `"ext"`) {
+		t.Fatalf("zero extension flag must be omitted: %s", encoded)
+	}
+}
+
 type facadeSensitiveValue struct{}
 
 func (facadeSensitiveValue) SkelSensitive() {}
 
 var _ Sensitive = facadeSensitiveValue{}
+
+func TestExtensionEventSchemaJSON(t *testing.T) {
+	var event EventSchema
+	if err := json.Unmarshal([]byte(`{"ext":true}`), &event); err != nil {
+		t.Fatal(err)
+	}
+	if !event.Ext {
+		t.Fatal("extension event flag lost during decoding")
+	}
+	encoded, err := json.Marshal(event)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(encoded), `"ext":true`) {
+		t.Fatalf("extension flag lost: %s", encoded)
+	}
+	encoded, err = json.Marshal(EventSchema{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(encoded), `"ext"`) {
+		t.Fatalf("zero extension flag must be omitted: %s", encoded)
+	}
+}
 
 // Public constructors must preserve their arguments; scalar encoding is tested internally.
 func TestFacadeScalarConstructors(t *testing.T) {

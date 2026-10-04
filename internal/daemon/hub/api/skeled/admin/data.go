@@ -987,6 +987,8 @@ type SkeletonEventItem struct {
 	DeprecatedReason string `json:"deprecatedReason"`
 	// Pub Whether the item is public
 	Pub bool `json:"pub"`
+	// Ext Whether the event is an extension contract
+	Ext bool `json:"ext"`
 	// Sensitive Whether the event payload is sensitive
 	Sensitive bool `json:"sensitive"`
 	// Fields Field list
@@ -1176,6 +1178,8 @@ type SkeletonServiceItem struct {
 	// Pub Whether the item is public
 	Pub bool `json:"pub"`
 	Api bool `json:"api"`
+	// Ext Whether the service is an extension contract
+	Ext bool `json:"ext"`
 	// AuthMode Authentication mode
 	AuthMode string `json:"authMode"`
 	// Require Permission requirements
