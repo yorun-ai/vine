@@ -8,6 +8,43 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-10-05
+
+### Added
+
+- Explicit Portal authentication modes: `required`, `optional`, and `guest`
+  for Rpc and Web, plus Web-only `off` for handlers that own authentication.
+- Web authentication modes in Hub registration, Watch schemas, and Dashboard
+  schema views.
+
+### Changed
+
+- Required, optional, and guest authentication reject invalid credentials.
+  Guest endpoints authenticate supplied credentials and distinguish invalid
+  credentials from authenticated callers who are forbidden.
+- Portal strips Authorization from forwarded Rpc requests and from Web requests
+  using required, optional, or guest authentication. Web off preserves the
+  original credentials for its handler.
+- Internal contracts are regenerated with skelc v0.25.0; Hub admin APIs declare
+  explicit optional authentication.
+- Stable Kubernetes overlays use v0.26.0 for Hub, Link, and Portal images.
+
+### Fixed
+
+- Reject Rpc authentication mode off during local and Hub registration, before
+  endpoint publication, and during Portal admission.
+- Preserve Web authentication metadata through schema registration and updates.
+
+### Upgrade Notes
+
+- Existing generated auth/noauth schemas remain supported: auth maps to
+  required; Rpc noauth maps to optional, while Web noauth maps to off.
+  Unset continues to inherit authentication from its enclosing context.
+- Rpc cannot use off. Use optional for anonymous Rpc calls; clients must omit
+  stale or invalid credentials rather than relying on anonymous fallback.
+- Web handlers that need the original Authorization header must use off and
+  handle authentication themselves.
+
 ## [0.25.1] - 2026-10-04
 
 ### Added
@@ -1445,7 +1482,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.25.1...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.26.0...HEAD
+[0.26.0]: https://github.com/yorun-ai/vine/compare/v0.25.1...v0.26.0
 [0.25.1]: https://github.com/yorun-ai/vine/compare/v0.25.0...v0.25.1
 [0.25.0]: https://github.com/yorun-ai/vine/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/yorun-ai/vine/compare/v0.23.2...v0.24.0
