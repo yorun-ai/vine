@@ -136,7 +136,7 @@ data AppConfigCreation {
 @desc("Hub's application configuration service, called by Client")
 api service AppConfigApiService {
     for AdminActor via client
-    noauth
+    auth optional
 
     @desc("List configuration items")
     method list {

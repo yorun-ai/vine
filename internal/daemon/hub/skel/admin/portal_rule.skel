@@ -175,7 +175,7 @@ data PortalRuleUpdate {
 @desc("Hub's Portal entry rule service, called by the Portal admin client")
 api service PortalRuleApiService {
     for AdminActor via client
-    noauth
+    auth optional
 
     @desc("List Portal entry rules that match the same request")
     method listConflicts {

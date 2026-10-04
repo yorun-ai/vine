@@ -96,7 +96,7 @@ data PortalCertUpdate {
 @desc("Hub's Portal site certificate service, called by the Portal admin client")
 api service PortalCertApiService {
     for AdminActor via client
-    noauth
+    auth optional
 
     @desc("List Portal site certificates")
     method list {

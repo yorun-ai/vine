@@ -34,7 +34,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "AdminApiService",
 		SkelName:          "vine.hub.admin.AdminApiService",
-		Hash:              "669fb1fb",
+		Hash:              "8aabb957",
 		ServerType:        reflect.TypeFor[AdminApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultAdminApiServiceServer](),
 
@@ -132,7 +132,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "AppConfigApiService",
 		SkelName:          "vine.hub.admin.AppConfigApiService",
-		Hash:              "29822328",
+		Hash:              "cbba6f1b",
 		ServerType:        reflect.TypeFor[AppConfigApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultAppConfigApiServiceServer](),
 
@@ -375,7 +375,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "AppStatusApiService",
 		SkelName:          "vine.hub.admin.AppStatusApiService",
-		Hash:              "125d7de1",
+		Hash:              "185da686",
 		ServerType:        reflect.TypeFor[AppStatusApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultAppStatusApiServiceServer](),
 
@@ -473,7 +473,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "EventDebugApiService",
 		SkelName:          "vine.hub.admin.EventDebugApiService",
-		Hash:              "883af419",
+		Hash:              "e8b3a6e5",
 		ServerType:        reflect.TypeFor[EventDebugApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultEventDebugApiServiceServer](),
 
@@ -642,7 +642,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "MessageQueueStatusApiService",
 		SkelName:          "vine.hub.admin.MessageQueueStatusApiService",
-		Hash:              "42550061",
+		Hash:              "1dfc99c7",
 		ServerType:        reflect.TypeFor[MessageQueueStatusApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultMessageQueueStatusApiServiceServer](),
 
@@ -740,7 +740,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalCertApiService",
 		SkelName:          "vine.hub.admin.PortalCertApiService",
-		Hash:              "95f8b48e",
+		Hash:              "a895dc55",
 		ServerType:        reflect.TypeFor[PortalCertApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalCertApiServiceServer](),
 
@@ -981,7 +981,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalEntryApiService",
 		SkelName:          "vine.hub.admin.PortalEntryApiService",
-		Hash:              "3a377397",
+		Hash:              "4a0f4586",
 		ServerType:        reflect.TypeFor[PortalEntryApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalEntryApiServiceServer](),
 
@@ -1187,7 +1187,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalRuleApiService",
 		SkelName:          "vine.hub.admin.PortalRuleApiService",
-		Hash:              "4f7fdc68",
+		Hash:              "c35d5006",
 		ServerType:        reflect.TypeFor[PortalRuleApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalRuleApiServiceServer](),
 
@@ -1458,7 +1458,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalSiteApiService",
 		SkelName:          "vine.hub.admin.PortalSiteApiService",
-		Hash:              "0738980f",
+		Hash:              "ff31eec1",
 		ServerType:        reflect.TypeFor[PortalSiteApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalSiteApiServiceServer](),
 
@@ -1729,7 +1729,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "PortalStatusApiService",
 		SkelName:          "vine.hub.admin.PortalStatusApiService",
-		Hash:              "b6b10ea4",
+		Hash:              "10bb95f5",
 		ServerType:        reflect.TypeFor[PortalStatusApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalStatusApiServiceServer](),
 
@@ -1827,7 +1827,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "ServiceDebugApiService",
 		SkelName:          "vine.hub.admin.ServiceDebugApiService",
-		Hash:              "9a48e803",
+		Hash:              "ec47f570",
 		ServerType:        reflect.TypeFor[ServiceDebugApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultServiceDebugApiServiceServer](),
 
@@ -2100,7 +2100,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "SkeletonApiService",
 		SkelName:          "vine.hub.admin.SkeletonApiService",
-		Hash:              "ef4eca97",
+		Hash:              "e053efeb",
 		ServerType:        reflect.TypeFor[SkeletonApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultSkeletonApiServiceServer](),
 
@@ -2439,7 +2439,7 @@ var (
 		Type:              rpcspec.ServiceSpecTypeServer,
 		Name:              "TaskDebugApiService",
 		SkelName:          "vine.hub.admin.TaskDebugApiService",
-		Hash:              "668461af",
+		Hash:              "c5ffe358",
 		ServerType:        reflect.TypeFor[TaskDebugApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultTaskDebugApiServiceServer](),
 

@@ -158,7 +158,7 @@ data ServiceDebugInvokeResponse {
 @desc("Hub Dashboard Service debugging service")
 api service ServiceDebugApiService {
     for AdminActor via client
-    noauth
+    auth optional
 
     @desc("List application instances")
     method listAppInstances {

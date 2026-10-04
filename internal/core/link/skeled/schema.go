@@ -13,7 +13,7 @@ var _DomainSchema = &skel.DomainSchema{
 	Description: "Internal API for Vine Link",
 	Hash:        "4942a038",
 	Full:        true,
-	Generated:   &skel.GeneratedInfo{CompilerVersion: "v0.21.0"},
+	Generated:   &skel.GeneratedInfo{CompilerVersion: "v0.25.0"},
 
 	Data: []*skel.DataSchema{
 		{Name: "AppRegistration", SkelName: "vine.link.AppRegistration", Description: "Application information registered by App to Link", Hash: "2d94718c", Members: []*skel.MemberSchema{
