@@ -8,6 +8,31 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-10-05
+
+### Added
+
+- Method-only `AuthModeInherit` and canonical authentication-mode validation at
+  local and Hub schema registration.
+
+### Changed
+
+- Replace `AuthModeGuest` / `guest` with `AuthModeAnonymous` / `anonymous`, without
+  a compatibility alias. Update references and regenerate affected contracts.
+- Normalize old generated authentication values during registration: empty or
+  `unset` services/web become `required`, methods become `inherit`, `auth` becomes
+  `required`, and `noauth` becomes `optional` for Rpc or `off` for web.
+- Web endpoints without an explicit mode now require authentication instead of
+  choosing behavior from the actor configuration. Regenerate with `optional`
+  for anonymous access or `off` for native handler authentication as appropriate.
+- Stable Kubernetes overlays use v0.27.0 for Hub, Link, and Portal images.
+
+### Fixed
+
+- Reject unknown authentication modes, service/web `inherit`, and Rpc `off`
+  before registering or publishing schemas.
+- Remove obsolete Dashboard `noauth` badge styling and refresh embedded assets.
+
 ## [0.26.0] - 2026-10-05
 
 ### Added
@@ -1482,7 +1507,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.26.0...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.27.0...HEAD
+[0.27.0]: https://github.com/yorun-ai/vine/compare/v0.26.0...v0.27.0
 [0.26.0]: https://github.com/yorun-ai/vine/compare/v0.25.1...v0.26.0
 [0.25.1]: https://github.com/yorun-ai/vine/compare/v0.25.0...v0.25.1
 [0.25.0]: https://github.com/yorun-ai/vine/compare/v0.24.0...v0.25.0
