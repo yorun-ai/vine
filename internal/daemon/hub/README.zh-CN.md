@@ -145,7 +145,7 @@ Hub 的职责可以拆成四条主线：
 
    - `vine.hub` 拥有完整的命令与 key 权限，密码在当前进程中随机生成。
    - `vine.link` 可以读取配置、Rpc endpoint 注册与 revision key，并且只能订阅配置 channel 和 Rpc 注册 pattern。
-   - `vine.portal` 可以读取 Portal rule、site、证书、actor/service/resource schema、Rpc/Web endpoint 注册与 revision key，并且只能订阅对应的列表 pattern。
+   - `vine.portal` 可以读取 Portal rule、site、证书、actor/service/web/resource schema、Rpc/Web endpoint 注册与 revision key，并且只能订阅对应的列表 pattern。
 
    Link 与 Portal 的 Redis 密码为空，用于进程内模式和分离部署调试。启用后端 mTLS 时，客户端证书会认证调用方，并把其 SPIFFE 身份绑定到对应的 Redis 用户名。未启用 mTLS 时，用户名只能选择最小权限角色，不能认证调用方，因此 Redis endpoint 必须位于回环地址或受信私有网络，并通过防火墙限制访问。
 

@@ -382,6 +382,9 @@ data SkeletonWebItem {
     @desc("Web deprecation reason")
     deprecatedReason: string
 
+    @desc("Authentication mode")
+    authMode: string
+
     @desc("Accessible Actor List")
     actors: list<SkeletonActorRef>
 }
@@ -664,6 +667,9 @@ data SkeletonDomain {
 
 @desc("Hub's skeleton service, called by the Portal admin client")
 api service SkeletonApiService {
+    for AdminActor via client
+    auth optional
+
     @desc("List Domain skeleton")
     method listDomains {
         @desc("Domain skeleton list")

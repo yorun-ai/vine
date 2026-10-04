@@ -157,6 +157,9 @@ data ServiceDebugInvokeResponse {
 
 @desc("Hub Dashboard Service debugging service")
 api service ServiceDebugApiService {
+    for AdminActor via client
+    auth optional
+
     @desc("List application instances")
     method listAppInstances {
         output list<ServiceDebugAppInstance>

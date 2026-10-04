@@ -45,7 +45,6 @@ func TestManagerLoadsRpcgwSiteFromWatch(t *testing.T) {
 	request.Header.Set(rpchttp.HeaderContentType, rpchttp.ContentTypeJson)
 	rpchttp.EncodeTraceToHeader(request.Header, meta.InitialTrace())
 	request.Header.Set(rpchttp.HeaderRpcClient, "name=demo.client,version=0.0.0,instanceId=123e4567-e89b-12d3-a456-426614174001")
-	request.Header.Set("Authorization", "key token")
 
 	target.Serve(testContext(recorder, request))
 	if recorder.Code != http.StatusServiceUnavailable {
@@ -269,12 +268,12 @@ func newTestSchemaWatch(t *testing.T) *watchtest.Client {
 		}),
 		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
 			SkelName: "demo.UserService",
-			AuthMode: skel.AuthModeNoAuth,
+			AuthMode: skel.AuthModeOptional,
 			Audiences: []*skel.ActorAudienceSchema{
 				{SkelName: "demo.UserActor"},
 			},
 			Methods: []*skel.MethodSchema{
-				{SkelName: "Get", AuthMode: skel.AuthModeNoAuth},
+				{SkelName: "Get", AuthMode: skel.AuthModeOptional},
 			},
 		}),
 	})

@@ -48,7 +48,7 @@ type ActorBase = internalskel.ActorBase
 // ActorVia identifies the channel through which an actor entered the system.
 type ActorVia = internalskel.ActorVia
 
-// AuthMode describes whether a generated endpoint requires authentication.
+// AuthMode controls Portal authentication for a generated endpoint.
 type AuthMode = internalskel.AuthMode
 
 // GeneratedInfo records the skelc version and source metadata of generated code.
@@ -137,11 +137,27 @@ const (
 	// ActorViaOpenAPI indicates that an actor came through an OpenAPI entry.
 	ActorViaOpenAPI = internalskel.ActorViaOpenAPI
 
-	// AuthModeUnset leaves authentication behavior unspecified.
+	// AuthModeUnset inherits authentication from the enclosing context or uses its default behavior.
 	AuthModeUnset = internalskel.AuthModeUnset
-	// AuthModeAuth requires an authenticated actor.
+	// AuthModeRequired requires valid credentials.
+	AuthModeRequired = internalskel.AuthModeRequired
+	// AuthModeOptional permits missing credentials but rejects invalid credentials.
+	AuthModeOptional = internalskel.AuthModeOptional
+	// AuthModeGuest permits only requests without credentials.
+	AuthModeGuest = internalskel.AuthModeGuest
+	// AuthModeOff skips Portal authentication for Web, preserving native credentials.
+	// Rpc services and methods cannot use this mode.
+	AuthModeOff = internalskel.AuthModeOff
+
+	// Legacy authentication values remain supported for previously generated contracts.
+
+	// AuthModeAuth is the legacy spelling of AuthModeRequired.
+	//
+	// Deprecated: Use AuthModeRequired instead.
 	AuthModeAuth = internalskel.AuthModeAuth
-	// AuthModeNoAuth permits unauthenticated access.
+	// AuthModeNoAuth is the legacy anonymous-access mode.
+	//
+	// Deprecated: Use AuthModeOptional for Rpc or AuthModeOff for Web.
 	AuthModeNoAuth = internalskel.AuthModeNoAuth
 
 	// PermRequireModeCode requires a concrete permission code.
@@ -203,7 +219,7 @@ const (
 	ScalarBinary = internalskel.ScalarBinary
 )
 
-// RegisterDomainSchema validates and adds schema to the process-wide domain registry.
+// RegisterDomainSchema validates schema, converts legacy auth spellings, and adds it to the process-wide domain registry.
 func RegisterDomainSchema(schema *DomainSchema) {
 	internalskel.RegisterDomainSchema(schema)
 }

@@ -22,7 +22,7 @@ func TestManagerLoadsActorAndServiceSchemas(t *testing.T) {
 		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
 			SkelName: "demo.UserService",
 			Hash:     "service-main",
-			AuthMode: skel.AuthModeAuth,
+			AuthMode: skel.AuthModeRequired,
 		}),
 	})
 
@@ -33,7 +33,7 @@ func TestManagerLoadsActorAndServiceSchemas(t *testing.T) {
 	service, ok := manager.serviceSchema("demo.UserService")
 	require.True(t, ok)
 	assert.Equal(t, "service-main", service.Hash)
-	assert.Equal(t, skel.AuthModeAuth, service.AuthMode)
+	assert.Equal(t, skel.AuthModeRequired, service.AuthMode)
 }
 
 func testManager(t *testing.T, valuesByKey map[string]string) *Access {

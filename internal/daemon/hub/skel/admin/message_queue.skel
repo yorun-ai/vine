@@ -35,6 +35,9 @@ data MessageQueueStatusView {
 
 @desc("Hub Dashboard message queue status service")
 api service MessageQueueStatusApiService {
+    for AdminActor via client
+    auth optional
+
     @desc("Read Task and Event streams without consuming messages")
     method list {
         output list<MessageQueueStatusView>

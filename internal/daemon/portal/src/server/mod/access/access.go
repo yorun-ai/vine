@@ -25,9 +25,11 @@ type Access struct {
 	mutex                             sync.RWMutex
 	actorNamesByKey                   map[string]string
 	serviceNamesByKey                 map[string]string
+	webNamesByKey                     map[string]string
 	resourceNamesByKey                map[string]string
 	actorsBySkelName                  map[string]*watched.SchemaActor
 	servicesBySkelName                map[string]*watched.SchemaService
+	websBySkelName                    map[string]*watched.SchemaWeb
 	resourcesBySkelName               map[string]*watched.SchemaResource
 	authServiceWatchersByActorKey     map[string]*epmgr.Watcher
 	permServiceWatchersByActorKey     map[string]*epmgr.Watcher
@@ -37,15 +39,18 @@ type Access struct {
 func (a *Access) DIInit() {
 	a.actorNamesByKey = map[string]string{}
 	a.serviceNamesByKey = map[string]string{}
+	a.webNamesByKey = map[string]string{}
 	a.resourceNamesByKey = map[string]string{}
 	a.actorsBySkelName = map[string]*watched.SchemaActor{}
 	a.servicesBySkelName = map[string]*watched.SchemaService{}
+	a.websBySkelName = map[string]*watched.SchemaWeb{}
 	a.resourcesBySkelName = map[string]*watched.SchemaResource{}
 	a.authServiceWatchersByActorKey = map[string]*epmgr.Watcher{}
 	a.permServiceWatchersByActorKey = map[string]*epmgr.Watcher{}
 	a.checkServiceWatchersByResourceKey = map[string]*epmgr.Watcher{}
 	a.loadActors()
 	a.loadServices()
+	a.loadWebs()
 	a.loadResources()
 }
 
@@ -87,7 +92,24 @@ func (a *Access) AuthWeb(operation *WebOperation) bool {
 	operation.endpointManager = a.Epmgr
 	operation.identity = a.Identity
 
-	if operation.Request.Header.Get(headerAuthorization) == "" {
+	if operation.WebName != "" {
+		schema, ok := a.webSchema(operation.WebName)
+		if !ok {
+			operation.writeError(ex.ServiceUnavailable, "web schema is not found: "+operation.WebName)
+			return false
+		}
+		if schema.AuthMode != "" && schema.AuthMode != skel.AuthModeUnset {
+			actorSchema, ok := a.actorSchema(operation.ActorVia.ActorSkelName)
+			if !ok {
+				operation.writeError(ex.ClientForbidden, "not allowed")
+				return false
+			}
+			operation.actorSchema = actorSchema
+			return operation.authenticate(schema.AuthMode, operation.writeError, operation.setActor)
+		}
+	}
+
+	if len(operation.Request.Header.Values(headerAuthorization)) == 0 {
 		operation.setActor(meta.NewAnonymousActor())
 		return true
 	}

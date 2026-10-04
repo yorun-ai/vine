@@ -11,9 +11,9 @@ func init() {
 var _DomainSchema = &skel.DomainSchema{
 	Domain:      "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "ce579c28",
+	Hash:        "e6b71505",
 	Full:        true,
-	Generated:   &skel.GeneratedInfo{CompilerVersion: "v0.23.3"},
+	Generated:   &skel.GeneratedInfo{CompilerVersion: "v0.25.0"},
 
 	Enums: []*skel.EnumSchema{
 		{Name: "PortalCorsMode", SkelName: "vine.hub.admin.PortalCorsMode", Description: "Portal site CORS mode", Hash: "b5d6b511", Items: []*skel.EnumItemSchema{
@@ -436,7 +436,7 @@ var _DomainSchema = &skel.DomainSchema{
 			{Name: "schemaHash", Description: "Service schema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "endpoint", Description: "Service agent access address", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 		}},
-		{Name: "SkeletonActorItem", SkelName: "vine.hub.admin.SkeletonActorItem", Description: "SkeletonActor", Hash: "27b79242", Members: []*skel.MemberSchema{
+		{Name: "SkeletonActorItem", SkelName: "vine.hub.admin.SkeletonActorItem", Description: "SkeletonActor", Hash: "37a4fd38", Members: []*skel.MemberSchema{
 			{Name: "domain", Description: "Domain", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "schemaHash", Description: "Skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "mainSchemaHash", Description: "Primary skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
@@ -500,7 +500,7 @@ var _DomainSchema = &skel.DomainSchema{
 			{Name: "fields", Description: "Field list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonField", SkelName: "vine.hub.admin.SkeletonField"}}},
 			{Name: "enumItems", Description: "List of enumeration items", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonEnumItem", SkelName: "vine.hub.admin.SkeletonEnumItem"}}},
 		}},
-		{Name: "SkeletonDomain", SkelName: "vine.hub.admin.SkeletonDomain", Description: "Domain skeleton version", Hash: "7d91f95e", Members: []*skel.MemberSchema{
+		{Name: "SkeletonDomain", SkelName: "vine.hub.admin.SkeletonDomain", Description: "Domain skeleton version", Hash: "07224ef2", Members: []*skel.MemberSchema{
 			{Name: "domain", Description: "Domain name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "schemaHash", Description: "DomainSchema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "mainSchemaHash", Description: "Primary DomainSchema hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
@@ -662,7 +662,7 @@ var _DomainSchema = &skel.DomainSchema{
 			{Name: "arguments", Description: "Parameter list", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonField", SkelName: "vine.hub.admin.SkeletonField"}}},
 			{Name: "argumentsSensitive", Description: "Whether all input arguments are sensitive", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
 		}},
-		{Name: "SkeletonWebItem", SkelName: "vine.hub.admin.SkeletonWebItem", Description: "Skeleton web page", Hash: "a831714a", Members: []*skel.MemberSchema{
+		{Name: "SkeletonWebItem", SkelName: "vine.hub.admin.SkeletonWebItem", Description: "Skeleton web page", Hash: "43105b93", Members: []*skel.MemberSchema{
 			{Name: "domain", Description: "Domain", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "schemaHash", Description: "Skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "mainSchemaHash", Description: "Primary skeleton item hash", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
@@ -674,6 +674,7 @@ var _DomainSchema = &skel.DomainSchema{
 			{Name: "description", Description: "Web page description", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "deprecated", Description: "Whether the Web is deprecated", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
 			{Name: "deprecatedReason", Description: "Web deprecation reason", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+			{Name: "authMode", Description: "Authentication mode", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
 			{Name: "actors", Description: "Accessible Actor List", Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonActorRef", SkelName: "vine.hub.admin.SkeletonActorRef"}}},
 		}},
 		{Name: "TaskDebugDefaultLaunchRequest", SkelName: "vine.hub.admin.TaskDebugDefaultLaunchRequest", Description: "Task Debug initiates a request by default", Hash: "196bd2e9", Members: []*skel.MemberSchema{
@@ -726,11 +727,15 @@ var _DomainSchema = &skel.DomainSchema{
 		}},
 	},
 
+	Actors: []*skel.ActorSchema{
+		{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Description: "Hub operator using the Dashboard on the admin listener", Hash: "c70b3174", Vias: []skel.ActorVia{skel.ActorViaClient}, AuthEnabled: false, PermEnabled: false},
+	},
+
 	Services: []*skel.ServiceSchema{
-		{Name: "AdminApiService", SkelName: "vine.hub.admin.AdminApiService", Description: "Hub's Admin API service, called by the Dashboard", Hash: "67c3e840", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+		{Name: "AdminApiService", SkelName: "vine.hub.admin.AdminApiService", Description: "Hub's Admin API service, called by the Dashboard", Hash: "8aabb957", Pub: false, Api: true, AuthMode: skel.AuthMode("optional"), Audiences: []*skel.ActorAudienceSchema{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: skel.ActorViaClient}}, Methods: []*skel.MethodSchema{
 			{Name: "readOnly", SkelName: "readOnly", Description: "Whether Hub configuration is read-only", Hash: "af56a296", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
 		}},
-		{Name: "AppConfigApiService", SkelName: "vine.hub.admin.AppConfigApiService", Description: "Hub's application configuration service, called by Client", Hash: "d7463c7a", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+		{Name: "AppConfigApiService", SkelName: "vine.hub.admin.AppConfigApiService", Description: "Hub's application configuration service, called by Client", Hash: "cbba6f1b", Pub: false, Api: true, AuthMode: skel.AuthMode("optional"), Audiences: []*skel.ActorAudienceSchema{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: skel.ActorViaClient}}, Methods: []*skel.MethodSchema{
 			{Name: "list", SkelName: "list", Description: "List configuration items", Hash: "6f9fa5a7", AuthMode: skel.AuthModeUnset, OutputDescription: "Configuration item list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigListItem", SkelName: "vine.hub.admin.AppConfigListItem"}}},
 			{Name: "get", SkelName: "get", Description: "Read configuration", Hash: "68cd7944", AuthMode: skel.AuthModeUnset, OutputDescription: "Configuration items", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem"}, Arguments: []*skel.MemberSchema{
 				{Name: "key", Description: "Configuration key", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
@@ -746,10 +751,10 @@ var _DomainSchema = &skel.DomainSchema{
 				{Name: "id", Description: "Configuration ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
 			}},
 		}},
-		{Name: "AppStatusApiService", SkelName: "vine.hub.admin.AppStatusApiService", Description: "Hub Dashboard's application status service", Hash: "5869e9a5", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+		{Name: "AppStatusApiService", SkelName: "vine.hub.admin.AppStatusApiService", Description: "Hub Dashboard's application status service", Hash: "185da686", Pub: false, Api: true, AuthMode: skel.AuthMode("optional"), Audiences: []*skel.ActorAudienceSchema{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: skel.ActorViaClient}}, Methods: []*skel.MethodSchema{
 			{Name: "list", SkelName: "list", Description: "List application instance statuses", Hash: "ba8cd3fb", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "AppStatusView", SkelName: "vine.hub.admin.AppStatusView"}}},
 		}},
-		{Name: "EventDebugApiService", SkelName: "vine.hub.admin.EventDebugApiService", Description: "Hub Dashboard Event Debugging Service", Hash: "70021469", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+		{Name: "EventDebugApiService", SkelName: "vine.hub.admin.EventDebugApiService", Description: "Hub Dashboard Event Debugging Service", Hash: "e8b3a6e5", Pub: false, Api: true, AuthMode: skel.AuthMode("optional"), Audiences: []*skel.ActorAudienceSchema{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: skel.ActorViaClient}}, Methods: []*skel.MethodSchema{
 			{Name: "listEvents", SkelName: "listEvents", Description: "List the events monitored by the application instance", Hash: "bf56d012", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "EventDebugEventItem", SkelName: "vine.hub.admin.EventDebugEventItem"}}},
 			{Name: "buildDefaultEmitRequest", SkelName: "buildDefaultEmitRequest", Description: "Generate a default Event send request", Hash: "b697b22d", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "EventDebugDefaultEmitRequest", SkelName: "vine.hub.admin.EventDebugDefaultEmitRequest"}, Arguments: []*skel.MemberSchema{
 				{Name: "eventSkelName", Description: "Event Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
@@ -759,10 +764,10 @@ var _DomainSchema = &skel.DomainSchema{
 				{Name: "request", Description: "Debug send request", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "EventDebugEmitRequest", SkelName: "vine.hub.admin.EventDebugEmitRequest"}},
 			}},
 		}},
-		{Name: "MessageQueueStatusApiService", SkelName: "vine.hub.admin.MessageQueueStatusApiService", Description: "Hub Dashboard message queue status service", Hash: "2e40eb39", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+		{Name: "MessageQueueStatusApiService", SkelName: "vine.hub.admin.MessageQueueStatusApiService", Description: "Hub Dashboard message queue status service", Hash: "1dfc99c7", Pub: false, Api: true, AuthMode: skel.AuthMode("optional"), Audiences: []*skel.ActorAudienceSchema{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: skel.ActorViaClient}}, Methods: []*skel.MethodSchema{
 			{Name: "list", SkelName: "list", Description: "Read Task and Event streams without consuming messages", Hash: "1633ffbd", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "MessageQueueStatusView", SkelName: "vine.hub.admin.MessageQueueStatusView"}}},
 		}},
-		{Name: "PortalCertApiService", SkelName: "vine.hub.admin.PortalCertApiService", Description: "Hub's Portal site certificate service, called by the Portal admin client", Hash: "93dd2cc6", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+		{Name: "PortalCertApiService", SkelName: "vine.hub.admin.PortalCertApiService", Description: "Hub's Portal site certificate service, called by the Portal admin client", Hash: "a895dc55", Pub: false, Api: true, AuthMode: skel.AuthMode("optional"), Audiences: []*skel.ActorAudienceSchema{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: skel.ActorViaClient}}, Methods: []*skel.MethodSchema{
 			{Name: "list", SkelName: "list", Description: "List Portal site certificates", Hash: "4cb16c1b", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal site certificate list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCertListItem", SkelName: "vine.hub.admin.PortalCertListItem"}}},
 			{Name: "get", SkelName: "get", Description: "Read the Portal site certificate", Hash: "379dc981", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal site certificate", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalCert", SkelName: "vine.hub.admin.PortalCert"}, Arguments: []*skel.MemberSchema{
 				{Name: "id", Description: "Certificate ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
@@ -778,7 +783,7 @@ var _DomainSchema = &skel.DomainSchema{
 				{Name: "id", Description: "Certificate ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
 			}},
 		}},
-		{Name: "PortalEntryApiService", SkelName: "vine.hub.admin.PortalEntryApiService", Description: "Hub's Portal access entry service, called by the Portal admin client", Hash: "8e77e8b3", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+		{Name: "PortalEntryApiService", SkelName: "vine.hub.admin.PortalEntryApiService", Description: "Hub's Portal access entry service, called by the Portal admin client", Hash: "4a0f4586", Pub: false, Api: true, AuthMode: skel.AuthMode("optional"), Audiences: []*skel.ActorAudienceSchema{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: skel.ActorViaClient}}, Methods: []*skel.MethodSchema{
 			{Name: "list", SkelName: "list", Description: "List Portal access entries", Hash: "ebaf8bcf", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal access entry list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry"}}},
 			{Name: "create", SkelName: "create", Description: "Create a Portal access entry", Hash: "364f1477", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal access entry", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry"}, Arguments: []*skel.MemberSchema{
 				{Name: "creation", Description: "Portal access entry creation parameters", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalEntryCreation", SkelName: "vine.hub.admin.PortalEntryCreation"}},
@@ -791,7 +796,7 @@ var _DomainSchema = &skel.DomainSchema{
 				{Name: "id", Description: "Entry ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
 			}},
 		}},
-		{Name: "PortalRuleApiService", SkelName: "vine.hub.admin.PortalRuleApiService", Description: "Hub's Portal entry rule service, called by the Portal admin client", Hash: "b736159f", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+		{Name: "PortalRuleApiService", SkelName: "vine.hub.admin.PortalRuleApiService", Description: "Hub's Portal entry rule service, called by the Portal admin client", Hash: "c35d5006", Pub: false, Api: true, AuthMode: skel.AuthMode("optional"), Audiences: []*skel.ActorAudienceSchema{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: skel.ActorViaClient}}, Methods: []*skel.MethodSchema{
 			{Name: "listConflicts", SkelName: "listConflicts", Description: "List Portal entry rules that match the same request", Hash: "440c6508", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal entry rule conflicts", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalRuleConflict", SkelName: "vine.hub.admin.PortalRuleConflict"}}},
 			{Name: "list", SkelName: "list", Description: "List Portal entry rules", Hash: "596d7b51", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal entry rule list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalRuleListItem", SkelName: "vine.hub.admin.PortalRuleListItem"}}},
 			{Name: "get", SkelName: "get", Description: "Read Portal entry rules", Hash: "fb271c57", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal entry rules", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalRule", SkelName: "vine.hub.admin.PortalRule"}, Arguments: []*skel.MemberSchema{
@@ -808,7 +813,7 @@ var _DomainSchema = &skel.DomainSchema{
 				{Name: "id", Description: "Rule ID", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
 			}},
 		}},
-		{Name: "PortalSiteApiService", SkelName: "vine.hub.admin.PortalSiteApiService", Description: "Hub's Portal target site service, called by the Portal admin client", Hash: "f713a78d", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+		{Name: "PortalSiteApiService", SkelName: "vine.hub.admin.PortalSiteApiService", Description: "Hub's Portal target site service, called by the Portal admin client", Hash: "ff31eec1", Pub: false, Api: true, AuthMode: skel.AuthMode("optional"), Audiences: []*skel.ActorAudienceSchema{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: skel.ActorViaClient}}, Methods: []*skel.MethodSchema{
 			{Name: "list", SkelName: "list", Description: "List Portal target sites", Hash: "a674394c", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal target site list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalSiteListItem", SkelName: "vine.hub.admin.PortalSiteListItem"}}},
 			{Name: "listOptions", SkelName: "listOptions", Description: "List Portal target site form options", Hash: "89d0bfb6", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal target site form options", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalSiteOptions", SkelName: "vine.hub.admin.PortalSiteOptions"}},
 			{Name: "get", SkelName: "get", Description: "Read the Portal target site", Hash: "dbf4e113", AuthMode: skel.AuthModeUnset, OutputDescription: "Portal target site", ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalSite", SkelName: "vine.hub.admin.PortalSite"}, Arguments: []*skel.MemberSchema{
@@ -825,10 +830,10 @@ var _DomainSchema = &skel.DomainSchema{
 				{Name: "id", Description: "Target site id", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}},
 			}},
 		}},
-		{Name: "PortalStatusApiService", SkelName: "vine.hub.admin.PortalStatusApiService", Description: "Hub Dashboard's Portal instance status service", Hash: "49b2f739", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+		{Name: "PortalStatusApiService", SkelName: "vine.hub.admin.PortalStatusApiService", Description: "Hub Dashboard's Portal instance status service", Hash: "10bb95f5", Pub: false, Api: true, AuthMode: skel.AuthMode("optional"), Audiences: []*skel.ActorAudienceSchema{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: skel.ActorViaClient}}, Methods: []*skel.MethodSchema{
 			{Name: "list", SkelName: "list", Description: "List Portal instance statuses", Hash: "2916f955", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "PortalStatusView", SkelName: "vine.hub.admin.PortalStatusView"}}},
 		}},
-		{Name: "ServiceDebugApiService", SkelName: "vine.hub.admin.ServiceDebugApiService", Description: "Hub Dashboard Service debugging service", Hash: "7bbd9cf0", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+		{Name: "ServiceDebugApiService", SkelName: "vine.hub.admin.ServiceDebugApiService", Description: "Hub Dashboard Service debugging service", Hash: "ec47f570", Pub: false, Api: true, AuthMode: skel.AuthMode("optional"), Audiences: []*skel.ActorAudienceSchema{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: skel.ActorViaClient}}, Methods: []*skel.MethodSchema{
 			{Name: "listAppInstances", SkelName: "listAppInstances", Description: "List application instances", Hash: "213565dd", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "ServiceDebugAppInstance", SkelName: "vine.hub.admin.ServiceDebugAppInstance"}}},
 			{Name: "listServices", SkelName: "listServices", Description: "List the services provided by the application instance", Hash: "964d0bc0", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "ServiceDebugServiceItem", SkelName: "vine.hub.admin.ServiceDebugServiceItem"}}},
 			{Name: "listServiceAppInstances", SkelName: "listServiceAppInstances", Description: "List application instances that provide the specified service", Hash: "bd1f5b3d", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "ServiceDebugAppInstance", SkelName: "vine.hub.admin.ServiceDebugAppInstance"}}, Arguments: []*skel.MemberSchema{
@@ -848,18 +853,18 @@ var _DomainSchema = &skel.DomainSchema{
 				{Name: "request", Description: "Debug call request", Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "ServiceDebugInvokeRequest", SkelName: "vine.hub.admin.ServiceDebugInvokeRequest"}},
 			}},
 		}},
-		{Name: "SkeletonApiService", SkelName: "vine.hub.admin.SkeletonApiService", Description: "Hub's skeleton service, called by the Portal admin client", Hash: "60bbc43d", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
-			{Name: "listDomains", SkelName: "listDomains", Description: "List Domain skeleton", Hash: "067be5fe", AuthMode: skel.AuthModeUnset, OutputDescription: "Domain skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonDomain", SkelName: "vine.hub.admin.SkeletonDomain"}}},
-			{Name: "listActors", SkelName: "listActors", Description: "List Actor Skeleton", Hash: "747364bc", AuthMode: skel.AuthModeUnset, OutputDescription: "Actor skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonActorItem", SkelName: "vine.hub.admin.SkeletonActorItem"}}},
+		{Name: "SkeletonApiService", SkelName: "vine.hub.admin.SkeletonApiService", Description: "Hub's skeleton service, called by the Portal admin client", Hash: "e053efeb", Pub: false, Api: true, AuthMode: skel.AuthMode("optional"), Audiences: []*skel.ActorAudienceSchema{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: skel.ActorViaClient}}, Methods: []*skel.MethodSchema{
+			{Name: "listDomains", SkelName: "listDomains", Description: "List Domain skeleton", Hash: "365949ab", AuthMode: skel.AuthModeUnset, OutputDescription: "Domain skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonDomain", SkelName: "vine.hub.admin.SkeletonDomain"}}},
+			{Name: "listActors", SkelName: "listActors", Description: "List Actor Skeleton", Hash: "647634c4", AuthMode: skel.AuthModeUnset, OutputDescription: "Actor skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonActorItem", SkelName: "vine.hub.admin.SkeletonActorItem"}}},
 			{Name: "listServices", SkelName: "listServices", Description: "List Service skeleton", Hash: "35bb796c", AuthMode: skel.AuthModeUnset, OutputDescription: "Service skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonServiceItem", SkelName: "vine.hub.admin.SkeletonServiceItem"}}},
 			{Name: "listResources", SkelName: "listResources", Description: "List Resource skeleton", Hash: "36ca61e6", AuthMode: skel.AuthModeUnset, OutputDescription: "Resource skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonResourceItem", SkelName: "vine.hub.admin.SkeletonResourceItem"}}},
-			{Name: "listWebs", SkelName: "listWebs", Description: "List Web Skeletons", Hash: "1a5e7855", AuthMode: skel.AuthModeUnset, OutputDescription: "Web skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonWebItem", SkelName: "vine.hub.admin.SkeletonWebItem"}}},
+			{Name: "listWebs", SkelName: "listWebs", Description: "List Web Skeletons", Hash: "222fd34b", AuthMode: skel.AuthModeUnset, OutputDescription: "Web skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonWebItem", SkelName: "vine.hub.admin.SkeletonWebItem"}}},
 			{Name: "listTasks", SkelName: "listTasks", Description: "List Task skeleton", Hash: "1c8182b7", AuthMode: skel.AuthModeUnset, OutputDescription: "Task skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonTask", SkelName: "vine.hub.admin.SkeletonTask"}}},
 			{Name: "listEvents", SkelName: "listEvents", Description: "List Event skeletons", Hash: "78433e57", AuthMode: skel.AuthModeUnset, OutputDescription: "Event skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonEventItem", SkelName: "vine.hub.admin.SkeletonEventItem"}}},
 			{Name: "listData", SkelName: "listData", Description: "List Data skeleton", Hash: "f5aa55bd", AuthMode: skel.AuthModeUnset, OutputDescription: "Data skeleton list, including Enum", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonData", SkelName: "vine.hub.admin.SkeletonData"}}},
 			{Name: "listConfigs", SkelName: "listConfigs", Description: "List Config skeleton", Hash: "63234eff", AuthMode: skel.AuthModeUnset, OutputDescription: "Config skeleton list", ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "SkeletonConfigItem", SkelName: "vine.hub.admin.SkeletonConfigItem"}}},
 		}},
-		{Name: "TaskDebugApiService", SkelName: "vine.hub.admin.TaskDebugApiService", Description: "Hub Dashboard Task Debugging Service", Hash: "3040e825", Pub: false, Api: true, AuthMode: skel.AuthModeUnset, Methods: []*skel.MethodSchema{
+		{Name: "TaskDebugApiService", SkelName: "vine.hub.admin.TaskDebugApiService", Description: "Hub Dashboard Task Debugging Service", Hash: "c5ffe358", Pub: false, Api: true, AuthMode: skel.AuthMode("optional"), Audiences: []*skel.ActorAudienceSchema{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: skel.ActorViaClient}}, Methods: []*skel.MethodSchema{
 			{Name: "listTasks", SkelName: "listTasks", Description: "List the tasks provided by the application instance", Hash: "64ec80ce", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "TaskDebugTaskItem", SkelName: "vine.hub.admin.TaskDebugTaskItem"}}},
 			{Name: "listTriggers", SkelName: "listTriggers", Description: "List Task triggers", Hash: "e559ea60", AuthMode: skel.AuthModeUnset, ResultType: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindData, Name: "TaskDebugTriggerItem", SkelName: "vine.hub.admin.TaskDebugTriggerItem"}}, Arguments: []*skel.MemberSchema{
 				{Name: "taskSkelName", Description: "Task Skel name", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},

@@ -9,7 +9,7 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-const defaultAuthMode = skel.AuthModeAuth
+const defaultAuthMode = skel.AuthModeRequired
 
 type RpcOperation struct {
 	Auther
@@ -33,18 +33,15 @@ func (o *RpcOperation) Auth() bool {
 		return false
 	}
 
-	if o.authMode() == skel.AuthModeNoAuth {
-		o.actor = meta.NewAnonymousActor()
-		o.Request.Header.Set(rpchttp.HeaderRpcActor, meta.EncodeActorToBase64(o.actor))
-		return true
-	}
-
-	if !o.actorSchema.AuthEnabled {
-		o.writeError(ex.ClientForbidden, "rpc method require auth, but actor auth not enabled")
+	mode := o.authMode()
+	if mode == skel.AuthModeOff {
+		o.writeError(ex.ServiceUnavailable, "Rpc does not support auth off")
 		return false
 	}
-
-	return o.auth(o.writeError, o.setActor)
+	if !o.authenticate(mode, o.writeError, o.setActor) {
+		return false
+	}
+	return true
 }
 
 func (o *RpcOperation) setActor(actor meta.Actor) {
@@ -73,10 +70,10 @@ func (o *RpcOperation) loadMethodSchema() bool {
 
 func (o *RpcOperation) authMode() skel.AuthMode {
 	authMode := o.methodSchema.AuthMode
-	if authMode == skel.AuthModeUnset {
+	if authMode == "" || authMode == skel.AuthModeUnset {
 		authMode = o.serviceSchema.AuthMode
 	}
-	if authMode == skel.AuthModeUnset {
+	if authMode == "" || authMode == skel.AuthModeUnset {
 		authMode = defaultAuthMode
 	}
 	return authMode

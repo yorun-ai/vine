@@ -1127,3 +1127,12 @@ func (r *_SkeletonServiceSchemaRepo) GetWebSchema(skelName string) *skel.WebSche
 func (r *_SkeletonServiceSchemaRepo) ListAppConfigTypeSchemas() ([]*skel.ConfigSchema, []*skel.EnumSchema, []*skel.DataSchema) {
 	return r.ListAppConfigSchemas(), r.ListEnumSchemas(), nil
 }
+
+func TestSkeletonWebAuthModes(t *testing.T) {
+	for _, mode := range []skel.AuthMode{"", skel.AuthModeUnset, skel.AuthModeRequired, skel.AuthModeOptional, skel.AuthModeGuest, skel.AuthModeOff} {
+		t.Run(string(mode), func(t *testing.T) {
+			item := toServerSkeletonWebItem(_SkeletonVersionFields{}, new(skel.WebSchema{SkelName: "demo.Web", AuthMode: mode}))
+			require.Equal(t, string(mode), item.AuthMode)
+		})
+	}
+}

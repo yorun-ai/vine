@@ -13,7 +13,7 @@ var _DomainSchema = &skel.DomainSchema{
 	Description: "Internal API for vine framework",
 	Hash:        "bea736f6",
 	Full:        true,
-	Generated:   &skel.GeneratedInfo{CompilerVersion: "v0.21.0"},
+	Generated:   &skel.GeneratedInfo{CompilerVersion: "v0.25.0"},
 
 	Data: []*skel.DataSchema{
 		{Name: "EventOn", SkelName: "vine.app.EventOn", Description: "Link triggers event processing information to the App", Hash: "e2794713", Members: []*skel.MemberSchema{

@@ -480,6 +480,7 @@ func toServerSkeletonWebItem(version _SkeletonVersionFields, schema *skel.WebSch
 		Description:      schema.Description,
 		Deprecated:       schema.Deprecated,
 		DeprecatedReason: schema.DeprecatedReason,
+		AuthMode:         string(schema.AuthMode),
 		Actors:           toServerSkeletonActorRefs(schema.Audiences),
 	}
 }

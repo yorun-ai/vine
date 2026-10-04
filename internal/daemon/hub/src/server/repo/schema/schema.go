@@ -53,6 +53,10 @@ func (r *SchemaRepo) SaveDomainSchemas(ownerName string, ownerId string, schemas
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	for _, schema := range schemas {
+		skel.ConvertLegacyAuthModes(schema)
+	}
+
 	ownerKey := schemaOwnerKey(ownerName, ownerId)
 	r.releaseDomainSchemas(ownerKey)
 	for _, schema := range schemas {

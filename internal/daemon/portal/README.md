@@ -14,7 +14,7 @@ internal/daemon/portal/
         ├── comp/           Shared components such as Hub info and Watch clients
         ├── flag/           Portal flags and default normalization
         ├── mod/            Runtime modules
-        │   ├── access/     Actor/service/resource schemas and Rpc/Web authorization
+        │   ├── access/     Actor/service/Web/resource schemas and Rpc/Web authorization
         │   ├── entry/      HTTP/HTTPS listeners and portal-rule dispatch
         │   ├── epmgr/      Rpc/Web endpoint subscriptions and round-robin selection
         │   ├── site/       Portal site management and RpcGW/WebGW creation
@@ -36,7 +36,7 @@ Portal has four primary responsibilities:
    `epmgr` subscribes to Rpc/Web endpoint keys, manages watcher reference counts, and provides `NextRpcEndpoint` and `NextWebEndpoint` to gateways.
 
 4. Authentication, permission, and certificates
-   `access` reads and watches `schema:actor:*`, `schema:service:*`, and `schema:resource:*` state. Before forwarding, RpcGW asks `access` to perform authentication and permission admission, which may invoke backend auth services, actor permission services, and resource check services. `vault` reads and watches certificates from Watch for HTTPS SNI matching.
+   `access` reads and watches `schema:actor:*`, `schema:service:*`, `schema:web:*`, and `schema:resource:*` state. Before forwarding, RpcGW asks `access` to perform authentication and permission admission, which may invoke backend auth services, actor permission services, and resource check services. `vault` reads and watches certificates from Watch for HTTPS SNI matching.
 
    The Hub Watch client uses the `vine.portal` user. Its ACL is limited to Portal rules, sites, certificates, schemas, Rpc/Web endpoint discovery, the shared revision key, and their required subscriptions. The Redis password is empty for in-process mode and separated-deployment debugging. With backend mTLS enabled, the Portal certificate authenticates the client and binds its SPIFFE identity to the `vine.portal` user. Without mTLS, the username only selects an ACL role; because that role can read TLS private keys, the Redis endpoint must remain restricted to a trusted network.
 
@@ -55,7 +55,7 @@ External callers should assemble only `src/server/app` and `src/server/flag`; th
 Preserve these ownership and dependency boundaries when modifying Portal:
 
 - `epmgr` is the single owner of Rpc/Web endpoint subscriptions, watcher reference counts, and round-robin selection. Sites and access logic obtain endpoints through it.
-- `access` owns actor/service/resource schemas and Rpc/Web admission state. Gateways must not maintain a second authentication or permission schema cache.
+- `access` owns actor/service/Web/resource schemas and Rpc/Web admission state. Gateways must not maintain a second authentication or permission schema cache.
 - `entry` owns listener entries and rule dispatch only; `site` owns RpcGW/WebGW instances only; `vault` owns certificate loading and matching only.
 - RpcGW and WebGW must continue propagating the active trace, initiator, actor, deadline, and remaining timeout. Do not replace the request context with a new background context.
 - When headers, forwarding paths, schemas, or endpoint formats change, update Link, Hub Watch structures, callers, and gateway tests together.
@@ -73,6 +73,25 @@ In inproc and standalone modes:
 
 Use normal process mode to validate real network entries, TLS listeners, cross-process endpoint reachability, or registration lease expiry.
 
-A WEBGW site requires both `actorSkelName` and `actorVia`. When the actor has authentication disabled, Portal preserves the native Authorization header and replaces inbound actor metadata with an anonymous actor. When actor authentication is enabled, Portal validates supplied credentials through Vine and rejects failures without falling back to native authentication. An unknown configured actor is still rejected when credentials are supplied. RPCGW authentication is unchanged.
+Rpc service/method modes are `required`, `optional`, and `guest`; Web also supports
+`off`. Local registration and Hub reject explicit Rpc `off`. Schema registration
+converts legacy `auth` to `required`, and `noauth` to `optional` for Rpc or `off` for Web. Rpc methods inherit the service mode, then default to
+`required` when both are omitted or `unset`. Web schemas without a mode retain
+the actor-dependent legacy behavior described below. Invalid supplied
+credentials and auth-service errors never fall back to anonymous access when
+Portal authentication is enabled. Web `off` uses an anonymous actor and preserves
+Authorization for native authentication. Rpc and Web `required`, `optional`, and
+`guest` remove Authorization after admission, forwarding only the admitted actor.
+Legacy Web requests also remove Authorization after successful Vine authentication.
+
+Hub publishes selected Web schemas under `schema:web:*`; Portal subscribes to
+updates and deletes and rejects named Web requests when the schema is unavailable.
+Deploy matching Hub and Portal versions together: older Portal versions do not
+recognize the canonical `optional` and `off` values published by the upgraded Hub.
+Previously generated application contracts require no regeneration. Old Rpc `noauth`
+now authenticates supplied credentials and rejects invalid credentials instead of
+silently admitting the request anonymously.
+
+A WEBGW site requires both `actorSkelName` and `actorVia`. When the actor has authentication disabled, Portal preserves the native Authorization header and replaces inbound actor metadata with an anonymous actor. When actor authentication is enabled, Portal validates supplied credentials through Vine and rejects failures without falling back to native authentication. An unknown configured actor is still rejected when credentials are supplied. Explicit Web modes override this legacy default.
 
 When changing entry, discovery, authentication, or forwarding behavior, validate standalone/inproc and normal network deployments separately. Inproc mode establishes routing and subscription semantics only; it does not establish correct real-listener, TLS, disconnection, or lease behavior.

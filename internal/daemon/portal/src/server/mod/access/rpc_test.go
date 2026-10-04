@@ -410,9 +410,11 @@ func TestRpcAccessOperationParseAuthMode(t *testing.T) {
 		methodMode  skel.AuthMode
 		want        skel.AuthMode
 	}{
-		{"method overrides service", skel.AuthModeNoAuth, skel.AuthModeAuth, skel.AuthModeAuth},
-		{"falls back to service", skel.AuthModeNoAuth, skel.AuthModeUnset, skel.AuthModeNoAuth},
-		{"defaults to auth", skel.AuthModeUnset, skel.AuthModeUnset, skel.AuthModeAuth},
+		{"method overrides service", skel.AuthModeOptional, skel.AuthModeRequired, skel.AuthModeRequired},
+		{"falls back to service", skel.AuthModeOptional, skel.AuthModeUnset, skel.AuthModeOptional},
+		{"defaults to required", skel.AuthModeUnset, skel.AuthModeUnset, skel.AuthModeRequired},
+		{"empty method inherits service", skel.AuthModeOptional, "", skel.AuthModeOptional},
+		{"empty modes default to required", "", "", skel.AuthModeRequired},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := &RpcOperation{
@@ -431,9 +433,9 @@ func TestAccessAllowRpcInjectsActorAndServiceSchemas(t *testing.T) {
 		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
 			SkelName:  "demo.UserService",
 			Audiences: testUserActorAudiences(),
-			AuthMode:  skel.AuthModeNoAuth,
+			AuthMode:  skel.AuthModeOptional,
 			Methods: []*skel.MethodSchema{
-				{SkelName: "Get", AuthMode: skel.AuthModeNoAuth},
+				{SkelName: "Get", AuthMode: skel.AuthModeOptional},
 			},
 		}),
 	})
@@ -457,12 +459,12 @@ func TestAccessAllowRpcRejectsDifferentActorVia(t *testing.T) {
 		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorSchema()),
 		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
 			SkelName: "demo.UserService",
-			AuthMode: skel.AuthModeNoAuth,
+			AuthMode: skel.AuthModeOptional,
 			Audiences: []*skel.ActorAudienceSchema{
 				{SkelName: "demo.UserActor", Via: skel.ActorViaAgent},
 			},
 			Methods: []*skel.MethodSchema{
-				{SkelName: "Get", AuthMode: skel.AuthModeNoAuth},
+				{SkelName: "Get", AuthMode: skel.AuthModeOptional},
 			},
 		}),
 	})

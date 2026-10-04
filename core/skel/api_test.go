@@ -103,3 +103,12 @@ func TestPermCheckInvocationCodeArgumentNameJSON(t *testing.T) {
 		}
 	}
 }
+
+func TestAuthModeCompatibility(t *testing.T) {
+	if string(AuthModeAuth) != "auth" || string(AuthModeNoAuth) != "noauth" {
+		t.Fatal("legacy constant values must remain compatible with old generated code")
+	}
+	if string(AuthModeOptional) != "optional" || string(AuthModeGuest) != "guest" {
+		t.Fatal("unexpected authentication mode values")
+	}
+}

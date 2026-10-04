@@ -533,7 +533,19 @@ func newTestWebGateway(t *testing.T, valuesByKey map[string]string) *WebGateway 
 }
 
 func newTestWebGatewayWithCors(t *testing.T, valuesByKey map[string]string, cors watched.PortalCors) *WebGateway {
-	return New(context.Background(), meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"), new(access.Access), newTestEpmgr(t, valuesByKey), watched.PortalSite{
+	if valuesByKey == nil {
+		valuesByKey = map[string]string{}
+	}
+	for _, name := range []string{"admin@demo.app", "home@demo.app"} {
+		key := watched.FormatSchemaWebKey(name)
+		if _, exists := valuesByKey[key]; !exists {
+			valuesByKey[key] = vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: name})
+		}
+	}
+	epmgrManager := newTestEpmgr(t, valuesByKey)
+	accessManager := &access.Access{Context: context.Background(), Watch: watchtest.New(t, valuesByKey), Epmgr: epmgrManager}
+	accessManager.DIInit()
+	return New(context.Background(), meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"), accessManager, epmgrManager, watched.PortalSite{
 		Name: "demo-web",
 		Type: "WEBGW",
 		Cors: cors,

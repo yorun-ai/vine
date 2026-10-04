@@ -57,7 +57,12 @@ func (o *Auther) auth(writeError _AuthErrorWriter, setActor _AuthActorSetter) bo
 }
 
 func (o *Auther) parseCredential(writeError _AuthErrorWriter) bool {
-	authorization := o.Request.Header.Get(headerAuthorization)
+	values := o.Request.Header.Values(headerAuthorization)
+	if len(values) != 1 {
+		writeError(ex.Unauthorized, "bad credential: expected one Authorization header")
+		return false
+	}
+	authorization := values[0]
 	credential, ok := parseCredential(o.actorSchema.AuthCredential, authorization)
 	if !ok {
 		writeError(ex.Unauthorized, "bad credential")
@@ -140,5 +145,38 @@ func (o *Auther) executeAuthRequest(authRequest *http.Request, writeError _AuthE
 		}
 	}
 	setActor(meta.NewAuthenticatedActorWithRawInfo(o.actorSchema.SkelName, identifier, o.actorSchema.AuthInfo.SkelName, info))
+	return true
+}
+
+// authenticate applies explicit modes without treating failed authentication as anonymous.
+func (o *Auther) authenticate(mode skel.AuthMode, writeError _AuthErrorWriter, setActor _AuthActorSetter) bool {
+	switch mode {
+	case skel.AuthModeOff:
+		setActor(meta.NewAnonymousActor())
+		return true
+	case skel.AuthModeOptional, skel.AuthModeGuest:
+		if len(o.Request.Header.Values(headerAuthorization)) == 0 {
+			setActor(meta.NewAnonymousActor())
+			o.Request.Header.Del(headerAuthorization)
+			return true
+		}
+	case skel.AuthModeRequired:
+	default:
+		writeError(ex.ServiceUnavailable, "unsupported auth mode")
+		return false
+	}
+	if !o.actorSchema.AuthEnabled {
+		writeError(ex.ClientForbidden, "endpoint requires auth, but actor auth not enabled")
+		return false
+	}
+	if !o.auth(writeError, setActor) {
+		return false
+	}
+	if mode == skel.AuthModeGuest {
+		writeError(ex.ClientForbidden, "endpoint only allows guests")
+		return false
+	}
+	// Portal forwards the admitted actor without the client's credentials.
+	o.Request.Header.Del(headerAuthorization)
 	return true
 }

@@ -14,7 +14,7 @@ internal/daemon/portal/
         ├── comp/           运行时共享组件，如 `hubinfo` 与 Hub Watch client
         ├── flag/           Portal 启动参数与默认值规范化
         ├── mod/            运行时模块层
-        │   ├── access/     actor/service/resource schema 与 Rpc/Web 认证授权
+        │   ├── access/     actor/service/Web/resource schema 与 Rpc/Web 认证授权
         │   ├── entry/      HTTP/HTTPS 监听入口与 portal rule 分发
         │   ├── epmgr/      Rpc/Web endpoint 订阅与轮询选择
         │   ├── site/       Portal site 管理与 RpcGW/WebGW 创建
@@ -36,7 +36,7 @@ Portal 的职责可以拆成四条主线：
    `epmgr` 统一订阅 Rpc/Web endpoint key，内部维护 watcher 引用计数，并为 gateway 提供 `NextRpcEndpoint` 和 `NextWebEndpoint`。
 
 4. Auth、Permission 与证书
-   `access` 从 `schema:actor:*`、`schema:service:*`、`schema:resource:*` 读取并监听准入相关 schema。RpcGW 在转发前调用 `access`，由它按需调用后端 auth service、actor permission service 和 resource check service。`vault` 从 Watch 读取并监听证书，用于 HTTPS SNI 匹配。
+   `access` 从 `schema:actor:*`、`schema:service:*`、`schema:web:*`、`schema:resource:*` 读取并监听准入相关 schema。RpcGW 在转发前调用 `access`，由它按需调用后端 auth service、actor permission service 和 resource check service。`vault` 从 Watch 读取并监听证书，用于 HTTPS SNI 匹配。
 
    Hub Watch client 使用 `vine.portal` 用户，其 ACL 仅允许读取 Portal rule、site、证书、schema、Rpc/Web endpoint、共享 revision key 以及所需的订阅。Redis 密码为空，用于进程内模式和分离部署调试。启用后端 mTLS 时，Portal 证书会认证客户端，并把其 SPIFFE 身份绑定到 `vine.portal` 用户。未启用 mTLS 时，用户名只能选择 ACL 角色；由于该角色可以读取 TLS 私钥，Redis endpoint 必须限制在受信网络中。
 
@@ -55,7 +55,7 @@ Portal 内部主要依赖关系是：
 修改 Portal 时必须保持以下 owner 和依赖边界：
 
 - `epmgr` 是 Rpc/Web endpoint 订阅、watcher 引用计数和轮询选择的唯一 owner；site 和 access 通过它获取 endpoint。
-- `access` 是 actor/service/resource schema 与 Rpc/Web 准入状态的 owner；gateway 不应维护第二份认证或权限 schema 缓存。
+- `access` 是 actor/service/Web/resource schema 与 Rpc/Web 准入状态的 owner；gateway 不应维护第二份认证或权限 schema 缓存。
 - `entry` 只管理监听入口和 rule 分发，`site` 只管理 RpcGW/WebGW，`vault` 只管理证书加载与匹配。
 - RpcGW/WebGW 必须继续传播当前 trace、initiator、actor、deadline 和剩余 timeout，不能用新的后台 context 覆盖请求上下文。
 - 修改 header、转发路径、schema 或 endpoint 格式时，必须同步 Link、Hub Watch 结构、调用方以及 gateway 测试。
@@ -74,3 +74,17 @@ Inproc/standalone 模式下需要注意：
 如果要验证真实网络入口、TLS 监听、跨进程 endpoint 可达性或注册租约过期，应使用普通进程模式启动 Portal。
 
 修改入口、发现、认证或转发逻辑时，应分别验证 standalone/inproc 和普通网络部署。inproc 模式只保证路由与订阅语义，不代表真实监听、TLS、断连和租约行为已经覆盖。
+
+RPC service/method 支持 `required`、`optional`、`guest`，Web 另支持 `off`。
+本地注册和 Hub 接收入口均拒绝 RPC 显式使用 `off`。旧值 `auth` 转为 `required`，
+RPC 的 `noauth` 转为 `optional`，Web 的 `noauth` 转为 `off`，Portal 只消费新值。RPC method 先继承 service，
+两者都省略或为 `unset` 时默认为 `required`。Web 未声明模式时保留原有依 actor 配置
+决定认证行为的默认值，显式模式覆盖默认值。启用 Portal 认证时，无效凭证和认证服务
+错误均拒绝，不退回匿名。Web `off` 使用匿名 actor 并保留 Authorization，供 handler 自行认证。
+RPC 和 Web 的 `required`、`optional`、`guest` 在准入通过后删除 Authorization，
+仅向下传递已准入的 actor。旧 Web 请求通过 Vine 认证后也删除 Authorization。
+
+Hub 在 `schema:web:*` 发布选中的 Web schema，Portal 订阅更新及删除事件；
+具名 Web 请求缺少 schema 时拒绝。Hub 与 Portal 必须配套升级：旧 Portal 不识别
+升级后 Hub 发布的 `optional`、`off` 值。旧应用生成的契约无需重新生成；旧 RPC
+`noauth` 现在会认证提供的凭证，无效凭证会报错，不再隐式匿名放行。

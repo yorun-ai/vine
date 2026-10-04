@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/base64"
+	"encoding/json/v2"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -57,6 +59,9 @@ func TestRpcGatewayRejectsPlaintextRegistrationWithMTLS(t *testing.T) {
 func TestRpcGatewayForwardsConfiguredServiceToRegistrationEndpoint(t *testing.T) {
 	ingressEndpoint := "link+inproc://vine/portal-rpcgw-test"
 	registerTestIngress(t, ingressEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, exists := r.Header["Authorization"]; exists {
+			t.Error("client credentials reached the Rpc backend")
+		}
 		w.Header().Set("X-Rpcgw-Test", "ok")
 		w.Header().Set("X-Rpcgw-Path", r.URL.Path)
 		w.Header().Set("X-Rpcgw-Trace", r.Header.Get(rpchttp.HeaderRpcTrace))
@@ -666,7 +671,6 @@ func setTestAuthHeaders(request *http.Request) {
 	request.Header.Set(rpchttp.HeaderContentType, rpchttp.ContentTypeJson)
 	rpchttp.EncodeTraceToHeader(request.Header, meta.InitialTrace())
 	request.Header.Set(rpchttp.HeaderRpcClient, "name=demo.client,version=0.0.0,instanceId=123e4567-e89b-12d3-a456-426614174001")
-	request.Header.Set("Authorization", "key token")
 }
 
 func testCredentialSchema() *skel.DataSchema {
@@ -805,12 +809,12 @@ func newTestSchemaWatch(t *testing.T) *watchtest.Client {
 		}),
 		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
 			SkelName: "demo.UserService",
-			AuthMode: skel.AuthModeNoAuth,
+			AuthMode: skel.AuthModeOptional,
 			Audiences: []*skel.ActorAudienceSchema{
 				{SkelName: "demo.UserActor"},
 			},
 			Methods: []*skel.MethodSchema{
-				{SkelName: "Get", AuthMode: skel.AuthModeNoAuth},
+				{SkelName: "Get", AuthMode: skel.AuthModeOptional},
 			},
 		}),
 	})
@@ -887,4 +891,68 @@ func headerValuesContain(values []string, target string) bool {
 		}
 	}
 	return false
+}
+
+func TestRpcGatewayRemovesAuthorizationBeforeHTTPForwarding(t *testing.T) {
+	backend := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, exists := r.Header["Authorization"]; exists {
+			t.Error("client credentials reached the HTTP Rpc backend")
+		}
+		payload, err := base64.RawURLEncoding.DecodeString(r.Header.Get(rpchttp.HeaderRpcActor))
+		if err != nil {
+			t.Errorf("invalid actor payload: %v", err)
+			return
+		}
+		var actor struct {
+			Type  meta.ActorType `json:"type"`
+			Realm string         `json:"realm"`
+			Info  struct {
+				UserId string `json:"userId"`
+			} `json:"info"`
+		}
+		if err := json.Unmarshal(payload, &actor); err != nil || actor.Type != meta.ActorTypeAuthenticated || actor.Realm != "demo.UserActor" || actor.Info.UserId != "u1" {
+			t.Errorf("missing authenticated actor: %s, %v", payload, err)
+		}
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	backend.Config.Protocols = new(http.Protocols)
+	backend.Config.Protocols.SetHTTP1(true)
+	backend.Config.Protocols.SetUnencryptedHTTP2(true)
+	backend.Start()
+	t.Cleanup(backend.Close)
+	target := newTestRpcGateway(t, map[string]string{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+			Endpoint: backend.URL, ServiceName: "demo.UserService", AppName: "demo.app", AppInstanceId: "instance-1",
+		}),
+	})
+	authEndpoint := "link+inproc://vine/portal-rpcgw-auth-test"
+	registerTestIngress(t, authEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil || !strings.Contains(string(body), `"key":"token"`) {
+			t.Errorf("authentication did not receive credentials: %s, %v", body, err)
+		}
+		w.Header().Set(rpchttp.HeaderContentType, rpchttp.ContentTypeJson)
+		w.Header().Set(rpchttp.HeaderRpcStatus, "OK")
+		w.Header().Set(rpchttp.HeaderRpcServer, "name=demo.auth,version=0.0.0,instanceId=123e4567-e89b-12d3-a456-426614174012")
+		_, _ = w.Write([]byte(`{"result":{"userId":"u1"}}`))
+	}))
+	watchClient := newTestSchemaWatch(t)
+	watchClient.SetValue(watched.FormatSchemaActorKey("demo.UserActor"), vcode.MustMarshalJsonS(watched.SchemaActor{
+		SkelName: "demo.UserActor", AuthEnabled: true, AuthCredential: testCredentialSchema(),
+		AuthInfo:    new(skel.DataSchema{SkelName: "demo.UserInfo"}),
+		AuthService: new(skel.ServiceSchema{SkelName: "demo.AuthService"}), AuthMethod: new(skel.MethodSchema{SkelName: "auth"}),
+	}))
+	watchClient.SetValue(watched.FormatRpcServiceRegistrationKey("demo.AuthService", "demo.auth", "auth-instance"), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{Endpoint: authEndpoint, ServiceName: "demo.AuthService", AppName: "demo.auth", AppInstanceId: "auth-instance"}))
+	authEpmgr := new(epmgr.Manager{Context: context.Background(), Watch: watchClient})
+	authEpmgr.DIInit()
+	target.access = new(access.Access{Context: context.Background(), Watch: watchClient, Epmgr: authEpmgr})
+	target.access.DIInit()
+	request := httptest.NewRequest(http.MethodPost, "http://demo.local/invoke/demo.UserService/Get", strings.NewReader("request"))
+	setTestAuthHeaders(request)
+	request.Header.Set("Authorization", "key token")
+	response := httptest.NewRecorder()
+	target.Serve(testContext(response, request))
+	if response.Code != http.StatusAccepted {
+		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+	}
 }

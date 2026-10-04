@@ -56,6 +56,9 @@ data EventDebugEmitRequest {
 
 @desc("Hub Dashboard Event Debugging Service")
 api service EventDebugApiService {
+    for AdminActor via client
+    auth optional
+
     @desc("List the events monitored by the application instance")
     method listEvents {
         output list<EventDebugEventItem>

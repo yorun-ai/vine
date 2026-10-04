@@ -70,6 +70,7 @@ func (g *WebGateway) Serve(ctx *spec.Context) {
 		Trace:     trace,
 		Initiator: initiator,
 		ActorVia:  g.actorVia,
+		WebName:   registration.WebSkelName,
 	}
 	if !g.access.AuthWeb(operation) {
 		return
