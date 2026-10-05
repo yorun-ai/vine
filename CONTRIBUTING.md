@@ -267,3 +267,13 @@ for inclusion in Vine is licensed under the terms and conditions of the
 
 By submitting a contribution, you represent that you have the right to submit
 it under these terms.
+
+## Publishing a Release
+
+After release preparation passes PR CI and is merged, sync main and push its
+version tag. The tag triggers binary and image builds; do not manually publish
+a GitHub Release first. Binary uploads stay in a Draft until all archive
+checksums and all three multi-platform images pass verification. The workflow
+then publishes the Release and, for the eligible stable version, promotes image
+`latest`. See [CI and release maintenance](.github/CI.md) for selective recovery
+and protection of already published binaries and versioned images.

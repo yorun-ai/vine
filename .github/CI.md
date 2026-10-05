@@ -10,8 +10,8 @@ This directory owns repository automation, not public deployment documentation.
 | PR targeting main | `ci.yml` | Run checks selected by changed inputs; always scan secrets and verify the required gate |
 | Push to main | `cache.yml` | Populate Go test/build and Hub image layer caches for future PRs; no correctness gate or publication |
 | Tag push | None | Mark a version only; never publish artifacts |
-| Published Release | `release.yml` | Validate the tag and publish binaries and images in parallel |
-| Manual Release workflow | `release.yml` | Recover artifacts for an existing published release |
+| Push a `v*` tag | `release.yml` | Build and verify binaries and images, then publish Release |
+| Manual Release workflow | `release.yml` | Recover artifacts for an existing tag |
 
 ## Required CI Gate
 
@@ -144,16 +144,20 @@ selected by the change policy.
 ## Release Sequence and Recovery
 
 1. Prepare the dated changelog in a PR, pass CI, and merge it.
-2. Create the version tag at that commit, then publish its GitHub Release.
+2. Sync local main, create the version tag at that commit and push it. Tag push
+   starts publication; Release events do not. Do not publish a Release manually.
 3. Shared validation checks tag, changelog, and main ancestry.
-4. Binaries and all three images publish independently after validation. Both
+4. Binary builds and all three version-image builds run independently after validation.
+   Once all binary archives are ready, upload them to a Draft Release using the
+   CHANGELOG entry as its notes. Both
    embed the Dashboard dist committed in the release tag; publication does not
    install frontend dependencies or rebuild Dashboard assets. PR CI verifies
    that the committed assets match the frontend build.
-6. Completion verifies four archive checksums, anonymous access to all three
+5. Completion verifies four archive checksums, anonymous access to all three
    images, Linux AMD64/ARM64, and release version/source/revision labels.
-   Only then may the current non-prerelease update image `latest` tags.
-7. A separate promotion job shares one concurrency group across all versions.
+   Only then is the Draft Release formally published. Prerelease tags remain
+   prereleases. The current non-prerelease can then update image `latest` tags.
+6. A separate promotion job shares one concurrency group across all versions.
    It rechecks latest-release eligibility after acquiring the lock, and holds
    the lock through promotion and verification. Builds remain parallel. Pending
    promotion jobs may be superseded under GitHub's default concurrency policy;
@@ -166,16 +170,17 @@ all three images, so existing invalid images require manual inspection. This
 workflow check does not prevent another registry client from overwriting a tag.
 The `latest` promotion remains unchanged.
 
-Manual runs select `artifacts: all`, `binaries`, or `images`. Use `images` when
-binary assets already exist. The workflow rejects existing expected binary
-assets (including partial uploads), and upload never uses `--clobber`. A partial
-binary upload requires explicit maintainer inspection and cleanup before retry;
-automation does not delete published assets. Normal failed-job reruns can also
-recover failures without rerunning successful jobs.
+Manual runs select `artifacts: all`, `binaries`, or `images`. Use `images` to
+recover images or latest promotion while reusing existing complete binaries.
+For a Draft, binary recovery rebuilds and replaces the expected attachments as
+a complete set, then downloads and checks them. Failed uploads remain Drafts;
+reruns can repair them. Published Releases reject binary rebuilding and upload,
+but still support images-only recovery. Never manually publish an incomplete Draft.
+Normal failed-job reruns can also recover without rerunning successful jobs.
 
 Artifact selection controls publication, not the definition of a complete
 release: the completion check still validates both artifact families. If a
-package is not publicly accessible, completion fails and `latest` is not
+package is not publicly accessible, completion fails, a new Release remains a Draft, and `latest` is not
 promoted. Set its visibility explicitly and retry after checking permissions.
 Binary-only recovery may promote already-published images once the complete
 release passes verification; it does not rebuild those images.

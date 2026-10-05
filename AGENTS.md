@@ -128,6 +128,14 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
 - For CI or publication changes, read `.github/CI.md` for required gates,
   release validation, concurrency, recovery, and dependency security policy.
 
+## Release Publication
+
+- Merge release preparation after required CI passes, sync local `main`, then push a `v*` tag at that reviewed commit. The tag starts `release.yml`; do not publish a GitHub Release manually to trigger builds.
+- Build binaries and versioned Hub/Link/Portal images from the tag. After all binary archives are ready, upload them to an unpublished Draft Release with notes from CHANGELOG. Only publish the Release after all archives and all three images pass completion verification.
+- Draft binary uploads may be replaced during recovery; published binary attachments must never be overwritten. Existing versioned images are skipped and reverified. Keep manual `all`, `binaries`, and `images` recovery, including images-only recovery for already published Releases.
+- Promote image `latest` only after complete verification and Release publication, retaining the cross-version lock and eligibility recheck. A complete release includes all artifact families even during selective recovery.
+- Follow `.github/CI.md` for recovery and verification; a published Release alone does not prove that latest-image promotion has completed.
+
 ## Release Preparation
 
 - Follow `CONTRIBUTING.md` for Kubernetes image tags and validation, Dashboard
