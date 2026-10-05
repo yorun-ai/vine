@@ -63,12 +63,29 @@ archive_names() {
   printf 'vine_%s_%s.tar.gz\n' "$version" darwin_amd64 "$version" darwin_arm64 "$version" linux_amd64 "$version" linux_arm64
 }
 
-require_new_assets() {
-  local names
-  names=$(archive_names "$1" | jq -Rsc 'split("\n")[:-1] + ["checksums.txt"]')
-  jq -e --argjson names "$names" '
-    map(.name | select(. as $name | $names | index($name))) |
-    if length == 0 then true else error("Existing binary assets; use images-only recovery: " + join(", ")) end'
+# Include drafts, and propagate API/auth failures instead of treating them as missing.
+find_release() {
+  gh api --paginate --slurp "repos/$1/releases?per_page=100" |
+    jq -ce --arg tag "$2" '
+      [.[][] | select(.tag_name == $tag)] |
+      if length == 0 then {} elif length == 1 then .[0]
+      else error("Duplicate release tag") end'
+}
+
+release_notes() {
+  require_changelog "$1" < CHANGELOG.md >/dev/null
+  awk -v prefix="## [$1] - " '
+    index($0, prefix) == 1 { found = 1; next }
+    found && /^## / { exit }
+    found { print; if ($0 ~ /[^[:space:]]/) body = 1 }
+    END { if (!body) exit 1 }
+  ' CHANGELOG.md
+}
+
+require_draft() {
+  jq -e --arg tag "$1" '.tag_name == $tag and .draft == true' >/dev/null || {
+    fail "Expected unpublished draft $1; refusing to overwrite published assets"; return 1;
+  }
 }
 
 require_binary_metadata() {
@@ -196,17 +213,36 @@ release_main() {
     validate)
       sha=$(git rev-parse HEAD)
       require_release_checkout "$tag" "$sha"
-      release=$(gh api "repos/$repo/releases/tags/$tag")
-      require_published_release "$tag" <<< "$release"
-      require_changelog "$version" < CHANGELOG.md
+      release_notes "$version" >/dev/null
+      release=$(find_release "$repo" "$tag")
       if [[ "$(jq -r .binaries <<< "$selected")" == true ]]; then
-        jq .assets <<< "$release" | require_new_assets "$tag"
+        if [[ "$(jq -r .draft <<< "$release")" == false ]]; then
+          fail "Published binary assets cannot be replaced; use images-only recovery"; return 1
+        fi
+      else
+        # Images-only recovery requires existing complete binary attachments.
+        verify_binaries "$repo" "$tag"
       fi
       printf 'commit=%s\n' "$sha" >> "$GITHUB_OUTPUT"
       jq -r 'to_entries[] | "\(.key)=\(.value)"' <<< "$selected" >> "$GITHUB_OUTPUT"
       ;;
-    preflight-binaries)
-      gh api "repos/$repo/releases/tags/$tag" --jq .assets | require_new_assets "$tag"
+    upload-binaries)
+      verify_archive_contents "$tag" dist
+      local notes prerelease=false
+      notes="$RUNNER_TEMP/vine-release-notes.md"
+      release_notes "$version" > "$notes"
+      release=$(find_release "$repo" "$tag")
+      [[ "$tag" != *-* ]] || prerelease=true
+      if [[ "$(jq -r '.tag_name // empty' <<< "$release")" == "" ]]; then
+        gh release create "$tag" --repo "$repo" --verify-tag --draft \
+          --prerelease="$prerelease" --title "$tag" --notes-file "$notes"
+      else
+        require_draft "$tag" <<< "$release"
+        gh release edit "$tag" --repo "$repo" --prerelease="$prerelease" \
+          --title "$tag" --notes-file "$notes"
+      fi
+      gh release upload "$tag" dist/vine_*.tar.gz dist/checksums.txt --repo "$repo" --clobber
+      verify_binaries "$repo" "$tag"
       ;;
     latest-eligible)
       release=$(gh api "repos/$repo/releases/tags/$tag")
@@ -228,15 +264,17 @@ release_main() {
       verify_release_jobs "${ARTIFACTS:-all}" <<< "$NEEDS"
       verify_binaries "$repo" "$tag"
       verify_images "$repo" "$tag" "$sha" false
-      release=$(gh api "repos/$repo/releases/tags/$tag")
-      publish=false
-      if [[ "$(jq -r .prerelease <<< "$release")" == false ]]; then
-        latest_tag=$(gh api "repos/$repo/releases/latest" --jq .tag_name)
-        publish=$(should_publish_latest "$latest_tag" <<< "$release")
+      release=$(find_release "$repo" "$tag")
+      if [[ "$(jq -r .draft <<< "$release")" == true ]]; then
+        require_draft "$tag" <<< "$release"
+        gh release edit "$tag" --repo "$repo" --verify-tag --draft=false
+      else
+        require_published_release "$tag" <<< "$release"
       fi
-      printf 'publish-latest=%s\n' "$publish" >> "$GITHUB_OUTPUT"
+      # Publication must complete before querying latest eligibility.
+      release_main latest-eligible
       ;;
-    *) echo "Usage: release.sh validate|preflight-binaries|image-build-needed|verify|latest-eligible|verify-latest" >&2; return 1 ;;
+    *) echo "Usage: release.sh validate|upload-binaries|image-build-needed|verify|latest-eligible|verify-latest" >&2; return 1 ;;
   esac
 }
 

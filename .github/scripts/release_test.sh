@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Each subshell initializes its own release environment; no state crosses fixtures.
+# shellcheck disable=SC2030,SC2031
 set -euo pipefail
 script="$(cd "$(dirname "$0")" && pwd)/release.sh"
 # shellcheck source=.github/scripts/release.sh
@@ -65,17 +67,15 @@ for choice in all binaries images; do
   done
 done
 
-require_new_assets "$tag" <<< '[{"name":"unrelated.txt"}]' >/dev/null
+require_draft "$tag" <<< '{"tag_name":"v0.14.1","draft":true}'
+expect_failure require_draft "$tag" <<< '{"tag_name":"v0.14.1","draft":false}'
+expect_failure require_draft "$tag" <<< '{"tag_name":"other","draft":true}'
 metadata=$(printf 'mod go.yorun.ai/vine %s\nbuild vcs.revision=%s\nbuild vcs.modified=false\n' "$tag" "$sha")
 require_binary_metadata "$tag" "$sha" <<< "$metadata"
 for bad in "${metadata//$tag/v0.0.0-20260909114016-63ce09d208d1}" "${metadata//$tag/$tag+dirty}" "${metadata//false/true}" "${metadata//$sha/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb}" ''; do
   expect_failure require_binary_metadata "$tag" "$sha" <<< "$bad"
 done
 names=$(archive_names "$tag")
-while IFS= read -r name; do
-  expect_failure require_new_assets "$tag" <<< "$(jq -n --arg name "$name" '[{name:$name}]')"
-done <<< "$names
-checksums.txt"
 [[ "$(should_publish_latest "$tag" <<< '{"tag_name":"v0.14.1","prerelease":false}')" == true ]]
 [[ "$(should_publish_latest "$tag" <<< '{"tag_name":"v0.14.0","prerelease":false}')" == false ]]
 [[ "$(should_publish_latest "$tag" <<< '{"tag_name":"v0.14.1","prerelease":true}')" == false ]]
@@ -189,4 +189,76 @@ verify_labels "$tag" "$sha" yorun-ai/vine <<< "$labels" >/dev/null
 for field in version revision source; do
   expect_failure verify_labels "$tag" "$sha" yorun-ai/vine <<< "$(jq --arg field "org.opencontainers.image.$field" '.[$field] = "wrong"' <<< "$labels")"
 done
+# Exercise lifecycle ordering without GitHub writes or registry requests.
+(
+  cd "$directory"
+  export RELEASE_TAG="$tag" GITHUB_REPOSITORY=yorun-ai/vine RUNNER_TEMP="$directory"
+  export GITHUB_OUTPUT="$directory/lifecycle-output" RELEASE_COMMIT="$sha" ARTIFACTS=all
+  export NEEDS='{"validate":{"result":"success"},"binaries":{"result":"success"},"images":{"result":"success"}}'
+  printf '## [0.14.1] - 2026-10-05\n\n### Changed\n- Fixture.\n' > CHANGELOG.md
+  state="$directory/release-state"
+  events="$directory/release-events"
+  printf '{}' > "$state"
+  : > "$events"
+  mkdir dist
+  while IFS= read -r name; do echo fixture > "dist/$name"; done <<< "$names"
+  (cd dist && sha256sum vine_*.tar.gz > checksums.txt)
+  fixture_sha="$sha"
+  git() { echo "$fixture_sha"; }
+  require_release_checkout() { :; }
+  verify_binaries() { echo binaries >> "$events"; test "${BAD_BINARY:-false}" = false; }
+  verify_images() { echo images >> "$events"; test "${BAD_IMAGE:-false}" = false; }
+  gh() {
+    case "$1 $2" in
+      'api --paginate')
+        test "${API_FAIL:-false}" = false || return 1
+        jq -c 'if .tag_name then [[.]] else [[]] end' "$state" ;;
+      'api repos/yorun-ai/vine/releases/latest') echo "$tag" ;;
+      'api repos/yorun-ai/vine/releases/tags/'*) cat "$state" ;;
+      'release create')
+        echo create >> "$events"
+        printf '{"tag_name":"%s","draft":true,"prerelease":false}' "$tag" > "$state" ;;
+      'release edit')
+        if [[ " $* " == *' --draft=false '* ]]; then
+          echo publish >> "$events"
+          printf '{"tag_name":"%s","draft":false,"prerelease":false}' "$tag" > "$state"
+        fi ;;
+      'release upload') echo upload >> "$events"; test "${UPLOAD_FAIL:-false}" = false ;;
+      *) echo "Unexpected gh call: $*" >&2; return 1 ;;
+    esac
+  }
+  lifecycle_failure() {
+    local result
+    set +e
+    (set -e; release_main "$1") > "$directory/lifecycle-error" 2>&1
+    result=$?
+    set -e
+    [[ "$result" != 0 ]] || { echo "Expected lifecycle failure: $1" >&2; exit 1; }
+  }
+  API_FAIL=true lifecycle_failure validate
+  release_main validate
+  UPLOAD_FAIL=true lifecycle_failure upload-binaries
+  jq -e '.draft == true' "$state" >/dev/null
+  release_main upload-binaries
+  : > "$events"
+  BAD_BINARY=true lifecycle_failure verify
+  jq -e '.draft == true' "$state" >/dev/null
+  BAD_IMAGE=true lifecycle_failure verify
+  jq -e '.draft == true' "$state" >/dev/null
+  NEEDS='{"validate":{"result":"success"},"binaries":{"result":"failure"},"images":{"result":"success"}}' lifecycle_failure verify
+  : > "$events"
+  release_main verify
+  [[ "$(cat "$events")" == $'binaries\nimages\npublish' ]]
+  jq -e '.draft == false' "$state" >/dev/null
+  : > "$events"
+  lifecycle_failure upload-binaries
+  lifecycle_failure validate
+  [[ ! -s "$events" ]]
+  # Published releases still support images-only recovery, without edits.
+  ARTIFACTS=images
+  NEEDS='{"validate":{"result":"success"},"binaries":{"result":"skipped"},"images":{"result":"success"}}'
+  release_main validate
+  release_main verify
+  if grep -qE 'publish|upload|create' "$events"; then exit 1; fi
+)
 echo 'Release policy tests passed'
