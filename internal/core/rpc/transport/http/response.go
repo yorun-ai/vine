@@ -74,7 +74,7 @@ func (d *_ResponseDecoder) decodeBody() error {
 		return fmt.Errorf("missing response body")
 	}
 
-	decodedBody, err := d.decodeBodyPayload(bodyBytes)
+	decodedBody, err := rpchttp.DecodeResponse(bodyBytes, d.httpResponse.Header.Get(HeaderContentType))
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,11 @@ func (d *_ResponseDecoder) decodeBody() error {
 		if rpchttp.IsEmptyErrorPayload(decodedBody.ErrorBytes) {
 			return fmt.Errorf("response body error does not match response status")
 		}
-		exErr, decodeErr := ex.DecodeError(decodedBody.ErrorBytes, decodedBody.Unmarshal)
+		errorPayload, decodeErr := decodedBody.DecodeError()
+		if decodeErr != nil {
+			return fmt.Errorf("invalid response body")
+		}
+		exErr, decodeErr := ex.FromPayload(errorPayload)
 		if decodeErr != nil {
 			return fmt.Errorf("invalid response body")
 		}
@@ -107,10 +111,6 @@ func (d *_ResponseDecoder) decodeBody() error {
 
 	d.rpcResponse.ResultValue = reflect.ValueOf(result).Elem().Interface()
 	return nil
-}
-
-func (d *_ResponseDecoder) decodeBodyPayload(bodyBytes []byte) (*rpchttp.ResponsePayload, error) {
-	return rpchttp.DecodeResponse(bodyBytes, d.httpResponse.Header.Get(HeaderContentType))
 }
 
 func WriteRequestErrorResponse(w http.ResponseWriter, r *http.Request, server meta.App, err ex.Error) error {
@@ -143,11 +143,11 @@ func writeResponseWithContentType(w http.ResponseWriter, rpcResponse spec.Respon
 
 func encodeResponseToBytes(rpcResponse spec.Response, contentType string) []byte {
 	var result any
-	var errorValue any
+	var errorValue *rpchttp.ErrorPayload
 	if rpcResponse.Error().Type() == ex.NoError {
 		result = rpcResponse.Result()
 	} else {
-		errorValue = rpcResponse.Error()
+		errorValue = ex.ToPayload(rpcResponse.Error())
 	}
 	encoded, err := rpchttp.EncodeResponse(result, errorValue, contentType)
 	vpre.MustNil(err)
@@ -162,16 +162,16 @@ func ClearResponseErrorDetail(bodyBytes []byte, contentType string) ([]byte, err
 	if err != nil {
 		return nil, err
 	}
-	if rpchttp.IsEmptyErrorPayload(payload.ErrorBytes) {
-		return bodyBytes, nil
-	}
-	errorValue, err := ex.DecodeError(payload.ErrorBytes, payload.Unmarshal)
+	errorValue, err := payload.DecodeError()
 	if err != nil {
 		return nil, err
 	}
-	var options []ex.ErrorOption
-	if errorValue.Reason() != "" {
-		options = append(options, ex.WithReason(errorValue.Reason()))
+	if errorValue == nil {
+		return bodyBytes, nil
 	}
-	return payload.EncodeWithError(ex.New(errorValue.Code(), errorValue.Message(), options...))
+	if _, err := ex.ParseCode(errorValue.Code); err != nil {
+		return nil, err
+	}
+	errorValue.Detail = ""
+	return payload.EncodeWithError(errorValue)
 }

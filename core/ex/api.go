@@ -122,21 +122,6 @@ func NewInternal() Error {
 	return internalex.NewInternal()
 }
 
-// DecodeError decodes a structured Error from payload using unmarshal.
-func DecodeError(payload []byte, unmarshal func([]byte, any) error) (Error, error) {
-	return internalex.DecodeError(payload, unmarshal)
-}
-
-// EncodeError encodes err using mustMarshal.
-func EncodeError(err Error, mustMarshal func(any) []byte) []byte {
-	return internalex.EncodeError(err, mustMarshal)
-}
-
-// ClearErrorDetail removes diagnostic detail from an encoded Error payload.
-func ClearErrorDetail(payload []byte, unmarshal func([]byte, any) error, mustMarshal func(any) []byte) ([]byte, error) {
-	return internalex.ClearErrorDetail(payload, unmarshal, mustMarshal)
-}
-
 // PanicIfError panics with err when err is non-nil.
 func PanicIfError(err error) {
 	internalex.PanicIfError(err)

@@ -11,11 +11,6 @@ import (
 	vrpchttp "go.yorun.ai/vrpc/transport/http"
 )
 
-type _InvokeErrorBody struct {
-	Message string `json:"message"`
-	Reason  string `json:"reason"`
-}
-
 func (o *Auther) buildInvokeRequest(serviceSkelName string, methodSkelName string, params map[string]any) *http.Request {
 	// The host is only a placeholder for building a valid request; ForwardRequest rewrites it from the selected endpoint.
 	return rpchttp.BuildInvokeRequest(rpchttp.InvokeRequest{
@@ -94,11 +89,11 @@ func readInvokeResponse[T any](response *http.Response, serviceLabel string, bad
 
 	reason := ""
 	message := defaultErrorMessage
-	if !vrpchttp.IsEmptyErrorPayload(payload.ErrorBytes) {
-		var errorValue _InvokeErrorBody
-		if err := payload.Unmarshal(payload.ErrorBytes, &errorValue); err != nil {
-			return zero, ex.ServiceUnavailable, badResponseMessage, "", false
-		}
+	errorValue, err := payload.DecodeError()
+	if err != nil {
+		return zero, ex.ServiceUnavailable, badResponseMessage, "", false
+	}
+	if errorValue != nil {
 		reason = errorValue.Reason
 		if errorValue.Message != "" {
 			message = errorValue.Message

@@ -170,7 +170,7 @@ func TestStatusCodeHeaderRoundTrip(t *testing.T) {
 func TestErrorPayloadRoundTrip(t *testing.T) {
 	errPayload := ex.New(ex.InvalidRequest, "bad request", ex.WithDetail("detail"))
 
-	body, err := vrpchttp.EncodeResponse(nil, errPayload, ContentTypeJson)
+	body, err := vrpchttp.EncodeResponse(nil, ex.ToPayload(errPayload), ContentTypeJson)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,9 +178,13 @@ func TestErrorPayloadRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := ex.DecodeError(payload.ErrorBytes, payload.Unmarshal)
+	errorPayload, err := payload.DecodeError()
 	if err != nil {
 		t.Fatalf("DecodeError() error = %v", err)
+	}
+	got, err := ex.FromPayload(errorPayload)
+	if err != nil {
+		t.Fatalf("FromPayload() error = %v", err)
 	}
 	if got.Code() != errPayload.Code() || got.Message() != errPayload.Message() || got.Detail() != errPayload.Detail() {
 		t.Fatalf("unexpected error payload: got=%s/%s/%s", got.Code(), got.Message(), got.Detail())
