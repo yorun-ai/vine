@@ -16,7 +16,7 @@ var _DomainDescriptor = &descriptor.Domain{
 	Description: "Hub admin API for Dashboard",
 	Hash:        "3eeb4d52",
 	Full:        true,
-	Generated:   &descriptor.GeneratedInfo{CompilerVersion: "v0.30.1-0.20261006195103-dedd0501f1ce"},
+	Generated:   &descriptor.GeneratedInfo{CompilerVersion: "v0.31.0"},
 
 	Enums: []*descriptor.Enum{
 		{Name: "PortalCorsMode", SkelName: "vine.hub.admin.PortalCorsMode", Description: "Portal site CORS mode", Hash: "b5d6b511", Items: []*descriptor.EnumItem{
