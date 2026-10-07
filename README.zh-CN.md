@@ -43,9 +43,9 @@ flowchart LR
 
 | 角色 | 职责 |
 | --- | --- |
-| **App** | 承载业务模块、handler、配置 schema 和基础设施依赖。 |
+| **App** | 承载业务模块、handler、配置 descriptor 和基础设施依赖。 |
 | **Link** | 注册本地应用，订阅发现与配置状态，选择实例，转发 Rpc/Web 流量并投递 Event/Task。 |
-| **Hub** | 管理配置、schema、注册、租约、Portal 配置、管理 API 和 Dashboard。 |
+| **Hub** | 管理配置、descriptor、注册、租约、Portal 配置、管理 API 和 Dashboard。 |
 | **Portal** | 提供可选的外部 HTTP/HTTPS 入口、路由、准入和公网 TLS 证书选择。 |
 
 应用之间的内部调用经过 Link，不经过 Portal。standalone 模式保持相同的职责划分，只是
@@ -174,7 +174,7 @@ Vine 将公开 API 保持在少量 facade 包中。`internal` 下的包属于实
 | [`core/rpc`](core/rpc)、[`core/web`](core/web) | 同步服务契约和 Web 处理 |
 | [`core/event`](core/event)、[`core/task`](core/task) | 异步广播和竞争消费者任务 |
 | [`core/conf`](core/conf) | eternal 配置快照和 instant 配置更新 |
-| [`core/skel`](core/skel) | Skel 运行时标量类型、schema 注册和生成器兼容性检查 |
+| [`core/skel`](core/skel) | Skel descriptor 注册、生成器兼容性检查和旧生成代码适配 |
 | [`core/meta`](core/meta)、[`core/logger`](core/logger)、[`core/ex`](core/ex)、[`core/redact`](core/redact) | 请求元数据、结构化日志、系统错误和敏感数据脱敏 |
 | [`buildinfo`](buildinfo) | linker 注入的可执行文件名、版本、commit、构建者和构建时间 |
 | [`infra/redis`](infra/redis)、[`infra/rdb`](infra/rdb) | 托管 Redis 与关系型数据库集成 |

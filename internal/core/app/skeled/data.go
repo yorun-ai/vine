@@ -2,7 +2,7 @@
 
 package skeled
 
-import "go.yorun.ai/vine/internal/core/skel"
+import skeltype "go.yorun.ai/skel/types"
 
 // EventOn Link triggers event processing information to the App
 type EventOn struct {
@@ -25,9 +25,9 @@ type EventOnMeta struct {
 	// AppVersion The application version that sent the event
 	AppVersion string `json:"appVersion"`
 	// AppInstanceId The application instance ID that sent the event
-	AppInstanceId skel.UUID `json:"appInstanceId"`
+	AppInstanceId skeltype.UUID `json:"appInstanceId"`
 	// EmittedAt The time the event was sent
-	EmittedAt skel.Timestamp `json:"emittedAt"`
+	EmittedAt skeltype.Timestamp `json:"emittedAt"`
 }
 
 // TaskRun Link triggers task execution information to the App
@@ -53,7 +53,7 @@ type TaskRunMeta struct {
 	// AppVersion The application version that initiated the task
 	AppVersion string `json:"appVersion"`
 	// AppInstanceId The application instance ID that initiated the task
-	AppInstanceId skel.UUID `json:"appInstanceId"`
+	AppInstanceId skeltype.UUID `json:"appInstanceId"`
 	// LaunchedAt Task launch time
-	LaunchedAt skel.Timestamp `json:"launchedAt"`
+	LaunchedAt skeltype.Timestamp `json:"launchedAt"`
 }

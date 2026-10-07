@@ -148,13 +148,13 @@ function HandlerRow({
   endpoint,
   href,
   onNavigate,
-  schemaHash,
+  descriptorHash,
   skelName,
 }: {
   endpoint: string
   href: string
   onNavigate: (href: string) => void
-  schemaHash: string
+  descriptorHash: string
   skelName: string
 }) {
   return (
@@ -174,7 +174,7 @@ function HandlerRow({
           {skelName}
         </a>
         <Badge variant="outline" className="font-mono">
-          {schemaHash}
+          {descriptorHash}
         </Badge>
       </div>
       <div className="truncate font-mono text-xs text-muted-foreground">
@@ -189,7 +189,7 @@ function ListenerRow({
   href,
   noRetry,
   onNavigate,
-  schemaHash,
+  descriptorHash,
   skelName,
   timeoutMs,
 }: {
@@ -197,7 +197,7 @@ function ListenerRow({
   href: string
   noRetry: boolean
   onNavigate: (href: string) => void
-  schemaHash: string
+  descriptorHash: string
   skelName: string
   timeoutMs: number
 }) {
@@ -218,7 +218,7 @@ function ListenerRow({
           {skelName}
         </a>
         <Badge variant="outline" className="font-mono">
-          {schemaHash}
+          {descriptorHash}
         </Badge>
       </div>
       <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
@@ -241,20 +241,20 @@ function TaskRunnerRow({
     <div className="grid gap-2 rounded-lg border bg-background px-3 py-2.5">
       <div className="flex min-w-0 items-center gap-2">
         <a
-          href={skeletonTaskHref(item.taskSkelName, item.schemaHash)}
+          href={skeletonTaskHref(item.taskSkelName, item.descriptorHash)}
           onClick={(event) => {
             if (shouldUseBrowserNavigation(event)) {
               return
             }
             event.preventDefault()
-            onNavigate(skeletonTaskHref(item.taskSkelName, item.schemaHash))
+            onNavigate(skeletonTaskHref(item.taskSkelName, item.descriptorHash))
           }}
           className="truncate text-sm font-semibold transition-colors hover:text-primary hover:underline"
         >
           {item.taskSkelName}
         </a>
         <Badge variant="outline" className="font-mono">
-          {item.schemaHash}
+          {item.descriptorHash}
         </Badge>
       </div>
       <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
@@ -304,11 +304,11 @@ function ServiceHandlers({
         <div className="grid gap-2">
           {items.map((item) => (
             <HandlerRow
-              key={`${item.serviceSkelName}:${item.schemaHash}:${item.endpoint}`}
+              key={`${item.serviceSkelName}:${item.descriptorHash}:${item.endpoint}`}
               skelName={item.serviceSkelName}
-              schemaHash={item.schemaHash}
+              descriptorHash={item.descriptorHash}
               endpoint={item.endpoint}
-              href={skeletonServiceHref(item.serviceSkelName, item.schemaHash)}
+              href={skeletonServiceHref(item.serviceSkelName, item.descriptorHash)}
               onNavigate={onNavigate}
             />
           ))}
@@ -337,11 +337,11 @@ function WebHandlers({
         <div className="grid gap-2">
           {items.map((item) => (
             <HandlerRow
-              key={`${item.webSkelName}:${item.schemaHash}:${item.endpoint}`}
+              key={`${item.webSkelName}:${item.descriptorHash}:${item.endpoint}`}
               skelName={item.webSkelName}
-              schemaHash={item.schemaHash}
+              descriptorHash={item.descriptorHash}
               endpoint={item.endpoint}
-              href={skeletonWebHref(item.webSkelName, item.schemaHash)}
+              href={skeletonWebHref(item.webSkelName, item.descriptorHash)}
               onNavigate={onNavigate}
             />
           ))}
@@ -372,10 +372,10 @@ function EventListeners({
         <div className="grid gap-2">
           {items.map((item) => (
             <ListenerRow
-              key={`${item.eventSkelName}:${item.schemaHash}`}
+              key={`${item.eventSkelName}:${item.descriptorHash}`}
               skelName={item.eventSkelName}
-              schemaHash={item.schemaHash}
-              href={skeletonEventHref(item.eventSkelName, item.schemaHash)}
+              descriptorHash={item.descriptorHash}
+              href={skeletonEventHref(item.eventSkelName, item.descriptorHash)}
               onNavigate={onNavigate}
               timeoutMs={item.timeoutMs}
               concurrency={item.concurrency}
@@ -409,7 +409,7 @@ function TaskRunners({
         <div className="grid gap-2">
           {items.map((item) => (
             <TaskRunnerRow
-              key={`${item.taskSkelName}:${item.schemaHash}`}
+              key={`${item.taskSkelName}:${item.descriptorHash}`}
               item={item}
               onNavigate={onNavigate}
             />

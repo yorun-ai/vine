@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/app"
 	"go.yorun.ai/vine/app/standalone"
 	"go.yorun.ai/vine/core/logger"
@@ -14,7 +15,6 @@ import (
 	"go.yorun.ai/vine/core/rpc"
 	linkskeled "go.yorun.ai/vine/internal/core/link/skeled"
 	internalrpc "go.yorun.ai/vine/internal/core/rpc/client"
-	"go.yorun.ai/vine/internal/core/skel"
 )
 
 // Runtime owns a standalone Vine runtime started for a test package.
@@ -129,11 +129,11 @@ func (r *Runtime) registerClientApp(t testing.TB) {
 		}
 	}()
 	r.registryClient().Register(linkskeled.AppRegistration{
-		ServiceHandlers: []linkskeled.ServiceHandlerRegistration{},
-		WebHandlers:     []linkskeled.WebHandlerRegistration{},
-		EventListeners:  []linkskeled.EventListenerRegistration{},
-		TaskRunners:     []linkskeled.TaskRunnerRegistration{},
-		DomainSchemas:   []skel.JSON{},
+		ServiceHandlers:   []linkskeled.ServiceHandlerRegistration{},
+		WebHandlers:       []linkskeled.WebHandlerRegistration{},
+		EventListeners:    []linkskeled.EventListenerRegistration{},
+		TaskRunners:       []linkskeled.TaskRunnerRegistration{},
+		DomainDescriptors: []skeltype.JSON{},
 	}, rpc.WithTimeout(registerTimeout))
 	r.clientAppRegistered = true
 }

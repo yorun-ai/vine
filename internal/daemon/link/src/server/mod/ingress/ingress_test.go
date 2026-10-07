@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	skeltype "go.yorun.ai/skel/types"
 	internalapp "go.yorun.ai/vine/internal/app"
 	coreapp "go.yorun.ai/vine/internal/core/app"
 	"go.yorun.ai/vine/internal/core/ex"
@@ -22,7 +23,6 @@ import (
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	rpcinproc "go.yorun.ai/vine/internal/core/rpc/transport/inproc"
-	"go.yorun.ai/vine/internal/core/skel"
 	webinproc "go.yorun.ai/vine/internal/core/web/inproc"
 	"go.yorun.ai/vine/internal/daemon"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
@@ -43,7 +43,7 @@ type _IngressRegistryServiceClient struct{}
 
 func (*_IngressRegistryServiceClient) Register(hubskeled.AppRegistration, ...client.InvokeOption) {
 }
-func (*_IngressRegistryServiceClient) Unregister(string, skel.UUID, ...client.InvokeOption) {}
+func (*_IngressRegistryServiceClient) Unregister(string, skeltype.UUID, ...client.InvokeOption) {}
 func (*_IngressRegistryServiceClient) Heartbeat(hubskeled.AppStatus, ...client.InvokeOption) bool {
 	return true
 }

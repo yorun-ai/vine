@@ -1,7 +1,7 @@
 package core
 
 import (
-	"go.yorun.ai/vine/internal/core/skel"
+	skeltype "go.yorun.ai/skel/types"
 	"strings"
 )
 
@@ -11,7 +11,7 @@ type FieldSource struct {
 	Source    string               `json:"source" yaml:"source"`
 	Define    string               `json:"define,omitempty" yaml:"define,omitempty"`
 	Override  string               `json:"override,omitempty" yaml:"override,omitempty"`
-	Template  *skel.JSON           `json:"template,omitempty" yaml:"template,omitempty"`
+	Template  *skeltype.JSON       `json:"template,omitempty" yaml:"template,omitempty"`
 	Bindings  []FieldSourceBinding `json:"bindings,omitempty" yaml:"bindings,omitempty"`
 	Variables []string             `json:"variables,omitempty" yaml:"variables,omitempty"`
 }
@@ -19,11 +19,11 @@ type FieldSource struct {
 // FieldSourceBinding records a substitution at a JSON pointer within Template.
 // Value is the validated value applied at that location, including defaults.
 type FieldSourceBinding struct {
-	Path        string    `json:"path" yaml:"path"`
-	Variable    string    `json:"variable" yaml:"variable"`
-	Reference   string    `json:"reference" yaml:"reference"`
-	Value       skel.JSON `json:"value" yaml:"value"`
-	DefaultUsed bool      `json:"defaultUsed" yaml:"defaultUsed"`
+	Path        string        `json:"path" yaml:"path"`
+	Variable    string        `json:"variable" yaml:"variable"`
+	Reference   string        `json:"reference" yaml:"reference"`
+	Value       skeltype.JSON `json:"value" yaml:"value"`
+	DefaultUsed bool          `json:"defaultUsed" yaml:"defaultUsed"`
 }
 
 type FieldSources map[string]FieldSource

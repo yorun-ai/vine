@@ -10,10 +10,11 @@ import (
 	"syscall"
 	"time"
 
-	coreapp "go.yorun.ai/vine/internal/core/app"
-
+	skeldesc "go.yorun.ai/skel/descriptor"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/buildinfo"
 	"go.yorun.ai/vine/core/skel"
+	coreapp "go.yorun.ai/vine/internal/core/app"
 	"go.yorun.ai/vine/internal/core/conf"
 	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/internal/core/link"
@@ -338,7 +339,7 @@ func (a *_AppImpl) registerApp() {
 		WebHandlers:       webHandlers,
 		EventListeners:    eventListeners,
 		TaskRunners:       taskRunners,
-		DomainSchemas:     a.domainSchemas(),
+		DomainDescriptors: a.domainDescriptors(),
 	})
 }
 
@@ -363,19 +364,19 @@ func (a *_AppImpl) webHandlerRegistrations() []linkskeled.WebHandlerRegistration
 	}
 	return vslice.Map(a.webber.server.WebInfos(), func(webInfo webspec.WebInfo) linkskeled.WebHandlerRegistration {
 		return linkskeled.WebHandlerRegistration{
-			WebSkelName: webInfo.SkelName(),
-			SchemaHash:  webInfo.Hash(),
+			WebSkelName:    webInfo.SkelName(),
+			DescriptorHash: webInfo.Hash(),
 		}
 	})
 }
 
-func (a *_AppImpl) domainSchemas() []skel.JSON {
-	if a.linker.SkipDomainSchemas() {
-		return []skel.JSON{}
+func (a *_AppImpl) domainDescriptors() []skeltype.JSON {
+	if a.linker.SkipDomainDescriptors() {
+		return []skeltype.JSON{}
 	}
-	schemas := skel.RegisteredDomainSchemas()
-	return vslice.Map(schemas, func(schema *skel.DomainSchema) skel.JSON {
-		return skel.JSON(vcode.MustMarshalJsonS(schema))
+	descriptors := skel.RegisteredDomainDescriptors()
+	return vslice.Map(descriptors, func(descriptor *skeldesc.Domain) skeltype.JSON {
+		return skeltype.JSON(vcode.MustMarshalJsonS(descriptor))
 	})
 }
 

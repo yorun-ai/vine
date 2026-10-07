@@ -22,15 +22,15 @@ export function createSkeletonRoutes<TParent extends AnyRoute>(
     component: EmptyComponent,
   })
 
-  const SkeletonDomainSchemaRoute = createRoute({
+  const SkeletonDomainDescriptorRoute = createRoute({
     getParentRoute: () => SkeletonDomainNameRoute,
-    path: '$schemaHash',
+    path: '$descriptorHash',
     component: EmptyComponent,
   })
 
   return [
     SkeletonDomainRoute.addChildren([
-      SkeletonDomainNameRoute.addChildren([SkeletonDomainSchemaRoute]),
+      SkeletonDomainNameRoute.addChildren([SkeletonDomainDescriptorRoute]),
     ]),
     createSkeletonRoute(parentRoute, 'actor', 'actors'),
     createSkeletonRoute(parentRoute, 'config', 'configs'),
@@ -58,11 +58,11 @@ function createSkeletonRoute<
     path: '$skelName',
     component: EmptyComponent,
   })
-  const schemaRoute = createRoute({
+  const descriptorRoute = createRoute({
     getParentRoute: () => nameRoute,
-    path: '$schemaHash',
+    path: '$descriptorHash',
     component: EmptyComponent,
   })
 
-  return route.addChildren([nameRoute.addChildren([schemaRoute])])
+  return route.addChildren([nameRoute.addChildren([descriptorRoute])])
 }

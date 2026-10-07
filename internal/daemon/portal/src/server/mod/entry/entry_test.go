@@ -3,14 +3,6 @@ package entry
 import (
 	"context"
 	"fmt"
-	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/core/link/ingressinproc"
-	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/skel"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
-	"go.yorun.ai/vine/internal/utilfortest/watchtest"
-	"go.yorun.ai/vine/util/vcode"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -18,10 +10,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	skeldesc "go.yorun.ai/skel/descriptor"
+	"go.yorun.ai/vine/internal/core/link/ingressinproc"
+	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/util/httputil"
+	"go.yorun.ai/vine/internal/utilfortest/watchtest"
+	"go.yorun.ai/vine/util/vcode"
 )
 
 type _TestSite struct {
@@ -197,8 +197,8 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
 			values := map[string]string{
-				watched.FormatSchemaWebKey("demo.Web"):     vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: "demo.Web", AuthMode: skel.AuthModeOff}),
-				watched.FormatSchemaActorKey("demo.Actor"): vcode.MustMarshalJsonS(watched.SchemaActor{SkelName: "demo.Actor"}),
+				watched.FormatDescriptorWebKey("demo.Web"):     vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: skeldesc.AuthModeOff}),
+				watched.FormatDescriptorActorKey("demo.Actor"): vcode.MustMarshalJsonS(watched.DescriptorActor{SkelName: "demo.Actor"}),
 				watched.FormatPortalSiteKey("web"): vcode.MustMarshalJsonS(watched.PortalSite{
 					Name: "web", Type: "WEBGW", ActorVia: watched.PortalActorVia{ActorSkelName: "demo.Actor"}, WebgwConfig: &watched.PortalWebgwConfig{WebName: "demo.Web"},
 				}),

@@ -2,7 +2,7 @@
 
 package skeled
 
-import "go.yorun.ai/vine/internal/core/skel"
+import skeltype "go.yorun.ai/skel/types"
 
 // AppRegistration Application information registered by App to Link
 type AppRegistration struct {
@@ -24,16 +24,20 @@ type AppRegistration struct {
 	EventListeners []EventListenerRegistration `json:"eventListeners"`
 	// TaskRunners List of task execution capabilities provided by the current application
 	TaskRunners []TaskRunnerRegistration `json:"taskRunners"`
-	// DomainSchemas List of all DomainSchemas registered by the current application
-	DomainSchemas []skel.JSON `json:"domainSchemas"`
+	// DomainDescriptors List of all domain descriptors registered by the current application
+	DomainDescriptors []skeltype.JSON `json:"domainDescriptors"`
+	// DomainSchemas Legacy schema registration input
+	//
+	// Deprecated: Use domainDescriptors instead.
+	DomainSchemas []skeltype.JSON `json:"domainSchemas"`
 }
 
 // BootInfo Key information obtained from Link when the App starts
 type BootInfo struct {
 	// RpcProxyEndpointPath The endpoint path that should be accessed when the current application initiates Rpc
 	RpcProxyEndpointPath string `json:"rpcProxyEndpointPath"`
-	// SkipDomainSchemas Whether to skip DomainSchema when app is registered
-	SkipDomainSchemas bool `json:"skipDomainSchemas"`
+	// SkipDomainDescriptors Whether to skip descriptor when app is registered
+	SkipDomainDescriptors bool `json:"skipDomainDescriptors"`
 }
 
 // EventEmission Event dispatch information sent from App to Link
@@ -57,15 +61,15 @@ type EventEmissionMeta struct {
 	// AppVersion The application version that sent the event
 	AppVersion string `json:"appVersion"`
 	// AppInstanceId The application instance ID that sent the event
-	AppInstanceId skel.UUID `json:"appInstanceId"`
+	AppInstanceId skeltype.UUID `json:"appInstanceId"`
 }
 
 // EventListenerRegistration Event listening capability registration information provided by the application
 type EventListenerRegistration struct {
 	// EventSkelName Event Skel name
 	EventSkelName string `json:"eventSkelName"`
-	// SchemaHash Event schema hash
-	SchemaHash string `json:"schemaHash"`
+	// DescriptorHash Event descriptor hash
+	DescriptorHash string `json:"descriptorHash"`
 	// TimeoutMs Execution timeout, in milliseconds
 	TimeoutMs int `json:"timeoutMs"`
 	// Concurrency Maximum concurrency
@@ -78,8 +82,8 @@ type EventListenerRegistration struct {
 type ServiceHandlerRegistration struct {
 	// ServiceSkelName Service Skel name
 	ServiceSkelName string `json:"serviceSkelName"`
-	// SchemaHash Service schema hash
-	SchemaHash string `json:"schemaHash"`
+	// DescriptorHash Service descriptor hash
+	DescriptorHash string `json:"descriptorHash"`
 }
 
 // TaskLaunch Task trigger information initiated by App to Link
@@ -105,7 +109,7 @@ type TaskLaunchMeta struct {
 	// AppVersion The application version that initiated the task
 	AppVersion string `json:"appVersion"`
 	// AppInstanceId The application instance ID that initiated the task
-	AppInstanceId skel.UUID `json:"appInstanceId"`
+	AppInstanceId skeltype.UUID `json:"appInstanceId"`
 }
 
 // TaskRunnerCronScheduler Task execution Cron schedule
@@ -120,8 +124,8 @@ type TaskRunnerCronScheduler struct {
 type TaskRunnerRegistration struct {
 	// TaskSkelName Task Skel name
 	TaskSkelName string `json:"taskSkelName"`
-	// SchemaHash Task schema hash
-	SchemaHash string `json:"schemaHash"`
+	// DescriptorHash Task descriptor hash
+	DescriptorHash string `json:"descriptorHash"`
 	// TimeoutMs Execution timeout, in milliseconds
 	TimeoutMs int `json:"timeoutMs"`
 	// Concurrency Maximum concurrency
@@ -136,6 +140,6 @@ type TaskRunnerRegistration struct {
 type WebHandlerRegistration struct {
 	// WebSkelName Web Skel name
 	WebSkelName string `json:"webSkelName"`
-	// SchemaHash Web schema hash
-	SchemaHash string `json:"schemaHash"`
+	// DescriptorHash Web descriptor hash
+	DescriptorHash string `json:"descriptorHash"`
 }

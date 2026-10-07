@@ -11,11 +11,11 @@ import (
 	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 	"uuid"
 
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
 	rpcinproc "go.yorun.ai/vine/internal/core/rpc/transport/inproc"
-	"go.yorun.ai/vine/internal/core/skel"
 	webinproc "go.yorun.ai/vine/internal/core/web/inproc"
 )
 
@@ -170,7 +170,7 @@ func TestAppImplStartInprocServerRegistersEventerInprocRoute(t *testing.T) {
 			TraceSpan:     meta.InitialTrace().Span(),
 			AppName:       "remote.app",
 			AppVersion:    "1.0.0",
-			AppInstanceId: skel.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
+			AppInstanceId: skeltype.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
 		},
 		EventSkelName: "test.eventer.TestEventerEvent",
 		EventJson:     `{"groupId":7}`,
@@ -209,7 +209,7 @@ func TestAppImplStartInprocServerRegistersTaskerInprocRoute(t *testing.T) {
 			TraceSpan:     meta.InitialTrace().Span(),
 			AppName:       "remote.app",
 			AppVersion:    "1.0.0",
-			AppInstanceId: skel.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
+			AppInstanceId: skeltype.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
 		},
 		TaskSkelName:    "test.tasker.TaskerTestTask",
 		TriggerSkelName: "forGroup",

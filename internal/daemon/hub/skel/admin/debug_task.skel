@@ -8,8 +8,8 @@ data TaskDebugTaskItem {
     @desc("Task Skel name")
     taskSkelName: string
 
-    @desc("Task schema hash")
-    schemaHash: string
+    @desc("Task descriptor hash")
+    descriptorHash: string
 
     @desc("Task description")
     description: string
@@ -65,8 +65,8 @@ data TaskDebugLaunchRequest {
     @desc("Task Skel name")
     taskSkelName: string
 
-    @desc("Task schema hash")
-    schemaHash: string
+    @desc("Task descriptor hash")
+    descriptorHash: string
 
     @desc("Trigger Skel name")
     triggerSkelName: string
@@ -97,8 +97,8 @@ api service TaskDebugApiService {
             @desc("Task Skel name")
             taskSkelName: string
 
-            @desc("Task schema hash")
-            schemaHash: string
+            @desc("Task descriptor hash")
+            descriptorHash: string
         }
 
         output list<TaskDebugTriggerItem>
@@ -110,8 +110,8 @@ api service TaskDebugApiService {
             @desc("Task Skel name")
             taskSkelName: string
 
-            @desc("Task schema hash")
-            schemaHash: string
+            @desc("Task descriptor hash")
+            descriptorHash: string
 
             @desc("Trigger Skel name")
             triggerSkelName: string

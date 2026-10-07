@@ -3,7 +3,7 @@ package core
 import (
 	"strings"
 
-	"go.yorun.ai/vine/internal/core/skel"
+	skeldesc "go.yorun.ai/skel/descriptor"
 )
 
 // AppConfigDefinition is the resolved declaration of one application config.
@@ -68,106 +68,106 @@ type AppConfigEnumItem struct {
 
 // NewAppConfigDefinition resolves the declaration of an application into the
 // definition the Hub serves: field types and enum options are resolved here so
-// no layer above has to join schemas again.
-func NewAppConfigDefinition(schema *skel.ConfigSchema, enumSchemas []*skel.EnumSchema, dataSchemas []*skel.DataSchema) *AppConfigDefinition {
-	if schema == nil {
+// no layer above has to join descriptors again.
+func NewAppConfigDefinition(descriptor *skeldesc.Config, enumDescriptors []*skeldesc.Enum, dataDescriptors []*skeldesc.Data) *AppConfigDefinition {
+	if descriptor == nil {
 		return nil
 	}
 	return &AppConfigDefinition{
-		SkelName:         schema.SkelName,
-		Name:             schema.Name,
-		Description:      schema.Description,
-		Deprecated:       schema.Deprecated,
-		DeprecatedReason: schema.DeprecatedReason,
-		Lifecycle:        schema.Lifecycle,
-		Sensitive:        schema.Sensitive,
-		DataTypes:        appConfigDataTypes(schema.Members, enumSchemas, dataSchemas),
-		Fields:           newAppConfigFields(schema.Members, enumSchemas),
+		SkelName:         descriptor.SkelName,
+		Name:             descriptor.Name,
+		Description:      descriptor.Description,
+		Deprecated:       descriptor.Deprecated,
+		DeprecatedReason: descriptor.DeprecatedReason,
+		Lifecycle:        string(descriptor.Lifecycle),
+		Sensitive:        descriptor.Sensitive,
+		DataTypes:        appConfigDataTypes(descriptor.Members, enumDescriptors, dataDescriptors),
+		Fields:           newAppConfigFields(descriptor.Members, enumDescriptors),
 	}
 }
 
-func newAppConfigFields(members []*skel.MemberSchema, enumSchemas []*skel.EnumSchema) []AppConfigField {
+func newAppConfigFields(members []*skeldesc.Member, enumDescriptors []*skeldesc.Enum) []AppConfigField {
 	fields := make([]AppConfigField, 0, len(members))
 	for _, member := range members {
 		field := AppConfigField{
 			Name:             member.Name,
-			ValueType:        newAppConfigType(member.Type, enumSchemas),
+			ValueType:        newAppConfigType(member.Type, enumDescriptors),
 			Sensitive:        member.Sensitive,
 			Example:          member.Example,
 			Type:             formatAppConfigFieldType(member.Type),
 			Description:      member.Description,
 			Deprecated:       member.Deprecated,
 			DeprecatedReason: member.DeprecatedReason,
-			EnumItems:        newAppConfigEnumItems(findEnumSchema(member.Type, enumSchemas)),
+			EnumItems:        newAppConfigEnumItems(findEnumDescriptor(member.Type, enumDescriptors)),
 		}
 		field.MapKeyEnumItems = []AppConfigEnumItem{}
 		field.MapValueEnumItems = []AppConfigEnumItem{}
-		if member.Type != nil && member.Type.Kind == skel.TypeKindMap {
-			field.MapKeyEnumItems = newAppConfigEnumItems(findEnumSchema(member.Type.Key, enumSchemas))
-			field.MapValueEnumItems = newAppConfigEnumItems(findEnumSchema(member.Type.Value, enumSchemas))
+		if member.Type != nil && member.Type.Kind == skeldesc.TypeKindMap {
+			field.MapKeyEnumItems = newAppConfigEnumItems(findEnumDescriptor(member.Type.Key, enumDescriptors))
+			field.MapValueEnumItems = newAppConfigEnumItems(findEnumDescriptor(member.Type.Value, enumDescriptors))
 		}
 		fields = append(fields, field)
 	}
 	return fields
 }
 
-func formatAppConfigFieldType(typeSchema *skel.TypeSchema) string {
-	if typeSchema == nil {
+func formatAppConfigFieldType(typeDescriptor *skeldesc.Type) string {
+	if typeDescriptor == nil {
 		return ""
 	}
 	var ret string
-	switch typeSchema.Kind {
-	case skel.TypeKindScalar:
-		ret = string(typeSchema.Scalar)
-	case skel.TypeKindEnum, skel.TypeKindData, skel.TypeKindConfig, skel.TypeKindEvent, skel.TypeKindTypeParameter:
-		ret = formatAppConfigNamedType(typeSchema)
-	case skel.TypeKindList:
-		ret = "list<" + formatAppConfigFieldType(typeSchema.Element) + ">"
-	case skel.TypeKindMap:
-		ret = "map<" + formatAppConfigFieldType(typeSchema.Key) + ", " + formatAppConfigFieldType(typeSchema.Value) + ">"
+	switch typeDescriptor.Kind {
+	case skeldesc.TypeKindScalar:
+		ret = string(typeDescriptor.Scalar)
+	case skeldesc.TypeKindEnum, skeldesc.TypeKindData, skeldesc.TypeKindConfig, skeldesc.TypeKindEvent, skeldesc.TypeKindTypeParameter:
+		ret = formatAppConfigNamedType(typeDescriptor)
+	case skeldesc.TypeKindList:
+		ret = "list<" + formatAppConfigFieldType(typeDescriptor.Element) + ">"
+	case skeldesc.TypeKindMap:
+		ret = "map<" + formatAppConfigFieldType(typeDescriptor.Key) + ", " + formatAppConfigFieldType(typeDescriptor.Value) + ">"
 	default:
-		ret = string(typeSchema.Kind)
+		ret = string(typeDescriptor.Kind)
 	}
-	if typeSchema.Nullable {
+	if typeDescriptor.Nullable {
 		ret += "?"
 	}
 	return ret
 }
 
-func formatAppConfigNamedType(typeSchema *skel.TypeSchema) string {
-	if typeSchema.SkelName != "" {
-		return appConfigTypeArguments(typeSchema.SkelName, typeSchema.TypeArguments)
+func formatAppConfigNamedType(typeDescriptor *skeldesc.Type) string {
+	if typeDescriptor.SkelName != "" {
+		return appConfigTypeArguments(typeDescriptor.SkelName, typeDescriptor.TypeArguments)
 	}
-	return appConfigTypeArguments(typeSchema.Name, typeSchema.TypeArguments)
+	return appConfigTypeArguments(typeDescriptor.Name, typeDescriptor.TypeArguments)
 }
 
-func findEnumSchema(typeSchema *skel.TypeSchema, enumSchemas []*skel.EnumSchema) *skel.EnumSchema {
-	if typeSchema == nil {
+func findEnumDescriptor(typeDescriptor *skeldesc.Type, enumDescriptors []*skeldesc.Enum) *skeldesc.Enum {
+	if typeDescriptor == nil {
 		return nil
 	}
-	if typeSchema.Kind == skel.TypeKindList {
-		return findEnumSchema(typeSchema.Element, enumSchemas)
+	if typeDescriptor.Kind == skeldesc.TypeKindList {
+		return findEnumDescriptor(typeDescriptor.Element, enumDescriptors)
 	}
-	if typeSchema.Kind == skel.TypeKindMap {
-		return findEnumSchema(typeSchema.Key, enumSchemas)
+	if typeDescriptor.Kind == skeldesc.TypeKindMap {
+		return findEnumDescriptor(typeDescriptor.Key, enumDescriptors)
 	}
-	if typeSchema.Kind != skel.TypeKindEnum {
+	if typeDescriptor.Kind != skeldesc.TypeKindEnum {
 		return nil
 	}
-	for _, enumSchema := range enumSchemas {
-		if enumSchema.SkelName == typeSchema.SkelName {
-			return enumSchema
+	for _, enumDescriptor := range enumDescriptors {
+		if enumDescriptor.SkelName == typeDescriptor.SkelName {
+			return enumDescriptor
 		}
 	}
 	return nil
 }
 
-func newAppConfigEnumItems(enumSchema *skel.EnumSchema) []AppConfigEnumItem {
-	if enumSchema == nil {
+func newAppConfigEnumItems(enumDescriptor *skeldesc.Enum) []AppConfigEnumItem {
+	if enumDescriptor == nil {
 		return []AppConfigEnumItem{}
 	}
-	items := make([]AppConfigEnumItem, 0, len(enumSchema.Items))
-	for _, item := range enumSchema.Items {
+	items := make([]AppConfigEnumItem, 0, len(enumDescriptor.Items))
+	for _, item := range enumDescriptor.Items {
 		items = append(items, AppConfigEnumItem{
 			Name:             item.Name,
 			Description:      item.Description,
@@ -178,7 +178,7 @@ func newAppConfigEnumItems(enumSchema *skel.EnumSchema) []AppConfigEnumItem {
 	return items
 }
 
-func appConfigTypeArguments(name string, arguments []*skel.TypeSchema) string {
+func appConfigTypeArguments(name string, arguments []*skeldesc.Type) string {
 	if len(arguments) == 0 {
 		return name
 	}
@@ -189,7 +189,7 @@ func appConfigTypeArguments(name string, arguments []*skel.TypeSchema) string {
 	return name + "<" + strings.Join(args, ", ") + ">"
 }
 
-func newAppConfigType(kind *skel.TypeSchema, enums []*skel.EnumSchema) *AppConfigType {
+func newAppConfigType(kind *skeldesc.Type, enums []*skeldesc.Enum) *AppConfigType {
 	if kind == nil {
 		return nil
 	}
@@ -197,14 +197,21 @@ func newAppConfigType(kind *skel.TypeSchema, enums []*skel.EnumSchema) *AppConfi
 	if name == "" {
 		name = kind.Name
 	}
-	if kind.Kind == skel.TypeKindScalar {
+	if kind.Kind == skeldesc.TypeKindScalar {
 		name = string(kind.Scalar)
 	}
-	result := &AppConfigType{Kind: string(kind.Kind), Name: name, Nullable: kind.Nullable,
-		Element: newAppConfigType(kind.Element, enums), Key: newAppConfigType(kind.Key, enums), Value: newAppConfigType(kind.Value, enums),
-		TypeArguments: []*AppConfigType{}, EnumItems: []AppConfigEnumItem{}}
-	if kind.Kind == skel.TypeKindEnum {
-		result.EnumItems = newAppConfigEnumItems(findEnumSchema(kind, enums))
+	result := &AppConfigType{
+		Kind:          string(kind.Kind),
+		Name:          name,
+		Nullable:      kind.Nullable,
+		Element:       newAppConfigType(kind.Element, enums),
+		Key:           newAppConfigType(kind.Key, enums),
+		Value:         newAppConfigType(kind.Value, enums),
+		TypeArguments: []*AppConfigType{},
+		EnumItems:     []AppConfigEnumItem{},
+	}
+	if kind.Kind == skeldesc.TypeKindEnum {
+		result.EnumItems = newAppConfigEnumItems(findEnumDescriptor(kind, enums))
 	}
 	for _, arg := range kind.TypeArguments {
 		result.TypeArguments = append(result.TypeArguments, newAppConfigType(arg, enums))
@@ -212,15 +219,15 @@ func newAppConfigType(kind *skel.TypeSchema, enums []*skel.EnumSchema) *AppConfi
 	return result
 }
 
-func appConfigDataTypes(members []*skel.MemberSchema, enums []*skel.EnumSchema, schemas []*skel.DataSchema) []AppConfigData {
-	index := map[string]*skel.DataSchema{}
-	for _, data := range schemas {
+func appConfigDataTypes(members []*skeldesc.Member, enums []*skeldesc.Enum, descriptors []*skeldesc.Data) []AppConfigData {
+	index := map[string]*skeldesc.Data{}
+	for _, data := range descriptors {
 		index[data.SkelName] = data
 	}
 	result := []AppConfigData{}
 	seen := map[string]bool{}
-	var visit func(*skel.TypeSchema)
-	visit = func(kind *skel.TypeSchema) {
+	var visit func(*skeldesc.Type)
+	visit = func(kind *skeldesc.Type) {
 		if kind == nil {
 			return
 		}
@@ -230,7 +237,7 @@ func appConfigDataTypes(members []*skel.MemberSchema, enums []*skel.EnumSchema, 
 		visit(kind.Element)
 		visit(kind.Key)
 		visit(kind.Value)
-		if kind.Kind != skel.TypeKindData || seen[kind.SkelName] {
+		if kind.Kind != skeldesc.TypeKindData || seen[kind.SkelName] {
 			return
 		}
 		seen[kind.SkelName] = true
@@ -238,9 +245,16 @@ func appConfigDataTypes(members []*skel.MemberSchema, enums []*skel.EnumSchema, 
 		if data == nil {
 			return
 		}
-		result = append(result, AppConfigData{Name: data.Name, SkelName: data.SkelName, Description: data.Description,
-			Deprecated: data.Deprecated, DeprecatedReason: data.DeprecatedReason, Sensitive: data.Sensitive,
-			TypeParameters: data.TypeParameters, Fields: newAppConfigFields(data.Members, enums)})
+		result = append(result, AppConfigData{
+			Name:             data.Name,
+			SkelName:         data.SkelName,
+			Description:      data.Description,
+			Deprecated:       data.Deprecated,
+			DeprecatedReason: data.DeprecatedReason,
+			Sensitive:        data.Sensitive,
+			TypeParameters:   data.TypeParameters,
+			Fields:           newAppConfigFields(data.Members, enums),
+		})
 		for _, member := range data.Members {
 			visit(member.Type)
 		}

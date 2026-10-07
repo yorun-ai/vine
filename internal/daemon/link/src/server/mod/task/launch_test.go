@@ -7,8 +7,8 @@ import (
 
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/core/link/skeled"
-	"go.yorun.ai/vine/internal/core/skel"
 	taskspec "go.yorun.ai/vine/internal/core/task/spec"
 	"go.yorun.ai/vine/util/vcode"
 )
@@ -24,7 +24,7 @@ func TestManagerLaunchesNATSMessage(t *testing.T) {
 			TraceSpan:     "span-1",
 			AppName:       "demo.app",
 			AppVersion:    "1.0.0",
-			AppInstanceId: skel.NewUUID(uuid.MustParse("11111111-1111-1111-1111-111111111111")),
+			AppInstanceId: skeltype.NewUUID(uuid.MustParse("11111111-1111-1111-1111-111111111111")),
 		},
 		TaskSkelName:    "demo.user.SyncUserTask",
 		TriggerSkelName: "demo.user.SyncUserTaskManualTrigger",

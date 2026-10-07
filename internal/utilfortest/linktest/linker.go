@@ -2,29 +2,29 @@
 package linktest
 
 import (
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/link"
 	linkskeled "go.yorun.ai/vine/internal/core/link/skeled"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/util/vslice"
 )
 
 // Linker records registrations and serves configured values without a Link process.
 type Linker struct {
-	RpcProxyOutEndpointValue string
-	SkipDomainSchemasValue   bool
-	LoopbackHostValue        string
-	HasLoopbackValue         bool
+	RpcProxyOutEndpointValue   string
+	SkipDomainDescriptorsValue bool
+	LoopbackHostValue          string
+	HasLoopbackValue           bool
 
-	RegisterServiceEndpoint string
-	RegisterServiceHandlers []linkskeled.ServiceHandlerRegistration
-	RegisterWebHandlers     []linkskeled.WebHandlerRegistration
-	RegisterEventListeners  []linkskeled.EventListenerRegistration
-	RegisterTaskRunners     []linkskeled.TaskRunnerRegistration
-	RegisterDomainSchemas   []skel.JSON
-	UnregisterCalls         int
-	UnregisterError         ex.Error
+	RegisterServiceEndpoint   string
+	RegisterServiceHandlers   []linkskeled.ServiceHandlerRegistration
+	RegisterWebHandlers       []linkskeled.WebHandlerRegistration
+	RegisterEventListeners    []linkskeled.EventListenerRegistration
+	RegisterTaskRunners       []linkskeled.TaskRunnerRegistration
+	RegisterDomainDescriptors []skeltype.JSON
+	UnregisterCalls           int
+	UnregisterError           ex.Error
 
 	EternalConfigByKey map[string]string
 	InstantConfigByKey map[string]string
@@ -34,8 +34,8 @@ func (l *Linker) RpcProxyEndpoint() string {
 	return l.RpcProxyOutEndpointValue
 }
 
-func (l *Linker) SkipDomainSchemas() bool {
-	return l.SkipDomainSchemasValue
+func (l *Linker) SkipDomainDescriptors() bool {
+	return l.SkipDomainDescriptorsValue
 }
 
 func (l *Linker) CheckLoopback() (string, bool) {
@@ -43,15 +43,21 @@ func (l *Linker) CheckLoopback() (string, bool) {
 }
 
 func (l *Linker) RegistryClient() linkskeled.RegistryServiceClient {
-	return &_TestLinkRegistryClient{linker: l}
+	return &_TestLinkRegistryClient{
+		linker: l,
+	}
 }
 
 func (l *Linker) RegistryClientER() linkskeled.RegistryServiceClientER {
-	return &_TestLinkRegistryClientER{linker: l}
+	return &_TestLinkRegistryClientER{
+		linker: l,
+	}
 }
 
 func (l *Linker) ConfigClient() linkskeled.ConfigServiceClient {
-	return &_TestLinkConfigClient{linker: l}
+	return &_TestLinkConfigClient{
+		linker: l,
+	}
 }
 
 func (l *Linker) EventClient() linkskeled.EventServiceClient {
@@ -77,7 +83,7 @@ func (c *_TestLinkRegistryClient) Register(registration linkskeled.AppRegistrati
 	l.RegisterWebHandlers = vslice.Clone(registration.WebHandlers)
 	l.RegisterEventListeners = vslice.Clone(registration.EventListeners)
 	l.RegisterTaskRunners = vslice.Clone(registration.TaskRunners)
-	l.RegisterDomainSchemas = append([]skel.JSON(nil), registration.DomainSchemas...)
+	l.RegisterDomainDescriptors = append([]skeltype.JSON(nil), registration.DomainDescriptors...)
 }
 
 func (c *_TestLinkRegistryClient) Unregister(_ivOpts ...rpcclient.InvokeOption) {

@@ -60,7 +60,7 @@ function appInstanceKey(instance: ServiceDebugAppInstance) {
 }
 
 function serviceKey(service: ServiceDebugServiceItem) {
-  return `${service.serviceSkelName}:${service.schemaHash}`
+  return `${service.serviceSkelName}:${service.descriptorHash}`
 }
 
 function methodStorageKey(serviceSkelName: string, methodSkelName: string) {
@@ -333,7 +333,7 @@ export function ServiceClientPage() {
       const nextRequest =
         await serviceDebugService.buildDefaultInvokeRequest({
           serviceSkelName: selectedService.serviceSkelName,
-          schemaHash: selectedService.schemaHash,
+          descriptorHash: selectedService.descriptorHash,
           methodSkelName: selectedMethod.skelName,
         })
       setActors(nextRequest.actors)
@@ -446,7 +446,7 @@ export function ServiceClientPage() {
     void serviceDebugService
       .listMethods({
         serviceSkelName: selectedService.serviceSkelName,
-        schemaHash: selectedService.schemaHash,
+        descriptorHash: selectedService.descriptorHash,
       })
       .then((nextMethods) => {
         if (ignore) {
@@ -482,7 +482,7 @@ export function ServiceClientPage() {
     void serviceDebugService
       .listServiceAppInstances({
         serviceSkelName: selectedService.serviceSkelName,
-        schemaHash: selectedService.schemaHash,
+        descriptorHash: selectedService.descriptorHash,
       })
       .then((nextAppInstances) => {
         if (ignore) {
@@ -541,7 +541,7 @@ export function ServiceClientPage() {
       const nextAppInstances =
         await serviceDebugService.listServiceAppInstances({
           serviceSkelName: selectedService.serviceSkelName,
-          schemaHash: selectedService.schemaHash,
+          descriptorHash: selectedService.descriptorHash,
         })
       setAppInstances(nextAppInstances)
       setSelectedAppInstance((current) => {
@@ -579,7 +579,7 @@ export function ServiceClientPage() {
             appName: selectedAppInstance?.appName ?? null,
             appInstanceId: selectedAppInstance?.appInstanceId ?? null,
             serviceSkelName: selectedService.serviceSkelName,
-            schemaHash: selectedService.schemaHash,
+            descriptorHash: selectedService.descriptorHash,
             methodSkelName: selectedMethod.skelName,
             paramsJson: params,
             timeoutSeconds: parsedTimeoutSeconds,
@@ -669,7 +669,7 @@ export function ServiceClientPage() {
                   api={selectedService?.api}
                   description={
                     selectedService?.deprecatedReason ??
-                    selectedService?.schemaHash
+                    selectedService?.descriptorHash
                   }
                   deprecated={selectedService?.deprecated}
                   placeholder={
@@ -717,7 +717,7 @@ export function ServiceClientPage() {
                       <SelectCardItem
                         title={item.serviceSkelName}
                         api={item.api}
-                        description={item.deprecatedReason ?? item.schemaHash}
+                        description={item.deprecatedReason ?? item.descriptorHash}
                         deprecated={item.deprecated}
                       />
                     </SelectItem>

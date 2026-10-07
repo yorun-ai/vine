@@ -2,14 +2,14 @@
 
 package control
 
-import "go.yorun.ai/vine/internal/core/skel"
+import skeltype "go.yorun.ai/skel/types"
 
 // AppRegistration Link application instance information registered with Hub
 type AppRegistration struct {
 	// Name Application name
 	Name string `json:"name"`
 	// InstanceId Application instance ID
-	InstanceId skel.UUID `json:"instanceId"`
+	InstanceId skeltype.UUID `json:"instanceId"`
 	// Version Application version
 	Version string `json:"version"`
 	// Endpoint Application access address (e.g. "http://10.1.2.3:23001")
@@ -22,8 +22,12 @@ type AppRegistration struct {
 	EventListeners []EventListenerRegistration `json:"eventListeners"`
 	// TaskRunners List of task execution capabilities provided by the application
 	TaskRunners []TaskRunnerRegistration `json:"taskRunners"`
-	// DomainSchemas List of all DomainSchemas registered by the application
-	DomainSchemas []skel.JSON `json:"domainSchemas"`
+	// DomainDescriptors List of all domain descriptors registered by the application
+	DomainDescriptors []skeltype.JSON `json:"domainDescriptors"`
+	// DomainSchemas Legacy schema registration input
+	//
+	// Deprecated: Use domainDescriptors instead.
+	DomainSchemas []skeltype.JSON `json:"domainSchemas"`
 }
 
 // AppStatus Application instance status information, used for heartbeat refresh
@@ -31,15 +35,15 @@ type AppStatus struct {
 	// Name Application name
 	Name string `json:"name"`
 	// InstanceId Application instance ID
-	InstanceId skel.UUID `json:"instanceId"`
+	InstanceId skeltype.UUID `json:"instanceId"`
 }
 
 // EventListenerRegistration Event listening capability registration information provided by the application
 type EventListenerRegistration struct {
 	// EventSkelName Event Skel name
 	EventSkelName string `json:"eventSkelName"`
-	// SchemaHash Event schema hash
-	SchemaHash string `json:"schemaHash"`
+	// DescriptorHash Event descriptor hash
+	DescriptorHash string `json:"descriptorHash"`
 	// TimeoutMs Execution timeout, in milliseconds
 	TimeoutMs int `json:"timeoutMs"`
 	// Concurrency Maximum concurrency
@@ -83,7 +87,7 @@ type Info struct {
 // PortalRegistration Portal instance registration information provided by Portal
 type PortalRegistration struct {
 	// InstanceId Portal instance ID
-	InstanceId skel.UUID `json:"instanceId"`
+	InstanceId skeltype.UUID `json:"instanceId"`
 	// Version Portal Vine runtime version
 	Version string `json:"version"`
 }
@@ -91,15 +95,15 @@ type PortalRegistration struct {
 // PortalStatus Portal instance status information, used for heartbeat refresh
 type PortalStatus struct {
 	// InstanceId Portal instance ID
-	InstanceId skel.UUID `json:"instanceId"`
+	InstanceId skeltype.UUID `json:"instanceId"`
 }
 
 // ServiceHandlerRegistration Rpc service processing capability registration information provided by the application
 type ServiceHandlerRegistration struct {
 	// ServiceSkelName Service Skel name
 	ServiceSkelName string `json:"serviceSkelName"`
-	// SchemaHash Service schema hash
-	SchemaHash string `json:"schemaHash"`
+	// DescriptorHash Service descriptor hash
+	DescriptorHash string `json:"descriptorHash"`
 	// Endpoint Service agent access address
 	Endpoint string `json:"endpoint"`
 }
@@ -116,8 +120,8 @@ type TaskRunnerCronScheduler struct {
 type TaskRunnerRegistration struct {
 	// TaskSkelName Task Skel name
 	TaskSkelName string `json:"taskSkelName"`
-	// SchemaHash Task schema hash
-	SchemaHash string `json:"schemaHash"`
+	// DescriptorHash Task descriptor hash
+	DescriptorHash string `json:"descriptorHash"`
 	// TimeoutMs Execution timeout, in milliseconds
 	TimeoutMs int `json:"timeoutMs"`
 	// Concurrency Maximum concurrency
@@ -132,8 +136,8 @@ type TaskRunnerRegistration struct {
 type WebHandlerRegistration struct {
 	// WebSkelName Web Skel name
 	WebSkelName string `json:"webSkelName"`
-	// SchemaHash Web schema hash
-	SchemaHash string `json:"schemaHash"`
+	// DescriptorHash Web descriptor hash
+	DescriptorHash string `json:"descriptorHash"`
 	// Endpoint Web proxy access address
 	Endpoint string `json:"endpoint"`
 }

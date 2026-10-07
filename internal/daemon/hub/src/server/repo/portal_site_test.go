@@ -9,8 +9,8 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/infra/rdb"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
@@ -25,33 +25,41 @@ var (
 	testPortalSiteRepoDBOnce sync.Once
 )
 
-// _PortalSiteSchemaRepo supplies the registered schemas a portal site repository
+// _PortalSiteDescriptorRepo supplies the registered descriptors a portal site repository
 // assembles Web mount paths and Rpc services from.
-type _PortalSiteSchemaRepo struct {
-	core.SchemaRepo
-	webs          []*skel.WebSchema
-	views         []core.DomainSchemaView
-	configSchemas []*skel.ConfigSchema
-	enumSchemas   []*skel.EnumSchema
-	dataSchemas   []*skel.DataSchema
+type _PortalSiteDescriptorRepo struct {
+	core.DescriptorRepo
+	webs              []*skeldesc.Web
+	views             []core.DomainDescriptorView
+	configDescriptors []*skeldesc.Config
+	enumDescriptors   []*skeldesc.Enum
+	dataDescriptors   []*skeldesc.Data
 }
 
-func (r *_PortalSiteSchemaRepo) ListAppConfigSchemas() []*skel.ConfigSchema { return r.configSchemas }
+func (r *_PortalSiteDescriptorRepo) ListAppConfigDescriptors() []*skeldesc.Config {
+	return r.configDescriptors
+}
 
-func (r *_PortalSiteSchemaRepo) ListEnumSchemas() []*skel.EnumSchema { return r.enumSchemas }
+func (r *_PortalSiteDescriptorRepo) ListEnumDescriptors() []*skeldesc.Enum {
+	return r.enumDescriptors
+}
 
-func (r *_PortalSiteSchemaRepo) GetWebSchema(skelName string) *skel.WebSchema {
-	for _, schema := range r.webs {
-		if schema.SkelName == skelName {
-			return schema
+func (r *_PortalSiteDescriptorRepo) GetWebDescriptor(skelName string) *skeldesc.Web {
+	for _, descriptor := range r.webs {
+		if descriptor.SkelName == skelName {
+			return descriptor
 		}
 	}
 	return nil
 }
 
-func (r *_PortalSiteSchemaRepo) ListWebSchemas() []*skel.WebSchema { return r.webs }
+func (r *_PortalSiteDescriptorRepo) ListWebDescriptors() []*skeldesc.Web {
+	return r.webs
+}
 
-func (r *_PortalSiteSchemaRepo) ListDomainSchemaViews() []core.DomainSchemaView { return r.views }
+func (r *_PortalSiteDescriptorRepo) ListDomainDescriptorViews() []core.DomainDescriptorView {
+	return r.views
+}
 
 func TestPortalSiteRepoSaveCreate(t *testing.T) {
 	_, repo, watchServer := newTestPortalSiteRepo(t)
@@ -111,9 +119,9 @@ func newTestPortalSiteRepo(t *testing.T) (*gorm.DB, *PortalSiteRepo, *watchserve
 		Dao: &model.PortalSiteDao{
 			Dao: rdb.NewDao[*model.PortalSite](db),
 		},
-		SchemaRepo: new(_PortalSiteSchemaRepo),
-		Syncer:     testSyncer(watchServer),
-		Access:     new(configaccess.Access),
+		DescriptorRepo: new(_PortalSiteDescriptorRepo),
+		Syncer:         testSyncer(watchServer),
+		Access:         new(configaccess.Access),
 	}
 	repo.Dao.EnsureSchema()
 	require.NoError(t, db.Exec("DELETE FROM portal_site").Error)
@@ -172,17 +180,17 @@ func TestPortalSiteRepoRejectsReadOnlyWrites(t *testing.T) {
 
 func TestPortalSiteRepoAssemblesDerivedValues(t *testing.T) {
 	_, repo, watchServer := newTestPortalSiteRepo(t)
-	schemas := repo.SchemaRepo.(*_PortalSiteSchemaRepo)
-	schemas.webs = []*skel.WebSchema{{Name: "Web", SkelName: "demo.Web", MountPath: "/demo"}}
-	schemas.views = []core.DomainSchemaView{{
-		DomainVersion: core.DomainSchemaVersion{
+	descriptors := repo.DescriptorRepo.(*_PortalSiteDescriptorRepo)
+	descriptors.webs = []*skeldesc.Web{{Name: "Web", SkelName: "demo.Web", MountPath: "/demo", AuthMode: skeldesc.AuthModeRequired}}
+	descriptors.views = []core.DomainDescriptorView{{
+		DomainVersion: core.DomainDescriptorVersion{
 			Main: true,
-			Schema: &skel.DomainSchema{
-				Domain: "demo",
-				Services: []*skel.ServiceSchema{{
+			Descriptor: &skeldesc.Domain{
+				Name: "demo",
+				Services: []*skeldesc.Service{{
 					SkelName:  "demo.Service",
-					Audiences: []*skel.ActorAudienceSchema{{SkelName: "demo.Actor", Via: skel.ActorViaClient}},
-				}},
+					Audiences: []*skeldesc.ActorAudience{{SkelName: "demo.Actor", Via: skeldesc.ActorViaClient}}, AuthMode: skeldesc.AuthModeRequired,
+				}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			},
 		},
 	}}
@@ -221,7 +229,7 @@ func TestPortalSiteRepoAssemblesDerivedValues(t *testing.T) {
 	assert.Equal(t, []watched.PortalRpcgwService{{SkelName: "demo.Service"}}, watchedRpc.RpcgwConfig.Services)
 }
 
-func TestPortalSiteRepoLeavesDerivedValuesEmptyWithoutSchemas(t *testing.T) {
+func TestPortalSiteRepoLeavesDerivedValuesEmptyWithoutDescriptors(t *testing.T) {
 	_, repo, _ := newTestPortalSiteRepo(t)
 
 	entry := testPortalSite("demo-web")
@@ -234,6 +242,6 @@ func TestPortalSiteRepoLeavesDerivedValuesEmptyWithoutSchemas(t *testing.T) {
 	assert.Empty(t, got.RpcgwServices)
 }
 
-func (r *_PortalSiteSchemaRepo) ListAppConfigTypeSchemas() ([]*skel.ConfigSchema, []*skel.EnumSchema, []*skel.DataSchema) {
-	return r.ListAppConfigSchemas(), r.ListEnumSchemas(), r.dataSchemas
+func (r *_PortalSiteDescriptorRepo) ListAppConfigTypeDescriptors() ([]*skeldesc.Config, []*skeldesc.Enum, []*skeldesc.Data) {
+	return r.ListAppConfigDescriptors(), r.ListEnumDescriptors(), r.dataDescriptors
 }

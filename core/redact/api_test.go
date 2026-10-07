@@ -5,8 +5,8 @@ import (
 	"testing"
 	"uuid"
 
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/core/redact"
-	"go.yorun.ai/vine/core/skel"
 )
 
 type sensitiveCredential struct {
@@ -47,7 +47,7 @@ func TestRenderCombinedFieldAttributes(t *testing.T) {
 }
 
 func TestRenderSensitiveValueAsAWhole(t *testing.T) {
-	var _ skel.Sensitive = sensitiveCredential{}
+	var _ skeltype.Sensitive = sensitiveCredential{}
 	result, err := redact.Render(struct {
 		Credential sensitiveCredential `json:"credential"`
 	}{Credential: sensitiveCredential{Token: "secret"}})
@@ -69,11 +69,11 @@ func TestRenderSensitiveValueAsAWhole(t *testing.T) {
 
 func TestRenderSkelScalars(t *testing.T) {
 	result, err := redact.Render(struct {
-		ID   skel.UUID   `json:"id"`
-		Data skel.Binary `json:"data"`
+		ID   skeltype.UUID   `json:"id"`
+		Data skeltype.Binary `json:"data"`
 	}{
-		ID:   skel.NewUUID(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
-		Data: skel.Binary("secret"),
+		ID:   skeltype.NewUUID(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+		Data: skeltype.Binary("secret"),
 	})
 	if err != nil {
 		t.Fatalf("render: %v", err)

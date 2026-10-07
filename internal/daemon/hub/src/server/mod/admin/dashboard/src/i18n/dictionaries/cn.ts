@@ -73,7 +73,7 @@ export const cn = {
   'appConfig.exists': '该配置已存在',
   'appConfig.deleteUnusedTitle': '删除未使用配置',
   'appConfig.deleteUnusedDescription': '删除后该配置值会从 Hub 配置中心移除。',
-  'appConfig.mismatchTitle': '配置值与 Schema 不匹配',
+  'appConfig.mismatchTitle': '配置值与配置定义不匹配',
   'appConfig.fieldsUnavailable': '字段视图暂不可用，请在 JSON 视图修正后保存。',
   'appConfig.moreIssues': '还有 {count} 个问题',
   'appConfig.noFieldDescription': '暂无字段说明',
@@ -406,7 +406,7 @@ export const cn = {
   'appConfig.valueMustBeObject': '配置值必须是 JSON 对象',
   'appConfig.missingField': '{field}: 缺少字段',
   'appConfig.typeMismatch': '{field}: 期望 {expected}，当前 {actual}',
-  'appConfig.unknownField': '{field}: Schema 中不存在该字段',
+  'appConfig.unknownField': '{field}: 配置定义中不存在该字段',
   'appConfig.saved': '配置已保存',
   'appConfig.skelNameRequired': '请输入 skelName',
   'appConfig.skelNameInvalid':

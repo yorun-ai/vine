@@ -1,5 +1,5 @@
-import { configDataFields, configTypeText, validConfigBinary } from './config-structured-schema.ts'
-import type { ConfigSchemaType, ConfigSchemaData } from './config-structured-schema.ts'
+import { configDataFields, configTypeText, validConfigBinary } from './config-structured-descriptor.ts'
+import type { ConfigDescriptorType, ConfigDescriptorData } from './config-structured-descriptor.ts'
 import { configScalarFormatMatches, validConfigUUID } from './config-scalar-validation.ts'
 import type { ConfigJsonField } from './config-json-document.ts'
 import { configMapEnums, configMapTypes } from './config-map-enum.ts'
@@ -13,7 +13,7 @@ export interface ConfigValueIssue {
   actual: string
 }
 
-export function configValueIssues(value: unknown, field: ConfigJsonField, data: ReadonlyArray<ConfigSchemaData> = field.dataTypes ?? []): ConfigValueIssue[] {
+export function configValueIssues(value: unknown, field: ConfigJsonField, data: ReadonlyArray<ConfigDescriptorData> = field.dataTypes ?? []): ConfigValueIssue[] {
   const issues: ConfigValueIssue[] = []
   const describe = (item: unknown) => item === null ? 'null' : Array.isArray(item) ? 'list' : typeof item
   function check(item: unknown, type: string, enums: EnumItems, path: string) {
@@ -97,13 +97,13 @@ export function configValueIssues(value: unknown, field: ConfigJsonField, data: 
       issues.push({ path, part: 'value', expected: base, actual: typeof item === 'string' ? JSON.stringify(item) : describe(item) })
     }
   }
-  function sensitiveType(type: ConfigSchemaType | null): boolean {
+  function sensitiveType(type: ConfigDescriptorType | null): boolean {
     if (type?.kind === 'data') return !!data.find((declaration) => declaration.skelName === type.name)?.sensitive
     if (type?.kind === 'list') return sensitiveType(type.element)
     if (type?.kind === 'map') return sensitiveType(type.value)
     return false
   }
-  function structured(item: unknown, type: ConfigSchemaType | null, path: string, sensitive: boolean) {
+  function structured(item: unknown, type: ConfigDescriptorType | null, path: string, sensitive: boolean) {
     const fail = (expected = type ? configTypeText(type) : 'unresolved type', actual = describe(item)) => issues.push({ path, part: 'value', expected, actual })
     if (!type) { fail(); return }
     sensitive ||= sensitiveType(type)

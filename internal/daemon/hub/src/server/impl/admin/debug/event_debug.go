@@ -4,10 +4,11 @@ import (
 	"strings"
 	"uuid"
 
+	skeldesc "go.yorun.ai/skel/descriptor"
+	skeltype "go.yorun.ai/skel/types"
 	eventspec "go.yorun.ai/vine/internal/core/event/spec"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/skel"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
@@ -19,15 +20,17 @@ import (
 type EventDebugApiServiceServerImpl struct {
 	skeled.DefaultEventDebugApiServiceServer
 
-	CurrentApp   meta.CurrentApp        `inject:""`
-	RegistryRepo core.RegistryRepo      `inject:""`
-	SchemaRepo   core.SchemaRepo        `inject:""`
-	NATSServer   *natsserver.NATSServer `inject:""`
-	Flag         *hubflag.Flag          `inject:""`
+	CurrentApp     meta.CurrentApp        `inject:""`
+	RegistryRepo   core.RegistryRepo      `inject:""`
+	DescriptorRepo core.DescriptorRepo    `inject:""`
+	NATSServer     *natsserver.NATSServer `inject:""`
+	Flag           *hubflag.Flag          `inject:""`
 }
 
 func (s *EventDebugApiServiceServerImpl) defaultBuilder() _DebugDefaultBuilder {
-	return _DebugDefaultBuilder{SchemaRepo: s.SchemaRepo}
+	return _DebugDefaultBuilder{
+		DescriptorRepo: s.DescriptorRepo,
+	}
 }
 
 func (s *EventDebugApiServiceServerImpl) natsPublisher() _DebugNATSPublisher {
@@ -42,35 +45,35 @@ func (s *EventDebugApiServiceServerImpl) ListEvents() []skeled.EventDebugEventIt
 	seen := map[string]struct{}{}
 	for _, status := range s.RegistryRepo.ListAppStatuses() {
 		for _, listener := range status.EventListeners {
-			key := listener.EventSkelName + "\x00" + listener.SchemaHash
+			key := listener.EventSkelName + "\x00" + listener.DescriptorHash
 			if _, ok := seen[key]; ok {
 				continue
 			}
 			seen[key] = struct{}{}
-			eventSchema := s.findEventSchema(listener.EventSkelName, listener.SchemaHash)
-			ret = append(ret, toEventDebugEventItem(eventSchema, listener.SchemaHash))
+			eventDescriptor := s.findEventDescriptor(listener.EventSkelName, listener.DescriptorHash)
+			ret = append(ret, toEventDebugEventItem(eventDescriptor, listener.DescriptorHash))
 		}
 	}
 	return vslice.SortBy(ret, func(a skeled.EventDebugEventItem, b skeled.EventDebugEventItem) bool {
 		if a.EventSkelName != b.EventSkelName {
 			return strings.Compare(a.EventSkelName, b.EventSkelName) < 0
 		}
-		return strings.Compare(a.SchemaHash, b.SchemaHash) < 0
+		return strings.Compare(a.DescriptorHash, b.DescriptorHash) < 0
 	})
 }
 
-func (s *EventDebugApiServiceServerImpl) BuildDefaultEmitRequest(eventSkelName string, schemaHash string) skeled.EventDebugDefaultEmitRequest {
-	eventSchema := s.findEventSchema(eventSkelName, schemaHash)
+func (s *EventDebugApiServiceServerImpl) BuildDefaultEmitRequest(eventSkelName string, descriptorHash string) skeled.EventDebugDefaultEmitRequest {
+	eventDescriptor := s.findEventDescriptor(eventSkelName, descriptorHash)
 	trace := meta.InitialTrace()
 	return skeled.EventDebugDefaultEmitRequest{
 		TraceId:   trace.Id(),
 		SpanId:    trace.Span(),
-		EventJson: s.defaultBuilder().defaultEventJson(eventSchema),
+		EventJson: s.defaultBuilder().defaultEventJson(eventDescriptor),
 	}
 }
 
 func (s *EventDebugApiServiceServerImpl) EmitEvent(request skeled.EventDebugEmitRequest) {
-	s.checkEventListener(request.EventSkelName, request.SchemaHash)
+	s.checkEventListener(request.EventSkelName, request.DescriptorHash)
 	debugParseJson(string(request.EventJson))
 
 	trace := debugTrace(request.TraceId, request.SpanId)
@@ -80,8 +83,8 @@ func (s *EventDebugApiServiceServerImpl) EmitEvent(request skeled.EventDebugEmit
 			TraceSpan:     trace.Span(),
 			AppName:       s.CurrentApp.Name(),
 			AppVersion:    s.CurrentApp.Version(),
-			AppInstanceId: skel.NewUUID(uuid.MustParse(s.CurrentApp.InstanceId())),
-			EmittedAt:     skel.NewTimestampNow(),
+			AppInstanceId: skeltype.NewUUID(uuid.MustParse(s.CurrentApp.InstanceId())),
+			EmittedAt:     skeltype.NewTimestampNow(),
 		},
 		EventSkelName: request.EventSkelName,
 		EventJson:     string(request.EventJson),
@@ -90,30 +93,30 @@ func (s *EventDebugApiServiceServerImpl) EmitEvent(request skeled.EventDebugEmit
 	publisher.publish(debugEventStreamConfig(), debugEventSubject(request.EventSkelName), vcode.MustMarshalJson(msg))
 }
 
-func (s *EventDebugApiServiceServerImpl) checkEventListener(eventSkelName string, schemaHash string) {
+func (s *EventDebugApiServiceServerImpl) checkEventListener(eventSkelName string, descriptorHash string) {
 	for _, status := range s.RegistryRepo.ListAppStatuses() {
-		if statusHasEventListener(status, eventSkelName, schemaHash) {
+		if statusHasEventListener(status, eventSkelName, descriptorHash) {
 			return
 		}
 	}
 	ex.PanicNew(ex.NotFound, "event listener registration not found")
 }
 
-func (s *EventDebugApiServiceServerImpl) findEventSchema(eventSkelName string, schemaHash string) *skel.EventSchema {
-	for _, version := range s.SchemaRepo.ListEventSchemaVersions() {
-		if version.Schema.SkelName == eventSkelName && (schemaHash == "" || version.SchemaHash == schemaHash) {
-			return version.Schema
+func (s *EventDebugApiServiceServerImpl) findEventDescriptor(eventSkelName string, descriptorHash string) *skeldesc.Event {
+	for _, version := range s.DescriptorRepo.ListEventDescriptorVersions() {
+		if version.Descriptor.SkelName == eventSkelName && (descriptorHash == "" || version.DescriptorHash == descriptorHash) {
+			return version.Descriptor
 		}
 	}
-	ex.PanicNew(ex.NotFound, "event schema not found")
+	ex.PanicNew(ex.NotFound, "event descriptor not found")
 	panic("unreachable")
 }
 
-func toEventDebugEventItem(event *skel.EventSchema, schemaHash string) skeled.EventDebugEventItem {
+func toEventDebugEventItem(event *skeldesc.Event, descriptorHash string) skeled.EventDebugEventItem {
 	return skeled.EventDebugEventItem{
 		Name:             event.Name,
 		EventSkelName:    event.SkelName,
-		SchemaHash:       schemaHash,
+		DescriptorHash:   descriptorHash,
 		Description:      event.Description,
 		Deprecated:       event.Deprecated,
 		DeprecatedReason: event.DeprecatedReason,
@@ -121,9 +124,9 @@ func toEventDebugEventItem(event *skel.EventSchema, schemaHash string) skeled.Ev
 	}
 }
 
-func statusHasEventListener(status *core.AppStatus, eventSkelName string, schemaHash string) bool {
+func statusHasEventListener(status *core.AppStatus, eventSkelName string, descriptorHash string) bool {
 	for _, listener := range status.EventListeners {
-		if listener.EventSkelName == eventSkelName && (schemaHash == "" || listener.SchemaHash == schemaHash) {
+		if listener.EventSkelName == eventSkelName && (descriptorHash == "" || listener.DescriptorHash == descriptorHash) {
 			return true
 		}
 	}

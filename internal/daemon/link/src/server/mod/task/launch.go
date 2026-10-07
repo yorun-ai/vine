@@ -2,8 +2,8 @@ package task
 
 import (
 	"github.com/nats-io/nats.go/jetstream"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/core/link/skeled"
-	"go.yorun.ai/vine/internal/core/skel"
 	taskspec "go.yorun.ai/vine/internal/core/task/spec"
 	"go.yorun.ai/vine/util/vcode"
 )
@@ -16,7 +16,7 @@ func (m *Manager) LaunchTask(launch skeled.TaskLaunch) {
 			AppName:       launch.Metadata.AppName,
 			AppVersion:    launch.Metadata.AppVersion,
 			AppInstanceId: launch.Metadata.AppInstanceId,
-			LaunchedAt:    skel.NewTimestampNow(),
+			LaunchedAt:    skeltype.NewTimestampNow(),
 		},
 		TaskSkelName:    launch.TaskSkelName,
 		TriggerSkelName: launch.TriggerSkelName,

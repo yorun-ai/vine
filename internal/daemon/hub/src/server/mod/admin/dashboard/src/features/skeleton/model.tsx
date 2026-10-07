@@ -120,7 +120,7 @@ export function getErrorMessage(error: unknown) {
 }
 
 export function itemValues(item: SkeletonItem) {
-  const values = [item.skelName, item.schemaHash]
+  const values = [item.skelName, item.descriptorHash]
   if ('actions' in item) {
     values.push(...item.actions.map((action) => action.permissionCode))
   }
@@ -128,11 +128,11 @@ export function itemValues(item: SkeletonItem) {
 }
 
 export function itemVersionKey(item: SkeletonItem) {
-  return !item.isMain ? `${item.skelName}:${item.schemaHash}` : item.skelName
+  return !item.isMain ? `${item.skelName}:${item.descriptorHash}` : item.skelName
 }
 
 export function itemRouteHash(item: SkeletonItem) {
-  return !item.isMain ? item.schemaHash : undefined
+  return !item.isMain ? item.descriptorHash : undefined
 }
 
 function encodePathSegment(value: string) {
@@ -145,34 +145,34 @@ export function skeletonItemHref(item: SkeletonItem, kind: SkeletonKind) {
   return routeHash ? `${basePath}/${encodePathSegment(routeHash)}` : basePath
 }
 
-export function skeletonActorHref(skelName: string, schemaHash?: string) {
+export function skeletonActorHref(skelName: string, descriptorHash?: string) {
   const basePath = `/skeleton/actor/${encodePathSegment(skelName)}`
-  return schemaHash ? `${basePath}/${encodePathSegment(schemaHash)}` : basePath
+  return descriptorHash ? `${basePath}/${encodePathSegment(descriptorHash)}` : basePath
 }
 
-export function skeletonServiceHref(skelName: string, schemaHash?: string) {
+export function skeletonServiceHref(skelName: string, descriptorHash?: string) {
   const basePath = `/skeleton/service/${encodePathSegment(skelName)}`
-  return schemaHash ? `${basePath}/${encodePathSegment(schemaHash)}` : basePath
+  return descriptorHash ? `${basePath}/${encodePathSegment(descriptorHash)}` : basePath
 }
 
-export function skeletonResourceHref(skelName: string, schemaHash?: string) {
+export function skeletonResourceHref(skelName: string, descriptorHash?: string) {
   const basePath = `/skeleton/resource/${encodePathSegment(skelName)}`
-  return schemaHash ? `${basePath}/${encodePathSegment(schemaHash)}` : basePath
+  return descriptorHash ? `${basePath}/${encodePathSegment(descriptorHash)}` : basePath
 }
 
-export function skeletonWebHref(skelName: string, schemaHash?: string) {
+export function skeletonWebHref(skelName: string, descriptorHash?: string) {
   const basePath = `/skeleton/web/${encodePathSegment(skelName)}`
-  return schemaHash ? `${basePath}/${encodePathSegment(schemaHash)}` : basePath
+  return descriptorHash ? `${basePath}/${encodePathSegment(descriptorHash)}` : basePath
 }
 
-export function skeletonEventHref(skelName: string, schemaHash?: string) {
+export function skeletonEventHref(skelName: string, descriptorHash?: string) {
   const basePath = `/skeleton/event/${encodePathSegment(skelName)}`
-  return schemaHash ? `${basePath}/${encodePathSegment(schemaHash)}` : basePath
+  return descriptorHash ? `${basePath}/${encodePathSegment(descriptorHash)}` : basePath
 }
 
-export function skeletonTaskHref(skelName: string, schemaHash?: string) {
+export function skeletonTaskHref(skelName: string, descriptorHash?: string) {
   const basePath = `/skeleton/task/${encodePathSegment(skelName)}`
-  return schemaHash ? `${basePath}/${encodePathSegment(schemaHash)}` : basePath
+  return descriptorHash ? `${basePath}/${encodePathSegment(descriptorHash)}` : basePath
 }
 
 export function skeletonDomainHref(item: SkeletonItem) {
@@ -215,13 +215,13 @@ function addTypeDefinition(
 export function findTypeDefinition(
   index: TypeDefinitionIndex,
   key: string,
-  domainSchemaHash?: string,
+  domainDescriptorHash?: string,
 ): SkeletonData | null {
   const values = index.get(key) ?? []
   const sameDomainVersion =
-    domainSchemaHash === undefined
+    domainDescriptorHash === undefined
       ? undefined
-      : values.find((item) => item.domainSchemaHash === domainSchemaHash)
+      : values.find((item) => item.domainDescriptorHash === domainDescriptorHash)
   return (
     sameDomainVersion ??
     values.find((item) => item.isMain) ??
@@ -237,41 +237,41 @@ export const skeletonRouteConfig: Record<
   actors: {
     listPath: '/skeleton/actor',
     detailPath: '/skeleton/actor/$skelName',
-    detailVersionPath: '/skeleton/actor/$skelName/$schemaHash',
+    detailVersionPath: '/skeleton/actor/$skelName/$descriptorHash',
   },
   configs: {
     listPath: '/skeleton/config',
     detailPath: '/skeleton/config/$skelName',
-    detailVersionPath: '/skeleton/config/$skelName/$schemaHash',
+    detailVersionPath: '/skeleton/config/$skelName/$descriptorHash',
   },
   services: {
     listPath: '/skeleton/service',
     detailPath: '/skeleton/service/$skelName',
-    detailVersionPath: '/skeleton/service/$skelName/$schemaHash',
+    detailVersionPath: '/skeleton/service/$skelName/$descriptorHash',
   },
   resources: {
     listPath: '/skeleton/resource',
     detailPath: '/skeleton/resource/$skelName',
-    detailVersionPath: '/skeleton/resource/$skelName/$schemaHash',
+    detailVersionPath: '/skeleton/resource/$skelName/$descriptorHash',
   },
   data: {
     listPath: '/skeleton/data',
     detailPath: '/skeleton/data/$skelName',
-    detailVersionPath: '/skeleton/data/$skelName/$schemaHash',
+    detailVersionPath: '/skeleton/data/$skelName/$descriptorHash',
   },
   webs: {
     listPath: '/skeleton/web',
     detailPath: '/skeleton/web/$skelName',
-    detailVersionPath: '/skeleton/web/$skelName/$schemaHash',
+    detailVersionPath: '/skeleton/web/$skelName/$descriptorHash',
   },
   tasks: {
     listPath: '/skeleton/task',
     detailPath: '/skeleton/task/$skelName',
-    detailVersionPath: '/skeleton/task/$skelName/$schemaHash',
+    detailVersionPath: '/skeleton/task/$skelName/$descriptorHash',
   },
   events: {
     listPath: '/skeleton/event',
     detailPath: '/skeleton/event/$skelName',
-    detailVersionPath: '/skeleton/event/$skelName/$schemaHash',
+    detailVersionPath: '/skeleton/event/$skelName/$descriptorHash',
   },
 }

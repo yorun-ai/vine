@@ -36,15 +36,15 @@ function getErrorMessage(error: unknown) {
 }
 
 function taskKey(task: TaskDebugTaskItem) {
-  return `${task.taskSkelName}:${task.schemaHash}`
+  return `${task.taskSkelName}:${task.descriptorHash}`
 }
 
 function argumentsStorageKey(
   taskSkelName: string,
-  schemaHash: string,
+  descriptorHash: string,
   triggerSkelName: string,
 ) {
-  return `${storageArgumentsPrefix}${taskSkelName}:${schemaHash}:${triggerSkelName}`
+  return `${storageArgumentsPrefix}${taskSkelName}:${descriptorHash}:${triggerSkelName}`
 }
 
 function readStorage(key: string) {
@@ -236,13 +236,13 @@ export function TaskLauncherPage() {
     try {
       const nextRequest = await taskDebugService.buildDefaultLaunchRequest({
         taskSkelName: selectedTask.taskSkelName,
-        schemaHash: selectedTask.schemaHash,
+        descriptorHash: selectedTask.descriptorHash,
         triggerSkelName: selectedTrigger.skelName,
       })
       const savedArgumentsJson = readStorage(
         argumentsStorageKey(
           selectedTask.taskSkelName,
-          selectedTask.schemaHash,
+          selectedTask.descriptorHash,
           selectedTrigger.skelName,
         ),
       )
@@ -316,7 +316,7 @@ export function TaskLauncherPage() {
     void taskDebugService
       .listTriggers({
         taskSkelName: selectedTask.taskSkelName,
-        schemaHash: selectedTask.schemaHash,
+        descriptorHash: selectedTask.descriptorHash,
       })
       .then((nextTriggers) => {
         if (!ignore) {
@@ -399,7 +399,7 @@ export function TaskLauncherPage() {
       await taskDebugService.launchTask({
         request: {
           taskSkelName: selectedTask.taskSkelName,
-          schemaHash: selectedTask.schemaHash,
+          descriptorHash: selectedTask.descriptorHash,
           triggerSkelName: selectedTrigger.skelName,
           argumentsJson,
           traceId: traceId.trim() === '' ? null : traceId.trim(),
@@ -409,7 +409,7 @@ export function TaskLauncherPage() {
       writeStorage(
         argumentsStorageKey(
           selectedTask.taskSkelName,
-          selectedTask.schemaHash,
+          selectedTask.descriptorHash,
           selectedTrigger.skelName,
         ),
         argumentsJson,
@@ -459,7 +459,7 @@ export function TaskLauncherPage() {
               <SelectTrigger className="h-auto w-full rounded-lg border-transparent bg-primary/[0.05] px-3 py-2.5 hover:bg-primary/[0.07] focus-visible:border-primary/30">
                 <SelectCardText
                   title={selectedTask?.taskSkelName}
-                  description={selectedTask?.schemaHash}
+                  description={selectedTask?.descriptorHash}
                   deprecated={selectedTask?.deprecated}
                   placeholder={loadingTasks ? 'Loading tasks' : 'Select task'}
                 />
@@ -503,7 +503,7 @@ export function TaskLauncherPage() {
                     >
                       <SelectCardItem
                         title={item.taskSkelName}
-                        description={item.schemaHash}
+                        description={item.descriptorHash}
                         deprecated={item.deprecated}
                       />
                     </SelectItem>

@@ -12,10 +12,9 @@ import (
 	"time"
 
 	"github.com/klauspost/compress/zstd"
-
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/skel"
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
@@ -538,12 +537,12 @@ func newTestWebGatewayWithCors(t *testing.T, valuesByKey map[string]string, cors
 		valuesByKey = map[string]string{}
 	}
 	for _, name := range []string{"admin@demo.app", "home@demo.app"} {
-		key := watched.FormatSchemaWebKey(name)
+		key := watched.FormatDescriptorWebKey(name)
 		if _, exists := valuesByKey[key]; !exists {
-			valuesByKey[key] = vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: name, AuthMode: skel.AuthModeOptional})
+			valuesByKey[key] = vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: name, AuthMode: skeldesc.AuthModeOptional})
 		}
 	}
-	valuesByKey[watched.FormatSchemaActorKey("demo.ClientActor")] = vcode.MustMarshalJsonS(watched.SchemaActor{SkelName: "demo.ClientActor"})
+	valuesByKey[watched.FormatDescriptorActorKey("demo.ClientActor")] = vcode.MustMarshalJsonS(watched.DescriptorActor{SkelName: "demo.ClientActor"})
 	epmgrManager := newTestEpmgr(t, valuesByKey)
 	accessManager := &access.Access{Context: context.Background(), Watch: watchtest.New(t, valuesByKey), Epmgr: epmgrManager}
 	accessManager.DIInit()

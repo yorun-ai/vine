@@ -8,7 +8,6 @@ import (
 	"time"
 
 	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
-
 	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/internal/core/ex"
 	linkskeled "go.yorun.ai/vine/internal/core/link/skeled"
@@ -156,7 +155,7 @@ func (t *_Tasker) taskRunnerRegistrations() []linkskeled.TaskRunnerRegistration 
 		taskInfo := infoByType[runnerEntry.kind]
 		registrations = append(registrations, linkskeled.TaskRunnerRegistration{
 			TaskSkelName:   taskInfo.SkelName(),
-			SchemaHash:     taskInfo.Hash(),
+			DescriptorHash: taskInfo.Hash(),
 			TimeoutMs:      int(runnerEntry.options.Timeout / time.Millisecond),
 			Concurrency:    runnerEntry.options.Concurrency,
 			NoRetry:        runnerEntry.options.NoRetry,

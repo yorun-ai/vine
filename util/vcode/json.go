@@ -7,9 +7,9 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-// MarshalJson encodes data as JSON using the default encoder.
+// MarshalJson encodes data as JSON.
 func MarshalJson(data any) ([]byte, error) {
-	return defaultEncoder.MarshalJson(data)
+	return json.Marshal(data)
 }
 
 // MarshalJsonWithOptions encodes data as JSON with additional options.
@@ -25,18 +25,26 @@ func MarshalJsonS(data any) (string, error) {
 
 // MustMarshalJson is like MarshalJson but panics on failure.
 func MustMarshalJson(data any) []byte {
-	return defaultEncoder.MustMarshalJson(data)
+	dataBytes, err := MarshalJson(data)
+	vpre.MustNil(err)
+	return dataBytes
 }
 
 // MustMarshalJsonS is like MarshalJsonS but panics on failure.
 func MustMarshalJsonS(data any) string {
-	return defaultEncoder.MustMarshalJsonS(data)
+	return string(MustMarshalJson(data))
+}
+
+// UnmarshalJsonTo decodes JSON into target, which must be a non-nil pointer.
+// On error, target may be partially populated.
+func UnmarshalJsonTo(data []byte, target any) error {
+	return json.Unmarshal(data, target)
 }
 
 // UnmarshalJson decodes JSON data into T.
 func UnmarshalJson[T any](jsonBytes []byte) (T, error) {
 	target := new(T)
-	if err := json.Unmarshal(jsonBytes, target); err != nil {
+	if err := UnmarshalJsonTo(jsonBytes, target); err != nil {
 		return *new(T), err
 	}
 	return *target, nil

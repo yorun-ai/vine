@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcserver "go.yorun.ai/vine/internal/core/rpc/server"
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
@@ -107,25 +108,25 @@ func TestServerServesAdminAPIAndDashboardBuild(t *testing.T) {
 }
 
 func TestAdminApiAudienceAndAuthenticationContract(t *testing.T) {
-	for _, domain := range skel.RegisteredDomainSchemas() {
-		if domain.Domain != "vine.hub.admin" {
+	for _, domain := range skel.RegisteredDomainDescriptors() {
+		if domain.Name != "vine.hub.admin" {
 			continue
 		}
 		require.Len(t, domain.Actors, 1)
 		actor := domain.Actors[0]
 		require.Equal(t, "vine.hub.admin.AdminActor", actor.SkelName)
-		require.Equal(t, []skel.ActorVia{skel.ActorViaClient}, actor.Vias)
-		require.False(t, actor.AuthEnabled, "the admin listener has no actor login service")
+		require.Equal(t, []skeldesc.ActorViaKind{skeldesc.ActorViaClient}, actor.Vias)
+		require.Nil(t, actor.Auth, "the admin listener has no actor login service")
 		require.Len(t, domain.Services, len(HandlerTypes()))
 		for _, service := range domain.Services {
 			require.True(t, service.Api, service.SkelName)
 			require.Len(t, service.Audiences, 1, service.SkelName)
-			require.True(t, service.HasAudience(actor.SkelName, skel.ActorViaClient), service.SkelName)
-			require.Equal(t, skel.AuthModeOptional, service.AuthMode, service.SkelName)
+			require.True(t, service.HasAudience(actor.SkelName, skeldesc.ActorViaClient), service.SkelName)
+			require.Equal(t, skeldesc.AuthModeOptional, service.AuthMode, service.SkelName)
 		}
 		return
 	}
-	t.Fatal("missing generated Hub admin schema")
+	t.Fatal("missing generated Hub admin descriptor")
 }
 
 func TestAdminApiRemainsCallableFromDashboardWithoutCredentials(t *testing.T) {

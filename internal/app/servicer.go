@@ -102,7 +102,7 @@ func (s *_Servicer) serviceHandlerRegistrations() []linkskeled.ServiceHandlerReg
 	for _, serviceInfo := range serviceInfos {
 		registrations = append(registrations, linkskeled.ServiceHandlerRegistration{
 			ServiceSkelName: serviceInfo.SkelName(),
-			SchemaHash:      serviceInfo.Hash(),
+			DescriptorHash:  serviceInfo.Hash(),
 		})
 	}
 	return registrations

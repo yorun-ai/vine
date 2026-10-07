@@ -5,22 +5,22 @@ import (
 	"io"
 	"net/http"
 
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/ex"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
-	"go.yorun.ai/vine/internal/core/skel"
 )
 
 func (o *RpcOperation) Check() bool {
-	if !o.loadMethodSchema() {
+	if !o.loadMethodDescriptor() {
 		return false
 	}
 
-	requirements := o.requirements()
-	if len(requirements) == 0 {
+	requirement := o.methodDescriptor.EffectiveRequire
+	if requirement == nil {
 		return true
 	}
 
-	expr := reorderPermExpr(mergeRequirements(requirements))
+	expr := requirement.Expression
 	if !o.checkActorPermissions(expr) {
 		return false
 	}
@@ -37,35 +37,24 @@ func (o *RpcOperation) Check() bool {
 	return ok
 }
 
-func (o *RpcOperation) requirements() []*skel.PermRequire {
-	requirements := make([]*skel.PermRequire, 0, 2)
-	if o.serviceSchema.Require != nil {
-		requirements = append(requirements, o.serviceSchema.Require)
-	}
-	if o.methodSchema.Require != nil {
-		requirements = append(requirements, o.methodSchema.Require)
-	}
-	return requirements
-}
-
-func (o *RpcOperation) checkActorPermissions(expr *skel.PermExpr) bool {
+func (o *RpcOperation) checkActorPermissions(expr *skeldesc.PermissionExpression) bool {
 	codes := collectPermissionCodes(expr)
 	if len(codes) == 0 {
 		o.permissionCodeResults = map[string]bool{}
 		return true
 	}
 
-	if !o.actorSchema.PermEnabled || o.actorSchema.PermService == nil || o.actorSchema.PermMethod == nil {
+	if o.actorDescriptor.Permission == nil || o.actorDescriptor.Permission.Method() == nil {
 		o.writeError(ex.ClientForbidden, "permission service is not configured")
 		return false
 	}
 
 	request := o.buildInvokeRequest(
-		o.actorSchema.PermService.SkelName,
-		o.actorSchema.PermMethod.SkelName,
+		o.actorDescriptor.Permission.Service.SkelName,
+		o.actorDescriptor.Permission.Method().SkelName,
 		map[string]any{"codes": codes},
 	)
-	if !o.forwardCheckCodesRequest(request, o.actorSchema.PermService.SkelName) {
+	if !o.forwardCheckCodesRequest(request, o.actorDescriptor.Permission.Service.SkelName) {
 		return false
 	}
 
@@ -103,7 +92,7 @@ func (o *RpcOperation) readRequestBody() bool {
 	return true
 }
 
-func (o *RpcOperation) tryCheckPermission(check *skel.PermCheckInvocation) (bool, ex.Code, string, string) {
+func (o *RpcOperation) tryCheckPermission(check *skeldesc.PermissionCheckInvocation) (bool, ex.Code, string, string) {
 	params, ok := o.extractCheckParams(check)
 	if !ok {
 		return false, ex.InvalidRequest, "permission check argument is missing", ""
@@ -117,7 +106,7 @@ func (o *RpcOperation) tryCheckPermission(check *skel.PermCheckInvocation) (bool
 	return o.tryForwardCheckRequest(request, check.ServiceSkelName, "permission check failed")
 }
 
-func (o *RpcOperation) extractCheckParams(check *skel.PermCheckInvocation) (map[string]any, bool) {
+func (o *RpcOperation) extractCheckParams(check *skeldesc.PermissionCheckInvocation) (map[string]any, bool) {
 	params := make(map[string]any, len(check.Arguments)+1)
 	params[check.CodeArgumentName] = check.ResourceSkelName + ":" + check.ActionName
 	for _, argument := range check.Arguments {
@@ -132,14 +121,7 @@ func (o *RpcOperation) extractCheckParams(check *skel.PermCheckInvocation) (map[
 }
 
 func (o *RpcOperation) extractCheckArgument(jsonPath string) (any, bool) {
-	fullJsonPath := "params." + jsonPath
-	switch rpchttp.MediaTypeOf(o.Request.Header.Get(rpchttp.HeaderContentType)) {
-	case rpchttp.ContentTypeJson:
-		return jsonGetByPath(o.requestBody, fullJsonPath)
-	case rpchttp.ContentTypeCbor:
-		return cborGetByPath(&o.cborPayload, o.requestBody, fullJsonPath)
-	}
-	return nil, false
+	return requestParamsGetByPath(&o.requestParams, o.requestBody, o.Request.Header.Get(rpchttp.HeaderContentType), jsonPath)
 }
 
 func (o *RpcOperation) tryForwardCheckRequest(request *http.Request, serviceSkelName string, defaultMessage string) (bool, ex.Code, string, string) {

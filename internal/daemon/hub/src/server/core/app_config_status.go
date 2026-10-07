@@ -5,10 +5,11 @@ import (
 	"encoding/json/v2"
 	"strconv"
 
-	"go.yorun.ai/vine/internal/core/skel"
+	skeldesc "go.yorun.ai/skel/descriptor"
+	skeltype "go.yorun.ai/skel/types"
 )
 
-// AppConfigStatus describes how a configuration value relates to the schema an
+// AppConfigStatus describes how a configuration value relates to the descriptor an
 // application declared for it.
 type AppConfigStatus string
 
@@ -21,33 +22,33 @@ const (
 
 // AppConfigStatusFor returns the status of a value against the declaration of
 // the application that owns the configuration.
-func AppConfigStatusFor(schema *skel.ConfigSchema, value string, enumSchemas []*skel.EnumSchema, dataSchemas []*skel.DataSchema) AppConfigStatus {
-	if schema == nil {
+func AppConfigStatusFor(descriptor *skeldesc.Config, value string, enumDescriptors []*skeldesc.Enum, dataDescriptors []*skeldesc.Data) AppConfigStatus {
+	if descriptor == nil {
 		return AppConfigStatusUnused
 	}
-	if !appConfigValueMatchesSchema(value, schema, enumSchemas, dataSchemas) {
+	if !appConfigValueMatchesDescriptor(value, descriptor, enumDescriptors, dataDescriptors) {
 		return AppConfigStatusMismatch
 	}
 	return AppConfigStatusNormal
 }
 
 // AppConfigLifecycleFor returns the lifecycle the owning application declared.
-func AppConfigLifecycleFor(schema *skel.ConfigSchema) string {
-	if schema == nil {
+func AppConfigLifecycleFor(descriptor *skeldesc.Config) string {
+	if descriptor == nil {
 		return ""
 	}
-	return schema.Lifecycle
+	return string(descriptor.Lifecycle)
 }
 
-func appConfigValueMatchesSchema(value string, schema *skel.ConfigSchema, enumSchemas []*skel.EnumSchema, dataSchemas []*skel.DataSchema) bool {
-	index := map[string]*skel.DataSchema{}
-	for _, data := range dataSchemas {
+func appConfigValueMatchesDescriptor(value string, descriptor *skeldesc.Config, enumDescriptors []*skeldesc.Enum, dataDescriptors []*skeldesc.Data) bool {
+	index := map[string]*skeldesc.Data{}
+	for _, data := range dataDescriptors {
 		index[data.SkelName] = data
 	}
-	return configObjectMatches(jsontext.Value(value), schema.Members, enumSchemas, index, nil)
+	return configObjectMatches(jsontext.Value(value), descriptor.Members, enumDescriptors, index, nil)
 }
 
-func configObjectMatches(value jsontext.Value, members []*skel.MemberSchema, enums []*skel.EnumSchema, data map[string]*skel.DataSchema, bindings map[string]*skel.TypeSchema) bool {
+func configObjectMatches(value jsontext.Value, members []*skeldesc.Member, enums []*skeldesc.Enum, data map[string]*skeldesc.Data, bindings map[string]*skeldesc.Type) bool {
 	var object map[string]jsontext.Value
 	if value.Kind() != '{' || json.Unmarshal(value, &object) != nil || len(object) != len(members) {
 		return false
@@ -61,11 +62,11 @@ func configObjectMatches(value jsontext.Value, members []*skel.MemberSchema, enu
 	return true
 }
 
-func configBoundType(kind *skel.TypeSchema, bindings map[string]*skel.TypeSchema) *skel.TypeSchema {
+func configBoundType(kind *skeldesc.Type, bindings map[string]*skeldesc.Type) *skeldesc.Type {
 	if kind == nil {
 		return nil
 	}
-	if kind.Kind == skel.TypeKindTypeParameter {
+	if kind.Kind == skeldesc.TypeKindTypeParameter {
 		bound := bindings[kind.Name]
 		if bound == nil {
 			return nil
@@ -78,14 +79,14 @@ func configBoundType(kind *skel.TypeSchema, bindings map[string]*skel.TypeSchema
 	copy.Element = configBoundType(kind.Element, bindings)
 	copy.Key = configBoundType(kind.Key, bindings)
 	copy.Value = configBoundType(kind.Value, bindings)
-	copy.TypeArguments = make([]*skel.TypeSchema, len(kind.TypeArguments))
+	copy.TypeArguments = make([]*skeldesc.Type, len(kind.TypeArguments))
 	for i, arg := range kind.TypeArguments {
 		copy.TypeArguments[i] = configBoundType(arg, bindings)
 	}
 	return &copy
 }
 
-func configTypeMatches(value jsontext.Value, kind *skel.TypeSchema, enums []*skel.EnumSchema, data map[string]*skel.DataSchema, bindings map[string]*skel.TypeSchema) bool {
+func configTypeMatches(value jsontext.Value, kind *skeldesc.Type, enums []*skeldesc.Enum, data map[string]*skeldesc.Data, bindings map[string]*skeldesc.Type) bool {
 	kind = configBoundType(kind, bindings)
 	if kind == nil {
 		return false
@@ -94,12 +95,12 @@ func configTypeMatches(value jsontext.Value, kind *skel.TypeSchema, enums []*ske
 		return kind.Nullable
 	}
 	switch kind.Kind {
-	case skel.TypeKindScalar:
+	case skeldesc.TypeKindScalar:
 		return configScalarMatches(value, kind.Scalar)
-	case skel.TypeKindEnum:
+	case skeldesc.TypeKindEnum:
 		var text string
 		return json.Unmarshal(value, &text) == nil && enumValueExists(text, kind, enums)
-	case skel.TypeKindList:
+	case skeldesc.TypeKindList:
 		var items []jsontext.Value
 		if value.Kind() != '[' || json.Unmarshal(value, &items) != nil {
 			return false
@@ -110,7 +111,7 @@ func configTypeMatches(value jsontext.Value, kind *skel.TypeSchema, enums []*ske
 			}
 		}
 		return true
-	case skel.TypeKindMap:
+	case skeldesc.TypeKindMap:
 		var items map[string]jsontext.Value
 		if value.Kind() != '{' || json.Unmarshal(value, &items) != nil {
 			return false
@@ -121,12 +122,12 @@ func configTypeMatches(value jsontext.Value, kind *skel.TypeSchema, enums []*ske
 			}
 		}
 		return true
-	case skel.TypeKindData:
+	case skeldesc.TypeKindData:
 		declaration := data[kind.SkelName]
 		if declaration == nil || len(declaration.TypeParameters) != len(kind.TypeArguments) {
 			return false
 		}
-		args := map[string]*skel.TypeSchema{}
+		args := map[string]*skeldesc.Type{}
 		for i, name := range declaration.TypeParameters {
 			args[name] = kind.TypeArguments[i]
 		}
@@ -136,70 +137,70 @@ func configTypeMatches(value jsontext.Value, kind *skel.TypeSchema, enums []*ske
 	}
 }
 
-func configScalarMatches(value jsontext.Value, scalar skel.Scalar) bool {
+func configScalarMatches(value jsontext.Value, scalar skeldesc.Scalar) bool {
 	var target any
 	switch scalar {
-	case skel.ScalarString:
+	case skeldesc.ScalarString:
 		target = new(string)
-	case skel.ScalarBool:
+	case skeldesc.ScalarBoolean:
 		target = new(bool)
-	case skel.ScalarInt, skel.ScalarLong:
+	case skeldesc.ScalarInt:
 		target = new(int64)
-	case skel.ScalarFloat, skel.ScalarDouble:
+	case skeldesc.ScalarFloat:
 		target = new(float64)
-	case skel.ScalarBinary:
-		target = new(skel.Binary)
-	case skel.ScalarDecimal:
-		target = new(skel.Decimal)
-	case skel.ScalarJson:
-		target = new(skel.JSON)
-	case skel.ScalarUuid:
-		target = new(skel.UUID)
-	case skel.ScalarDuration:
-		target = new(skel.Duration)
-	case skel.ScalarTimestamp:
-		target = new(skel.Timestamp)
-	case skel.ScalarLocalDate:
-		target = new(skel.LocalDate)
-	case skel.ScalarLocalTime:
-		target = new(skel.LocalTime)
-	case skel.ScalarLocalDateTime:
-		target = new(skel.LocalDateTime)
+	case skeldesc.ScalarBinary:
+		target = new(skeltype.Binary)
+	case skeldesc.ScalarDecimal:
+		target = new(skeltype.Decimal)
+	case skeldesc.ScalarJSON:
+		target = new(skeltype.JSON)
+	case skeldesc.ScalarUUID:
+		target = new(skeltype.UUID)
+	case skeldesc.ScalarDuration:
+		target = new(skeltype.Duration)
+	case skeldesc.ScalarTimestamp:
+		target = new(skeltype.Timestamp)
+	case skeldesc.ScalarLocalDate:
+		target = new(skeltype.LocalDate)
+	case skeldesc.ScalarLocalTime:
+		target = new(skeltype.LocalTime)
+	case skeldesc.ScalarLocalDateTime:
+		target = new(skeltype.LocalDateTime)
 	default:
 		return false
 	}
 	return json.Unmarshal(value, target) == nil
 }
 
-func jsonMapKeyMatchesType(value string, typeSchema *skel.TypeSchema, enumSchemas []*skel.EnumSchema) bool {
-	if typeSchema == nil {
+func jsonMapKeyMatchesType(value string, typeDescriptor *skeldesc.Type, enumDescriptors []*skeldesc.Enum) bool {
+	if typeDescriptor == nil {
 		return false
 	}
-	switch typeSchema.Kind {
-	case skel.TypeKindEnum:
-		return enumValueExists(value, typeSchema, enumSchemas)
-	case skel.TypeKindScalar:
-		switch typeSchema.Scalar {
-		case skel.ScalarBool:
+	switch typeDescriptor.Kind {
+	case skeldesc.TypeKindEnum:
+		return enumValueExists(value, typeDescriptor, enumDescriptors)
+	case skeldesc.TypeKindScalar:
+		switch typeDescriptor.Scalar {
+		case skeldesc.ScalarBoolean:
 			return value == "true" || value == "false"
-		case skel.ScalarInt, skel.ScalarLong:
+		case skeldesc.ScalarInt:
 			decoded, err := strconv.ParseInt(value, 10, 64)
 			return err == nil && (strconv.FormatInt(decoded, 10) == value || value == "-0")
 		default:
 			raw, err := json.Marshal(value)
-			return err == nil && configScalarMatches(raw, typeSchema.Scalar)
+			return err == nil && configScalarMatches(raw, typeDescriptor.Scalar)
 		}
 	default:
 		return false
 	}
 }
 
-func enumValueExists(value string, typeSchema *skel.TypeSchema, enumSchemas []*skel.EnumSchema) bool {
-	for _, enumSchema := range enumSchemas {
-		if enumSchema.SkelName != typeSchema.SkelName {
+func enumValueExists(value string, typeDescriptor *skeldesc.Type, enumDescriptors []*skeldesc.Enum) bool {
+	for _, enumDescriptor := range enumDescriptors {
+		if enumDescriptor.SkelName != typeDescriptor.SkelName {
 			continue
 		}
-		for _, item := range enumSchema.Items {
+		for _, item := range enumDescriptor.Items {
 			if item.Name == value {
 				return true
 			}

@@ -1,11 +1,12 @@
 package core
 
 import (
-	"go.yorun.ai/vine/internal/core/ex"
-	"go.yorun.ai/vine/internal/core/skel"
-	"go.yorun.ai/vine/util/vslice"
 	"net/url"
 	"strings"
+
+	skeldesc "go.yorun.ai/skel/descriptor"
+	"go.yorun.ai/vine/internal/core/ex"
+	"go.yorun.ai/vine/util/vslice"
 )
 
 type PortalSiteType string
@@ -114,7 +115,7 @@ type PortalSiteRepo interface {
 
 type PortalSiteCore struct {
 	PortalSiteRepo PortalSiteRepo `inject:""`
-	SchemaRepo     SchemaRepo     `inject:""`
+	DescriptorRepo DescriptorRepo `inject:""`
 }
 
 func (m *PortalSiteCore) List() []*PortalSite {
@@ -128,9 +129,9 @@ func (m *PortalSiteCore) List() []*PortalSite {
 
 func (m *PortalSiteCore) ListOptions() PortalSiteOptions {
 	return PortalSiteOptions{
-		Actors:   toPortalSiteActorOptions(m.SchemaRepo.ListActorSchemas()),
-		Services: toPortalSiteServiceOptions(m.SchemaRepo.ListServiceSchemas()),
-		Webs:     toPortalSiteWebOptions(m.SchemaRepo.ListWebSchemas()),
+		Actors:   toPortalSiteActorOptions(m.DescriptorRepo.ListActorDescriptors()),
+		Services: toPortalSiteServiceOptions(m.DescriptorRepo.ListServiceDescriptors()),
+		Webs:     toPortalSiteWebOptions(m.DescriptorRepo.ListWebDescriptors()),
 	}
 }
 
@@ -216,16 +217,16 @@ func (m *PortalSiteCore) Remove(id int) {
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", id))
 }
 
-func toPortalSiteActorOptions(schemas []*skel.ActorSchema) []PortalSiteActorOption {
-	options := make([]PortalSiteActorOption, 0, len(schemas))
-	for _, schema := range schemas {
-		actorVias := make([]string, 0, len(schema.Vias))
-		for _, actorVia := range schema.Vias {
+func toPortalSiteActorOptions(descriptors []*skeldesc.Actor) []PortalSiteActorOption {
+	options := make([]PortalSiteActorOption, 0, len(descriptors))
+	for _, descriptor := range descriptors {
+		actorVias := make([]string, 0, len(descriptor.Vias))
+		for _, actorVia := range descriptor.Vias {
 			actorVias = append(actorVias, string(actorVia))
 		}
 		options = append(options, PortalSiteActorOption{
-			Name:      schema.Name,
-			SkelName:  schema.SkelName,
+			Name:      descriptor.Name,
+			SkelName:  descriptor.SkelName,
 			ActorVias: actorVias,
 		})
 	}
@@ -234,13 +235,13 @@ func toPortalSiteActorOptions(schemas []*skel.ActorSchema) []PortalSiteActorOpti
 	})
 }
 
-func toPortalSiteServiceOptions(schemas []*skel.ServiceSchema) []PortalSiteServiceOption {
-	options := make([]PortalSiteServiceOption, 0, len(schemas))
-	for _, schema := range schemas {
+func toPortalSiteServiceOptions(descriptors []*skeldesc.Service) []PortalSiteServiceOption {
+	options := make([]PortalSiteServiceOption, 0, len(descriptors))
+	for _, descriptor := range descriptors {
 		options = append(options, PortalSiteServiceOption{
-			Name:           schema.Name,
-			SkelName:       schema.SkelName,
-			ActorSkelNames: actorSkelNames(schema.Audiences),
+			Name:           descriptor.Name,
+			SkelName:       descriptor.SkelName,
+			ActorSkelNames: actorSkelNames(descriptor.Audiences),
 		})
 	}
 	return vslice.SortBy(options, func(a PortalSiteServiceOption, b PortalSiteServiceOption) bool {
@@ -250,7 +251,7 @@ func toPortalSiteServiceOptions(schemas []*skel.ServiceSchema) []PortalSiteServi
 
 // MatchPortalSiteRpcgwServicesInDomainViews returns the Rpc services a site
 // forwards to, matching the services registered for its actor and access mode.
-func MatchPortalSiteRpcgwServicesInDomainViews(site PortalSite, views []DomainSchemaView) []string {
+func MatchPortalSiteRpcgwServicesInDomainViews(site PortalSite, views []DomainDescriptorView) []string {
 	if site.Type != PortalSiteTypeRPCGW {
 		return []string{}
 	}
@@ -261,26 +262,26 @@ func MatchPortalSiteRpcgwServicesInDomainViews(site PortalSite, views []DomainSc
 		if !view.DomainVersion.Main {
 			continue
 		}
-		for _, schema := range view.DomainVersion.Schema.Services {
-			if !schema.HasAudience(site.ActorSkelName, skel.ActorVia(site.ActorVia)) {
+		for _, service := range view.DomainVersion.Descriptor.Services {
+			if !service.HasAudience(site.ActorSkelName, skeldesc.ActorViaKind(site.ActorVia)) {
 				continue
 			}
-			if _, ok := seen[schema.SkelName]; !ok {
-				seen[schema.SkelName] = struct{}{}
-				serviceNames = append(serviceNames, schema.SkelName)
+			if _, ok := seen[service.SkelName]; !ok {
+				seen[service.SkelName] = struct{}{}
+				serviceNames = append(serviceNames, service.SkelName)
 			}
 		}
 	}
 	return vslice.Sort(serviceNames)
 }
 
-func toPortalSiteWebOptions(schemas []*skel.WebSchema) []PortalSiteWebOption {
-	options := make([]PortalSiteWebOption, 0, len(schemas))
-	for _, schema := range schemas {
+func toPortalSiteWebOptions(descriptors []*skeldesc.Web) []PortalSiteWebOption {
+	options := make([]PortalSiteWebOption, 0, len(descriptors))
+	for _, descriptor := range descriptors {
 		options = append(options, PortalSiteWebOption{
-			Name:           schema.Name,
-			SkelName:       schema.SkelName,
-			ActorSkelNames: actorSkelNames(schema.Audiences),
+			Name:           descriptor.Name,
+			SkelName:       descriptor.SkelName,
+			ActorSkelNames: actorSkelNames(descriptor.Audiences),
 		})
 	}
 	return vslice.SortBy(options, func(a PortalSiteWebOption, b PortalSiteWebOption) bool {
@@ -288,7 +289,7 @@ func toPortalSiteWebOptions(schemas []*skel.WebSchema) []PortalSiteWebOption {
 	})
 }
 
-func actorSkelNames(refs []*skel.ActorAudienceSchema) []string {
+func actorSkelNames(refs []*skeldesc.ActorAudience) []string {
 	names := make([]string, 0, len(refs))
 	for _, ref := range refs {
 		names = append(names, ref.SkelName)
@@ -313,7 +314,7 @@ func (s *PortalSite) normalizeAndValidate() {
 	fail(strings.TrimSpace(s.Name) != "", "name is required")
 	fail(s.Type == PortalSiteTypeRPCGW || s.Type == PortalSiteTypeWEBGW, "type must be RPCGW or WEBGW")
 	fail(strings.TrimSpace(s.ActorSkelName) != "", "actorSkelName is required")
-	fail(s.ActorVia == string(skel.ActorViaClient) || s.ActorVia == string(skel.ActorViaAgent) || s.ActorVia == string(skel.ActorViaOpenAPI), "actorVia must be client, agent or openapi")
+	fail(s.ActorVia == string(skeldesc.ActorViaClient) || s.ActorVia == string(skeldesc.ActorViaAgent) || s.ActorVia == string(skeldesc.ActorViaOpenAPI), "actorVia must be client, agent or openapi")
 	if s.Type == PortalSiteTypeWEBGW {
 		fail(strings.TrimSpace(s.WebName) != "", "webName is required for WEBGW")
 	}

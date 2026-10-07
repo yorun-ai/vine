@@ -1,12 +1,15 @@
 package ex
 
 import (
+	"bytes"
 	"encoding/json/v2"
 	"errors"
 	"strings"
 	"testing"
 
+	"github.com/fxamacker/cbor/v2"
 	"go.yorun.ai/vine/util/vcode"
+	rpchttp "go.yorun.ai/vrpc/transport/http"
 )
 
 func unmarshalJson(data []byte, target any) error {
@@ -96,52 +99,67 @@ func TestErrorStringIncludesDetail(t *testing.T) {
 	}
 }
 
-func TestErrorJsonRoundTrip(t *testing.T) {
-	err := New(OperationFailed, "write failed", WithReason("quota-exceeded"), WithDetail("disk offline"))
+func TestErrorWireRoundTrip(t *testing.T) {
+	cause := errors.New("local cause")
+	err := New(OperationFailed, "write failed", WithReason("quota-exceeded"), WithDetail("disk offline"), WithCause(cause))
 
-	payload := EncodeError(err, vcode.MustMarshalJson)
-	got, decodeErr := DecodeError(payload, unmarshalJson)
-	if decodeErr != nil {
-		t.Fatalf("DecodeError() error = %v", decodeErr)
-	}
-	if got.Code() != err.Code() || got.Message() != err.Message() || got.Reason() != err.Reason() || got.Detail() != err.Detail() {
-		t.Fatalf("unexpected decoded error: got=%s/%s/%s/%s", got.Code(), got.Message(), got.Reason(), got.Detail())
+	for _, codec := range []struct {
+		name        string
+		mustMarshal func(any) []byte
+		unmarshal   func([]byte, any) error
+	}{
+		{
+			name:        "json",
+			mustMarshal: vcode.MustMarshalJson,
+			unmarshal:   unmarshalJson,
+		},
+		{
+			name:        "cbor",
+			mustMarshal: vcode.MustMarshalCbor,
+			unmarshal:   cbor.Unmarshal,
+		},
+	} {
+		t.Run(codec.name, func(t *testing.T) {
+			payload := codec.mustMarshal(err)
+			if !bytes.Equal(payload, codec.mustMarshal(ToPayload(err))) {
+				t.Fatal("direct serialization differs from the shared payload")
+			}
+			var fields map[string]string
+			if decodeErr := codec.unmarshal(payload, &fields); decodeErr != nil {
+				t.Fatal(decodeErr)
+			}
+			if len(fields) != 4 {
+				t.Fatalf("unexpected wire fields: %v", fields)
+			}
+			var value rpchttp.ErrorPayload
+			if decodeErr := codec.unmarshal(payload, &value); decodeErr != nil {
+				t.Fatal(decodeErr)
+			}
+			got, decodeErr := FromPayload(&value)
+			if decodeErr != nil {
+				t.Fatalf("FromPayload() error = %v", decodeErr)
+			}
+			if got.Code() != err.Code() || got.Message() != err.Message() || got.Reason() != err.Reason() || got.Detail() != err.Detail() {
+				t.Fatalf("unexpected decoded error: got=%s/%s/%s/%s", got.Code(), got.Message(), got.Reason(), got.Detail())
+			}
+			if Stack(got) != "" || errors.Unwrap(got) != nil {
+				t.Fatal("remote error contains local diagnostics")
+			}
+		})
 	}
 }
 
-func TestClearErrorDetail(t *testing.T) {
-	err := New(OperationFailed, "write failed", WithReason("quota-exceeded"), WithDetail("disk offline"))
-
-	payload, decodeErr := ClearErrorDetail(EncodeError(err, vcode.MustMarshalJson), unmarshalJson, vcode.MustMarshalJson)
-	if decodeErr != nil {
-		t.Fatalf("ClearErrorDetail() error = %v", decodeErr)
-	}
-	got, decodeErr := DecodeError(payload, unmarshalJson)
-	if decodeErr != nil {
-		t.Fatalf("DecodeError() error = %v", decodeErr)
-	}
-	if got.Code() != err.Code() || got.Message() != err.Message() || got.Reason() != err.Reason() || got.Detail() != "" {
-		t.Fatalf("unexpected decoded error: got=%s/%s/%s/%s", got.Code(), got.Message(), got.Reason(), got.Detail())
-	}
-}
-
-func TestDecodeErrorRejectsUnknownCode(t *testing.T) {
-	got, decodeErr := DecodeError([]byte(`{"code":"BAD","message":"boom","detail":"detail"}`), unmarshalJson)
-	if got != nil {
-		t.Fatalf("expected nil decoded error, got %#v", got)
-	}
-	if decodeErr == nil || decodeErr.Error() != "unknown Code=BAD" {
-		t.Fatalf("unexpected decode error: %v", decodeErr)
-	}
-}
-
-func TestDecodeErrorReturnsDecodeError(t *testing.T) {
-	got, decodeErr := DecodeError([]byte(`{`), unmarshalJson)
-	if got != nil {
-		t.Fatalf("expected nil decoded error, got %#v", got)
-	}
-	if decodeErr == nil {
-		t.Fatalf("unexpected decode error: %#v", decodeErr)
+func TestFromPayloadRejectsInvalidPayload(t *testing.T) {
+	for _, payload := range []*rpchttp.ErrorPayload{
+		nil,
+		{
+			Code: "BAD",
+		},
+	} {
+		got, decodeErr := FromPayload(payload)
+		if got != nil || decodeErr == nil {
+			t.Fatalf("invalid payload %+v: error=%#v decodeError=%v", payload, got, decodeErr)
+		}
 	}
 }
 
@@ -291,14 +309,6 @@ func TestNewCapturesLocalStackWithoutSerializingIt(t *testing.T) {
 	}
 	if strings.Contains(string(payload), "stack") || strings.Contains(string(payload), "TestNewCaptures") {
 		t.Fatalf("local stack leaked into wire payload: %s", payload)
-	}
-
-	decoded, decodeErr := DecodeError(payload, unmarshalJson)
-	if decodeErr != nil {
-		t.Fatalf("DecodeError() error = %v", decodeErr)
-	}
-	if Stack(decoded) != "" {
-		t.Fatalf("remote decoded error should not have a local stack: %s", Stack(decoded))
 	}
 }
 

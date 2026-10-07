@@ -15,10 +15,10 @@ import (
 	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 
 	"github.com/stretchr/testify/assert"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/core/task/spec"
 )
 
@@ -265,7 +265,7 @@ func TestServerRunTaskAddsProfileLabels(t *testing.T) {
 			TraceSpan:     trace.Span(),
 			AppName:       "remote.app",
 			AppVersion:    "1.0.0",
-			AppInstanceId: skel.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
+			AppInstanceId: skeltype.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
 		},
 		TaskSkelName:    "runner.task",
 		TriggerSkelName: "forGroup",
@@ -300,7 +300,7 @@ func TestServerReturnsInvalidTaskWhenTriggerNotRegistered(t *testing.T) {
 			TraceSpan:     meta.InitialTrace().Span(),
 			AppName:       "remote.app",
 			AppVersion:    "1.0.0",
-			AppInstanceId: skel.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
+			AppInstanceId: skeltype.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
 		},
 		TaskSkelName:    "missing.task",
 		TriggerSkelName: "forGroup",
@@ -375,7 +375,7 @@ func TestServerRunTaskResolvesAndRunsTrigger(t *testing.T) {
 			TraceSpan:     baseTrace.Span(),
 			AppName:       "remote.app",
 			AppVersion:    "1.0.0",
-			AppInstanceId: skel.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
+			AppInstanceId: skeltype.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
 		},
 		TaskSkelName:    "runner.task",
 		TriggerSkelName: "forGroup",
@@ -415,7 +415,7 @@ func BenchmarkServerRunTask(b *testing.B) {
 			TraceSpan:     trace.Span(),
 			AppName:       "remote.app",
 			AppVersion:    "1.0.0",
-			AppInstanceId: skel.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
+			AppInstanceId: skeltype.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
 		},
 		TaskSkelName:    "benchmark.task",
 		TriggerSkelName: "forGroup",
@@ -445,7 +445,7 @@ func TestServerRunTaskAcceptsNullableArguments(t *testing.T) {
 			executor := &_RunnerRecorderExecutor{}
 			server := NewServer(Option{App: testTaskServerApp(), ImplTypes: []reflect.Type{reflect.TypeFor[*testRunnerImpl]()}, Executor: executor})
 			trace := meta.InitialTrace()
-			err := server.RunTask(context.Background(), appskeled.TaskRun{Metadata: appskeled.TaskRunMeta{TraceId: trace.Id(), TraceSpan: trace.Span(), AppName: "remote.app", AppVersion: "1.0.0", AppInstanceId: skel.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333"))}, TaskSkelName: "runner.task", TriggerSkelName: "forGroup", ArgumentsJson: tc.body})
+			err := server.RunTask(context.Background(), appskeled.TaskRun{Metadata: appskeled.TaskRunMeta{TraceId: trace.Id(), TraceSpan: trace.Span(), AppName: "remote.app", AppVersion: "1.0.0", AppInstanceId: skeltype.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333"))}, TaskSkelName: "runner.task", TriggerSkelName: "forGroup", ArgumentsJson: tc.body})
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
+	skeldesc "go.yorun.ai/skel/descriptor"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
-	"go.yorun.ai/vine/internal/core/skel"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 )
@@ -67,7 +68,7 @@ func TestInvokeServicePropagatesTimeoutAsRpcOptions(t *testing.T) {
 		AppInstanceId:   &appInstanceId,
 		ServiceSkelName: "demo.UserService",
 		MethodSkelName:  "Get",
-		ParamsJson:      skel.JSON(`{}`),
+		ParamsJson:      skeltype.JSON(`{}`),
 		TimeoutSeconds:  5,
 	})
 
@@ -94,10 +95,10 @@ func TestInvokeServicePropagatesTimeoutAsRpcOptions(t *testing.T) {
 }
 
 func TestToDebugSkeletonFieldsIncludesSensitive(t *testing.T) {
-	fields := toDebugSkeletonFields([]*skel.MemberSchema{{
+	fields := toDebugSkeletonFields([]*skeldesc.Member{{
 		Name:      "token",
 		Sensitive: true,
-		Type:      &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString},
+		Type:      &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString},
 	}})
 
 	if len(fields) != 1 || !fields[0].Sensitive {

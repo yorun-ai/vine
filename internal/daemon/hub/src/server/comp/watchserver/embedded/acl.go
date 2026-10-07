@@ -53,10 +53,10 @@ var aclRuleByRole = map[_UserRole]_ACLRule{
 			watched.FormatPortalRulePrefix() + ":*",
 			watched.FormatPortalSitePrefix() + ":*",
 			watched.FormatPortalCertPrefix() + ":*",
-			watched.FormatSchemaActorPrefix() + ":*",
-			watched.FormatSchemaServicePrefix() + ":*",
-			watched.FormatSchemaResourcePrefix() + ":*",
-			watched.FormatSchemaWebPrefix() + ":*",
+			watched.FormatDescriptorActorPrefix() + ":*",
+			watched.FormatDescriptorServicePrefix() + ":*",
+			watched.FormatDescriptorResourcePrefix() + ":*",
+			watched.FormatDescriptorWebPrefix() + ":*",
 			"rpc:*",
 			"web:*",
 		},
@@ -65,10 +65,10 @@ var aclRuleByRole = map[_UserRole]_ACLRule{
 			watched.FormatPortalRulePrefix() + ":*",
 			watched.FormatPortalSitePrefix() + ":*",
 			watched.FormatPortalCertPrefix() + ":*",
-			watched.FormatSchemaActorPrefix() + ":*",
-			watched.FormatSchemaServicePrefix() + ":*",
-			watched.FormatSchemaResourcePrefix() + ":*",
-			watched.FormatSchemaWebPrefix() + ":*",
+			watched.FormatDescriptorActorPrefix() + ":*",
+			watched.FormatDescriptorServicePrefix() + ":*",
+			watched.FormatDescriptorResourcePrefix() + ":*",
+			watched.FormatDescriptorWebPrefix() + ":*",
 			"rpc:*",
 			"web:*",
 		},
@@ -80,7 +80,9 @@ func connContext(conn interface{ Context() any }) *_ConnContext {
 	if !ok {
 		// A connection has no role until HELLO AUTH succeeds. In particular,
 		// anonymous connections must not inherit either read-only client role.
-		return &_ConnContext{role: userRoleNone}
+		return &_ConnContext{
+			role: userRoleNone,
+		}
 	}
 	return ctx
 }

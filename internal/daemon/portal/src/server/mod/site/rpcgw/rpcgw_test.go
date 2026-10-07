@@ -14,13 +14,12 @@ import (
 	"time"
 
 	"github.com/klauspost/compress/zstd"
-
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/mtls/mtlstest"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
@@ -673,10 +672,10 @@ func setTestAuthHeaders(request *http.Request) {
 	request.Header.Set(rpchttp.HeaderRpcClient, "name=demo.client,version=0.0.0,instanceId=123e4567-e89b-12d3-a456-426614174001")
 }
 
-func testCredentialSchema() *skel.DataSchema {
-	return &skel.DataSchema{
+func testCredentialDescriptor() *skeldesc.Data {
+	return &skeldesc.Data{
 		SkelName: "demo.UserCredential",
-		Members: []*skel.MemberSchema{
+		Members: []*skeldesc.Member{
 			{Name: "key"},
 		},
 	}
@@ -785,7 +784,7 @@ func newTestEpmgr(t *testing.T, valuesByKey map[string]string) *epmgr.Manager {
 }
 
 func newTestAccess(t *testing.T) *access.Access {
-	watchClient := newTestSchemaWatch(t)
+	watchClient := newTestDescriptorWatch(t)
 	epmgrManager := &epmgr.Manager{
 		Context: context.Background(),
 		Watch:   watchClient,
@@ -800,21 +799,19 @@ func newTestAccess(t *testing.T) *access.Access {
 	return manager
 }
 
-func newTestSchemaWatch(t *testing.T) *watchtest.Client {
+func newTestDescriptorWatch(t *testing.T) *watchtest.Client {
 	watchClient := watchtest.New(t, map[string]string{
-		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.SchemaActor{
-			SkelName:       "demo.UserActor",
-			AuthCredential: testCredentialSchema(),
-			AuthInfo:       &skel.DataSchema{SkelName: "demo.UserInfo"},
+		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.DescriptorActor{
+			SkelName: "demo.UserActor",
 		}),
-		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
 			SkelName: "demo.UserService",
-			AuthMode: skel.AuthModeOptional,
-			Audiences: []*skel.ActorAudienceSchema{
+			AuthMode: skeldesc.AuthModeOptional,
+			Audiences: []*skeldesc.ActorAudience{
 				{SkelName: "demo.UserActor"},
 			},
-			Methods: []*skel.MethodSchema{
-				{SkelName: "Get", AuthMode: skel.AuthModeOptional},
+			Methods: []*skeldesc.Method{
+				{SkelName: "Get", AuthMode: skeldesc.AuthModeOptional, Name: "Get", EffectiveAuthMode: skeldesc.AuthModeOptional},
 			},
 		}),
 	})
@@ -936,11 +933,9 @@ func TestRpcGatewayRemovesAuthorizationBeforeHTTPForwarding(t *testing.T) {
 		w.Header().Set(rpchttp.HeaderRpcServer, "name=demo.auth,version=0.0.0,instanceId=123e4567-e89b-12d3-a456-426614174012")
 		_, _ = w.Write([]byte(`{"result":{"userId":"u1"}}`))
 	}))
-	watchClient := newTestSchemaWatch(t)
-	watchClient.SetValue(watched.FormatSchemaActorKey("demo.UserActor"), vcode.MustMarshalJsonS(watched.SchemaActor{
-		SkelName: "demo.UserActor", AuthEnabled: true, AuthCredential: testCredentialSchema(),
-		AuthInfo:    new(skel.DataSchema{SkelName: "demo.UserInfo"}),
-		AuthService: new(skel.ServiceSchema{SkelName: "demo.AuthService"}), AuthMethod: new(skel.MethodSchema{SkelName: "auth"}),
+	watchClient := newTestDescriptorWatch(t)
+	watchClient.SetValue(watched.FormatDescriptorActorKey("demo.UserActor"), vcode.MustMarshalJsonS(watched.DescriptorActor{
+		SkelName: "demo.UserActor", Auth: &skeldesc.ActorAuth{Credential: testCredentialDescriptor(), Info: new(skeldesc.Data{SkelName: "demo.UserInfo"}), Service: new(skeldesc.Service{SkelName: "demo.AuthService", AuthMode: skeldesc.AuthModeRequired, Methods: []*skeldesc.Method{{Name: "Auth", SkelName: "auth", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired}}}), MethodName: "Auth"},
 	}))
 	watchClient.SetValue(watched.FormatRpcServiceRegistrationKey("demo.AuthService", "demo.auth", "auth-instance"), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{Endpoint: authEndpoint, ServiceName: "demo.AuthService", AppName: "demo.auth", AppInstanceId: "auth-instance"}))
 	authEpmgr := new(epmgr.Manager{Context: context.Background(), Watch: watchClient})

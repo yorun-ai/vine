@@ -9,10 +9,10 @@ import (
 	"sync"
 
 	"github.com/tidwall/gjson"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/util/httputil"
 )
 
@@ -88,12 +88,12 @@ func debugTrace(traceId *string, spanId *string) meta.Trace {
 	return trace
 }
 
-func (s *ServiceDebugApiServiceServerImpl) debugActor(actorSkelName *string, actorInfoJson skel.JSON) meta.Actor {
+func (s *ServiceDebugApiServiceServerImpl) debugActor(actorSkelName *string, actorInfoJson skeltype.JSON) meta.Actor {
 	if actorSkelName == nil || strings.TrimSpace(*actorSkelName) == "" {
 		return nil
 	}
-	actor := s.findActorSchema(strings.TrimSpace(*actorSkelName))
-	ex.PanicNewIfNot(actor.AuthInfo != nil, ex.InvalidRequest, "actor auth info schema not found")
+	actor := s.findActorDescriptor(strings.TrimSpace(*actorSkelName))
+	ex.PanicNewIfNot(actor.Auth != nil, ex.InvalidRequest, "actor auth info descriptor not found")
 	info := jsontext.Value(strings.TrimSpace(string(actorInfoJson)))
 	if len(info) == 0 {
 		info = jsontext.Value("{}")
@@ -102,13 +102,13 @@ func (s *ServiceDebugApiServiceServerImpl) debugActor(actorSkelName *string, act
 		ex.PanicNew(ex.InvalidRequest, "invalid actor info json")
 	}
 	identifier := ""
-	if actor.IdentifierField != "" {
-		value := gjson.GetBytes(info, actor.IdentifierField)
+	if actor.Auth.IdentifierField != "" {
+		value := gjson.GetBytes(info, actor.Auth.IdentifierField)
 		ex.PanicNewIfNot(value.Type != gjson.Null, ex.InvalidRequest, "actor identifier field is missing or null")
 		identifier = value.Raw
 		if value.Type == gjson.String {
 			identifier = value.Str
 		}
 	}
-	return meta.NewAuthenticatedActorWithRawInfo(actor.SkelName, identifier, actor.AuthInfo.SkelName, info)
+	return meta.NewAuthenticatedActorWithRawInfo(actor.SkelName, identifier, actor.Auth.Info.SkelName, info)
 }

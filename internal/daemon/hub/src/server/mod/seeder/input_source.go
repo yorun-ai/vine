@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go.yorun.ai/vine/internal/core/skel"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"gopkg.in/yaml.v3"
 )
@@ -125,7 +125,7 @@ func entityFieldSources(all core.FieldSources, kind string, index int) core.Fiel
 }
 
 // seedNodeJSON encodes a node as the deterministic JSON a field source records.
-func seedNodeJSON(node *yaml.Node) (skel.JSON, error) {
+func seedNodeJSON(node *yaml.Node) (skeltype.JSON, error) {
 	normalized, err := configJSONNode(node)
 	if err != nil {
 		return "", err
@@ -135,5 +135,5 @@ func seedNodeJSON(node *yaml.Node) (skel.JSON, error) {
 		return "", err
 	}
 	encoded, err := json.Marshal(value, json.Deterministic(true))
-	return skel.JSON(encoded), err
+	return skeltype.JSON(encoded), err
 }

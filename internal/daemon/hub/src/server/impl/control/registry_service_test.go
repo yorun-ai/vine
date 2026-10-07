@@ -6,7 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/core/skel"
+	skeldesc "go.yorun.ai/skel/descriptor"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
@@ -37,46 +38,46 @@ func (*_RegistryServicePortalSiteRepo) Remove(int) bool {
 	return false
 }
 
-type _RegistryServiceSchemaRepo struct {
-	actorSchemas   []*skel.ActorSchema
-	serviceSchemas []*skel.ServiceSchema
+type _RegistryServiceDescriptorRepo struct {
+	actorDescriptors   []*skeldesc.Actor
+	serviceDescriptors []*skeldesc.Service
 }
 
-func (*_RegistryServiceSchemaRepo) SaveDomainSchemas(string, string, []*skel.DomainSchema) {
+func (*_RegistryServiceDescriptorRepo) SaveDomainDescriptors(string, string, []*skeldesc.Domain) {
 }
 
-func (*_RegistryServiceSchemaRepo) SaveDomainSchemasJSON(string, string, []skel.JSON) {
+func (*_RegistryServiceDescriptorRepo) SaveDomainDescriptorsJSON(string, string, []skeltype.JSON) {
 }
 
-func (*_RegistryServiceSchemaRepo) ReleaseDomainSchemas(string, string) {}
+func (*_RegistryServiceDescriptorRepo) ReleaseDomainDescriptors(string, string) {}
 
-func (r *_RegistryServiceSchemaRepo) ListDomainSchemaViews() []core.DomainSchemaView {
-	return []core.DomainSchemaView{{
-		DomainVersion: core.DomainSchemaVersion{
+func (r *_RegistryServiceDescriptorRepo) ListDomainDescriptorViews() []core.DomainDescriptorView {
+	return []core.DomainDescriptorView{{
+		DomainVersion: core.DomainDescriptorVersion{
 			Main: true,
-			Schema: &skel.DomainSchema{
-				Services: r.serviceSchemas,
+			Descriptor: &skeldesc.Domain{
+				Services: r.serviceDescriptors, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			},
 		},
-		Actors: vslice.Collect(func(yield func(core.SchemaVersion[*skel.ActorSchema]) bool) {
-			for _, actor := range r.actorSchemas {
-				if !yield(core.SchemaVersion[*skel.ActorSchema]{
-					Schema:     actor,
-					SkelName:   actor.SkelName,
-					SchemaHash: actor.Hash,
-					Main:       true,
+		Actors: vslice.Collect(func(yield func(core.DescriptorVersion[*skeldesc.Actor]) bool) {
+			for _, actor := range r.actorDescriptors {
+				if !yield(core.DescriptorVersion[*skeldesc.Actor]{
+					Descriptor:     actor,
+					SkelName:       actor.SkelName,
+					DescriptorHash: actor.Hash,
+					Main:           true,
 				}) {
 					return
 				}
 			}
 		}),
-		Services: vslice.Collect(func(yield func(core.SchemaVersion[*skel.ServiceSchema]) bool) {
-			for _, service := range r.serviceSchemas {
-				if !yield(core.SchemaVersion[*skel.ServiceSchema]{
-					Schema:     service,
-					SkelName:   service.SkelName,
-					SchemaHash: service.Hash,
-					Main:       true,
+		Services: vslice.Collect(func(yield func(core.DescriptorVersion[*skeldesc.Service]) bool) {
+			for _, service := range r.serviceDescriptors {
+				if !yield(core.DescriptorVersion[*skeldesc.Service]{
+					Descriptor:     service,
+					SkelName:       service.SkelName,
+					DescriptorHash: service.Hash,
+					Main:           true,
 				}) {
 					return
 				}
@@ -85,63 +86,63 @@ func (r *_RegistryServiceSchemaRepo) ListDomainSchemaViews() []core.DomainSchema
 	}}
 }
 
-func (*_RegistryServiceSchemaRepo) ListVineHubSchemaViews() []core.DomainSchemaView {
+func (*_RegistryServiceDescriptorRepo) ListVineHubDescriptorViews() []core.DomainDescriptorView {
 	return nil
 }
 
-func (*_RegistryServiceSchemaRepo) ListActorSchemaVersions() []core.SchemaVersion[*skel.ActorSchema] {
+func (*_RegistryServiceDescriptorRepo) ListActorDescriptorVersions() []core.DescriptorVersion[*skeldesc.Actor] {
 	return nil
 }
 
-func (*_RegistryServiceSchemaRepo) ListConfigSchemaVersions() []core.SchemaVersion[*skel.ConfigSchema] {
+func (*_RegistryServiceDescriptorRepo) ListConfigDescriptorVersions() []core.DescriptorVersion[*skeldesc.Config] {
 	return nil
 }
 
-func (*_RegistryServiceSchemaRepo) ListDataSchemaVersions() []core.SchemaVersion[*skel.DataSchema] {
+func (*_RegistryServiceDescriptorRepo) ListDataDescriptorVersions() []core.DescriptorVersion[*skeldesc.Data] {
 	return nil
 }
 
-func (*_RegistryServiceSchemaRepo) ListEnumSchemaVersions() []core.SchemaVersion[*skel.EnumSchema] {
+func (*_RegistryServiceDescriptorRepo) ListEnumDescriptorVersions() []core.DescriptorVersion[*skeldesc.Enum] {
 	return nil
 }
 
-func (*_RegistryServiceSchemaRepo) ListEventSchemaVersions() []core.SchemaVersion[*skel.EventSchema] {
+func (*_RegistryServiceDescriptorRepo) ListEventDescriptorVersions() []core.DescriptorVersion[*skeldesc.Event] {
 	return nil
 }
 
-func (*_RegistryServiceSchemaRepo) ListResourceSchemaVersions() []core.SchemaVersion[*skel.ResourceSchema] {
+func (*_RegistryServiceDescriptorRepo) ListResourceDescriptorVersions() []core.DescriptorVersion[*skeldesc.Resource] {
 	return nil
 }
 
-func (*_RegistryServiceSchemaRepo) ListServiceSchemaVersions() []core.SchemaVersion[*skel.ServiceSchema] {
+func (*_RegistryServiceDescriptorRepo) ListServiceDescriptorVersions() []core.DescriptorVersion[*skeldesc.Service] {
 	return nil
 }
 
-func (*_RegistryServiceSchemaRepo) ListTaskSchemaVersions() []core.SchemaVersion[*skel.TaskSchema] {
+func (*_RegistryServiceDescriptorRepo) ListTaskDescriptorVersions() []core.DescriptorVersion[*skeldesc.Task] {
 	return nil
 }
 
-func (*_RegistryServiceSchemaRepo) ListWebSchemaVersions() []core.SchemaVersion[*skel.WebSchema] {
+func (*_RegistryServiceDescriptorRepo) ListWebDescriptorVersions() []core.DescriptorVersion[*skeldesc.Web] {
 	return nil
 }
 
-func (*_RegistryServiceSchemaRepo) ListAppConfigSchemas() []*skel.ConfigSchema {
+func (*_RegistryServiceDescriptorRepo) ListAppConfigDescriptors() []*skeldesc.Config {
 	return nil
 }
 
-func (r *_RegistryServiceSchemaRepo) ListActorSchemas() []*skel.ActorSchema {
-	return r.actorSchemas
+func (r *_RegistryServiceDescriptorRepo) ListActorDescriptors() []*skeldesc.Actor {
+	return r.actorDescriptors
 }
 
-func (*_RegistryServiceSchemaRepo) ListEnumSchemas() []*skel.EnumSchema {
+func (*_RegistryServiceDescriptorRepo) ListEnumDescriptors() []*skeldesc.Enum {
 	return nil
 }
 
-func (r *_RegistryServiceSchemaRepo) ListServiceSchemas() []*skel.ServiceSchema {
-	return r.serviceSchemas
+func (r *_RegistryServiceDescriptorRepo) ListServiceDescriptors() []*skeldesc.Service {
+	return r.serviceDescriptors
 }
 
-func (*_RegistryServiceSchemaRepo) ListWebSchemas() []*skel.WebSchema {
+func (*_RegistryServiceDescriptorRepo) ListWebDescriptors() []*skeldesc.Web {
 	return nil
 }
 
@@ -182,25 +183,25 @@ func TestRegistryServiceRefreshesPortalSiteRpcgwServices(t *testing.T) {
 			},
 		},
 	}
-	schemaRepo := &_RegistryServiceSchemaRepo{
-		serviceSchemas: []*skel.ServiceSchema{
+	descriptorRepo := &_RegistryServiceDescriptorRepo{
+		serviceDescriptors: []*skeldesc.Service{
 			{
 				SkelName: "demo.UserService",
-				Audiences: []*skel.ActorAudienceSchema{
+				Audiences: []*skeldesc.ActorAudience{
 					{SkelName: "demo.UserActor"},
-				},
+				}, AuthMode: skeldesc.AuthModeRequired,
 			},
 			{
 				SkelName: "demo.AdminService",
-				Audiences: []*skel.ActorAudienceSchema{
+				Audiences: []*skeldesc.ActorAudience{
 					{SkelName: "demo.AdminActor"},
-				},
+				}, AuthMode: skeldesc.AuthModeRequired,
 			},
 		},
 	}
 	service := &RegistryServiceServerImpl{
-		PortalSiteCore: &core.PortalSiteCore{PortalSiteRepo: siteRepo, SchemaRepo: schemaRepo},
-		SchemaRepo:     schemaRepo,
+		PortalSiteCore: &core.PortalSiteCore{PortalSiteRepo: siteRepo, DescriptorRepo: descriptorRepo},
+		DescriptorRepo: descriptorRepo,
 		Syncer:         testRegistrySyncer(watchServer),
 	}
 
@@ -224,64 +225,63 @@ func TestRegistryServiceRefreshesPortalSiteRpcgwServices(t *testing.T) {
 	assert.Equal(t, "demo.Web", webSite.WebgwConfig.WebName)
 }
 
-func TestRegistryServiceRefreshesSchemas(t *testing.T) {
+func TestRegistryServiceRefreshesDescriptors(t *testing.T) {
 	watchServer := watchserver.NewServerForTest()
 	defer watchServer.AfterAppStop()
 
 	service := &RegistryServiceServerImpl{
-		SchemaRepo: &_RegistryServiceSchemaRepo{
-			actorSchemas: []*skel.ActorSchema{
+		DescriptorRepo: &_RegistryServiceDescriptorRepo{
+			actorDescriptors: []*skeldesc.Actor{
 				{
 					SkelName: "demo.UserActor",
-					Hash:     "actor-main",
-					AuthService: &skel.ServiceSchema{
+					Hash:     "actor-main", Auth: &skeldesc.ActorAuth{Service: &skeldesc.Service{
 						SkelName: "demo.UserAuthService",
-						Hash:     "auth-service-main",
-					},
+						Hash:     "auth-service-main", AuthMode: skeldesc.AuthModeRequired,
+					}},
 				},
 			},
-			serviceSchemas: []*skel.ServiceSchema{
+			serviceDescriptors: []*skeldesc.Service{
 				{
-					SkelName: "demo.UserService",
-					Hash:     "service-main",
-					Methods: []*skel.MethodSchema{
-						{SkelName: "Get", AuthMode: skel.AuthModeAuth},
-					},
+					SkelName: "demo.UserService", Api: true,
+					Hash: "service-main",
+					Methods: []*skeldesc.Method{
+						{SkelName: "Get", AuthMode: skeldesc.AuthModeRequired, Name: "Get", EffectiveAuthMode: skeldesc.AuthModeRequired},
+					}, AuthMode: skeldesc.AuthModeRequired,
 				},
 			},
 		},
 		Syncer: testRegistrySyncer(watchServer),
 	}
 
-	service.refreshSchemas()
+	service.refreshDescriptors()
 
-	value, ok := watchServer.Get(watched.FormatSchemaActorKey("demo.UserActor"))
+	value, ok := watchServer.Get(watched.FormatDescriptorActorKey("demo.UserActor"))
 	require.True(t, ok)
-	actor := new(watched.SchemaActor)
+	actor := new(watched.DescriptorActor)
 	require.NoError(t, json.Unmarshal([]byte(value), actor))
 	assert.Equal(t, "demo.UserActor", actor.SkelName)
 	assert.Equal(t, "actor-main", actor.Hash)
-	require.NotNil(t, actor.AuthService)
-	assert.Equal(t, "demo.UserAuthService", actor.AuthService.SkelName)
+	require.NotNil(t, actor.Auth.Service)
+	assert.Equal(t, "demo.UserAuthService", actor.Auth.Service.SkelName)
 
-	value, ok = watchServer.Get(watched.FormatSchemaServiceKey("demo.UserService"))
+	value, ok = watchServer.Get(watched.FormatDescriptorServiceKey("demo.UserService"))
 	require.True(t, ok)
-	serviceSchema := new(watched.SchemaService)
-	require.NoError(t, json.Unmarshal([]byte(value), serviceSchema))
-	assert.Equal(t, "demo.UserService", serviceSchema.SkelName)
-	assert.Equal(t, "service-main", serviceSchema.Hash)
-	assert.Equal(t, skel.AuthModeAuth, serviceSchema.Methods[0].AuthMode)
+	serviceDescriptor := new(watched.DescriptorService)
+	require.NoError(t, json.Unmarshal([]byte(value), serviceDescriptor))
+	assert.Equal(t, "demo.UserService", serviceDescriptor.SkelName)
+	assert.Equal(t, "service-main", serviceDescriptor.Hash)
+	assert.Equal(t, skeldesc.AuthModeRequired, serviceDescriptor.Methods[0].AuthMode)
 }
 
-func (r *_RegistryServiceSchemaRepo) GetWebSchema(skelName string) *skel.WebSchema {
-	for _, schema := range r.ListWebSchemas() {
-		if schema.SkelName == skelName {
-			return schema
+func (r *_RegistryServiceDescriptorRepo) GetWebDescriptor(skelName string) *skeldesc.Web {
+	for _, descriptor := range r.ListWebDescriptors() {
+		if descriptor.SkelName == skelName {
+			return descriptor
 		}
 	}
 	return nil
 }
 
-func (r *_RegistryServiceSchemaRepo) ListAppConfigTypeSchemas() ([]*skel.ConfigSchema, []*skel.EnumSchema, []*skel.DataSchema) {
-	return r.ListAppConfigSchemas(), r.ListEnumSchemas(), nil
+func (r *_RegistryServiceDescriptorRepo) ListAppConfigTypeDescriptors() ([]*skeldesc.Config, []*skeldesc.Enum, []*skeldesc.Data) {
+	return r.ListAppConfigDescriptors(), r.ListEnumDescriptors(), nil
 }

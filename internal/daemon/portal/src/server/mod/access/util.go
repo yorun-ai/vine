@@ -4,48 +4,36 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/fxamacker/cbor/v2"
-	"github.com/tidwall/gjson"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/ex"
-	"go.yorun.ai/vine/internal/core/skel"
+	rpchttp "go.yorun.ai/vrpc/transport/http"
 )
 
 // Supported JsonPath syntax:
-//   - field cascade, such as "params.update.userId"
+//   - field cascade, such as "update.userId"
 //   - at most one list wildcard in a non-tail segment, such as
-//     "params.users[*].id"
+//     "users[*].id"
 //
-// Unsupported path syntax includes tail wildcards like "params.users[*]",
+// Unsupported path syntax includes tail wildcards like "users[*]",
 // multiple wildcards, array indexes, filters, slices, recursive descent, and
 // quoted fields. Tail wildcards are rejected because "items[*]" has the same
 // permission-check meaning as "items" and only adds ambiguity.
 
-func jsonGetByPath(data []byte, jsonPath string) (any, bool) {
-	if _, ok := parseJsonPath(jsonPath); !ok {
-		return nil, false
-	}
-	gjsonPath := strings.ReplaceAll(jsonPath, "[*]", ".#")
-	value := gjson.GetBytes(data, gjsonPath)
-	return value.Value(), value.Exists()
-}
-
-func cborGetByPath(payload *any, data []byte, jsonPath string) (any, bool) {
+func requestParamsGetByPath(payload *any, data []byte, contentType string, jsonPath string) (any, bool) {
 	parts, ok := parseJsonPath(jsonPath)
 	if !ok {
 		return nil, false
 	}
 
-	if *payload != nil {
-		return cborGetPathPartsValue(*payload, parts)
+	if *payload == nil {
+		var value any
+		if err := rpchttp.DecodeRequest(data, &value, contentType); err != nil {
+			return nil, false
+		}
+		*payload = value
 	}
 
-	var value any
-	if err := cbor.Unmarshal(data, &value); err != nil {
-		return nil, false
-	}
-
-	*payload = value
-	return cborGetPathPartsValue(value, parts)
+	return getPathPartsValue(*payload, parts)
 }
 
 type _JsonPathPart struct {
@@ -61,7 +49,9 @@ func parseJsonPath(path string) ([]_JsonPathPart, bool) {
 		if rawPart == "" {
 			return nil, false
 		}
-		part := _JsonPathPart{name: rawPart}
+		part := _JsonPathPart{
+			name: rawPart,
+		}
 		if before, ok := strings.CutSuffix(rawPart, "[*]"); ok {
 			part.name = before
 			part.wildcard = true
@@ -78,21 +68,21 @@ func parseJsonPath(path string) ([]_JsonPathPart, bool) {
 	return parts, true
 }
 
-func cborGetPathPartsValue(value any, parts []_JsonPathPart) (any, bool) {
+func getPathPartsValue(value any, parts []_JsonPathPart) (any, bool) {
 	for index, part := range parts {
 		var ok bool
-		value, ok = cborSelectPathField(value, part.name)
+		value, ok = selectPathField(value, part.name)
 		if !ok {
 			return nil, false
 		}
 		if part.wildcard {
-			return cborSelectWildcardPathValues(value, parts[index+1:])
+			return selectWildcardPathValues(value, parts[index+1:])
 		}
 	}
 	return value, true
 }
 
-func cborSelectPathField(value any, part string) (any, bool) {
+func selectPathField(value any, part string) (any, bool) {
 	switch node := value.(type) {
 	case map[string]any:
 		value, ok := node[part]
@@ -105,14 +95,14 @@ func cborSelectPathField(value any, part string) (any, bool) {
 	}
 }
 
-func cborSelectWildcardPathValues(value any, remainingParts []_JsonPathPart) (any, bool) {
-	values, ok := cborAsAnySlice(value)
+func selectWildcardPathValues(value any, remainingParts []_JsonPathPart) (any, bool) {
+	values, ok := value.([]any)
 	if !ok {
 		return nil, false
 	}
 	results := make([]any, 0, len(values))
 	for _, item := range values {
-		value, ok := cborGetPathPartsValue(item, remainingParts)
+		value, ok := getPathPartsValue(item, remainingParts)
 		if !ok {
 			return nil, false
 		}
@@ -121,90 +111,15 @@ func cborSelectWildcardPathValues(value any, remainingParts []_JsonPathPart) (an
 	return results, true
 }
 
-func cborAsAnySlice(value any) ([]any, bool) {
-	switch values := value.(type) {
-	case []any:
-		return values, true
-	default:
-		return nil, false
-	}
-}
-
-// Permission expressions keep the schema shape but are reordered for runtime
-// execution. Inside each direct all()/any() child list, cheap code checks are
-// evaluated first, nested expressions stay in the middle, and RPC-backed check
-// calls are delayed to the end. Reordering is local to the current expression
-// level; nested all()/any() groups are recursively reordered but never flattened
-// into their parent.
-//
-// Permission code results are collected from the full expression before
-// evaluation and every requested code must be present in the actor permission
-// service response. Resource check calls stay lazy: evalPermExpr only invokes
-// checkFunc when the reordered short-circuit traversal reaches a check node.
-
-func mergeRequirements(requirements []*skel.PermRequire) *skel.PermExpr {
-	if len(requirements) == 1 {
-		return requirements[0].Expr
-	}
-
-	children := make([]*skel.PermExpr, 0, len(requirements))
-	for _, require := range requirements {
-		children = append(children, require.Expr)
-	}
-	return &skel.PermExpr{
-		Mode:     skel.PermRequireModeAll,
-		Children: children,
-	}
-}
-
-func reorderPermExpr(expr *skel.PermExpr) *skel.PermExpr {
-	if expr.Mode != skel.PermRequireModeAll && expr.Mode != skel.PermRequireModeAny {
-		return expr
-	}
-
-	children := make([]*skel.PermExpr, 0, len(expr.Children))
-	for _, child := range expr.Children {
-		children = append(children, reorderPermExpr(child))
-	}
-
-	return &skel.PermExpr{
-		Mode:     expr.Mode,
-		Children: reorderPermExprChildren(children),
-	}
-}
-
-func reorderPermExprChildren(children []*skel.PermExpr) []*skel.PermExpr {
-	reordered := make([]*skel.PermExpr, 0, len(children))
-	for rank := 0; rank <= 2; rank++ {
-		for _, child := range children {
-			if permExprRank(child) == rank {
-				reordered = append(reordered, child)
-			}
-		}
-	}
-	return reordered
-}
-
-func permExprRank(expr *skel.PermExpr) int {
-	switch expr.Mode {
-	case skel.PermRequireModeCode:
-		return 0
-	case skel.PermRequireModeCheck:
-		return 2
-	default:
-		return 1
-	}
-}
-
-func collectPermissionCodes(expr *skel.PermExpr) []string {
+func collectPermissionCodes(expr *skeldesc.PermissionExpression) []string {
 	codes := make([]string, 0)
 	seen := map[string]struct{}{}
 	collectPermissionCodesTo(expr, seen, &codes)
 	return codes
 }
 
-func collectPermissionCodesTo(expr *skel.PermExpr, seen map[string]struct{}, codes *[]string) {
-	if expr.Mode == skel.PermRequireModeCode {
+func collectPermissionCodesTo(expr *skeldesc.PermissionExpression, seen map[string]struct{}, codes *[]string) {
+	if expr.Mode == skeldesc.PermissionRequireModeCode {
 		if _, ok := seen[expr.Code]; !ok {
 			seen[expr.Code] = struct{}{}
 			*codes = append(*codes, expr.Code)
@@ -217,24 +132,24 @@ func collectPermissionCodesTo(expr *skel.PermExpr, seen map[string]struct{}, cod
 	}
 }
 
-func hasPermissionChecks(expr *skel.PermExpr) bool {
-	if expr.Mode == skel.PermRequireModeCheck {
+func hasPermissionChecks(expr *skeldesc.PermissionExpression) bool {
+	if expr.Mode == skeldesc.PermissionRequireModeCheck {
 		return true
 	}
 
 	return slices.ContainsFunc(expr.Children, hasPermissionChecks)
 }
 
-func evalPermExpr(expr *skel.PermExpr, codeResults map[string]bool, checkFunc func(*skel.PermCheckInvocation) (bool, ex.Code, string, string)) (bool, ex.Code, string, string) {
+func evalPermExpr(expr *skeldesc.PermissionExpression, codeResults map[string]bool, checkFunc func(*skeldesc.PermissionCheckInvocation) (bool, ex.Code, string, string)) (bool, ex.Code, string, string) {
 	switch expr.Mode {
-	case skel.PermRequireModeCode:
+	case skeldesc.PermissionRequireModeCode:
 		if codeResults[expr.Code] {
 			return true, ex.OK, "", ""
 		}
 		return false, ex.PermissionDenied, "permission denied: " + expr.Code, ""
-	case skel.PermRequireModeCheck:
+	case skeldesc.PermissionRequireModeCheck:
 		return checkFunc(expr.Check)
-	case skel.PermRequireModeAll:
+	case skeldesc.PermissionRequireModeAll:
 		for _, child := range expr.Children {
 			ok, code, message, reason := evalPermExpr(child, codeResults, checkFunc)
 			if !ok {
@@ -242,14 +157,14 @@ func evalPermExpr(expr *skel.PermExpr, codeResults map[string]bool, checkFunc fu
 			}
 		}
 		return true, ex.OK, "", ""
-	case skel.PermRequireModeAny:
+	case skeldesc.PermissionRequireModeAny:
 		return evalAnyPermExpr(expr.Children, codeResults, checkFunc)
 	default:
 		return false, ex.ServiceUnavailable, "unsupported permission require mode", ""
 	}
 }
 
-func evalAnyPermExpr(children []*skel.PermExpr, codeResults map[string]bool, checkFunc func(*skel.PermCheckInvocation) (bool, ex.Code, string, string)) (bool, ex.Code, string, string) {
+func evalAnyPermExpr(children []*skeldesc.PermissionExpression, codeResults map[string]bool, checkFunc func(*skeldesc.PermissionCheckInvocation) (bool, ex.Code, string, string)) (bool, ex.Code, string, string) {
 	code := ex.ClientForbidden
 	message := "permission check failed"
 	reason := ""

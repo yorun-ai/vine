@@ -4,9 +4,9 @@ import (
 	"context"
 	"sync"
 
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/skel"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/util/vslice"
 )
@@ -26,7 +26,7 @@ type AppInstance struct {
 	WebHandlers        []skeled.WebHandlerRegistration
 	EventListeners     []skeled.EventListenerRegistration
 	TaskRunners        []skeled.TaskRunnerRegistration
-	DomainSchemas      []skel.JSON
+	DomainDescriptors  []skeltype.JSON
 	HubServiceHandlers []hubskeled.ServiceHandlerRegistration
 	HubWebHandlers     []hubskeled.WebHandlerRegistration
 
@@ -53,7 +53,7 @@ func (m *AppMinder) newAppInstance(registration AppRegistration) *AppInstance {
 		WebHandlers:        webHandlers,
 		EventListeners:     vslice.Clone(registration.EventListeners),
 		TaskRunners:        vslice.Clone(registration.TaskRunners),
-		DomainSchemas:      vslice.Clone(registration.DomainSchemas),
+		DomainDescriptors:  vslice.Clone(registration.DomainDescriptors),
 		HubServiceHandlers: defaultHubServiceHandlerRegistrations(serviceHandlers),
 		HubWebHandlers:     defaultHubWebHandlerRegistrations(webHandlers),
 		idleCh:             newClosedSignalChan(),
@@ -115,7 +115,7 @@ func defaultHubServiceHandlerRegistrations(registrations []skeled.ServiceHandler
 	for _, registration := range registrations {
 		ret = append(ret, hubskeled.ServiceHandlerRegistration{
 			ServiceSkelName: registration.ServiceSkelName,
-			SchemaHash:      registration.SchemaHash,
+			DescriptorHash:  registration.DescriptorHash,
 		})
 	}
 	return ret
@@ -125,8 +125,8 @@ func defaultHubWebHandlerRegistrations(registrations []skeled.WebHandlerRegistra
 	ret := make([]hubskeled.WebHandlerRegistration, 0, len(registrations))
 	for _, registration := range registrations {
 		ret = append(ret, hubskeled.WebHandlerRegistration{
-			WebSkelName: registration.WebSkelName,
-			SchemaHash:  registration.SchemaHash,
+			WebSkelName:    registration.WebSkelName,
+			DescriptorHash: registration.DescriptorHash,
 		})
 	}
 	return ret

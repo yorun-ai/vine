@@ -1,13 +1,16 @@
 package ex
 
 import (
+	"encoding/json/v2"
 	"fmt"
 	"reflect"
 	"runtime"
 	"strings"
 
+	"github.com/fxamacker/cbor/v2"
 	"go.yorun.ai/vine/util/vpre"
 	"go.yorun.ai/vine/util/vstring"
+	rpchttp "go.yorun.ai/vrpc/transport/http"
 )
 
 // Error
@@ -26,11 +29,11 @@ type Error interface {
 }
 
 type _Error struct {
-	CodeValue    Code   `json:"code"`
-	MessageValue string `json:"message"`
+	code    Code
+	message string
 
-	ReasonValue string `json:"reason"`
-	DetailValue string `json:"detail"`
+	reason string
+	detail string
 
 	cause      error
 	errorStack []uintptr
@@ -42,35 +45,35 @@ type _Error struct {
 func (e *_Error) Error() string {
 	parts := []string{
 		fmt.Sprintf("type=%s", e.Type()),
-		fmt.Sprintf("code=%s", e.CodeValue),
+		fmt.Sprintf("code=%s", e.code),
 	}
-	if e.MessageValue != "" {
-		parts = append([]string{e.MessageValue}, parts...)
+	if e.message != "" {
+		parts = append([]string{e.message}, parts...)
 	}
-	if e.DetailValue != "" {
-		parts = append(parts, fmt.Sprintf("detail=%s", e.DetailValue))
+	if e.detail != "" {
+		parts = append(parts, fmt.Sprintf("detail=%s", e.detail))
 	}
 	return strings.Join(parts, " ")
 }
 
 func (e *_Error) Type() Type {
-	return e.CodeValue.Type()
+	return e.code.Type()
 }
 
 func (e *_Error) Code() Code {
-	return e.CodeValue
+	return e.code
 }
 
 func (e *_Error) Message() string {
-	return e.MessageValue
+	return e.message
 }
 
 func (e *_Error) Reason() string {
-	return e.ReasonValue
+	return e.reason
 }
 
 func (e *_Error) Detail() string {
-	return e.DetailValue
+	return e.detail
 }
 
 func (e *_Error) Unwrap() error {
@@ -86,14 +89,14 @@ type ErrorOption func(*_Error)
 func WithReason(reason string) ErrorOption {
 	vpre.CheckNot(vstring.IsBlank(reason), "missing reason value")
 	return func(e *_Error) {
-		e.ReasonValue = reason
+		e.reason = reason
 	}
 }
 
 func WithDetail(detail string) ErrorOption {
 	vpre.CheckNot(vstring.IsBlank(detail), "missing detail value")
 	return func(e *_Error) {
-		e.DetailValue = detail
+		e.detail = detail
 	}
 }
 
@@ -123,8 +126,8 @@ func F(template string, args ...any) string {
 func New(code Code, message string, opts ...ErrorOption) Error {
 	vpre.Check(code.IsValid(), "unknown Code=%s", code)
 	err := &_Error{
-		CodeValue:    code,
-		MessageValue: message,
+		code:    code,
+		message: message,
 	}
 	if code != OK {
 		err.errorStack = captureStack()
@@ -135,7 +138,9 @@ func New(code Code, message string, opts ...ErrorOption) Error {
 	return err
 }
 
-var okError = new(_Error{CodeValue: OK})
+var okError = new(_Error{
+	code: OK,
+})
 
 func NewOK() Error {
 	return okError
@@ -147,39 +152,44 @@ func NewInternal() Error {
 
 // Serialization
 
-func DecodeError(payload []byte, unmarshal func([]byte, any) error) (Error, error) {
-	exErr, decodeErr := decodeError(payload, unmarshal)
-	if decodeErr != nil {
-		return nil, decodeErr
+// ToPayload copies the transport fields without exposing local diagnostics.
+func ToPayload(err Error) *rpchttp.ErrorPayload {
+	if err == nil {
+		return nil
 	}
-	return exErr, nil
+	return new(rpchttp.ErrorPayload{
+		Code:    string(err.Code()),
+		Message: err.Message(),
+		Reason:  err.Reason(),
+		Detail:  err.Detail(),
+	})
 }
 
-func EncodeError(err Error, mustMarshal func(any) []byte) []byte {
-	return mustMarshal(err)
-}
-
-func ClearErrorDetail(payload []byte, unmarshal func([]byte, any) error, mustMarshal func(any) []byte) ([]byte, error) {
-	exErr, decodeErr := decodeError(payload, unmarshal)
-	if decodeErr != nil {
-		return nil, decodeErr
+// FromPayload validates the Vine error code without creating a local stack.
+func FromPayload(payload *rpchttp.ErrorPayload) (Error, error) {
+	if payload == nil {
+		return nil, fmt.Errorf("invalid error payload")
 	}
-	exErr.DetailValue = ""
-	return mustMarshal(exErr), nil
-}
-
-func decodeError(payload []byte, unmarshal func([]byte, any) error) (*_Error, error) {
-	var exErr *_Error
-	if err := unmarshal(payload, &exErr); err != nil {
+	code, err := ParseCode(payload.Code)
+	if err != nil {
 		return nil, err
 	}
-	vpre.Check(exErr != nil, "invalid error payload")
+	return new(_Error{
+		code:    code,
+		message: payload.Message,
+		reason:  payload.Reason,
+		detail:  payload.Detail,
+	}), nil
+}
 
-	if !exErr.CodeValue.IsValid() {
-		return nil, fmt.Errorf("unknown Code=%s", exErr.CodeValue)
-	}
+// MarshalJSON retains direct serialization using the shared transport fields.
+func (e *_Error) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ToPayload(e))
+}
 
-	return exErr, nil
+// MarshalCBOR retains direct serialization using the shared transport fields.
+func (e *_Error) MarshalCBOR() ([]byte, error) {
+	return cbor.Marshal(ToPayload(e))
 }
 
 // Panic
@@ -273,22 +283,22 @@ func withPanic(err Error, value any) Error {
 func cloneError(err Error) *_Error {
 	internalErr := err.(*_Error)
 	return new(_Error{
-		CodeValue:    internalErr.CodeValue,
-		MessageValue: internalErr.MessageValue,
-		ReasonValue:  internalErr.ReasonValue,
-		DetailValue:  internalErr.DetailValue,
-		cause:        internalErr.cause,
-		errorStack:   append([]uintptr(nil), internalErr.errorStack...),
-		panicStack:   append([]uintptr(nil), internalErr.panicStack...),
-		panicked:     internalErr.panicked,
-		panicValue:   internalErr.panicValue,
+		code:       internalErr.code,
+		message:    internalErr.message,
+		reason:     internalErr.reason,
+		detail:     internalErr.detail,
+		cause:      internalErr.cause,
+		errorStack: append([]uintptr(nil), internalErr.errorStack...),
+		panicStack: append([]uintptr(nil), internalErr.panicStack...),
+		panicked:   internalErr.panicked,
+		panicValue: internalErr.panicValue,
 	})
 }
 
 func newInternalWithoutStack() *_Error {
 	return new(_Error{
-		CodeValue:    Internal,
-		MessageValue: Internal.DefaultMessage(),
+		code:    Internal,
+		message: Internal.DefaultMessage(),
 	})
 }
 

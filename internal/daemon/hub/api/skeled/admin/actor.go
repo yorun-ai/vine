@@ -2,10 +2,7 @@
 
 package admin
 
-import (
-	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/skel"
-)
+import "go.yorun.ai/vine/core/meta"
 
 func init() {
 	meta.RegisterActor(meta.ActorSpec{
@@ -13,23 +10,4 @@ func init() {
 		SkelName: "vine.hub.admin.AdminActor",
 		Hash:     "c70b3174",
 	})
-}
-
-// AdminActor Hub operator using the Dashboard on the admin listener
-type AdminActor struct {
-	skel.ActorBase
-}
-
-func (AdminActor) Name() string {
-	return "AdminActor"
-}
-
-func (AdminActor) SkelName() string {
-	return "vine.hub.admin.AdminActor"
-}
-
-func (AdminActor) Vias() []skel.ActorVia {
-	return []skel.ActorVia{
-		skel.ActorViaClient,
-	}
 }

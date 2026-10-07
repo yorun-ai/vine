@@ -1,4 +1,4 @@
-import { configSchemaHints, configSchemaCompletions } from './config-schema-hints'
+import { configDescriptorHints, configDescriptorCompletions } from './config-descriptor-hints'
 import { createConfigMapEnumExtension } from './config-map-enum-widget'
 import { yamlLanguage } from '@codemirror/lang-yaml'
 import { createConfigYamlDocument, normalizeConfigYaml, getConfigYamlErrors, getConfigYamlPropertyRanges } from './config-yaml-document'
@@ -195,7 +195,7 @@ export function ConfigJsonEditor({
           }
         }, { hoverTime: 1, hideOnChange: true }),
         hoverTooltip((view, pos) => {
-          const hint = configSchemaHints(view.state.doc.toString(), fields, isYaml).find((item) => pos >= item.from && pos <= item.to)
+          const hint = configDescriptorHints(view.state.doc.toString(), fields, isYaml).find((item) => pos >= item.from && pos <= item.to)
           if (!hint) return null
           return { pos: hint.from, end: hint.to, above: true, create: () => {
             const dom = view.dom.ownerDocument.createElement('div')
@@ -222,7 +222,7 @@ export function ConfigJsonEditor({
           const word = context.matchBefore(/["']?[\w.]*["']?/)
           if (!context.explicit && (!word || word.from === word.to)) return null
           const doc = context.state.doc.toString()
-          const options = configSchemaCompletions(doc, context.pos, fields, isYaml)
+          const options = configDescriptorCompletions(doc, context.pos, fields, isYaml)
           const quote = word?.text[0]
           const to = (quote === '"' || quote === "'") && doc[context.pos] === quote ? context.pos + 1 : context.pos
           return options.length ? { from: word?.from ?? context.pos, to, options } : null

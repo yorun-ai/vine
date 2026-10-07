@@ -1,16 +1,14 @@
 package http
 
 import (
-	"encoding/json/v2"
 	"fmt"
 	"net/http"
 	"reflect"
 
-	"github.com/fxamacker/cbor/v2"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
-	"go.yorun.ai/vine/util/vcode"
+	"go.yorun.ai/vine/util/vpre"
 
 	rpchttp "go.yorun.ai/vrpc/transport/http"
 )
@@ -23,9 +21,6 @@ type _ResponseDecoder struct {
 
 	statusCode ex.Code
 }
-
-type _ResponsePayloadJson = rpchttp.JSONResponse
-type _ResponsePayloadCbor = rpchttp.CBORResponse
 
 func decodeResponse(httpResponse *http.Response, methodInfo spec.MethodInfo) (spec.Response, error) {
 	decoder := _ResponseDecoder{
@@ -79,7 +74,7 @@ func (d *_ResponseDecoder) decodeBody() error {
 		return fmt.Errorf("missing response body")
 	}
 
-	decodedBody, err := d.decodeBodyPayload(bodyBytes)
+	decodedBody, err := rpchttp.DecodeResponse(bodyBytes, d.httpResponse.Header.Get(HeaderContentType))
 	if err != nil {
 		return err
 	}
@@ -88,7 +83,11 @@ func (d *_ResponseDecoder) decodeBody() error {
 		if rpchttp.IsEmptyErrorPayload(decodedBody.ErrorBytes) {
 			return fmt.Errorf("response body error does not match response status")
 		}
-		exErr, decodeErr := ex.DecodeError(decodedBody.ErrorBytes, decodedBody.Unmarshal)
+		errorPayload, decodeErr := decodedBody.DecodeError()
+		if decodeErr != nil {
+			return fmt.Errorf("invalid response body")
+		}
+		exErr, decodeErr := ex.FromPayload(errorPayload)
 		if decodeErr != nil {
 			return fmt.Errorf("invalid response body")
 		}
@@ -112,21 +111,6 @@ func (d *_ResponseDecoder) decodeBody() error {
 
 	d.rpcResponse.ResultValue = reflect.ValueOf(result).Elem().Interface()
 	return nil
-}
-
-func (d *_ResponseDecoder) decodeBodyPayload(bodyBytes []byte) (*rpchttp.ResponsePayload, error) {
-	switch MediaTypeOf(d.httpResponse.Header.Get(HeaderContentType)) {
-	case ContentTypeJson:
-		return rpchttp.DecodeJSONResponse(bodyBytes)
-	case ContentTypeCbor:
-		payload, err := rpchttp.DecodeCBORResponse(bodyBytes)
-		if err != nil {
-			return nil, fmt.Errorf("response body cannot be parsed")
-		}
-		return payload, nil
-	default:
-		return nil, fmt.Errorf("response body cannot be parsed")
-	}
 }
 
 func WriteRequestErrorResponse(w http.ResponseWriter, r *http.Request, server meta.App, err ex.Error) error {
@@ -158,68 +142,36 @@ func writeResponseWithContentType(w http.ResponseWriter, rpcResponse spec.Respon
 }
 
 func encodeResponseToBytes(rpcResponse spec.Response, contentType string) []byte {
-	var result []byte
-	var errorBytes []byte
-	var encoded []byte
-	var err error
-	if contentType == ContentTypeCbor {
-		if rpcResponse.Error().Type() == ex.NoError {
-			result = vcode.MustMarshalCbor(rpcResponse.Result())
-		} else {
-			result = vcode.MustMarshalCbor(nil)
-			errorBytes = ex.EncodeError(rpcResponse.Error(), vcode.MustMarshalCbor)
-		}
-		encoded, err = rpchttp.EncodeCBORResponse(result, errorBytes)
+	var result any
+	var errorValue *rpchttp.ErrorPayload
+	if rpcResponse.Error().Type() == ex.NoError {
+		result = rpcResponse.Result()
 	} else {
-		if rpcResponse.Error().Type() == ex.NoError {
-			result = vcode.MustMarshalJson(rpcResponse.Result())
-		} else {
-			result = vcode.MustMarshalJson(nil)
-			errorBytes = ex.EncodeError(rpcResponse.Error(), vcode.MustMarshalJson)
-		}
-		encoded, err = rpchttp.EncodeJSONResponse(result, errorBytes)
+		errorValue = ex.ToPayload(rpcResponse.Error())
 	}
-	if err != nil {
-		panic(err)
-	}
+	encoded, err := rpchttp.EncodeResponse(result, errorValue, contentType)
+	vpre.MustNil(err)
 	return encoded
 }
 
 func ClearResponseErrorDetail(bodyBytes []byte, contentType string) ([]byte, error) {
-	switch MediaTypeOf(contentType) {
-	case ContentTypeJson:
-		responsePayload := &_ResponsePayloadJson{}
-		if err := json.Unmarshal(bodyBytes, responsePayload); err != nil {
-			return nil, err
-		}
-		if rpchttp.IsEmptyErrorPayload(responsePayload.Error) {
-			return bodyBytes, nil
-		}
-		errorBytes, err := ex.ClearErrorDetail(responsePayload.Error, unmarshalJson, vcode.MustMarshalJson)
-		if err != nil {
-			return nil, err
-		}
-		responsePayload.Error = errorBytes
-		return rpchttp.EncodeJSONResponse(responsePayload.Result, responsePayload.Error)
-	case ContentTypeCbor:
-		responsePayload := &_ResponsePayloadCbor{}
-		if err := cbor.Unmarshal(bodyBytes, responsePayload); err != nil {
-			return nil, err
-		}
-		if rpchttp.IsEmptyErrorPayload(responsePayload.Error) {
-			return bodyBytes, nil
-		}
-		errorBytes, err := ex.ClearErrorDetail(responsePayload.Error, cbor.Unmarshal, vcode.MustMarshalCbor)
-		if err != nil {
-			return nil, err
-		}
-		responsePayload.Error = errorBytes
-		return rpchttp.EncodeCBORResponse(responsePayload.Result, responsePayload.Error)
-	default:
+	if !rpchttp.IsValidContentType(contentType) {
 		return bodyBytes, nil
 	}
-}
-
-func unmarshalJson(data []byte, target any) error {
-	return json.Unmarshal(data, target)
+	payload, err := rpchttp.DecodeResponse(bodyBytes, contentType)
+	if err != nil {
+		return nil, err
+	}
+	errorValue, err := payload.DecodeError()
+	if err != nil {
+		return nil, err
+	}
+	if errorValue == nil {
+		return bodyBytes, nil
+	}
+	if _, err := ex.ParseCode(errorValue.Code); err != nil {
+		return nil, err
+	}
+	errorValue.Detail = ""
+	return payload.EncodeWithError(errorValue)
 }

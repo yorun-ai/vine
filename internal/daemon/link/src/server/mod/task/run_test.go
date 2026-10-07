@@ -17,10 +17,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/skel"
 	taskspec "go.yorun.ai/vine/internal/core/task/spec"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 )
@@ -77,7 +77,7 @@ func TestManagerRegistersListenerAndDispatchesRun(t *testing.T) {
 			TraceSpan:     "0123456789abcdef",
 			AppName:       "launcher.app",
 			AppVersion:    "2.0.0",
-			AppInstanceId: skel.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
+			AppInstanceId: skeltype.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
 		},
 		TaskSkelName:    "demo.user.SyncUserTask",
 		TriggerSkelName: "demo.user.SyncUserTaskManualTrigger",
@@ -256,7 +256,7 @@ func TestManagerCompetesGloballyForTaskMessages(t *testing.T) {
 			TraceSpan:     "0123456789abcdef",
 			AppName:       "launcher.app",
 			AppVersion:    "2.0.0",
-			AppInstanceId: skel.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
+			AppInstanceId: skeltype.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
 		},
 		TaskSkelName:    "demo.user.SyncUserTask",
 		TriggerSkelName: "demo.user.SyncUserTaskManualTrigger",
@@ -342,7 +342,7 @@ func TestManagerDispatchesTaskToSingleRunner(t *testing.T) {
 			TraceSpan:     "0123456789abcdef",
 			AppName:       "launcher.app",
 			AppVersion:    "2.0.0",
-			AppInstanceId: skel.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
+			AppInstanceId: skeltype.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
 		},
 		TaskSkelName:    "demo.user.SyncUserTask",
 		TriggerSkelName: "demo.user.SyncUserTaskManualTrigger",

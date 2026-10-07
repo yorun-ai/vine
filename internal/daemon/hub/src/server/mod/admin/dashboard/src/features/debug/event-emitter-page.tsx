@@ -33,11 +33,11 @@ function getErrorMessage(error: unknown) {
 }
 
 function eventKey(event: EventDebugEventItem) {
-  return `${event.eventSkelName}:${event.schemaHash}`
+  return `${event.eventSkelName}:${event.descriptorHash}`
 }
 
-function eventJsonStorageKey(eventSkelName: string, schemaHash: string) {
-  return `${storageEventJsonPrefix}${eventSkelName}:${schemaHash}`
+function eventJsonStorageKey(eventSkelName: string, descriptorHash: string) {
+  return `${storageEventJsonPrefix}${eventSkelName}:${descriptorHash}`
 }
 
 function readStorage(key: string) {
@@ -213,12 +213,12 @@ export function EventEmitterPage() {
     try {
       const nextRequest = await eventDebugService.buildDefaultEmitRequest({
         eventSkelName: selectedEvent.eventSkelName,
-        schemaHash: selectedEvent.schemaHash,
+        descriptorHash: selectedEvent.descriptorHash,
       })
       const savedEventJson = readStorage(
         eventJsonStorageKey(
           selectedEvent.eventSkelName,
-          selectedEvent.schemaHash,
+          selectedEvent.descriptorHash,
         ),
       )
       setTraceId(nextRequest.traceId)
@@ -311,7 +311,7 @@ export function EventEmitterPage() {
       await eventDebugService.emitEvent({
         request: {
           eventSkelName: selectedEvent.eventSkelName,
-          schemaHash: selectedEvent.schemaHash,
+          descriptorHash: selectedEvent.descriptorHash,
           eventJson,
           traceId: traceId.trim() === '' ? null : traceId.trim(),
           spanId: spanId.trim() === '' ? null : spanId.trim(),
@@ -320,7 +320,7 @@ export function EventEmitterPage() {
       writeStorage(
         eventJsonStorageKey(
           selectedEvent.eventSkelName,
-          selectedEvent.schemaHash,
+          selectedEvent.descriptorHash,
         ),
         eventJson,
       )
@@ -369,7 +369,7 @@ export function EventEmitterPage() {
                   title={selectedEvent?.eventSkelName}
                   description={
                     selectedEvent?.deprecatedReason ??
-                    selectedEvent?.schemaHash
+                    selectedEvent?.descriptorHash
                   }
                   deprecated={selectedEvent?.deprecated}
                   placeholder={loadingEvents ? 'Loading events' : 'Select event'}
@@ -414,7 +414,7 @@ export function EventEmitterPage() {
                     >
                       <SelectCardItem
                         title={item.eventSkelName}
-                        description={item.deprecatedReason ?? item.schemaHash}
+                        description={item.deprecatedReason ?? item.descriptorHash}
                         deprecated={item.deprecated}
                       />
                     </SelectItem>

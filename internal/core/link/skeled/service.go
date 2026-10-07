@@ -5,18 +5,17 @@ package skeled
 import (
 	"reflect"
 
-	"go.yorun.ai/vine/internal/core/ex"
-	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
-	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
+	"go.yorun.ai/vine/core/ex"
+	"go.yorun.ai/vine/core/rpc"
 )
 
 func init() {
-	rpcspec.Register(_BootServiceSpec)
-	rpcspec.Register(_ConfigServiceSpec)
-	rpcspec.Register(_EventServiceSpec)
-	rpcspec.Register(_LockServiceSpec)
-	rpcspec.Register(_RegistryServiceSpec)
-	rpcspec.Register(_TaskServiceSpec)
+	rpc.Register(_BootServiceSpec)
+	rpc.Register(_ConfigServiceSpec)
+	rpc.Register(_EventServiceSpec)
+	rpc.Register(_LockServiceSpec)
+	rpc.Register(_RegistryServiceSpec)
+	rpc.Register(_TaskServiceSpec)
 }
 
 // BootServiceServer Link's startup information service, called by the App
@@ -24,11 +23,11 @@ func init() {
 // BootService / Spec
 
 var (
-	_BootServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
+	_BootServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeBoth,
 		Name:              "BootService",
 		SkelName:          "vine.link.BootService",
-		Hash:              "e8b9fae5",
+		Hash:              "c5600d90",
 		ServerType:        reflect.TypeFor[BootServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultBootServiceServer](),
 		ClientType:        reflect.TypeFor[BootServiceClient](),
@@ -39,11 +38,11 @@ var (
 		DefaultERServerType: reflect.TypeFor[*DefaultBootServiceServerER](),
 		ERClientType:        reflect.TypeFor[BootServiceClientER](),
 		ERClientCtor:        NewBootServiceClientER,
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_BootServiceGetInfoSpec,
 		},
 	}
-	_BootServiceGetInfoSpec = &rpcspec.MethodSpec{
+	_BootServiceGetInfoSpec = &rpc.MethodSpec{
 		Name:                        "GetInfo",
 		SkelName:                    "getInfo",
 		ArgumentsType:               nil,
@@ -127,7 +126,7 @@ type DefaultBootServiceServerER struct {
 
 type BootServiceClient interface {
 	// GetInfo Get key startup information.
-	GetInfo(_ivOpts ...rpcclient.InvokeOption) BootInfo
+	GetInfo(_ivOpts ...rpc.InvokeOption) BootInfo
 }
 
 type _BootServiceClient struct {
@@ -138,7 +137,7 @@ func NewBootServiceClient(clientER BootServiceClientER) BootServiceClient {
 	return &_BootServiceClient{clientER: clientER}
 }
 
-func (client *_BootServiceClient) GetInfo(_ivOpts ...rpcclient.InvokeOption) BootInfo {
+func (client *_BootServiceClient) GetInfo(_ivOpts ...rpc.InvokeOption) BootInfo {
 	ret, err := client.clientER.GetInfo(_ivOpts...)
 	ex.PanicIfError(err)
 	return ret
@@ -148,20 +147,20 @@ func (client *_BootServiceClient) GetInfo(_ivOpts ...rpcclient.InvokeOption) Boo
 
 type BootServiceClientER interface {
 	// GetInfo Get key startup information.
-	GetInfo(_ivOpts ...rpcclient.InvokeOption) (BootInfo, ex.Error)
+	GetInfo(_ivOpts ...rpc.InvokeOption) (BootInfo, ex.Error)
 }
 
 type _BootServiceClientER struct {
-	rpcClient *rpcclient.Client
+	rpcClient *rpc.Client
 }
 
-func NewBootServiceClientER(rpcClient *rpcclient.Client) BootServiceClientER {
+func NewBootServiceClientER(rpcClient *rpc.Client) BootServiceClientER {
 	return &_BootServiceClientER{
 		rpcClient: rpcClient,
 	}
 }
 
-func (client *_BootServiceClientER) GetInfo(_ivOpts ...rpcclient.InvokeOption) (BootInfo, ex.Error) {
+func (client *_BootServiceClientER) GetInfo(_ivOpts ...rpc.InvokeOption) (BootInfo, ex.Error) {
 	return client.rpcClient.InvokeAs[BootInfo](_BootServiceGetInfoSpec.Info(), nil, _ivOpts...)
 }
 
@@ -170,8 +169,8 @@ func (client *_BootServiceClientER) GetInfo(_ivOpts ...rpcclient.InvokeOption) (
 // ConfigService / Spec
 
 var (
-	_ConfigServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
+	_ConfigServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeBoth,
 		Name:              "ConfigService",
 		SkelName:          "vine.link.ConfigService",
 		Hash:              "420d2cb7",
@@ -185,12 +184,12 @@ var (
 		DefaultERServerType: reflect.TypeFor[*DefaultConfigServiceServerER](),
 		ERClientType:        reflect.TypeFor[ConfigServiceClientER](),
 		ERClientCtor:        NewConfigServiceClientER,
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_ConfigServiceGetEternalSpec,
 			_ConfigServiceGetInstantSpec,
 		},
 	}
-	_ConfigServiceGetEternalSpec = &rpcspec.MethodSpec{
+	_ConfigServiceGetEternalSpec = &rpc.MethodSpec{
 		Name:                        "GetEternal",
 		SkelName:                    "getEternal",
 		ArgumentsType:               reflect.TypeFor[_ConfigServiceGetEternalArguments](),
@@ -206,7 +205,7 @@ var (
 			ConfigServiceServerER.GetEternal,
 		},
 	}
-	_ConfigServiceGetInstantSpec = &rpcspec.MethodSpec{
+	_ConfigServiceGetInstantSpec = &rpc.MethodSpec{
 		Name:                        "GetInstant",
 		SkelName:                    "getInstant",
 		ArgumentsType:               reflect.TypeFor[_ConfigServiceGetInstantArguments](),
@@ -320,11 +319,11 @@ type ConfigServiceClient interface {
 	// GetEternal Read Eternal configuration.
 	//   @param key - Configuration key
 	//   @returns string - Configuration JSON
-	GetEternal(key string, _ivOpts ...rpcclient.InvokeOption) string
+	GetEternal(key string, _ivOpts ...rpc.InvokeOption) string
 	// GetInstant Read Instant configuration.
 	//   @param key - Configuration key
 	//   @returns string - Configuration JSON
-	GetInstant(key string, _ivOpts ...rpcclient.InvokeOption) string
+	GetInstant(key string, _ivOpts ...rpc.InvokeOption) string
 }
 
 type _ConfigServiceClient struct {
@@ -335,13 +334,13 @@ func NewConfigServiceClient(clientER ConfigServiceClientER) ConfigServiceClient 
 	return &_ConfigServiceClient{clientER: clientER}
 }
 
-func (client *_ConfigServiceClient) GetEternal(key string, _ivOpts ...rpcclient.InvokeOption) string {
+func (client *_ConfigServiceClient) GetEternal(key string, _ivOpts ...rpc.InvokeOption) string {
 	ret, err := client.clientER.GetEternal(key, _ivOpts...)
 	ex.PanicIfError(err)
 	return ret
 }
 
-func (client *_ConfigServiceClient) GetInstant(key string, _ivOpts ...rpcclient.InvokeOption) string {
+func (client *_ConfigServiceClient) GetInstant(key string, _ivOpts ...rpc.InvokeOption) string {
 	ret, err := client.clientER.GetInstant(key, _ivOpts...)
 	ex.PanicIfError(err)
 	return ret
@@ -353,30 +352,30 @@ type ConfigServiceClientER interface {
 	// GetEternal Read Eternal configuration.
 	//   @param key - Configuration key
 	//   @returns string - Configuration JSON
-	GetEternal(key string, _ivOpts ...rpcclient.InvokeOption) (string, ex.Error)
+	GetEternal(key string, _ivOpts ...rpc.InvokeOption) (string, ex.Error)
 	// GetInstant Read Instant configuration.
 	//   @param key - Configuration key
 	//   @returns string - Configuration JSON
-	GetInstant(key string, _ivOpts ...rpcclient.InvokeOption) (string, ex.Error)
+	GetInstant(key string, _ivOpts ...rpc.InvokeOption) (string, ex.Error)
 }
 
 type _ConfigServiceClientER struct {
-	rpcClient *rpcclient.Client
+	rpcClient *rpc.Client
 }
 
-func NewConfigServiceClientER(rpcClient *rpcclient.Client) ConfigServiceClientER {
+func NewConfigServiceClientER(rpcClient *rpc.Client) ConfigServiceClientER {
 	return &_ConfigServiceClientER{
 		rpcClient: rpcClient,
 	}
 }
 
-func (client *_ConfigServiceClientER) GetEternal(key string, _ivOpts ...rpcclient.InvokeOption) (string, ex.Error) {
+func (client *_ConfigServiceClientER) GetEternal(key string, _ivOpts ...rpc.InvokeOption) (string, ex.Error) {
 	return client.rpcClient.InvokeAs[string](_ConfigServiceGetEternalSpec.Info(), &_ConfigServiceGetEternalArguments{
 		Key: key,
 	}, _ivOpts...)
 }
 
-func (client *_ConfigServiceClientER) GetInstant(key string, _ivOpts ...rpcclient.InvokeOption) (string, ex.Error) {
+func (client *_ConfigServiceClientER) GetInstant(key string, _ivOpts ...rpc.InvokeOption) (string, ex.Error) {
 	return client.rpcClient.InvokeAs[string](_ConfigServiceGetInstantSpec.Info(), &_ConfigServiceGetInstantArguments{
 		Key: key,
 	}, _ivOpts...)
@@ -387,8 +386,8 @@ func (client *_ConfigServiceClientER) GetInstant(key string, _ivOpts ...rpcclien
 // EventService / Spec
 
 var (
-	_EventServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
+	_EventServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeBoth,
 		Name:              "EventService",
 		SkelName:          "vine.link.EventService",
 		Hash:              "f1d171cc",
@@ -402,11 +401,11 @@ var (
 		DefaultERServerType: reflect.TypeFor[*DefaultEventServiceServerER](),
 		ERClientType:        reflect.TypeFor[EventServiceClientER](),
 		ERClientCtor:        NewEventServiceClientER,
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_EventServiceEmitEventSpec,
 		},
 	}
-	_EventServiceEmitEventSpec = &rpcspec.MethodSpec{
+	_EventServiceEmitEventSpec = &rpc.MethodSpec{
 		Name:                        "EmitEvent",
 		SkelName:                    "emitEvent",
 		ArgumentsType:               reflect.TypeFor[_EventServiceEmitEventArguments](),
@@ -497,7 +496,7 @@ type DefaultEventServiceServerER struct {
 type EventServiceClient interface {
 	// EmitEvent Send event.
 	//   @param emission - Event sending information
-	EmitEvent(emission EventEmission, _ivOpts ...rpcclient.InvokeOption)
+	EmitEvent(emission EventEmission, _ivOpts ...rpc.InvokeOption)
 }
 
 type _EventServiceClient struct {
@@ -508,7 +507,7 @@ func NewEventServiceClient(clientER EventServiceClientER) EventServiceClient {
 	return &_EventServiceClient{clientER: clientER}
 }
 
-func (client *_EventServiceClient) EmitEvent(emission EventEmission, _ivOpts ...rpcclient.InvokeOption) {
+func (client *_EventServiceClient) EmitEvent(emission EventEmission, _ivOpts ...rpc.InvokeOption) {
 	err := client.clientER.EmitEvent(emission, _ivOpts...)
 	ex.PanicIfError(err)
 }
@@ -518,20 +517,20 @@ func (client *_EventServiceClient) EmitEvent(emission EventEmission, _ivOpts ...
 type EventServiceClientER interface {
 	// EmitEvent Send event.
 	//   @param emission - Event sending information
-	EmitEvent(emission EventEmission, _ivOpts ...rpcclient.InvokeOption) ex.Error
+	EmitEvent(emission EventEmission, _ivOpts ...rpc.InvokeOption) ex.Error
 }
 
 type _EventServiceClientER struct {
-	rpcClient *rpcclient.Client
+	rpcClient *rpc.Client
 }
 
-func NewEventServiceClientER(rpcClient *rpcclient.Client) EventServiceClientER {
+func NewEventServiceClientER(rpcClient *rpc.Client) EventServiceClientER {
 	return &_EventServiceClientER{
 		rpcClient: rpcClient,
 	}
 }
 
-func (client *_EventServiceClientER) EmitEvent(emission EventEmission, _ivOpts ...rpcclient.InvokeOption) ex.Error {
+func (client *_EventServiceClientER) EmitEvent(emission EventEmission, _ivOpts ...rpc.InvokeOption) ex.Error {
 	_, err := client.rpcClient.Invoke(_EventServiceEmitEventSpec.Info(), &_EventServiceEmitEventArguments{
 		Emission: emission,
 	}, _ivOpts...)
@@ -543,8 +542,8 @@ func (client *_EventServiceClientER) EmitEvent(emission EventEmission, _ivOpts .
 // LockService / Spec
 
 var (
-	_LockServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
+	_LockServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeBoth,
 		Name:              "LockService",
 		SkelName:          "vine.link.LockService",
 		Hash:              "8d360286",
@@ -558,13 +557,13 @@ var (
 		DefaultERServerType: reflect.TypeFor[*DefaultLockServiceServerER](),
 		ERClientType:        reflect.TypeFor[LockServiceClientER](),
 		ERClientCtor:        NewLockServiceClientER,
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_LockServiceAcquireSpec,
 			_LockServiceRenewSpec,
 			_LockServiceReleaseSpec,
 		},
 	}
-	_LockServiceAcquireSpec = &rpcspec.MethodSpec{
+	_LockServiceAcquireSpec = &rpc.MethodSpec{
 		Name:                        "Acquire",
 		SkelName:                    "acquire",
 		ArgumentsType:               reflect.TypeFor[_LockServiceAcquireArguments](),
@@ -580,7 +579,7 @@ var (
 			LockServiceServerER.Acquire,
 		},
 	}
-	_LockServiceRenewSpec = &rpcspec.MethodSpec{
+	_LockServiceRenewSpec = &rpc.MethodSpec{
 		Name:                        "Renew",
 		SkelName:                    "renew",
 		ArgumentsType:               reflect.TypeFor[_LockServiceRenewArguments](),
@@ -596,7 +595,7 @@ var (
 			LockServiceServerER.Renew,
 		},
 	}
-	_LockServiceReleaseSpec = &rpcspec.MethodSpec{
+	_LockServiceReleaseSpec = &rpc.MethodSpec{
 		Name:                        "Release",
 		SkelName:                    "release",
 		ArgumentsType:               reflect.TypeFor[_LockServiceReleaseArguments](),
@@ -727,11 +726,11 @@ type DefaultLockServiceServerER struct {
 
 type LockServiceClient interface {
 	// Acquire Acquire a lock using a unique attempt token.
-	Acquire(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) bool
+	Acquire(key string, token string, ttlMillis int, _ivOpts ...rpc.InvokeOption) bool
 	// Renew Renew a lock owned by the token.
-	Renew(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) bool
+	Renew(key string, token string, ttlMillis int, _ivOpts ...rpc.InvokeOption) bool
 	// Release Release a lock owned by the token.
-	Release(key string, token string, _ivOpts ...rpcclient.InvokeOption) bool
+	Release(key string, token string, _ivOpts ...rpc.InvokeOption) bool
 }
 
 type _LockServiceClient struct {
@@ -742,19 +741,19 @@ func NewLockServiceClient(clientER LockServiceClientER) LockServiceClient {
 	return &_LockServiceClient{clientER: clientER}
 }
 
-func (client *_LockServiceClient) Acquire(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) bool {
+func (client *_LockServiceClient) Acquire(key string, token string, ttlMillis int, _ivOpts ...rpc.InvokeOption) bool {
 	ret, err := client.clientER.Acquire(key, token, ttlMillis, _ivOpts...)
 	ex.PanicIfError(err)
 	return ret
 }
 
-func (client *_LockServiceClient) Renew(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) bool {
+func (client *_LockServiceClient) Renew(key string, token string, ttlMillis int, _ivOpts ...rpc.InvokeOption) bool {
 	ret, err := client.clientER.Renew(key, token, ttlMillis, _ivOpts...)
 	ex.PanicIfError(err)
 	return ret
 }
 
-func (client *_LockServiceClient) Release(key string, token string, _ivOpts ...rpcclient.InvokeOption) bool {
+func (client *_LockServiceClient) Release(key string, token string, _ivOpts ...rpc.InvokeOption) bool {
 	ret, err := client.clientER.Release(key, token, _ivOpts...)
 	ex.PanicIfError(err)
 	return ret
@@ -764,24 +763,24 @@ func (client *_LockServiceClient) Release(key string, token string, _ivOpts ...r
 
 type LockServiceClientER interface {
 	// Acquire Acquire a lock using a unique attempt token.
-	Acquire(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error)
+	Acquire(key string, token string, ttlMillis int, _ivOpts ...rpc.InvokeOption) (bool, ex.Error)
 	// Renew Renew a lock owned by the token.
-	Renew(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error)
+	Renew(key string, token string, ttlMillis int, _ivOpts ...rpc.InvokeOption) (bool, ex.Error)
 	// Release Release a lock owned by the token.
-	Release(key string, token string, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error)
+	Release(key string, token string, _ivOpts ...rpc.InvokeOption) (bool, ex.Error)
 }
 
 type _LockServiceClientER struct {
-	rpcClient *rpcclient.Client
+	rpcClient *rpc.Client
 }
 
-func NewLockServiceClientER(rpcClient *rpcclient.Client) LockServiceClientER {
+func NewLockServiceClientER(rpcClient *rpc.Client) LockServiceClientER {
 	return &_LockServiceClientER{
 		rpcClient: rpcClient,
 	}
 }
 
-func (client *_LockServiceClientER) Acquire(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error) {
+func (client *_LockServiceClientER) Acquire(key string, token string, ttlMillis int, _ivOpts ...rpc.InvokeOption) (bool, ex.Error) {
 	return client.rpcClient.InvokeAs[bool](_LockServiceAcquireSpec.Info(), &_LockServiceAcquireArguments{
 		Key:       key,
 		Token:     token,
@@ -789,7 +788,7 @@ func (client *_LockServiceClientER) Acquire(key string, token string, ttlMillis 
 	}, _ivOpts...)
 }
 
-func (client *_LockServiceClientER) Renew(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error) {
+func (client *_LockServiceClientER) Renew(key string, token string, ttlMillis int, _ivOpts ...rpc.InvokeOption) (bool, ex.Error) {
 	return client.rpcClient.InvokeAs[bool](_LockServiceRenewSpec.Info(), &_LockServiceRenewArguments{
 		Key:       key,
 		Token:     token,
@@ -797,7 +796,7 @@ func (client *_LockServiceClientER) Renew(key string, token string, ttlMillis in
 	}, _ivOpts...)
 }
 
-func (client *_LockServiceClientER) Release(key string, token string, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error) {
+func (client *_LockServiceClientER) Release(key string, token string, _ivOpts ...rpc.InvokeOption) (bool, ex.Error) {
 	return client.rpcClient.InvokeAs[bool](_LockServiceReleaseSpec.Info(), &_LockServiceReleaseArguments{
 		Key:   key,
 		Token: token,
@@ -809,11 +808,11 @@ func (client *_LockServiceClientER) Release(key string, token string, _ivOpts ..
 // RegistryService / Spec
 
 var (
-	_RegistryServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
+	_RegistryServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeBoth,
 		Name:              "RegistryService",
 		SkelName:          "vine.link.RegistryService",
-		Hash:              "6f5f2981",
+		Hash:              "a07517dc",
 		ServerType:        reflect.TypeFor[RegistryServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultRegistryServiceServer](),
 		ClientType:        reflect.TypeFor[RegistryServiceClient](),
@@ -824,12 +823,12 @@ var (
 		DefaultERServerType: reflect.TypeFor[*DefaultRegistryServiceServerER](),
 		ERClientType:        reflect.TypeFor[RegistryServiceClientER](),
 		ERClientCtor:        NewRegistryServiceClientER,
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_RegistryServiceRegisterSpec,
 			_RegistryServiceUnregisterSpec,
 		},
 	}
-	_RegistryServiceRegisterSpec = &rpcspec.MethodSpec{
+	_RegistryServiceRegisterSpec = &rpc.MethodSpec{
 		Name:                        "Register",
 		SkelName:                    "register",
 		ArgumentsType:               reflect.TypeFor[_RegistryServiceRegisterArguments](),
@@ -845,7 +844,7 @@ var (
 			RegistryServiceServerER.Register,
 		},
 	}
-	_RegistryServiceUnregisterSpec = &rpcspec.MethodSpec{
+	_RegistryServiceUnregisterSpec = &rpc.MethodSpec{
 		Name:                        "Unregister",
 		SkelName:                    "unregister",
 		ArgumentsType:               nil,
@@ -949,9 +948,9 @@ type DefaultRegistryServiceServerER struct {
 type RegistryServiceClient interface {
 	// Register Register the currently running application.
 	//   @param registration - Application instance registration information
-	Register(registration AppRegistration, _ivOpts ...rpcclient.InvokeOption)
+	Register(registration AppRegistration, _ivOpts ...rpc.InvokeOption)
 	// Unregister Log out of the currently running application and prepare to exit gracefully. This call may block until the current instance's in-progress work on the Link side is drained, or until the wait times out.
-	Unregister(_ivOpts ...rpcclient.InvokeOption)
+	Unregister(_ivOpts ...rpc.InvokeOption)
 }
 
 type _RegistryServiceClient struct {
@@ -962,12 +961,12 @@ func NewRegistryServiceClient(clientER RegistryServiceClientER) RegistryServiceC
 	return &_RegistryServiceClient{clientER: clientER}
 }
 
-func (client *_RegistryServiceClient) Register(registration AppRegistration, _ivOpts ...rpcclient.InvokeOption) {
+func (client *_RegistryServiceClient) Register(registration AppRegistration, _ivOpts ...rpc.InvokeOption) {
 	err := client.clientER.Register(registration, _ivOpts...)
 	ex.PanicIfError(err)
 }
 
-func (client *_RegistryServiceClient) Unregister(_ivOpts ...rpcclient.InvokeOption) {
+func (client *_RegistryServiceClient) Unregister(_ivOpts ...rpc.InvokeOption) {
 	err := client.clientER.Unregister(_ivOpts...)
 	ex.PanicIfError(err)
 }
@@ -977,29 +976,29 @@ func (client *_RegistryServiceClient) Unregister(_ivOpts ...rpcclient.InvokeOpti
 type RegistryServiceClientER interface {
 	// Register Register the currently running application.
 	//   @param registration - Application instance registration information
-	Register(registration AppRegistration, _ivOpts ...rpcclient.InvokeOption) ex.Error
+	Register(registration AppRegistration, _ivOpts ...rpc.InvokeOption) ex.Error
 	// Unregister Log out of the currently running application and prepare to exit gracefully. This call may block until the current instance's in-progress work on the Link side is drained, or until the wait times out.
-	Unregister(_ivOpts ...rpcclient.InvokeOption) ex.Error
+	Unregister(_ivOpts ...rpc.InvokeOption) ex.Error
 }
 
 type _RegistryServiceClientER struct {
-	rpcClient *rpcclient.Client
+	rpcClient *rpc.Client
 }
 
-func NewRegistryServiceClientER(rpcClient *rpcclient.Client) RegistryServiceClientER {
+func NewRegistryServiceClientER(rpcClient *rpc.Client) RegistryServiceClientER {
 	return &_RegistryServiceClientER{
 		rpcClient: rpcClient,
 	}
 }
 
-func (client *_RegistryServiceClientER) Register(registration AppRegistration, _ivOpts ...rpcclient.InvokeOption) ex.Error {
+func (client *_RegistryServiceClientER) Register(registration AppRegistration, _ivOpts ...rpc.InvokeOption) ex.Error {
 	_, err := client.rpcClient.Invoke(_RegistryServiceRegisterSpec.Info(), &_RegistryServiceRegisterArguments{
 		Registration: registration,
 	}, _ivOpts...)
 	return err
 }
 
-func (client *_RegistryServiceClientER) Unregister(_ivOpts ...rpcclient.InvokeOption) ex.Error {
+func (client *_RegistryServiceClientER) Unregister(_ivOpts ...rpc.InvokeOption) ex.Error {
 	_, err := client.rpcClient.Invoke(_RegistryServiceUnregisterSpec.Info(), nil, _ivOpts...)
 	return err
 }
@@ -1009,8 +1008,8 @@ func (client *_RegistryServiceClientER) Unregister(_ivOpts ...rpcclient.InvokeOp
 // TaskService / Spec
 
 var (
-	_TaskServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
+	_TaskServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeBoth,
 		Name:              "TaskService",
 		SkelName:          "vine.link.TaskService",
 		Hash:              "26a1aef1",
@@ -1024,11 +1023,11 @@ var (
 		DefaultERServerType: reflect.TypeFor[*DefaultTaskServiceServerER](),
 		ERClientType:        reflect.TypeFor[TaskServiceClientER](),
 		ERClientCtor:        NewTaskServiceClientER,
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_TaskServiceLaunchTaskSpec,
 		},
 	}
-	_TaskServiceLaunchTaskSpec = &rpcspec.MethodSpec{
+	_TaskServiceLaunchTaskSpec = &rpc.MethodSpec{
 		Name:                        "LaunchTask",
 		SkelName:                    "launchTask",
 		ArgumentsType:               reflect.TypeFor[_TaskServiceLaunchTaskArguments](),
@@ -1119,7 +1118,7 @@ type DefaultTaskServiceServerER struct {
 type TaskServiceClient interface {
 	// LaunchTask Start a task.
 	//   @param launch - Task trigger information
-	LaunchTask(launch TaskLaunch, _ivOpts ...rpcclient.InvokeOption)
+	LaunchTask(launch TaskLaunch, _ivOpts ...rpc.InvokeOption)
 }
 
 type _TaskServiceClient struct {
@@ -1130,7 +1129,7 @@ func NewTaskServiceClient(clientER TaskServiceClientER) TaskServiceClient {
 	return &_TaskServiceClient{clientER: clientER}
 }
 
-func (client *_TaskServiceClient) LaunchTask(launch TaskLaunch, _ivOpts ...rpcclient.InvokeOption) {
+func (client *_TaskServiceClient) LaunchTask(launch TaskLaunch, _ivOpts ...rpc.InvokeOption) {
 	err := client.clientER.LaunchTask(launch, _ivOpts...)
 	ex.PanicIfError(err)
 }
@@ -1140,20 +1139,20 @@ func (client *_TaskServiceClient) LaunchTask(launch TaskLaunch, _ivOpts ...rpccl
 type TaskServiceClientER interface {
 	// LaunchTask Start a task.
 	//   @param launch - Task trigger information
-	LaunchTask(launch TaskLaunch, _ivOpts ...rpcclient.InvokeOption) ex.Error
+	LaunchTask(launch TaskLaunch, _ivOpts ...rpc.InvokeOption) ex.Error
 }
 
 type _TaskServiceClientER struct {
-	rpcClient *rpcclient.Client
+	rpcClient *rpc.Client
 }
 
-func NewTaskServiceClientER(rpcClient *rpcclient.Client) TaskServiceClientER {
+func NewTaskServiceClientER(rpcClient *rpc.Client) TaskServiceClientER {
 	return &_TaskServiceClientER{
 		rpcClient: rpcClient,
 	}
 }
 
-func (client *_TaskServiceClientER) LaunchTask(launch TaskLaunch, _ivOpts ...rpcclient.InvokeOption) ex.Error {
+func (client *_TaskServiceClientER) LaunchTask(launch TaskLaunch, _ivOpts ...rpc.InvokeOption) ex.Error {
 	_, err := client.rpcClient.Invoke(_TaskServiceLaunchTaskSpec.Info(), &_TaskServiceLaunchTaskArguments{
 		Launch: launch,
 	}, _ivOpts...)

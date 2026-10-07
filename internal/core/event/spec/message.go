@@ -3,7 +3,7 @@ package spec
 import (
 	"fmt"
 
-	"go.yorun.ai/vine/internal/core/skel"
+	skeltype "go.yorun.ai/skel/types"
 )
 
 const (
@@ -31,9 +31,9 @@ type NATSMessageMeta struct {
 	TraceId   string `json:"traceId"`
 	TraceSpan string `json:"traceSpan"`
 
-	AppName       string    `json:"appName"`
-	AppVersion    string    `json:"appVersion"`
-	AppInstanceId skel.UUID `json:"appInstanceId"`
+	AppName       string        `json:"appName"`
+	AppVersion    string        `json:"appVersion"`
+	AppInstanceId skeltype.UUID `json:"appInstanceId"`
 
-	EmittedAt skel.Timestamp `json:"emittedAt"`
+	EmittedAt skeltype.Timestamp `json:"emittedAt"`
 }

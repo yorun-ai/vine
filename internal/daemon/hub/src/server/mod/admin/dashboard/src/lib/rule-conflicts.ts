@@ -16,7 +16,7 @@ export function invalidateRuleConflicts(queryClient: QueryClient) {
 
 // useRuleConflicts lists the rules Hub reports as matching the same request. The
 // request a rule matches depends on the Web mount path of its site, so Hub
-// answers this question from the schemas it holds instead of at write time: a
+// answers this question from the descriptors it holds instead of at write time: a
 // page marks the rules Portal cannot order on its own.
 export function useRuleConflicts() {
   const query = useQuery({

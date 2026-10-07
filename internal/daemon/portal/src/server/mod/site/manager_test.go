@@ -8,10 +8,10 @@ import (
 	"testing"
 	"testing/synctest"
 
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
-	"go.yorun.ai/vine/internal/core/skel"
 	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
@@ -239,7 +239,7 @@ func newTestEpmgr(t *testing.T, valuesByKey map[string]string) *epmgr.Manager {
 }
 
 func newTestAccess(t *testing.T) *access.Access {
-	watchClient := newTestSchemaWatch(t)
+	watchClient := newTestDescriptorWatch(t)
 	epmgrManager := &epmgr.Manager{
 		Context: context.Background(),
 		Watch:   watchClient,
@@ -254,26 +254,19 @@ func newTestAccess(t *testing.T) *access.Access {
 	return manager
 }
 
-func newTestSchemaWatch(t *testing.T) *watchtest.Client {
+func newTestDescriptorWatch(t *testing.T) *watchtest.Client {
 	watchClient := watchtest.New(t, map[string]string{
-		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.SchemaActor{
+		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.DescriptorActor{
 			SkelName: "demo.UserActor",
-			AuthCredential: &skel.DataSchema{
-				SkelName: "demo.UserCredential",
-				Members: []*skel.MemberSchema{
-					{Name: "key"},
-				},
-			},
-			AuthInfo: &skel.DataSchema{SkelName: "demo.UserInfo"},
 		}),
-		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
 			SkelName: "demo.UserService",
-			AuthMode: skel.AuthModeOptional,
-			Audiences: []*skel.ActorAudienceSchema{
+			AuthMode: skeldesc.AuthModeOptional,
+			Audiences: []*skeldesc.ActorAudience{
 				{SkelName: "demo.UserActor"},
 			},
-			Methods: []*skel.MethodSchema{
-				{SkelName: "Get", AuthMode: skel.AuthModeOptional},
+			Methods: []*skeldesc.Method{
+				{SkelName: "Get", AuthMode: skeldesc.AuthModeOptional, Name: "Get", EffectiveAuthMode: skeldesc.AuthModeOptional},
 			},
 		}),
 	})

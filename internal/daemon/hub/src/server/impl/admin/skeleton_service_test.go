@@ -8,7 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/core/skel"
+	skeldesc "go.yorun.ai/skel/descriptor"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vslice"
 )
@@ -20,10 +21,10 @@ func TestSkeletonApiPreservesExtensionMarkers(t *testing.T) {
 			name = "extension"
 		}
 		t.Run(name, func(t *testing.T) {
-			service := &SkeletonApiServiceServerImpl{SchemaRepo: &_SkeletonServiceSchemaRepo{
-				domainSchemas: []*skel.DomainSchema{{Domain: "demo.audit", Hash: "domain-hash",
-					Services: []*skel.ServiceSchema{{Name: "AuditService", SkelName: "demo.audit.AuditService", Hash: "service-hash", Pub: true, Ext: ext}},
-					Events:   []*skel.EventSchema{{Name: "AuditRecordedEvent", SkelName: "demo.audit.AuditRecordedEvent", Hash: "event-hash", Pub: true, Ext: ext}},
+			service := &SkeletonApiServiceServerImpl{DescriptorRepo: &_SkeletonServiceDescriptorRepo{
+				domainDescriptors: []*skeldesc.Domain{{Name: "demo.audit", Hash: "domain-hash",
+					Services: []*skeldesc.Service{{Name: "AuditService", SkelName: "demo.audit.AuditService", Hash: "service-hash", Pub: true, Ext: ext, AuthMode: skeldesc.AuthModeRequired}},
+					Events:   []*skeldesc.Event{{Name: "AuditRecordedEvent", SkelName: "demo.audit.AuditRecordedEvent", Hash: "event-hash", Pub: true, Ext: ext}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 				}},
 			}}
 			services := service.ListServices()
@@ -50,215 +51,215 @@ func TestSkeletonApiPreservesExtensionMarkers(t *testing.T) {
 	}
 }
 
-type _TestSchemaRef[T any] struct {
-	SkelName string
-	Hash     string
-	Schema   T
+type _TestDescriptorRef[T any] struct {
+	SkelName   string
+	Hash       string
+	Descriptor T
 }
 
-type _TestSchemaVersionState struct {
+type _TestDescriptorVersionState struct {
 	DefaultHash    string
 	MainDomainHash string
 	Hashes         map[string]struct{}
 }
 
-type _SkeletonServiceSchemaRepo struct {
-	domainSchemas []*skel.DomainSchema
-	versions      []core.DomainSchemaVersion
+type _SkeletonServiceDescriptorRepo struct {
+	domainDescriptors []*skeldesc.Domain
+	versions          []core.DomainDescriptorVersion
 }
 
-func (*_SkeletonServiceSchemaRepo) SaveDomainSchemas(string, string, []*skel.DomainSchema) {
+func (*_SkeletonServiceDescriptorRepo) SaveDomainDescriptors(string, string, []*skeldesc.Domain) {
 }
 
-func (*_SkeletonServiceSchemaRepo) SaveDomainSchemasJSON(string, string, []skel.JSON) {
+func (*_SkeletonServiceDescriptorRepo) SaveDomainDescriptorsJSON(string, string, []skeltype.JSON) {
 }
 
-func (*_SkeletonServiceSchemaRepo) ReleaseDomainSchemas(string, string) {}
+func (*_SkeletonServiceDescriptorRepo) ReleaseDomainDescriptors(string, string) {}
 
-func (r *_SkeletonServiceSchemaRepo) domainSchemaVersions() []core.DomainSchemaVersion {
+func (r *_SkeletonServiceDescriptorRepo) domainDescriptorVersions() []core.DomainDescriptorVersion {
 	if r.versions != nil {
 		return r.versions
 	}
-	versions := make([]core.DomainSchemaVersion, 0, len(r.domainSchemas))
-	for _, schema := range r.domainSchemas {
-		versions = append(versions, core.DomainSchemaVersion{Schema: schema, Main: true})
+	versions := make([]core.DomainDescriptorVersion, 0, len(r.domainDescriptors))
+	for _, descriptor := range r.domainDescriptors {
+		versions = append(versions, core.DomainDescriptorVersion{Descriptor: descriptor, Main: true})
 	}
 	return versions
 }
 
-func (r *_SkeletonServiceSchemaRepo) ListDomainSchemaViews() []core.DomainSchemaView {
-	versions := r.domainSchemaVersions()
-	actorVersions := r.ListActorSchemaVersions()
-	configVersions := r.ListConfigSchemaVersions()
-	dataVersions := r.ListDataSchemaVersions()
-	enumVersions := r.ListEnumSchemaVersions()
-	eventVersions := r.ListEventSchemaVersions()
-	resourceVersions := r.ListResourceSchemaVersions()
-	serviceVersions := r.ListServiceSchemaVersions()
-	taskVersions := r.ListTaskSchemaVersions()
-	webVersions := r.ListWebSchemaVersions()
-	views := make([]core.DomainSchemaView, 0, len(versions))
+func (r *_SkeletonServiceDescriptorRepo) ListDomainDescriptorViews() []core.DomainDescriptorView {
+	versions := r.domainDescriptorVersions()
+	actorVersions := r.ListActorDescriptorVersions()
+	configVersions := r.ListConfigDescriptorVersions()
+	dataVersions := r.ListDataDescriptorVersions()
+	enumVersions := r.ListEnumDescriptorVersions()
+	eventVersions := r.ListEventDescriptorVersions()
+	resourceVersions := r.ListResourceDescriptorVersions()
+	serviceVersions := r.ListServiceDescriptorVersions()
+	taskVersions := r.ListTaskDescriptorVersions()
+	webVersions := r.ListWebDescriptorVersions()
+	views := make([]core.DomainDescriptorView, 0, len(versions))
 	for _, version := range versions {
-		domainHash := version.Schema.Hash
-		views = append(views, core.DomainSchemaView{
+		domainHash := version.Descriptor.Hash
+		views = append(views, core.DomainDescriptorView{
 			DomainVersion: version,
-			Actors:        testSchemaVersionsByDomainHash(actorVersions, domainHash),
-			Configs:       testSchemaVersionsByDomainHash(configVersions, domainHash),
-			Data:          testSchemaVersionsByDomainHash(dataVersions, domainHash),
-			Enums:         testSchemaVersionsByDomainHash(enumVersions, domainHash),
-			Events:        testSchemaVersionsByDomainHash(eventVersions, domainHash),
-			Resources:     testSchemaVersionsByDomainHash(resourceVersions, domainHash),
-			Services:      testSchemaVersionsByDomainHash(serviceVersions, domainHash),
-			Tasks:         testSchemaVersionsByDomainHash(taskVersions, domainHash),
-			Webs:          testSchemaVersionsByDomainHash(webVersions, domainHash),
+			Actors:        testDescriptorVersionsByDomainHash(actorVersions, domainHash),
+			Configs:       testDescriptorVersionsByDomainHash(configVersions, domainHash),
+			Data:          testDescriptorVersionsByDomainHash(dataVersions, domainHash),
+			Enums:         testDescriptorVersionsByDomainHash(enumVersions, domainHash),
+			Events:        testDescriptorVersionsByDomainHash(eventVersions, domainHash),
+			Resources:     testDescriptorVersionsByDomainHash(resourceVersions, domainHash),
+			Services:      testDescriptorVersionsByDomainHash(serviceVersions, domainHash),
+			Tasks:         testDescriptorVersionsByDomainHash(taskVersions, domainHash),
+			Webs:          testDescriptorVersionsByDomainHash(webVersions, domainHash),
 		})
 	}
 	return views
 }
 
-func (r *_SkeletonServiceSchemaRepo) ListVineHubSchemaViews() []core.DomainSchemaView {
-	return r.ListDomainSchemaViews()
+func (r *_SkeletonServiceDescriptorRepo) ListVineHubDescriptorViews() []core.DomainDescriptorView {
+	return r.ListDomainDescriptorViews()
 }
 
-func (r *_SkeletonServiceSchemaRepo) ListActorSchemaVersions() []core.SchemaVersion[*skel.ActorSchema] {
-	return testSchemaVersions(r.domainSchemaVersions(), func(schema *skel.DomainSchema) []_TestSchemaRef[*skel.ActorSchema] {
-		refs := make([]_TestSchemaRef[*skel.ActorSchema], 0, len(schema.Actors))
-		for _, item := range schema.Actors {
-			refs = append(refs, _TestSchemaRef[*skel.ActorSchema]{SkelName: item.SkelName, Hash: item.Hash, Schema: item})
+func (r *_SkeletonServiceDescriptorRepo) ListActorDescriptorVersions() []core.DescriptorVersion[*skeldesc.Actor] {
+	return testDescriptorVersions(r.domainDescriptorVersions(), func(descriptor *skeldesc.Domain) []_TestDescriptorRef[*skeldesc.Actor] {
+		refs := make([]_TestDescriptorRef[*skeldesc.Actor], 0, len(descriptor.Actors))
+		for _, item := range descriptor.Actors {
+			refs = append(refs, _TestDescriptorRef[*skeldesc.Actor]{SkelName: item.SkelName, Hash: item.Hash, Descriptor: item})
 		}
 		return refs
 	})
 }
 
-func (r *_SkeletonServiceSchemaRepo) ListConfigSchemaVersions() []core.SchemaVersion[*skel.ConfigSchema] {
-	return testSchemaVersions(r.domainSchemaVersions(), func(schema *skel.DomainSchema) []_TestSchemaRef[*skel.ConfigSchema] {
-		refs := make([]_TestSchemaRef[*skel.ConfigSchema], 0, len(schema.Configs))
-		for _, item := range schema.Configs {
-			refs = append(refs, _TestSchemaRef[*skel.ConfigSchema]{SkelName: item.SkelName, Hash: item.Hash, Schema: item})
+func (r *_SkeletonServiceDescriptorRepo) ListConfigDescriptorVersions() []core.DescriptorVersion[*skeldesc.Config] {
+	return testDescriptorVersions(r.domainDescriptorVersions(), func(descriptor *skeldesc.Domain) []_TestDescriptorRef[*skeldesc.Config] {
+		refs := make([]_TestDescriptorRef[*skeldesc.Config], 0, len(descriptor.Configs))
+		for _, item := range descriptor.Configs {
+			refs = append(refs, _TestDescriptorRef[*skeldesc.Config]{SkelName: item.SkelName, Hash: item.Hash, Descriptor: item})
 		}
 		return refs
 	})
 }
 
-func (r *_SkeletonServiceSchemaRepo) ListDataSchemaVersions() []core.SchemaVersion[*skel.DataSchema] {
-	return testSchemaVersions(r.domainSchemaVersions(), func(schema *skel.DomainSchema) []_TestSchemaRef[*skel.DataSchema] {
-		refs := make([]_TestSchemaRef[*skel.DataSchema], 0, len(schema.Data))
-		for _, item := range schema.Data {
-			refs = append(refs, _TestSchemaRef[*skel.DataSchema]{SkelName: item.SkelName, Hash: item.Hash, Schema: item})
+func (r *_SkeletonServiceDescriptorRepo) ListDataDescriptorVersions() []core.DescriptorVersion[*skeldesc.Data] {
+	return testDescriptorVersions(r.domainDescriptorVersions(), func(descriptor *skeldesc.Domain) []_TestDescriptorRef[*skeldesc.Data] {
+		refs := make([]_TestDescriptorRef[*skeldesc.Data], 0, len(descriptor.Data))
+		for _, item := range descriptor.Data {
+			refs = append(refs, _TestDescriptorRef[*skeldesc.Data]{SkelName: item.SkelName, Hash: item.Hash, Descriptor: item})
 		}
-		for _, actor := range schema.Actors {
-			if actor.AuthCredential != nil {
-				refs = append(refs, _TestSchemaRef[*skel.DataSchema]{SkelName: actor.AuthCredential.SkelName, Hash: actor.AuthCredential.Hash, Schema: actor.AuthCredential})
+		for _, actor := range descriptor.Actors {
+			if actor.Auth != nil && actor.Auth.Credential != nil {
+				refs = append(refs, _TestDescriptorRef[*skeldesc.Data]{SkelName: actor.Auth.Credential.SkelName, Hash: actor.Auth.Credential.Hash, Descriptor: actor.Auth.Credential})
 			}
-			if actor.AuthInfo != nil {
-				refs = append(refs, _TestSchemaRef[*skel.DataSchema]{SkelName: actor.AuthInfo.SkelName, Hash: actor.AuthInfo.Hash, Schema: actor.AuthInfo})
-			}
-		}
-		return refs
-	})
-}
-
-func (r *_SkeletonServiceSchemaRepo) ListEnumSchemaVersions() []core.SchemaVersion[*skel.EnumSchema] {
-	return testSchemaVersions(r.domainSchemaVersions(), func(schema *skel.DomainSchema) []_TestSchemaRef[*skel.EnumSchema] {
-		refs := make([]_TestSchemaRef[*skel.EnumSchema], 0, len(schema.Enums))
-		for _, item := range schema.Enums {
-			refs = append(refs, _TestSchemaRef[*skel.EnumSchema]{SkelName: item.SkelName, Hash: item.Hash, Schema: item})
-		}
-		return refs
-	})
-}
-
-func (r *_SkeletonServiceSchemaRepo) ListEventSchemaVersions() []core.SchemaVersion[*skel.EventSchema] {
-	return testSchemaVersions(r.domainSchemaVersions(), func(schema *skel.DomainSchema) []_TestSchemaRef[*skel.EventSchema] {
-		refs := make([]_TestSchemaRef[*skel.EventSchema], 0, len(schema.Events))
-		for _, item := range schema.Events {
-			refs = append(refs, _TestSchemaRef[*skel.EventSchema]{SkelName: item.SkelName, Hash: item.Hash, Schema: item})
-		}
-		return refs
-	})
-}
-
-func (r *_SkeletonServiceSchemaRepo) ListResourceSchemaVersions() []core.SchemaVersion[*skel.ResourceSchema] {
-	return testSchemaVersions(r.domainSchemaVersions(), func(schema *skel.DomainSchema) []_TestSchemaRef[*skel.ResourceSchema] {
-		refs := make([]_TestSchemaRef[*skel.ResourceSchema], 0, len(schema.Resources))
-		for _, item := range schema.Resources {
-			refs = append(refs, _TestSchemaRef[*skel.ResourceSchema]{SkelName: item.SkelName, Hash: item.Hash, Schema: item})
-		}
-		return refs
-	})
-}
-
-func (r *_SkeletonServiceSchemaRepo) ListServiceSchemaVersions() []core.SchemaVersion[*skel.ServiceSchema] {
-	return testSchemaVersions(r.domainSchemaVersions(), func(schema *skel.DomainSchema) []_TestSchemaRef[*skel.ServiceSchema] {
-		refs := make([]_TestSchemaRef[*skel.ServiceSchema], 0, len(schema.Services))
-		for _, item := range schema.Services {
-			refs = append(refs, _TestSchemaRef[*skel.ServiceSchema]{SkelName: item.SkelName, Hash: item.Hash, Schema: item})
-		}
-		for _, actor := range schema.Actors {
-			if actor.AuthService != nil {
-				refs = append(refs, _TestSchemaRef[*skel.ServiceSchema]{SkelName: actor.AuthService.SkelName, Hash: actor.AuthService.Hash, Schema: actor.AuthService})
-			}
-			if actor.PermService != nil {
-				refs = append(refs, _TestSchemaRef[*skel.ServiceSchema]{SkelName: actor.PermService.SkelName, Hash: actor.PermService.Hash, Schema: actor.PermService})
+			if actor.Auth != nil && actor.Auth.Info != nil {
+				refs = append(refs, _TestDescriptorRef[*skeldesc.Data]{SkelName: actor.Auth.Info.SkelName, Hash: actor.Auth.Info.Hash, Descriptor: actor.Auth.Info})
 			}
 		}
 		return refs
 	})
 }
 
-func (r *_SkeletonServiceSchemaRepo) ListTaskSchemaVersions() []core.SchemaVersion[*skel.TaskSchema] {
-	return testSchemaVersions(r.domainSchemaVersions(), func(schema *skel.DomainSchema) []_TestSchemaRef[*skel.TaskSchema] {
-		refs := make([]_TestSchemaRef[*skel.TaskSchema], 0, len(schema.Tasks))
-		for _, item := range schema.Tasks {
-			refs = append(refs, _TestSchemaRef[*skel.TaskSchema]{SkelName: item.SkelName, Hash: item.Hash, Schema: item})
+func (r *_SkeletonServiceDescriptorRepo) ListEnumDescriptorVersions() []core.DescriptorVersion[*skeldesc.Enum] {
+	return testDescriptorVersions(r.domainDescriptorVersions(), func(descriptor *skeldesc.Domain) []_TestDescriptorRef[*skeldesc.Enum] {
+		refs := make([]_TestDescriptorRef[*skeldesc.Enum], 0, len(descriptor.Enums))
+		for _, item := range descriptor.Enums {
+			refs = append(refs, _TestDescriptorRef[*skeldesc.Enum]{SkelName: item.SkelName, Hash: item.Hash, Descriptor: item})
 		}
 		return refs
 	})
 }
 
-func (r *_SkeletonServiceSchemaRepo) ListWebSchemaVersions() []core.SchemaVersion[*skel.WebSchema] {
-	return testSchemaVersions(r.domainSchemaVersions(), func(schema *skel.DomainSchema) []_TestSchemaRef[*skel.WebSchema] {
-		refs := make([]_TestSchemaRef[*skel.WebSchema], 0, len(schema.Webs))
-		for _, item := range schema.Webs {
-			refs = append(refs, _TestSchemaRef[*skel.WebSchema]{SkelName: item.SkelName, Hash: item.Hash, Schema: item})
+func (r *_SkeletonServiceDescriptorRepo) ListEventDescriptorVersions() []core.DescriptorVersion[*skeldesc.Event] {
+	return testDescriptorVersions(r.domainDescriptorVersions(), func(descriptor *skeldesc.Domain) []_TestDescriptorRef[*skeldesc.Event] {
+		refs := make([]_TestDescriptorRef[*skeldesc.Event], 0, len(descriptor.Events))
+		for _, item := range descriptor.Events {
+			refs = append(refs, _TestDescriptorRef[*skeldesc.Event]{SkelName: item.SkelName, Hash: item.Hash, Descriptor: item})
 		}
 		return refs
 	})
 }
 
-func (r *_SkeletonServiceSchemaRepo) ListActorSchemas() []*skel.ActorSchema {
+func (r *_SkeletonServiceDescriptorRepo) ListResourceDescriptorVersions() []core.DescriptorVersion[*skeldesc.Resource] {
+	return testDescriptorVersions(r.domainDescriptorVersions(), func(descriptor *skeldesc.Domain) []_TestDescriptorRef[*skeldesc.Resource] {
+		refs := make([]_TestDescriptorRef[*skeldesc.Resource], 0, len(descriptor.Resources))
+		for _, item := range descriptor.Resources {
+			refs = append(refs, _TestDescriptorRef[*skeldesc.Resource]{SkelName: item.SkelName, Hash: item.Hash, Descriptor: item})
+		}
+		return refs
+	})
+}
+
+func (r *_SkeletonServiceDescriptorRepo) ListServiceDescriptorVersions() []core.DescriptorVersion[*skeldesc.Service] {
+	return testDescriptorVersions(r.domainDescriptorVersions(), func(descriptor *skeldesc.Domain) []_TestDescriptorRef[*skeldesc.Service] {
+		refs := make([]_TestDescriptorRef[*skeldesc.Service], 0, len(descriptor.Services))
+		for _, item := range descriptor.Services {
+			refs = append(refs, _TestDescriptorRef[*skeldesc.Service]{SkelName: item.SkelName, Hash: item.Hash, Descriptor: item})
+		}
+		for _, actor := range descriptor.Actors {
+			if actor.Auth != nil && actor.Auth.Service != nil {
+				refs = append(refs, _TestDescriptorRef[*skeldesc.Service]{SkelName: actor.Auth.Service.SkelName, Hash: actor.Auth.Service.Hash, Descriptor: actor.Auth.Service})
+			}
+			if actor.Permission != nil && actor.Permission.Service != nil {
+				refs = append(refs, _TestDescriptorRef[*skeldesc.Service]{SkelName: actor.Permission.Service.SkelName, Hash: actor.Permission.Service.Hash, Descriptor: actor.Permission.Service})
+			}
+		}
+		return refs
+	})
+}
+
+func (r *_SkeletonServiceDescriptorRepo) ListTaskDescriptorVersions() []core.DescriptorVersion[*skeldesc.Task] {
+	return testDescriptorVersions(r.domainDescriptorVersions(), func(descriptor *skeldesc.Domain) []_TestDescriptorRef[*skeldesc.Task] {
+		refs := make([]_TestDescriptorRef[*skeldesc.Task], 0, len(descriptor.Tasks))
+		for _, item := range descriptor.Tasks {
+			refs = append(refs, _TestDescriptorRef[*skeldesc.Task]{SkelName: item.SkelName, Hash: item.Hash, Descriptor: item})
+		}
+		return refs
+	})
+}
+
+func (r *_SkeletonServiceDescriptorRepo) ListWebDescriptorVersions() []core.DescriptorVersion[*skeldesc.Web] {
+	return testDescriptorVersions(r.domainDescriptorVersions(), func(descriptor *skeldesc.Domain) []_TestDescriptorRef[*skeldesc.Web] {
+		refs := make([]_TestDescriptorRef[*skeldesc.Web], 0, len(descriptor.Webs))
+		for _, item := range descriptor.Webs {
+			refs = append(refs, _TestDescriptorRef[*skeldesc.Web]{SkelName: item.SkelName, Hash: item.Hash, Descriptor: item})
+		}
+		return refs
+	})
+}
+
+func (r *_SkeletonServiceDescriptorRepo) ListActorDescriptors() []*skeldesc.Actor {
 	return nil
 }
 
-func (*_SkeletonServiceSchemaRepo) ListAppConfigSchemas() []*skel.ConfigSchema {
+func (*_SkeletonServiceDescriptorRepo) ListAppConfigDescriptors() []*skeldesc.Config {
 	return nil
 }
 
-func (r *_SkeletonServiceSchemaRepo) ListEnumSchemas() []*skel.EnumSchema {
+func (r *_SkeletonServiceDescriptorRepo) ListEnumDescriptors() []*skeldesc.Enum {
 	return nil
 }
 
-func (r *_SkeletonServiceSchemaRepo) ListServiceSchemas() []*skel.ServiceSchema {
+func (r *_SkeletonServiceDescriptorRepo) ListServiceDescriptors() []*skeldesc.Service {
 	return nil
 }
 
-func (r *_SkeletonServiceSchemaRepo) ListWebSchemas() []*skel.WebSchema {
+func (r *_SkeletonServiceDescriptorRepo) ListWebDescriptors() []*skeldesc.Web {
 	return nil
 }
 
-func testSchemaVersions[T any](
-	domainVersions []core.DomainSchemaVersion,
-	getRefs func(schema *skel.DomainSchema) []_TestSchemaRef[T],
-) []core.SchemaVersion[T] {
-	states := map[string]*_TestSchemaVersionState{}
+func testDescriptorVersions[T any](
+	domainVersions []core.DomainDescriptorVersion,
+	getRefs func(descriptor *skeldesc.Domain) []_TestDescriptorRef[T],
+) []core.DescriptorVersion[T] {
+	states := map[string]*_TestDescriptorVersionState{}
 	for _, domainVersion := range domainVersions {
-		for _, ref := range getRefs(domainVersion.Schema) {
+		for _, ref := range getRefs(domainVersion.Descriptor) {
 			if strings.HasPrefix(ref.SkelName, "vine.") {
 				continue
 			}
 			state := states[ref.SkelName]
 			if state == nil {
-				state = &_TestSchemaVersionState{Hashes: map[string]struct{}{}}
+				state = &_TestDescriptorVersionState{Hashes: map[string]struct{}{}}
 				states[ref.SkelName] = state
 			}
 			state.Hashes[ref.Hash] = struct{}{}
@@ -278,10 +279,10 @@ func testSchemaVersions[T any](
 		}
 	}
 
-	ret := make([]core.SchemaVersion[T], 0)
+	ret := make([]core.DescriptorVersion[T], 0)
 	seen := map[string]struct{}{}
 	for _, domainVersion := range domainVersions {
-		for _, ref := range getRefs(domainVersion.Schema) {
+		for _, ref := range getRefs(domainVersion.Descriptor) {
 			if strings.HasPrefix(ref.SkelName, "vine.") {
 				continue
 			}
@@ -291,33 +292,33 @@ func testSchemaVersions[T any](
 			}
 			seen[key] = struct{}{}
 			state := states[ref.SkelName]
-			ret = append(ret, core.SchemaVersion[T]{
-				Schema:           ref.Schema,
-				Domain:           domainVersion.Schema.Domain,
-				SkelName:         ref.SkelName,
-				SchemaHash:       ref.Hash,
-				MainSchemaHash:   state.DefaultHash,
-				Main:             ref.Hash == state.DefaultHash,
-				MultiVersion:     len(state.Hashes) > 1,
-				DomainSchemaHash: domainVersion.Schema.Hash,
+			ret = append(ret, core.DescriptorVersion[T]{
+				Descriptor:           ref.Descriptor,
+				Domain:               domainVersion.Descriptor.Name,
+				SkelName:             ref.SkelName,
+				DescriptorHash:       ref.Hash,
+				MainDescriptorHash:   state.DefaultHash,
+				Main:                 ref.Hash == state.DefaultHash,
+				MultiVersion:         len(state.Hashes) > 1,
+				DomainDescriptorHash: domainVersion.Descriptor.Hash,
 			})
 		}
 	}
-	return vslice.SortBy(ret, func(a core.SchemaVersion[T], b core.SchemaVersion[T]) bool {
+	return vslice.SortBy(ret, func(a core.DescriptorVersion[T], b core.DescriptorVersion[T]) bool {
 		if a.SkelName != b.SkelName {
 			return cmp.Compare(a.SkelName, b.SkelName) < 0
 		}
 		if a.Main != b.Main {
 			return a.Main
 		}
-		return cmp.Compare(b.SchemaHash, a.SchemaHash) < 0
+		return cmp.Compare(b.DescriptorHash, a.DescriptorHash) < 0
 	})
 }
 
-func testSchemaVersionsByDomainHash[T any](versions []core.SchemaVersion[T], domainHash string) []core.SchemaVersion[T] {
-	ret := make([]core.SchemaVersion[T], 0)
+func testDescriptorVersionsByDomainHash[T any](versions []core.DescriptorVersion[T], domainHash string) []core.DescriptorVersion[T] {
+	ret := make([]core.DescriptorVersion[T], 0)
 	for _, version := range versions {
-		if version.DomainSchemaHash == domainHash {
+		if version.DomainDescriptorHash == domainHash {
 			ret = append(ret, version)
 		}
 	}
@@ -326,13 +327,13 @@ func testSchemaVersionsByDomainHash[T any](versions []core.SchemaVersion[T], dom
 
 func TestSkeletonServiceListServices(t *testing.T) {
 	service := &SkeletonApiServiceServerImpl{
-		SchemaRepo: &_SkeletonServiceSchemaRepo{
-			domainSchemas: []*skel.DomainSchema{{
-				Domain: "demo.user",
-				Services: []*skel.ServiceSchema{
+		DescriptorRepo: &_SkeletonServiceDescriptorRepo{
+			domainDescriptors: []*skeldesc.Domain{{
+				Name: "demo.user",
+				Services: []*skeldesc.Service{
 					{
 						Name:     "AppConfigApiService",
-						SkelName: "vine.hub.admin.AppConfigApiService",
+						SkelName: "vine.hub.admin.AppConfigApiService", AuthMode: skeldesc.AuthModeRequired,
 					},
 					{
 						Name:             "UserService",
@@ -341,16 +342,16 @@ func TestSkeletonServiceListServices(t *testing.T) {
 						Deprecated:       true,
 						DeprecatedReason: "Use UserServiceV2",
 						Pub:              true,
-						Require: &skel.PermRequire{
-							Expr: &skel.PermExpr{
-								Mode: skel.PermRequireModeCode,
+						Require: &skeldesc.PermissionRequire{
+							Expression: &skeldesc.PermissionExpression{
+								Mode: skeldesc.PermissionRequireModeCode,
 								Code: "demo.user.User:read",
 							},
 						},
-						Audiences: []*skel.ActorAudienceSchema{
+						Audiences: []*skeldesc.ActorAudience{
 							{Name: "UserActor", SkelName: "demo.user.UserActor"},
 						},
-						Methods: []*skel.MethodSchema{{
+						Methods: []*skeldesc.Method{{
 							Name:               "listUsers",
 							SkelName:           "listUsers",
 							Description:        "分页查询用户",
@@ -360,55 +361,55 @@ func TestSkeletonServiceListServices(t *testing.T) {
 							OutputDescription:  "分页结果",
 							ArgumentsSensitive: true,
 							ResultSensitive:    true,
-							Require: &skel.PermRequire{
-								Expr: &skel.PermExpr{
-									Mode: skel.PermRequireModeAny,
-									Children: []*skel.PermExpr{
-										{Mode: skel.PermRequireModeCode, Code: "demo.user.User:manage"},
+							Require: &skeldesc.PermissionRequire{
+								Expression: &skeldesc.PermissionExpression{
+									Mode: skeldesc.PermissionRequireModeAny,
+									Children: []*skeldesc.PermissionExpression{
+										{Mode: skeldesc.PermissionRequireModeCode, Code: "demo.user.User:manage"},
 										{
-											Mode: skel.PermRequireModeCheck,
-											Check: &skel.PermCheckInvocation{
+											Mode: skeldesc.PermissionRequireModeCheck,
+											Check: &skeldesc.PermissionCheckInvocation{
 												ResourceSkelName: "demo.user.User",
 												ActionName:       "read",
 												CheckName:        "byTenant",
 												ServiceSkelName:  "demo.user.UserCheckService",
 												MethodSkelName:   "checkByTenant",
-												Arguments: []*skel.PermCheckArgument{{
+												Arguments: []*skeldesc.PermissionCheckArgument{{
 													Name:     "tenantId",
 													JsonPath: "params.tenantId",
-													Type:     &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString},
+													Type:     &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString},
 												}},
 											},
 										},
 									},
 								},
 							},
-							Arguments: []*skel.MemberSchema{{
+							Arguments: []*skeldesc.Member{{
 								Name:             "status",
 								Description:      "状态",
 								Deprecated:       true,
 								DeprecatedReason: "Use statuses",
 								Sensitive:        true,
-								Type: &skel.TypeSchema{
-									Kind:     skel.TypeKindEnum,
+								Type: &skeldesc.Type{
+									Kind:     skeldesc.TypeKindEnum,
 									Name:     "UserStatus",
 									SkelName: "demo.user.UserStatus",
 									Nullable: true,
 								},
 							}},
-							ResultType: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
+							ResultType: &skeldesc.Type{
+								Kind:     skeldesc.TypeKindData,
 								Name:     "Page",
 								SkelName: "demo.user.Page",
-								TypeArguments: []*skel.TypeSchema{{
-									Kind:     skel.TypeKindData,
+								TypeArguments: []*skeldesc.Type{{
+									Kind:     skeldesc.TypeKindData,
 									Name:     "User",
 									SkelName: "demo.user.User",
 								}},
-							},
-						}},
+							}, AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired,
+						}}, AuthMode: skeldesc.AuthModeRequired,
 					},
-				},
+				}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			}},
 		},
 	}
@@ -446,35 +447,34 @@ func TestSkeletonServiceListServices(t *testing.T) {
 }
 
 func TestSkeletonServiceListResources(t *testing.T) {
-	checkMethod := &skel.MethodSchema{
+	checkMethod := &skeldesc.Method{
 		Name:               "CheckByTenant",
 		SkelName:           "checkByTenant",
 		ArgumentsSensitive: true,
-		Arguments: []*skel.MemberSchema{{
+		Arguments: []*skeldesc.Member{{
 			Name: "tenantId",
-			Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString},
-		}},
+			Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString},
+		}}, AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired,
 	}
 	service := &SkeletonApiServiceServerImpl{
-		SchemaRepo: &_SkeletonServiceSchemaRepo{
-			domainSchemas: []*skel.DomainSchema{{
-				Domain: "demo.user",
-				Hash:   "domain-hash",
-				Resources: []*skel.ResourceSchema{{
+		DescriptorRepo: &_SkeletonServiceDescriptorRepo{
+			domainDescriptors: []*skeldesc.Domain{{
+				Name: "demo.user",
+				Hash: "domain-hash",
+				Resources: []*skeldesc.Resource{{
 					Name:             "User",
 					SkelName:         "demo.user.User",
 					Hash:             "user-resource",
 					Description:      "用户资源",
 					Deprecated:       true,
 					DeprecatedReason: "Use Account",
-					Checks: []*skel.ResourceCheckSchema{{
+					Checks: []*skeldesc.ResourceCheck{{
 						Name:             "byTenant",
 						Deprecated:       true,
 						DeprecatedReason: "Use byOrganization",
-						Method:           checkMethod,
-						Arguments:        checkMethod.Arguments,
+						MethodName:       checkMethod.Name,
 					}},
-					Actions: []*skel.ResourceActionSchema{{
+					Actions: []*skeldesc.ResourceAction{{
 						Name:             "read",
 						PermissionCode:   "demo.user.User:read",
 						Description:      "读取用户",
@@ -483,22 +483,18 @@ func TestSkeletonServiceListResources(t *testing.T) {
 					}, {
 						Name:           "update",
 						PermissionCode: "demo.user.User:update",
-						Checks: []*skel.ResourceCheckSchema{{
-							Name:   "byTenant",
-							Method: checkMethod,
-							Arguments: []*skel.MemberSchema{{
-								Name: "tenantId",
-								Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString},
-							}},
+						Checks: []*skeldesc.ResourceCheck{{
+							Name:       "byTenant",
+							MethodName: checkMethod.Name,
 						}},
 					}},
-					CheckService: &skel.ServiceSchema{
+					CheckService: &skeldesc.Service{
 						Name:     "UserCheckService",
 						SkelName: "demo.user.UserCheckService",
 						Hash:     "user-check-service",
-						Methods:  []*skel.MethodSchema{checkMethod},
+						Methods:  []*skeldesc.Method{checkMethod}, AuthMode: skeldesc.AuthModeRequired,
 					},
-				}},
+				}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			}},
 		},
 	}
@@ -533,29 +529,29 @@ func TestSkeletonServiceListResources(t *testing.T) {
 
 func TestSkeletonServiceFormatsExternalDomainTypesWithSkelName(t *testing.T) {
 	service := &SkeletonApiServiceServerImpl{
-		SchemaRepo: &_SkeletonServiceSchemaRepo{
-			domainSchemas: []*skel.DomainSchema{{
-				Domain: "booker",
-				Hash:   "booker-hash",
-				Data: []*skel.DataSchema{{
+		DescriptorRepo: &_SkeletonServiceDescriptorRepo{
+			domainDescriptors: []*skeldesc.Domain{{
+				Name: "booker",
+				Hash: "booker-hash",
+				Data: []*skeldesc.Data{{
 					Name:     "ReaderLoanContext",
 					SkelName: "booker.ReaderLoanContext",
 					Hash:     "reader-loan-context-hash",
-					Members: []*skel.MemberSchema{
+					Members: []*skeldesc.Member{
 						{
 							Name: "reader",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
+							Type: &skeldesc.Type{
+								Kind:     skeldesc.TypeKindData,
 								Name:     "UserSummary",
 								SkelName: "user.UserSummary",
 							},
 						},
 						{
 							Name: "collaborators",
-							Type: &skel.TypeSchema{
-								Kind: skel.TypeKindList,
-								Element: &skel.TypeSchema{
-									Kind:     skel.TypeKindData,
+							Type: &skeldesc.Type{
+								Kind: skeldesc.TypeKindList,
+								Element: &skeldesc.Type{
+									Kind:     skeldesc.TypeKindData,
 									Name:     "UserSummary",
 									SkelName: "user.UserSummary",
 								},
@@ -563,19 +559,19 @@ func TestSkeletonServiceFormatsExternalDomainTypesWithSkelName(t *testing.T) {
 						},
 						{
 							Name: "books",
-							Type: &skel.TypeSchema{
-								Kind:     skel.TypeKindData,
+							Type: &skeldesc.Type{
+								Kind:     skeldesc.TypeKindData,
 								Name:     "Page",
 								SkelName: "booker.Page",
-								TypeArguments: []*skel.TypeSchema{{
-									Kind:     skel.TypeKindData,
+								TypeArguments: []*skeldesc.Type{{
+									Kind:     skeldesc.TypeKindData,
 									Name:     "BookSummary",
 									SkelName: "booker.BookSummary",
 								}},
 							},
 						},
 					},
-				}},
+				}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			}},
 		},
 	}
@@ -591,13 +587,13 @@ func TestSkeletonServiceFormatsExternalDomainTypesWithSkelName(t *testing.T) {
 
 func TestSkeletonServiceListActorsFiltersVineSkeletons(t *testing.T) {
 	service := &SkeletonApiServiceServerImpl{
-		SchemaRepo: &_SkeletonServiceSchemaRepo{
-			domainSchemas: []*skel.DomainSchema{{
-				Domain: "demo.user",
-				Actors: []*skel.ActorSchema{
+		DescriptorRepo: &_SkeletonServiceDescriptorRepo{
+			domainDescriptors: []*skeldesc.Domain{{
+				Name: "demo.user",
+				Actors: []*skeldesc.Actor{
 					{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"},
 					{Name: "UserActor", SkelName: "demo.user.UserActor"},
-				},
+				}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			}},
 		},
 	}
@@ -610,70 +606,62 @@ func TestSkeletonServiceListActorsFiltersVineSkeletons(t *testing.T) {
 }
 
 func TestSkeletonServiceIncludesActorCredentialInfoAndAuthService(t *testing.T) {
-	credential := &skel.DataSchema{
+	credential := &skeldesc.Data{
 		Name:     "UserActorCredential",
 		SkelName: "demo.user.UserActorCredential",
 		Hash:     "credential-hash",
-		Members: []*skel.MemberSchema{{
+		Members: []*skeldesc.Member{{
 			Name: "token",
-			Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString},
+			Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString},
 		}},
 	}
-	info := &skel.DataSchema{
+	info := &skeldesc.Data{
 		Name:     "UserActorInfo",
 		SkelName: "demo.user.UserActorInfo",
 		Hash:     "info-hash",
-		Members: []*skel.MemberSchema{{
+		Members: []*skeldesc.Member{{
 			Name: "userId",
-			Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString},
+			Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString},
 		}},
 	}
-	authService := &skel.ServiceSchema{
+	authService := &skeldesc.Service{
 		Name:     "UserActorAuthService",
 		SkelName: "demo.user.UserActorAuthService",
 		Hash:     "auth-service-hash",
-		Methods: []*skel.MethodSchema{{
+		Methods: []*skeldesc.Method{{
 			Name:       "auth",
 			SkelName:   "demo.user.UserActorAuthService.auth",
-			ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, Name: info.Name, SkelName: info.SkelName},
-			Arguments: []*skel.MemberSchema{{
+			ResultType: &skeldesc.Type{Kind: skeldesc.TypeKindData, Name: info.Name, SkelName: info.SkelName},
+			Arguments: []*skeldesc.Member{{
 				Name: "credential",
-				Type: &skel.TypeSchema{Kind: skel.TypeKindData, Name: credential.Name, SkelName: credential.SkelName},
-			}},
-		}},
+				Type: &skeldesc.Type{Kind: skeldesc.TypeKindData, Name: credential.Name, SkelName: credential.SkelName},
+			}}, AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired,
+		}}, AuthMode: skeldesc.AuthModeRequired,
 	}
-	permMethod := &skel.MethodSchema{
+	permMethod := &skeldesc.Method{
 		Name:     "CheckAll",
 		SkelName: "checkAll",
-		Arguments: []*skel.MemberSchema{{
+		Arguments: []*skeldesc.Member{{
 			Name: "codes",
-			Type: &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
-		}},
+			Type: &skeldesc.Type{Kind: skeldesc.TypeKindList, Element: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString}},
+		}}, AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired,
 	}
-	permService := &skel.ServiceSchema{
+	permService := &skeldesc.Service{
 		Name:     "UserActorPermissionService",
 		SkelName: "demo.user.UserActorPermissionService",
 		Hash:     "perm-service-hash",
-		Methods:  []*skel.MethodSchema{permMethod},
+		Methods:  []*skeldesc.Method{permMethod}, AuthMode: skeldesc.AuthModeRequired,
 	}
 	service := &SkeletonApiServiceServerImpl{
-		SchemaRepo: &_SkeletonServiceSchemaRepo{
-			domainSchemas: []*skel.DomainSchema{{
-				Domain: "demo.user",
-				Hash:   "domain-hash",
-				Actors: []*skel.ActorSchema{{
-					Name:            "UserActor",
-					SkelName:        "demo.user.UserActor",
-					Hash:            "actor-hash",
-					AuthEnabled:     true,
-					AuthCredential:  credential,
-					AuthInfo:        info,
-					IdentifierField: "userId",
-					AuthService:     authService,
-					PermEnabled:     true,
-					PermService:     permService,
-					PermMethod:      permMethod,
-				}},
+		DescriptorRepo: &_SkeletonServiceDescriptorRepo{
+			domainDescriptors: []*skeldesc.Domain{{
+				Name: "demo.user",
+				Hash: "domain-hash",
+				Actors: []*skeldesc.Actor{{
+					Name:     "UserActor",
+					SkelName: "demo.user.UserActor",
+					Hash:     "actor-hash", Auth: &skeldesc.ActorAuth{Credential: credential, Info: info, IdentifierField: "userId", Service: authService}, Permission: &skeldesc.ActorPermission{Service: permService, MethodName: permMethod.Name},
+				}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			}},
 		},
 	}
@@ -706,70 +694,70 @@ func TestSkeletonServiceIncludesActorCredentialInfoAndAuthService(t *testing.T) 
 }
 
 func TestSkeletonServiceListActorsIncludesAccessibleItems(t *testing.T) {
-	mainSchema := &skel.DomainSchema{
-		Domain: "demo.user",
-		Hash:   "domain-main",
-		Actors: []*skel.ActorSchema{
+	mainDescriptor := &skeldesc.Domain{
+		Name: "demo.user",
+		Hash: "domain-main",
+		Actors: []*skeldesc.Actor{
 			{Name: "UserActor", SkelName: "demo.user.UserActor", Hash: "actor-hash"},
 		},
-		Services: []*skel.ServiceSchema{
+		Services: []*skeldesc.Service{
 			{
 				Name:     "MainService",
 				SkelName: "demo.user.MainService",
 				Hash:     "main-service",
-				Audiences: []*skel.ActorAudienceSchema{
+				Audiences: []*skeldesc.ActorAudience{
 					{Name: "UserActor", SkelName: "demo.user.UserActor"},
-				},
+				}, AuthMode: skeldesc.AuthModeRequired,
 			},
 		},
-		Webs: []*skel.WebSchema{
+		Webs: []*skeldesc.Web{
 			{
 				Name:     "UserWeb",
 				SkelName: "demo.user.UserWeb",
 				Hash:     "user-web",
-				Audiences: []*skel.ActorAudienceSchema{
+				Audiences: []*skeldesc.ActorAudience{
 					{Name: "UserActor", SkelName: "demo.user.UserActor"},
-				},
+				}, AuthMode: skeldesc.AuthModeRequired,
 			},
 		},
-		Events: []*skel.EventSchema{
+		Events: []*skeldesc.Event{
 			{
 				Name:     "UserEvent",
 				SkelName: "demo.user.UserEvent",
 				Hash:     "user-event",
 			},
-		},
+		}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 	}
-	oldSchema := &skel.DomainSchema{
-		Domain: "demo.user",
-		Hash:   "domain-old",
-		Actors: []*skel.ActorSchema{
+	oldDescriptor := &skeldesc.Domain{
+		Name: "demo.user",
+		Hash: "domain-old",
+		Actors: []*skeldesc.Actor{
 			{Name: "UserActor", SkelName: "demo.user.UserActor", Hash: "actor-hash"},
 		},
-		Services: []*skel.ServiceSchema{
+		Services: []*skeldesc.Service{
 			{
 				Name:     "OldService",
 				SkelName: "demo.user.OldService",
 				Hash:     "old-service",
-				Audiences: []*skel.ActorAudienceSchema{
+				Audiences: []*skeldesc.ActorAudience{
 					{Name: "UserActor", SkelName: "demo.user.UserActor"},
-				},
+				}, AuthMode: skeldesc.AuthModeRequired,
 			},
 			{
 				Name:     "OtherService",
 				SkelName: "demo.user.OtherService",
 				Hash:     "other-service",
-				Audiences: []*skel.ActorAudienceSchema{
+				Audiences: []*skeldesc.ActorAudience{
 					{Name: "OtherActor", SkelName: "demo.user.OtherActor"},
-				},
+				}, AuthMode: skeldesc.AuthModeRequired,
 			},
-		},
+		}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 	}
 	service := &SkeletonApiServiceServerImpl{
-		SchemaRepo: &_SkeletonServiceSchemaRepo{
-			versions: []core.DomainSchemaVersion{
-				{Schema: oldSchema, MainSchemaHash: "domain-main", Main: false, MultiVersion: true},
-				{Schema: mainSchema, MainSchemaHash: "domain-main", Main: true, MultiVersion: true},
+		DescriptorRepo: &_SkeletonServiceDescriptorRepo{
+			versions: []core.DomainDescriptorVersion{
+				{Descriptor: oldDescriptor, MainDescriptorHash: "domain-main", Main: false, MultiVersion: true},
+				{Descriptor: mainDescriptor, MainDescriptorHash: "domain-main", Main: true, MultiVersion: true},
 			},
 		},
 	}
@@ -786,45 +774,45 @@ func TestSkeletonServiceListActorsIncludesAccessibleItems(t *testing.T) {
 
 func TestSkeletonServiceListActorsIncludesCrossDomainAccessibleItems(t *testing.T) {
 	service := &SkeletonApiServiceServerImpl{
-		SchemaRepo: &_SkeletonServiceSchemaRepo{
-			domainSchemas: []*skel.DomainSchema{
+		DescriptorRepo: &_SkeletonServiceDescriptorRepo{
+			domainDescriptors: []*skeldesc.Domain{
 				{
-					Domain: "app",
-					Hash:   "app-domain",
-					Actors: []*skel.ActorSchema{
+					Name: "app",
+					Hash: "app-domain",
+					Actors: []*skeldesc.Actor{
 						{Name: "UserActor", SkelName: "app.UserActor", Hash: "actor-hash"},
-					},
+					}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 				},
 				{
-					Domain: "user",
-					Hash:   "user-domain",
-					Services: []*skel.ServiceSchema{
+					Name: "user",
+					Hash: "user-domain",
+					Services: []*skeldesc.Service{
 						{
 							Name:     "UserService",
 							SkelName: "user.UserService",
 							Hash:     "user-service",
-							Audiences: []*skel.ActorAudienceSchema{
+							Audiences: []*skeldesc.ActorAudience{
 								{Name: "UserActor", SkelName: "app.UserActor"},
-							},
+							}, AuthMode: skeldesc.AuthModeRequired,
 						},
 					},
-					Webs: []*skel.WebSchema{
+					Webs: []*skeldesc.Web{
 						{
 							Name:     "UserWeb",
 							SkelName: "user.UserWeb",
 							Hash:     "user-web",
-							Audiences: []*skel.ActorAudienceSchema{
+							Audiences: []*skeldesc.ActorAudience{
 								{Name: "UserActor", SkelName: "app.UserActor"},
-							},
+							}, AuthMode: skeldesc.AuthModeRequired,
 						},
 					},
-					Events: []*skel.EventSchema{
+					Events: []*skeldesc.Event{
 						{
 							Name:     "UserEvent",
 							SkelName: "user.UserEvent",
 							Hash:     "user-event",
 						},
-					},
+					}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 				},
 			},
 		},
@@ -842,25 +830,25 @@ func TestSkeletonServiceListActorsIncludesCrossDomainAccessibleItems(t *testing.
 
 func TestSkeletonServiceListConfigs(t *testing.T) {
 	service := &SkeletonApiServiceServerImpl{
-		SchemaRepo: &_SkeletonServiceSchemaRepo{
-			domainSchemas: []*skel.DomainSchema{{
-				Domain: "demo.user",
-				Configs: []*skel.ConfigSchema{{
+		DescriptorRepo: &_SkeletonServiceDescriptorRepo{
+			domainDescriptors: []*skeldesc.Domain{{
+				Name: "demo.user",
+				Configs: []*skeldesc.Config{{
 					Name:             "UserConfig",
 					SkelName:         "demo.user.UserConfig",
 					Deprecated:       true,
 					DeprecatedReason: "Use SiteConfig",
 					Pub:              true,
 					Sensitive:        true,
-					Lifecycle:        "ETERNAL",
-					Members: []*skel.MemberSchema{{
+					Lifecycle:        "eternal",
+					Members: []*skeldesc.Member{{
 						Name:             "enabled",
 						Deprecated:       true,
 						DeprecatedReason: "Use active",
 						Sensitive:        true,
-						Type:             &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool},
+						Type:             &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBoolean},
 					}},
-				}},
+				}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			}},
 		},
 	}
@@ -874,7 +862,7 @@ func TestSkeletonServiceListConfigs(t *testing.T) {
 	assert.Equal(t, "Use SiteConfig", configs[0].DeprecatedReason)
 	assert.True(t, configs[0].Pub)
 	assert.True(t, configs[0].Sensitive)
-	assert.Equal(t, "ETERNAL", configs[0].Lifecycle)
+	assert.Equal(t, "eternal", configs[0].Lifecycle)
 	require.Len(t, configs[0].Fields, 1)
 	assert.Equal(t, "bool", configs[0].Fields[0].Type)
 	assert.True(t, configs[0].Fields[0].Sensitive)
@@ -884,40 +872,40 @@ func TestSkeletonServiceListConfigs(t *testing.T) {
 
 func TestSkeletonServiceListTasksAndEvents(t *testing.T) {
 	service := &SkeletonApiServiceServerImpl{
-		SchemaRepo: &_SkeletonServiceSchemaRepo{
-			domainSchemas: []*skel.DomainSchema{{
-				Domain: "demo.user",
-				Tasks: []*skel.TaskSchema{{
+		DescriptorRepo: &_SkeletonServiceDescriptorRepo{
+			domainDescriptors: []*skeldesc.Domain{{
+				Name: "demo.user",
+				Tasks: []*skeldesc.Task{{
 					Name:             "SyncTask",
 					SkelName:         "demo.user.SyncTask",
 					Deprecated:       true,
 					DeprecatedReason: "Use ReconcileTask",
-					Triggers: []*skel.TriggerSchema{{
+					Triggers: []*skeldesc.TaskTrigger{{
 						Name:               "run",
 						SkelName:           "run",
 						Deprecated:         true,
 						DeprecatedReason:   "Use scheduled",
 						ArgumentsSensitive: true,
-						Arguments: []*skel.MemberSchema{{
+						Arguments: []*skeldesc.Member{{
 							Name:      "limit",
 							Sensitive: true,
-							Type:      &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt},
+							Type:      &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarInt},
 						}},
 					}},
 				}},
-				Events: []*skel.EventSchema{{
+				Events: []*skeldesc.Event{{
 					Name:             "UserCreatedEvent",
 					SkelName:         "demo.user.UserCreatedEvent",
 					Deprecated:       true,
 					DeprecatedReason: "Use AccountCreatedEvent",
 					Pub:              true,
 					Sensitive:        true,
-					Members: []*skel.MemberSchema{{
+					Members: []*skeldesc.Member{{
 						Name:      "userId",
 						Sensitive: true,
-						Type:      &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt},
+						Type:      &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarInt},
 					}},
-				}},
+				}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			}},
 		},
 	}
@@ -947,10 +935,10 @@ func TestSkeletonServiceListTasksAndEvents(t *testing.T) {
 
 func TestSkeletonServiceListDataIncludesEnums(t *testing.T) {
 	service := &SkeletonApiServiceServerImpl{
-		SchemaRepo: &_SkeletonServiceSchemaRepo{
-			domainSchemas: []*skel.DomainSchema{{
-				Domain: "demo.user",
-				Data: []*skel.DataSchema{
+		DescriptorRepo: &_SkeletonServiceDescriptorRepo{
+			domainDescriptors: []*skeldesc.Domain{{
+				Name: "demo.user",
+				Data: []*skeldesc.Data{
 					{Name: "InternalData", SkelName: "vine.hub.InternalData"},
 					{
 						Name:             "Page",
@@ -960,25 +948,25 @@ func TestSkeletonServiceListDataIncludesEnums(t *testing.T) {
 						DeprecatedReason: "Use CursorPage",
 						Sensitive:        true,
 						TypeParameters:   []string{"T"},
-						Members: []*skel.MemberSchema{{
+						Members: []*skeldesc.Member{{
 							Name:      "items",
 							Sensitive: true,
-							Type:      &skel.TypeSchema{Kind: skel.TypeKindList, Element: &skel.TypeSchema{Kind: skel.TypeKindTypeParameter, Name: "T"}},
+							Type:      &skeldesc.Type{Kind: skeldesc.TypeKindList, Element: &skeldesc.Type{Kind: skeldesc.TypeKindTypeParameter, Name: "T"}},
 						}},
 					},
 				},
-				Enums: []*skel.EnumSchema{
+				Enums: []*skeldesc.Enum{
 					{Name: "InternalStatus", SkelName: "vine.hub.InternalStatus"},
 					{
 						Name:             "UserStatus",
 						SkelName:         "demo.user.UserStatus",
 						Deprecated:       true,
 						DeprecatedReason: "Use AccountStatus",
-						Items: []*skel.EnumItemSchema{
+						Items: []*skeldesc.EnumItem{
 							{Name: "ACTIVE", Description: "启用", Deprecated: true, DeprecatedReason: "Use ENABLED"},
 						},
 					},
-				},
+				}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			}},
 		},
 	}
@@ -1006,48 +994,48 @@ func TestSkeletonServiceListDataIncludesEnums(t *testing.T) {
 }
 
 func TestSkeletonServiceMergesItemVersionsOnServer(t *testing.T) {
-	mainSchema := &skel.DomainSchema{
-		Domain: "demo.user",
-		Hash:   "domain-main",
-		Configs: []*skel.ConfigSchema{
-			{Name: "StableConfig", SkelName: "demo.user.StableConfig", Hash: "stable-config"},
+	mainDescriptor := &skeldesc.Domain{
+		Name: "demo.user",
+		Hash: "domain-main",
+		Configs: []*skeldesc.Config{
+			{Name: "StableConfig", SkelName: "demo.user.StableConfig", Hash: "stable-config", Lifecycle: skeldesc.ConfigLifecycleEternal},
 		},
-		Services: []*skel.ServiceSchema{
-			{Name: "StableService", SkelName: "demo.user.StableService", Hash: "stable-service"},
-			{Name: "ChangedService", SkelName: "demo.user.ChangedService", Hash: "changed-service-main"},
+		Services: []*skeldesc.Service{
+			{Name: "StableService", SkelName: "demo.user.StableService", Hash: "stable-service", AuthMode: skeldesc.AuthModeRequired},
+			{Name: "ChangedService", SkelName: "demo.user.ChangedService", Hash: "changed-service-main", AuthMode: skeldesc.AuthModeRequired},
 		},
-		Data: []*skel.DataSchema{
+		Data: []*skeldesc.Data{
 			{Name: "StableData", SkelName: "demo.user.StableData", Hash: "stable-data"},
-		},
+		}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 	}
-	oldSchema := &skel.DomainSchema{
-		Domain: "demo.user",
-		Hash:   "domain-old",
-		Configs: []*skel.ConfigSchema{
-			{Name: "StableConfig", SkelName: "demo.user.StableConfig", Hash: "stable-config"},
+	oldDescriptor := &skeldesc.Domain{
+		Name: "demo.user",
+		Hash: "domain-old",
+		Configs: []*skeldesc.Config{
+			{Name: "StableConfig", SkelName: "demo.user.StableConfig", Hash: "stable-config", Lifecycle: skeldesc.ConfigLifecycleEternal},
 		},
-		Services: []*skel.ServiceSchema{
-			{Name: "StableService", SkelName: "demo.user.StableService", Hash: "stable-service"},
-			{Name: "ChangedService", SkelName: "demo.user.ChangedService", Hash: "changed-service-old"},
-			{Name: "RemovedService", SkelName: "demo.user.RemovedService", Hash: "removed-service-b"},
+		Services: []*skeldesc.Service{
+			{Name: "StableService", SkelName: "demo.user.StableService", Hash: "stable-service", AuthMode: skeldesc.AuthModeRequired},
+			{Name: "ChangedService", SkelName: "demo.user.ChangedService", Hash: "changed-service-old", AuthMode: skeldesc.AuthModeRequired},
+			{Name: "RemovedService", SkelName: "demo.user.RemovedService", Hash: "removed-service-b", AuthMode: skeldesc.AuthModeRequired},
 		},
-		Data: []*skel.DataSchema{
+		Data: []*skeldesc.Data{
 			{Name: "StableData", SkelName: "demo.user.StableData", Hash: "stable-data"},
-		},
+		}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 	}
-	crossSchema := &skel.DomainSchema{
-		Domain: "demo.user",
-		Hash:   "domain-cross",
-		Services: []*skel.ServiceSchema{
-			{Name: "RemovedService", SkelName: "demo.user.RemovedService", Hash: "removed-service-a"},
-		},
+	crossDescriptor := &skeldesc.Domain{
+		Name: "demo.user",
+		Hash: "domain-cross",
+		Services: []*skeldesc.Service{
+			{Name: "RemovedService", SkelName: "demo.user.RemovedService", Hash: "removed-service-a", AuthMode: skeldesc.AuthModeRequired},
+		}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 	}
 	service := &SkeletonApiServiceServerImpl{
-		SchemaRepo: &_SkeletonServiceSchemaRepo{
-			versions: []core.DomainSchemaVersion{
-				{Schema: oldSchema, MainSchemaHash: "domain-main", Main: false, MultiVersion: true},
-				{Schema: mainSchema, MainSchemaHash: "domain-main", Main: true, MultiVersion: true},
-				{Schema: crossSchema, MainSchemaHash: "domain-main", Main: false, MultiVersion: true},
+		DescriptorRepo: &_SkeletonServiceDescriptorRepo{
+			versions: []core.DomainDescriptorVersion{
+				{Descriptor: oldDescriptor, MainDescriptorHash: "domain-main", Main: false, MultiVersion: true},
+				{Descriptor: mainDescriptor, MainDescriptorHash: "domain-main", Main: true, MultiVersion: true},
+				{Descriptor: crossDescriptor, MainDescriptorHash: "domain-main", Main: false, MultiVersion: true},
 			},
 		},
 	}
@@ -1066,31 +1054,31 @@ func TestSkeletonServiceMergesItemVersionsOnServer(t *testing.T) {
 	assert.True(t, services[1].IsMultiVersion)
 	assert.Equal(t, "demo.user.RemovedService", services[2].SkelName)
 	assert.True(t, services[2].IsMain)
-	assert.Equal(t, "removed-service-a", services[2].SchemaHash)
-	assert.Equal(t, "removed-service-a", services[2].MainSchemaHash)
+	assert.Equal(t, "removed-service-a", services[2].DescriptorHash)
+	assert.Equal(t, "removed-service-a", services[2].MainDescriptorHash)
 	assert.True(t, services[2].IsMultiVersion)
 	assert.Equal(t, "demo.user.RemovedService", services[3].SkelName)
 	assert.False(t, services[3].IsMain)
-	assert.Equal(t, "removed-service-b", services[3].SchemaHash)
-	assert.Equal(t, "removed-service-a", services[3].MainSchemaHash)
+	assert.Equal(t, "removed-service-b", services[3].DescriptorHash)
+	assert.Equal(t, "removed-service-a", services[3].MainDescriptorHash)
 	assert.True(t, services[3].IsMultiVersion)
 	assert.Equal(t, "demo.user.StableService", services[4].SkelName)
 	assert.True(t, services[4].IsMain)
 	assert.False(t, services[4].IsMultiVersion)
 	require.Len(t, configs, 1)
-	assert.Equal(t, "stable-config", configs[0].SchemaHash)
+	assert.Equal(t, "stable-config", configs[0].DescriptorHash)
 	assert.False(t, configs[0].IsMultiVersion)
 	require.Len(t, data, 1)
-	assert.Equal(t, "stable-data", data[0].SchemaHash)
+	assert.Equal(t, "stable-data", data[0].DescriptorHash)
 	assert.False(t, data[0].IsMultiVersion)
 	require.Len(t, domains, 3)
-	assert.Equal(t, "domain-main", domains[0].SchemaHash)
-	assert.Equal(t, "domain-old", domains[1].SchemaHash)
+	assert.Equal(t, "domain-main", domains[0].DescriptorHash)
+	assert.Equal(t, "domain-old", domains[1].DescriptorHash)
 	assert.False(t, domains[1].IsMain)
 	require.Len(t, domains[1].Services, 3)
 	require.Len(t, domains[1].Configs, 1)
 	require.Len(t, domains[1].Data, 1)
-	assert.Equal(t, "domain-cross", domains[2].SchemaHash)
+	assert.Equal(t, "domain-cross", domains[2].DescriptorHash)
 	assert.False(t, domains[2].IsMain)
 }
 
@@ -1099,14 +1087,14 @@ func TestSkeletonServiceApiFlag(t *testing.T) {
 		name     string
 		api      bool
 		pub      bool
-		authMode skel.AuthMode
+		authMode skeldesc.AuthMode
 	}{
 		{name: "api", api: true},
 		{name: "backend", pub: true},
-		{name: "legacy", pub: true, authMode: skel.AuthModeAuth},
+		{name: "legacy", pub: true, authMode: skeldesc.AuthModeRequired},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			item := toServerSkeletonServiceItem(_SkeletonVersionFields{}, &skel.ServiceSchema{
+			item := toServerSkeletonServiceItem(_SkeletonVersionFields{}, &skeldesc.Service{
 				Api: tc.api, Pub: tc.pub, AuthMode: tc.authMode,
 			})
 			assert.Equal(t, tc.api, item.Api)
@@ -1115,23 +1103,23 @@ func TestSkeletonServiceApiFlag(t *testing.T) {
 	}
 }
 
-func (r *_SkeletonServiceSchemaRepo) GetWebSchema(skelName string) *skel.WebSchema {
-	for _, schema := range r.ListWebSchemas() {
-		if schema.SkelName == skelName {
-			return schema
+func (r *_SkeletonServiceDescriptorRepo) GetWebDescriptor(skelName string) *skeldesc.Web {
+	for _, descriptor := range r.ListWebDescriptors() {
+		if descriptor.SkelName == skelName {
+			return descriptor
 		}
 	}
 	return nil
 }
 
-func (r *_SkeletonServiceSchemaRepo) ListAppConfigTypeSchemas() ([]*skel.ConfigSchema, []*skel.EnumSchema, []*skel.DataSchema) {
-	return r.ListAppConfigSchemas(), r.ListEnumSchemas(), nil
+func (r *_SkeletonServiceDescriptorRepo) ListAppConfigTypeDescriptors() ([]*skeldesc.Config, []*skeldesc.Enum, []*skeldesc.Data) {
+	return r.ListAppConfigDescriptors(), r.ListEnumDescriptors(), nil
 }
 
 func TestSkeletonWebAuthModes(t *testing.T) {
-	for _, mode := range []skel.AuthMode{"", skel.AuthModeUnset, skel.AuthModeRequired, skel.AuthModeOptional, skel.AuthModeAnonymous, skel.AuthModeOff} {
+	for _, mode := range []skeldesc.AuthMode{"", skeldesc.AuthModeInherit, skeldesc.AuthModeRequired, skeldesc.AuthModeOptional, skeldesc.AuthModeAnonymous, skeldesc.AuthModeOff} {
 		t.Run(string(mode), func(t *testing.T) {
-			item := toServerSkeletonWebItem(_SkeletonVersionFields{}, new(skel.WebSchema{SkelName: "demo.Web", AuthMode: mode}))
+			item := toServerSkeletonWebItem(_SkeletonVersionFields{}, new(skeldesc.Web{SkelName: "demo.Web", AuthMode: mode}))
 			require.Equal(t, string(mode), item.AuthMode)
 		})
 	}

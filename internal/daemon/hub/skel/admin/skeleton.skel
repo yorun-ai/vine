@@ -6,10 +6,10 @@ data SkeletonActorItem {
     domain: string
 
     @desc("Skeleton item hash")
-    schemaHash: string
+    descriptorHash: string
 
     @desc("Primary skeleton item hash")
-    mainSchemaHash: string
+    mainDescriptorHash: string
 
     @desc("Whether there are multiple valid versions of the skeleton item")
     isMultiVersion: bool
@@ -17,8 +17,8 @@ data SkeletonActorItem {
     @desc("Whether it is the main version of the skeleton item")
     isMain: bool
 
-    @desc("Owning DomainSchema hash")
-    domainSchemaHash: string
+    @desc("Owning DomainDescriptor hash")
+    domainDescriptorHash: string
 
     @desc("Actor name")
     name: string
@@ -159,10 +159,10 @@ data SkeletonServiceItem {
     domain: string
 
     @desc("Skeleton item hash")
-    schemaHash: string
+    descriptorHash: string
 
     @desc("Primary skeleton item hash")
-    mainSchemaHash: string
+    mainDescriptorHash: string
 
     @desc("Whether there are multiple valid versions of the skeleton item")
     isMultiVersion: bool
@@ -170,8 +170,8 @@ data SkeletonServiceItem {
     @desc("Whether it is the main version of the skeleton item")
     isMain: bool
 
-    @desc("Owning DomainSchema hash")
-    domainSchemaHash: string
+    @desc("Owning DomainDescriptor hash")
+    domainDescriptorHash: string
 
     @desc("Service name")
     name: string
@@ -308,10 +308,10 @@ data SkeletonResourceItem {
     domain: string
 
     @desc("Skeleton item hash")
-    schemaHash: string
+    descriptorHash: string
 
     @desc("Primary skeleton item hash")
-    mainSchemaHash: string
+    mainDescriptorHash: string
 
     @desc("Whether there are multiple valid versions of the skeleton item")
     isMultiVersion: bool
@@ -319,8 +319,8 @@ data SkeletonResourceItem {
     @desc("Whether it is the main version of the skeleton item")
     isMain: bool
 
-    @desc("Owning DomainSchema hash")
-    domainSchemaHash: string
+    @desc("Owning DomainDescriptor hash")
+    domainDescriptorHash: string
 
     @desc("Resource name")
     name: string
@@ -353,10 +353,10 @@ data SkeletonWebItem {
     domain: string
 
     @desc("Skeleton item hash")
-    schemaHash: string
+    descriptorHash: string
 
     @desc("Primary skeleton item hash")
-    mainSchemaHash: string
+    mainDescriptorHash: string
 
     @desc("Whether there are multiple valid versions of the skeleton item")
     isMultiVersion: bool
@@ -364,8 +364,8 @@ data SkeletonWebItem {
     @desc("Whether it is the main version of the skeleton item")
     isMain: bool
 
-    @desc("Owning DomainSchema hash")
-    domainSchemaHash: string
+    @desc("Owning DomainDescriptor hash")
+    domainDescriptorHash: string
 
     @desc("Web page name")
     name: string
@@ -425,10 +425,10 @@ data SkeletonTask {
     domain: string
 
     @desc("Skeleton item hash")
-    schemaHash: string
+    descriptorHash: string
 
     @desc("Primary skeleton item hash")
-    mainSchemaHash: string
+    mainDescriptorHash: string
 
     @desc("Whether there are multiple valid versions of the skeleton item")
     isMultiVersion: bool
@@ -436,8 +436,8 @@ data SkeletonTask {
     @desc("Whether it is the main version of the skeleton item")
     isMain: bool
 
-    @desc("Owning DomainSchema hash")
-    domainSchemaHash: string
+    @desc("Owning DomainDescriptor hash")
+    domainDescriptorHash: string
 
     @desc("Task name")
     name: string
@@ -464,10 +464,10 @@ data SkeletonEventItem {
     domain: string
 
     @desc("Skeleton item hash")
-    schemaHash: string
+    descriptorHash: string
 
     @desc("Primary skeleton item hash")
-    mainSchemaHash: string
+    mainDescriptorHash: string
 
     @desc("Whether there are multiple valid versions of the skeleton item")
     isMultiVersion: bool
@@ -475,8 +475,8 @@ data SkeletonEventItem {
     @desc("Whether it is the main version of the skeleton item")
     isMain: bool
 
-    @desc("Owning DomainSchema hash")
-    domainSchemaHash: string
+    @desc("Owning DomainDescriptor hash")
+    domainDescriptorHash: string
 
     @desc("Event name")
     name: string
@@ -527,10 +527,10 @@ data SkeletonData {
     domain: string
 
     @desc("Skeleton item hash")
-    schemaHash: string
+    descriptorHash: string
 
     @desc("Primary skeleton item hash")
-    mainSchemaHash: string
+    mainDescriptorHash: string
 
     @desc("Whether there are multiple valid versions of the skeleton item")
     isMultiVersion: bool
@@ -538,8 +538,8 @@ data SkeletonData {
     @desc("Whether it is the main version of the skeleton item")
     isMain: bool
 
-    @desc("Owning DomainSchema hash")
-    domainSchemaHash: string
+    @desc("Owning DomainDescriptor hash")
+    domainDescriptorHash: string
 
     @desc("Data name")
     name: string
@@ -578,10 +578,10 @@ data SkeletonConfigItem {
     domain: string
 
     @desc("Skeleton item hash")
-    schemaHash: string
+    descriptorHash: string
 
     @desc("Primary skeleton item hash")
-    mainSchemaHash: string
+    mainDescriptorHash: string
 
     @desc("Whether there are multiple valid versions of the skeleton item")
     isMultiVersion: bool
@@ -589,8 +589,8 @@ data SkeletonConfigItem {
     @desc("Whether it is the main version of the skeleton item")
     isMain: bool
 
-    @desc("Owning DomainSchema hash")
-    domainSchemaHash: string
+    @desc("Owning DomainDescriptor hash")
+    domainDescriptorHash: string
 
     @desc("Config name")
     name: string
@@ -625,11 +625,11 @@ data SkeletonDomain {
     @desc("Domain name")
     domain: string
 
-    @desc("DomainSchema hash")
-    schemaHash: string
+    @desc("DomainDescriptor hash")
+    descriptorHash: string
 
-    @desc("Primary DomainSchema hash")
-    mainSchemaHash: string
+    @desc("Primary DomainDescriptor hash")
+    mainDescriptorHash: string
 
     @desc("Whether multiple active versions exist")
     isMultiVersion: bool

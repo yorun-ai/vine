@@ -9,7 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"go.yorun.ai/vine/internal/core/skel"
+	skeltag "go.yorun.ai/skel/tag"
+	skeltype "go.yorun.ai/skel/types"
 )
 
 const redactedValue = "<redacted>"
@@ -55,7 +56,7 @@ func (s *_ProjectionState) project(value reflect.Value, depth int) (any, error) 
 		value = value.Elem()
 	}
 	if !s.option.RevealSensitive && value.CanInterface() {
-		if _, sensitive := reflect.TypeAssert[skel.Sensitive](value); sensitive {
+		if _, sensitive := reflect.TypeAssert[skeltype.Sensitive](value); sensitive {
 			s.redacted = true
 			return redactedValue, nil
 		}
@@ -147,7 +148,7 @@ func typeHasSensitiveMetadata(valueType reflect.Type, visiting map[reflect.Type]
 	visiting[valueType] = struct{}{}
 	defer delete(visiting, valueType)
 
-	sensitiveType := reflect.TypeFor[skel.Sensitive]()
+	sensitiveType := reflect.TypeFor[skeltype.Sensitive]()
 	if valueType.Implements(sensitiveType) ||
 		(valueType.Kind() != reflect.Pointer && reflect.PointerTo(valueType).Implements(sensitiveType)) {
 		return true
@@ -155,7 +156,7 @@ func typeHasSensitiveMetadata(valueType reflect.Type, visiting map[reflect.Type]
 
 	switch valueType.Kind() {
 	case reflect.Interface:
-		// Dynamic values may implement skel.Sensitive at runtime. Composite
+		// Dynamic values may implement skeltype.Sensitive at runtime. Composite
 		// containers with interface members must be projected before honoring
 		// an outer custom marshaler.
 		return true
@@ -164,7 +165,7 @@ func typeHasSensitiveMetadata(valueType reflect.Type, visiting map[reflect.Type]
 			if field.PkgPath != "" || field.Tag.Get("json") == "-" {
 				continue
 			}
-			if skel.HasTagFlag(field.Tag, "sensitive") ||
+			if skeltag.IsSensitive(field.Tag) ||
 				typeHasSensitiveMetadata(field.Type, visiting) {
 				return true
 			}
@@ -189,7 +190,7 @@ func (s *_ProjectionState) projectStruct(value reflect.Value, depth int) (any, e
 		if skip {
 			continue
 		}
-		if !s.option.RevealSensitive && skel.HasTagFlag(fieldInfo.Tag, "sensitive") {
+		if !s.option.RevealSensitive && skeltag.IsSensitive(fieldInfo.Tag) {
 			s.redacted = true
 			result[name] = redactedValue
 			continue

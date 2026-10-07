@@ -76,7 +76,7 @@ export const en: Record<TranslationKey, string> = {
   'appConfig.deleteUnusedTitle': 'Delete Unused Config',
   'appConfig.deleteUnusedDescription':
     'After deletion, this value is removed from the Hub config center.',
-  'appConfig.mismatchTitle': 'Config Value Does Not Match Schema',
+  'appConfig.mismatchTitle': 'Config Value Does Not Match Definition',
   'appConfig.fieldsUnavailable':
     'Fields view is unavailable. Fix the JSON view before saving.',
   'appConfig.moreIssues': '{count} more issues',
@@ -430,7 +430,7 @@ export const en: Record<TranslationKey, string> = {
   'appConfig.valueMustBeObject': 'The configuration value must be a JSON object',
   'appConfig.missingField': '{field}: field is missing',
   'appConfig.typeMismatch': '{field}: expected {expected}, got {actual}',
-  'appConfig.unknownField': '{field}: field is not defined in the schema',
+  'appConfig.unknownField': '{field}: field is not defined in the configuration',
   'appConfig.saved': 'Configuration saved',
   'appConfig.skelNameRequired': 'Enter a skelName',
   'appConfig.skelNameInvalid':

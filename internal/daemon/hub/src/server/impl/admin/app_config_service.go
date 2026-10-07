@@ -60,25 +60,25 @@ func toServerAppConfigItem(item *core.AppConfig, fieldSources []skeled.FieldSour
 		Status:       string(item.Status),
 		Lifecycle:    item.Lifecycle,
 		Value:        item.Value,
-		Schema:       toServerAppConfigSchema(item.Definition),
+		Descriptor:   toServerAppConfigDescriptor(item.Definition),
 		FieldSources: fieldSources,
 	}
 }
 
 func toServerAppConfigListItem(item *core.AppConfig) skeled.AppConfigListItem {
-	schemaName := ""
-	schemaSkelName := ""
+	descriptorName := ""
+	descriptorSkelName := ""
 	if item.Definition != nil {
-		schemaName = item.Definition.Name
-		schemaSkelName = item.Definition.SkelName
+		descriptorName = item.Definition.Name
+		descriptorSkelName = item.Definition.SkelName
 	}
 	return skeled.AppConfigListItem{
-		Id:             item.Id,
-		Key:            item.Name,
-		Status:         string(item.Status),
-		Lifecycle:      item.Lifecycle,
-		SchemaName:     schemaName,
-		SchemaSkelName: schemaSkelName,
+		Id:                 item.Id,
+		Key:                item.Name,
+		Status:             string(item.Status),
+		Lifecycle:          item.Lifecycle,
+		DescriptorName:     descriptorName,
+		DescriptorSkelName: descriptorSkelName,
 	}
 }
 
@@ -111,11 +111,11 @@ func appConfigStatusOrder(status core.AppConfigStatus) int {
 	}
 }
 
-func toServerAppConfigSchema(definition *core.AppConfigDefinition) *skeled.AppConfigSchema {
+func toServerAppConfigDescriptor(definition *core.AppConfigDefinition) *skeled.AppConfigDescriptor {
 	if definition == nil {
 		return nil
 	}
-	return &skeled.AppConfigSchema{
+	return &skeled.AppConfigDescriptor{
 		SkelName:         definition.SkelName,
 		Name:             definition.Name,
 		Description:      definition.Description,
@@ -124,14 +124,14 @@ func toServerAppConfigSchema(definition *core.AppConfigDefinition) *skeled.AppCo
 		Lifecycle:        definition.Lifecycle,
 		Sensitive:        definition.Sensitive,
 		DataTypes:        toServerAppConfigDataTypes(definition.DataTypes),
-		Fields:           toServerAppConfigSchemaFields(definition.Fields),
+		Fields:           toServerAppConfigDescriptorFields(definition.Fields),
 	}
 }
 
-func toServerAppConfigSchemaFields(fields []core.AppConfigField) []skeled.AppConfigSchemaField {
-	ret := make([]skeled.AppConfigSchemaField, 0, len(fields))
+func toServerAppConfigDescriptorFields(fields []core.AppConfigField) []skeled.AppConfigDescriptorField {
+	ret := make([]skeled.AppConfigDescriptorField, 0, len(fields))
 	for _, field := range fields {
-		ret = append(ret, skeled.AppConfigSchemaField{
+		ret = append(ret, skeled.AppConfigDescriptorField{
 			Name:              field.Name,
 			ValueType:         toServerAppConfigType(field.ValueType),
 			Sensitive:         field.Sensitive,
@@ -140,18 +140,18 @@ func toServerAppConfigSchemaFields(fields []core.AppConfigField) []skeled.AppCon
 			Description:       field.Description,
 			Deprecated:        field.Deprecated,
 			DeprecatedReason:  field.DeprecatedReason,
-			EnumItems:         toServerAppConfigSchemaEnumItems(field.EnumItems),
-			MapKeyEnumItems:   toServerAppConfigSchemaEnumItems(field.MapKeyEnumItems),
-			MapValueEnumItems: toServerAppConfigSchemaEnumItems(field.MapValueEnumItems),
+			EnumItems:         toServerAppConfigDescriptorEnumItems(field.EnumItems),
+			MapKeyEnumItems:   toServerAppConfigDescriptorEnumItems(field.MapKeyEnumItems),
+			MapValueEnumItems: toServerAppConfigDescriptorEnumItems(field.MapValueEnumItems),
 		})
 	}
 	return ret
 }
 
-func toServerAppConfigSchemaEnumItems(items []core.AppConfigEnumItem) []skeled.AppConfigSchemaEnumItem {
-	ret := make([]skeled.AppConfigSchemaEnumItem, 0, len(items))
+func toServerAppConfigDescriptorEnumItems(items []core.AppConfigEnumItem) []skeled.AppConfigDescriptorEnumItem {
+	ret := make([]skeled.AppConfigDescriptorEnumItem, 0, len(items))
 	for _, item := range items {
-		ret = append(ret, skeled.AppConfigSchemaEnumItem{
+		ret = append(ret, skeled.AppConfigDescriptorEnumItem{
 			Name:             item.Name,
 			Description:      item.Description,
 			Deprecated:       item.Deprecated,
@@ -195,26 +195,38 @@ func isSkelIdentifierSegment(segment string) bool {
 	return segment != ""
 }
 
-func toServerAppConfigType(kind *core.AppConfigType) *skeled.AppConfigSchemaType {
+func toServerAppConfigType(kind *core.AppConfigType) *skeled.AppConfigDescriptorType {
 	if kind == nil {
 		return nil
 	}
-	args := make([]skeled.AppConfigSchemaType, 0, len(kind.TypeArguments))
+	args := make([]skeled.AppConfigDescriptorType, 0, len(kind.TypeArguments))
 	for _, arg := range kind.TypeArguments {
 		args = append(args, *toServerAppConfigType(arg))
 	}
-	return &skeled.AppConfigSchemaType{Kind: kind.Kind, Name: kind.Name, Nullable: kind.Nullable,
-		TypeArguments: args, Element: toServerAppConfigType(kind.Element), Key: toServerAppConfigType(kind.Key), Value: toServerAppConfigType(kind.Value),
-		EnumItems: toServerAppConfigSchemaEnumItems(kind.EnumItems)}
+	return &skeled.AppConfigDescriptorType{
+		Kind:          kind.Kind,
+		Name:          kind.Name,
+		Nullable:      kind.Nullable,
+		TypeArguments: args,
+		Element:       toServerAppConfigType(kind.Element),
+		Key:           toServerAppConfigType(kind.Key),
+		Value:         toServerAppConfigType(kind.Value),
+		EnumItems:     toServerAppConfigDescriptorEnumItems(kind.EnumItems),
+	}
 }
 
-func toServerAppConfigDataTypes(data []core.AppConfigData) []skeled.AppConfigSchemaData {
-	result := make([]skeled.AppConfigSchemaData, 0, len(data))
+func toServerAppConfigDataTypes(data []core.AppConfigData) []skeled.AppConfigDescriptorData {
+	result := make([]skeled.AppConfigDescriptorData, 0, len(data))
 	for _, declaration := range data {
-		result = append(result, skeled.AppConfigSchemaData{
-			Name: declaration.Name, SkelName: declaration.SkelName, Description: declaration.Description,
-			Deprecated: declaration.Deprecated, DeprecatedReason: declaration.DeprecatedReason,
-			Sensitive: declaration.Sensitive, TypeParameters: declaration.TypeParameters, Fields: toServerAppConfigSchemaFields(declaration.Fields),
+		result = append(result, skeled.AppConfigDescriptorData{
+			Name:             declaration.Name,
+			SkelName:         declaration.SkelName,
+			Description:      declaration.Description,
+			Deprecated:       declaration.Deprecated,
+			DeprecatedReason: declaration.DeprecatedReason,
+			Sensitive:        declaration.Sensitive,
+			TypeParameters:   declaration.TypeParameters,
+			Fields:           toServerAppConfigDescriptorFields(declaration.Fields),
 		})
 	}
 	return result

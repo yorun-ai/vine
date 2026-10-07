@@ -1,7 +1,7 @@
 package admin
 
 import (
-	"go.yorun.ai/vine/internal/core/skel"
+	skeltype "go.yorun.ai/skel/types"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 )
@@ -59,8 +59,8 @@ func toServerPortalCert(cert *core.PortalCert, fieldSources []skeled.FieldSource
 		Domains:              cert.Domains,
 		Certificate:          cert.Certificate,
 		PrivateKeyConfigured: cert.PrivateKey != "",
-		ValidFrom:            skel.NewTimestamp(cert.ValidFrom),
-		ValidTo:              skel.NewTimestamp(cert.ValidTo),
+		ValidFrom:            skeltype.NewTimestamp(cert.ValidFrom),
+		ValidTo:              skeltype.NewTimestamp(cert.ValidTo),
 		FieldSources:         fieldSources,
 	}
 }

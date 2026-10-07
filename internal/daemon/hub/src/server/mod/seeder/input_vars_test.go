@@ -18,8 +18,8 @@ portalRules:
   matchHost: '${text}'
   disabled: '${enabled:true}'
 `)
-	node, sources, err := resolveSeedInputWithSchemas(template,
-		[]byte("database: {host: file, port: 5432}"), nil, testVarsSchemas(),
+	node, sources, err := resolveSeedInputWithDescriptors(template,
+		[]byte("database: {host: file, port: 5432}"), nil, testVarsDescriptors(),
 		"database.host=first", "database.host=last", `origins=["a.com","b.com"]`,
 		"enabled=false", "text=https://a.com/?x=a=b,c")
 	require.NoError(t, err)
@@ -46,8 +46,8 @@ func TestSeedAssignmentsReplaceObjectsAndRemainLiteral(t *testing.T) {
 	require.Equal(t, "", value["empty"])
 	require.Nil(t, value["optional"])
 
-	node, _, err := resolveSeedInputWithSchemas([]byte("portalRules: [{name: app.rule, matchHost: '${text}'}]"), nil, nil,
-		testVarsSchemas(), "text=${other}")
+	node, _, err := resolveSeedInputWithDescriptors([]byte("portalRules: [{name: app.rule, matchHost: '${text}'}]"), nil, nil,
+		testVarsDescriptors(), "text=${other}")
 	require.NoError(t, err)
 	var payload _SettingsYAMLPayload
 	require.NoError(t, node.Decode(&payload))
@@ -67,13 +67,13 @@ func TestSeedAssignmentsRejectMalformedInputs(t *testing.T) {
 	}
 }
 
-func TestSeedAssignmentsUseExistingSchemaValidation(t *testing.T) {
+func TestSeedAssignmentsUseExistingDescriptorValidation(t *testing.T) {
 	template := []byte("appConfigs: [{name: app.DatabaseConfig, value: '${database}'}]")
-	_, _, err := resolveSeedInputWithSchemas(template, nil, nil, testVarsSchemas(),
+	_, _, err := resolveSeedInputWithDescriptors(template, nil, nil, testVarsDescriptors(),
 		"database={host: localhost, port: wrong}")
 	require.ErrorContains(t, err, "expected int")
-	_, _, err = resolveSeedInputWithSchemas(template, nil, nil, testVarsSchemas(), "database={host: localhost}")
+	_, _, err = resolveSeedInputWithDescriptors(template, nil, nil, testVarsDescriptors(), "database={host: localhost}")
 	require.ErrorContains(t, err, "port: required field is missing")
-	_, _, err = resolveSeedInputWithSchemas([]byte("{}"), nil, nil, testVarsSchemas(), "unused=wrong")
+	_, _, err = resolveSeedInputWithDescriptors([]byte("{}"), nil, nil, testVarsDescriptors(), "unused=wrong")
 	require.NoError(t, err)
 }

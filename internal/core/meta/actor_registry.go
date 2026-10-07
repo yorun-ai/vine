@@ -3,9 +3,8 @@ package meta
 import (
 	"fmt"
 	"reflect"
-	"slices"
-	"strings"
 
+	skeltag "go.yorun.ai/skel/tag"
 	"go.yorun.ai/vine/internal/util/reflectutil"
 	"go.yorun.ai/vine/util/vmap"
 	"go.yorun.ai/vine/util/vpre"
@@ -64,7 +63,9 @@ func (r *Registry) RegisterActor(spec ActorSpec) {
 		Hash:         spec.Hash,
 		InfoSkelName: spec.InfoSkelName,
 		InfoType:     spec.InfoType,
-		identifier:   func(any) string { return "" },
+		identifier: func(any) string {
+			return ""
+		},
 	}
 
 	if spec.InfoType != nil {
@@ -72,7 +73,7 @@ func (r *Registry) RegisterActor(spec ActorSpec) {
 			"actor %s info type %s must be pointer to struct", spec.SkelName, spec.InfoType)
 		for i := range spec.InfoType.Elem().NumField() {
 			field := spec.InfoType.Elem().Field(i)
-			if slices.Contains(strings.Split(field.Tag.Get("skel"), ","), "identifier") {
+			if skeltag.IsIdentifier(field.Tag) {
 				info.identifier = func(value any) string {
 					return fmt.Sprint(reflect.ValueOf(value).Elem().Field(i).Interface())
 				}

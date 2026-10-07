@@ -6,48 +6,48 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/core/skel"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/utilfortest/watchtest"
 	"go.yorun.ai/vine/util/vcode"
 )
 
-func TestManagerLoadsActorAndServiceSchemas(t *testing.T) {
-	manager := testManager(t, map[string]string{
-		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.SchemaActor{
+func TestAccessLoadsActorAndServiceDescriptors(t *testing.T) {
+	access := newTestAccess(t, map[string]string{
+		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.DescriptorActor{
 			SkelName: "demo.UserActor",
 			Hash:     "actor-main",
 		}),
-		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
 			SkelName: "demo.UserService",
 			Hash:     "service-main",
-			AuthMode: skel.AuthModeRequired,
+			AuthMode: skeldesc.AuthModeRequired,
 		}),
 	})
 
-	actor, ok := manager.actorSchema("demo.UserActor")
+	actor, ok := access.actorDescriptor("demo.UserActor")
 	require.True(t, ok)
 	assert.Equal(t, "actor-main", actor.Hash)
 
-	service, ok := manager.serviceSchema("demo.UserService")
+	service, ok := access.serviceDescriptor("demo.UserService")
 	require.True(t, ok)
 	assert.Equal(t, "service-main", service.Hash)
-	assert.Equal(t, skel.AuthModeRequired, service.AuthMode)
+	assert.Equal(t, skeldesc.AuthModeRequired, service.AuthMode)
 }
 
-func testManager(t *testing.T, valuesByKey map[string]string) *Access {
+func newTestAccess(t *testing.T, valuesByKey map[string]string) *Access {
 	watchClient := watchtest.New(t, valuesByKey)
-	epmgrManager := &epmgr.Manager{
+	endpointManager := &epmgr.Manager{
 		Context: context.Background(),
 		Watch:   watchClient,
 	}
-	epmgrManager.DIInit()
-	manager := &Access{
+	endpointManager.DIInit()
+	access := &Access{
 		Context: context.Background(),
 		Watch:   watchClient,
-		Epmgr:   epmgrManager,
+		Epmgr:   endpointManager,
 	}
-	manager.DIInit()
-	return manager
+	access.DIInit()
+	return access
 }

@@ -12,17 +12,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
-	"go.yorun.ai/vine/internal/core/skel"
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/util/vcode"
 )
 
 func TestParseCredentialFromAuthorizationMapsFieldsCaseInsensitively(t *testing.T) {
-	credential, ok := parseCredential(testCredentialSchema(), "Key1 token123, key2 dXNlcjpwd2Q=")
+	credential, ok := parseCredential(testCredentialDescriptor(), "Key1 token123, key2 dXNlcjpwd2Q=")
 
 	require.True(t, ok)
 	assert.Equal(t, map[string]string{
@@ -32,39 +32,39 @@ func TestParseCredentialFromAuthorizationMapsFieldsCaseInsensitively(t *testing.
 }
 
 func TestParseCredentialFromAuthorizationRejectsUnknownField(t *testing.T) {
-	_, ok := parseCredential(testCredentialSchema(), "Key1 token123, unknown value")
+	_, ok := parseCredential(testCredentialDescriptor(), "Key1 token123, unknown value")
 
 	assert.False(t, ok)
 }
 
 func TestParseCredentialFromAuthorizationRejectsMissingField(t *testing.T) {
-	_, ok := parseCredential(testCredentialSchema(), "Key1 token123")
+	_, ok := parseCredential(testCredentialDescriptor(), "Key1 token123")
 
 	assert.False(t, ok)
 }
 
 func TestParseCredentialFromAuthorizationRejectsBadItem(t *testing.T) {
-	_, ok := parseCredential(testCredentialSchema(), "Key1")
+	_, ok := parseCredential(testCredentialDescriptor(), "Key1")
 
 	assert.False(t, ok)
 }
 
-func TestParseCredentialRejectsEmptyCredentialSchema(t *testing.T) {
-	_, ok := parseCredential(&skel.DataSchema{}, "")
+func TestParseCredentialRejectsEmptyCredentialDescriptor(t *testing.T) {
+	_, ok := parseCredential(&skeldesc.Data{}, "")
 
 	assert.False(t, ok)
 }
 
 func TestParseCredentialRejectsAllEmptyCredentialValues(t *testing.T) {
-	_, ok := parseCredential(testCredentialSchema(), "key1 , key2 ")
+	_, ok := parseCredential(testCredentialDescriptor(), "key1 , key2 ")
 
 	assert.False(t, ok)
 }
 
-func testCredentialSchema() *skel.DataSchema {
-	return &skel.DataSchema{
+func testCredentialDescriptor() *skeldesc.Data {
+	return &skeldesc.Data{
 		SkelName: "demo.UserCredential",
-		Members: []*skel.MemberSchema{
+		Members: []*skeldesc.Member{
 			{Name: "key1"},
 			{Name: "key2"},
 		},
@@ -84,11 +84,11 @@ func TestAuthPropagatesIdentifierAndRejectsInvalidResponse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			endpoint := registerTestAuthService(t, http.StatusOK, "OK", tt.info)
 			values := testAuthValues(endpoint)
-			schema := testAuthActorSchema()
-			schema.IdentifierField = "userId"
-			schema.AuthInfo.Members = []*skel.MemberSchema{{Name: "userId", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarInt}}}
-			values[watched.FormatSchemaActorKey("demo.UserActor")] = vcode.MustMarshalJsonS(schema)
-			manager := testManager(t, values)
+			descriptor := testAuthActorDescriptor()
+			descriptor.Auth.IdentifierField = "userId"
+			descriptor.Auth.Info.Members = []*skeldesc.Member{{Name: "userId", Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarInt}}}
+			values[watched.FormatDescriptorActorKey("demo.UserActor")] = vcode.MustMarshalJsonS(descriptor)
+			access := newTestAccess(t, values)
 			for _, web := range []bool{false, true} {
 				recorder := httptest.NewRecorder()
 				request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
@@ -100,9 +100,9 @@ func TestAuthPropagatesIdentifierAndRejectsInvalidResponse(t *testing.T) {
 				header := rpchttp.HeaderRpcActor
 				if web {
 					header = webspec.HeaderWebActor
-					ok = manager.AuthWeb(&WebOperation{Auther: authOperationForTest(t, request, recorder), ActorVia: watched.PortalActorVia{ActorSkelName: "demo.UserActor"}})
+					ok = access.AuthWeb(&WebOperation{Auther: authOperationForTest(t, request, recorder), ActorVia: watched.PortalActorVia{ActorSkelName: "demo.UserActor"}})
 				} else {
-					ok = manager.AllowRpc(&RpcOperation{Auther: authOperationForTest(t, request, recorder), Server: testServerApp(), ActorVia: watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, ServiceName: "demo.UserService", MethodName: "Get"})
+					ok = access.AllowRpc(&RpcOperation{Auther: authOperationForTest(t, request, recorder), Server: testServerApp(), ActorVia: watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, ServiceName: "demo.UserService", MethodName: "Get"})
 				}
 				require.Equal(t, tt.valid, ok)
 				if !ok {
@@ -140,10 +140,10 @@ func TestParseCredentialOptionalFields(t *testing.T) {
 		{name: "missing credentials"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			schema := testCredentialSchema()
-			schema.Members[0].Type = &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}
-			schema.Members[1].Type = &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}
-			got, ok := parseCredential(schema, tt.header)
+			descriptor := testCredentialDescriptor()
+			descriptor.Members[0].Type = &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString}
+			descriptor.Members[1].Type = &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString, Nullable: true}
+			got, ok := parseCredential(descriptor, tt.header)
 			require.Equal(t, tt.valid, ok)
 			if ok {
 				assert.Equal(t, tt.want, got)
@@ -205,20 +205,20 @@ func TestOptionalCredentialAuthForwarding(t *testing.T) {
 						ingressinproc.Register(endpoint, handler)
 						t.Cleanup(func() { ingressinproc.Unregister(endpoint) })
 					}
-					schema := testAuthActorSchema()
-					schema.AuthCredential.Members[1].Type = &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString, Nullable: true}
+					descriptor := testAuthActorDescriptor()
+					descriptor.Auth.Credential.Members[1].Type = &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString, Nullable: true}
 					values := testAuthValues(endpoint)
-					values[watched.FormatSchemaActorKey("demo.UserActor")] = vcode.MustMarshalJsonS(schema)
-					manager := testManager(t, values)
+					values[watched.FormatDescriptorActorKey("demo.UserActor")] = vcode.MustMarshalJsonS(descriptor)
+					access := newTestAccess(t, values)
 					recorder := httptest.NewRecorder()
 					request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 					setTestRequestHeaders(t, request)
 					request.Header.Set("Authorization", tt.header)
 					var ok bool
 					if transport.web {
-						ok = manager.AuthWeb(&WebOperation{Auther: authOperationForTest(t, request, recorder), ActorVia: watched.PortalActorVia{ActorSkelName: "demo.UserActor"}})
+						ok = access.AuthWeb(&WebOperation{Auther: authOperationForTest(t, request, recorder), ActorVia: watched.PortalActorVia{ActorSkelName: "demo.UserActor"}})
 					} else {
-						ok = manager.AllowRpc(testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+						ok = access.AllowRpc(testRpcOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 					}
 					require.Equal(t, tt.valid, ok)
 					if tt.valid {
@@ -237,7 +237,7 @@ func TestPortalAuthModes(t *testing.T) {
 	registerTestActorInfo()
 	for _, protocol := range []string{"rpc", "web"} {
 		t.Run(protocol, func(t *testing.T) {
-			for _, mode := range []skel.AuthMode{skel.AuthModeRequired, skel.AuthModeOptional, skel.AuthModeAnonymous, skel.AuthModeOff, "unknown"} {
+			for _, mode := range []skeldesc.AuthMode{skeldesc.AuthModeRequired, skeldesc.AuthModeOptional, skeldesc.AuthModeAnonymous, skeldesc.AuthModeOff, "unknown"} {
 				t.Run(string(mode), func(t *testing.T) {
 					for _, credential := range []string{"missing", "valid", "malformed", "rejected", "unavailable"} {
 						t.Run(credential, func(t *testing.T) {
@@ -250,12 +250,12 @@ func TestPortalAuthModes(t *testing.T) {
 							}
 							endpoint := registerTestAuthService(t, http.StatusOK, code, `{"userId":"u1"}`)
 							values := testAuthValues(endpoint)
-							values[watched.FormatSchemaServiceKey("demo.UserService")] = vcode.MustMarshalJsonS(watched.SchemaService{
+							values[watched.FormatDescriptorServiceKey("demo.UserService")] = vcode.MustMarshalJsonS(watched.DescriptorService{
 								SkelName: "demo.UserService", Audiences: testUserActorAudiences(), AuthMode: mode,
-								Methods: []*skel.MethodSchema{{SkelName: "Get"}},
+								Methods: []*skeldesc.Method{{SkelName: "Get", Name: "Get", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: mode}},
 							})
-							values[watched.FormatSchemaWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: "demo.Web", AuthMode: mode})
-							manager := testManager(t, values)
+							values[watched.FormatDescriptorWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: mode})
+							access := newTestAccess(t, values)
 							request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 							authorization := "Key1 token123, key2 dXNlcjpwd2Q="
 							if credential == "missing" {
@@ -272,32 +272,32 @@ func TestPortalAuthModes(t *testing.T) {
 							var actor meta.Actor
 							if protocol == "rpc" {
 								setTestRequestHeaders(t, request)
-								operation := testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response)
-								ok = manager.AllowRpc(operation)
+								operation := testRpcOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response)
+								ok = access.AllowRpc(operation)
 								actor = operation.actor
 							} else {
 								setTestWebRequestHeaders(t, request)
-								operation := testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response)
+								operation := testWebOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response)
 								operation.WebName = "demo.Web"
-								ok = manager.AuthWeb(operation)
+								ok = access.AuthWeb(operation)
 								actor = operation.actor
 							}
 							canonical := mode
-							want := (protocol == "web" && canonical == skel.AuthModeOff) ||
-								(credential == "missing" && (canonical == skel.AuthModeOptional || canonical == skel.AuthModeAnonymous)) ||
-								(credential == "valid" && (canonical == skel.AuthModeRequired || canonical == skel.AuthModeOptional))
+							want := (protocol == "web" && canonical == skeldesc.AuthModeOff) ||
+								(credential == "missing" && (canonical == skeldesc.AuthModeOptional || canonical == skeldesc.AuthModeAnonymous)) ||
+								(credential == "valid" && (canonical == skeldesc.AuthModeRequired || canonical == skeldesc.AuthModeOptional))
 							require.Equal(t, want, ok, response.Body.String())
-							if canonical == skel.AuthModeAnonymous && credential == "valid" {
+							if canonical == skeldesc.AuthModeAnonymous && credential == "valid" {
 								require.Contains(t, response.Body.String(), "endpoint only allows anonymous access")
 								require.True(t, actor.IsAuthenticated(), "anonymous admission must follow successful authentication")
 							}
 							if ok {
-								require.Equal(t, canonical == skel.AuthModeOff || credential == "missing", actor.IsAnonymous())
+								require.Equal(t, canonical == skeldesc.AuthModeOff || credential == "missing", actor.IsAnonymous())
 							}
-							if ok && (protocol == "rpc" || canonical != skel.AuthModeOff) {
+							if ok && (protocol == "rpc" || canonical != skeldesc.AuthModeOff) {
 								require.NotContains(t, request.Header, headerAuthorization)
 							}
-							if protocol == "web" && (!ok || canonical == skel.AuthModeOff) {
+							if protocol == "web" && (!ok || canonical == skeldesc.AuthModeOff) {
 								require.Equal(t, authorization, request.Header.Get(headerAuthorization))
 							}
 						})
@@ -310,30 +310,30 @@ func TestPortalAuthModes(t *testing.T) {
 
 func TestPortalRejectsEmptyAndDuplicateAuthorization(t *testing.T) {
 	for _, protocol := range []string{"rpc", "web"} {
-		for _, mode := range []skel.AuthMode{skel.AuthModeRequired, skel.AuthModeOptional, skel.AuthModeAnonymous, skel.AuthModeUnset, skel.AuthModeOff} {
-			if protocol == "rpc" && mode == skel.AuthModeOff {
+		for _, mode := range []skeldesc.AuthMode{skeldesc.AuthModeRequired, skeldesc.AuthModeOptional, skeldesc.AuthModeAnonymous, skeldesc.AuthModeOff} {
+			if protocol == "rpc" && mode == skeldesc.AuthModeOff {
 				continue
 			}
 			for _, headers := range [][]string{{""}, {"", "Bearer invalid"}, {"Key1 token, key2 token", "Bearer invalid"}, {"Key1 token, key2 token", "Key1 token, key2 token"}} {
 				t.Run(fmt.Sprintf("%s/%s/%q", protocol, mode, headers), func(t *testing.T) {
 					values := testAuthValues("")
-					values[watched.FormatSchemaWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: "demo.Web", AuthMode: mode})
-					values[watched.FormatSchemaServiceKey("demo.UserService")] = vcode.MustMarshalJsonS(watched.SchemaService{SkelName: "demo.UserService", AuthMode: mode, Audiences: testUserActorAudiences(), Methods: []*skel.MethodSchema{{SkelName: "Get"}}})
-					manager := testManager(t, values)
+					values[watched.FormatDescriptorWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: mode})
+					values[watched.FormatDescriptorServiceKey("demo.UserService")] = vcode.MustMarshalJsonS(watched.DescriptorService{SkelName: "demo.UserService", AuthMode: mode, Audiences: testUserActorAudiences(), Methods: []*skeldesc.Method{{SkelName: "Get", Name: "Get", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: mode}}})
+					access := newTestAccess(t, values)
 					request := httptest.NewRequest(http.MethodPost, "http://demo.local", nil)
 					request.Header[headerAuthorization] = append([]string(nil), headers...)
 					response := httptest.NewRecorder()
 					var ok bool
 					if protocol == "web" {
 						setTestWebRequestHeaders(t, request)
-						operation := testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response)
+						operation := testWebOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response)
 						operation.WebName = "demo.Web"
-						ok = manager.AuthWeb(operation)
+						ok = access.AuthWeb(operation)
 					} else {
 						setTestRequestHeaders(t, request)
-						ok = manager.AllowRpc(testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response))
+						ok = access.AllowRpc(testRpcOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response))
 					}
-					if mode == skel.AuthModeOff {
+					if mode == skeldesc.AuthModeOff {
 						require.True(t, ok)
 						require.Equal(t, headers, request.Header.Values(headerAuthorization))
 					} else {

@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 
+	skeltype "go.yorun.ai/skel/types"
 	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/link/skeled"
@@ -18,7 +19,6 @@ import (
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	rpcinproc "go.yorun.ai/vine/internal/core/rpc/transport/inproc"
-	"go.yorun.ai/vine/internal/core/skel"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
@@ -55,7 +55,7 @@ type _H2CTestServer struct {
 type _TestRegistryServiceClient struct{}
 
 func (*_TestRegistryServiceClient) Register(hubskeled.AppRegistration, ...client.InvokeOption) {}
-func (*_TestRegistryServiceClient) Unregister(string, skel.UUID, ...client.InvokeOption)       {}
+func (*_TestRegistryServiceClient) Unregister(string, skeltype.UUID, ...client.InvokeOption)   {}
 func (*_TestRegistryServiceClient) Heartbeat(hubskeled.AppStatus, ...client.InvokeOption) bool {
 	return true
 }

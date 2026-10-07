@@ -19,142 +19,11 @@ Targets:
 EOF
 }
 
-rewrite_data_imports() {
-  local target_dir="$1"
-
-  if [[ ! -f "${target_dir}/data.go" ]]; then
-    return
-  fi
-
-  perl -0pi -e '
-    s#"go\.yorun\.ai/vine/core/skel"#"go.yorun.ai/vine/internal/core/skel"#g;
-    s#"go\.yorun\.ai/vine/core/rpc"#rpc "go.yorun.ai/vine/internal/core/rpc/spec"#g;
-  ' "${target_dir}/data.go"
-}
-
-rewrite_schema_imports() {
-  local target_dir="$1"
-
-  if [[ ! -f "${target_dir}/schema.go" ]]; then
-    return
-  fi
-
-  perl -0pi -e '
-    s#"go\.yorun\.ai/vine/core/skel"#"go.yorun.ai/vine/internal/core/skel"#g;
-  ' "${target_dir}/schema.go"
-}
-
-rewrite_actor_imports() {
-  local target_dir="$1"
-
-  if [[ ! -f "${target_dir}/actor.go" ]]; then
-    return
-  fi
-
-  perl -0pi -e '
-    s#"go\.yorun\.ai/vine/core/skel"#"go.yorun.ai/vine/internal/core/skel"#g;
-    s#"go\.yorun\.ai/vine/core/meta"#"go.yorun.ai/vine/internal/core/meta"#g;
-  ' "${target_dir}/actor.go"
-}
-
-rewrite_web_imports() {
-  local target_dir="$1"
-
-  if [[ ! -f "${target_dir}/web.go" ]]; then
-    return
-  fi
-
-  perl -0pi -e '
-    s#"go\.yorun\.ai/vine/core/web"#web "go.yorun.ai/vine/internal/core/web/spec"#g;
-  ' "${target_dir}/web.go"
-}
-
-rewrite_service_imports() {
-  local target_dir="$1"
-
-  if [[ ! -f "${target_dir}/service.go" ]]; then
-    return
-  fi
-
-  perl -0pi -e '
-    s#"go\.yorun\.ai/vine/core/ex"#"go.yorun.ai/vine/internal/core/ex"#g;
-    s#"go\.yorun\.ai/vine/core/skel"#"go.yorun.ai/vine/internal/core/skel"#g;
-    s#"go\.yorun\.ai/vine/core/rpc"#rpcclient "go.yorun.ai/vine/internal/core/rpc/client"\n\trpcspec "go.yorun.ai/vine/internal/core/rpc/spec"#g;
-    s/\brpc\.Register\(/rpcspec.Register(/g;
-    s/\brpc\.ServiceSpec\b/rpcspec.ServiceSpec/g;
-    s/\brpc\.ServiceSpecType/rpcspec.ServiceSpecType/g;
-    s/\brpc\.MethodSpec\b/rpcspec.MethodSpec/g;
-    s/\brpc\.InvokeOption\b/rpcclient.InvokeOption/g;
-    s/\brpc\.(CheckValueNotNil|JoinPath|JoinIndex|JoinMapKey)\b/rpcspec.$1/g;
-    s/\*rpc\.Client\b/*rpcclient.Client/g;
-    s/^\s*rpcclient "go\.yorun\.ai\/vine\/internal\/core\/rpc\/client"\n//m unless /\brpcclient\./;
-  ' "${target_dir}/service.go"
-}
-
-rewrite_resource_imports() {
-  local target_dir="$1"
-
-  if [[ ! -f "${target_dir}/resource.go" ]]; then
-    return
-  fi
-
-  perl -0pi -e '
-    s#"go\.yorun\.ai/vine/core/ex"#"go.yorun.ai/vine/internal/core/ex"#g;
-    s#"go\.yorun\.ai/vine/core/rpc"#rpc "go.yorun.ai/vine/internal/core/rpc/spec"#g;
-    s/\brpc\.Register\(/rpc.Register(/g;
-    s/\brpc\.ServiceSpec\b/rpc.ServiceSpec/g;
-    s/\brpc\.ServiceSpecType/rpc.ServiceSpecType/g;
-    s/\brpc\.MethodSpec\b/rpc.MethodSpec/g;
-    s/\brpc\.(CheckValueNotNil|JoinPath|JoinIndex|JoinMapKey)\b/rpc.$1/g;
-  ' "${target_dir}/resource.go"
-}
-
-rewrite_event_imports() {
-  local target_dir="$1"
-
-  if [[ ! -f "${target_dir}/event.go" ]]; then
-    return
-  fi
-
-  perl -0pi -e '
-    s#"go\.yorun\.ai/vine/core/ex"#"go.yorun.ai/vine/internal/core/ex"#g;
-    s#"go\.yorun\.ai/vine/core/skel"#"go.yorun.ai/vine/internal/core/skel"#g;
-    s#"go\.yorun\.ai/vine/core/event"#event "go.yorun.ai/vine/internal/core/event"\n\teventspec "go.yorun.ai/vine/internal/core/event/spec"#g;
-    s/\bevent\.Register\(/eventspec.Register(/g;
-    s/\bevent\.EventSpec\b/eventspec.EventSpec/g;
-    s/\bevent\.EventSpecType\b/eventspec.EventSpecType/g;
-  ' "${target_dir}/event.go"
-}
-
-rewrite_ts_service_comments() {
-  local target_dir="$1"
-
-  if [[ ! -f "${target_dir}/service.ts" ]]; then
-    return
-  fi
-
-  perl -0pi -e '
-    s/(\* \@param params - )[^\r\n]*/$1Request parameters, or null for methods without input/g;
-    s/(\* \@param options - )[^\r\n]*/$1Optional invocation options/g;
-  ' "${target_dir}/service.ts"
-}
-
-rewrite_common_go_imports() {
-  local target_dir="$1"
-
-  rewrite_data_imports "${target_dir}"
-  rewrite_schema_imports "${target_dir}"
-  rewrite_service_imports "${target_dir}"
-  rewrite_resource_imports "${target_dir}"
-  gofmt -w "${target_dir}"/*.go
-}
-
 generate_app_skel() {
   local skel_dir="${repo_dir}/internal/core/app/skel"
   local target_dir="${repo_dir}/internal/core/app/skeled"
 
   skelc --strict gen go --skel-in "${skel_dir}" --go-out "${target_dir}"
-  rewrite_common_go_imports "${target_dir}"
 }
 
 generate_hub_skel_domain() {
@@ -165,14 +34,7 @@ generate_hub_skel_domain() {
   skelc --strict gen go --skel-in "${skel_dir}" --go-out "${api_dir}"
   if [[ -n "${frontend_dir}" ]]; then
     skelc --strict gen ts --api --skel-in "${skel_dir}" --ts-out "${frontend_dir}"
-    rewrite_ts_service_comments "${frontend_dir}"
   fi
-
-  rewrite_common_go_imports "${api_dir}"
-  rewrite_actor_imports "${api_dir}"
-  rewrite_web_imports "${api_dir}"
-  rewrite_event_imports "${api_dir}"
-  gofmt -w "${api_dir}"/*.go
 }
 
 generate_hub_skel() {
@@ -190,7 +52,6 @@ generate_link_skel() {
   local target_dir="${repo_dir}/internal/core/link/skeled"
 
   skelc --strict gen go --skel-in "${skel_dir}" --go-out "${target_dir}"
-  rewrite_common_go_imports "${target_dir}"
 }
 
 run_target() {

@@ -25,7 +25,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo"
 	repodb "go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/schema"
+	repodescriptor "go.yorun.ai/vine/internal/daemon/hub/src/server/repo/descriptor"
 )
 
 type HubApp struct {
@@ -34,17 +34,17 @@ type HubApp struct {
 	Flag       *flag.Flag              `inject:""`
 	InprocFlag *app.InternalInprocFlag `inject:""`
 
-	// The schema repository is app state: every injector of this application
+	// The descriptor repository is app state: every injector of this application
 	// shares the same store, while separate applications stay independent.
-	schemaRepoOnce sync.Once
-	schemaRepo     *schema.SchemaRepo
+	descriptorRepoOnce sync.Once
+	descriptorRepo     *repodescriptor.DescriptorRepo
 }
 
-func (a *HubApp) schemaRepository() *schema.SchemaRepo {
-	a.schemaRepoOnce.Do(func() {
-		a.schemaRepo = new(schema.SchemaRepo)
+func (a *HubApp) descriptorRepository() *repodescriptor.DescriptorRepo {
+	a.descriptorRepoOnce.Do(func() {
+		a.descriptorRepo = new(repodescriptor.DescriptorRepo)
 	})
-	return a.schemaRepo
+	return a.descriptorRepo
 }
 
 func (a *HubApp) Name() string {
@@ -100,7 +100,7 @@ func (a *HubApp) BindCommon(b *di.Binder) {
 	b.Bind(di.T[core.PortalSiteRepo]()).ToImplementation(di.T[*repo.PortalSiteRepo]())
 	b.Bind(di.T[core.MetadataRepo]()).ToImplementation(di.T[*repo.MetadataRepo]())
 
-	b.Bind(di.T[core.SchemaRepo]()).ToInstance(a.schemaRepository())
+	b.Bind(di.T[core.DescriptorRepo]()).ToInstance(a.descriptorRepository())
 	b.Bind(di.T[core.RegistryRepo]()).ToImplementation(di.T[*repo.RegistryRepo]())
 	b.Bind(di.T[core.PortalInstanceRepo]()).ToImplementation(di.T[*repo.PortalInstanceRepo]())
 }

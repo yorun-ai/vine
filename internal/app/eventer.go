@@ -8,7 +8,6 @@ import (
 	"time"
 
 	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
-
 	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/internal/core/event"
 	eventspec "go.yorun.ai/vine/internal/core/event/spec"
@@ -152,11 +151,11 @@ func (e *_Eventer) eventListenerRegistrations() []linkskeled.EventListenerRegist
 	for _, listenerEntry := range e.listeners {
 		eventInfo := infoByType[listenerEntry.kind]
 		registrations = append(registrations, linkskeled.EventListenerRegistration{
-			EventSkelName: eventInfo.SkelName(),
-			SchemaHash:    eventInfo.Hash(),
-			TimeoutMs:     int(listenerEntry.options.Timeout / time.Millisecond),
-			Concurrency:   listenerEntry.options.Concurrency,
-			NoRetry:       listenerEntry.options.NoRetry,
+			EventSkelName:  eventInfo.SkelName(),
+			DescriptorHash: eventInfo.Hash(),
+			TimeoutMs:      int(listenerEntry.options.Timeout / time.Millisecond),
+			Concurrency:    listenerEntry.options.Concurrency,
+			NoRetry:        listenerEntry.options.NoRetry,
 		})
 	}
 	return registrations

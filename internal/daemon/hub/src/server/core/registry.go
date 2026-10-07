@@ -3,19 +3,18 @@ package core
 import (
 	"time"
 
-	"go.yorun.ai/vine/internal/core/skel"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/daemon"
-	"go.yorun.ai/vine/util/vcode"
 )
 
 type RegistryCore struct {
-	RegistryRepo RegistryRepo `inject:""`
-	SchemaRepo   SchemaRepo   `inject:""`
+	RegistryRepo   RegistryRepo   `inject:""`
+	DescriptorRepo DescriptorRepo `inject:""`
 }
 
 func (m *RegistryCore) Register(reg AppRegistration) {
-	// Reject invalid schemas before publishing application status or endpoints.
-	m.SchemaRepo.SaveDomainSchemasJSON(reg.Name, reg.InstanceId, reg.DomainSchemas)
+	// Reject invalid descriptors before publishing application status or endpoints.
+	m.DescriptorRepo.SaveDomainDescriptors(reg.Name, reg.InstanceId, reg.DomainDescriptors)
 	m.RegistryRepo.SaveAppStatus(&AppStatus{
 		Name:            reg.Name,
 		InstanceId:      reg.InstanceId,
@@ -27,8 +26,7 @@ func (m *RegistryCore) Register(reg AppRegistration) {
 		TaskRunners:     reg.TaskRunners,
 	})
 	apiServices := map[string]bool{}
-	for _, raw := range reg.DomainSchemas {
-		domain := vcode.MustUnmarshalJsonS[*skel.DomainSchema](string(raw))
+	for _, domain := range reg.DomainDescriptors {
 		for _, service := range domain.Services {
 			if service.Api {
 				apiServices[service.SkelName] = true
@@ -70,7 +68,7 @@ func (m *RegistryCore) Unregister(appName string, instanceId string) {
 	for _, webHandler := range status.WebHandlers {
 		m.RegistryRepo.RemoveWebRegistration(webHandler.WebSkelName, status.Name, instanceId)
 	}
-	m.SchemaRepo.ReleaseDomainSchemas(appName, instanceId)
+	m.DescriptorRepo.ReleaseDomainDescriptors(appName, instanceId)
 	m.RegistryRepo.RemoveAppStatus(appName, instanceId)
 }
 
@@ -96,9 +94,9 @@ func (m *RegistryCore) Heartbeat(heartbeat AppHeartbeat) bool {
 	return true
 }
 
-// RegisterSchemas registers schema ownership without creating application endpoints.
-func (m *RegistryCore) RegisterSchemas(ownerName string, ownerId string, schemas []*skel.DomainSchema) {
-	m.SchemaRepo.SaveDomainSchemas(ownerName, ownerId, schemas)
+// RegisterDescriptors registers descriptor ownership without creating application endpoints.
+func (m *RegistryCore) RegisterDescriptors(ownerName string, ownerId string, descriptors []*skeldesc.Domain) {
+	m.DescriptorRepo.SaveDomainDescriptors(ownerName, ownerId, descriptors)
 }
 
 // SweepExpiredLeases unregisters expired instances, ignoring renewed or missing statuses.

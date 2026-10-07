@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"gopkg.in/yaml.v3"
@@ -15,10 +16,10 @@ import (
 // resolveSeedInput preserves YAML types for whole-field references. Substituted
 // variable values are literal data, not recursively evaluated templates.
 func resolveSeedInput(template []byte, variables []byte, source []byte, overrides ...string) (*yaml.Node, core.FieldSources, error) {
-	return resolveSeedInputWithSchemas(template, variables, source, skel.RegisteredDomainSchemas(), overrides...)
+	return resolveSeedInputWithDescriptors(template, variables, source, skel.RegisteredDomainDescriptors(), overrides...)
 }
 
-func resolveSeedInputWithSchemas(template []byte, variables []byte, source []byte, domains []*skel.DomainSchema, overrides ...string) (*yaml.Node, core.FieldSources, error) {
+func resolveSeedInputWithDescriptors(template []byte, variables []byte, source []byte, domains []*skeldesc.Domain, overrides ...string) (*yaml.Node, core.FieldSources, error) {
 	resolver, err := newSeedResolver(template, variables, source, domains, overrides...)
 	if err != nil {
 		return nil, nil, err
@@ -37,11 +38,11 @@ type _SeedResolver struct {
 	root       *yaml.Node
 	originals  map[string]*yaml.Node
 	sources    core.FieldSources
-	schema     *_VarsSchema
+	descriptor *_VarsDescriptor
 	dictionary *yaml.Node
 }
 
-func newSeedResolver(template []byte, variables []byte, source []byte, domains []*skel.DomainSchema, overrides ...string) (*_SeedResolver, error) {
+func newSeedResolver(template []byte, variables []byte, source []byte, domains []*skeldesc.Domain, overrides ...string) (*_SeedResolver, error) {
 	root, err := parseSeedNode(template)
 	if err != nil {
 		return nil, err
@@ -72,7 +73,7 @@ func newSeedResolver(template []byte, variables []byte, source []byte, domains [
 		root:       root,
 		originals:  originals,
 		sources:    sources,
-		schema:     newVarsSchema(domains),
+		descriptor: newVarsDescriptor(domains),
 		dictionary: dictionary,
 	}, nil
 }
@@ -113,20 +114,20 @@ func (r *_SeedResolver) resolveString(node *yaml.Node, path string) error {
 	if len(matches) == 0 {
 		return nil
 	}
-	target, err := r.schema.targetType(r.root, path)
+	target, err := r.descriptor.targetType(r.root, path)
 	if err != nil {
 		return fmt.Errorf("seed application point %s: %w", location, err)
 	}
 	whole := len(matches) == 1 && matches[0][0] == node.Value
 	substitution := &_SeedSubstitution{
 		whole:        whole,
-		jsonConfig:   !whole && target != nil && target.Kind == skel.TypeKindConfig,
+		jsonConfig:   !whole && target != nil && target.Kind == skeldesc.TypeKindConfig,
 		location:     location,
 		target:       target,
 		replacements: map[string]*yaml.Node{},
 		dependencies: map[string]bool{},
 	}
-	if !substitution.whole && !substitution.jsonConfig && target != nil && (target.Kind != skel.TypeKindScalar || target.Scalar != skel.ScalarString) {
+	if !substitution.whole && !substitution.jsonConfig && target != nil && (target.Kind != skeldesc.TypeKindScalar || target.Scalar != skeldesc.ScalarString) {
 		return fmt.Errorf("string interpolation requires a string target at %s", location)
 	}
 	for _, match := range matches {
@@ -160,7 +161,7 @@ type _SeedSubstitution struct {
 	jsonConfig bool
 
 	location     string
-	target       *skel.TypeSchema
+	target       *skeldesc.Type
 	replacements map[string]*yaml.Node
 	bindings     []core.FieldSourceBinding
 	dependencies map[string]bool
@@ -175,7 +176,7 @@ func (r *_SeedResolver) substitute(substitution *_SeedSubstitution, match []stri
 			return fmt.Errorf("seed variable %s must use camelCase path segments at %s", name, location)
 		}
 	}
-	kind, err := r.schema.variableType(name)
+	kind, err := r.descriptor.variableType(name)
 	if err != nil {
 		return fmt.Errorf("seed variable %s at %s: %w", name, location, err)
 	}
@@ -189,7 +190,7 @@ func (r *_SeedResolver) substitute(substitution *_SeedSubstitution, match []stri
 		}
 		defaultType := kind
 		if !substitution.whole {
-			defaultType = seedScalar(skel.ScalarString)
+			defaultType = seedScalar(skeldesc.ScalarString)
 		} else if defaultType == nil {
 			defaultType = substitution.target
 		}
@@ -201,13 +202,13 @@ func (r *_SeedResolver) substitute(substitution *_SeedSubstitution, match []stri
 	// Interpolation defaults are already text; supplied variables still obey their
 	// declared type. Null is preserved until use.
 	if substitution.whole || found {
-		value, err = r.schema.validateValue(value, kind, name, false)
+		value, err = r.descriptor.validateValue(value, kind, name, false)
 		if err != nil {
 			return fmt.Errorf("seed variable at %s: %w", location, err)
 		}
 	}
 	if substitution.whole {
-		value, err = r.schema.validateValue(value, substitution.target, location, true)
+		value, err = r.descriptor.validateValue(value, substitution.target, location, true)
 		if err != nil {
 			return err
 		}
@@ -269,7 +270,7 @@ func (r *_SeedResolver) resolveConfigJSON(node *yaml.Node, substitution *_SeedSu
 	if err := yaml.Unmarshal([]byte(node.Value), &doc); err != nil {
 		return fmt.Errorf("invalid interpolated config JSON at %s", location)
 	}
-	checked, err := r.schema.validateValue(doc.Content[0], substitution.target, location, true)
+	checked, err := r.descriptor.validateValue(doc.Content[0], substitution.target, location, true)
 	if err != nil {
 		return err
 	}

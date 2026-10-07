@@ -42,7 +42,7 @@ func TestBindingsKeepOriginalNestedTemplateAndEachDefault(t *testing.T) {
       empty: "${empty:fallback}"
       nullable: "${nil:fallback}"
 `)
-	_, sources, err := resolveSeedInputWithSchemas(template, []byte("items: [1, false]\nzero: 0\nempty: ''\nnil: null\n"), nil, nil)
+	_, sources, err := resolveSeedInputWithDescriptors(template, []byte("items: [1, false]\nzero: 0\nempty: ''\nnil: null\n"), nil, nil)
 	require.NoError(t, err)
 	source := sources["/appConfigs/0/value/options"]
 	require.JSONEq(t, `{"first":"${missing:first}","second":"${missing:second}","actual":"${items}","zero":"${zero:42}","empty":"${empty:fallback}","nullable":"${nil:fallback}"}`, string(*source.Template))
@@ -59,13 +59,13 @@ func TestBindingsKeepOriginalNestedTemplateAndEachDefault(t *testing.T) {
 }
 
 func TestBindingsRecordAppliedWholeObjectAndLiteralInterpolation(t *testing.T) {
-	_, sources, err := resolveSeedInputWithSchemas([]byte(`appConfigs: [{name: app.DatabaseConfig, value: '${database}'}]`), []byte(`database: {host: '${literal}', port: 5432, extra: unused}`), nil, testVarsSchemas())
+	_, sources, err := resolveSeedInputWithDescriptors([]byte(`appConfigs: [{name: app.DatabaseConfig, value: '${database}'}]`), []byte(`database: {host: '${literal}', port: 5432, extra: unused}`), nil, testVarsDescriptors())
 	require.NoError(t, err)
 	source := sources["/appConfigs/0/value"]
 	require.Equal(t, `"${database}"`, string(*source.Template))
 	require.Len(t, source.Bindings, 1)
 	require.JSONEq(t, `{"host":"${literal}","port":5432}`, string(source.Bindings[0].Value))
-	_, sources, err = resolveSeedInputWithSchemas([]byte(`portalRules: [{name: app.rule, matchHost: 'https://${host}:${port:443}'}]`), []byte("host: example.com"), nil, nil)
+	_, sources, err = resolveSeedInputWithDescriptors([]byte(`portalRules: [{name: app.rule, matchHost: 'https://${host}:${port:443}'}]`), []byte("host: example.com"), nil, nil)
 	require.NoError(t, err)
 	source = sources["/portalRules/0/matchHost"]
 	require.Len(t, source.Bindings, 2)

@@ -6,7 +6,7 @@ import (
 )
 
 type _RegistryTestActorInfo struct {
-	Subject string `json:"subject"`
+	Subject string `json:"subject" skel:" sensitive , identifier "`
 }
 
 func TestRegisterActorStoresActorSpec(t *testing.T) {
@@ -27,6 +27,11 @@ func TestRegisterActorStoresActorSpec(t *testing.T) {
 		t.Fatalf("expected actor info")
 	}
 	assertActorInfo(t, got, spec)
+	if identifier := got.identifier(new(_RegistryTestActorInfo{
+		Subject: "subject-1",
+	})); identifier != "subject-1" {
+		t.Fatalf("unexpected actor identifier: %q", identifier)
+	}
 
 	infoByData, ok := registry.infoByInfoSkelName[spec.InfoSkelName]
 	if !ok {

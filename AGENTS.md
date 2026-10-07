@@ -32,8 +32,10 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
   `bash script/gen-skel.sh [app|hub|link]`.
 - Before regenerating, verify that `skelc version` satisfies the current minimum
   in `internal/core/skel/version.go`. Do not regenerate with an older compiler.
-- Keep the import rewriting and formatting performed by `script/gen-skel.sh`.
-  Generated runtime code intentionally imports internal packages.
+- Keep generated files as emitted by `skelc`. `script/gen-skel.sh` only selects
+  targets and invokes the generator; generated code uses public runtime APIs.
+- Import `go.yorun.ai/skel/types` as `skeltype` directly in runtime code; keep
+  scalar compatibility aliases confined to `core/skel/deprecated.go`.
 - Dashboard assets under
   `internal/daemon/hub/src/server/mod/admin/dashboard/dist/` are generated and
   committed with the source. Refresh them with
@@ -89,13 +91,14 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
 ## Protocol and Persistence Boundaries
 
 - Treat Rpc/Web headers, Redis key formats, serialized JSON/CBOR fields, Skel
-  schemas, and generated contracts as cross-component protocol boundaries.
+  descriptors, and generated contracts as cross-component protocol boundaries.
 - When changing these formats, update affected producers, consumers and tests;
   correct existing documentation and add migration guidance when needed.
 - Use Go's `encoding/json/v2` and `encoding/json/jsontext` APIs for Vine JSON;
   do not reintroduce the v1 `encoding/json` implementation.
-- Encode Rpc, Event, and Task Skel payloads with the shared `vcode` encoder.
-  Supported schemas use empty arrays/maps for nil collections.
+- Encode and decode Rpc payloads and envelopes with the shared
+  `go.yorun.ai/vrpc/transport/http` wire codec. Use `vcode` for Event and Task
+  Skel payloads. Supported payloads use empty arrays/maps for nil collections.
 - The runtime isolates in-process Rpc arguments and results by cloning them from
   the declared Go types with `util/vbean`. Skel contracts carry only generated
   scalars, lists, maps, nullable values and beans, so reflection covers them.

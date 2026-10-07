@@ -9,8 +9,8 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/infra/rdb"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
@@ -117,9 +117,9 @@ func newTestAppConfigRepo(t *testing.T) (*gorm.DB, *AppConfigRepo, *watchserver.
 		Dao: &model.AppConfigDao{
 			Dao: rdb.NewDao[*model.AppConfig](db),
 		},
-		SchemaRepo: new(_PortalSiteSchemaRepo),
-		Syncer:     testSyncer(watchServer),
-		Access:     new(configaccess.Access),
+		DescriptorRepo: new(_PortalSiteDescriptorRepo),
+		Syncer:         testSyncer(watchServer),
+		Access:         new(configaccess.Access),
 	}
 	repo.Dao.EnsureSchema()
 	require.NoError(t, db.Exec("DELETE FROM app_config").Error)
@@ -158,28 +158,28 @@ func TestAppConfigRepoRejectsReadOnlyWrites(t *testing.T) {
 
 func TestAppConfigRepoSlotsAssembleDeclaredAndStoredConfigs(t *testing.T) {
 	_, repo, _ := newTestAppConfigRepo(t)
-	schemas := repo.SchemaRepo.(*_PortalSiteSchemaRepo)
-	schemas.enumSchemas = []*skel.EnumSchema{{
+	descriptors := repo.DescriptorRepo.(*_PortalSiteDescriptorRepo)
+	descriptors.enumDescriptors = []*skeldesc.Enum{{
 		SkelName: "demo.Mode",
-		Items:    []*skel.EnumItemSchema{{Name: "FAST", Description: "Fast"}, {Name: "SAFE"}},
+		Items:    []*skeldesc.EnumItem{{Name: "FAST", Description: "Fast"}, {Name: "SAFE"}},
 	}}
-	schemas.configSchemas = []*skel.ConfigSchema{
+	descriptors.configDescriptors = []*skeldesc.Config{
 		{
 			Name:      "FeatureConfig",
 			SkelName:  "demo.FeatureConfig",
-			Lifecycle: "ETERNAL",
-			Members: []*skel.MemberSchema{
-				{Name: "enabled", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
-				{Name: "mode", Description: "Run mode", Type: &skel.TypeSchema{Kind: skel.TypeKindEnum, SkelName: "demo.Mode"}},
+			Lifecycle: skeldesc.ConfigLifecycleEternal,
+			Members: []*skeldesc.Member{
+				{Name: "enabled", Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBoolean}},
+				{Name: "mode", Description: "Run mode", Type: &skeldesc.Type{Kind: skeldesc.TypeKindEnum, SkelName: "demo.Mode"}},
 			},
 		},
-		{Name: "OtherConfig", SkelName: "demo.OtherConfig", Lifecycle: "INSTANT"},
+		{Name: "OtherConfig", SkelName: "demo.OtherConfig", Lifecycle: skeldesc.ConfigLifecycleInstant},
 		{
 			Name:     "MismatchedConfig",
 			SkelName: "demo.MismatchedConfig",
-			Members: []*skel.MemberSchema{
-				{Name: "enabled", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
-			},
+			Members: []*skeldesc.Member{
+				{Name: "enabled", Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBoolean}},
+			}, Lifecycle: skeldesc.ConfigLifecycleEternal,
 		},
 	}
 
@@ -197,7 +197,7 @@ func TestAppConfigRepoSlotsAssembleDeclaredAndStoredConfigs(t *testing.T) {
 	require.NotNil(t, configured)
 	assert.True(t, configured.Configured)
 	assert.Equal(t, core.AppConfigStatusNormal, configured.Status)
-	assert.Equal(t, "ETERNAL", configured.Lifecycle)
+	assert.Equal(t, "eternal", configured.Lifecycle)
 	require.NotNil(t, configured.Definition)
 	require.Len(t, configured.Definition.Fields, 2)
 	assert.Equal(t, "Run mode", configured.Definition.Fields[1].Description)
@@ -211,7 +211,7 @@ func TestAppConfigRepoSlotsAssembleDeclaredAndStoredConfigs(t *testing.T) {
 	assert.False(t, declared.Configured)
 	assert.Zero(t, declared.Id)
 	assert.Equal(t, core.AppConfigStatusUnconfigured, declared.Status)
-	assert.Equal(t, "INSTANT", declared.Lifecycle)
+	assert.Equal(t, "instant", declared.Lifecycle)
 	assert.Empty(t, declared.FieldSources)
 
 	// A stored value that does not match its declaration is reported as such.
@@ -244,13 +244,13 @@ func TestAppConfigRepoSlotsAssembleDeclaredAndStoredConfigs(t *testing.T) {
 
 func TestAppConfigRepoStructuredValuesStayWhole(t *testing.T) {
 	_, repo, watchServer := newTestAppConfigRepo(t)
-	schemas := repo.SchemaRepo.(*_PortalSiteSchemaRepo)
-	schemas.dataSchemas = []*skel.DataSchema{{SkelName: "demo.Credentials", Sensitive: true, Members: []*skel.MemberSchema{
-		{Name: "certificate", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBinary}},
-		{Name: "label", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarString}},
+	descriptors := repo.DescriptorRepo.(*_PortalSiteDescriptorRepo)
+	descriptors.dataDescriptors = []*skeldesc.Data{{SkelName: "demo.Credentials", Sensitive: true, Members: []*skeldesc.Member{
+		{Name: "certificate", Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBinary}},
+		{Name: "label", Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString}},
 	}}}
-	schemas.configSchemas = []*skel.ConfigSchema{{SkelName: "demo.AppConfig", Lifecycle: "INSTANT", Members: []*skel.MemberSchema{
-		{Name: "credentials", Type: &skel.TypeSchema{Kind: skel.TypeKindData, SkelName: "demo.Credentials"}},
+	descriptors.configDescriptors = []*skeldesc.Config{{SkelName: "demo.AppConfig", Lifecycle: skeldesc.ConfigLifecycleInstant, Members: []*skeldesc.Member{
+		{Name: "credentials", Type: &skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: "demo.Credentials"}},
 	}}}
 	value := `{"credentials":{"certificate":"aG\r\nVsbG8=","label":"  hello  "}}`
 	item := testAppConfig("demo.AppConfig", value, 1)

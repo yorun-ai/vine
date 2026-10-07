@@ -3,11 +3,11 @@ package task
 import (
 	"uuid"
 
+	skeltype "go.yorun.ai/skel/types"
 	linkskeled "go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
-	"go.yorun.ai/vine/internal/core/skel"
 	tasklog "go.yorun.ai/vine/internal/core/task/log"
 	"go.yorun.ai/vine/internal/core/task/spec"
 	"go.yorun.ai/vine/util/vcode"
@@ -81,7 +81,7 @@ func (l *Launcher) buildLaunch(triggerInfo spec.TriggerInfo, arguments any, opti
 			TraceSpan:     l.context.Trace().Span(),
 			AppName:       l.clientApp.Name(),
 			AppVersion:    l.clientApp.Version(),
-			AppInstanceId: skel.NewUUID(uuid.MustParse(l.clientApp.InstanceId())),
+			AppInstanceId: skeltype.NewUUID(uuid.MustParse(l.clientApp.InstanceId())),
 		},
 		TaskSkelName:    triggerInfo.Task().SkelName(),
 		TriggerSkelName: triggerInfo.SkelName(),

@@ -47,7 +47,7 @@ func TestLinkerReturnsLinkInfoFromEndpoint(t *testing.T) {
 	}
 
 	assert.Equal(t, DefaultEndpoint+"/rpc/proxy/out", client.RpcProxyEndpoint())
-	assert.False(t, client.SkipDomainSchemas())
+	assert.False(t, client.SkipDomainDescriptors())
 }
 
 func TestLinkerBuildsRpcProxyEndpointFromInprocEndpointAndPath(t *testing.T) {
@@ -85,7 +85,7 @@ func TestInternalLinkerReturnsEmptyEndpointsWithoutRedirect(t *testing.T) {
 	})
 
 	assert.Equal(t, "", client.RpcProxyEndpoint())
-	assert.False(t, client.SkipDomainSchemas())
+	assert.False(t, client.SkipDomainDescriptors())
 }
 
 func TestInternalLinkerReturnsHubRPCInvokeEndpointWhenRedirectSet(t *testing.T) {
@@ -96,17 +96,17 @@ func TestInternalLinkerReturnsHubRPCInvokeEndpointWhenRedirectSet(t *testing.T) 
 	}, "http://demo.local:7071")
 
 	assert.Equal(t, "http://demo.local:7071/rpc/invoke", client.RpcProxyEndpoint())
-	assert.False(t, client.SkipDomainSchemas())
+	assert.False(t, client.SkipDomainDescriptors())
 }
 
-func TestLinkerSkipDomainSchemas(t *testing.T) {
+func TestLinkerSkipDomainDescriptors(t *testing.T) {
 	client := &_Linker{
 		app:              testRuntimeApp{name: "test.app", version: "1.2.3", instanceID: "00000000-0000-0000-0000-000000000123"},
 		linkBaseEndpoint: DefaultEndpoint,
-		bootInfo:         linkskeled.BootInfo{SkipDomainSchemas: true},
+		bootInfo:         linkskeled.BootInfo{SkipDomainDescriptors: true},
 	}
 
-	assert.True(t, client.SkipDomainSchemas())
+	assert.True(t, client.SkipDomainDescriptors())
 }
 
 func TestInternalLinkerCheckLoopbackReturnsFalseForNonLocalEndpoint(t *testing.T) {

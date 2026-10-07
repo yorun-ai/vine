@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	appcore "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/logger"
 	coreskel "go.yorun.ai/vine/internal/core/skel"
@@ -17,7 +18,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	hubflag "go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/schema"
+	repodescriptor "go.yorun.ai/vine/internal/daemon/hub/src/server/repo/descriptor"
 	"go.yorun.ai/vine/util/vcode"
 )
 
@@ -251,7 +252,7 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 	watchServer := watchserver.NewServerForTest()
 	defer watchServer.AfterAppStop()
 	db := _WatchTestStore{watchServer}
-	schemaRepo := new(schema.SchemaRepo)
+	descriptorRepo := new(repodescriptor.DescriptorRepo)
 	entryRepo := &testPortalEntryRepo{}
 	ruleRepo := &testPortalRuleRepo{
 		rules: []*core.PortalRule{
@@ -289,11 +290,11 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 				PortalSiteRepo:  siteRepo,
 			},
 		},
-		SchemaRepo:   schemaRepo,
-		RegistryCore: &core.RegistryCore{SchemaRepo: schemaRepo},
-		InprocFlag:   &appcore.InternalInprocFlag{},
-		Flag:         &hubflag.Flag{AdminListen: "127.0.0.1:7099"},
-		Logger:       logger.New("vine:test:initializer"),
+		DescriptorRepo: descriptorRepo,
+		RegistryCore:   &core.RegistryCore{DescriptorRepo: descriptorRepo},
+		InprocFlag:     &appcore.InternalInprocFlag{},
+		Flag:           &hubflag.Flag{AdminListen: "127.0.0.1:7099"},
+		Logger:         logger.New("vine:test:initializer"),
 	}
 
 	p = withTestAudit(p)
@@ -329,18 +330,18 @@ func marshalTestConfigValue(name string, value string) string {
 		Value: []byte(value),
 	})
 }
-func TestInitializerDIInitLoadsRegisteredSchemasIntoMemoryRepoInInprocMode(t *testing.T) {
+func TestInitializerDIInitLoadsRegisteredDescriptorsIntoMemoryRepoInInprocMode(t *testing.T) {
 	watchServer := watchserver.NewServerForTest()
 	defer watchServer.AfterAppStop()
 
-	domainSchema := &coreskel.DomainSchema{
-		Domain:    "test.initializer.schema",
-		Hash:      "test-initializer-schema-hash",
-		Generated: &coreskel.GeneratedInfo{CompilerVersion: "v99.0.0"},
+	domainDescriptor := &skeldesc.Domain{
+		Name:      "test.initializer.descriptor",
+		Hash:      "test-initializer-descriptor-hash",
+		Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 	}
-	coreskel.RegisterDomainSchema(domainSchema)
+	coreskel.RegisterDomainDescriptor(domainDescriptor)
 
-	schemaRepo := new(schema.SchemaRepo)
+	descriptorRepo := new(repodescriptor.DescriptorRepo)
 	p := &Initializer{
 		Syncer:          testSyncer(watchServer),
 		AppConfigRepo:   &testAppConfigRepo{},
@@ -348,8 +349,8 @@ func TestInitializerDIInitLoadsRegisteredSchemasIntoMemoryRepoInInprocMode(t *te
 		PortalRuleRepo:  &testPortalRuleRepo{},
 		PortalCertRepo:  &testPortalCertRepo{},
 		PortalSiteRepo:  &testPortalSiteRepo{},
-		SchemaRepo:      schemaRepo,
-		RegistryCore:    &core.RegistryCore{SchemaRepo: schemaRepo},
+		DescriptorRepo:  descriptorRepo,
+		RegistryCore:    &core.RegistryCore{DescriptorRepo: descriptorRepo},
 		InprocFlag:      &appcore.InternalInprocFlag{Enabled: true},
 		Flag:            &hubflag.Flag{AdminListen: "127.0.0.1:7099"},
 	}
@@ -357,27 +358,27 @@ func TestInitializerDIInitLoadsRegisteredSchemasIntoMemoryRepoInInprocMode(t *te
 	p = withTestAudit(p)
 	p.DIInit()
 
-	got, ok := findDomainSchemaByHash(schemaRepo.ListDomainSchemaViews(), domainSchema.Hash)
+	got, ok := findDomainDescriptorByHash(descriptorRepo.ListDomainDescriptorViews(), domainDescriptor.Hash)
 	assert.True(t, ok)
-	assert.Same(t, domainSchema, got)
+	assert.Same(t, domainDescriptor, got)
 }
 
-func TestInitializerDIInitLoadsHubSchemasIntoMemoryRepoInNormalMode(t *testing.T) {
+func TestInitializerDIInitLoadsHubDescriptorsIntoMemoryRepoInNormalMode(t *testing.T) {
 	watchServer := watchserver.NewServerForTest()
 	defer watchServer.AfterAppStop()
 
-	hubSchemas := make(map[string]*coreskel.DomainSchema)
-	for _, schema := range coreskel.RegisteredDomainSchemas() {
-		switch schema.Domain {
+	hubDescriptors := make(map[string]*skeldesc.Domain)
+	for _, descriptor := range coreskel.RegisteredDomainDescriptors() {
+		switch descriptor.Name {
 		case "vine.hub.control", "vine.hub.admin":
-			hubSchemas[schema.Domain] = schema
+			hubDescriptors[descriptor.Name] = descriptor
 		}
 	}
-	if len(hubSchemas) != 2 {
-		t.Fatalf("expected both Hub domain schemas, got %v", hubSchemas)
+	if len(hubDescriptors) != 2 {
+		t.Fatalf("expected both Hub domain descriptors, got %v", hubDescriptors)
 	}
 
-	schemaRepo := new(schema.SchemaRepo)
+	descriptorRepo := new(repodescriptor.DescriptorRepo)
 	p := &Initializer{
 		Syncer:          testSyncer(watchServer),
 		AppConfigRepo:   &testAppConfigRepo{},
@@ -385,8 +386,8 @@ func TestInitializerDIInitLoadsHubSchemasIntoMemoryRepoInNormalMode(t *testing.T
 		PortalRuleRepo:  &testPortalRuleRepo{},
 		PortalCertRepo:  &testPortalCertRepo{},
 		PortalSiteRepo:  &testPortalSiteRepo{},
-		SchemaRepo:      schemaRepo,
-		RegistryCore:    &core.RegistryCore{SchemaRepo: schemaRepo},
+		DescriptorRepo:  descriptorRepo,
+		RegistryCore:    &core.RegistryCore{DescriptorRepo: descriptorRepo},
 		InprocFlag:      &appcore.InternalInprocFlag{},
 		Flag:            &hubflag.Flag{AdminListen: "127.0.0.1:7099"},
 	}
@@ -394,17 +395,17 @@ func TestInitializerDIInitLoadsHubSchemasIntoMemoryRepoInNormalMode(t *testing.T
 	p = withTestAudit(p)
 	p.DIInit()
 
-	views := schemaRepo.ListDomainSchemaViews()
-	for domain, hubSchema := range hubSchemas {
-		got, ok := findDomainSchemaByHash(views, hubSchema.Hash)
+	views := descriptorRepo.ListDomainDescriptorViews()
+	for domain, hubDescriptor := range hubDescriptors {
+		got, ok := findDomainDescriptorByHash(views, hubDescriptor.Hash)
 		assert.True(t, ok, domain)
-		assert.Same(t, hubSchema, got, domain)
+		assert.Same(t, hubDescriptor, got, domain)
 	}
 }
 
-// Hub applies a seed before the applications register their schemas, so whether
+// Hub applies a seed before the applications register their descriptors, so whether
 // two rules match one request depends on the Web mount paths Hub reads only
-// after those schemas arrive. A read-only Hub has no Dashboard to resolve the
+// after those descriptors arrive. A read-only Hub has no Dashboard to resolve the
 // conflict from, so it refuses to serve the configuration; a stored one keeps
 // running and reports what the operator has to fix.
 func TestInitializerReportsRulesThatShareOneRequest(t *testing.T) {
@@ -431,8 +432,8 @@ func TestInitializerReportsRulesThatShareOneRequest(t *testing.T) {
 				PortalRuleRepo:  ruleRepo,
 				PortalCertRepo:  &testPortalCertRepo{},
 				PortalSiteRepo:  siteRepo,
-				SchemaRepo:      new(schema.SchemaRepo),
-				RegistryCore:    &core.RegistryCore{SchemaRepo: new(schema.SchemaRepo)},
+				DescriptorRepo:  new(repodescriptor.DescriptorRepo),
+				RegistryCore:    &core.RegistryCore{DescriptorRepo: new(repodescriptor.DescriptorRepo)},
 				InprocFlag:      &appcore.InternalInprocFlag{},
 				Flag:            &hubflag.Flag{NoDB: noDB, AdminListen: "127.0.0.1:7099"},
 			})
@@ -448,10 +449,10 @@ func TestInitializerReportsRulesThatShareOneRequest(t *testing.T) {
 	}
 }
 
-func findDomainSchemaByHash(views []core.DomainSchemaView, hash string) (*coreskel.DomainSchema, bool) {
+func findDomainDescriptorByHash(views []core.DomainDescriptorView, hash string) (*skeldesc.Domain, bool) {
 	for _, view := range views {
-		if view.DomainVersion.Schema.Hash == hash {
-			return view.DomainVersion.Schema, true
+		if view.DomainVersion.Descriptor.Hash == hash {
+			return view.DomainVersion.Descriptor, true
 		}
 	}
 	return nil, false

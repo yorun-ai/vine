@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/core/redact"
-	"go.yorun.ai/vine/internal/core/skel"
 )
 
 type readerTestConfig struct {
@@ -68,23 +68,23 @@ func TestReaderPreservesSensitiveStringValues(t *testing.T) {
 
 type readerValueConfig struct {
 	ConfigModel
-	Name     string               `json:"name"`
-	Blank    string               `json:"blank"`
-	Optional *string              `json:"optional"`
-	Missing  *string              `json:"missing"`
-	Items    *[]*string           `json:"items"`
-	Values   *map[string]*string  `json:"values"`
-	Labels   []string             `json:"labels"`
-	Headers  map[string]string    `json:"headers"`
-	Empty    []string             `json:"empty"`
-	NilItems []string             `json:"nilItems"`
-	NilMap   map[string]string    `json:"nilMap"`
-	JSON     skel.JSON            `json:"json"`
-	JSONs    []skel.JSON          `json:"jsons"`
-	JSONMap  map[string]skel.JSON `json:"jsonMap"`
-	Enum     readerTestEnum       `json:"enum"`
-	Count    int                  `json:"count"`
-	Enabled  bool                 `json:"enabled"`
+	Name     string                   `json:"name"`
+	Blank    string                   `json:"blank"`
+	Optional *string                  `json:"optional"`
+	Missing  *string                  `json:"missing"`
+	Items    *[]*string               `json:"items"`
+	Values   *map[string]*string      `json:"values"`
+	Labels   []string                 `json:"labels"`
+	Headers  map[string]string        `json:"headers"`
+	Empty    []string                 `json:"empty"`
+	NilItems []string                 `json:"nilItems"`
+	NilMap   map[string]string        `json:"nilMap"`
+	JSON     skeltype.JSON            `json:"json"`
+	JSONs    []skeltype.JSON          `json:"jsons"`
+	JSONMap  map[string]skeltype.JSON `json:"jsonMap"`
+	Enum     readerTestEnum           `json:"enum"`
+	Count    int                      `json:"count"`
+	Enabled  bool                     `json:"enabled"`
 }
 
 func TestReaderPreservesValuesAndIsolatesSnapshots(t *testing.T) {
@@ -125,9 +125,9 @@ func TestReaderPreservesValuesAndIsolatesSnapshots(t *testing.T) {
 			require.Empty(t, value.Empty)
 			require.Nil(t, value.NilItems)
 			require.Nil(t, value.NilMap)
-			require.Equal(t, skel.JSON(`  {"text":" keep "}  `), value.JSON)
-			require.Equal(t, []skel.JSON{"  {}  "}, value.JSONs)
-			require.Equal(t, map[string]skel.JSON{" key ": "  []  "}, value.JSONMap)
+			require.Equal(t, skeltype.JSON(`  {"text":" keep "}  `), value.JSON)
+			require.Equal(t, []skeltype.JSON{"  {}  "}, value.JSONs)
+			require.Equal(t, map[string]skeltype.JSON{" key ": "  []  "}, value.JSONMap)
 			require.Equal(t, readerTestEnum(" unchanged "), value.Enum)
 			require.Equal(t, 42, value.Count)
 			require.True(t, value.Enabled)
@@ -272,7 +272,7 @@ type readerEntry[TValue any] struct {
 type readerNestedData struct {
 	Name     string             `json:"name"`
 	Token    string             `json:"token" skel:"sensitive"`
-	Content  skel.Binary        `json:"content"`
+	Content  skeltype.Binary    `json:"content"`
 	Children []readerNestedData `json:"children"`
 }
 
@@ -286,9 +286,9 @@ type readerStructuredConfig struct {
 	ConfigModel
 	Nested     *readerNestedData                           `json:"nested"`
 	Groups     map[string][]readerEntry[*readerNestedData] `json:"groups"`
-	Payload    skel.Binary                                 `json:"payload"`
-	Payloads   []readerEntry[*skel.Binary]                 `json:"payloads"`
-	PayloadMap map[string]skel.Binary                      `json:"payloadMap"`
+	Payload    skeltype.Binary                             `json:"payload"`
+	Payloads   []readerEntry[*skeltype.Binary]             `json:"payloads"`
+	PayloadMap map[string]skeltype.Binary                  `json:"payloadMap"`
 	Whole      readerWholeSensitiveData                    `json:"whole"`
 	Private    *readerNestedData                           `json:"private" skel:"sensitive"`
 }
@@ -316,16 +316,16 @@ func TestReaderStructuredValuesAndRedaction(t *testing.T) {
 			value := reader.GetByType(reflect.TypeFor[*readerStructuredConfig]()).(*readerStructuredConfig)
 			require.Equal(t, " nested ", value.Nested.Name)
 			require.Equal(t, " nested-token ", value.Nested.Token)
-			require.Equal(t, skel.Binary("hello"), value.Nested.Content)
+			require.Equal(t, skeltype.Binary("hello"), value.Nested.Content)
 			require.Equal(t, " child ", value.Nested.Children[0].Name)
 			require.Empty(t, value.Nested.Children[0].Content)
 			require.NotNil(t, value.Nested.Children[0].Children)
 			require.Equal(t, " group ", value.Groups[" key "][0].Value.Name)
 			require.Nil(t, value.Groups[" key "][1].Value)
-			require.Equal(t, skel.Binary("hello"), value.Payload)
-			require.Equal(t, skel.Binary("hello"), *value.Payloads[0].Value)
+			require.Equal(t, skeltype.Binary("hello"), value.Payload)
+			require.Equal(t, skeltype.Binary("hello"), *value.Payloads[0].Value)
 			require.Nil(t, value.Payloads[1].Value)
-			require.Equal(t, skel.Binary("hello"), value.PayloadMap[" key "])
+			require.Equal(t, skeltype.Binary("hello"), value.PayloadMap[" key "])
 			require.Empty(t, value.PayloadMap["empty"])
 			require.Nil(t, value.PayloadMap["nil"])
 
@@ -347,9 +347,9 @@ func TestReaderStructuredValuesAndRedaction(t *testing.T) {
 			next := reader.GetByType(reflect.TypeFor[*readerStructuredConfig]()).(*readerStructuredConfig)
 			require.Equal(t, " child ", next.Nested.Children[0].Name)
 			require.Equal(t, " group ", next.Groups[" key "][0].Value.Name)
-			require.Equal(t, skel.Binary("hello"), next.Payload)
-			require.Equal(t, skel.Binary("hello"), *next.Payloads[0].Value)
-			require.Equal(t, skel.Binary("hello"), next.PayloadMap[" key "])
+			require.Equal(t, skeltype.Binary("hello"), next.Payload)
+			require.Equal(t, skeltype.Binary("hello"), *next.Payloads[0].Value)
+			require.Equal(t, skeltype.Binary("hello"), next.PayloadMap[" key "])
 			require.Equal(t, raw, linker.EternalConfigByKey[key])
 			require.Equal(t, raw, linker.InstantConfigByKey[key])
 		})
@@ -385,9 +385,9 @@ type readerOptionalEntry[TValue any] struct {
 
 type readerOptionalGenericConfig struct {
 	ConfigModel
-	Binary         []readerOptionalEntry[skel.Binary]  `json:"binary"`
-	NullableBinary []readerOptionalEntry[*skel.Binary] `json:"nullableBinary"`
-	Lists          []readerOptionalEntry[[]string]     `json:"lists"`
+	Binary         []readerOptionalEntry[skeltype.Binary]  `json:"binary"`
+	NullableBinary []readerOptionalEntry[*skeltype.Binary] `json:"nullableBinary"`
+	Lists          []readerOptionalEntry[[]string]         `json:"lists"`
 }
 
 func TestReaderNullableGenericParameterReferences(t *testing.T) {
@@ -402,9 +402,9 @@ func TestReaderNullableGenericParameterReferences(t *testing.T) {
 			require.Nil(t, config.Binary[0].Value)
 			require.NotNil(t, config.Binary[1].Value)
 			require.Empty(t, *config.Binary[1].Value)
-			require.Equal(t, skel.Binary("hello"), *config.Binary[2].Value)
+			require.Equal(t, skeltype.Binary("hello"), *config.Binary[2].Value)
 			require.Nil(t, config.NullableBinary[0].Value)
-			require.Equal(t, skel.Binary("hello"), **config.NullableBinary[1].Value)
+			require.Equal(t, skeltype.Binary("hello"), **config.NullableBinary[1].Value)
 			require.Nil(t, config.Lists[0].Value)
 			require.NotNil(t, config.Lists[1].Value)
 			require.Empty(t, *config.Lists[1].Value)

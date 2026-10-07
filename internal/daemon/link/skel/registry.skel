@@ -5,8 +5,8 @@ pub data ServiceHandlerRegistration {
     @desc("Service Skel name")
     serviceSkelName: string
 
-    @desc("Service schema hash")
-    schemaHash: string
+    @desc("Service descriptor hash")
+    descriptorHash: string
 }
 
 @desc("Web processing capability registration information provided by the application")
@@ -14,8 +14,8 @@ pub data WebHandlerRegistration {
     @desc("Web Skel name")
     webSkelName: string
 
-    @desc("Web schema hash")
-    schemaHash: string
+    @desc("Web descriptor hash")
+    descriptorHash: string
 }
 
 @desc("Event listening capability registration information provided by the application")
@@ -23,8 +23,8 @@ pub data EventListenerRegistration {
     @desc("Event Skel name")
     eventSkelName: string
 
-    @desc("Event schema hash")
-    schemaHash: string
+    @desc("Event descriptor hash")
+    descriptorHash: string
 
     @desc("Execution timeout, in milliseconds")
     timeoutMs: int
@@ -41,8 +41,8 @@ pub data TaskRunnerRegistration {
     @desc("Task Skel name")
     taskSkelName: string
 
-    @desc("Task schema hash")
-    schemaHash: string
+    @desc("Task descriptor hash")
+    descriptorHash: string
 
     @desc("Execution timeout, in milliseconds")
     timeoutMs: int
@@ -95,7 +95,11 @@ pub data AppRegistration {
     @desc("List of task execution capabilities provided by the current application")
     taskRunners: list<TaskRunnerRegistration>
 
-    @desc("List of all DomainSchemas registered by the current application")
+    @desc("List of all domain descriptors registered by the current application")
+    domainDescriptors: list<json>
+
+    @desc("Legacy schema registration input")
+    @deprecated("Use domainDescriptors instead")
     domainSchemas: list<json>
 }
 

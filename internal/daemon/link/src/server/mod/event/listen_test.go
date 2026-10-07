@@ -13,11 +13,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	skeltype "go.yorun.ai/skel/types"
 	eventspec "go.yorun.ai/vine/internal/core/event/spec"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 )
 
@@ -73,7 +73,7 @@ func TestManagerRegistersListenerAndDispatchesEvent(t *testing.T) {
 			TraceSpan:     "0123456789abcdef",
 			AppName:       "launcher.app",
 			AppVersion:    "2.0.0",
-			AppInstanceId: skel.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
+			AppInstanceId: skeltype.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
 		},
 		EventSkelName: "demo.user.UserCreatedEvent",
 		EventJson:     `{"userId":"u1"}`,
@@ -142,7 +142,7 @@ func TestManagerLimitsDispatchConcurrency(t *testing.T) {
 				TraceSpan:     "0123456789abcdef",
 				AppName:       "launcher.app",
 				AppVersion:    "2.0.0",
-				AppInstanceId: skel.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
+				AppInstanceId: skeltype.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
 			},
 			EventSkelName: "demo.user.UserCreatedEvent",
 			EventJson:     `{"userId":"u1"}`,
@@ -237,7 +237,7 @@ func TestManagerFansOutByAppName(t *testing.T) {
 			TraceSpan:     "0123456789abcdef",
 			AppName:       "launcher.app",
 			AppVersion:    "2.0.0",
-			AppInstanceId: skel.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
+			AppInstanceId: skeltype.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
 		},
 		EventSkelName: "demo.user.UserCreatedEvent",
 		EventJson:     `{"userId":"u1"}`,
@@ -312,7 +312,7 @@ func TestManagerCompetesAcrossSameAppNameInstances(t *testing.T) {
 			TraceSpan:     "0123456789abcdef",
 			AppName:       "launcher.app",
 			AppVersion:    "2.0.0",
-			AppInstanceId: skel.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
+			AppInstanceId: skeltype.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
 		},
 		EventSkelName: "demo.user.UserCreatedEvent",
 		EventJson:     `{"userId":"u1"}`,

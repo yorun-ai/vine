@@ -1,4 +1,4 @@
-import { defaultStructuredConfigValue } from './config-structured-schema'
+import { defaultStructuredConfigValue } from './config-structured-descriptor'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu'
 import { configSourceComment } from './config-source-comments'
 import { configValueIssues } from './config-value-validation'
@@ -59,7 +59,7 @@ import type {
   FieldSource,
   AppConfigItem,
   AppConfigListItem,
-  AppConfigSchema,
+  AppConfigDescriptor,
   SkeletonData,
 } from '@/skeled/admin'
 
@@ -90,43 +90,43 @@ function shortConfigName(key: string) {
   return key.split('.').at(-1) ?? key
 }
 
-// A list item carries the identity of its schema, a detail carries the schema
+// A list item carries the identity of its descriptor, a detail carries the descriptor
 // itself; both expose the same identity helpers.
 type AppConfigSummary = AppConfigListItem | AppConfigItem
 
-function configSchemaIdentity(config: AppConfigSummary) {
-  if ('schemaName' in config) {
-    return { name: config.schemaName, skelName: config.schemaSkelName }
+function configDescriptorIdentity(config: AppConfigSummary) {
+  if ('descriptorName' in config) {
+    return { name: config.descriptorName, skelName: config.descriptorSkelName }
   }
 
   return {
-    name: config.schema?.name ?? '',
-    skelName: config.schema?.skelName ?? '',
+    name: config.descriptor?.name ?? '',
+    skelName: config.descriptor?.skelName ?? '',
   }
 }
 
 function configListItem(config: AppConfigItem): AppConfigListItem {
-  const identity = configSchemaIdentity(config)
+  const identity = configDescriptorIdentity(config)
   return {
     id: config.id,
     key: config.key,
     status: config.status,
     lifecycle: config.lifecycle,
-    schemaName: identity.name,
-    schemaSkelName: identity.skelName,
+    descriptorName: identity.name,
+    descriptorSkelName: identity.skelName,
   }
 }
 
 function configName(config: AppConfigSummary) {
-  return configSchemaIdentity(config).name || shortConfigName(config.key)
+  return configDescriptorIdentity(config).name || shortConfigName(config.key)
 }
 
 function configSkelName(config: AppConfigSummary) {
-  return configSchemaIdentity(config).skelName || config.key
+  return configDescriptorIdentity(config).skelName || config.key
 }
 
 function configIsUnused(config: AppConfigSummary) {
-  return config.status === 'UNUSED' || configSchemaIdentity(config).skelName === ''
+  return config.status === 'UNUSED' || configDescriptorIdentity(config).skelName === ''
 }
 
 function configIsUnconfigured(config: AppConfigSummary) {
@@ -289,35 +289,35 @@ function defaultConfigFieldValue(
   return ''
 }
 
-function defaultConfigObject(schema: AppConfigSchema | null) {
+function defaultConfigObject(descriptor: AppConfigDescriptor | null) {
   const ret: Record<string, unknown> = {}
 
-  for (const field of schema?.fields ?? []) {
-    ret[field.name] = field.valueType ? defaultStructuredConfigValue(field.valueType, schema?.dataTypes ?? []) : defaultConfigFieldValue(field.type, field.enumItems)
+  for (const field of descriptor?.fields ?? []) {
+    ret[field.name] = field.valueType ? defaultStructuredConfigValue(field.valueType, descriptor?.dataTypes ?? []) : defaultConfigFieldValue(field.type, field.enumItems)
   }
 
   return ret
 }
 
-function defaultConfigValue(schema: AppConfigSchema | null) {
-  return stringifyConfigObject(defaultConfigObject(schema))
+function defaultConfigValue(descriptor: AppConfigDescriptor | null) {
+  return stringifyConfigObject(defaultConfigObject(descriptor))
 }
 
-function completeConfigValue(value: string, schema: AppConfigSchema | null) {
+function completeConfigValue(value: string, descriptor: AppConfigDescriptor | null) {
   const current = parseConfigObject(value) ?? {}
 
   return stringifyConfigObject({
-    ...defaultConfigObject(schema),
+    ...defaultConfigObject(descriptor),
     ...current,
   })
 }
 
 function collectConfigMismatchIssues(
   value: string,
-  schema: AppConfigSchema | null,
+  descriptor: AppConfigDescriptor | null,
   t: ReturnType<typeof useLocale>['t'],
 ) {
-  if (!schema) {
+  if (!descriptor) {
     return []
   }
 
@@ -328,10 +328,10 @@ function collectConfigMismatchIssues(
 
   const issues: Array<ConfigMismatchIssue> = []
   const fieldsByName = new Map(
-    schema.fields.map((field) => [field.name, field]),
+    descriptor.fields.map((field) => [field.name, field]),
   )
 
-  for (const field of schema.fields) {
+  for (const field of descriptor.fields) {
     if (!Object.prototype.hasOwnProperty.call(parsed, field.name)) {
       issues.push({
         fieldName: field.name,
@@ -342,7 +342,7 @@ function collectConfigMismatchIssues(
     }
 
     const fieldValue = parsed[field.name]
-    for (const issue of configValueIssues(fieldValue, { ...field, sensitive: schema.sensitive || field.sensitive }, schema.dataTypes)) {
+    for (const issue of configValueIssues(fieldValue, { ...field, sensitive: descriptor.sensitive || field.sensitive }, descriptor.dataTypes)) {
       issues.push({
         fieldName: field.name,
         text: t(issue.part === 'key' ? 'appConfig.mapEnumKeyMismatch' : 'appConfig.typeMismatch')
@@ -495,16 +495,16 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
     )
   }, [appConfigs, createDraftSkelName])
 
-  const selectedSchema = React.useMemo(() => {
-    return selectedAppConfig?.schema ?? null
+  const selectedDescriptor = React.useMemo(() => {
+    return selectedAppConfig?.descriptor ?? null
   }, [selectedAppConfig])
   const [sourceResult, setSourceResult] = React.useState<{ key: string; fields: FieldSource[]; config?: AppConfigItem } | null>(null)
   const editorFields = React.useMemo(() => {
     const sources = sourceResult?.key === selectedAppConfig?.key ? sourceResult?.fields ?? [] : []
-    return (selectedSchema?.fields ?? []).map((field) => ({
-      ...field, sensitive: selectedSchema?.sensitive || field.sensitive, dataTypes: selectedSchema?.dataTypes ?? [], commentTags, sourceComment: configSourceComment(field.name, sources),
+    return (selectedDescriptor?.fields ?? []).map((field) => ({
+      ...field, sensitive: selectedDescriptor?.sensitive || field.sensitive, dataTypes: selectedDescriptor?.dataTypes ?? [], commentTags, sourceComment: configSourceComment(field.name, sources),
     }))
-  }, [selectedSchema, selectedAppConfig?.key, sourceResult, commentTags])
+  }, [selectedDescriptor, selectedAppConfig?.key, sourceResult, commentTags])
   const typeIndex = React.useMemo(
     () => buildTypeDefinitionIndex(typeDefinitions),
     [typeDefinitions],
@@ -522,15 +522,15 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
     ? configIsMismatched(selectedAppConfig)
     : false
   const selectedSavedValue = selectedIsUnconfigured
-    ? defaultConfigValue(selectedSchema)
+    ? defaultConfigValue(selectedDescriptor)
     : (selectedAppConfig?.value ?? '')
   const savedConfigObject = React.useMemo(
     () => parseConfigObject(selectedSavedValue),
     [selectedSavedValue],
   )
   const mismatchIssues = React.useMemo(
-    () => collectConfigMismatchIssues(value, selectedSchema, t),
-    [selectedSchema, t, value],
+    () => collectConfigMismatchIssues(value, selectedDescriptor, t),
+    [selectedDescriptor, t, value],
   )
   const mismatchMessages = React.useMemo(
     () => {
@@ -688,7 +688,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
     try {
       const config = await appConfigService.get({ key })
       if (request !== detailRequest.current) return
-      const nextValue = configIsUnconfigured(config) ? defaultConfigValue(config.schema) : formatConfigValue(config.value)
+      const nextValue = configIsUnconfigured(config) ? defaultConfigValue(config.descriptor) : formatConfigValue(config.value)
       const selected = { ...config, value: nextValue }
       setSourceResult({ key, fields: config.fieldSources, config: selected })
       setSelectedAppConfig(selected)
@@ -760,7 +760,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
 
     try {
       const normalizedValue = selectedIsUnconfigured
-        ? completeConfigValue(value, selectedSchema)
+        ? completeConfigValue(value, selectedDescriptor)
         : formatConfigValue(value)
       const updated = selectedIsUnconfigured
         ? await appConfigService.create({
@@ -1321,7 +1321,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                     </Badge>
                   )}
                   <DeprecatedBadge
-                    deprecated={Boolean(selectedSchema?.deprecated)}
+                    deprecated={Boolean(selectedDescriptor?.deprecated)}
                   />
                 </div>
                 <p className="mt-2 truncate font-mono text-xs text-muted-foreground">
@@ -1364,14 +1364,14 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                     )
                   })()}
                 </p>
-                {selectedSchema?.description ? (
+                {selectedDescriptor?.description ? (
                   <p className="mt-2 min-w-0 truncate text-sm leading-6 text-muted-foreground">
-                    {selectedSchema.description}
+                    {selectedDescriptor.description}
                   </p>
                 ) : null}
                 <DeprecatedNotice
-                  deprecated={Boolean(selectedSchema?.deprecated)}
-                  deprecatedReason={selectedSchema?.deprecatedReason}
+                  deprecated={Boolean(selectedDescriptor?.deprecated)}
+                  deprecatedReason={selectedDescriptor?.deprecatedReason}
                   className="mt-3"
                 />
               </div>
@@ -1563,7 +1563,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                     rawValue={rawReplacement}
                     value={value}
                     fields={editorFields}
-                    lockKeys={!rawReplacement && valueIsValidJson && selectedSchema !== null && !selectedIsUnused && configObject !== null}
+                    lockKeys={!rawReplacement && valueIsValidJson && selectedDescriptor !== null && !selectedIsUnused && configObject !== null}
                     mismatchMessages={visibleMismatchMessages}
                     dirtyFields={dirtyFields}
                     typeIndex={typeIndex}
@@ -1600,10 +1600,10 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                               onClick={() => {
                                 const next = { ...configObject }
                                 if (issue.repair === 'reset') {
-                                  setValue(defaultConfigValue(selectedSchema))
+                                  setValue(defaultConfigValue(selectedDescriptor))
                                 } else {
                                   if (issue.repair === 'add') {
-                                    next[issue.fieldName!] = defaultConfigObject(selectedSchema)[issue.fieldName!]
+                                    next[issue.fieldName!] = defaultConfigObject(selectedDescriptor)[issue.fieldName!]
                                   } else {
                                     delete next[issue.fieldName!]
                                   }

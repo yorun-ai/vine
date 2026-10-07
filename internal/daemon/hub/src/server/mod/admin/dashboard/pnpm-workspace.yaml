@@ -1,5 +1,5 @@
 minimumReleaseAgeExclude:
-  - '@yorun-ai/vrpc@0.9.1'
+  - '@yorun-ai/vrpc@0.10.0'
 overrides:
   '@hono/node-server': ^2.0.10
   brace-expansion: 5.0.9

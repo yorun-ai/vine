@@ -233,7 +233,7 @@ func encodeTestActorToHeader(header http.Header, actor meta.Actor) {
 	header.Set(spec.HeaderWebActor, meta.EncodeActorToBase64(actor))
 }
 
-// Header decoding uses a registered actor schema, just as generated application actors do.
+// Header decoding uses a registered actor type, just as generated application actors do.
 type executorTestActorInfo struct{ Id string }
 
 func init() {

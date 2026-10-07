@@ -6,10 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/fxamacker/cbor/v2"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
-	"go.yorun.ai/vine/util/vcode"
 	"go.yorun.ai/vine/util/vpre"
 	rpchttp "go.yorun.ai/vrpc/transport/http"
 )
@@ -163,25 +161,7 @@ func (d *_RequestDecoder) decodeArguments() error {
 }
 
 func (d *_RequestDecoder) decodeArgumentsBytes(bodyBytes []byte, arguments any) error {
-	var raw []byte
-	var err error
-	unmarshal := unmarshalJson
-	switch MediaTypeOf(d.httpRequest.Header.Get(HeaderContentType)) {
-	case ContentTypeJson:
-		raw, err = rpchttp.DecodeJSONRequest(bodyBytes)
-	case ContentTypeCbor:
-		raw, err = rpchttp.DecodeCBORRequest(bodyBytes)
-		unmarshal = cbor.Unmarshal
-	default:
-		return fmt.Errorf("request body cannot be parsed")
-	}
-	if err != nil {
-		return err
-	}
-	if err := unmarshal(raw, arguments); err != nil {
-		return fmt.Errorf("request body cannot be parsed")
-	}
-	return nil
+	return rpchttp.DecodeRequest(bodyBytes, arguments, d.httpRequest.Header.Get(HeaderContentType))
 }
 
 func encodeRequest(endpoint string, rpcRequest spec.Request) (request *http.Request, err error) {
@@ -237,20 +217,7 @@ func encodeArgumentsToBytes(rpcRequest spec.Request) (encoded []byte, err error)
 		vpre.CheckNotNil(arguments, "request arguments cannot be nil for %s", methodInfo.Name())
 	}
 
-	switch contentType {
-	case ContentTypeCbor:
-		encodedArguments, err := vcode.MarshalCbor(arguments)
-		if err != nil {
-			return nil, err
-		}
-		return rpchttp.EncodeCBORRequest(encodedArguments)
-	default:
-		encodedArguments, err := vcode.MarshalJson(arguments)
-		if err != nil {
-			return nil, err
-		}
-		return rpchttp.EncodeJSONRequest(encodedArguments)
-	}
+	return rpchttp.EncodeRequest(arguments, contentType)
 }
 
 type InvokeRequest struct {
@@ -266,8 +233,7 @@ type InvokeRequest struct {
 }
 
 func BuildInvokeRequest(invokeRequest InvokeRequest) *http.Request {
-	params := vcode.MustMarshalJson(invokeRequest.Params)
-	body, err := rpchttp.EncodeJSONRequest(params)
+	body, err := rpchttp.EncodeRequest(invokeRequest.Params, ContentTypeJson)
 	vpre.MustNil(err)
 
 	request, err := rpchttp.NewRequest(invokeRequest.Context, strings.TrimRight(invokeRequest.Endpoint, "/"), "/"+invokeRequest.ServiceSkelName+"/"+invokeRequest.MethodSkelName, body, ContentTypeJson, ContentTypeJson)

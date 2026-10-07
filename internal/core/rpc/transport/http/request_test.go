@@ -262,6 +262,28 @@ func TestDecodeRequestParsesCborBody(t *testing.T) {
 	}
 }
 
+func TestDecodeRequestRejectsDuplicateCborKeys(t *testing.T) {
+	method := testServiceInfo().Methods()[0]
+	for name, body := range map[string][]byte{
+		"envelope":  []byte("\xa2\x66params\xa0\x66params\xa0"),
+		"arguments": []byte("\xa1\x66params\xa2\x64Name\x61a\x64Name\x61b"),
+	} {
+		t.Run(name, func(t *testing.T) {
+			req, err := http.NewRequestWithContext(t.Context(), RequestMethod, "http://localhost:8080"+method.FullURLPath(), bytes.NewReader(body))
+			if err != nil {
+				t.Fatal(err)
+			}
+			req.Header.Set(HeaderContentType, ContentTypeCbor)
+			req.Header.Set(HeaderAccept, ContentTypeJson)
+			EncodeTraceToHeader(req.Header, testContext().Trace())
+			EncodeClientToHeader(req.Header, testContext().Client())
+			if decoded, err := DecodeRequest(req); err == nil || decoded != nil {
+				t.Fatalf("duplicate keys accepted: %+v, %v", decoded, err)
+			}
+		})
+	}
+}
+
 func TestEncodeRequestUsesCborForBinaryArgumentsType(t *testing.T) {
 	method := newStandaloneMethodInfo(reflect.TypeFor[pingArguments](), reflect.TypeFor[string](), true, false)
 	rpcCtx := testContext()

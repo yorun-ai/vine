@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/link/skeled"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 )
 
@@ -56,7 +56,7 @@ func TestStartHeartbeatReRegistersWhenHubLosesRegistration(t *testing.T) {
 		defer client.mutex.Unlock()
 		assert.NotEmpty(t, client.heartbeats)
 		require.NotEmpty(t, client.registrations)
-		assert.Equal(t, skel.NewUUID(uuid.MustParse(appInfo.InstanceId())), client.registrations[0].InstanceId)
+		assert.Equal(t, skeltype.NewUUID(uuid.MustParse(appInfo.InstanceId())), client.registrations[0].InstanceId)
 	})
 }
 

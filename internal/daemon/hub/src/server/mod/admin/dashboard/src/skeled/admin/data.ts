@@ -25,42 +25,10 @@ export type AppConfigCreation = {
   /** Configuration JSON. */
   value:    string;
 }
-/** Configuration items. */
-export type AppConfigItem = {
-  /** Configuration ID. */
-  id:           number;
-  /** Configuration key. */
-  key:          string;
-  /** Configuration status. */
-  status:       string;
-  /** Configuration lifecycle. */
-  lifecycle:    string;
-  /** Configuration JSON. */
-  value:        string;
-  /** Configuration schema. */
-  schema:       AppConfigSchema | null;
-  /** Field sources; only returned by get, create and update. */
-  fieldSources: Array<FieldSource>;
-}
-/** Configuration item list item. */
-export type AppConfigListItem = {
-  /** Configuration ID. */
-  id:             number;
-  /** Configuration key. */
-  key:            string;
-  /** Configuration status. */
-  status:         string;
-  /** Configuration lifecycle. */
-  lifecycle:      string;
-  /** Configuration schema name; empty when no schema matches. */
-  schemaName:     string;
-  /** Configuration schema Skel name; empty when no schema matches. */
-  schemaSkelName: string;
-}
-/** Configuration schema items. */
-export type AppConfigSchema = {
+/** Configuration descriptor items. */
+export type AppConfigDescriptor = {
   sensitive:        boolean;
-  dataTypes:        Array<AppConfigSchemaData>;
+  dataTypes:        Array<AppConfigDescriptorData>;
   /** Configuration Skel name. */
   skelName:         string;
   /** Configuration name. */
@@ -74,10 +42,10 @@ export type AppConfigSchema = {
   /** Configuration lifecycle. */
   lifecycle:        string;
   /** Configuration field list. */
-  fields:           Array<AppConfigSchemaField>;
+  fields:           Array<AppConfigDescriptorField>;
 }
 /** Reusable data declaration reachable from a configuration. */
-export type AppConfigSchemaData = {
+export type AppConfigDescriptorData = {
   name:             string;
   skelName:         string;
   description:      string;
@@ -85,10 +53,10 @@ export type AppConfigSchemaData = {
   deprecatedReason: string;
   sensitive:        boolean;
   typeParameters:   Array<string>;
-  fields:           Array<AppConfigSchemaField>;
+  fields:           Array<AppConfigDescriptorField>;
 }
-/** Configuration schema enumeration options. */
-export type AppConfigSchemaEnumItem = {
+/** Configuration descriptor enumeration options. */
+export type AppConfigDescriptorEnumItem = {
   /** Enum option name. */
   name:             string;
   /** Enumeration options description. */
@@ -98,9 +66,9 @@ export type AppConfigSchemaEnumItem = {
   /** Enumeration option deprecation reason. */
   deprecatedReason: string;
 }
-/** Configuration schema fields. */
-export type AppConfigSchemaField = {
-  valueType:         AppConfigSchemaType | null;
+/** Configuration descriptor fields. */
+export type AppConfigDescriptorField = {
+  valueType:         AppConfigDescriptorType | null;
   sensitive:         boolean;
   example:           string;
   /** Field name. */
@@ -114,22 +82,54 @@ export type AppConfigSchemaField = {
   /** Field deprecation reason. */
   deprecatedReason:  string;
   /** Enumeration options list. */
-  enumItems:         Array<AppConfigSchemaEnumItem>;
+  enumItems:         Array<AppConfigDescriptorEnumItem>;
   /** Map key enumeration options. */
-  mapKeyEnumItems:   Array<AppConfigSchemaEnumItem>;
+  mapKeyEnumItems:   Array<AppConfigDescriptorEnumItem>;
   /** Map value enumeration options. */
-  mapValueEnumItems: Array<AppConfigSchemaEnumItem>;
+  mapValueEnumItems: Array<AppConfigDescriptorEnumItem>;
 }
 /** Structured configuration value type. */
-export type AppConfigSchemaType = {
+export type AppConfigDescriptorType = {
   kind:          string;
   nullable:      boolean;
   name:          string;
-  typeArguments: Array<AppConfigSchemaType>;
-  element:       AppConfigSchemaType | null;
-  key:           AppConfigSchemaType | null;
-  value:         AppConfigSchemaType | null;
-  enumItems:     Array<AppConfigSchemaEnumItem>;
+  typeArguments: Array<AppConfigDescriptorType>;
+  element:       AppConfigDescriptorType | null;
+  key:           AppConfigDescriptorType | null;
+  value:         AppConfigDescriptorType | null;
+  enumItems:     Array<AppConfigDescriptorEnumItem>;
+}
+/** Configuration items. */
+export type AppConfigItem = {
+  /** Configuration ID. */
+  id:           number;
+  /** Configuration key. */
+  key:          string;
+  /** Configuration status. */
+  status:       string;
+  /** Configuration lifecycle. */
+  lifecycle:    string;
+  /** Configuration JSON. */
+  value:        string;
+  /** Configuration descriptor. */
+  descriptor:   AppConfigDescriptor | null;
+  /** Field sources; only returned by get, create and update. */
+  fieldSources: Array<FieldSource>;
+}
+/** Configuration item list item. */
+export type AppConfigListItem = {
+  /** Configuration ID. */
+  id:                 number;
+  /** Configuration key. */
+  key:                string;
+  /** Configuration status. */
+  status:             string;
+  /** Configuration lifecycle. */
+  lifecycle:          string;
+  /** Configuration descriptor name; empty when no descriptor matches. */
+  descriptorName:     string;
+  /** Configuration descriptor Skel name; empty when no descriptor matches. */
+  descriptorSkelName: string;
 }
 /** Configuration update parameters. */
 export type AppConfigUpdate = {
@@ -167,15 +167,15 @@ export type EventDebugDefaultEmitRequest = {
 /** Event Debug send request. */
 export type EventDebugEmitRequest = {
   /** Event Skel name. */
-  eventSkelName: string;
-  /** Event schema hash. */
-  schemaHash:    string;
+  eventSkelName:  string;
+  /** Event descriptor hash. */
+  descriptorHash: string;
   /** Event JSON. */
-  eventJson:     string;
+  eventJson:      string;
   /** Trace ID. */
-  traceId:       string | null;
+  traceId:        string | null;
   /** Span ID. */
-  spanId:        string | null;
+  spanId:         string | null;
 }
 /** Event called by Event Debug. */
 export type EventDebugEventItem = {
@@ -183,8 +183,8 @@ export type EventDebugEventItem = {
   name:             string;
   /** Event Skel name. */
   eventSkelName:    string;
-  /** Event schema hash. */
-  schemaHash:       string;
+  /** Event descriptor hash. */
+  descriptorHash:   string;
   /** Event description. */
   description:      string;
   /** Whether the Event is deprecated. */
@@ -197,15 +197,15 @@ export type EventDebugEventItem = {
 /** Event listening capability registration information provided by the application. */
 export type EventListenerRegistration = {
   /** Event Skel name. */
-  eventSkelName: string;
-  /** Event schema hash. */
-  schemaHash:    string;
+  eventSkelName:  string;
+  /** Event descriptor hash. */
+  descriptorHash: string;
   /** Execution timeout, in milliseconds. */
-  timeoutMs:     number;
+  timeoutMs:      number;
   /** Maximum concurrency. */
-  concurrency:   number;
+  concurrency:    number;
   /** Whether to disallow retrying after failure. */
-  noRetry:       boolean;
+  noRetry:        boolean;
 }
 /** Layers that supplied an entity field. */
 export type FieldSource = {
@@ -679,8 +679,8 @@ export type ServiceDebugInvokeRequest = {
   appInstanceId:   string | null;
   /** Service Skel name. */
   serviceSkelName: string;
-  /** Service schema hash. */
-  schemaHash:      string;
+  /** Service descriptor hash. */
+  descriptorHash:  string;
   /** Method Skel name. */
   methodSkelName:  string;
   /** Request parameters JSON. */
@@ -736,8 +736,8 @@ export type ServiceDebugMethodItem = {
 export type ServiceDebugServiceItem = {
   /** Service Skel name. */
   serviceSkelName:  string;
-  /** Service schema hash. */
-  schemaHash:       string;
+  /** Service descriptor hash. */
+  descriptorHash:   string;
   api:              boolean;
   /** Whether the Service is deprecated. */
   deprecated:       boolean;
@@ -748,57 +748,57 @@ export type ServiceDebugServiceItem = {
 export type ServiceHandlerRegistration = {
   /** Service Skel name. */
   serviceSkelName: string;
-  /** Service schema hash. */
-  schemaHash:      string;
+  /** Service descriptor hash. */
+  descriptorHash:  string;
   /** Service agent access address. */
   endpoint:        string;
 }
 /** SkeletonActor. */
 export type SkeletonActorItem = {
   /** Domain. */
-  domain:           string;
+  domain:               string;
   /** Skeleton item hash. */
-  schemaHash:       string;
+  descriptorHash:       string;
   /** Primary skeleton item hash. */
-  mainSchemaHash:   string;
+  mainDescriptorHash:   string;
   /** Whether there are multiple valid versions of the skeleton item. */
-  isMultiVersion:   boolean;
+  isMultiVersion:       boolean;
   /** Whether it is the main version of the skeleton item. */
-  isMain:           boolean;
-  /** Owning DomainSchema hash. */
-  domainSchemaHash: string;
+  isMain:               boolean;
+  /** Owning DomainDescriptor hash. */
+  domainDescriptorHash: string;
   /** Actor name. */
-  name:             string;
+  name:                 string;
   /** Actor Skel name. */
-  skelName:         string;
+  skelName:             string;
   /** Actor description. */
-  description:      string;
+  description:          string;
   /** Whether the Actor is deprecated. */
-  deprecated:       boolean;
+  deprecated:           boolean;
   /** Actor deprecation reason. */
-  deprecatedReason: string;
+  deprecatedReason:     string;
   /** Actor access method list. */
-  actorVias:        Array<string>;
+  actorVias:            Array<string>;
   /** Whether to enable authentication. */
-  authEnabled:      boolean;
+  authEnabled:          boolean;
   /** Actor identifier field in Info. */
-  identifierField:  string;
+  identifierField:      string;
   /** Authentication credentials. */
-  credential:       SkeletonData | null;
+  credential:           SkeletonData | null;
   /** Authentication information. */
-  info:             SkeletonData | null;
+  info:                 SkeletonData | null;
   /** Authentication services. */
-  authService:      SkeletonServiceItem | null;
+  authService:          SkeletonServiceItem | null;
   /** Whether to enable permissions. */
-  permEnabled:      boolean;
+  permEnabled:          boolean;
   /** Permission service. */
-  permService:      SkeletonServiceItem | null;
+  permService:          SkeletonServiceItem | null;
   /** Permission method. */
-  permMethod:       SkeletonMethod | null;
+  permMethod:           SkeletonMethod | null;
   /** Accessible Service List. */
-  services:         Array<SkeletonServiceItem>;
+  services:             Array<SkeletonServiceItem>;
   /** Accessible web list. */
-  webs:             Array<SkeletonWebItem>;
+  webs:                 Array<SkeletonWebItem>;
 }
 /** Skeleton Actor Reference. */
 export type SkeletonActorRef = {
@@ -812,101 +812,101 @@ export type SkeletonActorRef = {
 /** SkeletonConfig. */
 export type SkeletonConfigItem = {
   /** Domain. */
-  domain:           string;
+  domain:               string;
   /** Skeleton item hash. */
-  schemaHash:       string;
+  descriptorHash:       string;
   /** Primary skeleton item hash. */
-  mainSchemaHash:   string;
+  mainDescriptorHash:   string;
   /** Whether there are multiple valid versions of the skeleton item. */
-  isMultiVersion:   boolean;
+  isMultiVersion:       boolean;
   /** Whether it is the main version of the skeleton item. */
-  isMain:           boolean;
-  /** Owning DomainSchema hash. */
-  domainSchemaHash: string;
+  isMain:               boolean;
+  /** Owning DomainDescriptor hash. */
+  domainDescriptorHash: string;
   /** Config name. */
-  name:             string;
+  name:                 string;
   /** Config Skel name. */
-  skelName:         string;
+  skelName:             string;
   /** Config description. */
-  description:      string;
+  description:          string;
   /** Whether the Config is deprecated. */
-  deprecated:       boolean;
+  deprecated:           boolean;
   /** Config deprecation reason. */
-  deprecatedReason: string;
+  deprecatedReason:     string;
   /** Whether the item is public. */
-  pub:              boolean;
+  pub:                  boolean;
   /** Whether the config value is sensitive. */
-  sensitive:        boolean;
+  sensitive:            boolean;
   /** Config lifecycle. */
-  lifecycle:        string;
+  lifecycle:            string;
   /** Field list. */
-  fields:           Array<SkeletonField>;
+  fields:               Array<SkeletonField>;
 }
 /** SkeletonData. */
 export type SkeletonData = {
   /** Domain. */
-  domain:           string;
+  domain:               string;
   /** Skeleton item hash. */
-  schemaHash:       string;
+  descriptorHash:       string;
   /** Primary skeleton item hash. */
-  mainSchemaHash:   string;
+  mainDescriptorHash:   string;
   /** Whether there are multiple valid versions of the skeleton item. */
-  isMultiVersion:   boolean;
+  isMultiVersion:       boolean;
   /** Whether it is the main version of the skeleton item. */
-  isMain:           boolean;
-  /** Owning DomainSchema hash. */
-  domainSchemaHash: string;
+  isMain:               boolean;
+  /** Owning DomainDescriptor hash. */
+  domainDescriptorHash: string;
   /** Data name. */
-  name:             string;
+  name:                 string;
   /** Data Skel name. */
-  skelName:         string;
+  skelName:             string;
   /** Data description. */
-  description:      string;
+  description:          string;
   /** Whether the Data or Enum is deprecated. */
-  deprecated:       boolean;
+  deprecated:           boolean;
   /** Data or Enum deprecation reason. */
-  deprecatedReason: string;
+  deprecatedReason:     string;
   /** Whether it is Enum. */
-  enum:             boolean;
+  enum:                 boolean;
   /** Whether the data is sensitive. */
-  sensitive:        boolean;
+  sensitive:            boolean;
   /** Type parameter list. */
-  typeParameters:   Array<string>;
+  typeParameters:       Array<string>;
   /** Field list. */
-  fields:           Array<SkeletonField>;
+  fields:               Array<SkeletonField>;
   /** List of enumeration items. */
-  enumItems:        Array<SkeletonEnumItem>;
+  enumItems:            Array<SkeletonEnumItem>;
 }
 /** Domain skeleton version. */
 export type SkeletonDomain = {
   /** Domain name. */
-  domain:         string;
-  /** DomainSchema hash. */
-  schemaHash:     string;
-  /** Primary DomainSchema hash. */
-  mainSchemaHash: string;
+  domain:             string;
+  /** DomainDescriptor hash. */
+  descriptorHash:     string;
+  /** Primary DomainDescriptor hash. */
+  mainDescriptorHash: string;
   /** Whether multiple active versions exist. */
-  isMultiVersion: boolean;
+  isMultiVersion:     boolean;
   /** Whether this is the primary version. */
-  isMain:         boolean;
+  isMain:             boolean;
   /** Total number of skeleton items. */
-  total:          number;
+  total:              number;
   /** Actor list. */
-  actors:         Array<SkeletonActorItem>;
+  actors:             Array<SkeletonActorItem>;
   /** Service list. */
-  services:       Array<SkeletonServiceItem>;
+  services:           Array<SkeletonServiceItem>;
   /** Resource list. */
-  resources:      Array<SkeletonResourceItem>;
+  resources:          Array<SkeletonResourceItem>;
   /** Data list. */
-  data:           Array<SkeletonData>;
+  data:               Array<SkeletonData>;
   /** Config list. */
-  configs:        Array<SkeletonConfigItem>;
+  configs:            Array<SkeletonConfigItem>;
   /** Web list. */
-  webs:           Array<SkeletonWebItem>;
+  webs:               Array<SkeletonWebItem>;
   /** Task list. */
-  tasks:          Array<SkeletonTask>;
+  tasks:              Array<SkeletonTask>;
   /** Event list. */
-  events:         Array<SkeletonEventItem>;
+  events:             Array<SkeletonEventItem>;
 }
 /** Skeleton enumeration items. */
 export type SkeletonEnumItem = {
@@ -922,35 +922,35 @@ export type SkeletonEnumItem = {
 /** Skeleton event. */
 export type SkeletonEventItem = {
   /** Domain. */
-  domain:           string;
+  domain:               string;
   /** Skeleton item hash. */
-  schemaHash:       string;
+  descriptorHash:       string;
   /** Primary skeleton item hash. */
-  mainSchemaHash:   string;
+  mainDescriptorHash:   string;
   /** Whether there are multiple valid versions of the skeleton item. */
-  isMultiVersion:   boolean;
+  isMultiVersion:       boolean;
   /** Whether it is the main version of the skeleton item. */
-  isMain:           boolean;
-  /** Owning DomainSchema hash. */
-  domainSchemaHash: string;
+  isMain:               boolean;
+  /** Owning DomainDescriptor hash. */
+  domainDescriptorHash: string;
   /** Event name. */
-  name:             string;
+  name:                 string;
   /** Event Skel name. */
-  skelName:         string;
+  skelName:             string;
   /** Event description. */
-  description:      string;
+  description:          string;
   /** Whether the Event is deprecated. */
-  deprecated:       boolean;
+  deprecated:           boolean;
   /** Event deprecation reason. */
-  deprecatedReason: string;
+  deprecatedReason:     string;
   /** Whether the item is public. */
-  pub:              boolean;
+  pub:                  boolean;
   /** Whether the event is an extension contract. */
-  ext:              boolean;
+  ext:                  boolean;
   /** Whether the event payload is sensitive. */
-  sensitive:        boolean;
+  sensitive:            boolean;
   /** Field list. */
-  fields:           Array<SkeletonField>;
+  fields:               Array<SkeletonField>;
 }
 /** Skeleton field. */
 export type SkeletonField = {
@@ -1072,98 +1072,98 @@ export type SkeletonResourceCheck = {
 /** Skeleton Resource item. */
 export type SkeletonResourceItem = {
   /** Domain. */
-  domain:           string;
+  domain:               string;
   /** Skeleton item hash. */
-  schemaHash:       string;
+  descriptorHash:       string;
   /** Primary skeleton item hash. */
-  mainSchemaHash:   string;
+  mainDescriptorHash:   string;
   /** Whether there are multiple valid versions of the skeleton item. */
-  isMultiVersion:   boolean;
+  isMultiVersion:       boolean;
   /** Whether it is the main version of the skeleton item. */
-  isMain:           boolean;
-  /** Owning DomainSchema hash. */
-  domainSchemaHash: string;
+  isMain:               boolean;
+  /** Owning DomainDescriptor hash. */
+  domainDescriptorHash: string;
   /** Resource name. */
-  name:             string;
+  name:                 string;
   /** Resource Skel name. */
-  skelName:         string;
+  skelName:             string;
   /** Resource description. */
-  description:      string;
+  description:          string;
   /** Whether the Resource is deprecated. */
-  deprecated:       boolean;
+  deprecated:           boolean;
   /** Resource deprecation reason. */
-  deprecatedReason: string;
+  deprecatedReason:     string;
   /** Resource level Check list. */
-  checks:           Array<SkeletonResourceCheck>;
+  checks:               Array<SkeletonResourceCheck>;
   /** Action list. */
-  actions:          Array<SkeletonResourceAction>;
+  actions:              Array<SkeletonResourceAction>;
   /** Check service. */
-  checkService:     SkeletonServiceItem | null;
+  checkService:         SkeletonServiceItem | null;
 }
 /** Skeleton service items. */
 export type SkeletonServiceItem = {
   /** Domain. */
-  domain:           string;
+  domain:               string;
   /** Skeleton item hash. */
-  schemaHash:       string;
+  descriptorHash:       string;
   /** Primary skeleton item hash. */
-  mainSchemaHash:   string;
+  mainDescriptorHash:   string;
   /** Whether there are multiple valid versions of the skeleton item. */
-  isMultiVersion:   boolean;
+  isMultiVersion:       boolean;
   /** Whether it is the main version of the skeleton item. */
-  isMain:           boolean;
-  /** Owning DomainSchema hash. */
-  domainSchemaHash: string;
+  isMain:               boolean;
+  /** Owning DomainDescriptor hash. */
+  domainDescriptorHash: string;
   /** Service name. */
-  name:             string;
+  name:                 string;
   /** Service Skel name. */
-  skelName:         string;
+  skelName:             string;
   /** Service Description. */
-  description:      string;
+  description:          string;
   /** Whether the Service is deprecated. */
-  deprecated:       boolean;
+  deprecated:           boolean;
   /** Service deprecation reason. */
-  deprecatedReason: string;
+  deprecatedReason:     string;
   /** Whether the item is public. */
-  pub:              boolean;
-  api:              boolean;
+  pub:                  boolean;
+  api:                  boolean;
   /** Whether the service is an extension contract. */
-  ext:              boolean;
+  ext:                  boolean;
   /** Authentication mode. */
-  authMode:         string;
+  authMode:             string;
   /** Permission requirements. */
-  require:          SkeletonPermExpr | null;
+  require:              SkeletonPermExpr | null;
   /** Accessible Actor List. */
-  actors:           Array<SkeletonActorRef>;
+  actors:               Array<SkeletonActorRef>;
   /** Method list. */
-  methods:          Array<SkeletonMethod>;
+  methods:              Array<SkeletonMethod>;
 }
 /** Skeleton task. */
 export type SkeletonTask = {
   /** Domain. */
-  domain:           string;
+  domain:               string;
   /** Skeleton item hash. */
-  schemaHash:       string;
+  descriptorHash:       string;
   /** Primary skeleton item hash. */
-  mainSchemaHash:   string;
+  mainDescriptorHash:   string;
   /** Whether there are multiple valid versions of the skeleton item. */
-  isMultiVersion:   boolean;
+  isMultiVersion:       boolean;
   /** Whether it is the main version of the skeleton item. */
-  isMain:           boolean;
-  /** Owning DomainSchema hash. */
-  domainSchemaHash: string;
+  isMain:               boolean;
+  /** Owning DomainDescriptor hash. */
+  domainDescriptorHash: string;
   /** Task name. */
-  name:             string;
+  name:                 string;
   /** Task Skel name. */
-  skelName:         string;
+  skelName:             string;
   /** Task description. */
-  description:      string;
+  description:          string;
   /** Whether the Task is deprecated. */
-  deprecated:       boolean;
+  deprecated:           boolean;
   /** Task deprecation reason. */
-  deprecatedReason: string;
+  deprecatedReason:     string;
   /** Trigger list. */
-  triggers:         Array<SkeletonTrigger>;
+  triggers:             Array<SkeletonTrigger>;
 }
 /** Skeleton task trigger. */
 export type SkeletonTrigger = {
@@ -1189,31 +1189,31 @@ export type SkeletonTrigger = {
 /** Skeleton web page. */
 export type SkeletonWebItem = {
   /** Domain. */
-  domain:           string;
+  domain:               string;
   /** Skeleton item hash. */
-  schemaHash:       string;
+  descriptorHash:       string;
   /** Primary skeleton item hash. */
-  mainSchemaHash:   string;
+  mainDescriptorHash:   string;
   /** Whether there are multiple valid versions of the skeleton item. */
-  isMultiVersion:   boolean;
+  isMultiVersion:       boolean;
   /** Whether it is the main version of the skeleton item. */
-  isMain:           boolean;
-  /** Owning DomainSchema hash. */
-  domainSchemaHash: string;
+  isMain:               boolean;
+  /** Owning DomainDescriptor hash. */
+  domainDescriptorHash: string;
   /** Web page name. */
-  name:             string;
+  name:                 string;
   /** Web Skel name. */
-  skelName:         string;
+  skelName:             string;
   /** Web page description. */
-  description:      string;
+  description:          string;
   /** Whether the Web is deprecated. */
-  deprecated:       boolean;
+  deprecated:           boolean;
   /** Web deprecation reason. */
-  deprecatedReason: string;
+  deprecatedReason:     string;
   /** Authentication mode. */
-  authMode:         string;
+  authMode:             string;
   /** Accessible Actor List. */
-  actors:           Array<SkeletonActorRef>;
+  actors:               Array<SkeletonActorRef>;
 }
 /** Task Debug initiates a request by default. */
 export type TaskDebugDefaultLaunchRequest = {
@@ -1228,8 +1228,8 @@ export type TaskDebugDefaultLaunchRequest = {
 export type TaskDebugLaunchRequest = {
   /** Task Skel name. */
   taskSkelName:    string;
-  /** Task schema hash. */
-  schemaHash:      string;
+  /** Task descriptor hash. */
+  descriptorHash:  string;
   /** Trigger Skel name. */
   triggerSkelName: string;
   /** Task parameters JSON. */
@@ -1245,8 +1245,8 @@ export type TaskDebugTaskItem = {
   name:             string;
   /** Task Skel name. */
   taskSkelName:     string;
-  /** Task schema hash. */
-  schemaHash:       string;
+  /** Task descriptor hash. */
+  descriptorHash:   string;
   /** Task description. */
   description:      string;
   /** Whether the Task is deprecated. */
@@ -1284,8 +1284,8 @@ export type TaskRunnerCronScheduler = {
 export type TaskRunnerRegistration = {
   /** Task Skel name. */
   taskSkelName:   string;
-  /** Task schema hash. */
-  schemaHash:     string;
+  /** Task descriptor hash. */
+  descriptorHash: string;
   /** Execution timeout, in milliseconds. */
   timeoutMs:      number;
   /** Maximum concurrency. */
@@ -1298,10 +1298,10 @@ export type TaskRunnerRegistration = {
 /** Web processing capability registration information provided by the application. */
 export type WebHandlerRegistration = {
   /** Web Skel name. */
-  webSkelName: string;
-  /** Web schema hash. */
-  schemaHash:  string;
+  webSkelName:    string;
+  /** Web descriptor hash. */
+  descriptorHash: string;
   /** Web proxy access address. */
-  endpoint:    string;
+  endpoint:       string;
 }
 export {};

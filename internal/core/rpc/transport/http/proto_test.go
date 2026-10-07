@@ -6,7 +6,7 @@ import (
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/util/vcode"
+	vrpchttp "go.yorun.ai/vrpc/transport/http"
 )
 
 func TestTraceHeaderRoundTrip(t *testing.T) {
@@ -170,10 +170,21 @@ func TestStatusCodeHeaderRoundTrip(t *testing.T) {
 func TestErrorPayloadRoundTrip(t *testing.T) {
 	errPayload := ex.New(ex.InvalidRequest, "bad request", ex.WithDetail("detail"))
 
-	body := ex.EncodeError(errPayload, vcode.MustMarshalJson)
-	got, err := ex.DecodeError(body, unmarshalJson)
+	body, err := vrpchttp.EncodeResponse(nil, ex.ToPayload(errPayload), ContentTypeJson)
+	if err != nil {
+		t.Fatal(err)
+	}
+	payload, err := vrpchttp.DecodeResponse(body, ContentTypeJson)
+	if err != nil {
+		t.Fatal(err)
+	}
+	errorPayload, err := payload.DecodeError()
 	if err != nil {
 		t.Fatalf("DecodeError() error = %v", err)
+	}
+	got, err := ex.FromPayload(errorPayload)
+	if err != nil {
+		t.Fatalf("FromPayload() error = %v", err)
 	}
 	if got.Code() != errPayload.Code() || got.Message() != errPayload.Message() || got.Detail() != errPayload.Detail() {
 		t.Fatalf("unexpected error payload: got=%s/%s/%s", got.Code(), got.Message(), got.Detail())

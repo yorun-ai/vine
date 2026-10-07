@@ -919,14 +919,14 @@ func TestAppImplStartRegistersEventerAndTasker(t *testing.T) {
 	assert.Equal(t, 1, linker.UnregisterCalls)
 }
 
-func TestAppImplStartSkipsDomainSchemasWhenSkipDomainSchemasEnabled(t *testing.T) {
+func TestAppImplStartSkipsDomainDescriptorsWhenSkipDomainDescriptorsEnabled(t *testing.T) {
 	ensureTaskerTaskRegistered()
 	ensureEventerEventRegistered()
 
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(true)
-	linker := &testLinker{SkipDomainSchemasValue: true}
+	linker := &testLinker{SkipDomainDescriptorsValue: true}
 	useTestLinker(t, linker)
 	app := newApp(&testFullSpec{
 		AppFlag:        &RunFlag{},
@@ -942,7 +942,7 @@ func TestAppImplStartSkipsDomainSchemasWhenSkipDomainSchemasEnabled(t *testing.T
 	app.Start()
 	app.StopGracefully()
 
-	assert.Nil(t, linker.RegisterDomainSchemas)
+	assert.Nil(t, linker.RegisterDomainDescriptors)
 }
 
 func TestAppImplStopGracefullyStopsInprocMode(t *testing.T) {

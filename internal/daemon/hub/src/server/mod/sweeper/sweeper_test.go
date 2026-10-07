@@ -5,7 +5,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.yorun.ai/vine/internal/core/skel"
+	skeldesc "go.yorun.ai/skel/descriptor"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
@@ -35,19 +36,19 @@ func (r *_SweeperRegistryRepo) RemoveAppStatus(appName string, instanceId string
 	r.removedApp = append(r.removedApp, appName+":"+instanceId)
 }
 
-type _SweeperSchemaRepo struct {
-	core.SchemaRepo
+type _SweeperDescriptorRepo struct {
+	core.DescriptorRepo
 	released []string
-	views    []core.DomainSchemaView
+	views    []core.DomainDescriptorView
 }
 
-func (r *_SweeperSchemaRepo) ReleaseDomainSchemas(ownerName string, ownerId string) {
+func (r *_SweeperDescriptorRepo) ReleaseDomainDescriptors(ownerName string, ownerId string) {
 	r.released = append(r.released, ownerName+":"+ownerId)
 }
 
-func (*_SweeperSchemaRepo) SaveDomainSchemasJSON(string, string, []skel.JSON) {}
+func (*_SweeperDescriptorRepo) SaveDomainDescriptorsJSON(string, string, []skeltype.JSON) {}
 
-func (r *_SweeperSchemaRepo) ListDomainSchemaViews() []core.DomainSchemaView {
+func (r *_SweeperDescriptorRepo) ListDomainDescriptorViews() []core.DomainDescriptorView {
 	return r.views
 }
 
@@ -70,19 +71,19 @@ func TestSweeperSkipsLiveLeaseStatus(t *testing.T) {
 		},
 		statusOK: true,
 	}
-	schemaRepo := &_SweeperSchemaRepo{}
+	descriptorRepo := &_SweeperDescriptorRepo{}
 	target := &Sweeper{
 		PortalInstanceCore: &core.PortalInstanceCore{PortalInstanceRepo: &_SweeperPortalInstanceRepo{}},
 		RegistryCore: &core.RegistryCore{
-			RegistryRepo: registryRepo,
-			SchemaRepo:   schemaRepo,
+			RegistryRepo:   registryRepo,
+			DescriptorRepo: descriptorRepo,
 		},
 	}
 
 	target.sweepExpiredLeases()
 
 	assert.Empty(t, registryRepo.removedApp)
-	assert.Empty(t, schemaRepo.released)
+	assert.Empty(t, descriptorRepo.released)
 }
 
 func TestSweeperUnregistersExpiredLeaseStatus(t *testing.T) {
@@ -99,27 +100,27 @@ func TestSweeperUnregistersExpiredLeaseStatus(t *testing.T) {
 		},
 		statusOK: true,
 	}
-	schemaRepo := &_SweeperSchemaRepo{views: []core.DomainSchemaView{{
-		DomainVersion: core.DomainSchemaVersion{
-			Schema: &skel.DomainSchema{
-				Services: []*skel.ServiceSchema{{
+	descriptorRepo := &_SweeperDescriptorRepo{views: []core.DomainDescriptorView{{
+		DomainVersion: core.DomainDescriptorVersion{
+			Descriptor: &skeldesc.Domain{
+				Services: []*skeldesc.Service{{
 					SkelName: "demo.Service",
 					Hash:     "service-main",
-					Audiences: []*skel.ActorAudienceSchema{{
+					Audiences: []*skeldesc.ActorAudience{{
 						SkelName: "demo.Actor",
-					}},
-				}},
+					}}, AuthMode: skeldesc.AuthModeRequired,
+				}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			},
 			Main: true,
 		},
-		Services: []core.SchemaVersion[*skel.ServiceSchema]{{
-			Schema: &skel.ServiceSchema{
+		Services: []core.DescriptorVersion[*skeldesc.Service]{{
+			Descriptor: &skeldesc.Service{
 				SkelName: "demo.Service",
-				Hash:     "service-main",
+				Hash:     "service-main", AuthMode: skeldesc.AuthModeRequired,
 			},
-			SkelName:   "demo.Service",
-			SchemaHash: "service-main",
-			Main:       true,
+			SkelName:       "demo.Service",
+			DescriptorHash: "service-main",
+			Main:           true,
 		}},
 	}}}
 	portalSiteRepo := &_SweeperPortalSiteRepo{entries: []*core.PortalSite{{
@@ -132,19 +133,19 @@ func TestSweeperUnregistersExpiredLeaseStatus(t *testing.T) {
 	}}}
 	target := &Sweeper{
 		PortalInstanceCore: &core.PortalInstanceCore{PortalInstanceRepo: &_SweeperPortalInstanceRepo{}},
-		SchemaRepo:         schemaRepo,
-		PortalSiteCore:     &core.PortalSiteCore{PortalSiteRepo: portalSiteRepo, SchemaRepo: schemaRepo},
+		DescriptorRepo:     descriptorRepo,
+		PortalSiteCore:     &core.PortalSiteCore{PortalSiteRepo: portalSiteRepo, DescriptorRepo: descriptorRepo},
 		Syncer:             syncerModule,
 		RegistryCore: &core.RegistryCore{
-			RegistryRepo: registryRepo,
-			SchemaRepo:   schemaRepo,
+			RegistryRepo:   registryRepo,
+			DescriptorRepo: descriptorRepo,
 		},
 	}
 
 	target.sweepExpiredLeases()
 
 	assert.Equal(t, []string{"demo.app:instance-1"}, registryRepo.removedApp)
-	assert.Equal(t, []string{"demo.app:instance-1"}, schemaRepo.released)
+	assert.Equal(t, []string{"demo.app:instance-1"}, descriptorRepo.released)
 	value, ok := watchServer.Get(watched.FormatPortalSiteKey("demo-rpc"))
 	assert.True(t, ok)
 	assert.JSONEq(t, `{
@@ -188,8 +189,8 @@ func TestSweeperRemovesExpiredPortalInstances(t *testing.T) {
 	target := &Sweeper{
 		PortalInstanceCore: &core.PortalInstanceCore{PortalInstanceRepo: portalRepo},
 		RegistryCore: &core.RegistryCore{
-			RegistryRepo: &_SweeperRegistryRepo{},
-			SchemaRepo:   &_SweeperSchemaRepo{},
+			RegistryRepo:   &_SweeperRegistryRepo{},
+			DescriptorRepo: &_SweeperDescriptorRepo{},
 		},
 	}
 

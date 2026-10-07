@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/client"
-	"go.yorun.ai/vine/internal/core/skel"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubinfo"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/flag"
@@ -23,7 +23,7 @@ type _TestPortalRegistryClient struct {
 	mutex         sync.Mutex
 	registrations []skeled.PortalRegistration
 	heartbeats    []skeled.PortalStatus
-	unregistered  []skel.UUID
+	unregistered  []skeltype.UUID
 	registered    bool
 	registerFails bool
 }
@@ -41,7 +41,7 @@ func (c *_TestPortalRegistryClient) Register(registration skeled.PortalRegistrat
 	}
 }
 
-func (c *_TestPortalRegistryClient) Unregister(instanceId skel.UUID, _ ...client.InvokeOption) {
+func (c *_TestPortalRegistryClient) Unregister(instanceId skeltype.UUID, _ ...client.InvokeOption) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -118,7 +118,7 @@ func TestHeartbeatRegistersOnStartAndUnregistersOnStop(t *testing.T) {
 		assert.GreaterOrEqual(t, heartbeats, 1)
 		assert.Equal(t, 0, unregistered)
 		client.mutex.Lock()
-		assert.Equal(t, skel.NewUUID(uuid.MustParse(testPortalInstanceId)), client.registrations[0].InstanceId)
+		assert.Equal(t, skeltype.NewUUID(uuid.MustParse(testPortalInstanceId)), client.registrations[0].InstanceId)
 		assert.Equal(t, "1.2.3", client.registrations[0].Version)
 		client.mutex.Unlock()
 
@@ -195,7 +195,7 @@ func TestHeartbeatKeepsRunningWhenHubLacksTheRegistration(t *testing.T) {
 		client.mutex.Lock()
 		lastRegistration := client.registrations[len(client.registrations)-1]
 		client.mutex.Unlock()
-		assert.Equal(t, skel.NewUUID(uuid.MustParse(testPortalInstanceId)), lastRegistration.InstanceId)
+		assert.Equal(t, skeltype.NewUUID(uuid.MustParse(testPortalInstanceId)), lastRegistration.InstanceId)
 
 		component.BeforeAppStop()
 	})

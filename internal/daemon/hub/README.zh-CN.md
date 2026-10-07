@@ -7,7 +7,7 @@
 未指定数据库参数时，Hub 默认启用 `--no-db`，必须提供 `--seed-data-file`。
 每次启动将配置加载到独立的内存 SQLite，初始化完成后，repo 层禁止修改
 应用配置、Portal entry、站点、规则和证书。请编辑 seed 文件后重启 Hub。
-Dashboard 展示只读提示并禁用编辑入口；注册、schema 和租约仍可写。
+Dashboard 展示只读提示并禁用编辑入口；注册、descriptor 和租约仍可写。
 显式指定 `--db-sqlite-file` 或 `--db-postgres-url` 则保留可写持久化行为，
 它们与 `--no-db` 互斥。standalone 也遵循这些规则，它还可通过
 `Option.SeedHubData` 传入内联 YAML，与 seed 文件互斥，使用相同的导入和只读机制。
@@ -119,8 +119,8 @@ Hub 的层次职责必须保持清晰：
   entry，`PortalRuleUpdate` 完全不能修改访问配置。seed YAML 仍在规则上声明访问
   配置，由 Hub 在应用 seed 时聚合为 entry。
 - 两条规则匹配同一个请求时行为是「报告」而不是「拒绝」：规则匹配的路径由 Web
-  声明的 mount 决定，而这些 schema 是应用在 Hub 启动之后才注册的，所以写入时
-  无法判断。Hub 在 schema 到位后审计并报出重复的请求（`no-db` 的只读配置直接
+  声明的 mount 决定，而这些 descriptor 是应用在 Hub 启动之后才注册的，所以写入时
+  无法判断。Hub 在 descriptor 到位后审计并报出重复的请求（`no-db` 的只读配置直接
   拒绝启动，因为没有可修复的界面；有数据库的配置继续运行，由操作者在 Dashboard
   上解决）。
 - 数据库表结构必须同时更新 `src/server/repo/db/model/sql/sqlite` 和 `src/server/repo/db/model/sql/pgsql`。
@@ -139,13 +139,13 @@ Hub 的职责可以拆成四条主线：
    Link 会把应用状态与 Rpc 服务注册写入 Hub。Hub 通过 `RegistryRepo` 持久化这些状态，并对外提供查询与心跳续租能力。
 
 3. Watch 分发层
-   `watchserver` 维护一份内存 Redis 数据。配置、应用状态、Rpc/Web endpoint 和 schema 都会同步写入其中，Link 与 Portal 通过 Redis 读取快照并监听变更事件。
+   `watchserver` 维护一份内存 Redis 数据。配置、应用状态、Rpc/Web endpoint 和 descriptor 都会同步写入其中，Link 与 Portal 通过 Redis 读取快照并监听变更事件。
 
    内嵌 Redis 协议要求客户端在执行数据命令前完成认证，并为三个用户分别配置资源级 ACL：
 
    - `vine.hub` 拥有完整的命令与 key 权限，密码在当前进程中随机生成。
    - `vine.link` 可以读取配置、Rpc endpoint 注册与 revision key，并且只能订阅配置 channel 和 Rpc 注册 pattern。
-   - `vine.portal` 可以读取 Portal rule、site、证书、actor/service/web/resource schema、Rpc/Web endpoint 注册与 revision key，并且只能订阅对应的列表 pattern。
+   - `vine.portal` 可以读取 Portal rule、site、证书、actor/service/web/resource descriptor、Rpc/Web endpoint 注册与 revision key，并且只能订阅对应的列表 pattern。
 
    Link 与 Portal 的 Redis 密码为空，用于进程内模式和分离部署调试。启用后端 mTLS 时，客户端证书会认证调用方，并把其 SPIFFE 身份绑定到对应的 Redis 用户名。未启用 mTLS 时，用户名只能选择最小权限角色，不能认证调用方，因此 Redis endpoint 必须位于回环地址或受信私有网络，并通过防火墙限制访问。
 

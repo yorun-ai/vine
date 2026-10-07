@@ -29,7 +29,7 @@ func (s *RegistryServiceServerImpl) Register(registration skeled.AppRegistration
 		WebHandlers:       vslice.Clone(registration.WebHandlers),
 		EventListeners:    vslice.Clone(registration.EventListeners),
 		TaskRunners:       vslice.Clone(registration.TaskRunners),
-		DomainSchemas:     vslice.Clone(registration.DomainSchemas),
+		DomainDescriptors: registrationDescriptors(registration),
 	})
 }
 

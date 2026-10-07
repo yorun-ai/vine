@@ -9,7 +9,7 @@ Without a database option, Hub defaults to `--no-db` and requires
 database on each start. After initialization, configuration repos reject writes
 to app configs, Portal entries, sites, rules, and certificates. Edit the seed file and
 restart Hub to apply changes. Dashboard exposes this state and disables editing;
-registration, schemas, and leases remain writable. Explicit `--db-sqlite-file`
+registration, descriptors, and leases remain writable. Explicit `--db-sqlite-file`
 or `--db-postgres-url` keeps writable persistence and is mutually exclusive
 with `--no-db`. This also applies to standalone, which can alternatively receive
 inline YAML through `Option.SeedHubData`, mutually exclusive with the seed file;
@@ -120,8 +120,8 @@ because an operator creates the entry before the rules that use it.
 
 Two rules that match the same request are reported, not rejected: the path a rule
 matches comes from the Web mount path its site declares, and Hub reads those
-schemas only after an application registers them, which happens after Hub starts.
-Hub audits the requests its published rules match once the schemas arrive: a
+descriptors only after an application registers them, which happens after Hub starts.
+Hub audits the requests its published rules match once the descriptors arrive: a
 read-only Hub refuses to serve such a configuration, because it has no surface to
 fix it from, and a stored configuration keeps both rules until the operator
 resolves the request from the Dashboard.
@@ -138,7 +138,7 @@ Hub serves the Admin API and the Dashboard on the admin module's own listener
 answers the API on `/api/invoke`, the path the Dashboard calls, and serves the
 embedded Dashboard build for every other path, so the Dashboard is not part
 of the Portal configuration. Hub provisions no
-entry, site, or rule for it, and Portal never routes it. `RegistryCore` owns schema registration
+entry, site, or rule for it, and Portal never routes it. `RegistryCore` owns descriptor registration
 and expired-lease removal. Initializer and Sweeper coordinate runtime publication
 through Syncer. The seed-applied marker remains startup bookkeeping in Seeder.
 
@@ -162,13 +162,13 @@ Hub has four primary responsibilities:
    Link writes application state and Rpc service registrations to Hub. Hub persists them through `RegistryRepo` and exposes queries and heartbeat lease renewal.
 
 3. Watch distribution layer
-   `watchserver` maintains an in-memory Watch dataset. Configuration, application state, Rpc/Web endpoints, and schemas are synchronized into it. Link and Portal read snapshots and subscribe to change events through Redis.
+   `watchserver` maintains an in-memory Watch dataset. Configuration, application state, Rpc/Web endpoints, and descriptors are synchronized into it. Link and Portal read snapshots and subscribe to change events through Redis.
 
    The embedded Redis protocol requires authentication before any data command. It defines three users with resource-level ACLs:
 
    - `vine.hub` has full command and key access. Its password is generated randomly for the current process.
    - `vine.link` can read configuration, Rpc endpoint registrations, and the revision key; it can subscribe only to configuration channels and Rpc registration patterns.
-   - `vine.portal` can read Portal rules, sites, certificates, actor/service/web/resource schemas, Rpc/Web endpoint registrations, and the revision key; it can subscribe only to the corresponding list patterns.
+   - `vine.portal` can read Portal rules, sites, certificates, actor/service/web/resource descriptors, Rpc/Web endpoint registrations, and the revision key; it can subscribe only to the corresponding list patterns.
 
    Link and Portal use empty Redis passwords for in-process mode and separated-deployment debugging. With backend mTLS enabled, the client certificate authenticates the caller and binds its SPIFFE identity to the matching Redis username. Without mTLS, the usernames only select least-privilege roles and do not authenticate the caller, so the Redis endpoint must remain on loopback or a trusted private network protected by a firewall.
 
@@ -265,7 +265,7 @@ columns are removed, older Hub versions that require them cannot use the databas
 
 ## Admin Display Strings
 
-Skeleton, configuration-schema, and debug-schema display fields use strings.
+Skeleton, configuration descriptor, and debug descriptor display fields use strings.
 Missing descriptions, deprecation reasons, examples, identifiers, access methods,
 and permission codes are represented by an empty string, not null. Update and
 debug-request fields retain optionality where omission has a separate meaning.

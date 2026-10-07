@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-Portal is Vine's external access layer. It synchronizes entries, sites, certificates, and access/schema state from Hub Watch, then routes incoming HTTP, Rpc, and Web requests to runtime endpoints.
+Portal is Vine's external access layer. It synchronizes entries, sites, certificates, and access/descriptor state from Hub Watch, then routes incoming HTTP, Rpc, and Web requests to runtime endpoints.
 
 ## Directory Structure
 
@@ -14,7 +14,7 @@ internal/daemon/portal/
         ├── comp/           Shared components such as Hub info and Watch clients
         ├── flag/           Portal flags and default normalization
         ├── mod/            Runtime modules
-        │   ├── access/     Actor/service/Web/resource schemas and Rpc/Web authorization
+        │   ├── access/     Actor/service/Web/resource descriptors and Rpc/Web authorization
         │   ├── entry/      HTTP/HTTPS listeners and portal-rule dispatch
         │   ├── epmgr/      Rpc/Web endpoint subscriptions and round-robin selection
         │   ├── site/       Portal site management and RpcGW/WebGW creation
@@ -36,9 +36,9 @@ Portal has four primary responsibilities:
    `epmgr` subscribes to Rpc/Web endpoint keys, manages watcher reference counts, and provides `NextRpcEndpoint` and `NextWebEndpoint` to gateways.
 
 4. Authentication, permission, and certificates
-   `access` reads and watches `schema:actor:*`, `schema:service:*`, `schema:web:*`, and `schema:resource:*` state. Before forwarding, RpcGW asks `access` to perform authentication and permission admission, which may invoke backend auth services, actor permission services, and resource check services. `vault` reads and watches certificates from Watch for HTTPS SNI matching.
+   `access` reads and watches `descriptor:actor:*`, `descriptor:service:*`, `descriptor:web:*`, and `descriptor:resource:*` state. Before forwarding, RpcGW asks `access` to perform authentication and permission admission, which may invoke backend auth services, actor permission services, and resource check services. `vault` reads and watches certificates from Watch for HTTPS SNI matching.
 
-   The Hub Watch client uses the `vine.portal` user. Its ACL is limited to Portal rules, sites, certificates, schemas, Rpc/Web endpoint discovery, the shared revision key, and their required subscriptions. The Redis password is empty for in-process mode and separated-deployment debugging. With backend mTLS enabled, the Portal certificate authenticates the client and binds its SPIFFE identity to the `vine.portal` user. Without mTLS, the username only selects an ACL role; because that role can read TLS private keys, the Redis endpoint must remain restricted to a trusted network.
+   The Hub Watch client uses the `vine.portal` user. Its ACL is limited to Portal rules, sites, certificates, descriptors, Rpc/Web endpoint discovery, the shared revision key, and their required subscriptions. The Redis password is empty for in-process mode and separated-deployment debugging. With backend mTLS enabled, the Portal certificate authenticates the client and binds its SPIFFE identity to the `vine.portal` user. Without mTLS, the username only selects an ACL role; because that role can read TLS private keys, the Redis endpoint must remain restricted to a trusted network.
 
 ## Dependencies
 
@@ -55,46 +55,54 @@ External callers should assemble only `src/server/app` and `src/server/flag`; th
 Preserve these ownership and dependency boundaries when modifying Portal:
 
 - `epmgr` is the single owner of Rpc/Web endpoint subscriptions, watcher reference counts, and round-robin selection. Sites and access logic obtain endpoints through it.
-- `access` owns actor/service/Web/resource schemas and Rpc/Web admission state. Gateways must not maintain a second authentication or permission schema cache.
+- `access` owns actor/service/Web/resource descriptors and Rpc/Web admission state. Gateways must not maintain a second authentication or permission descriptor cache.
 - `entry` owns listener entries and rule dispatch only; `site` owns RpcGW/WebGW instances only; `vault` owns certificate loading and matching only.
 - RpcGW and WebGW must continue propagating the active trace, initiator, actor, deadline, and remaining timeout. Do not replace the request context with a new background context.
-- When headers, forwarding paths, schemas, or endpoint formats change, update Link, Hub Watch structures, callers, and gateway tests together.
+- When headers, forwarding paths, descriptors, or endpoint formats change, update Link, Hub Watch structures, callers, and gateway tests together.
 
 ## Inproc Mode
 
-Portal can run in process as part of a standalone runtime. It still reads and watches portal rules, portal sites, certificates, schemas, and endpoint registrations from Hub Watch, but its Hub Watch client uses an in-process connection instead of external TCP.
+Portal can run in process as part of a standalone runtime. It still reads and watches portal rules, portal sites, certificates, descriptors, and endpoint registrations from Hub Watch, but its Hub Watch client uses an in-process connection instead of external TCP.
 
 In inproc and standalone modes:
 
 - The module boundaries and subscription semantics of `entry`, `site`, `access`, `epmgr`, and `vault` remain unchanged.
 - RpcGW and WebGW still forward through discovered endpoints, but targets may use `link+inproc://` and avoid an external Link ingress TCP port.
 - Portal does not own heartbeat or TTL renewal. Registrations in an inproc Hub are normally long-lived and depend on explicit application unregister plus Hub Watch events for cleanup.
-- This mode is suitable for testing routing, admission, schema watching, and gateway forwarding, but it does not model external network disconnection, independent Link/Portal process crashes, unreachable TLS listeners, or distributed lease expiry.
+- This mode is suitable for testing routing, admission, descriptor watching, and gateway forwarding, but it does not model external network disconnection, independent Link/Portal process crashes, unreachable TLS listeners, or distributed lease expiry.
 
 Use normal process mode to validate real network entries, TLS listeners, cross-process endpoint reachability, or registration lease expiry.
 
-Method `inherit` uses the service authentication mode. Registration converts
-empty and legacy `unset` method modes to `inherit`; services and web cannot use
-`inherit`.
+Rpc service/method authentication modes are `required`, `optional`, and
+`anonymous`; method declarations also support `inherit`. Web additionally supports
+`off`, while services and Web cannot use `inherit`. Local registration and Hub
+reject explicit Rpc `off`.
 
-Rpc service/method modes are `required`, `optional`, and `anonymous`; Web also supports
-`off`. Local registration and Hub reject explicit Rpc `off`. Schema registration
-converts legacy `auth` to `required`, and `noauth` to `optional` for Rpc or `off` for Web. Rpc methods inherit the service mode, then default to
-`required` when both are omitted or `unset`. Web empty and `unset` modes become `required` at schema registration. Invalid supplied
-credentials and auth-service errors never fall back to anonymous access when
-Portal authentication is enabled. Web `off` uses an anonymous actor and preserves
-Authorization for native authentication. Rpc and Web `required`, `optional`, and
-`anonymous` remove Authorization after admission, forwarding only the admitted actor.
+Generated descriptors carry each method's `EffectiveAuthMode` and
+`EffectiveRequire`. Local registration and Hub validate these values against the
+declared policies. Portal applies them directly without inheriting authentication
+modes or merging permission requirements. Web uses its validated `AuthMode`.
 
-Hub publishes selected Web schemas under `schema:web:*`; Portal subscribes to
-updates and deletes and rejects named Web requests when the schema is unavailable.
-Deploy matching Hub and Portal versions together: older Portal versions do not
-recognize the canonical `optional` and `off` values published by the upgraded Hub.
-Previously generated web contracts now require authentication by default. To allow
-anonymous access or native authentication, explicitly select `optional` or `off`
-and regenerate the contracts. Old Rpc `noauth`
-now authenticates supplied credentials and rejects invalid credentials instead of
-silently admitting the request anonymously.
+Legacy schema compatibility is confined to registration. The adapter converts
+`auth` to `required`, and `noauth` to `optional` for Rpc or `off` for Web. Empty and
+`unset` service/Web modes become `required`; empty and `unset` method modes become
+`inherit`. The adapter computes effective policies before validating the converted
+descriptor. New descriptors must already contain valid effective policies.
+
+Invalid supplied credentials and auth-service errors never fall back to anonymous
+access when Portal authentication is enabled. Web `off` uses an anonymous actor
+and preserves Authorization for native authentication. Rpc and Web `required`,
+`optional`, and `anonymous` remove Authorization after admission, forwarding only
+the admitted actor.
+
+Hub publishes selected Web descriptors under `descriptor:web:*`; Portal subscribes
+to updates and deletes and rejects named Web requests when the descriptor is
+unavailable. Deploy matching Hub, Link, and Portal versions together because the
+registration payloads and Watch keys use descriptors. Previously generated Web
+contracts now require authentication by default. To allow anonymous access or
+native authentication, explicitly select `optional` or `off` and regenerate the
+contracts. Old Rpc `noauth` authenticates supplied credentials and rejects invalid
+credentials instead of silently admitting the request anonymously.
 
 A WEBGW site requires both `actorSkelName` and `actorVia`. The configured actor must exist. Web authentication follows the declared mode; `required` rejects requests when the actor has no authentication configured. Only `off` preserves native Authorization credentials for the handler.
 

@@ -4,10 +4,10 @@ import (
 	"context"
 	"sync"
 
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/mtls"
-	"go.yorun.ai/vine/internal/core/skel"
 	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
@@ -26,10 +26,10 @@ type Access struct {
 	serviceNamesByKey                 map[string]string
 	webNamesByKey                     map[string]string
 	resourceNamesByKey                map[string]string
-	actorsBySkelName                  map[string]*watched.SchemaActor
-	servicesBySkelName                map[string]*watched.SchemaService
-	websBySkelName                    map[string]*watched.SchemaWeb
-	resourcesBySkelName               map[string]*watched.SchemaResource
+	actorsBySkelName                  map[string]*watched.DescriptorActor
+	servicesBySkelName                map[string]*watched.DescriptorService
+	websBySkelName                    map[string]*watched.DescriptorWeb
+	resourcesBySkelName               map[string]*watched.DescriptorResource
 	authServiceWatchersByActorKey     map[string]*epmgr.Watcher
 	permServiceWatchersByActorKey     map[string]*epmgr.Watcher
 	checkServiceWatchersByResourceKey map[string]*epmgr.Watcher
@@ -40,10 +40,10 @@ func (a *Access) DIInit() {
 	a.serviceNamesByKey = map[string]string{}
 	a.webNamesByKey = map[string]string{}
 	a.resourceNamesByKey = map[string]string{}
-	a.actorsBySkelName = map[string]*watched.SchemaActor{}
-	a.servicesBySkelName = map[string]*watched.SchemaService{}
-	a.websBySkelName = map[string]*watched.SchemaWeb{}
-	a.resourcesBySkelName = map[string]*watched.SchemaResource{}
+	a.actorsBySkelName = map[string]*watched.DescriptorActor{}
+	a.servicesBySkelName = map[string]*watched.DescriptorService{}
+	a.websBySkelName = map[string]*watched.DescriptorWeb{}
+	a.resourcesBySkelName = map[string]*watched.DescriptorResource{}
 	a.authServiceWatchersByActorKey = map[string]*epmgr.Watcher{}
 	a.permServiceWatchersByActorKey = map[string]*epmgr.Watcher{}
 	a.checkServiceWatchersByResourceKey = map[string]*epmgr.Watcher{}
@@ -60,23 +60,23 @@ func (a *Access) AllowRpc(operation *RpcOperation) bool {
 		return false
 	}
 
-	actorSchema, ok := a.actorSchema(operation.ActorVia.ActorSkelName)
+	actorDescriptor, ok := a.actorDescriptor(operation.ActorVia.ActorSkelName)
 	if !ok {
 		operation.writeError(ex.ClientForbidden, "not allowed")
 		return false
 	}
-	operation.actorSchema = actorSchema
+	operation.actorDescriptor = actorDescriptor
 
-	serviceSchema, ok := a.serviceSchema(operation.ServiceName)
+	serviceDescriptor, ok := a.serviceDescriptor(operation.ServiceName)
 	if !ok {
-		operation.writeError(ex.ServiceUnavailable, "rpc service schema is not found: "+operation.ServiceName)
+		operation.writeError(ex.ServiceUnavailable, "rpc service descriptor is not found: "+operation.ServiceName)
 		return false
 	}
-	operation.serviceSchema = serviceSchema
-	if !operation.loadMethodSchema() {
+	operation.serviceDescriptor = serviceDescriptor
+	if !operation.loadMethodDescriptor() {
 		return false
 	}
-	if !serviceSchema.HasAudience(operation.ActorVia.ActorSkelName, skel.ActorVia(operation.ActorVia.ActorVia)) {
+	if !serviceDescriptor.HasAudience(operation.ActorVia.ActorSkelName, skeldesc.ActorViaKind(operation.ActorVia.ActorVia)) {
 		operation.writeError(ex.ClientForbidden, "rpc service does not allow actor via")
 		return false
 	}
@@ -93,20 +93,18 @@ func (a *Access) AuthWeb(operation *WebOperation) bool {
 
 	mode := defaultAuthMode
 	if operation.WebName != "" {
-		schema, ok := a.webSchema(operation.WebName)
+		descriptor, ok := a.webDescriptor(operation.WebName)
 		if !ok {
-			operation.writeError(ex.ServiceUnavailable, "web schema is not found: "+operation.WebName)
+			operation.writeError(ex.ServiceUnavailable, "web descriptor is not found: "+operation.WebName)
 			return false
 		}
-		if schema.AuthMode != "" && schema.AuthMode != skel.AuthModeUnset {
-			mode = schema.AuthMode
-		}
+		mode = descriptor.AuthMode
 	}
-	actorSchema, ok := a.actorSchema(operation.ActorVia.ActorSkelName)
+	actorDescriptor, ok := a.actorDescriptor(operation.ActorVia.ActorSkelName)
 	if !ok {
 		operation.writeError(ex.ClientForbidden, "not allowed")
 		return false
 	}
-	operation.actorSchema = actorSchema
+	operation.actorDescriptor = actorDescriptor
 	return operation.authenticate(mode, operation.writeError, operation.setActor)
 }
