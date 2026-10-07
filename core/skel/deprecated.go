@@ -12,6 +12,36 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
+// Actor is the marker interface implemented by legacy generated actor types.
+//
+// Deprecated: Regenerate contracts with current skelc, which no longer emits actor marker types.
+type Actor interface {
+	Name() string
+	SkelName() string
+	Vias() []descriptor.ActorViaKind
+
+	mustBeActor()
+}
+
+// ActorBase supplies the marker methods for legacy generated actor types.
+//
+// Deprecated: Regenerate contracts with current skelc, which no longer embeds ActorBase.
+type ActorBase struct{}
+
+func (ActorBase) Name() string {
+	return ""
+}
+
+func (ActorBase) SkelName() string {
+	return ""
+}
+
+func (ActorBase) Vias() []descriptor.ActorViaKind {
+	return nil
+}
+
+func (ActorBase) mustBeActor() {}
+
 // Sensitive is implemented by generated values that are sensitive as a whole.
 //
 // Deprecated: Use go.yorun.ai/skel/types.Sensitive instead.

@@ -5,12 +5,6 @@ import (
 	internalskel "go.yorun.ai/vine/internal/core/skel"
 )
 
-// Actor is the Skel wire representation of an actor.
-type Actor = internalskel.Actor
-
-// ActorBase contains fields common to generated actor values.
-type ActorBase = internalskel.ActorBase
-
 // RegisterDomainDescriptor validates a contract and registers it in this process.
 func RegisterDomainDescriptor(value *descriptor.Domain) {
 	internalskel.RegisterDomainDescriptor(value)

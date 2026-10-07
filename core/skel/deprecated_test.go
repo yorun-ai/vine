@@ -42,6 +42,24 @@ func (facadeSensitiveValue) SkelSensitive() {}
 
 var _ Sensitive = facadeSensitiveValue{}
 
+type legacyGeneratedActor struct {
+	ActorBase
+}
+
+func (legacyGeneratedActor) Name() string {
+	return "LegacyActor"
+}
+
+func (legacyGeneratedActor) SkelName() string {
+	return "legacy.LegacyActor"
+}
+
+func (legacyGeneratedActor) Vias() []ActorVia {
+	return []ActorVia{ActorViaClient}
+}
+
+var _ Actor = legacyGeneratedActor{}
+
 func TestExtensionEventSchemaJSON(t *testing.T) {
 	var event EventSchema
 	if err := json.Unmarshal([]byte(`{"ext":true}`), &event); err != nil {
