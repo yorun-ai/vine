@@ -5,8 +5,71 @@ import (
 
 	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/ex"
+	"go.yorun.ai/vine/internal/core/skel/legacy"
 	"go.yorun.ai/vine/util/vcode"
 )
+
+func TestEvalPermExprPreservesLegacyShortCircuitAfterConversion(t *testing.T) {
+	for _, test := range []struct {
+		mode    legacy.PermRequireMode
+		allowed bool
+		code    ex.Code
+	}{
+		{legacy.PermRequireModeAny, true, ex.OK},
+		{legacy.PermRequireModeAll, false, ex.PermissionDenied},
+	} {
+		t.Run(string(test.mode), func(t *testing.T) {
+			// Old generators expand Resource:action:check into all(code, check).
+			declared := &legacy.PermExpr{
+				Mode: test.mode,
+				Children: []*legacy.PermExpr{
+					{
+						Mode: legacy.PermRequireModeAll,
+						Children: []*legacy.PermExpr{
+							{Mode: legacy.PermRequireModeCode, Code: "demo.Order:read"},
+							{Mode: legacy.PermRequireModeCheck, Check: &legacy.PermCheckInvocation{
+								ResourceSkelName: "demo.Order",
+								ActionName:       "read",
+								CheckName:        "exists",
+							}},
+						},
+					},
+					{Mode: legacy.PermRequireModeCode, Code: "demo.Order:update"},
+				},
+			}
+			domain, err := legacy.Convert(&legacy.DomainSchema{
+				Domain: "demo",
+				Services: []*legacy.ServiceSchema{{
+					Name:     "OrderApiService",
+					Api:      true,
+					AuthMode: legacy.AuthModeAuth,
+					Methods: []*legacy.MethodSchema{{
+						Name:    "read",
+						Require: &legacy.PermRequire{Expr: declared},
+					}},
+				}},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := skeldesc.ValidateEffectivePolicy(domain); err != nil {
+				t.Fatal(err)
+			}
+			calls := 0
+			expression := domain.Services[0].Methods[0].EffectiveRequire.Expression
+			allowed, code, _, _ := evalPermExpr(expression, map[string]bool{
+				"demo.Order:read":   true,
+				"demo.Order:update": test.allowed,
+			}, func(*skeldesc.PermissionCheckInvocation) (bool, ex.Code, string, string) {
+				calls++
+				return false, ex.ServiceUnavailable, "resource service unavailable", ""
+			})
+			if allowed != test.allowed || code != test.code || calls != 0 {
+				t.Fatalf("allowed=%v code=%s resource calls=%d; want allowed=%v code=%s without resource calls", allowed, code, calls, test.allowed, test.code)
+			}
+		})
+	}
+}
 
 func TestCborGetByPathSupportsFieldCascade(t *testing.T) {
 	data := vcode.MustMarshalCbor(map[string]any{
