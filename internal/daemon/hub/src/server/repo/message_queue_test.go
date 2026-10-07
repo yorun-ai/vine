@@ -66,16 +66,22 @@ func TestMessageQueueRepoSnapshots(t *testing.T) {
 				_, err := js.CreateOrUpdateStream(ctx, cfg)
 				require.NoError(t, err)
 			}
+			// Keep interest until the event snapshot consumers are created below.
+			_, err := js.CreateConsumer(ctx, eventspec.NATSStreamName, jetstream.ConsumerConfig{Durable: "fixture_retention", FilterSubject: "event.>", AckPolicy: jetstream.AckExplicitPolicy})
+			require.NoError(t, err)
+			for _, subject := range []string{"task.demo.Task", "task.demo.Orphan", "event.demo.Event"} {
+				_, err = js.Publish(ctx, subject, []byte("payload"))
+				require.NoError(t, err)
+			}
+			// Creation initializes pending counts from the stored messages; publish
+			// acknowledgements do not wait for existing consumers' async counters.
 			task, err := js.CreateConsumer(ctx, taskspec.NATSStreamName, jetstream.ConsumerConfig{Durable: "task_demo", FilterSubject: "task.demo.Task", AckPolicy: jetstream.AckExplicitPolicy})
 			require.NoError(t, err)
 			for _, name := range []string{"event_app_b", "event_app_a"} {
 				_, err = js.CreateConsumer(ctx, eventspec.NATSStreamName, jetstream.ConsumerConfig{Durable: name, FilterSubjects: []string{"event.demo.Other", "event.demo.Event"}, AckPolicy: jetstream.AckExplicitPolicy})
 				require.NoError(t, err)
 			}
-			for _, subject := range []string{"task.demo.Task", "task.demo.Orphan", "event.demo.Event"} {
-				_, err = js.Publish(ctx, subject, []byte("payload"))
-				require.NoError(t, err)
-			}
+			require.NoError(t, js.DeleteConsumer(ctx, eventspec.NATSStreamName, "fixture_retention"))
 			items, err := r.List(ctx)
 			require.NoError(t, err)
 			require.Len(t, items, 2)
