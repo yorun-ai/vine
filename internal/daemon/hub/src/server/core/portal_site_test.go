@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/core/skel"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/util/vslice"
 )
 
@@ -67,33 +67,33 @@ func (s *portalSiteRepoSpy) Remove(id int) bool {
 // newPortalSiteCoreForTest builds a site core with the repositories Hub injects,
 // so tests only choose the repositories they exercise.
 func newPortalSiteCoreForTest(repo PortalSiteRepo) *PortalSiteCore {
-	return &PortalSiteCore{PortalSiteRepo: repo, SchemaRepo: &schemaRepoSpy{}}
+	return &PortalSiteCore{PortalSiteRepo: repo, DescriptorRepo: &descriptorRepoSpy{}}
 }
 
-func TestMatchPortalSiteRpcgwServicesInDomainViewsIncludesVineSchemas(t *testing.T) {
+func TestMatchPortalSiteRpcgwServicesInDomainViewsIncludesVineDescriptors(t *testing.T) {
 	site := PortalSite{
 		Type:          PortalSiteTypeRPCGW,
 		ActorSkelName: "vine.hub.admin.AdminActor",
 		ActorVia:      "client",
 	}
-	views := []DomainSchemaView{{
-		DomainVersion: DomainSchemaVersion{
+	views := []DomainDescriptorView{{
+		DomainVersion: DomainDescriptorVersion{
 			Main: true,
-			Schema: &skel.DomainSchema{
-				Services: []*skel.ServiceSchema{
+			Descriptor: &skeldesc.Domain{
+				Services: []*skeldesc.Service{
 					{
 						SkelName: "vine.hub.admin.PortalSiteApiService",
-						Audiences: []*skel.ActorAudienceSchema{
+						Audiences: []*skeldesc.ActorAudience{
 							{SkelName: "vine.hub.admin.AdminActor"},
-						},
+						}, AuthMode: skeldesc.AuthModeRequired,
 					},
 					{
 						SkelName: "demo.UserService",
-						Audiences: []*skel.ActorAudienceSchema{
+						Audiences: []*skeldesc.ActorAudience{
 							{SkelName: "demo.UserActor"},
-						},
+						}, AuthMode: skeldesc.AuthModeRequired,
 					},
-				},
+				}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			},
 		},
 	}}
@@ -109,29 +109,29 @@ func TestMatchPortalSiteRpcgwServicesInDomainViewsMatchesActorVia(t *testing.T) 
 		ActorSkelName: "demo.UserActor",
 		ActorVia:      "client",
 	}
-	views := []DomainSchemaView{{
-		DomainVersion: DomainSchemaVersion{
+	views := []DomainDescriptorView{{
+		DomainVersion: DomainDescriptorVersion{
 			Main: true,
-			Schema: &skel.DomainSchema{Services: []*skel.ServiceSchema{
+			Descriptor: &skeldesc.Domain{Services: []*skeldesc.Service{
 				{
 					SkelName: "demo.ClientService",
-					Audiences: []*skel.ActorAudienceSchema{
-						{SkelName: "demo.UserActor", Via: skel.ActorViaClient},
-					},
+					Audiences: []*skeldesc.ActorAudience{
+						{SkelName: "demo.UserActor", Via: skeldesc.ActorViaClient},
+					}, AuthMode: skeldesc.AuthModeRequired,
 				},
 				{
 					SkelName: "demo.AgentService",
-					Audiences: []*skel.ActorAudienceSchema{
-						{SkelName: "demo.UserActor", Via: skel.ActorViaAgent},
-					},
+					Audiences: []*skeldesc.ActorAudience{
+						{SkelName: "demo.UserActor", Via: skeldesc.ActorViaAgent},
+					}, AuthMode: skeldesc.AuthModeRequired,
 				},
 				{
 					SkelName: "demo.AllViaService",
-					Audiences: []*skel.ActorAudienceSchema{
+					Audiences: []*skeldesc.ActorAudience{
 						{SkelName: "demo.UserActor"},
-					},
+					}, AuthMode: skeldesc.AuthModeRequired,
 				},
-			}},
+			}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"}},
 		},
 	}}
 

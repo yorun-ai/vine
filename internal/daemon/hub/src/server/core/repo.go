@@ -3,33 +3,33 @@ package core
 import (
 	"time"
 
-	"go.yorun.ai/vine/internal/core/skel"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/daemon"
 )
 
 type ServiceHandlerRegistration struct {
 	ServiceSkelName string
-	SchemaHash      string
+	DescriptorHash  string
 	Endpoint        string
 }
 
 type WebHandlerRegistration struct {
-	WebSkelName string
-	SchemaHash  string
-	Endpoint    string
+	WebSkelName    string
+	DescriptorHash string
+	Endpoint       string
 }
 
 type EventListenerRegistration struct {
-	EventSkelName string
-	SchemaHash    string
-	TimeoutMs     int
-	Concurrency   int
-	NoRetry       bool
+	EventSkelName  string
+	DescriptorHash string
+	TimeoutMs      int
+	Concurrency    int
+	NoRetry        bool
 }
 
 type TaskRunnerRegistration struct {
 	TaskSkelName   string
-	SchemaHash     string
+	DescriptorHash string
 	TimeoutMs      int
 	Concurrency    int
 	NoRetry        bool
@@ -42,15 +42,15 @@ type TaskRunnerCronScheduler struct {
 }
 
 type AppRegistration struct {
-	Name            string
-	InstanceId      string
-	Version         string
-	Endpoint        string
-	ServiceHandlers []ServiceHandlerRegistration
-	WebHandlers     []WebHandlerRegistration
-	EventListeners  []EventListenerRegistration
-	TaskRunners     []TaskRunnerRegistration
-	DomainSchemas   []skel.JSON
+	Name              string
+	InstanceId        string
+	Version           string
+	Endpoint          string
+	ServiceHandlers   []ServiceHandlerRegistration
+	WebHandlers       []WebHandlerRegistration
+	EventListeners    []EventListenerRegistration
+	TaskRunners       []TaskRunnerRegistration
+	DomainDescriptors []*skeldesc.Domain
 }
 
 type AppHeartbeat struct {
@@ -70,35 +70,35 @@ type AppStatus struct {
 	TaskRunners     []TaskRunnerRegistration
 }
 
-type DomainSchemaVersion struct {
-	Schema         *skel.DomainSchema
-	MainSchemaHash string
-	Main           bool
-	MultiVersion   bool
+type DomainDescriptorVersion struct {
+	Descriptor         *skeldesc.Domain
+	MainDescriptorHash string
+	Main               bool
+	MultiVersion       bool
 }
 
-type SchemaVersion[T any] struct {
-	Schema           T
-	Domain           string
-	SkelName         string
-	SchemaHash       string
-	MainSchemaHash   string
-	Main             bool
-	MultiVersion     bool
-	DomainSchemaHash string
+type DescriptorVersion[T any] struct {
+	Descriptor           T
+	Domain               string
+	SkelName             string
+	DescriptorHash       string
+	MainDescriptorHash   string
+	Main                 bool
+	MultiVersion         bool
+	DomainDescriptorHash string
 }
 
-type DomainSchemaView struct {
-	DomainVersion DomainSchemaVersion
-	Actors        []SchemaVersion[*skel.ActorSchema]
-	Configs       []SchemaVersion[*skel.ConfigSchema]
-	Data          []SchemaVersion[*skel.DataSchema]
-	Enums         []SchemaVersion[*skel.EnumSchema]
-	Events        []SchemaVersion[*skel.EventSchema]
-	Resources     []SchemaVersion[*skel.ResourceSchema]
-	Services      []SchemaVersion[*skel.ServiceSchema]
-	Tasks         []SchemaVersion[*skel.TaskSchema]
-	Webs          []SchemaVersion[*skel.WebSchema]
+type DomainDescriptorView struct {
+	DomainVersion DomainDescriptorVersion
+	Actors        []DescriptorVersion[*skeldesc.Actor]
+	Configs       []DescriptorVersion[*skeldesc.Config]
+	Data          []DescriptorVersion[*skeldesc.Data]
+	Enums         []DescriptorVersion[*skeldesc.Enum]
+	Events        []DescriptorVersion[*skeldesc.Event]
+	Resources     []DescriptorVersion[*skeldesc.Resource]
+	Services      []DescriptorVersion[*skeldesc.Service]
+	Tasks         []DescriptorVersion[*skeldesc.Task]
+	Webs          []DescriptorVersion[*skeldesc.Web]
 }
 
 type RpcServiceRegistration struct {
@@ -142,32 +142,31 @@ type RegistryRepo interface {
 	RemoveWebRegistration(name string, appName string, appInstanceId string)
 }
 
-// SchemaRepo stores the schemas applications register and selects the versions
+// DescriptorRepo stores the descriptors applications register and selects the versions
 // the Hub serves.
-type SchemaRepo interface {
-	SaveDomainSchemas(ownerName string, ownerId string, schemas []*skel.DomainSchema)
-	SaveDomainSchemasJSON(ownerName string, ownerId string, schemas []skel.JSON)
-	ReleaseDomainSchemas(ownerName string, ownerId string)
+type DescriptorRepo interface {
+	SaveDomainDescriptors(ownerName string, ownerId string, descriptors []*skeldesc.Domain)
+	ReleaseDomainDescriptors(ownerName string, ownerId string)
 
-	ListDomainSchemaViews() []DomainSchemaView
-	ListVineHubSchemaViews() []DomainSchemaView
-	ListActorSchemaVersions() []SchemaVersion[*skel.ActorSchema]
-	ListConfigSchemaVersions() []SchemaVersion[*skel.ConfigSchema]
-	ListDataSchemaVersions() []SchemaVersion[*skel.DataSchema]
-	ListEnumSchemaVersions() []SchemaVersion[*skel.EnumSchema]
-	ListEventSchemaVersions() []SchemaVersion[*skel.EventSchema]
-	ListResourceSchemaVersions() []SchemaVersion[*skel.ResourceSchema]
-	ListServiceSchemaVersions() []SchemaVersion[*skel.ServiceSchema]
-	ListTaskSchemaVersions() []SchemaVersion[*skel.TaskSchema]
-	ListWebSchemaVersions() []SchemaVersion[*skel.WebSchema]
+	ListDomainDescriptorViews() []DomainDescriptorView
+	ListVineHubDescriptorViews() []DomainDescriptorView
+	ListActorDescriptorVersions() []DescriptorVersion[*skeldesc.Actor]
+	ListConfigDescriptorVersions() []DescriptorVersion[*skeldesc.Config]
+	ListDataDescriptorVersions() []DescriptorVersion[*skeldesc.Data]
+	ListEnumDescriptorVersions() []DescriptorVersion[*skeldesc.Enum]
+	ListEventDescriptorVersions() []DescriptorVersion[*skeldesc.Event]
+	ListResourceDescriptorVersions() []DescriptorVersion[*skeldesc.Resource]
+	ListServiceDescriptorVersions() []DescriptorVersion[*skeldesc.Service]
+	ListTaskDescriptorVersions() []DescriptorVersion[*skeldesc.Task]
+	ListWebDescriptorVersions() []DescriptorVersion[*skeldesc.Web]
 
-	ListActorSchemas() []*skel.ActorSchema
-	ListServiceSchemas() []*skel.ServiceSchema
-	ListWebSchemas() []*skel.WebSchema
-	// GetWebSchema returns the selected schema by fully qualified Skel name, or nil if absent.
-	GetWebSchema(skelName string) *skel.WebSchema
+	ListActorDescriptors() []*skeldesc.Actor
+	ListServiceDescriptors() []*skeldesc.Service
+	ListWebDescriptors() []*skeldesc.Web
+	// GetWebDescriptor returns the selected descriptor by fully qualified Skel name, or nil if absent.
+	GetWebDescriptor(skelName string) *skeldesc.Web
 
-	ListAppConfigSchemas() []*skel.ConfigSchema
-	ListEnumSchemas() []*skel.EnumSchema
-	ListAppConfigTypeSchemas() ([]*skel.ConfigSchema, []*skel.EnumSchema, []*skel.DataSchema)
+	ListAppConfigDescriptors() []*skeldesc.Config
+	ListEnumDescriptors() []*skeldesc.Enum
+	ListAppConfigTypeDescriptors() ([]*skeldesc.Config, []*skeldesc.Enum, []*skeldesc.Data)
 }

@@ -5,15 +5,14 @@ package skeled
 import (
 	"reflect"
 
-	"go.yorun.ai/vine/internal/core/ex"
-	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
-	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
+	"go.yorun.ai/vine/core/ex"
+	"go.yorun.ai/vine/core/rpc"
 )
 
 func init() {
-	rpcspec.Register(_ConsoleServiceSpec)
-	rpcspec.Register(_EventServiceSpec)
-	rpcspec.Register(_TaskServiceSpec)
+	rpc.Register(_ConsoleServiceSpec)
+	rpc.Register(_EventServiceSpec)
+	rpc.Register(_TaskServiceSpec)
 }
 
 // ConsoleServiceServer App's console service, called by Link
@@ -21,8 +20,8 @@ func init() {
 // ConsoleService / Spec
 
 var (
-	_ConsoleServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
+	_ConsoleServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeBoth,
 		Name:              "ConsoleService",
 		SkelName:          "vine.app.ConsoleService",
 		Hash:              "ef0ecbc5",
@@ -36,11 +35,11 @@ var (
 		DefaultERServerType: reflect.TypeFor[*DefaultConsoleServiceServerER](),
 		ERClientType:        reflect.TypeFor[ConsoleServiceClientER](),
 		ERClientCtor:        NewConsoleServiceClientER,
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_ConsoleServicePingSpec,
 		},
 	}
-	_ConsoleServicePingSpec = &rpcspec.MethodSpec{
+	_ConsoleServicePingSpec = &rpc.MethodSpec{
 		Name:                        "Ping",
 		SkelName:                    "ping",
 		ArgumentsType:               nil,
@@ -123,7 +122,7 @@ type DefaultConsoleServiceServerER struct {
 
 type ConsoleServiceClient interface {
 	// Ping Application health check.
-	Ping(_ivOpts ...rpcclient.InvokeOption)
+	Ping(_ivOpts ...rpc.InvokeOption)
 }
 
 type _ConsoleServiceClient struct {
@@ -134,7 +133,7 @@ func NewConsoleServiceClient(clientER ConsoleServiceClientER) ConsoleServiceClie
 	return &_ConsoleServiceClient{clientER: clientER}
 }
 
-func (client *_ConsoleServiceClient) Ping(_ivOpts ...rpcclient.InvokeOption) {
+func (client *_ConsoleServiceClient) Ping(_ivOpts ...rpc.InvokeOption) {
 	err := client.clientER.Ping(_ivOpts...)
 	ex.PanicIfError(err)
 }
@@ -143,20 +142,20 @@ func (client *_ConsoleServiceClient) Ping(_ivOpts ...rpcclient.InvokeOption) {
 
 type ConsoleServiceClientER interface {
 	// Ping Application health check.
-	Ping(_ivOpts ...rpcclient.InvokeOption) ex.Error
+	Ping(_ivOpts ...rpc.InvokeOption) ex.Error
 }
 
 type _ConsoleServiceClientER struct {
-	rpcClient *rpcclient.Client
+	rpcClient *rpc.Client
 }
 
-func NewConsoleServiceClientER(rpcClient *rpcclient.Client) ConsoleServiceClientER {
+func NewConsoleServiceClientER(rpcClient *rpc.Client) ConsoleServiceClientER {
 	return &_ConsoleServiceClientER{
 		rpcClient: rpcClient,
 	}
 }
 
-func (client *_ConsoleServiceClientER) Ping(_ivOpts ...rpcclient.InvokeOption) ex.Error {
+func (client *_ConsoleServiceClientER) Ping(_ivOpts ...rpc.InvokeOption) ex.Error {
 	_, err := client.rpcClient.Invoke(_ConsoleServicePingSpec.Info(), nil, _ivOpts...)
 	return err
 }
@@ -166,8 +165,8 @@ func (client *_ConsoleServiceClientER) Ping(_ivOpts ...rpcclient.InvokeOption) e
 // EventService / Spec
 
 var (
-	_EventServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
+	_EventServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeBoth,
 		Name:              "EventService",
 		SkelName:          "vine.app.EventService",
 		Hash:              "d6668714",
@@ -181,11 +180,11 @@ var (
 		DefaultERServerType: reflect.TypeFor[*DefaultEventServiceServerER](),
 		ERClientType:        reflect.TypeFor[EventServiceClientER](),
 		ERClientCtor:        NewEventServiceClientER,
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_EventServiceOnEventSpec,
 		},
 	}
-	_EventServiceOnEventSpec = &rpcspec.MethodSpec{
+	_EventServiceOnEventSpec = &rpc.MethodSpec{
 		Name:                        "OnEvent",
 		SkelName:                    "onEvent",
 		ArgumentsType:               reflect.TypeFor[_EventServiceOnEventArguments](),
@@ -276,7 +275,7 @@ type DefaultEventServiceServerER struct {
 type EventServiceClient interface {
 	// OnEvent Trigger event processing.
 	//   @param on - Event handling information
-	OnEvent(on EventOn, _ivOpts ...rpcclient.InvokeOption)
+	OnEvent(on EventOn, _ivOpts ...rpc.InvokeOption)
 }
 
 type _EventServiceClient struct {
@@ -287,7 +286,7 @@ func NewEventServiceClient(clientER EventServiceClientER) EventServiceClient {
 	return &_EventServiceClient{clientER: clientER}
 }
 
-func (client *_EventServiceClient) OnEvent(on EventOn, _ivOpts ...rpcclient.InvokeOption) {
+func (client *_EventServiceClient) OnEvent(on EventOn, _ivOpts ...rpc.InvokeOption) {
 	err := client.clientER.OnEvent(on, _ivOpts...)
 	ex.PanicIfError(err)
 }
@@ -297,20 +296,20 @@ func (client *_EventServiceClient) OnEvent(on EventOn, _ivOpts ...rpcclient.Invo
 type EventServiceClientER interface {
 	// OnEvent Trigger event processing.
 	//   @param on - Event handling information
-	OnEvent(on EventOn, _ivOpts ...rpcclient.InvokeOption) ex.Error
+	OnEvent(on EventOn, _ivOpts ...rpc.InvokeOption) ex.Error
 }
 
 type _EventServiceClientER struct {
-	rpcClient *rpcclient.Client
+	rpcClient *rpc.Client
 }
 
-func NewEventServiceClientER(rpcClient *rpcclient.Client) EventServiceClientER {
+func NewEventServiceClientER(rpcClient *rpc.Client) EventServiceClientER {
 	return &_EventServiceClientER{
 		rpcClient: rpcClient,
 	}
 }
 
-func (client *_EventServiceClientER) OnEvent(on EventOn, _ivOpts ...rpcclient.InvokeOption) ex.Error {
+func (client *_EventServiceClientER) OnEvent(on EventOn, _ivOpts ...rpc.InvokeOption) ex.Error {
 	_, err := client.rpcClient.Invoke(_EventServiceOnEventSpec.Info(), &_EventServiceOnEventArguments{
 		On: on,
 	}, _ivOpts...)
@@ -322,8 +321,8 @@ func (client *_EventServiceClientER) OnEvent(on EventOn, _ivOpts ...rpcclient.In
 // TaskService / Spec
 
 var (
-	_TaskServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
+	_TaskServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeBoth,
 		Name:              "TaskService",
 		SkelName:          "vine.app.TaskService",
 		Hash:              "1974ce48",
@@ -337,11 +336,11 @@ var (
 		DefaultERServerType: reflect.TypeFor[*DefaultTaskServiceServerER](),
 		ERClientType:        reflect.TypeFor[TaskServiceClientER](),
 		ERClientCtor:        NewTaskServiceClientER,
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_TaskServiceRunTaskSpec,
 		},
 	}
-	_TaskServiceRunTaskSpec = &rpcspec.MethodSpec{
+	_TaskServiceRunTaskSpec = &rpc.MethodSpec{
 		Name:                        "RunTask",
 		SkelName:                    "runTask",
 		ArgumentsType:               reflect.TypeFor[_TaskServiceRunTaskArguments](),
@@ -432,7 +431,7 @@ type DefaultTaskServiceServerER struct {
 type TaskServiceClient interface {
 	// RunTask Trigger task execution.
 	//   @param run - Task execution information
-	RunTask(run TaskRun, _ivOpts ...rpcclient.InvokeOption)
+	RunTask(run TaskRun, _ivOpts ...rpc.InvokeOption)
 }
 
 type _TaskServiceClient struct {
@@ -443,7 +442,7 @@ func NewTaskServiceClient(clientER TaskServiceClientER) TaskServiceClient {
 	return &_TaskServiceClient{clientER: clientER}
 }
 
-func (client *_TaskServiceClient) RunTask(run TaskRun, _ivOpts ...rpcclient.InvokeOption) {
+func (client *_TaskServiceClient) RunTask(run TaskRun, _ivOpts ...rpc.InvokeOption) {
 	err := client.clientER.RunTask(run, _ivOpts...)
 	ex.PanicIfError(err)
 }
@@ -453,20 +452,20 @@ func (client *_TaskServiceClient) RunTask(run TaskRun, _ivOpts ...rpcclient.Invo
 type TaskServiceClientER interface {
 	// RunTask Trigger task execution.
 	//   @param run - Task execution information
-	RunTask(run TaskRun, _ivOpts ...rpcclient.InvokeOption) ex.Error
+	RunTask(run TaskRun, _ivOpts ...rpc.InvokeOption) ex.Error
 }
 
 type _TaskServiceClientER struct {
-	rpcClient *rpcclient.Client
+	rpcClient *rpc.Client
 }
 
-func NewTaskServiceClientER(rpcClient *rpcclient.Client) TaskServiceClientER {
+func NewTaskServiceClientER(rpcClient *rpc.Client) TaskServiceClientER {
 	return &_TaskServiceClientER{
 		rpcClient: rpcClient,
 	}
 }
 
-func (client *_TaskServiceClientER) RunTask(run TaskRun, _ivOpts ...rpcclient.InvokeOption) ex.Error {
+func (client *_TaskServiceClientER) RunTask(run TaskRun, _ivOpts ...rpc.InvokeOption) ex.Error {
 	_, err := client.rpcClient.Invoke(_TaskServiceRunTaskSpec.Info(), &_TaskServiceRunTaskArguments{
 		Run: run,
 	}, _ivOpts...)

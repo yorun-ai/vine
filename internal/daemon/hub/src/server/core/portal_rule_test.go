@@ -206,7 +206,7 @@ func TestPortalRuleCoreValidateKeepsRuleRepoUntouched(t *testing.T) {
 
 // Hub reports the requests two rules match once the Web mount paths decide the
 // prefixes, because no write can answer that question: Hub applies a seed before
-// the applications register their schemas.
+// the applications register their descriptors.
 func TestPortalRuleCoreConflictsFollowSiteMountPaths(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Scheme: "http", Port: 80, Enabled: true})
 	repo := &entryRuleRepoSpy{rules: map[int]*PortalRule{

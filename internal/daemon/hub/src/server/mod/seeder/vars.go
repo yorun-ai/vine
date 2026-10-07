@@ -7,20 +7,25 @@ import (
 	"strconv"
 	"strings"
 
-	"go.yorun.ai/vine/internal/core/skel"
+	skeldesc "go.yorun.ai/skel/descriptor"
+	skeltype "go.yorun.ai/skel/types"
 	"gopkg.in/yaml.v3"
 )
 
-// Generated skeled packages register these schemas during Go initialization,
+// Generated skeled packages register these descriptors during Go initialization,
 // before standalone starts Hub. The YAML tree remains authoritative for presence.
-type _VarsSchema struct {
-	data    map[string]*skel.DataSchema
-	configs map[string]*skel.ConfigSchema
-	enums   map[string]*skel.EnumSchema
+type _VarsDescriptor struct {
+	data    map[string]*skeldesc.Data
+	configs map[string]*skeldesc.Config
+	enums   map[string]*skeldesc.Enum
 }
 
-func newVarsSchema(domains []*skel.DomainSchema) *_VarsSchema {
-	result := new(_VarsSchema{data: map[string]*skel.DataSchema{}, configs: map[string]*skel.ConfigSchema{}, enums: map[string]*skel.EnumSchema{}})
+func newVarsDescriptor(domains []*skeldesc.Domain) *_VarsDescriptor {
+	result := new(_VarsDescriptor{
+		data:    map[string]*skeldesc.Data{},
+		configs: map[string]*skeldesc.Config{},
+		enums:   map[string]*skeldesc.Enum{},
+	})
 	for _, domain := range domains {
 		for _, item := range domain.Data {
 			result.data[item.SkelName] = item
@@ -35,36 +40,45 @@ func newVarsSchema(domains []*skel.DomainSchema) *_VarsSchema {
 	return result
 }
 
-func (s *_VarsSchema) members(kind *skel.TypeSchema) ([]*skel.MemberSchema, error) {
+func (s *_VarsDescriptor) members(kind *skeldesc.Type) ([]*skeldesc.Member, error) {
 	switch kind.Kind {
-	case skel.TypeKindConfig:
+	case skeldesc.TypeKindConfig:
 		if item := s.configs[kind.SkelName]; item != nil {
 			return item.Members, nil
 		}
-	case skel.TypeKindData:
+	case skeldesc.TypeKindData:
 		if kind.SkelName == "seed.PortalCors" {
-			return []*skel.MemberSchema{
-				{Name: "mode", Type: seedScalar(skel.ScalarString)},
-				{Name: "allowedOrigins", Type: new(skel.TypeSchema{Kind: skel.TypeKindList, Element: seedScalar(skel.ScalarString)})},
+			return []*skeldesc.Member{
+				{
+					Name: "mode",
+					Type: seedScalar(skeldesc.ScalarString),
+				},
+				{
+					Name: "allowedOrigins",
+					Type: new(skeldesc.Type{
+						Kind:    skeldesc.TypeKindList,
+						Element: seedScalar(skeldesc.ScalarString),
+					}),
+				},
 			}, nil
 		}
 		if item := s.data[kind.SkelName]; item != nil {
 			return item.Members, nil
 		}
 	}
-	return nil, fmt.Errorf("missing seed type schema %s", kind.SkelName)
+	return nil, fmt.Errorf("missing seed type descriptor %s", kind.SkelName)
 }
 
-func (s *_VarsSchema) childType(kind *skel.TypeSchema, key string) (*skel.TypeSchema, error) {
+func (s *_VarsDescriptor) childType(kind *skeldesc.Type, key string) (*skeldesc.Type, error) {
 	if kind == nil {
 		return nil, nil
 	}
 	switch kind.Kind {
-	case skel.TypeKindMap:
+	case skeldesc.TypeKindMap:
 		return kind.Value, nil
-	case skel.TypeKindList:
+	case skeldesc.TypeKindList:
 		return kind.Element, nil
-	case skel.TypeKindData, skel.TypeKindConfig:
+	case skeldesc.TypeKindData, skeldesc.TypeKindConfig:
 		members, err := s.members(kind)
 		if err != nil {
 			return nil, err
@@ -80,11 +94,14 @@ func (s *_VarsSchema) childType(kind *skel.TypeSchema, key string) (*skel.TypeSc
 	}
 }
 
-func (s *_VarsSchema) variableType(path string) (*skel.TypeSchema, error) {
+func (s *_VarsDescriptor) variableType(path string) (*skeldesc.Type, error) {
 	if s.data["app.Vars"] == nil {
 		return nil, nil
 	}
-	kind := new(skel.TypeSchema{Kind: skel.TypeKindData, SkelName: "app.Vars"})
+	kind := new(skeldesc.Type{
+		Kind:     skeldesc.TypeKindData,
+		SkelName: "app.Vars",
+	})
 	var err error
 	for segment := range strings.SplitSeq(path, ".") {
 		kind, err = s.childType(kind, segment)
@@ -109,13 +126,16 @@ func lookupSeedVariable(dictionary *yaml.Node, path string) (*yaml.Node, bool, e
 	return current, current != nil, nil
 }
 
-func seedScalar(scalar skel.Scalar) *skel.TypeSchema {
-	return new(skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: scalar})
+func seedScalar(scalar skeldesc.Scalar) *skeldesc.Type {
+	return new(skeldesc.Type{
+		Kind:   skeldesc.TypeKindScalar,
+		Scalar: scalar,
+	})
 }
 
-// Application-point types come from registered config schemas or the Hub seed
-// contract. Standalone gets application schemas from the imported skeled package.
-func (s *_VarsSchema) targetType(root *yaml.Node, path string) (*skel.TypeSchema, error) {
+// Application-point types come from registered config descriptors or the Hub seed
+// contract. Standalone gets application descriptors from the imported skeled package.
+func (s *_VarsDescriptor) targetType(root *yaml.Node, path string) (*skeldesc.Type, error) {
 	parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
 	if len(parts) < 3 {
 		return nil, nil
@@ -126,7 +146,7 @@ func (s *_VarsSchema) targetType(root *yaml.Node, path string) (*skel.TypeSchema
 			field = canonical
 		}
 	}
-	var kind *skel.TypeSchema
+	var kind *skeldesc.Type
 	switch {
 	case section == "appConfigs" && field == "value":
 		items := seedMappingValue(root, section)
@@ -138,22 +158,31 @@ func (s *_VarsSchema) targetType(root *yaml.Node, path string) (*skel.TypeSchema
 		if name == nil || s.configs[name.Value] == nil {
 			return nil, nil
 		}
-		kind = new(skel.TypeSchema{Kind: skel.TypeKindConfig, SkelName: name.Value})
+		kind = new(skeldesc.Type{
+			Kind:     skeldesc.TypeKindConfig,
+			SkelName: name.Value,
+		})
 	case section == "portalRules" && field == "matchPort":
-		kind = seedScalar(skel.ScalarInt)
+		kind = seedScalar(skeldesc.ScalarInt)
 	case section == "portalEntries" && field == "port":
-		kind = seedScalar(skel.ScalarInt)
+		kind = seedScalar(skeldesc.ScalarInt)
 	case field == "disabled" && (section == "portalSites" || section == "portalEntries" || section == "portalRules" || section == "portalCerts"):
-		kind = seedScalar(skel.ScalarBool)
+		kind = seedScalar(skeldesc.ScalarBoolean)
 	case section == "portalSites" && field == "cors":
-		kind = new(skel.TypeSchema{Kind: skel.TypeKindData, SkelName: "seed.PortalCors"})
+		kind = new(skeldesc.Type{
+			Kind:     skeldesc.TypeKindData,
+			SkelName: "seed.PortalCors",
+		})
 	case section == "portalCerts" && field == "domains":
-		kind = new(skel.TypeSchema{Kind: skel.TypeKindList, Element: seedScalar(skel.ScalarString)})
+		kind = new(skeldesc.Type{
+			Kind:    skeldesc.TypeKindList,
+			Element: seedScalar(skeldesc.ScalarString),
+		})
 	case section == "portalCerts" && (field == "validFrom" || field == "validTo"):
-		kind = seedScalar(skel.ScalarTimestamp)
+		kind = seedScalar(skeldesc.ScalarTimestamp)
 	default:
 		if seedStringFields[section][field] {
-			kind = seedScalar(skel.ScalarString)
+			kind = seedScalar(skeldesc.ScalarString)
 		}
 	}
 	for _, key := range parts[3:] {
@@ -167,11 +196,15 @@ func (s *_VarsSchema) targetType(root *yaml.Node, path string) (*skel.TypeSchema
 	return kind, nil
 }
 
-func parseSeedDefault(value string, kind *skel.TypeSchema) (*yaml.Node, error) {
+func parseSeedDefault(value string, kind *skeldesc.Type) (*yaml.Node, error) {
 	// Text defaults (including empty strings, URLs, dates and enum names) retain
 	// their literal spelling. Other defaults use YAML's native value syntax.
-	if kind != nil && (kind.Kind == skel.TypeKindEnum || (kind.Kind == skel.TypeKindScalar && seedStringScalar(kind.Scalar))) {
-		return new(yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value}), nil
+	if kind != nil && (kind.Kind == skeldesc.TypeKindEnum || (kind.Kind == skeldesc.TypeKindScalar && seedStringScalar(kind.Scalar))) {
+		return new(yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Tag:   "!!str",
+			Value: value,
+		}), nil
 	}
 	return parseSeedValue(value)
 }
@@ -179,7 +212,11 @@ func parseSeedDefault(value string, kind *skel.TypeSchema) (*yaml.Node, error) {
 // parseSeedValue preserves the native YAML type of one literal value.
 func parseSeedValue(value string) (*yaml.Node, error) {
 	if value == "" {
-		return new(yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: ""}), nil
+		return new(yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Tag:   "!!str",
+			Value: "",
+		}), nil
 	}
 	var doc yaml.Node
 	decoder := yaml.NewDecoder(strings.NewReader(value))
@@ -199,9 +236,9 @@ func parseSeedValue(value string) (*yaml.Node, error) {
 	return doc.Content[0], nil
 }
 
-func seedStringScalar(scalar skel.Scalar) bool {
+func seedStringScalar(scalar skeldesc.Scalar) bool {
 	switch scalar {
-	case skel.ScalarBool, skel.ScalarInt, skel.ScalarLong, skel.ScalarFloat, skel.ScalarDouble:
+	case skeldesc.ScalarBoolean, skeldesc.ScalarInt, skeldesc.ScalarFloat:
 		return false
 	default:
 		return true
@@ -211,7 +248,7 @@ func seedStringScalar(scalar skel.Scalar) bool {
 // validateValue validates only the value being applied. It never fills absent
 // fields with zero values, and ignores extra object fields rather than copying
 // them into the effective configuration.
-func (s *_VarsSchema) validateValue(node *yaml.Node, kind *skel.TypeSchema, path string, required bool) (*yaml.Node, error) {
+func (s *_VarsDescriptor) validateValue(node *yaml.Node, kind *skeldesc.Type, path string, required bool) (*yaml.Node, error) {
 	if kind == nil {
 		return cloneSeedNode(node), nil
 	}
@@ -224,7 +261,7 @@ func (s *_VarsSchema) validateValue(node *yaml.Node, kind *skel.TypeSchema, path
 	result := *node
 	result.Content = nil
 	switch kind.Kind {
-	case skel.TypeKindData, skel.TypeKindConfig:
+	case skeldesc.TypeKindData, skeldesc.TypeKindConfig:
 		if node.Kind != yaml.MappingNode {
 			return nil, fmt.Errorf("%s: expected object", path)
 		}
@@ -244,9 +281,13 @@ func (s *_VarsSchema) validateValue(node *yaml.Node, kind *skel.TypeSchema, path
 			if err != nil {
 				return nil, err
 			}
-			result.Content = append(result.Content, new(yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: member.Name}), checked)
+			result.Content = append(result.Content, new(yaml.Node{
+				Kind:  yaml.ScalarNode,
+				Tag:   "!!str",
+				Value: member.Name,
+			}), checked)
 		}
-	case skel.TypeKindList:
+	case skeldesc.TypeKindList:
 		if node.Kind != yaml.SequenceNode {
 			return nil, fmt.Errorf("%s: expected list", path)
 		}
@@ -257,7 +298,7 @@ func (s *_VarsSchema) validateValue(node *yaml.Node, kind *skel.TypeSchema, path
 			}
 			result.Content = append(result.Content, checked)
 		}
-	case skel.TypeKindMap:
+	case skeldesc.TypeKindMap:
 		if node.Kind != yaml.MappingNode {
 			return nil, fmt.Errorf("%s: expected map", path)
 		}
@@ -272,10 +313,10 @@ func (s *_VarsSchema) validateValue(node *yaml.Node, kind *skel.TypeSchema, path
 			}
 			result.Content = append(result.Content, key, value)
 		}
-	case skel.TypeKindEnum:
+	case skeldesc.TypeKindEnum:
 		enum := s.enums[kind.SkelName]
 		if enum == nil {
-			return nil, fmt.Errorf("%s: enum schema %s not found", path, kind.SkelName)
+			return nil, fmt.Errorf("%s: enum descriptor %s not found", path, kind.SkelName)
 		}
 		valid := false
 		for _, item := range enum.Items {
@@ -287,7 +328,7 @@ func (s *_VarsSchema) validateValue(node *yaml.Node, kind *skel.TypeSchema, path
 		if !valid {
 			return nil, fmt.Errorf("%s: invalid %s enum value", path, kind.SkelName)
 		}
-	case skel.TypeKindScalar:
+	case skeldesc.TypeKindScalar:
 		if err := validateSeedScalar(node, kind.Scalar); err != nil {
 			return nil, fmt.Errorf("%s: expected %s", path, kind.Scalar)
 		}
@@ -301,7 +342,7 @@ func (s *_VarsSchema) validateValue(node *yaml.Node, kind *skel.TypeSchema, path
 	return &result, nil
 }
 
-func validateSeedScalar(node *yaml.Node, scalar skel.Scalar) error {
+func validateSeedScalar(node *yaml.Node, scalar skeldesc.Scalar) error {
 	normalized, err := configJSONNode(node)
 	if err != nil {
 		return err
@@ -316,36 +357,32 @@ func validateSeedScalar(node *yaml.Node, scalar skel.Scalar) error {
 	}
 	var target any
 	switch scalar {
-	case skel.ScalarString:
+	case skeldesc.ScalarString:
 		target = new(string)
-	case skel.ScalarBool:
+	case skeldesc.ScalarBoolean:
 		target = new(bool)
-	case skel.ScalarInt:
+	case skeldesc.ScalarInt:
 		target = new(int)
-	case skel.ScalarLong:
-		target = new(int64)
-	case skel.ScalarFloat:
-		target = new(float32)
-	case skel.ScalarDouble:
+	case skeldesc.ScalarFloat:
 		target = new(float64)
-	case skel.ScalarDecimal:
-		target = new(skel.Decimal)
-	case skel.ScalarJson:
-		target = new(skel.JSON)
-	case skel.ScalarUuid:
-		target = new(skel.UUID)
-	case skel.ScalarTimestamp:
-		target = new(skel.Timestamp)
-	case skel.ScalarDuration:
-		target = new(skel.Duration)
-	case skel.ScalarLocalDate:
-		target = new(skel.LocalDate)
-	case skel.ScalarLocalTime:
-		target = new(skel.LocalTime)
-	case skel.ScalarLocalDateTime:
-		target = new(skel.LocalDateTime)
-	case skel.ScalarBinary:
-		target = new(skel.Binary)
+	case skeldesc.ScalarDecimal:
+		target = new(skeltype.Decimal)
+	case skeldesc.ScalarJSON:
+		target = new(skeltype.JSON)
+	case skeldesc.ScalarUUID:
+		target = new(skeltype.UUID)
+	case skeldesc.ScalarTimestamp:
+		target = new(skeltype.Timestamp)
+	case skeldesc.ScalarDuration:
+		target = new(skeltype.Duration)
+	case skeldesc.ScalarLocalDate:
+		target = new(skeltype.LocalDate)
+	case skeldesc.ScalarLocalTime:
+		target = new(skeltype.LocalTime)
+	case skeldesc.ScalarLocalDateTime:
+		target = new(skeltype.LocalDateTime)
+	case skeldesc.ScalarBinary:
+		target = new(skeltype.Binary)
 	default:
 		return fmt.Errorf("unsupported scalar %s", scalar)
 	}

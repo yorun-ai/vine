@@ -12,10 +12,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
-	"go.yorun.ai/vine/internal/core/skel"
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/util/vcode"
@@ -127,10 +127,10 @@ func testWebAuthContext(t *testing.T, actorVia watched.PortalActorVia, request *
 }
 
 func TestAuthWebOffPreservesNativeAuthorizationWithoutActorAuth(t *testing.T) {
-	schema := &watched.SchemaActor{SkelName: "demo.NativeActor"}
+	descriptor := &watched.DescriptorActor{SkelName: "demo.NativeActor"}
 	manager := testManager(t, map[string]string{
-		watched.FormatSchemaActorKey(schema.SkelName): vcode.MustMarshalJsonS(schema),
-		watched.FormatSchemaWebKey("demo.NativeWeb"):  vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: "demo.NativeWeb", AuthMode: skel.AuthModeOff}),
+		watched.FormatDescriptorActorKey(descriptor.SkelName): vcode.MustMarshalJsonS(descriptor),
+		watched.FormatDescriptorWebKey("demo.NativeWeb"):      vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.NativeWeb", AuthMode: skeldesc.AuthModeOff}),
 	})
 	for _, header := range []string{"", "Bearer native-token", "Basic dXNlcjpwdw==", "custom native-credential"} {
 		t.Run(header, func(t *testing.T) {
@@ -139,7 +139,7 @@ func TestAuthWebOffPreservesNativeAuthorizationWithoutActorAuth(t *testing.T) {
 			request.Header.Set(headerAuthorization, header)
 			request.Header.Set(webspec.HeaderWebActor, "untrusted actor metadata")
 			response := httptest.NewRecorder()
-			operation := testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: schema.SkelName, ActorVia: "client"}, request, response)
+			operation := testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: descriptor.SkelName, ActorVia: "client"}, request, response)
 			operation.WebName = "demo.NativeWeb"
 			require.True(t, manager.AuthWeb(operation))
 			require.Equal(t, header, request.Header.Get(headerAuthorization))
@@ -163,10 +163,10 @@ func TestAuthWebRejectsUnknownActorWithAuthorization(t *testing.T) {
 // Exercise the admission decision and forwarded headers through real HTTP
 // listeners, including a Web handler that owns its native authentication.
 func TestAuthWebNativeCredentialsReachBackend(t *testing.T) {
-	schema := &watched.SchemaActor{SkelName: "demo.NativeActor"}
+	descriptor := &watched.DescriptorActor{SkelName: "demo.NativeActor"}
 	manager := testManager(t, map[string]string{
-		watched.FormatSchemaActorKey(schema.SkelName): vcode.MustMarshalJsonS(schema),
-		watched.FormatSchemaWebKey("demo.NativeWeb"):  vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: "demo.NativeWeb", AuthMode: skel.AuthModeOff}),
+		watched.FormatDescriptorActorKey(descriptor.SkelName): vcode.MustMarshalJsonS(descriptor),
+		watched.FormatDescriptorWebKey("demo.NativeWeb"):      vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.NativeWeb", AuthMode: skeldesc.AuthModeOff}),
 	})
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		actor, err := meta.DecodeActorFromBase64(r.Header.Get(webspec.HeaderWebActor))
@@ -186,7 +186,7 @@ func TestAuthWebNativeCredentialsReachBackend(t *testing.T) {
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	gateway := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		setTestWebRequestHeaders(t, r)
-		operation := testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: schema.SkelName, ActorVia: "client"}, r, w)
+		operation := testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: descriptor.SkelName, ActorVia: "client"}, r, w)
 		operation.WebName = "demo.NativeWeb"
 		if manager.AuthWeb(operation) {
 			proxy.ServeHTTP(w, r)
@@ -211,7 +211,7 @@ func TestAuthWebNativeCredentialsReachBackend(t *testing.T) {
 	}
 }
 
-func TestAuthWebRejectsMissingNamedSchema(t *testing.T) {
+func TestAuthWebRejectsMissingNamedDescriptor(t *testing.T) {
 	manager := testManager(t, nil)
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/", nil)
 	response := httptest.NewRecorder()
@@ -220,18 +220,20 @@ func TestAuthWebRejectsMissingNamedSchema(t *testing.T) {
 	require.Equal(t, http.StatusServiceUnavailable, response.Code)
 }
 
-func TestAuthWebLegacySchemaDefaultsToRequired(t *testing.T) {
+func TestAuthWebLegacyDescriptorDefaultsToRequired(t *testing.T) {
 	registerTestActorInfo()
 	endpoint := registerTestAuthService(t, http.StatusOK, "OK", `{"userId":"u1"}`)
-	for _, mode := range []skel.AuthMode{"", skel.AuthModeUnset} {
+	for _, mode := range []skeldesc.AuthMode{skeldesc.AuthModeRequired} {
 		for _, enabled := range []bool{false, true} {
 			for _, credential := range []string{"", "Bearer malformed", "Key1 token, key2 token"} {
 				t.Run(fmt.Sprintf("%s/enabled=%t/%s", mode, enabled, credential), func(t *testing.T) {
 					values := testAuthValues(endpoint)
-					actor := testAuthActorSchema()
-					actor.AuthEnabled = enabled
-					values[watched.FormatSchemaActorKey(actor.SkelName)] = vcode.MustMarshalJsonS(actor)
-					values[watched.FormatSchemaWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.SchemaWeb{SkelName: "demo.Web", AuthMode: mode})
+					actor := testAuthActorDescriptor()
+					if !enabled {
+						actor.Auth = nil
+					}
+					values[watched.FormatDescriptorActorKey(actor.SkelName)] = vcode.MustMarshalJsonS(actor)
+					values[watched.FormatDescriptorWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: mode})
 					manager := testManager(t, values)
 					request := httptest.NewRequest(http.MethodGet, "http://demo.local/", nil)
 					setTestWebRequestHeaders(t, request)

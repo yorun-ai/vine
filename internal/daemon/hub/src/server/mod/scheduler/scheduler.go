@@ -11,9 +11,9 @@ import (
 	"uuid"
 
 	"github.com/robfig/cron/v3"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/skel"
 	taskspec "go.yorun.ai/vine/internal/core/task/spec"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
@@ -25,11 +25,11 @@ const schedulerRefreshInterval = 5 * time.Second
 type Scheduler struct {
 	app.BaseModule
 
-	CurrentApp   meta.CurrentApp        `inject:""`
-	RegistryRepo core.RegistryRepo      `inject:""`
-	SchemaRepo   core.SchemaRepo        `inject:""`
-	NATSServer   *natsserver.NATSServer `inject:""`
-	Flag         *hubflag.Flag          `inject:""`
+	CurrentApp     meta.CurrentApp        `inject:""`
+	RegistryRepo   core.RegistryRepo      `inject:""`
+	DescriptorRepo core.DescriptorRepo    `inject:""`
+	NATSServer     *natsserver.NATSServer `inject:""`
+	Flag           *hubflag.Flag          `inject:""`
 
 	mutex     sync.Mutex
 	cron      *cron.Cron
@@ -48,7 +48,7 @@ type _TaskPublisher interface {
 type _ScheduleConfig struct {
 	AppName         string
 	TaskSkelName    string
-	SchemaHash      string
+	DescriptorHash  string
 	TriggerSkelName string
 	CronExpr        string
 }
@@ -169,7 +169,7 @@ func (s *Scheduler) scheduleConfigs() ([]_ScheduleConfig, error) {
 				config := _ScheduleConfig{
 					AppName:         status.Name,
 					TaskSkelName:    runner.TaskSkelName,
-					SchemaHash:      runner.SchemaHash,
+					DescriptorHash:  runner.DescriptorHash,
 					TriggerSkelName: scheduler.TriggerSkelName,
 					CronExpr:        scheduler.CronExpr,
 				}
@@ -192,14 +192,14 @@ func (s *Scheduler) scheduleConfigs() ([]_ScheduleConfig, error) {
 }
 
 func (s *Scheduler) checkNoArgumentTrigger(config _ScheduleConfig) error {
-	for _, version := range s.SchemaRepo.ListTaskSchemaVersions() {
-		if version.Schema == nil {
+	for _, version := range s.DescriptorRepo.ListTaskDescriptorVersions() {
+		if version.Descriptor == nil {
 			continue
 		}
-		if version.Schema.SkelName != config.TaskSkelName || version.SchemaHash != config.SchemaHash {
+		if version.Descriptor.SkelName != config.TaskSkelName || version.DescriptorHash != config.DescriptorHash {
 			continue
 		}
-		for _, trigger := range version.Schema.Triggers {
+		for _, trigger := range version.Descriptor.Triggers {
 			if trigger == nil {
 				continue
 			}
@@ -226,8 +226,8 @@ func (s *Scheduler) publishSchedule(config _ScheduleConfig) {
 			TraceSpan:     trace.Span(),
 			AppName:       s.CurrentApp.Name(),
 			AppVersion:    s.CurrentApp.Version(),
-			AppInstanceId: skel.NewUUID(uuid.MustParse(s.CurrentApp.InstanceId())),
-			LaunchedAt:    skel.NewTimestampNow(),
+			AppInstanceId: skeltype.NewUUID(uuid.MustParse(s.CurrentApp.InstanceId())),
+			LaunchedAt:    skeltype.NewTimestampNow(),
 		},
 		TaskSkelName:    config.TaskSkelName,
 		TriggerSkelName: config.TriggerSkelName,
@@ -252,7 +252,7 @@ func (s *Scheduler) hasActiveRunner(config _ScheduleConfig) bool {
 			continue
 		}
 		for _, runner := range status.TaskRunners {
-			if runner.TaskSkelName != config.TaskSkelName || runner.SchemaHash != config.SchemaHash {
+			if runner.TaskSkelName != config.TaskSkelName || runner.DescriptorHash != config.DescriptorHash {
 				continue
 			}
 			for _, scheduler := range runner.CronSchedulers {
@@ -266,7 +266,7 @@ func (s *Scheduler) hasActiveRunner(config _ScheduleConfig) bool {
 }
 
 func (c _ScheduleConfig) key() string {
-	return strings.Join([]string{c.AppName, c.TaskSkelName, c.SchemaHash, c.TriggerSkelName, c.CronExpr}, "\x00")
+	return strings.Join([]string{c.AppName, c.TaskSkelName, c.DescriptorHash, c.TriggerSkelName, c.CronExpr}, "\x00")
 }
 
 func (c _ScheduleConfig) validate() error {
@@ -276,8 +276,8 @@ func (c _ScheduleConfig) validate() error {
 	if c.TaskSkelName == "" {
 		return fmt.Errorf("scheduled task skel name is empty")
 	}
-	if c.SchemaHash == "" {
-		return fmt.Errorf("scheduled task schema hash is empty")
+	if c.DescriptorHash == "" {
+		return fmt.Errorf("scheduled task descriptor hash is empty")
 	}
 	if c.TriggerSkelName == "" {
 		return fmt.Errorf("scheduled task trigger skel name is empty")

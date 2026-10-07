@@ -6,12 +6,12 @@ import (
 	"uuid"
 
 	"github.com/stretchr/testify/assert"
+	skeltype "go.yorun.ai/skel/types"
 	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/client"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
-	"go.yorun.ai/vine/internal/core/skel"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/ingress"
@@ -20,14 +20,14 @@ import (
 
 type _LinkRegistryRegistryServiceClient struct {
 	registrations []hubskeled.AppRegistration
-	unregistered  []skel.UUID
+	unregistered  []skeltype.UUID
 }
 
 func (c *_LinkRegistryRegistryServiceClient) Register(registration hubskeled.AppRegistration, _ivOpts ...client.InvokeOption) {
 	c.registrations = append(c.registrations, registration)
 }
 
-func (c *_LinkRegistryRegistryServiceClient) Unregister(_ string, instanceId skel.UUID, _ivOpts ...client.InvokeOption) {
+func (c *_LinkRegistryRegistryServiceClient) Unregister(_ string, instanceId skeltype.UUID, _ivOpts ...client.InvokeOption) {
 	c.unregistered = append(c.unregistered, instanceId)
 }
 
@@ -80,7 +80,7 @@ func TestRegistryServiceRegisterStartsHeartbeat(t *testing.T) {
 	})
 
 	assert.Len(t, client.registrations, 1)
-	assert.Equal(t, skel.NewUUID(uuid.MustParse(app.InstanceId())), client.registrations[0].InstanceId)
+	assert.Equal(t, skeltype.NewUUID(uuid.MustParse(app.InstanceId())), client.registrations[0].InstanceId)
 	assert.Equal(t, ing.Endpoint(), client.registrations[0].Endpoint)
 	assert.Equal(t, []hubskeled.ServiceHandlerRegistration{{
 		ServiceSkelName: "demo.service.UserService",
@@ -121,7 +121,7 @@ func TestRegistryServiceUnregisterStopsHeartbeat(t *testing.T) {
 
 	service.Unregister()
 
-	assert.Equal(t, []skel.UUID{skel.NewUUID(uuid.MustParse(app.InstanceId()))}, client.unregistered)
+	assert.Equal(t, []skeltype.UUID{skeltype.NewUUID(uuid.MustParse(app.InstanceId()))}, client.unregistered)
 }
 
 func newLinkServiceSpecContext(t *testing.T, app meta.App) spec.Context {

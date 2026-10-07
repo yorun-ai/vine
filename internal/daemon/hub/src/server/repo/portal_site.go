@@ -9,32 +9,32 @@ import (
 )
 
 type PortalSiteRepo struct {
-	Dao        *model.PortalSiteDao `inject:""`
-	SchemaRepo core.SchemaRepo      `inject:""`
-	Syncer     *syncer.Syncer       `inject:""`
-	Access     *configaccess.Access `inject:""`
+	Dao            *model.PortalSiteDao `inject:""`
+	DescriptorRepo core.DescriptorRepo  `inject:""`
+	Syncer         *syncer.Syncer       `inject:""`
+	Access         *configaccess.Access `inject:""`
 }
 
 func (s *PortalSiteRepo) List() []*core.PortalSite {
-	schemas := s.schemas()
+	descriptors := s.descriptors()
 	rows := s.Dao.ListOrdered()
 	entries := make([]*core.PortalSite, 0, len(rows))
 	for _, row := range rows {
-		entries = append(entries, s.toCorePortalSite(row, schemas))
+		entries = append(entries, s.toCorePortalSite(row, descriptors))
 	}
 	return entries
 }
 
 func (s *PortalSiteRepo) GetById(id int) (*core.PortalSite, bool) {
 	if row, ok := s.Dao.ById(id); ok {
-		return s.toCorePortalSite(row, s.schemas()), true
+		return s.toCorePortalSite(row, s.descriptors()), true
 	}
 	return nil, false
 }
 
 func (s *PortalSiteRepo) GetByName(name string) (*core.PortalSite, bool) {
 	if row, ok := s.Dao.ByName(name); ok {
-		return s.toCorePortalSite(row, s.schemas()), true
+		return s.toCorePortalSite(row, s.descriptors()), true
 	}
 	return nil, false
 }
@@ -44,7 +44,7 @@ func (s *PortalSiteRepo) Save(entry *core.PortalSite) {
 	row := toModelPortalSite(entry)
 	s.Dao.Save(row)
 
-	saved := s.toCorePortalSite(row, s.schemas())
+	saved := s.toCorePortalSite(row, s.descriptors())
 	*entry = *saved
 	s.Syncer.SyncPortalSite(saved)
 }
@@ -55,14 +55,14 @@ func (s *PortalSiteRepo) Remove(id int) bool {
 	if !ok {
 		return false
 	}
-	s.Syncer.RemovePortalSite(s.toCorePortalSite(entry, s.schemas()))
+	s.Syncer.RemovePortalSite(s.toCorePortalSite(entry, s.descriptors()))
 	return true
 }
 
-// toCorePortalSite reconstitutes a portal site from its row and the schemas the
+// toCorePortalSite reconstitutes a portal site from its row and the descriptors the
 // applications registered: the Web mount path and the Rpc services the site
 // forwards to are assembled here so the domain and the API read complete sites.
-func (s *PortalSiteRepo) toCorePortalSite(row *model.PortalSite, schemas _PortalSiteSchemas) *core.PortalSite {
+func (s *PortalSiteRepo) toCorePortalSite(row *model.PortalSite, descriptors _PortalSiteDescriptors) *core.PortalSite {
 	cors := core.NormalizePortalCors(core.PortalCors{
 		Mode:           core.PortalCorsMode(row.CorsMode),
 		AllowedOrigins: decodePortalCorsOrigins(row.CorsOrigins),
@@ -78,34 +78,37 @@ func (s *PortalSiteRepo) toCorePortalSite(row *model.PortalSite, schemas _Portal
 		WebName:       row.WebName,
 		Enabled:       row.Enabled,
 	}
-	entry.WebMountPath = schemas.mountPath(entry)
-	entry.RpcgwServices = core.MatchPortalSiteRpcgwServicesInDomainViews(*entry, schemas.views)
+	entry.WebMountPath = descriptors.mountPath(entry)
+	entry.RpcgwServices = core.MatchPortalSiteRpcgwServicesInDomainViews(*entry, descriptors.views)
 	return entry
 }
 
-// _PortalSiteSchemas is the schema state one repository call assembles sites
+// _PortalSiteDescriptors is the descriptor state one repository call assembles sites
 // from: the declared Web mount paths and the registered domain views.
-type _PortalSiteSchemas struct {
+type _PortalSiteDescriptors struct {
 	mountPaths map[string]string
-	views      []core.DomainSchemaView
+	views      []core.DomainDescriptorView
 }
 
-func (s *PortalSiteRepo) schemas() _PortalSiteSchemas {
-	webs := s.SchemaRepo.ListWebSchemas()
+func (s *PortalSiteRepo) descriptors() _PortalSiteDescriptors {
+	webs := s.DescriptorRepo.ListWebDescriptors()
 	mountPaths := make(map[string]string, len(webs))
 	for _, web := range webs {
 		if web.MountPath != "" {
 			mountPaths[web.SkelName] = web.MountPath
 		}
 	}
-	return _PortalSiteSchemas{mountPaths: mountPaths, views: s.SchemaRepo.ListDomainSchemaViews()}
+	return _PortalSiteDescriptors{
+		mountPaths: mountPaths,
+		views:      s.DescriptorRepo.ListDomainDescriptorViews(),
+	}
 }
 
-func (schemas _PortalSiteSchemas) mountPath(entry *core.PortalSite) string {
+func (descriptors _PortalSiteDescriptors) mountPath(entry *core.PortalSite) string {
 	if entry.Type != core.PortalSiteTypeWEBGW || entry.WebName == "" {
 		return ""
 	}
-	return schemas.mountPaths[entry.WebName]
+	return descriptors.mountPaths[entry.WebName]
 }
 
 func toModelPortalSite(entry *core.PortalSite) *model.PortalSite {

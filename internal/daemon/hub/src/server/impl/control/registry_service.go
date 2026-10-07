@@ -1,7 +1,7 @@
 package control
 
 import (
-	"go.yorun.ai/vine/internal/core/skel"
+	skeltype "go.yorun.ai/skel/types"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
@@ -13,29 +13,29 @@ type RegistryServiceServerImpl struct {
 
 	RegistryCore   *core.RegistryCore   `inject:""`
 	PortalSiteCore *core.PortalSiteCore `inject:""`
-	SchemaRepo     core.SchemaRepo      `inject:""`
+	DescriptorRepo core.DescriptorRepo  `inject:""`
 	Syncer         *syncer.Syncer       `inject:""`
 }
 
 func (s *RegistryServiceServerImpl) Register(reg skeled.AppRegistration) {
 	s.RegistryCore.Register(core.AppRegistration{
-		InstanceId:      reg.InstanceId.String(),
-		Name:            reg.Name,
-		Version:         reg.Version,
-		Endpoint:        reg.Endpoint,
-		ServiceHandlers: toCoreServiceHandlerRegistrations(reg.ServiceHandlers),
-		WebHandlers:     toCoreWebHandlerRegistrations(reg.WebHandlers),
-		EventListeners:  toCoreEventListenerRegistrations(reg.EventListeners),
-		TaskRunners:     toCoreTaskRunnerRegistrations(reg.TaskRunners),
-		DomainSchemas:   vslice.Clone(reg.DomainSchemas),
+		InstanceId:        reg.InstanceId.String(),
+		Name:              reg.Name,
+		Version:           reg.Version,
+		Endpoint:          reg.Endpoint,
+		ServiceHandlers:   toCoreServiceHandlerRegistrations(reg.ServiceHandlers),
+		WebHandlers:       toCoreWebHandlerRegistrations(reg.WebHandlers),
+		EventListeners:    toCoreEventListenerRegistrations(reg.EventListeners),
+		TaskRunners:       toCoreTaskRunnerRegistrations(reg.TaskRunners),
+		DomainDescriptors: decodeRegisteredDescriptors(reg),
 	})
-	s.refreshSchemas()
+	s.refreshDescriptors()
 	s.refreshPortalSiteRpcgwServices()
 }
 
-func (s *RegistryServiceServerImpl) Unregister(name string, instanceId skel.UUID) {
+func (s *RegistryServiceServerImpl) Unregister(name string, instanceId skeltype.UUID) {
 	s.RegistryCore.Unregister(name, instanceId.String())
-	s.refreshSchemas()
+	s.refreshDescriptors()
 	s.refreshPortalSiteRpcgwServices()
 }
 
@@ -52,8 +52,8 @@ func (s *RegistryServiceServerImpl) refreshPortalSiteRpcgwServices() {
 	}
 }
 
-func (s *RegistryServiceServerImpl) refreshSchemas() {
-	s.Syncer.SyncSchemas(s.SchemaRepo.ListDomainSchemaViews())
+func (s *RegistryServiceServerImpl) refreshDescriptors() {
+	s.Syncer.SyncDescriptors(s.DescriptorRepo.ListDomainDescriptorViews())
 }
 
 func toCoreServiceHandlerRegistrations(registrations []skeled.ServiceHandlerRegistration) []core.ServiceHandlerRegistration {
@@ -61,7 +61,7 @@ func toCoreServiceHandlerRegistrations(registrations []skeled.ServiceHandlerRegi
 		for _, registration := range registrations {
 			if !yield(core.ServiceHandlerRegistration{
 				ServiceSkelName: registration.ServiceSkelName,
-				SchemaHash:      registration.SchemaHash,
+				DescriptorHash:  registration.DescriptorHash,
 				Endpoint:        registration.Endpoint,
 			}) {
 				return
@@ -74,9 +74,9 @@ func toCoreWebHandlerRegistrations(registrations []skeled.WebHandlerRegistration
 	return vslice.Collect(func(yield func(core.WebHandlerRegistration) bool) {
 		for _, registration := range registrations {
 			if !yield(core.WebHandlerRegistration{
-				WebSkelName: registration.WebSkelName,
-				SchemaHash:  registration.SchemaHash,
-				Endpoint:    registration.Endpoint,
+				WebSkelName:    registration.WebSkelName,
+				DescriptorHash: registration.DescriptorHash,
+				Endpoint:       registration.Endpoint,
 			}) {
 				return
 			}
@@ -88,11 +88,11 @@ func toCoreEventListenerRegistrations(registrations []skeled.EventListenerRegist
 	return vslice.Collect(func(yield func(core.EventListenerRegistration) bool) {
 		for _, registration := range registrations {
 			if !yield(core.EventListenerRegistration{
-				EventSkelName: registration.EventSkelName,
-				SchemaHash:    registration.SchemaHash,
-				TimeoutMs:     registration.TimeoutMs,
-				Concurrency:   registration.Concurrency,
-				NoRetry:       registration.NoRetry,
+				EventSkelName:  registration.EventSkelName,
+				DescriptorHash: registration.DescriptorHash,
+				TimeoutMs:      registration.TimeoutMs,
+				Concurrency:    registration.Concurrency,
+				NoRetry:        registration.NoRetry,
 			}) {
 				return
 			}
@@ -105,7 +105,7 @@ func toCoreTaskRunnerRegistrations(registrations []skeled.TaskRunnerRegistration
 		for _, registration := range registrations {
 			if !yield(core.TaskRunnerRegistration{
 				TaskSkelName:   registration.TaskSkelName,
-				SchemaHash:     registration.SchemaHash,
+				DescriptorHash: registration.DescriptorHash,
 				TimeoutMs:      registration.TimeoutMs,
 				Concurrency:    registration.Concurrency,
 				NoRetry:        registration.NoRetry,

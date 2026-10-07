@@ -42,7 +42,7 @@ func (s *Syncer) RemovePortalEntry(entry *core.PortalEntry) {
 }
 
 // SyncPortalSite publishes a complete portal site, including the services it
-// derives from the schemas registered for its actor.
+// derives from the descriptors registered for its actor.
 func (s *Syncer) SyncPortalSite(site *core.PortalSite) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
@@ -240,12 +240,18 @@ func toWatchedPortalSite(site *core.PortalSite) *watched.PortalSite {
 	if site.Type == core.PortalSiteTypeRPCGW {
 		services := make([]watched.PortalRpcgwService, 0, len(site.RpcgwServices))
 		for _, serviceName := range site.RpcgwServices {
-			services = append(services, watched.PortalRpcgwService{SkelName: serviceName})
+			services = append(services, watched.PortalRpcgwService{
+				SkelName: serviceName,
+			})
 		}
-		ret.RpcgwConfig = &watched.PortalRpcgwConfig{Services: services}
+		ret.RpcgwConfig = &watched.PortalRpcgwConfig{
+			Services: services,
+		}
 	}
 	if site.Type == core.PortalSiteTypeWEBGW {
-		ret.WebgwConfig = &watched.PortalWebgwConfig{WebName: site.WebName}
+		ret.WebgwConfig = &watched.PortalWebgwConfig{
+			WebName: site.WebName,
+		}
 		ret.WebgwConfig.MountPath = site.WebMountPath
 	}
 	return ret

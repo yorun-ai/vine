@@ -4,9 +4,10 @@ import (
 	"strings"
 	"uuid"
 
+	skeldesc "go.yorun.ai/skel/descriptor"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/skel"
 	taskspec "go.yorun.ai/vine/internal/core/task/spec"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
@@ -19,15 +20,17 @@ import (
 type TaskDebugApiServiceServerImpl struct {
 	skeled.DefaultTaskDebugApiServiceServer
 
-	CurrentApp   meta.CurrentApp        `inject:""`
-	RegistryRepo core.RegistryRepo      `inject:""`
-	SchemaRepo   core.SchemaRepo        `inject:""`
-	NATSServer   *natsserver.NATSServer `inject:""`
-	Flag         *hubflag.Flag          `inject:""`
+	CurrentApp     meta.CurrentApp        `inject:""`
+	RegistryRepo   core.RegistryRepo      `inject:""`
+	DescriptorRepo core.DescriptorRepo    `inject:""`
+	NATSServer     *natsserver.NATSServer `inject:""`
+	Flag           *hubflag.Flag          `inject:""`
 }
 
 func (s *TaskDebugApiServiceServerImpl) defaultBuilder() _DebugDefaultBuilder {
-	return _DebugDefaultBuilder{SchemaRepo: s.SchemaRepo}
+	return _DebugDefaultBuilder{
+		DescriptorRepo: s.DescriptorRepo,
+	}
 }
 
 func (s *TaskDebugApiServiceServerImpl) natsPublisher() _DebugNATSPublisher {
@@ -42,19 +45,19 @@ func (s *TaskDebugApiServiceServerImpl) ListTasks() []skeled.TaskDebugTaskItem {
 	seen := map[string]struct{}{}
 	for _, status := range s.RegistryRepo.ListAppStatuses() {
 		for _, runner := range status.TaskRunners {
-			key := runner.TaskSkelName + "\x00" + runner.SchemaHash
+			key := runner.TaskSkelName + "\x00" + runner.DescriptorHash
 			if _, ok := seen[key]; ok {
 				continue
 			}
 			seen[key] = struct{}{}
-			taskSchema := s.findTaskSchema(runner.TaskSkelName, runner.SchemaHash)
+			taskDescriptor := s.findTaskDescriptor(runner.TaskSkelName, runner.DescriptorHash)
 			ret = append(ret, skeled.TaskDebugTaskItem{
-				Name:             taskSchema.Name,
-				TaskSkelName:     taskSchema.SkelName,
-				SchemaHash:       runner.SchemaHash,
-				Description:      taskSchema.Description,
-				Deprecated:       taskSchema.Deprecated,
-				DeprecatedReason: taskSchema.DeprecatedReason,
+				Name:             taskDescriptor.Name,
+				TaskSkelName:     taskDescriptor.SkelName,
+				DescriptorHash:   runner.DescriptorHash,
+				Description:      taskDescriptor.Description,
+				Deprecated:       taskDescriptor.Deprecated,
+				DeprecatedReason: taskDescriptor.DeprecatedReason,
 			})
 		}
 	}
@@ -62,14 +65,14 @@ func (s *TaskDebugApiServiceServerImpl) ListTasks() []skeled.TaskDebugTaskItem {
 		if a.TaskSkelName != b.TaskSkelName {
 			return strings.Compare(a.TaskSkelName, b.TaskSkelName) < 0
 		}
-		return strings.Compare(a.SchemaHash, b.SchemaHash) < 0
+		return strings.Compare(a.DescriptorHash, b.DescriptorHash) < 0
 	})
 }
 
-func (s *TaskDebugApiServiceServerImpl) ListTriggers(taskSkelName string, schemaHash string) []skeled.TaskDebugTriggerItem {
-	taskSchema := s.findTaskSchema(taskSkelName, schemaHash)
-	ret := make([]skeled.TaskDebugTriggerItem, 0, len(taskSchema.Triggers))
-	for _, trigger := range taskSchema.Triggers {
+func (s *TaskDebugApiServiceServerImpl) ListTriggers(taskSkelName string, descriptorHash string) []skeled.TaskDebugTriggerItem {
+	taskDescriptor := s.findTaskDescriptor(taskSkelName, descriptorHash)
+	ret := make([]skeled.TaskDebugTriggerItem, 0, len(taskDescriptor.Triggers))
+	for _, trigger := range taskDescriptor.Triggers {
 		ret = append(ret, toTaskDebugTriggerItem(trigger))
 	}
 	return vslice.SortBy(ret, func(a skeled.TaskDebugTriggerItem, b skeled.TaskDebugTriggerItem) bool {
@@ -77,19 +80,19 @@ func (s *TaskDebugApiServiceServerImpl) ListTriggers(taskSkelName string, schema
 	})
 }
 
-func (s *TaskDebugApiServiceServerImpl) BuildDefaultLaunchRequest(taskSkelName string, schemaHash string, triggerSkelName string) skeled.TaskDebugDefaultLaunchRequest {
-	taskSchema := s.findTaskSchema(taskSkelName, schemaHash)
-	triggerSchema := s.findTriggerSchema(taskSchema, triggerSkelName)
+func (s *TaskDebugApiServiceServerImpl) BuildDefaultLaunchRequest(taskSkelName string, descriptorHash string, triggerSkelName string) skeled.TaskDebugDefaultLaunchRequest {
+	taskDescriptor := s.findTaskDescriptor(taskSkelName, descriptorHash)
+	triggerDescriptor := s.findTriggerDescriptor(taskDescriptor, triggerSkelName)
 	trace := meta.InitialTrace()
 	return skeled.TaskDebugDefaultLaunchRequest{
 		TraceId:       trace.Id(),
 		SpanId:        trace.Span(),
-		ArgumentsJson: s.defaultBuilder().defaultArgumentsJson(triggerSchema),
+		ArgumentsJson: s.defaultBuilder().defaultArgumentsJson(triggerDescriptor),
 	}
 }
 
 func (s *TaskDebugApiServiceServerImpl) LaunchTask(request skeled.TaskDebugLaunchRequest) {
-	s.checkTaskRunner(request.TaskSkelName, request.SchemaHash)
+	s.checkTaskRunner(request.TaskSkelName, request.DescriptorHash)
 	debugParseJson(string(request.ArgumentsJson))
 
 	trace := debugTrace(request.TraceId, request.SpanId)
@@ -99,8 +102,8 @@ func (s *TaskDebugApiServiceServerImpl) LaunchTask(request skeled.TaskDebugLaunc
 			TraceSpan:     trace.Span(),
 			AppName:       s.CurrentApp.Name(),
 			AppVersion:    s.CurrentApp.Version(),
-			AppInstanceId: skel.NewUUID(uuid.MustParse(s.CurrentApp.InstanceId())),
-			LaunchedAt:    skel.NewTimestampNow(),
+			AppInstanceId: skeltype.NewUUID(uuid.MustParse(s.CurrentApp.InstanceId())),
+			LaunchedAt:    skeltype.NewTimestampNow(),
 		},
 		TaskSkelName:    request.TaskSkelName,
 		TriggerSkelName: request.TriggerSkelName,
@@ -110,36 +113,36 @@ func (s *TaskDebugApiServiceServerImpl) LaunchTask(request skeled.TaskDebugLaunc
 	publisher.publish(debugTaskStreamConfig(), debugTaskSubject(request.TaskSkelName), vcode.MustMarshalJson(msg))
 }
 
-func (s *TaskDebugApiServiceServerImpl) checkTaskRunner(taskSkelName string, schemaHash string) {
+func (s *TaskDebugApiServiceServerImpl) checkTaskRunner(taskSkelName string, descriptorHash string) {
 	for _, status := range s.RegistryRepo.ListAppStatuses() {
-		if statusHasTaskRunner(status, taskSkelName, schemaHash) {
+		if statusHasTaskRunner(status, taskSkelName, descriptorHash) {
 			return
 		}
 	}
 	ex.PanicNew(ex.NotFound, "task runner registration not found")
 }
 
-func (s *TaskDebugApiServiceServerImpl) findTaskSchema(taskSkelName string, schemaHash string) *skel.TaskSchema {
-	for _, version := range s.SchemaRepo.ListTaskSchemaVersions() {
-		if version.Schema.SkelName == taskSkelName && (schemaHash == "" || version.SchemaHash == schemaHash) {
-			return version.Schema
+func (s *TaskDebugApiServiceServerImpl) findTaskDescriptor(taskSkelName string, descriptorHash string) *skeldesc.Task {
+	for _, version := range s.DescriptorRepo.ListTaskDescriptorVersions() {
+		if version.Descriptor.SkelName == taskSkelName && (descriptorHash == "" || version.DescriptorHash == descriptorHash) {
+			return version.Descriptor
 		}
 	}
-	ex.PanicNew(ex.NotFound, "task schema not found")
+	ex.PanicNew(ex.NotFound, "task descriptor not found")
 	panic("unreachable")
 }
 
-func (s *TaskDebugApiServiceServerImpl) findTriggerSchema(taskSchema *skel.TaskSchema, triggerSkelName string) *skel.TriggerSchema {
-	for _, trigger := range taskSchema.Triggers {
+func (s *TaskDebugApiServiceServerImpl) findTriggerDescriptor(taskDescriptor *skeldesc.Task, triggerSkelName string) *skeldesc.TaskTrigger {
+	for _, trigger := range taskDescriptor.Triggers {
 		if trigger.SkelName == triggerSkelName {
 			return trigger
 		}
 	}
-	ex.PanicNew(ex.NotFound, "trigger schema not found")
+	ex.PanicNew(ex.NotFound, "trigger descriptor not found")
 	panic("unreachable")
 }
 
-func toTaskDebugTriggerItem(trigger *skel.TriggerSchema) skeled.TaskDebugTriggerItem {
+func toTaskDebugTriggerItem(trigger *skeldesc.TaskTrigger) skeled.TaskDebugTriggerItem {
 	return skeled.TaskDebugTriggerItem{
 		Name:             trigger.Name,
 		SkelName:         trigger.SkelName,
@@ -151,9 +154,9 @@ func toTaskDebugTriggerItem(trigger *skel.TriggerSchema) skeled.TaskDebugTrigger
 	}
 }
 
-func statusHasTaskRunner(status *core.AppStatus, taskSkelName string, schemaHash string) bool {
+func statusHasTaskRunner(status *core.AppStatus, taskSkelName string, descriptorHash string) bool {
 	for _, runner := range status.TaskRunners {
-		if runner.TaskSkelName == taskSkelName && (schemaHash == "" || runner.SchemaHash == schemaHash) {
+		if runner.TaskSkelName == taskSkelName && (descriptorHash == "" || runner.DescriptorHash == descriptorHash) {
 			return true
 		}
 	}

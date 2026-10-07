@@ -4,39 +4,40 @@ import (
 	"encoding/json/v2"
 	"testing"
 
-	"go.yorun.ai/vine/internal/core/skel"
+	skeldesc "go.yorun.ai/skel/descriptor"
+	skeltype "go.yorun.ai/skel/types"
 )
 
 func TestDebugDefaultBuilderScalarValuesAreValidSkelJson(t *testing.T) {
 	builder := _DebugDefaultBuilder{}
 
-	assertValidSkelJsonValue[skel.UUID](t, builder.defaultValue(&skel.TypeSchema{
-		Kind:   skel.TypeKindScalar,
-		Scalar: skel.ScalarUuid,
+	assertValidSkelJsonValue[skeltype.UUID](t, builder.defaultValue(&skeldesc.Type{
+		Kind:   skeldesc.TypeKindScalar,
+		Scalar: skeldesc.ScalarUUID,
 	}))
-	assertValidSkelJsonValue[skel.Timestamp](t, builder.defaultValue(&skel.TypeSchema{
-		Kind:   skel.TypeKindScalar,
-		Scalar: skel.ScalarTimestamp,
+	assertValidSkelJsonValue[skeltype.Timestamp](t, builder.defaultValue(&skeldesc.Type{
+		Kind:   skeldesc.TypeKindScalar,
+		Scalar: skeldesc.ScalarTimestamp,
 	}))
-	assertValidSkelJsonValue[skel.Duration](t, builder.defaultValue(&skel.TypeSchema{
-		Kind:   skel.TypeKindScalar,
-		Scalar: skel.ScalarDuration,
+	assertValidSkelJsonValue[skeltype.Duration](t, builder.defaultValue(&skeldesc.Type{
+		Kind:   skeldesc.TypeKindScalar,
+		Scalar: skeldesc.ScalarDuration,
 	}))
-	assertValidSkelJsonValue[skel.LocalDate](t, builder.defaultValue(&skel.TypeSchema{
-		Kind:   skel.TypeKindScalar,
-		Scalar: skel.ScalarLocalDate,
+	assertValidSkelJsonValue[skeltype.LocalDate](t, builder.defaultValue(&skeldesc.Type{
+		Kind:   skeldesc.TypeKindScalar,
+		Scalar: skeldesc.ScalarLocalDate,
 	}))
-	assertValidSkelJsonValue[skel.LocalTime](t, builder.defaultValue(&skel.TypeSchema{
-		Kind:   skel.TypeKindScalar,
-		Scalar: skel.ScalarLocalTime,
+	assertValidSkelJsonValue[skeltype.LocalTime](t, builder.defaultValue(&skeldesc.Type{
+		Kind:   skeldesc.TypeKindScalar,
+		Scalar: skeldesc.ScalarLocalTime,
 	}))
-	assertValidSkelJsonValue[skel.LocalDateTime](t, builder.defaultValue(&skel.TypeSchema{
-		Kind:   skel.TypeKindScalar,
-		Scalar: skel.ScalarLocalDateTime,
+	assertValidSkelJsonValue[skeltype.LocalDateTime](t, builder.defaultValue(&skeldesc.Type{
+		Kind:   skeldesc.TypeKindScalar,
+		Scalar: skeldesc.ScalarLocalDateTime,
 	}))
-	assertValidSkelJsonValue[skel.Binary](t, builder.defaultValue(&skel.TypeSchema{
-		Kind:   skel.TypeKindScalar,
-		Scalar: skel.ScalarBinary,
+	assertValidSkelJsonValue[skeltype.Binary](t, builder.defaultValue(&skeldesc.Type{
+		Kind:   skeldesc.TypeKindScalar,
+		Scalar: skeldesc.ScalarBinary,
 	}))
 }
 

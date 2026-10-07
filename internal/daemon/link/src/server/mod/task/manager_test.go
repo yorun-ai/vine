@@ -12,11 +12,11 @@ import (
 	gonats "github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/require"
+	skeltype "go.yorun.ai/skel/types"
 	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
-	"go.yorun.ai/vine/internal/core/skel"
 	hubnats "go.yorun.ai/vine/internal/daemon/hub/api/nats"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	hubnatsserver "go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
@@ -30,7 +30,7 @@ type _ManagerRegistryServiceClient struct{}
 
 func (*_ManagerRegistryServiceClient) Register(hubskeled.AppRegistration, ...rpcclient.InvokeOption) {
 }
-func (*_ManagerRegistryServiceClient) Unregister(string, skel.UUID, ...rpcclient.InvokeOption) {
+func (*_ManagerRegistryServiceClient) Unregister(string, skeltype.UUID, ...rpcclient.InvokeOption) {
 }
 func (*_ManagerRegistryServiceClient) Heartbeat(hubskeled.AppStatus, ...rpcclient.InvokeOption) bool {
 	return true

@@ -36,10 +36,10 @@ for (const yaml of [false, true]) {
 }
 
 test('string map keys remain editable and invalid enum values have read-only dropdowns', () => {
-  const schema = { ...field, type: 'map<string, demo.Status>', mapKeyEnumItems: [] }
-  const doc = createConfigJsonDocument('{"statuses":{"primary":123}}', [schema])
+  const descriptor = { ...field, type: 'map<string, demo.Status>', mapKeyEnumItems: [] }
+  const doc = createConfigJsonDocument('{"statuses":{"primary":123}}', [descriptor])
   const protection = createConfigValueProtection(doc.ranges)
-  const extensions = createConfigMapEnumExtension([schema], protection.ranges, true, false, new Map([['statuses', 'Invalid enum']]), new Set())
+  const extensions = createConfigMapEnumExtension([descriptor], protection.ranges, true, false, new Map([['statuses', 'Invalid enum']]), new Set())
   const state = EditorState.create({ doc: doc.doc, extensions: [...protection.extensions, ...extensions] })
   const widgets = state.field(extensions[1])
   assert.equal(widgets.size, 1)
@@ -48,10 +48,10 @@ test('string map keys remain editable and invalid enum values have read-only dro
 })
 
 test('YAML numeric map keys retain enum value dropdowns and exact edit ranges', () => {
-  const schema = { ...field, type: 'map<int, demo.Status>', mapKeyEnumItems: [] }
+  const descriptor = { ...field, type: 'map<int, demo.Status>', mapKeyEnumItems: [] }
   const text = '1: ACTIVE\n9007199254740993: LOCKED'
   const protection = createConfigValueProtection([{ name: 'statuses', from: 0, to: text.length }])
-  const extensions = createConfigMapEnumExtension([schema], protection.ranges, false, true, new Map(), new Set())
+  const extensions = createConfigMapEnumExtension([descriptor], protection.ranges, false, true, new Map(), new Set())
   let state = EditorState.create({ doc: text, extensions: [...protection.extensions, ...extensions] })
   assert.equal(state.field(extensions[1]).size, 2)
   const entries = configMapEntries(text, state.field(protection.ranges)[0], true)

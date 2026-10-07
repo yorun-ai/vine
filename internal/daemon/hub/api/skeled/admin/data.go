@@ -2,7 +2,7 @@
 
 package admin
 
-import "go.yorun.ai/vine/internal/core/skel"
+import skeltype "go.yorun.ai/skel/types"
 
 // AppConfigCreation Configuration creation parameters
 type AppConfigCreation struct {
@@ -10,6 +10,85 @@ type AppConfigCreation struct {
 	SkelName string `json:"skelName"`
 	// Value Configuration JSON
 	Value string `json:"value"`
+}
+
+// AppConfigDescriptor Configuration descriptor items
+type AppConfigDescriptor struct {
+	Sensitive bool                      `json:"sensitive"`
+	DataTypes []AppConfigDescriptorData `json:"dataTypes"`
+	// SkelName Configuration Skel name
+	SkelName string `json:"skelName"`
+	// Name Configuration name
+	Name string `json:"name"`
+	// Description Configuration description
+	Description string `json:"description"`
+	// Deprecated Whether the configuration is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Configuration deprecation reason
+	DeprecatedReason string `json:"deprecatedReason"`
+	// Lifecycle Configuration lifecycle
+	Lifecycle string `json:"lifecycle"`
+	// Fields Configuration field list
+	Fields []AppConfigDescriptorField `json:"fields"`
+}
+
+// AppConfigDescriptorData Reusable data declaration reachable from a configuration
+type AppConfigDescriptorData struct {
+	Name             string                     `json:"name"`
+	SkelName         string                     `json:"skelName"`
+	Description      string                     `json:"description"`
+	Deprecated       bool                       `json:"deprecated"`
+	DeprecatedReason string                     `json:"deprecatedReason"`
+	Sensitive        bool                       `json:"sensitive"`
+	TypeParameters   []string                   `json:"typeParameters"`
+	Fields           []AppConfigDescriptorField `json:"fields"`
+}
+
+// AppConfigDescriptorEnumItem Configuration descriptor enumeration options
+type AppConfigDescriptorEnumItem struct {
+	// Name Enum option name
+	Name string `json:"name"`
+	// Description Enumeration options description
+	Description string `json:"description"`
+	// Deprecated Whether the enumeration option is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Enumeration option deprecation reason
+	DeprecatedReason string `json:"deprecatedReason"`
+}
+
+// AppConfigDescriptorField Configuration descriptor fields
+type AppConfigDescriptorField struct {
+	ValueType *AppConfigDescriptorType `json:"valueType"`
+	Sensitive bool                     `json:"sensitive"`
+	Example   string                   `json:"example"`
+	// Name Field name
+	Name string `json:"name"`
+	// Type Field type
+	Type string `json:"type"`
+	// Description Field description
+	Description string `json:"description"`
+	// Deprecated Whether the field is deprecated
+	Deprecated bool `json:"deprecated"`
+	// DeprecatedReason Field deprecation reason
+	DeprecatedReason string `json:"deprecatedReason"`
+	// EnumItems Enumeration options list
+	EnumItems []AppConfigDescriptorEnumItem `json:"enumItems"`
+	// MapKeyEnumItems Map key enumeration options
+	MapKeyEnumItems []AppConfigDescriptorEnumItem `json:"mapKeyEnumItems"`
+	// MapValueEnumItems Map value enumeration options
+	MapValueEnumItems []AppConfigDescriptorEnumItem `json:"mapValueEnumItems"`
+}
+
+// AppConfigDescriptorType Structured configuration value type
+type AppConfigDescriptorType struct {
+	Kind          string                        `json:"kind"`
+	Nullable      bool                          `json:"nullable"`
+	Name          string                        `json:"name"`
+	TypeArguments []AppConfigDescriptorType     `json:"typeArguments"`
+	Element       *AppConfigDescriptorType      `json:"element"`
+	Key           *AppConfigDescriptorType      `json:"key"`
+	Value         *AppConfigDescriptorType      `json:"value"`
+	EnumItems     []AppConfigDescriptorEnumItem `json:"enumItems"`
 }
 
 // AppConfigItem Configuration items
@@ -24,8 +103,8 @@ type AppConfigItem struct {
 	Lifecycle string `json:"lifecycle"`
 	// Value Configuration JSON
 	Value string `json:"value"`
-	// Schema Configuration schema
-	Schema *AppConfigSchema `json:"schema"`
+	// Descriptor Configuration descriptor
+	Descriptor *AppConfigDescriptor `json:"descriptor"`
 	// FieldSources Field sources; only returned by get, create and update
 	FieldSources []FieldSource `json:"fieldSources"`
 }
@@ -40,89 +119,10 @@ type AppConfigListItem struct {
 	Status string `json:"status"`
 	// Lifecycle Configuration lifecycle
 	Lifecycle string `json:"lifecycle"`
-	// SchemaName Configuration schema name; empty when no schema matches
-	SchemaName string `json:"schemaName"`
-	// SchemaSkelName Configuration schema Skel name; empty when no schema matches
-	SchemaSkelName string `json:"schemaSkelName"`
-}
-
-// AppConfigSchema Configuration schema items
-type AppConfigSchema struct {
-	Sensitive bool                  `json:"sensitive"`
-	DataTypes []AppConfigSchemaData `json:"dataTypes"`
-	// SkelName Configuration Skel name
-	SkelName string `json:"skelName"`
-	// Name Configuration name
-	Name string `json:"name"`
-	// Description Configuration description
-	Description string `json:"description"`
-	// Deprecated Whether the configuration is deprecated
-	Deprecated bool `json:"deprecated"`
-	// DeprecatedReason Configuration deprecation reason
-	DeprecatedReason string `json:"deprecatedReason"`
-	// Lifecycle Configuration lifecycle
-	Lifecycle string `json:"lifecycle"`
-	// Fields Configuration field list
-	Fields []AppConfigSchemaField `json:"fields"`
-}
-
-// AppConfigSchemaData Reusable data declaration reachable from a configuration
-type AppConfigSchemaData struct {
-	Name             string                 `json:"name"`
-	SkelName         string                 `json:"skelName"`
-	Description      string                 `json:"description"`
-	Deprecated       bool                   `json:"deprecated"`
-	DeprecatedReason string                 `json:"deprecatedReason"`
-	Sensitive        bool                   `json:"sensitive"`
-	TypeParameters   []string               `json:"typeParameters"`
-	Fields           []AppConfigSchemaField `json:"fields"`
-}
-
-// AppConfigSchemaEnumItem Configuration schema enumeration options
-type AppConfigSchemaEnumItem struct {
-	// Name Enum option name
-	Name string `json:"name"`
-	// Description Enumeration options description
-	Description string `json:"description"`
-	// Deprecated Whether the enumeration option is deprecated
-	Deprecated bool `json:"deprecated"`
-	// DeprecatedReason Enumeration option deprecation reason
-	DeprecatedReason string `json:"deprecatedReason"`
-}
-
-// AppConfigSchemaField Configuration schema fields
-type AppConfigSchemaField struct {
-	ValueType *AppConfigSchemaType `json:"valueType"`
-	Sensitive bool                 `json:"sensitive"`
-	Example   string               `json:"example"`
-	// Name Field name
-	Name string `json:"name"`
-	// Type Field type
-	Type string `json:"type"`
-	// Description Field description
-	Description string `json:"description"`
-	// Deprecated Whether the field is deprecated
-	Deprecated bool `json:"deprecated"`
-	// DeprecatedReason Field deprecation reason
-	DeprecatedReason string `json:"deprecatedReason"`
-	// EnumItems Enumeration options list
-	EnumItems []AppConfigSchemaEnumItem `json:"enumItems"`
-	// MapKeyEnumItems Map key enumeration options
-	MapKeyEnumItems []AppConfigSchemaEnumItem `json:"mapKeyEnumItems"`
-	// MapValueEnumItems Map value enumeration options
-	MapValueEnumItems []AppConfigSchemaEnumItem `json:"mapValueEnumItems"`
-}
-
-// AppConfigSchemaType Structured configuration value type
-type AppConfigSchemaType struct {
-	Kind          string                    `json:"kind"`
-	Nullable      bool                      `json:"nullable"`
-	Name          string                    `json:"name"`
-	TypeArguments []AppConfigSchemaType     `json:"typeArguments"`
-	Element       *AppConfigSchemaType      `json:"element"`
-	Key           *AppConfigSchemaType      `json:"key"`
-	Value         *AppConfigSchemaType      `json:"value"`
-	EnumItems     []AppConfigSchemaEnumItem `json:"enumItems"`
+	// DescriptorName Configuration descriptor name; empty when no descriptor matches
+	DescriptorName string `json:"descriptorName"`
+	// DescriptorSkelName Configuration descriptor Skel name; empty when no descriptor matches
+	DescriptorSkelName string `json:"descriptorSkelName"`
 }
 
 // AppConfigUpdate Configuration update parameters
@@ -158,17 +158,17 @@ type EventDebugDefaultEmitRequest struct {
 	// SpanId Span ID
 	SpanId string `json:"spanId"`
 	// EventJson Default event JSON
-	EventJson skel.JSON `json:"eventJson"`
+	EventJson skeltype.JSON `json:"eventJson"`
 }
 
 // EventDebugEmitRequest Event Debug send request
 type EventDebugEmitRequest struct {
 	// EventSkelName Event Skel name
 	EventSkelName string `json:"eventSkelName"`
-	// SchemaHash Event schema hash
-	SchemaHash string `json:"schemaHash"`
+	// DescriptorHash Event descriptor hash
+	DescriptorHash string `json:"descriptorHash"`
 	// EventJson Event JSON
-	EventJson skel.JSON `json:"eventJson"`
+	EventJson skeltype.JSON `json:"eventJson"`
 	// TraceId Trace ID
 	TraceId *string `json:"traceId"`
 	// SpanId Span ID
@@ -181,8 +181,8 @@ type EventDebugEventItem struct {
 	Name string `json:"name"`
 	// EventSkelName Event Skel name
 	EventSkelName string `json:"eventSkelName"`
-	// SchemaHash Event schema hash
-	SchemaHash string `json:"schemaHash"`
+	// DescriptorHash Event descriptor hash
+	DescriptorHash string `json:"descriptorHash"`
 	// Description Event description
 	Description string `json:"description"`
 	// Deprecated Whether the Event is deprecated
@@ -197,8 +197,8 @@ type EventDebugEventItem struct {
 type EventListenerRegistration struct {
 	// EventSkelName Event Skel name
 	EventSkelName string `json:"eventSkelName"`
-	// SchemaHash Event schema hash
-	SchemaHash string `json:"schemaHash"`
+	// DescriptorHash Event descriptor hash
+	DescriptorHash string `json:"descriptorHash"`
 	// TimeoutMs Execution timeout, in milliseconds
 	TimeoutMs int `json:"timeoutMs"`
 	// Concurrency Maximum concurrency
@@ -220,7 +220,7 @@ type FieldSource struct {
 	// Variables Referenced seed variables
 	Variables []string `json:"variables"`
 	// Template Seed template
-	Template *skel.JSON `json:"template"`
+	Template *skeltype.JSON `json:"template"`
 	// Bindings Resolved variable bindings
 	Bindings []FieldSourceBinding `json:"bindings"`
 }
@@ -234,7 +234,7 @@ type FieldSourceBinding struct {
 	// Reference Variable reference
 	Reference string `json:"reference"`
 	// Value Resolved value
-	Value skel.JSON `json:"value"`
+	Value skeltype.JSON `json:"value"`
 	// DefaultUsed Whether the default was used
 	DefaultUsed bool `json:"defaultUsed"`
 }
@@ -287,9 +287,9 @@ type PortalCert struct {
 	// PrivateKeyConfigured Whether the private key has been configured
 	PrivateKeyConfigured bool `json:"privateKeyConfigured"`
 	// ValidFrom Validity start time
-	ValidFrom skel.Timestamp `json:"validFrom"`
+	ValidFrom skeltype.Timestamp `json:"validFrom"`
 	// ValidTo Validity end time
-	ValidTo skel.Timestamp `json:"validTo"`
+	ValidTo skeltype.Timestamp `json:"validTo"`
 	// FieldSources Field sources; only returned by get, create and update
 	FieldSources []FieldSource `json:"fieldSources"`
 	// Enabled Whether Hub publishes this certificate to Portal
@@ -323,9 +323,9 @@ type PortalCertListItem struct {
 	// PrivateKeyConfigured Whether the private key has been configured
 	PrivateKeyConfigured bool `json:"privateKeyConfigured"`
 	// ValidFrom Validity start time
-	ValidFrom skel.Timestamp `json:"validFrom"`
+	ValidFrom skeltype.Timestamp `json:"validFrom"`
 	// ValidTo Validity end time
-	ValidTo skel.Timestamp `json:"validTo"`
+	ValidTo skeltype.Timestamp `json:"validTo"`
 	// Enabled Whether Hub publishes this certificate to Portal
 	Enabled bool `json:"enabled"`
 }
@@ -671,7 +671,7 @@ type ServiceDebugActorItem struct {
 	// InfoSkelName Actor Info Skel name
 	InfoSkelName string `json:"infoSkelName"`
 	// ActorInfoJson Default Actor Info JSON
-	ActorInfoJson skel.JSON `json:"actorInfoJson"`
+	ActorInfoJson skeltype.JSON `json:"actorInfoJson"`
 }
 
 // ServiceDebugAppInstance Application instance called by Service Debug
@@ -697,9 +697,9 @@ type ServiceDebugDefaultInvokeRequest struct {
 	// ActorSkelName Default Actor Skel name
 	ActorSkelName *string `json:"actorSkelName"`
 	// ActorInfoJson Default Actor Info JSON
-	ActorInfoJson skel.JSON `json:"actorInfoJson"`
+	ActorInfoJson skeltype.JSON `json:"actorInfoJson"`
 	// ParamsJson Default request parameters JSON
-	ParamsJson skel.JSON `json:"paramsJson"`
+	ParamsJson skeltype.JSON `json:"paramsJson"`
 }
 
 // ServiceDebugInvokeRequest Service Debug call request
@@ -710,12 +710,12 @@ type ServiceDebugInvokeRequest struct {
 	AppInstanceId *string `json:"appInstanceId"`
 	// ServiceSkelName Service Skel name
 	ServiceSkelName string `json:"serviceSkelName"`
-	// SchemaHash Service schema hash
-	SchemaHash string `json:"schemaHash"`
+	// DescriptorHash Service descriptor hash
+	DescriptorHash string `json:"descriptorHash"`
 	// MethodSkelName Method Skel name
 	MethodSkelName string `json:"methodSkelName"`
 	// ParamsJson Request parameters JSON
-	ParamsJson skel.JSON `json:"paramsJson"`
+	ParamsJson skeltype.JSON `json:"paramsJson"`
 	// TimeoutSeconds Call timeout, in seconds
 	TimeoutSeconds int `json:"timeoutSeconds"`
 	// TraceId Trace ID
@@ -725,7 +725,7 @@ type ServiceDebugInvokeRequest struct {
 	// ActorSkelName Actor Skel name
 	ActorSkelName *string `json:"actorSkelName"`
 	// ActorInfoJson Actor Info JSON
-	ActorInfoJson skel.JSON `json:"actorInfoJson"`
+	ActorInfoJson skeltype.JSON `json:"actorInfoJson"`
 }
 
 // ServiceDebugInvokeResponse Service Debug call response
@@ -735,9 +735,9 @@ type ServiceDebugInvokeResponse struct {
 	// RpcStatus Rpc status code
 	RpcStatus string `json:"rpcStatus"`
 	// HeadersJson Response header JSON
-	HeadersJson skel.JSON `json:"headersJson"`
+	HeadersJson skeltype.JSON `json:"headersJson"`
 	// BodyJson Response body JSON
-	BodyJson skel.JSON `json:"bodyJson"`
+	BodyJson skeltype.JSON `json:"bodyJson"`
 }
 
 // ServiceDebugMethodItem Method called by Service Debug
@@ -770,9 +770,9 @@ type ServiceDebugMethodItem struct {
 type ServiceDebugServiceItem struct {
 	// ServiceSkelName Service Skel name
 	ServiceSkelName string `json:"serviceSkelName"`
-	// SchemaHash Service schema hash
-	SchemaHash string `json:"schemaHash"`
-	Api        bool   `json:"api"`
+	// DescriptorHash Service descriptor hash
+	DescriptorHash string `json:"descriptorHash"`
+	Api            bool   `json:"api"`
 	// Deprecated Whether the Service is deprecated
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Service deprecation reason
@@ -783,8 +783,8 @@ type ServiceDebugServiceItem struct {
 type ServiceHandlerRegistration struct {
 	// ServiceSkelName Service Skel name
 	ServiceSkelName string `json:"serviceSkelName"`
-	// SchemaHash Service schema hash
-	SchemaHash string `json:"schemaHash"`
+	// DescriptorHash Service descriptor hash
+	DescriptorHash string `json:"descriptorHash"`
 	// Endpoint Service agent access address
 	Endpoint string `json:"endpoint"`
 }
@@ -793,16 +793,16 @@ type ServiceHandlerRegistration struct {
 type SkeletonActorItem struct {
 	// Domain Domain
 	Domain string `json:"domain"`
-	// SchemaHash Skeleton item hash
-	SchemaHash string `json:"schemaHash"`
-	// MainSchemaHash Primary skeleton item hash
-	MainSchemaHash string `json:"mainSchemaHash"`
+	// DescriptorHash Skeleton item hash
+	DescriptorHash string `json:"descriptorHash"`
+	// MainDescriptorHash Primary skeleton item hash
+	MainDescriptorHash string `json:"mainDescriptorHash"`
 	// IsMultiVersion Whether there are multiple valid versions of the skeleton item
 	IsMultiVersion bool `json:"isMultiVersion"`
 	// IsMain Whether it is the main version of the skeleton item
 	IsMain bool `json:"isMain"`
-	// DomainSchemaHash Owning DomainSchema hash
-	DomainSchemaHash string `json:"domainSchemaHash"`
+	// DomainDescriptorHash Owning DomainDescriptor hash
+	DomainDescriptorHash string `json:"domainDescriptorHash"`
 	// Name Actor name
 	Name string `json:"name"`
 	// SkelName Actor Skel name
@@ -851,16 +851,16 @@ type SkeletonActorRef struct {
 type SkeletonConfigItem struct {
 	// Domain Domain
 	Domain string `json:"domain"`
-	// SchemaHash Skeleton item hash
-	SchemaHash string `json:"schemaHash"`
-	// MainSchemaHash Primary skeleton item hash
-	MainSchemaHash string `json:"mainSchemaHash"`
+	// DescriptorHash Skeleton item hash
+	DescriptorHash string `json:"descriptorHash"`
+	// MainDescriptorHash Primary skeleton item hash
+	MainDescriptorHash string `json:"mainDescriptorHash"`
 	// IsMultiVersion Whether there are multiple valid versions of the skeleton item
 	IsMultiVersion bool `json:"isMultiVersion"`
 	// IsMain Whether it is the main version of the skeleton item
 	IsMain bool `json:"isMain"`
-	// DomainSchemaHash Owning DomainSchema hash
-	DomainSchemaHash string `json:"domainSchemaHash"`
+	// DomainDescriptorHash Owning DomainDescriptor hash
+	DomainDescriptorHash string `json:"domainDescriptorHash"`
 	// Name Config name
 	Name string `json:"name"`
 	// SkelName Config Skel name
@@ -885,16 +885,16 @@ type SkeletonConfigItem struct {
 type SkeletonData struct {
 	// Domain Domain
 	Domain string `json:"domain"`
-	// SchemaHash Skeleton item hash
-	SchemaHash string `json:"schemaHash"`
-	// MainSchemaHash Primary skeleton item hash
-	MainSchemaHash string `json:"mainSchemaHash"`
+	// DescriptorHash Skeleton item hash
+	DescriptorHash string `json:"descriptorHash"`
+	// MainDescriptorHash Primary skeleton item hash
+	MainDescriptorHash string `json:"mainDescriptorHash"`
 	// IsMultiVersion Whether there are multiple valid versions of the skeleton item
 	IsMultiVersion bool `json:"isMultiVersion"`
 	// IsMain Whether it is the main version of the skeleton item
 	IsMain bool `json:"isMain"`
-	// DomainSchemaHash Owning DomainSchema hash
-	DomainSchemaHash string `json:"domainSchemaHash"`
+	// DomainDescriptorHash Owning DomainDescriptor hash
+	DomainDescriptorHash string `json:"domainDescriptorHash"`
 	// Name Data name
 	Name string `json:"name"`
 	// SkelName Data Skel name
@@ -921,10 +921,10 @@ type SkeletonData struct {
 type SkeletonDomain struct {
 	// Domain Domain name
 	Domain string `json:"domain"`
-	// SchemaHash DomainSchema hash
-	SchemaHash string `json:"schemaHash"`
-	// MainSchemaHash Primary DomainSchema hash
-	MainSchemaHash string `json:"mainSchemaHash"`
+	// DescriptorHash DomainDescriptor hash
+	DescriptorHash string `json:"descriptorHash"`
+	// MainDescriptorHash Primary DomainDescriptor hash
+	MainDescriptorHash string `json:"mainDescriptorHash"`
 	// IsMultiVersion Whether multiple active versions exist
 	IsMultiVersion bool `json:"isMultiVersion"`
 	// IsMain Whether this is the primary version
@@ -965,16 +965,16 @@ type SkeletonEnumItem struct {
 type SkeletonEventItem struct {
 	// Domain Domain
 	Domain string `json:"domain"`
-	// SchemaHash Skeleton item hash
-	SchemaHash string `json:"schemaHash"`
-	// MainSchemaHash Primary skeleton item hash
-	MainSchemaHash string `json:"mainSchemaHash"`
+	// DescriptorHash Skeleton item hash
+	DescriptorHash string `json:"descriptorHash"`
+	// MainDescriptorHash Primary skeleton item hash
+	MainDescriptorHash string `json:"mainDescriptorHash"`
 	// IsMultiVersion Whether there are multiple valid versions of the skeleton item
 	IsMultiVersion bool `json:"isMultiVersion"`
 	// IsMain Whether it is the main version of the skeleton item
 	IsMain bool `json:"isMain"`
-	// DomainSchemaHash Owning DomainSchema hash
-	DomainSchemaHash string `json:"domainSchemaHash"`
+	// DomainDescriptorHash Owning DomainDescriptor hash
+	DomainDescriptorHash string `json:"domainDescriptorHash"`
 	// Name Event name
 	Name string `json:"name"`
 	// SkelName Event Skel name
@@ -1123,16 +1123,16 @@ type SkeletonResourceCheck struct {
 type SkeletonResourceItem struct {
 	// Domain Domain
 	Domain string `json:"domain"`
-	// SchemaHash Skeleton item hash
-	SchemaHash string `json:"schemaHash"`
-	// MainSchemaHash Primary skeleton item hash
-	MainSchemaHash string `json:"mainSchemaHash"`
+	// DescriptorHash Skeleton item hash
+	DescriptorHash string `json:"descriptorHash"`
+	// MainDescriptorHash Primary skeleton item hash
+	MainDescriptorHash string `json:"mainDescriptorHash"`
 	// IsMultiVersion Whether there are multiple valid versions of the skeleton item
 	IsMultiVersion bool `json:"isMultiVersion"`
 	// IsMain Whether it is the main version of the skeleton item
 	IsMain bool `json:"isMain"`
-	// DomainSchemaHash Owning DomainSchema hash
-	DomainSchemaHash string `json:"domainSchemaHash"`
+	// DomainDescriptorHash Owning DomainDescriptor hash
+	DomainDescriptorHash string `json:"domainDescriptorHash"`
 	// Name Resource name
 	Name string `json:"name"`
 	// SkelName Resource Skel name
@@ -1155,16 +1155,16 @@ type SkeletonResourceItem struct {
 type SkeletonServiceItem struct {
 	// Domain Domain
 	Domain string `json:"domain"`
-	// SchemaHash Skeleton item hash
-	SchemaHash string `json:"schemaHash"`
-	// MainSchemaHash Primary skeleton item hash
-	MainSchemaHash string `json:"mainSchemaHash"`
+	// DescriptorHash Skeleton item hash
+	DescriptorHash string `json:"descriptorHash"`
+	// MainDescriptorHash Primary skeleton item hash
+	MainDescriptorHash string `json:"mainDescriptorHash"`
 	// IsMultiVersion Whether there are multiple valid versions of the skeleton item
 	IsMultiVersion bool `json:"isMultiVersion"`
 	// IsMain Whether it is the main version of the skeleton item
 	IsMain bool `json:"isMain"`
-	// DomainSchemaHash Owning DomainSchema hash
-	DomainSchemaHash string `json:"domainSchemaHash"`
+	// DomainDescriptorHash Owning DomainDescriptor hash
+	DomainDescriptorHash string `json:"domainDescriptorHash"`
 	// Name Service name
 	Name string `json:"name"`
 	// SkelName Service Skel name
@@ -1194,16 +1194,16 @@ type SkeletonServiceItem struct {
 type SkeletonTask struct {
 	// Domain Domain
 	Domain string `json:"domain"`
-	// SchemaHash Skeleton item hash
-	SchemaHash string `json:"schemaHash"`
-	// MainSchemaHash Primary skeleton item hash
-	MainSchemaHash string `json:"mainSchemaHash"`
+	// DescriptorHash Skeleton item hash
+	DescriptorHash string `json:"descriptorHash"`
+	// MainDescriptorHash Primary skeleton item hash
+	MainDescriptorHash string `json:"mainDescriptorHash"`
 	// IsMultiVersion Whether there are multiple valid versions of the skeleton item
 	IsMultiVersion bool `json:"isMultiVersion"`
 	// IsMain Whether it is the main version of the skeleton item
 	IsMain bool `json:"isMain"`
-	// DomainSchemaHash Owning DomainSchema hash
-	DomainSchemaHash string `json:"domainSchemaHash"`
+	// DomainDescriptorHash Owning DomainDescriptor hash
+	DomainDescriptorHash string `json:"domainDescriptorHash"`
 	// Name Task name
 	Name string `json:"name"`
 	// SkelName Task Skel name
@@ -1244,16 +1244,16 @@ type SkeletonTrigger struct {
 type SkeletonWebItem struct {
 	// Domain Domain
 	Domain string `json:"domain"`
-	// SchemaHash Skeleton item hash
-	SchemaHash string `json:"schemaHash"`
-	// MainSchemaHash Primary skeleton item hash
-	MainSchemaHash string `json:"mainSchemaHash"`
+	// DescriptorHash Skeleton item hash
+	DescriptorHash string `json:"descriptorHash"`
+	// MainDescriptorHash Primary skeleton item hash
+	MainDescriptorHash string `json:"mainDescriptorHash"`
 	// IsMultiVersion Whether there are multiple valid versions of the skeleton item
 	IsMultiVersion bool `json:"isMultiVersion"`
 	// IsMain Whether it is the main version of the skeleton item
 	IsMain bool `json:"isMain"`
-	// DomainSchemaHash Owning DomainSchema hash
-	DomainSchemaHash string `json:"domainSchemaHash"`
+	// DomainDescriptorHash Owning DomainDescriptor hash
+	DomainDescriptorHash string `json:"domainDescriptorHash"`
 	// Name Web page name
 	Name string `json:"name"`
 	// SkelName Web Skel name
@@ -1277,19 +1277,19 @@ type TaskDebugDefaultLaunchRequest struct {
 	// SpanId Span ID
 	SpanId string `json:"spanId"`
 	// ArgumentsJson Default task parameters JSON
-	ArgumentsJson skel.JSON `json:"argumentsJson"`
+	ArgumentsJson skeltype.JSON `json:"argumentsJson"`
 }
 
 // TaskDebugLaunchRequest Task Debug initiates a request
 type TaskDebugLaunchRequest struct {
 	// TaskSkelName Task Skel name
 	TaskSkelName string `json:"taskSkelName"`
-	// SchemaHash Task schema hash
-	SchemaHash string `json:"schemaHash"`
+	// DescriptorHash Task descriptor hash
+	DescriptorHash string `json:"descriptorHash"`
 	// TriggerSkelName Trigger Skel name
 	TriggerSkelName string `json:"triggerSkelName"`
 	// ArgumentsJson Task parameters JSON
-	ArgumentsJson skel.JSON `json:"argumentsJson"`
+	ArgumentsJson skeltype.JSON `json:"argumentsJson"`
 	// TraceId Trace ID
 	TraceId *string `json:"traceId"`
 	// SpanId Span ID
@@ -1302,8 +1302,8 @@ type TaskDebugTaskItem struct {
 	Name string `json:"name"`
 	// TaskSkelName Task Skel name
 	TaskSkelName string `json:"taskSkelName"`
-	// SchemaHash Task schema hash
-	SchemaHash string `json:"schemaHash"`
+	// DescriptorHash Task descriptor hash
+	DescriptorHash string `json:"descriptorHash"`
 	// Description Task description
 	Description string `json:"description"`
 	// Deprecated Whether the Task is deprecated
@@ -1344,8 +1344,8 @@ type TaskRunnerCronScheduler struct {
 type TaskRunnerRegistration struct {
 	// TaskSkelName Task Skel name
 	TaskSkelName string `json:"taskSkelName"`
-	// SchemaHash Task schema hash
-	SchemaHash string `json:"schemaHash"`
+	// DescriptorHash Task descriptor hash
+	DescriptorHash string `json:"descriptorHash"`
 	// TimeoutMs Execution timeout, in milliseconds
 	TimeoutMs int `json:"timeoutMs"`
 	// Concurrency Maximum concurrency
@@ -1360,8 +1360,8 @@ type TaskRunnerRegistration struct {
 type WebHandlerRegistration struct {
 	// WebSkelName Web Skel name
 	WebSkelName string `json:"webSkelName"`
-	// SchemaHash Web schema hash
-	SchemaHash string `json:"schemaHash"`
+	// DescriptorHash Web descriptor hash
+	DescriptorHash string `json:"descriptorHash"`
 	// Endpoint Web proxy access address
 	Endpoint string `json:"endpoint"`
 }

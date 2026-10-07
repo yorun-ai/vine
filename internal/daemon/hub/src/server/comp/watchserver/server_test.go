@@ -292,7 +292,7 @@ func TestWatchServerACL(t *testing.T) {
 		"rpc:demo.Service:endpoint:demo.app:instance":   "rpc",
 		"web:admin@demo.app:endpoint:demo.app:instance": "web",
 		"portal:cert:private":                           "certificate",
-		"schema:service:demo.Service":                   "schema",
+		"descriptor:service:demo.Service":               "descriptor",
 		"app:demo:status:instance":                      "status",
 	} {
 		require.NoError(t, hubClient.Set(ctx, key, value, 0).Err())
@@ -309,7 +309,7 @@ func TestWatchServerACL(t *testing.T) {
 	assertWatchValue(t, ctx, linkClient, hubwatch.RevisionKey, mustGet(t, server, hubwatch.RevisionKey))
 	for _, key := range []string{
 		"portal:cert:private",
-		"schema:service:demo.Service",
+		"descriptor:service:demo.Service",
 		"web:admin@demo.app:endpoint:demo.app:instance",
 		"app:demo:status:instance",
 	} {
@@ -318,7 +318,7 @@ func TestWatchServerACL(t *testing.T) {
 
 	portalClient := newNetworkRoleTestClient(t, server, hubwatch.PortalUsername, hubwatch.PortalPassword)
 	assertWatchValue(t, ctx, portalClient, "portal:cert:private", "certificate")
-	assertWatchValue(t, ctx, portalClient, "schema:service:demo.Service", "schema")
+	assertWatchValue(t, ctx, portalClient, "descriptor:service:demo.Service", "descriptor")
 	assertWatchValue(t, ctx, portalClient, "rpc:demo.Service:endpoint:demo.app:instance", "rpc")
 	assertWatchValue(t, ctx, portalClient, "web:admin@demo.app:endpoint:demo.app:instance", "web")
 	assert.ErrorContains(t, portalClient.Get(ctx, "config:feature-a").Err(), "NOPERM")

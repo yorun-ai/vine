@@ -4,7 +4,7 @@ import (
 	"cmp"
 	"strings"
 
-	"go.yorun.ai/vine/internal/core/skel"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vslice"
@@ -13,13 +13,13 @@ import (
 type SkeletonApiServiceServerImpl struct {
 	skeled.DefaultSkeletonApiServiceServer
 
-	SchemaRepo core.SchemaRepo `inject:""`
+	DescriptorRepo core.DescriptorRepo `inject:""`
 }
 
 func (s *SkeletonApiServiceServerImpl) ListDomains() []skeled.SkeletonDomain {
-	views := s.SchemaRepo.ListDomainSchemaViews()
-	serviceVersionsByKey := skeletonSchemaVersionsByKey(s.SchemaRepo.ListServiceSchemaVersions())
-	webVersionsByKey := skeletonSchemaVersionsByKey(s.SchemaRepo.ListWebSchemaVersions())
+	views := s.DescriptorRepo.ListDomainDescriptorViews()
+	serviceVersionsByKey := skeletonDescriptorVersionsByKey(s.DescriptorRepo.ListServiceDescriptorVersions())
+	webVersionsByKey := skeletonDescriptorVersionsByKey(s.DescriptorRepo.ListWebDescriptorVersions())
 	ret := make([]skeled.SkeletonDomain, 0, len(views))
 	for _, view := range views {
 		domain := toServerSkeletonDomain(view, serviceVersionsByKey, webVersionsByKey)
@@ -32,12 +32,12 @@ func (s *SkeletonApiServiceServerImpl) ListDomains() []skeled.SkeletonDomain {
 }
 
 func (s *SkeletonApiServiceServerImpl) ListActors() []skeled.SkeletonActorItem {
-	views := s.SchemaRepo.ListDomainSchemaViews()
-	serviceVersionsByKey := skeletonSchemaVersionsByKey(s.SchemaRepo.ListServiceSchemaVersions())
-	webVersionsByKey := skeletonSchemaVersionsByKey(s.SchemaRepo.ListWebSchemaVersions())
+	views := s.DescriptorRepo.ListDomainDescriptorViews()
+	serviceVersionsByKey := skeletonDescriptorVersionsByKey(s.DescriptorRepo.ListServiceDescriptorVersions())
+	webVersionsByKey := skeletonDescriptorVersionsByKey(s.DescriptorRepo.ListWebDescriptorVersions())
 	ret := make([]skeled.SkeletonActorItem, 0)
-	for _, version := range s.SchemaRepo.ListActorSchemaVersions() {
-		actor := toServerSkeletonActorItem(toSkeletonVersionFields(version), version.Schema)
+	for _, version := range s.DescriptorRepo.ListActorDescriptorVersions() {
+		actor := toServerSkeletonActorItem(toSkeletonVersionFields(version), version.Descriptor)
 		fillServerSkeletonActorItemAccess(&actor, views, serviceVersionsByKey, webVersionsByKey)
 		ret = append(ret, actor)
 	}
@@ -46,108 +46,108 @@ func (s *SkeletonApiServiceServerImpl) ListActors() []skeled.SkeletonActorItem {
 
 func (s *SkeletonApiServiceServerImpl) ListConfigs() []skeled.SkeletonConfigItem {
 	ret := make([]skeled.SkeletonConfigItem, 0)
-	for _, version := range s.SchemaRepo.ListConfigSchemaVersions() {
-		ret = append(ret, toServerSkeletonConfigItem(toSkeletonVersionFields(version), version.Schema))
+	for _, version := range s.DescriptorRepo.ListConfigDescriptorVersions() {
+		ret = append(ret, toServerSkeletonConfigItem(toSkeletonVersionFields(version), version.Descriptor))
 	}
 	return ret
 }
 
 func (s *SkeletonApiServiceServerImpl) ListServices() []skeled.SkeletonServiceItem {
 	ret := make([]skeled.SkeletonServiceItem, 0)
-	for _, version := range s.SchemaRepo.ListServiceSchemaVersions() {
-		ret = append(ret, toServerSkeletonServiceItem(toSkeletonVersionFields(version), version.Schema))
+	for _, version := range s.DescriptorRepo.ListServiceDescriptorVersions() {
+		ret = append(ret, toServerSkeletonServiceItem(toSkeletonVersionFields(version), version.Descriptor))
 	}
 	return ret
 }
 
 func (s *SkeletonApiServiceServerImpl) ListResources() []skeled.SkeletonResourceItem {
 	ret := make([]skeled.SkeletonResourceItem, 0)
-	for _, version := range s.SchemaRepo.ListResourceSchemaVersions() {
-		ret = append(ret, toServerSkeletonResourceItem(toSkeletonVersionFields(version), version.Schema))
+	for _, version := range s.DescriptorRepo.ListResourceDescriptorVersions() {
+		ret = append(ret, toServerSkeletonResourceItem(toSkeletonVersionFields(version), version.Descriptor))
 	}
 	return ret
 }
 
 func (s *SkeletonApiServiceServerImpl) ListWebs() []skeled.SkeletonWebItem {
 	ret := make([]skeled.SkeletonWebItem, 0)
-	for _, version := range s.SchemaRepo.ListWebSchemaVersions() {
-		ret = append(ret, toServerSkeletonWebItem(toSkeletonVersionFields(version), version.Schema))
+	for _, version := range s.DescriptorRepo.ListWebDescriptorVersions() {
+		ret = append(ret, toServerSkeletonWebItem(toSkeletonVersionFields(version), version.Descriptor))
 	}
 	return ret
 }
 
 func (s *SkeletonApiServiceServerImpl) ListTasks() []skeled.SkeletonTask {
 	ret := make([]skeled.SkeletonTask, 0)
-	for _, version := range s.SchemaRepo.ListTaskSchemaVersions() {
-		ret = append(ret, toServerSkeletonTask(toSkeletonVersionFields(version), version.Schema))
+	for _, version := range s.DescriptorRepo.ListTaskDescriptorVersions() {
+		ret = append(ret, toServerSkeletonTask(toSkeletonVersionFields(version), version.Descriptor))
 	}
 	return ret
 }
 
 func (s *SkeletonApiServiceServerImpl) ListEvents() []skeled.SkeletonEventItem {
 	ret := make([]skeled.SkeletonEventItem, 0)
-	for _, version := range s.SchemaRepo.ListEventSchemaVersions() {
-		ret = append(ret, toServerSkeletonEventItem(toSkeletonVersionFields(version), version.Schema))
+	for _, version := range s.DescriptorRepo.ListEventDescriptorVersions() {
+		ret = append(ret, toServerSkeletonEventItem(toSkeletonVersionFields(version), version.Descriptor))
 	}
 	return ret
 }
 
 func (s *SkeletonApiServiceServerImpl) ListData() []skeled.SkeletonData {
 	ret := make([]skeled.SkeletonData, 0)
-	for _, version := range s.SchemaRepo.ListDataSchemaVersions() {
-		ret = append(ret, toServerSkeletonData(toSkeletonVersionFields(version), version.Schema))
+	for _, version := range s.DescriptorRepo.ListDataDescriptorVersions() {
+		ret = append(ret, toServerSkeletonData(toSkeletonVersionFields(version), version.Descriptor))
 	}
-	for _, version := range s.SchemaRepo.ListEnumSchemaVersions() {
-		ret = append(ret, toServerSkeletonEnumData(toSkeletonVersionFields(version), version.Schema))
+	for _, version := range s.DescriptorRepo.ListEnumDescriptorVersions() {
+		ret = append(ret, toServerSkeletonEnumData(toSkeletonVersionFields(version), version.Descriptor))
 	}
 	return sortedSkeletonData(ret)
 }
 
 func sortedSkeletonActorItems(items []skeled.SkeletonActorItem) []skeled.SkeletonActorItem {
 	return vslice.SortBy(items, func(a skeled.SkeletonActorItem, b skeled.SkeletonActorItem) bool {
-		return compareSkeletonItemVersion(a.SkelName, a.IsMain, a.SchemaHash, b.SkelName, b.IsMain, b.SchemaHash) < 0
+		return compareSkeletonItemVersion(a.SkelName, a.IsMain, a.DescriptorHash, b.SkelName, b.IsMain, b.DescriptorHash) < 0
 	})
 }
 
 func sortedSkeletonConfigItems(items []skeled.SkeletonConfigItem) []skeled.SkeletonConfigItem {
 	return vslice.SortBy(items, func(a skeled.SkeletonConfigItem, b skeled.SkeletonConfigItem) bool {
-		return compareSkeletonItemVersion(a.SkelName, a.IsMain, a.SchemaHash, b.SkelName, b.IsMain, b.SchemaHash) < 0
+		return compareSkeletonItemVersion(a.SkelName, a.IsMain, a.DescriptorHash, b.SkelName, b.IsMain, b.DescriptorHash) < 0
 	})
 }
 
 func sortedSkeletonServiceItems(items []skeled.SkeletonServiceItem) []skeled.SkeletonServiceItem {
 	return vslice.SortBy(items, func(a skeled.SkeletonServiceItem, b skeled.SkeletonServiceItem) bool {
-		return compareSkeletonItemVersion(a.SkelName, a.IsMain, a.SchemaHash, b.SkelName, b.IsMain, b.SchemaHash) < 0
+		return compareSkeletonItemVersion(a.SkelName, a.IsMain, a.DescriptorHash, b.SkelName, b.IsMain, b.DescriptorHash) < 0
 	})
 }
 
 func sortedSkeletonResourceItems(items []skeled.SkeletonResourceItem) []skeled.SkeletonResourceItem {
 	return vslice.SortBy(items, func(a skeled.SkeletonResourceItem, b skeled.SkeletonResourceItem) bool {
-		return compareSkeletonItemVersion(a.SkelName, a.IsMain, a.SchemaHash, b.SkelName, b.IsMain, b.SchemaHash) < 0
+		return compareSkeletonItemVersion(a.SkelName, a.IsMain, a.DescriptorHash, b.SkelName, b.IsMain, b.DescriptorHash) < 0
 	})
 }
 
 func sortedSkeletonWebItems(items []skeled.SkeletonWebItem) []skeled.SkeletonWebItem {
 	return vslice.SortBy(items, func(a skeled.SkeletonWebItem, b skeled.SkeletonWebItem) bool {
-		return compareSkeletonItemVersion(a.SkelName, a.IsMain, a.SchemaHash, b.SkelName, b.IsMain, b.SchemaHash) < 0
+		return compareSkeletonItemVersion(a.SkelName, a.IsMain, a.DescriptorHash, b.SkelName, b.IsMain, b.DescriptorHash) < 0
 	})
 }
 
 func sortedSkeletonTasks(items []skeled.SkeletonTask) []skeled.SkeletonTask {
 	return vslice.SortBy(items, func(a skeled.SkeletonTask, b skeled.SkeletonTask) bool {
-		return compareSkeletonItemVersion(a.SkelName, a.IsMain, a.SchemaHash, b.SkelName, b.IsMain, b.SchemaHash) < 0
+		return compareSkeletonItemVersion(a.SkelName, a.IsMain, a.DescriptorHash, b.SkelName, b.IsMain, b.DescriptorHash) < 0
 	})
 }
 
 func sortedSkeletonEventItems(items []skeled.SkeletonEventItem) []skeled.SkeletonEventItem {
 	return vslice.SortBy(items, func(a skeled.SkeletonEventItem, b skeled.SkeletonEventItem) bool {
-		return compareSkeletonItemVersion(a.SkelName, a.IsMain, a.SchemaHash, b.SkelName, b.IsMain, b.SchemaHash) < 0
+		return compareSkeletonItemVersion(a.SkelName, a.IsMain, a.DescriptorHash, b.SkelName, b.IsMain, b.DescriptorHash) < 0
 	})
 }
 
 func sortedSkeletonData(items []skeled.SkeletonData) []skeled.SkeletonData {
 	return vslice.SortBy(items, func(a skeled.SkeletonData, b skeled.SkeletonData) bool {
-		return compareSkeletonItemVersion(a.SkelName, a.IsMain, a.SchemaHash, b.SkelName, b.IsMain, b.SchemaHash) < 0
+		return compareSkeletonItemVersion(a.SkelName, a.IsMain, a.DescriptorHash, b.SkelName, b.IsMain, b.DescriptorHash) < 0
 	})
 }
 
@@ -159,7 +159,7 @@ func sortedSkeletonDomains(items []skeled.SkeletonDomain) []skeled.SkeletonDomai
 		if a.IsMain != b.IsMain {
 			return a.IsMain
 		}
-		return cmp.Compare(b.SchemaHash, a.SchemaHash) < 0
+		return cmp.Compare(b.DescriptorHash, a.DescriptorHash) < 0
 	})
 }
 
@@ -177,74 +177,74 @@ func compareSkeletonItemVersion(aName string, aIsMain bool, aHash string, bName 
 }
 
 type _SkeletonVersionFields struct {
-	Domain           string
-	SchemaHash       string
-	MainSchemaHash   string
-	IsMultiVersion   bool
-	IsMain           bool
-	DomainSchemaHash string
+	Domain               string
+	DescriptorHash       string
+	MainDescriptorHash   string
+	IsMultiVersion       bool
+	IsMain               bool
+	DomainDescriptorHash string
 }
 
-func toSkeletonVersionFields[T any](version core.SchemaVersion[T]) _SkeletonVersionFields {
+func toSkeletonVersionFields[T any](version core.DescriptorVersion[T]) _SkeletonVersionFields {
 	return _SkeletonVersionFields{
-		Domain:           version.Domain,
-		SchemaHash:       version.SchemaHash,
-		MainSchemaHash:   version.MainSchemaHash,
-		IsMultiVersion:   version.MultiVersion,
-		IsMain:           version.Main,
-		DomainSchemaHash: version.DomainSchemaHash,
+		Domain:               version.Domain,
+		DescriptorHash:       version.DescriptorHash,
+		MainDescriptorHash:   version.MainDescriptorHash,
+		IsMultiVersion:       version.MultiVersion,
+		IsMain:               version.Main,
+		DomainDescriptorHash: version.DomainDescriptorHash,
 	}
 }
 
 func toServerSkeletonDomain(
-	view core.DomainSchemaView,
-	serviceVersionsByKey map[string]core.SchemaVersion[*skel.ServiceSchema],
-	webVersionsByKey map[string]core.SchemaVersion[*skel.WebSchema],
+	view core.DomainDescriptorView,
+	serviceVersionsByKey map[string]core.DescriptorVersion[*skeldesc.Service],
+	webVersionsByKey map[string]core.DescriptorVersion[*skeldesc.Web],
 ) skeled.SkeletonDomain {
 	version := view.DomainVersion
 	domain := skeled.SkeletonDomain{
-		Domain:         version.Schema.Domain,
-		SchemaHash:     version.Schema.Hash,
-		MainSchemaHash: version.MainSchemaHash,
-		IsMultiVersion: version.MultiVersion,
-		IsMain:         version.Main,
-		Actors:         make([]skeled.SkeletonActorItem, 0, len(view.Actors)),
-		Configs:        make([]skeled.SkeletonConfigItem, 0, len(view.Configs)),
-		Services:       make([]skeled.SkeletonServiceItem, 0, len(view.Services)),
-		Resources:      make([]skeled.SkeletonResourceItem, 0, len(view.Resources)),
-		Data:           make([]skeled.SkeletonData, 0, len(view.Data)+len(view.Enums)),
-		Webs:           make([]skeled.SkeletonWebItem, 0, len(view.Webs)),
-		Tasks:          make([]skeled.SkeletonTask, 0, len(view.Tasks)),
-		Events:         make([]skeled.SkeletonEventItem, 0, len(view.Events)),
+		Domain:             version.Descriptor.Name,
+		DescriptorHash:     version.Descriptor.Hash,
+		MainDescriptorHash: version.MainDescriptorHash,
+		IsMultiVersion:     version.MultiVersion,
+		IsMain:             version.Main,
+		Actors:             make([]skeled.SkeletonActorItem, 0, len(view.Actors)),
+		Configs:            make([]skeled.SkeletonConfigItem, 0, len(view.Configs)),
+		Services:           make([]skeled.SkeletonServiceItem, 0, len(view.Services)),
+		Resources:          make([]skeled.SkeletonResourceItem, 0, len(view.Resources)),
+		Data:               make([]skeled.SkeletonData, 0, len(view.Data)+len(view.Enums)),
+		Webs:               make([]skeled.SkeletonWebItem, 0, len(view.Webs)),
+		Tasks:              make([]skeled.SkeletonTask, 0, len(view.Tasks)),
+		Events:             make([]skeled.SkeletonEventItem, 0, len(view.Events)),
 	}
 	for _, item := range view.Actors {
-		actor := toServerSkeletonActorItem(toSkeletonVersionFields(item), item.Schema)
-		fillServerSkeletonActorItemAccess(&actor, []core.DomainSchemaView{view}, serviceVersionsByKey, webVersionsByKey)
+		actor := toServerSkeletonActorItem(toSkeletonVersionFields(item), item.Descriptor)
+		fillServerSkeletonActorItemAccess(&actor, []core.DomainDescriptorView{view}, serviceVersionsByKey, webVersionsByKey)
 		domain.Actors = append(domain.Actors, actor)
 	}
 	for _, item := range view.Configs {
-		domain.Configs = append(domain.Configs, toServerSkeletonConfigItem(toSkeletonVersionFields(item), item.Schema))
+		domain.Configs = append(domain.Configs, toServerSkeletonConfigItem(toSkeletonVersionFields(item), item.Descriptor))
 	}
 	for _, item := range view.Services {
-		domain.Services = append(domain.Services, toServerSkeletonServiceItem(toSkeletonVersionFields(item), item.Schema))
+		domain.Services = append(domain.Services, toServerSkeletonServiceItem(toSkeletonVersionFields(item), item.Descriptor))
 	}
 	for _, item := range view.Resources {
-		domain.Resources = append(domain.Resources, toServerSkeletonResourceItem(toSkeletonVersionFields(item), item.Schema))
+		domain.Resources = append(domain.Resources, toServerSkeletonResourceItem(toSkeletonVersionFields(item), item.Descriptor))
 	}
 	for _, item := range view.Data {
-		domain.Data = append(domain.Data, toServerSkeletonData(toSkeletonVersionFields(item), item.Schema))
+		domain.Data = append(domain.Data, toServerSkeletonData(toSkeletonVersionFields(item), item.Descriptor))
 	}
 	for _, item := range view.Enums {
-		domain.Data = append(domain.Data, toServerSkeletonEnumData(toSkeletonVersionFields(item), item.Schema))
+		domain.Data = append(domain.Data, toServerSkeletonEnumData(toSkeletonVersionFields(item), item.Descriptor))
 	}
 	for _, item := range view.Webs {
-		domain.Webs = append(domain.Webs, toServerSkeletonWebItem(toSkeletonVersionFields(item), item.Schema))
+		domain.Webs = append(domain.Webs, toServerSkeletonWebItem(toSkeletonVersionFields(item), item.Descriptor))
 	}
 	for _, item := range view.Tasks {
-		domain.Tasks = append(domain.Tasks, toServerSkeletonTask(toSkeletonVersionFields(item), item.Schema))
+		domain.Tasks = append(domain.Tasks, toServerSkeletonTask(toSkeletonVersionFields(item), item.Descriptor))
 	}
 	for _, item := range view.Events {
-		domain.Events = append(domain.Events, toServerSkeletonEventItem(toSkeletonVersionFields(item), item.Schema))
+		domain.Events = append(domain.Events, toServerSkeletonEventItem(toSkeletonVersionFields(item), item.Descriptor))
 	}
 	domain.Actors = sortedSkeletonActorItems(domain.Actors)
 	domain.Configs = sortedSkeletonConfigItems(domain.Configs)
@@ -258,90 +258,96 @@ func toServerSkeletonDomain(
 	return domain
 }
 
-func toServerSkeletonActorItem(version _SkeletonVersionFields, schema *skel.ActorSchema) skeled.SkeletonActorItem {
-	vias := make([]string, 0, len(schema.Vias))
-	for _, via := range schema.Vias {
+func toServerSkeletonActorItem(version _SkeletonVersionFields, descriptor *skeldesc.Actor) skeled.SkeletonActorItem {
+	vias := make([]string, 0, len(descriptor.Vias))
+	for _, via := range descriptor.Vias {
 		vias = append(vias, string(via))
 	}
-	return skeled.SkeletonActorItem{
-		Domain:           version.Domain,
-		SchemaHash:       version.SchemaHash,
-		MainSchemaHash:   version.MainSchemaHash,
-		IsMultiVersion:   version.IsMultiVersion,
-		IsMain:           version.IsMain,
-		DomainSchemaHash: version.DomainSchemaHash,
-		Name:             schema.Name,
-		SkelName:         schema.SkelName,
-		Description:      schema.Description,
-		Deprecated:       schema.Deprecated,
-		DeprecatedReason: schema.DeprecatedReason,
-		ActorVias:        vias,
-		AuthEnabled:      schema.AuthEnabled,
-		IdentifierField:  schema.IdentifierField,
-		Credential:       toServerSkeletonActorData(version, schema.AuthCredential),
-		Info:             toServerSkeletonActorData(version, schema.AuthInfo),
-		AuthService:      toServerSkeletonActorService(version, schema.AuthService),
-		PermEnabled:      schema.PermEnabled,
-		PermService:      toServerSkeletonActorService(version, schema.PermService),
-		PermMethod:       toServerSkeletonActorMethod(schema.PermMethod),
-		Services:         []skeled.SkeletonServiceItem{},
-		Webs:             []skeled.SkeletonWebItem{},
+	result := skeled.SkeletonActorItem{
+		Domain:               version.Domain,
+		DescriptorHash:       version.DescriptorHash,
+		MainDescriptorHash:   version.MainDescriptorHash,
+		IsMultiVersion:       version.IsMultiVersion,
+		IsMain:               version.IsMain,
+		DomainDescriptorHash: version.DomainDescriptorHash,
+		Name:                 descriptor.Name,
+		SkelName:             descriptor.SkelName,
+		Description:          descriptor.Description,
+		Deprecated:           descriptor.Deprecated,
+		DeprecatedReason:     descriptor.DeprecatedReason,
+		ActorVias:            vias,
+		AuthEnabled:          (descriptor.Auth != nil),
+		PermEnabled:          (descriptor.Permission != nil),
+		Services:             []skeled.SkeletonServiceItem{},
+		Webs:                 []skeled.SkeletonWebItem{},
 	}
+
+	if descriptor.Auth != nil {
+		result.IdentifierField = descriptor.Auth.IdentifierField
+		result.Credential = toServerSkeletonActorData(version, descriptor.Auth.Credential)
+		result.Info = toServerSkeletonActorData(version, descriptor.Auth.Info)
+		result.AuthService = toServerSkeletonActorService(version, descriptor.Auth.Service)
+	}
+	if descriptor.Permission != nil {
+		result.PermService = toServerSkeletonActorService(version, descriptor.Permission.Service)
+		result.PermMethod = toServerSkeletonActorMethod(descriptor.Permission.Method())
+	}
+	return result
 }
 
-func toServerSkeletonActorData(actorVersion _SkeletonVersionFields, schema *skel.DataSchema) *skeled.SkeletonData {
-	if schema == nil {
+func toServerSkeletonActorData(actorVersion _SkeletonVersionFields, descriptor *skeldesc.Data) *skeled.SkeletonData {
+	if descriptor == nil {
 		return nil
 	}
-	item := toServerSkeletonData(toSkeletonDerivedVersionFields(actorVersion, schema.Hash), schema)
+	item := toServerSkeletonData(toSkeletonDerivedVersionFields(actorVersion, descriptor.Hash), descriptor)
 	return &item
 }
 
-func toServerSkeletonActorService(actorVersion _SkeletonVersionFields, schema *skel.ServiceSchema) *skeled.SkeletonServiceItem {
-	if schema == nil {
+func toServerSkeletonActorService(actorVersion _SkeletonVersionFields, descriptor *skeldesc.Service) *skeled.SkeletonServiceItem {
+	if descriptor == nil {
 		return nil
 	}
-	item := toServerSkeletonServiceItem(toSkeletonDerivedVersionFields(actorVersion, schema.Hash), schema)
+	item := toServerSkeletonServiceItem(toSkeletonDerivedVersionFields(actorVersion, descriptor.Hash), descriptor)
 	return &item
 }
 
-func toServerSkeletonActorMethod(schema *skel.MethodSchema) *skeled.SkeletonMethod {
-	if schema == nil {
+func toServerSkeletonActorMethod(descriptor *skeldesc.Method) *skeled.SkeletonMethod {
+	if descriptor == nil {
 		return nil
 	}
-	item := toServerSkeletonMethod(schema)
+	item := toServerSkeletonMethod(descriptor)
 	return &item
 }
 
-func toSkeletonDerivedVersionFields(parent _SkeletonVersionFields, schemaHash string) _SkeletonVersionFields {
+func toSkeletonDerivedVersionFields(parent _SkeletonVersionFields, descriptorHash string) _SkeletonVersionFields {
 	return _SkeletonVersionFields{
-		Domain:           parent.Domain,
-		SchemaHash:       schemaHash,
-		MainSchemaHash:   schemaHash,
-		IsMultiVersion:   false,
-		IsMain:           true,
-		DomainSchemaHash: parent.DomainSchemaHash,
+		Domain:               parent.Domain,
+		DescriptorHash:       descriptorHash,
+		MainDescriptorHash:   descriptorHash,
+		IsMultiVersion:       false,
+		IsMain:               true,
+		DomainDescriptorHash: parent.DomainDescriptorHash,
 	}
 }
 
 func fillServerSkeletonActorItemAccess(
 	actor *skeled.SkeletonActorItem,
-	views []core.DomainSchemaView,
-	serviceVersionsByKey map[string]core.SchemaVersion[*skel.ServiceSchema],
-	webVersionsByKey map[string]core.SchemaVersion[*skel.WebSchema],
+	views []core.DomainDescriptorView,
+	serviceVersionsByKey map[string]core.DescriptorVersion[*skeldesc.Service],
+	webVersionsByKey map[string]core.DescriptorVersion[*skeldesc.Web],
 ) {
 	serviceKeys := map[string]struct{}{}
 	webKeys := map[string]struct{}{}
 
 	for _, view := range views {
-		if !domainSchemaCanReferenceActorVersion(view.DomainVersion.Schema, actor.SkelName, actor.SchemaHash) {
+		if !domainDescriptorCanReferenceActorVersion(view.DomainVersion.Descriptor, actor.SkelName, actor.DescriptorHash) {
 			continue
 		}
-		for _, schema := range view.DomainVersion.Schema.Services {
-			if !skeletonActorRefsContain(schema.Audiences, actor.SkelName) {
+		for _, descriptor := range view.DomainVersion.Descriptor.Services {
+			if !skeletonActorRefsContain(descriptor.Audiences, actor.SkelName) {
 				continue
 			}
-			key := skeletonSchemaVersionKey(schema.SkelName, schema.Hash)
+			key := skeletonDescriptorVersionKey(descriptor.SkelName, descriptor.Hash)
 			if _, ok := serviceKeys[key]; ok {
 				continue
 			}
@@ -350,13 +356,13 @@ func fillServerSkeletonActorItemAccess(
 				continue
 			}
 			serviceKeys[key] = struct{}{}
-			actor.Services = append(actor.Services, toServerSkeletonServiceItem(toSkeletonVersionFields(version), version.Schema))
+			actor.Services = append(actor.Services, toServerSkeletonServiceItem(toSkeletonVersionFields(version), version.Descriptor))
 		}
-		for _, schema := range view.DomainVersion.Schema.Webs {
-			if !skeletonActorRefsContain(schema.Audiences, actor.SkelName) {
+		for _, descriptor := range view.DomainVersion.Descriptor.Webs {
+			if !skeletonActorRefsContain(descriptor.Audiences, actor.SkelName) {
 				continue
 			}
-			key := skeletonSchemaVersionKey(schema.SkelName, schema.Hash)
+			key := skeletonDescriptorVersionKey(descriptor.SkelName, descriptor.Hash)
 			if _, ok := webKeys[key]; ok {
 				continue
 			}
@@ -365,7 +371,7 @@ func fillServerSkeletonActorItemAccess(
 				continue
 			}
 			webKeys[key] = struct{}{}
-			actor.Webs = append(actor.Webs, toServerSkeletonWebItem(toSkeletonVersionFields(version), version.Schema))
+			actor.Webs = append(actor.Webs, toServerSkeletonWebItem(toSkeletonVersionFields(version), version.Descriptor))
 		}
 	}
 
@@ -373,14 +379,14 @@ func fillServerSkeletonActorItemAccess(
 	actor.Webs = sortedSkeletonWebItems(actor.Webs)
 }
 
-func domainSchemaCanReferenceActorVersion(schema *skel.DomainSchema, skelName string, schemaHash string) bool {
+func domainDescriptorCanReferenceActorVersion(descriptor *skeldesc.Domain, skelName string, descriptorHash string) bool {
 	hasActor := false
-	for _, actor := range schema.Actors {
+	for _, actor := range descriptor.Actors {
 		if actor.SkelName != skelName {
 			continue
 		}
 		hasActor = true
-		if actor.Hash != schemaHash {
+		if actor.Hash != descriptorHash {
 			continue
 		}
 		return true
@@ -388,7 +394,7 @@ func domainSchemaCanReferenceActorVersion(schema *skel.DomainSchema, skelName st
 	return !hasActor
 }
 
-func skeletonActorRefsContain(refs []*skel.ActorAudienceSchema, skelName string) bool {
+func skeletonActorRefsContain(refs []*skeldesc.ActorAudience, skelName string) bool {
 	for _, ref := range refs {
 		if ref.SkelName == skelName {
 			return true
@@ -397,97 +403,97 @@ func skeletonActorRefsContain(refs []*skel.ActorAudienceSchema, skelName string)
 	return false
 }
 
-func toServerSkeletonServiceItem(version _SkeletonVersionFields, schema *skel.ServiceSchema) skeled.SkeletonServiceItem {
+func toServerSkeletonServiceItem(version _SkeletonVersionFields, descriptor *skeldesc.Service) skeled.SkeletonServiceItem {
 	return skeled.SkeletonServiceItem{
-		Domain:           version.Domain,
-		SchemaHash:       version.SchemaHash,
-		MainSchemaHash:   version.MainSchemaHash,
-		IsMultiVersion:   version.IsMultiVersion,
-		IsMain:           version.IsMain,
-		DomainSchemaHash: version.DomainSchemaHash,
-		Name:             schema.Name,
-		SkelName:         schema.SkelName,
-		Description:      schema.Description,
-		Deprecated:       schema.Deprecated,
-		DeprecatedReason: schema.DeprecatedReason,
-		Pub:              schema.Pub,
-		Api:              schema.Api,
-		Ext:              schema.Ext,
-		AuthMode:         string(schema.AuthMode),
-		Require:          toServerSkeletonPermExpr(schema.Require),
-		Actors:           toServerSkeletonActorRefs(schema.Audiences),
-		Methods:          toServerSkeletonMethods(schema.Methods),
+		Domain:               version.Domain,
+		DescriptorHash:       version.DescriptorHash,
+		MainDescriptorHash:   version.MainDescriptorHash,
+		IsMultiVersion:       version.IsMultiVersion,
+		IsMain:               version.IsMain,
+		DomainDescriptorHash: version.DomainDescriptorHash,
+		Name:                 descriptor.Name,
+		SkelName:             descriptor.SkelName,
+		Description:          descriptor.Description,
+		Deprecated:           descriptor.Deprecated,
+		DeprecatedReason:     descriptor.DeprecatedReason,
+		Pub:                  descriptor.Pub,
+		Api:                  descriptor.Api,
+		Ext:                  descriptor.Ext,
+		AuthMode:             string(descriptor.AuthMode),
+		Require:              toServerSkeletonPermExpr(descriptor.Require),
+		Actors:               toServerSkeletonActorRefs(descriptor.Audiences),
+		Methods:              toServerSkeletonMethods(descriptor.Methods),
 	}
 }
 
-func toServerSkeletonResourceItem(version _SkeletonVersionFields, schema *skel.ResourceSchema) skeled.SkeletonResourceItem {
+func toServerSkeletonResourceItem(version _SkeletonVersionFields, descriptor *skeldesc.Resource) skeled.SkeletonResourceItem {
 	return skeled.SkeletonResourceItem{
-		Domain:           version.Domain,
-		SchemaHash:       version.SchemaHash,
-		MainSchemaHash:   version.MainSchemaHash,
-		IsMultiVersion:   version.IsMultiVersion,
-		IsMain:           version.IsMain,
-		DomainSchemaHash: version.DomainSchemaHash,
-		Name:             schema.Name,
-		SkelName:         schema.SkelName,
-		Description:      schema.Description,
-		Deprecated:       schema.Deprecated,
-		DeprecatedReason: schema.DeprecatedReason,
-		Checks:           toServerSkeletonResourceChecks(schema.Checks),
-		Actions:          toServerSkeletonResourceActions(schema.Actions),
-		CheckService:     toServerSkeletonResourceCheckService(version, schema.CheckService),
+		Domain:               version.Domain,
+		DescriptorHash:       version.DescriptorHash,
+		MainDescriptorHash:   version.MainDescriptorHash,
+		IsMultiVersion:       version.IsMultiVersion,
+		IsMain:               version.IsMain,
+		DomainDescriptorHash: version.DomainDescriptorHash,
+		Name:                 descriptor.Name,
+		SkelName:             descriptor.SkelName,
+		Description:          descriptor.Description,
+		Deprecated:           descriptor.Deprecated,
+		DeprecatedReason:     descriptor.DeprecatedReason,
+		Checks:               toServerSkeletonResourceChecks(descriptor, descriptor.Checks),
+		Actions:              toServerSkeletonResourceActions(descriptor, descriptor.Actions),
+		CheckService:         toServerSkeletonResourceCheckService(version, descriptor.CheckService),
 	}
 }
 
-func toServerSkeletonResourceCheckService(resourceVersion _SkeletonVersionFields, schema *skel.ServiceSchema) *skeled.SkeletonServiceItem {
-	if schema == nil {
+func toServerSkeletonResourceCheckService(resourceVersion _SkeletonVersionFields, descriptor *skeldesc.Service) *skeled.SkeletonServiceItem {
+	if descriptor == nil {
 		return nil
 	}
-	item := toServerSkeletonServiceItem(toSkeletonDerivedVersionFields(resourceVersion, schema.Hash), schema)
+	item := toServerSkeletonServiceItem(toSkeletonDerivedVersionFields(resourceVersion, descriptor.Hash), descriptor)
 	return &item
 }
 
-func toServerSkeletonConfigItem(version _SkeletonVersionFields, schema *skel.ConfigSchema) skeled.SkeletonConfigItem {
+func toServerSkeletonConfigItem(version _SkeletonVersionFields, descriptor *skeldesc.Config) skeled.SkeletonConfigItem {
 	return skeled.SkeletonConfigItem{
-		Domain:           version.Domain,
-		SchemaHash:       version.SchemaHash,
-		MainSchemaHash:   version.MainSchemaHash,
-		IsMultiVersion:   version.IsMultiVersion,
-		IsMain:           version.IsMain,
-		DomainSchemaHash: version.DomainSchemaHash,
-		Name:             schema.Name,
-		SkelName:         schema.SkelName,
-		Description:      schema.Description,
-		Deprecated:       schema.Deprecated,
-		DeprecatedReason: schema.DeprecatedReason,
-		Pub:              schema.Pub,
-		Sensitive:        schema.Sensitive,
-		Lifecycle:        schema.Lifecycle,
-		Fields:           toServerSkeletonFields(schema.Members),
+		Domain:               version.Domain,
+		DescriptorHash:       version.DescriptorHash,
+		MainDescriptorHash:   version.MainDescriptorHash,
+		IsMultiVersion:       version.IsMultiVersion,
+		IsMain:               version.IsMain,
+		DomainDescriptorHash: version.DomainDescriptorHash,
+		Name:                 descriptor.Name,
+		SkelName:             descriptor.SkelName,
+		Description:          descriptor.Description,
+		Deprecated:           descriptor.Deprecated,
+		DeprecatedReason:     descriptor.DeprecatedReason,
+		Pub:                  descriptor.Pub,
+		Sensitive:            descriptor.Sensitive,
+		Lifecycle:            string(descriptor.Lifecycle),
+		Fields:               toServerSkeletonFields(descriptor.Members),
 	}
 }
 
-func toServerSkeletonWebItem(version _SkeletonVersionFields, schema *skel.WebSchema) skeled.SkeletonWebItem {
+func toServerSkeletonWebItem(version _SkeletonVersionFields, descriptor *skeldesc.Web) skeled.SkeletonWebItem {
 	return skeled.SkeletonWebItem{
-		Domain:           version.Domain,
-		SchemaHash:       version.SchemaHash,
-		MainSchemaHash:   version.MainSchemaHash,
-		IsMultiVersion:   version.IsMultiVersion,
-		IsMain:           version.IsMain,
-		DomainSchemaHash: version.DomainSchemaHash,
-		Name:             schema.Name,
-		SkelName:         schema.SkelName,
-		Description:      schema.Description,
-		Deprecated:       schema.Deprecated,
-		DeprecatedReason: schema.DeprecatedReason,
-		AuthMode:         string(schema.AuthMode),
-		Actors:           toServerSkeletonActorRefs(schema.Audiences),
+		Domain:               version.Domain,
+		DescriptorHash:       version.DescriptorHash,
+		MainDescriptorHash:   version.MainDescriptorHash,
+		IsMultiVersion:       version.IsMultiVersion,
+		IsMain:               version.IsMain,
+		DomainDescriptorHash: version.DomainDescriptorHash,
+		Name:                 descriptor.Name,
+		SkelName:             descriptor.SkelName,
+		Description:          descriptor.Description,
+		Deprecated:           descriptor.Deprecated,
+		DeprecatedReason:     descriptor.DeprecatedReason,
+		AuthMode:             string(descriptor.AuthMode),
+		Actors:               toServerSkeletonActorRefs(descriptor.Audiences),
 	}
 }
 
-func toServerSkeletonTask(version _SkeletonVersionFields, schema *skel.TaskSchema) skeled.SkeletonTask {
-	triggers := make([]skeled.SkeletonTrigger, 0, len(schema.Triggers))
-	for _, trigger := range schema.Triggers {
+func toServerSkeletonTask(version _SkeletonVersionFields, descriptor *skeldesc.Task) skeled.SkeletonTask {
+	triggers := make([]skeled.SkeletonTrigger, 0, len(descriptor.Triggers))
+	for _, trigger := range descriptor.Triggers {
 		triggers = append(triggers, skeled.SkeletonTrigger{
 			Name:               trigger.Name,
 			SkelName:           trigger.SkelName,
@@ -500,96 +506,96 @@ func toServerSkeletonTask(version _SkeletonVersionFields, schema *skel.TaskSchem
 		})
 	}
 	return skeled.SkeletonTask{
-		Domain:           version.Domain,
-		SchemaHash:       version.SchemaHash,
-		MainSchemaHash:   version.MainSchemaHash,
-		IsMultiVersion:   version.IsMultiVersion,
-		IsMain:           version.IsMain,
-		DomainSchemaHash: version.DomainSchemaHash,
-		Name:             schema.Name,
-		SkelName:         schema.SkelName,
-		Description:      schema.Description,
-		Deprecated:       schema.Deprecated,
-		DeprecatedReason: schema.DeprecatedReason,
-		Triggers:         triggers,
+		Domain:               version.Domain,
+		DescriptorHash:       version.DescriptorHash,
+		MainDescriptorHash:   version.MainDescriptorHash,
+		IsMultiVersion:       version.IsMultiVersion,
+		IsMain:               version.IsMain,
+		DomainDescriptorHash: version.DomainDescriptorHash,
+		Name:                 descriptor.Name,
+		SkelName:             descriptor.SkelName,
+		Description:          descriptor.Description,
+		Deprecated:           descriptor.Deprecated,
+		DeprecatedReason:     descriptor.DeprecatedReason,
+		Triggers:             triggers,
 	}
 }
 
-func toServerSkeletonEventItem(version _SkeletonVersionFields, schema *skel.EventSchema) skeled.SkeletonEventItem {
+func toServerSkeletonEventItem(version _SkeletonVersionFields, descriptor *skeldesc.Event) skeled.SkeletonEventItem {
 	return skeled.SkeletonEventItem{
-		Domain:           version.Domain,
-		SchemaHash:       version.SchemaHash,
-		MainSchemaHash:   version.MainSchemaHash,
-		IsMultiVersion:   version.IsMultiVersion,
-		IsMain:           version.IsMain,
-		DomainSchemaHash: version.DomainSchemaHash,
-		Name:             schema.Name,
-		SkelName:         schema.SkelName,
-		Description:      schema.Description,
-		Deprecated:       schema.Deprecated,
-		DeprecatedReason: schema.DeprecatedReason,
-		Pub:              schema.Pub,
-		Ext:              schema.Ext,
-		Sensitive:        schema.Sensitive,
-		Fields:           toServerSkeletonFields(schema.Members),
+		Domain:               version.Domain,
+		DescriptorHash:       version.DescriptorHash,
+		MainDescriptorHash:   version.MainDescriptorHash,
+		IsMultiVersion:       version.IsMultiVersion,
+		IsMain:               version.IsMain,
+		DomainDescriptorHash: version.DomainDescriptorHash,
+		Name:                 descriptor.Name,
+		SkelName:             descriptor.SkelName,
+		Description:          descriptor.Description,
+		Deprecated:           descriptor.Deprecated,
+		DeprecatedReason:     descriptor.DeprecatedReason,
+		Pub:                  descriptor.Pub,
+		Ext:                  descriptor.Ext,
+		Sensitive:            descriptor.Sensitive,
+		Fields:               toServerSkeletonFields(descriptor.Members),
 	}
 }
 
-func toServerSkeletonData(version _SkeletonVersionFields, schema *skel.DataSchema) skeled.SkeletonData {
+func toServerSkeletonData(version _SkeletonVersionFields, descriptor *skeldesc.Data) skeled.SkeletonData {
 	return skeled.SkeletonData{
-		Domain:           version.Domain,
-		SchemaHash:       version.SchemaHash,
-		MainSchemaHash:   version.MainSchemaHash,
-		IsMultiVersion:   version.IsMultiVersion,
-		IsMain:           version.IsMain,
-		DomainSchemaHash: version.DomainSchemaHash,
-		Name:             schema.Name,
-		SkelName:         schema.SkelName,
-		Description:      schema.Description,
-		Deprecated:       schema.Deprecated,
-		DeprecatedReason: schema.DeprecatedReason,
-		Enum:             false,
-		Sensitive:        schema.Sensitive,
-		TypeParameters:   append([]string{}, schema.TypeParameters...),
-		Fields:           toServerSkeletonFields(schema.Members),
-		EnumItems:        []skeled.SkeletonEnumItem{},
+		Domain:               version.Domain,
+		DescriptorHash:       version.DescriptorHash,
+		MainDescriptorHash:   version.MainDescriptorHash,
+		IsMultiVersion:       version.IsMultiVersion,
+		IsMain:               version.IsMain,
+		DomainDescriptorHash: version.DomainDescriptorHash,
+		Name:                 descriptor.Name,
+		SkelName:             descriptor.SkelName,
+		Description:          descriptor.Description,
+		Deprecated:           descriptor.Deprecated,
+		DeprecatedReason:     descriptor.DeprecatedReason,
+		Enum:                 false,
+		Sensitive:            descriptor.Sensitive,
+		TypeParameters:       append([]string{}, descriptor.TypeParameters...),
+		Fields:               toServerSkeletonFields(descriptor.Members),
+		EnumItems:            []skeled.SkeletonEnumItem{},
 	}
 }
 
-func toServerSkeletonEnumData(version _SkeletonVersionFields, schema *skel.EnumSchema) skeled.SkeletonData {
+func toServerSkeletonEnumData(version _SkeletonVersionFields, descriptor *skeldesc.Enum) skeled.SkeletonData {
 	return skeled.SkeletonData{
-		Domain:           version.Domain,
-		SchemaHash:       version.SchemaHash,
-		MainSchemaHash:   version.MainSchemaHash,
-		IsMultiVersion:   version.IsMultiVersion,
-		IsMain:           version.IsMain,
-		DomainSchemaHash: version.DomainSchemaHash,
-		Name:             schema.Name,
-		SkelName:         schema.SkelName,
-		Description:      schema.Description,
-		Deprecated:       schema.Deprecated,
-		DeprecatedReason: schema.DeprecatedReason,
-		Enum:             true,
-		TypeParameters:   []string{},
-		Fields:           []skeled.SkeletonField{},
-		EnumItems:        toServerSkeletonEnumItems(schema.Items),
+		Domain:               version.Domain,
+		DescriptorHash:       version.DescriptorHash,
+		MainDescriptorHash:   version.MainDescriptorHash,
+		IsMultiVersion:       version.IsMultiVersion,
+		IsMain:               version.IsMain,
+		DomainDescriptorHash: version.DomainDescriptorHash,
+		Name:                 descriptor.Name,
+		SkelName:             descriptor.SkelName,
+		Description:          descriptor.Description,
+		Deprecated:           descriptor.Deprecated,
+		DeprecatedReason:     descriptor.DeprecatedReason,
+		Enum:                 true,
+		TypeParameters:       []string{},
+		Fields:               []skeled.SkeletonField{},
+		EnumItems:            toServerSkeletonEnumItems(descriptor.Items),
 	}
 }
 
-func toServerSkeletonEnumItems(schemas []*skel.EnumItemSchema) []skeled.SkeletonEnumItem {
-	ret := make([]skeled.SkeletonEnumItem, 0, len(schemas))
-	for _, schema := range schemas {
+func toServerSkeletonEnumItems(descriptors []*skeldesc.EnumItem) []skeled.SkeletonEnumItem {
+	ret := make([]skeled.SkeletonEnumItem, 0, len(descriptors))
+	for _, descriptor := range descriptors {
 		ret = append(ret, skeled.SkeletonEnumItem{
-			Name:             schema.Name,
-			Description:      schema.Description,
-			Deprecated:       schema.Deprecated,
-			DeprecatedReason: schema.DeprecatedReason,
+			Name:             descriptor.Name,
+			Description:      descriptor.Description,
+			Deprecated:       descriptor.Deprecated,
+			DeprecatedReason: descriptor.DeprecatedReason,
 		})
 	}
 	return ret
 }
 
-func toServerSkeletonActorRefs(refs []*skel.ActorAudienceSchema) []skeled.SkeletonActorRef {
+func toServerSkeletonActorRefs(refs []*skeldesc.ActorAudience) []skeled.SkeletonActorRef {
 	ret := make([]skeled.SkeletonActorRef, 0, len(refs))
 	for _, ref := range refs {
 		ret = append(ret, skeled.SkeletonActorRef{
@@ -601,47 +607,47 @@ func toServerSkeletonActorRefs(refs []*skel.ActorAudienceSchema) []skeled.Skelet
 	return ret
 }
 
-func toServerSkeletonMethods(schemas []*skel.MethodSchema) []skeled.SkeletonMethod {
-	ret := make([]skeled.SkeletonMethod, 0, len(schemas))
-	for _, schema := range schemas {
-		ret = append(ret, toServerSkeletonMethod(schema))
+func toServerSkeletonMethods(descriptors []*skeldesc.Method) []skeled.SkeletonMethod {
+	ret := make([]skeled.SkeletonMethod, 0, len(descriptors))
+	for _, descriptor := range descriptors {
+		ret = append(ret, toServerSkeletonMethod(descriptor))
 	}
 	return ret
 }
 
-func toServerSkeletonMethod(schema *skel.MethodSchema) skeled.SkeletonMethod {
+func toServerSkeletonMethod(descriptor *skeldesc.Method) skeled.SkeletonMethod {
 	return skeled.SkeletonMethod{
-		Name:               schema.Name,
-		SkelName:           schema.SkelName,
-		Description:        schema.Description,
-		Deprecated:         schema.Deprecated,
-		DeprecatedReason:   schema.DeprecatedReason,
-		InputDescription:   schema.InputDescription,
-		OutputDescription:  schema.OutputDescription,
-		Example:            schema.Example,
-		AuthMode:           string(schema.AuthMode),
-		Require:            toServerSkeletonPermExpr(schema.Require),
-		OutputExample:      schema.OutputExample,
-		Arguments:          toServerSkeletonFields(schema.Arguments),
-		ArgumentsSensitive: schema.ArgumentsSensitive,
-		ResultType:         formatSkeletonType(schema.ResultType),
-		ResultSensitive:    schema.ResultSensitive,
+		Name:               descriptor.Name,
+		SkelName:           descriptor.SkelName,
+		Description:        descriptor.Description,
+		Deprecated:         descriptor.Deprecated,
+		DeprecatedReason:   descriptor.DeprecatedReason,
+		InputDescription:   descriptor.InputDescription,
+		OutputDescription:  descriptor.OutputDescription,
+		Example:            descriptor.Example,
+		AuthMode:           string(descriptor.AuthMode),
+		Require:            toServerSkeletonPermExpr(descriptor.Require),
+		OutputExample:      descriptor.OutputExample,
+		Arguments:          toServerSkeletonFields(descriptor.Arguments),
+		ArgumentsSensitive: descriptor.ArgumentsSensitive,
+		ResultType:         formatSkeletonType(descriptor.ResultType),
+		ResultSensitive:    descriptor.ResultSensitive,
 	}
 }
 
-func toServerSkeletonPermExpr(schema *skel.PermRequire) *skeled.SkeletonPermExpr {
-	if schema == nil {
+func toServerSkeletonPermExpr(descriptor *skeldesc.PermissionRequire) *skeled.SkeletonPermExpr {
+	if descriptor == nil {
 		return nil
 	}
-	return toServerSkeletonPermExprNode(schema.Expr)
+	return toServerSkeletonPermExprNode(descriptor.Expression)
 }
 
-func toServerSkeletonPermExprNode(schema *skel.PermExpr) *skeled.SkeletonPermExpr {
-	if schema == nil {
+func toServerSkeletonPermExprNode(descriptor *skeldesc.PermissionExpression) *skeled.SkeletonPermExpr {
+	if descriptor == nil {
 		return nil
 	}
-	children := make([]skeled.SkeletonPermExpr, 0, len(schema.Children))
-	for _, child := range schema.Children {
+	children := make([]skeled.SkeletonPermExpr, 0, len(descriptor.Children))
+	for _, child := range descriptor.Children {
 		childExpr := toServerSkeletonPermExprNode(child)
 		if childExpr == nil {
 			continue
@@ -649,129 +655,130 @@ func toServerSkeletonPermExprNode(schema *skel.PermExpr) *skeled.SkeletonPermExp
 		children = append(children, *childExpr)
 	}
 	return &skeled.SkeletonPermExpr{
-		Mode:     string(schema.Mode),
-		Code:     schema.Code,
-		Check:    toServerSkeletonPermCheck(schema.Check),
+		Mode:     string(descriptor.Mode),
+		Code:     descriptor.Code,
+		Check:    toServerSkeletonPermCheck(descriptor.Check),
 		Children: children,
 	}
 }
 
-func toServerSkeletonPermCheck(schema *skel.PermCheckInvocation) *skeled.SkeletonPermCheck {
-	if schema == nil {
+func toServerSkeletonPermCheck(descriptor *skeldesc.PermissionCheckInvocation) *skeled.SkeletonPermCheck {
+	if descriptor == nil {
 		return nil
 	}
 	return &skeled.SkeletonPermCheck{
-		ResourceSkelName: schema.ResourceSkelName,
-		ActionName:       schema.ActionName,
-		CheckName:        schema.CheckName,
-		ServiceSkelName:  schema.ServiceSkelName,
-		MethodSkelName:   schema.MethodSkelName,
-		Arguments:        toServerSkeletonPermCheckArguments(schema.Arguments),
+		ResourceSkelName: descriptor.ResourceSkelName,
+		ActionName:       descriptor.ActionName,
+		CheckName:        descriptor.CheckName,
+		ServiceSkelName:  descriptor.ServiceSkelName,
+		MethodSkelName:   descriptor.MethodSkelName,
+		Arguments:        toServerSkeletonPermCheckArguments(descriptor.Arguments),
 	}
 }
 
-func toServerSkeletonPermCheckArguments(schemas []*skel.PermCheckArgument) []skeled.SkeletonPermCheckArgument {
-	ret := make([]skeled.SkeletonPermCheckArgument, 0, len(schemas))
-	for _, schema := range schemas {
+func toServerSkeletonPermCheckArguments(descriptors []*skeldesc.PermissionCheckArgument) []skeled.SkeletonPermCheckArgument {
+	ret := make([]skeled.SkeletonPermCheckArgument, 0, len(descriptors))
+	for _, descriptor := range descriptors {
 		ret = append(ret, skeled.SkeletonPermCheckArgument{
-			Name:     schema.Name,
-			JsonPath: schema.JsonPath,
-			Type:     formatSkeletonType(schema.Type),
+			Name:     descriptor.Name,
+			JsonPath: descriptor.JsonPath,
+			Type:     formatSkeletonType(descriptor.Type),
 		})
 	}
 	return ret
 }
 
-func toServerSkeletonResourceActions(schemas []*skel.ResourceActionSchema) []skeled.SkeletonResourceAction {
-	ret := make([]skeled.SkeletonResourceAction, 0, len(schemas))
-	for _, schema := range schemas {
+func toServerSkeletonResourceActions(resource *skeldesc.Resource, descriptors []*skeldesc.ResourceAction) []skeled.SkeletonResourceAction {
+	ret := make([]skeled.SkeletonResourceAction, 0, len(descriptors))
+	for _, descriptor := range descriptors {
 		ret = append(ret, skeled.SkeletonResourceAction{
-			Name:             schema.Name,
-			PermissionCode:   schema.PermissionCode,
-			Description:      schema.Description,
-			Deprecated:       schema.Deprecated,
-			DeprecatedReason: schema.DeprecatedReason,
-			Checks:           toServerSkeletonResourceChecks(schema.Checks),
+			Name:             descriptor.Name,
+			PermissionCode:   descriptor.PermissionCode,
+			Description:      descriptor.Description,
+			Deprecated:       descriptor.Deprecated,
+			DeprecatedReason: descriptor.DeprecatedReason,
+			Checks:           toServerSkeletonResourceChecks(resource, descriptor.Checks),
 		})
 	}
 	return ret
 }
 
-func toServerSkeletonResourceChecks(schemas []*skel.ResourceCheckSchema) []skeled.SkeletonResourceCheck {
-	ret := make([]skeled.SkeletonResourceCheck, 0, len(schemas))
-	for _, schema := range schemas {
+func toServerSkeletonResourceChecks(resource *skeldesc.Resource, descriptors []*skeldesc.ResourceCheck) []skeled.SkeletonResourceCheck {
+	ret := make([]skeled.SkeletonResourceCheck, 0, len(descriptors))
+	for _, descriptor := range descriptors {
+		method := resource.CheckMethod(descriptor)
 		ret = append(ret, skeled.SkeletonResourceCheck{
-			Name:               schema.Name,
-			Deprecated:         schema.Deprecated,
-			DeprecatedReason:   schema.DeprecatedReason,
-			MethodName:         schema.Method.Name,
-			MethodSkelName:     schema.Method.SkelName,
-			Arguments:          toServerSkeletonFields(schema.Arguments),
-			ArgumentsSensitive: schema.Method.ArgumentsSensitive,
+			Name:               descriptor.Name,
+			Deprecated:         descriptor.Deprecated,
+			DeprecatedReason:   descriptor.DeprecatedReason,
+			MethodName:         method.Name,
+			MethodSkelName:     method.SkelName,
+			Arguments:          toServerSkeletonFields(method.Arguments),
+			ArgumentsSensitive: method.ArgumentsSensitive,
 		})
 	}
 	return ret
 }
 
-func toServerSkeletonFields(schemas []*skel.MemberSchema) []skeled.SkeletonField {
-	ret := make([]skeled.SkeletonField, 0, len(schemas))
-	for _, schema := range schemas {
+func toServerSkeletonFields(descriptors []*skeldesc.Member) []skeled.SkeletonField {
+	ret := make([]skeled.SkeletonField, 0, len(descriptors))
+	for _, descriptor := range descriptors {
 		ret = append(ret, skeled.SkeletonField{
-			Name:             schema.Name,
-			Type:             formatSkeletonType(schema.Type),
-			Description:      schema.Description,
-			Deprecated:       schema.Deprecated,
-			DeprecatedReason: schema.DeprecatedReason,
-			Example:          schema.Example,
-			Sensitive:        schema.Sensitive,
+			Name:             descriptor.Name,
+			Type:             formatSkeletonType(descriptor.Type),
+			Description:      descriptor.Description,
+			Deprecated:       descriptor.Deprecated,
+			DeprecatedReason: descriptor.DeprecatedReason,
+			Example:          descriptor.Example,
+			Sensitive:        descriptor.Sensitive,
 		})
 	}
 	return ret
 }
 
-func formatSkeletonType(typeSchema *skel.TypeSchema) string {
-	if typeSchema == nil {
+func formatSkeletonType(typeDescriptor *skeldesc.Type) string {
+	if typeDescriptor == nil {
 		return ""
 	}
 	var ret string
-	switch typeSchema.Kind {
-	case skel.TypeKindScalar:
-		ret = string(typeSchema.Scalar)
-	case skel.TypeKindEnum, skel.TypeKindData, skel.TypeKindConfig, skel.TypeKindEvent:
-		ret = formatSkeletonNamedType(typeSchema)
-		if len(typeSchema.TypeArguments) > 0 {
-			args := make([]string, 0, len(typeSchema.TypeArguments))
-			for _, arg := range typeSchema.TypeArguments {
+	switch typeDescriptor.Kind {
+	case skeldesc.TypeKindScalar:
+		ret = string(typeDescriptor.Scalar)
+	case skeldesc.TypeKindEnum, skeldesc.TypeKindData, skeldesc.TypeKindConfig, skeldesc.TypeKindEvent:
+		ret = formatSkeletonNamedType(typeDescriptor)
+		if len(typeDescriptor.TypeArguments) > 0 {
+			args := make([]string, 0, len(typeDescriptor.TypeArguments))
+			for _, arg := range typeDescriptor.TypeArguments {
 				args = append(args, formatSkeletonType(arg))
 			}
 			ret += "<" + strings.Join(args, ", ") + ">"
 		}
-	case skel.TypeKindTypeParameter:
-		ret = typeSchema.Name
+	case skeldesc.TypeKindTypeParameter:
+		ret = typeDescriptor.Name
 		if ret == "" {
-			ret = shortSkelName(typeSchema.SkelName)
+			ret = shortSkelName(typeDescriptor.SkelName)
 		}
-	case skel.TypeKindList:
-		ret = "list<" + formatSkeletonType(typeSchema.Element) + ">"
-	case skel.TypeKindMap:
-		ret = "map<" + formatSkeletonType(typeSchema.Key) + ", " + formatSkeletonType(typeSchema.Value) + ">"
+	case skeldesc.TypeKindList:
+		ret = "list<" + formatSkeletonType(typeDescriptor.Element) + ">"
+	case skeldesc.TypeKindMap:
+		ret = "map<" + formatSkeletonType(typeDescriptor.Key) + ", " + formatSkeletonType(typeDescriptor.Value) + ">"
 	default:
-		ret = string(typeSchema.Kind)
+		ret = string(typeDescriptor.Kind)
 	}
-	if typeSchema.Nullable {
+	if typeDescriptor.Nullable {
 		ret += "?"
 	}
 	return ret
 }
 
-func formatSkeletonNamedType(typeSchema *skel.TypeSchema) string {
-	if typeSchema.SkelName != "" {
-		return typeSchema.SkelName
+func formatSkeletonNamedType(typeDescriptor *skeldesc.Type) string {
+	if typeDescriptor.SkelName != "" {
+		return typeDescriptor.SkelName
 	}
-	if typeSchema.Name != "" {
-		return typeSchema.Name
+	if typeDescriptor.Name != "" {
+		return typeDescriptor.Name
 	}
-	return shortSkelName(typeSchema.SkelName)
+	return shortSkelName(typeDescriptor.SkelName)
 }
 
 func shortSkelName(skelName string) string {
@@ -781,14 +788,14 @@ func shortSkelName(skelName string) string {
 	return skelName
 }
 
-func skeletonSchemaVersionKey(skelName string, schemaHash string) string {
-	return skelName + "\x00" + schemaHash
+func skeletonDescriptorVersionKey(skelName string, descriptorHash string) string {
+	return skelName + "\x00" + descriptorHash
 }
 
-func skeletonSchemaVersionsByKey[T any](versions []core.SchemaVersion[T]) map[string]core.SchemaVersion[T] {
-	ret := make(map[string]core.SchemaVersion[T], len(versions))
+func skeletonDescriptorVersionsByKey[T any](versions []core.DescriptorVersion[T]) map[string]core.DescriptorVersion[T] {
+	ret := make(map[string]core.DescriptorVersion[T], len(versions))
 	for _, version := range versions {
-		ret[skeletonSchemaVersionKey(version.SkelName, version.SchemaHash)] = version
+		ret[skeletonDescriptorVersionKey(version.SkelName, version.DescriptorHash)] = version
 	}
 	return ret
 }

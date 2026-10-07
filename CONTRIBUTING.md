@@ -45,7 +45,7 @@ bash test/test.sh
   public API signature.
 - Preserve the component and module lifecycle, request context, trace, identity,
   cancellation, and deadline propagation contracts.
-- Treat Rpc/Web headers, Redis keys and values, JSON/CBOR fields, Skel schemas,
+- Treat Rpc/Web headers, Redis keys and values, JSON/CBOR fields, Skel descriptors,
   and generated contracts as cross-component protocols. Update every producer,
   consumer, test, and relevant document together.
 
@@ -125,9 +125,10 @@ bash script/gen-skel.sh link
 ```
 
 Use `bash script/gen-skel.sh all` when every target must be regenerated. The
-script intentionally rewrites generated imports and formats generated Go files;
-do not replace it with a direct `skelc` invocation. Inspect the generated diff
-and run all affected Go and frontend checks.
+script selects the source and output directories and invokes `skelc`, preserving
+the generated imports, comments, and formatting. Generated code uses public
+runtime APIs. Inspect the generated diff and run all affected Go and frontend
+checks.
 
 ## Documentation
 

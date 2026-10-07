@@ -4,7 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.yorun.ai/vine/internal/core/skel"
+	skeldesc "go.yorun.ai/skel/descriptor"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/daemon"
 	"go.yorun.ai/vine/util/vcode"
 )
@@ -21,91 +22,91 @@ type registryRepoSpy struct {
 	webRegistrations []*WebRegistration
 }
 
-type schemaRepoSpy struct {
-	domainSchemas []*skel.DomainSchema
-	webs          []*skel.WebSchema
-	saved         []string
-	released      []string
+type descriptorRepoSpy struct {
+	domainDescriptors []*skeldesc.Domain
+	webs              []*skeldesc.Web
+	saved             []string
+	released          []string
 }
 
-func (s *schemaRepoSpy) SaveDomainSchemas(ownerName string, ownerId string, schemas []*skel.DomainSchema) {
+func (s *descriptorRepoSpy) SaveDomainDescriptors(ownerName string, ownerId string, descriptors []*skeldesc.Domain) {
 	s.saved = append(s.saved, ownerName+":"+ownerId)
-	s.domainSchemas = append([]*skel.DomainSchema{}, schemas...)
+	s.domainDescriptors = append([]*skeldesc.Domain{}, descriptors...)
 }
 
-func (s *schemaRepoSpy) SaveDomainSchemasJSON(ownerName string, ownerId string, schemas []skel.JSON) {
+func (s *descriptorRepoSpy) SaveDomainDescriptorsJSON(ownerName string, ownerId string, descriptors []skeltype.JSON) {
 	s.saved = append(s.saved, ownerName+":"+ownerId)
-	s.domainSchemas = make([]*skel.DomainSchema, 0, len(schemas))
-	for _, schemaJson := range schemas {
-		s.domainSchemas = append(s.domainSchemas, vcode.MustUnmarshalJsonS[*skel.DomainSchema](string(schemaJson)))
+	s.domainDescriptors = make([]*skeldesc.Domain, 0, len(descriptors))
+	for _, descriptorJson := range descriptors {
+		s.domainDescriptors = append(s.domainDescriptors, vcode.MustUnmarshalJsonS[*skeldesc.Domain](string(descriptorJson)))
 	}
 }
 
-func (s *schemaRepoSpy) ReleaseDomainSchemas(ownerName string, ownerId string) {
+func (s *descriptorRepoSpy) ReleaseDomainDescriptors(ownerName string, ownerId string) {
 	s.released = append(s.released, ownerName+":"+ownerId)
 }
 
-func (*schemaRepoSpy) ListDomainSchemaViews() []DomainSchemaView {
+func (*descriptorRepoSpy) ListDomainDescriptorViews() []DomainDescriptorView {
 	return nil
 }
 
-func (*schemaRepoSpy) ListVineHubSchemaViews() []DomainSchemaView {
+func (*descriptorRepoSpy) ListVineHubDescriptorViews() []DomainDescriptorView {
 	return nil
 }
 
-func (*schemaRepoSpy) ListActorSchemaVersions() []SchemaVersion[*skel.ActorSchema] {
+func (*descriptorRepoSpy) ListActorDescriptorVersions() []DescriptorVersion[*skeldesc.Actor] {
 	return nil
 }
 
-func (*schemaRepoSpy) ListConfigSchemaVersions() []SchemaVersion[*skel.ConfigSchema] {
+func (*descriptorRepoSpy) ListConfigDescriptorVersions() []DescriptorVersion[*skeldesc.Config] {
 	return nil
 }
 
-func (*schemaRepoSpy) ListDataSchemaVersions() []SchemaVersion[*skel.DataSchema] {
+func (*descriptorRepoSpy) ListDataDescriptorVersions() []DescriptorVersion[*skeldesc.Data] {
 	return nil
 }
 
-func (*schemaRepoSpy) ListEnumSchemaVersions() []SchemaVersion[*skel.EnumSchema] {
+func (*descriptorRepoSpy) ListEnumDescriptorVersions() []DescriptorVersion[*skeldesc.Enum] {
 	return nil
 }
 
-func (*schemaRepoSpy) ListEventSchemaVersions() []SchemaVersion[*skel.EventSchema] {
+func (*descriptorRepoSpy) ListEventDescriptorVersions() []DescriptorVersion[*skeldesc.Event] {
 	return nil
 }
 
-func (*schemaRepoSpy) ListResourceSchemaVersions() []SchemaVersion[*skel.ResourceSchema] {
+func (*descriptorRepoSpy) ListResourceDescriptorVersions() []DescriptorVersion[*skeldesc.Resource] {
 	return nil
 }
 
-func (*schemaRepoSpy) ListServiceSchemaVersions() []SchemaVersion[*skel.ServiceSchema] {
+func (*descriptorRepoSpy) ListServiceDescriptorVersions() []DescriptorVersion[*skeldesc.Service] {
 	return nil
 }
 
-func (*schemaRepoSpy) ListTaskSchemaVersions() []SchemaVersion[*skel.TaskSchema] {
+func (*descriptorRepoSpy) ListTaskDescriptorVersions() []DescriptorVersion[*skeldesc.Task] {
 	return nil
 }
 
-func (*schemaRepoSpy) ListWebSchemaVersions() []SchemaVersion[*skel.WebSchema] {
+func (*descriptorRepoSpy) ListWebDescriptorVersions() []DescriptorVersion[*skeldesc.Web] {
 	return nil
 }
 
-func (*schemaRepoSpy) ListAppConfigSchemas() []*skel.ConfigSchema {
+func (*descriptorRepoSpy) ListAppConfigDescriptors() []*skeldesc.Config {
 	return nil
 }
 
-func (*schemaRepoSpy) ListActorSchemas() []*skel.ActorSchema {
+func (*descriptorRepoSpy) ListActorDescriptors() []*skeldesc.Actor {
 	return nil
 }
 
-func (*schemaRepoSpy) ListEnumSchemas() []*skel.EnumSchema {
+func (*descriptorRepoSpy) ListEnumDescriptors() []*skeldesc.Enum {
 	return nil
 }
 
-func (*schemaRepoSpy) ListServiceSchemas() []*skel.ServiceSchema {
+func (*descriptorRepoSpy) ListServiceDescriptors() []*skeldesc.Service {
 	return nil
 }
 
-func (s *schemaRepoSpy) ListWebSchemas() []*skel.WebSchema {
+func (s *descriptorRepoSpy) ListWebDescriptors() []*skeldesc.Web {
 	return s.webs
 }
 
@@ -183,17 +184,17 @@ func (s *registryRepoSpy) RemoveWebRegistration(name string, appName string, app
 	s.calls = append(s.calls, "RemoveWebRegistration:"+name+":"+appName+":"+appInstanceId)
 }
 
-func newRegistryCoreForTest(repo RegistryRepo, schemaRepo SchemaRepo) *RegistryCore {
+func newRegistryCoreForTest(repo RegistryRepo, descriptorRepo DescriptorRepo) *RegistryCore {
 	return &RegistryCore{
-		RegistryRepo: repo,
-		SchemaRepo:   schemaRepo,
+		RegistryRepo:   repo,
+		DescriptorRepo: descriptorRepo,
 	}
 }
 
 func TestRegistryCoreRegister(t *testing.T) {
 	repo := &registryRepoSpy{}
-	schemaRepo := &schemaRepoSpy{}
-	core := newRegistryCoreForTest(repo, schemaRepo)
+	descriptorRepo := &descriptorRepoSpy{}
+	core := newRegistryCoreForTest(repo, descriptorRepo)
 
 	core.Register(AppRegistration{
 		InstanceId: "instance-1",
@@ -221,12 +222,12 @@ func TestRegistryCoreRegister(t *testing.T) {
 	assert.Len(t, repo.webRegistrations, 1)
 	assert.Equal(t, "http://127.0.0.1:23001/web/proxy/in/instance-1/default@demo.app", repo.webRegistrations[0].Endpoint)
 	assert.Equal(t, daemon.LinkIdentity, repo.webRegistrations[0].ServerIdentity)
-	assert.Empty(t, schemaRepo.domainSchemas)
+	assert.Empty(t, descriptorRepo.domainDescriptors)
 }
 
 func TestRegistryCoreRegisterKeepsProvidedProxyEndpoints(t *testing.T) {
 	repo := &registryRepoSpy{}
-	core := newRegistryCoreForTest(repo, &schemaRepoSpy{})
+	core := newRegistryCoreForTest(repo, &descriptorRepoSpy{})
 
 	core.Register(AppRegistration{
 		InstanceId:      "instance-1",
@@ -243,24 +244,24 @@ func TestRegistryCoreRegisterKeepsProvidedProxyEndpoints(t *testing.T) {
 	assert.Equal(t, "/web/proxy/in/instance-1/default@demo.app", repo.webRegistrations[0].Endpoint)
 }
 
-func TestRegistryCoreRegisterSavesDomainSchemas(t *testing.T) {
+func TestRegistryCoreRegisterSavesDomainDescriptors(t *testing.T) {
 	repo := &registryRepoSpy{}
-	schemaRepo := &schemaRepoSpy{}
-	core := newRegistryCoreForTest(repo, schemaRepo)
-	domainSchema := &skel.DomainSchema{
-		Domain: "demo.user",
-		Hash:   "pkg-hash-1",
+	descriptorRepo := &descriptorRepoSpy{}
+	core := newRegistryCoreForTest(repo, descriptorRepo)
+	domainDescriptor := &skeldesc.Domain{
+		Name: "demo.user",
+		Hash: "pkg-hash-1", Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 	}
 
 	core.Register(AppRegistration{
-		InstanceId:    "instance-1",
-		Name:          "demo.app",
-		DomainSchemas: []skel.JSON{skel.JSON(vcode.MustMarshalJsonS(domainSchema))},
+		InstanceId:        "instance-1",
+		Name:              "demo.app",
+		DomainDescriptors: []*skeldesc.Domain{domainDescriptor},
 	})
 
-	assert.Empty(t, schemaRepo.released)
-	assert.Equal(t, []string{"demo.app:instance-1"}, schemaRepo.saved)
-	assert.Equal(t, []*skel.DomainSchema{domainSchema}, schemaRepo.domainSchemas)
+	assert.Empty(t, descriptorRepo.released)
+	assert.Equal(t, []string{"demo.app:instance-1"}, descriptorRepo.saved)
+	assert.Equal(t, []*skeldesc.Domain{domainDescriptor}, descriptorRepo.domainDescriptors)
 }
 
 func TestRegistryCoreUnregisterWithStatus(t *testing.T) {
@@ -274,8 +275,8 @@ func TestRegistryCoreUnregisterWithStatus(t *testing.T) {
 		appStatusOK:     true,
 		keepAppStatusOK: true,
 	}
-	schemaRepo := &schemaRepoSpy{}
-	core := newRegistryCoreForTest(repo, schemaRepo)
+	descriptorRepo := &descriptorRepoSpy{}
+	core := newRegistryCoreForTest(repo, descriptorRepo)
 
 	core.Unregister("demo.app", "instance-1")
 
@@ -286,12 +287,12 @@ func TestRegistryCoreUnregisterWithStatus(t *testing.T) {
 		"RemoveWebRegistration:default@demo.app:demo.app:instance-1",
 		"RemoveAppStatus:demo.app:instance-1",
 	}, repo.calls)
-	assert.Equal(t, []string{"demo.app:instance-1"}, schemaRepo.released)
+	assert.Equal(t, []string{"demo.app:instance-1"}, descriptorRepo.released)
 }
 
 func TestRegistryCoreUnregisterWithoutStatus(t *testing.T) {
 	repo := &registryRepoSpy{}
-	core := newRegistryCoreForTest(repo, &schemaRepoSpy{})
+	core := newRegistryCoreForTest(repo, &descriptorRepoSpy{})
 
 	core.Unregister("demo.app", "instance-1")
 
@@ -311,7 +312,7 @@ func TestRegistryCoreHeartbeatWithStatus(t *testing.T) {
 		appStatusOK:     true,
 		keepAppStatusOK: true,
 	}
-	core := newRegistryCoreForTest(repo, &schemaRepoSpy{})
+	core := newRegistryCoreForTest(repo, &descriptorRepoSpy{})
 
 	registered := core.Heartbeat(AppHeartbeat{Name: "demo.app", InstanceId: "instance-1"})
 
@@ -336,7 +337,7 @@ func TestRegistryCoreHeartbeatReturnsFalseWhenKeepFails(t *testing.T) {
 		keepAppStatusOK: true,
 		keepRpcOK:       map[string]bool{"svc.alpha": false},
 	}
-	core := newRegistryCoreForTest(repo, &schemaRepoSpy{})
+	core := newRegistryCoreForTest(repo, &descriptorRepoSpy{})
 
 	registered := core.Heartbeat(AppHeartbeat{Name: "demo.app", InstanceId: "instance-1"})
 
@@ -350,7 +351,7 @@ func TestRegistryCoreHeartbeatReturnsFalseWhenKeepFails(t *testing.T) {
 
 func TestRegistryCoreHeartbeatWithoutStatus(t *testing.T) {
 	repo := &registryRepoSpy{}
-	core := newRegistryCoreForTest(repo, &schemaRepoSpy{})
+	core := newRegistryCoreForTest(repo, &descriptorRepoSpy{})
 
 	registered := core.Heartbeat(AppHeartbeat{Name: "demo.app", InstanceId: "instance-1"})
 
@@ -360,12 +361,12 @@ func TestRegistryCoreHeartbeatWithoutStatus(t *testing.T) {
 	assert.False(t, registered)
 }
 
-func TestRegistryPropagatesApiBoundaryFromSchema(t *testing.T) {
+func TestRegistryPropagatesApiBoundaryFromDescriptor(t *testing.T) {
 	repo := &registryRepoSpy{}
-	core := newRegistryCoreForTest(repo, &schemaRepoSpy{})
+	core := newRegistryCoreForTest(repo, &descriptorRepoSpy{})
 	core.Register(AppRegistration{
 		InstanceId: "instance-1", Name: "demo.app", Version: "1.0.0",
-		DomainSchemas: []skel.JSON{skel.JSON(`{"name":"demo","services":[{"skelName":"demo.ApiService","api":true},{"skelName":"demo.BackendService","pub":true},{"skelName":"demo.LegacyService","authMode":"auth"}]}`)},
+		DomainDescriptors: []*skeldesc.Domain{{Name: "demo", Services: []*skeldesc.Service{{SkelName: "demo.ApiService", Api: true, AuthMode: skeldesc.AuthModeRequired}, {SkelName: "demo.BackendService", Pub: true, AuthMode: skeldesc.AuthModeRequired}, {SkelName: "demo.LegacyService", AuthMode: skeldesc.AuthModeRequired}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"}}},
 		ServiceHandlers: []ServiceHandlerRegistration{
 			{ServiceSkelName: "demo.ApiService"},
 			{ServiceSkelName: "demo.BackendService"},
@@ -378,15 +379,15 @@ func TestRegistryPropagatesApiBoundaryFromSchema(t *testing.T) {
 	assert.False(t, repo.rpcRegistrations[2].Api)
 }
 
-func (r *schemaRepoSpy) GetWebSchema(skelName string) *skel.WebSchema {
-	for _, schema := range r.webs {
-		if schema.SkelName == skelName {
-			return schema
+func (r *descriptorRepoSpy) GetWebDescriptor(skelName string) *skeldesc.Web {
+	for _, descriptor := range r.webs {
+		if descriptor.SkelName == skelName {
+			return descriptor
 		}
 	}
 	return nil
 }
 
-func (r *schemaRepoSpy) ListAppConfigTypeSchemas() ([]*skel.ConfigSchema, []*skel.EnumSchema, []*skel.DataSchema) {
-	return r.ListAppConfigSchemas(), r.ListEnumSchemas(), nil
+func (r *descriptorRepoSpy) ListAppConfigTypeDescriptors() ([]*skeldesc.Config, []*skeldesc.Enum, []*skeldesc.Data) {
+	return r.ListAppConfigDescriptors(), r.ListEnumDescriptors(), nil
 }

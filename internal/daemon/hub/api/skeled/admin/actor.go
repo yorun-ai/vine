@@ -3,8 +3,9 @@
 package admin
 
 import (
-	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/skel"
+	"go.yorun.ai/skel/descriptor"
+	"go.yorun.ai/vine/core/meta"
+	"go.yorun.ai/vine/core/skel"
 )
 
 func init() {
@@ -28,8 +29,8 @@ func (AdminActor) SkelName() string {
 	return "vine.hub.admin.AdminActor"
 }
 
-func (AdminActor) Vias() []skel.ActorVia {
-	return []skel.ActorVia{
-		skel.ActorViaClient,
+func (AdminActor) Vias() []descriptor.ActorViaKind {
+	return []descriptor.ActorViaKind{
+		descriptor.ActorViaClient,
 	}
 }

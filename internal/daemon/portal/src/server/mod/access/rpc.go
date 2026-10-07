@@ -1,40 +1,39 @@
 package access
 
 import (
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/util/vpre"
 )
 
-const defaultAuthMode = skel.AuthModeRequired
+const defaultAuthMode = skeldesc.AuthModeRequired
 
 type RpcOperation struct {
 	Auther
 
 	Server meta.App
 
-	ActorVia    watched.PortalActorVia
-	ServiceName string
-	MethodName  string
-
-	serviceSchema *skel.ServiceSchema
-	methodSchema  *skel.MethodSchema
-	requestBody   []byte
-	cborPayload   any
+	ActorVia          watched.PortalActorVia
+	ServiceName       string
+	MethodName        string
+	serviceDescriptor *skeldesc.Service
+	methodDescriptor  *skeldesc.Method
+	requestBody       []byte
+	cborPayload       any
 
 	permissionCodeResults map[string]bool
 }
 
 func (o *RpcOperation) Auth() bool {
-	if !o.loadMethodSchema() {
+	if !o.loadMethodDescriptor() {
 		return false
 	}
 
-	mode := o.authMode()
-	if mode == skel.AuthModeOff {
+	mode := o.methodDescriptor.EffectiveAuthMode
+	if mode == skeldesc.AuthModeOff {
 		o.writeError(ex.ServiceUnavailable, "Rpc does not support auth off")
 		return false
 	}
@@ -53,30 +52,19 @@ func (o *RpcOperation) writeError(code ex.Code, message string, options ...ex.Er
 	vpre.MustNil(rpchttp.WriteRequestErrorResponse(o.Response, o.Request, o.Server, ex.New(code, message, options...)))
 }
 
-func (o *RpcOperation) loadMethodSchema() bool {
-	if o.methodSchema != nil {
+func (o *RpcOperation) loadMethodDescriptor() bool {
+	if o.methodDescriptor != nil {
 		return true
 	}
 
-	method, ok := o.serviceSchema.MethodByName(o.MethodName)
-	if !ok {
-		o.writeError(ex.NotFound, "rpc method schema is not found: "+o.ServiceName+"/"+o.MethodName)
+	method := o.serviceDescriptor.MethodBySkelName(o.MethodName)
+	if method == nil {
+		o.writeError(ex.NotFound, "rpc method descriptor is not found: "+o.ServiceName+"/"+o.MethodName)
 		return false
 	}
 
-	o.methodSchema = method
+	o.methodDescriptor = method
 	return true
-}
-
-func (o *RpcOperation) authMode() skel.AuthMode {
-	authMode := o.methodSchema.AuthMode
-	if authMode == "" || authMode == skel.AuthModeUnset || authMode == skel.AuthModeInherit {
-		authMode = o.serviceSchema.AuthMode
-	}
-	if authMode == "" || authMode == skel.AuthModeUnset {
-		authMode = defaultAuthMode
-	}
-	return authMode
 }
 
 func (o *RpcOperation) writeErrorWithReason(code ex.Code, message string, reason string) {

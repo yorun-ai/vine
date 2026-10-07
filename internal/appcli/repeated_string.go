@@ -19,14 +19,21 @@ type RepeatedStringFlag struct {
 // commas in YAML lists, objects and text remain part of the value. Its
 // environment source supplies one occurrence.
 func NewRepeatedStringFlag(name string, env string, target *[]string, usage string) *RepeatedStringFlag {
-	value := new(_RepeatedString{values: target})
+	value := new(_RepeatedString{
+		values: target,
+	})
 	return new(RepeatedStringFlag{
-		GenericFlag: new(ucli.GenericFlag{Name: name, Sources: ucli.EnvVars(env), Usage: usage, Value: value}),
-		value:       value,
+		GenericFlag: new(ucli.GenericFlag{
+			Name:    name,
+			Sources: ucli.EnvVars(env),
+			Usage:   usage,
+			Value:   value,
+		}),
+		value: value,
 	})
 }
 
-// IsBoolFlag reports whether a registered variable schema selected a bool flag.
+// IsBoolFlag reports whether a registered variable descriptor selected a bool flag.
 func (f *RepeatedStringFlag) IsBoolFlag() bool {
 	return f.value.boolean
 }

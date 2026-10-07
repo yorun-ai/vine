@@ -5,17 +5,16 @@ package control
 import (
 	"reflect"
 
-	"go.yorun.ai/vine/internal/core/ex"
-	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
-	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
-	"go.yorun.ai/vine/internal/core/skel"
+	skeltype "go.yorun.ai/skel/types"
+	"go.yorun.ai/vine/core/ex"
+	"go.yorun.ai/vine/core/rpc"
 )
 
 func init() {
-	rpcspec.Register(_InfoServiceSpec)
-	rpcspec.Register(_LockServiceSpec)
-	rpcspec.Register(_PortalRegistryServiceSpec)
-	rpcspec.Register(_RegistryServiceSpec)
+	rpc.Register(_InfoServiceSpec)
+	rpc.Register(_LockServiceSpec)
+	rpc.Register(_PortalRegistryServiceSpec)
+	rpc.Register(_RegistryServiceSpec)
 }
 
 // InfoServiceServer Hub's information service, called by Link
@@ -23,8 +22,8 @@ func init() {
 // InfoService / Spec
 
 var (
-	_InfoServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
+	_InfoServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeBoth,
 		Name:              "InfoService",
 		SkelName:          "vine.hub.control.InfoService",
 		Hash:              "1c4fd8ce",
@@ -38,11 +37,11 @@ var (
 		DefaultERServerType: reflect.TypeFor[*DefaultInfoServiceServerER](),
 		ERClientType:        reflect.TypeFor[InfoServiceClientER](),
 		ERClientCtor:        NewInfoServiceClientER,
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_InfoServiceGetInfoSpec,
 		},
 	}
-	_InfoServiceGetInfoSpec = &rpcspec.MethodSpec{
+	_InfoServiceGetInfoSpec = &rpc.MethodSpec{
 		Name:                        "GetInfo",
 		SkelName:                    "getInfo",
 		ArgumentsType:               nil,
@@ -128,7 +127,7 @@ type DefaultInfoServiceServerER struct {
 type InfoServiceClient interface {
 	// GetInfo Read Hub information.
 	//   @returns Info - Hub information
-	GetInfo(_ivOpts ...rpcclient.InvokeOption) Info
+	GetInfo(_ivOpts ...rpc.InvokeOption) Info
 }
 
 type _InfoServiceClient struct {
@@ -139,7 +138,7 @@ func NewInfoServiceClient(clientER InfoServiceClientER) InfoServiceClient {
 	return &_InfoServiceClient{clientER: clientER}
 }
 
-func (client *_InfoServiceClient) GetInfo(_ivOpts ...rpcclient.InvokeOption) Info {
+func (client *_InfoServiceClient) GetInfo(_ivOpts ...rpc.InvokeOption) Info {
 	ret, err := client.clientER.GetInfo(_ivOpts...)
 	ex.PanicIfError(err)
 	return ret
@@ -150,20 +149,20 @@ func (client *_InfoServiceClient) GetInfo(_ivOpts ...rpcclient.InvokeOption) Inf
 type InfoServiceClientER interface {
 	// GetInfo Read Hub information.
 	//   @returns Info - Hub information
-	GetInfo(_ivOpts ...rpcclient.InvokeOption) (Info, ex.Error)
+	GetInfo(_ivOpts ...rpc.InvokeOption) (Info, ex.Error)
 }
 
 type _InfoServiceClientER struct {
-	rpcClient *rpcclient.Client
+	rpcClient *rpc.Client
 }
 
-func NewInfoServiceClientER(rpcClient *rpcclient.Client) InfoServiceClientER {
+func NewInfoServiceClientER(rpcClient *rpc.Client) InfoServiceClientER {
 	return &_InfoServiceClientER{
 		rpcClient: rpcClient,
 	}
 }
 
-func (client *_InfoServiceClientER) GetInfo(_ivOpts ...rpcclient.InvokeOption) (Info, ex.Error) {
+func (client *_InfoServiceClientER) GetInfo(_ivOpts ...rpc.InvokeOption) (Info, ex.Error) {
 	return client.rpcClient.InvokeAs[Info](_InfoServiceGetInfoSpec.Info(), nil, _ivOpts...)
 }
 
@@ -172,8 +171,8 @@ func (client *_InfoServiceClientER) GetInfo(_ivOpts ...rpcclient.InvokeOption) (
 // LockService / Spec
 
 var (
-	_LockServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
+	_LockServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeBoth,
 		Name:              "LockService",
 		SkelName:          "vine.hub.control.LockService",
 		Hash:              "19321bbe",
@@ -187,13 +186,13 @@ var (
 		DefaultERServerType: reflect.TypeFor[*DefaultLockServiceServerER](),
 		ERClientType:        reflect.TypeFor[LockServiceClientER](),
 		ERClientCtor:        NewLockServiceClientER,
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_LockServiceAcquireSpec,
 			_LockServiceRenewSpec,
 			_LockServiceReleaseSpec,
 		},
 	}
-	_LockServiceAcquireSpec = &rpcspec.MethodSpec{
+	_LockServiceAcquireSpec = &rpc.MethodSpec{
 		Name:                        "Acquire",
 		SkelName:                    "acquire",
 		ArgumentsType:               reflect.TypeFor[_LockServiceAcquireArguments](),
@@ -209,7 +208,7 @@ var (
 			LockServiceServerER.Acquire,
 		},
 	}
-	_LockServiceRenewSpec = &rpcspec.MethodSpec{
+	_LockServiceRenewSpec = &rpc.MethodSpec{
 		Name:                        "Renew",
 		SkelName:                    "renew",
 		ArgumentsType:               reflect.TypeFor[_LockServiceRenewArguments](),
@@ -225,7 +224,7 @@ var (
 			LockServiceServerER.Renew,
 		},
 	}
-	_LockServiceReleaseSpec = &rpcspec.MethodSpec{
+	_LockServiceReleaseSpec = &rpc.MethodSpec{
 		Name:                        "Release",
 		SkelName:                    "release",
 		ArgumentsType:               reflect.TypeFor[_LockServiceReleaseArguments](),
@@ -356,11 +355,11 @@ type DefaultLockServiceServerER struct {
 
 type LockServiceClient interface {
 	// Acquire Acquire a lock using a unique attempt token.
-	Acquire(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) bool
+	Acquire(key string, token string, ttlMillis int, _ivOpts ...rpc.InvokeOption) bool
 	// Renew Renew a lock owned by the token.
-	Renew(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) bool
+	Renew(key string, token string, ttlMillis int, _ivOpts ...rpc.InvokeOption) bool
 	// Release Release a lock owned by the token.
-	Release(key string, token string, _ivOpts ...rpcclient.InvokeOption) bool
+	Release(key string, token string, _ivOpts ...rpc.InvokeOption) bool
 }
 
 type _LockServiceClient struct {
@@ -371,19 +370,19 @@ func NewLockServiceClient(clientER LockServiceClientER) LockServiceClient {
 	return &_LockServiceClient{clientER: clientER}
 }
 
-func (client *_LockServiceClient) Acquire(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) bool {
+func (client *_LockServiceClient) Acquire(key string, token string, ttlMillis int, _ivOpts ...rpc.InvokeOption) bool {
 	ret, err := client.clientER.Acquire(key, token, ttlMillis, _ivOpts...)
 	ex.PanicIfError(err)
 	return ret
 }
 
-func (client *_LockServiceClient) Renew(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) bool {
+func (client *_LockServiceClient) Renew(key string, token string, ttlMillis int, _ivOpts ...rpc.InvokeOption) bool {
 	ret, err := client.clientER.Renew(key, token, ttlMillis, _ivOpts...)
 	ex.PanicIfError(err)
 	return ret
 }
 
-func (client *_LockServiceClient) Release(key string, token string, _ivOpts ...rpcclient.InvokeOption) bool {
+func (client *_LockServiceClient) Release(key string, token string, _ivOpts ...rpc.InvokeOption) bool {
 	ret, err := client.clientER.Release(key, token, _ivOpts...)
 	ex.PanicIfError(err)
 	return ret
@@ -393,24 +392,24 @@ func (client *_LockServiceClient) Release(key string, token string, _ivOpts ...r
 
 type LockServiceClientER interface {
 	// Acquire Acquire a lock using a unique attempt token.
-	Acquire(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error)
+	Acquire(key string, token string, ttlMillis int, _ivOpts ...rpc.InvokeOption) (bool, ex.Error)
 	// Renew Renew a lock owned by the token.
-	Renew(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error)
+	Renew(key string, token string, ttlMillis int, _ivOpts ...rpc.InvokeOption) (bool, ex.Error)
 	// Release Release a lock owned by the token.
-	Release(key string, token string, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error)
+	Release(key string, token string, _ivOpts ...rpc.InvokeOption) (bool, ex.Error)
 }
 
 type _LockServiceClientER struct {
-	rpcClient *rpcclient.Client
+	rpcClient *rpc.Client
 }
 
-func NewLockServiceClientER(rpcClient *rpcclient.Client) LockServiceClientER {
+func NewLockServiceClientER(rpcClient *rpc.Client) LockServiceClientER {
 	return &_LockServiceClientER{
 		rpcClient: rpcClient,
 	}
 }
 
-func (client *_LockServiceClientER) Acquire(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error) {
+func (client *_LockServiceClientER) Acquire(key string, token string, ttlMillis int, _ivOpts ...rpc.InvokeOption) (bool, ex.Error) {
 	return client.rpcClient.InvokeAs[bool](_LockServiceAcquireSpec.Info(), &_LockServiceAcquireArguments{
 		Key:       key,
 		Token:     token,
@@ -418,7 +417,7 @@ func (client *_LockServiceClientER) Acquire(key string, token string, ttlMillis 
 	}, _ivOpts...)
 }
 
-func (client *_LockServiceClientER) Renew(key string, token string, ttlMillis int, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error) {
+func (client *_LockServiceClientER) Renew(key string, token string, ttlMillis int, _ivOpts ...rpc.InvokeOption) (bool, ex.Error) {
 	return client.rpcClient.InvokeAs[bool](_LockServiceRenewSpec.Info(), &_LockServiceRenewArguments{
 		Key:       key,
 		Token:     token,
@@ -426,7 +425,7 @@ func (client *_LockServiceClientER) Renew(key string, token string, ttlMillis in
 	}, _ivOpts...)
 }
 
-func (client *_LockServiceClientER) Release(key string, token string, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error) {
+func (client *_LockServiceClientER) Release(key string, token string, _ivOpts ...rpc.InvokeOption) (bool, ex.Error) {
 	return client.rpcClient.InvokeAs[bool](_LockServiceReleaseSpec.Info(), &_LockServiceReleaseArguments{
 		Key:   key,
 		Token: token,
@@ -438,8 +437,8 @@ func (client *_LockServiceClientER) Release(key string, token string, _ivOpts ..
 // PortalRegistryService / Spec
 
 var (
-	_PortalRegistryServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
+	_PortalRegistryServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeBoth,
 		Name:              "PortalRegistryService",
 		SkelName:          "vine.hub.control.PortalRegistryService",
 		Hash:              "d3a88a51",
@@ -453,13 +452,13 @@ var (
 		DefaultERServerType: reflect.TypeFor[*DefaultPortalRegistryServiceServerER](),
 		ERClientType:        reflect.TypeFor[PortalRegistryServiceClientER](),
 		ERClientCtor:        NewPortalRegistryServiceClientER,
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_PortalRegistryServiceRegisterSpec,
 			_PortalRegistryServiceUnregisterSpec,
 			_PortalRegistryServiceHeartbeatSpec,
 		},
 	}
-	_PortalRegistryServiceRegisterSpec = &rpcspec.MethodSpec{
+	_PortalRegistryServiceRegisterSpec = &rpc.MethodSpec{
 		Name:                        "Register",
 		SkelName:                    "register",
 		ArgumentsType:               reflect.TypeFor[_PortalRegistryServiceRegisterArguments](),
@@ -475,7 +474,7 @@ var (
 			PortalRegistryServiceServerER.Register,
 		},
 	}
-	_PortalRegistryServiceUnregisterSpec = &rpcspec.MethodSpec{
+	_PortalRegistryServiceUnregisterSpec = &rpc.MethodSpec{
 		Name:                        "Unregister",
 		SkelName:                    "unregister",
 		ArgumentsType:               reflect.TypeFor[_PortalRegistryServiceUnregisterArguments](),
@@ -491,7 +490,7 @@ var (
 			PortalRegistryServiceServerER.Unregister,
 		},
 	}
-	_PortalRegistryServiceHeartbeatSpec = &rpcspec.MethodSpec{
+	_PortalRegistryServiceHeartbeatSpec = &rpc.MethodSpec{
 		Name:                        "Heartbeat",
 		SkelName:                    "heartbeat",
 		ArgumentsType:               reflect.TypeFor[_PortalRegistryServiceHeartbeatArguments](),
@@ -516,7 +515,7 @@ type _PortalRegistryServiceRegisterArguments struct {
 }
 
 type _PortalRegistryServiceUnregisterArguments struct {
-	InstanceId skel.UUID `json:"instanceId" skel:"index(0)"`
+	InstanceId skeltype.UUID `json:"instanceId" skel:"index(0)"`
 }
 
 type _PortalRegistryServiceHeartbeatArguments struct {
@@ -531,7 +530,7 @@ type PortalRegistryServiceServer interface {
 	Register(registration PortalRegistration)
 	// Unregister Unregister a Portal instance.
 	//   @param instanceId - Portal instance ID
-	Unregister(instanceId skel.UUID)
+	Unregister(instanceId skeltype.UUID)
 	// Heartbeat Portal instance heartbeat.
 	//   @param status - Portal instance status
 	//   @returns bool - Whether the current Portal instance is still registered in the Hub
@@ -548,7 +547,7 @@ func (*DefaultPortalRegistryServiceServer) Register(PortalRegistration) {
 	ex.PanicNew(ex.InvalidRequest, "method register is not implemented")
 }
 
-func (*DefaultPortalRegistryServiceServer) Unregister(skel.UUID) {
+func (*DefaultPortalRegistryServiceServer) Unregister(skeltype.UUID) {
 	ex.PanicNew(ex.InvalidRequest, "method unregister is not implemented")
 }
 
@@ -563,7 +562,7 @@ func (*DefaultPortalRegistryServiceServer) mustBePortalRegistryServiceServer() {
 
 type PortalRegistryServiceServerER interface {
 	Register(registration PortalRegistration) ex.Error
-	Unregister(instanceId skel.UUID) ex.Error
+	Unregister(instanceId skeltype.UUID) ex.Error
 	Heartbeat(status PortalStatus) (bool, ex.Error)
 
 	mustBePortalRegistryServiceServerER()
@@ -595,7 +594,7 @@ func (service *_WrapperPortalRegistryServiceServerER) Register(registration Port
 	return
 }
 
-func (service *_WrapperPortalRegistryServiceServerER) Unregister(instanceId skel.UUID) (err ex.Error) {
+func (service *_WrapperPortalRegistryServiceServerER) Unregister(instanceId skeltype.UUID) (err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	service.server().Unregister(instanceId)
 	return
@@ -620,14 +619,14 @@ type DefaultPortalRegistryServiceServerER struct {
 type PortalRegistryServiceClient interface {
 	// Register Register a Portal instance.
 	//   @param registration - Portal instance registration information
-	Register(registration PortalRegistration, _ivOpts ...rpcclient.InvokeOption)
+	Register(registration PortalRegistration, _ivOpts ...rpc.InvokeOption)
 	// Unregister Unregister a Portal instance.
 	//   @param instanceId - Portal instance ID
-	Unregister(instanceId skel.UUID, _ivOpts ...rpcclient.InvokeOption)
+	Unregister(instanceId skeltype.UUID, _ivOpts ...rpc.InvokeOption)
 	// Heartbeat Portal instance heartbeat.
 	//   @param status - Portal instance status
 	//   @returns bool - Whether the current Portal instance is still registered in the Hub
-	Heartbeat(status PortalStatus, _ivOpts ...rpcclient.InvokeOption) bool
+	Heartbeat(status PortalStatus, _ivOpts ...rpc.InvokeOption) bool
 }
 
 type _PortalRegistryServiceClient struct {
@@ -638,17 +637,17 @@ func NewPortalRegistryServiceClient(clientER PortalRegistryServiceClientER) Port
 	return &_PortalRegistryServiceClient{clientER: clientER}
 }
 
-func (client *_PortalRegistryServiceClient) Register(registration PortalRegistration, _ivOpts ...rpcclient.InvokeOption) {
+func (client *_PortalRegistryServiceClient) Register(registration PortalRegistration, _ivOpts ...rpc.InvokeOption) {
 	err := client.clientER.Register(registration, _ivOpts...)
 	ex.PanicIfError(err)
 }
 
-func (client *_PortalRegistryServiceClient) Unregister(instanceId skel.UUID, _ivOpts ...rpcclient.InvokeOption) {
+func (client *_PortalRegistryServiceClient) Unregister(instanceId skeltype.UUID, _ivOpts ...rpc.InvokeOption) {
 	err := client.clientER.Unregister(instanceId, _ivOpts...)
 	ex.PanicIfError(err)
 }
 
-func (client *_PortalRegistryServiceClient) Heartbeat(status PortalStatus, _ivOpts ...rpcclient.InvokeOption) bool {
+func (client *_PortalRegistryServiceClient) Heartbeat(status PortalStatus, _ivOpts ...rpc.InvokeOption) bool {
 	ret, err := client.clientER.Heartbeat(status, _ivOpts...)
 	ex.PanicIfError(err)
 	return ret
@@ -659,41 +658,41 @@ func (client *_PortalRegistryServiceClient) Heartbeat(status PortalStatus, _ivOp
 type PortalRegistryServiceClientER interface {
 	// Register Register a Portal instance.
 	//   @param registration - Portal instance registration information
-	Register(registration PortalRegistration, _ivOpts ...rpcclient.InvokeOption) ex.Error
+	Register(registration PortalRegistration, _ivOpts ...rpc.InvokeOption) ex.Error
 	// Unregister Unregister a Portal instance.
 	//   @param instanceId - Portal instance ID
-	Unregister(instanceId skel.UUID, _ivOpts ...rpcclient.InvokeOption) ex.Error
+	Unregister(instanceId skeltype.UUID, _ivOpts ...rpc.InvokeOption) ex.Error
 	// Heartbeat Portal instance heartbeat.
 	//   @param status - Portal instance status
 	//   @returns bool - Whether the current Portal instance is still registered in the Hub
-	Heartbeat(status PortalStatus, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error)
+	Heartbeat(status PortalStatus, _ivOpts ...rpc.InvokeOption) (bool, ex.Error)
 }
 
 type _PortalRegistryServiceClientER struct {
-	rpcClient *rpcclient.Client
+	rpcClient *rpc.Client
 }
 
-func NewPortalRegistryServiceClientER(rpcClient *rpcclient.Client) PortalRegistryServiceClientER {
+func NewPortalRegistryServiceClientER(rpcClient *rpc.Client) PortalRegistryServiceClientER {
 	return &_PortalRegistryServiceClientER{
 		rpcClient: rpcClient,
 	}
 }
 
-func (client *_PortalRegistryServiceClientER) Register(registration PortalRegistration, _ivOpts ...rpcclient.InvokeOption) ex.Error {
+func (client *_PortalRegistryServiceClientER) Register(registration PortalRegistration, _ivOpts ...rpc.InvokeOption) ex.Error {
 	_, err := client.rpcClient.Invoke(_PortalRegistryServiceRegisterSpec.Info(), &_PortalRegistryServiceRegisterArguments{
 		Registration: registration,
 	}, _ivOpts...)
 	return err
 }
 
-func (client *_PortalRegistryServiceClientER) Unregister(instanceId skel.UUID, _ivOpts ...rpcclient.InvokeOption) ex.Error {
+func (client *_PortalRegistryServiceClientER) Unregister(instanceId skeltype.UUID, _ivOpts ...rpc.InvokeOption) ex.Error {
 	_, err := client.rpcClient.Invoke(_PortalRegistryServiceUnregisterSpec.Info(), &_PortalRegistryServiceUnregisterArguments{
 		InstanceId: instanceId,
 	}, _ivOpts...)
 	return err
 }
 
-func (client *_PortalRegistryServiceClientER) Heartbeat(status PortalStatus, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error) {
+func (client *_PortalRegistryServiceClientER) Heartbeat(status PortalStatus, _ivOpts ...rpc.InvokeOption) (bool, ex.Error) {
 	return client.rpcClient.InvokeAs[bool](_PortalRegistryServiceHeartbeatSpec.Info(), &_PortalRegistryServiceHeartbeatArguments{
 		Status: status,
 	}, _ivOpts...)
@@ -704,11 +703,11 @@ func (client *_PortalRegistryServiceClientER) Heartbeat(status PortalStatus, _iv
 // RegistryService / Spec
 
 var (
-	_RegistryServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeBoth,
+	_RegistryServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeBoth,
 		Name:              "RegistryService",
 		SkelName:          "vine.hub.control.RegistryService",
-		Hash:              "bde422d8",
+		Hash:              "ee06f954",
 		ServerType:        reflect.TypeFor[RegistryServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultRegistryServiceServer](),
 		ClientType:        reflect.TypeFor[RegistryServiceClient](),
@@ -719,13 +718,13 @@ var (
 		DefaultERServerType: reflect.TypeFor[*DefaultRegistryServiceServerER](),
 		ERClientType:        reflect.TypeFor[RegistryServiceClientER](),
 		ERClientCtor:        NewRegistryServiceClientER,
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_RegistryServiceRegisterSpec,
 			_RegistryServiceUnregisterSpec,
 			_RegistryServiceHeartbeatSpec,
 		},
 	}
-	_RegistryServiceRegisterSpec = &rpcspec.MethodSpec{
+	_RegistryServiceRegisterSpec = &rpc.MethodSpec{
 		Name:                        "Register",
 		SkelName:                    "register",
 		ArgumentsType:               reflect.TypeFor[_RegistryServiceRegisterArguments](),
@@ -741,7 +740,7 @@ var (
 			RegistryServiceServerER.Register,
 		},
 	}
-	_RegistryServiceUnregisterSpec = &rpcspec.MethodSpec{
+	_RegistryServiceUnregisterSpec = &rpc.MethodSpec{
 		Name:                        "Unregister",
 		SkelName:                    "unregister",
 		ArgumentsType:               reflect.TypeFor[_RegistryServiceUnregisterArguments](),
@@ -757,7 +756,7 @@ var (
 			RegistryServiceServerER.Unregister,
 		},
 	}
-	_RegistryServiceHeartbeatSpec = &rpcspec.MethodSpec{
+	_RegistryServiceHeartbeatSpec = &rpc.MethodSpec{
 		Name:                        "Heartbeat",
 		SkelName:                    "heartbeat",
 		ArgumentsType:               reflect.TypeFor[_RegistryServiceHeartbeatArguments](),
@@ -782,8 +781,8 @@ type _RegistryServiceRegisterArguments struct {
 }
 
 type _RegistryServiceUnregisterArguments struct {
-	Name       string    `json:"name" skel:"index(0)"`
-	InstanceId skel.UUID `json:"instanceId" skel:"index(1)"`
+	Name       string        `json:"name" skel:"index(0)"`
+	InstanceId skeltype.UUID `json:"instanceId" skel:"index(1)"`
 }
 
 type _RegistryServiceHeartbeatArguments struct {
@@ -799,7 +798,7 @@ type RegistryServiceServer interface {
 	// Unregister Unregister an application instance.
 	//   @param name - Application name
 	//   @param instanceId - Application instance ID
-	Unregister(name string, instanceId skel.UUID)
+	Unregister(name string, instanceId skeltype.UUID)
 	// Heartbeat Application instance heartbeat.
 	//   @param status - Application instance ID
 	//   @returns bool - Whether the current instance is still registered in the Hub
@@ -816,7 +815,7 @@ func (*DefaultRegistryServiceServer) Register(AppRegistration) {
 	ex.PanicNew(ex.InvalidRequest, "method register is not implemented")
 }
 
-func (*DefaultRegistryServiceServer) Unregister(string, skel.UUID) {
+func (*DefaultRegistryServiceServer) Unregister(string, skeltype.UUID) {
 	ex.PanicNew(ex.InvalidRequest, "method unregister is not implemented")
 }
 
@@ -831,7 +830,7 @@ func (*DefaultRegistryServiceServer) mustBeRegistryServiceServer() {}
 
 type RegistryServiceServerER interface {
 	Register(registration AppRegistration) ex.Error
-	Unregister(name string, instanceId skel.UUID) ex.Error
+	Unregister(name string, instanceId skeltype.UUID) ex.Error
 	Heartbeat(status AppStatus) (bool, ex.Error)
 
 	mustBeRegistryServiceServerER()
@@ -863,7 +862,7 @@ func (service *_WrapperRegistryServiceServerER) Register(registration AppRegistr
 	return
 }
 
-func (service *_WrapperRegistryServiceServerER) Unregister(name string, instanceId skel.UUID) (err ex.Error) {
+func (service *_WrapperRegistryServiceServerER) Unregister(name string, instanceId skeltype.UUID) (err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	service.server().Unregister(name, instanceId)
 	return
@@ -888,15 +887,15 @@ type DefaultRegistryServiceServerER struct {
 type RegistryServiceClient interface {
 	// Register Register application instance.
 	//   @param registration - Application instance registration information
-	Register(registration AppRegistration, _ivOpts ...rpcclient.InvokeOption)
+	Register(registration AppRegistration, _ivOpts ...rpc.InvokeOption)
 	// Unregister Unregister an application instance.
 	//   @param name - Application name
 	//   @param instanceId - Application instance ID
-	Unregister(name string, instanceId skel.UUID, _ivOpts ...rpcclient.InvokeOption)
+	Unregister(name string, instanceId skeltype.UUID, _ivOpts ...rpc.InvokeOption)
 	// Heartbeat Application instance heartbeat.
 	//   @param status - Application instance ID
 	//   @returns bool - Whether the current instance is still registered in the Hub
-	Heartbeat(status AppStatus, _ivOpts ...rpcclient.InvokeOption) bool
+	Heartbeat(status AppStatus, _ivOpts ...rpc.InvokeOption) bool
 }
 
 type _RegistryServiceClient struct {
@@ -907,17 +906,17 @@ func NewRegistryServiceClient(clientER RegistryServiceClientER) RegistryServiceC
 	return &_RegistryServiceClient{clientER: clientER}
 }
 
-func (client *_RegistryServiceClient) Register(registration AppRegistration, _ivOpts ...rpcclient.InvokeOption) {
+func (client *_RegistryServiceClient) Register(registration AppRegistration, _ivOpts ...rpc.InvokeOption) {
 	err := client.clientER.Register(registration, _ivOpts...)
 	ex.PanicIfError(err)
 }
 
-func (client *_RegistryServiceClient) Unregister(name string, instanceId skel.UUID, _ivOpts ...rpcclient.InvokeOption) {
+func (client *_RegistryServiceClient) Unregister(name string, instanceId skeltype.UUID, _ivOpts ...rpc.InvokeOption) {
 	err := client.clientER.Unregister(name, instanceId, _ivOpts...)
 	ex.PanicIfError(err)
 }
 
-func (client *_RegistryServiceClient) Heartbeat(status AppStatus, _ivOpts ...rpcclient.InvokeOption) bool {
+func (client *_RegistryServiceClient) Heartbeat(status AppStatus, _ivOpts ...rpc.InvokeOption) bool {
 	ret, err := client.clientER.Heartbeat(status, _ivOpts...)
 	ex.PanicIfError(err)
 	return ret
@@ -928,35 +927,35 @@ func (client *_RegistryServiceClient) Heartbeat(status AppStatus, _ivOpts ...rpc
 type RegistryServiceClientER interface {
 	// Register Register application instance.
 	//   @param registration - Application instance registration information
-	Register(registration AppRegistration, _ivOpts ...rpcclient.InvokeOption) ex.Error
+	Register(registration AppRegistration, _ivOpts ...rpc.InvokeOption) ex.Error
 	// Unregister Unregister an application instance.
 	//   @param name - Application name
 	//   @param instanceId - Application instance ID
-	Unregister(name string, instanceId skel.UUID, _ivOpts ...rpcclient.InvokeOption) ex.Error
+	Unregister(name string, instanceId skeltype.UUID, _ivOpts ...rpc.InvokeOption) ex.Error
 	// Heartbeat Application instance heartbeat.
 	//   @param status - Application instance ID
 	//   @returns bool - Whether the current instance is still registered in the Hub
-	Heartbeat(status AppStatus, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error)
+	Heartbeat(status AppStatus, _ivOpts ...rpc.InvokeOption) (bool, ex.Error)
 }
 
 type _RegistryServiceClientER struct {
-	rpcClient *rpcclient.Client
+	rpcClient *rpc.Client
 }
 
-func NewRegistryServiceClientER(rpcClient *rpcclient.Client) RegistryServiceClientER {
+func NewRegistryServiceClientER(rpcClient *rpc.Client) RegistryServiceClientER {
 	return &_RegistryServiceClientER{
 		rpcClient: rpcClient,
 	}
 }
 
-func (client *_RegistryServiceClientER) Register(registration AppRegistration, _ivOpts ...rpcclient.InvokeOption) ex.Error {
+func (client *_RegistryServiceClientER) Register(registration AppRegistration, _ivOpts ...rpc.InvokeOption) ex.Error {
 	_, err := client.rpcClient.Invoke(_RegistryServiceRegisterSpec.Info(), &_RegistryServiceRegisterArguments{
 		Registration: registration,
 	}, _ivOpts...)
 	return err
 }
 
-func (client *_RegistryServiceClientER) Unregister(name string, instanceId skel.UUID, _ivOpts ...rpcclient.InvokeOption) ex.Error {
+func (client *_RegistryServiceClientER) Unregister(name string, instanceId skeltype.UUID, _ivOpts ...rpc.InvokeOption) ex.Error {
 	_, err := client.rpcClient.Invoke(_RegistryServiceUnregisterSpec.Info(), &_RegistryServiceUnregisterArguments{
 		Name:       name,
 		InstanceId: instanceId,
@@ -964,7 +963,7 @@ func (client *_RegistryServiceClientER) Unregister(name string, instanceId skel.
 	return err
 }
 
-func (client *_RegistryServiceClientER) Heartbeat(status AppStatus, _ivOpts ...rpcclient.InvokeOption) (bool, ex.Error) {
+func (client *_RegistryServiceClientER) Heartbeat(status AppStatus, _ivOpts ...rpc.InvokeOption) (bool, ex.Error) {
 	return client.rpcClient.InvokeAs[bool](_RegistryServiceHeartbeatSpec.Info(), &_RegistryServiceHeartbeatArguments{
 		Status: status,
 	}, _ivOpts...)

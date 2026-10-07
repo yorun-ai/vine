@@ -10,11 +10,11 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/app"
 	eventspec "go.yorun.ai/vine/internal/core/event/spec"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/mtls"
-	"go.yorun.ai/vine/internal/core/skel"
 	taskspec "go.yorun.ai/vine/internal/core/task/spec"
 	hubnats "go.yorun.ai/vine/internal/daemon/hub/api/nats"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
@@ -81,7 +81,7 @@ func TestDebugMessagesPublishThroughConfiguredBroker(t *testing.T) {
 			trace := meta.InitialTrace()
 			traceId, spanId := trace.Id(), trace.Span()
 			before := time.Now()
-			eventService.EmitEvent(skeled.EventDebugEmitRequest{EventSkelName: "demo.A", SchemaHash: "v1", EventJson: skel.JSON(`{"message":"event"}`), TraceId: &traceId, SpanId: &spanId})
+			eventService.EmitEvent(skeled.EventDebugEmitRequest{EventSkelName: "demo.A", DescriptorHash: "v1", EventJson: skeltype.JSON(`{"message":"event"}`), TraceId: &traceId, SpanId: &spanId})
 			event, err := eventConsumer.Next(jetstream.FetchMaxWait(time.Second))
 			require.NoError(t, err)
 			assert.Equal(t, eventspec.NATSSubject("demo.A"), event.Subject())
@@ -95,8 +95,8 @@ func TestDebugMessagesPublishThroughConfiguredBroker(t *testing.T) {
 			assert.Equal(t, eventService.CurrentApp.InstanceId(), decodedEvent.Metadata.AppInstanceId.String())
 			assert.False(t, decodedEvent.Metadata.EmittedAt.Time.Before(before.Add(-time.Second)))
 			require.NoError(t, event.Ack())
-			// Empty schema hash selects any registered version and missing trace creates one.
-			taskService.LaunchTask(skeled.TaskDebugLaunchRequest{TaskSkelName: "demo.A", TriggerSkelName: "A", ArgumentsJson: skel.JSON(`{"message":"task"}`)})
+			// Empty descriptor hash selects any registered version and missing trace creates one.
+			taskService.LaunchTask(skeled.TaskDebugLaunchRequest{TaskSkelName: "demo.A", TriggerSkelName: "A", ArgumentsJson: skeltype.JSON(`{"message":"task"}`)})
 			task, err := taskConsumer.Next(jetstream.FetchMaxWait(time.Second))
 			require.NoError(t, err)
 			assert.Equal(t, taskspec.NATSSubject("demo.A"), task.Subject())

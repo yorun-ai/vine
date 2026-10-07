@@ -1,9 +1,11 @@
 package skel
 
+import "go.yorun.ai/skel/descriptor"
+
 type Actor interface {
 	Name() string
 	SkelName() string
-	Vias() []ActorVia
+	Vias() []descriptor.ActorViaKind
 
 	mustBeActor()
 }
@@ -18,16 +20,8 @@ func (ActorBase) SkelName() string {
 	return ""
 }
 
-func (ActorBase) Vias() []ActorVia {
+func (ActorBase) Vias() []descriptor.ActorViaKind {
 	return nil
 }
 
 func (ActorBase) mustBeActor() {}
-
-type ActorVia string
-
-const (
-	ActorViaClient  ActorVia = "client"
-	ActorViaAgent   ActorVia = "agent"
-	ActorViaOpenAPI ActorVia = "openapi"
-)

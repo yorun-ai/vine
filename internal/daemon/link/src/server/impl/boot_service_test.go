@@ -19,7 +19,7 @@ func TestBootServiceReturnsRpcProxyEndpointPath(t *testing.T) {
 	assert.Equal(t, "/rpc/proxy/out", info.RpcProxyEndpointPath)
 }
 
-func TestBootServiceSkipsDomainSchemasOnlyWhenHubAndAppShareProcess(t *testing.T) {
+func TestBootServiceSkipsDomainDescriptorsOnlyWhenHubAndAppShareProcess(t *testing.T) {
 	tests := []struct {
 		name          string
 		hubInprocMode bool
@@ -38,7 +38,7 @@ func TestBootServiceSkipsDomainSchemasOnlyWhenHubAndAppShareProcess(t *testing.T
 				InprocFlag: &app.InternalInprocFlag{Enabled: test.appInprocMode},
 			}
 
-			assert.Equal(t, test.wantSkip, service.GetInfo().SkipDomainSchemas)
+			assert.Equal(t, test.wantSkip, service.GetInfo().SkipDomainDescriptors)
 		})
 	}
 }

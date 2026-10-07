@@ -3,7 +3,7 @@ package spec
 import (
 	"reflect"
 
-	"go.yorun.ai/vine/internal/core/skel"
+	skeltag "go.yorun.ai/skel/tag"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -221,7 +221,7 @@ func buildArgumentFieldInfos(argsType reflect.Type) []_ArgumentFieldInfo {
 	seenIndexes := map[int]string{}
 	for index := 0; index < argsType.NumField(); index++ {
 		field := argsType.Field(index)
-		argIndex, found, err := skel.TagIndex(field.Tag)
+		argIndex, found, err := skeltag.Index(field.Tag)
 		vpre.CheckNilError(err, "invalid argument index on %s.%s", argsType, field.Name)
 		vpre.Check(found, "missing argument index on %s.%s", argsType, field.Name)
 		vpre.Check(argIndex >= 0 && argIndex < argsType.NumField(), "arg index %d out of range on %s.%s", argIndex, argsType, field.Name)

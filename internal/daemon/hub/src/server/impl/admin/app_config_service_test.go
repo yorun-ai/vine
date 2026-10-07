@@ -8,7 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/core/skel"
+	skeldesc "go.yorun.ai/skel/descriptor"
+	skeltype "go.yorun.ai/skel/types"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 )
@@ -16,24 +17,24 @@ import (
 // _AppConfigServiceAppConfigRepo mirrors the repository contract: it returns
 // configuration slots with their declaration, status and lifecycle assembled.
 type _AppConfigServiceAppConfigRepo struct {
-	items   []*core.AppConfig
-	schemas []*skel.ConfigSchema
-	enums   []*skel.EnumSchema
+	items       []*core.AppConfig
+	descriptors []*skeldesc.Config
+	enums       []*skeldesc.Enum
 }
 
 func (r *_AppConfigServiceAppConfigRepo) assemble(item *core.AppConfig) *core.AppConfig {
-	var schema *skel.ConfigSchema
-	for _, candidate := range r.schemas {
+	var descriptor *skeldesc.Config
+	for _, candidate := range r.descriptors {
 		if candidate.SkelName == item.Name {
-			schema = candidate
+			descriptor = candidate
 			break
 		}
 	}
-	item.Definition = core.NewAppConfigDefinition(schema, r.enums, nil)
+	item.Definition = core.NewAppConfigDefinition(descriptor, r.enums, nil)
 	item.Configured = item.Id != 0
-	item.Lifecycle = core.AppConfigLifecycleFor(schema)
+	item.Lifecycle = core.AppConfigLifecycleFor(descriptor)
 	if item.Configured {
-		item.Status = core.AppConfigStatusFor(schema, item.Value, r.enums, nil)
+		item.Status = core.AppConfigStatusFor(descriptor, item.Value, r.enums, nil)
 	} else {
 		item.Status = core.AppConfigStatusUnconfigured
 	}
@@ -54,11 +55,11 @@ func (r *_AppConfigServiceAppConfigRepo) ListSlots() []*core.AppConfig {
 	for _, slot := range slots {
 		seen[slot.Name] = struct{}{}
 	}
-	for _, schema := range r.schemas {
-		if _, ok := seen[schema.SkelName]; ok {
+	for _, descriptor := range r.descriptors {
+		if _, ok := seen[descriptor.SkelName]; ok {
 			continue
 		}
-		slots = append(slots, r.assemble(&core.AppConfig{Name: schema.SkelName}))
+		slots = append(slots, r.assemble(&core.AppConfig{Name: descriptor.SkelName}))
 	}
 	return slots
 }
@@ -67,8 +68,8 @@ func (r *_AppConfigServiceAppConfigRepo) FindByName(name string) (*core.AppConfi
 	if item, ok := r.GetByName(name); ok {
 		return item, true
 	}
-	for _, schema := range r.schemas {
-		if schema.SkelName == name {
+	for _, descriptor := range r.descriptors {
+		if descriptor.SkelName == name {
 			return r.assemble(&core.AppConfig{Name: name}), true
 		}
 	}
@@ -122,10 +123,10 @@ func (r *_AppConfigServiceAppConfigRepo) Remove(id int) bool {
 
 func TestAppConfigServiceCreateConfig(t *testing.T) {
 	repo := &_AppConfigServiceAppConfigRepo{
-		schemas: []*skel.ConfigSchema{{
+		descriptors: []*skeldesc.Config{{
 			Name:      "FeatureConfig",
 			SkelName:  "demo.user.FeatureConfig",
-			Lifecycle: "INSTANT",
+			Lifecycle: skeldesc.ConfigLifecycleInstant,
 		}},
 	}
 	service := &AppConfigApiServiceServerImpl{AppConfigCore: &core.AppConfigCore{AppConfigRepo: repo}}
@@ -138,8 +139,8 @@ func TestAppConfigServiceCreateConfig(t *testing.T) {
 	assert.Equal(t, "demo.user.FeatureConfig", item.Key)
 	assert.Equal(t, "NORMAL", item.Status)
 	assert.Equal(t, 1, item.Id)
-	require.NotNil(t, item.Schema)
-	assert.Equal(t, "FeatureConfig", item.Schema.Name)
+	require.NotNil(t, item.Descriptor)
+	assert.Equal(t, "FeatureConfig", item.Descriptor.Name)
 }
 
 func TestAppConfigServiceCreateRejectsInvalidConfigSkelName(t *testing.T) {
@@ -181,9 +182,9 @@ func TestAppConfigServiceRemoveOnlyAllowsUnusedConfig(t *testing.T) {
 			{Id: 8, Name: "demo.user.LegacyConfig", Value: `{}`, Version: 1},
 		},
 	}
-	repo.schemas = []*skel.ConfigSchema{{
+	repo.descriptors = []*skeldesc.Config{{
 		Name:     "SiteConfig",
-		SkelName: "demo.user.SiteConfig",
+		SkelName: "demo.user.SiteConfig", Lifecycle: skeldesc.ConfigLifecycleEternal,
 	}}
 	service := &AppConfigApiServiceServerImpl{AppConfigCore: &core.AppConfigCore{AppConfigRepo: repo}}
 
@@ -209,19 +210,19 @@ func TestEditorScalarFormatsMatchRuntime(t *testing.T) {
 			var target any
 			switch item.Type {
 			case "duration":
-				target = new(skel.Duration)
+				target = new(skeltype.Duration)
 			case "decimal":
-				target = new(skel.Decimal)
+				target = new(skeltype.Decimal)
 			case "uuid":
-				target = new(skel.UUID)
+				target = new(skeltype.UUID)
 			case "timestamp":
-				target = new(skel.Timestamp)
+				target = new(skeltype.Timestamp)
 			case "localdate":
-				target = new(skel.LocalDate)
+				target = new(skeltype.LocalDate)
 			case "localtime":
-				target = new(skel.LocalTime)
+				target = new(skeltype.LocalTime)
 			case "localdatetime":
-				target = new(skel.LocalDateTime)
+				target = new(skeltype.LocalDateTime)
 			default:
 				t.Fatalf("unknown scalar %s", item.Type)
 			}
@@ -233,16 +234,16 @@ func TestEditorScalarFormatsMatchRuntime(t *testing.T) {
 
 func TestAppConfigServiceGetReturnsFieldSourcesAndDeclaredSlots(t *testing.T) {
 	repo := &_AppConfigServiceAppConfigRepo{
-		schemas: []*skel.ConfigSchema{
+		descriptors: []*skeldesc.Config{
 			{
 				Name:      "FeatureConfig",
 				SkelName:  "demo.FeatureConfig",
-				Lifecycle: "ETERNAL",
-				Members: []*skel.MemberSchema{
-					{Name: "enabled", Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool}},
+				Lifecycle: skeldesc.ConfigLifecycleEternal,
+				Members: []*skeldesc.Member{
+					{Name: "enabled", Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBoolean}},
 				},
 			},
-			{Name: "OtherConfig", SkelName: "demo.OtherConfig", Lifecycle: "INSTANT"},
+			{Name: "OtherConfig", SkelName: "demo.OtherConfig", Lifecycle: skeldesc.ConfigLifecycleInstant},
 		},
 		items: []*core.AppConfig{{
 			Id:           7,
@@ -258,14 +259,14 @@ func TestAppConfigServiceGetReturnsFieldSourcesAndDeclaredSlots(t *testing.T) {
 	require.Len(t, detail.FieldSources, 1)
 	assert.Equal(t, "/value", detail.FieldSources[0].Path)
 	assert.Equal(t, "hub", detail.FieldSources[0].Override)
-	assert.Equal(t, "demo.FeatureConfig", detail.Schema.SkelName)
+	assert.Equal(t, "demo.FeatureConfig", detail.Descriptor.SkelName)
 
 	// A configuration an application declares without a stored value resolves by
 	// key and carries no provenance.
 	declared := service.Get("demo.OtherConfig")
 	assert.Zero(t, declared.Id)
 	assert.Equal(t, "UNCONFIGURED", declared.Status)
-	assert.Equal(t, "INSTANT", declared.Lifecycle)
+	assert.Equal(t, "instant", declared.Lifecycle)
 	assert.Empty(t, declared.FieldSources)
 
 	// The list payload has no field for provenance, so it cannot leak sources.
@@ -278,11 +279,11 @@ func TestAppConfigServiceGetReturnsFieldSourcesAndDeclaredSlots(t *testing.T) {
 	assert.Equal(t, map[string]string{"demo.FeatureConfig": "NORMAL", "demo.OtherConfig": "UNCONFIGURED"}, statuses)
 }
 
-func TestStructuredConfigSchemaMapping(t *testing.T) {
-	kind := &skel.TypeSchema{Kind: skel.TypeKindData, SkelName: "demo.Box", TypeArguments: []*skel.TypeSchema{{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBinary}}}
-	definition := core.NewAppConfigDefinition(&skel.ConfigSchema{Sensitive: true, Members: []*skel.MemberSchema{{Name: "box", Type: kind}}}, nil,
-		[]*skel.DataSchema{{SkelName: "demo.Box", TypeParameters: []string{"T"}, Sensitive: true, Members: []*skel.MemberSchema{{Name: "value", Sensitive: true, Example: "aGVsbG8=", Type: &skel.TypeSchema{Kind: skel.TypeKindTypeParameter, Name: "T"}}}}})
-	result := toServerAppConfigSchema(definition)
+func TestStructuredConfigDescriptorMapping(t *testing.T) {
+	kind := &skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: "demo.Box", TypeArguments: []*skeldesc.Type{{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBinary}}}
+	definition := core.NewAppConfigDefinition(&skeldesc.Config{Sensitive: true, Members: []*skeldesc.Member{{Name: "box", Type: kind}}, Lifecycle: skeldesc.ConfigLifecycleEternal}, nil,
+		[]*skeldesc.Data{{SkelName: "demo.Box", TypeParameters: []string{"T"}, Sensitive: true, Members: []*skeldesc.Member{{Name: "value", Sensitive: true, Example: "aGVsbG8=", Type: &skeldesc.Type{Kind: skeldesc.TypeKindTypeParameter, Name: "T"}}}}})
+	result := toServerAppConfigDescriptor(definition)
 	require.True(t, result.Sensitive)
 	require.Len(t, result.DataTypes, 1)
 	require.True(t, result.DataTypes[0].Sensitive)

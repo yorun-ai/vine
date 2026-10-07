@@ -49,9 +49,9 @@ flowchart LR
 
 | Role | Responsibility |
 | --- | --- |
-| **App** | Owns business modules, handlers, configuration schemas, and infrastructure dependencies. |
+| **App** | Owns business modules, handlers, configuration descriptors, and infrastructure dependencies. |
 | **Link** | Registers local applications, watches discovery/configuration state, selects instances, forwards Rpc/Web traffic, and delivers Event/Task messages. |
-| **Hub** | Owns configuration, schemas, registrations, leases, Portal configuration, management APIs, and the Dashboard. |
+| **Hub** | Owns configuration, descriptors, registrations, leases, Portal configuration, management APIs, and the Dashboard. |
 | **Portal** | Provides optional external HTTP/HTTPS entry points, routing, admission, and public TLS certificate selection. |
 
 Internal application-to-application calls use Link and do not pass through
@@ -187,7 +187,7 @@ Vine keeps its public API in a small set of facade packages. Packages under
 | [`core/rpc`](core/rpc), [`core/web`](core/web) | Synchronous service contracts and Web handling |
 | [`core/event`](core/event), [`core/task`](core/task) | Asynchronous fan-out and competing-consumer work |
 | [`core/conf`](core/conf) | Eternal configuration snapshots and instant configuration updates |
-| [`core/skel`](core/skel) | Skel runtime scalar types, schema registration, and generator compatibility checks |
+| [`core/skel`](core/skel) | Skel descriptor registration, generator compatibility checks, and legacy generated-code adapters |
 | [`core/meta`](core/meta), [`core/logger`](core/logger), [`core/ex`](core/ex), [`core/redact`](core/redact) | Request metadata, structured logging, system errors, and sensitive-data redaction |
 | [`buildinfo`](buildinfo) | Linker-injected executable name, version, commit, builder, and build time |
 | [`infra/redis`](infra/redis), [`infra/rdb`](infra/rdb) | Managed Redis and relational database integration |

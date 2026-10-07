@@ -28,7 +28,7 @@ func (l *_InternalLinker) RpcProxyEndpoint() string {
 	return l.hubEndpoint + coreapp.PathRpcInvoke
 }
 
-func (*_InternalLinker) SkipDomainSchemas() bool {
+func (*_InternalLinker) SkipDomainDescriptors() bool {
 	return false
 }
 

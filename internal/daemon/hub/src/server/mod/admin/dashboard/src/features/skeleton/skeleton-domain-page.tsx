@@ -92,49 +92,49 @@ const groupDefinitions: Record<
     label: 'Actor',
     icon: Users,
     detailPath: '/skeleton/actor/$skelName',
-    detailVersionPath: '/skeleton/actor/$skelName/$schemaHash',
+    detailVersionPath: '/skeleton/actor/$skelName/$descriptorHash',
   },
   configs: {
     label: 'Config',
     icon: SlidersHorizontal,
     detailPath: '/skeleton/config/$skelName',
-    detailVersionPath: '/skeleton/config/$skelName/$schemaHash',
+    detailVersionPath: '/skeleton/config/$skelName/$descriptorHash',
   },
   services: {
     label: 'Service',
     icon: Server,
     detailPath: '/skeleton/service/$skelName',
-    detailVersionPath: '/skeleton/service/$skelName/$schemaHash',
+    detailVersionPath: '/skeleton/service/$skelName/$descriptorHash',
   },
   resources: {
     label: 'Resource',
     icon: ShieldCheck,
     detailPath: '/skeleton/resource/$skelName',
-    detailVersionPath: '/skeleton/resource/$skelName/$schemaHash',
+    detailVersionPath: '/skeleton/resource/$skelName/$descriptorHash',
   },
   data: {
     label: 'Data',
     icon: Braces,
     detailPath: '/skeleton/data/$skelName',
-    detailVersionPath: '/skeleton/data/$skelName/$schemaHash',
+    detailVersionPath: '/skeleton/data/$skelName/$descriptorHash',
   },
   webs: {
     label: 'Web',
     icon: Globe2,
     detailPath: '/skeleton/web/$skelName',
-    detailVersionPath: '/skeleton/web/$skelName/$schemaHash',
+    detailVersionPath: '/skeleton/web/$skelName/$descriptorHash',
   },
   tasks: {
     label: 'Task',
     icon: CalendarClock,
     detailPath: '/skeleton/task/$skelName',
-    detailVersionPath: '/skeleton/task/$skelName/$schemaHash',
+    detailVersionPath: '/skeleton/task/$skelName/$descriptorHash',
   },
   events: {
     label: 'Event',
     icon: Radio,
     detailPath: '/skeleton/event/$skelName',
-    detailVersionPath: '/skeleton/event/$skelName/$schemaHash',
+    detailVersionPath: '/skeleton/event/$skelName/$descriptorHash',
   },
 }
 
@@ -178,15 +178,15 @@ function getDomainGroups(summary: SkeletonDomain) {
 }
 
 function getDomainSummaryKey(summary: SkeletonDomain) {
-  return `${summary.domain}:${summary.schemaHash}`
+  return `${summary.domain}:${summary.descriptorHash}`
 }
 
 function skeletonDomainListItemDomId(domain: string) {
   return `skeleton-domain-list-item:${encodeURIComponent(domain)}`
 }
 
-function skeletonDomainVersionDomId(domain: string, schemaHash: string) {
-  return `skeleton-domain-list-version:${encodeURIComponent(domain)}:${encodeURIComponent(schemaHash)}`
+function skeletonDomainVersionDomId(domain: string, descriptorHash: string) {
+  return `skeleton-domain-list-version:${encodeURIComponent(domain)}:${encodeURIComponent(descriptorHash)}`
 }
 
 function buildDomainVersionGroups(items: Array<SkeletonDomain>) {
@@ -219,13 +219,13 @@ function compareDomainVersions(a: SkeletonDomain, b: SkeletonDomain) {
   if (a.isMain !== b.isMain) {
     return a.isMain ? -1 : 1
   }
-  return b.schemaHash.localeCompare(a.schemaHash)
+  return b.descriptorHash.localeCompare(a.descriptorHash)
 }
 
 function skeletonDomainHref(summary: SkeletonDomain) {
   const basePath = `/skeleton/domain/${encodeURIComponent(summary.domain)}`
   return !summary.isMain
-    ? `${basePath}/${encodeURIComponent(summary.schemaHash)}`
+    ? `${basePath}/${encodeURIComponent(summary.descriptorHash)}`
     : basePath
 }
 
@@ -254,7 +254,7 @@ export function SkeletonDomainPage() {
       const currentPathname = state.location.pathname
 
       if (!currentPathname.startsWith(prefix)) {
-        return { domain: undefined, schemaHash: undefined }
+        return { domain: undefined, descriptorHash: undefined }
       }
 
       const segments = currentPathname
@@ -264,7 +264,7 @@ export function SkeletonDomainPage() {
         .filter(Boolean)
       return {
         domain: segments[0] ? decodeURIComponent(segments[0]) : undefined,
-        schemaHash: segments[1] ? decodeURIComponent(segments[1]) : undefined,
+        descriptorHash: segments[1] ? decodeURIComponent(segments[1]) : undefined,
       }
     },
   })
@@ -311,23 +311,23 @@ export function SkeletonDomainPage() {
       summaries.find(
         (summary) =>
           summary.domain === routeParams.domain &&
-          (routeParams.schemaHash
-            ? summary.schemaHash === routeParams.schemaHash
+          (routeParams.descriptorHash
+            ? summary.descriptorHash === routeParams.descriptorHash
             : summary.isMain),
       ) ??
       filteredSummaries.at(0) ??
       null,
-    [filteredSummaries, routeParams.domain, routeParams.schemaHash, summaries],
+    [filteredSummaries, routeParams.domain, routeParams.descriptorHash, summaries],
   )
 
   const navigateToDomain = React.useCallback(
     (summary: SkeletonDomain, replace = false) => {
       void navigate({
         to: !summary.isMain
-          ? '/skeleton/domain/$domain/$schemaHash'
+          ? '/skeleton/domain/$domain/$descriptorHash'
           : '/skeleton/domain/$domain',
         params: !summary.isMain
-          ? { domain: summary.domain, schemaHash: summary.schemaHash }
+          ? { domain: summary.domain, descriptorHash: summary.descriptorHash }
           : { domain: summary.domain },
         replace,
       })
@@ -336,13 +336,13 @@ export function SkeletonDomainPage() {
   )
   React.useEffect(() => {
     const domain = routeParams.domain
-    if (!domain || !routeParams.schemaHash) {
+    if (!domain || !routeParams.descriptorHash) {
       return
     }
     setExpandedDomainGroups((current) =>
       current[domain] ? current : { ...current, [domain]: true },
     )
-  }, [routeParams.domain, routeParams.schemaHash])
+  }, [routeParams.domain, routeParams.descriptorHash])
   React.useEffect(() => {
     if (!selectedSummary) {
       return
@@ -351,7 +351,7 @@ export function SkeletonDomainPage() {
       const targetId = !selectedSummary.isMain
         ? skeletonDomainVersionDomId(
             selectedSummary.domain,
-            selectedSummary.schemaHash,
+            selectedSummary.descriptorHash,
           )
         : skeletonDomainListItemDomId(selectedSummary.domain)
       document.getElementById(targetId)?.scrollIntoView({
@@ -382,7 +382,7 @@ export function SkeletonDomainPage() {
       void navigate({
         to: !item.isMain ? group.detailVersionPath : group.detailPath,
         params: !item.isMain
-          ? { skelName: item.skelName, schemaHash: item.schemaHash }
+          ? { skelName: item.skelName, descriptorHash: item.descriptorHash }
           : { skelName: item.skelName },
       })
     },
@@ -522,7 +522,7 @@ export function SkeletonDomainPage() {
                       </span>
                       {summary.isMultiVersion ? (
                         <span className="truncate font-mono text-xs text-muted-foreground">
-                          {t('skeleton.mainVersion')} · {summary.schemaHash}
+                          {t('skeleton.mainVersion')} · {summary.descriptorHash}
                         </span>
                       ) : null}
                     </a>
@@ -540,7 +540,7 @@ export function SkeletonDomainPage() {
                             key={getDomainSummaryKey(version)}
                             id={skeletonDomainVersionDomId(
                               version.domain,
-                              version.schemaHash,
+                              version.descriptorHash,
                             )}
                             href={skeletonDomainHref(version)}
                             onClick={(event) => {
@@ -561,7 +561,7 @@ export function SkeletonDomainPage() {
                               variant="outline"
                               className="absolute top-2 right-3 border-amber-300 bg-amber-50 text-amber-700"
                             >
-                              {version.schemaHash}
+                              {version.descriptorHash}
                             </Badge>
                             <div className="flex min-w-0 items-center gap-2">
                               <span
@@ -576,7 +576,7 @@ export function SkeletonDomainPage() {
                               </span>
                             </div>
                             <span className="truncate font-mono text-xs text-muted-foreground">
-                              {version.schemaHash}
+                              {version.descriptorHash}
                             </span>
                           </a>
                         )
@@ -610,7 +610,7 @@ export function SkeletonDomainPage() {
                       variant="outline"
                       className="border-amber-300 bg-amber-50 text-amber-700"
                     >
-                      {selectedSummary.schemaHash}
+                      {selectedSummary.descriptorHash}
                     </Badge>
                   ) : selectedSummary.isMultiVersion ? (
                     <Badge variant="outline">
@@ -671,7 +671,7 @@ export function SkeletonDomainPage() {
                     >
                       {group.items.map((item) => (
                         <a
-                          key={`$<SkelName skelName={item.skelName} domain={item.domain} />:${item.schemaHash}`}
+                          key={`$<SkelName skelName={item.skelName} domain={item.domain} />:${item.descriptorHash}`}
                           href={skeletonItemHref(item, group.kind)}
                           onClick={(event) => {
                             if (shouldUseBrowserNavigation(event)) {

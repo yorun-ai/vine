@@ -22,7 +22,7 @@ type Initializer struct {
 	PortalCertRepo  core.PortalCertRepo     `inject:""`
 	PortalSiteRepo  core.PortalSiteRepo     `inject:""`
 	RuleCore        *core.PortalRuleCore    `inject:""`
-	SchemaRepo      core.SchemaRepo         `inject:""`
+	DescriptorRepo  core.DescriptorRepo     `inject:""`
 	RegistryCore    *core.RegistryCore      `inject:""`
 	Seeder          *seeder.Seeder          `inject:""`
 	Syncer          *syncer.Syncer          `inject:""`
@@ -34,15 +34,15 @@ type Initializer struct {
 }
 
 const (
-	inprocSchemaAppName    = "vine.hub.inproc"
-	inprocSchemaInstanceId = "registered"
+	inprocDescriptorAppName    = "vine.hub.inproc"
+	inprocDescriptorInstanceId = "registered"
 )
 
 func (i *Initializer) DIInit() {
-	i.RegistryCore.RegisterSchemas(inprocSchemaAppName, inprocSchemaInstanceId, skel.RegisteredDomainSchemas())
+	i.RegistryCore.RegisterDescriptors(inprocDescriptorAppName, inprocDescriptorInstanceId, skel.RegisteredDomainDescriptors())
 
-	domainViews := i.SchemaRepo.ListDomainSchemaViews()
-	i.Syncer.SyncSchemas(domainViews)
+	domainViews := i.DescriptorRepo.ListDomainDescriptorViews()
+	i.Syncer.SyncDescriptors(domainViews)
 	for _, item := range i.AppConfigRepo.List() {
 		i.Syncer.SyncAppConfig(item)
 	}
@@ -67,8 +67,8 @@ func (i *Initializer) DIInit() {
 }
 
 // checkPortalRuleConflicts reports rules that match the same request now that the
-// schemas decide the prefix of a rule bound to a Web mount path. Hub applies a
-// seed before applications register their schemas, so the write that declared the
+// descriptors decide the prefix of a rule bound to a Web mount path. Hub applies a
+// seed before applications register their descriptors, so the write that declared the
 // rules cannot answer this question. A read-only configuration has no surface an
 // operator could fix, so Hub refuses to serve it; a stored configuration keeps
 // running and Hub reports what the Dashboard has to resolve.

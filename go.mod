@@ -26,6 +26,7 @@ require (
 	github.com/tidwall/gjson v1.19.0
 	github.com/tidwall/redcon v1.6.4
 	github.com/urfave/cli/v3 v3.14.0
+	go.yorun.ai/skel v0.30.1-0.20261006195103-dedd0501f1ce
 	go.yorun.ai/vrpc v0.12.0
 	golang.org/x/net v0.59.0
 	gopkg.in/yaml.v3 v3.0.1

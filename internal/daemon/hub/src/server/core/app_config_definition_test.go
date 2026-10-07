@@ -1,25 +1,26 @@
 package core
 
 import (
-	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/core/skel"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	skeldesc "go.yorun.ai/skel/descriptor"
 )
 
 func TestConfigDefinitionPreservesReachableTypesAndMetadata(t *testing.T) {
-	enum := &skel.TypeSchema{Kind: skel.TypeKindEnum, SkelName: "foreign.Mode"}
-	dataType := &skel.TypeSchema{Kind: skel.TypeKindData, SkelName: "demo.Box", TypeArguments: []*skel.TypeSchema{enum}}
-	recursive := &skel.TypeSchema{Kind: skel.TypeKindData, SkelName: "demo.Node", Nullable: true}
-	schemas := []*skel.DataSchema{
-		{Name: "Box", SkelName: "demo.Box", TypeParameters: []string{"T"}, Sensitive: true, Members: []*skel.MemberSchema{
-			{Name: "value", Description: "Payload", Example: "ACTIVE", Deprecated: true, DeprecatedReason: "Old", Sensitive: true, Type: &skel.TypeSchema{Kind: skel.TypeKindTypeParameter, Name: "T"}},
+	enum := &skeldesc.Type{Kind: skeldesc.TypeKindEnum, SkelName: "foreign.Mode"}
+	dataType := &skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: "demo.Box", TypeArguments: []*skeldesc.Type{enum}}
+	recursive := &skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: "demo.Node", Nullable: true}
+	descriptors := []*skeldesc.Data{
+		{Name: "Box", SkelName: "demo.Box", TypeParameters: []string{"T"}, Sensitive: true, Members: []*skeldesc.Member{
+			{Name: "value", Description: "Payload", Example: "ACTIVE", Deprecated: true, DeprecatedReason: "Old", Sensitive: true, Type: &skeldesc.Type{Kind: skeldesc.TypeKindTypeParameter, Name: "T"}},
 			{Name: "next", Type: recursive},
 		}},
-		{Name: "Node", SkelName: "demo.Node", Members: []*skel.MemberSchema{{Name: "next", Type: recursive}}},
+		{Name: "Node", SkelName: "demo.Node", Members: []*skeldesc.Member{{Name: "next", Type: recursive}}},
 		{SkelName: "demo.Unrelated"},
 	}
-	definition := NewAppConfigDefinition(&skel.ConfigSchema{Sensitive: true, Members: []*skel.MemberSchema{{Name: "box", Type: dataType}}},
-		[]*skel.EnumSchema{{SkelName: "foreign.Mode", Items: []*skel.EnumItemSchema{{Name: "ACTIVE", Description: "Active"}}}}, schemas)
+	definition := NewAppConfigDefinition(&skeldesc.Config{Sensitive: true, Members: []*skeldesc.Member{{Name: "box", Type: dataType}}, Lifecycle: skeldesc.ConfigLifecycleEternal},
+		[]*skeldesc.Enum{{SkelName: "foreign.Mode", Items: []*skeldesc.EnumItem{{Name: "ACTIVE", Description: "Active"}}}}, descriptors)
 	require.True(t, definition.Sensitive)
 	require.Equal(t, "demo.Box<foreign.Mode>", definition.Fields[0].Type)
 	require.Equal(t, "Active", definition.Fields[0].ValueType.TypeArguments[0].EnumItems[0].Description)

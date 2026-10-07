@@ -1,7 +1,7 @@
 package repo
 
 import (
-	"go.yorun.ai/vine/internal/core/skel"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
@@ -9,55 +9,59 @@ import (
 )
 
 type AppConfigRepo struct {
-	Dao        *model.AppConfigDao  `inject:""`
-	SchemaRepo core.SchemaRepo      `inject:""`
-	Syncer     *syncer.Syncer       `inject:""`
-	Access     *configaccess.Access `inject:""`
+	Dao            *model.AppConfigDao  `inject:""`
+	DescriptorRepo core.DescriptorRepo  `inject:""`
+	Syncer         *syncer.Syncer       `inject:""`
+	Access         *configaccess.Access `inject:""`
 }
 
 func (s *AppConfigRepo) List() []*core.AppConfig {
-	schemas, enumSchemas, dataSchemas := s.SchemaRepo.ListAppConfigTypeSchemas()
-	return s.listItems(schemas, enumSchemas, dataSchemas)
+	descriptors, enumDescriptors, dataDescriptors := s.DescriptorRepo.ListAppConfigTypeDescriptors()
+	return s.listItems(descriptors, enumDescriptors, dataDescriptors)
 }
 
 // ListSlots returns the configuration surface: the stored values plus the
 // configurations registered applications declare without a value.
 func (s *AppConfigRepo) ListSlots() []*core.AppConfig {
-	schemas, enumSchemas, dataSchemas := s.SchemaRepo.ListAppConfigTypeSchemas()
-	slots := s.listItems(schemas, enumSchemas, dataSchemas)
+	descriptors, enumDescriptors, dataDescriptors := s.DescriptorRepo.ListAppConfigTypeDescriptors()
+	slots := s.listItems(descriptors, enumDescriptors, dataDescriptors)
 	declared := make(map[string]struct{}, len(slots))
 	for _, slot := range slots {
 		declared[slot.Name] = struct{}{}
 	}
-	for _, schema := range schemas {
-		if _, ok := declared[schema.SkelName]; ok {
+	for _, descriptor := range descriptors {
+		if _, ok := declared[descriptor.SkelName]; ok {
 			continue
 		}
-		slots = append(slots, s.toCoreAppConfig(&core.AppConfig{Name: schema.SkelName}, schemas, enumSchemas, dataSchemas))
+		slots = append(slots, s.toCoreAppConfig(&core.AppConfig{
+			Name: descriptor.SkelName,
+		}, descriptors, enumDescriptors, dataDescriptors))
 	}
 	return slots
 }
 
-func (s *AppConfigRepo) listItems(schemas []*skel.ConfigSchema, enumSchemas []*skel.EnumSchema, dataSchemas []*skel.DataSchema) []*core.AppConfig {
+func (s *AppConfigRepo) listItems(descriptors []*skeldesc.Config, enumDescriptors []*skeldesc.Enum, dataDescriptors []*skeldesc.Data) []*core.AppConfig {
 	rows := s.Dao.ListOrdered()
 	items := make([]*core.AppConfig, 0, len(rows))
 	for _, row := range rows {
-		items = append(items, s.toCoreAppConfig(mapAppConfig(row), schemas, enumSchemas, dataSchemas))
+		items = append(items, s.toCoreAppConfig(mapAppConfig(row), descriptors, enumDescriptors, dataDescriptors))
 	}
 	return items
 }
 
 // FindByName returns the configuration with the name, stored or declared.
 func (s *AppConfigRepo) FindByName(name string) (*core.AppConfig, bool) {
-	schemas, enumSchemas, dataSchemas := s.SchemaRepo.ListAppConfigTypeSchemas()
+	descriptors, enumDescriptors, dataDescriptors := s.DescriptorRepo.ListAppConfigTypeDescriptors()
 	if row, ok := s.Dao.LatestByName(name); ok {
-		return s.toCoreAppConfig(mapAppConfig(row), schemas, enumSchemas, dataSchemas), true
+		return s.toCoreAppConfig(mapAppConfig(row), descriptors, enumDescriptors, dataDescriptors), true
 	}
-	schema := findAppConfigSchema(name, schemas)
-	if schema == nil {
+	descriptor := findAppConfigDescriptor(name, descriptors)
+	if descriptor == nil {
 		return nil, false
 	}
-	return s.toCoreAppConfig(&core.AppConfig{Name: name}, schemas, enumSchemas, dataSchemas), true
+	return s.toCoreAppConfig(&core.AppConfig{
+		Name: name,
+	}, descriptors, enumDescriptors, dataDescriptors), true
 }
 
 func (s *AppConfigRepo) GetById(id int) (*core.AppConfig, bool) {
@@ -100,29 +104,29 @@ func (s *AppConfigRepo) Remove(id int) bool {
 }
 
 func (s *AppConfigRepo) resolveAppConfig(item *core.AppConfig) *core.AppConfig {
-	schemas, enums, data := s.SchemaRepo.ListAppConfigTypeSchemas()
-	return s.toCoreAppConfig(item, schemas, enums, data)
+	descriptors, enums, data := s.DescriptorRepo.ListAppConfigTypeDescriptors()
+	return s.toCoreAppConfig(item, descriptors, enums, data)
 }
 
 // toCoreAppConfig assembles a configuration slot from its stored value and the
 // declaration of the application that owns it.
-func (s *AppConfigRepo) toCoreAppConfig(item *core.AppConfig, schemas []*skel.ConfigSchema, enumSchemas []*skel.EnumSchema, dataSchemas []*skel.DataSchema) *core.AppConfig {
-	schema := findAppConfigSchema(item.Name, schemas)
-	item.Definition = core.NewAppConfigDefinition(schema, enumSchemas, dataSchemas)
+func (s *AppConfigRepo) toCoreAppConfig(item *core.AppConfig, descriptors []*skeldesc.Config, enumDescriptors []*skeldesc.Enum, dataDescriptors []*skeldesc.Data) *core.AppConfig {
+	descriptor := findAppConfigDescriptor(item.Name, descriptors)
+	item.Definition = core.NewAppConfigDefinition(descriptor, enumDescriptors, dataDescriptors)
 	item.Configured = item.Id != 0
-	item.Lifecycle = core.AppConfigLifecycleFor(schema)
+	item.Lifecycle = core.AppConfigLifecycleFor(descriptor)
 	if item.Configured {
-		item.Status = core.AppConfigStatusFor(schema, item.Value, enumSchemas, dataSchemas)
+		item.Status = core.AppConfigStatusFor(descriptor, item.Value, enumDescriptors, dataDescriptors)
 	} else {
 		item.Status = core.AppConfigStatusUnconfigured
 	}
 	return item
 }
 
-func findAppConfigSchema(name string, schemas []*skel.ConfigSchema) *skel.ConfigSchema {
-	for _, schema := range schemas {
-		if schema.SkelName == name {
-			return schema
+func findAppConfigDescriptor(name string, descriptors []*skeldesc.Config) *skeldesc.Config {
+	for _, descriptor := range descriptors {
+		if descriptor.SkelName == name {
+			return descriptor
 		}
 	}
 	return nil

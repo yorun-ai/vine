@@ -52,12 +52,12 @@ function shouldUseBrowserNavigation(
 function TypeText({
   type,
   typeIndex,
-  domainSchemaHash,
+  domainDescriptorHash,
   onTypeClick,
 }: {
   type: string
   typeIndex: TypeDefinitionIndex
-  domainSchemaHash?: string
+  domainDescriptorHash?: string
   onTypeClick: (item: SkeletonItem) => void
 }) {
   if (type === '') {
@@ -72,7 +72,7 @@ function TypeText({
   while ((match = pattern.exec(type)) !== null) {
     const token = match[0]
     const start = match.index
-    const definition = findTypeDefinition(typeIndex, token, domainSchemaHash)
+    const definition = findTypeDefinition(typeIndex, token, domainDescriptorHash)
 
     if (start > cursor) {
       parts.push(type.slice(cursor, start))
@@ -178,14 +178,14 @@ function FunctionSignature({
   name,
   fields,
   resultType,
-  domainSchemaHash,
+  domainDescriptorHash,
   typeIndex,
   onTypeClick,
 }: {
   fields: Array<SkeletonField>
   name: string
   resultType?: string
-  domainSchemaHash?: string
+  domainDescriptorHash?: string
   typeIndex: TypeDefinitionIndex
   onTypeClick: (item: SkeletonItem) => void
 }) {
@@ -204,7 +204,7 @@ function FunctionSignature({
           <TypeText
             type={field.type || 'unknown'}
             typeIndex={typeIndex}
-            domainSchemaHash={domainSchemaHash}
+            domainDescriptorHash={domainDescriptorHash}
             onTypeClick={onTypeClick}
           />
         </React.Fragment>
@@ -216,7 +216,7 @@ function FunctionSignature({
           <TypeText
             type={resultType ?? ''}
             typeIndex={typeIndex}
-            domainSchemaHash={domainSchemaHash}
+            domainDescriptorHash={domainDescriptorHash}
             onTypeClick={onTypeClick}
           />
         </>
@@ -227,12 +227,12 @@ function FunctionSignature({
 
 function FieldList({
   fields,
-  domainSchemaHash,
+  domainDescriptorHash,
   typeIndex,
   onTypeClick,
 }: {
   fields: Array<SkeletonField>
-  domainSchemaHash?: string
+  domainDescriptorHash?: string
   typeIndex: TypeDefinitionIndex
   onTypeClick: (item: SkeletonItem) => void
 }) {
@@ -260,7 +260,7 @@ function FieldList({
               <TypeText
                 type={field.type || 'void'}
                 typeIndex={typeIndex}
-                domainSchemaHash={domainSchemaHash}
+                domainDescriptorHash={domainDescriptorHash}
                 onTypeClick={onTypeClick}
               />
             </Badge>
@@ -291,12 +291,12 @@ function FieldList({
 
 function MethodOutput({
   method,
-  domainSchemaHash,
+  domainDescriptorHash,
   typeIndex,
   onTypeClick,
 }: {
   method: SkeletonMethod
-  domainSchemaHash?: string
+  domainDescriptorHash?: string
   typeIndex: TypeDefinitionIndex
   onTypeClick: (item: SkeletonItem) => void
 }) {
@@ -313,7 +313,7 @@ function MethodOutput({
             <TypeText
               type={method.resultType}
               typeIndex={typeIndex}
-              domainSchemaHash={domainSchemaHash}
+              domainDescriptorHash={domainDescriptorHash}
               onTypeClick={onTypeClick}
             />
           </Badge>
@@ -499,12 +499,12 @@ function EnumItemList({ items }: { items: Array<SkeletonEnumItem> }) {
 
 function MethodList({
   methods,
-  domainSchemaHash,
+  domainDescriptorHash,
   typeIndex,
   onTypeClick,
 }: {
   methods: Array<SkeletonMethod>
-  domainSchemaHash?: string
+  domainDescriptorHash?: string
   typeIndex: TypeDefinitionIndex
   onTypeClick: (item: SkeletonItem) => void
 }) {
@@ -530,7 +530,7 @@ function MethodList({
                 fields={method.arguments}
                 resultType={method.resultType}
                 typeIndex={typeIndex}
-                domainSchemaHash={domainSchemaHash}
+                domainDescriptorHash={domainDescriptorHash}
                 onTypeClick={onTypeClick}
               />
             </code>
@@ -564,13 +564,13 @@ function MethodList({
           <FieldList
             fields={method.arguments}
             typeIndex={typeIndex}
-            domainSchemaHash={domainSchemaHash}
+            domainDescriptorHash={domainDescriptorHash}
             onTypeClick={onTypeClick}
           />
           <MethodOutput
             method={method}
             typeIndex={typeIndex}
-            domainSchemaHash={domainSchemaHash}
+            domainDescriptorHash={domainDescriptorHash}
             onTypeClick={onTypeClick}
           />
         </div>
@@ -582,13 +582,13 @@ function MethodList({
 function ResourceCheckList({
   checks,
   emptyText,
-  domainSchemaHash,
+  domainDescriptorHash,
   typeIndex,
   onTypeClick,
 }: {
   checks: Array<SkeletonResourceCheck>
   emptyText: string
-  domainSchemaHash?: string
+  domainDescriptorHash?: string
   typeIndex: TypeDefinitionIndex
   onTypeClick: (item: SkeletonItem) => void
 }) {
@@ -609,7 +609,7 @@ function ResourceCheckList({
                 name={check.methodName}
                 fields={check.arguments}
                 typeIndex={typeIndex}
-                domainSchemaHash={domainSchemaHash}
+                domainDescriptorHash={domainDescriptorHash}
                 onTypeClick={onTypeClick}
               />
             </code>
@@ -633,12 +633,12 @@ function ResourceCheckList({
 
 function ResourceActionList({
   actions,
-  domainSchemaHash,
+  domainDescriptorHash,
   typeIndex,
   onTypeClick,
 }: {
   actions: Array<SkeletonResourceAction>
-  domainSchemaHash?: string
+  domainDescriptorHash?: string
   typeIndex: TypeDefinitionIndex
   onTypeClick: (item: SkeletonItem) => void
 }) {
@@ -682,7 +682,7 @@ function ResourceActionList({
                 checks={action.checks}
                 emptyText={t('skeleton.noResourceChecks')}
                 typeIndex={typeIndex}
-                domainSchemaHash={domainSchemaHash}
+                domainDescriptorHash={domainDescriptorHash}
                 onTypeClick={onTypeClick}
               />
             </div>
@@ -695,12 +695,12 @@ function ResourceActionList({
 
 function TriggerList({
   triggers,
-  domainSchemaHash,
+  domainDescriptorHash,
   typeIndex,
   onTypeClick,
 }: {
   triggers: Array<SkeletonTrigger>
-  domainSchemaHash?: string
+  domainDescriptorHash?: string
   typeIndex: TypeDefinitionIndex
   onTypeClick: (item: SkeletonItem) => void
 }) {
@@ -728,7 +728,7 @@ function TriggerList({
                 name={trigger.name}
                 fields={trigger.arguments}
                 typeIndex={typeIndex}
-                domainSchemaHash={domainSchemaHash}
+                domainDescriptorHash={domainDescriptorHash}
                 onTypeClick={onTypeClick}
               />
             </code>
@@ -752,7 +752,7 @@ function TriggerList({
           <FieldList
             fields={trigger.arguments}
             typeIndex={typeIndex}
-            domainSchemaHash={domainSchemaHash}
+            domainDescriptorHash={domainDescriptorHash}
             onTypeClick={onTypeClick}
           />
         </div>
@@ -826,7 +826,7 @@ function DetailSection({
   )
 }
 
-function ActorSchemaLink<
+function ActorDescriptorLink<
   T extends { name: string; skelName: string; deprecated?: boolean },
 >({
   icon: Icon,
@@ -963,7 +963,7 @@ export function SkeletonItemDetails({
   relatedServices: Array<SkeletonServiceItem>
   relatedWebs: Array<SkeletonWebItem>
   onTypeClick: (item: SkeletonItem) => void
-  onActorClick: (skelName: string, domainSchemaHash?: string) => void
+  onActorClick: (skelName: string, domainDescriptorHash?: string) => void
   onServiceClick: (item: SkeletonServiceItem) => void
   onDataClick: (item: SkeletonData) => void
   onWebClick: (item: SkeletonWebItem) => void
@@ -1019,7 +1019,7 @@ export function SkeletonItemDetails({
               </dl>
             ) : null}
             <div className="grid gap-3 md:grid-cols-3">
-              <ActorSchemaLink
+              <ActorDescriptorLink
                 icon={KeyRound}
                 title={t('skeleton.actorCredential')}
                 hideTitle
@@ -1028,7 +1028,7 @@ export function SkeletonItemDetails({
                 onItemClick={onDataClick}
                 getItemHref={(data) => skeletonItemHref(data, 'data')}
               />
-              <ActorSchemaLink
+              <ActorDescriptorLink
                 icon={Braces}
                 title={t('skeleton.actorInfo')}
                 hideTitle
@@ -1037,7 +1037,7 @@ export function SkeletonItemDetails({
                 onItemClick={onDataClick}
                 getItemHref={(data) => skeletonItemHref(data, 'data')}
               />
-              <ActorSchemaLink
+              <ActorDescriptorLink
                 icon={Server}
                 title={t('skeleton.actorAuthService')}
                 hideTitle
@@ -1053,7 +1053,7 @@ export function SkeletonItemDetails({
             title={t('skeleton.permissionGroup')}
           >
             <div className="grid gap-3">
-              <ActorSchemaLink
+              <ActorDescriptorLink
                 icon={ShieldCheck}
                 title={t('skeleton.actorPermService')}
                 hideTitle
@@ -1109,7 +1109,7 @@ export function SkeletonItemDetails({
           <MethodList
             methods={item.methods}
             typeIndex={typeIndex}
-            domainSchemaHash={item.domainSchemaHash}
+            domainDescriptorHash={item.domainDescriptorHash}
             onTypeClick={onTypeClick}
           />
         </div>
@@ -1117,7 +1117,7 @@ export function SkeletonItemDetails({
       {isResource ? (
         <>
           <div className="grid gap-3">
-            <ActorSchemaLink
+            <ActorDescriptorLink
               icon={Server}
               title={t('skeleton.resourceCheckService')}
               item={item.checkService}
@@ -1135,7 +1135,7 @@ export function SkeletonItemDetails({
               checks={item.checks}
               emptyText={t('skeleton.noResourceChecks')}
               typeIndex={typeIndex}
-              domainSchemaHash={item.domainSchemaHash}
+              domainDescriptorHash={item.domainDescriptorHash}
               onTypeClick={onTypeClick}
             />
           </div>
@@ -1146,7 +1146,7 @@ export function SkeletonItemDetails({
             <ResourceActionList
               actions={item.actions}
               typeIndex={typeIndex}
-              domainSchemaHash={item.domainSchemaHash}
+              domainDescriptorHash={item.domainDescriptorHash}
               onTypeClick={onTypeClick}
             />
           </div>
@@ -1160,7 +1160,7 @@ export function SkeletonItemDetails({
           <FieldList
             fields={item.fields}
             typeIndex={typeIndex}
-            domainSchemaHash={item.domainSchemaHash}
+            domainDescriptorHash={item.domainDescriptorHash}
             onTypeClick={onTypeClick}
           />
         </div>
@@ -1173,7 +1173,7 @@ export function SkeletonItemDetails({
           <TriggerList
             triggers={item.triggers}
             typeIndex={typeIndex}
-            domainSchemaHash={item.domainSchemaHash}
+            domainDescriptorHash={item.domainDescriptorHash}
             onTypeClick={onTypeClick}
           />
         </div>
@@ -1186,7 +1186,7 @@ export function SkeletonItemDetails({
           <FieldList
             fields={item.fields}
             typeIndex={typeIndex}
-            domainSchemaHash={item.domainSchemaHash}
+            domainDescriptorHash={item.domainDescriptorHash}
             onTypeClick={onTypeClick}
           />
         </div>
@@ -1207,7 +1207,7 @@ export function SkeletonItemDetails({
           <FieldList
             fields={item.fields}
             typeIndex={typeIndex}
-            domainSchemaHash={item.domainSchemaHash}
+            domainDescriptorHash={item.domainDescriptorHash}
             onTypeClick={onTypeClick}
           />
         </div>

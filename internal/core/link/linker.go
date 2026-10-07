@@ -23,7 +23,7 @@ type Linker interface {
 	// CheckLoopback reports which loopback host app registration should reuse,
 	// and whether this link linkBaseEndpoint is using a loopback host at all.
 	CheckLoopback() (string, bool)
-	SkipDomainSchemas() bool
+	SkipDomainDescriptors() bool
 	RpcProxyEndpoint() string
 	RegistryClient() linkskeled.RegistryServiceClient
 	// RegistryClientER returns the error-reporting registry client for lifecycle
@@ -100,8 +100,8 @@ func (l *_Linker) RpcProxyEndpoint() string {
 	return l.linkBaseEndpoint + l.bootInfo.RpcProxyEndpointPath
 }
 
-func (l *_Linker) SkipDomainSchemas() bool {
-	return l.bootInfo.SkipDomainSchemas
+func (l *_Linker) SkipDomainDescriptors() bool {
+	return l.bootInfo.SkipDomainDescriptors
 }
 
 func (l *_Linker) CheckLoopback() (string, bool) {

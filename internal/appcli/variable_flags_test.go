@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	ucli "github.com/urfave/cli/v3"
+	skeldesc "go.yorun.ai/skel/descriptor"
 )
 
 func variableFlagsForTest(target *[]string, ignored []string, renamed map[string]string, paths map[string]string) []ucli.Flag {
@@ -153,7 +154,7 @@ func TestVariableFlagPreservesEmptyEnvironmentValue(t *testing.T) {
 func variableBoolFlagsForTest(target *[]string, ignored []string, renamed map[string]string, paths map[string]string) []ucli.Flag {
 	names := NewFlagNames(ignored, renamed)
 	seed := names.StringSlice("hub-seed-var", "VINE_TEST_SEED_VAR", target, "seed variable")
-	list := append([]ucli.Flag{seed}, names.variableFlags(paths, target, seed, variableFlagTestSchemas())...)
+	list := append([]ucli.Flag{seed}, names.variableFlags(paths, target, seed, variableFlagTestDescriptors())...)
 	names.Validate()
 	return list
 }
@@ -280,4 +281,120 @@ func TestVariableFlagBooleanSelectionAndFallback(t *testing.T) {
 	_, err = parseArgs([]string{"app", "--enabled=wrong"}, variableBoolFlagsForTest(&assignments,
 		nil, nil, map[string]string{"enabled": "enabled"})...)
 	require.ErrorContains(t, err, "expected boolean value")
+}
+
+func variableFlagTestDescriptors() []*skeldesc.Domain {
+	boolean := new(skeldesc.Type{
+		Kind:   skeldesc.TypeKindScalar,
+		Scalar: skeldesc.ScalarBoolean,
+	})
+	text := new(skeldesc.Type{
+		Kind:   skeldesc.TypeKindScalar,
+		Scalar: skeldesc.ScalarString,
+	})
+	return []*skeldesc.Domain{
+		{
+			Data: []*skeldesc.Data{
+				{
+					SkelName: "app.Vars",
+					Members: []*skeldesc.Member{
+						{
+							Name: "enabled",
+							Type: boolean,
+						},
+						{
+							Name: "optional",
+							Type: new(skeldesc.Type{
+								Kind:     skeldesc.TypeKindScalar,
+								Scalar:   skeldesc.ScalarBoolean,
+								Nullable: true,
+							}),
+						},
+						{
+							Name: "feature",
+							Type: new(skeldesc.Type{
+								Kind:     skeldesc.TypeKindData,
+								SkelName: "app.Feature",
+							}),
+						},
+						{
+							Name: "config",
+							Type: new(skeldesc.Type{
+								Kind:     skeldesc.TypeKindConfig,
+								SkelName: "app.Config",
+							}),
+						},
+						{
+							Name: "toggles",
+							Type: new(skeldesc.Type{
+								Kind:  skeldesc.TypeKindMap,
+								Key:   text,
+								Value: boolean,
+							}),
+						},
+						{
+							Name: "groups",
+							Type: new(skeldesc.Type{
+								Kind:    skeldesc.TypeKindList,
+								Element: boolean,
+							}),
+						},
+						{
+							Name: "text",
+							Type: text,
+						},
+						{
+							Name: "missingType",
+							Type: new(skeldesc.Type{
+								Kind:     skeldesc.TypeKindData,
+								SkelName: "app.Missing",
+							}),
+						},
+					},
+				},
+				{
+					SkelName: "app.Feature",
+					Members: []*skeldesc.Member{
+						{
+							Name: "enabled",
+							Type: boolean,
+						},
+					},
+				},
+			},
+			Configs: []*skeldesc.Config{
+				{
+					SkelName: "app.Config",
+					Members: []*skeldesc.Member{
+						{
+							Name: "enabled",
+							Type: boolean,
+						},
+					},
+					Lifecycle: skeldesc.ConfigLifecycleEternal,
+				},
+			},
+			Generated: &skeldesc.GeneratedInfo{
+				CompilerVersion: "v99.0.0",
+			},
+		},
+	}
+}
+
+func TestVariableFlagDescriptorResolvesBooleanPaths(t *testing.T) {
+	descriptor := newVariableFlagDescriptor(variableFlagTestDescriptors())
+	for _, path := range []string{"enabled", "feature.enabled", "config.enabled", "toggles.anyKey", "optional"} {
+		t.Run(path, func(t *testing.T) {
+			kind := descriptor.variableType(path)
+			require.NotNil(t, kind)
+			require.Equal(t, skeldesc.TypeKindScalar, kind.Kind)
+			require.Equal(t, skeldesc.ScalarBoolean, kind.Scalar)
+		})
+	}
+	require.True(t, descriptor.variableType("optional").Nullable)
+	require.Equal(t, skeldesc.ScalarString, descriptor.variableType("text").Scalar)
+	for _, path := range []string{"unknown", "feature.unknown", "enabled.child", "groups.item", "missingType.enabled"} {
+		require.Nil(t, descriptor.variableType(path))
+	}
+	require.Nil(t, newVariableFlagDescriptor(nil).variableType("enabled"))
 }

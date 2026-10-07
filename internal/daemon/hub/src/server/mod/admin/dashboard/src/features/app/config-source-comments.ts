@@ -8,7 +8,7 @@ interface FieldSource {
   bindings?: ReadonlyArray<{ path: string; variable: string; reference: string; value: string; defaultUsed: boolean }>
 }
 
-// Sources are JSON Pointers into the seed entity, not schema field names.
+// Sources are JSON Pointers into the seed entity, not configuration field names.
 export function configSourceComment(name: string, sources: ReadonlyArray<FieldSource>) {
   const path = `/value/${name.replace(/~/g, '~0').replace(/\//g, '~1')}`
   const ancestor = sources.filter((source) => path === source.path || path.startsWith(`${source.path}/`))

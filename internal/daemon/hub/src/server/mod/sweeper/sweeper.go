@@ -20,7 +20,7 @@ type Sweeper struct {
 	RegistryCore       *core.RegistryCore       `inject:""`
 	PortalInstanceCore *core.PortalInstanceCore `inject:""`
 	PortalSiteCore     *core.PortalSiteCore     `inject:""`
-	SchemaRepo         core.SchemaRepo          `inject:""`
+	DescriptorRepo     core.DescriptorRepo      `inject:""`
 	Syncer             *syncer.Syncer           `inject:""`
 
 	stop context.CancelFunc
@@ -49,7 +49,7 @@ func (s *Sweeper) sweepExpiredLeases() {
 	if !s.RegistryCore.SweepExpiredLeases() {
 		return
 	}
-	s.refreshSchemas()
+	s.refreshDescriptors()
 	s.refreshPortalSiteRpcgwServices()
 }
 
@@ -59,8 +59,8 @@ func (s *Sweeper) sweepExpiredPortalInstances() {
 	s.PortalInstanceCore.SweepExpired()
 }
 
-func (s *Sweeper) refreshSchemas() {
-	s.Syncer.SyncSchemas(s.SchemaRepo.ListDomainSchemaViews())
+func (s *Sweeper) refreshDescriptors() {
+	s.Syncer.SyncDescriptors(s.DescriptorRepo.ListDomainDescriptorViews())
 }
 
 func (s *Sweeper) refreshPortalSiteRpcgwServices() {

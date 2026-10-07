@@ -68,9 +68,9 @@ function skeletonListItemDomId(kind: SkeletonKind, skelName: string) {
 function skeletonVersionDomId(
   kind: SkeletonKind,
   skelName: string,
-  schemaHash: string,
+  descriptorHash: string,
 ) {
-  return `skeleton-list-version:${kind}:${skelName}:${schemaHash}`
+  return `skeleton-list-version:${kind}:${skelName}:${descriptorHash}`
 }
 
 interface SkeletonItemVersionGroup {
@@ -110,7 +110,7 @@ function compareSkeletonItems(a: SkeletonItem, b: SkeletonItem) {
   if (a.isMain !== b.isMain) {
     return a.isMain ? -1 : 1
   }
-  return b.schemaHash.localeCompare(a.schemaHash)
+  return b.descriptorHash.localeCompare(a.descriptorHash)
 }
 
 function getSkeletonListBadge(item: SkeletonItem) {
@@ -147,7 +147,7 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
       const currentPathname = state.location.pathname
 
       if (!currentPathname.startsWith(prefix)) {
-        return { skelName: undefined, schemaHash: undefined }
+        return { skelName: undefined, descriptorHash: undefined }
       }
 
       const parts = currentPathname
@@ -160,12 +160,12 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
         skelName: encodedSkelName
           ? decodeURIComponent(encodedSkelName)
           : undefined,
-        schemaHash: parts[1] ? decodeURIComponent(parts[1]) : undefined,
+        descriptorHash: parts[1] ? decodeURIComponent(parts[1]) : undefined,
       }
     },
   })
   const routeSkelName = routeItem.skelName
-  const routeSchemaHash = routeItem.schemaHash
+  const routeDescriptorHash = routeItem.descriptorHash
   const [items, setItems] = React.useState<Array<SkeletonItem>>(
     () => skeletonItemsByKind.get(kind) ?? [],
   )
@@ -273,36 +273,36 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
     [items],
   )
   React.useEffect(() => {
-    if (!routeSkelName || !routeSchemaHash) {
+    if (!routeSkelName || !routeDescriptorHash) {
       return
     }
     const groupKey = `${kind}:${routeSkelName}`
     setExpandedVersionGroups((current) =>
       current[groupKey] ? current : { ...current, [groupKey]: true },
     )
-  }, [kind, routeSchemaHash, routeSkelName])
+  }, [kind, routeDescriptorHash, routeSkelName])
   React.useEffect(() => {
     if (!routeSkelName) {
       return
     }
     window.requestAnimationFrame(() => {
-      const targetId = routeSchemaHash
-        ? skeletonVersionDomId(kind, routeSkelName, routeSchemaHash)
+      const targetId = routeDescriptorHash
+        ? skeletonVersionDomId(kind, routeSkelName, routeDescriptorHash)
         : skeletonListItemDomId(kind, routeSkelName)
       document.getElementById(targetId)?.scrollIntoView({
         block: 'nearest',
         inline: 'nearest',
       })
     })
-  }, [filteredGroups, kind, routeSchemaHash, routeSkelName])
+  }, [filteredGroups, kind, routeDescriptorHash, routeSkelName])
   const selectedItem = React.useMemo(
     () =>
       items.find(
         (item) =>
           item.skelName === routeSkelName &&
-          (routeSchemaHash ? item.schemaHash === routeSchemaHash : item.isMain),
+          (routeDescriptorHash ? item.descriptorHash === routeDescriptorHash : item.isMain),
       ) ?? null,
-    [items, routeSchemaHash, routeSkelName],
+    [items, routeDescriptorHash, routeSkelName],
   )
   const selectedVersionGroup = React.useMemo(
     () =>
@@ -332,11 +332,11 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
 
   const navigateToItem = React.useCallback(
     (item: SkeletonItem, replace = false) => {
-      const schemaHash = itemRouteHash(item)
+      const descriptorHash = itemRouteHash(item)
       void navigate({
-        to: schemaHash ? routeConfig.detailVersionPath : routeConfig.detailPath,
-        params: schemaHash
-          ? { skelName: item.skelName, schemaHash }
+        to: descriptorHash ? routeConfig.detailVersionPath : routeConfig.detailPath,
+        params: descriptorHash
+          ? { skelName: item.skelName, descriptorHash }
           : { skelName: item.skelName },
         replace,
       })
@@ -346,13 +346,13 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
   const navigateToSkeletonItem = React.useCallback(
     (item: SkeletonItem, itemKind: SkeletonKind) => {
       const targetRouteConfig = skeletonRouteConfig[itemKind]
-      const schemaHash = itemRouteHash(item)
+      const descriptorHash = itemRouteHash(item)
       void navigate({
-        to: schemaHash
+        to: descriptorHash
           ? targetRouteConfig.detailVersionPath
           : targetRouteConfig.detailPath,
-        params: schemaHash
-          ? { skelName: item.skelName, schemaHash }
+        params: descriptorHash
+          ? { skelName: item.skelName, descriptorHash }
           : { skelName: item.skelName },
       })
     },
@@ -383,12 +383,12 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
     [navigateToSkeletonItem],
   )
   const navigateToActorDefinition = React.useCallback(
-    (skelName: string, schemaHash?: string) => {
+    (skelName: string, descriptorHash?: string) => {
       void navigate({
-        to: schemaHash
-          ? '/skeleton/actor/$skelName/$schemaHash'
+        to: descriptorHash
+          ? '/skeleton/actor/$skelName/$descriptorHash'
           : '/skeleton/actor/$skelName',
-        params: schemaHash ? { skelName, schemaHash } : { skelName },
+        params: descriptorHash ? { skelName, descriptorHash } : { skelName },
       })
     },
     [navigate],
@@ -484,8 +484,8 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
               const item = group.main
               const isSelected =
                 item.skelName === routeSkelName &&
-                (routeSchemaHash
-                  ? item.schemaHash === routeSchemaHash
+                (routeDescriptorHash
+                  ? item.descriptorHash === routeDescriptorHash
                   : item.isMain)
               const listBadge = getSkeletonListBadge(item)
               const groupKey = `${kind}:${group.skelName}`
@@ -567,14 +567,14 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
                         group.versions.some(
                           (version) =>
                             version.skelName === routeSkelName &&
-                            version.schemaHash === routeSchemaHash,
+                            version.descriptorHash === routeDescriptorHash,
                         ) && 'border-amber-300',
                       )}
                     >
                       {group.versions.map((version) => {
                         const versionSelected =
                           version.skelName === routeSkelName &&
-                          version.schemaHash === routeSchemaHash
+                          version.descriptorHash === routeDescriptorHash
                         const versionBadge = getSkeletonListBadge(version)
                         return (
                           <a
@@ -582,7 +582,7 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
                             id={skeletonVersionDomId(
                               kind,
                               version.skelName,
-                              version.schemaHash,
+                              version.descriptorHash,
                             )}
                             href={skeletonItemHref(version, kind)}
                             onClick={(event) => {
@@ -627,7 +627,7 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
                                 variant="outline"
                                 className="shrink-0 border-amber-300 bg-amber-50 text-amber-700"
                               >
-                                {version.schemaHash}
+                                {version.descriptorHash}
                               </Badge>
                             </div>
                             <span className="truncate font-mono text-xs text-muted-foreground">
@@ -674,7 +674,7 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
                       variant="outline"
                       className="border-amber-300 bg-amber-50 text-amber-700"
                     >
-                      {selectedItem.schemaHash}
+                      {selectedItem.descriptorHash}
                     </Badge>
                   ) : selectedVersionGroup &&
                     selectedVersionGroup.versions.length > 0 ? (
@@ -692,7 +692,7 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
                       >
                         {selectedVersionGroup.versions.map((version) => {
                           const versionSelected =
-                            version.schemaHash === selectedItem.schemaHash
+                            version.descriptorHash === selectedItem.descriptorHash
                           return (
                             <a
                               key={itemVersionKey(version)}
@@ -712,7 +712,7 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
                               )}
                             >
                               <span className="font-mono text-xs">
-                                {version.schemaHash}
+                                {version.descriptorHash}
                               </span>
                               {versionSelected ? (
                                 <Badge

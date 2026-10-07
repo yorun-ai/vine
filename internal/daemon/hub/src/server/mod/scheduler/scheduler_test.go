@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/skel"
 	taskspec "go.yorun.ai/vine/internal/core/task/spec"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 )
@@ -55,13 +55,13 @@ func (r *_SchedulerRegistryRepo) ListAppStatuses() []*core.AppStatus {
 	return r.statuses
 }
 
-type _SchedulerSchemaRepo struct {
-	core.SchemaRepo
+type _SchedulerDescriptorRepo struct {
+	core.DescriptorRepo
 
-	taskVersions []core.SchemaVersion[*skel.TaskSchema]
+	taskVersions []core.DescriptorVersion[*skeldesc.Task]
 }
 
-func (r *_SchedulerSchemaRepo) ListTaskSchemaVersions() []core.SchemaVersion[*skel.TaskSchema] {
+func (r *_SchedulerDescriptorRepo) ListTaskDescriptorVersions() []core.DescriptorVersion[*skeldesc.Task] {
 	return r.taskVersions
 }
 
@@ -153,15 +153,15 @@ func TestSchedulerPublishScheduleHandlesPublisherError(t *testing.T) {
 func TestSchedulerRejectsCronSchedulerTriggerWithArguments(t *testing.T) {
 	publisher := &_SchedulerTaskPublisher{}
 	target := newTestScheduler([]*core.AppStatus{newTestScheduledAppStatus("instance-1")}, publisher)
-	target.SchemaRepo = &_SchedulerSchemaRepo{taskVersions: []core.SchemaVersion[*skel.TaskSchema]{{
-		SchemaHash: "task-hash",
-		Schema: &skel.TaskSchema{
+	target.DescriptorRepo = &_SchedulerDescriptorRepo{taskVersions: []core.DescriptorVersion[*skeldesc.Task]{{
+		DescriptorHash: "task-hash",
+		Descriptor: &skeldesc.Task{
 			SkelName: "demo.booker.RebuildCatalogIndexTask",
-			Triggers: []*skel.TriggerSchema{{
+			Triggers: []*skeldesc.TaskTrigger{{
 				SkelName: "rebuild",
-				Arguments: []*skel.MemberSchema{{
+				Arguments: []*skeldesc.Member{{
 					Name: "full",
-					Type: &skel.TypeSchema{Kind: skel.TypeKindScalar, Scalar: skel.ScalarBool},
+					Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBoolean},
 				}},
 			}},
 		},
@@ -189,9 +189,9 @@ func TestSchedulerRejectsInvalidCronWithoutChangingExistingJobs(t *testing.T) {
 
 func TestSchedulerRefreshRecoveryContainsUnexpectedPanic(t *testing.T) {
 	target := &Scheduler{
-		RegistryRepo: &_PanickingSchedulerRegistryRepo{},
-		SchemaRepo:   &_SchedulerSchemaRepo{},
-		publisher:    &_SchedulerTaskPublisher{},
+		RegistryRepo:   &_PanickingSchedulerRegistryRepo{},
+		DescriptorRepo: &_SchedulerDescriptorRepo{},
+		publisher:      &_SchedulerTaskPublisher{},
 	}
 	target.DIInit()
 
@@ -223,7 +223,7 @@ func TestSchedulerBeforeAppStopWaitsForRefreshLoop(t *testing.T) {
 		}
 		target := &Scheduler{
 			RegistryRepo:    registryRepo,
-			SchemaRepo:      &_SchedulerSchemaRepo{},
+			DescriptorRepo:  &_SchedulerDescriptorRepo{},
 			publisher:       &_SchedulerTaskPublisher{},
 			refreshInterval: time.Millisecond,
 		}
@@ -281,11 +281,11 @@ func newTestSchedulerWithRegistry(registryRepo *_SchedulerRegistryRepo, publishe
 	target := &Scheduler{
 		CurrentApp:   meta.MustNewApp("vine.hub", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"),
 		RegistryRepo: registryRepo,
-		SchemaRepo: &_SchedulerSchemaRepo{taskVersions: []core.SchemaVersion[*skel.TaskSchema]{{
-			SchemaHash: "task-hash",
-			Schema: &skel.TaskSchema{
+		DescriptorRepo: &_SchedulerDescriptorRepo{taskVersions: []core.DescriptorVersion[*skeldesc.Task]{{
+			DescriptorHash: "task-hash",
+			Descriptor: &skeldesc.Task{
 				SkelName: "demo.booker.RebuildCatalogIndexTask",
-				Triggers: []*skel.TriggerSchema{{
+				Triggers: []*skeldesc.TaskTrigger{{
 					SkelName: "rebuild",
 				}},
 			},
@@ -301,8 +301,8 @@ func newTestScheduledAppStatus(instanceId string) *core.AppStatus {
 		Name:       "booker",
 		InstanceId: instanceId,
 		TaskRunners: []core.TaskRunnerRegistration{{
-			TaskSkelName: "demo.booker.RebuildCatalogIndexTask",
-			SchemaHash:   "task-hash",
+			TaskSkelName:   "demo.booker.RebuildCatalogIndexTask",
+			DescriptorHash: "task-hash",
 			CronSchedulers: []core.TaskRunnerCronScheduler{{
 				TriggerSkelName: "rebuild",
 				CronExpr:        "0 * * * *",
@@ -315,7 +315,7 @@ func newTestScheduleConfig() _ScheduleConfig {
 	return _ScheduleConfig{
 		AppName:         "booker",
 		TaskSkelName:    "demo.booker.RebuildCatalogIndexTask",
-		SchemaHash:      "task-hash",
+		DescriptorHash:  "task-hash",
 		TriggerSkelName: "rebuild",
 		CronExpr:        "0 * * * *",
 	}

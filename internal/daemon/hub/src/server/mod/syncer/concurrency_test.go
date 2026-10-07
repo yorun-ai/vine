@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"go.yorun.ai/vine/internal/core/skel"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 )
@@ -28,11 +28,11 @@ func TestSyncerSupportsConcurrentStateUpdates(t *testing.T) {
 				target.SyncPortalRule(&core.PortalRule{Id: id, Name: name})
 				target.SyncPortalCert(&core.PortalCert{Id: id, Name: name})
 
-				views := concurrentSchemaViews(name)
+				views := concurrentDescriptorViews(name)
 				if iteration%2 == 0 {
-					target.SyncSchemas(views)
+					target.SyncDescriptors(views)
 				} else {
-					target.WriteSchemas(views)
+					target.WriteDescriptors(views)
 				}
 			}
 		})
@@ -41,13 +41,13 @@ func TestSyncerSupportsConcurrentStateUpdates(t *testing.T) {
 	waitGroup.Wait()
 }
 
-func concurrentSchemaViews(name string) []core.DomainSchemaView {
-	return []core.DomainSchemaView{{
-		Actors: []core.SchemaVersion[*skel.ActorSchema]{{
-			Schema:     &skel.ActorSchema{SkelName: name, Hash: name},
-			SkelName:   name,
-			SchemaHash: name,
-			Main:       true,
+func concurrentDescriptorViews(name string) []core.DomainDescriptorView {
+	return []core.DomainDescriptorView{{
+		Actors: []core.DescriptorVersion[*skeldesc.Actor]{{
+			Descriptor:     &skeldesc.Actor{SkelName: name, Hash: name},
+			SkelName:       name,
+			DescriptorHash: name,
+			Main:           true,
 		}},
 	}}
 }

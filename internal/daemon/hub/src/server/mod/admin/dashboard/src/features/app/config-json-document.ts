@@ -1,10 +1,10 @@
 import JSON5 from 'json5'
-import type { ConfigSchemaType, ConfigSchemaData } from './config-structured-schema.ts'
+import type { ConfigDescriptorType, ConfigDescriptorData } from './config-structured-descriptor.ts'
 
 export interface ConfigJsonField {
   name: string
-  valueType?: ConfigSchemaType | null
-  dataTypes?: ReadonlyArray<ConfigSchemaData>
+  valueType?: ConfigDescriptorType | null
+  dataTypes?: ReadonlyArray<ConfigDescriptorData>
   sensitive?: boolean
   example?: string
   deprecated?: boolean

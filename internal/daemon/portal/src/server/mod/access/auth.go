@@ -7,10 +7,10 @@ import (
 	"strings"
 
 	"github.com/tidwall/gjson"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/mtls"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/util/vpre"
 )
@@ -28,7 +28,7 @@ type Auther struct {
 	Initiator meta.Initiator
 
 	endpointManager *epmgr.Manager
-	actorSchema     *skel.ActorSchema
+	actorDescriptor *skeldesc.Actor
 	identity        *mtls.Identity
 
 	actor      meta.Actor
@@ -36,8 +36,8 @@ type Auther struct {
 }
 
 func (o *Auther) auth(writeError _AuthErrorWriter, setActor _AuthActorSetter) bool {
-	vpre.CheckNotNil(o.actorSchema.AuthCredential, "actor auth credential schema is not configured")
-	vpre.CheckNotNil(o.actorSchema.AuthInfo, "actor auth info schema is not configured")
+	vpre.CheckNotNil(o.actorDescriptor.Auth.Credential, "actor auth credential descriptor is not configured")
+	vpre.CheckNotNil(o.actorDescriptor.Auth.Info, "actor auth info descriptor is not configured")
 
 	if !o.parseCredential(writeError) {
 		return false
@@ -45,8 +45,8 @@ func (o *Auther) auth(writeError _AuthErrorWriter, setActor _AuthActorSetter) bo
 
 	o.actor = meta.NewAuthenticatingActor()
 	authRequest := o.buildInvokeRequest(
-		o.actorSchema.AuthService.SkelName,
-		o.actorSchema.AuthMethod.SkelName,
+		o.actorDescriptor.Auth.Service.SkelName,
+		o.actorDescriptor.Auth.Method().SkelName,
 		map[string]any{"credential": o.credential},
 	)
 	if !o.executeAuthRequest(authRequest, writeError, setActor) {
@@ -63,7 +63,7 @@ func (o *Auther) parseCredential(writeError _AuthErrorWriter) bool {
 		return false
 	}
 	authorization := values[0]
-	credential, ok := parseCredential(o.actorSchema.AuthCredential, authorization)
+	credential, ok := parseCredential(o.actorDescriptor.Auth.Credential, authorization)
 	if !ok {
 		writeError(ex.Unauthorized, "bad credential")
 		return false
@@ -73,12 +73,12 @@ func (o *Auther) parseCredential(writeError _AuthErrorWriter) bool {
 	return true
 }
 
-func parseCredential(schema *skel.DataSchema, authorization string) (map[string]string, bool) {
+func parseCredential(descriptor *skeldesc.Data, authorization string) (map[string]string, bool) {
 	credentialNames := map[string]string{}
-	for _, member := range schema.Members {
+	for _, member := range descriptor.Members {
 		credentialNames[strings.ToLower(member.Name)] = member.Name
 	}
-	// skelc rejects empty actor credentials; keep this guard for stale schema data.
+	// skelc rejects empty actor credentials; keep this guard for stale descriptor data.
 	if len(credentialNames) == 0 {
 		return nil, false
 	}
@@ -103,7 +103,7 @@ func parseCredential(schema *skel.DataSchema, authorization string) (map[string]
 		credential[name] = value
 	}
 
-	for _, member := range schema.Members {
+	for _, member := range descriptor.Members {
 		if member.Type != nil && member.Type.Nullable {
 			continue
 		}
@@ -116,7 +116,7 @@ func parseCredential(schema *skel.DataSchema, authorization string) (map[string]
 }
 
 func (o *Auther) executeAuthRequest(authRequest *http.Request, writeError _AuthErrorWriter, setActor _AuthActorSetter) bool {
-	skelServiceName := o.actorSchema.AuthService.SkelName
+	skelServiceName := o.actorDescriptor.Auth.Service.SkelName
 	info, code, message, reason, ok := o.invoke[jsontext.Value](authRequest, skelServiceName, "auth", "auth failed")
 	if !ok {
 		var options []ex.ErrorOption
@@ -133,8 +133,8 @@ func (o *Auther) executeAuthRequest(authRequest *http.Request, writeError _AuthE
 	}
 
 	identifier := ""
-	if o.actorSchema.IdentifierField != "" {
-		value := gjson.GetBytes(info, o.actorSchema.IdentifierField)
+	if o.actorDescriptor.Auth.IdentifierField != "" {
+		value := gjson.GetBytes(info, o.actorDescriptor.Auth.IdentifierField)
 		if value.Type == gjson.Null {
 			writeError(ex.ServiceUnavailable, "bad auth response")
 			return false
@@ -144,35 +144,35 @@ func (o *Auther) executeAuthRequest(authRequest *http.Request, writeError _AuthE
 			identifier = value.Str
 		}
 	}
-	setActor(meta.NewAuthenticatedActorWithRawInfo(o.actorSchema.SkelName, identifier, o.actorSchema.AuthInfo.SkelName, info))
+	setActor(meta.NewAuthenticatedActorWithRawInfo(o.actorDescriptor.SkelName, identifier, o.actorDescriptor.Auth.Info.SkelName, info))
 	return true
 }
 
 // authenticate applies explicit modes without treating failed authentication as anonymous.
-func (o *Auther) authenticate(mode skel.AuthMode, writeError _AuthErrorWriter, setActor _AuthActorSetter) bool {
+func (o *Auther) authenticate(mode skeldesc.AuthMode, writeError _AuthErrorWriter, setActor _AuthActorSetter) bool {
 	switch mode {
-	case skel.AuthModeOff:
+	case skeldesc.AuthModeOff:
 		setActor(meta.NewAnonymousActor())
 		return true
-	case skel.AuthModeOptional, skel.AuthModeAnonymous:
+	case skeldesc.AuthModeOptional, skeldesc.AuthModeAnonymous:
 		if len(o.Request.Header.Values(headerAuthorization)) == 0 {
 			setActor(meta.NewAnonymousActor())
 			o.Request.Header.Del(headerAuthorization)
 			return true
 		}
-	case skel.AuthModeRequired:
+	case skeldesc.AuthModeRequired:
 	default:
 		writeError(ex.ServiceUnavailable, "unsupported auth mode")
 		return false
 	}
-	if !o.actorSchema.AuthEnabled {
+	if o.actorDescriptor.Auth == nil {
 		writeError(ex.ClientForbidden, "endpoint requires auth, but actor auth not enabled")
 		return false
 	}
 	if !o.auth(writeError, setActor) {
 		return false
 	}
-	if mode == skel.AuthModeAnonymous {
+	if mode == skeldesc.AuthModeAnonymous {
 		writeError(ex.ClientForbidden, "endpoint only allows anonymous access")
 		return false
 	}

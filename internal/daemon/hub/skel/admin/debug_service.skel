@@ -20,8 +20,8 @@ data ServiceDebugServiceItem {
     @desc("Service Skel name")
     serviceSkelName: string
 
-    @desc("Service schema hash")
-    schemaHash: string
+    @desc("Service descriptor hash")
+    descriptorHash: string
 
     api: bool
 
@@ -115,8 +115,8 @@ data ServiceDebugInvokeRequest {
     @desc("Service Skel name")
     serviceSkelName: string
 
-    @desc("Service schema hash")
-    schemaHash: string
+    @desc("Service descriptor hash")
+    descriptorHash: string
 
     @desc("Method Skel name")
     methodSkelName: string
@@ -176,8 +176,8 @@ api service ServiceDebugApiService {
             @desc("Service Skel name")
             serviceSkelName: string
 
-            @desc("Service schema hash")
-            schemaHash: string
+            @desc("Service descriptor hash")
+            descriptorHash: string
         }
 
         output list<ServiceDebugAppInstance>
@@ -189,8 +189,8 @@ api service ServiceDebugApiService {
             @desc("Service Skel name")
             serviceSkelName: string
 
-            @desc("Service schema hash")
-            schemaHash: string
+            @desc("Service descriptor hash")
+            descriptorHash: string
         }
 
         output list<ServiceDebugMethodItem>
@@ -202,8 +202,8 @@ api service ServiceDebugApiService {
             @desc("Service Skel name")
             serviceSkelName: string
 
-            @desc("Service schema hash")
-            schemaHash: string
+            @desc("Service descriptor hash")
+            descriptorHash: string
 
             @desc("Method Skel name")
             methodSkelName: string

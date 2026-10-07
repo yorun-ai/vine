@@ -17,8 +17,8 @@ data AppConfigItem {
     @desc("Configuration JSON")
     value: string
 
-    @desc("Configuration schema")
-    schema: AppConfigSchema?
+    @desc("Configuration descriptor")
+    descriptor: AppConfigDescriptor?
 
     @desc("Field sources; only returned by get, create and update")
     fieldSources: list<FieldSource>
@@ -38,16 +38,16 @@ data AppConfigListItem {
     @desc("Configuration lifecycle")
     lifecycle: string
 
-    @desc("Configuration schema name; empty when no schema matches")
-    schemaName: string
+    @desc("Configuration descriptor name; empty when no descriptor matches")
+    descriptorName: string
 
-    @desc("Configuration schema Skel name; empty when no schema matches")
-    schemaSkelName: string
+    @desc("Configuration descriptor Skel name; empty when no descriptor matches")
+    descriptorSkelName: string
 }
 
-@desc("Configuration schema fields")
-data AppConfigSchemaField {
-    valueType: AppConfigSchemaType?
+@desc("Configuration descriptor fields")
+data AppConfigDescriptorField {
+    valueType: AppConfigDescriptorType?
     sensitive: bool
     example: string
 
@@ -67,17 +67,17 @@ data AppConfigSchemaField {
     deprecatedReason: string
 
     @desc("Enumeration options list")
-    enumItems: list<AppConfigSchemaEnumItem>
+    enumItems: list<AppConfigDescriptorEnumItem>
 
     @desc("Map key enumeration options")
-    mapKeyEnumItems: list<AppConfigSchemaEnumItem>
+    mapKeyEnumItems: list<AppConfigDescriptorEnumItem>
 
     @desc("Map value enumeration options")
-    mapValueEnumItems: list<AppConfigSchemaEnumItem>
+    mapValueEnumItems: list<AppConfigDescriptorEnumItem>
 }
 
-@desc("Configuration schema enumeration options")
-data AppConfigSchemaEnumItem {
+@desc("Configuration descriptor enumeration options")
+data AppConfigDescriptorEnumItem {
     @desc("Enum option name")
     name: string
 
@@ -91,10 +91,10 @@ data AppConfigSchemaEnumItem {
     deprecatedReason: string
 }
 
-@desc("Configuration schema items")
-data AppConfigSchema {
+@desc("Configuration descriptor items")
+data AppConfigDescriptor {
     sensitive: bool
-    dataTypes: list<AppConfigSchemaData>
+    dataTypes: list<AppConfigDescriptorData>
 
     @desc("Configuration Skel name")
     skelName: string
@@ -115,7 +115,7 @@ data AppConfigSchema {
     lifecycle: string
 
     @desc("Configuration field list")
-    fields: list<AppConfigSchemaField>
+    fields: list<AppConfigDescriptorField>
 }
 
 @desc("Configuration update parameters")
@@ -189,19 +189,19 @@ api service AppConfigApiService {
 }
 
 @desc("Structured configuration value type")
-data AppConfigSchemaType {
+data AppConfigDescriptorType {
     kind: string
     nullable: bool
     name: string
-    typeArguments: list<AppConfigSchemaType>
-    element: AppConfigSchemaType?
-    key: AppConfigSchemaType?
-    value: AppConfigSchemaType?
-    enumItems: list<AppConfigSchemaEnumItem>
+    typeArguments: list<AppConfigDescriptorType>
+    element: AppConfigDescriptorType?
+    key: AppConfigDescriptorType?
+    value: AppConfigDescriptorType?
+    enumItems: list<AppConfigDescriptorEnumItem>
 }
 
 @desc("Reusable data declaration reachable from a configuration")
-data AppConfigSchemaData {
+data AppConfigDescriptorData {
     name: string
     skelName: string
     description: string
@@ -209,5 +209,5 @@ data AppConfigSchemaData {
     deprecatedReason: string
     sensitive: bool
     typeParameters: list<string>
-    fields: list<AppConfigSchemaField>
+    fields: list<AppConfigDescriptorField>
 }

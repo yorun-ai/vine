@@ -19,9 +19,10 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	skeldesc "go.yorun.ai/skel/descriptor"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/infra/rdb"
 	"go.yorun.ai/vine/internal/core/logger"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
@@ -30,7 +31,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/schema"
+	repodescriptor "go.yorun.ai/vine/internal/daemon/hub/src/server/repo/descriptor"
 	"go.yorun.ai/vine/util/vcode"
 	"go.yorun.ai/vine/util/vfile"
 	"gorm.io/gorm"
@@ -40,8 +41,8 @@ func TestSeederLoadsYAMLIntoSQLiteRepos(t *testing.T) {
 	for _, inline := range []bool{false, true} {
 		t.Run(fmt.Sprintf("inline=%t", inline), func(t *testing.T) {
 			configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, watchServer := newTestSeederRepos(t)
-			entryRepo.SchemaRepo.SaveDomainSchemas("demo", "instance", []*skel.DomainSchema{{
-				Domain: "demo", Hash: "mounted-web", Webs: []*skel.WebSchema{{SkelName: "demo.AdminWeb", MountPath: "/mounted"}},
+			entryRepo.DescriptorRepo.SaveDomainDescriptors("demo", "instance", []*skeldesc.Domain{{
+				Name: "demo", Hash: "mounted-web", Webs: []*skeldesc.Web{{SkelName: "demo.AdminWeb", MountPath: "/mounted", AuthMode: skeldesc.AuthModeRequired}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			}})
 			seedPath := filepath.Join(t.TempDir(), "hub.yaml")
 			seedYAML := `
@@ -784,10 +785,10 @@ func newTestSeederRepos(t *testing.T) (*repo.AppConfigRepo, *repo.PortalRuleRepo
 	t.Cleanup(watchServer.AfterAppStop)
 
 	return &repo.AppConfigRepo{
-		Dao:        &model.AppConfigDao{Dao: rdb.NewDao[*model.AppConfig](gdb)},
-		SchemaRepo: new(schema.SchemaRepo),
-		Syncer:     testSyncer(watchServer),
-		Access:     new(configaccess.Access),
+		Dao:            &model.AppConfigDao{Dao: rdb.NewDao[*model.AppConfig](gdb)},
+		DescriptorRepo: new(repodescriptor.DescriptorRepo),
+		Syncer:         testSyncer(watchServer),
+		Access:         new(configaccess.Access),
 	}, &repo.PortalRuleRepo{
 		Dao:             &model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](gdb)},
 		Syncer:          testSyncer(watchServer),
@@ -798,10 +799,10 @@ func newTestSeederRepos(t *testing.T) (*repo.AppConfigRepo, *repo.PortalRuleRepo
 		Syncer: testSyncer(watchServer),
 		Access: new(configaccess.Access),
 	}, &repo.PortalSiteRepo{
-		Dao:        &model.PortalSiteDao{Dao: rdb.NewDao[*model.PortalSite](gdb)},
-		SchemaRepo: new(schema.SchemaRepo),
-		Syncer:     testSyncer(watchServer),
-		Access:     new(configaccess.Access),
+		Dao:            &model.PortalSiteDao{Dao: rdb.NewDao[*model.PortalSite](gdb)},
+		DescriptorRepo: new(repodescriptor.DescriptorRepo),
+		Syncer:         testSyncer(watchServer),
+		Access:         new(configaccess.Access),
 	}, &repo.MetadataRepo{
 		Dao: &model.MetadataDao{Dao: rdb.NewDao[*model.Metadata](gdb)},
 	}, watchServer
@@ -824,7 +825,7 @@ func saveTestPortalRule(t *testing.T, ruleRepo *repo.PortalRuleRepo, rule *core.
 
 // newTestSiteCore builds a site core with the repositories Hub injects.
 func newTestSiteCore(siteRepo core.PortalSiteRepo) *core.PortalSiteCore {
-	return &core.PortalSiteCore{PortalSiteRepo: siteRepo, SchemaRepo: new(schema.SchemaRepo)}
+	return &core.PortalSiteCore{PortalSiteRepo: siteRepo, DescriptorRepo: new(repodescriptor.DescriptorRepo)}
 }
 
 // newTestRuleCore builds a rule core with the chosen rule repository and the
@@ -944,7 +945,7 @@ func TestSeederPersistsSourcesByEntityAndClearsOnRemoval(t *testing.T) {
 	item, ok := configRepo.GetByName("second")
 	require.True(t, ok)
 	require.Equal(t, `"resolved"`, item.Value)
-	require.Equal(t, core.FieldSource{Source: "app/default", Define: "domain/booker", Override: "app/default", Variables: []string{"value"}, Template: new(skel.JSON(`"${value}"`)), Bindings: []core.FieldSourceBinding{{Variable: "value", Reference: "${value}", Value: skel.JSON(`"\"resolved\""`)}}}, item.FieldSources["/value"])
+	require.Equal(t, core.FieldSource{Source: "app/default", Define: "domain/booker", Override: "app/default", Variables: []string{"value"}, Template: new(skeltype.JSON(`"${value}"`)), Bindings: []core.FieldSourceBinding{{Variable: "value", Reference: "${value}", Value: skeltype.JSON(`"\"resolved\""`)}}}, item.FieldSources["/value"])
 	other, ok := configRepo.GetByName("first")
 	require.True(t, ok)
 	require.Empty(t, other.FieldSources)
@@ -989,7 +990,7 @@ fields:
 	require.True(t, ok)
 	require.JSONEq(t, `{"accessTokenTTL":"2h","refreshTokenTTL":"168h","nested":{"enabled":false}}`, item.Value)
 	require.Equal(t, core.FieldSources{
-		"/value/accessTokenTTL":  {Source: "profile/dev", Define: "domain/user", Override: "profile/dev", Variables: []string{"ttl"}, Template: new(skel.JSON(`"${ttl}"`)), Bindings: []core.FieldSourceBinding{{Variable: "ttl", Reference: "${ttl}", Value: skel.JSON(`"2h"`)}}},
+		"/value/accessTokenTTL":  {Source: "profile/dev", Define: "domain/user", Override: "profile/dev", Variables: []string{"ttl"}, Template: new(skeltype.JSON(`"${ttl}"`)), Bindings: []core.FieldSourceBinding{{Variable: "ttl", Reference: "${ttl}", Value: skeltype.JSON(`"2h"`)}}},
 		"/value/refreshTokenTTL": {Source: "domain/user", Define: "domain/user"},
 		"/value/nested":          {Source: "app/default", Define: "domain/user", Override: "app/default"},
 	}, item.FieldSources)

@@ -8,11 +8,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/utilfortest/watchtest"
@@ -60,19 +60,15 @@ func TestCheckActorPermissionsRejectsMissingCodeResult(t *testing.T) {
 		Trace:           meta.InitialTrace(),
 		Initiator:       initiator,
 		endpointManager: manager,
-		actorSchema: &skel.ActorSchema{
-			PermEnabled: true,
-			PermService: &skel.ServiceSchema{SkelName: "app.UserActorPermissionService"},
-			PermMethod:  &skel.MethodSchema{SkelName: "checkCodes"},
-		},
-		Server: serverApp,
+		actorDescriptor: &skeldesc.Actor{Permission: &skeldesc.ActorPermission{Service: &skeldesc.Service{SkelName: "app.UserActorPermissionService", Methods: []*skeldesc.Method{{SkelName: "checkCodes", Name: "checkCodes", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired}}, AuthMode: skeldesc.AuthModeRequired}, MethodName: "checkCodes"}},
+		Server:          serverApp,
 	}
 
-	ok := operation.checkActorPermissions(&skel.PermExpr{
-		Mode: skel.PermRequireModeAll,
-		Children: []*skel.PermExpr{
-			{Mode: skel.PermRequireModeCode, Code: "app.User:read"},
-			{Mode: skel.PermRequireModeCode, Code: "app.User:manage"},
+	ok := operation.checkActorPermissions(&skeldesc.PermissionExpression{
+		Mode: skeldesc.PermissionRequireModeAll,
+		Children: []*skeldesc.PermissionExpression{
+			{Mode: skeldesc.PermissionRequireModeCode, Code: "app.User:read"},
+			{Mode: skeldesc.PermissionRequireModeCode, Code: "app.User:manage"},
 		},
 	})
 	if ok {
@@ -110,11 +106,11 @@ func TestExtractCheckParamsSupportsCborRequestBody(t *testing.T) {
 		}),
 	}
 
-	params, ok := operation.extractCheckParams(&skel.PermCheckInvocation{
+	params, ok := operation.extractCheckParams(&skeldesc.PermissionCheckInvocation{
 		CodeArgumentName: "code",
 		ResourceSkelName: "app.User",
 		ActionName:       "update",
-		Arguments: []*skel.PermCheckArgument{
+		Arguments: []*skeldesc.PermissionCheckArgument{
 			{Name: "userId", JsonPath: "update.userId"},
 			{Name: "itemIds", JsonPath: "items[*].id"},
 		},
@@ -151,11 +147,11 @@ func TestExtractCheckParamsSupportsJsonWildcardPath(t *testing.T) {
 		}),
 	}
 
-	params, ok := operation.extractCheckParams(&skel.PermCheckInvocation{
+	params, ok := operation.extractCheckParams(&skeldesc.PermissionCheckInvocation{
 		CodeArgumentName: "code",
 		ResourceSkelName: "app.User",
 		ActionName:       "update",
-		Arguments: []*skel.PermCheckArgument{
+		Arguments: []*skeldesc.PermissionCheckArgument{
 			{Name: "itemIds", JsonPath: "items[*].id"},
 		},
 	})
@@ -184,11 +180,11 @@ func TestExtractCheckParamsRejectsTrailingWildcardPath(t *testing.T) {
 		}),
 	}
 
-	_, ok := operation.extractCheckParams(&skel.PermCheckInvocation{
+	_, ok := operation.extractCheckParams(&skeldesc.PermissionCheckInvocation{
 		CodeArgumentName: "code",
 		ResourceSkelName: "app.User",
 		ActionName:       "update",
-		Arguments: []*skel.PermCheckArgument{
+		Arguments: []*skeldesc.PermissionCheckArgument{
 			{Name: "items", JsonPath: "items[*]"},
 		},
 	})
@@ -213,7 +209,7 @@ func newAccessTestEndpointManager(t *testing.T, serviceName string, endpoint str
 	return manager
 }
 
-func TestExtractCheckParamsUsesSchemaCodeArgumentName(t *testing.T) {
+func TestExtractCheckParamsUsesDescriptorCodeArgumentName(t *testing.T) {
 	for _, mediaType := range []string{rpchttp.ContentTypeJson, rpchttp.ContentTypeCbor} {
 		for _, name := range []string{"code", "code1"} {
 			t.Run(mediaType+"/"+name, func(t *testing.T) {
@@ -229,9 +225,9 @@ func TestExtractCheckParamsUsesSchemaCodeArgumentName(t *testing.T) {
 				request := httptest.NewRequest(http.MethodPost, "/rpc/invoke/app.UserService/update", nil)
 				request.Header.Set(rpchttp.HeaderContentType, mediaType)
 				operation := &RpcOperation{Request: request, requestBody: encoded}
-				params, ok := operation.extractCheckParams(&skel.PermCheckInvocation{
+				params, ok := operation.extractCheckParams(&skeldesc.PermissionCheckInvocation{
 					ResourceSkelName: "app.User", ActionName: "update", CodeArgumentName: name,
-					Arguments: []*skel.PermCheckArgument{{Name: businessName, JsonPath: businessName}},
+					Arguments: []*skeldesc.PermissionCheckArgument{{Name: businessName, JsonPath: businessName}},
 				})
 				if !ok || len(params) != 2 || params[name] != "app.User:update" || params[businessName] != "business-value" {
 					t.Fatalf("unexpected check arguments: ok=%v params=%#v", ok, params)
@@ -242,7 +238,7 @@ func TestExtractCheckParamsUsesSchemaCodeArgumentName(t *testing.T) {
 }
 
 func TestCheckPreservesPermissionErrorReason(t *testing.T) {
-	for _, mode := range []skel.PermRequireMode{skel.PermRequireModeCode, skel.PermRequireModeCheck} {
+	for _, mode := range []skeldesc.PermissionRequireMode{skeldesc.PermissionRequireModeCode, skeldesc.PermissionRequireModeCheck} {
 		t.Run(string(mode), func(t *testing.T) {
 			const serviceName = "app.PermissionService"
 			server := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -259,20 +255,16 @@ func TestCheckPreservesPermissionErrorReason(t *testing.T) {
 			setTestRequestHeaders(t, request)
 			recorder := httptest.NewRecorder()
 			operation := &RpcOperation{
-				Auther:        authOperationForTest(t, request, recorder),
-				Server:        testServerApp(),
-				serviceSchema: &skel.ServiceSchema{},
-				methodSchema: &skel.MethodSchema{Require: &skel.PermRequire{Expr: &skel.PermExpr{
+				Auther:            authOperationForTest(t, request, recorder),
+				Server:            testServerApp(),
+				serviceDescriptor: &skeldesc.Service{AuthMode: skeldesc.AuthModeRequired},
+				methodDescriptor: &skeldesc.Method{EffectiveRequire: &skeldesc.PermissionRequire{Expression: &skeldesc.PermissionExpression{
 					Mode: mode, Code: "app.User:update",
-					Check: &skel.PermCheckInvocation{CodeArgumentName: "code", ServiceSkelName: serviceName, MethodSkelName: "check", ResourceSkelName: "app.User", ActionName: "update"},
-				}}},
+					Check: &skeldesc.PermissionCheckInvocation{CodeArgumentName: "code", ServiceSkelName: serviceName, MethodSkelName: "check", ResourceSkelName: "app.User", ActionName: "update"},
+				}}, Name: "Call", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired},
 			}
 			operation.endpointManager = manager
-			operation.actorSchema = &skel.ActorSchema{
-				PermEnabled: true,
-				PermService: &skel.ServiceSchema{SkelName: serviceName},
-				PermMethod:  &skel.MethodSchema{SkelName: "checkCodes"},
-			}
+			operation.actorDescriptor = &skeldesc.Actor{Permission: &skeldesc.ActorPermission{Service: &skeldesc.Service{SkelName: serviceName, Methods: []*skeldesc.Method{{SkelName: "checkCodes", Name: "checkCodes", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired}}, AuthMode: skeldesc.AuthModeRequired}, MethodName: "checkCodes"}}
 			require.False(t, operation.Check())
 			assertRpcAuthError(t, recorder, ex.PermissionDenied, "tenant suspended")
 			var body struct {

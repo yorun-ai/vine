@@ -80,7 +80,7 @@ test('type links target known definitions only, including nested collection type
   assert.equal(links[0].from < document.doc.indexOf('description stays plain'), true)
 })
 
-test('schema-free documents preserve raw text without synthetic keys or comments', () => {
+test('documents without a descriptor preserve raw text without synthetic keys or comments', () => {
   for (const value of ['{"name":"demo"}', '[1,2]', 'null', '"string"', '{unfinished']) {
     const document = createConfigJsonDocument(value, [], false)
     assert.equal(document.doc, value)
@@ -89,14 +89,14 @@ test('schema-free documents preserve raw text without synthetic keys or comments
   }
 })
 
-test('schema-free JSON5 accepts key edits and converts to standard JSON', () => {
+test('JSON5 without a descriptor accepts key edits and converts to standard JSON', () => {
   assert.deepEqual(JSON.parse(normalizeConfigJson("{ // config\n renamed: 'value', added: [1,2,], }")), {
     renamed: 'value', added: [1, 2],
   })
   assert.throws(() => normalizeConfigJson('{number: Infinity}'))
 })
 
-test('schema-free syntax errors have bounded positions and clear after correction', () => {
+test('syntax errors without a descriptor have bounded positions and clear after correction', () => {
   for (const source of ['', '{', '{\n value: "unterminated\n}']) {
     const errors = getFreeConfigJsonErrors(source)
     assert.equal(errors.length, 1)

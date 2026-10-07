@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"go.yorun.ai/vine/buildinfo"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.yorun.ai/vine/buildinfo"
 	"go.yorun.ai/vine/infra/rdb"
 	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/di"
@@ -33,7 +33,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo"
 	repodb "go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/schema"
+	repodescriptor "go.yorun.ai/vine/internal/daemon/hub/src/server/repo/descriptor"
 )
 
 var (
@@ -274,15 +274,15 @@ func TestHubAppBindCommonProvidesAppConfigRepoForPG(t *testing.T) {
 	assert.IsType(t, &repo.AppConfigRepo{Access: new(configaccess.Access)}, configRepo)
 }
 
-func TestHubAppBindCommonProvidesSchemaRepo(t *testing.T) {
-	// The schema repo binding is independent of the run mode, so the inproc and
+func TestHubAppBindCommonProvidesDescriptorRepo(t *testing.T) {
+	// The descriptor repo binding is independent of the run mode, so the inproc and
 	// non-inproc modes do not need separate expectations.
-	schemaRepo := newHubBoundSchemaRepo(t, &HubApp{
+	descriptorRepo := newHubBoundDescriptorRepo(t, &HubApp{
 		InprocFlag: &internalapp.InternalInprocFlag{},
 		Flag:       &flag.Flag{Store: flag.StoreSQLite},
 	})
 
-	assert.IsType(t, &schema.SchemaRepo{}, schemaRepo)
+	assert.IsType(t, &repodescriptor.DescriptorRepo{}, descriptorRepo)
 }
 
 // TestInitializerResolvesFromCommonBindings is a composition smoke test: the
@@ -370,7 +370,7 @@ func newHubBoundAppConfigRepo(t *testing.T, spec *HubApp) core.AppConfigRepo {
 	return configRepo
 }
 
-func newHubBoundSchemaRepo(t *testing.T, spec *HubApp) core.SchemaRepo {
+func newHubBoundDescriptorRepo(t *testing.T, spec *HubApp) core.DescriptorRepo {
 	t.Helper()
 
 	injector := di.NewInjector(
@@ -383,7 +383,7 @@ func newHubBoundSchemaRepo(t *testing.T, spec *HubApp) core.SchemaRepo {
 		},
 	)
 
-	return injector.Get(di.T[core.SchemaRepo]()).Interface().(core.SchemaRepo)
+	return injector.Get(di.T[core.DescriptorRepo]()).Interface().(core.DescriptorRepo)
 }
 
 func TestHubConfigurationLifecycle(t *testing.T) {
@@ -465,7 +465,7 @@ func TestHubConfigurationLifecycle(t *testing.T) {
 				module.RegistryCore.Register(core.AppRegistration{Name: "demo", InstanceId: "test", Version: "test"})
 			})
 			require.NotEmpty(t, module.RegistryCore.RegistryRepo.ListAppStatuses())
-			require.NotEmpty(t, module.SchemaRepo.ListDomainSchemaViews())
+			require.NotEmpty(t, module.DescriptorRepo.ListDomainDescriptorViews())
 			service := injector.Get(di.T[*adminimpl.AdminApiServiceServerImpl]()).Interface().(*adminimpl.AdminApiServiceServerImpl)
 			require.Equal(t, !persistent, service.ReadOnly())
 		})

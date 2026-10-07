@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	skeltype "go.yorun.ai/skel/types"
 	internalapp "go.yorun.ai/vine/internal/app"
-	"go.yorun.ai/vine/internal/core/skel"
 	controlskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
@@ -66,7 +66,7 @@ func TestPortalStatusServiceListsWhatPortalRegistered(t *testing.T) {
 
 	assert.Empty(t, service.List())
 
-	instanceId := skel.NewUUID(uuid.MustParse("11111111-1111-1111-1111-111111111111"))
+	instanceId := skeltype.NewUUID(uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 	registry.Register(controlskeled.PortalRegistration{
 		InstanceId: instanceId,
 		Version:    "1.2.3",

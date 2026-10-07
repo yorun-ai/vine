@@ -286,9 +286,9 @@ func (m *PortalRuleCore) save(rule PortalRule) *PortalRule {
 // Conflicts returns the requests more than one published rule matches, once the
 // Web mount path of each site decides its prefix. Portal resolves matching rules
 // by their longest path prefix, so two rules that match identically have no
-// defined order. Hub applies a seed before applications register their schemas,
+// defined order. Hub applies a seed before applications register their descriptors,
 // so no write can answer this question: only a caller that reads the registered
-// schemas can report what Hub cannot resolve on its own.
+// descriptors can report what Hub cannot resolve on its own.
 func (m *PortalRuleCore) Conflicts() []PortalRuleConflict {
 	type _Match struct {
 		name string
@@ -312,7 +312,10 @@ func (m *PortalRuleCore) Conflicts() []PortalRuleConflict {
 		key := portalEntryMatchKey(*entry, matchPathPrefix)
 		matchedRule, found := matched[key]
 		if !found {
-			matched[key] = _Match{name: rule.Name, id: rule.Id}
+			matched[key] = _Match{
+				name: rule.Name,
+				id:   rule.Id,
+			}
 			continue
 		}
 		published, suppressed := PortalRuleConflictWinner(rule.Name, matchedRule.name)
@@ -330,7 +333,7 @@ func (m *PortalRuleCore) Conflicts() []PortalRuleConflict {
 	return conflicts
 }
 
-// ruleSite returns the site a rule targets, with the Web mount path its schema
+// ruleSite returns the site a rule targets, with the Web mount path its descriptor
 // declares.
 func (m *PortalRuleCore) ruleSite(rule *PortalRule) *PortalSite {
 	if rule.RouteType != PortalRuleRouteTypeSite || rule.RouteSiteName == "" {

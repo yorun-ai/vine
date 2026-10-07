@@ -3,8 +3,8 @@ package access
 import (
 	"testing"
 
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/ex"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/util/vcode"
 )
 
@@ -74,21 +74,21 @@ func TestCborGetByPathRejectsUnsupportedWildcardPaths(t *testing.T) {
 }
 
 func TestEvalPermExprKeepsAnyBranchesSeparate(t *testing.T) {
-	ok, _, _, _ := evalPermExpr(&skel.PermExpr{
-		Mode: skel.PermRequireModeAny,
-		Children: []*skel.PermExpr{
-			{Mode: skel.PermRequireModeCode, Code: "app.User:manage"},
+	ok, _, _, _ := evalPermExpr(&skeldesc.PermissionExpression{
+		Mode: skeldesc.PermissionRequireModeAny,
+		Children: []*skeldesc.PermissionExpression{
+			{Mode: skeldesc.PermissionRequireModeCode, Code: "app.User:manage"},
 			{
-				Mode: skel.PermRequireModeAll,
-				Children: []*skel.PermExpr{
-					{Mode: skel.PermRequireModeCode, Code: "app.User:update"},
+				Mode: skeldesc.PermissionRequireModeAll,
+				Children: []*skeldesc.PermissionExpression{
+					{Mode: skeldesc.PermissionRequireModeCode, Code: "app.User:update"},
 				},
 			},
 		},
 	}, map[string]bool{
 		"app.User:manage": false,
 		"app.User:update": true,
-	}, func(*skel.PermCheckInvocation) (bool, ex.Code, string, string) {
+	}, func(*skeldesc.PermissionCheckInvocation) (bool, ex.Code, string, string) {
 		t.Fatal("checkFunc should not be called")
 		return false, ex.ServiceUnavailable, "", ""
 	})
@@ -97,65 +97,24 @@ func TestEvalPermExprKeepsAnyBranchesSeparate(t *testing.T) {
 	}
 }
 
-func TestReorderPermExprDelaysChecksInSameGroup(t *testing.T) {
-	expr := reorderPermExpr(&skel.PermExpr{
-		Mode: skel.PermRequireModeAny,
-		Children: []*skel.PermExpr{
-			{Mode: skel.PermRequireModeCheck, Check: &skel.PermCheckInvocation{CheckName: "byOwner"}},
-			{
-				Mode: skel.PermRequireModeAll,
-				Children: []*skel.PermExpr{
-					{Mode: skel.PermRequireModeCheck, Check: &skel.PermCheckInvocation{CheckName: "byTenant"}},
-					{Mode: skel.PermRequireModeCode, Code: "app.User:update"},
-				},
-			},
-			{Mode: skel.PermRequireModeCode, Code: "app.User:manage"},
-		},
-	})
-
-	if expr.Children[0].Mode != skel.PermRequireModeCode || expr.Children[0].Code != "app.User:manage" {
-		t.Fatalf("first child = %#v, want manage code", expr.Children[0])
-	}
-	if expr.Children[1].Mode != skel.PermRequireModeAll {
-		t.Fatalf("second child mode = %s, want all", expr.Children[1].Mode)
-	}
-	if expr.Children[2].Mode != skel.PermRequireModeCheck {
-		t.Fatalf("third child mode = %s, want check", expr.Children[2].Mode)
-	}
-	if expr.Children[1].Children[0].Mode != skel.PermRequireModeCode {
-		t.Fatalf("nested first child mode = %s, want code", expr.Children[1].Children[0].Mode)
-	}
-
-	ok, _, _, _ := evalPermExpr(expr, map[string]bool{
-		"app.User:manage": true,
-		"app.User:update": true,
-	}, func(*skel.PermCheckInvocation) (bool, ex.Code, string, string) {
-		t.Fatal("checkFunc should not be called after code branch succeeds")
-		return false, ex.ServiceUnavailable, "", ""
-	})
-	if !ok {
-		t.Fatalf("evalPermExpr() ok = false, want true")
-	}
-}
-
 func TestEvalPermExprPreservesSelectedFailureReason(t *testing.T) {
-	check := func(name string) *skel.PermExpr {
-		return &skel.PermExpr{Mode: skel.PermRequireModeCheck, Check: &skel.PermCheckInvocation{CheckName: name}}
+	check := func(name string) *skeldesc.PermissionExpression {
+		return &skeldesc.PermissionExpression{Mode: skeldesc.PermissionRequireModeCheck, Check: &skeldesc.PermissionCheckInvocation{CheckName: name}}
 	}
 	for _, tc := range []struct {
 		name        string
-		expr        *skel.PermExpr
+		expr        *skeldesc.PermissionExpression
 		wantOK      bool
 		wantMessage string
 		wantReason  string
 	}{
-		{"all", &skel.PermExpr{Mode: skel.PermRequireModeAll, Children: []*skel.PermExpr{check("first"), check("last")}}, false, "first", "first_reason"},
-		{"any", &skel.PermExpr{Mode: skel.PermRequireModeAny, Children: []*skel.PermExpr{check("first"), check("last")}}, false, "last", "last_reason"},
-		{"any succeeds", &skel.PermExpr{Mode: skel.PermRequireModeAny, Children: []*skel.PermExpr{check("first"), {Mode: skel.PermRequireModeCode, Code: "allowed"}}}, true, "", ""},
-		{"any ends with code denial", &skel.PermExpr{Mode: skel.PermRequireModeAny, Children: []*skel.PermExpr{check("first"), {Mode: skel.PermRequireModeCode, Code: "denied"}}}, false, "permission denied: denied", ""},
+		{"all", &skeldesc.PermissionExpression{Mode: skeldesc.PermissionRequireModeAll, Children: []*skeldesc.PermissionExpression{check("first"), check("last")}}, false, "first", "first_reason"},
+		{"any", &skeldesc.PermissionExpression{Mode: skeldesc.PermissionRequireModeAny, Children: []*skeldesc.PermissionExpression{check("first"), check("last")}}, false, "last", "last_reason"},
+		{"any succeeds", &skeldesc.PermissionExpression{Mode: skeldesc.PermissionRequireModeAny, Children: []*skeldesc.PermissionExpression{check("first"), {Mode: skeldesc.PermissionRequireModeCode, Code: "allowed"}}}, true, "", ""},
+		{"any ends with code denial", &skeldesc.PermissionExpression{Mode: skeldesc.PermissionRequireModeAny, Children: []*skeldesc.PermissionExpression{check("first"), {Mode: skeldesc.PermissionRequireModeCode, Code: "denied"}}}, false, "permission denied: denied", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			ok, code, message, reason := evalPermExpr(tc.expr, map[string]bool{"allowed": true}, func(check *skel.PermCheckInvocation) (bool, ex.Code, string, string) {
+			ok, code, message, reason := evalPermExpr(tc.expr, map[string]bool{"allowed": true}, func(check *skeldesc.PermissionCheckInvocation) (bool, ex.Code, string, string) {
 				return false, ex.PermissionDenied, check.CheckName, check.CheckName + "_reason"
 			})
 			wantCode := ex.PermissionDenied

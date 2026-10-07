@@ -8,8 +8,9 @@ import (
 	"uuid"
 
 	"cloud.google.com/go/civil"
+	skeldesc "go.yorun.ai/skel/descriptor"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/core/ex"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vcode"
 )
@@ -17,113 +18,113 @@ import (
 var debugDefaultTime = time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
 
 type _DebugDefaultBuilder struct {
-	SchemaRepo core.SchemaRepo
+	DescriptorRepo core.DescriptorRepo
 }
 
-func (b _DebugDefaultBuilder) defaultActorInfoJson(actorSkelName string) skel.JSON {
-	actor := b.findActorSchema(actorSkelName)
-	if actor.AuthInfo == nil {
-		return skel.JSON("{}")
+func (b _DebugDefaultBuilder) defaultActorInfoJson(actorSkelName string) skeltype.JSON {
+	actor := b.findActorDescriptor(actorSkelName)
+	if actor.Auth == nil {
+		return skeltype.JSON("{}")
 	}
-	return skel.JSON(debugPrettyJson(b.defaultDataValue(actor.AuthInfo)))
+	return skeltype.JSON(debugPrettyJson(b.defaultDataValue(actor.Auth.Info)))
 }
 
-func (b _DebugDefaultBuilder) defaultParamsJson(method *skel.MethodSchema) skel.JSON {
+func (b _DebugDefaultBuilder) defaultParamsJson(method *skeldesc.Method) skeltype.JSON {
 	if strings.TrimSpace(method.Example) != "" {
-		return skel.JSON(debugPrettyJson(debugParseJson(method.Example)))
+		return skeltype.JSON(debugPrettyJson(debugParseJson(method.Example)))
 	}
 	params := map[string]any{}
 	for _, argument := range method.Arguments {
 		params[argument.Name] = b.defaultMemberValue(argument)
 	}
-	return skel.JSON(debugPrettyJson(params))
+	return skeltype.JSON(debugPrettyJson(params))
 }
 
-func (b _DebugDefaultBuilder) defaultArgumentsJson(trigger *skel.TriggerSchema) skel.JSON {
+func (b _DebugDefaultBuilder) defaultArgumentsJson(trigger *skeldesc.TaskTrigger) skeltype.JSON {
 	args := map[string]any{}
 	for _, argument := range trigger.Arguments {
 		args[argument.Name] = b.defaultMemberValue(argument)
 	}
-	return skel.JSON(debugPrettyJson(args))
+	return skeltype.JSON(debugPrettyJson(args))
 }
 
-func (b _DebugDefaultBuilder) defaultEventJson(event *skel.EventSchema) skel.JSON {
-	return skel.JSON(debugPrettyJson(b.defaultMembersValue(event.Members)))
+func (b _DebugDefaultBuilder) defaultEventJson(event *skeldesc.Event) skeltype.JSON {
+	return skeltype.JSON(debugPrettyJson(b.defaultMembersValue(event.Members)))
 }
 
-func (b _DebugDefaultBuilder) defaultMemberValue(member *skel.MemberSchema) any {
+func (b _DebugDefaultBuilder) defaultMemberValue(member *skeldesc.Member) any {
 	if strings.TrimSpace(member.Example) != "" {
 		return debugParseJson(member.Example)
 	}
 	return b.defaultValue(member.Type)
 }
 
-func (b _DebugDefaultBuilder) defaultValue(typeSchema *skel.TypeSchema) any {
-	if typeSchema == nil {
+func (b _DebugDefaultBuilder) defaultValue(typeDescriptor *skeldesc.Type) any {
+	if typeDescriptor == nil {
 		return nil
 	}
-	if typeSchema.Nullable {
+	if typeDescriptor.Nullable {
 		return nil
 	}
-	switch typeSchema.Kind {
-	case skel.TypeKindScalar:
-		switch typeSchema.Scalar {
-		case skel.ScalarBool:
+	switch typeDescriptor.Kind {
+	case skeldesc.TypeKindScalar:
+		switch typeDescriptor.Scalar {
+		case skeldesc.ScalarBoolean:
 			return false
-		case skel.ScalarInt, skel.ScalarLong, skel.ScalarFloat, skel.ScalarDouble:
+		case skeldesc.ScalarInt, skeldesc.ScalarFloat:
 			return 0
-		case skel.ScalarDecimal:
+		case skeldesc.ScalarDecimal:
 			return "0"
-		case skel.ScalarJson:
+		case skeldesc.ScalarJSON:
 			return map[string]any{}
-		case skel.ScalarUuid:
+		case skeldesc.ScalarUUID:
 			return uuid.Nil().String()
-		case skel.ScalarTimestamp:
-			return debugScalarJsonString(skel.NewTimestamp(debugDefaultTime))
-		case skel.ScalarDuration:
-			return debugScalarJsonString(skel.NewDuration(0))
-		case skel.ScalarLocalDate:
-			return debugScalarJsonString(skel.NewLocalDate(civil.DateOf(debugDefaultTime)))
-		case skel.ScalarLocalTime:
-			return debugScalarJsonString(skel.NewLocalTime(civil.TimeOf(debugDefaultTime)))
-		case skel.ScalarLocalDateTime:
-			return debugScalarJsonString(skel.NewLocalDateTime(civil.DateTimeOf(debugDefaultTime)))
-		case skel.ScalarBinary:
-			return debugScalarJsonString(skel.Binary{})
+		case skeldesc.ScalarTimestamp:
+			return debugScalarJsonString(skeltype.NewTimestamp(debugDefaultTime))
+		case skeldesc.ScalarDuration:
+			return debugScalarJsonString(skeltype.NewDuration(0))
+		case skeldesc.ScalarLocalDate:
+			return debugScalarJsonString(skeltype.NewLocalDate(civil.DateOf(debugDefaultTime)))
+		case skeldesc.ScalarLocalTime:
+			return debugScalarJsonString(skeltype.NewLocalTime(civil.TimeOf(debugDefaultTime)))
+		case skeldesc.ScalarLocalDateTime:
+			return debugScalarJsonString(skeltype.NewLocalDateTime(civil.DateTimeOf(debugDefaultTime)))
+		case skeldesc.ScalarBinary:
+			return debugScalarJsonString(skeltype.Binary{})
 		default:
 			return ""
 		}
-	case skel.TypeKindList:
+	case skeldesc.TypeKindList:
 		return []any{}
-	case skel.TypeKindMap:
+	case skeldesc.TypeKindMap:
 		return map[string]any{}
-	case skel.TypeKindData:
-		if dataSchema, ok := b.findDataSchema(typeSchema.SkelName); ok {
-			return b.defaultMembersValue(dataSchema.Members)
+	case skeldesc.TypeKindData:
+		if dataDescriptor, ok := b.findDataDescriptor(typeDescriptor.SkelName); ok {
+			return b.defaultMembersValue(dataDescriptor.Members)
 		}
 		return map[string]any{}
-	case skel.TypeKindConfig:
-		if configSchema, ok := b.findConfigSchema(typeSchema.SkelName); ok {
-			return b.defaultMembersValue(configSchema.Members)
+	case skeldesc.TypeKindConfig:
+		if configDescriptor, ok := b.findConfigDescriptor(typeDescriptor.SkelName); ok {
+			return b.defaultMembersValue(configDescriptor.Members)
 		}
 		return map[string]any{}
-	case skel.TypeKindEvent:
-		if eventSchema, ok := b.findEventSchema(typeSchema.SkelName); ok {
-			return b.defaultMembersValue(eventSchema.Members)
+	case skeldesc.TypeKindEvent:
+		if eventDescriptor, ok := b.findEventDescriptor(typeDescriptor.SkelName); ok {
+			return b.defaultMembersValue(eventDescriptor.Members)
 		}
 		return map[string]any{}
-	case skel.TypeKindEnum:
+	case skeldesc.TypeKindEnum:
 		return ""
 	default:
 		return nil
 	}
 }
 
-func (b _DebugDefaultBuilder) defaultDataValue(dataSchema *skel.DataSchema) map[string]any {
-	return b.defaultMembersValue(dataSchema.Members)
+func (b _DebugDefaultBuilder) defaultDataValue(dataDescriptor *skeldesc.Data) map[string]any {
+	return b.defaultMembersValue(dataDescriptor.Members)
 }
 
-func (b _DebugDefaultBuilder) defaultMembersValue(members []*skel.MemberSchema) map[string]any {
+func (b _DebugDefaultBuilder) defaultMembersValue(members []*skeldesc.Member) map[string]any {
 	ret := map[string]any{}
 	for _, member := range members {
 		ret[member.Name] = b.defaultMemberValue(member)
@@ -131,38 +132,38 @@ func (b _DebugDefaultBuilder) defaultMembersValue(members []*skel.MemberSchema) 
 	return ret
 }
 
-func (b _DebugDefaultBuilder) findActorSchema(actorSkelName string) *skel.ActorSchema {
-	for _, schema := range b.SchemaRepo.ListActorSchemas() {
-		if schema.SkelName == actorSkelName {
-			return schema
+func (b _DebugDefaultBuilder) findActorDescriptor(actorSkelName string) *skeldesc.Actor {
+	for _, descriptor := range b.DescriptorRepo.ListActorDescriptors() {
+		if descriptor.SkelName == actorSkelName {
+			return descriptor
 		}
 	}
-	ex.PanicNew(ex.NotFound, "actor schema not found")
+	ex.PanicNew(ex.NotFound, "actor descriptor not found")
 	panic("unreachable")
 }
 
-func (b _DebugDefaultBuilder) findDataSchema(dataSkelName string) (*skel.DataSchema, bool) {
-	for _, version := range b.SchemaRepo.ListDataSchemaVersions() {
-		if version.Schema.SkelName == dataSkelName {
-			return version.Schema, true
+func (b _DebugDefaultBuilder) findDataDescriptor(dataSkelName string) (*skeldesc.Data, bool) {
+	for _, version := range b.DescriptorRepo.ListDataDescriptorVersions() {
+		if version.Descriptor.SkelName == dataSkelName {
+			return version.Descriptor, true
 		}
 	}
 	return nil, false
 }
 
-func (b _DebugDefaultBuilder) findConfigSchema(configSkelName string) (*skel.ConfigSchema, bool) {
-	for _, version := range b.SchemaRepo.ListConfigSchemaVersions() {
-		if version.Schema.SkelName == configSkelName {
-			return version.Schema, true
+func (b _DebugDefaultBuilder) findConfigDescriptor(configSkelName string) (*skeldesc.Config, bool) {
+	for _, version := range b.DescriptorRepo.ListConfigDescriptorVersions() {
+		if version.Descriptor.SkelName == configSkelName {
+			return version.Descriptor, true
 		}
 	}
 	return nil, false
 }
 
-func (b _DebugDefaultBuilder) findEventSchema(eventSkelName string) (*skel.EventSchema, bool) {
-	for _, version := range b.SchemaRepo.ListEventSchemaVersions() {
-		if version.Schema.SkelName == eventSkelName {
-			return version.Schema, true
+func (b _DebugDefaultBuilder) findEventDescriptor(eventSkelName string) (*skeldesc.Event, bool) {
+	for _, version := range b.DescriptorRepo.ListEventDescriptorVersions() {
+		if version.Descriptor.SkelName == eventSkelName {
+			return version.Descriptor, true
 		}
 	}
 	return nil, false

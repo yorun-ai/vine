@@ -5,8 +5,8 @@ pub data BootInfo {
     @desc("The endpoint path that should be accessed when the current application initiates Rpc")
     rpcProxyEndpointPath: string
 
-    @desc("Whether to skip DomainSchema when app is registered")
-    skipDomainSchemas: bool
+    @desc("Whether to skip descriptor when app is registered")
+    skipDomainDescriptors: bool
 }
 
 @desc("Link's startup information service, called by the App")

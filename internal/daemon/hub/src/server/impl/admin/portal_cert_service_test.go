@@ -1,7 +1,7 @@
 package admin
 
 import (
-	"go.yorun.ai/vine/internal/core/skel"
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/util/vcode"
 	"testing"
 
@@ -40,7 +40,7 @@ func TestPortalCertServiceMapsListItemsAndDetail(t *testing.T) {
 }
 
 func TestPortalCertServiceDoesNotReturnPrivateKeyProvenanceValues(t *testing.T) {
-	secret := skel.JSON(`"private PEM content"`)
+	secret := skeltype.JSON(`"private PEM content"`)
 	sources := core.FieldSources{
 		"/privateKey": {Source: "seed", Template: &secret, Bindings: []core.FieldSourceBinding{{Variable: "key", Value: secret}}},
 	}

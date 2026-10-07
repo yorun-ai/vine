@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/skel"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/comp/hubinfo"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
@@ -63,7 +63,7 @@ type AppRegistration struct {
 	WebHandlers       []skeled.WebHandlerRegistration
 	EventListeners    []skeled.EventListenerRegistration
 	TaskRunners       []skeled.TaskRunnerRegistration
-	DomainSchemas     []skel.JSON
+	DomainDescriptors []skeltype.JSON
 }
 
 func (m *AppMinder) RegisterInstance(registration AppRegistration) {

@@ -7,9 +7,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/link/skeled"
-	"go.yorun.ai/vine/internal/core/skel"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 )
@@ -68,7 +68,7 @@ func TestRegisterHubInstancePublishesRegistration(t *testing.T) {
 	assert.Len(t, client.registrations, 1)
 	assert.Equal(t, hubskeled.AppRegistration{
 		Name:       appInfo.Name(),
-		InstanceId: skel.NewUUID(uuid.MustParse(appInfo.InstanceId())),
+		InstanceId: skeltype.NewUUID(uuid.MustParse(appInfo.InstanceId())),
 		Version:    appInfo.Version(),
 		Endpoint:   "http://127.0.0.1:8081",
 		ServiceHandlers: []hubskeled.ServiceHandlerRegistration{{
@@ -102,5 +102,5 @@ func TestUnregisterHubInstancePublishesUnregister(t *testing.T) {
 
 	client.mutex.Lock()
 	defer client.mutex.Unlock()
-	assert.Equal(t, []skel.UUID{skel.NewUUID(uuid.MustParse(appInfo.InstanceId()))}, client.unregistered)
+	assert.Equal(t, []skeltype.UUID{skeltype.NewUUID(uuid.MustParse(appInfo.InstanceId()))}, client.unregistered)
 }

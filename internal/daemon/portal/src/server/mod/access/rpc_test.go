@@ -13,11 +13,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/util/vcode"
 )
@@ -205,13 +205,13 @@ func TestAccessAllowRpcCreatesTraceChildForAuthService(t *testing.T) {
 
 func testAuthValues(authEndpoint string) map[string]string {
 	values := map[string]string{
-		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorSchema()),
-		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
+		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorDescriptor()),
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
 			SkelName:  "demo.UserService",
 			Audiences: testUserActorAudiences(),
-			Methods: []*skel.MethodSchema{
-				{SkelName: "Get"},
-			},
+			Methods: []*skeldesc.Method{
+				{SkelName: "Get", Name: "Get", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired},
+			}, AuthMode: skeldesc.AuthModeRequired,
 		}),
 	}
 	if authEndpoint != "" {
@@ -225,37 +225,32 @@ func testAuthValues(authEndpoint string) map[string]string {
 	return values
 }
 
-func testAuthActorSchema() watched.SchemaActor {
-	return watched.SchemaActor{
-		SkelName:       "demo.UserActor",
-		AuthEnabled:    true,
-		AuthCredential: testCredentialSchema(),
-		AuthInfo:       &skel.DataSchema{SkelName: "demo.UserInfo"},
-		AuthService:    testAuthServiceSchema(),
-		AuthMethod:     testAuthMethodSchema(),
+func testAuthActorDescriptor() watched.DescriptorActor {
+	return watched.DescriptorActor{
+		SkelName: "demo.UserActor", Auth: &skeldesc.ActorAuth{Info: &skeldesc.Data{SkelName: "demo.UserInfo"}, Service: testAuthServiceDescriptor(), MethodName: testAuthMethodDescriptor().Name, Credential: testCredentialDescriptor()},
 	}
 }
 
-func testUserActorAudiences() []*skel.ActorAudienceSchema {
-	return []*skel.ActorAudienceSchema{{SkelName: "demo.UserActor"}}
+func testUserActorAudiences() []*skeldesc.ActorAudience {
+	return []*skeldesc.ActorAudience{{SkelName: "demo.UserActor"}}
 }
 
-func testAuthServiceSchema() *skel.ServiceSchema {
-	return &skel.ServiceSchema{
+func testAuthServiceDescriptor() *skeldesc.Service {
+	return &skeldesc.Service{
 		SkelName: "demo.UserActorAuthService",
-		Methods: []*skel.MethodSchema{
-			testAuthMethodSchema(),
-		},
+		Methods: []*skeldesc.Method{
+			testAuthMethodDescriptor(),
+		}, AuthMode: skeldesc.AuthModeRequired,
 	}
 }
 
-func testAuthMethodSchema() *skel.MethodSchema {
-	return &skel.MethodSchema{
+func testAuthMethodDescriptor() *skeldesc.Method {
+	return &skeldesc.Method{
 		SkelName: "auth",
-		Arguments: []*skel.MemberSchema{
+		Arguments: []*skeldesc.Member{
 			{Name: "credential"},
 		},
-		ResultType: &skel.TypeSchema{Kind: skel.TypeKindData, SkelName: "demo.UserInfo"},
+		ResultType: &skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: "demo.UserInfo"}, Name: "auth", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired,
 	}
 }
 
@@ -305,9 +300,9 @@ func registerTestActorInfo() {
 	})
 }
 
-func TestAccessAllowRpcRejectsMissingServiceSchema(t *testing.T) {
+func TestAccessAllowRpcRejectsMissingServiceDescriptor(t *testing.T) {
 	access := testManager(t, map[string]string{
-		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorSchema()),
+		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorDescriptor()),
 	})
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
@@ -315,18 +310,18 @@ func TestAccessAllowRpcRejectsMissingServiceSchema(t *testing.T) {
 	ok := access.AllowRpc(testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 
 	assert.False(t, ok)
-	assertRpcAuthError(t, recorder, ex.ServiceUnavailable, "rpc service schema is not found")
+	assertRpcAuthError(t, recorder, ex.ServiceUnavailable, "rpc service descriptor is not found")
 }
 
-func TestAccessAllowRpcRejectsMissingMethodSchema(t *testing.T) {
+func TestAccessAllowRpcRejectsMissingMethodDescriptor(t *testing.T) {
 	access := testManager(t, map[string]string{
-		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorSchema()),
-		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
+		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorDescriptor()),
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
 			SkelName:  "demo.UserService",
 			Audiences: testUserActorAudiences(),
-			Methods: []*skel.MethodSchema{
-				{SkelName: "List"},
-			},
+			Methods: []*skeldesc.Method{
+				{SkelName: "List", Name: "List", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired},
+			}, AuthMode: skeldesc.AuthModeRequired,
 		}),
 	})
 	recorder := httptest.NewRecorder()
@@ -335,17 +330,17 @@ func TestAccessAllowRpcRejectsMissingMethodSchema(t *testing.T) {
 	ok := access.AllowRpc(testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 
 	assert.False(t, ok)
-	assertRpcAuthError(t, recorder, ex.NotFound, "rpc method schema is not found")
+	assertRpcAuthError(t, recorder, ex.NotFound, "rpc method descriptor is not found")
 }
 
-func TestAccessAllowRpcRejectsMissingActorSchema(t *testing.T) {
+func TestAccessAllowRpcRejectsMissingActorDescriptor(t *testing.T) {
 	access := testManager(t, map[string]string{
-		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
 			SkelName:  "demo.UserService",
 			Audiences: testUserActorAudiences(),
-			Methods: []*skel.MethodSchema{
-				{SkelName: "Get"},
-			},
+			Methods: []*skeldesc.Method{
+				{SkelName: "Get", Name: "Get", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired},
+			}, AuthMode: skeldesc.AuthModeRequired,
 		}),
 	})
 	recorder := httptest.NewRecorder()
@@ -357,19 +352,17 @@ func TestAccessAllowRpcRejectsMissingActorSchema(t *testing.T) {
 	assertRpcAuthError(t, recorder, ex.ClientForbidden, "not allowed")
 }
 
-func TestAccessAllowRpcRejectsActorWithoutCredentialSchema(t *testing.T) {
+func TestAccessAllowRpcRejectsActorWithoutCredentialDescriptor(t *testing.T) {
 	access := testManager(t, map[string]string{
-		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.SchemaActor{
-			SkelName:    "demo.UserActor",
-			AuthEnabled: true,
-			AuthInfo:    &skel.DataSchema{SkelName: "demo.UserInfo"},
+		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.DescriptorActor{
+			SkelName: "demo.UserActor", Auth: &skeldesc.ActorAuth{Info: &skeldesc.Data{SkelName: "demo.UserInfo"}, Service: testAuthServiceDescriptor(), MethodName: testAuthMethodDescriptor().Name},
 		}),
-		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
 			SkelName:  "demo.UserService",
 			Audiences: testUserActorAudiences(),
-			Methods: []*skel.MethodSchema{
-				{SkelName: "Get"},
-			},
+			Methods: []*skeldesc.Method{
+				{SkelName: "Get", Name: "Get", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired},
+			}, AuthMode: skeldesc.AuthModeRequired,
 		}),
 	})
 	recorder := httptest.NewRecorder()
@@ -380,19 +373,17 @@ func TestAccessAllowRpcRejectsActorWithoutCredentialSchema(t *testing.T) {
 	})
 }
 
-func TestAccessAllowRpcRejectsActorWithoutInfoSchema(t *testing.T) {
+func TestAccessAllowRpcRejectsActorWithoutInfoDescriptor(t *testing.T) {
 	access := testManager(t, map[string]string{
-		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.SchemaActor{
-			SkelName:       "demo.UserActor",
-			AuthEnabled:    true,
-			AuthCredential: &skel.DataSchema{SkelName: "demo.UserCredential"},
+		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.DescriptorActor{
+			SkelName: "demo.UserActor", Auth: &skeldesc.ActorAuth{Credential: &skeldesc.Data{SkelName: "demo.UserCredential"}, Service: testAuthServiceDescriptor(), MethodName: testAuthMethodDescriptor().Name},
 		}),
-		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
 			SkelName:  "demo.UserService",
 			Audiences: testUserActorAudiences(),
-			Methods: []*skel.MethodSchema{
-				{SkelName: "Get"},
-			},
+			Methods: []*skeldesc.Method{
+				{SkelName: "Get", Name: "Get", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired},
+			}, AuthMode: skeldesc.AuthModeRequired,
 		}),
 	})
 	recorder := httptest.NewRecorder()
@@ -403,40 +394,24 @@ func TestAccessAllowRpcRejectsActorWithoutInfoSchema(t *testing.T) {
 	})
 }
 
-func TestRpcAccessOperationParseAuthMode(t *testing.T) {
-	for _, test := range []struct {
-		name        string
-		serviceMode skel.AuthMode
-		methodMode  skel.AuthMode
-		want        skel.AuthMode
-	}{
-		{"method overrides service", skel.AuthModeOptional, skel.AuthModeRequired, skel.AuthModeRequired},
-		{"inherits service", skel.AuthModeOptional, skel.AuthModeInherit, skel.AuthModeOptional},
-		{"falls back to service", skel.AuthModeOptional, skel.AuthModeUnset, skel.AuthModeOptional},
-		{"defaults to required", skel.AuthModeUnset, skel.AuthModeUnset, skel.AuthModeRequired},
-		{"empty method inherits service", skel.AuthModeOptional, "", skel.AuthModeOptional},
-		{"empty modes default to required", "", "", skel.AuthModeRequired},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			ctx := &RpcOperation{
-				serviceSchema: &skel.ServiceSchema{AuthMode: test.serviceMode},
-				methodSchema:  &skel.MethodSchema{AuthMode: test.methodMode},
-			}
-
-			assert.Equal(t, test.want, ctx.authMode())
-		})
-	}
+func TestRpcOperationConsumesEffectiveAuth(t *testing.T) {
+	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
+	operation := &RpcOperation{Auther: Auther{Request: request, Response: httptest.NewRecorder(), actorDescriptor: &skeldesc.Actor{}},
+		serviceDescriptor: &skeldesc.Service{AuthMode: skeldesc.AuthModeRequired},
+		methodDescriptor:  &skeldesc.Method{AuthMode: skeldesc.AuthModeRequired, EffectiveAuthMode: skeldesc.AuthModeAnonymous}}
+	require.True(t, operation.Auth())
+	require.Equal(t, meta.ActorTypeAnonymous, operation.actor.Type())
 }
 
-func TestAccessAllowRpcInjectsActorAndServiceSchemas(t *testing.T) {
+func TestAccessAllowRpcInjectsActorAndServiceDescriptors(t *testing.T) {
 	access := testManager(t, map[string]string{
-		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorSchema()),
-		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
+		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorDescriptor()),
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
 			SkelName:  "demo.UserService",
 			Audiences: testUserActorAudiences(),
-			AuthMode:  skel.AuthModeOptional,
-			Methods: []*skel.MethodSchema{
-				{SkelName: "Get", AuthMode: skel.AuthModeOptional},
+			AuthMode:  skeldesc.AuthModeOptional,
+			Methods: []*skeldesc.Method{
+				{SkelName: "Get", AuthMode: skeldesc.AuthModeOptional, Name: "Get", EffectiveAuthMode: skeldesc.AuthModeOptional},
 			},
 		}),
 	})
@@ -451,21 +426,21 @@ func TestAccessAllowRpcInjectsActorAndServiceSchemas(t *testing.T) {
 
 	require.True(t, access.AllowRpc(ctx))
 
-	assert.Equal(t, "demo.UserActor", ctx.actorSchema.SkelName)
-	assert.Equal(t, "demo.UserService", ctx.serviceSchema.SkelName)
+	assert.Equal(t, "demo.UserActor", ctx.actorDescriptor.SkelName)
+	assert.Equal(t, "demo.UserService", ctx.serviceDescriptor.SkelName)
 }
 
 func TestAccessAllowRpcRejectsDifferentActorVia(t *testing.T) {
 	access := testManager(t, map[string]string{
-		watched.FormatSchemaActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorSchema()),
-		watched.FormatSchemaServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.SchemaService{
+		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorDescriptor()),
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
 			SkelName: "demo.UserService",
-			AuthMode: skel.AuthModeOptional,
-			Audiences: []*skel.ActorAudienceSchema{
-				{SkelName: "demo.UserActor", Via: skel.ActorViaAgent},
+			AuthMode: skeldesc.AuthModeOptional,
+			Audiences: []*skeldesc.ActorAudience{
+				{SkelName: "demo.UserActor", Via: skeldesc.ActorViaAgent},
 			},
-			Methods: []*skel.MethodSchema{
-				{SkelName: "Get", AuthMode: skel.AuthModeOptional},
+			Methods: []*skeldesc.Method{
+				{SkelName: "Get", AuthMode: skeldesc.AuthModeOptional, Name: "Get", EffectiveAuthMode: skeldesc.AuthModeOptional},
 			},
 		}),
 	})
@@ -489,12 +464,10 @@ func TestRpcAccessOperationParseCredentialWritesUnauthorized(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			response := httptest.NewRecorder()
 			ctx := &RpcOperation{
-				actorSchema: &skel.ActorSchema{
-					AuthCredential: testCredentialSchema(),
-				},
-				Request:  httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil),
-				Response: response,
-				Server:   testServerApp(),
+				actorDescriptor: &skeldesc.Actor{Auth: &skeldesc.ActorAuth{Credential: testCredentialDescriptor()}},
+				Request:         httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil),
+				Response:        response,
+				Server:          testServerApp(),
 			}
 			if authorization != "" {
 				ctx.Request.Header.Set(headerAuthorization, authorization)

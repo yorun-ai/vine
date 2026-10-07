@@ -1,4 +1,3 @@
-// Package skel implements generated Skel types, schemas, and registration.
-// Schemas require skelc v0.17.1 or later. Nil slices and maps encode as empty
-// arrays and maps in JSON and CBOR.
+// Package skel validates and registers runtime descriptors.
+// Registration boundaries convert legacy schemas before passing descriptors here.
 package skel

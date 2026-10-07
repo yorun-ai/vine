@@ -46,7 +46,7 @@ func toSkeledServiceHandlerRegistrations(registrations []core.ServiceHandlerRegi
 	for _, registration := range registrations {
 		items = append(items, skeled.ServiceHandlerRegistration{
 			ServiceSkelName: registration.ServiceSkelName,
-			SchemaHash:      registration.SchemaHash,
+			DescriptorHash:  registration.DescriptorHash,
 			Endpoint:        registration.Endpoint,
 		})
 	}
@@ -59,9 +59,9 @@ func toSkeledWebHandlerRegistrations(registrations []core.WebHandlerRegistration
 	items := []skeled.WebHandlerRegistration{}
 	for _, registration := range registrations {
 		items = append(items, skeled.WebHandlerRegistration{
-			WebSkelName: registration.WebSkelName,
-			SchemaHash:  registration.SchemaHash,
-			Endpoint:    registration.Endpoint,
+			WebSkelName:    registration.WebSkelName,
+			DescriptorHash: registration.DescriptorHash,
+			Endpoint:       registration.Endpoint,
 		})
 	}
 	return vslice.SortBy(items, func(a skeled.WebHandlerRegistration, b skeled.WebHandlerRegistration) bool {
@@ -73,11 +73,11 @@ func toSkeledEventListenerRegistrations(registrations []core.EventListenerRegist
 	items := []skeled.EventListenerRegistration{}
 	for _, registration := range registrations {
 		items = append(items, skeled.EventListenerRegistration{
-			EventSkelName: registration.EventSkelName,
-			SchemaHash:    registration.SchemaHash,
-			TimeoutMs:     registration.TimeoutMs,
-			Concurrency:   registration.Concurrency,
-			NoRetry:       registration.NoRetry,
+			EventSkelName:  registration.EventSkelName,
+			DescriptorHash: registration.DescriptorHash,
+			TimeoutMs:      registration.TimeoutMs,
+			Concurrency:    registration.Concurrency,
+			NoRetry:        registration.NoRetry,
 		})
 	}
 	return vslice.SortBy(items, func(a skeled.EventListenerRegistration, b skeled.EventListenerRegistration) bool {
@@ -90,7 +90,7 @@ func toSkeledTaskRunnerRegistrations(registrations []core.TaskRunnerRegistration
 	for _, registration := range registrations {
 		items = append(items, skeled.TaskRunnerRegistration{
 			TaskSkelName:   registration.TaskSkelName,
-			SchemaHash:     registration.SchemaHash,
+			DescriptorHash: registration.DescriptorHash,
 			TimeoutMs:      registration.TimeoutMs,
 			Concurrency:    registration.Concurrency,
 			NoRetry:        registration.NoRetry,

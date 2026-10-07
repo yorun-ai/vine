@@ -5,24 +5,24 @@ package admin
 import (
 	"reflect"
 
-	"go.yorun.ai/vine/internal/core/ex"
-	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
+	"go.yorun.ai/vine/core/ex"
+	"go.yorun.ai/vine/core/rpc"
 )
 
 func init() {
-	rpcspec.Register(_AdminApiServiceSpec)
-	rpcspec.Register(_AppConfigApiServiceSpec)
-	rpcspec.Register(_AppStatusApiServiceSpec)
-	rpcspec.Register(_EventDebugApiServiceSpec)
-	rpcspec.Register(_MessageQueueStatusApiServiceSpec)
-	rpcspec.Register(_PortalCertApiServiceSpec)
-	rpcspec.Register(_PortalEntryApiServiceSpec)
-	rpcspec.Register(_PortalRuleApiServiceSpec)
-	rpcspec.Register(_PortalSiteApiServiceSpec)
-	rpcspec.Register(_PortalStatusApiServiceSpec)
-	rpcspec.Register(_ServiceDebugApiServiceSpec)
-	rpcspec.Register(_SkeletonApiServiceSpec)
-	rpcspec.Register(_TaskDebugApiServiceSpec)
+	rpc.Register(_AdminApiServiceSpec)
+	rpc.Register(_AppConfigApiServiceSpec)
+	rpc.Register(_AppStatusApiServiceSpec)
+	rpc.Register(_EventDebugApiServiceSpec)
+	rpc.Register(_MessageQueueStatusApiServiceSpec)
+	rpc.Register(_PortalCertApiServiceSpec)
+	rpc.Register(_PortalEntryApiServiceSpec)
+	rpc.Register(_PortalRuleApiServiceSpec)
+	rpc.Register(_PortalSiteApiServiceSpec)
+	rpc.Register(_PortalStatusApiServiceSpec)
+	rpc.Register(_ServiceDebugApiServiceSpec)
+	rpc.Register(_SkeletonApiServiceSpec)
+	rpc.Register(_TaskDebugApiServiceSpec)
 }
 
 // AdminApiServiceServer Hub's Admin API service, called by the Dashboard
@@ -30,8 +30,8 @@ func init() {
 // AdminApiService / Spec
 
 var (
-	_AdminApiServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeServer,
+	_AdminApiServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeServer,
 		Name:              "AdminApiService",
 		SkelName:          "vine.hub.admin.AdminApiService",
 		Hash:              "8aabb957",
@@ -41,11 +41,11 @@ var (
 		ERServerType:        reflect.TypeFor[AdminApiServiceServerER](),
 		WrapperERServerCtor: _NewWrapperAdminApiServiceServerER,
 		DefaultERServerType: reflect.TypeFor[*DefaultAdminApiServiceServerER](),
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_AdminApiServiceReadOnlySpec,
 		},
 	}
-	_AdminApiServiceReadOnlySpec = &rpcspec.MethodSpec{
+	_AdminApiServiceReadOnlySpec = &rpc.MethodSpec{
 		Name:                        "ReadOnly",
 		SkelName:                    "readOnly",
 		ArgumentsType:               nil,
@@ -128,18 +128,18 @@ type DefaultAdminApiServiceServerER struct {
 // AppConfigApiService / Spec
 
 var (
-	_AppConfigApiServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeServer,
+	_AppConfigApiServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeServer,
 		Name:              "AppConfigApiService",
 		SkelName:          "vine.hub.admin.AppConfigApiService",
-		Hash:              "cbba6f1b",
+		Hash:              "aae53a0a",
 		ServerType:        reflect.TypeFor[AppConfigApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultAppConfigApiServiceServer](),
 
 		ERServerType:        reflect.TypeFor[AppConfigApiServiceServerER](),
 		WrapperERServerCtor: _NewWrapperAppConfigApiServiceServerER,
 		DefaultERServerType: reflect.TypeFor[*DefaultAppConfigApiServiceServerER](),
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_AppConfigApiServiceListSpec,
 			_AppConfigApiServiceGetSpec,
 			_AppConfigApiServiceUpdateSpec,
@@ -147,7 +147,7 @@ var (
 			_AppConfigApiServiceRemoveSpec,
 		},
 	}
-	_AppConfigApiServiceListSpec = &rpcspec.MethodSpec{
+	_AppConfigApiServiceListSpec = &rpc.MethodSpec{
 		Name:                        "List",
 		SkelName:                    "list",
 		ArgumentsType:               nil,
@@ -161,7 +161,7 @@ var (
 			AppConfigApiServiceServerER.List,
 		},
 	}
-	_AppConfigApiServiceGetSpec = &rpcspec.MethodSpec{
+	_AppConfigApiServiceGetSpec = &rpc.MethodSpec{
 		Name:                        "Get",
 		SkelName:                    "get",
 		ArgumentsType:               reflect.TypeFor[_AppConfigApiServiceGetArguments](),
@@ -175,7 +175,7 @@ var (
 			AppConfigApiServiceServerER.Get,
 		},
 	}
-	_AppConfigApiServiceUpdateSpec = &rpcspec.MethodSpec{
+	_AppConfigApiServiceUpdateSpec = &rpc.MethodSpec{
 		Name:                        "Update",
 		SkelName:                    "update",
 		ArgumentsType:               reflect.TypeFor[_AppConfigApiServiceUpdateArguments](),
@@ -189,7 +189,7 @@ var (
 			AppConfigApiServiceServerER.Update,
 		},
 	}
-	_AppConfigApiServiceCreateSpec = &rpcspec.MethodSpec{
+	_AppConfigApiServiceCreateSpec = &rpc.MethodSpec{
 		Name:                        "Create",
 		SkelName:                    "create",
 		ArgumentsType:               reflect.TypeFor[_AppConfigApiServiceCreateArguments](),
@@ -203,7 +203,7 @@ var (
 			AppConfigApiServiceServerER.Create,
 		},
 	}
-	_AppConfigApiServiceRemoveSpec = &rpcspec.MethodSpec{
+	_AppConfigApiServiceRemoveSpec = &rpc.MethodSpec{
 		Name:                        "Remove",
 		SkelName:                    "remove",
 		ArgumentsType:               reflect.TypeFor[_AppConfigApiServiceRemoveArguments](),
@@ -371,22 +371,22 @@ type DefaultAppConfigApiServiceServerER struct {
 // AppStatusApiService / Spec
 
 var (
-	_AppStatusApiServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeServer,
+	_AppStatusApiServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeServer,
 		Name:              "AppStatusApiService",
 		SkelName:          "vine.hub.admin.AppStatusApiService",
-		Hash:              "185da686",
+		Hash:              "3a2ef71b",
 		ServerType:        reflect.TypeFor[AppStatusApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultAppStatusApiServiceServer](),
 
 		ERServerType:        reflect.TypeFor[AppStatusApiServiceServerER](),
 		WrapperERServerCtor: _NewWrapperAppStatusApiServiceServerER,
 		DefaultERServerType: reflect.TypeFor[*DefaultAppStatusApiServiceServerER](),
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_AppStatusApiServiceListSpec,
 		},
 	}
-	_AppStatusApiServiceListSpec = &rpcspec.MethodSpec{
+	_AppStatusApiServiceListSpec = &rpc.MethodSpec{
 		Name:                        "List",
 		SkelName:                    "list",
 		ArgumentsType:               nil,
@@ -469,24 +469,24 @@ type DefaultAppStatusApiServiceServerER struct {
 // EventDebugApiService / Spec
 
 var (
-	_EventDebugApiServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeServer,
+	_EventDebugApiServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeServer,
 		Name:              "EventDebugApiService",
 		SkelName:          "vine.hub.admin.EventDebugApiService",
-		Hash:              "e8b3a6e5",
+		Hash:              "a849cee2",
 		ServerType:        reflect.TypeFor[EventDebugApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultEventDebugApiServiceServer](),
 
 		ERServerType:        reflect.TypeFor[EventDebugApiServiceServerER](),
 		WrapperERServerCtor: _NewWrapperEventDebugApiServiceServerER,
 		DefaultERServerType: reflect.TypeFor[*DefaultEventDebugApiServiceServerER](),
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_EventDebugApiServiceListEventsSpec,
 			_EventDebugApiServiceBuildDefaultEmitRequestSpec,
 			_EventDebugApiServiceEmitEventSpec,
 		},
 	}
-	_EventDebugApiServiceListEventsSpec = &rpcspec.MethodSpec{
+	_EventDebugApiServiceListEventsSpec = &rpc.MethodSpec{
 		Name:                        "ListEvents",
 		SkelName:                    "listEvents",
 		ArgumentsType:               nil,
@@ -500,7 +500,7 @@ var (
 			EventDebugApiServiceServerER.ListEvents,
 		},
 	}
-	_EventDebugApiServiceBuildDefaultEmitRequestSpec = &rpcspec.MethodSpec{
+	_EventDebugApiServiceBuildDefaultEmitRequestSpec = &rpc.MethodSpec{
 		Name:                        "BuildDefaultEmitRequest",
 		SkelName:                    "buildDefaultEmitRequest",
 		ArgumentsType:               reflect.TypeFor[_EventDebugApiServiceBuildDefaultEmitRequestArguments](),
@@ -514,7 +514,7 @@ var (
 			EventDebugApiServiceServerER.BuildDefaultEmitRequest,
 		},
 	}
-	_EventDebugApiServiceEmitEventSpec = &rpcspec.MethodSpec{
+	_EventDebugApiServiceEmitEventSpec = &rpc.MethodSpec{
 		Name:                        "EmitEvent",
 		SkelName:                    "emitEvent",
 		ArgumentsType:               reflect.TypeFor[_EventDebugApiServiceEmitEventArguments](),
@@ -533,8 +533,8 @@ var (
 // EventDebugApiService / Arguments
 
 type _EventDebugApiServiceBuildDefaultEmitRequestArguments struct {
-	EventSkelName string `json:"eventSkelName" skel:"index(0)"`
-	SchemaHash    string `json:"schemaHash" skel:"index(1)"`
+	EventSkelName  string `json:"eventSkelName" skel:"index(0)"`
+	DescriptorHash string `json:"descriptorHash" skel:"index(1)"`
 }
 
 type _EventDebugApiServiceEmitEventArguments struct {
@@ -548,8 +548,8 @@ type EventDebugApiServiceServer interface {
 	ListEvents() []EventDebugEventItem
 	// BuildDefaultEmitRequest Generate a default Event send request.
 	//   @param eventSkelName - Event Skel name
-	//   @param schemaHash - Event schema hash
-	BuildDefaultEmitRequest(eventSkelName string, schemaHash string) EventDebugDefaultEmitRequest
+	//   @param descriptorHash - Event descriptor hash
+	BuildDefaultEmitRequest(eventSkelName string, descriptorHash string) EventDebugDefaultEmitRequest
 	// EmitEvent Send Event.
 	//   @param request - Debug send request
 	EmitEvent(request EventDebugEmitRequest)
@@ -581,7 +581,7 @@ func (*DefaultEventDebugApiServiceServer) mustBeEventDebugApiServiceServer() {}
 
 type EventDebugApiServiceServerER interface {
 	ListEvents() ([]EventDebugEventItem, ex.Error)
-	BuildDefaultEmitRequest(eventSkelName string, schemaHash string) (EventDebugDefaultEmitRequest, ex.Error)
+	BuildDefaultEmitRequest(eventSkelName string, descriptorHash string) (EventDebugDefaultEmitRequest, ex.Error)
 	EmitEvent(request EventDebugEmitRequest) ex.Error
 
 	mustBeEventDebugApiServiceServerER()
@@ -613,9 +613,9 @@ func (service *_WrapperEventDebugApiServiceServerER) ListEvents() (ret []EventDe
 	return
 }
 
-func (service *_WrapperEventDebugApiServiceServerER) BuildDefaultEmitRequest(eventSkelName string, schemaHash string) (ret EventDebugDefaultEmitRequest, err ex.Error) {
+func (service *_WrapperEventDebugApiServiceServerER) BuildDefaultEmitRequest(eventSkelName string, descriptorHash string) (ret EventDebugDefaultEmitRequest, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().BuildDefaultEmitRequest(eventSkelName, schemaHash)
+	ret = service.server().BuildDefaultEmitRequest(eventSkelName, descriptorHash)
 	return
 }
 
@@ -638,8 +638,8 @@ type DefaultEventDebugApiServiceServerER struct {
 // MessageQueueStatusApiService / Spec
 
 var (
-	_MessageQueueStatusApiServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeServer,
+	_MessageQueueStatusApiServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeServer,
 		Name:              "MessageQueueStatusApiService",
 		SkelName:          "vine.hub.admin.MessageQueueStatusApiService",
 		Hash:              "1dfc99c7",
@@ -649,11 +649,11 @@ var (
 		ERServerType:        reflect.TypeFor[MessageQueueStatusApiServiceServerER](),
 		WrapperERServerCtor: _NewWrapperMessageQueueStatusApiServiceServerER,
 		DefaultERServerType: reflect.TypeFor[*DefaultMessageQueueStatusApiServiceServerER](),
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_MessageQueueStatusApiServiceListSpec,
 		},
 	}
-	_MessageQueueStatusApiServiceListSpec = &rpcspec.MethodSpec{
+	_MessageQueueStatusApiServiceListSpec = &rpc.MethodSpec{
 		Name:                        "List",
 		SkelName:                    "list",
 		ArgumentsType:               nil,
@@ -736,8 +736,8 @@ type DefaultMessageQueueStatusApiServiceServerER struct {
 // PortalCertApiService / Spec
 
 var (
-	_PortalCertApiServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeServer,
+	_PortalCertApiServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeServer,
 		Name:              "PortalCertApiService",
 		SkelName:          "vine.hub.admin.PortalCertApiService",
 		Hash:              "a895dc55",
@@ -747,7 +747,7 @@ var (
 		ERServerType:        reflect.TypeFor[PortalCertApiServiceServerER](),
 		WrapperERServerCtor: _NewWrapperPortalCertApiServiceServerER,
 		DefaultERServerType: reflect.TypeFor[*DefaultPortalCertApiServiceServerER](),
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_PortalCertApiServiceListSpec,
 			_PortalCertApiServiceGetSpec,
 			_PortalCertApiServiceCreateSpec,
@@ -755,7 +755,7 @@ var (
 			_PortalCertApiServiceRemoveSpec,
 		},
 	}
-	_PortalCertApiServiceListSpec = &rpcspec.MethodSpec{
+	_PortalCertApiServiceListSpec = &rpc.MethodSpec{
 		Name:                        "List",
 		SkelName:                    "list",
 		ArgumentsType:               nil,
@@ -769,7 +769,7 @@ var (
 			PortalCertApiServiceServerER.List,
 		},
 	}
-	_PortalCertApiServiceGetSpec = &rpcspec.MethodSpec{
+	_PortalCertApiServiceGetSpec = &rpc.MethodSpec{
 		Name:                        "Get",
 		SkelName:                    "get",
 		ArgumentsType:               reflect.TypeFor[_PortalCertApiServiceGetArguments](),
@@ -783,7 +783,7 @@ var (
 			PortalCertApiServiceServerER.Get,
 		},
 	}
-	_PortalCertApiServiceCreateSpec = &rpcspec.MethodSpec{
+	_PortalCertApiServiceCreateSpec = &rpc.MethodSpec{
 		Name:                        "Create",
 		SkelName:                    "create",
 		ArgumentsType:               reflect.TypeFor[_PortalCertApiServiceCreateArguments](),
@@ -797,7 +797,7 @@ var (
 			PortalCertApiServiceServerER.Create,
 		},
 	}
-	_PortalCertApiServiceUpdateSpec = &rpcspec.MethodSpec{
+	_PortalCertApiServiceUpdateSpec = &rpc.MethodSpec{
 		Name:                        "Update",
 		SkelName:                    "update",
 		ArgumentsType:               reflect.TypeFor[_PortalCertApiServiceUpdateArguments](),
@@ -811,7 +811,7 @@ var (
 			PortalCertApiServiceServerER.Update,
 		},
 	}
-	_PortalCertApiServiceRemoveSpec = &rpcspec.MethodSpec{
+	_PortalCertApiServiceRemoveSpec = &rpc.MethodSpec{
 		Name:                        "Remove",
 		SkelName:                    "remove",
 		ArgumentsType:               reflect.TypeFor[_PortalCertApiServiceRemoveArguments](),
@@ -977,8 +977,8 @@ type DefaultPortalCertApiServiceServerER struct {
 // PortalEntryApiService / Spec
 
 var (
-	_PortalEntryApiServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeServer,
+	_PortalEntryApiServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeServer,
 		Name:              "PortalEntryApiService",
 		SkelName:          "vine.hub.admin.PortalEntryApiService",
 		Hash:              "4a0f4586",
@@ -988,14 +988,14 @@ var (
 		ERServerType:        reflect.TypeFor[PortalEntryApiServiceServerER](),
 		WrapperERServerCtor: _NewWrapperPortalEntryApiServiceServerER,
 		DefaultERServerType: reflect.TypeFor[*DefaultPortalEntryApiServiceServerER](),
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_PortalEntryApiServiceListSpec,
 			_PortalEntryApiServiceCreateSpec,
 			_PortalEntryApiServiceUpdateSpec,
 			_PortalEntryApiServiceRemoveSpec,
 		},
 	}
-	_PortalEntryApiServiceListSpec = &rpcspec.MethodSpec{
+	_PortalEntryApiServiceListSpec = &rpc.MethodSpec{
 		Name:                        "List",
 		SkelName:                    "list",
 		ArgumentsType:               nil,
@@ -1009,7 +1009,7 @@ var (
 			PortalEntryApiServiceServerER.List,
 		},
 	}
-	_PortalEntryApiServiceCreateSpec = &rpcspec.MethodSpec{
+	_PortalEntryApiServiceCreateSpec = &rpc.MethodSpec{
 		Name:                        "Create",
 		SkelName:                    "create",
 		ArgumentsType:               reflect.TypeFor[_PortalEntryApiServiceCreateArguments](),
@@ -1023,7 +1023,7 @@ var (
 			PortalEntryApiServiceServerER.Create,
 		},
 	}
-	_PortalEntryApiServiceUpdateSpec = &rpcspec.MethodSpec{
+	_PortalEntryApiServiceUpdateSpec = &rpc.MethodSpec{
 		Name:                        "Update",
 		SkelName:                    "update",
 		ArgumentsType:               reflect.TypeFor[_PortalEntryApiServiceUpdateArguments](),
@@ -1037,7 +1037,7 @@ var (
 			PortalEntryApiServiceServerER.Update,
 		},
 	}
-	_PortalEntryApiServiceRemoveSpec = &rpcspec.MethodSpec{
+	_PortalEntryApiServiceRemoveSpec = &rpc.MethodSpec{
 		Name:                        "Remove",
 		SkelName:                    "remove",
 		ArgumentsType:               reflect.TypeFor[_PortalEntryApiServiceRemoveArguments](),
@@ -1183,8 +1183,8 @@ type DefaultPortalEntryApiServiceServerER struct {
 // PortalRuleApiService / Spec
 
 var (
-	_PortalRuleApiServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeServer,
+	_PortalRuleApiServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeServer,
 		Name:              "PortalRuleApiService",
 		SkelName:          "vine.hub.admin.PortalRuleApiService",
 		Hash:              "c35d5006",
@@ -1194,7 +1194,7 @@ var (
 		ERServerType:        reflect.TypeFor[PortalRuleApiServiceServerER](),
 		WrapperERServerCtor: _NewWrapperPortalRuleApiServiceServerER,
 		DefaultERServerType: reflect.TypeFor[*DefaultPortalRuleApiServiceServerER](),
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_PortalRuleApiServiceListConflictsSpec,
 			_PortalRuleApiServiceListSpec,
 			_PortalRuleApiServiceGetSpec,
@@ -1203,7 +1203,7 @@ var (
 			_PortalRuleApiServiceRemoveSpec,
 		},
 	}
-	_PortalRuleApiServiceListConflictsSpec = &rpcspec.MethodSpec{
+	_PortalRuleApiServiceListConflictsSpec = &rpc.MethodSpec{
 		Name:                        "ListConflicts",
 		SkelName:                    "listConflicts",
 		ArgumentsType:               nil,
@@ -1217,7 +1217,7 @@ var (
 			PortalRuleApiServiceServerER.ListConflicts,
 		},
 	}
-	_PortalRuleApiServiceListSpec = &rpcspec.MethodSpec{
+	_PortalRuleApiServiceListSpec = &rpc.MethodSpec{
 		Name:                        "List",
 		SkelName:                    "list",
 		ArgumentsType:               nil,
@@ -1231,7 +1231,7 @@ var (
 			PortalRuleApiServiceServerER.List,
 		},
 	}
-	_PortalRuleApiServiceGetSpec = &rpcspec.MethodSpec{
+	_PortalRuleApiServiceGetSpec = &rpc.MethodSpec{
 		Name:                        "Get",
 		SkelName:                    "get",
 		ArgumentsType:               reflect.TypeFor[_PortalRuleApiServiceGetArguments](),
@@ -1245,7 +1245,7 @@ var (
 			PortalRuleApiServiceServerER.Get,
 		},
 	}
-	_PortalRuleApiServiceCreateSpec = &rpcspec.MethodSpec{
+	_PortalRuleApiServiceCreateSpec = &rpc.MethodSpec{
 		Name:                        "Create",
 		SkelName:                    "create",
 		ArgumentsType:               reflect.TypeFor[_PortalRuleApiServiceCreateArguments](),
@@ -1259,7 +1259,7 @@ var (
 			PortalRuleApiServiceServerER.Create,
 		},
 	}
-	_PortalRuleApiServiceUpdateSpec = &rpcspec.MethodSpec{
+	_PortalRuleApiServiceUpdateSpec = &rpc.MethodSpec{
 		Name:                        "Update",
 		SkelName:                    "update",
 		ArgumentsType:               reflect.TypeFor[_PortalRuleApiServiceUpdateArguments](),
@@ -1273,7 +1273,7 @@ var (
 			PortalRuleApiServiceServerER.Update,
 		},
 	}
-	_PortalRuleApiServiceRemoveSpec = &rpcspec.MethodSpec{
+	_PortalRuleApiServiceRemoveSpec = &rpc.MethodSpec{
 		Name:                        "Remove",
 		SkelName:                    "remove",
 		ArgumentsType:               reflect.TypeFor[_PortalRuleApiServiceRemoveArguments](),
@@ -1454,8 +1454,8 @@ type DefaultPortalRuleApiServiceServerER struct {
 // PortalSiteApiService / Spec
 
 var (
-	_PortalSiteApiServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeServer,
+	_PortalSiteApiServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeServer,
 		Name:              "PortalSiteApiService",
 		SkelName:          "vine.hub.admin.PortalSiteApiService",
 		Hash:              "ff31eec1",
@@ -1465,7 +1465,7 @@ var (
 		ERServerType:        reflect.TypeFor[PortalSiteApiServiceServerER](),
 		WrapperERServerCtor: _NewWrapperPortalSiteApiServiceServerER,
 		DefaultERServerType: reflect.TypeFor[*DefaultPortalSiteApiServiceServerER](),
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_PortalSiteApiServiceListSpec,
 			_PortalSiteApiServiceListOptionsSpec,
 			_PortalSiteApiServiceGetSpec,
@@ -1474,7 +1474,7 @@ var (
 			_PortalSiteApiServiceRemoveSpec,
 		},
 	}
-	_PortalSiteApiServiceListSpec = &rpcspec.MethodSpec{
+	_PortalSiteApiServiceListSpec = &rpc.MethodSpec{
 		Name:                        "List",
 		SkelName:                    "list",
 		ArgumentsType:               nil,
@@ -1488,7 +1488,7 @@ var (
 			PortalSiteApiServiceServerER.List,
 		},
 	}
-	_PortalSiteApiServiceListOptionsSpec = &rpcspec.MethodSpec{
+	_PortalSiteApiServiceListOptionsSpec = &rpc.MethodSpec{
 		Name:                        "ListOptions",
 		SkelName:                    "listOptions",
 		ArgumentsType:               nil,
@@ -1502,7 +1502,7 @@ var (
 			PortalSiteApiServiceServerER.ListOptions,
 		},
 	}
-	_PortalSiteApiServiceGetSpec = &rpcspec.MethodSpec{
+	_PortalSiteApiServiceGetSpec = &rpc.MethodSpec{
 		Name:                        "Get",
 		SkelName:                    "get",
 		ArgumentsType:               reflect.TypeFor[_PortalSiteApiServiceGetArguments](),
@@ -1516,7 +1516,7 @@ var (
 			PortalSiteApiServiceServerER.Get,
 		},
 	}
-	_PortalSiteApiServiceCreateSpec = &rpcspec.MethodSpec{
+	_PortalSiteApiServiceCreateSpec = &rpc.MethodSpec{
 		Name:                        "Create",
 		SkelName:                    "create",
 		ArgumentsType:               reflect.TypeFor[_PortalSiteApiServiceCreateArguments](),
@@ -1530,7 +1530,7 @@ var (
 			PortalSiteApiServiceServerER.Create,
 		},
 	}
-	_PortalSiteApiServiceUpdateSpec = &rpcspec.MethodSpec{
+	_PortalSiteApiServiceUpdateSpec = &rpc.MethodSpec{
 		Name:                        "Update",
 		SkelName:                    "update",
 		ArgumentsType:               reflect.TypeFor[_PortalSiteApiServiceUpdateArguments](),
@@ -1544,7 +1544,7 @@ var (
 			PortalSiteApiServiceServerER.Update,
 		},
 	}
-	_PortalSiteApiServiceRemoveSpec = &rpcspec.MethodSpec{
+	_PortalSiteApiServiceRemoveSpec = &rpc.MethodSpec{
 		Name:                        "Remove",
 		SkelName:                    "remove",
 		ArgumentsType:               reflect.TypeFor[_PortalSiteApiServiceRemoveArguments](),
@@ -1725,8 +1725,8 @@ type DefaultPortalSiteApiServiceServerER struct {
 // PortalStatusApiService / Spec
 
 var (
-	_PortalStatusApiServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeServer,
+	_PortalStatusApiServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeServer,
 		Name:              "PortalStatusApiService",
 		SkelName:          "vine.hub.admin.PortalStatusApiService",
 		Hash:              "10bb95f5",
@@ -1736,11 +1736,11 @@ var (
 		ERServerType:        reflect.TypeFor[PortalStatusApiServiceServerER](),
 		WrapperERServerCtor: _NewWrapperPortalStatusApiServiceServerER,
 		DefaultERServerType: reflect.TypeFor[*DefaultPortalStatusApiServiceServerER](),
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_PortalStatusApiServiceListSpec,
 		},
 	}
-	_PortalStatusApiServiceListSpec = &rpcspec.MethodSpec{
+	_PortalStatusApiServiceListSpec = &rpc.MethodSpec{
 		Name:                        "List",
 		SkelName:                    "list",
 		ArgumentsType:               nil,
@@ -1823,18 +1823,18 @@ type DefaultPortalStatusApiServiceServerER struct {
 // ServiceDebugApiService / Spec
 
 var (
-	_ServiceDebugApiServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeServer,
+	_ServiceDebugApiServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeServer,
 		Name:              "ServiceDebugApiService",
 		SkelName:          "vine.hub.admin.ServiceDebugApiService",
-		Hash:              "ec47f570",
+		Hash:              "744e05c5",
 		ServerType:        reflect.TypeFor[ServiceDebugApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultServiceDebugApiServiceServer](),
 
 		ERServerType:        reflect.TypeFor[ServiceDebugApiServiceServerER](),
 		WrapperERServerCtor: _NewWrapperServiceDebugApiServiceServerER,
 		DefaultERServerType: reflect.TypeFor[*DefaultServiceDebugApiServiceServerER](),
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_ServiceDebugApiServiceListAppInstancesSpec,
 			_ServiceDebugApiServiceListServicesSpec,
 			_ServiceDebugApiServiceListServiceAppInstancesSpec,
@@ -1843,7 +1843,7 @@ var (
 			_ServiceDebugApiServiceInvokeServiceSpec,
 		},
 	}
-	_ServiceDebugApiServiceListAppInstancesSpec = &rpcspec.MethodSpec{
+	_ServiceDebugApiServiceListAppInstancesSpec = &rpc.MethodSpec{
 		Name:                        "ListAppInstances",
 		SkelName:                    "listAppInstances",
 		ArgumentsType:               nil,
@@ -1857,7 +1857,7 @@ var (
 			ServiceDebugApiServiceServerER.ListAppInstances,
 		},
 	}
-	_ServiceDebugApiServiceListServicesSpec = &rpcspec.MethodSpec{
+	_ServiceDebugApiServiceListServicesSpec = &rpc.MethodSpec{
 		Name:                        "ListServices",
 		SkelName:                    "listServices",
 		ArgumentsType:               nil,
@@ -1871,7 +1871,7 @@ var (
 			ServiceDebugApiServiceServerER.ListServices,
 		},
 	}
-	_ServiceDebugApiServiceListServiceAppInstancesSpec = &rpcspec.MethodSpec{
+	_ServiceDebugApiServiceListServiceAppInstancesSpec = &rpc.MethodSpec{
 		Name:                        "ListServiceAppInstances",
 		SkelName:                    "listServiceAppInstances",
 		ArgumentsType:               reflect.TypeFor[_ServiceDebugApiServiceListServiceAppInstancesArguments](),
@@ -1885,7 +1885,7 @@ var (
 			ServiceDebugApiServiceServerER.ListServiceAppInstances,
 		},
 	}
-	_ServiceDebugApiServiceListMethodsSpec = &rpcspec.MethodSpec{
+	_ServiceDebugApiServiceListMethodsSpec = &rpc.MethodSpec{
 		Name:                        "ListMethods",
 		SkelName:                    "listMethods",
 		ArgumentsType:               reflect.TypeFor[_ServiceDebugApiServiceListMethodsArguments](),
@@ -1899,7 +1899,7 @@ var (
 			ServiceDebugApiServiceServerER.ListMethods,
 		},
 	}
-	_ServiceDebugApiServiceBuildDefaultInvokeRequestSpec = &rpcspec.MethodSpec{
+	_ServiceDebugApiServiceBuildDefaultInvokeRequestSpec = &rpc.MethodSpec{
 		Name:                        "BuildDefaultInvokeRequest",
 		SkelName:                    "buildDefaultInvokeRequest",
 		ArgumentsType:               reflect.TypeFor[_ServiceDebugApiServiceBuildDefaultInvokeRequestArguments](),
@@ -1913,7 +1913,7 @@ var (
 			ServiceDebugApiServiceServerER.BuildDefaultInvokeRequest,
 		},
 	}
-	_ServiceDebugApiServiceInvokeServiceSpec = &rpcspec.MethodSpec{
+	_ServiceDebugApiServiceInvokeServiceSpec = &rpc.MethodSpec{
 		Name:                        "InvokeService",
 		SkelName:                    "invokeService",
 		ArgumentsType:               reflect.TypeFor[_ServiceDebugApiServiceInvokeServiceArguments](),
@@ -1933,17 +1933,17 @@ var (
 
 type _ServiceDebugApiServiceListServiceAppInstancesArguments struct {
 	ServiceSkelName string `json:"serviceSkelName" skel:"index(0)"`
-	SchemaHash      string `json:"schemaHash" skel:"index(1)"`
+	DescriptorHash  string `json:"descriptorHash" skel:"index(1)"`
 }
 
 type _ServiceDebugApiServiceListMethodsArguments struct {
 	ServiceSkelName string `json:"serviceSkelName" skel:"index(0)"`
-	SchemaHash      string `json:"schemaHash" skel:"index(1)"`
+	DescriptorHash  string `json:"descriptorHash" skel:"index(1)"`
 }
 
 type _ServiceDebugApiServiceBuildDefaultInvokeRequestArguments struct {
 	ServiceSkelName string `json:"serviceSkelName" skel:"index(0)"`
-	SchemaHash      string `json:"schemaHash" skel:"index(1)"`
+	DescriptorHash  string `json:"descriptorHash" skel:"index(1)"`
 	MethodSkelName  string `json:"methodSkelName" skel:"index(2)"`
 }
 
@@ -1960,17 +1960,17 @@ type ServiceDebugApiServiceServer interface {
 	ListServices() []ServiceDebugServiceItem
 	// ListServiceAppInstances List application instances that provide the specified service.
 	//   @param serviceSkelName - Service Skel name
-	//   @param schemaHash - Service schema hash
-	ListServiceAppInstances(serviceSkelName string, schemaHash string) []ServiceDebugAppInstance
+	//   @param descriptorHash - Service descriptor hash
+	ListServiceAppInstances(serviceSkelName string, descriptorHash string) []ServiceDebugAppInstance
 	// ListMethods List Service methods.
 	//   @param serviceSkelName - Service Skel name
-	//   @param schemaHash - Service schema hash
-	ListMethods(serviceSkelName string, schemaHash string) []ServiceDebugMethodItem
+	//   @param descriptorHash - Service descriptor hash
+	ListMethods(serviceSkelName string, descriptorHash string) []ServiceDebugMethodItem
 	// BuildDefaultInvokeRequest Generate default Service call request.
 	//   @param serviceSkelName - Service Skel name
-	//   @param schemaHash - Service schema hash
+	//   @param descriptorHash - Service descriptor hash
 	//   @param methodSkelName - Method Skel name
-	BuildDefaultInvokeRequest(serviceSkelName string, schemaHash string, methodSkelName string) ServiceDebugDefaultInvokeRequest
+	BuildDefaultInvokeRequest(serviceSkelName string, descriptorHash string, methodSkelName string) ServiceDebugDefaultInvokeRequest
 	// InvokeService Call Service method.
 	//   @param request - Debug call request
 	InvokeService(request ServiceDebugInvokeRequest) ServiceDebugInvokeResponse
@@ -2019,9 +2019,9 @@ func (*DefaultServiceDebugApiServiceServer) mustBeServiceDebugApiServiceServer()
 type ServiceDebugApiServiceServerER interface {
 	ListAppInstances() ([]ServiceDebugAppInstance, ex.Error)
 	ListServices() ([]ServiceDebugServiceItem, ex.Error)
-	ListServiceAppInstances(serviceSkelName string, schemaHash string) ([]ServiceDebugAppInstance, ex.Error)
-	ListMethods(serviceSkelName string, schemaHash string) ([]ServiceDebugMethodItem, ex.Error)
-	BuildDefaultInvokeRequest(serviceSkelName string, schemaHash string, methodSkelName string) (ServiceDebugDefaultInvokeRequest, ex.Error)
+	ListServiceAppInstances(serviceSkelName string, descriptorHash string) ([]ServiceDebugAppInstance, ex.Error)
+	ListMethods(serviceSkelName string, descriptorHash string) ([]ServiceDebugMethodItem, ex.Error)
+	BuildDefaultInvokeRequest(serviceSkelName string, descriptorHash string, methodSkelName string) (ServiceDebugDefaultInvokeRequest, ex.Error)
 	InvokeService(request ServiceDebugInvokeRequest) (ServiceDebugInvokeResponse, ex.Error)
 
 	mustBeServiceDebugApiServiceServerER()
@@ -2059,21 +2059,21 @@ func (service *_WrapperServiceDebugApiServiceServerER) ListServices() (ret []Ser
 	return
 }
 
-func (service *_WrapperServiceDebugApiServiceServerER) ListServiceAppInstances(serviceSkelName string, schemaHash string) (ret []ServiceDebugAppInstance, err ex.Error) {
+func (service *_WrapperServiceDebugApiServiceServerER) ListServiceAppInstances(serviceSkelName string, descriptorHash string) (ret []ServiceDebugAppInstance, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().ListServiceAppInstances(serviceSkelName, schemaHash)
+	ret = service.server().ListServiceAppInstances(serviceSkelName, descriptorHash)
 	return
 }
 
-func (service *_WrapperServiceDebugApiServiceServerER) ListMethods(serviceSkelName string, schemaHash string) (ret []ServiceDebugMethodItem, err ex.Error) {
+func (service *_WrapperServiceDebugApiServiceServerER) ListMethods(serviceSkelName string, descriptorHash string) (ret []ServiceDebugMethodItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().ListMethods(serviceSkelName, schemaHash)
+	ret = service.server().ListMethods(serviceSkelName, descriptorHash)
 	return
 }
 
-func (service *_WrapperServiceDebugApiServiceServerER) BuildDefaultInvokeRequest(serviceSkelName string, schemaHash string, methodSkelName string) (ret ServiceDebugDefaultInvokeRequest, err ex.Error) {
+func (service *_WrapperServiceDebugApiServiceServerER) BuildDefaultInvokeRequest(serviceSkelName string, descriptorHash string, methodSkelName string) (ret ServiceDebugDefaultInvokeRequest, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().BuildDefaultInvokeRequest(serviceSkelName, schemaHash, methodSkelName)
+	ret = service.server().BuildDefaultInvokeRequest(serviceSkelName, descriptorHash, methodSkelName)
 	return
 }
 
@@ -2096,18 +2096,18 @@ type DefaultServiceDebugApiServiceServerER struct {
 // SkeletonApiService / Spec
 
 var (
-	_SkeletonApiServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeServer,
+	_SkeletonApiServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeServer,
 		Name:              "SkeletonApiService",
 		SkelName:          "vine.hub.admin.SkeletonApiService",
-		Hash:              "e053efeb",
+		Hash:              "2dee9822",
 		ServerType:        reflect.TypeFor[SkeletonApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultSkeletonApiServiceServer](),
 
 		ERServerType:        reflect.TypeFor[SkeletonApiServiceServerER](),
 		WrapperERServerCtor: _NewWrapperSkeletonApiServiceServerER,
 		DefaultERServerType: reflect.TypeFor[*DefaultSkeletonApiServiceServerER](),
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_SkeletonApiServiceListDomainsSpec,
 			_SkeletonApiServiceListActorsSpec,
 			_SkeletonApiServiceListServicesSpec,
@@ -2119,7 +2119,7 @@ var (
 			_SkeletonApiServiceListConfigsSpec,
 		},
 	}
-	_SkeletonApiServiceListDomainsSpec = &rpcspec.MethodSpec{
+	_SkeletonApiServiceListDomainsSpec = &rpc.MethodSpec{
 		Name:                        "ListDomains",
 		SkelName:                    "listDomains",
 		ArgumentsType:               nil,
@@ -2133,7 +2133,7 @@ var (
 			SkeletonApiServiceServerER.ListDomains,
 		},
 	}
-	_SkeletonApiServiceListActorsSpec = &rpcspec.MethodSpec{
+	_SkeletonApiServiceListActorsSpec = &rpc.MethodSpec{
 		Name:                        "ListActors",
 		SkelName:                    "listActors",
 		ArgumentsType:               nil,
@@ -2147,7 +2147,7 @@ var (
 			SkeletonApiServiceServerER.ListActors,
 		},
 	}
-	_SkeletonApiServiceListServicesSpec = &rpcspec.MethodSpec{
+	_SkeletonApiServiceListServicesSpec = &rpc.MethodSpec{
 		Name:                        "ListServices",
 		SkelName:                    "listServices",
 		ArgumentsType:               nil,
@@ -2161,7 +2161,7 @@ var (
 			SkeletonApiServiceServerER.ListServices,
 		},
 	}
-	_SkeletonApiServiceListResourcesSpec = &rpcspec.MethodSpec{
+	_SkeletonApiServiceListResourcesSpec = &rpc.MethodSpec{
 		Name:                        "ListResources",
 		SkelName:                    "listResources",
 		ArgumentsType:               nil,
@@ -2175,7 +2175,7 @@ var (
 			SkeletonApiServiceServerER.ListResources,
 		},
 	}
-	_SkeletonApiServiceListWebsSpec = &rpcspec.MethodSpec{
+	_SkeletonApiServiceListWebsSpec = &rpc.MethodSpec{
 		Name:                        "ListWebs",
 		SkelName:                    "listWebs",
 		ArgumentsType:               nil,
@@ -2189,7 +2189,7 @@ var (
 			SkeletonApiServiceServerER.ListWebs,
 		},
 	}
-	_SkeletonApiServiceListTasksSpec = &rpcspec.MethodSpec{
+	_SkeletonApiServiceListTasksSpec = &rpc.MethodSpec{
 		Name:                        "ListTasks",
 		SkelName:                    "listTasks",
 		ArgumentsType:               nil,
@@ -2203,7 +2203,7 @@ var (
 			SkeletonApiServiceServerER.ListTasks,
 		},
 	}
-	_SkeletonApiServiceListEventsSpec = &rpcspec.MethodSpec{
+	_SkeletonApiServiceListEventsSpec = &rpc.MethodSpec{
 		Name:                        "ListEvents",
 		SkelName:                    "listEvents",
 		ArgumentsType:               nil,
@@ -2217,7 +2217,7 @@ var (
 			SkeletonApiServiceServerER.ListEvents,
 		},
 	}
-	_SkeletonApiServiceListDataSpec = &rpcspec.MethodSpec{
+	_SkeletonApiServiceListDataSpec = &rpc.MethodSpec{
 		Name:                        "ListData",
 		SkelName:                    "listData",
 		ArgumentsType:               nil,
@@ -2231,7 +2231,7 @@ var (
 			SkeletonApiServiceServerER.ListData,
 		},
 	}
-	_SkeletonApiServiceListConfigsSpec = &rpcspec.MethodSpec{
+	_SkeletonApiServiceListConfigsSpec = &rpc.MethodSpec{
 		Name:                        "ListConfigs",
 		SkelName:                    "listConfigs",
 		ArgumentsType:               nil,
@@ -2435,25 +2435,25 @@ type DefaultSkeletonApiServiceServerER struct {
 // TaskDebugApiService / Spec
 
 var (
-	_TaskDebugApiServiceSpec = &rpcspec.ServiceSpec{
-		Type:              rpcspec.ServiceSpecTypeServer,
+	_TaskDebugApiServiceSpec = &rpc.ServiceSpec{
+		Type:              rpc.ServiceSpecTypeServer,
 		Name:              "TaskDebugApiService",
 		SkelName:          "vine.hub.admin.TaskDebugApiService",
-		Hash:              "c5ffe358",
+		Hash:              "28b85dde",
 		ServerType:        reflect.TypeFor[TaskDebugApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultTaskDebugApiServiceServer](),
 
 		ERServerType:        reflect.TypeFor[TaskDebugApiServiceServerER](),
 		WrapperERServerCtor: _NewWrapperTaskDebugApiServiceServerER,
 		DefaultERServerType: reflect.TypeFor[*DefaultTaskDebugApiServiceServerER](),
-		Methods: []*rpcspec.MethodSpec{
+		Methods: []*rpc.MethodSpec{
 			_TaskDebugApiServiceListTasksSpec,
 			_TaskDebugApiServiceListTriggersSpec,
 			_TaskDebugApiServiceBuildDefaultLaunchRequestSpec,
 			_TaskDebugApiServiceLaunchTaskSpec,
 		},
 	}
-	_TaskDebugApiServiceListTasksSpec = &rpcspec.MethodSpec{
+	_TaskDebugApiServiceListTasksSpec = &rpc.MethodSpec{
 		Name:                        "ListTasks",
 		SkelName:                    "listTasks",
 		ArgumentsType:               nil,
@@ -2467,7 +2467,7 @@ var (
 			TaskDebugApiServiceServerER.ListTasks,
 		},
 	}
-	_TaskDebugApiServiceListTriggersSpec = &rpcspec.MethodSpec{
+	_TaskDebugApiServiceListTriggersSpec = &rpc.MethodSpec{
 		Name:                        "ListTriggers",
 		SkelName:                    "listTriggers",
 		ArgumentsType:               reflect.TypeFor[_TaskDebugApiServiceListTriggersArguments](),
@@ -2481,7 +2481,7 @@ var (
 			TaskDebugApiServiceServerER.ListTriggers,
 		},
 	}
-	_TaskDebugApiServiceBuildDefaultLaunchRequestSpec = &rpcspec.MethodSpec{
+	_TaskDebugApiServiceBuildDefaultLaunchRequestSpec = &rpc.MethodSpec{
 		Name:                        "BuildDefaultLaunchRequest",
 		SkelName:                    "buildDefaultLaunchRequest",
 		ArgumentsType:               reflect.TypeFor[_TaskDebugApiServiceBuildDefaultLaunchRequestArguments](),
@@ -2495,7 +2495,7 @@ var (
 			TaskDebugApiServiceServerER.BuildDefaultLaunchRequest,
 		},
 	}
-	_TaskDebugApiServiceLaunchTaskSpec = &rpcspec.MethodSpec{
+	_TaskDebugApiServiceLaunchTaskSpec = &rpc.MethodSpec{
 		Name:                        "LaunchTask",
 		SkelName:                    "launchTask",
 		ArgumentsType:               reflect.TypeFor[_TaskDebugApiServiceLaunchTaskArguments](),
@@ -2514,13 +2514,13 @@ var (
 // TaskDebugApiService / Arguments
 
 type _TaskDebugApiServiceListTriggersArguments struct {
-	TaskSkelName string `json:"taskSkelName" skel:"index(0)"`
-	SchemaHash   string `json:"schemaHash" skel:"index(1)"`
+	TaskSkelName   string `json:"taskSkelName" skel:"index(0)"`
+	DescriptorHash string `json:"descriptorHash" skel:"index(1)"`
 }
 
 type _TaskDebugApiServiceBuildDefaultLaunchRequestArguments struct {
 	TaskSkelName    string `json:"taskSkelName" skel:"index(0)"`
-	SchemaHash      string `json:"schemaHash" skel:"index(1)"`
+	DescriptorHash  string `json:"descriptorHash" skel:"index(1)"`
 	TriggerSkelName string `json:"triggerSkelName" skel:"index(2)"`
 }
 
@@ -2535,13 +2535,13 @@ type TaskDebugApiServiceServer interface {
 	ListTasks() []TaskDebugTaskItem
 	// ListTriggers List Task triggers.
 	//   @param taskSkelName - Task Skel name
-	//   @param schemaHash - Task schema hash
-	ListTriggers(taskSkelName string, schemaHash string) []TaskDebugTriggerItem
+	//   @param descriptorHash - Task descriptor hash
+	ListTriggers(taskSkelName string, descriptorHash string) []TaskDebugTriggerItem
 	// BuildDefaultLaunchRequest Generate a default Task launch request.
 	//   @param taskSkelName - Task Skel name
-	//   @param schemaHash - Task schema hash
+	//   @param descriptorHash - Task descriptor hash
 	//   @param triggerSkelName - Trigger Skel name
-	BuildDefaultLaunchRequest(taskSkelName string, schemaHash string, triggerSkelName string) TaskDebugDefaultLaunchRequest
+	BuildDefaultLaunchRequest(taskSkelName string, descriptorHash string, triggerSkelName string) TaskDebugDefaultLaunchRequest
 	// LaunchTask Initiate Task.
 	//   @param request - Debug launch request
 	LaunchTask(request TaskDebugLaunchRequest)
@@ -2578,8 +2578,8 @@ func (*DefaultTaskDebugApiServiceServer) mustBeTaskDebugApiServiceServer() {}
 
 type TaskDebugApiServiceServerER interface {
 	ListTasks() ([]TaskDebugTaskItem, ex.Error)
-	ListTriggers(taskSkelName string, schemaHash string) ([]TaskDebugTriggerItem, ex.Error)
-	BuildDefaultLaunchRequest(taskSkelName string, schemaHash string, triggerSkelName string) (TaskDebugDefaultLaunchRequest, ex.Error)
+	ListTriggers(taskSkelName string, descriptorHash string) ([]TaskDebugTriggerItem, ex.Error)
+	BuildDefaultLaunchRequest(taskSkelName string, descriptorHash string, triggerSkelName string) (TaskDebugDefaultLaunchRequest, ex.Error)
 	LaunchTask(request TaskDebugLaunchRequest) ex.Error
 
 	mustBeTaskDebugApiServiceServerER()
@@ -2611,15 +2611,15 @@ func (service *_WrapperTaskDebugApiServiceServerER) ListTasks() (ret []TaskDebug
 	return
 }
 
-func (service *_WrapperTaskDebugApiServiceServerER) ListTriggers(taskSkelName string, schemaHash string) (ret []TaskDebugTriggerItem, err ex.Error) {
+func (service *_WrapperTaskDebugApiServiceServerER) ListTriggers(taskSkelName string, descriptorHash string) (ret []TaskDebugTriggerItem, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().ListTriggers(taskSkelName, schemaHash)
+	ret = service.server().ListTriggers(taskSkelName, descriptorHash)
 	return
 }
 
-func (service *_WrapperTaskDebugApiServiceServerER) BuildDefaultLaunchRequest(taskSkelName string, schemaHash string, triggerSkelName string) (ret TaskDebugDefaultLaunchRequest, err ex.Error) {
+func (service *_WrapperTaskDebugApiServiceServerER) BuildDefaultLaunchRequest(taskSkelName string, descriptorHash string, triggerSkelName string) (ret TaskDebugDefaultLaunchRequest, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
-	ret = service.server().BuildDefaultLaunchRequest(taskSkelName, schemaHash, triggerSkelName)
+	ret = service.server().BuildDefaultLaunchRequest(taskSkelName, descriptorHash, triggerSkelName)
 	return
 }
 

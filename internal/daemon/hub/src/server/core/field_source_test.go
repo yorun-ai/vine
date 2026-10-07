@@ -2,7 +2,7 @@ package core
 
 import (
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/core/skel"
+	skeltype "go.yorun.ai/skel/types"
 	"testing"
 )
 
@@ -22,13 +22,13 @@ func TestHubOverrideUpdatesSourceAndPreservesDefine(t *testing.T) {
 }
 
 func TestOverrideClearsTemplateAndBindingsWithoutMutatingOriginal(t *testing.T) {
-	template := skel.JSON(`"${enabled}"`)
-	original := FieldSources{"/value/enabled": {Source: "app/default", Define: "app/default", Template: &template, Variables: []string{"enabled"}, Bindings: []FieldSourceBinding{{Variable: "enabled", Reference: "${enabled}", Value: skel.JSON(`false`)}}}}
+	template := skeltype.JSON(`"${enabled}"`)
+	original := FieldSources{"/value/enabled": {Source: "app/default", Define: "app/default", Template: &template, Variables: []string{"enabled"}, Bindings: []FieldSourceBinding{{Variable: "enabled", Reference: "${enabled}", Value: skeltype.JSON(`false`)}}}}
 	cloned := cloneFieldSources(original)
-	*cloned["/value/enabled"].Template = skel.JSON(`"changed"`)
-	cloned["/value/enabled"].Bindings[0].Value = skel.JSON(`true`)
-	require.Equal(t, skel.JSON(`"${enabled}"`), *original["/value/enabled"].Template)
-	require.Equal(t, skel.JSON(`false`), original["/value/enabled"].Bindings[0].Value)
+	*cloned["/value/enabled"].Template = skeltype.JSON(`"changed"`)
+	cloned["/value/enabled"].Bindings[0].Value = skeltype.JSON(`true`)
+	require.Equal(t, skeltype.JSON(`"${enabled}"`), *original["/value/enabled"].Template)
+	require.Equal(t, skeltype.JSON(`false`), original["/value/enabled"].Bindings[0].Value)
 	updated := overrideFieldSource(cloned, "/value/enabled")
 	require.Nil(t, updated["/value/enabled"].Template)
 	require.Empty(t, updated["/value/enabled"].Bindings)

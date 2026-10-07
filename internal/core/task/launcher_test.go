@@ -9,12 +9,12 @@ import (
 	"time"
 	"uuid"
 
+	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/core/ex"
 	linkskeled "go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/core/task/spec"
 )
 
@@ -124,7 +124,7 @@ func TestTaskLauncherBuildRequestInjectsMetaFields(t *testing.T) {
 	if launch.Metadata.AppName != launcher.clientApp.Name() {
 		t.Fatalf("unexpected client app: got %s want %s", launch.Metadata.AppName, launcher.clientApp.Name())
 	}
-	if launch.Metadata.AppInstanceId != skel.NewUUID(uuid.MustParse(launcher.clientApp.InstanceId())) {
+	if launch.Metadata.AppInstanceId != skeltype.NewUUID(uuid.MustParse(launcher.clientApp.InstanceId())) {
 		t.Fatalf("unexpected client app instance id: got %s want %s", launch.Metadata.AppInstanceId, launcher.clientApp.InstanceId())
 	}
 }
