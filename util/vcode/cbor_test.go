@@ -31,6 +31,14 @@ func TestMarshalAndUnmarshalCbor(t *testing.T) {
 	assert.Equal(t, true, decoded.Flags["enabled"])
 }
 
+func TestUnmarshalCborRejectsDuplicateKeysWithoutReturningPartialValue(t *testing.T) {
+	// {"count": 1, "count": 2}
+	value, err := UnmarshalCbor[cborPayload]([]byte("\xa2\x65count\x01\x65count\x02"))
+	var duplicate *cbor.DupMapKeyError
+	assert.ErrorAs(t, err, &duplicate)
+	assert.Nil(t, value)
+}
+
 func TestMarshalCborFormatsNilContainersAsEmpty(t *testing.T) {
 	payload := struct {
 		Items  []string          `cbor:"items"`

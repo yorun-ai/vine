@@ -2,7 +2,6 @@ package meta
 
 import (
 	"encoding/json/jsontext"
-	"encoding/json/v2"
 	"fmt"
 	"reflect"
 
@@ -141,7 +140,7 @@ func GetActorInfoByType(metaActor Actor, kind reflect.Type) (any, bool) {
 	}
 
 	target := reflect.New(kind.Elem())
-	err := json.Unmarshal(actor.rawAuthInfo, target.Interface())
+	err := vcode.UnmarshalJsonTo(actor.rawAuthInfo, target.Interface())
 	vpre.CheckNilError(err, "unmarshal actor info %s failed", actor.actorInfo.InfoSkelName)
 	return target.Interface(), true
 }

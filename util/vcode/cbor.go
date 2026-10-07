@@ -5,25 +5,41 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-// MarshalCbor encodes data as CBOR using the default encoder.
+var cborEncodeMode cbor.EncMode
+var cborDecodeMode cbor.DecMode
+
+func init() {
+	var err error
+	cborEncodeMode, err = (cbor.EncOptions{
+		NilContainers: cbor.NilContainerAsEmpty,
+	}).EncMode()
+	vpre.MustNil(err)
+
+	cborDecodeMode, err = (cbor.DecOptions{
+		DupMapKey: cbor.DupMapKeyEnforcedAPF,
+	}).DecMode()
+	vpre.MustNil(err)
+}
+
+// MarshalCbor encodes data as CBOR, representing nil collections as empty collections.
 func MarshalCbor(data any) ([]byte, error) {
-	return defaultEncoder.MarshalCbor(data)
+	return cborEncodeMode.Marshal(data)
 }
 
 // MustMarshalCbor is like MarshalCbor but panics on failure.
 func MustMarshalCbor(data any) []byte {
-	return defaultEncoder.MustMarshalCbor(data)
+	dataBytes, err := MarshalCbor(data)
+	vpre.MustNil(err)
+	return dataBytes
 }
 
-// UnmarshalCbor decodes CBOR data into a newly allocated T.
+// UnmarshalCbor decodes CBOR data into a newly allocated T, rejecting duplicate map keys.
 func UnmarshalCbor[T any](cborBytes []byte) (*T, error) {
-	var target T
-	targetPtr := &target
-	err := cbor.Unmarshal(cborBytes, targetPtr)
-	if err != nil {
+	target := new(T)
+	if err := cborDecodeMode.Unmarshal(cborBytes, target); err != nil {
 		return nil, err
 	}
-	return targetPtr, nil
+	return target, nil
 }
 
 // MustUnmarshalCbor is like UnmarshalCbor but panics on failure.

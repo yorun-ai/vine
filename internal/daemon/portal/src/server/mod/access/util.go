@@ -4,48 +4,36 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/fxamacker/cbor/v2"
-	"github.com/tidwall/gjson"
 	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/ex"
+	rpchttp "go.yorun.ai/vrpc/transport/http"
 )
 
 // Supported JsonPath syntax:
-//   - field cascade, such as "params.update.userId"
+//   - field cascade, such as "update.userId"
 //   - at most one list wildcard in a non-tail segment, such as
-//     "params.users[*].id"
+//     "users[*].id"
 //
-// Unsupported path syntax includes tail wildcards like "params.users[*]",
+// Unsupported path syntax includes tail wildcards like "users[*]",
 // multiple wildcards, array indexes, filters, slices, recursive descent, and
 // quoted fields. Tail wildcards are rejected because "items[*]" has the same
 // permission-check meaning as "items" and only adds ambiguity.
 
-func jsonGetByPath(data []byte, jsonPath string) (any, bool) {
-	if _, ok := parseJsonPath(jsonPath); !ok {
-		return nil, false
-	}
-	gjsonPath := strings.ReplaceAll(jsonPath, "[*]", ".#")
-	value := gjson.GetBytes(data, gjsonPath)
-	return value.Value(), value.Exists()
-}
-
-func cborGetByPath(payload *any, data []byte, jsonPath string) (any, bool) {
+func requestParamsGetByPath(payload *any, data []byte, contentType string, jsonPath string) (any, bool) {
 	parts, ok := parseJsonPath(jsonPath)
 	if !ok {
 		return nil, false
 	}
 
-	if *payload != nil {
-		return cborGetPathPartsValue(*payload, parts)
+	if *payload == nil {
+		var value any
+		if err := rpchttp.DecodeRequest(data, &value, contentType); err != nil {
+			return nil, false
+		}
+		*payload = value
 	}
 
-	var value any
-	if err := cbor.Unmarshal(data, &value); err != nil {
-		return nil, false
-	}
-
-	*payload = value
-	return cborGetPathPartsValue(value, parts)
+	return getPathPartsValue(*payload, parts)
 }
 
 type _JsonPathPart struct {
@@ -80,21 +68,21 @@ func parseJsonPath(path string) ([]_JsonPathPart, bool) {
 	return parts, true
 }
 
-func cborGetPathPartsValue(value any, parts []_JsonPathPart) (any, bool) {
+func getPathPartsValue(value any, parts []_JsonPathPart) (any, bool) {
 	for index, part := range parts {
 		var ok bool
-		value, ok = cborSelectPathField(value, part.name)
+		value, ok = selectPathField(value, part.name)
 		if !ok {
 			return nil, false
 		}
 		if part.wildcard {
-			return cborSelectWildcardPathValues(value, parts[index+1:])
+			return selectWildcardPathValues(value, parts[index+1:])
 		}
 	}
 	return value, true
 }
 
-func cborSelectPathField(value any, part string) (any, bool) {
+func selectPathField(value any, part string) (any, bool) {
 	switch node := value.(type) {
 	case map[string]any:
 		value, ok := node[part]
@@ -107,29 +95,20 @@ func cborSelectPathField(value any, part string) (any, bool) {
 	}
 }
 
-func cborSelectWildcardPathValues(value any, remainingParts []_JsonPathPart) (any, bool) {
-	values, ok := cborAsAnySlice(value)
+func selectWildcardPathValues(value any, remainingParts []_JsonPathPart) (any, bool) {
+	values, ok := value.([]any)
 	if !ok {
 		return nil, false
 	}
 	results := make([]any, 0, len(values))
 	for _, item := range values {
-		value, ok := cborGetPathPartsValue(item, remainingParts)
+		value, ok := getPathPartsValue(item, remainingParts)
 		if !ok {
 			return nil, false
 		}
 		results = append(results, value)
 	}
 	return results, true
-}
-
-func cborAsAnySlice(value any) ([]any, bool) {
-	switch values := value.(type) {
-	case []any:
-		return values, true
-	default:
-		return nil, false
-	}
 }
 
 func collectPermissionCodes(expr *skeldesc.PermissionExpression) []string {

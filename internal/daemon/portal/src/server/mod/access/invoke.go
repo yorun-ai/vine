@@ -2,19 +2,14 @@ package access
 
 import (
 	"context"
-	"encoding/json/v2"
 	"errors"
 	"net/http"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/gwutil"
+	vrpchttp "go.yorun.ai/vrpc/transport/http"
 )
-
-type _InvokeResponseBody[T any] struct {
-	Result T                 `json:"result"`
-	Error  *_InvokeErrorBody `json:"error"`
-}
 
 type _InvokeErrorBody struct {
 	Message string `json:"message"`
@@ -84,21 +79,29 @@ func readInvokeResponse[T any](response *http.Response, serviceLabel string, bad
 		return zero, ex.ServiceUnavailable, badResponseMessage, "", false
 	}
 
-	responseBody := &_InvokeResponseBody[T]{}
-	if err = json.Unmarshal(body, responseBody); err != nil {
+	payload, err := vrpchttp.DecodeResponse(body, vrpchttp.ContentTypeJson)
+	if err != nil {
 		return zero, ex.ServiceUnavailable, badResponseMessage, "", false
 	}
 
 	if statusCode == ex.OK {
-		return responseBody.Result, ex.OK, "", "", true
+		var result T
+		if !vrpchttp.IsEmptyErrorPayload(payload.ErrorBytes) || payload.Unmarshal(payload.ResultBytes, &result) != nil {
+			return zero, ex.ServiceUnavailable, badResponseMessage, "", false
+		}
+		return result, ex.OK, "", "", true
 	}
 
 	reason := ""
 	message := defaultErrorMessage
-	if responseBody.Error != nil {
-		reason = responseBody.Error.Reason
-		if responseBody.Error.Message != "" {
-			message = responseBody.Error.Message
+	if !vrpchttp.IsEmptyErrorPayload(payload.ErrorBytes) {
+		var errorValue _InvokeErrorBody
+		if err := payload.Unmarshal(payload.ErrorBytes, &errorValue); err != nil {
+			return zero, ex.ServiceUnavailable, badResponseMessage, "", false
+		}
+		reason = errorValue.Reason
+		if errorValue.Message != "" {
+			message = errorValue.Message
 		}
 	}
 	return zero, mapInvokeStatusCode(statusCode), message, reason, false

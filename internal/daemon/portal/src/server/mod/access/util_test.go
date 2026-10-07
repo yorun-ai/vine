@@ -7,6 +7,7 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/skel/legacy"
 	"go.yorun.ai/vine/util/vcode"
+	rpchttp "go.yorun.ai/vrpc/transport/http"
 )
 
 func TestEvalPermExprPreservesLegacyShortCircuitAfterConversion(t *testing.T) {
@@ -71,7 +72,7 @@ func TestEvalPermExprPreservesLegacyShortCircuitAfterConversion(t *testing.T) {
 	}
 }
 
-func TestCborGetByPathSupportsFieldCascade(t *testing.T) {
+func TestRequestParamsGetByPathSupportsFieldCascade(t *testing.T) {
 	data := vcode.MustMarshalCbor(map[string]any{
 		"params": map[string]any{
 			"update": map[string]any{
@@ -81,9 +82,9 @@ func TestCborGetByPathSupportsFieldCascade(t *testing.T) {
 	})
 
 	var payload any
-	value, ok := cborGetByPath(&payload, data, "params.update.userId")
+	value, ok := requestParamsGetByPath(&payload, data, rpchttp.ContentTypeCbor, "update.userId")
 	if !ok {
-		t.Fatalf("cborGet() ok = false, want true")
+		t.Fatalf("requestParamsGetByPath() ok = false, want true")
 	}
 	if value != uint64(42) {
 		t.Fatalf("unexpected value: %#v", value)
@@ -93,7 +94,32 @@ func TestCborGetByPathSupportsFieldCascade(t *testing.T) {
 	}
 }
 
-func TestCborGetByPathSupportsSingleWildcardPath(t *testing.T) {
+func TestRequestParamsGetByPathRejectsDuplicateKeysWithoutCachingPartialValue(t *testing.T) {
+	for _, test := range []struct {
+		contentType string
+		body        []byte
+	}{
+		{
+			contentType: rpchttp.ContentTypeJson,
+			body:        []byte(`{"params":{"id":1,"id":2}}`),
+		},
+		{
+			contentType: rpchttp.ContentTypeCbor,
+			// {"params": {"id": 1, "id": 2}}
+			body: []byte("\xa1\x66params\xa2\x62id\x01\x62id\x02"),
+		},
+	} {
+		t.Run(test.contentType, func(t *testing.T) {
+			var payload any
+			value, ok := requestParamsGetByPath(&payload, test.body, test.contentType, "id")
+			if ok || value != nil || payload != nil {
+				t.Fatalf("ambiguous permission input accepted or cached: value=%v, cached=%v", value, payload)
+			}
+		})
+	}
+}
+
+func TestRequestParamsGetByPathSupportsSingleWildcardPath(t *testing.T) {
 	data := vcode.MustMarshalCbor(map[string]any{
 		"params": map[string]any{
 			"items": []any{
@@ -104,9 +130,9 @@ func TestCborGetByPathSupportsSingleWildcardPath(t *testing.T) {
 	})
 
 	var payload any
-	value, ok := cborGetByPath(&payload, data, "params.items[*].id")
+	value, ok := requestParamsGetByPath(&payload, data, rpchttp.ContentTypeCbor, "items[*].id")
 	if !ok {
-		t.Fatalf("cborGet() ok = false, want true")
+		t.Fatalf("requestParamsGetByPath() ok = false, want true")
 	}
 	values := value.([]any)
 	if len(values) != 2 || values[0] != "first" || values[1] != "second" {
@@ -114,7 +140,7 @@ func TestCborGetByPathSupportsSingleWildcardPath(t *testing.T) {
 	}
 }
 
-func TestCborGetByPathRejectsUnsupportedWildcardPaths(t *testing.T) {
+func TestRequestParamsGetByPathRejectsUnsupportedWildcardPaths(t *testing.T) {
 	data := vcode.MustMarshalCbor(map[string]any{
 		"params": map[string]any{
 			"items": []any{
@@ -128,11 +154,11 @@ func TestCborGetByPathRejectsUnsupportedWildcardPaths(t *testing.T) {
 	})
 
 	var payload any
-	if _, ok := cborGetByPath(&payload, data, "params.items[*]"); ok {
-		t.Fatalf("cborGet() ok = true for tail wildcard, want false")
+	if _, ok := requestParamsGetByPath(&payload, data, rpchttp.ContentTypeCbor, "items[*]"); ok {
+		t.Fatalf("requestParamsGetByPath() ok = true for tail wildcard, want false")
 	}
-	if _, ok := cborGetByPath(&payload, data, "params.items[*].children[*].id"); ok {
-		t.Fatalf("cborGet() ok = true for multiple wildcards, want false")
+	if _, ok := requestParamsGetByPath(&payload, data, rpchttp.ContentTypeCbor, "items[*].children[*].id"); ok {
+		t.Fatalf("requestParamsGetByPath() ok = true for multiple wildcards, want false")
 	}
 }
 

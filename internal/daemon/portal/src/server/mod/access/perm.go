@@ -121,14 +121,7 @@ func (o *RpcOperation) extractCheckParams(check *skeldesc.PermissionCheckInvocat
 }
 
 func (o *RpcOperation) extractCheckArgument(jsonPath string) (any, bool) {
-	fullJsonPath := "params." + jsonPath
-	switch rpchttp.MediaTypeOf(o.Request.Header.Get(rpchttp.HeaderContentType)) {
-	case rpchttp.ContentTypeJson:
-		return jsonGetByPath(o.requestBody, fullJsonPath)
-	case rpchttp.ContentTypeCbor:
-		return cborGetByPath(&o.cborPayload, o.requestBody, fullJsonPath)
-	}
-	return nil, false
+	return requestParamsGetByPath(&o.requestParams, o.requestBody, o.Request.Header.Get(rpchttp.HeaderContentType), jsonPath)
 }
 
 func (o *RpcOperation) tryForwardCheckRequest(request *http.Request, serviceSkelName string, defaultMessage string) (bool, ex.Code, string, string) {

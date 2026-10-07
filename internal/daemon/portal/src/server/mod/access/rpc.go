@@ -22,7 +22,7 @@ type RpcOperation struct {
 	serviceDescriptor *skeldesc.Service
 	methodDescriptor  *skeldesc.Method
 	requestBody       []byte
-	cborPayload       any
+	requestParams     any
 
 	permissionCodeResults map[string]bool
 }

@@ -2,7 +2,7 @@ package http
 
 import (
 	"bytes"
-	"encoding/json/v2"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -13,7 +13,23 @@ import (
 	"github.com/fxamacker/cbor/v2"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
+	vrpchttp "go.yorun.ai/vrpc/transport/http"
 )
+
+func TestClearResponseErrorDetailRejectsDuplicateCborKeys(t *testing.T) {
+	for name, body := range map[string][]byte{
+		"envelope": []byte("\xa2\x65error\xf6\x65error\xf6"),
+		"error":    []byte("\xa1\x65error\xa2\x64code\x61a\x64code\x61b"),
+	} {
+		t.Run(name, func(t *testing.T) {
+			cleared, err := ClearResponseErrorDetail(body, ContentTypeCbor)
+			var duplicate *cbor.DupMapKeyError
+			if !errors.As(err, &duplicate) || cleared != nil {
+				t.Fatalf("expected duplicate key error without rewritten response: %x, %v", cleared, err)
+			}
+		})
+	}
+}
 
 func TestDecodeResponseDecodesErrorPayload(t *testing.T) {
 	method := testServiceInfo().Methods()[0]
@@ -194,18 +210,18 @@ func TestClearResponseErrorDetailClearsJsonDetail(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ClearResponseErrorDetail() error = %v", err)
 	}
-	responsePayload := &_ResponsePayloadJson{}
-	if err := json.Unmarshal(gotBody, responsePayload); err != nil {
-		t.Fatalf("Unmarshal() error = %v", err)
+	responsePayload, err := vrpchttp.DecodeResponse(gotBody, ContentTypeJson)
+	if err != nil {
+		t.Fatalf("DecodeResponse() error = %v", err)
 	}
 	errorPayload := map[string]any{}
-	if err := json.Unmarshal(responsePayload.Error, &errorPayload); err != nil {
+	if err := responsePayload.Unmarshal(responsePayload.ErrorBytes, &errorPayload); err != nil {
 		t.Fatalf("Unmarshal() error = %v", err)
 	}
 	if got, ok := errorPayload["detail"]; !ok || got != "" {
 		t.Fatalf("expected empty detail field, got %#v", errorPayload)
 	}
-	gotErr, err := ex.DecodeError(responsePayload.Error, unmarshalJson)
+	gotErr, err := ex.DecodeError(responsePayload.ErrorBytes, responsePayload.Unmarshal)
 	if err != nil {
 		t.Fatalf("DecodeError() error = %v", err)
 	}
@@ -232,7 +248,7 @@ func TestClearResponseErrorDetailClearsCborDetail(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ClearResponseErrorDetail() error = %v", err)
 	}
-	responsePayload := &_ResponsePayloadCbor{}
+	responsePayload := &vrpchttp.CBORResponse{}
 	if err := cbor.Unmarshal(gotBody, responsePayload); err != nil {
 		t.Fatalf("Unmarshal() error = %v", err)
 	}
