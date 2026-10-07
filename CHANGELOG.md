@@ -8,6 +8,62 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-10-07
+
+### Changed
+
+- Use shared `go.yorun.ai/skel/descriptor` contracts throughout runtime
+  registration, Hub discovery, Link, Portal, and the Dashboard. New generated
+  code registers domains with `core/skel.RegisterDomainDescriptor`.
+- Use `go.yorun.ai/skel/types` for Skel scalar representations and the shared
+  `go.yorun.ai/vrpc/transport/http` codecs and error payloads for Rpc transport.
+- Portal consumes effective authentication and permission policies validated
+  at registration instead of deriving them independently for each request.
+- Upgrade Skel to v0.31.0, vRPC Go to v0.14.0, and the Dashboard's vRPC TS
+  runtime to v0.10.0. Regenerate internal contracts with skelc v0.31.0 and
+  refresh the embedded Dashboard assets and third-party notices.
+- Stable Kubernetes overlays use v0.28.0 for Hub, Link, and Portal images.
+- Publish releases only after all binary archives and all three multi-platform
+  images are verified; promote image `latest` after publication.
+
+### Fixed
+
+- Reject duplicate CBOR map keys consistently in Rpc transport and `vcode`
+  decoding.
+- Convert legacy generated schemas at registration while preserving legacy
+  authentication defaults and permission short-circuit behavior. Compute and
+  validate their effective policies before exposing them to the runtime.
+
+### Deprecated
+
+- Vine's Skel scalar aliases, constructors, legacy schema types, and generated
+  actor markers remain in `core/skel` for old generated code. New code should
+  use Skel's `types` and `descriptor` packages; regenerate contracts to remove
+  the deprecated registration and actor markers.
+
+### Removed
+
+- Remove `core/skel.RegisteredDomainSchemas`; use
+  `RegisteredDomainDescriptors` instead.
+- Remove `vcode.Encoder`, `NewEncoder`, and `DefaultEncoder`; use the package
+  JSON/CBOR helpers or the vRPC HTTP wire codec as appropriate.
+- Remove the encoded-error helpers `core/ex.DecodeError`, `EncodeError`, and
+  `ClearErrorDetail`; transport code now uses structured vRPC error payloads.
+
+### Upgrade Notes
+
+- Upgrade Hub, Link, and Portal together. Discovery and management payloads
+  now use descriptors, including `descriptorHash`, `mainDescriptorHash`, and
+  `domainDescriptorHash` in Hub management responses.
+- Legacy schema registration remains supported, but non-API services with
+  actor audiences or permission admission rules are rejected. Split those
+  contracts into explicit API and internal services before upgrading.
+- New descriptor registrations must supply consistent effective policies.
+  Use skelc v0.31.0 to generate them; legacy schema adapters compute them
+  automatically. The minimum accepted historical compiler version remains
+  v0.17.1.
+
+
 ## [0.27.0] - 2026-10-05
 
 ### Added
@@ -1507,7 +1563,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.27.0...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.28.0...HEAD
+[0.28.0]: https://github.com/yorun-ai/vine/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/yorun-ai/vine/compare/v0.26.0...v0.27.0
 [0.26.0]: https://github.com/yorun-ai/vine/compare/v0.25.1...v0.26.0
 [0.25.1]: https://github.com/yorun-ai/vine/compare/v0.25.0...v0.25.1
