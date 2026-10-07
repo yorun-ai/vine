@@ -35,8 +35,8 @@ func TestCheckActorPermissionsRejectsMissingCodeResult(t *testing.T) {
 	}))
 	permissionServer.Start()
 
-	manager := newAccessTestEndpointManager(t, "app.UserActorPermissionService", permissionServer.URL)
-	watcher := manager.WatchRpc("app.UserActorPermissionService")
+	access := newAccessTestEndpointManager(t, "app.UserActorPermissionService", permissionServer.URL)
+	watcher := access.WatchRpc("app.UserActorPermissionService")
 	t.Cleanup(watcher.Release)
 
 	initiator, err := meta.NewInitiator("demo.client", "0.0.0", "123e4567-e89b-12d3-a456-426614174001", "test", "127.0.0.1")
@@ -59,7 +59,7 @@ func TestCheckActorPermissionsRejectsMissingCodeResult(t *testing.T) {
 		Response:        recorder,
 		Trace:           meta.InitialTrace(),
 		Initiator:       initiator,
-		endpointManager: manager,
+		endpointManager: access,
 		actorDescriptor: &skeldesc.Actor{Permission: &skeldesc.ActorPermission{Service: &skeldesc.Service{SkelName: "app.UserActorPermissionService", Methods: []*skeldesc.Method{{SkelName: "checkCodes", Name: "checkCodes", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired}}, AuthMode: skeldesc.AuthModeRequired}, MethodName: "checkCodes"}},
 		Server:          serverApp,
 	}
@@ -194,7 +194,7 @@ func TestExtractCheckParamsRejectsTrailingWildcardPath(t *testing.T) {
 }
 
 func newAccessTestEndpointManager(t *testing.T, serviceName string, endpoint string) *epmgr.Manager {
-	manager := &epmgr.Manager{
+	access := &epmgr.Manager{
 		Context: context.Background(),
 		Watch: watchtest.New(t, map[string]string{
 			watched.FormatRpcServiceRegistrationKey(serviceName, "perm.test", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
@@ -205,8 +205,8 @@ func newAccessTestEndpointManager(t *testing.T, serviceName string, endpoint str
 			}),
 		}),
 	}
-	manager.DIInit()
-	return manager
+	access.DIInit()
+	return access
 }
 
 func TestExtractCheckParamsUsesDescriptorCodeArgumentName(t *testing.T) {
@@ -248,8 +248,8 @@ func TestCheckPreservesPermissionErrorReason(t *testing.T) {
 			server.Config.Protocols = new(http.Protocols)
 			server.Config.Protocols.SetUnencryptedHTTP2(true)
 			server.Start()
-			manager := newAccessTestEndpointManager(t, serviceName, server.URL)
-			watcher := manager.WatchRpc(serviceName)
+			access := newAccessTestEndpointManager(t, serviceName, server.URL)
+			watcher := access.WatchRpc(serviceName)
 			t.Cleanup(watcher.Release)
 			request := httptest.NewRequest(http.MethodPost, "/app.UserService/update", nil)
 			setTestRequestHeaders(t, request)
@@ -263,7 +263,7 @@ func TestCheckPreservesPermissionErrorReason(t *testing.T) {
 					Check: &skeldesc.PermissionCheckInvocation{CodeArgumentName: "code", ServiceSkelName: serviceName, MethodSkelName: "check", ResourceSkelName: "app.User", ActionName: "update"},
 				}}, Name: "Call", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired},
 			}
-			operation.endpointManager = manager
+			operation.endpointManager = access
 			operation.actorDescriptor = &skeldesc.Actor{Permission: &skeldesc.ActorPermission{Service: &skeldesc.Service{SkelName: serviceName, Methods: []*skeldesc.Method{{SkelName: "checkCodes", Name: "checkCodes", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired}}, AuthMode: skeldesc.AuthModeRequired}, MethodName: "checkCodes"}}
 			require.False(t, operation.Check())
 			assertRpcAuthError(t, recorder, ex.PermissionDenied, "tenant suspended")

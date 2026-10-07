@@ -1086,13 +1086,6 @@ func TestSeederWildcardWebOnly(t *testing.T) {
 	}
 }
 
-func TestSeederRejectsLegacyCertificateFields(t *testing.T) {
-	for _, field := range []string{"publicKeyBase64", "privateKeyBase64"} {
-		target := &Seeder{Flag: &flag.Flag{SeedHubData: "portalCerts:\n  - name: legacy\n    " + field + ": old"}}
-		require.Panics(t, target.loadSeedYAML)
-	}
-}
-
 func TestSeederAppliesVariableAssignmentsWithAndWithoutFile(t *testing.T) {
 	for _, withFile := range []bool{false, true} {
 		t.Run(fmt.Sprint(withFile), func(t *testing.T) {

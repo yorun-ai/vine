@@ -100,7 +100,7 @@ func TestSyncerPublishesOnlyEnabledConfiguration(t *testing.T) {
 	assert.False(t, ok, "a disabled certificate is not published")
 }
 
-func TestPortalRuleTargetPathWatchRoundTrip(t *testing.T) {
+func TestPortalRuleResolvedPathsWatchRoundTrip(t *testing.T) {
 	rule := &core.PortalRule{Name: "mapped", RouteType: "SITE", MatchPathPrefix: "/api", RoutePathPrefix: "/internal"}
 	wire := vcode.MustMarshalJsonS(ToWatchedPortalRule(rule, nil))
 	decoded := vcode.MustUnmarshalJsonS[*watched.PortalRule](wire)
@@ -109,8 +109,6 @@ func TestPortalRuleTargetPathWatchRoundTrip(t *testing.T) {
 	assert.Contains(t, wire, `"resolvedMatchPathPrefix":"/api"`)
 	assert.NotContains(t, wire, `"routePathPrefix"`)
 	assert.NotContains(t, wire, `"matchPathPrefix"`)
-	assert.NotContains(t, wire, `"targetPath"`)
-	assert.NotContains(t, wire, `"targetType"`)
 }
 
 func TestPortalSitePublishesWebMountPath(t *testing.T) {

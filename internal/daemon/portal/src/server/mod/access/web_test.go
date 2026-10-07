@@ -2,7 +2,6 @@ package access
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
@@ -21,25 +20,25 @@ import (
 	"go.yorun.ai/vine/util/vcode"
 )
 
-func TestAuthWebRequiresAuthorizationByDefault(t *testing.T) {
-	access := testManager(t, testAuthValues(""))
+func TestAuthWebRequiredModeRejectsMissingAuthorization(t *testing.T) {
+	access := newTestAccess(t, testAuthValues(""))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/ping", nil)
 	setTestWebRequestHeaders(t, request)
-	require.False(t, access.AuthWeb(testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder)))
+	require.False(t, access.AuthWeb(testWebOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder)))
 	require.Equal(t, http.StatusUnauthorized, recorder.Code)
 }
 
 func TestAuthWebParsesAuthorization(t *testing.T) {
 	registerTestActorInfo()
 	authEndpoint := registerTestAuthService(t, http.StatusOK, "OK", `{"userId":"u1"}`)
-	access := testManager(t, testAuthValues(authEndpoint))
+	access := newTestAccess(t, testAuthValues(authEndpoint))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/ping", nil)
 	setTestWebRequestHeaders(t, request)
 	request.Header.Set(headerAuthorization, "Key1 token123, key2 dXNlcjpwd2Q=")
 
-	ok := access.AuthWeb(testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	ok := access.AuthWeb(testWebOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 
 	require.True(t, ok)
 	actor, err := meta.DecodeActorFromBase64(request.Header.Get(webspec.HeaderWebActor))
@@ -50,13 +49,13 @@ func TestAuthWebParsesAuthorization(t *testing.T) {
 }
 
 func TestAuthWebRejectsBadAuthorizationAsUnauthorized(t *testing.T) {
-	access := testManager(t, testAuthValues(""))
+	access := newTestAccess(t, testAuthValues(""))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/ping", nil)
 	setTestWebRequestHeaders(t, request)
 	request.Header.Set(headerAuthorization, "Key1 token123, unknown value")
 
-	ok := access.AuthWeb(testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	ok := access.AuthWeb(testWebOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 
 	require.False(t, ok)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
@@ -65,13 +64,13 @@ func TestAuthWebRejectsBadAuthorizationAsUnauthorized(t *testing.T) {
 
 func TestAuthWebMapsAuthServiceStatus(t *testing.T) {
 	authEndpoint := registerTestAuthService(t, http.StatusOK, "UNAUTHORIZED", `null`)
-	access := testManager(t, testAuthValues(authEndpoint))
+	access := newTestAccess(t, testAuthValues(authEndpoint))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/ping", nil)
 	setTestWebRequestHeaders(t, request)
 	request.Header.Set(headerAuthorization, "Key1 token123, key2 dXNlcjpwd2Q=")
 
-	ok := access.AuthWeb(testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	ok := access.AuthWeb(testWebOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 
 	require.False(t, ok)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
@@ -88,7 +87,7 @@ func TestAuthWebForwardsTimeoutToAuthService(t *testing.T) {
 		writeTestAuthResponse(w, r, http.StatusOK, "OK", `{"userId":"u1"}`)
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(authEndpoint) })
-	access := testManager(t, testAuthValues(authEndpoint))
+	access := newTestAccess(t, testAuthValues(authEndpoint))
 	recorder := httptest.NewRecorder()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -96,7 +95,7 @@ func TestAuthWebForwardsTimeoutToAuthService(t *testing.T) {
 	setTestWebRequestHeaders(t, request)
 	request.Header.Set(headerAuthorization, "Key1 token123, key2 dXNlcjpwd2Q=")
 
-	ok := access.AuthWeb(testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	ok := access.AuthWeb(testWebOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 
 	require.True(t, ok)
 }
@@ -110,7 +109,7 @@ func setTestWebRequestHeaders(t *testing.T, request *http.Request) {
 	request.Header.Set(webspec.HeaderWebInitiator, meta.EncodeInitiatorToBase64(initiator))
 }
 
-func testWebAuthContext(t *testing.T, actorVia watched.PortalActorVia, request *http.Request, response http.ResponseWriter) *WebOperation {
+func testWebOperation(t *testing.T, actorVia watched.PortalActorVia, request *http.Request, response http.ResponseWriter) *WebOperation {
 	t.Helper()
 
 	trace, err := webspec.DecodeTraceFromHeader(request.Header)
@@ -128,7 +127,7 @@ func testWebAuthContext(t *testing.T, actorVia watched.PortalActorVia, request *
 
 func TestAuthWebOffPreservesNativeAuthorizationWithoutActorAuth(t *testing.T) {
 	descriptor := &watched.DescriptorActor{SkelName: "demo.NativeActor"}
-	manager := testManager(t, map[string]string{
+	access := newTestAccess(t, map[string]string{
 		watched.FormatDescriptorActorKey(descriptor.SkelName): vcode.MustMarshalJsonS(descriptor),
 		watched.FormatDescriptorWebKey("demo.NativeWeb"):      vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.NativeWeb", AuthMode: skeldesc.AuthModeOff}),
 	})
@@ -139,9 +138,9 @@ func TestAuthWebOffPreservesNativeAuthorizationWithoutActorAuth(t *testing.T) {
 			request.Header.Set(headerAuthorization, header)
 			request.Header.Set(webspec.HeaderWebActor, "untrusted actor metadata")
 			response := httptest.NewRecorder()
-			operation := testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: descriptor.SkelName, ActorVia: "client"}, request, response)
+			operation := testWebOperation(t, watched.PortalActorVia{ActorSkelName: descriptor.SkelName, ActorVia: "client"}, request, response)
 			operation.WebName = "demo.NativeWeb"
-			require.True(t, manager.AuthWeb(operation))
+			require.True(t, access.AuthWeb(operation))
 			require.Equal(t, header, request.Header.Get(headerAuthorization))
 			actor, err := meta.DecodeActorFromBase64(request.Header.Get(webspec.HeaderWebActor))
 			require.NoError(t, err)
@@ -151,12 +150,12 @@ func TestAuthWebOffPreservesNativeAuthorizationWithoutActorAuth(t *testing.T) {
 }
 
 func TestAuthWebRejectsUnknownActorWithAuthorization(t *testing.T) {
-	manager := testManager(t, nil)
+	access := newTestAccess(t, nil)
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/ping", nil)
 	setTestWebRequestHeaders(t, request)
 	request.Header.Set(headerAuthorization, "Bearer native-token")
 	response := httptest.NewRecorder()
-	require.False(t, manager.AuthWeb(testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "missing.Actor", ActorVia: "client"}, request, response)))
+	require.False(t, access.AuthWeb(testWebOperation(t, watched.PortalActorVia{ActorSkelName: "missing.Actor", ActorVia: "client"}, request, response)))
 	require.Equal(t, http.StatusForbidden, response.Code)
 }
 
@@ -164,7 +163,7 @@ func TestAuthWebRejectsUnknownActorWithAuthorization(t *testing.T) {
 // listeners, including a Web handler that owns its native authentication.
 func TestAuthWebNativeCredentialsReachBackend(t *testing.T) {
 	descriptor := &watched.DescriptorActor{SkelName: "demo.NativeActor"}
-	manager := testManager(t, map[string]string{
+	access := newTestAccess(t, map[string]string{
 		watched.FormatDescriptorActorKey(descriptor.SkelName): vcode.MustMarshalJsonS(descriptor),
 		watched.FormatDescriptorWebKey("demo.NativeWeb"):      vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.NativeWeb", AuthMode: skeldesc.AuthModeOff}),
 	})
@@ -186,9 +185,9 @@ func TestAuthWebNativeCredentialsReachBackend(t *testing.T) {
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	gateway := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		setTestWebRequestHeaders(t, r)
-		operation := testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: descriptor.SkelName, ActorVia: "client"}, r, w)
+		operation := testWebOperation(t, watched.PortalActorVia{ActorSkelName: descriptor.SkelName, ActorVia: "client"}, r, w)
 		operation.WebName = "demo.NativeWeb"
-		if manager.AuthWeb(operation) {
+		if access.AuthWeb(operation) {
 			proxy.ServeHTTP(w, r)
 		}
 	}))
@@ -212,52 +211,75 @@ func TestAuthWebNativeCredentialsReachBackend(t *testing.T) {
 }
 
 func TestAuthWebRejectsMissingNamedDescriptor(t *testing.T) {
-	manager := testManager(t, nil)
+	access := newTestAccess(t, nil)
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/", nil)
 	response := httptest.NewRecorder()
 	operation := &WebOperation{Auther: Auther{Request: request, Response: response}, WebName: "demo.Missing"}
-	require.False(t, manager.AuthWeb(operation))
+	require.False(t, access.AuthWeb(operation))
 	require.Equal(t, http.StatusServiceUnavailable, response.Code)
 }
 
-func TestAuthWebLegacyDescriptorDefaultsToRequired(t *testing.T) {
+func TestAuthWebLoadsRequiredPolicyFromDescriptor(t *testing.T) {
 	registerTestActorInfo()
 	endpoint := registerTestAuthService(t, http.StatusOK, "OK", `{"userId":"u1"}`)
-	for _, mode := range []skeldesc.AuthMode{skeldesc.AuthModeRequired} {
-		for _, enabled := range []bool{false, true} {
-			for _, credential := range []string{"", "Bearer malformed", "Key1 token, key2 token"} {
-				t.Run(fmt.Sprintf("%s/enabled=%t/%s", mode, enabled, credential), func(t *testing.T) {
-					values := testAuthValues(endpoint)
-					actor := testAuthActorDescriptor()
-					if !enabled {
-						actor.Auth = nil
-					}
-					values[watched.FormatDescriptorActorKey(actor.SkelName)] = vcode.MustMarshalJsonS(actor)
-					values[watched.FormatDescriptorWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: mode})
-					manager := testManager(t, values)
-					request := httptest.NewRequest(http.MethodGet, "http://demo.local/", nil)
-					setTestWebRequestHeaders(t, request)
-					if credential != "" {
-						request.Header.Set(headerAuthorization, credential)
-					}
-					response := httptest.NewRecorder()
-					operation := testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: actor.SkelName}, request, response)
-					operation.WebName = "demo.Web"
-					want := enabled && credential == "Key1 token, key2 token"
-					require.Equal(t, want, manager.AuthWeb(operation))
-					if want {
-						require.NotContains(t, request.Header, headerAuthorization)
-						admitted, err := meta.DecodeActorFromBase64(request.Header.Get(webspec.HeaderWebActor))
-						require.NoError(t, err)
-						require.True(t, admitted.IsAuthenticated())
-					} else if !enabled {
-						require.Equal(t, http.StatusForbidden, response.Code)
-						require.Contains(t, response.Body.String(), "actor auth not enabled")
-					} else {
-						require.Equal(t, http.StatusUnauthorized, response.Code)
-					}
-				})
+	for _, test := range []struct {
+		name       string
+		auth       bool
+		credential string
+		allowed    bool
+	}{
+		{
+			name:       "actor without auth",
+			credential: "Key1 token, key2 token",
+		},
+		{
+			name: "missing credential",
+			auth: true,
+		},
+		{
+			name:       "malformed credential",
+			auth:       true,
+			credential: "Bearer malformed",
+		},
+		{
+			name:       "valid credential",
+			auth:       true,
+			credential: "Key1 token, key2 token",
+			allowed:    true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			values := testAuthValues(endpoint)
+			actor := testAuthActorDescriptor()
+			if !test.auth {
+				actor.Auth = nil
 			}
-		}
+			values[watched.FormatDescriptorActorKey(actor.SkelName)] = vcode.MustMarshalJsonS(actor)
+			values[watched.FormatDescriptorWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.DescriptorWeb{
+				SkelName: "demo.Web",
+				AuthMode: skeldesc.AuthModeRequired,
+			})
+			access := newTestAccess(t, values)
+			request := httptest.NewRequest(http.MethodGet, "http://demo.local/", nil)
+			setTestWebRequestHeaders(t, request)
+			if test.credential != "" {
+				request.Header.Set(headerAuthorization, test.credential)
+			}
+			response := httptest.NewRecorder()
+			operation := testWebOperation(t, watched.PortalActorVia{ActorSkelName: actor.SkelName}, request, response)
+			operation.WebName = "demo.Web"
+			require.Equal(t, test.allowed, access.AuthWeb(operation))
+			if test.allowed {
+				require.NotContains(t, request.Header, headerAuthorization)
+				admitted, err := meta.DecodeActorFromBase64(request.Header.Get(webspec.HeaderWebActor))
+				require.NoError(t, err)
+				require.True(t, admitted.IsAuthenticated())
+			} else if !test.auth {
+				require.Equal(t, http.StatusForbidden, response.Code)
+				require.Contains(t, response.Body.String(), "actor auth not enabled")
+			} else {
+				require.Equal(t, http.StatusUnauthorized, response.Code)
+			}
+		})
 	}
 }

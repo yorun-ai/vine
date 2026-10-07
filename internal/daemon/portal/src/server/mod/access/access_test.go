@@ -13,8 +13,8 @@ import (
 	"go.yorun.ai/vine/util/vcode"
 )
 
-func TestManagerLoadsActorAndServiceDescriptors(t *testing.T) {
-	manager := testManager(t, map[string]string{
+func TestAccessLoadsActorAndServiceDescriptors(t *testing.T) {
+	access := newTestAccess(t, map[string]string{
 		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.DescriptorActor{
 			SkelName: "demo.UserActor",
 			Hash:     "actor-main",
@@ -26,28 +26,28 @@ func TestManagerLoadsActorAndServiceDescriptors(t *testing.T) {
 		}),
 	})
 
-	actor, ok := manager.actorDescriptor("demo.UserActor")
+	actor, ok := access.actorDescriptor("demo.UserActor")
 	require.True(t, ok)
 	assert.Equal(t, "actor-main", actor.Hash)
 
-	service, ok := manager.serviceDescriptor("demo.UserService")
+	service, ok := access.serviceDescriptor("demo.UserService")
 	require.True(t, ok)
 	assert.Equal(t, "service-main", service.Hash)
 	assert.Equal(t, skeldesc.AuthModeRequired, service.AuthMode)
 }
 
-func testManager(t *testing.T, valuesByKey map[string]string) *Access {
+func newTestAccess(t *testing.T, valuesByKey map[string]string) *Access {
 	watchClient := watchtest.New(t, valuesByKey)
-	epmgrManager := &epmgr.Manager{
+	endpointManager := &epmgr.Manager{
 		Context: context.Background(),
 		Watch:   watchClient,
 	}
-	epmgrManager.DIInit()
-	manager := &Access{
+	endpointManager.DIInit()
+	access := &Access{
 		Context: context.Background(),
 		Watch:   watchClient,
-		Epmgr:   epmgrManager,
+		Epmgr:   endpointManager,
 	}
-	manager.DIInit()
-	return manager
+	access.DIInit()
+	return access
 }

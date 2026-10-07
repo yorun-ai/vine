@@ -88,7 +88,7 @@ func TestAuthPropagatesIdentifierAndRejectsInvalidResponse(t *testing.T) {
 			descriptor.Auth.IdentifierField = "userId"
 			descriptor.Auth.Info.Members = []*skeldesc.Member{{Name: "userId", Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarInt}}}
 			values[watched.FormatDescriptorActorKey("demo.UserActor")] = vcode.MustMarshalJsonS(descriptor)
-			manager := testManager(t, values)
+			access := newTestAccess(t, values)
 			for _, web := range []bool{false, true} {
 				recorder := httptest.NewRecorder()
 				request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
@@ -100,9 +100,9 @@ func TestAuthPropagatesIdentifierAndRejectsInvalidResponse(t *testing.T) {
 				header := rpchttp.HeaderRpcActor
 				if web {
 					header = webspec.HeaderWebActor
-					ok = manager.AuthWeb(&WebOperation{Auther: authOperationForTest(t, request, recorder), ActorVia: watched.PortalActorVia{ActorSkelName: "demo.UserActor"}})
+					ok = access.AuthWeb(&WebOperation{Auther: authOperationForTest(t, request, recorder), ActorVia: watched.PortalActorVia{ActorSkelName: "demo.UserActor"}})
 				} else {
-					ok = manager.AllowRpc(&RpcOperation{Auther: authOperationForTest(t, request, recorder), Server: testServerApp(), ActorVia: watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, ServiceName: "demo.UserService", MethodName: "Get"})
+					ok = access.AllowRpc(&RpcOperation{Auther: authOperationForTest(t, request, recorder), Server: testServerApp(), ActorVia: watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, ServiceName: "demo.UserService", MethodName: "Get"})
 				}
 				require.Equal(t, tt.valid, ok)
 				if !ok {
@@ -209,16 +209,16 @@ func TestOptionalCredentialAuthForwarding(t *testing.T) {
 					descriptor.Auth.Credential.Members[1].Type = &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString, Nullable: true}
 					values := testAuthValues(endpoint)
 					values[watched.FormatDescriptorActorKey("demo.UserActor")] = vcode.MustMarshalJsonS(descriptor)
-					manager := testManager(t, values)
+					access := newTestAccess(t, values)
 					recorder := httptest.NewRecorder()
 					request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 					setTestRequestHeaders(t, request)
 					request.Header.Set("Authorization", tt.header)
 					var ok bool
 					if transport.web {
-						ok = manager.AuthWeb(&WebOperation{Auther: authOperationForTest(t, request, recorder), ActorVia: watched.PortalActorVia{ActorSkelName: "demo.UserActor"}})
+						ok = access.AuthWeb(&WebOperation{Auther: authOperationForTest(t, request, recorder), ActorVia: watched.PortalActorVia{ActorSkelName: "demo.UserActor"}})
 					} else {
-						ok = manager.AllowRpc(testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+						ok = access.AllowRpc(testRpcOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 					}
 					require.Equal(t, tt.valid, ok)
 					if tt.valid {
@@ -255,7 +255,7 @@ func TestPortalAuthModes(t *testing.T) {
 								Methods: []*skeldesc.Method{{SkelName: "Get", Name: "Get", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: mode}},
 							})
 							values[watched.FormatDescriptorWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: mode})
-							manager := testManager(t, values)
+							access := newTestAccess(t, values)
 							request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 							authorization := "Key1 token123, key2 dXNlcjpwd2Q="
 							if credential == "missing" {
@@ -272,14 +272,14 @@ func TestPortalAuthModes(t *testing.T) {
 							var actor meta.Actor
 							if protocol == "rpc" {
 								setTestRequestHeaders(t, request)
-								operation := testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response)
-								ok = manager.AllowRpc(operation)
+								operation := testRpcOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response)
+								ok = access.AllowRpc(operation)
 								actor = operation.actor
 							} else {
 								setTestWebRequestHeaders(t, request)
-								operation := testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response)
+								operation := testWebOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response)
 								operation.WebName = "demo.Web"
-								ok = manager.AuthWeb(operation)
+								ok = access.AuthWeb(operation)
 								actor = operation.actor
 							}
 							canonical := mode
@@ -319,19 +319,19 @@ func TestPortalRejectsEmptyAndDuplicateAuthorization(t *testing.T) {
 					values := testAuthValues("")
 					values[watched.FormatDescriptorWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: mode})
 					values[watched.FormatDescriptorServiceKey("demo.UserService")] = vcode.MustMarshalJsonS(watched.DescriptorService{SkelName: "demo.UserService", AuthMode: mode, Audiences: testUserActorAudiences(), Methods: []*skeldesc.Method{{SkelName: "Get", Name: "Get", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: mode}}})
-					manager := testManager(t, values)
+					access := newTestAccess(t, values)
 					request := httptest.NewRequest(http.MethodPost, "http://demo.local", nil)
 					request.Header[headerAuthorization] = append([]string(nil), headers...)
 					response := httptest.NewRecorder()
 					var ok bool
 					if protocol == "web" {
 						setTestWebRequestHeaders(t, request)
-						operation := testWebAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response)
+						operation := testWebOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response)
 						operation.WebName = "demo.Web"
-						ok = manager.AuthWeb(operation)
+						ok = access.AuthWeb(operation)
 					} else {
 						setTestRequestHeaders(t, request)
-						ok = manager.AllowRpc(testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response))
+						ok = access.AllowRpc(testRpcOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response))
 					}
 					if mode == skeldesc.AuthModeOff {
 						require.True(t, ok)

@@ -348,14 +348,12 @@ func TestPortalDescriptorsExcludeBackendServices(t *testing.T) {
 	view := []core.DomainDescriptorView{{Services: []core.DescriptorVersion[*skeldesc.Service]{
 		{Main: true, Descriptor: &skeldesc.Service{SkelName: "demo.BackendService", Pub: true, Hash: "backend", AuthMode: skeldesc.AuthModeRequired}},
 		{Main: true, Descriptor: &skeldesc.Service{SkelName: "demo.ApiService", Api: true, Hash: "api", AuthMode: skeldesc.AuthModeRequired}},
-		{Main: true, Descriptor: &skeldesc.Service{SkelName: "demo.LegacyService", AuthMode: skeldesc.AuthModeRequired, Hash: "legacy"}},
+		{Main: true, Descriptor: &skeldesc.Service{SkelName: "demo.PrivateService", AuthMode: skeldesc.AuthModeRequired, Hash: "private"}},
 	}}}
 	target.SyncDescriptors(view)
-	for _, name := range []string{"demo.ApiService"} {
-		_, ok := watchServer.Get(watched.FormatDescriptorServiceKey(name))
-		require.True(t, ok, name)
-	}
-	_, ok := watchServer.Get(watched.FormatDescriptorServiceKey("demo.LegacyService"))
+	_, ok := watchServer.Get(watched.FormatDescriptorServiceKey("demo.ApiService"))
+	require.True(t, ok)
+	_, ok = watchServer.Get(watched.FormatDescriptorServiceKey("demo.PrivateService"))
 	require.False(t, ok)
 	_, ok = watchServer.Get(watched.FormatDescriptorServiceKey("demo.BackendService"))
 	require.False(t, ok)

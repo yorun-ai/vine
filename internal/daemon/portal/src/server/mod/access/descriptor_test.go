@@ -11,11 +11,11 @@ import (
 	"go.yorun.ai/vine/util/vcode"
 )
 
-func TestManagerHandlesActorDescriptorEvents(t *testing.T) {
-	manager := testManager(t, map[string]string{})
+func TestAccessHandlesActorDescriptorEvents(t *testing.T) {
+	access := newTestAccess(t, map[string]string{})
 
 	key := watched.FormatDescriptorActorKey("demo.UserActor")
-	manager.handleActorEvent(hubwatch.Event{
+	access.handleActorEvent(hubwatch.Event{
 		Kind: hubwatch.EventKindUpsert,
 		Key:  key,
 		Value: vcode.MustMarshalJsonS(watched.DescriptorActor{
@@ -23,11 +23,11 @@ func TestManagerHandlesActorDescriptorEvents(t *testing.T) {
 			Hash:     "actor-main",
 		}),
 	})
-	actor, ok := manager.actorDescriptor("demo.UserActor")
+	actor, ok := access.actorDescriptor("demo.UserActor")
 	require.True(t, ok)
 	assert.Equal(t, "actor-main", actor.Hash)
 
-	manager.handleActorEvent(hubwatch.Event{
+	access.handleActorEvent(hubwatch.Event{
 		Kind: hubwatch.EventKindUpsert,
 		Key:  key,
 		Value: vcode.MustMarshalJsonS(watched.DescriptorActor{
@@ -35,23 +35,23 @@ func TestManagerHandlesActorDescriptorEvents(t *testing.T) {
 			Hash:     "actor-next",
 		}),
 	})
-	actor, ok = manager.actorDescriptor("demo.UserActor")
+	actor, ok = access.actorDescriptor("demo.UserActor")
 	require.True(t, ok)
 	assert.Equal(t, "actor-next", actor.Hash)
 
-	manager.handleActorEvent(hubwatch.Event{
+	access.handleActorEvent(hubwatch.Event{
 		Kind: hubwatch.EventKindDelete,
 		Key:  key,
 	})
-	_, ok = manager.actorDescriptor("demo.UserActor")
+	_, ok = access.actorDescriptor("demo.UserActor")
 	assert.False(t, ok)
 }
 
-func TestManagerHandlesServiceDescriptorEvents(t *testing.T) {
-	manager := testManager(t, map[string]string{})
+func TestAccessHandlesServiceDescriptorEvents(t *testing.T) {
+	access := newTestAccess(t, map[string]string{})
 
 	key := watched.FormatDescriptorServiceKey("demo.UserService")
-	manager.handleServiceEvent(hubwatch.Event{
+	access.handleServiceEvent(hubwatch.Event{
 		Kind: hubwatch.EventKindUpsert,
 		Key:  key,
 		Value: vcode.MustMarshalJsonS(watched.DescriptorService{
@@ -62,33 +62,33 @@ func TestManagerHandlesServiceDescriptorEvents(t *testing.T) {
 			}, AuthMode: skeldesc.AuthModeRequired,
 		}),
 	})
-	service, ok := manager.serviceDescriptor("demo.UserService")
+	service, ok := access.serviceDescriptor("demo.UserService")
 	require.True(t, ok)
 	assert.Equal(t, "service-main", service.Hash)
 	require.Len(t, service.Methods, 1)
 	assert.Equal(t, skeldesc.AuthModeRequired, service.Methods[0].AuthMode)
 
-	manager.handleServiceEvent(hubwatch.Event{
+	access.handleServiceEvent(hubwatch.Event{
 		Kind: hubwatch.EventKindDelete,
 		Key:  key,
 	})
-	_, ok = manager.serviceDescriptor("demo.UserService")
+	_, ok = access.serviceDescriptor("demo.UserService")
 	assert.False(t, ok)
 }
 
-func TestManagerHandlesWebDescriptorEvents(t *testing.T) {
+func TestAccessHandlesWebDescriptorEvents(t *testing.T) {
 	key := watched.FormatDescriptorWebKey("demo.Web")
-	manager := testManager(t, map[string]string{key: vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: skeldesc.AuthModeRequired})})
-	descriptor, ok := manager.webDescriptor("demo.Web")
+	access := newTestAccess(t, map[string]string{key: vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: skeldesc.AuthModeRequired})})
+	descriptor, ok := access.webDescriptor("demo.Web")
 	require.True(t, ok)
 	require.Equal(t, skeldesc.AuthModeRequired, descriptor.AuthMode)
-	manager.handleWebEvent(hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: key,
+	access.handleWebEvent(hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: key,
 		Value: vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: skeldesc.AuthModeAnonymous}),
 	})
-	descriptor, ok = manager.webDescriptor("demo.Web")
+	descriptor, ok = access.webDescriptor("demo.Web")
 	require.True(t, ok)
 	require.Equal(t, skeldesc.AuthModeAnonymous, descriptor.AuthMode)
-	manager.handleWebEvent(hubwatch.Event{Kind: hubwatch.EventKindDelete, Key: key})
-	_, ok = manager.webDescriptor("demo.Web")
+	access.handleWebEvent(hubwatch.Event{Kind: hubwatch.EventKindDelete, Key: key})
+	_, ok = access.webDescriptor("demo.Web")
 	require.False(t, ok)
 }

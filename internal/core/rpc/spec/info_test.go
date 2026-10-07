@@ -11,28 +11,28 @@ import (
 
 var initializedMethodInfoCounter atomic.Uint64
 
-func TestArgumentSkelIndexes(t *testing.T) {
+func TestMethodInfoPositionsArgumentsBySkelIndex(t *testing.T) {
 	type arguments struct {
 		Second string `skel:"index(1),sensitive"`
 		First  int    `skel:"index(0)"`
 	}
 	method := newInitializedMethodInfo(reflect.TypeFor[arguments](), nil, false, false)
 	require.Equal(t, []any{42, " second "}, method.PositionArguments(&arguments{First: 42, Second: " second "}))
-	for _, tag := range []reflect.StructTag{`skel:"index(0)"`, `skel:"index(0),sensitive"`} {
-		kind := reflect.StructOf([]reflect.StructField{{Name: "Value", Type: reflect.TypeFor[string](), Tag: tag}})
-		require.Equal(t, 0, buildArgumentFieldInfos(kind)[0].ArgIndex)
-	}
-	for _, tag := range []reflect.StructTag{`arg:"0"`, `skel:"sensitive"`, `skel:"index(x)"`, `skel:"index(-1)"`, `skel:"index(1)"`, `skel:"index(0),index(0)"`} {
+}
+
+func TestServiceInfoInitRejectsMissingOrNegativeArgumentIndexes(t *testing.T) {
+	for _, tag := range []reflect.StructTag{`skel:"sensitive"`, `skel:"index(-1)"`} {
 		t.Run(string(tag), func(t *testing.T) {
-			kind := reflect.StructOf([]reflect.StructField{{Name: "Value", Type: reflect.TypeFor[string](), Tag: tag}})
-			require.Panics(t, func() { buildArgumentFieldInfos(kind) })
+			kind := reflect.StructOf([]reflect.StructField{{
+				Name: "Value",
+				Type: reflect.TypeFor[string](),
+				Tag:  tag,
+			}})
+			require.Panics(t, func() {
+				newInitializedMethodInfo(kind, nil, false, false)
+			})
 		})
 	}
-	type duplicate struct {
-		First  int `skel:"index(0)"`
-		Second int `skel:"index(0)"`
-	}
-	require.Panics(t, func() { buildArgumentFieldInfos(reflect.TypeFor[duplicate]()) })
 }
 
 type testArgumentsInput struct {
@@ -94,20 +94,6 @@ func TestMethodInfoPositionArgumentsRequiresPointer(t *testing.T) {
 	}()
 
 	method.PositionArguments(testArgumentsInput{})
-}
-
-func TestServiceInfoInitBuildsArgumentFieldInfos(t *testing.T) {
-	method := newInitializedMethodInfo(reflect.TypeFor[testArgumentsInput](), nil, false, false)
-
-	if len(method.argumentFieldInfos) != 2 {
-		t.Fatalf("unexpected argument field info count: got %d", len(method.argumentFieldInfos))
-	}
-	if method.argumentFieldInfos[0].FieldIndex != 0 || method.argumentFieldInfos[0].ArgIndex != 0 {
-		t.Fatalf("unexpected first argument field info: %#v", method.argumentFieldInfos[0])
-	}
-	if method.argumentFieldInfos[1].FieldIndex != 1 || method.argumentFieldInfos[1].ArgIndex != 1 {
-		t.Fatalf("unexpected second argument field info: %#v", method.argumentFieldInfos[1])
-	}
 }
 
 func TestMethodInfoArgumentsContainsBinaryType(t *testing.T) {

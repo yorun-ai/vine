@@ -25,7 +25,7 @@ import (
 func TestAccessAllowRpcParsesTargetRpc(t *testing.T) {
 	registerTestActorInfo()
 	authEndpoint := registerTestAuthService(t, http.StatusOK, "OK", `{"userId":"u1"}`)
-	access := testManager(t, testAuthValues(authEndpoint))
+	access := newTestAccess(t, testAuthValues(authEndpoint))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 	setTestRequestHeaders(t, request)
@@ -95,7 +95,7 @@ func (b *requestCloseTrackingBody) Close() error {
 }
 
 func TestAccessAllowRpcReturnsServiceUnavailableWhenAuthServiceHasNoEndpoint(t *testing.T) {
-	access := testManager(t, testAuthValues(""))
+	access := newTestAccess(t, testAuthValues(""))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 	setTestRequestHeaders(t, request)
@@ -115,13 +115,13 @@ func TestAccessAllowRpcReturnsServiceUnavailableWhenAuthServiceHasNoEndpoint(t *
 
 func TestAccessAllowRpcMapsAuthServiceStatus(t *testing.T) {
 	authEndpoint := registerTestAuthService(t, http.StatusOK, "UNAUTHORIZED", `null`)
-	access := testManager(t, testAuthValues(authEndpoint))
+	access := newTestAccess(t, testAuthValues(authEndpoint))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 	setTestRequestHeaders(t, request)
 	request.Header.Set("Authorization", "Key1 token123, key2 dXNlcjpwd2Q=")
 
-	ok := access.AllowRpc(testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	ok := access.AllowRpc(testRpcOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 
 	assert.False(t, ok)
 	assertRpcAuthError(t, recorder, ex.Unauthorized, "auth failed")
@@ -137,13 +137,13 @@ func TestAccessAllowRpcSendsCredentialToAuthService(t *testing.T) {
 		writeTestAuthResponse(w, r, http.StatusOK, "OK", `{"userId":"u1"}`)
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(authEndpoint) })
-	access := testManager(t, testAuthValues(authEndpoint))
+	access := newTestAccess(t, testAuthValues(authEndpoint))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 	setTestRequestHeaders(t, request)
 	request.Header.Set("Authorization", "Key1 token123, key2 dXNlcjpwd2Q=")
 
-	ok := access.AllowRpc(testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	ok := access.AllowRpc(testRpcOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 
 	require.True(t, ok)
 }
@@ -158,7 +158,7 @@ func TestAccessAllowRpcForwardsTimeoutToAuthService(t *testing.T) {
 		writeTestAuthResponse(w, r, http.StatusOK, "OK", `{"userId":"u1"}`)
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(authEndpoint) })
-	access := testManager(t, testAuthValues(authEndpoint))
+	access := newTestAccess(t, testAuthValues(authEndpoint))
 	recorder := httptest.NewRecorder()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -166,7 +166,7 @@ func TestAccessAllowRpcForwardsTimeoutToAuthService(t *testing.T) {
 	setTestRequestHeaders(t, request)
 	request.Header.Set("Authorization", "Key1 token123, key2 dXNlcjpwd2Q=")
 
-	ok := access.AllowRpc(testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	ok := access.AllowRpc(testRpcOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 
 	require.True(t, ok)
 }
@@ -181,7 +181,7 @@ func TestAccessAllowRpcCreatesTraceChildForAuthService(t *testing.T) {
 		writeTestAuthResponse(w, r, http.StatusOK, "OK", `{"userId":"u1"}`)
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(authEndpoint) })
-	access := testManager(t, testAuthValues(authEndpoint))
+	access := newTestAccess(t, testAuthValues(authEndpoint))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 	setTestRequestHeaders(t, request)
@@ -301,20 +301,20 @@ func registerTestActorInfo() {
 }
 
 func TestAccessAllowRpcRejectsMissingServiceDescriptor(t *testing.T) {
-	access := testManager(t, map[string]string{
+	access := newTestAccess(t, map[string]string{
 		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorDescriptor()),
 	})
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 
-	ok := access.AllowRpc(testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	ok := access.AllowRpc(testRpcOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 
 	assert.False(t, ok)
 	assertRpcAuthError(t, recorder, ex.ServiceUnavailable, "rpc service descriptor is not found")
 }
 
 func TestAccessAllowRpcRejectsMissingMethodDescriptor(t *testing.T) {
-	access := testManager(t, map[string]string{
+	access := newTestAccess(t, map[string]string{
 		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorDescriptor()),
 		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
 			SkelName:  "demo.UserService",
@@ -327,14 +327,14 @@ func TestAccessAllowRpcRejectsMissingMethodDescriptor(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 
-	ok := access.AllowRpc(testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	ok := access.AllowRpc(testRpcOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 
 	assert.False(t, ok)
 	assertRpcAuthError(t, recorder, ex.NotFound, "rpc method descriptor is not found")
 }
 
 func TestAccessAllowRpcRejectsMissingActorDescriptor(t *testing.T) {
-	access := testManager(t, map[string]string{
+	access := newTestAccess(t, map[string]string{
 		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
 			SkelName:  "demo.UserService",
 			Audiences: testUserActorAudiences(),
@@ -346,14 +346,14 @@ func TestAccessAllowRpcRejectsMissingActorDescriptor(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 
-	ok := access.AllowRpc(testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	ok := access.AllowRpc(testRpcOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 
 	assert.False(t, ok)
 	assertRpcAuthError(t, recorder, ex.ClientForbidden, "not allowed")
 }
 
 func TestAccessAllowRpcRejectsActorWithoutCredentialDescriptor(t *testing.T) {
-	access := testManager(t, map[string]string{
+	access := newTestAccess(t, map[string]string{
 		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.DescriptorActor{
 			SkelName: "demo.UserActor", Auth: &skeldesc.ActorAuth{Info: &skeldesc.Data{SkelName: "demo.UserInfo"}, Service: testAuthServiceDescriptor(), MethodName: testAuthMethodDescriptor().Name},
 		}),
@@ -369,12 +369,12 @@ func TestAccessAllowRpcRejectsActorWithoutCredentialDescriptor(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 
 	assert.Panics(t, func() {
-		access.AllowRpc(testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+		access.AllowRpc(testRpcOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 	})
 }
 
 func TestAccessAllowRpcRejectsActorWithoutInfoDescriptor(t *testing.T) {
-	access := testManager(t, map[string]string{
+	access := newTestAccess(t, map[string]string{
 		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.DescriptorActor{
 			SkelName: "demo.UserActor", Auth: &skeldesc.ActorAuth{Credential: &skeldesc.Data{SkelName: "demo.UserCredential"}, Service: testAuthServiceDescriptor(), MethodName: testAuthMethodDescriptor().Name},
 		}),
@@ -390,11 +390,11 @@ func TestAccessAllowRpcRejectsActorWithoutInfoDescriptor(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 
 	assert.Panics(t, func() {
-		access.AllowRpc(testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+		access.AllowRpc(testRpcOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 	})
 }
 
-func TestRpcOperationConsumesEffectiveAuth(t *testing.T) {
+func TestRpcOperationConsumesEffectiveAuthMode(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 	operation := &RpcOperation{Auther: Auther{Request: request, Response: httptest.NewRecorder(), actorDescriptor: &skeldesc.Actor{}},
 		serviceDescriptor: &skeldesc.Service{AuthMode: skeldesc.AuthModeRequired},
@@ -404,7 +404,7 @@ func TestRpcOperationConsumesEffectiveAuth(t *testing.T) {
 }
 
 func TestAccessAllowRpcInjectsActorAndServiceDescriptors(t *testing.T) {
-	access := testManager(t, map[string]string{
+	access := newTestAccess(t, map[string]string{
 		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorDescriptor()),
 		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
 			SkelName:  "demo.UserService",
@@ -431,7 +431,7 @@ func TestAccessAllowRpcInjectsActorAndServiceDescriptors(t *testing.T) {
 }
 
 func TestAccessAllowRpcRejectsDifferentActorVia(t *testing.T) {
-	access := testManager(t, map[string]string{
+	access := newTestAccess(t, map[string]string{
 		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorDescriptor()),
 		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
 			SkelName: "demo.UserService",
@@ -447,7 +447,7 @@ func TestAccessAllowRpcRejectsDifferentActorVia(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 
-	ok := access.AllowRpc(testRpcAuthContext(t, watched.PortalActorVia{
+	ok := access.AllowRpc(testRpcOperation(t, watched.PortalActorVia{
 		ActorSkelName: "demo.UserActor",
 		ActorVia:      "client",
 	}, request, recorder))
@@ -480,7 +480,7 @@ func TestRpcAccessOperationParseCredentialWritesUnauthorized(t *testing.T) {
 	}
 }
 
-func testRpcAuthContext(t *testing.T, actorVia watched.PortalActorVia, request *http.Request, response http.ResponseWriter) *RpcOperation {
+func testRpcOperation(t *testing.T, actorVia watched.PortalActorVia, request *http.Request, response http.ResponseWriter) *RpcOperation {
 	t.Helper()
 
 	setTestRequestHeaders(t, request)
@@ -539,12 +539,12 @@ func TestAccessAllowRpcPreservesAuthErrorReason(t *testing.T) {
 		_, _ = w.Write([]byte(`{"error":{"message":"pending review","reason":"USER_PENDING_REVIEW"}}`))
 	}))
 	t.Cleanup(func() { ingressinproc.Unregister(endpoint) })
-	manager := testManager(t, testAuthValues(endpoint))
+	access := newTestAccess(t, testAuthValues(endpoint))
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 	setTestRequestHeaders(t, request)
 	request.Header.Set("Authorization", "Key1 token123, key2 dXNlcjpwd2Q=")
-	allowed := manager.AllowRpc(testRpcAuthContext(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	allowed := access.AllowRpc(testRpcOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
 	require.False(t, allowed)
 	assertRpcAuthError(t, recorder, ex.PermissionDenied, "pending review")
 	assert.Contains(t, recorder.Body.String(), `"reason":"USER_PENDING_REVIEW"`)
