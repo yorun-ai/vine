@@ -8,6 +8,22 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.28.1] - 2026-10-09
+
+### Added
+
+- Show the running Hub runtime version in the Dashboard sidebar.
+
+### Changed
+
+- Refresh the Dashboard light and dark palettes, logo, and favicon with a teal primary color.
+- Improve Dashboard visual hierarchy and responsive layouts.
+- Stable Kubernetes overlays use v0.28.1 for Hub, Link, and Portal images.
+
+### Fixed
+
+- Suppress routine Portal TLS handshake disconnect and connection-reset noise while retaining other handshake errors.
+
 ## [0.28.0] - 2026-10-07
 
 ### Changed
@@ -1563,7 +1579,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.28.0...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.28.1...HEAD
+[0.28.1]: https://github.com/yorun-ai/vine/compare/v0.28.0...v0.28.1
 [0.28.0]: https://github.com/yorun-ai/vine/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/yorun-ai/vine/compare/v0.26.0...v0.27.0
 [0.26.0]: https://github.com/yorun-ai/vine/compare/v0.25.1...v0.26.0
