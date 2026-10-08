@@ -27,7 +27,7 @@ export function ListDetailLayout({
   const handleListScroll = useReservedScrollbar()
 
   return (
-    <section className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden bg-white">
+    <section className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden bg-background">
       <div
         className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[var(--list-panel-width)_minmax(0,1fr)]"
         style={panel.gridStyle}

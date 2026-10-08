@@ -259,7 +259,7 @@ export function AppSidebar({
 
       <aside
         className={cn(
-          'relative z-40 flex h-dvh shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-10 after:w-3 after:bg-[linear-gradient(to_left,rgba(124,72,253,0.045),rgba(124,72,253,0.015),transparent)] transition-[width,transform] duration-200 ease-linear',
+          'relative z-40 flex h-dvh shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-10 after:w-3 after:bg-[linear-gradient(to_left,rgba(0,126,164,0.045),rgba(0,126,164,0.015),transparent)] transition-[width,transform] duration-200 ease-linear',
           isResizing && 'transition-none',
           isMobile
             ? cn(
