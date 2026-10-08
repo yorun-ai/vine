@@ -29,11 +29,13 @@ export function ListDetailLayout({
   return (
     <section className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden bg-background">
       <div
-        className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[var(--list-panel-width)_minmax(0,1fr)]"
+        className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(150px,0.35fr)_minmax(0,0.65fr)] lg:grid-rows-1 lg:grid-cols-[var(--list-panel-width)_minmax(0,1fr)]"
         style={panel.gridStyle}
       >
         <aside className="relative flex min-h-0 flex-col border-b border-border/70 lg:border-r lg:border-b-0">
-          <div className="border-b border-border/70 p-4">{listHeader}</div>
+          {listHeader ? (
+            <div className="border-b border-border/70 p-4">{listHeader}</div>
+          ) : null}
           <div
             className="scrollbar-reserved min-h-0 flex-1 overflow-auto py-2 pr-1 pl-2"
             onScroll={handleListScroll}

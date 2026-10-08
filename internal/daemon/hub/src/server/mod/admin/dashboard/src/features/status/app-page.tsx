@@ -1,4 +1,6 @@
+import { CopyValue } from '@/components/copy-value'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
+import { ListEmptyState } from '@/components/list-empty-state'
 import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
@@ -9,6 +11,7 @@ import {
   Globe2,
   Radio,
   RefreshCw,
+  SearchX,
   Server,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -105,9 +108,9 @@ function DetailRow({
   value: React.ReactNode
 }) {
   return (
-    <div className="grid gap-1 rounded-lg border bg-background px-3 py-2.5">
+    <div className="grid gap-1 rounded-lg bg-muted/30 px-3 py-3">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="min-w-0 break-all font-mono text-sm">{value}</div>
+      <div className="min-w-0 break-words font-mono text-sm [overflow-wrap:anywhere]">{value}</div>
     </div>
   )
 }
@@ -133,7 +136,7 @@ function CapabilityShell({
   title: string
 }) {
   return (
-    <section className="grid gap-3">
+    <section className={count === 0 ? "flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border/40 py-2" : "grid gap-3"}>
       <div className="flex items-center gap-2">
         {icon}
         <h3 className="text-sm font-semibold">{title}</h3>
@@ -158,7 +161,7 @@ function HandlerRow({
   skelName: string
 }) {
   return (
-    <div className="grid gap-1 rounded-lg border bg-background px-3 py-2.5">
+    <div className="grid gap-1 rounded-lg bg-muted/30 px-3 py-3">
       <div className="flex min-w-0 items-center gap-2">
         <a
           href={href}
@@ -173,9 +176,9 @@ function HandlerRow({
         >
           {skelName}
         </a>
-        <Badge variant="outline" className="font-mono">
+        <span className="font-mono text-xs text-muted-foreground">
           {descriptorHash}
-        </Badge>
+        </span>
       </div>
       <div className="truncate font-mono text-xs text-muted-foreground">
         {endpoint}
@@ -202,7 +205,7 @@ function ListenerRow({
   timeoutMs: number
 }) {
   return (
-    <div className="grid gap-2 rounded-lg border bg-background px-3 py-2.5">
+    <div className="grid gap-2 rounded-lg bg-muted/35 px-3 py-3">
       <div className="flex min-w-0 items-center gap-2">
         <a
           href={href}
@@ -217,9 +220,9 @@ function ListenerRow({
         >
           {skelName}
         </a>
-        <Badge variant="outline" className="font-mono">
+        <span className="font-mono text-xs text-muted-foreground">
           {descriptorHash}
-        </Badge>
+        </span>
       </div>
       <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
         <Badge variant="secondary">timeout {timeoutMs}ms</Badge>
@@ -238,7 +241,7 @@ function TaskRunnerRow({
   onNavigate: (href: string) => void
 }) {
   return (
-    <div className="grid gap-2 rounded-lg border bg-background px-3 py-2.5">
+    <div className="grid gap-2 rounded-lg bg-muted/35 px-3 py-3">
       <div className="flex min-w-0 items-center gap-2">
         <a
           href={skeletonTaskHref(item.taskSkelName, item.descriptorHash)}
@@ -253,9 +256,9 @@ function TaskRunnerRow({
         >
           {item.taskSkelName}
         </a>
-        <Badge variant="outline" className="font-mono">
+        <span className="font-mono text-xs text-muted-foreground">
           {item.descriptorHash}
-        </Badge>
+        </span>
       </div>
       <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
         <Badge variant="secondary">timeout {item.timeoutMs}ms</Badge>
@@ -531,10 +534,11 @@ export function AppStatusPage() {
   return (
     <section className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden bg-background">
       <div
-        className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[var(--list-panel-width)_minmax(0,1fr)]"
+        className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(150px,0.35fr)_minmax(0,0.65fr)] lg:grid-rows-1 lg:grid-cols-[var(--list-panel-width)_minmax(0,1fr)]"
         style={listPanel.gridStyle}
       >
         <aside className="relative flex min-h-0 flex-col border-b border-border/70 lg:border-r lg:border-b-0">
+          {items.length > 0 ? (
           <div className="grid gap-4 border-b border-border/70 p-4">
             <div className="relative w-full md:max-w-sm">
               <SearchInput
@@ -559,6 +563,7 @@ export function AppStatusPage() {
               </Button>
             </div>
           </div>
+          ) : null}
 
           <div
             className="scrollbar-reserved min-h-0 flex-1 overflow-auto py-2 pr-1 pl-2"
@@ -567,11 +572,16 @@ export function AppStatusPage() {
             {loading ? (
               <StatusListSkeleton />
             ) : filteredItems.length === 0 ? (
-              <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-                {items.length === 0
-                  ? t('statusApp.empty')
-                  : t('statusApp.noMatch')}
-              </div>
+              // The detail pane next to this column renders the same empty
+              // state in full; this column stays a compact placeholder.
+              <ListEmptyState
+                icon={items.length === 0 ? Activity : SearchX}
+                title={
+                  items.length === 0
+                    ? t('statusApp.empty')
+                    : t('statusApp.noMatch')
+                }
+              />
             ) : (
               <div className="space-y-1">
                 {filteredItems.map((item) => (
@@ -643,8 +653,8 @@ export function AppStatusPage() {
                         <Badge variant="outline">{selectedItem.version}</Badge>
                       ) : null}
                     </div>
-                    <div className="mt-1 truncate font-mono text-sm text-muted-foreground">
-                      {selectedItem.instanceId}
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      <CopyValue value={selectedItem.instanceId} />
                     </div>
                   </div>
                 </div>
@@ -659,19 +669,13 @@ export function AppStatusPage() {
                         {t('statusApp.instanceInfo')}
                       </h3>
                     </div>
-                    <div className="grid gap-2 lg:grid-cols-2">
-                      <DetailRow
-                        label={t('statusApp.instanceId')}
-                        value={selectedItem.instanceId}
-                      />
+                    <div className="grid gap-2 lg:grid-cols-1">
+
                       <DetailRow
                         label={t('statusApp.endpoint')}
-                        value={selectedItem.endpoint || t('common.none')}
+                        value={selectedItem.endpoint ? <CopyValue value={selectedItem.endpoint} /> : t('common.none')}
                       />
-                      <DetailRow
-                        label={t('statusApp.version')}
-                        value={selectedItem.version || t('common.none')}
-                      />
+
                     </div>
                   </section>
 

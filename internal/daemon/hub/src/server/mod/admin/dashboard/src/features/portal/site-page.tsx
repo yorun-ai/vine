@@ -4,6 +4,7 @@ import { invalidateRuleConflicts } from '@/lib/rule-conflicts'
 import { useConfigAccess } from '@/lib/config-access'
 import { SkelName } from '@/components/skel-name'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
+import { ListEmptyState } from '@/components/list-empty-state'
 import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -14,6 +15,7 @@ import {
   Loader2,
   Plus,
   RefreshCw,
+  SearchX,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -1567,6 +1569,7 @@ export function PortalSitePage() {
           style={listPanel.gridStyle}
         >
           <aside className="relative flex min-h-0 flex-col border-b border-border/70 lg:border-r lg:border-b-0">
+            {visibleEntries.length > 0 ? (
             <div className="grid gap-4 border-b border-border/70 p-4">
               <div className="relative w-full md:max-w-sm">
                 <SearchInput
@@ -1605,6 +1608,7 @@ export function PortalSitePage() {
                 </div>
               </div>
             </div>
+            ) : null}
 
             <div
               className="scrollbar-reserved min-h-0 flex-1 overflow-auto py-2 pr-1 pl-2"
@@ -1613,11 +1617,17 @@ export function PortalSitePage() {
               {loading ? (
                 <PortalSiteListSkeleton />
               ) : filteredEntries.length === 0 ? (
-                <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-                  {visibleEntries.length === 0
-                    ? t('portalSite.empty')
-                    : t('portalSite.noMatch')}
-                </div>
+                // The detail pane next to this column renders the full empty
+                // state, including the create action; repeating it here would
+                // put two identical primary buttons on one screen.
+                <ListEmptyState
+                  icon={visibleEntries.length === 0 ? Globe2 : SearchX}
+                  title={
+                    visibleEntries.length === 0
+                      ? t('portalSite.empty')
+                      : t('portalSite.noMatch')
+                  }
+                />
               ) : (
                 <div className="space-y-1">
                   {filteredEntries.map((entry) => (

@@ -1,11 +1,18 @@
+import { Badge } from '@/components/ui/badge'
+import { CopyValue } from '@/components/copy-value'
 import { ListDetailLayout } from '@/components/ui/list-detail-layout'
+import { ListEmptyState } from '@/components/list-empty-state'
 import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
-import { Boxes, RefreshCw, Rocket } from 'lucide-react'
+import {
+  Boxes,
+  RefreshCw,
+  Rocket,
+  SearchX,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Empty,
@@ -82,9 +89,9 @@ function DetailRow({
   value: React.ReactNode
 }) {
   return (
-    <div className="grid gap-1 rounded-lg border bg-background px-3 py-2.5">
+    <div className="grid gap-1 px-1 py-2">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="min-w-0 break-all font-mono text-sm">{value}</div>
+      <div className="min-w-0 break-words font-mono text-sm [overflow-wrap:anywhere]">{value}</div>
     </div>
   )
 }
@@ -184,7 +191,7 @@ export function PortalInstancePage() {
     <ListDetailLayout
       defaultWidth={PORTAL_INSTANCE_LIST_DEFAULT_WIDTH}
       resizeLabel={t('portalInstance.resizeList')}
-      listHeader={
+      listHeader={items.length > 0 ? (
         <>
           <div className="relative">
             <SearchInput
@@ -211,7 +218,7 @@ export function PortalInstancePage() {
             </div>
           </div>
         </>
-      }
+      ) : null}
       listFooter={t('portalInstance.itemCount').replace(
         '{count}',
         String(items.length),
@@ -220,11 +227,16 @@ export function PortalInstancePage() {
         loading ? (
           <PortalInstanceListSkeleton />
         ) : filteredItems.length === 0 ? (
-          <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-            {items.length === 0
-              ? t('portalInstance.empty')
-              : t('portalInstance.noMatch')}
-          </div>
+          // The detail pane next to this column renders the same empty state
+          // in full; this column stays a compact placeholder.
+          <ListEmptyState
+            icon={items.length === 0 ? Rocket : SearchX}
+            title={
+              items.length === 0
+                ? t('portalInstance.empty')
+                : t('portalInstance.noMatch')
+            }
+          />
         ) : (
           <div className="space-y-1">
             {filteredItems.map((item) => (
@@ -270,12 +282,10 @@ export function PortalInstancePage() {
           <div className="border-b border-border/70 px-6 py-5">
             <div className="flex min-w-0 items-center gap-2">
               <Rocket className="size-4 shrink-0 text-primary" />
-              <h1 className="truncate font-mono text-xl font-semibold">
-                {selectedItem.instanceId}
+              <h1 className="text-xl font-semibold">
+                {t('nav.portalInstance.label')}
               </h1>
-              <Badge variant="outline">
-                {selectedItem.version || t('common.noVersion')}
-              </Badge>
+
             </div>
           </div>
 
@@ -287,10 +297,10 @@ export function PortalInstancePage() {
                   {t('portalInstance.instanceInfo')}
                 </h3>
               </div>
-              <div className="grid gap-2 lg:grid-cols-2">
+              <div className="grid max-w-3xl gap-4">
                 <DetailRow
                   label={t('portalInstance.instanceId')}
-                  value={selectedItem.instanceId}
+                  value={<CopyValue value={selectedItem.instanceId} />}
                 />
                 <DetailRow
                   label={t('portalInstance.version')}

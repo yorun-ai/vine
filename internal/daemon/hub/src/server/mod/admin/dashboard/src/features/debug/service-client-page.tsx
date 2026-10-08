@@ -1,3 +1,4 @@
+import { DebugPanels } from '@/components/ui/debug-panels'
 import { useLocale } from '@/i18n'
 import { Badge } from '@/components/ui/badge'
 import { SearchInput } from '@/components/ui/search-input'
@@ -638,11 +639,9 @@ export function ServiceClientPage() {
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <section className="shrink-0 border-b border-border px-3 py-2">
-        <div className="grid gap-3 lg:grid-cols-[minmax(260px,1.2fr)_minmax(220px,1fr)_minmax(220px,1fr)_auto]">
+        <div className="grid gap-3 md:grid-cols-3">
           <label className="grid min-w-0 gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">
-              Service
-            </span>
+            <span className="text-xs font-medium text-muted-foreground">{t('debug.service')}</span>
             <Select
               open={serviceSelectOpen}
               onOpenChange={setServiceSelectOpen}
@@ -673,7 +672,7 @@ export function ServiceClientPage() {
                   }
                   deprecated={selectedService?.deprecated}
                   placeholder={
-                    loadingServices ? 'Loading services' : 'Select service'
+                    loadingServices ? t('debug.loadingServices') : t('debug.chooseService')
                   }
                 />
               </SelectTrigger>
@@ -699,9 +698,7 @@ export function ServiceClientPage() {
                 }
               >
                 {filteredServices.length === 0 ? (
-                  <div className="px-3 py-4 text-sm text-muted-foreground">
-                    No services found.
-                  </div>
+                  <div className="px-3 py-4 text-sm text-muted-foreground">{t('debug.noServices')}</div>
                 ) : (
                   filteredServices.map((item) => (
                     <SelectItem
@@ -727,9 +724,7 @@ export function ServiceClientPage() {
             </Select>
           </label>
           <label className="grid min-w-0 gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">
-              Method
-            </span>
+            <span className="text-xs font-medium text-muted-foreground">{t('debug.method')}</span>
             <Select
               value={selectedMethodKey}
               onValueChange={(value) => {
@@ -759,7 +754,7 @@ export function ServiceClientPage() {
                   }
                   deprecated={selectedMethod?.deprecated}
                   placeholder={
-                    loadingMethods ? 'Loading methods' : 'Select method'
+                    loadingMethods ? t('debug.loadingMethods') : t('debug.chooseMethod')
                   }
                 />
               </SelectTrigger>
@@ -793,9 +788,7 @@ export function ServiceClientPage() {
           </label>
 
           <label className="grid min-w-0 gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">
-              App Instance
-            </span>
+            <span className="text-xs font-medium text-muted-foreground">{t('debug.instance')}</span>
             <Select
               value={selectedAppInstanceKey}
               onValueChange={(value) => {
@@ -815,16 +808,16 @@ export function ServiceClientPage() {
                   title={
                     selectedAppInstance
                       ? `${selectedAppInstance.appName}@${selectedAppInstance.appVersion}`
-                      : 'Auto select'
+                      : t('debug.auto')
                   }
                   description={
                     selectedAppInstance?.appInstanceId ??
-                    'Uses the only matching instance'
+                    t('debug.onlyInstance')
                   }
                   placeholder={
                     loadingAppInstances
-                      ? 'Loading app instances'
-                      : 'Select app instance'
+                      ? t('debug.loadingInstances')
+                      : t('debug.chooseInstance')
                   }
                 />
               </SelectTrigger>
@@ -843,7 +836,7 @@ export function ServiceClientPage() {
                   )}
                 >
                   <SelectCardItem
-                    title="Auto select"
+                    title={t('debug.auto')}
                     description="Use the only matching app instance"
                   />
                 </SelectItem>
@@ -868,28 +861,57 @@ export function ServiceClientPage() {
             </Select>
           </label>
 
-          <div />
         </div>
       </section>
 
-      <main className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)]">
+      <DebugPanels>
         <section className="flex min-h-0 flex-col border-b border-border">
-          <div className="flex h-11 shrink-0 items-center gap-6 border-b border-border px-4">
-            <h2 className="text-sm font-semibold text-foreground">Request</h2>
+          <div className="flex h-11 shrink-0 items-center gap-3 border-b border-border px-4">
+            <h2 className="text-sm font-semibold text-foreground">{t('debug.request')}</h2>
             {traceId || spanId ? (
-              <div className="flex min-w-0 items-center gap-4 font-mono text-xs text-muted-foreground">
+              <div className="hidden min-w-0 flex-1 items-center gap-4 font-mono text-xs text-muted-foreground md:flex">
                 <span className="truncate">traceId={traceId || '-'}</span>
                 <span className="truncate">spanId={spanId || '-'}</span>
               </div>
             ) : null}
+              <div className="ml-auto flex shrink-0 items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-8 px-3"
+                  disabled={loadingDefaultRequest}
+                  onClick={resetRequest}
+                >
+                  {loadingDefaultRequest ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <RotateCcw />
+                  )}
+                  {t('debug.reset')}
+                </Button>
+                <Button
+                  type="button"
+                  className="h-8 px-3"
+                  disabled={
+                    selectedService === null ||
+                    selectedMethod === null ||
+                    invoking ||
+                    loadingDefaultRequest
+                  }
+                  onClick={() => void invokeService()}
+                >
+                  {invoking ? <Loader2 className="animate-spin" /> : <Send />}
+                  {t('debug.send')}
+                </Button>
+              </div>
           </div>
-          <div className="grid min-h-0 flex-1 gap-3 p-3 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
-            <section className="flex min-h-0 flex-col">
+          <div className="grid min-h-0 flex-1 gap-3 p-3 lg:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
+            <section className="flex min-h-0 flex-col overflow-y-auto">
               <div className="grid shrink-0 gap-3">
                 <p className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                   {t('debug.directInvocationHelp')}
                 </p>
-                <h3 className="text-sm font-semibold text-foreground">Actor</h3>
+                <h3 className="text-sm font-semibold text-foreground">{t('debug.actor')}</h3>
                 <label className="grid min-w-0">
                   <Select
                     value={selectedActorSkelName}
@@ -898,7 +920,7 @@ export function ServiceClientPage() {
                   >
                     <SelectTrigger className="h-9 w-full">
                       <span className="truncate text-sm">
-                        {selectedActorSkelName || 'No actor required'}
+                        {selectedActorSkelName || t('debug.noActor')}
                       </span>
                     </SelectTrigger>
                     <SelectContent
@@ -915,9 +937,7 @@ export function ServiceClientPage() {
                   </Select>
                 </label>
                 <label className="grid min-w-0 gap-1.5">
-                  <span className="text-xs font-medium text-muted-foreground">
-                    Timeout (s)
-                  </span>
+                  <span className="text-xs font-medium text-muted-foreground">{t('debug.timeout')}</span>
                   <Input
                     type="number"
                     min={1}
@@ -953,53 +973,20 @@ export function ServiceClientPage() {
                 ) : null}
               </div>
 
-              <div className="flex shrink-0 items-center gap-2 pt-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-10 min-w-28"
-                  disabled={loadingDefaultRequest}
-                  onClick={resetRequest}
-                >
-                  {loadingDefaultRequest ? (
-                    <Loader2 className="animate-spin" />
-                  ) : (
-                    <RotateCcw />
-                  )}
-                  Reset
-                </Button>
-                <Button
-                  type="button"
-                  className="h-10 min-w-28"
-                  disabled={
-                    selectedService === null ||
-                    selectedMethod === null ||
-                    invoking ||
-                    loadingDefaultRequest
-                  }
-                  onClick={() => void invokeService()}
-                >
-                  {invoking ? <Loader2 className="animate-spin" /> : <Send />}
-                  Send
-                </Button>
-              </div>
+
             </section>
 
             <div className="flex min-h-0 flex-col gap-1.5">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">
-                  Params
-                </span>
+                <span className="text-sm font-medium text-foreground">{t('debug.params')}</span>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   className="h-7 px-2 text-xs"
-                  onClick={() => void copyText(params, 'Params copied')}
+                  onClick={() => void copyText(params, t('debug.paramsCopied'))}
                 >
-                  <Copy />
-                  Copy
-                </Button>
+                  <Copy />{t('debug.copy')}</Button>
               </div>
               <CodeMirror
                 value={params}
@@ -1024,28 +1011,24 @@ export function ServiceClientPage() {
 
         <section className="flex min-h-0 flex-col">
           <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-4">
-            <h2 className="text-sm font-semibold text-foreground">
-              Response
-            </h2>
+            <h2 className="text-sm font-semibold text-foreground">{t('debug.response')}</h2>
             <Button
               type="button"
               variant="outline"
               size="sm"
               className="h-7 px-2 text-xs"
               disabled={response === null}
-              onClick={() => void copyText(responseText, 'Response copied')}
+              onClick={() => void copyText(responseText, t('debug.responseCopied'))}
             >
-              <Copy />
-              Copy
-            </Button>
+              <Copy />{t('debug.copy')}</Button>
           </div>
           <div className="min-h-0 flex-1 p-3">
             <pre className="scrollbar-reserved h-full overflow-auto rounded-md border border-input bg-muted/20 p-3 font-mono text-[13px] leading-5 text-muted-foreground">
-              {responseText}
+              {response ? responseText : t('debug.noResponse')}
             </pre>
           </div>
         </section>
-      </main>
+      </DebugPanels>
     </div>
   )
 }

@@ -287,7 +287,7 @@ export function AppSidebar({
               className="size-8 shrink-0 object-contain"
             />
             {isLogoExpanded ? (
-              <span className="ml-2.5 min-w-0 truncate text-[17px] font-semibold tracking-[-0.02em] text-foreground">
+              <span className="ml-2.5 shrink-0 text-[17px] font-semibold tracking-[-0.02em] text-foreground">
                 Vine Hub
               </span>
             ) : null}
@@ -305,7 +305,7 @@ export function AppSidebar({
             ) : null}
             {isLogoExpanded && hubVersion.data ? (
               <span
-                className="ml-auto min-w-0 truncate pl-2 text-[11px] font-medium text-muted-foreground"
+                className="ml-auto min-w-0 flex-1 truncate pl-2 text-right text-[11px] font-medium text-muted-foreground"
                 title={`${t('sidebar.hubVersion')}: ${hubVersion.data}`}
               >
                 {hubVersion.data}
@@ -327,7 +327,7 @@ export function AppSidebar({
             <PopoverTrigger
               aria-label={`${t('sidebar.sceneSwitch.current')}${activeScene.label}`}
               className={cn(
-                'flex h-14 w-full cursor-pointer items-center justify-between overflow-hidden rounded-[8px] border border-sidebar-border bg-background px-2 text-sidebar-foreground shadow-[0_2px_12px_rgba(15,23,42,0.04)] transition-[width,height,padding,border-radius,background-color,color,border-color] duration-200 ease-out hover:bg-primary/[0.06] hover:text-primary',
+                'flex h-10 w-full cursor-pointer items-center justify-between overflow-hidden rounded-[8px] border border-transparent bg-transparent px-2 text-sidebar-foreground transition-[width,height,padding,border-radius,background-color,color,border-color] duration-200 ease-out hover:bg-primary/[0.06] hover:text-primary',
                 isNavCompact &&
                   'mx-auto flex size-10 items-stretch justify-center p-0',
                 isCollapsedCompact &&

@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowDown, ArrowUp, ArrowUpDown, RefreshCw } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, RefreshCw, Inbox, Users, SearchX } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
+import { ListEmptyState } from '@/components/list-empty-state'
 import { Button } from '@/components/ui/button'
 import { SearchInput } from '@/components/ui/search-input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -70,11 +70,14 @@ function SortHeader<Key extends string>({
 function QueueStream({
   item,
   query,
+  onClearSearch,
 }: {
   item: MessageQueueStatusView
   query: string
+  onClearSearch: () => void
 }) {
   const { t } = useLocale()
+  const [view, setView] = useState('subjects')
   const [subjectSort, setSubjectSort] = useState<QueueSort<SubjectSortKey>>({
     key: 'subject',
     direction: 'asc',
@@ -105,23 +108,19 @@ function QueueStream({
     setConsumerSort((current) => nextQueueSort(current, key))
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border">
-      <div className="flex shrink-0 flex-wrap items-center gap-3 border-b bg-muted/30 p-3">
-        <span className="font-mono text-xs text-muted-foreground">
+    <section className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex shrink-0 flex-wrap items-baseline justify-between gap-x-6 gap-y-3 py-3">
+        <span className="font-mono text-sm font-medium text-foreground">
           {item.stream}
         </span>
         {item.exists ? (
-          <div className="ml-auto flex flex-wrap gap-2">
-            <Badge variant="secondary">
-              {t('queue.stored')}: {number(item.messages)}
-            </Badge>
-            <Badge variant="outline">{number(item.bytes)} B</Badge>
-            <Badge variant="outline">
-              {t('queue.consumers')}: {number(item.consumers.length)}
-            </Badge>
-          </div>
+          <dl className="flex flex-wrap items-baseline gap-x-6 gap-y-2 text-xs text-muted-foreground">
+            <div className="flex items-baseline gap-2"><dt>{t('queue.stored')}</dt><dd className="text-sm font-medium tabular-nums text-foreground">{number(item.messages)}</dd></div>
+            <div className="flex items-baseline gap-2"><dt>{t('queue.storage')}</dt><dd className="tabular-nums">{number(item.bytes)} B</dd></div>
+            <div className="flex items-baseline gap-2"><dt>{t('queue.consumers')}</dt><dd className="text-sm font-medium tabular-nums text-foreground">{number(item.consumers.length)}</dd></div>
+          </dl>
         ) : (
-          <Badge variant="outline">{t('queue.missing')}</Badge>
+          <span className="text-sm text-muted-foreground">{t('queue.missing')}</span>
         )}
       </div>
       {!item.exists ? (
@@ -130,11 +129,12 @@ function QueueStream({
         </p>
       ) : (
         <Tabs
-          defaultValue="subjects"
+          value={view}
+          onValueChange={setView}
           className="min-h-0 flex-1 gap-0 overflow-hidden"
         >
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b px-3 py-2">
-            <TabsList aria-label={t('queue.views')}>
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 pb-2 pt-3">
+            <TabsList variant="line" aria-label={t('queue.views')}>
               <TabsTrigger value="subjects">{t('queue.subjects')}</TabsTrigger>
               <TabsTrigger value="consumers">
                 {t('queue.consumers')}
@@ -149,8 +149,8 @@ function QueueStream({
             className="min-h-0 overflow-auto"
             tabIndex={0}
           >
-            <table className="w-full text-sm">
-              <thead className="text-xs text-muted-foreground">
+            {subjects.length > 0 && <table className="w-full text-sm">
+              <thead className="border-b border-border/60 text-xs text-muted-foreground">
                 <tr>
                   <SortHeader
                     label="Subject"
@@ -168,7 +168,7 @@ function QueueStream({
               </thead>
               <tbody>
                 {subjects.map((row) => (
-                  <tr key={row.subject} className="border-t">
+                  <tr key={row.subject} className="border-b border-border/40 hover:bg-muted/30">
                     <td
                       className={`${cell} min-w-64 break-all font-mono text-xs`}
                     >
@@ -180,11 +180,19 @@ function QueueStream({
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table>}
             {!subjects.length && (
-              <p className="p-4 text-sm text-muted-foreground">
-                {keyword ? t('queue.noMatch') : t('queue.noSubjects')}
-              </p>
+              <ListEmptyState
+                icon={keyword ? SearchX : Inbox}
+                title={keyword ? t('queue.noMatch') : t('queue.noSubjects')}
+                description={keyword ? undefined : t('queue.noSubjectsHelp')}
+                className="border-0 py-14"
+                action={keyword ? (
+                  <Button variant="link" onClick={onClearSearch}>{t('queue.clearSearch')}</Button>
+                ) : item.consumers.length > 0 ? (
+                  <Button variant="link" onClick={() => setView('consumers')}>{t('queue.viewConsumers')}</Button>
+                ) : undefined}
+              />
             )}
           </TabsContent>
           <TabsContent
@@ -192,7 +200,7 @@ function QueueStream({
             className="flex min-h-0 flex-col overflow-hidden"
           >
             {item.kind === 'event' && (
-              <p className="max-h-20 shrink-0 overflow-auto border-b bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
+              <p className="max-h-20 shrink-0 overflow-auto pb-3 pt-1 text-xs text-muted-foreground">
                 {t('queue.eventHelp')}
               </p>
             )}
@@ -202,8 +210,8 @@ function QueueStream({
               role="region"
               aria-label={t('queue.consumers')}
             >
-              <table className="w-full text-sm">
-                <thead className="text-xs text-muted-foreground">
+              {consumers.length > 0 && <table className="w-full text-sm">
+                <thead className="border-b border-border/60 text-xs text-muted-foreground">
                   <tr>
                     <SortHeader
                       label="Subject"
@@ -230,7 +238,7 @@ function QueueStream({
                 </thead>
                 <tbody>
                   {consumers.map((row) => (
-                    <tr key={row.name} className="border-t">
+                    <tr key={row.name} className="border-b border-border/40 hover:bg-muted/30">
                       <td
                         className={`${cell} min-w-64 break-all font-mono text-xs`}
                       >
@@ -251,11 +259,14 @@ function QueueStream({
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table>}
               {!consumers.length && (
-                <p className="p-4 text-sm text-muted-foreground">
-                  {keyword ? t('queue.noMatch') : t('queue.noConsumers')}
-                </p>
+                <ListEmptyState
+                  icon={keyword ? SearchX : Users}
+                  title={keyword ? t('queue.noMatch') : t('queue.noConsumers')}
+                  className="border-0 py-14"
+                  action={keyword ? <Button variant="link" onClick={onClearSearch}>{t('queue.clearSearch')}</Button> : undefined}
+                />
               )}
             </div>
           </TabsContent>
@@ -334,7 +345,7 @@ export function MessageQueuePage({ kind }: { kind: 'task' | 'event' }) {
           </p>
         )}
       </div>
-      {item && <QueueStream key={kind} item={item} query={query} />}
+      {item && <QueueStream key={kind} item={item} query={query} onClearSearch={() => setQuery('')} />}
     </div>
   )
 }

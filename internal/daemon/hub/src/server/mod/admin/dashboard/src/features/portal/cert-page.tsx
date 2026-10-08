@@ -2,6 +2,7 @@ import { FieldSourceInfo } from '@/features/field-source/field-source-info'
 import { EnabledField } from './enabled-field'
 import { useConfigAccess } from '@/lib/config-access'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
+import { ListEmptyState } from '@/components/list-empty-state'
 import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
@@ -12,6 +13,7 @@ import {
   Loader2,
   Plus,
   RefreshCw,
+  SearchX,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -821,6 +823,7 @@ export function PortalCertPage() {
           style={listPanel.gridStyle}
         >
           <aside className="relative flex min-h-0 flex-col border-b border-border/70 lg:border-r lg:border-b-0">
+            {certs.length > 0 ? (
             <div className="grid gap-4 border-b border-border/70 p-4">
               <div className="relative w-full md:max-w-sm">
                 <SearchInput
@@ -859,6 +862,7 @@ export function PortalCertPage() {
                 </div>
               </div>
             </div>
+            ) : null}
 
             <div
               className="scrollbar-reserved min-h-0 flex-1 overflow-auto py-2 pr-1 pl-2"
@@ -867,11 +871,17 @@ export function PortalCertPage() {
               {loading ? (
                 <PortalCertListSkeleton />
               ) : filteredCerts.length === 0 ? (
-                <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-                  {certs.length === 0
-                    ? t('portalCert.empty')
-                    : t('portalCert.noMatch')}
-                </div>
+                // The detail pane next to this column renders the full empty
+                // state, including the create action; repeating it here would
+                // put two identical primary buttons on one screen.
+                <ListEmptyState
+                  icon={certs.length === 0 ? KeyRound : SearchX}
+                  title={
+                    certs.length === 0
+                      ? t('portalCert.empty')
+                      : t('portalCert.noMatch')
+                  }
+                />
               ) : (
                 <div className="space-y-1">
                   {filteredCerts.map((cert) => (

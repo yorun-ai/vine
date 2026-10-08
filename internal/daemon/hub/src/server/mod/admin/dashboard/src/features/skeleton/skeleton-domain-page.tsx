@@ -3,6 +3,7 @@ import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import {
+  Boxes,
   Braces,
   CalendarClock,
   ChevronDown,
@@ -10,6 +11,7 @@ import {
   Loader2,
   Radio,
   RefreshCw,
+  SearchX,
   Server,
   ShieldCheck,
   SlidersHorizontal,
@@ -21,6 +23,7 @@ import { DeprecatedBadge } from '@/components/deprecated'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ListDetailLayout } from '@/components/ui/list-detail-layout'
+import { ListEmptyState } from '@/components/list-empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { vrpcClient } from '@/config/vrpc-client'
 import { useLocale } from '@/i18n'
@@ -407,7 +410,7 @@ export function SkeletonDomainPage() {
         '{count}',
         String(filteredDomainGroups.length),
       )}
-      listHeader={
+      listHeader={summaries.length > 0 ? (
         <>
           <div className="relative">
             <SearchInput
@@ -437,7 +440,7 @@ export function SkeletonDomainPage() {
             </div>
           </div>
         </>
-      }
+      ) : null}
       list={
         loading ? (
           <div className="space-y-2">
@@ -446,11 +449,19 @@ export function SkeletonDomainPage() {
             ))}
           </div>
         ) : filteredDomainGroups.length === 0 ? (
-          <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-            {summaries.length === 0
-              ? t('skeleton.domainEmpty')
-              : t('skeleton.domainNoMatch')}
-          </div>
+          <ListEmptyState
+            icon={summaries.length === 0 ? Boxes : SearchX}
+            title={
+              summaries.length === 0
+                ? t('skeleton.domainEmpty')
+                : t('skeleton.domainNoMatch')
+            }
+            description={
+              summaries.length === 0
+                ? t('skeleton.emptyDescription')
+                : t('common.adjustSearch')
+            }
+          />
         ) : (
           <div className="space-y-1">
             {filteredDomainGroups.map((group) => {
@@ -709,9 +720,12 @@ export function SkeletonDomainPage() {
           </div>
         </div>
       ) : (
-        <div className="flex h-full min-h-[24rem] items-center justify-center text-sm text-muted-foreground">
-          {t('skeleton.domainEmpty')}
-        </div>
+        <ListEmptyState
+          icon={Boxes}
+          title={t('skeleton.selectOne')}
+          description={t('skeleton.selectOneDescription')}
+          className="h-full min-h-[24rem]"
+        />
       )}
     </ListDetailLayout>
   )

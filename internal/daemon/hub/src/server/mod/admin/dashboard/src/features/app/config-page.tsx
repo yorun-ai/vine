@@ -24,6 +24,7 @@ import {
   RefreshCw,
   RotateCcw,
   Save,
+  SearchX,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -46,6 +47,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { ListDetailLayout } from '@/components/ui/list-detail-layout'
+import { ListEmptyState } from '@/components/list-empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { vrpcClient } from '@/config/vrpc-client'
 import { copyTextToClipboard } from '@/lib/clipboard'
@@ -528,6 +530,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
     () => parseConfigObject(selectedSavedValue),
     [selectedSavedValue],
   )
+  const [focusedIssue, setFocusedIssue] = React.useState<{ field: string; revision: number } | null>(null)
   const mismatchIssues = React.useMemo(
     () => collectConfigMismatchIssues(value, selectedDescriptor, t),
     [selectedDescriptor, t, value],
@@ -932,6 +935,23 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
     setReplaceDraft('')
   }
 
+  const hasAnyConfig = appConfigs.length > 0
+  const hasNoMatch = hasAnyConfig && filteredConfigs.length === 0
+
+  function openCreateDialog() {
+    setCreateDialogOpen(true)
+    setCreateSkelName('')
+    setCreateValue(emptyConfigValue)
+    setCreateSkelNameError(null)
+    setCreateValueError(null)
+    setCreateMessage(null)
+    setCreateMatchedConfig(null)
+    setSelectedKey(null)
+    setSelectedAppConfig(null)
+    setValue('')
+    void navigate({ to: '/app/config' })
+  }
+
   async function handleCopyConfigJson() {
     try {
       await copyTextToClipboard(editorFormat === 'yaml' ? formatConfigYaml(value) : value)
@@ -950,61 +970,51 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
         String(filteredConfigs.length),
       )}
       listHeader={
-        <>
-          <div className="relative">
-            <SearchInput
-              value={query}
-              onValueChange={setQuery}
-              placeholder={t('common.searchSkelName')}
-            />
-          </div>
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <DomainFilter
-              domains={configDomains}
-              query={query}
-              onQueryChange={setQuery}
-              loading={listLoading}
-            />
-            <div className="ml-auto flex shrink-0 items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => void loadList()}
-                disabled={listLoading}
-                className="size-7"
-                title={t('action.refreshList')}
-              >
-                {listLoading ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="size-3.5" />
-                )}
-              </Button>
-              <Button
-                size="sm"
-                disabled={readOnly}
-                onClick={() => {
-                  setCreateDialogOpen(true)
-                  setCreateSkelName('')
-                  setCreateValue(emptyConfigValue)
-                  setCreateSkelNameError(null)
-                  setCreateValueError(null)
-                  setCreateMessage(null)
-                  setCreateMatchedConfig(null)
-                  setSelectedKey(null)
-                  setSelectedAppConfig(null)
-                  setValue('')
-                  void navigate({ to: '/app/config' })
-                }}
-                className="h-7 gap-1.5 px-2.5"
-                title={t('action.addConfig')}
-              >
-                <Plus className="size-3.5" />
-                {t('action.create')}
-              </Button>
+        hasAnyConfig ? (
+          <>
+            <div className="relative">
+              <SearchInput
+                value={query}
+                onValueChange={setQuery}
+                placeholder={t('common.searchSkelName')}
+              />
             </div>
-          </div>
-        </>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <DomainFilter
+                domains={configDomains}
+                query={query}
+                onQueryChange={setQuery}
+                loading={listLoading}
+              />
+              <div className="ml-auto flex shrink-0 items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => void loadList()}
+                  disabled={listLoading}
+                  className="size-7"
+                  title={t('action.refreshList')}
+                >
+                  {listLoading ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="size-3.5" />
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={readOnly}
+                  onClick={() => openCreateDialog()}
+                  className="h-7 gap-1.5 px-2.5"
+                  title={t('action.addConfig')}
+                >
+                  <Plus className="size-3.5" />
+                  {t('action.create')}
+                </Button>
+              </div>
+            </div>
+          </>
+        ) : null
       }
       list={
         listLoading ? (
@@ -1014,9 +1024,25 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
             ))}
           </div>
         ) : filteredConfigs.length === 0 && !createDialogOpen ? (
-          <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-            {t('appConfig.empty')}
-          </div>
+          <ListEmptyState
+            icon={hasNoMatch ? SearchX : Braces}
+            title={
+              hasNoMatch ? t('appConfig.noMatch') : t('appConfig.empty')
+            }
+            description={
+              hasNoMatch
+                ? t('common.adjustSearch')
+                : t('appConfig.emptyDescription')
+            }
+            action={
+              hasNoMatch || readOnly ? undefined : (
+                <Button type="button" onClick={() => openCreateDialog()}>
+                  <Plus />
+                  {t('action.createConfig')}
+                </Button>
+              )
+            }
+          />
         ) : (
           <div className="space-y-1">
             {createDialogOpen ? (
@@ -1062,14 +1088,14 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                   {status === 'UNUSED' ? (
                     <Badge
                       variant="outline"
-                      className="absolute top-2.5 right-3 border-amber-400 bg-amber-50 text-amber-700"
+                      className="absolute top-2.5 right-3 border-warning/25 bg-warning/10 text-warning"
                     >
                       {t('status.unused')}
                     </Badge>
                   ) : status === 'UNCONFIGURED' ? (
                     <Badge
                       variant="outline"
-                      className="absolute top-2.5 right-3 border-sky-300 bg-sky-50 text-sky-700"
+                      className="absolute top-2.5 right-3 border-info/25 bg-info/10 text-info"
                     >
                       {t('status.unconfigured')}
                     </Badge>
@@ -1087,15 +1113,11 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                       isSelected ? 'text-primary' : 'text-foreground',
                     )}
                   >
-                    <span className="truncate">{configName(config)}</span>
-                    {status !== 'UNUSED' && config.lifecycle ? (
-                      <Badge variant="outline" className="shrink-0">
-                        {config.lifecycle}
-                      </Badge>
-                    ) : null}
+                    <span className="min-w-0 break-words" title={configSkelName(config)}>{configName(config)}</span>
                   </span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    <SkelName skelName={configSkelName(config)} />
+                  <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                    <span className="min-w-0 break-all"><SkelName skelName={configSkelName(config)} /></span>
+                    {status !== 'UNUSED' && config.lifecycle ? <span className="text-muted-foreground/80">{config.lifecycle}</span> : null}
                   </span>
                 </a>
               )
@@ -1265,9 +1287,12 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
           </div>
         </div>
       ) : !selectedKey && !listLoading ? (
-        <div className="flex h-full min-h-[24rem] items-center justify-center text-sm text-muted-foreground">
-          {t('appConfig.selectOne')}
-        </div>
+        <ListEmptyState
+          icon={Braces}
+          title={t('appConfig.selectOne')}
+          description={t('appConfig.selectOneDescription')}
+          className="h-full min-h-[24rem]"
+        />
       ) : detailLoading ? (
         <div className="space-y-4 p-6">
           <Skeleton className="h-8 w-56" />
@@ -1287,7 +1312,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                   {selectedIsUnused ? (
                     <Badge
                       variant="outline"
-                      className="border-amber-400 bg-amber-50 text-amber-700"
+                      className="border-warning/25 bg-warning/10 text-warning"
                     >
                       {t('status.unused')}
                     </Badge>
@@ -1307,7 +1332,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                     <>
                       <Badge
                         variant="outline"
-                        className="border-sky-300 bg-sky-50 text-sky-700"
+                        className="border-info/25 bg-info/10 text-info"
                       >
                         {t('status.unconfigured')}
                       </Badge>
@@ -1564,6 +1589,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                     value={value}
                     fields={editorFields}
                     lockKeys={!rawReplacement && valueIsValidJson && selectedDescriptor !== null && !selectedIsUnused && configObject !== null}
+                    focusField={focusedIssue}
                     mismatchMessages={visibleMismatchMessages}
                     dirtyFields={dirtyFields}
                     typeIndex={typeIndex}
@@ -1577,7 +1603,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                   />
                 </TabsContent>
               </Tabs>
-              <div className="h-28 shrink-0 overflow-y-auto" aria-live="polite">
+              <div className="max-h-48 shrink-0 overflow-y-auto empty:hidden" aria-live="polite">
                 {!valueIsValidJson || jsonDraftInvalid || mismatchIssues.length > 0 ? (
                 <Alert variant="destructive" className="min-h-full">
                   <AlertTitle>
@@ -1590,7 +1616,7 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                     <ul className="grid gap-2">
                       {mismatchIssues.map((issue) => (
                         <li key={issue.text} className="flex items-center justify-between gap-3">
-                          <span>{issue.text}</span>
+                          <button type="button" className="min-w-0 text-left hover:underline focus-visible:outline-ring" onClick={() => setFocusedIssue({ field: issue.fieldName ?? issue.text.split(':')[0], revision: Date.now() })}>{issue.text}</button>
                           {issue.repair ? (
                             <Button
                               type="button"
