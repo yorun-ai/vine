@@ -22,7 +22,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/vault"
 )
 
-func TestPortalAppFiltersOnlyTLSHandshakeEOF(t *testing.T) {
+func TestPortalAppFiltersOnlyTLSHandshakeDisconnects(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "stdlog.jsonl")
 	logger.SetDefault(logger.New("vine:test", logger.WithOption{
 		Format:     logger.FormatJSON,
@@ -33,15 +33,23 @@ func TestPortalAppFiltersOnlyTLSHandshakeEOF(t *testing.T) {
 		logger.SetDefault(logger.New("vine:default"))
 	})
 
-	dropped := "http: TLS handshake error from 127.0.0.1:1234: EOF"
+	dropped := []string{
+		"http: TLS handshake error from 127.0.0.1:1234: EOF",
+		"http: TLS handshake error from 10.202.70.24:36500: read tcp 172.22.101.51:443->10.202.70.24:36500: read: connection reset by peer",
+		"http: TLS handshake error from [::1]:1234: read tcp [::1]:443->[::1]:1234: read: connection reset by peer",
+	}
 	retained := []string{
 		"http: TLS handshake error from 127.0.0.1:1234: remote error: tls: bad certificate",
 		"http: TLS handshake error from 127.0.0.1:1234: tls: first record does not look like a TLS handshake",
 		"http: TLS handshake error from 127.0.0.1:1234: i/o timeout",
 		"http: TLS handshake error from 127.0.0.1:1234: EOF: extra detail",
+		"http: TLS handshake error from 127.0.0.1:1234: read tcp 127.0.0.1:443->127.0.0.1:1234: read: connection reset by peer: extra detail",
+		"read tcp 127.0.0.1:443->127.0.0.1:1234: read: connection reset by peer",
 		"unrelated standard library INFO",
 	}
-	log.Print(dropped)
+	for _, message := range dropped {
+		log.Print(message)
+	}
 	for _, message := range retained {
 		log.Print(message)
 	}
@@ -50,13 +58,36 @@ func TestPortalAppFiltersOnlyTLSHandshakeEOF(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(output), `"msg":"`+dropped+`"`) {
-		t.Fatalf("handshake EOF was logged: %s", output)
+	for _, message := range dropped {
+		if strings.Contains(string(output), `"msg":"`+message+`"`) {
+			t.Errorf("handshake disconnect was logged: %q", message)
+		}
 	}
 	for _, message := range retained {
 		if !strings.Contains(string(output), message) {
 			t.Errorf("standard log message missing: %q", message)
 		}
+	}
+}
+
+func TestPortalAppKeepsTLSHandshakeDisconnectsAtDebug(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "stdlog.jsonl")
+	logger.SetDefault(logger.New("vine:test", logger.WithOption{
+		Format:     logger.FormatJSON,
+		Level:      logger.LevelDebug,
+		OutputPath: path,
+	}))
+	t.Cleanup(func() {
+		logger.SetDefault(logger.New("vine:default"))
+	})
+	message := "http: TLS handshake error from 10.202.70.24:36500: read tcp 172.22.101.51:443->10.202.70.24:36500: read: connection reset by peer"
+	log.Print(message)
+	output, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(output), `"level":"DEBUG"`) || strings.Contains(string(output), `"level":"INFO"`) || strings.Count(string(output), `"msg":"`+message+`"`) != 1 {
+		t.Fatalf("handshake disconnect should appear once at Debug only: %s", output)
 	}
 }
 

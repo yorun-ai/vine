@@ -21,8 +21,8 @@ import (
 
 func init() {
 	logger.ConfigureStdLogProcessors(
-		"portal-tls-eof",
-		logger.StdLogRegexpFilterProcessor(`^http: TLS handshake error from .*: EOF$`),
+		"portal-tls-disconnect",
+		logger.StdLogRegexpFilterProcessor(`^http: TLS handshake error from .*: (EOF|read tcp .*: read: connection reset by peer)$`),
 	)
 }
 
