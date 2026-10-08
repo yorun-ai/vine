@@ -1,4 +1,5 @@
 export const cn = {
+  'sidebar.hubVersion': 'Hub 当前版本',
   'nav.taskQueue.label': '任务队列',
   'nav.taskQueue.description': '查看任务消息存量、积压与确认情况。',
   'nav.eventQueue.label': '事件队列',

@@ -4,6 +4,7 @@ export const AdminApiServiceSpec = {
   serviceName: 'vine.hub.admin.AdminApiService',
   methods: {
     readOnly: 'readOnly',
+    version: 'version',
   },
 } as const;
 

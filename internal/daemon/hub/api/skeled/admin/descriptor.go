@@ -14,7 +14,7 @@ func init() {
 var _DomainDescriptor = &descriptor.Domain{
 	Name:        "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "3eeb4d52",
+	Hash:        "f5b13236",
 	Full:        true,
 	Generated:   &descriptor.GeneratedInfo{CompilerVersion: "v0.31.0"},
 
@@ -735,8 +735,9 @@ var _DomainDescriptor = &descriptor.Domain{
 	},
 
 	Services: []*descriptor.Service{
-		{Name: "AdminApiService", SkelName: "vine.hub.admin.AdminApiService", Description: "Hub's Admin API service, called by the Dashboard", Hash: "8aabb957", Pub: false, Api: true, AuthMode: descriptor.AuthModeOptional, Audiences: []*descriptor.ActorAudience{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: descriptor.ActorViaClient}}, Methods: []*descriptor.Method{
+		{Name: "AdminApiService", SkelName: "vine.hub.admin.AdminApiService", Description: "Hub's Admin API service, called by the Dashboard", Hash: "cd98bfd8", Pub: false, Api: true, AuthMode: descriptor.AuthModeOptional, Audiences: []*descriptor.ActorAudience{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: descriptor.ActorViaClient}}, Methods: []*descriptor.Method{
 			{Name: "readOnly", SkelName: "readOnly", Description: "Whether Hub configuration is read-only", Hash: "af56a296", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, ResultType: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean}},
+			{Name: "version", SkelName: "version", Description: "Vine runtime version of the running Hub", Hash: "58e373c0", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, ResultType: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 		}},
 		{Name: "AppConfigApiService", SkelName: "vine.hub.admin.AppConfigApiService", Description: "Hub's application configuration service, called by Client", Hash: "aae53a0a", Pub: false, Api: true, AuthMode: descriptor.AuthModeOptional, Audiences: []*descriptor.ActorAudience{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: descriptor.ActorViaClient}}, Methods: []*descriptor.Method{
 			{Name: "list", SkelName: "list", Description: "List configuration items", Hash: "70435fd8", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Configuration item list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "AppConfigListItem", SkelName: "vine.hub.admin.AppConfigListItem"}}},

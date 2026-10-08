@@ -34,7 +34,7 @@ var (
 		Type:              rpc.ServiceSpecTypeServer,
 		Name:              "AdminApiService",
 		SkelName:          "vine.hub.admin.AdminApiService",
-		Hash:              "8aabb957",
+		Hash:              "cd98bfd8",
 		ServerType:        reflect.TypeFor[AdminApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultAdminApiServiceServer](),
 
@@ -43,6 +43,7 @@ var (
 		DefaultERServerType: reflect.TypeFor[*DefaultAdminApiServiceServerER](),
 		Methods: []*rpc.MethodSpec{
 			_AdminApiServiceReadOnlySpec,
+			_AdminApiServiceVersionSpec,
 		},
 	}
 	_AdminApiServiceReadOnlySpec = &rpc.MethodSpec{
@@ -59,6 +60,20 @@ var (
 			AdminApiServiceServerER.ReadOnly,
 		},
 	}
+	_AdminApiServiceVersionSpec = &rpc.MethodSpec{
+		Name:                        "Version",
+		SkelName:                    "version",
+		ArgumentsType:               nil,
+		ResultType:                  reflect.TypeFor[string](),
+		ArgumentsSensitive:          false,
+		ResultSensitive:             false,
+		ArgumentsContainsBinaryType: false,
+		ResultContainsBinaryType:    false,
+		MethodFuncs: []any{
+			AdminApiServiceServer.Version,
+			AdminApiServiceServerER.Version,
+		},
+	}
 )
 
 // AdminApiService / Server
@@ -66,6 +81,8 @@ var (
 type AdminApiServiceServer interface {
 	// ReadOnly Whether Hub configuration is read-only.
 	ReadOnly() bool
+	// Version Vine runtime version of the running Hub.
+	Version() string
 
 	mustBeAdminApiServiceServer()
 }
@@ -79,12 +96,18 @@ func (*DefaultAdminApiServiceServer) ReadOnly() bool {
 	return false
 }
 
+func (*DefaultAdminApiServiceServer) Version() string {
+	ex.PanicNew(ex.InvalidRequest, "method version is not implemented")
+	return ""
+}
+
 func (*DefaultAdminApiServiceServer) mustBeAdminApiServiceServer() {}
 
 // AdminApiService / ERServer
 
 type AdminApiServiceServerER interface {
 	ReadOnly() (bool, ex.Error)
+	Version() (string, ex.Error)
 
 	mustBeAdminApiServiceServerER()
 }
@@ -112,6 +135,12 @@ func (service *_WrapperAdminApiServiceServerER) server() AdminApiServiceServer {
 func (service *_WrapperAdminApiServiceServerER) ReadOnly() (ret bool, err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	ret = service.server().ReadOnly()
+	return
+}
+
+func (service *_WrapperAdminApiServiceServerER) Version() (ret string, err ex.Error) {
+	defer func() { err = ex.Recover(recover()) }()
+	ret = service.server().Version()
 	return
 }
 

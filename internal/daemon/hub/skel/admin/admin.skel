@@ -14,4 +14,9 @@ api service AdminApiService {
     method readOnly {
         output bool
     }
+
+    @desc("Vine runtime version of the running Hub")
+    method version {
+        output string
+    }
 }

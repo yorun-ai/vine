@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/popover'
 import { useReservedScrollbar } from '@/components/ui/resizable-list-panel'
 import { cn } from '@/lib/utils'
+import { useHubVersion } from '@/lib/hub-version'
 import { useLocale } from '@/i18n'
 
 import { getCategorizedScenes } from './nav-matching'
@@ -117,6 +118,7 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const navigate = useNavigate()
   const { locale, t } = useLocale()
+  const hubVersion = useHubVersion()
   const categorizedScenes = React.useMemo(
     () => getCategorizedScenes(locale),
     [locale],
@@ -299,6 +301,14 @@ export function AppSidebar({
                 )}
               >
                 DEV
+              </span>
+            ) : null}
+            {isLogoExpanded && hubVersion.data ? (
+              <span
+                className="ml-auto min-w-0 truncate pl-2 text-[11px] font-medium text-muted-foreground"
+                title={`${t('sidebar.hubVersion')}: ${hubVersion.data}`}
+              >
+                {hubVersion.data}
               </span>
             ) : null}
           </div>
