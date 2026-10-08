@@ -87,6 +87,23 @@ export function createAdminApiService(client: VrpcClient) {
         options,
       });
     },
+    /**
+     * Vine runtime version of the running Hub.
+     * @param params - Must be null
+     * @param options - Call options, optional
+     * @returns string -
+     */
+    version(
+      params: null,
+      options?: VrpcRequestOptions,
+    ) {
+      return client.invoke<string>({
+        serviceName: AdminApiServiceSpec.serviceName,
+        methodName: AdminApiServiceSpec.methods.version,
+        params,
+        options,
+      });
+    },
   };
 }
 /** Hub's application configuration service, called by Client */

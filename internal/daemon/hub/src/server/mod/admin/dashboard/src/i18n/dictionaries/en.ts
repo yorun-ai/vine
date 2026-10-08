@@ -1,6 +1,7 @@
 import type { TranslationKey } from './cn'
 
 export const en: Record<TranslationKey, string> = {
+  'sidebar.hubVersion': 'Current Hub version',
   'nav.taskQueue.label': 'Task Queues',
   'nav.taskQueue.description': 'Inspect Task messages, backlog, and acknowledgements.',
   'nav.eventQueue.label': 'Event Queues',
