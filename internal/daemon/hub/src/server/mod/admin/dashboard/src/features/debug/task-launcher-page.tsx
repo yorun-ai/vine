@@ -1,3 +1,5 @@
+import { useLocale } from '@/i18n'
+import { DebugPanels } from '@/components/ui/debug-panels'
 import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
 import { json } from '@codemirror/lang-json'
@@ -159,6 +161,7 @@ function SelectCardItem({
 }
 
 export function TaskLauncherPage() {
+  const { t } = useLocale()
   const navigate = useNavigate()
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
@@ -438,7 +441,7 @@ export function TaskLauncherPage() {
         <div className="grid items-start gap-3 lg:grid-cols-[minmax(260px,1fr)_minmax(260px,1fr)_auto]">
           <label className="grid min-w-0 gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">
-              Task
+              {t('debug.task')}
             </span>
             <Select
               open={taskSelectOpen}
@@ -461,7 +464,7 @@ export function TaskLauncherPage() {
                   title={selectedTask?.taskSkelName}
                   description={selectedTask?.descriptorHash}
                   deprecated={selectedTask?.deprecated}
-                  placeholder={loadingTasks ? 'Loading tasks' : 'Select task'}
+                  placeholder={loadingTasks ? t('debug.loadingTasks') : t('debug.chooseTask')}
                 />
               </SelectTrigger>
               <SelectContent
@@ -486,9 +489,7 @@ export function TaskLauncherPage() {
                 }
               >
                 {filteredTasks.length === 0 ? (
-                  <div className="px-3 py-4 text-sm text-muted-foreground">
-                    No tasks found.
-                  </div>
+                  <div className="px-3 py-4 text-sm text-muted-foreground">{t('debug.noTasks')}</div>
                 ) : (
                   filteredTasks.map((item) => (
                     <SelectItem
@@ -515,7 +516,7 @@ export function TaskLauncherPage() {
 
           <label className="grid min-w-0 gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">
-              Trigger
+              {t('debug.trigger')}
             </span>
             <Select
               value={selectedTriggerKey}
@@ -547,7 +548,7 @@ export function TaskLauncherPage() {
                   }
                   deprecated={selectedTrigger?.deprecated}
                   placeholder={
-                    loadingTriggers ? 'Loading triggers' : 'Select trigger'
+                    loadingTriggers ? t('debug.loadingTriggers') : t('debug.chooseTrigger')
                   }
                 />
               </SelectTrigger>
@@ -596,7 +597,7 @@ export function TaskLauncherPage() {
               ) : (
                 <RotateCcw />
               )}
-              Reset
+              {t('debug.reset')}
             </Button>
             <Button
               type="button"
@@ -610,16 +611,16 @@ export function TaskLauncherPage() {
               onClick={() => void launchTask()}
             >
               {launching ? <Loader2 className="animate-spin" /> : <Send />}
-              Send
+              {t('debug.send')}
             </Button>
           </div>
         </div>
       </section>
 
-      <main className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_minmax(160px,0.45fr)]">
+      <DebugPanels>
         <section className="flex min-h-0 flex-col border-b border-border">
           <div className="flex h-11 shrink-0 items-center gap-6 border-b border-border px-4">
-            <h2 className="text-sm font-semibold text-foreground">Request</h2>
+            <h2 className="text-sm font-semibold text-foreground">{t('debug.request')}</h2>
             {traceId || spanId ? (
               <div className="flex min-w-0 items-center gap-4 font-mono text-xs text-muted-foreground">
                 <span className="truncate">traceId={traceId || '-'}</span>
@@ -630,21 +631,17 @@ export function TaskLauncherPage() {
           <div className="min-h-0 flex-1 p-3">
             <div className="flex h-full min-h-0 flex-col gap-1.5">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">
-                  Arguments
-                </span>
+                <span className="text-sm font-medium text-foreground">{t('debug.arguments')}</span>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   className="h-7 px-2 text-xs"
                   onClick={() =>
-                    void copyText(argumentsJson, 'Arguments copied')
+                    void copyText(argumentsJson, t('debug.argumentsCopied'))
                   }
                 >
-                  <Copy />
-                  Copy
-                </Button>
+                  <Copy />{t('debug.copy')}</Button>
               </div>
               <CodeMirror
                 value={argumentsJson}
@@ -669,15 +666,15 @@ export function TaskLauncherPage() {
 
         <section className="flex min-h-0 flex-col">
           <div className="flex h-11 shrink-0 items-center border-b border-border px-4">
-            <h2 className="text-sm font-semibold text-foreground">Result</h2>
+            <h2 className="text-sm font-semibold text-foreground">{t('debug.result')}</h2>
           </div>
           <div className="min-h-0 flex-1 p-3">
             <pre className="scrollbar-reserved h-full overflow-auto rounded-md border border-input bg-muted/20 p-3 font-mono text-[13px] leading-5 text-muted-foreground">
-              {result}
+              {result === 'No task launched yet.' ? t('debug.noTask') : result}
             </pre>
           </div>
         </section>
-      </main>
+      </DebugPanels>
     </div>
   )
 }

@@ -26,6 +26,8 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -54,6 +56,8 @@
 }
 
 :root {
+  --warning: #946200;
+  --info: #087398;
   --background: #ffffff;
   --foreground: oklch(0.21 0.012 240);
   --card: #ffffff;
@@ -89,6 +93,8 @@
 }
 
 .dark {
+  --warning: #e7bd62;
+  --info: #82cfe6;
   --background: #191d24;
   --foreground: #edf0f4;
   --card: #222831;

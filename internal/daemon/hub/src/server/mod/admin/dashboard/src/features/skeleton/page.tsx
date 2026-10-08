@@ -3,7 +3,12 @@ import { SkelName } from '@/components/skel-name'
 import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
-import { ChevronDown, Loader2, RefreshCw } from 'lucide-react'
+import {
+  ChevronDown,
+  Loader2,
+  RefreshCw,
+  SearchX,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
@@ -13,6 +18,7 @@ import {
 } from '@/components/deprecated'
 import { Button } from '@/components/ui/button'
 import { ListDetailLayout } from '@/components/ui/list-detail-layout'
+import { ListEmptyState } from '@/components/list-empty-state'
 import {
   Popover,
   PopoverContent,
@@ -429,7 +435,7 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
         '{count}',
         String(filteredGroups.length),
       )}
-      listHeader={
+      listHeader={items.length > 0 ? (
         <>
           <div className="relative">
             <SearchInput
@@ -464,7 +470,7 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
             </div>
           </div>
         </>
-      }
+      ) : null}
       list={
         loading ? (
           <div className="space-y-2">
@@ -473,11 +479,19 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
             ))}
           </div>
         ) : filteredGroups.length === 0 ? (
-          <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-            {items.length === 0
-              ? tText(config.emptyTitle)
-              : t('skeleton.noMatch')}
-          </div>
+          <ListEmptyState
+            icon={items.length === 0 ? config.icon : SearchX}
+            title={
+              items.length === 0
+                ? tText(config.emptyTitle)
+                : t('skeleton.noMatch')
+            }
+            description={
+              items.length === 0
+                ? t('skeleton.emptyDescription')
+                : t('common.adjustSearch')
+            }
+          />
         ) : (
           <div className="min-w-0 space-y-1">
             {filteredGroups.map((group) => {
@@ -646,9 +660,12 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
       }
     >
       {!routeSkelName && !loading ? (
-        <div className="flex h-full min-h-[24rem] items-center justify-center text-sm text-muted-foreground">
-          {t('skeleton.selectOne')}
-        </div>
+        <ListEmptyState
+          icon={config.icon}
+          title={t('skeleton.selectOne')}
+          description={t('skeleton.selectOneDescription')}
+          className="h-full min-h-[24rem]"
+        />
       ) : loading ? (
         <div className="space-y-4 p-6">
           <Skeleton className="h-8 w-56" />
@@ -797,9 +814,11 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
           </div>
         </div>
       ) : (
-        <div className="flex h-full min-h-[24rem] items-center justify-center text-sm text-muted-foreground">
-          {t('skeleton.notFound')}
-        </div>
+        <ListEmptyState
+          icon={SearchX}
+          title={t('skeleton.notFound')}
+          className="h-full min-h-[24rem]"
+        />
       )}
     </ListDetailLayout>
   )

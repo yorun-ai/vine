@@ -7,6 +7,7 @@ import {
   lockedWebMountPath,
 } from './web-mount-path'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
+import { ListEmptyState } from '@/components/list-empty-state'
 import { SearchInput } from '@/components/ui/search-input'
 import { invalidateRuleConflicts, useRuleConflicts } from '@/lib/rule-conflicts'
 import * as React from 'react'
@@ -20,6 +21,7 @@ import {
   Loader2,
   Plus,
   RefreshCw,
+  SearchX,
   ShieldCheck,
   Trash2,
 } from 'lucide-react'
@@ -803,7 +805,7 @@ function PortalRuleInlineEditor({
 
           <Field label={t('portalRule.matchPathPrefix')}>
             <Input
-              className={lockedMountPath === null ? undefined : 'text-destructive'}
+              className={lockedMountPath === null ? undefined : 'text-muted-foreground'}
               value={formValue.matchPathPrefix}
               placeholder={t('portalRule.pathPrefixPlaceholder')}
               onChange={(event) => setField('matchPathPrefix', event.target.value)}
@@ -911,7 +913,7 @@ function PortalRuleInlineEditor({
           {formValue.routeType === 'SITE' ? (
             <Field label={t('portalRule.routePathPrefix')} error={fieldErrors.routePathPrefix}>
               <Input
-                className={lockedMountPath === null ? undefined : 'text-destructive'}
+                className={lockedMountPath === null ? undefined : 'text-muted-foreground'}
                 value={formValue.routePathPrefix}
                 placeholder="/internal"
                 aria-invalid={Boolean(fieldErrors.routePathPrefix)}
@@ -1291,6 +1293,7 @@ export function PortalRulePage() {
           style={listPanel.gridStyle}
         >
           <aside className="relative flex min-h-0 flex-col border-b border-border/70 lg:border-r lg:border-b-0">
+            {visibleRules.length > 0 ? (
             <div className="grid gap-4 border-b border-border/70 p-4">
               <div className="relative w-full md:max-w-sm">
                 <SearchInput
@@ -1329,6 +1332,7 @@ export function PortalRulePage() {
                 </div>
               </div>
             </div>
+            ) : null}
 
             <div
               className="scrollbar-reserved min-h-0 flex-1 overflow-auto py-2 pr-1 pl-2"
@@ -1337,11 +1341,17 @@ export function PortalRulePage() {
               {loading ? (
                 <PortalRuleListSkeleton />
               ) : filteredRules.length === 0 ? (
-                <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-                  {visibleRules.length === 0
-                    ? t('portalRule.empty')
-                    : t('portalRule.noMatch')}
-                </div>
+                // The detail pane next to this column renders the full empty
+                // state, including the create action; repeating it here would
+                // put two identical primary buttons on one screen.
+                <ListEmptyState
+                  icon={visibleRules.length === 0 ? ShieldCheck : SearchX}
+                  title={
+                    visibleRules.length === 0
+                      ? t('portalRule.empty')
+                      : t('portalRule.noMatch')
+                  }
+                />
               ) : (
                 <div className="space-y-1">
                   {filteredRules.map((rule) => (
@@ -1598,7 +1608,7 @@ export function PortalRulePage() {
                             {selectedMountPath === null ? (
                               selectedRule.matchPathPrefix || '/'
                             ) : (
-                              <span className="text-destructive line-through">
+                              <span className="text-muted-foreground line-through">
                                 {rawSelectedRule?.matchPathPrefix || '/'}
                               </span>
                             )}
@@ -1658,7 +1668,7 @@ export function PortalRulePage() {
                               {selectedMountPath === null ? (
                                 selectedRule.routePathPrefix || '/'
                               ) : (
-                                <span className="text-destructive line-through">
+                                <span className="text-muted-foreground line-through">
                                   {rawSelectedRule?.routePathPrefix || '/'}
                                 </span>
                               )}

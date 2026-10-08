@@ -2,6 +2,7 @@ import { EnabledField } from './enabled-field'
 import { invalidateRuleConflicts, useRuleConflicts } from '@/lib/rule-conflicts'
 import { useConfigAccess } from '@/lib/config-access'
 import { ListDetailFooter } from '@/components/ui/list-detail-layout'
+import { ListEmptyState } from '@/components/list-empty-state'
 import { SearchInput } from '@/components/ui/search-input'
 import * as React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -13,8 +14,9 @@ import {
   Edit3,
   GitBranch,
   Loader2,
-  RefreshCw,
   Plus,
+  RefreshCw,
+  SearchX,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -32,6 +34,7 @@ import {
 } from '@/components/ui/dialog'
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -680,6 +683,7 @@ export function PortalEntryPage() {
         style={listPanel.gridStyle}
       >
         <aside className="relative flex min-h-0 flex-col border-b border-border/70 lg:border-r lg:border-b-0">
+          {entries.length > 0 ? (
           <div className="grid gap-4 border-b border-border/70 p-4">
             <div className="relative w-full md:max-w-sm">
               <SearchInput
@@ -715,6 +719,7 @@ export function PortalEntryPage() {
                 </div>
             </div>
           </div>
+          ) : null}
 
           <div
             className="scrollbar-reserved min-h-0 flex-1 overflow-auto py-2 pr-1 pl-2"
@@ -723,11 +728,17 @@ export function PortalEntryPage() {
             {loading ? (
               <PortalEntryListSkeleton />
             ) : filteredEntries.length === 0 ? (
-              <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-                {entries.length === 0
-                  ? t('portalEntry.empty')
-                  : t('portalEntry.noMatch')}
-              </div>
+              // The detail pane next to this column renders the full empty
+              // state, including the create action; repeating it here would
+              // put two identical primary buttons on one screen.
+              <ListEmptyState
+                icon={entries.length === 0 ? Compass : SearchX}
+                title={
+                  entries.length === 0
+                    ? t('portalEntry.empty')
+                    : t('portalEntry.noMatch')
+                }
+              />
             ) : (
               <div className="space-y-1">
                 {filteredEntries.map((entry) => (
@@ -1007,9 +1018,19 @@ export function PortalEntryPage() {
                     : t('portalEntry.noMatch')}
                 </EmptyTitle>
                 <EmptyDescription>
-                  {t('portalEntry.emptyDescription')}
+                  {entries.length === 0
+                    ? t('portalEntry.emptyDescription')
+                    : t('common.adjustSearch')}
                 </EmptyDescription>
               </EmptyHeader>
+              {entries.length === 0 && !readOnly ? (
+                <EmptyContent>
+                  <Button type="button" onClick={() => setCreating(true)}>
+                    <Plus />
+                    {t('portalEntry.createTitle')}
+                  </Button>
+                </EmptyContent>
+              ) : null}
             </Empty>
           )}
         </main>

@@ -26,6 +26,7 @@ class ConfigDirtyGutterMarker extends GutterMarker {
 const dirtyGutterMarker = new ConfigDirtyGutterMarker()
 
 interface ConfigJsonEditorProps {
+  focusField?: { field: string; revision: number } | null
   rawValue?: boolean
   format?: 'json5' | 'yaml'
   value: string
@@ -42,6 +43,7 @@ interface ConfigJsonEditorProps {
 
 export function ConfigJsonEditor({
   value,
+  focusField,
   format = 'json5',
   rawValue = false,
   fields,
@@ -54,6 +56,21 @@ export function ConfigJsonEditor({
   onChange,
   onInvalidChange,
 }: ConfigJsonEditorProps) {
+  const viewRef = React.useRef<EditorView | null>(null)
+  React.useEffect(() => {
+    const view = viewRef.current
+    if (!view || !focusField) return
+    const ranges = (format === 'yaml' ? getConfigYamlPropertyRanges : getConfigJsonPropertyRanges)(view.state.doc.toString())
+    const rootField = focusField.field.split(/[.\[]/)[0]
+    const target = ranges.find((range) => range.name === focusField.field)
+      ?? ranges.find((range) => range.name === rootField)
+    if (!target) return
+    view.dispatch({
+      selection: { anchor: target.from },
+      effects: EditorView.scrollIntoView(target.from, { y: 'center' }),
+    })
+    view.focus()
+  }, [focusField, format])
   const { t } = useLocale()
   const isYaml = format === 'yaml'
   const createDocument = React.useCallback((text: string, definitions: ReadonlyArray<ConfigJsonField>, locked: boolean) => {
@@ -327,6 +344,7 @@ export function ConfigJsonEditor({
 
   return (
     <CodeMirror
+      onCreateEditor={(view) => { viewRef.current = view }}
       key={document.doc}
       value={draft}
       extensions={extensions}

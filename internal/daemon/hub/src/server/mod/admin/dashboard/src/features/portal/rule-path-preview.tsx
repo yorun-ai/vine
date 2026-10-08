@@ -19,11 +19,11 @@ export function RulePathPreview({ matchPathPrefix, routePathPrefix, mountPath }:
     <section aria-labelledby={titleId} className="grid min-w-0 gap-3 border-t pt-5">
       <h3 id={titleId} className="text-sm font-medium">{t('portalRule.pathPreview')}</h3>
       {mountPath ? (
-        <Alert variant="warning" className="text-xs">
+        <Alert variant="default" className="text-xs">
           <AlertDescription>
             {(() => {
               const [before, after] = t('portalRule.webMountPathPreview').split('{mountPath}')
-              return <>{before}<span className="font-semibold text-destructive">{mountPath}</span>{after}</>
+              return <>{before}<span className="font-mono font-medium text-foreground">{mountPath}</span>{after}</>
             })()}
           </AlertDescription>
         </Alert>
