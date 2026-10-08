@@ -649,7 +649,7 @@ export function SkeletonDomainPage() {
                   <section key={group.kind} className="grid gap-2">
                     <button
                       type="button"
-                      className="sticky top-0 z-20 -mx-6 flex items-center gap-2 bg-white px-6 py-2 text-left"
+                      className="sticky top-0 z-20 -mx-6 flex items-center gap-2 bg-background px-6 py-2 text-left"
                       onClick={() =>
                         toggleGroupCollapsed(selectedSummary, group.kind)
                       }
