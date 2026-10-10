@@ -78,7 +78,7 @@ func seedSourcePath(path string) string {
 // seedLocation presents entity names and fields instead of internal JSON pointers.
 func seedLocation(root *yaml.Node, path string) string {
 	parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
-	kinds := map[string]string{"appConfigs": "appConfig", "portalRules": "portalRule", "portalSites": "portalSite", "portalCerts": "portalCert"}
+	kinds := map[string]string{"appConfigs": "appConfig", "portalRules": "portalRule", "portalEntries": "portalEntry", "portalSites": "portalSite", "portalCerts": "portalCert"}
 	if len(parts) < 2 || kinds[parts[0]] == "" {
 		return "seed"
 	}

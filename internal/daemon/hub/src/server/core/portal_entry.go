@@ -30,8 +30,7 @@ const (
 // routes at once.
 type PortalEntry struct {
 	Id int
-	// Name is the entry label. Hub derives the name from the access of an entry
-	// it creates on its own, and a seed or an operator can name an entry instead.
+	// Name is the entry label supplied by a seed or an operator.
 	Name     string
 	Protocol string
 	Http     *PortalEntryHTTP
@@ -222,30 +221,6 @@ func (m *PortalEntryCore) FindById(id int) (*PortalEntry, bool) {
 	return m.PortalEntryRepo.GetById(id)
 }
 
-// EnsureEntry returns the entry rules with this scheme, host, and port belong
-// to, and creates it when no entry serves them yet.
-func (m *PortalEntryCore) EnsureEntry(scheme string, host string, port int) *PortalEntry {
-	normalized := normalizePortalEntry(PortalEntry{
-		Scheme: scheme,
-		Host:   host,
-		Port:   port,
-		// A rule Hub aggregates into a new entry stays published, the way a rule
-		// that names an entry Hub already stores does.
-		Enabled: true,
-	})
-	if current, ok := m.PortalEntryRepo.GetBySchemeHostPort(normalized.Scheme, normalized.Host, normalized.Port); ok {
-		return current
-	}
-	normalized.Name = PortalEntryName(normalized.Scheme, normalized.Host, normalized.Port)
-	m.validateListeners(normalized)
-	m.PortalEntryRepo.Save(&normalized)
-	return &normalized
-}
-
-// Update changes the label and the access of the entry and republishes the rules
-// it routes. When another entry already serves the target access, the rules move
-// to that entry and the emptied one is removed, so one access never has two
-// entries.
 func (m *PortalEntryCore) Update(id int, update PortalEntryUpdate) PortalEntryView {
 	current, ok := m.PortalEntryRepo.GetById(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", id))
@@ -312,15 +287,6 @@ func (m *PortalEntryCore) Update(id int, update PortalEntryUpdate) PortalEntryVi
 		m.saveRules(next.Id, next.Id)
 	}
 	return m.view(next)
-}
-
-// PortalEntryName returns the name Hub derives for an entry it creates on its
-// own, such as the entry a rule joins when no entry serves its access yet.
-func PortalEntryName(scheme string, host string, port int) string {
-	if host == "" {
-		return fmt.Sprintf("%s:%d", scheme, port)
-	}
-	return fmt.Sprintf("%s:%s:%d", scheme, host, port)
 }
 
 // portalEntryAddress renders the access an entry serves for error messages.

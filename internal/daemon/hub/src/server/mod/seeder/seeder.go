@@ -56,7 +56,7 @@ func (s *Seeder) loadSeedYAML() {
 	ex.PanicIfError(err)
 	payload := new(_SettingsYAMLPayload)
 	ex.PanicIfError(node.Decode(payload))
-	ex.PanicIfError(checkSeedRuleStyle(payload))
+	ex.PanicIfError(validateSeedRuleEntries(payload))
 	for i := range payload.AppConfigs {
 		payload.AppConfigs[i].Sources = entityFieldSources(sources, "appConfigs", i)
 	}
@@ -90,18 +90,7 @@ func (s *Seeder) loadSeedYAML() {
 	}
 	for _, rule := range entities.PortalRules {
 		s.RuleCore.Validate(*rule.Rule)
-		if rule.EntryName == "" {
-			listenerEntries = append(listenerEntries, s.EntryCore.Normalize(rule.Entry))
-		}
-		entry := rule.Entry
-		if rule.EntryName != "" {
-			declared, ok := entries[rule.EntryName]
-			if !ok {
-				declared, ok = s.EntryCore.FindByName(rule.EntryName)
-			}
-			ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %s not found", rule.EntryName))
-			entry = *declared
-		}
+		entry := *entries[rule.EntryName]
 		if strings.HasPrefix(strings.TrimSpace(entry.Host), "*.") {
 			entry = s.EntryCore.Normalize(entry)
 			site, ok := sites[rule.Rule.RouteSiteName]

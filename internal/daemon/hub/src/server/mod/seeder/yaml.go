@@ -82,32 +82,17 @@ type seedEntities struct {
 	PortalCerts   []*core.PortalCert
 }
 
-// seedRule is one Portal rule a seed declares together with the entry it joins:
-// the entry the document names, or the scheme, host, and port the rule declares
-// and Hub ensures when it applies the rule.
+// seedRule carries a rule and the name of its explicitly declared entry.
 type seedRule struct {
-	Rule *core.PortalRule
-	// EntryName names a Portal entry the same document declares. Empty means the
-	// rule declares the scheme, host, and port of the entry it joins.
+	Rule      *core.PortalRule
 	EntryName string
-	// Entry holds the scheme, host, and port the rule declares, used when
-	// EntryName is empty.
-	Entry core.PortalEntry
 }
 
-// resolveSeedRule points a seed rule at the entry it joins: the entry the seed
-// names, or the entry that serves the scheme, host, and port the rule declares.
-// Hub ensures the latter, the way it does for any rule whose fields no entry
-// serves yet.
 func resolveSeedRule(entryCore *core.PortalEntryCore, rule *seedRule) *core.PortalRule {
 	resolved := *rule.Rule
-	if rule.EntryName != "" {
-		entry, ok := entryCore.FindByName(rule.EntryName)
-		ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %s not found", rule.EntryName))
-		resolved.EntryId = entry.Id
-		return &resolved
-	}
-	resolved.EntryId = entryCore.EnsureEntry(rule.Entry.Scheme, rule.Entry.Host, rule.Entry.Port).Id
+	entry, ok := entryCore.FindByName(rule.EntryName)
+	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %s not found", rule.EntryName))
+	resolved.EntryId = entry.Id
 	return &resolved
 }
 
@@ -118,7 +103,7 @@ func parseSeedEntities(content string) (*seedEntities, error) {
 	if err != nil || payload == nil {
 		return nil, err
 	}
-	if err := checkSeedRuleStyle(payload); err != nil {
+	if err := validateSeedRuleEntries(payload); err != nil {
 		return nil, err
 	}
 	return payload.entities(), nil
@@ -206,6 +191,8 @@ type _PortalEntry struct {
 	Protocol  *string           `yaml:"protocol"`
 	Http      *_PortalEntryHTTP `yaml:"http"`
 	Name      string            `yaml:"name"`
+	Scheme    string            `yaml:"scheme"`
+	Port      int               `yaml:"port"`
 	Host      string            `yaml:"host"`
 	ListenIPs []string          `yaml:"listenIPs"`
 	// Enabled defaults to true when omitted.
@@ -220,8 +207,17 @@ func (e *_PortalEntry) UnmarshalYAML(node *yaml.Node) error {
 	if err := checkSeedFields(fields, "portalEntries"); err != nil {
 		return err
 	}
-	if value, present := fields["protocol"]; !present || value.Tag == "!!null" || strings.TrimSpace(value.Value) == "" {
-		return fmt.Errorf("portal entry protocol is required")
+	if value, present := fields["protocol"]; present {
+		if value.Tag == "!!null" || strings.TrimSpace(value.Value) == "" {
+			return fmt.Errorf("portal entry protocol is empty")
+		}
+		for _, old := range []string{"scheme", "port"} {
+			if _, mixed := fields[old]; mixed {
+				return fmt.Errorf("portal entry: protocol cannot be mixed with legacy %s", old)
+			}
+		}
+	} else if _, block := fields["http"]; block {
+		return fmt.Errorf("portal entry http requires protocol")
 	}
 	if block, ok := fields["http"]; ok && block.Tag == "!!null" {
 		return fmt.Errorf("portal entry http cannot be null")
@@ -233,6 +229,8 @@ func (e *_PortalEntry) UnmarshalYAML(node *yaml.Node) error {
 func (e _PortalEntry) toCorePortalEntry() *core.PortalEntry {
 	entry := &core.PortalEntry{
 		Name:      e.Name,
+		Scheme:    e.Scheme,
+		Port:      e.Port,
 		Host:      e.Host,
 		ListenIPs: e.ListenIPs,
 		Enabled:   core.EnabledOrDefault(e.Enabled),
@@ -253,12 +251,8 @@ func (e _PortalEntry) toCorePortalEntry() *core.PortalEntry {
 type _PortalRule struct {
 	Sources core.FieldSources `yaml:"-"`
 	Name    string            `yaml:"name"`
-	// EntryName names the entry the rule joins. A rule declares either the entry
-	// name or the access the entry serves, never both.
+	// EntryName names an entry declared in the same seed.
 	EntryName               string `yaml:"entryName"`
-	MatchScheme             string `yaml:"matchScheme"`
-	MatchHost               string `yaml:"matchHost"`
-	MatchPort               int    `yaml:"matchPort"`
 	MatchPathPrefix         string `yaml:"matchPathPrefix"`
 	RouteType               string `yaml:"routeType"`
 	RouteSiteName           string `yaml:"routeSiteName"`
@@ -325,12 +319,10 @@ func seedEntityLabel(section string, name string) string {
 	return fmt.Sprintf("%s %q", kind, name)
 }
 
-// toSeedRule carries the rule itself and the entry it joins: a seed expresses
-// the entry either by naming one it declares or by declaring the access Hub
-// ensures when it applies the rule.
+// toSeedRule carries a rule and its declared entry reference.
 func (r _PortalRule) toSeedRule() *seedRule {
 	return &seedRule{
-		Rule: &core.PortalRule{FieldSources: ruleFieldSources(r.Sources),
+		Rule: &core.PortalRule{FieldSources: r.Sources,
 			Name:                    r.Name,
 			MatchPathPrefix:         r.MatchPathPrefix,
 			RouteType:               r.RouteType,
@@ -340,29 +332,7 @@ func (r _PortalRule) toSeedRule() *seedRule {
 			Enabled:                 core.EnabledOrDefault(r.Enabled),
 		},
 		EntryName: r.EntryName,
-		Entry: core.PortalEntry{
-			Scheme: r.MatchScheme,
-			Host:   r.MatchHost,
-			Port:   r.MatchPort,
-		},
 	}
-}
-
-// ruleFieldSources drops the fields a seed declares for the entry a rule joins:
-// the entry owns the access, and an entry carries no field sources of its own.
-func ruleFieldSources(sources core.FieldSources) core.FieldSources {
-	if len(sources) == 0 {
-		return nil
-	}
-	ret := core.FieldSources{}
-	for path, source := range sources {
-		switch path {
-		case "/matchScheme", "/matchHost", "/matchPort":
-			continue
-		}
-		ret[path] = source
-	}
-	return ret
 }
 
 // toCorePortalRule returns the rule the seed declares, without resolving the

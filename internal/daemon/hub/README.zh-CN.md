@@ -103,25 +103,19 @@ Hub 的层次职责必须保持清晰：
   数据库中的实体保持启用。停用证书可不提供有效 PEM 内容，名称和 YAML 字段类型仍校验，
   启用时必须提供有效且匹配的证书和私钥。
 - entry 使用 `protocol: http` 和平铺的 `http` 块，默认 HTTP/80、HTTPS/443、
-  `autoHTTPS: true`，自动跳转要求同时启用两种传输协议。seed 和 Admin API 的入口输入必须使用
-  `protocol`，不再接受旧顶层 `scheme/port`；数据库旧入口保留原协议且不启用跳转。已有数据一一迁移，保留
+  `autoHTTPS: true`，自动跳转要求同时启用两种传输协议。Admin API 的入口输入必须使用
+  `protocol`；seed 保留 v0.27.0 的 `scheme/port` 转换，保持单一传输且关闭自动跳转，不能与 `protocol` 混用；数据库旧入口保留原协议且不启用跳转。已有数据一一迁移，保留
   规则引用。启用的 entry 独立发布到 `portal:entry:*`，无需规则即可监听和跳转。
 - entry 有自己的名称：seed 的 `portalEntries` 段声明 `name`、`protocol`、`host`、
   `http`、`listenIPs`，并在规则之前应用，因此规则会加入服务其访问配置的 entry 并沿用该名称；
-  entry 也可以暂时不承载任何规则。Hub 只为它自行创建的 entry 推导
-  `scheme[:host]:port` 名称，所以没有显式声明 entry 时规则加入的 entry 以访问配置命名。
+  entry 也可以暂时不承载任何规则，规则必须通过 `entryName` 引用同一 seed 声明的 entry。
 - Portal 各段是强类型的：实体声明了该段没有的字段时 Hub 直接报错，避免拼错或改名
   后的字段被静默忽略、实体停留在默认值；Hub 自己不再创建任何实体。
 - name 只在同一类实体内唯一，所以站点、entry 与规则可以同名。
-- 规则加入 entry 有两种写法：用 `entryName` 指定名称，或直接声明该 entry 服务的
-  访问配置（`matchScheme` / `matchHost` / `matchPort`）。两者互斥：同一条规则不
-  能同时使用两种写法，同一份 seed 文档也只能全部使用其中一种；声明了
-  `portalEntries` 的 seed 必须用 `entryName` 引用这些 entry，而不是在规则上声明
-  访问配置。seed 必须自洽：规则只能引用同一份文档声明的 entry，Hub 不会用库里的
-  数据补全关系。访问配置属于 entry，Hub 会在写入任何内容之前拒绝这类文档。
-- Admin API 通过 entry 触达规则的访问配置：`PortalRuleCreation` 指定新规则属于哪个
-  entry，`PortalRuleUpdate` 完全不能修改访问配置。seed YAML 仍在规则上声明访问
-  配置，由 Hub 在应用 seed 时聚合为 entry。
+- 每条规则必须用 `entryName` 引用同一 seed 声明的 entry，Hub 不再根据规则创建 entry。
+  旧规则字段 `matchScheme/matchHost/matchPort`、缺失或不存在的引用都会在写入前被拒绝。
+- Admin API 通过 entry 触达规则的访问配置：`PortalRuleCreation` 指定新规则所属 entry，
+  `PortalRuleUpdate` 不能修改访问配置。
 - 两条规则匹配同一个请求时行为是「报告」而不是「拒绝」：规则匹配的路径由 Web
   声明的 mount 决定，而这些 descriptor 是应用在 Hub 启动之后才注册的，所以写入时
   无法判断。Hub 在 descriptor 到位后审计并报出重复的请求（`no-db` 的只读配置直接
@@ -181,9 +175,8 @@ Hub 当前支持两类数据库配置来源：
 
 `mod/seeder` 负责 seed YAML 契约：它把文档解码成 Hub 要应用的领域实体，payload 结构体与解析结果保持包内私有。只接受当前 match/route 字段名称；旧别名会在 Hub 写入任何内容之前被拒绝。
 
-seed 仍在规则上声明 `matchScheme`、`matchHost` 和 `matchPort`。应用 seed 时 Hub
-会把声明的访问配置聚合为 entry，因此 seed 不会把同一份访问配置写到每条规则上。
-Watch 独立发布 entry；Portal 通过规则的 `entryName` 查找对应 entry。
+seed 的每条规则必须通过 `entryName` 引用同一文档声明的 entry。Watch 独立发布 entry，
+Portal 根据规则引用解析监听配置。
 
 ## Admin 载荷约定
 

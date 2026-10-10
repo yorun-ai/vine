@@ -158,8 +158,6 @@ func (s *_VarsDescriptor) targetType(root *yaml.Node, path string) (*skeldesc.Ty
 			Kind:     skeldesc.TypeKindConfig,
 			SkelName: name.Value,
 		})
-	case section == "portalRules" && field == "matchPort":
-		kind = seedScalar(skeldesc.ScalarInt)
 	case section == "portalEntries" && field == "port":
 		kind = seedScalar(skeldesc.ScalarInt)
 	case field == "enabled" && (section == "portalSites" || section == "portalEntries" || section == "portalRules" || section == "portalCerts"):
