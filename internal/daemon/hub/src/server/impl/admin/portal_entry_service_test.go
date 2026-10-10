@@ -62,7 +62,7 @@ func TestPortalEntryServiceCreatesAndRemovesEntry(t *testing.T) {
 		PortalSiteRepo:  &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{}},
 	}}
 
-	created := service.Create(skeled.PortalEntryCreation{Name: "web", Scheme: new("http"), Host: "", Port: new(8080), ListenIPs: []string{"127.0.0.1", "::1"}})
+	created := service.Create(skeled.PortalEntryCreation{Name: "web", Protocol: "http", Http: new(skeled.PortalEntryHttpUpdate{HttpPort: new(8080), HttpsEnabled: new(false), AutoHttps: new(false)}), Host: "", ListenIPs: []string{"127.0.0.1", "::1"}})
 
 	// An entry routes no rule when the operator creates it.
 	require.NotZero(t, created.Id)
@@ -85,13 +85,9 @@ func TestPortalEntryServiceCreatesAndRemovesEntry(t *testing.T) {
 }
 
 func TestPortalEntryProtocolVocabulary(t *testing.T) {
-	require.NotPanics(t, func() { validatePortalEntryVocabulary(new("http"), nil, nil, nil) })
-	for _, port := range []*int{new(0), new(80)} {
-		require.Panics(t, func() { validatePortalEntryVocabulary(new("http"), nil, nil, port) })
-	}
-	require.Panics(t, func() { validatePortalEntryVocabulary(new("http"), nil, new(""), nil) })
-	require.Panics(t, func() { validatePortalEntryVocabulary(nil, new(skeled.PortalEntryHttpUpdate{}), nil, nil) })
-	require.Panics(t, func() { validatePortalEntryVocabulary(new(""), nil, nil, nil) })
+	require.NotPanics(t, func() { validatePortalEntryProtocol(new("http")) })
+	require.Panics(t, func() { validatePortalEntryProtocol(new("")) })
+	require.Panics(t, func() { validatePortalEntryProtocol(new("tcp")) })
 	patch := toCoreHTTPUpdate(new(skeled.PortalEntryHttpUpdate{HttpsEnabled: new(false), AutoHttps: new(false)}))
 	config := patch.Apply(core.DefaultPortalEntryHTTP())
 	require.True(t, config.HttpEnabled)
@@ -103,7 +99,7 @@ func TestPortalEntryServiceCreatesDefaultHTTPAndPatchesTransports(t *testing.T) 
 	service := &PortalEntryApiServiceServerImpl{PortalEntryCore: &core.PortalEntryCore{
 		PortalEntryRepo: newTestPortalEntryRepoSpy(), PortalRuleRepo: &_NamedPortalRuleRepoSpy{items: map[string]*core.PortalRule{}}, PortalSiteRepo: &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{}},
 	}}
-	created := service.Create(skeled.PortalEntryCreation{Name: "dual", Protocol: new("http"), Host: "demo.local"})
+	created := service.Create(skeled.PortalEntryCreation{Name: "dual", Protocol: "http", Host: "demo.local"})
 	require.True(t, created.Http.HttpEnabled)
 	require.True(t, created.Http.HttpsEnabled)
 	require.True(t, created.Http.AutoHttps)

@@ -373,16 +373,12 @@ type PortalEntry struct {
 
 // PortalEntryCreation Portal access entry creation parameters
 type PortalEntryCreation struct {
-	Protocol *string                `json:"protocol"`
+	Protocol string                 `json:"protocol"`
 	Http     *PortalEntryHttpUpdate `json:"http"`
 	// Name Entry name
 	Name string `json:"name"`
-	// Scheme Entry protocol
-	Scheme *string `json:"scheme"`
 	// Host Match Host, empty string means no restriction
 	Host string `json:"host"`
-	// Port Entry port
-	Port *int `json:"port"`
 	// ListenIPs Listener IP addresses; empty preserves the default wildcard TCP listener
 	ListenIPs []string `json:"listenIPs"`
 	// Enabled Whether Hub publishes this entry and its rules to Portal; defaults to true
@@ -425,12 +421,8 @@ type PortalEntryUpdate struct {
 	Http     *PortalEntryHttpUpdate `json:"http"`
 	// Name Entry name
 	Name *string `json:"name"`
-	// Scheme Entry protocol
-	Scheme *string `json:"scheme"`
 	// Host Match Host, empty string means no restriction
 	Host *string `json:"host"`
-	// Port Entry port
-	Port *int `json:"port"`
 	// ListenIPs Listener IP addresses; empty restores the default wildcard TCP listener
 	ListenIPs *[]string `json:"listenIPs"`
 	// Enabled Whether Hub publishes this entry and its rules to Portal

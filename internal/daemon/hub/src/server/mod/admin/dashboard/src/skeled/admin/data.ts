@@ -362,16 +362,12 @@ export type PortalEntry = {
 }
 /** Portal access entry creation parameters. */
 export type PortalEntryCreation = {
-  protocol:  string | null;
+  protocol:  string;
   http:      PortalEntryHttpUpdate | null;
   /** Entry name. */
   name:      string;
-  /** Entry protocol. */
-  scheme:    string | null;
   /** Match Host, empty string means no restriction. */
   host:      string;
-  /** Entry port. */
-  port:      number | null;
   /** Listener IP addresses; empty preserves the default wildcard TCP listener. */
   listenIPs: Array<string>;
   /** Whether Hub publishes this entry and its rules to Portal; defaults to true. */
@@ -410,12 +406,8 @@ export type PortalEntryUpdate = {
   http:      PortalEntryHttpUpdate | null;
   /** Entry name. */
   name:      string | null;
-  /** Entry protocol. */
-  scheme:    string | null;
   /** Match Host, empty string means no restriction. */
   host:      string | null;
-  /** Entry port. */
-  port:      number | null;
   /** Listener IP addresses; empty restores the default wildcard TCP listener. */
   listenIPs: Array<string> | null;
   /** Whether Hub publishes this entry and its rules to Portal. */

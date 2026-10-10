@@ -26,7 +26,6 @@ func TestPortalRuleSeedMapsWithoutDomainValidation(t *testing.T) {
 func TestSeedPortalRuleFieldNames(t *testing.T) {
 	for _, content := range []string{
 		"portalRules:\n  - name: example\n    matchScheme: http\n    routeType: SITE\n    routePathPrefix: /internal",
-		"portalRules:\n  - name: example\n    scheme: http\n    targetType: SITE\n    targetPath: /internal",
 	} {
 		payload, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload](content)
 		require.NoError(t, err)
@@ -35,7 +34,7 @@ func TestSeedPortalRuleFieldNames(t *testing.T) {
 		assert.Equal(t, "/internal", seedRule.Rule.RoutePathPrefix)
 	}
 	_, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload]("portalRules:\n  - scheme: http\n    routeType: SITE")
-	require.ErrorContains(t, err, "cannot be mixed")
+	require.ErrorContains(t, err, "unknown field")
 }
 
 func TestSeedRejectsYAMLReferencesInFilesAndInline(t *testing.T) {
@@ -86,7 +85,8 @@ func TestSeedRejectsNonDecimalNumbers(t *testing.T) {
 func TestSeedPortalEntryListenIPs(t *testing.T) {
 	payload, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload](`portalEntries:
   - name: local
-    scheme: http
+    protocol: http
+    http: {httpEnabled: true, httpsEnabled: false, autoHTTPS: false}
     listenIPs: ["127.0.0.1", "::1"]
 `)
 	require.NoError(t, err)

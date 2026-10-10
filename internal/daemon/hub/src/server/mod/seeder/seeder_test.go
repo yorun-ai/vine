@@ -57,13 +57,13 @@ portalSites:
     webName: demo.AdminWeb
 portalRules:
   - name: admin
-    scheme: https
-    host: demo.local
-    port: 443
-    pathPrefix: /admin
-    targetType: SITE
-    siteName: admin@demo.app
-    redirectionPattern: ""
+    matchScheme: https
+    matchHost: demo.local
+    matchPort: 443
+    matchPathPrefix: /admin
+    routeType: SITE
+    routeSiteName: admin@demo.app
+    routeRedirectionPattern: ""
 portalCerts:
   - name: admin-cert
     issuer: ignored
@@ -207,13 +207,13 @@ portalSites:
     webName: demo.AdminWeb
 portalRules:
   - name: admin
-    scheme: https
-    host: demo.local
-    port: 443
-    pathPrefix: /admin
-    targetType: SITE
-    siteName: admin@demo.app
-    redirectionPattern: ""
+    matchScheme: https
+    matchHost: demo.local
+    matchPort: 443
+    matchPathPrefix: /admin
+    routeType: SITE
+    routeSiteName: admin@demo.app
+    routeRedirectionPattern: ""
 portalCerts:
   - name: admin-cert
     issuer: ignored
@@ -274,7 +274,7 @@ portalSites:
     type: WEBGW
 portalRules:
   - name: vine.hub.admin-api
-    scheme: http
+    matchScheme: http
 `))
 
 	seeder := &Seeder{
@@ -305,8 +305,8 @@ portalRules:
 		"other entry": `
 portalEntries:
   - name: api
-    scheme: http
-    port: 8099
+    protocol: http
+    http: {httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8099}
 portalRules:
   - name: demo.web
     entryName: web
@@ -328,8 +328,8 @@ func TestSeederRejectsAccessRuleWithDeclaredEntries(t *testing.T) {
 	content := `
 portalEntries:
   - name: web
-    scheme: http
-    port: 8099
+    protocol: http
+    http: {httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8099}
 portalRules:
   - name: demo.web
     matchScheme: http
@@ -348,8 +348,8 @@ func TestSeederRejectsMixedPortalRuleStyles(t *testing.T) {
 	content := `
 portalEntries:
   - name: web
-    scheme: http
-    port: 8099
+    protocol: http
+    http: {httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8099}
 portalRules:
   - name: demo.web
     entryName: web
@@ -441,6 +441,10 @@ portalRules:
 func TestSeederEnableSwitches(t *testing.T) {
 	for _, section := range []string{"portalEntries", "portalSites", "portalRules", "portalCerts"} {
 		t.Run(section, func(t *testing.T) {
+			entryFields := ""
+			if section == "portalEntries" {
+				entryFields = ", protocol: http"
+			}
 			for _, fixture := range []struct {
 				fields  string
 				enabled bool
@@ -449,7 +453,7 @@ func TestSeederEnableSwitches(t *testing.T) {
 				{", enabled: true", true},
 				{", enabled: false", false},
 			} {
-				payload, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload](section + ": [{name: demo" + fixture.fields + "}]")
+				payload, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload](section + ": [{name: demo" + entryFields + fixture.fields + "}]")
 				require.NoError(t, err)
 				var actual bool
 				switch section {
@@ -482,7 +486,7 @@ func TestSeederRejectsUnknownPortalField(t *testing.T) {
 	}{
 		{
 			name:    "portal entry",
-			content: "portalEntries:\n  - name: web\n    scheme: http\n    port: 8099\n    webname: demo.Web\n",
+			content: "portalEntries:\n  - name: web\n    protocol: http\n    webname: demo.Web\n",
 			want:    `portal entry "web" declares unknown field "webname"`,
 		},
 		{
@@ -527,8 +531,8 @@ func TestSeederStoresDisabledConfiguration(t *testing.T) {
 	require.NoError(t, vfile.WriteString(seedPath, `
 portalEntries:
   - name: web
-    scheme: http
-    port: 8099
+    protocol: http
+    http: {httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8099}
     enabled: false
 portalSites:
   - name: demo.Web
@@ -590,8 +594,8 @@ func TestSeederPortalRuleJoinsNamedEntry(t *testing.T) {
 	require.NoError(t, vfile.WriteString(seedPath, `
 portalEntries:
   - name: web
-    scheme: http
-    port: 8099
+    protocol: http
+    http: {httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8099}
 portalRules:
   - name: demo.web
     entryName: web
@@ -640,13 +644,13 @@ func TestSeederAppliesPortalEntriesBeforeRules(t *testing.T) {
 	require.NoError(t, vfile.WriteString(seedPath, `
 portalEntries:
   - name: web
-    scheme: http
-    port: 8099
+    protocol: http
+    http: {httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8099}
     listenIPs: ["::1", "127.0.0.1", "127.0.0.1"]
   - name: idle
-    scheme: https
+    protocol: http
     host: api.example.com
-    port: 8443
+    http: {httpEnabled: false, httpsEnabled: true, autoHTTPS: false, httpsPort: 8443}
 portalRules:
   - name: demo.web
     entryName: web
@@ -687,8 +691,8 @@ func TestSeederRejectsUnnamedPortalEntry(t *testing.T) {
 	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
 	require.NoError(t, vfile.WriteString(seedPath, `
 portalEntries:
-  - scheme: http
-    port: 8099
+  - protocol: http
+    http: {httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8099}
 `))
 	seeder := &Seeder{
 		Flag:          newTestSeederFlag(seedPath),
@@ -844,10 +848,8 @@ func newTestRuleCore(ruleRepo *repo.PortalRuleRepo, siteRepo core.PortalSiteRepo
 }
 
 func TestSeederPreflightsAllRulesBeforeImporting(t *testing.T) {
-	for _, legacy := range []bool{false, true} {
-		t.Run(fmt.Sprint(legacy), func(t *testing.T) {
-			configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
-			content := `appConfigs:
+	configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
+	content := `appConfigs:
   - name: pending
     value: test
 portalRules:
@@ -860,24 +862,20 @@ portalRules:
     routeType: SITE
     routeSiteName: web
 `
-			if legacy {
-				content = strings.NewReplacer("matchScheme:", "scheme:", "routeType:", "targetType:", "routeSiteName:", "siteName:").Replace(content)
-			}
-			path := filepath.Join(t.TempDir(), "hub.yaml")
-			require.NoError(t, vfile.WriteString(path, content))
-			seeder := &Seeder{Flag: newTestSeederFlag(path), Logger: logger.New("vine:test"),
-				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo}, EntryCore: newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo),
-				RuleCore: newTestRuleCore(ruleRepo, entryRepo),
-				CertCore: &core.PortalCertCore{PortalCertRepo: certRepo},
-				SiteCore: newTestSiteCore(entryRepo), MetadataRepo: metadataRepo}
-			require.Panics(t, seeder.DIInit)
-			_, exists := configRepo.GetByName("pending")
-			require.False(t, exists)
-			_, exists = ruleRepo.GetByName("valid")
-			require.False(t, exists)
-			require.False(t, metadataRepo.IsSeeded())
-		})
-	}
+
+	path := filepath.Join(t.TempDir(), "hub.yaml")
+	require.NoError(t, vfile.WriteString(path, content))
+	seeder := &Seeder{Flag: newTestSeederFlag(path), Logger: logger.New("vine:test"),
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo}, EntryCore: newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo),
+		RuleCore: newTestRuleCore(ruleRepo, entryRepo),
+		CertCore: &core.PortalCertCore{PortalCertRepo: certRepo},
+		SiteCore: newTestSiteCore(entryRepo), MetadataRepo: metadataRepo}
+	require.Panics(t, seeder.DIInit)
+	_, exists := configRepo.GetByName("pending")
+	require.False(t, exists)
+	_, exists = ruleRepo.GetByName("valid")
+	require.False(t, exists)
+	require.False(t, metadataRepo.IsSeeded())
 }
 
 func testSeederCertificate(t *testing.T) string {
@@ -1060,7 +1058,7 @@ func TestSeederWildcardWebOnly(t *testing.T) {
 				access := "    matchScheme: http\n    matchHost: '*.example.com'\n"
 				entries := ""
 				if named {
-					entries = "portalEntries:\n  - name: wildcard\n    scheme: http\n    host: '*.example.com'\n"
+					entries = "portalEntries:\n  - name: wildcard\n    protocol: http\n    host: '*.example.com'\n"
 					access = "    entryName: wildcard\n"
 				}
 				seed := entries + "portalSites:\n  - name: target\n    type: " + kind + "\n    actorSkelName: demo.Actor\n    actorVia: client\n    webName: demo.Web\nportalRules:\n  - name: wildcard\n" + access + "    routeType: SITE\n    routeSiteName: target\n"
@@ -1123,14 +1121,14 @@ func TestSeederRejectsListenerConflictsBeforeWrites(t *testing.T) {
 	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
 	require.NoError(t, vfile.WriteString(seedPath, `portalEntries:
   - name: wildcard
-    scheme: http
+    protocol: http
     host: one.local
-    port: 8080
+    http: {httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8080}
     listenIPs: ["0.0.0.0"]
   - name: local
-    scheme: http
+    protocol: http
     host: two.local
-    port: 8080
+    http: {httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8080}
     listenIPs: ["127.0.0.1"]
 `))
 	seeder := &Seeder{

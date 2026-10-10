@@ -141,11 +141,7 @@ func (s *_VarsDescriptor) targetType(root *yaml.Node, path string) (*skeldesc.Ty
 		return nil, nil
 	}
 	section, field := parts[0], parts[2]
-	if section == "portalRules" {
-		if canonical, ok := portalRuleAliases[field]; ok {
-			field = canonical
-		}
-	}
+
 	var kind *skeldesc.Type
 	switch {
 	case section == "appConfigs" && field == "value":

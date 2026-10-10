@@ -87,9 +87,7 @@ func toServerPortalCertListItem(cert *core.PortalCert) skeled.PortalCertListItem
 func portalCertFieldSources(sources core.FieldSources) []skeled.FieldSource {
 	fields := toServerFieldSources(sources)
 	for i := range fields {
-		// TODO: Remove only the legacy /privateKeyBase64 branch when provenance
-		// migration support is retired; keep PEM private-key redaction.
-		if fields[i].Path == "/privateKey" || fields[i].Path == "/privateKeyBase64" {
+		if fields[i].Path == "/privateKey" {
 			fields[i].Template = nil
 			fields[i].Bindings = nil
 		}

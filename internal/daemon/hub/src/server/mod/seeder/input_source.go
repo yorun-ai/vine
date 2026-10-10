@@ -107,17 +107,13 @@ func seedLocation(root *yaml.Node, path string) string {
 }
 
 // entityFieldSources narrows the sources of the whole seed to the fields of one
-// entity, and canonicalizes the field names a Portal rule aliases.
+// entity.
 func entityFieldSources(all core.FieldSources, kind string, index int) core.FieldSources {
 	result := core.FieldSources{}
 	prefix := "/" + kind + "/" + strconv.Itoa(index) + "/"
 	for path, origin := range all {
 		if field, ok := strings.CutPrefix(path, prefix); ok {
-			if kind == "portalRules" {
-				if canonical, ok := portalRuleAliases[field]; ok {
-					field = canonical
-				}
-			}
+
 			result["/"+field] = origin
 		}
 	}

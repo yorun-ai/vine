@@ -56,14 +56,8 @@ data PortalEntryUpdate {
     @desc("Entry name")
     name: string?
 
-    @desc("Entry protocol")
-    scheme: string?
-
     @desc("Match Host, empty string means no restriction")
     host: string?
-
-    @desc("Entry port")
-    port: int?
 
     @desc("Listener IP addresses; empty restores the default wildcard TCP listener")
     listenIPs: list<string>?
@@ -74,19 +68,13 @@ data PortalEntryUpdate {
 
 @desc("Portal access entry creation parameters")
 data PortalEntryCreation {
- protocol: string?
+ protocol: string
  http: PortalEntryHTTPUpdate?
     @desc("Entry name")
     name: string
 
-    @desc("Entry protocol")
-    scheme: string?
-
     @desc("Match Host, empty string means no restriction")
     host: string
-
-    @desc("Entry port")
-    port: int?
 
     @desc("Listener IP addresses; empty preserves the default wildcard TCP listener")
     listenIPs: list<string>

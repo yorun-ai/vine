@@ -343,23 +343,15 @@ func convertSlice[S any, T any](values []*S, convert func(*S) *T) []*T {
 	return result
 }
 func normalizeAuth(value AuthMode, owner string) descriptor.AuthMode {
-	switch value {
-	case "", AuthModeUnset:
+	if value == "" {
 		if owner == "method" {
 			return descriptor.AuthModeInherit
 		}
 		return descriptor.AuthModeRequired
-	case AuthModeAuth:
-		return descriptor.AuthModeRequired
-	case AuthModeNoAuth:
-		if owner == "web" {
-			return descriptor.AuthModeOff
-		}
-		return descriptor.AuthModeOptional
-	default:
-		return descriptor.AuthMode(value)
 	}
+	return descriptor.AuthMode(value)
 }
+
 func normalizeScalar(value Scalar) descriptor.Scalar {
 	switch value {
 	case ScalarLong:
@@ -456,6 +448,11 @@ func Convert(value *DomainSchema) (*descriptor.Domain, error) {
 		return nil, err
 	}
 	result := convertDomain(value)
+	for _, web := range result.Webs {
+		if web != nil && !web.AuthMode.IsValid() {
+			return nil, fmt.Errorf("web %s: invalid auth mode %q", web.SkelName, web.AuthMode)
+		}
+	}
 	services := append([]*descriptor.Service(nil), result.Services...)
 	for _, actor := range result.Actors {
 		if actor == nil {
@@ -480,7 +477,13 @@ func Convert(value *DomainSchema) (*descriptor.Domain, error) {
 		if service == nil {
 			return nil, fmt.Errorf("nil legacy service")
 		}
+		if !service.AuthMode.IsValid() {
+			return nil, fmt.Errorf("service %s: invalid auth mode %q", service.SkelName, service.AuthMode)
+		}
 		for _, method := range service.Methods {
+			if !method.AuthMode.IsValid() {
+				return nil, fmt.Errorf("method %s: invalid auth mode %q", method.Name, method.AuthMode)
+			}
 			effective, err := descriptor.ComputeEffectivePolicy(service, method)
 			if err != nil {
 				return nil, fmt.Errorf("service %s: %w", service.SkelName, err)

@@ -6,11 +6,7 @@ import "go.yorun.ai/skel/descriptor"
 
 type AuthMode = descriptor.AuthMode
 
-const (
-	AuthModeUnset  AuthMode = "unset"
-	AuthModeAuth   AuthMode = "auth"
-	AuthModeNoAuth AuthMode = "noauth"
-)
+const ()
 
 type DomainSchema struct {
 	Domain      string            `json:"domain"`

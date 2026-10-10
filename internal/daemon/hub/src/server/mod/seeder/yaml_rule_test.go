@@ -1,13 +1,9 @@
 package seeder
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.yorun.ai/vine/internal/core/logger"
 	"gopkg.in/yaml.v3"
 )
 
@@ -28,44 +24,12 @@ func (r *testRule) UnmarshalYAML(node *yaml.Node) error {
 	return decodePortalRule(node, (*plain)(r))
 }
 
-func TestPortalRuleYAMLCompatibility(t *testing.T) {
-	logPath := filepath.Join(t.TempDir(), "warnings.log")
-	previous := ruleLogger
-	ruleLogger = logger.New("vine.hub.seed", logger.WithOption{OutputPath: logPath, Level: logger.LevelWarn})
-	t.Cleanup(func() { ruleLogger = previous })
-	legacy := "name: example\nscheme: https\nhost: example.com\nport: 443\npathPrefix: /api\ntargetType: SITE\nsiteName: web\ntargetPath: /internal\nredirectionPattern: ''\n"
-	var oldRule testRule
-	require.NoError(t, yaml.Unmarshal([]byte(legacy), &oldRule))
-	expected := testRule{Name: "example", MatchScheme: "https", MatchHost: "example.com", MatchPort: 443, MatchPathPrefix: "/api", RouteType: "SITE", RouteSiteName: "web", RoutePathPrefix: "/internal"}
-	require.Equal(t, expected, oldRule)
-	logged, err := os.ReadFile(logPath)
-	require.NoError(t, err)
-	require.Equal(t, 8, strings.Count(string(logged), "level=WARN"))
-	require.Contains(t, string(logged), "replacement=routePathPrefix")
-	current, err := yaml.Marshal(oldRule)
-	require.NoError(t, err)
-	require.NotContains(t, string(current), "targetPath:")
-	require.Contains(t, string(current), "routePathPrefix:")
-	var newRule testRule
-	require.NoError(t, yaml.Unmarshal(current, &newRule))
-	require.Equal(t, expected, newRule)
-	after, err := os.ReadFile(logPath)
-	require.NoError(t, err)
-	require.Equal(t, string(logged), string(after), "new fields must not warn")
-}
-
-func TestPortalRuleYAMLRejectsMixedFields(t *testing.T) {
-	for _, input := range []string{
-		"host: old\nmatchHost: ''", "port: 80\nmatchPort: 0",
-		"targetPath: /old\nroutePathPrefix: ''", "scheme: http\nrouteType: SITE",
-		"matchScheme: http\ntargetType: SITE", "host: ''\nmatchHost: ''",
-	} {
-		t.Run(input, func(t *testing.T) {
-			var rule testRule
-			err := yaml.Unmarshal([]byte("name: mixed\n"+input), &rule)
-			require.ErrorContains(t, err, "cannot be mixed")
-			require.ErrorContains(t, err, "mixed")
-		})
+func TestPortalRuleYAMLCurrentFieldsAndRejectsAliases(t *testing.T) {
+	var rule testRule
+	require.NoError(t, yaml.Unmarshal([]byte("name: example\nmatchScheme: https\nmatchHost: example.com\nmatchPort: 443\nmatchPathPrefix: /api\nrouteType: SITE\nrouteSiteName: web\nroutePathPrefix: /internal"), &rule))
+	require.Equal(t, "https", rule.MatchScheme)
+	for _, field := range []string{"scheme", "host", "port", "pathPrefix", "targetType", "siteName", "targetPath", "redirectionPattern"} {
+		require.ErrorContains(t, yaml.Unmarshal([]byte("name: example\n"+field+": old"), &rule), "unknown field")
 	}
 }
 

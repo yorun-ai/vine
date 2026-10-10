@@ -346,23 +346,6 @@ const (
 	// Deprecated: Use go.yorun.ai/skel/descriptor.AuthModeOff instead.
 	AuthModeOff = descriptor.AuthModeOff
 
-	// Legacy authentication values remain supported for previously generated contracts.
-
-	// AuthModeUnset is the legacy unspecified authentication mode.
-	//
-	// Deprecated: Use go.yorun.ai/skel/descriptor.AuthModeInherit for methods or AuthModeRequired for services and web.
-	AuthModeUnset = legacy.AuthModeUnset
-
-	// AuthModeAuth is the legacy spelling of AuthModeRequired.
-	//
-	// Deprecated: Use go.yorun.ai/skel/descriptor.AuthModeRequired instead.
-	AuthModeAuth = legacy.AuthModeAuth
-
-	// AuthModeNoAuth is the legacy anonymous-access mode.
-	//
-	// Deprecated: Use go.yorun.ai/skel/descriptor.AuthModeOptional for Rpc or AuthModeOff for web.
-	AuthModeNoAuth = legacy.AuthModeNoAuth
-
 	// PermRequireModeCode requires a concrete permission code.
 	//
 	// Deprecated: Use go.yorun.ai/skel/descriptor.PermissionRequireModeCode instead.
