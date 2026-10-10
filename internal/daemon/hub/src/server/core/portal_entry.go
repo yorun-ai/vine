@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"slices"
 	"strings"
 	"unicode"
 
 	"go.yorun.ai/vine/internal/core/ex"
+	"go.yorun.ai/vine/internal/daemon/listenip"
 	"go.yorun.ai/vine/util/vslice"
 )
 
@@ -34,6 +36,8 @@ type PortalEntry struct {
 	Scheme string
 	Host   string
 	Port   int
+	// ListenIPs restricts listener addresses; empty preserves legacy wildcard TCP.
+	ListenIPs []string
 	// Enabled decides whether Hub publishes the rules of the entry to Portal.
 	Enabled bool
 }
@@ -50,9 +54,10 @@ type PortalEntryUpdate struct {
 	Name *string
 	// Scheme, Host, and Port are optional and keep the stored access when they
 	// are nil.
-	Scheme *string
-	Host   *string
-	Port   *int
+	Scheme    *string
+	Host      *string
+	Port      *int
+	ListenIPs *[]string
 	// Enabled is optional and keeps the stored switch when it is nil.
 	Enabled *bool
 }
@@ -62,6 +67,8 @@ type PortalEntryCreation struct {
 	Scheme string
 	Host   string
 	Port   int
+	// ListenIPs restricts listener addresses; empty preserves legacy wildcard TCP.
+	ListenIPs []string
 	// Enabled is optional and defaults to true.
 	Enabled *bool
 }
@@ -119,11 +126,12 @@ func (m *PortalEntryCore) List() []PortalEntryView {
 // Create adds the named user entry for an access no user entry serves yet.
 func (m *PortalEntryCore) Create(creation PortalEntryCreation) PortalEntryView {
 	entry := m.Validate(PortalEntry{
-		Name:    creation.Name,
-		Scheme:  creation.Scheme,
-		Host:    creation.Host,
-		Port:    creation.Port,
-		Enabled: EnabledOrDefault(creation.Enabled),
+		Name:      creation.Name,
+		Scheme:    creation.Scheme,
+		Host:      creation.Host,
+		Port:      creation.Port,
+		ListenIPs: creation.ListenIPs,
+		Enabled:   EnabledOrDefault(creation.Enabled),
 	})
 	_, ok := m.PortalEntryRepo.GetByName(entry.Name)
 	ex.PanicNewIfNot(!ok, ex.OperationFailed, ex.F("portal entry %q already exists", entry.Name))
@@ -131,6 +139,7 @@ func (m *PortalEntryCore) Create(creation PortalEntryCreation) PortalEntryView {
 		ex.PanicNew(ex.OperationFailed,
 			ex.F("portal entry %q already serves %s", current.Name, portalEntryAddress(entry)))
 	}
+	m.validateListeners(entry)
 	m.PortalEntryRepo.Save(&entry)
 	return PortalEntryView{PortalEntry: entry}
 }
@@ -164,6 +173,7 @@ func (m *PortalEntryCore) Save(entry PortalEntry) *PortalEntry {
 			ex.F("portal entry %q already serves %s", current.Name, portalEntryAddress(entry)))
 	}
 	m.validateWildcardRules(entry, entry.Id)
+	m.validateListeners(entry)
 	m.PortalEntryRepo.Save(&entry)
 	m.saveRules(entry.Id, entry.Id)
 	return &entry
@@ -242,6 +252,9 @@ func (m *PortalEntryCore) Update(id int, update PortalEntryUpdate) PortalEntryVi
 	if update.Port != nil {
 		next.Port = *update.Port
 	}
+	if update.ListenIPs != nil {
+		next.ListenIPs = *update.ListenIPs
+	}
 	if update.Enabled != nil {
 		next.Enabled = *update.Enabled
 	}
@@ -260,14 +273,16 @@ func (m *PortalEntryCore) Update(id int, update PortalEntryUpdate) PortalEntryVi
 			return m.view(*target)
 		}
 	}
-	if !accessChanged && next.Name == current.Name && next.Enabled == current.Enabled {
+	listenersChanged := !slices.Equal(next.ListenIPs, current.ListenIPs)
+	if !accessChanged && !listenersChanged && next.Name == current.Name && next.Enabled == current.Enabled {
 		return m.view(*current)
 	}
 
 	next.Id = current.Id
+	m.validateListeners(next)
 	m.PortalEntryRepo.Save(&next)
-	// Portal reaches the entry through its rules, so only an access change has to
-	// republish them.
+	// Save republishes listener changes through Syncer. An access change also
+	// saves the attached rules to refresh their access-dependent domain state.
 	if accessChanged {
 		m.saveRules(next.Id, next.Id)
 	}
@@ -304,6 +319,9 @@ func normalizePortalEntry(entry PortalEntry) PortalEntry {
 	ex.PanicNewIfNot(entry.Scheme == "http" || entry.Scheme == "https", ex.OperationFailed, ex.F("unknown portal entry scheme: %s", entry.Scheme))
 	ex.PanicNewIfNot(entry.Port >= 0 && entry.Port <= 65535, ex.OperationFailed, "portal entry port must be between 0 and 65535")
 	ex.PanicNewIfNot(portalEntryHostAccepted(entry.Host), ex.OperationFailed, "portal entry host must be a hostname, IP or leading *. wildcard without a port")
+	ips, err := listenip.Normalize(entry.ListenIPs)
+	ex.PanicNewIfNot(err == nil, ex.OperationFailed, ex.F("%v", err))
+	entry.ListenIPs = ips
 	entry.Port = portalEntrySchemePort(entry.Scheme, entry.Port)
 	return entry
 }
@@ -427,6 +445,44 @@ func (m *PortalEntryCore) validateWildcardRules(entry PortalEntry, ruleEntryId i
 	for _, rule := range m.PortalRuleRepo.List() {
 		if rule.EntryId == ruleEntryId {
 			rule.ValidateWildcardTarget(entry, m.portalRuleSite(rule))
+		}
+	}
+}
+
+// validateListeners rejects bind overlaps while allowing virtual hosts to share
+// an identical listener. Entry identity remains scheme, host, and port.
+func (m *PortalEntryCore) validateListeners(entry PortalEntry) {
+	if !entry.Enabled {
+		return
+	}
+	entries := []PortalEntry{entry}
+	for _, other := range m.PortalEntryRepo.List() {
+		if other.Id != entry.Id {
+			entries = append(entries, *other)
+		}
+	}
+	ValidatePortalEntryListeners(entries)
+}
+
+// ValidatePortalEntryListeners checks a complete configuration for overlapping
+// bindings before a seed writes it. Identical listeners of the same scheme share
+// a socket; wildcard overlaps and different schemes on the same socket conflict.
+func ValidatePortalEntryListeners(entries []PortalEntry) {
+	for i, entry := range entries {
+		if !entry.Enabled {
+			continue
+		}
+		for _, other := range entries[i+1:] {
+			if !other.Enabled || other.Port != entry.Port {
+				continue
+			}
+			for _, left := range listenip.Addresses(entry.ListenIPs) {
+				for _, right := range listenip.Addresses(other.ListenIPs) {
+					if listenip.Overlap(left, right) && (left != right || entry.Scheme != other.Scheme) {
+						ex.PanicNew(ex.OperationFailed, ex.F("portal entry %q listener conflicts with entry %q on port %d", entry.Name, other.Name, entry.Port))
+					}
+				}
+			}
 		}
 	}
 }

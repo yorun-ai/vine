@@ -362,6 +362,8 @@ type PortalEntry struct {
 	Host string `json:"host"`
 	// Port Entry port
 	Port int `json:"port"`
+	// ListenIPs Listener IP addresses; empty preserves the default wildcard TCP listener
+	ListenIPs []string `json:"listenIPs"`
 	// Rules Entry rule list
 	Rules []PortalEntryRule `json:"rules"`
 	// Enabled Whether Hub publishes the rules of this entry to Portal
@@ -378,6 +380,8 @@ type PortalEntryCreation struct {
 	Host string `json:"host"`
 	// Port Entry port
 	Port int `json:"port"`
+	// ListenIPs Listener IP addresses; empty preserves the default wildcard TCP listener
+	ListenIPs []string `json:"listenIPs"`
 	// Enabled Whether Hub publishes the rules of this entry to Portal; defaults to true
 	Enabled *bool `json:"enabled"`
 }
@@ -400,6 +404,8 @@ type PortalEntryUpdate struct {
 	Host *string `json:"host"`
 	// Port Entry port
 	Port *int `json:"port"`
+	// ListenIPs Listener IP addresses; empty restores the default wildcard TCP listener
+	ListenIPs *[]string `json:"listenIPs"`
 	// Enabled Whether Hub publishes the rules of this entry to Portal
 	Enabled *bool `json:"enabled"`
 }

@@ -103,7 +103,7 @@ Hub 的层次职责必须保持清晰：
   的规则、停用站点上的 SITE 规则以及停用的证书都会从发布内容中移除。早于该开关的
   数据库中的实体保持启用。
 - entry 有自己的名称：seed 的 `portalEntries` 段声明 `name`、`scheme`、`host`、
-  `port`，并在规则之前应用，因此规则会加入服务其访问配置的 entry 并沿用该名称；
+  `port`、`listenIPs`，并在规则之前应用，因此规则会加入服务其访问配置的 entry 并沿用该名称；
   entry 也可以暂时不承载任何规则。Hub 只为它自行创建的 entry 推导
   `scheme[:host]:port` 名称，所以没有显式声明 entry 时规则加入的 entry 以访问配置
 - Portal 各段是强类型的：实体声明了该段没有的字段时 Hub 直接报错，避免拼错或改名

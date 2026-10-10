@@ -217,3 +217,24 @@ func TestSyncerPublishesPEMAndLegacyCertificateFields(t *testing.T) {
 		require.Equal(t, cert.PrivateKey, string(legacyKey))
 	}
 }
+
+func TestSyncPortalEntryRepublishesListenIPs(t *testing.T) {
+	watchServer := watchserver.NewServerForTest()
+	t.Cleanup(watchServer.AfterAppStop)
+	target := testSyncer(watchServer)
+	entry := &core.PortalEntry{Id: 1, Name: "local", Scheme: "http", Port: 8080, ListenIPs: []string{"127.0.0.1"}, Enabled: true}
+	target.SyncPortalEntry(entry)
+	target.SyncPortalRule(&core.PortalRule{Id: 1, Name: "local-rule", EntryId: entry.Id, RouteType: "PERMANENT_REDIRECT", RouteRedirectionPattern: "https://example.com", Enabled: true})
+	read := func() *watched.PortalRule {
+		value, ok := watchServer.Get(watched.FormatPortalRuleKey("local-rule"))
+		require.True(t, ok)
+		return vcode.MustUnmarshalJsonS[*watched.PortalRule](value)
+	}
+	assert.Equal(t, entry.ListenIPs, read().ListenIPs)
+	entry.ListenIPs = []string{"::1"}
+	target.SyncPortalEntry(entry)
+	assert.Equal(t, []string{"::1"}, read().ListenIPs)
+	entry.ListenIPs = nil
+	target.SyncPortalEntry(entry)
+	assert.Empty(t, read().ListenIPs)
+}

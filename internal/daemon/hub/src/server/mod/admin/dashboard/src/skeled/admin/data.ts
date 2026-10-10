@@ -343,32 +343,36 @@ export type PortalCors = {
 /** Portal access entry. */
 export type PortalEntry = {
   /** Entry ID. */
-  id:      number;
+  id:        number;
   /** Entry name. */
-  name:    string;
+  name:      string;
   /** Entry protocol. */
-  scheme:  string;
+  scheme:    string;
   /** Match Host, empty string means no restriction. */
-  host:    string;
+  host:      string;
   /** Entry port. */
-  port:    number;
+  port:      number;
+  /** Listener IP addresses; empty preserves the default wildcard TCP listener. */
+  listenIPs: Array<string>;
   /** Entry rule list. */
-  rules:   Array<PortalEntryRule>;
+  rules:     Array<PortalEntryRule>;
   /** Whether Hub publishes the rules of this entry to Portal. */
-  enabled: boolean;
+  enabled:   boolean;
 }
 /** Portal access entry creation parameters. */
 export type PortalEntryCreation = {
   /** Entry name. */
-  name:    string;
+  name:      string;
   /** Entry protocol. */
-  scheme:  string;
+  scheme:    string;
   /** Match Host, empty string means no restriction. */
-  host:    string;
+  host:      string;
   /** Entry port. */
-  port:    number;
+  port:      number;
+  /** Listener IP addresses; empty preserves the default wildcard TCP listener. */
+  listenIPs: Array<string>;
   /** Whether Hub publishes the rules of this entry to Portal; defaults to true. */
-  enabled: boolean | null;
+  enabled:   boolean | null;
 }
 /** Portal access entry rules. */
 export type PortalEntryRule = {
@@ -380,15 +384,17 @@ export type PortalEntryRule = {
 /** Portal access entry update parameters. */
 export type PortalEntryUpdate = {
   /** Entry name. */
-  name:    string | null;
+  name:      string | null;
   /** Entry protocol. */
-  scheme:  string | null;
+  scheme:    string | null;
   /** Match Host, empty string means no restriction. */
-  host:    string | null;
+  host:      string | null;
   /** Entry port. */
-  port:    number | null;
+  port:      number | null;
+  /** Listener IP addresses; empty restores the default wildcard TCP listener. */
+  listenIPs: Array<string> | null;
   /** Whether Hub publishes the rules of this entry to Portal. */
-  enabled: boolean | null;
+  enabled:   boolean | null;
 }
 /** Portal entry rules. */
 export type PortalRule = {

@@ -1,13 +1,17 @@
 package model
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"uuid"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/infra/rdb"
+	"go.yorun.ai/vine/infra/rdb/adapter"
 	"gorm.io/gorm"
 )
 
@@ -84,4 +88,51 @@ func newTestPortalEntryDao(t *testing.T) *PortalEntryDao {
 	dao.EnsureSchema()
 	dao.EnsureSchema()
 	return dao
+}
+
+func TestPortalEntryDaoMigratesListenIPs(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "legacy.sqlite")), &gorm.Config{})
+	require.NoError(t, err)
+	connection, err := db.DB()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = connection.Close() })
+	testPortalEntryListenIPsMigration(t, db, createPortalEntrySQLiteSQL)
+}
+
+func TestPostgresPortalEntryListenIPsMigration(t *testing.T) {
+	dsn := os.Getenv("VINE_TEST_POSTGRES_DSN")
+	if dsn == "" {
+		t.Skip("set VINE_TEST_POSTGRES_DSN to run PostgreSQL integration tests")
+	}
+	db, err := gorm.Open(adapter.NewDialector(dsn), &gorm.Config{})
+	require.NoError(t, err)
+	connection, err := db.DB()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = connection.Close() })
+	tx := db.Begin()
+	require.NoError(t, tx.Error)
+	t.Cleanup(func() { require.NoError(t, tx.Rollback().Error) })
+	schema := "vine_entry_ips_" + strings.ReplaceAll(uuid.NewV7().String(), "-", "")
+	require.NoError(t, tx.Exec(`CREATE SCHEMA "`+schema+`"`).Error)
+	require.NoError(t, tx.Exec(`SET LOCAL search_path TO "`+schema+`"`).Error)
+	testPortalEntryListenIPsMigration(t, tx, createPortalEntryPgSQL)
+}
+
+func testPortalEntryListenIPsMigration(t *testing.T, db *gorm.DB, schema string) {
+	t.Helper()
+	legacy := strings.ReplaceAll(schema, "    listen_ips TEXT NOT NULL DEFAULT '[]',  -- Explicit listener IPs; empty keeps legacy wildcard TCP\n", "")
+	require.NoError(t, db.Exec(legacy).Error)
+	require.NoError(t, db.Exec("INSERT INTO portal_entry (name, scheme, host, port) VALUES ('legacy', 'http', '', 8080)").Error)
+	dao := &PortalEntryDao{Dao: rdb.NewDao[*PortalEntry](db)}
+	dao.EnsureSchema()
+	dao.EnsureSchema()
+	entry, ok := dao.ByName("legacy")
+	require.True(t, ok)
+	assert.Equal(t, "[]", entry.ListenIPs)
+	assert.True(t, entry.Enabled)
+	assert.Equal(t, 8080, entry.Port)
+	entry.ListenIPs = `["127.0.0.1","::1"]`
+	dao.Save(entry)
+	entry, _ = dao.ByName("legacy")
+	assert.Equal(t, `["127.0.0.1","::1"]`, entry.ListenIPs)
 }

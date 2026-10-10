@@ -18,11 +18,12 @@ var createPortalEntryPgSQL string
 // storing the access themselves, so Hub changes an access once per entry.
 type PortalEntry struct {
 	rdb.Model
-	Name    string `gorm:"column:name"`
-	Scheme  string `gorm:"column:scheme"`
-	Host    string `gorm:"column:host"`
-	Port    int    `gorm:"column:port"`
-	Enabled bool   `gorm:"column:enabled;not null"`
+	Name      string `gorm:"column:name"`
+	Scheme    string `gorm:"column:scheme"`
+	Host      string `gorm:"column:host"`
+	Port      int    `gorm:"column:port"`
+	ListenIPs string `gorm:"column:listen_ips;not null;default:'[]'"`
+	Enabled   bool   `gorm:"column:enabled;not null"`
 }
 
 func (*PortalEntry) TableName() string {
@@ -35,6 +36,16 @@ type PortalEntryDao struct {
 
 func (d *PortalEntryDao) EnsureSchema() {
 	ex.PanicIfError(ensurePortalEntryTable(d.GormDB()))
+	ex.PanicIfError(d.GormDB().Transaction(func(tx *gorm.DB) error {
+		columns, err := tableColumnNames(tx, "portal_entry")
+		if err != nil {
+			return err
+		}
+		if columns["listen_ips"] {
+			return nil
+		}
+		return tx.Exec("ALTER TABLE portal_entry ADD COLUMN listen_ips TEXT NOT NULL DEFAULT '[]'").Error
+	}))
 }
 
 func (d *PortalEntryDao) ListOrdered() []*PortalEntry {
@@ -64,11 +75,12 @@ func (d *PortalEntryDao) Save(entry *PortalEntry) *PortalEntry {
 	row, ok := d.ById(entry.Id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", entry.Id))
 	d.Update(row, rdb.Patch{
-		"name":    entry.Name,
-		"scheme":  entry.Scheme,
-		"host":    entry.Host,
-		"port":    entry.Port,
-		"enabled": entry.Enabled,
+		"name":       entry.Name,
+		"scheme":     entry.Scheme,
+		"host":       entry.Host,
+		"port":       entry.Port,
+		"listen_ips": entry.ListenIPs,
+		"enabled":    entry.Enabled,
 	})
 	return row
 }

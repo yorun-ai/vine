@@ -11,6 +11,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/vault"
 	"go.yorun.ai/vine/util/vcode"
+	"go.yorun.ai/vine/util/vpre"
 )
 
 const (
@@ -44,9 +45,20 @@ func (e *Manager) AfterAppStart() {
 	defer e.mutex.Unlock()
 
 	e.started = true
-	e.reconcileEntriesLocked()
-	for _, entry := range e.entriesByKey {
-		entry.Start()
+	err := e.reconcileEntriesLocked()
+	if err == nil {
+		for _, entry := range e.entriesByKey {
+			if err = entry.Start(); err != nil {
+				break
+			}
+		}
+	}
+	if err != nil {
+		for _, entry := range e.entriesByKey {
+			entry.Stop()
+		}
+		e.started = false
+		vpre.Panicf("portal entry startup failed: %v", err)
 	}
 }
 
@@ -72,7 +84,9 @@ func (e *Manager) loadPortalRules() {
 		rule := vcode.MustUnmarshalJsonS[*watched.PortalRule](value)
 		e.entryRulesByName[key] = *rule
 	}
-	e.reconcileEntriesLocked()
+	if err := e.reconcileEntriesLocked(); err != nil {
+		entryLogger.Error("vine.portal listener update failed", "error", err)
+	}
 	subscription.Start()
 }
 
@@ -82,44 +96,67 @@ func (e *Manager) handlePortalRuleEvent(event hubapiwatch.Event) {
 
 	if event.Kind == hubapiwatch.EventKindDelete {
 		delete(e.entryRulesByName, event.Key)
-		e.reconcileEntriesLocked()
+		if err := e.reconcileEntriesLocked(); err != nil {
+			entryLogger.Error("vine.portal listener update failed", "error", err)
+		}
 		return
 	}
 
 	rule := vcode.MustUnmarshalJsonS[*watched.PortalRule](event.Value)
 	e.entryRulesByName[event.Key] = *rule
-	e.reconcileEntriesLocked()
+	if err := e.reconcileEntriesLocked(); err != nil {
+		entryLogger.Error("vine.portal listener update failed", "error", err)
+	}
 }
 
-func (e *Manager) reconcileEntriesLocked() {
+// reconcileEntriesLocked applies a listener change only after every new binding
+// succeeds. Removed listeners are stopped first to allow wildcard/IP transitions;
+// on failure, new bindings are closed and the previous listeners are restored.
+func (e *Manager) reconcileEntriesLocked() error {
 	nextRules := e.buildRulesLocked()
 	removedEntries, rulesToUpdate, rulesToCreate := e.diffEntriesLocked(nextRules)
-
 	for _, entry := range removedEntries {
-		delete(e.entriesByKey, entry.Key())
 		entry.Stop()
 	}
-
+	created := map[_Key]*_Entry{}
+	for key, rules := range rulesToCreate {
+		entry := newEntry(key.scheme, key.port, e.Vault)
+		entry.listenIP = key.listenIP
+		entry.SetOrUpdateRules(rules)
+		if e.started {
+			if err := entry.Start(); err != nil {
+				for _, previous := range created {
+					previous.Stop()
+				}
+				for _, previous := range removedEntries {
+					if restoreErr := previous.Start(); restoreErr != nil {
+						entryLogger.Error("vine.portal listener restore failed", "error", restoreErr)
+					}
+				}
+				return err
+			}
+		}
+		created[key] = entry
+	}
+	for _, entry := range removedEntries {
+		delete(e.entriesByKey, entry.Key())
+	}
 	for key, rules := range rulesToUpdate {
 		e.entriesByKey[key].SetOrUpdateRules(rules)
 	}
-
-	for key, rules := range rulesToCreate {
-		entry := newEntry(key.scheme, key.port, e.Vault)
-		entry.SetOrUpdateRules(rules)
+	for key, entry := range created {
 		e.entriesByKey[key] = entry
-		if e.started {
-			entry.Start()
-		}
 	}
+	return nil
 }
 
 func (e *Manager) buildRulesLocked() map[_Key][]*_Rule {
 	rulesByKey := map[_Key][]*_Rule{}
 	for _, item := range e.entryRulesByName {
 		if rule, ok := newRule(item, e.SiteManager); ok {
-			key := rule.Key()
-			rulesByKey[key] = append(rulesByKey[key], rule)
+			for _, key := range rule.Keys() {
+				rulesByKey[key] = append(rulesByKey[key], rule)
+			}
 		}
 	}
 	return rulesByKey

@@ -1,13 +1,16 @@
 package entry
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -264,4 +267,53 @@ func TestEntryWildcardHostPrecedence(t *testing.T) {
 		require.True(t, ok)
 		assert.Equal(t, want, rule.name)
 	}
+}
+
+func TestEntryExplicitIPListeners(t *testing.T) {
+	for _, test := range []struct {
+		ip      string
+		network string
+	}{{"127.0.0.1", "tcp4"}, {"::1", "tcp6"}} {
+		t.Run(test.ip, func(t *testing.T) {
+			if test.network == "tcp6" {
+				probe, err := net.Listen("tcp6", "[::1]:0")
+				if err != nil {
+					t.Skipf("IPv6 unavailable: %v", err)
+				}
+				_ = probe.Close()
+			}
+			entry := newEntry(spec.SchemeHTTP, 0, nil)
+			entry.listenIP = test.ip
+			require.NoError(t, entry.Start())
+			t.Cleanup(entry.Stop)
+			require.NoError(t, entry.Start())
+			host, _, err := net.SplitHostPort(entry.addr)
+			require.NoError(t, err)
+			assert.Equal(t, test.ip, host)
+			connection, err := net.DialTimeout(test.network, entry.addr, time.Second)
+			require.NoError(t, err)
+			defer connection.Close()
+			require.NoError(t, connection.SetDeadline(time.Now().Add(time.Second)))
+			request, err := http.NewRequest(http.MethodGet, "http://example.com/missing", nil)
+			require.NoError(t, err)
+			require.NoError(t, request.Write(connection))
+			response, err := http.ReadResponse(bufio.NewReader(connection), request)
+			require.NoError(t, err)
+			_ = response.Body.Close()
+			assert.Equal(t, http.StatusNotFound, response.StatusCode)
+		})
+	}
+}
+
+func TestEntryDefaultKeepsTCPWildcard(t *testing.T) {
+	previous := listenEntryTCP
+	t.Cleanup(func() { listenEntryTCP = previous })
+	listenEntryTCP = func(network string, address string) (net.Listener, error) {
+		assert.Equal(t, "tcp", network)
+		assert.Equal(t, "0.0.0.0:8080", address)
+		return newTestListener(), nil
+	}
+	entry := newEntry(spec.SchemeHTTP, 8080, nil)
+	require.NoError(t, entry.Start())
+	t.Cleanup(entry.Stop)
 }

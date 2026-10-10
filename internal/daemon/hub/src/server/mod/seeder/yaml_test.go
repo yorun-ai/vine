@@ -82,3 +82,16 @@ func TestSeedRejectsNonDecimalNumbers(t *testing.T) {
 		}
 	}
 }
+
+func TestSeedPortalEntryListenIPs(t *testing.T) {
+	payload, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload](`portalEntries:
+  - name: local
+    scheme: http
+    listenIPs: ["127.0.0.1", "::1"]
+`)
+	require.NoError(t, err)
+	require.Len(t, payload.PortalEntries, 1)
+	assert.Equal(t, []string{"127.0.0.1", "::1"}, payload.PortalEntries[0].toCorePortalEntry().ListenIPs)
+	_, err = vcode.UnmarshalYamlS[*_SettingsYAMLPayload]("portalEntries:\n  - name: local\n    scheme: http\n    listenIPs: localhost\n")
+	require.Error(t, err)
+}

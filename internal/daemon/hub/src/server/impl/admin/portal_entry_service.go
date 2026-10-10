@@ -22,22 +22,24 @@ func (s *PortalEntryApiServiceServerImpl) List() []skeled.PortalEntry {
 
 func (s *PortalEntryApiServiceServerImpl) Update(id int, update skeled.PortalEntryUpdate) skeled.PortalEntry {
 	entry := s.PortalEntryCore.Update(id, core.PortalEntryUpdate{
-		Name:    update.Name,
-		Scheme:  update.Scheme,
-		Host:    update.Host,
-		Port:    update.Port,
-		Enabled: update.Enabled,
+		Name:      update.Name,
+		Scheme:    update.Scheme,
+		Host:      update.Host,
+		Port:      update.Port,
+		ListenIPs: update.ListenIPs,
+		Enabled:   update.Enabled,
 	})
 	return s.toServerPortalEntry(entry)
 }
 
 func (s *PortalEntryApiServiceServerImpl) Create(creation skeled.PortalEntryCreation) skeled.PortalEntry {
 	entry := s.PortalEntryCore.Create(core.PortalEntryCreation{
-		Name:    creation.Name,
-		Scheme:  creation.Scheme,
-		Host:    creation.Host,
-		Port:    creation.Port,
-		Enabled: creation.Enabled,
+		Name:      creation.Name,
+		Scheme:    creation.Scheme,
+		Host:      creation.Host,
+		Port:      creation.Port,
+		ListenIPs: creation.ListenIPs,
+		Enabled:   creation.Enabled,
 	})
 	return s.toServerPortalEntry(entry)
 }
@@ -52,13 +54,14 @@ func (s *PortalEntryApiServiceServerImpl) toServerPortalEntry(entry core.PortalE
 		rules = append(rules, s.toServerPortalEntryRule(entry.PortalEntry, rule))
 	}
 	return skeled.PortalEntry{
-		Id:      entry.Id,
-		Name:    entry.Name,
-		Scheme:  entry.Scheme,
-		Host:    entry.Host,
-		Port:    entry.Port,
-		Enabled: entry.Enabled,
-		Rules:   rules,
+		Id:        entry.Id,
+		Name:      entry.Name,
+		Scheme:    entry.Scheme,
+		Host:      entry.Host,
+		Port:      entry.Port,
+		ListenIPs: entry.ListenIPs,
+		Enabled:   entry.Enabled,
+		Rules:     rules,
 	}
 }
 

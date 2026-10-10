@@ -68,3 +68,19 @@ func newTestPortalEntryRepoDB(t *testing.T) *PortalEntryRepo {
 	repo.Dao.EnsureSchema()
 	return repo
 }
+
+func TestPortalEntryRepoListenIPsRoundTrip(t *testing.T) {
+	repo := newTestPortalEntryRepoDB(t)
+	entry := &core.PortalEntry{Name: "local", Scheme: "http", Port: 8080, ListenIPs: []string{"127.0.0.1", "::1"}}
+	repo.Save(entry)
+	got, ok := repo.GetById(entry.Id)
+	require.True(t, ok)
+	assert.Equal(t, entry.ListenIPs, got.ListenIPs)
+	got.ListenIPs[0] = "127.0.0.2"
+	again, _ := repo.GetById(entry.Id)
+	assert.Equal(t, "127.0.0.1", again.ListenIPs[0])
+	entry.ListenIPs = []string{}
+	repo.Save(entry)
+	got, _ = repo.GetById(entry.Id)
+	assert.Empty(t, got.ListenIPs)
+}

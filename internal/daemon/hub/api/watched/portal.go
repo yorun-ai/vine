@@ -13,13 +13,14 @@ const (
 )
 
 type PortalRule struct {
-	Name                    string `json:"name"`
-	MatchScheme             string `json:"matchScheme"`
-	MatchHost               string `json:"matchHost"`
-	MatchPort               int    `json:"matchPort"`
-	RouteType               string `json:"routeType"`
-	RouteSiteName           string `json:"routeSiteName"`
-	RouteRedirectionPattern string `json:"routeRedirectionPattern"`
+	Name                    string   `json:"name"`
+	MatchScheme             string   `json:"matchScheme"`
+	MatchHost               string   `json:"matchHost"`
+	MatchPort               int      `json:"matchPort"`
+	ListenIPs               []string `json:"listenIPs"`
+	RouteType               string   `json:"routeType"`
+	RouteSiteName           string   `json:"routeSiteName"`
+	RouteRedirectionPattern string   `json:"routeRedirectionPattern"`
 	// ResolvedMatchPathPrefix is the effective match path prefix after the
 	// target site mount path has been applied.
 	ResolvedMatchPathPrefix string `json:"resolvedMatchPathPrefix"`

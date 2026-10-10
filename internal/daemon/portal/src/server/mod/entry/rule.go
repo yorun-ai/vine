@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/listenip"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/webgw"
@@ -20,11 +21,13 @@ const (
 )
 
 type _Key struct {
-	scheme spec.Scheme
-	port   int
+	listenIP string
+	scheme   spec.Scheme
+	port     int
 }
 
 type _Rule struct {
+	listenIPs       []string
 	name            string
 	matchScheme     spec.Scheme
 	matchHost       string
@@ -45,9 +48,15 @@ func newRule(rule watched.PortalRule, siteManager *site.Manager) (*_Rule, bool) 
 		return nil, false
 	}
 
+	ips, err := listenip.Normalize(rule.ListenIPs)
+	if err != nil {
+		entryLogger.Error("vine.portal invalid listener IPs", "rule", rule.Name, "error", err)
+		return nil, false
+	}
 	scheme := spec.Scheme(rule.MatchScheme)
 	entryRule := &_Rule{
 		name:            rule.Name,
+		listenIPs:       ips,
 		matchScheme:     scheme,
 		matchHost:       entryRuleHost(rule.MatchHost),
 		matchPort:       entryRulePort(scheme, rule.MatchPort),
@@ -199,4 +208,14 @@ func (r _Rule) hostPriority() int {
 		return 1
 	}
 	return 2
+}
+
+func (r _Rule) Keys() []_Key {
+	keys := make([]_Key, 0, len(r.listenIPs)+1)
+	for _, ip := range listenip.Addresses(r.listenIPs) {
+		key := r.Key()
+		key.listenIP = ip
+		keys = append(keys, key)
+	}
+	return keys
 }

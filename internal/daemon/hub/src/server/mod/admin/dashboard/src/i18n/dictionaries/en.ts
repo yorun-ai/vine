@@ -133,6 +133,9 @@ export const en: Record<TranslationKey, string> = {
   'portalEntry.nameRequired': 'Enter an entry name',
   'portalEntry.scheme': 'Scheme',
   'portalEntry.host': 'Host',
+  'portalEntry.listenIPs': 'Listen IPs',
+  'portalEntry.listenIPsHelp': 'Separate IP addresses with commas or spaces. Leave empty for the default wildcard listener (dual stack where supported).',
+  'portalEntry.defaultListenIPs': 'All interfaces (default)',
   'portalEntry.port': 'Port',
   'portalEntry.invalidPort':
     'Port must be an integer between 0 and 65535',

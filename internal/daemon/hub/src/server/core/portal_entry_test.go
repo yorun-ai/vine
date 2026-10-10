@@ -288,7 +288,7 @@ func TestPortalEntryCoreCreate(t *testing.T) {
 	assert.Equal(t, 443, entry.Port)
 	assert.Empty(t, entry.Rules)
 	require.Len(t, entryRepo.entries, 1)
-	assert.Equal(t, []string{"GetByName:web", "GetBySchemeHostPort:https:demo.local:443", "Save"}, entryRepo.calls)
+	assert.Equal(t, []string{"GetByName:web", "GetBySchemeHostPort:https:demo.local:443", "List", "Save"}, entryRepo.calls)
 
 	// The name identifies one entry, and an access serves one user entry.
 	require.PanicsWithError(t,
@@ -571,4 +571,37 @@ func TestPortalEntryWildcardChangeRejectsNonWebRules(t *testing.T) {
 		entry, _ := repo.GetById(1)
 		assert.Equal(t, "api.example.com", entry.Host)
 	}
+}
+
+func TestPortalEntryListenIPsCreateUpdateAndReset(t *testing.T) {
+	repo := newPortalEntryRepoSpy()
+	target := &PortalEntryCore{PortalEntryRepo: repo, PortalRuleRepo: &entryRuleRepoSpy{}}
+	created := target.Create(PortalEntryCreation{Name: "local", Scheme: "http", Port: 8080, ListenIPs: []string{"::1", "127.0.0.1", "::ffff:127.0.0.1"}})
+	assert.Equal(t, []string{"127.0.0.1", "::1"}, created.ListenIPs)
+	updated := target.Update(created.Id, PortalEntryUpdate{ListenIPs: new([]string{"127.0.0.2"})})
+	assert.Equal(t, []string{"127.0.0.2"}, updated.ListenIPs)
+	unchanged := target.Update(created.Id, PortalEntryUpdate{Name: new("renamed")})
+	assert.Equal(t, updated.ListenIPs, unchanged.ListenIPs)
+	reset := target.Update(created.Id, PortalEntryUpdate{ListenIPs: new([]string{})})
+	assert.Empty(t, reset.ListenIPs)
+}
+
+func TestPortalEntryListenIPsRejectConflictsAndShareListeners(t *testing.T) {
+	repo := newPortalEntryRepoSpy()
+	target := &PortalEntryCore{PortalEntryRepo: repo, PortalRuleRepo: &entryRuleRepoSpy{}}
+	target.Create(PortalEntryCreation{Name: "one", Scheme: "http", Host: "one.local", Port: 8080, ListenIPs: []string{"127.0.0.1"}})
+	target.Create(PortalEntryCreation{Name: "two", Scheme: "http", Host: "two.local", Port: 8080, ListenIPs: []string{"127.0.0.1"}})
+	target.Create(PortalEntryCreation{Name: "v6", Scheme: "https", Host: "v6.local", Port: 8080, ListenIPs: []string{"::1"}})
+	for _, creation := range []PortalEntryCreation{
+		{Name: "wildcard", Scheme: "http", Host: "wildcard.local", Port: 8080, ListenIPs: []string{"0.0.0.0"}},
+		{Name: "default", Scheme: "http", Host: "default.local", Port: 8080},
+		{Name: "tls", Scheme: "https", Host: "tls.local", Port: 8080, ListenIPs: []string{"127.0.0.1"}},
+		{Name: "bad", Scheme: "http", Port: 8090, ListenIPs: []string{"localhost"}},
+	} {
+		require.Panics(t, func() { target.Create(creation) })
+	}
+	assert.Len(t, repo.List(), 3)
+	disabled := target.Create(PortalEntryCreation{Name: "disabled", Scheme: "https", Host: "disabled.local", Port: 8080, ListenIPs: []string{"127.0.0.1"}, Enabled: new(false)})
+	require.Panics(t, func() { target.Update(disabled.Id, PortalEntryUpdate{Enabled: new(true)}) })
+	assert.False(t, target.Get(disabled.Id).Enabled)
 }
