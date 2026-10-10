@@ -97,8 +97,7 @@ Hub 的层次职责必须保持清晰：
   都返回内嵌的 Dashboard 构建产物，Dashboard 因此不再属于 Portal 配置——Hub 不为
   它创建任何 entry、站点或规则，Portal 也不会路由 Dashboard。
 - Portal 站点、entry、规则与证书在库里都有 `enabled` 开关（默认启用），Dashboard
-  可编辑；seed 使用 `enabled`，省略时默认 true，显式空值会报错。旧 `disabled` 输入
-  仍受支持，但不能与 `enabled` 同时填写。Hub 会把停用的实体保留在
+  可编辑；seed 使用 `enabled`，省略时默认 true，显式空值会报错。Hub 会把停用的实体保留在
   数据库里但停止发布到 Watch，Portal 因此完全看不到它：停用的规则、停用 entry 下
   的规则、停用站点上的 SITE 规则以及停用的证书都会从发布内容中移除。早于该开关的
   数据库中的实体保持启用。停用证书可不提供有效 PEM 内容，名称和 YAML 字段类型仍校验，

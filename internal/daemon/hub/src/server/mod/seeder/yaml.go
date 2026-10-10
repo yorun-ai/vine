@@ -216,9 +216,8 @@ type _PortalEntry struct {
 	Host      string            `yaml:"host"`
 	Port      int               `yaml:"port"`
 	ListenIPs []string          `yaml:"listenIPs"`
-	// Enabled defaults to true when omitted. Disabled is a legacy alias.
-	Enabled  *bool `yaml:"enabled"`
-	Disabled bool  `yaml:"disabled"`
+	// Enabled defaults to true when omitted.
+	Enabled *bool `yaml:"enabled"`
 }
 
 func (e *_PortalEntry) UnmarshalYAML(node *yaml.Node) error {
@@ -255,7 +254,7 @@ func (e _PortalEntry) toCorePortalEntry() *core.PortalEntry {
 		Host:      e.Host,
 		Port:      e.Port,
 		ListenIPs: e.ListenIPs,
-		Enabled:   seedEnabled(e.Enabled, e.Disabled),
+		Enabled:   core.EnabledOrDefault(e.Enabled),
 	}
 	if e.Protocol != nil {
 		entry.Protocol = *e.Protocol
@@ -284,9 +283,8 @@ type _PortalRule struct {
 	RouteSiteName           string `yaml:"routeSiteName"`
 	RouteRedirectionPattern string `yaml:"routeRedirectionPattern"`
 	RoutePathPrefix         string `yaml:"routePathPrefix"`
-	// Enabled defaults to true when omitted. Disabled is a legacy alias.
-	Enabled  *bool `yaml:"enabled"`
-	Disabled bool  `yaml:"disabled"`
+	// Enabled defaults to true when omitted.
+	Enabled *bool `yaml:"enabled"`
 }
 
 // seedMappingFields decodes the YAML mapping of one seed entity.
@@ -301,7 +299,7 @@ func seedMappingFields(node *yaml.Node, entity string) (map[string]yaml.Node, er
 	return fields, nil
 }
 
-// checkSeedFields rejects unknown fields and conflicting enable switches.
+// checkSeedFields rejects unknown fields and null enable switches.
 func checkSeedFields(fields map[string]yaml.Node, section string) error {
 	return checkSeedEntityFields(fields, section, fields["name"].Value)
 }
@@ -310,9 +308,6 @@ func checkSeedFields(fields map[string]yaml.Node, section string) error {
 // caller passes: a nested mapping such as cors carries no name of its own.
 func checkSeedEntityFields(fields map[string]yaml.Node, section string, name string) error {
 	if value, exists := fields["enabled"]; exists && seedSectionFields[section]["enabled"] {
-		if _, legacy := fields["disabled"]; legacy {
-			return fmt.Errorf("%s cannot declare both enabled and disabled", seedEntityLabel(section, name))
-		}
 		if value.Tag == "!!null" {
 			return fmt.Errorf("%s: enabled cannot be null", seedEntityLabel(section, name))
 		}
@@ -335,13 +330,6 @@ func checkSeedEntityFields(fields map[string]yaml.Node, section string, name str
 		return fmt.Errorf("%s declares unknown field %q", seedEntityLabel(section, name), key)
 	}
 	return nil
-}
-
-func seedEnabled(enabled *bool, disabled bool) bool {
-	if enabled != nil {
-		return *enabled
-	}
-	return !disabled
 }
 
 // seedEntityLabel names the entity an error is about.
@@ -368,7 +356,7 @@ func (r _PortalRule) toSeedRule() *seedRule {
 			RouteSiteName:           r.RouteSiteName,
 			RouteRedirectionPattern: r.RouteRedirectionPattern,
 			RoutePathPrefix:         r.RoutePathPrefix,
-			Enabled:                 seedEnabled(r.Enabled, r.Disabled),
+			Enabled:                 core.EnabledOrDefault(r.Enabled),
 		},
 		EntryName: r.EntryName,
 		Entry: core.PortalEntry{
@@ -412,9 +400,8 @@ type _PortalSite struct {
 	ActorVia      string            `yaml:"actorVia"`
 	Cors          _PortalCors       `yaml:"cors"`
 	WebName       string            `yaml:"webName"`
-	// Enabled defaults to true when omitted. Disabled is a legacy alias.
-	Enabled  *bool `yaml:"enabled"`
-	Disabled bool  `yaml:"disabled"`
+	// Enabled defaults to true when omitted.
+	Enabled *bool `yaml:"enabled"`
 }
 
 func (s *_PortalSite) UnmarshalYAML(node *yaml.Node) error {
@@ -455,7 +442,7 @@ func (s _PortalSite) toCorePortalSite() *core.PortalSite {
 		ActorVia:      s.ActorVia,
 		Cors:          cors,
 		WebName:       s.WebName,
-		Enabled:       seedEnabled(s.Enabled, s.Disabled),
+		Enabled:       core.EnabledOrDefault(s.Enabled),
 	}
 	return site
 }
@@ -471,9 +458,8 @@ type _PortalCert struct {
 	PrivateKey  string            `yaml:"privateKey"`
 	ValidFrom   time.Time         `yaml:"validFrom"`
 	ValidTo     time.Time         `yaml:"validTo"`
-	// Enabled defaults to true when omitted. Disabled is a legacy alias.
-	Enabled  *bool `yaml:"enabled"`
-	Disabled bool  `yaml:"disabled"`
+	// Enabled defaults to true when omitted.
+	Enabled *bool `yaml:"enabled"`
 }
 
 func (c *_PortalCert) UnmarshalYAML(node *yaml.Node) error {
@@ -493,7 +479,7 @@ func (c _PortalCert) toCorePortalCert() *core.PortalCert {
 		Name:        c.Name,
 		Certificate: c.Certificate,
 		PrivateKey:  c.PrivateKey,
-		Enabled:     seedEnabled(c.Enabled, c.Disabled),
+		Enabled:     core.EnabledOrDefault(c.Enabled),
 	}
 	return cert
 }

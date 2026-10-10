@@ -114,9 +114,7 @@ func (m *PortalCertCore) Update(id int, update PortalCertUpdate) *PortalCert {
 		next.PrivateKey = *update.PrivateKey
 	}
 	if update.Enabled != nil {
-		// Preserve provenance for both current and legacy seed switches.
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/enabled")
-		next.FieldSources = overrideFieldSource(next.FieldSources, "/disabled")
 		next.Enabled = *update.Enabled
 	}
 
