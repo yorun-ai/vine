@@ -79,7 +79,10 @@ func newPortalEntryRepoSpy(entries ...*PortalEntry) *portalEntryRepoSpy {
 	}
 	for _, entry := range entries {
 		if entry.Name == "" {
-			entry.Name = PortalEntryName(entry.Scheme, entry.Host, entry.Port)
+			entry.Name = fmt.Sprintf("%s:%d", entry.Scheme, entry.Port)
+			if entry.Host != "" {
+				entry.Name = fmt.Sprintf("%s:%s:%d", entry.Scheme, entry.Host, entry.Port)
+			}
 		}
 		spy.Save(entry)
 		if entry.Id >= spy.nextId {
@@ -512,26 +515,6 @@ func TestPortalEntryCoreUpdateRenamesEntry(t *testing.T) {
 	require.PanicsWithError(t, `portal entry "api" already exists type=APPLICATION code=OPERATION_FAILED`, func() {
 		core.Update(1, PortalEntryUpdate{Name: new("api")})
 	})
-}
-
-func TestPortalEntryCoreEnsureAccessNormalizesAndReusesEntry(t *testing.T) {
-	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 3, Scheme: "http", Port: 80})
-	core := newPortalEntryCoreForTest(&entryRuleRepoSpy{}, entryRepo, nil)
-
-	entry := core.EnsureEntry(" HTTP ", " ", 0)
-
-	// " HTTP " and an unset port address the entry Portal already serves.
-	assert.Equal(t, 3, entry.Id)
-	assert.Empty(t, entryRepo.calls[1:])
-
-	created := core.EnsureEntry("HTTPS", " demo.local ", 0)
-	assert.Equal(t, "https", created.Scheme)
-	assert.Equal(t, "demo.local", created.Host)
-	assert.Equal(t, 443, created.Port)
-	// Hub names an entry it creates on its own after the access it stores.
-	assert.Equal(t, "https:demo.local:443", created.Name)
-	// The rule that joins a new access stays published.
-	assert.True(t, created.Enabled)
 }
 
 func TestPortalEntryCoreGetRejectsMissingEntry(t *testing.T) {

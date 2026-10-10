@@ -25,12 +25,12 @@ func TestPortalRuleSeedMapsWithoutDomainValidation(t *testing.T) {
 
 func TestSeedPortalRuleFieldNames(t *testing.T) {
 	for _, content := range []string{
-		"portalRules:\n  - name: example\n    matchScheme: http\n    routeType: SITE\n    routePathPrefix: /internal",
+		"portalRules:\n  - name: example\n    entryName: web\n    routeType: SITE\n    routePathPrefix: /internal",
 	} {
 		payload, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload](content)
 		require.NoError(t, err)
 		seedRule := payload.PortalRules[0].toSeedRule()
-		assert.Equal(t, "http", seedRule.Entry.Scheme)
+		assert.Equal(t, "web", seedRule.EntryName)
 		assert.Equal(t, "/internal", seedRule.Rule.RoutePathPrefix)
 	}
 	_, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload]("portalRules:\n  - scheme: http\n    routeType: SITE")

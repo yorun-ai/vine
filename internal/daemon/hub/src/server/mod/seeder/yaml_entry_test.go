@@ -30,3 +30,25 @@ func TestSeedHTTPBlockDefaultsAndPresence(t *testing.T) {
 		require.Error(t, err, value)
 	}
 }
+
+func TestSeedLegacyEntriesPreserveTransportAndPort(t *testing.T) {
+	for _, fixture := range []struct {
+		yaml string
+		http bool
+		port int
+	}{
+		{"{name: web, scheme: http}", true, 80},
+		{"{name: web, scheme: http, port: 7088}", true, 7088},
+		{"{name: web, scheme: https, port: 8443}", false, 8443},
+	} {
+		payload, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload]("portalEntries: [" + fixture.yaml + "]")
+		require.NoError(t, err)
+		entry := core.NormalizePortalEntry(*payload.PortalEntries[0].toCorePortalEntry())
+		require.Equal(t, "http", entry.Protocol)
+		require.Equal(t, fixture.http, entry.Http.HttpEnabled)
+		require.Equal(t, !fixture.http, entry.Http.HttpsEnabled)
+		require.False(t, entry.Http.AutoHTTPS)
+		require.Len(t, entry.Accesses(), 1)
+		require.Equal(t, fixture.port, entry.Accesses()[0].Port)
+	}
+}

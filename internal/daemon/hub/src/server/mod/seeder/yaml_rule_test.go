@@ -9,9 +9,7 @@ import (
 
 type testRule struct {
 	Name                    string `yaml:"name"`
-	MatchScheme             string `yaml:"matchScheme"`
-	MatchHost               string `yaml:"matchHost"`
-	MatchPort               int    `yaml:"matchPort"`
+	EntryName               string `yaml:"entryName"`
 	MatchPathPrefix         string `yaml:"matchPathPrefix"`
 	RouteType               string `yaml:"routeType"`
 	RouteSiteName           string `yaml:"routeSiteName"`
@@ -26,9 +24,9 @@ func (r *testRule) UnmarshalYAML(node *yaml.Node) error {
 
 func TestPortalRuleYAMLCurrentFieldsAndRejectsAliases(t *testing.T) {
 	var rule testRule
-	require.NoError(t, yaml.Unmarshal([]byte("name: example\nmatchScheme: https\nmatchHost: example.com\nmatchPort: 443\nmatchPathPrefix: /api\nrouteType: SITE\nrouteSiteName: web\nroutePathPrefix: /internal"), &rule))
-	require.Equal(t, "https", rule.MatchScheme)
-	for _, field := range []string{"scheme", "host", "port", "pathPrefix", "targetType", "siteName", "targetPath", "redirectionPattern"} {
+	require.NoError(t, yaml.Unmarshal([]byte("name: example\nentryName: web\nmatchPathPrefix: /api\nrouteType: SITE\nrouteSiteName: web\nroutePathPrefix: /internal"), &rule))
+	require.Equal(t, "web", rule.EntryName)
+	for _, field := range []string{"matchScheme", "matchHost", "matchPort", "scheme", "host", "port", "pathPrefix", "targetType", "siteName", "targetPath", "redirectionPattern"} {
 		require.ErrorContains(t, yaml.Unmarshal([]byte("name: example\n"+field+": old"), &rule), "unknown field")
 	}
 }
@@ -46,4 +44,11 @@ func TestPortalRuleYAMLRejectsReferencesAndDuplicateKeys(t *testing.T) {
 	}
 	var rule testRule
 	require.Error(t, yaml.Unmarshal([]byte("host: a\nhost: b"), &rule))
+}
+
+func TestSeedRulesRequireDeclaredEntries(t *testing.T) {
+	_, err := parseSeedEntities("portalRules: [{name: web, routeType: SITE, routeSiteName: app.Web}]")
+	require.ErrorContains(t, err, "requires entryName")
+	_, err = parseSeedEntities("portalRules: [{name: web, entryName: missing, routeType: SITE, routeSiteName: app.Web}]")
+	require.ErrorContains(t, err, "seed does not declare")
 }

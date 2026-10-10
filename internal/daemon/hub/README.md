@@ -100,23 +100,12 @@ creates or replaces by name and owns identity handling, along with versioning an
 field sources where applicable. API updates merge provided fields into the
 existing entity before validation.
 
-An entry owns the protocol family, host, listener IPs, and transport ports Portal serves; rules reference the entry
-and never store access of their own. `PortalRuleCore` resolves the entry of the
-access a rule declares, so rules that share an access share one entry. Changing
-an entry changes every rule it routes, and Hub republishes those rules so Portal
-receives the access the entry now serves.
-
-The Admin API reaches a rule's access through its entry: `PortalRuleCreation`
-names the entry a new rule belongs to, and `PortalRuleUpdate` cannot change an
-access at all. Seed YAML keeps declaring the access on the rule, because Hub
-aggregates the declared access into entries while it applies the seed.
-
-`PortalEntryCore` creates an entry for an access no user entry serves, addresses
-it by `id` afterwards, so the Admin API and the Dashboard rename it, change the
-access it serves, or flip its switch, and removes an entry that routes no rule:
-rules belong to the operator, so deleting their entry fails instead of leaving
-them without an access. The entry list returns an entry that routes nothing,
-because an operator creates the entry before the rules that use it.
+An entry owns the protocol family, host, listener IPs, and transport ports Portal
+serves. Rules reference a declared entry through `entryName`; Hub does not create
+entries from rule access fields. Changing an entry changes every rule it routes.
+The Admin API and seed both require an entry reference when creating a rule.
+`PortalEntryCore` addresses entries by id, and refuses to delete an entry while
+rules still reference it. Entries without rules remain listed.
 
 Two rules that match the same request are reported, not rejected: the path a rule
 matches comes from the Web mount path its site declares, and Hub reads those
@@ -207,8 +196,7 @@ and default-use flag). AppConfig metadata groups nested substitutions under the
 top-level value key. Admin edits clear obsolete templates and bindings. The
 admin API and Dashboard expose this metadata alongside field origins.
 
-Portal rule YAML uses flat fields in this order: `matchScheme`, `matchHost`,
-`matchPort`, `matchPathPrefix`, `routeType`, `routeSiteName`,
+Portal rule YAML uses flat fields in this order: `entryName`, `matchPathPrefix`, `routeType`, `routeSiteName`,
 `routeRedirectionPattern`, and `routePathPrefix`.
 
 Hub stores an `enabled` switch on every Portal site, entry, rule, and
@@ -221,11 +209,9 @@ Disabled certificates may be stored without valid PEM content; names and YAML
 field types remain checked, and enabling requires a valid matching certificate
 and private key. A database that predates the switch keeps every stored entity enabled.
 
-Portal entry YAML declares `name`, `protocol`, `host`, `http`, `listenIPs`, and `enabled`. The flat HTTP block defaults to HTTP/80, HTTPS/443, and `autoHTTPS: true`; automatic redirects require both transports. Seed and Admin API entry inputs require `protocol`; legacy top-level `scheme` and `port` are rejected. Existing database entries retain their original single transport and do not gain redirects. Existing rows migrate one-for-one without changing rule references. Hub publishes enabled entries separately under `portal:entry:*`, including entries with no rules. A seed applies
-entries before rules, so a rule joins the entry that serves its access and keeps
-the name the seed gave it; an entry may route no rule yet. Hub derives the name
-`scheme[:host]:port` only for the entry it creates on its own, which is why the
-entry a rule joins without a declared entry is named after its access.
+Portal entry YAML declares `name`, `protocol`, `host`, `http`, `listenIPs`, and `enabled`. The flat HTTP block defaults to HTTP/80, HTTPS/443, and `autoHTTPS: true`; automatic redirects require both transports. Admin API entry inputs require `protocol`. Seeds also accept v0.27.0 `scheme` and `port` inputs, converting them to a single enabled transport with automatic redirects disabled; they cannot be combined with `protocol`. Existing database entries retain their original single transport and do not gain redirects. Existing rows migrate one-for-one without changing rule references. Hub publishes enabled entries separately under `portal:entry:*`, including entries with no rules. A seed applies
+entries before rules; every rule must name an entry declared in the same seed.
+An entry may route no rule yet.
 The Portal sections are typed: Hub rejects an entity that declares a field the
 section does not name, so a misspelled or renamed field fails instead of
 silently leaving the entity at its default. The built-in marker is not part of
@@ -235,20 +221,10 @@ declare fails instead of nominating an entity.
 Names stay unique per entity kind, which is why a site, an entry, and a rule may
 share one.
 
-A Portal rule joins an entry either by naming it with `entryName` or by declaring
-the access the entry serves. The two are mutually exclusive: a rule never does
-both, and one seed document uses one style for every rule it declares. A seed
-that declares `portalEntries` names them, so its rules reference an entry with
-`entryName` instead of declaring an access. A seed is self-contained: a rule only
-references an entry the same document declares, so Hub never reads stored data to
-complete the relationship. Hub rejects such a document before it writes anything,
-because the entry owns the access.
-
-Seeds keep declaring `matchScheme`, `matchHost`, and `matchPort` on rules, so a
-seed written before entries had names keeps working. Hub aggregates the declared
-access into entries while the seed is applied, so a seed never stores the same
-access on every rule. Watch publishes entries separately; Portal resolves each
-rule through its `entryName`.
+Every Portal rule requires `entryName` referencing an entry declared in the same
+seed. Hub rejects missing references and the retired rule access fields
+`matchScheme`, `matchHost`, and `matchPort` before writing any entities. Watch
+publishes entries separately; Portal resolves each rule through its `entryName`.
 
 The `mod/seeder` package owns the seed YAML contract. It decodes a document into
 the domain entities Hub applies; the payload structs and the parsed document

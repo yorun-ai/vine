@@ -15,7 +15,7 @@ portalCerts:
   domains: '${origins}'
 portalRules:
 - name: app.rule
-  matchHost: '${text}'
+  routePathPrefix: '${text}'
   enabled: '${enabled:true}'
 `)
 	node, sources, err := resolveSeedInputWithDescriptors(template,
@@ -27,7 +27,7 @@ portalRules:
 	require.NoError(t, node.Decode(&payload))
 	require.JSONEq(t, `{"host":"last","port":5432}`, payload.AppConfigs[0].Value)
 	require.Equal(t, []string{"a.com", "b.com"}, payload.PortalCerts[0].Domains)
-	require.Equal(t, "https://a.com/?x=a=b,c", payload.PortalRules[0].MatchHost)
+	require.Equal(t, "https://a.com/?x=a=b,c", payload.PortalRules[0].RoutePathPrefix)
 	require.NotNil(t, payload.PortalRules[0].Enabled)
 	require.False(t, *payload.PortalRules[0].Enabled)
 	require.Equal(t, []string{"database"}, sources["/appConfigs/0/value"].Variables)
@@ -47,12 +47,12 @@ func TestSeedAssignmentsReplaceObjectsAndRemainLiteral(t *testing.T) {
 	require.Equal(t, "", value["empty"])
 	require.Nil(t, value["optional"])
 
-	node, _, err := resolveSeedInputWithDescriptors([]byte("portalRules: [{name: app.rule, matchHost: '${text}'}]"), nil, nil,
+	node, _, err := resolveSeedInputWithDescriptors([]byte("portalRules: [{name: app.rule, routePathPrefix: '${text}'}]"), nil, nil,
 		testVarsDescriptors(), "text=${other}")
 	require.NoError(t, err)
 	var payload _SettingsYAMLPayload
 	require.NoError(t, node.Decode(&payload))
-	require.Equal(t, "${other}", payload.PortalRules[0].MatchHost)
+	require.Equal(t, "${other}", payload.PortalRules[0].RoutePathPrefix)
 }
 
 func TestSeedAssignmentsRejectMalformedInputs(t *testing.T) {

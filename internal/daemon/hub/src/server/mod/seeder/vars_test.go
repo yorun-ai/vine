@@ -29,9 +29,9 @@ func testVarsDescriptors() []*skeldesc.Domain {
 }
 
 func TestVarsRuleUsesCanonicalTargetType(t *testing.T) {
-	for _, field := range []string{"matchPort"} {
+	for _, field := range []string{"port"} {
 		t.Run(field, func(t *testing.T) {
-			_, _, err := resolveSeedInputWithDescriptors([]byte("portalRules: [{name: app.rule, "+field+": '${port}'}]"), []byte("port: null"), nil, nil)
+			_, _, err := resolveSeedInputWithDescriptors([]byte("portalEntries: [{name: app.entry, "+field+": '${port}'}]"), []byte("port: null"), nil, nil)
 			require.ErrorContains(t, err, "null is not allowed")
 		})
 	}
@@ -72,8 +72,10 @@ func TestVarsDefaultsDoNotReplacePresentValues(t *testing.T) {
   value: {enabled: "${enabled:true}"}
 portalRules:
 - name: app.rule
-  matchHost: "${text:fallback}"
-  matchPort: "${database.port:5432}"
+  routePathPrefix: "${text:fallback}"
+portalEntries:
+- name: app.entry
+  port: "${database.port:5432}"
 portalCerts:
 - name: app.cert
   domains: "${origins:[example.com]}"
@@ -83,8 +85,8 @@ portalCerts:
 	var payload _SettingsYAMLPayload
 	require.NoError(t, node.Decode(&payload))
 	require.JSONEq(t, `{"value":null}`, payload.AppConfigs[0].Value)
-	require.Equal(t, "", payload.PortalRules[0].MatchHost)
-	require.Zero(t, payload.PortalRules[0].MatchPort)
+	require.Equal(t, "", payload.PortalRules[0].RoutePathPrefix)
+	require.Zero(t, payload.PortalEntries[0].Port)
 	require.JSONEq(t, `{"enabled":false}`, payload.AppConfigs[1].Value)
 	require.Empty(t, payload.PortalCerts[0].Domains)
 }
@@ -105,15 +107,15 @@ func TestVarsReferencesRejectErrorsAtApplicationPoint(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			template := []byte("portalRules:\n- name: app.rule\n  matchPort: '" + tc.reference + "'\n")
+			template := []byte("portalEntries:\n- name: app.entry\n  port: '" + tc.reference + "'\n")
 			_, _, err := resolveSeedInputWithDescriptors(template, []byte(tc.variables), nil, testVarsDescriptors())
 			require.ErrorContains(t, err, tc.want)
 			if tc.name == "missing" {
 				require.EqualError(t, err, tc.want)
 			} else {
-				require.Contains(t, err.Error(), `portalRule "app.rule" field "matchPort"`)
+				require.Contains(t, err.Error(), `portalEntry "app.entry" field "port"`)
 			}
-			require.NotContains(t, err.Error(), "/portalRules/0/")
+			require.NotContains(t, err.Error(), "/portalEntries/0/")
 			require.NotContains(t, err.Error(), "secret-value")
 		})
 	}
@@ -122,7 +124,7 @@ func TestVarsReferencesRejectErrorsAtApplicationPoint(t *testing.T) {
 func TestVarsTextDefaultsAndInterpolation(t *testing.T) {
 	template := []byte(`portalRules:
 - name: app.rule
-  matchHost: "${text:https://localhost:8443/a.b}"
+  routePathPrefix: "${text:https://localhost:8443/a.b}"
   matchPathPrefix: "${text:}/${text:second}"
   routeRedirectionPattern: "https://${database.host:localhost}:${database.port:8080}"
 `)
@@ -130,15 +132,15 @@ func TestVarsTextDefaultsAndInterpolation(t *testing.T) {
 	require.NoError(t, err)
 	var payload _SettingsYAMLPayload
 	require.NoError(t, node.Decode(&payload))
-	require.Equal(t, "https://localhost:8443/a.b", payload.PortalRules[0].MatchHost)
+	require.Equal(t, "https://localhost:8443/a.b", payload.PortalRules[0].RoutePathPrefix)
 	require.Equal(t, "/second", payload.PortalRules[0].MatchPathPrefix)
 	require.Equal(t, "https://localhost:8080", payload.PortalRules[0].RouteRedirectionPattern)
 }
 
 func TestVarsTypedDefaultKeepsNumericLookingString(t *testing.T) {
-	node, _, err := resolveSeedInputWithDescriptors([]byte("portalRules: [{name: app.rule, matchHost: '${text:00123}'}]"), nil, nil, testVarsDescriptors())
+	node, _, err := resolveSeedInputWithDescriptors([]byte("portalRules: [{name: app.rule, routePathPrefix: '${text:00123}'}]"), nil, nil, testVarsDescriptors())
 	require.NoError(t, err)
-	field := seedMappingValue(seedMappingValue(node, "portalRules").Content[0], "matchHost")
+	field := seedMappingValue(seedMappingValue(node, "portalRules").Content[0], "routePathPrefix")
 	require.Equal(t, "!!str", field.ShortTag())
 	require.Equal(t, "00123", field.Value)
 }
