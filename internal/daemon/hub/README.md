@@ -213,8 +213,8 @@ Portal rule YAML uses flat fields in this order: `matchScheme`, `matchHost`,
 
 Hub stores an `enabled` switch on every Portal site, entry, rule, and
 certificate, and the Dashboard edits it. Seeds use `enabled`, which defaults to
-true when omitted; explicit null values are rejected. The legacy `disabled`
-switch remains accepted, but cannot be combined with `enabled`. Hub keeps a disabled entity in its database and stops publishing it to
+true when omitted; explicit null values are rejected. Hub keeps a disabled
+entity in its database and stops publishing it to
 Watch, so Portal never sees it: Hub omits a disabled rule, the rules of a
 disabled entry, the SITE rules of a disabled site, and a disabled certificate.
 Disabled certificates may be stored without valid PEM content; names and YAML

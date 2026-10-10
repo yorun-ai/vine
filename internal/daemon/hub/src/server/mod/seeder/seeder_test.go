@@ -407,7 +407,7 @@ portalSites:
     webName: demo.Web
 portalRules:
   - name: demo.web
-    disabled: false
+    enabled: true
     matchScheme: http
     matchPort: 8099
     matchPathPrefix: /
@@ -448,8 +448,6 @@ func TestSeederEnableSwitches(t *testing.T) {
 				{"", true},
 				{", enabled: true", true},
 				{", enabled: false", false},
-				{", disabled: false", true},
-				{", disabled: true", false},
 			} {
 				payload, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload](section + ": [{name: demo" + fixture.fields + "}]")
 				require.NoError(t, err)
@@ -466,7 +464,7 @@ func TestSeederEnableSwitches(t *testing.T) {
 				}
 				require.Equal(t, fixture.enabled, actual, fixture.fields)
 			}
-			for _, fields := range []string{", enabled: false, disabled: true", ", enabled: null, disabled: false", ", enabled: null", ", enabled:", ", enabled: nope"} {
+			for _, fields := range []string{", disabled: true", ", disabled: false", ", enabled: false, disabled: true", ", enabled: null", ", enabled:", ", enabled: nope"} {
 				_, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload](section + ": [{name: demo" + fields + "}]")
 				require.Error(t, err, fields)
 			}
@@ -531,21 +529,21 @@ portalEntries:
   - name: web
     scheme: http
     port: 8099
-    disabled: true
+    enabled: false
 portalSites:
   - name: demo.Web
     type: WEBGW
     actorSkelName: demo.Actor
     actorVia: client
     webName: demo.Web
-    disabled: true
+    enabled: false
 portalRules:
   - name: demo.web
     entryName: web
     matchPathPrefix: /
     routeType: SITE
     routeSiteName: demo.Web
-    disabled: true
+    enabled: false
 portalCerts:
   - name: demo-cert
     enabled: false

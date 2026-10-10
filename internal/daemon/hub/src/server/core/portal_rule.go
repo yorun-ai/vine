@@ -138,9 +138,7 @@ func (m *PortalRuleCore) Update(id int, update PortalRuleUpdate) *PortalRule {
 		next.RoutePathPrefix = *update.RoutePathPrefix
 	}
 	if update.Enabled != nil {
-		// Preserve provenance for both current and legacy seed switches.
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/enabled")
-		next.FieldSources = overrideFieldSource(next.FieldSources, "/disabled")
 		next.Enabled = *update.Enabled
 	}
 
