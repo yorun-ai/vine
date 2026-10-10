@@ -51,6 +51,7 @@ var aclRuleByRole = map[_UserRole]_ACLRule{
 		readKeyRules: []string{
 			hubwatch.RevisionKey,
 			watched.FormatPortalRulePrefix() + ":*",
+			watched.FormatPortalEntryPrefix() + ":*",
 			watched.FormatPortalSitePrefix() + ":*",
 			watched.FormatPortalCertPrefix() + ":*",
 			watched.FormatDescriptorActorPrefix() + ":*",
@@ -63,6 +64,7 @@ var aclRuleByRole = map[_UserRole]_ACLRule{
 		readListRules: []string{
 			hubwatch.RevisionKey,
 			watched.FormatPortalRulePrefix() + ":*",
+			watched.FormatPortalEntryPrefix() + ":*",
 			watched.FormatPortalSitePrefix() + ":*",
 			watched.FormatPortalCertPrefix() + ":*",
 			watched.FormatDescriptorActorPrefix() + ":*",

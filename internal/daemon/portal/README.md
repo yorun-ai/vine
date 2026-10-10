@@ -27,7 +27,7 @@ internal/daemon/portal/
 Portal has four primary responsibilities:
 
 1. Entry listeners
-   `entry` reads `portal:rule:*` configuration from Watch, maintains HTTP/HTTPS listeners by scheme, listen IP, and port, and dispatches requests to the corresponding site. Path rewriting preserves the escaped suffix and query string and is owned by `entry`, not the target gateway.
+   `entry` reads `portal:entry:*` and `portal:rule:*` configuration from Watch, maintains HTTP/HTTPS listeners by scheme, listen IP, and port, and dispatches requests to the corresponding site. Entries independently create their enabled transports, including rule-free HTTP 308 redirects when `autoHTTPS` is enabled and the request host has a matching, currently valid configured certificate. Otherwise, requests follow normal HTTP rules. Rules reference entries by `entryName`; transport and listener settings exist only on entries. Path rewriting preserves the escaped suffix and query string and is owned by `entry`, not the target gateway.
 
 2. Site routing
    `site` reads `portal:site:*` configuration from Watch and maintains RpcGW and WebGW instances by site type. Each gateway is responsible only for matching and forwarding requests within its site.
@@ -38,7 +38,7 @@ Portal has four primary responsibilities:
 4. Authentication, permission, and certificates
    `access` reads and watches `descriptor:actor:*`, `descriptor:service:*`, `descriptor:web:*`, and `descriptor:resource:*` state. Before forwarding, RpcGW asks `access` to perform authentication and permission admission, which may invoke backend auth services, actor permission services, and resource check services. `vault` reads and watches certificates from Watch for HTTPS SNI matching.
 
-   The Hub Watch client uses the `vine.portal` user. Its ACL is limited to Portal rules, sites, certificates, descriptors, Rpc/Web endpoint discovery, the shared revision key, and their required subscriptions. The Redis password is empty for in-process mode and separated-deployment debugging. With backend mTLS enabled, the Portal certificate authenticates the client and binds its SPIFFE identity to the `vine.portal` user. Without mTLS, the username only selects an ACL role; because that role can read TLS private keys, the Redis endpoint must remain restricted to a trusted network.
+   The Hub Watch client uses the `vine.portal` user. Its ACL is limited to Portal entries, rules, sites, certificates, descriptors, Rpc/Web endpoint discovery, the shared revision key, and their required subscriptions. The Redis password is empty for in-process mode and separated-deployment debugging. With backend mTLS enabled, the Portal certificate authenticates the client and binds its SPIFFE identity to the `vine.portal` user. Without mTLS, the username only selects an ACL role; because that role can read TLS private keys, the Redis endpoint must remain restricted to a trusted network.
 
 ## Dependencies
 

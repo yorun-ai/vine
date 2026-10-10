@@ -67,6 +67,9 @@ func (e *_Entry) SetOrUpdateRules(rules []*_Rule) {
 		if left.hostPriority() != right.hostPriority() {
 			return left.hostPriority() > right.hostPriority()
 		}
+		if (left.autoHTTPSPort != 0) != (right.autoHTTPSPort != 0) {
+			return left.autoHTTPSPort != 0
+		}
 		if len(left.matchPathPrefix) != len(right.matchPathPrefix) {
 			return len(left.matchPathPrefix) > len(right.matchPathPrefix)
 		}

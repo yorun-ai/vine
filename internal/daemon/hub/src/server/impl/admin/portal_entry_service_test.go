@@ -62,7 +62,7 @@ func TestPortalEntryServiceCreatesAndRemovesEntry(t *testing.T) {
 		PortalSiteRepo:  &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{}},
 	}}
 
-	created := service.Create(skeled.PortalEntryCreation{Name: "web", Scheme: "http", Host: "", Port: 8080, ListenIPs: []string{"127.0.0.1", "::1"}})
+	created := service.Create(skeled.PortalEntryCreation{Name: "web", Scheme: new("http"), Host: "", Port: new(8080), ListenIPs: []string{"127.0.0.1", "::1"}})
 
 	// An entry routes no rule when the operator creates it.
 	require.NotZero(t, created.Id)
@@ -82,4 +82,44 @@ func TestPortalEntryServiceCreatesAndRemovesEntry(t *testing.T) {
 	service.Remove(created.Id)
 
 	assert.Empty(t, service.List())
+}
+
+func TestPortalEntryProtocolVocabulary(t *testing.T) {
+	require.NotPanics(t, func() { validatePortalEntryVocabulary(new("http"), nil, nil, nil) })
+	for _, port := range []*int{new(0), new(80)} {
+		require.Panics(t, func() { validatePortalEntryVocabulary(new("http"), nil, nil, port) })
+	}
+	require.Panics(t, func() { validatePortalEntryVocabulary(new("http"), nil, new(""), nil) })
+	require.Panics(t, func() { validatePortalEntryVocabulary(nil, new(skeled.PortalEntryHttpUpdate{}), nil, nil) })
+	require.Panics(t, func() { validatePortalEntryVocabulary(new(""), nil, nil, nil) })
+	patch := toCoreHTTPUpdate(new(skeled.PortalEntryHttpUpdate{HttpsEnabled: new(false), AutoHttps: new(false)}))
+	config := patch.Apply(core.DefaultPortalEntryHTTP())
+	require.True(t, config.HttpEnabled)
+	require.False(t, config.HttpsEnabled)
+	require.False(t, config.AutoHTTPS)
+}
+
+func TestPortalEntryServiceCreatesDefaultHTTPAndPatchesTransports(t *testing.T) {
+	service := &PortalEntryApiServiceServerImpl{PortalEntryCore: &core.PortalEntryCore{
+		PortalEntryRepo: newTestPortalEntryRepoSpy(), PortalRuleRepo: &_NamedPortalRuleRepoSpy{items: map[string]*core.PortalRule{}}, PortalSiteRepo: &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{}},
+	}}
+	created := service.Create(skeled.PortalEntryCreation{Name: "dual", Protocol: new("http"), Host: "demo.local"})
+	require.True(t, created.Http.HttpEnabled)
+	require.True(t, created.Http.HttpsEnabled)
+	require.True(t, created.Http.AutoHttps)
+	require.Equal(t, 80, created.Http.HttpPort)
+	require.Equal(t, 443, created.Http.HttpsPort)
+	updated := service.Update(created.Id, skeled.PortalEntryUpdate{Protocol: new("http"), Http: new(skeled.PortalEntryHttpUpdate{HttpsPort: new(8443)})})
+	require.Equal(t, created.Id, updated.Id)
+	require.True(t, updated.Http.AutoHttps)
+	require.Equal(t, 8443, updated.Http.HttpsPort)
+	updated = service.Update(created.Id, skeled.PortalEntryUpdate{Protocol: new("http"), Http: new(skeled.PortalEntryHttpUpdate{HttpsEnabled: new(false), AutoHttps: new(false)})})
+	require.True(t, updated.Http.HttpEnabled)
+	require.False(t, updated.Http.HttpsEnabled)
+	require.False(t, updated.Http.AutoHttps)
+	require.Equal(t, 80, updated.Http.HttpPort)
+	require.Panics(t, func() {
+		service.Update(created.Id, skeled.PortalEntryUpdate{Protocol: new("http"), Http: new(skeled.PortalEntryHttpUpdate{AutoHttps: new(true)})})
+	})
+	require.False(t, service.List()[0].Http.AutoHttps)
 }

@@ -17,13 +17,10 @@ func TestNewRuleBuildsSiteRule(t *testing.T) {
 
 	rule, ok := newRule(watched.PortalRule{
 		Name:                    "admin",
-		MatchScheme:             string(spec.SchemeHTTPS),
-		MatchHost:               "demo.local",
-		MatchPort:               8443,
 		ResolvedMatchPathPrefix: "/admin",
 		RouteType:               routeTypeSite,
 		RouteSiteName:           "admin@demo.app",
-	}, siteManager)
+	}, watched.PortalEntry{Host: "demo.local"}, spec.SchemeHTTPS, 8443, siteManager)
 
 	assert.True(t, ok)
 	assert.Equal(t, "admin", rule.name)
@@ -38,13 +35,10 @@ func TestNewRuleBuildsSiteRule(t *testing.T) {
 func TestNewRuleBuildsRedirectRule(t *testing.T) {
 	rule, ok := newRule(watched.PortalRule{
 		Name:                    "redirect",
-		MatchScheme:             string(spec.SchemeHTTP),
-		MatchHost:               "demo.local",
-		MatchPort:               8080,
 		ResolvedMatchPathPrefix: "/old",
 		RouteType:               routeTypePermanentRedirect,
 		RouteRedirectionPattern: "https://demo.local/new",
-	}, newTestSiteManager(t))
+	}, watched.PortalEntry{Host: "demo.local"}, spec.SchemeHTTP, 8080, newTestSiteManager(t))
 
 	assert.True(t, ok)
 	assert.Equal(t, "redirect", rule.name)
@@ -58,10 +52,9 @@ func TestNewRuleBuildsRedirectRule(t *testing.T) {
 func TestNewRuleBuildsSiteRuleWithMissingSiteName(t *testing.T) {
 	rule, ok := newRule(watched.PortalRule{
 		Name:          "admin",
-		MatchScheme:   string(spec.SchemeHTTPS),
 		RouteType:     routeTypeSite,
 		RouteSiteName: "missing@demo.app",
-	}, newTestSiteManager(t))
+	}, watched.PortalEntry{Host: ""}, spec.SchemeHTTPS, 443, newTestSiteManager(t))
 
 	assert.True(t, ok)
 	assert.Equal(t, "missing@demo.app", rule.routeSiteName)
@@ -70,24 +63,12 @@ func TestNewRuleBuildsSiteRuleWithMissingSiteName(t *testing.T) {
 func TestNewRuleSkipsUnknownTargetType(t *testing.T) {
 	rule, ok := newRule(watched.PortalRule{
 		Name:          "broken",
-		MatchScheme:   "tcp",
 		RouteType:     "BROKEN",
 		RouteSiteName: "admin@demo.app",
-	}, newTestSiteManager(t, "admin@demo.app"))
+	}, watched.PortalEntry{Host: ""}, spec.Scheme("tcp"), 80, newTestSiteManager(t, "admin@demo.app"))
 
 	assert.False(t, ok)
 	assert.Nil(t, rule)
-}
-
-func TestPortalRulePortDefaultsByScheme(t *testing.T) {
-	assert.Equal(t, defaultHTTPEntryPort, entryRulePort(spec.SchemeHTTP, 0))
-	assert.Equal(t, defaultHTTPSEntryPort, entryRulePort(spec.SchemeHTTPS, 0))
-}
-
-func TestPortalRulePortPanicsOnUnsupportedScheme(t *testing.T) {
-	assert.Panics(t, func() {
-		entryRulePort(spec.Scheme("tcp"), 0)
-	})
 }
 
 func TestRuleRewritePath(t *testing.T) {
@@ -131,12 +112,12 @@ func TestWildcardHostMatchesOneLabel(t *testing.T) {
 }
 
 func TestWildcardRuleRejectsRpcAndRedirect(t *testing.T) {
-	rule, ok := newRule(watched.PortalRule{Name: "wildcard", MatchScheme: "http", MatchHost: "*.example.com", RouteType: "SITE", RouteSiteName: "rpc"}, newTestSiteManager(t, "rpc"))
+	rule, ok := newRule(watched.PortalRule{Name: "wildcard", RouteType: "SITE", RouteSiteName: "rpc"}, watched.PortalEntry{Host: "*.example.com"}, spec.SchemeHTTP, 80, newTestSiteManager(t, "rpc"))
 	require.True(t, ok)
 	w := httptest.NewRecorder()
 	rule.Serve(&spec.Context{Request: httptest.NewRequest("GET", "http://a.example.com/inspect", nil), ResponseWriter: w})
 	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 	assert.Contains(t, w.Body.String(), "WEBGW")
-	_, ok = newRule(watched.PortalRule{Name: "redirect", MatchScheme: "http", MatchHost: "*.example.com", RouteType: "TEMPORARY_REDIRECT"}, nil)
+	_, ok = newRule(watched.PortalRule{Name: "redirect", RouteType: "TEMPORARY_REDIRECT"}, watched.PortalEntry{Host: "*.example.com"}, spec.SchemeHTTP, 80, nil)
 	assert.False(t, ok)
 }

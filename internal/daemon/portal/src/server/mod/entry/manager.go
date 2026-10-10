@@ -9,16 +9,13 @@ import (
 	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/vault"
 	"go.yorun.ai/vine/util/vcode"
 	"go.yorun.ai/vine/util/vpre"
 )
 
-const (
-	defaultHTTPEntryPort  = 80
-	defaultHTTPSEntryPort = 443
-	entryShutdownTimeout  = 10 * time.Second
-)
+const entryShutdownTimeout = 10 * time.Second
 
 type Manager struct {
 	app.BaseModule
@@ -28,15 +25,18 @@ type Manager struct {
 	Vault       *vault.Vault          `inject:""`
 	Watch       hubapiwatch.ClientOps `inject:""`
 
-	mutex            sync.Mutex
-	entryRulesByName map[string]watched.PortalRule
-	entriesByKey     map[_Key]*_Entry
-	started          bool
+	mutex              sync.Mutex
+	entryRulesByName   map[string]watched.PortalRule
+	entryConfigsByName map[string]watched.PortalEntry
+	entriesByKey       map[_Key]*_Entry
+	started            bool
 }
 
 func (e *Manager) DIInit() {
 	e.entryRulesByName = map[string]watched.PortalRule{}
 	e.entriesByKey = map[_Key]*_Entry{}
+	e.entryConfigsByName = map[string]watched.PortalEntry{}
+	e.loadPortalEntries()
 	e.loadPortalRules()
 }
 
@@ -71,6 +71,28 @@ func (e *Manager) AfterAppStop() {
 
 	for _, entry := range entries {
 		entry.Stop()
+	}
+}
+
+func (e *Manager) loadPortalEntries() {
+	values, subscription := e.Watch.LoadListAndSubscribe(e.Context, watched.FormatPortalEntryPrefix(), e.handlePortalEntryEvent)
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	for key, value := range values {
+		e.entryConfigsByName[key] = vcode.MustUnmarshalJsonS[watched.PortalEntry](value)
+	}
+	subscription.Start()
+}
+func (e *Manager) handlePortalEntryEvent(event hubapiwatch.Event) {
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	if event.Kind == hubapiwatch.EventKindDelete {
+		delete(e.entryConfigsByName, event.Key)
+	} else {
+		e.entryConfigsByName[event.Key] = vcode.MustUnmarshalJsonS[watched.PortalEntry](event.Value)
+	}
+	if err := e.reconcileEntriesLocked(); err != nil {
+		entryLogger.Error("vine.portal listener update failed", "error", err)
 	}
 }
 
@@ -153,9 +175,30 @@ func (e *Manager) reconcileEntriesLocked() error {
 func (e *Manager) buildRulesLocked() map[_Key][]*_Rule {
 	rulesByKey := map[_Key][]*_Rule{}
 	for _, item := range e.entryRulesByName {
-		if rule, ok := newRule(item, e.SiteManager); ok {
+		config, ok := e.entryConfigsByName[watched.FormatPortalEntryKey(item.EntryName)]
+		if !ok {
+			continue
+		}
+		for _, access := range entryTransports(config) {
+			if rule, ok := newRule(item, config, access.scheme, access.port, e.SiteManager); ok {
+				for _, key := range rule.Keys() {
+					rulesByKey[key] = append(rulesByKey[key], rule)
+				}
+			}
+		}
+	}
+	for _, config := range e.entryConfigsByName {
+		for _, access := range entryTransports(config) {
+			rule := &_Rule{name: config.Name, listenIPs: config.ListenIPs, matchScheme: access.scheme, matchPort: access.port, matchHost: config.Host}
 			for _, key := range rule.Keys() {
-				rulesByKey[key] = append(rulesByKey[key], rule)
+				if _, ok := rulesByKey[key]; !ok {
+					rulesByKey[key] = nil
+				}
+				if access.scheme == spec.SchemeHTTP && config.Http.AutoHTTPS {
+					rule.autoHTTPSPort = config.Http.HttpsPort
+					rule.certificateVault = e.Vault
+					rulesByKey[key] = append(rulesByKey[key], rule)
+				}
 			}
 		}
 	}
@@ -184,4 +227,20 @@ func (e *Manager) diffEntriesLocked(nextRules map[_Key][]*_Rule) ([]*_Entry, map
 	}
 
 	return removedEntries, rulesToUpdate, rulesToCreate
+}
+
+type _Transport struct {
+	scheme spec.Scheme
+	port   int
+}
+
+func entryTransports(config watched.PortalEntry) []_Transport {
+	transports := []_Transport{}
+	if config.Http.HttpEnabled {
+		transports = append(transports, _Transport{scheme: spec.SchemeHTTP, port: config.Http.HttpPort})
+	}
+	if config.Http.HttpsEnabled {
+		transports = append(transports, _Transport{scheme: spec.SchemeHTTPS, port: config.Http.HttpsPort})
+	}
+	return transports
 }

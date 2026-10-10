@@ -62,6 +62,30 @@ func (v *Vault) initTemporaryWebCerts() {
 	}
 }
 
+// HasValidCertificate reports whether a configured certificate matches host and
+// is currently valid. Temporary certificates do not qualify for automatic HTTPS.
+func (v *Vault) HasValidCertificate(host string) bool {
+	return v.hasValidCertificateAt(host, time.Now())
+}
+
+func (v *Vault) hasValidCertificateAt(host string, now time.Time) bool {
+	host = strings.ToLower(strings.TrimSuffix(strings.Trim(host, "[]"), "."))
+	v.mutex.Lock()
+	defer v.mutex.Unlock()
+	if !v.indexFreshLocked(now) {
+		v.rebuildIndexAtLocked(now)
+	}
+	cert := v.certsByHost[host]
+	if cert == nil {
+		cert = v.matchWildcardCertLocked(host)
+	}
+	if cert == nil || !cert.validAt(now) {
+		return false
+	}
+	leaf := cert.cert.Leaf
+	return !now.Before(leaf.NotBefore) && !now.After(leaf.NotAfter) && leaf.VerifyHostname(host) == nil
+}
+
 func (v *Vault) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	return v.getCertificateAt(hello, time.Now())
 }

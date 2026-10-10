@@ -2,6 +2,7 @@ package model
 
 import (
 	_ "embed"
+	"fmt"
 
 	"go.yorun.ai/vine/infra/rdb"
 	"go.yorun.ai/vine/internal/core/ex"
@@ -18,12 +19,14 @@ var createPortalEntryPgSQL string
 // storing the access themselves, so Hub changes an access once per entry.
 type PortalEntry struct {
 	rdb.Model
-	Name      string `gorm:"column:name"`
-	Scheme    string `gorm:"column:scheme"`
-	Host      string `gorm:"column:host"`
-	Port      int    `gorm:"column:port"`
-	ListenIPs string `gorm:"column:listen_ips;not null;default:'[]'"`
-	Enabled   bool   `gorm:"column:enabled;not null"`
+	Name       string `gorm:"column:name"`
+	Protocol   string `gorm:"column:protocol;not null;default:''"`
+	HTTPConfig string `gorm:"column:http_config;not null;default:''"`
+	Scheme     string `gorm:"column:scheme"`
+	Host       string `gorm:"column:host"`
+	Port       int    `gorm:"column:port"`
+	ListenIPs  string `gorm:"column:listen_ips;not null;default:'[]'"`
+	Enabled    bool   `gorm:"column:enabled;not null"`
 }
 
 func (*PortalEntry) TableName() string {
@@ -41,10 +44,41 @@ func (d *PortalEntryDao) EnsureSchema() {
 		if err != nil {
 			return err
 		}
-		if columns["listen_ips"] {
-			return nil
+		if !columns["listen_ips"] {
+			if err := tx.Exec("ALTER TABLE portal_entry ADD COLUMN listen_ips TEXT NOT NULL DEFAULT '[]'").Error; err != nil {
+				return err
+			}
 		}
-		return tx.Exec("ALTER TABLE portal_entry ADD COLUMN listen_ips TEXT NOT NULL DEFAULT '[]'").Error
+		for _, name := range []string{"protocol", "http_config"} {
+			if !columns[name] {
+				if err := tx.Exec("ALTER TABLE portal_entry ADD COLUMN " + name + " TEXT NOT NULL DEFAULT ''").Error; err != nil {
+					return err
+				}
+			}
+		}
+		rows := []*PortalEntry{}
+		if err := tx.Unscoped().Where("protocol = '' OR http_config = ''").Find(&rows).Error; err != nil {
+			return err
+		}
+		for _, row := range rows {
+			config, err := legacyHTTPConfig(row.Scheme, row.Port)
+			if err != nil {
+				return err
+			}
+			if err := tx.Unscoped().Model(&PortalEntry{}).Where("id = ?", row.Id).Updates(map[string]any{"protocol": "http", "http_config": config}).Error; err != nil {
+				return err
+			}
+		}
+		if !columns["protocol"] || !columns["http_config"] {
+			if err := tx.Exec("DROP INDEX IF EXISTS uk_portal_entry_access").Error; err != nil {
+				return err
+			}
+		}
+		if err := tx.Exec("CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_entry_access ON portal_entry(scheme, host, port) WHERE deleted_at IS NULL AND scheme <> ''").Error; err != nil {
+			return err
+		}
+		return tx.Exec("CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_entry_protocol_access ON portal_entry(protocol, host, http_config) WHERE deleted_at IS NULL AND http_config <> ''").Error
+
 	}))
 }
 
@@ -75,12 +109,14 @@ func (d *PortalEntryDao) Save(entry *PortalEntry) *PortalEntry {
 	row, ok := d.ById(entry.Id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", entry.Id))
 	d.Update(row, rdb.Patch{
-		"name":       entry.Name,
-		"scheme":     entry.Scheme,
-		"host":       entry.Host,
-		"port":       entry.Port,
-		"listen_ips": entry.ListenIPs,
-		"enabled":    entry.Enabled,
+		"name":        entry.Name,
+		"protocol":    entry.Protocol,
+		"http_config": entry.HTTPConfig,
+		"scheme":      entry.Scheme,
+		"host":        entry.Host,
+		"port":        entry.Port,
+		"listen_ips":  entry.ListenIPs,
+		"enabled":     entry.Enabled,
 	})
 	return row
 }
@@ -97,4 +133,22 @@ func (d *PortalEntryDao) DeleteById(id int) (*PortalEntry, bool) {
 // ensurePortalEntryTable creates the entry table and its indexes.
 func ensurePortalEntryTable(db *gorm.DB) error {
 	return db.Exec(schemaSQL(db, createPortalEntrySQLiteSQL, createPortalEntryPgSQL)).Error
+}
+
+// legacyHTTPConfig preserves exactly one enabled transport while upgrading rows.
+func legacyHTTPConfig(scheme string, port int) (string, error) {
+	if scheme != "http" && scheme != "https" {
+		return "", fmt.Errorf("cannot migrate portal entry scheme %q", scheme)
+	}
+	if port < 0 || port > 65535 {
+		return "", fmt.Errorf("cannot migrate portal entry port %d", port)
+	}
+	httpPort, httpsPort := 80, 443
+	if scheme == "http" && port != 0 {
+		httpPort = port
+	}
+	if scheme == "https" && port != 0 {
+		httpsPort = port
+	}
+	return fmt.Sprintf(`{"httpEnabled":%t,"httpPort":%d,"httpsEnabled":%t,"httpsPort":%d,"autoHTTPS":false}`, scheme == "http", httpPort, scheme == "https", httpsPort), nil
 }

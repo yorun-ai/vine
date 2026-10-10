@@ -27,7 +27,7 @@ internal/daemon/portal/
 Portal 的职责可以拆成四条主线：
 
 1. 入口监听
-   `entry` 从 Watch 读取 `portal:rule:*` 配置，按 scheme/listen IP/port 维护 HTTP/HTTPS listener，并把请求交给对应 site。路径改写保留转义后的后缀和 query string，并由 `entry` 负责。
+   `entry` 从 Watch 读取 `portal:entry:*` 和 `portal:rule:*` 配置，按 scheme/listen IP/port 维护 HTTP/HTTPS listener，并把请求交给对应 site。入口独立建立启用的传输协议监听，`autoHTTPS` 的 HTTP 308 跳转不依赖规则，但要求已配置的证书匹配请求 host 且处于有效期内，否则继续走普通 HTTP 规则。规则通过 `entryName` 引用入口，传输协议和监听配置只由入口持有。路径改写保留转义后的后缀和 query string，并由 `entry` 负责。
 
 2. 站点路由
    `site` 从 Watch 读取 `portal:site:*` 配置，按类型维护 RpcGW 和 WebGW。RpcGW/WebGW 只负责各自 site 内的请求匹配与转发。

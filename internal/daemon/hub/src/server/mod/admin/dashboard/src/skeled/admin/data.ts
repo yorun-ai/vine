@@ -340,8 +340,9 @@ export type PortalCors = {
   /** List of origins allowed in strict mode. */
   allowedOrigins: Array<string>;
 }
-/** Portal access entry. */
 export type PortalEntry = {
+  protocol:  string;
+  http:      PortalEntryHttp;
   /** Entry ID. */
   id:        number;
   /** Entry name. */
@@ -356,23 +357,45 @@ export type PortalEntry = {
   listenIPs: Array<string>;
   /** Entry rule list. */
   rules:     Array<PortalEntryRule>;
-  /** Whether Hub publishes the rules of this entry to Portal. */
+  /** Whether Hub publishes this entry and its rules to Portal. */
   enabled:   boolean;
 }
 /** Portal access entry creation parameters. */
 export type PortalEntryCreation = {
+  protocol:  string | null;
+  http:      PortalEntryHttpUpdate | null;
   /** Entry name. */
   name:      string;
   /** Entry protocol. */
-  scheme:    string;
+  scheme:    string | null;
   /** Match Host, empty string means no restriction. */
   host:      string;
   /** Entry port. */
-  port:      number;
+  port:      number | null;
   /** Listener IP addresses; empty preserves the default wildcard TCP listener. */
   listenIPs: Array<string>;
-  /** Whether Hub publishes the rules of this entry to Portal; defaults to true. */
+  /** Whether Hub publishes this entry and its rules to Portal; defaults to true. */
   enabled:   boolean | null;
+}
+/** Portal access entry. */
+export type PortalEntryHttp = {
+  /** Enable HTTP transport. */
+  httpEnabled:  boolean;
+  /** HTTP listener port. */
+  httpPort:     number;
+  /** Enable HTTPS transport. */
+  httpsEnabled: boolean;
+  /** HTTPS listener port. */
+  httpsPort:    number;
+  /** Redirect HTTP to HTTPS with status 308. */
+  autoHTTPS:    boolean;
+}
+export type PortalEntryHttpUpdate = {
+  httpEnabled:  boolean | null;
+  httpPort:     number | null;
+  httpsEnabled: boolean | null;
+  httpsPort:    number | null;
+  autoHTTPS:    boolean | null;
 }
 /** Portal access entry rules. */
 export type PortalEntryRule = {
@@ -383,6 +406,8 @@ export type PortalEntryRule = {
 }
 /** Portal access entry update parameters. */
 export type PortalEntryUpdate = {
+  protocol:  string | null;
+  http:      PortalEntryHttpUpdate | null;
   /** Entry name. */
   name:      string | null;
   /** Entry protocol. */
@@ -393,11 +418,13 @@ export type PortalEntryUpdate = {
   port:      number | null;
   /** Listener IP addresses; empty restores the default wildcard TCP listener. */
   listenIPs: Array<string> | null;
-  /** Whether Hub publishes the rules of this entry to Portal. */
+  /** Whether Hub publishes this entry and its rules to Portal. */
   enabled:   boolean | null;
 }
 /** Portal entry rules. */
 export type PortalRule = {
+  entryName:               string;
+  entryAddresses:          Array<string>;
   /** Rule ID. */
   id:                      number;
   /** Rule name. */
@@ -471,6 +498,8 @@ export type PortalRuleCreation = {
 }
 /** Portal entry rule list item. */
 export type PortalRuleListItem = {
+  entryName:               string;
+  entryAddresses:          Array<string>;
   /** Rule ID. */
   id:                      number;
   /** Rule name. */

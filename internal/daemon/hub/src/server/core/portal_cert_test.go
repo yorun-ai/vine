@@ -155,7 +155,7 @@ func TestPortalCertSaveDerivesMetadataAndPreservesIdentity(t *testing.T) {
 	from := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := from.AddDate(1, 0, 0)
 	certificate, privateKey := testPortalCertPEM(t, "actual", []string{"demo.local"}, nil, from, to)
-	cert := PortalCert{Id: 99, Name: "demo", Issuer: "forged", Domains: []string{"forged.local"}, Certificate: certificate, PrivateKey: privateKey}
+	cert := PortalCert{Id: 99, Name: "demo", Enabled: true, Issuer: "forged", Domains: []string{"forged.local"}, Certificate: certificate, PrivateKey: privateKey}
 	got := target.Save(cert)
 	require.NotEqual(t, 99, got.Id)
 	require.Equal(t, "actual", got.Issuer)
@@ -189,4 +189,23 @@ func TestPortalCertPEMValidationAndUpdates(t *testing.T) {
 		require.Equal(t, key, target.Get(stored.Id).PrivateKey)
 		require.Equal(t, certificate, target.Get(stored.Id).Certificate)
 	}
+}
+
+func TestPortalCertDisabledPlaceholderRequiresValidPEMOnEnable(t *testing.T) {
+	target := &PortalCertCore{PortalCertRepo: newTestPortalCertRepo()}
+	require.Panics(t, func() { target.Create(PortalCertCreation{Enabled: new(false)}) })
+	cert := target.Create(PortalCertCreation{Name: "placeholder", Enabled: new(false)})
+	require.Empty(t, cert.Certificate)
+	require.Empty(t, cert.PrivateKey)
+	cert = target.Update(cert.Id, PortalCertUpdate{Certificate: new("pending"), PrivateKey: new("pending")})
+	require.False(t, cert.Enabled)
+	require.Equal(t, "pending", cert.Certificate)
+	require.Panics(t, func() { target.Update(cert.Id, PortalCertUpdate{Enabled: new(true)}) })
+	require.False(t, target.Get(cert.Id).Enabled, "a failed enable leaves the stored certificate disabled")
+
+	from := time.Now().Add(-time.Hour)
+	certificate, key := testPortalCertPEM(t, "issuer", []string{"demo.local"}, nil, from, from.Add(2*time.Hour))
+	cert = target.Update(cert.Id, PortalCertUpdate{Certificate: &certificate, PrivateKey: &key, Enabled: new(true)})
+	require.True(t, cert.Enabled)
+	require.Equal(t, []string{"demo.local"}, cert.Domains)
 }

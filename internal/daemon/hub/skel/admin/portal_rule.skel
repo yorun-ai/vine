@@ -29,6 +29,8 @@ data PortalRuleCreation {
 
 @desc("Portal entry rules")
 data PortalRule {
+ entryName: string
+ entryAddresses: list<string>
     @desc("Rule ID")
     id: int
 
@@ -75,6 +77,8 @@ data PortalRule {
 
 @desc("Portal entry rule list item")
 data PortalRuleListItem {
+ entryName: string
+ entryAddresses: list<string>
     @desc("Rule ID")
     id: int
 

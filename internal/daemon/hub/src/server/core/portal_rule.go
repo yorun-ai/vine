@@ -138,7 +138,8 @@ func (m *PortalRuleCore) Update(id int, update PortalRuleUpdate) *PortalRule {
 		next.RoutePathPrefix = *update.RoutePathPrefix
 	}
 	if update.Enabled != nil {
-		// A seed declares the switch as disabled, so it owns that source path.
+		// Preserve provenance for both current and legacy seed switches.
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/enabled")
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/disabled")
 		next.Enabled = *update.Enabled
 	}
@@ -218,8 +219,11 @@ func (*PortalRuleCore) Validate(rule PortalRule) PortalRule {
 	return rule
 }
 
-// portalEntryMatchKey identifies the requests one entry and path prefix match.
-func portalEntryMatchKey(entry PortalEntry, matchPathPrefix string) string {
+// PortalEntryMatchKey identifies the requests one entry and path prefix match.
+func PortalEntryMatchKey(entry PortalEntry, matchPathPrefix string) string {
+	if entry.Scheme == "" && entry.Protocol != "" {
+		return entry.Host + "\x00" + fmt.Sprint(*entry.Http) + "\x00" + matchPathPrefix
+	}
 	return entry.Scheme + "\x00" + entry.Host + "\x00" + strconv.Itoa(entry.Port) + "\x00" + matchPathPrefix
 }
 
@@ -255,6 +259,9 @@ func (c PortalRuleConflict) MatchText() string {
 	host := c.Entry.Host
 	if host == "" {
 		host = "*"
+	}
+	if c.Entry.Scheme == "" && c.Entry.Protocol != "" {
+		return portalEntryAccessText(c.Entry) + c.MatchPathPrefix
 	}
 	return fmt.Sprintf("%s://%s:%d%s", c.Entry.Scheme, host, c.Entry.Port, c.MatchPathPrefix)
 }
@@ -309,7 +316,7 @@ func (m *PortalRuleCore) Conflicts() []PortalRuleConflict {
 			continue
 		}
 		matchPathPrefix, _ := ResolvePortalRulePaths(rule, site)
-		key := portalEntryMatchKey(*entry, matchPathPrefix)
+		key := PortalEntryMatchKey(*entry, matchPathPrefix)
 		matchedRule, found := matched[key]
 		if !found {
 			matched[key] = _Match{

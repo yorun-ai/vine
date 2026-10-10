@@ -12,6 +12,32 @@ import (
 	"go.yorun.ai/vine/internal/daemon"
 )
 
+func TestVaultHasValidCertificate(t *testing.T) {
+	parsed, err := newCertificate(newTestPortalCert(t, "demo-cert", []string{"demo.local", "*.demo.local"}))
+	require.NoError(t, err)
+	vault := &Vault{certs: map[string]*_Certificate{parsed.name: parsed}}
+	vault.rebuildIndexLocked()
+	now := time.Now()
+	assert.True(t, vault.HasValidCertificate("DEMO.LOCAL."))
+	assert.True(t, vault.HasValidCertificate("admin.demo.local"))
+	assert.False(t, vault.HasValidCertificate("other.local"))
+	assert.False(t, vault.HasValidCertificate("a.admin.demo.local"))
+	assert.False(t, vault.hasValidCertificateAt("demo.local", now.Add(-2*time.Hour)))
+	assert.False(t, vault.hasValidCertificateAt("demo.local", now.Add(2*time.Hour)))
+
+	// Certificate dates remain authoritative even when Watch metadata is valid.
+	parsed.cert.Leaf.NotBefore = now.Add(time.Hour)
+	assert.False(t, vault.hasValidCertificateAt("demo.local", now))
+	parsed.cert.Leaf.NotBefore = now.Add(-time.Hour)
+	parsed.cert.Leaf.NotAfter = now.Add(-time.Minute)
+	assert.False(t, vault.hasValidCertificateAt("demo.local", now))
+
+	temporaryVault := newTemporaryWebCertVault(t, nil)
+	_, err = temporaryVault.GetCertificate(&tls.ClientHelloInfo{ServerName: "demo.local"})
+	require.NoError(t, err)
+	assert.False(t, temporaryVault.HasValidCertificate("demo.local"))
+}
+
 func TestVaultGetCertificateMatchesHost(t *testing.T) {
 	cert := newTestPortalCert(t, "demo-cert", []string{"demo.local"})
 	parsed, err := newCertificate(cert)
