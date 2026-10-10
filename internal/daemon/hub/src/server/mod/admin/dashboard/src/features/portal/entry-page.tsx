@@ -168,8 +168,6 @@ function portalEntryFormValueToUpdate(
   return {
     name: value.name.trim(),
     protocol: 'http',
-    scheme: null,
-    port: null,
     http: portalEntryHTTPConfig(value),
     host: value.host.trim(),
     listenIPs: value.listenIPs.split(/[\s,]+/).filter(Boolean),
@@ -608,8 +606,6 @@ export function PortalEntryPage() {
           creation: {
             name: value.name.trim(),
             protocol: 'http',
-            scheme: null,
-            port: null,
             http: portalEntryHTTPConfig(value),
             host: value.host.trim(),
             listenIPs: value.listenIPs.split(/[\s,]+/).filter(Boolean),

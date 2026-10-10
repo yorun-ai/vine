@@ -10,7 +10,7 @@ import (
 )
 
 func TestRegistrationConvertsLegacySchemaAtWireBoundary(t *testing.T) {
-	raw := skeltype.JSON(`{"domain":"demo","hash":"unchanged","generated":{"compilerVersion":"v0.17.1"},"services":[{"name":"Api","skelName":"demo.Api","api":true,"authMode":"auth","require":{"expr":{"mode":"code","code":"read"}},"methods":[{"name":"Get","skelName":"get","authMode":"noauth"}]}]}`)
+	raw := skeltype.JSON(`{"domain":"demo","hash":"unchanged","generated":{"compilerVersion":"v0.17.1"},"services":[{"name":"Api","skelName":"demo.Api","api":true,"authMode":"required","require":{"expr":{"mode":"code","code":"read"}},"methods":[{"name":"Get","skelName":"get","authMode":"optional"}]}]}`)
 	for _, reg := range []skeled.AppRegistration{{DomainSchemas: []skeltype.JSON{raw}}, {DomainDescriptors: []skeltype.JSON{raw}}} {
 		domains := decodeRegisteredDescriptors(reg)
 		require.Len(t, domains, 1)

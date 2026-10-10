@@ -1,28 +1,12 @@
 package model
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/tls"
-	"crypto/x509"
-	"encoding/base64"
-	"encoding/pem"
-	"fmt"
-	"math/big"
-	"os"
-	"path/filepath"
-	"strings"
 	"testing"
 	"time"
-	"uuid"
 
-	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/infra/rdb"
-	"go.yorun.ai/vine/infra/rdb/adapter"
-	"gorm.io/gorm"
 )
 
 func TestPortalCertDaoCreateAndQuery(t *testing.T) {
@@ -107,227 +91,20 @@ func newTestPortalCertDao(t *testing.T) *PortalCertDao {
 	return dao
 }
 
-func TestSQLitePortalCertPEMMigration(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "cert.sqlite")), &gorm.Config{})
-	require.NoError(t, err)
-	connection, err := db.DB()
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = connection.Close() })
-	testPortalCertPEMMigration(t, db, "sqlite")
-}
-
-func TestPostgresPortalCertPEMMigration(t *testing.T) {
-	dsn := os.Getenv("VINE_TEST_POSTGRES_DSN")
-	if dsn == "" {
-		t.Skip("set VINE_TEST_POSTGRES_DSN to run PostgreSQL integration tests")
+func TestPortalCertRemovesRetiredColumnsWithoutChangingPEM(t *testing.T) {
+	dao := newTestPortalCertDao(t)
+	cert := dao.Save(&PortalCert{Name: "kept", Certificate: "current PEM", PrivateKey: "current key", Domains: "[]"})
+	for _, name := range []string{"public_key_base64", "private_key_base64"} {
+		require.NoError(t, dao.GormDB().Exec("ALTER TABLE portal_cert ADD COLUMN "+name+" TEXT NOT NULL DEFAULT 'stale'").Error)
 	}
-	db, err := gorm.Open(adapter.NewDialector(dsn), &gorm.Config{})
-	require.NoError(t, err)
-	connection, err := db.DB()
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = connection.Close() })
-	tx := db.Begin()
-	require.NoError(t, tx.Error)
-	t.Cleanup(func() { require.NoError(t, tx.Rollback().Error) })
-	schema := "vine_cert_" + strings.ReplaceAll(uuid.NewV7().String(), "-", "")
-	require.NoError(t, tx.Exec(`CREATE SCHEMA "`+schema+`"`).Error)
-	require.NoError(t, tx.Exec(`SET LOCAL search_path TO "`+schema+`"`).Error)
-	testPortalCertPEMMigration(t, tx, "pgsql")
-}
-
-func testPortalCertPEMMigration(t *testing.T, db *gorm.DB, dialect string) {
-	t.Helper()
-	sql, err := os.ReadFile("testdata/" + dialect + "/portal_cert_0220.sql")
-	require.NoError(t, err)
-	require.NoError(t, db.Exec(string(sql)).Error)
-	ensureFieldSourceTable(db)
-	certPEM, keyPEM, certDER, keyDER := migrationTestPair(t)
-	chain := certPEM + certPEM
-	from := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
-	for i, input := range [][2]string{
-		{base64.StdEncoding.EncodeToString([]byte(chain)), base64.StdEncoding.EncodeToString([]byte(keyPEM))},
-		{certPEM, keyPEM},
-		{base64.RawStdEncoding.EncodeToString(certDER), base64.StdEncoding.EncodeToString(keyDER)},
-	} {
-		id := i + 1
-		require.NoError(t, db.Exec(`INSERT INTO portal_cert (id, name, issuer, domains, public_key_base64, private_key_base64, enabled, valid_from, valid_to) VALUES (?, ?, 'issuer', '["demo.local"]', ?, ?, FALSE, ?, ?)`, id, "cert"+string(rune('a'+i)), input[0], input[1], from, from.AddDate(1, 0, 0)).Error)
-	}
-	// Include soft-deleted rows, and ensure provenance survives under new names.
-	require.NoError(t, db.Exec("UPDATE portal_cert SET deleted_at = ? WHERE id = 3", from).Error)
-	require.NoError(t, saveFieldSource(db, "portal_cert", 1, `{"/publicKeyBase64":{"source":"seed"},"/privateKeyBase64":{"source":"secret"}}`))
-	dao := &PortalCertDao{Dao: rdb.NewDao[*PortalCert](db)}
 	dao.EnsureSchema()
-	row, ok := dao.ById(1)
-	require.True(t, ok)
-	require.Equal(t, chain, row.Certificate)
-	require.Equal(t, keyPEM, row.PrivateKey)
-	require.False(t, row.Enabled)
-	require.True(t, from.Equal(row.ValidFrom))
-	require.Equal(t, "issuer", row.Issuer)
-	require.Equal(t, `["demo.local"]`, row.Domains)
-	require.Contains(t, row.FieldSources, `"/certificate"`)
-	require.Contains(t, row.FieldSources, `"/privateKey"`)
-	require.NotContains(t, row.FieldSources, "Base64")
-	require.Equal(t, base64.StdEncoding.EncodeToString([]byte(chain)), row.PublicKeyBase64)
-	for id := 1; id <= 3; id++ {
-		var migrated struct {
-			Certificate string
-			PrivateKey  string
-		}
-		require.NoError(t, db.Table("portal_cert").Select("certificate, private_key").Where("id = ?", id).Scan(&migrated).Error)
-		_, err := tls.X509KeyPair([]byte(migrated.Certificate), []byte(migrated.PrivateKey))
-		require.NoError(t, err)
-	}
-	// Changed PEM remains authoritative over stale legacy data on restart.
-	row.Certificate = certPEM
-	dao.Save(row)
-	require.NoError(t, db.Exec("UPDATE portal_cert SET public_key_base64 = 'stale', private_key_base64 = 'stale' WHERE id = 1").Error)
 	dao.EnsureSchema()
-	row, ok = dao.ById(1)
+	columns, err := tableColumnNames(dao.GormDB(), "portal_cert")
+	require.NoError(t, err)
+	require.NotContains(t, columns, "public_key_base64")
+	require.NotContains(t, columns, "private_key_base64")
+	stored, ok := dao.ById(cert.Id)
 	require.True(t, ok)
-	require.Equal(t, certPEM, row.Certificate)
-	require.Equal(t, keyPEM, row.PrivateKey)
-}
-
-func TestPortalCertPEMMigrationRollsBackInvalidData(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "invalid.sqlite")), &gorm.Config{})
-	require.NoError(t, err)
-	conn, err := db.DB()
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = conn.Close() })
-	sql, err := os.ReadFile("testdata/sqlite/portal_cert_0220.sql")
-	require.NoError(t, err)
-	require.NoError(t, db.Exec(string(sql)).Error)
-	cert, key, _, _ := migrationTestPair(t)
-	for id, value := range map[int]string{1: base64.StdEncoding.EncodeToString([]byte(cert)), 2: "invalid"} {
-		require.NoError(t, db.Exec(`INSERT INTO portal_cert (id,name,issuer,domains,public_key_base64,private_key_base64) VALUES (?,?,'','[]',?,?)`, id, "cert"+string(rune('a'+id)), value, base64.StdEncoding.EncodeToString([]byte(key))).Error)
-	}
-	dao := &PortalCertDao{Dao: rdb.NewDao[*PortalCert](db)}
-	require.Panics(t, dao.EnsureSchema)
-	columns, err := tableColumnNames(db, "portal_cert")
-	require.NoError(t, err)
-	require.NotContains(t, columns, "certificate")
-	require.NotContains(t, columns, "private_key")
-}
-
-func migrationTestPair(t *testing.T) (string, string, []byte, []byte) {
-	t.Helper()
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	require.NoError(t, err)
-	template := &x509.Certificate{SerialNumber: big.NewInt(1), DNSNames: []string{"demo.local"}, NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(time.Hour)}
-	der, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
-	require.NoError(t, err)
-	keyDER, err := x509.MarshalPKCS8PrivateKey(key)
-	require.NoError(t, err)
-	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})), string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyDER})), der, keyDER
-}
-
-func newLegacyPortalCertMigrationDB(t *testing.T, pemColumns bool) *gorm.DB {
-	t.Helper()
-	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "migration.sqlite")), &gorm.Config{})
-	require.NoError(t, err)
-	pool, err := db.DB()
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, pool.Close()) })
-	fixture, err := os.ReadFile("testdata/sqlite/portal_cert_0220.sql")
-	require.NoError(t, err)
-	require.NoError(t, db.Exec(string(fixture)).Error)
-	ensureFieldSourceTable(db)
-	if pemColumns {
-		for _, column := range []string{"certificate", "private_key"} {
-			require.NoError(t, db.Exec("ALTER TABLE portal_cert ADD COLUMN "+column+" TEXT NOT NULL DEFAULT ''").Error)
-		}
-	}
-	return db
-}
-
-func insertLegacyPortalCert(t *testing.T, db *gorm.DB, id int, certificate string, key string) {
-	t.Helper()
-	require.NoError(t, db.Exec(`INSERT INTO portal_cert (id,name,issuer,domains,public_key_base64,private_key_base64) VALUES (?,?,'issuer','[]',?,?)`, id, fmt.Sprintf("cert-%d", id), certificate, key).Error)
-}
-
-func TestPortalCertPEMMigrationRejectsMismatchedPair(t *testing.T) {
-	db := newLegacyPortalCertMigrationDB(t, false)
-	cert, key, _, _ := migrationTestPair(t)
-	_, wrongKey, _, _ := migrationTestPair(t)
-	insertLegacyPortalCert(t, db, 1, cert, key)
-	insertLegacyPortalCert(t, db, 2, cert, wrongKey)
-	dao := &PortalCertDao{Dao: rdb.NewDao[*PortalCert](db)}
-	require.Panics(t, dao.EnsureSchema)
-	columns, err := tableColumnNames(db, "portal_cert")
-	require.NoError(t, err)
-	assert.NotContains(t, columns, "certificate")
-	assert.NotContains(t, columns, "private_key")
-	var rows []struct {
-		PublicKeyBase64  string
-		PrivateKeyBase64 string
-	}
-	require.NoError(t, db.Table("portal_cert").Select("public_key_base64, private_key_base64").Order("id").Scan(&rows).Error)
-	require.Len(t, rows, 2)
-	assert.Equal(t, cert, rows[0].PublicKeyBase64)
-	assert.Equal(t, key, rows[0].PrivateKeyBase64)
-	assert.Equal(t, wrongKey, rows[1].PrivateKeyBase64)
-}
-
-func TestPortalCertPEMMigrationFillsOnlyMissingField(t *testing.T) {
-	for _, missing := range []string{"certificate", "private_key"} {
-		t.Run(missing, func(t *testing.T) {
-			db := newLegacyPortalCertMigrationDB(t, true)
-			cert, key, _, _ := migrationTestPair(t)
-			if missing == "certificate" {
-				insertLegacyPortalCert(t, db, 1, base64.StdEncoding.EncodeToString([]byte(cert)), "stale")
-				require.NoError(t, db.Exec("UPDATE portal_cert SET private_key = ? WHERE id = 1", key).Error)
-			} else {
-				insertLegacyPortalCert(t, db, 1, "stale", base64.StdEncoding.EncodeToString([]byte(key)))
-				require.NoError(t, db.Exec("UPDATE portal_cert SET certificate = ? WHERE id = 1", cert).Error)
-			}
-			dao := &PortalCertDao{Dao: rdb.NewDao[*PortalCert](db)}
-			for range 2 {
-				dao.EnsureSchema()
-			}
-			row, ok := dao.ById(1)
-			require.True(t, ok)
-			assert.Equal(t, cert, row.Certificate)
-			assert.Equal(t, key, row.PrivateKey)
-		})
-	}
-}
-
-func TestPortalCertSourceMigrationPreservesNewProvenance(t *testing.T) {
-	db := newLegacyPortalCertMigrationDB(t, true)
-	cert, key, _, _ := migrationTestPair(t)
-	insertLegacyPortalCert(t, db, 1, cert, key)
-	require.NoError(t, saveFieldSource(db, "portal_cert", 1, `{"/certificate":{"source":"new-cert"},"/publicKeyBase64":{"source":"old-cert"},"/privateKey":{"source":"new-key"},"/privateKeyBase64":{"source":"old-key"},"/issuer":{"source":"issuer"}}`))
-	dao := &PortalCertDao{Dao: rdb.NewDao[*PortalCert](db)}
-	for range 2 {
-		dao.EnsureSchema()
-	}
-	row, ok := dao.ById(1)
-	require.True(t, ok)
-	assert.JSONEq(t, `{"/certificate":{"source":"new-cert"},"/privateKey":{"source":"new-key"},"/issuer":{"source":"issuer"}}`, row.FieldSources)
-}
-
-func TestPortalCertPEMMigrationRollsBackCorruptProvenance(t *testing.T) {
-	db := newLegacyPortalCertMigrationDB(t, true)
-	cert, key, _, _ := migrationTestPair(t)
-	validSource := `{"/publicKeyBase64":{"source":"seed"}}`
-	for id, source := range []string{validSource, "{"} {
-		insertLegacyPortalCert(t, db, id+1, cert, key)
-		require.NoError(t, saveFieldSource(db, "portal_cert", id+1, source))
-	}
-	dao := &PortalCertDao{Dao: rdb.NewDao[*PortalCert](db)}
-	require.Panics(t, dao.EnsureSchema)
-	var rows []struct {
-		Certificate string
-		PrivateKey  string
-	}
-	require.NoError(t, db.Table("portal_cert").Select("certificate, private_key").Order("id").Scan(&rows).Error)
-	require.Len(t, rows, 2)
-	for _, row := range rows {
-		assert.Empty(t, row.Certificate, "converted data must roll back along with provenance")
-		assert.Empty(t, row.PrivateKey)
-	}
-	var sources []string
-	require.NoError(t, db.Table("field_source").Order("entity_id").Pluck("fields", &sources).Error)
-	assert.Equal(t, []string{validSource, "{"}, sources)
+	require.Equal(t, cert.Certificate, stored.Certificate)
+	require.Equal(t, cert.PrivateKey, stored.PrivateKey)
 }

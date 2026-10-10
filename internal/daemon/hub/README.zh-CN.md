@@ -103,8 +103,8 @@ Hub 的层次职责必须保持清晰：
   数据库中的实体保持启用。停用证书可不提供有效 PEM 内容，名称和 YAML 字段类型仍校验，
   启用时必须提供有效且匹配的证书和私钥。
 - entry 使用 `protocol: http` 和平铺的 `http` 块，默认 HTTP/80、HTTPS/443、
-  `autoHTTPS: true`，自动跳转要求同时启用两种传输协议。旧 `scheme` 和顶层 `port` 输入
-  转换为只启用原协议、关闭跳转的配置，不能与 `protocol` 混用。已有数据一一迁移，保留
+  `autoHTTPS: true`，自动跳转要求同时启用两种传输协议。seed 和 Admin API 的入口输入必须使用
+  `protocol`，不再接受旧顶层 `scheme/port`；数据库旧入口保留原协议且不启用跳转。已有数据一一迁移，保留
   规则引用。启用的 entry 独立发布到 `portal:entry:*`，无需规则即可监听和跳转。
 - entry 有自己的名称：seed 的 `portalEntries` 段声明 `name`、`protocol`、`host`、
   `http`、`listenIPs`，并在规则之前应用，因此规则会加入服务其访问配置的 entry 并沿用该名称；
@@ -172,20 +172,18 @@ Hub 当前支持两类数据库配置来源：
 
 启动时可以通过 `--seed-data-file` 让 `seeder` 从本地 YAML 文件一次性导入初始配置、站点规则和证书到数据库；导入后 Hub 仍然统一从数据库 repo 读取，再写入 Redis，对 Link 暴露一致的读取与订阅语义。
 
-现有数据库必须已经完成 Portal Entry 迁移。Hub 在初始化表结构时删除规则表的
-`match_scheme`、`match_host`、`match_port`，以及规则表和站点表的 `built_in` 列。
-现有 entry 关系和规则路径保持不变；启动时不再转换 Entry 之前的数据库，也不再
-改写规则路径。删除这些列后，依赖它们的旧版 Hub 无法再使用该数据库。
+现有数据库必须已使用 v0.27.0 的结构。初始化时继续升级 entry 的监听 IP 和 HTTP
+协议配置块，不再执行更早的证书格式转换和已退休列清理。
 
 数据库 metadata 记录首次 seed 完成状态。后续启动跳过全部 seed、变量和来源输入，seed 条目不再提供 `override` 开关。无数据库模式每次建立新存储并导入 seed。
 
 字段来源以 JSON 保存原始字段模板，并记录每次替换的相对路径、变量名、占位符、实际应用的 JSON 值和默认值使用标记。AppConfig 的嵌套替换归属 value 的一级 key；管理接口修改字段后清除旧模板和替换记录。管理 API 与 Dashboard 一同展示这些信息及字段来源。
 
-`mod/seeder` 负责 seed YAML 契约：它把文档解码成 Hub 要应用的领域实体，payload 结构体与解析结果保持包内私有。它接受旧规则字段并逐字段告警；同一条规则混用新旧字段会在 Hub 写入任何内容之前失败。
+`mod/seeder` 负责 seed YAML 契约：它把文档解码成 Hub 要应用的领域实体，payload 结构体与解析结果保持包内私有。只接受当前 match/route 字段名称；旧别名会在 Hub 写入任何内容之前被拒绝。
 
 seed 仍在规则上声明 `matchScheme`、`matchHost` 和 `matchPort`。应用 seed 时 Hub
 会把声明的访问配置聚合为 entry，因此 seed 不会把同一份访问配置写到每条规则上。
-Portal 收到的规则仍携带其 entry 的访问配置；entry 是 Hub 侧状态，不是 Watch key。
+Watch 独立发布 entry；Portal 通过规则的 `entryName` 查找对应 entry。
 
 ## Admin 载荷约定
 
@@ -238,8 +236,6 @@ Hub 在普通模式和 inproc 模式下，对注册信息的处理不同：
 ### 证书表示
 
 Hub 领域、Admin API、Dashboard 和 seed 统一使用 PEM `certificate`、`privateKey`
-字段。DAO 增加 `certificate`、`private_key` 列，在发布前以事务迁移旧 Base64 或已存的
-PEM 数据。旧列仅用于迁移，新写入使用 PEM。字段来源路径改用新名称，保留历史溯源信息。
-Syncer 向 Watch 同时发布 PEM 及其派生的旧 Base64 字段。升级时先升级 Hub：新 Portal
-只读 PEM 字段，旧 Portal 仍可消费旧字段。持久化前校验证书与私钥配对，Admin API 的
-来源信息也不得泄露私钥值。
+字段。已有数据库必须已包含 PEM 字段；DAO 删除退休的 Base64 列，不再转换其中内容。
+Watch 只发布 PEM 字段；Hub、Link 和 Portal 必须同步升级。启用证书要求证书与私钥
+有效且匹配，停用证书可以占位。Admin API 的来源信息不得泄露私钥值。

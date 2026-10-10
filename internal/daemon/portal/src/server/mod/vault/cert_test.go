@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/base64"
 	"encoding/pem"
 	"math/big"
 	"testing"
@@ -75,18 +74,4 @@ func newTestCertificatePEM(t *testing.T, domains []string) ([]byte, []byte) {
 	require.NoError(t, err)
 	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes})
 	return certPEM, keyPEM
-}
-
-func TestCertificateOnlyReadsPEMFields(t *testing.T) {
-	cert := newTestPortalCert(t, "pem", []string{"demo.local"})
-	cert.PublicKeyBase64 = "invalid legacy certificate"
-	cert.PrivateKeyBase64 = "invalid legacy key"
-	_, err := newCertificate(cert)
-	require.NoError(t, err)
-	cert.PublicKeyBase64 = base64.StdEncoding.EncodeToString([]byte(cert.Certificate))
-	cert.PrivateKeyBase64 = base64.StdEncoding.EncodeToString([]byte(cert.PrivateKey))
-	cert.Certificate = ""
-	cert.PrivateKey = ""
-	_, err = newCertificate(cert)
-	require.Error(t, err, "new Portal must not fall back to Base64 fields")
 }

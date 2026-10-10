@@ -36,7 +36,6 @@ type PortalSiteDao struct {
 }
 
 func (d *PortalSiteDao) EnsureSchema() {
-	dropColumns(d.GormDB(), "portal_site", "built_in")
 	sql := schemaSQL(d.GormDB(), createPortalSiteSQLiteSQL, createPortalSitePgSQL)
 	err := d.GormDB().Exec(sql).Error
 	ex.PanicIfError(err)

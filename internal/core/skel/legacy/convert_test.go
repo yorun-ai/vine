@@ -8,7 +8,7 @@ import (
 )
 
 func TestConvertNormalizesAuthAndComputesPolicy(t *testing.T) {
-	for _, mode := range []AuthMode{"", AuthModeUnset, AuthModeAuth, AuthModeNoAuth} {
+	for _, mode := range []AuthMode{"", "required", "optional"} {
 		t.Run(string(mode), func(t *testing.T) {
 			source := &DomainSchema{
 				Domain: "demo",
@@ -32,7 +32,7 @@ func TestConvertNormalizesAuthAndComputesPolicy(t *testing.T) {
 						{
 							Name:     "List",
 							SkelName: "list",
-							AuthMode: AuthModeNoAuth,
+							AuthMode: AuthMode("optional"),
 						},
 					},
 				}},
@@ -46,7 +46,7 @@ func TestConvertNormalizesAuthAndComputesPolicy(t *testing.T) {
 			result, err := Convert(source)
 			require.NoError(t, err)
 			expected := descriptor.AuthModeRequired
-			if mode == AuthModeNoAuth {
+			if mode == AuthMode("optional") {
 				expected = descriptor.AuthModeOptional
 			}
 			require.Equal(t, expected, result.Services[0].AuthMode)
@@ -55,9 +55,7 @@ func TestConvertNormalizesAuthAndComputesPolicy(t *testing.T) {
 			require.Equal(t, descriptor.AuthModeOptional, result.Services[0].Methods[1].EffectiveAuthMode)
 			require.Equal(t, "read", result.Services[0].Methods[0].EffectiveRequire.Expression.Code)
 			require.NoError(t, descriptor.ValidateEffectivePolicy(result))
-			if mode == AuthModeNoAuth {
-				expected = descriptor.AuthModeOff
-			}
+
 			require.Equal(t, expected, result.Webs[0].AuthMode)
 			require.Equal(t, descriptor.ConfigLifecycleEternal, result.Configs[0].Lifecycle)
 			require.Equal(t, "original", result.Hash)
@@ -71,7 +69,7 @@ func TestConvertCallbackReferences(t *testing.T) {
 	method := &MethodSchema{
 		Name:     "Authenticate",
 		SkelName: "authenticate",
-		AuthMode: AuthModeNoAuth,
+		AuthMode: AuthMode("optional"),
 	}
 	service := &ServiceSchema{
 		Name:     "Auth",
@@ -118,4 +116,11 @@ func TestConvertUnmarkedService(t *testing.T) {
 	service := result.Services[0]
 	require.False(t, service.Api)
 	require.False(t, service.Pub)
+}
+
+func TestConvertRejectsRetiredAuthenticationModes(t *testing.T) {
+	for _, mode := range []AuthMode{"auth", "noauth", "unset"} {
+		_, err := Convert(&DomainSchema{Domain: "demo", Services: []*ServiceSchema{{Name: "Api", SkelName: "demo.Api", Api: true, AuthMode: mode, Methods: []*MethodSchema{{Name: "Get"}}}}})
+		require.Error(t, err, mode)
+	}
 }

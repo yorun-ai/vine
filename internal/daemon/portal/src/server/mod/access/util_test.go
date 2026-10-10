@@ -43,7 +43,7 @@ func TestEvalPermExprPreservesLegacyShortCircuitAfterConversion(t *testing.T) {
 				Services: []*legacy.ServiceSchema{{
 					Name:     "OrderApiService",
 					Api:      true,
-					AuthMode: legacy.AuthModeAuth,
+					AuthMode: legacy.AuthMode("required"),
 					Methods: []*legacy.MethodSchema{{
 						Name:    "read",
 						Require: &legacy.PermRequire{Expr: declared},

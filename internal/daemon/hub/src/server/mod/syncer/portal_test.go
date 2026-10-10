@@ -1,7 +1,6 @@
 package syncer
 
 import (
-	"encoding/base64"
 	"github.com/stretchr/testify/require"
 	"testing"
 
@@ -216,12 +215,7 @@ func TestSyncerPublishesPEMAndLegacyCertificateFields(t *testing.T) {
 		published := vcode.MustUnmarshalJsonS[watched.PortalCert](value)
 		require.Equal(t, cert.Certificate, published.Certificate)
 		require.Equal(t, cert.PrivateKey, published.PrivateKey)
-		legacyCert, err := base64.StdEncoding.DecodeString(published.PublicKeyBase64)
-		require.NoError(t, err)
-		legacyKey, err := base64.StdEncoding.DecodeString(published.PrivateKeyBase64)
-		require.NoError(t, err)
-		require.Equal(t, cert.Certificate, string(legacyCert))
-		require.Equal(t, cert.PrivateKey, string(legacyKey))
+
 	}
 }
 

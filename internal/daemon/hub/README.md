@@ -221,7 +221,7 @@ Disabled certificates may be stored without valid PEM content; names and YAML
 field types remain checked, and enabling requires a valid matching certificate
 and private key. A database that predates the switch keeps every stored entity enabled.
 
-Portal entry YAML declares `name`, `protocol`, `host`, `http`, `listenIPs`, and `enabled`. The flat HTTP block defaults to HTTP/80, HTTPS/443, and `autoHTTPS: true`; automatic redirects require both transports. Legacy `scheme` and top-level `port` inputs are converted to one enabled transport with redirects disabled and cannot be combined with `protocol`. Existing rows migrate one-for-one without changing rule references. Hub publishes enabled entries separately under `portal:entry:*`, including entries with no rules. A seed applies
+Portal entry YAML declares `name`, `protocol`, `host`, `http`, `listenIPs`, and `enabled`. The flat HTTP block defaults to HTTP/80, HTTPS/443, and `autoHTTPS: true`; automatic redirects require both transports. Seed and Admin API entry inputs require `protocol`; legacy top-level `scheme` and `port` are rejected. Existing database entries retain their original single transport and do not gain redirects. Existing rows migrate one-for-one without changing rule references. Hub publishes enabled entries separately under `portal:entry:*`, including entries with no rules. A seed applies
 entries before rules, so a rule joins the entry that serves its access and keeps
 the name the seed gave it; an entry may route no rule yet. Hub derives the name
 `scheme[:host]:port` only for the entry it creates on its own, which is why the
@@ -247,22 +247,18 @@ because the entry owns the access.
 Seeds keep declaring `matchScheme`, `matchHost`, and `matchPort` on rules, so a
 seed written before entries had names keeps working. Hub aggregates the declared
 access into entries while the seed is applied, so a seed never stores the same
-access on every rule. Portal still receives rules carrying the access of their
-entry, and the entry is Hub-side state rather than a Watch key.
+access on every rule. Watch publishes entries separately; Portal resolves each
+rule through its `entryName`.
 
 The `mod/seeder` package owns the seed YAML contract. It decodes a document into
 the domain entities Hub applies; the payload structs and the parsed document
-stay private to the package. It accepts legacy rule fields with a warning per
-field, and mixing old and new fields in one rule fails before Hub writes
-anything. A Portal section declares only the fields Hub names for it.
+stay private to the package. Only the current match/route field names are
+accepted; retired aliases are rejected before Hub writes anything. A Portal section declares only the fields Hub names for it.
 
 Admin API and Watch use only the new fields; upgrade Hub and Portal together.
-Existing databases must already have completed the Portal Entry migration.
-Hub removes the retired `portal_rule.match_scheme`, `match_host`, `match_port`,
-and the `built_in` columns on rules and sites during schema initialization.
-The existing entry relationships and rule paths are preserved; Hub no longer
-converts pre-Entry databases or rewrites paths during startup. After these
-columns are removed, older Hub versions that require them cannot use the database.
+Existing databases must already use the v0.27.0 schema. Entry listener IPs
+and HTTP protocol blocks are upgraded during initialization; pre-v0.27.0
+certificate and retired-column migrations are no longer performed.
 
 ## Admin Display Strings
 
@@ -331,11 +327,8 @@ This removes the need for heartbeat-based lease maintenance in single-process mo
 ### Certificate representation
 
 Hub's domain, Admin API, Dashboard and seed use PEM `certificate` and `privateKey`
-fields. The DAO adds `certificate` and `private_key` columns and migrates legacy
-Base64 (or directly stored PEM) material transactionally before publication.
-The old columns remain for migration only; new writes use PEM. Field-source paths
-move to the new field names while retaining their historical provenance.
-Syncer publishes both PEM and derived legacy Base64 fields to Watch. Upgrade Hub
-first: the new Portal reads only the PEM fields, while old Portal instances can
-consume the legacy fields. Validate certificate/key pairs before persistence and
-never expose private key values through Admin API provenance.
+fields. Stored databases must already contain PEM fields. The DAO removes the
+retired Base64 columns without converting their contents. Watch publishes only
+PEM fields; Hub, Link, and Portal must be upgraded together. Enabled certificates
+require a valid certificate/key pair; disabled certificates may be placeholders.
+Never expose private key values through Admin API provenance.

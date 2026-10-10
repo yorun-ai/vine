@@ -28,8 +28,8 @@ func testVarsDescriptors() []*skeldesc.Domain {
 	}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"}}}
 }
 
-func TestVarsLegacyRuleUsesCanonicalTargetType(t *testing.T) {
-	for _, field := range []string{"port", "matchPort"} {
+func TestVarsRuleUsesCanonicalTargetType(t *testing.T) {
+	for _, field := range []string{"matchPort"} {
 		t.Run(field, func(t *testing.T) {
 			_, _, err := resolveSeedInputWithDescriptors([]byte("portalRules: [{name: app.rule, "+field+": '${port}'}]"), []byte("port: null"), nil, nil)
 			require.ErrorContains(t, err, "null is not allowed")

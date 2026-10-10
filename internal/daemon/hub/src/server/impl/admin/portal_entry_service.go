@@ -22,13 +22,11 @@ func (s *PortalEntryApiServiceServerImpl) List() []skeled.PortalEntry {
 }
 
 func (s *PortalEntryApiServiceServerImpl) Update(id int, update skeled.PortalEntryUpdate) skeled.PortalEntry {
-	validatePortalEntryVocabulary(update.Protocol, update.Http, update.Scheme, update.Port)
+	validatePortalEntryProtocol(update.Protocol)
 	entry := s.PortalEntryCore.Update(id, core.PortalEntryUpdate{
 		Protocol: update.Protocol, Http: toCoreHTTPUpdate(update.Http),
 		Name:      update.Name,
-		Scheme:    update.Scheme,
 		Host:      update.Host,
-		Port:      update.Port,
 		ListenIPs: update.ListenIPs,
 		Enabled:   update.Enabled,
 	})
@@ -36,29 +34,15 @@ func (s *PortalEntryApiServiceServerImpl) Update(id int, update skeled.PortalEnt
 }
 
 func (s *PortalEntryApiServiceServerImpl) Create(creation skeled.PortalEntryCreation) skeled.PortalEntry {
-	validatePortalEntryVocabulary(creation.Protocol, creation.Http, creation.Scheme, creation.Port)
-	var config *core.PortalEntryHTTP
-	protocol, scheme, port := "", "", 0
-	if creation.Protocol != nil {
-		protocol = *creation.Protocol
-		value := core.DefaultPortalEntryHTTP()
-		if creation.Http != nil {
-			value = toCoreHTTPUpdate(creation.Http).Apply(value)
-		}
-		config = &value
-	}
-	if creation.Scheme != nil {
-		scheme = *creation.Scheme
-	}
-	if creation.Port != nil {
-		port = *creation.Port
+	validatePortalEntryProtocol(&creation.Protocol)
+	config := core.DefaultPortalEntryHTTP()
+	if creation.Http != nil {
+		config = toCoreHTTPUpdate(creation.Http).Apply(config)
 	}
 	entry := s.PortalEntryCore.Create(core.PortalEntryCreation{
-		Protocol: protocol, Http: config,
+		Protocol: creation.Protocol, Http: &config,
 		Name:      creation.Name,
-		Scheme:    scheme,
 		Host:      creation.Host,
-		Port:      port,
 		ListenIPs: creation.ListenIPs,
 		Enabled:   creation.Enabled,
 	})
@@ -101,9 +85,7 @@ func (s *PortalEntryApiServiceServerImpl) toServerPortalEntryRule(entry core.Por
 	}
 }
 
-func validatePortalEntryVocabulary(protocol *string, config *skeled.PortalEntryHttpUpdate, scheme *string, port *int) {
-	ex.PanicNewIfNot(protocol == nil || (scheme == nil && port == nil), ex.OperationFailed, "protocol cannot be combined with scheme or port")
-	ex.PanicNewIfNot(config == nil || protocol != nil, ex.OperationFailed, "http requires protocol")
+func validatePortalEntryProtocol(protocol *string) {
 	ex.PanicNewIfNot(protocol == nil || *protocol == "http", ex.OperationFailed, "unknown portal entry protocol")
 }
 func toCoreHTTPUpdate(h *skeled.PortalEntryHttpUpdate) *core.PortalEntryHTTPUpdate {

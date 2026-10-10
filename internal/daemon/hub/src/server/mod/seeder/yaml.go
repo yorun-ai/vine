@@ -50,18 +50,17 @@ func stringFieldsOf(payload any) map[string]bool {
 // seedSectionFields lists every field a seed section declares, so a field Hub
 // does not know fails instead of silently leaving the entity at its default.
 // Portal sections are fully typed: unlike an app config value, nothing in them
-// is free-form. The rule section also accepts the legacy names it warns about.
+// is free-form.
 var seedSectionFields = map[string]map[string]bool{
 	"portalSites":    yamlFieldsOf(_PortalSite{}),
 	"portalEntries":  yamlFieldsOf(_PortalEntry{}),
-	"portalRules":    yamlFieldsOf(_PortalRule{}, portalRuleAliases),
+	"portalRules":    yamlFieldsOf(_PortalRule{}),
 	"portalCerts":    yamlFieldsOf(_PortalCert{}),
 	"portalSiteCors": yamlFieldsOf(_PortalCors{}),
 }
 
-// yamlFieldsOf derives every YAML field a seed payload struct declares. Extra
-// name sets carry field names the contract still accepts under another name.
-func yamlFieldsOf(payload any, extra ...map[string]string) map[string]bool {
+// yamlFieldsOf derives every YAML field a seed payload struct declares.
+func yamlFieldsOf(payload any) map[string]bool {
 	fields := map[string]bool{}
 	payloadType := reflect.TypeOf(payload)
 	for field := range payloadType.Fields() {
@@ -70,11 +69,6 @@ func yamlFieldsOf(payload any, extra ...map[string]string) map[string]bool {
 			continue
 		}
 		fields[name] = true
-	}
-	for _, names := range extra {
-		for name := range names {
-			fields[name] = true
-		}
 	}
 	return fields
 }
@@ -212,9 +206,7 @@ type _PortalEntry struct {
 	Protocol  *string           `yaml:"protocol"`
 	Http      *_PortalEntryHTTP `yaml:"http"`
 	Name      string            `yaml:"name"`
-	Scheme    string            `yaml:"scheme"`
 	Host      string            `yaml:"host"`
-	Port      int               `yaml:"port"`
 	ListenIPs []string          `yaml:"listenIPs"`
 	// Enabled defaults to true when omitted.
 	Enabled *bool `yaml:"enabled"`
@@ -228,17 +220,8 @@ func (e *_PortalEntry) UnmarshalYAML(node *yaml.Node) error {
 	if err := checkSeedFields(fields, "portalEntries"); err != nil {
 		return err
 	}
-	if _, current := fields["protocol"]; current {
-		for _, legacy := range []string{"scheme", "port"} {
-			if _, mixed := fields[legacy]; mixed {
-				return fmt.Errorf("portal entry: protocol cannot be mixed with legacy %s", legacy)
-			}
-		}
-		if fields["protocol"].Tag == "!!null" || strings.TrimSpace(fields["protocol"].Value) == "" {
-			return fmt.Errorf("portal entry protocol is empty")
-		}
-	} else if _, block := fields["http"]; block {
-		return fmt.Errorf("portal entry http requires protocol")
+	if value, present := fields["protocol"]; !present || value.Tag == "!!null" || strings.TrimSpace(value.Value) == "" {
+		return fmt.Errorf("portal entry protocol is required")
 	}
 	if block, ok := fields["http"]; ok && block.Tag == "!!null" {
 		return fmt.Errorf("portal entry http cannot be null")
@@ -250,9 +233,7 @@ func (e *_PortalEntry) UnmarshalYAML(node *yaml.Node) error {
 func (e _PortalEntry) toCorePortalEntry() *core.PortalEntry {
 	entry := &core.PortalEntry{
 		Name:      e.Name,
-		Scheme:    e.Scheme,
 		Host:      e.Host,
-		Port:      e.Port,
 		ListenIPs: e.ListenIPs,
 		Enabled:   core.EnabledOrDefault(e.Enabled),
 	}
@@ -485,8 +466,6 @@ func (c _PortalCert) toCorePortalCert() *core.PortalCert {
 }
 
 func (r *_PortalRule) UnmarshalYAML(node *yaml.Node) error {
-	// TODO: Remove legacy field decoding from startup seeds when old YAML support
-	// is retired, together with decodePortalRule compatibility logic.
 	type plain _PortalRule
 	return decodePortalRule(node, (*plain)(r))
 }
