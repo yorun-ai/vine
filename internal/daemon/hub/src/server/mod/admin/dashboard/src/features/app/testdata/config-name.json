@@ -1,0 +1,110 @@
+[
+  {
+    "name": "demo.user.FeatureConfig",
+    "valid": true
+  },
+  {
+    "name": "demo.user.FeatureConfigV1",
+    "valid": true
+  },
+  {
+    "name": "demo.user.FeatureConfigV2",
+    "valid": true
+  },
+  {
+    "name": "demo.user.FeatureConfigV10",
+    "valid": true
+  },
+  {
+    "name": "demo.user.FeatureConfigV123456789012345678901234567890",
+    "valid": true
+  },
+  {
+    "name": "demo.user.FeatureV2Config",
+    "valid": true
+  },
+  {
+    "name": "_demo.FeatureConfig",
+    "valid": true
+  },
+  {
+    "name": "",
+    "valid": false
+  },
+  {
+    "name": "Config",
+    "valid": false
+  },
+  {
+    "name": "demo.Config",
+    "valid": false
+  },
+  {
+    "name": "demo.ConfigV2",
+    "valid": false
+  },
+  {
+    "name": "demo.user.FeatureConfigV0",
+    "valid": false
+  },
+  {
+    "name": "demo.user.FeatureConfigV01",
+    "valid": false
+  },
+  {
+    "name": "demo.user.FeatureConfigV",
+    "valid": false
+  },
+  {
+    "name": "demo.user.FeatureConfigv2",
+    "valid": false
+  },
+  {
+    "name": "demo.user.FeatureConfigV-1",
+    "valid": false
+  },
+  {
+    "name": "demo.user.FeatureConfigV1.2",
+    "valid": false
+  },
+  {
+    "name": "demo.user.FeatureConfigV2beta",
+    "valid": false
+  },
+  {
+    "name": "demo.user.FeatureConfigV2V3",
+    "valid": false
+  },
+  {
+    "name": "demo.user.FeatureConfigV２",
+    "valid": false
+  },
+  {
+    "name": "demo.user.FeatureConfigV2\n",
+    "valid": false
+  },
+  {
+    "name": "ddd",
+    "valid": false
+  },
+  {
+    "name": "demo.ddd",
+    "valid": false
+  },
+  {
+    "name": "demo.user.bad-config",
+    "valid": false
+  },
+  {
+    "name": "demo.1user.BadConfig",
+    "valid": false
+  },
+  {
+    "name": "demo.user.",
+    "valid": false
+  },
+  {
+    "name": ".demo.FeatureConfig",
+    "valid": false
+  }
+]

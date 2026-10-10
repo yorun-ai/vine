@@ -2,6 +2,7 @@ import { defaultStructuredConfigValue } from './config-structured-descriptor'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu'
 import { configSourceComment } from './config-source-comments'
 import { configValueIssues } from './config-value-validation'
+import { isValidConfigSkelName } from './config-name'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatConfigYaml, normalizeConfigYaml } from './config-yaml-document'
 import { ConfigJsonEditor } from './config-json-editor'
@@ -150,21 +151,6 @@ function configStatus(config: AppConfigSummary): AppConfigStatus {
     return 'MISMATCH'
   }
   return 'NORMAL'
-}
-
-function isValidConfigSkelName(skelName: string) {
-  const parts = skelName.split('.')
-
-  if (parts.length < 2) {
-    return false
-  }
-
-  const configName = parts.at(-1) ?? ''
-
-  return (
-    configName.endsWith('Config') &&
-    parts.every((part) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(part))
-  )
 }
 
 function appConfigPath(key: string) {

@@ -2,6 +2,7 @@ package admin
 
 import (
 	"cmp"
+	"regexp"
 	"strings"
 
 	"go.yorun.ai/vine/internal/core/ex"
@@ -161,16 +162,19 @@ func toServerAppConfigDescriptorEnumItems(items []core.AppConfigEnumItem) []skel
 	return ret
 }
 
+var configNamePattern = regexp.MustCompile(`^.+Config(?:V[1-9][0-9]*)?$`)
+
 // isValidConfigSkelName reports whether the Dashboard may create a value under
-// the name: a dotted Skel name whose final segment is a Config name. Skel owns
-// the identifier grammar, so this only guards the shape Hub serves.
+// the name: a dotted Skel name with a nonempty body, Config suffix and optional
+// positive V version without leading zeroes. Skel owns the identifier grammar,
+// so this only guards the shape Hub serves.
 func isValidConfigSkelName(skelName string) bool {
 	segments := strings.Split(skelName, ".")
 	if len(segments) < 2 {
 		return false
 	}
 
-	if !strings.HasSuffix(segments[len(segments)-1], "Config") {
+	if !configNamePattern.MatchString(segments[len(segments)-1]) {
 		return false
 	}
 	for _, segment := range segments {

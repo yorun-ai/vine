@@ -159,19 +159,37 @@ func TestAppConfigServiceCreateRejectsInvalidConfigSkelName(t *testing.T) {
 }
 
 func TestAppConfigSkelNameShape(t *testing.T) {
-	for name, want := range map[string]bool{
-		"demo.user.FeatureConfig": true,
-		"demo.Config":             true,
-		"Config":                  false,
-		"_demo.FeatureConfig":     true,
-		"ddd":                     false,
-		"demo.ddd":                false,
-		"demo.user.bad-config":    false,
-		"demo.1user.BadConfig":    false,
-		"demo.user.":              false,
-		".demo.Config":            false,
-	} {
-		assert.Equal(t, want, isValidConfigSkelName(name), name)
+	data, err := os.ReadFile("../../mod/admin/dashboard/src/features/app/testdata/config-name.json")
+	require.NoError(t, err)
+	var cases []struct {
+		Name  string `json:"name"`
+		Valid bool   `json:"valid"`
+	}
+	require.NoError(t, json.Unmarshal(data, &cases))
+	for _, test := range cases {
+		assert.Equal(t, test.Valid, isValidConfigSkelName(test.Name), test.Name)
+	}
+}
+
+func TestAppConfigServiceVersionsStayIndependent(t *testing.T) {
+	repo := new(_AppConfigServiceAppConfigRepo)
+	service := new(AppConfigApiServiceServerImpl{AppConfigCore: &core.AppConfigCore{AppConfigRepo: repo}})
+	versions := []string{"", "V1", "V2", "V10"}
+	for _, version := range versions {
+		item := service.Create(skeled.AppConfigCreation{SkelName: "demo.FeatureConfig" + version, Value: `{}`})
+		require.Equal(t, "demo.FeatureConfig"+version, item.Key)
+	}
+	require.Len(t, service.List(), len(versions))
+	v1 := service.Get("demo.FeatureConfigV1")
+	service.Update(v1.Id, skeled.AppConfigUpdate{Value: new(`{"enabled":true}`)})
+	require.JSONEq(t, `{"enabled":true}`, service.Get(v1.Key).Value)
+	for _, version := range []string{"", "V2", "V10"} {
+		require.JSONEq(t, `{}`, service.Get("demo.FeatureConfig"+version).Value)
+	}
+	require.True(t, service.Remove(v1.Id))
+	require.Len(t, service.List(), 3)
+	for _, version := range []string{"", "V2", "V10"} {
+		require.Equal(t, "demo.FeatureConfig"+version, service.Get("demo.FeatureConfig"+version).Key)
 	}
 }
 
