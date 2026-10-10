@@ -4,18 +4,18 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"sort"
-	"strconv"
 	"sync"
 	"time"
 
 	"go.yorun.ai/vine/internal/core/logger"
+	"go.yorun.ai/vine/internal/daemon/listenip"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/vault"
 	"go.yorun.ai/vine/internal/util/httputil"
-	"go.yorun.ai/vine/util/vpre"
 )
 
 const (
@@ -30,16 +30,18 @@ var (
 )
 
 type _Entry struct {
-	scheme spec.Scheme
-	port   int
-	vault  *vault.Vault
+	listenIP string
+	scheme   spec.Scheme
+	port     int
+	vault    *vault.Vault
 
 	mutex sync.RWMutex
 	rules []*_Rule
 
-	server  *http.Server
-	addr    string
-	started bool
+	server   *http.Server
+	listener net.Listener
+	addr     string
+	started  bool
 }
 
 func newEntry(scheme spec.Scheme, port int, vault *vault.Vault) *_Entry {
@@ -52,8 +54,9 @@ func newEntry(scheme spec.Scheme, port int, vault *vault.Vault) *_Entry {
 
 func (e *_Entry) Key() _Key {
 	return _Key{
-		scheme: e.scheme,
-		port:   e.port,
+		scheme:   e.scheme,
+		listenIP: e.listenIP,
+		port:     e.port,
 	}
 }
 
@@ -107,35 +110,40 @@ func (e *_Entry) prepareRequest(r *http.Request) *http.Request {
 	return request
 }
 
-func (e *_Entry) Start() {
+func (e *_Entry) Start() error {
 	if e.started {
-		return
+		return nil
 	}
 
-	listenAddr := net.JoinHostPort("0.0.0.0", strconv.Itoa(e.port))
+	network, listenAddr := listenip.Binding(e.listenIP, e.port)
 	server := newEntryHTTPServer(listenAddr, e)
 	if e.scheme == spec.SchemeHTTPS {
 		server.TLSConfig = &tls.Config{
 			GetCertificate: e.getCertificate,
 		}
 	}
-	listener, err := listenEntryTCP("tcp", listenAddr)
-	vpre.Check(err == nil, "portal entry server listen failed: %v", err)
+	listener, err := listenEntryTCP(network, listenAddr)
+	if err != nil {
+		return fmt.Errorf("portal entry %s listener %s failed: %w", e.scheme, listenAddr, err)
+	}
 	e.server = server
+	e.listener = listener
 	e.addr = listener.Addr().String()
 	e.started = true
 
+	addr := e.addr
 	go func() {
-		entryLogger.Info("vine.portal entry started", "addr", e.addr)
+		entryLogger.Info("vine.portal entry started", "addr", addr)
 		err := e.serve(server, listener)
 		if errors.Is(err, http.ErrServerClosed) {
-			entryLogger.Debug("vine.portal entry stopped", "addr", e.addr)
+			entryLogger.Debug("vine.portal entry stopped", "addr", addr)
 			return
 		}
 		if err != nil {
-			entryLogger.Error("vine.portal entry failed", "addr", e.addr, "error", err)
+			entryLogger.Error("vine.portal entry failed", "addr", addr, "error", err)
 		}
 	}()
+	return nil
 }
 
 func newEntryHTTPServer(addr string, handler http.Handler) *http.Server {
@@ -162,6 +170,8 @@ func (e *_Entry) Stop() {
 		return
 	}
 	server := e.server
+	listener := e.listener
+	defer listener.Close()
 	addr := e.addr
 
 	ctx, cancel := context.WithTimeout(context.Background(), entryShutdownTimeout)
@@ -169,6 +179,7 @@ func (e *_Entry) Stop() {
 
 	e.started = false
 	e.server = nil
+	e.listener = nil
 	err := httputil.ShutdownServer(server, ctx)
 	if errors.Is(err, http.ErrServerClosed) {
 		return

@@ -82,6 +82,7 @@ interface PortalEntryFormValue {
   scheme: string
   host: string
   port: string
+  listenIPs: string
 }
 
 const newEntryFormValue: PortalEntryFormValue = {
@@ -90,6 +91,7 @@ const newEntryFormValue: PortalEntryFormValue = {
   scheme: 'http',
   host: '',
   port: '80',
+  listenIPs: '',
 }
 
 // derivePortalEntryName mirrors the name Hub derives for an entry it creates on
@@ -142,6 +144,7 @@ function portalEntryToFormValue(entry: PortalEntry): PortalEntryFormValue {
     scheme: entry.scheme,
     host: entry.host,
     port: String(entry.port),
+    listenIPs: entry.listenIPs.join(', '),
   }
 }
 
@@ -153,6 +156,7 @@ function portalEntryFormValueToUpdate(
     scheme: value.scheme,
     host: value.host.trim(),
     port: Number(value.port),
+    listenIPs: value.listenIPs.split(/[\s,]+/).filter(Boolean),
     enabled: value.enabled,
   }
 }
@@ -358,6 +362,14 @@ function PortalEntryInlineEditor({
           placeholder="*"
           onChange={(event) => setField('host', event.target.value)}
         />
+      </Field>
+      <Field label={t('portalEntry.listenIPs')}>
+        <Input
+          value={formValue.listenIPs}
+          placeholder="127.0.0.1, ::1"
+          onChange={(event) => setField('listenIPs', event.target.value)}
+        />
+        <p className="text-xs text-muted-foreground">{t('portalEntry.listenIPsHelp')}</p>
       </Field>
       <Field label={t('portalEntry.port')} error={fieldErrors.port}>
         <Input
@@ -580,6 +592,7 @@ export function PortalEntryPage() {
             scheme: value.scheme,
             host: value.host.trim(),
             port: Number(value.port),
+            listenIPs: value.listenIPs.split(/[\s,]+/).filter(Boolean),
             enabled: value.enabled,
           },
         })
@@ -770,6 +783,9 @@ export function PortalEntryPage() {
                     </div>
                     <div className="truncate font-mono text-xs text-muted-foreground">
                       {portalEntryAddress(entry)}
+                    </div>
+                    <div className="truncate font-mono text-xs text-muted-foreground">
+                      {entry.listenIPs.length ? entry.listenIPs.join(', ') : t('portalEntry.defaultListenIPs')}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {t('portalEntry.ruleCount').replace(

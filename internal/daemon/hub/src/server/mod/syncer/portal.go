@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"encoding/base64"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -17,6 +18,7 @@ func (s *Syncer) SyncPortalEntry(entry *core.PortalEntry) {
 	defer s.namesMutex.Unlock()
 
 	stored := *entry
+	stored.ListenIPs = slices.Clone(entry.ListenIPs)
 	s.portalEntriesById[entry.Id] = &stored
 	for _, rule := range s.portalRulesById {
 		if rule.EntryId != entry.Id {
@@ -281,6 +283,7 @@ func ToWatchedPortalRule(rule *core.PortalRule, entry *core.PortalEntry) *watche
 		ret.MatchScheme = entry.Scheme
 		ret.MatchHost = entry.Host
 		ret.MatchPort = entry.Port
+		ret.ListenIPs = slices.Clone(entry.ListenIPs)
 	}
 	return ret
 }

@@ -208,10 +208,11 @@ func (i _AppConfig) toCoreAppConfig() *core.AppConfig {
 // Portal entry
 
 type _PortalEntry struct {
-	Name   string `yaml:"name"`
-	Scheme string `yaml:"scheme"`
-	Host   string `yaml:"host"`
-	Port   int    `yaml:"port"`
+	Name      string   `yaml:"name"`
+	Scheme    string   `yaml:"scheme"`
+	Host      string   `yaml:"host"`
+	Port      int      `yaml:"port"`
+	ListenIPs []string `yaml:"listenIPs"`
 	// Disabled is optional and defaults to false. A seed declares the exception,
 	// so Hub keeps the positive spelling of the switch it stores: enabled.
 	Disabled bool `yaml:"disabled"`
@@ -231,11 +232,12 @@ func (e *_PortalEntry) UnmarshalYAML(node *yaml.Node) error {
 
 func (e _PortalEntry) toCorePortalEntry() *core.PortalEntry {
 	return &core.PortalEntry{
-		Name:    e.Name,
-		Scheme:  e.Scheme,
-		Host:    e.Host,
-		Port:    e.Port,
-		Enabled: !e.Disabled,
+		Name:      e.Name,
+		Scheme:    e.Scheme,
+		Host:      e.Host,
+		Port:      e.Port,
+		ListenIPs: e.ListenIPs,
+		Enabled:   !e.Disabled,
 	}
 }
 

@@ -2,11 +2,15 @@ package entry
 
 import (
 	"context"
+	"errors"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/meta"
+	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
@@ -195,4 +199,126 @@ func (l *_TestListener) Close() error {
 
 func (*_TestListener) Addr() net.Addr {
 	return &net.TCPAddr{Port: 8080}
+}
+
+func TestManagerListenIPsShareAndUpdateBindings(t *testing.T) {
+	manager := &Manager{entryRulesByName: map[string]watched.PortalRule{}, entriesByKey: map[_Key]*_Entry{}}
+	first := watched.PortalRule{Name: "first", MatchScheme: "http", MatchPort: 8080, ListenIPs: []string{"127.0.0.1", "::1"}, RouteType: "PERMANENT_REDIRECT", RouteRedirectionPattern: "https://example.com"}
+	second := first
+	second.Name = "second"
+	second.ListenIPs = []string{"127.0.0.1"}
+	manager.entryRulesByName[first.Name] = first
+	manager.entryRulesByName[second.Name] = second
+	require.NoError(t, manager.reconcileEntriesLocked())
+	v4 := _Key{scheme: spec.SchemeHTTP, port: 8080, listenIP: "127.0.0.1"}
+	v6 := _Key{scheme: spec.SchemeHTTP, port: 8080, listenIP: "::1"}
+	require.Len(t, manager.entriesByKey, 2)
+	assert.Len(t, manager.entriesByKey[v4].rules, 2)
+	assert.Len(t, manager.entriesByKey[v6].rules, 1)
+	shared := manager.entriesByKey[v4]
+	first.ListenIPs = []string{"127.0.0.2"}
+	manager.entryRulesByName[first.Name] = first
+	require.NoError(t, manager.reconcileEntriesLocked())
+	assert.Same(t, shared, manager.entriesByKey[v4])
+	assert.Len(t, shared.rules, 1)
+	assert.NotContains(t, manager.entriesByKey, v6)
+	assert.Contains(t, manager.entriesByKey, _Key{scheme: spec.SchemeHTTP, port: 8080, listenIP: "127.0.0.2"})
+}
+
+func TestManagerListenIPsBindingFailureClosesPartialListeners(t *testing.T) {
+	previous := listenEntryTCP
+	t.Cleanup(func() { listenEntryTCP = previous })
+	var opened net.Listener
+	calls := 0
+	listenEntryTCP = func(network string, address string) (net.Listener, error) {
+		calls++
+		if calls == 2 {
+			return nil, errors.New("address unavailable")
+		}
+		listener, err := net.Listen("tcp4", "127.0.0.1:0")
+		opened = listener
+		return listener, err
+	}
+	manager := &Manager{started: true, entriesByKey: map[_Key]*_Entry{}, entryRulesByName: map[string]watched.PortalRule{
+		"local": {Name: "local", MatchScheme: "http", MatchPort: 8080, ListenIPs: []string{"127.0.0.1", "::1"}, RouteType: "PERMANENT_REDIRECT", RouteRedirectionPattern: "https://example.com"},
+	}}
+	t.Cleanup(manager.AfterAppStop)
+	require.Error(t, manager.reconcileEntriesLocked())
+	assert.Empty(t, manager.entriesByKey)
+	require.NotNil(t, opened)
+	connection, err := net.DialTimeout("tcp4", opened.Addr().String(), time.Second)
+	if connection != nil {
+		_ = connection.Close()
+	}
+	assert.Error(t, err, "the partial listener must have been closed")
+}
+
+func TestManagerListenIPsFailedUpdateRestoresOldListener(t *testing.T) {
+	previous := listenEntryTCP
+	t.Cleanup(func() { listenEntryTCP = previous })
+	rule := watched.PortalRule{Name: "local", MatchScheme: "http", MatchPort: 8080, ListenIPs: []string{"127.0.0.1"}, RouteType: "PERMANENT_REDIRECT", RouteRedirectionPattern: "https://example.com"}
+	listenEntryTCP = func(network string, address string) (net.Listener, error) {
+		if address == "127.0.0.2:8080" {
+			return nil, errors.New("address unavailable")
+		}
+		return net.Listen("tcp4", "127.0.0.1:0")
+	}
+	manager := &Manager{started: true, entriesByKey: map[_Key]*_Entry{}, entryRulesByName: map[string]watched.PortalRule{"local": rule}}
+	t.Cleanup(manager.AfterAppStop)
+	require.NoError(t, manager.reconcileEntriesLocked())
+	key := _Key{scheme: spec.SchemeHTTP, port: 8080, listenIP: "127.0.0.1"}
+	old := manager.entriesByKey[key]
+	rule.ListenIPs = []string{"127.0.0.2"}
+	manager.entryRulesByName[rule.Name] = rule
+	require.Error(t, manager.reconcileEntriesLocked())
+	require.Same(t, old, manager.entriesByKey[key])
+	assert.True(t, old.started)
+	connection, err := net.DialTimeout("tcp4", old.addr, time.Second)
+	require.NoError(t, err)
+	_ = connection.Close()
+}
+
+func TestManagerWatchUpdatesConvergeFromWildcardToExplicitIPs(t *testing.T) {
+	probe, err := net.Listen("tcp6", "[::1]:0")
+	if err != nil {
+		t.Skipf("IPv6 unavailable: %v", err)
+	}
+	_ = probe.Close()
+	reservation, err := net.Listen("tcp4", "127.0.0.1:0")
+	require.NoError(t, err)
+	port := reservation.Addr().(*net.TCPAddr).Port
+	require.NoError(t, reservation.Close())
+	first := watched.PortalRule{Name: "one", MatchScheme: "http", MatchPort: port, RouteType: "PERMANENT_REDIRECT", RouteRedirectionPattern: "https://example.com", ResolvedMatchPathPrefix: "/one"}
+	second := first
+	second.Name = "two"
+	second.ResolvedMatchPathPrefix = "/two"
+	manager := &Manager{entryRulesByName: map[string]watched.PortalRule{"one": first, "two": second}, entriesByKey: map[_Key]*_Entry{}}
+	t.Cleanup(manager.AfterAppStop)
+	manager.AfterAppStart()
+	oldKey := _Key{scheme: spec.SchemeHTTP, port: port}
+	old := manager.entriesByKey[oldKey]
+	require.NotNil(t, old)
+	first.ListenIPs = []string{"127.0.0.1", "::1"}
+	second.ListenIPs = first.ListenIPs
+	manager.handlePortalRuleEvent(hubapiwatch.Event{Key: "one", Value: vcode.MustMarshalJsonS(first)})
+	// The old rule still needs the wildcard socket. A failed intermediate bind
+	// keeps the old configuration without leaving partial explicit listeners.
+	require.Same(t, old, manager.entriesByKey[oldKey])
+	assert.True(t, old.started)
+	manager.handlePortalRuleEvent(hubapiwatch.Event{Key: "two", Value: vcode.MustMarshalJsonS(second)})
+	assert.False(t, old.started)
+	require.Len(t, manager.entriesByKey, 2)
+	for _, ip := range first.ListenIPs {
+		entry := manager.entriesByKey[_Key{scheme: spec.SchemeHTTP, port: port, listenIP: ip}]
+		require.NotNil(t, entry)
+		assert.True(t, entry.started)
+		assert.Len(t, entry.rules, 2)
+		connection, err := net.DialTimeout("tcp", entry.addr, time.Second)
+		require.NoError(t, err)
+		_ = connection.Close()
+	}
+	manager.handlePortalRuleEvent(hubapiwatch.Event{Kind: hubapiwatch.EventKindDelete, Key: "one"})
+	require.Len(t, manager.entriesByKey, 2)
+	manager.handlePortalRuleEvent(hubapiwatch.Event{Kind: hubapiwatch.EventKindDelete, Key: "two"})
+	assert.Empty(t, manager.entriesByKey)
 }

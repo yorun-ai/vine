@@ -644,6 +644,7 @@ portalEntries:
   - name: web
     scheme: http
     port: 8099
+    listenIPs: ["::1", "127.0.0.1", "127.0.0.1"]
   - name: idle
     scheme: https
     host: api.example.com
@@ -672,6 +673,7 @@ portalRules:
 	require.True(t, ok)
 	assert.Equal(t, "http", web.Scheme)
 	assert.Equal(t, 8099, web.Port)
+	assert.Equal(t, []string{"127.0.0.1", "::1"}, web.ListenIPs)
 	// An entry may route no rule: the seed declares the entry Portal serves.
 	idle, ok := ruleRepo.PortalEntryRepo.GetByName("idle")
 	require.True(t, ok)
@@ -1115,4 +1117,29 @@ func TestSeederAppliesVariableAssignmentsWithAndWithoutFile(t *testing.T) {
 			require.NotPanics(t, s.DIInit)
 		})
 	}
+}
+
+func TestSeederRejectsListenerConflictsBeforeWrites(t *testing.T) {
+	configRepo, ruleRepo, certRepo, siteRepo, metadataRepo, _ := newTestSeederRepos(t)
+	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
+	require.NoError(t, vfile.WriteString(seedPath, `portalEntries:
+  - name: wildcard
+    scheme: http
+    host: one.local
+    port: 8080
+    listenIPs: ["0.0.0.0"]
+  - name: local
+    scheme: http
+    host: two.local
+    port: 8080
+    listenIPs: ["127.0.0.1"]
+`))
+	seeder := &Seeder{
+		Flag: newTestSeederFlag(seedPath), AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
+		MetadataRepo: metadataRepo, Logger: logger.New("vine:test"),
+		EntryCore: newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo),
+		RuleCore:  newTestRuleCore(ruleRepo, siteRepo), CertCore: &core.PortalCertCore{PortalCertRepo: certRepo}, SiteCore: newTestSiteCore(siteRepo),
+	}
+	require.Panics(t, seeder.DIInit)
+	assert.Empty(t, ruleRepo.PortalEntryRepo.List(), "the seed must reject the conflict before saving the first entry")
 }

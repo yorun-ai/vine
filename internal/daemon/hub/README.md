@@ -220,7 +220,7 @@ Watch, so Portal never sees it: Hub omits a disabled rule, the rules of a
 disabled entry, the SITE rules of a disabled site, and a disabled certificate.
 A database that predates the switch keeps every stored entity enabled.
 
-Portal entry YAML declares `name`, `scheme`, `host`, `port`, and `disabled`. A seed applies
+Portal entry YAML declares `name`, `scheme`, `host`, `port`, `listenIPs`, and `disabled`. A seed applies
 entries before rules, so a rule joins the entry that serves its access and keeps
 the name the seed gave it; an entry may route no rule yet. Hub derives the name
 `scheme[:host]:port` only for the entry it creates on its own, which is why the

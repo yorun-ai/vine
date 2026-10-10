@@ -5,6 +5,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
+	"go.yorun.ai/vine/util/vcode"
 )
 
 type PortalEntryRepo struct {
@@ -63,22 +64,24 @@ func (s *PortalEntryRepo) Remove(id int) bool {
 
 func toCorePortalEntry(row *model.PortalEntry) *core.PortalEntry {
 	return &core.PortalEntry{
-		Id:      row.Id,
-		Name:    row.Name,
-		Scheme:  row.Scheme,
-		Host:    row.Host,
-		Port:    row.Port,
-		Enabled: row.Enabled,
+		Id:        row.Id,
+		Name:      row.Name,
+		Scheme:    row.Scheme,
+		Host:      row.Host,
+		Port:      row.Port,
+		ListenIPs: vcode.MustUnmarshalJsonS[[]string](row.ListenIPs),
+		Enabled:   row.Enabled,
 	}
 }
 
 func toModelPortalEntry(entry *core.PortalEntry) *model.PortalEntry {
 	return &model.PortalEntry{
-		Id:      entry.Id,
-		Name:    entry.Name,
-		Scheme:  entry.Scheme,
-		Host:    entry.Host,
-		Port:    entry.Port,
-		Enabled: entry.Enabled,
+		Id:        entry.Id,
+		Name:      entry.Name,
+		Scheme:    entry.Scheme,
+		Host:      entry.Host,
+		Port:      entry.Port,
+		ListenIPs: vcode.MustMarshalJsonS(entry.ListenIPs),
+		Enabled:   entry.Enabled,
 	}
 }

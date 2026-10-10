@@ -78,9 +78,11 @@ func (s *Seeder) loadSeedYAML() {
 		s.SiteCore.Validate(*site)
 	}
 	entries := map[string]*core.PortalEntry{}
+	listenerEntries := []core.PortalEntry{}
 	for _, entry := range entities.PortalEntries {
 		normalized := s.EntryCore.Validate(*entry)
 		entries[normalized.Name] = &normalized
+		listenerEntries = append(listenerEntries, normalized)
 	}
 	sites := map[string]*core.PortalSite{}
 	for _, site := range entities.PortalSites {
@@ -89,7 +91,7 @@ func (s *Seeder) loadSeedYAML() {
 	for _, rule := range entities.PortalRules {
 		s.RuleCore.Validate(*rule.Rule)
 		if rule.EntryName == "" {
-			s.EntryCore.Normalize(rule.Entry)
+			listenerEntries = append(listenerEntries, s.EntryCore.Normalize(rule.Entry))
 		}
 		entry := rule.Entry
 		if rule.EntryName != "" {
@@ -109,6 +111,7 @@ func (s *Seeder) loadSeedYAML() {
 			rule.Rule.ValidateWildcardTarget(entry, site)
 		}
 	}
+	core.ValidatePortalEntryListeners(listenerEntries)
 	for _, cert := range entities.PortalCerts {
 		s.CertCore.Validate(*cert)
 	}

@@ -62,18 +62,20 @@ func TestPortalEntryServiceCreatesAndRemovesEntry(t *testing.T) {
 		PortalSiteRepo:  &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{}},
 	}}
 
-	created := service.Create(skeled.PortalEntryCreation{Name: "web", Scheme: "http", Host: "", Port: 8080})
+	created := service.Create(skeled.PortalEntryCreation{Name: "web", Scheme: "http", Host: "", Port: 8080, ListenIPs: []string{"127.0.0.1", "::1"}})
 
 	// An entry routes no rule when the operator creates it.
 	require.NotZero(t, created.Id)
 	assert.Equal(t, "web", created.Name)
 	assert.Equal(t, "http", created.Scheme)
 	assert.Equal(t, 8080, created.Port)
+	assert.Equal(t, []string{"127.0.0.1", "::1"}, created.ListenIPs)
 	assert.Empty(t, created.Rules)
 
-	updated := service.Update(created.Id, skeled.PortalEntryUpdate{Name: new("console")})
+	updated := service.Update(created.Id, skeled.PortalEntryUpdate{Name: new("console"), ListenIPs: new([]string{"127.0.0.2"})})
 	assert.Equal(t, "console", updated.Name)
 	assert.Equal(t, 8080, updated.Port)
+	assert.Equal(t, []string{"127.0.0.2"}, updated.ListenIPs)
 
 	assert.Len(t, service.List(), 1)
 
