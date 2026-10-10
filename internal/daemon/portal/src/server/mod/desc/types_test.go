@@ -158,6 +158,51 @@ func TestDependencyTraversalIncludesInputDataAndEnumMembers(t *testing.T) {
 	require.Equal(t, []string{watched.FormatDescriptorDataKey("demo.Settings"), watched.FormatDescriptorEnumKey("demo.Status")}, a.typeSubscription.keys)
 }
 
+func TestVersionedAPIDependenciesStayIndependent(t *testing.T) {
+	values := map[string]string{
+		watched.FormatDescriptorDataKey("demo.Shared"): vcode.MustMarshalJsonS(skeldesc.Data{SkelName: "demo.Shared"}),
+	}
+	for _, version := range []string{"", "V1", "V2", "V10"} {
+		service, data, enum := "demo.OrderApiService"+version, "demo.Order"+version, "demo.Status"+version
+		values[watched.FormatDescriptorServiceKey(service)] = vcode.MustMarshalJsonS(apiDescriptor(service, dataRef(data)))
+		values[watched.FormatDescriptorDataKey(data)] = vcode.MustMarshalJsonS(skeldesc.Data{SkelName: data, Members: []*skeldesc.Member{
+			{Name: "shared", Type: dataRef("demo.Shared")},
+			{Name: "status", Type: new(skeldesc.Type{Kind: skeldesc.TypeKindEnum, SkelName: enum})},
+		}})
+		values[watched.FormatDescriptorEnumKey(enum)] = vcode.MustMarshalJsonS(skeldesc.Enum{SkelName: enum, Hash: "initial"})
+	}
+	m := newTestManager(t, values)
+	initial := m.Snapshot()
+	require.Len(t, initial.Services, 4)
+	require.Len(t, initial.Data, 5)
+	require.Len(t, initial.Enums, 4)
+	for name := range initial.Services {
+		service, ok := m.Service(name)
+		require.True(t, ok)
+		require.Equal(t, name, service.SkelName)
+	}
+	publishDescriptor(t, m, watched.FormatDescriptorEnumKey("demo.StatusV1"), skeldesc.Enum{SkelName: "demo.StatusV1", Hash: "updated"})
+	require.Eventually(t, func() bool { return m.Snapshot().Enums["demo.StatusV1"].Hash == "updated" }, time.Second, time.Millisecond)
+	require.Equal(t, "initial", m.Snapshot().Enums["demo.StatusV10"].Hash)
+	m.Watch.(*watchtest.Client).Publish(hubwatch.Event{Kind: hubwatch.EventKindDelete, Key: watched.FormatDescriptorServiceKey("demo.OrderApiServiceV1")})
+	require.Eventually(t, func() bool {
+		s := m.Snapshot()
+		return !s.Syncing && len(s.Services) == 3
+	}, time.Second, time.Millisecond)
+	snapshot := m.Snapshot()
+	require.NotContains(t, snapshot.Data, "demo.OrderV1")
+	require.NotContains(t, snapshot.Enums, "demo.StatusV1")
+	require.Contains(t, snapshot.Data, "demo.Shared")
+	for _, version := range []string{"", "V2", "V10"} {
+		require.Contains(t, snapshot.Services, "demo.OrderApiService"+version)
+		require.Contains(t, snapshot.Data, "demo.Order"+version)
+		require.Contains(t, snapshot.Enums, "demo.Status"+version)
+	}
+	require.Empty(t, snapshot.MissingKeys)
+	require.Len(t, initial.Services, 4, "previous snapshots remain usable")
+	require.Equal(t, "initial", initial.Enums["demo.StatusV1"].Hash)
+}
+
 type controlledTypeWatch struct {
 	hubwatch.ClientOps
 	before   func(context.Context, []string) error

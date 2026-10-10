@@ -424,7 +424,7 @@ export const cn = {
   'appConfig.saved': '配置已保存',
   'appConfig.skelNameRequired': '请输入 skelName',
   'appConfig.skelNameInvalid':
-    'skelName 必须是 domain.NameConfig 格式，且名称以 Config 结尾',
+    '请使用 domain.NameConfig 或 domain.NameConfigV2；Config 前的名称不能为空，可选的 V 版本号须为无前导零的正整数',
   'appConfig.valueInvalidJson': '配置值必须是有效 JSON',
   'appConfig.deleted': '配置已删除',
   'appConfig.mapEnumKeyMismatch': '{field} 的键无效：期望 {expected}，当前 {actual}',

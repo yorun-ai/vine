@@ -8,8 +8,42 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
+	descriptorrepo "go.yorun.ai/vine/internal/daemon/hub/src/server/repo/descriptor"
 	"go.yorun.ai/vine/util/vcode"
 )
+
+func TestVersionedServicesPublishAndUnregisterIndependently(t *testing.T) {
+	repo := new(descriptorrepo.DescriptorRepo)
+	server := watchserver.NewServerForTest()
+	t.Cleanup(server.AfterAppStop)
+	syncer := testSyncer(server)
+	for _, version := range []string{"", "V1", "V2", "V10"} {
+		name := "OrderApiService" + version
+		repo.SaveDomainDescriptors("demo.app", "instance"+version, []*skeldesc.Domain{{
+			Name: "demo", Hash: "domain" + version,
+			Generated: new(skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"}),
+			Services: []*skeldesc.Service{{
+				Name: name, SkelName: "demo." + name, Hash: "service" + version,
+				Api: true, AuthMode: skeldesc.AuthModeRequired,
+			}},
+		}})
+	}
+	syncer.SyncDescriptors(repo.ListDomainDescriptorViews())
+	for _, version := range []string{"", "V1", "V2", "V10"} {
+		name := "demo.OrderApiService" + version
+		value, ok := server.Get(watched.FormatDescriptorServiceKey(name))
+		require.True(t, ok, name)
+		require.Equal(t, name, vcode.MustUnmarshalJsonS[*skeldesc.Service](value).SkelName)
+	}
+	repo.ReleaseDomainDescriptors("demo.app", "instanceV1")
+	syncer.SyncDescriptors(repo.ListDomainDescriptorViews())
+	_, ok := server.Get(watched.FormatDescriptorServiceKey("demo.OrderApiServiceV1"))
+	require.False(t, ok)
+	for _, version := range []string{"", "V2", "V10"} {
+		_, ok := server.Get(watched.FormatDescriptorServiceKey("demo.OrderApiService" + version))
+		require.True(t, ok, "removing V1 must not remove %q", version)
+	}
+}
 
 func TestAdditionalDescriptorTypesPublicationLifecycle(t *testing.T) {
 	for _, test := range []struct {

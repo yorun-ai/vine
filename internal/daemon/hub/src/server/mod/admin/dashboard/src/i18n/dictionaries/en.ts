@@ -452,7 +452,7 @@ export const en: Record<TranslationKey, string> = {
   'appConfig.saved': 'Configuration saved',
   'appConfig.skelNameRequired': 'Enter a skelName',
   'appConfig.skelNameInvalid':
-    'skelName must use the domain.NameConfig format and end with Config',
+    'Use domain.NameConfig or domain.NameConfigV2; the name before Config is required, and an optional V version must be a positive integer without leading zeroes',
   'appConfig.valueInvalidJson': 'The configuration value must be valid JSON',
   'appConfig.deleted': 'Configuration deleted',
   'appConfig.mapEnumKeyMismatch': 'Invalid key at {field}: expected {expected}, got {actual}',
