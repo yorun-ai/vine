@@ -114,7 +114,8 @@ func (m *PortalCertCore) Update(id int, update PortalCertUpdate) *PortalCert {
 		next.PrivateKey = *update.PrivateKey
 	}
 	if update.Enabled != nil {
-		// A seed declares the switch as disabled, so it owns that source path.
+		// Preserve provenance for both current and legacy seed switches.
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/enabled")
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/disabled")
 		next.Enabled = *update.Enabled
 	}
@@ -159,9 +160,12 @@ func parsePortalCertMetadata(cert *x509.Certificate) _PortalCertMetadata {
 	}
 }
 
-// Validate parses the certificate and derives metadata without accessing storage.
+// Validate checks the name and, for enabled certificates, parses PEM and derives metadata.
 func (*PortalCertCore) Validate(cert PortalCert) PortalCert {
 	ex.PanicNewIfNot(strings.TrimSpace(cert.Name) != "", ex.OperationFailed, "certificate name is required")
+	if !cert.Enabled {
+		return cert
+	}
 	pair, err := tls.X509KeyPair([]byte(cert.Certificate), []byte(cert.PrivateKey))
 	ex.PanicNewIfNot(err == nil, ex.OperationFailed, "certificate and privateKey must be a matching PEM certificate chain and private key")
 	for i, der := range pair.Certificate {

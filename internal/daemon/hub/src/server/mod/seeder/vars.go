@@ -166,7 +166,7 @@ func (s *_VarsDescriptor) targetType(root *yaml.Node, path string) (*skeldesc.Ty
 		kind = seedScalar(skeldesc.ScalarInt)
 	case section == "portalEntries" && field == "port":
 		kind = seedScalar(skeldesc.ScalarInt)
-	case field == "disabled" && (section == "portalSites" || section == "portalEntries" || section == "portalRules" || section == "portalCerts"):
+	case (field == "enabled" || field == "disabled") && (section == "portalSites" || section == "portalEntries" || section == "portalRules" || section == "portalCerts"):
 		kind = seedScalar(skeldesc.ScalarBoolean)
 	case section == "portalSites" && field == "cors":
 		kind = new(skeldesc.Type{

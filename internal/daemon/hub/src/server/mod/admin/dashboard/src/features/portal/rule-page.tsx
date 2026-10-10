@@ -112,6 +112,7 @@ type PortalRuleFormErrors = Partial<Record<keyof PortalRuleFormValue, string>>
 interface PortalRuleFormValue {
   name: string
   enabled: boolean
+  entryName: string
   matchScheme: string
   matchHost: string
   matchPort: string
@@ -125,6 +126,7 @@ interface PortalRuleFormValue {
 const emptyFormValue: PortalRuleFormValue = {
   name: '',
   enabled: true,
+  entryName: '',
   matchScheme: 'http',
   matchHost: '',
   matchPort: '',
@@ -143,6 +145,7 @@ function ruleToFormValue(rule: PortalRuleListItem): PortalRuleFormValue {
   return {
     name: rule.name,
     enabled: rule.enabled,
+    entryName:rule.entryName,
     matchScheme: rule.matchScheme,
     matchHost: rule.matchHost,
     matchPort: rule.matchPort === 0 ? '' : String(rule.matchPort),
@@ -173,7 +176,7 @@ function derivePortalRuleName(value: PortalRuleFormValue) {
     value.routeType === 'SITE' ? value.routeSiteName : value.routeRedirectionPattern
 
   return [
-    normalizeRuleNamePart(value.matchScheme, 'http'),
+    normalizeRuleNamePart(value.entryName || value.matchScheme, 'http'),
     normalizeRuleNamePart(value.matchHost, 'all'),
     normalizeRuleNamePart(value.matchPort, 'auto'),
     normalizeRuleNamePart(value.matchPathPrefix, 'root'),
@@ -261,6 +264,7 @@ function formValueToUpdate(value: PortalRuleFormValue): PortalRuleUpdate {
 }
 
 function formatMatch(rule: PortalRuleListItem) {
+  if (rule.entryAddresses?.length) return rule.entryAddresses.map((address) => address + (rule.matchPathPrefix || '/')).join(' · ')
   const matchPort = rule.matchPort === 0 ? '' : `:${rule.matchPort}`
   const matchHost = rule.matchHost || '*'
   const matchPathPrefix = rule.matchPathPrefix || '/'
@@ -343,8 +347,7 @@ function portalEntryPath(name: string) {
 
 const portalEntryListPath = '/portal/entry'
 
-// portalRuleEntry returns the entry a rule belongs to: the entry that serves the
-// scheme, host, and port the rule carries.
+// Resolve the entry by name so dual-transport entries keep their identity.
 // Protocol, host, and port belong to the entry, so the rule page displays them
 // and links to the entry instead of editing them here.
 function portalRuleEntry(
@@ -354,9 +357,7 @@ function portalRuleEntry(
   return (
     portalEntries.find(
       (entry) =>
-        entry.scheme === rule.matchScheme &&
-        entry.host === rule.matchHost &&
-        entry.port === rule.matchPort,
+        entry.name === rule.entryName,
     ) ?? null
   )
 }
@@ -365,13 +366,10 @@ function portalRuleFormEntry(
   value: PortalRuleFormValue,
   portalEntries: Array<PortalEntry>,
 ) {
-  const port = Number(value.matchPort)
   return (
     portalEntries.find(
       (entry) =>
-        entry.scheme === value.matchScheme &&
-        entry.host === value.matchHost &&
-        entry.port === port,
+        entry.name === value.entryName,
     ) ?? null
   )
 }
@@ -611,7 +609,10 @@ function PortalRuleInlineEditor({
           'matchHost',
           entry.host,
         )
-        return updatePortalRuleField(withHost, 'matchPort', String(entry.port))
+        return syncDerivedName(current, {
+          ...updatePortalRuleField(withHost, 'matchPort', String(entry.port)),
+          entryName: entry.name,
+        })
       })
     },
     [portalEntries],

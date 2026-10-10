@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
+	"strings"
 	"time"
 
 	"go.yorun.ai/vine/internal/core/ex"
@@ -208,14 +209,16 @@ func (i _AppConfig) toCoreAppConfig() *core.AppConfig {
 // Portal entry
 
 type _PortalEntry struct {
-	Name      string   `yaml:"name"`
-	Scheme    string   `yaml:"scheme"`
-	Host      string   `yaml:"host"`
-	Port      int      `yaml:"port"`
-	ListenIPs []string `yaml:"listenIPs"`
-	// Disabled is optional and defaults to false. A seed declares the exception,
-	// so Hub keeps the positive spelling of the switch it stores: enabled.
-	Disabled bool `yaml:"disabled"`
+	Protocol  *string           `yaml:"protocol"`
+	Http      *_PortalEntryHTTP `yaml:"http"`
+	Name      string            `yaml:"name"`
+	Scheme    string            `yaml:"scheme"`
+	Host      string            `yaml:"host"`
+	Port      int               `yaml:"port"`
+	ListenIPs []string          `yaml:"listenIPs"`
+	// Enabled defaults to true when omitted. Disabled is a legacy alias.
+	Enabled  *bool `yaml:"enabled"`
+	Disabled bool  `yaml:"disabled"`
 }
 
 func (e *_PortalEntry) UnmarshalYAML(node *yaml.Node) error {
@@ -226,19 +229,43 @@ func (e *_PortalEntry) UnmarshalYAML(node *yaml.Node) error {
 	if err := checkSeedFields(fields, "portalEntries"); err != nil {
 		return err
 	}
+	if _, current := fields["protocol"]; current {
+		for _, legacy := range []string{"scheme", "port"} {
+			if _, mixed := fields[legacy]; mixed {
+				return fmt.Errorf("portal entry: protocol cannot be mixed with legacy %s", legacy)
+			}
+		}
+		if fields["protocol"].Tag == "!!null" || strings.TrimSpace(fields["protocol"].Value) == "" {
+			return fmt.Errorf("portal entry protocol is empty")
+		}
+	} else if _, block := fields["http"]; block {
+		return fmt.Errorf("portal entry http requires protocol")
+	}
+	if block, ok := fields["http"]; ok && block.Tag == "!!null" {
+		return fmt.Errorf("portal entry http cannot be null")
+	}
 	type plain _PortalEntry
 	return node.Decode((*plain)(e))
 }
 
 func (e _PortalEntry) toCorePortalEntry() *core.PortalEntry {
-	return &core.PortalEntry{
+	entry := &core.PortalEntry{
 		Name:      e.Name,
 		Scheme:    e.Scheme,
 		Host:      e.Host,
 		Port:      e.Port,
 		ListenIPs: e.ListenIPs,
-		Enabled:   !e.Disabled,
+		Enabled:   seedEnabled(e.Enabled, e.Disabled),
 	}
+	if e.Protocol != nil {
+		entry.Protocol = *e.Protocol
+		config := core.DefaultPortalEntryHTTP()
+		if e.Http != nil {
+			config = e.Http.update().Apply(config)
+		}
+		entry.Http = &config
+	}
+	return entry
 }
 
 // Portal rule
@@ -257,9 +284,9 @@ type _PortalRule struct {
 	RouteSiteName           string `yaml:"routeSiteName"`
 	RouteRedirectionPattern string `yaml:"routeRedirectionPattern"`
 	RoutePathPrefix         string `yaml:"routePathPrefix"`
-	// Disabled is optional and defaults to false. A seed declares the exception,
-	// so Hub keeps the positive spelling of the switch it stores: enabled.
-	Disabled bool `yaml:"disabled"`
+	// Enabled defaults to true when omitted. Disabled is a legacy alias.
+	Enabled  *bool `yaml:"enabled"`
+	Disabled bool  `yaml:"disabled"`
 }
 
 // seedMappingFields decodes the YAML mapping of one seed entity.
@@ -274,10 +301,7 @@ func seedMappingFields(node *yaml.Node, entity string) (map[string]yaml.Node, er
 	return fields, nil
 }
 
-// checkSeedFields rejects a field the section does not declare, and names the
-// switch Hub stores as enabled under the name a seed declares instead. Decoding
-// ignores a field the payload does not declare, so a typo or a renamed field
-// would silently leave the entity at its default.
+// checkSeedFields rejects unknown fields and conflicting enable switches.
 func checkSeedFields(fields map[string]yaml.Node, section string) error {
 	return checkSeedEntityFields(fields, section, fields["name"].Value)
 }
@@ -285,6 +309,14 @@ func checkSeedFields(fields map[string]yaml.Node, section string) error {
 // checkSeedEntityFields checks one entity mapping, naming it with the label the
 // caller passes: a nested mapping such as cors carries no name of its own.
 func checkSeedEntityFields(fields map[string]yaml.Node, section string, name string) error {
+	if value, exists := fields["enabled"]; exists && seedSectionFields[section]["enabled"] {
+		if _, legacy := fields["disabled"]; legacy {
+			return fmt.Errorf("%s cannot declare both enabled and disabled", seedEntityLabel(section, name))
+		}
+		if value.Tag == "!!null" {
+			return fmt.Errorf("%s: enabled cannot be null", seedEntityLabel(section, name))
+		}
+	}
 	keys := make([]string, 0, len(fields))
 	for key := range fields {
 		keys = append(keys, key)
@@ -293,10 +325,6 @@ func checkSeedEntityFields(fields map[string]yaml.Node, section string, name str
 	for _, key := range keys {
 		if seedSectionFields[section][key] {
 			continue
-		}
-		if key == "enabled" {
-			return fmt.Errorf("%s declares \"enabled\"; a seed turns configuration off with \"disabled: true\"",
-				seedEntityLabel(section, name))
 		}
 		if key == "builtIn" {
 			// TODO: Report builtIn as an unknown field once the built-in entities
@@ -307,6 +335,13 @@ func checkSeedEntityFields(fields map[string]yaml.Node, section string, name str
 		return fmt.Errorf("%s declares unknown field %q", seedEntityLabel(section, name), key)
 	}
 	return nil
+}
+
+func seedEnabled(enabled *bool, disabled bool) bool {
+	if enabled != nil {
+		return *enabled
+	}
+	return !disabled
 }
 
 // seedEntityLabel names the entity an error is about.
@@ -333,7 +368,7 @@ func (r _PortalRule) toSeedRule() *seedRule {
 			RouteSiteName:           r.RouteSiteName,
 			RouteRedirectionPattern: r.RouteRedirectionPattern,
 			RoutePathPrefix:         r.RoutePathPrefix,
-			Enabled:                 !r.Disabled,
+			Enabled:                 seedEnabled(r.Enabled, r.Disabled),
 		},
 		EntryName: r.EntryName,
 		Entry: core.PortalEntry{
@@ -377,9 +412,9 @@ type _PortalSite struct {
 	ActorVia      string            `yaml:"actorVia"`
 	Cors          _PortalCors       `yaml:"cors"`
 	WebName       string            `yaml:"webName"`
-	// Disabled is optional and defaults to false. A seed declares the exception,
-	// so Hub keeps the positive spelling of the switch it stores: enabled.
-	Disabled bool `yaml:"disabled"`
+	// Enabled defaults to true when omitted. Disabled is a legacy alias.
+	Enabled  *bool `yaml:"enabled"`
+	Disabled bool  `yaml:"disabled"`
 }
 
 func (s *_PortalSite) UnmarshalYAML(node *yaml.Node) error {
@@ -420,7 +455,7 @@ func (s _PortalSite) toCorePortalSite() *core.PortalSite {
 		ActorVia:      s.ActorVia,
 		Cors:          cors,
 		WebName:       s.WebName,
-		Enabled:       !s.Disabled,
+		Enabled:       seedEnabled(s.Enabled, s.Disabled),
 	}
 	return site
 }
@@ -436,9 +471,9 @@ type _PortalCert struct {
 	PrivateKey  string            `yaml:"privateKey"`
 	ValidFrom   time.Time         `yaml:"validFrom"`
 	ValidTo     time.Time         `yaml:"validTo"`
-	// Disabled is optional and defaults to false. A seed declares the exception,
-	// so Hub keeps the positive spelling of the switch it stores: enabled.
-	Disabled bool `yaml:"disabled"`
+	// Enabled defaults to true when omitted. Disabled is a legacy alias.
+	Enabled  *bool `yaml:"enabled"`
+	Disabled bool  `yaml:"disabled"`
 }
 
 func (c *_PortalCert) UnmarshalYAML(node *yaml.Node) error {
@@ -458,7 +493,7 @@ func (c _PortalCert) toCorePortalCert() *core.PortalCert {
 		Name:        c.Name,
 		Certificate: c.Certificate,
 		PrivateKey:  c.PrivateKey,
-		Enabled:     !c.Disabled,
+		Enabled:     seedEnabled(c.Enabled, c.Disabled),
 	}
 	return cert
 }

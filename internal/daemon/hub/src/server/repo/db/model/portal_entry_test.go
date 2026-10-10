@@ -136,3 +136,69 @@ func testPortalEntryListenIPsMigration(t *testing.T, db *gorm.DB, schema string)
 	entry, _ = dao.ByName("legacy")
 	assert.Equal(t, `["127.0.0.1","::1"]`, entry.ListenIPs)
 }
+
+func TestPortalEntryProtocolMigrationPreservesSeparateLegacyEntries(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "protocol.sqlite")), &gorm.Config{})
+	require.NoError(t, err)
+	connection, err := db.DB()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = connection.Close() })
+	testPortalEntryProtocolMigration(t, db, createPortalEntrySQLiteSQL)
+}
+func TestPostgresPortalEntryProtocolMigration(t *testing.T) {
+	dsn := os.Getenv("VINE_TEST_POSTGRES_DSN")
+	if dsn == "" {
+		t.Skip("set VINE_TEST_POSTGRES_DSN to run PostgreSQL integration tests")
+	}
+	db, err := gorm.Open(adapter.NewDialector(dsn), &gorm.Config{})
+	require.NoError(t, err)
+	connection, err := db.DB()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = connection.Close() })
+	tx := db.Begin()
+	require.NoError(t, tx.Error)
+	t.Cleanup(func() { require.NoError(t, tx.Rollback().Error) })
+	schema := "vine_entry_protocol_" + strings.ReplaceAll(uuid.NewV7().String(), "-", "")
+	require.NoError(t, tx.Exec(`CREATE SCHEMA "`+schema+`"`).Error)
+	require.NoError(t, tx.Exec(`SET LOCAL search_path TO "`+schema+`"`).Error)
+	testPortalEntryProtocolMigration(t, tx, createPortalEntryPgSQL)
+}
+func testPortalEntryProtocolMigration(t *testing.T, db *gorm.DB, schema string) {
+	t.Helper()
+	legacyLines := []string{}
+	for _, line := range strings.Split(schema, "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "protocol TEXT") || strings.HasPrefix(strings.TrimSpace(line), "http_config TEXT") {
+			continue
+		}
+		legacyLines = append(legacyLines, line)
+	}
+	legacy := strings.ReplaceAll(strings.Join(legacyLines, "\n"), " AND scheme <> ''", "")
+	require.NoError(t, db.Exec(legacy).Error)
+	require.NoError(t, db.Exec("INSERT INTO portal_entry (name,scheme,host,port,listen_ips,enabled) VALUES ('plain','http','demo.local',8080,'[\"127.0.0.1\"]',true),('secure','https','demo.local',8443,'[\"::1\"]',false)").Error)
+	dao := &PortalEntryDao{Dao: rdb.NewDao[*PortalEntry](db)}
+	before := dao.ListOrdered()
+	require.Len(t, before, 2)
+	dao.EnsureSchema()
+	dao.EnsureSchema()
+	after := dao.ListOrdered()
+	require.Len(t, after, 2)
+	for i, entry := range after {
+		require.Equal(t, before[i].Id, entry.Id)
+		require.Equal(t, before[i].Name, entry.Name)
+		require.Equal(t, before[i].Enabled, entry.Enabled)
+		require.Equal(t, before[i].ListenIPs, entry.ListenIPs)
+		require.Equal(t, before[i].Scheme, entry.Scheme)
+		require.Equal(t, before[i].Port, entry.Port)
+		require.Equal(t, "http", entry.Protocol)
+		require.Contains(t, entry.HTTPConfig, `"autoHTTPS":false`)
+		if entry.Scheme == "http" {
+			require.Contains(t, entry.HTTPConfig, `"httpsEnabled":false`)
+		} else {
+			require.Contains(t, entry.HTTPConfig, `"httpEnabled":false`)
+		}
+	}
+	dao.Save(&PortalEntry{Name: "dual", Protocol: "http", HTTPConfig: `{"httpEnabled":true,"httpPort":80,"httpsEnabled":true,"httpsPort":443,"autoHTTPS":true}`, Host: "other.local", Enabled: true})
+	dao.Save(&PortalEntry{Name: "another-dual", Protocol: "http", HTTPConfig: `{"httpEnabled":true,"httpPort":80,"httpsEnabled":true,"httpsPort":443,"autoHTTPS":true}`, Host: "third.local", Enabled: true})
+	dao.EnsureSchema()
+	require.Len(t, dao.ListOrdered(), 4)
+}

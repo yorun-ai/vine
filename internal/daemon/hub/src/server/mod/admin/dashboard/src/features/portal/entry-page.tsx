@@ -41,19 +41,13 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import {
   ResizableListHandle,
   useReservedScrollbar,
   useResizableListPanel,
 } from '@/components/ui/resizable-list-panel'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Tooltip,
@@ -74,32 +68,39 @@ import type {
 
 const portalEntryService = createPortalEntryApiService(vrpcClient)
 const PORTAL_ENTRY_LIST_DEFAULT_WIDTH = 352
-const portalEntrySchemes = ['http', 'https'] as const
 
 interface PortalEntryFormValue {
   name: string
   enabled: boolean
-  scheme: string
+  httpEnabled: boolean
+  httpsEnabled: boolean
+  autoHTTPS: boolean
   host: string
-  port: string
+  httpPort: string
+  httpsPort: string
   listenIPs: string
 }
 
 const newEntryFormValue: PortalEntryFormValue = {
-  name: 'http:80',
+  name: 'http:80+https:443',
   enabled: true,
-  scheme: 'http',
+  httpEnabled: true,
+  httpsEnabled: true,
+  autoHTTPS: true,
   host: '',
-  port: '80',
+  httpPort: '80',
+  httpsPort: '443',
   listenIPs: '',
 }
 
-// derivePortalEntryName mirrors the name Hub derives for an entry it creates on
-// its own, so a new entry starts with the label the Dashboard already showed.
+// Derive a label from the enabled transports until the operator provides a name.
 function derivePortalEntryName(value: PortalEntryFormValue) {
   const host = value.host.trim()
-  const port = value.port.trim() || (value.scheme === 'https' ? '443' : '80')
-  return host === '' ? `${value.scheme}:${port}` : `${value.scheme}:${host}:${port}`
+  const ports = [
+    value.httpEnabled ? `http:${value.httpPort.trim() || '80'}` : '',
+    value.httpsEnabled ? `https:${value.httpsPort.trim() || '443'}` : '',
+  ].filter(Boolean).join('+')
+  return host === '' ? ports : `${host}:${ports}`
 }
 
 function syncDerivedEntryName(
@@ -118,8 +119,8 @@ function updatePortalEntryField(
   field: keyof PortalEntryFormValue,
   value: string | boolean,
 ) {
-  if (field === 'enabled') {
-    return { ...current, enabled: value === true }
+  if (field === 'enabled' || field === 'httpEnabled' || field === 'httpsEnabled' || field === 'autoHTTPS') {
+    return syncDerivedEntryName(current, { ...current, [field]: value === true })
   }
   if (typeof value !== 'string') {
     return current
@@ -141,10 +142,23 @@ function portalEntryToFormValue(entry: PortalEntry): PortalEntryFormValue {
   return {
     name: entry.name,
     enabled: entry.enabled,
-    scheme: entry.scheme,
+    httpEnabled: entry.http.httpEnabled,
+    httpsEnabled: entry.http.httpsEnabled,
+    autoHTTPS: entry.http.autoHTTPS,
     host: entry.host,
-    port: String(entry.port),
+    httpPort: String(entry.http.httpPort),
+    httpsPort: String(entry.http.httpsPort),
     listenIPs: entry.listenIPs.join(', '),
+  }
+}
+
+function portalEntryHTTPConfig(value: PortalEntryFormValue) {
+  return {
+    httpEnabled: value.httpEnabled,
+    httpPort: Number(value.httpPort),
+    httpsEnabled: value.httpsEnabled,
+    httpsPort: Number(value.httpsPort),
+    autoHTTPS: value.autoHTTPS,
   }
 }
 
@@ -153,16 +167,22 @@ function portalEntryFormValueToUpdate(
 ): PortalEntryUpdate {
   return {
     name: value.name.trim(),
-    scheme: value.scheme,
+    protocol: 'http',
+    scheme: null,
+    port: null,
+    http: portalEntryHTTPConfig(value),
     host: value.host.trim(),
-    port: Number(value.port),
     listenIPs: value.listenIPs.split(/[\s,]+/).filter(Boolean),
     enabled: value.enabled,
   }
 }
 
 function portalEntryAddress(entry: PortalEntry) {
-  return `${entry.scheme}://${entry.host || '*'}:${entry.port}`
+  const host = entry.host.includes(':') ? `[${entry.host}]` : entry.host || '*'
+  return [
+    entry.http.httpEnabled ? `http://${host}:${entry.http.httpPort}` : '',
+    entry.http.httpsEnabled ? `https://${host}:${entry.http.httpsPort}` : '',
+  ].filter(Boolean).join(' · ')
 }
 
 function isValidPort(value: string) {
@@ -305,9 +325,10 @@ function PortalEntryInlineEditor({
       if (formValue.name.trim() === '') {
         errors.name = t('portalEntry.nameRequired')
       }
-      if (!isValidPort(formValue.port)) {
-        errors.port = t('portalEntry.invalidPort')
-      }
+      if (!isValidPort(formValue.httpPort)) errors.httpPort=t('portalEntry.invalidPort')
+      if (!isValidPort(formValue.httpsPort)) errors.httpsPort=t('portalEntry.invalidPort')
+      if (!formValue.httpEnabled && !formValue.httpsEnabled) errors.httpEnabled=t('portalEntry.transportRequired')
+      if (formValue.autoHTTPS && (!formValue.httpEnabled || !formValue.httpsEnabled)) errors.autoHTTPS=t('portalEntry.autoHTTPSRequiresBoth')
       setFieldErrors(errors)
       setFormError(null)
       if (Object.keys(errors).length > 0) {
@@ -339,23 +360,7 @@ function PortalEntryInlineEditor({
           onChange={(event) => setField('name', event.target.value)}
         />
       </Field>
-      <Field label={t('portalEntry.scheme')} error={fieldErrors.scheme}>
-        <Select
-          value={formValue.scheme}
-          onValueChange={(value) => setField('scheme', value ?? '')}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {portalEntrySchemes.map((scheme) => (
-              <SelectItem key={scheme} value={scheme}>
-                {scheme}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </Field>
+      <Field label={t('portalEntry.protocol')}><Input value="http" readOnly /></Field>
       <Field label={t('portalEntry.host')}>
         <Input
           value={formValue.host}
@@ -371,13 +376,27 @@ function PortalEntryInlineEditor({
         />
         <p className="text-xs text-muted-foreground">{t('portalEntry.listenIPsHelp')}</p>
       </Field>
-      <Field label={t('portalEntry.port')} error={fieldErrors.port}>
-        <Input
-          value={formValue.port}
-          inputMode="numeric"
-          aria-invalid={Boolean(fieldErrors.port)}
-          onChange={(event) => setField('port', event.target.value)}
+      {(['http', 'https'] as const).map((transport) => (
+        <React.Fragment key={transport}>
+          <Field label={transport.toUpperCase()} error={fieldErrors[`${transport}Enabled`]}>
+            <Switch
+              aria-label={transport.toUpperCase()}
+              checked={formValue[`${transport}Enabled`]}
+              onCheckedChange={(checked) => setField(`${transport}Enabled`, checked === true)}
+            />
+          </Field>
+          <Field label={`${transport.toUpperCase()} ${t('portalEntry.port')}`} error={fieldErrors[`${transport}Port`]}>
+            <Input value={formValue[`${transport}Port`]} inputMode="numeric" onChange={(event) => setField(`${transport}Port`,event.target.value)} />
+          </Field>
+        </React.Fragment>
+      ))}
+      <Field label={t('portalEntry.autoHTTPS')} error={fieldErrors.autoHTTPS}>
+        <Switch
+          aria-label={t('portalEntry.autoHTTPS')}
+          checked={formValue.autoHTTPS}
+          onCheckedChange={(checked) => setField('autoHTTPS', checked === true)}
         />
+        <p className="text-xs text-muted-foreground">{t('portalEntry.autoHTTPSHelp')}</p>
       </Field>
 
       <EnabledField
@@ -520,9 +539,8 @@ export function PortalEntryPage() {
     return entries.filter((entry) => {
       const values = [
         entry.name,
-        entry.scheme,
+        portalEntryAddress(entry),
         entry.host,
-        String(entry.port),
         ...entry.rules.flatMap((entryRule) => [
           entryRule.site?.name ?? '',
           entryRule.site?.actorSkelName ?? '',
@@ -589,9 +607,11 @@ export function PortalEntryPage() {
         const created = await portalEntryService.create({
           creation: {
             name: value.name.trim(),
-            scheme: value.scheme,
+            protocol: 'http',
+            scheme: null,
+            port: null,
+            http: portalEntryHTTPConfig(value),
             host: value.host.trim(),
-            port: Number(value.port),
             listenIPs: value.listenIPs.split(/[\s,]+/).filter(Boolean),
             enabled: value.enabled,
           },

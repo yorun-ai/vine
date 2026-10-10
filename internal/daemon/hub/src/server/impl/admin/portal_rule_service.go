@@ -1,6 +1,9 @@
 package admin
 
 import (
+	"fmt"
+	"strings"
+
 	"go.yorun.ai/vine/internal/core/ex"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
@@ -83,6 +86,18 @@ func toServerPortalRule(rule *core.PortalRule, entry *core.PortalEntry, fieldSou
 		FieldSources:            fieldSources,
 	}
 	if entry != nil {
+		ret.EntryName = entry.Name
+		ret.EntryAddresses = []string{}
+		for _, access := range entry.Accesses() {
+			host := entry.Host
+			if host == "" {
+				host = "*"
+			}
+			if strings.Contains(host, ":") {
+				host = "[" + host + "]"
+			}
+			ret.EntryAddresses = append(ret.EntryAddresses, fmt.Sprintf("%s://%s:%d", access.Scheme, host, access.Port))
+		}
 		ret.MatchScheme = entry.Scheme
 		ret.MatchHost = entry.Host
 		ret.MatchPort = entry.Port
@@ -129,9 +144,10 @@ func toServerPortalRuleListItem(entry *core.PortalEntry, rule *core.PortalRule, 
 		}
 	}
 	return skeled.PortalRuleListItem{
-		Enabled:                 detail.Enabled,
-		Id:                      detail.Id,
-		Name:                    detail.Name,
+		Enabled:   detail.Enabled,
+		Id:        detail.Id,
+		Name:      detail.Name,
+		EntryName: detail.EntryName, EntryAddresses: detail.EntryAddresses,
 		MatchScheme:             detail.MatchScheme,
 		MatchHost:               detail.MatchHost,
 		MatchPort:               detail.MatchPort,

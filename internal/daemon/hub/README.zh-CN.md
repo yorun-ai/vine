@@ -82,7 +82,7 @@ Hub 的层次职责必须保持清晰：
 
 - Core 的 `Validate` 只做校验与归一化，不写存储。规则的结构校验不查询站点；保存通配符域名下的规则时要求目标是已存在的 WEBGW 站点，修改入口访问地址时检查其下所有规则。站点被删除或改为非 Web 类型后，Hub 撤下对应通配符规则，Portal 转发前也检查目标类型。Hub 随站点发布 Web 挂载路径元数据，由 Portal 生成实际生效的规则路径。
 - 应用配置、entry、站点、规则和证书的写入都经过各自的 Core。entry 拥有 Portal
-  监听的 scheme、host 和 port，规则只引用 entry，不再自行保存访问配置。
+  监听的协议族、host、IP 和各传输协议端口，规则只引用 entry，不再自行保存访问配置。
   `PortalRuleCore` 按规则声明的访问配置解析 entry，因此访问配置相同的规则共用
   同一个 entry。修改 entry 会改变它路由的全部规则，Hub 随即重新发布这些规则，
   让 Portal 读到该 entry 当前服务的访问配置。
@@ -97,15 +97,20 @@ Hub 的层次职责必须保持清晰：
   都返回内嵌的 Dashboard 构建产物，Dashboard 因此不再属于 Portal 配置——Hub 不为
   它创建任何 entry、站点或规则，Portal 也不会路由 Dashboard。
 - Portal 站点、entry、规则与证书在库里都有 `enabled` 开关（默认启用），Dashboard
-  可编辑；seed 用 `disabled`（默认 false）声明同一个开关，只标出要停用的实体，
-  写 `enabled` 的 seed 会直接报错，避免被忽略后继续发布。Hub 会把停用的实体保留在
+  可编辑；seed 使用 `enabled`，省略时默认 true，显式空值会报错。旧 `disabled` 输入
+  仍受支持，但不能与 `enabled` 同时填写。Hub 会把停用的实体保留在
   数据库里但停止发布到 Watch，Portal 因此完全看不到它：停用的规则、停用 entry 下
   的规则、停用站点上的 SITE 规则以及停用的证书都会从发布内容中移除。早于该开关的
-  数据库中的实体保持启用。
-- entry 有自己的名称：seed 的 `portalEntries` 段声明 `name`、`scheme`、`host`、
-  `port`、`listenIPs`，并在规则之前应用，因此规则会加入服务其访问配置的 entry 并沿用该名称；
+  数据库中的实体保持启用。停用证书可不提供有效 PEM 内容，名称和 YAML 字段类型仍校验，
+  启用时必须提供有效且匹配的证书和私钥。
+- entry 使用 `protocol: http` 和平铺的 `http` 块，默认 HTTP/80、HTTPS/443、
+  `autoHTTPS: true`，自动跳转要求同时启用两种传输协议。旧 `scheme` 和顶层 `port` 输入
+  转换为只启用原协议、关闭跳转的配置，不能与 `protocol` 混用。已有数据一一迁移，保留
+  规则引用。启用的 entry 独立发布到 `portal:entry:*`，无需规则即可监听和跳转。
+- entry 有自己的名称：seed 的 `portalEntries` 段声明 `name`、`protocol`、`host`、
+  `http`、`listenIPs`，并在规则之前应用，因此规则会加入服务其访问配置的 entry 并沿用该名称；
   entry 也可以暂时不承载任何规则。Hub 只为它自行创建的 entry 推导
-  `scheme[:host]:port` 名称，所以没有显式声明 entry 时规则加入的 entry 以访问配置
+  `scheme[:host]:port` 名称，所以没有显式声明 entry 时规则加入的 entry 以访问配置命名。
 - Portal 各段是强类型的：实体声明了该段没有的字段时 Hub 直接报错，避免拼错或改名
   后的字段被静默忽略、实体停留在默认值；Hub 自己不再创建任何实体。
 - name 只在同一类实体内唯一，所以站点、entry 与规则可以同名。

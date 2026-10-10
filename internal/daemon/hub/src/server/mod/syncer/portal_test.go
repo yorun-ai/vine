@@ -102,13 +102,17 @@ func TestSyncerPublishesOnlyEnabledConfiguration(t *testing.T) {
 
 func TestPortalRuleResolvedPathsWatchRoundTrip(t *testing.T) {
 	rule := &core.PortalRule{Name: "mapped", RouteType: "SITE", MatchPathPrefix: "/api", RoutePathPrefix: "/internal"}
-	wire := vcode.MustMarshalJsonS(ToWatchedPortalRule(rule, nil))
+	wire := vcode.MustMarshalJsonS(ToWatchedPortalRule(rule, &core.PortalEntry{Name: "web"}))
 	decoded := vcode.MustUnmarshalJsonS[*watched.PortalRule](wire)
 	assert.Equal(t, "/internal", decoded.ResolvedRoutePathPrefix)
 	assert.Contains(t, wire, `"resolvedRoutePathPrefix":"/internal"`)
 	assert.Contains(t, wire, `"resolvedMatchPathPrefix":"/api"`)
 	assert.NotContains(t, wire, `"routePathPrefix"`)
 	assert.NotContains(t, wire, `"matchPathPrefix"`)
+	assert.Equal(t, "web", decoded.EntryName)
+	for _, field := range []string{"matchScheme", "matchHost", "matchPort", "listenIPs"} {
+		assert.NotContains(t, wire, `"`+field+`"`)
+	}
 }
 
 func TestPortalSitePublishesWebMountPath(t *testing.T) {
@@ -122,6 +126,7 @@ func TestPortalSitePublishesWebMountPath(t *testing.T) {
 
 func TestPortalRuleResolvedPrefixesFollowWebMountPath(t *testing.T) {
 	target := testSyncer(watchserver.NewServerForTest())
+	target.SyncPortalEntry(&core.PortalEntry{Id: 1, Name: "web", Scheme: "http", Port: 8080, Enabled: true})
 	tests := []struct {
 		name      string
 		mountPath string
@@ -135,7 +140,7 @@ func TestPortalRuleResolvedPrefixesFollowWebMountPath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rule := &core.PortalRule{RouteType: string(core.PortalRuleRouteTypeSite), RouteSiteName: "web", MatchPathPrefix: "/configured", RoutePathPrefix: "/backend"}
+			rule := &core.PortalRule{EntryId: 1, RouteType: string(core.PortalRuleRouteTypeSite), RouteSiteName: "web", MatchPathPrefix: "/configured", RoutePathPrefix: "/backend"}
 			site := &core.PortalSite{Type: core.PortalSiteTypeWEBGW, Name: "web", WebMountPath: tt.mountPath}
 			got := target.toWatchedPortalRule(rule, site)
 			assert.Equal(t, tt.match, got.ResolvedMatchPathPrefix)
@@ -149,7 +154,9 @@ func TestPortalSiteUpdateRepublishesResolvedRule(t *testing.T) {
 	watchServer := watchserver.NewServerForTest()
 	defer watchServer.AfterAppStop()
 	target := testSyncer(watchServer)
+	target.SyncPortalEntry(&core.PortalEntry{Id: 1, Name: "web-entry", Scheme: "http", Port: 8080, Enabled: true})
 	rule := &core.PortalRule{
+		EntryId:         1,
 		Id:              1,
 		Name:            "web-rule",
 		RouteType:       string(core.PortalRuleRouteTypeSite),
@@ -225,10 +232,10 @@ func TestSyncPortalEntryRepublishesListenIPs(t *testing.T) {
 	entry := &core.PortalEntry{Id: 1, Name: "local", Scheme: "http", Port: 8080, ListenIPs: []string{"127.0.0.1"}, Enabled: true}
 	target.SyncPortalEntry(entry)
 	target.SyncPortalRule(&core.PortalRule{Id: 1, Name: "local-rule", EntryId: entry.Id, RouteType: "PERMANENT_REDIRECT", RouteRedirectionPattern: "https://example.com", Enabled: true})
-	read := func() *watched.PortalRule {
-		value, ok := watchServer.Get(watched.FormatPortalRuleKey("local-rule"))
+	read := func() *watched.PortalEntry {
+		value, ok := watchServer.Get(watched.FormatPortalEntryKey("local"))
 		require.True(t, ok)
-		return vcode.MustUnmarshalJsonS[*watched.PortalRule](value)
+		return vcode.MustUnmarshalJsonS[*watched.PortalEntry](value)
 	}
 	assert.Equal(t, entry.ListenIPs, read().ListenIPs)
 	entry.ListenIPs = []string{"::1"}
@@ -237,4 +244,50 @@ func TestSyncPortalEntryRepublishesListenIPs(t *testing.T) {
 	entry.ListenIPs = nil
 	target.SyncPortalEntry(entry)
 	assert.Empty(t, read().ListenIPs)
+}
+
+func TestSyncerPublishesIndependentEntryAndRemovesRenamedAndDisabledKeys(t *testing.T) {
+	server := watchserver.NewServerForTest()
+	defer server.AfterAppStop()
+	target := testSyncer(server)
+	entry := &core.PortalEntry{Id: 1, Name: "web", Protocol: "http", Host: "demo.local", Enabled: true}
+	target.SyncPortalEntry(entry)
+	value, ok := server.Get(watched.FormatPortalEntryKey("web"))
+	require.True(t, ok)
+	config := vcode.MustUnmarshalJsonS[watched.PortalEntry](value)
+	require.True(t, config.Http.AutoHTTPS)
+	require.Equal(t, 443, config.Http.HttpsPort)
+	entry.Name = "renamed"
+	target.SyncPortalEntry(entry)
+	_, ok = server.Get(watched.FormatPortalEntryKey("web"))
+	require.False(t, ok)
+	_, ok = server.Get(watched.FormatPortalEntryKey("renamed"))
+	require.True(t, ok)
+	entry.Enabled = false
+	target.SyncPortalEntry(entry)
+	_, ok = server.Get(watched.FormatPortalEntryKey("renamed"))
+	require.False(t, ok)
+	entry.Enabled = true
+	target.SyncPortalEntry(entry)
+	target.RemovePortalEntry(entry)
+	_, ok = server.Get(watched.FormatPortalEntryKey("renamed"))
+	require.False(t, ok)
+}
+
+func TestSyncerRequiresEntryBeforePublishingRule(t *testing.T) {
+	server := watchserver.NewServerForTest()
+	t.Cleanup(server.AfterAppStop)
+	target := testSyncer(server)
+	rule := &core.PortalRule{Id: 1, Name: "rule", EntryId: 1, RouteType: "PERMANENT_REDIRECT", RouteRedirectionPattern: "https://example.com", Enabled: true}
+	target.SyncPortalRule(rule)
+	_, ok := server.Get(watched.FormatPortalRuleKey(rule.Name))
+	require.False(t, ok)
+	entry := &core.PortalEntry{Id: 1, Name: "web", Protocol: "http", Enabled: true}
+	target.SyncPortalEntry(entry)
+	value, ok := server.Get(watched.FormatPortalRuleKey(rule.Name))
+	require.True(t, ok)
+	require.Equal(t, "web", vcode.MustUnmarshalJsonS[watched.PortalRule](value).EntryName)
+	target.RemovePortalEntry(entry)
+	_, ok = server.Get(watched.FormatPortalRuleKey(rule.Name))
+	require.False(t, ok)
 }

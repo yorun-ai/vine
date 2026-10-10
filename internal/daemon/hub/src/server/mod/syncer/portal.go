@@ -3,7 +3,6 @@ package syncer
 import (
 	"encoding/base64"
 	"slices"
-	"strconv"
 	"strings"
 
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
@@ -17,8 +16,17 @@ func (s *Syncer) SyncPortalEntry(entry *core.PortalEntry) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
-	stored := *entry
-	stored.ListenIPs = slices.Clone(entry.ListenIPs)
+	stored := core.NormalizePortalEntry(*entry)
+	if previous := s.portalEntriesById[entry.Id]; previous != nil && previous.Name != entry.Name {
+		s.WatchServer.DeleteAndNotify(watched.FormatPortalEntryKey(previous.Name))
+	}
+	if stored.Enabled {
+		h := stored.Http
+		s.WatchServer.SetAndNotify(watched.FormatPortalEntryKey(stored.Name), vcode.MustMarshalJsonS(watched.PortalEntry{Name: stored.Name, Protocol: stored.Protocol, Host: stored.Host, ListenIPs: stored.ListenIPs, Http: watched.PortalEntryHTTP{HttpEnabled: h.HttpEnabled, HttpPort: h.HttpPort, HttpsEnabled: h.HttpsEnabled, HttpsPort: h.HttpsPort, AutoHTTPS: h.AutoHTTPS}}))
+	} else {
+		s.WatchServer.DeleteAndNotify(watched.FormatPortalEntryKey(stored.Name))
+	}
+	stored.ListenIPs = slices.Clone(stored.ListenIPs)
 	s.portalEntriesById[entry.Id] = &stored
 	for _, rule := range s.portalRulesById {
 		if rule.EntryId != entry.Id {
@@ -32,13 +40,13 @@ func (s *Syncer) RemovePortalEntry(entry *core.PortalEntry) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
+	s.WatchServer.DeleteAndNotify(watched.FormatPortalEntryKey(entry.Name))
 	delete(s.portalEntriesById, entry.Id)
 	for _, rule := range s.portalRulesById {
 		if rule.EntryId != entry.Id {
 			continue
 		}
-		// Hub publishes a rule when it cannot resolve the entry it belongs to, so
-		// removing the entry leaves the published rule in place.
+		// A rule cannot be published without its entry reference.
 		s.publishPortalRuleLocked(rule, s.portalSiteOfRuleLocked(rule))
 	}
 }
@@ -194,22 +202,19 @@ func (s *Syncer) portalRuleMatchKeyLocked(rule *core.PortalRule, site *core.Port
 		return ""
 	}
 	matchPathPrefix, _ := core.ResolvePortalRulePaths(rule, site)
-	return entry.Scheme + "\x00" + entry.Host + "\x00" + strconv.Itoa(entry.Port) + "\x00" + matchPathPrefix
+	return core.PortalEntryMatchKey(*entry, matchPathPrefix)
 }
 
 func (s *Syncer) publishesPortalRuleLocked(rule *core.PortalRule, site *core.PortalSite) bool {
 	if !rule.Enabled {
 		return false
 	}
-	// Hub publishes a rule when it cannot resolve the entry it belongs to, so a
-	// partial startup never hides configuration from Portal.
-	if entry, ok := s.portalEntriesById[rule.EntryId]; ok {
-		if !entry.Enabled {
-			return false
-		}
-		if strings.HasPrefix(entry.Host, "*.") && (rule.RouteType != core.PortalRuleRouteTypeSite || site == nil || site.Type != core.PortalSiteTypeWEBGW) {
-			return false
-		}
+	entry, ok := s.portalEntriesById[rule.EntryId]
+	if !ok || !entry.Enabled {
+		return false
+	}
+	if strings.HasPrefix(entry.Host, "*.") && (rule.RouteType != core.PortalRuleRouteTypeSite || site == nil || site.Type != core.PortalSiteTypeWEBGW) {
+		return false
 	}
 	if rule.RouteType == core.PortalRuleRouteTypeSite && site != nil && !site.Enabled {
 		return false
@@ -267,23 +272,16 @@ func (s *Syncer) toWatchedPortalRule(rule *core.PortalRule, sites ...*core.Porta
 	return ret
 }
 
-// ToWatchedPortalRule renders a rule for Portal with the access of the entry it
-// belongs to. An entry Hub has not published leaves the access empty, the way a
-// rule keeps its paths when Hub cannot resolve the site it targets.
+// ToWatchedPortalRule renders a rule with its entry reference and resolved paths.
 func ToWatchedPortalRule(rule *core.PortalRule, entry *core.PortalEntry) *watched.PortalRule {
 	ret := &watched.PortalRule{
+		EntryName:               entry.Name,
 		Name:                    rule.Name,
 		RouteType:               rule.RouteType,
 		RouteSiteName:           rule.RouteSiteName,
 		RouteRedirectionPattern: rule.RouteRedirectionPattern,
 		ResolvedMatchPathPrefix: rule.MatchPathPrefix,
 		ResolvedRoutePathPrefix: rule.RoutePathPrefix,
-	}
-	if entry != nil {
-		ret.MatchScheme = entry.Scheme
-		ret.MatchHost = entry.Host
-		ret.MatchPort = entry.Port
-		ret.ListenIPs = slices.Clone(entry.ListenIPs)
 	}
 	return ret
 }

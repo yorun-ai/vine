@@ -4,6 +4,8 @@ CREATE TABLE IF NOT EXISTS portal_entry (
     updated_at DATETIME,                    -- Update time
     deleted_at DATETIME,                    -- Soft deletion time
     name TEXT NOT NULL,                     -- Entry name, unique among user entries
+    protocol TEXT NOT NULL DEFAULT '',      -- Protocol family; populated by migration
+    http_config TEXT NOT NULL DEFAULT '',   -- Canonical HTTP configuration JSON
     scheme TEXT NOT NULL,                   -- Scheme, only http / https are supported
     host TEXT NOT NULL,                     -- Domain or IP, empty string means no restriction
     port INTEGER NOT NULL,                  -- Port Portal listens on
@@ -18,4 +20,4 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_entry_name
 -- One entry serves an access, and Hub creates an entry again when rules return
 -- to an access whose entry was removed.
 CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_entry_access
-    ON portal_entry(scheme, host, port) WHERE deleted_at IS NULL;
+    ON portal_entry(scheme, host, port) WHERE deleted_at IS NULL AND scheme <> '';

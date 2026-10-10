@@ -103,6 +103,8 @@ func TestPortalRuleRepoPublishesEntryAccess(t *testing.T) {
 
 	entry, ok := repo.PortalEntryRepo.GetById(rule.EntryId)
 	require.True(t, ok)
+	entry.Protocol = ""
+	entry.Http = nil
 	entry.Scheme = "http"
 	entry.Host = "app.example.com"
 	entry.Port = 8080

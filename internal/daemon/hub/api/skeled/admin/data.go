@@ -350,8 +350,9 @@ type PortalCors struct {
 	AllowedOrigins []string `json:"allowedOrigins"`
 }
 
-// PortalEntry Portal access entry
 type PortalEntry struct {
+	Protocol string          `json:"protocol"`
+	Http     PortalEntryHttp `json:"http"`
 	// Id Entry ID
 	Id int `json:"id"`
 	// Name Entry name
@@ -366,24 +367,48 @@ type PortalEntry struct {
 	ListenIPs []string `json:"listenIPs"`
 	// Rules Entry rule list
 	Rules []PortalEntryRule `json:"rules"`
-	// Enabled Whether Hub publishes the rules of this entry to Portal
+	// Enabled Whether Hub publishes this entry and its rules to Portal
 	Enabled bool `json:"enabled"`
 }
 
 // PortalEntryCreation Portal access entry creation parameters
 type PortalEntryCreation struct {
+	Protocol *string                `json:"protocol"`
+	Http     *PortalEntryHttpUpdate `json:"http"`
 	// Name Entry name
 	Name string `json:"name"`
 	// Scheme Entry protocol
-	Scheme string `json:"scheme"`
+	Scheme *string `json:"scheme"`
 	// Host Match Host, empty string means no restriction
 	Host string `json:"host"`
 	// Port Entry port
-	Port int `json:"port"`
+	Port *int `json:"port"`
 	// ListenIPs Listener IP addresses; empty preserves the default wildcard TCP listener
 	ListenIPs []string `json:"listenIPs"`
-	// Enabled Whether Hub publishes the rules of this entry to Portal; defaults to true
+	// Enabled Whether Hub publishes this entry and its rules to Portal; defaults to true
 	Enabled *bool `json:"enabled"`
+}
+
+// PortalEntryHttp Portal access entry
+type PortalEntryHttp struct {
+	// HttpEnabled Enable HTTP transport
+	HttpEnabled bool `json:"httpEnabled"`
+	// HttpPort HTTP listener port
+	HttpPort int `json:"httpPort"`
+	// HttpsEnabled Enable HTTPS transport
+	HttpsEnabled bool `json:"httpsEnabled"`
+	// HttpsPort HTTPS listener port
+	HttpsPort int `json:"httpsPort"`
+	// AutoHttps Redirect HTTP to HTTPS with status 308
+	AutoHttps bool `json:"autoHTTPS"`
+}
+
+type PortalEntryHttpUpdate struct {
+	HttpEnabled  *bool `json:"httpEnabled"`
+	HttpPort     *int  `json:"httpPort"`
+	HttpsEnabled *bool `json:"httpsEnabled"`
+	HttpsPort    *int  `json:"httpsPort"`
+	AutoHttps    *bool `json:"autoHTTPS"`
 }
 
 // PortalEntryRule Portal access entry rules
@@ -396,6 +421,8 @@ type PortalEntryRule struct {
 
 // PortalEntryUpdate Portal access entry update parameters
 type PortalEntryUpdate struct {
+	Protocol *string                `json:"protocol"`
+	Http     *PortalEntryHttpUpdate `json:"http"`
 	// Name Entry name
 	Name *string `json:"name"`
 	// Scheme Entry protocol
@@ -406,12 +433,14 @@ type PortalEntryUpdate struct {
 	Port *int `json:"port"`
 	// ListenIPs Listener IP addresses; empty restores the default wildcard TCP listener
 	ListenIPs *[]string `json:"listenIPs"`
-	// Enabled Whether Hub publishes the rules of this entry to Portal
+	// Enabled Whether Hub publishes this entry and its rules to Portal
 	Enabled *bool `json:"enabled"`
 }
 
 // PortalRule Portal entry rules
 type PortalRule struct {
+	EntryName      string   `json:"entryName"`
+	EntryAddresses []string `json:"entryAddresses"`
 	// Id Rule ID
 	Id int `json:"id"`
 	// Name Rule name
@@ -488,6 +517,8 @@ type PortalRuleCreation struct {
 
 // PortalRuleListItem Portal entry rule list item
 type PortalRuleListItem struct {
+	EntryName      string   `json:"entryName"`
+	EntryAddresses []string `json:"entryAddresses"`
 	// Id Rule ID
 	Id int `json:"id"`
 	// Name Rule name

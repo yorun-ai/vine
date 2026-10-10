@@ -100,7 +100,7 @@ creates or replaces by name and owns identity handling, along with versioning an
 field sources where applicable. API updates merge provided fields into the
 existing entity before validation.
 
-An entry owns the scheme, host, and port Portal serves; rules reference the entry
+An entry owns the protocol family, host, listener IPs, and transport ports Portal serves; rules reference the entry
 and never store access of their own. `PortalRuleCore` resolves the entry of the
 access a rule declares, so rules that share an access share one entry. Changing
 an entry changes every rule it routes, and Hub republishes those rules so Portal
@@ -212,19 +212,20 @@ Portal rule YAML uses flat fields in this order: `matchScheme`, `matchHost`,
 `routeRedirectionPattern`, and `routePathPrefix`.
 
 Hub stores an `enabled` switch on every Portal site, entry, rule, and
-certificate, and the Dashboard edits it. A seed declares the same switch as
-`disabled`, which defaults to false, so a seed names only the entities it turns
-off; a seed that writes `enabled` fails instead of silently publishing the
-entity. Hub keeps a disabled entity in its database and stops publishing it to
+certificate, and the Dashboard edits it. Seeds use `enabled`, which defaults to
+true when omitted; explicit null values are rejected. The legacy `disabled`
+switch remains accepted, but cannot be combined with `enabled`. Hub keeps a disabled entity in its database and stops publishing it to
 Watch, so Portal never sees it: Hub omits a disabled rule, the rules of a
 disabled entry, the SITE rules of a disabled site, and a disabled certificate.
-A database that predates the switch keeps every stored entity enabled.
+Disabled certificates may be stored without valid PEM content; names and YAML
+field types remain checked, and enabling requires a valid matching certificate
+and private key. A database that predates the switch keeps every stored entity enabled.
 
-Portal entry YAML declares `name`, `scheme`, `host`, `port`, `listenIPs`, and `disabled`. A seed applies
+Portal entry YAML declares `name`, `protocol`, `host`, `http`, `listenIPs`, and `enabled`. The flat HTTP block defaults to HTTP/80, HTTPS/443, and `autoHTTPS: true`; automatic redirects require both transports. Legacy `scheme` and top-level `port` inputs are converted to one enabled transport with redirects disabled and cannot be combined with `protocol`. Existing rows migrate one-for-one without changing rule references. Hub publishes enabled entries separately under `portal:entry:*`, including entries with no rules. A seed applies
 entries before rules, so a rule joins the entry that serves its access and keeps
 the name the seed gave it; an entry may route no rule yet. Hub derives the name
 `scheme[:host]:port` only for the entry it creates on its own, which is why the
-entry a rule joins without a declared entry is named after its access. The
+entry a rule joins without a declared entry is named after its access.
 The Portal sections are typed: Hub rejects an entity that declares a field the
 section does not name, so a misspelled or renamed field fails instead of
 silently leaving the entity at its default. The built-in marker is not part of

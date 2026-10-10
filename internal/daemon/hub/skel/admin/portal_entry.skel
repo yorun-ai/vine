@@ -1,7 +1,28 @@
 domain vine.hub.admin
 
 @desc("Portal access entry")
+data PortalEntryHTTP {
+    @desc("Enable HTTP transport")
+    httpEnabled: bool
+    @desc("HTTP listener port")
+    httpPort: int
+    @desc("Enable HTTPS transport")
+    httpsEnabled: bool
+    @desc("HTTPS listener port")
+    httpsPort: int
+    @desc("Redirect HTTP to HTTPS with status 308")
+    autoHTTPS: bool
+}
+data PortalEntryHTTPUpdate {
+ httpEnabled: bool?
+ httpPort: int?
+ httpsEnabled: bool?
+ httpsPort: int?
+ autoHTTPS: bool?
+}
 data PortalEntry {
+ protocol: string
+ http: PortalEntryHTTP
     @desc("Entry ID")
     id: int
 
@@ -23,13 +44,15 @@ data PortalEntry {
     @desc("Entry rule list")
     rules: list<PortalEntryRule>
 
-    @desc("Whether Hub publishes the rules of this entry to Portal")
+    @desc("Whether Hub publishes this entry and its rules to Portal")
     enabled: bool
 
 }
 
 @desc("Portal access entry update parameters")
 data PortalEntryUpdate {
+ protocol: string?
+ http: PortalEntryHTTPUpdate?
     @desc("Entry name")
     name: string?
 
@@ -45,28 +68,30 @@ data PortalEntryUpdate {
     @desc("Listener IP addresses; empty restores the default wildcard TCP listener")
     listenIPs: list<string>?
 
-    @desc("Whether Hub publishes the rules of this entry to Portal")
+    @desc("Whether Hub publishes this entry and its rules to Portal")
     enabled: bool?
 }
 
 @desc("Portal access entry creation parameters")
 data PortalEntryCreation {
+ protocol: string?
+ http: PortalEntryHTTPUpdate?
     @desc("Entry name")
     name: string
 
     @desc("Entry protocol")
-    scheme: string
+    scheme: string?
 
     @desc("Match Host, empty string means no restriction")
     host: string
 
     @desc("Entry port")
-    port: int
+    port: int?
 
     @desc("Listener IP addresses; empty preserves the default wildcard TCP listener")
     listenIPs: list<string>
 
-    @desc("Whether Hub publishes the rules of this entry to Portal; defaults to true")
+    @desc("Whether Hub publishes this entry and its rules to Portal; defaults to true")
     enabled: bool?
 }
 

@@ -220,7 +220,7 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 			t.Cleanup(public.Close)
 			for _, hostPattern := range []string{"shop.example.com", "*.example.com"} {
 				for _, targetPath := range []string{"/internal", "/v2", ""} {
-					rule, ok := newRule(watched.PortalRule{Name: "rule", MatchScheme: "http", MatchHost: hostPattern, ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: targetPath, RouteType: "SITE", RouteSiteName: "web"}, sites)
+					rule, ok := newRule(watched.PortalRule{Name: "rule", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: targetPath, RouteType: "SITE", RouteSiteName: "web"}, watched.PortalEntry{Host: hostPattern}, spec.SchemeHTTP, 80, sites)
 					require.True(t, ok)
 					entry.SetOrUpdateRules([]*_Rule{rule})
 					request, err := http.NewRequest(http.MethodPost, public.URL+"/api/a%2Fb/?q=%2F", strings.NewReader("payload"))
@@ -244,7 +244,7 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 }
 
 func TestEntryTargetPathDispatchesWithinRpcGateway(t *testing.T) {
-	rule, ok := newRule(watched.PortalRule{Name: "rpc", MatchScheme: "http", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: "/inspect", RouteType: "SITE", RouteSiteName: "rpc"}, newTestSiteManager(t, "rpc"))
+	rule, ok := newRule(watched.PortalRule{Name: "rpc", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: "/inspect", RouteType: "SITE", RouteSiteName: "rpc"}, watched.PortalEntry{Host: ""}, spec.SchemeHTTP, 80, newTestSiteManager(t, "rpc"))
 	require.True(t, ok)
 	entry := newEntry(spec.SchemeHTTP, 80, nil)
 	entry.SetOrUpdateRules([]*_Rule{rule})

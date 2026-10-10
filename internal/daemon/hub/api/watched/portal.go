@@ -12,15 +12,36 @@ const (
 	portalRuleKeyFormat = portalRulePrefix + ":%s"
 )
 
+// PortalEntryHTTP is the complete HTTP transport configuration published by Hub.
+type PortalEntryHTTP struct {
+	HttpEnabled  bool `json:"httpEnabled"`
+	HttpPort     int  `json:"httpPort"`
+	HttpsEnabled bool `json:"httpsEnabled"`
+	HttpsPort    int  `json:"httpsPort"`
+	AutoHTTPS    bool `json:"autoHTTPS"`
+}
+
+// PortalEntry owns listener bindings and transport settings independently of rules.
+type PortalEntry struct {
+	Name      string          `json:"name"`
+	Protocol  string          `json:"protocol"`
+	Host      string          `json:"host"`
+	ListenIPs []string        `json:"listenIPs"`
+	Http      PortalEntryHTTP `json:"http"`
+}
+
+// FormatPortalEntryPrefix returns the entry configuration namespace.
+func FormatPortalEntryPrefix() string { return "portal:entry" }
+
+// FormatPortalEntryKey returns the Watch key for a named entry.
+func FormatPortalEntryKey(name string) string { return FormatPortalEntryPrefix() + ":" + name }
+
 type PortalRule struct {
-	Name                    string   `json:"name"`
-	MatchScheme             string   `json:"matchScheme"`
-	MatchHost               string   `json:"matchHost"`
-	MatchPort               int      `json:"matchPort"`
-	ListenIPs               []string `json:"listenIPs"`
-	RouteType               string   `json:"routeType"`
-	RouteSiteName           string   `json:"routeSiteName"`
-	RouteRedirectionPattern string   `json:"routeRedirectionPattern"`
+	EntryName               string `json:"entryName"`
+	Name                    string `json:"name"`
+	RouteType               string `json:"routeType"`
+	RouteSiteName           string `json:"routeSiteName"`
+	RouteRedirectionPattern string `json:"routeRedirectionPattern"`
 	// ResolvedMatchPathPrefix is the effective match path prefix after the
 	// target site mount path has been applied.
 	ResolvedMatchPathPrefix string `json:"resolvedMatchPathPrefix"`

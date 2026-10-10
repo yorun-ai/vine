@@ -395,8 +395,7 @@ func TestSeederPublishesRuleItAggregatesIntoANewEntry(t *testing.T) {
 	// A seed written the 0.19.0 way declares the access on the rule and declares
 	// no entry. Hub aggregates the access into an entry and keeps publishing the
 	// rule, the way a rule that names an entry Hub already stores stays
-	// published. A seed declares the switch as disabled, so leaving it at the
-	// default keeps the rule published.
+	// published. Leaving the enable switch at its default keeps the rule published.
 	configRepo, ruleRepo, certRepo, siteRepo, metadataRepo, watchServer := newTestSeederRepos(t)
 	seedPath := filepath.Join(t.TempDir(), "hub.yaml")
 	require.NoError(t, vfile.WriteString(seedPath, `
@@ -439,36 +438,38 @@ portalRules:
 	assert.True(t, published)
 }
 
-func TestSeederRejectsStoredSwitchName(t *testing.T) {
-	// Hub stores the switch as enabled, and a seed declares it as disabled.
-	// Decoding ignores a field the payload does not declare, so a seed that
-	// still writes enabled would silently keep the entity published: Hub names
-	// the field the seed should declare instead.
-	for _, testCase := range []struct {
-		name    string
-		content string
-	}{
-		{
-			name:    "portal entry",
-			content: "portalEntries:\n  - name: web\n    scheme: http\n    port: 8099\n    enabled: false\n",
-		},
-		{
-			name:    "portal site",
-			content: "portalSites:\n  - name: demo.Web\n    enabled: false\n",
-		},
-		{
-			name:    "portal rule",
-			content: "portalRules:\n  - name: demo.web\n    entryName: web\n    enabled: false\n",
-		},
-		{
-			name:    "portal certificate",
-			content: "portalCerts:\n  - name: demo-cert\n    enabled: false\n",
-		},
-	} {
-		t.Run(testCase.name, func(t *testing.T) {
-			_, err := parseSeedEntities(testCase.content)
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), `declares "enabled"; a seed turns configuration off with "disabled: true"`)
+func TestSeederEnableSwitches(t *testing.T) {
+	for _, section := range []string{"portalEntries", "portalSites", "portalRules", "portalCerts"} {
+		t.Run(section, func(t *testing.T) {
+			for _, fixture := range []struct {
+				fields  string
+				enabled bool
+			}{
+				{"", true},
+				{", enabled: true", true},
+				{", enabled: false", false},
+				{", disabled: false", true},
+				{", disabled: true", false},
+			} {
+				payload, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload](section + ": [{name: demo" + fixture.fields + "}]")
+				require.NoError(t, err)
+				var actual bool
+				switch section {
+				case "portalEntries":
+					actual = payload.PortalEntries[0].toCorePortalEntry().Enabled
+				case "portalSites":
+					actual = payload.PortalSites[0].toCorePortalSite().Enabled
+				case "portalRules":
+					actual = payload.PortalRules[0].toCorePortalRule().Enabled
+				case "portalCerts":
+					actual = payload.PortalCerts[0].toCorePortalCert().Enabled
+				}
+				require.Equal(t, fixture.enabled, actual, fixture.fields)
+			}
+			for _, fields := range []string{", enabled: false, disabled: true", ", enabled: null, disabled: false", ", enabled: null", ", enabled:", ", enabled: nope"} {
+				_, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload](section + ": [{name: demo" + fields + "}]")
+				require.Error(t, err, fields)
+			}
 		})
 	}
 }
@@ -547,8 +548,7 @@ portalRules:
     disabled: true
 portalCerts:
   - name: demo-cert
-    `+testSeederCertificate(t)+`
-    disabled: true
+    enabled: false
 `))
 	seeder := &Seeder{
 		Flag:          newTestSeederFlag(seedPath),
@@ -786,24 +786,25 @@ func newTestSeederRepos(t *testing.T) (*repo.AppConfigRepo, *repo.PortalRuleRepo
 	watchServer := watchserver.NewServerForTest()
 	t.Cleanup(watchServer.AfterAppStop)
 
+	sharedSyncer := testSyncer(watchServer)
 	return &repo.AppConfigRepo{
 		Dao:            &model.AppConfigDao{Dao: rdb.NewDao[*model.AppConfig](gdb)},
 		DescriptorRepo: new(repodescriptor.DescriptorRepo),
-		Syncer:         testSyncer(watchServer),
+		Syncer:         sharedSyncer,
 		Access:         new(configaccess.Access),
 	}, &repo.PortalRuleRepo{
 		Dao:             &model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](gdb)},
-		Syncer:          testSyncer(watchServer),
+		Syncer:          sharedSyncer,
 		Access:          new(configaccess.Access),
-		PortalEntryRepo: &repo.PortalEntryRepo{Dao: &model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](gdb)}, Syncer: testSyncer(watchServer), Access: new(configaccess.Access)},
+		PortalEntryRepo: &repo.PortalEntryRepo{Dao: &model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](gdb)}, Syncer: sharedSyncer, Access: new(configaccess.Access)},
 	}, &repo.PortalCertRepo{
 		Dao:    &model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](gdb)},
-		Syncer: testSyncer(watchServer),
+		Syncer: sharedSyncer,
 		Access: new(configaccess.Access),
 	}, &repo.PortalSiteRepo{
 		Dao:            &model.PortalSiteDao{Dao: rdb.NewDao[*model.PortalSite](gdb)},
 		DescriptorRepo: new(repodescriptor.DescriptorRepo),
-		Syncer:         testSyncer(watchServer),
+		Syncer:         sharedSyncer,
 		Access:         new(configaccess.Access),
 	}, &repo.MetadataRepo{
 		Dao: &model.MetadataDao{Dao: rdb.NewDao[*model.Metadata](gdb)},

@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
@@ -11,6 +12,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/webgw"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/vault"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -27,39 +29,40 @@ type _Key struct {
 }
 
 type _Rule struct {
-	listenIPs       []string
-	name            string
-	matchScheme     spec.Scheme
-	matchHost       string
-	matchPort       int
-	matchPathPrefix string
-	routePathPrefix string
+	autoHTTPSPort    int
+	certificateVault *vault.Vault
+	listenIPs        []string
+	name             string
+	matchScheme      spec.Scheme
+	matchHost        string
+	matchPort        int
+	matchPathPrefix  string
+	routePathPrefix  string
 
 	siteManager     *site.Manager
 	redirectionSite spec.Site
 	routeSiteName   string
 }
 
-func newRule(rule watched.PortalRule, siteManager *site.Manager) (*_Rule, bool) {
+func newRule(rule watched.PortalRule, config watched.PortalEntry, scheme spec.Scheme, port int, siteManager *site.Manager) (*_Rule, bool) {
 	isRedirection := rule.RouteType == routeTypePermanentRedirect || rule.RouteType == routeTypeTemporaryRedirect
 	isEntry := rule.RouteType == routeTypeSite
-	if (!isRedirection && !isEntry) || (strings.HasPrefix(rule.MatchHost, "*.") && !isEntry) {
+	if (!isRedirection && !isEntry) || (strings.HasPrefix(config.Host, "*.") && !isEntry) {
 		entryLogger.Warn("vine.portal entry rule target type is not supported", "rule", rule.Name, "routeType", rule.RouteType)
 		return nil, false
 	}
 
-	ips, err := listenip.Normalize(rule.ListenIPs)
+	ips, err := listenip.Normalize(config.ListenIPs)
 	if err != nil {
 		entryLogger.Error("vine.portal invalid listener IPs", "rule", rule.Name, "error", err)
 		return nil, false
 	}
-	scheme := spec.Scheme(rule.MatchScheme)
 	entryRule := &_Rule{
 		name:            rule.Name,
 		listenIPs:       ips,
 		matchScheme:     scheme,
-		matchHost:       entryRuleHost(rule.MatchHost),
-		matchPort:       entryRulePort(scheme, rule.MatchPort),
+		matchHost:       config.Host,
+		matchPort:       port,
 		matchPathPrefix: rule.ResolvedMatchPathPrefix,
 		routePathPrefix: strings.TrimRight(rule.ResolvedRoutePathPrefix, "/"),
 	}
@@ -74,28 +77,6 @@ func newRule(rule watched.PortalRule, siteManager *site.Manager) (*_Rule, bool) 
 	return entryRule, true
 }
 
-func entryRulePort(scheme spec.Scheme, port int) int {
-	switch scheme {
-	case spec.SchemeHTTP:
-		if port == 0 {
-			port = defaultHTTPEntryPort
-		}
-	case spec.SchemeHTTPS:
-		if port == 0 {
-			port = defaultHTTPSEntryPort
-		}
-	default:
-		vpre.Panicf("unknown port scheme: %s", string(scheme))
-	}
-
-	vpre.Check(port != 0, "unsupported entry scheme: %s", string(scheme))
-	return port
-}
-
-func entryRuleHost(host string) string {
-	return host
-}
-
 func (r _Rule) Key() _Key {
 	return _Key{
 		scheme: r.matchScheme,
@@ -107,7 +88,7 @@ func (r _Rule) Matches(request *http.Request) bool {
 	if !r.matchesHost(requestHost(request)) {
 		return false
 	}
-	return r.matchesPathPrefix(request.URL.Path)
+	return r.matchesPathPrefix(request.URL.Path) && (r.autoHTTPSPort == 0 || r.certificateVault.HasValidCertificate(requestHost(request)))
 }
 
 func (r _Rule) matchesHost(host string) bool {
@@ -135,6 +116,18 @@ func (r _Rule) matchesPathPrefix(path string) bool {
 }
 
 func (r _Rule) Serve(ctx *spec.Context) {
+	if r.autoHTTPSPort != 0 {
+		host := strings.Trim(requestHost(ctx.Request), "[]")
+		if r.autoHTTPSPort != 443 {
+			host = net.JoinHostPort(host, strconv.Itoa(r.autoHTTPSPort))
+		} else if strings.Contains(host, ":") {
+			host = "[" + host + "]"
+		}
+		target := &url.URL{Scheme: "https", Host: host, Path: ctx.Request.URL.Path, RawPath: ctx.Request.URL.RawPath, RawQuery: ctx.Request.URL.RawQuery, ForceQuery: ctx.Request.URL.ForceQuery}
+		ctx.ResponseWriter.Header().Set("Location", target.String())
+		ctx.ResponseWriter.WriteHeader(http.StatusPermanentRedirect)
+		return
+	}
 	if r.redirectionSite != nil {
 		r.redirectionSite.Serve(ctx)
 		return

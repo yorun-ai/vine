@@ -16,7 +16,7 @@ portalCerts:
 portalRules:
 - name: app.rule
   matchHost: '${text}'
-  disabled: '${enabled:true}'
+  enabled: '${enabled:true}'
 `)
 	node, sources, err := resolveSeedInputWithDescriptors(template,
 		[]byte("database: {host: file, port: 5432}"), nil, testVarsDescriptors(),
@@ -28,7 +28,8 @@ portalRules:
 	require.JSONEq(t, `{"host":"last","port":5432}`, payload.AppConfigs[0].Value)
 	require.Equal(t, []string{"a.com", "b.com"}, payload.PortalCerts[0].Domains)
 	require.Equal(t, "https://a.com/?x=a=b,c", payload.PortalRules[0].MatchHost)
-	require.False(t, payload.PortalRules[0].Disabled)
+	require.NotNil(t, payload.PortalRules[0].Enabled)
+	require.False(t, *payload.PortalRules[0].Enabled)
 	require.Equal(t, []string{"database"}, sources["/appConfigs/0/value"].Variables)
 }
 

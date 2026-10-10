@@ -56,6 +56,9 @@ func TestPortalACLAllowsOnlyPortalRuntimeState(t *testing.T) {
 	for name, command := range map[string][]string{
 		"ping":                     {"PING"},
 		"revision":                 {"GET", watch.RevisionKey},
+		"portal entry":             {"GET", "portal:entry:public"},
+		"portal entry scan":        {"SCAN", "0", "MATCH", "portal:entry:*"},
+		"portal entry subscribe":   {"PSUBSCRIBE", "portal:entry:*"},
 		"portal rule":              {"GET", "portal:rule:public"},
 		"portal site":              {"GET", "portal:site:public"},
 		"portal certificate":       {"GET", "portal:cert:production"},

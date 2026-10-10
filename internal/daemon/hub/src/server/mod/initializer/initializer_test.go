@@ -253,10 +253,10 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 	defer watchServer.AfterAppStop()
 	db := _WatchTestStore{watchServer}
 	descriptorRepo := new(repodescriptor.DescriptorRepo)
-	entryRepo := &testPortalEntryRepo{}
+	entryRepo := &testPortalEntryRepo{entries: []*core.PortalEntry{new(core.NormalizePortalEntry(core.PortalEntry{Id: 1, Name: "web", Protocol: "http", Enabled: true}))}}
 	ruleRepo := &testPortalRuleRepo{
 		rules: []*core.PortalRule{
-			{Id: 1, Name: "demo-entry", MatchPathPrefix: "/admin", RouteType: "SITE", RouteSiteName: "admin@demo.app", Enabled: true},
+			{Id: 1, EntryId: 1, Name: "demo-entry", MatchPathPrefix: "/admin", RouteType: "SITE", RouteSiteName: "admin@demo.app", Enabled: true},
 		},
 	}
 	siteRepo := &testPortalSiteRepo{
