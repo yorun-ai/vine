@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 	"go.yorun.ai/vine/internal/app"
@@ -35,6 +36,8 @@ type Subscription interface {
 
 type ClientOps interface {
 	Load(key string) (string, bool)
+	LoadList(prefix string) map[string]string
+	LoadKeysAndSubscribe(ctx context.Context, keys []string, handle func(event Event)) (map[string]string, Subscription, error)
 	LoadAndSubscribe(ctx context.Context, key string, handle func(event Event)) (string, bool, Subscription)
 	LoadListAndSubscribe(ctx context.Context, prefix string, handle func(event Event)) (map[string]string, Subscription)
 }
@@ -63,9 +66,10 @@ type Client struct {
 	redisClient *redis.Client
 	repair      func(option *Option) bool
 
-	watcherMutex   sync.Mutex
-	lifecycleMutex sync.Mutex
-	watchers       map[*_Watcher]struct{}
+	watcherMutex  sync.Mutex
+	lifecycleOnce sync.Once
+	lifecycle     chan struct{}
+	watchers      map[*_Watcher]struct{}
 }
 
 func (*Client) InitOption(*Option) {}
@@ -128,8 +132,17 @@ func (c *Client) Close() {
 	}
 }
 
-func (c *Client) lockLifecycle()   { c.lifecycleMutex.Lock() }
-func (c *Client) unlockLifecycle() { c.lifecycleMutex.Unlock() }
+func (c *Client) lockLifecycle() { _ = c.lockLifecycleContext(context.Background()) }
+func (c *Client) lockLifecycleContext(ctx context.Context) error {
+	c.lifecycleOnce.Do(func() { c.lifecycle = make(chan struct{}, 1) })
+	select {
+	case c.lifecycle <- struct{}{}:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+func (c *Client) unlockLifecycle() { <-c.lifecycle }
 
 func (c *Client) addWatcher(watcher *_Watcher) {
 	c.watcherMutex.Lock()
@@ -192,65 +205,102 @@ func (c *Client) Load(key string) (string, bool) {
 	return value, true
 }
 
-func (c *Client) loadScanKeyValues(prefix string) map[string]string {
-	redisClient, ctx := c.currentRedisClient()
+const snapshotTimeout = 5 * time.Second
+const snapshotBatchSize = 256
 
-	pattern := formatRedisListPattern(prefix)
-	keys := make([]string, 0)
-	var cursor uint64
-	for {
-		batch, nextCursor, err := redisClient.Scan(ctx, cursor, pattern, 1000).Result()
-		vpre.CheckNilError(err, "scan redis keys failed")
-		keys = append(keys, batch...)
-		if nextCursor == 0 {
-			break
-		}
-		cursor = nextCursor
-	}
-
-	valuesByKey := map[string]string{}
-	for _, key := range keys {
-		value, ok := c.Load(key)
-		if !ok {
-			continue
-		}
-		valuesByKey[key] = value
-	}
-	return valuesByKey
+// LoadList returns a revision-consistent prefix snapshot without retaining a subscription.
+func (c *Client) LoadList(prefix string) map[string]string {
+	c.lockLifecycle()
+	defer c.unlockLifecycle()
+	_, ctx := c.currentRedisClient()
+	values, _, err := c.loadStableSnapshot(ctx, nil, prefix)
+	vpre.CheckNilError(err, "load redis snapshot failed")
+	return values
 }
 
-func (c *Client) loadStableValue(key string) (string, bool, uint64) {
+// loadStableSnapshot uses bounded pipelines and a revision fence. The deadline
+// also bounds retries when unrelated writes keep moving the global revision.
+func (c *Client) loadStableSnapshot(ctx context.Context, keys []string, prefix string) (map[string]string, uint64, error) {
+	ctx, cancel := context.WithTimeout(ctx, snapshotTimeout)
+	defer cancel()
+	client, _ := c.currentRedisClient()
 	for {
-		revision1 := c.loadRevision()
-		value, ok := c.Load(key)
-		revision2 := c.loadRevision()
-		if revision1 == revision2 {
-			return value, ok, revision2
+		if err := ctx.Err(); err != nil {
+			return nil, 0, err
+		}
+		before, err := readRevision(ctx, client)
+		if err != nil {
+			return nil, 0, err
+		}
+		selected := keys
+		if prefix != "" {
+			selected = nil
+			var cursor uint64
+			for {
+				batch, next, err := client.Scan(ctx, cursor, formatRedisListPattern(prefix), 1000).Result()
+				if err != nil {
+					return nil, 0, err
+				}
+				selected = append(selected, batch...)
+				cursor = next
+				if cursor == 0 {
+					break
+				}
+			}
+		}
+		values, err := readKeyValues(ctx, client, selected)
+		if err != nil {
+			return nil, 0, err
+		}
+		after, err := readRevision(ctx, client)
+		if err != nil {
+			return nil, 0, err
+		}
+		if before == after {
+			return values, after, nil
 		}
 	}
 }
 
-func (c *Client) loadStableScanKeyValues(prefix string) (map[string]string, uint64) {
-	for {
-		revision1 := c.loadRevision()
-		valuesByKey := c.loadScanKeyValues(prefix)
-		revision2 := c.loadRevision()
-		if revision1 == revision2 {
-			return valuesByKey, revision2
+func readKeyValues(ctx context.Context, client *redis.Client, keys []string) (map[string]string, error) {
+	values := make(map[string]string, len(keys))
+	for offset := 0; offset < len(keys); offset += snapshotBatchSize {
+		batch := keys[offset:min(offset+snapshotBatchSize, len(keys))]
+		pipeline := client.Pipeline()
+		commands := make([]*redis.StringCmd, len(batch))
+		for i, key := range batch {
+			commands[i] = pipeline.Get(ctx, key)
+		}
+		_, err := pipeline.Exec(ctx)
+		if err != nil && !errors.Is(err, redis.Nil) {
+			return nil, err
+		}
+		for i, command := range commands {
+			value, err := command.Result()
+			if errors.Is(err, redis.Nil) {
+				continue
+			}
+			if err != nil {
+				return nil, err
+			}
+			values[batch[i]] = value
 		}
 	}
+	return values, nil
 }
 
-func (c *Client) loadRevision() uint64 {
-	value, ok := c.Load(RevisionKey)
-	if !ok || value == "" {
-		return 0
+func readRevision(ctx context.Context, client *redis.Client) (uint64, error) {
+	value, err := client.Get(ctx, RevisionKey).Result()
+	if errors.Is(err, redis.Nil) {
+		return 0, nil
 	}
-	revision, err := strconv.ParseUint(value, 10, 64)
 	if err != nil {
-		return 0
+		return 0, err
 	}
-	return revision
+	if value == "" {
+		return 0, nil
+	}
+	return strconv.ParseUint(value, 10, 64)
 }
 
 func formatRedisListPattern(prefix string) string {

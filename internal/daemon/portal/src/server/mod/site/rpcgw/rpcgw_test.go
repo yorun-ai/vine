@@ -23,6 +23,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/desc"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/computil"
@@ -790,12 +791,16 @@ func newTestAccess(t *testing.T) *access.Access {
 		Watch:   watchClient,
 	}
 	epmgrManager.DIInit()
+	descriptors := new(desc.Manager{Context: t.Context(), Watch: watchClient})
+	descriptors.DIInit()
+	t.Cleanup(descriptors.AfterAppStop)
 	manager := &access.Access{
 		Context: context.Background(),
-		Watch:   watchClient,
+		Desc:    descriptors,
 		Epmgr:   epmgrManager,
 	}
 	manager.DIInit()
+	t.Cleanup(manager.AfterAppStop)
 	return manager
 }
 
@@ -804,7 +809,7 @@ func newTestDescriptorWatch(t *testing.T) *watchtest.Client {
 		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.DescriptorActor{
 			SkelName: "demo.UserActor",
 		}),
-		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{Api: true,
 			SkelName: "demo.UserService",
 			AuthMode: skeldesc.AuthModeOptional,
 			Audiences: []*skeldesc.ActorAudience{
@@ -940,8 +945,12 @@ func TestRpcGatewayRemovesAuthorizationBeforeHTTPForwarding(t *testing.T) {
 	watchClient.SetValue(watched.FormatRpcServiceRegistrationKey("demo.AuthService", "demo.auth", "auth-instance"), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{Endpoint: authEndpoint, ServiceName: "demo.AuthService", AppName: "demo.auth", AppInstanceId: "auth-instance"}))
 	authEpmgr := new(epmgr.Manager{Context: context.Background(), Watch: watchClient})
 	authEpmgr.DIInit()
-	target.access = new(access.Access{Context: context.Background(), Watch: watchClient, Epmgr: authEpmgr})
+	descriptors := new(desc.Manager{Context: t.Context(), Watch: watchClient})
+	descriptors.DIInit()
+	t.Cleanup(descriptors.AfterAppStop)
+	target.access = new(access.Access{Context: t.Context(), Desc: descriptors, Epmgr: authEpmgr})
 	target.access.DIInit()
+	t.Cleanup(target.access.AfterAppStop)
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/invoke/demo.UserService/Get", strings.NewReader("request"))
 	setTestAuthHeaders(request)
 	request.Header.Set("Authorization", "key token")

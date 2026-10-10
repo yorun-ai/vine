@@ -49,6 +49,7 @@ case "${scope}" in
       ./internal/daemon/portal/src/server/cacheutil
       ./internal/daemon/portal/src/server/comp/hubwatch
       ./internal/daemon/portal/src/server/mod/access
+      ./internal/daemon/portal/src/server/mod/desc
       ./internal/daemon/portal/src/server/mod/entry
       ./internal/daemon/portal/src/server/mod/epmgr
       ./internal/daemon/portal/src/server/mod/site/...

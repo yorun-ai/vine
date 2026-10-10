@@ -18,6 +18,7 @@ import (
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/desc"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/computil"
@@ -544,8 +545,12 @@ func newTestWebGatewayWithCors(t *testing.T, valuesByKey map[string]string, cors
 	}
 	valuesByKey[watched.FormatDescriptorActorKey("demo.ClientActor")] = vcode.MustMarshalJsonS(watched.DescriptorActor{SkelName: "demo.ClientActor"})
 	epmgrManager := newTestEpmgr(t, valuesByKey)
-	accessManager := &access.Access{Context: context.Background(), Watch: watchtest.New(t, valuesByKey), Epmgr: epmgrManager}
+	descriptors := new(desc.Manager{Context: t.Context(), Watch: watchtest.New(t, valuesByKey)})
+	descriptors.DIInit()
+	t.Cleanup(descriptors.AfterAppStop)
+	accessManager := &access.Access{Context: t.Context(), Desc: descriptors, Epmgr: epmgrManager}
 	accessManager.DIInit()
+	t.Cleanup(accessManager.AfterAppStop)
 	return New(context.Background(), meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"), accessManager, epmgrManager, watched.PortalSite{
 		Name:     "demo-web",
 		Type:     "WEBGW",

@@ -3,6 +3,8 @@ package watch
 import (
 	"context"
 	"encoding/json/v2"
+	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -14,7 +16,9 @@ import (
 func (c *Client) LoadAndSubscribe(ctx context.Context, key string, handle func(event Event)) (string, bool, Subscription) {
 	c.lockLifecycle()
 	defer c.unlockLifecycle()
-	value, ok, _ := c.loadStableValue(key)
+	values, _, err := c.loadStableSnapshot(ctx, []string{key}, "")
+	vpre.CheckNilError(err, "load redis key failed")
+	value, ok := values[key]
 	watcher := &_Watcher{
 		client:       c,
 		ctx:          ctx,
@@ -23,14 +27,15 @@ func (c *Client) LoadAndSubscribe(ctx context.Context, key string, handle func(e
 		snapshot:     &_WatchKeySnapshot{client: c, key: key, value: value, hasValue: ok},
 		subscription: newSubscription(ctx, handle),
 	}
-	c.subscribeWatcher(watcher)
+	vpre.CheckNilError(c.subscribeWatcher(watcher), "subscribe failed")
 	return value, ok, watcher.subscription
 }
 
 func (c *Client) LoadListAndSubscribe(ctx context.Context, prefix string, handle func(event Event)) (map[string]string, Subscription) {
 	c.lockLifecycle()
 	defer c.unlockLifecycle()
-	valuesByKey, _ := c.loadStableScanKeyValues(prefix)
+	valuesByKey, _, err := c.loadStableSnapshot(ctx, nil, prefix)
+	vpre.CheckNilError(err, "load redis list failed")
 	watcher := &_Watcher{
 		client:       c,
 		ctx:          ctx,
@@ -39,11 +44,42 @@ func (c *Client) LoadListAndSubscribe(ctx context.Context, prefix string, handle
 		snapshot:     &_WatchListSnapshot{client: c, prefix: prefix, valuesByKey: vmap.Clone(valuesByKey)},
 		subscription: newSubscription(ctx, handle),
 	}
-	c.subscribeWatcher(watcher)
+	vpre.CheckNilError(c.subscribeWatcher(watcher), "subscribe failed")
 	return valuesByKey, watcher.subscription
 }
 
-func (c *Client) subscribeWatcher(watcher *_Watcher) {
+// LoadKeysAndSubscribe loads a stable key snapshot and watches those exact keys
+// over one PubSub connection. Like other subscriptions, it reconciles after
+// attachment and reconnect and buffers events until Start. keys must be nonempty
+// literal Watch keys, without Redis pattern characters.
+func (c *Client) LoadKeysAndSubscribe(ctx context.Context, keys []string, handle func(event Event)) (map[string]string, Subscription, error) {
+	if err := c.lockLifecycleContext(ctx); err != nil {
+		return nil, nil, err
+	}
+	defer c.unlockLifecycle()
+	keys = append([]string(nil), keys...)
+	vpre.Check(len(keys) > 0, "key subscription requires at least one key")
+	for _, key := range keys {
+		vpre.Check(key != "" && !strings.ContainsAny(key, "*?[]\\"), "key subscription requires literal keys")
+	}
+	slices.Sort(keys)
+	keys = slices.Compact(keys)
+	values, _, err := c.loadStableSnapshot(ctx, keys, "")
+	if err != nil {
+		return nil, nil, err
+	}
+	watcher := &_Watcher{
+		client: c, ctx: ctx, keys: keys, handle: handle,
+		snapshot:     &_WatchListSnapshot{client: c, keys: keys, valuesByKey: vmap.Clone(values)},
+		subscription: newSubscription(ctx, handle),
+	}
+	if err := c.subscribeWatcher(watcher); err != nil {
+		return nil, nil, err
+	}
+	return values, watcher.subscription, nil
+}
+
+func (c *Client) subscribeWatcher(watcher *_Watcher) error {
 	redisClient, _ := c.currentRedisClient()
 	c.addWatcher(watcher)
 	succeeded := false
@@ -52,8 +88,11 @@ func (c *Client) subscribeWatcher(watcher *_Watcher) {
 			c.removeWatcher(watcher)
 		}
 	}()
-	watcher.start(redisClient)
+	if err := watcher.start(redisClient); err != nil {
+		return err
+	}
 	succeeded = true
+	return nil
 }
 
 // _Watcher owns one subscription to a key or key prefix. It outlives a
@@ -65,6 +104,7 @@ type _Watcher struct {
 	ctx      context.Context
 	key      string
 	prefix   string
+	keys     []string
 	handle   func(event Event)
 	snapshot _Snapshot
 
@@ -78,14 +118,14 @@ type _Watcher struct {
 
 // _Snapshot reconciles watched values with the events delivered for them.
 type _Snapshot interface {
-	handleSubscription(handle func(event Event)) uint64
+	handleSubscription(handle func(event Event)) (uint64, error)
 	handleEvent(handle func(event Event)) func(event Event)
 }
 
-func (w *_Watcher) start(redisClient *redis.Client) {
+func (w *_Watcher) start(redisClient *redis.Client) error {
 	if redisClient == nil || w.ctx.Err() != nil {
 		w.client.removeWatcher(w)
-		return
+		return w.ctx.Err()
 	}
 
 	consumeCtx, cancel := context.WithCancel(w.ctx)
@@ -97,16 +137,26 @@ func (w *_Watcher) start(redisClient *redis.Client) {
 			_ = pubsub.Close()
 		}
 	}()
-	if _, err := pubsub.Receive(consumeCtx); err != nil {
-		_ = pubsub.Close()
-		cancel()
-		vpre.Panic(err)
+	attachCtx, attachCancel := context.WithTimeout(consumeCtx, snapshotTimeout)
+	defer attachCancel()
+	stopClose := context.AfterFunc(attachCtx, func() { _ = pubsub.Close() })
+	defer stopClose()
+	// Redis acknowledges each pattern separately. Only a complete group is a
+	// subscription barrier; a single acknowledgement must not reload all keys.
+	for {
+		message, err := pubsub.Receive(attachCtx)
+		if err != nil {
+			return err
+		}
+		if acknowledgement, ok := message.(*redis.Subscription); ok && acknowledgement.Count == w.subscriptionCount() {
+			break
+		}
 	}
 
 	// Reconcile before consuming: the reload covers everything that changed
 	// while no subscription was attached, and later events are filtered by the
 	// resulting revision.
-	reader := &Client{ctx: consumeCtx, redisClient: redisClient}
+	reader := &Client{ctx: attachCtx, redisClient: redisClient}
 	switch snapshot := w.snapshot.(type) {
 	case *_WatchKeySnapshot:
 		snapshot.client = reader
@@ -114,8 +164,15 @@ func (w *_Watcher) start(redisClient *redis.Client) {
 		snapshot.client = reader
 	}
 	handleEvent := w.snapshot.handleEvent(w.enqueue)
-	revision := w.snapshot.handleSubscription(handleEvent)
+	revision, err := w.snapshot.handleSubscription(handleEvent)
+	if err != nil {
+		return err
+	}
+	if !stopClose() || attachCtx.Err() != nil {
+		return attachCtx.Err()
+	}
 
+	reader.ctx = consumeCtx
 	w.mutex.Lock()
 	w.cancel = cancel
 	w.pubsub = pubsub
@@ -126,11 +183,17 @@ func (w *_Watcher) start(redisClient *redis.Client) {
 
 	go func() {
 		defer close(done)
-		w.client.consumePatternMessages(consumeCtx, pubsub.ChannelWithSubscriptions(), revision, w.snapshot.handleSubscription, handleEvent, pubsub.Close)
+		w.client.consumePatternMessages(consumeCtx, pubsub.ChannelWithSubscriptions(), revision, w.subscriptionCount(), w.snapshot.handleSubscription, handleEvent, pubsub.Close)
 	}()
+	return nil
 }
 
+func (w *_Watcher) subscriptionCount() int { return max(1, len(w.keys)) }
+
 func (w *_Watcher) subscribe(ctx context.Context, redisClient *redis.Client) *redis.PubSub {
+	if len(w.keys) > 0 {
+		return redisClient.PSubscribe(ctx, w.keys...)
+	}
 	if w.key != "" {
 		return redisClient.Subscribe(ctx, w.key)
 	}
@@ -143,7 +206,10 @@ func (w *_Watcher) enqueue(event Event) {
 
 func (w *_Watcher) restart(redisClient *redis.Client) {
 	w.stop()
-	w.start(redisClient)
+	err := w.start(redisClient)
+	if w.ctx.Err() == nil {
+		vpre.CheckNilError(err, "restart subscription failed")
+	}
 }
 
 func (w *_Watcher) stop() {
@@ -238,7 +304,8 @@ func (c *Client) consumePatternMessages(
 	ctx context.Context,
 	messageCh <-chan any,
 	revision uint64,
-	handleSubscription func(handle func(event Event)) uint64,
+	subscriptionCount int,
+	handleSubscription func(handle func(event Event)) (uint64, error),
 	handleEvent func(event Event),
 	closeFn func() error,
 ) {
@@ -255,15 +322,11 @@ func (c *Client) consumePatternMessages(
 			}
 			switch message := message.(type) {
 			case *redis.Subscription:
-				if message.Kind == "subscribe" || message.Kind == "psubscribe" {
+				if (message.Kind == "subscribe" || message.Kind == "psubscribe") && message.Count == subscriptionCount {
 					for {
-						loaded := false
-						func() {
-							defer func() { _ = recover() }()
-							revision = handleSubscription(handleEvent)
-							loaded = true
-						}()
-						if loaded {
+						nextRevision, err := handleSubscription(handleEvent)
+						if err == nil {
+							revision = nextRevision
 							break
 						}
 						select {
@@ -295,9 +358,14 @@ type _WatchKeySnapshot struct {
 	hasValue bool
 }
 
-func (s *_WatchKeySnapshot) handleSubscription(handle func(event Event)) uint64 {
-	value, ok, revision := s.client.loadStableValue(s.key)
-	return s.reconcile(value, ok, revision, handle)
+func (s *_WatchKeySnapshot) handleSubscription(handle func(event Event)) (uint64, error) {
+	_, ctx := s.client.currentRedisClient()
+	values, revision, err := s.client.loadStableSnapshot(ctx, []string{s.key}, "")
+	if err != nil {
+		return 0, err
+	}
+	value, ok := values[s.key]
+	return s.reconcile(value, ok, revision, handle), nil
 }
 
 func (s *_WatchKeySnapshot) reconcile(value string, ok bool, revision uint64, handle func(event Event)) uint64 {
@@ -346,12 +414,17 @@ func (s *_WatchKeySnapshot) handleEvent(handle func(event Event)) func(event Eve
 type _WatchListSnapshot struct {
 	client      *Client
 	prefix      string
+	keys        []string
 	valuesByKey map[string]string
 }
 
-func (s *_WatchListSnapshot) handleSubscription(handle func(event Event)) uint64 {
-	valuesByKey, revision := s.client.loadStableScanKeyValues(s.prefix)
-	return s.reconcile(valuesByKey, revision, handle)
+func (s *_WatchListSnapshot) handleSubscription(handle func(event Event)) (uint64, error) {
+	_, ctx := s.client.currentRedisClient()
+	values, revision, err := s.client.loadStableSnapshot(ctx, s.keys, s.prefix)
+	if err != nil {
+		return 0, err
+	}
+	return s.reconcile(values, revision, handle), nil
 }
 
 func (s *_WatchListSnapshot) reconcile(valuesByKey map[string]string, revision uint64, handle func(event Event)) uint64 {

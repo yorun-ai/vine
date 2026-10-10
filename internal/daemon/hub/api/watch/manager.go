@@ -106,12 +106,13 @@ func (c *Client) closeRedisClient() {
 
 func redisOptionsFor(option *Option, addr string) *redis.Options {
 	redisOptions := &redis.Options{
-		Protocol:        2,
-		DisableIdentity: true,
-		Username:        option.Username,
-		Password:        option.Password,
-		TLSConfig:       option.TLSConfig,
-		Addr:            addr,
+		Protocol:              2,
+		ContextTimeoutEnabled: true,
+		DisableIdentity:       true,
+		Username:              option.Username,
+		Password:              option.Password,
+		TLSConfig:             option.TLSConfig,
+		Addr:                  addr,
 	}
 	if option.Username != "" && option.Password == "" {
 		// go-redis omits HELLO AUTH when the password is empty. Link and Portal

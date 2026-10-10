@@ -19,6 +19,7 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/desc"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
@@ -211,8 +212,12 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 			}
 			endpoints := &epmgr.Manager{Context: ctx, Watch: watchtest.New(t, values)}
 			endpoints.DIInit()
-			accessManager := &access.Access{Context: ctx, Watch: watchtest.New(t, values), Epmgr: endpoints}
+			descriptors := new(desc.Manager{Context: ctx, Watch: watchtest.New(t, values)})
+			descriptors.DIInit()
+			t.Cleanup(descriptors.AfterAppStop)
+			accessManager := &access.Access{Context: ctx, Desc: descriptors, Epmgr: endpoints}
 			accessManager.DIInit()
+			t.Cleanup(accessManager.AfterAppStop)
 			sites := &site.Manager{Context: ctx, CurrentApp: meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"), Watch: watchtest.New(t, values), Epmgr: endpoints, Access: accessManager}
 			sites.DIInit()
 			entry := newEntry(spec.SchemeHTTP, 80, nil)

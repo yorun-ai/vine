@@ -153,11 +153,13 @@ Hub has four primary responsibilities:
 3. Watch distribution layer
    `watchserver` maintains an in-memory Watch dataset. Configuration, application state, Rpc/Web endpoints, and descriptors are synchronized into it. Link and Portal read snapshots and subscribe to change events through Redis.
 
+   Descriptor keys cover domain, actor, service, resource, web, data, enum, config, event, and task definitions, using the selected main version of each definition. Standalone service keys contain only API services; domain keys retain the complete domain contract, including internal services. Config descriptors contain definitions, not configuration values.
+
    The embedded Redis protocol requires authentication before any data command. It defines three users with resource-level ACLs:
 
    - `vine.hub` has full command and key access. Its password is generated randomly for the current process.
    - `vine.link` can read configuration, Rpc endpoint registrations, and the revision key; it can subscribe only to configuration channels and Rpc registration patterns.
-   - `vine.portal` can read Portal rules, sites, certificates, actor/service/web/resource descriptors, Rpc/Web endpoint registrations, and the revision key; it can subscribe only to the corresponding list patterns.
+   - `vine.portal` can read Portal rules, sites, certificates, all descriptors, Rpc/Web endpoint registrations, and the revision key; it can subscribe only to the corresponding list patterns.
 
    Link and Portal use empty Redis passwords for in-process mode and separated-deployment debugging. With backend mTLS enabled, the client certificate authenticates the caller and binds its SPIFFE identity to the matching Redis username. Without mTLS, the usernames only select least-privilege roles and do not authenticate the caller, so the Redis endpoint must remain on loopback or a trusted private network protected by a firewall.
 

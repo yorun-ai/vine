@@ -8,49 +8,34 @@ import (
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/mtls"
-	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
-	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/desc"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 )
 
 type Access struct {
 	app.BaseModule
 
-	Context  context.Context       `inject:""`
-	Watch    hubapiwatch.ClientOps `inject:""`
-	Epmgr    *epmgr.Manager        `inject:""`
-	Identity *mtls.Identity        `inject:""`
+	Context  context.Context `inject:""`
+	Desc     *desc.Manager   `inject:""`
+	Epmgr    *epmgr.Manager  `inject:""`
+	Identity *mtls.Identity  `inject:""`
 
-	mutex                             sync.RWMutex
-	actorNamesByKey                   map[string]string
-	serviceNamesByKey                 map[string]string
-	webNamesByKey                     map[string]string
-	resourceNamesByKey                map[string]string
-	actorsBySkelName                  map[string]*watched.DescriptorActor
-	servicesBySkelName                map[string]*watched.DescriptorService
-	websBySkelName                    map[string]*watched.DescriptorWeb
-	resourcesBySkelName               map[string]*watched.DescriptorResource
-	authServiceWatchersByActorKey     map[string]*epmgr.Watcher
-	permServiceWatchersByActorKey     map[string]*epmgr.Watcher
-	checkServiceWatchersByResourceKey map[string]*epmgr.Watcher
+	mutex          sync.Mutex
+	serviceWatches map[string]*_ServiceWatch
+	watchCancel    context.CancelFunc
+	stopped        bool
+}
+
+type _ServiceWatch struct {
+	name    string
+	watcher *epmgr.Watcher
 }
 
 func (a *Access) DIInit() {
-	a.actorNamesByKey = map[string]string{}
-	a.serviceNamesByKey = map[string]string{}
-	a.webNamesByKey = map[string]string{}
-	a.resourceNamesByKey = map[string]string{}
-	a.actorsBySkelName = map[string]*watched.DescriptorActor{}
-	a.servicesBySkelName = map[string]*watched.DescriptorService{}
-	a.websBySkelName = map[string]*watched.DescriptorWeb{}
-	a.resourcesBySkelName = map[string]*watched.DescriptorResource{}
-	a.authServiceWatchersByActorKey = map[string]*epmgr.Watcher{}
-	a.permServiceWatchersByActorKey = map[string]*epmgr.Watcher{}
-	a.checkServiceWatchersByResourceKey = map[string]*epmgr.Watcher{}
-	a.loadActors()
-	a.loadServices()
-	a.loadWebs()
-	a.loadResources()
+	a.serviceWatches = map[string]*_ServiceWatch{}
+	ctx, cancel := context.WithCancel(a.Context)
+	a.watchCancel = cancel
+	a.Desc.ObserveAdmission(ctx, a.handleAdmission)
 }
 
 func (a *Access) AllowRpc(operation *RpcOperation) bool {
@@ -60,14 +45,14 @@ func (a *Access) AllowRpc(operation *RpcOperation) bool {
 		return false
 	}
 
-	actorDescriptor, ok := a.actorDescriptor(operation.ActorVia.ActorSkelName)
+	actorDescriptor, ok := a.Desc.Actor(operation.ActorVia.ActorSkelName)
 	if !ok {
 		operation.writeError(ex.ClientForbidden, "not allowed")
 		return false
 	}
 	operation.actorDescriptor = actorDescriptor
 
-	serviceDescriptor, ok := a.serviceDescriptor(operation.ServiceName)
+	serviceDescriptor, ok := a.Desc.Service(operation.ServiceName)
 	if !ok {
 		operation.writeError(ex.ServiceUnavailable, "rpc service descriptor is not found: "+operation.ServiceName)
 		return false
@@ -93,18 +78,63 @@ func (a *Access) AuthWeb(operation *WebOperation) bool {
 
 	mode := defaultAuthMode
 	if operation.WebName != "" {
-		descriptor, ok := a.webDescriptor(operation.WebName)
+		descriptor, ok := a.Desc.Web(operation.WebName)
 		if !ok {
 			operation.writeError(ex.ServiceUnavailable, "web descriptor is not found: "+operation.WebName)
 			return false
 		}
 		mode = descriptor.AuthMode
 	}
-	actorDescriptor, ok := a.actorDescriptor(operation.ActorVia.ActorSkelName)
+	actorDescriptor, ok := a.Desc.Actor(operation.ActorVia.ActorSkelName)
 	if !ok {
 		operation.writeError(ex.ClientForbidden, "not allowed")
 		return false
 	}
 	operation.actorDescriptor = actorDescriptor
 	return operation.authenticate(mode, operation.writeError, operation.setActor)
+}
+
+func (a *Access) handleAdmission(snapshot desc.AdmissionSnapshot) {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+	if a.stopped {
+		return
+	}
+	desired := map[string]string{}
+	for name, actor := range snapshot.Actors {
+		if actor.Auth != nil {
+			desired["auth:"+name] = actor.Auth.Service.SkelName
+		}
+		if actor.Permission != nil {
+			desired["permission:"+name] = actor.Permission.Service.SkelName
+		}
+	}
+	for name, resource := range snapshot.Resources {
+		if resource.CheckService != nil {
+			desired["check:"+name] = resource.CheckService.SkelName
+		}
+	}
+	for key, watch := range a.serviceWatches {
+		if desired[key] != watch.name {
+			watch.watcher.Release()
+			delete(a.serviceWatches, key)
+		}
+	}
+	for key, name := range desired {
+		if a.serviceWatches[key] == nil {
+			a.serviceWatches[key] = new(_ServiceWatch{name: name, watcher: a.Epmgr.WatchRpc(name)})
+		}
+	}
+}
+
+// AfterAppStop releases admission observers and endpoint subscriptions.
+func (a *Access) AfterAppStop() {
+	a.watchCancel()
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+	a.stopped = true
+	for _, watch := range a.serviceWatches {
+		watch.watcher.Release()
+	}
+	clear(a.serviceWatches)
 }

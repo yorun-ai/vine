@@ -139,11 +139,13 @@ Hub 的职责可以拆成四条主线：
 3. Watch 分发层
    `watchserver` 维护一份内存 Redis 数据。配置、应用状态、Rpc/Web endpoint 和 descriptor 都会同步写入其中，Link 与 Portal 通过 Redis 读取快照并监听变更事件。
 
+   Descriptor key 包含 domain、actor、service、resource、web、data、enum、config、event、task 的定义，各自发布选中的主版本。独立 service key 只包含 API Service；domain key 保留完整域契约，包括内部 Service。Config descriptor 只有定义，不包含配置值。
+
    内嵌 Redis 协议要求客户端在执行数据命令前完成认证，并为三个用户分别配置资源级 ACL：
 
    - `vine.hub` 拥有完整的命令与 key 权限，密码在当前进程中随机生成。
    - `vine.link` 可以读取配置、Rpc endpoint 注册与 revision key，并且只能订阅配置 channel 和 Rpc 注册 pattern。
-   - `vine.portal` 可以读取 Portal rule、site、证书、actor/service/web/resource descriptor、Rpc/Web endpoint 注册与 revision key，并且只能订阅对应的列表 pattern。
+   - `vine.portal` 可以读取 Portal rule、site、证书、所有 descriptor、Rpc/Web endpoint 注册与 revision key，并且只能订阅对应的列表 pattern。
 
    Link 与 Portal 的 Redis 密码为空，用于进程内模式和分离部署调试。启用后端 mTLS 时，客户端证书会认证调用方，并把其 SPIFFE 身份绑定到对应的 Redis 用户名。未启用 mTLS 时，用户名只能选择最小权限角色，不能认证调用方，因此 Redis endpoint 必须位于回环地址或受信私有网络，并通过防火墙限制访问。
 
