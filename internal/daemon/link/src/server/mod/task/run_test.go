@@ -27,6 +27,46 @@ import (
 
 const testPathTask = "/task"
 
+func TestManagerRetriesFailedMessageThroughJetStreamDelay(t *testing.T) {
+	oldFactory, oldRun := newAppTaskServiceClient, runAppTask
+	t.Cleanup(func() { newAppTaskServiceClient, runAppTask = oldFactory, oldRun })
+	manager, cleanup := newTestManager(t)
+	t.Cleanup(cleanup)
+	attempts := make(chan time.Time, 2)
+	var count atomic.Int64
+	newAppTaskServiceClient = func(context.Context, meta.App, string, taskspec.NATSMessage) appskeled.TaskServiceClientER {
+		return nil
+	}
+	runAppTask = func(appskeled.TaskServiceClientER, appskeled.TaskRun, time.Duration) ex.Error {
+		attempts <- time.Now()
+		if count.Add(1) == 1 {
+			return ex.New(ex.Internal, "temporary task failure")
+		}
+		return nil
+	}
+	manager.AppMinder.RegisterInstance(minder.AppRegistration{
+		AppInfo:      meta.MustNewApp("demo.app", "1.0.0", "11111111-1111-1111-1111-111111111111"),
+		TaskEndpoint: testLocalAppEndpoint(8080) + testPathTask,
+		TaskRunners: []skeled.TaskRunnerRegistration{{
+			TaskSkelName: "demo.task", TimeoutMs: 2500, Concurrency: 1,
+		}},
+	})
+	manager.LaunchTask(skeled.TaskLaunch{TaskSkelName: "demo.task"})
+	var first time.Time
+	for attempt := range 2 {
+		select {
+		case at := <-attempts:
+			if attempt == 0 {
+				first = at
+			} else {
+				require.GreaterOrEqual(t, at.Sub(first), 900*time.Millisecond, "JetStream must delay redelivery")
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatal("task delivery timeout")
+		}
+	}
+}
+
 func TestManagerRegistersListenerAndDispatchesRun(t *testing.T) {
 	manager, cleanup := newTestManager(t)
 	defer cleanup()
@@ -382,12 +422,27 @@ func testLocalAppEndpoint(port int) string {
 // Unused jetstream.Msg methods deliberately remain unimplemented.
 type dispatcherMessage struct {
 	jetstream.Msg
-	acked   atomic.Int64
-	nacked  atomic.Int64
-	renewed atomic.Int64
+	acked       atomic.Int64
+	nacked      atomic.Int64
+	renewed     atomic.Int64
+	delayed     atomic.Int64
+	delay       atomic.Int64
+	delivered   uint64
+	metadataErr error
 }
 
-func newDispatcherMessage() *dispatcherMessage { return new(dispatcherMessage) }
+func newDispatcherMessage() *dispatcherMessage { return new(dispatcherMessage{delivered: 1}) }
+func (m *dispatcherMessage) Metadata() (*jetstream.MsgMetadata, error) {
+	if m.metadataErr != nil {
+		return nil, m.metadataErr
+	}
+	return new(jetstream.MsgMetadata{NumDelivered: m.delivered}), nil
+}
+func (m *dispatcherMessage) NakWithDelay(delay time.Duration) error {
+	m.delay.Store(int64(delay))
+	m.delayed.Add(1)
+	return nil
+}
 func (m *dispatcherMessage) Data() []byte {
 	return []byte(vcode.MustMarshalJsonS(taskspec.NATSMessage{TaskSkelName: "demo.task"}))
 }
@@ -459,13 +514,15 @@ func TestTaskMessageRenewalStopsBeforeFinalAck(t *testing.T) {
 
 func TestDispatcherAcknowledgementReleasesCapacity(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		noRetry bool
-		fail    bool
+		name            string
+		noRetry         bool
+		fail            bool
+		metadataMissing bool
 	}{
 		{name: "success"},
 		{name: "retry", fail: true},
 		{name: "no retry", noRetry: true, fail: true},
+		{name: "missing metadata", fail: true, metadataMissing: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
@@ -483,23 +540,62 @@ func TestDispatcherAcknowledgementReleasesCapacity(t *testing.T) {
 					return nil
 				}
 				first, second := newDispatcherMessage(), newDispatcherMessage()
+				second.delivered = 8
+				if test.metadataMissing {
+					first.metadataErr = fmt.Errorf("metadata unavailable")
+					second.metadataErr = first.metadataErr
+				}
 				messages.queue <- first
 				messages.queue <- second
 				go manager.dispatchTaskMessages(state)
 				synctest.Wait()
 				for _, msg := range []*dispatcherMessage{first, second} {
 					if test.fail && !test.noRetry {
-						require.Equal(t, int64(1), msg.nacked.Load())
+						require.Equal(t, int64(1), msg.delayed.Load())
 						require.Zero(t, msg.acked.Load())
+						baseDelay := time.Second
+						if msg == second || test.metadataMissing {
+							baseDelay = 10 * time.Minute
+						}
+						require.GreaterOrEqual(t, time.Duration(msg.delay.Load()), baseDelay*9/10)
+						require.LessOrEqual(t, time.Duration(msg.delay.Load()), baseDelay)
 					} else {
 						require.Equal(t, int64(1), msg.acked.Load())
-						require.Zero(t, msg.nacked.Load())
+						require.Zero(t, msg.delayed.Load())
 					}
+					require.Zero(t, msg.nacked.Load())
 				}
 				manager.AfterAppStop()
 				synctest.Wait()
 				require.Empty(t, runners[0].semaphore)
 			})
+		})
+	}
+}
+
+func TestTaskRetryDelay(t *testing.T) {
+	for _, test := range []struct {
+		delivered uint64
+		base      time.Duration
+	}{
+		{1, time.Second},
+		{2, 5 * time.Second},
+		{3, 15 * time.Second},
+		{4, 30 * time.Second},
+		{5, time.Minute},
+		{6, 2 * time.Minute},
+		{7, 5 * time.Minute},
+		{8, 10 * time.Minute},
+		{9, 10 * time.Minute},
+		{^uint64(0), 10 * time.Minute},
+		{0, 10 * time.Minute},
+	} {
+		t.Run(fmt.Sprintf("delivered=%d", test.delivered), func(t *testing.T) {
+			for range 100 {
+				delay := taskRetryDelay(test.delivered)
+				require.GreaterOrEqual(t, delay, test.base*9/10)
+				require.LessOrEqual(t, delay, test.base)
+			}
 		})
 	}
 }

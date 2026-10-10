@@ -2,7 +2,6 @@ package rdb
 
 import (
 	"fmt"
-	"math"
 	"net/url"
 	"strings"
 	"sync"
@@ -14,9 +13,8 @@ import (
 
 const (
 	defaultMaxOpenConns = 10
-	maxIdleConnsPercent = 0.3
 
-	connMaxIdleTime = time.Hour * 1
+	connMaxIdleTime = 10 * time.Minute
 	connMaxLifeTime = time.Hour * 8
 )
 
@@ -99,9 +97,7 @@ func configurePool(gormDB *gorm.DB, config Option) error {
 	if config.MaxOpenConn > 0 {
 		maxOpenConns = config.MaxOpenConn
 	}
-	maxIdleConns := int(math.Ceil(float64(maxOpenConns) * maxIdleConnsPercent))
-
-	sqlDB.SetMaxIdleConns(maxIdleConns)
+	sqlDB.SetMaxIdleConns(maxOpenConns)
 	sqlDB.SetMaxOpenConns(maxOpenConns)
 	sqlDB.SetConnMaxIdleTime(connMaxIdleTime)
 	sqlDB.SetConnMaxLifetime(connMaxLifeTime)

@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"errors"
+	"math/rand/v2"
 	"sync"
 	"time"
 
@@ -207,11 +208,44 @@ func (m *Manager) runTaskMessage(natsMsg jetstream.Msg, runner *_TaskRunnerState
 	err := m.runTask(runner, msg)
 	stopRenewal()
 	if err != nil && !runner.registration.NoRetry {
-		ackTaskMessage(natsMsg.Nak())
+		var delivered uint64
+		var stream string
+		var streamSequence uint64
+		metadata, metadataErr := natsMsg.Metadata()
+		if metadataErr != nil {
+			taskLogger.Warn("task message metadata unavailable", "taskSkelName", msg.TaskSkelName, "error", metadataErr)
+		} else {
+			delivered = metadata.NumDelivered
+			stream = metadata.Stream
+			streamSequence = metadata.Sequence.Stream
+		}
+		delay := taskRetryDelay(delivered)
+		ackTaskMessage(natsMsg.NakWithDelay(delay))
+		taskLogger.Warn("task retry scheduled", "taskSkelName", msg.TaskSkelName, "stream", stream, "streamSequence", streamSequence, "deliveries", delivered, "delay", delay)
 		return
 	}
 
 	ackTaskMessage(natsMsg.Ack())
+}
+
+func taskRetryDelay(delivered uint64) time.Duration {
+	delays := [...]time.Duration{
+		time.Second,
+		5 * time.Second,
+		15 * time.Second,
+		30 * time.Second,
+		time.Minute,
+		2 * time.Minute,
+		5 * time.Minute,
+		10 * time.Minute,
+	}
+	// Missing delivery metadata uses the longest delay to avoid a retry storm.
+	delay := delays[len(delays)-1]
+	if delivered > 0 {
+		delay = delays[min(delivered-1, uint64(len(delays)-1))]
+	}
+	// Jitter down by up to 10%, keeping the maximum delay at ten minutes.
+	return delay - time.Duration(rand.Int64N(int64(delay/10)+1))
 }
 
 func keepTaskMessageAlive(msg jetstream.Msg) func() {
