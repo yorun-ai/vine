@@ -16,19 +16,16 @@ type Syncer struct {
 
 	WatchServer *watchserver.Server `inject:""`
 
-	namesMutex               sync.Mutex
-	descriptorMutex          sync.Mutex
-	appConfigNamesById       map[int]string
-	portalSiteNamesById      map[int]string
-	portalSitesByName        map[string]*core.PortalSite
-	portalEntriesById        map[int]*core.PortalEntry
-	portalRuleNamesById      map[int]string
-	portalRulesById          map[int]*core.PortalRule
-	portalCertNamesById      map[int]string
-	descriptorActorHashes    map[string]string
-	descriptorResourceHashes map[string]string
-	descriptorServiceHashes  map[string]string
-	descriptorWebHashes      map[string]string
+	namesMutex          sync.Mutex
+	descriptorMutex     sync.Mutex
+	appConfigNamesById  map[int]string
+	portalSiteNamesById map[int]string
+	portalSitesByName   map[string]*core.PortalSite
+	portalEntriesById   map[int]*core.PortalEntry
+	portalRuleNamesById map[int]string
+	portalRulesById     map[int]*core.PortalRule
+	portalCertNamesById map[int]string
+	descriptorHashes    map[string]string
 }
 
 func (s *Syncer) DIInit() {
@@ -39,10 +36,7 @@ func (s *Syncer) DIInit() {
 	s.portalRuleNamesById = map[int]string{}
 	s.portalRulesById = map[int]*core.PortalRule{}
 	s.portalCertNamesById = map[int]string{}
-	s.descriptorActorHashes = map[string]string{}
-	s.descriptorResourceHashes = map[string]string{}
-	s.descriptorServiceHashes = map[string]string{}
-	s.descriptorWebHashes = map[string]string{}
+	s.descriptorHashes = map[string]string{}
 }
 
 func (s *Syncer) SyncAppConfig(item *core.AppConfig) {

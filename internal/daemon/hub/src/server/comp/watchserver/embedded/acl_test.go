@@ -104,6 +104,27 @@ func TestHubACLDelegatesCommandValidationToHandlers(t *testing.T) {
 	assert.True(t, canRunTestCommand(userRoleHub, []string{"UNKNOWN"}))
 }
 
+func TestDescriptorACLByRole(t *testing.T) {
+	for _, kind := range []string{"domain", "actor", "service", "resource", "web", "data", "enum", "config", "event", "task"} {
+		t.Run(kind, func(t *testing.T) {
+			key := "descriptor:" + kind + ":demo.Contract"
+			pattern := "descriptor:" + kind + ":*"
+			for _, command := range [][]string{{"GET", key}, {"SCAN", "0", "MATCH", pattern}, {"PSUBSCRIBE", pattern}} {
+				assert.True(t, canRunTestCommand(userRolePortal, command), command)
+				assert.True(t, canRunTestCommand(userRoleHub, command), command)
+				assert.False(t, canRunTestCommand(userRoleLink, command), command)
+				assert.False(t, canRunTestCommand(userRoleNone, command), command)
+			}
+			assert.False(t, canRunTestCommand(userRolePortal, []string{"SET", key, "value"}))
+			assert.False(t, canRunTestCommand(userRolePortal, []string{"DEL", key}))
+		})
+	}
+	assert.True(t, canRunTestCommand(userRolePortal, []string{"SCAN", "0", "MATCH", "descriptor:*"}))
+	assert.True(t, canRunTestCommand(userRolePortal, []string{"PSUBSCRIBE", "descriptor:*"}))
+	assert.False(t, canRunTestCommand(userRolePortal, []string{"GET", "descriptor:"}))
+	assert.False(t, canRunTestCommand(userRolePortal, []string{"GET", "descriptor-other:data:demo.Contract"}))
+}
+
 func canRunTestCommand(role _UserRole, values []string) bool {
 	args := make([][]byte, len(values))
 	for index, value := range values {

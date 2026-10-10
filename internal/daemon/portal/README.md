@@ -14,7 +14,8 @@ internal/daemon/portal/
         ├── comp/           Shared components such as Hub info and Watch clients
         ├── flag/           Portal flags and default normalization
         ├── mod/            Runtime modules
-        │   ├── access/     Actor/service/Web/resource descriptors and Rpc/Web authorization
+        │   ├── access/     Rpc/Web authorization and auth/permission endpoint watches
+        │   ├── desc/       Descriptor subscriptions, caches, and API type dependencies
         │   ├── entry/      HTTP/HTTPS listeners and portal-rule dispatch
         │   ├── epmgr/      Rpc/Web endpoint subscriptions and round-robin selection
         │   ├── site/       Portal site management and RpcGW/WebGW creation
@@ -36,7 +37,11 @@ Portal has four primary responsibilities:
    `epmgr` subscribes to Rpc/Web endpoint keys, manages watcher reference counts, and provides `NextRpcEndpoint` and `NextWebEndpoint` to gateways.
 
 4. Authentication, permission, and certificates
-   `access` reads and watches `descriptor:actor:*`, `descriptor:service:*`, `descriptor:web:*`, and `descriptor:resource:*` state. Before forwarding, RpcGW asks `access` to perform authentication and permission admission, which may invoke backend auth services, actor permission services, and resource check services. `vault` reads and watches certificates from Watch for HTTPS SNI matching.
+   `desc` reads and watches `descriptor:actor:*`, `descriptor:service:*`, `descriptor:web:*`, and `descriptor:resource:*` state. `access` queries this cache and observes actor/resource changes to maintain auth and permission endpoint watches. Before forwarding, RpcGW asks `access` to perform authentication and permission admission, which may invoke backend auth services, actor permission services, and resource check services. `vault` reads and watches certificates from Watch for HTTPS SNI matching.
+
+   At startup, `desc` reads a complete `descriptor:*` snapshot and selects API services' transitive Data and Enum dependencies, including generic arguments and collection types. A single background worker coalesces service/type changes, loads dependencies outside the cache lock, and publishes paired service/type snapshots only if its generation is still current. Admission uses the latest service definitions immediately; a slow or failed type refresh does not block requests or delay service revocation. Failed refreshes retain the previous type snapshot and subscription and retry with bounded backoff. Shutdown cancels pending work and waits for the worker. Actor/resource observers also run outside the cache lock, with ordered delivery.
+
+   Selected type keys share one PubSub connection. Attachment and reconnect wait for all subscription acknowledgements before one reconciliation, using bounded GET pipelines. A replacement subscription is ready before its predecessor is released. Missing definitions remain subscribed until published. `desc.Manager.Snapshot()` returns the last paired service/type snapshot, its missing keys, and a `Syncing` flag when newer inputs are pending; this does not implement inspect.
 
    The Hub Watch client uses the `vine.portal` user. Its ACL is limited to Portal entries, rules, sites, certificates, descriptors, Rpc/Web endpoint discovery, the shared revision key, and their required subscriptions. The Redis password is empty for in-process mode and separated-deployment debugging. With backend mTLS enabled, the Portal certificate authenticates the client and binds its SPIFFE identity to the `vine.portal` user. Without mTLS, the username only selects an ACL role; because that role can read TLS private keys, the Redis endpoint must remain restricted to a trusted network.
 
@@ -46,7 +51,8 @@ The primary Portal module dependencies are:
 
 - `entry -> site, vault`
 - `site -> access, epmgr`
-- `access -> epmgr`
+- `access -> desc, epmgr`
+- `desc -> hubwatch`
 - `vault -> hubwatch`
 - `epmgr -> hubwatch`
 
@@ -55,7 +61,7 @@ External callers should assemble only `src/server/app` and `src/server/flag`; th
 Preserve these ownership and dependency boundaries when modifying Portal:
 
 - `epmgr` is the single owner of Rpc/Web endpoint subscriptions, watcher reference counts, and round-robin selection. Sites and access logic obtain endpoints through it.
-- `access` owns actor/service/Web/resource descriptors and Rpc/Web admission state. Gateways must not maintain a second authentication or permission descriptor cache.
+- `desc` owns all descriptor subscriptions and caches, including API type dependencies. `access` owns Rpc/Web admission and its auth/permission endpoint watches. Gateways and access must not maintain a second descriptor cache.
 - `entry` owns listener entries and rule dispatch only; `site` owns RpcGW/WebGW instances only; `vault` owns certificate loading and matching only.
 - RpcGW and WebGW must continue propagating the active trace, initiator, actor, deadline, and remaining timeout. Do not replace the request context with a new background context.
 - When headers, forwarding paths, descriptors, or endpoint formats change, update Link, Hub Watch structures, callers, and gateway tests together.
@@ -66,7 +72,7 @@ Portal can run in process as part of a standalone runtime. It still reads and wa
 
 In inproc and standalone modes:
 
-- The module boundaries and subscription semantics of `entry`, `site`, `access`, `epmgr`, and `vault` remain unchanged.
+- The module boundaries and subscription semantics of `entry`, `site`, `desc`, `access`, `epmgr`, and `vault` remain unchanged.
 - RpcGW and WebGW still forward through discovered endpoints, but targets may use `link+inproc://` and avoid an external Link ingress TCP port.
 - Portal does not own heartbeat or TTL renewal. Registrations in an inproc Hub are normally long-lived and depend on explicit application unregister plus Hub Watch events for cleanup.
 - This mode is suitable for testing routing, admission, descriptor watching, and gateway forwarding, but it does not model external network disconnection, independent Link/Portal process crashes, unreachable TLS listeners, or distributed lease expiry.

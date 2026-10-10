@@ -206,7 +206,7 @@ func TestAccessAllowRpcCreatesTraceChildForAuthService(t *testing.T) {
 func testAuthValues(authEndpoint string) map[string]string {
 	values := map[string]string{
 		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorDescriptor()),
-		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{Api: true,
 			SkelName:  "demo.UserService",
 			Audiences: testUserActorAudiences(),
 			Methods: []*skeldesc.Method{
@@ -316,7 +316,7 @@ func TestAccessAllowRpcRejectsMissingServiceDescriptor(t *testing.T) {
 func TestAccessAllowRpcRejectsMissingMethodDescriptor(t *testing.T) {
 	access := newTestAccess(t, map[string]string{
 		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorDescriptor()),
-		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{Api: true,
 			SkelName:  "demo.UserService",
 			Audiences: testUserActorAudiences(),
 			Methods: []*skeldesc.Method{
@@ -335,7 +335,7 @@ func TestAccessAllowRpcRejectsMissingMethodDescriptor(t *testing.T) {
 
 func TestAccessAllowRpcRejectsMissingActorDescriptor(t *testing.T) {
 	access := newTestAccess(t, map[string]string{
-		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{Api: true,
 			SkelName:  "demo.UserService",
 			Audiences: testUserActorAudiences(),
 			Methods: []*skeldesc.Method{
@@ -357,7 +357,7 @@ func TestAccessAllowRpcRejectsActorWithoutCredentialDescriptor(t *testing.T) {
 		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.DescriptorActor{
 			SkelName: "demo.UserActor", Auth: &skeldesc.ActorAuth{Info: &skeldesc.Data{SkelName: "demo.UserInfo"}, Service: testAuthServiceDescriptor(), MethodName: testAuthMethodDescriptor().Name},
 		}),
-		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{Api: true,
 			SkelName:  "demo.UserService",
 			Audiences: testUserActorAudiences(),
 			Methods: []*skeldesc.Method{
@@ -378,7 +378,7 @@ func TestAccessAllowRpcRejectsActorWithoutInfoDescriptor(t *testing.T) {
 		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.DescriptorActor{
 			SkelName: "demo.UserActor", Auth: &skeldesc.ActorAuth{Credential: &skeldesc.Data{SkelName: "demo.UserCredential"}, Service: testAuthServiceDescriptor(), MethodName: testAuthMethodDescriptor().Name},
 		}),
-		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{Api: true,
 			SkelName:  "demo.UserService",
 			Audiences: testUserActorAudiences(),
 			Methods: []*skeldesc.Method{
@@ -406,7 +406,7 @@ func TestRpcOperationConsumesEffectiveAuthMode(t *testing.T) {
 func TestAccessAllowRpcInjectsActorAndServiceDescriptors(t *testing.T) {
 	access := newTestAccess(t, map[string]string{
 		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorDescriptor()),
-		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{Api: true,
 			SkelName:  "demo.UserService",
 			Audiences: testUserActorAudiences(),
 			AuthMode:  skeldesc.AuthModeOptional,
@@ -433,7 +433,7 @@ func TestAccessAllowRpcInjectsActorAndServiceDescriptors(t *testing.T) {
 func TestAccessAllowRpcRejectsDifferentActorVia(t *testing.T) {
 	access := newTestAccess(t, map[string]string{
 		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(testAuthActorDescriptor()),
-		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{Api: true,
 			SkelName: "demo.UserService",
 			AuthMode: skeldesc.AuthModeOptional,
 			Audiences: []*skeldesc.ActorAudience{

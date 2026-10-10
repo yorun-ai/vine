@@ -101,6 +101,20 @@ func (c *Client) LoadListAndSubscribe(ctx context.Context, prefix string, handle
 	return values, c.subscribe(ctx, pattern.Match, handle)
 }
 
+// LoadList reads a prefix snapshot without registering an event handler.
+func (c *Client) LoadList(prefix string) map[string]string {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	pattern := glob.MustCompile(strings.TrimSuffix(prefix, ":") + ":*")
+	values := map[string]string{}
+	for key, value := range c.values {
+		if pattern.Match(key) {
+			values[key] = value
+		}
+	}
+	return values
+}
+
 func (c *Client) subscribe(ctx context.Context, match func(string) bool, handle func(watch.Event)) *_Subscription {
 	sub := &_Subscription{ctx: ctx, match: match, handle: handle, events: make(chan watch.Event, 64), start: make(chan struct{})}
 	c.subscriptions = append(c.subscriptions, sub)
@@ -133,3 +147,21 @@ func (c *Client) subscribe(ctx context.Context, match func(string) bool, handle 
 func (s *_Subscription) Start() { s.once.Do(func() { close(s.start) }) }
 
 var _ watch.ClientOps = (*Client)(nil)
+
+// LoadKeysAndSubscribe atomically reads and watches exact keys as one subscription.
+func (c *Client) LoadKeysAndSubscribe(ctx context.Context, keys []string, handle func(watch.Event)) (map[string]string, watch.Subscription, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, nil, err
+	}
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	selected := make(map[string]bool, len(keys))
+	values := map[string]string{}
+	for _, key := range keys {
+		selected[key] = true
+		if value, ok := c.values[key]; ok {
+			values[key] = value
+		}
+	}
+	return values, c.subscribe(ctx, func(key string) bool { return selected[key] }, handle), nil
+}

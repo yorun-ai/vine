@@ -250,7 +250,7 @@ func TestPortalAuthModes(t *testing.T) {
 							}
 							endpoint := registerTestAuthService(t, http.StatusOK, code, `{"userId":"u1"}`)
 							values := testAuthValues(endpoint)
-							values[watched.FormatDescriptorServiceKey("demo.UserService")] = vcode.MustMarshalJsonS(watched.DescriptorService{
+							values[watched.FormatDescriptorServiceKey("demo.UserService")] = vcode.MustMarshalJsonS(watched.DescriptorService{Api: true,
 								SkelName: "demo.UserService", Audiences: testUserActorAudiences(), AuthMode: mode,
 								Methods: []*skeldesc.Method{{SkelName: "Get", Name: "Get", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: mode}},
 							})
@@ -318,7 +318,7 @@ func TestPortalRejectsEmptyAndDuplicateAuthorization(t *testing.T) {
 				t.Run(fmt.Sprintf("%s/%s/%q", protocol, mode, headers), func(t *testing.T) {
 					values := testAuthValues("")
 					values[watched.FormatDescriptorWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: mode})
-					values[watched.FormatDescriptorServiceKey("demo.UserService")] = vcode.MustMarshalJsonS(watched.DescriptorService{SkelName: "demo.UserService", AuthMode: mode, Audiences: testUserActorAudiences(), Methods: []*skeldesc.Method{{SkelName: "Get", Name: "Get", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: mode}}})
+					values[watched.FormatDescriptorServiceKey("demo.UserService")] = vcode.MustMarshalJsonS(watched.DescriptorService{Api: true, SkelName: "demo.UserService", AuthMode: mode, Audiences: testUserActorAudiences(), Methods: []*skeldesc.Method{{SkelName: "Get", Name: "Get", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: mode}}})
 					access := newTestAccess(t, values)
 					request := httptest.NewRequest(http.MethodPost, "http://demo.local", nil)
 					request.Header[headerAuthorization] = append([]string(nil), headers...)

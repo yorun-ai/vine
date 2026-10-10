@@ -15,6 +15,7 @@ import (
 	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/desc"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/utilfortest/watchtest"
@@ -245,12 +246,16 @@ func newTestAccess(t *testing.T) *access.Access {
 		Watch:   watchClient,
 	}
 	epmgrManager.DIInit()
+	descriptors := new(desc.Manager{Context: t.Context(), Watch: watchClient})
+	descriptors.DIInit()
+	t.Cleanup(descriptors.AfterAppStop)
 	manager := &access.Access{
 		Context: context.Background(),
-		Watch:   watchClient,
+		Desc:    descriptors,
 		Epmgr:   epmgrManager,
 	}
 	manager.DIInit()
+	t.Cleanup(manager.AfterAppStop)
 	return manager
 }
 
@@ -259,7 +264,7 @@ func newTestDescriptorWatch(t *testing.T) *watchtest.Client {
 		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.DescriptorActor{
 			SkelName: "demo.UserActor",
 		}),
-		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{Api: true,
 			SkelName: "demo.UserService",
 			AuthMode: skeldesc.AuthModeOptional,
 			Audiences: []*skeldesc.ActorAudience{
