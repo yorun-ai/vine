@@ -548,6 +548,8 @@ export type PortalSite = {
   actorSkelName:  string;
   /** Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default. */
   inspectEnabled: boolean;
+  /** Expose API services as MCP tools over HTTP; RPCGW only, disabled by default. */
+  mcpEnabled:     boolean;
   /** Rpc gateway service Skel name list. */
   rpcgwServices:  Array<string>;
   /** CORS configuration. */
@@ -578,6 +580,8 @@ export type PortalSiteCreation = {
   actorSkelName:  string;
   /** Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default. */
   inspectEnabled: boolean;
+  /** Expose API services as MCP tools over HTTP; RPCGW only, disabled by default. */
+  mcpEnabled:     boolean;
   /** CORS configuration. */
   cors:           PortalCors | null;
   /** Web name. */
@@ -597,6 +601,8 @@ export type PortalSiteListItem = {
   actorSkelName:  string;
   /** Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default. */
   inspectEnabled: boolean;
+  /** Expose API services as MCP tools over HTTP; RPCGW only, disabled by default. */
+  mcpEnabled:     boolean;
   /** Rpc gateway service Skel name list. */
   rpcgwServices:  Array<string>;
   /** CORS configuration. */
@@ -636,6 +642,8 @@ export type PortalSiteUpdate = {
   actorSkelName:  string | null;
   /** Expose read-only Rpc inspect and JSON Schema; RPCGW only. */
   inspectEnabled: boolean | null;
+  /** Expose API services as MCP tools over HTTP; RPCGW only, disabled by default. */
+  mcpEnabled:     boolean | null;
   /** CORS configuration. */
   cors:           PortalCors | null;
   /** Web name. */

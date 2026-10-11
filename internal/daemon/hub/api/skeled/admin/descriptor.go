@@ -14,7 +14,7 @@ func init() {
 var _DomainDescriptor = &descriptor.Domain{
 	Name:        "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "50460939",
+	Hash:        "d5846a68",
 	Full:        true,
 	Generated:   &descriptor.GeneratedInfo{CompilerVersion: "v0.31.1"},
 
@@ -219,7 +219,7 @@ var _DomainDescriptor = &descriptor.Domain{
 			{Name: "mode", Description: "CORS mode: DISABLED/SAME_DOMAIN/STRICT", Type: &descriptor.Type{Kind: descriptor.TypeKindEnum, Name: "PortalCorsMode", SkelName: "vine.hub.admin.PortalCorsMode"}},
 			{Name: "allowedOrigins", Description: "List of origins allowed in strict mode", Type: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}}},
 		}},
-		{Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry", Hash: "8c00cd44", Members: []*descriptor.Member{
+		{Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry", Hash: "174abed7", Members: []*descriptor.Member{
 			{Name: "protocol", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "http", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntryHTTP", SkelName: "vine.hub.admin.PortalEntryHTTP"}},
 			{Name: "id", Description: "Entry ID", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
@@ -253,7 +253,7 @@ var _DomainDescriptor = &descriptor.Domain{
 			{Name: "httpsPort", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt, Nullable: true}},
 			{Name: "autoHTTPS", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean, Nullable: true}},
 		}},
-		{Name: "PortalEntryRule", SkelName: "vine.hub.admin.PortalEntryRule", Description: "Portal access entry rules", Hash: "0c1c6ede", Members: []*descriptor.Member{
+		{Name: "PortalEntryRule", SkelName: "vine.hub.admin.PortalEntryRule", Description: "Portal access entry rules", Hash: "243108ae", Members: []*descriptor.Member{
 			{Name: "rule", Description: "Entry rules", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalRuleListItem", SkelName: "vine.hub.admin.PortalRuleListItem"}},
 			{Name: "site", Description: "Target site", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalSiteListItem", SkelName: "vine.hub.admin.PortalSiteListItem", Nullable: true}},
 		}},
@@ -331,12 +331,13 @@ var _DomainDescriptor = &descriptor.Domain{
 			{Name: "routePathPrefix", Description: "Target site path prefix; empty means strip the matching prefix only", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString, Nullable: true}},
 			{Name: "enabled", Description: "Whether Hub publishes this rule to Portal", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean, Nullable: true}},
 		}},
-		{Name: "PortalSite", SkelName: "vine.hub.admin.PortalSite", Description: "Portal target site", Hash: "918a7e4f", Members: []*descriptor.Member{
+		{Name: "PortalSite", SkelName: "vine.hub.admin.PortalSite", Description: "Portal target site", Hash: "ddf4c447", Members: []*descriptor.Member{
 			{Name: "id", Description: "Target site id", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			{Name: "name", Description: "Target site name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "type", Description: "Target site type", Type: &descriptor.Type{Kind: descriptor.TypeKindEnum, Name: "PortalSiteType", SkelName: "vine.hub.admin.PortalSiteType"}},
 			{Name: "actorSkelName", Description: "Actor Skel name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "inspectEnabled", Description: "Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean}},
+			{Name: "mcpEnabled", Description: "Expose API services as MCP tools over HTTP; RPCGW only, disabled by default", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean}},
 			{Name: "rpcgwServices", Description: "Rpc gateway service Skel name list", Type: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}}},
 			{Name: "cors", Description: "CORS configuration", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalCors", SkelName: "vine.hub.admin.PortalCors", Nullable: true}},
 			{Name: "webName", Description: "Web name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
@@ -348,21 +349,23 @@ var _DomainDescriptor = &descriptor.Domain{
 			{Name: "name", Description: "Actor name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "skelName", Description: "Actor Skel name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 		}},
-		{Name: "PortalSiteCreation", SkelName: "vine.hub.admin.PortalSiteCreation", Description: "Portal target site creation parameters", Hash: "0ac4cf26", Members: []*descriptor.Member{
+		{Name: "PortalSiteCreation", SkelName: "vine.hub.admin.PortalSiteCreation", Description: "Portal target site creation parameters", Hash: "c3ff8f8f", Members: []*descriptor.Member{
 			{Name: "name", Description: "Target site name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "type", Description: "Target site type", Type: &descriptor.Type{Kind: descriptor.TypeKindEnum, Name: "PortalSiteType", SkelName: "vine.hub.admin.PortalSiteType"}},
 			{Name: "actorSkelName", Description: "Actor Skel name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "inspectEnabled", Description: "Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean}},
+			{Name: "mcpEnabled", Description: "Expose API services as MCP tools over HTTP; RPCGW only, disabled by default", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean}},
 			{Name: "cors", Description: "CORS configuration", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalCors", SkelName: "vine.hub.admin.PortalCors", Nullable: true}},
 			{Name: "webName", Description: "Web name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "enabled", Description: "Whether Hub publishes this site to Portal", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean, Nullable: true}},
 		}},
-		{Name: "PortalSiteListItem", SkelName: "vine.hub.admin.PortalSiteListItem", Description: "Portal target site list item", Hash: "2dc8fcd7", Members: []*descriptor.Member{
+		{Name: "PortalSiteListItem", SkelName: "vine.hub.admin.PortalSiteListItem", Description: "Portal target site list item", Hash: "de92dc8b", Members: []*descriptor.Member{
 			{Name: "id", Description: "Target site id", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			{Name: "name", Description: "Target site name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "type", Description: "Target site type", Type: &descriptor.Type{Kind: descriptor.TypeKindEnum, Name: "PortalSiteType", SkelName: "vine.hub.admin.PortalSiteType"}},
 			{Name: "actorSkelName", Description: "Actor Skel name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "inspectEnabled", Description: "Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean}},
+			{Name: "mcpEnabled", Description: "Expose API services as MCP tools over HTTP; RPCGW only, disabled by default", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean}},
 			{Name: "rpcgwServices", Description: "Rpc gateway service Skel name list", Type: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}}},
 			{Name: "cors", Description: "CORS configuration", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalCors", SkelName: "vine.hub.admin.PortalCors", Nullable: true}},
 			{Name: "webName", Description: "Web name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
@@ -379,11 +382,12 @@ var _DomainDescriptor = &descriptor.Domain{
 			{Name: "skelName", Description: "Service Skel name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "actorSkelNames", Description: "Actor Skel name list", Type: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}}},
 		}},
-		{Name: "PortalSiteUpdate", SkelName: "vine.hub.admin.PortalSiteUpdate", Description: "Portal target site update parameters", Hash: "ba6dabe9", Members: []*descriptor.Member{
+		{Name: "PortalSiteUpdate", SkelName: "vine.hub.admin.PortalSiteUpdate", Description: "Portal target site update parameters", Hash: "43c27d0f", Members: []*descriptor.Member{
 			{Name: "name", Description: "Target site name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString, Nullable: true}},
 			{Name: "type", Description: "Target site type", Type: &descriptor.Type{Kind: descriptor.TypeKindEnum, Name: "PortalSiteType", SkelName: "vine.hub.admin.PortalSiteType", Nullable: true}},
 			{Name: "actorSkelName", Description: "Actor Skel name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString, Nullable: true}},
 			{Name: "inspectEnabled", Description: "Expose read-only Rpc inspect and JSON Schema; RPCGW only", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean, Nullable: true}},
+			{Name: "mcpEnabled", Description: "Expose API services as MCP tools over HTTP; RPCGW only, disabled by default", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean, Nullable: true}},
 			{Name: "cors", Description: "CORS configuration", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalCors", SkelName: "vine.hub.admin.PortalCors", Nullable: true}},
 			{Name: "webName", Description: "Web name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString, Nullable: true}},
 			{Name: "enabled", Description: "Whether Hub publishes this site to Portal", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean, Nullable: true}},
@@ -807,12 +811,12 @@ var _DomainDescriptor = &descriptor.Domain{
 				{Name: "id", Description: "Certificate ID", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			}},
 		}},
-		{Name: "PortalEntryApiService", SkelName: "vine.hub.admin.PortalEntryApiService", Description: "Hub's Portal access entry service, called by the Portal admin client", Hash: "0a0bb64b", Pub: false, Api: true, AuthMode: descriptor.AuthModeOptional, Audiences: []*descriptor.ActorAudience{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: descriptor.ActorViaClient}}, Methods: []*descriptor.Method{
-			{Name: "list", SkelName: "list", Description: "List Portal access entries", Hash: "5ac299e3", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal access entry list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry"}}},
-			{Name: "create", SkelName: "create", Description: "Create a Portal access entry", Hash: "ddc0b9f1", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal access entry", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry"}, Arguments: []*descriptor.Member{
+		{Name: "PortalEntryApiService", SkelName: "vine.hub.admin.PortalEntryApiService", Description: "Hub's Portal access entry service, called by the Portal admin client", Hash: "243e4dbf", Pub: false, Api: true, AuthMode: descriptor.AuthModeOptional, Audiences: []*descriptor.ActorAudience{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: descriptor.ActorViaClient}}, Methods: []*descriptor.Method{
+			{Name: "list", SkelName: "list", Description: "List Portal access entries", Hash: "68a561e9", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal access entry list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry"}}},
+			{Name: "create", SkelName: "create", Description: "Create a Portal access entry", Hash: "b4725e4c", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal access entry", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry"}, Arguments: []*descriptor.Member{
 				{Name: "creation", Description: "Portal access entry creation parameters", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntryCreation", SkelName: "vine.hub.admin.PortalEntryCreation"}},
 			}},
-			{Name: "update", SkelName: "update", Description: "Modify a Portal access entry", Hash: "3f0a6807", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal access entry", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry"}, Arguments: []*descriptor.Member{
+			{Name: "update", SkelName: "update", Description: "Modify a Portal access entry", Hash: "b039b5da", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal access entry", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry"}, Arguments: []*descriptor.Member{
 				{Name: "id", Description: "Entry ID", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 				{Name: "update", Description: "Portal access entry update parameters", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntryUpdate", SkelName: "vine.hub.admin.PortalEntryUpdate"}},
 			}},
@@ -837,16 +841,16 @@ var _DomainDescriptor = &descriptor.Domain{
 				{Name: "id", Description: "Rule ID", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			}},
 		}},
-		{Name: "PortalSiteApiService", SkelName: "vine.hub.admin.PortalSiteApiService", Description: "Hub's Portal target site service, called by the Portal admin client", Hash: "d2f1cbb5", Pub: false, Api: true, AuthMode: descriptor.AuthModeOptional, Audiences: []*descriptor.ActorAudience{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: descriptor.ActorViaClient}}, Methods: []*descriptor.Method{
-			{Name: "list", SkelName: "list", Description: "List Portal target sites", Hash: "956ada14", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal target site list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalSiteListItem", SkelName: "vine.hub.admin.PortalSiteListItem"}}},
+		{Name: "PortalSiteApiService", SkelName: "vine.hub.admin.PortalSiteApiService", Description: "Hub's Portal target site service, called by the Portal admin client", Hash: "ea4440ac", Pub: false, Api: true, AuthMode: descriptor.AuthModeOptional, Audiences: []*descriptor.ActorAudience{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor", Via: descriptor.ActorViaClient}}, Methods: []*descriptor.Method{
+			{Name: "list", SkelName: "list", Description: "List Portal target sites", Hash: "e5f749b8", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal target site list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalSiteListItem", SkelName: "vine.hub.admin.PortalSiteListItem"}}},
 			{Name: "listOptions", SkelName: "listOptions", Description: "List Portal target site form options", Hash: "d499a1c0", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal target site form options", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalSiteOptions", SkelName: "vine.hub.admin.PortalSiteOptions"}},
-			{Name: "get", SkelName: "get", Description: "Read the Portal target site", Hash: "161d64c6", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal target site", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalSite", SkelName: "vine.hub.admin.PortalSite"}, Arguments: []*descriptor.Member{
+			{Name: "get", SkelName: "get", Description: "Read the Portal target site", Hash: "10e1114b", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal target site", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalSite", SkelName: "vine.hub.admin.PortalSite"}, Arguments: []*descriptor.Member{
 				{Name: "id", Description: "Target site id", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			}},
-			{Name: "create", SkelName: "create", Description: "Create Portal target site", Hash: "710f9d62", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal target site", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalSite", SkelName: "vine.hub.admin.PortalSite"}, Arguments: []*descriptor.Member{
+			{Name: "create", SkelName: "create", Description: "Create Portal target site", Hash: "debb5a61", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal target site", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalSite", SkelName: "vine.hub.admin.PortalSite"}, Arguments: []*descriptor.Member{
 				{Name: "creation", Description: "Portal target site creation parameters", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalSiteCreation", SkelName: "vine.hub.admin.PortalSiteCreation"}},
 			}},
-			{Name: "update", SkelName: "update", Description: "Modify Portal target site", Hash: "58d29dba", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal target site", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalSite", SkelName: "vine.hub.admin.PortalSite"}, Arguments: []*descriptor.Member{
+			{Name: "update", SkelName: "update", Description: "Modify Portal target site", Hash: "719e4292", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal target site", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalSite", SkelName: "vine.hub.admin.PortalSite"}, Arguments: []*descriptor.Member{
 				{Name: "id", Description: "Target site id", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 				{Name: "update", Description: "Portal target site update parameters", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalSiteUpdate", SkelName: "vine.hub.admin.PortalSiteUpdate"}},
 			}},

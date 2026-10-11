@@ -43,6 +43,24 @@ func TestPortalSiteDaoMigratesInspectDisabledAndPersistsToggles(t *testing.T) {
 	}
 }
 
+func TestPortalSiteDaoMigratesMcpDisabledAndPersistsToggles(t *testing.T) {
+	dao := newTestPortalSiteDao(t)
+	entry := dao.Save(new(PortalSite{Name: "existing-api", Type: "RPCGW", ActorSkelName: "demo.Actor", Enabled: true}))
+	require.NoError(t, dao.GormDB().Exec("ALTER TABLE portal_site DROP COLUMN mcp_enabled").Error)
+	dao.EnsureSchema()
+	dao.EnsureSchema()
+	stored, ok := dao.ById(entry.Id)
+	require.True(t, ok)
+	require.False(t, stored.McpEnabled)
+	for _, enabled := range []bool{true, false} {
+		stored.McpEnabled = enabled
+		dao.Save(stored)
+		stored, ok = dao.ById(entry.Id)
+		require.True(t, ok)
+		require.Equal(t, enabled, stored.McpEnabled)
+	}
+}
+
 func TestPortalSiteDaoRemovesViaWithoutChangingSites(t *testing.T) {
 	dao := newTestPortalSiteDao(t)
 	site := dao.Save(new(PortalSite{Name: "kept", Type: "RPCGW", ActorSkelName: "demo.Actor", Enabled: true}))

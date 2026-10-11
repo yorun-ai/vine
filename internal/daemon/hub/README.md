@@ -323,3 +323,9 @@ RPCGW sites also have an `inspectEnabled` switch, defaulting to false in seeds,
 Admin creation, and migrated databases. The Dashboard can toggle it and Watch
 publishes it inside `rpcgwConfig`. It enables unauthenticated, read-only API
 contract inspection on that site; Web sites reject an enabled inspect switch.
+
+The separate RPCGW-only `mcpEnabled` switch defaults to false, including migrated
+rows. Seed, Admin API and Dashboard changes publish through `rpcgwConfig` and
+apply live. It exposes MCP tools at the site's `/mcp` path while retaining the
+site's API selection, authentication and permission rules. It does not require
+`inspectEnabled`.

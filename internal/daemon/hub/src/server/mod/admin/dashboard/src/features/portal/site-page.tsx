@@ -120,6 +120,7 @@ interface PortalSiteFormValue {
   type: PortalSiteType
   actorSkelName: string
   inspectEnabled: boolean
+  mcpEnabled: boolean
   corsMode: PortalCorsModeValue
   corsAllowedOrigins: string
   rpcgwServices: string
@@ -133,6 +134,7 @@ const emptyFormValue: PortalSiteFormValue = {
   type: 'WEBGW',
   actorSkelName: '',
   inspectEnabled: false,
+  mcpEnabled: false,
   corsMode: 'SAME_DOMAIN',
   corsAllowedOrigins: '',
   rpcgwServices: '',
@@ -206,6 +208,7 @@ function portalSiteToFormValue(entry: PortalSiteListItem): PortalSiteFormValue {
     type: normalizePortalSiteType(entry.type),
     actorSkelName: entry.actorSkelName,
     inspectEnabled: entry.inspectEnabled,
+    mcpEnabled: entry.mcpEnabled,
     corsMode: normalizePortalCorsMode(cors?.mode),
     corsAllowedOrigins: (cors?.allowedOrigins ?? []).join('\n'),
     rpcgwServices: rpcgwServices.join('\n'),
@@ -214,7 +217,8 @@ function portalSiteToFormValue(entry: PortalSiteListItem): PortalSiteFormValue {
   }
 }
 
-function InspectField({ enabled, onChange }: {
+function ProtocolField({ protocol, enabled, onChange }: {
+  protocol: 'inspect' | 'mcp'
   enabled: boolean
   onChange: (enabled: boolean) => void
 }) {
@@ -224,9 +228,9 @@ function InspectField({ enabled, onChange }: {
     <div className="grid gap-2">
       <div className="flex items-center gap-2">
         <Switch id={id} checked={enabled} onCheckedChange={(checked) => onChange(checked === true)} />
-        <Label htmlFor={id}>{t('portalSite.inspectEnabled')}</Label>
+        <Label htmlFor={id}>{t(`portalSite.${protocol}Enabled`)}</Label>
       </div>
-      <p className="text-xs leading-5 text-muted-foreground">{t('portalSite.inspectHelp')}</p>
+      <p className="text-xs leading-5 text-muted-foreground">{t(`portalSite.${protocol}Help`)}</p>
     </div>
   )
 }
@@ -247,6 +251,7 @@ function formValueToCreation(value: PortalSiteFormValue): PortalSiteCreation {
     type: value.type,
     actorSkelName: value.actorSkelName.trim(),
     inspectEnabled: value.type === 'RPCGW' && value.inspectEnabled,
+    mcpEnabled: value.type === 'RPCGW' && value.mcpEnabled,
     cors: {
       mode: value.corsMode,
       allowedOrigins:
@@ -267,6 +272,7 @@ function formValueToUpdate(value: PortalSiteFormValue): PortalSiteUpdate {
     type: creation.type,
     actorSkelName: creation.actorSkelName,
     inspectEnabled: creation.inspectEnabled,
+    mcpEnabled: creation.mcpEnabled,
     cors: creation.cors,
     webName: creation.webName,
     enabled: value.enabled,
@@ -695,10 +701,18 @@ function PortalSiteDialog({
           </FieldRow>
 
           {formValue.type === 'RPCGW' && (
-            <InspectField
-              enabled={formValue.inspectEnabled}
-              onChange={(enabled) => setField('inspectEnabled', enabled)}
-            />
+            <>
+              <ProtocolField
+                protocol="inspect"
+                enabled={formValue.inspectEnabled}
+                onChange={(enabled) => setField('inspectEnabled', enabled)}
+              />
+              <ProtocolField
+                protocol="mcp"
+                enabled={formValue.mcpEnabled}
+                onChange={(enabled) => setField('mcpEnabled', enabled)}
+              />
+            </>
           )}
 
           {formValue.type === 'RPCGW' ? (
@@ -1139,10 +1153,18 @@ function PortalSiteInlineEditor({
       </FieldRow>
 
       {formValue.type === 'RPCGW' && (
-        <InspectField
-          enabled={formValue.inspectEnabled}
-          onChange={(enabled) => setField('inspectEnabled', enabled)}
-        />
+        <>
+          <ProtocolField
+            protocol="inspect"
+            enabled={formValue.inspectEnabled}
+            onChange={(enabled) => setField('inspectEnabled', enabled)}
+          />
+          <ProtocolField
+            protocol="mcp"
+            enabled={formValue.mcpEnabled}
+            onChange={(enabled) => setField('mcpEnabled', enabled)}
+          />
+        </>
       )}
 
       {formValue.type === 'RPCGW' ? (
@@ -1734,6 +1756,11 @@ export function PortalSitePage() {
                         {selectedEntry.type === 'RPCGW' && (
                           <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path="/inspectEnabled" />} label={t('portalSite.inspectEnabled')}>
                             {selectedEntry.inspectEnabled ? t('common.enabled') : t('common.disabled')}
+                          </ReadonlyField>
+                        )}
+                        {selectedEntry.type === 'RPCGW' && (
+                          <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path="/mcpEnabled" />} label={t('portalSite.mcpEnabled')}>
+                            {selectedEntry.mcpEnabled ? t('common.enabled') : t('common.disabled')}
                           </ReadonlyField>
                         )}
                         <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path="/cors/mode" />} label={t('portalSite.corsMode')}>

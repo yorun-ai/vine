@@ -76,6 +76,20 @@ func ExposeHeader(header http.Header, key string) {
 	header.Set(HeaderAccessControlExposeHeaders, value+", "+key)
 }
 
+// AllowRequestOrigin validates Origin for endpoints that require active rejection
+// of cross-origin requests. Exact entry origins and non-browser clients are allowed.
+func AllowRequestOrigin(r *http.Request, cors watched.PortalCors, entryOrigin EntryOrigin) bool {
+	values := r.Header.Values("Origin")
+	if len(values) == 0 {
+		return true
+	}
+	if len(values) != 1 {
+		return false
+	}
+	origin, ok := parseOrigin(values[0])
+	return ok && (origin == parseEntryOrigin(entryOrigin) || allowOrigin(cors, values[0], entryOrigin))
+}
+
 // isCORSRequest reports whether the request carries browser CORS semantics.
 // Same-origin and non-browser requests usually omit Origin and do not need CORS response headers.
 func isCORSRequest(origin string) bool {
@@ -140,8 +154,9 @@ type _Origin struct {
 func parseOrigin(origin string) (_Origin, bool) {
 	parsed, err := url.Parse(origin)
 	if err != nil ||
-		parsed.Scheme == "" ||
+		(parsed.Scheme != "http" && parsed.Scheme != "https") ||
 		parsed.Host == "" ||
+		parsed.User != nil ||
 		parsed.Path != "" ||
 		parsed.RawQuery != "" ||
 		parsed.Fragment != "" {

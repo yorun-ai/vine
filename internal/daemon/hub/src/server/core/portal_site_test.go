@@ -146,6 +146,25 @@ func TestPortalSiteInspectSwitchDefaultsAndUpdates(t *testing.T) {
 	require.Panics(t, func() { target.Validate(web) })
 }
 
+func TestPortalSiteMcpSwitchDefaultsAndUpdates(t *testing.T) {
+	repo := new(portalSiteRepoSpy)
+	target := newPortalSiteCoreForTest(repo)
+	site := target.Create(PortalSiteCreation{Name: "api", Type: PortalSiteTypeRPCGW, ActorSkelName: "demo.Actor"})
+	require.False(t, site.McpEnabled)
+	site = target.Update(site.Id, PortalSiteUpdate{McpEnabled: new(true)})
+	require.True(t, site.McpEnabled)
+	site = target.Update(site.Id, PortalSiteUpdate{Name: new("renamed")})
+	require.True(t, site.McpEnabled, "unrelated updates preserve the switch")
+	site.FieldSources = FieldSources{"/mcpEnabled": {Source: "seed"}}
+	repo.Save(site)
+	site = target.Update(site.Id, PortalSiteUpdate{McpEnabled: new(false)})
+	require.False(t, site.McpEnabled)
+	require.Equal(t, "hub", site.FieldSources["/mcpEnabled"].Override)
+	web := testUserSite()
+	web.McpEnabled = true
+	require.Panics(t, func() { target.Validate(web) })
+}
+
 func TestPortalSiteValidateWithoutStorage(t *testing.T) {
 	target := &PortalSiteCore{}
 	got := target.Validate(testUserSite())

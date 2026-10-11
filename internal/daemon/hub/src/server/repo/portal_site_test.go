@@ -92,6 +92,22 @@ func TestPortalSiteInspectSwitchRoundTripsToWatch(t *testing.T) {
 	}
 }
 
+func TestPortalSiteMcpSwitchRoundTripsToWatch(t *testing.T) {
+	_, repo, watchServer := newTestPortalSiteRepo(t)
+	entry := testPortalSite("mcp-api")
+	for _, enabled := range []bool{false, true, false} {
+		entry.McpEnabled = enabled
+		repo.Save(entry)
+		stored, ok := repo.GetById(entry.Id)
+		require.True(t, ok)
+		require.Equal(t, enabled, stored.McpEnabled)
+		raw, ok := watchServer.Get(watched.FormatPortalSiteKey(entry.Name))
+		require.True(t, ok)
+		wire := vcode.MustUnmarshalJsonS[*watched.PortalSite](raw)
+		require.Equal(t, enabled, wire.RpcgwConfig.McpEnabled)
+	}
+}
+
 func TestPortalSiteRepoSaveRename(t *testing.T) {
 	_, repo, watchServer := newTestPortalSiteRepo(t)
 

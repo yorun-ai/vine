@@ -158,6 +158,7 @@ func TestSweeperUnregistersExpiredLeaseStatus(t *testing.T) {
 		},
 		"rpcgwConfig": {
             "inspectEnabled": false,
+            "mcpEnabled": false,
 			"services": [
 				{"skelName": "demo.Service"}
 			]

@@ -9,7 +9,6 @@ import (
 
 	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/ex"
-	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/core/skel/jsonschema"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/util/vpre"
@@ -59,11 +58,6 @@ func (g *RpcGateway) serveInspect(ctx *spec.Context) {
 	w.Header().Set("Cache-Control", "no-store")
 	g.mutex.Lock()
 	enabled := g.inspectEnabled
-	actor := g.actorSkelName
-	configured := make([]string, 0, len(g.watchers))
-	for service := range g.watchers {
-		configured = append(configured, service)
-	}
 	g.mutex.Unlock()
 	if !enabled {
 		writeInspectError(w, ex.NotFound, "rpcgw path is not found")
@@ -81,20 +75,11 @@ func (g *RpcGateway) serveInspect(ctx *spec.Context) {
 		writeInspectError(w, ex.NotFound, "inspect path is not found")
 		return
 	}
-	snapshot := g.desc.Snapshot()
+	snapshot, visible := g.apiSnapshot()
 	if snapshot.Syncing {
 		w.Header().Set("Retry-After", "1")
 		writeInspectError(w, ex.ServiceUnavailable, "inspect descriptors are syncing")
 		return
-	}
-	visible := map[string]*skeldesc.Service{}
-	if snapshot.Actors[actor] != nil {
-		for _, name := range configured {
-			service := snapshot.Services[name]
-			if service != nil && service.Api && skel.HasActorAudience(service.Audiences, actor) {
-				visible[name] = service
-			}
-		}
 	}
 	if list {
 		services := make([]_InspectService, 0, len(visible))

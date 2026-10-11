@@ -108,3 +108,24 @@ WEBGW site 必须配置 `actorSkelName`，且指定的 actor 必须存在。Vine
 元数据；RPCGW 按 service 声明的 Actor audience 准入，再执行鉴权和权限检查。
 Web 认证遵循声明的模式；actor 未配置认证时，`required` 会拒绝请求。
 只有 `off` 会为 handler 保留原生 Authorization 凭证。
+
+## RpcGW MCP
+
+RPCGW site 的独立开关 `mcpEnabled` 默认为 false，开启后提供 `POST /mcp`。
+Entry 将 `/api` 映射到站点根路径时，对外地址为 `/api/mcp`。仅支持 MCP
+`2026-07-28`，入口要求对应的版本头并拒绝旧版初始化。官方 MCP Go SDK
+负责 Streamable HTTP、请求元数据校验、服务发现和 JSON-RPC 错误；Portal 使用无状态
+JSON 响应，仅声明 tools 能力，不发送工具列表变更通知。
+
+MCP 与 Inspect 共用按站点 Actor 筛选的 API 目录，直接读取 `desc` 快照，不另设
+描述符缓存。`tools/list` 排序分页，`tools/call` 只生成目标方法的 schema；同步中或
+缺失类型时拒绝请求。工具名为 `{serviceSkelName}.{methodSkelName}`，超出 MCP 名称
+字符或长度建议时使用稳定的 SHA-256 名称。输入和输出均执行 JSON Schema 校验，
+`structuredContent` 直接包含 API 返回值，包括标量、数组及 `null`，文本 `content`
+提供相同的 JSON。
+
+调用复用 Rpc 准入和转发，仅复制调用方的 Authorization；Portal 生成后端 client、
+trace 和 initiator，准入逻辑生成 actor，并在业务转发前删除凭据。MCP 保留 HTTP
+取消信号，限制 30 秒；原有 `/invoke` 的断连策略不变。API 错误转换为 `isError`
+工具结果，目录及协议错误使用 JSON-RPC error。所有 MCP 请求和预检均校验 Origin，
+响应禁止缓存。该入口使用 Vine 凭据，不提供 OAuth 发现或授权服务器。

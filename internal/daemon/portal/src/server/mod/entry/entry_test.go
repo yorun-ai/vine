@@ -264,6 +264,26 @@ func TestEntryTargetPathDispatchesWithinRpcGateway(t *testing.T) {
 	assert.JSONEq(t, `{"services":[]}`, response.Body.String())
 }
 
+func TestEntryDispatchesMcpAtApiPrefix(t *testing.T) {
+	manager := newTestSiteManager(t, "rpc")
+	gateway, found := manager.Site("rpc")
+	require.True(t, found)
+	gateway.Update(watched.PortalSite{Name: "rpc", Type: "RPCGW", RpcgwConfig: new(watched.PortalRpcgwConfig{McpEnabled: true})})
+	rule, ok := newRule(watched.PortalRule{Name: "rpc", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: "/", RouteType: "SITE", RouteSiteName: "rpc"}, watched.PortalEntry{Host: ""}, spec.SchemeHTTP, 80, manager)
+	require.True(t, ok)
+	entry := newEntry(spec.SchemeHTTP, 80, nil)
+	entry.SetOrUpdateRules([]*_Rule{rule})
+	request := httptest.NewRequest(http.MethodPost, "/api/mcp", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientInfo":{"name":"test","version":"1"},"io.modelcontextprotocol/clientCapabilities":{}}}}`))
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Accept", "application/json, text/event-stream")
+	request.Header.Set("MCP-Protocol-Version", "2026-07-28")
+	request.Header.Set("Mcp-Method", "tools/list")
+	response := httptest.NewRecorder()
+	entry.ServeHTTP(response, request)
+	require.Equal(t, http.StatusOK, response.Code, response.Body.String())
+	assert.Contains(t, response.Body.String(), `"tools":[]`)
+}
+
 func TestEntryWildcardHostPrecedence(t *testing.T) {
 	e := newEntry(spec.SchemeHTTP, 80, nil)
 	e.SetOrUpdateRules([]*_Rule{

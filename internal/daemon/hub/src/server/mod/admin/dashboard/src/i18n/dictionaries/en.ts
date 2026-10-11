@@ -263,6 +263,8 @@ export const en: Record<TranslationKey, string> = {
     'After creating a certificate, Portal HTTPS can sync it from Hub.',
   'common.adjustSearch': 'Adjust the search keywords and check the list again.',
   'common.to': 'to',
+  'portalSite.mcpEnabled': 'Enable MCP',
+  'portalSite.mcpHelp': 'Expose API tools at /mcp. Calls use this site’s actor, authentication and permissions.',
   'portalSite.inspectEnabled': 'Enable Inspect',
   'portalSite.inspectHelp': 'Allow unauthenticated read-only access to this site’s API contracts and JSON Schema. API invocation permissions still apply.',
   'portalSite.createTitle': 'New Target Site',

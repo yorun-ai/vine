@@ -48,6 +48,7 @@ type PortalSite struct {
 	Type           PortalSiteType
 	ActorSkelName  string
 	InspectEnabled bool
+	McpEnabled     bool
 	Cors           PortalCors
 	WebName        string
 	// WebMountPath is derived from the Web contract of the site and is empty when
@@ -65,6 +66,7 @@ type PortalSiteCreation struct {
 	Type           PortalSiteType
 	ActorSkelName  string
 	InspectEnabled bool
+	McpEnabled     bool
 	Cors           PortalCors
 	WebName        string
 	// Enabled is optional and defaults to true.
@@ -76,6 +78,7 @@ type PortalSiteUpdate struct {
 	Type           *PortalSiteType
 	ActorSkelName  *string
 	InspectEnabled *bool
+	McpEnabled     *bool
 	Cors           *PortalCors
 	WebName        *string
 	Enabled        *bool
@@ -156,6 +159,7 @@ func (m *PortalSiteCore) Create(creation PortalSiteCreation) *PortalSite {
 		Type:           creation.Type,
 		ActorSkelName:  creation.ActorSkelName,
 		InspectEnabled: creation.InspectEnabled,
+		McpEnabled:     creation.McpEnabled,
 		Cors:           creation.Cors,
 		WebName:        creation.WebName,
 		Enabled:        EnabledOrDefault(creation.Enabled),
@@ -190,6 +194,10 @@ func (m *PortalSiteCore) Update(id int, update PortalSiteUpdate) *PortalSite {
 	if update.InspectEnabled != nil {
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/inspectEnabled")
 		next.InspectEnabled = *update.InspectEnabled
+	}
+	if update.McpEnabled != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/mcpEnabled")
+		next.McpEnabled = *update.McpEnabled
 	}
 	if update.Cors != nil {
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/cors")
@@ -312,6 +320,7 @@ func (s *PortalSite) normalizeAndValidate() {
 	fail(s.Type == PortalSiteTypeRPCGW || s.Type == PortalSiteTypeWEBGW, "type must be RPCGW or WEBGW")
 	fail(strings.TrimSpace(s.ActorSkelName) != "", "actorSkelName is required")
 	fail(!s.InspectEnabled || s.Type == PortalSiteTypeRPCGW, "inspectEnabled is only supported for RPCGW")
+	fail(!s.McpEnabled || s.Type == PortalSiteTypeRPCGW, "mcpEnabled is only supported for RPCGW")
 	if s.Type == PortalSiteTypeWEBGW {
 		fail(strings.TrimSpace(s.WebName) != "", "webName is required for WEBGW")
 	}

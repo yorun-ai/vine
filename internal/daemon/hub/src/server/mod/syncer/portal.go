@@ -249,6 +249,7 @@ func toWatchedPortalSite(site *core.PortalSite) *watched.PortalSite {
 		}
 		ret.RpcgwConfig = &watched.PortalRpcgwConfig{
 			InspectEnabled: site.InspectEnabled,
+			McpEnabled:     site.McpEnabled,
 			Services:       services,
 		}
 	}

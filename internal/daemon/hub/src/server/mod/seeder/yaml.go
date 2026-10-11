@@ -350,6 +350,7 @@ type _PortalSite struct {
 	Type           string            `yaml:"type"`
 	ActorSkelName  string            `yaml:"actorSkelName"`
 	InspectEnabled bool              `yaml:"inspectEnabled"`
+	McpEnabled     bool              `yaml:"mcpEnabled"`
 	// Deprecated: accepted for old seed files; Vine ignores Via.
 	ActorVia string      `yaml:"actorVia"`
 	Cors     _PortalCors `yaml:"cors"`
@@ -368,8 +369,10 @@ func (s *_PortalSite) UnmarshalYAML(node *yaml.Node) error {
 	if err := checkSeedFields(fields, "portalSites"); err != nil {
 		return err
 	}
-	if value, ok := fields["inspectEnabled"]; ok && (value.Kind != yaml.ScalarNode || value.Tag != "!!bool") {
-		return fmt.Errorf("portal site %q: inspectEnabled must be a boolean", fields["name"].Value)
+	for _, key := range []string{"inspectEnabled", "mcpEnabled"} {
+		if value, ok := fields[key]; ok && (value.Kind != yaml.ScalarNode || value.Tag != "!!bool") {
+			return fmt.Errorf("portal site %q: %s must be a boolean", fields["name"].Value, key)
+		}
 	}
 	if cors, ok := fields["cors"]; ok && cors.Kind == yaml.MappingNode {
 		corsFields, err := seedMappingFields(&cors, "portal site cors")
@@ -403,6 +406,7 @@ func (s _PortalSite) toCorePortalSite() *core.PortalSite {
 		Type:           core.PortalSiteType(s.Type),
 		ActorSkelName:  s.ActorSkelName,
 		InspectEnabled: s.InspectEnabled,
+		McpEnabled:     s.McpEnabled,
 		Cors:           cors,
 		WebName:        s.WebName,
 		Enabled:        core.EnabledOrDefault(s.Enabled),

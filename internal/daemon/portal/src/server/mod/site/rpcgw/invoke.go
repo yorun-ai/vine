@@ -58,7 +58,15 @@ func (g *RpcGateway) serveInvoke(ctx *spec.Context) {
 		g.writeError(ctx.ResponseWriter, invokeRequest, ex.InvalidRequest, "invalid rpc request path")
 		return
 	}
+	g.invoke(&spec.Context{
+		Request: invokeRequest, ResponseWriter: ctx.ResponseWriter, RemoteAddr: ctx.RemoteAddr,
+	}, trace, initiator, serviceName, methodName)
+}
 
+// invoke shares admission and backend forwarding between vRPC and MCP.
+// Each transport prepares its own request metadata and cancellation policy.
+func (g *RpcGateway) invoke(ctx *spec.Context, trace meta.Trace, initiator meta.Initiator, serviceName string, methodName string) {
+	invokeRequest := ctx.Request
 	g.mutex.Lock()
 	actorSkelName := g.actorSkelName
 	g.mutex.Unlock()

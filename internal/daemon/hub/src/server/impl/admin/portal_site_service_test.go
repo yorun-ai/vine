@@ -13,6 +13,7 @@ func TestToServerPortalSiteMapsCompleteEntity(t *testing.T) {
 		Name:          "web",
 		Type:          core.PortalSiteTypeWEBGW,
 		ActorSkelName: "demo.Actor",
+		McpEnabled:    true,
 		WebName:       "demo.Web",
 		WebMountPath:  "/demo",
 		RpcgwServices: []string{"demo.Service"},
@@ -22,6 +23,7 @@ func TestToServerPortalSiteMapsCompleteEntity(t *testing.T) {
 	site := toServerPortalSite(entry, toServerFieldSources(entry.FieldSources))
 
 	assert.Equal(t, "demo.Web", site.WebName)
+	assert.True(t, site.McpEnabled)
 	assert.Equal(t, "/demo", site.WebMountPath)
 	assert.Equal(t, []string{"demo.Service"}, site.RpcgwServices)
 	assert.Len(t, site.FieldSources, 1)

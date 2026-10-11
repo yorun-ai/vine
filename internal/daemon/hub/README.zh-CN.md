@@ -241,3 +241,8 @@ Hub 领域、Admin API、Dashboard 和 seed 统一使用 PEM `certificate`、`pr
 字段。已有数据库必须已包含 PEM 字段；DAO 删除退休的 Base64 列，不再转换其中内容。
 Watch 只发布 PEM 字段；Hub、Link 和 Portal 必须同步升级。启用证书要求证书与私钥
 有效且匹配，停用证书可以占位。Admin API 的来源信息不得泄露私钥值。
+
+RPCGW site 新增独立的 `mcpEnabled` 开关，seed、Admin 创建及已有数据库迁移均
+默认关闭。Dashboard 可以修改，Watch 通过 `rpcgwConfig` 下发并实时生效。开启后
+在站点 `/mcp` 提供 MCP 工具，沿用站点 API 范围、认证和权限规则，无需开启
+`inspectEnabled`；WEBGW 不允许开启 MCP。

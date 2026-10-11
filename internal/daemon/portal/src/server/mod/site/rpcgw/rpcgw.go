@@ -18,6 +18,7 @@ import (
 
 const pathInvoke = "/invoke"
 const pathInspect = "/inspect"
+const pathMcp = "/mcp"
 
 var optionsAllowedMethods = []string{http.MethodPost}
 
@@ -25,6 +26,7 @@ type RpcGateway struct {
 	name           string
 	actorSkelName  string
 	inspectEnabled bool
+	mcpEnabled     bool
 	cors           watched.PortalCors
 
 	app     meta.App
@@ -56,6 +58,7 @@ func (g *RpcGateway) init(config watched.PortalSite) {
 	g.name = config.Name
 	g.actorSkelName = config.ActorSkelName
 	g.inspectEnabled = config.RpcgwConfig.InspectEnabled
+	g.mcpEnabled = config.RpcgwConfig.McpEnabled
 	g.cors = config.Cors
 	g.watchers = map[string]*epmgr.Watcher{}
 	for _, service := range config.RpcgwConfig.Services {
@@ -76,6 +79,7 @@ func (g *RpcGateway) Update(config watched.PortalSite) bool {
 	defer g.mutex.Unlock()
 	g.actorSkelName = config.ActorSkelName
 	g.inspectEnabled = config.RpcgwConfig.InspectEnabled
+	g.mcpEnabled = config.RpcgwConfig.McpEnabled
 	g.cors = config.Cors
 	for serviceName, watcher := range g.watchers {
 		if _, ok := serviceNames[serviceName]; ok {
@@ -120,6 +124,10 @@ func (g *RpcGateway) Serve(ctx *spec.Context) {
 	cors := g.cors
 	g.mutex.Unlock()
 	path := httputil.PathPrefix(ctx.Request.URL.Path)
+	if path == pathMcp {
+		g.serveMcp(ctx, cors)
+		return
+	}
 	if ctx.Request.Method == http.MethodOptions {
 		methods := optionsAllowedMethods
 		if path == pathInspect {

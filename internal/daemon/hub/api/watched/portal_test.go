@@ -43,6 +43,7 @@ func TestPortalSiteJSON(t *testing.T) {
 		},
 		"rpcgwConfig": {
 			"inspectEnabled": true,
+			"mcpEnabled": false,
 			"services": [
 				{"skelName": "demo.user.UserService"},
 				{"skelName": "demo.order.OrderService"}

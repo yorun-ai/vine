@@ -249,6 +249,8 @@ export const cn = {
     '新建证书后，Portal HTTPS 即可从 Hub 同步证书配置。',
   'common.adjustSearch': '调整搜索关键词后再查看列表。',
   'common.to': '至',
+  'portalSite.mcpEnabled': '开启 MCP',
+  'portalSite.mcpHelp': '在 /mcp 提供 API 工具；调用沿用本站点的 Actor、认证和权限规则。',
   'portalSite.inspectEnabled': '开启 Inspect',
   'portalSite.inspectHelp': '允许无需身份认证的只读访问，查询本站点的 API 契约和 JSON Schema。API 调用仍按原有权限校验。',
   'portalSite.createTitle': '新建目标站点',

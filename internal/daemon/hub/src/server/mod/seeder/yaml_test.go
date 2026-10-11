@@ -40,6 +40,21 @@ func TestPortalSiteInspectSeedDefaultAndBoolean(t *testing.T) {
 	}
 }
 
+func TestPortalSiteMcpSeedDefaultAndBoolean(t *testing.T) {
+	for _, test := range []struct {
+		field string
+		want  bool
+	}{{"", false}, {", mcpEnabled: true", true}, {", mcpEnabled: false", false}} {
+		entities, err := parseSeedEntities("portalSites: [{name: api, type: RPCGW, actorSkelName: demo.Actor" + test.field + "}]")
+		require.NoError(t, err)
+		require.Equal(t, test.want, entities.PortalSites[0].McpEnabled)
+	}
+	for _, value := range []string{"null", "'true'", "1", "[]", "{}"} {
+		_, err := parseSeedEntities("portalSites: [{name: api, type: RPCGW, actorSkelName: demo.Actor, mcpEnabled: " + value + "}]")
+		require.ErrorContains(t, err, "mcpEnabled must be a boolean")
+	}
+}
+
 func TestPortalRuleSeedMapsWithoutDomainValidation(t *testing.T) {
 	seed := _PortalRule{Name: "mapped", RouteType: "SITE", RoutePathPrefix: "/internal/"}
 	rule := seed.toCorePortalRule()

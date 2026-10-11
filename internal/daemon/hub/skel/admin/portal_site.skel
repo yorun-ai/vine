@@ -44,6 +44,9 @@ data PortalSiteCreation {
     @desc("Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default")
     inspectEnabled: bool
 
+    @desc("Expose API services as MCP tools over HTTP; RPCGW only, disabled by default")
+    mcpEnabled: bool
+
     @desc("CORS configuration")
     cors: PortalCors?
 
@@ -70,6 +73,9 @@ data PortalSite {
 
     @desc("Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default")
     inspectEnabled: bool
+
+    @desc("Expose API services as MCP tools over HTTP; RPCGW only, disabled by default")
+    mcpEnabled: bool
 
     @desc("Rpc gateway service Skel name list")
     rpcgwServices: list<string>
@@ -107,6 +113,9 @@ data PortalSiteListItem {
     @desc("Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default")
     inspectEnabled: bool
 
+    @desc("Expose API services as MCP tools over HTTP; RPCGW only, disabled by default")
+    mcpEnabled: bool
+
     @desc("Rpc gateway service Skel name list")
     rpcgwServices: list<string>
 
@@ -136,6 +145,9 @@ data PortalSiteUpdate {
 
     @desc("Expose read-only Rpc inspect and JSON Schema; RPCGW only")
     inspectEnabled: bool?
+
+    @desc("Expose API services as MCP tools over HTTP; RPCGW only, disabled by default")
+    mcpEnabled: bool?
 
     @desc("CORS configuration")
     cors: PortalCors?

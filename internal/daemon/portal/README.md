@@ -134,3 +134,33 @@ local `$defs`, including recursive contracts; it retains no descriptor cache.
 Only configured API services accepting the site's current actor are visible.
 No live backend endpoint is required. Responses are not cacheable, have no
 revision, and share site CORS with GET-specific preflight methods.
+
+## RpcGW MCP
+
+The independent `mcpEnabled` site switch (default false) exposes `POST /mcp`.
+An entry mapping `/api` to the site root therefore exposes `/api/mcp`.
+Only MCP `2026-07-28` is supported. The gateway requires that protocol version
+header and rejects legacy initialization; the official MCP Go SDK owns Streamable
+HTTP framing, request metadata validation, discovery, and JSON-RPC errors.
+The gateway uses stateless JSON responses and advertises only tools, without
+list-change notifications.
+
+Inspect and MCP share the site's Actor/API catalog selection. MCP builds tool
+schemas from the current `desc` snapshot without another descriptor cache.
+`tools/list` is sorted and paginated; `tools/call` resolves only its selected
+method. Both reject syncing snapshots or unresolved schemas. Tool names use
+`{serviceSkelName}.{methodSkelName}`, with a deterministic SHA-256 name for wire
+names outside MCP's character/length recommendations. Input and output are
+validated against the same JSON Schema contracts as Inspect. `structuredContent`
+contains the API result directly, including scalars, arrays, and `null`, with
+the same JSON in text `content`.
+
+Calls reuse Rpc admission and forwarding. Only Authorization is copied from the
+MCP request; Portal supplies backend client, trace and initiator metadata, and
+admission supplies the actor. Credentials are stripped before business-service
+forwarding. MCP requests retain HTTP cancellation and have a 30-second limit;
+legacy `/invoke` keeps its existing disconnect policy. API failures are tool
+results with `isError`; catalog/protocol failures are JSON-RPC errors.
+Origin validation applies before handling MCP requests or preflight. Responses
+are non-cacheable. This endpoint uses Vine credentials, not an OAuth discovery
+or authorization-server implementation.

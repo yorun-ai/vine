@@ -21,6 +21,7 @@ type PortalSite struct {
 	Type           string `gorm:"column:type"`
 	ActorSkelName  string `gorm:"column:actor_skel_name"`
 	InspectEnabled bool   `gorm:"column:inspect_enabled;not null"`
+	McpEnabled     bool   `gorm:"column:mcp_enabled;not null"`
 	CorsMode       string `gorm:"column:cors_mode"`
 	CorsOrigins    string `gorm:"column:cors_origins"`
 	WebName        string `gorm:"column:web_name"`
@@ -44,6 +45,9 @@ func (d *PortalSiteDao) EnsureSchema() {
 	ex.PanicIfError(err)
 	if !columns["inspect_enabled"] {
 		ex.PanicIfError(d.GormDB().Exec("ALTER TABLE portal_site ADD COLUMN inspect_enabled BOOLEAN NOT NULL DEFAULT FALSE").Error)
+	}
+	if !columns["mcp_enabled"] {
+		ex.PanicIfError(d.GormDB().Exec("ALTER TABLE portal_site ADD COLUMN mcp_enabled BOOLEAN NOT NULL DEFAULT FALSE").Error)
 	}
 	ensureFieldSourceTable(d.GormDB())
 }
@@ -74,6 +78,7 @@ func (d *PortalSiteDao) Save(entry *PortalSite) *PortalSite {
 		"type":            entry.Type,
 		"actor_skel_name": entry.ActorSkelName,
 		"inspect_enabled": entry.InspectEnabled,
+		"mcp_enabled":     entry.McpEnabled,
 		"cors_mode":       entry.CorsMode,
 		"cors_origins":    entry.CorsOrigins,
 		"web_name":        entry.WebName,
