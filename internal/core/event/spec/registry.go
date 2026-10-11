@@ -108,6 +108,9 @@ func RegisteredEventEmitterFactories() []any {
 func (r *Registry) RegisteredEventEmitterFactories() []any {
 	var factories []any
 	for _, eventInfo := range r.eventInfoBySkelName {
+		if !eventInfo.emitterRegistered {
+			continue
+		}
 		factories = append(factories, eventInfo.EmitterCtor())
 	}
 	return factories
