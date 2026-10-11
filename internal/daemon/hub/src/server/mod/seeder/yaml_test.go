@@ -130,7 +130,7 @@ func TestSeedPortalEntryListenIPs(t *testing.T) {
 	payload, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload](`portalEntries:
   - name: local
     protocol: http
-    http: {httpEnabled: true, httpsEnabled: false, autoHTTPS: false}
+    http: {http: ENABLED, https: DISABLED, autohttps: DISABLED}
     listenIPs: ["127.0.0.1", "::1"]
 `)
 	require.NoError(t, err)

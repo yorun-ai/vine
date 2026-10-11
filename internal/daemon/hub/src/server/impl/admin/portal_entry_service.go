@@ -24,7 +24,7 @@ func (s *PortalEntryApiServiceServerImpl) List() []skeled.PortalEntry {
 func (s *PortalEntryApiServiceServerImpl) Update(id int, update skeled.PortalEntryUpdate) skeled.PortalEntry {
 	validatePortalEntryProtocol(update.Protocol)
 	entry := s.PortalEntryCore.Update(id, core.PortalEntryUpdate{
-		Protocol: update.Protocol, Http: toCoreHTTPUpdate(update.Http),
+		Protocol: update.Protocol, Http: toCoreHTTPConfig(update.Http),
 		Name:      update.Name,
 		ListenIPs: update.ListenIPs,
 		Enabled:   update.Enabled,
@@ -36,7 +36,7 @@ func (s *PortalEntryApiServiceServerImpl) Create(creation skeled.PortalEntryCrea
 	validatePortalEntryProtocol(&creation.Protocol)
 	config := core.DefaultPortalEntryHTTP()
 	if creation.Http != nil {
-		config = toCoreHTTPUpdate(creation.Http).Apply(config)
+		config = *toCoreHTTPConfig(creation.Http)
 	}
 	entry := s.PortalEntryCore.Create(core.PortalEntryCreation{
 		Protocol: creation.Protocol, Http: &config,
@@ -58,13 +58,14 @@ func (s *PortalEntryApiServiceServerImpl) toServerPortalEntry(entry core.PortalE
 		rules = append(rules, s.toServerPortalEntryRule(entry.PortalEntry, rule))
 	}
 	return skeled.PortalEntry{
-		Protocol:  entry.Protocol,
-		Http:      skeled.PortalEntryHttp{Host: entry.Http.Host, HttpEnabled: entry.Http.HttpEnabled, HttpPort: entry.Http.HttpPort, HttpsEnabled: entry.Http.HttpsEnabled, HttpsPort: entry.Http.HttpsPort, AutoHttps: entry.Http.AutoHTTPS},
-		Id:        entry.Id,
-		Name:      entry.Name,
-		ListenIPs: entry.ListenIPs,
-		Enabled:   entry.Enabled,
-		Rules:     rules,
+		Protocol:      entry.Protocol,
+		EffectiveHttp: toServerEffectiveHTTP(*entry.EffectiveHTTP),
+		Http:          skeled.PortalEntryHttp{Host: entry.Http.Host, Http: skeled.PortalSwitchMode(entry.Http.Http), HttpPort: entry.Http.HttpPort, Https: skeled.PortalSwitchMode(entry.Http.Https), HttpsPort: entry.Http.HttpsPort, Autohttps: skeled.PortalSwitchMode(entry.Http.AutoHTTPS)},
+		Id:            entry.Id,
+		Name:          entry.Name,
+		ListenIPs:     entry.ListenIPs,
+		Enabled:       entry.Enabled,
+		Rules:         rules,
 	}
 }
 
@@ -83,9 +84,13 @@ func (s *PortalEntryApiServiceServerImpl) toServerPortalEntryRule(entry core.Por
 func validatePortalEntryProtocol(protocol *string) {
 	ex.PanicNewIfNot(protocol == nil || *protocol == "http", ex.OperationFailed, "unknown portal entry protocol")
 }
-func toCoreHTTPUpdate(h *skeled.PortalEntryHttpUpdate) *core.PortalEntryHTTPUpdate {
+func toCoreHTTPConfig(h *skeled.PortalEntryHttp) *core.PortalEntryHTTP {
 	if h == nil {
 		return nil
 	}
-	return &core.PortalEntryHTTPUpdate{Host: h.Host, HttpEnabled: h.HttpEnabled, HttpPort: h.HttpPort, HttpsEnabled: h.HttpsEnabled, HttpsPort: h.HttpsPort, AutoHTTPS: h.AutoHttps}
+	return &core.PortalEntryHTTP{Host: h.Host, Http: core.PortalSwitchMode(h.Http), HttpPort: h.HttpPort, Https: core.PortalSwitchMode(h.Https), HttpsPort: h.HttpsPort, AutoHTTPS: core.PortalSwitchMode(h.Autohttps)}
+}
+
+func toServerEffectiveHTTP(h core.PortalEntryEffectiveHTTP) skeled.PortalEntryEffectiveHttp {
+	return skeled.PortalEntryEffectiveHttp{Host: h.Host, HttpEnabled: h.HttpEnabled, HttpPort: h.HttpPort, HttpsEnabled: h.HttpsEnabled, HttpsPort: h.HttpsPort, AutohttpsEnabled: h.AutoHTTPSEnabled, HttpsReason: h.HTTPSReason}
 }

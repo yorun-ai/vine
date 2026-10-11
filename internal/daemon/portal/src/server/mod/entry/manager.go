@@ -2,12 +2,14 @@ package entry
 
 import (
 	"context"
+	"slices"
 	"sync"
 	"time"
 
 	"go.yorun.ai/vine/internal/app"
 	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/listenip"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/vault"
@@ -144,7 +146,7 @@ func (e *Manager) reconcileEntriesLocked() error {
 	for key, rules := range rulesToCreate {
 		entry := newEntry(key.scheme, key.port, e.Vault)
 		entry.listenIP = key.listenIP
-		entry.SetOrUpdateRules(rules)
+		entry.SetOrUpdateRouting(e.listenerHosts(key), rules)
 		if e.started {
 			if err := entry.Start(); err != nil {
 				for _, previous := range created {
@@ -164,7 +166,7 @@ func (e *Manager) reconcileEntriesLocked() error {
 		delete(e.entriesByKey, entry.Key())
 	}
 	for key, rules := range rulesToUpdate {
-		e.entriesByKey[key].SetOrUpdateRules(rules)
+		e.entriesByKey[key].SetOrUpdateRouting(e.listenerHosts(key), rules)
 	}
 	for key, entry := range created {
 		e.entriesByKey[key] = entry
@@ -189,13 +191,13 @@ func (e *Manager) buildRulesLocked() map[_Key][]*_Rule {
 	}
 	for _, config := range e.entryConfigsByName {
 		for _, access := range entryTransports(config) {
-			rule := &_Rule{name: config.Name, listenIPs: config.ListenIPs, matchScheme: access.scheme, matchPort: access.port, matchHost: config.Http.Host}
+			rule := &_Rule{name: config.Name, listenIPs: config.ListenIPs, matchScheme: access.scheme, matchPort: access.port, matchHost: config.EffectiveHTTP.Host}
 			for _, key := range rule.Keys() {
 				if _, ok := rulesByKey[key]; !ok {
 					rulesByKey[key] = nil
 				}
-				if access.scheme == spec.SchemeHTTP && config.Http.HttpEnabled && config.Http.HttpsEnabled && config.Http.AutoHTTPS {
-					rule.autoHTTPSPort = config.Http.HttpsPort
+				if access.scheme == spec.SchemeHTTP && config.EffectiveHTTP.AutoHTTPSEnabled {
+					rule.autoHTTPSPort = config.EffectiveHTTP.HttpsPort
 					rule.certificateVault = e.Vault
 					rulesByKey[key] = append(rulesByKey[key], rule)
 				}
@@ -236,11 +238,29 @@ type _Transport struct {
 
 func entryTransports(config watched.PortalEntry) []_Transport {
 	transports := []_Transport{}
-	if config.Http.HttpEnabled {
-		transports = append(transports, _Transport{scheme: spec.SchemeHTTP, port: config.Http.HttpPort})
+	if config.EffectiveHTTP.HttpEnabled {
+		transports = append(transports, _Transport{scheme: spec.SchemeHTTP, port: config.EffectiveHTTP.HttpPort})
 	}
-	if config.Http.HttpsEnabled {
-		transports = append(transports, _Transport{scheme: spec.SchemeHTTPS, port: config.Http.HttpsPort})
+	if config.EffectiveHTTP.HttpsEnabled {
+		transports = append(transports, _Transport{scheme: spec.SchemeHTTPS, port: config.EffectiveHTTP.HttpsPort})
 	}
 	return transports
+}
+
+// listenerHosts includes entries without routing rules and uses the same binding
+// and transport selection as listener creation.
+func (e *Manager) listenerHosts(key _Key) []string {
+	hosts := []string{}
+	for _, config := range e.entryConfigsByName {
+		if !slices.Contains(listenip.Addresses(config.ListenIPs), key.listenIP) {
+			continue
+		}
+		for _, access := range entryTransports(config) {
+			if access.scheme == key.scheme && access.port == key.port {
+				hosts = append(hosts, config.EffectiveHTTP.Host)
+			}
+		}
+	}
+	slices.Sort(hosts)
+	return slices.Compact(hosts)
 }

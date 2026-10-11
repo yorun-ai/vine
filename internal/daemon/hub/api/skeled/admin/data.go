@@ -351,8 +351,9 @@ type PortalCors struct {
 }
 
 type PortalEntry struct {
-	Protocol string          `json:"protocol"`
-	Http     PortalEntryHttp `json:"http"`
+	Protocol      string                   `json:"protocol"`
+	Http          PortalEntryHttp          `json:"http"`
+	EffectiveHttp PortalEntryEffectiveHttp `json:"effectiveHTTP"`
 	// Id Entry ID
 	Id int `json:"id"`
 	// Name Entry name
@@ -367,8 +368,9 @@ type PortalEntry struct {
 
 // PortalEntryCreation Portal access entry creation parameters
 type PortalEntryCreation struct {
-	Protocol string                 `json:"protocol"`
-	Http     *PortalEntryHttpUpdate `json:"http"`
+	Protocol string `json:"protocol"`
+	// Http Replace the complete HTTP block; omitted switches default to AUTO; null is invalid
+	Http *PortalEntryHttp `json:"http"`
 	// Name Entry name
 	Name string `json:"name"`
 	// ListenIPs Listener IP addresses; empty preserves the default wildcard TCP listener
@@ -377,29 +379,31 @@ type PortalEntryCreation struct {
 	Enabled *bool `json:"enabled"`
 }
 
-// PortalEntryHttp Portal access entry
-type PortalEntryHttp struct {
-	// Host Match Host, empty string means no restriction
-	Host string `json:"host"`
-	// HttpEnabled Enable HTTP transport
-	HttpEnabled bool `json:"httpEnabled"`
-	// HttpPort HTTP listener port
-	HttpPort int `json:"httpPort"`
-	// HttpsEnabled Enable HTTPS transport
-	HttpsEnabled bool `json:"httpsEnabled"`
-	// HttpsPort HTTPS listener port
-	HttpsPort int `json:"httpsPort"`
-	// AutoHttps Redirect HTTP to HTTPS with status 308
-	AutoHttps bool `json:"autoHTTPS"`
+// PortalEntryEffectiveHttp Hub-computed transport settings; certificate validity is checked by Portal
+type PortalEntryEffectiveHttp struct {
+	Host             string `json:"host"`
+	HttpEnabled      bool   `json:"httpEnabled"`
+	HttpPort         int    `json:"httpPort"`
+	HttpsEnabled     bool   `json:"httpsEnabled"`
+	HttpsPort        int    `json:"httpsPort"`
+	AutohttpsEnabled bool   `json:"autohttpsEnabled"`
+	HttpsReason      string `json:"httpsReason"`
 }
 
-type PortalEntryHttpUpdate struct {
-	Host         *string `json:"host"`
-	HttpEnabled  *bool   `json:"httpEnabled"`
-	HttpPort     *int    `json:"httpPort"`
-	HttpsEnabled *bool   `json:"httpsEnabled"`
-	HttpsPort    *int    `json:"httpsPort"`
-	AutoHttps    *bool   `json:"autoHTTPS"`
+// PortalEntryHttp Portal access entry
+type PortalEntryHttp struct {
+	// Host Match Host; empty means IP access over HTTP only
+	Host string `json:"host"`
+	// Http HTTP transport mode; defaults to AUTO
+	Http PortalSwitchMode `json:"http"`
+	// HttpPort HTTP listener port
+	HttpPort int `json:"httpPort"`
+	// Https HTTPS transport mode; defaults to AUTO
+	Https PortalSwitchMode `json:"https"`
+	// HttpsPort HTTPS listener port
+	HttpsPort int `json:"httpsPort"`
+	// Autohttps HTTP-to-HTTPS redirect mode (308); defaults to AUTO
+	Autohttps PortalSwitchMode `json:"autohttps"`
 }
 
 // PortalEntryRule Portal access entry rules
@@ -412,8 +416,9 @@ type PortalEntryRule struct {
 
 // PortalEntryUpdate Portal access entry update parameters
 type PortalEntryUpdate struct {
-	Protocol *string                `json:"protocol"`
-	Http     *PortalEntryHttpUpdate `json:"http"`
+	Protocol *string `json:"protocol"`
+	// Http Replace the complete HTTP block; omitted switches default to AUTO; null is invalid
+	Http *PortalEntryHttp `json:"http"`
 	// Name Entry name
 	Name *string `json:"name"`
 	// ListenIPs Listener IP addresses; empty restores the default wildcard TCP listener

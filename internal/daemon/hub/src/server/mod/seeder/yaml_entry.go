@@ -8,12 +8,12 @@ import (
 )
 
 type _PortalEntryHTTP struct {
-	Host         *string `yaml:"host"`
-	HttpEnabled  *bool   `yaml:"httpEnabled"`
-	HttpPort     *int    `yaml:"httpPort"`
-	HttpsEnabled *bool   `yaml:"httpsEnabled"`
-	HttpsPort    *int    `yaml:"httpsPort"`
-	AutoHTTPS    *bool   `yaml:"autoHTTPS"`
+	Host      *string               `yaml:"host"`
+	Http      core.PortalSwitchMode `yaml:"http"`
+	HttpPort  *int                  `yaml:"httpPort"`
+	Https     core.PortalSwitchMode `yaml:"https"`
+	HttpsPort *int                  `yaml:"httpsPort"`
+	AutoHTTPS core.PortalSwitchMode `yaml:"autohttps"`
 }
 
 func (h *_PortalEntryHTTP) UnmarshalYAML(node *yaml.Node) error {
@@ -29,11 +29,26 @@ func (h *_PortalEntryHTTP) UnmarshalYAML(node *yaml.Node) error {
 		if value.Tag == "!!null" {
 			return fmt.Errorf("portal entry http: %s cannot be null", key)
 		}
+		if key == "http" || key == "https" || key == "autohttps" {
+			if value.Tag != "!!str" || !core.PortalSwitchMode(value.Value).Valid() {
+				return fmt.Errorf("portal entry http.%s must be ENABLED, DISABLED or AUTO", key)
+			}
+		}
 	}
 	type plain _PortalEntryHTTP
 	return node.Decode((*plain)(h))
 }
 
-func (h _PortalEntryHTTP) update() core.PortalEntryHTTPUpdate {
-	return core.PortalEntryHTTPUpdate{Host: h.Host, HttpEnabled: h.HttpEnabled, HttpPort: h.HttpPort, HttpsEnabled: h.HttpsEnabled, HttpsPort: h.HttpsPort, AutoHTTPS: h.AutoHTTPS}
+func (h _PortalEntryHTTP) config() core.PortalEntryHTTP {
+	value := core.PortalEntryHTTP{Http: h.Http, Https: h.Https, AutoHTTPS: h.AutoHTTPS}
+	if h.Host != nil {
+		value.Host = *h.Host
+	}
+	if h.HttpPort != nil {
+		value.HttpPort = *h.HttpPort
+	}
+	if h.HttpsPort != nil {
+		value.HttpsPort = *h.HttpsPort
+	}
+	return value
 }

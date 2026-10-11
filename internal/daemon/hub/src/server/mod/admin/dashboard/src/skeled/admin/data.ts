@@ -18,6 +18,13 @@ export type PortalSiteType =
   /** Web gateway. */
   | "WEBGW"
 ;
+/** Explicit or automatically derived HTTP transport behavior. */
+export type PortalSwitchMode =
+  | "UNSPECIFIED"
+  | "ENABLED"
+  | "DISABLED"
+  | "AUTO"
+;
 /** Configuration creation parameters. */
 export type AppConfigCreation = {
   /** Configuration Skel name. */
@@ -341,23 +348,25 @@ export type PortalCors = {
   allowedOrigins: Array<string>;
 }
 export type PortalEntry = {
-  protocol:  string;
-  http:      PortalEntryHttp;
+  protocol:      string;
+  http:          PortalEntryHttp;
+  effectiveHTTP: PortalEntryEffectiveHttp;
   /** Entry ID. */
-  id:        number;
+  id:            number;
   /** Entry name. */
-  name:      string;
+  name:          string;
   /** Listener IP addresses; empty preserves the default wildcard TCP listener. */
-  listenIPs: Array<string>;
+  listenIPs:     Array<string>;
   /** Entry rule list. */
-  rules:     Array<PortalEntryRule>;
+  rules:         Array<PortalEntryRule>;
   /** Whether Hub publishes this entry and its rules to Portal. */
-  enabled:   boolean;
+  enabled:       boolean;
 }
 /** Portal access entry creation parameters. */
 export type PortalEntryCreation = {
   protocol:  string;
-  http:      PortalEntryHttpUpdate | null;
+  /** Replace the complete HTTP block; omitted switches default to AUTO; null is invalid. */
+  http:      PortalEntryHttp | null;
   /** Entry name. */
   name:      string;
   /** Listener IP addresses; empty preserves the default wildcard TCP listener. */
@@ -365,28 +374,30 @@ export type PortalEntryCreation = {
   /** Whether Hub publishes this entry and its rules to Portal; defaults to true. */
   enabled:   boolean | null;
 }
+/** Hub-computed transport settings; certificate validity is checked by Portal. */
+export type PortalEntryEffectiveHttp = {
+  host:             string;
+  httpEnabled:      boolean;
+  httpPort:         number;
+  httpsEnabled:     boolean;
+  httpsPort:        number;
+  autohttpsEnabled: boolean;
+  httpsReason:      string;
+}
 /** Portal access entry. */
 export type PortalEntryHttp = {
-  /** Match Host, empty string means no restriction. */
-  host:         string;
-  /** Enable HTTP transport. */
-  httpEnabled:  boolean;
+  /** Match Host; empty means IP access over HTTP only. */
+  host:      string;
+  /** HTTP transport mode; defaults to AUTO. */
+  http:      PortalSwitchMode;
   /** HTTP listener port. */
-  httpPort:     number;
-  /** Enable HTTPS transport. */
-  httpsEnabled: boolean;
+  httpPort:  number;
+  /** HTTPS transport mode; defaults to AUTO. */
+  https:     PortalSwitchMode;
   /** HTTPS listener port. */
-  httpsPort:    number;
-  /** Redirect HTTP to HTTPS with status 308. */
-  autoHTTPS:    boolean;
-}
-export type PortalEntryHttpUpdate = {
-  host:         string | null;
-  httpEnabled:  boolean | null;
-  httpPort:     number | null;
-  httpsEnabled: boolean | null;
-  httpsPort:    number | null;
-  autoHTTPS:    boolean | null;
+  httpsPort: number;
+  /** HTTP-to-HTTPS redirect mode (308); defaults to AUTO. */
+  autohttps: PortalSwitchMode;
 }
 /** Portal access entry rules. */
 export type PortalEntryRule = {
@@ -398,7 +409,8 @@ export type PortalEntryRule = {
 /** Portal access entry update parameters. */
 export type PortalEntryUpdate = {
   protocol:  string | null;
-  http:      PortalEntryHttpUpdate | null;
+  /** Replace the complete HTTP block; omitted switches default to AUTO; null is invalid. */
+  http:      PortalEntryHttp | null;
   /** Entry name. */
   name:      string | null;
   /** Listener IP addresses; empty restores the default wildcard TCP listener. */

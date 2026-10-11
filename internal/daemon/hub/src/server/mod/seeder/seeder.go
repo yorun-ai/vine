@@ -80,10 +80,32 @@ func (s *Seeder) loadSeedYAML() {
 	for _, site := range entities.PortalSites {
 		s.SiteCore.Validate(*site)
 	}
+	certsByName := map[string]*core.PortalCert{}
+	for _, cert := range s.CertCore.List() {
+		certsByName[cert.Name] = cert
+	}
+	for _, cert := range entities.PortalCerts {
+		validated := s.CertCore.Validate(*cert)
+		certsByName[validated.Name] = &validated
+	}
+	certs := make([]*core.PortalCert, 0, len(certsByName))
+	for _, cert := range certsByName {
+		certs = append(certs, cert)
+	}
 	entries := map[string]*core.PortalEntry{}
 	listenerEntries := []core.PortalEntry{}
 	for _, entry := range entities.PortalEntries {
 		normalized := s.EntryCore.Validate(*entry)
+		core.ValidatePortalEntryCertificates(normalized, certs)
+		_, duplicateName := entries[normalized.Name]
+		ex.PanicNewIfNot(!duplicateName, ex.OperationFailed, ex.F("portal entry %q is declared more than once in the seed", normalized.Name))
+		// Save rejects duplicate access even for disabled entries or different
+		// listener IPs. Check the same normalized identity before any seed writes.
+		for _, other := range listenerEntries {
+			if normalized.Protocol == other.Protocol && normalized.Http.Equal(*other.Http) {
+				ex.PanicNew(ex.OperationFailed, ex.F("portal entry %q duplicates entry %q in the seed", normalized.Name, other.Name))
+			}
+		}
 		entries[normalized.Name] = &normalized
 		listenerEntries = append(listenerEntries, normalized)
 	}
@@ -104,9 +126,6 @@ func (s *Seeder) loadSeedYAML() {
 		}
 	}
 	core.ValidatePortalEntryListeners(listenerEntries)
-	for _, cert := range entities.PortalCerts {
-		s.CertCore.Validate(*cert)
-	}
 
 	s.payload = payload
 }
@@ -119,6 +138,10 @@ func (s *Seeder) applySeed() {
 	for _, site := range entities.PortalSites {
 		s.SiteCore.Save(*site)
 	}
+	// Certificates come before entries so explicit HTTPS can be validated.
+	for _, cert := range entities.PortalCerts {
+		s.CertCore.Save(*cert)
+	}
 	// Entries come before rules: a rule joins the entry that serves its access,
 	// and an entry the seed named keeps that name.
 	for _, entry := range entities.PortalEntries {
@@ -126,8 +149,5 @@ func (s *Seeder) applySeed() {
 	}
 	for _, rule := range entities.PortalRules {
 		s.RuleCore.Save(*resolveSeedRule(s.EntryCore, rule))
-	}
-	for _, cert := range entities.PortalCerts {
-		s.CertCore.Save(*cert)
 	}
 }

@@ -102,13 +102,16 @@ Hub 的层次职责必须保持清晰：
   的规则、停用站点上的 SITE 规则以及停用的证书都会从发布内容中移除。早于该开关的
   数据库中的实体保持启用。停用证书可不提供有效 PEM 内容，名称和 YAML 字段类型仍校验，
   启用时必须提供有效且匹配的证书和私钥。
-- entry 使用 `protocol: http` 和平铺的 `http` 块，默认 HTTP/80、HTTPS/443、
-  `autoHTTPS: true`，自动跳转要求同时启用两种传输协议。Admin API 的入口输入必须使用
-  `protocol`；seed 保留 v0.27.0 的 `scheme/port` 转换，保持单一传输且关闭自动跳转，不能与 `protocol` 混用；数据库旧入口保留原协议且不启用跳转。已有数据一一迁移，保留
+- entry 使用 `protocol: http` 和 `http` 块，块内 `http`、`https`、`autohttps` 使用
+  `ENABLED`、`DISABLED`、`AUTO`，省略为 `AUTO`，不接受 null。HTTP 自动开启；HTTPS 自动模式
+  需要域名和已启用的匹配证书；自动跳转需要域名且 HTTP、HTTPS 均生效。显式启用缺少条件时报错。
+  端口默认 80/443。Hub 推导 `effectiveHTTP` 的 bool 开关 `httpEnabled`、`httpsEnabled`、
+  `autohttpsEnabled`，不考虑证书有效期；Portal 遵照生效配置监听，并检查证书有效期。Admin API 的入口输入必须使用
+  `protocol`；seed 保留 v0.28 的 `scheme/port` 转换，保持单一传输且关闭自动跳转，不能与 `protocol` 混用；数据库旧入口保留原协议且不启用跳转。已有数据一一迁移，保留
   规则引用。启用的 entry 独立发布到 `portal:entry:*`，无需规则即可监听和跳转。
 - entry 有自己的名称：seed 的 `portalEntries` 段声明 `name`、`protocol`、`http`、
   `listenIPs`，HTTP 请求域名位于 `http.host`。旧字段仅在 seed 解码和数据库迁移时转换；迁移完成后删除旧列，
-  `protocol` 不能与旧顶层 `scheme`、`port`、`host` 混用。Admin API 和 Watch 统一使用 `http.host`。seed 入口在规则之前应用，因此规则会加入服务其访问配置的 entry 并沿用该名称；
+  `protocol` 不能与旧顶层 `scheme`、`port`、`host` 混用。Admin API 返回 `http` 和 `effectiveHTTP`，Watch 仅发布 `effectiveHTTP`。seed 入口在规则之前应用，因此规则会加入服务其访问配置的 entry 并沿用该名称；
   entry 也可以暂时不承载任何规则，规则必须通过 `entryName` 引用同一 seed 声明的 entry。
 - 入口内部模型与 Admin 响应仅使用 `protocol` 和 `http`；顶层 `scheme`、`host`、`port`
   仅在旧 seed 解码和数据库迁移边界兼容。规则响应通过 `entryName` 和 `entryAddresses`
@@ -179,8 +182,11 @@ Admin API、Watch 和 Dashboard 不再包含该字段，数据库
 初始化会删除 `portal_site.actor_via` 列。描述符元数据原样保留，以兼容已生成的契约代码。
 Hub 与 Portal 需要同步升级。
 
-现有数据库必须已使用 v0.27.0 的结构。初始化时继续升级 entry 的监听 IP 和 HTTP
-协议配置块，不再执行更早的证书格式转换和已退休列清理。
+数据库升级以 v0.28 结构为起点。`scheme/host/port` 入口直接转成当前枚举 HTTP 配置，
+保留原单一协议、端口、ID、规则引用、启用状态和软删除状态；监听 IP 默认 `[]`，自动跳转保持关闭。
+初始化删除入口旧列、site 的 `actor_via` 及证书旧 Base64 列，保留已有 PEM 数据，
+新增 inspect/MCP 开关默认关闭。当前 HTTP JSON 拒绝未知字段，不会把旧开关名误当成 AUTO。
+重复初始化不会再次改写已迁移的数据。
 
 数据库 metadata 记录首次 seed 完成状态。后续启动跳过全部 seed、变量和来源输入，seed 条目不再提供 `override` 开关。无数据库模式每次建立新存储并导入 seed。
 

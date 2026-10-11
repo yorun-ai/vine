@@ -26,9 +26,10 @@ const (
 type PortalEntry struct {
 	Id int
 	// Name is the entry label supplied by a seed or an operator.
-	Name     string
-	Protocol string
-	Http     *PortalEntryHTTP
+	Name          string
+	Protocol      string
+	Http          *PortalEntryHTTP
+	EffectiveHTTP *PortalEntryEffectiveHTTP
 	// ListenIPs restricts listener addresses; empty preserves legacy wildcard TCP.
 	ListenIPs []string
 	// Enabled decides whether Hub publishes the rules of the entry to Portal.
@@ -46,7 +47,7 @@ type PortalEntryUpdate struct {
 	// Name is optional and keeps the stored label when it is nil.
 	Name      *string
 	Protocol  *string
-	Http      *PortalEntryHTTPUpdate
+	Http      *PortalEntryHTTP
 	ListenIPs *[]string
 	// Enabled is optional and keeps the stored switch when it is nil.
 	Enabled *bool
@@ -82,6 +83,7 @@ type PortalEntryCore struct {
 	PortalEntryRepo PortalEntryRepo `inject:""`
 	PortalRuleRepo  PortalRuleRepo  `inject:""`
 	PortalSiteRepo  PortalSiteRepo  `inject:""`
+	PortalCertRepo  PortalCertRepo  `inject:""`
 }
 
 // List returns the entries with the rules they route, ordered by port, scheme,
@@ -99,12 +101,12 @@ func (m *PortalEntryCore) List() []PortalEntryView {
 	}
 
 	return vslice.SortBy(views, func(a PortalEntryView, b PortalEntryView) bool {
-		aa, ba := a.Accesses()[0], b.Accesses()[0]
-		if aa.Port != ba.Port {
-			return aa.Port < ba.Port
+		aAccess, bAccess := a.ReservedAccesses()[0], b.ReservedAccesses()[0]
+		if aAccess.Port != bAccess.Port {
+			return aAccess.Port < bAccess.Port
 		}
-		if aa.Scheme != ba.Scheme {
-			return aa.Scheme < ba.Scheme
+		if aAccess.Scheme != bAccess.Scheme {
+			return aAccess.Scheme < bAccess.Scheme
 		}
 		if a.Http.Host != b.Http.Host {
 			return a.Http.Host < b.Http.Host
@@ -129,6 +131,7 @@ func (m *PortalEntryCore) Create(creation PortalEntryCreation) PortalEntryView {
 			ex.F("portal entry %q already serves %s", current.Name, portalEntryAddress(entry)))
 	}
 	m.validateListeners(entry)
+	m.validateCertificates(entry)
 	m.PortalEntryRepo.Save(&entry)
 	return PortalEntryView{PortalEntry: entry}
 }
@@ -163,6 +166,7 @@ func (m *PortalEntryCore) Save(entry PortalEntry) *PortalEntry {
 	}
 	m.validateWildcardRules(entry, entry.Id)
 	m.validateListeners(entry)
+	m.validateCertificates(entry)
 	m.PortalEntryRepo.Save(&entry)
 	m.saveRules(entry.Id, entry.Id)
 	return &entry
@@ -206,12 +210,13 @@ func (m *PortalEntryCore) Update(id int, update PortalEntryUpdate) PortalEntryVi
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", id))
 
 	next := normalizePortalEntry(*current)
+	next.EffectiveHTTP = nil
 	if update.Protocol != nil {
 		next.Protocol = *update.Protocol
 		ex.PanicNewIfNot(strings.TrimSpace(next.Protocol) != "", ex.OperationFailed, "protocol is empty")
 	}
 	if update.Http != nil {
-		config := update.Http.Apply(*next.Http)
+		config := *update.Http
 		next.Http = &config
 	}
 	if update.Name != nil {
@@ -230,7 +235,7 @@ func (m *PortalEntryCore) Update(id int, update PortalEntryUpdate) PortalEntryVi
 		}
 	}
 	m.validateWildcardRules(next, current.Id)
-	accessChanged := next.Protocol != current.Protocol || *next.Http != *normalizePortalEntry(*current).Http
+	accessChanged := next.Protocol != current.Protocol || !next.Http.Equal(*normalizePortalEntry(*current).Http)
 	if accessChanged {
 		if target, ok := m.sameAccess(next); ok && target.Id != current.Id {
 			ex.PanicNew(ex.OperationFailed, ex.F("portal entry %q already serves this access", target.Name))
@@ -243,6 +248,7 @@ func (m *PortalEntryCore) Update(id int, update PortalEntryUpdate) PortalEntryVi
 
 	next.Id = current.Id
 	m.validateListeners(next)
+	m.validateCertificates(next)
 	m.PortalEntryRepo.Save(&next)
 	// Save republishes listener changes through Syncer. An access change also
 	// saves the attached rules to refresh their access-dependent domain state.
@@ -255,7 +261,7 @@ func (m *PortalEntryCore) Update(id int, update PortalEntryUpdate) PortalEntryVi
 // portalEntryAddress renders the access an entry serves for error messages.
 func portalEntryAddress(entry PortalEntry) string {
 	addresses := []string{}
-	for _, access := range entry.Accesses() {
+	for _, access := range entry.ReservedAccesses() {
 		if entry.Http.Host == "" {
 			addresses = append(addresses, fmt.Sprintf("%s:%d", access.Scheme, access.Port))
 		} else {
@@ -271,11 +277,6 @@ func portalEntryAddress(entry PortalEntry) string {
 func normalizePortalEntry(entry PortalEntry) PortalEntry {
 	entry.Name = strings.TrimSpace(entry.Name)
 	entry = normalizePortalEntryHTTP(entry)
-	entry.Http.Host = strings.TrimSpace(entry.Http.Host)
-	if strings.HasPrefix(entry.Http.Host, "*.") {
-		entry.Http.Host = strings.ToLower(entry.Http.Host)
-	}
-	ex.PanicNewIfNot(portalEntryHostAccepted(entry.Http.Host), ex.OperationFailed, "portal entry host must be a hostname, IP or leading *. wildcard without a port")
 	ips, err := listenip.Normalize(entry.ListenIPs)
 	ex.PanicNewIfNot(err == nil, ex.OperationFailed, ex.F("%v", err))
 	entry.ListenIPs = ips
@@ -416,9 +417,9 @@ func ValidatePortalEntryListeners(entries []PortalEntry) {
 			if !other.Enabled {
 				continue
 			}
-			for _, access := range entry.Accesses() {
-				for _, otherAccess := range other.Accesses() {
-					if entry.Http.Host == other.Http.Host && access.Scheme == otherAccess.Scheme && access.Port == otherAccess.Port && *entry.Http != *other.Http {
+			for _, access := range entry.ReservedAccesses() {
+				for _, otherAccess := range other.ReservedAccesses() {
+					if entry.Http.Host == other.Http.Host && access.Scheme == otherAccess.Scheme && access.Port == otherAccess.Port && !entry.Http.Equal(*other.Http) {
 						ex.PanicNew(ex.OperationFailed, ex.F("portal entry %q shares an access with entry %q; configure the transports on one entry", entry.Name, other.Name))
 					}
 					if access.Port != otherAccess.Port {
@@ -439,9 +440,13 @@ func ValidatePortalEntryListeners(entries []PortalEntry) {
 
 func (m *PortalEntryCore) sameAccess(entry PortalEntry) (*PortalEntry, bool) {
 	for _, other := range m.PortalEntryRepo.List() {
-		if other.Id != entry.Id && other.Protocol == entry.Protocol && *normalizePortalEntry(*other).Http == *entry.Http {
+		if other.Id != entry.Id && other.Protocol == entry.Protocol && normalizePortalEntry(*other).Http.Equal(*entry.Http) {
 			return other, true
 		}
 	}
 	return nil, false
+}
+
+func (m *PortalEntryCore) validateCertificates(entry PortalEntry) {
+	ValidatePortalEntryCertificates(entry, m.PortalCertRepo.List())
 }

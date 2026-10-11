@@ -43,61 +43,40 @@ func (d *PortalEntryDao) EnsureSchema() {
 		if err != nil {
 			return err
 		}
-		if !columns["listen_ips"] {
-			if err := tx.Exec("ALTER TABLE portal_entry ADD COLUMN listen_ips TEXT NOT NULL DEFAULT '[]'").Error; err != nil {
-				return err
+		// v0.28 stores one scheme/host/port per entry. Convert that shape
+		// directly to the current configuration; never combine old and new fields.
+		if columns["scheme"] || columns["host"] || columns["port"] {
+			if !columns["scheme"] || !columns["host"] || !columns["port"] || columns["protocol"] || columns["http_config"] || columns["listen_ips"] {
+				return fmt.Errorf("unsupported mixed portal entry schema")
 			}
-		}
-		for _, name := range []string{"protocol", "http_config"} {
-			if !columns[name] {
-				if err := tx.Exec("ALTER TABLE portal_entry ADD COLUMN " + name + " TEXT NOT NULL DEFAULT ''").Error; err != nil {
+			for _, definition := range []string{
+				"protocol TEXT NOT NULL DEFAULT ''",
+				"http_config TEXT NOT NULL DEFAULT ''",
+				"listen_ips TEXT NOT NULL DEFAULT '[]'",
+			} {
+				if err := tx.Exec("ALTER TABLE portal_entry ADD COLUMN " + definition).Error; err != nil {
 					return err
 				}
 			}
-		}
-		// Old columns are read only here, then removed after every row has
-		// the canonical protocol configuration, including soft-deleted rows.
-		if columns["host"] {
-			type _LegacyEntry struct {
-				Id         int
-				Protocol   string
-				HTTPConfig string
-				Scheme     string
-				Host       string
-				Port       int
+			type _EntryV028 struct {
+				Id     int
+				Scheme string
+				Host   string
+				Port   int
 			}
-			rows := []_LegacyEntry{}
-			if err := tx.Table("portal_entry").Find(&rows).Error; err != nil {
+			rows := []_EntryV028{}
+			// Include soft-deleted rows, but avoid SELECT * across schema changes.
+			if err := tx.Table("portal_entry").Select("id, scheme, host, port").Find(&rows).Error; err != nil {
 				return err
 			}
 			for _, row := range rows {
-				config := core.PortalEntryHTTP{}
-				if row.Protocol == "" || row.HTTPConfig == "" {
-					legacy, err := legacyHTTPConfig(row.Scheme, row.Port)
-					if err != nil {
-						return err
-					}
-					config = legacy
-				} else {
-					if row.Protocol != "http" {
-						return fmt.Errorf("cannot migrate portal entry protocol %q", row.Protocol)
-					}
-					if err := json.Unmarshal([]byte(row.HTTPConfig), &config); err != nil {
-						return err
-					}
+				config, err := legacyHTTPConfig(row.Scheme, row.Port)
+				if err != nil {
+					return err
 				}
-				// A nested host already written by a newer version wins,
-				// including an explicitly empty host.
-				fields := map[string]any{}
-				if row.HTTPConfig != "" {
-					if err := json.Unmarshal([]byte(row.HTTPConfig), &fields); err != nil {
-						return err
-					}
-				}
-				if _, exists := fields["host"]; !exists {
-					config.Host = row.Host
-				}
-				raw, err := json.Marshal(config)
+				config.Host = row.Host
+				entry := core.NormalizePortalEntry(core.PortalEntry{Protocol: "http", Http: &config})
+				raw, err := json.Marshal(entry.Http)
 				if err != nil {
 					return err
 				}
@@ -105,19 +84,16 @@ func (d *PortalEntryDao) EnsureSchema() {
 					return err
 				}
 			}
-			for _, index := range []string{"uk_portal_entry_access", "uk_portal_entry_protocol_access"} {
-				if err := tx.Exec("DROP INDEX IF EXISTS " + index).Error; err != nil {
+			if err := tx.Exec("DROP INDEX IF EXISTS uk_portal_entry_access").Error; err != nil {
+				return err
+			}
+			for _, column := range []string{"scheme", "host", "port"} {
+				if err := tx.Exec("ALTER TABLE portal_entry DROP COLUMN " + column).Error; err != nil {
 					return err
 				}
 			}
-			for _, column := range []string{"scheme", "host", "port"} {
-				if columns[column] {
-					if err := tx.Exec("ALTER TABLE portal_entry DROP COLUMN " + column).Error; err != nil {
-						return err
-					}
-				}
-			}
 		}
+
 		return tx.Exec("CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_entry_protocol_access ON portal_entry(protocol, http_config) WHERE deleted_at IS NULL AND http_config <> ''").Error
 
 	}))
@@ -183,5 +159,11 @@ func legacyHTTPConfig(scheme string, port int) (core.PortalEntryHTTP, error) {
 	if scheme == "https" && port != 0 {
 		httpsPort = port
 	}
-	return core.PortalEntryHTTP{HttpEnabled: scheme == "http", HttpPort: httpPort, HttpsEnabled: scheme == "https", HttpsPort: httpsPort}, nil
+	config := core.PortalEntryHTTP{Http: core.PortalSwitchModeDisabled, HttpPort: httpPort, Https: core.PortalSwitchModeDisabled, HttpsPort: httpsPort, AutoHTTPS: core.PortalSwitchModeDisabled}
+	if scheme == "http" {
+		config.Http = core.PortalSwitchModeEnabled
+	} else {
+		config.Https = core.PortalSwitchModeEnabled
+	}
+	return config, nil
 }

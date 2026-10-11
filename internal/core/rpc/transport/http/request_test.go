@@ -3,17 +3,21 @@ package http
 import (
 	"bytes"
 	"context"
-	rpchttp "go.yorun.ai/vrpc/transport/http"
+	"encoding/json/v2"
+	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/fxamacker/cbor/v2"
+	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
+	rpchttp "go.yorun.ai/vrpc/transport/http"
 )
 
 type _PingNoArgsServiceServer interface {
@@ -439,5 +443,57 @@ func TestEncodeRequestDestination(t *testing.T) {
 		if req.Header.Get("vrpc-destination") != "" {
 			t.Fatal("unexpected destination header")
 		}
+	}
+}
+
+// Like generated Skel enums, this type validates JSON and has no CBOR methods.
+type requestTestMode string
+
+func (m *requestTestMode) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		return fmt.Errorf("mode cannot be null")
+	}
+	var value string
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	switch value {
+	case "ENABLED", "DISABLED", "AUTO":
+		*m = requestTestMode(value)
+	default:
+		*m = "UNSPECIFIED"
+	}
+	return nil
+}
+
+func TestRequestCBORPreservesEnumValidation(t *testing.T) {
+	type args struct {
+		Mode     requestTestMode            `json:"mode"`
+		Optional *requestTestMode           `json:"optional"`
+		Modes    []requestTestMode          `json:"modes"`
+		ByName   map[string]requestTestMode `json:"byName"`
+		Binary   []byte                     `json:"binary"`
+	}
+	for _, contentType := range []string{ContentTypeJson, ContentTypeCbor} {
+		request := httptest.NewRequest(http.MethodPost, "/", nil)
+		request.Header.Set(HeaderContentType, contentType)
+		decoder := &_RequestDecoder{httpRequest: request}
+		for _, raw := range []any{map[string]any{"mode": nil}, map[string]any{"modes": []any{nil}}, map[string]any{"byName": map[string]any{"a": nil}}} {
+			body, err := rpchttp.EncodeRequest(raw, contentType)
+			require.NoError(t, err)
+			require.Error(t, decoder.decodeArgumentsBytes(body, new(args)))
+		}
+		body, err := rpchttp.EncodeRequest(map[string]any{"mode": "", "optional": nil, "modes": []string{"AUTO"}, "byName": map[string]string{"a": "ENABLED"}, "binary": []byte{0, 1, 255}}, contentType)
+		require.NoError(t, err)
+		var target args
+		require.NoError(t, decoder.decodeArgumentsBytes(body, &target))
+		require.Equal(t, requestTestMode("UNSPECIFIED"), target.Mode)
+		require.Nil(t, target.Optional)
+		require.Equal(t, []requestTestMode{"AUTO"}, target.Modes)
+		require.Equal(t, map[string]requestTestMode{"a": "ENABLED"}, target.ByName)
+		require.Equal(t, []byte{0, 1, 255}, target.Binary)
+		omitted, err := rpchttp.EncodeRequest(map[string]any{}, contentType)
+		require.NoError(t, err)
+		require.NoError(t, decoder.decodeArgumentsBytes(omitted, new(args)))
 	}
 }

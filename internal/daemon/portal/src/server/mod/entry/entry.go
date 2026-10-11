@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -37,6 +38,7 @@ type _Entry struct {
 
 	mutex sync.RWMutex
 	rules []*_Rule
+	hosts []string
 
 	server   *http.Server
 	listener net.Listener
@@ -60,7 +62,7 @@ func (e *_Entry) Key() _Key {
 	}
 }
 
-func (e *_Entry) SetOrUpdateRules(rules []*_Rule) {
+func (e *_Entry) SetOrUpdateRouting(hosts []string, rules []*_Rule) {
 	sort.SliceStable(rules, func(i int, j int) bool {
 		left := rules[i]
 		right := rules[j]
@@ -78,10 +80,19 @@ func (e *_Entry) SetOrUpdateRules(rules []*_Rule) {
 
 	e.mutex.Lock()
 	e.rules = rules
+	e.hosts = hosts
 	e.mutex.Unlock()
 }
 
 func (e *_Entry) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Host == "" {
+		http.Error(w, "missing Host", http.StatusBadRequest)
+		return
+	}
+	if e.scheme == spec.SchemeHTTPS && (r.TLS == nil || !e.acceptsSNI(r.TLS.ServerName) || normalizeHost(requestHost(r)) != normalizeHost(r.TLS.ServerName)) {
+		http.Error(w, "request host does not match TLS entry", http.StatusMisdirectedRequest)
+		return
+	}
 	request := e.prepareRequest(r)
 	if rule, ok := e.route(request); ok {
 		rule.Serve(&spec.Context{
@@ -97,9 +108,26 @@ func (e *_Entry) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (e *_Entry) route(r *http.Request) (*_Rule, bool) {
 	e.mutex.RLock()
 	rules := e.rules
+	hosts := e.hosts
 	e.mutex.RUnlock()
 
+	var selectedHost string
+	var ok bool
+	if e.scheme == spec.SchemeHTTPS {
+		if r.TLS == nil {
+			return nil, false
+		}
+		selectedHost, ok = matchSNI(hosts, r.TLS.ServerName)
+	} else {
+		selectedHost, ok = matchEntryHost(hosts, requestHost(r))
+	}
+	if !ok {
+		return nil, false
+	}
 	for _, rule := range rules {
+		if normalizeHost(rule.matchHost) != selectedHost {
+			continue
+		}
 		if rule.Matches(r) {
 			return rule, true
 		}
@@ -122,7 +150,8 @@ func (e *_Entry) Start() error {
 	server := newEntryHTTPServer(listenAddr, e)
 	if e.scheme == spec.SchemeHTTPS {
 		server.TLSConfig = &tls.Config{
-			GetCertificate: e.getCertificate,
+			GetConfigForClient: e.getTLSConfig,
+			GetCertificate:     e.vault.GetCertificate,
 		}
 	}
 	listener, err := listenEntryTCP(network, listenAddr)
@@ -164,8 +193,50 @@ func (e *_Entry) serve(server *http.Server, listener net.Listener) error {
 	return server.Serve(listener)
 }
 
-func (e *_Entry) getCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-	return e.vault.GetCertificate(hello)
+// getTLSConfig gates every handshake, including resumed sessions, before the
+// vault selects a certificate.
+func (e *_Entry) getTLSConfig(hello *tls.ClientHelloInfo) (*tls.Config, error) {
+	if !e.acceptsSNI(hello.ServerName) {
+		return nil, errors.New("no HTTPS entry matches SNI")
+	}
+	return nil, nil
+}
+
+// acceptsSNI checks configured entries on this listener, independently of routes
+// and certificates. Empty names and IP literals cannot select an HTTPS entry.
+func (e *_Entry) acceptsSNI(serverName string) bool {
+	e.mutex.RLock()
+	defer e.mutex.RUnlock()
+	_, ok := matchSNI(e.hosts, serverName)
+	return ok
+}
+
+func matchSNI(hosts []string, serverName string) (string, bool) {
+	host := normalizeHost(serverName)
+	if host == "" || isIPHost(host) {
+		return "", false
+	}
+	return matchEntryHost(hosts, host)
+}
+
+// matchEntryHost selects an entry independently of its rules. An exact host
+// takes precedence over wildcard hosts and the empty-host HTTP IP entry, even
+// when the selected entry has no rule matching the requested path.
+func matchEntryHost(hosts []string, host string) (string, bool) {
+	selected := ""
+	matched := false
+	for _, pattern := range hosts {
+		if !matchesHost(pattern, host) {
+			continue
+		}
+		if pattern != "" && !strings.HasPrefix(pattern, "*.") {
+			return normalizeHost(pattern), true
+		}
+		if !matched || pattern != "" {
+			selected, matched = normalizeHost(pattern), true
+		}
+	}
+	return selected, matched
 }
 
 func (e *_Entry) Stop() {

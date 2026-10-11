@@ -1,31 +1,41 @@
 domain vine.hub.admin
 
+@desc("Explicit or automatically derived HTTP transport behavior")
+enum PortalSwitchMode {
+    ENABLED
+    DISABLED
+    AUTO
+}
+
 @desc("Portal access entry")
 data PortalEntryHTTP {
-    @desc("Match Host, empty string means no restriction")
+    @desc("Match Host; empty means IP access over HTTP only")
     host: string
-    @desc("Enable HTTP transport")
-    httpEnabled: bool
+    @desc("HTTP transport mode; defaults to AUTO")
+    http: PortalSwitchMode
     @desc("HTTP listener port")
     httpPort: int
-    @desc("Enable HTTPS transport")
-    httpsEnabled: bool
+    @desc("HTTPS transport mode; defaults to AUTO")
+    https: PortalSwitchMode
     @desc("HTTPS listener port")
     httpsPort: int
-    @desc("Redirect HTTP to HTTPS with status 308")
-    autoHTTPS: bool
+    @desc("HTTP-to-HTTPS redirect mode (308); defaults to AUTO")
+    autohttps: PortalSwitchMode
 }
-data PortalEntryHTTPUpdate {
- host: string?
- httpEnabled: bool?
- httpPort: int?
- httpsEnabled: bool?
- httpsPort: int?
- autoHTTPS: bool?
+@desc("Hub-computed transport settings; certificate validity is checked by Portal")
+data PortalEntryEffectiveHTTP {
+ host: string
+ httpEnabled: bool
+ httpPort: int
+ httpsEnabled: bool
+ httpsPort: int
+ autohttpsEnabled: bool
+ httpsReason: string
 }
 data PortalEntry {
  protocol: string
  http: PortalEntryHTTP
+ effectiveHTTP: PortalEntryEffectiveHTTP
     @desc("Entry ID")
     id: int
 
@@ -46,7 +56,8 @@ data PortalEntry {
 @desc("Portal access entry update parameters")
 data PortalEntryUpdate {
  protocol: string?
- http: PortalEntryHTTPUpdate?
+ @desc("Replace the complete HTTP block; omitted switches default to AUTO; null is invalid")
+ http: PortalEntryHTTP?
     @desc("Entry name")
     name: string?
 
@@ -60,7 +71,8 @@ data PortalEntryUpdate {
 @desc("Portal access entry creation parameters")
 data PortalEntryCreation {
  protocol: string
- http: PortalEntryHTTPUpdate?
+ @desc("Replace the complete HTTP block; omitted switches default to AUTO; null is invalid")
+ http: PortalEntryHTTP?
     @desc("Entry name")
     name: string
 

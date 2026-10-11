@@ -8,6 +8,57 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-10-11
+
+### Changed
+
+- Configure Portal transports with `http.http`, `http.https`, and
+  `http.autohttps` using `ENABLED`, `DISABLED`, or `AUTO`. Omitted switches use
+  `AUTO`; explicit nulls and invalid modes are rejected.
+- Let Hub derive `effectiveHTTP` from entry configuration and enabled matching
+  certificates. HTTP is enabled automatically; HTTPS also requires a domain
+  host and a matching certificate, while automatic redirects require both
+  transports. Certificate validity remains Portal's responsibility.
+- Return raw configuration and effective transport state in the Admin API and
+  Dashboard, and publish only effective switches and ports through Watch.
+  Recompute entries when certificates change, and reserve potential HTTPS
+  listeners before a certificate is available.
+- Reject explicit HTTPS or automatic redirect activation without a matching
+  enabled certificate, and reject certificate changes that remove a required
+  match. Replacing an entry's HTTP block resets omitted switches to `AUTO`.
+- Update stable Hub, Link, and Portal Kubernetes images to v0.31.0.
+
+### Fixed
+
+- Restrict empty-host entries to HTTP IP access. Match each TLS handshake's SNI
+  against entries on its listener before selecting a certificate, including
+  resumed sessions; reject absent, IP, or unmatched SNI and return `421` when
+  request Host differs from SNI.
+- Select HTTP and HTTPS entries before matching paths, so exact hosts do not
+  inherit wildcard routes or automatic redirects. Match equivalent IPv6
+  addresses correctly and keep explicit IP entries ahead of empty-host entries.
+- Normalize entry host case and trailing dots before validation and storage.
+  Reject duplicate normalized seed entries before importing any entities.
+- Preserve non-nullable Skel enum validation when decoding CBOR Rpc requests.
+- Migrate v0.27/v0.28 Portal storage directly to the current format on SQLite
+  and PostgreSQL, preserving entry IDs, rule references, ports, enable state,
+  and soft deletion. Retain each entry's original single transport without
+  adding automatic redirects.
+
+### Upgrade Notes
+
+- Upgrade Hub and Portal together for the new `effectiveHTTP` Watch contract;
+  upgrades from v0.27/v0.28 must also upgrade Link for the intervening descriptor
+  contract changes. Regenerate application contracts with skelc v0.32.0 or later.
+- Admin clients and current-format seeds must use the enum switches above;
+  effective response booleans are `httpEnabled`, `httpsEnabled`, and
+  `autohttpsEnabled`. Legacy seed `scheme`/`host`/`port` fields remain supported
+  when they are not mixed with `protocol`/`http`.
+- Direct database upgrades support the v0.27/v0.28 schema. Databases already
+  converted by v0.29/v0.30 are not supported migration inputs. Existing HTTPS
+  entries must have a domain host; empty or IP hosts are rejected. Resolve
+  duplicate hosts that differ only by case or a trailing dot before upgrading.
+
 ## [0.30.0] - 2026-10-11
 
 ### Changed
@@ -1681,7 +1732,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.30.0...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.31.0...HEAD
+[0.31.0]: https://github.com/yorun-ai/vine/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/yorun-ai/vine/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/yorun-ai/vine/compare/v0.28.1...v0.29.0
 [0.28.1]: https://github.com/yorun-ai/vine/compare/v0.28.0...v0.28.1

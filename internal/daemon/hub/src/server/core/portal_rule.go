@@ -219,7 +219,8 @@ func (*PortalRuleCore) Validate(rule PortalRule) PortalRule {
 // PortalEntryMatchKey identifies the requests one entry and path prefix match.
 func PortalEntryMatchKey(entry PortalEntry, matchPathPrefix string) string {
 	entry = NormalizePortalEntry(entry)
-	return entry.Protocol + "\x00" + fmt.Sprint(*entry.Http) + "\x00" + matchPathPrefix
+	h := entry.Http.Effective(true)
+	return fmt.Sprintf("%s\x00%s\x00%t:%d:%t:%d\x00%s", entry.Protocol, h.Host, h.HttpEnabled, h.HttpPort, h.HttpsEnabled, h.HttpsPort, matchPathPrefix)
 }
 
 // PortalRuleConflict names two published rules that match the same request: the
@@ -249,15 +250,15 @@ func PortalRuleConflictWinner(rule string, conflict string) (published string, s
 	return rule, conflict
 }
 
-// MatchText renders the request both rules match.
+// MatchText renders potential matches, including transports awaiting a certificate.
 func (c PortalRuleConflict) MatchText() string {
 	entry := NormalizePortalEntry(c.Entry)
 	host := entry.Http.Host
 	if host == "" {
-		host = "*"
+		host = "<IP>"
 	}
 	addresses := []string{}
-	for _, access := range entry.Accesses() {
+	for _, access := range entry.ReservedAccesses() {
 		addresses = append(addresses, fmt.Sprintf("%s://%s:%d%s", access.Scheme, host, access.Port, c.MatchPathPrefix))
 	}
 	return strings.Join(addresses, ", ")
