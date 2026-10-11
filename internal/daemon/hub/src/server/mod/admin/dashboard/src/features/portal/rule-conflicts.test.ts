@@ -9,7 +9,7 @@ test('indexes a conflict by both rules it names', () => {
     conflictRuleId: 1,
     conflictRule: 'web',
     entry: 'http:7088',
-    match: 'http://*:7088/',
+    match: 'http://<IP>:7088/',
     publishedRuleId: 1,
     publishedRule: 'web',
     suppressedRuleId: 2,

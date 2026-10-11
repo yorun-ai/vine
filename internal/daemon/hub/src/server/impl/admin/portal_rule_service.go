@@ -88,10 +88,10 @@ func toServerPortalRule(rule *core.PortalRule, entry *core.PortalEntry, fieldSou
 	if entry != nil {
 		ret.EntryName = entry.Name
 		ret.EntryAddresses = []string{}
-		for _, access := range entry.Accesses() {
+		for _, access := range entry.EffectiveAccesses() {
 			host := entry.Http.Host
 			if host == "" {
-				host = "*"
+				host = "<IP>"
 			}
 			if strings.Contains(host, ":") {
 				host = "[" + host + "]"

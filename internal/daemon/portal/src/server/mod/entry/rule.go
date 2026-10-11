@@ -47,7 +47,7 @@ type _Rule struct {
 func newRule(rule watched.PortalRule, config watched.PortalEntry, scheme spec.Scheme, port int, siteManager *site.Manager) (*_Rule, bool) {
 	isRedirection := rule.RouteType == routeTypePermanentRedirect || rule.RouteType == routeTypeTemporaryRedirect
 	isEntry := rule.RouteType == routeTypeSite
-	if (!isRedirection && !isEntry) || (strings.HasPrefix(config.Http.Host, "*.") && !isEntry) {
+	if (!isRedirection && !isEntry) || (strings.HasPrefix(config.EffectiveHTTP.Host, "*.") && !isEntry) {
 		entryLogger.Warn("vine.portal entry rule target type is not supported", "rule", rule.Name, "routeType", rule.RouteType)
 		return nil, false
 	}
@@ -61,7 +61,7 @@ func newRule(rule watched.PortalRule, config watched.PortalEntry, scheme spec.Sc
 		name:            rule.Name,
 		listenIPs:       ips,
 		matchScheme:     scheme,
-		matchHost:       config.Http.Host,
+		matchHost:       config.EffectiveHTTP.Host,
 		matchPort:       port,
 		matchPathPrefix: rule.ResolvedMatchPathPrefix,
 		routePathPrefix: strings.TrimRight(rule.ResolvedRoutePathPrefix, "/"),
@@ -88,21 +88,41 @@ func (r _Rule) Matches(request *http.Request) bool {
 	if !r.matchesHost(requestHost(request)) {
 		return false
 	}
-	return r.matchesPathPrefix(request.URL.Path) && (r.autoHTTPSPort == 0 || r.certificateVault.HasValidCertificate(requestHost(request)))
+	return r.matchesPathPrefix(request.URL.Path) && (r.autoHTTPSPort == 0 || (!isIPHost(requestHost(request)) && r.certificateVault.HasValidCertificate(requestHost(request))))
 }
 
 func (r _Rule) matchesHost(host string) bool {
-	if r.matchHost == "" {
-		return true
+	if r.matchHost == "" && r.matchScheme != spec.SchemeHTTP {
+		return false
 	}
-	if strings.HasPrefix(r.matchHost, "*.") {
-		suffix := r.matchHost[1:]
-		host = strings.ToLower(host)
-		suffix = strings.ToLower(suffix)
-		label, ok := strings.CutSuffix(host, suffix)
+	return matchesHost(r.matchHost, host)
+}
+
+func normalizeHost(host string) string { return strings.ToLower(strings.TrimSuffix(host, ".")) }
+
+func isIPHost(host string) bool {
+	if strings.HasPrefix(host, "[") && strings.HasSuffix(host, "]") {
+		host = host[1 : len(host)-1]
+	}
+	return net.ParseIP(host) != nil
+}
+
+func matchesHost(pattern string, host string) bool {
+	if pattern == "" {
+		return isIPHost(host)
+	}
+	pattern, host = normalizeHost(pattern), normalizeHost(host)
+	if ip := net.ParseIP(pattern); ip != nil {
+		if strings.HasPrefix(host, "[") && strings.HasSuffix(host, "]") {
+			host = host[1 : len(host)-1]
+		}
+		return ip.Equal(net.ParseIP(host))
+	}
+	if strings.HasPrefix(pattern, "*.") {
+		label, ok := strings.CutSuffix(host, pattern[1:])
 		return ok && label != "" && !strings.Contains(label, ".")
 	}
-	return r.matchHost == host
+	return pattern == host
 }
 
 func (r _Rule) matchesPathPrefix(path string) bool {

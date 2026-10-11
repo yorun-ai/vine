@@ -1,27 +1,22 @@
 package model
 
 import (
-	"fmt"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
-	"go.yorun.ai/vine/util/vcode"
-	"os"
 	"path/filepath"
-	"strings"
 	"testing"
-	"uuid"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/infra/rdb"
-	"go.yorun.ai/vine/infra/rdb/adapter"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
+	"go.yorun.ai/vine/util/vcode"
 	"gorm.io/gorm"
 )
 
 func TestPortalEntryDaoStoresAndFindsName(t *testing.T) {
 	dao := newTestPortalEntryDao(t)
 
-	entry := dao.Save(&PortalEntry{Name: "web", Protocol: "http", HTTPConfig: `{"host":"demo.local","httpEnabled":false,"httpPort":80,"httpsEnabled":true,"httpsPort":8443,"autoHTTPS":false}`})
+	entry := dao.Save(&PortalEntry{Name: "web", Protocol: "http", HTTPConfig: `{"host":"demo.local","http":"DISABLED","httpPort":80,"https":"ENABLED","httpsPort":8443,"autohttps":"DISABLED"}`})
 	require.NotZero(t, entry.Id)
 
 	byName, ok := dao.ByName("web")
@@ -32,21 +27,21 @@ func TestPortalEntryDaoStoresAndFindsName(t *testing.T) {
 
 	// A user entry name identifies one entry.
 	require.Panics(t, func() {
-		dao.Save(&PortalEntry{Name: "web", Protocol: "http", HTTPConfig: `{"host":"demo.local","httpEnabled":false,"httpPort":80,"httpsEnabled":true,"httpsPort":9443,"autoHTTPS":false}`})
+		dao.Save(&PortalEntry{Name: "web", Protocol: "http", HTTPConfig: `{"host":"demo.local","http":"DISABLED","httpPort":80,"https":"ENABLED","httpsPort":9443,"autohttps":"DISABLED"}`})
 	})
 }
 
 func TestPortalEntryDaoCreateQueryAndRemove(t *testing.T) {
 	dao := newTestPortalEntryDao(t)
 
-	entry := dao.Save(&PortalEntry{Protocol: "http", HTTPConfig: `{"host":"demo.local","httpEnabled":false,"httpPort":80,"httpsEnabled":true,"httpsPort":8443,"autoHTTPS":false}`})
+	entry := dao.Save(&PortalEntry{Protocol: "http", HTTPConfig: `{"host":"demo.local","http":"DISABLED","httpPort":80,"https":"ENABLED","httpsPort":8443,"autohttps":"DISABLED"}`})
 	require.NotZero(t, entry.Id)
 
 	byAccess, ok := dao.ById(entry.Id)
 	require.True(t, ok)
 	assert.Equal(t, entry.Id, byAccess.Id)
 
-	updated := dao.Save(&PortalEntry{Id: entry.Id, Protocol: "http", HTTPConfig: `{"host":"demo.local","httpEnabled":false,"httpPort":80,"httpsEnabled":true,"httpsPort":9443,"autoHTTPS":false}`})
+	updated := dao.Save(&PortalEntry{Id: entry.Id, Protocol: "http", HTTPConfig: `{"host":"demo.local","http":"DISABLED","httpPort":80,"https":"ENABLED","httpsPort":9443,"autohttps":"DISABLED"}`})
 	assert.Equal(t, entry.Id, updated.Id)
 	got, ok := dao.ById(entry.Id)
 	require.True(t, ok)
@@ -59,14 +54,14 @@ func TestPortalEntryDaoCreateQueryAndRemove(t *testing.T) {
 
 	// Hub recreates an entry when rules return to an access, so the deleted row
 	// must not keep the access index occupied.
-	recreated := dao.Save(&PortalEntry{Protocol: "http", HTTPConfig: `{"host":"demo.local","httpEnabled":false,"httpPort":80,"httpsEnabled":true,"httpsPort":9443,"autoHTTPS":false}`})
+	recreated := dao.Save(&PortalEntry{Protocol: "http", HTTPConfig: `{"host":"demo.local","http":"DISABLED","httpPort":80,"https":"ENABLED","httpsPort":9443,"autohttps":"DISABLED"}`})
 	assert.NotZero(t, recreated.Id)
 }
 
 func TestPortalEntryDaoKeepsOneEntryPerAccess(t *testing.T) {
 	dao := newTestPortalEntryDao(t)
 
-	user := dao.Save(&PortalEntry{Protocol: "http", HTTPConfig: `{"host":"","httpEnabled":true,"httpPort":7099,"httpsEnabled":false,"httpsPort":443,"autoHTTPS":false}`})
+	user := dao.Save(&PortalEntry{Protocol: "http", HTTPConfig: `{"host":"","http":"ENABLED","httpPort":7099,"https":"DISABLED","httpsPort":443,"autohttps":"DISABLED"}`})
 	require.NotZero(t, user.Id)
 	byAccess, ok := dao.ById(user.Id)
 	require.True(t, ok)
@@ -74,7 +69,7 @@ func TestPortalEntryDaoKeepsOneEntryPerAccess(t *testing.T) {
 
 	// One access never has two entries.
 	require.Panics(t, func() {
-		dao.Save(&PortalEntry{Protocol: "http", HTTPConfig: `{"host":"","httpEnabled":true,"httpPort":7099,"httpsEnabled":false,"httpsPort":443,"autoHTTPS":false}`})
+		dao.Save(&PortalEntry{Protocol: "http", HTTPConfig: `{"host":"","http":"ENABLED","httpPort":7099,"https":"DISABLED","httpsPort":443,"autohttps":"DISABLED"}`})
 	})
 }
 
@@ -92,157 +87,96 @@ func newTestPortalEntryDao(t *testing.T) *PortalEntryDao {
 	return dao
 }
 
-func TestPortalEntryDaoMigratesListenIPs(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "legacy.sqlite")), &gorm.Config{})
-	require.NoError(t, err)
-	connection, err := db.DB()
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = connection.Close() })
-	testPortalEntryListenIPsMigration(t, db, createPortalEntrySQLiteSQL)
+// Fixtures are the unmodified portal_entry schemas from the v0.28.0 tag.
+func TestPortalEntryMigrationFrom028(t *testing.T) {
+	db := newModelTestDB(t, "entry-028.sqlite")
+	testPortalEntryMigrationFrom028(t, db, "sqlite")
 }
 
-func TestPostgresPortalEntryListenIPsMigration(t *testing.T) {
-	dsn := os.Getenv("VINE_TEST_POSTGRES_DSN")
-	if dsn == "" {
-		t.Skip("set VINE_TEST_POSTGRES_DSN to run PostgreSQL integration tests")
-	}
-	db, err := gorm.Open(adapter.NewDialector(dsn), &gorm.Config{})
-	require.NoError(t, err)
-	connection, err := db.DB()
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = connection.Close() })
-	tx := db.Begin()
-	require.NoError(t, tx.Error)
-	t.Cleanup(func() { require.NoError(t, tx.Rollback().Error) })
-	schema := "vine_entry_ips_" + strings.ReplaceAll(uuid.NewV7().String(), "-", "")
-	require.NoError(t, tx.Exec(`CREATE SCHEMA "`+schema+`"`).Error)
-	require.NoError(t, tx.Exec(`SET LOCAL search_path TO "`+schema+`"`).Error)
-	testPortalEntryListenIPsMigration(t, tx, createPortalEntryPgSQL)
+func TestPostgresPortalEntryMigrationFrom028(t *testing.T) {
+	testPortalEntryMigrationFrom028(t, newModelPostgresTestDB(t), "pgsql")
 }
 
-func testPortalEntryListenIPsMigration(t *testing.T, db *gorm.DB, schema string) {
+func testPortalEntryMigrationFrom028(t *testing.T, db *gorm.DB, dialect string) {
 	t.Helper()
-	legacy := strings.ReplaceAll(legacyEntrySchema(schema), "    listen_ips TEXT NOT NULL DEFAULT '[]',  -- Explicit listener IPs; empty keeps legacy wildcard TCP\n", "")
-	require.NoError(t, db.Exec(legacy).Error)
-	require.NoError(t, db.Exec("INSERT INTO portal_entry (name, scheme, host, port) VALUES ('legacy', 'http', '', 8080)").Error)
+	loadModel028Schema(t, db, dialect, "portal_entry")
+	require.NoError(t, db.Exec(`INSERT INTO portal_entry (name,scheme,host,port,enabled,created_at,updated_at) VALUES
+ ('plain','http','demo.local',8080,true,'2026-01-01 00:00:00','2026-01-02 00:00:00'),
+ ('secure','https','DEMO.LOCAL.',8443,false,'2026-01-01 00:00:00','2026-01-02 00:00:00'),
+ ('archived','http','',80,false,'2026-01-01 00:00:00','2026-01-02 00:00:00')`).Error)
+	require.NoError(t, db.Exec("UPDATE portal_entry SET deleted_at = '2026-01-03 00:00:00' WHERE name = 'archived'").Error)
+	// Only read fields that exist before and after the migration, including deleted rows.
+	before := []*PortalEntry{}
+	require.NoError(t, db.Unscoped().Select("id, name, enabled, created_at, updated_at, deleted_at").Order("id").Find(&before).Error)
+	require.Len(t, before, 3)
+	ruleDao := &PortalRuleDao{Dao: rdb.NewDao[*PortalRule](db)}
+	ruleDao.EnsureSchema()
+	rule := ruleDao.Save(new(PortalRule{Name: "kept", EntryId: before[0].Id, MatchPathPrefix: "/", RouteType: "SITE", RouteSiteName: "application", Enabled: true}))
 	dao := &PortalEntryDao{Dao: rdb.NewDao[*PortalEntry](db)}
 	dao.EnsureSchema()
-	dao.EnsureSchema()
-	entry, ok := dao.ByName("legacy")
-	require.True(t, ok)
-	assert.Equal(t, "[]", entry.ListenIPs)
-	assert.True(t, entry.Enabled)
-	assert.Equal(t, 8080, vcode.MustUnmarshalJsonS[core.PortalEntryHTTP](entry.HTTPConfig).HttpPort)
-	entry.ListenIPs = `["127.0.0.1","::1"]`
-	dao.Save(entry)
-	entry, _ = dao.ByName("legacy")
-	assert.Equal(t, `["127.0.0.1","::1"]`, entry.ListenIPs)
-}
-
-func TestPortalEntryProtocolMigrationPreservesSeparateLegacyEntries(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "protocol.sqlite")), &gorm.Config{})
-	require.NoError(t, err)
-	connection, err := db.DB()
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = connection.Close() })
-	testPortalEntryProtocolMigration(t, db, createPortalEntrySQLiteSQL)
-}
-func TestPostgresPortalEntryProtocolMigration(t *testing.T) {
-	dsn := os.Getenv("VINE_TEST_POSTGRES_DSN")
-	if dsn == "" {
-		t.Skip("set VINE_TEST_POSTGRES_DSN to run PostgreSQL integration tests")
-	}
-	db, err := gorm.Open(adapter.NewDialector(dsn), &gorm.Config{})
-	require.NoError(t, err)
-	connection, err := db.DB()
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = connection.Close() })
-	tx := db.Begin()
-	require.NoError(t, tx.Error)
-	t.Cleanup(func() { require.NoError(t, tx.Rollback().Error) })
-	schema := "vine_entry_protocol_" + strings.ReplaceAll(uuid.NewV7().String(), "-", "")
-	require.NoError(t, tx.Exec(`CREATE SCHEMA "`+schema+`"`).Error)
-	require.NoError(t, tx.Exec(`SET LOCAL search_path TO "`+schema+`"`).Error)
-	testPortalEntryProtocolMigration(t, tx, createPortalEntryPgSQL)
-}
-func testPortalEntryProtocolMigration(t *testing.T, db *gorm.DB, schema string) {
-	t.Helper()
-	legacyLines := []string{}
-	for _, line := range strings.Split(legacyEntrySchema(schema), "\n") {
-		if strings.HasPrefix(strings.TrimSpace(line), "protocol TEXT") || strings.HasPrefix(strings.TrimSpace(line), "http_config TEXT") {
-			continue
-		}
-		legacyLines = append(legacyLines, line)
-	}
-	legacy := strings.ReplaceAll(strings.Join(legacyLines, "\n"), " AND scheme <> ''", "")
-	require.NoError(t, db.Exec(legacy).Error)
-	require.NoError(t, db.Exec("INSERT INTO portal_entry (name,scheme,host,port,listen_ips,enabled) VALUES ('plain','http','demo.local',8080,'[\"127.0.0.1\"]',true),('secure','https','demo.local',8443,'[\"::1\"]',false)").Error)
-	dao := &PortalEntryDao{Dao: rdb.NewDao[*PortalEntry](db)}
-	before := dao.ListOrdered()
-	require.Len(t, before, 2)
-	dao.EnsureSchema()
-	dao.EnsureSchema()
-	after := dao.ListOrdered()
-	require.Len(t, after, 2)
+	after := []*PortalEntry{}
+	require.NoError(t, db.Unscoped().Order("id").Find(&after).Error)
+	require.Len(t, after, 3)
 	for i, entry := range after {
 		require.Equal(t, before[i].Id, entry.Id)
 		require.Equal(t, before[i].Name, entry.Name)
 		require.Equal(t, before[i].Enabled, entry.Enabled)
-		require.Equal(t, before[i].ListenIPs, entry.ListenIPs)
-		require.Contains(t, entry.HTTPConfig, `"host":"demo.local"`)
+		require.Equal(t, before[i].CreatedAt, entry.CreatedAt)
+		require.Equal(t, before[i].UpdatedAt, entry.UpdatedAt)
+		require.Equal(t, before[i].DeletedAt, entry.DeletedAt)
+		require.Equal(t, "[]", entry.ListenIPs)
 		require.Equal(t, "http", entry.Protocol)
-		require.Contains(t, entry.HTTPConfig, `"autoHTTPS":false`)
-		if entry.Name == "plain" {
-			require.Contains(t, entry.HTTPConfig, `"httpsEnabled":false`)
-		} else {
-			require.Contains(t, entry.HTTPConfig, `"httpEnabled":false`)
+		cfg := vcode.MustUnmarshalJsonS[core.PortalEntryHTTP](entry.HTTPConfig)
+		require.Equal(t, core.PortalSwitchModeDisabled, cfg.AutoHTTPS)
+		switch entry.Name {
+		case "plain":
+			require.Equal(t, core.PortalEntryHTTP{Host: "demo.local", Http: core.PortalSwitchModeEnabled, HttpPort: 8080, Https: core.PortalSwitchModeDisabled, HttpsPort: 443, AutoHTTPS: core.PortalSwitchModeDisabled}, cfg)
+		case "secure":
+			require.Equal(t, core.PortalEntryHTTP{Host: "demo.local", Http: core.PortalSwitchModeDisabled, HttpPort: 80, Https: core.PortalSwitchModeEnabled, HttpsPort: 8443, AutoHTTPS: core.PortalSwitchModeDisabled}, cfg)
+		case "archived":
+			require.Equal(t, "", cfg.Host)
+			require.Equal(t, 80, cfg.HttpPort)
 		}
 	}
-	dao.Save(&PortalEntry{Name: "dual", Protocol: "http", HTTPConfig: `{"host":"other.local","httpEnabled":true,"httpPort":80,"httpsEnabled":true,"httpsPort":443,"autoHTTPS":true}`, Enabled: true})
-	dao.Save(&PortalEntry{Name: "another-dual", Protocol: "http", HTTPConfig: `{"host":"third.local","httpEnabled":true,"httpPort":80,"httpsEnabled":true,"httpsPort":443,"autoHTTPS":true}`, Enabled: true})
-	dao.EnsureSchema()
-	require.Len(t, dao.ListOrdered(), 4)
-}
-
-// Build both historical schemas explicitly; production table definitions have no old columns.
-func legacyEntrySchema(schema string) string {
-	schema = strings.Replace(schema, "    enabled BOOLEAN", "    scheme TEXT NOT NULL DEFAULT '',\n    host TEXT NOT NULL DEFAULT '',\n    port INTEGER NOT NULL DEFAULT 0,\n    enabled BOOLEAN", 1)
-	return schema + "CREATE UNIQUE INDEX uk_portal_entry_access ON portal_entry(scheme,host,port) WHERE deleted_at IS NULL AND scheme <> '';"
-}
-
-func TestPortalEntryMigrationMovesHostAndDropsLegacyColumns(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "host.sqlite")), &gorm.Config{})
-	require.NoError(t, err)
-	conn, err := db.DB()
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = conn.Close() })
-	require.NoError(t, db.Exec(legacyEntrySchema(createPortalEntrySQLiteSQL)).Error)
-	require.NoError(t, db.Exec("CREATE UNIQUE INDEX uk_portal_entry_protocol_access ON portal_entry(protocol,host,http_config) WHERE deleted_at IS NULL AND http_config <> ''").Error)
-	configs := []string{
-		`{"httpEnabled":true,"httpPort":8080,"httpsEnabled":true,"httpsPort":8443,"autoHTTPS":true}`,
-		`{"host":"","httpEnabled":true,"httpPort":80,"httpsEnabled":false,"httpsPort":443,"autoHTTPS":false}`,
-		`{"host":"nested.local","httpEnabled":false,"httpPort":80,"httpsEnabled":true,"httpsPort":443,"autoHTTPS":false}`,
-	}
-	for i, config := range configs {
-		require.NoError(t, db.Exec("INSERT INTO portal_entry (id,name,protocol,http_config,host,listen_ips,enabled) VALUES (?,?,?,?,?,?,?)", i+1, fmt.Sprint(i), "http", config, "old.local", `["127.0.0.1"]`, false).Error)
-	}
-	require.NoError(t, db.Exec("UPDATE portal_entry SET deleted_at = CURRENT_TIMESTAMP WHERE id = 3").Error)
-	dao := &PortalEntryDao{Dao: rdb.NewDao[*PortalEntry](db)}
-	dao.EnsureSchema()
-	dao.EnsureSchema()
 	columns, err := tableColumnNames(db, "portal_entry")
 	require.NoError(t, err)
-	for _, name := range []string{"scheme", "host", "port"} {
-		require.False(t, columns[name])
+	for _, field := range []string{"scheme", "host", "port"} {
+		require.NotContains(t, columns, field)
 	}
-	rows := []*PortalEntry{}
-	require.NoError(t, db.Unscoped().Order("id").Find(&rows).Error)
-	require.Len(t, rows, 3)
-	for i, host := range []string{"old.local", "", "nested.local"} {
-		require.Equal(t, i+1, rows[i].Id)
-		require.Equal(t, host, vcode.MustUnmarshalJsonS[core.PortalEntryHTTP](rows[i].HTTPConfig).Host)
-		require.False(t, rows[i].Enabled)
-		require.Equal(t, `["127.0.0.1"]`, rows[i].ListenIPs)
+	for _, field := range []string{"protocol", "http_config", "listen_ips"} {
+		require.Contains(t, columns, field)
 	}
+	loadedRule, ok := ruleDao.ById(rule.Id)
+	require.True(t, ok)
+	require.Equal(t, rule.EntryId, loadedRule.EntryId)
 	require.Len(t, dao.ListOrdered(), 2)
+	// A second startup preserves the complete result, including soft-deleted rows.
+	dao.EnsureSchema()
+	again := []*PortalEntry{}
+	require.NoError(t, db.Unscoped().Order("id").Find(&again).Error)
+	require.Equal(t, after, again)
+	// The retired single-transport index must no longer block new-format entries.
+	dao.Save(new(PortalEntry{Name: "dual", Protocol: "http", HTTPConfig: `{"host":"other.local","http":"AUTO","https":"AUTO","autohttps":"AUTO"}`, ListenIPs: "[]", Enabled: true}))
+	dao.EnsureSchema()
+	require.Len(t, dao.ListOrdered(), 3)
+}
+
+func TestPortalEntryMigrationRollsBackInvalidLegacyData(t *testing.T) {
+	for _, scheme := range []string{"tcp", "https"} {
+		t.Run(scheme, func(t *testing.T) {
+			db := newModelTestDB(t, "rollback.sqlite")
+			loadModel028Schema(t, db, "sqlite", "portal_entry")
+			require.NoError(t, db.Exec("INSERT INTO portal_entry (name,scheme,host,port) VALUES ('invalid',?,'',80)", scheme).Error)
+			before, err := tableColumnNames(db, "portal_entry")
+			require.NoError(t, err)
+			dao := &PortalEntryDao{Dao: rdb.NewDao[*PortalEntry](db)}
+			require.Panics(t, dao.EnsureSchema)
+			after, err := tableColumnNames(db, "portal_entry")
+			require.NoError(t, err)
+			require.Equal(t, before, after)
+			var stored string
+			require.NoError(t, db.Raw("SELECT scheme FROM portal_entry WHERE name = 'invalid'").Scan(&stored).Error)
+			require.Equal(t, scheme, stored)
+		})
+	}
 }

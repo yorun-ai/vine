@@ -9,6 +9,14 @@ import (
 	"go.yorun.ai/vine/util/vslice"
 )
 
+func TestPortalRuleAddressesUseOnlyEffectiveTransports(t *testing.T) {
+	entry := core.NormalizePortalEntry(core.PortalEntry{Protocol: "http", Http: new(core.PortalEntryHTTP{Host: "example.com", Http: "DISABLED"})})
+	entry.EffectiveHTTP = new(entry.Http.Effective(false))
+	require.Empty(t, toServerPortalRule(new(core.PortalRule), &entry, nil).EntryAddresses)
+	entry.EffectiveHTTP = new(entry.Http.Effective(true))
+	require.Equal(t, []string{"https://example.com:443"}, toServerPortalRule(new(core.PortalRule), &entry, nil).EntryAddresses)
+}
+
 // _PortalCertRepoSpy is a map-backed certificate repository.
 type _PortalCertRepoSpy struct {
 	items map[string]*core.PortalCert
@@ -92,6 +100,7 @@ type _PortalEntryRepoSpy struct {
 	nextId  int
 	entries map[int]*core.PortalEntry
 	removed []int
+	certs   core.PortalCertRepo
 }
 
 func (s *_PortalEntryRepoSpy) List() []*core.PortalEntry {
@@ -124,6 +133,11 @@ func (s *_PortalEntryRepoSpy) GetByName(name string) (*core.PortalEntry, bool) {
 }
 
 func (s *_PortalEntryRepoSpy) Save(entry *core.PortalEntry) {
+	var certs []*core.PortalCert
+	if s.certs != nil {
+		certs = s.certs.List()
+	}
+	entry.EffectiveHTTP = new(entry.Http.Effective(core.HasPortalCertificate(entry.Http.Host, certs)))
 	value := *entry
 	if value.Id == 0 {
 		value.Id = s.nextId
@@ -200,7 +214,7 @@ func TestPortalRuleServiceGetReturnsFieldSources(t *testing.T) {
 			FieldSources:  core.FieldSources{"/matchScheme": {Source: "app/default", Override: "hub"}},
 		},
 	}}
-	ruleCore := newTestPortalRuleCore(repo, newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 80}}))
+	ruleCore := newTestPortalRuleCore(repo, newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}}))
 	service := &PortalRuleApiServiceServerImpl{PortalRuleCore: ruleCore, PortalEntryCore: ruleCore.PortalEntryCore}
 
 	detail := service.Get(3)
@@ -214,7 +228,7 @@ func TestPortalRuleServiceGetReturnsFieldSources(t *testing.T) {
 // Hub reports the rules that match the same request, so the Dashboard shows the
 // operator what Portal cannot order on its own.
 func TestPortalRuleServiceListConflicts(t *testing.T) {
-	entryRepo := newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Name: "http:80", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 80}})
+	entryRepo := newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Name: "http:80", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}})
 	ruleRepo := &_NamedPortalRuleRepoSpy{items: map[string]*core.PortalRule{
 		"web":   {Id: 1, Name: "web", EntryId: 1, RouteType: core.PortalRuleRouteTypeSite, RouteSiteName: "demo.Web", Enabled: true},
 		"fixed": {Id: 2, Name: "fixed", EntryId: 1, RouteType: core.PortalRuleRouteTypeSite, RouteSiteName: "demo.Fixed", Enabled: true},
@@ -229,7 +243,7 @@ func TestPortalRuleServiceListConflicts(t *testing.T) {
 	assert.Equal(t, "web", conflicts[0].ConflictRule)
 	assert.Equal(t, 1, conflicts[0].ConflictRuleId)
 	assert.Equal(t, "http:80", conflicts[0].Entry)
-	assert.Equal(t, "http://*:80", conflicts[0].Match)
+	assert.Equal(t, "http://<IP>:80", conflicts[0].Match)
 	// Hub publishes the rule whose name sorts first, so the Dashboard can say
 	// which one serves the request.
 	assert.Equal(t, "fixed", conflicts[0].PublishedRule)

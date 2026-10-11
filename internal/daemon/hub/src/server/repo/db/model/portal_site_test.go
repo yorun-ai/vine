@@ -25,56 +25,46 @@ func TestPortalSiteDaoStoresEnabledSwitch(t *testing.T) {
 	assert.Equal(t, disabled.Id, site.Id)
 }
 
-func TestPortalSiteDaoMigratesInspectDisabledAndPersistsToggles(t *testing.T) {
-	dao := newTestPortalSiteDao(t)
-	entry := dao.Save(new(PortalSite{Name: "existing-api", Type: "RPCGW", ActorSkelName: "demo.Actor", Enabled: true}))
-	require.NoError(t, dao.GormDB().Exec("ALTER TABLE portal_site DROP COLUMN inspect_enabled").Error)
-	dao.EnsureSchema()
-	dao.EnsureSchema()
-	stored, ok := dao.ById(entry.Id)
-	require.True(t, ok)
-	require.False(t, stored.InspectEnabled)
-	for _, enabled := range []bool{true, false} {
-		stored.InspectEnabled = enabled
-		dao.Save(stored)
-		stored, ok = dao.ById(entry.Id)
-		require.True(t, ok)
-		require.Equal(t, enabled, stored.InspectEnabled)
-	}
+func TestPortalSiteDaoMigratesFrom028(t *testing.T) {
+	testPortalSiteMigrationFrom028(t, newModelTestDB(t, "site-028.sqlite"), "sqlite")
 }
 
-func TestPortalSiteDaoMigratesMcpDisabledAndPersistsToggles(t *testing.T) {
-	dao := newTestPortalSiteDao(t)
-	entry := dao.Save(new(PortalSite{Name: "existing-api", Type: "RPCGW", ActorSkelName: "demo.Actor", Enabled: true}))
-	require.NoError(t, dao.GormDB().Exec("ALTER TABLE portal_site DROP COLUMN mcp_enabled").Error)
-	dao.EnsureSchema()
-	dao.EnsureSchema()
-	stored, ok := dao.ById(entry.Id)
-	require.True(t, ok)
-	require.False(t, stored.McpEnabled)
-	for _, enabled := range []bool{true, false} {
-		stored.McpEnabled = enabled
-		dao.Save(stored)
-		stored, ok = dao.ById(entry.Id)
-		require.True(t, ok)
-		require.Equal(t, enabled, stored.McpEnabled)
-	}
+func TestPostgresPortalSiteMigrationFrom028(t *testing.T) {
+	testPortalSiteMigrationFrom028(t, newModelPostgresTestDB(t), "pgsql")
 }
 
-func TestPortalSiteDaoRemovesViaWithoutChangingSites(t *testing.T) {
-	dao := newTestPortalSiteDao(t)
-	site := dao.Save(new(PortalSite{Name: "kept", Type: "RPCGW", ActorSkelName: "demo.Actor", Enabled: true}))
-	require.NoError(t, dao.GormDB().Exec("ALTER TABLE portal_site ADD COLUMN actor_via TEXT NOT NULL DEFAULT 'agent'").Error)
+func testPortalSiteMigrationFrom028(t *testing.T, db *gorm.DB, dialect string) {
+	t.Helper()
+	loadModel028Schema(t, db, dialect, "portal_site")
+	require.NoError(t, db.Exec(`INSERT INTO portal_site (name,type,actor_skel_name,actor_via,cors_mode,cors_origins,web_name,enabled)
+ VALUES ('kept','RPCGW','demo.Actor','agent','STRICT','["https://example.com"]','',false)`).Error)
+	dao := &PortalSiteDao{Dao: rdb.NewDao[*PortalSite](db)}
 	dao.EnsureSchema()
-	dao.EnsureSchema()
-	columns, err := tableColumnNames(dao.GormDB(), "portal_site")
+	columns, err := tableColumnNames(db, "portal_site")
 	require.NoError(t, err)
 	require.NotContains(t, columns, "actor_via")
-	stored, ok := dao.ById(site.Id)
+	stored, ok := dao.ByName("kept")
 	require.True(t, ok)
-	require.Equal(t, site, stored)
-	stored.Name = "updated"
-	dao.Save(stored)
+	require.NotZero(t, stored.Id)
+	require.Equal(t, "RPCGW", stored.Type)
+	require.Equal(t, "demo.Actor", stored.ActorSkelName)
+	require.Equal(t, "STRICT", stored.CorsMode)
+	require.Equal(t, `["https://example.com"]`, stored.CorsOrigins)
+	require.False(t, stored.Enabled)
+	require.False(t, stored.InspectEnabled)
+	require.False(t, stored.McpEnabled)
+	dao.EnsureSchema()
+	again, ok := dao.ById(stored.Id)
+	require.True(t, ok)
+	require.Equal(t, stored, again)
+	for _, switches := range [][2]bool{{true, false}, {false, true}, {false, false}} {
+		stored.InspectEnabled, stored.McpEnabled = switches[0], switches[1]
+		dao.Save(stored)
+		loaded, ok := dao.ById(stored.Id)
+		require.True(t, ok)
+		require.Equal(t, switches[0], loaded.InspectEnabled)
+		require.Equal(t, switches[1], loaded.McpEnabled)
+	}
 	require.NotZero(t, dao.Save(new(PortalSite{Name: "new", Type: "RPCGW", ActorSkelName: "demo.Actor", Enabled: true})).Id)
 }
 

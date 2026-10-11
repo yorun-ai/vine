@@ -12,13 +12,14 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
+	"go.yorun.ai/vine/util/vcode"
 	"gorm.io/gorm"
 )
 
 func TestPortalEntryRepoStoresAccessAndName(t *testing.T) {
 	repo := newTestPortalEntryRepoDB(t)
 
-	entry := &core.PortalEntry{Name: "web", Protocol: "http", Http: &core.PortalEntryHTTP{Host: "demo.local", HttpEnabled: false, HttpsEnabled: true, HttpsPort: 8443}}
+	entry := &core.PortalEntry{Name: "web", Protocol: "http", Http: &core.PortalEntryHTTP{Host: "demo.local", Http: "DISABLED", Https: "ENABLED", HttpsPort: 8443}}
 	repo.Save(entry)
 	require.NotZero(t, entry.Id)
 
@@ -61,17 +62,19 @@ func newTestPortalEntryRepoDB(t *testing.T) *PortalEntryRepo {
 	watchServer := watchserver.NewServerForTest()
 	t.Cleanup(watchServer.AfterAppStop)
 	repo := &PortalEntryRepo{
-		Dao:    &model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](db)},
-		Syncer: testSyncer(watchServer),
-		Access: new(configaccess.Access),
+		CertDao: &model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](db)},
+		Dao:     &model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](db)},
+		Syncer:  testSyncer(watchServer),
+		Access:  new(configaccess.Access),
 	}
 	repo.Dao.EnsureSchema()
+	repo.CertDao.EnsureSchema()
 	return repo
 }
 
 func TestPortalEntryRepoListenIPsRoundTrip(t *testing.T) {
 	repo := newTestPortalEntryRepoDB(t)
-	entry := &core.PortalEntry{Name: "local", ListenIPs: []string{"127.0.0.1", "::1"}, Protocol: "http", Http: &core.PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 8080}}
+	entry := &core.PortalEntry{Name: "local", ListenIPs: []string{"127.0.0.1", "::1"}, Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}}
 	repo.Save(entry)
 	got, ok := repo.GetById(entry.Id)
 	require.True(t, ok)
@@ -89,7 +92,7 @@ func TestPortalEntryRepoStoresHTTPHost(t *testing.T) {
 	repo := newTestPortalEntryRepoDB(t)
 	row := &model.PortalEntry{
 		Name: "legacy", Protocol: "http", ListenIPs: "[]", Enabled: true,
-		HTTPConfig: `{"host":"demo.local","httpEnabled":true,"httpPort":80,"httpsEnabled":true,"httpsPort":443,"autoHTTPS":true}`,
+		HTTPConfig: `{"host":"demo.local","http":"ENABLED","httpPort":80,"https":"ENABLED","httpsPort":443,"autohttps":"ENABLED"}`,
 	}
 	repo.Dao.Save(row)
 	entry, ok := repo.GetById(row.Id)
@@ -100,4 +103,68 @@ func TestPortalEntryRepoStoresHTTPHost(t *testing.T) {
 	got, ok := repo.GetById(row.Id)
 	require.True(t, ok)
 	require.Equal(t, "new.local", got.Http.Host)
+}
+
+func TestPortalEntryRepoPersistsNormalizedHost(t *testing.T) {
+	repo := newTestPortalEntryRepoDB(t)
+	for _, host := range []string{"APP.EXAMPLE.COM.", "*.EXAMPLE.COM."} {
+		entry := new(core.PortalEntry{Name: host, Protocol: "http", Http: new(core.PortalEntryHTTP{Host: " " + host + " "})})
+		repo.Save(entry)
+		row, ok := repo.Dao.ById(entry.Id)
+		require.True(t, ok)
+		stored := vcode.MustUnmarshalJsonS[core.PortalEntryHTTP](row.HTTPConfig)
+		want := "app.example.com"
+		if host[0] == '*' {
+			want = "*.example.com"
+		}
+		require.Equal(t, want, stored.Host)
+		loaded, ok := repo.GetByName(host)
+		require.True(t, ok)
+		require.Equal(t, want, loaded.Http.Host)
+		require.Equal(t, want, loaded.EffectiveHTTP.Host)
+	}
+}
+
+func TestPortalEntryRepoPersistsIntentAndEnrichesEffectiveHTTP(t *testing.T) {
+	repo := newTestPortalEntryRepoDB(t)
+	entry := &core.PortalEntry{Name: "web", Protocol: "http", Enabled: true, Http: &core.PortalEntryHTTP{Host: "app.example.com"}}
+	repo.Save(entry)
+	require.EqualValues(t, "AUTO", entry.Http.Https)
+	require.False(t, entry.EffectiveHTTP.HttpsEnabled)
+	// Certificate metadata is normally parsed by PortalCertCore before persistence.
+	cert := &model.PortalCert{Name: "wildcard", Domains: `["*.example.com"]`, Enabled: true}
+	repo.CertDao.Save(cert)
+	loaded, ok := repo.GetById(entry.Id)
+	require.True(t, ok)
+	require.EqualValues(t, "AUTO", loaded.Http.Https)
+	require.True(t, loaded.EffectiveHTTP.HttpsEnabled)
+	require.True(t, loaded.EffectiveHTTP.AutoHTTPSEnabled)
+	cert.Enabled = false
+	repo.CertDao.Save(cert)
+	require.False(t, repo.List()[0].EffectiveHTTP.HttpsEnabled)
+	loaded.Http.Https = "DISABLED"
+	repo.Save(loaded)
+	loaded, ok = repo.GetByName("web")
+	require.True(t, ok)
+	require.EqualValues(t, "DISABLED", loaded.Http.Https)
+	loaded.Http.Https = "AUTO"
+	repo.Save(loaded)
+	loaded, ok = repo.GetById(entry.Id)
+	require.True(t, ok)
+	require.EqualValues(t, "AUTO", loaded.Http.Https)
+}
+
+func TestPortalEntryRepoRejectsInvalidStoredHTTPFields(t *testing.T) {
+	repo := newTestPortalEntryRepoDB(t)
+	for _, config := range []string{
+		`{"host":"demo.local","httpEnabled":false}`,
+		`{"host":"demo.local","httpsEnabled":true}`,
+		`{"host":"demo.local","autoHTTPS":false}`,
+		`{"host":"demo.local","typo":"AUTO"}`,
+		`null`,
+	} {
+		row := new(model.PortalEntry{Name: config, Protocol: "http", HTTPConfig: config, ListenIPs: "[]", Enabled: true})
+		repo.Dao.Save(row)
+		require.Panics(t, func() { repo.GetById(row.Id) }, config)
+	}
 }

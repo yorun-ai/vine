@@ -3,6 +3,8 @@ package entry
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
 	"net"
@@ -17,12 +19,14 @@ import (
 	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/core/meta"
+	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/desc"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/vault"
 	"go.yorun.ai/vine/internal/util/httputil"
 	"go.yorun.ai/vine/internal/utilfortest/watchtest"
 	"go.yorun.ai/vine/util/vcode"
@@ -49,7 +53,9 @@ func (s *_TestSite) Stop() {
 func TestEntryRouteMatchesAttachedRules(t *testing.T) {
 	target := &_TestSite{name: "admin@demo.app"}
 	entry := &_Entry{
-		port: 8443,
+		scheme: spec.SchemeHTTPS,
+		port:   8443,
+		hosts:  []string{"demo.local"},
 		rules: []*_Rule{{
 			matchScheme:     spec.SchemeHTTPS,
 			matchHost:       "demo.local",
@@ -59,39 +65,31 @@ func TestEntryRouteMatchesAttachedRules(t *testing.T) {
 		}},
 	}
 
-	rule, ok := entry.route(newTestRequest("https://demo.local:8443/admin/users"))
+	request := newTestRequest("https://demo.local:8443/admin/users")
+	request.TLS = &tls.ConnectionState{ServerName: "demo.local"}
+	rule, ok := entry.route(request)
 
 	assert.True(t, ok)
 	assert.Same(t, target, rule.redirectionSite)
 }
 
-func TestEntryRouteMatchesEmptyHostWithAnyRequestHost(t *testing.T) {
-	target := &_TestSite{name: "admin@demo.app"}
-	entry := &_Entry{
-		port: 8443,
-		rules: []*_Rule{{
-			matchScheme:     spec.SchemeHTTPS,
-			matchHost:       "",
-			matchPort:       8443,
-			matchPathPrefix: "/admin",
-			redirectionSite: target,
-		}},
-	}
-
-	for _, requestHost := range []string{"127.0.0.1", "demo.local"} {
-		t.Run(requestHost, func(t *testing.T) {
-			rule, ok := entry.route(newTestRequest("https://" + requestHost + ":8443/admin/users"))
-
-			assert.True(t, ok)
-			assert.Same(t, target, rule.redirectionSite)
-		})
+func TestEntryRouteEmptyHostOnlyMatchesHTTPIP(t *testing.T) {
+	for _, scheme := range []spec.Scheme{spec.SchemeHTTP, spec.SchemeHTTPS} {
+		entry := newEntry(scheme, 8080, nil)
+		entry.SetOrUpdateRouting([]string{""}, []*_Rule{{matchScheme: scheme, matchPathPrefix: "/admin"}})
+		for _, host := range []string{"127.0.0.1", "[::1]", "demo.local"} {
+			_, ok := entry.route(newTestRequest(string(scheme) + "://" + host + ":8080/admin/users"))
+			assert.Equal(t, scheme == spec.SchemeHTTP && host != "demo.local", ok, "%s %s", scheme, host)
+		}
 	}
 }
 
 func TestEntryRouteDoesNotMatchPartialPathPrefix(t *testing.T) {
 	target := &_TestSite{name: "admin@demo.app"}
 	entry := &_Entry{
-		port: 8443,
+		scheme: spec.SchemeHTTPS,
+		port:   8443,
+		hosts:  []string{"demo.local"},
 		rules: []*_Rule{{
 			matchScheme:     spec.SchemeHTTPS,
 			matchHost:       "demo.local",
@@ -101,14 +99,18 @@ func TestEntryRouteDoesNotMatchPartialPathPrefix(t *testing.T) {
 		}},
 	}
 
-	_, ok := entry.route(newTestRequest("https://demo.local:8443/admin2/users"))
+	request := newTestRequest("https://demo.local:8443/admin2/users")
+	request.TLS = &tls.ConnectionState{ServerName: "demo.local"}
+	_, ok := entry.route(request)
 
 	assert.False(t, ok)
 }
 
 func TestEntryServesRedirectRule(t *testing.T) {
 	entry := &_Entry{
-		port: 8080,
+		scheme: spec.SchemeHTTP,
+		port:   8080,
+		hosts:  []string{"demo.local"},
 		rules: []*_Rule{{
 			matchScheme:     spec.SchemeHTTP,
 			matchHost:       "demo.local",
@@ -129,7 +131,9 @@ func TestEntryServesRedirectRule(t *testing.T) {
 
 func TestEntryServesRedirectRuleWithoutTrimmedPathPrefix(t *testing.T) {
 	entry := &_Entry{
-		port: 8080,
+		scheme: spec.SchemeHTTP,
+		port:   8080,
+		hosts:  []string{"demo.local"},
 		rules: []*_Rule{{
 			matchScheme:     spec.SchemeHTTP,
 			matchHost:       "demo.local",
@@ -167,7 +171,7 @@ func TestEntryResetRulesClearsAttachedRules(t *testing.T) {
 		}},
 	}
 
-	entry.SetOrUpdateRules(nil)
+	entry.SetOrUpdateRouting(nil, nil)
 
 	assert.Empty(t, entry.rules)
 }
@@ -225,9 +229,9 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 			t.Cleanup(public.Close)
 			for _, hostPattern := range []string{"shop.example.com", "*.example.com"} {
 				for _, targetPath := range []string{"/internal", "/v2", ""} {
-					rule, ok := newRule(watched.PortalRule{Name: "rule", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: targetPath, RouteType: "SITE", RouteSiteName: "web"}, watched.PortalEntry{Http: watched.PortalEntryHTTP{Host: hostPattern}}, spec.SchemeHTTP, 80, sites)
+					rule, ok := newRule(watched.PortalRule{Name: "rule", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: targetPath, RouteType: "SITE", RouteSiteName: "web"}, watched.PortalEntry{EffectiveHTTP: watched.PortalEntryHTTP{Host: hostPattern}}, spec.SchemeHTTP, 80, sites)
 					require.True(t, ok)
-					entry.SetOrUpdateRules([]*_Rule{rule})
+					entry.SetOrUpdateRouting([]string{hostPattern}, []*_Rule{rule})
 					request, err := http.NewRequest(http.MethodPost, public.URL+"/api/a%2Fb/?q=%2F", strings.NewReader("payload"))
 					require.NoError(t, err)
 					request.Header.Set("Authorization", "Bearer native-token")
@@ -253,10 +257,10 @@ func TestEntryTargetPathDispatchesWithinRpcGateway(t *testing.T) {
 	gateway, found := manager.Site("rpc")
 	require.True(t, found)
 	gateway.Update(watched.PortalSite{Name: "rpc", Type: "RPCGW", RpcgwConfig: new(watched.PortalRpcgwConfig{InspectEnabled: true})})
-	rule, ok := newRule(watched.PortalRule{Name: "rpc", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: "/inspect", RouteType: "SITE", RouteSiteName: "rpc"}, watched.PortalEntry{Http: watched.PortalEntryHTTP{Host: ""}}, spec.SchemeHTTP, 80, manager)
+	rule, ok := newRule(watched.PortalRule{Name: "rpc", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: "/inspect", RouteType: "SITE", RouteSiteName: "rpc"}, watched.PortalEntry{EffectiveHTTP: watched.PortalEntryHTTP{Host: "example.com"}}, spec.SchemeHTTP, 80, manager)
 	require.True(t, ok)
 	entry := newEntry(spec.SchemeHTTP, 80, nil)
-	entry.SetOrUpdateRules([]*_Rule{rule})
+	entry.SetOrUpdateRouting([]string{"example.com"}, []*_Rule{rule})
 	response := httptest.NewRecorder()
 	entry.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api", nil))
 	require.Equal(t, http.StatusOK, response.Code)
@@ -269,10 +273,10 @@ func TestEntryDispatchesMcpAtApiPrefix(t *testing.T) {
 	gateway, found := manager.Site("rpc")
 	require.True(t, found)
 	gateway.Update(watched.PortalSite{Name: "rpc", Type: "RPCGW", RpcgwConfig: new(watched.PortalRpcgwConfig{McpEnabled: true})})
-	rule, ok := newRule(watched.PortalRule{Name: "rpc", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: "/", RouteType: "SITE", RouteSiteName: "rpc"}, watched.PortalEntry{Http: watched.PortalEntryHTTP{Host: ""}}, spec.SchemeHTTP, 80, manager)
+	rule, ok := newRule(watched.PortalRule{Name: "rpc", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: "/", RouteType: "SITE", RouteSiteName: "rpc"}, watched.PortalEntry{EffectiveHTTP: watched.PortalEntryHTTP{Host: "example.com"}}, spec.SchemeHTTP, 80, manager)
 	require.True(t, ok)
 	entry := newEntry(spec.SchemeHTTP, 80, nil)
-	entry.SetOrUpdateRules([]*_Rule{rule})
+	entry.SetOrUpdateRouting([]string{"example.com"}, []*_Rule{rule})
 	request := httptest.NewRequest(http.MethodPost, "/api/mcp", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientInfo":{"name":"test","version":"1"},"io.modelcontextprotocol/clientCapabilities":{}}}}`))
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json, text/event-stream")
@@ -286,16 +290,53 @@ func TestEntryDispatchesMcpAtApiPrefix(t *testing.T) {
 
 func TestEntryWildcardHostPrecedence(t *testing.T) {
 	e := newEntry(spec.SchemeHTTP, 80, nil)
-	e.SetOrUpdateRules([]*_Rule{
-		{name: "fallback", matchPathPrefix: "/deep/path"},
+	e.SetOrUpdateRouting([]string{"", "*.example.com", "a.example.com"}, []*_Rule{
+		{name: "fallback", matchScheme: spec.SchemeHTTP, matchPathPrefix: "/deep/path"},
 		{name: "wildcard", matchHost: "*.example.com", matchPathPrefix: "/deep"},
 		{name: "exact", matchHost: "a.example.com", matchPathPrefix: "/"},
 		{name: "wildcard-long", matchHost: "*.example.com", matchPathPrefix: "/deep/path"},
 	})
-	for host, want := range map[string]string{"a.example.com": "exact", "b.example.com": "wildcard-long", "example.net": "fallback"} {
+	for host, want := range map[string]string{"a.example.com": "exact", "b.example.com": "wildcard-long", "127.0.0.1": "fallback"} {
 		rule, ok := e.route(httptest.NewRequest("GET", "http://"+host+"/deep/path", nil))
 		require.True(t, ok)
 		assert.Equal(t, want, rule.name)
+	}
+}
+
+func TestEntryHTTPSelectsHostBeforeMatchingPaths(t *testing.T) {
+	e := newEntry(spec.SchemeHTTP, 80, nil)
+	e.SetOrUpdateRouting([]string{"", "*.example.com", "app.example.com", "127.0.0.1", "::1"}, []*_Rule{
+		{name: "fallback", matchScheme: spec.SchemeHTTP, matchPathPrefix: "/"},
+		{name: "wildcard", matchHost: "*.example.com", matchPathPrefix: "/"},
+		{name: "exact", matchHost: "app.example.com", matchPathPrefix: "/own"},
+		{name: "ip", matchHost: "127.0.0.1", matchPathPrefix: "/own"},
+		{name: "ipv6", matchHost: "::1", matchPathPrefix: "/own"},
+	})
+	for _, test := range []struct {
+		target string
+		rule   string
+	}{
+		{"http://app.example.com/own", "exact"},
+		{"http://APP.EXAMPLE.COM./own", "exact"},
+		{"http://app.example.com/other", ""},
+		{"http://other.example.com/other", "wildcard"},
+		{"http://deep.other.example.com/other", ""},
+		{"http://127.0.0.1/own", "ip"},
+		{"http://127.0.0.1/other", ""},
+		{"http://127.0.0.2/other", "fallback"},
+		{"http://[::1]/own", "ipv6"},
+		{"http://[0:0:0:0:0:0:0:1]/own", "ipv6"},
+		{"http://[::1]/other", ""},
+		{"http://[::2]/other", "fallback"},
+		{"http://unknown.test/other", ""},
+	} {
+		t.Run(test.target, func(t *testing.T) {
+			rule, ok := e.route(newTestRequest(test.target))
+			require.Equal(t, test.rule != "", ok)
+			if ok {
+				require.Equal(t, test.rule, rule.name)
+			}
+		})
 	}
 }
 
@@ -346,4 +387,99 @@ func TestEntryDefaultKeepsTCPWildcard(t *testing.T) {
 	entry := newEntry(spec.SchemeHTTP, 8080, nil)
 	require.NoError(t, entry.Start())
 	t.Cleanup(entry.Stop)
+}
+
+func TestEntryTLSSelectsEntryBeforeCertificate(t *testing.T) {
+	cert := testHTTPPortalCertificate(t, "*.example.com", "*.public.example.com")
+	certificate, err := tls.X509KeyPair([]byte(cert.Certificate), []byte(cert.PrivateKey))
+	require.NoError(t, err)
+	roots := x509.NewCertPool()
+	roots.AddCert(certificate.Leaf)
+	certificateVault := &vault.Vault{Context: context.Background(), Watch: watchtest.New(t, map[string]string{watched.FormatPortalCertKey("test"): vcode.MustMarshalJsonS(cert)})}
+	certificateVault.DIInit()
+	configs := testEntryConfigs(
+		testEntryConfig("exact", "https", "allowed.example.com", 0, []string{"127.0.0.1"}),
+		testEntryConfig("wildcard", "https", "*.public.example.com", 0, []string{"127.0.0.1"}),
+		testEntryConfig("private", "https", "private.public.example.com", 0, []string{"127.0.0.1"}),
+		testEntryConfig("other-port", "https", "other.example.com", 443, []string{"127.0.0.1"}),
+		testEntryConfig("other-ip", "https", "ip.example.com", 0, []string{"127.0.0.2"}),
+	)
+	manager := &Manager{Vault: certificateVault, SiteManager: &site.Manager{}, entryConfigsByName: configs, entryRulesByName: map[string]watched.PortalRule{"wildcard": {Name: "wildcard", EntryName: "wildcard", RouteType: routeTypeSite, RouteSiteName: "unavailable"}}, entriesByKey: map[_Key]*_Entry{}}
+	require.NoError(t, manager.reconcileEntriesLocked())
+	ingress := manager.entriesByKey[_Key{listenIP: "127.0.0.1", scheme: spec.SchemeHTTPS, port: 0}]
+	require.NoError(t, ingress.Start())
+	t.Cleanup(ingress.Stop)
+	request := func(sni string, host string, clientConfig *tls.Config) (int, bool, error) {
+		config := clientConfig.Clone()
+		config.ServerName = sni
+		conn, err := tls.DialWithDialer(&net.Dialer{Timeout: time.Second}, "tcp4", ingress.addr, config)
+		if err != nil {
+			return 0, false, err
+		}
+		defer conn.Close()
+		require.NoError(t, conn.SetDeadline(time.Now().Add(3*time.Second)))
+		_, err = fmt.Fprintf(conn, "GET / HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n", host)
+		if err != nil {
+			return 0, false, err
+		}
+		response, err := http.ReadResponse(bufio.NewReader(conn), nil)
+		if err != nil {
+			return 0, false, err
+		}
+		defer response.Body.Close()
+		_, err = io.Copy(io.Discard, response.Body)
+		return response.StatusCode, conn.ConnectionState().DidResume, err
+	}
+	trusted := &tls.Config{RootCAs: roots}
+	for _, test := range []struct {
+		sni    string
+		host   string
+		status int
+	}{
+		{"allowed.example.com", "allowed.example.com", http.StatusNotFound},
+		{"allowed.example.com", "ALLOWED.EXAMPLE.COM.:443", http.StatusNotFound},
+		{"allowed.example.com", "a.public.example.com", http.StatusMisdirectedRequest},
+		{"a.public.example.com", "b.public.example.com", http.StatusMisdirectedRequest},
+		{"a.public.example.com", "a.public.example.com", http.StatusServiceUnavailable},
+		{"private.public.example.com", "private.public.example.com", http.StatusNotFound},
+	} {
+		t.Run(test.sni+"/"+test.host, func(t *testing.T) {
+			status, _, err := request(test.sni, test.host, trusted)
+			require.NoError(t, err)
+			require.Equal(t, test.status, status)
+		})
+	}
+	// Skip client verification here so only server entry admission can reject these.
+	for _, sni := range []string{"unknown.example.com", "other.example.com", "ip.example.com", "deep.a.public.example.com", "", "127.0.0.1"} {
+		t.Run("reject/"+sni, func(t *testing.T) {
+			_, _, err := request(sni, "allowed.example.com", &tls.Config{InsecureSkipVerify: true})
+			require.Error(t, err)
+		})
+	}
+	// Admission must also run when a previously accepted TLS session is resumed.
+	for _, version := range []uint16{tls.VersionTLS12, tls.VersionTLS13} {
+		t.Run(fmt.Sprint("resume/", version), func(t *testing.T) {
+			config := &tls.Config{RootCAs: roots, MinVersion: version, MaxVersion: version, ClientSessionCache: tls.NewLRUClientSessionCache(4)}
+			_, _, err := request("allowed.example.com", "allowed.example.com", config)
+			require.NoError(t, err)
+			_, resumed, err := request("allowed.example.com", "allowed.example.com", config)
+			require.NoError(t, err)
+			require.True(t, resumed)
+			key := watched.FormatPortalEntryKey("exact")
+			manager.handlePortalEntryEvent(hubapiwatch.Event{Kind: hubapiwatch.EventKindDelete, Key: key})
+			_, _, err = request("allowed.example.com", "allowed.example.com", config)
+			require.Error(t, err)
+			value := testEntryConfig("exact", "https", "allowed.example.com", 0, []string{"127.0.0.1"})
+			manager.handlePortalEntryEvent(hubapiwatch.Event{Key: key, Value: vcode.MustMarshalJsonS(value)})
+		})
+	}
+}
+
+func TestEntryRejectsMissingHost(t *testing.T) {
+	ingress := newEntry(spec.SchemeHTTP, 80, nil)
+	request := httptest.NewRequest(http.MethodGet, "http://127.0.0.1/", nil)
+	request.Host = ""
+	response := httptest.NewRecorder()
+	ingress.ServeHTTP(response, request)
+	require.Equal(t, http.StatusBadRequest, response.Code)
 }

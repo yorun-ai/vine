@@ -419,7 +419,7 @@ func TestInitializerReportsRulesThatShareOneRequest(t *testing.T) {
 				{Id: 2, Name: "demo.fixed-site", Type: core.PortalSiteTypeWEBGW, Enabled: true},
 			}}
 			entryRepo := &testPortalEntryRepo{entries: []*core.PortalEntry{
-				{Id: 1, Name: "http:80", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 80}},
+				{Id: 1, Name: "http:80", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}},
 			}}
 			p := withTestAudit(&Initializer{
 				Syncer:          testSyncer(watchServer),
@@ -439,7 +439,7 @@ func TestInitializerReportsRulesThatShareOneRequest(t *testing.T) {
 				return
 			}
 			require.PanicsWithError(t,
-				`portal rule "demo.app-explicit" and portal rule "demo.app" both match http://*:80: give each request one rule in the seed Hub loads type=APPLICATION code=OPERATION_FAILED`,
+				`portal rule "demo.app-explicit" and portal rule "demo.app" both match http://<IP>:80: give each request one rule in the seed Hub loads type=APPLICATION code=OPERATION_FAILED`,
 				p.DIInit)
 		})
 	}

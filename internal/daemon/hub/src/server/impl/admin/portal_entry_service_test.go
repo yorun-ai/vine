@@ -1,12 +1,21 @@
 package admin
 
 import (
+	"bytes"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.yorun.ai/vine/internal/core/meta"
+	vinehttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
+	"go.yorun.ai/vine/util/vcode"
+	vrpchttp "go.yorun.ai/vrpc/transport/http"
 )
 
 func TestPortalEntryServiceMapsRulesAndTargetSites(t *testing.T) {
@@ -33,7 +42,7 @@ func TestPortalEntryServiceMapsRulesAndTargetSites(t *testing.T) {
 		},
 	}}
 	service := &PortalEntryApiServiceServerImpl{PortalEntryCore: &core.PortalEntryCore{
-		PortalEntryRepo: newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Name: "http:8080", Protocol: "http", Http: &core.PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 8080}}),
+		PortalEntryRepo: newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Name: "http:8080", Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}}),
 		PortalRuleRepo:  ruleRepo,
 		PortalSiteRepo:  siteRepo,
 	}}
@@ -59,9 +68,10 @@ func TestPortalEntryServiceCreatesAndRemovesEntry(t *testing.T) {
 		PortalEntryRepo: entryRepo,
 		PortalRuleRepo:  &_NamedPortalRuleRepoSpy{items: map[string]*core.PortalRule{}},
 		PortalSiteRepo:  &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{}},
+		PortalCertRepo:  new(_PortalCertRepoSpy),
 	}}
 
-	created := service.Create(skeled.PortalEntryCreation{Name: "web", Protocol: "http", Http: new(skeled.PortalEntryHttpUpdate{HttpPort: new(8080), HttpsEnabled: new(false), AutoHttps: new(false)}), ListenIPs: []string{"127.0.0.1", "::1"}})
+	created := service.Create(skeled.PortalEntryCreation{Name: "web", Protocol: "http", Http: new(skeled.PortalEntryHttp{HttpPort: 8080, Https: "DISABLED", Autohttps: "DISABLED"}), ListenIPs: []string{"127.0.0.1", "::1"}})
 
 	// An entry routes no rule when the operator creates it.
 	require.NotZero(t, created.Id)
@@ -87,65 +97,84 @@ func TestPortalEntryProtocolVocabulary(t *testing.T) {
 	require.NotPanics(t, func() { validatePortalEntryProtocol(new("http")) })
 	require.Panics(t, func() { validatePortalEntryProtocol(new("")) })
 	require.Panics(t, func() { validatePortalEntryProtocol(new("tcp")) })
-	patch := toCoreHTTPUpdate(new(skeled.PortalEntryHttpUpdate{HttpsEnabled: new(false), AutoHttps: new(false)}))
-	config := patch.Apply(core.DefaultPortalEntryHTTP())
+	patch := toCoreHTTPConfig(new(skeled.PortalEntryHttp{Https: "DISABLED", Autohttps: "DISABLED"}))
+	config := patch.Effective(false)
 	require.True(t, config.HttpEnabled)
 	require.False(t, config.HttpsEnabled)
-	require.False(t, config.AutoHTTPS)
+	require.False(t, config.AutoHTTPSEnabled)
 }
 
-func TestPortalEntryServiceCreatesDefaultHTTPAndPatchesTransports(t *testing.T) {
-	service := &PortalEntryApiServiceServerImpl{PortalEntryCore: &core.PortalEntryCore{
-		PortalEntryRepo: newTestPortalEntryRepoSpy(), PortalRuleRepo: &_NamedPortalRuleRepoSpy{items: map[string]*core.PortalRule{}}, PortalSiteRepo: &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{}},
-	}}
-	created := service.Create(skeled.PortalEntryCreation{Name: "dual", Protocol: "http", Http: new(skeled.PortalEntryHttpUpdate{Host: new("demo.local")})})
-	require.True(t, created.Http.HttpEnabled)
-	require.True(t, created.Http.HttpsEnabled)
-	require.True(t, created.Http.AutoHttps)
-	require.Equal(t, 80, created.Http.HttpPort)
-	require.Equal(t, 443, created.Http.HttpsPort)
-	updated := service.Update(created.Id, skeled.PortalEntryUpdate{Protocol: new("http"), Http: new(skeled.PortalEntryHttpUpdate{HttpsPort: new(8443)})})
-	require.Equal(t, created.Id, updated.Id)
-	require.True(t, updated.Http.AutoHttps)
-	require.Equal(t, 8443, updated.Http.HttpsPort)
-	updated = service.Update(created.Id, skeled.PortalEntryUpdate{Protocol: new("http"), Http: new(skeled.PortalEntryHttpUpdate{HttpsEnabled: new(false), AutoHttps: new(false)})})
-	require.True(t, updated.Http.HttpEnabled)
-	require.False(t, updated.Http.HttpsEnabled)
-	require.False(t, updated.Http.AutoHttps)
-	require.Equal(t, 80, updated.Http.HttpPort)
-	updated = service.Update(created.Id, skeled.PortalEntryUpdate{Protocol: new("http"), Http: new(skeled.PortalEntryHttpUpdate{AutoHttps: new(true)})})
-	require.False(t, updated.Http.HttpsEnabled)
-	require.True(t, updated.Http.AutoHttps)
-	require.True(t, service.List()[0].Http.AutoHttps)
-	updated = service.Update(created.Id, skeled.PortalEntryUpdate{Protocol: new("http"), Http: new(skeled.PortalEntryHttpUpdate{HttpEnabled: new(false), HttpsEnabled: new(true)})})
-	require.False(t, updated.Http.HttpEnabled)
-	require.True(t, updated.Http.HttpsEnabled)
-	require.True(t, updated.Http.AutoHttps)
-}
-
-func TestPortalEntryServiceUpdatesAndClearsHTTPHost(t *testing.T) {
+func TestPortalEntryServiceRetainsAutomaticSwitches(t *testing.T) {
+	certRepo := new(_PortalCertRepoSpy)
 	entryRepo := newTestPortalEntryRepoSpy()
-	service := &PortalEntryApiServiceServerImpl{PortalEntryCore: &core.PortalEntryCore{
-		PortalEntryRepo: entryRepo,
-		PortalRuleRepo:  &_NamedPortalRuleRepoSpy{items: map[string]*core.PortalRule{}},
-		PortalSiteRepo:  &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{}},
-	}}
-	created := service.Create(skeled.PortalEntryCreation{
-		Name: "web", Protocol: "http",
-		Http: new(skeled.PortalEntryHttpUpdate{Host: new("demo.local")}),
+	entryRepo.certs = certRepo
+	service := &PortalEntryApiServiceServerImpl{PortalEntryCore: &core.PortalEntryCore{PortalCertRepo: certRepo, PortalEntryRepo: entryRepo, PortalRuleRepo: &_NamedPortalRuleRepoSpy{items: map[string]*core.PortalRule{}}, PortalSiteRepo: &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{}}}}
+	created := service.Create(skeled.PortalEntryCreation{Name: "web", Protocol: "http", Http: &skeled.PortalEntryHttp{Host: "demo.local"}})
+	require.EqualValues(t, "AUTO", created.Http.Http)
+	require.EqualValues(t, "AUTO", created.Http.Https)
+	require.EqualValues(t, "AUTO", created.Http.Autohttps)
+	require.True(t, created.EffectiveHttp.HttpEnabled)
+	require.False(t, created.EffectiveHttp.HttpsEnabled)
+	require.Panics(t, func() {
+		service.Update(created.Id, skeled.PortalEntryUpdate{Http: &skeled.PortalEntryHttp{Host: "demo.local", Https: "ENABLED"}})
 	})
-	require.Equal(t, "demo.local", created.Http.Host)
-	updated := service.Update(created.Id, skeled.PortalEntryUpdate{
-		Http: new(skeled.PortalEntryHttpUpdate{Host: new("other.local")}),
-	})
-	require.Equal(t, "other.local", updated.Http.Host)
-	unchanged := service.Update(created.Id, skeled.PortalEntryUpdate{
-		Http: new(skeled.PortalEntryHttpUpdate{HttpsPort: new(8443)}),
-	})
-	require.Equal(t, "other.local", unchanged.Http.Host)
-	cleared := service.Update(created.Id, skeled.PortalEntryUpdate{
-		Http: new(skeled.PortalEntryHttpUpdate{Host: new("")}),
-	})
-	require.Empty(t, cleared.Http.Host)
-	require.Empty(t, service.List()[0].Http.Host)
+	certRepo.Save(new(core.PortalCert{Name: "demo", Enabled: true, Domains: []string{"demo.local"}}))
+	updated := service.Update(created.Id, skeled.PortalEntryUpdate{Http: &skeled.PortalEntryHttp{Host: "demo.local", Https: "ENABLED", HttpsPort: 8443}})
+	require.True(t, updated.EffectiveHttp.HttpsEnabled)
+	require.Equal(t, 8443, updated.EffectiveHttp.HttpsPort)
+	unchanged := service.Update(created.Id, skeled.PortalEntryUpdate{Name: new("renamed")})
+	require.True(t, unchanged.EffectiveHttp.HttpsEnabled)
+	automatic := service.Update(created.Id, skeled.PortalEntryUpdate{Http: &skeled.PortalEntryHttp{Host: "demo.local"}})
+	require.EqualValues(t, "AUTO", automatic.Http.Https)
+	require.True(t, automatic.EffectiveHttp.HttpsEnabled)
+}
+
+func TestPortalEntryHTTPModeWireContract(t *testing.T) {
+	for _, contentType := range []string{vrpchttp.ContentTypeJson, vrpchttp.ContentTypeCbor} {
+		t.Run(contentType, func(t *testing.T) {
+			for _, field := range []string{"http", "https", "autohttps"} {
+				for _, value := range []any{nil, true, false, 1, "", "enabled", "ON", "UNSPECIFIED"} {
+					t.Run(fmt.Sprintf("%s=%v", field, value), func(t *testing.T) {
+						body, err := vrpchttp.EncodeRequest(map[string]any{"creation": map[string]any{"protocol": "http", "http": map[string]any{"host": "demo.local", field: value}}}, contentType)
+						require.NoError(t, err)
+						input, err := decodePortalEntryCreation(t, body, contentType)
+						if err == nil {
+							require.Panics(t, func() {
+								core.NormalizePortalEntry(core.PortalEntry{Protocol: input.Protocol, Http: toCoreHTTPConfig(input.Http)})
+							})
+						}
+					})
+				}
+			}
+			for _, modes := range []map[string]any{{}, {"http": "AUTO", "https": "AUTO", "autohttps": "AUTO"}, {"http": "ENABLED", "https": "DISABLED", "autohttps": "DISABLED"}} {
+				body, err := vrpchttp.EncodeRequest(map[string]any{"creation": map[string]any{"protocol": "http", "http": modes}}, contentType)
+				require.NoError(t, err)
+				input, err := decodePortalEntryCreation(t, body, contentType)
+				require.NoError(t, err)
+				entry := core.NormalizePortalEntry(core.PortalEntry{Protocol: input.Protocol, Http: toCoreHTTPConfig(input.Http)})
+				require.True(t, entry.Http.Http.Valid())
+				require.True(t, entry.Http.Https.Valid())
+				require.True(t, entry.Http.AutoHTTPS.Valid())
+				effective := entry.Http.Effective(false)
+				require.JSONEq(t, fmt.Sprintf(`{"host":"","httpEnabled":true,"httpPort":80,"httpsEnabled":false,"httpsPort":443,"autohttpsEnabled":false,"httpsReason":%q}`, effective.HTTPSReason), vcode.MustMarshalJsonS(toServerEffectiveHTTP(effective)))
+			}
+		})
+	}
+}
+
+func decodePortalEntryCreation(t *testing.T, body []byte, contentType string) (skeled.PortalEntryCreation, error) {
+	t.Helper()
+	request := httptest.NewRequest(http.MethodPost, "/vine.hub.admin.PortalEntryApiService/create", bytes.NewReader(body))
+	request.Header.Set(vrpchttp.HeaderContentType, contentType)
+	request.Header.Set(vrpchttp.HeaderAccept, vrpchttp.ContentTypeJson)
+	vinehttp.EncodeTraceToHeader(request.Header, meta.InitialTrace())
+	client, err := meta.NewApp("test", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
+	require.NoError(t, err)
+	vinehttp.EncodeClientToHeader(request.Header, client)
+	decoded, err := vinehttp.DecodeRequest(request)
+	if err != nil {
+		return skeled.PortalEntryCreation{}, err
+	}
+	t.Cleanup(decoded.Cancel)
+	return reflect.ValueOf(decoded.Arguments()).Elem().FieldByName("Creation").Interface().(skeled.PortalEntryCreation), nil
 }

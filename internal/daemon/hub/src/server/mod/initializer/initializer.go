@@ -46,6 +46,10 @@ func (i *Initializer) DIInit() {
 	for _, item := range i.AppConfigRepo.List() {
 		i.Syncer.SyncAppConfig(item)
 	}
+	// Publish certificates before resolving entry transports.
+	for _, cert := range i.PortalCertRepo.List() {
+		i.Syncer.SyncPortalCert(cert)
+	}
 	// Entries and sites come before rules: Hub decides whether it publishes a rule
 	// from the entry it belongs to and the site it targets.
 	for _, entry := range i.PortalEntryRepo.List() {
@@ -56,9 +60,6 @@ func (i *Initializer) DIInit() {
 	}
 	for _, rule := range i.PortalRuleRepo.List() {
 		i.Syncer.SyncPortalRule(rule)
-	}
-	for _, cert := range i.PortalCertRepo.List() {
-		i.Syncer.SyncPortalCert(cert)
 	}
 	i.checkPortalRuleConflicts()
 	if i.Flag.NoDB {

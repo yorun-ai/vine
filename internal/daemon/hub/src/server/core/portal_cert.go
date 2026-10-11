@@ -49,7 +49,8 @@ type PortalCertRepo interface {
 }
 
 type PortalCertCore struct {
-	PortalCertRepo PortalCertRepo `inject:""`
+	PortalCertRepo  PortalCertRepo  `inject:""`
+	PortalEntryRepo PortalEntryRepo `inject:""`
 }
 
 func (m *PortalCertCore) List() []*PortalCert {
@@ -119,11 +120,15 @@ func (m *PortalCertCore) Update(id int, update PortalCertUpdate) *PortalCert {
 	}
 
 	*next = m.Validate(*next)
+	m.validateEntryCertificates(next.Id, next)
 	m.PortalCertRepo.Save(next)
 	return next
 }
 
 func (m *PortalCertCore) Remove(id int) {
+	_, exists := m.PortalCertRepo.GetById(id)
+	ex.PanicNewIfNot(exists, ex.OperationFailed, ex.F("entry cert %d not found", id))
+	m.validateEntryCertificates(id, nil)
 	ok := m.PortalCertRepo.Remove(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("entry cert %d not found", id))
 }
@@ -189,7 +194,25 @@ func (m *PortalCertCore) Save(cert PortalCert) *PortalCert {
 	cert.Id = 0
 	if current, ok := m.PortalCertRepo.GetByName(cert.Name); ok {
 		cert.Id = current.Id
+		m.validateEntryCertificates(cert.Id, &cert)
 	}
 	m.PortalCertRepo.Save(&cert)
 	return &cert
+}
+
+// validateEntryCertificates checks the proposed certificate set before a write
+// can remove the last certificate required by an explicitly enabled transport.
+func (m *PortalCertCore) validateEntryCertificates(id int, replacement *PortalCert) {
+	certs := []*PortalCert{}
+	for _, cert := range m.PortalCertRepo.List() {
+		if cert.Id != id {
+			certs = append(certs, cert)
+		}
+	}
+	if replacement != nil {
+		certs = append(certs, replacement)
+	}
+	for _, entry := range m.PortalEntryRepo.List() {
+		ValidatePortalEntryCertificates(*entry, certs)
+	}
 }

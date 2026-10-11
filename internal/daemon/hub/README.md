@@ -101,8 +101,7 @@ field sources where applicable. API updates merge provided fields into the
 existing entity before validation.
 
 An entry owns the protocol family and listener IPs; its HTTP block owns
-`host` and transport settings. The Admin API and Watch publish the request host
-as `http.host`. Legacy seed fields are converted when decoded; stored legacy columns are converted
+`host` and `http`/`https`/`autohttps` mode switches (`ENABLED`, `DISABLED`, `AUTO`; omission means `AUTO`, null is invalid). Hub retains automatic versus explicit values and computes `effectiveHTTP` from the configuration and enabled matching certificates, without consulting validity dates. The Admin API returns both `http` and `effectiveHTTP` (boolean `httpEnabled`, `httpsEnabled`, and `autohttpsEnabled`); Watch publishes only `effectiveHTTP`. Entry repositories enrich reads with the same domain resolver used by Syncer, which republishes entries on certificate changes. An empty host allows only HTTP IP access. Static validation rejects contradictory explicit switches and reserves potential HTTPS ports even before a certificate is uploaded. Legacy seed fields are converted when decoded; stored legacy columns are converted
 and removed during database migration; `protocol` cannot be combined with legacy top-level `scheme`, `port`,
 or `host`. Rules reference a declared entry through `entryName`; Hub does not create
 entries from rule access fields. Changing an entry changes every rule it routes.
@@ -219,7 +218,7 @@ Disabled certificates may be stored without valid PEM content; names and YAML
 field types remain checked, and enabling requires a valid matching certificate
 and private key. A database that predates the switch keeps every stored entity enabled.
 
-Portal entry YAML declares `name`, `protocol`, `http`, `listenIPs`, and `enabled`. The flat HTTP block defaults to HTTP/80, HTTPS/443, and `autoHTTPS: true`; automatic redirects require both transports. Admin API entry inputs require `protocol`. Seeds also accept v0.27.0 `scheme` and `port` inputs, converting them to a single enabled transport with automatic redirects disabled; they cannot be combined with `protocol`. Existing database entries retain their original single transport and do not gain redirects. Existing rows migrate one-for-one without changing rule references. Hub publishes enabled entries separately under `portal:entry:*`, including entries with no rules. A seed applies
+Portal entry YAML declares `name`, `protocol`, `http`, `listenIPs`, and `enabled`. Omitted HTTP switches mean automatic: HTTP is on, HTTPS requires a domain and an enabled matching certificate, and autohttps requires a domain plus both effective transports. Ports default to 80 and 443. Explicit HTTPS and autohttps require an enabled matching certificate before saving; automatic mode can wait for one. Certificate changes are rejected if they would remove the last match required by an explicit switch. Supplying `http` in an Admin update replaces the entire block; omitting it keeps the stored intent. Admin API entry inputs require `protocol`. Seeds also accept v0.28 `scheme` and `port` inputs, converting them to a single enabled transport with automatic redirects disabled; they cannot be combined with `protocol`. Existing database entries retain their original single transport and do not gain redirects. Existing rows migrate one-for-one without changing rule references. Hub publishes enabled entries separately under `portal:entry:*`, including entries with no rules. A seed validates certificate dependencies before any write and applies certificates before entries, then
 entries before rules; every rule must name an entry declared in the same seed.
 An entry may route no rule yet.
 The Portal sections are typed: Hub rejects an entity that declares a field the
@@ -250,9 +249,14 @@ Admin API, Watch and Dashboard no longer expose it, and
 database initialization drops `portal_site.actor_via`. Descriptor metadata is
 preserved for compatibility with generated contracts.
 
-Existing databases must already use the v0.27.0 schema. Entry listener IPs
-and HTTP protocol blocks are upgraded during initialization; pre-v0.27.0
-certificate and retired-column migrations are no longer performed.
+Database upgrades start from the v0.28 schema. Each `scheme`/`host`/`port` entry
+converts directly into the current enum-based HTTP configuration, preserving its
+single transport, port, ID, rule references, enable state, and soft deletion.
+Listener IPs default to `[]`; redirects remain disabled. Initialization removes
+the retired entry columns, site `actor_via`, and obsolete certificate Base64
+columns. Existing PEM data is retained, and new inspection/MCP switches default
+to false. Current HTTP JSON rejects unknown fields; it never reinterprets old
+switch names as AUTO. Repeated initialization leaves migrated data unchanged.
 
 ## Admin Display Strings
 

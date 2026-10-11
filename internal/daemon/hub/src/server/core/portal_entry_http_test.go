@@ -1,65 +1,138 @@
 package core
 
 import (
-	"github.com/stretchr/testify/require"
+	"fmt"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
+	"go.yorun.ai/vine/util/vcode"
 )
 
-func TestPortalHTTPDefaultsAndSingleTransport(t *testing.T) {
-	entry := NormalizePortalEntry(PortalEntry{Protocol: "http"})
-	require.Equal(t, DefaultPortalEntryHTTP(), *entry.Http)
-	require.Len(t, entry.Accesses(), 2)
-	for _, scheme := range []string{"http", "https"} {
-		single := NormalizePortalEntry(PortalEntry{Id: 42, Name: scheme, Enabled: true, ListenIPs: []string{"127.0.0.1"}, Protocol: "http", Http: &PortalEntryHTTP{Host: "demo.local", HttpEnabled: scheme == "http", HttpsEnabled: scheme == "https", HttpPort: 8443, HttpsPort: 8443}})
-		require.Equal(t, 42, single.Id)
-		require.Equal(t, "http", single.Protocol)
-		require.Equal(t, scheme, single.Accesses()[0].Scheme)
-		require.Equal(t, 8443, single.Accesses()[0].Port)
-		require.False(t, single.Http.AutoHTTPS)
-		require.Len(t, single.Accesses(), 1)
-		require.Equal(t, single, NormalizePortalEntry(single))
-	}
-}
-func TestPortalHTTPInvalidConfigurations(t *testing.T) {
-	for _, config := range []PortalEntryHTTP{
-		{}, {AutoHTTPS: true},
-		{HttpEnabled: true, HttpsEnabled: true, HttpPort: 8080, HttpsPort: 8080},
-		{HttpEnabled: true, HttpPort: -1}, {HttpsEnabled: true, HttpsPort: 65536},
+func TestPortalHTTPEffective(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		raw    PortalEntryHTTP
+		cert   bool
+		http   bool
+		https  bool
+		auto   bool
+		reason string
+	}{
+		{"empty", PortalEntryHTTP{}, false, true, false, false, "NO_DOMAIN"},
+		{"IP", PortalEntryHTTP{Host: "127.0.0.1"}, true, true, false, false, "NO_DOMAIN"},
+		{"domain without cert", PortalEntryHTTP{Host: "example.com"}, false, true, false, false, "NO_MATCHING_CERTIFICATE"},
+		{"automatic", PortalEntryHTTP{Host: "example.com"}, true, true, true, true, "ENABLED"},
+		{"explicit HTTPS", PortalEntryHTTP{Host: "example.com", Https: "ENABLED"}, true, true, true, true, "ENABLED"},
+		{"HTTP only", PortalEntryHTTP{Host: "example.com", Https: "DISABLED"}, true, true, false, false, "DISABLED"},
+		{"HTTPS only", PortalEntryHTTP{Host: "example.com", Http: "DISABLED"}, true, false, true, false, "ENABLED"},
+		{"pending HTTPS", PortalEntryHTTP{Host: "example.com", Http: "DISABLED"}, false, false, false, false, "NO_MATCHING_CERTIFICATE"},
+		{"no redirect", PortalEntryHTTP{Host: "example.com", AutoHTTPS: "DISABLED"}, true, true, true, false, "ENABLED"},
 	} {
-		require.Panics(t, func() { NormalizePortalEntry(PortalEntry{Protocol: "http", Http: &config}) })
+		t.Run(tc.name, func(t *testing.T) {
+			entry := NormalizePortalEntry(PortalEntry{Protocol: "http", Http: &tc.raw})
+			got := entry.Http.Effective(tc.cert)
+			require.Equal(t, tc.http, got.HttpEnabled)
+			require.Equal(t, tc.https, got.HttpsEnabled)
+			require.Equal(t, tc.auto, got.AutoHTTPSEnabled)
+			require.Equal(t, tc.reason, got.HTTPSReason)
+			require.Equal(t, 80, got.HttpPort)
+			require.Equal(t, 443, got.HttpsPort)
+			require.Equal(t, tc.raw.Http.normalized("http"), entry.Http.Http)
+			require.Equal(t, tc.raw.Https.normalized("https"), entry.Http.Https)
+			require.Equal(t, tc.raw.AutoHTTPS.normalized("autohttps"), entry.Http.AutoHTTPS)
+		})
 	}
-	require.Panics(t, func() { NormalizePortalEntry(PortalEntry{Protocol: "tcp"}) })
-}
-func TestPortalHTTPRejectsPartiallyOverlappingEntry(t *testing.T) {
-	require.Panics(t, func() {
-		ValidatePortalEntryListeners([]PortalEntry{
-			{Name: "dual", Protocol: "http", Enabled: true, Http: &PortalEntryHTTP{Host: "demo.local", HttpEnabled: true, HttpsEnabled: true, AutoHTTPS: true}},
-			{Name: "single", Enabled: true, Protocol: "http", Http: &PortalEntryHTTP{Host: "demo.local", HttpEnabled: true, HttpsEnabled: false, HttpPort: 80}},
-		})
-	})
-	require.NotPanics(t, func() {
-		ValidatePortalEntryListeners([]PortalEntry{
-			{Name: "dual", Protocol: "http", Enabled: true, Http: &PortalEntryHTTP{Host: "one.local", HttpEnabled: true, HttpsEnabled: true, AutoHTTPS: true}},
-			{Name: "single", Enabled: true, Protocol: "http", Http: &PortalEntryHTTP{Host: "two.local", HttpEnabled: true, HttpsEnabled: false, HttpPort: 80}},
-		})
-	})
 }
 
-func TestPortalHTTPPreservesAutoHTTPSWithSingleTransport(t *testing.T) {
-	for _, scheme := range []string{"http", "https"} {
-		t.Run(scheme, func(t *testing.T) {
-			config := DefaultPortalEntryHTTP()
-			config.HttpEnabled = scheme == "http"
-			config.HttpsEnabled = scheme == "https"
-			entry := NormalizePortalEntry(PortalEntry{Protocol: "http", Http: &config})
-			require.True(t, entry.Http.AutoHTTPS)
-			require.Len(t, entry.Accesses(), 1)
-			require.Equal(t, scheme, entry.Accesses()[0].Scheme)
-			entry.Http.HttpEnabled = true
-			entry.Http.HttpsEnabled = true
-			entry = NormalizePortalEntry(entry)
-			require.True(t, entry.Http.AutoHTTPS)
-			require.Len(t, entry.Accesses(), 2)
-		})
+func TestPortalEntryAccessesSeparateEffectiveAndReservedTransports(t *testing.T) {
+	entry := NormalizePortalEntry(PortalEntry{Protocol: "http", Http: new(PortalEntryHTTP{Host: "example.com", Http: "DISABLED", HttpsPort: 8443})})
+	reserved := []PortalEntryAccess{{Scheme: "https", Port: 8443}}
+	require.Equal(t, reserved, entry.ReservedAccesses())
+	// An unresolved entry must never masquerade as an effective listener.
+	require.Panics(t, func() { entry.EffectiveAccesses() })
+
+	for _, hasCertificate := range []bool{false, true, false} {
+		entry.EffectiveHTTP = new(entry.Http.Effective(hasCertificate))
+		if hasCertificate {
+			require.Equal(t, reserved, entry.EffectiveAccesses())
+		} else {
+			require.Empty(t, entry.EffectiveAccesses())
+		}
+		require.Equal(t, reserved, entry.ReservedAccesses())
+	}
+}
+func TestPortalHTTPRejectsExplicitConflicts(t *testing.T) {
+	for _, raw := range []PortalEntryHTTP{
+		{Https: "ENABLED"}, {Host: "::1", Https: "ENABLED"}, {AutoHTTPS: "ENABLED"},
+		{Host: "example.com", Https: "DISABLED", AutoHTTPS: "ENABLED"},
+		{Host: "example.com", Http: "DISABLED", AutoHTTPS: "ENABLED"},
+		{Http: "DISABLED", Https: "DISABLED"},
+		{Host: "example.com", HttpPort: 443}, {HttpPort: -1}, {HttpsPort: 65536},
+	} {
+		require.Panics(t, func() { NormalizePortalEntry(PortalEntry{Protocol: "http", Http: &raw}) })
+	}
+	require.NotPanics(t, func() { NormalizePortalEntry(PortalEntry{Protocol: "http", Http: &PortalEntryHTTP{HttpPort: 443}}) })
+}
+func TestPortalCertificatePresenceIgnoresValidity(t *testing.T) {
+	for _, date := range []time.Time{time.Now().Add(-time.Hour), time.Now().Add(time.Hour)} {
+		certs := []*PortalCert{{Enabled: true, Domains: []string{"*.example.com"}, ValidFrom: date, ValidTo: date}}
+		require.True(t, HasPortalCertificate("app.example.com", certs))
+		require.True(t, HasPortalCertificate("*.example.com", certs))
+		require.False(t, HasPortalCertificate("a.b.example.com", certs))
+		require.False(t, HasPortalCertificate("example.com", certs))
+		certs[0].Enabled = false
+		require.False(t, HasPortalCertificate("app.example.com", certs))
+	}
+	require.False(t, HasPortalCertificate("*.example.com", []*PortalCert{{Enabled: true, Domains: []string{"app.example.com"}}}))
+}
+
+func TestPortalEntryExplicitSwitchesRequireMatchingCertificate(t *testing.T) {
+	for _, raw := range []PortalEntryHTTP{
+		{Host: "app.example.com", Https: "ENABLED"},
+		{Host: "app.example.com", AutoHTTPS: "ENABLED"},
+		{Host: "*.example.com", Https: "ENABLED"},
+	} {
+		entry := NormalizePortalEntry(PortalEntry{Name: "web", Protocol: "http", Http: &raw})
+		for _, certs := range [][]*PortalCert{
+			nil,
+			{{Enabled: false, Domains: []string{"*.example.com"}}},
+			{{Enabled: true, Domains: []string{"other.example.com"}}},
+		} {
+			require.Panics(t, func() { ValidatePortalEntryCertificates(entry, certs) })
+		}
+		for _, date := range []time.Time{time.Now().Add(-time.Hour), time.Now().Add(time.Hour)} {
+			require.NotPanics(t, func() {
+				ValidatePortalEntryCertificates(entry, []*PortalCert{{Enabled: true, Domains: []string{"*.example.com"}, ValidFrom: date, ValidTo: date}})
+			})
+		}
+	}
+	for _, raw := range []PortalEntryHTTP{{Host: "app.example.com"}, {Host: "app.example.com", Https: "DISABLED"}} {
+		entry := NormalizePortalEntry(PortalEntry{Protocol: "http", Http: &raw})
+		require.NotPanics(t, func() { ValidatePortalEntryCertificates(entry, nil) })
+	}
+}
+
+func TestPortalHTTPModeJSON(t *testing.T) {
+	for _, input := range []string{`{}`, `{"http":"AUTO","https":"AUTO","autohttps":"AUTO"}`} {
+		raw, err := vcode.UnmarshalJsonS[PortalEntryHTTP](input)
+		require.NoError(t, err)
+		entry := NormalizePortalEntry(PortalEntry{Protocol: "http", Http: &raw})
+		require.Equal(t, PortalSwitchModeAuto, entry.Http.Http)
+		require.Equal(t, PortalSwitchModeAuto, entry.Http.Https)
+		require.Equal(t, PortalSwitchModeAuto, entry.Http.AutoHTTPS)
+		encoded := vcode.MustMarshalJsonS(entry.Http)
+		require.JSONEq(t, `{"host":"","http":"AUTO","httpPort":80,"https":"AUTO","httpsPort":443,"autohttps":"AUTO"}`, encoded)
+	}
+	for _, field := range []string{"http", "https", "autohttps"} {
+		for _, value := range []string{`null`, `true`, `false`, `1`, `""`, `"enabled"`, `"ON"`, `"UNSPECIFIED"`} {
+			_, err := vcode.UnmarshalJsonS[PortalEntryHTTP](fmt.Sprintf(`{"%s":%s}`, field, value))
+			require.Error(t, err, "%s=%s", field, value)
+		}
+	}
+	for _, mode := range []PortalSwitchMode{"enabled", "ON", "UNSPECIFIED"} {
+		for _, raw := range []PortalEntryHTTP{{Http: mode}, {Https: mode}, {AutoHTTPS: mode}} {
+			require.Panics(t, func() { NormalizePortalEntry(PortalEntry{Protocol: "http", Http: &raw}) })
+		}
 	}
 }

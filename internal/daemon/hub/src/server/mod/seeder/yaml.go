@@ -237,16 +237,18 @@ func (e _PortalEntry) toCorePortalEntry() *core.PortalEntry {
 		entry.Protocol = *e.Protocol
 		config := core.DefaultPortalEntryHTTP()
 		if e.Http != nil {
-			config = e.Http.update().Apply(config)
+			config = e.Http.config()
 		}
 		entry.Http = &config
 	} else {
 		scheme := strings.ToLower(strings.TrimSpace(e.Scheme))
 		ex.PanicNewIfNot(scheme == "http" || scheme == "https", ex.OperationFailed, ex.F("unknown portal entry scheme: %s", scheme))
-		config := core.PortalEntryHTTP{Host: e.Host, HttpEnabled: scheme == "http", HttpsEnabled: scheme == "https"}
+		config := core.PortalEntryHTTP{Host: e.Host, Http: core.PortalSwitchModeDisabled, Https: core.PortalSwitchModeDisabled, AutoHTTPS: "DISABLED"}
 		if scheme == "http" {
+			config.Http = core.PortalSwitchModeEnabled
 			config.HttpPort = e.Port
 		} else {
+			config.Https = core.PortalSwitchModeEnabled
 			config.HttpsPort = e.Port
 		}
 		entry.Protocol, entry.Http = "http", &config

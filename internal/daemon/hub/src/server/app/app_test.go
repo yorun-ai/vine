@@ -444,7 +444,7 @@ func TestHubConfigurationLifecycle(t *testing.T) {
 				{"save rule", func() {
 					// A rule belongs to the entry that serves its access, so Hub
 					// stores the entry before the rule.
-					entry := &core.PortalEntry{Name: "http:80", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 80}}
+					entry := &core.PortalEntry{Name: "http:80", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}}
 					entryRepo.Save(entry)
 					ruleRepo.Save(&core.PortalRule{Name: "new.rule", EntryId: entry.Id, RouteType: "SITE", RouteSiteName: "new.site"})
 				}},

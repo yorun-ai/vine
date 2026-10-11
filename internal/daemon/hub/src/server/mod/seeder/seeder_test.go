@@ -49,7 +49,7 @@ func TestSeederLoadsYAMLIntoSQLiteRepos(t *testing.T) {
   - name: feature.flag
     value: '{"enabled":true}'
 portalEntries:
-  - host: demo.local
+  - host: admin.local
     name: https:demo.local:443
     port: 443
     scheme: https
@@ -89,9 +89,9 @@ portalCerts:
 				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 				MetadataRepo:  metadataRepo,
 				Logger:        logger.New("vine:test"),
-				EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo),
+				EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo, certRepo),
 				RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
-				CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+				CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo, PortalEntryRepo: ruleRepo.PortalEntryRepo},
 				SiteCore:      newTestSiteCore(entryRepo),
 			}
 			seeder.DIInit()
@@ -168,9 +168,9 @@ appConfigs:
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo, certRepo),
 		RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
-		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo, PortalEntryRepo: ruleRepo.PortalEntryRepo},
 		SiteCore:      newTestSiteCore(entryRepo),
 	}
 	seeder.DIInit()
@@ -231,7 +231,7 @@ portalCerts:
 	configRepo.Save(&core.AppConfig{Name: "feature.flag", Value: `{"enabled":true}`, Version: 7})
 	configRepo.Save(&core.AppConfig{Name: "feature.keep", Value: `{"enabled":true}`, Version: 3})
 	entryRepo.Save(&core.PortalSite{Name: "admin@demo.app", Type: core.PortalSiteTypeWEBGW, ActorSkelName: "old.Actor", WebName: "old.Web"})
-	saveTestPortalRule(t, ruleRepo, &core.PortalRule{Name: "admin", MatchPathPrefix: "/old", RouteType: "SITE", RouteSiteName: "old-site"}, core.PortalEntry{Protocol: "http", Http: &core.PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 80}})
+	saveTestPortalRule(t, ruleRepo, &core.PortalRule{Name: "admin", MatchPathPrefix: "/old", RouteType: "SITE", RouteSiteName: "old-site"}, core.PortalEntry{Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}})
 	certRepo.Save(&core.PortalCert{Name: "admin-cert", Issuer: "old", Domains: []string{"old.local"}, Certificate: "old-pub", PrivateKey: "old-pri"})
 	metadataRepo.MarkSeeded()
 
@@ -240,9 +240,9 @@ portalCerts:
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo, certRepo),
 		RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
-		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo, PortalEntryRepo: ruleRepo.PortalEntryRepo},
 		SiteCore:      newTestSiteCore(entryRepo),
 	}
 	seeder.DIInit()
@@ -290,9 +290,9 @@ portalSites:
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo, certRepo),
 		RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
-		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo, PortalEntryRepo: ruleRepo.PortalEntryRepo},
 		SiteCore:      newTestSiteCore(entryRepo),
 	}
 
@@ -314,7 +314,7 @@ portalRules:
 portalEntries:
   - name: api
     protocol: http
-    http: {httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8099}
+    http: {http: ENABLED, https: DISABLED, autohttps: DISABLED, httpPort: 8099}
 portalRules:
   - name: demo.web
     entryName: web
@@ -424,7 +424,7 @@ func TestSeederStoresDisabledConfiguration(t *testing.T) {
 portalEntries:
   - name: web
     protocol: http
-    http: {httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8099}
+    http: {http: ENABLED, https: DISABLED, autohttps: DISABLED, httpPort: 8099}
     enabled: false
 portalSites:
   - name: demo.Web
@@ -449,9 +449,9 @@ portalCerts:
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo, certRepo),
 		RuleCore:      newTestRuleCore(ruleRepo, siteRepo),
-		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo, PortalEntryRepo: ruleRepo.PortalEntryRepo},
 		SiteCore:      newTestSiteCore(siteRepo),
 	}
 
@@ -487,7 +487,7 @@ func TestSeederPortalRuleJoinsNamedEntry(t *testing.T) {
 portalEntries:
   - name: web
     protocol: http
-    http: {httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8099}
+    http: {http: ENABLED, https: DISABLED, autohttps: DISABLED, httpPort: 8099}
 portalRules:
   - name: demo.web
     entryName: web
@@ -500,9 +500,9 @@ portalRules:
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo, certRepo),
 		RuleCore:      newTestRuleCore(ruleRepo, siteRepo),
-		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo, PortalEntryRepo: ruleRepo.PortalEntryRepo},
 		SiteCore:      newTestSiteCore(siteRepo),
 	}
 
@@ -514,8 +514,8 @@ portalRules:
 	rule, ok := ruleRepo.GetByName("demo.web")
 	require.True(t, ok)
 	assert.Equal(t, entry.Id, rule.EntryId)
-	assert.Equal(t, "http", entry.Accesses()[0].Scheme)
-	assert.Equal(t, 8099, entry.Accesses()[0].Port)
+	assert.Equal(t, "http", entry.EffectiveAccesses()[0].Scheme)
+	assert.Equal(t, 8099, entry.EffectiveAccesses()[0].Port)
 }
 
 func TestSeederRejectsPortalRuleMixingEntryNameAndAccess(t *testing.T) {
@@ -537,25 +537,27 @@ func TestSeederAppliesPortalEntriesBeforeRules(t *testing.T) {
 portalEntries:
   - name: web
     protocol: http
-    http: {httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8099}
+    http: {http: ENABLED, https: DISABLED, autohttps: DISABLED, httpPort: 8099}
     listenIPs: ["::1", "127.0.0.1", "127.0.0.1"]
   - name: idle
     protocol: http
-    http: {host: api.example.com, httpEnabled: false, httpsEnabled: true, httpsPort: 8443}
+    http: {host: admin.local, http: DISABLED, https: ENABLED, httpsPort: 8443}
 portalRules:
   - name: demo.web
     entryName: web
     routeType: SITE
     routeSiteName: demo.Web
-`))
+portalCerts:
+  - name: web-cert
+    `+testSeederCertificate(t)+"\n"))
 	seeder := &Seeder{
 		Flag:          newTestSeederFlag(seedPath),
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo, certRepo),
 		RuleCore:      newTestRuleCore(ruleRepo, siteRepo),
-		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo, PortalEntryRepo: ruleRepo.PortalEntryRepo},
 		SiteCore:      newTestSiteCore(siteRepo),
 	}
 
@@ -564,13 +566,13 @@ portalRules:
 	// A seed names an entry, and a rule joins the entry it names.
 	web, ok := ruleRepo.PortalEntryRepo.GetByName("web")
 	require.True(t, ok)
-	assert.Equal(t, "http", web.Accesses()[0].Scheme)
-	assert.Equal(t, 8099, web.Accesses()[0].Port)
+	assert.Equal(t, "http", web.EffectiveAccesses()[0].Scheme)
+	assert.Equal(t, 8099, web.EffectiveAccesses()[0].Port)
 	assert.Equal(t, []string{"127.0.0.1", "::1"}, web.ListenIPs)
 	// An entry may route no rule: the seed declares the entry Portal serves.
 	idle, ok := ruleRepo.PortalEntryRepo.GetByName("idle")
 	require.True(t, ok)
-	assert.Equal(t, 8443, idle.Accesses()[0].Port)
+	assert.Equal(t, 8443, idle.EffectiveAccesses()[0].Port)
 
 	rule, ok := ruleRepo.GetByName("demo.web")
 	require.True(t, ok)
@@ -583,16 +585,16 @@ func TestSeederRejectsUnnamedPortalEntry(t *testing.T) {
 	require.NoError(t, vfile.WriteString(seedPath, `
 portalEntries:
   - protocol: http
-    http: {httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8099}
+    http: {http: ENABLED, https: DISABLED, autohttps: DISABLED, httpPort: 8099}
 `))
 	seeder := &Seeder{
 		Flag:          newTestSeederFlag(seedPath),
 		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("vine:test"),
-		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo, certRepo),
 		RuleCore:      newTestRuleCore(ruleRepo, siteRepo),
-		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+		CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo, PortalEntryRepo: ruleRepo.PortalEntryRepo},
 		SiteCore:      newTestSiteCore(siteRepo),
 	}
 
@@ -601,11 +603,12 @@ portalEntries:
 }
 
 // newTestEntryCore builds an entry core with the repositories Hub injects.
-func newTestEntryCore(entryRepo core.PortalEntryRepo, ruleRepo core.PortalRuleRepo, siteRepo core.PortalSiteRepo) *core.PortalEntryCore {
+func newTestEntryCore(entryRepo core.PortalEntryRepo, ruleRepo core.PortalRuleRepo, siteRepo core.PortalSiteRepo, certRepo core.PortalCertRepo) *core.PortalEntryCore {
 	return &core.PortalEntryCore{
 		PortalEntryRepo: entryRepo,
 		PortalRuleRepo:  ruleRepo,
 		PortalSiteRepo:  siteRepo,
+		PortalCertRepo:  certRepo,
 	}
 }
 
@@ -640,9 +643,9 @@ func TestSeederStoresRulesThatShareOneRequest(t *testing.T) {
 				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 				MetadataRepo:  metadataRepo,
 				Logger:        logger.New("vine:test"),
-				EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo),
+				EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo, certRepo),
 				RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
-				CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo},
+				CertCore:      &core.PortalCertCore{PortalCertRepo: certRepo, PortalEntryRepo: ruleRepo.PortalEntryRepo},
 				SiteCore:      newTestSiteCore(entryRepo),
 			}
 
@@ -654,7 +657,7 @@ func TestSeederStoresRulesThatShareOneRequest(t *testing.T) {
 			require.Len(t, conflicts, 1)
 			assert.ElementsMatch(t, []string{"demo.app", "demo.app-second"},
 				[]string{conflicts[0].Rule, conflicts[0].Conflict})
-			assert.Equal(t, "http://*:80/app", conflicts[0].MatchText())
+			assert.Equal(t, "http://<IP>:80/app", conflicts[0].MatchText())
 		})
 	}
 }
@@ -684,7 +687,7 @@ func newTestSeederRepos(t *testing.T) (*repo.AppConfigRepo, *repo.PortalRuleRepo
 		Dao:             &model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](gdb)},
 		Syncer:          sharedSyncer,
 		Access:          new(configaccess.Access),
-		PortalEntryRepo: &repo.PortalEntryRepo{Dao: &model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](gdb)}, Syncer: sharedSyncer, Access: new(configaccess.Access)},
+		PortalEntryRepo: &repo.PortalEntryRepo{CertDao: &model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](gdb)}, Dao: &model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](gdb)}, Syncer: sharedSyncer, Access: new(configaccess.Access)},
 	}, &repo.PortalCertRepo{
 		Dao:    &model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](gdb)},
 		Syncer: sharedSyncer,
@@ -764,9 +767,9 @@ portalRules:
 	path := filepath.Join(t.TempDir(), "hub.yaml")
 	require.NoError(t, vfile.WriteString(path, content))
 	seeder := &Seeder{Flag: newTestSeederFlag(path), Logger: logger.New("vine:test"),
-		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo}, EntryCore: newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo),
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo}, EntryCore: newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo, certRepo),
 		RuleCore: newTestRuleCore(ruleRepo, entryRepo),
-		CertCore: &core.PortalCertCore{PortalCertRepo: certRepo},
+		CertCore: &core.PortalCertCore{PortalCertRepo: certRepo, PortalEntryRepo: ruleRepo.PortalEntryRepo},
 		SiteCore: newTestSiteCore(entryRepo), MetadataRepo: metadataRepo}
 	require.Panics(t, seeder.DIInit)
 	_, exists := configRepo.GetByName("pending")
@@ -774,6 +777,111 @@ portalRules:
 	_, exists = ruleRepo.GetByName("valid")
 	require.False(t, exists)
 	require.False(t, metadataRepo.IsSeeded())
+}
+
+func TestSeederPreflightsDuplicateEntriesBeforeWriting(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		entries string
+		err     string
+	}{
+		{
+			name: "normalized host",
+			entries: `
+  - name: first
+    protocol: http
+    http: {host: APP.EXAMPLE.COM, https: DISABLED}
+  - name: second
+    protocol: http
+    http: {host: app.example.com., https: DISABLED}
+`,
+		},
+		{
+			name: "default port and modes",
+			entries: `
+  - name: first
+    protocol: http
+  - name: second
+    protocol: http
+    http: {http: AUTO, https: AUTO, autohttps: AUTO, httpPort: 80, httpsPort: 443}
+`,
+		},
+		{
+			name: "disabled entry with different listener IP",
+			entries: `
+  - name: first
+    protocol: http
+    listenIPs: [127.0.0.1]
+  - name: second
+    protocol: http
+    listenIPs: [127.0.0.2]
+    enabled: false
+`,
+		},
+		{
+			name: "legacy and current entry",
+			entries: `
+  - name: first
+    scheme: http
+    host: APP.EXAMPLE.COM
+  - name: second
+    protocol: http
+    http: {host: app.example.com., http: ENABLED, https: DISABLED, autohttps: DISABLED, httpPort: 80}
+`,
+		},
+		{
+			name: "normalized entry name",
+			entries: `
+  - name: first
+    protocol: http
+  - name: ' first '
+    protocol: http
+    http: {host: other.example.com}
+`,
+			err: `portal entry "first" is declared more than once in the seed`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			configs, rules, certs, sites, metadata, watch := newTestSeederRepos(t)
+			content := "appConfigs: [{name: pending, value: '{}'}]\nportalEntries:" + test.entries
+			target := &Seeder{Flag: &flag.Flag{SeedHubData: content}, Logger: logger.New("seed-duplicate-test"), MetadataRepo: metadata,
+				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configs}, EntryCore: newTestEntryCore(rules.PortalEntryRepo, rules, sites, certs),
+				RuleCore: newTestRuleCore(rules, sites), SiteCore: newTestSiteCore(sites),
+				CertCore: &core.PortalCertCore{PortalCertRepo: certs, PortalEntryRepo: rules.PortalEntryRepo}}
+			message := test.err
+			if message == "" {
+				message = `portal entry "second" duplicates entry "first" in the seed`
+			}
+			require.PanicsWithError(t, message+" type=APPLICATION code=OPERATION_FAILED", target.DIInit)
+			require.Empty(t, configs.List())
+			require.Empty(t, rules.PortalEntryRepo.List())
+			require.False(t, metadata.IsSeeded())
+			_, published := watch.Get(watched.FormatPortalEntryKey("first"))
+			require.False(t, published)
+		})
+	}
+}
+
+func TestSeederAllowsDistinctEntryAccesses(t *testing.T) {
+	configs, rules, certs, sites, metadata, _ := newTestSeederRepos(t)
+	content := `portalEntries:
+  - name: first
+    protocol: http
+    http: {host: app.example.com, https: DISABLED}
+  - name: other-host
+    protocol: http
+    http: {host: other.example.com, https: DISABLED}
+  - name: other-port
+    protocol: http
+    http: {host: APP.EXAMPLE.COM., httpPort: 8080, https: DISABLED}
+`
+	target := &Seeder{Flag: &flag.Flag{SeedHubData: content}, Logger: logger.New("seed-distinct-test"), MetadataRepo: metadata,
+		AppConfigCore: &core.AppConfigCore{AppConfigRepo: configs}, EntryCore: newTestEntryCore(rules.PortalEntryRepo, rules, sites, certs),
+		RuleCore: newTestRuleCore(rules, sites), SiteCore: newTestSiteCore(sites),
+		CertCore: &core.PortalCertCore{PortalCertRepo: certs, PortalEntryRepo: rules.PortalEntryRepo}}
+	require.NotPanics(t, target.DIInit)
+	require.Len(t, rules.PortalEntryRepo.List(), 3)
+	require.True(t, metadata.IsSeeded())
 }
 
 func testSeederCertificate(t *testing.T) string {
@@ -800,9 +908,9 @@ func TestSeederPreflightsSitesAndCertificatesBeforeWriting(t *testing.T) {
 			path := filepath.Join(t.TempDir(), "hub.yaml")
 			require.NoError(t, vfile.WriteString(path, "appConfigs:\n  - name: pending\n    value: test\n"+invalid))
 			target := &Seeder{Flag: newTestSeederFlag(path), Logger: logger.New("vine:test"), MetadataRepo: metadata,
-				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configs}, EntryCore: newTestEntryCore(rules.PortalEntryRepo, rules, sites),
+				AppConfigCore: &core.AppConfigCore{AppConfigRepo: configs}, EntryCore: newTestEntryCore(rules.PortalEntryRepo, rules, sites, certs),
 				RuleCore: newTestRuleCore(rules, sites),
-				CertCore: &core.PortalCertCore{PortalCertRepo: certs}, SiteCore: newTestSiteCore(sites)}
+				CertCore: &core.PortalCertCore{PortalCertRepo: certs, PortalEntryRepo: rules.PortalEntryRepo}, SiteCore: newTestSiteCore(sites)}
 			require.Panics(t, target.DIInit)
 			_, exists := configs.GetByName("pending")
 			require.False(t, exists)
@@ -821,9 +929,55 @@ func TestSeederRejectsInvalidInlineYAML(t *testing.T) {
 }
 
 func TestSeederAcceptsEmptyInlineMapping(t *testing.T) {
-	seeder := new(Seeder{Flag: new(flag.Flag{SeedHubData: "{}"})})
+	_, _, certs, _, _, _ := newTestSeederRepos(t)
+	seeder := new(Seeder{Flag: new(flag.Flag{SeedHubData: "{}"}), CertCore: new(core.PortalCertCore{PortalCertRepo: certs})})
 	require.NotPanics(t, seeder.loadSeedYAML)
 	require.NotNil(t, seeder.payload)
+}
+
+func TestSeederValidatesExplicitEntryCertificatesBeforeWriting(t *testing.T) {
+	certificateYAML := testSeederCertificate(t)
+	for _, setting := range []string{"https: ENABLED", "autohttps: ENABLED"} {
+		for _, fixture := range []struct {
+			name string
+			host string
+			cert string
+			ok   bool
+		}{
+			{name: "missing", host: "admin.local"},
+			{name: "disabled", host: "admin.local", cert: "portalCerts: [{name: disabled, enabled: false}]\n"},
+			{name: "mismatch", host: "other.local", cert: "portalCerts:\n  - name: tls\n    " + certificateYAML + "\n"},
+			{name: "matching", host: "admin.local", cert: "portalCerts:\n  - name: tls\n    " + certificateYAML + "\n", ok: true},
+		} {
+			t.Run(setting+"/"+fixture.name, func(t *testing.T) {
+				configs, rules, certs, sites, metadata, watch := newTestSeederRepos(t)
+				yaml := "appConfigs: [{name: pending, value: '{}'}]\nportalEntries:\n  - name: web\n    protocol: http\n    http: {host: " + fixture.host + ", " + setting + "}\n" + fixture.cert
+				seeder := new(Seeder{
+					Flag: new(flag.Flag{SeedHubData: yaml}), Logger: logger.New("seed-cert-test"), MetadataRepo: metadata,
+					AppConfigCore: new(core.AppConfigCore{AppConfigRepo: configs}),
+					EntryCore:     newTestEntryCore(rules.PortalEntryRepo, rules, sites, certs),
+					RuleCore:      newTestRuleCore(rules, sites), SiteCore: newTestSiteCore(sites),
+					CertCore: new(core.PortalCertCore{PortalCertRepo: certs, PortalEntryRepo: rules.PortalEntryRepo}),
+				})
+				if !fixture.ok {
+					require.PanicsWithError(t, fmt.Sprintf("portal entry %q: explicit HTTPS or autohttps requires an enabled matching certificate for host %q type=APPLICATION code=OPERATION_FAILED", "web", fixture.host), seeder.DIInit)
+					require.Empty(t, configs.List())
+					require.Empty(t, certs.List())
+					require.Empty(t, rules.PortalEntryRepo.List())
+					require.False(t, metadata.IsSeeded())
+					return
+				}
+				require.NotPanics(t, seeder.DIInit)
+				entry, ok := rules.PortalEntryRepo.GetByName("web")
+				require.True(t, ok)
+				require.True(t, entry.EffectiveHTTP.HttpsEnabled)
+				require.True(t, entry.EffectiveHTTP.AutoHTTPSEnabled)
+				published, ok := watch.Get(watched.FormatPortalEntryKey("web"))
+				require.True(t, ok)
+				require.True(t, vcode.MustUnmarshalJsonS[watched.PortalEntry](published).EffectiveHTTP.HttpsEnabled)
+			})
+		}
+	}
 }
 
 func TestSeederPersistsSourcesByEntityAndClearsOnRemoval(t *testing.T) {
@@ -832,10 +986,10 @@ func TestSeederPersistsSourcesByEntityAndClearsOnRemoval(t *testing.T) {
 	source := fmt.Sprintf("version: 1\nseedSha256: %x\nfields:\n  /appConfigs/0/value:\n    source: app/default\n    define: domain/booker\n    override: app/default\n", sha256.Sum256([]byte(template)))
 	s := new(Seeder{Flag: new(flag.Flag{SeedHubData: template, SeedHubSource: source, SeedHubVarsFile: writeSeedHubVarsFile(t, `value: '"resolved"'`)}),
 		AppConfigCore: new(core.AppConfigCore{AppConfigRepo: configRepo}),
-		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo, certRepo),
 		RuleCore:      newTestRuleCore(ruleRepo, siteRepo),
 		SiteCore:      newTestSiteCore(siteRepo),
-		CertCore:      new(core.PortalCertCore{PortalCertRepo: certRepo}), MetadataRepo: metadataRepo, Logger: logger.New("seed-source-test"),
+		CertCore:      new(core.PortalCertCore{PortalCertRepo: certRepo, PortalEntryRepo: ruleRepo.PortalEntryRepo}), MetadataRepo: metadataRepo, Logger: logger.New("seed-source-test"),
 	})
 	s.Flag.Normalize(true)
 	s.DIInit()
@@ -875,10 +1029,10 @@ fields:
 	target := new(Seeder{
 		Flag:          new(flag.Flag{SeedHubData: template, SeedHubSource: source, SeedHubVarsFile: writeSeedHubVarsFile(t, "ttl: 2h")}),
 		AppConfigCore: new(core.AppConfigCore{AppConfigRepo: configs}),
-		EntryCore:     newTestEntryCore(rules.PortalEntryRepo, rules, sites),
+		EntryCore:     newTestEntryCore(rules.PortalEntryRepo, rules, sites, certs),
 		RuleCore:      newTestRuleCore(rules, sites),
 		SiteCore:      newTestSiteCore(sites),
-		CertCore:      new(core.PortalCertCore{PortalCertRepo: certs}),
+		CertCore:      new(core.PortalCertCore{PortalCertRepo: certs, PortalEntryRepo: rules.PortalEntryRepo}),
 		MetadataRepo:  metadata, Logger: logger.New("seed-key-sources-test"),
 	})
 	target.Flag.Normalize(true)
@@ -919,10 +1073,10 @@ fields:
 	seeder := &Seeder{
 		Flag:          new(flag.Flag{SeedHubData: template, SeedHubSource: source}),
 		AppConfigCore: new(core.AppConfigCore{AppConfigRepo: configRepo}),
-		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo),
+		EntryCore:     newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, entryRepo, certRepo),
 		RuleCore:      newTestRuleCore(ruleRepo, entryRepo),
 		SiteCore:      newTestSiteCore(entryRepo),
-		CertCore:      new(core.PortalCertCore{PortalCertRepo: certRepo}),
+		CertCore:      new(core.PortalCertCore{PortalCertRepo: certRepo, PortalEntryRepo: ruleRepo.PortalEntryRepo}),
 		MetadataRepo:  metadataRepo,
 		Logger:        logger.New("seed-rule-sources-test"),
 	}
@@ -955,8 +1109,8 @@ func TestSeederWildcardWebOnly(t *testing.T) {
 			target := &Seeder{
 				Flag: newTestSeederFlag(seedPath), AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 				MetadataRepo: metadataRepo, Logger: logger.New("vine:test"),
-				EntryCore: newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo),
-				RuleCore:  newTestRuleCore(ruleRepo, siteRepo), CertCore: &core.PortalCertCore{PortalCertRepo: certRepo}, SiteCore: newTestSiteCore(siteRepo),
+				EntryCore: newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo, certRepo),
+				RuleCore:  newTestRuleCore(ruleRepo, siteRepo), CertCore: &core.PortalCertCore{PortalCertRepo: certRepo, PortalEntryRepo: ruleRepo.PortalEntryRepo}, SiteCore: newTestSiteCore(siteRepo),
 			}
 			if kind == "WEBGW" {
 				require.NotPanics(t, target.DIInit)
@@ -986,9 +1140,9 @@ func TestSeederAppliesVariableAssignmentsWithAndWithoutFile(t *testing.T) {
 			s := new(Seeder{
 				Flag: flags, MetadataRepo: metadata, Logger: logger.New("seed-vars-test"),
 				AppConfigCore: new(core.AppConfigCore{AppConfigRepo: configs}),
-				EntryCore:     newTestEntryCore(rules.PortalEntryRepo, rules, sites),
+				EntryCore:     newTestEntryCore(rules.PortalEntryRepo, rules, sites, certs),
 				RuleCore:      newTestRuleCore(rules, sites), SiteCore: newTestSiteCore(sites),
-				CertCore: new(core.PortalCertCore{PortalCertRepo: certs}),
+				CertCore: new(core.PortalCertCore{PortalCertRepo: certs, PortalEntryRepo: rules.PortalEntryRepo}),
 			})
 			s.Flag.Normalize(true)
 			s.DIInit()
@@ -1009,18 +1163,18 @@ func TestSeederRejectsListenerConflictsBeforeWrites(t *testing.T) {
 	require.NoError(t, vfile.WriteString(seedPath, `portalEntries:
   - name: wildcard
     protocol: http
-    http: {host: one.local, httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8080}
+    http: {host: one.local, http: ENABLED, https: DISABLED, autohttps: DISABLED, httpPort: 8080}
     listenIPs: ["0.0.0.0"]
   - name: local
     protocol: http
-    http: {host: two.local, httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8080}
+    http: {host: two.local, http: ENABLED, https: DISABLED, autohttps: DISABLED, httpPort: 8080}
     listenIPs: ["127.0.0.1"]
 `))
 	seeder := &Seeder{
 		Flag: newTestSeederFlag(seedPath), AppConfigCore: &core.AppConfigCore{AppConfigRepo: configRepo},
 		MetadataRepo: metadataRepo, Logger: logger.New("vine:test"),
-		EntryCore: newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo),
-		RuleCore:  newTestRuleCore(ruleRepo, siteRepo), CertCore: &core.PortalCertCore{PortalCertRepo: certRepo}, SiteCore: newTestSiteCore(siteRepo),
+		EntryCore: newTestEntryCore(ruleRepo.PortalEntryRepo, ruleRepo, siteRepo, certRepo),
+		RuleCore:  newTestRuleCore(ruleRepo, siteRepo), CertCore: &core.PortalCertCore{PortalCertRepo: certRepo, PortalEntryRepo: ruleRepo.PortalEntryRepo}, SiteCore: newTestSiteCore(siteRepo),
 	}
 	require.Panics(t, seeder.DIInit)
 	assert.Empty(t, ruleRepo.PortalEntryRepo.List(), "the seed must reject the conflict before saving the first entry")

@@ -41,7 +41,7 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import {
   ResizableListHandle,
@@ -60,6 +60,7 @@ import { useLocale } from '@/i18n'
 import { cn } from '@/lib/utils'
 import { createPortalEntryApiService } from '@/skeled/admin'
 import type {
+  PortalSwitchMode,
   PortalEntry,
   PortalEntryRule,
   PortalEntryUpdate,
@@ -72,9 +73,9 @@ const PORTAL_ENTRY_LIST_DEFAULT_WIDTH = 352
 interface PortalEntryFormValue {
   name: string
   enabled: boolean
-  httpEnabled: boolean
-  httpsEnabled: boolean
-  autoHTTPS: boolean
+  http: PortalSwitchMode
+  https: PortalSwitchMode
+  autohttps: PortalSwitchMode
   host: string
   httpPort: string
   httpsPort: string
@@ -82,11 +83,11 @@ interface PortalEntryFormValue {
 }
 
 const newEntryFormValue: PortalEntryFormValue = {
-  name: 'http:80+https:443',
+  name: 'http:80',
   enabled: true,
-  httpEnabled: true,
-  httpsEnabled: true,
-  autoHTTPS: true,
+  http: 'AUTO',
+  https: 'AUTO',
+  autohttps: 'AUTO',
   host: '',
   httpPort: '80',
   httpsPort: '443',
@@ -97,8 +98,8 @@ const newEntryFormValue: PortalEntryFormValue = {
 function derivePortalEntryName(value: PortalEntryFormValue) {
   const host = value.host.trim()
   const ports = [
-    value.httpEnabled ? `http:${value.httpPort.trim() || '80'}` : '',
-    value.httpsEnabled ? `https:${value.httpsPort.trim() || '443'}` : '',
+    value.http !== 'DISABLED' ? `http:${value.httpPort.trim() || '80'}` : '',
+    host !== '' && value.https === 'ENABLED' ? `https:${value.httpsPort.trim() || '443'}` : '',
   ].filter(Boolean).join('+')
   return host === '' ? ports : `${host}:${ports}`
 }
@@ -119,8 +120,9 @@ function updatePortalEntryField(
   field: keyof PortalEntryFormValue,
   value: string | boolean,
 ) {
-  if (field === 'enabled' || field === 'httpEnabled' || field === 'httpsEnabled' || field === 'autoHTTPS') {
-    return syncDerivedEntryName(current, { ...current, [field]: value === true })
+  if (field === 'enabled') return { ...current, enabled: value === true }
+  if (field === 'http' || field === 'https' || field === 'autohttps') {
+    return syncDerivedEntryName(current, { ...current, [field]: value as PortalSwitchMode })
   }
   if (typeof value !== 'string') {
     return current
@@ -142,9 +144,9 @@ function portalEntryToFormValue(entry: PortalEntry): PortalEntryFormValue {
   return {
     name: entry.name,
     enabled: entry.enabled,
-    httpEnabled: entry.http.httpEnabled,
-    httpsEnabled: entry.http.httpsEnabled,
-    autoHTTPS: entry.http.autoHTTPS,
+    http: entry.http.http,
+    https: entry.http.https,
+    autohttps: entry.http.autohttps,
     host: entry.http.host,
     httpPort: String(entry.http.httpPort),
     httpsPort: String(entry.http.httpsPort),
@@ -155,11 +157,11 @@ function portalEntryToFormValue(entry: PortalEntry): PortalEntryFormValue {
 function portalEntryHTTPConfig(value: PortalEntryFormValue) {
   return {
     host: value.host.trim(),
-    httpEnabled: value.httpEnabled,
+    http: value.http,
     httpPort: Number(value.httpPort),
-    httpsEnabled: value.httpsEnabled,
+    https: value.https,
     httpsPort: Number(value.httpsPort),
-    autoHTTPS: value.autoHTTPS,
+    autohttps: value.autohttps,
   }
 }
 
@@ -176,11 +178,27 @@ function portalEntryFormValueToUpdate(
 }
 
 function portalEntryAddress(entry: PortalEntry) {
-  const host = entry.http.host.includes(':') ? `[${entry.http.host}]` : entry.http.host || '*'
-  return [
-    entry.http.httpEnabled ? `http://${host}:${entry.http.httpPort}` : '',
-    entry.http.httpsEnabled ? `https://${host}:${entry.http.httpsPort}` : '',
-  ].filter(Boolean).join(' · ')
+ const h = entry.effectiveHTTP
+ const host = h.host.includes(':') ? `[${h.host}]` : h.host || '<IP>'
+ return [h.httpEnabled ? `http://${host}:${h.httpPort}` : '', h.httpsEnabled ? `https://${host}:${h.httpsPort}` : ''].filter(Boolean).join(' · ')
+}
+
+function TransportMode({ value, onChange, label }: {value: PortalSwitchMode; onChange: (value: PortalSwitchMode) => void; label: string}) {
+ const { t } = useLocale()
+ return <Select value={value} onValueChange={(next) => {if (next) onChange(next as PortalSwitchMode)}}>
+  <SelectTrigger aria-label={label} className="w-full"><SelectValue /></SelectTrigger>
+  <SelectContent><SelectItem value="AUTO">{t('portalEntry.automatic')}</SelectItem><SelectItem value="ENABLED">{t('common.enabled')}</SelectItem><SelectItem value="DISABLED">{t('common.disabled')}</SelectItem></SelectContent>
+ </Select>
+}
+
+function EffectiveHTTPStatus({ entry }: {entry: PortalEntry}) {
+ const { t } = useLocale()
+ const h = entry.effectiveHTTP
+ const reason = h.httpsReason === 'NO_DOMAIN' ? t('portalEntry.noDomain') : h.httpsReason === 'NO_MATCHING_CERTIFICATE' ? t('portalEntry.noCertificate') : ''
+ return <div className="mt-2 text-xs text-muted-foreground">
+  <p>{t('portalEntry.effective')}: HTTP {t(h.httpEnabled ? 'common.enabled' : 'common.disabled')} · HTTPS {t(h.httpsEnabled ? 'common.enabled' : 'common.disabled')} · {t('portalEntry.autoHTTPS')} {t(h.autohttpsEnabled ? 'common.enabled' : 'common.disabled')}</p>
+  {reason ? <p>{reason}</p> : null}
+ </div>
 }
 
 function isValidPort(value: string) {
@@ -325,7 +343,7 @@ function PortalEntryInlineEditor({
       }
       if (!isValidPort(formValue.httpPort)) errors.httpPort=t('portalEntry.invalidPort')
       if (!isValidPort(formValue.httpsPort)) errors.httpsPort=t('portalEntry.invalidPort')
-      if (!formValue.httpEnabled && !formValue.httpsEnabled) errors.httpEnabled=t('portalEntry.transportRequired')
+      // Cross-field and certificate decisions belong to Hub.
       setFieldErrors(errors)
       setFormError(null)
       if (Object.keys(errors).length > 0) {
@@ -361,9 +379,10 @@ function PortalEntryInlineEditor({
       <Field label={t('portalEntry.host')}>
         <Input
           value={formValue.host}
-          placeholder="*"
+          placeholder={t('portalRule.hostPlaceholder')}
           onChange={(event) => setField('host', event.target.value)}
         />
+        <p className="text-xs text-muted-foreground">{t('portalEntry.hostHelp')}</p>
       </Field>
       <Field label={t('portalEntry.listenIPs')}>
         <Input
@@ -375,24 +394,16 @@ function PortalEntryInlineEditor({
       </Field>
       {(['http', 'https'] as const).map((transport) => (
         <React.Fragment key={transport}>
-          <Field label={transport.toUpperCase()} error={fieldErrors[`${transport}Enabled`]}>
-            <Switch
-              aria-label={transport.toUpperCase()}
-              checked={formValue[`${transport}Enabled`]}
-              onCheckedChange={(checked) => setField(`${transport}Enabled`, checked === true)}
-            />
+          <Field label={transport.toUpperCase()} error={fieldErrors[transport]}>
+            <TransportMode label={transport.toUpperCase()} value={formValue[transport]} onChange={(value) => setField(transport, value)} />
           </Field>
           <Field label={`${transport.toUpperCase()} ${t('portalEntry.port')}`} error={fieldErrors[`${transport}Port`]}>
             <Input value={formValue[`${transport}Port`]} inputMode="numeric" onChange={(event) => setField(`${transport}Port`,event.target.value)} />
           </Field>
         </React.Fragment>
       ))}
-      <Field label={t('portalEntry.autoHTTPS')} error={fieldErrors.autoHTTPS}>
-        <Switch
-          aria-label={t('portalEntry.autoHTTPS')}
-          checked={formValue.autoHTTPS}
-          onCheckedChange={(checked) => setField('autoHTTPS', checked === true)}
-        />
+      <Field label={t('portalEntry.autoHTTPS')} error={fieldErrors.autohttps}>
+        <TransportMode label={t('portalEntry.autoHTTPS')} value={formValue.autohttps} onChange={(value) => setField('autohttps', value)} />
         <p className="text-xs text-muted-foreground">{t('portalEntry.autoHTTPSHelp')}</p>
       </Field>
 
@@ -868,6 +879,7 @@ export function PortalEntryPage() {
                     <p className="mt-2 font-mono text-xs text-muted-foreground">
                       {portalEntryAddress(selectedEntry)}
                     </p>
+                    <EffectiveHTTPStatus entry={selectedEntry} />
                   </div>
                   {editingEntry?.name === selectedEntry.name ? null : (
                     <div className="flex items-center gap-2">

@@ -8,6 +8,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestPortalRuleConflictKeepsReservedMatchWhileHTTPSAwaitsCertificate(t *testing.T) {
+	entry := NormalizePortalEntry(PortalEntry{Protocol: "http", Http: new(PortalEntryHTTP{Host: "APP.EXAMPLE.COM.", Http: "DISABLED"})})
+	entry.EffectiveHTTP = new(entry.Http.Effective(false))
+	conflict := PortalRuleConflict{Entry: entry, MatchPathPrefix: "/app"}
+	require.Equal(t, "https://app.example.com:443/app", conflict.MatchText())
+	key := PortalEntryMatchKey(entry, "/app")
+	entry.Http.Host = "app.example.com"
+	entry.EffectiveHTTP = new(entry.Http.Effective(true))
+	require.Equal(t, key, PortalEntryMatchKey(entry, "/app"))
+}
+
 func TestResolvePortalRulePaths(t *testing.T) {
 	rule := &PortalRule{
 		RouteType:       PortalRuleRouteTypeSite,
@@ -143,7 +154,7 @@ func TestPortalRuleValidationAcrossCreateUpdateSave(t *testing.T) {
 // The caller resolves the entry a rule joins, so the rule core stores a complete
 // rule and rejects one that names no entry at all.
 func TestPortalRuleCoreSaveKeepsEntry(t *testing.T) {
-	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 4, Name: "web", Protocol: "http", Http: &PortalEntryHTTP{Host: "app.example.com", HttpEnabled: false, HttpsEnabled: true, HttpsPort: 8443}})
+	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 4, Name: "web", Protocol: "http", Http: &PortalEntryHTTP{Host: "app.example.com", Http: "DISABLED", Https: "ENABLED", HttpsPort: 8443}})
 	repo := &entryRuleRepoSpy{}
 	core := newPortalRuleCoreWithEntriesForTest(repo, nil, entryRepo)
 
@@ -208,7 +219,7 @@ func TestPortalRuleCoreValidateKeepsRuleRepoUntouched(t *testing.T) {
 // prefixes, because no write can answer that question: Hub applies a seed before
 // the applications register their descriptors.
 func TestPortalRuleCoreConflictsFollowSiteMountPaths(t *testing.T) {
-	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Enabled: true, Protocol: "http", Http: &PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 80}})
+	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Enabled: true, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}})
 	repo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
 		1: {Id: 1, Name: "web", EntryId: 1, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site", Enabled: true},
 		2: {Id: 2, Name: "fixed", EntryId: 1, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "fixed-site", Enabled: true},
@@ -225,7 +236,7 @@ func TestPortalRuleCoreConflictsFollowSiteMountPaths(t *testing.T) {
 	require.Len(t, conflicts, 1)
 	assert.Equal(t, "fixed", conflicts[0].Rule)
 	assert.Equal(t, "web", conflicts[0].Conflict)
-	assert.Equal(t, "http://*:80", conflicts[0].MatchText())
+	assert.Equal(t, "http://<IP>:80", conflicts[0].MatchText())
 
 	// A Web mount path decides the prefix of the rules that target it, so two
 	// webs Hub serves at different paths no longer match the same request.
@@ -242,7 +253,7 @@ func TestPortalRuleCoreConflictsSkipDisabledEntities(t *testing.T) {
 	disabledRule := &PortalRule{Id: 1, Name: "web", EntryId: 1, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site", Enabled: false}
 	enabledRule := &PortalRule{Id: 2, Name: "fixed", EntryId: 1, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "fixed-site", Enabled: true}
 	repo := &entryRuleRepoSpy{rules: map[int]*PortalRule{1: disabledRule, 2: enabledRule}}
-	core := newPortalRuleCoreWithEntriesForTest(repo, nil, newPortalEntryRepoSpy(&PortalEntry{Id: 1, Enabled: true, Protocol: "http", Http: &PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 80}}))
+	core := newPortalRuleCoreWithEntriesForTest(repo, nil, newPortalEntryRepoSpy(&PortalEntry{Id: 1, Enabled: true, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}}))
 	core.PortalSiteRepo = &portalSiteRepoSpy{entries: map[int]*PortalSite{
 		1: {Id: 1, Name: "web-site", Type: PortalSiteTypeWEBGW, Enabled: true},
 		2: {Id: 2, Name: "fixed-site", Type: PortalSiteTypeWEBGW, Enabled: false},
@@ -259,7 +270,7 @@ func TestPortalRuleCoreConflictsSkipDisabledEntities(t *testing.T) {
 }
 
 func TestPortalRuleCoreCreateKeepsEntry(t *testing.T) {
-	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Protocol: "http", Http: &PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 80}})
+	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}})
 	repo := &entryRuleRepoSpy{}
 	core := newPortalRuleCoreWithEntriesForTest(repo, nil, entryRepo)
 
@@ -287,7 +298,7 @@ func TestPortalRuleCorePreservesConfiguredPathsWithoutResolvingSites(t *testing.
 // newTestPortalRuleEntryRepo builds the entry repository Hub stores a rule in
 // when the Admin API creates it: one entry, named after the access it serves.
 func newTestPortalRuleEntryRepo() *portalEntryRepoSpy {
-	return newPortalEntryRepoSpy(&PortalEntry{Id: 1, Protocol: "http", Http: &PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 80}})
+	return newPortalEntryRepoSpy(&PortalEntry{Id: 1, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}})
 }
 
 // newPortalRuleCoreForTest builds a rule core with the repositories Hub injects,
@@ -314,7 +325,7 @@ func TestWildcardRulesOnlyTargetWebSites(t *testing.T) {
 		for _, kind := range []PortalSiteType{PortalSiteTypeWEBGW, PortalSiteTypeRPCGW, ""} {
 			t.Run(route+string(kind), func(t *testing.T) {
 				repo := &entryRuleRepoSpy{}
-				entries := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Name: "wildcard", Protocol: "http", Http: &PortalEntryHTTP{Host: "*.example.com", HttpEnabled: true, HttpsEnabled: false, HttpPort: 80}})
+				entries := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Name: "wildcard", Protocol: "http", Http: &PortalEntryHTTP{Host: "*.example.com", Http: "ENABLED", Https: "DISABLED", HttpPort: 80}})
 				target := newPortalRuleCoreWithEntriesForTest(repo, nil, entries)
 				sites := &portalSiteRepoSpy{}
 				if kind != "" {

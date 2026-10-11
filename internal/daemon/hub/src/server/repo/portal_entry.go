@@ -1,6 +1,9 @@
 package repo
 
 import (
+	"encoding/json/v2"
+
+	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
@@ -9,30 +12,38 @@ import (
 )
 
 type PortalEntryRepo struct {
-	Dao    *model.PortalEntryDao `inject:""`
-	Syncer *syncer.Syncer        `inject:""`
-	Access *configaccess.Access  `inject:""`
+	CertDao *model.PortalCertDao  `inject:""`
+	Dao     *model.PortalEntryDao `inject:""`
+	Syncer  *syncer.Syncer        `inject:""`
+	Access  *configaccess.Access  `inject:""`
 }
 
 func (s *PortalEntryRepo) List() []*core.PortalEntry {
 	rows := s.Dao.ListOrdered()
+	certs := s.certificates()
 	entries := make([]*core.PortalEntry, 0, len(rows))
 	for _, row := range rows {
-		entries = append(entries, toCorePortalEntry(row))
+		entry := toCorePortalEntry(row)
+		resolveEntryHTTP(entry, certs)
+		entries = append(entries, entry)
 	}
 	return entries
 }
 
 func (s *PortalEntryRepo) GetById(id int) (*core.PortalEntry, bool) {
 	if row, ok := s.Dao.ById(id); ok {
-		return toCorePortalEntry(row), true
+		entry := toCorePortalEntry(row)
+		resolveEntryHTTP(entry, s.certificates())
+		return entry, true
 	}
 	return nil, false
 }
 
 func (s *PortalEntryRepo) GetByName(name string) (*core.PortalEntry, bool) {
 	if row, ok := s.Dao.ByName(name); ok {
-		return toCorePortalEntry(row), true
+		entry := toCorePortalEntry(row)
+		resolveEntryHTTP(entry, s.certificates())
+		return entry, true
 	}
 	return nil, false
 }
@@ -43,6 +54,7 @@ func (s *PortalEntryRepo) Save(entry *core.PortalEntry) {
 	row := toModelPortalEntry(entry)
 	s.Dao.Save(row)
 	entry.Id = row.Id
+	resolveEntryHTTP(entry, s.certificates())
 	s.Syncer.SyncPortalEntry(entry)
 }
 
@@ -64,7 +76,10 @@ func toCorePortalEntry(row *model.PortalEntry) *core.PortalEntry {
 		Enabled:   row.Enabled,
 	}
 	entry.Protocol = row.Protocol
-	entry.Http = vcode.MustUnmarshalJsonS[*core.PortalEntryHTTP](row.HTTPConfig)
+	// Stored configuration follows the current schema. Unknown fields must not
+	// silently disappear and turn an explicit switch into AUTO.
+	ex.PanicIfError(json.Unmarshal([]byte(row.HTTPConfig), &entry.Http, json.RejectUnknownMembers(true)))
+	ex.PanicNewIfNot(entry.Http != nil, ex.OperationFailed, "portal entry HTTP configuration must be an object")
 	return new(core.NormalizePortalEntry(*entry))
 }
 
@@ -78,4 +93,15 @@ func toModelPortalEntry(entry *core.PortalEntry) *model.PortalEntry {
 		ListenIPs:  vcode.MustMarshalJsonS(entry.ListenIPs),
 		Enabled:    entry.Enabled,
 	}
+}
+
+func (s *PortalEntryRepo) certificates() []*core.PortalCert {
+	certs := []*core.PortalCert{}
+	for _, row := range s.CertDao.ListOrdered() {
+		certs = append(certs, toCorePortalCert(row))
+	}
+	return certs
+}
+func resolveEntryHTTP(entry *core.PortalEntry, certs []*core.PortalCert) {
+	entry.EffectiveHTTP = new(entry.Http.Effective(core.HasPortalCertificate(entry.Http.Host, certs)))
 }

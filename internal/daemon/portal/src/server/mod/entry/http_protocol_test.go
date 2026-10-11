@@ -2,6 +2,7 @@ package entry
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
@@ -21,7 +22,7 @@ import (
 	"time"
 )
 
-func TestAutoHTTPSPreservesRequestURL(t *testing.T) {
+func TestAutoHTTPSEnabledPreservesRequestURL(t *testing.T) {
 	for _, test := range []struct {
 		host     string
 		port     int
@@ -46,7 +47,7 @@ func TestHTTPEntryWatchCreatesRedirectWithoutRulesAndUpdatesTransports(t *testin
 	certificateVault := &vault.Vault{Context: context.Background(), Watch: watchtest.New(t, map[string]string{watched.FormatPortalCertKey("test"): vcode.MustMarshalJsonS(testHTTPPortalCertificate(t))})}
 	certificateVault.DIInit()
 	manager := &Manager{Vault: certificateVault, entryRulesByName: map[string]watched.PortalRule{}, entryConfigsByName: map[string]watched.PortalEntry{}, entriesByKey: map[_Key]*_Entry{}}
-	config := watched.PortalEntry{Name: "web", Protocol: "http", ListenIPs: []string{"127.0.0.1"}, Http: watched.PortalEntryHTTP{Host: "", HttpEnabled: true, HttpPort: 8080, HttpsEnabled: true, HttpsPort: 8443, AutoHTTPS: true}}
+	config := watched.PortalEntry{Name: "web", Protocol: "http", ListenIPs: []string{"127.0.0.1"}, EffectiveHTTP: watched.PortalEntryHTTP{Host: "example.com", HttpEnabled: true, HttpPort: 8080, HttpsEnabled: true, HttpsPort: 8443, AutoHTTPSEnabled: true}}
 	event := hubapiwatch.Event{Key: watched.FormatPortalEntryKey("web"), Value: vcode.MustMarshalJsonS(config)}
 	manager.handlePortalEntryEvent(event)
 	require.Len(t, manager.entriesByKey, 2)
@@ -57,19 +58,19 @@ func TestHTTPEntryWatchCreatesRedirectWithoutRulesAndUpdatesTransports(t *testin
 	require.Equal(t, 308, response.Code)
 	require.Equal(t, "https://example.com:8443/a", response.Header().Get("Location"))
 	require.Empty(t, manager.entriesByKey[_Key{listenIP: "127.0.0.1", scheme: spec.SchemeHTTPS, port: 8443}].rules)
-	config.Http.AutoHTTPS = false
+	config.EffectiveHTTP.AutoHTTPSEnabled = false
 	event.Value = vcode.MustMarshalJsonS(config)
 	manager.handlePortalEntryEvent(event)
 	response = httptest.NewRecorder()
 	ingress.ServeHTTP(response, request)
 	require.Equal(t, 404, response.Code)
 	manager.entryRulesByName["rule"] = watched.PortalRule{Name: "rule", EntryName: "web", RouteType: routeTypePermanentRedirect, RouteRedirectionPattern: "https://target.local", ResolvedMatchPathPrefix: "/a"}
-	config.Http.Host = "example.com"
+	config.EffectiveHTTP.Host = "example.com"
 	event.Value = vcode.MustMarshalJsonS(config)
 	manager.handlePortalEntryEvent(event)
 	require.Len(t, ingress.rules, 1)
 	require.Len(t, manager.entriesByKey[_Key{listenIP: "127.0.0.1", scheme: spec.SchemeHTTPS, port: 8443}].rules, 1)
-	config.Http.HttpsEnabled = false
+	config.EffectiveHTTP.HttpsEnabled = false
 	event.Value = vcode.MustMarshalJsonS(config)
 	manager.handlePortalEntryEvent(event)
 	require.Len(t, manager.entriesByKey, 1)
@@ -91,7 +92,7 @@ func TestHTTPProtocolRealRedirectAndTLSListeners(t *testing.T) {
 	require.NoError(t, err)
 	httpPort := httpReservation.Addr().(*net.TCPAddr).Port
 	httpsPort := httpsReservation.Addr().(*net.TCPAddr).Port
-	config := watched.PortalEntry{Name: "web", Protocol: "http", ListenIPs: []string{"127.0.0.1"}, Http: watched.PortalEntryHTTP{Host: "example.com", HttpEnabled: true, HttpPort: httpPort, HttpsEnabled: true, HttpsPort: httpsPort, AutoHTTPS: true}}
+	config := watched.PortalEntry{Name: "web", Protocol: "http", ListenIPs: []string{"127.0.0.1"}, EffectiveHTTP: watched.PortalEntryHTTP{Host: "example.com", HttpEnabled: true, HttpPort: httpPort, HttpsEnabled: true, HttpsPort: httpsPort, AutoHTTPSEnabled: true}}
 	clientWatch := watchtest.New(t, map[string]string{watched.FormatPortalEntryKey("web"): vcode.MustMarshalJsonS(config)})
 	manager := &Manager{Context: context.Background(), Watch: clientWatch, Vault: certificateVault}
 	manager.DIInit()
@@ -123,23 +124,29 @@ func TestHTTPProtocolRealRedirectAndTLSListeners(t *testing.T) {
 	require.Equal(t, fmt.Sprintf("https://example.com:%d/a%%2Fb?q=x%%2Fy", httpsPort), response.Request.URL.String())
 }
 
-func testHTTPPortalCertificate(t *testing.T) watched.PortalCert {
+func testHTTPPortalCertificate(t *testing.T, hosts ...string) watched.PortalCert {
 	t.Helper()
 	server := httptest.NewTLSServer(http.NotFoundHandler())
 	certificate := server.TLS.Certificates[0]
 	server.Close()
 	parsed, err := x509.ParseCertificate(certificate.Certificate[0])
 	require.NoError(t, err)
+	if len(hosts) > 0 {
+		parsed.DNSNames = hosts
+		parsed.IPAddresses = nil
+		certificate.Certificate[0], err = x509.CreateCertificate(rand.Reader, parsed, parsed, parsed.PublicKey, certificate.PrivateKey)
+		require.NoError(t, err)
+	}
 	private, err := x509.MarshalPKCS8PrivateKey(certificate.PrivateKey)
 	require.NoError(t, err)
 	return watched.PortalCert{Name: "test", Certificate: string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificate.Certificate[0]})), PrivateKey: string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: private})), ValidFrom: parsed.NotBefore, ValidTo: parsed.NotAfter}
 }
 
-func TestAutoHTTPSFallsBackToHTTPWithoutValidCertificate(t *testing.T) {
+func TestAutoHTTPSEnabledFallsBackToHTTPWithoutValidCertificate(t *testing.T) {
 	certificateWatch := watchtest.New(t, nil)
 	certificateVault := &vault.Vault{Context: context.Background(), Watch: certificateWatch}
 	certificateVault.DIInit()
-	config := watched.PortalEntry{Name: "web", Protocol: "http", Http: watched.PortalEntryHTTP{HttpEnabled: true, HttpPort: 8080, HttpsEnabled: true, HttpsPort: 8443, AutoHTTPS: true}}
+	config := watched.PortalEntry{Name: "web", Protocol: "http", EffectiveHTTP: watched.PortalEntryHTTP{Host: "example.com", HttpEnabled: true, HttpPort: 8080, HttpsEnabled: true, HttpsPort: 8443, AutoHTTPSEnabled: true}}
 	manager := &Manager{Vault: certificateVault, entryConfigsByName: testEntryConfigs(config), entryRulesByName: map[string]watched.PortalRule{"rule": testRedirectRule("rule", "web")}, entriesByKey: map[_Key]*_Entry{}}
 	require.NoError(t, manager.reconcileEntriesLocked())
 	ingress := manager.entriesByKey[_Key{scheme: spec.SchemeHTTP, port: 8080}]
@@ -152,7 +159,17 @@ func TestAutoHTTPSFallsBackToHTTPWithoutValidCertificate(t *testing.T) {
 	cert := testHTTPPortalCertificate(t)
 	certificateWatch.Publish(hubapiwatch.Event{Key: watched.FormatPortalCertKey(cert.Name), Value: vcode.MustMarshalJsonS(cert)})
 	require.Eventually(t, func() bool { return location("example.com") == "https://example.com:8443/a" }, time.Second, time.Millisecond)
-	require.Equal(t, "https://example.com", location("other.local"), "a certificate must match the actual request host")
+	require.Empty(t, location("other.local"), "an unrelated host must not enter the configured entry")
 	certificateWatch.Publish(hubapiwatch.Event{Kind: hubapiwatch.EventKindDelete, Key: watched.FormatPortalCertKey(cert.Name)})
 	require.Eventually(t, func() bool { return location("example.com") == "https://example.com" }, time.Second, time.Millisecond)
+}
+
+func TestAutoHTTPSEnabledDoesNotRedirectIPRequests(t *testing.T) {
+	certificateVault := &vault.Vault{Context: context.Background(), Watch: watchtest.New(t, map[string]string{watched.FormatPortalCertKey("test"): vcode.MustMarshalJsonS(testHTTPPortalCertificate(t))})}
+	certificateVault.DIInit()
+	for _, host := range []string{"127.0.0.1", "::1"} {
+		rule := &_Rule{matchScheme: spec.SchemeHTTP, matchHost: host, autoHTTPSPort: 443, certificateVault: certificateVault}
+		request := httptest.NewRequest(http.MethodGet, "http://"+net.JoinHostPort(host, "80")+"/", nil)
+		require.False(t, rule.Matches(request), "IP requests cannot select an HTTPS entry by SNI")
+	}
 }

@@ -67,3 +67,34 @@ func (portalSiteType *PortalSiteType) UnmarshalJSON(data []byte) error {
 	}
 	return err
 }
+
+// PortalSwitchMode Explicit or automatically derived HTTP transport behavior
+type PortalSwitchMode string
+
+const (
+	PortalSwitchModeUnspecified PortalSwitchMode = "UNSPECIFIED"
+	PortalSwitchModeEnabled     PortalSwitchMode = "ENABLED"
+	PortalSwitchModeDisabled    PortalSwitchMode = "DISABLED"
+	PortalSwitchModeAuto        PortalSwitchMode = "AUTO"
+)
+
+func (portalSwitchMode PortalSwitchMode) MarshalJSON() ([]byte, error) {
+	return fmt.Appendf(nil, "\"%s\"", portalSwitchMode), nil
+}
+
+func (portalSwitchMode *PortalSwitchMode) UnmarshalJSON(data []byte) error {
+	var err error = nil
+	switch string(data) {
+	case `"ENABLED"`:
+		*portalSwitchMode = PortalSwitchModeEnabled
+	case `"DISABLED"`:
+		*portalSwitchMode = PortalSwitchModeDisabled
+	case `"AUTO"`:
+		*portalSwitchMode = PortalSwitchModeAuto
+	case "null":
+		err = fmt.Errorf("unexpected null value for non-pointer PortalSwitchMode")
+	default:
+		*portalSwitchMode = PortalSwitchModeUnspecified
+	}
+	return err
+}

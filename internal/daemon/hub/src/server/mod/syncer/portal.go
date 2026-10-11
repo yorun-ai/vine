@@ -16,15 +16,11 @@ func (s *Syncer) SyncPortalEntry(entry *core.PortalEntry) {
 	defer s.namesMutex.Unlock()
 
 	stored := core.NormalizePortalEntry(*entry)
+	stored.EffectiveHTTP = nil
 	if previous := s.portalEntriesById[entry.Id]; previous != nil && previous.Name != entry.Name {
 		s.WatchServer.DeleteAndNotify(watched.FormatPortalEntryKey(previous.Name))
 	}
-	if stored.Enabled {
-		h := stored.Http
-		s.WatchServer.SetAndNotify(watched.FormatPortalEntryKey(stored.Name), vcode.MustMarshalJsonS(watched.PortalEntry{Name: stored.Name, Protocol: stored.Protocol, ListenIPs: stored.ListenIPs, Http: watched.PortalEntryHTTP{Host: h.Host, HttpEnabled: h.HttpEnabled, HttpPort: h.HttpPort, HttpsEnabled: h.HttpsEnabled, HttpsPort: h.HttpsPort, AutoHTTPS: h.AutoHTTPS}}))
-	} else {
-		s.WatchServer.DeleteAndNotify(watched.FormatPortalEntryKey(stored.Name))
-	}
+	s.publishPortalEntryLocked(&stored)
 	stored.ListenIPs = slices.Clone(stored.ListenIPs)
 	s.portalEntriesById[entry.Id] = &stored
 	for _, rule := range s.portalRulesById {
@@ -134,15 +130,21 @@ func (s *Syncer) SyncPortalCert(cert *core.PortalCert) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
+	s.removeRenamedKeyLocked(s.portalCertNamesById, cert.Id, cert.Name, watched.FormatPortalCertKey)
 	if !cert.Enabled {
 		// A disabled certificate is not part of the Portal TLS configuration.
 		s.WatchServer.DeleteAndNotify(watched.FormatPortalCertKey(cert.Name))
 		delete(s.portalCertNamesById, cert.Id)
+		delete(s.portalCertsById, cert.Id)
+		s.republishPortalEntriesLocked()
 		return
 	}
-	s.removeRenamedKeyLocked(s.portalCertNamesById, cert.Id, cert.Name, watched.FormatPortalCertKey)
 	s.WatchServer.SetAndNotify(watched.FormatPortalCertKey(cert.Name), vcode.MustMarshalJsonS(ToWatchedPortalCert(cert)))
 	s.saveNameByIdLocked(s.portalCertNamesById, cert.Id, cert.Name)
+	stored := *cert
+	stored.Domains = slices.Clone(cert.Domains)
+	s.portalCertsById[cert.Id] = &stored
+	s.republishPortalEntriesLocked()
 }
 
 func (s *Syncer) RemovePortalCert(cert *core.PortalCert) {
@@ -151,6 +153,8 @@ func (s *Syncer) RemovePortalCert(cert *core.PortalCert) {
 
 	s.WatchServer.DeleteAndNotify(watched.FormatPortalCertKey(cert.Name))
 	delete(s.portalCertNamesById, cert.Id)
+	delete(s.portalCertsById, cert.Id)
+	s.republishPortalEntriesLocked()
 }
 
 // publishPortalRuleLocked publishes one rule for Portal, or removes it when Hub
@@ -301,4 +305,22 @@ func (s *Syncer) cachePortalSiteLocked(site *core.PortalSite) {
 
 func (s *Syncer) removePortalSiteLocked(site *core.PortalSite) {
 	delete(s.portalSitesByName, site.Name)
+}
+
+func (s *Syncer) publishPortalEntryLocked(entry *core.PortalEntry) {
+	if !entry.Enabled {
+		s.WatchServer.DeleteAndNotify(watched.FormatPortalEntryKey(entry.Name))
+		return
+	}
+	certs := make([]*core.PortalCert, 0, len(s.portalCertsById))
+	for _, cert := range s.portalCertsById {
+		certs = append(certs, cert)
+	}
+	h := entry.Http.Effective(core.HasPortalCertificate(entry.Http.Host, certs))
+	s.WatchServer.SetAndNotify(watched.FormatPortalEntryKey(entry.Name), vcode.MustMarshalJsonS(watched.PortalEntry{Name: entry.Name, Protocol: entry.Protocol, ListenIPs: entry.ListenIPs, EffectiveHTTP: watched.PortalEntryHTTP{Host: h.Host, HttpEnabled: h.HttpEnabled, HttpPort: h.HttpPort, HttpsEnabled: h.HttpsEnabled, HttpsPort: h.HttpsPort, AutoHTTPSEnabled: h.AutoHTTPSEnabled}}))
+}
+func (s *Syncer) republishPortalEntriesLocked() {
+	for _, entry := range s.portalEntriesById {
+		s.publishPortalEntryLocked(entry)
+	}
 }
