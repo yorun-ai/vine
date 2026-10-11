@@ -2,10 +2,12 @@ package model
 
 import (
 	_ "embed"
+	"encoding/json/v2"
 	"fmt"
 
 	"go.yorun.ai/vine/infra/rdb"
 	"go.yorun.ai/vine/internal/core/ex"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"gorm.io/gorm"
 )
 
@@ -22,9 +24,6 @@ type PortalEntry struct {
 	Name       string `gorm:"column:name"`
 	Protocol   string `gorm:"column:protocol;not null;default:''"`
 	HTTPConfig string `gorm:"column:http_config;not null;default:''"`
-	Scheme     string `gorm:"column:scheme"`
-	Host       string `gorm:"column:host"`
-	Port       int    `gorm:"column:port"`
 	ListenIPs  string `gorm:"column:listen_ips;not null;default:'[]'"`
 	Enabled    bool   `gorm:"column:enabled;not null"`
 }
@@ -56,34 +55,76 @@ func (d *PortalEntryDao) EnsureSchema() {
 				}
 			}
 		}
-		rows := []*PortalEntry{}
-		if err := tx.Unscoped().Where("protocol = '' OR http_config = ''").Find(&rows).Error; err != nil {
-			return err
-		}
-		for _, row := range rows {
-			config, err := legacyHTTPConfig(row.Scheme, row.Port)
-			if err != nil {
+		// Old columns are read only here, then removed after every row has
+		// the canonical protocol configuration, including soft-deleted rows.
+		if columns["host"] {
+			type _LegacyEntry struct {
+				Id         int
+				Protocol   string
+				HTTPConfig string
+				Scheme     string
+				Host       string
+				Port       int
+			}
+			rows := []_LegacyEntry{}
+			if err := tx.Table("portal_entry").Find(&rows).Error; err != nil {
 				return err
 			}
-			if err := tx.Unscoped().Model(&PortalEntry{}).Where("id = ?", row.Id).Updates(map[string]any{"protocol": "http", "http_config": config}).Error; err != nil {
-				return err
+			for _, row := range rows {
+				config := core.PortalEntryHTTP{}
+				if row.Protocol == "" || row.HTTPConfig == "" {
+					legacy, err := legacyHTTPConfig(row.Scheme, row.Port)
+					if err != nil {
+						return err
+					}
+					config = legacy
+				} else {
+					if row.Protocol != "http" {
+						return fmt.Errorf("cannot migrate portal entry protocol %q", row.Protocol)
+					}
+					if err := json.Unmarshal([]byte(row.HTTPConfig), &config); err != nil {
+						return err
+					}
+				}
+				// A nested host already written by a newer version wins,
+				// including an explicitly empty host.
+				fields := map[string]any{}
+				if row.HTTPConfig != "" {
+					if err := json.Unmarshal([]byte(row.HTTPConfig), &fields); err != nil {
+						return err
+					}
+				}
+				if _, exists := fields["host"]; !exists {
+					config.Host = row.Host
+				}
+				raw, err := json.Marshal(config)
+				if err != nil {
+					return err
+				}
+				if err := tx.Table("portal_entry").Where("id = ?", row.Id).Updates(map[string]any{"protocol": "http", "http_config": string(raw)}).Error; err != nil {
+					return err
+				}
+			}
+			for _, index := range []string{"uk_portal_entry_access", "uk_portal_entry_protocol_access"} {
+				if err := tx.Exec("DROP INDEX IF EXISTS " + index).Error; err != nil {
+					return err
+				}
+			}
+			for _, column := range []string{"scheme", "host", "port"} {
+				if columns[column] {
+					if err := tx.Exec("ALTER TABLE portal_entry DROP COLUMN " + column).Error; err != nil {
+						return err
+					}
+				}
 			}
 		}
-		if !columns["protocol"] || !columns["http_config"] {
-			if err := tx.Exec("DROP INDEX IF EXISTS uk_portal_entry_access").Error; err != nil {
-				return err
-			}
-		}
-		if err := tx.Exec("CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_entry_access ON portal_entry(scheme, host, port) WHERE deleted_at IS NULL AND scheme <> ''").Error; err != nil {
-			return err
-		}
-		return tx.Exec("CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_entry_protocol_access ON portal_entry(protocol, host, http_config) WHERE deleted_at IS NULL AND http_config <> ''").Error
+		return tx.Exec("CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_entry_protocol_access ON portal_entry(protocol, http_config) WHERE deleted_at IS NULL AND http_config <> ''").Error
 
 	}))
 }
 
 func (d *PortalEntryDao) ListOrdered() []*PortalEntry {
-	return d.Query().Order("port").Order("scheme").Order("host").List()
+	return d.Query().Order("name").Order("id").List()
 }
 
 func (d *PortalEntryDao) ById(id int) (*PortalEntry, bool) {
@@ -93,11 +134,6 @@ func (d *PortalEntryDao) ById(id int) (*PortalEntry, bool) {
 // ByName returns the user entry Hub labels with the name.
 func (d *PortalEntryDao) ByName(name string) (*PortalEntry, bool) {
 	return d.First("name = ?", name)
-}
-
-// BySchemeHostPort returns the entry that serves the access.
-func (d *PortalEntryDao) BySchemeHostPort(scheme string, host string, port int) (*PortalEntry, bool) {
-	return d.First("scheme = ? AND host = ? AND port = ?", scheme, host, port)
 }
 
 func (d *PortalEntryDao) Save(entry *PortalEntry) *PortalEntry {
@@ -112,9 +148,6 @@ func (d *PortalEntryDao) Save(entry *PortalEntry) *PortalEntry {
 		"name":        entry.Name,
 		"protocol":    entry.Protocol,
 		"http_config": entry.HTTPConfig,
-		"scheme":      entry.Scheme,
-		"host":        entry.Host,
-		"port":        entry.Port,
 		"listen_ips":  entry.ListenIPs,
 		"enabled":     entry.Enabled,
 	})
@@ -136,12 +169,12 @@ func ensurePortalEntryTable(db *gorm.DB) error {
 }
 
 // legacyHTTPConfig preserves exactly one enabled transport while upgrading rows.
-func legacyHTTPConfig(scheme string, port int) (string, error) {
+func legacyHTTPConfig(scheme string, port int) (core.PortalEntryHTTP, error) {
 	if scheme != "http" && scheme != "https" {
-		return "", fmt.Errorf("cannot migrate portal entry scheme %q", scheme)
+		return core.PortalEntryHTTP{}, fmt.Errorf("cannot migrate portal entry scheme %q", scheme)
 	}
 	if port < 0 || port > 65535 {
-		return "", fmt.Errorf("cannot migrate portal entry port %d", port)
+		return core.PortalEntryHTTP{}, fmt.Errorf("cannot migrate portal entry port %d", port)
 	}
 	httpPort, httpsPort := 80, 443
 	if scheme == "http" && port != 0 {
@@ -150,5 +183,5 @@ func legacyHTTPConfig(scheme string, port int) (string, error) {
 	if scheme == "https" && port != 0 {
 		httpsPort = port
 	}
-	return fmt.Sprintf(`{"httpEnabled":%t,"httpPort":%d,"httpsEnabled":%t,"httpsPort":%d,"autoHTTPS":false}`, scheme == "http", httpPort, scheme == "https", httpsPort), nil
+	return core.PortalEntryHTTP{HttpEnabled: scheme == "http", HttpPort: httpPort, HttpsEnabled: scheme == "https", HttpsPort: httpsPort}, nil
 }

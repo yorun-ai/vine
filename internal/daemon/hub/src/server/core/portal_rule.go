@@ -3,7 +3,6 @@ package core
 import (
 	"fmt"
 	"net/url"
-	"strconv"
 	"strings"
 	"unicode"
 
@@ -219,10 +218,8 @@ func (*PortalRuleCore) Validate(rule PortalRule) PortalRule {
 
 // PortalEntryMatchKey identifies the requests one entry and path prefix match.
 func PortalEntryMatchKey(entry PortalEntry, matchPathPrefix string) string {
-	if entry.Scheme == "" && entry.Protocol != "" {
-		return entry.Host + "\x00" + fmt.Sprint(*entry.Http) + "\x00" + matchPathPrefix
-	}
-	return entry.Scheme + "\x00" + entry.Host + "\x00" + strconv.Itoa(entry.Port) + "\x00" + matchPathPrefix
+	entry = NormalizePortalEntry(entry)
+	return entry.Protocol + "\x00" + fmt.Sprint(*entry.Http) + "\x00" + matchPathPrefix
 }
 
 // PortalRuleConflict names two published rules that match the same request: the
@@ -254,14 +251,16 @@ func PortalRuleConflictWinner(rule string, conflict string) (published string, s
 
 // MatchText renders the request both rules match.
 func (c PortalRuleConflict) MatchText() string {
-	host := c.Entry.Host
+	entry := NormalizePortalEntry(c.Entry)
+	host := entry.Http.Host
 	if host == "" {
 		host = "*"
 	}
-	if c.Entry.Scheme == "" && c.Entry.Protocol != "" {
-		return portalEntryAccessText(c.Entry) + c.MatchPathPrefix
+	addresses := []string{}
+	for _, access := range entry.Accesses() {
+		addresses = append(addresses, fmt.Sprintf("%s://%s:%d%s", access.Scheme, host, access.Port, c.MatchPathPrefix))
 	}
-	return fmt.Sprintf("%s://%s:%d%s", c.Entry.Scheme, host, c.Entry.Port, c.MatchPathPrefix)
+	return strings.Join(addresses, ", ")
 }
 
 // Save creates or replaces a complete user rule by name, preserving an existing
@@ -281,7 +280,7 @@ func (m *PortalRuleCore) save(rule PortalRule) *PortalRule {
 		ex.F("portal rule %q: the entry it belongs to is required", rule.Name))
 	entry := m.PortalEntryCore.Get(rule.EntryId)
 	rule = m.Validate(rule)
-	if strings.HasPrefix(entry.Host, "*.") {
+	if strings.HasPrefix(entry.Http.Host, "*.") {
 		rule.ValidateWildcardTarget(*entry, m.ruleSite(&rule))
 	}
 	m.PortalRuleRepo.Save(&rule)
@@ -354,7 +353,7 @@ func (m *PortalRuleCore) ruleSite(rule *PortalRule) *PortalSite {
 // ValidateWildcardTarget restricts wildcard entries to existing Web sites.
 // Callers provide the effective entry and site, including seed declarations.
 func (r *PortalRule) ValidateWildcardTarget(entry PortalEntry, site *PortalSite) {
-	if !strings.HasPrefix(entry.Host, "*.") {
+	if !strings.HasPrefix(entry.Http.Host, "*.") {
 		return
 	}
 	ex.PanicNewIfNot(r.RouteType == PortalRuleRouteTypeSite && site != nil && site.Type == PortalSiteTypeWEBGW,

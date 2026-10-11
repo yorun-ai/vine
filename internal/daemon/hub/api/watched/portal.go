@@ -14,18 +14,18 @@ const (
 
 // PortalEntryHTTP is the complete HTTP transport configuration published by Hub.
 type PortalEntryHTTP struct {
-	HttpEnabled  bool `json:"httpEnabled"`
-	HttpPort     int  `json:"httpPort"`
-	HttpsEnabled bool `json:"httpsEnabled"`
-	HttpsPort    int  `json:"httpsPort"`
-	AutoHTTPS    bool `json:"autoHTTPS"`
+	Host         string `json:"host"`
+	HttpEnabled  bool   `json:"httpEnabled"`
+	HttpPort     int    `json:"httpPort"`
+	HttpsEnabled bool   `json:"httpsEnabled"`
+	HttpsPort    int    `json:"httpsPort"`
+	AutoHTTPS    bool   `json:"autoHTTPS"`
 }
 
 // PortalEntry owns listener bindings and transport settings independently of rules.
 type PortalEntry struct {
 	Name      string          `json:"name"`
 	Protocol  string          `json:"protocol"`
-	Host      string          `json:"host"`
 	ListenIPs []string        `json:"listenIPs"`
 	Http      PortalEntryHTTP `json:"http"`
 }

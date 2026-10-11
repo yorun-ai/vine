@@ -231,7 +231,7 @@ portalCerts:
 	configRepo.Save(&core.AppConfig{Name: "feature.flag", Value: `{"enabled":true}`, Version: 7})
 	configRepo.Save(&core.AppConfig{Name: "feature.keep", Value: `{"enabled":true}`, Version: 3})
 	entryRepo.Save(&core.PortalSite{Name: "admin@demo.app", Type: core.PortalSiteTypeWEBGW, ActorSkelName: "old.Actor", WebName: "old.Web"})
-	saveTestPortalRule(t, ruleRepo, &core.PortalRule{Name: "admin", MatchPathPrefix: "/old", RouteType: "SITE", RouteSiteName: "old-site"}, core.PortalEntry{Scheme: "http", Port: 80})
+	saveTestPortalRule(t, ruleRepo, &core.PortalRule{Name: "admin", MatchPathPrefix: "/old", RouteType: "SITE", RouteSiteName: "old-site"}, core.PortalEntry{Protocol: "http", Http: &core.PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 80}})
 	certRepo.Save(&core.PortalCert{Name: "admin-cert", Issuer: "old", Domains: []string{"old.local"}, Certificate: "old-pub", PrivateKey: "old-pri"})
 	metadataRepo.MarkSeeded()
 
@@ -514,8 +514,8 @@ portalRules:
 	rule, ok := ruleRepo.GetByName("demo.web")
 	require.True(t, ok)
 	assert.Equal(t, entry.Id, rule.EntryId)
-	assert.Equal(t, "http", entry.Scheme)
-	assert.Equal(t, 8099, entry.Port)
+	assert.Equal(t, "http", entry.Accesses()[0].Scheme)
+	assert.Equal(t, 8099, entry.Accesses()[0].Port)
 }
 
 func TestSeederRejectsPortalRuleMixingEntryNameAndAccess(t *testing.T) {
@@ -541,8 +541,7 @@ portalEntries:
     listenIPs: ["::1", "127.0.0.1", "127.0.0.1"]
   - name: idle
     protocol: http
-    host: api.example.com
-    http: {httpEnabled: false, httpsEnabled: true, autoHTTPS: false, httpsPort: 8443}
+    http: {host: api.example.com, httpEnabled: false, httpsEnabled: true, httpsPort: 8443}
 portalRules:
   - name: demo.web
     entryName: web
@@ -565,13 +564,13 @@ portalRules:
 	// A seed names an entry, and a rule joins the entry it names.
 	web, ok := ruleRepo.PortalEntryRepo.GetByName("web")
 	require.True(t, ok)
-	assert.Equal(t, "http", web.Scheme)
-	assert.Equal(t, 8099, web.Port)
+	assert.Equal(t, "http", web.Accesses()[0].Scheme)
+	assert.Equal(t, 8099, web.Accesses()[0].Port)
 	assert.Equal(t, []string{"127.0.0.1", "::1"}, web.ListenIPs)
 	// An entry may route no rule: the seed declares the entry Portal serves.
 	idle, ok := ruleRepo.PortalEntryRepo.GetByName("idle")
 	require.True(t, ok)
-	assert.Equal(t, 8443, idle.Port)
+	assert.Equal(t, 8443, idle.Accesses()[0].Port)
 
 	rule, ok := ruleRepo.GetByName("demo.web")
 	require.True(t, ok)
@@ -706,9 +705,12 @@ func newTestSeederRepos(t *testing.T) (*repo.AppConfigRepo, *repo.PortalRuleRepo
 func saveTestPortalRule(t *testing.T, ruleRepo *repo.PortalRuleRepo, rule *core.PortalRule, access core.PortalEntry) {
 	t.Helper()
 
-	entry, ok := ruleRepo.PortalEntryRepo.GetBySchemeHostPort(access.Scheme, access.Host, access.Port)
+	access = core.NormalizePortalEntry(access)
+	access.Name = "test-entry"
+	entry, ok := ruleRepo.PortalEntryRepo.GetByName(access.Name)
 	if !ok {
-		entry = &core.PortalEntry{Scheme: access.Scheme, Host: access.Host, Port: access.Port, Enabled: true}
+		entry = &access
+		entry.Enabled = true
 		ruleRepo.PortalEntryRepo.Save(entry)
 	}
 	rule.EntryId = entry.Id
@@ -945,7 +947,7 @@ func TestSeederWildcardWebOnly(t *testing.T) {
 	for _, kind := range []string{"WEBGW", "RPCGW"} {
 		t.Run(kind, func(t *testing.T) {
 			configRepo, ruleRepo, certRepo, siteRepo, metadataRepo, watchServer := newTestSeederRepos(t)
-			entries := "portalEntries:\n  - name: wildcard\n    protocol: http\n    host: '*.example.com'\n"
+			entries := "portalEntries:\n  - name: wildcard\n    protocol: http\n    http: {host: '*.example.com'}\n"
 			access := "    entryName: wildcard\n"
 			seed := entries + "portalSites:\n  - name: target\n    type: " + kind + "\n    actorSkelName: demo.Actor\n    actorVia: client\n    webName: demo.Web\nportalRules:\n  - name: wildcard\n" + access + "    routeType: SITE\n    routeSiteName: target\n"
 			seedPath := filepath.Join(t.TempDir(), "hub.yaml")
@@ -1007,13 +1009,11 @@ func TestSeederRejectsListenerConflictsBeforeWrites(t *testing.T) {
 	require.NoError(t, vfile.WriteString(seedPath, `portalEntries:
   - name: wildcard
     protocol: http
-    host: one.local
-    http: {httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8080}
+    http: {host: one.local, httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8080}
     listenIPs: ["0.0.0.0"]
   - name: local
     protocol: http
-    host: two.local
-    http: {httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8080}
+    http: {host: two.local, httpEnabled: true, httpsEnabled: false, autoHTTPS: false, httpPort: 8080}
     listenIPs: ["127.0.0.1"]
 `))
 	seeder := &Seeder{

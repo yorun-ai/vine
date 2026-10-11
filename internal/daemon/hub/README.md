@@ -100,12 +100,20 @@ creates or replaces by name and owns identity handling, along with versioning an
 field sources where applicable. API updates merge provided fields into the
 existing entity before validation.
 
-An entry owns the protocol family, host, listener IPs, and transport ports Portal
-serves. Rules reference a declared entry through `entryName`; Hub does not create
+An entry owns the protocol family and listener IPs; its HTTP block owns
+`host` and transport settings. The Admin API and Watch publish the request host
+as `http.host`. Legacy seed fields are converted when decoded; stored legacy columns are converted
+and removed during database migration; `protocol` cannot be combined with legacy top-level `scheme`, `port`,
+or `host`. Rules reference a declared entry through `entryName`; Hub does not create
 entries from rule access fields. Changing an entry changes every rule it routes.
 The Admin API and seed both require an entry reference when creating a rule.
 `PortalEntryCore` addresses entries by id, and refuses to delete an entry while
 rules still reference it. Entries without rules remain listed.
+
+Portal entry models and Admin responses use only `protocol` and `http`; top-level
+`scheme`, `host`, and `port` are accepted only by legacy seed decoding and database
+migration. Rule responses expose `entryName` and `entryAddresses`, without the old
+`matchScheme`, `matchHost`, and `matchPort` projections.
 
 Two rules that match the same request are reported, not rejected: the path a rule
 matches comes from the Web mount path its site declares, and Hub reads those
@@ -211,7 +219,7 @@ Disabled certificates may be stored without valid PEM content; names and YAML
 field types remain checked, and enabling requires a valid matching certificate
 and private key. A database that predates the switch keeps every stored entity enabled.
 
-Portal entry YAML declares `name`, `protocol`, `host`, `http`, `listenIPs`, and `enabled`. The flat HTTP block defaults to HTTP/80, HTTPS/443, and `autoHTTPS: true`; automatic redirects require both transports. Admin API entry inputs require `protocol`. Seeds also accept v0.27.0 `scheme` and `port` inputs, converting them to a single enabled transport with automatic redirects disabled; they cannot be combined with `protocol`. Existing database entries retain their original single transport and do not gain redirects. Existing rows migrate one-for-one without changing rule references. Hub publishes enabled entries separately under `portal:entry:*`, including entries with no rules. A seed applies
+Portal entry YAML declares `name`, `protocol`, `http`, `listenIPs`, and `enabled`. The flat HTTP block defaults to HTTP/80, HTTPS/443, and `autoHTTPS: true`; automatic redirects require both transports. Admin API entry inputs require `protocol`. Seeds also accept v0.27.0 `scheme` and `port` inputs, converting them to a single enabled transport with automatic redirects disabled; they cannot be combined with `protocol`. Existing database entries retain their original single transport and do not gain redirects. Existing rows migrate one-for-one without changing rule references. Hub publishes enabled entries separately under `portal:entry:*`, including entries with no rules. A seed applies
 entries before rules; every rule must name an entry declared in the same seed.
 An entry may route no rule yet.
 The Portal sections are typed: Hub rejects an entity that declares a field the

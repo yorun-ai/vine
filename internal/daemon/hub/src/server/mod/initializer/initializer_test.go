@@ -106,10 +106,6 @@ func (r *testPortalEntryRepo) GetByName(name string) (*core.PortalEntry, bool) {
 	return nil, false
 }
 
-func (*testPortalEntryRepo) GetBySchemeHostPort(string, string, int) (*core.PortalEntry, bool) {
-	return nil, false
-}
-
 func (*testPortalEntryRepo) Save(*core.PortalEntry) {}
 
 func (r *testPortalEntryRepo) Remove(id int) bool {
@@ -423,7 +419,7 @@ func TestInitializerReportsRulesThatShareOneRequest(t *testing.T) {
 				{Id: 2, Name: "demo.fixed-site", Type: core.PortalSiteTypeWEBGW, Enabled: true},
 			}}
 			entryRepo := &testPortalEntryRepo{entries: []*core.PortalEntry{
-				{Id: 1, Name: "http:80", Scheme: "http", Port: 80, Enabled: true},
+				{Id: 1, Name: "http:80", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 80}},
 			}}
 			p := withTestAudit(&Initializer{
 				Syncer:          testSyncer(watchServer),

@@ -47,7 +47,7 @@ type _Rule struct {
 func newRule(rule watched.PortalRule, config watched.PortalEntry, scheme spec.Scheme, port int, siteManager *site.Manager) (*_Rule, bool) {
 	isRedirection := rule.RouteType == routeTypePermanentRedirect || rule.RouteType == routeTypeTemporaryRedirect
 	isEntry := rule.RouteType == routeTypeSite
-	if (!isRedirection && !isEntry) || (strings.HasPrefix(config.Host, "*.") && !isEntry) {
+	if (!isRedirection && !isEntry) || (strings.HasPrefix(config.Http.Host, "*.") && !isEntry) {
 		entryLogger.Warn("vine.portal entry rule target type is not supported", "rule", rule.Name, "routeType", rule.RouteType)
 		return nil, false
 	}
@@ -61,7 +61,7 @@ func newRule(rule watched.PortalRule, config watched.PortalEntry, scheme spec.Sc
 		name:            rule.Name,
 		listenIPs:       ips,
 		matchScheme:     scheme,
-		matchHost:       config.Host,
+		matchHost:       config.Http.Host,
 		matchPort:       port,
 		matchPathPrefix: rule.ResolvedMatchPathPrefix,
 		routePathPrefix: strings.TrimRight(rule.ResolvedRoutePathPrefix, "/"),

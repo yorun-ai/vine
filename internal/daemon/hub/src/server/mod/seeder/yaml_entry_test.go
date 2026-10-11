@@ -52,3 +52,25 @@ func TestSeedLegacyEntriesPreserveTransportAndPort(t *testing.T) {
 		require.Equal(t, fixture.port, entry.Accesses()[0].Port)
 	}
 }
+
+func TestSeedHTTPHostAndLegacyConversion(t *testing.T) {
+	for _, input := range []string{
+		"{name: web, protocol: http, http: {host: '*.EXAMPLE.com'}}",
+		"{name: web, scheme: https, host: '*.EXAMPLE.com'}",
+	} {
+		payload, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload]("portalEntries: [" + input + "]")
+		require.NoError(t, err)
+		entry := core.NormalizePortalEntry(*payload.PortalEntries[0].toCorePortalEntry())
+		require.Equal(t, "*.example.com", entry.Http.Host)
+	}
+	for _, input := range []string{
+		"{name: web, protocol: http, host: 'demo.local'}",
+		"{name: web, protocol: http, host: ''}",
+		"{name: web, protocol: http, host: null}",
+		"{name: web, protocol: http, host: '', http: {host: 'demo.local'}}",
+		"{name: web, protocol: http, http: {host: null}}",
+	} {
+		_, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload]("portalEntries: [" + input + "]")
+		require.Error(t, err)
+	}
+}

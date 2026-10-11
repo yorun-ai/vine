@@ -103,11 +103,8 @@ func TestPortalRuleRepoPublishesEntryAccess(t *testing.T) {
 
 	entry, ok := repo.PortalEntryRepo.GetById(rule.EntryId)
 	require.True(t, ok)
-	entry.Protocol = ""
-	entry.Http = nil
-	entry.Scheme = "http"
-	entry.Host = "app.example.com"
-	entry.Port = 8080
+	entry.Protocol = "http"
+	entry.Http = &core.PortalEntryHTTP{Host: "app.example.com", HttpEnabled: true, HttpPort: 8080}
 	repo.PortalEntryRepo.Save(entry)
 
 	got, ok := repo.GetById(rule.Id)
@@ -181,9 +178,9 @@ func sharedTestPortalRuleRepoDB(t *testing.T) *gorm.DB {
 func testPortalRule(t *testing.T, repo *PortalRuleRepo, name string) *core.PortalRule {
 	t.Helper()
 
-	entry, ok := repo.PortalEntryRepo.GetBySchemeHostPort("https", "demo.local", 443)
+	entry, ok := repo.PortalEntryRepo.GetByName("test-entry")
 	if !ok {
-		entry = &core.PortalEntry{Scheme: "https", Host: "demo.local", Port: 443, Enabled: true}
+		entry = &core.PortalEntry{Name: "test-entry", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Host: "demo.local", HttpEnabled: false, HttpsEnabled: true, HttpsPort: 443}}
 		repo.PortalEntryRepo.Save(entry)
 	}
 	return &core.PortalRule{

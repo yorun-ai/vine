@@ -347,12 +347,6 @@ export type PortalEntry = {
   id:        number;
   /** Entry name. */
   name:      string;
-  /** Entry protocol. */
-  scheme:    string;
-  /** Match Host, empty string means no restriction. */
-  host:      string;
-  /** Entry port. */
-  port:      number;
   /** Listener IP addresses; empty preserves the default wildcard TCP listener. */
   listenIPs: Array<string>;
   /** Entry rule list. */
@@ -366,8 +360,6 @@ export type PortalEntryCreation = {
   http:      PortalEntryHttpUpdate | null;
   /** Entry name. */
   name:      string;
-  /** Match Host, empty string means no restriction. */
-  host:      string;
   /** Listener IP addresses; empty preserves the default wildcard TCP listener. */
   listenIPs: Array<string>;
   /** Whether Hub publishes this entry and its rules to Portal; defaults to true. */
@@ -375,6 +367,8 @@ export type PortalEntryCreation = {
 }
 /** Portal access entry. */
 export type PortalEntryHttp = {
+  /** Match Host, empty string means no restriction. */
+  host:         string;
   /** Enable HTTP transport. */
   httpEnabled:  boolean;
   /** HTTP listener port. */
@@ -387,6 +381,7 @@ export type PortalEntryHttp = {
   autoHTTPS:    boolean;
 }
 export type PortalEntryHttpUpdate = {
+  host:         string | null;
   httpEnabled:  boolean | null;
   httpPort:     number | null;
   httpsEnabled: boolean | null;
@@ -406,8 +401,6 @@ export type PortalEntryUpdate = {
   http:      PortalEntryHttpUpdate | null;
   /** Entry name. */
   name:      string | null;
-  /** Match Host, empty string means no restriction. */
-  host:      string | null;
   /** Listener IP addresses; empty restores the default wildcard TCP listener. */
   listenIPs: Array<string> | null;
   /** Whether Hub publishes this entry and its rules to Portal. */
@@ -421,12 +414,6 @@ export type PortalRule = {
   id:                      number;
   /** Rule name. */
   name:                    string;
-  /** Matching protocol. */
-  matchScheme:             string;
-  /** Match Host, empty string means no restriction. */
-  matchHost:               string;
-  /** Match matchPort, 0 means no restriction. */
-  matchPort:               number;
   /** Match path prefix, empty string means match all paths. */
   matchPathPrefix:         string;
   /** Target type. */
@@ -496,12 +483,6 @@ export type PortalRuleListItem = {
   id:                      number;
   /** Rule name. */
   name:                    string;
-  /** Matching protocol. */
-  matchScheme:             string;
-  /** Match Host, empty string means no restriction. */
-  matchHost:               string;
-  /** Match matchPort, 0 means no restriction. */
-  matchPort:               number;
   /** Match path prefix, empty string means match all paths. */
   matchPathPrefix:         string;
   /** Target type. */

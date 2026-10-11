@@ -8,11 +8,12 @@ import (
 )
 
 type _PortalEntryHTTP struct {
-	HttpEnabled  *bool `yaml:"httpEnabled"`
-	HttpPort     *int  `yaml:"httpPort"`
-	HttpsEnabled *bool `yaml:"httpsEnabled"`
-	HttpsPort    *int  `yaml:"httpsPort"`
-	AutoHTTPS    *bool `yaml:"autoHTTPS"`
+	Host         *string `yaml:"host"`
+	HttpEnabled  *bool   `yaml:"httpEnabled"`
+	HttpPort     *int    `yaml:"httpPort"`
+	HttpsEnabled *bool   `yaml:"httpsEnabled"`
+	HttpsPort    *int    `yaml:"httpsPort"`
+	AutoHTTPS    *bool   `yaml:"autoHTTPS"`
 }
 
 func (h *_PortalEntryHTTP) UnmarshalYAML(node *yaml.Node) error {
@@ -34,5 +35,5 @@ func (h *_PortalEntryHTTP) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (h _PortalEntryHTTP) update() core.PortalEntryHTTPUpdate {
-	return core.PortalEntryHTTPUpdate{HttpEnabled: h.HttpEnabled, HttpPort: h.HttpPort, HttpsEnabled: h.HttpsEnabled, HttpsPort: h.HttpsPort, AutoHTTPS: h.AutoHTTPS}
+	return core.PortalEntryHTTPUpdate{Host: h.Host, HttpEnabled: h.HttpEnabled, HttpPort: h.HttpPort, HttpsEnabled: h.HttpsEnabled, HttpsPort: h.HttpsPort, AutoHTTPS: h.AutoHTTPS}
 }

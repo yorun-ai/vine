@@ -123,15 +123,6 @@ func (s *_PortalEntryRepoSpy) GetByName(name string) (*core.PortalEntry, bool) {
 	return nil, false
 }
 
-func (s *_PortalEntryRepoSpy) GetBySchemeHostPort(scheme string, host string, port int) (*core.PortalEntry, bool) {
-	for _, entry := range s.List() {
-		if entry.Scheme == scheme && entry.Host == host && entry.Port == port {
-			return entry, true
-		}
-	}
-	return nil, false
-}
-
 func (s *_PortalEntryRepoSpy) Save(entry *core.PortalEntry) {
 	value := *entry
 	if value.Id == 0 {
@@ -209,7 +200,7 @@ func TestPortalRuleServiceGetReturnsFieldSources(t *testing.T) {
 			FieldSources:  core.FieldSources{"/matchScheme": {Source: "app/default", Override: "hub"}},
 		},
 	}}
-	ruleCore := newTestPortalRuleCore(repo, newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Scheme: "http", Port: 80, Enabled: true}))
+	ruleCore := newTestPortalRuleCore(repo, newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 80}}))
 	service := &PortalRuleApiServiceServerImpl{PortalRuleCore: ruleCore, PortalEntryCore: ruleCore.PortalEntryCore}
 
 	detail := service.Get(3)
@@ -223,7 +214,7 @@ func TestPortalRuleServiceGetReturnsFieldSources(t *testing.T) {
 // Hub reports the rules that match the same request, so the Dashboard shows the
 // operator what Portal cannot order on its own.
 func TestPortalRuleServiceListConflicts(t *testing.T) {
-	entryRepo := newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Name: "http:80", Scheme: "http", Port: 80, Enabled: true})
+	entryRepo := newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Name: "http:80", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 80}})
 	ruleRepo := &_NamedPortalRuleRepoSpy{items: map[string]*core.PortalRule{
 		"web":   {Id: 1, Name: "web", EntryId: 1, RouteType: core.PortalRuleRouteTypeSite, RouteSiteName: "demo.Web", Enabled: true},
 		"fixed": {Id: 2, Name: "fixed", EntryId: 1, RouteType: core.PortalRuleRouteTypeSite, RouteSiteName: "demo.Fixed", Enabled: true},

@@ -14,18 +14,13 @@ import (
 )
 
 const (
-	portalEntryDefaultHTTPPort  = 80
-	portalEntryDefaultHTTPSPort = 443
-)
-
-const (
 	PortalRuleRouteTypeSite              = "SITE"
 	PortalRuleRouteTypePermanentRedirect = "PERMANENT_REDIRECT"
 	PortalRuleRouteTypeTemporaryRedirect = "TEMPORARY_REDIRECT"
 )
 
 // PortalEntry is a Portal access entry: the name Hub shows for it and the
-// scheme, host, and port Portal serves. Hub stores an entry for every access
+// protocol and its listener configuration. Hub stores an entry for every access
 // user rules use, so changing an entry changes the access of all the rules it
 // routes at once.
 type PortalEntry struct {
@@ -34,10 +29,6 @@ type PortalEntry struct {
 	Name     string
 	Protocol string
 	Http     *PortalEntryHTTP
-	// Scheme and Port are legacy inputs and single-transport projections.
-	Scheme string
-	Host   string
-	Port   int
 	// ListenIPs restricts listener addresses; empty preserves legacy wildcard TCP.
 	ListenIPs []string
 	// Enabled decides whether Hub publishes the rules of the entry to Portal.
@@ -53,14 +44,9 @@ type PortalEntryView struct {
 
 type PortalEntryUpdate struct {
 	// Name is optional and keeps the stored label when it is nil.
-	Name     *string
-	Protocol *string
-	Http     *PortalEntryHTTPUpdate
-	// Scheme, Host, and Port are optional and keep the stored access when they
-	// are nil.
-	Scheme    *string
-	Host      *string
-	Port      *int
+	Name      *string
+	Protocol  *string
+	Http      *PortalEntryHTTPUpdate
 	ListenIPs *[]string
 	// Enabled is optional and keeps the stored switch when it is nil.
 	Enabled *bool
@@ -70,10 +56,6 @@ type PortalEntryCreation struct {
 	Name     string
 	Protocol string
 	Http     *PortalEntryHTTP
-	// Scheme and Port are legacy inputs and single-transport projections.
-	Scheme string
-	Host   string
-	Port   int
 	// ListenIPs restricts listener addresses; empty preserves legacy wildcard TCP.
 	ListenIPs []string
 	// Enabled is optional and defaults to true.
@@ -92,9 +74,6 @@ type PortalEntryRepo interface {
 	GetById(id int) (*PortalEntry, bool)
 	// GetByName returns the entry Hub labels with the name.
 	GetByName(name string) (*PortalEntry, bool)
-	// GetBySchemeHostPort returns the entry that serves the scheme, host, and
-	// port, which is how a rule joins the entry it belongs to.
-	GetBySchemeHostPort(scheme string, host string, port int) (*PortalEntry, bool)
 	Save(entry *PortalEntry)
 	Remove(id int) bool
 }
@@ -120,13 +99,17 @@ func (m *PortalEntryCore) List() []PortalEntryView {
 	}
 
 	return vslice.SortBy(views, func(a PortalEntryView, b PortalEntryView) bool {
-		if a.Port != b.Port {
-			return a.Port < b.Port
+		aa, ba := a.Accesses()[0], b.Accesses()[0]
+		if aa.Port != ba.Port {
+			return aa.Port < ba.Port
 		}
-		if a.Scheme != b.Scheme {
-			return cmpString(a.Scheme, b.Scheme) < 0
+		if aa.Scheme != ba.Scheme {
+			return aa.Scheme < ba.Scheme
 		}
-		return cmpString(a.Host, b.Host) < 0
+		if a.Http.Host != b.Http.Host {
+			return a.Http.Host < b.Http.Host
+		}
+		return a.Name < b.Name
 	})
 }
 
@@ -136,9 +119,6 @@ func (m *PortalEntryCore) Create(creation PortalEntryCreation) PortalEntryView {
 		Name:      creation.Name,
 		Protocol:  creation.Protocol,
 		Http:      creation.Http,
-		Scheme:    creation.Scheme,
-		Host:      creation.Host,
-		Port:      creation.Port,
 		ListenIPs: creation.ListenIPs,
 		Enabled:   EnabledOrDefault(creation.Enabled),
 	})
@@ -161,7 +141,7 @@ func (*PortalEntryCore) Validate(entry PortalEntry) PortalEntry {
 }
 
 // Normalize checks and normalizes the fields of an entry a caller declares
-// without accessing storage, so a seed fails on a bad scheme, host, or port
+// without accessing storage, so a seed fails on an invalid protocol configuration
 // before Hub applies the rule that declares them. The name stays optional here,
 // because Hub derives the name of an entry it creates on its own.
 func (*PortalEntryCore) Normalize(entry PortalEntry) PortalEntry {
@@ -226,7 +206,6 @@ func (m *PortalEntryCore) Update(id int, update PortalEntryUpdate) PortalEntryVi
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", id))
 
 	next := normalizePortalEntry(*current)
-	ex.PanicNewIfNot((update.Protocol == nil && update.Http == nil) || (update.Scheme == nil && update.Port == nil), ex.OperationFailed, "protocol/http cannot be mixed with legacy scheme/port")
 	if update.Protocol != nil {
 		next.Protocol = *update.Protocol
 		ex.PanicNewIfNot(strings.TrimSpace(next.Protocol) != "", ex.OperationFailed, "protocol is empty")
@@ -235,21 +214,8 @@ func (m *PortalEntryCore) Update(id int, update PortalEntryUpdate) PortalEntryVi
 		config := update.Http.Apply(*next.Http)
 		next.Http = &config
 	}
-	if update.Scheme != nil || update.Port != nil {
-		ex.PanicNewIfNot(next.Scheme != "", ex.OperationFailed, "legacy scheme/port cannot update a dual-transport entry; use protocol/http")
-		next.Protocol, next.Http = "", nil
-	}
 	if update.Name != nil {
 		next.Name = *update.Name
-	}
-	if update.Scheme != nil {
-		next.Scheme = *update.Scheme
-	}
-	if update.Host != nil {
-		next.Host = *update.Host
-	}
-	if update.Port != nil {
-		next.Port = *update.Port
 	}
 	if update.ListenIPs != nil {
 		next.ListenIPs = *update.ListenIPs
@@ -264,13 +230,10 @@ func (m *PortalEntryCore) Update(id int, update PortalEntryUpdate) PortalEntryVi
 		}
 	}
 	m.validateWildcardRules(next, current.Id)
-	accessChanged := next.Host != current.Host || *next.Http != *normalizePortalEntry(*current).Http
+	accessChanged := next.Protocol != current.Protocol || *next.Http != *normalizePortalEntry(*current).Http
 	if accessChanged {
 		if target, ok := m.sameAccess(next); ok && target.Id != current.Id {
-			ex.PanicNewIfNot(update.Protocol == nil && update.Http == nil, ex.OperationFailed, ex.F("portal entry %q already serves this access", target.Name))
-			m.saveRules(current.Id, target.Id)
-			m.PortalEntryRepo.Remove(current.Id)
-			return m.view(*target)
+			ex.PanicNew(ex.OperationFailed, ex.F("portal entry %q already serves this access", target.Name))
 		}
 	}
 	listenersChanged := !slices.Equal(next.ListenIPs, current.ListenIPs)
@@ -291,27 +254,28 @@ func (m *PortalEntryCore) Update(id int, update PortalEntryUpdate) PortalEntryVi
 
 // portalEntryAddress renders the access an entry serves for error messages.
 func portalEntryAddress(entry PortalEntry) string {
-	if entry.Scheme == "" {
-		return portalEntryAccessText(entry)
+	addresses := []string{}
+	for _, access := range entry.Accesses() {
+		if entry.Http.Host == "" {
+			addresses = append(addresses, fmt.Sprintf("%s:%d", access.Scheme, access.Port))
+		} else {
+			addresses = append(addresses, fmt.Sprintf("%s:%s:%d", access.Scheme, entry.Http.Host, access.Port))
+		}
 	}
-	if entry.Host == "" {
-		return fmt.Sprintf("%s:%d", entry.Scheme, entry.Port)
-	}
-	return fmt.Sprintf("%s:%s:%d", entry.Scheme, entry.Host, entry.Port)
+	return strings.Join(addresses, ", ")
 }
 
 // normalizePortalEntry returns the entry the way Hub stores it: a trimmed name,
-// a lowercase scheme, a trimmed host, and the port Portal listens on. The name
+// a lowercase protocol and a normalized HTTP configuration. The name
 // stays empty when the caller does not name the entry.
 func normalizePortalEntry(entry PortalEntry) PortalEntry {
 	entry.Name = strings.TrimSpace(entry.Name)
 	entry = normalizePortalEntryHTTP(entry)
-	entry.Host = strings.TrimSpace(entry.Host)
-	if strings.HasPrefix(entry.Host, "*.") {
-		entry.Host = strings.ToLower(entry.Host)
+	entry.Http.Host = strings.TrimSpace(entry.Http.Host)
+	if strings.HasPrefix(entry.Http.Host, "*.") {
+		entry.Http.Host = strings.ToLower(entry.Http.Host)
 	}
-	ex.PanicNewIfNot(entry.Port >= 0 && entry.Port <= 65535, ex.OperationFailed, "portal entry port must be between 0 and 65535")
-	ex.PanicNewIfNot(portalEntryHostAccepted(entry.Host), ex.OperationFailed, "portal entry host must be a hostname, IP or leading *. wildcard without a port")
+	ex.PanicNewIfNot(portalEntryHostAccepted(entry.Http.Host), ex.OperationFailed, "portal entry host must be a hostname, IP or leading *. wildcard without a port")
 	ips, err := listenip.Normalize(entry.ListenIPs)
 	ex.PanicNewIfNot(err == nil, ex.OperationFailed, ex.F("%v", err))
 	entry.ListenIPs = ips
@@ -356,24 +320,6 @@ func isPortalEntryRuleRouteType(value string) bool {
 	return value == PortalRuleRouteTypeSite ||
 		value == PortalRuleRouteTypePermanentRedirect ||
 		value == PortalRuleRouteTypeTemporaryRedirect
-}
-
-// portalEntrySchemePort returns the port Portal listens on. An unset port means
-// the default port of the scheme.
-func portalEntrySchemePort(scheme string, port int) int {
-	switch scheme {
-	case "http":
-		if port == 0 {
-			return portalEntryDefaultHTTPPort
-		}
-	case "https":
-		if port == 0 {
-			return portalEntryDefaultHTTPSPort
-		}
-	default:
-		ex.PanicNew(ex.OperationFailed, ex.F("unknown portal entry scheme: %s", scheme))
-	}
-	return port
 }
 
 func (m *PortalEntryCore) rulesByEntry() map[int][]PortalEntryRule {
@@ -429,9 +375,9 @@ func sortedPortalEntryRules(rules []PortalEntryRule) []PortalEntryRule {
 	})
 }
 
-// validateWildcardRules also covers entry access changes and entry merges.
+// validateWildcardRules also covers entry access changes.
 func (m *PortalEntryCore) validateWildcardRules(entry PortalEntry, ruleEntryId int) {
-	if !strings.HasPrefix(entry.Host, "*.") {
+	if !strings.HasPrefix(entry.Http.Host, "*.") {
 		return
 	}
 	for _, rule := range m.PortalRuleRepo.List() {
@@ -442,7 +388,7 @@ func (m *PortalEntryCore) validateWildcardRules(entry PortalEntry, ruleEntryId i
 }
 
 // validateListeners rejects bind overlaps while allowing virtual hosts to share
-// an identical listener. Entry identity remains scheme, host, and port.
+// an identical listener. Entry identity is its protocol configuration.
 func (m *PortalEntryCore) validateListeners(entry PortalEntry) {
 	if !entry.Enabled {
 		return
@@ -461,16 +407,18 @@ func (m *PortalEntryCore) validateListeners(entry PortalEntry) {
 // a socket; wildcard overlaps and different schemes on the same socket conflict.
 func ValidatePortalEntryListeners(entries []PortalEntry) {
 	for i, entry := range entries {
+		entry = normalizePortalEntry(entry)
 		if !entry.Enabled {
 			continue
 		}
 		for _, other := range entries[i+1:] {
+			other = normalizePortalEntry(other)
 			if !other.Enabled {
 				continue
 			}
 			for _, access := range entry.Accesses() {
 				for _, otherAccess := range other.Accesses() {
-					if entry.Host == other.Host && access.Scheme == otherAccess.Scheme && access.Port == otherAccess.Port && *normalizePortalEntry(entry).Http != *normalizePortalEntry(other).Http {
+					if entry.Http.Host == other.Http.Host && access.Scheme == otherAccess.Scheme && access.Port == otherAccess.Port && *entry.Http != *other.Http {
 						ex.PanicNew(ex.OperationFailed, ex.F("portal entry %q shares an access with entry %q; configure the transports on one entry", entry.Name, other.Name))
 					}
 					if access.Port != otherAccess.Port {
@@ -490,11 +438,8 @@ func ValidatePortalEntryListeners(entries []PortalEntry) {
 }
 
 func (m *PortalEntryCore) sameAccess(entry PortalEntry) (*PortalEntry, bool) {
-	if entry.Scheme != "" {
-		return m.PortalEntryRepo.GetBySchemeHostPort(entry.Scheme, entry.Host, entry.Port)
-	}
 	for _, other := range m.PortalEntryRepo.List() {
-		if other.Id != entry.Id && other.Host == entry.Host && *normalizePortalEntry(*other).Http == *entry.Http {
+		if other.Id != entry.Id && other.Protocol == entry.Protocol && *normalizePortalEntry(*other).Http == *entry.Http {
 			return other, true
 		}
 	}

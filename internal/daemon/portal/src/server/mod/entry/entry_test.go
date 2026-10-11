@@ -225,7 +225,7 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 			t.Cleanup(public.Close)
 			for _, hostPattern := range []string{"shop.example.com", "*.example.com"} {
 				for _, targetPath := range []string{"/internal", "/v2", ""} {
-					rule, ok := newRule(watched.PortalRule{Name: "rule", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: targetPath, RouteType: "SITE", RouteSiteName: "web"}, watched.PortalEntry{Host: hostPattern}, spec.SchemeHTTP, 80, sites)
+					rule, ok := newRule(watched.PortalRule{Name: "rule", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: targetPath, RouteType: "SITE", RouteSiteName: "web"}, watched.PortalEntry{Http: watched.PortalEntryHTTP{Host: hostPattern}}, spec.SchemeHTTP, 80, sites)
 					require.True(t, ok)
 					entry.SetOrUpdateRules([]*_Rule{rule})
 					request, err := http.NewRequest(http.MethodPost, public.URL+"/api/a%2Fb/?q=%2F", strings.NewReader("payload"))
@@ -253,7 +253,7 @@ func TestEntryTargetPathDispatchesWithinRpcGateway(t *testing.T) {
 	gateway, found := manager.Site("rpc")
 	require.True(t, found)
 	gateway.Update(watched.PortalSite{Name: "rpc", Type: "RPCGW", RpcgwConfig: new(watched.PortalRpcgwConfig{InspectEnabled: true})})
-	rule, ok := newRule(watched.PortalRule{Name: "rpc", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: "/inspect", RouteType: "SITE", RouteSiteName: "rpc"}, watched.PortalEntry{Host: ""}, spec.SchemeHTTP, 80, manager)
+	rule, ok := newRule(watched.PortalRule{Name: "rpc", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: "/inspect", RouteType: "SITE", RouteSiteName: "rpc"}, watched.PortalEntry{Http: watched.PortalEntryHTTP{Host: ""}}, spec.SchemeHTTP, 80, manager)
 	require.True(t, ok)
 	entry := newEntry(spec.SchemeHTTP, 80, nil)
 	entry.SetOrUpdateRules([]*_Rule{rule})
@@ -269,7 +269,7 @@ func TestEntryDispatchesMcpAtApiPrefix(t *testing.T) {
 	gateway, found := manager.Site("rpc")
 	require.True(t, found)
 	gateway.Update(watched.PortalSite{Name: "rpc", Type: "RPCGW", RpcgwConfig: new(watched.PortalRpcgwConfig{McpEnabled: true})})
-	rule, ok := newRule(watched.PortalRule{Name: "rpc", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: "/", RouteType: "SITE", RouteSiteName: "rpc"}, watched.PortalEntry{Host: ""}, spec.SchemeHTTP, 80, manager)
+	rule, ok := newRule(watched.PortalRule{Name: "rpc", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: "/", RouteType: "SITE", RouteSiteName: "rpc"}, watched.PortalEntry{Http: watched.PortalEntryHTTP{Host: ""}}, spec.SchemeHTTP, 80, manager)
 	require.True(t, ok)
 	entry := newEntry(spec.SchemeHTTP, 80, nil)
 	entry.SetOrUpdateRules([]*_Rule{rule})
