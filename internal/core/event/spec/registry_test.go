@@ -135,3 +135,46 @@ func TestRegisterRejectsDuplicateEmitterBlock(t *testing.T) {
 
 	register()
 }
+
+func TestRegisteredEventEmitterFactoriesSkipsListenerOnly(t *testing.T) {
+	registry := NewRegistry()
+	registry.Register(new(EventSpec{
+		Type:                  EventSpecTypeListener,
+		Name:                  "RegistryTestEvent",
+		SkelName:              "event.spec.registryTestEvent",
+		EmitterMethodName:     "EmitRegistryTestEvent",
+		ListenerMethodName:    "OnRegistryTestEvent",
+		PayloadType:           reflect.TypeFor[*_RegistryTestEvent](),
+		ListenerType:          reflect.TypeFor[_RegistryTestListener](),
+		DefaultListenerType:   reflect.TypeFor[*_DefaultRegistryTestListener](),
+		ERListenerType:        reflect.TypeFor[_RegistryTestListenerER](),
+		WrapperERListenerCtor: newWrapperRegistryTestListenerER,
+		DefaultERListenerType: reflect.TypeFor[*_DefaultRegistryTestListenerER](),
+	}))
+	if factories := registry.RegisteredEventEmitterFactories(); len(factories) != 0 {
+		t.Fatalf("listener-only event returned emitter factories: %v", factories)
+	}
+
+	called := false
+	registry.Register(new(EventSpec{
+		Type:               EventSpecTypeEmitter,
+		Name:               "RegistryTestEvent",
+		SkelName:           "event.spec.registryTestEvent",
+		EmitterMethodName:  "EmitRegistryTestEvent",
+		ListenerMethodName: "OnRegistryTestEvent",
+		PayloadType:        reflect.TypeFor[*_RegistryTestEvent](),
+		EmitterType:        reflect.TypeFor[_RegistryTestEmitter](),
+		EmitterCtor: func() _RegistryTestEmitter {
+			called = true
+			return nil
+		},
+	}))
+	factories := registry.RegisteredEventEmitterFactories()
+	if len(factories) != 1 {
+		t.Fatalf("registered emitter returned %d factories, want 1", len(factories))
+	}
+	factories[0].(func() _RegistryTestEmitter)()
+	if !called {
+		t.Fatal("returned factory did not invoke the registered emitter constructor")
+	}
+}
