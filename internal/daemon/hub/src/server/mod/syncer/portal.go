@@ -232,12 +232,9 @@ func (s *Syncer) portalSiteOfRuleLocked(rule *core.PortalRule) *core.PortalSite 
 
 func toWatchedPortalSite(site *core.PortalSite) *watched.PortalSite {
 	ret := &watched.PortalSite{
-		Name: site.Name,
-		Type: string(site.Type),
-		ActorVia: watched.PortalActorVia{
-			ActorSkelName: site.ActorSkelName,
-			ActorVia:      site.ActorVia,
-		},
+		Name:          site.Name,
+		Type:          string(site.Type),
+		ActorSkelName: site.ActorSkelName,
 		Cors: watched.PortalCors{
 			Mode:           watched.PortalCorsMode(site.Cors.Mode),
 			AllowedOrigins: append([]string{}, site.Cors.AllowedOrigins...),
@@ -251,7 +248,9 @@ func toWatchedPortalSite(site *core.PortalSite) *watched.PortalSite {
 			})
 		}
 		ret.RpcgwConfig = &watched.PortalRpcgwConfig{
-			Services: services,
+			InspectEnabled: site.InspectEnabled,
+			McpEnabled:     site.McpEnabled,
+			Services:       services,
 		}
 	}
 	if site.Type == core.PortalSiteTypeWEBGW {

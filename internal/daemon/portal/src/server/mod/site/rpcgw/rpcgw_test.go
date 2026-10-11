@@ -552,7 +552,7 @@ func TestRpcGatewayDispatchesInspectPath(t *testing.T) {
 
 	target.Serve(testContext(recorder, request))
 
-	assertRpcGatewayError(t, recorder, ex.InvalidRequest, "rpcgw inspect is not implemented")
+	assertInspectError(t, recorder, ex.NotFound, "rpcgw path is not found")
 }
 
 func TestRpcGatewayAllowsOptionsFromSameEntryDomain(t *testing.T) {
@@ -650,6 +650,16 @@ func TestRpcGatewayRejectsServiceOutsideConfiguredList(t *testing.T) {
 	}
 }
 
+func TestRpcGatewayDoesNotRouteServicesWatchedByAnotherSite(t *testing.T) {
+	target := newTestRpcGateway(t, nil)
+	other := target.epmgr.WatchRpc("demo.OtherService")
+	t.Cleanup(other.Release)
+	registration, configured := target.routeService("demo.OtherService")
+	if configured || registration != nil {
+		t.Fatal("a shared endpoint watch must not add a service to this site")
+	}
+}
+
 func testContext(recorder http.ResponseWriter, request *http.Request) *spec.Context {
 	return testContextWithEntryOrigin(recorder, request, "")
 }
@@ -689,13 +699,12 @@ func newTestRpcGateway(t *testing.T, valuesByKey map[string]string) *RpcGateway 
 }
 
 func newTestRpcGatewayWithCors(t *testing.T, valuesByKey map[string]string, cors watched.PortalCors) *RpcGateway {
-	return New(context.Background(), testServerApp(), newTestAccess(t), newTestEpmgr(t, valuesByKey), watched.PortalSite{
-		Name: "demo-api",
-		Type: "RPCGW",
-		ActorVia: watched.PortalActorVia{
-			ActorSkelName: "demo.UserActor",
-		},
-		Cors: cors,
+	access := newTestAccess(t)
+	return New(t.Context(), testServerApp(), access, access.Desc, newTestEpmgr(t, valuesByKey), watched.PortalSite{
+		Name:          "demo-api",
+		Type:          "RPCGW",
+		ActorSkelName: "demo.UserActor",
+		Cors:          cors,
 		RpcgwConfig: &watched.PortalRpcgwConfig{
 			Services: []watched.PortalRpcgwService{{SkelName: "demo.UserService"}},
 		},

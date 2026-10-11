@@ -31,26 +31,28 @@ func (s *PortalSiteApiServiceServerImpl) Get(id int) skeled.PortalSite {
 
 func (s *PortalSiteApiServiceServerImpl) Create(creation skeled.PortalSiteCreation) skeled.PortalSite {
 	entry := s.PortalSiteCore.Create(core.PortalSiteCreation{
-		Name:          creation.Name,
-		Type:          core.PortalSiteType(creation.Type),
-		ActorSkelName: creation.ActorSkelName,
-		ActorVia:      creation.ActorVia,
-		Cors:          toCorePortalCors(creation.Cors),
-		WebName:       creation.WebName,
-		Enabled:       creation.Enabled,
+		Name:           creation.Name,
+		Type:           core.PortalSiteType(creation.Type),
+		ActorSkelName:  creation.ActorSkelName,
+		InspectEnabled: creation.InspectEnabled,
+		McpEnabled:     creation.McpEnabled,
+		Cors:           toCorePortalCors(creation.Cors),
+		WebName:        creation.WebName,
+		Enabled:        creation.Enabled,
 	})
 	return toServerPortalSite(entry, toServerFieldSources(entry.FieldSources))
 }
 
 func (s *PortalSiteApiServiceServerImpl) Update(id int, update skeled.PortalSiteUpdate) skeled.PortalSite {
 	entry := s.PortalSiteCore.Update(id, core.PortalSiteUpdate{
-		Name:          update.Name,
-		Type:          toCorePortalSiteTypePointer(update.Type),
-		ActorSkelName: update.ActorSkelName,
-		ActorVia:      update.ActorVia,
-		Cors:          toCorePortalCorsPointer(update.Cors),
-		WebName:       update.WebName,
-		Enabled:       update.Enabled,
+		Name:           update.Name,
+		Type:           toCorePortalSiteTypePointer(update.Type),
+		ActorSkelName:  update.ActorSkelName,
+		InspectEnabled: update.InspectEnabled,
+		McpEnabled:     update.McpEnabled,
+		Cors:           toCorePortalCorsPointer(update.Cors),
+		WebName:        update.WebName,
+		Enabled:        update.Enabled,
 	})
 	return toServerPortalSite(entry, toServerFieldSources(entry.FieldSources))
 }
@@ -61,17 +63,18 @@ func (s *PortalSiteApiServiceServerImpl) Remove(id int) {
 
 func toServerPortalSite(entry *core.PortalSite, fieldSources []skeled.FieldSource) skeled.PortalSite {
 	return skeled.PortalSite{
-		Enabled:       entry.Enabled,
-		Id:            entry.Id,
-		Name:          entry.Name,
-		Type:          skeled.PortalSiteType(entry.Type),
-		ActorSkelName: entry.ActorSkelName,
-		ActorVia:      entry.ActorVia,
-		RpcgwServices: entry.RpcgwServices,
-		Cors:          toServerPortalCors(entry.Cors),
-		WebName:       entry.WebName,
-		WebMountPath:  entry.WebMountPath,
-		FieldSources:  fieldSources,
+		Enabled:        entry.Enabled,
+		Id:             entry.Id,
+		Name:           entry.Name,
+		Type:           skeled.PortalSiteType(entry.Type),
+		ActorSkelName:  entry.ActorSkelName,
+		InspectEnabled: entry.InspectEnabled,
+		McpEnabled:     entry.McpEnabled,
+		RpcgwServices:  entry.RpcgwServices,
+		Cors:           toServerPortalCors(entry.Cors),
+		WebName:        entry.WebName,
+		WebMountPath:   entry.WebMountPath,
+		FieldSources:   fieldSources,
 	}
 }
 
@@ -80,16 +83,17 @@ func toServerPortalSite(entry *core.PortalSite, fieldSources []skeled.FieldSourc
 func toServerPortalSiteListItem(entry *core.PortalSite) skeled.PortalSiteListItem {
 	detail := toServerPortalSite(entry, nil)
 	return skeled.PortalSiteListItem{
-		Enabled:       detail.Enabled,
-		Id:            detail.Id,
-		Name:          detail.Name,
-		Type:          detail.Type,
-		ActorSkelName: detail.ActorSkelName,
-		ActorVia:      detail.ActorVia,
-		RpcgwServices: detail.RpcgwServices,
-		Cors:          detail.Cors,
-		WebName:       detail.WebName,
-		WebMountPath:  detail.WebMountPath,
+		Enabled:        detail.Enabled,
+		Id:             detail.Id,
+		Name:           detail.Name,
+		Type:           detail.Type,
+		ActorSkelName:  detail.ActorSkelName,
+		InspectEnabled: detail.InspectEnabled,
+		McpEnabled:     detail.McpEnabled,
+		RpcgwServices:  detail.RpcgwServices,
+		Cors:           detail.Cors,
+		WebName:        detail.WebName,
+		WebMountPath:   detail.WebMountPath,
 	}
 }
 
@@ -164,9 +168,8 @@ func toServerPortalSiteActorOptions(options []core.PortalSiteActorOption) []skel
 	ret := make([]skeled.PortalSiteActorOption, 0, len(options))
 	for _, option := range options {
 		ret = append(ret, skeled.PortalSiteActorOption{
-			Name:      option.Name,
-			SkelName:  option.SkelName,
-			ActorVias: option.ActorVias,
+			Name:     option.Name,
+			SkelName: option.SkelName,
 		})
 	}
 	return ret

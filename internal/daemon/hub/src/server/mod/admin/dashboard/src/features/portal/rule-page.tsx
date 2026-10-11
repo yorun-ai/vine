@@ -632,7 +632,6 @@ function PortalRuleInlineEditor({
         name: formValue.routeSiteName,
         type: '',
         actorSkelName: '',
-        actorVia: '',
         rpcgwServices: [],
         webName: '',
       },

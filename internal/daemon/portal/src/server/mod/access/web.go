@@ -6,14 +6,13 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
-	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 )
 
 type WebOperation struct {
 	Auther
 
-	ActorVia watched.PortalActorVia
-	WebName  string
+	ActorSkelName string
+	WebName       string
 }
 
 func (o *WebOperation) setActor(actor meta.Actor) {

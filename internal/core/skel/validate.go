@@ -58,13 +58,6 @@ func ValidateDescriptor(domain *descriptor.Domain) error {
 				return fmt.Errorf("actor %s: unknown permission method %q", actor.SkelName, actor.Permission.MethodName)
 			}
 		}
-		for _, via := range actor.Vias {
-			switch via {
-			case descriptor.ActorViaClient, descriptor.ActorViaAgent, descriptor.ActorViaOpenAPI:
-			default:
-				return fmt.Errorf("actor %s: invalid transport %q", actor.SkelName, via)
-			}
-		}
 	}
 	for _, resource := range domain.Resources {
 		if resource == nil {

@@ -41,7 +41,7 @@ Portal has four primary responsibilities:
 
    At startup, `desc` reads a complete `descriptor:*` snapshot and selects API services' transitive Data and Enum dependencies, including generic arguments and collection types. A single background worker coalesces service/type changes, loads dependencies outside the cache lock, and publishes paired service/type snapshots only if its generation is still current. Admission uses the latest service definitions immediately; a slow or failed type refresh does not block requests or delay service revocation. Failed refreshes retain the previous type snapshot and subscription and retry with bounded backoff. Shutdown cancels pending work and waits for the worker. Actor/resource observers also run outside the cache lock, with ordered delivery.
 
-   Selected type keys share one PubSub connection. Attachment and reconnect wait for all subscription acknowledgements before one reconciliation, using bounded GET pipelines. A replacement subscription is ready before its predecessor is released. Missing definitions remain subscribed until published. `desc.Manager.Snapshot()` returns the last paired service/type snapshot, its missing keys, and a `Syncing` flag when newer inputs are pending; this does not implement inspect.
+   Selected type keys share one PubSub connection. Attachment and reconnect wait for all subscription acknowledgements before one reconciliation, using bounded GET pipelines. A replacement subscription is ready before its predecessor is released. Missing definitions remain subscribed until published. `desc.Manager.Snapshot()` returns the last paired service/type snapshot, its missing keys, and a `Syncing` flag when newer inputs are pending. RpcGW inspect uses this snapshot directly and returns 503 during synchronization or when a requested schema cannot be resolved.
 
    The Hub Watch client uses the `vine.portal` user. Its ACL is limited to Portal entries, rules, sites, certificates, descriptors, Rpc/Web endpoint discovery, the shared revision key, and their required subscriptions. The Redis password is empty for in-process mode and separated-deployment debugging. With backend mTLS enabled, the Portal certificate authenticates the client and binds its SPIFFE identity to the `vine.portal` user. Without mTLS, the username only selects an ACL role; because that role can read TLS private keys, the Redis endpoint must remain restricted to a trusted network.
 
@@ -50,7 +50,7 @@ Portal has four primary responsibilities:
 The primary Portal module dependencies are:
 
 - `entry -> site, vault`
-- `site -> access, epmgr`
+- `site -> access, desc, epmgr`
 - `access -> desc, epmgr`
 - `desc -> hubwatch`
 - `vault -> hubwatch`
@@ -110,6 +110,57 @@ native authentication, explicitly select `optional` or `off` and regenerate the
 contracts. Old Rpc `noauth` authenticates supplied credentials and rejects invalid
 credentials instead of silently admitting the request anonymously.
 
-A WEBGW site requires both `actorSkelName` and `actorVia`. The configured actor must exist. Web authentication follows the declared mode; `required` rejects requests when the actor has no authentication configured. Only `off` preserves native Authorization credentials for the handler.
+A WEBGW site requires `actorSkelName`, and the configured actor must exist. Vine ignores legacy `via` metadata. RPCGW admits calls by the service's actor audiences, then applies authentication and permission rules. Web authentication follows the declared mode; `required` rejects requests when the actor has no authentication configured. Only `off` preserves native Authorization credentials for the handler.
 
 When changing entry, discovery, authentication, or forwarding behavior, validate standalone/inproc and normal network deployments separately. Inproc mode establishes routing and subscription semantics only; it does not establish correct real-listener, TLS, disconnection, or lease behavior.
+
+## RpcGW Inspect
+
+RPCGW sites expose read-only `GET /inspect/_list`,
+`GET /inspect/{service}/_list`, and `GET /inspect/{service}/{method}` when the
+site's `inspectEnabled` switch is true. `/inspect` and `/inspect/` alias the
+service list. The switch defaults to false and updates live through Watch.
+Inspection requires no credentials; invocation admission remains unchanged.
+
+Responses use `application/json`: service lists return `{services: [...]}`,
+method lists return `{service: {...}, methods: [...]}` with the same service
+summary as the catalog, and method details are objects.
+Failures use HTTP status codes with a `{code, message}` body. Lists contain
+stable, wire-name-sorted service or method summaries. Method details carry effective auth/permission
+metadata and independent JSON Schema 2020-12 `inputSchema` and `outputSchema`
+documents for params and result values. The converter in
+`internal/core/skel/jsonschema` resolves generic Data and Enum references with
+local `$defs`, including recursive contracts; it retains no descriptor cache.
+Only configured API services accepting the site's current actor are visible.
+No live backend endpoint is required. Responses are not cacheable, have no
+revision, and share site CORS with GET-specific preflight methods.
+
+## RpcGW MCP
+
+The independent `mcpEnabled` site switch (default false) exposes `POST /mcp`.
+An entry mapping `/api` to the site root therefore exposes `/api/mcp`.
+Only MCP `2026-07-28` is supported. The gateway requires that protocol version
+header and rejects legacy initialization; the official MCP Go SDK owns Streamable
+HTTP framing, request metadata validation, discovery, and JSON-RPC errors.
+The gateway uses stateless JSON responses and advertises only tools, without
+list-change notifications.
+
+Inspect and MCP share the site's Actor/API catalog selection. MCP builds tool
+schemas from the current `desc` snapshot without another descriptor cache.
+`tools/list` is sorted and paginated; `tools/call` resolves only its selected
+method. Both reject syncing snapshots or unresolved schemas. Tool names use
+`{serviceSkelName}.{methodSkelName}`, with a deterministic SHA-256 name for wire
+names outside MCP's character/length recommendations. Input and output are
+validated against the same JSON Schema contracts as Inspect. `structuredContent`
+contains the API result directly, including scalars, arrays, and `null`, with
+the same JSON in text `content`.
+
+Calls reuse Rpc admission and forwarding. Only Authorization is copied from the
+MCP request; Portal supplies backend client, trace and initiator metadata, and
+admission supplies the actor. Credentials are stripped before business-service
+forwarding. MCP requests retain HTTP cancellation and have a 30-second limit;
+legacy `/invoke` keeps its existing disconnect policy. API failures are tool
+results with `isError`; catalog/protocol failures are JSON-RPC errors.
+Origin validation applies before handling MCP requests or preflight. Responses
+are non-cacheable. This endpoint uses Vine credentials, not an OAuth discovery
+or authorization-server implementation.

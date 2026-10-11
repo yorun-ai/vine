@@ -539,76 +539,80 @@ export type PortalRuleUpdate = {
 /** Portal target site. */
 export type PortalSite = {
   /** Target site id. */
-  id:            number;
+  id:             number;
   /** Target site name. */
-  name:          string;
+  name:           string;
   /** Target site type. */
-  type:          PortalSiteType;
+  type:           PortalSiteType;
   /** Actor Skel name. */
-  actorSkelName: string;
-  /** Actor access method. */
-  actorVia:      string;
+  actorSkelName:  string;
+  /** Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default. */
+  inspectEnabled: boolean;
+  /** Expose API services as MCP tools over HTTP; RPCGW only, disabled by default. */
+  mcpEnabled:     boolean;
   /** Rpc gateway service Skel name list. */
-  rpcgwServices: Array<string>;
+  rpcgwServices:  Array<string>;
   /** CORS configuration. */
-  cors:          PortalCors | null;
+  cors:           PortalCors | null;
   /** Web name. */
-  webName:       string;
+  webName:        string;
   /** Web mount path; empty means the Web is not limited to a path. */
-  webMountPath:  string;
+  webMountPath:   string;
   /** Field sources; only returned by get, create and update. */
-  fieldSources:  Array<FieldSource>;
+  fieldSources:   Array<FieldSource>;
   /** Whether Hub publishes this site to Portal. */
-  enabled:       boolean;
+  enabled:        boolean;
 }
 /** Portal target site Actor options. */
 export type PortalSiteActorOption = {
   /** Actor name. */
-  name:      string;
+  name:     string;
   /** Actor Skel name. */
-  skelName:  string;
-  /** Actor access method list. */
-  actorVias: Array<string>;
+  skelName: string;
 }
 /** Portal target site creation parameters. */
 export type PortalSiteCreation = {
   /** Target site name. */
-  name:          string;
+  name:           string;
   /** Target site type. */
-  type:          PortalSiteType;
+  type:           PortalSiteType;
   /** Actor Skel name. */
-  actorSkelName: string;
-  /** Actor access method. */
-  actorVia:      string;
+  actorSkelName:  string;
+  /** Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default. */
+  inspectEnabled: boolean;
+  /** Expose API services as MCP tools over HTTP; RPCGW only, disabled by default. */
+  mcpEnabled:     boolean;
   /** CORS configuration. */
-  cors:          PortalCors | null;
+  cors:           PortalCors | null;
   /** Web name. */
-  webName:       string;
+  webName:        string;
   /** Whether Hub publishes this site to Portal. */
-  enabled:       boolean | null;
+  enabled:        boolean | null;
 }
 /** Portal target site list item. */
 export type PortalSiteListItem = {
   /** Target site id. */
-  id:            number;
+  id:             number;
   /** Target site name. */
-  name:          string;
+  name:           string;
   /** Target site type. */
-  type:          PortalSiteType;
+  type:           PortalSiteType;
   /** Actor Skel name. */
-  actorSkelName: string;
-  /** Actor access method. */
-  actorVia:      string;
+  actorSkelName:  string;
+  /** Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default. */
+  inspectEnabled: boolean;
+  /** Expose API services as MCP tools over HTTP; RPCGW only, disabled by default. */
+  mcpEnabled:     boolean;
   /** Rpc gateway service Skel name list. */
-  rpcgwServices: Array<string>;
+  rpcgwServices:  Array<string>;
   /** CORS configuration. */
-  cors:          PortalCors | null;
+  cors:           PortalCors | null;
   /** Web name. */
-  webName:       string;
+  webName:        string;
   /** Web mount path; empty means the Web is not limited to a path. */
-  webMountPath:  string;
+  webMountPath:   string;
   /** Whether Hub publishes this site to Portal. */
-  enabled:       boolean;
+  enabled:        boolean;
 }
 /** Portal target site form options. */
 export type PortalSiteOptions = {
@@ -631,19 +635,21 @@ export type PortalSiteServiceOption = {
 /** Portal target site update parameters. */
 export type PortalSiteUpdate = {
   /** Target site name. */
-  name:          string | null;
+  name:           string | null;
   /** Target site type. */
-  type:          PortalSiteType | null;
+  type:           PortalSiteType | null;
   /** Actor Skel name. */
-  actorSkelName: string | null;
-  /** Actor access method. */
-  actorVia:      string | null;
+  actorSkelName:  string | null;
+  /** Expose read-only Rpc inspect and JSON Schema; RPCGW only. */
+  inspectEnabled: boolean | null;
+  /** Expose API services as MCP tools over HTTP; RPCGW only, disabled by default. */
+  mcpEnabled:     boolean | null;
   /** CORS configuration. */
-  cors:          PortalCors | null;
+  cors:           PortalCors | null;
   /** Web name. */
-  webName:       string | null;
+  webName:        string | null;
   /** Whether Hub publishes this site to Portal. */
-  enabled:       boolean | null;
+  enabled:        boolean | null;
 }
 /** Portal target site web options. */
 export type PortalSiteWebOption = {
@@ -804,8 +810,6 @@ export type SkeletonActorItem = {
   deprecated:           boolean;
   /** Actor deprecation reason. */
   deprecatedReason:     string;
-  /** Actor access method list. */
-  actorVias:            Array<string>;
   /** Whether to enable authentication. */
   authEnabled:          boolean;
   /** Actor identifier field in Info. */
@@ -833,8 +837,6 @@ export type SkeletonActorRef = {
   name:     string;
   /** Actor Skel name. */
   skelName: string;
-  /** Access method. */
-  via:      string;
 }
 /** SkeletonConfig. */
 export type SkeletonConfigItem = {

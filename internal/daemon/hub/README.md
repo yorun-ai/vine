@@ -234,6 +234,14 @@ stay private to the package. Only the current match/route field names are
 accepted; retired aliases are rejected before Hub writes anything. A Portal section declares only the fields Hub names for it.
 
 Admin API and Watch use only the new fields; upgrade Hub and Portal together.
+Portal sites select their actor with `actorSkelName`. RPCGW publishes API
+services for that actor regardless of descriptor `via` metadata; authentication
+and permission rules still apply. Seed YAML accepts the deprecated `actorVia`
+field but ignores it and logs a warning naming each site that declares it.
+Admin API, Watch and Dashboard no longer expose it, and
+database initialization drops `portal_site.actor_via`. Descriptor metadata is
+preserved for compatibility with generated contracts.
+
 Existing databases must already use the v0.27.0 schema. Entry listener IPs
 and HTTP protocol blocks are upgraded during initialization; pre-v0.27.0
 certificate and retired-column migrations are no longer performed.
@@ -310,3 +318,14 @@ retired Base64 columns without converting their contents. Watch publishes only
 PEM fields; Hub, Link, and Portal must be upgraded together. Enabled certificates
 require a valid certificate/key pair; disabled certificates may be placeholders.
 Never expose private key values through Admin API provenance.
+
+RPCGW sites also have an `inspectEnabled` switch, defaulting to false in seeds,
+Admin creation, and migrated databases. The Dashboard can toggle it and Watch
+publishes it inside `rpcgwConfig`. It enables unauthenticated, read-only API
+contract inspection on that site; Web sites reject an enabled inspect switch.
+
+The separate RPCGW-only `mcpEnabled` switch defaults to false, including migrated
+rows. Seed, Admin API and Dashboard changes publish through `rpcgwConfig` and
+apply live. It exposes MCP tools at the site's `/mcp` path while retaining the
+site's API selection, authentication and permission rules. It does not require
+`inspectEnabled`.

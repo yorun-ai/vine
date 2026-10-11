@@ -76,6 +76,38 @@ func TestPortalSiteRepoSaveCreate(t *testing.T) {
 	assertWatchedPortalSite(t, entry, vcode.MustUnmarshalJsonS[*watched.PortalSite](raw))
 }
 
+func TestPortalSiteInspectSwitchRoundTripsToWatch(t *testing.T) {
+	_, repo, watchServer := newTestPortalSiteRepo(t)
+	entry := testPortalSite("inspect-api")
+	for _, enabled := range []bool{false, true, false} {
+		entry.InspectEnabled = enabled
+		repo.Save(entry)
+		stored, ok := repo.GetById(entry.Id)
+		require.True(t, ok)
+		require.Equal(t, enabled, stored.InspectEnabled)
+		raw, ok := watchServer.Get(watched.FormatPortalSiteKey(entry.Name))
+		require.True(t, ok)
+		wire := vcode.MustUnmarshalJsonS[*watched.PortalSite](raw)
+		require.Equal(t, enabled, wire.RpcgwConfig.InspectEnabled)
+	}
+}
+
+func TestPortalSiteMcpSwitchRoundTripsToWatch(t *testing.T) {
+	_, repo, watchServer := newTestPortalSiteRepo(t)
+	entry := testPortalSite("mcp-api")
+	for _, enabled := range []bool{false, true, false} {
+		entry.McpEnabled = enabled
+		repo.Save(entry)
+		stored, ok := repo.GetById(entry.Id)
+		require.True(t, ok)
+		require.Equal(t, enabled, stored.McpEnabled)
+		raw, ok := watchServer.Get(watched.FormatPortalSiteKey(entry.Name))
+		require.True(t, ok)
+		wire := vcode.MustUnmarshalJsonS[*watched.PortalSite](raw)
+		require.Equal(t, enabled, wire.RpcgwConfig.McpEnabled)
+	}
+}
+
 func TestPortalSiteRepoSaveRename(t *testing.T) {
 	_, repo, watchServer := newTestPortalSiteRepo(t)
 
@@ -147,7 +179,6 @@ func testPortalSite(name string) *core.PortalSite {
 		Name:          name,
 		Type:          core.PortalSiteTypeRPCGW,
 		ActorSkelName: "demo.Actor",
-		ActorVia:      "client",
 		Cors: core.PortalCors{
 			Mode:           core.PortalCorsModeStrict,
 			AllowedOrigins: []string{"https://console.example.com"},
@@ -162,8 +193,7 @@ func assertWatchedPortalSite(t *testing.T, expected *core.PortalSite, actual *wa
 	require.NotNil(t, actual)
 	assert.Equal(t, expected.Name, actual.Name)
 	assert.Equal(t, string(expected.Type), actual.Type)
-	assert.Equal(t, expected.ActorSkelName, actual.ActorVia.ActorSkelName)
-	assert.Equal(t, expected.ActorVia, actual.ActorVia.ActorVia)
+	assert.Equal(t, expected.ActorSkelName, actual.ActorSkelName)
 	assert.Equal(t, watched.PortalCorsMode(expected.Cors.Mode), actual.Cors.Mode)
 	assert.Equal(t, expected.Cors.AllowedOrigins, actual.Cors.AllowedOrigins)
 	require.NotNil(t, actual.RpcgwConfig)
@@ -188,8 +218,8 @@ func TestPortalSiteRepoAssemblesDerivedValues(t *testing.T) {
 			Descriptor: &skeldesc.Domain{
 				Name: "demo",
 				Services: []*skeldesc.Service{{
-					SkelName:  "demo.Service",
-					Audiences: []*skeldesc.ActorAudience{{SkelName: "demo.Actor", Via: skeldesc.ActorViaClient}}, AuthMode: skeldesc.AuthModeRequired,
+					SkelName: "demo.Service",
+					Api:      true, Audiences: []*skeldesc.ActorAudience{{SkelName: "demo.Actor", Via: skeldesc.ActorViaClient}}, AuthMode: skeldesc.AuthModeRequired,
 				}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			},
 		},
@@ -199,7 +229,7 @@ func TestPortalSiteRepoAssemblesDerivedValues(t *testing.T) {
 	web.Type, web.WebName = core.PortalSiteTypeWEBGW, "demo.Web"
 	repo.Save(web)
 	rpc := testPortalSite("demo-rpc")
-	rpc.Type, rpc.ActorSkelName, rpc.ActorVia = core.PortalSiteTypeRPCGW, "demo.Actor", "client"
+	rpc.Type, rpc.ActorSkelName = core.PortalSiteTypeRPCGW, "demo.Actor"
 	repo.Save(rpc)
 
 	// The repository reconstitutes aggregates: the saved entity and every read

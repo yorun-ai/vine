@@ -17,17 +17,15 @@ func TestPortalSiteKeys(t *testing.T) {
 
 func TestPortalSiteJSON(t *testing.T) {
 	data, err := json.Marshal(PortalSite{
-		Name: "demo.user.AdminActor-client-rpc",
-		Type: "RPCGW",
-		ActorVia: PortalActorVia{
-			ActorSkelName: "demo.user.AdminActor",
-			ActorVia:      "client",
-		},
+		Name:          "demo.user.AdminActor-client-rpc",
+		Type:          "RPCGW",
+		ActorSkelName: "demo.user.AdminActor",
 		Cors: PortalCors{
 			Mode:           PortalCorsModeStrict,
 			AllowedOrigins: []string{"https://console.example.com"},
 		},
 		RpcgwConfig: &PortalRpcgwConfig{
+			InspectEnabled: true,
 			Services: []PortalRpcgwService{
 				{SkelName: "demo.user.UserService"},
 				{SkelName: "demo.order.OrderService"},
@@ -38,15 +36,14 @@ func TestPortalSiteJSON(t *testing.T) {
 	assert.JSONEq(t, `{
 		"name": "demo.user.AdminActor-client-rpc",
 		"type": "RPCGW",
-		"actorVia": {
-			"actorSkelName": "demo.user.AdminActor",
-			"actorVia": "client"
-		},
+		"actorSkelName": "demo.user.AdminActor",
 		"cors": {
 			"mode": "STRICT",
 			"allowedOrigins": ["https://console.example.com"]
 		},
 		"rpcgwConfig": {
+			"inspectEnabled": true,
+			"mcpEnabled": false,
 			"services": [
 				{"skelName": "demo.user.UserService"},
 				{"skelName": "demo.order.OrderService"}

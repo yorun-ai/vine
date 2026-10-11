@@ -62,6 +62,9 @@ func (s *Seeder) loadSeedYAML() {
 	}
 	for i := range payload.PortalSites {
 		payload.PortalSites[i].Sources = entityFieldSources(sources, "portalSites", i)
+		if payload.PortalSites[i].actorViaPresent {
+			s.Logger.Warn("hub seed actorVia is deprecated and ignored; remove this field", "site", payload.PortalSites[i].Name)
+		}
 	}
 	for i := range payload.PortalRules {
 		payload.PortalRules[i].Sources = entityFieldSources(sources, "portalRules", i)

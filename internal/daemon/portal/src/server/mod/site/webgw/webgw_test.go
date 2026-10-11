@@ -552,10 +552,10 @@ func newTestWebGatewayWithCors(t *testing.T, valuesByKey map[string]string, cors
 	accessManager.DIInit()
 	t.Cleanup(accessManager.AfterAppStop)
 	return New(context.Background(), meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"), accessManager, epmgrManager, watched.PortalSite{
-		Name:     "demo-web",
-		Type:     "WEBGW",
-		Cors:     cors,
-		ActorVia: watched.PortalActorVia{ActorSkelName: "demo.ClientActor", ActorVia: "client"},
+		Name:          "demo-web",
+		Type:          "WEBGW",
+		Cors:          cors,
+		ActorSkelName: "demo.ClientActor",
 		WebgwConfig: &watched.PortalWebgwConfig{
 			WebName: "admin@demo.app",
 		},

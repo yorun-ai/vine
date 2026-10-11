@@ -68,16 +68,18 @@ func (s *PortalSiteRepo) toCorePortalSite(row *model.PortalSite, descriptors _Po
 		AllowedOrigins: decodePortalCorsOrigins(row.CorsOrigins),
 	})
 	entry := &core.PortalSite{
-		FieldSources:  decodeFieldSources(row.FieldSources),
-		Id:            row.Id,
-		Name:          row.Name,
-		Type:          core.PortalSiteType(row.Type),
-		ActorSkelName: row.ActorSkelName,
-		ActorVia:      row.ActorVia,
-		Cors:          cors,
-		WebName:       row.WebName,
-		Enabled:       row.Enabled,
+		FieldSources:   decodeFieldSources(row.FieldSources),
+		Id:             row.Id,
+		Name:           row.Name,
+		Type:           core.PortalSiteType(row.Type),
+		ActorSkelName:  row.ActorSkelName,
+		InspectEnabled: row.InspectEnabled,
+		McpEnabled:     row.McpEnabled,
+		Cors:           cors,
+		WebName:        row.WebName,
+		Enabled:        row.Enabled,
 	}
+	delete(entry.FieldSources, "/actorVia")
 	entry.WebMountPath = descriptors.mountPath(entry)
 	entry.RpcgwServices = core.MatchPortalSiteRpcgwServicesInDomainViews(*entry, descriptors.views)
 	return entry
@@ -113,16 +115,17 @@ func (descriptors _PortalSiteDescriptors) mountPath(entry *core.PortalSite) stri
 
 func toModelPortalSite(entry *core.PortalSite) *model.PortalSite {
 	return &model.PortalSite{
-		FieldSources:  encodeFieldSources(entry.FieldSources),
-		Id:            entry.Id,
-		Name:          entry.Name,
-		Type:          string(entry.Type),
-		ActorSkelName: entry.ActorSkelName,
-		ActorVia:      entry.ActorVia,
-		CorsMode:      string(entry.Cors.Mode),
-		CorsOrigins:   vcode.MustMarshalJsonS(entry.Cors.AllowedOrigins),
-		WebName:       entry.WebName,
-		Enabled:       entry.Enabled,
+		FieldSources:   encodeFieldSources(entry.FieldSources),
+		Id:             entry.Id,
+		Name:           entry.Name,
+		Type:           string(entry.Type),
+		ActorSkelName:  entry.ActorSkelName,
+		InspectEnabled: entry.InspectEnabled,
+		McpEnabled:     entry.McpEnabled,
+		CorsMode:       string(entry.Cors.Mode),
+		CorsOrigins:    vcode.MustMarshalJsonS(entry.Cors.AllowedOrigins),
+		WebName:        entry.WebName,
+		Enabled:        entry.Enabled,
 	}
 }
 

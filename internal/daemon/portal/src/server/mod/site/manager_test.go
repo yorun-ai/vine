@@ -25,11 +25,9 @@ import (
 func TestManagerLoadsRpcgwSiteFromWatch(t *testing.T) {
 	manager := newTestManager(t, map[string]string{
 		watched.FormatPortalSiteKey("demo-api"): vcode.MustMarshalJsonS(watched.PortalSite{
-			Name: "demo-api",
-			Type: siteTypeRpcgw,
-			ActorVia: watched.PortalActorVia{
-				ActorSkelName: "demo.UserActor",
-			},
+			Name:          "demo-api",
+			Type:          siteTypeRpcgw,
+			ActorSkelName: "demo.UserActor",
 			RpcgwConfig: &watched.PortalRpcgwConfig{
 				Services: []watched.PortalRpcgwService{{SkelName: "demo.UserService"}},
 			},
@@ -226,6 +224,7 @@ func newTestManager(t *testing.T, valuesByKey map[string]string) *Manager {
 		Access:     newTestAccess(t),
 		Epmgr:      epmgrManager,
 	}
+	manager.Desc = manager.Access.Desc
 	manager.DIInit()
 	return manager
 }

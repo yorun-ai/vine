@@ -41,8 +41,11 @@ data PortalSiteCreation {
     @desc("Actor Skel name")
     actorSkelName: string
 
-    @desc("Actor access method")
-    actorVia: string
+    @desc("Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default")
+    inspectEnabled: bool
+
+    @desc("Expose API services as MCP tools over HTTP; RPCGW only, disabled by default")
+    mcpEnabled: bool
 
     @desc("CORS configuration")
     cors: PortalCors?
@@ -68,8 +71,11 @@ data PortalSite {
     @desc("Actor Skel name")
     actorSkelName: string
 
-    @desc("Actor access method")
-    actorVia: string
+    @desc("Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default")
+    inspectEnabled: bool
+
+    @desc("Expose API services as MCP tools over HTTP; RPCGW only, disabled by default")
+    mcpEnabled: bool
 
     @desc("Rpc gateway service Skel name list")
     rpcgwServices: list<string>
@@ -104,8 +110,11 @@ data PortalSiteListItem {
     @desc("Actor Skel name")
     actorSkelName: string
 
-    @desc("Actor access method")
-    actorVia: string
+    @desc("Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default")
+    inspectEnabled: bool
+
+    @desc("Expose API services as MCP tools over HTTP; RPCGW only, disabled by default")
+    mcpEnabled: bool
 
     @desc("Rpc gateway service Skel name list")
     rpcgwServices: list<string>
@@ -134,8 +143,11 @@ data PortalSiteUpdate {
     @desc("Actor Skel name")
     actorSkelName: string?
 
-    @desc("Actor access method")
-    actorVia: string?
+    @desc("Expose read-only Rpc inspect and JSON Schema; RPCGW only")
+    inspectEnabled: bool?
+
+    @desc("Expose API services as MCP tools over HTTP; RPCGW only, disabled by default")
+    mcpEnabled: bool?
 
     @desc("CORS configuration")
     cors: PortalCors?
@@ -154,9 +166,6 @@ data PortalSiteActorOption {
 
     @desc("Actor Skel name")
     skelName: string
-
-    @desc("Actor access method list")
-    actorVias: list<string>
 }
 
 @desc("Portal target site service options")

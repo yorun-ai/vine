@@ -138,28 +138,7 @@ function actorBadges(
           }}
         >
           {actor.name}
-          {actor.via ? (
-            <span className="border-l pl-1.5 text-muted-foreground">
-              {actor.via}
-            </span>
-          ) : null}
         </a>
-      ))}
-    </div>
-  )
-}
-
-function textBadges(values: Array<string>, noneText: string) {
-  const items = Array.isArray(values) ? values : []
-  if (items.length === 0) {
-    return <span className="text-xs text-muted-foreground">{noneText}</span>
-  }
-  return (
-    <div className="flex flex-wrap gap-1">
-      {items.map((item) => (
-        <Badge key={item} variant="secondary">
-          {item}
-        </Badge>
       ))}
     </div>
   )
@@ -888,10 +867,6 @@ export function SkeletonItemBadges({
   showVersion?: boolean
 }) {
   const { t } = useLocale()
-  const actorVias =
-    'actorVias' in item && Array.isArray(item.actorVias)
-      ? item.actorVias
-      : []
 
   return (
     <div className="flex flex-wrap justify-end gap-1">
@@ -936,11 +911,6 @@ export function SkeletonItemBadges({
       ) : showVersion && item.isMultiVersion ? (
         <Badge variant="outline">{t('version.multiple')}</Badge>
       ) : null}
-      {actorVias.map((actorVia) => (
-        <Badge key={actorVia} variant="secondary">
-          {actorVia}
-        </Badge>
-      ))}
     </div>
   )
 }
@@ -988,15 +958,6 @@ export function SkeletonItemDetails({
     <div className="grid gap-4">
       {isActor ? (
         <>
-          <div className="grid gap-2">
-            <div className="text-xs font-medium text-muted-foreground">
-              {t('skeleton.actorVia')}
-            </div>
-            {textBadges(
-              'actorVias' in item ? item.actorVias : [],
-              t('common.none'),
-            )}
-          </div>
           <DetailSection icon={KeyRound} title={t('skeleton.authGroup')}>
             {'authEnabled' in item && item.authEnabled ? (
               <dl className="flex flex-wrap gap-x-6 gap-y-2 rounded-md border px-3 py-2 text-xs">

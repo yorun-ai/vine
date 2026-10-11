@@ -10,6 +10,7 @@ import (
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/desc"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/util/httputil"
@@ -17,31 +18,36 @@ import (
 
 const pathInvoke = "/invoke"
 const pathInspect = "/inspect"
+const pathMcp = "/mcp"
 
 var optionsAllowedMethods = []string{http.MethodPost}
 
 type RpcGateway struct {
-	name     string
-	actorVia watched.PortalActorVia
-	cors     watched.PortalCors
+	name           string
+	actorSkelName  string
+	inspectEnabled bool
+	mcpEnabled     bool
+	cors           watched.PortalCors
 
 	app     meta.App
 	context context.Context
 	cancel  context.CancelFunc
 	access  *access.Access
+	desc    *desc.Manager
 	epmgr   *epmgr.Manager
 
 	mutex    sync.Mutex
 	watchers map[string]*epmgr.Watcher
 }
 
-func New(ctx context.Context, appInfo meta.App, accessManager *access.Access, epmgrManager *epmgr.Manager, config watched.PortalSite) *RpcGateway {
+func New(ctx context.Context, appInfo meta.App, accessManager *access.Access, descriptors *desc.Manager, epmgrManager *epmgr.Manager, config watched.PortalSite) *RpcGateway {
 	gatewayCtx, cancel := context.WithCancel(ctx)
 	gateway := &RpcGateway{
 		context: gatewayCtx,
 		cancel:  cancel,
 		app:     appInfo,
 		access:  accessManager,
+		desc:    descriptors,
 		epmgr:   epmgrManager,
 	}
 	gateway.init(config)
@@ -50,7 +56,9 @@ func New(ctx context.Context, appInfo meta.App, accessManager *access.Access, ep
 
 func (g *RpcGateway) init(config watched.PortalSite) {
 	g.name = config.Name
-	g.actorVia = config.ActorVia
+	g.actorSkelName = config.ActorSkelName
+	g.inspectEnabled = config.RpcgwConfig.InspectEnabled
+	g.mcpEnabled = config.RpcgwConfig.McpEnabled
 	g.cors = config.Cors
 	g.watchers = map[string]*epmgr.Watcher{}
 	for _, service := range config.RpcgwConfig.Services {
@@ -67,9 +75,11 @@ func (g *RpcGateway) Update(config watched.PortalSite) bool {
 		serviceNames[service.SkelName] = struct{}{}
 	}
 
-	addedServices := make([]string, 0)
 	g.mutex.Lock()
-	g.actorVia = config.ActorVia
+	defer g.mutex.Unlock()
+	g.actorSkelName = config.ActorSkelName
+	g.inspectEnabled = config.RpcgwConfig.InspectEnabled
+	g.mcpEnabled = config.RpcgwConfig.McpEnabled
 	g.cors = config.Cors
 	for serviceName, watcher := range g.watchers {
 		if _, ok := serviceNames[serviceName]; ok {
@@ -80,13 +90,8 @@ func (g *RpcGateway) Update(config watched.PortalSite) bool {
 	}
 	for serviceName := range serviceNames {
 		if _, ok := g.watchers[serviceName]; !ok {
-			addedServices = append(addedServices, serviceName)
+			g.watchers[serviceName] = g.epmgr.WatchRpc(serviceName)
 		}
-	}
-	g.mutex.Unlock()
-
-	for _, serviceName := range addedServices {
-		g.watchService(serviceName)
 	}
 	return true
 }
@@ -102,6 +107,11 @@ func (g *RpcGateway) watchService(serviceName string) {
 }
 
 func (g *RpcGateway) routeService(serviceName string) (*watched.RpcServiceRegistration, bool) {
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+	if _, configured := g.watchers[serviceName]; !configured {
+		return nil, false
+	}
 	return g.epmgr.NextRpcEndpoint(serviceName)
 }
 
@@ -110,18 +120,30 @@ func (g *RpcGateway) Name() string {
 }
 
 func (g *RpcGateway) Serve(ctx *spec.Context) {
-	if ctx.Request.Method == http.MethodOptions {
-		spec.ServeOptions(ctx.ResponseWriter, ctx.Request, g.cors, ctx.EntryOrigin, optionsAllowedMethods)
+	g.mutex.Lock()
+	cors := g.cors
+	g.mutex.Unlock()
+	path := httputil.PathPrefix(ctx.Request.URL.Path)
+	if path == pathMcp {
+		g.serveMcp(ctx, cors)
 		return
 	}
-	if spec.ApplyCORS(ctx.ResponseWriter, ctx.Request, g.cors, ctx.EntryOrigin) {
+	if ctx.Request.Method == http.MethodOptions {
+		methods := optionsAllowedMethods
+		if path == pathInspect {
+			methods = []string{http.MethodGet}
+		}
+		spec.ServeOptions(ctx.ResponseWriter, ctx.Request, cors, ctx.EntryOrigin, methods)
+		return
+	}
+	if spec.ApplyCORS(ctx.ResponseWriter, ctx.Request, cors, ctx.EntryOrigin) {
 		spec.ExposeHeader(ctx.ResponseWriter.Header(), spec.HeaderPortalTraceId)
 	}
 	ctx.ResponseWriter.Header().Set(spec.HeaderPortalTraceId, rpcTraceIdOrNew(ctx.Request.Header))
 
 	mappedCtx := *ctx
 	mappedCtx.ResponseWriter = newHTTPStatusMappingResponseWriter(ctx.ResponseWriter)
-	switch httputil.PathPrefix(mappedCtx.Request.URL.Path) {
+	switch path {
 	case pathInvoke:
 		g.serveInvoke(&mappedCtx)
 	case pathInspect:

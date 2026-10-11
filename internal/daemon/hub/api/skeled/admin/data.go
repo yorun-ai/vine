@@ -567,8 +567,10 @@ type PortalSite struct {
 	Type PortalSiteType `json:"type"`
 	// ActorSkelName Actor Skel name
 	ActorSkelName string `json:"actorSkelName"`
-	// ActorVia Actor access method
-	ActorVia string `json:"actorVia"`
+	// InspectEnabled Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default
+	InspectEnabled bool `json:"inspectEnabled"`
+	// McpEnabled Expose API services as MCP tools over HTTP; RPCGW only, disabled by default
+	McpEnabled bool `json:"mcpEnabled"`
 	// RpcgwServices Rpc gateway service Skel name list
 	RpcgwServices []string `json:"rpcgwServices"`
 	// Cors CORS configuration
@@ -589,8 +591,6 @@ type PortalSiteActorOption struct {
 	Name string `json:"name"`
 	// SkelName Actor Skel name
 	SkelName string `json:"skelName"`
-	// ActorVias Actor access method list
-	ActorVias []string `json:"actorVias"`
 }
 
 // PortalSiteCreation Portal target site creation parameters
@@ -601,8 +601,10 @@ type PortalSiteCreation struct {
 	Type PortalSiteType `json:"type"`
 	// ActorSkelName Actor Skel name
 	ActorSkelName string `json:"actorSkelName"`
-	// ActorVia Actor access method
-	ActorVia string `json:"actorVia"`
+	// InspectEnabled Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default
+	InspectEnabled bool `json:"inspectEnabled"`
+	// McpEnabled Expose API services as MCP tools over HTTP; RPCGW only, disabled by default
+	McpEnabled bool `json:"mcpEnabled"`
 	// Cors CORS configuration
 	Cors *PortalCors `json:"cors"`
 	// WebName Web name
@@ -621,8 +623,10 @@ type PortalSiteListItem struct {
 	Type PortalSiteType `json:"type"`
 	// ActorSkelName Actor Skel name
 	ActorSkelName string `json:"actorSkelName"`
-	// ActorVia Actor access method
-	ActorVia string `json:"actorVia"`
+	// InspectEnabled Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default
+	InspectEnabled bool `json:"inspectEnabled"`
+	// McpEnabled Expose API services as MCP tools over HTTP; RPCGW only, disabled by default
+	McpEnabled bool `json:"mcpEnabled"`
 	// RpcgwServices Rpc gateway service Skel name list
 	RpcgwServices []string `json:"rpcgwServices"`
 	// Cors CORS configuration
@@ -663,8 +667,10 @@ type PortalSiteUpdate struct {
 	Type *PortalSiteType `json:"type"`
 	// ActorSkelName Actor Skel name
 	ActorSkelName *string `json:"actorSkelName"`
-	// ActorVia Actor access method
-	ActorVia *string `json:"actorVia"`
+	// InspectEnabled Expose read-only Rpc inspect and JSON Schema; RPCGW only
+	InspectEnabled *bool `json:"inspectEnabled"`
+	// McpEnabled Expose API services as MCP tools over HTTP; RPCGW only, disabled by default
+	McpEnabled *bool `json:"mcpEnabled"`
 	// Cors CORS configuration
 	Cors *PortalCors `json:"cors"`
 	// WebName Web name
@@ -842,8 +848,6 @@ type SkeletonActorItem struct {
 	Deprecated bool `json:"deprecated"`
 	// DeprecatedReason Actor deprecation reason
 	DeprecatedReason string `json:"deprecatedReason"`
-	// ActorVias Actor access method list
-	ActorVias []string `json:"actorVias"`
 	// AuthEnabled Whether to enable authentication
 	AuthEnabled bool `json:"authEnabled"`
 	// IdentifierField Actor identifier field in Info
@@ -872,8 +876,6 @@ type SkeletonActorRef struct {
 	Name string `json:"name"`
 	// SkelName Actor Skel name
 	SkelName string `json:"skelName"`
-	// Via Access method
-	Via string `json:"via"`
 }
 
 // SkeletonConfigItem SkeletonConfig

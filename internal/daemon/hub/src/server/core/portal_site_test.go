@@ -74,7 +74,6 @@ func TestMatchPortalSiteRpcgwServicesInDomainViewsIncludesVineDescriptors(t *tes
 	site := PortalSite{
 		Type:          PortalSiteTypeRPCGW,
 		ActorSkelName: "vine.hub.admin.AdminActor",
-		ActorVia:      "client",
 	}
 	views := []DomainDescriptorView{{
 		DomainVersion: DomainDescriptorVersion{
@@ -82,12 +81,14 @@ func TestMatchPortalSiteRpcgwServicesInDomainViewsIncludesVineDescriptors(t *tes
 			Descriptor: &skeldesc.Domain{
 				Services: []*skeldesc.Service{
 					{
+						Api:      true,
 						SkelName: "vine.hub.admin.PortalSiteApiService",
 						Audiences: []*skeldesc.ActorAudience{
 							{SkelName: "vine.hub.admin.AdminActor"},
 						}, AuthMode: skeldesc.AuthModeRequired,
 					},
 					{
+						Api:      true,
 						SkelName: "demo.UserService",
 						Audiences: []*skeldesc.ActorAudience{
 							{SkelName: "demo.UserActor"},
@@ -103,45 +104,65 @@ func TestMatchPortalSiteRpcgwServicesInDomainViewsIncludesVineDescriptors(t *tes
 	assert.Equal(t, []string{"vine.hub.admin.PortalSiteApiService"}, services)
 }
 
-func TestMatchPortalSiteRpcgwServicesInDomainViewsMatchesActorVia(t *testing.T) {
-	site := PortalSite{
-		Type:          PortalSiteTypeRPCGW,
-		ActorSkelName: "demo.UserActor",
-		ActorVia:      "client",
+func TestMatchPortalSiteRpcgwServicesInDomainViewsIgnoresVia(t *testing.T) {
+	site := PortalSite{Type: PortalSiteTypeRPCGW, ActorSkelName: "demo.UserActor"}
+	services := []*skeldesc.Service{}
+	for _, via := range []skeldesc.ActorViaKind{"", skeldesc.ActorViaClient, skeldesc.ActorViaAgent, skeldesc.ActorViaOpenAPI, "future"} {
+		services = append(services, new(skeldesc.Service{
+			Api: true, SkelName: "demo.Service" + string(via),
+			Audiences: []*skeldesc.ActorAudience{{SkelName: site.ActorSkelName, Via: via}},
+		}))
 	}
-	views := []DomainDescriptorView{{
-		DomainVersion: DomainDescriptorVersion{
-			Main: true,
-			Descriptor: &skeldesc.Domain{Services: []*skeldesc.Service{
-				{
-					SkelName: "demo.ClientService",
-					Audiences: []*skeldesc.ActorAudience{
-						{SkelName: "demo.UserActor", Via: skeldesc.ActorViaClient},
-					}, AuthMode: skeldesc.AuthModeRequired,
-				},
-				{
-					SkelName: "demo.AgentService",
-					Audiences: []*skeldesc.ActorAudience{
-						{SkelName: "demo.UserActor", Via: skeldesc.ActorViaAgent},
-					}, AuthMode: skeldesc.AuthModeRequired,
-				},
-				{
-					SkelName: "demo.AllViaService",
-					Audiences: []*skeldesc.ActorAudience{
-						{SkelName: "demo.UserActor"},
-					}, AuthMode: skeldesc.AuthModeRequired,
-				},
-			}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"}},
-		},
-	}}
-
-	services := MatchPortalSiteRpcgwServicesInDomainViews(site, views)
-
-	assert.Equal(t, []string{"demo.AllViaService", "demo.ClientService"}, services)
+	services = append(services,
+		new(skeldesc.Service{Api: true, SkelName: "demo.OtherActorService", Audiences: []*skeldesc.ActorAudience{{SkelName: "demo.OtherActor"}}}),
+		new(skeldesc.Service{SkelName: "demo.InternalService"}),
+	)
+	views := []DomainDescriptorView{{DomainVersion: DomainDescriptorVersion{
+		Main: true, Descriptor: new(skeldesc.Domain{Services: services}),
+	}}}
+	assert.Equal(t, []string{"demo.Service", "demo.Serviceagent", "demo.Serviceclient", "demo.Servicefuture", "demo.Serviceopenapi"}, MatchPortalSiteRpcgwServicesInDomainViews(site, views))
 }
 
 func testUserSite() PortalSite {
-	return PortalSite{Name: "demo-web", Type: PortalSiteTypeWEBGW, ActorSkelName: "demo.Actor", ActorVia: "client", WebName: "demo.Web"}
+	return PortalSite{Name: "demo-web", Type: PortalSiteTypeWEBGW, ActorSkelName: "demo.Actor", WebName: "demo.Web"}
+}
+
+func TestPortalSiteInspectSwitchDefaultsAndUpdates(t *testing.T) {
+	repo := new(portalSiteRepoSpy)
+	target := newPortalSiteCoreForTest(repo)
+	site := target.Create(PortalSiteCreation{Name: "api", Type: PortalSiteTypeRPCGW, ActorSkelName: "demo.Actor"})
+	require.False(t, site.InspectEnabled)
+	site = target.Update(site.Id, PortalSiteUpdate{InspectEnabled: new(true)})
+	require.True(t, site.InspectEnabled)
+	site = target.Update(site.Id, PortalSiteUpdate{Name: new("renamed")})
+	require.True(t, site.InspectEnabled, "unrelated updates preserve the switch")
+	site.FieldSources = FieldSources{"/inspectEnabled": {Source: "seed"}}
+	repo.Save(site)
+	site = target.Update(site.Id, PortalSiteUpdate{InspectEnabled: new(false)})
+	require.False(t, site.InspectEnabled)
+	require.Equal(t, "hub", site.FieldSources["/inspectEnabled"].Override)
+	web := testUserSite()
+	web.InspectEnabled = true
+	require.Panics(t, func() { target.Validate(web) })
+}
+
+func TestPortalSiteMcpSwitchDefaultsAndUpdates(t *testing.T) {
+	repo := new(portalSiteRepoSpy)
+	target := newPortalSiteCoreForTest(repo)
+	site := target.Create(PortalSiteCreation{Name: "api", Type: PortalSiteTypeRPCGW, ActorSkelName: "demo.Actor"})
+	require.False(t, site.McpEnabled)
+	site = target.Update(site.Id, PortalSiteUpdate{McpEnabled: new(true)})
+	require.True(t, site.McpEnabled)
+	site = target.Update(site.Id, PortalSiteUpdate{Name: new("renamed")})
+	require.True(t, site.McpEnabled, "unrelated updates preserve the switch")
+	site.FieldSources = FieldSources{"/mcpEnabled": {Source: "seed"}}
+	repo.Save(site)
+	site = target.Update(site.Id, PortalSiteUpdate{McpEnabled: new(false)})
+	require.False(t, site.McpEnabled)
+	require.Equal(t, "hub", site.FieldSources["/mcpEnabled"].Override)
+	web := testUserSite()
+	web.McpEnabled = true
+	require.Panics(t, func() { target.Validate(web) })
 }
 
 func TestPortalSiteValidateWithoutStorage(t *testing.T) {
@@ -152,7 +173,6 @@ func TestPortalSiteValidateWithoutStorage(t *testing.T) {
 		"name":        func(s *PortalSite) { s.Name = " " },
 		"type":        func(s *PortalSite) { s.Type = "unknown" },
 		"actor":       func(s *PortalSite) { s.ActorSkelName = "" },
-		"via":         func(s *PortalSite) { s.ActorVia = "unknown" },
 		"web":         func(s *PortalSite) { s.WebName = "" },
 		"cors mode":   func(s *PortalSite) { s.Cors.Mode = "unknown" },
 		"cors origin": func(s *PortalSite) { s.Cors.AllowedOrigins = []string{"https://demo.local/path"} },

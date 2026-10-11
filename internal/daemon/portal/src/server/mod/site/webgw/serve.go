@@ -65,12 +65,12 @@ func (g *WebGateway) Serve(ctx *spec.Context) {
 	}
 
 	operation := &access.WebOperation{
-		Request:   request,
-		Response:  ctx.ResponseWriter,
-		Trace:     trace,
-		Initiator: initiator,
-		ActorVia:  g.actorVia,
-		WebName:   registration.WebSkelName,
+		Request:       request,
+		Response:      ctx.ResponseWriter,
+		Trace:         trace,
+		Initiator:     initiator,
+		ActorSkelName: g.actorSkelName,
+		WebName:       registration.WebSkelName,
 	}
 	if !g.access.AuthWeb(operation) {
 		return

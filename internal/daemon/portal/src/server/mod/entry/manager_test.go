@@ -12,6 +12,7 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/desc"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
@@ -173,11 +174,15 @@ func newTestSiteManager(t *testing.T, names ...string) *site.Manager {
 		Watch:   watchtest.New(t, valuesByKey),
 	}
 	epmgrManager.DIInit()
+	descriptors := new(desc.Manager{Context: t.Context(), Watch: watchtest.New(t, nil)})
+	descriptors.DIInit()
+	t.Cleanup(descriptors.AfterAppStop)
 	manager := &site.Manager{
 		CurrentApp: meta.MustNewApp("vine.portal", "0.0.0", "123e4567-e89b-12d3-a456-426614174099"),
 		Context:    context.Background(),
 		Watch:      watchtest.New(t, valuesByKey),
 		Epmgr:      epmgrManager,
+		Desc:       descriptors,
 	}
 	manager.DIInit()
 	return manager

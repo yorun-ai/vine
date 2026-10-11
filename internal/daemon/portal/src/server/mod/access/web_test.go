@@ -25,7 +25,7 @@ func TestAuthWebRequiredModeRejectsMissingAuthorization(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/ping", nil)
 	setTestWebRequestHeaders(t, request)
-	require.False(t, access.AuthWeb(testWebOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder)))
+	require.False(t, access.AuthWeb(testWebOperation(t, "demo.UserActor", request, recorder)))
 	require.Equal(t, http.StatusUnauthorized, recorder.Code)
 }
 
@@ -38,7 +38,7 @@ func TestAuthWebParsesAuthorization(t *testing.T) {
 	setTestWebRequestHeaders(t, request)
 	request.Header.Set(headerAuthorization, "Key1 token123, key2 dXNlcjpwd2Q=")
 
-	ok := access.AuthWeb(testWebOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	ok := access.AuthWeb(testWebOperation(t, "demo.UserActor", request, recorder))
 
 	require.True(t, ok)
 	actor, err := meta.DecodeActorFromBase64(request.Header.Get(webspec.HeaderWebActor))
@@ -55,7 +55,7 @@ func TestAuthWebRejectsBadAuthorizationAsUnauthorized(t *testing.T) {
 	setTestWebRequestHeaders(t, request)
 	request.Header.Set(headerAuthorization, "Key1 token123, unknown value")
 
-	ok := access.AuthWeb(testWebOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	ok := access.AuthWeb(testWebOperation(t, "demo.UserActor", request, recorder))
 
 	require.False(t, ok)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
@@ -70,7 +70,7 @@ func TestAuthWebMapsAuthServiceStatus(t *testing.T) {
 	setTestWebRequestHeaders(t, request)
 	request.Header.Set(headerAuthorization, "Key1 token123, key2 dXNlcjpwd2Q=")
 
-	ok := access.AuthWeb(testWebOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	ok := access.AuthWeb(testWebOperation(t, "demo.UserActor", request, recorder))
 
 	require.False(t, ok)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
@@ -95,7 +95,7 @@ func TestAuthWebForwardsTimeoutToAuthService(t *testing.T) {
 	setTestWebRequestHeaders(t, request)
 	request.Header.Set(headerAuthorization, "Key1 token123, key2 dXNlcjpwd2Q=")
 
-	ok := access.AuthWeb(testWebOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+	ok := access.AuthWeb(testWebOperation(t, "demo.UserActor", request, recorder))
 
 	require.True(t, ok)
 }
@@ -109,7 +109,7 @@ func setTestWebRequestHeaders(t *testing.T, request *http.Request) {
 	request.Header.Set(webspec.HeaderWebInitiator, meta.EncodeInitiatorToBase64(initiator))
 }
 
-func testWebOperation(t *testing.T, actorVia watched.PortalActorVia, request *http.Request, response http.ResponseWriter) *WebOperation {
+func testWebOperation(t *testing.T, actorSkelName string, request *http.Request, response http.ResponseWriter) *WebOperation {
 	t.Helper()
 
 	trace, err := webspec.DecodeTraceFromHeader(request.Header)
@@ -117,11 +117,11 @@ func testWebOperation(t *testing.T, actorVia watched.PortalActorVia, request *ht
 	initiator, err := meta.DecodeInitiatorFromBase64(request.Header.Get(webspec.HeaderWebInitiator))
 	require.NoError(t, err)
 	return &WebOperation{
-		Request:   request,
-		Response:  response,
-		Trace:     trace,
-		Initiator: initiator,
-		ActorVia:  actorVia,
+		Request:       request,
+		Response:      response,
+		Trace:         trace,
+		Initiator:     initiator,
+		ActorSkelName: actorSkelName,
 	}
 }
 
@@ -138,7 +138,7 @@ func TestAuthWebOffPreservesNativeAuthorizationWithoutActorAuth(t *testing.T) {
 			request.Header.Set(headerAuthorization, header)
 			request.Header.Set(webspec.HeaderWebActor, "untrusted actor metadata")
 			response := httptest.NewRecorder()
-			operation := testWebOperation(t, watched.PortalActorVia{ActorSkelName: descriptor.SkelName, ActorVia: "client"}, request, response)
+			operation := testWebOperation(t, descriptor.SkelName, request, response)
 			operation.WebName = "demo.NativeWeb"
 			require.True(t, access.AuthWeb(operation))
 			require.Equal(t, header, request.Header.Get(headerAuthorization))
@@ -155,7 +155,7 @@ func TestAuthWebRejectsUnknownActorWithAuthorization(t *testing.T) {
 	setTestWebRequestHeaders(t, request)
 	request.Header.Set(headerAuthorization, "Bearer native-token")
 	response := httptest.NewRecorder()
-	require.False(t, access.AuthWeb(testWebOperation(t, watched.PortalActorVia{ActorSkelName: "missing.Actor", ActorVia: "client"}, request, response)))
+	require.False(t, access.AuthWeb(testWebOperation(t, "missing.Actor", request, response)))
 	require.Equal(t, http.StatusForbidden, response.Code)
 }
 
@@ -185,7 +185,7 @@ func TestAuthWebNativeCredentialsReachBackend(t *testing.T) {
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	gateway := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		setTestWebRequestHeaders(t, r)
-		operation := testWebOperation(t, watched.PortalActorVia{ActorSkelName: descriptor.SkelName, ActorVia: "client"}, r, w)
+		operation := testWebOperation(t, descriptor.SkelName, r, w)
 		operation.WebName = "demo.NativeWeb"
 		if access.AuthWeb(operation) {
 			proxy.ServeHTTP(w, r)
@@ -266,7 +266,7 @@ func TestAuthWebLoadsRequiredPolicyFromDescriptor(t *testing.T) {
 				request.Header.Set(headerAuthorization, test.credential)
 			}
 			response := httptest.NewRecorder()
-			operation := testWebOperation(t, watched.PortalActorVia{ActorSkelName: actor.SkelName}, request, response)
+			operation := testWebOperation(t, actor.SkelName, request, response)
 			operation.WebName = "demo.Web"
 			require.Equal(t, test.allowed, access.AuthWeb(operation))
 			if test.allowed {

@@ -54,6 +54,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Tooltip,
@@ -118,7 +119,8 @@ interface PortalSiteFormValue {
   name: string
   type: PortalSiteType
   actorSkelName: string
-  actorVia: string
+  inspectEnabled: boolean
+  mcpEnabled: boolean
   corsMode: PortalCorsModeValue
   corsAllowedOrigins: string
   rpcgwServices: string
@@ -131,7 +133,8 @@ const emptyFormValue: PortalSiteFormValue = {
   name: '',
   type: 'WEBGW',
   actorSkelName: '',
-  actorVia: 'client',
+  inspectEnabled: false,
+  mcpEnabled: false,
   corsMode: 'SAME_DOMAIN',
   corsAllowedOrigins: '',
   rpcgwServices: '',
@@ -204,13 +207,32 @@ function portalSiteToFormValue(entry: PortalSiteListItem): PortalSiteFormValue {
     name: entry.name,
     type: normalizePortalSiteType(entry.type),
     actorSkelName: entry.actorSkelName,
-    actorVia: entry.actorVia,
+    inspectEnabled: entry.inspectEnabled,
+    mcpEnabled: entry.mcpEnabled,
     corsMode: normalizePortalCorsMode(cors?.mode),
     corsAllowedOrigins: (cors?.allowedOrigins ?? []).join('\n'),
     rpcgwServices: rpcgwServices.join('\n'),
     webName: entry.webName,
     enabled: entry.enabled,
   }
+}
+
+function ProtocolField({ protocol, enabled, onChange }: {
+  protocol: 'inspect' | 'mcp'
+  enabled: boolean
+  onChange: (enabled: boolean) => void
+}) {
+  const { t } = useLocale()
+  const id = React.useId()
+  return (
+    <div className="grid gap-2">
+      <div className="flex items-center gap-2">
+        <Switch id={id} checked={enabled} onCheckedChange={(checked) => onChange(checked === true)} />
+        <Label htmlFor={id}>{t(`portalSite.${protocol}Enabled`)}</Label>
+      </div>
+      <p className="text-xs leading-5 text-muted-foreground">{t(`portalSite.${protocol}Help`)}</p>
+    </div>
+  )
 }
 
 function portalSiteRpcgwServices(entry: PortalSiteListItem) {
@@ -228,7 +250,8 @@ function formValueToCreation(value: PortalSiteFormValue): PortalSiteCreation {
     name: value.name.trim(),
     type: value.type,
     actorSkelName: value.actorSkelName.trim(),
-    actorVia: value.actorVia.trim(),
+    inspectEnabled: value.type === 'RPCGW' && value.inspectEnabled,
+    mcpEnabled: value.type === 'RPCGW' && value.mcpEnabled,
     cors: {
       mode: value.corsMode,
       allowedOrigins:
@@ -248,7 +271,8 @@ function formValueToUpdate(value: PortalSiteFormValue): PortalSiteUpdate {
     name: creation.name,
     type: creation.type,
     actorSkelName: creation.actorSkelName,
-    actorVia: creation.actorVia,
+    inspectEnabled: creation.inspectEnabled,
+    mcpEnabled: creation.mcpEnabled,
     cors: creation.cors,
     webName: creation.webName,
     enabled: value.enabled,
@@ -266,9 +290,6 @@ function validateFormValue(
   }
   if (value.actorSkelName.trim() === '') {
     errors.actorSkelName = t('portalSite.actorRequired')
-  }
-  if (value.actorVia.trim() === '') {
-    errors.actorVia = t('portalSite.actorViaRequired')
   }
   if (
     value.corsMode === 'STRICT' &&
@@ -300,10 +321,6 @@ function portalCorsModeLabel(value: string | null | undefined) {
     portalCorsModes.find((item) => item.value === mode)?.label ??
     'portalSite.corsSameDomain'
   )
-}
-
-function includesValue(values: Array<string>, value: string) {
-  return value !== '' && values.includes(value)
 }
 
 function FieldRow({
@@ -421,13 +438,6 @@ function PortalSiteDialog({
   const [fieldErrors, setFieldErrors] = React.useState<PortalSiteFormErrors>({})
   const [formError, setFormError] = React.useState<string | null>(null)
   const isCreate = mode === 'create'
-  const currentActor = React.useMemo(
-    () =>
-      options.actors.find(
-        (actor) => actor.skelName === formValue.actorSkelName,
-      ),
-    [formValue.actorSkelName, options.actors],
-  )
   const actorOptions = React.useMemo(() => {
     if (
       formValue.actorSkelName === '' ||
@@ -441,20 +451,9 @@ function PortalSiteDialog({
       {
         name: formValue.actorSkelName,
         skelName: formValue.actorSkelName,
-        actorVias: includesValue([], formValue.actorVia)
-          ? []
-          : [formValue.actorVia].filter(Boolean),
       },
     ]
-  }, [formValue.actorVia, formValue.actorSkelName, options.actors])
-  const actorViaOptions = React.useMemo(() => {
-    const actorVias = currentActor?.actorVias ?? []
-    if (includesValue(actorVias, formValue.actorVia)) {
-      return actorVias
-    }
-
-    return [formValue.actorVia, ...actorVias].filter(Boolean)
-  }, [currentActor, formValue.actorVia])
+  }, [formValue.actorSkelName, options.actors])
   const availableServices = React.useMemo(
     () =>
       options.services.filter((service) =>
@@ -553,13 +552,6 @@ function PortalSiteDialog({
 
   const handleActorChange = React.useCallback(
     (actorSkelName: string) => {
-      const actor = options.actors.find(
-        (item) => item.skelName === actorSkelName,
-      )
-      const nextActorVia =
-        actor && !actor.actorVias.includes(formValue.actorVia)
-          ? (actor.actorVias[0] ?? '')
-          : formValue.actorVia
       const nextWeb = options.webs.find((web) =>
         web.actorSkelNames.includes(actorSkelName),
       )
@@ -568,7 +560,6 @@ function PortalSiteDialog({
       setFieldErrors((current) => {
         const {
           actorSkelName: _actorSkelName,
-          actorVia: _actorVia,
           rpcgwServices: _rpcgwServices,
           webName: _webName,
           ...next
@@ -578,7 +569,6 @@ function PortalSiteDialog({
       setFormValue((current) => ({
         ...current,
         actorSkelName,
-        actorVia: nextActorVia,
         webName:
           current.type === 'WEBGW' &&
           current.webName !== '' &&
@@ -591,7 +581,7 @@ function PortalSiteDialog({
             : current.webName,
       }))
     },
-    [formValue.actorVia, options.actors, options.webs],
+    [options.webs],
   )
 
   const handleSubmit = React.useCallback(
@@ -708,36 +698,22 @@ function PortalSiteDialog({
                 </SelectContent>
               </Select>
             </Field>
-            <Field
-              label={t('portalSite.actorVia')}
-              error={fieldErrors.actorVia}
-            >
-              <Select
-                value={formValue.actorVia}
-                onValueChange={(value) => {
-                  if (value) {
-                    setField('actorVia', value)
-                  }
-                }}
-              >
-                <SelectTrigger
-                  aria-invalid={Boolean(fieldErrors.actorVia)}
-                  className="w-full"
-                >
-                  <SelectValue
-                    placeholder={t('portalSite.selectActorVia')}
-                  />
-                </SelectTrigger>
-                <SelectContent align="start">
-                  {actorViaOptions.map((actorVia) => (
-                    <SelectItem key={actorVia} value={actorVia}>
-                      {actorVia}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
           </FieldRow>
+
+          {formValue.type === 'RPCGW' && (
+            <>
+              <ProtocolField
+                protocol="inspect"
+                enabled={formValue.inspectEnabled}
+                onChange={(enabled) => setField('inspectEnabled', enabled)}
+              />
+              <ProtocolField
+                protocol="mcp"
+                enabled={formValue.mcpEnabled}
+                onChange={(enabled) => setField('mcpEnabled', enabled)}
+              />
+            </>
+          )}
 
           {formValue.type === 'RPCGW' ? (
             <Field
@@ -932,13 +908,6 @@ function PortalSiteInlineEditor({
   )
   const [fieldErrors, setFieldErrors] = React.useState<PortalSiteFormErrors>({})
   const [formError, setFormError] = React.useState<string | null>(null)
-  const currentActor = React.useMemo(
-    () =>
-      options.actors.find(
-        (actor) => actor.skelName === formValue.actorSkelName,
-      ),
-    [formValue.actorSkelName, options.actors],
-  )
   const actorOptions = React.useMemo(() => {
     if (
       formValue.actorSkelName === '' ||
@@ -952,20 +921,9 @@ function PortalSiteInlineEditor({
       {
         name: formValue.actorSkelName,
         skelName: formValue.actorSkelName,
-        actorVias: includesValue([], formValue.actorVia)
-          ? []
-          : [formValue.actorVia].filter(Boolean),
       },
     ]
-  }, [formValue.actorVia, formValue.actorSkelName, options.actors])
-  const actorViaOptions = React.useMemo(() => {
-    const actorVias = currentActor?.actorVias ?? []
-    if (includesValue(actorVias, formValue.actorVia)) {
-      return actorVias
-    }
-
-    return [formValue.actorVia, ...actorVias].filter(Boolean)
-  }, [currentActor, formValue.actorVia])
+  }, [formValue.actorSkelName, options.actors])
   const availableServices = React.useMemo(
     () =>
       options.services.filter((service) =>
@@ -1059,13 +1017,6 @@ function PortalSiteInlineEditor({
 
   const handleActorChange = React.useCallback(
     (actorSkelName: string) => {
-      const actor = options.actors.find(
-        (item) => item.skelName === actorSkelName,
-      )
-      const nextActorVia =
-        actor && !actor.actorVias.includes(formValue.actorVia)
-          ? (actor.actorVias[0] ?? '')
-          : formValue.actorVia
       const nextWeb = options.webs.find((web) =>
         web.actorSkelNames.includes(actorSkelName),
       )
@@ -1074,7 +1025,6 @@ function PortalSiteInlineEditor({
       setFieldErrors((current) => {
         const {
           actorSkelName: _actorSkelName,
-          actorVia: _actorVia,
           rpcgwServices: _rpcgwServices,
           webName: _webName,
           ...next
@@ -1084,7 +1034,6 @@ function PortalSiteInlineEditor({
       setFormValue((current) => ({
         ...current,
         actorSkelName,
-        actorVia: nextActorVia,
         webName:
           current.type === 'WEBGW' &&
           current.webName !== '' &&
@@ -1097,7 +1046,7 @@ function PortalSiteInlineEditor({
             : current.webName,
       }))
     },
-    [formValue.actorVia, options.actors, options.webs],
+    [options.webs],
   )
 
   const handleSubmit = React.useCallback(
@@ -1201,34 +1150,22 @@ function PortalSiteInlineEditor({
             </SelectContent>
           </Select>
         </Field>
-        <Field
-          label={t('portalSite.actorVia')}
-          error={fieldErrors.actorVia}
-        >
-          <Select
-            value={formValue.actorVia}
-            onValueChange={(value) => {
-              if (value) {
-                setField('actorVia', value)
-              }
-            }}
-          >
-            <SelectTrigger
-              aria-invalid={Boolean(fieldErrors.actorVia)}
-              className="w-full"
-            >
-              <SelectValue placeholder={t('portalSite.selectActorVia')} />
-            </SelectTrigger>
-            <SelectContent align="start">
-              {actorViaOptions.map((actorVia) => (
-                <SelectItem key={actorVia} value={actorVia}>
-                  {actorVia}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
       </FieldRow>
+
+      {formValue.type === 'RPCGW' && (
+        <>
+          <ProtocolField
+            protocol="inspect"
+            enabled={formValue.inspectEnabled}
+            onChange={(enabled) => setField('inspectEnabled', enabled)}
+          />
+          <ProtocolField
+            protocol="mcp"
+            enabled={formValue.mcpEnabled}
+            onChange={(enabled) => setField('mcpEnabled', enabled)}
+          />
+        </>
+      )}
 
       {formValue.type === 'RPCGW' ? (
         <Field
@@ -1388,7 +1325,6 @@ export function PortalSitePage() {
         entry.name,
         entry.type,
         entry.actorSkelName,
-        entry.actorVia,
         cors?.mode ?? '',
         ...(cors?.allowedOrigins ?? []),
         rpcgwServices.join(','),
@@ -1815,13 +1751,18 @@ export function PortalSitePage() {
                           <SkelName skelName={selectedEntry.actorSkelName} />
                         </a>
                       </ReadonlyField>
-                        <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path="/actorVia" />} label={t('portalSite.actorVia')}>
-                          <Badge variant="outline">
-                            {selectedEntry.actorVia}
-                          </Badge>
-                        </ReadonlyField>
                       </FieldRow>
                       <FieldRow>
+                        {selectedEntry.type === 'RPCGW' && (
+                          <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path="/inspectEnabled" />} label={t('portalSite.inspectEnabled')}>
+                            {selectedEntry.inspectEnabled ? t('common.enabled') : t('common.disabled')}
+                          </ReadonlyField>
+                        )}
+                        {selectedEntry.type === 'RPCGW' && (
+                          <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path="/mcpEnabled" />} label={t('portalSite.mcpEnabled')}>
+                            {selectedEntry.mcpEnabled ? t('common.enabled') : t('common.disabled')}
+                          </ReadonlyField>
+                        )}
                         <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path="/cors/mode" />} label={t('portalSite.corsMode')}>
                           <Badge variant="outline">
                             {t(portalCorsModeLabel(selectedEntry.cors?.mode))}

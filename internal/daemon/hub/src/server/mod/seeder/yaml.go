@@ -2,6 +2,7 @@ package seeder
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"regexp"
 	"sort"
@@ -344,15 +345,20 @@ func (r _PortalRule) toCorePortalRule() *core.PortalRule {
 // Portal site
 
 type _PortalSite struct {
-	Sources       core.FieldSources `yaml:"-"`
-	Name          string            `yaml:"name"`
-	Type          string            `yaml:"type"`
-	ActorSkelName string            `yaml:"actorSkelName"`
-	ActorVia      string            `yaml:"actorVia"`
-	Cors          _PortalCors       `yaml:"cors"`
-	WebName       string            `yaml:"webName"`
+	Sources        core.FieldSources `yaml:"-"`
+	Name           string            `yaml:"name"`
+	Type           string            `yaml:"type"`
+	ActorSkelName  string            `yaml:"actorSkelName"`
+	InspectEnabled bool              `yaml:"inspectEnabled"`
+	McpEnabled     bool              `yaml:"mcpEnabled"`
+	// Deprecated: accepted for old seed files; Vine ignores Via.
+	ActorVia string      `yaml:"actorVia"`
+	Cors     _PortalCors `yaml:"cors"`
+	WebName  string      `yaml:"webName"`
 	// Enabled defaults to true when omitted.
 	Enabled *bool `yaml:"enabled"`
+
+	actorViaPresent bool
 }
 
 func (s *_PortalSite) UnmarshalYAML(node *yaml.Node) error {
@@ -362,6 +368,11 @@ func (s *_PortalSite) UnmarshalYAML(node *yaml.Node) error {
 	}
 	if err := checkSeedFields(fields, "portalSites"); err != nil {
 		return err
+	}
+	for _, key := range []string{"inspectEnabled", "mcpEnabled"} {
+		if value, ok := fields[key]; ok && (value.Kind != yaml.ScalarNode || value.Tag != "!!bool") {
+			return fmt.Errorf("portal site %q: %s must be a boolean", fields["name"].Value, key)
+		}
 	}
 	if cors, ok := fields["cors"]; ok && cors.Kind == yaml.MappingNode {
 		corsFields, err := seedMappingFields(&cors, "portal site cors")
@@ -373,7 +384,11 @@ func (s *_PortalSite) UnmarshalYAML(node *yaml.Node) error {
 		}
 	}
 	type plain _PortalSite
-	return node.Decode((*plain)(s))
+	if err := node.Decode((*plain)(s)); err != nil {
+		return err
+	}
+	_, s.actorViaPresent = fields["actorVia"]
+	return nil
 }
 
 type _PortalCors struct {
@@ -386,15 +401,17 @@ func (s _PortalSite) toCorePortalSite() *core.PortalSite {
 		Mode:           core.PortalCorsMode(s.Cors.Mode),
 		AllowedOrigins: append([]string{}, s.Cors.AllowedOrigins...),
 	}
-	site := &core.PortalSite{FieldSources: s.Sources,
-		Name:          s.Name,
-		Type:          core.PortalSiteType(s.Type),
-		ActorSkelName: s.ActorSkelName,
-		ActorVia:      s.ActorVia,
-		Cors:          cors,
-		WebName:       s.WebName,
-		Enabled:       core.EnabledOrDefault(s.Enabled),
+	site := &core.PortalSite{FieldSources: maps.Clone(s.Sources),
+		Name:           s.Name,
+		Type:           core.PortalSiteType(s.Type),
+		ActorSkelName:  s.ActorSkelName,
+		InspectEnabled: s.InspectEnabled,
+		McpEnabled:     s.McpEnabled,
+		Cors:           cors,
+		WebName:        s.WebName,
+		Enabled:        core.EnabledOrDefault(s.Enabled),
 	}
+	delete(site.FieldSources, "/actorVia")
 	return site
 }
 
