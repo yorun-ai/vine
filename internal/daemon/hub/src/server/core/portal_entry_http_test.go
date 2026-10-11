@@ -22,7 +22,7 @@ func TestPortalHTTPDefaultsAndLegacyConversion(t *testing.T) {
 }
 func TestPortalHTTPInvalidConfigurations(t *testing.T) {
 	for _, config := range []PortalEntryHTTP{
-		{}, {HttpEnabled: true, HttpPort: 80, AutoHTTPS: true}, {HttpsEnabled: true, HttpsPort: 443, AutoHTTPS: true},
+		{}, {AutoHTTPS: true},
 		{HttpEnabled: true, HttpsEnabled: true, HttpPort: 8080, HttpsPort: 8080},
 		{HttpEnabled: true, HttpPort: -1}, {HttpsEnabled: true, HttpsPort: 65536},
 	} {
@@ -43,4 +43,23 @@ func TestPortalHTTPRejectsPartiallyOverlappingEntry(t *testing.T) {
 			{Name: "single", Scheme: "http", Port: 80, Host: "two.local", Enabled: true},
 		})
 	})
+}
+
+func TestPortalHTTPPreservesAutoHTTPSWithSingleTransport(t *testing.T) {
+	for _, scheme := range []string{"http", "https"} {
+		t.Run(scheme, func(t *testing.T) {
+			config := DefaultPortalEntryHTTP()
+			config.HttpEnabled = scheme == "http"
+			config.HttpsEnabled = scheme == "https"
+			entry := NormalizePortalEntry(PortalEntry{Protocol: "http", Http: &config})
+			require.True(t, entry.Http.AutoHTTPS)
+			require.Len(t, entry.Accesses(), 1)
+			require.Equal(t, scheme, entry.Accesses()[0].Scheme)
+			entry.Http.HttpEnabled = true
+			entry.Http.HttpsEnabled = true
+			entry = NormalizePortalEntry(entry)
+			require.True(t, entry.Http.AutoHTTPS)
+			require.Len(t, entry.Accesses(), 2)
+		})
+	}
 }

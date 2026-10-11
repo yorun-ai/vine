@@ -326,7 +326,6 @@ function PortalEntryInlineEditor({
       if (!isValidPort(formValue.httpPort)) errors.httpPort=t('portalEntry.invalidPort')
       if (!isValidPort(formValue.httpsPort)) errors.httpsPort=t('portalEntry.invalidPort')
       if (!formValue.httpEnabled && !formValue.httpsEnabled) errors.httpEnabled=t('portalEntry.transportRequired')
-      if (formValue.autoHTTPS && (!formValue.httpEnabled || !formValue.httpsEnabled)) errors.autoHTTPS=t('portalEntry.autoHTTPSRequiresBoth')
       setFieldErrors(errors)
       setFormError(null)
       if (Object.keys(errors).length > 0) {

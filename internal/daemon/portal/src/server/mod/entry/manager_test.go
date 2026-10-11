@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -16,6 +18,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/vault"
 	"go.yorun.ai/vine/internal/utilfortest/watchtest"
 	"go.yorun.ai/vine/util/vcode"
 )
@@ -345,4 +348,46 @@ func TestManagerIgnoresLegacyRulesWithoutEntryReference(t *testing.T) {
 	require.NoError(t, manager.reconcileEntriesLocked())
 	require.Len(t, manager.entriesByKey, 1)
 	require.Empty(t, manager.entriesByKey[_Key{scheme: spec.SchemeHTTP, port: 8080}].rules)
+}
+
+func TestAutoHTTPSRequiresBothTransports(t *testing.T) {
+	certificateVault := &vault.Vault{Context: context.Background(), Watch: watchtest.New(t, map[string]string{watched.FormatPortalCertKey("test"): vcode.MustMarshalJsonS(testHTTPPortalCertificate(t))})}
+	certificateVault.DIInit()
+	manager := &Manager{Vault: certificateVault, entryRulesByName: map[string]watched.PortalRule{}, entryConfigsByName: map[string]watched.PortalEntry{}, entriesByKey: map[_Key]*_Entry{}}
+	config := watched.PortalEntry{Name: "web", Protocol: "http", Http: watched.PortalEntryHTTP{HttpEnabled: true, HttpPort: 8080, HttpsEnabled: true, HttpsPort: 8443, AutoHTTPS: true}}
+	for _, test := range []struct {
+		name         string
+		httpEnabled  bool
+		httpsEnabled bool
+		autoHTTPS    bool
+		status       int
+	}{
+		{"both enabled", true, true, true, http.StatusPermanentRedirect},
+		{"HTTPS disabled", true, false, true, http.StatusNotFound},
+		{"HTTPS restored", true, true, true, http.StatusPermanentRedirect},
+		{"HTTP disabled", false, true, true, 0},
+		{"HTTP restored", true, true, true, http.StatusPermanentRedirect},
+		{"redirect disabled", true, true, false, http.StatusNotFound},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			config.Http.HttpEnabled = test.httpEnabled
+			config.Http.HttpsEnabled = test.httpsEnabled
+			config.Http.AutoHTTPS = test.autoHTTPS
+			manager.handlePortalEntryEvent(hubapiwatch.Event{Key: watched.FormatPortalEntryKey("web"), Value: vcode.MustMarshalJsonS(config)})
+			ingress := manager.entriesByKey[_Key{scheme: spec.SchemeHTTP, port: 8080}]
+			if !test.httpEnabled {
+				require.Nil(t, ingress)
+				return
+			}
+			require.NotNil(t, ingress)
+			response := httptest.NewRecorder()
+			ingress.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "http://example.com/a", nil))
+			require.Equal(t, test.status, response.Code)
+			if test.status == http.StatusPermanentRedirect {
+				require.Equal(t, "https://example.com:8443/a", response.Header().Get("Location"))
+			} else {
+				require.Empty(t, response.Header().Get("Location"))
+			}
+		})
+	}
 }

@@ -101,7 +101,6 @@ func normalizePortalEntryHTTP(entry PortalEntry) PortalEntry {
 		config.HttpsPort = 443
 	}
 	ex.PanicNewIfNot(config.HttpEnabled || config.HttpsEnabled, ex.OperationFailed, "portal entry must enable HTTP or HTTPS")
-	ex.PanicNewIfNot(!config.AutoHTTPS || (config.HttpEnabled && config.HttpsEnabled), ex.OperationFailed, "autoHTTPS requires HTTP and HTTPS to be enabled")
 	ex.PanicNewIfNot(!config.HttpEnabled || !config.HttpsEnabled || config.HttpPort != config.HttpsPort, ex.OperationFailed, "HTTP and HTTPS cannot listen on the same port")
 	// The deprecated projection remains available for single-transport API clients.
 	entry.Scheme, entry.Port = "", 0

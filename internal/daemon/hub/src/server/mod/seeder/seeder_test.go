@@ -542,7 +542,7 @@ portalEntries:
   - name: idle
     protocol: http
     host: api.example.com
-    http: {httpEnabled: false, httpsEnabled: true, autoHTTPS: false, httpsPort: 8443}
+    http: {httpEnabled: false, httpsEnabled: true, httpsPort: 8443}
 portalRules:
   - name: demo.web
     entryName: web

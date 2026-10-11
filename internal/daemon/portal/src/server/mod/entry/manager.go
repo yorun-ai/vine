@@ -194,7 +194,7 @@ func (e *Manager) buildRulesLocked() map[_Key][]*_Rule {
 				if _, ok := rulesByKey[key]; !ok {
 					rulesByKey[key] = nil
 				}
-				if access.scheme == spec.SchemeHTTP && config.Http.AutoHTTPS {
+				if access.scheme == spec.SchemeHTTP && config.Http.HttpEnabled && config.Http.HttpsEnabled && config.Http.AutoHTTPS {
 					rule.autoHTTPSPort = config.Http.HttpsPort
 					rule.certificateVault = e.Vault
 					rulesByKey[key] = append(rulesByKey[key], rule)
