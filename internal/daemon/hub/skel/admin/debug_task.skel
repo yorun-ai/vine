@@ -83,7 +83,7 @@ data TaskDebugLaunchRequest {
 
 @desc("Hub Dashboard Task Debugging Service")
 api service TaskDebugApiService {
-    for AdminActor via client
+    for AdminActor
     auth optional
 
     @desc("List the tasks provided by the application instance")

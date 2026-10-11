@@ -430,31 +430,28 @@ func TestAccessAllowRpcInjectsActorAndServiceDescriptors(t *testing.T) {
 	assert.Equal(t, "demo.UserService", ctx.serviceDescriptor.SkelName)
 }
 
-func TestAccessAllowRpcIgnoresViaButEnforcesActor(t *testing.T) {
-	for _, via := range []skeldesc.ActorViaKind{"", skeldesc.ActorViaClient, skeldesc.ActorViaAgent, skeldesc.ActorViaOpenAPI, "future"} {
-		for _, audience := range []string{"demo.UserActor", "demo.OtherActor"} {
-			t.Run(audience+"/"+string(via), func(t *testing.T) {
-				actor := testAuthActorDescriptor()
-				actor.Vias = []skeldesc.ActorViaKind{skeldesc.ActorViaClient}
-				access := newTestAccess(t, map[string]string{
-					watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(actor),
-					watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
-						Api: true, SkelName: "demo.UserService", AuthMode: skeldesc.AuthModeOptional,
-						Audiences: []*skeldesc.ActorAudience{{SkelName: audience, Via: via}},
-						Methods:   []*skeldesc.Method{{SkelName: "Get", Name: "Get", AuthMode: skeldesc.AuthModeOptional, EffectiveAuthMode: skeldesc.AuthModeOptional}},
-					}),
-				})
-				recorder := httptest.NewRecorder()
-				request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
-				allowed := access.AllowRpc(testRpcOperation(t, "demo.UserActor", request, recorder))
-				if audience == "demo.UserActor" {
-					require.True(t, allowed, recorder.Body.String())
-				} else {
-					require.False(t, allowed)
-					assertRpcAuthError(t, recorder, ex.ClientForbidden, "rpc service does not allow actor")
-				}
+func TestAccessAllowRpcEnforcesActorAudience(t *testing.T) {
+	for _, audience := range []string{"demo.UserActor", "demo.OtherActor"} {
+		t.Run(audience, func(t *testing.T) {
+			actor := testAuthActorDescriptor()
+			access := newTestAccess(t, map[string]string{
+				watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(actor),
+				watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
+					Api: true, SkelName: "demo.UserService", AuthMode: skeldesc.AuthModeOptional,
+					Audiences: []*skeldesc.ActorAudience{{SkelName: audience}},
+					Methods:   []*skeldesc.Method{{SkelName: "Get", Name: "Get", AuthMode: skeldesc.AuthModeOptional, EffectiveAuthMode: skeldesc.AuthModeOptional}},
+				}),
 			})
-		}
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
+			allowed := access.AllowRpc(testRpcOperation(t, "demo.UserActor", request, recorder))
+			if audience == "demo.UserActor" {
+				require.True(t, allowed, recorder.Body.String())
+			} else {
+				require.False(t, allowed)
+				assertRpcAuthError(t, recorder, ex.ClientForbidden, "rpc service does not allow actor")
+			}
+		})
 	}
 }
 

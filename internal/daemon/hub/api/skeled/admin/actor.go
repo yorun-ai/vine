@@ -8,6 +8,6 @@ func init() {
 	meta.RegisterActor(meta.ActorSpec{
 		Name:     "AdminActor",
 		SkelName: "vine.hub.admin.AdminActor",
-		Hash:     "c70b3174",
+		Hash:     "50bec0df",
 	})
 }

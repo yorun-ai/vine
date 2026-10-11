@@ -19,7 +19,7 @@ type Actor interface {
 	Name() string
 	SkelName() string
 	// Deprecated: retained for generated code compatibility; Vine ignores Via.
-	Vias() []descriptor.ActorViaKind
+	Vias() []ActorVia
 
 	mustBeActor()
 }
@@ -40,7 +40,7 @@ func (ActorBase) SkelName() string {
 // Vias supplies the legacy actor marker method.
 //
 // Deprecated: retained for generated code compatibility; Vine ignores Via.
-func (ActorBase) Vias() []descriptor.ActorViaKind {
+func (ActorBase) Vias() []ActorVia {
 	return nil
 }
 
@@ -99,7 +99,7 @@ type LocalDateTime = skeltype.LocalDateTime
 // ActorVia preserves the transport metadata emitted by legacy skelc versions.
 //
 // Deprecated: retained for generated code compatibility; Vine ignores Via.
-type ActorVia = descriptor.ActorViaKind
+type ActorVia = legacy.ActorVia
 
 // NewDecimal converts value to the Skel decimal representation.
 //
@@ -175,17 +175,17 @@ const (
 	// ActorViaClient identifies the client channel.
 	//
 	// Deprecated: retained for generated code compatibility; Vine ignores Via.
-	ActorViaClient = descriptor.ActorViaClient
+	ActorViaClient ActorVia = "client"
 
 	// ActorViaAgent identifies the agent channel.
 	//
 	// Deprecated: retained for generated code compatibility; Vine ignores Via.
-	ActorViaAgent = descriptor.ActorViaAgent
+	ActorViaAgent ActorVia = "agent"
 
 	// ActorViaOpenAPI identifies the OpenAPI channel.
 	//
 	// Deprecated: retained for generated code compatibility; Vine ignores Via.
-	ActorViaOpenAPI = descriptor.ActorViaOpenAPI
+	ActorViaOpenAPI ActorVia = "openapi"
 )
 
 // AuthMode controls Portal authentication for a generated endpoint.

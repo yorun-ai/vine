@@ -101,7 +101,7 @@ data AppStatusView {
 
 @desc("Hub Dashboard's application status service")
 api service AppStatusApiService {
-    for AdminActor via client
+    for AdminActor
     auth optional
 
     @desc("List application instance statuses")

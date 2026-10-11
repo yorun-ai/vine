@@ -94,7 +94,7 @@ data PortalEntryRule {
 
 @desc("Hub's Portal access entry service, called by the Portal admin client")
 api service PortalEntryApiService {
-    for AdminActor via client
+    for AdminActor
     auth optional
 
     @desc("List Portal access entries")

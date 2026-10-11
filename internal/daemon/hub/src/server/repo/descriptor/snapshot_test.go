@@ -53,7 +53,6 @@ func TestDescriptorRepoListsLatestDomainDescriptorByDomain(t *testing.T) {
 			Name:     "UserActor",
 			SkelName: "demo.user.UserActor",
 			Hash:     "actor-hash-2",
-			Vias:     []skeldesc.ActorViaKind{skeldesc.ActorViaClient, skeldesc.ActorViaAgent},
 		},
 	}
 

@@ -68,7 +68,7 @@ func TestSyncerSyncDescriptorsWritesMainActorAndServiceDescriptors(t *testing.T)
 					Hash:     "service-main",
 					AuthMode: skeldesc.AuthModeRequired,
 					Audiences: []*skeldesc.ActorAudience{
-						{SkelName: "demo.user.UserActor", Via: skeldesc.ActorViaClient},
+						{SkelName: "demo.user.UserActor"},
 					},
 					Methods: []*skeldesc.Method{
 						{SkelName: "Get", AuthMode: skeldesc.AuthModeOptional, Name: "Get", EffectiveAuthMode: skeldesc.AuthModeOptional},
@@ -97,7 +97,6 @@ func TestSyncerSyncDescriptorsWritesMainActorAndServiceDescriptors(t *testing.T)
   "name": "",
   "skelName": "demo.user.UserActor",
   "hash": "actor-main",
-  "vias": [],
   "auth": {
     "methodName": "",
     "credential": {
@@ -125,8 +124,7 @@ func TestSyncerSyncDescriptorsWritesMainActorAndServiceDescriptors(t *testing.T)
 	assert.JSONEq(t, `{
   "name": "",
   "skelName": "demo.user.NoAuthActor",
-  "hash": "actor-no-auth",
-  "vias": []
+  "hash": "actor-no-auth"
 }`, value)
 	_, ok = watchServer.Get(watched.FormatDescriptorActorKey("demo.user.OldActor"))
 	assert.False(t, ok)
@@ -142,8 +140,7 @@ func TestSyncerSyncDescriptorsWritesMainActorAndServiceDescriptors(t *testing.T)
   "audiences": [
     {
       "name": "",
-      "skelName": "demo.user.UserActor",
-      "via": "client"
+      "skelName": "demo.user.UserActor"
     }
   ],
   "methods": [
@@ -200,8 +197,7 @@ func TestSyncerWriteDescriptorsWritesMainActorAndServiceDescriptors(t *testing.T
 	assert.JSONEq(t, `{
   "name": "",
   "skelName": "vine.hub.admin.AdminActor",
-  "hash": "admin-actor-main",
-  "vias": []
+  "hash": "admin-actor-main"
 }`, value)
 
 	value, ok = watchServer.Get(watched.FormatDescriptorServiceKey("vine.hub.admin.SkeletonApiService"))
