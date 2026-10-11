@@ -168,6 +168,13 @@ Hub 当前支持两类数据库配置来源：
 
 启动时可以通过 `--seed-data-file` 让 `seeder` 从本地 YAML 文件一次性导入初始配置、站点规则和证书到数据库；导入后 Hub 仍然统一从数据库 repo 读取，再写入 Redis，对 Link 暴露一致的读取与订阅语义。
 
+Portal site 通过 `actorSkelName` 选择 Actor，RPCGW 发布该 Actor 对应的 API Service，
+忽略 descriptor 的 `via` 元数据，继续执行鉴权和权限规则。Seed YAML 仍接受已弃用的
+`actorVia` 字段，但忽略其值，并对显式声明该字段的每个 site 输出带站点名称的 warning。
+Admin API、Watch 和 Dashboard 不再包含该字段，数据库
+初始化会删除 `portal_site.actor_via` 列。描述符元数据原样保留，以兼容已生成的契约代码。
+Hub 与 Portal 需要同步升级。
+
 现有数据库必须已使用 v0.27.0 的结构。初始化时继续升级 entry 的监听 IP 和 HTTP
 协议配置块，不再执行更早的证书格式转换和已退休列清理。
 

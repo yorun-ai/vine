@@ -11,10 +11,10 @@ import (
 )
 
 type WebGateway struct {
-	name     string
-	actorVia watched.PortalActorVia
-	cors     watched.PortalCors
-	webName  string
+	name          string
+	actorSkelName string
+	cors          watched.PortalCors
+	webName       string
 
 	context context.Context
 	cancel  context.CancelFunc
@@ -41,7 +41,7 @@ func New(ctx context.Context, appInfo meta.CurrentApp, accessManager *access.Acc
 
 func (g *WebGateway) init(config watched.PortalSite) {
 	g.name = config.Name
-	g.actorVia = config.ActorVia
+	g.actorSkelName = config.ActorSkelName
 	g.cors = config.Cors
 	g.webName = config.WebgwConfig.WebName
 	g.watcher = g.epmgr.WatchWeb(g.webName)
@@ -54,7 +54,7 @@ func (g *WebGateway) Update(config watched.PortalSite) bool {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	g.actorVia = config.ActorVia
+	g.actorSkelName = config.ActorSkelName
 	g.cors = config.Cors
 	nextWebName := config.WebgwConfig.WebName
 	if g.webName == nextWebName {

@@ -104,6 +104,7 @@ Hub、Link 与 Portal 必须配套升级。旧 Web 契约现在默认要求认�
 必须显式选择 `optional` 或 `off` 并重新生成。旧 RPC `noauth` 会认证提供的凭证，
 无效凭证会报错，不再隐式匿名放行。
 
-WEBGW site 必须配置 `actorSkelName` 和 `actorVia`，且指定的 actor 必须存在。
+WEBGW site 必须配置 `actorSkelName`，且指定的 actor 必须存在。Vine 忽略旧的 `via`
+元数据；RPCGW 按 service 声明的 Actor audience 准入，再执行鉴权和权限检查。
 Web 认证遵循声明的模式；actor 未配置认证时，`required` 会拒绝请求。
 只有 `off` 会为 handler 保留原生 Authorization 凭证。

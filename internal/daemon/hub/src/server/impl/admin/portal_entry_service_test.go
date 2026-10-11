@@ -27,7 +27,6 @@ func TestPortalEntryServiceMapsRulesAndTargetSites(t *testing.T) {
 			Name:          "demo-site",
 			Type:          core.PortalSiteTypeWEBGW,
 			ActorSkelName: "demo.Actor",
-			ActorVia:      "client",
 			WebName:       "demo.Web",
 			WebMountPath:  "/demo",
 			FieldSources:  core.FieldSources{"/name": {Source: "app/default"}},

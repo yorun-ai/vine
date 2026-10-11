@@ -13,7 +13,6 @@ func TestToServerPortalSiteMapsCompleteEntity(t *testing.T) {
 		Name:          "web",
 		Type:          core.PortalSiteTypeWEBGW,
 		ActorSkelName: "demo.Actor",
-		ActorVia:      "client",
 		WebName:       "demo.Web",
 		WebMountPath:  "/demo",
 		RpcgwServices: []string{"demo.Service"},

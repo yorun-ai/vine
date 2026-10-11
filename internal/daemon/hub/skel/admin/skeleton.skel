@@ -35,9 +35,6 @@ data SkeletonActorItem {
     @desc("Actor deprecation reason")
     deprecatedReason: string
 
-    @desc("Actor access method list")
-    actorVias: list<string>
-
     @desc("Whether to enable authentication")
     authEnabled: bool
 
@@ -76,9 +73,6 @@ data SkeletonActorRef {
 
     @desc("Actor Skel name")
     skelName: string
-
-    @desc("Access method")
-    via: string
 }
 
 @desc("Skeleton field")

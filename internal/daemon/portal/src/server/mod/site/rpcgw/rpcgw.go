@@ -21,9 +21,9 @@ const pathInspect = "/inspect"
 var optionsAllowedMethods = []string{http.MethodPost}
 
 type RpcGateway struct {
-	name     string
-	actorVia watched.PortalActorVia
-	cors     watched.PortalCors
+	name          string
+	actorSkelName string
+	cors          watched.PortalCors
 
 	app     meta.App
 	context context.Context
@@ -50,7 +50,7 @@ func New(ctx context.Context, appInfo meta.App, accessManager *access.Access, ep
 
 func (g *RpcGateway) init(config watched.PortalSite) {
 	g.name = config.Name
-	g.actorVia = config.ActorVia
+	g.actorSkelName = config.ActorSkelName
 	g.cors = config.Cors
 	g.watchers = map[string]*epmgr.Watcher{}
 	for _, service := range config.RpcgwConfig.Services {
@@ -69,7 +69,7 @@ func (g *RpcGateway) Update(config watched.PortalSite) bool {
 
 	addedServices := make([]string, 0)
 	g.mutex.Lock()
-	g.actorVia = config.ActorVia
+	g.actorSkelName = config.ActorSkelName
 	g.cors = config.Cors
 	for serviceName, watcher := range g.watchers {
 		if _, ok := serviceNames[serviceName]; ok {

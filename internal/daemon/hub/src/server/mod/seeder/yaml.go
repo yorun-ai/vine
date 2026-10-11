@@ -2,6 +2,7 @@ package seeder
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"regexp"
 	"sort"
@@ -348,11 +349,14 @@ type _PortalSite struct {
 	Name          string            `yaml:"name"`
 	Type          string            `yaml:"type"`
 	ActorSkelName string            `yaml:"actorSkelName"`
-	ActorVia      string            `yaml:"actorVia"`
-	Cors          _PortalCors       `yaml:"cors"`
-	WebName       string            `yaml:"webName"`
+	// Deprecated: accepted for old seed files; Vine ignores Via.
+	ActorVia string      `yaml:"actorVia"`
+	Cors     _PortalCors `yaml:"cors"`
+	WebName  string      `yaml:"webName"`
 	// Enabled defaults to true when omitted.
 	Enabled *bool `yaml:"enabled"`
+
+	actorViaPresent bool
 }
 
 func (s *_PortalSite) UnmarshalYAML(node *yaml.Node) error {
@@ -373,7 +377,11 @@ func (s *_PortalSite) UnmarshalYAML(node *yaml.Node) error {
 		}
 	}
 	type plain _PortalSite
-	return node.Decode((*plain)(s))
+	if err := node.Decode((*plain)(s)); err != nil {
+		return err
+	}
+	_, s.actorViaPresent = fields["actorVia"]
+	return nil
 }
 
 type _PortalCors struct {
@@ -386,15 +394,15 @@ func (s _PortalSite) toCorePortalSite() *core.PortalSite {
 		Mode:           core.PortalCorsMode(s.Cors.Mode),
 		AllowedOrigins: append([]string{}, s.Cors.AllowedOrigins...),
 	}
-	site := &core.PortalSite{FieldSources: s.Sources,
+	site := &core.PortalSite{FieldSources: maps.Clone(s.Sources),
 		Name:          s.Name,
 		Type:          core.PortalSiteType(s.Type),
 		ActorSkelName: s.ActorSkelName,
-		ActorVia:      s.ActorVia,
 		Cors:          cors,
 		WebName:       s.WebName,
 		Enabled:       core.EnabledOrDefault(s.Enabled),
 	}
+	delete(site.FieldSources, "/actorVia")
 	return site
 }
 

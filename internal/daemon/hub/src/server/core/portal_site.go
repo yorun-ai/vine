@@ -2,10 +2,12 @@ package core
 
 import (
 	"net/url"
+	"slices"
 	"strings"
 
 	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/ex"
+	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/util/vslice"
 )
 
@@ -45,7 +47,6 @@ type PortalSite struct {
 	Name          string
 	Type          PortalSiteType
 	ActorSkelName string
-	ActorVia      string
 	Cors          PortalCors
 	WebName       string
 	// WebMountPath is derived from the Web contract of the site and is empty when
@@ -62,7 +63,6 @@ type PortalSiteCreation struct {
 	Name          string
 	Type          PortalSiteType
 	ActorSkelName string
-	ActorVia      string
 	Cors          PortalCors
 	WebName       string
 	// Enabled is optional and defaults to true.
@@ -73,16 +73,14 @@ type PortalSiteUpdate struct {
 	Name          *string
 	Type          *PortalSiteType
 	ActorSkelName *string
-	ActorVia      *string
 	Cors          *PortalCors
 	WebName       *string
 	Enabled       *bool
 }
 
 type PortalSiteActorOption struct {
-	Name      string
-	SkelName  string
-	ActorVias []string
+	Name     string
+	SkelName string
 }
 
 type PortalSiteServiceOption struct {
@@ -154,7 +152,6 @@ func (m *PortalSiteCore) Create(creation PortalSiteCreation) *PortalSite {
 		Name:          creation.Name,
 		Type:          creation.Type,
 		ActorSkelName: creation.ActorSkelName,
-		ActorVia:      creation.ActorVia,
 		Cors:          creation.Cors,
 		WebName:       creation.WebName,
 		Enabled:       EnabledOrDefault(creation.Enabled),
@@ -186,10 +183,6 @@ func (m *PortalSiteCore) Update(id int, update PortalSiteUpdate) *PortalSite {
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/actorSkelName")
 		next.ActorSkelName = *update.ActorSkelName
 	}
-	if update.ActorVia != nil {
-		next.FieldSources = overrideFieldSource(next.FieldSources, "/actorVia")
-		next.ActorVia = *update.ActorVia
-	}
 	if update.Cors != nil {
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/cors")
 		next.Cors = *update.Cors
@@ -219,14 +212,9 @@ func (m *PortalSiteCore) Remove(id int) {
 func toPortalSiteActorOptions(descriptors []*skeldesc.Actor) []PortalSiteActorOption {
 	options := make([]PortalSiteActorOption, 0, len(descriptors))
 	for _, descriptor := range descriptors {
-		actorVias := make([]string, 0, len(descriptor.Vias))
-		for _, actorVia := range descriptor.Vias {
-			actorVias = append(actorVias, string(actorVia))
-		}
 		options = append(options, PortalSiteActorOption{
-			Name:      descriptor.Name,
-			SkelName:  descriptor.SkelName,
-			ActorVias: actorVias,
+			Name:     descriptor.Name,
+			SkelName: descriptor.SkelName,
 		})
 	}
 	return vslice.SortBy(options, func(a PortalSiteActorOption, b PortalSiteActorOption) bool {
@@ -249,7 +237,7 @@ func toPortalSiteServiceOptions(descriptors []*skeldesc.Service) []PortalSiteSer
 }
 
 // MatchPortalSiteRpcgwServicesInDomainViews returns the Rpc services a site
-// forwards to, matching the services registered for its actor and access mode.
+// forwards to, matching API services registered for its actor regardless of Via.
 func MatchPortalSiteRpcgwServicesInDomainViews(site PortalSite, views []DomainDescriptorView) []string {
 	if site.Type != PortalSiteTypeRPCGW {
 		return []string{}
@@ -262,7 +250,7 @@ func MatchPortalSiteRpcgwServicesInDomainViews(site PortalSite, views []DomainDe
 			continue
 		}
 		for _, service := range view.DomainVersion.Descriptor.Services {
-			if !service.HasAudience(site.ActorSkelName, skeldesc.ActorViaKind(site.ActorVia)) {
+			if !service.Api || !skel.HasActorAudience(service.Audiences, site.ActorSkelName) {
 				continue
 			}
 			if _, ok := seen[service.SkelName]; !ok {
@@ -291,7 +279,9 @@ func toPortalSiteWebOptions(descriptors []*skeldesc.Web) []PortalSiteWebOption {
 func actorSkelNames(refs []*skeldesc.ActorAudience) []string {
 	names := make([]string, 0, len(refs))
 	for _, ref := range refs {
-		names = append(names, ref.SkelName)
+		if !slices.Contains(names, ref.SkelName) {
+			names = append(names, ref.SkelName)
+		}
 	}
 	return names
 }
@@ -313,7 +303,6 @@ func (s *PortalSite) normalizeAndValidate() {
 	fail(strings.TrimSpace(s.Name) != "", "name is required")
 	fail(s.Type == PortalSiteTypeRPCGW || s.Type == PortalSiteTypeWEBGW, "type must be RPCGW or WEBGW")
 	fail(strings.TrimSpace(s.ActorSkelName) != "", "actorSkelName is required")
-	fail(s.ActorVia == string(skeldesc.ActorViaClient) || s.ActorVia == string(skeldesc.ActorViaAgent) || s.ActorVia == string(skeldesc.ActorViaOpenAPI), "actorVia must be client, agent or openapi")
 	if s.Type == PortalSiteTypeWEBGW {
 		fail(strings.TrimSpace(s.WebName) != "", "webName is required for WEBGW")
 	}

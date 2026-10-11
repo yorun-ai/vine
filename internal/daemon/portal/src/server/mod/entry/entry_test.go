@@ -204,7 +204,7 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 				watched.FormatDescriptorWebKey("demo.Web"):     vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: skeldesc.AuthModeOff}),
 				watched.FormatDescriptorActorKey("demo.Actor"): vcode.MustMarshalJsonS(watched.DescriptorActor{SkelName: "demo.Actor"}),
 				watched.FormatPortalSiteKey("web"): vcode.MustMarshalJsonS(watched.PortalSite{
-					Name: "web", Type: "WEBGW", ActorVia: watched.PortalActorVia{ActorSkelName: "demo.Actor"}, WebgwConfig: &watched.PortalWebgwConfig{WebName: "demo.Web"},
+					Name: "web", Type: "WEBGW", ActorSkelName: "demo.Actor", WebgwConfig: &watched.PortalWebgwConfig{WebName: "demo.Web"},
 				}),
 				watched.FormatWebRegistrationKey("demo.Web", "demo", "instance"): vcode.MustMarshalJsonS(watched.WebRegistration{
 					Endpoint: endpoint + "/web/proxy/in/instance/demo.Web", WebSkelName: "demo.Web", AppName: "demo", AppInstanceId: "instance",

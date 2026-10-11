@@ -546,8 +546,6 @@ export type PortalSite = {
   type:          PortalSiteType;
   /** Actor Skel name. */
   actorSkelName: string;
-  /** Actor access method. */
-  actorVia:      string;
   /** Rpc gateway service Skel name list. */
   rpcgwServices: Array<string>;
   /** CORS configuration. */
@@ -564,11 +562,9 @@ export type PortalSite = {
 /** Portal target site Actor options. */
 export type PortalSiteActorOption = {
   /** Actor name. */
-  name:      string;
+  name:     string;
   /** Actor Skel name. */
-  skelName:  string;
-  /** Actor access method list. */
-  actorVias: Array<string>;
+  skelName: string;
 }
 /** Portal target site creation parameters. */
 export type PortalSiteCreation = {
@@ -578,8 +574,6 @@ export type PortalSiteCreation = {
   type:          PortalSiteType;
   /** Actor Skel name. */
   actorSkelName: string;
-  /** Actor access method. */
-  actorVia:      string;
   /** CORS configuration. */
   cors:          PortalCors | null;
   /** Web name. */
@@ -597,8 +591,6 @@ export type PortalSiteListItem = {
   type:          PortalSiteType;
   /** Actor Skel name. */
   actorSkelName: string;
-  /** Actor access method. */
-  actorVia:      string;
   /** Rpc gateway service Skel name list. */
   rpcgwServices: Array<string>;
   /** CORS configuration. */
@@ -636,8 +628,6 @@ export type PortalSiteUpdate = {
   type:          PortalSiteType | null;
   /** Actor Skel name. */
   actorSkelName: string | null;
-  /** Actor access method. */
-  actorVia:      string | null;
   /** CORS configuration. */
   cors:          PortalCors | null;
   /** Web name. */
@@ -804,8 +794,6 @@ export type SkeletonActorItem = {
   deprecated:           boolean;
   /** Actor deprecation reason. */
   deprecatedReason:     string;
-  /** Actor access method list. */
-  actorVias:            Array<string>;
   /** Whether to enable authentication. */
   authEnabled:          boolean;
   /** Actor identifier field in Info. */
@@ -833,8 +821,6 @@ export type SkeletonActorRef = {
   name:     string;
   /** Actor Skel name. */
   skelName: string;
-  /** Access method. */
-  via:      string;
 }
 /** SkeletonConfig. */
 export type SkeletonConfigItem = {

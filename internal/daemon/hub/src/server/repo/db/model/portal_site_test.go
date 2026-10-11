@@ -25,6 +25,23 @@ func TestPortalSiteDaoStoresEnabledSwitch(t *testing.T) {
 	assert.Equal(t, disabled.Id, site.Id)
 }
 
+func TestPortalSiteDaoRemovesViaWithoutChangingSites(t *testing.T) {
+	dao := newTestPortalSiteDao(t)
+	site := dao.Save(new(PortalSite{Name: "kept", Type: "RPCGW", ActorSkelName: "demo.Actor", Enabled: true}))
+	require.NoError(t, dao.GormDB().Exec("ALTER TABLE portal_site ADD COLUMN actor_via TEXT NOT NULL DEFAULT 'agent'").Error)
+	dao.EnsureSchema()
+	dao.EnsureSchema()
+	columns, err := tableColumnNames(dao.GormDB(), "portal_site")
+	require.NoError(t, err)
+	require.NotContains(t, columns, "actor_via")
+	stored, ok := dao.ById(site.Id)
+	require.True(t, ok)
+	require.Equal(t, site, stored)
+	stored.Name = "updated"
+	dao.Save(stored)
+	require.NotZero(t, dao.Save(new(PortalSite{Name: "new", Type: "RPCGW", ActorSkelName: "demo.Actor", Enabled: true})).Id)
+}
+
 func newTestPortalSiteDao(t *testing.T) *PortalSiteDao {
 	t.Helper()
 

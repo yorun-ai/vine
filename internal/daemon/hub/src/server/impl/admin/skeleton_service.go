@@ -259,10 +259,6 @@ func toServerSkeletonDomain(
 }
 
 func toServerSkeletonActorItem(version _SkeletonVersionFields, descriptor *skeldesc.Actor) skeled.SkeletonActorItem {
-	vias := make([]string, 0, len(descriptor.Vias))
-	for _, via := range descriptor.Vias {
-		vias = append(vias, string(via))
-	}
 	result := skeled.SkeletonActorItem{
 		Domain:               version.Domain,
 		DescriptorHash:       version.DescriptorHash,
@@ -275,7 +271,6 @@ func toServerSkeletonActorItem(version _SkeletonVersionFields, descriptor *skeld
 		Description:          descriptor.Description,
 		Deprecated:           descriptor.Deprecated,
 		DeprecatedReason:     descriptor.DeprecatedReason,
-		ActorVias:            vias,
 		AuthEnabled:          (descriptor.Auth != nil),
 		PermEnabled:          (descriptor.Permission != nil),
 		Services:             []skeled.SkeletonServiceItem{},
@@ -597,11 +592,15 @@ func toServerSkeletonEnumItems(descriptors []*skeldesc.EnumItem) []skeled.Skelet
 
 func toServerSkeletonActorRefs(refs []*skeldesc.ActorAudience) []skeled.SkeletonActorRef {
 	ret := make([]skeled.SkeletonActorRef, 0, len(refs))
+	seen := map[string]bool{}
 	for _, ref := range refs {
+		if seen[ref.SkelName] {
+			continue
+		}
+		seen[ref.SkelName] = true
 		ret = append(ret, skeled.SkeletonActorRef{
 			Name:     ref.Name,
 			SkelName: ref.SkelName,
-			Via:      string(ref.Via),
 		})
 	}
 	return ret

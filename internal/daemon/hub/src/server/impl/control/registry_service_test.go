@@ -163,7 +163,6 @@ func TestRegistryServiceRefreshesPortalSiteRpcgwServices(t *testing.T) {
 				Name:          "demo.UserActor-client-rpc",
 				Type:          core.PortalSiteTypeRPCGW,
 				ActorSkelName: "demo.UserActor",
-				ActorVia:      "client",
 				RpcgwServices: []string{"demo.UserService"},
 				Enabled:       true,
 			},
@@ -172,7 +171,6 @@ func TestRegistryServiceRefreshesPortalSiteRpcgwServices(t *testing.T) {
 				Name:          "vine.hub.admin.AdminActor-client-rpc",
 				Type:          core.PortalSiteTypeRPCGW,
 				ActorSkelName: "vine.hub.admin.AdminActor",
-				ActorVia:      "client",
 			},
 			{
 				Id:      3,

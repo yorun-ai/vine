@@ -18,6 +18,7 @@ import (
 type Actor interface {
 	Name() string
 	SkelName() string
+	// Deprecated: retained for generated code compatibility; Vine ignores Via.
 	Vias() []descriptor.ActorViaKind
 
 	mustBeActor()
@@ -36,6 +37,9 @@ func (ActorBase) SkelName() string {
 	return ""
 }
 
+// Vias supplies the legacy actor marker method.
+//
+// Deprecated: retained for generated code compatibility; Vine ignores Via.
 func (ActorBase) Vias() []descriptor.ActorViaKind {
 	return nil
 }
@@ -92,9 +96,9 @@ type LocalTime = skeltype.LocalTime
 // Deprecated: Use go.yorun.ai/skel/types.LocalDateTime instead.
 type LocalDateTime = skeltype.LocalDateTime
 
-// ActorVia identifies the channel through which an actor entered the system.
+// ActorVia preserves the transport metadata emitted by legacy skelc versions.
 //
-// Deprecated: Use go.yorun.ai/skel/descriptor.ActorViaKind in new contracts.
+// Deprecated: retained for generated code compatibility; Vine ignores Via.
 type ActorVia = descriptor.ActorViaKind
 
 // NewDecimal converts value to the Skel decimal representation.
@@ -170,17 +174,17 @@ func NewLocalDateTimeOf(t time.Time) LocalDateTime {
 const (
 	// ActorViaClient identifies the client channel.
 	//
-	// Deprecated: Use go.yorun.ai/skel/descriptor.ActorViaClient instead.
+	// Deprecated: retained for generated code compatibility; Vine ignores Via.
 	ActorViaClient = descriptor.ActorViaClient
 
 	// ActorViaAgent identifies the agent channel.
 	//
-	// Deprecated: Use go.yorun.ai/skel/descriptor.ActorViaAgent instead.
+	// Deprecated: retained for generated code compatibility; Vine ignores Via.
 	ActorViaAgent = descriptor.ActorViaAgent
 
 	// ActorViaOpenAPI identifies the OpenAPI channel.
 	//
-	// Deprecated: Use go.yorun.ai/skel/descriptor.ActorViaOpenAPI instead.
+	// Deprecated: retained for generated code compatibility; Vine ignores Via.
 	ActorViaOpenAPI = descriptor.ActorViaOpenAPI
 )
 

@@ -4,10 +4,10 @@ import (
 	"context"
 	"sync"
 
-	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/mtls"
+	"go.yorun.ai/vine/internal/core/skel"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/desc"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 )
@@ -45,7 +45,7 @@ func (a *Access) AllowRpc(operation *RpcOperation) bool {
 		return false
 	}
 
-	actorDescriptor, ok := a.Desc.Actor(operation.ActorVia.ActorSkelName)
+	actorDescriptor, ok := a.Desc.Actor(operation.ActorSkelName)
 	if !ok {
 		operation.writeError(ex.ClientForbidden, "not allowed")
 		return false
@@ -61,8 +61,8 @@ func (a *Access) AllowRpc(operation *RpcOperation) bool {
 	if !operation.loadMethodDescriptor() {
 		return false
 	}
-	if !serviceDescriptor.HasAudience(operation.ActorVia.ActorSkelName, skeldesc.ActorViaKind(operation.ActorVia.ActorVia)) {
-		operation.writeError(ex.ClientForbidden, "rpc service does not allow actor via")
+	if !skel.HasActorAudience(serviceDescriptor.Audiences, operation.ActorSkelName) {
+		operation.writeError(ex.ClientForbidden, "rpc service does not allow actor")
 		return false
 	}
 
@@ -85,7 +85,7 @@ func (a *Access) AuthWeb(operation *WebOperation) bool {
 		}
 		mode = descriptor.AuthMode
 	}
-	actorDescriptor, ok := a.Desc.Actor(operation.ActorVia.ActorSkelName)
+	actorDescriptor, ok := a.Desc.Actor(operation.ActorSkelName)
 	if !ok {
 		operation.writeError(ex.ClientForbidden, "not allowed")
 		return false

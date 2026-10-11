@@ -261,7 +261,7 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 	}
 	siteRepo := &testPortalSiteRepo{
 		entries: []*core.PortalSite{
-			{Id: 1, Name: "demo-entry", Type: core.PortalSiteTypeWEBGW, ActorSkelName: "demo.Actor", ActorVia: "client", WebName: "demo.Web", Enabled: true},
+			{Id: 1, Name: "demo-entry", Type: core.PortalSiteTypeWEBGW, ActorSkelName: "demo.Actor", WebName: "demo.Web", Enabled: true},
 		},
 	}
 

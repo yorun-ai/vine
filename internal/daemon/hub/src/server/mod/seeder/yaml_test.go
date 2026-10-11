@@ -8,8 +8,22 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vcode"
 )
+
+func TestPortalSiteSeedIgnoresLegacyVia(t *testing.T) {
+	for _, field := range []string{"", ", actorVia: client", ", actorVia: agent", ", actorVia: openapi", ", actorVia: future"} {
+		t.Run(field, func(t *testing.T) {
+			entities, err := parseSeedEntities("portalSites: [{name: api, type: RPCGW, actorSkelName: demo.Actor" + field + "}]")
+			require.NoError(t, err)
+			require.Len(t, entities.PortalSites, 1)
+			target := new(core.PortalSiteCore)
+			require.NotPanics(t, func() { target.Validate(*entities.PortalSites[0]) })
+			require.Equal(t, "demo.Actor", entities.PortalSites[0].ActorSkelName)
+		})
+	}
+}
 
 func TestPortalRuleSeedMapsWithoutDomainValidation(t *testing.T) {
 	seed := _PortalRule{Name: "mapped", RouteType: "SITE", RoutePathPrefix: "/internal/"}

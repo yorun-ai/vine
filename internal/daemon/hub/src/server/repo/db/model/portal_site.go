@@ -20,7 +20,6 @@ type PortalSite struct {
 	Name          string `gorm:"column:name"`
 	Type          string `gorm:"column:type"`
 	ActorSkelName string `gorm:"column:actor_skel_name"`
-	ActorVia      string `gorm:"column:actor_via"`
 	CorsMode      string `gorm:"column:cors_mode"`
 	CorsOrigins   string `gorm:"column:cors_origins"`
 	WebName       string `gorm:"column:web_name"`
@@ -39,6 +38,7 @@ func (d *PortalSiteDao) EnsureSchema() {
 	sql := schemaSQL(d.GormDB(), createPortalSiteSQLiteSQL, createPortalSitePgSQL)
 	err := d.GormDB().Exec(sql).Error
 	ex.PanicIfError(err)
+	dropColumns(d.GormDB(), "portal_site", "actor_via")
 	ensureFieldSourceTable(d.GormDB())
 }
 
@@ -67,7 +67,6 @@ func (d *PortalSiteDao) Save(entry *PortalSite) *PortalSite {
 		"name":            entry.Name,
 		"type":            entry.Type,
 		"actor_skel_name": entry.ActorSkelName,
-		"actor_via":       entry.ActorVia,
 		"cors_mode":       entry.CorsMode,
 		"cors_origins":    entry.CorsOrigins,
 		"web_name":        entry.WebName,

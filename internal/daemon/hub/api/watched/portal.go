@@ -66,10 +66,10 @@ const (
 )
 
 type PortalSite struct {
-	Name     string         `json:"name"`
-	Type     string         `json:"type"`
-	ActorVia PortalActorVia `json:"actorVia"`
-	Cors     PortalCors     `json:"cors"`
+	Name          string     `json:"name"`
+	Type          string     `json:"type"`
+	ActorSkelName string     `json:"actorSkelName"`
+	Cors          PortalCors `json:"cors"`
 
 	RpcgwConfig *PortalRpcgwConfig `json:"rpcgwConfig,omitempty"`
 	WebgwConfig *PortalWebgwConfig `json:"webgwConfig,omitempty"`
@@ -86,11 +86,6 @@ const (
 type PortalCors struct {
 	Mode           PortalCorsMode `json:"mode"`
 	AllowedOrigins []string       `json:"allowedOrigins"`
-}
-
-type PortalActorVia struct {
-	ActorSkelName string `json:"actorSkelName"`
-	ActorVia      string `json:"actorVia"`
 }
 
 type PortalRpcgwConfig struct {

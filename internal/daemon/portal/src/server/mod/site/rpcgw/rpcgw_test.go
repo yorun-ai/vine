@@ -690,12 +690,10 @@ func newTestRpcGateway(t *testing.T, valuesByKey map[string]string) *RpcGateway 
 
 func newTestRpcGatewayWithCors(t *testing.T, valuesByKey map[string]string, cors watched.PortalCors) *RpcGateway {
 	return New(context.Background(), testServerApp(), newTestAccess(t), newTestEpmgr(t, valuesByKey), watched.PortalSite{
-		Name: "demo-api",
-		Type: "RPCGW",
-		ActorVia: watched.PortalActorVia{
-			ActorSkelName: "demo.UserActor",
-		},
-		Cors: cors,
+		Name:          "demo-api",
+		Type:          "RPCGW",
+		ActorSkelName: "demo.UserActor",
+		Cors:          cors,
 		RpcgwConfig: &watched.PortalRpcgwConfig{
 			Services: []watched.PortalRpcgwService{{SkelName: "demo.UserService"}},
 		},

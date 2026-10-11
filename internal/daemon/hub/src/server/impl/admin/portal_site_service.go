@@ -34,7 +34,6 @@ func (s *PortalSiteApiServiceServerImpl) Create(creation skeled.PortalSiteCreati
 		Name:          creation.Name,
 		Type:          core.PortalSiteType(creation.Type),
 		ActorSkelName: creation.ActorSkelName,
-		ActorVia:      creation.ActorVia,
 		Cors:          toCorePortalCors(creation.Cors),
 		WebName:       creation.WebName,
 		Enabled:       creation.Enabled,
@@ -47,7 +46,6 @@ func (s *PortalSiteApiServiceServerImpl) Update(id int, update skeled.PortalSite
 		Name:          update.Name,
 		Type:          toCorePortalSiteTypePointer(update.Type),
 		ActorSkelName: update.ActorSkelName,
-		ActorVia:      update.ActorVia,
 		Cors:          toCorePortalCorsPointer(update.Cors),
 		WebName:       update.WebName,
 		Enabled:       update.Enabled,
@@ -66,7 +64,6 @@ func toServerPortalSite(entry *core.PortalSite, fieldSources []skeled.FieldSourc
 		Name:          entry.Name,
 		Type:          skeled.PortalSiteType(entry.Type),
 		ActorSkelName: entry.ActorSkelName,
-		ActorVia:      entry.ActorVia,
 		RpcgwServices: entry.RpcgwServices,
 		Cors:          toServerPortalCors(entry.Cors),
 		WebName:       entry.WebName,
@@ -85,7 +82,6 @@ func toServerPortalSiteListItem(entry *core.PortalSite) skeled.PortalSiteListIte
 		Name:          detail.Name,
 		Type:          detail.Type,
 		ActorSkelName: detail.ActorSkelName,
-		ActorVia:      detail.ActorVia,
 		RpcgwServices: detail.RpcgwServices,
 		Cors:          detail.Cors,
 		WebName:       detail.WebName,
@@ -164,9 +160,8 @@ func toServerPortalSiteActorOptions(options []core.PortalSiteActorOption) []skel
 	ret := make([]skeled.PortalSiteActorOption, 0, len(options))
 	for _, option := range options {
 		ret = append(ret, skeled.PortalSiteActorOption{
-			Name:      option.Name,
-			SkelName:  option.SkelName,
-			ActorVias: option.ActorVias,
+			Name:     option.Name,
+			SkelName: option.SkelName,
 		})
 	}
 	return ret

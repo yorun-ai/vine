@@ -100,9 +100,9 @@ func TestAuthPropagatesIdentifierAndRejectsInvalidResponse(t *testing.T) {
 				header := rpchttp.HeaderRpcActor
 				if web {
 					header = webspec.HeaderWebActor
-					ok = access.AuthWeb(&WebOperation{Auther: authOperationForTest(t, request, recorder), ActorVia: watched.PortalActorVia{ActorSkelName: "demo.UserActor"}})
+					ok = access.AuthWeb(&WebOperation{Auther: authOperationForTest(t, request, recorder), ActorSkelName: "demo.UserActor"})
 				} else {
-					ok = access.AllowRpc(&RpcOperation{Auther: authOperationForTest(t, request, recorder), Server: testServerApp(), ActorVia: watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, ServiceName: "demo.UserService", MethodName: "Get"})
+					ok = access.AllowRpc(&RpcOperation{Auther: authOperationForTest(t, request, recorder), Server: testServerApp(), ActorSkelName: "demo.UserActor", ServiceName: "demo.UserService", MethodName: "Get"})
 				}
 				require.Equal(t, tt.valid, ok)
 				if !ok {
@@ -216,9 +216,9 @@ func TestOptionalCredentialAuthForwarding(t *testing.T) {
 					request.Header.Set("Authorization", tt.header)
 					var ok bool
 					if transport.web {
-						ok = access.AuthWeb(&WebOperation{Auther: authOperationForTest(t, request, recorder), ActorVia: watched.PortalActorVia{ActorSkelName: "demo.UserActor"}})
+						ok = access.AuthWeb(&WebOperation{Auther: authOperationForTest(t, request, recorder), ActorSkelName: "demo.UserActor"})
 					} else {
-						ok = access.AllowRpc(testRpcOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, recorder))
+						ok = access.AllowRpc(testRpcOperation(t, "demo.UserActor", request, recorder))
 					}
 					require.Equal(t, tt.valid, ok)
 					if tt.valid {
@@ -272,12 +272,12 @@ func TestPortalAuthModes(t *testing.T) {
 							var actor meta.Actor
 							if protocol == "rpc" {
 								setTestRequestHeaders(t, request)
-								operation := testRpcOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response)
+								operation := testRpcOperation(t, "demo.UserActor", request, response)
 								ok = access.AllowRpc(operation)
 								actor = operation.actor
 							} else {
 								setTestWebRequestHeaders(t, request)
-								operation := testWebOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response)
+								operation := testWebOperation(t, "demo.UserActor", request, response)
 								operation.WebName = "demo.Web"
 								ok = access.AuthWeb(operation)
 								actor = operation.actor
@@ -326,12 +326,12 @@ func TestPortalRejectsEmptyAndDuplicateAuthorization(t *testing.T) {
 					var ok bool
 					if protocol == "web" {
 						setTestWebRequestHeaders(t, request)
-						operation := testWebOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response)
+						operation := testWebOperation(t, "demo.UserActor", request, response)
 						operation.WebName = "demo.Web"
 						ok = access.AuthWeb(operation)
 					} else {
 						setTestRequestHeaders(t, request)
-						ok = access.AllowRpc(testRpcOperation(t, watched.PortalActorVia{ActorSkelName: "demo.UserActor"}, request, response))
+						ok = access.AllowRpc(testRpcOperation(t, "demo.UserActor", request, response))
 					}
 					if mode == skeldesc.AuthModeOff {
 						require.True(t, ok)

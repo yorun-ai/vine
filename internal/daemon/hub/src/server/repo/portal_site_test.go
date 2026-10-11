@@ -147,7 +147,6 @@ func testPortalSite(name string) *core.PortalSite {
 		Name:          name,
 		Type:          core.PortalSiteTypeRPCGW,
 		ActorSkelName: "demo.Actor",
-		ActorVia:      "client",
 		Cors: core.PortalCors{
 			Mode:           core.PortalCorsModeStrict,
 			AllowedOrigins: []string{"https://console.example.com"},
@@ -162,8 +161,7 @@ func assertWatchedPortalSite(t *testing.T, expected *core.PortalSite, actual *wa
 	require.NotNil(t, actual)
 	assert.Equal(t, expected.Name, actual.Name)
 	assert.Equal(t, string(expected.Type), actual.Type)
-	assert.Equal(t, expected.ActorSkelName, actual.ActorVia.ActorSkelName)
-	assert.Equal(t, expected.ActorVia, actual.ActorVia.ActorVia)
+	assert.Equal(t, expected.ActorSkelName, actual.ActorSkelName)
 	assert.Equal(t, watched.PortalCorsMode(expected.Cors.Mode), actual.Cors.Mode)
 	assert.Equal(t, expected.Cors.AllowedOrigins, actual.Cors.AllowedOrigins)
 	require.NotNil(t, actual.RpcgwConfig)
@@ -188,8 +186,8 @@ func TestPortalSiteRepoAssemblesDerivedValues(t *testing.T) {
 			Descriptor: &skeldesc.Domain{
 				Name: "demo",
 				Services: []*skeldesc.Service{{
-					SkelName:  "demo.Service",
-					Audiences: []*skeldesc.ActorAudience{{SkelName: "demo.Actor", Via: skeldesc.ActorViaClient}}, AuthMode: skeldesc.AuthModeRequired,
+					SkelName: "demo.Service",
+					Api:      true, Audiences: []*skeldesc.ActorAudience{{SkelName: "demo.Actor", Via: skeldesc.ActorViaClient}}, AuthMode: skeldesc.AuthModeRequired,
 				}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			},
 		},
@@ -199,7 +197,7 @@ func TestPortalSiteRepoAssemblesDerivedValues(t *testing.T) {
 	web.Type, web.WebName = core.PortalSiteTypeWEBGW, "demo.Web"
 	repo.Save(web)
 	rpc := testPortalSite("demo-rpc")
-	rpc.Type, rpc.ActorSkelName, rpc.ActorVia = core.PortalSiteTypeRPCGW, "demo.Actor", "client"
+	rpc.Type, rpc.ActorSkelName = core.PortalSiteTypeRPCGW, "demo.Actor"
 	repo.Save(rpc)
 
 	// The repository reconstitutes aggregates: the saved entity and every read

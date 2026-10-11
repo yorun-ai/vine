@@ -73,11 +73,11 @@ func (s *PortalSiteRepo) toCorePortalSite(row *model.PortalSite, descriptors _Po
 		Name:          row.Name,
 		Type:          core.PortalSiteType(row.Type),
 		ActorSkelName: row.ActorSkelName,
-		ActorVia:      row.ActorVia,
 		Cors:          cors,
 		WebName:       row.WebName,
 		Enabled:       row.Enabled,
 	}
+	delete(entry.FieldSources, "/actorVia")
 	entry.WebMountPath = descriptors.mountPath(entry)
 	entry.RpcgwServices = core.MatchPortalSiteRpcgwServicesInDomainViews(*entry, descriptors.views)
 	return entry
@@ -118,7 +118,6 @@ func toModelPortalSite(entry *core.PortalSite) *model.PortalSite {
 		Name:          entry.Name,
 		Type:          string(entry.Type),
 		ActorSkelName: entry.ActorSkelName,
-		ActorVia:      entry.ActorVia,
 		CorsMode:      string(entry.Cors.Mode),
 		CorsOrigins:   vcode.MustMarshalJsonS(entry.Cors.AllowedOrigins),
 		WebName:       entry.WebName,

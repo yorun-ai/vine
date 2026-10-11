@@ -110,6 +110,6 @@ native authentication, explicitly select `optional` or `off` and regenerate the
 contracts. Old Rpc `noauth` authenticates supplied credentials and rejects invalid
 credentials instead of silently admitting the request anonymously.
 
-A WEBGW site requires both `actorSkelName` and `actorVia`. The configured actor must exist. Web authentication follows the declared mode; `required` rejects requests when the actor has no authentication configured. Only `off` preserves native Authorization credentials for the handler.
+A WEBGW site requires `actorSkelName`, and the configured actor must exist. Vine ignores legacy `via` metadata. RPCGW admits calls by the service's actor audiences, then applies authentication and permission rules. Web authentication follows the declared mode; `required` rejects requests when the actor has no authentication configured. Only `off` preserves native Authorization credentials for the handler.
 
 When changing entry, discovery, authentication, or forwarding behavior, validate standalone/inproc and normal network deployments separately. Inproc mode establishes routing and subscription semantics only; it does not establish correct real-listener, TLS, disconnection, or lease behavior.

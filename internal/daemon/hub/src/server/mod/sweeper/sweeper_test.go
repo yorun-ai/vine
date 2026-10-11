@@ -151,10 +151,7 @@ func TestSweeperUnregistersExpiredLeaseStatus(t *testing.T) {
 	assert.JSONEq(t, `{
 		"name": "demo-rpc",
 		"type": "RPCGW",
-		"actorVia": {
-			"actorSkelName": "demo.Actor",
-			"actorVia": ""
-		},
+		"actorSkelName": "demo.Actor",
 		"cors": {
 			"mode": "",
 			"allowedOrigins": []

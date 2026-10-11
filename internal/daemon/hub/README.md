@@ -234,6 +234,14 @@ stay private to the package. Only the current match/route field names are
 accepted; retired aliases are rejected before Hub writes anything. A Portal section declares only the fields Hub names for it.
 
 Admin API and Watch use only the new fields; upgrade Hub and Portal together.
+Portal sites select their actor with `actorSkelName`. RPCGW publishes API
+services for that actor regardless of descriptor `via` metadata; authentication
+and permission rules still apply. Seed YAML accepts the deprecated `actorVia`
+field but ignores it and logs a warning naming each site that declares it.
+Admin API, Watch and Dashboard no longer expose it, and
+database initialization drops `portal_site.actor_via`. Descriptor metadata is
+preserved for compatibility with generated contracts.
+
 Existing databases must already use the v0.27.0 schema. Entry listener IPs
 and HTTP protocol blocks are upgraded during initialization; pre-v0.27.0
 certificate and retired-column migrations are no longer performed.

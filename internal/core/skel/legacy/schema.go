@@ -100,28 +100,30 @@ type EventSchema struct {
 }
 
 type ActorSchema struct {
-	Name             string                    `json:"name"`
-	SkelName         string                    `json:"skelName"`
-	Description      string                    `json:"description,omitempty"`
-	Deprecated       bool                      `json:"deprecated,omitzero"`
-	DeprecatedReason string                    `json:"deprecatedReason,omitempty"`
-	Hash             string                    `json:"hash"`
-	Vias             []descriptor.ActorViaKind `json:"vias"`
-	AuthEnabled      bool                      `json:"authEnabled"`
-	AuthCredential   *DataSchema               `json:"authCredential,omitempty"`
-	AuthInfo         *DataSchema               `json:"authInfo,omitempty"`
-	IdentifierField  string                    `json:"identifierField,omitempty"`
-	AuthService      *ServiceSchema            `json:"authService,omitempty"`
-	AuthMethod       *MethodSchema             `json:"authMethod,omitempty"`
-	PermEnabled      bool                      `json:"permEnabled"`
-	PermService      *ServiceSchema            `json:"permService,omitempty"`
-	PermMethod       *MethodSchema             `json:"permMethod,omitempty"`
+	Name             string `json:"name"`
+	SkelName         string `json:"skelName"`
+	Description      string `json:"description,omitempty"`
+	Deprecated       bool   `json:"deprecated,omitzero"`
+	DeprecatedReason string `json:"deprecatedReason,omitempty"`
+	Hash             string `json:"hash"`
+	// Deprecated: retained for generated code compatibility; Vine ignores Via.
+	Vias            []descriptor.ActorViaKind `json:"vias"`
+	AuthEnabled     bool                      `json:"authEnabled"`
+	AuthCredential  *DataSchema               `json:"authCredential,omitempty"`
+	AuthInfo        *DataSchema               `json:"authInfo,omitempty"`
+	IdentifierField string                    `json:"identifierField,omitempty"`
+	AuthService     *ServiceSchema            `json:"authService,omitempty"`
+	AuthMethod      *MethodSchema             `json:"authMethod,omitempty"`
+	PermEnabled     bool                      `json:"permEnabled"`
+	PermService     *ServiceSchema            `json:"permService,omitempty"`
+	PermMethod      *MethodSchema             `json:"permMethod,omitempty"`
 }
 
 type ActorAudienceSchema struct {
-	Name     string                  `json:"name"`
-	SkelName string                  `json:"skelName"`
-	Via      descriptor.ActorViaKind `json:"via,omitempty"`
+	Name     string `json:"name"`
+	SkelName string `json:"skelName"`
+	// Deprecated: retained for generated code compatibility; Vine ignores Via.
+	Via descriptor.ActorViaKind `json:"via,omitempty"`
 }
 
 type ServiceSchema struct {

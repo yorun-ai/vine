@@ -41,9 +41,6 @@ data PortalSiteCreation {
     @desc("Actor Skel name")
     actorSkelName: string
 
-    @desc("Actor access method")
-    actorVia: string
-
     @desc("CORS configuration")
     cors: PortalCors?
 
@@ -67,9 +64,6 @@ data PortalSite {
 
     @desc("Actor Skel name")
     actorSkelName: string
-
-    @desc("Actor access method")
-    actorVia: string
 
     @desc("Rpc gateway service Skel name list")
     rpcgwServices: list<string>
@@ -104,9 +98,6 @@ data PortalSiteListItem {
     @desc("Actor Skel name")
     actorSkelName: string
 
-    @desc("Actor access method")
-    actorVia: string
-
     @desc("Rpc gateway service Skel name list")
     rpcgwServices: list<string>
 
@@ -134,9 +125,6 @@ data PortalSiteUpdate {
     @desc("Actor Skel name")
     actorSkelName: string?
 
-    @desc("Actor access method")
-    actorVia: string?
-
     @desc("CORS configuration")
     cors: PortalCors?
 
@@ -154,9 +142,6 @@ data PortalSiteActorOption {
 
     @desc("Actor Skel name")
     skelName: string
-
-    @desc("Actor access method list")
-    actorVias: list<string>
 }
 
 @desc("Portal target site service options")

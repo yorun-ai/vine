@@ -60,14 +60,14 @@ func (g *RpcGateway) serveInvoke(ctx *spec.Context) {
 	}
 
 	operation := &access.RpcOperation{
-		Request:     invokeRequest,
-		Response:    ctx.ResponseWriter,
-		Trace:       trace,
-		Initiator:   initiator,
-		Server:      g.app,
-		ActorVia:    g.actorVia,
-		ServiceName: serviceName,
-		MethodName:  methodName,
+		Request:       invokeRequest,
+		Response:      ctx.ResponseWriter,
+		Trace:         trace,
+		Initiator:     initiator,
+		Server:        g.app,
+		ActorSkelName: g.actorSkelName,
+		ServiceName:   serviceName,
+		MethodName:    methodName,
 	}
 	if !g.access.AllowRpc(operation) {
 		return
