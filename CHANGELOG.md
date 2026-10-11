@@ -8,6 +8,40 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-10-11
+
+### Changed
+
+- Move Portal entry host matching into `http.host`. Hub normalizes the protocol
+  configuration and publishes resolved listener ports for Portal to consume.
+- Use the canonical `protocol`/`http` structure throughout Hub, Portal, Admin API,
+  and Dashboard. Rule responses expose `entryName` and `entryAddresses`.
+- Upgrade the Go vRPC dependency to v0.15.0, aligned with Skel v0.32.0.
+- Update stable Hub, Link, and Portal Kubernetes images to v0.30.0.
+
+### Fixed
+
+- Apply automatic HTTPS redirects only when HTTP, HTTPS, and `autoHTTPS` are
+  all enabled. Single-transport entries can retain the default `autoHTTPS` value.
+
+### Removed
+
+- Remove top-level entry `scheme`, `host`, and `port` from Admin responses and
+  internal models, and remove rule response `matchScheme`, `matchHost`, and
+  `matchPort` projections. Database migration converts and drops legacy entry
+  columns while preserving entry IDs and rule references.
+
+### Upgrade Notes
+
+- Upgrade Hub and Portal together because the Watch entry format now nests the
+  request host under `http`.
+- Seeds using `protocol` must move top-level `host` to `http.host`; mixing
+  `protocol` with any legacy `scheme`, `host`, or `port` field is rejected.
+  Legacy seeds without `protocol` remain supported at the seed decoding boundary.
+- Admin clients must use `protocol` and `http` for entries and `entryName` and
+  `entryAddresses` for rule addresses. Legacy fields are supported only during
+  seed decoding and database migration.
+
 ## [0.29.0] - 2026-10-11
 
 ### Added
@@ -1647,7 +1681,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.29.0...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.30.0...HEAD
+[0.30.0]: https://github.com/yorun-ai/vine/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/yorun-ai/vine/compare/v0.28.1...v0.29.0
 [0.28.1]: https://github.com/yorun-ai/vine/compare/v0.28.0...v0.28.1
 [0.28.0]: https://github.com/yorun-ai/vine/compare/v0.27.0...v0.28.0
