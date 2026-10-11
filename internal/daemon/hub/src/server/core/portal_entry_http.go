@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"strings"
 
 	"go.yorun.ai/vine/internal/core/ex"
@@ -9,15 +8,17 @@ import (
 
 // PortalEntryHTTP configures both HTTP transports of one logical entry.
 type PortalEntryHTTP struct {
-	HttpEnabled  bool `json:"httpEnabled"`
-	HttpPort     int  `json:"httpPort"`
-	HttpsEnabled bool `json:"httpsEnabled"`
-	HttpsPort    int  `json:"httpsPort"`
-	AutoHTTPS    bool `json:"autoHTTPS"`
+	Host         string `json:"host"`
+	HttpEnabled  bool   `json:"httpEnabled"`
+	HttpPort     int    `json:"httpPort"`
+	HttpsEnabled bool   `json:"httpsEnabled"`
+	HttpsPort    int    `json:"httpsPort"`
+	AutoHTTPS    bool   `json:"autoHTTPS"`
 }
 
 // PortalEntryHTTPUpdate changes only the HTTP fields supplied by the caller.
 type PortalEntryHTTPUpdate struct {
+	Host         *string
 	HttpEnabled  *bool
 	HttpPort     *int
 	HttpsEnabled *bool
@@ -32,6 +33,9 @@ func DefaultPortalEntryHTTP() PortalEntryHTTP {
 
 // Apply merges the supplied fields into an owned configuration value.
 func (u PortalEntryHTTPUpdate) Apply(value PortalEntryHTTP) PortalEntryHTTP {
+	if u.Host != nil {
+		value.Host = *u.Host
+	}
 	if u.HttpEnabled != nil {
 		value.HttpEnabled = *u.HttpEnabled
 	}
@@ -69,28 +73,16 @@ func (e PortalEntry) Accesses() []PortalEntryAccess {
 	return accesses
 }
 
-// NormalizePortalEntry converts legacy entries and validates the canonical configuration.
+// NormalizePortalEntry validates the canonical configuration.
 func NormalizePortalEntry(entry PortalEntry) PortalEntry { return normalizePortalEntry(entry) }
 
 func normalizePortalEntryHTTP(entry PortalEntry) PortalEntry {
 	entry.Protocol = strings.ToLower(strings.TrimSpace(entry.Protocol))
-	if entry.Protocol == "" {
-		entry.Scheme = strings.ToLower(strings.TrimSpace(entry.Scheme))
-		port := portalEntrySchemePort(entry.Scheme, entry.Port)
-		entry.Protocol = "http"
-		entry.Http = new(PortalEntryHTTP{HttpEnabled: entry.Scheme == "http", HttpPort: 80, HttpsEnabled: entry.Scheme == "https", HttpsPort: 443})
-		if entry.Scheme == "http" {
-			entry.Http.HttpPort = port
-		} else {
-			entry.Http.HttpsPort = port
-		}
+	ex.PanicNewIfNot(entry.Protocol == "http", ex.OperationFailed, ex.F("unknown portal entry protocol: %s", entry.Protocol))
+	if entry.Http == nil {
+		entry.Http = new(DefaultPortalEntryHTTP())
 	} else {
-		ex.PanicNewIfNot(entry.Protocol == "http", ex.OperationFailed, ex.F("unknown portal entry protocol: %s", entry.Protocol))
-		if entry.Http == nil {
-			entry.Http = new(DefaultPortalEntryHTTP())
-		} else {
-			entry.Http = new(*entry.Http)
-		}
+		entry.Http = new(*entry.Http)
 	}
 	config := entry.Http
 	ex.PanicNewIfNot(config.HttpPort >= 0 && config.HttpPort <= 65535 && config.HttpsPort >= 0 && config.HttpsPort <= 65535, ex.OperationFailed, "portal entry port must be between 0 and 65535")
@@ -102,21 +94,5 @@ func normalizePortalEntryHTTP(entry PortalEntry) PortalEntry {
 	}
 	ex.PanicNewIfNot(config.HttpEnabled || config.HttpsEnabled, ex.OperationFailed, "portal entry must enable HTTP or HTTPS")
 	ex.PanicNewIfNot(!config.HttpEnabled || !config.HttpsEnabled || config.HttpPort != config.HttpsPort, ex.OperationFailed, "HTTP and HTTPS cannot listen on the same port")
-	// The deprecated projection remains available for single-transport API clients.
-	entry.Scheme, entry.Port = "", 0
-	if config.HttpEnabled && !config.HttpsEnabled {
-		entry.Scheme, entry.Port = "http", config.HttpPort
-	}
-	if config.HttpsEnabled && !config.HttpEnabled {
-		entry.Scheme, entry.Port = "https", config.HttpsPort
-	}
 	return entry
-}
-
-func portalEntryAccessText(entry PortalEntry) string {
-	addresses := []string{}
-	for _, access := range entry.Accesses() {
-		addresses = append(addresses, fmt.Sprintf("%s://%s:%d", access.Scheme, entry.Host, access.Port))
-	}
-	return strings.Join(addresses, ", ")
 }

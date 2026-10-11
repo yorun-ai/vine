@@ -89,7 +89,7 @@ func toServerPortalRule(rule *core.PortalRule, entry *core.PortalEntry, fieldSou
 		ret.EntryName = entry.Name
 		ret.EntryAddresses = []string{}
 		for _, access := range entry.Accesses() {
-			host := entry.Host
+			host := entry.Http.Host
 			if host == "" {
 				host = "*"
 			}
@@ -98,9 +98,6 @@ func toServerPortalRule(rule *core.PortalRule, entry *core.PortalEntry, fieldSou
 			}
 			ret.EntryAddresses = append(ret.EntryAddresses, fmt.Sprintf("%s://%s:%d", access.Scheme, host, access.Port))
 		}
-		ret.MatchScheme = entry.Scheme
-		ret.MatchHost = entry.Host
-		ret.MatchPort = entry.Port
 	}
 	return ret
 }
@@ -148,9 +145,6 @@ func toServerPortalRuleListItem(entry *core.PortalEntry, rule *core.PortalRule, 
 		Id:        detail.Id,
 		Name:      detail.Name,
 		EntryName: detail.EntryName, EntryAddresses: detail.EntryAddresses,
-		MatchScheme:             detail.MatchScheme,
-		MatchHost:               detail.MatchHost,
-		MatchPort:               detail.MatchPort,
 		MatchPathPrefix:         detail.MatchPathPrefix,
 		RouteType:               detail.RouteType,
 		RouteSiteName:           detail.RouteSiteName,

@@ -14,7 +14,7 @@ func init() {
 var _DomainDescriptor = &descriptor.Domain{
 	Name:        "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "2056be49",
+	Hash:        "ad3af7c2",
 	Full:        true,
 	Generated:   &descriptor.GeneratedInfo{CompilerVersion: "v0.32.0"},
 
@@ -219,60 +219,54 @@ var _DomainDescriptor = &descriptor.Domain{
 			{Name: "mode", Description: "CORS mode: DISABLED/SAME_DOMAIN/STRICT", Type: &descriptor.Type{Kind: descriptor.TypeKindEnum, Name: "PortalCorsMode", SkelName: "vine.hub.admin.PortalCorsMode"}},
 			{Name: "allowedOrigins", Description: "List of origins allowed in strict mode", Type: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}}},
 		}},
-		{Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry", Hash: "174abed7", Members: []*descriptor.Member{
+		{Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry", Hash: "1820bf88", Members: []*descriptor.Member{
 			{Name: "protocol", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "http", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntryHTTP", SkelName: "vine.hub.admin.PortalEntryHTTP"}},
 			{Name: "id", Description: "Entry ID", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			{Name: "name", Description: "Entry name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
-			{Name: "scheme", Description: "Entry protocol", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
-			{Name: "host", Description: "Match Host, empty string means no restriction", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
-			{Name: "port", Description: "Entry port", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			{Name: "listenIPs", Description: "Listener IP addresses; empty preserves the default wildcard TCP listener", Type: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}}},
 			{Name: "rules", Description: "Entry rule list", Type: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntryRule", SkelName: "vine.hub.admin.PortalEntryRule"}}},
 			{Name: "enabled", Description: "Whether Hub publishes this entry and its rules to Portal", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean}},
 		}},
-		{Name: "PortalEntryCreation", SkelName: "vine.hub.admin.PortalEntryCreation", Description: "Portal access entry creation parameters", Hash: "b4466a53", Members: []*descriptor.Member{
+		{Name: "PortalEntryCreation", SkelName: "vine.hub.admin.PortalEntryCreation", Description: "Portal access entry creation parameters", Hash: "f01cd666", Members: []*descriptor.Member{
 			{Name: "protocol", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "http", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntryHTTPUpdate", SkelName: "vine.hub.admin.PortalEntryHTTPUpdate", Nullable: true}},
 			{Name: "name", Description: "Entry name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
-			{Name: "host", Description: "Match Host, empty string means no restriction", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "listenIPs", Description: "Listener IP addresses; empty preserves the default wildcard TCP listener", Type: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}}},
 			{Name: "enabled", Description: "Whether Hub publishes this entry and its rules to Portal; defaults to true", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean, Nullable: true}},
 		}},
-		{Name: "PortalEntryHTTP", SkelName: "vine.hub.admin.PortalEntryHTTP", Description: "Portal access entry", Hash: "89cd7007", Members: []*descriptor.Member{
+		{Name: "PortalEntryHTTP", SkelName: "vine.hub.admin.PortalEntryHTTP", Description: "Portal access entry", Hash: "86d63941", Members: []*descriptor.Member{
+			{Name: "host", Description: "Match Host, empty string means no restriction", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "httpEnabled", Description: "Enable HTTP transport", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean}},
 			{Name: "httpPort", Description: "HTTP listener port", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			{Name: "httpsEnabled", Description: "Enable HTTPS transport", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean}},
 			{Name: "httpsPort", Description: "HTTPS listener port", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			{Name: "autoHTTPS", Description: "Redirect HTTP to HTTPS with status 308", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean}},
 		}},
-		{Name: "PortalEntryHTTPUpdate", SkelName: "vine.hub.admin.PortalEntryHTTPUpdate", Hash: "07b792c5", Members: []*descriptor.Member{
+		{Name: "PortalEntryHTTPUpdate", SkelName: "vine.hub.admin.PortalEntryHTTPUpdate", Hash: "787a15b1", Members: []*descriptor.Member{
+			{Name: "host", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString, Nullable: true}},
 			{Name: "httpEnabled", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean, Nullable: true}},
 			{Name: "httpPort", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt, Nullable: true}},
 			{Name: "httpsEnabled", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean, Nullable: true}},
 			{Name: "httpsPort", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt, Nullable: true}},
 			{Name: "autoHTTPS", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean, Nullable: true}},
 		}},
-		{Name: "PortalEntryRule", SkelName: "vine.hub.admin.PortalEntryRule", Description: "Portal access entry rules", Hash: "243108ae", Members: []*descriptor.Member{
+		{Name: "PortalEntryRule", SkelName: "vine.hub.admin.PortalEntryRule", Description: "Portal access entry rules", Hash: "fe96f1ab", Members: []*descriptor.Member{
 			{Name: "rule", Description: "Entry rules", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalRuleListItem", SkelName: "vine.hub.admin.PortalRuleListItem"}},
 			{Name: "site", Description: "Target site", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalSiteListItem", SkelName: "vine.hub.admin.PortalSiteListItem", Nullable: true}},
 		}},
-		{Name: "PortalEntryUpdate", SkelName: "vine.hub.admin.PortalEntryUpdate", Description: "Portal access entry update parameters", Hash: "83daa632", Members: []*descriptor.Member{
+		{Name: "PortalEntryUpdate", SkelName: "vine.hub.admin.PortalEntryUpdate", Description: "Portal access entry update parameters", Hash: "56c11072", Members: []*descriptor.Member{
 			{Name: "protocol", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString, Nullable: true}},
 			{Name: "http", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntryHTTPUpdate", SkelName: "vine.hub.admin.PortalEntryHTTPUpdate", Nullable: true}},
 			{Name: "name", Description: "Entry name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString, Nullable: true}},
-			{Name: "host", Description: "Match Host, empty string means no restriction", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString, Nullable: true}},
 			{Name: "listenIPs", Description: "Listener IP addresses; empty restores the default wildcard TCP listener", Type: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}, Nullable: true}},
 			{Name: "enabled", Description: "Whether Hub publishes this entry and its rules to Portal", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean, Nullable: true}},
 		}},
-		{Name: "PortalRule", SkelName: "vine.hub.admin.PortalRule", Description: "Portal entry rules", Hash: "f03ed558", Members: []*descriptor.Member{
+		{Name: "PortalRule", SkelName: "vine.hub.admin.PortalRule", Description: "Portal entry rules", Hash: "b228272f", Members: []*descriptor.Member{
 			{Name: "entryName", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "entryAddresses", Type: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}}},
 			{Name: "id", Description: "Rule ID", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			{Name: "name", Description: "Rule name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
-			{Name: "matchScheme", Description: "Matching protocol", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
-			{Name: "matchHost", Description: "Match Host, empty string means no restriction", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
-			{Name: "matchPort", Description: "Match matchPort, 0 means no restriction", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			{Name: "matchPathPrefix", Description: "Match path prefix, empty string means match all paths", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "routeType", Description: "Target type", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "routeSiteName", Description: "Site name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
@@ -305,14 +299,11 @@ var _DomainDescriptor = &descriptor.Domain{
 			{Name: "routePathPrefix", Description: "Target site path prefix; empty means strip the matching prefix only", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString, Nullable: true}},
 			{Name: "enabled", Description: "Whether Hub publishes this rule to Portal", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean, Nullable: true}},
 		}},
-		{Name: "PortalRuleListItem", SkelName: "vine.hub.admin.PortalRuleListItem", Description: "Portal entry rule list item", Hash: "c56fce64", Members: []*descriptor.Member{
+		{Name: "PortalRuleListItem", SkelName: "vine.hub.admin.PortalRuleListItem", Description: "Portal entry rule list item", Hash: "d8ddc010", Members: []*descriptor.Member{
 			{Name: "entryName", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "entryAddresses", Type: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}}},
 			{Name: "id", Description: "Rule ID", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			{Name: "name", Description: "Rule name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
-			{Name: "matchScheme", Description: "Matching protocol", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
-			{Name: "matchHost", Description: "Match Host, empty string means no restriction", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
-			{Name: "matchPort", Description: "Match matchPort, 0 means no restriction", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			{Name: "matchPathPrefix", Description: "Match path prefix, empty string means match all paths", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "routeType", Description: "Target type", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "routeSiteName", Description: "Site name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
@@ -811,12 +802,12 @@ var _DomainDescriptor = &descriptor.Domain{
 				{Name: "id", Description: "Certificate ID", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			}},
 		}},
-		{Name: "PortalEntryApiService", SkelName: "vine.hub.admin.PortalEntryApiService", Description: "Hub's Portal access entry service, called by the Portal admin client", Hash: "2974ff3d", Pub: false, Api: true, AuthMode: descriptor.AuthModeOptional, Audiences: []*descriptor.ActorAudience{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"}}, Methods: []*descriptor.Method{
-			{Name: "list", SkelName: "list", Description: "List Portal access entries", Hash: "68a561e9", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal access entry list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry"}}},
-			{Name: "create", SkelName: "create", Description: "Create a Portal access entry", Hash: "b4725e4c", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal access entry", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry"}, Arguments: []*descriptor.Member{
+		{Name: "PortalEntryApiService", SkelName: "vine.hub.admin.PortalEntryApiService", Description: "Hub's Portal access entry service, called by the Portal admin client", Hash: "08b0261f", Pub: false, Api: true, AuthMode: descriptor.AuthModeOptional, Audiences: []*descriptor.ActorAudience{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"}}, Methods: []*descriptor.Method{
+			{Name: "list", SkelName: "list", Description: "List Portal access entries", Hash: "b509dd57", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal access entry list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry"}}},
+			{Name: "create", SkelName: "create", Description: "Create a Portal access entry", Hash: "73919b59", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal access entry", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry"}, Arguments: []*descriptor.Member{
 				{Name: "creation", Description: "Portal access entry creation parameters", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntryCreation", SkelName: "vine.hub.admin.PortalEntryCreation"}},
 			}},
-			{Name: "update", SkelName: "update", Description: "Modify a Portal access entry", Hash: "b039b5da", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal access entry", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry"}, Arguments: []*descriptor.Member{
+			{Name: "update", SkelName: "update", Description: "Modify a Portal access entry", Hash: "ce51d16d", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal access entry", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntry", SkelName: "vine.hub.admin.PortalEntry"}, Arguments: []*descriptor.Member{
 				{Name: "id", Description: "Entry ID", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 				{Name: "update", Description: "Portal access entry update parameters", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalEntryUpdate", SkelName: "vine.hub.admin.PortalEntryUpdate"}},
 			}},
@@ -824,16 +815,16 @@ var _DomainDescriptor = &descriptor.Domain{
 				{Name: "id", Description: "Entry ID", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			}},
 		}},
-		{Name: "PortalRuleApiService", SkelName: "vine.hub.admin.PortalRuleApiService", Description: "Hub's Portal entry rule service, called by the Portal admin client", Hash: "c2d6b7ef", Pub: false, Api: true, AuthMode: descriptor.AuthModeOptional, Audiences: []*descriptor.ActorAudience{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"}}, Methods: []*descriptor.Method{
+		{Name: "PortalRuleApiService", SkelName: "vine.hub.admin.PortalRuleApiService", Description: "Hub's Portal entry rule service, called by the Portal admin client", Hash: "a303a541", Pub: false, Api: true, AuthMode: descriptor.AuthModeOptional, Audiences: []*descriptor.ActorAudience{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"}}, Methods: []*descriptor.Method{
 			{Name: "listConflicts", SkelName: "listConflicts", Description: "List Portal entry rules that match the same request", Hash: "440c6508", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal entry rule conflicts", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalRuleConflict", SkelName: "vine.hub.admin.PortalRuleConflict"}}},
-			{Name: "list", SkelName: "list", Description: "List Portal entry rules", Hash: "5779a329", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal entry rule list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalRuleListItem", SkelName: "vine.hub.admin.PortalRuleListItem"}}},
-			{Name: "get", SkelName: "get", Description: "Read Portal entry rules", Hash: "a19f143c", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal entry rules", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalRule", SkelName: "vine.hub.admin.PortalRule"}, Arguments: []*descriptor.Member{
+			{Name: "list", SkelName: "list", Description: "List Portal entry rules", Hash: "1da12ca4", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal entry rule list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalRuleListItem", SkelName: "vine.hub.admin.PortalRuleListItem"}}},
+			{Name: "get", SkelName: "get", Description: "Read Portal entry rules", Hash: "db952b50", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal entry rules", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalRule", SkelName: "vine.hub.admin.PortalRule"}, Arguments: []*descriptor.Member{
 				{Name: "id", Description: "Rule ID", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			}},
-			{Name: "create", SkelName: "create", Description: "Create Portal entry rules", Hash: "b7a1202b", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal entry rules", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalRule", SkelName: "vine.hub.admin.PortalRule"}, Arguments: []*descriptor.Member{
+			{Name: "create", SkelName: "create", Description: "Create Portal entry rules", Hash: "308b7994", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal entry rules", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalRule", SkelName: "vine.hub.admin.PortalRule"}, Arguments: []*descriptor.Member{
 				{Name: "creation", Description: "Portal entry rule creation parameters", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalRuleCreation", SkelName: "vine.hub.admin.PortalRuleCreation"}},
 			}},
-			{Name: "update", SkelName: "update", Description: "Modify Portal entry rules", Hash: "568b4a51", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal entry rules", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalRule", SkelName: "vine.hub.admin.PortalRule"}, Arguments: []*descriptor.Member{
+			{Name: "update", SkelName: "update", Description: "Modify Portal entry rules", Hash: "84ac7d65", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Portal entry rules", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalRule", SkelName: "vine.hub.admin.PortalRule"}, Arguments: []*descriptor.Member{
 				{Name: "id", Description: "Rule ID", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 				{Name: "update", Description: "Portal entry rule update parameters", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "PortalRuleUpdate", SkelName: "vine.hub.admin.PortalRuleUpdate"}},
 			}},

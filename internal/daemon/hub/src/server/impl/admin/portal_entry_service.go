@@ -26,7 +26,6 @@ func (s *PortalEntryApiServiceServerImpl) Update(id int, update skeled.PortalEnt
 	entry := s.PortalEntryCore.Update(id, core.PortalEntryUpdate{
 		Protocol: update.Protocol, Http: toCoreHTTPUpdate(update.Http),
 		Name:      update.Name,
-		Host:      update.Host,
 		ListenIPs: update.ListenIPs,
 		Enabled:   update.Enabled,
 	})
@@ -42,7 +41,6 @@ func (s *PortalEntryApiServiceServerImpl) Create(creation skeled.PortalEntryCrea
 	entry := s.PortalEntryCore.Create(core.PortalEntryCreation{
 		Protocol: creation.Protocol, Http: &config,
 		Name:      creation.Name,
-		Host:      creation.Host,
 		ListenIPs: creation.ListenIPs,
 		Enabled:   creation.Enabled,
 	})
@@ -61,12 +59,9 @@ func (s *PortalEntryApiServiceServerImpl) toServerPortalEntry(entry core.PortalE
 	}
 	return skeled.PortalEntry{
 		Protocol:  entry.Protocol,
-		Http:      skeled.PortalEntryHttp{HttpEnabled: entry.Http.HttpEnabled, HttpPort: entry.Http.HttpPort, HttpsEnabled: entry.Http.HttpsEnabled, HttpsPort: entry.Http.HttpsPort, AutoHttps: entry.Http.AutoHTTPS},
+		Http:      skeled.PortalEntryHttp{Host: entry.Http.Host, HttpEnabled: entry.Http.HttpEnabled, HttpPort: entry.Http.HttpPort, HttpsEnabled: entry.Http.HttpsEnabled, HttpsPort: entry.Http.HttpsPort, AutoHttps: entry.Http.AutoHTTPS},
 		Id:        entry.Id,
 		Name:      entry.Name,
-		Scheme:    entry.Scheme,
-		Host:      entry.Host,
-		Port:      entry.Port,
 		ListenIPs: entry.ListenIPs,
 		Enabled:   entry.Enabled,
 		Rules:     rules,
@@ -92,5 +87,5 @@ func toCoreHTTPUpdate(h *skeled.PortalEntryHttpUpdate) *core.PortalEntryHTTPUpda
 	if h == nil {
 		return nil
 	}
-	return &core.PortalEntryHTTPUpdate{HttpEnabled: h.HttpEnabled, HttpPort: h.HttpPort, HttpsEnabled: h.HttpsEnabled, HttpsPort: h.HttpsPort, AutoHTTPS: h.AutoHttps}
+	return &core.PortalEntryHTTPUpdate{Host: h.Host, HttpEnabled: h.HttpEnabled, HttpPort: h.HttpPort, HttpsEnabled: h.HttpsEnabled, HttpsPort: h.HttpsPort, AutoHTTPS: h.AutoHttps}
 }

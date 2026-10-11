@@ -189,7 +189,7 @@ func (e *Manager) buildRulesLocked() map[_Key][]*_Rule {
 	}
 	for _, config := range e.entryConfigsByName {
 		for _, access := range entryTransports(config) {
-			rule := &_Rule{name: config.Name, listenIPs: config.ListenIPs, matchScheme: access.scheme, matchPort: access.port, matchHost: config.Host}
+			rule := &_Rule{name: config.Name, listenIPs: config.ListenIPs, matchScheme: access.scheme, matchPort: access.port, matchHost: config.Http.Host}
 			for _, key := range rule.Keys() {
 				if _, ok := rulesByKey[key]; !ok {
 					rulesByKey[key] = nil

@@ -18,11 +18,11 @@ import (
 func TestPortalEntryRepoStoresAccessAndName(t *testing.T) {
 	repo := newTestPortalEntryRepoDB(t)
 
-	entry := &core.PortalEntry{Name: "web", Scheme: "https", Host: "demo.local", Port: 8443}
+	entry := &core.PortalEntry{Name: "web", Protocol: "http", Http: &core.PortalEntryHTTP{Host: "demo.local", HttpEnabled: false, HttpsEnabled: true, HttpsPort: 8443}}
 	repo.Save(entry)
 	require.NotZero(t, entry.Id)
 
-	got, ok := repo.GetBySchemeHostPort("https", "demo.local", 8443)
+	got, ok := repo.GetById(entry.Id)
 	require.True(t, ok)
 	assert.Equal(t, entry.Id, got.Id)
 	// An entry keeps the name it was stored with.
@@ -71,7 +71,7 @@ func newTestPortalEntryRepoDB(t *testing.T) *PortalEntryRepo {
 
 func TestPortalEntryRepoListenIPsRoundTrip(t *testing.T) {
 	repo := newTestPortalEntryRepoDB(t)
-	entry := &core.PortalEntry{Name: "local", Scheme: "http", Port: 8080, ListenIPs: []string{"127.0.0.1", "::1"}}
+	entry := &core.PortalEntry{Name: "local", ListenIPs: []string{"127.0.0.1", "::1"}, Protocol: "http", Http: &core.PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 8080}}
 	repo.Save(entry)
 	got, ok := repo.GetById(entry.Id)
 	require.True(t, ok)
@@ -83,4 +83,21 @@ func TestPortalEntryRepoListenIPsRoundTrip(t *testing.T) {
 	repo.Save(entry)
 	got, _ = repo.GetById(entry.Id)
 	assert.Empty(t, got.ListenIPs)
+}
+
+func TestPortalEntryRepoStoresHTTPHost(t *testing.T) {
+	repo := newTestPortalEntryRepoDB(t)
+	row := &model.PortalEntry{
+		Name: "legacy", Protocol: "http", ListenIPs: "[]", Enabled: true,
+		HTTPConfig: `{"host":"demo.local","httpEnabled":true,"httpPort":80,"httpsEnabled":true,"httpsPort":443,"autoHTTPS":true}`,
+	}
+	repo.Dao.Save(row)
+	entry, ok := repo.GetById(row.Id)
+	require.True(t, ok)
+	require.Equal(t, "demo.local", entry.Http.Host)
+	entry.Http.Host = "new.local"
+	repo.Save(entry)
+	got, ok := repo.GetById(row.Id)
+	require.True(t, ok)
+	require.Equal(t, "new.local", got.Http.Host)
 }

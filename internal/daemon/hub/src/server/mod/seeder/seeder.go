@@ -94,7 +94,7 @@ func (s *Seeder) loadSeedYAML() {
 	for _, rule := range entities.PortalRules {
 		s.RuleCore.Validate(*rule.Rule)
 		entry := *entries[rule.EntryName]
-		if strings.HasPrefix(strings.TrimSpace(entry.Host), "*.") {
+		if strings.HasPrefix(strings.TrimSpace(entry.Http.Host), "*.") {
 			entry = s.EntryCore.Normalize(entry)
 			site, ok := sites[rule.Rule.RouteSiteName]
 			if !ok {

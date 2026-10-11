@@ -21,7 +21,7 @@ func (s *Syncer) SyncPortalEntry(entry *core.PortalEntry) {
 	}
 	if stored.Enabled {
 		h := stored.Http
-		s.WatchServer.SetAndNotify(watched.FormatPortalEntryKey(stored.Name), vcode.MustMarshalJsonS(watched.PortalEntry{Name: stored.Name, Protocol: stored.Protocol, Host: stored.Host, ListenIPs: stored.ListenIPs, Http: watched.PortalEntryHTTP{HttpEnabled: h.HttpEnabled, HttpPort: h.HttpPort, HttpsEnabled: h.HttpsEnabled, HttpsPort: h.HttpsPort, AutoHTTPS: h.AutoHTTPS}}))
+		s.WatchServer.SetAndNotify(watched.FormatPortalEntryKey(stored.Name), vcode.MustMarshalJsonS(watched.PortalEntry{Name: stored.Name, Protocol: stored.Protocol, ListenIPs: stored.ListenIPs, Http: watched.PortalEntryHTTP{Host: h.Host, HttpEnabled: h.HttpEnabled, HttpPort: h.HttpPort, HttpsEnabled: h.HttpsEnabled, HttpsPort: h.HttpsPort, AutoHTTPS: h.AutoHTTPS}}))
 	} else {
 		s.WatchServer.DeleteAndNotify(watched.FormatPortalEntryKey(stored.Name))
 	}
@@ -212,7 +212,7 @@ func (s *Syncer) publishesPortalRuleLocked(rule *core.PortalRule, site *core.Por
 	if !ok || !entry.Enabled {
 		return false
 	}
-	if strings.HasPrefix(entry.Host, "*.") && (rule.RouteType != core.PortalRuleRouteTypeSite || site == nil || site.Type != core.PortalSiteTypeWEBGW) {
+	if strings.HasPrefix(entry.Http.Host, "*.") && (rule.RouteType != core.PortalRuleRouteTypeSite || site == nil || site.Type != core.PortalSiteTypeWEBGW) {
 		return false
 	}
 	if rule.RouteType == core.PortalRuleRouteTypeSite && site != nil && !site.Enabled {

@@ -1010,7 +1010,7 @@ var (
 		Type:              rpc.ServiceSpecTypeServer,
 		Name:              "PortalEntryApiService",
 		SkelName:          "vine.hub.admin.PortalEntryApiService",
-		Hash:              "2974ff3d",
+		Hash:              "08b0261f",
 		ServerType:        reflect.TypeFor[PortalEntryApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalEntryApiServiceServer](),
 
@@ -1216,7 +1216,7 @@ var (
 		Type:              rpc.ServiceSpecTypeServer,
 		Name:              "PortalRuleApiService",
 		SkelName:          "vine.hub.admin.PortalRuleApiService",
-		Hash:              "c2d6b7ef",
+		Hash:              "a303a541",
 		ServerType:        reflect.TypeFor[PortalRuleApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultPortalRuleApiServiceServer](),
 

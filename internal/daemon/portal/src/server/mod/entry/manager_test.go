@@ -211,7 +211,7 @@ func (*_TestListener) Addr() net.Addr {
 }
 
 func testEntryConfig(name string, scheme string, host string, port int, ips []string) watched.PortalEntry {
-	config := watched.PortalEntry{Name: name, Protocol: "http", Host: host, ListenIPs: ips}
+	config := watched.PortalEntry{Name: name, Protocol: "http", Http: watched.PortalEntryHTTP{Host: host}, ListenIPs: ips}
 	if scheme == "http" {
 		config.Http.HttpEnabled = true
 		config.Http.HttpPort = port

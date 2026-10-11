@@ -212,7 +212,7 @@ func (e *_PortalEntry) UnmarshalYAML(node *yaml.Node) error {
 		if value.Tag == "!!null" || strings.TrimSpace(value.Value) == "" {
 			return fmt.Errorf("portal entry protocol is empty")
 		}
-		for _, old := range []string{"scheme", "port"} {
+		for _, old := range []string{"scheme", "port", "host"} {
 			if _, mixed := fields[old]; mixed {
 				return fmt.Errorf("portal entry: protocol cannot be mixed with legacy %s", old)
 			}
@@ -230,9 +230,6 @@ func (e *_PortalEntry) UnmarshalYAML(node *yaml.Node) error {
 func (e _PortalEntry) toCorePortalEntry() *core.PortalEntry {
 	entry := &core.PortalEntry{
 		Name:      e.Name,
-		Scheme:    e.Scheme,
-		Port:      e.Port,
-		Host:      e.Host,
 		ListenIPs: e.ListenIPs,
 		Enabled:   core.EnabledOrDefault(e.Enabled),
 	}
@@ -243,6 +240,16 @@ func (e _PortalEntry) toCorePortalEntry() *core.PortalEntry {
 			config = e.Http.update().Apply(config)
 		}
 		entry.Http = &config
+	} else {
+		scheme := strings.ToLower(strings.TrimSpace(e.Scheme))
+		ex.PanicNewIfNot(scheme == "http" || scheme == "https", ex.OperationFailed, ex.F("unknown portal entry scheme: %s", scheme))
+		config := core.PortalEntryHTTP{Host: e.Host, HttpEnabled: scheme == "http", HttpsEnabled: scheme == "https"}
+		if scheme == "http" {
+			config.HttpPort = e.Port
+		} else {
+			config.HttpsPort = e.Port
+		}
+		entry.Protocol, entry.Http = "http", &config
 	}
 	return entry
 }

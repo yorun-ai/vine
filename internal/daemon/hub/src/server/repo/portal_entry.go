@@ -37,13 +37,6 @@ func (s *PortalEntryRepo) GetByName(name string) (*core.PortalEntry, bool) {
 	return nil, false
 }
 
-func (s *PortalEntryRepo) GetBySchemeHostPort(scheme string, host string, port int) (*core.PortalEntry, bool) {
-	if row, ok := s.Dao.BySchemeHostPort(scheme, host, port); ok {
-		return toCorePortalEntry(row), true
-	}
-	return nil, false
-}
-
 func (s *PortalEntryRepo) Save(entry *core.PortalEntry) {
 	s.Access.CheckWrite()
 	*entry = core.NormalizePortalEntry(*entry)
@@ -67,16 +60,11 @@ func toCorePortalEntry(row *model.PortalEntry) *core.PortalEntry {
 	entry := &core.PortalEntry{
 		Id:        row.Id,
 		Name:      row.Name,
-		Scheme:    row.Scheme,
-		Host:      row.Host,
-		Port:      row.Port,
 		ListenIPs: vcode.MustUnmarshalJsonS[[]string](row.ListenIPs),
 		Enabled:   row.Enabled,
 	}
-	if row.Protocol != "" && row.HTTPConfig != "" {
-		entry.Protocol = row.Protocol
-		entry.Http = vcode.MustUnmarshalJsonS[*core.PortalEntryHTTP](row.HTTPConfig)
-	}
+	entry.Protocol = row.Protocol
+	entry.Http = vcode.MustUnmarshalJsonS[*core.PortalEntryHTTP](row.HTTPConfig)
 	return new(core.NormalizePortalEntry(*entry))
 }
 
@@ -87,9 +75,6 @@ func toModelPortalEntry(entry *core.PortalEntry) *model.PortalEntry {
 		Name:       entry.Name,
 		Protocol:   entry.Protocol,
 		HTTPConfig: vcode.MustMarshalJsonS(entry.Http),
-		Scheme:     entry.Scheme,
-		Host:       entry.Host,
-		Port:       entry.Port,
 		ListenIPs:  vcode.MustMarshalJsonS(entry.ListenIPs),
 		Enabled:    entry.Enabled,
 	}

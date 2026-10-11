@@ -113,9 +113,6 @@ interface PortalRuleFormValue {
   name: string
   enabled: boolean
   entryName: string
-  matchScheme: string
-  matchHost: string
-  matchPort: string
   matchPathPrefix: string
   routeType: PortalRuleRouteType
   routeSiteName: string
@@ -127,9 +124,6 @@ const emptyFormValue: PortalRuleFormValue = {
   name: '',
   enabled: true,
   entryName: '',
-  matchScheme: 'http',
-  matchHost: '',
-  matchPort: '',
   matchPathPrefix: '',
   routeType: 'SITE',
   routeSiteName: '',
@@ -146,9 +140,6 @@ function ruleToFormValue(rule: PortalRuleListItem): PortalRuleFormValue {
     name: rule.name,
     enabled: rule.enabled,
     entryName:rule.entryName,
-    matchScheme: rule.matchScheme,
-    matchHost: rule.matchHost,
-    matchPort: rule.matchPort === 0 ? '' : String(rule.matchPort),
     matchPathPrefix: rule.matchPathPrefix,
     routeType: normalizeTargetType(rule.routeType),
     routeSiteName: rule.routeSiteName,
@@ -176,9 +167,7 @@ function derivePortalRuleName(value: PortalRuleFormValue) {
     value.routeType === 'SITE' ? value.routeSiteName : value.routeRedirectionPattern
 
   return [
-    normalizeRuleNamePart(value.entryName || value.matchScheme, 'http'),
-    normalizeRuleNamePart(value.matchHost, 'all'),
-    normalizeRuleNamePart(value.matchPort, 'auto'),
+    normalizeRuleNamePart(value.entryName, 'entry'),
     normalizeRuleNamePart(value.matchPathPrefix, 'root'),
     normalizeRuleNamePart(target, value.routeType.toLowerCase()),
   ].join('.')
@@ -264,12 +253,8 @@ function formValueToUpdate(value: PortalRuleFormValue): PortalRuleUpdate {
 }
 
 function formatMatch(rule: PortalRuleListItem) {
-  if (rule.entryAddresses?.length) return rule.entryAddresses.map((address) => address + (rule.matchPathPrefix || '/')).join(' · ')
-  const matchPort = rule.matchPort === 0 ? '' : `:${rule.matchPort}`
-  const matchHost = rule.matchHost || '*'
-  const matchPathPrefix = rule.matchPathPrefix || '/'
+  return rule.entryAddresses.map((address) => address + (rule.matchPathPrefix || '/')).join(' · ')
 
-  return `${rule.matchScheme}://${matchHost}${matchPort}${matchPathPrefix}`
 }
 
 function routeTypeLabel(routeType: string) {
@@ -298,7 +283,7 @@ function validateFormValue(
   // The rule matches the access of its Portal entry, so a rule without an entry
   // has no request to match.
   if (portalRuleFormEntry(value, portalEntries) === null) {
-    errors.matchScheme = t('portalRule.entryRequired')
+    errors.entryName = t('portalRule.entryRequired')
   }
 
   if (value.routeType === 'SITE' && value.routePathPrefix.trim() !== '') {
@@ -593,26 +578,13 @@ function PortalRuleInlineEditor({
       }
       setFormError(null)
       setFieldErrors((current) => {
-        const { matchScheme: _matchScheme, ...next } = current
+        const { entryName: _entryName, ...next } = current
         return next
       })
       // Route the access through the shared field update so the derived rule
       // name keeps following the entry.
       setFormValue((current) => {
-        const withScheme = updatePortalRuleField(
-          current,
-          'matchScheme',
-          entry.scheme,
-        )
-        const withHost = updatePortalRuleField(
-          withScheme,
-          'matchHost',
-          entry.host,
-        )
-        return syncDerivedName(current, {
-          ...updatePortalRuleField(withHost, 'matchPort', String(entry.port)),
-          entryName: entry.name,
-        })
+        return syncDerivedName(current, { ...current, entryName: entry.name })
       })
     },
     [portalEntries],
@@ -745,7 +717,7 @@ function PortalRuleInlineEditor({
           title={t('portalRule.match')}
           description={t('portalRule.matchDescription')}
         >
-          <Field label={t('portalRule.entry')} error={fieldErrors.matchScheme}>
+          <Field label={t('portalRule.entry')} error={fieldErrors.entryName}>
             {rule === null ? (
               <Select
                 value={matchedEntry?.name ?? ''}
@@ -756,7 +728,7 @@ function PortalRuleInlineEditor({
                 }}
               >
                 <SelectTrigger
-                  aria-invalid={Boolean(fieldErrors.matchScheme)}
+                  aria-invalid={Boolean(fieldErrors.entryName)}
                   className="w-full"
                 >
                   <SelectValue placeholder={t('portalRule.selectEntry')} />
@@ -1027,9 +999,7 @@ export function PortalRulePage() {
     return visibleRules.filter((rule) => {
       const values = [
         rule.name,
-        rule.matchScheme,
-        rule.matchHost,
-        String(rule.matchPort),
+        ...rule.entryAddresses,
         rule.matchPathPrefix,
         rule.routeType,
         rule.routeSiteName,

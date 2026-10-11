@@ -37,15 +37,6 @@ data PortalRule {
     @desc("Rule name")
     name: string
 
-    @desc("Matching protocol")
-    matchScheme: string
-
-    @desc("Match Host, empty string means no restriction")
-    matchHost: string
-
-    @desc("Match matchPort, 0 means no restriction")
-    matchPort: int
-
     @desc("Match path prefix, empty string means match all paths")
     matchPathPrefix: string
 
@@ -84,15 +75,6 @@ data PortalRuleListItem {
 
     @desc("Rule name")
     name: string
-
-    @desc("Matching protocol")
-    matchScheme: string
-
-    @desc("Match Host, empty string means no restriction")
-    matchHost: string
-
-    @desc("Match matchPort, 0 means no restriction")
-    matchPort: int
 
     @desc("Match path prefix, empty string means match all paths")
     matchPathPrefix: string

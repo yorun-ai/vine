@@ -18,7 +18,7 @@ func TestSyncerPublishesOneRulePerRequest(t *testing.T) {
 	defer watchServer.AfterAppStop()
 	target := testSyncer(watchServer)
 
-	entry := &core.PortalEntry{Id: 1, Name: "web", Scheme: "http", Port: 8099, Enabled: true}
+	entry := &core.PortalEntry{Id: 1, Name: "web", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 8099}}
 	target.SyncPortalEntry(entry)
 	first := &core.PortalRule{Id: 1, Name: "demo.app", EntryId: entry.Id, MatchPathPrefix: "/", Enabled: true}
 	second := &core.PortalRule{Id: 2, Name: "demo.app-shadow", EntryId: entry.Id, MatchPathPrefix: "/", Enabled: true}
@@ -41,7 +41,7 @@ func TestSyncerPublishesOnlyEnabledConfiguration(t *testing.T) {
 	defer watchServer.AfterAppStop()
 	target := testSyncer(watchServer)
 
-	entry := &core.PortalEntry{Id: 1, Name: "web", Scheme: "http", Port: 8099, Enabled: true}
+	entry := &core.PortalEntry{Id: 1, Name: "web", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 8099}}
 	target.SyncPortalEntry(entry)
 	site := &core.PortalSite{Id: 1, Name: "web-site", Type: core.PortalSiteTypeWEBGW, WebName: "demo.Web", Enabled: true}
 	target.SyncPortalSite(site)
@@ -125,7 +125,7 @@ func TestPortalSitePublishesWebMountPath(t *testing.T) {
 
 func TestPortalRuleResolvedPrefixesFollowWebMountPath(t *testing.T) {
 	target := testSyncer(watchserver.NewServerForTest())
-	target.SyncPortalEntry(&core.PortalEntry{Id: 1, Name: "web", Scheme: "http", Port: 8080, Enabled: true})
+	target.SyncPortalEntry(&core.PortalEntry{Id: 1, Name: "web", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 8080}})
 	tests := []struct {
 		name      string
 		mountPath string
@@ -153,7 +153,7 @@ func TestPortalSiteUpdateRepublishesResolvedRule(t *testing.T) {
 	watchServer := watchserver.NewServerForTest()
 	defer watchServer.AfterAppStop()
 	target := testSyncer(watchServer)
-	target.SyncPortalEntry(&core.PortalEntry{Id: 1, Name: "web-entry", Scheme: "http", Port: 8080, Enabled: true})
+	target.SyncPortalEntry(&core.PortalEntry{Id: 1, Name: "web-entry", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 8080}})
 	rule := &core.PortalRule{
 		EntryId:         1,
 		Id:              1,
@@ -182,7 +182,7 @@ func TestSyncerWithdrawsWildcardRuleWhenSiteBecomesRpc(t *testing.T) {
 	watchServer := watchserver.NewServerForTest()
 	t.Cleanup(watchServer.AfterAppStop)
 	target := testSyncer(watchServer)
-	target.SyncPortalEntry(&core.PortalEntry{Id: 1, Name: "wildcard", Scheme: "http", Host: "*.example.com", Port: 80, Enabled: true})
+	target.SyncPortalEntry(&core.PortalEntry{Id: 1, Name: "wildcard", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Host: "*.example.com", HttpEnabled: true, HttpsEnabled: false, HttpPort: 80}})
 	site := &core.PortalSite{Id: 1, Name: "target", Type: core.PortalSiteTypeWEBGW, WebName: "demo.Web", Enabled: true}
 	target.SyncPortalSite(site)
 	target.SyncPortalRule(&core.PortalRule{Id: 1, Name: "wildcard", EntryId: 1, RouteType: "SITE", RouteSiteName: "target", Enabled: true})
@@ -223,7 +223,7 @@ func TestSyncPortalEntryRepublishesListenIPs(t *testing.T) {
 	watchServer := watchserver.NewServerForTest()
 	t.Cleanup(watchServer.AfterAppStop)
 	target := testSyncer(watchServer)
-	entry := &core.PortalEntry{Id: 1, Name: "local", Scheme: "http", Port: 8080, ListenIPs: []string{"127.0.0.1"}, Enabled: true}
+	entry := &core.PortalEntry{Id: 1, Name: "local", ListenIPs: []string{"127.0.0.1"}, Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{HttpEnabled: true, HttpsEnabled: false, HttpPort: 8080}}
 	target.SyncPortalEntry(entry)
 	target.SyncPortalRule(&core.PortalRule{Id: 1, Name: "local-rule", EntryId: entry.Id, RouteType: "PERMANENT_REDIRECT", RouteRedirectionPattern: "https://example.com", Enabled: true})
 	read := func() *watched.PortalEntry {
@@ -244,11 +244,14 @@ func TestSyncerPublishesIndependentEntryAndRemovesRenamedAndDisabledKeys(t *test
 	server := watchserver.NewServerForTest()
 	defer server.AfterAppStop()
 	target := testSyncer(server)
-	entry := &core.PortalEntry{Id: 1, Name: "web", Protocol: "http", Host: "demo.local", Enabled: true}
+	entry := &core.PortalEntry{Id: 1, Name: "web", Protocol: "http", Enabled: true, Http: &core.PortalEntryHTTP{Host: "demo.local", HttpEnabled: true, HttpsEnabled: true, AutoHTTPS: true}}
 	target.SyncPortalEntry(entry)
 	value, ok := server.Get(watched.FormatPortalEntryKey("web"))
 	require.True(t, ok)
 	config := vcode.MustUnmarshalJsonS[watched.PortalEntry](value)
+	require.Equal(t, "demo.local", config.Http.Host)
+	wire := vcode.MustUnmarshalJsonS[map[string]any](value)
+	require.NotContains(t, wire, "host")
 	require.True(t, config.Http.AutoHTTPS)
 	require.Equal(t, 443, config.Http.HttpsPort)
 	entry.Name = "renamed"

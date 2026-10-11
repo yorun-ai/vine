@@ -106,9 +106,13 @@ Hub 的层次职责必须保持清晰：
   `autoHTTPS: true`，自动跳转要求同时启用两种传输协议。Admin API 的入口输入必须使用
   `protocol`；seed 保留 v0.27.0 的 `scheme/port` 转换，保持单一传输且关闭自动跳转，不能与 `protocol` 混用；数据库旧入口保留原协议且不启用跳转。已有数据一一迁移，保留
   规则引用。启用的 entry 独立发布到 `portal:entry:*`，无需规则即可监听和跳转。
-- entry 有自己的名称：seed 的 `portalEntries` 段声明 `name`、`protocol`、`host`、
-  `http`、`listenIPs`，并在规则之前应用，因此规则会加入服务其访问配置的 entry 并沿用该名称；
+- entry 有自己的名称：seed 的 `portalEntries` 段声明 `name`、`protocol`、`http`、
+  `listenIPs`，HTTP 请求域名位于 `http.host`。旧字段仅在 seed 解码和数据库迁移时转换；迁移完成后删除旧列，
+  `protocol` 不能与旧顶层 `scheme`、`port`、`host` 混用。Admin API 和 Watch 统一使用 `http.host`。seed 入口在规则之前应用，因此规则会加入服务其访问配置的 entry 并沿用该名称；
   entry 也可以暂时不承载任何规则，规则必须通过 `entryName` 引用同一 seed 声明的 entry。
+- 入口内部模型与 Admin 响应仅使用 `protocol` 和 `http`；顶层 `scheme`、`host`、`port`
+  仅在旧 seed 解码和数据库迁移边界兼容。规则响应通过 `entryName` 和 `entryAddresses`
+  展示入口，不再返回旧的 `matchScheme`、`matchHost`、`matchPort` 投影。
 - Portal 各段是强类型的：实体声明了该段没有的字段时 Hub 直接报错，避免拼错或改名
   后的字段被静默忽略、实体停留在默认值；Hub 自己不再创建任何实体。
 - name 只在同一类实体内唯一，所以站点、entry 与规则可以同名。

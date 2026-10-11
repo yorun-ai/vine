@@ -357,12 +357,6 @@ type PortalEntry struct {
 	Id int `json:"id"`
 	// Name Entry name
 	Name string `json:"name"`
-	// Scheme Entry protocol
-	Scheme string `json:"scheme"`
-	// Host Match Host, empty string means no restriction
-	Host string `json:"host"`
-	// Port Entry port
-	Port int `json:"port"`
 	// ListenIPs Listener IP addresses; empty preserves the default wildcard TCP listener
 	ListenIPs []string `json:"listenIPs"`
 	// Rules Entry rule list
@@ -377,8 +371,6 @@ type PortalEntryCreation struct {
 	Http     *PortalEntryHttpUpdate `json:"http"`
 	// Name Entry name
 	Name string `json:"name"`
-	// Host Match Host, empty string means no restriction
-	Host string `json:"host"`
 	// ListenIPs Listener IP addresses; empty preserves the default wildcard TCP listener
 	ListenIPs []string `json:"listenIPs"`
 	// Enabled Whether Hub publishes this entry and its rules to Portal; defaults to true
@@ -387,6 +379,8 @@ type PortalEntryCreation struct {
 
 // PortalEntryHttp Portal access entry
 type PortalEntryHttp struct {
+	// Host Match Host, empty string means no restriction
+	Host string `json:"host"`
 	// HttpEnabled Enable HTTP transport
 	HttpEnabled bool `json:"httpEnabled"`
 	// HttpPort HTTP listener port
@@ -400,11 +394,12 @@ type PortalEntryHttp struct {
 }
 
 type PortalEntryHttpUpdate struct {
-	HttpEnabled  *bool `json:"httpEnabled"`
-	HttpPort     *int  `json:"httpPort"`
-	HttpsEnabled *bool `json:"httpsEnabled"`
-	HttpsPort    *int  `json:"httpsPort"`
-	AutoHttps    *bool `json:"autoHTTPS"`
+	Host         *string `json:"host"`
+	HttpEnabled  *bool   `json:"httpEnabled"`
+	HttpPort     *int    `json:"httpPort"`
+	HttpsEnabled *bool   `json:"httpsEnabled"`
+	HttpsPort    *int    `json:"httpsPort"`
+	AutoHttps    *bool   `json:"autoHTTPS"`
 }
 
 // PortalEntryRule Portal access entry rules
@@ -421,8 +416,6 @@ type PortalEntryUpdate struct {
 	Http     *PortalEntryHttpUpdate `json:"http"`
 	// Name Entry name
 	Name *string `json:"name"`
-	// Host Match Host, empty string means no restriction
-	Host *string `json:"host"`
 	// ListenIPs Listener IP addresses; empty restores the default wildcard TCP listener
 	ListenIPs *[]string `json:"listenIPs"`
 	// Enabled Whether Hub publishes this entry and its rules to Portal
@@ -437,12 +430,6 @@ type PortalRule struct {
 	Id int `json:"id"`
 	// Name Rule name
 	Name string `json:"name"`
-	// MatchScheme Matching protocol
-	MatchScheme string `json:"matchScheme"`
-	// MatchHost Match Host, empty string means no restriction
-	MatchHost string `json:"matchHost"`
-	// MatchPort Match matchPort, 0 means no restriction
-	MatchPort int `json:"matchPort"`
 	// MatchPathPrefix Match path prefix, empty string means match all paths
 	MatchPathPrefix string `json:"matchPathPrefix"`
 	// RouteType Target type
@@ -515,12 +502,6 @@ type PortalRuleListItem struct {
 	Id int `json:"id"`
 	// Name Rule name
 	Name string `json:"name"`
-	// MatchScheme Matching protocol
-	MatchScheme string `json:"matchScheme"`
-	// MatchHost Match Host, empty string means no restriction
-	MatchHost string `json:"matchHost"`
-	// MatchPort Match matchPort, 0 means no restriction
-	MatchPort int `json:"matchPort"`
 	// MatchPathPrefix Match path prefix, empty string means match all paths
 	MatchPathPrefix string `json:"matchPathPrefix"`
 	// RouteType Target type

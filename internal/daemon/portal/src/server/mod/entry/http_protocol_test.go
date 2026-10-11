@@ -46,7 +46,7 @@ func TestHTTPEntryWatchCreatesRedirectWithoutRulesAndUpdatesTransports(t *testin
 	certificateVault := &vault.Vault{Context: context.Background(), Watch: watchtest.New(t, map[string]string{watched.FormatPortalCertKey("test"): vcode.MustMarshalJsonS(testHTTPPortalCertificate(t))})}
 	certificateVault.DIInit()
 	manager := &Manager{Vault: certificateVault, entryRulesByName: map[string]watched.PortalRule{}, entryConfigsByName: map[string]watched.PortalEntry{}, entriesByKey: map[_Key]*_Entry{}}
-	config := watched.PortalEntry{Name: "web", Protocol: "http", Host: "", ListenIPs: []string{"127.0.0.1"}, Http: watched.PortalEntryHTTP{HttpEnabled: true, HttpPort: 8080, HttpsEnabled: true, HttpsPort: 8443, AutoHTTPS: true}}
+	config := watched.PortalEntry{Name: "web", Protocol: "http", ListenIPs: []string{"127.0.0.1"}, Http: watched.PortalEntryHTTP{Host: "", HttpEnabled: true, HttpPort: 8080, HttpsEnabled: true, HttpsPort: 8443, AutoHTTPS: true}}
 	event := hubapiwatch.Event{Key: watched.FormatPortalEntryKey("web"), Value: vcode.MustMarshalJsonS(config)}
 	manager.handlePortalEntryEvent(event)
 	require.Len(t, manager.entriesByKey, 2)
@@ -64,7 +64,7 @@ func TestHTTPEntryWatchCreatesRedirectWithoutRulesAndUpdatesTransports(t *testin
 	ingress.ServeHTTP(response, request)
 	require.Equal(t, 404, response.Code)
 	manager.entryRulesByName["rule"] = watched.PortalRule{Name: "rule", EntryName: "web", RouteType: routeTypePermanentRedirect, RouteRedirectionPattern: "https://target.local", ResolvedMatchPathPrefix: "/a"}
-	config.Host = "example.com"
+	config.Http.Host = "example.com"
 	event.Value = vcode.MustMarshalJsonS(config)
 	manager.handlePortalEntryEvent(event)
 	require.Len(t, ingress.rules, 1)
@@ -91,7 +91,7 @@ func TestHTTPProtocolRealRedirectAndTLSListeners(t *testing.T) {
 	require.NoError(t, err)
 	httpPort := httpReservation.Addr().(*net.TCPAddr).Port
 	httpsPort := httpsReservation.Addr().(*net.TCPAddr).Port
-	config := watched.PortalEntry{Name: "web", Protocol: "http", Host: "example.com", ListenIPs: []string{"127.0.0.1"}, Http: watched.PortalEntryHTTP{HttpEnabled: true, HttpPort: httpPort, HttpsEnabled: true, HttpsPort: httpsPort, AutoHTTPS: true}}
+	config := watched.PortalEntry{Name: "web", Protocol: "http", ListenIPs: []string{"127.0.0.1"}, Http: watched.PortalEntryHTTP{Host: "example.com", HttpEnabled: true, HttpPort: httpPort, HttpsEnabled: true, HttpsPort: httpsPort, AutoHTTPS: true}}
 	clientWatch := watchtest.New(t, map[string]string{watched.FormatPortalEntryKey("web"): vcode.MustMarshalJsonS(config)})
 	manager := &Manager{Context: context.Background(), Watch: clientWatch, Vault: certificateVault}
 	manager.DIInit()

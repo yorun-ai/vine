@@ -2,6 +2,8 @@ domain vine.hub.admin
 
 @desc("Portal access entry")
 data PortalEntryHTTP {
+    @desc("Match Host, empty string means no restriction")
+    host: string
     @desc("Enable HTTP transport")
     httpEnabled: bool
     @desc("HTTP listener port")
@@ -14,6 +16,7 @@ data PortalEntryHTTP {
     autoHTTPS: bool
 }
 data PortalEntryHTTPUpdate {
+ host: string?
  httpEnabled: bool?
  httpPort: int?
  httpsEnabled: bool?
@@ -28,15 +31,6 @@ data PortalEntry {
 
     @desc("Entry name")
     name: string
-
-    @desc("Entry protocol")
-    scheme: string
-
-    @desc("Match Host, empty string means no restriction")
-    host: string
-
-    @desc("Entry port")
-    port: int
 
     @desc("Listener IP addresses; empty preserves the default wildcard TCP listener")
     listenIPs: list<string>
@@ -56,9 +50,6 @@ data PortalEntryUpdate {
     @desc("Entry name")
     name: string?
 
-    @desc("Match Host, empty string means no restriction")
-    host: string?
-
     @desc("Listener IP addresses; empty restores the default wildcard TCP listener")
     listenIPs: list<string>?
 
@@ -72,9 +63,6 @@ data PortalEntryCreation {
  http: PortalEntryHTTPUpdate?
     @desc("Entry name")
     name: string
-
-    @desc("Match Host, empty string means no restriction")
-    host: string
 
     @desc("Listener IP addresses; empty preserves the default wildcard TCP listener")
     listenIPs: list<string>

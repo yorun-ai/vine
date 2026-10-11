@@ -145,7 +145,7 @@ function portalEntryToFormValue(entry: PortalEntry): PortalEntryFormValue {
     httpEnabled: entry.http.httpEnabled,
     httpsEnabled: entry.http.httpsEnabled,
     autoHTTPS: entry.http.autoHTTPS,
-    host: entry.host,
+    host: entry.http.host,
     httpPort: String(entry.http.httpPort),
     httpsPort: String(entry.http.httpsPort),
     listenIPs: entry.listenIPs.join(', '),
@@ -154,6 +154,7 @@ function portalEntryToFormValue(entry: PortalEntry): PortalEntryFormValue {
 
 function portalEntryHTTPConfig(value: PortalEntryFormValue) {
   return {
+    host: value.host.trim(),
     httpEnabled: value.httpEnabled,
     httpPort: Number(value.httpPort),
     httpsEnabled: value.httpsEnabled,
@@ -169,14 +170,13 @@ function portalEntryFormValueToUpdate(
     name: value.name.trim(),
     protocol: 'http',
     http: portalEntryHTTPConfig(value),
-    host: value.host.trim(),
     listenIPs: value.listenIPs.split(/[\s,]+/).filter(Boolean),
     enabled: value.enabled,
   }
 }
 
 function portalEntryAddress(entry: PortalEntry) {
-  const host = entry.host.includes(':') ? `[${entry.host}]` : entry.host || '*'
+  const host = entry.http.host.includes(':') ? `[${entry.http.host}]` : entry.http.host || '*'
   return [
     entry.http.httpEnabled ? `http://${host}:${entry.http.httpPort}` : '',
     entry.http.httpsEnabled ? `https://${host}:${entry.http.httpsPort}` : '',
@@ -211,7 +211,7 @@ function ruleTargetValue(entryRule: PortalEntryRule) {
 
 function formatRuleMatch(rule: PortalRuleListItem) {
   const pathPrefix = rule.matchPathPrefix || '/'
-  return rule.matchHost ? `${rule.matchHost}${pathPrefix}` : pathPrefix
+  return rule.entryAddresses.map((address) => `${address}${pathPrefix}`).join(' · ')
 }
 
 function portalRuleHref(rule: PortalRuleListItem) {
@@ -537,7 +537,7 @@ export function PortalEntryPage() {
       const values = [
         entry.name,
         portalEntryAddress(entry),
-        entry.host,
+        entry.http.host,
         ...entry.rules.flatMap((entryRule) => [
           entryRule.site?.name ?? '',
           entryRule.site?.actorSkelName ?? '',
@@ -545,7 +545,7 @@ export function PortalEntryPage() {
           ...((entryRule.site?.rpcgwServices as Array<string> | undefined) ??
             []),
           entryRule.rule.name,
-          entryRule.rule.matchHost,
+          ...entryRule.rule.entryAddresses,
           entryRule.rule.matchPathPrefix,
           entryRule.rule.routeType,
           entryRule.rule.routeSiteName,
@@ -606,8 +606,7 @@ export function PortalEntryPage() {
             name: value.name.trim(),
             protocol: 'http',
             http: portalEntryHTTPConfig(value),
-            host: value.host.trim(),
-            listenIPs: value.listenIPs.split(/[\s,]+/).filter(Boolean),
+                    listenIPs: value.listenIPs.split(/[\s,]+/).filter(Boolean),
             enabled: value.enabled,
           },
         })
