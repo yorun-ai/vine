@@ -248,7 +248,8 @@ func toWatchedPortalSite(site *core.PortalSite) *watched.PortalSite {
 			})
 		}
 		ret.RpcgwConfig = &watched.PortalRpcgwConfig{
-			Services: services,
+			InspectEnabled: site.InspectEnabled,
+			Services:       services,
 		}
 	}
 	if site.Type == core.PortalSiteTypeWEBGW {

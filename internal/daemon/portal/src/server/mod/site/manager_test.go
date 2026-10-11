@@ -224,6 +224,7 @@ func newTestManager(t *testing.T, valuesByKey map[string]string) *Manager {
 		Access:     newTestAccess(t),
 		Epmgr:      epmgrManager,
 	}
+	manager.Desc = manager.Access.Desc
 	manager.DIInit()
 	return manager
 }

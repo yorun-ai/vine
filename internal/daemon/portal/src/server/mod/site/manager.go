@@ -9,6 +9,7 @@ import (
 	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/desc"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/rpcgw"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
@@ -28,6 +29,7 @@ type Manager struct {
 	CurrentApp meta.CurrentApp       `inject:""`
 	Watch      hubapiwatch.ClientOps `inject:""`
 	Access     *access.Access        `inject:""`
+	Desc       *desc.Manager         `inject:""`
 	Epmgr      *epmgr.Manager        `inject:""`
 
 	mutex       sync.RWMutex
@@ -119,7 +121,7 @@ func (m *Manager) decodeSite(value string) watched.PortalSite {
 func (m *Manager) newSite(config watched.PortalSite) spec.Site {
 	switch config.Type {
 	case siteTypeRpcgw:
-		return rpcgw.New(m.Context, m.CurrentApp, m.Access, m.Epmgr, config)
+		return rpcgw.New(m.Context, m.CurrentApp, m.Access, m.Desc, m.Epmgr, config)
 	case siteTypeWebgw:
 		return webgw.New(m.Context, m.CurrentApp, m.Access, m.Epmgr, config)
 	default:

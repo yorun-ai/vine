@@ -25,6 +25,24 @@ func TestPortalSiteDaoStoresEnabledSwitch(t *testing.T) {
 	assert.Equal(t, disabled.Id, site.Id)
 }
 
+func TestPortalSiteDaoMigratesInspectDisabledAndPersistsToggles(t *testing.T) {
+	dao := newTestPortalSiteDao(t)
+	entry := dao.Save(new(PortalSite{Name: "existing-api", Type: "RPCGW", ActorSkelName: "demo.Actor", Enabled: true}))
+	require.NoError(t, dao.GormDB().Exec("ALTER TABLE portal_site DROP COLUMN inspect_enabled").Error)
+	dao.EnsureSchema()
+	dao.EnsureSchema()
+	stored, ok := dao.ById(entry.Id)
+	require.True(t, ok)
+	require.False(t, stored.InspectEnabled)
+	for _, enabled := range []bool{true, false} {
+		stored.InspectEnabled = enabled
+		dao.Save(stored)
+		stored, ok = dao.ById(entry.Id)
+		require.True(t, ok)
+		require.Equal(t, enabled, stored.InspectEnabled)
+	}
+}
+
 func TestPortalSiteDaoRemovesViaWithoutChangingSites(t *testing.T) {
 	dao := newTestPortalSiteDao(t)
 	site := dao.Save(new(PortalSite{Name: "kept", Type: "RPCGW", ActorSkelName: "demo.Actor", Enabled: true}))

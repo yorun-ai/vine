@@ -42,13 +42,14 @@ func NormalizePortalCors(cors PortalCors) PortalCors {
 }
 
 type PortalSite struct {
-	FieldSources  FieldSources
-	Id            int
-	Name          string
-	Type          PortalSiteType
-	ActorSkelName string
-	Cors          PortalCors
-	WebName       string
+	FieldSources   FieldSources
+	Id             int
+	Name           string
+	Type           PortalSiteType
+	ActorSkelName  string
+	InspectEnabled bool
+	Cors           PortalCors
+	WebName        string
 	// WebMountPath is derived from the Web contract of the site and is empty when
 	// the Web is not limited to a path.
 	WebMountPath string
@@ -60,22 +61,24 @@ type PortalSite struct {
 }
 
 type PortalSiteCreation struct {
-	Name          string
-	Type          PortalSiteType
-	ActorSkelName string
-	Cors          PortalCors
-	WebName       string
+	Name           string
+	Type           PortalSiteType
+	ActorSkelName  string
+	InspectEnabled bool
+	Cors           PortalCors
+	WebName        string
 	// Enabled is optional and defaults to true.
 	Enabled *bool
 }
 
 type PortalSiteUpdate struct {
-	Name          *string
-	Type          *PortalSiteType
-	ActorSkelName *string
-	Cors          *PortalCors
-	WebName       *string
-	Enabled       *bool
+	Name           *string
+	Type           *PortalSiteType
+	ActorSkelName  *string
+	InspectEnabled *bool
+	Cors           *PortalCors
+	WebName        *string
+	Enabled        *bool
 }
 
 type PortalSiteActorOption struct {
@@ -149,12 +152,13 @@ func (m *PortalSiteCore) Create(creation PortalSiteCreation) *PortalSite {
 	ex.PanicNewIfNot(!ok, ex.OperationFailed, ex.F("portal entry %q already exists", creation.Name))
 
 	entry := PortalSite{
-		Name:          creation.Name,
-		Type:          creation.Type,
-		ActorSkelName: creation.ActorSkelName,
-		Cors:          creation.Cors,
-		WebName:       creation.WebName,
-		Enabled:       EnabledOrDefault(creation.Enabled),
+		Name:           creation.Name,
+		Type:           creation.Type,
+		ActorSkelName:  creation.ActorSkelName,
+		InspectEnabled: creation.InspectEnabled,
+		Cors:           creation.Cors,
+		WebName:        creation.WebName,
+		Enabled:        EnabledOrDefault(creation.Enabled),
 	}
 	entry = m.Validate(entry)
 	m.PortalSiteRepo.Save(&entry)
@@ -182,6 +186,10 @@ func (m *PortalSiteCore) Update(id int, update PortalSiteUpdate) *PortalSite {
 	if update.ActorSkelName != nil {
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/actorSkelName")
 		next.ActorSkelName = *update.ActorSkelName
+	}
+	if update.InspectEnabled != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/inspectEnabled")
+		next.InspectEnabled = *update.InspectEnabled
 	}
 	if update.Cors != nil {
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/cors")
@@ -303,6 +311,7 @@ func (s *PortalSite) normalizeAndValidate() {
 	fail(strings.TrimSpace(s.Name) != "", "name is required")
 	fail(s.Type == PortalSiteTypeRPCGW || s.Type == PortalSiteTypeWEBGW, "type must be RPCGW or WEBGW")
 	fail(strings.TrimSpace(s.ActorSkelName) != "", "actorSkelName is required")
+	fail(!s.InspectEnabled || s.Type == PortalSiteTypeRPCGW, "inspectEnabled is only supported for RPCGW")
 	if s.Type == PortalSiteTypeWEBGW {
 		fail(strings.TrimSpace(s.WebName) != "", "webName is required for WEBGW")
 	}

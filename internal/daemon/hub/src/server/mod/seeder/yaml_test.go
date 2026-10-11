@@ -25,6 +25,21 @@ func TestPortalSiteSeedIgnoresLegacyVia(t *testing.T) {
 	}
 }
 
+func TestPortalSiteInspectSeedDefaultAndBoolean(t *testing.T) {
+	for _, test := range []struct {
+		field string
+		want  bool
+	}{{"", false}, {", inspectEnabled: true", true}, {", inspectEnabled: false", false}} {
+		entities, err := parseSeedEntities("portalSites: [{name: api, type: RPCGW, actorSkelName: demo.Actor" + test.field + "}]")
+		require.NoError(t, err)
+		require.Equal(t, test.want, entities.PortalSites[0].InspectEnabled)
+	}
+	for _, value := range []string{"null", "'true'", "1", "[]", "{}"} {
+		_, err := parseSeedEntities("portalSites: [{name: api, type: RPCGW, actorSkelName: demo.Actor, inspectEnabled: " + value + "}]")
+		require.ErrorContains(t, err, "inspectEnabled must be a boolean")
+	}
+}
+
 func TestPortalRuleSeedMapsWithoutDomainValidation(t *testing.T) {
 	seed := _PortalRule{Name: "mapped", RouteType: "SITE", RoutePathPrefix: "/internal/"}
 	rule := seed.toCorePortalRule()

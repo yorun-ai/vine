@@ -41,6 +41,9 @@ data PortalSiteCreation {
     @desc("Actor Skel name")
     actorSkelName: string
 
+    @desc("Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default")
+    inspectEnabled: bool
+
     @desc("CORS configuration")
     cors: PortalCors?
 
@@ -64,6 +67,9 @@ data PortalSite {
 
     @desc("Actor Skel name")
     actorSkelName: string
+
+    @desc("Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default")
+    inspectEnabled: bool
 
     @desc("Rpc gateway service Skel name list")
     rpcgwServices: list<string>
@@ -98,6 +104,9 @@ data PortalSiteListItem {
     @desc("Actor Skel name")
     actorSkelName: string
 
+    @desc("Expose read-only Rpc inspect and JSON Schema; RPCGW only, disabled by default")
+    inspectEnabled: bool
+
     @desc("Rpc gateway service Skel name list")
     rpcgwServices: list<string>
 
@@ -124,6 +133,9 @@ data PortalSiteUpdate {
 
     @desc("Actor Skel name")
     actorSkelName: string?
+
+    @desc("Expose read-only Rpc inspect and JSON Schema; RPCGW only")
+    inspectEnabled: bool?
 
     @desc("CORS configuration")
     cors: PortalCors?

@@ -31,24 +31,26 @@ func (s *PortalSiteApiServiceServerImpl) Get(id int) skeled.PortalSite {
 
 func (s *PortalSiteApiServiceServerImpl) Create(creation skeled.PortalSiteCreation) skeled.PortalSite {
 	entry := s.PortalSiteCore.Create(core.PortalSiteCreation{
-		Name:          creation.Name,
-		Type:          core.PortalSiteType(creation.Type),
-		ActorSkelName: creation.ActorSkelName,
-		Cors:          toCorePortalCors(creation.Cors),
-		WebName:       creation.WebName,
-		Enabled:       creation.Enabled,
+		Name:           creation.Name,
+		Type:           core.PortalSiteType(creation.Type),
+		ActorSkelName:  creation.ActorSkelName,
+		InspectEnabled: creation.InspectEnabled,
+		Cors:           toCorePortalCors(creation.Cors),
+		WebName:        creation.WebName,
+		Enabled:        creation.Enabled,
 	})
 	return toServerPortalSite(entry, toServerFieldSources(entry.FieldSources))
 }
 
 func (s *PortalSiteApiServiceServerImpl) Update(id int, update skeled.PortalSiteUpdate) skeled.PortalSite {
 	entry := s.PortalSiteCore.Update(id, core.PortalSiteUpdate{
-		Name:          update.Name,
-		Type:          toCorePortalSiteTypePointer(update.Type),
-		ActorSkelName: update.ActorSkelName,
-		Cors:          toCorePortalCorsPointer(update.Cors),
-		WebName:       update.WebName,
-		Enabled:       update.Enabled,
+		Name:           update.Name,
+		Type:           toCorePortalSiteTypePointer(update.Type),
+		ActorSkelName:  update.ActorSkelName,
+		InspectEnabled: update.InspectEnabled,
+		Cors:           toCorePortalCorsPointer(update.Cors),
+		WebName:        update.WebName,
+		Enabled:        update.Enabled,
 	})
 	return toServerPortalSite(entry, toServerFieldSources(entry.FieldSources))
 }
@@ -59,16 +61,17 @@ func (s *PortalSiteApiServiceServerImpl) Remove(id int) {
 
 func toServerPortalSite(entry *core.PortalSite, fieldSources []skeled.FieldSource) skeled.PortalSite {
 	return skeled.PortalSite{
-		Enabled:       entry.Enabled,
-		Id:            entry.Id,
-		Name:          entry.Name,
-		Type:          skeled.PortalSiteType(entry.Type),
-		ActorSkelName: entry.ActorSkelName,
-		RpcgwServices: entry.RpcgwServices,
-		Cors:          toServerPortalCors(entry.Cors),
-		WebName:       entry.WebName,
-		WebMountPath:  entry.WebMountPath,
-		FieldSources:  fieldSources,
+		Enabled:        entry.Enabled,
+		Id:             entry.Id,
+		Name:           entry.Name,
+		Type:           skeled.PortalSiteType(entry.Type),
+		ActorSkelName:  entry.ActorSkelName,
+		InspectEnabled: entry.InspectEnabled,
+		RpcgwServices:  entry.RpcgwServices,
+		Cors:           toServerPortalCors(entry.Cors),
+		WebName:        entry.WebName,
+		WebMountPath:   entry.WebMountPath,
+		FieldSources:   fieldSources,
 	}
 }
 
@@ -77,15 +80,16 @@ func toServerPortalSite(entry *core.PortalSite, fieldSources []skeled.FieldSourc
 func toServerPortalSiteListItem(entry *core.PortalSite) skeled.PortalSiteListItem {
 	detail := toServerPortalSite(entry, nil)
 	return skeled.PortalSiteListItem{
-		Enabled:       detail.Enabled,
-		Id:            detail.Id,
-		Name:          detail.Name,
-		Type:          detail.Type,
-		ActorSkelName: detail.ActorSkelName,
-		RpcgwServices: detail.RpcgwServices,
-		Cors:          detail.Cors,
-		WebName:       detail.WebName,
-		WebMountPath:  detail.WebMountPath,
+		Enabled:        detail.Enabled,
+		Id:             detail.Id,
+		Name:           detail.Name,
+		Type:           detail.Type,
+		ActorSkelName:  detail.ActorSkelName,
+		InspectEnabled: detail.InspectEnabled,
+		RpcgwServices:  detail.RpcgwServices,
+		Cors:           detail.Cors,
+		WebName:        detail.WebName,
+		WebMountPath:   detail.WebMountPath,
 	}
 }
 

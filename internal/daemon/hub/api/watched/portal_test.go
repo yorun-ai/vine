@@ -25,6 +25,7 @@ func TestPortalSiteJSON(t *testing.T) {
 			AllowedOrigins: []string{"https://console.example.com"},
 		},
 		RpcgwConfig: &PortalRpcgwConfig{
+			InspectEnabled: true,
 			Services: []PortalRpcgwService{
 				{SkelName: "demo.user.UserService"},
 				{SkelName: "demo.order.OrderService"},
@@ -41,6 +42,7 @@ func TestPortalSiteJSON(t *testing.T) {
 			"allowedOrigins": ["https://console.example.com"]
 		},
 		"rpcgwConfig": {
+			"inspectEnabled": true,
 			"services": [
 				{"skelName": "demo.user.UserService"},
 				{"skelName": "demo.order.OrderService"}

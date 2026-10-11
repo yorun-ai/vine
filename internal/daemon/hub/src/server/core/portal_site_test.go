@@ -127,6 +127,25 @@ func testUserSite() PortalSite {
 	return PortalSite{Name: "demo-web", Type: PortalSiteTypeWEBGW, ActorSkelName: "demo.Actor", WebName: "demo.Web"}
 }
 
+func TestPortalSiteInspectSwitchDefaultsAndUpdates(t *testing.T) {
+	repo := new(portalSiteRepoSpy)
+	target := newPortalSiteCoreForTest(repo)
+	site := target.Create(PortalSiteCreation{Name: "api", Type: PortalSiteTypeRPCGW, ActorSkelName: "demo.Actor"})
+	require.False(t, site.InspectEnabled)
+	site = target.Update(site.Id, PortalSiteUpdate{InspectEnabled: new(true)})
+	require.True(t, site.InspectEnabled)
+	site = target.Update(site.Id, PortalSiteUpdate{Name: new("renamed")})
+	require.True(t, site.InspectEnabled, "unrelated updates preserve the switch")
+	site.FieldSources = FieldSources{"/inspectEnabled": {Source: "seed"}}
+	repo.Save(site)
+	site = target.Update(site.Id, PortalSiteUpdate{InspectEnabled: new(false)})
+	require.False(t, site.InspectEnabled)
+	require.Equal(t, "hub", site.FieldSources["/inspectEnabled"].Override)
+	web := testUserSite()
+	web.InspectEnabled = true
+	require.Panics(t, func() { target.Validate(web) })
+}
+
 func TestPortalSiteValidateWithoutStorage(t *testing.T) {
 	target := &PortalSiteCore{}
 	got := target.Validate(testUserSite())

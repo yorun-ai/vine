@@ -345,10 +345,11 @@ func (r _PortalRule) toCorePortalRule() *core.PortalRule {
 // Portal site
 
 type _PortalSite struct {
-	Sources       core.FieldSources `yaml:"-"`
-	Name          string            `yaml:"name"`
-	Type          string            `yaml:"type"`
-	ActorSkelName string            `yaml:"actorSkelName"`
+	Sources        core.FieldSources `yaml:"-"`
+	Name           string            `yaml:"name"`
+	Type           string            `yaml:"type"`
+	ActorSkelName  string            `yaml:"actorSkelName"`
+	InspectEnabled bool              `yaml:"inspectEnabled"`
 	// Deprecated: accepted for old seed files; Vine ignores Via.
 	ActorVia string      `yaml:"actorVia"`
 	Cors     _PortalCors `yaml:"cors"`
@@ -366,6 +367,9 @@ func (s *_PortalSite) UnmarshalYAML(node *yaml.Node) error {
 	}
 	if err := checkSeedFields(fields, "portalSites"); err != nil {
 		return err
+	}
+	if value, ok := fields["inspectEnabled"]; ok && (value.Kind != yaml.ScalarNode || value.Tag != "!!bool") {
+		return fmt.Errorf("portal site %q: inspectEnabled must be a boolean", fields["name"].Value)
 	}
 	if cors, ok := fields["cors"]; ok && cors.Kind == yaml.MappingNode {
 		corsFields, err := seedMappingFields(&cors, "portal site cors")
@@ -395,12 +399,13 @@ func (s _PortalSite) toCorePortalSite() *core.PortalSite {
 		AllowedOrigins: append([]string{}, s.Cors.AllowedOrigins...),
 	}
 	site := &core.PortalSite{FieldSources: maps.Clone(s.Sources),
-		Name:          s.Name,
-		Type:          core.PortalSiteType(s.Type),
-		ActorSkelName: s.ActorSkelName,
-		Cors:          cors,
-		WebName:       s.WebName,
-		Enabled:       core.EnabledOrDefault(s.Enabled),
+		Name:           s.Name,
+		Type:           core.PortalSiteType(s.Type),
+		ActorSkelName:  s.ActorSkelName,
+		InspectEnabled: s.InspectEnabled,
+		Cors:           cors,
+		WebName:        s.WebName,
+		Enabled:        core.EnabledOrDefault(s.Enabled),
 	}
 	delete(site.FieldSources, "/actorVia")
 	return site

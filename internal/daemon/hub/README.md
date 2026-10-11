@@ -318,3 +318,8 @@ retired Base64 columns without converting their contents. Watch publishes only
 PEM fields; Hub, Link, and Portal must be upgraded together. Enabled certificates
 require a valid certificate/key pair; disabled certificates may be placeholders.
 Never expose private key values through Admin API provenance.
+
+RPCGW sites also have an `inspectEnabled` switch, defaulting to false in seeds,
+Admin creation, and migrated databases. The Dashboard can toggle it and Watch
+publishes it inside `rpcgwConfig`. It enables unauthenticated, read-only API
+contract inspection on that site; Web sites reject an enabled inspect switch.

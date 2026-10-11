@@ -76,6 +76,22 @@ func TestPortalSiteRepoSaveCreate(t *testing.T) {
 	assertWatchedPortalSite(t, entry, vcode.MustUnmarshalJsonS[*watched.PortalSite](raw))
 }
 
+func TestPortalSiteInspectSwitchRoundTripsToWatch(t *testing.T) {
+	_, repo, watchServer := newTestPortalSiteRepo(t)
+	entry := testPortalSite("inspect-api")
+	for _, enabled := range []bool{false, true, false} {
+		entry.InspectEnabled = enabled
+		repo.Save(entry)
+		stored, ok := repo.GetById(entry.Id)
+		require.True(t, ok)
+		require.Equal(t, enabled, stored.InspectEnabled)
+		raw, ok := watchServer.Get(watched.FormatPortalSiteKey(entry.Name))
+		require.True(t, ok)
+		wire := vcode.MustUnmarshalJsonS[*watched.PortalSite](raw)
+		require.Equal(t, enabled, wire.RpcgwConfig.InspectEnabled)
+	}
+}
+
 func TestPortalSiteRepoSaveRename(t *testing.T) {
 	_, repo, watchServer := newTestPortalSiteRepo(t)
 

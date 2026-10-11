@@ -89,7 +89,8 @@ type PortalCors struct {
 }
 
 type PortalRpcgwConfig struct {
-	Services []PortalRpcgwService `json:"services"`
+	InspectEnabled bool                 `json:"inspectEnabled"`
+	Services       []PortalRpcgwService `json:"services"`
 }
 
 type PortalRpcgwService struct {

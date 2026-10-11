@@ -249,14 +249,19 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 }
 
 func TestEntryTargetPathDispatchesWithinRpcGateway(t *testing.T) {
-	rule, ok := newRule(watched.PortalRule{Name: "rpc", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: "/inspect", RouteType: "SITE", RouteSiteName: "rpc"}, watched.PortalEntry{Host: ""}, spec.SchemeHTTP, 80, newTestSiteManager(t, "rpc"))
+	manager := newTestSiteManager(t, "rpc")
+	gateway, found := manager.Site("rpc")
+	require.True(t, found)
+	gateway.Update(watched.PortalSite{Name: "rpc", Type: "RPCGW", RpcgwConfig: new(watched.PortalRpcgwConfig{InspectEnabled: true})})
+	rule, ok := newRule(watched.PortalRule{Name: "rpc", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: "/inspect", RouteType: "SITE", RouteSiteName: "rpc"}, watched.PortalEntry{Host: ""}, spec.SchemeHTTP, 80, manager)
 	require.True(t, ok)
 	entry := newEntry(spec.SchemeHTTP, 80, nil)
 	entry.SetOrUpdateRules([]*_Rule{rule})
 	response := httptest.NewRecorder()
 	entry.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api", nil))
-	assert.Contains(t, response.Body.String(), "rpcgw inspect is not implemented")
-	assert.NotContains(t, response.Body.String(), "rpcgw path is not found")
+	require.Equal(t, http.StatusOK, response.Code)
+	assert.Equal(t, "application/json", response.Header().Get("Content-Type"))
+	assert.JSONEq(t, `{"services":[]}`, response.Body.String())
 }
 
 func TestEntryWildcardHostPrecedence(t *testing.T) {

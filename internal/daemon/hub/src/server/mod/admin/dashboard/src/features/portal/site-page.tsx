@@ -54,6 +54,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Tooltip,
@@ -118,6 +119,7 @@ interface PortalSiteFormValue {
   name: string
   type: PortalSiteType
   actorSkelName: string
+  inspectEnabled: boolean
   corsMode: PortalCorsModeValue
   corsAllowedOrigins: string
   rpcgwServices: string
@@ -130,6 +132,7 @@ const emptyFormValue: PortalSiteFormValue = {
   name: '',
   type: 'WEBGW',
   actorSkelName: '',
+  inspectEnabled: false,
   corsMode: 'SAME_DOMAIN',
   corsAllowedOrigins: '',
   rpcgwServices: '',
@@ -202,12 +205,30 @@ function portalSiteToFormValue(entry: PortalSiteListItem): PortalSiteFormValue {
     name: entry.name,
     type: normalizePortalSiteType(entry.type),
     actorSkelName: entry.actorSkelName,
+    inspectEnabled: entry.inspectEnabled,
     corsMode: normalizePortalCorsMode(cors?.mode),
     corsAllowedOrigins: (cors?.allowedOrigins ?? []).join('\n'),
     rpcgwServices: rpcgwServices.join('\n'),
     webName: entry.webName,
     enabled: entry.enabled,
   }
+}
+
+function InspectField({ enabled, onChange }: {
+  enabled: boolean
+  onChange: (enabled: boolean) => void
+}) {
+  const { t } = useLocale()
+  const id = React.useId()
+  return (
+    <div className="grid gap-2">
+      <div className="flex items-center gap-2">
+        <Switch id={id} checked={enabled} onCheckedChange={(checked) => onChange(checked === true)} />
+        <Label htmlFor={id}>{t('portalSite.inspectEnabled')}</Label>
+      </div>
+      <p className="text-xs leading-5 text-muted-foreground">{t('portalSite.inspectHelp')}</p>
+    </div>
+  )
 }
 
 function portalSiteRpcgwServices(entry: PortalSiteListItem) {
@@ -225,6 +246,7 @@ function formValueToCreation(value: PortalSiteFormValue): PortalSiteCreation {
     name: value.name.trim(),
     type: value.type,
     actorSkelName: value.actorSkelName.trim(),
+    inspectEnabled: value.type === 'RPCGW' && value.inspectEnabled,
     cors: {
       mode: value.corsMode,
       allowedOrigins:
@@ -244,6 +266,7 @@ function formValueToUpdate(value: PortalSiteFormValue): PortalSiteUpdate {
     name: creation.name,
     type: creation.type,
     actorSkelName: creation.actorSkelName,
+    inspectEnabled: creation.inspectEnabled,
     cors: creation.cors,
     webName: creation.webName,
     enabled: value.enabled,
@@ -670,6 +693,13 @@ function PortalSiteDialog({
               </Select>
             </Field>
           </FieldRow>
+
+          {formValue.type === 'RPCGW' && (
+            <InspectField
+              enabled={formValue.inspectEnabled}
+              onChange={(enabled) => setField('inspectEnabled', enabled)}
+            />
+          )}
 
           {formValue.type === 'RPCGW' ? (
             <Field
@@ -1107,6 +1137,13 @@ function PortalSiteInlineEditor({
           </Select>
         </Field>
       </FieldRow>
+
+      {formValue.type === 'RPCGW' && (
+        <InspectField
+          enabled={formValue.inspectEnabled}
+          onChange={(enabled) => setField('inspectEnabled', enabled)}
+        />
+      )}
 
       {formValue.type === 'RPCGW' ? (
         <Field
@@ -1694,6 +1731,11 @@ export function PortalSitePage() {
                       </ReadonlyField>
                       </FieldRow>
                       <FieldRow>
+                        {selectedEntry.type === 'RPCGW' && (
+                          <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path="/inspectEnabled" />} label={t('portalSite.inspectEnabled')}>
+                            {selectedEntry.inspectEnabled ? t('common.enabled') : t('common.disabled')}
+                          </ReadonlyField>
+                        )}
                         <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path="/cors/mode" />} label={t('portalSite.corsMode')}>
                           <Badge variant="outline">
                             {t(portalCorsModeLabel(selectedEntry.cors?.mode))}

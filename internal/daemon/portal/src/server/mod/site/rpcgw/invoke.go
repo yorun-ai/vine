@@ -59,13 +59,16 @@ func (g *RpcGateway) serveInvoke(ctx *spec.Context) {
 		return
 	}
 
+	g.mutex.Lock()
+	actorSkelName := g.actorSkelName
+	g.mutex.Unlock()
 	operation := &access.RpcOperation{
 		Request:       invokeRequest,
 		Response:      ctx.ResponseWriter,
 		Trace:         trace,
 		Initiator:     initiator,
 		Server:        g.app,
-		ActorSkelName: g.actorSkelName,
+		ActorSkelName: actorSkelName,
 		ServiceName:   serviceName,
 		MethodName:    methodName,
 	}

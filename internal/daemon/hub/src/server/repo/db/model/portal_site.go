@@ -17,13 +17,14 @@ var createPortalSitePgSQL string
 type PortalSite struct {
 	FieldSources string `gorm:"-"`
 	rdb.Model
-	Name          string `gorm:"column:name"`
-	Type          string `gorm:"column:type"`
-	ActorSkelName string `gorm:"column:actor_skel_name"`
-	CorsMode      string `gorm:"column:cors_mode"`
-	CorsOrigins   string `gorm:"column:cors_origins"`
-	WebName       string `gorm:"column:web_name"`
-	Enabled       bool   `gorm:"column:enabled;not null"`
+	Name           string `gorm:"column:name"`
+	Type           string `gorm:"column:type"`
+	ActorSkelName  string `gorm:"column:actor_skel_name"`
+	InspectEnabled bool   `gorm:"column:inspect_enabled;not null"`
+	CorsMode       string `gorm:"column:cors_mode"`
+	CorsOrigins    string `gorm:"column:cors_origins"`
+	WebName        string `gorm:"column:web_name"`
+	Enabled        bool   `gorm:"column:enabled;not null"`
 }
 
 func (*PortalSite) TableName() string {
@@ -39,6 +40,11 @@ func (d *PortalSiteDao) EnsureSchema() {
 	err := d.GormDB().Exec(sql).Error
 	ex.PanicIfError(err)
 	dropColumns(d.GormDB(), "portal_site", "actor_via")
+	columns, err := tableColumnNames(d.GormDB(), "portal_site")
+	ex.PanicIfError(err)
+	if !columns["inspect_enabled"] {
+		ex.PanicIfError(d.GormDB().Exec("ALTER TABLE portal_site ADD COLUMN inspect_enabled BOOLEAN NOT NULL DEFAULT FALSE").Error)
+	}
 	ensureFieldSourceTable(d.GormDB())
 }
 
@@ -67,6 +73,7 @@ func (d *PortalSiteDao) Save(entry *PortalSite) *PortalSite {
 		"name":            entry.Name,
 		"type":            entry.Type,
 		"actor_skel_name": entry.ActorSkelName,
+		"inspect_enabled": entry.InspectEnabled,
 		"cors_mode":       entry.CorsMode,
 		"cors_origins":    entry.CorsOrigins,
 		"web_name":        entry.WebName,
