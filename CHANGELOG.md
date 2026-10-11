@@ -8,6 +8,17 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.31.1] - 2026-10-12
+
+### Fixed
+
+- Prevent application startup failures when an event contract registers only a
+  listener by excluding unregistered emitter factories from dependency injection.
+
+### Changed
+
+- Update stable Hub, Link, and Portal Kubernetes images to v0.31.1.
+
 ## [0.31.0] - 2026-10-11
 
 ### Changed
@@ -1732,7 +1743,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.31.0...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.31.1...HEAD
+[0.31.1]: https://github.com/yorun-ai/vine/compare/v0.31.0...v0.31.1
 [0.31.0]: https://github.com/yorun-ai/vine/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/yorun-ai/vine/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/yorun-ai/vine/compare/v0.28.1...v0.29.0
