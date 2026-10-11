@@ -20,7 +20,6 @@ func testDomainDescriptor() *skeldesc.Domain {
 				Name:     "AdminActor",
 				SkelName: "demo.user.AdminActor",
 				Hash:     "actor-hash-1",
-				Vias:     []skeldesc.ActorViaKind{skeldesc.ActorViaClient},
 			},
 		},
 		Configs: []*skeldesc.Config{

@@ -156,7 +156,6 @@ func convertActorAudience(value *ActorAudienceSchema) *descriptor.ActorAudience 
 	result := &descriptor.ActorAudience{
 		Name:     value.Name,
 		SkelName: value.SkelName,
-		Via:      descriptor.ActorViaKind(value.Via),
 	}
 	return result
 }
@@ -372,7 +371,6 @@ func convertActor(value *ActorSchema) *descriptor.Actor {
 		Deprecated:       value.Deprecated,
 		DeprecatedReason: value.DeprecatedReason,
 		Hash:             value.Hash,
-		Vias:             append([]descriptor.ActorViaKind(nil), value.Vias...),
 	}
 	if value.AuthEnabled {
 		result.Auth = &descriptor.ActorAuth{

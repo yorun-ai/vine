@@ -1,11 +1,33 @@
 package legacy
 
 import (
+	"encoding/json/v2"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/skel/descriptor"
 )
+
+func TestConvertLegacyViaInputs(t *testing.T) {
+	for _, via := range []string{"client", "agent", "openapi", "future"} {
+		t.Run(via, func(t *testing.T) {
+			source := new(DomainSchema)
+			require.NoError(t, json.Unmarshal([]byte(`{
+				"domain":"demo",
+				"actors":[{"name":"UserActor","skelName":"demo.UserActor","vias":["`+via+`"]}],
+				"services":[{"name":"UserApiService","skelName":"demo.UserApiService","api":true,"authMode":"optional",
+					"audiences":[{"name":"UserActor","skelName":"demo.UserActor","via":"`+via+`"}]}]
+			}`), source))
+			result, err := Convert(source)
+			require.NoError(t, err)
+			require.Equal(t, []*descriptor.Actor{{Name: "UserActor", SkelName: "demo.UserActor"}}, result.Actors)
+			require.True(t, result.Services[0].HasAudience("demo.UserActor"))
+			require.False(t, result.Services[0].HasAudience("demo.OtherActor"))
+			require.Equal(t, []ActorVia{ActorVia(via)}, source.Actors[0].Vias)
+			require.Equal(t, ActorVia(via), source.Services[0].Audiences[0].Via)
+		})
+	}
+}
 
 func TestConvertNormalizesAuthAndComputesPolicy(t *testing.T) {
 	for _, mode := range []AuthMode{"", "required", "optional"} {

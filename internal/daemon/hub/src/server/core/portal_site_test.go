@@ -104,23 +104,17 @@ func TestMatchPortalSiteRpcgwServicesInDomainViewsIncludesVineDescriptors(t *tes
 	assert.Equal(t, []string{"vine.hub.admin.PortalSiteApiService"}, services)
 }
 
-func TestMatchPortalSiteRpcgwServicesInDomainViewsIgnoresVia(t *testing.T) {
+func TestMatchPortalSiteRpcgwServicesInDomainViewsRequiresActorAudience(t *testing.T) {
 	site := PortalSite{Type: PortalSiteTypeRPCGW, ActorSkelName: "demo.UserActor"}
-	services := []*skeldesc.Service{}
-	for _, via := range []skeldesc.ActorViaKind{"", skeldesc.ActorViaClient, skeldesc.ActorViaAgent, skeldesc.ActorViaOpenAPI, "future"} {
-		services = append(services, new(skeldesc.Service{
-			Api: true, SkelName: "demo.Service" + string(via),
-			Audiences: []*skeldesc.ActorAudience{{SkelName: site.ActorSkelName, Via: via}},
-		}))
+	services := []*skeldesc.Service{
+		{Api: true, SkelName: "demo.UserApiService", Audiences: []*skeldesc.ActorAudience{{SkelName: site.ActorSkelName}}},
+		{Api: true, SkelName: "demo.OtherActorService", Audiences: []*skeldesc.ActorAudience{{SkelName: "demo.OtherActor"}}},
+		{SkelName: "demo.InternalService"},
 	}
-	services = append(services,
-		new(skeldesc.Service{Api: true, SkelName: "demo.OtherActorService", Audiences: []*skeldesc.ActorAudience{{SkelName: "demo.OtherActor"}}}),
-		new(skeldesc.Service{SkelName: "demo.InternalService"}),
-	)
 	views := []DomainDescriptorView{{DomainVersion: DomainDescriptorVersion{
 		Main: true, Descriptor: new(skeldesc.Domain{Services: services}),
 	}}}
-	assert.Equal(t, []string{"demo.Service", "demo.Serviceagent", "demo.Serviceclient", "demo.Servicefuture", "demo.Serviceopenapi"}, MatchPortalSiteRpcgwServicesInDomainViews(site, views))
+	assert.Equal(t, []string{"demo.UserApiService"}, MatchPortalSiteRpcgwServicesInDomainViews(site, views))
 }
 
 func testUserSite() PortalSite {

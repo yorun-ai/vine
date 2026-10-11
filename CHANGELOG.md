@@ -8,6 +8,74 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.29.0] - 2026-10-11
+
+### Added
+
+- Configure Portal entry `listenIPs` to bind explicit IPv4/IPv6 addresses.
+  Entries support independent HTTP and HTTPS listeners, configurable ports,
+  and automatic HTTPS redirects when a valid certificate matches the host.
+- Enable read-only API inspection per RPCGW site with `inspectEnabled`,
+  including service/method catalogs and JSON Schema 2020-12 input/output schemas.
+- Enable MCP tools per RPCGW site with `mcpEnabled`. Support MCP `2026-07-28`,
+  paginated tool discovery and calls using Vine credentials, actor admission,
+  authentication and permission checks. Both inspection and MCP default to off.
+- Accept versioned Skel config names such as `CheckoutConfigV2` in Hub and
+  Dashboard while keeping each version independently configurable.
+
+### Changed
+
+- Upgrade Skel to v0.32.0 and regenerate built-in contracts without via
+  metadata. Runtime admission and Portal configuration use actor audiences;
+  legacy seed `actorVia` values are ignored with a warning.
+- Publish all selected main descriptor kinds through Hub Watch. Portal keeps
+  API services and their transitive Data/Enum dependencies in coordinated
+  snapshots, with background refresh, reconnect reconciliation and retry.
+- Require seed rules to reference an explicitly declared entry through
+  `entryName`. Entries own listener and transport settings and remain published
+  even without rules. Legacy seed entry `scheme`/`port` inputs still convert
+  to their original single transport without automatic redirects.
+- Use optional `enabled` switches for seed sites, entries, rules and
+  certificates, defaulting to true. Disabled certificates may be placeholders;
+  enabling them requires valid PEM certificate/key data.
+- Stable Kubernetes overlays use v0.29.0 for Hub, Link and Portal images.
+
+### Fixed
+
+- Retain idle database connections up to the open-connection limit and reclaim
+  them after ten idle minutes, avoiding connection churn after traffic bursts.
+- Back off failed task delivery from one second up to ten minutes with jitter,
+  releasing execution slots during the wait. Unlimited retry and `NoRetry`
+  behavior remain unchanged.
+- Compile legacy generated-schema adapters against Skel v0.32.0 by keeping
+  deprecated via input types in Vine and dropping them during conversion.
+
+### Removed
+
+- Remove implicit seed entry creation, rule-owned `matchScheme`, `matchHost`
+  and `matchPort`, and the seed `disabled` alias.
+- Retire pre-v0.27 database conversion paths and Base64 certificate fields.
+  Certificate storage and Watch publication use PEM fields only.
+- Reject retired authentication spellings `auth`, `noauth` and `unset`;
+  legacy empty-value defaults remain supported.
+
+### Upgrade Notes
+
+- Upgrade Hub, Link and Portal together because entry, site and descriptor
+  Watch contracts changed. Existing databases must already use the v0.27
+  schema; current entry migrations preserve IDs, rules, listener IPs and
+  single-transport behavior.
+- Regenerate application contracts with skelc v0.32.0. Update direct Skel
+  descriptor consumers for removed via fields and the actor-only `HasAudience`
+  signature. Vine's deprecated legacy schema registration and actor/scalar
+  compatibility APIs remain available.
+- Declare seed entries explicitly, reference them from rules, replace
+  `disabled` with the corresponding `enabled` value, and use current auth
+  modes. Admin entry inputs use `protocol` and the HTTP configuration block.
+- Enable inspection only for APIs whose contracts should be exposed without
+  authentication. MCP clients must support protocol `2026-07-28` and use Vine
+  Authorization credentials; this endpoint does not provide OAuth discovery.
+
 ## [0.28.1] - 2026-10-09
 
 ### Added
@@ -1579,7 +1647,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.28.1...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.29.0...HEAD
+[0.29.0]: https://github.com/yorun-ai/vine/compare/v0.28.1...v0.29.0
 [0.28.1]: https://github.com/yorun-ai/vine/compare/v0.28.0...v0.28.1
 [0.28.0]: https://github.com/yorun-ai/vine/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/yorun-ai/vine/compare/v0.26.0...v0.27.0

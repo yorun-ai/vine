@@ -219,7 +219,7 @@ func TestPortalSiteRepoAssemblesDerivedValues(t *testing.T) {
 				Name: "demo",
 				Services: []*skeldesc.Service{{
 					SkelName: "demo.Service",
-					Api:      true, Audiences: []*skeldesc.ActorAudience{{SkelName: "demo.Actor", Via: skeldesc.ActorViaClient}}, AuthMode: skeldesc.AuthModeRequired,
+					Api:      true, Audiences: []*skeldesc.ActorAudience{{SkelName: "demo.Actor"}}, AuthMode: skeldesc.AuthModeRequired,
 				}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			},
 		},
