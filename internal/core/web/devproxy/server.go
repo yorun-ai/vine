@@ -164,11 +164,13 @@ func (s *_FollowedServer) setProxy(replacement *httputil.ReverseProxy, address s
 	s.address = address
 }
 
+const developmentMaxConnsPerHost = 8
+
 // Reuse a bounded pool so a browser's module graph does not create an
 // unbounded burst of TCP connections to the development server.
 var developmentTransport = func() *http.Transport {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.MaxConnsPerHost = 32
+	transport.MaxConnsPerHost = developmentMaxConnsPerHost
 	transport.MaxIdleConnsPerHost = transport.MaxConnsPerHost
 	return transport
 }()

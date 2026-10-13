@@ -27,7 +27,7 @@ func TestDevelopmentProxyBoundsConcurrentRequests(t *testing.T) {
 	backend := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		current := active.Add(1)
 		defer active.Add(-1)
-		if current > 32 {
+		if current > developmentMaxConnsPerHost {
 			http.Error(writer, "development server overloaded", http.StatusServiceUnavailable)
 			return
 		}
