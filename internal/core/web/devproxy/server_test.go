@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -19,11 +20,57 @@ import (
 	"go.yorun.ai/vine/internal/core/web/spec"
 )
 
-func TestServerForwardsTheRequestToTheDevelopmentServer(t *testing.T) {
+// A module graph arrives in a burst. The proxy must queue excess requests
+// instead of overrunning the development server with upstream connections.
+func TestDevProxyBoundsConcurrentRequests(t *testing.T) {
+	var active atomic.Int32
+	backend := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		current := active.Add(1)
+		defer active.Add(-1)
+		if current > devMaxConnsPerHost {
+			http.Error(writer, "development server overloaded", http.StatusServiceUnavailable)
+			return
+		}
+		time.Sleep(30 * time.Millisecond)
+		_, _ = writer.Write([]byte("module source"))
+	}))
+	t.Cleanup(backend.Close)
+	target, err := url.Parse(backend.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	proxy := devProxy(target)
+	if transport, ok := proxy.Transport.(*http.Transport); ok {
+		t.Cleanup(transport.CloseIdleConnections)
+	}
+
+	start := make(chan struct{})
+	results := make(chan int, 128)
+	for range cap(results) {
+		go func() {
+			<-start
+			response := httptest.NewRecorder()
+			proxy.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/src/module.ts", nil))
+			results <- response.Code
+		}()
+	}
+	close(start)
+	failures := 0
+	for range cap(results) {
+		if status := <-results; status != http.StatusOK {
+			failures++
+		}
+	}
+	if failures > 0 {
+		t.Fatalf("%d module requests failed under concurrent load", failures)
+	}
+}
+
+func TestServerForwardsTheRequestToTheDevServer(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	setStateReloadInterval(t, 0)
-	developmentServer := newDevelopmentServer(t, "from source")
-	server := newServerForTest(t, developmentServer)
+	devServer := newDevServer(t, "from source")
+	server := newServerForTest(t, devServer)
 
 	recorder := serveForTest(server, "/admin/assets/app.js?v=1")
 
@@ -33,11 +80,11 @@ func TestServerForwardsTheRequestToTheDevelopmentServer(t *testing.T) {
 	if recorder.Body.String() != "from source" {
 		t.Fatalf("unexpected body: %s", recorder.Body.String())
 	}
-	if developmentServer.path != "/admin/assets/app.js" {
-		t.Fatalf("unexpected target path: %s", developmentServer.path)
+	if devServer.path != "/admin/assets/app.js" {
+		t.Fatalf("unexpected target path: %s", devServer.path)
 	}
-	if developmentServer.query != "v=1" {
-		t.Fatalf("unexpected target query: %s", developmentServer.query)
+	if devServer.query != "v=1" {
+		t.Fatalf("unexpected target query: %s", devServer.query)
 	}
 }
 
@@ -47,25 +94,25 @@ func TestServerForwardsTheRequestToTheDevelopmentServer(t *testing.T) {
 func TestServerForwardsAnEscapedRequestPath(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	setStateReloadInterval(t, 0)
-	developmentServer := newDevelopmentServer(t, "from source")
-	server := newServerForTest(t, developmentServer)
+	devServer := newDevServer(t, "from source")
+	server := newServerForTest(t, devServer)
 
 	recorder := serveForTest(server, "/admin/a%2Fb")
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("unexpected status code: %d", recorder.Code)
 	}
-	if developmentServer.requestURI != "/admin/a%2Fb" {
-		t.Fatalf("unexpected target request URI: %s", developmentServer.requestURI)
+	if devServer.requestURI != "/admin/a%2Fb" {
+		t.Fatalf("unexpected target request URI: %s", devServer.requestURI)
 	}
 }
 
-func TestServerFollowsTheDevelopmentServerToAnotherPort(t *testing.T) {
+func TestServerFollowsTheDevServerToAnotherPort(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	setStateReloadInterval(t, 0)
 	stateFilePath := filepath.Join(t.TempDir(), "dev-state.json")
-	first := newDevelopmentServer(t, "first")
-	second := newDevelopmentServer(t, "second")
+	first := newDevServer(t, "first")
+	second := newDevServer(t, "second")
 	first.writeStateFile(t, stateFilePath)
 	server := serverForStateFile(stateFilePath)
 
@@ -82,12 +129,12 @@ func TestServerFollowsTheDevelopmentServerToAnotherPort(t *testing.T) {
 // A development server keeps answering a state file that is being rewritten, and
 // one that was removed after the frontend stopped: the proxy that is running is
 // the last server the file named.
-func TestServerKeepsTheDevelopmentServerItHas(t *testing.T) {
+func TestServerKeepsTheDevServerItHas(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	setStateReloadInterval(t, 0)
 	stateFilePath := filepath.Join(t.TempDir(), "dev-state.json")
-	developmentServer := newDevelopmentServer(t, "from source")
-	developmentServer.writeStateFile(t, stateFilePath)
+	devServer := newDevServer(t, "from source")
+	devServer.writeStateFile(t, stateFilePath)
 	server := serverForStateFile(stateFilePath)
 	if body := serveForTest(server, "/").Body.String(); body != "from source" {
 		t.Fatalf("unexpected body: %s", body)
@@ -107,12 +154,12 @@ func TestServerKeepsTheDevelopmentServerItHas(t *testing.T) {
 // The Web handler is built for every request, so two servers serving one state
 // file follow one development server: the second request uses the file the first
 // read, not a state file of its own.
-func TestServersServingTheSameStateFileFollowOneDevelopmentServer(t *testing.T) {
+func TestServersServingTheSameStateFileFollowOneDevServer(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	setStateReloadInterval(t, time.Hour)
 	stateFilePath := filepath.Join(t.TempDir(), "dev-state.json")
-	developmentServer := newDevelopmentServer(t, "from source")
-	developmentServer.writeStateFile(t, stateFilePath)
+	devServer := newDevServer(t, "from source")
+	devServer.writeStateFile(t, stateFilePath)
 	first := serverForStateFile(stateFilePath)
 	if body := serveForTest(first, "/").Body.String(); body != "from source" {
 		t.Fatalf("unexpected body: %s", body)
@@ -175,11 +222,11 @@ func TestServerReportsAnInvalidStateFile(t *testing.T) {
 	}
 }
 
-func TestServerReportsAnUnreachableDevelopmentServer(t *testing.T) {
+func TestServerReportsAnUnreachableDevServer(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	setStateReloadInterval(t, 0)
 	stateFilePath := filepath.Join(t.TempDir(), "dev-state.json")
-	host, port := closedDevelopmentServerAddress(t)
+	host, port := closedDevServerAddress(t)
 	writeStateFile(t, stateFilePath, host, port)
 	server := serverForStateFile(stateFilePath)
 
@@ -232,10 +279,10 @@ func setStateReloadInterval(t *testing.T, interval time.Duration) {
 	t.Cleanup(func() { stateReloadInterval = previous })
 }
 
-func newServerForTest(t *testing.T, developmentServer *developmentServer) *Server {
+func newServerForTest(t *testing.T, devServer *devServer) *Server {
 	t.Helper()
 	stateFilePath := filepath.Join(t.TempDir(), "dev-state.json")
-	developmentServer.writeStateFile(t, stateFilePath)
+	devServer.writeStateFile(t, stateFilePath)
 	return serverForStateFile(stateFilePath)
 }
 
@@ -267,29 +314,29 @@ func (*closeNotifyRecorder) CloseNotify() <-chan bool {
 	return make(chan bool)
 }
 
-// developmentServer stands in for the frontend a development run starts: it
+// devServer stands in for the frontend a development run starts: it
 // records the request it was given and answers with one body.
-type developmentServer struct {
+type devServer struct {
 	server     *httptest.Server
 	path       string
 	query      string
 	requestURI string
 }
 
-func newDevelopmentServer(t *testing.T, body string) *developmentServer {
+func newDevServer(t *testing.T, body string) *devServer {
 	t.Helper()
-	development := new(developmentServer)
-	development.server = httptest.NewTestServer(t, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		development.path = request.URL.Path
-		development.query = request.URL.RawQuery
-		development.requestURI = request.RequestURI
+	dev := new(devServer)
+	dev.server = httptest.NewTestServer(t, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		dev.path = request.URL.Path
+		dev.query = request.URL.RawQuery
+		dev.requestURI = request.RequestURI
 		_, _ = writer.Write([]byte(body))
 	}))
-	development.server.Start()
-	return development
+	dev.server.Start()
+	return dev
 }
 
-func (d *developmentServer) writeStateFile(t *testing.T, stateFilePath string) {
+func (d *devServer) writeStateFile(t *testing.T, stateFilePath string) {
 	t.Helper()
 	parsed, err := url.Parse(d.server.URL)
 	if err != nil {
@@ -310,9 +357,9 @@ func writeStateFile(t *testing.T, stateFilePath string, host string, port int) {
 	}
 }
 
-// closedDevelopmentServerAddress returns an address nothing listens on, the way
+// closedDevServerAddress returns an address nothing listens on, the way
 // a frontend that stopped leaves its state file behind.
-func closedDevelopmentServerAddress(t *testing.T) (string, int) {
+func closedDevServerAddress(t *testing.T) (string, int) {
 	t.Helper()
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {

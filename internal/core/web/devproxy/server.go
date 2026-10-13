@@ -150,7 +150,7 @@ func (s *_FollowedServer) proxyFor(state *_State) *httputil.ReverseProxy {
 	target := &url.URL{Scheme: "http", Host: addressOf(state)}
 	logger.Info("forwarding to the development server",
 		"target", target.String(), "state", s.stateFilePath)
-	return developmentProxy(target)
+	return devProxy(target)
 }
 
 // setProxy replaces the proxy a request forwards through, and the address it
@@ -164,14 +164,26 @@ func (s *_FollowedServer) setProxy(replacement *httputil.ReverseProxy, address s
 	s.address = address
 }
 
-// developmentProxy forwards a request to target with the path the Web received,
+const devMaxConnsPerHost = 8
+
+// Reuse a bounded pool so a browser's module graph does not create an
+// unbounded burst of TCP connections to the development server.
+var devTransport = func() *http.Transport {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.MaxConnsPerHost = devMaxConnsPerHost
+	transport.MaxIdleConnsPerHost = transport.MaxConnsPerHost
+	return transport
+}()
+
+// devProxy forwards a request to target with the path the Web received,
 // mount included, so a development server started for the Web's mount answers the
 // route the client asked for. The whole URL the Web handler read reaches the
 // development server, escaping included, so a path the client encoded reaches it
 // as the client sent it. A request the development server does not answer is
 // reported as 502: the Web has no content of its own to serve.
-func developmentProxy(target *url.URL) *httputil.ReverseProxy {
+func devProxy(target *url.URL) *httputil.ReverseProxy {
 	return &httputil.ReverseProxy{
+		Transport: devTransport,
 		Rewrite: func(request *httputil.ProxyRequest) {
 			request.SetURL(target)
 			request.Out.Host = target.Host
