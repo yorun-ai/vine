@@ -12,12 +12,59 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.yorun.ai/vine/internal/core/web/spec"
 )
+
+// A module graph arrives in a burst. The proxy must queue excess requests
+// instead of overrunning the development server with upstream connections.
+func TestDevelopmentProxyBoundsConcurrentRequests(t *testing.T) {
+	var active atomic.Int32
+	backend := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		current := active.Add(1)
+		defer active.Add(-1)
+		if current > 32 {
+			http.Error(writer, "development server overloaded", http.StatusServiceUnavailable)
+			return
+		}
+		time.Sleep(30 * time.Millisecond)
+		_, _ = writer.Write([]byte("module source"))
+	}))
+	t.Cleanup(backend.Close)
+	target, err := url.Parse(backend.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	proxy := developmentProxy(target)
+	if transport, ok := proxy.Transport.(*http.Transport); ok {
+		t.Cleanup(transport.CloseIdleConnections)
+	}
+
+	start := make(chan struct{})
+	results := make(chan int, 128)
+	for range cap(results) {
+		go func() {
+			<-start
+			response := httptest.NewRecorder()
+			proxy.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/src/module.ts", nil))
+			results <- response.Code
+		}()
+	}
+	close(start)
+	failures := 0
+	for range cap(results) {
+		if status := <-results; status != http.StatusOK {
+			failures++
+		}
+	}
+	if failures > 0 {
+		t.Fatalf("%d module requests failed under concurrent load", failures)
+	}
+}
 
 func TestServerForwardsTheRequestToTheDevelopmentServer(t *testing.T) {
 	gin.SetMode(gin.TestMode)

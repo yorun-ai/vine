@@ -164,6 +164,15 @@ func (s *_FollowedServer) setProxy(replacement *httputil.ReverseProxy, address s
 	s.address = address
 }
 
+// Reuse a bounded pool so a browser's module graph does not create an
+// unbounded burst of TCP connections to the development server.
+var developmentTransport = func() *http.Transport {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.MaxConnsPerHost = 32
+	transport.MaxIdleConnsPerHost = transport.MaxConnsPerHost
+	return transport
+}()
+
 // developmentProxy forwards a request to target with the path the Web received,
 // mount included, so a development server started for the Web's mount answers the
 // route the client asked for. The whole URL the Web handler read reaches the
@@ -172,6 +181,7 @@ func (s *_FollowedServer) setProxy(replacement *httputil.ReverseProxy, address s
 // reported as 502: the Web has no content of its own to serve.
 func developmentProxy(target *url.URL) *httputil.ReverseProxy {
 	return &httputil.ReverseProxy{
+		Transport: developmentTransport,
 		Rewrite: func(request *httputil.ProxyRequest) {
 			request.SetURL(target)
 			request.Out.Host = target.Host
