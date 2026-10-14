@@ -8,6 +8,20 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.31.2] - 2026-10-14
+
+### Fixed
+
+- Prevent blank pages during development server connection bursts by sharing a
+  connection pool limited to eight connections per host in the Web development
+  proxy.
+
+### Changed
+
+- Upgrade `golang.org/x/net` to v0.61.0 for upstream HTTP/2 fixes and update
+  its related `x/crypto`, `x/sync`, `x/sys`, and `x/text` dependencies.
+- Update stable Hub, Link, and Portal Kubernetes images to v0.31.2.
+
 ## [0.31.1] - 2026-10-12
 
 ### Fixed
@@ -1743,7 +1757,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.31.1...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.31.2...HEAD
+[0.31.2]: https://github.com/yorun-ai/vine/compare/v0.31.1...v0.31.2
 [0.31.1]: https://github.com/yorun-ai/vine/compare/v0.31.0...v0.31.1
 [0.31.0]: https://github.com/yorun-ai/vine/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/yorun-ai/vine/compare/v0.29.0...v0.30.0
