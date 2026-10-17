@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type MailGateway interface {
@@ -733,4 +734,54 @@ func TestSeedRejectsIncompatibleConcreteInstanceWithFriendlyError(t *testing.T) 
 			})
 		},
 	)
+}
+
+type genericPrimaryConfig struct {
+	Endpoint string
+}
+
+type genericReplicaConfig struct {
+	Endpoint string
+}
+
+// Exported because injection scans exported embedded fields.
+type GenericConfiguredComponent[C any] struct {
+	Config C `inject:""`
+}
+
+type genericPrimaryComponent struct {
+	GenericConfiguredComponent[*genericPrimaryConfig]
+}
+
+type genericReplicaComponent struct {
+	GenericConfiguredComponent[*genericReplicaConfig]
+}
+
+type genericComponentConsumer struct {
+	Primary *genericPrimaryComponent `inject:""`
+	Replica *genericReplicaComponent `inject:""`
+	ready   bool
+}
+
+func (c *genericComponentConsumer) DIInit() {
+	c.ready = c.Primary.Config != nil && c.Replica.Config != nil
+}
+
+func TestInjectorInjectsConcreteDependenciesIntoGenericEmbeddedFields(t *testing.T) {
+	primary := &genericPrimaryConfig{Endpoint: "primary"}
+	replica := &genericReplicaConfig{Endpoint: "replica"}
+	injector := NewInjector(func(b *Binder) {
+		b.BindInstance(primary)
+		b.BindInstance(replica)
+		b.Bind(T[*genericPrimaryComponent]())
+		b.Bind(T[*genericReplicaComponent]())
+		b.Bind(T[*genericComponentConsumer]())
+	})
+
+	consumer := injector.Get(T[*genericComponentConsumer]()).Interface().(*genericComponentConsumer)
+	require.NotNil(t, consumer.Primary)
+	require.NotNil(t, consumer.Replica)
+	assert.Same(t, primary, consumer.Primary.Config)
+	assert.Same(t, replica, consumer.Replica.Config)
+	assert.True(t, consumer.ready, "generic dependencies must be injected before the consumer's DIInit")
 }
