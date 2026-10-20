@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"reflect"
 	"runtime/pprof"
@@ -85,7 +86,19 @@ func (s *Server) handle(rpcRequest spec.Request) (response spec.Response) {
 
 	defer func() {
 		if reErr := recover(); reErr != nil {
-			logErr = ex.RecoverExecution(reErr)
+			cause, isError := reErr.(error)
+			var structured ex.Error
+			if isError && rpcRequest.Context().Err() == context.Canceled &&
+				!errors.As(cause, &structured) && errors.Is(cause, context.Canceled) {
+				logErr = ex.New(ex.InvocationCancelled, context.Canceled.Error())
+			} else {
+				logErr = ex.RecoverExecution(reErr)
+			}
+		}
+		// Cancellation from a nested Rpc follows the same request lifetime.
+		// Keep unrelated failures intact even if the caller has disconnected.
+		if logErr != nil && logErr.Code() == ex.InvocationCancelled && rpcRequest.Context().Err() == context.Canceled {
+			logErr = ex.New(ex.InvocationCancelled, context.Canceled.Error())
 		}
 
 		if logErr == nil {

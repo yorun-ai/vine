@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json/v2"
+	"fmt"
 	"go.yorun.ai/vine/internal/utilfortest/spectest"
 	"io"
 	"net/http"
@@ -97,6 +98,7 @@ func (*serverCloneServiceImpl) Mutate(names []string) {
 }
 
 type _ServerTestExecutor struct {
+	beforeExecute func()
 	result        any
 	err           ex.Error
 	panicV        any
@@ -138,6 +140,9 @@ var (
 func (*_ServerTestExecutor) Init(spec.ImplDict) {}
 
 func (e *_ServerTestExecutor) Execute(ctx spec.Context, _ spec.MethodImpl, _ []any) (any, ex.Error) {
+	if e.beforeExecute != nil {
+		e.beforeExecute()
+	}
 	if e.panicV != nil {
 		panic(e.panicV)
 	}
@@ -413,5 +418,90 @@ func TestServerHandleDoesNotTreatPanickedOKErrorAsSuccess(t *testing.T) {
 
 	if response.Error() == nil || response.Error().Code() != ex.Internal {
 		t.Fatalf("panicked OK error must be converted to failure, got %#v", response.Error())
+	}
+}
+
+func TestServerHandleClassifiesOnlyRequestCancellation(t *testing.T) {
+	method := spectest.RpcService(new(spec.ServiceSpec{
+		Type:     spec.ServiceSpecTypeBoth,
+		Name:     "CancellationService",
+		SkelName: "test.service.handle.cancellation",
+		Methods:  []*spec.MethodSpec{{Name: "Get", SkelName: "get"}},
+	})).Methods()[0]
+	for _, tc := range []struct {
+		name       string
+		cancel     bool
+		panicValue any
+		returned   ex.Error
+		code       ex.Code
+		level      string
+		panicked   bool
+	}{
+		{name: "database cancellation", cancel: true, panicValue: context.Canceled, code: ex.InvocationCancelled, level: "DEBUG"},
+		{name: "wrapped cancellation", cancel: true, panicValue: fmt.Errorf("query: %w", context.Canceled), code: ex.InvocationCancelled, level: "DEBUG"},
+		{name: "nested rpc cancellation", cancel: true, panicValue: ex.New(ex.InvocationCancelled, "nested request cancelled"), code: ex.InvocationCancelled, level: "DEBUG"},
+		{name: "returned nested cancellation", cancel: true, returned: ex.RecoverExecution(ex.New(ex.InvocationCancelled, "nested request cancelled")), code: ex.InvocationCancelled, level: "DEBUG"},
+		{name: "live request cancellation panic", panicValue: context.Canceled, code: ex.Internal, level: "ERROR", panicked: true},
+		{name: "live request nested cancellation", panicValue: ex.New(ex.InvocationCancelled, "nested request cancelled"), code: ex.InvocationCancelled, level: "ERROR", panicked: true},
+		{name: "unrelated panic after cancellation", cancel: true, panicValue: "database unavailable", code: ex.Internal, level: "ERROR", panicked: true},
+		{name: "business error with cancelled cause", cancel: true, panicValue: ex.New(ex.OperationFailed, "business failure", ex.WithCause(context.Canceled)), code: ex.OperationFailed, level: "ERROR", panicked: true},
+		{name: "timeout", panicValue: context.DeadlineExceeded, code: ex.Internal, level: "ERROR", panicked: true},
+		{name: "completed before cancellation", cancel: true, code: ex.OK, level: "DEBUG"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			executor := new(_ServerTestExecutor{
+				panicV: tc.panicValue,
+				err:    tc.returned,
+				result: "retained result",
+			})
+			if tc.cancel {
+				executor.beforeExecute = cancel
+			}
+			path := filepath.Join(t.TempDir(), "cancellation.jsonl")
+			log := logger.New("vine:test", logger.WithOption{
+				Format:     logger.FormatJSON,
+				Level:      logger.LevelDebug,
+				OutputPath: path,
+			})
+			server := new(Server{
+				opt:      new(Option{App: testServerApp()}),
+				executor: executor,
+				log:      log,
+			})
+			response := server.handle(new(spec.RequestImpl{
+				ContextValue:    ctx,
+				TraceValue:      meta.InitialTrace(),
+				MethodInfoValue: method,
+			}))
+			wantCode := tc.code
+			if wantCode.IsUnresponsive() {
+				wantCode = ex.Internal
+			}
+			if response.Error().Code() != wantCode {
+				t.Fatalf("unexpected response code: %v", response.Error())
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			lines := bytes.Split(bytes.TrimSpace(data), []byte("\n"))
+			var finished map[string]any
+			if err := json.Unmarshal(lines[len(lines)-1], &finished); err != nil {
+				t.Fatal(err)
+			}
+			if finished["msg"] != "rpc server handle finished" || finished["code"] != string(tc.code) || finished["level"] != tc.level {
+				t.Fatalf("unexpected terminal record: %#v", finished)
+			}
+			_, hasPanic := finished["panic"]
+			_, hasStack := finished["stack"]
+			if hasPanic != tc.panicked || hasStack != tc.panicked {
+				t.Fatalf("incorrect cancellation/panic diagnostics: %#v", finished)
+			}
+			if tc.code == ex.OK && response.Result() != "retained result" {
+				t.Fatal("request cancellation must not replace completed results")
+			}
+		})
 	}
 }

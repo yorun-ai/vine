@@ -366,6 +366,10 @@ func TestFailureLevelsRemainVisibleWithoutDebug(t *testing.T) {
 		FinishServer(ex.New(ex.InvocationFailed, "system"), nil)
 	StartServerHandle(log, meta.InitialTrace(), method, nil, nil, &spec.EmptyArguments{}).
 		FinishServer(nil, nil)
+	StartServerHandle(log, meta.InitialTrace(), method, nil, nil, &spec.EmptyArguments{}).
+		FinishServer(ex.New(ex.InvocationCancelled, "request cancelled"), nil)
+	StartClientInvoke(log, meta.InitialTrace(), method, "http://localhost/rpc").
+		Finish(ex.New(ex.InvocationCancelled, "request cancelled"))
 
 	records := readRpcLogRecords(t, path)
 	if len(records) != 2 {

@@ -147,6 +147,11 @@ func (s *Span) finish(err ex.Error, result any, server bool) {
 	if code == ex.OK && s.muteSuccess {
 		return
 	}
+	_, panicked := ex.PanicValue(err)
+	cancelled := code == ex.InvocationCancelled && !panicked
+	if cancelled && !s.logger.Enabled(logger.LevelDebug) {
+		return
+	}
 	if server && code == ex.OK && !s.logger.Enabled(logger.LevelDebug) {
 		return
 	}
@@ -158,8 +163,10 @@ func (s *Span) finish(err ex.Error, result any, server bool) {
 		if panicValue, panicked := ex.PanicValue(err); panicked {
 			s.fields = append(s.fields, "panic", panicValue)
 		}
-		if stack := ex.Stack(err); stack != "" {
-			s.fields = append(s.fields, "stack", stack)
+		if !cancelled {
+			if stack := ex.Stack(err); stack != "" {
+				s.fields = append(s.fields, "stack", stack)
+			}
 		}
 		if server && s.muteSuccess {
 			if s.debugEnabledAtStart {
@@ -270,6 +277,10 @@ func logLifecycle(log *logger.Logger, msg string, err ex.Error, fields ...any) {
 	code := ex.OK
 	if err != nil {
 		code = err.Code()
+	}
+	if code == ex.InvocationCancelled {
+		log.Debug(msg, fields...)
+		return
 	}
 	switch code.Type() {
 	case ex.SystemError:
