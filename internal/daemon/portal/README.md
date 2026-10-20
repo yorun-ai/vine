@@ -135,6 +135,27 @@ Only configured API services accepting the site's current actor are visible.
 No live backend endpoint is required. Responses are not cacheable, have no
 revision, and share site CORS with GET-specific preflight methods.
 
+## RpcGW outgoing request headers
+
+After admission, both `/invoke` and MCP construct backend headers from a fixed
+contract: `Accept`, `Content-Type`, `vrpc-client`, `vrpc-trace`, `vrpc-initiator`,
+`vrpc-actor`, and `vrpc-options`. `/invoke` retains the parsed, self-reported client
+identity; MCP uses Portal's identity. Portal reconstructs initiator and actor,
+derives trace spans, and regenerates options from the remaining deadline.
+
+Credentials, CORS inputs, User-Agent and client IP inputs remain available at
+entry/admission. User-Agent and IP survive in initiator metadata, not as forwarded
+HTTP headers. Cookies, arbitrary custom headers, forwarding headers, MCP headers,
+and response-only vRPC headers do not pass through. There is no configurable
+custom-header passthrough: business identity belongs in admitted actor info and
+per-call business input in method parameters. Applications relying on incidental
+header passthrough must migrate those values before upgrading.
+
+Only absent or a single `identity` request Content-Encoding is supported;
+unsupported or malformed encodings are rejected before admission. Body framing
+is a transport concern. This boundary applies only to Portal RpcGW; internal RPC,
+Link and WebGW header behavior is unchanged.
+
 ## RpcGW MCP
 
 The independent `mcpEnabled` site switch (default false) exposes `POST /mcp`.

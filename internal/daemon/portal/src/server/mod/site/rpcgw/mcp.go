@@ -69,6 +69,10 @@ func (g *RpcGateway) serveMcp(ctx *spec.Context, cors watched.PortalCors) {
 		_ = json.MarshalWrite(w, map[string]any{"jsonrpc": "2.0", "id": nil, "error": failure})
 		return
 	}
+	if !supportedRequestContentEncoding(r.Header) {
+		http.Error(w, "unsupported MCP request Content-Encoding; only identity is supported", http.StatusUnsupportedMediaType)
+		return
+	}
 	requestCtx, cancel := gwutil.ContextWithoutClientCancel(r.Context(), g.context, maxRpcTimeout)
 	defer cancel()
 	next := *ctx

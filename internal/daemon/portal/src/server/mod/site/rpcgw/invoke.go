@@ -22,6 +22,10 @@ var rpcGatewayLogger = logger.New("daemon:portal:rpcgw")
 
 func (g *RpcGateway) serveInvoke(ctx *spec.Context) {
 	invokeRequest := httputil.StripPathPrefix(ctx.Request, pathInvoke)
+	if !supportedRequestContentEncoding(invokeRequest.Header) {
+		g.writeError(ctx.ResponseWriter, invokeRequest, ex.InvalidRequest, "unsupported rpc request Content-Encoding; only identity is supported")
+		return
+	}
 
 	if err := rpchttp.CheckRequestContentTypeHeader(invokeRequest.Header); err != nil {
 		rpcGatewayLogger.Warn("vine.portal rpcgw request content type is invalid", "path", ctx.Request.URL.Path, "error", err)
@@ -172,6 +176,7 @@ func ensureRpcInitiator(request *http.Request, remoteAddr string) (meta.Initiato
 	if err != nil {
 		return nil, err
 	}
+	rpchttp.EncodeClientToHeader(request.Header, client)
 	initiator, err := meta.NewInitiator(
 		client.Name(),
 		client.Version(),
