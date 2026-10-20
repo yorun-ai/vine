@@ -34,6 +34,8 @@ export type AppConfigCreation = {
 }
 /** Configuration descriptor items. */
 export type AppConfigDescriptor = {
+  /** Source abstract configuration Skel name; empty for configs without a source. */
+  fromSkelName:     string;
   sensitive:        boolean;
   dataTypes:        Array<AppConfigDescriptorData>;
   /** Configuration Skel name. */
@@ -855,6 +857,10 @@ export type SkeletonActorRef = {
 }
 /** SkeletonConfig. */
 export type SkeletonConfigItem = {
+  /** Whether the config is an abstract contract. */
+  abs:                  boolean;
+  /** Source abstract configuration Skel name; empty for configs without a source. */
+  fromSkelName:         string;
   /** Domain. */
   domain:               string;
   /** Skeleton item hash. */

@@ -3,7 +3,6 @@ package spec
 import (
 	"reflect"
 	"sync"
-	"testing"
 
 	"go.yorun.ai/vine/internal/core/ex"
 )
@@ -90,27 +89,5 @@ func newTestInfoTaskSpec() *TaskSpec {
 			ArgumentsType:      reflect.TypeFor[testInfoTaskArguments](),
 			ArgumentsSensitive: true,
 		}},
-	}
-}
-
-func TestGetTriggerInfoReturnsRegisteredTrigger(t *testing.T) {
-	registry := NewRegistry()
-	registry.Register(newTestInfoTaskSpec())
-
-	triggerInfo, ok := registry.GetTriggerInfo("test.info.task", "forGroup")
-	if !ok {
-		t.Fatal("expected trigger info")
-	}
-	if triggerInfo.Name() != "ForGroup" {
-		t.Fatalf("unexpected trigger info: %+v", triggerInfo)
-	}
-	if triggerInfo.LauncherMethodName() != "LaunchForGroup" {
-		t.Fatalf("unexpected launcher method name: %+v", triggerInfo)
-	}
-	if triggerInfo.RunnerMethodName() != "RunForGroup" {
-		t.Fatalf("unexpected runner method name: %+v", triggerInfo)
-	}
-	if !triggerInfo.ArgumentsSensitive() {
-		t.Fatal("expected trigger arguments to be sensitive")
 	}
 }

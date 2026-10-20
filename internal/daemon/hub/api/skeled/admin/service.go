@@ -161,7 +161,7 @@ var (
 		Type:              rpc.ServiceSpecTypeServer,
 		Name:              "AppConfigApiService",
 		SkelName:          "vine.hub.admin.AppConfigApiService",
-		Hash:              "e5d2ae7a",
+		Hash:              "bc74b81a",
 		ServerType:        reflect.TypeFor[AppConfigApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultAppConfigApiServiceServer](),
 
@@ -2129,7 +2129,7 @@ var (
 		Type:              rpc.ServiceSpecTypeServer,
 		Name:              "SkeletonApiService",
 		SkelName:          "vine.hub.admin.SkeletonApiService",
-		Hash:              "6a181d32",
+		Hash:              "dce7e2fd",
 		ServerType:        reflect.TypeFor[SkeletonApiServiceServer](),
 		DefaultServerType: reflect.TypeFor[*DefaultSkeletonApiServiceServer](),
 

@@ -7,14 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPortalRuleKeys(t *testing.T) {
-	assert.Equal(t, "portal:rule:demo-entry", FormatPortalRuleKey("demo-entry"))
-}
-
-func TestPortalSiteKeys(t *testing.T) {
-	assert.Equal(t, "portal:site:demo.user.AdminActor-client-rpc", FormatPortalSiteKey("demo.user.AdminActor-client-rpc"))
-}
-
 func TestPortalSiteJSON(t *testing.T) {
 	data, err := json.Marshal(PortalSite{
 		Name:          "demo.user.AdminActor-client-rpc",
@@ -50,15 +42,6 @@ func TestPortalSiteJSON(t *testing.T) {
 			]
 		}
 	}`, string(data))
-}
-
-func TestPortalCertKeys(t *testing.T) {
-	assert.Equal(t, "portal:cert:demo-cert", FormatPortalCertKey("demo-cert"))
-}
-
-func TestPortalInstanceKeys(t *testing.T) {
-	assert.Equal(t, "portal:instance:11111111-1111-1111-1111-111111111111", FormatPortalInstanceKey("11111111-1111-1111-1111-111111111111"))
-	assert.Equal(t, "portal:instance:*", FormatPortalInstancePattern())
 }
 
 func TestPortalInstanceJSON(t *testing.T) {

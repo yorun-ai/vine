@@ -14,9 +14,9 @@ func init() {
 var _DomainDescriptor = &descriptor.Domain{
 	Name:        "vine.hub.admin",
 	Description: "Hub admin API for Dashboard",
-	Hash:        "f535241e",
+	Hash:        "ddacbb82",
 	Full:        true,
-	Generated:   &descriptor.GeneratedInfo{CompilerVersion: "v0.32.1"},
+	Generated:   &descriptor.GeneratedInfo{CompilerVersion: "v0.33.0"},
 
 	Enums: []*descriptor.Enum{
 		{Name: "PortalCorsMode", SkelName: "vine.hub.admin.PortalCorsMode", Description: "Portal site CORS mode", Hash: "b5d6b511", Items: []*descriptor.EnumItem{
@@ -40,7 +40,8 @@ var _DomainDescriptor = &descriptor.Domain{
 			{Name: "skelName", Description: "Configuration Skel name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "value", Description: "Configuration JSON", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 		}},
-		{Name: "AppConfigDescriptor", SkelName: "vine.hub.admin.AppConfigDescriptor", Description: "Configuration descriptor items", Hash: "d276ae0c", Members: []*descriptor.Member{
+		{Name: "AppConfigDescriptor", SkelName: "vine.hub.admin.AppConfigDescriptor", Description: "Configuration descriptor items", Hash: "3670416c", Members: []*descriptor.Member{
+			{Name: "fromSkelName", Description: "Source abstract configuration Skel name; empty for configs without a source", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "sensitive", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean}},
 			{Name: "dataTypes", Type: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "AppConfigDescriptorData", SkelName: "vine.hub.admin.AppConfigDescriptorData"}}},
 			{Name: "skelName", Description: "Configuration Skel name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
@@ -90,7 +91,7 @@ var _DomainDescriptor = &descriptor.Domain{
 			{Name: "value", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "AppConfigDescriptorType", SkelName: "vine.hub.admin.AppConfigDescriptorType", Nullable: true}},
 			{Name: "enumItems", Type: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "AppConfigDescriptorEnumItem", SkelName: "vine.hub.admin.AppConfigDescriptorEnumItem"}}},
 		}},
-		{Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem", Description: "Configuration items", Hash: "fbaeecc6", Members: []*descriptor.Member{
+		{Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem", Description: "Configuration items", Hash: "7c877510", Members: []*descriptor.Member{
 			{Name: "id", Description: "Configuration ID", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			{Name: "key", Description: "Configuration key", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "status", Description: "Configuration status", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
@@ -505,7 +506,9 @@ var _DomainDescriptor = &descriptor.Domain{
 			{Name: "name", Description: "Actor name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "skelName", Description: "Actor Skel name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 		}},
-		{Name: "SkeletonConfigItem", SkelName: "vine.hub.admin.SkeletonConfigItem", Description: "SkeletonConfig", Hash: "794c6f69", Members: []*descriptor.Member{
+		{Name: "SkeletonConfigItem", SkelName: "vine.hub.admin.SkeletonConfigItem", Description: "SkeletonConfig", Hash: "d72eb447", Members: []*descriptor.Member{
+			{Name: "abs", Description: "Whether the config is an abstract contract", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean}},
+			{Name: "fromSkelName", Description: "Source abstract configuration Skel name; empty for configs without a source", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "domain", Description: "Domain", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "descriptorHash", Description: "Skeleton item hash", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "mainDescriptorHash", Description: "Primary skeleton item hash", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
@@ -540,7 +543,7 @@ var _DomainDescriptor = &descriptor.Domain{
 			{Name: "fields", Description: "Field list", Type: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "SkeletonField", SkelName: "vine.hub.admin.SkeletonField"}}},
 			{Name: "enumItems", Description: "List of enumeration items", Type: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "SkeletonEnumItem", SkelName: "vine.hub.admin.SkeletonEnumItem"}}},
 		}},
-		{Name: "SkeletonDomain", SkelName: "vine.hub.admin.SkeletonDomain", Description: "Domain skeleton version", Hash: "f4fca570", Members: []*descriptor.Member{
+		{Name: "SkeletonDomain", SkelName: "vine.hub.admin.SkeletonDomain", Description: "Domain skeleton version", Hash: "c74bdc0b", Members: []*descriptor.Member{
 			{Name: "domain", Description: "Domain name", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "descriptorHash", Description: "DomainDescriptor hash", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			{Name: "mainDescriptorHash", Description: "Primary DomainDescriptor hash", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
@@ -776,16 +779,16 @@ var _DomainDescriptor = &descriptor.Domain{
 			{Name: "readOnly", SkelName: "readOnly", Description: "Whether Hub configuration is read-only", Hash: "af56a296", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, ResultType: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean}},
 			{Name: "version", SkelName: "version", Description: "Vine runtime version of the running Hub", Hash: "58e373c0", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, ResultType: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 		}},
-		{Name: "AppConfigApiService", SkelName: "vine.hub.admin.AppConfigApiService", Description: "Hub's application configuration service, called by Client", Hash: "e5d2ae7a", Pub: false, Api: true, AuthMode: descriptor.AuthModeOptional, Audiences: []*descriptor.ActorAudience{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"}}, Methods: []*descriptor.Method{
+		{Name: "AppConfigApiService", SkelName: "vine.hub.admin.AppConfigApiService", Description: "Hub's application configuration service, called by Client", Hash: "bc74b81a", Pub: false, Api: true, AuthMode: descriptor.AuthModeOptional, Audiences: []*descriptor.ActorAudience{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"}}, Methods: []*descriptor.Method{
 			{Name: "list", SkelName: "list", Description: "List configuration items", Hash: "70435fd8", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Configuration item list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "AppConfigListItem", SkelName: "vine.hub.admin.AppConfigListItem"}}},
-			{Name: "get", SkelName: "get", Description: "Read configuration", Hash: "8151df77", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Configuration items", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem"}, Arguments: []*descriptor.Member{
+			{Name: "get", SkelName: "get", Description: "Read configuration", Hash: "28ff6563", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Configuration items", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem"}, Arguments: []*descriptor.Member{
 				{Name: "key", Description: "Configuration key", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
 			}},
-			{Name: "update", SkelName: "update", Description: "Modify configuration", Hash: "c50bc365", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Configuration items", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem"}, Arguments: []*descriptor.Member{
+			{Name: "update", SkelName: "update", Description: "Modify configuration", Hash: "aec5087b", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Configuration items", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem"}, Arguments: []*descriptor.Member{
 				{Name: "id", Description: "Configuration ID", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 				{Name: "update", Description: "Configuration update parameters", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "AppConfigUpdate", SkelName: "vine.hub.admin.AppConfigUpdate"}},
 			}},
-			{Name: "create", SkelName: "create", Description: "Create configuration", Hash: "871c204d", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Configuration items", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem"}, Arguments: []*descriptor.Member{
+			{Name: "create", SkelName: "create", Description: "Create configuration", Hash: "7c1bf26d", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Configuration items", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "AppConfigItem", SkelName: "vine.hub.admin.AppConfigItem"}, Arguments: []*descriptor.Member{
 				{Name: "creation", Description: "Configuration creation parameters", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "AppConfigCreation", SkelName: "vine.hub.admin.AppConfigCreation"}},
 			}},
 			{Name: "remove", SkelName: "remove", Description: "Delete unused configuration", Hash: "8a48c541", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Whether deletion succeeded", ResultType: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean}, Arguments: []*descriptor.Member{
@@ -894,8 +897,8 @@ var _DomainDescriptor = &descriptor.Domain{
 				{Name: "request", Description: "Debug call request", Type: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "ServiceDebugInvokeRequest", SkelName: "vine.hub.admin.ServiceDebugInvokeRequest"}},
 			}},
 		}},
-		{Name: "SkeletonApiService", SkelName: "vine.hub.admin.SkeletonApiService", Description: "Hub's skeleton service, called by the Portal admin client", Hash: "6a181d32", Pub: false, Api: true, AuthMode: descriptor.AuthModeOptional, Audiences: []*descriptor.ActorAudience{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"}}, Methods: []*descriptor.Method{
-			{Name: "listDomains", SkelName: "listDomains", Description: "List Domain skeleton", Hash: "820936de", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Domain skeleton list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "SkeletonDomain", SkelName: "vine.hub.admin.SkeletonDomain"}}},
+		{Name: "SkeletonApiService", SkelName: "vine.hub.admin.SkeletonApiService", Description: "Hub's skeleton service, called by the Portal admin client", Hash: "dce7e2fd", Pub: false, Api: true, AuthMode: descriptor.AuthModeOptional, Audiences: []*descriptor.ActorAudience{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"}}, Methods: []*descriptor.Method{
+			{Name: "listDomains", SkelName: "listDomains", Description: "List Domain skeleton", Hash: "b9139bce", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Domain skeleton list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "SkeletonDomain", SkelName: "vine.hub.admin.SkeletonDomain"}}},
 			{Name: "listActors", SkelName: "listActors", Description: "List Actor Skeleton", Hash: "80183950", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Actor skeleton list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "SkeletonActorItem", SkelName: "vine.hub.admin.SkeletonActorItem"}}},
 			{Name: "listServices", SkelName: "listServices", Description: "List Service skeleton", Hash: "2f625f15", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Service skeleton list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "SkeletonServiceItem", SkelName: "vine.hub.admin.SkeletonServiceItem"}}},
 			{Name: "listResources", SkelName: "listResources", Description: "List Resource skeleton", Hash: "3c406f3f", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Resource skeleton list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "SkeletonResourceItem", SkelName: "vine.hub.admin.SkeletonResourceItem"}}},
@@ -903,7 +906,7 @@ var _DomainDescriptor = &descriptor.Domain{
 			{Name: "listTasks", SkelName: "listTasks", Description: "List Task skeleton", Hash: "f9a2ddf3", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Task skeleton list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "SkeletonTask", SkelName: "vine.hub.admin.SkeletonTask"}}},
 			{Name: "listEvents", SkelName: "listEvents", Description: "List Event skeletons", Hash: "a3c217d7", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Event skeleton list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "SkeletonEventItem", SkelName: "vine.hub.admin.SkeletonEventItem"}}},
 			{Name: "listData", SkelName: "listData", Description: "List Data skeleton", Hash: "21d2d1ca", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Data skeleton list, including Enum", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "SkeletonData", SkelName: "vine.hub.admin.SkeletonData"}}},
-			{Name: "listConfigs", SkelName: "listConfigs", Description: "List Config skeleton", Hash: "3efd391e", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Config skeleton list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "SkeletonConfigItem", SkelName: "vine.hub.admin.SkeletonConfigItem"}}},
+			{Name: "listConfigs", SkelName: "listConfigs", Description: "List Config skeleton", Hash: "64c52ef9", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, OutputDescription: "Config skeleton list", ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "SkeletonConfigItem", SkelName: "vine.hub.admin.SkeletonConfigItem"}}},
 		}},
 		{Name: "TaskDebugApiService", SkelName: "vine.hub.admin.TaskDebugApiService", Description: "Hub Dashboard Task Debugging Service", Hash: "32519b29", Pub: false, Api: true, AuthMode: descriptor.AuthModeOptional, Audiences: []*descriptor.ActorAudience{{Name: "AdminActor", SkelName: "vine.hub.admin.AdminActor"}}, Methods: []*descriptor.Method{
 			{Name: "listTasks", SkelName: "listTasks", Description: "List the tasks provided by the application instance", Hash: "d9f9f919", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeOptional, ResultType: &descriptor.Type{Kind: descriptor.TypeKindList, Element: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "TaskDebugTaskItem", SkelName: "vine.hub.admin.TaskDebugTaskItem"}}},

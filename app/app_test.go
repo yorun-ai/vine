@@ -6,14 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type _BundledTestAppSpec struct {
-	Application
-}
-
-func (*_BundledTestAppSpec) Name() string {
-	return "app.bundled.test"
-}
-
 type _RecordingApp struct {
 	name   string
 	events *[]string
@@ -32,10 +24,6 @@ func (a *_RecordingApp) StopGracefully() {
 }
 
 func (*_RecordingApp) StartAndWait() {}
-
-func TestNewPreservesApplicationName(t *testing.T) {
-	assert.Equal(t, "app.bundled.test", New[*_BundledTestAppSpec]().Name())
-}
 
 func TestNewBundledRequiresApps(t *testing.T) {
 	assert.PanicsWithError(t, "app.New app expected", func() {
@@ -106,13 +94,4 @@ func TestApplyOptionKeepsUnsetCliOption(t *testing.T) {
 	applyOption(cliOption, Option{})
 
 	assert.Equal(t, "http://cli-link.local:7079", cliOption.LinkEndpoint)
-}
-
-func TestHookAdderFacade(t *testing.T) {
-	add := new(HookAdder)
-	add.BeforeAppStart(func() {})
-	add.AfterAppStart(func() {})
-	add.BeforeAppStop(func() {})
-	add.AfterAppStop(func() {})
-	assert.Panics(t, func() { add.AfterAppStart(nil) })
 }

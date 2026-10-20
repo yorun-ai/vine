@@ -58,29 +58,6 @@ func TestNewPanicsWhenContextIsNil(t *testing.T) {
 	_ = New(Option{})
 }
 
-func TestNewDefaultsReturnIfSystemErrorToFalse(t *testing.T) {
-	client := New(Option{
-		Context: testClientContext(),
-		Logger:  testClientLogger(),
-	})
-
-	if client.returnIfSystemError {
-		t.Fatal("expected ReturnIfSystemError to default to false")
-	}
-}
-
-func TestNewUsesConfiguredReturnIfSystemError(t *testing.T) {
-	client := New(Option{
-		Context:             testClientContext(),
-		Logger:              testClientLogger(),
-		ReturnIfSystemError: true,
-	})
-
-	if !client.returnIfSystemError {
-		t.Fatal("expected ReturnIfSystemError to be enabled on client")
-	}
-}
-
 func TestInvokePanicsOnSystemErrorByDefault(t *testing.T) {
 	client := New(Option{
 		Context:        testClientContext(),

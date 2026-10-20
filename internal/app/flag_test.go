@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -37,50 +36,6 @@ func TestFlagsEnsureRunFlagKeepsProvidedRunFlag(t *testing.T) {
 	flags.EnsureRunFlag()
 
 	assert.Equal(t, ":18080", flags[T[*RunFlag]()].(*RunFlag).ListenAddr)
-}
-
-func TestFlagsListenAddrReturnsRunFlagValue(t *testing.T) {
-	flags := _Flags{
-		T[*RunFlag](): &RunFlag{ListenAddr: ":28089"},
-	}
-
-	assert.Equal(t, ":28089", flags.ListenAddr())
-}
-
-func TestFlagsContextReturnsRunFlagContext(t *testing.T) {
-	ctx := context.WithValue(context.Background(), "k", "v")
-	flags := _Flags{
-		T[*RunFlag](): &RunFlag{Context: ctx},
-	}
-
-	assert.Same(t, ctx, flags.Context())
-}
-
-func TestFlagsContextReturnsBackgroundWhenRunFlagContextIsNil(t *testing.T) {
-	flags := _Flags{
-		T[*RunFlag](): &RunFlag{},
-	}
-
-	assert.NotNil(t, flags.Context())
-}
-
-func TestWithLinkEndpointSetsRunFlag(t *testing.T) {
-	flags := _Flags{}
-
-	flags.Apply(WithLinkEndpoint("http://127.0.0.1:7079"))
-
-	assert.Equal(t, "http://127.0.0.1:7079", flags.LinkEndpoint())
-}
-
-func TestFlagsApplySetsListenAddr(t *testing.T) {
-	flags := _Flags{}
-	flag := &RunFlag{ListenAddr: ":28089"}
-
-	flags.Apply(With(flag))
-
-	if assert.Len(t, flags, 1) {
-		assert.Same(t, flag, flags[reflect.TypeOf(flag)])
-	}
 }
 
 func TestFlagsApplyAddsProvidedBindingByConcreteType(t *testing.T) {

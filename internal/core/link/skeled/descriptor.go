@@ -16,7 +16,7 @@ var _DomainDescriptor = &descriptor.Domain{
 	Description: "Internal API for Vine Link",
 	Hash:        "4fe38e57",
 	Full:        true,
-	Generated:   &descriptor.GeneratedInfo{CompilerVersion: "v0.32.1"},
+	Generated:   &descriptor.GeneratedInfo{CompilerVersion: "v0.33.0"},
 
 	Data: []*descriptor.Data{
 		{Name: "AppRegistration", SkelName: "vine.link.AppRegistration", Description: "Application information registered by App to Link", Hash: "c2ed015d", Members: []*descriptor.Member{

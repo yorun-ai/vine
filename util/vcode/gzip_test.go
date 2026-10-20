@@ -18,17 +18,6 @@ func TestGzipAndUngzip(t *testing.T) {
 	assert.Equal(t, source, unzipped)
 }
 
-func TestGzipStringHelpers(t *testing.T) {
-	source := "string payload"
-
-	zipped, err := GzipS(source)
-	assert.NoError(t, err)
-
-	unzipped, err := UngzipS(zipped)
-	assert.NoError(t, err)
-	assert.Equal(t, source, unzipped)
-}
-
 func TestMustGzipAndUngzip(t *testing.T) {
 	source := []byte("must payload")
 

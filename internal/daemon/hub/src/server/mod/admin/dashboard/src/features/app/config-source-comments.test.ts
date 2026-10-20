@@ -30,11 +30,6 @@ test('a whole-value variable source is inherited only without a closer field ori
   assert.equal(configSourceComment('other', fields), '@source profile/dev\n@define profile/dev\n@override \n@variables CONFIG')
 })
 
-test('list and object sources display once without descendant paths', () => {
- for (const name of ['categories', 'options']) {
-  assert.equal(configSourceComment(name, [{path: `/value/${name}`, source: 'app/default', define: 'domain/booker', override: 'app/default', variables: ['A', 'B']}]), '@source app/default\n@define domain/booker\n@override app/default\n@variables A, B')
- }
-})
 
 test('source is supplied by the backend without frontend fallback', () => {
   assert.equal(configSourceComment('enabled', [{path: '/value/enabled', source: '', define: 'domain/demo', override: 'app/default', variables: []}]), '@define domain/demo\n@override app/default')

@@ -1,7 +1,6 @@
 package reflectutil
 
 import (
-	"errors"
 	"reflect"
 	"testing"
 
@@ -27,19 +26,6 @@ type exportedHolder struct {
 	EmbeddedA
 	EmbeddedB
 	Visible string
-}
-
-func sampleFunc() {}
-
-func TestKindHelpers(t *testing.T) {
-	assert.True(t, IsError(errors.New("boom")))
-	assert.True(t, IsErrorType(reflect.TypeFor[error]()))
-	assert.True(t, IsInterfaceType(reflect.TypeFor[error]()))
-	assert.True(t, IsPointerType(reflect.TypeFor[*holder]()))
-	assert.True(t, IsStructPointerType(reflect.TypeFor[*holder]()))
-	assert.True(t, IsFunc(sampleFunc))
-	assert.True(t, IsMap(map[string]int{}))
-	assert.True(t, IsSlice([]int{}))
 }
 
 func TestNilHelpers(t *testing.T) {

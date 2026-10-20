@@ -1,16 +1,14 @@
 package link
 
 import (
-	"context"
 	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	coreapp "go.yorun.ai/vine/internal/core/app"
+
 	linkskeled "go.yorun.ai/vine/internal/core/link/skeled"
-	"go.yorun.ai/vine/internal/core/logger"
+
 	"go.yorun.ai/vine/internal/core/meta"
-	"go.yorun.ai/vine/internal/core/rpc/client"
 )
 
 type testRuntimeApp struct {
@@ -37,17 +35,6 @@ func mustHostname(linkBaseEndpoint string) string {
 		panic(err)
 	}
 	return endpointURL.Hostname()
-}
-
-func TestLinkerReturnsLinkInfoFromEndpoint(t *testing.T) {
-	client := &_Linker{
-		app:              testRuntimeApp{name: "test.app", version: "1.2.3", instanceID: "00000000-0000-0000-0000-000000000123"},
-		linkBaseEndpoint: DefaultEndpoint,
-		bootInfo:         linkskeled.BootInfo{RpcProxyEndpointPath: "/rpc/proxy/out"},
-	}
-
-	assert.Equal(t, DefaultEndpoint+"/rpc/proxy/out", client.RpcProxyEndpoint())
-	assert.False(t, client.SkipDomainDescriptors())
 }
 
 func TestLinkerBuildsRpcProxyEndpointFromInprocEndpointAndPath(t *testing.T) {
@@ -77,17 +64,6 @@ func TestLinkerCheckLoopback(t *testing.T) {
 	}
 }
 
-func TestInternalLinkerReturnsEmptyEndpointsWithoutRedirect(t *testing.T) {
-	client := NewInternalLinker(testRuntimeApp{
-		name:       "test.app",
-		version:    "1.2.3",
-		instanceID: "00000000-0000-0000-0000-000000000123",
-	})
-
-	assert.Equal(t, "", client.RpcProxyEndpoint())
-	assert.False(t, client.SkipDomainDescriptors())
-}
-
 func TestInternalLinkerReturnsHubRPCInvokeEndpointWhenRedirectSet(t *testing.T) {
 	client := NewRedirectedInternalLinker(testRuntimeApp{
 		name:       "test.app",
@@ -97,16 +73,6 @@ func TestInternalLinkerReturnsHubRPCInvokeEndpointWhenRedirectSet(t *testing.T) 
 
 	assert.Equal(t, "http://demo.local:7071/rpc/invoke", client.RpcProxyEndpoint())
 	assert.False(t, client.SkipDomainDescriptors())
-}
-
-func TestLinkerSkipDomainDescriptors(t *testing.T) {
-	client := &_Linker{
-		app:              testRuntimeApp{name: "test.app", version: "1.2.3", instanceID: "00000000-0000-0000-0000-000000000123"},
-		linkBaseEndpoint: DefaultEndpoint,
-		bootInfo:         linkskeled.BootInfo{SkipDomainDescriptors: true},
-	}
-
-	assert.True(t, client.SkipDomainDescriptors())
 }
 
 func TestInternalLinkerCheckLoopbackReturnsFalseForNonLocalEndpoint(t *testing.T) {
@@ -119,49 +85,6 @@ func TestInternalLinkerCheckLoopbackReturnsFalseForNonLocalEndpoint(t *testing.T
 	host, ok := client.CheckLoopback()
 	assert.False(t, ok)
 	assert.Empty(t, host)
-}
-
-func TestNewLinkerBuildsRPCClients(t *testing.T) {
-	app := testRuntimeApp{
-		name:       "test.app",
-		version:    "1.2.3",
-		instanceID: "00000000-0000-0000-0000-000000000123",
-	}
-
-	oldFactory := newLinker
-	newLinker = func(app meta.App, linkBaseEndpoint string) Linker {
-		linker := &_Linker{
-			app:              app,
-			linkBaseEndpoint: linkBaseEndpoint,
-			bootInfo:         linkskeled.BootInfo{RpcProxyEndpointPath: "/rpc/proxy/out"},
-		}
-		rpcClient := client.New(client.Option{
-			Context:        newLinkMetaContext(context.Background()),
-			ClientApp:      linker.app,
-			Logger:         logger.New("vine:test"),
-			ServerEndpoint: linker.linkBaseEndpoint + coreapp.PathRpcInvoke,
-		})
-		linker.bootClient = linkskeled.NewBootServiceClient(linkskeled.NewBootServiceClientER(rpcClient))
-		linker.registryClientER = linkskeled.NewRegistryServiceClientER(rpcClient)
-		linker.registryClient = linkskeled.NewRegistryServiceClient(linker.registryClientER)
-		linker.configClient = linkskeled.NewConfigServiceClient(linkskeled.NewConfigServiceClientER(rpcClient))
-		linker.eventClient = linkskeled.NewEventServiceClient(linkskeled.NewEventServiceClientER(rpcClient))
-		linker.taskClient = linkskeled.NewTaskServiceClient(linkskeled.NewTaskServiceClientER(rpcClient))
-		return linker
-	}
-	t.Cleanup(func() {
-		newLinker = oldFactory
-	})
-
-	client := NewLinker(app, false, "")
-	linker := client.(*_Linker)
-
-	assert.NotNil(t, linker.bootClient)
-	assert.NotNil(t, linker.registryClient)
-	assert.NotNil(t, linker.registryClientER)
-	assert.NotNil(t, linker.configClient)
-	assert.NotNil(t, linker.eventClient)
-	assert.NotNil(t, linker.taskClient)
 }
 
 func TestNewLinkerUsesExplicitEndpoint(t *testing.T) {

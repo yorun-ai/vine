@@ -11,6 +11,7 @@ import (
 	"go.yorun.ai/vine/core/conf"
 	internalconf "go.yorun.ai/vine/internal/core/conf"
 	"go.yorun.ai/vine/util/vcode"
+	"go.yorun.ai/vine/util/vpre"
 	"gopkg.in/yaml.v3"
 )
 
@@ -25,6 +26,7 @@ type ConfigOverride struct {
 // OverrideConfig creates an override whose name is derived from the registered config type C.
 func OverrideConfig[C conf.Config](value C) ConfigOverride {
 	kind := reflect.TypeOf(value)
+	internalconf.RequireConcreteType(kind)
 	return ConfigOverride{
 		Name:  internalconf.SkelNameByType(kind),
 		Value: value,
@@ -33,6 +35,7 @@ func OverrideConfig[C conf.Config](value C) ConfigOverride {
 
 // OverrideConfigByName creates an override for an explicit Skel configuration name.
 func OverrideConfigByName(name string, value any) ConfigOverride {
+	vpre.CheckNilError(internalconf.ValidateValueName(name), "invalid config override")
 	return ConfigOverride{Name: name, Value: value}
 }
 
@@ -52,6 +55,9 @@ func mergeSeedConfigOverrides(t testing.TB, seedPath string, overrides []ConfigO
 
 	configs := seedAppConfigs(payload["appConfigs"])
 	for _, override := range overrides {
+		if err := internalconf.ValidateValueName(override.Name); err != nil {
+			return "", nil, err
+		}
 		value, err := vcode.MarshalJson(override.Value)
 		if err != nil {
 			return "", nil, fmt.Errorf("marshal config override %s: %w", override.Name, err)

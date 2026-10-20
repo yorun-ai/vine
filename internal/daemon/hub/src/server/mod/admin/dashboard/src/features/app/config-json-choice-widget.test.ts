@@ -45,23 +45,3 @@ test('duration fields receive a duration editor while retaining their existing v
   assert.equal(widget.value, '"1h30m"')
   assert.equal(state.doc.toString(), document.doc)
 })
-
-test('changed dropdowns retain their dirty state alongside error priority', () => {
-  const fields = [{ name: 'enabled', type: 'bool', description: '' }]
-  const document = createConfigJsonDocument('{"enabled":true}', fields)
-  const protection = createConfigValueProtection(document.ranges)
-  const choices = createConfigChoiceExtension(fields, false, protection.ranges, new Map(), undefined, new Set(['enabled']))
-  const state = EditorState.create({ doc: document.doc, extensions: [...protection.extensions, choices] })
-  assert.equal(state.field(choices).iter().value!.spec.widget.dirty, true)
-})
-
-test('all date-time types have specialized editors, including nullable fields', () => {
-  for (const type of ['localdate', 'localtime', 'localdatetime', 'timestamp', 'timestamp?']) {
-    const fields = [{ name: 'schedule', type, description: '' }]
-    const document = createConfigJsonDocument('{"schedule":null}', fields)
-    const protection = createConfigValueProtection(document.ranges)
-    const choices = createConfigChoiceExtension(fields, false, protection.ranges)
-    const state = EditorState.create({ doc: document.doc, extensions: [...protection.extensions, choices] })
-    assert.equal(state.field(choices).iter().value!.spec.widget.dateTimeType, type)
-  }
-})

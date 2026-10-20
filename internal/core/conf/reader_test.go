@@ -142,31 +142,6 @@ func TestReaderPreservesValuesAndIsolatesSnapshots(t *testing.T) {
 	}
 }
 
-func TestReaderGetByTypeDecodesLinkConfig(t *testing.T) {
-	registry := NewRegistry()
-
-	registry.Register(ConfigSpec{
-		Name:      "ReaderTestConfig",
-		SkelName:  "demo.user.ReaderTestConfig",
-		Lifecycle: LifecycleEternal,
-		Type:      reflect.TypeFor[*readerTestConfig](),
-	})
-
-	reader := newReader(&linktest.Linker{
-		EternalConfigByKey: map[string]string{
-			"demo.user.ReaderTestConfig": `{"name":"demo"}`,
-		},
-	}, registry)
-
-	value, ok := reader.GetByType(reflect.TypeFor[*readerTestConfig]()).(*readerTestConfig)
-	if !ok {
-		t.Fatal("expected reader to return *readerTestConfig")
-	}
-	if value.Name != "demo" {
-		t.Fatalf("unexpected decoded name: %q", value.Name)
-	}
-}
-
 func TestReaderGetByTypeUsesLocalLifecycle(t *testing.T) {
 	registry := NewRegistry()
 
@@ -408,6 +383,28 @@ func TestReaderNullableGenericParameterReferences(t *testing.T) {
 			require.Nil(t, config.Lists[0].Value)
 			require.NotNil(t, config.Lists[1].Value)
 			require.Empty(t, *config.Lists[1].Value)
+		})
+	}
+}
+
+type readerAbstractConfig struct {
+	ConfigModel
+	Value string `json:"value"`
+}
+type readerPrimaryConfig readerAbstractConfig
+type readerReplicaConfig readerAbstractConfig
+
+func TestReaderAdoptedConfigsResolveIndependentlyWithoutSource(t *testing.T) {
+	for _, lifecycle := range []Lifecycle{LifecycleEternal, LifecycleInstant} {
+		t.Run(string(lifecycle), func(t *testing.T) {
+			r := NewRegistry()
+			// Source metadata must not require registration or redirect value lookup.
+			r.Register(ConfigSpec{SkelName: "demo.PrimaryConfig", Type: reflect.TypeFor[*readerPrimaryConfig](), Lifecycle: lifecycle, FromSkelName: "demo.DatabaseAbsConfig", FromType: reflect.TypeFor[*readerAbstractConfig]()})
+			r.Register(ConfigSpec{SkelName: "demo.ReplicaConfig", Type: reflect.TypeFor[*readerReplicaConfig](), Lifecycle: lifecycle, FromSkelName: "demo.DatabaseAbsConfig", FromType: reflect.TypeFor[*readerAbstractConfig]()})
+			values := map[string]string{"demo.PrimaryConfig": `{"value":"primary"}`, "demo.ReplicaConfig": `{"value":"replica"}`}
+			reader := newReader(&linktest.Linker{EternalConfigByKey: values, InstantConfigByKey: values}, r)
+			require.Equal(t, "primary", reader.GetByType(reflect.TypeFor[*readerPrimaryConfig]()).(*readerPrimaryConfig).Value)
+			require.Equal(t, "replica", reader.GetByType(reflect.TypeFor[*readerReplicaConfig]()).(*readerReplicaConfig).Value)
 		})
 	}
 }

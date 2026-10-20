@@ -8,6 +8,8 @@ import (
 
 // AppConfigDefinition is the resolved declaration of one application config.
 type AppConfigDefinition struct {
+	Abs              bool
+	FromSkelName     string
 	SkelName         string
 	Name             string
 	Description      string
@@ -74,6 +76,8 @@ func NewAppConfigDefinition(descriptor *skeldesc.Config, enumDescriptors []*skel
 		return nil
 	}
 	return &AppConfigDefinition{
+		Abs:              descriptor.Abs,
+		FromSkelName:     descriptor.FromSkelName,
 		SkelName:         descriptor.SkelName,
 		Name:             descriptor.Name,
 		Description:      descriptor.Description,

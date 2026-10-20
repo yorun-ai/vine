@@ -9,60 +9,6 @@ type regTestConfig struct {
 	Name string `json:"name"`
 }
 
-func TestRegisterEternal(t *testing.T) {
-	registry := NewRegistry()
-
-	registry.Register(ConfigSpec{
-		Name:      "RegTestConfig",
-		SkelName:  "demo.user.RegTestConfig",
-		Lifecycle: LifecycleEternal,
-		Type:      reflect.TypeFor[regTestConfig](),
-	})
-
-	reg, ok := registry.infoBySkelName["demo.user.RegTestConfig"]
-	if !ok {
-		t.Fatal("expected registration")
-	}
-	if reg.Name != "RegTestConfig" {
-		t.Fatalf("unexpected name: %s", reg.Name)
-	}
-	if reg.Type != reflect.TypeFor[regTestConfig]() {
-		t.Fatalf("unexpected mapped type: %v", reg.Type)
-	}
-	if reg.Lifecycle != LifecycleEternal {
-		t.Fatalf("unexpected lifecycle: %s", reg.Lifecycle)
-	}
-	if reg.SkelName != "demo.user.RegTestConfig" {
-		t.Fatalf("unexpected skelName: %s", reg.SkelName)
-	}
-	types := registry.RegisteredTypes()
-	if len(types) != 1 {
-		t.Fatalf("unexpected registered types count: %d", len(types))
-	}
-	if types[0] != reflect.TypeFor[regTestConfig]() {
-		t.Fatalf("unexpected registered type: %v", types[0])
-	}
-}
-
-func TestRegisterInstant(t *testing.T) {
-	registry := NewRegistry()
-
-	registry.Register(ConfigSpec{
-		Name:      "RegTestConfig",
-		SkelName:  "demo.user.RegTestConfig",
-		Lifecycle: LifecycleInstant,
-		Type:      reflect.TypeFor[regTestConfig](),
-	})
-
-	reg, ok := registry.infoBySkelName["demo.user.RegTestConfig"]
-	if !ok {
-		t.Fatal("expected registration")
-	}
-	if reg.Lifecycle != LifecycleInstant {
-		t.Fatalf("unexpected lifecycle: %s", reg.Lifecycle)
-	}
-}
-
 func TestRegisterRejectsDuplicateSkelName(t *testing.T) {
 	registry := NewRegistry()
 

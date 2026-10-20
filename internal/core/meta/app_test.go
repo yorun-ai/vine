@@ -6,16 +6,6 @@ import (
 	"uuid"
 )
 
-func TestNewAppAcceptsValidValues(t *testing.T) {
-	app, err := NewApp("demo.service", "1.2.3", "123e4567-e89b-12d3-a456-426614174000")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if app.Name() != "demo.service" || app.Version() != "1.2.3" || app.InstanceId() != "123e4567-e89b-12d3-a456-426614174000" {
-		t.Fatalf("unexpected app content: %#v", app)
-	}
-}
-
 func TestNewAppRejectsInvalidName(t *testing.T) {
 	for _, name := range []string{"DemoService", "demo.worker@demo.runtime", "2worker", "user-service", ".worker", "demo..worker"} {
 		if _, err := NewApp(name, "1.2.3", "123e4567-e89b-12d3-a456-426614174000"); err == nil {

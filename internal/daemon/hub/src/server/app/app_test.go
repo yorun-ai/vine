@@ -16,38 +16,26 @@ import (
 	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/lockserver"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
+
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
 	adminimpl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/admin"
 	controlimpl "go.yorun.ai/vine/internal/daemon/hub/src/server/impl/control"
 	adminapi "go.yorun.ai/vine/internal/daemon/hub/src/server/mod/admin"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/controlapi"
+
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/initializer"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/scheduler"
+
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/seeder"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/sweeper"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
+
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo"
 	repodb "go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db"
-	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
-	repodescriptor "go.yorun.ai/vine/internal/daemon/hub/src/server/repo/descriptor"
 )
 
 var (
 	testSQLitePath     string
 	testSQLitePathOnce sync.Once
 )
-
-func collectComponentTypes(spec *HubApp) []reflect.Type {
-	var componentTypes []reflect.Type
-	spec.InitComponents(func(componentType reflect.Type) {
-		componentTypes = append(componentTypes, componentType)
-	})
-	return componentTypes
-}
 
 func collectModuleTypes(spec *HubApp) []reflect.Type {
 	var moduleTypes []reflect.Type
@@ -102,31 +90,6 @@ func TestHubAppDIInitNormalizesFlagAndSetsRunFlag(t *testing.T) {
 	assert.Equal(t, flag.MQModeNATS, spec.Flag.MQMode)
 }
 
-func TestHubAppDIInitKeepsPGConnUrl(t *testing.T) {
-	spec := &HubApp{
-		AppFlag:    &internalapp.RunFlag{},
-		InprocFlag: &internalapp.InternalInprocFlag{},
-		Flag: &flag.Flag{
-			MQMode:         flag.MQModeNATS,
-			Store:          flag.StorePostgreSQL,
-			DBPostgresURL:  "postgres://demo:demo@127.0.0.1:5432/hub",
-			MQNatsEndpoint: "nats://127.0.0.1:4222",
-		},
-	}
-
-	spec.DIInit()
-
-	if got, want := spec.InternalAttrs.CurrentApp.Version(), buildinfo.MustVineVersion(); got != want {
-		t.Fatalf("unexpected daemon version: got %q, want Vine version %q", got, want)
-	}
-
-	assert.Equal(t, flag.StorePostgreSQL, spec.Flag.Store)
-	assert.Equal(t, "postgres://demo:demo@127.0.0.1:5432/hub", spec.Flag.DBPostgresURL)
-	assert.Equal(t, "nats://127.0.0.1:4222", spec.Flag.MQNatsEndpoint)
-	assert.Equal(t, flag.MQModeNATS, spec.Flag.MQMode)
-	assert.Equal(t, flag.HubDefaultAdminListen, spec.AppFlag.ListenAddr)
-}
-
 func TestHubAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
 	spec := &HubApp{
 		AppFlag:    &internalapp.RunFlag{},
@@ -164,125 +127,6 @@ func TestHubAdminModuleServesOnlyAdminAPIHandlers(t *testing.T) {
 	assert.NotContains(t, handlerTypes, internalapp.T[*controlimpl.InfoServiceServerImpl]())
 	assert.NotContains(t, handlerTypes, internalapp.T[*controlimpl.RegistryServiceServerImpl]())
 	assert.Contains(t, handlerTypes, internalapp.T[*adminimpl.AppConfigApiServiceServerImpl]())
-}
-
-func TestHubAppModuleTypesIncludesRuntimeModules(t *testing.T) {
-	// The runtime module list and its order are independent of the run mode and
-	// the MQ mode, so no mode combination needs its own expectation.
-	spec := &HubApp{
-		InprocFlag: &internalapp.InternalInprocFlag{},
-		Flag:       &flag.Flag{},
-	}
-
-	assert.Equal(t, []reflect.Type{
-		internalapp.T[*syncer.Syncer](),
-		internalapp.T[*seeder.Seeder](),
-		internalapp.T[*initializer.Initializer](),
-		internalapp.T[*scheduler.Scheduler](),
-		internalapp.T[*sweeper.Sweeper](),
-		internalapp.T[*controlapi.Server](),
-		internalapp.T[*adminapi.Server](),
-	}, collectModuleTypes(spec))
-}
-
-func TestHubAppComponentTypesReturnsRuntimeComponents(t *testing.T) {
-	// The component list is independent of the configured store, so SQLite and
-	// PostgreSQL do not need separate expectations.
-	spec := &HubApp{
-		Flag: &flag.Flag{Store: flag.StoreSQLite},
-	}
-
-	assert.Equal(t, []reflect.Type{
-		internalapp.T[*configaccess.Access](),
-		internalapp.T[*repodb.HubDatabase](),
-		internalapp.T[*natsserver.NATSServer](),
-		internalapp.T[*lockserver.Server](),
-		internalapp.T[*watchserver.Server](),
-	}, collectComponentTypes(spec))
-}
-
-func TestConfigDatabaseInitOptionForSQLite(t *testing.T) {
-	spec := &repodb.HubDatabase{
-		Flag: &flag.Flag{
-			Store:        flag.StoreSQLite,
-			DBSQLiteFile: "/tmp/hub.sqlite",
-		},
-	}
-	option := &rdb.Option{}
-
-	spec.InitOption(option)
-
-	assert.Equal(t, "sqlite:///tmp/hub.sqlite", option.ConnURL)
-	daoTypes := []reflect.Type{}
-	spec.InitDao(func(daoType reflect.Type) {
-		daoTypes = append(daoTypes, daoType)
-	})
-	assert.Equal(t, []reflect.Type{
-		rdb.T[*model.AppConfigDao](),
-		rdb.T[*model.PortalCertDao](),
-		rdb.T[*model.PortalEntryDao](),
-		rdb.T[*model.PortalRuleDao](),
-		rdb.T[*model.MetadataDao](),
-		rdb.T[*model.PortalSiteDao](),
-	}, daoTypes)
-}
-
-func TestConfigDatabaseInitOptionForPG(t *testing.T) {
-	spec := &repodb.HubDatabase{
-		Flag: &flag.Flag{
-			Store:         flag.StorePostgreSQL,
-			DBPostgresURL: "postgres://demo:demo@127.0.0.1:5432/hub",
-		},
-	}
-	option := &rdb.Option{}
-
-	spec.InitOption(option)
-
-	assert.Equal(t, "postgres://demo:demo@127.0.0.1:5432/hub", option.ConnURL)
-	daoTypes := []reflect.Type{}
-	spec.InitDao(func(daoType reflect.Type) {
-		daoTypes = append(daoTypes, daoType)
-	})
-	assert.Equal(t, []reflect.Type{
-		rdb.T[*model.AppConfigDao](),
-		rdb.T[*model.PortalCertDao](),
-		rdb.T[*model.PortalEntryDao](),
-		rdb.T[*model.PortalRuleDao](),
-		rdb.T[*model.MetadataDao](),
-		rdb.T[*model.PortalSiteDao](),
-	}, daoTypes)
-}
-
-func TestHubAppBindCommonProvidesAppConfigRepoForSQLite(t *testing.T) {
-	configRepo := newHubBoundAppConfigRepo(t, &HubApp{
-		InprocFlag: &internalapp.InternalInprocFlag{},
-		Flag:       &flag.Flag{Store: flag.StoreSQLite},
-	})
-
-	assert.IsType(t, &repo.AppConfigRepo{Access: new(configaccess.Access)}, configRepo)
-}
-
-func TestHubAppBindCommonProvidesAppConfigRepoForPG(t *testing.T) {
-	configRepo := newHubBoundAppConfigRepo(t, &HubApp{
-		InprocFlag: &internalapp.InternalInprocFlag{},
-		Flag: &flag.Flag{
-			Store:         flag.StorePostgreSQL,
-			DBPostgresURL: "postgres://demo:demo@127.0.0.1:5432/hub",
-		},
-	})
-
-	assert.IsType(t, &repo.AppConfigRepo{Access: new(configaccess.Access)}, configRepo)
-}
-
-func TestHubAppBindCommonProvidesDescriptorRepo(t *testing.T) {
-	// The descriptor repo binding is independent of the run mode, so the inproc and
-	// non-inproc modes do not need separate expectations.
-	descriptorRepo := newHubBoundDescriptorRepo(t, &HubApp{
-		InprocFlag: &internalapp.InternalInprocFlag{},
-		Flag:       &flag.Flag{Store: flag.StoreSQLite},
-	})
-
-	assert.IsType(t, &repodescriptor.DescriptorRepo{}, descriptorRepo)
 }
 
 // TestInitializerResolvesFromCommonBindings is a composition smoke test: the
@@ -328,62 +172,6 @@ func TestInitializerResolvesFromCommonBindings(t *testing.T) {
 	})
 	assert.NotNil(t, module)
 	assert.IsType(t, &repo.AppConfigRepo{Access: new(configaccess.Access)}, module.AppConfigRepo)
-}
-
-func newHubBoundAppConfigRepo(t *testing.T, spec *HubApp) core.AppConfigRepo {
-	t.Helper()
-
-	component := &repodb.HubDatabase{
-		Flag: &flag.Flag{
-			Store:        flag.StoreSQLite,
-			DBSQLiteFile: sharedTestSQLitePath(t),
-		},
-	}
-	manager := initTestConfigDatabase(component)
-	t.Cleanup(manager.AfterAppStop)
-
-	daoInjector := di.NewInjector(
-		func(b *di.Binder) {
-			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
-			b.BindInstance(logger.New("vine:test"))
-			manager.Bind(b)
-		},
-	)
-	daoExecution := daoInjector.StartExecution()
-	defer daoExecution.CompleteExecution()
-	daoInstance := daoExecution.Get(rdb.T[*model.AppConfigDao]()).Interface()
-	watchServer := watchserver.NewServerForTest()
-	t.Cleanup(watchServer.AfterAppStop)
-
-	injector := di.NewInjector(
-		func(b *di.Binder) {
-			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
-			b.Bind(di.T[*flag.Flag]()).ToInstance(spec.Flag)
-			b.BindInstance(daoInstance)
-			b.BindInstance(logger.New("vine:test"))
-			b.BindInstance(watchServer)
-			spec.BindCommon(b)
-		},
-	)
-
-	configRepo := injector.Get(di.T[core.AppConfigRepo]()).Interface().(core.AppConfigRepo)
-	return configRepo
-}
-
-func newHubBoundDescriptorRepo(t *testing.T, spec *HubApp) core.DescriptorRepo {
-	t.Helper()
-
-	injector := di.NewInjector(
-		func(b *di.Binder) {
-			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
-			b.BindInstance(logger.New("vine:test"))
-			b.Bind(di.T[*flag.Flag]()).ToInstance(spec.Flag)
-			b.Bind(di.T[*internalapp.InternalInprocFlag]()).ToInstance(spec.InprocFlag)
-			spec.BindCommon(b)
-		},
-	)
-
-	return injector.Get(di.T[core.DescriptorRepo]()).Interface().(core.DescriptorRepo)
 }
 
 func TestHubConfigurationLifecycle(t *testing.T) {

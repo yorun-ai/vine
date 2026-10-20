@@ -49,6 +49,9 @@ type AppConfigRepo interface {
 	FindByName(name string) (*AppConfig, bool)
 	GetById(id int) (*AppConfig, bool)
 	GetByName(name string) (*AppConfig, bool)
+	// GetDefinition returns the registered declaration, including abstract configs,
+	// or nil if no application declares the name.
+	GetDefinition(name string) *AppConfigDefinition
 	Save(item *AppConfig)
 	Remove(id int) bool
 }
@@ -128,9 +131,12 @@ func (m *AppConfigCore) Remove(id int) bool {
 	return m.AppConfigRepo.Remove(item.Id)
 }
 
-// Validate checks configuration fields without accessing storage.
-func (*AppConfigCore) Validate(item AppConfig) AppConfig {
+// Validate resolves the registered definition and checks configuration fields
+// without writing. Supplied definition metadata is replaced by the repository's.
+func (m *AppConfigCore) Validate(item AppConfig) AppConfig {
 	ex.PanicNewIfNot(strings.TrimSpace(item.Name) != "", ex.OperationFailed, "config name is required")
+	item.Definition = m.AppConfigRepo.GetDefinition(item.Name)
+	ex.PanicNewIfNot(item.Definition == nil || !item.Definition.Abs, ex.OperationFailed, ex.F("abstract config %q cannot have a value", item.Name))
 	return item
 }
 

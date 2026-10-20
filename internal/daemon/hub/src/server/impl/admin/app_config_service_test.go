@@ -94,6 +94,10 @@ func (r *_AppConfigServiceAppConfigRepo) GetByName(name string) (*core.AppConfig
 	return nil, false
 }
 
+func (r *_AppConfigServiceAppConfigRepo) GetDefinition(name string) *core.AppConfigDefinition {
+	return r.assemble(&core.AppConfig{Name: name}).Definition
+}
+
 func (r *_AppConfigServiceAppConfigRepo) Save(item *core.AppConfig) {
 	if item.Id == 0 {
 		item.Id = len(r.items) + 1

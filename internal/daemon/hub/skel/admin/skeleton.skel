@@ -568,6 +568,12 @@ data SkeletonData {
 
 @desc("SkeletonConfig")
 data SkeletonConfigItem {
+    @desc("Whether the config is an abstract contract")
+    abs: bool
+
+    @desc("Source abstract configuration Skel name; empty for configs without a source")
+    fromSkelName: string
+
     @desc("Domain")
     domain: string
 

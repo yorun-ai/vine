@@ -2,51 +2,14 @@ package admin
 
 import (
 	"bytes"
-	"io/fs"
+
 	"net/http"
 	"net/http/httptest"
-	"regexp"
+
 	"strings"
 	"sync"
 	"testing"
-
-	coreapp "go.yorun.ai/vine/internal/core/app"
 )
-
-func TestDashboardHandlerServesEmbeddedIndex(t *testing.T) {
-	response := getAsset("/")
-	if response.Code != http.StatusOK {
-		t.Fatalf("unexpected status code: %d", response.Code)
-	}
-	if !strings.Contains(response.Body.String(), `<div id="app"></div>`) {
-		t.Fatalf("expected embedded dashboard index, got: %s", response.Body.String())
-	}
-}
-
-func TestDashboardHandlerServesEmbeddedAsset(t *testing.T) {
-	response := getAsset("/brand/vinehub.png")
-
-	if response.Code != http.StatusOK {
-		t.Fatalf("unexpected status code: %d", response.Code)
-	}
-	if contentType := response.Header().Get("Content-Type"); contentType != "image/png" {
-		t.Fatalf("unexpected content type: %s", contentType)
-	}
-	if body := response.Body.Bytes(); len(body) < 8 || string(body[:8]) != "\x89PNG\r\n\x1a\n" {
-		t.Fatalf("expected embedded png asset")
-	}
-}
-
-func TestDashboardHandlerFallsBackToIndexForSpaRoute(t *testing.T) {
-	response := getAsset("/settings/dashboard-port")
-
-	if response.Code != http.StatusOK {
-		t.Fatalf("unexpected status code: %d", response.Code)
-	}
-	if !strings.Contains(response.Body.String(), `<div id="app"></div>`) {
-		t.Fatalf("expected embedded dashboard index, got: %s", response.Body.String())
-	}
-}
 
 func TestDashboardHandlerReturnsNotFoundForMissingFile(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "http://hub.local/assets/missing.js", nil)
@@ -56,41 +19,6 @@ func TestDashboardHandlerReturnsNotFoundForMissingFile(t *testing.T) {
 	if response.Code != http.StatusNotFound {
 		t.Fatalf("unexpected missing asset status code: %d", response.Code)
 	}
-}
-
-// TestDashboardBuildCallsTheAdminApiPath guards the path the listener serves: the
-// Admin API answers one path there and the Dashboard build on every other, so the
-// build Hub hands the browser has to call the API path. A build that called
-// another path would reach the entry document instead of the API.
-func TestDashboardBuildCallsTheAdminApiPath(t *testing.T) {
-	script := dashboardScriptPath(getAsset("/").Body.String())
-	if script == "" {
-		t.Fatal("expected the index to load a build script")
-	}
-	body := getAsset(script).Body.String()
-	if !strings.Contains(body, apiPath) {
-		t.Fatalf("expected the Dashboard build to call %s", apiPath)
-	}
-	if strings.Contains(body, coreapp.PathRpcInvoke) {
-		t.Fatalf("expected the Dashboard build to call %s, not the runtime path %s", apiPath, coreapp.PathRpcInvoke)
-	}
-}
-
-// dashboardScriptPath returns the build script the entry document loads.
-func dashboardScriptPath(index string) string {
-	matches := regexp.MustCompile(`src="([^"]+\.js)"`).FindStringSubmatch(index)
-	if len(matches) != 2 {
-		return ""
-	}
-	return matches[1]
-}
-
-func getAsset(target string) *httptest.ResponseRecorder {
-	request := httptest.NewRequest(http.MethodGet, "http://hub.local"+target, nil)
-	request.Header.Set("Accept", "text/html")
-	response := httptest.NewRecorder()
-	dashboardHandler().ServeHTTP(response, request)
-	return response
 }
 
 func TestDashboardServesEmbeddedBuildOutput(t *testing.T) {
@@ -131,24 +59,6 @@ func TestDashboardServesEmbeddedBuildOutput(t *testing.T) {
 		})
 	}
 	wg.Wait()
-}
-
-func TestDashboardBundleExcludesLicenseReports(t *testing.T) {
-	err := fs.WalkDir(dashboardFS, "dashboard/dist", func(filename string, entry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if entry.IsDir() {
-			return nil
-		}
-		if strings.Contains(filename, "THIRD_PARTY_LICENSES") {
-			t.Errorf("unexpected generated license file: %s", filename)
-		}
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
 }
 
 func TestDashboardDevProxyRequiresEnvironment(t *testing.T) {

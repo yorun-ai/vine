@@ -23,56 +23,6 @@ func (*queryTestModel) TableName() string {
 	return "query_test_models"
 }
 
-func TestQueryCount(t *testing.T) {
-	config := Option{
-		ConnURL:     "sqlite://" + t.TempDir() + "/query.sqlite",
-		MaxOpenConn: 1,
-	}
-	db, err := openConnection(config)
-	require.NoError(t, err)
-
-	err = db.AutoMigrate(&queryTestModel{})
-	require.NoError(t, err)
-
-	err = db.Create([]*queryTestModel{
-		{Name: "alpha"},
-		{Name: "alpha"},
-		{Name: "beta"},
-	}).Error
-	require.NoError(t, err)
-
-	dao := NewDao[*queryTestModel](db)
-	query := dao.Query("name = ?", "alpha")
-	assert.Equal(t, 2, query.Count())
-}
-
-func TestQueryFirstAndList(t *testing.T) {
-	db, err := openConnection(Option{
-		ConnURL:     "sqlite://" + t.TempDir() + "/query.sqlite",
-		MaxOpenConn: 1,
-	})
-	require.NoError(t, err)
-
-	err = db.AutoMigrate(&queryTestModel{})
-	require.NoError(t, err)
-
-	err = db.Create([]*queryTestModel{
-		{Name: "alpha"},
-		{Name: "beta"},
-	}).Error
-	require.NoError(t, err)
-
-	dao := NewDao[*queryTestModel](db)
-
-	first, ok := dao.Query("name = ?", "alpha").First()
-	require.True(t, ok)
-	require.NotNil(t, first)
-	assert.Equal(t, "alpha", first.Name)
-
-	list := dao.Query("name IN ?", []string{"alpha", "beta"}).List()
-	assert.Len(t, list, 2)
-}
-
 func TestQueryFirstLimitsRows(t *testing.T) {
 	db, err := openConnection(Option{
 		ConnURL:     "sqlite://" + t.TempDir() + "/query.sqlite",

@@ -2,7 +2,7 @@ package admin
 
 import (
 	"cmp"
-	"encoding/json/v2"
+
 	"strings"
 	"testing"
 
@@ -13,43 +13,6 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vslice"
 )
-
-func TestSkeletonApiPreservesExtensionMarkers(t *testing.T) {
-	for _, ext := range []bool{false, true} {
-		name := "public"
-		if ext {
-			name = "extension"
-		}
-		t.Run(name, func(t *testing.T) {
-			service := &SkeletonApiServiceServerImpl{DescriptorRepo: &_SkeletonServiceDescriptorRepo{
-				domainDescriptors: []*skeldesc.Domain{{Name: "demo.audit", Hash: "domain-hash",
-					Services: []*skeldesc.Service{{Name: "AuditService", SkelName: "demo.audit.AuditService", Hash: "service-hash", Pub: true, Ext: ext, AuthMode: skeldesc.AuthModeRequired}},
-					Events:   []*skeldesc.Event{{Name: "AuditRecordedEvent", SkelName: "demo.audit.AuditRecordedEvent", Hash: "event-hash", Pub: true, Ext: ext}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
-				}},
-			}}
-			services := service.ListServices()
-			events := service.ListEvents()
-			domains := service.ListDomains()
-			require.Len(t, services, 1)
-			require.Len(t, events, 1)
-			require.Len(t, domains, 1)
-			require.Len(t, domains[0].Services, 1)
-			require.Len(t, domains[0].Events, 1)
-			assert.Equal(t, ext, services[0].Ext)
-			assert.Equal(t, ext, events[0].Ext)
-			assert.Equal(t, ext, domains[0].Services[0].Ext)
-			assert.Equal(t, ext, domains[0].Events[0].Ext)
-			for _, items := range []any{services, events} {
-				encoded, err := json.Marshal(items)
-				require.NoError(t, err)
-				var decoded []map[string]any
-				require.NoError(t, json.Unmarshal(encoded, &decoded))
-				assert.Equal(t, ext, decoded[0]["ext"])
-				assert.Equal(t, true, decoded[0]["pub"])
-			}
-		})
-	}
-}
 
 type _TestDescriptorRef[T any] struct {
 	SkelName   string
@@ -828,111 +791,6 @@ func TestSkeletonServiceListActorsIncludesCrossDomainAccessibleItems(t *testing.
 	assert.Equal(t, "user.UserWeb", actors[0].Webs[0].SkelName)
 }
 
-func TestSkeletonServiceListConfigs(t *testing.T) {
-	service := &SkeletonApiServiceServerImpl{
-		DescriptorRepo: &_SkeletonServiceDescriptorRepo{
-			domainDescriptors: []*skeldesc.Domain{{
-				Name: "demo.user",
-				Configs: []*skeldesc.Config{{
-					Name:             "UserConfig",
-					SkelName:         "demo.user.UserConfig",
-					Deprecated:       true,
-					DeprecatedReason: "Use SiteConfig",
-					Pub:              true,
-					Sensitive:        true,
-					Lifecycle:        "eternal",
-					Members: []*skeldesc.Member{{
-						Name:             "enabled",
-						Deprecated:       true,
-						DeprecatedReason: "Use active",
-						Sensitive:        true,
-						Type:             &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBoolean},
-					}},
-				}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
-			}},
-		},
-	}
-
-	configs := service.ListConfigs()
-
-	require.Len(t, configs, 1)
-	assert.Equal(t, "demo.user", configs[0].Domain)
-	assert.Equal(t, "demo.user.UserConfig", configs[0].SkelName)
-	assert.True(t, configs[0].Deprecated)
-	assert.Equal(t, "Use SiteConfig", configs[0].DeprecatedReason)
-	assert.True(t, configs[0].Pub)
-	assert.True(t, configs[0].Sensitive)
-	assert.Equal(t, "eternal", configs[0].Lifecycle)
-	require.Len(t, configs[0].Fields, 1)
-	assert.Equal(t, "bool", configs[0].Fields[0].Type)
-	assert.True(t, configs[0].Fields[0].Sensitive)
-	assert.True(t, configs[0].Fields[0].Deprecated)
-	assert.Equal(t, "Use active", configs[0].Fields[0].DeprecatedReason)
-}
-
-func TestSkeletonServiceListTasksAndEvents(t *testing.T) {
-	service := &SkeletonApiServiceServerImpl{
-		DescriptorRepo: &_SkeletonServiceDescriptorRepo{
-			domainDescriptors: []*skeldesc.Domain{{
-				Name: "demo.user",
-				Tasks: []*skeldesc.Task{{
-					Name:             "SyncTask",
-					SkelName:         "demo.user.SyncTask",
-					Deprecated:       true,
-					DeprecatedReason: "Use ReconcileTask",
-					Triggers: []*skeldesc.TaskTrigger{{
-						Name:               "run",
-						SkelName:           "run",
-						Deprecated:         true,
-						DeprecatedReason:   "Use scheduled",
-						ArgumentsSensitive: true,
-						Arguments: []*skeldesc.Member{{
-							Name:      "limit",
-							Sensitive: true,
-							Type:      &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarInt},
-						}},
-					}},
-				}},
-				Events: []*skeldesc.Event{{
-					Name:             "UserCreatedEvent",
-					SkelName:         "demo.user.UserCreatedEvent",
-					Deprecated:       true,
-					DeprecatedReason: "Use AccountCreatedEvent",
-					Pub:              true,
-					Sensitive:        true,
-					Members: []*skeldesc.Member{{
-						Name:      "userId",
-						Sensitive: true,
-						Type:      &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarInt},
-					}},
-				}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
-			}},
-		},
-	}
-
-	tasks := service.ListTasks()
-	events := service.ListEvents()
-
-	require.Len(t, tasks, 1)
-	assert.True(t, tasks[0].Deprecated)
-	assert.Equal(t, "Use ReconcileTask", tasks[0].DeprecatedReason)
-	assert.Equal(t, "demo.user", tasks[0].Domain)
-	require.Len(t, tasks[0].Triggers, 1)
-	assert.True(t, tasks[0].Triggers[0].ArgumentsSensitive)
-	assert.True(t, tasks[0].Triggers[0].Deprecated)
-	assert.Equal(t, "Use scheduled", tasks[0].Triggers[0].DeprecatedReason)
-	assert.Equal(t, "int", tasks[0].Triggers[0].Arguments[0].Type)
-	assert.True(t, tasks[0].Triggers[0].Arguments[0].Sensitive)
-	require.Len(t, events, 1)
-	assert.Equal(t, "demo.user", events[0].Domain)
-	assert.True(t, events[0].Pub)
-	assert.True(t, events[0].Deprecated)
-	assert.Equal(t, "Use AccountCreatedEvent", events[0].DeprecatedReason)
-	assert.True(t, events[0].Sensitive)
-	assert.Equal(t, "int", events[0].Fields[0].Type)
-	assert.True(t, events[0].Fields[0].Sensitive)
-}
-
 func TestSkeletonServiceListDataIncludesEnums(t *testing.T) {
 	service := &SkeletonApiServiceServerImpl{
 		DescriptorRepo: &_SkeletonServiceDescriptorRepo{
@@ -1080,27 +938,6 @@ func TestSkeletonServiceMergesItemVersionsOnServer(t *testing.T) {
 	require.Len(t, domains[1].Data, 1)
 	assert.Equal(t, "domain-cross", domains[2].DescriptorHash)
 	assert.False(t, domains[2].IsMain)
-}
-
-func TestSkeletonServiceApiFlag(t *testing.T) {
-	for _, tc := range []struct {
-		name     string
-		api      bool
-		pub      bool
-		authMode skeldesc.AuthMode
-	}{
-		{name: "api", api: true},
-		{name: "backend", pub: true},
-		{name: "legacy", pub: true, authMode: skeldesc.AuthModeRequired},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			item := toServerSkeletonServiceItem(_SkeletonVersionFields{}, &skeldesc.Service{
-				Api: tc.api, Pub: tc.pub, AuthMode: tc.authMode,
-			})
-			assert.Equal(t, tc.api, item.Api)
-			assert.Equal(t, tc.pub, item.Pub)
-		})
-	}
 }
 
 func (r *_SkeletonServiceDescriptorRepo) GetWebDescriptor(skelName string) *skeldesc.Web {

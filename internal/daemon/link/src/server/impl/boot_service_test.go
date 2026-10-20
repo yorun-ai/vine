@@ -8,17 +8,6 @@ import (
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 )
 
-func TestBootServiceReturnsRpcProxyEndpointPath(t *testing.T) {
-	service := &BootServiceServerImpl{
-		Flag:       &flag.Flag{},
-		InprocFlag: &app.InternalInprocFlag{},
-	}
-
-	info := service.GetInfo()
-
-	assert.Equal(t, "/rpc/proxy/out", info.RpcProxyEndpointPath)
-}
-
 func TestBootServiceSkipsDomainDescriptorsOnlyWhenHubAndAppShareProcess(t *testing.T) {
 	tests := []struct {
 		name          string

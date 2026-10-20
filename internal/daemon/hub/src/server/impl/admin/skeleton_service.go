@@ -450,6 +450,8 @@ func toServerSkeletonResourceCheckService(resourceVersion _SkeletonVersionFields
 
 func toServerSkeletonConfigItem(version _SkeletonVersionFields, descriptor *skeldesc.Config) skeled.SkeletonConfigItem {
 	return skeled.SkeletonConfigItem{
+		Abs:                  descriptor.Abs,
+		FromSkelName:         descriptor.FromSkelName,
 		Domain:               version.Domain,
 		DescriptorHash:       version.DescriptorHash,
 		MainDescriptorHash:   version.MainDescriptorHash,

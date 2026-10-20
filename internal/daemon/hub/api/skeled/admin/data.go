@@ -14,8 +14,10 @@ type AppConfigCreation struct {
 
 // AppConfigDescriptor Configuration descriptor items
 type AppConfigDescriptor struct {
-	Sensitive bool                      `json:"sensitive"`
-	DataTypes []AppConfigDescriptorData `json:"dataTypes"`
+	// FromSkelName Source abstract configuration Skel name; empty for configs without a source
+	FromSkelName string                    `json:"fromSkelName"`
+	Sensitive    bool                      `json:"sensitive"`
+	DataTypes    []AppConfigDescriptorData `json:"dataTypes"`
 	// SkelName Configuration Skel name
 	SkelName string `json:"skelName"`
 	// Name Configuration name
@@ -891,6 +893,10 @@ type SkeletonActorRef struct {
 
 // SkeletonConfigItem SkeletonConfig
 type SkeletonConfigItem struct {
+	// Abs Whether the config is an abstract contract
+	Abs bool `json:"abs"`
+	// FromSkelName Source abstract configuration Skel name; empty for configs without a source
+	FromSkelName string `json:"fromSkelName"`
 	// Domain Domain
 	Domain string `json:"domain"`
 	// DescriptorHash Skeleton item hash

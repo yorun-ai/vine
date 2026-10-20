@@ -46,7 +46,7 @@ func (s *AppConfigApiServiceServerImpl) Create(creation skeled.AppConfigCreation
 
 func (s *AppConfigApiServiceServerImpl) Remove(id int) bool {
 	item := s.AppConfigCore.Get(id)
-	ex.PanicNewIfNot(item.Definition == nil, ex.OperationFailed, ex.F("config %q is not unused", item.Name))
+	ex.PanicNewIfNot(item.Definition == nil || item.Definition.Abs, ex.OperationFailed, ex.F("config %q is not unused", item.Name))
 	return s.AppConfigCore.Remove(id)
 }
 
@@ -113,10 +113,11 @@ func appConfigStatusOrder(status core.AppConfigStatus) int {
 }
 
 func toServerAppConfigDescriptor(definition *core.AppConfigDefinition) *skeled.AppConfigDescriptor {
-	if definition == nil {
+	if definition == nil || definition.Abs {
 		return nil
 	}
 	return &skeled.AppConfigDescriptor{
+		FromSkelName:     definition.FromSkelName,
 		SkelName:         definition.SkelName,
 		Name:             definition.Name,
 		Description:      definition.Description,

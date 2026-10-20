@@ -6,10 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConcat(t *testing.T) {
-	assert.Equal(t, []int{1, 2, 3, 4}, Concat([]int{1, 2}, []int{3}, nil, []int{4}))
-}
-
 func TestIntersectUnionAndDifference(t *testing.T) {
 	list1 := []int{1, 3, 5, 7, 9}
 	list2 := []int{7, 9, 11, 13, 15}

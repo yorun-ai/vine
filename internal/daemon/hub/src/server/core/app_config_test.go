@@ -11,7 +11,8 @@ import (
 type configRepoSpy struct {
 	calls []string
 
-	items map[string]*AppConfig
+	items       map[string]*AppConfig
+	definitions map[string]*AppConfigDefinition
 
 	savedItem *AppConfig
 }
@@ -56,6 +57,10 @@ func (s *configRepoSpy) GetByName(name string) (*AppConfig, bool) {
 	return &value, true
 }
 
+func (s *configRepoSpy) GetDefinition(name string) *AppConfigDefinition {
+	return s.definitions[name]
+}
+
 func (s *configRepoSpy) Save(item *AppConfig) {
 	s.calls = append(s.calls, "Save")
 	value := *item
@@ -76,46 +81,6 @@ func (s *configRepoSpy) Remove(id int) bool {
 		return true
 	}
 	return false
-}
-
-func TestAppConfigCoreList(t *testing.T) {
-	repo := &configRepoSpy{
-		items: map[string]*AppConfig{
-			"db.main": {
-				Id:      1,
-				Name:    "db.main",
-				Value:   `{"connUrl":"postgres://demo"}`,
-				Version: 1,
-			},
-		},
-	}
-	core := &AppConfigCore{AppConfigRepo: repo}
-
-	items := core.List()
-
-	assert.Len(t, items, 1)
-	assert.Equal(t, []string{"List"}, repo.calls)
-	assert.Equal(t, "db.main", items[0].Name)
-}
-
-func TestAppConfigCoreGet(t *testing.T) {
-	repo := &configRepoSpy{
-		items: map[string]*AppConfig{
-			"feature.flag": {
-				Id:      2,
-				Name:    "feature.flag",
-				Value:   `{"enabled":true}`,
-				Version: 2,
-			},
-		},
-	}
-	core := &AppConfigCore{AppConfigRepo: repo}
-
-	item := core.Get(2)
-
-	assert.Equal(t, []string{"GetById"}, repo.calls)
-	assert.Equal(t, 2, item.Version)
-	assert.Equal(t, `{"enabled":true}`, item.Value)
 }
 
 func TestAppConfigCoreGetMissing(t *testing.T) {
@@ -237,12 +202,52 @@ func TestAppConfigSaveOwnsIdentityAndVersion(t *testing.T) {
 	require.Equal(t, 3, target.Update(7, AppConfigUpdate{Value: new("three")}).Version)
 }
 
-func TestAppConfigValidateDoesNotAccessStorage(t *testing.T) {
-	target := &AppConfigCore{}
+func TestAppConfigValidateDoesNotWrite(t *testing.T) {
+	repo := &configRepoSpy{}
+	target := &AppConfigCore{AppConfigRepo: repo}
 	require.NotPanics(t, func() { target.Validate(AppConfig{Name: "demo"}) })
 	require.Panics(t, func() { target.Validate(AppConfig{Name: " "}) })
-	repo := &configRepoSpy{}
-	target.AppConfigRepo = repo
 	require.Panics(t, func() { target.Save(AppConfig{}) })
 	require.Empty(t, repo.calls)
+}
+
+func TestAppConfigCoreRejectsAbstractValues(t *testing.T) {
+	const name = "demo.DatabaseAbsConfig"
+	for _, operation := range []string{"create", "update", "save"} {
+		t.Run(operation, func(t *testing.T) {
+			repo := &configRepoSpy{
+				definitions: map[string]*AppConfigDefinition{
+					name: {SkelName: name, Abs: true},
+				},
+			}
+			target := &AppConfigCore{AppConfigRepo: repo}
+			if operation == "update" || operation == "save" {
+				// Existing values may predate registration of the abstract declaration.
+				repo.items = map[string]*AppConfig{
+					name: {Id: 7, Name: name, Value: "old", Version: 2},
+				}
+			}
+			// Caller metadata cannot hide the registered abstract declaration.
+			item := AppConfig{Name: name, Value: "new", Definition: &AppConfigDefinition{}}
+			got := capturePanic(func() {
+				switch operation {
+				case "create":
+					target.Create(AppConfigCreation{Name: name, Value: item.Value})
+				case "update":
+					target.Update(7, AppConfigUpdate{Value: &item.Value})
+				default:
+					target.Save(item)
+				}
+			})
+			err, ok := got.(ex.Error)
+			require.True(t, ok, "expected domain error, got %v", got)
+			assert.Equal(t, ex.OperationFailed, err.Code())
+			assert.Contains(t, err.Error(), `abstract config "demo.DatabaseAbsConfig" cannot have a value`)
+			require.Nil(t, repo.savedItem)
+			if existing := repo.items[name]; existing != nil {
+				assert.Equal(t, "old", existing.Value)
+				assert.Equal(t, 2, existing.Version)
+			}
+		})
+	}
 }

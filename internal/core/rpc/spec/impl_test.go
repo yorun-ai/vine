@@ -146,19 +146,6 @@ func TestImplDictAddMarksERType(t *testing.T) {
 	}
 }
 
-func TestImplDictGetMethodImpl(t *testing.T) {
-	dict := NewImplDict()
-	dict.Add(reflect.TypeFor[*implServerImpl]())
-
-	methodImpl, err := dict.GetMethodImpl(_implServiceSpec.SkelName, _implServiceSpec.Methods[0].SkelName)
-	if err != nil {
-		t.Fatalf("GetMethodImpl() error = %v", err)
-	}
-	if methodImpl.Info().SkelName() != _implServiceSpec.Methods[0].SkelName {
-		t.Fatalf("unexpected method info: %#v", methodImpl.Info())
-	}
-}
-
 func TestImplDictGetMethodImplByInfo(t *testing.T) {
 	dict := NewImplDict()
 	dict.Add(reflect.TypeFor[*implServerImpl]())

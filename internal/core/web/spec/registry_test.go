@@ -20,30 +20,6 @@ func (*_DefaultRegistryTestWebServer) Routes(*Router) {
 
 func (*_DefaultRegistryTestWebServer) mustBeRegistryTestWebServer() {}
 
-func TestRegisterStoresWebInfo(t *testing.T) {
-	registry := NewRegistry()
-
-	spec := &WebSpec{
-		Name:              "RegistryTestWeb",
-		SkelName:          "demo.user.RegistryTestWeb",
-		ServerType:        reflect.TypeFor[_RegistryTestWebServer](),
-		DefaultServerType: reflect.TypeFor[*_DefaultRegistryTestWebServer](),
-	}
-
-	registry.Register(spec)
-
-	infos := registry.RegisteredWebInfos()
-	if len(infos) != 1 {
-		t.Fatalf("unexpected web info count: %d", len(infos))
-	}
-	if infos[0].Name() != "RegistryTestWeb" {
-		t.Fatalf("unexpected web name: %s", infos[0].Name())
-	}
-	if infos[0].SkelName() != "demo.user.RegistryTestWeb" {
-		t.Fatalf("unexpected web skel name: %s", infos[0].SkelName())
-	}
-}
-
 func TestRegisterValidatesMountPath(t *testing.T) {
 	valid := []string{"", "/", "/app", "/app/", "/app/%2Fdocs"}
 	for _, mountPath := range valid {

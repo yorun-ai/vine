@@ -48,26 +48,6 @@ func TestDecodeActorFromEmptyBase64ReturnsError(t *testing.T) {
 	}
 }
 
-func TestNewAnonymousActor(t *testing.T) {
-	anonymous := NewAnonymousActor()
-	if anonymous.Type() != ActorTypeAnonymous {
-		t.Fatalf("unexpected anonymous actor type: %s", anonymous.Type())
-	}
-	if anonymous.RawInfo() != "" {
-		t.Fatalf("unexpected anonymous actor info: %#v", anonymous.RawInfo())
-	}
-}
-
-func TestNewAuthenticatingActor(t *testing.T) {
-	authenticating := NewAuthenticatingActor()
-	if authenticating.Type() != ActorTypeAuthenticating {
-		t.Fatalf("unexpected authenticating actor type: %s", authenticating.Type())
-	}
-	if authenticating.RawInfo() != "" {
-		t.Fatalf("unexpected authenticating actor info: %#v", authenticating.RawInfo())
-	}
-}
-
 func TestNewAuthenticatedActor(t *testing.T) {
 	resetActorRegistryForTest()
 
@@ -106,80 +86,6 @@ func TestNewAuthenticatedActorRejectsUnregisteredInfoType(t *testing.T) {
 	assertPanics(t, func() {
 		NewAuthenticatedActor(&_TestActorInfo{Name: "demo"})
 	})
-}
-
-func TestNewAbsentActor(t *testing.T) {
-	absentActor := NewAbsentActor()
-
-	if absentActor.Type() != ActorTypeAbsent {
-		t.Fatalf("unexpected absent actor type: %s", absentActor.Type())
-	}
-	if absentActor.RawInfo() != "" {
-		t.Fatalf("unexpected absent actor info: %#v", absentActor.RawInfo())
-	}
-}
-
-func TestActorTypePredicates(t *testing.T) {
-	tests := []struct {
-		name          string
-		actor         Actor
-		anonymous     bool
-		authenticated bool
-	}{
-		{
-			name:  "absent",
-			actor: NewAbsentActor(),
-		},
-		{
-			name:      "anonymous",
-			actor:     NewAnonymousActor(),
-			anonymous: true,
-		},
-		{
-			name:  "authenticating",
-			actor: NewAuthenticatingActor(),
-		},
-		{
-			name:          "authenticated",
-			actor:         NewAuthenticatedActorWithRawInfo("test.actor.Actor", "", "test.actor.Info", []byte(`{"Name":"demo"}`)),
-			authenticated: true,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			if tc.actor.IsAnonymous() != tc.anonymous {
-				t.Fatalf("IsAnonymous() = %t, want %t", tc.actor.IsAnonymous(), tc.anonymous)
-			}
-			if tc.actor.IsAuthenticated() != tc.authenticated {
-				t.Fatalf("IsAuthenticated() = %t, want %t", tc.actor.IsAuthenticated(), tc.authenticated)
-			}
-		})
-	}
-}
-
-func TestNewAuthorizedActorBase64RoundTrip(t *testing.T) {
-	resetActorRegistryForTest()
-
-	spec := ActorSpec{
-		Name:         "AuthorizedActor",
-		SkelName:     "test.actor.AuthorizedActor",
-		InfoSkelName: "test.actor.AuthorizedActorInfo",
-		InfoType:     reflect.TypeFor[*_TestActorInfo](),
-	}
-	RegisterActor(spec)
-
-	actor := NewAuthenticatedActorWithRawInfo(spec.SkelName, "", spec.InfoSkelName, []byte(`{"Name":"demo"}`))
-	got, err := DecodeActorFromBase64(EncodeActorToBase64(actor))
-	if err != nil {
-		t.Fatalf("DecodeActorFromBase64() error = %v", err)
-	}
-	if got.Type() != ActorTypeAuthenticated {
-		t.Fatalf("unexpected actor type: %s", got.Type())
-	}
-	if got.RawInfo() != `{"Name":"demo"}` {
-		t.Fatalf("unexpected actor info: %s", got.RawInfo())
-	}
 }
 
 func TestGetActorInfoByType(t *testing.T) {

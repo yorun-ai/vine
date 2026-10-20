@@ -65,6 +65,8 @@ export const en: Record<TranslationKey, string> = {
   'common.language': 'Language',
   'common.fields': 'Fields',
   'common.searchSkelName': 'Search skelName',
+  'skeleton.configFrom': 'From',
+  'appConfig.from': 'From',
   'appConfig.fieldsTitle': 'Config Fields',
   'appConfig.itemCount': '{count} configs',
   'appConfig.empty': 'No configs',

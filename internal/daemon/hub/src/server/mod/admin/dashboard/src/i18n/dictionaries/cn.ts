@@ -63,6 +63,8 @@ export const cn = {
   'common.language': '语言',
   'common.fields': '字段',
   'common.searchSkelName': '搜索 skelName',
+  'skeleton.configFrom': '来源',
+  'appConfig.from': '来源',
   'appConfig.fieldsTitle': '配置字段',
   'appConfig.itemCount': '共 {count} 项配置',
   'appConfig.empty': '暂无配置项',

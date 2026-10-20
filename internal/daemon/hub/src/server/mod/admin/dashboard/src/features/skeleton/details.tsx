@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { Link } from '@tanstack/react-router'
 import {
   Braces,
   EyeOff,
@@ -874,6 +875,9 @@ export function SkeletonItemBadges({
       {'sensitive' in item && item.sensitive ? (
         <SensitiveBadge label={t('skeleton.sensitive')} />
       ) : null}
+      {'abs' in item && item.abs ? (
+        <Badge variant="outline">abs</Badge>
+      ) : null}
       {'api' in item && item.api ? (
         <Badge variant="outline">api</Badge>
       ) : null}
@@ -919,6 +923,7 @@ export function SkeletonItemDetails({
   item,
   kind,
   typeIndex,
+  configSourceHash,
   relatedServices,
   relatedWebs,
   onTypeClick,
@@ -930,6 +935,7 @@ export function SkeletonItemDetails({
   item: SkeletonItem
   kind: SkeletonKind
   typeIndex: TypeDefinitionIndex
+  configSourceHash?: string
   relatedServices: Array<SkeletonServiceItem>
   relatedWebs: Array<SkeletonWebItem>
   onTypeClick: (item: SkeletonItem) => void
@@ -1112,6 +1118,31 @@ export function SkeletonItemDetails({
             />
           </div>
         </>
+      ) : null}
+      {kind === 'configs' && 'fromSkelName' in item && item.fromSkelName ? (
+        <dl className="flex flex-wrap items-baseline gap-2 rounded-md border px-3 py-2 text-xs">
+          <dt className="text-muted-foreground">{t('skeleton.configFrom')}</dt>
+          <dd className="min-w-0 break-all">
+            <Link
+              to={
+                configSourceHash
+                  ? '/skeleton/config/$skelName/$descriptorHash'
+                  : '/skeleton/config/$skelName'
+              }
+              params={
+                configSourceHash
+                  ? {
+                      skelName: item.fromSkelName,
+                      descriptorHash: configSourceHash,
+                    }
+                  : { skelName: item.fromSkelName }
+              }
+              className="font-mono text-primary underline-offset-2 hover:underline"
+            >
+              {item.fromSkelName}
+            </Link>
+          </dd>
+        </dl>
       ) : null}
       {hasConfigFields ? (
         <div className="grid gap-2">

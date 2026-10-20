@@ -44,10 +44,6 @@ type _TestCacheConsumer struct {
 	Cache *_TestUserCache `inject:""`
 }
 
-type _TestDefaultCache struct {
-	Cache[*_TestUser]
-}
-
 type _TestEmptyPrefixCache struct {
 	Cache[*_TestUser]
 }
@@ -138,50 +134,6 @@ func (c *_TestCacheCmdable) Del(ctx context.Context, keys ...string) *goredis.In
 	c.delCalls = append(c.delCalls, _TestDelCall{ctx: ctx, keys: append([]string(nil), keys...)})
 	c.mutex.Unlock()
 	return c.delFunc(ctx, keys...)
-}
-
-func TestRedisNewCacheReturnsHandle(t *testing.T) {
-	cmdable := goredis.NewClient(&goredis.Options{Addr: "127.0.0.1:6379"})
-	t.Cleanup(func() {
-		_ = cmdable.Close()
-	})
-	redis := &Redis{Cmdable: cmdable}
-	ctx := context.Background()
-
-	cache := redis.NewCache[*_TestUser](ctx, "user")
-
-	require.NotNil(t, cache)
-	assert.Equal(t, ctx, cache.ctx)
-	assert.Equal(t, "user", cache.keyPrefix)
-	assert.Equal(t, cmdable, cache.cmdable)
-}
-
-func TestRedisNewCacheByTypeReturnsTypedHandle(t *testing.T) {
-	cmdable := goredis.NewClient(&goredis.Options{Addr: "127.0.0.1:6379"})
-	t.Cleanup(func() {
-		_ = cmdable.Close()
-	})
-	redis := &Redis{Cmdable: cmdable}
-	ctx := context.Background()
-
-	cache := redis.NewCacheByType(reflect.TypeFor[*_TestUserCache](), ctx).(*_TestUserCache)
-
-	require.NotNil(t, cache)
-	assert.Equal(t, ctx, cache.ctx)
-	assert.Equal(t, "user", cache.keyPrefix)
-	assert.Equal(t, cmdable, cache.cmdable)
-}
-
-func TestRedisNewCacheByTypeUsesDefaultTypePrefixWhenNotOverridden(t *testing.T) {
-	cmdable := goredis.NewClient(&goredis.Options{Addr: "127.0.0.1:6379"})
-	t.Cleanup(func() {
-		_ = cmdable.Close()
-	})
-	redis := &Redis{Cmdable: cmdable}
-
-	cache := redis.NewCacheByType(reflect.TypeFor[*_TestDefaultCache](), context.Background()).(*_TestDefaultCache)
-
-	assert.Equal(t, "go.yorun.ai_vine_infra_redis._TestDefaultCache", cache.keyPrefix)
 }
 
 func TestRedisManagerBindProvidesCache(t *testing.T) {

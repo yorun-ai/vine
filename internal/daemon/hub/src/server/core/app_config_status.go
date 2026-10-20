@@ -23,7 +23,7 @@ const (
 // AppConfigStatusFor returns the status of a value against the declaration of
 // the application that owns the configuration.
 func AppConfigStatusFor(descriptor *skeldesc.Config, value string, enumDescriptors []*skeldesc.Enum, dataDescriptors []*skeldesc.Data) AppConfigStatus {
-	if descriptor == nil {
+	if descriptor == nil || descriptor.Abs {
 		return AppConfigStatusUnused
 	}
 	if !appConfigValueMatchesDescriptor(value, descriptor, enumDescriptors, dataDescriptors) {
@@ -34,7 +34,7 @@ func AppConfigStatusFor(descriptor *skeldesc.Config, value string, enumDescripto
 
 // AppConfigLifecycleFor returns the lifecycle the owning application declared.
 func AppConfigLifecycleFor(descriptor *skeldesc.Config) string {
-	if descriptor == nil {
+	if descriptor == nil || descriptor.Abs {
 		return ""
 	}
 	return string(descriptor.Lifecycle)

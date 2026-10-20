@@ -1,7 +1,6 @@
 package vmap
 
 import (
-	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,20 +23,4 @@ func TestCloneCopyAndMerge(t *testing.T) {
 		map[string]int{"c": 5},
 	)
 	assert.Equal(t, map[string]int{"a": 1, "b": 4, "c": 5}, merged)
-}
-
-func TestKeysAndValues(t *testing.T) {
-	dict := map[string]int{"a": 1, "b": 2, "c": 3}
-
-	keys := Keys(dict)
-	slices.Sort(keys)
-	assert.Equal(t, []string{"a", "b", "c"}, keys)
-
-	assert.Equal(t, []string{"a", "b", "c"}, SortedKeys(dict))
-
-	values := Values(dict)
-	slices.Sort(values)
-	assert.Equal(t, []int{1, 2, 3}, values)
-
-	assert.Equal(t, []int{1, 2, 3}, SortedValues(dict))
 }

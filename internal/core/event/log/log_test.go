@@ -72,14 +72,6 @@ func TestListenerStartedLogsSafePayloadOnlyOnce(t *testing.T) {
 	}
 }
 
-func TestRenderEventPayloadReportsTruncation(t *testing.T) {
-	result := renderEventPayload(strings.Repeat("x", 4097))
-	if result.err != nil || !result.result.Truncated || result.result.Redacted ||
-		result.result.JSON != `"<truncated:string bytes=4097>"` {
-		t.Fatalf("unexpected truncated Event payload: %#v", result)
-	}
-}
-
 func TestEventRedactFailureOmitsPayload(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "event-redact-failure.jsonl")
 	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})

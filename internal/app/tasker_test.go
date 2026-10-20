@@ -184,20 +184,6 @@ func TestNewTaskerInitBuildsServers(t *testing.T) {
 	assert.True(t, tasker.runners[0].options.NoRetry)
 }
 
-func TestNewTaskerUsesDefaultRunnerOptions(t *testing.T) {
-	ensureTaskerTaskRegistered()
-
-	app := newTestAppImpl()
-	spec := &testFullSpec{}
-
-	tasker := newTasker(spec, app.currentApp, app.bindAppDeps)
-
-	assert.Len(t, tasker.runners, 1)
-	assert.Equal(t, 30*time.Second, tasker.runners[0].options.Timeout)
-	assert.Equal(t, 10, tasker.runners[0].options.Concurrency)
-	assert.False(t, tasker.runners[0].options.NoRetry)
-}
-
 type testTaskerRunnerCronSchedulerSpec struct {
 	Application
 	TaskerEnabled

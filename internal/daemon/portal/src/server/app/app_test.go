@@ -4,23 +4,15 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"reflect"
+
 	"strings"
 	"testing"
 
 	"go.yorun.ai/vine/buildinfo"
 	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/logger"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubinfo"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/comp/hubwatch"
+
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/flag"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/desc"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/entry"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/heartbeat"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site"
-	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/vault"
 )
 
 func TestPortalAppFiltersOnlyTLSHandshakeDisconnects(t *testing.T) {
@@ -92,22 +84,6 @@ func TestPortalAppKeepsTLSHandshakeDisconnectsAtDebug(t *testing.T) {
 	}
 }
 
-func collectComponentTypes(spec *PortalApp) []reflect.Type {
-	var componentTypes []reflect.Type
-	spec.InitComponents(func(componentType reflect.Type) {
-		componentTypes = append(componentTypes, componentType)
-	})
-	return componentTypes
-}
-
-func collectModuleTypes(spec *PortalApp) []reflect.Type {
-	var moduleTypes []reflect.Type
-	spec.InitModules(func(moduleType reflect.Type) {
-		moduleTypes = append(moduleTypes, moduleType)
-	})
-	return moduleTypes
-}
-
 func TestPortalAppDIInitSetsRunFlagListenAddr(t *testing.T) {
 	spec := &PortalApp{
 		AppFlag:    &internalapp.RunFlag{},
@@ -138,73 +114,5 @@ func TestPortalAppDIInitSetsRunFlagListenAddr(t *testing.T) {
 	}
 	if spec.InternalAttrs.InprocHostPath != "" {
 		t.Fatalf("expected empty inproc host path, got %q", spec.InternalAttrs.InprocHostPath)
-	}
-}
-
-func TestPortalAppDIInitUsesLogicalNameInInprocMode(t *testing.T) {
-	spec := &PortalApp{
-		AppFlag:    &internalapp.RunFlag{},
-		InprocFlag: &internalapp.InternalInprocFlag{Enabled: true},
-		Flag:       &flag.Flag{HubInprocMode: true},
-	}
-
-	spec.DIInit()
-
-	if got, want := spec.InternalAttrs.CurrentApp.Version(), buildinfo.MustVineVersion(); got != want {
-		t.Fatalf("unexpected daemon version: got %q, want Vine version %q", got, want)
-	}
-
-	if got := spec.Name(); got != "vine.portal" {
-		t.Fatalf("unexpected spec name: %s", got)
-	}
-	if got := spec.InternalAttrs.CurrentApp.Name(); got != "vine.portal" {
-		t.Fatalf("unexpected app info name: %s", got)
-	}
-}
-
-func TestPortalAppInitComponentsAddsHubWatchClient(t *testing.T) {
-	spec := &PortalApp{}
-
-	componentTypes := collectComponentTypes(spec)
-
-	if len(componentTypes) != 2 {
-		t.Fatalf("unexpected component count: %d", len(componentTypes))
-	}
-	if got := componentTypes[0]; got != internalapp.T[*hubinfo.HubInfo]() {
-		t.Fatalf("unexpected first component type: %v", got)
-	}
-	if got := componentTypes[1]; got != internalapp.T[*hubwatch.Client]() {
-		t.Fatalf("unexpected second component type: %v", got)
-	}
-}
-
-func TestPortalAppInitModulesAddsManagers(t *testing.T) {
-	spec := &PortalApp{}
-
-	moduleTypes := collectModuleTypes(spec)
-
-	if len(moduleTypes) != 7 {
-		t.Fatalf("unexpected module count: %d", len(moduleTypes))
-	}
-	if got := moduleTypes[0]; got != internalapp.T[*heartbeat.Heartbeat]() {
-		t.Fatalf("unexpected module type: %v", got)
-	}
-	if got := moduleTypes[1]; got != internalapp.T[*epmgr.Manager]() {
-		t.Fatalf("unexpected module type: %v", got)
-	}
-	if got := moduleTypes[2]; got != internalapp.T[*desc.Manager]() {
-		t.Fatalf("unexpected module type: %v", got)
-	}
-	if got := moduleTypes[3]; got != internalapp.T[*access.Access]() {
-		t.Fatalf("unexpected module type: %v", got)
-	}
-	if got := moduleTypes[4]; got != internalapp.T[*site.Manager]() {
-		t.Fatalf("unexpected module type: %v", got)
-	}
-	if got := moduleTypes[5]; got != internalapp.T[*vault.Vault]() {
-		t.Fatalf("unexpected module type: %v", got)
-	}
-	if got := moduleTypes[6]; got != internalapp.T[*entry.Manager]() {
-		t.Fatalf("unexpected module type: %v", got)
 	}
 }

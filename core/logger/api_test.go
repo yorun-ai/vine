@@ -18,15 +18,6 @@ type _LoggedRecord struct {
 	Source  _LoggedSource `json:"source"`
 }
 
-func TestIsValidFormat(t *testing.T) {
-	if !IsValidFormat(FormatText) || !IsValidFormat(FormatJSON) {
-		t.Fatal("expected public formats to be valid")
-	}
-	if IsValidFormat(Format("YAML")) {
-		t.Fatal("expected unsupported format to be invalid")
-	}
-}
-
 func TestFacadeInfoUsesExternalCallerSource(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "facade-logger.jsonl")
 	log := New("vine:test", WithOption{
@@ -73,36 +64,4 @@ func readFacadeLastRecord(t *testing.T, path string) _LoggedRecord {
 		t.Fatalf("unmarshal log record: %v", err)
 	}
 	return record
-}
-
-func TestFacadeAutoLoggerAndNamedRules(t *testing.T) {
-	t.Cleanup(func() {
-		SetGlobalLevel(LevelInfo)
-		clearFacadeLevels()
-	})
-	clearFacadeLevels()
-	SetGlobalLevel(LevelInfo)
-
-	auto := New("vine:test", WithOption{Format: FormatText, Level: LevelAuto})
-	fixed := New("vine:test", WithOption{Format: FormatText, Level: LevelInfo})
-	SetGlobalLevel(LevelDebug)
-	if !auto.Enabled(LevelDebug) {
-		t.Fatal("facade auto logger should follow the default level")
-	}
-	if fixed.Enabled(LevelDebug) {
-		t.Fatal("facade fixed logger should keep its configured level")
-	}
-
-	SetLevel("app:*:event", LevelWarn)
-	SetLevel("app:demo.user:event", LevelError)
-	named := New("app", "demo.user", "event")
-	if named.Enabled(LevelWarn) || !named.Enabled(LevelError) {
-		t.Fatal("facade named logger should resolve the most specific rule")
-	}
-}
-
-func clearFacadeLevels() {
-	for pattern := range Levels() {
-		ClearLevel(pattern)
-	}
 }

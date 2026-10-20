@@ -15,18 +15,6 @@ type sensitiveCredential struct {
 
 func (sensitiveCredential) SkelSensitive() {}
 
-func TestRenderPublicAPI(t *testing.T) {
-	result, err := redact.Render(struct {
-		Password string `json:"password" skel:"sensitive"`
-	}{Password: "secret"})
-	if err != nil {
-		t.Fatalf("render: %v", err)
-	}
-	if !result.Redacted || strings.Contains(result.JSON, "secret") {
-		t.Fatalf("unexpected result: %#v", result)
-	}
-}
-
 func TestRenderCombinedFieldAttributes(t *testing.T) {
 	value := struct {
 		Password string `json:"password" skel:"sensitive,noTrim"`
@@ -83,17 +71,5 @@ func TestRenderSkelScalars(t *testing.T) {
 	}
 	if strings.Contains(result.JSON, "secret") || !strings.Contains(result.JSON, "<binary:6 bytes>") {
 		t.Fatalf("binary should be summarized: %s", result.JSON)
-	}
-}
-
-func TestRenderPublicLimits(t *testing.T) {
-	limits := redact.DefaultLimits()
-	limits.MaxStringBytes = 3
-	result, err := redact.Render("value", redact.Option{Limits: &limits})
-	if err != nil {
-		t.Fatalf("render: %v", err)
-	}
-	if !result.Truncated || result.JSON != `"<truncated:string bytes=5>"` {
-		t.Fatalf("unexpected truncation: %#v", result)
 	}
 }

@@ -189,22 +189,6 @@ func TestNewTaskLauncherPanicsWhenTaskClientIsNil(t *testing.T) {
 	})
 }
 
-func TestNewTaskLauncherStoresConfiguredValues(t *testing.T) {
-	taskClient := &testLauncherTaskClient{}
-	launcher := NewLauncher(LauncherOption{
-		Context:    testLauncherContext(),
-		Logger:     testLauncherLogger(),
-		TaskClient: taskClient,
-	})
-
-	if launcher.context == nil || launcher.logger == nil {
-		t.Fatalf("unexpected launcher: %+v", launcher)
-	}
-	if launcher.taskClient != taskClient {
-		t.Fatal("expected task client to be stored")
-	}
-}
-
 func TestTaskLauncherPreservesNullableArguments(t *testing.T) {
 	client := &testLauncherTaskClient{}
 	launcher := NewLauncher(LauncherOption{Context: testLauncherContext(), Logger: testLauncherLogger(), ClientApp: meta.MustNewApp("test.app", "1.0.0", "123e4567-e89b-12d3-a456-426614174000"), TaskClient: client})

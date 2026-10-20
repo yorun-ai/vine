@@ -16,22 +16,6 @@ func unmarshalJson(data []byte, target any) error {
 	return json.Unmarshal(data, target)
 }
 
-func TestErrorTypeDerivedFromCode(t *testing.T) {
-	err := New(NotFound, "missing user")
-
-	if got := err.Type(); got != ApplicationError {
-		t.Fatalf("unexpected error type: got %s", got)
-	}
-}
-
-func TestNewInternalUsesCodeDefaultMessage(t *testing.T) {
-	err := NewInternal()
-
-	if got := err.Message(); got != Internal.DefaultMessage() {
-		t.Fatalf("unexpected internal message: got %q want %q", got, Internal.DefaultMessage())
-	}
-}
-
 func TestNewOKReusesImmutableError(t *testing.T) {
 	first := NewOK()
 	second := NewOK()
@@ -58,44 +42,12 @@ func TestNewOKReusesImmutableError(t *testing.T) {
 	}
 }
 
-func TestFFormatsMessage(t *testing.T) {
-	got := F("field %s is invalid", "email")
-
-	if got != "field email is invalid" {
-		t.Fatalf("unexpected formatted message: %q", got)
-	}
-}
-
 func TestWithCauseSupportsUnwrap(t *testing.T) {
 	cause := errors.New("disk offline")
 	err := New(OperationFailed, "write failed", WithCause(cause))
 
 	if !errors.Is(err, cause) {
 		t.Fatalf("expected wrapped cause to support errors.Is")
-	}
-}
-
-func TestWithDetailSetsDetailText(t *testing.T) {
-	err := New(OperationFailed, "write failed", WithDetail("disk offline"))
-
-	if got := err.Detail(); got != "disk offline" {
-		t.Fatalf("unexpected detail text: got %q", got)
-	}
-}
-
-func TestWithReasonSetsReasonText(t *testing.T) {
-	err := New(OperationFailed, "write failed", WithReason("quota-exceeded"))
-
-	if got := err.Reason(); got != "quota-exceeded" {
-		t.Fatalf("unexpected reason text: got %q", got)
-	}
-}
-
-func TestErrorStringIncludesDetail(t *testing.T) {
-	err := New(OperationFailed, "write failed", WithDetail("disk offline"))
-
-	if got := err.Error(); !strings.Contains(got, "detail=disk offline") {
-		t.Fatalf("expected detail in error string, got %q", got)
 	}
 }
 

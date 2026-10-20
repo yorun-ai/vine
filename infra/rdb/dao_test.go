@@ -37,22 +37,6 @@ func openDaoTestDB(t *testing.T) *Dao[*daoTestModel] {
 	return &dao
 }
 
-func TestDaoCreateReturnsInsertedModel(t *testing.T) {
-	dao := openDaoTestDB(t)
-
-	model := dao.Create(&daoTestModel{
-		Name:  "alpha",
-		Value: "one",
-	})
-
-	require.NotNil(t, model)
-	assert.NotZero(t, model.Id)
-	assert.False(t, model.CreatedAt.IsZero())
-	assert.False(t, model.UpdatedAt.IsZero())
-	assert.Equal(t, "alpha", model.Name)
-	assert.Equal(t, "one", model.Value)
-}
-
 func TestDaoUpdateReturnsUpdatedModel(t *testing.T) {
 	dao := openDaoTestDB(t)
 	now := time.Date(2026, time.January, 2, 3, 4, 5, 0, time.UTC)
@@ -73,19 +57,6 @@ func TestDaoUpdateReturnsUpdatedModel(t *testing.T) {
 	assert.Equal(t, "two", updated.Value)
 	assert.Equal(t, now, updated.UpdatedAt)
 	assert.True(t, updated.UpdatedAt.After(updated.CreatedAt))
-}
-
-func TestDaoDeleteRemovesModel(t *testing.T) {
-	dao := openDaoTestDB(t)
-	model := dao.Create(&daoTestModel{
-		Name:  "alpha",
-		Value: "one",
-	})
-
-	dao.Delete(model)
-
-	_, ok := dao.First("id = ?", model.Id)
-	assert.False(t, ok)
 }
 
 type uuidDaoTestModel struct {

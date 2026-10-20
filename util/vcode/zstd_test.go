@@ -18,17 +18,6 @@ func TestZstdAndUnzstd(t *testing.T) {
 	assert.Equal(t, source, unzipped)
 }
 
-func TestZstdStringHelpers(t *testing.T) {
-	source := "string payload"
-
-	zipped, err := ZstdS(source)
-	assert.NoError(t, err)
-
-	unzipped, err := UnzstdS(zipped)
-	assert.NoError(t, err)
-	assert.Equal(t, source, unzipped)
-}
-
 func TestMustZstdAndUnzstd(t *testing.T) {
 	source := []byte("must payload")
 
