@@ -2,15 +2,19 @@
 package webtimeout
 
 import (
+	"cmp"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 )
 
-// Config contains an optional default and ordered path overrides. An empty config
-// clears the policy; unmatched paths then retain legacy timeout behavior.
+// Config contains an optional default and path overrides ordered only to break
+// specificity ties. An empty config clears the policy; unmatched paths then
+// retain legacy timeout behavior.
 type Config struct {
 	Default *Policy `json:"default,omitempty" yaml:"default"`
 	Paths   []Path  `json:"paths,omitempty" yaml:"paths"`
@@ -33,8 +37,10 @@ type Compiled struct {
 	paths        []_Path
 }
 type _Path struct {
-	pattern *regexp.Regexp
-	total   time.Duration
+	pattern  *regexp.Regexp
+	total    time.Duration
+	exact    bool
+	segments []string
 }
 
 // Compile validates a configuration and builds an immutable matching snapshot.
@@ -59,9 +65,52 @@ func Compile(config *Config) (*Compiled, error) {
 		if err != nil {
 			return nil, fmt.Errorf("webTimeout.paths[%d]: %w", i, err)
 		}
-		compiled.paths = append(compiled.paths, _Path{pattern: pattern, total: total})
+		compiled.paths = append(compiled.paths, _Path{
+			pattern:  pattern,
+			total:    total,
+			exact:    !strings.Contains(rule.Path, "*"),
+			segments: strings.Split(rule.Path[1:], "/"),
+		})
 	}
+	slices.SortStableFunc(compiled.paths, compareSpecificity)
 	return compiled, nil
+}
+
+// compareSpecificity orders exact paths first, then compares segments from left
+// to right. Ending a pattern is more specific than a trailing ** that can match
+// zero segments, but less specific than another literal or single-segment glob.
+func compareSpecificity(left _Path, right _Path) int {
+	if left.exact != right.exact {
+		if left.exact {
+			return -1
+		}
+		return 1
+	}
+	for i := 0; i < max(len(left.segments), len(right.segments)); i++ {
+		leftKind, leftFixed := segmentSpecificity(left.segments, i)
+		rightKind, rightFixed := segmentSpecificity(right.segments, i)
+		if order := cmp.Compare(rightKind, leftKind); order != 0 {
+			return order
+		}
+		if order := cmp.Compare(rightFixed, leftFixed); order != 0 {
+			return order
+		}
+	}
+	return 0
+}
+
+func segmentSpecificity(segments []string, index int) (int, int) {
+	if index >= len(segments) {
+		return 1, 0
+	}
+	segment := segments[index]
+	if segment == "**" {
+		return 0, 0
+	}
+	if strings.Contains(segment, "*") {
+		return 2, utf8.RuneCountInString(strings.ReplaceAll(segment, "*", ""))
+	}
+	return 3, 0
 }
 
 func parseTotal(value string) (time.Duration, error) {
@@ -108,7 +157,8 @@ func compilePath(value string) (*regexp.Regexp, error) {
 	return regexp.Compile(expression.String())
 }
 
-// Total matches the decoded, rewritten URL path. Zero means no explicit policy.
+// Total selects the most specific match for the decoded, rewritten URL path.
+// Equal specificity preserves configuration order. Zero means no explicit policy.
 func (c *Compiled) Total(path string) time.Duration {
 	if c == nil {
 		return 0
