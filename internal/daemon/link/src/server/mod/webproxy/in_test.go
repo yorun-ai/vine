@@ -220,3 +220,53 @@ func TestHandleInWebRequestInheritsContextDeadline(t *testing.T) {
 		})
 	}
 }
+
+func TestInboundForwardingAbortsTruncatedResponse(t *testing.T) {
+	for _, backend := range []string{"network", "inproc"} {
+		t.Run(backend, func(t *testing.T) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/octet-stream")
+				_, _ = w.Write([]byte(strings.Repeat("partial", 10000)))
+				w.(http.Flusher).Flush()
+				panic(http.ErrAbortHandler)
+			})
+			proxy := &WebProxy{}
+			endpoint := "web+inproc://transfer-test"
+			if backend == "inproc" {
+				t.Cleanup(webinproc.Register(endpoint, handler))
+			} else {
+				upstream := httptest.NewServer(handler)
+				defer upstream.Close()
+				endpoint = upstream.URL
+				proxy.transport = upstream.Client().Transport
+			}
+			for _, h2 := range []bool{false, true} {
+				downstream := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if backend == "inproc" {
+						proxy.forwardInboundInproc(w, r, endpoint, "/")
+					} else {
+						proxy.forwardInbound(w, r, endpoint)
+					}
+				}))
+				downstream.EnableHTTP2 = h2
+				downstream.StartTLS()
+				response, err := downstream.Client().Get(downstream.URL)
+				if err != nil {
+					downstream.Close()
+					t.Fatalf("expected committed response headers: %v", err)
+				}
+				if response.StatusCode != http.StatusOK {
+					t.Fatalf("status=%d", response.StatusCode)
+				}
+				if err == nil {
+					_, err = io.ReadAll(response.Body)
+					response.Body.Close()
+				}
+				downstream.Close()
+				if err == nil {
+					t.Fatalf("http2=%v: truncated response completed successfully", h2)
+				}
+			}
+		})
+	}
+}

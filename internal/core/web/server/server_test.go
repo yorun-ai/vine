@@ -2,8 +2,12 @@ package server
 
 import (
 	"encoding/json/v2"
+	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -18,6 +22,7 @@ import (
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/web/assets"
 	"go.yorun.ai/vine/internal/core/web/spec"
+	vinehttp "go.yorun.ai/vine/internal/util/httputil"
 )
 
 type _ServerTestHandler struct {
@@ -325,7 +330,7 @@ func TestServerRejectsHandlerWithoutEmbeddedDefaultServer(t *testing.T) {
 	})
 }
 
-func TestServerRecoveryIgnoresAbortHandlerPanic(t *testing.T) {
+func TestServerRecoveryPropagatesAbortHandlerPanic(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	server := newServerTestServer(&_ServerTestExecutor{
@@ -337,7 +342,7 @@ func TestServerRecoveryIgnoresAbortHandlerPanic(t *testing.T) {
 
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/demo.user.ServerTestWeb/ping", nil)
-	server.HTTPHandler().ServeHTTP(recorder, request)
+	assert.PanicsWithValue(t, http.ErrAbortHandler, func() { server.HTTPHandler().ServeHTTP(recorder, request) })
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("unexpected status code: %d", recorder.Code)
@@ -517,4 +522,45 @@ func readServerTestLastLogRecord(t *testing.T, path string) _ServerTestLogRecord
 		t.Fatalf("unmarshal log record: %v", err)
 	}
 	return record
+}
+
+func TestServerReverseProxyAbortReachesTransport(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("partial"))
+		w.(http.Flusher).Flush()
+		panic(http.ErrAbortHandler)
+	}))
+	defer upstream.Close()
+	upstreamURL, err := url.Parse(upstream.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	proxy := httputil.NewSingleHostReverseProxy(upstreamURL)
+	proxy.ErrorLog = log.New(io.Discard, "", 0)
+	server := newServerTestServer(&_ServerTestExecutor{execute: func(route spec.Route, ctx *gin.Context) {
+		proxy.ServeHTTP(ctx.Writer, ctx.Request)
+	}})
+	for _, protocol := range []string{"http1", "http2", "inproc"} {
+		t.Run(protocol, func(t *testing.T) {
+			var response *http.Response
+			var err error
+			if protocol == "inproc" {
+				response, err = vinehttp.InprocRoundTrip(server.HTTPHandler(), httptest.NewRequest("GET", "/demo.user.ServerTestWeb/ping", nil))
+			} else {
+				listener := httptest.NewUnstartedServer(server.HTTPHandler())
+				listener.EnableHTTP2 = protocol == "http2"
+				listener.StartTLS()
+				defer listener.Close()
+				response, err = listener.Client().Get(listener.URL + "/demo.user.ServerTestWeb/ping")
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer response.Body.Close()
+			data, err := io.ReadAll(response.Body)
+			if err == nil || string(data) != "partial" {
+				t.Fatalf("body=%q err=%v", data, err)
+			}
+		})
+	}
 }
