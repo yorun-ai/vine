@@ -16,13 +16,18 @@ const (
 	maxWebTimeout     = 120 * time.Second
 )
 
-func requestWithWebOptionsTimeout(request *http.Request, gatewayContext context.Context) (*http.Request, context.CancelFunc, error) {
+func requestWithWebOptionsTimeout(request *http.Request, gatewayContext context.Context, policyTotal time.Duration) (*http.Request, context.CancelFunc, error) {
 	options, err := webspec.DecodeOptionsFromHeader(request.Header)
 	if err != nil {
 		return request, nil, err
 	}
 
 	timeout := options.Timeout
+	if policyTotal > 0 {
+		if timeout <= 0 || timeout > policyTotal {
+			timeout = policyTotal
+		}
+	}
 	if timeout <= 0 && (httputil.IsUpgradeRequest(request) || httputil.IsEventStreamRequest(request)) {
 		ctx, cancel := context.WithCancel(request.Context())
 		stopGatewayCancel := context.AfterFunc(gatewayContext, cancel)
@@ -36,7 +41,7 @@ func requestWithWebOptionsTimeout(request *http.Request, gatewayContext context.
 	if timeout <= 0 {
 		timeout = defaultWebTimeout
 	}
-	if timeout > maxWebTimeout {
+	if policyTotal == 0 && timeout > maxWebTimeout {
 		return request, nil, fmt.Errorf("invalid header %s: timeout exceeds %s", webspec.HeaderWebOptions, maxWebTimeout)
 	}
 

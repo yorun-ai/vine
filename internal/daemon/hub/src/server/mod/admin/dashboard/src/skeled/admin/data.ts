@@ -547,6 +547,8 @@ export type PortalSite = {
   rpcgwServices:  Array<string>;
   /** CORS configuration. */
   cors:           PortalCors | null;
+  /** WebGW total timeout policy. */
+  webTimeout:     PortalWebTimeout | null;
   /** Web name. */
   webName:        string;
   /** Web mount path; empty means the Web is not limited to a path. */
@@ -577,6 +579,8 @@ export type PortalSiteCreation = {
   mcpEnabled:     boolean;
   /** CORS configuration. */
   cors:           PortalCors | null;
+  /** WebGW total timeout policy. */
+  webTimeout:     PortalWebTimeout | null;
   /** Web name. */
   webName:        string;
   /** Whether Hub publishes this site to Portal. */
@@ -600,6 +604,8 @@ export type PortalSiteListItem = {
   rpcgwServices:  Array<string>;
   /** CORS configuration. */
   cors:           PortalCors | null;
+  /** WebGW total timeout policy. */
+  webTimeout:     PortalWebTimeout | null;
   /** Web name. */
   webName:        string;
   /** Web mount path; empty means the Web is not limited to a path. */
@@ -639,6 +645,8 @@ export type PortalSiteUpdate = {
   mcpEnabled:     boolean | null;
   /** CORS configuration. */
   cors:           PortalCors | null;
+  /** WebGW total timeout policy. */
+  webTimeout:     PortalWebTimeout | null;
   /** Web name. */
   webName:        string | null;
   /** Whether Hub publishes this site to Portal. */
@@ -659,6 +667,20 @@ export type PortalStatusView = {
   instanceId: string;
   /** Portal version. */
   version:    string;
+}
+/** WebGW timeout policy; empty clears it, omission on update preserves it. */
+export type PortalWebTimeout = {
+  default: PortalWebTimeoutPolicy | null;
+  paths:   Array<PortalWebTimeoutPath>;
+}
+/** Ordered Web path timeout override. */
+export type PortalWebTimeoutPath = {
+  path:  string;
+  total: string;
+}
+/** Web request total timeout. */
+export type PortalWebTimeoutPolicy = {
+  total: string;
 }
 /** Service Debug Actor options. */
 export type ServiceDebugActorItem = {

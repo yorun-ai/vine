@@ -20,18 +20,21 @@ var optionsAllowedMethods = []string{
 }
 
 func (g *WebGateway) Serve(ctx *spec.Context) {
+	g.mutex.Lock()
+	cors, actorSkelName, timeout := g.cors, g.actorSkelName, g.webTimeout
+	g.mutex.Unlock()
 	if ctx.Request.Method == http.MethodOptions {
-		spec.ServeOptions(ctx.ResponseWriter, ctx.Request, g.cors, ctx.EntryOrigin, optionsAllowedMethods)
+		spec.ServeOptions(ctx.ResponseWriter, ctx.Request, cors, ctx.EntryOrigin, optionsAllowedMethods)
 		return
 	}
-	if spec.ApplyCORS(ctx.ResponseWriter, ctx.Request, g.cors, ctx.EntryOrigin) {
+	if spec.ApplyCORS(ctx.ResponseWriter, ctx.Request, cors, ctx.EntryOrigin) {
 		spec.ExposeHeader(ctx.ResponseWriter.Header(), spec.HeaderPortalTraceId)
 	}
 
 	request := ctx.Request.Clone(ctx.Request.Context())
 	request.Header = ctx.Request.Header.Clone()
 	var cancel context.CancelFunc
-	request, cancel, err := requestWithWebOptionsTimeout(request, g.context)
+	request, cancel, err := requestWithWebOptionsTimeout(request, g.context, timeout.Total(request.URL.Path))
 	if err != nil {
 		ctx.ResponseWriter.Header().Set(spec.HeaderPortalTraceId, webTraceIdOrNew(request.Header))
 		http.Error(ctx.ResponseWriter, "web request options cannot be created: "+err.Error(), http.StatusBadRequest)
@@ -69,7 +72,7 @@ func (g *WebGateway) Serve(ctx *spec.Context) {
 		Response:      ctx.ResponseWriter,
 		Trace:         trace,
 		Initiator:     initiator,
-		ActorSkelName: g.actorSkelName,
+		ActorSkelName: actorSkelName,
 		WebName:       registration.WebSkelName,
 	}
 	if !g.access.AuthWeb(operation) {

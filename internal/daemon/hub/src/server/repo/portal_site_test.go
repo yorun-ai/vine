@@ -16,6 +16,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
+	"go.yorun.ai/vine/internal/daemon/webtimeout"
 	"go.yorun.ai/vine/util/vcode"
 	"gorm.io/gorm"
 )
@@ -274,4 +275,26 @@ func TestPortalSiteRepoLeavesDerivedValuesEmptyWithoutDescriptors(t *testing.T) 
 
 func (r *_PortalSiteDescriptorRepo) ListAppConfigTypeDescriptors() ([]*skeldesc.Config, []*skeldesc.Enum, []*skeldesc.Data) {
 	return r.ListAppConfigDescriptors(), r.ListEnumDescriptors(), r.dataDescriptors
+}
+
+func TestWebTimeoutRoundTripsThroughStorageAndWatch(t *testing.T) {
+	_, repo, watchServer := newTestPortalSiteRepo(t)
+	entry := testPortalSite("web-timeout")
+	entry.Type = core.PortalSiteTypeWEBGW
+	entry.WebTimeout = &webtimeout.Config{Default: &webtimeout.Policy{Total: "30s"}, Paths: []webtimeout.Path{{Path: "/go/**", Total: "15m"}}}
+	repo.Save(entry)
+	stored, ok := repo.GetById(entry.Id)
+	require.True(t, ok)
+	require.Equal(t, entry.WebTimeout, stored.WebTimeout)
+	raw, ok := watchServer.Get(watched.FormatPortalSiteKey(entry.Name))
+	require.True(t, ok)
+	require.Equal(t, entry.WebTimeout, vcode.MustUnmarshalJsonS[*watched.PortalSite](raw).WebTimeout)
+	entry.WebTimeout = nil
+	repo.Save(entry)
+	stored, ok = repo.GetById(entry.Id)
+	require.True(t, ok)
+	require.Nil(t, stored.WebTimeout)
+	raw, ok = watchServer.Get(watched.FormatPortalSiteKey(entry.Name))
+	require.True(t, ok)
+	require.Nil(t, vcode.MustUnmarshalJsonS[*watched.PortalSite](raw).WebTimeout)
 }

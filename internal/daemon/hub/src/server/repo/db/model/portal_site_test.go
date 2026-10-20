@@ -53,6 +53,7 @@ func testPortalSiteMigrationFrom028(t *testing.T, db *gorm.DB, dialect string) {
 	require.False(t, stored.Enabled)
 	require.False(t, stored.InspectEnabled)
 	require.False(t, stored.McpEnabled)
+	require.Equal(t, "null", stored.WebTimeout)
 	dao.EnsureSchema()
 	again, ok := dao.ById(stored.Id)
 	require.True(t, ok)

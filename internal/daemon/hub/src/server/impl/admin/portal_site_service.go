@@ -3,6 +3,7 @@ package admin
 import (
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
+	"go.yorun.ai/vine/internal/daemon/webtimeout"
 )
 
 type PortalSiteApiServiceServerImpl struct {
@@ -37,6 +38,7 @@ func (s *PortalSiteApiServiceServerImpl) Create(creation skeled.PortalSiteCreati
 		InspectEnabled: creation.InspectEnabled,
 		McpEnabled:     creation.McpEnabled,
 		Cors:           toCorePortalCors(creation.Cors),
+		WebTimeout:     toCoreWebTimeout(creation.WebTimeout),
 		WebName:        creation.WebName,
 		Enabled:        creation.Enabled,
 	})
@@ -51,6 +53,7 @@ func (s *PortalSiteApiServiceServerImpl) Update(id int, update skeled.PortalSite
 		InspectEnabled: update.InspectEnabled,
 		McpEnabled:     update.McpEnabled,
 		Cors:           toCorePortalCorsPointer(update.Cors),
+		WebTimeout:     toCoreWebTimeout(update.WebTimeout),
 		WebName:        update.WebName,
 		Enabled:        update.Enabled,
 	})
@@ -72,6 +75,7 @@ func toServerPortalSite(entry *core.PortalSite, fieldSources []skeled.FieldSourc
 		McpEnabled:     entry.McpEnabled,
 		RpcgwServices:  entry.RpcgwServices,
 		Cors:           toServerPortalCors(entry.Cors),
+		WebTimeout:     toServerWebTimeout(entry.WebTimeout),
 		WebName:        entry.WebName,
 		WebMountPath:   entry.WebMountPath,
 		FieldSources:   fieldSources,
@@ -92,6 +96,7 @@ func toServerPortalSiteListItem(entry *core.PortalSite) skeled.PortalSiteListIte
 		McpEnabled:     detail.McpEnabled,
 		RpcgwServices:  detail.RpcgwServices,
 		Cors:           detail.Cors,
+		WebTimeout:     detail.WebTimeout,
 		WebName:        detail.WebName,
 		WebMountPath:   detail.WebMountPath,
 	}
@@ -197,4 +202,32 @@ func toServerPortalSiteWebOptions(options []core.PortalSiteWebOption) []skeled.P
 		})
 	}
 	return ret
+}
+
+func toCoreWebTimeout(value *skeled.PortalWebTimeout) *webtimeout.Config {
+	if value == nil {
+		return nil
+	}
+	result := new(webtimeout.Config{Paths: make([]webtimeout.Path, 0, len(value.Paths))})
+	if value.Default != nil {
+		result.Default = new(webtimeout.Policy{Total: value.Default.Total})
+	}
+	for _, path := range value.Paths {
+		result.Paths = append(result.Paths, webtimeout.Path{Path: path.Path, Total: path.Total})
+	}
+	return result
+}
+
+func toServerWebTimeout(value *webtimeout.Config) *skeled.PortalWebTimeout {
+	if value == nil {
+		return nil
+	}
+	result := new(skeled.PortalWebTimeout{Paths: make([]skeled.PortalWebTimeoutPath, 0, len(value.Paths))})
+	if value.Default != nil {
+		result.Default = new(skeled.PortalWebTimeoutPolicy{Total: value.Default.Total})
+	}
+	for _, path := range value.Paths {
+		result.Paths = append(result.Paths, skeled.PortalWebTimeoutPath{Path: path.Path, Total: path.Total})
+	}
+	return result
 }

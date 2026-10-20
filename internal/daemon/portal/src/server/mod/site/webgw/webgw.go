@@ -4,10 +4,12 @@ import (
 	"context"
 	"sync"
 
+	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
+	"go.yorun.ai/vine/internal/daemon/webtimeout"
 )
 
 type WebGateway struct {
@@ -15,6 +17,7 @@ type WebGateway struct {
 	actorSkelName string
 	cors          watched.PortalCors
 	webName       string
+	webTimeout    *webtimeout.Compiled
 
 	context context.Context
 	cancel  context.CancelFunc
@@ -43,6 +46,7 @@ func (g *WebGateway) init(config watched.PortalSite) {
 	g.name = config.Name
 	g.actorSkelName = config.ActorSkelName
 	g.cors = config.Cors
+	g.webTimeout = compileWebTimeout(config.WebTimeout)
 	g.webName = config.WebgwConfig.WebName
 	g.watcher = g.epmgr.WatchWeb(g.webName)
 }
@@ -56,6 +60,7 @@ func (g *WebGateway) Update(config watched.PortalSite) bool {
 
 	g.actorSkelName = config.ActorSkelName
 	g.cors = config.Cors
+	g.webTimeout = compileWebTimeout(config.WebTimeout)
 	nextWebName := config.WebgwConfig.WebName
 	if g.webName == nextWebName {
 		return true
@@ -84,4 +89,10 @@ func (g *WebGateway) Stop() {
 	g.watcher = nil
 	g.mutex.Unlock()
 	g.cancel()
+}
+
+func compileWebTimeout(config *webtimeout.Config) *webtimeout.Compiled {
+	compiled, err := webtimeout.Compile(config)
+	ex.PanicIfError(err)
+	return compiled
 }

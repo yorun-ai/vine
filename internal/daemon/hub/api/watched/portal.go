@@ -3,6 +3,8 @@ package watched
 import (
 	"fmt"
 	"time"
+
+	"go.yorun.ai/vine/internal/daemon/webtimeout"
 )
 
 // Entry rules
@@ -66,10 +68,11 @@ const (
 )
 
 type PortalSite struct {
-	Name          string     `json:"name"`
-	Type          string     `json:"type"`
-	ActorSkelName string     `json:"actorSkelName"`
-	Cors          PortalCors `json:"cors"`
+	Name          string             `json:"name"`
+	Type          string             `json:"type"`
+	ActorSkelName string             `json:"actorSkelName"`
+	Cors          PortalCors         `json:"cors"`
+	WebTimeout    *webtimeout.Config `json:"webTimeout,omitempty"`
 
 	RpcgwConfig *PortalRpcgwConfig `json:"rpcgwConfig,omitempty"`
 	WebgwConfig *PortalWebgwConfig `json:"webgwConfig,omitempty"`

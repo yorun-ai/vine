@@ -8,6 +8,7 @@ import (
 	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/skel"
+	"go.yorun.ai/vine/internal/daemon/webtimeout"
 	"go.yorun.ai/vine/util/vslice"
 )
 
@@ -49,6 +50,7 @@ type PortalSite struct {
 	ActorSkelName  string
 	InspectEnabled bool
 	McpEnabled     bool
+	WebTimeout     *webtimeout.Config
 	Cors           PortalCors
 	WebName        string
 	// WebMountPath is derived from the Web contract of the site and is empty when
@@ -67,6 +69,7 @@ type PortalSiteCreation struct {
 	ActorSkelName  string
 	InspectEnabled bool
 	McpEnabled     bool
+	WebTimeout     *webtimeout.Config
 	Cors           PortalCors
 	WebName        string
 	// Enabled is optional and defaults to true.
@@ -79,6 +82,7 @@ type PortalSiteUpdate struct {
 	ActorSkelName  *string
 	InspectEnabled *bool
 	McpEnabled     *bool
+	WebTimeout     *webtimeout.Config
 	Cors           *PortalCors
 	WebName        *string
 	Enabled        *bool
@@ -161,6 +165,7 @@ func (m *PortalSiteCore) Create(creation PortalSiteCreation) *PortalSite {
 		InspectEnabled: creation.InspectEnabled,
 		McpEnabled:     creation.McpEnabled,
 		Cors:           creation.Cors,
+		WebTimeout:     creation.WebTimeout,
 		WebName:        creation.WebName,
 		Enabled:        EnabledOrDefault(creation.Enabled),
 	}
@@ -198,6 +203,10 @@ func (m *PortalSiteCore) Update(id int, update PortalSiteUpdate) *PortalSite {
 	if update.McpEnabled != nil {
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/mcpEnabled")
 		next.McpEnabled = *update.McpEnabled
+	}
+	if update.WebTimeout != nil {
+		next.FieldSources = overrideFieldSource(next.FieldSources, "/webTimeout")
+		next.WebTimeout = update.WebTimeout
 	}
 	if update.Cors != nil {
 		next.FieldSources = overrideFieldSource(next.FieldSources, "/cors")
@@ -323,6 +332,14 @@ func (s *PortalSite) normalizeAndValidate() {
 	fail(!s.McpEnabled || s.Type == PortalSiteTypeRPCGW, "mcpEnabled is only supported for RPCGW")
 	if s.Type == PortalSiteTypeWEBGW {
 		fail(strings.TrimSpace(s.WebName) != "", "webName is required for WEBGW")
+	}
+	if s.WebTimeout != nil && s.WebTimeout.Default == nil && len(s.WebTimeout.Paths) == 0 {
+		s.WebTimeout = nil
+	}
+	fail(s.WebTimeout == nil || s.Type == PortalSiteTypeWEBGW, "webTimeout is only supported for WEBGW")
+	_, timeoutErr := webtimeout.Compile(s.WebTimeout)
+	if timeoutErr != nil {
+		fail(false, timeoutErr.Error())
 	}
 	s.Cors = NormalizePortalCors(s.Cors)
 	fail(s.Cors.Mode == PortalCorsModeDisabled || s.Cors.Mode == PortalCorsModeSameDomain || s.Cors.Mode == PortalCorsModeStrict, "unsupported CORS mode")

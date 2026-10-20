@@ -11,6 +11,7 @@ import (
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
+	"go.yorun.ai/vine/internal/daemon/webtimeout"
 	"go.yorun.ai/vine/util/vcode"
 	"gopkg.in/yaml.v3"
 )
@@ -361,9 +362,10 @@ type _PortalSite struct {
 	InspectEnabled bool              `yaml:"inspectEnabled"`
 	McpEnabled     bool              `yaml:"mcpEnabled"`
 	// Deprecated: accepted for old seed files; Vine ignores Via.
-	ActorVia string      `yaml:"actorVia"`
-	Cors     _PortalCors `yaml:"cors"`
-	WebName  string      `yaml:"webName"`
+	ActorVia   string             `yaml:"actorVia"`
+	Cors       _PortalCors        `yaml:"cors"`
+	WebTimeout *webtimeout.Config `yaml:"webTimeout"`
+	WebName    string             `yaml:"webName"`
 	// Enabled defaults to true when omitted.
 	Enabled *bool `yaml:"enabled"`
 
@@ -392,6 +394,11 @@ func (s *_PortalSite) UnmarshalYAML(node *yaml.Node) error {
 			return err
 		}
 	}
+	if timeout, ok := fields["webTimeout"]; ok {
+		if err := validateWebTimeoutYAML(&timeout); err != nil {
+			return err
+		}
+	}
 	type plain _PortalSite
 	if err := node.Decode((*plain)(s)); err != nil {
 		return err
@@ -417,6 +424,7 @@ func (s _PortalSite) toCorePortalSite() *core.PortalSite {
 		InspectEnabled: s.InspectEnabled,
 		McpEnabled:     s.McpEnabled,
 		Cors:           cors,
+		WebTimeout:     s.WebTimeout,
 		WebName:        s.WebName,
 		Enabled:        core.EnabledOrDefault(s.Enabled),
 	}

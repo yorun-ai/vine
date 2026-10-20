@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	skeldesc "go.yorun.ai/skel/descriptor"
+	"go.yorun.ai/vine/internal/daemon/webtimeout"
 	"go.yorun.ai/vine/util/vslice"
 )
 
@@ -190,4 +191,28 @@ func TestPortalSiteSaveAndUpdateProtectIdentityAndValidate(t *testing.T) {
 	require.Equal(t, 7, got.Id)
 	require.Panics(t, func() { target.Update(7, PortalSiteUpdate{WebName: new("")}) })
 	require.Equal(t, "demo.Web", repo.entries[7].WebName)
+}
+
+func TestWebTimeoutValidation(t *testing.T) {
+	target := new(PortalSiteCore)
+	site := PortalSite{Name: "files", Type: PortalSiteTypeWEBGW, ActorSkelName: "demo.Actor", WebName: "demo.Web"}
+	site.WebTimeout = &webtimeout.Config{Default: &webtimeout.Policy{Total: "15m"}}
+	require.NotPanics(t, func() { target.Validate(site) })
+	site.Type = PortalSiteTypeRPCGW
+	require.Panics(t, func() { target.Validate(site) })
+	site.WebTimeout = &webtimeout.Config{}
+	require.Nil(t, target.Validate(site).WebTimeout)
+	site.Type = PortalSiteTypeWEBGW
+	site.WebTimeout = &webtimeout.Config{Default: &webtimeout.Policy{Total: "0s"}}
+	require.Panics(t, func() { target.Validate(site) })
+}
+
+func TestWebTimeoutUpdateReplacesPreservesAndClears(t *testing.T) {
+	target := newPortalSiteCoreForTest(&portalSiteRepoSpy{})
+	policy := &webtimeout.Config{Default: &webtimeout.Policy{Total: "15m"}, Paths: []webtimeout.Path{{Path: "/short", Total: "5s"}}}
+	site := target.Create(PortalSiteCreation{Name: "files", Type: PortalSiteTypeWEBGW, ActorSkelName: "demo.Actor", WebName: "demo.Web", WebTimeout: policy})
+	require.Equal(t, policy, target.Update(site.Id, PortalSiteUpdate{Name: new("renamed")}).WebTimeout)
+	replacement := &webtimeout.Config{Default: &webtimeout.Policy{Total: "1m"}}
+	require.Equal(t, replacement, target.Update(site.Id, PortalSiteUpdate{WebTimeout: replacement}).WebTimeout)
+	require.Nil(t, target.Update(site.Id, PortalSiteUpdate{WebTimeout: &webtimeout.Config{}}).WebTimeout)
 }
