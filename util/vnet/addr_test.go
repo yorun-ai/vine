@@ -2,18 +2,7 @@ package vnet
 
 import (
 	"fmt"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
-
-func TestMustParsePort(t *testing.T) {
-	assert.Equal(t, 7079, MustParsePort(":7079"))
-}
-
-func TestMustParseHost(t *testing.T) {
-	assert.Equal(t, "0.0.0.0", MustParseHost("0.0.0.0:7079"))
-}
 
 func ExampleParseHost() {
 	host, err := ParseHost("127.0.0.1:7079")

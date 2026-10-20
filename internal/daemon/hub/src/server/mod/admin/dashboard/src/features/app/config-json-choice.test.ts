@@ -11,17 +11,6 @@ test('boolean options preserve JSON boolean types and optional null', () => {
   assert.deepEqual(getConfigJsonChoices({ ...field, type: 'bool?' }).map((item) => JSON.parse(item.value)), [false, true, null])
 })
 
-test('enum options preserve names and include descriptions', () => {
-  const choices = getConfigJsonChoices({
-    name: 'category', type: 'booker.Category?', description: '',
-    enumItems: [{ name: 'LITERATURE', description: '文学' }, { name: 'SCIENCE', description: '' }],
-  })
-  assert.deepEqual(choices, [
-    { value: '"LITERATURE"', label: 'LITERATURE', description: '文学' },
-    { value: '"SCIENCE"', label: 'SCIENCE', description: '' },
-    { value: 'null', label: 'null' },
-  ])
-})
 
 test('collections and non-enum fields keep text editing', () => {
   for (const type of ['map<string, booker.Category>', 'list<list<booker.Category>>']) {

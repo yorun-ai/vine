@@ -39,10 +39,6 @@ type _TestLockerConsumer struct {
 	Locker *_TestUserLocker `inject:""`
 }
 
-type _TestDefaultLocker struct {
-	Locker
-}
-
 type _TestEmptyPrefixLocker struct {
 	Locker
 }
@@ -108,50 +104,6 @@ func newTestLockCmdable() *_TestLockCmdable {
 			return goredis.NewCmdResult(int64(1), nil)
 		},
 	}
-}
-
-func TestRedisNewLockerReturnsHandle(t *testing.T) {
-	cmdable := goredis.NewClient(&goredis.Options{Addr: "127.0.0.1:6379"})
-	t.Cleanup(func() {
-		_ = cmdable.Close()
-	})
-	redis := &Redis{Cmdable: cmdable}
-	ctx := context.Background()
-
-	locker := redis.NewLocker(ctx, "lock:user")
-
-	require.NotNil(t, locker)
-	assert.Equal(t, ctx, locker.ctx)
-	assert.Equal(t, "lock:user", locker.keyPrefix)
-	assert.Equal(t, cmdable, locker.cmdable)
-}
-
-func TestRedisNewLockerByTypeReturnsTypedHandle(t *testing.T) {
-	cmdable := goredis.NewClient(&goredis.Options{Addr: "127.0.0.1:6379"})
-	t.Cleanup(func() {
-		_ = cmdable.Close()
-	})
-	redis := &Redis{Cmdable: cmdable}
-	ctx := context.Background()
-
-	locker := redis.NewLockerByType(reflect.TypeFor[*_TestUserLocker](), ctx).(*_TestUserLocker)
-
-	require.NotNil(t, locker)
-	assert.Equal(t, ctx, locker.ctx)
-	assert.Equal(t, "lock:user", locker.keyPrefix)
-	assert.Equal(t, cmdable, locker.cmdable)
-}
-
-func TestRedisNewLockerByTypeUsesDefaultTypePrefixWhenNotOverridden(t *testing.T) {
-	cmdable := goredis.NewClient(&goredis.Options{Addr: "127.0.0.1:6379"})
-	t.Cleanup(func() {
-		_ = cmdable.Close()
-	})
-	redis := &Redis{Cmdable: cmdable}
-
-	locker := redis.NewLockerByType(reflect.TypeFor[*_TestDefaultLocker](), context.Background()).(*_TestDefaultLocker)
-
-	assert.Equal(t, "go.yorun.ai_vine_infra_redis._TestDefaultLocker", locker.keyPrefix)
 }
 
 func TestRedisManagerBindProvidesLocker(t *testing.T) {

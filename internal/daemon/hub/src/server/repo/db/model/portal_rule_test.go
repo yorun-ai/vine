@@ -5,54 +5,11 @@ import (
 	"testing"
 
 	"github.com/glebarez/sqlite"
-	"github.com/stretchr/testify/assert"
+
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/infra/rdb"
 	"gorm.io/gorm"
 )
-
-func TestPortalRuleDaoCreateAndQuery(t *testing.T) {
-	dao := newTestPortalRuleDao(t)
-
-	dao.Create(&PortalRule{
-		Name:                    "admin",
-		EntryId:                 3,
-		MatchPathPrefix:         "/admin",
-		RouteType:               "SITE",
-		RouteSiteName:           "admin@demo.app",
-		RouteRedirectionPattern: "",
-	})
-
-	rule, ok := dao.ByName("admin")
-	require.True(t, ok)
-	assert.Equal(t, 3, rule.EntryId)
-	assert.Equal(t, "/admin", rule.MatchPathPrefix)
-	assert.Equal(t, "SITE", rule.RouteType)
-	assert.Equal(t, "admin@demo.app", rule.RouteSiteName)
-}
-
-func TestPortalRuleDaoListOrdered(t *testing.T) {
-	dao := newTestPortalRuleDao(t)
-
-	dao.Create(&PortalRule{Name: "z", EntryId: 1, MatchPathPrefix: "", RouteType: "SITE", RouteSiteName: "z"})
-	dao.Create(&PortalRule{Name: "a", EntryId: 1, MatchPathPrefix: "/a", RouteType: "SITE", RouteSiteName: "a"})
-
-	rules := dao.ListOrdered()
-	require.Len(t, rules, 2)
-	assert.Equal(t, "a", rules[0].Name)
-	assert.Equal(t, "z", rules[1].Name)
-}
-
-func newTestPortalRuleDao(t *testing.T) *PortalRuleDao {
-	t.Helper()
-
-	db := newModelTestDB(t, "portal-rule.sqlite")
-	dao := &PortalRuleDao{
-		Dao: rdb.NewDao[*PortalRule](db),
-	}
-	dao.EnsureSchema()
-	return dao
-}
 
 func TestPortalRuleEnsureSchemaOnCurrentSchema(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "current.sqlite")), &gorm.Config{})

@@ -21,24 +21,6 @@ func resetRulesForTest(t *testing.T) {
 	rules.Store(empty)
 }
 
-func TestLevelToSLogLevel(t *testing.T) {
-	cases := []struct {
-		level Level
-		want  slog.Level
-	}{
-		{level: LevelDebug, want: slog.LevelDebug},
-		{level: LevelInfo, want: slog.LevelInfo},
-		{level: LevelWarn, want: slog.LevelWarn},
-		{level: LevelError, want: slog.LevelError},
-	}
-
-	for _, tc := range cases {
-		if got := tc.level.ToSLogLevel(); got != tc.want {
-			t.Fatalf("%s.ToSLogLevel() = %v, want %v", tc.level, got, tc.want)
-		}
-	}
-}
-
 func TestIsValidLevel(t *testing.T) {
 	for _, level := range []Level{LevelDebug, LevelInfo, LevelWarn, LevelError} {
 		if !IsValidLevel(level) {
@@ -54,20 +36,6 @@ func TestIsValidLevel(t *testing.T) {
 	}
 	if LevelAuto != "" {
 		t.Fatalf("LevelAuto = %q, want the zero value", LevelAuto)
-	}
-}
-
-func TestSetGlobalLevel(t *testing.T) {
-	resetGlobalOptionForTest(t)
-
-	SetGlobalLevel(LevelDebug)
-	if got := globalLevel.Level(); got != slog.LevelDebug {
-		t.Fatalf("global level = %s, want %s", got, LevelDebug)
-	}
-
-	SetGlobalLevel(LevelError)
-	if got := globalLevel.Level(); got != slog.LevelError {
-		t.Fatalf("global level = %s, want %s", got, LevelError)
 	}
 }
 

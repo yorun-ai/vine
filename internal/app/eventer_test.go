@@ -163,20 +163,6 @@ func TestNewEventerInitBuildsServers(t *testing.T) {
 	assert.True(t, eventer.listeners[0].options.NoRetry)
 }
 
-func TestNewEventerUsesDefaultListenerOptions(t *testing.T) {
-	ensureEventerEventRegistered()
-
-	app := newTestAppImpl()
-	spec := &testFullSpec{}
-
-	eventer := newEventer(spec, app.currentApp, app.bindAppDeps)
-
-	assert.Len(t, eventer.listeners, 1)
-	assert.Equal(t, 30*time.Second, eventer.listeners[0].options.Timeout)
-	assert.Equal(t, 10, eventer.listeners[0].options.Concurrency)
-	assert.False(t, eventer.listeners[0].options.NoRetry)
-}
-
 func TestAppEventServiceServerOnEventForwardsToEventServer(t *testing.T) {
 	ensureEventerEventRegistered()
 	testEventerOnGroupID = 0

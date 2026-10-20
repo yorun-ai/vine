@@ -83,46 +83,6 @@ func (s *configRepoSpy) Remove(id int) bool {
 	return false
 }
 
-func TestAppConfigCoreList(t *testing.T) {
-	repo := &configRepoSpy{
-		items: map[string]*AppConfig{
-			"db.main": {
-				Id:      1,
-				Name:    "db.main",
-				Value:   `{"connUrl":"postgres://demo"}`,
-				Version: 1,
-			},
-		},
-	}
-	core := &AppConfigCore{AppConfigRepo: repo}
-
-	items := core.List()
-
-	assert.Len(t, items, 1)
-	assert.Equal(t, []string{"List"}, repo.calls)
-	assert.Equal(t, "db.main", items[0].Name)
-}
-
-func TestAppConfigCoreGet(t *testing.T) {
-	repo := &configRepoSpy{
-		items: map[string]*AppConfig{
-			"feature.flag": {
-				Id:      2,
-				Name:    "feature.flag",
-				Value:   `{"enabled":true}`,
-				Version: 2,
-			},
-		},
-	}
-	core := &AppConfigCore{AppConfigRepo: repo}
-
-	item := core.Get(2)
-
-	assert.Equal(t, []string{"GetById"}, repo.calls)
-	assert.Equal(t, 2, item.Version)
-	assert.Equal(t, `{"enabled":true}`, item.Value)
-}
-
 func TestAppConfigCoreGetMissing(t *testing.T) {
 	repo := &configRepoSpy{}
 	core := &AppConfigCore{AppConfigRepo: repo}

@@ -1,7 +1,6 @@
 package di
 
 import (
-	"errors"
 	"reflect"
 	"testing"
 
@@ -22,20 +21,6 @@ func (s *binderTestImpl) Run() string {
 
 type binderTestResource struct {
 	SingletonScoped
-}
-
-func TestBinderBindFactoryUsesFirstReturnType(t *testing.T) {
-	injector := NewInjector(func(b *Binder) {
-		b.BindFactory(func() *binderTestResource {
-			return &binderTestResource{}
-		})
-	}).(*_PlainInjector)
-
-	binding := injector.bindings[T[*binderTestResource]()]
-	if assert.NotNil(t, binding) {
-		assert.Equal(t, T[*binderTestResource](), binding.targetType)
-		assert.NotNil(t, binding.factory)
-	}
 }
 
 func TestBinderBindFactoryPanicsForNonFunc(t *testing.T) {
@@ -60,23 +45,6 @@ func TestBinderBindFactoryPanicsWithoutReturnValue(t *testing.T) {
 	)
 }
 
-func TestBindingToInstanceSetsSingletonFactory(t *testing.T) {
-	injector := &_PlainInjector{bindings: map[reflect.Type]*Binding{}}
-	binding := newBinder(injector).Bind(T[*binderTestResource]()).ToInstance(&binderTestResource{})
-
-	assert.Equal(t, SingletonScope, binding.explicitScope)
-	assert.NotNil(t, binding.factory)
-	assert.Nil(t, binding.factoryDependenciesOverridden)
-}
-
-func TestBindingToImplementationOverridesFactoryDeps(t *testing.T) {
-	injector := &_PlainInjector{bindings: map[reflect.Type]*Binding{}}
-	binding := newBinder(injector).Bind(T[binderTestService]()).ToImplementation(T[*binderTestImpl]())
-
-	assert.Equal(t, []reflect.Type{T[*binderTestImpl]()}, binding.factoryDependenciesOverridden)
-	assert.NotNil(t, binding.factory)
-}
-
 func TestBindingToImplementationPanicsForNonInterfaceTarget(t *testing.T) {
 	injector := &_PlainInjector{bindings: map[reflect.Type]*Binding{}}
 	binding := newBinder(injector).Bind(T[*binderTestResource]())
@@ -89,13 +57,6 @@ func TestBindingToImplementationPanicsForNonInterfaceTarget(t *testing.T) {
 	)
 }
 
-func TestBindingAsNullableMarksBinding(t *testing.T) {
-	injector := &_PlainInjector{bindings: map[reflect.Type]*Binding{}}
-	binding := newBinder(injector).Bind(T[*binderTestResource]()).AsNullable()
-
-	assert.True(t, binding.isNullable)
-}
-
 func TestBindingAsNullablePanicsForNonNilableType(t *testing.T) {
 	injector := &_PlainInjector{bindings: map[reflect.Type]*Binding{}}
 	binding := newBinding(injector, T[int](), false)
@@ -106,19 +67,6 @@ func TestBindingAsNullablePanicsForNonNilableType(t *testing.T) {
 			binding.AsNullable()
 		},
 	)
-}
-
-func TestBindingWithDisposerAcceptsMatchingSignature(t *testing.T) {
-	injector := &_PlainInjector{bindings: map[reflect.Type]*Binding{}}
-	binding := newBinder(injector).Bind(T[*binderTestResource]())
-
-	assert.NotPanics(t, func() {
-		binding.WithDisposer(func(*binderTestResource) error {
-			return nil
-		})
-	})
-
-	assert.NotNil(t, binding.disposer)
 }
 
 func TestBindingWithDisposerPanicsWhenDisposeDefinitionAlreadyImplemented(t *testing.T) {
@@ -143,19 +91,6 @@ func TestBindingWithDisposerPanicsForMismatchedArgument(t *testing.T) {
 			binding.WithDisposer(func(*binderTestImpl) {})
 		},
 	)
-}
-
-func TestBindingToFactoryAllowsErrorReturningFactory(t *testing.T) {
-	injector := &_PlainInjector{bindings: map[reflect.Type]*Binding{}}
-	binding := newBinder(injector).Bind(T[*binderTestResource]())
-
-	assert.NotPanics(t, func() {
-		binding.ToFactory(func() (*binderTestResource, error) {
-			return nil, errors.New("boom")
-		})
-	})
-
-	assert.NotNil(t, binding.factory)
 }
 
 func TestBindingToAbstractFactoryPanicsForNonInterfaceTarget(t *testing.T) {

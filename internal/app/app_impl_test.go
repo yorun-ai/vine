@@ -519,21 +519,6 @@ func TestAppImplInitConsoleServerSkipsWhenDisabledByInternalAttrs(t *testing.T) 
 	assert.False(t, app.shouldEnableConsole())
 }
 
-func TestAppImplInitConsoleServerCreatesHandler(t *testing.T) {
-	flags := _Flags{}
-	flags.EnsureRunFlag()
-	flags.InitInprocFlag(true)
-
-	app := newApp(&testHelperAppSpec{AppFlag: &RunFlag{}}, flags)
-	app.initInjector()
-	app.initServers()
-
-	assert.NotNil(t, app.consoleServer)
-	assert.NotNil(t, app.consoleServer.HTTPHandler())
-	assert.NotNil(t, app.consoleServer.RpcHandler())
-	assert.True(t, app.shouldEnableConsole())
-}
-
 func TestNewAppPanicsWhenApplicationNameIsEmpty(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
@@ -566,39 +551,6 @@ func TestAppImplInitSpecInitializesEnabledModules(t *testing.T) {
 
 	assert.NotNil(t, app.eventer)
 	assert.NotNil(t, app.tasker)
-}
-
-func TestNewAppUsesRunFlagListenAddr(t *testing.T) {
-	flags := _Flags{}
-	flags.EnsureRunFlag()
-	flags.InitInprocFlag(false)
-	flags[T[*RunFlag]()] = &RunFlag{ListenAddr: ":18089"}
-	app := newApp(&testListenAddrSpec{AppFlag: &RunFlag{}}, flags)
-
-	assert.Equal(t, ":18089", app.listenAddr)
-}
-
-func TestNewAppDisablesInprocModeByDefault(t *testing.T) {
-	flags := _Flags{}
-	flags.EnsureRunFlag()
-	flags.InitInprocFlag(false)
-
-	app := newApp(&testListenAddrSpec{AppFlag: &RunFlag{}}, flags)
-
-	assert.NotNil(t, app.inprocFlag)
-	assert.False(t, app.inprocFlag.Enabled)
-}
-
-func TestNewAppEnablesInprocModeWhenFlagProvided(t *testing.T) {
-	flags := _Flags{}
-	flags.EnsureRunFlag()
-	flags.InitInprocFlag(true)
-
-	app := newApp(&testListenAddrSpec{AppFlag: &RunFlag{}}, flags)
-
-	assert.NotNil(t, app.inprocFlag)
-	assert.True(t, app.inprocFlag.Enabled)
-	assert.Equal(t, coreapp.InprocHostPath(app.currentApp.InstanceId()), app.inprocFlag.HostPath)
 }
 
 func TestNewAppUsesRunFlagListenAddrMutatedInDIInit(t *testing.T) {

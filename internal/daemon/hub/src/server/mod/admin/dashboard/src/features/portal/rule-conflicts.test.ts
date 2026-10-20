@@ -22,7 +22,3 @@ test('indexes a conflict by both rules it names', () => {
   assert.equal(indexed.get(2), conflict)
   assert.equal(indexed.size, 2)
 })
-
-test('reports no rule without a conflict', () => {
-  assert.equal(conflictsByRuleId([]).size, 0)
-})

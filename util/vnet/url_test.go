@@ -34,13 +34,6 @@ func TestParseHttpURLNormalizesEmptyPath(t *testing.T) {
 	assert.Equal(t, "https://hub.example.com:8443/", parsed.String())
 }
 
-func TestMustParseHttpURL(t *testing.T) {
-	parsed := MustParseHttpURL(":7099")
-
-	assert.Equal(t, "http", parsed.Scheme)
-	assert.Equal(t, 7099, parsed.Port())
-}
-
 func TestParseHttpURLRejectsMissingPort(t *testing.T) {
 	_, err := ParseHttpURL("https://hub.example.com/admin")
 

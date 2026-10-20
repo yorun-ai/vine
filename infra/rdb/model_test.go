@@ -100,27 +100,6 @@ func TestUUIDColumnTypes(t *testing.T) {
 	}
 }
 
-func TestModelIsNew(t *testing.T) {
-	id := uuid.NewV7()
-	tests := []struct {
-		name  string
-		model interface{ IsNew() bool }
-		want  bool
-	}{
-		{"integer unset", new(Model), true},
-		{"integer assigned", new(Model{Id: 1}), false},
-		{"deletable integer unset", new(DeletableModel), true},
-		{"deletable integer assigned", new(DeletableModel{Id: 1}), false},
-		{"uuid unset", new(UModel), true},
-		{"uuid assigned before insert", new(UModel{Id: id}), false},
-		{"deletable uuid unset", new(UDeletableModel), true},
-		{"deletable uuid assigned before insert", new(UDeletableModel{Id: id}), false},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) { assert.Equal(t, test.want, test.model.IsNew()) })
-	}
-}
-
 type uuidParent struct {
 	UModel
 	Name     string

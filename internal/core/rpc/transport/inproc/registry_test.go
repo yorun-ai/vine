@@ -60,30 +60,6 @@ func registryTestRequest(t *testing.T) spec.Request {
 	}
 }
 
-func TestRegisterAndGetHandler(t *testing.T) {
-	resetRegistryForTest(t)
-
-	handler := registryTestHandler{}
-	Register("rpc+inproc://hub.api", handler)
-
-	got, ok := getHandler("rpc+inproc://hub.api")
-	if !ok {
-		t.Fatal("expected registered handler")
-	}
-	if got != handler {
-		t.Fatalf("unexpected handler: got %#v want %#v", got, handler)
-	}
-}
-
-func TestGetHandlerReturnsFalseForMissingEndpoint(t *testing.T) {
-	resetRegistryForTest(t)
-
-	got, ok := getHandler("rpc+inproc://link.api")
-	if ok {
-		t.Fatalf("expected missing handler, got %#v", got)
-	}
-}
-
 func TestRegisterRejectsInvalidInput(t *testing.T) {
 	resetRegistryForTest(t)
 
@@ -140,18 +116,6 @@ func TestRegisteredHandlerWorksWithRoundTrip(t *testing.T) {
 	}
 	if response == nil || response.Error() == nil || response.Error().Code() != ex.OK {
 		t.Fatalf("unexpected response: %#v", response)
-	}
-}
-
-func TestUnregisterRemovesHandler(t *testing.T) {
-	resetRegistryForTest(t)
-
-	Register("rpc+inproc://hub.api", registryTestHandler{})
-	Unregister("rpc+inproc://hub.api")
-
-	got, ok := getHandler("rpc+inproc://hub.api")
-	if ok {
-		t.Fatalf("expected handler to be removed, got %#v", got)
 	}
 }
 

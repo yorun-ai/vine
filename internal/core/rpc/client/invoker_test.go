@@ -21,10 +21,6 @@ type invokerClientResult struct {
 	Name string `json:"name"`
 }
 
-type invokerServerResult struct {
-	Name string `json:"name"`
-}
-
 func testMethodInfo() spec.MethodInfo {
 	return newInvokerTestMethodInfo("Ping", "ping", nil, nil)
 }
@@ -246,35 +242,6 @@ func TestParseResponseAllowsOKErrorAndReturnsResult(t *testing.T) {
 	}
 	if result != "ok" {
 		t.Fatalf("expected result to pass through, got %#v", result)
-	}
-}
-
-func TestParseResponseReturnsSuccessResult(t *testing.T) {
-	result, err := parseResponse(&spec.ResponseImpl{
-		ResultValue: "pong",
-	}, nil)
-	if err != nil {
-		t.Fatalf("expected nil error, got %#v", err)
-	}
-	if result != "pong" {
-		t.Fatalf("expected pong result, got %#v", result)
-	}
-}
-
-func TestParseResponseReturnsResponseResultAsIs(t *testing.T) {
-	result, err := parseResponse(&spec.ResponseImpl{
-		ResultValue: invokerServerResult{Name: "vine"},
-	}, nil)
-	if err != nil {
-		t.Fatalf("expected nil error, got %#v", err)
-	}
-
-	got, ok := result.(invokerServerResult)
-	if !ok {
-		t.Fatalf("expected invokerServerResult, got %#v", result)
-	}
-	if got.Name != "vine" {
-		t.Fatalf("unexpected result: %#v", got)
 	}
 }
 

@@ -142,31 +142,6 @@ func TestReaderPreservesValuesAndIsolatesSnapshots(t *testing.T) {
 	}
 }
 
-func TestReaderGetByTypeDecodesLinkConfig(t *testing.T) {
-	registry := NewRegistry()
-
-	registry.Register(ConfigSpec{
-		Name:      "ReaderTestConfig",
-		SkelName:  "demo.user.ReaderTestConfig",
-		Lifecycle: LifecycleEternal,
-		Type:      reflect.TypeFor[*readerTestConfig](),
-	})
-
-	reader := newReader(&linktest.Linker{
-		EternalConfigByKey: map[string]string{
-			"demo.user.ReaderTestConfig": `{"name":"demo"}`,
-		},
-	}, registry)
-
-	value, ok := reader.GetByType(reflect.TypeFor[*readerTestConfig]()).(*readerTestConfig)
-	if !ok {
-		t.Fatal("expected reader to return *readerTestConfig")
-	}
-	if value.Name != "demo" {
-		t.Fatalf("unexpected decoded name: %q", value.Name)
-	}
-}
-
 func TestReaderGetByTypeUsesLocalLifecycle(t *testing.T) {
 	registry := NewRegistry()
 

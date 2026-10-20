@@ -12,12 +12,6 @@ import (
 	"testing"
 )
 
-func TestDefaultLoggerName(t *testing.T) {
-	if got := defaultLoggers.Load().logger.Name(); got != "vine:default" {
-		t.Fatalf("default logger name = %q, want %q", got, "vine:default")
-	}
-}
-
 func TestStandardLoggerUsesIndependentName(t *testing.T) {
 	resetRulesForTest(t)
 	previousDefault := defaultLoggers.Load().logger

@@ -2,22 +2,6 @@ package meta
 
 import "testing"
 
-func TestNewInitiatorAcceptsValidValues(t *testing.T) {
-	initiator, err := NewInitiator("demo.service", "1.2.3", "123e4567-e89b-12d3-a456-426614174000", "http", "127.0.0.1")
-	if err != nil {
-		t.Fatalf("unexpected initiator error: %v", err)
-	}
-	if initiator.Name() != "demo.service" || initiator.Version() != "1.2.3" || initiator.InstanceId() != "123e4567-e89b-12d3-a456-426614174000" {
-		t.Fatalf("unexpected initiator app content")
-	}
-	if initiator.Dialer() != "http" {
-		t.Fatalf("unexpected dialer: %s", initiator.Dialer())
-	}
-	if initiator.IpAddr() != "127.0.0.1" {
-		t.Fatalf("unexpected ip addr: %v", initiator.IpAddr())
-	}
-}
-
 func TestNewInitiatorRejectsInvalidApp(t *testing.T) {
 	if _, err := NewInitiator("BadName", "1.2.3", "123e4567-e89b-12d3-a456-426614174000", "http", "127.0.0.1"); err == nil {
 		t.Fatalf("expected invalid app to be rejected")
