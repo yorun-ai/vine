@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestOrderedPathPolicies(t *testing.T) {
+func TestPathPolicies(t *testing.T) {
 	config, err := Compile(&Config{Default: &Policy{Total: "30s"}, Paths: []Path{
 		{Path: "/go/private/*", Total: "5s"},
 		{Path: "/go/**", Total: "15m"},
@@ -42,5 +42,52 @@ func TestRejectInvalidPolicies(t *testing.T) {
 	for _, path := range []string{"", "go/**", "/go?x=1", "/go#x", "/go/[ab]", "/foo**", "/***", "/x/../y", "/x//y", "/x\\y", "/x\ny"} {
 		_, err := Compile(&Config{Paths: []Path{{Path: path, Total: "1s"}}})
 		require.Error(t, err, path)
+	}
+}
+
+func TestMostSpecificPathPolicy(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		broad    string
+		specific string
+		request  string
+	}{
+		{"download override", "/files/**", "/files/download/**", "/files/download/archive.zip"},
+		{"exact before glob", "/files/*.zip", "/files/archive.zip", "/files/archive.zip"},
+		{"literal before star", "/files/*/**", "/files/download/**", "/files/download/a"},
+		{"star before globstar", "/files/**", "/files/*", "/files/a"},
+		{"fixed characters in glob", "/files/*.zip", "/files/archive*.zip", "/files/archive.zip"},
+		{"leftmost segment wins", "/files/*/very-long-name.zip", "/files/download/*", "/files/download/very-long-name.zip"},
+		{"end before optional globstar", "/files/*/**", "/files/*", "/files/a"},
+		{"globstar suffix", "/files/**", "/files/**/archive.zip", "/files/a/archive.zip"},
+		{"exact root", "/**", "/", "/"},
+		{"exact globstar base", "/files/**", "/files", "/files"},
+		{"unicode fixed characters", "/files/界*", "/files/*ab", "/files/界ab"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			for _, reverse := range []bool{false, true} {
+				paths := []Path{{Path: test.broad, Total: "1s"}, {Path: test.specific, Total: "2s"}}
+				if reverse {
+					paths[0], paths[1] = paths[1], paths[0]
+				}
+				original := append([]Path(nil), paths...)
+				compiled, err := Compile(&Config{Paths: paths})
+				require.NoError(t, err)
+				require.Equal(t, 2*time.Second, compiled.Total(test.request))
+				require.Equal(t, original, paths, "compilation must not reorder the source configuration")
+			}
+		})
+	}
+}
+
+func TestEqualSpecificityPreservesConfigurationOrder(t *testing.T) {
+	for _, paths := range [][]Path{
+		{{Path: "/files/a*", Total: "1s"}, {Path: "/files/*b", Total: "2s"}},
+		{{Path: "/files/*b", Total: "1s"}, {Path: "/files/a*", Total: "2s"}},
+		{{Path: "/files/ab", Total: "1s"}, {Path: "/files/ab", Total: "2s"}},
+	} {
+		compiled, err := Compile(&Config{Paths: paths})
+		require.NoError(t, err)
+		require.Equal(t, time.Second, compiled.Total("/files/ab"))
 	}
 }
