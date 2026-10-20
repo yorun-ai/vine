@@ -93,6 +93,9 @@ data AppConfigDescriptorEnumItem {
 
 @desc("Configuration descriptor items")
 data AppConfigDescriptor {
+    @desc("Source abstract configuration Skel name; empty for configs without a source")
+    fromSkelName: string
+
     sensitive: bool
     dataTypes: list<AppConfigDescriptorData>
 

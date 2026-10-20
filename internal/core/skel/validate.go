@@ -93,6 +93,9 @@ func ValidateDescriptor(domain *descriptor.Domain) error {
 		if config == nil {
 			return fmt.Errorf("nil config descriptor")
 		}
+		if config.Abs && config.Pub {
+			return fmt.Errorf("abstract config %s has conflicting modifiers", config.SkelName)
+		}
 		switch config.Lifecycle {
 		case descriptor.ConfigLifecycleEternal, descriptor.ConfigLifecycleInstant:
 		default:

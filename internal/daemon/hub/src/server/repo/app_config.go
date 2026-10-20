@@ -30,6 +30,9 @@ func (s *AppConfigRepo) ListSlots() []*core.AppConfig {
 		declared[slot.Name] = struct{}{}
 	}
 	for _, descriptor := range descriptors {
+		if descriptor.Abs {
+			continue
+		}
 		if _, ok := declared[descriptor.SkelName]; ok {
 			continue
 		}
@@ -56,7 +59,7 @@ func (s *AppConfigRepo) FindByName(name string) (*core.AppConfig, bool) {
 		return s.toCoreAppConfig(mapAppConfig(row), descriptors, enumDescriptors, dataDescriptors), true
 	}
 	descriptor := findAppConfigDescriptor(name, descriptors)
-	if descriptor == nil {
+	if descriptor == nil || descriptor.Abs {
 		return nil, false
 	}
 	return s.toCoreAppConfig(&core.AppConfig{
@@ -76,6 +79,11 @@ func (s *AppConfigRepo) GetByName(name string) (*core.AppConfig, bool) {
 		return s.resolveAppConfig(mapAppConfig(row)), true
 	}
 	return nil, false
+}
+
+func (s *AppConfigRepo) GetDefinition(name string) *core.AppConfigDefinition {
+	descriptors, enums, data := s.DescriptorRepo.ListAppConfigTypeDescriptors()
+	return core.NewAppConfigDefinition(findAppConfigDescriptor(name, descriptors), enums, data)
 }
 
 func (s *AppConfigRepo) Save(item *core.AppConfig) {

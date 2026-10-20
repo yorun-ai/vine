@@ -26,7 +26,7 @@ func newReader(linker link.Linker, registry *Registry) Reader {
 }
 
 func (r *_Reader) GetByType(kind reflect.Type) any {
-	info := r.registry.lookupByType(kind)
+	info := r.registry.requireConcreteType(kind)
 	text := r.getRaw(info)
 	vpre.Check(text != "", "config %s json is empty", info.SkelName)
 

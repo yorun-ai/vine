@@ -138,6 +138,10 @@ func (*testAppConfigRepo) GetByName(string) (*core.AppConfig, bool) {
 	return nil, false
 }
 
+func (*testAppConfigRepo) GetDefinition(string) *core.AppConfigDefinition {
+	return nil
+}
+
 func (*testAppConfigRepo) Save(*core.AppConfig) {
 }
 

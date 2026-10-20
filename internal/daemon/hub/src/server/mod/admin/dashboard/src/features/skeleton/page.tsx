@@ -29,6 +29,7 @@ import { useLocale } from '@/i18n'
 import { cn } from '@/lib/utils'
 import type {
   SkeletonData,
+  SkeletonDomain,
   SkeletonServiceItem,
   SkeletonWebItem,
 } from '@/skeled/admin'
@@ -52,6 +53,7 @@ import type { SkeletonItem, SkeletonKind } from './model'
 
 const skeletonItemsByKind = new Map<SkeletonKind, Array<SkeletonItem>>()
 let cachedTypeDefinitions: Array<SkeletonData> | null = null
+let cachedConfigDomains: Array<SkeletonDomain> | null = null
 const SKELETON_LIST_DEFAULT_WIDTH = 352
 
 function shouldUseBrowserNavigation(
@@ -178,6 +180,9 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
   const [typeDefinitions, setTypeDefinitions] = React.useState<
     Array<SkeletonData>
   >(() => cachedTypeDefinitions ?? [])
+  const [configDomains, setConfigDomains] = React.useState<
+    Array<SkeletonDomain>
+  >(() => cachedConfigDomains ?? [])
   const [query, setQuery] = React.useState('')
   const [expandedVersionGroups, setExpandedVersionGroups] = React.useState<
     Record<string, boolean>
@@ -213,15 +218,20 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
         return
       }
 
-      const [nextItems, dataItems] = await Promise.all([
+      const [nextItems, dataItems, domains] = await Promise.all([
         config.load(),
         skeletonService.listData(null),
+        kind === 'configs' ? skeletonService.listDomains(null) : null,
       ])
       skeletonItemsByKind.set(kind, nextItems)
       skeletonItemsByKind.set('data', dataItems)
       cachedTypeDefinitions = dataItems
       setItems(nextItems)
       setTypeDefinitions(dataItems)
+      if (domains !== null) {
+        cachedConfigDomains = domains
+        setConfigDomains(domains)
+      }
     } catch (error) {
       toast.error(getErrorMessage(error))
     } finally {
@@ -310,6 +320,21 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
       ) ?? null,
     [items, routeDescriptorHash, routeSkelName],
   )
+  const configSourceHash = React.useMemo(() => {
+    if (kind !== 'configs' || !selectedItem || !('fromSkelName' in selectedItem)) {
+      return undefined
+    }
+    // The flat config list deduplicates config hashes across domain versions.
+    // Resolve local sources from the complete owning domain snapshot instead.
+    const domain = configDomains.find(
+      (item) =>
+        item.domain === selectedItem.domain &&
+        item.descriptorHash === selectedItem.domainDescriptorHash,
+    )
+    return domain?.configs.find(
+      (item) => item.skelName === selectedItem.fromSkelName,
+    )?.descriptorHash
+  }, [configDomains, kind, selectedItem])
   const selectedVersionGroup = React.useMemo(
     () =>
       selectedItem
@@ -803,6 +828,7 @@ export function SkeletonPage({ kind }: { kind: SkeletonKind }) {
               item={selectedItem}
               kind={kind}
               typeIndex={typeIndex}
+              configSourceHash={configSourceHash}
               relatedServices={relatedServices}
               relatedWebs={relatedWebs}
               onTypeClick={navigateToTypeDefinition}

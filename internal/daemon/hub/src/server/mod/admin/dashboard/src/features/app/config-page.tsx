@@ -1375,6 +1375,24 @@ export function AppConfigPage({ routeKey }: AppConfigPageProps) {
                     )
                   })()}
                 </p>
+                {selectedDescriptor?.fromSkelName ? (
+                  <p className="mt-2 break-all text-xs text-muted-foreground">
+                    {t('appConfig.from')}{' '}
+                    <a
+                      href={skeletonConfigPath(selectedDescriptor.fromSkelName)}
+                      className="font-mono text-primary underline-offset-2 hover:underline"
+                      onClick={(event) => {
+                        if (shouldUseBrowserNavigation(event)) {
+                          return
+                        }
+                        event.preventDefault()
+                        navigateToConfigDefinition(selectedDescriptor.fromSkelName)
+                      }}
+                    >
+                      {selectedDescriptor.fromSkelName}
+                    </a>
+                  </p>
+                ) : null}
                 {selectedDescriptor?.description ? (
                   <p className="mt-2 min-w-0 truncate text-sm leading-6 text-muted-foreground">
                     {selectedDescriptor.description}

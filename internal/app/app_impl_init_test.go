@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"os"
+	"os/exec"
 	"reflect"
 	"sync"
 	"testing"
@@ -916,4 +918,29 @@ func TestBindClientsProvidesBothLockScopes(t *testing.T) {
 	universal := injector.Get(T[*corelock.UniversalLocker]()).Interface().(*corelock.UniversalLocker)
 	assert.NotNil(t, locker)
 	assert.NotNil(t, universal)
+}
+
+type testAbstractConfig struct{ conf.ConfigModel }
+type testAbstractConfigConsumer struct {
+	Config *testAbstractConfig `inject:""`
+}
+
+func TestRuntimeRejectsAbstractConfigInjection(t *testing.T) {
+	// Registration is process-wide; isolate this fixture from other runtime tests.
+	if os.Getenv("VINE_TEST_ABSTRACT_CONFIG") != "1" {
+		cmd := exec.Command(os.Args[0], "-test.run=^TestRuntimeRejectsAbstractConfigInjection$")
+		cmd.Env = append(os.Environ(), "VINE_TEST_ABSTRACT_CONFIG=1")
+		if output, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("%v: %s", err, output)
+		}
+		return
+	}
+	conf.Register(conf.ConfigSpec{SkelName: "test.AbstractConfig", Abs: true, Type: reflect.TypeFor[*testAbstractConfig](), Lifecycle: conf.LifecycleEternal})
+	app := newTestAppImpl()
+	attachTestLinker(app)
+	app.reader = conf.NewReader(app.linker)
+	assert.PanicsWithError(t, "abstract config test.AbstractConfig cannot be resolved or assigned a value", func() {
+		injector := di.NewInjector(app.bindRuntime, func(b *di.Binder) { b.Bind(reflect.TypeFor[*testAbstractConfigConsumer]()) })
+		injector.Get(reflect.TypeFor[*testAbstractConfigConsumer]())
+	})
 }

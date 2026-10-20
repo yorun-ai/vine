@@ -20,7 +20,9 @@ type Reader = internalconf.Reader
 // ConfigModel can be embedded to implement Config.
 type ConfigModel = internalconf.ConfigModel
 
-// ConfigSpec describes a configuration's registered name, type, and lifecycle.
+// ConfigSpec describes a configuration's registered identity, lifecycle, and
+// optional abstract source. Abs contracts cannot be resolved as application values.
+// Concrete adopters identify their source with FromSkelName and FromType.
 type ConfigSpec = internalconf.ConfigSpec
 
 const (
@@ -35,7 +37,9 @@ func ParseLifecycle(s string) (Lifecycle, bool) {
 	return internalconf.ParseLifecycle(s)
 }
 
-// Register adds spec to the process-wide configuration registry.
+// Register adds spec to the process-wide configuration registry, including abstract
+// contracts. Source relationships are descriptive metadata; Skel validates them
+// during compilation, and Vine does not revalidate them at runtime.
 func Register(spec ConfigSpec) {
 	internalconf.Register(spec)
 }
