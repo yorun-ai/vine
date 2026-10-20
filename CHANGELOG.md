@@ -8,6 +8,50 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-10-21
+
+### Added
+
+- Support Skel abstract configuration contracts and concrete configs that adopt
+  them. Keep abstract/source metadata available while excluding abstract
+  declarations from application config slots and rejecting values for them.
+- Show abstract declarations in Hub Skeleton and source links in App Config and
+  Skeleton details, preserving the selected version for same-domain navigation.
+- Configure per-site WebGW total execution timeouts through `webTimeout`, with
+  a default and ordered path wildcard overrides in Seed, Admin API, and Dashboard.
+  Explicit policies support long downloads; client options can only shorten them.
+- Accept MCP tool-call timeout options through `_meta["vmcp-options"]`, using
+  the existing Rpc timeout format and 30-second default / 120-second maximum.
+
+### Changed
+
+- Forward only the fixed vRPC request contract from Portal RpcGW to backends,
+  preserving admitted actor information, Portal-derived initiator/trace metadata,
+  and remaining timeout. Reject unsupported request content encodings.
+- Log request cancellation as a debug lifecycle event rather than an error.
+- Upgrade Skel to v0.33.0 and vRPC Go to v0.15.1, regenerate built-in contracts,
+  and refresh the embedded Dashboard.
+- Update stable Hub, Link, and Portal Kubernetes images to v0.32.0.
+
+### Fixed
+
+- Preserve applicable response lengths and propagate body-copy failures through
+  Web service, Link, and Portal forwarding so interrupted downloads fail visibly
+  instead of appearing to complete successfully.
+- Align accepted MCP tool execution with Rpc timeout and gateway shutdown policy,
+  preventing client disconnects or SDK cancellation from cancelling business work.
+
+### Upgrade Notes
+
+- Generate abstract/adopted configs with skelc v0.33.0 or later and use Vine
+  v0.32.0 or later. Existing concrete configurations continue to work.
+- Upgrade Hub and Portal together to use `webTimeout`; older Portal versions
+  do not enforce it. Sites without an explicit policy retain their timeout
+  behavior. Regenerate custom Admin clients to access the new Site field.
+- Applications relying on incidental custom-header forwarding through RpcGW
+  must move business identity to actor information and invocation inputs to
+  method parameters. Send RpcGW request bodies without content encoding.
+
 ## [0.31.2] - 2026-10-14
 
 ### Fixed
@@ -1757,7 +1801,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.31.2...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.32.0...HEAD
+[0.32.0]: https://github.com/yorun-ai/vine/compare/v0.31.2...v0.32.0
 [0.31.2]: https://github.com/yorun-ai/vine/compare/v0.31.1...v0.31.2
 [0.31.1]: https://github.com/yorun-ai/vine/compare/v0.31.0...v0.31.1
 [0.31.0]: https://github.com/yorun-ai/vine/compare/v0.30.0...v0.31.0
