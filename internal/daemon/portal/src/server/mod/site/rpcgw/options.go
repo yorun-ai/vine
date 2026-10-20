@@ -17,15 +17,29 @@ const (
 )
 
 func requestWithRpcOptionsTimeout(request *http.Request, gatewayContext context.Context) (*http.Request, context.CancelFunc, error) {
-	header := request.Header.Clone()
+	header, timeout, err := decodeRpcOptionsTimeout(request.Header)
+	if err != nil {
+		return request, nil, err
+	}
+
+	ctx, cancel := gwutil.ContextWithoutClientCancel(request.Context(), gatewayContext, timeout)
+	next := request.Clone(ctx)
+	next.Header = header
+	rpchttp.EncodeOptionsToHeader(next.Header, &rpchttp.Options{Timeout: timeout})
+	return next, cancel, nil
+}
+
+// decodeRpcOptionsTimeout validates the shared external options format and keeps only timeout.
+func decodeRpcOptionsTimeout(source http.Header) (http.Header, time.Duration, error) {
+	header := source.Clone()
 	values := header.Values(rpchttp.HeaderRpcOptions)
 	if len(values) > 1 {
-		return request, nil, fmt.Errorf("invalid request header %s", rpchttp.HeaderRpcOptions)
+		return nil, 0, fmt.Errorf("invalid request header %s", rpchttp.HeaderRpcOptions)
 	}
 	if len(values) == 1 {
 		fields, err := vrpchttp.DecodeFields(values[0])
 		if err != nil {
-			return request, nil, fmt.Errorf("invalid request header %s", rpchttp.HeaderRpcOptions)
+			return nil, 0, fmt.Errorf("invalid request header %s", rpchttp.HeaderRpcOptions)
 		}
 		header.Del(rpchttp.HeaderRpcOptions)
 		if timeout := fields["timeout"]; timeout != "" {
@@ -34,7 +48,7 @@ func requestWithRpcOptionsTimeout(request *http.Request, gatewayContext context.
 	}
 	options, err := rpchttp.DecodeOptionsFromHeader(header)
 	if err != nil {
-		return request, nil, err
+		return nil, 0, err
 	}
 
 	timeout := options.Timeout
@@ -42,12 +56,8 @@ func requestWithRpcOptionsTimeout(request *http.Request, gatewayContext context.
 		timeout = defaultRpcTimeout
 	}
 	if timeout > maxRpcTimeout {
-		return request, nil, fmt.Errorf("invalid request header %s: timeout exceeds %s", rpchttp.HeaderRpcOptions, maxRpcTimeout)
+		return nil, 0, fmt.Errorf("invalid request header %s: timeout exceeds %s", rpchttp.HeaderRpcOptions, maxRpcTimeout)
 	}
 
-	ctx, cancel := gwutil.ContextWithoutClientCancel(request.Context(), gatewayContext, timeout)
-	next := request.Clone(ctx)
-	next.Header = header
-	rpchttp.EncodeOptionsToHeader(next.Header, &rpchttp.Options{Timeout: timeout})
-	return next, cancel, nil
+	return header, timeout, nil
 }

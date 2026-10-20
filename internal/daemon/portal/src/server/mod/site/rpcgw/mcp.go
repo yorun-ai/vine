@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -15,6 +16,7 @@ import (
 	"go.yorun.ai/vine/internal/core/skel/jsonschema"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/gwutil"
 	vrpchttp "go.yorun.ai/vrpc/transport/http"
 )
 
@@ -67,10 +69,8 @@ func (g *RpcGateway) serveMcp(ctx *spec.Context, cors watched.PortalCors) {
 		_ = json.MarshalWrite(w, map[string]any{"jsonrpc": "2.0", "id": nil, "error": failure})
 		return
 	}
-	requestCtx, cancel := context.WithTimeout(r.Context(), defaultRpcTimeout)
+	requestCtx, cancel := gwutil.ContextWithoutClientCancel(r.Context(), g.context, maxRpcTimeout)
 	defer cancel()
-	stop := context.AfterFunc(g.context, cancel)
-	defer stop()
 	next := *ctx
 	next.Request = r.WithContext(requestCtx)
 	// Servers are request-scoped: only the requested catalog or method is
@@ -114,8 +114,20 @@ func (g *RpcGateway) newMcpServer(httpCtx *spec.Context) *mcp.Server {
 	})
 	server.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, request mcp.Request) (mcp.Result, error) {
+			timeout, err := mcpOptionsTimeout(request.GetParams().GetMeta())
+			if err != nil {
+				return nil, &jsonrpc.Error{Code: jsonrpc.CodeInvalidParams, Message: err.Error()}
+			}
+			// Count decoding and admission against the same budget as execution.
+			limit, _ := httpCtx.Request.Context().Deadline()
+			requestCtx, cancel := context.WithDeadline(context.WithoutCancel(ctx), limit.Add(timeout-maxRpcTimeout))
+			defer cancel()
+			stop := context.AfterFunc(httpCtx.Request.Context(), cancel)
+			defer stop()
+			nextHTTP := *httpCtx
+			nextHTTP.Request = httpCtx.Request.WithContext(requestCtx)
 			if method != "tools/list" && method != "tools/call" {
-				return next(ctx, method, request)
+				return next(requestCtx, method, request)
 			}
 			snapshot, services := g.apiSnapshot()
 			if snapshot.Syncing {
@@ -143,11 +155,11 @@ func (g *RpcGateway) newMcpServer(httpCtx *spec.Context) *mcp.Server {
 						InputSchema: input, OutputSchema: output,
 					}
 					server.AddTool(tool, func(ctx context.Context, call *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-						return g.callMcpTool(ctx, httpCtx, service.SkelName, operation.SkelName, tool, call)
+						return g.callMcpTool(ctx, &nextHTTP, service.SkelName, operation.SkelName, tool, call)
 					})
 				}
 			}
-			return next(ctx, method, request)
+			return next(requestCtx, method, request)
 		}
 	})
 	return server
@@ -169,4 +181,21 @@ func mcpToolDescription(service *skeldesc.Service, method *skeldesc.Method) stri
 		parts = append(parts, "Deprecated.", service.DeprecatedReason, method.DeprecatedReason)
 	}
 	return strings.TrimSpace(strings.Join(parts, "\n"))
+}
+
+// mcpOptionsTimeout uses the same wire codec and limits as the vRPC ingress.
+func mcpOptionsTimeout(metadata map[string]any) (time.Duration, error) {
+	header := make(http.Header)
+	if value, present := metadata["vmcp-options"]; present {
+		options, ok := value.(string)
+		if !ok {
+			return 0, fmt.Errorf("invalid vmcp-options: expected a string")
+		}
+		header.Set("vrpc-options", options)
+	}
+	_, timeout, err := decodeRpcOptionsTimeout(header)
+	if err != nil {
+		return 0, fmt.Errorf("invalid vmcp-options: %s", strings.ReplaceAll(err.Error(), "vrpc-options", "vmcp-options"))
+	}
+	return timeout, nil
 }

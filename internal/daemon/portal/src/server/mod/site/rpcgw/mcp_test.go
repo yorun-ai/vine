@@ -31,11 +31,18 @@ func mcpRequest(method string, params any, version string) *http.Request {
 		if params == nil {
 			params = map[string]any{}
 		}
-		params.(map[string]any)["_meta"] = map[string]any{
+		metadata, _ := params.(map[string]any)["_meta"].(map[string]any)
+		if metadata == nil {
+			metadata = map[string]any{}
+		}
+		for key, value := range map[string]any{
 			mcp.MetaKeyProtocolVersion:    version,
 			mcp.MetaKeyClientCapabilities: map[string]any{},
 			mcp.MetaKeyClientInfo:         map[string]string{"name": "Test MCP Client", "version": "dev"},
+		} {
+			metadata[key] = value
 		}
+		params.(map[string]any)["_meta"] = metadata
 	}
 	body := vcode.MustMarshalJsonS(map[string]any{"jsonrpc": "2.0", "id": 1, "method": method, "params": params})
 	r := httptest.NewRequest(http.MethodPost, "http://api.example.com/mcp", strings.NewReader(body))
