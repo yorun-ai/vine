@@ -7,6 +7,8 @@ import (
 	"encoding/json/v2"
 	"io"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -160,7 +162,82 @@ func TestMcpCallAdmissionForwardingAndErrors(t *testing.T) {
 	require.Equal(t, count, calls.Load())
 }
 
-func TestMcpCallCancellationReachesBackend(t *testing.T) {
+func TestMcpCallIgnoresClientCancellation(t *testing.T) {
+	for _, protocol := range []string{"inproc", "http1", "http2"} {
+		t.Run(protocol, func(t *testing.T) {
+			watch := newTestDescriptorWatch(t)
+			entered := make(chan context.Context, 1)
+			release := make(chan struct{})
+			finished := make(chan struct{})
+			mcpBackend(t, watch, "demo.UserService", func(w http.ResponseWriter, r *http.Request) {
+				defer close(finished)
+				entered <- r.Context()
+				select {
+				case <-release:
+				case <-r.Context().Done():
+					return
+				}
+				mcpBackendResult(t, w, nil, nil)
+			})
+			gateway := newInspectGateway(t, watch, mcpConfig("demo.UserService"))
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			r := mcpRequest("tools/call", map[string]any{"name": "demo.UserService.Get"}, mcpProtocolVersion).WithContext(ctx)
+			done := make(chan struct{})
+			var client *http.Client
+			if protocol != "inproc" {
+				server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					gateway.Serve(testContextWithEntryOrigin(w, r, "api.example.com"))
+				}))
+				server.EnableHTTP2 = protocol == "http2"
+				server.StartTLS()
+				defer server.Close()
+				r.URL, _ = url.Parse(server.URL + "/mcp")
+				r.Host = r.URL.Host
+				r.RequestURI = ""
+				client = server.Client()
+			}
+			go func() {
+				defer close(done)
+				if client == nil {
+					mcpServe(gateway, r)
+					return
+				}
+				response, err := client.Do(r)
+				if err == nil {
+					io.Copy(io.Discard, response.Body)
+					response.Body.Close()
+				}
+			}()
+			var backendCtx context.Context
+			select {
+			case backendCtx = <-entered:
+			case <-time.After(2 * time.Second):
+				t.Fatal("backend did not start")
+			}
+			cancel()
+			// A detached business call remains alive after the caller has gone away.
+			select {
+			case <-backendCtx.Done():
+				t.Fatalf("backend cancelled by client: %v", backendCtx.Err())
+			case <-time.After(50 * time.Millisecond):
+			}
+			close(release)
+			select {
+			case <-finished:
+			case <-time.After(time.Second):
+				t.Fatal("backend did not finish")
+			}
+			select {
+			case <-done:
+			case <-time.After(time.Second):
+				t.Fatal("MCP request did not finish")
+			}
+		})
+	}
+}
+
+func TestMcpCallGatewayShutdownReachesBackend(t *testing.T) {
 	watch := newTestDescriptorWatch(t)
 	entered, cancelled := make(chan struct{}), make(chan struct{})
 	mcpBackend(t, watch, "demo.UserService", func(w http.ResponseWriter, r *http.Request) {
@@ -169,9 +246,7 @@ func TestMcpCallCancellationReachesBackend(t *testing.T) {
 		close(cancelled)
 	})
 	gateway := newInspectGateway(t, watch, mcpConfig("demo.UserService"))
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-	r := mcpRequest("tools/call", map[string]any{"name": "demo.UserService.Get"}, mcpProtocolVersion).WithContext(ctx)
+	r := mcpRequest("tools/call", map[string]any{"name": "demo.UserService.Get"}, mcpProtocolVersion)
 	done := make(chan struct{})
 	go func() { mcpServe(gateway, r); close(done) }()
 	select {
@@ -179,7 +254,7 @@ func TestMcpCallCancellationReachesBackend(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("backend did not start")
 	}
-	cancel()
+	gateway.cancel()
 	select {
 	case <-cancelled:
 	case <-time.After(time.Second):
@@ -190,6 +265,24 @@ func TestMcpCallCancellationReachesBackend(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("MCP request did not finish")
 	}
+}
+
+func TestMcpToolIgnoresSDKCancellation(t *testing.T) {
+	watch := newTestDescriptorWatch(t)
+	mcpBackend(t, watch, "demo.UserService", func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, r.Context().Err())
+		mcpBackendResult(t, w, map[string]any{}, nil)
+	})
+	gateway := newInspectGateway(t, watch, mcpConfig("demo.UserService"))
+	sdkCtx, cancel := context.WithCancel(t.Context())
+	cancel()
+	request := mcpRequest("tools/call", nil, mcpProtocolVersion)
+	rpchttp.EncodeTraceToHeader(request.Header, meta.InitialTrace())
+	result, err := gateway.callMcpTool(sdkCtx, testContext(httptest.NewRecorder(), request), "demo.UserService", "Get",
+		&mcp.Tool{InputSchema: map[string]any{"type": "object"}, OutputSchema: map[string]any{"type": "object"}},
+		&mcp.CallToolRequest{Params: &mcp.CallToolParamsRaw{Arguments: []byte("{}")}})
+	require.NoError(t, err)
+	require.False(t, result.IsError, result.Content)
 }
 
 func TestMcpStructuredResultsPreserveTypesAndValidate(t *testing.T) {
@@ -242,5 +335,126 @@ func TestMcpStructuredResultsPreserveTypesAndValidate(t *testing.T) {
 			mcpResult(t, mcpServe(gateway, mcpRequest("tools/call", map[string]any{"name": "demo.UserService.GetV2"}, "2026-07-28")), &result)
 			require.True(t, result.IsError)
 		})
+	}
+}
+
+func TestMcpCallIgnoresCallerDeadline(t *testing.T) {
+	watch := newTestDescriptorWatch(t)
+	mcpBackend(t, watch, "demo.UserService", func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, r.Context().Err())
+		deadline, ok := r.Context().Deadline()
+		require.True(t, ok)
+		require.Greater(t, time.Until(deadline), defaultRpcTimeout-time.Second)
+		mcpBackendResult(t, w, nil, nil)
+	})
+	gateway := newInspectGateway(t, watch, mcpConfig("demo.UserService"))
+	ctx, cancel := context.WithDeadline(t.Context(), time.Now().Add(-time.Second))
+	defer cancel()
+	request := mcpRequest("tools/call", map[string]any{"name": "demo.UserService.Get"}, mcpProtocolVersion).WithContext(ctx)
+	var result mcp.CallToolResult
+	mcpResult(t, mcpServe(gateway, request), &result)
+	require.False(t, result.IsError, result.Content)
+}
+
+func TestMcpToolServerDeadlineReachesBackend(t *testing.T) {
+	watch := newTestDescriptorWatch(t)
+	cancelled := make(chan struct{})
+	mcpBackend(t, watch, "demo.UserService", func(w http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
+		close(cancelled)
+	})
+	gateway := newInspectGateway(t, watch, mcpConfig("demo.UserService"))
+	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+	defer cancel()
+	request := mcpRequest("tools/call", nil, mcpProtocolVersion).WithContext(ctx)
+	rpchttp.EncodeTraceToHeader(request.Header, meta.InitialTrace())
+	result, err := gateway.callMcpTool(t.Context(), testContext(httptest.NewRecorder(), request), "demo.UserService", "Get",
+		&mcp.Tool{InputSchema: map[string]any{"type": "object"}, OutputSchema: map[string]any{"type": "object"}},
+		&mcp.CallToolRequest{Params: &mcp.CallToolParamsRaw{Arguments: []byte("{}")}})
+	require.NoError(t, err)
+	require.True(t, result.IsError)
+	select {
+	case <-cancelled:
+	case <-time.After(time.Second):
+		t.Fatal("server deadline did not cancel backend")
+	}
+}
+
+func TestMcpOptionsReachBackend(t *testing.T) {
+	watch := newTestDescriptorWatch(t)
+	var calls atomic.Int32
+	var expected time.Duration
+	mcpBackend(t, watch, "demo.UserService", func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		deadline, ok := r.Context().Deadline()
+		require.True(t, ok)
+		require.InDelta(t, expected.Seconds(), time.Until(deadline).Seconds(), 2)
+		mcpBackendResult(t, w, nil, nil)
+	})
+	gateway := newInspectGateway(t, watch, mcpConfig("demo.UserService"))
+	for _, test := range []struct {
+		name  string
+		value any
+		want  time.Duration
+	}{
+		{"default", nil, 30 * time.Second},
+		{"extended", "timeout=60s", 60 * time.Second},
+		{"maximum", "timeout=120s", 120 * time.Second},
+		{"shorter", "timeout=5s", 5 * time.Second},
+		{"unknown ignored", "timeout=60s,destination=private.app,future=value", 60 * time.Second},
+		{"too long", "timeout=121s", 0},
+		{"zero", "timeout=0s", 0},
+		{"negative", "timeout=-1s", 0},
+		{"malformed", "timeout=no", 0},
+		{"duplicate", "timeout=10s,timeout=20s", 0},
+		{"empty", "", 0},
+		{"wrong type", map[string]any{"timeout": "60s"}, 0},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			expected = test.want
+			metadata := map[string]any{}
+			if test.value != nil {
+				metadata["vmcp-options"] = test.value
+			}
+			before := calls.Load()
+			response := mcpServe(gateway, mcpRequest("tools/call", map[string]any{"name": "demo.UserService.Get", "_meta": metadata}, mcpProtocolVersion))
+			if test.want == 0 {
+				var wire struct {
+					Error struct {
+						Code int `json:"code"`
+					} `json:"error"`
+				}
+				require.NoError(t, json.Unmarshal(response.Body.Bytes(), &wire))
+				require.Equal(t, -32602, wire.Error.Code)
+				require.Equal(t, before, calls.Load())
+			} else {
+				var result mcp.CallToolResult
+				mcpResult(t, response, &result)
+				require.False(t, result.IsError, result.Content)
+				require.Equal(t, before+1, calls.Load())
+			}
+		})
+	}
+}
+
+func TestMcpOptionsTimeoutCancelsBackend(t *testing.T) {
+	watch := newTestDescriptorWatch(t)
+	cancelled := make(chan struct{})
+	mcpBackend(t, watch, "demo.UserService", func(w http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
+		close(cancelled)
+	})
+	gateway := newInspectGateway(t, watch, mcpConfig("demo.UserService"))
+	response := mcpServe(gateway, mcpRequest("tools/call", map[string]any{
+		"name":  "demo.UserService.Get",
+		"_meta": map[string]any{"vmcp-options": "timeout=100ms"},
+	}, mcpProtocolVersion))
+	var result mcp.CallToolResult
+	mcpResult(t, response, &result)
+	require.True(t, result.IsError)
+	select {
+	case <-cancelled:
+	case <-time.After(time.Second):
+		t.Fatal("vmcp-options timeout did not cancel backend")
 	}
 }

@@ -3,6 +3,7 @@ package webgw
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/klauspost/compress/zstd"
+	"github.com/stretchr/testify/require"
 	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -22,6 +24,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/computil"
+	"go.yorun.ai/vine/internal/daemon/webtimeout"
 	"go.yorun.ai/vine/internal/utilfortest/watchtest"
 	"go.yorun.ai/vine/util/vcode"
 )
@@ -170,7 +173,7 @@ func TestWebGatewayDoesNotAddDefaultTimeoutToUpgrade(t *testing.T) {
 		request.Header.Set("Connection", "Upgrade")
 		request.Header.Set("Upgrade", "websocket")
 
-		forwardRequest, cancel, err := requestWithWebOptionsTimeout(request, gatewayContext)
+		forwardRequest, cancel, err := requestWithWebOptionsTimeout(request, gatewayContext, 0)
 		if err != nil {
 			t.Fatalf("requestWithWebOptionsTimeout() error = %v", err)
 		}
@@ -193,7 +196,7 @@ func TestWebGatewayDoesNotAddDefaultTimeoutToUpgrade(t *testing.T) {
 		request = httptest.NewRequest(http.MethodGet, "http://demo.local/hmr", nil)
 		request.Header.Set("Connection", "Upgrade")
 		request.Header.Set("Upgrade", "websocket")
-		forwardRequest, cancel, err = requestWithWebOptionsTimeout(request, gatewayContext)
+		forwardRequest, cancel, err = requestWithWebOptionsTimeout(request, gatewayContext, 0)
 		if err != nil {
 			t.Fatalf("requestWithWebOptionsTimeout() error = %v", err)
 		}
@@ -210,7 +213,7 @@ func TestWebGatewayDoesNotAddDefaultTimeoutToEventStream(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/events", nil)
 	request.Header.Set("Accept", "text/event-stream")
 
-	forwardRequest, cancel, err := requestWithWebOptionsTimeout(request, context.Background())
+	forwardRequest, cancel, err := requestWithWebOptionsTimeout(request, context.Background(), 0)
 	if err != nil {
 		t.Fatalf("requestWithWebOptionsTimeout() error = %v", err)
 	}
@@ -650,4 +653,71 @@ func mustDecodeWebTrace(t *testing.T, value string) meta.Trace {
 		t.Fatalf("DecodeTraceFromHeader() error = %v", err)
 	}
 	return trace
+}
+
+func TestWebTimeoutPolicyHotUpdate(t *testing.T) {
+	for _, http2 := range []bool{false, true} {
+		t.Run(fmt.Sprintf("http2=%v", http2), func(t *testing.T) {
+			started := make(chan struct{})
+			release := make(chan struct{})
+			endpoint := "link+inproc://vine/web-timeout-" + meta.NewId()
+			ingressinproc.Register(endpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if strings.Contains(r.URL.Path, "hold") {
+					close(started)
+					<-release
+				}
+				encodeWebOptionsToHeader(r)
+				w.Header().Set("X-Remaining", r.Header.Get(webspec.HeaderWebOptions))
+				_, _ = w.Write([]byte("ok"))
+			}))
+			t.Cleanup(func() { ingressinproc.Unregister(endpoint) })
+			target := newTestWebGateway(t, map[string]string{
+				watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{Endpoint: endpoint + "/web/proxy/in/instance-1/admin@demo.app", WebSkelName: "admin@demo.app", AppName: "demo.app", AppInstanceId: "instance-1"}),
+			})
+			t.Cleanup(target.Stop)
+			config := watched.PortalSite{Name: "demo-web", Type: "WEBGW", ActorSkelName: "demo.ClientActor", WebgwConfig: &watched.PortalWebgwConfig{WebName: "admin@demo.app"}, WebTimeout: &webtimeout.Config{Paths: []webtimeout.Path{{Path: "/go/**", Total: "15m"}}}}
+			require.True(t, target.Update(config))
+			server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { target.Serve(testContext(w, r)) }))
+			server.EnableHTTP2 = http2
+			server.StartTLS()
+			t.Cleanup(server.Close)
+			result := make(chan *http.Response, 1)
+			failures := make(chan error, 1)
+			go func() {
+				response, err := server.Client().Get(server.URL + "/go/hold?path=/other")
+				if err != nil {
+					failures <- err
+					return
+				}
+				result <- response
+			}()
+			select {
+			case <-started:
+			case err := <-failures:
+				t.Fatal(err)
+			case <-time.After(3 * time.Second):
+				t.Fatal("backend did not start")
+			}
+			config.WebTimeout = &webtimeout.Config{Default: &webtimeout.Policy{Total: "5s"}}
+			require.True(t, target.Update(config))
+			close(release)
+			response := <-result
+			defer response.Body.Close()
+			require.Equal(t, http.StatusOK, response.StatusCode)
+			require.Equal(t, map[bool]int{false: 1, true: 2}[http2], response.ProtoMajor)
+			options := mustDecodeWebOptions(t, response.Header.Get("X-Remaining"))
+			require.Greater(t, options.Timeout, 14*time.Minute)
+			for _, test := range []struct {
+				path string
+				want time.Duration
+			}{{"/go/new", 5 * time.Second}, {"/other", 5 * time.Second}} {
+				response, err := server.Client().Get(server.URL + test.path)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				options := mustDecodeWebOptions(t, response.Header.Get("X-Remaining"))
+				require.InDelta(t, test.want.Seconds(), options.Timeout.Seconds(), 1)
+				_ = response.Body.Close()
+			}
+		})
+	}
 }

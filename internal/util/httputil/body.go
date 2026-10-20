@@ -3,46 +3,80 @@ package httputil
 import (
 	"bytes"
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 )
 
-func CopyResponseBody(w http.ResponseWriter, response *http.Response) {
-	if IsEventStreamResponse(response) {
-		copyStreamBody(w, response.Body)
-		return
+// CopyResponseBody returns transfer failures instead of treating a partial body as EOF.
+func CopyResponseBody(w http.ResponseWriter, response *http.Response) (int64, error) {
+	if response.Request != nil && response.Request.Method == http.MethodHead || response.StatusCode == http.StatusNoContent || response.StatusCode == http.StatusNotModified || response.StatusCode < 200 {
+		return 0, nil
 	}
-	copyPlainBody(w, response.Body)
+	var n int64
+	var err error
+	if IsEventStreamResponse(response) {
+		n, err = copyStreamBody(w, response.Body)
+	} else {
+		n, err = io.Copy(w, response.Body)
+	}
+	if err == nil {
+		if length, known := ResponseBodyLength(response); known && n != length {
+			err = fmt.Errorf("response length mismatch: %w", io.ErrUnexpectedEOF)
+		}
+	}
+	return n, err
 }
 
-func copyPlainBody(w http.ResponseWriter, body io.ReadCloser) {
-	_, _ = io.Copy(w, body)
+// ResponseBodyLength reports the declared length, including in-process responses.
+func ResponseBodyLength(response *http.Response) (int64, bool) {
+	if value := response.Header.Get("Content-Length"); value != "" {
+		length, err := strconv.ParseInt(value, 10, 64)
+		return length, err == nil && length >= 0
+	}
+	return response.ContentLength, response.ContentLength > 0
 }
 
 func ReadResponseBody(response *http.Response) ([]byte, error) {
 	body, err := io.ReadAll(response.Body)
 	_ = response.Body.Close()
 	if err != nil {
-		return nil, err
+		return body, err
+	}
+	if length, known := ResponseBodyLength(response); known && int64(len(body)) != length {
+		return body, io.ErrUnexpectedEOF
 	}
 	response.Body = io.NopCloser(bytes.NewReader(body))
 	return body, nil
 }
 
-func copyStreamBody(w http.ResponseWriter, body io.ReadCloser) {
-	flusher, _ := w.(http.Flusher)
+func copyStreamBody(w http.ResponseWriter, body io.ReadCloser) (int64, error) {
+	controller := http.NewResponseController(w)
 	buffer := make([]byte, 32*1024)
+	var transferred int64
 	for {
-		n, err := readStreamBody(body, buffer, DefaultStreamIdleTimeout)
+		n, readErr := readStreamBody(body, buffer, DefaultStreamIdleTimeout)
 		if n > 0 {
-			_, _ = w.Write(buffer[:n])
-			if flusher != nil {
-				flusher.Flush()
+			written, err := w.Write(buffer[:n])
+			transferred += int64(written)
+			if err != nil {
+				return transferred, err
+			}
+			if written != n {
+				return transferred, io.ErrShortWrite
+			}
+			if err := controller.Flush(); err != nil && !errors.Is(err, http.ErrNotSupported) {
+				return transferred, err
 			}
 		}
-		if err != nil {
-			return
+		if readErr != nil {
+			if readErr == io.EOF {
+				readErr = nil
+			}
+			return transferred, readErr
 		}
 	}
 }

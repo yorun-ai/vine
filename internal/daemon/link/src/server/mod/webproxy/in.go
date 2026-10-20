@@ -1,10 +1,13 @@
 package webproxy
 
 import (
+	"context"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 
+	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	webinproc "go.yorun.ai/vine/internal/core/web/inproc"
 	"go.yorun.ai/vine/internal/util/httputil"
@@ -82,14 +85,26 @@ func (p *WebProxy) forwardInboundInproc(w http.ResponseWriter, r *http.Request, 
 
 	resp, err := webinproc.RoundTrip(targetEndpoint, req)
 	if err != nil {
-		http.Error(w, "proxy request failed", http.StatusServiceUnavailable)
+		status := http.StatusServiceUnavailable
+		if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
+			status = http.StatusBadGateway
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			status = http.StatusGatewayTimeout
+		}
+		http.Error(w, "proxy request failed", status)
 		return
 	}
 
 	defer resp.Body.Close()
 	httputil.CopyHeader(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
-	httputil.CopyResponseBody(w, resp)
+	resp.Request = r
+	if transferred, err := httputil.CopyResponseBody(w, resp); err != nil {
+		expected, known := httputil.ResponseBodyLength(resp)
+		logger.Error("web response transfer failed", "phase", "body", "error", err, "expectedLength", expected, "lengthKnown", known, "transferredBytes", transferred)
+		panic(http.ErrAbortHandler)
+	}
 }
 
 func (p *WebProxy) forwardInbound(w http.ResponseWriter, r *http.Request, targetURL string) {
@@ -111,12 +126,24 @@ func (p *WebProxy) forwardInbound(w http.ResponseWriter, r *http.Request, target
 
 	resp, err := p.transport.RoundTrip(targetReq)
 	if err != nil {
-		http.Error(w, "proxy request failed", http.StatusServiceUnavailable)
+		status := http.StatusServiceUnavailable
+		if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
+			status = http.StatusBadGateway
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			status = http.StatusGatewayTimeout
+		}
+		http.Error(w, "proxy request failed", status)
 		return
 	}
 
 	defer resp.Body.Close()
 	httputil.CopyHeader(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
-	httputil.CopyResponseBody(w, resp)
+	resp.Request = r
+	if transferred, err := httputil.CopyResponseBody(w, resp); err != nil {
+		expected, known := httputil.ResponseBodyLength(resp)
+		logger.Error("web response transfer failed", "phase", "body", "error", err, "expectedLength", expected, "lengthKnown", known, "transferredBytes", transferred)
+		panic(http.ErrAbortHandler)
+	}
 }

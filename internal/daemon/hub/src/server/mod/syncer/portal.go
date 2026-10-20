@@ -239,6 +239,7 @@ func toWatchedPortalSite(site *core.PortalSite) *watched.PortalSite {
 		Name:          site.Name,
 		Type:          string(site.Type),
 		ActorSkelName: site.ActorSkelName,
+		WebTimeout:    site.WebTimeout,
 		Cors: watched.PortalCors{
 			Mode:           watched.PortalCorsMode(site.Cors.Mode),
 			AllowedOrigins: append([]string{}, site.Cors.AllowedOrigins...),

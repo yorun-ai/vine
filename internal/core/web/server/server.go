@@ -204,8 +204,7 @@ func (s *Server) ginRecovery() gin.HandlerFunc {
 					return
 				}
 				if isAbortHandlerPanic(recovered) {
-					ginCtx.Abort()
-					return
+					panic(http.ErrAbortHandler)
 				}
 				logger.Error("web request panic recovered", "panic", recovered, "stack", string(debug.Stack()))
 				ginCtx.AbortWithStatus(http.StatusInternalServerError)

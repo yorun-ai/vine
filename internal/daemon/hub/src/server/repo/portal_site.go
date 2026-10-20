@@ -5,6 +5,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
+	"go.yorun.ai/vine/internal/daemon/webtimeout"
 	"go.yorun.ai/vine/util/vcode"
 )
 
@@ -76,6 +77,7 @@ func (s *PortalSiteRepo) toCorePortalSite(row *model.PortalSite, descriptors _Po
 		InspectEnabled: row.InspectEnabled,
 		McpEnabled:     row.McpEnabled,
 		Cors:           cors,
+		WebTimeout:     decodeWebTimeout(row.WebTimeout),
 		WebName:        row.WebName,
 		Enabled:        row.Enabled,
 	}
@@ -125,6 +127,7 @@ func toModelPortalSite(entry *core.PortalSite) *model.PortalSite {
 		CorsMode:       string(entry.Cors.Mode),
 		CorsOrigins:    vcode.MustMarshalJsonS(entry.Cors.AllowedOrigins),
 		WebName:        entry.WebName,
+		WebTimeout:     vcode.MustMarshalJsonS(entry.WebTimeout),
 		Enabled:        entry.Enabled,
 	}
 }
@@ -138,4 +141,11 @@ func decodePortalCorsOrigins(value string) []string {
 		return []string{}
 	}
 	return origins
+}
+
+func decodeWebTimeout(value string) *webtimeout.Config {
+	if value == "" || value == "null" {
+		return nil
+	}
+	return vcode.MustUnmarshalJsonS[*webtimeout.Config](value)
 }

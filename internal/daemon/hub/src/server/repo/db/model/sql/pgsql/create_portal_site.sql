@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS portal_site (
     mcp_enabled BOOLEAN NOT NULL DEFAULT FALSE, -- MCP tools over HTTP
     cors_mode TEXT NOT NULL DEFAULT 'SAME_DOMAIN', -- CORS mode
     cors_origins TEXT NOT NULL DEFAULT '[]',-- CORS allowed origins JSON
+    web_timeout TEXT NOT NULL DEFAULT 'null', -- WebGW timeout policy JSON
     web_name TEXT NOT NULL,                 -- Web skel name
     enabled BOOLEAN NOT NULL DEFAULT TRUE -- Whether Hub publishes this site
 );

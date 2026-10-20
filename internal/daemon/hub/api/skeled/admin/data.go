@@ -561,6 +561,8 @@ type PortalSite struct {
 	RpcgwServices []string `json:"rpcgwServices"`
 	// Cors CORS configuration
 	Cors *PortalCors `json:"cors"`
+	// WebTimeout WebGW total timeout policy
+	WebTimeout *PortalWebTimeout `json:"webTimeout"`
 	// WebName Web name
 	WebName string `json:"webName"`
 	// WebMountPath Web mount path; empty means the Web is not limited to a path
@@ -593,6 +595,8 @@ type PortalSiteCreation struct {
 	McpEnabled bool `json:"mcpEnabled"`
 	// Cors CORS configuration
 	Cors *PortalCors `json:"cors"`
+	// WebTimeout WebGW total timeout policy
+	WebTimeout *PortalWebTimeout `json:"webTimeout"`
 	// WebName Web name
 	WebName string `json:"webName"`
 	// Enabled Whether Hub publishes this site to Portal
@@ -617,6 +621,8 @@ type PortalSiteListItem struct {
 	RpcgwServices []string `json:"rpcgwServices"`
 	// Cors CORS configuration
 	Cors *PortalCors `json:"cors"`
+	// WebTimeout WebGW total timeout policy
+	WebTimeout *PortalWebTimeout `json:"webTimeout"`
 	// WebName Web name
 	WebName string `json:"webName"`
 	// WebMountPath Web mount path; empty means the Web is not limited to a path
@@ -659,6 +665,8 @@ type PortalSiteUpdate struct {
 	McpEnabled *bool `json:"mcpEnabled"`
 	// Cors CORS configuration
 	Cors *PortalCors `json:"cors"`
+	// WebTimeout WebGW total timeout policy
+	WebTimeout *PortalWebTimeout `json:"webTimeout"`
 	// WebName Web name
 	WebName *string `json:"webName"`
 	// Enabled Whether Hub publishes this site to Portal
@@ -681,6 +689,23 @@ type PortalStatusView struct {
 	InstanceId string `json:"instanceId"`
 	// Version Portal version
 	Version string `json:"version"`
+}
+
+// PortalWebTimeout WebGW timeout policy; empty clears it, omission on update preserves it
+type PortalWebTimeout struct {
+	Default *PortalWebTimeoutPolicy `json:"default"`
+	Paths   []PortalWebTimeoutPath  `json:"paths"`
+}
+
+// PortalWebTimeoutPath Ordered Web path timeout override
+type PortalWebTimeoutPath struct {
+	Path  string `json:"path"`
+	Total string `json:"total"`
+}
+
+// PortalWebTimeoutPolicy Web request total timeout
+type PortalWebTimeoutPolicy struct {
+	Total string `json:"total"`
 }
 
 // ServiceDebugActorItem Service Debug Actor options

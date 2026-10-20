@@ -125,7 +125,9 @@ MCP 与 Inspect 共用按站点 Actor 筛选的 API 目录，直接读取 `desc`
 提供相同的 JSON。
 
 调用复用 Rpc 准入和转发，仅复制调用方的 Authorization；Portal 生成后端 client、
-trace 和 initiator，准入逻辑生成 actor，并在业务转发前删除凭据。MCP 保留 HTTP
-取消信号，限制 30 秒；原有 `/invoke` 的断连策略不变。API 错误转换为 `isError`
+trace 和 initiator，准入逻辑生成 actor，并在业务转发前删除凭据。MCP 与原有 `/invoke` 使用相同的断连策略：请求受理后，业务执行屏蔽 HTTP 和
+SDK 取消，由服务端总时限和 Portal 停止控制。`params._meta["vmcp-options"]`
+使用与 `vrpc-options` 相同的字符串格式（例如 `timeout=60s`），默认 30 秒，
+最多 120 秒。非法选项在准入前返回 JSON-RPC Invalid Params，未知选项忽略。API 错误转换为 `isError`
 工具结果，目录及协议错误使用 JSON-RPC error。所有 MCP 请求和预检均校验 Origin，
 响应禁止缓存。该入口使用 Vine 凭据，不提供 OAuth 发现或授权服务器。

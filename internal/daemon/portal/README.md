@@ -158,8 +158,12 @@ the same JSON in text `content`.
 Calls reuse Rpc admission and forwarding. Only Authorization is copied from the
 MCP request; Portal supplies backend client, trace and initiator metadata, and
 admission supplies the actor. Credentials are stripped before business-service
-forwarding. MCP requests retain HTTP cancellation and have a 30-second limit;
-legacy `/invoke` keeps its existing disconnect policy. API failures are tool
+forwarding. MCP requests share the legacy `/invoke` disconnect policy: accepted business
+execution ignores HTTP and SDK cancellation, while the server-controlled
+timeout and Portal shutdown still cancel it. `params._meta["vmcp-options"]` uses
+the same options string as `vrpc-options` (for example, `timeout=60s`): the default
+is 30 seconds and the maximum is 120 seconds. Invalid options return JSON-RPC
+Invalid Params before admission; unknown options are ignored. API failures are tool
 results with `isError`; catalog/protocol failures are JSON-RPC errors.
 Origin validation applies before handling MCP requests or preflight. Responses
 are non-cacheable. This endpoint uses Vine credentials, not an OAuth discovery

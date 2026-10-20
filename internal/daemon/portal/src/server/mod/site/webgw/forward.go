@@ -3,8 +3,10 @@ package webgw
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 
+	"go.yorun.ai/vine/internal/core/logger"
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
@@ -31,6 +33,9 @@ func (g *WebGateway) forward(ctx *spec.Context, request *http.Request, registrat
 	response, err := gwutil.ForwardRequestWithTransport(request, endpoint, transport)
 	if err != nil {
 		statusCode := http.StatusServiceUnavailable
+		if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
+			statusCode = http.StatusBadGateway
+		}
 		if errors.Is(err, context.DeadlineExceeded) {
 			statusCode = http.StatusGatewayTimeout
 		}
@@ -45,16 +50,30 @@ func (g *WebGateway) forward(ctx *spec.Context, request *http.Request, registrat
 	}
 
 	httputil.CopyHeader(ctx.ResponseWriter.Header(), response.Header)
-	httputil.ClearBodyHeaders(ctx.ResponseWriter.Header())
+	// These statuses carry no body; do not advertise a transfer length to HTTP/2.
+	if response.StatusCode == http.StatusNotModified || response.StatusCode == http.StatusNoContent {
+		httputil.ClearBodyHeaders(ctx.ResponseWriter.Header())
+	}
 	ctx.ResponseWriter.Header().Set(spec.HeaderPortalTraceId, traceId)
 	ctx.ResponseWriter.WriteHeader(response.StatusCode)
-	httputil.CopyResponseBody(ctx.ResponseWriter, response)
+	response.Request = request
+	if transferred, err := httputil.CopyResponseBody(ctx.ResponseWriter, response); err != nil {
+		expected, known := httputil.ResponseBodyLength(response)
+		logger.Error("web response transfer failed", "phase", "body", "error", err, "expectedLength", expected, "lengthKnown", known, "transferredBytes", transferred)
+		panic(http.ErrAbortHandler)
+	}
 }
 
 func (g *WebGateway) writeCompressedResponse(ctx *spec.Context, response *http.Response, traceId string) {
 	body, err := httputil.ReadResponseBody(response)
 	if err != nil {
-		http.Error(ctx.ResponseWriter, "webgw response body cannot be read: "+err.Error(), http.StatusServiceUnavailable)
+		expected, known := httputil.ResponseBodyLength(response)
+		logger.Error("web response transfer failed", "phase", "read", "error", err, "expectedLength", expected, "lengthKnown", known, "transferredBytes", len(body))
+		status := http.StatusBadGateway
+		if errors.Is(err, context.DeadlineExceeded) {
+			status = http.StatusGatewayTimeout
+		}
+		http.Error(ctx.ResponseWriter, "webgw response body cannot be read", status)
 		return
 	}
 
@@ -67,7 +86,10 @@ func (g *WebGateway) writeCompressedResponse(ctx *spec.Context, response *http.R
 		ctx.ResponseWriter.Header().Add("Vary", "Accept-Encoding")
 	}
 	ctx.ResponseWriter.WriteHeader(response.StatusCode)
-	_, _ = ctx.ResponseWriter.Write(body)
+	if n, err := ctx.ResponseWriter.Write(body); err != nil || n != len(body) {
+		logger.Error("web response transfer failed", "phase", "write", "expectedLength", len(body), "transferredBytes", n)
+		panic(http.ErrAbortHandler)
+	}
 }
 
 func encodeWebForwardTrace(header http.Header) {

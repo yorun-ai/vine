@@ -125,6 +125,8 @@ interface PortalSiteFormValue {
   corsAllowedOrigins: string
   rpcgwServices: string
   webName: string
+  webTimeoutTotal: string
+  webTimeoutPaths: string
 }
 
 type PortalSiteFormErrors = Partial<Record<keyof PortalSiteFormValue, string>>
@@ -139,6 +141,8 @@ const emptyFormValue: PortalSiteFormValue = {
   corsAllowedOrigins: '',
   rpcgwServices: '',
   webName: '',
+  webTimeoutTotal: '',
+  webTimeoutPaths: '',
   enabled: true,
 }
 
@@ -213,6 +217,8 @@ function portalSiteToFormValue(entry: PortalSiteListItem): PortalSiteFormValue {
     corsAllowedOrigins: (cors?.allowedOrigins ?? []).join('\n'),
     rpcgwServices: rpcgwServices.join('\n'),
     webName: entry.webName,
+    webTimeoutTotal: entry.webTimeout?.default?.total ?? '',
+    webTimeoutPaths: (entry.webTimeout?.paths ?? []).map((rule) => `${rule.path} ${rule.total}`).join('\n'),
     enabled: entry.enabled,
   }
 }
@@ -259,6 +265,11 @@ function formValueToCreation(value: PortalSiteFormValue): PortalSiteCreation {
           ? splitLines(value.corsAllowedOrigins)
           : [],
     },
+    webTimeout: {
+      default: value.type === 'WEBGW' && value.webTimeoutTotal.trim()
+        ? { total: value.webTimeoutTotal.trim() } : null,
+      paths: value.type === 'WEBGW' ? parseWebTimeoutPaths(value.webTimeoutPaths) : [],
+    },
     webName: value.type === 'WEBGW' ? value.webName.trim() : '',
     enabled: value.enabled,
   }
@@ -274,6 +285,7 @@ function formValueToUpdate(value: PortalSiteFormValue): PortalSiteUpdate {
     inspectEnabled: creation.inspectEnabled,
     mcpEnabled: creation.mcpEnabled,
     cors: creation.cors,
+    webTimeout: creation.webTimeout,
     webName: creation.webName,
     enabled: value.enabled,
   }
@@ -304,6 +316,18 @@ function validateFormValue(
     errors.webName = t('portalSite.webRequired')
   }
 
+  if (value.type === 'WEBGW') {
+    if (value.webTimeoutTotal.trim() && !validTimeoutDuration(value.webTimeoutTotal.trim())) {
+      errors.webTimeoutTotal = t('portalSite.webTimeoutInvalidDuration')
+    }
+    const lines = value.webTimeoutPaths.split('\n').map((line) => line.trim()).filter(Boolean)
+    if (lines.some((line) => {
+      const parts = line.split(/\s+/)
+      return parts.length !== 2 || !parts[0].startsWith('/') || !validTimeoutDuration(parts[1])
+    })) {
+      errors.webTimeoutPaths = t('portalSite.webTimeoutInvalidPaths')
+    }
+  }
   return errors
 }
 
@@ -351,6 +375,36 @@ function Field({
       {error ? <div className="text-xs text-destructive">{error}</div> : null}
     </div>
   )
+}
+
+function validTimeoutDuration(value: string) {
+  return /^\+?(?:(?:\d+(?:\.\d*)?|\.\d+)(?:ns|us|µs|μs|ms|s|m|h))+$/.test(value) && /[1-9]/.test(value)
+}
+
+function parseWebTimeoutPaths(value: string) {
+  return value.split('\n').map((line) => line.trim()).filter(Boolean).map((line) => {
+    const [path, total] = line.split(/\s+/)
+    return { path, total }
+  })
+}
+
+function WebTimeoutFields({ formValue, fieldErrors, setField }: {
+  formValue: PortalSiteFormValue
+  fieldErrors: PortalSiteFormErrors
+  setField: (field: keyof PortalSiteFormValue, value: string) => void
+}) {
+  const { t } = useLocale()
+  if (formValue.type !== 'WEBGW') return null
+  return <div className="grid gap-4 border-t pt-4">
+    <Field label={t('portalSite.webTimeoutTotal')} error={fieldErrors.webTimeoutTotal}>
+      <Input value={formValue.webTimeoutTotal} placeholder="30s" onChange={(event) => setField('webTimeoutTotal', event.target.value)} />
+      <p className="text-xs text-muted-foreground">{t('portalSite.webTimeoutDescription')}</p>
+    </Field>
+    <Field label={t('portalSite.webTimeoutPaths')} error={fieldErrors.webTimeoutPaths}>
+      <Textarea className="min-h-24 font-mono text-xs" value={formValue.webTimeoutPaths} placeholder={'/go/** 15m\n/npm/** 15m'} onChange={(event) => setField('webTimeoutPaths', event.target.value)} />
+      <p className="text-xs text-muted-foreground">{t('portalSite.webTimeoutPathsDescription')}</p>
+    </Field>
+  </div>
 }
 
 function PortalCorsFields({
@@ -777,7 +831,9 @@ function PortalSiteDialog({
             </Field>
           )}
 
-          <PortalCorsFields
+          <WebTimeoutFields formValue={formValue} fieldErrors={fieldErrors} setField={setField} />
+
+      <PortalCorsFields
             formValue={formValue}
             fieldErrors={fieldErrors}
             setField={setField}
@@ -1228,6 +1284,8 @@ function PortalSiteInlineEditor({
           </Select>
         </Field>
       )}
+
+      <WebTimeoutFields formValue={formValue} fieldErrors={fieldErrors} setField={setField} />
 
       <PortalCorsFields
         formValue={formValue}
@@ -1786,6 +1844,16 @@ export function PortalSitePage() {
                           )}
                         </ReadonlyField>
                       </FieldRow>
+                      {selectedEntry.type === 'WEBGW' && <>
+                        <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path="/webTimeout/default" />} label={t('portalSite.webTimeoutTotal')}>
+                          {selectedEntry.webTimeout?.default?.total ?? t('portalSite.webTimeoutLegacy')}
+                        </ReadonlyField>
+                        <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path="/webTimeout/paths" />} label={t('portalSite.webTimeoutPaths')}>
+                          {(selectedEntry.webTimeout?.paths ?? []).length ? <ol className="space-y-1 font-mono text-xs">
+                            {selectedEntry.webTimeout!.paths.map((rule, index) => <li key={index}>{index + 1}. {rule.path} — {rule.total}</li>)}
+                          </ol> : '-'}
+                        </ReadonlyField>
+                      </>}
                       <ReadonlyField source={<FieldSourceInfo fields={selectedEntryFields} path={selectedEntry.type === 'RPCGW' ? '/rpcgwServices' : '/webName'} />}
                         label={
                           selectedEntry.type === 'RPCGW'

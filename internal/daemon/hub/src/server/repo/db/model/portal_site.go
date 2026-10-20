@@ -22,6 +22,7 @@ type PortalSite struct {
 	ActorSkelName  string `gorm:"column:actor_skel_name"`
 	InspectEnabled bool   `gorm:"column:inspect_enabled;not null"`
 	McpEnabled     bool   `gorm:"column:mcp_enabled;not null"`
+	WebTimeout     string `gorm:"column:web_timeout;not null"`
 	CorsMode       string `gorm:"column:cors_mode"`
 	CorsOrigins    string `gorm:"column:cors_origins"`
 	WebName        string `gorm:"column:web_name"`
@@ -48,6 +49,9 @@ func (d *PortalSiteDao) EnsureSchema() {
 	}
 	if !columns["mcp_enabled"] {
 		ex.PanicIfError(d.GormDB().Exec("ALTER TABLE portal_site ADD COLUMN mcp_enabled BOOLEAN NOT NULL DEFAULT FALSE").Error)
+	}
+	if !columns["web_timeout"] {
+		ex.PanicIfError(d.GormDB().Exec("ALTER TABLE portal_site ADD COLUMN web_timeout TEXT NOT NULL DEFAULT 'null'").Error)
 	}
 	ensureFieldSourceTable(d.GormDB())
 }
@@ -82,6 +86,7 @@ func (d *PortalSiteDao) Save(entry *PortalSite) *PortalSite {
 		"cors_mode":       entry.CorsMode,
 		"cors_origins":    entry.CorsOrigins,
 		"web_name":        entry.WebName,
+		"web_timeout":     entry.WebTimeout,
 		"enabled":         entry.Enabled,
 	})
 	return row

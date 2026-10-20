@@ -19,7 +19,7 @@ import (
 	vrpchttp "go.yorun.ai/vrpc/transport/http"
 )
 
-func (g *RpcGateway) callMcpTool(ctx context.Context, httpCtx *spec.Context, service string, method string, tool *mcp.Tool, call *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (g *RpcGateway) callMcpTool(_ context.Context, httpCtx *spec.Context, service string, method string, tool *mcp.Tool, call *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	input, err := resolveMcpSchema(tool.InputSchema)
 	if err != nil {
 		return nil, &jsonrpc.Error{Code: -32000, Message: "API input schema is unavailable"}
@@ -39,12 +39,9 @@ func (g *RpcGateway) callMcpTool(ctx context.Context, httpCtx *spec.Context, ser
 	if err != nil {
 		return mcpToolFailure(ex.InvalidRequest, "invalid tool arguments", ""), nil
 	}
-	// Keep both the HTTP caller's cancellation/deadline and SDK cancellation.
-	// The legacy vRPC entry point intentionally has a different disconnect policy.
-	invokeCtx, cancel := context.WithCancel(httpCtx.Request.Context())
-	defer cancel()
-	stop := context.AfterFunc(ctx, cancel)
-	defer stop()
+	// Once accepted, business execution follows the gateway's timeout and shutdown,
+	// not HTTP disconnects or SDK cancellation of the client-facing call.
+	invokeCtx := httpCtx.Request.Context()
 	request, err := vrpchttp.NewRequest(invokeCtx, "http://portal", "/"+service+"/"+method, body, rpchttp.ContentTypeJson, rpchttp.ContentTypeJson)
 	if err != nil {
 		return nil, &jsonrpc.Error{Code: jsonrpc.CodeInternalError, Message: "cannot prepare tool invocation"}
