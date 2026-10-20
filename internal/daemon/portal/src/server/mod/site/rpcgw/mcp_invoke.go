@@ -49,7 +49,6 @@ func (g *RpcGateway) callMcpTool(_ context.Context, httpCtx *spec.Context, servi
 	// Only credentials cross the transport boundary. Actor/initiator/options and
 	// other client-supplied vRPC headers must never become trusted backend context.
 	request.Header["Authorization"] = append([]string(nil), httpCtx.Request.Header.Values("Authorization")...)
-	request.Header.Set("User-Agent", httpCtx.Request.UserAgent())
 	rpchttp.EncodeClientToHeader(request.Header, g.app)
 	trace, err := rpchttp.DecodeTraceFromHeader(httpCtx.Request.Header)
 	if err != nil {

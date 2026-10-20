@@ -109,6 +109,23 @@ WEBGW site 必须配置 `actorSkelName`，且指定的 actor 必须存在。Vine
 Web 认证遵循声明的模式；actor 未配置认证时，`required` 会拒绝请求。
 只有 `off` 会为 handler 保留原生 Authorization 凭证。
 
+## RpcGW 后端请求头
+
+`/invoke` 和 MCP 在准入后按固定契约构造后端请求头：`Accept`、`Content-Type`、
+`vrpc-client`、`vrpc-trace`、`vrpc-initiator`、`vrpc-actor` 和 `vrpc-options`。
+`/invoke` 保留解析后的调用方自报身份，MCP 使用 Portal 身份。Portal 重建 initiator
+和 actor、派生 trace span，并根据剩余 deadline 重新生成 options。
+
+入口和准入阶段仍可读取凭据、CORS、User-Agent 和客户端 IP。User-Agent/IP 保留在
+initiator 元数据中，不作为 HTTP 请求头透传。Cookie、自定义头、转发头、MCP 头和
+仅用于响应的 vRPC 头不会传到业务后端。不提供自定义透传配置：业务身份通过准入后的
+actor info 传递，单次调用的业务输入通过方法参数传递。依赖原有偶然透传行为的业务
+应在升级前迁移这些值。
+
+请求 Content-Encoding 只允许省略或单个 `identity`，其他编码及非法格式在准入前拒绝。
+Body framing 由传输层负责。该边界只在 Portal RpcGW 实施，不改变内部 RPC、Link
+和 WebGW 的请求头行为。
+
 ## RpcGW MCP
 
 RPCGW site 的独立开关 `mcpEnabled` 默认为 false，开启后提供 `POST /mcp`。
