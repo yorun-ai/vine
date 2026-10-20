@@ -8,6 +8,24 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.32.1] - 2026-10-21
+
+### Fixed
+
+- Select the most specific matching Portal Web timeout path so download-specific
+  budgets override broad wildcard policies regardless of configuration order.
+  Equally specific rules retain configuration order.
+
+### Changed
+
+- Update stable Hub, Link, and Portal Kubernetes images to v0.32.1.
+
+### Upgrade Notes
+
+- Review overlapping `webTimeout.paths` rules when upgrading Portal: specificity
+  now takes priority over configuration order, so an existing request may select
+  a different timeout. Matching still uses the decoded path after Entry rewriting.
+
 ## [0.32.0] - 2026-10-21
 
 ### Added
@@ -1801,7 +1819,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.32.0...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.32.1...HEAD
+[0.32.1]: https://github.com/yorun-ai/vine/compare/v0.32.0...v0.32.1
 [0.32.0]: https://github.com/yorun-ai/vine/compare/v0.31.2...v0.32.0
 [0.31.2]: https://github.com/yorun-ai/vine/compare/v0.31.1...v0.31.2
 [0.31.1]: https://github.com/yorun-ai/vine/compare/v0.31.0...v0.31.1
