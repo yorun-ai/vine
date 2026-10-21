@@ -17,8 +17,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.yorun.ai/vine/internal/core/logger"
+	webproxy "go.yorun.ai/vine/internal/core/web/proxy"
 	"go.yorun.ai/vine/internal/core/web/spec"
-	vinehttp "go.yorun.ai/vine/internal/util/httputil"
 )
 
 // stateReloadInterval is how long the state file a request read stays current: a
@@ -120,29 +120,7 @@ func (s *_FollowedServer) serve(ginCtx *gin.Context) {
 		ginCtx.String(http.StatusBadGateway, problem.Error())
 		return
 	}
-	forwarded := vinehttp.ServeReverseProxy(target, _ProxyWriter{ginCtx.Writer}, ginCtx.Request, devProxyLogger)
-	// Only 5xx needs provenance to choose the completion log level.
-	if ginCtx.Writer.Status() >= http.StatusInternalServerError {
-		spec.SetUpstream5xx(ginCtx, forwarded)
-	}
-}
-
-type _ProxyWriter struct{ gin.ResponseWriter }
-
-func (w _ProxyWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
-
-func (w _ProxyWriter) FlushError() error {
-	if flusher, ok := w.ResponseWriter.(interface{ FlushError() error }); ok {
-		return flusher.FlushError()
-	}
-	// Gin's Flush discards the underlying error. Commit its pending headers
-	// before flushing the underlying writer through ResponseController.
-	if unwrapper, ok := w.ResponseWriter.(interface{ Unwrap() http.ResponseWriter }); ok {
-		w.WriteHeaderNow()
-		return http.NewResponseController(unwrapper.Unwrap()).Flush()
-	}
-	w.Flush()
-	return nil
+	webproxy.ServeReverseProxy(target, ginCtx, devProxyLogger)
 }
 
 // target returns the proxy forwarding to the development server the current state

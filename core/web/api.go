@@ -2,13 +2,16 @@ package web
 
 import (
 	"io/fs"
+	"net/http/httputil"
 	"reflect"
 
 	"github.com/gin-gonic/gin"
 	"go.yorun.ai/vine/core/di"
+	"go.yorun.ai/vine/core/logger"
 	"go.yorun.ai/vine/core/meta"
 	internalassets "go.yorun.ai/vine/internal/core/web/assets"
 	internaldevproxy "go.yorun.ai/vine/internal/core/web/devproxy"
+	internalproxy "go.yorun.ai/vine/internal/core/web/proxy"
 	internalserver "go.yorun.ai/vine/internal/core/web/server"
 	internalspec "go.yorun.ai/vine/internal/core/web/spec"
 )
@@ -106,4 +109,12 @@ func Register(webSpec *WebSpec) {
 // RegisteredWebInfos returns metadata for all registered Web contracts.
 func RegisteredWebInfos() []WebInfo {
 	return internalspec.RegisteredWebInfos()
+}
+
+// ServeReverseProxy forwards a Gin request and classifies its Vine Web completion log by
+// response provenance. Successfully forwarded upstream 5xx responses log at Debug;
+// local failures remain errors. It preserves proxy response/error hooks, owns
+// failure logging (replacing ErrorLog), and aborts canceled requests without 502.
+func ServeReverseProxy(proxy *httputil.ReverseProxy, ctx *gin.Context, log *logger.Logger) {
+	internalproxy.ServeReverseProxy(proxy, ctx, log)
 }
