@@ -18,12 +18,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/web/spec"
+	vinehttp "go.yorun.ai/vine/internal/util/httputil"
 )
 
 // stateReloadInterval is how long the state file a request read stays current: a
 // development server that restarts on another port is followed within it. A test
 // lowers it so one request reads the file again.
 var stateReloadInterval = time.Second
+
+var devProxyLogger = logger.New("web:devproxy")
 
 // _State is what a development server writes about itself.
 type _State struct {
@@ -111,12 +114,35 @@ func (s *_FollowedServers) server(stateFilePath string) *_FollowedServer {
 // serve forwards one request, and answers 502 when the state file cannot be read
 // or the development server does not answer it.
 func (s *_FollowedServer) serve(ginCtx *gin.Context) {
+	spec.SetUpstream5xx(ginCtx, false)
 	target, problem := s.target()
 	if problem != nil {
 		ginCtx.String(http.StatusBadGateway, problem.Error())
 		return
 	}
-	target.ServeHTTP(ginCtx.Writer, ginCtx.Request)
+	forwarded := vinehttp.ServeReverseProxy(target, _ProxyWriter{ginCtx.Writer}, ginCtx.Request, devProxyLogger)
+	// Only 5xx needs provenance to choose the completion log level.
+	if ginCtx.Writer.Status() >= http.StatusInternalServerError {
+		spec.SetUpstream5xx(ginCtx, forwarded)
+	}
+}
+
+type _ProxyWriter struct{ gin.ResponseWriter }
+
+func (w _ProxyWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
+
+func (w _ProxyWriter) FlushError() error {
+	if flusher, ok := w.ResponseWriter.(interface{ FlushError() error }); ok {
+		return flusher.FlushError()
+	}
+	// Gin's Flush discards the underlying error. Commit its pending headers
+	// before flushing the underlying writer through ResponseController.
+	if unwrapper, ok := w.ResponseWriter.(interface{ Unwrap() http.ResponseWriter }); ok {
+		w.WriteHeaderNow()
+		return http.NewResponseController(unwrapper.Unwrap()).Flush()
+	}
+	w.Flush()
+	return nil
 }
 
 // target returns the proxy forwarding to the development server the current state

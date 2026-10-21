@@ -9,7 +9,7 @@ import (
 	"go.yorun.ai/vine/internal/core/logger"
 )
 
-func newTestProxyLogger(t *testing.T, name string) (*logger.Logger, string) {
+func newTestProxyLogger(t testing.TB, name string) (*logger.Logger, string) {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "proxy.jsonl")
 	log := logger.New(name, logger.WithOption{
