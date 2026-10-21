@@ -8,6 +8,19 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.32.4] - 2026-10-22
+
+### Fixed
+
+- Register SIGINT and SIGTERM handling before application startup so signals
+  received during startup trigger graceful shutdown after startup completes,
+  across ordinary, linked, and standalone applications. Release signal handling
+  before shutdown to preserve subsequent-signal behavior.
+
+### Changed
+
+- Update stable Hub, Link, and Portal Kubernetes images to v0.32.4.
+
 ## [0.32.3] - 2026-10-21
 
 ### Fixed
@@ -1853,7 +1866,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.32.3...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.32.4...HEAD
+[0.32.4]: https://github.com/yorun-ai/vine/compare/v0.32.3...v0.32.4
 [0.32.3]: https://github.com/yorun-ai/vine/compare/v0.32.2...v0.32.3
 [0.32.2]: https://github.com/yorun-ai/vine/compare/v0.32.1...v0.32.2
 [0.32.1]: https://github.com/yorun-ai/vine/compare/v0.32.0...v0.32.1
