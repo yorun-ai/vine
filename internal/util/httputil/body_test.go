@@ -121,3 +121,28 @@ func TestReadResponseBodyRejectsLengthMismatch(t *testing.T) {
 }
 
 func (w *failingBodyWriter) WriteString(s string) (int, error) { return w.Write([]byte(s)) }
+
+func TestCopyResponseBodyPreservesHTTP2FailureDirection(t *testing.T) {
+	for _, stream := range []bool{false, true} {
+		for _, upstream := range []bool{false, true} {
+			t.Run(fmt.Sprintf("stream=%v/upstream=%v", stream, upstream), func(t *testing.T) {
+				ctx, cancel := context.WithCancel(t.Context())
+				defer cancel()
+				cancel()
+				failure := errors.New("http2: stream closed")
+				response := &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader("response"))}
+				if stream {
+					response.Header.Set("Content-Type", "text/event-stream")
+				}
+				if upstream {
+					response.Body = io.NopCloser(proxyFailingReader{err: failure})
+				}
+				writer := &proxyFailingWriter{ResponseRecorder: httptest.NewRecorder(), write: func([]byte) (int, error) { return 0, failure }}
+				_, err := CopyResponseBody(writer, response)
+				if !errors.Is(err, failure) || IsCanceledResponseTransfer(ctx, err) != !upstream {
+					t.Fatalf("failure direction lost: %v", err)
+				}
+			})
+		}
+	}
+}

@@ -173,6 +173,8 @@ func TestServeReverseProxyWriteFailures(t *testing.T) {
 		level  string
 	}{
 		{"write failure", false, io.ErrClosedPipe, "ERROR"},
+		{"canceled HTTP2 write", true, errors.New("http2: stream closed"), "DEBUG"},
+		{"live HTTP2 write", false, errors.New("http2: stream closed"), "ERROR"},
 		{"client cancellation", true, context.Canceled, "DEBUG"},
 		{"upstream cancellation", false, context.Canceled, "ERROR"},
 		{"deadline", true, context.DeadlineExceeded, "ERROR"},
