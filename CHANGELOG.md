@@ -8,6 +8,27 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.32.2] - 2026-10-21
+
+### Added
+
+- Add `web.ServeReverseProxy` for custom Vine Web handlers, preserving proxy
+  hooks and failure diagnostics while classifying forwarded upstream responses.
+
+### Fixed
+
+- Log confirmed client cancellations at Debug across Web proxies, including
+  WebSocket upgrades, while preserving errors for other transport failures.
+- Log ordinary Web 4xx responses and successfully forwarded upstream 5xx
+  responses at Debug; retain warnings for explicitly registered request errors
+  and errors for local 5xx failures.
+- Preserve response read, write, and flush failures in reverse proxies so failed
+  transfers are not classified as successfully forwarded upstream responses.
+
+### Changed
+
+- Update stable Hub, Link, and Portal Kubernetes images to v0.32.2.
+
 ## [0.32.1] - 2026-10-21
 
 ### Fixed
@@ -1819,7 +1840,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.32.1...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.32.2...HEAD
+[0.32.2]: https://github.com/yorun-ai/vine/compare/v0.32.1...v0.32.2
 [0.32.1]: https://github.com/yorun-ai/vine/compare/v0.32.0...v0.32.1
 [0.32.0]: https://github.com/yorun-ai/vine/compare/v0.31.2...v0.32.0
 [0.31.2]: https://github.com/yorun-ai/vine/compare/v0.31.1...v0.31.2
