@@ -64,9 +64,7 @@ func (a *_App) StopGracefully() {
 }
 
 func (a *_App) StartAndWait() {
-	a.Start()
-	internalapp.WaitExitSignal()
-	a.StopGracefully()
+	internalapp.StartAndWait(a)
 }
 
 // Helpers
