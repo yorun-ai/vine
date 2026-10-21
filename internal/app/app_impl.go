@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os/signal"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	skeldesc "go.yorun.ai/skel/descriptor"
@@ -207,9 +205,7 @@ func (a *_AppImpl) StopGracefully() {
 }
 
 func (a *_AppImpl) StartAndWait() {
-	a.Start()
-	WaitExitSignal()
-	a.StopGracefully()
+	StartAndWait(a)
 }
 
 func (a *_AppImpl) startServers() {
@@ -415,10 +411,4 @@ func (a *_AppImpl) endpointHost() string {
 		return detectHostIP()
 	}
 	return a.httpHost
-}
-
-func WaitExitSignal() {
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-	<-ctx.Done()
 }
