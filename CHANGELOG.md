@@ -8,6 +8,19 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.32.3] - 2026-10-21
+
+### Fixed
+
+- Log downstream HTTP/2 stream-closed write and flush failures at Debug when
+  the incoming request is canceled, including ordinary, streaming, compressed,
+  and reverse-proxied Web responses. Upstream failures, deadlines, and failures
+  on active requests retain their error classification.
+
+### Changed
+
+- Update stable Hub, Link, and Portal Kubernetes images to v0.32.3.
+
 ## [0.32.2] - 2026-10-21
 
 ### Added
@@ -1840,7 +1853,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.32.2...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.32.3...HEAD
+[0.32.3]: https://github.com/yorun-ai/vine/compare/v0.32.2...v0.32.3
 [0.32.2]: https://github.com/yorun-ai/vine/compare/v0.32.1...v0.32.2
 [0.32.1]: https://github.com/yorun-ai/vine/compare/v0.32.0...v0.32.1
 [0.32.0]: https://github.com/yorun-ai/vine/compare/v0.31.2...v0.32.0
