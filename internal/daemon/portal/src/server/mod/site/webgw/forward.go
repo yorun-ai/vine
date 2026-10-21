@@ -15,6 +15,8 @@ import (
 	"go.yorun.ai/vine/internal/util/httputil"
 )
 
+var webGatewayLogger = logger.New("daemon:portal:webgw")
+
 func (g *WebGateway) forward(ctx *spec.Context, request *http.Request, registration *watched.WebRegistration, traceId string) {
 	endpoint := registration.Endpoint
 	encodeWebOptionsToHeader(request)
@@ -24,7 +26,7 @@ func (g *WebGateway) forward(ctx *spec.Context, request *http.Request, registrat
 		http.Error(ctx.ResponseWriter, "webgw endpoint is insecure: "+err.Error(), http.StatusServiceUnavailable)
 		return
 	}
-	if handled, err := gwutil.ForwardUpgradeWithTransport(ctx.ResponseWriter, request, endpoint, transport); handled {
+	if handled, err := gwutil.ForwardUpgradeWithTransport(ctx.ResponseWriter, request, endpoint, transport, webGatewayLogger); handled {
 		if err != nil {
 			http.Error(ctx.ResponseWriter, "webgw websocket forward failed: "+err.Error(), http.StatusServiceUnavailable)
 		}
@@ -59,7 +61,7 @@ func (g *WebGateway) forward(ctx *spec.Context, request *http.Request, registrat
 	response.Request = request
 	if transferred, err := httputil.CopyResponseBody(ctx.ResponseWriter, response); err != nil {
 		expected, known := httputil.ResponseBodyLength(response)
-		logger.Error("web response transfer failed", "phase", "body", "error", err, "expectedLength", expected, "lengthKnown", known, "transferredBytes", transferred)
+		httputil.LogResponseTransferError(ctx.Request.Context(), webGatewayLogger, err, "phase", "body", "expectedLength", expected, "lengthKnown", known, "transferredBytes", transferred)
 		panic(http.ErrAbortHandler)
 	}
 }
@@ -68,7 +70,7 @@ func (g *WebGateway) writeCompressedResponse(ctx *spec.Context, response *http.R
 	body, err := httputil.ReadResponseBody(response)
 	if err != nil {
 		expected, known := httputil.ResponseBodyLength(response)
-		logger.Error("web response transfer failed", "phase", "read", "error", err, "expectedLength", expected, "lengthKnown", known, "transferredBytes", len(body))
+		httputil.LogResponseTransferError(ctx.Request.Context(), webGatewayLogger, err, "phase", "read", "expectedLength", expected, "lengthKnown", known, "transferredBytes", len(body))
 		status := http.StatusBadGateway
 		if errors.Is(err, context.DeadlineExceeded) {
 			status = http.StatusGatewayTimeout
@@ -87,7 +89,10 @@ func (g *WebGateway) writeCompressedResponse(ctx *spec.Context, response *http.R
 	}
 	ctx.ResponseWriter.WriteHeader(response.StatusCode)
 	if n, err := ctx.ResponseWriter.Write(body); err != nil || n != len(body) {
-		logger.Error("web response transfer failed", "phase", "write", "expectedLength", len(body), "transferredBytes", n)
+		if err == nil {
+			err = io.ErrShortWrite
+		}
+		httputil.LogResponseTransferError(ctx.Request.Context(), webGatewayLogger, err, "phase", "write", "expectedLength", len(body), "transferredBytes", n)
 		panic(http.ErrAbortHandler)
 	}
 }

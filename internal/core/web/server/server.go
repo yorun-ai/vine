@@ -182,12 +182,13 @@ func (s *Server) ginLogger() gin.HandlerFunc {
 			attrs = append(attrs, "query", rawQuery)
 		}
 
+		if len(ginCtx.Errors) > 0 {
+			attrs = append(attrs, "errors", ginCtx.Errors.String())
+		}
 		switch {
-		case len(ginCtx.Errors) > 0:
-			logger.Warn("web request finished", append(attrs, "errors", ginCtx.Errors.String())...)
-		case ginCtx.Writer.Status() >= http.StatusInternalServerError:
+		case ginCtx.Writer.Status() >= http.StatusInternalServerError && (len(ginCtx.Errors) > 0 || !spec.IsUpstream5xx(ginCtx)):
 			logger.Error("web request finished", attrs...)
-		case ginCtx.Writer.Status() >= http.StatusBadRequest:
+		case len(ginCtx.Errors) > 0:
 			logger.Warn("web request finished", attrs...)
 		default:
 			logger.Debug("web request finished", attrs...)
@@ -199,6 +200,7 @@ func (s *Server) ginRecovery() gin.HandlerFunc {
 	return func(ginCtx *gin.Context) {
 		defer func() {
 			if recovered := recover(); recovered != nil {
+				spec.SetUpstream5xx(ginCtx, false)
 				if err, ok := recovered.(ex.Error); ok {
 					s.recoverWebError(ginCtx, err)
 					return

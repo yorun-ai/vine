@@ -13,6 +13,8 @@ import (
 	"go.yorun.ai/vine/internal/util/httputil"
 )
 
+var webProxyLogger = logger.New("daemon:link:webproxy")
+
 func (p *WebProxy) handleIn(w http.ResponseWriter, r *http.Request) {
 	route, suffix, err := p.resolveInboundRoute(r.URL.Path)
 	if err != nil {
@@ -102,7 +104,7 @@ func (p *WebProxy) forwardInboundInproc(w http.ResponseWriter, r *http.Request, 
 	resp.Request = r
 	if transferred, err := httputil.CopyResponseBody(w, resp); err != nil {
 		expected, known := httputil.ResponseBodyLength(resp)
-		logger.Error("web response transfer failed", "phase", "body", "error", err, "expectedLength", expected, "lengthKnown", known, "transferredBytes", transferred)
+		httputil.LogResponseTransferError(r.Context(), webProxyLogger, err, "phase", "body", "expectedLength", expected, "lengthKnown", known, "transferredBytes", transferred)
 		panic(http.ErrAbortHandler)
 	}
 }
@@ -110,7 +112,7 @@ func (p *WebProxy) forwardInboundInproc(w http.ResponseWriter, r *http.Request, 
 func (p *WebProxy) forwardInbound(w http.ResponseWriter, r *http.Request, targetURL string) {
 	targetURL = appendRequestQuery(targetURL, r.URL.RawQuery)
 	if httputil.IsUpgradeRequest(r) {
-		if err := httputil.ForwardUpgrade(w, r, targetURL, nil); err != nil {
+		if err := httputil.ForwardUpgrade(w, r, targetURL, nil, webProxyLogger); err != nil {
 			http.Error(w, "proxy websocket request failed", http.StatusServiceUnavailable)
 		}
 		return
@@ -143,7 +145,7 @@ func (p *WebProxy) forwardInbound(w http.ResponseWriter, r *http.Request, target
 	resp.Request = r
 	if transferred, err := httputil.CopyResponseBody(w, resp); err != nil {
 		expected, known := httputil.ResponseBodyLength(resp)
-		logger.Error("web response transfer failed", "phase", "body", "error", err, "expectedLength", expected, "lengthKnown", known, "transferredBytes", transferred)
+		httputil.LogResponseTransferError(r.Context(), webProxyLogger, err, "phase", "body", "expectedLength", expected, "lengthKnown", known, "transferredBytes", transferred)
 		panic(http.ErrAbortHandler)
 	}
 }

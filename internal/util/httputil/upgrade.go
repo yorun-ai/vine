@@ -8,13 +8,15 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"go.yorun.ai/vine/internal/core/logger"
 )
 
 func IsUpgradeRequest(r *http.Request) bool {
 	return headerContainsToken(r.Header, "Connection", "upgrade") && r.Header.Get("Upgrade") != ""
 }
 
-func ForwardUpgrade(w http.ResponseWriter, r *http.Request, targetURL string, transport http.RoundTripper) error {
+func ForwardUpgrade(w http.ResponseWriter, r *http.Request, targetURL string, transport http.RoundTripper, log *logger.Logger) error {
 	target, err := url.Parse(targetURL)
 	if err != nil {
 		return err
@@ -31,6 +33,10 @@ func ForwardUpgrade(w http.ResponseWriter, r *http.Request, targetURL string, tr
 			request.SetXForwarded()
 		},
 		Transport: NewUpgradeIdleTransport(transport, DefaultStreamIdleTimeout),
+		ErrorHandler: func(w http.ResponseWriter, request *http.Request, err error) {
+			logProxyFailure(request.Context(), log, "web upgrade", err)
+			w.WriteHeader(http.StatusBadGateway)
+		},
 	}
 	proxy.ServeHTTP(w, r)
 	return nil
