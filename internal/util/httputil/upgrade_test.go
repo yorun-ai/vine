@@ -2,6 +2,8 @@ package httputil
 
 import (
 	"bufio"
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -25,6 +27,7 @@ func TestIsUpgradeRequest(t *testing.T) {
 }
 
 func TestForwardUpgrade(t *testing.T) {
+	log, _ := newTestProxyLogger(t, "daemon:link:webproxy")
 	var gotPath string
 	var gotQuery string
 	target := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +55,7 @@ func TestForwardUpgrade(t *testing.T) {
 	target.Start()
 
 	frontend := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		err := ForwardUpgrade(w, r, target.URL+"/hmr?from=proxy", nil)
+		err := ForwardUpgrade(w, r, target.URL+"/hmr?from=proxy", nil, log)
 		if err != nil {
 			t.Errorf("ForwardUpgrade() error = %v", err)
 		}
@@ -178,4 +181,110 @@ func (*upgradeStreamStub) Write(buffer []byte) (int, error) {
 func (s *upgradeStreamStub) Close() error {
 	s.closeOnce.Do(func() { close(s.closed) })
 	return nil
+}
+
+func TestForwardUpgradeFailureLogging(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		cancel bool
+		err    error
+		level  string
+	}{
+		{"client cancellation", true, context.Canceled, "DEBUG"},
+		{"canceled EOF", true, io.EOF, "DEBUG"},
+		{"upstream cancellation", false, context.Canceled, "ERROR"},
+		{"upstream EOF", false, io.EOF, "ERROR"},
+		{"deadline", false, context.DeadlineExceeded, "ERROR"},
+		{"unrelated failure after cancellation", true, errors.New("dial failed"), "ERROR"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			log, logPath := newTestProxyLogger(t, "daemon:link:webproxy")
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			request := httptest.NewRequestWithContext(ctx, http.MethodGet, "http://demo.local/ws", nil)
+			request.Header.Set("Connection", "Upgrade")
+			request.Header.Set("Upgrade", "websocket")
+			response := httptest.NewRecorder()
+			transport := roundTripFunc(func(r *http.Request) (*http.Response, error) {
+				if tc.cancel {
+					cancel()
+				}
+				return nil, tc.err
+			})
+			if err := ForwardUpgrade(response, request, "http://backend.local/ws", transport, log); err != nil {
+				t.Fatal(err)
+			}
+			if response.Code != http.StatusBadGateway {
+				t.Fatalf("status = %d, want 502", response.Code)
+			}
+			record := readProxyLog(t, logPath)
+			if record["logger"] != log.Name() || record["level"] != tc.level || record["error"] != tc.err.Error() {
+				t.Fatalf("unexpected failure log: %v", record)
+			}
+		})
+	}
+}
+
+func TestForwardUpgradeClientDisconnectCancelsPendingHandshake(t *testing.T) {
+	log, logPath := newTestProxyLogger(t, "daemon:portal:webgw")
+	backendEntered := make(chan struct{})
+	backendCanceled := make(chan error, 1)
+	backend := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		close(backendEntered)
+		// Keep the handshake pending until the actual network request is canceled.
+		select {
+		case <-r.Context().Done():
+			backendCanceled <- r.Context().Err()
+		case <-t.Context().Done():
+		}
+	}))
+	backend.Start()
+
+	proxyFinished := make(chan error, 1)
+	frontend := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		proxyFinished <- ForwardUpgrade(w, r, backend.URL+"/ws", backend.Client().Transport, log)
+	}))
+	frontend.Start()
+
+	connection, err := net.DialTimeout("tcp", strings.TrimPrefix(frontend.URL, "http://"), 5*time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = connection.Close() })
+	if err := connection.SetWriteDeadline(time.Now().Add(5 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := fmt.Fprint(connection, "GET /ws HTTP/1.1\r\nHost: demo.local\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n"); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-backendEntered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("backend did not receive the upgrade request")
+	}
+
+	// Closing the client socket must cancel both proxy hops without a manual cancel.
+	if err := connection.Close(); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case err := <-backendCanceled:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("backend context error = %v, want context.Canceled", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("client disconnect did not cancel the backend handshake")
+	}
+	select {
+	case err := <-proxyFinished:
+		if err != nil {
+			t.Fatalf("proxy handler returned an error: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("proxy handler did not exit after client disconnect")
+	}
+	record := readProxyLog(t, logPath)
+	if record["level"] != "DEBUG" || record["msg"] != "web upgrade canceled" || record["logger"] != log.Name() {
+		t.Fatalf("unexpected cancellation log: %v", record)
+	}
 }

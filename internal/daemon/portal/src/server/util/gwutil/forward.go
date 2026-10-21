@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
+	"go.yorun.ai/vine/internal/core/logger"
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	rpcinproc "go.yorun.ai/vine/internal/core/rpc/transport/inproc"
 	webinproc "go.yorun.ai/vine/internal/core/web/inproc"
@@ -51,11 +52,11 @@ func ForwardRequestWithTransport(r *http.Request, endpoint string, transport htt
 	return response, nil
 }
 
-func ForwardUpgrade(w http.ResponseWriter, r *http.Request, endpoint string) (bool, error) {
-	return ForwardUpgradeWithTransport(w, r, endpoint, nil)
+func ForwardUpgrade(w http.ResponseWriter, r *http.Request, endpoint string, log *logger.Logger) (bool, error) {
+	return ForwardUpgradeWithTransport(w, r, endpoint, nil, log)
 }
 
-func ForwardUpgradeWithTransport(w http.ResponseWriter, r *http.Request, endpoint string, transport http.RoundTripper) (bool, error) {
+func ForwardUpgradeWithTransport(w http.ResponseWriter, r *http.Request, endpoint string, transport http.RoundTripper, log *logger.Logger) (bool, error) {
 	if !httputil.IsUpgradeRequest(r) {
 		return false, nil
 	}
@@ -65,7 +66,7 @@ func ForwardUpgradeWithTransport(w http.ResponseWriter, r *http.Request, endpoin
 	if !isHTTPEndpoint(endpoint) {
 		return false, nil
 	}
-	return true, httputil.ForwardUpgrade(w, r, endpoint+r.URL.RequestURI(), transport)
+	return true, httputil.ForwardUpgrade(w, r, endpoint+r.URL.RequestURI(), transport, log)
 }
 
 func forwardIngressInprocRequest(ctx context.Context, r *http.Request, endpoint string) (*http.Response, error) {
