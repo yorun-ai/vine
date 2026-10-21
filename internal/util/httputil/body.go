@@ -21,7 +21,7 @@ func CopyResponseBody(w http.ResponseWriter, response *http.Response) (int64, er
 	if IsEventStreamResponse(response) {
 		n, err = copyStreamBody(w, response.Body)
 	} else {
-		n, err = io.Copy(w, response.Body)
+		n, err = io.Copy(_ResponseBodyWriter{w}, response.Body)
 	}
 	if err == nil {
 		if length, known := ResponseBodyLength(response); known && n != length {
@@ -63,13 +63,13 @@ func copyStreamBody(w http.ResponseWriter, body io.ReadCloser) (int64, error) {
 			written, err := w.Write(buffer[:n])
 			transferred += int64(written)
 			if err != nil {
-				return transferred, err
+				return transferred, &_ResponseWriteError{err}
 			}
 			if written != n {
 				return transferred, io.ErrShortWrite
 			}
 			if err := controller.Flush(); err != nil && !errors.Is(err, http.ErrNotSupported) {
-				return transferred, err
+				return transferred, &_ResponseWriteError{err}
 			}
 		}
 		if readErr != nil {
@@ -103,4 +103,15 @@ func readStreamBody(body io.ReadCloser, buffer []byte, idleTimeout time.Duration
 		_ = body.Close()
 		return 0, context.DeadlineExceeded
 	}
+}
+
+// Avoid io.Copy fast paths bypassing the write-error direction marker.
+type _ResponseBodyWriter struct{ io.Writer }
+
+func (w _ResponseBodyWriter) Write(p []byte) (int, error) {
+	n, err := w.Writer.Write(p)
+	if err != nil {
+		return n, &_ResponseWriteError{err}
+	}
+	return n, nil
 }

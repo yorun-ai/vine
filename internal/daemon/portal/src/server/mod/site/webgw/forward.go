@@ -92,7 +92,7 @@ func (g *WebGateway) writeCompressedResponse(ctx *spec.Context, response *http.R
 		if err == nil {
 			err = io.ErrShortWrite
 		}
-		httputil.LogResponseTransferError(ctx.Request.Context(), webGatewayLogger, err, "phase", "write", "expectedLength", len(body), "transferredBytes", n)
+		httputil.LogResponseWriteError(ctx.Request.Context(), webGatewayLogger, err, "phase", "write", "expectedLength", len(body), "transferredBytes", n)
 		panic(http.ErrAbortHandler)
 	}
 }

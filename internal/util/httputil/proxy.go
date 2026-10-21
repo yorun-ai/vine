@@ -79,7 +79,7 @@ func (t *_ProxyTransfer) Write(buffer []byte) (int, error) {
 		err = io.ErrShortWrite
 	}
 	if err != nil {
-		t.fail(err)
+		t.fail(&_ResponseWriteError{err})
 	}
 	return n, err
 }
@@ -87,7 +87,7 @@ func (t *_ProxyTransfer) Write(buffer []byte) (int, error) {
 func (t *_ProxyTransfer) FlushError() error {
 	err := http.NewResponseController(t.ResponseWriter).Flush()
 	if err != nil && !errors.Is(err, http.ErrNotSupported) {
-		t.fail(err)
+		t.fail(&_ResponseWriteError{err})
 	}
 	return err
 }
