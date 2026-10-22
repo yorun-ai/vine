@@ -8,6 +8,28 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.32.5] - 2026-10-22
+
+### Fixed
+
+- Apply the 60-second SSE idle limit only at Portal, allowing internal Web
+  forwarding to remain idle without independent timers. Idle expiry now ends
+  unknown-length SSE responses normally and logs at Debug instead of aborting
+  the response and propagating transfer errors through the proxy chain.
+- Preserve request deadline, cancellation, and fixed-length truncation errors
+  when handling idle expiry. Reuse one reader worker and timer per idle-controlled
+  response, and release them when forwarding ends.
+
+### Changed
+
+- Update stable Hub, Link, and Portal Kubernetes images to v0.32.5.
+
+### Upgrade Notes
+
+- Upgrade Portal and Link together to remove internal SSE idle timers. The
+  60-second external idle limit, explicit request timeouts, client cancellation
+  isolation, and WebSocket behavior remain unchanged.
+
 ## [0.32.4] - 2026-10-22
 
 ### Fixed
@@ -1866,7 +1888,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.32.4...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.32.5...HEAD
+[0.32.5]: https://github.com/yorun-ai/vine/compare/v0.32.4...v0.32.5
 [0.32.4]: https://github.com/yorun-ai/vine/compare/v0.32.3...v0.32.4
 [0.32.3]: https://github.com/yorun-ai/vine/compare/v0.32.2...v0.32.3
 [0.32.2]: https://github.com/yorun-ai/vine/compare/v0.32.1...v0.32.2
