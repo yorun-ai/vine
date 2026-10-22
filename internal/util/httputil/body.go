@@ -11,20 +11,37 @@ import (
 	"time"
 )
 
+// ErrStreamIdleTimeout indicates an idle SSE response that may end normally.
+// Fixed-length responses instead retain a truncation error.
+var ErrStreamIdleTimeout = errors.New("SSE stream idle timeout")
+
 // CopyResponseBody returns transfer failures instead of treating a partial body as EOF.
 func CopyResponseBody(w http.ResponseWriter, response *http.Response) (int64, error) {
+	return CopyResponseBodyWithIdleTimeout(w, response, 0)
+}
+
+// CopyResponseBodyWithIdleTimeout applies an SSE idle limit at the external gateway.
+// A zero duration leaves internal forwarding unbounded by idle time.
+func CopyResponseBodyWithIdleTimeout(w http.ResponseWriter, response *http.Response, idleTimeout time.Duration) (int64, error) {
 	if response.Request != nil && response.Request.Method == http.MethodHead || response.StatusCode == http.StatusNoContent || response.StatusCode == http.StatusNotModified || response.StatusCode < 200 {
 		return 0, nil
 	}
 	var n int64
 	var err error
 	if IsEventStreamResponse(response) {
-		n, err = copyStreamBody(w, response.Body)
+		ctx := context.Background()
+		if response.Request != nil {
+			ctx = response.Request.Context()
+		}
+		n, err = copyStreamBody(ctx, w, response.Body, idleTimeout)
 	} else {
 		n, err = io.Copy(_ResponseBodyWriter{w}, response.Body)
 	}
-	if err == nil {
-		if length, known := ResponseBodyLength(response); known && n != length {
+	if length, known := ResponseBodyLength(response); known {
+		switch {
+		case errors.Is(err, ErrStreamIdleTimeout):
+			err = fmt.Errorf("response idle before completion: %w", io.ErrUnexpectedEOF)
+		case err == nil && n != length:
 			err = fmt.Errorf("response length mismatch: %w", io.ErrUnexpectedEOF)
 		}
 	}
@@ -53,12 +70,18 @@ func ReadResponseBody(response *http.Response) ([]byte, error) {
 	return body, nil
 }
 
-func copyStreamBody(w http.ResponseWriter, body io.ReadCloser) (int64, error) {
+func copyStreamBody(ctx context.Context, w http.ResponseWriter, body io.ReadCloser, idleTimeout time.Duration) (int64, error) {
 	controller := http.NewResponseController(w)
 	buffer := make([]byte, 32*1024)
+	read := body.Read
+	if idleTimeout > 0 {
+		var cleanup func()
+		read, cleanup = newIdleStreamReader(ctx, body, idleTimeout)
+		defer cleanup()
+	}
 	var transferred int64
 	for {
-		n, readErr := readStreamBody(body, buffer, DefaultStreamIdleTimeout)
+		n, readErr := read(buffer)
 		if n > 0 {
 			written, err := w.Write(buffer[:n])
 			transferred += int64(written)
@@ -86,23 +109,56 @@ type _ReadResult struct {
 	err error
 }
 
-func readStreamBody(body io.ReadCloser, buffer []byte, idleTimeout time.Duration) (int, error) {
-	resultCh := make(chan _ReadResult, 1)
+// Reads are requested only after the previous chunk has been written and flushed,
+// so the worker never reuses a buffer still owned by the response writer.
+func newIdleStreamReader(ctx context.Context, body io.ReadCloser, idleTimeout time.Duration) (func([]byte) (int, error), func()) {
+	requests := make(chan []byte)
+	results := make(chan _ReadResult, 1)
+	finished := make(chan struct{})
 	go func() {
-		n, err := body.Read(buffer)
-		resultCh <- _ReadResult{n: n, err: err}
+		defer close(finished)
+		for buffer := range requests {
+			n, err := body.Read(buffer)
+			results <- _ReadResult{n: n, err: err}
+		}
 	}()
-
 	timer := time.NewTimer(idleTimeout)
-	defer timer.Stop()
-
-	select {
-	case result := <-resultCh:
-		return result.n, result.err
-	case <-timer.C:
+	timer.Stop()
+	cleanup := func() {
+		timer.Stop()
+		close(requests)
+		// HTTP response bodies must unblock Read on Close. The single buffered
+		// result lets an outstanding read finish even after the caller returns.
 		_ = body.Close()
-		return 0, context.DeadlineExceeded
+		<-finished
 	}
+	read := func(buffer []byte) (int, error) {
+		timer.Reset(idleTimeout)
+		defer timer.Stop()
+		requests <- buffer
+		select {
+		case result := <-results:
+			return result.n, result.err
+		case <-timer.C:
+			// Determine the cause before cleanup: Close can itself cancel ctx.
+			err := ctx.Err()
+			if err == nil {
+				if deadline, ok := ctx.Deadline(); ok && !time.Now().Before(deadline) {
+					err = context.DeadlineExceeded
+				}
+			}
+			if err == nil {
+				select {
+				case result := <-results:
+					return result.n, result.err
+				default:
+				}
+				err = ErrStreamIdleTimeout
+			}
+			return 0, err
+		}
+	}
+	return read, cleanup
 }
 
 // Avoid io.Copy fast paths bypassing the write-error direction marker.
