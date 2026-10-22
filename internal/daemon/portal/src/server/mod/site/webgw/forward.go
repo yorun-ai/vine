@@ -59,7 +59,11 @@ func (g *WebGateway) forward(ctx *spec.Context, request *http.Request, registrat
 	ctx.ResponseWriter.Header().Set(spec.HeaderPortalTraceId, traceId)
 	ctx.ResponseWriter.WriteHeader(response.StatusCode)
 	response.Request = request
-	if transferred, err := httputil.CopyResponseBody(ctx.ResponseWriter, response); err != nil {
+	if transferred, err := httputil.CopyResponseBodyWithIdleTimeout(ctx.ResponseWriter, response, httputil.DefaultStreamIdleTimeout); err != nil {
+		if errors.Is(err, httputil.ErrStreamIdleTimeout) {
+			webGatewayLogger.Debug("web response stream idle", "transferredBytes", transferred)
+			return
+		}
 		expected, known := httputil.ResponseBodyLength(response)
 		httputil.LogResponseTransferError(ctx.Request.Context(), webGatewayLogger, err, "phase", "body", "expectedLength", expected, "lengthKnown", known, "transferredBytes", transferred)
 		panic(http.ErrAbortHandler)
