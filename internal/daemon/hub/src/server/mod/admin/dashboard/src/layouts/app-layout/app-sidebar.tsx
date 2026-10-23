@@ -259,7 +259,7 @@ export function AppSidebar({
 
       <aside
         className={cn(
-          'relative z-40 flex h-dvh shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-10 after:w-3 after:bg-[linear-gradient(to_left,rgba(0,126,164,0.045),rgba(0,126,164,0.015),transparent)] transition-[width,transform] duration-200 ease-linear',
+          'relative z-40 flex h-dvh shrink-0 flex-col [container-type:inline-size] border-r border-sidebar-border bg-sidebar text-sidebar-foreground after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-10 after:w-3 after:bg-[linear-gradient(to_left,rgba(0,126,164,0.045),rgba(0,126,164,0.015),transparent)] transition-[width,transform] duration-200 ease-linear',
           isResizing && 'transition-none',
           isMobile
             ? cn(
@@ -327,9 +327,10 @@ export function AppSidebar({
             <PopoverTrigger
               aria-label={`${t('sidebar.sceneSwitch.current')}${activeScene.label}`}
               className={cn(
-                'flex h-10 w-full cursor-pointer items-center justify-between overflow-hidden rounded-[8px] border border-transparent bg-transparent px-2 text-sidebar-foreground transition-[width,height,padding,border-radius,background-color,color,border-color] duration-200 ease-out hover:bg-primary/[0.06] hover:text-primary',
+                'flex h-14 w-full cursor-pointer items-center justify-between overflow-hidden rounded-[8px] border border-primary/15 bg-background px-2 pr-3 text-sidebar-foreground shadow-[0_2px_6px_rgba(0,0,0,0.025)] transition-[width,height,padding,border-radius,background-color,color,border-color] duration-200 ease-out hover:border-primary/30 hover:bg-primary/[0.03] hover:text-primary',
+                isScenePanelOpen && 'border-primary/30 bg-primary/[0.03]',
                 isNavCompact &&
-                  'mx-auto flex size-10 items-stretch justify-center p-0',
+                  'mx-auto flex size-10 items-stretch justify-center p-0 shadow-none',
                 isCollapsedCompact &&
                   (isScenePanelOpen
                     ? '!border-primary/35 !bg-accent !text-primary hover:!bg-sidebar-accent'
@@ -459,7 +460,7 @@ export function AppSidebar({
                               </span>
                               <span
                                 className={cn(
-                                  'mt-0.5 block line-clamp-2 text-xs leading-relaxed',
+                                  'mt-0.5 block truncate text-xs leading-relaxed',
                                   isCurrent
                                     ? 'text-primary/80'
                                     : 'text-muted-foreground',
@@ -481,12 +482,15 @@ export function AppSidebar({
 
         <div
           className={cn(
-            'scrollbar-reserved flex-1 overflow-y-auto bg-sidebar pt-1.5 pb-2',
+            'scrollbar-reserved flex-1 overflow-x-hidden overflow-y-auto bg-sidebar pt-1.5 pb-2 [scrollbar-width:thin]',
             isCollapsed && 'pt-1',
           )}
           onScroll={handleScrollAreaScroll}
         >
-          <div className="flex flex-col">
+          <div
+            // Match the sidebar content width without subtracting the scrollbar gutter.
+            className="flex w-[100cqw] flex-col"
+          >
             {activeScene.groups.map((group) => {
               const isGroupCollapsed =
                 !isCollapsed && collapsedGroups[group.id] === true
@@ -503,7 +507,7 @@ export function AppSidebar({
                   className={cn(
                     'px-3',
                     group.title ? 'py-0' : 'py-1.5',
-                    isCollapsed && 'py-1.5',
+                    isCollapsed && 'px-0 py-1.5',
                   )}
                 >
                   {group.title ? (
@@ -512,9 +516,9 @@ export function AppSidebar({
                       aria-expanded={!isGroupCollapsed}
                       title={activeGroupItem?.label}
                       className={cn(
-                        'my-1 flex h-8 w-full cursor-pointer items-center justify-between gap-2 rounded-md px-2 text-left text-xs font-semibold tracking-[0.08em] text-muted-foreground/70 transition-colors hover:bg-primary/[0.06] hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                        'my-1 flex h-8 w-full cursor-pointer items-center gap-1 rounded-md border border-transparent px-2 text-left text-xs font-normal text-muted-foreground/70 transition-colors hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                         shouldHighlightGroupTitle &&
-                          'bg-primary/[0.08] text-primary hover:bg-primary/[0.08] hover:text-primary',
+                          'text-primary',
                         isCollapsed &&
                           'my-0 h-0 min-h-0 overflow-hidden px-0 opacity-0',
                       )}
@@ -528,7 +532,7 @@ export function AppSidebar({
                       <ChevronDown
                         aria-hidden="true"
                         className={cn(
-                          'size-3 shrink-0 transition-transform',
+                          'size-3 shrink-0 transition-transform duration-200 ease-out motion-reduce:transition-none',
                           isGroupCollapsed && '-rotate-90',
                           isCollapsed && 'hidden',
                         )}
@@ -538,44 +542,54 @@ export function AppSidebar({
 
                   <div
                     className={cn(
-                      'flex flex-col gap-1',
-                      isCollapsed && 'items-center',
-                      isGroupCollapsed && 'hidden',
+                      'grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none',
+                      isGroupCollapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]',
                     )}
+                    inert={isGroupCollapsed}
+                    aria-hidden={isGroupCollapsed}
                   >
-                    {group.items.map((item) => {
-                      const isActive = activeItem?.id === item.id
+                    <div className="min-h-0 overflow-hidden">
+                      <div
+                        className={cn(
+                          'flex flex-col gap-1',
+                          isCollapsed && 'items-center',
+                        )}
+                      >
+                        {group.items.map((item) => {
+                          const isActive = activeItem?.id === item.id
 
-                      return (
-                        <a
-                          key={item.id}
-                          href={item.to}
-                          title={item.label}
-                          className={cn(
-                            isActive ? activeStyle : defaultStyle,
-                            'flex h-8 w-full items-center gap-2 rounded-md border px-2 text-left text-sm transition-colors',
-                            isCollapsed && 'size-8 justify-center gap-0 p-2',
-                          )}
-                          onClick={(event) => {
-                            if (shouldUseBrowserNavigation(event)) {
-                              return
-                            }
-                            event.preventDefault()
-                            handleNavigate(item.to)
-                          }}
-                        >
-                          <item.icon className="size-4 shrink-0" />
-                          <span
-                            className={cn(
-                              'truncate whitespace-nowrap',
-                              isCollapsed && 'hidden',
-                            )}
-                          >
-                            {item.label}
-                          </span>
-                        </a>
-                      )
-                    })}
+                          return (
+                            <a
+                              key={item.id}
+                              href={item.to}
+                              title={item.label}
+                              className={cn(
+                                isActive ? activeStyle : defaultStyle,
+                                'flex h-8 w-full items-center gap-2 rounded-md border px-2 text-left text-sm transition-colors',
+                                isCollapsed && 'size-8 justify-center gap-0 p-2',
+                              )}
+                              onClick={(event) => {
+                                if (shouldUseBrowserNavigation(event)) {
+                                  return
+                                }
+                                event.preventDefault()
+                                handleNavigate(item.to)
+                              }}
+                            >
+                              <item.icon className="size-4 shrink-0" />
+                              <span
+                                className={cn(
+                                  'truncate whitespace-nowrap',
+                                  isCollapsed && 'hidden',
+                                )}
+                              >
+                                {item.label}
+                              </span>
+                            </a>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </section>
               )
