@@ -5,6 +5,7 @@ import {
   Braces,
   CalendarClock,
   Compass,
+  Code2,
   GitBranch,
   Globe2,
   LayoutDashboard,
@@ -199,6 +200,16 @@ export const APP_SCENES: Array<AppScene> = [
           },
         ],
       },
+    ],
+  }),
+  createScene({
+    id: 'developer-tools',
+    labelKey: 'scene.developerTools.label',
+    descriptionKey: 'scene.developerTools.description',
+    categoryKey: 'scene.category.vineHub',
+    icon: Code2,
+    defaultTo: '/debug/service-client',
+    groups: [
       {
         id: 'debug-group',
         titleKey: 'nav.group.debug',
@@ -328,7 +339,7 @@ export const APP_SCENES: Array<AppScene> = [
 export const APP_SCENE_CATEGORIES: Array<AppSceneCategory> = [
   {
     titleKey: 'scene.category.vineHub',
-    sceneIds: ['vine-hub'],
+    sceneIds: ['vine-hub', 'developer-tools'],
   },
 ]
 
