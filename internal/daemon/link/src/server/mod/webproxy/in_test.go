@@ -71,16 +71,8 @@ func TestHandleInRejectsMalformedInstanceScopedPath(t *testing.T) {
 		path   string
 		reason string
 	}{
-		{
-			name:   "missing app instance id",
-			path:   "/",
-			reason: "missing app instance id",
-		},
-		{
-			name:   "invalid app instance id",
-			path:   "/not-a-uuid/admin@demo.app/ping",
-			reason: "invalid app instance id",
-		},
+		{name: "missing app instance id", path: "/", reason: "missing app instance id"},
+		{name: "invalid app instance id", path: "/not-a-uuid/admin@demo.app/ping", reason: "invalid app instance id"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -185,10 +177,7 @@ func TestHandleInWebRequestInheritsContextDeadline(t *testing.T) {
 		accept string
 	}{
 		{name: "ordinary request"},
-		{
-			name:   "event stream",
-			accept: "text/event-stream",
-		},
+		{name: "event stream", accept: "text/event-stream"},
 	}
 	for index, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

@@ -37,11 +37,7 @@ func TestMarshalAndUnmarshalJson(t *testing.T) {
 }
 
 func TestMustJsonVariants(t *testing.T) {
-	payload := jsonPayload{
-		Name:  "must",
-		Count: 5,
-		Tags:  []string{"x"},
-	}
+	payload := jsonPayload{Name: "must", Count: 5, Tags: []string{"x"}}
 
 	data := MustMarshalJson(payload)
 	assert.JSONEq(t, `{"name":"must","count":5,"tags":["x"]}`, string(data))

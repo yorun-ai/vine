@@ -55,108 +55,48 @@ func TestAdditionalDescriptorTypesPublicationLifecycle(t *testing.T) {
 			name: "domain",
 			key:  watched.FormatDescriptorDomainKey("demo.Contract"),
 			build: func(hash string, main bool) (core.DomainDescriptorView, any) {
-				value := new(skeldesc.Domain{
-					Name:        "demo.Contract",
-					Hash:        hash,
-					Description: hash,
-				})
-				return core.DomainDescriptorView{DomainVersion: core.DomainDescriptorVersion{
-					Descriptor: value,
-					Main:       main,
-				}}, value
+				value := new(skeldesc.Domain{Name: "demo.Contract", Hash: hash, Description: hash})
+				return core.DomainDescriptorView{DomainVersion: core.DomainDescriptorVersion{Descriptor: value, Main: main}}, value
 			},
 		},
 		{
 			name: "data",
 			key:  watched.FormatDescriptorDataKey("demo.Contract"),
 			build: func(hash string, main bool) (core.DomainDescriptorView, any) {
-				value := new(skeldesc.Data{
-					SkelName:    "demo.Contract",
-					Hash:        hash,
-					Description: hash,
-					Members: []*skeldesc.Member{{Name: "id", Type: new(skeldesc.Type{
-						Kind:   skeldesc.TypeKindScalar,
-						Scalar: skeldesc.ScalarInt,
-					})}},
-				})
-				return core.DomainDescriptorView{Data: []core.DescriptorVersion[*skeldesc.Data]{{
-					Descriptor: value,
-					Main:       main,
-				}}}, value
+				value := new(skeldesc.Data{SkelName: "demo.Contract", Hash: hash, Description: hash, Members: []*skeldesc.Member{{Name: "id", Type: new(skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarInt})}}})
+				return core.DomainDescriptorView{Data: []core.DescriptorVersion[*skeldesc.Data]{{Descriptor: value, Main: main}}}, value
 			},
 		},
 		{
 			name: "enum",
 			key:  watched.FormatDescriptorEnumKey("demo.Contract"),
 			build: func(hash string, main bool) (core.DomainDescriptorView, any) {
-				value := new(skeldesc.Enum{
-					SkelName:    "demo.Contract",
-					Hash:        hash,
-					Description: hash,
-					Items:       []*skeldesc.EnumItem{{Name: "ACTIVE"}},
-				})
-				return core.DomainDescriptorView{Enums: []core.DescriptorVersion[*skeldesc.Enum]{{
-					Descriptor: value,
-					Main:       main,
-				}}}, value
+				value := new(skeldesc.Enum{SkelName: "demo.Contract", Hash: hash, Description: hash, Items: []*skeldesc.EnumItem{{Name: "ACTIVE"}}})
+				return core.DomainDescriptorView{Enums: []core.DescriptorVersion[*skeldesc.Enum]{{Descriptor: value, Main: main}}}, value
 			},
 		},
 		{
 			name: "config",
 			key:  watched.FormatDescriptorConfigKey("demo.Contract"),
 			build: func(hash string, main bool) (core.DomainDescriptorView, any) {
-				value := new(skeldesc.Config{
-					SkelName:    "demo.Contract",
-					Hash:        hash,
-					Description: hash,
-					Lifecycle:   skeldesc.ConfigLifecycleInstant,
-					Members: []*skeldesc.Member{{Name: "flag", Type: new(skeldesc.Type{
-						Kind:   skeldesc.TypeKindScalar,
-						Scalar: skeldesc.ScalarBoolean,
-					})}},
-				})
-				return core.DomainDescriptorView{Configs: []core.DescriptorVersion[*skeldesc.Config]{{
-					Descriptor: value,
-					Main:       main,
-				}}}, value
+				value := new(skeldesc.Config{SkelName: "demo.Contract", Hash: hash, Description: hash, Lifecycle: skeldesc.ConfigLifecycleInstant, Members: []*skeldesc.Member{{Name: "flag", Type: new(skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBoolean})}}})
+				return core.DomainDescriptorView{Configs: []core.DescriptorVersion[*skeldesc.Config]{{Descriptor: value, Main: main}}}, value
 			},
 		},
 		{
 			name: "event",
 			key:  watched.FormatDescriptorEventKey("demo.Contract"),
 			build: func(hash string, main bool) (core.DomainDescriptorView, any) {
-				value := new(skeldesc.Event{
-					SkelName:    "demo.Contract",
-					Hash:        hash,
-					Description: hash,
-					Members: []*skeldesc.Member{{Name: "id", Type: new(skeldesc.Type{
-						Kind:   skeldesc.TypeKindScalar,
-						Scalar: skeldesc.ScalarInt,
-					})}},
-				})
-				return core.DomainDescriptorView{Events: []core.DescriptorVersion[*skeldesc.Event]{{
-					Descriptor: value,
-					Main:       main,
-				}}}, value
+				value := new(skeldesc.Event{SkelName: "demo.Contract", Hash: hash, Description: hash, Members: []*skeldesc.Member{{Name: "id", Type: new(skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarInt})}}})
+				return core.DomainDescriptorView{Events: []core.DescriptorVersion[*skeldesc.Event]{{Descriptor: value, Main: main}}}, value
 			},
 		},
 		{
 			name: "task",
 			key:  watched.FormatDescriptorTaskKey("demo.Contract"),
 			build: func(hash string, main bool) (core.DomainDescriptorView, any) {
-				value := new(skeldesc.Task{
-					SkelName:    "demo.Contract",
-					Hash:        hash,
-					Description: hash,
-					Triggers: []*skeldesc.TaskTrigger{{Name: "Manual", SkelName: "manual", Arguments: []*skeldesc.Member{{Name: "id", Type: new(skeldesc.Type{
-						Kind:   skeldesc.TypeKindScalar,
-						Scalar: skeldesc.ScalarInt,
-					})}}}},
-				})
-				return core.DomainDescriptorView{Tasks: []core.DescriptorVersion[*skeldesc.Task]{{
-					Descriptor: value,
-					Main:       main,
-				}}}, value
+				value := new(skeldesc.Task{SkelName: "demo.Contract", Hash: hash, Description: hash, Triggers: []*skeldesc.TaskTrigger{{Name: "Manual", SkelName: "manual", Arguments: []*skeldesc.Member{{Name: "id", Type: new(skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarInt})}}}}})
+				return core.DomainDescriptorView{Tasks: []core.DescriptorVersion[*skeldesc.Task]{{Descriptor: value, Main: main}}}, value
 			},
 		},
 	} {
@@ -211,22 +151,8 @@ func TestWebDescriptorsPublicationLifecycle(t *testing.T) {
 	target := testSyncer(server)
 	views := []core.DomainDescriptorView{{
 		Webs: []core.DescriptorVersion[*skeldesc.Web]{
-			{
-				Descriptor: new(skeldesc.Web{
-					SkelName: "demo.Web",
-					Hash:     "first",
-					AuthMode: skeldesc.AuthModeRequired,
-				}),
-				Main: true,
-			},
-			{
-				Descriptor: new(skeldesc.Web{
-					SkelName: "demo.OldWeb",
-					Hash:     "old",
-					AuthMode: skeldesc.AuthModeRequired,
-				}),
-				Main: false,
-			},
+			{Descriptor: new(skeldesc.Web{SkelName: "demo.Web", Hash: "first", AuthMode: skeldesc.AuthModeRequired}), Main: true},
+			{Descriptor: new(skeldesc.Web{SkelName: "demo.OldWeb", Hash: "old", AuthMode: skeldesc.AuthModeRequired}), Main: false},
 		},
 	}}
 	target.SyncDescriptors(views)
@@ -258,34 +184,14 @@ func TestDomainDescriptorsRetainCompleteContractWithOnlyAPIServiceKeys(t *testin
 	server := watchserver.NewServerForTest()
 	t.Cleanup(server.AfterAppStop)
 	target := testSyncer(server)
-	api := new(skeldesc.Service{
-		SkelName: "demo.API",
-		Hash:     "api",
-		Api:      true,
-	})
-	internal := new(skeldesc.Service{
-		SkelName: "demo.Internal",
-		Hash:     "internal",
-	})
-	domain := new(skeldesc.Domain{
-		Name:     "demo",
-		Hash:     "domain",
-		Services: []*skeldesc.Service{api, internal},
-	})
+	api := new(skeldesc.Service{SkelName: "demo.API", Hash: "api", Api: true})
+	internal := new(skeldesc.Service{SkelName: "demo.Internal", Hash: "internal"})
+	domain := new(skeldesc.Domain{Name: "demo", Hash: "domain", Services: []*skeldesc.Service{api, internal}})
 	view := core.DomainDescriptorView{
-		DomainVersion: core.DomainDescriptorVersion{
-			Descriptor: domain,
-			Main:       true,
-		},
+		DomainVersion: core.DomainDescriptorVersion{Descriptor: domain, Main: true},
 		Services: []core.DescriptorVersion[*skeldesc.Service]{
-			{
-				Descriptor: api,
-				Main:       true,
-			},
-			{
-				Descriptor: internal,
-				Main:       true,
-			},
+			{Descriptor: api, Main: true},
+			{Descriptor: internal, Main: true},
 		},
 	}
 	for _, write := range []func([]core.DomainDescriptorView){target.SyncDescriptors, target.WriteDescriptors} {

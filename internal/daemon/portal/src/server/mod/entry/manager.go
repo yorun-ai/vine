@@ -191,13 +191,7 @@ func (e *Manager) buildRulesLocked() map[_Key][]*_Rule {
 	}
 	for _, config := range e.entryConfigsByName {
 		for _, access := range entryTransports(config) {
-			rule := &_Rule{
-				name:        config.Name,
-				listenIPs:   config.ListenIPs,
-				matchScheme: access.scheme,
-				matchPort:   access.port,
-				matchHost:   config.EffectiveHTTP.Host,
-			}
+			rule := &_Rule{name: config.Name, listenIPs: config.ListenIPs, matchScheme: access.scheme, matchPort: access.port, matchHost: config.EffectiveHTTP.Host}
 			for _, key := range rule.Keys() {
 				if _, ok := rulesByKey[key]; !ok {
 					rulesByKey[key] = nil
@@ -245,16 +239,10 @@ type _Transport struct {
 func entryTransports(config watched.PortalEntry) []_Transport {
 	transports := []_Transport{}
 	if config.EffectiveHTTP.HttpEnabled {
-		transports = append(transports, _Transport{
-			scheme: spec.SchemeHTTP,
-			port:   config.EffectiveHTTP.HttpPort,
-		})
+		transports = append(transports, _Transport{scheme: spec.SchemeHTTP, port: config.EffectiveHTTP.HttpPort})
 	}
 	if config.EffectiveHTTP.HttpsEnabled {
-		transports = append(transports, _Transport{
-			scheme: spec.SchemeHTTPS,
-			port:   config.EffectiveHTTP.HttpsPort,
-		})
+		transports = append(transports, _Transport{scheme: spec.SchemeHTTPS, port: config.EffectiveHTTP.HttpsPort})
 	}
 	return transports
 }

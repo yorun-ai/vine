@@ -43,14 +43,8 @@ func (r *MessageQueueRepo) List(ctx context.Context) ([]core.MessageQueueStatus,
 		return nil, err
 	}
 	items := []core.MessageQueueStatus{
-		{
-			Kind:   "task",
-			Stream: taskspec.NATSStreamName,
-		},
-		{
-			Kind:   "event",
-			Stream: eventspec.NATSStreamName,
-		},
+		{Kind: "task", Stream: taskspec.NATSStreamName},
+		{Kind: "event", Stream: eventspec.NATSStreamName},
 	}
 	for i := range items {
 		item := &items[i]
@@ -71,10 +65,7 @@ func (r *MessageQueueRepo) List(ctx context.Context) ([]core.MessageQueueStatus,
 		item.Messages = info.State.Msgs
 		item.Bytes = info.State.Bytes
 		for subject, count := range info.State.Subjects {
-			item.Subjects = append(item.Subjects, core.MessageQueueSubject{
-				Subject:  subject,
-				Messages: count,
-			})
+			item.Subjects = append(item.Subjects, core.MessageQueueSubject{Subject: subject, Messages: count})
 		}
 		slices.SortFunc(item.Subjects, func(a core.MessageQueueSubject, b core.MessageQueueSubject) int {
 			return cmp.Compare(a.Subject, b.Subject)

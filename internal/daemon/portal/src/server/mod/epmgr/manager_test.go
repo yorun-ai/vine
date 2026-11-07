@@ -127,10 +127,7 @@ func testWebRegistrationValue(webName string, instanceId string, endpoint string
 
 func TestEndpointDiscoveryThroughHubWatch(t *testing.T) {
 	server, client := watchtest.NewServer(t, watch.PortalUsername)
-	manager := &Manager{
-		Context: t.Context(),
-		Watch:   client,
-	}
+	manager := &Manager{Context: t.Context(), Watch: client}
 	manager.DIInit()
 	subscription := manager.WatchRpc("demo.Service")
 	t.Cleanup(subscription.Release)

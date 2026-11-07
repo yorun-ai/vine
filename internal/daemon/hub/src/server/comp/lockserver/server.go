@@ -57,10 +57,7 @@ func (s *Server) Acquire(key string, token string, ttlMillis int) bool {
 		// An active lease blocks acquisition even for the same token; use Renew to extend it.
 		return false
 	}
-	s.items[key] = _Lease{
-		token:   token,
-		expires: now.Add(ttl),
-	}
+	s.items[key] = _Lease{token: token, expires: now.Add(ttl)}
 	return true
 }
 

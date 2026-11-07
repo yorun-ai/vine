@@ -58,11 +58,7 @@ func TestTriggerNullableArguments(t *testing.T) {
 		Items  *[]string
 		Labels *map[string]string
 	}
-	trigger := &_TriggerInfo{
-		name:               "Run",
-		argumentsType:      reflect.TypeFor[arguments](),
-		argumentFieldInfos: buildArgumentFieldInfos(reflect.TypeFor[arguments]()),
-	}
+	trigger := &_TriggerInfo{name: "Run", argumentsType: reflect.TypeFor[arguments](), argumentFieldInfos: buildArgumentFieldInfos(reflect.TypeFor[arguments]())}
 	emptyItems, emptyLabels := []string{}, map[string]string{}
 	note, items, labels := "note", []string{"item"}, map[string]string{"key": "value"}
 	for _, args := range []*arguments{{}, {Items: &emptyItems, Labels: &emptyLabels}, {Note: &note, Items: &items, Labels: &labels}} {
@@ -78,10 +74,7 @@ func TestTriggerNullableArguments(t *testing.T) {
 
 func TestTriggerRejectsNilArgumentObject(t *testing.T) {
 	type arguments struct{ Note *string }
-	trigger := &_TriggerInfo{
-		name:          "Run",
-		argumentsType: reflect.TypeFor[arguments](),
-	}
+	trigger := &_TriggerInfo{name: "Run", argumentsType: reflect.TypeFor[arguments]()}
 	for _, args := range []any{nil, (*arguments)(nil)} {
 		if err := trigger.ValidateArguments(args); err == nil {
 			t.Fatal("nil argument object must be rejected")

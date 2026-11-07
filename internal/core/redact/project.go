@@ -46,10 +46,7 @@ func (s *_ProjectionState) project(value reflect.Value, depth int) (any, error) 
 			return nil, nil
 		}
 		if value.Kind() == reflect.Pointer {
-			visit := _Visit{
-				kind: value.Kind(),
-				ptr:  value.Pointer(),
-			}
+			visit := _Visit{kind: value.Kind(), ptr: value.Pointer()}
 			if _, exists := s.visiting[visit]; exists {
 				return "<cycle>", nil
 			}
@@ -225,10 +222,7 @@ func (s *_ProjectionState) projectMap(value reflect.Value, depth int) (any, erro
 	if value.Len() > s.limits.MaxCollectionItems {
 		return s.truncatedValue("map", "entries", value.Len()), nil
 	}
-	visit := _Visit{
-		kind: value.Kind(),
-		ptr:  value.Pointer(),
-	}
+	visit := _Visit{kind: value.Kind(), ptr: value.Pointer()}
 	if _, exists := s.visiting[visit]; exists {
 		return map[string]any{"_value": "<cycle>"}, nil
 	}
@@ -261,10 +255,7 @@ func (s *_ProjectionState) projectList(value reflect.Value, depth int) (any, err
 	}
 	var visit _Visit
 	if value.Kind() == reflect.Slice {
-		visit = _Visit{
-			kind: value.Kind(),
-			ptr:  value.Pointer(),
-		}
+		visit = _Visit{kind: value.Kind(), ptr: value.Pointer()}
 		if _, exists := s.visiting[visit]; exists {
 			return []any{"<cycle>"}, nil
 		}

@@ -24,31 +24,8 @@ func (r *queueRepoStub) List(ctx context.Context) ([]core.MessageQueueStatus, er
 
 func TestMessageQueueServicePreservesCountsAndRequestContext(t *testing.T) {
 	ctx := meta.NewContext(t.Context(), nil, nil, nil)
-	repo := &queueRepoStub{
-		statuses: []core.MessageQueueStatus{{
-			Kind:     "task",
-			Stream:   "VINE_TASKS",
-			Exists:   true,
-			Messages: math.MaxUint64,
-			Bytes:    math.MaxUint64,
-			Subjects: []core.MessageQueueSubject{{
-				Subject:  "task.demo",
-				Messages: math.MaxUint64,
-			}},
-			Consumers: []core.MessageQueueConsumer{{
-				Name:           "demo",
-				FilterSubjects: []string{"task.demo"},
-				Pending:        math.MaxUint64,
-				AckPending:     2,
-				Redelivered:    1,
-				Waiting:        3,
-			}},
-		}},
-	}
-	service := &MessageQueueStatusApiServiceServerImpl{
-		Context:          ctx,
-		MessageQueueRepo: repo,
-	}
+	repo := &queueRepoStub{statuses: []core.MessageQueueStatus{{Kind: "task", Stream: "VINE_TASKS", Exists: true, Messages: math.MaxUint64, Bytes: math.MaxUint64, Subjects: []core.MessageQueueSubject{{Subject: "task.demo", Messages: math.MaxUint64}}, Consumers: []core.MessageQueueConsumer{{Name: "demo", FilterSubjects: []string{"task.demo"}, Pending: math.MaxUint64, AckPending: 2, Redelivered: 1, Waiting: 3}}}}}
+	service := &MessageQueueStatusApiServiceServerImpl{Context: ctx, MessageQueueRepo: repo}
 	items := service.List()
 	require.Same(t, ctx, repo.ctx)
 	require.Equal(t, "18446744073709551615", items[0].Messages)
@@ -61,9 +38,6 @@ func TestMessageQueueServicePreservesCountsAndRequestContext(t *testing.T) {
 }
 
 func TestMessageQueueServiceDoesNotReturnConnectionSecrets(t *testing.T) {
-	service := &MessageQueueStatusApiServiceServerImpl{
-		Context:          meta.NewContext(t.Context(), nil, nil, nil),
-		MessageQueueRepo: &queueRepoStub{err: errors.New("nats://user:secret@host")},
-	}
+	service := &MessageQueueStatusApiServiceServerImpl{Context: meta.NewContext(t.Context(), nil, nil, nil), MessageQueueRepo: &queueRepoStub{err: errors.New("nats://user:secret@host")}}
 	require.PanicsWithError(t, "Unable to read message queue status type=SYSTEM code=SERVICE_UNAVAILABLE", func() { service.List() })
 }

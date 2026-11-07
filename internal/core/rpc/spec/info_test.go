@@ -17,10 +17,7 @@ func TestMethodInfoPositionsArgumentsBySkelIndex(t *testing.T) {
 		First  int    `skel:"index(0)"`
 	}
 	method := newInitializedMethodInfo(reflect.TypeFor[arguments](), nil, false, false)
-	require.Equal(t, []any{42, " second "}, method.PositionArguments(&arguments{
-		First:  42,
-		Second: " second ",
-	}))
+	require.Equal(t, []any{42, " second "}, method.PositionArguments(&arguments{First: 42, Second: " second "}))
 }
 
 func TestServiceInfoInitRejectsMissingOrNegativeArgumentIndexes(t *testing.T) {

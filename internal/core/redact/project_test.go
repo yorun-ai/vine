@@ -15,11 +15,8 @@ func TestRenderMasksOnlyExplicitlySensitiveFields(t *testing.T) {
 		Profile taggedValue       `json:"profile"`
 		Meta    map[string]string `json:"meta"`
 	}{
-		Profile: taggedValue{
-			Name:   "Alice",
-			Secret: "tagged-secret",
-		},
-		Meta: map[string]string{"access_token": "key-secret", "visible": "value"},
+		Profile: taggedValue{Name: "Alice", Secret: "tagged-secret"},
+		Meta:    map[string]string{"access_token": "key-secret", "visible": "value"},
 	})
 	if err != nil {
 		t.Fatalf("render: %v", err)

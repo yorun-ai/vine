@@ -45,10 +45,7 @@ func TestFilteredUpdatePreservesValuesAndScope(t *testing.T) {
 		Note:   new("original"),
 	}))
 	second := dao.Create(new(filteredTestModel{Group: "selected"}))
-	other := dao.Create(new(filteredTestModel{
-		Group:  "other",
-		Active: true,
-	}))
+	other := dao.Create(new(filteredTestModel{Group: "other", Active: true}))
 
 	filtered := dao.Filter("group_name = ?", "selected")
 	affected := filtered.Update(Patch{
@@ -136,14 +133,8 @@ func TestFilteredDatabaseErrorsPanic(t *testing.T) {
 
 func TestOneUpdateAndDeleteRequireExactlyOneRow(t *testing.T) {
 	dao, _ := newFilteredTestDao(t)
-	first := dao.Create(new(filteredTestModel{
-		Group: "selected",
-		Count: 3,
-	}))
-	dao.Create(new(filteredTestModel{
-		Group: "selected",
-		Count: 4,
-	}))
+	first := dao.Create(new(filteredTestModel{Group: "selected", Count: 3}))
+	dao.Create(new(filteredTestModel{Group: "selected", Count: 4}))
 	require.Panics(t, func() { dao.One() })
 	require.Panics(t, func() { dao.One(uuid.NewV7()).Update(Patch{"count": 1}) })
 	require.Panics(t, func() { dao.One(uuid.NewV7()).Delete() })
@@ -181,14 +172,8 @@ func TestOnePhysicalDeleteRollsBackMultipleMatches(t *testing.T) {
 
 func TestOneFailureRollsBackWithinExistingTransaction(t *testing.T) {
 	dao, db := newFilteredTestDao(t)
-	first := dao.Create(new(filteredTestModel{
-		Group: "selected",
-		Count: 3,
-	}))
-	dao.Create(new(filteredTestModel{
-		Group: "selected",
-		Count: 4,
-	}))
+	first := dao.Create(new(filteredTestModel{Group: "selected", Count: 3}))
+	dao.Create(new(filteredTestModel{Group: "selected", Count: 4}))
 	// One must keep its rollback guarantee even with nested transactions disabled
 	// on the supplied connection, without changing that connection's config.
 	db = db.Session(new(gorm.Session{DisableNestedTransaction: true}))

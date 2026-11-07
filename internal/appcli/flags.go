@@ -54,11 +54,7 @@ func NewFlagNames(ignored []string, renamed map[string]string) *FlagNames {
 // and its environment variable out of the application.
 func (n *FlagNames) String(canonical string, env string, target *string, usage string) *ucli.StringFlag {
 	name, env := n.resolve(canonical, env)
-	flag := &ucli.StringFlag{
-		Name:    name,
-		Sources: ucli.EnvVars(env),
-		Usage:   usage,
-	}
+	flag := &ucli.StringFlag{Name: name, Sources: ucli.EnvVars(env), Usage: usage}
 	if !n.ignored[canonical] {
 		flag.Destination = target
 	}
@@ -78,11 +74,7 @@ func (n *FlagNames) StringSlice(canonical string, env string, target *[]string, 
 // Bool declares one boolean flag bound to target, with the same rules as String.
 func (n *FlagNames) Bool(canonical string, env string, target *bool, usage string) *ucli.BoolFlag {
 	name, env := n.resolve(canonical, env)
-	flag := &ucli.BoolFlag{
-		Name:    name,
-		Sources: ucli.EnvVars(env),
-		Usage:   usage,
-	}
+	flag := &ucli.BoolFlag{Name: name, Sources: ucli.EnvVars(env), Usage: usage}
 	if !n.ignored[canonical] {
 		flag.Destination = target
 	}

@@ -47,18 +47,9 @@ func TestPortalEntryServiceMapsRulesAndTargetSites(t *testing.T) {
 	}
 	service := &PortalEntryApiServiceServerImpl{
 		PortalEntryCore: &core.PortalEntryCore{
-			PortalEntryRepo: newTestPortalEntryRepoSpy(&core.PortalEntry{
-				Id:       1,
-				Name:     "http:8080",
-				Protocol: "http",
-				Http: &core.PortalEntryHTTP{
-					Http:     "ENABLED",
-					Https:    "DISABLED",
-					HttpPort: 8080,
-				},
-			}),
-			PortalRuleRepo: ruleRepo,
-			PortalSiteRepo: siteRepo,
+			PortalEntryRepo: newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Name: "http:8080", Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}}),
+			PortalRuleRepo:  ruleRepo,
+			PortalSiteRepo:  siteRepo,
 		},
 	}
 
@@ -88,16 +79,7 @@ func TestPortalEntryServiceCreatesAndRemovesEntry(t *testing.T) {
 		},
 	}
 
-	created := service.Create(skeled.PortalEntryCreation{
-		Name:     "web",
-		Protocol: "http",
-		Http: new(skeled.PortalEntryHttp{
-			HttpPort:  8080,
-			Https:     "DISABLED",
-			Autohttps: "DISABLED",
-		}),
-		ListenIPs: []string{"127.0.0.1", "::1"},
-	})
+	created := service.Create(skeled.PortalEntryCreation{Name: "web", Protocol: "http", Http: new(skeled.PortalEntryHttp{HttpPort: 8080, Https: "DISABLED", Autohttps: "DISABLED"}), ListenIPs: []string{"127.0.0.1", "::1"}})
 
 	// An entry routes no rule when the operator creates it.
 	require.NotZero(t, created.Id)
@@ -107,10 +89,7 @@ func TestPortalEntryServiceCreatesAndRemovesEntry(t *testing.T) {
 	assert.Equal(t, []string{"127.0.0.1", "::1"}, created.ListenIPs)
 	assert.Empty(t, created.Rules)
 
-	updated := service.Update(created.Id, skeled.PortalEntryUpdate{
-		Name:      new("console"),
-		ListenIPs: new([]string{"127.0.0.2"}),
-	})
+	updated := service.Update(created.Id, skeled.PortalEntryUpdate{Name: new("console"), ListenIPs: new([]string{"127.0.0.2"})})
 	assert.Equal(t, "console", updated.Name)
 	assert.Equal(t, 8080, updated.Http.HttpPort)
 	assert.Equal(t, []string{"127.0.0.2"}, updated.ListenIPs)
@@ -126,10 +105,7 @@ func TestPortalEntryProtocolVocabulary(t *testing.T) {
 	require.NotPanics(t, func() { validatePortalEntryProtocol(new("http")) })
 	require.Panics(t, func() { validatePortalEntryProtocol(new("")) })
 	require.Panics(t, func() { validatePortalEntryProtocol(new("tcp")) })
-	patch := toCoreHTTPConfig(new(skeled.PortalEntryHttp{
-		Https:     "DISABLED",
-		Autohttps: "DISABLED",
-	}))
+	patch := toCoreHTTPConfig(new(skeled.PortalEntryHttp{Https: "DISABLED", Autohttps: "DISABLED"}))
 	config := patch.Effective(false)
 	require.True(t, config.HttpEnabled)
 	require.False(t, config.HttpsEnabled)
@@ -140,42 +116,18 @@ func TestPortalEntryServiceRetainsAutomaticSwitches(t *testing.T) {
 	certRepo := new(_PortalCertRepoSpy)
 	entryRepo := newTestPortalEntryRepoSpy()
 	entryRepo.certs = certRepo
-	service := &PortalEntryApiServiceServerImpl{
-		PortalEntryCore: &core.PortalEntryCore{
-			PortalCertRepo:  certRepo,
-			PortalEntryRepo: entryRepo,
-			PortalRuleRepo:  &_NamedPortalRuleRepoSpy{items: map[string]*core.PortalRule{}},
-			PortalSiteRepo:  &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{}},
-		},
-	}
-	created := service.Create(skeled.PortalEntryCreation{
-		Name:     "web",
-		Protocol: "http",
-		Http:     &skeled.PortalEntryHttp{Host: "demo.local"},
-	})
+	service := &PortalEntryApiServiceServerImpl{PortalEntryCore: &core.PortalEntryCore{PortalCertRepo: certRepo, PortalEntryRepo: entryRepo, PortalRuleRepo: &_NamedPortalRuleRepoSpy{items: map[string]*core.PortalRule{}}, PortalSiteRepo: &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{}}}}
+	created := service.Create(skeled.PortalEntryCreation{Name: "web", Protocol: "http", Http: &skeled.PortalEntryHttp{Host: "demo.local"}})
 	require.EqualValues(t, "AUTO", created.Http.Http)
 	require.EqualValues(t, "AUTO", created.Http.Https)
 	require.EqualValues(t, "AUTO", created.Http.Autohttps)
 	require.True(t, created.EffectiveHttp.HttpEnabled)
 	require.False(t, created.EffectiveHttp.HttpsEnabled)
 	require.Panics(t, func() {
-		service.Update(created.Id, skeled.PortalEntryUpdate{Http: &skeled.PortalEntryHttp{
-			Host:  "demo.local",
-			Https: "ENABLED",
-		}})
+		service.Update(created.Id, skeled.PortalEntryUpdate{Http: &skeled.PortalEntryHttp{Host: "demo.local", Https: "ENABLED"}})
 	})
-	certRepo.Save(new(core.PortalCert{
-		Name:    "demo",
-		Enabled: true,
-		Domains: []string{"demo.local"},
-	}))
-	updated := service.Update(created.Id, skeled.PortalEntryUpdate{
-		Http: &skeled.PortalEntryHttp{
-			Host:      "demo.local",
-			Https:     "ENABLED",
-			HttpsPort: 8443,
-		},
-	})
+	certRepo.Save(new(core.PortalCert{Name: "demo", Enabled: true, Domains: []string{"demo.local"}}))
+	updated := service.Update(created.Id, skeled.PortalEntryUpdate{Http: &skeled.PortalEntryHttp{Host: "demo.local", Https: "ENABLED", HttpsPort: 8443}})
 	require.True(t, updated.EffectiveHttp.HttpsEnabled)
 	require.Equal(t, 8443, updated.EffectiveHttp.HttpsPort)
 	unchanged := service.Update(created.Id, skeled.PortalEntryUpdate{Name: new("renamed")})
@@ -196,10 +148,7 @@ func TestPortalEntryHTTPModeWireContract(t *testing.T) {
 						input, err := decodePortalEntryCreation(t, body, contentType)
 						if err == nil {
 							require.Panics(t, func() {
-								core.NormalizePortalEntry(core.PortalEntry{
-									Protocol: input.Protocol,
-									Http:     toCoreHTTPConfig(input.Http),
-								})
+								core.NormalizePortalEntry(core.PortalEntry{Protocol: input.Protocol, Http: toCoreHTTPConfig(input.Http)})
 							})
 						}
 					})
@@ -210,10 +159,7 @@ func TestPortalEntryHTTPModeWireContract(t *testing.T) {
 				require.NoError(t, err)
 				input, err := decodePortalEntryCreation(t, body, contentType)
 				require.NoError(t, err)
-				entry := core.NormalizePortalEntry(core.PortalEntry{
-					Protocol: input.Protocol,
-					Http:     toCoreHTTPConfig(input.Http),
-				})
+				entry := core.NormalizePortalEntry(core.PortalEntry{Protocol: input.Protocol, Http: toCoreHTTPConfig(input.Http)})
 				require.True(t, entry.Http.Http.Valid())
 				require.True(t, entry.Http.Https.Valid())
 				require.True(t, entry.Http.AutoHTTPS.Valid())

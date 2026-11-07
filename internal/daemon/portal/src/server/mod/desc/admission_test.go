@@ -13,31 +13,18 @@ import (
 )
 
 func TestAdmissionObserverReceivesInitialStateAndStopsOnCancellation(t *testing.T) {
-	target := newTestManager(t, map[string]string{watched.FormatDescriptorActorKey("demo.User"): vcode.MustMarshalJsonS(skeldesc.Actor{
-		SkelName: "demo.User",
-		Hash:     "initial",
-	})})
+	target := newTestManager(t, map[string]string{watched.FormatDescriptorActorKey("demo.User"): vcode.MustMarshalJsonS(skeldesc.Actor{SkelName: "demo.User", Hash: "initial"})})
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	var snapshots []AdmissionSnapshot
 	target.ObserveAdmission(ctx, func(snapshot AdmissionSnapshot) { snapshots = append(snapshots, snapshot) })
 	require.Len(t, snapshots, 1)
-	target.handleActorEvent(hubwatch.Event{
-		Kind: hubwatch.EventKindUpsert,
-		Key:  watched.FormatDescriptorActorKey("demo.User"),
-		Value: vcode.MustMarshalJsonS(skeldesc.Actor{
-			SkelName: "demo.User",
-			Hash:     "updated",
-		}),
-	})
+	target.handleActorEvent(hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: watched.FormatDescriptorActorKey("demo.User"), Value: vcode.MustMarshalJsonS(skeldesc.Actor{SkelName: "demo.User", Hash: "updated"})})
 	require.Len(t, snapshots, 2)
 	require.Equal(t, "initial", snapshots[0].Actors["demo.User"].Hash)
 	require.Equal(t, "updated", snapshots[1].Actors["demo.User"].Hash)
 	cancel()
-	target.handleActorEvent(hubwatch.Event{
-		Kind: hubwatch.EventKindDelete,
-		Key:  watched.FormatDescriptorActorKey("demo.User"),
-	})
+	target.handleActorEvent(hubwatch.Event{Kind: hubwatch.EventKindDelete, Key: watched.FormatDescriptorActorKey("demo.User")})
 	require.Len(t, snapshots, 2)
 	_, ok := target.Actor("demo.User")
 	require.False(t, ok)

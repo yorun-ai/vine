@@ -80,10 +80,7 @@ func (c *_TestInfoServiceClient) calls() int {
 func newTestHubInfo(client *_TestInfoServiceClient) *hubinfo.HubInfo {
 	flags := &flag.Flag{HubEndpoint: "http://127.0.0.1:7071"}
 	flags.Normalize(false)
-	component := &hubinfo.HubInfo{
-		Flag:              flags,
-		InfoServiceClient: client,
-	}
+	component := &hubinfo.HubInfo{Flag: flags, InfoServiceClient: client}
 	component.DIInit()
 	return component
 }

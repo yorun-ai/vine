@@ -13,26 +13,10 @@ func TestModuleVersion(t *testing.T) {
 		raw      string
 		expected string
 	}{
-		{
-			name:     "devel",
-			raw:      "(devel)",
-			expected: DevVersion,
-		},
-		{
-			name:     "without v prefix",
-			raw:      "1.2.3",
-			expected: "v1.2.3",
-		},
-		{
-			name:     "module version",
-			raw:      "v2.3.4",
-			expected: "v2.3.4",
-		},
-		{
-			name:     "dirty",
-			raw:      "v1.1.0-alpha3+dirty",
-			expected: "v1.1.0-alpha3",
-		},
+		{name: "devel", raw: "(devel)", expected: DevVersion},
+		{name: "without v prefix", raw: "1.2.3", expected: "v1.2.3"},
+		{name: "module version", raw: "v2.3.4", expected: "v2.3.4"},
+		{name: "dirty", raw: "v1.1.0-alpha3+dirty", expected: "v1.1.0-alpha3"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := moduleVersion(tt.raw); got != tt.expected {
@@ -137,46 +121,10 @@ func TestMustVineVersion(t *testing.T) {
 		linker string
 		want   string
 	}{
-		{
-			name: "Vine binary",
-			info: debug.BuildInfo{Main: debug.Module{
-				Path:    "go.yorun.ai/vine",
-				Version: "v0.17.0",
-			}},
-			want: "v0.17.0",
-		},
-		{
-			name: "release linker version",
-			info: debug.BuildInfo{Main: debug.Module{
-				Path:    "go.yorun.ai/vine",
-				Version: "(devel)",
-			}},
-			linker: "v0.18.0",
-			want:   "v0.18.0",
-		},
-		{
-			name: "embedded Hub",
-			info: debug.BuildInfo{
-				Main: debug.Module{
-					Path:    "example.com/app",
-					Version: "v9.0.0",
-				},
-				Deps: []*debug.Module{{Path: "go.yorun.ai/vine", Version: "v0.17.0"}},
-			},
-			linker: "v9.0.0",
-			want:   "v0.17.0",
-		},
-		{
-			name: "development dependency",
-			info: debug.BuildInfo{
-				Main: debug.Module{
-					Path:    "example.com/app",
-					Version: "v9.0.0",
-				},
-				Deps: []*debug.Module{{Path: "go.yorun.ai/vine", Version: "(devel)"}},
-			},
-			want: DevVersion,
-		},
+		{name: "Vine binary", info: debug.BuildInfo{Main: debug.Module{Path: "go.yorun.ai/vine", Version: "v0.17.0"}}, want: "v0.17.0"},
+		{name: "release linker version", info: debug.BuildInfo{Main: debug.Module{Path: "go.yorun.ai/vine", Version: "(devel)"}}, linker: "v0.18.0", want: "v0.18.0"},
+		{name: "embedded Hub", info: debug.BuildInfo{Main: debug.Module{Path: "example.com/app", Version: "v9.0.0"}, Deps: []*debug.Module{{Path: "go.yorun.ai/vine", Version: "v0.17.0"}}}, linker: "v9.0.0", want: "v0.17.0"},
+		{name: "development dependency", info: debug.BuildInfo{Main: debug.Module{Path: "example.com/app", Version: "v9.0.0"}, Deps: []*debug.Module{{Path: "go.yorun.ai/vine", Version: "(devel)"}}}, want: DevVersion},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			originalRead, originalLinker := readBuildInfo, ldModuleVersion

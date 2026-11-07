@@ -19,12 +19,7 @@ var discardProxyErrorLog = stdlog.New(io.Discard, "", 0)
 // shared transport, buffer pool and existing response/error hooks. Failure logs
 // belong to this wrapper, replacing ReverseProxy.ErrorLog to avoid duplicates.
 func ServeReverseProxy(proxy *stdhttputil.ReverseProxy, w http.ResponseWriter, r *http.Request, log *logger.Logger) bool {
-	transfer := new(_ProxyTransfer{
-		ResponseWriter: w,
-		proxy:          proxy,
-		request:        r,
-		log:            log,
-	})
+	transfer := new(_ProxyTransfer{ResponseWriter: w, proxy: proxy, request: r, log: log})
 	next := *proxy
 	next.ErrorLog = discardProxyErrorLog
 	next.ModifyResponse = transfer.modifyResponse

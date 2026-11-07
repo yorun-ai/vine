@@ -208,18 +208,12 @@ func (r *RegistryRepo) PopExpiredAppLeases() []core.AppHeartbeat {
 }
 
 func (r *RegistryRepo) saveAppLease(appName string, instanceId string) {
-	member := vcode.MustMarshalJsonS(_AppLease{
-		Name:       appName,
-		InstanceId: instanceId,
-	})
+	member := vcode.MustMarshalJsonS(_AppLease{Name: appName, InstanceId: instanceId})
 	r.WatchServer.KeepLease(hubRegistryLeaseKey, member, hubRegistryLeaseTTL)
 }
 
 func (r *RegistryRepo) removeAppLease(appName string, instanceId string) {
-	member := vcode.MustMarshalJsonS(_AppLease{
-		Name:       appName,
-		InstanceId: instanceId,
-	})
+	member := vcode.MustMarshalJsonS(_AppLease{Name: appName, InstanceId: instanceId})
 	r.WatchServer.RemoveLease(hubRegistryLeaseKey, member)
 }
 

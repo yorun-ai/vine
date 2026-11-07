@@ -302,10 +302,7 @@ func renderRpcResult(method spec.MethodInfo, value any) _PayloadValue {
 
 func renderPayload(value any, sensitive bool) _PayloadValue {
 	result, err := redact.Render(value, redact.Option{RootSensitive: sensitive})
-	return _PayloadValue{
-		result: result,
-		err:    err,
-	}
+	return _PayloadValue{result: result, err: err}
 }
 
 func appendPayloadFields(fields []any, name string, payload _PayloadValue) []any {

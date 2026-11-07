@@ -100,39 +100,11 @@ func TestRedisOperationErrorsPreserveCodeAndCause(t *testing.T) {
 		cause error
 		code  ex.Code
 	}{
-		{
-			"connection refused",
-			&net.OpError{
-				Op:  "dial",
-				Net: "tcp",
-				Err: syscall.ECONNREFUSED,
-			},
-			ex.ServiceUnavailable,
-		},
-		{
-			"Redis rejection",
-			errors.New("NOPERM operation denied"),
-			ex.ServiceUnavailable,
-		},
-		{
-			"cancelled",
-			fmt.Errorf("request failed: %w", context.Canceled),
-			ex.InvocationCancelled,
-		},
-		{
-			"deadline exceeded",
-			fmt.Errorf("request failed: %w", context.DeadlineExceeded),
-			ex.InvocationTimeout,
-		},
-		{
-			"socket timeout",
-			&net.OpError{
-				Op:  "read",
-				Net: "tcp",
-				Err: os.ErrDeadlineExceeded,
-			},
-			ex.InvocationTimeout,
-		},
+		{"connection refused", &net.OpError{Op: "dial", Net: "tcp", Err: syscall.ECONNREFUSED}, ex.ServiceUnavailable},
+		{"Redis rejection", errors.New("NOPERM operation denied"), ex.ServiceUnavailable},
+		{"cancelled", fmt.Errorf("request failed: %w", context.Canceled), ex.InvocationCancelled},
+		{"deadline exceeded", fmt.Errorf("request failed: %w", context.DeadlineExceeded), ex.InvocationTimeout},
+		{"socket timeout", &net.OpError{Op: "read", Net: "tcp", Err: os.ErrDeadlineExceeded}, ex.InvocationTimeout},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -147,18 +119,9 @@ func TestRedisOperationErrorsPreserveCodeAndCause(t *testing.T) {
 				name string
 				call func()
 			}{
-				{
-					"acquire",
-					func() { locker.Acquire(ctx, "key", "token", 1000) },
-				},
-				{
-					"renew",
-					func() { locker.Renew(ctx, "key", "token", 1000) },
-				},
-				{
-					"release",
-					func() { locker.Release(ctx, "key", "token") },
-				},
+				{"acquire", func() { locker.Acquire(ctx, "key", "token", 1000) }},
+				{"renew", func() { locker.Renew(ctx, "key", "token", 1000) }},
+				{"release", func() { locker.Release(ctx, "key", "token") }},
 			} {
 				t.Run(operation.name, func(t *testing.T) {
 					var recovered ex.Error

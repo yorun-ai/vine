@@ -109,49 +109,16 @@ func TestFlagNormalizeMQModes(t *testing.T) {
 		want     string
 		failure  string
 	}{
-		{
-			name: "default",
-			want: MQModeEmbedded,
-		},
-		{
-			name: "embedded",
-			mode: MQModeEmbedded,
-			want: MQModeEmbedded,
-		},
-		{
-			name:     "external",
-			mode:     MQModeNATS,
-			endpoint: "nats://localhost:4222",
-			want:     MQModeNATS,
-		},
-		{
-			name:     "default rejects endpoint",
-			endpoint: "nats://localhost:4222",
-			failure:  "mq-nats-endpoint cannot be used with mq-mode=embedded",
-		},
-		{
-			name:     "embedded rejects endpoint",
-			mode:     MQModeEmbedded,
-			endpoint: "nats://localhost:4222",
-			failure:  "mq-nats-endpoint cannot be used with mq-mode=embedded",
-		},
-		{
-			name:    "external needs endpoint",
-			mode:    MQModeNATS,
-			failure: "mq-nats-endpoint is required when mq-mode=nats",
-		},
-		{
-			name:    "unknown",
-			mode:    "unknown",
-			failure: `unsupported MQ mode "unknown"`,
-		},
+		{name: "default", want: MQModeEmbedded},
+		{name: "embedded", mode: MQModeEmbedded, want: MQModeEmbedded},
+		{name: "external", mode: MQModeNATS, endpoint: "nats://localhost:4222", want: MQModeNATS},
+		{name: "default rejects endpoint", endpoint: "nats://localhost:4222", failure: "mq-nats-endpoint cannot be used with mq-mode=embedded"},
+		{name: "embedded rejects endpoint", mode: MQModeEmbedded, endpoint: "nats://localhost:4222", failure: "mq-nats-endpoint cannot be used with mq-mode=embedded"},
+		{name: "external needs endpoint", mode: MQModeNATS, failure: "mq-nats-endpoint is required when mq-mode=nats"},
+		{name: "unknown", mode: "unknown", failure: `unsupported MQ mode "unknown"`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			f := &Flag{
-				SeedHubData:    "{}",
-				MQMode:         tc.mode,
-				MQNatsEndpoint: tc.endpoint,
-			}
+			f := &Flag{SeedHubData: "{}", MQMode: tc.mode, MQNatsEndpoint: tc.endpoint}
 			if tc.failure != "" {
 				require.PanicsWithError(t, tc.failure, func() { f.Normalize(false) })
 				return
@@ -228,10 +195,7 @@ func TestFlagInferStoreRejectsMultipleStores(t *testing.T) {
 
 func TestNoDBModes(t *testing.T) {
 	for _, explicit := range []bool{false, true} {
-		f := &Flag{
-			NoDB:            explicit,
-			SeedHubDataFile: "seed.yaml",
-		}
+		f := &Flag{NoDB: explicit, SeedHubDataFile: "seed.yaml"}
 		f.Normalize(true)
 		require.True(t, f.NoDB)
 		require.Equal(t, StoreMemory, f.Store)
@@ -284,84 +248,22 @@ func TestFlagNormalizeLockModes(t *testing.T) {
 		want     string
 		failure  bool
 	}{
-		{
-			name: "default",
-			want: "embedded",
-		},
-		{
-			name: "embedded",
-			mode: "embedded",
-			want: "embedded",
-		},
-		{
-			name:     "redis",
-			mode:     "redis",
-			endpoint: "redis://user:pass@localhost:6379/2",
-			want:     "redis",
-		},
-		{
-			name:     "redis TLS",
-			mode:     "redis",
-			endpoint: "rediss://localhost:6379",
-			want:     "redis",
-		},
-		{
-			name: "disable",
-			mode: "disable",
-			want: "disable",
-		},
-		{
-			name:    "missing endpoint",
-			mode:    "redis",
-			failure: true,
-		},
-		{
-			name:     "default rejects endpoint",
-			endpoint: "redis://localhost",
-			failure:  true,
-		},
-		{
-			name:     "embedded rejects endpoint",
-			mode:     "embedded",
-			endpoint: "redis://localhost",
-			failure:  true,
-		},
-		{
-			name:     "disable rejects endpoint",
-			mode:     "disable",
-			endpoint: "redis://localhost",
-			failure:  true,
-		},
-		{
-			name:    "unsupported mode",
-			mode:    "disabled",
-			failure: true,
-		},
-		{
-			name:     "wrong scheme",
-			mode:     "redis",
-			endpoint: "http://localhost:6379",
-			failure:  true,
-		},
-		{
-			name:     "missing host",
-			mode:     "redis",
-			endpoint: "redis://",
-			failure:  true,
-		},
-		{
-			name:     "invalid DB",
-			mode:     "redis",
-			endpoint: "redis://localhost/not-a-db",
-			failure:  true,
-		},
+		{name: "default", want: "embedded"},
+		{name: "embedded", mode: "embedded", want: "embedded"},
+		{name: "redis", mode: "redis", endpoint: "redis://user:pass@localhost:6379/2", want: "redis"},
+		{name: "redis TLS", mode: "redis", endpoint: "rediss://localhost:6379", want: "redis"},
+		{name: "disable", mode: "disable", want: "disable"},
+		{name: "missing endpoint", mode: "redis", failure: true},
+		{name: "default rejects endpoint", endpoint: "redis://localhost", failure: true},
+		{name: "embedded rejects endpoint", mode: "embedded", endpoint: "redis://localhost", failure: true},
+		{name: "disable rejects endpoint", mode: "disable", endpoint: "redis://localhost", failure: true},
+		{name: "unsupported mode", mode: "disabled", failure: true},
+		{name: "wrong scheme", mode: "redis", endpoint: "http://localhost:6379", failure: true},
+		{name: "missing host", mode: "redis", endpoint: "redis://", failure: true},
+		{name: "invalid DB", mode: "redis", endpoint: "redis://localhost/not-a-db", failure: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			f := &Flag{
-				SeedHubData:       "{}",
-				LockMode:          tc.mode,
-				LockRedisEndpoint: tc.endpoint,
-			}
+			f := &Flag{SeedHubData: "{}", LockMode: tc.mode, LockRedisEndpoint: tc.endpoint}
 			if tc.failure {
 				require.Panics(t, func() { f.Normalize(false) })
 				return
@@ -374,11 +276,7 @@ func TestFlagNormalizeLockModes(t *testing.T) {
 }
 
 func TestFlagNormalizeInprocUsesEmbeddedLock(t *testing.T) {
-	f := &Flag{
-		SeedHubData:       "{}",
-		LockMode:          "redis",
-		LockRedisEndpoint: "redis://localhost:6379",
-	}
+	f := &Flag{SeedHubData: "{}", LockMode: "redis", LockRedisEndpoint: "redis://localhost:6379"}
 	f.Normalize(true)
 	assert.Equal(t, "embedded", f.LockMode)
 	assert.Empty(t, f.LockRedisEndpoint)

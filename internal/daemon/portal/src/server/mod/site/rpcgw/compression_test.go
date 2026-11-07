@@ -125,12 +125,7 @@ func TestRpcgwHeaderContractAcrossTransports(t *testing.T) {
 						registerTestIngress(t, endpoint, handler)
 					}
 					watch := newTestDescriptorWatch(t)
-					watch.SetValue(watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
-						Endpoint:      endpoint,
-						ServiceName:   "demo.UserService",
-						AppName:       "demo.app",
-						AppInstanceId: "instance-1",
-					}))
+					watch.SetValue(watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{Endpoint: endpoint, ServiceName: "demo.UserService", AppName: "demo.app", AppInstanceId: "instance-1"}))
 					gateway := newInspectGateway(t, watch, mcpConfig("demo.UserService"))
 					var request *http.Request
 					if format == "mcp" {

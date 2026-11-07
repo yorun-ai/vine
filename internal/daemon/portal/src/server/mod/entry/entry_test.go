@@ -205,10 +205,7 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
 			values := map[string]string{
-				watched.FormatDescriptorWebKey("demo.Web"): vcode.MustMarshalJsonS(watched.DescriptorWeb{
-					SkelName: "demo.Web",
-					AuthMode: skeldesc.AuthModeOff,
-				}),
+				watched.FormatDescriptorWebKey("demo.Web"):     vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: skeldesc.AuthModeOff}),
 				watched.FormatDescriptorActorKey("demo.Actor"): vcode.MustMarshalJsonS(watched.DescriptorActor{SkelName: "demo.Actor"}),
 				watched.FormatPortalSiteKey("web"): vcode.MustMarshalJsonS(watched.PortalSite{
 					Name:          "web",
@@ -223,44 +220,22 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 					AppInstanceId: "instance",
 				}),
 			}
-			endpoints := &epmgr.Manager{
-				Context: ctx,
-				Watch:   watchtest.New(t, values),
-			}
+			endpoints := &epmgr.Manager{Context: ctx, Watch: watchtest.New(t, values)}
 			endpoints.DIInit()
-			descriptors := new(desc.Manager{
-				Context: ctx,
-				Watch:   watchtest.New(t, values),
-			})
+			descriptors := new(desc.Manager{Context: ctx, Watch: watchtest.New(t, values)})
 			descriptors.DIInit()
 			t.Cleanup(descriptors.AfterAppStop)
-			accessManager := &access.Access{
-				Context: ctx,
-				Desc:    descriptors,
-				Epmgr:   endpoints,
-			}
+			accessManager := &access.Access{Context: ctx, Desc: descriptors, Epmgr: endpoints}
 			accessManager.DIInit()
 			t.Cleanup(accessManager.AfterAppStop)
-			sites := &site.Manager{
-				Context:    ctx,
-				CurrentApp: meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"),
-				Watch:      watchtest.New(t, values),
-				Epmgr:      endpoints,
-				Access:     accessManager,
-			}
+			sites := &site.Manager{Context: ctx, CurrentApp: meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"), Watch: watchtest.New(t, values), Epmgr: endpoints, Access: accessManager}
 			sites.DIInit()
 			entry := newEntry(spec.SchemeHTTP, 80, nil)
 			public := httptest.NewServer(entry)
 			t.Cleanup(public.Close)
 			for _, hostPattern := range []string{"shop.example.com", "*.example.com"} {
 				for _, targetPath := range []string{"/internal", "/v2", ""} {
-					rule, ok := newRule(watched.PortalRule{
-						Name:                    "rule",
-						ResolvedMatchPathPrefix: "/api",
-						ResolvedRoutePathPrefix: targetPath,
-						RouteType:               "SITE",
-						RouteSiteName:           "web",
-					}, watched.PortalEntry{EffectiveHTTP: watched.PortalEntryHTTP{Host: hostPattern}}, spec.SchemeHTTP, 80, sites)
+					rule, ok := newRule(watched.PortalRule{Name: "rule", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: targetPath, RouteType: "SITE", RouteSiteName: "web"}, watched.PortalEntry{EffectiveHTTP: watched.PortalEntryHTTP{Host: hostPattern}}, spec.SchemeHTTP, 80, sites)
 					require.True(t, ok)
 					entry.SetOrUpdateRouting([]string{hostPattern}, []*_Rule{rule})
 					request, err := http.NewRequest(http.MethodPost, public.URL+"/api/a%2Fb/?q=%2F", strings.NewReader("payload"))
@@ -287,18 +262,8 @@ func TestEntryTargetPathDispatchesWithinRpcGateway(t *testing.T) {
 	manager := newTestSiteManager(t, "rpc")
 	gateway, found := manager.Site("rpc")
 	require.True(t, found)
-	gateway.Update(watched.PortalSite{
-		Name:        "rpc",
-		Type:        "RPCGW",
-		RpcgwConfig: new(watched.PortalRpcgwConfig{InspectEnabled: true}),
-	})
-	rule, ok := newRule(watched.PortalRule{
-		Name:                    "rpc",
-		ResolvedMatchPathPrefix: "/api",
-		ResolvedRoutePathPrefix: "/inspect",
-		RouteType:               "SITE",
-		RouteSiteName:           "rpc",
-	}, watched.PortalEntry{EffectiveHTTP: watched.PortalEntryHTTP{Host: "example.com"}}, spec.SchemeHTTP, 80, manager)
+	gateway.Update(watched.PortalSite{Name: "rpc", Type: "RPCGW", RpcgwConfig: new(watched.PortalRpcgwConfig{InspectEnabled: true})})
+	rule, ok := newRule(watched.PortalRule{Name: "rpc", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: "/inspect", RouteType: "SITE", RouteSiteName: "rpc"}, watched.PortalEntry{EffectiveHTTP: watched.PortalEntryHTTP{Host: "example.com"}}, spec.SchemeHTTP, 80, manager)
 	require.True(t, ok)
 	entry := newEntry(spec.SchemeHTTP, 80, nil)
 	entry.SetOrUpdateRouting([]string{"example.com"}, []*_Rule{rule})
@@ -313,18 +278,8 @@ func TestEntryDispatchesMcpAtApiPrefix(t *testing.T) {
 	manager := newTestSiteManager(t, "rpc")
 	gateway, found := manager.Site("rpc")
 	require.True(t, found)
-	gateway.Update(watched.PortalSite{
-		Name:        "rpc",
-		Type:        "RPCGW",
-		RpcgwConfig: new(watched.PortalRpcgwConfig{McpEnabled: true}),
-	})
-	rule, ok := newRule(watched.PortalRule{
-		Name:                    "rpc",
-		ResolvedMatchPathPrefix: "/api",
-		ResolvedRoutePathPrefix: "/",
-		RouteType:               "SITE",
-		RouteSiteName:           "rpc",
-	}, watched.PortalEntry{EffectiveHTTP: watched.PortalEntryHTTP{Host: "example.com"}}, spec.SchemeHTTP, 80, manager)
+	gateway.Update(watched.PortalSite{Name: "rpc", Type: "RPCGW", RpcgwConfig: new(watched.PortalRpcgwConfig{McpEnabled: true})})
+	rule, ok := newRule(watched.PortalRule{Name: "rpc", ResolvedMatchPathPrefix: "/api", ResolvedRoutePathPrefix: "/", RouteType: "SITE", RouteSiteName: "rpc"}, watched.PortalEntry{EffectiveHTTP: watched.PortalEntryHTTP{Host: "example.com"}}, spec.SchemeHTTP, 80, manager)
 	require.True(t, ok)
 	entry := newEntry(spec.SchemeHTTP, 80, nil)
 	entry.SetOrUpdateRouting([]string{"example.com"}, []*_Rule{rule})
@@ -367,58 +322,19 @@ func TestEntryHTTPSelectsHostBeforeMatchingPaths(t *testing.T) {
 		target string
 		rule   string
 	}{
-		{
-			"http://app.example.com/own",
-			"exact",
-		},
-		{
-			"http://APP.EXAMPLE.COM./own",
-			"exact",
-		},
-		{
-			"http://app.example.com/other",
-			"",
-		},
-		{
-			"http://other.example.com/other",
-			"wildcard",
-		},
-		{
-			"http://deep.other.example.com/other",
-			"",
-		},
-		{
-			"http://127.0.0.1/own",
-			"ip",
-		},
-		{
-			"http://127.0.0.1/other",
-			"",
-		},
-		{
-			"http://127.0.0.2/other",
-			"fallback",
-		},
-		{
-			"http://[::1]/own",
-			"ipv6",
-		},
-		{
-			"http://[0:0:0:0:0:0:0:1]/own",
-			"ipv6",
-		},
-		{
-			"http://[::1]/other",
-			"",
-		},
-		{
-			"http://[::2]/other",
-			"fallback",
-		},
-		{
-			"http://unknown.test/other",
-			"",
-		},
+		{"http://app.example.com/own", "exact"},
+		{"http://APP.EXAMPLE.COM./own", "exact"},
+		{"http://app.example.com/other", ""},
+		{"http://other.example.com/other", "wildcard"},
+		{"http://deep.other.example.com/other", ""},
+		{"http://127.0.0.1/own", "ip"},
+		{"http://127.0.0.1/other", ""},
+		{"http://127.0.0.2/other", "fallback"},
+		{"http://[::1]/own", "ipv6"},
+		{"http://[0:0:0:0:0:0:0:1]/own", "ipv6"},
+		{"http://[::1]/other", ""},
+		{"http://[::2]/other", "fallback"},
+		{"http://unknown.test/other", ""},
 	} {
 		t.Run(test.target, func(t *testing.T) {
 			rule, ok := e.route(newTestRequest(test.target))
@@ -434,13 +350,7 @@ func TestEntryExplicitIPListeners(t *testing.T) {
 	for _, test := range []struct {
 		ip      string
 		network string
-	}{{
-		"127.0.0.1",
-		"tcp4",
-	}, {
-		"::1",
-		"tcp6",
-	}} {
+	}{{"127.0.0.1", "tcp4"}, {"::1", "tcp6"}} {
 		t.Run(test.ip, func(t *testing.T) {
 			if test.network == "tcp6" {
 				probe, err := net.Listen("tcp6", "[::1]:0")
@@ -491,10 +401,7 @@ func TestEntryTLSSelectsEntryBeforeCertificate(t *testing.T) {
 	require.NoError(t, err)
 	roots := x509.NewCertPool()
 	roots.AddCert(certificate.Leaf)
-	certificateVault := &vault.Vault{
-		Context: context.Background(),
-		Watch:   watchtest.New(t, map[string]string{watched.FormatPortalCertKey("test"): vcode.MustMarshalJsonS(cert)}),
-	}
+	certificateVault := &vault.Vault{Context: context.Background(), Watch: watchtest.New(t, map[string]string{watched.FormatPortalCertKey("test"): vcode.MustMarshalJsonS(cert)})}
 	certificateVault.DIInit()
 	configs := testEntryConfigs(
 		testEntryConfig("exact", "https", "allowed.example.com", 0, []string{"127.0.0.1"}),
@@ -503,24 +410,9 @@ func TestEntryTLSSelectsEntryBeforeCertificate(t *testing.T) {
 		testEntryConfig("other-port", "https", "other.example.com", 443, []string{"127.0.0.1"}),
 		testEntryConfig("other-ip", "https", "ip.example.com", 0, []string{"127.0.0.2"}),
 	)
-	manager := &Manager{
-		Vault:              certificateVault,
-		SiteManager:        &site.Manager{},
-		entryConfigsByName: configs,
-		entryRulesByName: map[string]watched.PortalRule{"wildcard": {
-			Name:          "wildcard",
-			EntryName:     "wildcard",
-			RouteType:     routeTypeSite,
-			RouteSiteName: "unavailable",
-		}},
-		entriesByKey: map[_Key]*_Entry{},
-	}
+	manager := &Manager{Vault: certificateVault, SiteManager: &site.Manager{}, entryConfigsByName: configs, entryRulesByName: map[string]watched.PortalRule{"wildcard": {Name: "wildcard", EntryName: "wildcard", RouteType: routeTypeSite, RouteSiteName: "unavailable"}}, entriesByKey: map[_Key]*_Entry{}}
 	require.NoError(t, manager.reconcileEntriesLocked())
-	ingress := manager.entriesByKey[_Key{
-		listenIP: "127.0.0.1",
-		scheme:   spec.SchemeHTTPS,
-		port:     0,
-	}]
+	ingress := manager.entriesByKey[_Key{listenIP: "127.0.0.1", scheme: spec.SchemeHTTPS, port: 0}]
 	require.NoError(t, ingress.Start())
 	t.Cleanup(ingress.Stop)
 	request := func(sni string, host string, clientConfig *tls.Config) (int, bool, error) {
@@ -550,36 +442,12 @@ func TestEntryTLSSelectsEntryBeforeCertificate(t *testing.T) {
 		host   string
 		status int
 	}{
-		{
-			"allowed.example.com",
-			"allowed.example.com",
-			http.StatusNotFound,
-		},
-		{
-			"allowed.example.com",
-			"ALLOWED.EXAMPLE.COM.:443",
-			http.StatusNotFound,
-		},
-		{
-			"allowed.example.com",
-			"a.public.example.com",
-			http.StatusMisdirectedRequest,
-		},
-		{
-			"a.public.example.com",
-			"b.public.example.com",
-			http.StatusMisdirectedRequest,
-		},
-		{
-			"a.public.example.com",
-			"a.public.example.com",
-			http.StatusServiceUnavailable,
-		},
-		{
-			"private.public.example.com",
-			"private.public.example.com",
-			http.StatusNotFound,
-		},
+		{"allowed.example.com", "allowed.example.com", http.StatusNotFound},
+		{"allowed.example.com", "ALLOWED.EXAMPLE.COM.:443", http.StatusNotFound},
+		{"allowed.example.com", "a.public.example.com", http.StatusMisdirectedRequest},
+		{"a.public.example.com", "b.public.example.com", http.StatusMisdirectedRequest},
+		{"a.public.example.com", "a.public.example.com", http.StatusServiceUnavailable},
+		{"private.public.example.com", "private.public.example.com", http.StatusNotFound},
 	} {
 		t.Run(test.sni+"/"+test.host, func(t *testing.T) {
 			status, _, err := request(test.sni, test.host, trusted)
@@ -597,29 +465,18 @@ func TestEntryTLSSelectsEntryBeforeCertificate(t *testing.T) {
 	// Admission must also run when a previously accepted TLS session is resumed.
 	for _, version := range []uint16{tls.VersionTLS12, tls.VersionTLS13} {
 		t.Run(fmt.Sprint("resume/", version), func(t *testing.T) {
-			config := &tls.Config{
-				RootCAs:            roots,
-				MinVersion:         version,
-				MaxVersion:         version,
-				ClientSessionCache: tls.NewLRUClientSessionCache(4),
-			}
+			config := &tls.Config{RootCAs: roots, MinVersion: version, MaxVersion: version, ClientSessionCache: tls.NewLRUClientSessionCache(4)}
 			_, _, err := request("allowed.example.com", "allowed.example.com", config)
 			require.NoError(t, err)
 			_, resumed, err := request("allowed.example.com", "allowed.example.com", config)
 			require.NoError(t, err)
 			require.True(t, resumed)
 			key := watched.FormatPortalEntryKey("exact")
-			manager.handlePortalEntryEvent(hubapiwatch.Event{
-				Kind: hubapiwatch.EventKindDelete,
-				Key:  key,
-			})
+			manager.handlePortalEntryEvent(hubapiwatch.Event{Kind: hubapiwatch.EventKindDelete, Key: key})
 			_, _, err = request("allowed.example.com", "allowed.example.com", config)
 			require.Error(t, err)
 			value := testEntryConfig("exact", "https", "allowed.example.com", 0, []string{"127.0.0.1"})
-			manager.handlePortalEntryEvent(hubapiwatch.Event{
-				Key:   key,
-				Value: vcode.MustMarshalJsonS(value),
-			})
+			manager.handlePortalEntryEvent(hubapiwatch.Event{Key: key, Value: vcode.MustMarshalJsonS(value)})
 		})
 	}
 }

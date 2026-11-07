@@ -49,17 +49,8 @@ func (s *_VarsDescriptor) members(kind *skeldesc.Type) ([]*skeldesc.Member, erro
 	case skeldesc.TypeKindData:
 		if kind.SkelName == "seed.PortalWebTimeout" {
 			return []*skeldesc.Member{
-				{Name: "default", Type: new(skeldesc.Type{
-					Kind:     skeldesc.TypeKindData,
-					SkelName: "seed.PortalWebTimeoutPolicy",
-				})},
-				{Name: "paths", Type: new(skeldesc.Type{
-					Kind: skeldesc.TypeKindList,
-					Element: new(skeldesc.Type{
-						Kind:     skeldesc.TypeKindData,
-						SkelName: "seed.PortalWebTimeoutPath",
-					}),
-				})},
+				{Name: "default", Type: new(skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: "seed.PortalWebTimeoutPolicy"})},
+				{Name: "paths", Type: new(skeldesc.Type{Kind: skeldesc.TypeKindList, Element: new(skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: "seed.PortalWebTimeoutPath"})})},
 			}, nil
 		}
 		if kind.SkelName == "seed.PortalWebTimeoutPolicy" {
@@ -184,10 +175,7 @@ func (s *_VarsDescriptor) targetType(root *yaml.Node, path string) (*skeldesc.Ty
 	case field == "enabled" && (section == "portalSites" || section == "portalEntries" || section == "portalRules" || section == "portalCerts"):
 		kind = seedScalar(skeldesc.ScalarBoolean)
 	case section == "portalSites" && field == "webTimeout":
-		kind = new(skeldesc.Type{
-			Kind:     skeldesc.TypeKindData,
-			SkelName: "seed.PortalWebTimeout",
-		})
+		kind = new(skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: "seed.PortalWebTimeout"})
 	case section == "portalSites" && field == "cors":
 		kind = new(skeldesc.Type{
 			Kind:     skeldesc.TypeKindData,

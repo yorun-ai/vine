@@ -790,15 +790,9 @@ func newTestEpmgr(t *testing.T, valuesByKey map[string]string) *epmgr.Manager {
 
 func newTestAccess(t *testing.T) *access.Access {
 	watchClient := newTestDescriptorWatch(t)
-	epmgrManager := &epmgr.Manager{
-		Context: context.Background(),
-		Watch:   watchClient,
-	}
+	epmgrManager := &epmgr.Manager{Context: context.Background(), Watch: watchClient}
 	epmgrManager.DIInit()
-	descriptors := new(desc.Manager{
-		Context: t.Context(),
-		Watch:   watchClient,
-	})
+	descriptors := new(desc.Manager{Context: t.Context(), Watch: watchClient})
 	descriptors.DIInit()
 	t.Cleanup(descriptors.AfterAppStop)
 	manager := &access.Access{
@@ -950,39 +944,15 @@ func TestRpcGatewayRemovesAuthorizationBeforeHTTPForwarding(t *testing.T) {
 	watchClient := newTestDescriptorWatch(t)
 	watchClient.SetValue(watched.FormatDescriptorActorKey("demo.UserActor"), vcode.MustMarshalJsonS(watched.DescriptorActor{
 		SkelName: "demo.UserActor",
-		Auth: &skeldesc.ActorAuth{
-			Credential: testCredentialDescriptor(),
-			Info:       new(skeldesc.Data{SkelName: "demo.UserInfo"}),
-			Service: new(skeldesc.Service{
-				SkelName: "demo.AuthService",
-				AuthMode: skeldesc.AuthModeRequired,
-				Methods:  []*skeldesc.Method{{Name: "Auth", SkelName: "auth", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired}},
-			}),
-			MethodName: "Auth",
-		},
+		Auth:     &skeldesc.ActorAuth{Credential: testCredentialDescriptor(), Info: new(skeldesc.Data{SkelName: "demo.UserInfo"}), Service: new(skeldesc.Service{SkelName: "demo.AuthService", AuthMode: skeldesc.AuthModeRequired, Methods: []*skeldesc.Method{{Name: "Auth", SkelName: "auth", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired}}}), MethodName: "Auth"},
 	}))
-	watchClient.SetValue(watched.FormatRpcServiceRegistrationKey("demo.AuthService", "demo.auth", "auth-instance"), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
-		Endpoint:      authEndpoint,
-		ServiceName:   "demo.AuthService",
-		AppName:       "demo.auth",
-		AppInstanceId: "auth-instance",
-	}))
-	authEpmgr := new(epmgr.Manager{
-		Context: context.Background(),
-		Watch:   watchClient,
-	})
+	watchClient.SetValue(watched.FormatRpcServiceRegistrationKey("demo.AuthService", "demo.auth", "auth-instance"), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{Endpoint: authEndpoint, ServiceName: "demo.AuthService", AppName: "demo.auth", AppInstanceId: "auth-instance"}))
+	authEpmgr := new(epmgr.Manager{Context: context.Background(), Watch: watchClient})
 	authEpmgr.DIInit()
-	descriptors := new(desc.Manager{
-		Context: t.Context(),
-		Watch:   watchClient,
-	})
+	descriptors := new(desc.Manager{Context: t.Context(), Watch: watchClient})
 	descriptors.DIInit()
 	t.Cleanup(descriptors.AfterAppStop)
-	target.access = new(access.Access{
-		Context: t.Context(),
-		Desc:    descriptors,
-		Epmgr:   authEpmgr,
-	})
+	target.access = new(access.Access{Context: t.Context(), Desc: descriptors, Epmgr: authEpmgr})
 	target.access.DIInit()
 	t.Cleanup(target.access.AfterAppStop)
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/invoke/demo.UserService/Get", strings.NewReader("request"))

@@ -117,32 +117,21 @@ func newTestCacheCmdable() *_TestCacheCmdable {
 
 func (c *_TestCacheCmdable) Get(ctx context.Context, key string) *goredis.StringCmd {
 	c.mutex.Lock()
-	c.getCalls = append(c.getCalls, _TestGetCall{
-		ctx: ctx,
-		key: key,
-	})
+	c.getCalls = append(c.getCalls, _TestGetCall{ctx: ctx, key: key})
 	c.mutex.Unlock()
 	return c.getFunc(ctx, key)
 }
 
 func (c *_TestCacheCmdable) Set(ctx context.Context, key string, value any, expiration time.Duration) *goredis.StatusCmd {
 	c.mutex.Lock()
-	c.setCalls = append(c.setCalls, _TestSetCall{
-		ctx:        ctx,
-		key:        key,
-		value:      value,
-		expiration: expiration,
-	})
+	c.setCalls = append(c.setCalls, _TestSetCall{ctx: ctx, key: key, value: value, expiration: expiration})
 	c.mutex.Unlock()
 	return c.setFunc(ctx, key, value, expiration)
 }
 
 func (c *_TestCacheCmdable) Del(ctx context.Context, keys ...string) *goredis.IntCmd {
 	c.mutex.Lock()
-	c.delCalls = append(c.delCalls, _TestDelCall{
-		ctx:  ctx,
-		keys: append([]string(nil), keys...),
-	})
+	c.delCalls = append(c.delCalls, _TestDelCall{ctx: ctx, keys: append([]string(nil), keys...)})
 	c.mutex.Unlock()
 	return c.delFunc(ctx, keys...)
 }
@@ -201,10 +190,7 @@ func TestCacheGetReturnsValue(t *testing.T) {
 	value, ok := cache.Get("1")
 
 	require.True(t, ok)
-	assert.Equal(t, &_TestUser{
-		ID:   "1",
-		Name: "demo",
-	}, value)
+	assert.Equal(t, &_TestUser{ID: "1", Name: "demo"}, value)
 	require.Len(t, cmdable.getCalls, 1)
 	assert.Equal(t, "vine:cache:user:1", cmdable.getCalls[0].key)
 }
@@ -231,10 +217,7 @@ func TestCacheSetMarshalsValue(t *testing.T) {
 		keyPrefix: "user",
 	}
 
-	cache.Set("1", &_TestUser{
-		ID:   "1",
-		Name: "demo",
-	}, time.Minute)
+	cache.Set("1", &_TestUser{ID: "1", Name: "demo"}, time.Minute)
 
 	require.Len(t, cmdable.setCalls, 1)
 	assert.Equal(t, "vine:cache:user:1", cmdable.setCalls[0].key)
@@ -308,16 +291,10 @@ func TestCacheGetOrLoadReturnsCachedValue(t *testing.T) {
 
 	value := cache.GetOrLoad("1", time.Minute, func() *_TestUser {
 		loaded = true
-		return &_TestUser{
-			ID:   "1",
-			Name: "loaded",
-		}
+		return &_TestUser{ID: "1", Name: "loaded"}
 	})
 
-	assert.Equal(t, &_TestUser{
-		ID:   "1",
-		Name: "cached",
-	}, value)
+	assert.Equal(t, &_TestUser{ID: "1", Name: "cached"}, value)
 	assert.False(t, loaded)
 	assert.Empty(t, cmdable.setCalls)
 }
@@ -333,16 +310,10 @@ func TestCacheGetOrLoadLoadsAndSetsWhenMissing(t *testing.T) {
 
 	value := cache.GetOrLoad("1", time.Minute, func() *_TestUser {
 		loaded = true
-		return &_TestUser{
-			ID:   "1",
-			Name: "loaded",
-		}
+		return &_TestUser{ID: "1", Name: "loaded"}
 	})
 
-	assert.Equal(t, &_TestUser{
-		ID:   "1",
-		Name: "loaded",
-	}, value)
+	assert.Equal(t, &_TestUser{ID: "1", Name: "loaded"}, value)
 	assert.True(t, loaded)
 	require.Len(t, cmdable.setCalls, 1)
 	assert.Equal(t, "vine:cache:user:1", cmdable.setCalls[0].key)

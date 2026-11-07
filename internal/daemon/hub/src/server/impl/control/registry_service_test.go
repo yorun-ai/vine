@@ -199,10 +199,7 @@ func TestRegistryServiceRefreshesPortalSiteRpcgwServices(t *testing.T) {
 		},
 	}
 	service := &RegistryServiceServerImpl{
-		PortalSiteCore: &core.PortalSiteCore{
-			PortalSiteRepo: siteRepo,
-			DescriptorRepo: descriptorRepo,
-		},
+		PortalSiteCore: &core.PortalSiteCore{PortalSiteRepo: siteRepo, DescriptorRepo: descriptorRepo},
 		DescriptorRepo: descriptorRepo,
 		Syncer:         testRegistrySyncer(watchServer),
 	}

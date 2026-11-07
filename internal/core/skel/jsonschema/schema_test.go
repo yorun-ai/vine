@@ -11,25 +11,15 @@ import (
 )
 
 func scalarType(kind descriptor.Scalar) *descriptor.Type {
-	return new(descriptor.Type{
-		Kind:   descriptor.TypeKindScalar,
-		Scalar: kind,
-	})
+	return new(descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: kind})
 }
 
 func dataType(name string, args ...*descriptor.Type) *descriptor.Type {
-	return new(descriptor.Type{
-		Kind:          descriptor.TypeKindData,
-		SkelName:      name,
-		TypeArguments: args,
-	})
+	return new(descriptor.Type{Kind: descriptor.TypeKindData, SkelName: name, TypeArguments: args})
 }
 
 func parameter(name string) *descriptor.Type {
-	return new(descriptor.Type{
-		Kind: descriptor.TypeKindTypeParameter,
-		Name: name,
-	})
+	return new(descriptor.Type{Kind: descriptor.TypeKindTypeParameter, Name: name})
 }
 
 func TestMethodResolvesGenericCyclesWithoutMutatingDescriptors(t *testing.T) {
@@ -41,10 +31,7 @@ func TestMethodResolvesGenericCyclesWithoutMutatingDescriptors(t *testing.T) {
 			Members: []*descriptor.Member{
 				{Name: "value", Type: parameter("T"), Description: "Value", Sensitive: true},
 				{Name: "optional", Type: optional},
-				{Name: "children", Type: new(descriptor.Type{
-					Kind:    descriptor.TypeKindList,
-					Element: dataType("demo.Node", parameter("T")),
-				})},
+				{Name: "children", Type: new(descriptor.Type{Kind: descriptor.TypeKindList, Element: dataType("demo.Node", parameter("T"))})},
 			},
 		},
 	}
@@ -91,11 +78,8 @@ func TestMethodNestedGenericsMapsAndAnnotations(t *testing.T) {
 	}
 	method := new(descriptor.Method{
 		Arguments: []*descriptor.Member{{Name: "boxes", Type: new(descriptor.Type{
-			Kind: descriptor.TypeKindMap,
-			Key: new(descriptor.Type{
-				Kind:     descriptor.TypeKindEnum,
-				SkelName: "demo.Status",
-			}),
+			Kind:  descriptor.TypeKindMap,
+			Key:   new(descriptor.Type{Kind: descriptor.TypeKindEnum, SkelName: "demo.Status"}),
 			Value: dataType("demo.Box", dataType("demo.Box", scalarType(descriptor.ScalarInt))),
 		})}},
 		InputDescription: "Find boxes",
@@ -131,10 +115,7 @@ func TestMethodNestedGenericsMapsAndAnnotations(t *testing.T) {
 func TestMethodRejectsIncompleteOrUnboundedSchemas(t *testing.T) {
 	for _, kind := range []*descriptor.Type{
 		dataType("demo.Missing"),
-		new(descriptor.Type{
-			Kind:     descriptor.TypeKindEnum,
-			SkelName: "demo.Missing",
-		}),
+		new(descriptor.Type{Kind: descriptor.TypeKindEnum, SkelName: "demo.Missing"}),
 		parameter("T"),
 		new(descriptor.Type{Kind: "future"}),
 		new(descriptor.Type{Kind: descriptor.TypeKindList}),
@@ -147,10 +128,7 @@ func TestMethodRejectsIncompleteOrUnboundedSchemas(t *testing.T) {
 	}
 	data := map[string]*descriptor.Data{
 		"demo.Growing": {SkelName: "demo.Growing", TypeParameters: []string{"T"}, Members: []*descriptor.Member{
-			{Name: "next", Type: dataType("demo.Growing", new(descriptor.Type{
-				Kind:    descriptor.TypeKindList,
-				Element: parameter("T"),
-			}))},
+			{Name: "next", Type: dataType("demo.Growing", new(descriptor.Type{Kind: descriptor.TypeKindList, Element: parameter("T")}))},
 		}},
 	}
 	_, _, err := Method(new(descriptor.Method{ResultType: dataType("demo.Growing")}), data, nil)

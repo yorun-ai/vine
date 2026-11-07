@@ -226,10 +226,7 @@ func (s *Store) Subscribe(conn redcon.Conn, channel string, pattern bool) {
 func (s *Store) SetWithTTL(key string, value string, ttl time.Duration) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	s.items[key] = _Item{
-		value:    value,
-		expireAt: timeNow().Add(time.Duration(ttlSeconds(ttl)) * time.Second),
-	}
+	s.items[key] = _Item{value: value, expireAt: timeNow().Add(time.Duration(ttlSeconds(ttl)) * time.Second)}
 }
 
 func (s *Store) InitRevision() {
@@ -254,18 +251,12 @@ func (s *Store) setAndNotify(key string, value string, expireAt time.Time) {
 	oldValue, ok := s.getLocked(key, timeNow())
 	if ok && oldValue == value {
 		if !expireAt.IsZero() {
-			s.items[key] = _Item{
-				value:    value,
-				expireAt: expireAt,
-			}
+			s.items[key] = _Item{value: value, expireAt: expireAt}
 		}
 		s.mutex.Unlock()
 		return
 	}
-	s.items[key] = _Item{
-		value:    value,
-		expireAt: expireAt,
-	}
+	s.items[key] = _Item{value: value, expireAt: expireAt}
 	revision := s.nextRevisionLocked()
 	s.mutex.Unlock()
 
@@ -379,10 +370,7 @@ func (s *Store) zRangeByScoreLocked(key string, min float64, max float64, limit 
 		if score < min || score > max {
 			continue
 		}
-		items = append(items, _ZSetItem{
-			member: member,
-			score:  score,
-		})
+		items = append(items, _ZSetItem{member: member, score: score})
 	}
 	sort.Slice(items, func(i int, j int) bool {
 		if items[i].score != items[j].score {

@@ -55,11 +55,7 @@ func TestMarshalCborFormatsNilContainersAsEmpty(t *testing.T) {
 }
 
 func TestMustMarshalAndUnmarshalCbor(t *testing.T) {
-	payload := cborPayload{
-		Name:  "must",
-		Count: 7,
-		Flags: map[string]any{},
-	}
+	payload := cborPayload{Name: "must", Count: 7, Flags: map[string]any{}}
 
 	data := MustMarshalCbor(payload)
 	decoded := MustUnmarshalCbor[cborPayload](data)

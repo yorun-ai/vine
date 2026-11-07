@@ -85,10 +85,7 @@ func newFailure(kind string, cause error) error {
 	if _, ok := errors.AsType[*_Failure](cause); ok {
 		return cause
 	}
-	return &_Failure{
-		kind:  kind,
-		cause: cause,
-	}
+	return &_Failure{kind: kind, cause: cause}
 }
 
 func failureKind(err error) string {
@@ -133,10 +130,7 @@ func Render(value any, options ...Option) (result Result, err error) {
 		return Result{}, newFailure("invalid_limits", err)
 	}
 	if option.RootSensitive && !option.RevealSensitive {
-		return Result{
-			JSON:     `"<redacted>"`,
-			Redacted: true,
-		}, nil
+		return Result{JSON: `"<redacted>"`, Redacted: true}, nil
 	}
 	if option.Sanitizer != nil {
 		value, err = option.Sanitizer(value)

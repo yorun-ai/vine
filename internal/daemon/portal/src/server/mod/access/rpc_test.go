@@ -230,12 +230,7 @@ func testAuthValues(authEndpoint string) map[string]string {
 func testAuthActorDescriptor() watched.DescriptorActor {
 	return watched.DescriptorActor{
 		SkelName: "demo.UserActor",
-		Auth: &skeldesc.ActorAuth{
-			Info:       &skeldesc.Data{SkelName: "demo.UserInfo"},
-			Service:    testAuthServiceDescriptor(),
-			MethodName: testAuthMethodDescriptor().Name,
-			Credential: testCredentialDescriptor(),
-		},
+		Auth:     &skeldesc.ActorAuth{Info: &skeldesc.Data{SkelName: "demo.UserInfo"}, Service: testAuthServiceDescriptor(), MethodName: testAuthMethodDescriptor().Name, Credential: testCredentialDescriptor()},
 	}
 }
 
@@ -259,10 +254,7 @@ func testAuthMethodDescriptor() *skeldesc.Method {
 		Arguments: []*skeldesc.Member{
 			{Name: "credential"},
 		},
-		ResultType: &skeldesc.Type{
-			Kind:     skeldesc.TypeKindData,
-			SkelName: "demo.UserInfo",
-		},
+		ResultType:        &skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: "demo.UserInfo"},
 		Name:              "auth",
 		AuthMode:          skeldesc.AuthModeInherit,
 		EffectiveAuthMode: skeldesc.AuthModeRequired,
@@ -375,11 +367,7 @@ func TestAccessAllowRpcRejectsActorWithoutCredentialDescriptor(t *testing.T) {
 	access := newTestAccess(t, map[string]string{
 		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.DescriptorActor{
 			SkelName: "demo.UserActor",
-			Auth: &skeldesc.ActorAuth{
-				Info:       &skeldesc.Data{SkelName: "demo.UserInfo"},
-				Service:    testAuthServiceDescriptor(),
-				MethodName: testAuthMethodDescriptor().Name,
-			},
+			Auth:     &skeldesc.ActorAuth{Info: &skeldesc.Data{SkelName: "demo.UserInfo"}, Service: testAuthServiceDescriptor(), MethodName: testAuthMethodDescriptor().Name},
 		}),
 		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
 			Api:       true,
@@ -403,11 +391,7 @@ func TestAccessAllowRpcRejectsActorWithoutInfoDescriptor(t *testing.T) {
 	access := newTestAccess(t, map[string]string{
 		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.DescriptorActor{
 			SkelName: "demo.UserActor",
-			Auth: &skeldesc.ActorAuth{
-				Credential: &skeldesc.Data{SkelName: "demo.UserCredential"},
-				Service:    testAuthServiceDescriptor(),
-				MethodName: testAuthMethodDescriptor().Name,
-			},
+			Auth:     &skeldesc.ActorAuth{Credential: &skeldesc.Data{SkelName: "demo.UserCredential"}, Service: testAuthServiceDescriptor(), MethodName: testAuthMethodDescriptor().Name},
 		}),
 		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
 			Api:       true,
@@ -430,16 +414,9 @@ func TestAccessAllowRpcRejectsActorWithoutInfoDescriptor(t *testing.T) {
 func TestRpcOperationConsumesEffectiveAuthMode(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 	operation := &RpcOperation{
-		Auther: Auther{
-			Request:         request,
-			Response:        httptest.NewRecorder(),
-			actorDescriptor: &skeldesc.Actor{},
-		},
+		Auther:            Auther{Request: request, Response: httptest.NewRecorder(), actorDescriptor: &skeldesc.Actor{}},
 		serviceDescriptor: &skeldesc.Service{AuthMode: skeldesc.AuthModeRequired},
-		methodDescriptor: &skeldesc.Method{
-			AuthMode:          skeldesc.AuthModeRequired,
-			EffectiveAuthMode: skeldesc.AuthModeAnonymous,
-		},
+		methodDescriptor:  &skeldesc.Method{AuthMode: skeldesc.AuthModeRequired, EffectiveAuthMode: skeldesc.AuthModeAnonymous},
 	}
 	require.True(t, operation.Auth())
 	require.Equal(t, meta.ActorTypeAnonymous, operation.actor.Type())

@@ -64,10 +64,7 @@ func StartRunnerHandle(
 func renderArguments(trigger spec.TriggerInfo, value any) _ArgumentsValue {
 	sensitive := trigger != nil && trigger.ArgumentsSensitive()
 	result, err := redact.Render(value, redact.Option{RootSensitive: sensitive})
-	return _ArgumentsValue{
-		result: result,
-		err:    err,
-	}
+	return _ArgumentsValue{result: result, err: err}
 }
 
 func appendArgumentsFields(fields []any, arguments _ArgumentsValue) []any {

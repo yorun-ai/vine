@@ -36,10 +36,7 @@ func OverrideConfig[C conf.Config](value C) ConfigOverride {
 // OverrideConfigByName creates an override for an explicit Skel configuration name.
 func OverrideConfigByName(name string, value any) ConfigOverride {
 	vpre.CheckNilError(internalconf.ValidateValueName(name), "invalid config override")
-	return ConfigOverride{
-		Name:  name,
-		Value: value,
-	}
+	return ConfigOverride{Name: name, Value: value}
 }
 
 func mergeSeedConfigOverrides(t testing.TB, seedPath string, overrides []ConfigOverride) (string, func(), error) {

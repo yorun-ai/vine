@@ -939,12 +939,7 @@ func TestRuntimeRejectsAbstractConfigInjection(t *testing.T) {
 		}
 		return
 	}
-	conf.Register(conf.ConfigSpec{
-		SkelName:  "test.AbstractConfig",
-		Abs:       true,
-		Type:      reflect.TypeFor[*testAbstractConfig](),
-		Lifecycle: conf.LifecycleEternal,
-	})
+	conf.Register(conf.ConfigSpec{SkelName: "test.AbstractConfig", Abs: true, Type: reflect.TypeFor[*testAbstractConfig](), Lifecycle: conf.LifecycleEternal})
 	app := newTestAppImpl()
 	attachTestLinker(app)
 	app.reader = conf.NewReader(app.linker)

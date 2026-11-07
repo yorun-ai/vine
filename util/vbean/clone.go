@@ -184,10 +184,7 @@ func buildClonerLocked(valueType reflect.Type) (func(target reflect.Value, sourc
 			if fieldCloner.identity {
 				continue
 			}
-			fieldCopies = append(fieldCopies, _FieldCopy{
-				index:  index,
-				cloner: fieldCloner,
-			})
+			fieldCopies = append(fieldCopies, _FieldCopy{index: index, cloner: fieldCloner})
 		}
 		if len(fieldCopies) == 0 {
 			return identityCloner.copyInto, true

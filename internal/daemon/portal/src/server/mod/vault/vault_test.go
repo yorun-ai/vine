@@ -42,11 +42,7 @@ func TestVaultGetCertificateMatchesHost(t *testing.T) {
 	cert := newTestPortalCert(t, "demo-cert", []string{"demo.local"})
 	parsed, err := newCertificate(cert)
 	require.NoError(t, err)
-	vault := &Vault{
-		certs: map[string]*_Certificate{
-			parsed.name: parsed,
-		},
-	}
+	vault := &Vault{certs: map[string]*_Certificate{parsed.name: parsed}}
 	vault.rebuildIndexLocked()
 
 	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "demo.local"})
@@ -59,11 +55,7 @@ func TestVaultGetCertificateMatchesWildcardHost(t *testing.T) {
 	cert := newTestPortalCert(t, "demo-cert", []string{"*.demo.local"})
 	parsed, err := newCertificate(cert)
 	require.NoError(t, err)
-	vault := &Vault{
-		certs: map[string]*_Certificate{
-			parsed.name: parsed,
-		},
-	}
+	vault := &Vault{certs: map[string]*_Certificate{parsed.name: parsed}}
 	vault.rebuildIndexLocked()
 
 	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "admin.demo.local"})
@@ -77,11 +69,7 @@ func TestVaultGetCertificateDoesNotMatchMissingHost(t *testing.T) {
 	cert := newTestPortalCert(t, "demo-cert", []string{"demo.local"})
 	parsed, err := newCertificate(cert)
 	require.NoError(t, err)
-	vault := &Vault{
-		certs: map[string]*_Certificate{
-			parsed.name: parsed,
-		},
-	}
+	vault := &Vault{certs: map[string]*_Certificate{parsed.name: parsed}}
 	vault.rebuildIndexLocked()
 
 	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "other.local"})
@@ -116,11 +104,7 @@ func TestVaultGetCertificateReturnsExpiredMatchingCert(t *testing.T) {
 	cert.ValidTo = time.Now().Add(-time.Hour)
 	parsed, err := newCertificate(cert)
 	require.NoError(t, err)
-	vault := &Vault{
-		certs: map[string]*_Certificate{
-			parsed.name: parsed,
-		},
-	}
+	vault := &Vault{certs: map[string]*_Certificate{parsed.name: parsed}}
 	vault.rebuildIndexLocked()
 
 	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "demo.local"})
@@ -274,66 +258,18 @@ func TestVaultCertificatePriority(t *testing.T) {
 		from, to time.Time
 		rank     int
 	}{
-		{
-			"valid exact",
-			"admin.demo.local",
-			now.Add(-time.Hour),
-			now.Add(time.Hour),
-			0,
-		},
-		{
-			"valid wildcard",
-			"*.demo.local",
-			now.Add(-time.Hour),
-			now.Add(time.Hour),
-			1,
-		},
-		{
-			"expired exact",
-			"admin.demo.local",
-			now.Add(-2 * time.Hour),
-			now.Add(-time.Hour),
-			2,
-		},
-		{
-			"future exact",
-			"admin.demo.local",
-			now.Add(time.Hour),
-			now.Add(2 * time.Hour),
-			2,
-		},
-		{
-			"expired wildcard",
-			"*.demo.local",
-			now.Add(-2 * time.Hour),
-			now.Add(-time.Hour),
-			3,
-		},
-		{
-			"future wildcard",
-			"*.demo.local",
-			now.Add(time.Hour),
-			now.Add(2 * time.Hour),
-			3,
-		},
+		{"valid exact", "admin.demo.local", now.Add(-time.Hour), now.Add(time.Hour), 0},
+		{"valid wildcard", "*.demo.local", now.Add(-time.Hour), now.Add(time.Hour), 1},
+		{"expired exact", "admin.demo.local", now.Add(-2 * time.Hour), now.Add(-time.Hour), 2},
+		{"future exact", "admin.demo.local", now.Add(time.Hour), now.Add(2 * time.Hour), 2},
+		{"expired wildcard", "*.demo.local", now.Add(-2 * time.Hour), now.Add(-time.Hour), 3},
+		{"future wildcard", "*.demo.local", now.Add(time.Hour), now.Add(2 * time.Hour), 3},
 	}
 	for _, a := range kinds {
 		for _, b := range kinds {
 			t.Run(a.name+" vs "+b.name, func(t *testing.T) {
-				first := new(_Certificate{
-					name:      "a-cert",
-					domains:   []string{a.domain},
-					validFrom: a.from,
-					validTo:   a.to,
-					cert:      new(tls.Certificate),
-				})
-				second := new(_Certificate{
-					name:      "z-cert",
-					domains:   []string{b.domain},
-					validFrom: b.from,
-					validTo:   b.to,
-					cert:      new(tls.Certificate),
-				})
+				first := new(_Certificate{name: "a-cert", domains: []string{a.domain}, validFrom: a.from, validTo: a.to, cert: new(tls.Certificate)})
+				second := new(_Certificate{name: "z-cert", domains: []string{b.domain}, validFrom: b.from, validTo: b.to, cert: new(tls.Certificate)})
 				vault := new(Vault{certs: map[string]*_Certificate{second.name: second, first.name: first}})
 				vault.rebuildIndexAtLocked(now)
 				want := first
@@ -354,50 +290,20 @@ func TestVaultCertificateCacheValidityBoundaries(t *testing.T) {
 	now := time.Date(2026, 9, 13, 12, 0, 0, 0, time.UTC)
 	for _, domain := range []string{"admin.demo.local", "*.demo.local"} {
 		t.Run(domain, func(t *testing.T) {
-			first := new(_Certificate{
-				name:      "a-cert",
-				domains:   []string{domain},
-				validFrom: now,
-				validTo:   now.Add(time.Hour),
-				cert:      new(tls.Certificate),
-			})
-			second := new(_Certificate{
-				name:      "z-cert",
-				domains:   []string{domain},
-				validFrom: now.Add(-time.Hour),
-				validTo:   now.Add(2 * time.Hour),
-				cert:      new(tls.Certificate),
-			})
+			first := new(_Certificate{name: "a-cert", domains: []string{domain}, validFrom: now, validTo: now.Add(time.Hour), cert: new(tls.Certificate)})
+			second := new(_Certificate{name: "z-cert", domains: []string{domain}, validFrom: now.Add(-time.Hour), validTo: now.Add(2 * time.Hour), cert: new(tls.Certificate)})
 			vault := new(Vault{certs: map[string]*_Certificate{first.name: first, second.name: second}})
 			vault.rebuildIndexAtLocked(now.Add(-time.Nanosecond))
 			for _, step := range []struct {
 				at   time.Time
 				want *_Certificate
 			}{
-				{
-					now.Add(-time.Nanosecond),
-					second,
-				},
-				{
-					now,
-					first,
-				},
-				{
-					first.validTo,
-					first,
-				},
-				{
-					first.validTo.Add(time.Nanosecond),
-					second,
-				},
-				{
-					second.validTo.Add(time.Nanosecond),
-					first,
-				},
-				{
-					now.Add(-time.Nanosecond),
-					second,
-				}, // Clock rollback must also discard cached choices.
+				{now.Add(-time.Nanosecond), second},
+				{now, first},
+				{first.validTo, first},
+				{first.validTo.Add(time.Nanosecond), second},
+				{second.validTo.Add(time.Nanosecond), first},
+				{now.Add(-time.Nanosecond), second}, // Clock rollback must also discard cached choices.
 			} {
 				got, err := vault.getCertificateAt(&tls.ClientHelloInfo{ServerName: "admin.demo.local"}, step.at)
 				require.NoError(t, err)

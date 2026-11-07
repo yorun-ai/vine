@@ -14,21 +14,11 @@ import (
 func TestPortalSiteDaoStoresEnabledSwitch(t *testing.T) {
 	dao := newTestPortalSiteDao(t)
 
-	enabled := dao.Save(&PortalSite{
-		Name:    "enabled",
-		Type:    "WEBGW",
-		WebName: "demo.Web",
-		Enabled: true,
-	})
+	enabled := dao.Save(&PortalSite{Name: "enabled", Type: "WEBGW", WebName: "demo.Web", Enabled: true})
 	assert.True(t, enabled.Enabled)
 
 	// Hub stores a disabled entity with the switch off.
-	disabled := dao.Save(&PortalSite{
-		Name:    "disabled",
-		Type:    "WEBGW",
-		WebName: "demo.Web",
-		Enabled: false,
-	})
+	disabled := dao.Save(&PortalSite{Name: "disabled", Type: "WEBGW", WebName: "demo.Web", Enabled: false})
 	site, ok := dao.ByName("disabled")
 	require.True(t, ok)
 	assert.False(t, site.Enabled)
@@ -76,12 +66,7 @@ func testPortalSiteMigrationFrom028(t *testing.T, db *gorm.DB, dialect string) {
 		require.Equal(t, switches[0], loaded.InspectEnabled)
 		require.Equal(t, switches[1], loaded.McpEnabled)
 	}
-	require.NotZero(t, dao.Save(new(PortalSite{
-		Name:          "new",
-		Type:          "RPCGW",
-		ActorSkelName: "demo.Actor",
-		Enabled:       true,
-	})).Id)
+	require.NotZero(t, dao.Save(new(PortalSite{Name: "new", Type: "RPCGW", ActorSkelName: "demo.Actor", Enabled: true})).Id)
 }
 
 func newTestPortalSiteDao(t *testing.T) *PortalSiteDao {

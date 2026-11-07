@@ -52,10 +52,7 @@ func TestAppConfigRepoSaveItemCreate(t *testing.T) {
 	key := watched.FormatConfigKey("db.main")
 	raw, ok := watchServer.Get(key)
 	require.True(t, ok)
-	assert.Equal(t, &watched.ConfigValue{
-		Name:  "db.main",
-		Value: []byte(`{"connUrl":"postgres://demo"}`),
-	}, vcode.MustUnmarshalJsonS[*watched.ConfigValue](raw))
+	assert.Equal(t, &watched.ConfigValue{Name: "db.main", Value: []byte(`{"connUrl":"postgres://demo"}`)}, vcode.MustUnmarshalJsonS[*watched.ConfigValue](raw))
 }
 
 func TestAppConfigRepoSaveItemDuplicateNameWithoutId(t *testing.T) {
@@ -85,10 +82,7 @@ func TestAppConfigRepoSaveItemUpdate(t *testing.T) {
 	key := watched.FormatConfigKey("feature.flag")
 	raw, ok := watchServer.Get(key)
 	require.True(t, ok)
-	assert.Equal(t, &watched.ConfigValue{
-		Name:  "feature.flag",
-		Value: []byte(`{"enabled":false}`),
-	}, vcode.MustUnmarshalJsonS[*watched.ConfigValue](raw))
+	assert.Equal(t, &watched.ConfigValue{Name: "feature.flag", Value: []byte(`{"enabled":false}`)}, vcode.MustUnmarshalJsonS[*watched.ConfigValue](raw))
 }
 
 func TestAppConfigRepoRemoveItem(t *testing.T) {
@@ -173,14 +167,8 @@ func TestAppConfigRepoSlotsAssembleDeclaredAndStoredConfigs(t *testing.T) {
 			SkelName:  "demo.FeatureConfig",
 			Lifecycle: skeldesc.ConfigLifecycleEternal,
 			Members: []*skeldesc.Member{
-				{Name: "enabled", Type: &skeldesc.Type{
-					Kind:   skeldesc.TypeKindScalar,
-					Scalar: skeldesc.ScalarBoolean,
-				}},
-				{Name: "mode", Description: "Run mode", Type: &skeldesc.Type{
-					Kind:     skeldesc.TypeKindEnum,
-					SkelName: "demo.Mode",
-				}},
+				{Name: "enabled", Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBoolean}},
+				{Name: "mode", Description: "Run mode", Type: &skeldesc.Type{Kind: skeldesc.TypeKindEnum, SkelName: "demo.Mode"}},
 			},
 		},
 		{Name: "OtherConfig", SkelName: "demo.OtherConfig", Lifecycle: skeldesc.ConfigLifecycleInstant},
@@ -188,10 +176,7 @@ func TestAppConfigRepoSlotsAssembleDeclaredAndStoredConfigs(t *testing.T) {
 			Name:     "MismatchedConfig",
 			SkelName: "demo.MismatchedConfig",
 			Members: []*skeldesc.Member{
-				{Name: "enabled", Type: &skeldesc.Type{
-					Kind:   skeldesc.TypeKindScalar,
-					Scalar: skeldesc.ScalarBoolean,
-				}},
+				{Name: "enabled", Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBoolean}},
 			}, Lifecycle: skeldesc.ConfigLifecycleEternal,
 		},
 	}
@@ -259,20 +244,11 @@ func TestAppConfigRepoStructuredValuesStayWhole(t *testing.T) {
 	_, repo, watchServer := newTestAppConfigRepo(t)
 	descriptors := repo.DescriptorRepo.(*_PortalSiteDescriptorRepo)
 	descriptors.dataDescriptors = []*skeldesc.Data{{SkelName: "demo.Credentials", Sensitive: true, Members: []*skeldesc.Member{
-		{Name: "certificate", Type: &skeldesc.Type{
-			Kind:   skeldesc.TypeKindScalar,
-			Scalar: skeldesc.ScalarBinary,
-		}},
-		{Name: "label", Type: &skeldesc.Type{
-			Kind:   skeldesc.TypeKindScalar,
-			Scalar: skeldesc.ScalarString,
-		}},
+		{Name: "certificate", Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBinary}},
+		{Name: "label", Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString}},
 	}}}
 	descriptors.configDescriptors = []*skeldesc.Config{{SkelName: "demo.AppConfig", Lifecycle: skeldesc.ConfigLifecycleInstant, Members: []*skeldesc.Member{
-		{Name: "credentials", Type: &skeldesc.Type{
-			Kind:     skeldesc.TypeKindData,
-			SkelName: "demo.Credentials",
-		}},
+		{Name: "credentials", Type: &skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: "demo.Credentials"}},
 	}}}
 	value := `{"credentials":{"certificate":"aG\r\nVsbG8=","label":"  hello  "}}`
 	item := testAppConfig("demo.AppConfig", value, 1)

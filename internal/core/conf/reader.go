@@ -22,10 +22,7 @@ func NewReader(linker link.Linker) Reader {
 }
 
 func newReader(linker link.Linker, registry *Registry) Reader {
-	return &_Reader{
-		linker:   linker,
-		registry: registry,
-	}
+	return &_Reader{linker: linker, registry: registry}
 }
 
 func (r *_Reader) GetByType(kind reflect.Type) any {

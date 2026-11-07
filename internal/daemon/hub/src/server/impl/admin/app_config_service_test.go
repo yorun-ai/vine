@@ -178,10 +178,7 @@ func TestAppConfigServiceVersionsStayIndependent(t *testing.T) {
 	service := new(AppConfigApiServiceServerImpl{AppConfigCore: &core.AppConfigCore{AppConfigRepo: repo}})
 	versions := []string{"", "V1", "V2", "V10"}
 	for _, version := range versions {
-		item := service.Create(skeled.AppConfigCreation{
-			SkelName: "demo.FeatureConfig" + version,
-			Value:    `{}`,
-		})
+		item := service.Create(skeled.AppConfigCreation{SkelName: "demo.FeatureConfig" + version, Value: `{}`})
 		require.Equal(t, "demo.FeatureConfig"+version, item.Key)
 	}
 	require.Len(t, service.List(), len(versions))
@@ -263,23 +260,17 @@ func TestAppConfigServiceGetReturnsFieldSourcesAndDeclaredSlots(t *testing.T) {
 				SkelName:  "demo.FeatureConfig",
 				Lifecycle: skeldesc.ConfigLifecycleEternal,
 				Members: []*skeldesc.Member{
-					{Name: "enabled", Type: &skeldesc.Type{
-						Kind:   skeldesc.TypeKindScalar,
-						Scalar: skeldesc.ScalarBoolean,
-					}},
+					{Name: "enabled", Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBoolean}},
 				},
 			},
 			{Name: "OtherConfig", SkelName: "demo.OtherConfig", Lifecycle: skeldesc.ConfigLifecycleInstant},
 		},
 		items: []*core.AppConfig{{
-			Id:      7,
-			Name:    "demo.FeatureConfig",
-			Value:   `{"enabled":true}`,
-			Version: 1,
-			FieldSources: core.FieldSources{"/value": {
-				Source:   "app/default",
-				Override: "hub",
-			}},
+			Id:           7,
+			Name:         "demo.FeatureConfig",
+			Value:        `{"enabled":true}`,
+			Version:      1,
+			FieldSources: core.FieldSources{"/value": {Source: "app/default", Override: "hub"}},
 		}},
 	}
 	service := &AppConfigApiServiceServerImpl{AppConfigCore: &core.AppConfigCore{AppConfigRepo: repo}}
@@ -309,20 +300,9 @@ func TestAppConfigServiceGetReturnsFieldSourcesAndDeclaredSlots(t *testing.T) {
 }
 
 func TestStructuredConfigDescriptorMapping(t *testing.T) {
-	kind := &skeldesc.Type{
-		Kind:          skeldesc.TypeKindData,
-		SkelName:      "demo.Box",
-		TypeArguments: []*skeldesc.Type{{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBinary}},
-	}
-	definition := core.NewAppConfigDefinition(&skeldesc.Config{
-		Sensitive: true,
-		Members:   []*skeldesc.Member{{Name: "box", Type: kind}},
-		Lifecycle: skeldesc.ConfigLifecycleEternal,
-	}, nil,
-		[]*skeldesc.Data{{SkelName: "demo.Box", TypeParameters: []string{"T"}, Sensitive: true, Members: []*skeldesc.Member{{Name: "value", Sensitive: true, Example: "aGVsbG8=", Type: &skeldesc.Type{
-			Kind: skeldesc.TypeKindTypeParameter,
-			Name: "T",
-		}}}}})
+	kind := &skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: "demo.Box", TypeArguments: []*skeldesc.Type{{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBinary}}}
+	definition := core.NewAppConfigDefinition(&skeldesc.Config{Sensitive: true, Members: []*skeldesc.Member{{Name: "box", Type: kind}}, Lifecycle: skeldesc.ConfigLifecycleEternal}, nil,
+		[]*skeldesc.Data{{SkelName: "demo.Box", TypeParameters: []string{"T"}, Sensitive: true, Members: []*skeldesc.Member{{Name: "value", Sensitive: true, Example: "aGVsbG8=", Type: &skeldesc.Type{Kind: skeldesc.TypeKindTypeParameter, Name: "T"}}}}})
 	result := toServerAppConfigDescriptor(definition)
 	require.True(t, result.Sensitive)
 	require.Len(t, result.DataTypes, 1)

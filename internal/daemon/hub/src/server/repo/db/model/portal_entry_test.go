@@ -16,11 +16,7 @@ import (
 func TestPortalEntryDaoStoresAndFindsName(t *testing.T) {
 	dao := newTestPortalEntryDao(t)
 
-	entry := dao.Save(&PortalEntry{
-		Name:       "web",
-		Protocol:   "http",
-		HTTPConfig: `{"host":"demo.local","http":"DISABLED","httpPort":80,"https":"ENABLED","httpsPort":8443,"autohttps":"DISABLED"}`,
-	})
+	entry := dao.Save(&PortalEntry{Name: "web", Protocol: "http", HTTPConfig: `{"host":"demo.local","http":"DISABLED","httpPort":80,"https":"ENABLED","httpsPort":8443,"autohttps":"DISABLED"}`})
 	require.NotZero(t, entry.Id)
 
 	byName, ok := dao.ByName("web")
@@ -31,32 +27,21 @@ func TestPortalEntryDaoStoresAndFindsName(t *testing.T) {
 
 	// A user entry name identifies one entry.
 	require.Panics(t, func() {
-		dao.Save(&PortalEntry{
-			Name:       "web",
-			Protocol:   "http",
-			HTTPConfig: `{"host":"demo.local","http":"DISABLED","httpPort":80,"https":"ENABLED","httpsPort":9443,"autohttps":"DISABLED"}`,
-		})
+		dao.Save(&PortalEntry{Name: "web", Protocol: "http", HTTPConfig: `{"host":"demo.local","http":"DISABLED","httpPort":80,"https":"ENABLED","httpsPort":9443,"autohttps":"DISABLED"}`})
 	})
 }
 
 func TestPortalEntryDaoCreateQueryAndRemove(t *testing.T) {
 	dao := newTestPortalEntryDao(t)
 
-	entry := dao.Save(&PortalEntry{
-		Protocol:   "http",
-		HTTPConfig: `{"host":"demo.local","http":"DISABLED","httpPort":80,"https":"ENABLED","httpsPort":8443,"autohttps":"DISABLED"}`,
-	})
+	entry := dao.Save(&PortalEntry{Protocol: "http", HTTPConfig: `{"host":"demo.local","http":"DISABLED","httpPort":80,"https":"ENABLED","httpsPort":8443,"autohttps":"DISABLED"}`})
 	require.NotZero(t, entry.Id)
 
 	byAccess, ok := dao.ById(entry.Id)
 	require.True(t, ok)
 	assert.Equal(t, entry.Id, byAccess.Id)
 
-	updated := dao.Save(&PortalEntry{
-		Id:         entry.Id,
-		Protocol:   "http",
-		HTTPConfig: `{"host":"demo.local","http":"DISABLED","httpPort":80,"https":"ENABLED","httpsPort":9443,"autohttps":"DISABLED"}`,
-	})
+	updated := dao.Save(&PortalEntry{Id: entry.Id, Protocol: "http", HTTPConfig: `{"host":"demo.local","http":"DISABLED","httpPort":80,"https":"ENABLED","httpsPort":9443,"autohttps":"DISABLED"}`})
 	assert.Equal(t, entry.Id, updated.Id)
 	got, ok := dao.ById(entry.Id)
 	require.True(t, ok)
@@ -69,20 +54,14 @@ func TestPortalEntryDaoCreateQueryAndRemove(t *testing.T) {
 
 	// Hub recreates an entry when rules return to an access, so the deleted row
 	// must not keep the access index occupied.
-	recreated := dao.Save(&PortalEntry{
-		Protocol:   "http",
-		HTTPConfig: `{"host":"demo.local","http":"DISABLED","httpPort":80,"https":"ENABLED","httpsPort":9443,"autohttps":"DISABLED"}`,
-	})
+	recreated := dao.Save(&PortalEntry{Protocol: "http", HTTPConfig: `{"host":"demo.local","http":"DISABLED","httpPort":80,"https":"ENABLED","httpsPort":9443,"autohttps":"DISABLED"}`})
 	assert.NotZero(t, recreated.Id)
 }
 
 func TestPortalEntryDaoKeepsOneEntryPerAccess(t *testing.T) {
 	dao := newTestPortalEntryDao(t)
 
-	user := dao.Save(&PortalEntry{
-		Protocol:   "http",
-		HTTPConfig: `{"host":"","http":"ENABLED","httpPort":7099,"https":"DISABLED","httpsPort":443,"autohttps":"DISABLED"}`,
-	})
+	user := dao.Save(&PortalEntry{Protocol: "http", HTTPConfig: `{"host":"","http":"ENABLED","httpPort":7099,"https":"DISABLED","httpsPort":443,"autohttps":"DISABLED"}`})
 	require.NotZero(t, user.Id)
 	byAccess, ok := dao.ById(user.Id)
 	require.True(t, ok)
@@ -90,10 +69,7 @@ func TestPortalEntryDaoKeepsOneEntryPerAccess(t *testing.T) {
 
 	// One access never has two entries.
 	require.Panics(t, func() {
-		dao.Save(&PortalEntry{
-			Protocol:   "http",
-			HTTPConfig: `{"host":"","http":"ENABLED","httpPort":7099,"https":"DISABLED","httpsPort":443,"autohttps":"DISABLED"}`,
-		})
+		dao.Save(&PortalEntry{Protocol: "http", HTTPConfig: `{"host":"","http":"ENABLED","httpPort":7099,"https":"DISABLED","httpsPort":443,"autohttps":"DISABLED"}`})
 	})
 }
 
@@ -135,14 +111,7 @@ func testPortalEntryMigrationFrom028(t *testing.T, db *gorm.DB, dialect string) 
 	require.Len(t, before, 3)
 	ruleDao := &PortalRuleDao{Dao: rdb.NewDao[*PortalRule](db)}
 	ruleDao.EnsureSchema()
-	rule := ruleDao.Save(new(PortalRule{
-		Name:            "kept",
-		EntryId:         before[0].Id,
-		MatchPathPrefix: "/",
-		RouteType:       "SITE",
-		RouteSiteName:   "application",
-		Enabled:         true,
-	}))
+	rule := ruleDao.Save(new(PortalRule{Name: "kept", EntryId: before[0].Id, MatchPathPrefix: "/", RouteType: "SITE", RouteSiteName: "application", Enabled: true}))
 	dao := &PortalEntryDao{Dao: rdb.NewDao[*PortalEntry](db)}
 	dao.EnsureSchema()
 	after := []*PortalEntry{}
@@ -161,23 +130,9 @@ func testPortalEntryMigrationFrom028(t *testing.T, db *gorm.DB, dialect string) 
 		require.Equal(t, core.PortalSwitchModeDisabled, cfg.AutoHTTPS)
 		switch entry.Name {
 		case "plain":
-			require.Equal(t, core.PortalEntryHTTP{
-				Host:      "demo.local",
-				Http:      core.PortalSwitchModeEnabled,
-				HttpPort:  8080,
-				Https:     core.PortalSwitchModeDisabled,
-				HttpsPort: 443,
-				AutoHTTPS: core.PortalSwitchModeDisabled,
-			}, cfg)
+			require.Equal(t, core.PortalEntryHTTP{Host: "demo.local", Http: core.PortalSwitchModeEnabled, HttpPort: 8080, Https: core.PortalSwitchModeDisabled, HttpsPort: 443, AutoHTTPS: core.PortalSwitchModeDisabled}, cfg)
 		case "secure":
-			require.Equal(t, core.PortalEntryHTTP{
-				Host:      "demo.local",
-				Http:      core.PortalSwitchModeDisabled,
-				HttpPort:  80,
-				Https:     core.PortalSwitchModeEnabled,
-				HttpsPort: 8443,
-				AutoHTTPS: core.PortalSwitchModeDisabled,
-			}, cfg)
+			require.Equal(t, core.PortalEntryHTTP{Host: "demo.local", Http: core.PortalSwitchModeDisabled, HttpPort: 80, Https: core.PortalSwitchModeEnabled, HttpsPort: 8443, AutoHTTPS: core.PortalSwitchModeDisabled}, cfg)
 		case "archived":
 			require.Equal(t, "", cfg.Host)
 			require.Equal(t, 80, cfg.HttpPort)
@@ -201,13 +156,7 @@ func testPortalEntryMigrationFrom028(t *testing.T, db *gorm.DB, dialect string) 
 	require.NoError(t, db.Unscoped().Order("id").Find(&again).Error)
 	require.Equal(t, after, again)
 	// The retired single-transport index must no longer block new-format entries.
-	dao.Save(new(PortalEntry{
-		Name:       "dual",
-		Protocol:   "http",
-		HTTPConfig: `{"host":"other.local","http":"AUTO","https":"AUTO","autohttps":"AUTO"}`,
-		ListenIPs:  "[]",
-		Enabled:    true,
-	}))
+	dao.Save(new(PortalEntry{Name: "dual", Protocol: "http", HTTPConfig: `{"host":"other.local","http":"AUTO","https":"AUTO","autohttps":"AUTO"}`, ListenIPs: "[]", Enabled: true}))
 	dao.EnsureSchema()
 	require.Len(t, dao.ListOrdered(), 3)
 }

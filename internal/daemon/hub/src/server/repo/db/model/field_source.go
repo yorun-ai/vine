@@ -40,11 +40,7 @@ func saveFieldSource(tx *gorm.DB, kind string, id int, fields string) error {
 	return tx.Session(&gorm.Session{NewDB: true}).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "kind"}, {Name: "entity_id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"fields"}),
-	}).Create(&_FieldSource{
-		Kind:     kind,
-		EntityId: id,
-		Fields:   fields,
-	}).Error
+	}).Create(&_FieldSource{Kind: kind, EntityId: id, Fields: fields}).Error
 }
 
 func deleteFieldSource(tx *gorm.DB, kind string, id int) error {

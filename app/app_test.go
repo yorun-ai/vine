@@ -56,14 +56,8 @@ func TestNewBundledFlattensBundles(t *testing.T) {
 
 func TestNewBundledStartsInOrderAndStopsInReverse(t *testing.T) {
 	events := []string{}
-	appA := &_RecordingApp{
-		name:   "app.a",
-		events: &events,
-	}
-	appB := &_RecordingApp{
-		name:   "app.b",
-		events: &events,
-	}
+	appA := &_RecordingApp{name: "app.a", events: &events}
+	appB := &_RecordingApp{name: "app.b", events: &events}
 	bundle := NewBundled(
 		&_App{apps: []App{appA}},
 		&_App{apps: []App{appB}},

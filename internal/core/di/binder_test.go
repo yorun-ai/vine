@@ -141,16 +141,8 @@ func TestBindingRejectsChangesAfterInjectorInitialization(t *testing.T) {
 				resourceBinding.WithDependencies(nil, func(reflect.Value, []reflect.Value) {})
 			},
 		},
-		{
-			name:    "scope",
-			binding: resourceBinding,
-			change:  func() { resourceBinding.In(ExecutionScope) },
-		},
-		{
-			name:    "nullable",
-			binding: resourceBinding,
-			change:  func() { resourceBinding.AsNullable() },
-		},
+		{name: "scope", binding: resourceBinding, change: func() { resourceBinding.In(ExecutionScope) }},
+		{name: "nullable", binding: resourceBinding, change: func() { resourceBinding.AsNullable() }},
 		{
 			name:    "factory",
 			binding: resourceBinding,

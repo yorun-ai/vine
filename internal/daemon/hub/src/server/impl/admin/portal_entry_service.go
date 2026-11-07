@@ -62,19 +62,12 @@ func (s *PortalEntryApiServiceServerImpl) toServerPortalEntry(entry core.PortalE
 	return skeled.PortalEntry{
 		Protocol:      entry.Protocol,
 		EffectiveHttp: toServerEffectiveHTTP(*entry.EffectiveHTTP),
-		Http: skeled.PortalEntryHttp{
-			Host:      entry.Http.Host,
-			Http:      skeled.PortalSwitchMode(entry.Http.Http),
-			HttpPort:  entry.Http.HttpPort,
-			Https:     skeled.PortalSwitchMode(entry.Http.Https),
-			HttpsPort: entry.Http.HttpsPort,
-			Autohttps: skeled.PortalSwitchMode(entry.Http.AutoHTTPS),
-		},
-		Id:        entry.Id,
-		Name:      entry.Name,
-		ListenIPs: entry.ListenIPs,
-		Enabled:   entry.Enabled,
-		Rules:     rules,
+		Http:          skeled.PortalEntryHttp{Host: entry.Http.Host, Http: skeled.PortalSwitchMode(entry.Http.Http), HttpPort: entry.Http.HttpPort, Https: skeled.PortalSwitchMode(entry.Http.Https), HttpsPort: entry.Http.HttpsPort, Autohttps: skeled.PortalSwitchMode(entry.Http.AutoHTTPS)},
+		Id:            entry.Id,
+		Name:          entry.Name,
+		ListenIPs:     entry.ListenIPs,
+		Enabled:       entry.Enabled,
+		Rules:         rules,
 	}
 }
 
@@ -97,24 +90,9 @@ func toCoreHTTPConfig(h *skeled.PortalEntryHttp) *core.PortalEntryHTTP {
 	if h == nil {
 		return nil
 	}
-	return &core.PortalEntryHTTP{
-		Host:      h.Host,
-		Http:      core.PortalSwitchMode(h.Http),
-		HttpPort:  h.HttpPort,
-		Https:     core.PortalSwitchMode(h.Https),
-		HttpsPort: h.HttpsPort,
-		AutoHTTPS: core.PortalSwitchMode(h.Autohttps),
-	}
+	return &core.PortalEntryHTTP{Host: h.Host, Http: core.PortalSwitchMode(h.Http), HttpPort: h.HttpPort, Https: core.PortalSwitchMode(h.Https), HttpsPort: h.HttpsPort, AutoHTTPS: core.PortalSwitchMode(h.Autohttps)}
 }
 
 func toServerEffectiveHTTP(h core.PortalEntryEffectiveHTTP) skeled.PortalEntryEffectiveHttp {
-	return skeled.PortalEntryEffectiveHttp{
-		Host:             h.Host,
-		HttpEnabled:      h.HttpEnabled,
-		HttpPort:         h.HttpPort,
-		HttpsEnabled:     h.HttpsEnabled,
-		HttpsPort:        h.HttpsPort,
-		AutohttpsEnabled: h.AutoHTTPSEnabled,
-		HttpsReason:      h.HTTPSReason,
-	}
+	return skeled.PortalEntryEffectiveHttp{Host: h.Host, HttpEnabled: h.HttpEnabled, HttpPort: h.HttpPort, HttpsEnabled: h.HttpsEnabled, HttpsPort: h.HttpsPort, AutohttpsEnabled: h.AutoHTTPSEnabled, HttpsReason: h.HTTPSReason}
 }

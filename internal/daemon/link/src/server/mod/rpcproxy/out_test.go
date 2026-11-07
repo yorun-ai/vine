@@ -29,11 +29,7 @@ func TestForwardOutboundRequestWithTransportInheritsContextDeadline(t *testing.T
 	var targetDeadline time.Time
 	transport := _OutboundRoundTripperFunc(func(request *http.Request) (*http.Response, error) {
 		targetDeadline, _ = request.Context().Deadline()
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			Header:     http.Header{},
-			Body:       io.NopCloser(strings.NewReader("ok")),
-		}, nil
+		return &http.Response{StatusCode: http.StatusOK, Header: http.Header{}, Body: io.NopCloser(strings.NewReader("ok"))}, nil
 	})
 
 	request, err := http.NewRequest(http.MethodPost, "http://link.local/demo.Service/Invoke", nil)
@@ -154,13 +150,7 @@ func TestApiServiceRejectsBackendCallsAtLink(t *testing.T) {
 			caller := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")
 			target := mustMetaApp(t, "target.app", "22222222-2222-2222-2222-222222222222")
 			proxy := newTestRpcProxy(t, newTestHubWatchClient(t, map[string][]watched.RpcServiceRegistration{
-				"demo.OrderService": {{
-					ServiceName:   "demo.OrderService",
-					Api:           true,
-					AppName:       target.Name(),
-					AppInstanceId: target.InstanceId(),
-					Endpoint:      "http://remote.invalid/rpc/proxy/in/target",
-				}},
+				"demo.OrderService": {{ServiceName: "demo.OrderService", Api: true, AppName: target.Name(), AppInstanceId: target.InstanceId(), Endpoint: "http://remote.invalid/rpc/proxy/in/target"}},
 			}))
 			registerLocalApp(proxy, caller, "http://127.0.0.1:8080"+testPathRpcInvoke, "http://127.0.0.1:8080", nil)
 			if local {
@@ -182,12 +172,7 @@ func TestOutboundDestinationTransports(t *testing.T) {
 	caller := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")
 	target := mustMetaApp(t, "target.app", "22222222-2222-2222-2222-222222222222")
 	proxy := newTestRpcProxy(t, newTestHubWatchClient(t, map[string][]watched.RpcServiceRegistration{
-		service: {{
-			ServiceName:   service,
-			AppName:       target.Name(),
-			AppInstanceId: target.InstanceId(),
-			Endpoint:      "http://target.invalid",
-		}},
+		service: {{ServiceName: service, AppName: target.Name(), AppInstanceId: target.InstanceId(), Endpoint: "http://target.invalid"}},
 	}))
 	registerLocalApp(proxy, caller, "http://caller.invalid", "http://caller.invalid", nil)
 	registerLocalApp(proxy, target, "http://target.invalid", "http://target.invalid", []string{service})
@@ -202,11 +187,7 @@ func TestOutboundDestinationTransports(t *testing.T) {
 				if r.URL.Host != "target.invalid" {
 					t.Errorf("unexpected target: %s", r.URL)
 				}
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Header:     http.Header{},
-					Body:       io.NopCloser(strings.NewReader("ok")),
-				}, nil
+				return &http.Response{StatusCode: http.StatusOK, Header: http.Header{}, Body: io.NopCloser(strings.NewReader("ok"))}, nil
 			})
 			req := newInboundProxyRequest(t, caller, method.FullURLPath())
 			req.Header.Set(rpchttp.HeaderRpcOptions, "timeout=10s,future=value,destination="+destination)
@@ -227,19 +208,10 @@ func TestOutboundDestinationTransports(t *testing.T) {
 		if req.Destination() != "" {
 			t.Error("destination reached server")
 		}
-		return &spec.ResponseImpl{
-			ServerValue: target,
-			MethodValue: method,
-			ErrorValue:  ex.NewOK(),
-		}
+		return &spec.ResponseImpl{ServerValue: target, MethodValue: method, ErrorValue: ex.NewOK()}
 	}))
 	for _, destination := range []string{target.Name(), "missing.app"} {
-		response := proxy.serveRpcOut(&spec.RequestImpl{
-			ContextValue:     context.Background(),
-			ClientValue:      caller,
-			DestinationValue: destination,
-			MethodInfoValue:  method,
-		})
+		response := proxy.serveRpcOut(&spec.RequestImpl{ContextValue: context.Background(), ClientValue: caller, DestinationValue: destination, MethodInfoValue: method})
 		want := ex.OK
 		if destination != target.Name() {
 			want = ex.ServiceUnavailable

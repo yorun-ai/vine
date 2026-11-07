@@ -260,20 +260,9 @@ func TestHubWatchListenInputs(t *testing.T) {
 		env  map[string]string
 		want string
 	}{
-		{
-			name: "default",
-			want: "127.0.0.1:7072",
-		},
-		{
-			name: "flag",
-			args: []string{"--watch-listen", ":8100"},
-			want: ":8100",
-		},
-		{
-			name: "environment",
-			env:  map[string]string{EnvHubWatchListen: ":8101"},
-			want: ":8101",
-		},
+		{name: "default", want: "127.0.0.1:7072"},
+		{name: "flag", args: []string{"--watch-listen", ":8100"}, want: ":8100"},
+		{name: "environment", env: map[string]string{EnvHubWatchListen: ":8101"}, want: ":8101"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Setenv(EnvHubWatchListen, "")
@@ -309,32 +298,11 @@ func TestRunHubLockModes(t *testing.T) {
 		mode     string
 		endpoint string
 	}{
-		{
-			name: "default",
-			mode: "embedded",
-		},
-		{
-			name: "embedded",
-			args: []string{"--lock-mode=embedded"},
-			mode: "embedded",
-		},
-		{
-			name:     "redis",
-			args:     []string{"--lock-mode=redis", "--lock-redis-endpoint=redis://localhost:6379/2"},
-			mode:     "redis",
-			endpoint: "redis://localhost:6379/2",
-		},
-		{
-			name: "disable",
-			args: []string{"--lock-mode=disable"},
-			mode: "disable",
-		},
-		{
-			name:     "environment",
-			env:      map[string]string{EnvHubLockMode: "redis", EnvHubLockRedisEndpoint: "rediss://localhost:6379"},
-			mode:     "redis",
-			endpoint: "rediss://localhost:6379",
-		},
+		{name: "default", mode: "embedded"},
+		{name: "embedded", args: []string{"--lock-mode=embedded"}, mode: "embedded"},
+		{name: "redis", args: []string{"--lock-mode=redis", "--lock-redis-endpoint=redis://localhost:6379/2"}, mode: "redis", endpoint: "redis://localhost:6379/2"},
+		{name: "disable", args: []string{"--lock-mode=disable"}, mode: "disable"},
+		{name: "environment", env: map[string]string{EnvHubLockMode: "redis", EnvHubLockRedisEndpoint: "rediss://localhost:6379"}, mode: "redis", endpoint: "rediss://localhost:6379"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, key := range []string{EnvHubLockMode, EnvHubLockRedisEndpoint} {
@@ -367,27 +335,10 @@ func TestHubMQInputs(t *testing.T) {
 		mode     string
 		endpoint string
 	}{
-		{
-			name: "default",
-			mode: "embedded",
-		},
-		{
-			name: "embedded",
-			args: []string{"--mq-mode=embedded"},
-			mode: "embedded",
-		},
-		{
-			name:     "external",
-			args:     []string{"--mq-mode=nats", "--mq-nats-endpoint=nats://new:4222"},
-			mode:     "nats",
-			endpoint: "nats://new:4222",
-		},
-		{
-			name:     "environment",
-			env:      map[string]string{EnvHubMQMode: "nats", EnvHubMQNatsEndpoint: "nats://new:4222"},
-			mode:     "nats",
-			endpoint: "nats://new:4222",
-		},
+		{name: "default", mode: "embedded"},
+		{name: "embedded", args: []string{"--mq-mode=embedded"}, mode: "embedded"},
+		{name: "external", args: []string{"--mq-mode=nats", "--mq-nats-endpoint=nats://new:4222"}, mode: "nats", endpoint: "nats://new:4222"},
+		{name: "environment", env: map[string]string{EnvHubMQMode: "nats", EnvHubMQNatsEndpoint: "nats://new:4222"}, mode: "nats", endpoint: "nats://new:4222"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, key := range []string{EnvHubMQMode, EnvHubMQNatsEndpoint} {

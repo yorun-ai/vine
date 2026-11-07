@@ -100,11 +100,7 @@ func newRule(pattern string, level Level) (_Rule, error) {
 	if !IsValidLevel(level) {
 		return _Rule{}, fmt.Errorf("%+v is not a valid LogLevel", level)
 	}
-	return _Rule{
-		pattern:  pattern,
-		segments: segments,
-		level:    level,
-	}, nil
+	return _Rule{pattern: pattern, segments: segments, level: level}, nil
 }
 
 func parseRulePattern(pattern string) ([]string, error) {

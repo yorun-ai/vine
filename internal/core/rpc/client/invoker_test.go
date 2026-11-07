@@ -58,10 +58,7 @@ func TestInvokerBuildRequestCreatesClientSpan(t *testing.T) {
 		Context:    context.Background(),
 		TraceValue: trace,
 	}
-	client := New(Option{
-		Context: rpcContext,
-		Logger:  testClientLogger(),
-	})
+	client := New(Option{Context: rpcContext, Logger: testClientLogger()})
 	methodInfo := testMethodInfo()
 
 	first := client.newInvoker(methodInfo, nil, nil).buildRequest()
@@ -247,15 +244,8 @@ func TestParseResponseAllowsOKErrorAndReturnsResult(t *testing.T) {
 }
 
 func TestInvokerDestination(t *testing.T) {
-	rpcContext := &meta.ContextImpl{
-		Context:    context.Background(),
-		TraceValue: meta.InitialTrace(),
-	}
-	c := New(Option{
-		Context:   rpcContext,
-		ClientApp: testClientApp(t),
-		Logger:    testClientLogger(),
-	})
+	rpcContext := &meta.ContextImpl{Context: context.Background(), TraceValue: meta.InitialTrace()}
+	c := New(Option{Context: rpcContext, ClientApp: testClientApp(t), Logger: testClientLogger()})
 	for _, destination := range []string{"target.app", ""} {
 		var options []InvokeOption
 		if destination != "" {

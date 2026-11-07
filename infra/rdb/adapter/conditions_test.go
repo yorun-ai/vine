@@ -10,10 +10,7 @@ import (
 )
 
 func TestNormalizeConditionsPreservesNonUUIDArguments(t *testing.T) {
-	expression := clause.Expr{
-		SQL:  "name = ?",
-		Vars: []any{"a"},
-	}
+	expression := clause.Expr{SQL: "name = ?", Vars: []any{"a"}}
 	conditions := []any{"id = ? AND name = ?", 42, "a", []byte{1, 2}, expression}
 	require.Equal(t, conditions, NormalizeConditions(conditions))
 	id := uuid.NewV7()

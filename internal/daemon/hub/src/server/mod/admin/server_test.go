@@ -31,16 +31,8 @@ func TestServerOpensAdminListenerForInprocHub(t *testing.T) {
 		adminListen string
 		wantHTTP    bool
 	}{
-		{
-			name:        "address declared",
-			adminListen: "127.0.0.1:7099",
-			wantHTTP:    true,
-		},
-		{
-			name:        "address omitted",
-			adminListen: "",
-			wantHTTP:    false,
-		},
+		{name: "address declared", adminListen: "127.0.0.1:7099", wantHTTP: true},
+		{name: "address omitted", adminListen: "", wantHTTP: false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			server := &Server{

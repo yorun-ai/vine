@@ -76,40 +76,17 @@ func TestAuthPropagatesIdentifierAndRejectsInvalidResponse(t *testing.T) {
 		name, info, want string
 		valid            bool
 	}{
-		{
-			"large integer",
-			`{"userId":9007199254740993}`,
-			"9007199254740993",
-			true,
-		},
-		{
-			"zero",
-			`{"userId":0}`,
-			"0",
-			true,
-		},
-		{
-			"missing",
-			`{}`,
-			"",
-			false,
-		},
-		{
-			"null",
-			`{"userId":null}`,
-			"",
-			false,
-		},
+		{"large integer", `{"userId":9007199254740993}`, "9007199254740993", true},
+		{"zero", `{"userId":0}`, "0", true},
+		{"missing", `{}`, "", false},
+		{"null", `{"userId":null}`, "", false},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			endpoint := registerTestAuthService(t, http.StatusOK, "OK", tt.info)
 			values := testAuthValues(endpoint)
 			descriptor := testAuthActorDescriptor()
 			descriptor.Auth.IdentifierField = "userId"
-			descriptor.Auth.Info.Members = []*skeldesc.Member{{Name: "userId", Type: &skeldesc.Type{
-				Kind:   skeldesc.TypeKindScalar,
-				Scalar: skeldesc.ScalarInt,
-			}}}
+			descriptor.Auth.Info.Members = []*skeldesc.Member{{Name: "userId", Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarInt}}}
 			values[watched.FormatDescriptorActorKey("demo.UserActor")] = vcode.MustMarshalJsonS(descriptor)
 			access := newTestAccess(t, values)
 			for _, web := range []bool{false, true} {
@@ -123,18 +100,9 @@ func TestAuthPropagatesIdentifierAndRejectsInvalidResponse(t *testing.T) {
 				header := rpchttp.HeaderRpcActor
 				if web {
 					header = webspec.HeaderWebActor
-					ok = access.AuthWeb(&WebOperation{
-						Auther:        authOperationForTest(t, request, recorder),
-						ActorSkelName: "demo.UserActor",
-					})
+					ok = access.AuthWeb(&WebOperation{Auther: authOperationForTest(t, request, recorder), ActorSkelName: "demo.UserActor"})
 				} else {
-					ok = access.AllowRpc(&RpcOperation{
-						Auther:        authOperationForTest(t, request, recorder),
-						Server:        testServerApp(),
-						ActorSkelName: "demo.UserActor",
-						ServiceName:   "demo.UserService",
-						MethodName:    "Get",
-					})
+					ok = access.AllowRpc(&RpcOperation{Auther: authOperationForTest(t, request, recorder), Server: testServerApp(), ActorSkelName: "demo.UserActor", ServiceName: "demo.UserService", MethodName: "Get"})
 				}
 				require.Equal(t, tt.valid, ok)
 				if !ok {
@@ -161,55 +129,20 @@ func TestParseCredentialOptionalFields(t *testing.T) {
 		valid        bool
 		want         map[string]string
 	}{
-		{
-			name:   "omitted",
-			header: "key1 token",
-			valid:  true,
-			want:   map[string]string{"key1": "token"},
-		},
-		{
-			name:   "provided",
-			header: "KEY1 token, KEY2 tenant",
-			valid:  true,
-			want:   map[string]string{"key1": "token", "key2": "tenant"},
-		},
-		{
-			name:   "missing required",
-			header: "key2 tenant",
-		},
-		{
-			name:   "empty optional",
-			header: "key1 token, key2 ",
-		},
-		{
-			name:   "empty required",
-			header: "key1 , key2 tenant",
-		},
-		{
-			name:   "blank optional",
-			header: "key1 token, key2 \t",
-		},
-		{
-			name:   "unknown",
-			header: "key1 token, other tenant",
-		},
-		{
-			name:   "malformed",
-			header: "key1 token, key2",
-		},
+		{name: "omitted", header: "key1 token", valid: true, want: map[string]string{"key1": "token"}},
+		{name: "provided", header: "KEY1 token, KEY2 tenant", valid: true, want: map[string]string{"key1": "token", "key2": "tenant"}},
+		{name: "missing required", header: "key2 tenant"},
+		{name: "empty optional", header: "key1 token, key2 "},
+		{name: "empty required", header: "key1 , key2 tenant"},
+		{name: "blank optional", header: "key1 token, key2 \t"},
+		{name: "unknown", header: "key1 token, other tenant"},
+		{name: "malformed", header: "key1 token, key2"},
 		{name: "missing credentials"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			descriptor := testCredentialDescriptor()
-			descriptor.Members[0].Type = &skeldesc.Type{
-				Kind:   skeldesc.TypeKindScalar,
-				Scalar: skeldesc.ScalarString,
-			}
-			descriptor.Members[1].Type = &skeldesc.Type{
-				Kind:     skeldesc.TypeKindScalar,
-				Scalar:   skeldesc.ScalarString,
-				Nullable: true,
-			}
+			descriptor.Members[0].Type = &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString}
+			descriptor.Members[1].Type = &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString, Nullable: true}
 			got, ok := parseCredential(descriptor, tt.header)
 			require.Equal(t, tt.valid, ok)
 			if ok {
@@ -224,17 +157,7 @@ func TestOptionalCredentialAuthForwarding(t *testing.T) {
 		name         string
 		web, network bool
 	}{
-		{name: "rpc inproc"}, {
-			name: "web inproc",
-			web:  true,
-		}, {
-			name:    "rpc http",
-			network: true,
-		}, {
-			name:    "web http",
-			web:     true,
-			network: true,
-		},
+		{name: "rpc inproc"}, {name: "web inproc", web: true}, {name: "rpc http", network: true}, {name: "web http", web: true, network: true},
 	} {
 		t.Run(transport.name, func(t *testing.T) {
 			for _, tt := range []struct {
@@ -242,25 +165,10 @@ func TestOptionalCredentialAuthForwarding(t *testing.T) {
 				valid        bool
 				optional     *string
 			}{
-				{
-					name:   "omitted",
-					header: "key1 token",
-					valid:  true,
-				},
-				{
-					name:     "provided",
-					header:   "key1 token, key2 tenant",
-					valid:    true,
-					optional: new("tenant"),
-				},
-				{
-					name:   "empty",
-					header: "key1 token, key2 ",
-				},
-				{
-					name:   "required missing",
-					header: "key2 tenant",
-				},
+				{name: "omitted", header: "key1 token", valid: true},
+				{name: "provided", header: "key1 token, key2 tenant", valid: true, optional: new("tenant")},
+				{name: "empty", header: "key1 token, key2 "},
+				{name: "required missing", header: "key2 tenant"},
 			} {
 				t.Run(tt.name, func(t *testing.T) {
 					endpoint := "link+inproc://vine/optional-credential"
@@ -298,11 +206,7 @@ func TestOptionalCredentialAuthForwarding(t *testing.T) {
 						t.Cleanup(func() { ingressinproc.Unregister(endpoint) })
 					}
 					descriptor := testAuthActorDescriptor()
-					descriptor.Auth.Credential.Members[1].Type = &skeldesc.Type{
-						Kind:     skeldesc.TypeKindScalar,
-						Scalar:   skeldesc.ScalarString,
-						Nullable: true,
-					}
+					descriptor.Auth.Credential.Members[1].Type = &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString, Nullable: true}
 					values := testAuthValues(endpoint)
 					values[watched.FormatDescriptorActorKey("demo.UserActor")] = vcode.MustMarshalJsonS(descriptor)
 					access := newTestAccess(t, values)
@@ -312,10 +216,7 @@ func TestOptionalCredentialAuthForwarding(t *testing.T) {
 					request.Header.Set("Authorization", tt.header)
 					var ok bool
 					if transport.web {
-						ok = access.AuthWeb(&WebOperation{
-							Auther:        authOperationForTest(t, request, recorder),
-							ActorSkelName: "demo.UserActor",
-						})
+						ok = access.AuthWeb(&WebOperation{Auther: authOperationForTest(t, request, recorder), ActorSkelName: "demo.UserActor"})
 					} else {
 						ok = access.AllowRpc(testRpcOperation(t, "demo.UserActor", request, recorder))
 					}
@@ -356,10 +257,7 @@ func TestPortalAuthModes(t *testing.T) {
 								AuthMode:  mode,
 								Methods:   []*skeldesc.Method{{SkelName: "Get", Name: "Get", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: mode}},
 							})
-							values[watched.FormatDescriptorWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.DescriptorWeb{
-								SkelName: "demo.Web",
-								AuthMode: mode,
-							})
+							values[watched.FormatDescriptorWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: mode})
 							access := newTestAccess(t, values)
 							request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
 							authorization := "Key1 token123, key2 dXNlcjpwd2Q="
@@ -422,17 +320,8 @@ func TestPortalRejectsEmptyAndDuplicateAuthorization(t *testing.T) {
 			for _, headers := range [][]string{{""}, {"", "Bearer invalid"}, {"Key1 token, key2 token", "Bearer invalid"}, {"Key1 token, key2 token", "Key1 token, key2 token"}} {
 				t.Run(fmt.Sprintf("%s/%s/%q", protocol, mode, headers), func(t *testing.T) {
 					values := testAuthValues("")
-					values[watched.FormatDescriptorWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.DescriptorWeb{
-						SkelName: "demo.Web",
-						AuthMode: mode,
-					})
-					values[watched.FormatDescriptorServiceKey("demo.UserService")] = vcode.MustMarshalJsonS(watched.DescriptorService{
-						Api:       true,
-						SkelName:  "demo.UserService",
-						AuthMode:  mode,
-						Audiences: testUserActorAudiences(),
-						Methods:   []*skeldesc.Method{{SkelName: "Get", Name: "Get", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: mode}},
-					})
+					values[watched.FormatDescriptorWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: mode})
+					values[watched.FormatDescriptorServiceKey("demo.UserService")] = vcode.MustMarshalJsonS(watched.DescriptorService{Api: true, SkelName: "demo.UserService", AuthMode: mode, Audiences: testUserActorAudiences(), Methods: []*skeldesc.Method{{SkelName: "Get", Name: "Get", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: mode}}})
 					access := newTestAccess(t, values)
 					request := httptest.NewRequest(http.MethodPost, "http://demo.local", nil)
 					request.Header[headerAuthorization] = append([]string(nil), headers...)

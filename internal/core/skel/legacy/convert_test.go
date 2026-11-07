@@ -140,10 +140,7 @@ func TestConvertUnmarkedService(t *testing.T) {
 
 func TestConvertRejectsRetiredAuthenticationModes(t *testing.T) {
 	for _, mode := range []AuthMode{"auth", "noauth", "unset"} {
-		_, err := Convert(&DomainSchema{
-			Domain:   "demo",
-			Services: []*ServiceSchema{{Name: "Api", SkelName: "demo.Api", Api: true, AuthMode: mode, Methods: []*MethodSchema{{Name: "Get"}}}},
-		})
+		_, err := Convert(&DomainSchema{Domain: "demo", Services: []*ServiceSchema{{Name: "Api", SkelName: "demo.Api", Api: true, AuthMode: mode, Methods: []*MethodSchema{{Name: "Get"}}}}})
 		require.Error(t, err, mode)
 	}
 }

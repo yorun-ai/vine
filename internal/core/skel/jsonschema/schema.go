@@ -25,11 +25,7 @@ type _Builder struct {
 // Method returns schemas for the named params object and the result value,
 // excluding the vRPC envelope. The supplied descriptors are never modified.
 func Method(method *descriptor.Method, data map[string]*descriptor.Data, enums map[string]*descriptor.Enum) (Schema, Schema, error) {
-	input := &_Builder{
-		data:  data,
-		enums: enums,
-		defs:  map[string]Schema{},
-	}
+	input := &_Builder{data: data, enums: enums, defs: map[string]Schema{}}
 	params, err := input.members(method.Arguments, nil, 0)
 	if err != nil {
 		return nil, nil, fmt.Errorf("input: %w", err)
@@ -37,11 +33,7 @@ func Method(method *descriptor.Method, data map[string]*descriptor.Data, enums m
 	annotate(params, method.InputDescription, false, "", method.ArgumentsSensitive, "")
 	input.document(params)
 
-	output := &_Builder{
-		data:  data,
-		enums: enums,
-		defs:  map[string]Schema{},
-	}
+	output := &_Builder{data: data, enums: enums, defs: map[string]Schema{}}
 	result := Schema{"type": "null"}
 	if method.ResultType != nil {
 		result, err = output.schema(method.ResultType, nil, 0)
@@ -220,16 +212,7 @@ func substitute(kind *descriptor.Type, bindings map[string]*descriptor.Type, dep
 	for _, pair := range []struct {
 		source *descriptor.Type
 		target **descriptor.Type
-	}{{
-		kind.Element,
-		&result.Element,
-	}, {
-		kind.Key,
-		&result.Key,
-	}, {
-		kind.Value,
-		&result.Value,
-	}} {
+	}{{kind.Element, &result.Element}, {kind.Key, &result.Key}, {kind.Value, &result.Value}} {
 		if pair.source != nil {
 			*pair.target, err = substitute(pair.source, bindings, depth+1)
 			if err != nil {

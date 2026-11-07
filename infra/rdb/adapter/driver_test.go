@@ -268,48 +268,21 @@ func TestDriverNamedValueConversionAndCheckerPrecedence(t *testing.T) {
 		input    any
 		expected any
 	}{
-		{
-			"uuid",
-			id,
-			id.String(),
-		}, {
-			"pointer",
-			&id,
-			id.String(),
-		}, {
-			"null",
-			(*uuid.UUID)(nil),
-			nil,
-		}, {
-			"other",
-			int64(7),
-			int64(7),
-		},
+		{"uuid", id, id.String()}, {"pointer", &id, id.String()}, {"null", (*uuid.UUID)(nil), nil}, {"other", int64(7), int64(7)},
 	} {
 		t.Run(item.name, func(t *testing.T) {
 			calls := []string{}
 			underlying := &driverContextConnStub{
 				check: func(value *driver.NamedValue) error {
 					calls = append(calls, "connection")
-					assert.Equal(t, driver.NamedValue{
-						Name:    "arg",
-						Ordinal: 2,
-						Value:   item.expected,
-					}, *value)
+					assert.Equal(t, driver.NamedValue{Name: "arg", Ordinal: 2, Value: item.expected}, *value)
 					return failure
 				},
 			}
 			conn := &_Conn{Conn: underlying}
-			value := driver.NamedValue{
-				Name:    "arg",
-				Ordinal: 2,
-				Value:   item.input,
-			}
+			value := driver.NamedValue{Name: "arg", Ordinal: 2, Value: item.input}
 			assert.ErrorIs(t, conn.CheckNamedValue(&value), failure)
-			statement := &_Stmt{
-				conn: conn,
-				Stmt: new(driverStmtStub),
-			}
+			statement := &_Stmt{conn: conn, Stmt: new(driverStmtStub)}
 			value.Value = item.input
 			assert.ErrorIs(t, statement.CheckNamedValue(&value), failure)
 			statement.Stmt = &driverContextStmtStub{
@@ -333,15 +306,8 @@ func TestDriverNamedValueConversionAndCheckerPrecedence(t *testing.T) {
 func TestDriverConnectionContextDelegation(t *testing.T) {
 	ctx := t.Context()
 	failure := errors.New("driver failure")
-	args := []driver.NamedValue{{
-		Name:    "value",
-		Ordinal: 1,
-		Value:   "uuid-text",
-	}}
-	options := driver.TxOptions{
-		ReadOnly:  true,
-		Isolation: driver.IsolationLevel(sql.LevelSerializable),
-	}
+	args := []driver.NamedValue{{Name: "value", Ordinal: 1, Value: "uuid-text"}}
+	options := driver.TxOptions{ReadOnly: true, Isolation: driver.IsolationLevel(sql.LevelSerializable)}
 	calls := []string{}
 	statement := new(driverStmtStub)
 	underlying := &driverContextConnStub{
@@ -450,10 +416,7 @@ func TestDriverStatementFallbackPreservesArgumentsAndCancellation(t *testing.T) 
 	statement := &_Stmt{Stmt: underlying}
 	args := make([]driver.NamedValue, len(expected))
 	for i, value := range expected {
-		args[i] = driver.NamedValue{
-			Ordinal: i + 1,
-			Value:   value,
-		}
+		args[i] = driver.NamedValue{Ordinal: i + 1, Value: value}
 	}
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
@@ -461,11 +424,7 @@ func TestDriverStatementFallbackPreservesArgumentsAndCancellation(t *testing.T) 
 	assert.ErrorIs(t, err, context.Canceled)
 	_, err = statement.QueryContext(ctx, args)
 	assert.ErrorIs(t, err, context.Canceled)
-	named := []driver.NamedValue{{
-		Name:    "arg",
-		Ordinal: 1,
-		Value:   7,
-	}}
+	named := []driver.NamedValue{{Name: "arg", Ordinal: 1, Value: 7}}
 	_, err = statement.ExecContext(t.Context(), named)
 	assert.ErrorContains(t, err, "does not support named parameters")
 	_, err = statement.QueryContext(t.Context(), named)
@@ -483,11 +442,7 @@ func TestDriverStatementFallbackPreservesArgumentsAndCancellation(t *testing.T) 
 func TestDriverStatementContextDelegation(t *testing.T) {
 	ctx := t.Context()
 	failure := errors.New("statement failure")
-	args := []driver.NamedValue{{
-		Name:    "value",
-		Ordinal: 1,
-		Value:   "uuid-text",
-	}}
+	args := []driver.NamedValue{{Name: "value", Ordinal: 1, Value: "uuid-text"}}
 	calls := []string{}
 	underlying := &driverContextStmtStub{
 		execContext: func(received context.Context, receivedArgs []driver.NamedValue) (driver.Result, error) {

@@ -53,10 +53,7 @@ func StartListenerHandle(log *logger.Logger, trace meta.Trace, event spec.EventI
 
 func renderEventPayload(value any) _PayloadValue {
 	result, err := redact.Render(value)
-	return _PayloadValue{
-		result: result,
-		err:    err,
-	}
+	return _PayloadValue{result: result, err: err}
 }
 
 func Start(log *logger.Logger, startMsg string, finishMsg string, trace meta.Trace, event spec.EventInfo, emitter meta.App) *Span {

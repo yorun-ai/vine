@@ -50,10 +50,7 @@ func TestStartAndWaitSignalDuringStartup(t *testing.T) {
 		if childSignal == "interrupt" {
 			sig = syscall.SIGINT
 		}
-		application := &signalLifecycleApp{
-			t:      t,
-			signal: sig,
-		}
+		application := &signalLifecycleApp{t: t, signal: sig}
 		StartAndWait(application)
 		if !application.stopped {
 			t.Fatal("application did not stop")

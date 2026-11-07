@@ -14,23 +14,14 @@ func testVarsDescriptors() []*skeldesc.Domain {
 	database := []*skeldesc.Member{{Name: "host", Type: seedScalar(skeldesc.ScalarString)}, {Name: "port", Type: seedScalar(skeldesc.ScalarInt)}}
 	return []*skeldesc.Domain{{Name: "app", Data: []*skeldesc.Data{
 		{Name: "Vars", SkelName: "app.Vars", Members: []*skeldesc.Member{
-			{Name: "database", Type: &skeldesc.Type{
-				Kind:     skeldesc.TypeKindData,
-				SkelName: "app.DatabaseVars",
-			}},
+			{Name: "database", Type: &skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: "app.DatabaseVars"}},
 			{Name: "enabled", Type: seedScalar(skeldesc.ScalarBoolean)},
 			{Name: "text", Type: seedScalar(skeldesc.ScalarString)},
 			{Name: "optional", Type: nullable},
-			{Name: "origins", Type: &skeldesc.Type{
-				Kind:    skeldesc.TypeKindList,
-				Element: seedScalar(skeldesc.ScalarString),
-			}},
+			{Name: "origins", Type: &skeldesc.Type{Kind: skeldesc.TypeKindList, Element: seedScalar(skeldesc.ScalarString)}},
 			{Name: "unused", Type: seedScalar(skeldesc.ScalarInt)},
 		}},
-		{Name: "DatabaseVars", SkelName: "app.DatabaseVars", Members: append(append([]*skeldesc.Member{}, database...), &skeldesc.Member{
-			Name: "oldField",
-			Type: seedScalar(skeldesc.ScalarString),
-		})},
+		{Name: "DatabaseVars", SkelName: "app.DatabaseVars", Members: append(append([]*skeldesc.Member{}, database...), &skeldesc.Member{Name: "oldField", Type: seedScalar(skeldesc.ScalarString)})},
 	}, Configs: []*skeldesc.Config{
 		{SkelName: "app.DatabaseConfig", Members: database, Lifecycle: skeldesc.ConfigLifecycleEternal},
 		{SkelName: "app.OptionalConfig", Members: []*skeldesc.Member{{Name: "value", Type: nullable}}, Lifecycle: skeldesc.ConfigLifecycleEternal},
@@ -102,72 +93,17 @@ portalCerts:
 
 func TestVarsReferencesRejectErrorsAtApplicationPoint(t *testing.T) {
 	cases := []struct{ name, reference, variables, want string }{
-		{
-			"missing",
-			"${database.port}",
-			"",
-			`variable "database.port" is missing and has no default`,
-		},
-		{
-			"present null",
-			"${database.port:5432}",
-			"database: {port: null}",
-			"null is not allowed",
-		},
-		{
-			"parent null",
-			"${database.port:5432}",
-			"database: null",
-			"parent is not an object",
-		},
-		{
-			"parent scalar",
-			"${database.port:5432}",
-			"database: nope",
-			"parent is not an object",
-		},
-		{
-			"wrong type",
-			"${database.port:5432}",
-			"database: {port: secret-value}",
-			"expected int",
-		},
-		{
-			"invalid default",
-			"${database.port:secret-value}",
-			"",
-			"expected int",
-		},
-		{
-			"undeclared",
-			"${database.missing:5432}",
-			"",
-			"not defined in app.DatabaseVars",
-		},
-		{
-			"bad path",
-			"${database_port:5432}",
-			"",
-			"camelCase",
-		},
-		{
-			"empty path",
-			"${:5432}",
-			"",
-			"camelCase",
-		},
-		{
-			"malformed",
-			"${database.port",
-			"",
-			"malformed",
-		},
-		{
-			"nested default",
-			"${database.port:${other}}",
-			"",
-			"malformed",
-		},
+		{"missing", "${database.port}", "", `variable "database.port" is missing and has no default`},
+		{"present null", "${database.port:5432}", "database: {port: null}", "null is not allowed"},
+		{"parent null", "${database.port:5432}", "database: null", "parent is not an object"},
+		{"parent scalar", "${database.port:5432}", "database: nope", "parent is not an object"},
+		{"wrong type", "${database.port:5432}", "database: {port: secret-value}", "expected int"},
+		{"invalid default", "${database.port:secret-value}", "", "expected int"},
+		{"undeclared", "${database.missing:5432}", "", "not defined in app.DatabaseVars"},
+		{"bad path", "${database_port:5432}", "", "camelCase"},
+		{"empty path", "${:5432}", "", "camelCase"},
+		{"malformed", "${database.port", "", "malformed"},
+		{"nested default", "${database.port:${other}}", "", "malformed"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -215,51 +151,11 @@ func TestVarsDescriptorScalarValidation(t *testing.T) {
 		value  string
 		valid  bool
 	}{
-		{
-			skeldesc.ScalarDuration,
-			"2h",
-			true,
-		}, {
-			skeldesc.ScalarDuration,
-			"bad",
-			false,
-		},
-		{
-			skeldesc.ScalarTimestamp,
-			"2026-09-14T10:30:00Z",
-			true,
-		}, {
-			skeldesc.ScalarTimestamp,
-			"bad",
-			false,
-		},
-		{
-			skeldesc.ScalarUUID,
-			"550e8400-e29b-41d4-a716-446655440000",
-			true,
-		}, {
-			skeldesc.ScalarUUID,
-			"bad",
-			false,
-		},
-		{
-			skeldesc.ScalarInt,
-			"5432",
-			true,
-		}, {
-			skeldesc.ScalarInt,
-			"'5432'",
-			false,
-		},
-		{
-			skeldesc.ScalarBoolean,
-			"false",
-			true,
-		}, {
-			skeldesc.ScalarBoolean,
-			"'false'",
-			false,
-		},
+		{skeldesc.ScalarDuration, "2h", true}, {skeldesc.ScalarDuration, "bad", false},
+		{skeldesc.ScalarTimestamp, "2026-09-14T10:30:00Z", true}, {skeldesc.ScalarTimestamp, "bad", false},
+		{skeldesc.ScalarUUID, "550e8400-e29b-41d4-a716-446655440000", true}, {skeldesc.ScalarUUID, "bad", false},
+		{skeldesc.ScalarInt, "5432", true}, {skeldesc.ScalarInt, "'5432'", false},
+		{skeldesc.ScalarBoolean, "false", true}, {skeldesc.ScalarBoolean, "'false'", false},
 	} {
 		var doc yaml.Node
 		require.NoError(t, yaml.Unmarshal([]byte(tc.value), &doc))

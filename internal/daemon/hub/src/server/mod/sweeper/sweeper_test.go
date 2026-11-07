@@ -63,10 +63,7 @@ func (r *_SweeperPortalSiteRepo) List() []*core.PortalSite {
 
 func TestSweeperSkipsLiveLeaseStatus(t *testing.T) {
 	registryRepo := &_SweeperRegistryRepo{
-		leases: []core.AppHeartbeat{{
-			Name:       "demo.app",
-			InstanceId: "instance-1",
-		}},
+		leases: []core.AppHeartbeat{{Name: "demo.app", InstanceId: "instance-1"}},
 		status: &core.AppStatus{
 			Name:       "demo.app",
 			InstanceId: "instance-1",
@@ -95,10 +92,7 @@ func TestSweeperUnregistersExpiredLeaseStatus(t *testing.T) {
 	syncerModule := &syncer.Syncer{WatchServer: watchServer}
 	syncerModule.DIInit()
 	registryRepo := &_SweeperRegistryRepo{
-		leases: []core.AppHeartbeat{{
-			Name:       "demo.app",
-			InstanceId: "instance-1",
-		}},
+		leases: []core.AppHeartbeat{{Name: "demo.app", InstanceId: "instance-1"}},
 		status: &core.AppStatus{
 			Name:       "demo.app",
 			InstanceId: "instance-1",
@@ -146,11 +140,8 @@ func TestSweeperUnregistersExpiredLeaseStatus(t *testing.T) {
 	target := &Sweeper{
 		PortalInstanceCore: &core.PortalInstanceCore{PortalInstanceRepo: &_SweeperPortalInstanceRepo{}},
 		DescriptorRepo:     descriptorRepo,
-		PortalSiteCore: &core.PortalSiteCore{
-			PortalSiteRepo: portalSiteRepo,
-			DescriptorRepo: descriptorRepo,
-		},
-		Syncer: syncerModule,
+		PortalSiteCore:     &core.PortalSiteCore{PortalSiteRepo: portalSiteRepo, DescriptorRepo: descriptorRepo},
+		Syncer:             syncerModule,
 		RegistryCore: &core.RegistryCore{
 			RegistryRepo:   registryRepo,
 			DescriptorRepo: descriptorRepo,

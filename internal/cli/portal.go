@@ -43,11 +43,7 @@ func newPortalCommand() *ucli.Command {
 
 func newPortalServeFlags() []ucli.Flag {
 	return append([]ucli.Flag{
-		&ucli.StringFlag{
-			Name:    flagPortalHubEndpoint,
-			Sources: ucli.EnvVars(envPortalHubEndpoint),
-			Usage:   "hub API endpoint",
-		},
+		&ucli.StringFlag{Name: flagPortalHubEndpoint, Sources: ucli.EnvVars(envPortalHubEndpoint), Usage: "hub API endpoint"},
 	}, mtlsFlags(commandPortal)...)
 }
 

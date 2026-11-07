@@ -92,13 +92,10 @@ func newTestHeartbeat(client *_TestPortalRegistryClient, infoClient *_TestInfoSe
 		panic(err)
 	}
 	return &Heartbeat{
-		Context:    context.Background(),
-		Flag:       flags,
-		CurrentApp: appInfo,
-		HubInfo: &hubinfo.HubInfo{
-			Flag:              flags,
-			InfoServiceClient: infoClient,
-		},
+		Context:              context.Background(),
+		Flag:                 flags,
+		CurrentApp:           appInfo,
+		HubInfo:              &hubinfo.HubInfo{Flag: flags, InfoServiceClient: infoClient},
 		PortalRegistryClient: client,
 	}
 }
@@ -174,10 +171,7 @@ func TestHeartbeatKeepsRunningWhenHubLacksTheRegistration(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		// A Hub that does not serve this service must not stop Portal: startup
 		// succeeds and the heartbeat keeps trying until Hub answers.
-		client := &_TestPortalRegistryClient{
-			registered:    false,
-			registerFails: true,
-		}
+		client := &_TestPortalRegistryClient{registered: false, registerFails: true}
 		component := newTestHeartbeat(client, &_TestInfoServiceClient{}, &flag.Flag{})
 		component.Context = t.Context()
 

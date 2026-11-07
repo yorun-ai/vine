@@ -37,10 +37,7 @@ func (c *testClient) Acquire(key string, token string, ttlMillis int, options ..
 	if c.leases == nil {
 		c.leases = make(map[string]testLease)
 	}
-	c.leases[key] = testLease{
-		token:  token,
-		expiry: time.Now().Add(ttl),
-	}
+	c.leases[key] = testLease{token: token, expiry: time.Now().Add(ttl)}
 	return true
 }
 
@@ -56,10 +53,7 @@ func (c *testClient) Renew(key string, token string, ttlMillis int, options ...c
 	if token != lease.token || !time.Now().Before(lease.expiry) {
 		return false
 	}
-	c.leases[key] = testLease{
-		token:  token,
-		expiry: time.Now().Add(ttl),
-	}
+	c.leases[key] = testLease{token: token, expiry: time.Now().Add(ttl)}
 	return true
 }
 

@@ -114,24 +114,15 @@ func TestRejectedRegistrationDoesNotPublishEndpoints(t *testing.T) {
 			original := testDomainDescriptor()
 			descriptors.SaveDomainDescriptors("demo", "instance", []*skeldesc.Domain{original})
 			registry := new(registrationWriteSpy)
-			target := core.RegistryCore{
-				DescriptorRepo: descriptors,
-				RegistryRepo:   registry,
-			}
+			target := core.RegistryCore{DescriptorRepo: descriptors, RegistryRepo: registry}
 			invalid := testDomainDescriptor()
 			invalid.Hash = "replacement"
 			invalid.Services[0].AuthMode = mode
 			reg := core.AppRegistration{
-				Name:       "demo",
-				InstanceId: "instance",
-				ServiceHandlers: []core.ServiceHandlerRegistration{{
-					ServiceSkelName: invalid.Services[0].SkelName,
-					Endpoint:        "http://replacement",
-				}},
-				WebHandlers: []core.WebHandlerRegistration{{
-					WebSkelName: "demo.Web",
-					Endpoint:    "http://replacement",
-				}},
+				Name:              "demo",
+				InstanceId:        "instance",
+				ServiceHandlers:   []core.ServiceHandlerRegistration{{ServiceSkelName: invalid.Services[0].SkelName, Endpoint: "http://replacement"}},
+				WebHandlers:       []core.WebHandlerRegistration{{WebSkelName: "demo.Web", Endpoint: "http://replacement"}},
 				DomainDescriptors: []*skeldesc.Domain{invalid},
 			}
 			if mode == skeldesc.AuthModeOff {

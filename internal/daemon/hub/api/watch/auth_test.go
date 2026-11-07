@@ -13,18 +13,9 @@ func TestSPIFFEPathForUsername(t *testing.T) {
 		username string
 		identity daemon.Identity
 	}{
-		{
-			username: HubUsername,
-			identity: daemon.HubIdentity,
-		},
-		{
-			username: LinkUsername,
-			identity: daemon.LinkIdentity,
-		},
-		{
-			username: PortalUsername,
-			identity: daemon.PortalIdentity,
-		},
+		{username: HubUsername, identity: daemon.HubIdentity},
+		{username: LinkUsername, identity: daemon.LinkIdentity},
+		{username: PortalUsername, identity: daemon.PortalIdentity},
 	}
 	for _, test := range tests {
 		t.Run(test.username, func(t *testing.T) {

@@ -47,11 +47,7 @@ var _ spec.EventInfo = eventLogTestInfo{}
 
 func TestListenerStartedLogsSafePayloadOnlyOnce(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "event.jsonl")
-	log := logger.New("vine:test", logger.WithOption{
-		Format:     logger.FormatJSON,
-		Level:      logger.LevelDebug,
-		OutputPath: path,
-	})
+	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
 	span := StartListenerHandle(log, meta.InitialTrace(), eventLogTestInfo{}, nil, nil, eventLogPayload{
 		UserID: "u-1",
 		Cookie: "private-cookie",
@@ -78,11 +74,7 @@ func TestListenerStartedLogsSafePayloadOnlyOnce(t *testing.T) {
 
 func TestEventRedactFailureOmitsPayload(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "event-redact-failure.jsonl")
-	log := logger.New("vine:test", logger.WithOption{
-		Format:     logger.FormatJSON,
-		Level:      logger.LevelDebug,
-		OutputPath: path,
-	})
+	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
 
 	StartListenerHandle(log, nil, eventLogTestInfo{}, nil, nil, eventFailingMarshaler{})
 
@@ -94,11 +86,7 @@ func TestEventRedactFailureOmitsPayload(t *testing.T) {
 
 func TestListenerPanicUsesErrorAndMainFields(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "event-panic.jsonl")
-	log := logger.New("vine:test", logger.WithOption{
-		Format:     logger.FormatJSON,
-		Level:      logger.LevelDebug,
-		OutputPath: path,
-	})
+	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
 	span := StartListenerHandle(log, meta.InitialTrace(), eventLogTestInfo{}, nil, nil, map[string]any{})
 
 	var recovered ex.Error
@@ -125,11 +113,7 @@ func TestListenerPanicUsesErrorAndMainFields(t *testing.T) {
 
 func TestListenerApplicationFailureUsesInfo(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "event-application-error.jsonl")
-	log := logger.New("vine:test", logger.WithOption{
-		Format:     logger.FormatJSON,
-		Level:      logger.LevelDebug,
-		OutputPath: path,
-	})
+	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
 	span := StartListenerHandle(log, meta.InitialTrace(), eventLogTestInfo{}, nil, nil, map[string]any{})
 
 	span.Finish(ex.New(ex.OperationFailed, "boom"))

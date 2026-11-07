@@ -53,30 +53,14 @@ func runCLICommand(command *ucli.Command, args []string) (result _RunResult) {
 	err := command.Run(context.Background(), args)
 	if err != nil {
 		if stderr.Len() > 0 {
-			return _RunResult{
-				exitCode: exitCodeError,
-				stdout:   stdout.String(),
-				stderr:   stderr.String(),
-			}
+			return _RunResult{exitCode: exitCodeError, stdout: stdout.String(), stderr: stderr.String()}
 		}
-		return _RunResult{
-			exitCode: exitCodeError,
-			stdout:   stdout.String(),
-			stderr:   err.Error(),
-		}
+		return _RunResult{exitCode: exitCodeError, stdout: stdout.String(), stderr: err.Error()}
 	}
 	if stderr.Len() > 0 {
-		return _RunResult{
-			exitCode: exitCodeError,
-			stdout:   stdout.String(),
-			stderr:   stderr.String(),
-		}
+		return _RunResult{exitCode: exitCodeError, stdout: stdout.String(), stderr: stderr.String()}
 	}
-	return _RunResult{
-		exitCode: exitCodeSuccess,
-		stdout:   stdout.String(),
-		stderr:   stderr.String(),
-	}
+	return _RunResult{exitCode: exitCodeSuccess, stdout: stdout.String(), stderr: stderr.String()}
 }
 
 func newVineCommand() *ucli.Command {
@@ -98,10 +82,7 @@ func newVersionCommand() *ucli.Command {
 	return &ucli.Command{
 		Name: commandVersion,
 		Flags: []ucli.Flag{
-			&ucli.BoolFlag{
-				Name:  flagVersionJSON,
-				Usage: "output version info as JSON",
-			},
+			&ucli.BoolFlag{Name: flagVersionJSON, Usage: "output version info as JSON"},
 		},
 		Action: func(_ context.Context, cmd *ucli.Command) error {
 			args := commandPositionalArgs(cmd)

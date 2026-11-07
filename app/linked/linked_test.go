@@ -32,14 +32,8 @@ import (
 func TestStopGracefullyWaitsAppBeforeStoppingLink(t *testing.T) {
 	events := []string{}
 	application := &_App{
-		apps: []app.App{&_RecordingApp{
-			name:   "app",
-			events: &events,
-		}},
-		link: &_RecordingApp{
-			name:   "link",
-			events: &events,
-		},
+		apps: []app.App{&_RecordingApp{name: "app", events: &events}},
+		link: &_RecordingApp{name: "link", events: &events},
 	}
 
 	application.StopGracefully()
@@ -304,10 +298,7 @@ func TestLinkedRuntimeLifecycle(t *testing.T) {
 		Methods:             []*rpcspec.MethodSpec{{Name: "Ping", SkelName: "Ping", ResultType: reflect.TypeFor[string]()}},
 	}
 	rpcspec.Register(service)
-	application := NewWithOption[*linkedLifecycleSpec](Option{
-		LinkHubEndpoint:   "http://" + controlAddr,
-		LinkIngressListen: "127.0.0.1:0",
-	})
+	application := NewWithOption[*linkedLifecycleSpec](Option{LinkHubEndpoint: "http://" + controlAddr, LinkIngressListen: "127.0.0.1:0"})
 	application.Start()
 	stopped := false
 	t.Cleanup(func() {
@@ -330,13 +321,7 @@ func TestLinkedRuntimeLifecycle(t *testing.T) {
 	registration := vcode.MustUnmarshalJsonS[watched.RpcServiceRegistration](values[registrationKey])
 	caller := meta.MustNewApp(registration.AppName, registration.AppVersion, registration.AppInstanceId)
 	linker := link.NewLinker(caller, true, "")
-	rpc := rpcclient.New(rpcclient.Option{
-		Context:             meta.NewContext(t.Context(), meta.InitialTrace(), nil, meta.NewAbsentActor()),
-		ClientApp:           caller,
-		Logger:              logger.New("linked:test"),
-		ReturnIfSystemError: true,
-		ServerEndpoint:      linker.RpcProxyEndpoint(),
-	})
+	rpc := rpcclient.New(rpcclient.Option{Context: meta.NewContext(t.Context(), meta.InitialTrace(), nil, meta.NewAbsentActor()), ClientApp: caller, Logger: logger.New("linked:test"), ReturnIfSystemError: true, ServerEndpoint: linker.RpcProxyEndpoint()})
 	result, err := rpc.Invoke(service.Methods[0].Info(), nil, rpcclient.WithTimeout(time.Second))
 	require.Nil(t, err)
 	assert.Equal(t, "pong", result)

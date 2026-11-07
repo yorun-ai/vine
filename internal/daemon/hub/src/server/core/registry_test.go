@@ -202,20 +202,11 @@ func TestRegistryCoreRegister(t *testing.T) {
 		Version:    "1.2.3",
 		Endpoint:   "http://127.0.0.1:23001",
 		ServiceHandlers: []ServiceHandlerRegistration{
-			{
-				ServiceSkelName: "svc.alpha",
-				Endpoint:        "http://127.0.0.1:23001/rpc/proxy/in",
-			},
-			{
-				ServiceSkelName: "svc.beta",
-				Endpoint:        "http://127.0.0.1:23001/rpc/proxy/in",
-			},
+			{ServiceSkelName: "svc.alpha", Endpoint: "http://127.0.0.1:23001/rpc/proxy/in"},
+			{ServiceSkelName: "svc.beta", Endpoint: "http://127.0.0.1:23001/rpc/proxy/in"},
 		},
 		WebHandlers: []WebHandlerRegistration{
-			{
-				WebSkelName: "default@demo.app",
-				Endpoint:    "http://127.0.0.1:23001/web/proxy/in/instance-1/default@demo.app",
-			},
+			{WebSkelName: "default@demo.app", Endpoint: "http://127.0.0.1:23001/web/proxy/in/instance-1/default@demo.app"},
 		},
 	})
 
@@ -239,18 +230,12 @@ func TestRegistryCoreRegisterKeepsProvidedProxyEndpoints(t *testing.T) {
 	core := newRegistryCoreForTest(repo, &descriptorRepoSpy{})
 
 	core.Register(AppRegistration{
-		InstanceId: "instance-1",
-		Name:       "demo.app",
-		Version:    "1.2.3",
-		Endpoint:   "",
-		ServiceHandlers: []ServiceHandlerRegistration{{
-			ServiceSkelName: "svc.alpha",
-			Endpoint:        "/rpc/proxy/in",
-		}},
-		WebHandlers: []WebHandlerRegistration{{
-			WebSkelName: "default@demo.app",
-			Endpoint:    "/web/proxy/in/instance-1/default@demo.app",
-		}},
+		InstanceId:      "instance-1",
+		Name:            "demo.app",
+		Version:         "1.2.3",
+		Endpoint:        "",
+		ServiceHandlers: []ServiceHandlerRegistration{{ServiceSkelName: "svc.alpha", Endpoint: "/rpc/proxy/in"}},
+		WebHandlers:     []WebHandlerRegistration{{WebSkelName: "default@demo.app", Endpoint: "/web/proxy/in/instance-1/default@demo.app"}},
 	})
 
 	assert.Len(t, repo.rpcRegistrations, 1)
@@ -330,10 +315,7 @@ func TestRegistryCoreHeartbeatWithStatus(t *testing.T) {
 	}
 	core := newRegistryCoreForTest(repo, &descriptorRepoSpy{})
 
-	registered := core.Heartbeat(AppHeartbeat{
-		Name:       "demo.app",
-		InstanceId: "instance-1",
-	})
+	registered := core.Heartbeat(AppHeartbeat{Name: "demo.app", InstanceId: "instance-1"})
 
 	assert.Equal(t, []string{
 		"GetAppStatus:demo.app:instance-1",
@@ -358,10 +340,7 @@ func TestRegistryCoreHeartbeatReturnsFalseWhenKeepFails(t *testing.T) {
 	}
 	core := newRegistryCoreForTest(repo, &descriptorRepoSpy{})
 
-	registered := core.Heartbeat(AppHeartbeat{
-		Name:       "demo.app",
-		InstanceId: "instance-1",
-	})
+	registered := core.Heartbeat(AppHeartbeat{Name: "demo.app", InstanceId: "instance-1"})
 
 	assert.Equal(t, []string{
 		"GetAppStatus:demo.app:instance-1",
@@ -375,10 +354,7 @@ func TestRegistryCoreHeartbeatWithoutStatus(t *testing.T) {
 	repo := &registryRepoSpy{}
 	core := newRegistryCoreForTest(repo, &descriptorRepoSpy{})
 
-	registered := core.Heartbeat(AppHeartbeat{
-		Name:       "demo.app",
-		InstanceId: "instance-1",
-	})
+	registered := core.Heartbeat(AppHeartbeat{Name: "demo.app", InstanceId: "instance-1"})
 
 	assert.Equal(t, []string{
 		"GetAppStatus:demo.app:instance-1",

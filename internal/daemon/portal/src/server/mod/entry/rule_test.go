@@ -73,81 +73,22 @@ func TestNewRuleSkipsUnknownTargetType(t *testing.T) {
 
 func TestRuleRewritePath(t *testing.T) {
 	for _, test := range []struct{ prefix, target, request, want string }{
-		{
-			"/api",
-			"",
-			"/api/users?x=1",
-			"/users?x=1",
-		},
-		{
-			"/api",
-			"/internal",
-			"/api/users?x=%2F",
-			"/internal/users?x=%2F",
-		},
-		{
-			"/api",
-			"/api",
-			"/api/users",
-			"/api/users",
-		},
-		{
-			"/",
-			"/internal",
-			"/users",
-			"/internal/users",
-		},
-		{
-			"",
-			"/internal",
-			"/users",
-			"/internal/users",
-		},
-		{
-			"/api",
-			"/internal",
-			"/api",
-			"/internal",
-		},
-		{
-			"/api",
-			"/internal",
-			"/api/",
-			"/internal/",
-		},
-		{
-			"/api",
-			"",
-			"/api",
-			"/",
-		},
-		{
-			"/api",
-			"/internal",
-			"/%61pi/a%2Fb/%25/%E4%B8%AD/?q=a+b",
-			"/internal/a%2Fb/%25/%E4%B8%AD/?q=a+b",
-		},
-		{
-			"/api",
-			"/base%20path",
-			"/api//a/../b",
-			"/base%20path//a/../b",
-		},
-		{
-			"/",
-			"",
-			"/a%2Fb/",
-			"/a%2Fb/",
-		},
+		{"/api", "", "/api/users?x=1", "/users?x=1"},
+		{"/api", "/internal", "/api/users?x=%2F", "/internal/users?x=%2F"},
+		{"/api", "/api", "/api/users", "/api/users"},
+		{"/", "/internal", "/users", "/internal/users"},
+		{"", "/internal", "/users", "/internal/users"},
+		{"/api", "/internal", "/api", "/internal"},
+		{"/api", "/internal", "/api/", "/internal/"},
+		{"/api", "", "/api", "/"},
+		{"/api", "/internal", "/%61pi/a%2Fb/%25/%E4%B8%AD/?q=a+b", "/internal/a%2Fb/%25/%E4%B8%AD/?q=a+b"},
+		{"/api", "/base%20path", "/api//a/../b", "/base%20path//a/../b"},
+		{"/", "", "/a%2Fb/", "/a%2Fb/"},
 	} {
 		t.Run(test.prefix+"->"+test.target+test.request, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader("body"))
 			request.Header.Set("X-Test", "keep")
-			rule := _Rule{
-				matchHost:       requestHost(request),
-				matchPathPrefix: test.prefix,
-				routePathPrefix: test.target,
-			}
+			rule := _Rule{matchHost: requestHost(request), matchPathPrefix: test.prefix, routePathPrefix: test.target}
 			require.True(t, rule.Matches(request))
 			next := rule.rewritePath(request)
 			assert.Equal(t, test.want, next.URL.RequestURI())
@@ -161,10 +102,7 @@ func TestRuleRewritePath(t *testing.T) {
 }
 
 func TestRuleExactIPv6HostMatchesEquivalentAddresses(t *testing.T) {
-	rule := _Rule{
-		matchScheme: spec.SchemeHTTP,
-		matchHost:   "::1",
-	}
+	rule := _Rule{matchScheme: spec.SchemeHTTP, matchHost: "::1"}
 	for _, host := range []string{"[::1]", "[::1]:8080", "[0:0:0:0:0:0:0:1]"} {
 		require.True(t, rule.Matches(httptest.NewRequest(http.MethodGet, "http://"+host+"/", nil)), host)
 	}
@@ -184,22 +122,12 @@ func TestWildcardHostMatchesOneLabel(t *testing.T) {
 }
 
 func TestWildcardRuleRejectsRpcAndRedirect(t *testing.T) {
-	rule, ok := newRule(watched.PortalRule{
-		Name:          "wildcard",
-		RouteType:     "SITE",
-		RouteSiteName: "rpc",
-	}, watched.PortalEntry{EffectiveHTTP: watched.PortalEntryHTTP{Host: "*.example.com"}}, spec.SchemeHTTP, 80, newTestSiteManager(t, "rpc"))
+	rule, ok := newRule(watched.PortalRule{Name: "wildcard", RouteType: "SITE", RouteSiteName: "rpc"}, watched.PortalEntry{EffectiveHTTP: watched.PortalEntryHTTP{Host: "*.example.com"}}, spec.SchemeHTTP, 80, newTestSiteManager(t, "rpc"))
 	require.True(t, ok)
 	w := httptest.NewRecorder()
-	rule.Serve(&spec.Context{
-		Request:        httptest.NewRequest("GET", "http://a.example.com/inspect", nil),
-		ResponseWriter: w,
-	})
+	rule.Serve(&spec.Context{Request: httptest.NewRequest("GET", "http://a.example.com/inspect", nil), ResponseWriter: w})
 	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 	assert.Contains(t, w.Body.String(), "WEBGW")
-	_, ok = newRule(watched.PortalRule{
-		Name:      "redirect",
-		RouteType: "TEMPORARY_REDIRECT",
-	}, watched.PortalEntry{EffectiveHTTP: watched.PortalEntryHTTP{Host: "*.example.com"}}, spec.SchemeHTTP, 80, nil)
+	_, ok = newRule(watched.PortalRule{Name: "redirect", RouteType: "TEMPORARY_REDIRECT"}, watched.PortalEntry{EffectiveHTTP: watched.PortalEntryHTTP{Host: "*.example.com"}}, spec.SchemeHTTP, 80, nil)
 	assert.False(t, ok)
 }

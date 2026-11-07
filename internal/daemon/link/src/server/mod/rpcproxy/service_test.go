@@ -155,24 +155,9 @@ func TestDestinationRoundRobin(t *testing.T) {
 	service := "demo.service.UserService"
 	proxy := newTestRpcProxy(t, newTestHubWatchClient(t, map[string][]watched.RpcServiceRegistration{
 		service: {
-			{
-				ServiceName:   service,
-				AppName:       "target.app",
-				AppInstanceId: "one",
-				Endpoint:      "http://one.invalid",
-			},
-			{
-				ServiceName:   service,
-				AppName:       "target.app",
-				AppInstanceId: "two",
-				Endpoint:      "http://two.invalid",
-			},
-			{
-				ServiceName:   service,
-				AppName:       "other.app",
-				AppInstanceId: "three",
-				Endpoint:      "http://three.invalid",
-			},
+			{ServiceName: service, AppName: "target.app", AppInstanceId: "one", Endpoint: "http://one.invalid"},
+			{ServiceName: service, AppName: "target.app", AppInstanceId: "two", Endpoint: "http://two.invalid"},
+			{ServiceName: service, AppName: "other.app", AppInstanceId: "three", Endpoint: "http://three.invalid"},
 		},
 	}))
 	registerLocalApp(proxy, caller, "http://caller.invalid", "http://caller.invalid", nil)

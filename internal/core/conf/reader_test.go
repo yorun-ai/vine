@@ -41,15 +41,8 @@ func TestReaderPreservesSensitiveStringValues(t *testing.T) {
 	for _, lifecycle := range []Lifecycle{LifecycleEternal, LifecycleInstant} {
 		t.Run(string(lifecycle), func(t *testing.T) {
 			registry := NewRegistry()
-			registry.Register(ConfigSpec{
-				SkelName:  key,
-				Lifecycle: lifecycle,
-				Type:      reflect.TypeFor[*readerSensitiveConfig](),
-			})
-			reader := newReader(&linktest.Linker{
-				EternalConfigByKey: map[string]string{key: raw},
-				InstantConfigByKey: map[string]string{key: raw},
-			}, registry)
+			registry.Register(ConfigSpec{SkelName: key, Lifecycle: lifecycle, Type: reflect.TypeFor[*readerSensitiveConfig]()})
+			reader := newReader(&linktest.Linker{EternalConfigByKey: map[string]string{key: raw}, InstantConfigByKey: map[string]string{key: raw}}, registry)
 			value := reader.GetByType(reflect.TypeFor[*readerSensitiveConfig]()).(*readerSensitiveConfig)
 			require.Equal(t, " plain ", value.Plain)
 			require.Equal(t, " secret ", value.Secret)
@@ -114,10 +107,7 @@ func TestReaderPreservesValuesAndIsolatesSnapshots(t *testing.T) {
 				Lifecycle: lifecycle,
 				Type:      reflect.TypeFor[*readerValueConfig](),
 			})
-			linker := &linktest.Linker{
-				EternalConfigByKey: map[string]string{key: raw},
-				InstantConfigByKey: map[string]string{key: raw},
-			}
+			linker := &linktest.Linker{EternalConfigByKey: map[string]string{key: raw}, InstantConfigByKey: map[string]string{key: raw}}
 			reader := newReader(linker, registry)
 			value := reader.GetByType(reflect.TypeFor[*readerValueConfig]()).(*readerValueConfig)
 			require.Equal(t, "\u2003 hello  world\ninside \u00a0", value.Name)
@@ -237,10 +227,7 @@ func TestReaderEnumMapKeysAndValues(t *testing.T) {
 				Lifecycle: lifecycle,
 				Type:      reflect.TypeFor[*readerEnumMapConfig](),
 			})
-			reader := newReader(new(linktest.Linker{
-				EternalConfigByKey: map[string]string{key: raw},
-				InstantConfigByKey: map[string]string{key: raw},
-			}), registry)
+			reader := newReader(new(linktest.Linker{EternalConfigByKey: map[string]string{key: raw}, InstantConfigByKey: map[string]string{key: raw}}), registry)
 			value := reader.GetByType(reflect.TypeFor[*readerEnumMapConfig]()).(*readerEnumMapConfig)
 			require.Equal(t, map[string]readerTestEnum{"primary": "ACTIVE"}, value.ByName)
 			require.Equal(t, map[readerTestEnum]readerTestEnum{"ACTIVE": "LOCKED"}, value.ByStatus)
@@ -291,15 +278,8 @@ func TestReaderStructuredValuesAndRedaction(t *testing.T) {
 	for _, lifecycle := range []Lifecycle{LifecycleEternal, LifecycleInstant} {
 		t.Run(string(lifecycle), func(t *testing.T) {
 			registry := NewRegistry()
-			registry.Register(ConfigSpec{
-				SkelName:  key,
-				Lifecycle: lifecycle,
-				Type:      reflect.TypeFor[*readerStructuredConfig](),
-			})
-			linker := new(linktest.Linker{
-				EternalConfigByKey: map[string]string{key: raw},
-				InstantConfigByKey: map[string]string{key: raw},
-			})
+			registry.Register(ConfigSpec{SkelName: key, Lifecycle: lifecycle, Type: reflect.TypeFor[*readerStructuredConfig]()})
+			linker := new(linktest.Linker{EternalConfigByKey: map[string]string{key: raw}, InstantConfigByKey: map[string]string{key: raw}})
 			reader := newReader(linker, registry)
 			value := reader.GetByType(reflect.TypeFor[*readerStructuredConfig]()).(*readerStructuredConfig)
 			require.Equal(t, " nested ", value.Nested.Name)
@@ -356,15 +336,8 @@ func TestReaderRejectsInvalidBinary(t *testing.T) {
 		} {
 			t.Run(string(lifecycle)+"/"+raw, func(t *testing.T) {
 				registry := NewRegistry()
-				registry.Register(ConfigSpec{
-					SkelName:  key,
-					Lifecycle: lifecycle,
-					Type:      reflect.TypeFor[*readerStructuredConfig](),
-				})
-				reader := newReader(new(linktest.Linker{
-					EternalConfigByKey: map[string]string{key: raw},
-					InstantConfigByKey: map[string]string{key: raw},
-				}), registry)
+				registry.Register(ConfigSpec{SkelName: key, Lifecycle: lifecycle, Type: reflect.TypeFor[*readerStructuredConfig]()})
+				reader := newReader(new(linktest.Linker{EternalConfigByKey: map[string]string{key: raw}, InstantConfigByKey: map[string]string{key: raw}}), registry)
 				require.Panics(t, func() { reader.GetByType(reflect.TypeFor[*readerStructuredConfig]()) })
 			})
 		}
@@ -388,15 +361,8 @@ func TestReaderNullableGenericParameterReferences(t *testing.T) {
 	for _, lifecycle := range []Lifecycle{LifecycleEternal, LifecycleInstant} {
 		t.Run(string(lifecycle), func(t *testing.T) {
 			registry := NewRegistry()
-			registry.Register(ConfigSpec{
-				SkelName:  key,
-				Lifecycle: lifecycle,
-				Type:      reflect.TypeFor[*readerOptionalGenericConfig](),
-			})
-			reader := newReader(&linktest.Linker{
-				EternalConfigByKey: map[string]string{key: raw},
-				InstantConfigByKey: map[string]string{key: raw},
-			}, registry)
+			registry.Register(ConfigSpec{SkelName: key, Lifecycle: lifecycle, Type: reflect.TypeFor[*readerOptionalGenericConfig]()})
+			reader := newReader(&linktest.Linker{EternalConfigByKey: map[string]string{key: raw}, InstantConfigByKey: map[string]string{key: raw}}, registry)
 			config := reader.GetByType(reflect.TypeFor[*readerOptionalGenericConfig]()).(*readerOptionalGenericConfig)
 			require.Nil(t, config.Binary[0].Value)
 			require.NotNil(t, config.Binary[1].Value)
@@ -423,25 +389,10 @@ func TestReaderAdoptedConfigsResolveIndependentlyWithoutSource(t *testing.T) {
 		t.Run(string(lifecycle), func(t *testing.T) {
 			r := NewRegistry()
 			// Source metadata must not require registration or redirect value lookup.
-			r.Register(ConfigSpec{
-				SkelName:     "demo.PrimaryConfig",
-				Type:         reflect.TypeFor[*readerPrimaryConfig](),
-				Lifecycle:    lifecycle,
-				FromSkelName: "demo.DatabaseAbsConfig",
-				FromType:     reflect.TypeFor[*readerAbstractConfig](),
-			})
-			r.Register(ConfigSpec{
-				SkelName:     "demo.ReplicaConfig",
-				Type:         reflect.TypeFor[*readerReplicaConfig](),
-				Lifecycle:    lifecycle,
-				FromSkelName: "demo.DatabaseAbsConfig",
-				FromType:     reflect.TypeFor[*readerAbstractConfig](),
-			})
+			r.Register(ConfigSpec{SkelName: "demo.PrimaryConfig", Type: reflect.TypeFor[*readerPrimaryConfig](), Lifecycle: lifecycle, FromSkelName: "demo.DatabaseAbsConfig", FromType: reflect.TypeFor[*readerAbstractConfig]()})
+			r.Register(ConfigSpec{SkelName: "demo.ReplicaConfig", Type: reflect.TypeFor[*readerReplicaConfig](), Lifecycle: lifecycle, FromSkelName: "demo.DatabaseAbsConfig", FromType: reflect.TypeFor[*readerAbstractConfig]()})
 			values := map[string]string{"demo.PrimaryConfig": `{"value":"primary"}`, "demo.ReplicaConfig": `{"value":"replica"}`}
-			reader := newReader(&linktest.Linker{
-				EternalConfigByKey: values,
-				InstantConfigByKey: values,
-			}, r)
+			reader := newReader(&linktest.Linker{EternalConfigByKey: values, InstantConfigByKey: values}, r)
 			require.Equal(t, "primary", reader.GetByType(reflect.TypeFor[*readerPrimaryConfig]()).(*readerPrimaryConfig).Value)
 			require.Equal(t, "replica", reader.GetByType(reflect.TypeFor[*readerReplicaConfig]()).(*readerReplicaConfig).Value)
 		})

@@ -68,10 +68,7 @@ func (s *portalSiteRepoSpy) Remove(id int) bool {
 // newPortalSiteCoreForTest builds a site core with the repositories Hub injects,
 // so tests only choose the repositories they exercise.
 func newPortalSiteCoreForTest(repo PortalSiteRepo) *PortalSiteCore {
-	return &PortalSiteCore{
-		PortalSiteRepo: repo,
-		DescriptorRepo: &descriptorRepoSpy{},
-	}
+	return &PortalSiteCore{PortalSiteRepo: repo, DescriptorRepo: &descriptorRepoSpy{}}
 }
 
 func TestMatchPortalSiteRpcgwServicesInDomainViewsIncludesVineDescriptors(t *testing.T) {
@@ -110,10 +107,7 @@ func TestMatchPortalSiteRpcgwServicesInDomainViewsIncludesVineDescriptors(t *tes
 }
 
 func TestMatchPortalSiteRpcgwServicesInDomainViewsRequiresActorAudience(t *testing.T) {
-	site := PortalSite{
-		Type:          PortalSiteTypeRPCGW,
-		ActorSkelName: "demo.UserActor",
-	}
+	site := PortalSite{Type: PortalSiteTypeRPCGW, ActorSkelName: "demo.UserActor"}
 	services := []*skeldesc.Service{
 		{Api: true, SkelName: "demo.UserApiService", Audiences: []*skeldesc.ActorAudience{{SkelName: site.ActorSkelName}}},
 		{Api: true, SkelName: "demo.OtherActorService", Audiences: []*skeldesc.ActorAudience{{SkelName: "demo.OtherActor"}}},
@@ -127,22 +121,13 @@ func TestMatchPortalSiteRpcgwServicesInDomainViewsRequiresActorAudience(t *testi
 }
 
 func testUserSite() PortalSite {
-	return PortalSite{
-		Name:          "demo-web",
-		Type:          PortalSiteTypeWEBGW,
-		ActorSkelName: "demo.Actor",
-		WebName:       "demo.Web",
-	}
+	return PortalSite{Name: "demo-web", Type: PortalSiteTypeWEBGW, ActorSkelName: "demo.Actor", WebName: "demo.Web"}
 }
 
 func TestPortalSiteInspectSwitchDefaultsAndUpdates(t *testing.T) {
 	repo := new(portalSiteRepoSpy)
 	target := newPortalSiteCoreForTest(repo)
-	site := target.Create(PortalSiteCreation{
-		Name:          "api",
-		Type:          PortalSiteTypeRPCGW,
-		ActorSkelName: "demo.Actor",
-	})
+	site := target.Create(PortalSiteCreation{Name: "api", Type: PortalSiteTypeRPCGW, ActorSkelName: "demo.Actor"})
 	require.False(t, site.InspectEnabled)
 	site = target.Update(site.Id, PortalSiteUpdate{InspectEnabled: new(true)})
 	require.True(t, site.InspectEnabled)
@@ -161,11 +146,7 @@ func TestPortalSiteInspectSwitchDefaultsAndUpdates(t *testing.T) {
 func TestPortalSiteMcpSwitchDefaultsAndUpdates(t *testing.T) {
 	repo := new(portalSiteRepoSpy)
 	target := newPortalSiteCoreForTest(repo)
-	site := target.Create(PortalSiteCreation{
-		Name:          "api",
-		Type:          PortalSiteTypeRPCGW,
-		ActorSkelName: "demo.Actor",
-	})
+	site := target.Create(PortalSiteCreation{Name: "api", Type: PortalSiteTypeRPCGW, ActorSkelName: "demo.Actor"})
 	require.False(t, site.McpEnabled)
 	site = target.Update(site.Id, PortalSiteUpdate{McpEnabled: new(true)})
 	require.True(t, site.McpEnabled)
@@ -218,12 +199,7 @@ func TestPortalSiteSaveAndUpdateProtectIdentityAndValidate(t *testing.T) {
 
 func TestWebTimeoutValidation(t *testing.T) {
 	target := new(PortalSiteCore)
-	site := PortalSite{
-		Name:          "files",
-		Type:          PortalSiteTypeWEBGW,
-		ActorSkelName: "demo.Actor",
-		WebName:       "demo.Web",
-	}
+	site := PortalSite{Name: "files", Type: PortalSiteTypeWEBGW, ActorSkelName: "demo.Actor", WebName: "demo.Web"}
 	site.WebTimeout = &webtimeout.Config{Default: &webtimeout.Policy{Total: "15m"}}
 	require.NotPanics(t, func() { target.Validate(site) })
 	site.Type = PortalSiteTypeRPCGW
@@ -237,20 +213,8 @@ func TestWebTimeoutValidation(t *testing.T) {
 
 func TestWebTimeoutUpdateReplacesPreservesAndClears(t *testing.T) {
 	target := newPortalSiteCoreForTest(&portalSiteRepoSpy{})
-	policy := &webtimeout.Config{
-		Default: &webtimeout.Policy{Total: "15m"},
-		Paths: []webtimeout.Path{{
-			Path:  "/short",
-			Total: "5s",
-		}},
-	}
-	site := target.Create(PortalSiteCreation{
-		Name:          "files",
-		Type:          PortalSiteTypeWEBGW,
-		ActorSkelName: "demo.Actor",
-		WebName:       "demo.Web",
-		WebTimeout:    policy,
-	})
+	policy := &webtimeout.Config{Default: &webtimeout.Policy{Total: "15m"}, Paths: []webtimeout.Path{{Path: "/short", Total: "5s"}}}
+	site := target.Create(PortalSiteCreation{Name: "files", Type: PortalSiteTypeWEBGW, ActorSkelName: "demo.Actor", WebName: "demo.Web", WebTimeout: policy})
 	require.Equal(t, policy, target.Update(site.Id, PortalSiteUpdate{Name: new("renamed")}).WebTimeout)
 	replacement := &webtimeout.Config{Default: &webtimeout.Policy{Total: "1m"}}
 	require.Equal(t, replacement, target.Update(site.Id, PortalSiteUpdate{WebTimeout: replacement}).WebTimeout)

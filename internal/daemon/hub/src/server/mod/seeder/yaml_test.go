@@ -29,16 +29,7 @@ func TestPortalSiteInspectSeedDefaultAndBoolean(t *testing.T) {
 	for _, test := range []struct {
 		field string
 		want  bool
-	}{{
-		"",
-		false,
-	}, {
-		", inspectEnabled: true",
-		true,
-	}, {
-		", inspectEnabled: false",
-		false,
-	}} {
+	}{{"", false}, {", inspectEnabled: true", true}, {", inspectEnabled: false", false}} {
 		entities, err := parseSeedEntities("portalSites: [{name: api, type: RPCGW, actorSkelName: demo.Actor" + test.field + "}]")
 		require.NoError(t, err)
 		require.Equal(t, test.want, entities.PortalSites[0].InspectEnabled)
@@ -53,16 +44,7 @@ func TestPortalSiteMcpSeedDefaultAndBoolean(t *testing.T) {
 	for _, test := range []struct {
 		field string
 		want  bool
-	}{{
-		"",
-		false,
-	}, {
-		", mcpEnabled: true",
-		true,
-	}, {
-		", mcpEnabled: false",
-		false,
-	}} {
+	}{{"", false}, {", mcpEnabled: true", true}, {", mcpEnabled: false", false}} {
 		entities, err := parseSeedEntities("portalSites: [{name: api, type: RPCGW, actorSkelName: demo.Actor" + test.field + "}]")
 		require.NoError(t, err)
 		require.Equal(t, test.want, entities.PortalSites[0].McpEnabled)
@@ -74,11 +56,7 @@ func TestPortalSiteMcpSeedDefaultAndBoolean(t *testing.T) {
 }
 
 func TestPortalRuleSeedMapsWithoutDomainValidation(t *testing.T) {
-	seed := _PortalRule{
-		Name:            "mapped",
-		RouteType:       "SITE",
-		RoutePathPrefix: "/internal/",
-	}
+	seed := _PortalRule{Name: "mapped", RouteType: "SITE", RoutePathPrefix: "/internal/"}
 	rule := seed.toCorePortalRule()
 	assert.Zero(t, rule.Id)
 	assert.Equal(t, "/internal/", rule.RoutePathPrefix)

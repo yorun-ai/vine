@@ -31,21 +31,13 @@ func decodeAppConfig(node *yaml.Node, target any) error {
 		if err != nil {
 			return fmt.Errorf("app config %q value: %w", fields["name"].Value, err)
 		}
-		fields["value"] = yaml.Node{
-			Kind:  yaml.ScalarNode,
-			Tag:   "!!str",
-			Value: string(data),
-		}
+		fields["value"] = yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: string(data)}
 	}
 	normalized := *node
 	normalized.Content = nil
 	for name, value := range fields {
 		normalized.Content = append(normalized.Content,
-			new(yaml.Node{
-				Kind:  yaml.ScalarNode,
-				Tag:   "!!str",
-				Value: name,
-			}), &value)
+			new(yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: name}), &value)
 	}
 	return normalized.Decode(target)
 }

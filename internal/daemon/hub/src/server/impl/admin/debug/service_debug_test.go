@@ -98,10 +98,7 @@ func TestToDebugSkeletonFieldsIncludesSensitive(t *testing.T) {
 	fields := toDebugSkeletonFields([]*skeldesc.Member{{
 		Name:      "token",
 		Sensitive: true,
-		Type: &skeldesc.Type{
-			Kind:   skeldesc.TypeKindScalar,
-			Scalar: skeldesc.ScalarString,
-		},
+		Type:      &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString},
 	}})
 
 	if len(fields) != 1 || !fields[0].Sensitive {

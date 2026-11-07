@@ -55,10 +55,7 @@ func TestAutoLoggerAndChildFollowDefaultLevelChanges(t *testing.T) {
 	resetGlobalOptionForTest(t)
 	SetGlobalLevel(LevelInfo)
 
-	log := New("vine:test", WithOption{
-		Format: FormatText,
-		Level:  LevelAuto,
-	})
+	log := New("vine:test", WithOption{Format: FormatText, Level: LevelAuto})
 	child := log.With(slog.String("group", "child"))
 	if log.Enabled(LevelDebug) || child.Enabled(LevelDebug) {
 		t.Fatal("Debug should initially be disabled")
@@ -73,10 +70,7 @@ func TestAutoLoggerAndChildFollowDefaultLevelChanges(t *testing.T) {
 func TestFixedLoggerDoesNotFollowLevelChanges(t *testing.T) {
 	resetGlobalOptionForTest(t)
 	SetGlobalLevel(LevelInfo)
-	log := New("vine:test", WithOption{
-		Format: FormatText,
-		Level:  LevelInfo,
-	})
+	log := New("vine:test", WithOption{Format: FormatText, Level: LevelInfo})
 
 	SetGlobalLevel(LevelDebug)
 	if log.Enabled(LevelDebug) {
@@ -106,38 +100,14 @@ func TestNamedLoggerResolvesRulesBySpecificity(t *testing.T) {
 		name string
 		want Level
 	}{
-		{
-			name: "app:demo.user:rpc:server",
-			want: LevelDebug,
-		},
-		{
-			name: "app:demo.user:rpc:client",
-			want: LevelWarn,
-		},
-		{
-			name: "app:demo.user:event:server",
-			want: LevelInfo,
-		},
-		{
-			name: "app:demo.user:event:listener",
-			want: LevelWarn,
-		},
-		{
-			name: "app:demo.user",
-			want: LevelInfo,
-		},
-		{
-			name: "app:demo.order:rpc:server",
-			want: LevelError,
-		},
-		{
-			name: "app:demo.order:rpc:client",
-			want: LevelWarn,
-		},
-		{
-			name: "app:demo.order:event",
-			want: LevelError,
-		},
+		{name: "app:demo.user:rpc:server", want: LevelDebug},
+		{name: "app:demo.user:rpc:client", want: LevelWarn},
+		{name: "app:demo.user:event:server", want: LevelInfo},
+		{name: "app:demo.user:event:listener", want: LevelWarn},
+		{name: "app:demo.user", want: LevelInfo},
+		{name: "app:demo.order:rpc:server", want: LevelError},
+		{name: "app:demo.order:rpc:client", want: LevelWarn},
+		{name: "app:demo.order:event", want: LevelError},
 	}
 	for _, test := range tests {
 		if got := resolvedThreshold(newNamedLoggerForTest(test.name)); got != test.want {

@@ -28,10 +28,7 @@ func TestPortalInstanceRepoSavesAndListsInstances(t *testing.T) {
 	now := time.Now().UTC().Round(0)
 	setTimeNowForTest(t, func() time.Time { return now })
 
-	repo.Save(&core.PortalInstance{
-		InstanceId: "instance-1",
-		Version:    "1.2.3",
-	})
+	repo.Save(&core.PortalInstance{InstanceId: "instance-1", Version: "1.2.3"})
 
 	instance, ok := repo.GetById("instance-1")
 	require.True(t, ok)
@@ -49,10 +46,7 @@ func TestPortalInstanceRepoHeartbeatKeepsLease(t *testing.T) {
 	now := time.Now().UTC().Round(0)
 	setTimeNowForTest(t, func() time.Time { return now })
 
-	repo.Save(&core.PortalInstance{
-		InstanceId: "instance-1",
-		Version:    "1.2.3",
-	})
+	repo.Save(&core.PortalInstance{InstanceId: "instance-1", Version: "1.2.3"})
 
 	now = now.Add(20 * time.Second)
 	assert.True(t, repo.Keep("instance-1"))
@@ -71,10 +65,7 @@ func TestPortalInstanceRepoSweepsExpiredInstances(t *testing.T) {
 	now := time.Now().UTC().Round(0)
 	setTimeNowForTest(t, func() time.Time { return now })
 
-	repo.Save(&core.PortalInstance{
-		InstanceId: "instance-1",
-		Version:    "1.2.3",
-	})
+	repo.Save(&core.PortalInstance{InstanceId: "instance-1", Version: "1.2.3"})
 
 	now = now.Add(hubPortalRegistryLeaseTTL - time.Second)
 	assert.Empty(t, repo.PopExpiredLeases())
@@ -93,10 +84,7 @@ func TestPortalInstanceRepoRemovalDropsLease(t *testing.T) {
 	repo, testServer := newTestPortalInstanceRepo(t, false)
 	setTimeNowForTest(t, func() time.Time { return time.Now().UTC().Round(0) })
 
-	repo.Save(&core.PortalInstance{
-		InstanceId: "instance-1",
-		Version:    "1.2.3",
-	})
+	repo.Save(&core.PortalInstance{InstanceId: "instance-1", Version: "1.2.3"})
 	repo.Remove("instance-1")
 
 	// A removed instance must not be reported as expired later, otherwise the
@@ -110,10 +98,7 @@ func TestPortalInstanceRepoRemovalDropsLease(t *testing.T) {
 func TestPortalInstanceRepoInprocModeSkipsLeases(t *testing.T) {
 	repo, _ := newTestPortalInstanceRepo(t, true)
 
-	repo.Save(&core.PortalInstance{
-		InstanceId: "instance-1",
-		Version:    "1.2.3",
-	})
+	repo.Save(&core.PortalInstance{InstanceId: "instance-1", Version: "1.2.3"})
 
 	instance, ok := repo.GetById("instance-1")
 	require.True(t, ok)
@@ -129,10 +114,7 @@ func TestPortalInstanceRepoRecordsJSONShape(t *testing.T) {
 	now := time.Now().UTC().Round(0)
 	setTimeNowForTest(t, func() time.Time { return now })
 
-	repo.Save(&core.PortalInstance{
-		InstanceId: "instance-1",
-		Version:    "1.2.3",
-	})
+	repo.Save(&core.PortalInstance{InstanceId: "instance-1", Version: "1.2.3"})
 
 	value, ok := testServer.Get(watched.FormatPortalInstanceKey("instance-1"))
 	require.True(t, ok)

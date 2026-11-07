@@ -49,19 +49,10 @@ func TestAppImplStartInprocServerRollsBackPartialRegistration(t *testing.T) {
 	prefix := coreapp.PathWebAccess + "/rollback"
 	handler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 	target := &_AppImpl{
-		inprocFlag: &InternalInprocFlag{
-			Enabled:  true,
-			HostPath: hostPath,
-		},
+		inprocFlag: &InternalInprocFlag{Enabled: true, HostPath: hostPath},
 		routes: []_ServerRoute{
-			{
-				Prefix:      prefix,
-				HttpHandler: handler,
-			},
-			{
-				Prefix:      prefix,
-				HttpHandler: handler,
-			},
+			{Prefix: prefix, HttpHandler: handler},
+			{Prefix: prefix, HttpHandler: handler},
 		},
 	}
 

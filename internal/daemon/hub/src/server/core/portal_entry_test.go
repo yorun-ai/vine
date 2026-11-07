@@ -171,11 +171,7 @@ func newPortalEntryCoreForTest(ruleRepo PortalRuleRepo, entryRepo PortalEntryRep
 // this repository with the certificate set they exercise explicitly.
 func portalEntryTestCertificates() PortalCertRepo {
 	repo := newTestPortalCertRepo()
-	repo.Save(new(PortalCert{
-		Name:    "entry-fixtures",
-		Enabled: true,
-		Domains: []string{"*.local", "*.example.com"},
-	}))
+	repo.Save(new(PortalCert{Name: "entry-fixtures", Enabled: true, Domains: []string{"*.local", "*.example.com"}}))
 	return repo
 }
 
@@ -188,11 +184,7 @@ func TestPortalEntryCoreRejectsMissingCertificateBeforeWriting(t *testing.T) {
 				target.PortalCertRepo = newTestPortalCertRepo()
 				raw := PortalEntryHTTP{Host: "app.example.com"}
 				if operation == "update" {
-					target.Create(PortalEntryCreation{
-						Name:     "web",
-						Protocol: "http",
-						Http:     &raw,
-					})
+					target.Create(PortalEntryCreation{Name: "web", Protocol: "http", Http: &raw})
 				}
 				if redirect {
 					raw.AutoHTTPS = PortalSwitchModeEnabled
@@ -203,17 +195,9 @@ func TestPortalEntryCoreRejectsMissingCertificateBeforeWriting(t *testing.T) {
 				require.PanicsWithError(t, `portal entry "web": explicit HTTPS or autohttps requires an enabled matching certificate for host "app.example.com" type=APPLICATION code=OPERATION_FAILED`, func() {
 					switch operation {
 					case "create":
-						target.Create(PortalEntryCreation{
-							Name:     "web",
-							Protocol: "http",
-							Http:     &raw,
-						})
+						target.Create(PortalEntryCreation{Name: "web", Protocol: "http", Http: &raw})
 					case "save":
-						target.Save(PortalEntry{
-							Name:     "web",
-							Protocol: "http",
-							Http:     &raw,
-						})
+						target.Save(PortalEntry{Name: "web", Protocol: "http", Http: &raw})
 					case "update":
 						target.Update(1, PortalEntryUpdate{Http: &raw})
 					}
@@ -231,16 +215,7 @@ func TestPortalEntryCoreRejectsMissingCertificateBeforeWriting(t *testing.T) {
 func TestPortalEntryCoreSaveReplacesByName(t *testing.T) {
 	// A seed applies entries before rules: an entry keeps its identity, and
 	// replacing it republishes the rules it routes.
-	entryRepo := newPortalEntryRepoSpy(&PortalEntry{
-		Id:       1,
-		Name:     "web",
-		Protocol: "http",
-		Http: &PortalEntryHTTP{
-			Http:     "ENABLED",
-			Https:    "DISABLED",
-			HttpPort: 7088,
-		},
-	})
+	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Name: "web", Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}})
 	ruleRepo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
 			1: {Id: 1, Name: "app", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
@@ -248,16 +223,7 @@ func TestPortalEntryCoreSaveReplacesByName(t *testing.T) {
 	}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
-	saved := core.Save(PortalEntry{
-		Name:     "web",
-		Protocol: "http",
-		Http: &PortalEntryHTTP{
-			Host:      "app.example.com",
-			Http:      "DISABLED",
-			Https:     "ENABLED",
-			HttpsPort: 8443,
-		},
-	})
+	saved := core.Save(PortalEntry{Name: "web", Protocol: "http", Http: &PortalEntryHTTP{Host: "app.example.com", Http: "DISABLED", Https: "ENABLED", HttpsPort: 8443}})
 
 	assert.Equal(t, 1, saved.Id)
 	assert.Equal(t, "web", saved.Name)
@@ -268,27 +234,11 @@ func TestPortalEntryCoreSaveReplacesByName(t *testing.T) {
 	// A name is required, and two entries never serve one access.
 	require.PanicsWithError(t, "portal entry name is required type=APPLICATION code=OPERATION_FAILED",
 		func() {
-			core.Save(PortalEntry{
-				Protocol: "http",
-				Http: &PortalEntryHTTP{
-					Http:     "ENABLED",
-					Https:    "DISABLED",
-					HttpPort: 8080,
-				},
-			})
+			core.Save(PortalEntry{Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}})
 		})
 	require.PanicsWithError(t, `portal entry "web" already serves https:app.example.com:8443 type=APPLICATION code=OPERATION_FAILED`,
 		func() {
-			core.Save(PortalEntry{
-				Name:     "api",
-				Protocol: "http",
-				Http: &PortalEntryHTTP{
-					Host:      "app.example.com",
-					Http:      "DISABLED",
-					Https:     "ENABLED",
-					HttpsPort: 8443,
-				},
-			})
+			core.Save(PortalEntry{Name: "api", Protocol: "http", Http: &PortalEntryHTTP{Host: "app.example.com", Http: "DISABLED", Https: "ENABLED", HttpsPort: 8443}})
 		})
 }
 
@@ -296,36 +246,9 @@ func TestPortalEntryCoreSaveRejectsAccessTakenByAnotherEntry(t *testing.T) {
 	// Replacing an entry moves the access of every rule it routes. Hub rejects a
 	// move onto an access another entry already serves.
 	entryRepo := newPortalEntryRepoSpy(
-		&PortalEntry{
-			Id:       1,
-			Name:     "web",
-			Protocol: "http",
-			Http: &PortalEntryHTTP{
-				Http:     "ENABLED",
-				Https:    "DISABLED",
-				HttpPort: 8088,
-			},
-		},
-		&PortalEntry{
-			Id:       2,
-			Name:     "vine",
-			Protocol: "http",
-			Http: &PortalEntryHTTP{
-				Http:     "ENABLED",
-				Https:    "DISABLED",
-				HttpPort: 7099,
-			},
-		},
-		&PortalEntry{
-			Id:       3,
-			Name:     "api",
-			Protocol: "http",
-			Http: &PortalEntryHTTP{
-				Http:     "ENABLED",
-				Https:    "DISABLED",
-				HttpPort: 8099,
-			},
-		},
+		&PortalEntry{Id: 1, Name: "web", Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8088}},
+		&PortalEntry{Id: 2, Name: "vine", Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7099}},
+		&PortalEntry{Id: 3, Name: "api", Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8099}},
 	)
 	ruleRepo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
@@ -338,15 +261,7 @@ func TestPortalEntryCoreSaveRejectsAccessTakenByAnotherEntry(t *testing.T) {
 	require.PanicsWithError(t,
 		`portal entry "vine" already serves http:7099 type=APPLICATION code=OPERATION_FAILED`,
 		func() {
-			core.Save(PortalEntry{
-				Name:     "web",
-				Protocol: "http",
-				Http: &PortalEntryHTTP{
-					Http:     "ENABLED",
-					Https:    "DISABLED",
-					HttpPort: 7099,
-				},
-			})
+			core.Save(PortalEntry{Name: "web", Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7099}})
 		})
 	assert.Equal(t, 8088, entryRepo.entries[1].EffectiveAccesses()[0].Port)
 
@@ -354,58 +269,16 @@ func TestPortalEntryCoreSaveRejectsAccessTakenByAnotherEntry(t *testing.T) {
 	require.PanicsWithError(t,
 		`portal entry "api" already serves http:8099 type=APPLICATION code=OPERATION_FAILED`,
 		func() {
-			core.Save(PortalEntry{
-				Name:     "other",
-				Protocol: "http",
-				Http: &PortalEntryHTTP{
-					Http:     "ENABLED",
-					Https:    "DISABLED",
-					HttpPort: 8099,
-				},
-			})
+			core.Save(PortalEntry{Name: "other", Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8099}})
 		})
 }
 
 func TestPortalEntryCoreListGroupsRulesByEntry(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(
-		&PortalEntry{
-			Id:       1,
-			Protocol: "http",
-			Http: &PortalEntryHTTP{
-				Host:      "secure.local",
-				Http:      "DISABLED",
-				Https:     "ENABLED",
-				HttpsPort: 443,
-			},
-		},
-		&PortalEntry{
-			Id:       2,
-			Protocol: "http",
-			Http: &PortalEntryHTTP{
-				Http:     "ENABLED",
-				Https:    "DISABLED",
-				HttpPort: 8080,
-			},
-		},
-		&PortalEntry{
-			Id:       3,
-			Protocol: "http",
-			Http: &PortalEntryHTTP{
-				Host:     "demo.local",
-				Http:     "ENABLED",
-				Https:    "DISABLED",
-				HttpPort: 8080,
-			},
-		},
-		&PortalEntry{
-			Id:       5,
-			Protocol: "http",
-			Http: &PortalEntryHTTP{
-				Http:     "ENABLED",
-				Https:    "DISABLED",
-				HttpPort: 9090,
-			},
-		},
+		&PortalEntry{Id: 1, Protocol: "http", Http: &PortalEntryHTTP{Host: "secure.local", Http: "DISABLED", Https: "ENABLED", HttpsPort: 443}},
+		&PortalEntry{Id: 2, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}},
+		&PortalEntry{Id: 3, Protocol: "http", Http: &PortalEntryHTTP{Host: "demo.local", Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}},
+		&PortalEntry{Id: 5, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 9090}},
 	)
 	ruleRepo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
@@ -450,16 +323,7 @@ func TestPortalEntryCoreListGroupsRulesByEntry(t *testing.T) {
 func TestPortalEntryCoreListIncludesEntriesWithoutRules(t *testing.T) {
 	// An operator creates an entry before the rules that use it, so the entry
 	// list shows it while it routes nothing.
-	entryRepo := newPortalEntryRepoSpy(&PortalEntry{
-		Id:       1,
-		Protocol: "http",
-		Http: &PortalEntryHTTP{
-			Host:      "secure.local",
-			Http:      "DISABLED",
-			Https:     "ENABLED",
-			HttpsPort: 443,
-		},
-	})
+	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Protocol: "http", Http: &PortalEntryHTTP{Host: "secure.local", Http: "DISABLED", Https: "ENABLED", HttpsPort: 443}})
 	core := newPortalEntryCoreForTest(&entryRuleRepoSpy{}, entryRepo, nil)
 
 	entries := core.List()
@@ -473,16 +337,7 @@ func TestPortalEntryCoreCreate(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy()
 	core := newPortalEntryCoreForTest(&entryRuleRepoSpy{}, entryRepo, nil)
 
-	entry := core.Create(PortalEntryCreation{
-		Name:     " web ",
-		Protocol: "http",
-		Http: &PortalEntryHTTP{
-			Host:      " demo.local ",
-			Http:      "DISABLED",
-			Https:     "ENABLED",
-			HttpsPort: 0,
-		},
-	})
+	entry := core.Create(PortalEntryCreation{Name: " web ", Protocol: "http", Http: &PortalEntryHTTP{Host: " demo.local ", Http: "DISABLED", Https: "ENABLED", HttpsPort: 0}})
 
 	// The operator names an entry; the access is normalized as Hub stores it.
 	assert.Equal(t, "web", entry.Name)
@@ -497,30 +352,12 @@ func TestPortalEntryCoreCreate(t *testing.T) {
 	require.PanicsWithError(t,
 		`portal entry "web" already exists type=APPLICATION code=OPERATION_FAILED`,
 		func() {
-			core.Create(PortalEntryCreation{
-				Name:     "web",
-				Protocol: "http",
-				Http: &PortalEntryHTTP{
-					Host:      "demo.local",
-					Http:      "DISABLED",
-					Https:     "ENABLED",
-					HttpsPort: 443,
-				},
-			})
+			core.Create(PortalEntryCreation{Name: "web", Protocol: "http", Http: &PortalEntryHTTP{Host: "demo.local", Http: "DISABLED", Https: "ENABLED", HttpsPort: 443}})
 		})
 	require.PanicsWithError(t,
 		`portal entry "web" already serves https:demo.local:443 type=APPLICATION code=OPERATION_FAILED`,
 		func() {
-			core.Create(PortalEntryCreation{
-				Name:     "api",
-				Protocol: "http",
-				Http: &PortalEntryHTTP{
-					Host:      "demo.local",
-					Http:      "DISABLED",
-					Https:     "ENABLED",
-					HttpsPort: 443,
-				},
-			})
+			core.Create(PortalEntryCreation{Name: "api", Protocol: "http", Http: &PortalEntryHTTP{Host: "demo.local", Http: "DISABLED", Https: "ENABLED", HttpsPort: 443}})
 		})
 	panicValue := capturePanic(func() {
 		core.Create(PortalEntryCreation{Name: " "})
@@ -533,15 +370,7 @@ func TestPortalEntryCoreCreate(t *testing.T) {
 
 func TestPortalEntryCoreRemove(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(
-		&PortalEntry{
-			Id:       1,
-			Protocol: "http",
-			Http: &PortalEntryHTTP{
-				Http:     "ENABLED",
-				Https:    "DISABLED",
-				HttpPort: 7088,
-			},
-		},
+		&PortalEntry{Id: 1, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}},
 	)
 	ruleRepo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
@@ -557,15 +386,7 @@ func TestPortalEntryCoreRemove(t *testing.T) {
 	assert.Contains(t, entryRepo.entries, 1)
 
 	// An entry that routes nothing is removed.
-	core.Create(PortalEntryCreation{
-		Name:     "idle",
-		Protocol: "http",
-		Http: &PortalEntryHTTP{
-			Http:     "ENABLED",
-			Https:    "DISABLED",
-			HttpPort: 8080,
-		},
-	})
+	core.Create(PortalEntryCreation{Name: "idle", Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}})
 	created, ok := entryRepo.GetByName("idle")
 	require.True(t, ok)
 	assert.Equal(t, "idle", created.Name)
@@ -576,17 +397,7 @@ func TestPortalEntryCoreRemove(t *testing.T) {
 }
 
 func TestPortalEntryCoreListRejectsUnknownScheme(t *testing.T) {
-	entryRepo := newPortalEntryRepoSpy(&PortalEntry{
-		Id:       1,
-		Name:     "invalid",
-		Protocol: "tcp",
-		Http: &PortalEntryHTTP{
-			Http:      "DISABLED",
-			Https:     "DISABLED",
-			HttpPort:  9000,
-			HttpsPort: 9000,
-		},
-	})
+	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Name: "invalid", Protocol: "tcp", Http: &PortalEntryHTTP{Http: "DISABLED", Https: "DISABLED", HttpPort: 9000, HttpsPort: 9000}})
 	ruleRepo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
 			1: {Id: 1, Name: "tcp", EntryId: 1, RouteType: PortalRuleRouteTypeSite},
@@ -605,25 +416,8 @@ func TestPortalEntryCoreListRejectsUnknownScheme(t *testing.T) {
 
 func TestPortalEntryCoreUpdateSavesEntryAndRepublishesRules(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(
-		&PortalEntry{
-			Id:       1,
-			Protocol: "http",
-			Http: &PortalEntryHTTP{
-				Http:     "ENABLED",
-				Https:    "DISABLED",
-				HttpPort: 7088,
-			},
-		},
-		&PortalEntry{
-			Id:       2,
-			Protocol: "http",
-			Http: &PortalEntryHTTP{
-				Host:     "demo.local",
-				Http:     "ENABLED",
-				Https:    "DISABLED",
-				HttpPort: 7088,
-			},
-		},
+		&PortalEntry{Id: 1, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}},
+		&PortalEntry{Id: 2, Protocol: "http", Http: &PortalEntryHTTP{Host: "demo.local", Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}},
 	)
 	ruleRepo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
@@ -635,14 +429,7 @@ func TestPortalEntryCoreUpdateSavesEntryAndRepublishesRules(t *testing.T) {
 	}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
-	entry := core.Update(1, PortalEntryUpdate{
-		Http: &PortalEntryHTTP{
-			Host:      "app.example.com",
-			Http:      "DISABLED",
-			Https:     "ENABLED",
-			HttpsPort: 8443,
-		},
-	})
+	entry := core.Update(1, PortalEntryUpdate{Http: &PortalEntryHTTP{Host: "app.example.com", Http: "DISABLED", Https: "ENABLED", HttpsPort: 8443}})
 
 	// The access is one stored row: Hub no longer rewrites it per rule.
 	assert.Equal(t, 1, entry.Id)
@@ -675,25 +462,8 @@ func TestPortalEntryCoreUpdateSavesEntryAndRepublishesRules(t *testing.T) {
 
 func TestPortalEntryCoreUpdateRejectsExistingAccess(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(
-		&PortalEntry{
-			Id:       1,
-			Protocol: "http",
-			Http: &PortalEntryHTTP{
-				Http:     "ENABLED",
-				Https:    "DISABLED",
-				HttpPort: 7088,
-			},
-		},
-		&PortalEntry{
-			Id:       2,
-			Protocol: "http",
-			Http: &PortalEntryHTTP{
-				Host:      "demo.local",
-				Http:      "DISABLED",
-				Https:     "ENABLED",
-				HttpsPort: 8443,
-			},
-		},
+		&PortalEntry{Id: 1, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}},
+		&PortalEntry{Id: 2, Protocol: "http", Http: &PortalEntryHTTP{Host: "demo.local", Http: "DISABLED", Https: "ENABLED", HttpsPort: 8443}},
 	)
 	ruleRepo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
@@ -704,15 +474,7 @@ func TestPortalEntryCoreUpdateRejectsExistingAccess(t *testing.T) {
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
 	require.Panics(t, func() {
-		core.Update(1, PortalEntryUpdate{
-			Http: &PortalEntryHTTP{
-				Host:      "demo.local",
-				Http:      "DISABLED",
-				HttpPort:  80,
-				Https:     "ENABLED",
-				HttpsPort: 8443,
-			},
-		})
+		core.Update(1, PortalEntryUpdate{Http: &PortalEntryHTTP{Host: "demo.local", Http: "DISABLED", HttpPort: 80, Https: "ENABLED", HttpsPort: 8443}})
 	})
 	assert.Len(t, entryRepo.entries, 2)
 	assert.Equal(t, 1, ruleRepo.rules[1].EntryId)
@@ -722,25 +484,11 @@ func TestPortalEntryCoreUpdateRejectsExistingAccess(t *testing.T) {
 }
 
 func TestPortalEntryCoreUpdateRejectsMissingEntry(t *testing.T) {
-	entryRepo := newPortalEntryRepoSpy(&PortalEntry{
-		Id:       1,
-		Protocol: "http",
-		Http: &PortalEntryHTTP{
-			Http:     "ENABLED",
-			Https:    "DISABLED",
-			HttpPort: 7088,
-		},
-	})
+	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}})
 	core := newPortalEntryCoreForTest(&entryRuleRepoSpy{}, entryRepo, nil)
 
 	panicValue := capturePanic(func() {
-		core.Update(99, PortalEntryUpdate{
-			Http: &PortalEntryHTTP{
-				Http:     "ENABLED",
-				Https:    "DISABLED",
-				HttpPort: 8080,
-			},
-		})
+		core.Update(99, PortalEntryUpdate{Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}})
 	})
 
 	err, ok := panicValue.(ex.Error)
@@ -750,15 +498,7 @@ func TestPortalEntryCoreUpdateRejectsMissingEntry(t *testing.T) {
 }
 
 func TestPortalEntryCoreUpdateNormalizesPatch(t *testing.T) {
-	entryRepo := newPortalEntryRepoSpy(&PortalEntry{
-		Id:       2,
-		Protocol: "http",
-		Http: &PortalEntryHTTP{
-			Http:     "ENABLED",
-			Https:    "DISABLED",
-			HttpPort: 80,
-		},
-	})
+	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 2, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}})
 	ruleRepo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
 			1: {Id: 1, Name: "web", EntryId: 2, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
@@ -766,14 +506,7 @@ func TestPortalEntryCoreUpdateNormalizesPatch(t *testing.T) {
 	}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
-	entry := core.Update(2, PortalEntryUpdate{
-		Http: &PortalEntryHTTP{
-			Host:     " demo.local ",
-			Http:     "DISABLED",
-			Https:    "ENABLED",
-			HttpPort: 0,
-		},
-	})
+	entry := core.Update(2, PortalEntryUpdate{Http: &PortalEntryHTTP{Host: " demo.local ", Http: "DISABLED", Https: "ENABLED", HttpPort: 0}})
 
 	assert.Equal(t, 2, entry.Id)
 	assert.Equal(t, "http:80", entry.Name)
@@ -789,15 +522,7 @@ func TestPortalEntryCoreUpdateNormalizesPatch(t *testing.T) {
 }
 
 func TestPortalEntryCoreUpdateKeepsEntryOnUnchangedPatch(t *testing.T) {
-	entryRepo := newPortalEntryRepoSpy(&PortalEntry{
-		Id:       1,
-		Protocol: "http",
-		Http: &PortalEntryHTTP{
-			Http:     "ENABLED",
-			Https:    "DISABLED",
-			HttpPort: 7088,
-		},
-	})
+	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}})
 	ruleRepo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
 			1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
@@ -805,13 +530,7 @@ func TestPortalEntryCoreUpdateKeepsEntryOnUnchangedPatch(t *testing.T) {
 	}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
-	entry := core.Update(1, PortalEntryUpdate{
-		Http: &PortalEntryHTTP{
-			Http:     "ENABLED",
-			Https:    "DISABLED",
-			HttpPort: 7088,
-		},
-	})
+	entry := core.Update(1, PortalEntryUpdate{Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}})
 
 	// Hub writes nothing when the patch changes nothing.
 	assert.Equal(t, 1, entry.Id)
@@ -824,27 +543,8 @@ func TestPortalEntryCoreUpdateKeepsEntryOnUnchangedPatch(t *testing.T) {
 
 func TestPortalEntryCoreUpdateRenamesEntry(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(
-		&PortalEntry{
-			Id:       1,
-			Name:     "web",
-			Protocol: "http",
-			Http: &PortalEntryHTTP{
-				Http:     "ENABLED",
-				Https:    "DISABLED",
-				HttpPort: 7088,
-			},
-		},
-		&PortalEntry{
-			Id:       2,
-			Name:     "api",
-			Protocol: "http",
-			Http: &PortalEntryHTTP{
-				Host:     "demo.local",
-				Http:     "ENABLED",
-				Https:    "DISABLED",
-				HttpPort: 7088,
-			},
-		},
+		&PortalEntry{Id: 1, Name: "web", Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}},
+		&PortalEntry{Id: 2, Name: "api", Protocol: "http", Http: &PortalEntryHTTP{Host: "demo.local", Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}},
 	)
 	ruleRepo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
@@ -898,32 +598,14 @@ func TestPortalEntryNormalizesHostBeforeValidation(t *testing.T) {
 		host string
 		want string
 	}{
-		{
-			" APP.EXAMPLE.COM. ",
-			"app.example.com",
-		},
-		{
-			" *.EXAMPLE.COM. ",
-			"*.example.com",
-		},
-		{
-			" \t ",
-			"",
-		},
-		{
-			"127.0.0.1.",
-			"127.0.0.1",
-		},
-		{
-			"2001:DB8::1",
-			"2001:db8::1",
-		},
+		{" APP.EXAMPLE.COM. ", "app.example.com"},
+		{" *.EXAMPLE.COM. ", "*.example.com"},
+		{" \t ", ""},
+		{"127.0.0.1.", "127.0.0.1"},
+		{"2001:DB8::1", "2001:db8::1"},
 	} {
 		t.Run(tc.host, func(t *testing.T) {
-			raw := PortalEntry{
-				Protocol: "http",
-				Http:     new(PortalEntryHTTP{Host: tc.host}),
-			}
+			raw := PortalEntry{Protocol: "http", Http: new(PortalEntryHTTP{Host: tc.host})}
 			normalized := NormalizePortalEntry(raw)
 			require.Equal(t, tc.want, normalized.Http.Host)
 			require.Equal(t, normalized, NormalizePortalEntry(normalized))
@@ -932,28 +614,16 @@ func TestPortalEntryNormalizesHostBeforeValidation(t *testing.T) {
 	}
 	for _, host := range []string{".", "..", "app.example.com..", "*.example.com.."} {
 		require.Panics(t, func() {
-			NormalizePortalEntry(PortalEntry{
-				Protocol: "http",
-				Http:     new(PortalEntryHTTP{Host: host}),
-			})
+			NormalizePortalEntry(PortalEntry{Protocol: "http", Http: new(PortalEntryHTTP{Host: host})})
 		}, host)
 	}
 	// Removing the trailing dot must happen before deciding whether Host is an IP.
 	for _, raw := range []PortalEntryHTTP{
-		{
-			Host:  "127.0.0.1.",
-			Https: "ENABLED",
-		},
-		{
-			Host:      "127.0.0.1.",
-			AutoHTTPS: "ENABLED",
-		},
+		{Host: "127.0.0.1.", Https: "ENABLED"},
+		{Host: "127.0.0.1.", AutoHTTPS: "ENABLED"},
 	} {
 		require.Panics(t, func() {
-			NormalizePortalEntry(PortalEntry{
-				Protocol: "http",
-				Http:     &raw,
-			})
+			NormalizePortalEntry(PortalEntry{Protocol: "http", Http: &raw})
 		})
 	}
 }
@@ -963,24 +633,10 @@ func TestPortalEntryRejectsEquivalentHostConflicts(t *testing.T) {
 		t.Run(host, func(t *testing.T) {
 			repo := newPortalEntryRepoSpy()
 			target := newPortalEntryCoreForTest(&entryRuleRepoSpy{}, repo, nil)
-			target.Create(PortalEntryCreation{
-				Name:     "one",
-				Protocol: "http",
-				Http: new(PortalEntryHTTP{
-					Host:  host,
-					Https: "DISABLED",
-				}),
-			})
+			target.Create(PortalEntryCreation{Name: "one", Protocol: "http", Http: new(PortalEntryHTTP{Host: host, Https: "DISABLED"})})
 			for _, https := range []PortalSwitchMode{PortalSwitchModeDisabled, PortalSwitchModeEnabled} {
 				require.Panics(t, func() {
-					target.Create(PortalEntryCreation{
-						Name:     "two",
-						Protocol: "http",
-						Http: new(PortalEntryHTTP{
-							Host:  strings.ToLower(host) + ".",
-							Https: https,
-						}),
-					})
+					target.Create(PortalEntryCreation{Name: "two", Protocol: "http", Http: new(PortalEntryHTTP{Host: strings.ToLower(host) + ".", Https: https})})
 				})
 			}
 			require.Len(t, repo.entries, 1)
@@ -989,59 +645,26 @@ func TestPortalEntryRejectsEquivalentHostConflicts(t *testing.T) {
 }
 
 func TestPortalEntryReservesListenersWhileHTTPSAwaitsCertificate(t *testing.T) {
-	pending := NormalizePortalEntry(PortalEntry{
-		Name:     "pending",
-		Enabled:  true,
-		Protocol: "http",
-		Http: new(PortalEntryHTTP{
-			Host:      "app.example.com",
-			Http:      "DISABLED",
-			HttpsPort: 8443,
-		}),
-	})
+	pending := NormalizePortalEntry(PortalEntry{Name: "pending", Enabled: true, Protocol: "http", Http: new(PortalEntryHTTP{Host: "app.example.com", Http: "DISABLED", HttpsPort: 8443})})
 	pending.EffectiveHTTP = new(pending.Http.Effective(false))
 	require.Empty(t, pending.EffectiveAccesses())
 	require.Panics(t, func() {
 		ValidatePortalEntryListeners([]PortalEntry{
 			pending,
-			{
-				Name:     "conflict",
-				Enabled:  true,
-				Protocol: "http",
-				Http:     new(PortalEntryHTTP{HttpPort: 8443}),
-			},
+			{Name: "conflict", Enabled: true, Protocol: "http", Http: new(PortalEntryHTTP{HttpPort: 8443})},
 		})
 	})
 }
 
 func TestPortalEntryWildcardChangeRejectsNonWebRules(t *testing.T) {
 	for _, save := range []bool{false, true} {
-		repo := newPortalEntryRepoSpy(&PortalEntry{
-			Id:       1,
-			Name:     "entry",
-			Protocol: "http",
-			Http: &PortalEntryHTTP{
-				Host:     "api.example.com",
-				Http:     "ENABLED",
-				Https:    "DISABLED",
-				HttpPort: 80,
-			},
-		})
+		repo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Name: "entry", Protocol: "http", Http: &PortalEntryHTTP{Host: "api.example.com", Http: "ENABLED", Https: "DISABLED", HttpPort: 80}})
 		rules := &entryRuleRepoSpy{rules: map[int]*PortalRule{1: {Id: 1, Name: "rpc", EntryId: 1, RouteType: "SITE", RouteSiteName: "rpc"}}}
 		sites := &portalSiteRepoSpy{entries: map[int]*PortalSite{1: {Id: 1, Name: "rpc", Type: PortalSiteTypeRPCGW}}}
 		target := newPortalEntryCoreForTest(rules, repo, sites)
 		assert.Panics(t, func() {
 			if save {
-				target.Save(PortalEntry{
-					Name:     "entry",
-					Protocol: "http",
-					Http: &PortalEntryHTTP{
-						Host:     "*.example.com",
-						Http:     "ENABLED",
-						Https:    "DISABLED",
-						HttpPort: 80,
-					},
-				})
+				target.Save(PortalEntry{Name: "entry", Protocol: "http", Http: &PortalEntryHTTP{Host: "*.example.com", Http: "ENABLED", Https: "DISABLED", HttpPort: 80}})
 			} else {
 				target.Update(1, PortalEntryUpdate{Http: &PortalEntryHTTP{Host: "*.example.com"}})
 			}
@@ -1053,21 +676,8 @@ func TestPortalEntryWildcardChangeRejectsNonWebRules(t *testing.T) {
 
 func TestPortalEntryListenIPsCreateUpdateAndReset(t *testing.T) {
 	repo := newPortalEntryRepoSpy()
-	target := &PortalEntryCore{
-		PortalEntryRepo: repo,
-		PortalRuleRepo:  &entryRuleRepoSpy{},
-		PortalCertRepo:  portalEntryTestCertificates(),
-	}
-	created := target.Create(PortalEntryCreation{
-		Name:      "local",
-		ListenIPs: []string{"::1", "127.0.0.1", "::ffff:127.0.0.1"},
-		Protocol:  "http",
-		Http: &PortalEntryHTTP{
-			Http:     "ENABLED",
-			Https:    "DISABLED",
-			HttpPort: 8080,
-		},
-	})
+	target := &PortalEntryCore{PortalEntryRepo: repo, PortalRuleRepo: &entryRuleRepoSpy{}, PortalCertRepo: portalEntryTestCertificates()}
+	created := target.Create(PortalEntryCreation{Name: "local", ListenIPs: []string{"::1", "127.0.0.1", "::ffff:127.0.0.1"}, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}})
 	assert.Equal(t, []string{"127.0.0.1", "::1"}, created.ListenIPs)
 	updated := target.Update(created.Id, PortalEntryUpdate{ListenIPs: new([]string{"127.0.0.2"})})
 	assert.Equal(t, []string{"127.0.0.2"}, updated.ListenIPs)
@@ -1079,103 +689,20 @@ func TestPortalEntryListenIPsCreateUpdateAndReset(t *testing.T) {
 
 func TestPortalEntryListenIPsRejectConflictsAndShareListeners(t *testing.T) {
 	repo := newPortalEntryRepoSpy()
-	target := &PortalEntryCore{
-		PortalEntryRepo: repo,
-		PortalRuleRepo:  &entryRuleRepoSpy{},
-		PortalCertRepo:  portalEntryTestCertificates(),
-	}
-	target.Create(PortalEntryCreation{
-		Name:      "one",
-		ListenIPs: []string{"127.0.0.1"},
-		Protocol:  "http",
-		Http: &PortalEntryHTTP{
-			Host:     "one.local",
-			Http:     "ENABLED",
-			Https:    "DISABLED",
-			HttpPort: 8080,
-		},
-	})
-	target.Create(PortalEntryCreation{
-		Name:      "two",
-		ListenIPs: []string{"127.0.0.1"},
-		Protocol:  "http",
-		Http: &PortalEntryHTTP{
-			Host:     "two.local",
-			Http:     "ENABLED",
-			Https:    "DISABLED",
-			HttpPort: 8080,
-		},
-	})
-	target.Create(PortalEntryCreation{
-		Name:      "v6",
-		ListenIPs: []string{"::1"},
-		Protocol:  "http",
-		Http: &PortalEntryHTTP{
-			Host:      "v6.local",
-			Http:      "DISABLED",
-			Https:     "ENABLED",
-			HttpsPort: 8080,
-		},
-	})
+	target := &PortalEntryCore{PortalEntryRepo: repo, PortalRuleRepo: &entryRuleRepoSpy{}, PortalCertRepo: portalEntryTestCertificates()}
+	target.Create(PortalEntryCreation{Name: "one", ListenIPs: []string{"127.0.0.1"}, Protocol: "http", Http: &PortalEntryHTTP{Host: "one.local", Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}})
+	target.Create(PortalEntryCreation{Name: "two", ListenIPs: []string{"127.0.0.1"}, Protocol: "http", Http: &PortalEntryHTTP{Host: "two.local", Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}})
+	target.Create(PortalEntryCreation{Name: "v6", ListenIPs: []string{"::1"}, Protocol: "http", Http: &PortalEntryHTTP{Host: "v6.local", Http: "DISABLED", Https: "ENABLED", HttpsPort: 8080}})
 	for _, creation := range []PortalEntryCreation{
-		{
-			Name:      "wildcard",
-			ListenIPs: []string{"0.0.0.0"},
-			Protocol:  "http",
-			Http: &PortalEntryHTTP{
-				Host:     "wildcard.local",
-				Http:     "ENABLED",
-				Https:    "DISABLED",
-				HttpPort: 8080,
-			},
-		},
-		{
-			Name:     "default",
-			Protocol: "http",
-			Http: &PortalEntryHTTP{
-				Host:     "default.local",
-				Http:     "ENABLED",
-				Https:    "DISABLED",
-				HttpPort: 8080,
-			},
-		},
-		{
-			Name:      "tls",
-			ListenIPs: []string{"127.0.0.1"},
-			Protocol:  "http",
-			Http: &PortalEntryHTTP{
-				Host:      "tls.local",
-				Http:      "DISABLED",
-				Https:     "ENABLED",
-				HttpsPort: 8080,
-			},
-		},
-		{
-			Name:      "bad",
-			ListenIPs: []string{"localhost"},
-			Protocol:  "http",
-			Http: &PortalEntryHTTP{
-				Http:     "ENABLED",
-				Https:    "DISABLED",
-				HttpPort: 8090,
-			},
-		},
+		{Name: "wildcard", ListenIPs: []string{"0.0.0.0"}, Protocol: "http", Http: &PortalEntryHTTP{Host: "wildcard.local", Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}},
+		{Name: "default", Protocol: "http", Http: &PortalEntryHTTP{Host: "default.local", Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}},
+		{Name: "tls", ListenIPs: []string{"127.0.0.1"}, Protocol: "http", Http: &PortalEntryHTTP{Host: "tls.local", Http: "DISABLED", Https: "ENABLED", HttpsPort: 8080}},
+		{Name: "bad", ListenIPs: []string{"localhost"}, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8090}},
 	} {
 		require.Panics(t, func() { target.Create(creation) })
 	}
 	assert.Len(t, repo.List(), 3)
-	disabled := target.Create(PortalEntryCreation{
-		Name:      "disabled",
-		ListenIPs: []string{"127.0.0.1"},
-		Enabled:   new(false),
-		Protocol:  "http",
-		Http: &PortalEntryHTTP{
-			Host:      "disabled.local",
-			Http:      "DISABLED",
-			Https:     "ENABLED",
-			HttpsPort: 8080,
-		},
-	})
+	disabled := target.Create(PortalEntryCreation{Name: "disabled", ListenIPs: []string{"127.0.0.1"}, Enabled: new(false), Protocol: "http", Http: &PortalEntryHTTP{Host: "disabled.local", Http: "DISABLED", Https: "ENABLED", HttpsPort: 8080}})
 	require.Panics(t, func() {
 		target.Update(disabled.Id, PortalEntryUpdate{Enabled: new(true)})
 	})

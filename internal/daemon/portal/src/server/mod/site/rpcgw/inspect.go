@@ -101,10 +101,7 @@ func (g *RpcGateway) serveInspect(ctx *spec.Context) {
 			methods = append(methods, inspectMethod(method))
 		}
 		slices.SortFunc(methods, func(a _InspectMethod, b _InspectMethod) int { return cmp.Compare(a.SkelName, b.SkelName) })
-		writeInspect(w, http.StatusOK, _InspectMethodList{
-			Service: inspectServiceSummary(service),
-			Methods: methods,
-		})
+		writeInspect(w, http.StatusOK, _InspectMethodList{Service: inspectServiceSummary(service), Methods: methods})
 		return
 	}
 	method := service.MethodBySkelName(parts[1])
@@ -118,12 +115,7 @@ func (g *RpcGateway) serveInspect(ctx *spec.Context) {
 		writeInspectError(w, ex.ServiceUnavailable, "inspect schema is unavailable")
 		return
 	}
-	writeInspect(w, http.StatusOK, _InspectDetail{
-		_InspectMethod: inspectMethod(method),
-		Service:        service.SkelName,
-		InputSchema:    input,
-		OutputSchema:   output,
-	})
+	writeInspect(w, http.StatusOK, _InspectDetail{_InspectMethod: inspectMethod(method), Service: service.SkelName, InputSchema: input, OutputSchema: output})
 }
 
 func inspectServiceSummary(service *skeldesc.Service) _InspectService {
@@ -149,10 +141,7 @@ func inspectMethod(method *skeldesc.Method) _InspectMethod {
 }
 
 func writeInspectError(w http.ResponseWriter, code ex.Code, message string) {
-	writeInspect(w, ex.HTTPStatusCode(code), _InspectError{
-		Code:    code,
-		Message: message,
-	})
+	writeInspect(w, ex.HTTPStatusCode(code), _InspectError{Code: code, Message: message})
 }
 
 func writeInspect(w http.ResponseWriter, status int, value any) {

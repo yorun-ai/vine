@@ -108,10 +108,7 @@ func newTypedInvokeClient(t *testing.T, result any, err ex.Error) (*Client, spec
 	t.Helper()
 	endpoint := inproc.Endpoint(t.Name())
 	t.Cleanup(inproc.Register(endpoint, spec.RpcHandlerFunc(func(request spec.Request) spec.Response {
-		return &spec.ResponseImpl{
-			ResultValue: result,
-			ErrorValue:  err,
-		}
+		return &spec.ResponseImpl{ResultValue: result, ErrorValue: err}
 	})))
 	return New(Option{
 		Context:        testClientContext(),
@@ -206,11 +203,7 @@ func TestInvokeEncodingFailureLogsRejectedWithoutStarted(t *testing.T) {
 		}},
 	}).Methods()[0]
 	logPath := filepath.Join(t.TempDir(), "client-rejected.jsonl")
-	log := logger.New("vine:test", logger.WithOption{
-		Format:     logger.FormatJSON,
-		Level:      logger.LevelDebug,
-		OutputPath: logPath,
-	})
+	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: logPath})
 	client := New(Option{
 		Context:             testClientContext(),
 		ClientApp:           testClientApp(t),

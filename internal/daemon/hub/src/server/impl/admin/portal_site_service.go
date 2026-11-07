@@ -213,10 +213,7 @@ func toCoreWebTimeout(value *skeled.PortalWebTimeout) *webtimeout.Config {
 		result.Default = new(webtimeout.Policy{Total: value.Default.Total})
 	}
 	for _, path := range value.Paths {
-		result.Paths = append(result.Paths, webtimeout.Path{
-			Path:  path.Path,
-			Total: path.Total,
-		})
+		result.Paths = append(result.Paths, webtimeout.Path{Path: path.Path, Total: path.Total})
 	}
 	return result
 }
@@ -230,10 +227,7 @@ func toServerWebTimeout(value *webtimeout.Config) *skeled.PortalWebTimeout {
 		result.Default = new(skeled.PortalWebTimeoutPolicy{Total: value.Default.Total})
 	}
 	for _, path := range value.Paths {
-		result.Paths = append(result.Paths, skeled.PortalWebTimeoutPath{
-			Path:  path.Path,
-			Total: path.Total,
-		})
+		result.Paths = append(result.Paths, skeled.PortalWebTimeoutPath{Path: path.Path, Total: path.Total})
 	}
 	return result
 }

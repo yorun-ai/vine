@@ -329,26 +329,11 @@ func TestWatchServerACL(t *testing.T) {
 				name string
 				run  func() error
 			}{
-				{
-					"set",
-					func() error { return client.Set(ctx, "config:feature-b", "b", 0).Err() },
-				},
-				{
-					"incr",
-					func() error { return client.Incr(ctx, "counter").Err() },
-				},
-				{
-					"del",
-					func() error { return client.Del(ctx, "config:feature-a").Err() },
-				},
-				{
-					"publish",
-					func() error { return client.Publish(ctx, "config:feature-a", "payload").Err() },
-				},
-				{
-					"expire",
-					func() error { return client.Expire(ctx, "config:feature-a", time.Second).Err() },
-				},
+				{"set", func() error { return client.Set(ctx, "config:feature-b", "b", 0).Err() }},
+				{"incr", func() error { return client.Incr(ctx, "counter").Err() }},
+				{"del", func() error { return client.Del(ctx, "config:feature-a").Err() }},
+				{"publish", func() error { return client.Publish(ctx, "config:feature-a", "payload").Err() }},
+				{"expire", func() error { return client.Expire(ctx, "config:feature-a", time.Second).Err() }},
 			} {
 				t.Run(run.name, func(t *testing.T) {
 					assert.ErrorContains(t, run.run(), "NOPERM")

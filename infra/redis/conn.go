@@ -37,10 +37,7 @@ func acquireRedisClient(option *Option) (*goredis.Client, func()) {
 func newRedisConnection(option *Option) *_RedisConnection {
 	client := newRedisClient(option)
 	client.AddHook(_SelectHook{dbIndex: client.Options().DB})
-	return new(_RedisConnection{
-		endpoint: option.Endpoint,
-		client:   client,
-	})
+	return new(_RedisConnection{endpoint: option.Endpoint, client: client})
 }
 
 // acquire requires connectionsMu to keep lookup and reference acquisition atomic.

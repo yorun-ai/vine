@@ -13,10 +13,7 @@ type _UnknownSite struct {
 }
 
 func newUnknownSite(name string, kind string) spec.Site {
-	return &_UnknownSite{
-		name: name,
-		kind: kind,
-	}
+	return &_UnknownSite{name: name, kind: kind}
 }
 
 func (s *_UnknownSite) Name() string {

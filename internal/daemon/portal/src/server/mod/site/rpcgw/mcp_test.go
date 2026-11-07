@@ -84,11 +84,7 @@ func TestMcpSDKClientDiscoveryAndPagination(t *testing.T) {
 	watch := inspectWatch(t)
 	service := inspectService("demo.UserService")
 	for i := range mcpPageSize {
-		service.Methods = append(service.Methods, &skeldesc.Method{
-			Name:              fmt.Sprintf("M%03d", i),
-			SkelName:          fmt.Sprintf("M%03d", i),
-			EffectiveAuthMode: skeldesc.AuthModeOptional,
-		})
+		service.Methods = append(service.Methods, &skeldesc.Method{Name: fmt.Sprintf("M%03d", i), SkelName: fmt.Sprintf("M%03d", i), EffectiveAuthMode: skeldesc.AuthModeOptional})
 	}
 	watch.SetValue(watched.FormatDescriptorServiceKey(service.SkelName), vcode.MustMarshalJsonS(service))
 	mcpBackend(t, watch, service.SkelName, func(w http.ResponseWriter, r *http.Request) {
@@ -100,10 +96,7 @@ func TestMcpSDKClientDiscoveryAndPagination(t *testing.T) {
 		gateway.Serve(testContextWithEntryOrigin(w, r, "api.example.com"))
 	}))
 	t.Cleanup(server.Close)
-	client := mcp.NewClient(&mcp.Implementation{
-		Name:    "vine-test",
-		Version: "1.0.0",
-	}, nil)
+	client := mcp.NewClient(&mcp.Implementation{Name: "vine-test", Version: "1.0.0"}, nil)
 	session, err := client.Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: server.URL + "/mcp"}, nil)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = session.Close() })
@@ -243,19 +236,11 @@ func TestMcpProtocolErrors(t *testing.T) {
 
 func TestMcpSyncingAndDescriptorRecovery(t *testing.T) {
 	client := inspectWatch(t)
-	watch := &inspectBlockingWatch{
-		ClientOps: client,
-		entered:   make(chan struct{}),
-		release:   make(chan struct{}),
-	}
+	watch := &inspectBlockingWatch{ClientOps: client, entered: make(chan struct{}), release: make(chan struct{})}
 	gateway := newInspectGateway(t, watch, mcpConfig("demo.UserService"))
 	service := inspectService("demo.UserService")
 	service.Methods[0].ResultType.SkelName = "demo.Missing"
-	client.Publish(hubwatch.Event{
-		Kind:  hubwatch.EventKindUpsert,
-		Key:   watched.FormatDescriptorServiceKey(service.SkelName),
-		Value: vcode.MustMarshalJsonS(service),
-	})
+	client.Publish(hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: watched.FormatDescriptorServiceKey(service.SkelName), Value: vcode.MustMarshalJsonS(service)})
 	select {
 	case <-watch.entered:
 	case <-time.After(time.Second):
@@ -268,11 +253,7 @@ func TestMcpSyncingAndDescriptorRecovery(t *testing.T) {
 	require.Eventually(t, func() bool { return !gateway.desc.Snapshot().Syncing }, time.Second, time.Millisecond)
 	response = mcpServe(gateway, mcpRequest("tools/list", nil, "2026-07-28"))
 	require.Contains(t, response.Body.String(), "schema is unavailable")
-	client.Publish(hubwatch.Event{
-		Kind:  hubwatch.EventKindUpsert,
-		Key:   watched.FormatDescriptorDataKey("demo.Missing"),
-		Value: vcode.MustMarshalJsonS(skeldesc.Data{SkelName: "demo.Missing"}),
-	})
+	client.Publish(hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: watched.FormatDescriptorDataKey("demo.Missing"), Value: vcode.MustMarshalJsonS(skeldesc.Data{SkelName: "demo.Missing"})})
 	require.Eventually(t, func() bool { s := gateway.desc.Snapshot(); return !s.Syncing && s.Data["demo.Missing"] != nil }, time.Second, time.Millisecond)
 	var result mcp.ListToolsResult
 	mcpResult(t, mcpServe(gateway, mcpRequest("tools/list", nil, "2026-07-28")), &result)

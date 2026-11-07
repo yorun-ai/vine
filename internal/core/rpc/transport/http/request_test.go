@@ -421,14 +421,7 @@ func TestEncodeRequestDestination(t *testing.T) {
 	ctx, cancel := context.WithTimeout(rpcCtx, time.Minute)
 	defer cancel()
 	for _, destination := range []string{"target.app", ""} {
-		msg := &spec.RequestImpl{
-			ContextValue:     ctx,
-			TraceValue:       rpcCtx.Trace(),
-			ClientValue:      rpcCtx.Client(),
-			DestinationValue: destination,
-			MethodInfoValue:  testServiceInfo().Methods()[0],
-			ArgumentsValue:   &pingArguments{Name: "vine"},
-		}
+		msg := &spec.RequestImpl{ContextValue: ctx, TraceValue: rpcCtx.Trace(), ClientValue: rpcCtx.Client(), DestinationValue: destination, MethodInfoValue: testServiceInfo().Methods()[0], ArgumentsValue: &pingArguments{Name: "vine"}}
 		req, err := encodeRequest("http://localhost:8080", msg)
 		if err != nil {
 			t.Fatal(err)

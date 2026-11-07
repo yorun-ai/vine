@@ -66,10 +66,7 @@ type _TypeDescriptor struct {
 
 func newTypeDescriptor(key string) *_TypeDescriptor {
 	parts := strings.SplitN(key, ":", 3)
-	return new(_TypeDescriptor{
-		kind: parts[1],
-		name: parts[2],
-	})
+	return new(_TypeDescriptor{kind: parts[1], name: parts[2]})
 }
 
 func (entry *_TypeDescriptor) setValue(value string) error {

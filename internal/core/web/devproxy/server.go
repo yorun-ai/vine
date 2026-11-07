@@ -149,10 +149,7 @@ func (s *_FollowedServer) proxyFor(state *_State) *httputil.ReverseProxy {
 	if s.proxy != nil && s.address == addressOf(state) {
 		return s.proxy
 	}
-	target := &url.URL{
-		Scheme: "http",
-		Host:   addressOf(state),
-	}
+	target := &url.URL{Scheme: "http", Host: addressOf(state)}
 	logger.Info("forwarding to the development server",
 		"target", target.String(), "state", s.stateFilePath)
 	return devProxy(target)

@@ -48,10 +48,7 @@ func TestSyncerSyncDescriptorsWritesMainActorAndServiceDescriptors(t *testing.T)
 			{
 				Descriptor: &skeldesc.Actor{
 					SkelName: "demo.user.OldActor",
-					Auth: &skeldesc.ActorAuth{Service: &skeldesc.Service{
-						SkelName: "demo.user.OldAuthService",
-						AuthMode: skeldesc.AuthModeRequired,
-					}},
+					Auth:     &skeldesc.ActorAuth{Service: &skeldesc.Service{SkelName: "demo.user.OldAuthService", AuthMode: skeldesc.AuthModeRequired}},
 				},
 				SkelName:       "demo.user.OldActor",
 				DescriptorHash: "actor-old",
@@ -180,10 +177,7 @@ func TestSyncerWriteDescriptorsWritesMainActorAndServiceDescriptors(t *testing.T
 
 	target.WriteDescriptors([]core.DomainDescriptorView{{
 		Actors: []core.DescriptorVersion[*skeldesc.Actor]{{
-			Descriptor: &skeldesc.Actor{
-				SkelName: "vine.hub.admin.AdminActor",
-				Hash:     "admin-actor-main",
-			},
+			Descriptor:     &skeldesc.Actor{SkelName: "vine.hub.admin.AdminActor", Hash: "admin-actor-main"},
 			SkelName:       "vine.hub.admin.AdminActor",
 			DescriptorHash: "admin-actor-main",
 			Main:           true,
@@ -229,21 +223,13 @@ func TestSyncerSyncDescriptorsDoesNotDeleteVineHubDescriptors(t *testing.T) {
 
 	target.WriteDescriptors([]core.DomainDescriptorView{{
 		Actors: []core.DescriptorVersion[*skeldesc.Actor]{{
-			Descriptor: &skeldesc.Actor{
-				SkelName: "vine.hub.admin.AdminActor",
-				Hash:     "admin-actor-main",
-			},
+			Descriptor:     &skeldesc.Actor{SkelName: "vine.hub.admin.AdminActor", Hash: "admin-actor-main"},
 			SkelName:       "vine.hub.admin.AdminActor",
 			DescriptorHash: "admin-actor-main",
 			Main:           true,
 		}},
 		Services: []core.DescriptorVersion[*skeldesc.Service]{{
-			Descriptor: &skeldesc.Service{
-				Api:      true,
-				SkelName: "vine.hub.admin.SkeletonApiService",
-				Hash:     "skeleton-service-main",
-				AuthMode: skeldesc.AuthModeRequired,
-			},
+			Descriptor:     &skeldesc.Service{Api: true, SkelName: "vine.hub.admin.SkeletonApiService", Hash: "skeleton-service-main", AuthMode: skeldesc.AuthModeRequired},
 			SkelName:       "vine.hub.admin.SkeletonApiService",
 			DescriptorHash: "skeleton-service-main",
 			Main:           true,
@@ -267,10 +253,7 @@ func TestSyncerSyncDescriptorsRemovesStaleDescriptors(t *testing.T) {
 		Actors: []core.DescriptorVersion[*skeldesc.Actor]{{
 			Descriptor: &skeldesc.Actor{
 				SkelName: "demo.user.UserActor",
-				Auth: &skeldesc.ActorAuth{Service: &skeldesc.Service{
-					SkelName: "demo.user.UserAuthService",
-					AuthMode: skeldesc.AuthModeRequired,
-				}},
+				Auth:     &skeldesc.ActorAuth{Service: &skeldesc.Service{SkelName: "demo.user.UserAuthService", AuthMode: skeldesc.AuthModeRequired}},
 			},
 			SkelName:       "demo.user.UserActor",
 			DescriptorHash: "actor-main",
@@ -368,32 +351,9 @@ func TestPortalDescriptorsExcludeBackendServices(t *testing.T) {
 	target := testSyncer(watchServer)
 	view := []core.DomainDescriptorView{{
 		Services: []core.DescriptorVersion[*skeldesc.Service]{
-			{
-				Main: true,
-				Descriptor: &skeldesc.Service{
-					SkelName: "demo.BackendService",
-					Pub:      true,
-					Hash:     "backend",
-					AuthMode: skeldesc.AuthModeRequired,
-				},
-			},
-			{
-				Main: true,
-				Descriptor: &skeldesc.Service{
-					SkelName: "demo.ApiService",
-					Api:      true,
-					Hash:     "api",
-					AuthMode: skeldesc.AuthModeRequired,
-				},
-			},
-			{
-				Main: true,
-				Descriptor: &skeldesc.Service{
-					SkelName: "demo.PrivateService",
-					AuthMode: skeldesc.AuthModeRequired,
-					Hash:     "private",
-				},
-			},
+			{Main: true, Descriptor: &skeldesc.Service{SkelName: "demo.BackendService", Pub: true, Hash: "backend", AuthMode: skeldesc.AuthModeRequired}},
+			{Main: true, Descriptor: &skeldesc.Service{SkelName: "demo.ApiService", Api: true, Hash: "api", AuthMode: skeldesc.AuthModeRequired}},
+			{Main: true, Descriptor: &skeldesc.Service{SkelName: "demo.PrivateService", AuthMode: skeldesc.AuthModeRequired, Hash: "private"}},
 		},
 	}}
 	target.SyncDescriptors(view)

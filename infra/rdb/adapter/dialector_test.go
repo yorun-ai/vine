@@ -117,13 +117,7 @@ func TestAutomaticUUIDFields(t *testing.T) {
 			require.Equal(t, "text", types["text"])
 			require.Equal(t, "text", types["serialized"])
 			id := uuid.NewV7()
-			row := new(automaticUUIDModel{
-				Ref:        id,
-				Optional:   &id,
-				Text:       id,
-				Serialized: id,
-				Children:   []automaticUUIDChild{{}, {}},
-			})
+			row := new(automaticUUIDModel{Ref: id, Optional: &id, Text: id, Serialized: id, Children: []automaticUUIDChild{{}, {}}})
 			require.NoError(t, db.Create(row).Error)
 			require.NotEqual(t, uuid.Nil(), row.ID)
 			for _, child := range row.Children {
@@ -204,11 +198,7 @@ func TestPostgresTestDSNWithZone(t *testing.T) {
 func TestPostgresUUIDMappingWithoutConnection(t *testing.T) {
 	// Opening the pool is lazy. Both settings prevent GORM from using a connection.
 	dialect := NewDialector("host=127.0.0.1 user=unused dbname=unused").(*_PostgresDialector)
-	db, err := gorm.Open(dialect, &gorm.Config{
-		DisableAutomaticPing:   true,
-		DryRun:                 true,
-		SkipDefaultTransaction: true,
-	})
+	db, err := gorm.Open(dialect, &gorm.Config{DisableAutomaticPing: true, DryRun: true, SkipDefaultTransaction: true})
 	require.NoError(t, err)
 	pool, err := db.DB()
 	require.NoError(t, err)

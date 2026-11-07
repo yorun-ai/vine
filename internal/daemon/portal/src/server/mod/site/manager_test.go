@@ -235,10 +235,7 @@ func newTestAccess(t *testing.T) *access.Access {
 		Watch:   watchClient,
 	}
 	epmgrManager.DIInit()
-	descriptors := new(desc.Manager{
-		Context: t.Context(),
-		Watch:   watchClient,
-	})
+	descriptors := new(desc.Manager{Context: t.Context(), Watch: watchClient})
 	descriptors.DIInit()
 	t.Cleanup(descriptors.AfterAppStop)
 	manager := &access.Access{
@@ -291,32 +288,17 @@ func (s *_TestSite) Stop() {
 
 func TestManagerReplacesSiteWhenTypeChanges(t *testing.T) {
 	key := watched.FormatPortalSiteKey("changing")
-	web := watched.PortalSite{
-		Name:        "changing",
-		Type:        siteTypeWebgw,
-		WebgwConfig: &watched.PortalWebgwConfig{WebName: "demo.Web"},
-	}
-	rpc := watched.PortalSite{
-		Name:        "changing",
-		Type:        siteTypeRpcgw,
-		RpcgwConfig: &watched.PortalRpcgwConfig{},
-	}
+	web := watched.PortalSite{Name: "changing", Type: siteTypeWebgw, WebgwConfig: &watched.PortalWebgwConfig{WebName: "demo.Web"}}
+	rpc := watched.PortalSite{Name: "changing", Type: siteTypeRpcgw, RpcgwConfig: &watched.PortalRpcgwConfig{}}
 	manager := newTestManager(t, map[string]string{key: vcode.MustMarshalJsonS(web)})
 	before, _ := manager.Site("changing")
 	for _, config := range []watched.PortalSite{rpc, web} {
-		manager.handleSiteEvent(hubapiwatch.Event{
-			Kind:  hubapiwatch.EventKindUpsert,
-			Key:   key,
-			Value: vcode.MustMarshalJsonS(config),
-		})
+		manager.handleSiteEvent(hubapiwatch.Event{Kind: hubapiwatch.EventKindUpsert, Key: key, Value: vcode.MustMarshalJsonS(config)})
 		after, ok := manager.Site("changing")
 		if !ok || before == after {
 			t.Fatal("type change must replace the gateway")
 		}
 		before = after
 	}
-	manager.handleSiteEvent(hubapiwatch.Event{
-		Kind: hubapiwatch.EventKindDelete,
-		Key:  key,
-	})
+	manager.handleSiteEvent(hubapiwatch.Event{Kind: hubapiwatch.EventKindDelete, Key: key})
 }

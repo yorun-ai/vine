@@ -280,13 +280,7 @@ func TestWebTimeoutRoundTripsThroughStorageAndWatch(t *testing.T) {
 	_, repo, watchServer := newTestPortalSiteRepo(t)
 	entry := testPortalSite("web-timeout")
 	entry.Type = core.PortalSiteTypeWEBGW
-	entry.WebTimeout = &webtimeout.Config{
-		Default: &webtimeout.Policy{Total: "30s"},
-		Paths: []webtimeout.Path{{
-			Path:  "/go/**",
-			Total: "15m",
-		}},
-	}
+	entry.WebTimeout = &webtimeout.Config{Default: &webtimeout.Policy{Total: "30s"}, Paths: []webtimeout.Path{{Path: "/go/**", Total: "15m"}}}
 	repo.Save(entry)
 	stored, ok := repo.GetById(entry.Id)
 	require.True(t, ok)

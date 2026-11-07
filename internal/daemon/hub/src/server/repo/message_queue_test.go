@@ -23,39 +23,20 @@ import (
 
 func newMessageQueueTestRepo(t *testing.T, mode string) *MessageQueueRepo {
 	t.Helper()
-	r := &MessageQueueRepo{
-		InprocFlag: &app.InternalInprocFlag{Enabled: mode == "inproc"},
-		Flag:       &flag.Flag{MQMode: flag.MQModeEmbedded},
-	}
+	r := &MessageQueueRepo{InprocFlag: &app.InternalInprocFlag{Enabled: mode == "inproc"}, Flag: &flag.Flag{MQMode: flag.MQModeEmbedded}}
 	if mode == "external" {
-		server, err := ns.NewServer(&ns.Options{
-			Host:      "127.0.0.1",
-			Port:      -1,
-			JetStream: true,
-			StoreDir:  t.TempDir(),
-			Username:  "operator",
-			Password:  "secret",
-			NoSigs:    true,
-			NoLog:     true,
-		})
+		server, err := ns.NewServer(&ns.Options{Host: "127.0.0.1", Port: -1, JetStream: true, StoreDir: t.TempDir(), Username: "operator", Password: "secret", NoSigs: true, NoLog: true})
 		require.NoError(t, err)
 		server.Start()
 		t.Cleanup(func() { server.Shutdown(); server.WaitForShutdown() })
 		require.True(t, server.ReadyForConnections(5*time.Second))
-		r.Flag = &flag.Flag{
-			MQMode:         flag.MQModeNATS,
-			MQNatsEndpoint: "nats://operator:secret@" + server.Addr().String(),
-		}
+		r.Flag = &flag.Flag{MQMode: flag.MQModeNATS, MQNatsEndpoint: "nats://operator:secret@" + server.Addr().String()}
 	} else {
 		identity := mtls.DisabledIdentity()
 		if mode == "tls" {
 			identity = mtlstest.NewCA(t).Identity(t, daemon.HubIdentity.SPIFFEPath())
 		}
-		r.NATSServer = &natsserver.NATSServer{
-			InprocFlag: r.InprocFlag,
-			Flag:       r.Flag,
-			Identity:   identity,
-		}
+		r.NATSServer = &natsserver.NATSServer{InprocFlag: r.InprocFlag, Flag: r.Flag, Identity: identity}
 		r.NATSServer.DIInit()
 		t.Cleanup(r.NATSServer.AfterAppStop)
 	}
@@ -79,28 +60,14 @@ func TestMessageQueueRepoSnapshots(t *testing.T) {
 			js := queueTestJS(t, r)
 			ctx := t.Context()
 			for _, cfg := range []jetstream.StreamConfig{
-				{
-					Name:      taskspec.NATSStreamName,
-					Subjects:  []string{"task.>"},
-					Retention: jetstream.WorkQueuePolicy,
-					Storage:   jetstream.MemoryStorage,
-				},
-				{
-					Name:      eventspec.NATSStreamName,
-					Subjects:  []string{"event.>"},
-					Retention: jetstream.InterestPolicy,
-					Storage:   jetstream.MemoryStorage,
-				},
+				{Name: taskspec.NATSStreamName, Subjects: []string{"task.>"}, Retention: jetstream.WorkQueuePolicy, Storage: jetstream.MemoryStorage},
+				{Name: eventspec.NATSStreamName, Subjects: []string{"event.>"}, Retention: jetstream.InterestPolicy, Storage: jetstream.MemoryStorage},
 			} {
 				_, err := js.CreateOrUpdateStream(ctx, cfg)
 				require.NoError(t, err)
 			}
 			// Keep interest until the event snapshot consumers are created below.
-			_, err := js.CreateConsumer(ctx, eventspec.NATSStreamName, jetstream.ConsumerConfig{
-				Durable:       "fixture_retention",
-				FilterSubject: "event.>",
-				AckPolicy:     jetstream.AckExplicitPolicy,
-			})
+			_, err := js.CreateConsumer(ctx, eventspec.NATSStreamName, jetstream.ConsumerConfig{Durable: "fixture_retention", FilterSubject: "event.>", AckPolicy: jetstream.AckExplicitPolicy})
 			require.NoError(t, err)
 			for _, subject := range []string{"task.demo.Task", "task.demo.Orphan", "event.demo.Event"} {
 				_, err = js.Publish(ctx, subject, []byte("payload"))
@@ -108,18 +75,10 @@ func TestMessageQueueRepoSnapshots(t *testing.T) {
 			}
 			// Creation initializes pending counts from the stored messages; publish
 			// acknowledgements do not wait for existing consumers' async counters.
-			task, err := js.CreateConsumer(ctx, taskspec.NATSStreamName, jetstream.ConsumerConfig{
-				Durable:       "task_demo",
-				FilterSubject: "task.demo.Task",
-				AckPolicy:     jetstream.AckExplicitPolicy,
-			})
+			task, err := js.CreateConsumer(ctx, taskspec.NATSStreamName, jetstream.ConsumerConfig{Durable: "task_demo", FilterSubject: "task.demo.Task", AckPolicy: jetstream.AckExplicitPolicy})
 			require.NoError(t, err)
 			for _, name := range []string{"event_app_b", "event_app_a"} {
-				_, err = js.CreateConsumer(ctx, eventspec.NATSStreamName, jetstream.ConsumerConfig{
-					Durable:        name,
-					FilterSubjects: []string{"event.demo.Other", "event.demo.Event"},
-					AckPolicy:      jetstream.AckExplicitPolicy,
-				})
+				_, err = js.CreateConsumer(ctx, eventspec.NATSStreamName, jetstream.ConsumerConfig{Durable: name, FilterSubjects: []string{"event.demo.Other", "event.demo.Event"}, AckPolicy: jetstream.AckExplicitPolicy})
 				require.NoError(t, err)
 			}
 			require.NoError(t, js.DeleteConsumer(ctx, eventspec.NATSStreamName, "fixture_retention"))
@@ -127,13 +86,7 @@ func TestMessageQueueRepoSnapshots(t *testing.T) {
 			require.NoError(t, err)
 			require.Len(t, items, 2)
 			require.Equal(t, uint64(2), items[0].Messages)
-			require.Equal(t, []core.MessageQueueSubject{{
-				Subject:  "task.demo.Orphan",
-				Messages: 1,
-			}, {
-				Subject:  "task.demo.Task",
-				Messages: 1,
-			}}, items[0].Subjects)
+			require.Equal(t, []core.MessageQueueSubject{{Subject: "task.demo.Orphan", Messages: 1}, {Subject: "task.demo.Task", Messages: 1}}, items[0].Subjects)
 			require.Len(t, items[0].Consumers, 1)
 			require.Equal(t, uint64(1), items[0].Consumers[0].Pending)
 			require.Zero(t, items[0].Consumers[0].AckPending)
@@ -187,17 +140,10 @@ func TestMessageQueueRepoMissingStreamsAndCancellation(t *testing.T) {
 func TestMessageQueueRepoListsEveryConsumerPage(t *testing.T) {
 	r := newMessageQueueTestRepo(t, "external")
 	js := queueTestJS(t, r)
-	_, err := js.CreateStream(t.Context(), jetstream.StreamConfig{
-		Name:     eventspec.NATSStreamName,
-		Subjects: []string{"event.>"},
-		Storage:  jetstream.MemoryStorage,
-	})
+	_, err := js.CreateStream(t.Context(), jetstream.StreamConfig{Name: eventspec.NATSStreamName, Subjects: []string{"event.>"}, Storage: jetstream.MemoryStorage})
 	require.NoError(t, err)
 	for i := range 260 {
-		_, err = js.CreateConsumer(t.Context(), eventspec.NATSStreamName, jetstream.ConsumerConfig{
-			Durable:   fmt.Sprintf("reader_%03d", i),
-			AckPolicy: jetstream.AckExplicitPolicy,
-		})
+		_, err = js.CreateConsumer(t.Context(), eventspec.NATSStreamName, jetstream.ConsumerConfig{Durable: fmt.Sprintf("reader_%03d", i), AckPolicy: jetstream.AckExplicitPolicy})
 		require.NoError(t, err)
 	}
 	items, err := r.List(t.Context())

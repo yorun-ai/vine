@@ -119,10 +119,7 @@ func newIdleStreamReader(ctx context.Context, body io.ReadCloser, idleTimeout ti
 		defer close(finished)
 		for buffer := range requests {
 			n, err := body.Read(buffer)
-			results <- _ReadResult{
-				n:   n,
-				err: err,
-			}
+			results <- _ReadResult{n: n, err: err}
 		}
 	}()
 	timer := time.NewTimer(idleTimeout)

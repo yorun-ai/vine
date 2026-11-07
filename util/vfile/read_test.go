@@ -55,25 +55,13 @@ func TestReadAsJsonAndYaml(t *testing.T) {
 
 	jsonPayload, err := ReadAsJson[*readPayload](jsonPath)
 	assert.NoError(t, err)
-	assert.Equal(t, readPayload{
-		Name:  "vine",
-		Count: 5,
-	}, *jsonPayload)
-	assert.Equal(t, readPayload{
-		Name:  "vine",
-		Count: 5,
-	}, *MustReadAsJson[*readPayload](jsonPath))
+	assert.Equal(t, readPayload{Name: "vine", Count: 5}, *jsonPayload)
+	assert.Equal(t, readPayload{Name: "vine", Count: 5}, *MustReadAsJson[*readPayload](jsonPath))
 
 	yamlPayload, err := ReadAsYaml[*readPayload](yamlPath)
 	assert.NoError(t, err)
-	assert.Equal(t, readPayload{
-		Name:  "vine",
-		Count: 6,
-	}, *yamlPayload)
-	assert.Equal(t, readPayload{
-		Name:  "vine",
-		Count: 6,
-	}, *MustReadAsYaml[*readPayload](yamlPath))
+	assert.Equal(t, readPayload{Name: "vine", Count: 6}, *yamlPayload)
+	assert.Equal(t, readPayload{Name: "vine", Count: 6}, *MustReadAsYaml[*readPayload](yamlPath))
 }
 
 func TestReadAsJsonAndYamlInvalidContent(t *testing.T) {

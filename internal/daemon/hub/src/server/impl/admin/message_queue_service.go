@@ -34,10 +34,7 @@ func (s *MessageQueueStatusApiServiceServerImpl) List() []skeled.MessageQueueSta
 			Consumers: []skeled.MessageQueueConsumer{},
 		}
 		for _, subject := range status.Subjects {
-			item.Subjects = append(item.Subjects, skeled.MessageQueueSubject{
-				Subject:  subject.Subject,
-				Messages: strconv.FormatUint(subject.Messages, 10),
-			})
+			item.Subjects = append(item.Subjects, skeled.MessageQueueSubject{Subject: subject.Subject, Messages: strconv.FormatUint(subject.Messages, 10)})
 		}
 		for _, consumer := range status.Consumers {
 			item.Consumers = append(item.Consumers, skeled.MessageQueueConsumer{

@@ -162,10 +162,7 @@ func TestSchedulerRejectsCronSchedulerTriggerWithArguments(t *testing.T) {
 					SkelName: "rebuild",
 					Arguments: []*skeldesc.Member{{
 						Name: "full",
-						Type: &skeldesc.Type{
-							Kind:   skeldesc.TypeKindScalar,
-							Scalar: skeldesc.ScalarBoolean,
-						},
+						Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBoolean},
 					}},
 				}},
 			},

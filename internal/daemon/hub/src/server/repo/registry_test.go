@@ -118,10 +118,7 @@ func TestRegistryRepoListAppStatuses(t *testing.T) {
 func TestRegistryRepoKeepAndRemoveAppStatus(t *testing.T) {
 	repo, watchServer := newTestRegistryRepo(t, false)
 
-	status := &core.AppStatus{
-		InstanceId: "instance-1",
-		Name:       "demo.app",
-	}
+	status := &core.AppStatus{InstanceId: "instance-1", Name: "demo.app"}
 	repo.SaveAppStatus(status)
 
 	key := watched.FormatAppStatusKey(status.Name, status.InstanceId)
@@ -146,10 +143,7 @@ func TestRegistryRepoPopExpiredAppLeases(t *testing.T) {
 	repo, _ := newTestRegistryRepo(t, false)
 	now := time.Now().Round(0)
 	setTimeNowForTest(t, func() time.Time { return now })
-	status := &core.AppStatus{
-		InstanceId: "instance-1",
-		Name:       "demo.app",
-	}
+	status := &core.AppStatus{InstanceId: "instance-1", Name: "demo.app"}
 	repo.SaveAppStatus(status)
 
 	now = now.Add(hubRegistryLeaseTTL - time.Second)
@@ -158,10 +152,7 @@ func TestRegistryRepoPopExpiredAppLeases(t *testing.T) {
 	now = now.Add(2 * time.Second)
 	leases := repo.PopExpiredAppLeases()
 
-	assert.Equal(t, []core.AppHeartbeat{{
-		Name:       "demo.app",
-		InstanceId: "instance-1",
-	}}, leases)
+	assert.Equal(t, []core.AppHeartbeat{{Name: "demo.app", InstanceId: "instance-1"}}, leases)
 	assert.Empty(t, repo.PopExpiredAppLeases())
 }
 
@@ -169,10 +160,7 @@ func TestRegistryRepoKeepAppStatusRefreshesAppLease(t *testing.T) {
 	repo, _ := newTestRegistryRepo(t, false)
 	now := time.Now().Round(0)
 	setTimeNowForTest(t, func() time.Time { return now })
-	status := &core.AppStatus{
-		InstanceId: "instance-1",
-		Name:       "demo.app",
-	}
+	status := &core.AppStatus{InstanceId: "instance-1", Name: "demo.app"}
 	repo.SaveAppStatus(status)
 
 	now = now.Add(hubRegistryLeaseTTL / 2)
@@ -186,10 +174,7 @@ func TestRegistryRepoPopExpiredAppLeasesSkipsRenewedStatus(t *testing.T) {
 	repo, watchServer := newTestRegistryRepo(t, false)
 	now := time.Now().Round(0)
 	setTimeNowForTest(t, func() time.Time { return now })
-	status := &core.AppStatus{
-		InstanceId: "instance-1",
-		Name:       "demo.app",
-	}
+	status := &core.AppStatus{InstanceId: "instance-1", Name: "demo.app"}
 	repo.SaveAppStatus(status)
 
 	key := watched.FormatAppStatusKey(status.Name, status.InstanceId)
@@ -206,10 +191,7 @@ func TestRegistryRepoPopExpiredAppLeasesSkipsRenewedStatus(t *testing.T) {
 func TestRegistryRepoInprocDoesNotSaveAppLease(t *testing.T) {
 	repo, _ := newTestRegistryRepo(t, true)
 
-	repo.SaveAppStatus(&core.AppStatus{
-		InstanceId: "instance-1",
-		Name:       "demo.app",
-	})
+	repo.SaveAppStatus(&core.AppStatus{InstanceId: "instance-1", Name: "demo.app"})
 
 	assert.Empty(t, repo.PopExpiredAppLeases())
 }
@@ -352,10 +334,7 @@ func TestRegistryRepoKeepAndRemoveWebRegistration(t *testing.T) {
 func TestRegistryRepoInprocSavesWithoutTTL(t *testing.T) {
 	repo, watchServer := newTestRegistryRepo(t, true)
 
-	status := &core.AppStatus{
-		InstanceId: "instance-1",
-		Name:       "demo.app",
-	}
+	status := &core.AppStatus{InstanceId: "instance-1", Name: "demo.app"}
 	repo.SaveAppStatus(status)
 
 	key := watched.FormatAppStatusKey(status.Name, status.InstanceId)
@@ -413,11 +392,7 @@ func TestRegistryRepoInprocSaveWebRegistrationNotifiesSubscribers(t *testing.T) 
 	defer pubsub.Close()
 	read, err := pubsub.Receive(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, &redis.Subscription{
-		Kind:    "psubscribe",
-		Channel: pattern,
-		Count:   1,
-	}, read)
+	assert.Equal(t, &redis.Subscription{Kind: "psubscribe", Channel: pattern, Count: 1}, read)
 
 	registration := &core.WebRegistration{
 		Endpoint:      "link+inproc://demo/web/proxy/in/instance-1/default@demo.app",

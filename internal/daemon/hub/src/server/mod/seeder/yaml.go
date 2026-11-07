@@ -184,11 +184,7 @@ func (i *_AppConfig) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (i _AppConfig) toCoreAppConfig() *core.AppConfig {
-	return &core.AppConfig{
-		FieldSources: i.Sources,
-		Name:         i.Name,
-		Value:        i.Value,
-	}
+	return &core.AppConfig{FieldSources: i.Sources, Name: i.Name, Value: i.Value}
 }
 
 // Portal entry
@@ -248,12 +244,7 @@ func (e _PortalEntry) toCorePortalEntry() *core.PortalEntry {
 	} else {
 		scheme := strings.ToLower(strings.TrimSpace(e.Scheme))
 		ex.PanicNewIfNot(scheme == "http" || scheme == "https", ex.OperationFailed, ex.F("unknown portal entry scheme: %s", scheme))
-		config := core.PortalEntryHTTP{
-			Host:      e.Host,
-			Http:      core.PortalSwitchModeDisabled,
-			Https:     core.PortalSwitchModeDisabled,
-			AutoHTTPS: "DISABLED",
-		}
+		config := core.PortalEntryHTTP{Host: e.Host, Http: core.PortalSwitchModeDisabled, Https: core.PortalSwitchModeDisabled, AutoHTTPS: "DISABLED"}
 		if scheme == "http" {
 			config.Http = core.PortalSwitchModeEnabled
 			config.HttpPort = e.Port

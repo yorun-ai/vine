@@ -27,45 +27,10 @@ func TestFieldSourceEntityLifecycle(t *testing.T) {
 		kind, sql string
 		row       any
 	}{
-		{
-			"app_config",
-			createAppConfigSQLiteSQL,
-			&AppConfig{
-				Id:           1,
-				Name:         "existing",
-				Value:        "{}",
-				Version:      1,
-				FieldSources: testSourceFields,
-			},
-		},
-		{
-			"portal_rule",
-			createPortalRuleSQLiteSQL,
-			&PortalRule{
-				Id:           1,
-				Name:         "existing",
-				FieldSources: testSourceFields,
-			},
-		},
-		{
-			"portal_site",
-			createPortalSiteSQLiteSQL,
-			&PortalSite{
-				Id:           1,
-				Name:         "existing",
-				FieldSources: testSourceFields,
-			},
-		},
-		{
-			"portal_cert",
-			createPortalCertSQLiteSQL,
-			&PortalCert{
-				Id:           1,
-				Name:         "existing",
-				Domains:      "[]",
-				FieldSources: testSourceFields,
-			},
-		},
+		{"app_config", createAppConfigSQLiteSQL, &AppConfig{Id: 1, Name: "existing", Value: "{}", Version: 1, FieldSources: testSourceFields}},
+		{"portal_rule", createPortalRuleSQLiteSQL, &PortalRule{Id: 1, Name: "existing", FieldSources: testSourceFields}},
+		{"portal_site", createPortalSiteSQLiteSQL, &PortalSite{Id: 1, Name: "existing", FieldSources: testSourceFields}},
+		{"portal_cert", createPortalCertSQLiteSQL, &PortalCert{Id: 1, Name: "existing", Domains: "[]", FieldSources: testSourceFields}},
 	} {
 		t.Run(tc.kind, func(t *testing.T) {
 			db := sourceTestDB(t)
@@ -98,17 +63,8 @@ func TestFieldSourceSaveIsolationAndRollback(t *testing.T) {
 	configs.EnsureSchema()
 	sites.EnsureSchema()
 	require.False(t, db.Migrator().HasColumn("app_config", "field_sources"))
-	config := configs.Save(&AppConfig{
-		Name:         "config",
-		Value:        "{}",
-		Version:      1,
-		FieldSources: testSourceFields,
-	})
-	site := sites.Save(&PortalSite{
-		Id:           0,
-		Name:         "site",
-		FieldSources: `{"/name":{"source":"domain/site","define":"domain/site"}}`,
-	})
+	config := configs.Save(&AppConfig{Name: "config", Value: "{}", Version: 1, FieldSources: testSourceFields})
+	site := sites.Save(&PortalSite{Id: 0, Name: "site", FieldSources: `{"/name":{"source":"domain/site","define":"domain/site"}}`})
 	require.Equal(t, config.Id, site.Id)
 	config.Name = "renamed"
 	config.FieldSources = `{"/value/enabled":{"source":"hub","define":"domain/base","override":"hub"}}`
@@ -126,12 +82,7 @@ func TestFieldSourceSaveIsolationAndRollback(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "renamed", loaded.Name)
 	require.Panics(t, func() {
-		configs.Save(&AppConfig{
-			Name:         "failed-create",
-			Value:        "{}",
-			Version:      1,
-			FieldSources: testSourceFields,
-		})
+		configs.Save(&AppConfig{Name: "failed-create", Value: "{}", Version: 1, FieldSources: testSourceFields})
 	})
 	_, ok = configs.LatestByName("failed-create")
 	require.False(t, ok)

@@ -30,14 +30,8 @@ func inspectService(name string) *skeldesc.Service {
 		Api:       true,
 		Audiences: []*skeldesc.ActorAudience{{SkelName: "demo.UserActor"}},
 		Methods: []*skeldesc.Method{{Name: "Get", SkelName: "GetV2", EffectiveAuthMode: skeldesc.AuthModeRequired,
-			Arguments: []*skeldesc.Member{{Name: "id", Type: new(skeldesc.Type{
-				Kind:   skeldesc.TypeKindScalar,
-				Scalar: skeldesc.ScalarInt,
-			})}},
-			ResultType: new(skeldesc.Type{
-				Kind:     skeldesc.TypeKindData,
-				SkelName: "demo.User",
-			}),
+			Arguments:  []*skeldesc.Member{{Name: "id", Type: new(skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarInt})}},
+			ResultType: new(skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: "demo.User"}),
 		}},
 	})
 }
@@ -47,10 +41,7 @@ func inspectWatch(t *testing.T) *watchtest.Client {
 	watch.SetValue(watched.FormatDescriptorServiceKey("demo.UserService"), vcode.MustMarshalJsonS(inspectService("demo.UserService")))
 	watch.SetValue(watched.FormatDescriptorDataKey("demo.User"), vcode.MustMarshalJsonS(skeldesc.Data{
 		SkelName: "demo.User",
-		Members: []*skeldesc.Member{{Name: "name", Type: new(skeldesc.Type{
-			Kind:   skeldesc.TypeKindScalar,
-			Scalar: skeldesc.ScalarString,
-		})}},
+		Members:  []*skeldesc.Member{{Name: "name", Type: new(skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString})}},
 	}))
 	return watch
 }
@@ -71,22 +62,12 @@ func inspectConfig(names ...string) watched.PortalSite {
 
 func newInspectGateway(t *testing.T, watch hubwatch.ClientOps, config watched.PortalSite) *RpcGateway {
 	t.Helper()
-	descriptors := new(desc.Manager{
-		Context: t.Context(),
-		Watch:   watch,
-	})
+	descriptors := new(desc.Manager{Context: t.Context(), Watch: watch})
 	descriptors.DIInit()
 	t.Cleanup(descriptors.AfterAppStop)
-	endpoints := new(epmgr.Manager{
-		Context: t.Context(),
-		Watch:   watch,
-	})
+	endpoints := new(epmgr.Manager{Context: t.Context(), Watch: watch})
 	endpoints.DIInit()
-	admission := new(access.Access{
-		Context: t.Context(),
-		Desc:    descriptors,
-		Epmgr:   endpoints,
-	})
+	admission := new(access.Access{Context: t.Context(), Desc: descriptors, Epmgr: endpoints})
 	admission.DIInit()
 	t.Cleanup(admission.AfterAppStop)
 	gateway := New(t.Context(), testServerApp(), admission, descriptors, endpoints, config)
@@ -225,19 +206,11 @@ func (w *inspectBlockingWatch) LoadKeysAndSubscribe(ctx context.Context, keys []
 
 func TestInspectFailsWhileSyncingAndRecoversMissingTypeFromWatch(t *testing.T) {
 	client := inspectWatch(t)
-	watch := &inspectBlockingWatch{
-		ClientOps: client,
-		entered:   make(chan struct{}),
-		release:   make(chan struct{}),
-	}
+	watch := &inspectBlockingWatch{ClientOps: client, entered: make(chan struct{}), release: make(chan struct{})}
 	gateway := newInspectGateway(t, watch, inspectConfig("demo.UserService"))
 	service := inspectService("demo.UserService")
 	service.Methods[0].ResultType.SkelName = "demo.Missing"
-	client.Publish(hubwatch.Event{
-		Kind:  hubwatch.EventKindUpsert,
-		Key:   watched.FormatDescriptorServiceKey(service.SkelName),
-		Value: vcode.MustMarshalJsonS(service),
-	})
+	client.Publish(hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: watched.FormatDescriptorServiceKey(service.SkelName), Value: vcode.MustMarshalJsonS(service)})
 	select {
 	case <-watch.entered:
 	case <-time.After(3 * time.Second):
@@ -251,14 +224,7 @@ func TestInspectFailsWhileSyncingAndRecoversMissingTypeFromWatch(t *testing.T) {
 	close(watch.release)
 	require.Eventually(t, func() bool { return !gateway.desc.Snapshot().Syncing }, 3*time.Second, time.Millisecond)
 	assertInspectError(t, inspectRequest(gateway, http.MethodGet, "/inspect/demo.UserService/GetV2"), ex.ServiceUnavailable, "inspect schema is unavailable")
-	client.Publish(hubwatch.Event{
-		Kind: hubwatch.EventKindUpsert,
-		Key:  watched.FormatDescriptorDataKey("demo.Missing"),
-		Value: vcode.MustMarshalJsonS(skeldesc.Data{
-			SkelName:    "demo.Missing",
-			Description: "Recovered",
-		}),
-	})
+	client.Publish(hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: watched.FormatDescriptorDataKey("demo.Missing"), Value: vcode.MustMarshalJsonS(skeldesc.Data{SkelName: "demo.Missing", Description: "Recovered"})})
 	require.Eventually(t, func() bool {
 		snapshot := gateway.desc.Snapshot()
 		return !snapshot.Syncing && snapshot.Data["demo.Missing"] != nil
@@ -266,10 +232,7 @@ func TestInspectFailsWhileSyncingAndRecoversMissingTypeFromWatch(t *testing.T) {
 	recorder := inspectRequest(gateway, http.MethodGet, "/inspect/demo.UserService/GetV2")
 	require.Equal(t, http.StatusOK, recorder.Code)
 	require.Contains(t, recorder.Body.String(), "Recovered")
-	client.Publish(hubwatch.Event{
-		Kind: hubwatch.EventKindDelete,
-		Key:  watched.FormatDescriptorServiceKey(service.SkelName),
-	})
+	client.Publish(hubwatch.Event{Kind: hubwatch.EventKindDelete, Key: watched.FormatDescriptorServiceKey(service.SkelName)})
 	require.Eventually(t, func() bool {
 		return inspectRequest(gateway, http.MethodGet, "/inspect/demo.UserService/GetV2").Code == http.StatusNotFound
 	}, 3*time.Second, time.Millisecond)

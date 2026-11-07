@@ -113,28 +113,19 @@ func (w *_McpResponseWriter) Write(body []byte) (int, error) {
 }
 
 func (g *RpcGateway) newMcpServer(httpCtx *spec.Context) *mcp.Server {
-	server := mcp.NewServer(&mcp.Implementation{
-		Name:    "vine.portal",
-		Version: g.app.Version(),
-	}, &mcp.ServerOptions{
+	server := mcp.NewServer(&mcp.Implementation{Name: "vine.portal", Version: g.app.Version()}, &mcp.ServerOptions{
 		PageSize:                  mcpPageSize,
 		SupportedProtocolVersions: []string{mcpProtocolVersion},
 		Capabilities:              &mcp.ServerCapabilities{Tools: &mcp.ToolCapabilities{}},
 		SetCacheable: func(_ context.Context, _ mcp.Request, value *mcp.Cacheable) {
-			*value = mcp.Cacheable{
-				TTLMs:      0,
-				CacheScope: "private",
-			}
+			*value = mcp.Cacheable{TTLMs: 0, CacheScope: "private"}
 		},
 	})
 	server.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, request mcp.Request) (mcp.Result, error) {
 			timeout, err := mcpOptionsTimeout(request.GetParams().GetMeta())
 			if err != nil {
-				return nil, &jsonrpc.Error{
-					Code:    jsonrpc.CodeInvalidParams,
-					Message: err.Error(),
-				}
+				return nil, &jsonrpc.Error{Code: jsonrpc.CodeInvalidParams, Message: err.Error()}
 			}
 			// Count decoding and admission against the same budget as execution.
 			limit, _ := httpCtx.Request.Context().Deadline()
@@ -150,10 +141,7 @@ func (g *RpcGateway) newMcpServer(httpCtx *spec.Context) *mcp.Server {
 			snapshot, services := g.apiSnapshot()
 			if snapshot.Syncing {
 				httpCtx.ResponseWriter.Header().Set("Retry-After", "1")
-				return nil, &jsonrpc.Error{
-					Code:    -32000,
-					Message: "API descriptors are syncing",
-				}
+				return nil, &jsonrpc.Error{Code: -32000, Message: "API descriptors are syncing"}
 			}
 			requested := ""
 			if method == "tools/call" {
@@ -168,10 +156,7 @@ func (g *RpcGateway) newMcpServer(httpCtx *spec.Context) *mcp.Server {
 					input, output, err := jsonschema.Method(operation, snapshot.Data, snapshot.Enums)
 					if err != nil {
 						rpcGatewayLogger.Warn("vine.portal MCP schema is unavailable", "service", service.SkelName, "method", operation.SkelName, "error", err)
-						return nil, &jsonrpc.Error{
-							Code:    -32000,
-							Message: "API schema is unavailable",
-						}
+						return nil, &jsonrpc.Error{Code: -32000, Message: "API schema is unavailable"}
 					}
 					tool := &mcp.Tool{
 						Name:         name,

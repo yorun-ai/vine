@@ -16,16 +16,8 @@ func TestEvalPermExprPreservesLegacyShortCircuitAfterConversion(t *testing.T) {
 		allowed bool
 		code    ex.Code
 	}{
-		{
-			legacy.PermRequireModeAny,
-			true,
-			ex.OK,
-		},
-		{
-			legacy.PermRequireModeAll,
-			false,
-			ex.PermissionDenied,
-		},
+		{legacy.PermRequireModeAny, true, ex.OK},
+		{legacy.PermRequireModeAll, false, ex.PermissionDenied},
 	} {
 		t.Run(string(test.mode), func(t *testing.T) {
 			// Old generators expand Resource:action:check into all(code, check).
@@ -196,10 +188,7 @@ func TestEvalPermExprKeepsAnyBranchesSeparate(t *testing.T) {
 
 func TestEvalPermExprPreservesSelectedFailureReason(t *testing.T) {
 	check := func(name string) *skeldesc.PermissionExpression {
-		return &skeldesc.PermissionExpression{
-			Mode:  skeldesc.PermissionRequireModeCheck,
-			Check: &skeldesc.PermissionCheckInvocation{CheckName: name},
-		}
+		return &skeldesc.PermissionExpression{Mode: skeldesc.PermissionRequireModeCheck, Check: &skeldesc.PermissionCheckInvocation{CheckName: name}}
 	}
 	for _, tc := range []struct {
 		name        string
@@ -208,46 +197,10 @@ func TestEvalPermExprPreservesSelectedFailureReason(t *testing.T) {
 		wantMessage string
 		wantReason  string
 	}{
-		{
-			"all",
-			&skeldesc.PermissionExpression{
-				Mode:     skeldesc.PermissionRequireModeAll,
-				Children: []*skeldesc.PermissionExpression{check("first"), check("last")},
-			},
-			false,
-			"first",
-			"first_reason",
-		},
-		{
-			"any",
-			&skeldesc.PermissionExpression{
-				Mode:     skeldesc.PermissionRequireModeAny,
-				Children: []*skeldesc.PermissionExpression{check("first"), check("last")},
-			},
-			false,
-			"last",
-			"last_reason",
-		},
-		{
-			"any succeeds",
-			&skeldesc.PermissionExpression{
-				Mode:     skeldesc.PermissionRequireModeAny,
-				Children: []*skeldesc.PermissionExpression{check("first"), {Mode: skeldesc.PermissionRequireModeCode, Code: "allowed"}},
-			},
-			true,
-			"",
-			"",
-		},
-		{
-			"any ends with code denial",
-			&skeldesc.PermissionExpression{
-				Mode:     skeldesc.PermissionRequireModeAny,
-				Children: []*skeldesc.PermissionExpression{check("first"), {Mode: skeldesc.PermissionRequireModeCode, Code: "denied"}},
-			},
-			false,
-			"permission denied: denied",
-			"",
-		},
+		{"all", &skeldesc.PermissionExpression{Mode: skeldesc.PermissionRequireModeAll, Children: []*skeldesc.PermissionExpression{check("first"), check("last")}}, false, "first", "first_reason"},
+		{"any", &skeldesc.PermissionExpression{Mode: skeldesc.PermissionRequireModeAny, Children: []*skeldesc.PermissionExpression{check("first"), check("last")}}, false, "last", "last_reason"},
+		{"any succeeds", &skeldesc.PermissionExpression{Mode: skeldesc.PermissionRequireModeAny, Children: []*skeldesc.PermissionExpression{check("first"), {Mode: skeldesc.PermissionRequireModeCode, Code: "allowed"}}}, true, "", ""},
+		{"any ends with code denial", &skeldesc.PermissionExpression{Mode: skeldesc.PermissionRequireModeAny, Children: []*skeldesc.PermissionExpression{check("first"), {Mode: skeldesc.PermissionRequireModeCode, Code: "denied"}}}, false, "permission denied: denied", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ok, code, message, reason := evalPermExpr(tc.expr, map[string]bool{"allowed": true}, func(check *skeldesc.PermissionCheckInvocation) (bool, ex.Code, string, string) {

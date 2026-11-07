@@ -253,14 +253,7 @@ func TestInitializerDIInitWritesRepoItems(t *testing.T) {
 	defer watchServer.AfterAppStop()
 	db := _WatchTestStore{watchServer}
 	descriptorRepo := new(repodescriptor.DescriptorRepo)
-	entryRepo := &testPortalEntryRepo{
-		entries: []*core.PortalEntry{new(core.NormalizePortalEntry(core.PortalEntry{
-			Id:       1,
-			Name:     "web",
-			Protocol: "http",
-			Enabled:  true,
-		}))},
-	}
+	entryRepo := &testPortalEntryRepo{entries: []*core.PortalEntry{new(core.NormalizePortalEntry(core.PortalEntry{Id: 1, Name: "web", Protocol: "http", Enabled: true}))}}
 	ruleRepo := &testPortalRuleRepo{
 		rules: []*core.PortalRule{
 			{Id: 1, EntryId: 1, Name: "demo-entry", MatchPathPrefix: "/admin", RouteType: "SITE", RouteSiteName: "admin@demo.app", Enabled: true},
@@ -435,11 +428,7 @@ func TestInitializerReportsRulesThatShareOneRequest(t *testing.T) {
 			}
 			entryRepo := &testPortalEntryRepo{
 				entries: []*core.PortalEntry{
-					{Id: 1, Name: "http:80", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{
-						Http:     "ENABLED",
-						Https:    "DISABLED",
-						HttpPort: 80,
-					}},
+					{Id: 1, Name: "http:80", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}},
 				},
 			}
 			p := withTestAudit(&Initializer{
@@ -452,10 +441,7 @@ func TestInitializerReportsRulesThatShareOneRequest(t *testing.T) {
 				DescriptorRepo:  new(repodescriptor.DescriptorRepo),
 				RegistryCore:    &core.RegistryCore{DescriptorRepo: new(repodescriptor.DescriptorRepo)},
 				InprocFlag:      &appcore.InternalInprocFlag{},
-				Flag: &hubflag.Flag{
-					NoDB:        noDB,
-					AdminListen: "127.0.0.1:7099",
-				},
+				Flag:            &hubflag.Flag{NoDB: noDB, AdminListen: "127.0.0.1:7099"},
 			})
 
 			if !noDB {

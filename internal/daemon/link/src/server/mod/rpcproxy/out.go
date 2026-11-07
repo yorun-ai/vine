@@ -117,18 +117,12 @@ func (p *RpcProxy) resolveOutboundTarget(serviceName string, clientApp meta.App,
 		if targetAppState.draining && targetAppState.appInfo.InstanceId() != clientApp.InstanceId() {
 			return _OutboundTarget{}, ex.New(ex.ServiceUnavailable, "rpc proxy outbound local target unavailable")
 		}
-		return _OutboundTarget{
-			endpoint:  targetAppState.serviceEndpoint,
-			transport: p.transport,
-		}, nil
+		return _OutboundTarget{endpoint: targetAppState.serviceEndpoint, transport: p.transport}, nil
 	}
 
 	transport, err := p.Identity.BackendTransport(registration.ServerIdentity.SPIFFEPath(), registration.Endpoint)
 	if err != nil {
 		return _OutboundTarget{}, ex.New(ex.ServiceUnavailable, "rpc proxy outbound target is insecure", ex.WithDetail(err.Error()))
 	}
-	return _OutboundTarget{
-		endpoint:  registration.Endpoint,
-		transport: transport,
-	}, nil
+	return _OutboundTarget{endpoint: registration.Endpoint, transport: transport}, nil
 }

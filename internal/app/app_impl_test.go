@@ -41,22 +41,10 @@ func TestNewAppLoggerUsesAppName(t *testing.T) {
 		appName string
 		pattern string
 	}{
-		{
-			appName: "demo.user",
-			pattern: "app:demo.user:rpc",
-		},
-		{
-			appName: "vine.hub",
-			pattern: "app:vine.hub:rpc",
-		},
-		{
-			appName: "vine.link",
-			pattern: "app:vine.link:rpc",
-		},
-		{
-			appName: "vine.portal",
-			pattern: "app:vine.portal:rpc",
-		},
+		{appName: "demo.user", pattern: "app:demo.user:rpc"},
+		{appName: "vine.hub", pattern: "app:vine.hub:rpc"},
+		{appName: "vine.link", pattern: "app:vine.link:rpc"},
+		{appName: "vine.portal", pattern: "app:vine.portal:rpc"},
 	}
 	for _, test := range tests {
 		logger.SetLevel(test.pattern, logger.LevelDebug)
@@ -80,10 +68,7 @@ type _TestHTTPListener struct {
 func newTestHTTPListener(port int) *_TestHTTPListener {
 	return &_TestHTTPListener{
 		closed: make(chan struct{}),
-		addr: &net.TCPAddr{
-			IP:   net.ParseIP("127.0.0.1"),
-			Port: port,
-		},
+		addr:   &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: port},
 	}
 }
 

@@ -174,21 +174,9 @@ func TestBooleanVariableFlagsPresenceAndRepeats(t *testing.T) {
 		want []string
 	}{
 		{name: "absent"},
-		{
-			name: "bare",
-			args: []string{"--enabled"},
-			want: []string{"enabled=true"},
-		},
-		{
-			name: "false",
-			args: []string{"--enabled=false"},
-			want: []string{"enabled=false"},
-		},
-		{
-			name: "repeat",
-			args: []string{"--enabled=false", "--enabled", "--enabled=true"},
-			want: []string{"enabled=false", "enabled=true", "enabled=true"},
-		},
+		{name: "bare", args: []string{"--enabled"}, want: []string{"enabled=true"}},
+		{name: "false", args: []string{"--enabled=false"}, want: []string{"enabled=false"}},
+		{name: "repeat", args: []string{"--enabled=false", "--enabled", "--enabled=true"}, want: []string{"enabled=false", "enabled=true", "enabled=true"}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			var assignments []string

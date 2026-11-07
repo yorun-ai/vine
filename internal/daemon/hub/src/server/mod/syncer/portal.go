@@ -314,19 +314,7 @@ func (s *Syncer) publishPortalEntryLocked(entry *core.PortalEntry) {
 		certs = append(certs, cert)
 	}
 	h := entry.Http.Effective(core.HasPortalCertificate(entry.Http.Host, certs))
-	s.WatchServer.SetAndNotify(watched.FormatPortalEntryKey(entry.Name), vcode.MustMarshalJsonS(watched.PortalEntry{
-		Name:      entry.Name,
-		Protocol:  entry.Protocol,
-		ListenIPs: entry.ListenIPs,
-		EffectiveHTTP: watched.PortalEntryHTTP{
-			Host:             h.Host,
-			HttpEnabled:      h.HttpEnabled,
-			HttpPort:         h.HttpPort,
-			HttpsEnabled:     h.HttpsEnabled,
-			HttpsPort:        h.HttpsPort,
-			AutoHTTPSEnabled: h.AutoHTTPSEnabled,
-		},
-	}))
+	s.WatchServer.SetAndNotify(watched.FormatPortalEntryKey(entry.Name), vcode.MustMarshalJsonS(watched.PortalEntry{Name: entry.Name, Protocol: entry.Protocol, ListenIPs: entry.ListenIPs, EffectiveHTTP: watched.PortalEntryHTTP{Host: h.Host, HttpEnabled: h.HttpEnabled, HttpPort: h.HttpPort, HttpsEnabled: h.HttpsEnabled, HttpsPort: h.HttpsPort, AutoHTTPSEnabled: h.AutoHTTPSEnabled}}))
 }
 func (s *Syncer) republishPortalEntriesLocked() {
 	for _, entry := range s.portalEntriesById {

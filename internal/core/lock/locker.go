@@ -35,20 +35,12 @@ func WithTTL(ttl time.Duration) OptionFunc {
 
 // NewLocker creates an application locker bound to Link and the active context.
 func NewLocker(client skeled.LockServiceClient, ctx context.Context, appName string) *Locker {
-	return new(Locker{
-		client: client,
-		prefix: "app:" + appName,
-		ctx:    ctx,
-	})
+	return new(Locker{client: client, prefix: "app:" + appName, ctx: ctx})
 }
 
 // WithContext returns a copy bound to ctx for acquisition and lease lifetime.
 func (l *Locker) WithContext(ctx context.Context) *Locker {
-	return new(Locker{
-		client: l.client,
-		prefix: l.prefix,
-		ctx:    ctx,
-	})
+	return new(Locker{client: l.client, prefix: l.prefix, ctx: ctx})
 }
 
 // Lock waits for ownership. Cancellation, timeout and backend failures panic with

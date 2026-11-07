@@ -34,10 +34,7 @@ type _Subscription struct {
 func New(t testing.TB, values map[string]string) *Client {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
-	c := &Client{
-		values: maps.Clone(values),
-		ctx:    ctx,
-	}
+	c := &Client{values: maps.Clone(values), ctx: ctx}
 	if c.values == nil {
 		c.values = map[string]string{}
 	}
@@ -119,13 +116,7 @@ func (c *Client) LoadList(prefix string) map[string]string {
 }
 
 func (c *Client) subscribe(ctx context.Context, match func(string) bool, handle func(watch.Event)) *_Subscription {
-	sub := &_Subscription{
-		ctx:    ctx,
-		match:  match,
-		handle: handle,
-		events: make(chan watch.Event, 64),
-		start:  make(chan struct{}),
-	}
+	sub := &_Subscription{ctx: ctx, match: match, handle: handle, events: make(chan watch.Event, 64), start: make(chan struct{})}
 	c.subscriptions = append(c.subscriptions, sub)
 	c.wait.Add(1)
 	go func() {

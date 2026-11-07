@@ -143,14 +143,7 @@ func (r _Rule) Serve(ctx *spec.Context) {
 		} else if strings.Contains(host, ":") {
 			host = "[" + host + "]"
 		}
-		target := &url.URL{
-			Scheme:     "https",
-			Host:       host,
-			Path:       ctx.Request.URL.Path,
-			RawPath:    ctx.Request.URL.RawPath,
-			RawQuery:   ctx.Request.URL.RawQuery,
-			ForceQuery: ctx.Request.URL.ForceQuery,
-		}
+		target := &url.URL{Scheme: "https", Host: host, Path: ctx.Request.URL.Path, RawPath: ctx.Request.URL.RawPath, RawQuery: ctx.Request.URL.RawQuery, ForceQuery: ctx.Request.URL.ForceQuery}
 		ctx.ResponseWriter.Header().Set("Location", target.String())
 		ctx.ResponseWriter.WriteHeader(http.StatusPermanentRedirect)
 		return

@@ -41,10 +41,7 @@ func TestRenderMasksExplicitlySensitiveRoot(t *testing.T) {
 func TestRenderAppliesSanitizerBeforeRedaction(t *testing.T) {
 	result, err := Render("ignored", Option{
 		Sanitizer: func(any) (any, error) {
-			return sanitizedValue{
-				Token: "secret",
-				Name:  "visible",
-			}, nil
+			return sanitizedValue{Token: "secret", Name: "visible"}, nil
 		},
 	})
 	if err != nil {

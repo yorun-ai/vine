@@ -25,10 +25,7 @@ func InprocRoundTrip(handler http.Handler, req *http.Request) (*http.Response, e
 	reader, writer := io.Pipe()
 	responseWriter := newResponseWriter(reader, writer, responseCh)
 	responseWriter.request = req
-	responseWriter.reader = &_InprocBody{
-		ReadCloser: reader,
-		cancel:     cancel,
-	}
+	responseWriter.reader = &_InprocBody{ReadCloser: reader, cancel: cancel}
 	go func() {
 		stop := context.AfterFunc(req.Context(), func() { _ = writer.CloseWithError(req.Context().Err()) })
 		defer stop()

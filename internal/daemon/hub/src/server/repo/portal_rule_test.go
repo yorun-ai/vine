@@ -104,11 +104,7 @@ func TestPortalRuleRepoPublishesEntryAccess(t *testing.T) {
 	entry, ok := repo.PortalEntryRepo.GetById(rule.EntryId)
 	require.True(t, ok)
 	entry.Protocol = "http"
-	entry.Http = &core.PortalEntryHTTP{
-		Host:     "app.example.com",
-		Http:     "ENABLED",
-		HttpPort: 8080,
-	}
+	entry.Http = &core.PortalEntryHTTP{Host: "app.example.com", Http: "ENABLED", HttpPort: 8080}
 	repo.PortalEntryRepo.Save(entry)
 
 	got, ok := repo.GetById(rule.Id)
@@ -184,17 +180,7 @@ func testPortalRule(t *testing.T, repo *PortalRuleRepo, name string) *core.Porta
 
 	entry, ok := repo.PortalEntryRepo.GetByName("test-entry")
 	if !ok {
-		entry = &core.PortalEntry{
-			Name:     "test-entry",
-			Enabled:  true,
-			Protocol: "http",
-			Http: &core.PortalEntryHTTP{
-				Host:      "demo.local",
-				Http:      "DISABLED",
-				Https:     "ENABLED",
-				HttpsPort: 443,
-			},
-		}
+		entry = &core.PortalEntry{Name: "test-entry", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Host: "demo.local", Http: "DISABLED", Https: "ENABLED", HttpsPort: 443}}
 		repo.PortalEntryRepo.Save(entry)
 	}
 	return &core.PortalRule{

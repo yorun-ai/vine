@@ -190,42 +190,12 @@ func TestForwardUpgradeFailureLogging(t *testing.T) {
 		err    error
 		level  string
 	}{
-		{
-			"client cancellation",
-			true,
-			context.Canceled,
-			"DEBUG",
-		},
-		{
-			"canceled EOF",
-			true,
-			io.EOF,
-			"DEBUG",
-		},
-		{
-			"upstream cancellation",
-			false,
-			context.Canceled,
-			"ERROR",
-		},
-		{
-			"upstream EOF",
-			false,
-			io.EOF,
-			"ERROR",
-		},
-		{
-			"deadline",
-			false,
-			context.DeadlineExceeded,
-			"ERROR",
-		},
-		{
-			"unrelated failure after cancellation",
-			true,
-			errors.New("dial failed"),
-			"ERROR",
-		},
+		{"client cancellation", true, context.Canceled, "DEBUG"},
+		{"canceled EOF", true, io.EOF, "DEBUG"},
+		{"upstream cancellation", false, context.Canceled, "ERROR"},
+		{"upstream EOF", false, io.EOF, "ERROR"},
+		{"deadline", false, context.DeadlineExceeded, "ERROR"},
+		{"unrelated failure after cancellation", true, errors.New("dial failed"), "ERROR"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			log, logPath := newTestProxyLogger(t, "daemon:link:webproxy")

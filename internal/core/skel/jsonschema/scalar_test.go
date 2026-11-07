@@ -19,78 +19,18 @@ func TestScalarsDescribeSharedJSONWireValues(t *testing.T) {
 		jsonType string
 		format   string
 	}{
-		{
-			descriptor.ScalarString,
-			"hi",
-			"string",
-			"",
-		},
-		{
-			descriptor.ScalarBoolean,
-			true,
-			"boolean",
-			"",
-		},
-		{
-			descriptor.ScalarInt,
-			42,
-			"integer",
-			"",
-		},
-		{
-			descriptor.ScalarFloat,
-			1.5,
-			"number",
-			"",
-		},
-		{
-			descriptor.ScalarDecimal,
-			skeltype.NewDecimal(decimal.RequireFromString("1.500")),
-			"string",
-			"",
-		},
-		{
-			descriptor.ScalarBinary,
-			skeltype.Binary{1, 2, 3},
-			"string",
-			"",
-		},
-		{
-			descriptor.ScalarTimestamp,
-			skeltype.NewTimestamp(time.Now()),
-			"string",
-			"date-time",
-		},
-		{
-			descriptor.ScalarDuration,
-			skeltype.NewDuration(time.Hour),
-			"string",
-			"",
-		},
-		{
-			descriptor.ScalarLocalDate,
-			skeltype.NewLocalDateOf(time.Now()),
-			"string",
-			"date",
-		},
-		{
-			descriptor.ScalarLocalTime,
-			skeltype.NewLocalTimeOf(time.Now()),
-			"string",
-			"",
-		},
-		{
-			descriptor.ScalarLocalDateTime,
-			skeltype.NewLocalDateTimeOf(time.Now()),
-			"string",
-			"",
-		},
-		{
-			descriptor.ScalarUUID,
-			"123e4567-e89b-12d3-a456-426614174000",
-			"string",
-			"uuid",
-		},
+		{descriptor.ScalarString, "hi", "string", ""},
+		{descriptor.ScalarBoolean, true, "boolean", ""},
+		{descriptor.ScalarInt, 42, "integer", ""},
+		{descriptor.ScalarFloat, 1.5, "number", ""},
+		{descriptor.ScalarDecimal, skeltype.NewDecimal(decimal.RequireFromString("1.500")), "string", ""},
+		{descriptor.ScalarBinary, skeltype.Binary{1, 2, 3}, "string", ""},
+		{descriptor.ScalarTimestamp, skeltype.NewTimestamp(time.Now()), "string", "date-time"},
+		{descriptor.ScalarDuration, skeltype.NewDuration(time.Hour), "string", ""},
+		{descriptor.ScalarLocalDate, skeltype.NewLocalDateOf(time.Now()), "string", "date"},
+		{descriptor.ScalarLocalTime, skeltype.NewLocalTimeOf(time.Now()), "string", ""},
+		{descriptor.ScalarLocalDateTime, skeltype.NewLocalDateTimeOf(time.Now()), "string", ""},
+		{descriptor.ScalarUUID, "123e4567-e89b-12d3-a456-426614174000", "string", "uuid"},
 	} {
 		t.Run(string(test.kind), func(t *testing.T) {
 			schema, err := scalar(test.kind)

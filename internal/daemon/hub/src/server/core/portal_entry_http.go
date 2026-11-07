@@ -69,11 +69,7 @@ type PortalEntryEffectiveHTTP struct {
 
 // DefaultPortalEntryHTTP leaves switches automatic and ports at their defaults.
 func DefaultPortalEntryHTTP() PortalEntryHTTP {
-	return PortalEntryHTTP{
-		Http:      PortalSwitchModeAuto,
-		Https:     PortalSwitchModeAuto,
-		AutoHTTPS: PortalSwitchModeAuto,
-	}
+	return PortalEntryHTTP{Http: PortalSwitchModeAuto, Https: PortalSwitchModeAuto, AutoHTTPS: PortalSwitchModeAuto}
 }
 
 // Effective resolves switches using certificate presence, never validity dates.
@@ -92,15 +88,7 @@ func (h PortalEntryHTTP) Effective(hasCertificate bool) PortalEntryEffectiveHTTP
 			reason = "NO_MATCHING_CERTIFICATE"
 		}
 	}
-	return PortalEntryEffectiveHTTP{
-		Host:             h.Host,
-		HttpEnabled:      httpEnabled,
-		HttpPort:         defaultPort(h.HttpPort, 80),
-		HttpsEnabled:     httpsEnabled,
-		HttpsPort:        defaultPort(h.HttpsPort, 443),
-		AutoHTTPSEnabled: domain && httpEnabled && httpsEnabled && (h.AutoHTTPS != PortalSwitchModeDisabled),
-		HTTPSReason:      reason,
-	}
+	return PortalEntryEffectiveHTTP{Host: h.Host, HttpEnabled: httpEnabled, HttpPort: defaultPort(h.HttpPort, 80), HttpsEnabled: httpsEnabled, HttpsPort: defaultPort(h.HttpsPort, 443), AutoHTTPSEnabled: domain && httpEnabled && httpsEnabled && (h.AutoHTTPS != PortalSwitchModeDisabled), HTTPSReason: reason}
 }
 func defaultPort(port int, fallback int) int {
 	if port == 0 {
@@ -175,16 +163,10 @@ func (e PortalEntry) ReservedAccesses() []PortalEntryAccess {
 func (h PortalEntryEffectiveHTTP) accesses() []PortalEntryAccess {
 	accesses := []PortalEntryAccess{}
 	if h.HttpEnabled {
-		accesses = append(accesses, PortalEntryAccess{
-			Scheme: "http",
-			Port:   h.HttpPort,
-		})
+		accesses = append(accesses, PortalEntryAccess{Scheme: "http", Port: h.HttpPort})
 	}
 	if h.HttpsEnabled {
-		accesses = append(accesses, PortalEntryAccess{
-			Scheme: "https",
-			Port:   h.HttpsPort,
-		})
+		accesses = append(accesses, PortalEntryAccess{Scheme: "https", Port: h.HttpsPort})
 	}
 	return accesses
 }

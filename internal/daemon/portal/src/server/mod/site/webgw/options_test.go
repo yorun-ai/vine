@@ -19,62 +19,14 @@ func TestSiteTimeoutAndClientBudget(t *testing.T) {
 		want    time.Duration
 		invalid bool
 	}{
-		{
-			"legacy default",
-			0,
-			"",
-			30 * time.Second,
-			false,
-		},
-		{
-			"legacy override",
-			0,
-			"timeout=120s",
-			120 * time.Second,
-			false,
-		},
-		{
-			"legacy limit",
-			0,
-			"timeout=121s",
-			0,
-			true,
-		},
-		{
-			"site extended",
-			15 * time.Minute,
-			"",
-			15 * time.Minute,
-			false,
-		},
-		{
-			"client shortens",
-			15 * time.Minute,
-			"timeout=5m",
-			5 * time.Minute,
-			false,
-		},
-		{
-			"client capped",
-			15 * time.Minute,
-			"timeout=1h",
-			15 * time.Minute,
-			false,
-		},
-		{
-			"site shortens",
-			5 * time.Second,
-			"timeout=30s",
-			5 * time.Second,
-			false,
-		},
-		{
-			"invalid still rejected",
-			time.Minute,
-			"timeout=oops",
-			0,
-			true,
-		},
+		{"legacy default", 0, "", 30 * time.Second, false},
+		{"legacy override", 0, "timeout=120s", 120 * time.Second, false},
+		{"legacy limit", 0, "timeout=121s", 0, true},
+		{"site extended", 15 * time.Minute, "", 15 * time.Minute, false},
+		{"client shortens", 15 * time.Minute, "timeout=5m", 5 * time.Minute, false},
+		{"client capped", 15 * time.Minute, "timeout=1h", 15 * time.Minute, false},
+		{"site shortens", 5 * time.Second, "timeout=30s", 5 * time.Second, false},
+		{"invalid still rejected", time.Minute, "timeout=oops", 0, true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			ctx, cancelClient := context.WithCancel(t.Context())

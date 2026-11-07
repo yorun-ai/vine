@@ -229,10 +229,7 @@ func (op *_TarjanOp[N]) strongConnect(v N) *_TarjanNode {
 	index := len(op.nodes)
 	op.index[v] = index
 	op.stack = append(op.stack, v)
-	op.nodes = append(op.nodes, _TarjanNode{
-		lowLink: index,
-		stacked: true,
-	})
+	op.nodes = append(op.nodes, _TarjanNode{lowLink: index, stacked: true})
 	node := &op.nodes[index]
 
 	for _, w := range op.graph[v] {
