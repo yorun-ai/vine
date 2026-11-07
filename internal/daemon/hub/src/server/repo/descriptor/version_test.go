@@ -97,7 +97,8 @@ func TestDescriptorRepoListsVineHubDescriptorViews(t *testing.T) {
 			Name:     "SkeletonApiService",
 			SkelName: "vine.hub.admin.SkeletonApiService",
 			Hash:     "skeleton-service-hash", AuthMode: skeldesc.AuthModeRequired,
-		}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
+		}},
+		Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 	}
 	controlDescriptor := &skeldesc.Domain{
 		Name: "vine.hub.control",
@@ -106,7 +107,8 @@ func TestDescriptorRepoListsVineHubDescriptorViews(t *testing.T) {
 			Name:     "InfoService",
 			SkelName: "vine.hub.control.InfoService",
 			Hash:     "info-service-hash", AuthMode: skeldesc.AuthModeRequired,
-		}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
+		}},
+		Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 	}
 
 	repo.SaveDomainDescriptors("vine.hub.inproc", "registered", []*skeldesc.Domain{controlDescriptor, adminDescriptor})

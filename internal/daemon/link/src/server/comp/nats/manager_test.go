@@ -85,9 +85,7 @@ func TestClientManagerBuildsRemoteConnection(t *testing.T) {
 	}
 	defer server.Shutdown()
 
-	component := &_TestRemoteClient{
-		Endpoint: "nats://" + server.Addr().String(),
-	}
+	component := &_TestRemoteClient{Endpoint: "nats://" + server.Addr().String()}
 	manager := initTestClient(component)
 	defer manager.AfterAppStop()
 
@@ -117,9 +115,7 @@ func TestClientManagerBuildsRemoteConnectionWithReconnectOptions(t *testing.T) {
 		return new(gonats.Conn), nil
 	}
 
-	component := &_TestRemoteClient{
-		Endpoint: "nats://127.0.0.1:4222",
-	}
+	component := &_TestRemoteClient{Endpoint: "nats://127.0.0.1:4222"}
 	component.ensuredStream = map[string]struct{}{
 		"events": {},
 	}

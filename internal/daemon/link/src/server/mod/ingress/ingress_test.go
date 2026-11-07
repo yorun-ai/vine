@@ -170,10 +170,8 @@ func TestIngressRegistersInprocEndpointWhenHubInprocModeEnabled(t *testing.T) {
 	proxy.DIInit()
 
 	ing := &Ingress{
-		Context: context.Background(),
-		Flag: &flag.Flag{
-			HubInprocMode: true,
-		},
+		Context:  context.Background(),
+		Flag:     &flag.Flag{HubInprocMode: true},
 		RpcProxy: proxy,
 	}
 	ing.DIInit()

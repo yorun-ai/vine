@@ -27,9 +27,21 @@ func TestBindingAndOverlap(t *testing.T) {
 		network string
 		address string
 	}{
-		{"", "tcp", "0.0.0.0:8080"},
-		{"127.0.0.1", "tcp4", "127.0.0.1:8080"},
-		{"::1", "tcp6", "[::1]:8080"},
+		{
+			"",
+			"tcp",
+			"0.0.0.0:8080",
+		},
+		{
+			"127.0.0.1",
+			"tcp4",
+			"127.0.0.1:8080",
+		},
+		{
+			"::1",
+			"tcp6",
+			"[::1]:8080",
+		},
 	} {
 		network, address := Binding(test.ip, 8080)
 		assert.Equal(t, test.network, network)

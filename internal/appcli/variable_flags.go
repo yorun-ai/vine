@@ -23,9 +23,7 @@ func (n *FlagNames) VariableFlags(paths map[string]string, target *[]string, see
 
 func (n *FlagNames) variableFlags(paths map[string]string, target *[]string, seed *RepeatedStringFlag, domains []*skeldesc.Domain) []ucli.Flag {
 	descriptor := newVariableFlagDescriptor(domains)
-	assignments := new(_VariableAssignments{
-		target: target,
-	})
+	assignments := new(_VariableAssignments{target: target})
 	if seed.value.values == target {
 		seed.value.values = new([]string)
 		seed.value.assignments = assignments

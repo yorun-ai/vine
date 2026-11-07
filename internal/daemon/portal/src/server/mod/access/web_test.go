@@ -129,7 +129,10 @@ func TestAuthWebOffPreservesNativeAuthorizationWithoutActorAuth(t *testing.T) {
 	descriptor := &watched.DescriptorActor{SkelName: "demo.NativeActor"}
 	access := newTestAccess(t, map[string]string{
 		watched.FormatDescriptorActorKey(descriptor.SkelName): vcode.MustMarshalJsonS(descriptor),
-		watched.FormatDescriptorWebKey("demo.NativeWeb"):      vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.NativeWeb", AuthMode: skeldesc.AuthModeOff}),
+		watched.FormatDescriptorWebKey("demo.NativeWeb"): vcode.MustMarshalJsonS(watched.DescriptorWeb{
+			SkelName: "demo.NativeWeb",
+			AuthMode: skeldesc.AuthModeOff,
+		}),
 	})
 	for _, header := range []string{"", "Bearer native-token", "Basic dXNlcjpwdw==", "custom native-credential"} {
 		t.Run(header, func(t *testing.T) {
@@ -165,7 +168,10 @@ func TestAuthWebNativeCredentialsReachBackend(t *testing.T) {
 	descriptor := &watched.DescriptorActor{SkelName: "demo.NativeActor"}
 	access := newTestAccess(t, map[string]string{
 		watched.FormatDescriptorActorKey(descriptor.SkelName): vcode.MustMarshalJsonS(descriptor),
-		watched.FormatDescriptorWebKey("demo.NativeWeb"):      vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.NativeWeb", AuthMode: skeldesc.AuthModeOff}),
+		watched.FormatDescriptorWebKey("demo.NativeWeb"): vcode.MustMarshalJsonS(watched.DescriptorWeb{
+			SkelName: "demo.NativeWeb",
+			AuthMode: skeldesc.AuthModeOff,
+		}),
 	})
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		actor, err := meta.DecodeActorFromBase64(r.Header.Get(webspec.HeaderWebActor))
@@ -196,8 +202,14 @@ func TestAuthWebNativeCredentialsReachBackend(t *testing.T) {
 		credential string
 		status     int
 	}{
-		{"Bearer native-token", http.StatusNoContent},
-		{"Bearer wrong-token", http.StatusUnauthorized},
+		{
+			"Bearer native-token",
+			http.StatusNoContent,
+		},
+		{
+			"Bearer wrong-token",
+			http.StatusUnauthorized,
+		},
 	} {
 		request, err := http.NewRequest(http.MethodGet, gateway.URL, nil)
 		require.NoError(t, err)
@@ -214,7 +226,13 @@ func TestAuthWebRejectsMissingNamedDescriptor(t *testing.T) {
 	access := newTestAccess(t, nil)
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/", nil)
 	response := httptest.NewRecorder()
-	operation := &WebOperation{Auther: Auther{Request: request, Response: response}, WebName: "demo.Missing"}
+	operation := &WebOperation{
+		Auther: Auther{
+			Request:  request,
+			Response: response,
+		},
+		WebName: "demo.Missing",
+	}
 	require.False(t, access.AuthWeb(operation))
 	require.Equal(t, http.StatusServiceUnavailable, response.Code)
 }

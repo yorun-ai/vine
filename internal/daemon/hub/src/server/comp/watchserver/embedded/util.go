@@ -37,7 +37,10 @@ func redisHello(targetAddr string, timeout time.Duration, tlsConfig *tls.Config)
 	var conn net.Conn
 	var err error
 	if tlsConfig != nil {
-		conn, err = (&tls.Dialer{NetDialer: dialer, Config: tlsConfig}).DialContext(context.Background(), "tcp", targetAddr)
+		conn, err = (&tls.Dialer{
+			NetDialer: dialer,
+			Config:    tlsConfig,
+		}).DialContext(context.Background(), "tcp", targetAddr)
 	} else {
 		conn, err = dialer.Dial("tcp", targetAddr)
 	}

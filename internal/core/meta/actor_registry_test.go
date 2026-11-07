@@ -27,9 +27,7 @@ func TestRegisterActorStoresActorSpec(t *testing.T) {
 		t.Fatalf("expected actor info")
 	}
 	assertActorInfo(t, got, spec)
-	if identifier := got.identifier(new(_RegistryTestActorInfo{
-		Subject: "subject-1",
-	})); identifier != "subject-1" {
+	if identifier := got.identifier(new(_RegistryTestActorInfo{Subject: "subject-1"})); identifier != "subject-1" {
 		t.Fatalf("unexpected actor identifier: %q", identifier)
 	}
 

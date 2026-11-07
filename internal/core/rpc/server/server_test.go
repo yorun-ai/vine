@@ -280,10 +280,8 @@ func TestServerHandlePreservesExecutorError(t *testing.T) {
 	}).Methods()[0]
 	wantErr := ex.New(ex.OperationFailed, "boom")
 	response := (&Server{
-		opt: &Option{App: testServerApp()},
-		executor: &_ServerTestExecutor{
-			err: wantErr,
-		},
+		opt:      &Option{App: testServerApp()},
+		executor: &_ServerTestExecutor{err: wantErr},
 	}).handle(&spec.RequestImpl{
 		ContextValue:    context.Background(),
 		TraceValue:      meta.InitialTrace(),
@@ -303,7 +301,11 @@ func TestServerHTTPHandlerReturnsStandardVrpcErrorForInvalidRequest(t *testing.T
 		t.Fatalf("NewApp() error = %v", err)
 	}
 	logPath := filepath.Join(t.TempDir(), "rpc-rejected.jsonl")
-	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: logPath})
+	log := logger.New("vine:test", logger.WithOption{
+		Format:     logger.FormatJSON,
+		Level:      logger.LevelDebug,
+		OutputPath: logPath,
+	})
 	server := New(Option{
 		App:          serverApp,
 		Logger:       log,
@@ -382,10 +384,8 @@ func TestServerHandleConvertsRecoveredPanicToInternalError(t *testing.T) {
 		t.Fatalf("NewApp() error = %v", err)
 	}
 	response := (&Server{
-		opt: &Option{App: app},
-		executor: &_ServerTestExecutor{
-			panicV: "boom",
-		},
+		opt:      &Option{App: app},
+		executor: &_ServerTestExecutor{panicV: "boom"},
 	}).handle(&spec.RequestImpl{
 		ContextValue:    context.Background(),
 		TraceValue:      meta.InitialTrace(),
@@ -406,10 +406,8 @@ func TestServerHandleDoesNotTreatPanickedOKErrorAsSuccess(t *testing.T) {
 		Methods:  []*spec.MethodSpec{{Name: "Ping", SkelName: "ping"}},
 	})).Methods()[0]
 	response := (&Server{
-		opt: &Option{},
-		executor: new(_ServerTestExecutor{
-			panicV: ex.NewOK(),
-		}),
+		opt:      &Option{},
+		executor: new(_ServerTestExecutor{panicV: ex.NewOK()}),
 	}).handle(new(spec.RequestImpl{
 		ContextValue:    context.Background(),
 		TraceValue:      meta.InitialTrace(),
@@ -437,16 +435,77 @@ func TestServerHandleClassifiesOnlyRequestCancellation(t *testing.T) {
 		level      string
 		panicked   bool
 	}{
-		{name: "database cancellation", cancel: true, panicValue: context.Canceled, code: ex.InvocationCancelled, level: "DEBUG"},
-		{name: "wrapped cancellation", cancel: true, panicValue: fmt.Errorf("query: %w", context.Canceled), code: ex.InvocationCancelled, level: "DEBUG"},
-		{name: "nested rpc cancellation", cancel: true, panicValue: ex.New(ex.InvocationCancelled, "nested request cancelled"), code: ex.InvocationCancelled, level: "DEBUG"},
-		{name: "returned nested cancellation", cancel: true, returned: ex.RecoverExecution(ex.New(ex.InvocationCancelled, "nested request cancelled")), code: ex.InvocationCancelled, level: "DEBUG"},
-		{name: "live request cancellation panic", panicValue: context.Canceled, code: ex.Internal, level: "ERROR", panicked: true},
-		{name: "live request nested cancellation", panicValue: ex.New(ex.InvocationCancelled, "nested request cancelled"), code: ex.InvocationCancelled, level: "ERROR", panicked: true},
-		{name: "unrelated panic after cancellation", cancel: true, panicValue: "database unavailable", code: ex.Internal, level: "ERROR", panicked: true},
-		{name: "business error with cancelled cause", cancel: true, panicValue: ex.New(ex.OperationFailed, "business failure", ex.WithCause(context.Canceled)), code: ex.OperationFailed, level: "ERROR", panicked: true},
-		{name: "timeout", panicValue: context.DeadlineExceeded, code: ex.Internal, level: "ERROR", panicked: true},
-		{name: "completed before cancellation", cancel: true, code: ex.OK, level: "DEBUG"},
+		{
+			name:       "database cancellation",
+			cancel:     true,
+			panicValue: context.Canceled,
+			code:       ex.InvocationCancelled,
+			level:      "DEBUG",
+		},
+		{
+			name:       "wrapped cancellation",
+			cancel:     true,
+			panicValue: fmt.Errorf("query: %w", context.Canceled),
+			code:       ex.InvocationCancelled,
+			level:      "DEBUG",
+		},
+		{
+			name:       "nested rpc cancellation",
+			cancel:     true,
+			panicValue: ex.New(ex.InvocationCancelled, "nested request cancelled"),
+			code:       ex.InvocationCancelled,
+			level:      "DEBUG",
+		},
+		{
+			name:     "returned nested cancellation",
+			cancel:   true,
+			returned: ex.RecoverExecution(ex.New(ex.InvocationCancelled, "nested request cancelled")),
+			code:     ex.InvocationCancelled,
+			level:    "DEBUG",
+		},
+		{
+			name:       "live request cancellation panic",
+			panicValue: context.Canceled,
+			code:       ex.Internal,
+			level:      "ERROR",
+			panicked:   true,
+		},
+		{
+			name:       "live request nested cancellation",
+			panicValue: ex.New(ex.InvocationCancelled, "nested request cancelled"),
+			code:       ex.InvocationCancelled,
+			level:      "ERROR",
+			panicked:   true,
+		},
+		{
+			name:       "unrelated panic after cancellation",
+			cancel:     true,
+			panicValue: "database unavailable",
+			code:       ex.Internal,
+			level:      "ERROR",
+			panicked:   true,
+		},
+		{
+			name:       "business error with cancelled cause",
+			cancel:     true,
+			panicValue: ex.New(ex.OperationFailed, "business failure", ex.WithCause(context.Canceled)),
+			code:       ex.OperationFailed,
+			level:      "ERROR",
+			panicked:   true,
+		},
+		{
+			name:       "timeout",
+			panicValue: context.DeadlineExceeded,
+			code:       ex.Internal,
+			level:      "ERROR",
+			panicked:   true,
+		},
+		{
+			name:   "completed before cancellation",
+			cancel: true,
+			code:   ex.OK,
+			level:  "DEBUG",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(t.Context())

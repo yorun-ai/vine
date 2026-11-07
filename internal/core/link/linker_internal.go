@@ -16,9 +16,7 @@ func NewInternalLinker(app meta.App) Linker {
 }
 
 func NewRedirectedInternalLinker(app meta.App, redirectEndpoint string) Linker {
-	return &_InternalLinker{
-		hubEndpoint: redirectEndpoint,
-	}
+	return &_InternalLinker{hubEndpoint: redirectEndpoint}
 }
 
 func (l *_InternalLinker) RpcProxyEndpoint() string {

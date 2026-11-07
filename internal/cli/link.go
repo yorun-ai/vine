@@ -47,9 +47,23 @@ func newLinkCommand() *ucli.Command {
 
 func newLinkServeFlags() []ucli.Flag {
 	return append([]ucli.Flag{
-		&ucli.StringFlag{Name: FlagLinkAPIListen, Sources: ucli.EnvVars(EnvLinkAPIListen), Value: linkflag.LinkDefaultAPIListen, Usage: "link API listen address"},
-		&ucli.StringFlag{Name: FlagLinkIngressListen, Sources: ucli.EnvVars(EnvLinkIngressListen), Value: linkflag.LinkDefaultIngressListen, Usage: "link ingress listen address"},
-		&ucli.StringFlag{Name: FlagLinkHubEndpoint, Sources: ucli.EnvVars(EnvLinkHubEndpoint), Usage: "hub API endpoint"},
+		&ucli.StringFlag{
+			Name:    FlagLinkAPIListen,
+			Sources: ucli.EnvVars(EnvLinkAPIListen),
+			Value:   linkflag.LinkDefaultAPIListen,
+			Usage:   "link API listen address",
+		},
+		&ucli.StringFlag{
+			Name:    FlagLinkIngressListen,
+			Sources: ucli.EnvVars(EnvLinkIngressListen),
+			Value:   linkflag.LinkDefaultIngressListen,
+			Usage:   "link ingress listen address",
+		},
+		&ucli.StringFlag{
+			Name:    FlagLinkHubEndpoint,
+			Sources: ucli.EnvVars(EnvLinkHubEndpoint),
+			Usage:   "hub API endpoint",
+		},
 	}, mtlsFlags(commandLink)...)
 }
 

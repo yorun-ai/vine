@@ -29,7 +29,10 @@ func (m *Manager) ObserveAdmission(ctx context.Context, handle func(AdmissionSna
 		m.mutex.Unlock()
 		return
 	}
-	observer := new(_AdmissionObserver{ctx: ctx, handle: handle})
+	observer := new(_AdmissionObserver{
+		ctx:    ctx,
+		handle: handle,
+	})
 	m.admissionObservers[observer] = struct{}{}
 	snapshot := m.admissionSnapshotLocked()
 	m.mutex.Unlock()
@@ -44,7 +47,10 @@ func (m *Manager) ObserveAdmission(ctx context.Context, handle func(AdmissionSna
 }
 
 func (m *Manager) admissionSnapshotLocked() AdmissionSnapshot {
-	return AdmissionSnapshot{Actors: maps.Clone(m.actorsBySkelName), Resources: maps.Clone(m.resourcesBySkelName)}
+	return AdmissionSnapshot{
+		Actors:    maps.Clone(m.actorsBySkelName),
+		Resources: maps.Clone(m.resourcesBySkelName),
+	}
 }
 
 // admissionMutex orders mutation and delivery; mutex only protects cached data.
@@ -58,7 +64,10 @@ func (m *Manager) notifyAdmission() {
 	m.mutex.RUnlock()
 	for _, observer := range observers {
 		if observer.ctx.Err() == nil {
-			observer.handle(AdmissionSnapshot{Actors: maps.Clone(snapshot.Actors), Resources: maps.Clone(snapshot.Resources)})
+			observer.handle(AdmissionSnapshot{
+				Actors:    maps.Clone(snapshot.Actors),
+				Resources: maps.Clone(snapshot.Resources),
+			})
 		}
 	}
 }

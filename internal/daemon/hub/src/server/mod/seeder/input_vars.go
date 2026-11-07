@@ -14,7 +14,10 @@ func applySeedVariables(dictionary *yaml.Node, assignments []string) (*yaml.Node
 		return dictionary, nil
 	}
 	if dictionary == nil {
-		dictionary = new(yaml.Node{Kind: yaml.MappingNode, Tag: "!!map"})
+		dictionary = new(yaml.Node{
+			Kind: yaml.MappingNode,
+			Tag:  "!!map",
+		})
 	}
 	for _, assignment := range assignments {
 		path, literal, found := strings.Cut(assignment, "=")
@@ -50,10 +53,17 @@ func applySeedVariables(dictionary *yaml.Node, assignments []string) (*yaml.Node
 			}
 			child := value
 			if index < len(segments)-1 {
-				child = new(yaml.Node{Kind: yaml.MappingNode, Tag: "!!map"})
+				child = new(yaml.Node{
+					Kind: yaml.MappingNode,
+					Tag:  "!!map",
+				})
 			}
 			if position < 0 {
-				current.Content = append(current.Content, new(yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: segment}), child)
+				current.Content = append(current.Content, new(yaml.Node{
+					Kind:  yaml.ScalarNode,
+					Tag:   "!!str",
+					Value: segment,
+				}), child)
 			} else if index == len(segments)-1 {
 				current.Content[position] = child
 			} else {

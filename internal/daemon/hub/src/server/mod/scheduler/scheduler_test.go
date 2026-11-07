@@ -153,19 +153,24 @@ func TestSchedulerPublishScheduleHandlesPublisherError(t *testing.T) {
 func TestSchedulerRejectsCronSchedulerTriggerWithArguments(t *testing.T) {
 	publisher := &_SchedulerTaskPublisher{}
 	target := newTestScheduler([]*core.AppStatus{newTestScheduledAppStatus("instance-1")}, publisher)
-	target.DescriptorRepo = &_SchedulerDescriptorRepo{taskVersions: []core.DescriptorVersion[*skeldesc.Task]{{
-		DescriptorHash: "task-hash",
-		Descriptor: &skeldesc.Task{
-			SkelName: "demo.booker.RebuildCatalogIndexTask",
-			Triggers: []*skeldesc.TaskTrigger{{
-				SkelName: "rebuild",
-				Arguments: []*skeldesc.Member{{
-					Name: "full",
-					Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBoolean},
+	target.DescriptorRepo = &_SchedulerDescriptorRepo{
+		taskVersions: []core.DescriptorVersion[*skeldesc.Task]{{
+			DescriptorHash: "task-hash",
+			Descriptor: &skeldesc.Task{
+				SkelName: "demo.booker.RebuildCatalogIndexTask",
+				Triggers: []*skeldesc.TaskTrigger{{
+					SkelName: "rebuild",
+					Arguments: []*skeldesc.Member{{
+						Name: "full",
+						Type: &skeldesc.Type{
+							Kind:   skeldesc.TypeKindScalar,
+							Scalar: skeldesc.ScalarBoolean,
+						},
+					}},
 				}},
-			}},
-		},
-	}}}
+			},
+		}},
+	}
 
 	err := target.refreshSchedules()
 	require.Error(t, err)
@@ -281,15 +286,17 @@ func newTestSchedulerWithRegistry(registryRepo *_SchedulerRegistryRepo, publishe
 	target := &Scheduler{
 		CurrentApp:   meta.MustNewApp("vine.hub", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"),
 		RegistryRepo: registryRepo,
-		DescriptorRepo: &_SchedulerDescriptorRepo{taskVersions: []core.DescriptorVersion[*skeldesc.Task]{{
-			DescriptorHash: "task-hash",
-			Descriptor: &skeldesc.Task{
-				SkelName: "demo.booker.RebuildCatalogIndexTask",
-				Triggers: []*skeldesc.TaskTrigger{{
-					SkelName: "rebuild",
-				}},
-			},
-		}}},
+		DescriptorRepo: &_SchedulerDescriptorRepo{
+			taskVersions: []core.DescriptorVersion[*skeldesc.Task]{{
+				DescriptorHash: "task-hash",
+				Descriptor: &skeldesc.Task{
+					SkelName: "demo.booker.RebuildCatalogIndexTask",
+					Triggers: []*skeldesc.TaskTrigger{{
+						SkelName: "rebuild",
+					}},
+				},
+			}},
+		},
 		publisher: publisher,
 	}
 	target.DIInit()

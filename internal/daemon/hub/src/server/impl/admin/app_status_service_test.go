@@ -65,28 +65,12 @@ func TestAppStatusServiceListSortsStatusesAndRegistrations(t *testing.T) {
 				Name:       "demo.user",
 				InstanceId: "instance-2",
 			}, {
-				Name:       "demo.booker",
-				InstanceId: "instance-2",
-				ServiceHandlers: []core.ServiceHandlerRegistration{{
-					ServiceSkelName: "demo.booker.ZService",
-				}, {
-					ServiceSkelName: "demo.booker.AService",
-				}},
-				WebHandlers: []core.WebHandlerRegistration{{
-					WebSkelName: "demo.booker.ZWeb",
-				}, {
-					WebSkelName: "demo.booker.AWeb",
-				}},
-				EventListeners: []core.EventListenerRegistration{{
-					EventSkelName: "demo.booker.ZEvent",
-				}, {
-					EventSkelName: "demo.booker.AEvent",
-				}},
-				TaskRunners: []core.TaskRunnerRegistration{{
-					TaskSkelName: "demo.booker.ZTask",
-				}, {
-					TaskSkelName: "demo.booker.ATask",
-				}},
+				Name:            "demo.booker",
+				InstanceId:      "instance-2",
+				ServiceHandlers: []core.ServiceHandlerRegistration{{ServiceSkelName: "demo.booker.ZService"}, {ServiceSkelName: "demo.booker.AService"}},
+				WebHandlers:     []core.WebHandlerRegistration{{WebSkelName: "demo.booker.ZWeb"}, {WebSkelName: "demo.booker.AWeb"}},
+				EventListeners:  []core.EventListenerRegistration{{EventSkelName: "demo.booker.ZEvent"}, {EventSkelName: "demo.booker.AEvent"}},
+				TaskRunners:     []core.TaskRunnerRegistration{{TaskSkelName: "demo.booker.ZTask"}, {TaskSkelName: "demo.booker.ATask"}},
 			}, {
 				Name:       "demo.booker",
 				InstanceId: "instance-1",

@@ -22,7 +22,10 @@ func TestSubscriptionSnapshotFailureRetriesAndRemainsCancellable(t *testing.T) {
 		ctx, cancel := context.WithCancel(t.Context())
 		defer cancel()
 		messages := make(chan any, 1)
-		messages <- &redis.Subscription{Kind: "subscribe", Count: 1}
+		messages <- &redis.Subscription{
+			Kind:  "subscribe",
+			Count: 1,
+		}
 		var calls atomic.Int32
 		done := make(chan struct{})
 		go func() {
@@ -47,7 +50,10 @@ func TestSubscriptionSnapshotFailureRetriesAndRemainsCancellable(t *testing.T) {
 func TestCancelledWatcherIsRemovedFromRepairSet(t *testing.T) {
 	client := new(Client)
 	ctx, cancel := context.WithCancel(context.Background())
-	watcher := &_Watcher{client: client, ctx: ctx}
+	watcher := &_Watcher{
+		client: client,
+		ctx:    ctx,
+	}
 	client.addWatcher(watcher)
 
 	cancel()
@@ -71,7 +77,11 @@ func TestSubscriptionReplaysDeleteAfterSnapshotPublication(t *testing.T) {
 
 		// The delete arrives after the scan but before the caller publishes its
 		// loaded snapshot. It must remain buffered until Start.
-		subscription.enqueue(Event{Revision: 2, Kind: EventKindDelete, Key: key})
+		subscription.enqueue(Event{
+			Revision: 2,
+			Kind:     EventKindDelete,
+			Key:      key,
+		})
 		assert.Empty(t, handled)
 		maps.Copy(published, loadedSnapshot)
 		subscription.Start()
@@ -95,7 +105,12 @@ func TestSubscriptionReplaysUpsertAfterSnapshotPublication(t *testing.T) {
 		})
 
 		// The upsert arrives after the scan but before snapshot publication.
-		subscription.enqueue(Event{Revision: 2, Kind: EventKindUpsert, Key: key, Value: "new"})
+		subscription.enqueue(Event{
+			Revision: 2,
+			Kind:     EventKindUpsert,
+			Key:      key,
+			Value:    "new",
+		})
 		assert.Empty(t, handled)
 		maps.Copy(published, loadedSnapshot)
 		subscription.Start()
@@ -117,7 +132,10 @@ func TestSubscriptionStartIsNonBlockingAndPreservesEventOrder(t *testing.T) {
 			handled <- event
 		})
 		for revision := uint64(1); revision <= 3; revision++ {
-			subscription.enqueue(Event{Revision: revision, Kind: EventKindUpsert})
+			subscription.enqueue(Event{
+				Revision: revision,
+				Kind:     EventKindUpsert,
+			})
 		}
 
 		stateMutex.Lock()
@@ -174,7 +192,12 @@ func (h *keysetCounter) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
 func TestKeySetReadsGrowLinearlyAndReconcileAfterReconnect(t *testing.T) {
 	server := miniredis.RunT(t)
 	server.Set(RevisionKey, "1")
-	rdb := redis.NewClient(&redis.Options{Addr: server.Addr(), Protocol: 2, DisableIdentity: true, ContextTimeoutEnabled: true})
+	rdb := redis.NewClient(&redis.Options{
+		Addr:                  server.Addr(),
+		Protocol:              2,
+		DisableIdentity:       true,
+		ContextTimeoutEnabled: true,
+	})
 	counter := new(keysetCounter)
 	rdb.AddHook(counter)
 	client := new(Client)
@@ -216,7 +239,11 @@ func TestKeySetReadsGrowLinearlyAndReconcileAfterReconnect(t *testing.T) {
 
 func TestKeySetReadFailureAndLifecycleCancellationReturnErrors(t *testing.T) {
 	server := miniredis.RunT(t)
-	rdb := redis.NewClient(&redis.Options{Addr: server.Addr(), Protocol: 2, DisableIdentity: true})
+	rdb := redis.NewClient(&redis.Options{
+		Addr:            server.Addr(),
+		Protocol:        2,
+		DisableIdentity: true,
+	})
 	client := new(Client)
 	client.setRedisClient(t.Context(), rdb)
 	require.NoError(t, rdb.Close())
@@ -236,7 +263,10 @@ func TestKeySetReadFailureAndLifecycleCancellationReturnErrors(t *testing.T) {
 func TestGroupAcknowledgementsReconcileOnlyWhenComplete(t *testing.T) {
 	messages := make(chan any, 7)
 	for _, count := range []int{1, 2, 3, 1, 2, 3} {
-		messages <- &redis.Subscription{Kind: "psubscribe", Count: count}
+		messages <- &redis.Subscription{
+			Kind:  "psubscribe",
+			Count: count,
+		}
 	}
 	close(messages)
 	calls := 0
@@ -265,7 +295,11 @@ func TestFailedKeySetAttachmentReleasesPartialSubscription(t *testing.T) {
 	server := miniredis.RunT(t)
 	server.Set(RevisionKey, "1")
 	server.Set("descriptor:data:demo.User", "user")
-	rdb := redis.NewClient(&redis.Options{Addr: server.Addr(), Protocol: 2, DisableIdentity: true})
+	rdb := redis.NewClient(&redis.Options{
+		Addr:            server.Addr(),
+		Protocol:        2,
+		DisableIdentity: true,
+	})
 	rdb.AddHook(new(failAttachedSnapshotHook))
 	client := new(Client)
 	client.setRedisClient(t.Context(), rdb)

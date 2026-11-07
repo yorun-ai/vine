@@ -149,9 +149,7 @@ func newTestPortalSiteRepo(t *testing.T) (*gorm.DB, *PortalSiteRepo, *watchserve
 	t.Cleanup(watchServer.AfterAppStop)
 
 	repo := &PortalSiteRepo{
-		Dao: &model.PortalSiteDao{
-			Dao: rdb.NewDao[*model.PortalSite](db),
-		},
+		Dao:            &model.PortalSiteDao{Dao: rdb.NewDao[*model.PortalSite](db)},
 		DescriptorRepo: new(_PortalSiteDescriptorRepo),
 		Syncer:         testSyncer(watchServer),
 		Access:         new(configaccess.Access),
@@ -221,7 +219,8 @@ func TestPortalSiteRepoAssemblesDerivedValues(t *testing.T) {
 				Services: []*skeldesc.Service{{
 					SkelName: "demo.Service",
 					Api:      true, Audiences: []*skeldesc.ActorAudience{{SkelName: "demo.Actor"}}, AuthMode: skeldesc.AuthModeRequired,
-				}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
+				}},
+				Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			},
 		},
 	}}
@@ -281,7 +280,13 @@ func TestWebTimeoutRoundTripsThroughStorageAndWatch(t *testing.T) {
 	_, repo, watchServer := newTestPortalSiteRepo(t)
 	entry := testPortalSite("web-timeout")
 	entry.Type = core.PortalSiteTypeWEBGW
-	entry.WebTimeout = &webtimeout.Config{Default: &webtimeout.Policy{Total: "30s"}, Paths: []webtimeout.Path{{Path: "/go/**", Total: "15m"}}}
+	entry.WebTimeout = &webtimeout.Config{
+		Default: &webtimeout.Policy{Total: "30s"},
+		Paths: []webtimeout.Path{{
+			Path:  "/go/**",
+			Total: "15m",
+		}},
+	}
 	repo.Save(entry)
 	stored, ok := repo.GetById(entry.Id)
 	require.True(t, ok)

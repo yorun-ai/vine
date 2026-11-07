@@ -18,7 +18,11 @@ import (
 
 func TestRunnerFinishedUsesDebugAndOmitsOKError(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "task.jsonl")
-	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
+	log := logger.New("vine:test", logger.WithOption{
+		Format:     logger.FormatJSON,
+		Level:      logger.LevelDebug,
+		OutputPath: path,
+	})
 	span := StartRunnerHandle(log, meta.InitialTrace(), nil, nil, nil)
 	span.Finish(ex.NewOK())
 
@@ -50,7 +54,11 @@ func (taskFailingMarshaler) MarshalJSON() ([]byte, error) {
 
 func TestRunnerStartedLogsRedactedArgumentsOnlyOnce(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "task-arguments.jsonl")
-	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
+	log := logger.New("vine:test", logger.WithOption{
+		Format:     logger.FormatJSON,
+		Level:      logger.LevelDebug,
+		OutputPath: path,
+	})
 	taskInfo := spectest.Task(new(spec.TaskSpec{
 		DefaultRunnerType:   reflect.TypeFor[*taskLogDefaultRunner](),
 		DefaultERRunnerType: reflect.TypeFor[*taskLogDefaultERRunner](),
@@ -90,7 +98,11 @@ func TestRunnerStartedLogsRedactedArgumentsOnlyOnce(t *testing.T) {
 
 func TestTaskRedactFailureOmitsPayload(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "task-redact-failure.jsonl")
-	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
+	log := logger.New("vine:test", logger.WithOption{
+		Format:     logger.FormatJSON,
+		Level:      logger.LevelDebug,
+		OutputPath: path,
+	})
 
 	StartRunnerHandle(log, nil, nil, nil, nil, taskFailingMarshaler{})
 
@@ -102,7 +114,11 @@ func TestTaskRedactFailureOmitsPayload(t *testing.T) {
 
 func TestRunnerFailureIncludesSourceStack(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "task-error.jsonl")
-	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
+	log := logger.New("vine:test", logger.WithOption{
+		Format:     logger.FormatJSON,
+		Level:      logger.LevelDebug,
+		OutputPath: path,
+	})
 	taskInfo := spectest.Task(new(spec.TaskSpec{
 		DefaultRunnerType:   reflect.TypeFor[*taskLogDefaultRunner](),
 		DefaultERRunnerType: reflect.TypeFor[*taskLogDefaultERRunner](),

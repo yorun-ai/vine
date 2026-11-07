@@ -18,10 +18,32 @@ func TestSyncerPublishesOneRulePerRequest(t *testing.T) {
 	defer watchServer.AfterAppStop()
 	target := testSyncer(watchServer)
 
-	entry := &core.PortalEntry{Id: 1, Name: "web", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8099}}
+	entry := &core.PortalEntry{
+		Id:       1,
+		Name:     "web",
+		Enabled:  true,
+		Protocol: "http",
+		Http: &core.PortalEntryHTTP{
+			Http:     "ENABLED",
+			Https:    "DISABLED",
+			HttpPort: 8099,
+		},
+	}
 	target.SyncPortalEntry(entry)
-	first := &core.PortalRule{Id: 1, Name: "demo.app", EntryId: entry.Id, MatchPathPrefix: "/", Enabled: true}
-	second := &core.PortalRule{Id: 2, Name: "demo.app-shadow", EntryId: entry.Id, MatchPathPrefix: "/", Enabled: true}
+	first := &core.PortalRule{
+		Id:              1,
+		Name:            "demo.app",
+		EntryId:         entry.Id,
+		MatchPathPrefix: "/",
+		Enabled:         true,
+	}
+	second := &core.PortalRule{
+		Id:              2,
+		Name:            "demo.app-shadow",
+		EntryId:         entry.Id,
+		MatchPathPrefix: "/",
+		Enabled:         true,
+	}
 	target.SyncPortalRule(second)
 	target.SyncPortalRule(first)
 
@@ -41,16 +63,41 @@ func TestSyncerPublishesOnlyEnabledConfiguration(t *testing.T) {
 	defer watchServer.AfterAppStop()
 	target := testSyncer(watchServer)
 
-	entry := &core.PortalEntry{Id: 1, Name: "web", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8099}}
+	entry := &core.PortalEntry{
+		Id:       1,
+		Name:     "web",
+		Enabled:  true,
+		Protocol: "http",
+		Http: &core.PortalEntryHTTP{
+			Http:     "ENABLED",
+			Https:    "DISABLED",
+			HttpPort: 8099,
+		},
+	}
 	target.SyncPortalEntry(entry)
-	site := &core.PortalSite{Id: 1, Name: "web-site", Type: core.PortalSiteTypeWEBGW, WebName: "demo.Web", Enabled: true}
+	site := &core.PortalSite{
+		Id:      1,
+		Name:    "web-site",
+		Type:    core.PortalSiteTypeWEBGW,
+		WebName: "demo.Web",
+		Enabled: true,
+	}
 	target.SyncPortalSite(site)
 	rule := &core.PortalRule{
-		Id: 1, Name: "web", EntryId: entry.Id, RouteType: core.PortalRuleRouteTypeSite,
-		RouteSiteName: site.Name, MatchPathPrefix: "/", Enabled: true,
+		Id:              1,
+		Name:            "web",
+		EntryId:         entry.Id,
+		RouteType:       core.PortalRuleRouteTypeSite,
+		RouteSiteName:   site.Name,
+		MatchPathPrefix: "/",
+		Enabled:         true,
 	}
 	target.SyncPortalRule(rule)
-	target.SyncPortalCert(&core.PortalCert{Id: 1, Name: "web-cert", Enabled: true})
+	target.SyncPortalCert(&core.PortalCert{
+		Id:      1,
+		Name:    "web-cert",
+		Enabled: true,
+	})
 
 	for _, key := range []string{
 		watched.FormatPortalRuleKey("web"),
@@ -94,13 +141,22 @@ func TestSyncerPublishesOnlyEnabledConfiguration(t *testing.T) {
 	assert.True(t, ok)
 
 	// Disabling a certificate removes it from the Portal TLS configuration.
-	target.SyncPortalCert(&core.PortalCert{Id: 1, Name: "web-cert", Enabled: false})
+	target.SyncPortalCert(&core.PortalCert{
+		Id:      1,
+		Name:    "web-cert",
+		Enabled: false,
+	})
 	_, ok = watchServer.Get(watched.FormatPortalCertKey("web-cert"))
 	assert.False(t, ok, "a disabled certificate is not published")
 }
 
 func TestPortalRuleResolvedPathsWatchRoundTrip(t *testing.T) {
-	rule := &core.PortalRule{Name: "mapped", RouteType: "SITE", MatchPathPrefix: "/api", RoutePathPrefix: "/internal"}
+	rule := &core.PortalRule{
+		Name:            "mapped",
+		RouteType:       "SITE",
+		MatchPathPrefix: "/api",
+		RoutePathPrefix: "/internal",
+	}
 	wire := vcode.MustMarshalJsonS(ToWatchedPortalRule(rule, &core.PortalEntry{Name: "web"}))
 	decoded := vcode.MustUnmarshalJsonS[*watched.PortalRule](wire)
 	assert.Equal(t, "/internal", decoded.ResolvedRoutePathPrefix)
@@ -116,7 +172,12 @@ func TestPortalRuleResolvedPathsWatchRoundTrip(t *testing.T) {
 
 func TestPortalSitePublishesWebMountPath(t *testing.T) {
 	for _, mountPath := range []string{"", "/", "/app"} {
-		site := &core.PortalSite{Name: "web", Type: core.PortalSiteTypeWEBGW, WebName: "demo.Web", WebMountPath: mountPath}
+		site := &core.PortalSite{
+			Name:         "web",
+			Type:         core.PortalSiteTypeWEBGW,
+			WebName:      "demo.Web",
+			WebMountPath: mountPath,
+		}
 		wire := vcode.MustMarshalJsonS(toWatchedPortalSite(site))
 		decoded := vcode.MustUnmarshalJsonS[watched.PortalSite](wire)
 		assert.Equal(t, mountPath, decoded.WebgwConfig.MountPath)
@@ -125,22 +186,62 @@ func TestPortalSitePublishesWebMountPath(t *testing.T) {
 
 func TestPortalRuleResolvedPrefixesFollowWebMountPath(t *testing.T) {
 	target := testSyncer(watchserver.NewServerForTest())
-	target.SyncPortalEntry(&core.PortalEntry{Id: 1, Name: "web", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}})
+	target.SyncPortalEntry(&core.PortalEntry{
+		Id:       1,
+		Name:     "web",
+		Enabled:  true,
+		Protocol: "http",
+		Http: &core.PortalEntryHTTP{
+			Http:     "ENABLED",
+			Https:    "DISABLED",
+			HttpPort: 8080,
+		},
+	})
 	tests := []struct {
 		name      string
 		mountPath string
 		match     string
 		route     string
 	}{
-		{name: "empty", mountPath: "", match: "/configured", route: "/backend"},
-		{name: "root", mountPath: "/", match: "/", route: ""},
-		{name: "trim trailing slash", mountPath: "/app/", match: "/app", route: "/app"},
-		{name: "nested", mountPath: "/app/admin", match: "/app/admin", route: "/app/admin"},
+		{
+			name:      "empty",
+			mountPath: "",
+			match:     "/configured",
+			route:     "/backend",
+		},
+		{
+			name:      "root",
+			mountPath: "/",
+			match:     "/",
+			route:     "",
+		},
+		{
+			name:      "trim trailing slash",
+			mountPath: "/app/",
+			match:     "/app",
+			route:     "/app",
+		},
+		{
+			name:      "nested",
+			mountPath: "/app/admin",
+			match:     "/app/admin",
+			route:     "/app/admin",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rule := &core.PortalRule{EntryId: 1, RouteType: string(core.PortalRuleRouteTypeSite), RouteSiteName: "web", MatchPathPrefix: "/configured", RoutePathPrefix: "/backend"}
-			site := &core.PortalSite{Type: core.PortalSiteTypeWEBGW, Name: "web", WebMountPath: tt.mountPath}
+			rule := &core.PortalRule{
+				EntryId:         1,
+				RouteType:       string(core.PortalRuleRouteTypeSite),
+				RouteSiteName:   "web",
+				MatchPathPrefix: "/configured",
+				RoutePathPrefix: "/backend",
+			}
+			site := &core.PortalSite{
+				Type:         core.PortalSiteTypeWEBGW,
+				Name:         "web",
+				WebMountPath: tt.mountPath,
+			}
 			got := target.toWatchedPortalRule(rule, site)
 			assert.Equal(t, tt.match, got.ResolvedMatchPathPrefix)
 			assert.Equal(t, tt.route, got.ResolvedRoutePathPrefix)
@@ -153,7 +254,17 @@ func TestPortalSiteUpdateRepublishesResolvedRule(t *testing.T) {
 	watchServer := watchserver.NewServerForTest()
 	defer watchServer.AfterAppStop()
 	target := testSyncer(watchServer)
-	target.SyncPortalEntry(&core.PortalEntry{Id: 1, Name: "web-entry", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}})
+	target.SyncPortalEntry(&core.PortalEntry{
+		Id:       1,
+		Name:     "web-entry",
+		Enabled:  true,
+		Protocol: "http",
+		Http: &core.PortalEntryHTTP{
+			Http:     "ENABLED",
+			Https:    "DISABLED",
+			HttpPort: 8080,
+		},
+	})
 	rule := &core.PortalRule{
 		EntryId:         1,
 		Id:              1,
@@ -165,12 +276,24 @@ func TestPortalSiteUpdateRepublishesResolvedRule(t *testing.T) {
 		Enabled:         true,
 	}
 	target.SyncPortalRule(rule)
-	target.SyncPortalSite(&core.PortalSite{Id: 1, Name: "web", Type: core.PortalSiteTypeWEBGW, WebMountPath: "/old", Enabled: true})
+	target.SyncPortalSite(&core.PortalSite{
+		Id:           1,
+		Name:         "web",
+		Type:         core.PortalSiteTypeWEBGW,
+		WebMountPath: "/old",
+		Enabled:      true,
+	})
 	value, ok := watchServer.Get(watched.FormatPortalRuleKey(rule.Name))
 	assert.True(t, ok)
 	assert.Equal(t, "/old", vcode.MustUnmarshalJsonS[*watched.PortalRule](value).ResolvedMatchPathPrefix)
 
-	target.SyncPortalSite(&core.PortalSite{Id: 1, Name: "web", Type: core.PortalSiteTypeWEBGW, WebMountPath: "/new/", Enabled: true})
+	target.SyncPortalSite(&core.PortalSite{
+		Id:           1,
+		Name:         "web",
+		Type:         core.PortalSiteTypeWEBGW,
+		WebMountPath: "/new/",
+		Enabled:      true,
+	})
 	value, ok = watchServer.Get(watched.FormatPortalRuleKey(rule.Name))
 	assert.True(t, ok)
 	resolved := vcode.MustUnmarshalJsonS[*watched.PortalRule](value)
@@ -182,10 +305,34 @@ func TestSyncerWithdrawsWildcardRuleWhenSiteBecomesRpc(t *testing.T) {
 	watchServer := watchserver.NewServerForTest()
 	t.Cleanup(watchServer.AfterAppStop)
 	target := testSyncer(watchServer)
-	target.SyncPortalEntry(&core.PortalEntry{Id: 1, Name: "wildcard", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Host: "*.example.com", Http: "ENABLED", Https: "DISABLED", HttpPort: 80}})
-	site := &core.PortalSite{Id: 1, Name: "target", Type: core.PortalSiteTypeWEBGW, WebName: "demo.Web", Enabled: true}
+	target.SyncPortalEntry(&core.PortalEntry{
+		Id:       1,
+		Name:     "wildcard",
+		Enabled:  true,
+		Protocol: "http",
+		Http: &core.PortalEntryHTTP{
+			Host:     "*.example.com",
+			Http:     "ENABLED",
+			Https:    "DISABLED",
+			HttpPort: 80,
+		},
+	})
+	site := &core.PortalSite{
+		Id:      1,
+		Name:    "target",
+		Type:    core.PortalSiteTypeWEBGW,
+		WebName: "demo.Web",
+		Enabled: true,
+	}
 	target.SyncPortalSite(site)
-	target.SyncPortalRule(&core.PortalRule{Id: 1, Name: "wildcard", EntryId: 1, RouteType: "SITE", RouteSiteName: "target", Enabled: true})
+	target.SyncPortalRule(&core.PortalRule{
+		Id:            1,
+		Name:          "wildcard",
+		EntryId:       1,
+		RouteType:     "SITE",
+		RouteSiteName: "target",
+		Enabled:       true,
+	})
 	_, ok := watchServer.Get(watched.FormatPortalRuleKey("wildcard"))
 	assert.True(t, ok)
 	site.Type = core.PortalSiteTypeRPCGW
@@ -205,7 +352,13 @@ func TestSyncerPublishesPEMAndLegacyCertificateFields(t *testing.T) {
 	server := watchserver.NewServerForTest()
 	t.Cleanup(server.AfterAppStop)
 	target := testSyncer(server)
-	cert := &core.PortalCert{Id: 1, Name: "pem", Certificate: "certificate PEM\n", PrivateKey: "private key PEM\n", Enabled: true}
+	cert := &core.PortalCert{
+		Id:          1,
+		Name:        "pem",
+		Certificate: "certificate PEM\n",
+		PrivateKey:  "private key PEM\n",
+		Enabled:     true,
+	}
 	for _, suffix := range []string{"", "updated\n"} {
 		cert.Certificate += suffix
 		cert.PrivateKey += suffix
@@ -223,9 +376,27 @@ func TestSyncPortalEntryRepublishesListenIPs(t *testing.T) {
 	watchServer := watchserver.NewServerForTest()
 	t.Cleanup(watchServer.AfterAppStop)
 	target := testSyncer(watchServer)
-	entry := &core.PortalEntry{Id: 1, Name: "local", ListenIPs: []string{"127.0.0.1"}, Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}}
+	entry := &core.PortalEntry{
+		Id:        1,
+		Name:      "local",
+		ListenIPs: []string{"127.0.0.1"},
+		Enabled:   true,
+		Protocol:  "http",
+		Http: &core.PortalEntryHTTP{
+			Http:     "ENABLED",
+			Https:    "DISABLED",
+			HttpPort: 8080,
+		},
+	}
 	target.SyncPortalEntry(entry)
-	target.SyncPortalRule(&core.PortalRule{Id: 1, Name: "local-rule", EntryId: entry.Id, RouteType: "PERMANENT_REDIRECT", RouteRedirectionPattern: "https://example.com", Enabled: true})
+	target.SyncPortalRule(&core.PortalRule{
+		Id:                      1,
+		Name:                    "local-rule",
+		EntryId:                 entry.Id,
+		RouteType:               "PERMANENT_REDIRECT",
+		RouteRedirectionPattern: "https://example.com",
+		Enabled:                 true,
+	})
 	read := func() *watched.PortalEntry {
 		value, ok := watchServer.Get(watched.FormatPortalEntryKey("local"))
 		require.True(t, ok)
@@ -244,8 +415,24 @@ func TestSyncerPublishesIndependentEntryAndRemovesRenamedAndDisabledKeys(t *test
 	server := watchserver.NewServerForTest()
 	defer server.AfterAppStop()
 	target := testSyncer(server)
-	target.SyncPortalCert(new(core.PortalCert{Id: 1, Name: "demo", Enabled: true, Domains: []string{"demo.local"}}))
-	entry := &core.PortalEntry{Id: 1, Name: "web", Protocol: "http", Enabled: true, Http: &core.PortalEntryHTTP{Host: "demo.local", Http: "ENABLED", Https: "ENABLED", AutoHTTPS: "ENABLED"}}
+	target.SyncPortalCert(new(core.PortalCert{
+		Id:      1,
+		Name:    "demo",
+		Enabled: true,
+		Domains: []string{"demo.local"},
+	}))
+	entry := &core.PortalEntry{
+		Id:       1,
+		Name:     "web",
+		Protocol: "http",
+		Enabled:  true,
+		Http: &core.PortalEntryHTTP{
+			Host:      "demo.local",
+			Http:      "ENABLED",
+			Https:     "ENABLED",
+			AutoHTTPS: "ENABLED",
+		},
+	}
 	target.SyncPortalEntry(entry)
 	value, ok := server.Get(watched.FormatPortalEntryKey("web"))
 	require.True(t, ok)
@@ -276,11 +463,23 @@ func TestSyncerRequiresEntryBeforePublishingRule(t *testing.T) {
 	server := watchserver.NewServerForTest()
 	t.Cleanup(server.AfterAppStop)
 	target := testSyncer(server)
-	rule := &core.PortalRule{Id: 1, Name: "rule", EntryId: 1, RouteType: "PERMANENT_REDIRECT", RouteRedirectionPattern: "https://example.com", Enabled: true}
+	rule := &core.PortalRule{
+		Id:                      1,
+		Name:                    "rule",
+		EntryId:                 1,
+		RouteType:               "PERMANENT_REDIRECT",
+		RouteRedirectionPattern: "https://example.com",
+		Enabled:                 true,
+	}
 	target.SyncPortalRule(rule)
 	_, ok := server.Get(watched.FormatPortalRuleKey(rule.Name))
 	require.False(t, ok)
-	entry := &core.PortalEntry{Id: 1, Name: "web", Protocol: "http", Enabled: true}
+	entry := &core.PortalEntry{
+		Id:       1,
+		Name:     "web",
+		Protocol: "http",
+		Enabled:  true,
+	}
 	target.SyncPortalEntry(entry)
 	value, ok := server.Get(watched.FormatPortalRuleKey(rule.Name))
 	require.True(t, ok)
@@ -294,7 +493,13 @@ func TestSyncerRecomputesEffectiveHTTPOnCertificateChanges(t *testing.T) {
 	server := watchserver.NewServerForTest()
 	t.Cleanup(server.AfterAppStop)
 	target := testSyncer(server)
-	entry := &core.PortalEntry{Id: 1, Name: "web", Protocol: "http", Enabled: true, Http: &core.PortalEntryHTTP{Host: "app.example.com"}}
+	entry := &core.PortalEntry{
+		Id:       1,
+		Name:     "web",
+		Protocol: "http",
+		Enabled:  true,
+		Http:     &core.PortalEntryHTTP{Host: "app.example.com"},
+	}
 	target.SyncPortalEntry(entry)
 	read := func() watched.PortalEntryHTTP {
 		value, ok := server.Get(watched.FormatPortalEntryKey("web"))
@@ -305,7 +510,12 @@ func TestSyncerRecomputesEffectiveHTTPOnCertificateChanges(t *testing.T) {
 	}
 	require.True(t, read().HttpEnabled)
 	require.False(t, read().HttpsEnabled)
-	expired := &core.PortalCert{Id: 1, Name: "wildcard", Enabled: true, Domains: []string{"*.example.com"}}
+	expired := &core.PortalCert{
+		Id:      1,
+		Name:    "wildcard",
+		Enabled: true,
+		Domains: []string{"*.example.com"},
+	}
 	// Presence alone enables HTTPS: zero/expired validity never affects this result.
 	target.SyncPortalCert(expired)
 	require.True(t, read().HttpsEnabled)

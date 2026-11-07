@@ -30,10 +30,8 @@ func newNetworkTestServer(t *testing.T) (*Server, *redis.Client) {
 	t.Helper()
 
 	server := &Server{
-		Context: context.Background(),
-		Option: &flag.Flag{
-			WatchListen: "127.0.0.1:0",
-		},
+		Context:    context.Background(),
+		Option:     &flag.Flag{WatchListen: "127.0.0.1:0"},
 		InprocFlag: &app.InternalInprocFlag{},
 	}
 	server.DIInit()
@@ -56,11 +54,9 @@ func newInprocTestServer(t *testing.T) (*Server, *redis.Client) {
 	t.Helper()
 
 	server := &Server{
-		Context: context.Background(),
-		Option:  &flag.Flag{},
-		InprocFlag: &app.InternalInprocFlag{
-			Enabled: true,
-		},
+		Context:    context.Background(),
+		Option:     &flag.Flag{},
+		InprocFlag: &app.InternalInprocFlag{Enabled: true},
 	}
 	server.DIInit()
 	t.Cleanup(server.AfterAppStop)
@@ -333,11 +329,26 @@ func TestWatchServerACL(t *testing.T) {
 				name string
 				run  func() error
 			}{
-				{"set", func() error { return client.Set(ctx, "config:feature-b", "b", 0).Err() }},
-				{"incr", func() error { return client.Incr(ctx, "counter").Err() }},
-				{"del", func() error { return client.Del(ctx, "config:feature-a").Err() }},
-				{"publish", func() error { return client.Publish(ctx, "config:feature-a", "payload").Err() }},
-				{"expire", func() error { return client.Expire(ctx, "config:feature-a", time.Second).Err() }},
+				{
+					"set",
+					func() error { return client.Set(ctx, "config:feature-b", "b", 0).Err() },
+				},
+				{
+					"incr",
+					func() error { return client.Incr(ctx, "counter").Err() },
+				},
+				{
+					"del",
+					func() error { return client.Del(ctx, "config:feature-a").Err() },
+				},
+				{
+					"publish",
+					func() error { return client.Publish(ctx, "config:feature-a", "payload").Err() },
+				},
+				{
+					"expire",
+					func() error { return client.Expire(ctx, "config:feature-a", time.Second).Err() },
+				},
 			} {
 				t.Run(run.name, func(t *testing.T) {
 					assert.ErrorContains(t, run.run(), "NOPERM")

@@ -29,7 +29,15 @@ type _Result struct {
 
 func newLock(client skeled.LockServiceClient, parent context.Context, key string, token string, ttl time.Duration, deadline time.Time) *Lock {
 	ctx, cancel := context.WithCancelCause(parent)
-	l := new(Lock{client: client, key: key, token: token, ttl: ttl, ctx: ctx, cancel: cancel, unlock: make(chan chan _Result)})
+	l := new(Lock{
+		client: client,
+		key:    key,
+		token:  token,
+		ttl:    ttl,
+		ctx:    ctx,
+		cancel: cancel,
+		unlock: make(chan chan _Result),
+	})
 	go l.run(deadline)
 	return l
 }

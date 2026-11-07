@@ -56,8 +56,14 @@ func TestNewBundledFlattensBundles(t *testing.T) {
 
 func TestNewBundledStartsInOrderAndStopsInReverse(t *testing.T) {
 	events := []string{}
-	appA := &_RecordingApp{name: "app.a", events: &events}
-	appB := &_RecordingApp{name: "app.b", events: &events}
+	appA := &_RecordingApp{
+		name:   "app.a",
+		events: &events,
+	}
+	appB := &_RecordingApp{
+		name:   "app.b",
+		events: &events,
+	}
 	bundle := NewBundled(
 		&_App{apps: []App{appA}},
 		&_App{apps: []App{appB}},
@@ -75,21 +81,15 @@ func TestNewBundledStartsInOrderAndStopsInReverse(t *testing.T) {
 }
 
 func TestApplyOptionOverridesCliOption(t *testing.T) {
-	cliOption := &Option{
-		LinkEndpoint: "http://cli-link.local:7079",
-	}
+	cliOption := &Option{LinkEndpoint: "http://cli-link.local:7079"}
 
-	applyOption(cliOption, Option{
-		LinkEndpoint: "http://option-link.local:7079",
-	})
+	applyOption(cliOption, Option{LinkEndpoint: "http://option-link.local:7079"})
 
 	assert.Equal(t, "http://option-link.local:7079", cliOption.LinkEndpoint)
 }
 
 func TestApplyOptionKeepsUnsetCliOption(t *testing.T) {
-	cliOption := &Option{
-		LinkEndpoint: "http://cli-link.local:7079",
-	}
+	cliOption := &Option{LinkEndpoint: "http://cli-link.local:7079"}
 
 	applyOption(cliOption, Option{})
 

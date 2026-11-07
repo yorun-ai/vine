@@ -32,7 +32,13 @@ func newDebugBroker(t *testing.T, mode string) (*hubserver.NATSServer, *hubflag.
 	var component *hubserver.NATSServer
 	var conn *gonats.Conn
 	if mode == "external" {
-		server, err := natsserver.NewServer(&natsserver.Options{Port: -1, NoSigs: true, NoLog: true, JetStream: true, StoreDir: t.TempDir()})
+		server, err := natsserver.NewServer(&natsserver.Options{
+			Port:      -1,
+			NoSigs:    true,
+			NoLog:     true,
+			JetStream: true,
+			StoreDir:  t.TempDir(),
+		})
 		require.NoError(t, err)
 		t.Cleanup(func() { server.Shutdown(); server.WaitForShutdown() })
 		go server.Start()
@@ -42,7 +48,11 @@ func newDebugBroker(t *testing.T, mode string) (*hubserver.NATSServer, *hubflag.
 		conn, err = gonats.Connect(flag.MQNatsEndpoint)
 		require.NoError(t, err)
 	} else {
-		component = &hubserver.NATSServer{InprocFlag: &app.InternalInprocFlag{Enabled: mode == "inproc"}, Flag: flag, Identity: new(mtls.Identity)}
+		component = &hubserver.NATSServer{
+			InprocFlag: &app.InternalInprocFlag{Enabled: mode == "inproc"},
+			Flag:       flag,
+			Identity:   new(mtls.Identity),
+		}
 		t.Cleanup(component.AfterAppStop)
 		component.DIInit()
 		if mode == "inproc" {
@@ -74,14 +84,28 @@ func TestDebugMessagesPublishThroughConfiguredBroker(t *testing.T) {
 			eventService, taskService := newMessageDebugServices()
 			eventService.NATSServer, eventService.Flag = component, flag
 			taskService.NATSServer, taskService.Flag = component, flag
-			eventConsumer, err := js.CreateConsumer(t.Context(), eventspec.NATSStreamName, jetstream.ConsumerConfig{Durable: "debug_event", FilterSubject: eventspec.NATSSubject("demo.A"), AckPolicy: jetstream.AckExplicitPolicy})
+			eventConsumer, err := js.CreateConsumer(t.Context(), eventspec.NATSStreamName, jetstream.ConsumerConfig{
+				Durable:       "debug_event",
+				FilterSubject: eventspec.NATSSubject("demo.A"),
+				AckPolicy:     jetstream.AckExplicitPolicy,
+			})
 			require.NoError(t, err)
-			taskConsumer, err := js.CreateConsumer(t.Context(), taskspec.NATSStreamName, jetstream.ConsumerConfig{Durable: "debug_task", FilterSubject: taskspec.NATSSubject("demo.A"), AckPolicy: jetstream.AckExplicitPolicy})
+			taskConsumer, err := js.CreateConsumer(t.Context(), taskspec.NATSStreamName, jetstream.ConsumerConfig{
+				Durable:       "debug_task",
+				FilterSubject: taskspec.NATSSubject("demo.A"),
+				AckPolicy:     jetstream.AckExplicitPolicy,
+			})
 			require.NoError(t, err)
 			trace := meta.InitialTrace()
 			traceId, spanId := trace.Id(), trace.Span()
 			before := time.Now()
-			eventService.EmitEvent(skeled.EventDebugEmitRequest{EventSkelName: "demo.A", DescriptorHash: "v1", EventJson: skeltype.JSON(`{"message":"event"}`), TraceId: &traceId, SpanId: &spanId})
+			eventService.EmitEvent(skeled.EventDebugEmitRequest{
+				EventSkelName:  "demo.A",
+				DescriptorHash: "v1",
+				EventJson:      skeltype.JSON(`{"message":"event"}`),
+				TraceId:        &traceId,
+				SpanId:         &spanId,
+			})
 			event, err := eventConsumer.Next(jetstream.FetchMaxWait(time.Second))
 			require.NoError(t, err)
 			assert.Equal(t, eventspec.NATSSubject("demo.A"), event.Subject())
@@ -96,7 +120,11 @@ func TestDebugMessagesPublishThroughConfiguredBroker(t *testing.T) {
 			assert.False(t, decodedEvent.Metadata.EmittedAt.Time.Before(before.Add(-time.Second)))
 			require.NoError(t, event.Ack())
 			// Empty descriptor hash selects any registered version and missing trace creates one.
-			taskService.LaunchTask(skeled.TaskDebugLaunchRequest{TaskSkelName: "demo.A", TriggerSkelName: "A", ArgumentsJson: skeltype.JSON(`{"message":"task"}`)})
+			taskService.LaunchTask(skeled.TaskDebugLaunchRequest{
+				TaskSkelName:    "demo.A",
+				TriggerSkelName: "A",
+				ArgumentsJson:   skeltype.JSON(`{"message":"task"}`),
+			})
 			task, err := taskConsumer.Next(jetstream.FetchMaxWait(time.Second))
 			require.NoError(t, err)
 			assert.Equal(t, taskspec.NATSSubject("demo.A"), task.Subject())
@@ -128,7 +156,10 @@ func TestDebugMessagesPublishThroughConfiguredBroker(t *testing.T) {
 func TestDebugPublisherRequiresExternallyProvisionedStream(t *testing.T) {
 	component, flag, js := newDebugBroker(t, "external")
 	require.NoError(t, js.DeleteStream(t.Context(), eventspec.NATSStreamName))
-	publisher := &_DebugNATSPublisher{NATSServer: component, Flag: flag}
+	publisher := &_DebugNATSPublisher{
+		NATSServer: component,
+		Flag:       flag,
+	}
 	require.Panics(t, func() { publisher.publish(debugEventStreamConfig(), debugEventSubject("demo.A"), []byte(`{}`)) })
 	_, err := js.Stream(context.Background(), eventspec.NATSStreamName)
 	assert.ErrorIs(t, err, jetstream.ErrStreamNotFound)

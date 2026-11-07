@@ -10,7 +10,13 @@ import (
 )
 
 func TestPortalRuleAddressesUseOnlyEffectiveTransports(t *testing.T) {
-	entry := core.NormalizePortalEntry(core.PortalEntry{Protocol: "http", Http: new(core.PortalEntryHTTP{Host: "example.com", Http: "DISABLED"})})
+	entry := core.NormalizePortalEntry(core.PortalEntry{
+		Protocol: "http",
+		Http: new(core.PortalEntryHTTP{
+			Host: "example.com",
+			Http: "DISABLED",
+		}),
+	})
 	entry.EffectiveHTTP = new(entry.Http.Effective(false))
 	require.Empty(t, toServerPortalRule(new(core.PortalRule), &entry, nil).EntryAddresses)
 	entry.EffectiveHTTP = new(entry.Http.Effective(true))
@@ -204,18 +210,35 @@ func (s *_PortalRuleRepoSpy) Remove(id int) bool {
 }
 
 func TestPortalRuleServiceGetReturnsFieldSources(t *testing.T) {
-	repo := &_PortalRuleRepoSpy{rules: map[int]*core.PortalRule{
-		3: {
-			Id:            3,
-			Name:          "demo.rule",
-			EntryId:       1,
-			RouteType:     core.PortalRuleRouteTypeSite,
-			RouteSiteName: "demo-site",
-			FieldSources:  core.FieldSources{"/matchScheme": {Source: "app/default", Override: "hub"}},
+	repo := &_PortalRuleRepoSpy{
+		rules: map[int]*core.PortalRule{
+			3: {
+				Id:            3,
+				Name:          "demo.rule",
+				EntryId:       1,
+				RouteType:     core.PortalRuleRouteTypeSite,
+				RouteSiteName: "demo-site",
+				FieldSources: core.FieldSources{"/matchScheme": {
+					Source:   "app/default",
+					Override: "hub",
+				}},
+			},
 		},
-	}}
-	ruleCore := newTestPortalRuleCore(repo, newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}}))
-	service := &PortalRuleApiServiceServerImpl{PortalRuleCore: ruleCore, PortalEntryCore: ruleCore.PortalEntryCore}
+	}
+	ruleCore := newTestPortalRuleCore(repo, newTestPortalEntryRepoSpy(&core.PortalEntry{
+		Id:       1,
+		Enabled:  true,
+		Protocol: "http",
+		Http: &core.PortalEntryHTTP{
+			Http:     "ENABLED",
+			Https:    "DISABLED",
+			HttpPort: 80,
+		},
+	}))
+	service := &PortalRuleApiServiceServerImpl{
+		PortalRuleCore:  ruleCore,
+		PortalEntryCore: ruleCore.PortalEntryCore,
+	}
 
 	detail := service.Get(3)
 
@@ -228,11 +251,23 @@ func TestPortalRuleServiceGetReturnsFieldSources(t *testing.T) {
 // Hub reports the rules that match the same request, so the Dashboard shows the
 // operator what Portal cannot order on its own.
 func TestPortalRuleServiceListConflicts(t *testing.T) {
-	entryRepo := newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Name: "http:80", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}})
-	ruleRepo := &_NamedPortalRuleRepoSpy{items: map[string]*core.PortalRule{
-		"web":   {Id: 1, Name: "web", EntryId: 1, RouteType: core.PortalRuleRouteTypeSite, RouteSiteName: "demo.Web", Enabled: true},
-		"fixed": {Id: 2, Name: "fixed", EntryId: 1, RouteType: core.PortalRuleRouteTypeSite, RouteSiteName: "demo.Fixed", Enabled: true},
-	}}
+	entryRepo := newTestPortalEntryRepoSpy(&core.PortalEntry{
+		Id:       1,
+		Name:     "http:80",
+		Enabled:  true,
+		Protocol: "http",
+		Http: &core.PortalEntryHTTP{
+			Http:     "ENABLED",
+			Https:    "DISABLED",
+			HttpPort: 80,
+		},
+	})
+	ruleRepo := &_NamedPortalRuleRepoSpy{
+		items: map[string]*core.PortalRule{
+			"web":   {Id: 1, Name: "web", EntryId: 1, RouteType: core.PortalRuleRouteTypeSite, RouteSiteName: "demo.Web", Enabled: true},
+			"fixed": {Id: 2, Name: "fixed", EntryId: 1, RouteType: core.PortalRuleRouteTypeSite, RouteSiteName: "demo.Fixed", Enabled: true},
+		},
+	}
 	service := &PortalRuleApiServiceServerImpl{PortalRuleCore: newTestPortalRuleCore(ruleRepo, entryRepo)}
 
 	conflicts := service.ListConflicts()

@@ -36,15 +36,24 @@ func (c *hubClient) Release(key string, token string, opts ...client.InvokeOptio
 
 func newTestLocker(t *testing.T, mode string, endpoint string, inproc bool) (*Locker, *hubClient) {
 	t.Helper()
-	flags := &flag.Flag{HubEndpoint: "http://localhost:7071", HubInprocMode: inproc}
+	flags := &flag.Flag{
+		HubEndpoint:   "http://localhost:7071",
+		HubInprocMode: inproc,
+	}
 	flags.Normalize(false)
 	info := &hubinfo.HubInfo{
-		Flag:              flags,
-		InfoServiceClient: &infoClient{info: hubskeled.Info{LockMode: mode, LockRedisEndpoint: endpoint}},
+		Flag: flags,
+		InfoServiceClient: &infoClient{info: hubskeled.Info{
+			LockMode:          mode,
+			LockRedisEndpoint: endpoint,
+		}},
 	}
 	info.DIInit()
 	hub := &hubClient{}
-	locker := &Locker{HubInfo: info, Hub: hub}
+	locker := &Locker{
+		HubInfo: info,
+		Hub:     hub,
+	}
 	locker.DIInit()
 	t.Cleanup(locker.AfterAppStop)
 	return locker, hub
@@ -54,10 +63,19 @@ func newTestLockerWithHubInfo(t *testing.T, mode string, endpoint string) (*Lock
 	t.Helper()
 	flags := &flag.Flag{HubEndpoint: "http://localhost:7071"}
 	flags.Normalize(false)
-	infoClientValue := &infoClient{info: hubskeled.Info{LockMode: mode, LockRedisEndpoint: endpoint}}
-	info := &hubinfo.HubInfo{Flag: flags, InfoServiceClient: infoClientValue}
+	infoClientValue := &infoClient{info: hubskeled.Info{
+		LockMode:          mode,
+		LockRedisEndpoint: endpoint,
+	}}
+	info := &hubinfo.HubInfo{
+		Flag:              flags,
+		InfoServiceClient: infoClientValue,
+	}
 	info.DIInit()
-	locker := &Locker{HubInfo: info, Hub: &hubClient{}}
+	locker := &Locker{
+		HubInfo: info,
+		Hub:     &hubClient{},
+	}
 	locker.DIInit()
 	t.Cleanup(locker.AfterAppStop)
 	return locker, infoClientValue, info

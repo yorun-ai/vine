@@ -44,12 +44,14 @@ func TestRedisRoutesDirectlyAndPreservesRequestContext(t *testing.T) {
 	assert.True(t, options.ContextTimeoutEnabled)
 	ctx := lockContext(context.Background())
 	var commands [][]any
-	locker.impl.(*_RedisLocker).client.AddHook(redisHook{process: func(got context.Context, cmd goredis.Cmder) error {
-		assert.Same(t, ctx, got)
-		commands = append(commands, cmd.Args())
-		cmd.(*goredis.Cmd).SetVal(int64(1))
-		return nil
-	}})
+	locker.impl.(*_RedisLocker).client.AddHook(redisHook{
+		process: func(got context.Context, cmd goredis.Cmder) error {
+			assert.Same(t, ctx, got)
+			commands = append(commands, cmd.Args())
+			cmd.(*goredis.Cmd).SetVal(int64(1))
+			return nil
+		},
+	})
 	assert.True(t, locker.Acquire(ctx, "app:key", "token", 1234))
 	assert.True(t, locker.Renew(ctx, "app:key", "token", 2345))
 	assert.True(t, locker.Release(ctx, "app:key", "token"))
@@ -64,13 +66,15 @@ func TestRedisRoutesDirectlyAndPreservesRequestContext(t *testing.T) {
 func TestRedisFailuresDoNotFallBackToHub(t *testing.T) {
 	for _, failure := range []bool{false, true} {
 		locker, hub := newTestLocker(t, "redis", "redis://localhost:6379", false)
-		locker.impl.(*_RedisLocker).client.AddHook(redisHook{process: func(ctx context.Context, cmd goredis.Cmder) error {
-			if failure {
-				return errors.New("Redis unavailable")
-			}
-			cmd.(*goredis.Cmd).SetVal(int64(0))
-			return nil
-		}})
+		locker.impl.(*_RedisLocker).client.AddHook(redisHook{
+			process: func(ctx context.Context, cmd goredis.Cmder) error {
+				if failure {
+					return errors.New("Redis unavailable")
+				}
+				cmd.(*goredis.Cmd).SetVal(int64(0))
+				return nil
+			},
+		})
 		call := func() bool { return locker.Acquire(lockContext(context.Background()), "key", "token", 1000) }
 		if failure {
 			require.Panics(t, func() { call() })
@@ -96,26 +100,65 @@ func TestRedisOperationErrorsPreserveCodeAndCause(t *testing.T) {
 		cause error
 		code  ex.Code
 	}{
-		{"connection refused", &net.OpError{Op: "dial", Net: "tcp", Err: syscall.ECONNREFUSED}, ex.ServiceUnavailable},
-		{"Redis rejection", errors.New("NOPERM operation denied"), ex.ServiceUnavailable},
-		{"cancelled", fmt.Errorf("request failed: %w", context.Canceled), ex.InvocationCancelled},
-		{"deadline exceeded", fmt.Errorf("request failed: %w", context.DeadlineExceeded), ex.InvocationTimeout},
-		{"socket timeout", &net.OpError{Op: "read", Net: "tcp", Err: os.ErrDeadlineExceeded}, ex.InvocationTimeout},
+		{
+			"connection refused",
+			&net.OpError{
+				Op:  "dial",
+				Net: "tcp",
+				Err: syscall.ECONNREFUSED,
+			},
+			ex.ServiceUnavailable,
+		},
+		{
+			"Redis rejection",
+			errors.New("NOPERM operation denied"),
+			ex.ServiceUnavailable,
+		},
+		{
+			"cancelled",
+			fmt.Errorf("request failed: %w", context.Canceled),
+			ex.InvocationCancelled,
+		},
+		{
+			"deadline exceeded",
+			fmt.Errorf("request failed: %w", context.DeadlineExceeded),
+			ex.InvocationTimeout,
+		},
+		{
+			"socket timeout",
+			&net.OpError{
+				Op:  "read",
+				Net: "tcp",
+				Err: os.ErrDeadlineExceeded,
+			},
+			ex.InvocationTimeout,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			locker, hub := newTestLocker(t, "redis", "redis://localhost", false)
-			locker.impl.(*_RedisLocker).client.AddHook(redisHook{process: func(context.Context, goredis.Cmder) error {
-				return tc.cause
-			}})
+			locker.impl.(*_RedisLocker).client.AddHook(redisHook{
+				process: func(context.Context, goredis.Cmder) error {
+					return tc.cause
+				},
+			})
 			ctx := lockContext(context.Background())
 			for _, operation := range []struct {
 				name string
 				call func()
 			}{
-				{"acquire", func() { locker.Acquire(ctx, "key", "token", 1000) }},
-				{"renew", func() { locker.Renew(ctx, "key", "token", 1000) }},
-				{"release", func() { locker.Release(ctx, "key", "token") }},
+				{
+					"acquire",
+					func() { locker.Acquire(ctx, "key", "token", 1000) },
+				},
+				{
+					"renew",
+					func() { locker.Renew(ctx, "key", "token", 1000) },
+				},
+				{
+					"release",
+					func() { locker.Release(ctx, "key", "token") },
+				},
 			} {
 				t.Run(operation.name, func(t *testing.T) {
 					var recovered ex.Error

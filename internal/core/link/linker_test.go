@@ -39,7 +39,11 @@ func mustHostname(linkBaseEndpoint string) string {
 
 func TestLinkerBuildsRpcProxyEndpointFromInprocEndpointAndPath(t *testing.T) {
 	client := &_Linker{
-		app:              testRuntimeApp{name: "test.app", version: "1.2.3", instanceID: "00000000-0000-0000-0000-000000000123"},
+		app: testRuntimeApp{
+			name:       "test.app",
+			version:    "1.2.3",
+			instanceID: "00000000-0000-0000-0000-000000000123",
+		},
 		linkBaseEndpoint: InprocEndpoint,
 		bootInfo:         linkskeled.BootInfo{RpcProxyEndpointPath: "/rpc/proxy/out"},
 	}
@@ -54,7 +58,11 @@ func TestLinkerCheckLoopback(t *testing.T) {
 		"http://[::1]:7079",
 	} {
 		client := &_Linker{
-			app:              testRuntimeApp{name: "test.app", version: "1.2.3", instanceID: "00000000-0000-0000-0000-000000000123"},
+			app: testRuntimeApp{
+				name:       "test.app",
+				version:    "1.2.3",
+				instanceID: "00000000-0000-0000-0000-000000000123",
+			},
 			linkBaseEndpoint: linkBaseEndpoint,
 		}
 
@@ -98,7 +106,10 @@ func TestNewLinkerUsesExplicitEndpoint(t *testing.T) {
 	var actualLinkBaseEndpoint string
 	newLinker = func(app meta.App, linkBaseEndpoint string) Linker {
 		actualLinkBaseEndpoint = linkBaseEndpoint
-		return &_Linker{app: app, linkBaseEndpoint: linkBaseEndpoint}
+		return &_Linker{
+			app:              app,
+			linkBaseEndpoint: linkBaseEndpoint,
+		}
 	}
 	t.Cleanup(func() {
 		newLinker = oldFactory
@@ -120,7 +131,10 @@ func TestNewLinkerUsesRpcInprocEndpointWhenInprocEnabled(t *testing.T) {
 	var actualLinkBaseEndpoint string
 	newLinker = func(app meta.App, linkBaseEndpoint string) Linker {
 		actualLinkBaseEndpoint = linkBaseEndpoint
-		return &_Linker{app: app, linkBaseEndpoint: linkBaseEndpoint}
+		return &_Linker{
+			app:              app,
+			linkBaseEndpoint: linkBaseEndpoint,
+		}
 	}
 	t.Cleanup(func() {
 		newLinker = oldFactory

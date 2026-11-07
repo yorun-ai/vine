@@ -60,9 +60,7 @@ func (p *WebProxy) OnSetup(instance *minder.AppInstance) {
 		instance.HubWebHandlers[idx].Endpoint = inEndpointOf(instance.IngressEndpoint, appInstanceID, webSkelName)
 	}
 
-	appState := &_AppState{
-		webRouteByName: map[string]*_WebRoute{},
-	}
+	appState := &_AppState{webRouteByName: map[string]*_WebRoute{}}
 	for _, webHandler := range instance.WebHandlers {
 		endpointPrefix := instance.WebEndpointPrefix
 		endpoint := endpointPrefix + "/" + webHandler.WebSkelName

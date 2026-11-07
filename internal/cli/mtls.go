@@ -19,9 +19,21 @@ const (
 
 func mtlsFlags(component string) []ucli.Flag {
 	return []ucli.Flag{
-		&ucli.StringFlag{Name: FlagMTLSCAFile, Sources: ucli.EnvVars(componentEnvName(component, EnvMTLSCAFileSuffix)), Usage: "Vine backend mTLS CA certificate file"},
-		&ucli.StringFlag{Name: FlagMTLSCertFile, Sources: ucli.EnvVars(componentEnvName(component, EnvMTLSCertFileSuffix)), Usage: "this component's mTLS certificate file"},
-		&ucli.StringFlag{Name: FlagMTLSKeyFile, Sources: ucli.EnvVars(componentEnvName(component, EnvMTLSKeyFileSuffix)), Usage: "this component's mTLS private key file"},
+		&ucli.StringFlag{
+			Name:    FlagMTLSCAFile,
+			Sources: ucli.EnvVars(componentEnvName(component, EnvMTLSCAFileSuffix)),
+			Usage:   "Vine backend mTLS CA certificate file",
+		},
+		&ucli.StringFlag{
+			Name:    FlagMTLSCertFile,
+			Sources: ucli.EnvVars(componentEnvName(component, EnvMTLSCertFileSuffix)),
+			Usage:   "this component's mTLS certificate file",
+		},
+		&ucli.StringFlag{
+			Name:    FlagMTLSKeyFile,
+			Sources: ucli.EnvVars(componentEnvName(component, EnvMTLSKeyFileSuffix)),
+			Usage:   "this component's mTLS private key file",
+		},
 	}
 }
 

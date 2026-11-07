@@ -25,7 +25,10 @@ func InprocRoundTrip(handler http.Handler, req *http.Request) (*http.Response, e
 	reader, writer := io.Pipe()
 	responseWriter := newResponseWriter(reader, writer, responseCh)
 	responseWriter.request = req
-	responseWriter.reader = &_InprocBody{ReadCloser: reader, cancel: cancel}
+	responseWriter.reader = &_InprocBody{
+		ReadCloser: reader,
+		cancel:     cancel,
+	}
 	go func() {
 		stop := context.AfterFunc(req.Context(), func() { _ = writer.CloseWithError(req.Context().Err()) })
 		defer stop()
@@ -111,13 +114,15 @@ func (w *_ResponseWriter) WriteHeader(statusCode int) {
 			length = parsed
 		}
 	}
-	w.responseCh <- _InprocResponse{response: &http.Response{
-		Request:       w.request,
-		ContentLength: length,
-		StatusCode:    statusCode,
-		Header:        w.header.Clone(),
-		Body:          w.reader,
-	}}
+	w.responseCh <- _InprocResponse{
+		response: &http.Response{
+			Request:       w.request,
+			ContentLength: length,
+			StatusCode:    statusCode,
+			Header:        w.header.Clone(),
+			Body:          w.reader,
+		},
+	}
 }
 
 func (w *_ResponseWriter) Write(data []byte) (int, error) {

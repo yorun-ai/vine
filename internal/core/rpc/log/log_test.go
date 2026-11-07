@@ -150,7 +150,11 @@ func TestRenderRpcPayloadReportsTruncation(t *testing.T) {
 
 func TestRpcRedactFailureOmitsPayload(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "rpc-redact-failure.jsonl")
-	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
+	log := logger.New("vine:test", logger.WithOption{
+		Format:     logger.FormatJSON,
+		Level:      logger.LevelDebug,
+		OutputPath: path,
+	})
 
 	StartServerHandle(log, nil, testRpcLogMethodInfo(), nil, nil, rpcFailingMarshaler{})
 
@@ -242,7 +246,11 @@ func TestMuteSuccessSpanStillLogsError(t *testing.T) {
 	MuteSuccessLog(rpcLogTestClientPing)
 
 	path := filepath.Join(t.TempDir(), "rpc-muted-client.jsonl")
-	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
+	log := logger.New("vine:test", logger.WithOption{
+		Format:     logger.FormatJSON,
+		Level:      logger.LevelDebug,
+		OutputPath: path,
+	})
 	span := StartClientInvoke(log, nil, serviceSpec.Methods[0].Info(), "http://127.0.0.1:1/rpc/invoke")
 	if !span.muteSuccess {
 		t.Fatal("expected muteSuccess span for muteSuccessLog client method")
@@ -275,7 +283,11 @@ func TestServerLifecycleLogsSafePayloadAndDebugFinished(t *testing.T) {
 		}},
 	}).Methods()[0]
 	path := filepath.Join(t.TempDir(), "rpc.jsonl")
-	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
+	log := logger.New("vine:test", logger.WithOption{
+		Format:     logger.FormatJSON,
+		Level:      logger.LevelDebug,
+		OutputPath: path,
+	})
 
 	span := StartServerHandle(log, meta.InitialTrace(), method, nil, nil, &rpcLifecycleArguments{
 		UserID: "u-1",
@@ -308,7 +320,11 @@ func TestServerLifecycleLogsSafePayloadAndDebugFinished(t *testing.T) {
 func TestPanicDiagnosticIsMergedIntoSingleFailureFinished(t *testing.T) {
 	method := testRpcLogMethodInfo()
 	path := filepath.Join(t.TempDir(), "rpc-panic.jsonl")
-	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
+	log := logger.New("vine:test", logger.WithOption{
+		Format:     logger.FormatJSON,
+		Level:      logger.LevelDebug,
+		OutputPath: path,
+	})
 	span := StartServerHandle(log, meta.InitialTrace(), method, nil, nil, &spec.EmptyArguments{})
 
 	var recovered ex.Error
@@ -338,7 +354,11 @@ func TestPanicDiagnosticIsMergedIntoSingleFailureFinished(t *testing.T) {
 
 func TestApplicationPanicUsesErrorLevel(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "rpc-application-panic.jsonl")
-	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
+	log := logger.New("vine:test", logger.WithOption{
+		Format:     logger.FormatJSON,
+		Level:      logger.LevelDebug,
+		OutputPath: path,
+	})
 	span := StartServerHandle(log, meta.InitialTrace(), testRpcLogMethodInfo(), nil, nil, &spec.EmptyArguments{})
 
 	var recovered ex.Error
@@ -357,7 +377,11 @@ func TestApplicationPanicUsesErrorLevel(t *testing.T) {
 
 func TestFailureLevelsRemainVisibleWithoutDebug(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "rpc-failure-levels.jsonl")
-	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelInfo, OutputPath: path})
+	log := logger.New("vine:test", logger.WithOption{
+		Format:     logger.FormatJSON,
+		Level:      logger.LevelInfo,
+		OutputPath: path,
+	})
 	method := testRpcLogMethodInfo()
 
 	StartServerHandle(log, meta.InitialTrace(), method, nil, nil, &spec.EmptyArguments{}).
@@ -385,7 +409,11 @@ func TestFailureLevelsRemainVisibleWithoutDebug(t *testing.T) {
 
 func TestServerSpanBuildsLifecycleFieldsLazilyWithoutDebug(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "rpc-lazy-fields.jsonl")
-	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelInfo, OutputPath: path})
+	log := logger.New("vine:test", logger.WithOption{
+		Format:     logger.FormatJSON,
+		Level:      logger.LevelInfo,
+		OutputPath: path,
+	})
 	method := testRpcLogMethodInfo()
 	trace := meta.InitialTrace()
 	client := meta.MustNewApp("client", "1.0.0", "123e4567-e89b-12d3-a456-426614174001")
@@ -447,8 +475,15 @@ func TestMutedMethodLogsOnlyFailureFinishedWithStartSnapshot(t *testing.T) {
 	MuteSuccessLog(rpcLogTestMutedFailure)
 	method := serviceSpec.Methods[0].Info()
 	path := filepath.Join(t.TempDir(), "rpc-muted.jsonl")
-	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
-	arguments := &rpcLifecycleArguments{UserID: "before", Token: "secret"}
+	log := logger.New("vine:test", logger.WithOption{
+		Format:     logger.FormatJSON,
+		Level:      logger.LevelDebug,
+		OutputPath: path,
+	})
+	arguments := &rpcLifecycleArguments{
+		UserID: "before",
+		Token:  "secret",
+	}
 
 	span := StartServerHandle(log, nil, method, nil, nil, arguments)
 	arguments.UserID = "after"
@@ -506,7 +541,10 @@ func TestDisabledDebugDoesNotRenderPayload(t *testing.T) {
 	}).Methods()[0]
 	renderCalls := 0
 	value := _CountingMarshaler{calls: &renderCalls}
-	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatText, Level: logger.LevelInfo})
+	log := logger.New("vine:test", logger.WithOption{
+		Format: logger.FormatText,
+		Level:  logger.LevelInfo,
+	})
 
 	span := StartServerHandle(log, nil, method, nil, nil, value)
 	span.FinishServer(nil, value)
@@ -528,7 +566,11 @@ func TestInternalTaskEventTransportNeverLogsRpcPayload(t *testing.T) {
 		}},
 	})).Methods()[0]
 	path := filepath.Join(t.TempDir(), "rpc-internal-envelope.jsonl")
-	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
+	log := logger.New("vine:test", logger.WithOption{
+		Format:     logger.FormatJSON,
+		Level:      logger.LevelDebug,
+		OutputPath: path,
+	})
 
 	span := StartServerHandle(log, nil, method, nil, nil, new(rpcLifecycleArguments{Token: "secret"}))
 	span.FinishServer(nil, "secret-result")

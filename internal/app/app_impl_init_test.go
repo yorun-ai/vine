@@ -19,9 +19,7 @@ import (
 )
 
 func attachTestLinker(app *_AppImpl) {
-	app.linker = &testLinker{
-		RpcProxyOutEndpointValue: "http://127.0.0.1:7079/rpc/proxy/out",
-	}
+	app.linker = &testLinker{RpcProxyOutEndpointValue: "http://127.0.0.1:7079/rpc/proxy/out"}
 }
 
 type testDepsFlag struct {
@@ -828,9 +826,11 @@ func TestInitComponentsReadiesManagedDependenciesBeforeConsumer(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
-	a := newApp(&managedReadyAppSpec{componentTypes: []reflect.Type{
-		T[*managedReadyConsumer](), T[*managedReadyOtherResource](), T[*ManagedReadyResource](),
-	}}, flags)
+	a := newApp(&managedReadyAppSpec{
+		componentTypes: []reflect.Type{
+			T[*managedReadyConsumer](), T[*managedReadyOtherResource](), T[*ManagedReadyResource](),
+		},
+	}, flags)
 	a.initInjector()
 	a.injector = a.injector.SubInjector(func(b *di.Binder) { b.BindInstance(log) })
 	a.initComponents()
@@ -883,9 +883,11 @@ func TestInitComponentsReadiesManagerDependencies(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
-	a := newApp(&managedReadyAppSpec{componentTypes: []reflect.Type{
-		T[*managedReadyViaManager](), T[*ManagedReadyResource](),
-	}}, flags)
+	a := newApp(&managedReadyAppSpec{
+		componentTypes: []reflect.Type{
+			T[*managedReadyViaManager](), T[*ManagedReadyResource](),
+		},
+	}, flags)
 	a.initInjector()
 	a.injector = a.injector.SubInjector(func(b *di.Binder) { b.BindInstance(new(managedReadyLog)) })
 	a.initComponents()
@@ -899,9 +901,11 @@ func TestInitComponentsRejectsCyclesThroughManager(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(false)
-	a := newApp(&managedReadyAppSpec{componentTypes: []reflect.Type{
-		T[*managedReadyCycleConsumer](), T[*managedReadyCycle](),
-	}}, flags)
+	a := newApp(&managedReadyAppSpec{
+		componentTypes: []reflect.Type{
+			T[*managedReadyCycleConsumer](), T[*managedReadyCycle](),
+		},
+	}, flags)
 	a.initInjector()
 	assert.PanicsWithError(t, "cycle dependency detected: *app.managedReadyCycle -> *app.managedReadyCycleManager -> *app.managedReadyCycleConsumer -> *app.managedReadyCycle", a.initComponents)
 }
@@ -935,7 +939,12 @@ func TestRuntimeRejectsAbstractConfigInjection(t *testing.T) {
 		}
 		return
 	}
-	conf.Register(conf.ConfigSpec{SkelName: "test.AbstractConfig", Abs: true, Type: reflect.TypeFor[*testAbstractConfig](), Lifecycle: conf.LifecycleEternal})
+	conf.Register(conf.ConfigSpec{
+		SkelName:  "test.AbstractConfig",
+		Abs:       true,
+		Type:      reflect.TypeFor[*testAbstractConfig](),
+		Lifecycle: conf.LifecycleEternal,
+	})
 	app := newTestAppImpl()
 	attachTestLinker(app)
 	app.reader = conf.NewReader(app.linker)

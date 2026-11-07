@@ -54,12 +54,14 @@ func TestManagerHandlesServiceDescriptorEvents(t *testing.T) {
 	manager.handleServiceEvent(hubwatch.Event{
 		Kind: hubwatch.EventKindUpsert,
 		Key:  key,
-		Value: vcode.MustMarshalJsonS(watched.DescriptorService{Api: true,
+		Value: vcode.MustMarshalJsonS(watched.DescriptorService{
+			Api:      true,
 			SkelName: "demo.UserService",
 			Hash:     "service-main",
 			Methods: []*skeldesc.Method{
 				{SkelName: "Get", AuthMode: skeldesc.AuthModeRequired, Name: "Get", EffectiveAuthMode: skeldesc.AuthModeRequired},
-			}, AuthMode: skeldesc.AuthModeRequired,
+			},
+			AuthMode: skeldesc.AuthModeRequired,
 		}),
 	})
 	service, ok := manager.Service("demo.UserService")
@@ -78,17 +80,28 @@ func TestManagerHandlesServiceDescriptorEvents(t *testing.T) {
 
 func TestManagerHandlesWebDescriptorEvents(t *testing.T) {
 	key := watched.FormatDescriptorWebKey("demo.Web")
-	manager := newTestManager(t, map[string]string{key: vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: skeldesc.AuthModeRequired})})
+	manager := newTestManager(t, map[string]string{key: vcode.MustMarshalJsonS(watched.DescriptorWeb{
+		SkelName: "demo.Web",
+		AuthMode: skeldesc.AuthModeRequired,
+	})})
 	descriptor, ok := manager.Web("demo.Web")
 	require.True(t, ok)
 	require.Equal(t, skeldesc.AuthModeRequired, descriptor.AuthMode)
-	manager.handleWebEvent(hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: key,
-		Value: vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: skeldesc.AuthModeAnonymous}),
+	manager.handleWebEvent(hubwatch.Event{
+		Kind: hubwatch.EventKindUpsert,
+		Key:  key,
+		Value: vcode.MustMarshalJsonS(watched.DescriptorWeb{
+			SkelName: "demo.Web",
+			AuthMode: skeldesc.AuthModeAnonymous,
+		}),
 	})
 	descriptor, ok = manager.Web("demo.Web")
 	require.True(t, ok)
 	require.Equal(t, skeldesc.AuthModeAnonymous, descriptor.AuthMode)
-	manager.handleWebEvent(hubwatch.Event{Kind: hubwatch.EventKindDelete, Key: key})
+	manager.handleWebEvent(hubwatch.Event{
+		Kind: hubwatch.EventKindDelete,
+		Key:  key,
+	})
 	_, ok = manager.Web("demo.Web")
 	require.False(t, ok)
 }

@@ -75,7 +75,10 @@ func (d *PortalEntryDao) EnsureSchema() {
 					return err
 				}
 				config.Host = row.Host
-				entry := core.NormalizePortalEntry(core.PortalEntry{Protocol: "http", Http: &config})
+				entry := core.NormalizePortalEntry(core.PortalEntry{
+					Protocol: "http",
+					Http:     &config,
+				})
 				raw, err := json.Marshal(entry.Http)
 				if err != nil {
 					return err
@@ -159,7 +162,13 @@ func legacyHTTPConfig(scheme string, port int) (core.PortalEntryHTTP, error) {
 	if scheme == "https" && port != 0 {
 		httpsPort = port
 	}
-	config := core.PortalEntryHTTP{Http: core.PortalSwitchModeDisabled, HttpPort: httpPort, Https: core.PortalSwitchModeDisabled, HttpsPort: httpsPort, AutoHTTPS: core.PortalSwitchModeDisabled}
+	config := core.PortalEntryHTTP{
+		Http:      core.PortalSwitchModeDisabled,
+		HttpPort:  httpPort,
+		Https:     core.PortalSwitchModeDisabled,
+		HttpsPort: httpsPort,
+		AutoHTTPS: core.PortalSwitchModeDisabled,
+	}
 	if scheme == "http" {
 		config.Http = core.PortalSwitchModeEnabled
 	} else {

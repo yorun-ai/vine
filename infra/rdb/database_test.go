@@ -51,9 +51,7 @@ type databaseTestConsumer struct {
 
 func TestDatabaseInitComponentInitializesOptionAndDaoTypes(t *testing.T) {
 	connURL := "sqlite://" + t.TempDir() + "/database.sqlite"
-	component := &databaseTestComponent{
-		connURL: connURL,
-	}
+	component := &databaseTestComponent{connURL: connURL}
 
 	manager := initTestDatabase(component)
 	t.Cleanup(manager.AfterAppStop)
@@ -73,9 +71,7 @@ func TestDatabaseInitComponentInitializesOptionAndDaoTypes(t *testing.T) {
 
 func TestDatabaseBindProvidesExecutionScopedDao(t *testing.T) {
 	connURL := "sqlite://" + t.TempDir() + "/database.sqlite"
-	component := &databaseTestComponent{
-		connURL: connURL,
-	}
+	component := &databaseTestComponent{connURL: connURL}
 	manager := initTestDatabase(component)
 	t.Cleanup(manager.AfterAppStop)
 
@@ -103,9 +99,7 @@ func TestDatabaseBindProvidesExecutionScopedDao(t *testing.T) {
 
 func TestDatabaseAfterAppStopReleasesSharedConnection(t *testing.T) {
 	connURL := "sqlite://" + t.TempDir() + "/database.sqlite"
-	component := &databaseTestComponent{
-		connURL: connURL,
-	}
+	component := &databaseTestComponent{connURL: connURL}
 
 	manager := initTestDatabase(component)
 	manager.AfterAppStop()

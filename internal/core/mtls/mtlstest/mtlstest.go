@@ -52,7 +52,14 @@ func NewCA(t testing.TB) *CA {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &CA{cert: cert, key: key, pem: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})}
+	return &CA{
+		cert: cert,
+		key:  key,
+		pem: pem.EncodeToMemory(&pem.Block{
+			Type:  "CERTIFICATE",
+			Bytes: der,
+		}),
+	}
 }
 
 // Files writes a temporary X.509-SVID and returns its mTLS file paths.
@@ -89,9 +96,19 @@ func (ca *CA) Files(t testing.TB, identityPath mtls.SPIFFEPath) mtls.Files {
 	certFile := filepath.Join(dir, "cert.pem")
 	keyFile := filepath.Join(dir, "key.pem")
 	writeFile(t, caFile, ca.pem)
-	writeFile(t, certFile, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}))
-	writeFile(t, keyFile, pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyDER}))
-	return mtls.Files{CAFile: caFile, CertFile: certFile, KeyFile: keyFile}
+	writeFile(t, certFile, pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: der,
+	}))
+	writeFile(t, keyFile, pem.EncodeToMemory(&pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: keyDER,
+	}))
+	return mtls.Files{
+		CAFile:   caFile,
+		CertFile: certFile,
+		KeyFile:  keyFile,
+	}
 }
 
 // Identity loads a temporary X.509-SVID through the production mTLS loader.

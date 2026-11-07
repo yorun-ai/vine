@@ -200,8 +200,16 @@ func TestServerReportsAnInvalidStateFile(t *testing.T) {
 		content string
 		message string
 	}{
-		{name: "no port", content: `{"host": "127.0.0.1"}`, message: "invalid development server port 0"},
-		{name: "broken json", content: `{"port":`, message: "parse development server state"},
+		{
+			name:    "no port",
+			content: `{"host": "127.0.0.1"}`,
+			message: "invalid development server port 0",
+		},
+		{
+			name:    "broken json",
+			content: `{"port":`,
+			message: "parse development server state",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			stateFilePath := filepath.Join(t.TempDir(), "dev-state.json")
@@ -245,8 +253,14 @@ func TestServerRoutesServeTheMountRootAndEveryPath(t *testing.T) {
 		basePath string
 		paths    []string
 	}{
-		{basePath: "/", paths: []string{"/*path"}},
-		{basePath: "/admin", paths: []string{"", "/*path"}},
+		{
+			basePath: "/",
+			paths:    []string{"/*path"},
+		},
+		{
+			basePath: "/admin",
+			paths:    []string{"", "/*path"},
+		},
 	} {
 		t.Run(test.basePath, func(t *testing.T) {
 			router := spec.NewRouter(reflect.TypeFor[*Server](), test.basePath)

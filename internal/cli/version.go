@@ -28,9 +28,7 @@ func versionInfo() _VersionInfo {
 	return _VersionInfo{
 		Name:           cliName,
 		DebugBuildInfo: buildinfo.MustDebugBuildInfo(),
-		Dependencies: _VersionDependencies{
-			MinSkelcVersion: skel.MinSkelcVersion(),
-		},
+		Dependencies:   _VersionDependencies{MinSkelcVersion: skel.MinSkelcVersion()},
 	}
 }
 

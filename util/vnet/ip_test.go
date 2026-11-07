@@ -56,9 +56,10 @@ func TestDetectHostIPCachesResult(t *testing.T) {
 	prev := dialUDP
 	dialUDP = func(string) (net.Conn, error) {
 		callCount++
-		return &_TestUDPConn{
-			localAddr: &net.UDPAddr{IP: net.ParseIP("10.0.0.8"), Port: 12345},
-		}, nil
+		return &_TestUDPConn{localAddr: &net.UDPAddr{
+			IP:   net.ParseIP("10.0.0.8"),
+			Port: 12345,
+		}}, nil
 	}
 	t.Cleanup(func() {
 		dialUDP = prev

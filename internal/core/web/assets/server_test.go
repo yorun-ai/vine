@@ -22,7 +22,10 @@ func TestAssetsServerServeAsset(t *testing.T) {
 	}, "."))
 
 	recorder, ginCtx := newStaticTestContext(http.MethodGet, "/assets/app.js")
-	ginCtx.Params = gin.Params{{Key: "path", Value: "/assets/app.js"}}
+	ginCtx.Params = gin.Params{{
+		Key:   "path",
+		Value: "/assets/app.js",
+	}}
 	server.SetContext(ginCtx)
 	server.Serve()
 
@@ -45,7 +48,10 @@ func TestAssetsServerServeAssetsUsesRoutePath(t *testing.T) {
 	}, "."))
 
 	recorder, ginCtx := newStaticTestContext(http.MethodGet, "/assets/../app.js")
-	ginCtx.Params = gin.Params{{Key: "path", Value: "/assets/../app.js"}}
+	ginCtx.Params = gin.Params{{
+		Key:   "path",
+		Value: "/assets/../app.js",
+	}}
 	server.SetContext(ginCtx)
 	server.Serve()
 
@@ -64,7 +70,10 @@ func TestAssetsServerServesArchiveDotSlashFilenames(t *testing.T) {
 	})))
 
 	recorder, ginCtx := newStaticTestContext(http.MethodGet, "/")
-	ginCtx.Params = gin.Params{{Key: "path", Value: "/"}}
+	ginCtx.Params = gin.Params{{
+		Key:   "path",
+		Value: "/",
+	}}
 	server.SetContext(ginCtx)
 	server.Serve()
 
@@ -83,7 +92,10 @@ func TestAssetsServerFallbackAndErrors(t *testing.T) {
 	}, "."))
 
 	recorder, ginCtx := newStaticTestContext(http.MethodGet, "/portal/site")
-	ginCtx.Params = gin.Params{{Key: "path", Value: "/portal/site"}}
+	ginCtx.Params = gin.Params{{
+		Key:   "path",
+		Value: "/portal/site",
+	}}
 	ginCtx.Request.Header.Set("Accept", "text/html")
 	server.SetContext(ginCtx)
 	server.Serve()
@@ -92,7 +104,10 @@ func TestAssetsServerFallbackAndErrors(t *testing.T) {
 	}
 
 	recorder, ginCtx = newStaticTestContext(http.MethodGet, "/missing.js")
-	ginCtx.Params = gin.Params{{Key: "path", Value: "/missing.js"}}
+	ginCtx.Params = gin.Params{{
+		Key:   "path",
+		Value: "/missing.js",
+	}}
 	ginCtx.Request.Header.Set("Accept", "*/*")
 	server.SetContext(ginCtx)
 	server.Serve()
@@ -115,7 +130,10 @@ func TestAssetsServerFallbackMissingIndex(t *testing.T) {
 	}, "."))
 
 	recorder, ginCtx := newStaticTestContext(http.MethodGet, "/portal/site")
-	ginCtx.Params = gin.Params{{Key: "path", Value: "/portal/site"}}
+	ginCtx.Params = gin.Params{{
+		Key:   "path",
+		Value: "/portal/site",
+	}}
 	ginCtx.Request.Header.Set("Accept", "text/html")
 	server.SetContext(ginCtx)
 	server.Serve()
@@ -131,7 +149,10 @@ func TestAssetsServerServesAcceptedEncoding(t *testing.T) {
 	}), "dist"))
 
 	recorder, ginCtx := newStaticTestContext(http.MethodGet, "/portal/site")
-	ginCtx.Params = gin.Params{{Key: "path", Value: "/portal/site"}}
+	ginCtx.Params = gin.Params{{
+		Key:   "path",
+		Value: "/portal/site",
+	}}
 	ginCtx.Request.Header.Set("Accept", "text/html")
 	ginCtx.Request.Header.Set("Accept-Encoding", "gzip, zstd")
 	server.SetContext(ginCtx)
@@ -155,7 +176,10 @@ func TestAssetsServerServesAcceptedBrotliEncoding(t *testing.T) {
 	}), "dist"))
 
 	recorder, ginCtx := newStaticTestContext(http.MethodGet, "/portal/site")
-	ginCtx.Params = gin.Params{{Key: "path", Value: "/portal/site"}}
+	ginCtx.Params = gin.Params{{
+		Key:   "path",
+		Value: "/portal/site",
+	}}
 	ginCtx.Request.Header.Set("Accept", "text/html")
 	ginCtx.Request.Header.Set("Accept-Encoding", "gzip, zstd, br")
 	server.SetContext(ginCtx)
@@ -179,7 +203,10 @@ func TestAssetsServerEncodesPlainAssetWithPreferredEncoding(t *testing.T) {
 	}), "dist"))
 
 	recorder, ginCtx := newStaticTestContext(http.MethodGet, "/assets/app.js")
-	ginCtx.Params = gin.Params{{Key: "path", Value: "/assets/app.js"}}
+	ginCtx.Params = gin.Params{{
+		Key:   "path",
+		Value: "/assets/app.js",
+	}}
 	ginCtx.Request.Header.Set("Accept-Encoding", "gzip, zstd, br")
 	server.SetContext(ginCtx)
 	server.Serve()
@@ -202,7 +229,10 @@ func TestAssetsServerEncodesPlainAssetWithGzip(t *testing.T) {
 	}), "dist"))
 
 	recorder, ginCtx := newStaticTestContext(http.MethodGet, "/assets/app.js")
-	ginCtx.Params = gin.Params{{Key: "path", Value: "/assets/app.js"}}
+	ginCtx.Params = gin.Params{{
+		Key:   "path",
+		Value: "/assets/app.js",
+	}}
 	ginCtx.Request.Header.Set("Accept-Encoding", "gzip")
 	server.SetContext(ginCtx)
 	server.Serve()
@@ -226,7 +256,10 @@ func TestAssetsServerLeavesCompressedFormatsUnchanged(t *testing.T) {
 				"dist/" + filename: content,
 			}), "dist"))
 			recorder, ctx := newStaticTestContext(http.MethodGet, "/"+filename)
-			ctx.Params = gin.Params{{Key: "path", Value: "/" + filename}}
+			ctx.Params = gin.Params{{
+				Key:   "path",
+				Value: "/" + filename,
+			}}
 			ctx.Request.Header.Set("Accept-Encoding", "br, gzip, zstd")
 			server.SetContext(ctx)
 			server.Serve()

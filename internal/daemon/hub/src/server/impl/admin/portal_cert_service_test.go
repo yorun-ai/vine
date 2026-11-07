@@ -11,17 +11,22 @@ import (
 )
 
 func TestPortalCertServiceMapsListItemsAndDetail(t *testing.T) {
-	repo := &_PortalCertRepoSpy{items: map[string]*core.PortalCert{
-		"demo-cert": {
-			Id:           5,
-			Name:         "demo-cert",
-			Issuer:       "letsencrypt",
-			Domains:      []string{"demo.local"},
-			Certificate:  "pub",
-			PrivateKey:   "pri",
-			FieldSources: core.FieldSources{"/certificate": {Source: "app/default", Override: "hub"}},
+	repo := &_PortalCertRepoSpy{
+		items: map[string]*core.PortalCert{
+			"demo-cert": {
+				Id:          5,
+				Name:        "demo-cert",
+				Issuer:      "letsencrypt",
+				Domains:     []string{"demo.local"},
+				Certificate: "pub",
+				PrivateKey:  "pri",
+				FieldSources: core.FieldSources{"/certificate": {
+					Source:   "app/default",
+					Override: "hub",
+				}},
+			},
 		},
-	}}
+	}
 	service := &PortalCertApiServiceServerImpl{PortalCertCore: &core.PortalCertCore{PortalCertRepo: repo}}
 
 	list := service.List()
@@ -42,7 +47,14 @@ func TestPortalCertServiceMapsListItemsAndDetail(t *testing.T) {
 func TestPortalCertServiceDoesNotReturnPrivateKeyProvenanceValues(t *testing.T) {
 	secret := skeltype.JSON(`"private PEM content"`)
 	sources := core.FieldSources{
-		"/privateKey": {Source: "seed", Template: &secret, Bindings: []core.FieldSourceBinding{{Variable: "key", Value: secret}}},
+		"/privateKey": {
+			Source:   "seed",
+			Template: &secret,
+			Bindings: []core.FieldSourceBinding{{
+				Variable: "key",
+				Value:    secret,
+			}},
+		},
 	}
 	fields := portalCertFieldSources(sources)
 	require.Len(t, fields, 1)

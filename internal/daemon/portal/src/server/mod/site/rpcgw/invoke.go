@@ -63,7 +63,9 @@ func (g *RpcGateway) serveInvoke(ctx *spec.Context) {
 		return
 	}
 	g.invoke(&spec.Context{
-		Request: invokeRequest, ResponseWriter: ctx.ResponseWriter, RemoteAddr: ctx.RemoteAddr,
+		Request:        invokeRequest,
+		ResponseWriter: ctx.ResponseWriter,
+		RemoteAddr:     ctx.RemoteAddr,
 	}, trace, initiator, serviceName, methodName)
 }
 

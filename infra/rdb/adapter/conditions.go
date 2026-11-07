@@ -18,7 +18,10 @@ func NormalizeConditions(conditions []any) []any {
 	if len(conditions) > 0 {
 		switch conditions[0].(type) {
 		case uuid.UUID, *uuid.UUID:
-			normalized[0] = clause.Eq{Column: clause.PrimaryColumn, Value: normalized[0]}
+			normalized[0] = clause.Eq{
+				Column: clause.PrimaryColumn,
+				Value:  normalized[0],
+			}
 		}
 	}
 	return normalized

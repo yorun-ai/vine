@@ -71,12 +71,8 @@ func TestRegistryServiceRegisterStartsHeartbeat(t *testing.T) {
 		WebEndpointPrefix: "http://127.0.0.1:8080/web/access",
 		EventEndpoint:     "http://127.0.0.1:8080/event",
 		TaskEndpoint:      "http://127.0.0.1:8080/task",
-		ServiceHandlers: []skeled.ServiceHandlerRegistration{{
-			ServiceSkelName: "demo.service.UserService",
-		}},
-		WebHandlers: []skeled.WebHandlerRegistration{{
-			WebSkelName: "default@demo.app",
-		}},
+		ServiceHandlers:   []skeled.ServiceHandlerRegistration{{ServiceSkelName: "demo.service.UserService"}},
+		WebHandlers:       []skeled.WebHandlerRegistration{{WebSkelName: "default@demo.app"}},
 	})
 
 	assert.Len(t, client.registrations, 1)
@@ -106,12 +102,8 @@ func TestRegistryServiceUnregisterStopsHeartbeat(t *testing.T) {
 		AppInfo:         app,
 		ConsoleEndpoint: "http://127.0.0.1:8080/console",
 		IngressEndpoint: ing.Endpoint(),
-		ServiceHandlers: []skeled.ServiceHandlerRegistration{{
-			ServiceSkelName: "demo.service.UserService",
-		}},
-		WebHandlers: []skeled.WebHandlerRegistration{{
-			WebSkelName: "default@demo.app",
-		}},
+		ServiceHandlers: []skeled.ServiceHandlerRegistration{{ServiceSkelName: "demo.service.UserService"}},
+		WebHandlers:     []skeled.WebHandlerRegistration{{WebSkelName: "default@demo.app"}},
 	})
 	service := &RegistryServiceServerImpl{
 		AppMinder: appMinder,

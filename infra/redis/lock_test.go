@@ -458,10 +458,13 @@ func TestLockContextRequiresHeldLock(t *testing.T) {
 func newHeldTestLock(cmdable goredis.Cmdable, timeout time.Duration) *Lock {
 	ctx := context.Background()
 	lock := &Lock{
-		ctx:           ctx,
-		cmdable:       cmdable,
-		key:           "vine:lock:lock:user:123",
-		option:        &_LockOption{timeout: timeout, refresh: true},
+		ctx:     ctx,
+		cmdable: cmdable,
+		key:     "vine:lock:lock:user:123",
+		option: &_LockOption{
+			timeout: timeout,
+			refresh: true,
+		},
 		token:         "held-token",
 		leaseDeadline: localLeaseDeadline(time.Now(), timeout),
 	}

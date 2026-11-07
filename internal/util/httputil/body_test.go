@@ -22,14 +22,45 @@ func TestCopyResponseBodyPreservesTransferFailures(t *testing.T) {
 			want    int64
 			wantErr error
 		}{
-			{name: "complete", body: strings.NewReader("abc"), length: "3", want: 3},
-			{name: "unknown", body: strings.NewReader("abc"), want: 3},
-			{name: "truncated", body: strings.NewReader("abc"), length: "5", want: 3, wantErr: io.ErrUnexpectedEOF},
-			{name: "excess", body: strings.NewReader("abc"), length: "2", want: 3, wantErr: io.ErrUnexpectedEOF},
-			{name: "read error", body: &failingBodyReader{}, want: 3, wantErr: io.ErrUnexpectedEOF},
+			{
+				name:   "complete",
+				body:   strings.NewReader("abc"),
+				length: "3",
+				want:   3,
+			},
+			{
+				name: "unknown",
+				body: strings.NewReader("abc"),
+				want: 3,
+			},
+			{
+				name:    "truncated",
+				body:    strings.NewReader("abc"),
+				length:  "5",
+				want:    3,
+				wantErr: io.ErrUnexpectedEOF,
+			},
+			{
+				name:    "excess",
+				body:    strings.NewReader("abc"),
+				length:  "2",
+				want:    3,
+				wantErr: io.ErrUnexpectedEOF,
+			},
+			{
+				name:    "read error",
+				body:    &failingBodyReader{},
+				want:    3,
+				wantErr: io.ErrUnexpectedEOF,
+			},
 		} {
 			t.Run(fmt.Sprintf("stream=%v/%s", streaming, tc.name), func(t *testing.T) {
-				response := &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(tc.body), ContentLength: -1}
+				response := &http.Response{
+					StatusCode:    200,
+					Header:        make(http.Header),
+					Body:          io.NopCloser(tc.body),
+					ContentLength: -1,
+				}
 				if tc.length != "" {
 					response.Header.Set("Content-Length", tc.length)
 				}
@@ -69,11 +100,18 @@ func (w *failingBodyWriter) FlushError() error { return io.ErrClosedPipe }
 func TestCopyResponseBodyReportsWriteFailures(t *testing.T) {
 	for _, streaming := range []bool{false, true} {
 		for _, short := range []bool{false, true} {
-			response := &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader("abc"))}
+			response := &http.Response{
+				StatusCode: 200,
+				Header:     make(http.Header),
+				Body:       io.NopCloser(strings.NewReader("abc")),
+			}
 			if streaming {
 				response.Header.Set("Content-Type", "text/event-stream")
 			}
-			n, err := CopyResponseBody(&failingBodyWriter{ResponseRecorder: httptest.NewRecorder(), short: short}, response)
+			n, err := CopyResponseBody(&failingBodyWriter{
+				ResponseRecorder: httptest.NewRecorder(),
+				short:            short,
+			}, response)
 			want := io.ErrClosedPipe
 			if short {
 				want = io.ErrShortWrite
@@ -83,8 +121,15 @@ func TestCopyResponseBodyReportsWriteFailures(t *testing.T) {
 			}
 		}
 	}
-	response := &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": {"text/event-stream"}}, Body: io.NopCloser(strings.NewReader("abc"))}
-	n, err := CopyResponseBody(&failingBodyWriter{ResponseRecorder: httptest.NewRecorder(), flush: true}, response)
+	response := &http.Response{
+		StatusCode: 200,
+		Header:     http.Header{"Content-Type": {"text/event-stream"}},
+		Body:       io.NopCloser(strings.NewReader("abc")),
+	}
+	n, err := CopyResponseBody(&failingBodyWriter{
+		ResponseRecorder: httptest.NewRecorder(),
+		flush:            true,
+	}, response)
 	if n != 3 || !errors.Is(err, io.ErrClosedPipe) {
 		t.Fatalf("flush: %d, %v", n, err)
 	}
@@ -94,8 +139,22 @@ func TestCopyResponseBodySkipsBodylessResponses(t *testing.T) {
 	for _, tc := range []struct {
 		method string
 		status int
-	}{{"HEAD", 200}, {"GET", 204}, {"GET", 304}} {
-		response := &http.Response{StatusCode: tc.status, Request: httptest.NewRequest(tc.method, "/", nil), Header: http.Header{"Content-Length": {"100"}}, Body: io.NopCloser(&failingBodyReader{})}
+	}{{
+		"HEAD",
+		200,
+	}, {
+		"GET",
+		204,
+	}, {
+		"GET",
+		304,
+	}} {
+		response := &http.Response{
+			StatusCode: tc.status,
+			Request:    httptest.NewRequest(tc.method, "/", nil),
+			Header:     http.Header{"Content-Length": {"100"}},
+			Body:       io.NopCloser(&failingBodyReader{}),
+		}
 		n, err := CopyResponseBody(httptest.NewRecorder(), response)
 		if n != 0 || err != nil {
 			t.Fatalf("%v: %d, %v", tc, n, err)
@@ -104,7 +163,10 @@ func TestCopyResponseBodySkipsBodylessResponses(t *testing.T) {
 }
 
 func TestReadResponseBodyRejectsLengthMismatch(t *testing.T) {
-	response := &http.Response{Header: http.Header{"Content-Length": {"5"}}, Body: io.NopCloser(strings.NewReader("abc"))}
+	response := &http.Response{
+		Header: http.Header{"Content-Length": {"5"}},
+		Body:   io.NopCloser(strings.NewReader("abc")),
+	}
 	if _, err := ReadResponseBody(response); !errors.Is(err, io.ErrUnexpectedEOF) {
 		t.Fatalf("got %v", err)
 	}
@@ -120,14 +182,21 @@ func TestCopyResponseBodyPreservesHTTP2FailureDirection(t *testing.T) {
 				defer cancel()
 				cancel()
 				failure := errors.New("http2: stream closed")
-				response := &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader("response"))}
+				response := &http.Response{
+					StatusCode: 200,
+					Header:     make(http.Header),
+					Body:       io.NopCloser(strings.NewReader("response")),
+				}
 				if stream {
 					response.Header.Set("Content-Type", "text/event-stream")
 				}
 				if upstream {
 					response.Body = io.NopCloser(proxyFailingReader{err: failure})
 				}
-				writer := &proxyFailingWriter{ResponseRecorder: httptest.NewRecorder(), write: func([]byte) (int, error) { return 0, failure }}
+				writer := &proxyFailingWriter{
+					ResponseRecorder: httptest.NewRecorder(),
+					write:            func([]byte) (int, error) { return 0, failure },
+				}
 				_, err := CopyResponseBody(writer, response)
 				if !errors.Is(err, failure) || IsCanceledResponseTransfer(ctx, err) != !upstream {
 					t.Fatalf("failure direction lost: %v", err)
@@ -141,9 +210,13 @@ func TestSSEIdleDoesNotHideTruncation(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		reader, writer := io.Pipe()
 		defer writer.Close()
-		response := &http.Response{StatusCode: 200, Header: http.Header{
-			"Content-Type": {"text/event-stream"}, "Content-Length": {"10"},
-		}, Body: reader}
+		response := &http.Response{
+			StatusCode: 200,
+			Header: http.Header{
+				"Content-Type": {"text/event-stream"}, "Content-Length": {"10"},
+			},
+			Body: reader,
+		}
 		_, err := CopyResponseBodyWithIdleTimeout(httptest.NewRecorder(), response, time.Second)
 		if !errors.Is(err, io.ErrUnexpectedEOF) {
 			t.Fatalf("fixed-length idle response must remain truncated: %v", err)
@@ -246,7 +319,12 @@ func TestInternalSSEForwardingHasNoIdleTimeout(t *testing.T) {
 		done := make(chan error, 1)
 		recorder := httptest.NewRecorder()
 		go func() {
-			_, err := CopyResponseBody(recorder, &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": {"text/event-stream"}}, Body: reader, ContentLength: -1})
+			_, err := CopyResponseBody(recorder, &http.Response{
+				StatusCode:    200,
+				Header:        http.Header{"Content-Type": {"text/event-stream"}},
+				Body:          reader,
+				ContentLength: -1,
+			})
 			done <- err
 		}()
 		synctest.Sleep(2 * DefaultStreamIdleTimeout)
@@ -275,15 +353,27 @@ func TestSSEIdleDoesNotHideRequestTermination(t *testing.T) {
 		newContext func(context.Context) (context.Context, context.CancelFunc)
 		want       error
 	}{
-		{"deadline", func(parent context.Context) (context.Context, context.CancelFunc) {
-			return context.WithTimeout(parent, time.Second)
-		}, context.DeadlineExceeded},
-		{"cancel", func(parent context.Context) (context.Context, context.CancelFunc) {
-			ctx, cancel := context.WithCancel(parent)
-			cancel()
-			return ctx, cancel
-		}, context.Canceled},
-		{"idle cleanup", context.WithCancel, ErrStreamIdleTimeout},
+		{
+			"deadline",
+			func(parent context.Context) (context.Context, context.CancelFunc) {
+				return context.WithTimeout(parent, time.Second)
+			},
+			context.DeadlineExceeded,
+		},
+		{
+			"cancel",
+			func(parent context.Context) (context.Context, context.CancelFunc) {
+				ctx, cancel := context.WithCancel(parent)
+				cancel()
+				return ctx, cancel
+			},
+			context.Canceled,
+		},
+		{
+			"idle cleanup",
+			context.WithCancel,
+			ErrStreamIdleTimeout,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
@@ -291,8 +381,17 @@ func TestSSEIdleDoesNotHideRequestTermination(t *testing.T) {
 				defer cancel()
 				reader, writer := io.Pipe()
 				defer writer.Close()
-				body := &cancelOnCloseBody{ReadCloser: reader, cancel: cancel}
-				response := &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": {"text/event-stream"}}, Body: body, ContentLength: -1, Request: httptest.NewRequestWithContext(ctx, "GET", "/", nil)}
+				body := &cancelOnCloseBody{
+					ReadCloser: reader,
+					cancel:     cancel,
+				}
+				response := &http.Response{
+					StatusCode:    200,
+					Header:        http.Header{"Content-Type": {"text/event-stream"}},
+					Body:          body,
+					ContentLength: -1,
+					Request:       httptest.NewRequestWithContext(ctx, "GET", "/", nil),
+				}
 				_, err := CopyResponseBodyWithIdleTimeout(httptest.NewRecorder(), response, time.Second)
 				if !errors.Is(err, tc.want) {
 					t.Fatalf("got %v, want %v", err, tc.want)
@@ -319,7 +418,12 @@ func TestIdleStreamReaderReusesConnectionAcrossHeartbeats(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		reader, writer := io.Pipe()
 		defer writer.Close()
-		response := &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": {"text/event-stream"}}, Body: reader, ContentLength: -1}
+		response := &http.Response{
+			StatusCode:    200,
+			Header:        http.Header{"Content-Type": {"text/event-stream"}},
+			Body:          reader,
+			ContentLength: -1,
+		}
 		recorder := httptest.NewRecorder()
 		done := make(chan error, 1)
 		go func() {
@@ -359,18 +463,57 @@ func TestIdleStreamReaderCleansUpEveryExit(t *testing.T) {
 		writer http.ResponseWriter
 		want   error
 	}{
-		{"EOF", strings.NewReader("abc"), httptest.NewRecorder(), nil},
-		{"read failure", &failingBodyReader{}, httptest.NewRecorder(), io.ErrUnexpectedEOF},
-		{"write failure", strings.NewReader("abc"), &failingBodyWriter{ResponseRecorder: httptest.NewRecorder()}, io.ErrClosedPipe},
-		{"short write", strings.NewReader("abc"), &failingBodyWriter{ResponseRecorder: httptest.NewRecorder(), short: true}, io.ErrShortWrite},
-		{"flush failure", strings.NewReader("abc"), &failingBodyWriter{ResponseRecorder: httptest.NewRecorder(), flush: true}, io.ErrClosedPipe},
+		{
+			"EOF",
+			strings.NewReader("abc"),
+			httptest.NewRecorder(),
+			nil,
+		},
+		{
+			"read failure",
+			&failingBodyReader{},
+			httptest.NewRecorder(),
+			io.ErrUnexpectedEOF,
+		},
+		{
+			"write failure",
+			strings.NewReader("abc"),
+			&failingBodyWriter{ResponseRecorder: httptest.NewRecorder()},
+			io.ErrClosedPipe,
+		},
+		{
+			"short write",
+			strings.NewReader("abc"),
+			&failingBodyWriter{
+				ResponseRecorder: httptest.NewRecorder(),
+				short:            true,
+			},
+			io.ErrShortWrite,
+		},
+		{
+			"flush failure",
+			strings.NewReader("abc"),
+			&failingBodyWriter{
+				ResponseRecorder: httptest.NewRecorder(),
+				flush:            true,
+			},
+			io.ErrClosedPipe,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// synctest also fails if the reader worker survives the copy's cleanup.
 			synctest.Test(t, func(t *testing.T) {
 				closed := false
-				body := &cancelOnCloseBody{ReadCloser: io.NopCloser(tc.source), cancel: func() { closed = true }}
-				response := &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": {"text/event-stream"}}, Body: body, ContentLength: -1}
+				body := &cancelOnCloseBody{
+					ReadCloser: io.NopCloser(tc.source),
+					cancel:     func() { closed = true },
+				}
+				response := &http.Response{
+					StatusCode:    200,
+					Header:        http.Header{"Content-Type": {"text/event-stream"}},
+					Body:          body,
+					ContentLength: -1,
+				}
 				_, err := CopyResponseBodyWithIdleTimeout(tc.writer, response, time.Second)
 				if !errors.Is(err, tc.want) {
 					t.Fatalf("got %v, want %v", err, tc.want)

@@ -37,9 +37,21 @@ func TestSeedLegacyEntriesPreserveTransportAndPort(t *testing.T) {
 		http bool
 		port int
 	}{
-		{"{name: web, scheme: http}", true, 80},
-		{"{name: web, scheme: http, port: 7088}", true, 7088},
-		{"{name: web, scheme: https, host: example.com, port: 8443}", false, 8443},
+		{
+			"{name: web, scheme: http}",
+			true,
+			80,
+		},
+		{
+			"{name: web, scheme: http, port: 7088}",
+			true,
+			7088,
+		},
+		{
+			"{name: web, scheme: https, host: example.com, port: 8443}",
+			false,
+			8443,
+		},
 	} {
 		payload, err := vcode.UnmarshalYamlS[*_SettingsYAMLPayload]("portalEntries: [" + fixture.yaml + "]")
 		require.NoError(t, err)

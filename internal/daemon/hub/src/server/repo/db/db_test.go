@@ -31,7 +31,11 @@ func TestNoDBCreatesIsolatedDatabasesAndSchemas(t *testing.T) {
 		(&model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](db)}).EnsureSchema()
 		(&model.MetadataDao{Dao: rdb.NewDao[*model.Metadata](db)}).EnsureSchema()
 		require.Empty(t, config.ListOrdered())
-		config.Save(&model.AppConfig{Name: "demo.Config", Value: "{}", Version: 1})
+		config.Save(&model.AppConfig{
+			Name:    "demo.Config",
+			Value:   "{}",
+			Version: 1,
+		})
 		require.Len(t, config.ListOrdered(), 1)
 	}
 }

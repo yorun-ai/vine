@@ -20,11 +20,16 @@ func (c *Client) LoadAndSubscribe(ctx context.Context, key string, handle func(e
 	vpre.CheckNilError(err, "load redis key failed")
 	value, ok := values[key]
 	watcher := &_Watcher{
-		client:       c,
-		ctx:          ctx,
-		key:          key,
-		handle:       handle,
-		snapshot:     &_WatchKeySnapshot{client: c, key: key, value: value, hasValue: ok},
+		client: c,
+		ctx:    ctx,
+		key:    key,
+		handle: handle,
+		snapshot: &_WatchKeySnapshot{
+			client:   c,
+			key:      key,
+			value:    value,
+			hasValue: ok,
+		},
 		subscription: newSubscription(ctx, handle),
 	}
 	vpre.CheckNilError(c.subscribeWatcher(watcher), "subscribe failed")
@@ -37,11 +42,15 @@ func (c *Client) LoadListAndSubscribe(ctx context.Context, prefix string, handle
 	valuesByKey, _, err := c.loadStableSnapshot(ctx, nil, prefix)
 	vpre.CheckNilError(err, "load redis list failed")
 	watcher := &_Watcher{
-		client:       c,
-		ctx:          ctx,
-		prefix:       prefix,
-		handle:       handle,
-		snapshot:     &_WatchListSnapshot{client: c, prefix: prefix, valuesByKey: vmap.Clone(valuesByKey)},
+		client: c,
+		ctx:    ctx,
+		prefix: prefix,
+		handle: handle,
+		snapshot: &_WatchListSnapshot{
+			client:      c,
+			prefix:      prefix,
+			valuesByKey: vmap.Clone(valuesByKey),
+		},
 		subscription: newSubscription(ctx, handle),
 	}
 	vpre.CheckNilError(c.subscribeWatcher(watcher), "subscribe failed")
@@ -69,8 +78,15 @@ func (c *Client) LoadKeysAndSubscribe(ctx context.Context, keys []string, handle
 		return nil, nil, err
 	}
 	watcher := &_Watcher{
-		client: c, ctx: ctx, keys: keys, handle: handle,
-		snapshot:     &_WatchListSnapshot{client: c, keys: keys, valuesByKey: vmap.Clone(values)},
+		client: c,
+		ctx:    ctx,
+		keys:   keys,
+		handle: handle,
+		snapshot: &_WatchListSnapshot{
+			client:      c,
+			keys:        keys,
+			valuesByKey: vmap.Clone(values),
+		},
 		subscription: newSubscription(ctx, handle),
 	}
 	if err := c.subscribeWatcher(watcher); err != nil {
@@ -156,7 +172,10 @@ func (w *_Watcher) start(redisClient *redis.Client) error {
 	// Reconcile before consuming: the reload covers everything that changed
 	// while no subscription was attached, and later events are filtered by the
 	// resulting revision.
-	reader := &Client{ctx: attachCtx, redisClient: redisClient}
+	reader := &Client{
+		ctx:         attachCtx,
+		redisClient: redisClient,
+	}
 	switch snapshot := w.snapshot.(type) {
 	case *_WatchKeySnapshot:
 		snapshot.client = reader

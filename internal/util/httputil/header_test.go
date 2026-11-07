@@ -27,9 +27,7 @@ func TestIsEventStreamResponse(t *testing.T) {
 		"text/event-stream; charset=utf-8",
 		"Text/Event-Stream",
 	} {
-		response := &http.Response{
-			Header: http.Header{"Content-Type": []string{contentType}},
-		}
+		response := &http.Response{Header: http.Header{"Content-Type": []string{contentType}}}
 
 		if !IsEventStreamResponse(response) {
 			t.Fatalf("expected event stream response: %s", contentType)

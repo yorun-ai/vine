@@ -9,7 +9,13 @@ import (
 )
 
 func TestWebTimeoutAdminMapping(t *testing.T) {
-	config := &webtimeout.Config{Default: &webtimeout.Policy{Total: "30s"}, Paths: []webtimeout.Path{{Path: "/go/**", Total: "15m"}}}
+	config := &webtimeout.Config{
+		Default: &webtimeout.Policy{Total: "30s"},
+		Paths: []webtimeout.Path{{
+			Path:  "/go/**",
+			Total: "15m",
+		}},
+	}
 	entry := &core.PortalSite{WebTimeout: config}
 	detail := toServerPortalSite(entry, nil)
 	require.Equal(t, config, toCoreWebTimeout(detail.WebTimeout))

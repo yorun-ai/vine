@@ -81,7 +81,9 @@ func TestServerServesEmbeddedAssetsThroughContainer(t *testing.T) {
 			spec.ResetRegistryForTest()
 			t.Cleanup(spec.ResetRegistryForTest)
 			spec.Register(&spec.WebSpec{
-				Name: "ServerTestWeb", SkelName: "demo.user.ServerTestWeb", MountPath: mount,
+				Name:              "ServerTestWeb",
+				SkelName:          "demo.user.ServerTestWeb",
+				MountPath:         mount,
 				ServerType:        reflect.TypeFor[_ServerTestWebServer](),
 				DefaultServerType: reflect.TypeFor[*_DefaultServerTestWebServer](),
 			})
@@ -94,13 +96,55 @@ func TestServerServesEmbeddedAssetsThroughContainer(t *testing.T) {
 				status int
 				body   string
 			}{
-				{http.MethodGet, base + "/", "", 200, "index"},
-				{http.MethodGet, base + "/index.html", "", 200, "index"},
-				{http.MethodGet, base + "/app.js?v=1", "", 200, "script"},
-				{http.MethodHead, base + "/app.js", "", 200, ""},
-				{http.MethodGet, base + "/missing.js", "", 404, ""},
-				{http.MethodGet, base + "/page", "text/html", 200, "index"},
-				{http.MethodPost, base + "/", "", 405, ""},
+				{
+					http.MethodGet,
+					base + "/",
+					"",
+					200,
+					"index",
+				},
+				{
+					http.MethodGet,
+					base + "/index.html",
+					"",
+					200,
+					"index",
+				},
+				{
+					http.MethodGet,
+					base + "/app.js?v=1",
+					"",
+					200,
+					"script",
+				},
+				{
+					http.MethodHead,
+					base + "/app.js",
+					"",
+					200,
+					"",
+				},
+				{
+					http.MethodGet,
+					base + "/missing.js",
+					"",
+					404,
+					"",
+				},
+				{
+					http.MethodGet,
+					base + "/page",
+					"text/html",
+					200,
+					"index",
+				},
+				{
+					http.MethodPost,
+					base + "/",
+					"",
+					405,
+					"",
+				},
 			} {
 				request := newAssetsWebRequest(t, tc.method, "/demo.user.ServerTestWeb"+tc.path)
 				request.Header.Set("Accept", tc.accept)
@@ -146,11 +190,31 @@ func TestStripWebNamePreservesRequestURI(t *testing.T) {
 		path  string
 		uri   string
 	}{
-		{"/demo.Web/main/a%2Fb?q=a%2Fb", "/main/a/b", "/main/a%2Fb?q=a%2Fb"},
-		{"/demo.Web/main/a%20b", "/main/a b", "/main/a%20b"},
-		{"/demo.Web/main?", "/main", "/main?"},
-		{"/demo.Web", "/", "/"},
-		{"/%64emo.Web/main/a%2Fb", "/main/a/b", "/main/a/b"},
+		{
+			"/demo.Web/main/a%2Fb?q=a%2Fb",
+			"/main/a/b",
+			"/main/a%2Fb?q=a%2Fb",
+		},
+		{
+			"/demo.Web/main/a%20b",
+			"/main/a b",
+			"/main/a%20b",
+		},
+		{
+			"/demo.Web/main?",
+			"/main",
+			"/main?",
+		},
+		{
+			"/demo.Web",
+			"/",
+			"/",
+		},
+		{
+			"/%64emo.Web/main/a%2Fb",
+			"/main/a/b",
+			"/main/a/b",
+		},
 	} {
 		t.Run(tc.input, func(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
@@ -380,9 +444,21 @@ func TestServerRecoveryMapsStructuredErrorToHTTPStatus(t *testing.T) {
 		code   ex.Code
 		status int
 	}{
-		{name: "application error", code: ex.NotFound, status: http.StatusNotFound},
-		{name: "client system error", code: ex.InvalidRequest, status: http.StatusBadRequest},
-		{name: "server system error", code: ex.ServiceUnavailable, status: http.StatusServiceUnavailable},
+		{
+			name:   "application error",
+			code:   ex.NotFound,
+			status: http.StatusNotFound,
+		},
+		{
+			name:   "client system error",
+			code:   ex.InvalidRequest,
+			status: http.StatusBadRequest,
+		},
+		{
+			name:   "server system error",
+			code:   ex.ServiceUnavailable,
+			status: http.StatusServiceUnavailable,
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -461,17 +537,72 @@ func TestServerRequestCompletionLog(t *testing.T) {
 		reportError bool
 		level       string
 	}{
-		{"success", http.StatusOK, false, "DEBUG"},
-		{"not modified", http.StatusNotModified, false, "DEBUG"},
-		{"bad request", http.StatusBadRequest, false, "DEBUG"},
-		{"unauthorized", http.StatusUnauthorized, false, "DEBUG"},
-		{"forbidden", http.StatusForbidden, false, "DEBUG"},
-		{"not found", http.StatusNotFound, false, "DEBUG"},
-		{"internal error", http.StatusInternalServerError, false, "ERROR"},
-		{"bad gateway", http.StatusBadGateway, false, "ERROR"},
-		{"explicit error with success", http.StatusOK, true, "WARN"},
-		{"explicit error with client error", http.StatusBadRequest, true, "WARN"},
-		{"explicit error with server error", http.StatusBadGateway, true, "ERROR"},
+		{
+			"success",
+			http.StatusOK,
+			false,
+			"DEBUG",
+		},
+		{
+			"not modified",
+			http.StatusNotModified,
+			false,
+			"DEBUG",
+		},
+		{
+			"bad request",
+			http.StatusBadRequest,
+			false,
+			"DEBUG",
+		},
+		{
+			"unauthorized",
+			http.StatusUnauthorized,
+			false,
+			"DEBUG",
+		},
+		{
+			"forbidden",
+			http.StatusForbidden,
+			false,
+			"DEBUG",
+		},
+		{
+			"not found",
+			http.StatusNotFound,
+			false,
+			"DEBUG",
+		},
+		{
+			"internal error",
+			http.StatusInternalServerError,
+			false,
+			"ERROR",
+		},
+		{
+			"bad gateway",
+			http.StatusBadGateway,
+			false,
+			"ERROR",
+		},
+		{
+			"explicit error with success",
+			http.StatusOK,
+			true,
+			"WARN",
+		},
+		{
+			"explicit error with client error",
+			http.StatusBadRequest,
+			true,
+			"WARN",
+		},
+		{
+			"explicit error with server error",
+			http.StatusBadGateway,
+			true,
+			"ERROR",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			gin.SetMode(gin.TestMode)
@@ -508,15 +639,17 @@ func TestServerRequestCompletionPreservesOrdinaryRequests(t *testing.T) {
 	defer cancel()
 	for _, status := range []int{http.StatusOK, http.StatusServiceUnavailable} {
 		request := httptest.NewRequestWithContext(ctx, "GET", "/demo.user.ServerTestWeb/ping", nil)
-		server := newServerTestServer(&_ServerTestExecutor{execute: func(route spec.Route, ginCtx *gin.Context) {
-			if ginCtx.Request != request || ginCtx.Request.Context() != ctx {
-				t.Fatal("completion logging replaced the request or its context")
-			}
-			if ginCtx.Keys != nil {
-				t.Fatal("ordinary request allocated tracking state")
-			}
-			ginCtx.Status(status)
-		}})
+		server := newServerTestServer(&_ServerTestExecutor{
+			execute: func(route spec.Route, ginCtx *gin.Context) {
+				if ginCtx.Request != request || ginCtx.Request.Context() != ctx {
+					t.Fatal("completion logging replaced the request or its context")
+				}
+				if ginCtx.Keys != nil {
+					t.Fatal("ordinary request allocated tracking state")
+				}
+				ginCtx.Status(status)
+			},
+		})
 		server.HTTPHandler().ServeHTTP(httptest.NewRecorder(), request)
 	}
 }
@@ -575,9 +708,11 @@ func TestServerReverseProxyAbortReachesTransport(t *testing.T) {
 	}
 	proxy := httputil.NewSingleHostReverseProxy(upstreamURL)
 	proxy.ErrorLog = log.New(io.Discard, "", 0)
-	server := newServerTestServer(&_ServerTestExecutor{execute: func(route spec.Route, ctx *gin.Context) {
-		proxy.ServeHTTP(ctx.Writer, ctx.Request)
-	}})
+	server := newServerTestServer(&_ServerTestExecutor{
+		execute: func(route spec.Route, ctx *gin.Context) {
+			proxy.ServeHTTP(ctx.Writer, ctx.Request)
+		},
+	})
 	for _, protocol := range []string{"http1", "http2", "inproc"} {
 		t.Run(protocol, func(t *testing.T) {
 			var response *http.Response
@@ -629,26 +764,28 @@ func TestDevProxyCompletionLogDistinguishesUpstreamFromLocalFailure(t *testing.T
 	proxy.SetStateFile(statePath)
 	var reportError bool
 	var panicAfter bool
-	server := newServerTestServer(&_ServerTestExecutor{execute: func(route spec.Route, ctx *gin.Context) {
-		if ctx.Query("local") == "true" {
-			if spec.IsUpstream5xx(ctx) {
-				t.Fatal("upstream marker leaked into another request")
+	server := newServerTestServer(&_ServerTestExecutor{
+		execute: func(route spec.Route, ctx *gin.Context) {
+			if ctx.Query("local") == "true" {
+				if spec.IsUpstream5xx(ctx) {
+					t.Fatal("upstream marker leaked into another request")
+				}
+				ctx.Status(http.StatusServiceUnavailable)
+				return
 			}
-			ctx.Status(http.StatusServiceUnavailable)
-			return
-		}
-		proxy.GinCtx = ctx
-		proxy.Serve()
-		if ctx.Query("success") == "true" && ctx.Keys != nil {
-			t.Fatal("successful proxy response allocated tracking state")
-		}
-		if panicAfter {
-			panic("local handler panic")
-		}
-		if reportError {
-			_ = ctx.Error(errors.New("local handler failure"))
-		}
-	}})
+			proxy.GinCtx = ctx
+			proxy.Serve()
+			if ctx.Query("success") == "true" && ctx.Keys != nil {
+				t.Fatal("successful proxy response allocated tracking state")
+			}
+			if panicAfter {
+				panic("local handler panic")
+			}
+			if reportError {
+				_ = ctx.Error(errors.New("local handler failure"))
+			}
+		},
+	})
 	for _, tc := range []struct {
 		name          string
 		query         string
@@ -658,12 +795,60 @@ func TestDevProxyCompletionLogDistinguishesUpstreamFromLocalFailure(t *testing.T
 		status        int
 		level         string
 	}{
-		{"upstream 200", "success=true", false, false, false, 200, "DEBUG"},
-		{"upstream 503", "", false, false, false, 503, "DEBUG"},
-		{"local 503 after upstream request", "local=true", false, false, false, 503, "ERROR"},
-		{"upstream with explicit error", "", true, false, false, 503, "ERROR"},
-		{"local panic after upstream", "", false, true, false, 503, "ERROR"},
-		{"connection failure", "", false, false, true, 502, "ERROR"},
+		{
+			"upstream 200",
+			"success=true",
+			false,
+			false,
+			false,
+			200,
+			"DEBUG",
+		},
+		{
+			"upstream 503",
+			"",
+			false,
+			false,
+			false,
+			503,
+			"DEBUG",
+		},
+		{
+			"local 503 after upstream request",
+			"local=true",
+			false,
+			false,
+			false,
+			503,
+			"ERROR",
+		},
+		{
+			"upstream with explicit error",
+			"",
+			true,
+			false,
+			false,
+			503,
+			"ERROR",
+		},
+		{
+			"local panic after upstream",
+			"",
+			false,
+			true,
+			false,
+			503,
+			"ERROR",
+		},
+		{
+			"connection failure",
+			"",
+			false,
+			false,
+			true,
+			502,
+			"ERROR",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			reportError = tc.explicitError
@@ -692,8 +877,16 @@ func TestDevProxyFlushFailureThroughGin(t *testing.T) {
 		failure error
 		level   string
 	}{
-		{"success", nil, "DEBUG"},
-		{"flush failure", io.ErrClosedPipe, "ERROR"},
+		{
+			"success",
+			nil,
+			"DEBUG",
+		},
+		{
+			"flush failure",
+			io.ErrClosedPipe,
+			"ERROR",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			logPath := setServerTestDefaultLogger(t)
@@ -712,7 +905,11 @@ func TestDevProxyFlushFailureThroughGin(t *testing.T) {
 			}))
 			backend.Start()
 			server := newServerTestDevProxy(t, backend.URL)
-			writer := new(serverTestFlushWriter{ResponseRecorder: httptest.NewRecorder(), failure: tc.failure, headersFlushed: headersFlushed})
+			writer := new(serverTestFlushWriter{
+				ResponseRecorder: httptest.NewRecorder(),
+				failure:          tc.failure,
+				headersFlushed:   headersFlushed,
+			})
 			server.HTTPHandler().ServeHTTP(writer, httptest.NewRequestWithContext(t.Context(), "GET", "/demo.user.ServerTestWeb/ping", nil))
 			if writer.flushes.Load() == 0 || writer.Code != http.StatusServiceUnavailable {
 				t.Fatalf("flushes=%d status=%d", writer.flushes.Load(), writer.Code)
@@ -832,11 +1029,13 @@ func newServerTestDevProxy(t *testing.T, backendURL string) *Server {
 	if err := os.WriteFile(statePath, state, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	return newServerTestServer(&_ServerTestExecutor{execute: func(route spec.Route, ctx *gin.Context) {
-		proxy := new(devproxy.Server{GinCtx: ctx})
-		proxy.SetStateFile(statePath)
-		proxy.Serve()
-	}})
+	return newServerTestServer(&_ServerTestExecutor{
+		execute: func(route spec.Route, ctx *gin.Context) {
+			proxy := new(devproxy.Server{GinCtx: ctx})
+			proxy.SetStateFile(statePath)
+			proxy.Serve()
+		},
+	})
 }
 
 func TestDevProxyWebSocketHMR(t *testing.T) {

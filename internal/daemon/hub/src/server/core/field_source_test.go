@@ -7,23 +7,51 @@ import (
 )
 
 func TestSourceOverrideDropsReplacedDescendants(t *testing.T) {
-	original := FieldSources{"/value/removed": {Source: "domain/booker", Define: "domain/booker", Variables: []string{"OLD"}}, "/name": {Source: "app/default", Define: "app/default"}}
+	original := FieldSources{"/value/removed": {
+		Source:    "domain/booker",
+		Define:    "domain/booker",
+		Variables: []string{"OLD"},
+	}, "/name": {
+		Source: "app/default",
+		Define: "app/default",
+	}}
 	next := overrideFieldSource(cloneFieldSources(original), "/value")
 	require.Contains(t, original, "/value/removed")
 	require.NotContains(t, next, "/value/removed")
-	require.Equal(t, FieldSource{Source: "hub", Override: "hub"}, next["/value"])
+	require.Equal(t, FieldSource{
+		Source:   "hub",
+		Override: "hub",
+	}, next["/value"])
 	require.Equal(t, original["/name"], next["/name"])
 }
 
 func TestHubOverrideUpdatesSourceAndPreservesDefine(t *testing.T) {
-	sources := FieldSources{"/value/enabled": {Source: "profile/dev", Define: "domain/booker", Override: "profile/dev"}}
+	sources := FieldSources{"/value/enabled": {
+		Source:   "profile/dev",
+		Define:   "domain/booker",
+		Override: "profile/dev",
+	}}
 	next := overrideFieldSource(sources, "/value/enabled")
-	require.Equal(t, FieldSource{Source: "hub", Define: "domain/booker", Override: "hub"}, next["/value/enabled"])
+	require.Equal(t, FieldSource{
+		Source:   "hub",
+		Define:   "domain/booker",
+		Override: "hub",
+	}, next["/value/enabled"])
 }
 
 func TestOverrideClearsTemplateAndBindingsWithoutMutatingOriginal(t *testing.T) {
 	template := skeltype.JSON(`"${enabled}"`)
-	original := FieldSources{"/value/enabled": {Source: "app/default", Define: "app/default", Template: &template, Variables: []string{"enabled"}, Bindings: []FieldSourceBinding{{Variable: "enabled", Reference: "${enabled}", Value: skeltype.JSON(`false`)}}}}
+	original := FieldSources{"/value/enabled": {
+		Source:    "app/default",
+		Define:    "app/default",
+		Template:  &template,
+		Variables: []string{"enabled"},
+		Bindings: []FieldSourceBinding{{
+			Variable:  "enabled",
+			Reference: "${enabled}",
+			Value:     skeltype.JSON(`false`),
+		}},
+	}}
 	cloned := cloneFieldSources(original)
 	*cloned["/value/enabled"].Template = skeltype.JSON(`"changed"`)
 	cloned["/value/enabled"].Bindings[0].Value = skeltype.JSON(`true`)

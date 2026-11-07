@@ -176,7 +176,10 @@ func checkLoggerArgs(args []any) {
 			if len(args) == 1 {
 				return
 			}
-			checkLoggerAttr(slog.Attr{Key: arg, Value: slog.AnyValue(args[1])})
+			checkLoggerAttr(slog.Attr{
+				Key:   arg,
+				Value: slog.AnyValue(args[1]),
+			})
 			args = args[2:]
 		default:
 			args = args[1:]

@@ -21,12 +21,10 @@ func TestRegistrationRejectsInvalidDescriptorWithoutReplacingDomain(t *testing.T
 			d.Services[0].Methods[0].EffectiveAuthMode = descriptor.AuthModeOptional
 		},
 		func(d *descriptor.Domain) {
-			d.Services[0].Methods[0].EffectiveRequire = &descriptor.PermissionRequire{
-				Expression: &descriptor.PermissionExpression{
-					Mode: descriptor.PermissionRequireModeCode,
-					Code: "invented",
-				},
-			}
+			d.Services[0].Methods[0].EffectiveRequire = &descriptor.PermissionRequire{Expression: &descriptor.PermissionExpression{
+				Mode: descriptor.PermissionRequireModeCode,
+				Code: "invented",
+			}}
 		},
 		func(d *descriptor.Domain) {
 			d.Services[0].Api = false
@@ -180,19 +178,15 @@ func TestRegisterDomainDescriptorPanicsOnDuplicateFullDomain(t *testing.T) {
 }
 
 func validGeneratedInfoForTest() *descriptor.GeneratedInfo {
-	return &descriptor.GeneratedInfo{
-		CompilerVersion: "v99.0.0",
-	}
+	return &descriptor.GeneratedInfo{CompilerVersion: "v99.0.0"}
 }
 
 func TestRegisterDomainDescriptorSupportedCompilerVersions(t *testing.T) {
 	for _, version := range []string{"v0.17.1", "v0.18.0", buildinfo.DevVersion} {
 		t.Run(version, func(t *testing.T) {
 			NewRegistry().RegisterDomainDescriptor(&descriptor.Domain{
-				Name: "test",
-				Generated: &descriptor.GeneratedInfo{
-					CompilerVersion: version,
-				},
+				Name:      "test",
+				Generated: &descriptor.GeneratedInfo{CompilerVersion: version},
 			})
 		})
 	}
@@ -211,11 +205,9 @@ func TestRegisterDomainDescriptorPanicsOnLowCompilerVersion(t *testing.T) {
 		}
 	}()
 	registry.RegisterDomainDescriptor(&descriptor.Domain{
-		Name: "demo.user",
-		Hash: "full-hash",
-		Generated: &descriptor.GeneratedInfo{
-			CompilerVersion: "v0.17.0",
-		},
+		Name:      "demo.user",
+		Hash:      "full-hash",
+		Generated: &descriptor.GeneratedInfo{CompilerVersion: "v0.17.0"},
 	})
 }
 

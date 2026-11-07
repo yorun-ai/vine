@@ -76,9 +76,7 @@ func (s *Server) Serve() {
 // handler is built for every request, while the proxy and the address it forwards
 // to outlive the request, so a frontend that restarts on another port is followed
 // without a restart of the application.
-var followedServers = &_FollowedServers{
-	byStateFile: map[string]*_FollowedServer{},
-}
+var followedServers = &_FollowedServers{byStateFile: map[string]*_FollowedServer{}}
 
 // _FollowedServers keeps one development server per state file.
 type _FollowedServers struct {
@@ -151,7 +149,10 @@ func (s *_FollowedServer) proxyFor(state *_State) *httputil.ReverseProxy {
 	if s.proxy != nil && s.address == addressOf(state) {
 		return s.proxy
 	}
-	target := &url.URL{Scheme: "http", Host: addressOf(state)}
+	target := &url.URL{
+		Scheme: "http",
+		Host:   addressOf(state),
+	}
 	logger.Info("forwarding to the development server",
 		"target", target.String(), "state", s.stateFilePath)
 	return devProxy(target)

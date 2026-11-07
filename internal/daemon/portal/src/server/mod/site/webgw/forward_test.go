@@ -26,15 +26,61 @@ func TestForwardResponseIntegrity(t *testing.T) {
 		status      int
 		wantFailure bool
 	}{
-		{name: "complete", length: "7", body: "package", status: 200},
-		{name: "unknown", body: "package", status: 200},
-		{name: "truncated", length: "70010", body: strings.Repeat("partial", 10000), status: 200, wantFailure: true},
-		{name: "aborted unknown length", body: strings.Repeat("partial", 10000), abort: true, status: 200, wantFailure: true},
-		{name: "compressed truncation", length: "10", body: "partial", compress: true, status: 200, wantFailure: true},
-		{name: "compressed", length: "5000", body: strings.Repeat("x", 5000), compress: true, status: 200},
-		{name: "head", method: "HEAD", length: "100", status: 200},
-		{name: "not modified", length: "100", status: 304},
-		{name: "no content", status: 204},
+		{
+			name:   "complete",
+			length: "7",
+			body:   "package",
+			status: 200,
+		},
+		{
+			name:   "unknown",
+			body:   "package",
+			status: 200,
+		},
+		{
+			name:        "truncated",
+			length:      "70010",
+			body:        strings.Repeat("partial", 10000),
+			status:      200,
+			wantFailure: true,
+		},
+		{
+			name:        "aborted unknown length",
+			body:        strings.Repeat("partial", 10000),
+			abort:       true,
+			status:      200,
+			wantFailure: true,
+		},
+		{
+			name:        "compressed truncation",
+			length:      "10",
+			body:        "partial",
+			compress:    true,
+			status:      200,
+			wantFailure: true,
+		},
+		{
+			name:     "compressed",
+			length:   "5000",
+			body:     strings.Repeat("x", 5000),
+			compress: true,
+			status:   200,
+		},
+		{
+			name:   "head",
+			method: "HEAD",
+			length: "100",
+			status: 200,
+		},
+		{
+			name:   "not modified",
+			length: "100",
+			status: 304,
+		},
+		{
+			name:   "no content",
+			status: 204,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "link+inproc://response-integrity"
@@ -70,7 +116,10 @@ func TestForwardResponseIntegrity(t *testing.T) {
 			t.Cleanup(func() { ingressinproc.Unregister(endpoint) })
 			gateway := newTestWebGateway(t, map[string]string{
 				watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
-					Endpoint: endpoint + "/web/proxy/in/instance-1/admin@demo.app", WebSkelName: "admin@demo.app", AppName: "demo.app", AppInstanceId: "instance-1",
+					Endpoint:      endpoint + "/web/proxy/in/instance-1/admin@demo.app",
+					WebSkelName:   "admin@demo.app",
+					AppName:       "demo.app",
+					AppInstanceId: "instance-1",
 				}),
 			})
 			for _, h2 := range []bool{false, true} {

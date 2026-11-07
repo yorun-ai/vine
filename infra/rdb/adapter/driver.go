@@ -42,9 +42,15 @@ func (d *_Driver) OpenConnector(name string) (driver.Connector, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &_Connector{Connector: connector, driver: d}, nil
+		return &_Connector{
+			Connector: connector,
+			driver:    d,
+		}, nil
 	}
-	return &_Connector{driver: d, name: name}, nil
+	return &_Connector{
+		driver: d,
+		name:   name,
+	}, nil
 }
 
 type _Connector struct {
@@ -100,7 +106,10 @@ func (c *_Conn) Prepare(query string) (driver.Stmt, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &_Stmt{Stmt: stmt, conn: c}, nil
+	return &_Stmt{
+		Stmt: stmt,
+		conn: c,
+	}, nil
 }
 
 // PrepareContext delegates context-aware preparation when supported.
@@ -111,7 +120,10 @@ func (c *_Conn) PrepareContext(ctx context.Context, query string) (driver.Stmt, 
 		if err != nil {
 			return nil, err
 		}
-		return &_Stmt{Stmt: stmt, conn: c}, nil
+		return &_Stmt{
+			Stmt: stmt,
+			conn: c,
+		}, nil
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err

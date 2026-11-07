@@ -32,7 +32,10 @@ func mcpBackend(t *testing.T, watch *watchtest.Client, service string, handler h
 	endpoint := "link+inproc://vine/mcp-" + meta.NewId()
 	registerTestIngress(t, endpoint, handler)
 	watch.SetValue(watched.FormatRpcServiceRegistrationKey(service, "demo.app", "instance-1"), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
-		Endpoint: endpoint, ServiceName: service, AppName: "demo.app", AppInstanceId: "instance-1",
+		Endpoint:      endpoint,
+		ServiceName:   service,
+		AppName:       "demo.app",
+		AppInstanceId: "instance-1",
 	}))
 }
 
@@ -52,10 +55,18 @@ func mcpBackendResult(t *testing.T, w http.ResponseWriter, result any, failure *
 
 func TestMcpCallAdmissionForwardingAndErrors(t *testing.T) {
 	watch := inspectWatch(t)
-	actor := &skeldesc.Actor{SkelName: "demo.UserActor", Auth: &skeldesc.ActorAuth{
-		Credential: testCredentialDescriptor(), Info: &skeldesc.Data{SkelName: "demo.UserInfo"},
-		Service: &skeldesc.Service{SkelName: "demo.AuthService", Methods: []*skeldesc.Method{{Name: "Auth", SkelName: "auth"}}}, MethodName: "Auth",
-	}}
+	actor := &skeldesc.Actor{
+		SkelName: "demo.UserActor",
+		Auth: &skeldesc.ActorAuth{
+			Credential: testCredentialDescriptor(),
+			Info:       &skeldesc.Data{SkelName: "demo.UserInfo"},
+			Service: &skeldesc.Service{
+				SkelName: "demo.AuthService",
+				Methods:  []*skeldesc.Method{{Name: "Auth", SkelName: "auth"}},
+			},
+			MethodName: "Auth",
+		},
+	}
 	watch.SetValue(watched.FormatDescriptorActorKey(actor.SkelName), vcode.MustMarshalJsonS(actor))
 	mcpBackend(t, watch, "demo.AuthService", func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
@@ -65,7 +76,10 @@ func TestMcpCallAdmissionForwardingAndErrors(t *testing.T) {
 		}
 		require.NoError(t, vrpchttp.DecodeRequest(body, &arguments, r.Header.Get("Content-Type")))
 		if arguments.Credential["key"] != "token" {
-			mcpBackendResult(t, w, nil, &vrpchttp.ErrorPayload{Code: string(ex.Unauthorized), Message: "invalid token"})
+			mcpBackendResult(t, w, nil, &vrpchttp.ErrorPayload{
+				Code:    string(ex.Unauthorized),
+				Message: "invalid token",
+			})
 			return
 		}
 		mcpBackendResult(t, w, map[string]string{"userId": "u1"}, nil)
@@ -107,7 +121,12 @@ func TestMcpCallAdmissionForwardingAndErrors(t *testing.T) {
 		require.NoError(t, err)
 		require.JSONEq(t, `{"params":{"id":9007199254740993}}`, string(body))
 		if failure.Load() {
-			mcpBackendResult(t, w, nil, &vrpchttp.ErrorPayload{Code: string(ex.OperationFailed), Message: "denied", Reason: "blocked", Detail: "secret"})
+			mcpBackendResult(t, w, nil, &vrpchttp.ErrorPayload{
+				Code:    string(ex.OperationFailed),
+				Message: "denied",
+				Reason:  "blocked",
+				Detail:  "secret",
+			})
 			return
 		}
 		mcpBackendResult(t, w, map[string]string{"name": "Alice"}, nil)
@@ -149,8 +168,15 @@ func TestMcpCallAdmissionForwardingAndErrors(t *testing.T) {
 	require.Contains(t, result.Content[0].(*mcp.TextContent).Text, "blocked")
 	require.NotContains(t, result.Content[0].(*mcp.TextContent).Text, "secret")
 	service := inspectService("demo.UserService")
-	service.Methods[0].EffectiveRequire = &skeldesc.PermissionRequire{Expression: &skeldesc.PermissionExpression{Mode: skeldesc.PermissionRequireModeCode, Code: "demo.User:read"}}
-	watch.Publish(hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: watched.FormatDescriptorServiceKey(service.SkelName), Value: vcode.MustMarshalJsonS(service)})
+	service.Methods[0].EffectiveRequire = &skeldesc.PermissionRequire{Expression: &skeldesc.PermissionExpression{
+		Mode: skeldesc.PermissionRequireModeCode,
+		Code: "demo.User:read",
+	}}
+	watch.Publish(hubwatch.Event{
+		Kind:  hubwatch.EventKindUpsert,
+		Key:   watched.FormatDescriptorServiceKey(service.SkelName),
+		Value: vcode.MustMarshalJsonS(service),
+	})
 	require.Eventually(t, func() bool {
 		snapshot := gateway.desc.Snapshot()
 		return !snapshot.Syncing && snapshot.Services[service.SkelName].Methods[0].EffectiveRequire != nil
@@ -279,7 +305,10 @@ func TestMcpToolIgnoresSDKCancellation(t *testing.T) {
 	request := mcpRequest("tools/call", nil, mcpProtocolVersion)
 	rpchttp.EncodeTraceToHeader(request.Header, meta.InitialTrace())
 	result, err := gateway.callMcpTool(sdkCtx, testContext(httptest.NewRecorder(), request), "demo.UserService", "Get",
-		&mcp.Tool{InputSchema: map[string]any{"type": "object"}, OutputSchema: map[string]any{"type": "object"}},
+		&mcp.Tool{
+			InputSchema:  map[string]any{"type": "object"},
+			OutputSchema: map[string]any{"type": "object"},
+		},
 		&mcp.CallToolRequest{Params: &mcp.CallToolParamsRaw{Arguments: []byte("{}")}})
 	require.NoError(t, err)
 	require.False(t, result.IsError, result.Content)
@@ -291,11 +320,46 @@ func TestMcpStructuredResultsPreserveTypesAndValidate(t *testing.T) {
 		kind  *skeldesc.Type
 		value jsontext.Value
 	}{
-		{"integer", &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarInt}, jsontext.Value(`9007199254740993`)},
-		{"string", &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString}, jsontext.Value(`"hello"`)},
-		{"boolean", &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBoolean}, jsontext.Value(`false`)},
-		{"array", &skeldesc.Type{Kind: skeldesc.TypeKindList, Element: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString}}, jsontext.Value(`["a"]`)},
-		{"void", nil, jsontext.Value(`null`)},
+		{
+			"integer",
+			&skeldesc.Type{
+				Kind:   skeldesc.TypeKindScalar,
+				Scalar: skeldesc.ScalarInt,
+			},
+			jsontext.Value(`9007199254740993`),
+		},
+		{
+			"string",
+			&skeldesc.Type{
+				Kind:   skeldesc.TypeKindScalar,
+				Scalar: skeldesc.ScalarString,
+			},
+			jsontext.Value(`"hello"`),
+		},
+		{
+			"boolean",
+			&skeldesc.Type{
+				Kind:   skeldesc.TypeKindScalar,
+				Scalar: skeldesc.ScalarBoolean,
+			},
+			jsontext.Value(`false`),
+		},
+		{
+			"array",
+			&skeldesc.Type{
+				Kind: skeldesc.TypeKindList,
+				Element: &skeldesc.Type{
+					Kind:   skeldesc.TypeKindScalar,
+					Scalar: skeldesc.ScalarString,
+				},
+			},
+			jsontext.Value(`["a"]`),
+		},
+		{
+			"void",
+			nil,
+			jsontext.Value(`null`),
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			watch := newTestDescriptorWatch(t)
@@ -369,7 +433,10 @@ func TestMcpToolServerDeadlineReachesBackend(t *testing.T) {
 	request := mcpRequest("tools/call", nil, mcpProtocolVersion).WithContext(ctx)
 	rpchttp.EncodeTraceToHeader(request.Header, meta.InitialTrace())
 	result, err := gateway.callMcpTool(t.Context(), testContext(httptest.NewRecorder(), request), "demo.UserService", "Get",
-		&mcp.Tool{InputSchema: map[string]any{"type": "object"}, OutputSchema: map[string]any{"type": "object"}},
+		&mcp.Tool{
+			InputSchema:  map[string]any{"type": "object"},
+			OutputSchema: map[string]any{"type": "object"},
+		},
 		&mcp.CallToolRequest{Params: &mcp.CallToolParamsRaw{Arguments: []byte("{}")}})
 	require.NoError(t, err)
 	require.True(t, result.IsError)
@@ -397,18 +464,66 @@ func TestMcpOptionsReachBackend(t *testing.T) {
 		value any
 		want  time.Duration
 	}{
-		{"default", nil, 30 * time.Second},
-		{"extended", "timeout=60s", 60 * time.Second},
-		{"maximum", "timeout=120s", 120 * time.Second},
-		{"shorter", "timeout=5s", 5 * time.Second},
-		{"unknown ignored", "timeout=60s,destination=private.app,future=value", 60 * time.Second},
-		{"too long", "timeout=121s", 0},
-		{"zero", "timeout=0s", 0},
-		{"negative", "timeout=-1s", 0},
-		{"malformed", "timeout=no", 0},
-		{"duplicate", "timeout=10s,timeout=20s", 0},
-		{"empty", "", 0},
-		{"wrong type", map[string]any{"timeout": "60s"}, 0},
+		{
+			"default",
+			nil,
+			30 * time.Second,
+		},
+		{
+			"extended",
+			"timeout=60s",
+			60 * time.Second,
+		},
+		{
+			"maximum",
+			"timeout=120s",
+			120 * time.Second,
+		},
+		{
+			"shorter",
+			"timeout=5s",
+			5 * time.Second,
+		},
+		{
+			"unknown ignored",
+			"timeout=60s,destination=private.app,future=value",
+			60 * time.Second,
+		},
+		{
+			"too long",
+			"timeout=121s",
+			0,
+		},
+		{
+			"zero",
+			"timeout=0s",
+			0,
+		},
+		{
+			"negative",
+			"timeout=-1s",
+			0,
+		},
+		{
+			"malformed",
+			"timeout=no",
+			0,
+		},
+		{
+			"duplicate",
+			"timeout=10s,timeout=20s",
+			0,
+		},
+		{
+			"empty",
+			"",
+			0,
+		},
+		{
+			"wrong type",
+			map[string]any{"timeout": "60s"},
+			0,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			expected = test.want

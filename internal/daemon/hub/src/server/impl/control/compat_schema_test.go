@@ -31,7 +31,9 @@ func TestRegistrationValidatesNewDescriptorWithoutRepair(t *testing.T) {
 		`{"name":"demo","generated":{"compilerVersion":"v99.0.0"},"services":[{"name":"Api","api":true,"authMode":"required","methods":[{"name":"Get","authMode":"inherit","effectiveAuthMode":"optional"}]}]}`,
 		`{"domain":"demo","generated":{"compilerVersion":"v99.0.0"},"services":[{"name":"Old","audiences":[{"skelName":"demo.User"}]}]}`,
 	} {
-		require.Panics(t, func() { decodeRegisteredDescriptors(skeled.AppRegistration{DomainDescriptors: []skeltype.JSON{raw}}) })
+		require.Panics(t, func() {
+			decodeRegisteredDescriptors(skeled.AppRegistration{DomainDescriptors: []skeltype.JSON{raw}})
+		})
 	}
 	require.Panics(t, func() {
 		decodeRegisteredDescriptors(skeled.AppRegistration{DomainDescriptors: []skeltype.JSON{valid, valid}})

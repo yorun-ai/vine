@@ -18,9 +18,7 @@ type Option struct {
 }
 
 func defaultOption() *Option {
-	return &Option{
-		MaxOpenConn: defaultMaxOpenConns,
-	}
+	return &Option{MaxOpenConn: defaultMaxOpenConns}
 }
 
 // TypeAdder registers a DAO pointer type with a database specification.

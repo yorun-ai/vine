@@ -18,7 +18,10 @@ import (
 
 func TestPortalCertCoreCreateDerivesMetadata(t *testing.T) {
 	repo := newTestPortalCertRepo()
-	core := &PortalCertCore{PortalCertRepo: repo, PortalEntryRepo: newPortalEntryRepoSpy()}
+	core := &PortalCertCore{
+		PortalCertRepo:  repo,
+		PortalEntryRepo: newPortalEntryRepoSpy(),
+	}
 	validFrom := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	validTo := time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -37,7 +40,10 @@ func TestPortalCertCoreCreateDerivesMetadata(t *testing.T) {
 
 func TestPortalCertCoreUpdateDerivesMetadataWhenPublicKeyChanges(t *testing.T) {
 	repo := newTestPortalCertRepo()
-	core := &PortalCertCore{PortalCertRepo: repo, PortalEntryRepo: newPortalEntryRepoSpy()}
+	core := &PortalCertCore{
+		PortalCertRepo:  repo,
+		PortalEntryRepo: newPortalEntryRepoSpy(),
+	}
 	validFrom := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	validTo := time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC)
 	certificate, privateKey := testPortalCertPEM(t, "letsencrypt", []string{"demo.local"}, nil, validFrom, validTo)
@@ -127,35 +133,48 @@ func testPortalCertPEM(t *testing.T, issuer string, dnsNames []string, ipAddress
 	require.NoError(t, err)
 	template := &x509.Certificate{
 		SerialNumber: big.NewInt(validFrom.UnixNano()),
-		Subject: pkix.Name{
-			CommonName: "demo.local",
-		},
-		DNSNames:    dnsNames,
-		IPAddresses: ipAddresses,
-		NotBefore:   validFrom,
-		NotAfter:    validTo,
-		KeyUsage:    x509.KeyUsageDigitalSignature,
+		Subject:      pkix.Name{CommonName: "demo.local"},
+		DNSNames:     dnsNames,
+		IPAddresses:  ipAddresses,
+		NotBefore:    validFrom,
+		NotAfter:     validTo,
+		KeyUsage:     x509.KeyUsageDigitalSignature,
 	}
 	parent := &x509.Certificate{
 		SerialNumber: big.NewInt(validFrom.UnixNano() + 1),
-		Subject: pkix.Name{
-			CommonName: issuer,
-		},
-		NotBefore: validFrom,
-		NotAfter:  validTo,
+		Subject:      pkix.Name{CommonName: issuer},
+		NotBefore:    validFrom,
+		NotAfter:     validTo,
 	}
 	der, err := x509.CreateCertificate(rand.Reader, template, parent, &key.PublicKey, key)
 	require.NoError(t, err)
-	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})), string(pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)}))
+	return string(pem.EncodeToMemory(&pem.Block{
+			Type:  "CERTIFICATE",
+			Bytes: der,
+		})), string(pem.EncodeToMemory(&pem.Block{
+			Type:  "RSA PRIVATE KEY",
+			Bytes: x509.MarshalPKCS1PrivateKey(key),
+		}))
 }
 
 func TestPortalCertSaveDerivesMetadataAndPreservesIdentity(t *testing.T) {
 	repo := newTestPortalCertRepo()
-	target := &PortalCertCore{PortalCertRepo: repo, PortalEntryRepo: newPortalEntryRepoSpy()}
+	target := &PortalCertCore{
+		PortalCertRepo:  repo,
+		PortalEntryRepo: newPortalEntryRepoSpy(),
+	}
 	from := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := from.AddDate(1, 0, 0)
 	certificate, privateKey := testPortalCertPEM(t, "actual", []string{"demo.local"}, nil, from, to)
-	cert := PortalCert{Id: 99, Name: "demo", Enabled: true, Issuer: "forged", Domains: []string{"forged.local"}, Certificate: certificate, PrivateKey: privateKey}
+	cert := PortalCert{
+		Id:          99,
+		Name:        "demo",
+		Enabled:     true,
+		Issuer:      "forged",
+		Domains:     []string{"forged.local"},
+		Certificate: certificate,
+		PrivateKey:  privateKey,
+	}
 	got := target.Save(cert)
 	require.NotEqual(t, 99, got.Id)
 	require.Equal(t, "actual", got.Issuer)
@@ -174,16 +193,26 @@ func TestPortalCertPEMValidationAndUpdates(t *testing.T) {
 	from := time.Now().Add(-time.Hour)
 	certificate, key := testPortalCertPEM(t, "issuer", []string{"demo.local"}, nil, from, from.Add(2*time.Hour))
 	_, otherKey := testPortalCertPEM(t, "other", []string{"other.local"}, nil, from, from.Add(2*time.Hour))
-	target := &PortalCertCore{PortalCertRepo: newTestPortalCertRepo(), PortalEntryRepo: newPortalEntryRepoSpy()}
+	target := &PortalCertCore{
+		PortalCertRepo:  newTestPortalCertRepo(),
+		PortalEntryRepo: newPortalEntryRepoSpy(),
+	}
 	chain := certificate + certificate
-	stored := target.Create(PortalCertCreation{Name: "chain", Certificate: chain, PrivateKey: key})
+	stored := target.Create(PortalCertCreation{
+		Name:        "chain",
+		Certificate: chain,
+		PrivateKey:  key,
+	})
 	require.Equal(t, chain, stored.Certificate)
 	updated := target.Update(stored.Id, PortalCertUpdate{Certificate: &certificate})
 	require.Equal(t, key, updated.PrivateKey, "omitted key keeps the stored key")
 	for _, change := range []PortalCertUpdate{
 		{PrivateKey: &otherKey}, {PrivateKey: new("")},
 		{Certificate: new(base64.StdEncoding.EncodeToString([]byte(certificate)))},
-		{Certificate: new(certificate + string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: []byte("bad DER")})))},
+		{Certificate: new(certificate + string(pem.EncodeToMemory(&pem.Block{
+			Type:  "CERTIFICATE",
+			Bytes: []byte("bad DER"),
+		})))},
 	} {
 		require.Panics(t, func() { target.Update(stored.Id, change) })
 		require.Equal(t, key, target.Get(stored.Id).PrivateKey)
@@ -192,20 +221,37 @@ func TestPortalCertPEMValidationAndUpdates(t *testing.T) {
 }
 
 func TestPortalCertDisabledPlaceholderRequiresValidPEMOnEnable(t *testing.T) {
-	target := &PortalCertCore{PortalCertRepo: newTestPortalCertRepo(), PortalEntryRepo: newPortalEntryRepoSpy()}
-	require.Panics(t, func() { target.Create(PortalCertCreation{Enabled: new(false)}) })
-	cert := target.Create(PortalCertCreation{Name: "placeholder", Enabled: new(false)})
+	target := &PortalCertCore{
+		PortalCertRepo:  newTestPortalCertRepo(),
+		PortalEntryRepo: newPortalEntryRepoSpy(),
+	}
+	require.Panics(t, func() {
+		target.Create(PortalCertCreation{Enabled: new(false)})
+	})
+	cert := target.Create(PortalCertCreation{
+		Name:    "placeholder",
+		Enabled: new(false),
+	})
 	require.Empty(t, cert.Certificate)
 	require.Empty(t, cert.PrivateKey)
-	cert = target.Update(cert.Id, PortalCertUpdate{Certificate: new("pending"), PrivateKey: new("pending")})
+	cert = target.Update(cert.Id, PortalCertUpdate{
+		Certificate: new("pending"),
+		PrivateKey:  new("pending"),
+	})
 	require.False(t, cert.Enabled)
 	require.Equal(t, "pending", cert.Certificate)
-	require.Panics(t, func() { target.Update(cert.Id, PortalCertUpdate{Enabled: new(true)}) })
+	require.Panics(t, func() {
+		target.Update(cert.Id, PortalCertUpdate{Enabled: new(true)})
+	})
 	require.False(t, target.Get(cert.Id).Enabled, "a failed enable leaves the stored certificate disabled")
 
 	from := time.Now().Add(-time.Hour)
 	certificate, key := testPortalCertPEM(t, "issuer", []string{"demo.local"}, nil, from, from.Add(2*time.Hour))
-	cert = target.Update(cert.Id, PortalCertUpdate{Certificate: &certificate, PrivateKey: &key, Enabled: new(true)})
+	cert = target.Update(cert.Id, PortalCertUpdate{
+		Certificate: &certificate,
+		PrivateKey:  &key,
+		Enabled:     new(true),
+	})
 	require.True(t, cert.Enabled)
 	require.Equal(t, []string{"demo.local"}, cert.Domains)
 }
@@ -217,31 +263,57 @@ func TestPortalCertChangesPreserveExplicitEntryRequirements(t *testing.T) {
 	for _, redirect := range []bool{false, true} {
 		repo := newTestPortalCertRepo()
 		entries := newPortalEntryRepoSpy()
-		target := new(PortalCertCore{PortalCertRepo: repo, PortalEntryRepo: entries})
-		cert := target.Create(PortalCertCreation{Name: "primary", Certificate: certificate, PrivateKey: key})
+		target := new(PortalCertCore{
+			PortalCertRepo:  repo,
+			PortalEntryRepo: entries,
+		})
+		cert := target.Create(PortalCertCreation{
+			Name:        "primary",
+			Certificate: certificate,
+			PrivateKey:  key,
+		})
 		raw := PortalEntryHTTP{Host: "app.example.com"}
 		if redirect {
 			raw.AutoHTTPS = PortalSwitchModeEnabled
 		} else {
 			raw.Https = PortalSwitchModeEnabled
 		}
-		entry := new(PortalEntry{Name: "web", Protocol: "http", Enabled: true, Http: &raw})
+		entry := new(PortalEntry{
+			Name:     "web",
+			Protocol: "http",
+			Enabled:  true,
+			Http:     &raw,
+		})
 		entries.Save(entry)
 		for _, change := range []func(){
 			func() { target.Remove(cert.Id) },
-			func() { target.Update(cert.Id, PortalCertUpdate{Enabled: new(false)}) },
 			func() {
-				target.Update(cert.Id, PortalCertUpdate{Certificate: &otherCertificate, PrivateKey: &otherKey})
+				target.Update(cert.Id, PortalCertUpdate{Enabled: new(false)})
 			},
 			func() {
-				target.Save(PortalCert{Name: cert.Name, Enabled: true, Certificate: otherCertificate, PrivateKey: otherKey})
+				target.Update(cert.Id, PortalCertUpdate{
+					Certificate: &otherCertificate,
+					PrivateKey:  &otherKey,
+				})
+			},
+			func() {
+				target.Save(PortalCert{
+					Name:        cert.Name,
+					Enabled:     true,
+					Certificate: otherCertificate,
+					PrivateKey:  otherKey,
+				})
 			},
 		} {
 			require.Panics(t, change)
 			require.Equal(t, cert, target.Get(cert.Id), "a rejected change must leave the certificate intact")
 		}
 		// A second matching certificate permits removal of the first.
-		backup := target.Create(PortalCertCreation{Name: "backup", Certificate: certificate, PrivateKey: key})
+		backup := target.Create(PortalCertCreation{
+			Name:        "backup",
+			Certificate: certificate,
+			PrivateKey:  key,
+		})
 		require.NotPanics(t, func() { target.Remove(cert.Id) })
 		require.Panics(t, func() { target.Remove(backup.Id) })
 		// Automatic entries allow the last matching certificate to be removed.

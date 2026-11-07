@@ -290,7 +290,9 @@ func TestServerReturnsInvalidTaskWhenTriggerNotRegistered(t *testing.T) {
 		ImplTypes: []reflect.Type{reflect.TypeFor[*testRunnerImpl]()},
 		Executor:  &_RunnerRecorderExecutor{},
 		Logger: logger.New("vine:test", logger.WithOption{
-			Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: logPath,
+			Format:     logger.FormatJSON,
+			Level:      logger.LevelDebug,
+			OutputPath: logPath,
 		}),
 	})
 
@@ -335,9 +337,7 @@ func TestServerConvertsRecoveredPanicToInternalError(t *testing.T) {
 	server := NewServer(Option{
 		App:       testTaskServerApp(),
 		ImplTypes: []reflect.Type{reflect.TypeFor[*testRunnerImpl]()},
-		Executor: &_RunnerRecorderExecutor{
-			panicV: "boom",
-		},
+		Executor:  &_RunnerRecorderExecutor{panicV: "boom"},
 	})
 	triggerImpl, getErr := server.implDict.GetTriggerImpl("runner.task", "forGroup")
 	if getErr != nil {
@@ -405,9 +405,7 @@ func BenchmarkServerRunTask(b *testing.B) {
 		App:       testTaskServerApp(),
 		ImplTypes: []reflect.Type{reflect.TypeFor[*benchmarkTaskRunnerImpl]()},
 		Executor:  NewContainerExecutor(nil, nil),
-		Logger: logger.New("vine:benchmark", logger.WithOption{
-			Level: logger.LevelError,
-		}),
+		Logger:    logger.New("vine:benchmark", logger.WithOption{Level: logger.LevelError}),
 	})
 	run := appskeled.TaskRun{
 		Metadata: appskeled.TaskRunMeta{
@@ -436,16 +434,47 @@ func TestServerRunTaskAcceptsNullableArguments(t *testing.T) {
 		name, body string
 		want       []any
 	}{
-		{"null", `{"groupId":9,"note":null,"items":null,"labels":null}`, []any{9, (*string)(nil), (*[]string)(nil), (*map[string]string)(nil)}},
-		{"omitted", `{"groupId":9}`, []any{9, (*string)(nil), (*[]string)(nil), (*map[string]string)(nil)}},
-		{"empty", `{"groupId":9,"note":"","items":[],"labels":{}}`, []any{9, new(""), new([]string{}), new(map[string]string{})}},
-		{"value", `{"groupId":9,"note":"note","items":["item"],"labels":{"key":"value"}}`, []any{9, new("note"), new([]string{"item"}), new(map[string]string{"key": "value"})}},
+		{
+			"null",
+			`{"groupId":9,"note":null,"items":null,"labels":null}`,
+			[]any{9, (*string)(nil), (*[]string)(nil), (*map[string]string)(nil)},
+		},
+		{
+			"omitted",
+			`{"groupId":9}`,
+			[]any{9, (*string)(nil), (*[]string)(nil), (*map[string]string)(nil)},
+		},
+		{
+			"empty",
+			`{"groupId":9,"note":"","items":[],"labels":{}}`,
+			[]any{9, new(""), new([]string{}), new(map[string]string{})},
+		},
+		{
+			"value",
+			`{"groupId":9,"note":"note","items":["item"],"labels":{"key":"value"}}`,
+			[]any{9, new("note"), new([]string{"item"}), new(map[string]string{"key": "value"})},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			executor := &_RunnerRecorderExecutor{}
-			server := NewServer(Option{App: testTaskServerApp(), ImplTypes: []reflect.Type{reflect.TypeFor[*testRunnerImpl]()}, Executor: executor})
+			server := NewServer(Option{
+				App:       testTaskServerApp(),
+				ImplTypes: []reflect.Type{reflect.TypeFor[*testRunnerImpl]()},
+				Executor:  executor,
+			})
 			trace := meta.InitialTrace()
-			err := server.RunTask(context.Background(), appskeled.TaskRun{Metadata: appskeled.TaskRunMeta{TraceId: trace.Id(), TraceSpan: trace.Span(), AppName: "remote.app", AppVersion: "1.0.0", AppInstanceId: skeltype.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333"))}, TaskSkelName: "runner.task", TriggerSkelName: "forGroup", ArgumentsJson: tc.body})
+			err := server.RunTask(context.Background(), appskeled.TaskRun{
+				Metadata: appskeled.TaskRunMeta{
+					TraceId:       trace.Id(),
+					TraceSpan:     trace.Span(),
+					AppName:       "remote.app",
+					AppVersion:    "1.0.0",
+					AppInstanceId: skeltype.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
+				},
+				TaskSkelName:    "runner.task",
+				TriggerSkelName: "forGroup",
+				ArgumentsJson:   tc.body,
+			})
 			if err != nil {
 				t.Fatal(err)
 			}

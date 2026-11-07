@@ -55,10 +55,13 @@ func (g *RpcGateway) serveMcp(ctx *spec.Context, cors watched.PortalCors) {
 	// advertised versions are restricted. Require the modern version at ingress.
 	if version := r.Header.Get("MCP-Protocol-Version"); r.Method == http.MethodPost && version != mcpProtocolVersion {
 		data, _ := json.Marshal(mcp.UnsupportedProtocolVersionData{
-			Supported: []string{mcpProtocolVersion}, Requested: version,
+			Supported: []string{mcpProtocolVersion},
+			Requested: version,
 		})
 		failure := &jsonrpc.Error{
-			Code: mcp.CodeUnsupportedProtocolVersion, Message: "Unsupported protocol version", Data: data,
+			Code:    mcp.CodeUnsupportedProtocolVersion,
+			Message: "Unsupported protocol version",
+			Data:    data,
 		}
 		if version == "" {
 			failure.Code = mcp.CodeHeaderMismatch
@@ -82,8 +85,10 @@ func (g *RpcGateway) serveMcp(ctx *spec.Context, cors watched.PortalCors) {
 	handler := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server {
 		return g.newMcpServer(&next)
 	}, &mcp.StreamableHTTPOptions{
-		Stateless: true, JSONResponse: true, PropagateRequestCancellation: true,
-		MaxRequestBodyBytes: vrpchttp.MaxRequestBodyBytes,
+		Stateless:                    true,
+		JSONResponse:                 true,
+		PropagateRequestCancellation: true,
+		MaxRequestBodyBytes:          vrpchttp.MaxJSONRequestBodyBytes,
 	})
 	handler.ServeHTTP(&_McpResponseWriter{ResponseWriter: w}, next.Request)
 }
@@ -108,19 +113,28 @@ func (w *_McpResponseWriter) Write(body []byte) (int, error) {
 }
 
 func (g *RpcGateway) newMcpServer(httpCtx *spec.Context) *mcp.Server {
-	server := mcp.NewServer(&mcp.Implementation{Name: "vine.portal", Version: g.app.Version()}, &mcp.ServerOptions{
+	server := mcp.NewServer(&mcp.Implementation{
+		Name:    "vine.portal",
+		Version: g.app.Version(),
+	}, &mcp.ServerOptions{
 		PageSize:                  mcpPageSize,
 		SupportedProtocolVersions: []string{mcpProtocolVersion},
 		Capabilities:              &mcp.ServerCapabilities{Tools: &mcp.ToolCapabilities{}},
 		SetCacheable: func(_ context.Context, _ mcp.Request, value *mcp.Cacheable) {
-			*value = mcp.Cacheable{TTLMs: 0, CacheScope: "private"}
+			*value = mcp.Cacheable{
+				TTLMs:      0,
+				CacheScope: "private",
+			}
 		},
 	})
 	server.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, request mcp.Request) (mcp.Result, error) {
 			timeout, err := mcpOptionsTimeout(request.GetParams().GetMeta())
 			if err != nil {
-				return nil, &jsonrpc.Error{Code: jsonrpc.CodeInvalidParams, Message: err.Error()}
+				return nil, &jsonrpc.Error{
+					Code:    jsonrpc.CodeInvalidParams,
+					Message: err.Error(),
+				}
 			}
 			// Count decoding and admission against the same budget as execution.
 			limit, _ := httpCtx.Request.Context().Deadline()
@@ -136,7 +150,10 @@ func (g *RpcGateway) newMcpServer(httpCtx *spec.Context) *mcp.Server {
 			snapshot, services := g.apiSnapshot()
 			if snapshot.Syncing {
 				httpCtx.ResponseWriter.Header().Set("Retry-After", "1")
-				return nil, &jsonrpc.Error{Code: -32000, Message: "API descriptors are syncing"}
+				return nil, &jsonrpc.Error{
+					Code:    -32000,
+					Message: "API descriptors are syncing",
+				}
 			}
 			requested := ""
 			if method == "tools/call" {
@@ -151,12 +168,17 @@ func (g *RpcGateway) newMcpServer(httpCtx *spec.Context) *mcp.Server {
 					input, output, err := jsonschema.Method(operation, snapshot.Data, snapshot.Enums)
 					if err != nil {
 						rpcGatewayLogger.Warn("vine.portal MCP schema is unavailable", "service", service.SkelName, "method", operation.SkelName, "error", err)
-						return nil, &jsonrpc.Error{Code: -32000, Message: "API schema is unavailable"}
+						return nil, &jsonrpc.Error{
+							Code:    -32000,
+							Message: "API schema is unavailable",
+						}
 					}
 					tool := &mcp.Tool{
-						Name: name, Title: service.SkelName + "/" + operation.SkelName,
-						Description: mcpToolDescription(service, operation),
-						InputSchema: input, OutputSchema: output,
+						Name:         name,
+						Title:        service.SkelName + "/" + operation.SkelName,
+						Description:  mcpToolDescription(service, operation),
+						InputSchema:  input,
+						OutputSchema: output,
 					}
 					server.AddTool(tool, func(ctx context.Context, call *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 						return g.callMcpTool(ctx, &nextHTTP, service.SkelName, operation.SkelName, tool, call)

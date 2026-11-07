@@ -19,7 +19,16 @@ import (
 func TestPortalEntryRepoStoresAccessAndName(t *testing.T) {
 	repo := newTestPortalEntryRepoDB(t)
 
-	entry := &core.PortalEntry{Name: "web", Protocol: "http", Http: &core.PortalEntryHTTP{Host: "demo.local", Http: "DISABLED", Https: "ENABLED", HttpsPort: 8443}}
+	entry := &core.PortalEntry{
+		Name:     "web",
+		Protocol: "http",
+		Http: &core.PortalEntryHTTP{
+			Host:      "demo.local",
+			Http:      "DISABLED",
+			Https:     "ENABLED",
+			HttpsPort: 8443,
+		},
+	}
 	repo.Save(entry)
 	require.NotZero(t, entry.Id)
 
@@ -74,7 +83,16 @@ func newTestPortalEntryRepoDB(t *testing.T) *PortalEntryRepo {
 
 func TestPortalEntryRepoListenIPsRoundTrip(t *testing.T) {
 	repo := newTestPortalEntryRepoDB(t)
-	entry := &core.PortalEntry{Name: "local", ListenIPs: []string{"127.0.0.1", "::1"}, Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}}
+	entry := &core.PortalEntry{
+		Name:      "local",
+		ListenIPs: []string{"127.0.0.1", "::1"},
+		Protocol:  "http",
+		Http: &core.PortalEntryHTTP{
+			Http:     "ENABLED",
+			Https:    "DISABLED",
+			HttpPort: 8080,
+		},
+	}
 	repo.Save(entry)
 	got, ok := repo.GetById(entry.Id)
 	require.True(t, ok)
@@ -91,7 +109,10 @@ func TestPortalEntryRepoListenIPsRoundTrip(t *testing.T) {
 func TestPortalEntryRepoStoresHTTPHost(t *testing.T) {
 	repo := newTestPortalEntryRepoDB(t)
 	row := &model.PortalEntry{
-		Name: "legacy", Protocol: "http", ListenIPs: "[]", Enabled: true,
+		Name:       "legacy",
+		Protocol:   "http",
+		ListenIPs:  "[]",
+		Enabled:    true,
 		HTTPConfig: `{"host":"demo.local","http":"ENABLED","httpPort":80,"https":"ENABLED","httpsPort":443,"autohttps":"ENABLED"}`,
 	}
 	repo.Dao.Save(row)
@@ -108,7 +129,11 @@ func TestPortalEntryRepoStoresHTTPHost(t *testing.T) {
 func TestPortalEntryRepoPersistsNormalizedHost(t *testing.T) {
 	repo := newTestPortalEntryRepoDB(t)
 	for _, host := range []string{"APP.EXAMPLE.COM.", "*.EXAMPLE.COM."} {
-		entry := new(core.PortalEntry{Name: host, Protocol: "http", Http: new(core.PortalEntryHTTP{Host: " " + host + " "})})
+		entry := new(core.PortalEntry{
+			Name:     host,
+			Protocol: "http",
+			Http:     new(core.PortalEntryHTTP{Host: " " + host + " "}),
+		})
 		repo.Save(entry)
 		row, ok := repo.Dao.ById(entry.Id)
 		require.True(t, ok)
@@ -127,12 +152,21 @@ func TestPortalEntryRepoPersistsNormalizedHost(t *testing.T) {
 
 func TestPortalEntryRepoPersistsIntentAndEnrichesEffectiveHTTP(t *testing.T) {
 	repo := newTestPortalEntryRepoDB(t)
-	entry := &core.PortalEntry{Name: "web", Protocol: "http", Enabled: true, Http: &core.PortalEntryHTTP{Host: "app.example.com"}}
+	entry := &core.PortalEntry{
+		Name:     "web",
+		Protocol: "http",
+		Enabled:  true,
+		Http:     &core.PortalEntryHTTP{Host: "app.example.com"},
+	}
 	repo.Save(entry)
 	require.EqualValues(t, "AUTO", entry.Http.Https)
 	require.False(t, entry.EffectiveHTTP.HttpsEnabled)
 	// Certificate metadata is normally parsed by PortalCertCore before persistence.
-	cert := &model.PortalCert{Name: "wildcard", Domains: `["*.example.com"]`, Enabled: true}
+	cert := &model.PortalCert{
+		Name:    "wildcard",
+		Domains: `["*.example.com"]`,
+		Enabled: true,
+	}
 	repo.CertDao.Save(cert)
 	loaded, ok := repo.GetById(entry.Id)
 	require.True(t, ok)
@@ -163,7 +197,13 @@ func TestPortalEntryRepoRejectsInvalidStoredHTTPFields(t *testing.T) {
 		`{"host":"demo.local","typo":"AUTO"}`,
 		`null`,
 	} {
-		row := new(model.PortalEntry{Name: config, Protocol: "http", HTTPConfig: config, ListenIPs: "[]", Enabled: true})
+		row := new(model.PortalEntry{
+			Name:       config,
+			Protocol:   "http",
+			HTTPConfig: config,
+			ListenIPs:  "[]",
+			Enabled:    true,
+		})
 		repo.Dao.Save(row)
 		require.Panics(t, func() { repo.GetById(row.Id) }, config)
 	}

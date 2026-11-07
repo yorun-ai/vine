@@ -89,13 +89,28 @@ func TestNewBundledFlattensBundles(t *testing.T) {
 
 func TestStopGracefullyWaitsAppsBeforeStoppingInfra(t *testing.T) {
 	events := []string{}
-	appA := &_RecordingApp{name: "app.a", events: &events}
-	appB := &_RecordingApp{name: "app.b", events: &events}
+	appA := &_RecordingApp{
+		name:   "app.a",
+		events: &events,
+	}
+	appB := &_RecordingApp{
+		name:   "app.b",
+		events: &events,
+	}
 	standalone := &_App{
-		apps:   []app.App{appA, appB},
-		link:   &_RecordingApp{name: "link", events: &events},
-		portal: &_RecordingApp{name: "portal", events: &events},
-		hub:    &_RecordingApp{name: "hub", events: &events},
+		apps: []app.App{appA, appB},
+		link: &_RecordingApp{
+			name:   "link",
+			events: &events,
+		},
+		portal: &_RecordingApp{
+			name:   "portal",
+			events: &events,
+		},
+		hub: &_RecordingApp{
+			name:   "hub",
+			events: &events,
+		},
 	}
 
 	standalone.StopGracefully()
@@ -191,7 +206,11 @@ func TestInlineSeedConflictsWithFile(t *testing.T) {
 
 func TestApplySeedTemplateOptions(t *testing.T) {
 	flags := new(hubflag.Flag)
-	applyOption(flags, Option{HubSeedData: "{}", HubSeedSource: "source", HubSeedVarsFile: "vars.yaml"})
+	applyOption(flags, Option{
+		HubSeedData:     "{}",
+		HubSeedSource:   "source",
+		HubSeedVarsFile: "vars.yaml",
+	})
 	assert.Equal(t, "source", flags.SeedHubSource)
 	assert.Equal(t, "vars.yaml", flags.SeedHubVarsFile)
 	assert.False(t, Option{HubSeedSourceFile: "source.yaml"}.isZero())
@@ -252,7 +271,9 @@ func TestIgnoredFlagAndItsEnvironmentAreDropped(t *testing.T) {
 }
 
 func TestUnknownIgnoredFlagPanics(t *testing.T) {
-	assert.Panics(t, func() { flags(&hubflag.Flag{}, Option{IgnoredFlags: []string{"hub-unknown"}}) })
+	assert.Panics(t, func() {
+		flags(&hubflag.Flag{}, Option{IgnoredFlags: []string{"hub-unknown"}})
+	})
 }
 
 // A renamed flag answers to the new name alone: the declared name and the

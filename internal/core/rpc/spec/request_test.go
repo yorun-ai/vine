@@ -36,9 +36,7 @@ func TestRequestImplPositionalArgumentsUsesMethodArgumentOrder(t *testing.T) {
 func TestRequestImplPositionalArgumentsWithoutMethodArgumentsReturnsNil(t *testing.T) {
 	method := newInitializedMethodInfo(nil, nil, false, false)
 	method.name = "Ping"
-	req := &RequestImpl{
-		MethodInfoValue: method,
-	}
+	req := &RequestImpl{MethodInfoValue: method}
 
 	if got := req.PositionalArguments(); got != nil {
 		t.Fatalf("expected nil positional arguments, got %#v", got)

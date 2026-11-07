@@ -16,12 +16,42 @@ func TestSeedVariablesAreLiteralAndDoNotMutateDictionary(t *testing.T) {
 
 func TestResolveSeedRejectsInvalidInputs(t *testing.T) {
 	for _, tc := range []struct{ name, seed, vars, source string }{
-		{"missing variable", "appConfigs: [{name: demo.Config, value: '${missing}'}]", "", ""},
-		{"collection interpolation", "appConfigs: [{name: demo.Config, value: 'x${value}'}]", "value: []", ""},
-		{"duplicate variable", "{}", "value: 1\nvalue: 2", ""},
-		{"multiple documents", "{}\n---\n{}", "", ""},
-		{"mapping key", "'${name}': value", "name: field", ""},
-		{"bad digest", "{}", "", "version: 1\nseedSha256: bad\nfields: {}"},
+		{
+			"missing variable",
+			"appConfigs: [{name: demo.Config, value: '${missing}'}]",
+			"",
+			"",
+		},
+		{
+			"collection interpolation",
+			"appConfigs: [{name: demo.Config, value: 'x${value}'}]",
+			"value: []",
+			"",
+		},
+		{
+			"duplicate variable",
+			"{}",
+			"value: 1\nvalue: 2",
+			"",
+		},
+		{
+			"multiple documents",
+			"{}\n---\n{}",
+			"",
+			"",
+		},
+		{
+			"mapping key",
+			"'${name}': value",
+			"name: field",
+			"",
+		},
+		{
+			"bad digest",
+			"{}",
+			"",
+			"version: 1\nseedSha256: bad\nfields: {}",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			_, _, err := resolveSeedInput([]byte(tc.seed), []byte(tc.vars), []byte(tc.source))
@@ -50,7 +80,31 @@ func TestBindingsKeepOriginalNestedTemplateAndEachDefault(t *testing.T) {
 	expected := []struct {
 		path, value string
 		fallback    bool
-	}{{"/first", `"first"`, true}, {"/second", `"second"`, true}, {"/actual", `[1,false]`, false}, {"/zero", `0`, false}, {"/empty", `""`, false}, {"/nullable", `null`, false}}
+	}{{
+		"/first",
+		`"first"`,
+		true,
+	}, {
+		"/second",
+		`"second"`,
+		true,
+	}, {
+		"/actual",
+		`[1,false]`,
+		false,
+	}, {
+		"/zero",
+		`0`,
+		false,
+	}, {
+		"/empty",
+		`""`,
+		false,
+	}, {
+		"/nullable",
+		`null`,
+		false,
+	}}
 	for i, want := range expected {
 		require.Equal(t, want.path, source.Bindings[i].Path)
 		require.JSONEq(t, want.value, string(source.Bindings[i].Value))

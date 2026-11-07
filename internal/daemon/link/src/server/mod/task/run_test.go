@@ -48,7 +48,9 @@ func TestManagerRetriesFailedMessageThroughJetStreamDelay(t *testing.T) {
 		AppInfo:      meta.MustNewApp("demo.app", "1.0.0", "11111111-1111-1111-1111-111111111111"),
 		TaskEndpoint: testLocalAppEndpoint(8080) + testPathTask,
 		TaskRunners: []skeled.TaskRunnerRegistration{{
-			TaskSkelName: "demo.task", TimeoutMs: 2500, Concurrency: 1,
+			TaskSkelName: "demo.task",
+			TimeoutMs:    2500,
+			Concurrency:  1,
 		}},
 	})
 	manager.LaunchTask(skeled.TaskLaunch{TaskSkelName: "demo.task"})
@@ -431,7 +433,9 @@ type dispatcherMessage struct {
 	metadataErr error
 }
 
-func newDispatcherMessage() *dispatcherMessage { return new(dispatcherMessage{delivered: 1}) }
+func newDispatcherMessage() *dispatcherMessage {
+	return new(dispatcherMessage{delivered: 1})
+}
 func (m *dispatcherMessage) Metadata() (*jetstream.MsgMetadata, error) {
 	if m.metadataErr != nil {
 		return nil, m.metadataErr
@@ -471,8 +475,16 @@ func (m *dispatcherMessages) Next(ctx context.Context) (jetstream.Msg, error) {
 func (m *dispatcherMessages) Stop() { m.stop.Do(func() { close(m.stopped) }) }
 func newDispatcherFixture(t *testing.T, capacities ...int) (*Manager, *_TaskSubscription, *dispatcherMessages, []*_TaskRunnerState) {
 	t.Helper()
-	messages := new(dispatcherMessages{queue: make(chan jetstream.Msg, 100), stopped: make(chan struct{})})
-	state := new(_TaskSubscription{messages: messages, runnerByApp: map[string]*_TaskRunnerState{}, changed: make(chan struct{}), done: make(chan struct{})})
+	messages := new(dispatcherMessages{
+		queue:   make(chan jetstream.Msg, 100),
+		stopped: make(chan struct{}),
+	})
+	state := new(_TaskSubscription{
+		messages:    messages,
+		runnerByApp: map[string]*_TaskRunnerState{},
+		changed:     make(chan struct{}),
+		done:        make(chan struct{}),
+	})
 	manager := new(Manager{
 		Context:                    t.Context(),
 		runnerByAppInstanceID:      map[string]map[string]*_TaskRunnerState{},
@@ -485,8 +497,15 @@ func newDispatcherFixture(t *testing.T, capacities ...int) (*Manager, *_TaskSubs
 		t.Cleanup(cancel)
 		runner := new(_TaskRunnerState{
 			instance:      new(minder.AppInstance{AppInfo: meta.MustNewApp("demo.app", "1.0.0", id)}),
-			appInstanceID: id, registration: skeled.TaskRunnerRegistration{TaskSkelName: "demo.task", Concurrency: capacity},
-			semaphore: make(chan struct{}, capacity), readContext: ctx, cancelRead: cancel, subscription: state,
+			appInstanceID: id,
+			registration: skeled.TaskRunnerRegistration{
+				TaskSkelName: "demo.task",
+				Concurrency:  capacity,
+			},
+			semaphore:    make(chan struct{}, capacity),
+			readContext:  ctx,
+			cancelRead:   cancel,
+			subscription: state,
 		})
 		runners = append(runners, runner)
 		state.runnerByApp[id] = runner
@@ -520,9 +539,20 @@ func TestDispatcherAcknowledgementReleasesCapacity(t *testing.T) {
 		metadataMissing bool
 	}{
 		{name: "success"},
-		{name: "retry", fail: true},
-		{name: "no retry", noRetry: true, fail: true},
-		{name: "missing metadata", fail: true, metadataMissing: true},
+		{
+			name: "retry",
+			fail: true,
+		},
+		{
+			name:    "no retry",
+			noRetry: true,
+			fail:    true,
+		},
+		{
+			name:            "missing metadata",
+			fail:            true,
+			metadataMissing: true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
@@ -578,17 +608,50 @@ func TestTaskRetryDelay(t *testing.T) {
 		delivered uint64
 		base      time.Duration
 	}{
-		{1, time.Second},
-		{2, 5 * time.Second},
-		{3, 15 * time.Second},
-		{4, 30 * time.Second},
-		{5, time.Minute},
-		{6, 2 * time.Minute},
-		{7, 5 * time.Minute},
-		{8, 10 * time.Minute},
-		{9, 10 * time.Minute},
-		{^uint64(0), 10 * time.Minute},
-		{0, 10 * time.Minute},
+		{
+			1,
+			time.Second,
+		},
+		{
+			2,
+			5 * time.Second,
+		},
+		{
+			3,
+			15 * time.Second,
+		},
+		{
+			4,
+			30 * time.Second,
+		},
+		{
+			5,
+			time.Minute,
+		},
+		{
+			6,
+			2 * time.Minute,
+		},
+		{
+			7,
+			5 * time.Minute,
+		},
+		{
+			8,
+			10 * time.Minute,
+		},
+		{
+			9,
+			10 * time.Minute,
+		},
+		{
+			^uint64(0),
+			10 * time.Minute,
+		},
+		{
+			0,
+			10 * time.Minute,
+		},
 	} {
 		t.Run(fmt.Sprintf("delivered=%d", test.delivered), func(t *testing.T) {
 			for range 100 {

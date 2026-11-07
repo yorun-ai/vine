@@ -38,7 +38,11 @@ func TestMarshalAndUnmarshalYaml(t *testing.T) {
 }
 
 func TestMustYamlVariants(t *testing.T) {
-	payload := yamlPayload{Name: "must", Count: 1, Tags: []string{"tag"}}
+	payload := yamlPayload{
+		Name:  "must",
+		Count: 1,
+		Tags:  []string{"tag"},
+	}
 
 	data := MustMarshalYaml(payload)
 	assert.Equal(t, string(data), MustMarshalYamlS(payload))

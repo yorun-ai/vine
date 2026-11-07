@@ -122,7 +122,10 @@ func (a *Access) handleAdmission(snapshot desc.AdmissionSnapshot) {
 	}
 	for key, name := range desired {
 		if a.serviceWatches[key] == nil {
-			a.serviceWatches[key] = new(_ServiceWatch{name: name, watcher: a.Epmgr.WatchRpc(name)})
+			a.serviceWatches[key] = new(_ServiceWatch{
+				name:    name,
+				watcher: a.Epmgr.WatchRpc(name),
+			})
 		}
 	}
 }

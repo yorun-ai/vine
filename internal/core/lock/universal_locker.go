@@ -13,7 +13,13 @@ type UniversalLocker struct {
 
 // NewUniversalLocker creates a cross-application locker bound to Link and the active context.
 func NewUniversalLocker(client skeled.LockServiceClient, ctx context.Context) *UniversalLocker {
-	return new(UniversalLocker{locker: new(Locker{client: client, prefix: "universal", ctx: ctx})})
+	return new(UniversalLocker{
+		locker: new(Locker{
+			client: client,
+			prefix: "universal",
+			ctx:    ctx,
+		}),
+	})
 }
 
 // WithContext returns a copy bound to ctx for acquisition and lease lifetime.

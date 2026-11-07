@@ -15,7 +15,10 @@ func TestPoolRetainsConnectionsAfterPeakUsage(t *testing.T) {
 	for _, maxOpenConn := range []int{0, 4} {
 		t.Run(fmt.Sprintf("maxOpenConn=%d", maxOpenConn), func(t *testing.T) {
 			connURL := "sqlite://" + filepath.Join(t.TempDir(), "pool.sqlite")
-			db, err := openConnection(Option{ConnURL: connURL, MaxOpenConn: maxOpenConn})
+			db, err := openConnection(Option{
+				ConnURL:     connURL,
+				MaxOpenConn: maxOpenConn,
+			})
 			require.NoError(t, err)
 			t.Cleanup(func() { closeConnection(connURL) })
 			sqlDB, err := db.DB()
@@ -69,7 +72,10 @@ func TestOpenSharesGormDBByConnURLAndKeepsFirstPoolSize(t *testing.T) {
 
 func TestMemoryDatabaseLastsUntilConnectionLifecycleEnds(t *testing.T) {
 	url := "sqlite://file:vine-memory-lifecycle?mode=memory&cache=shared"
-	db, err := openConnection(Option{ConnURL: url, MaxOpenConn: 1})
+	db, err := openConnection(Option{
+		ConnURL:     url,
+		MaxOpenConn: 1,
+	})
 	require.NoError(t, err)
 	require.NoError(t, db.Exec("CREATE TABLE memory_probe (value TEXT)").Error)
 	require.NoError(t, db.Exec("INSERT INTO memory_probe VALUES ('seed')").Error)
@@ -77,7 +83,10 @@ func TestMemoryDatabaseLastsUntilConnectionLifecycleEnds(t *testing.T) {
 	require.NoError(t, db.Raw("SELECT value FROM memory_probe").Scan(&value).Error)
 	require.Equal(t, "seed", value)
 	closeConnection(url)
-	reopened, err := openConnection(Option{ConnURL: url, MaxOpenConn: 1})
+	reopened, err := openConnection(Option{
+		ConnURL:     url,
+		MaxOpenConn: 1,
+	})
 	require.NoError(t, err)
 	t.Cleanup(func() { closeConnection(url) })
 	require.False(t, reopened.Migrator().HasTable("memory_probe"))

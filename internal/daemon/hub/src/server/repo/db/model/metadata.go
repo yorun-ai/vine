@@ -40,7 +40,10 @@ func (d *MetadataDao) ByName(name string) (*Metadata, bool) {
 func (d *MetadataDao) SaveByName(name string, value string) {
 	row, ok := d.ByName(name)
 	if !ok {
-		d.Create(&Metadata{Name: name, Value: value})
+		d.Create(&Metadata{
+			Name:  name,
+			Value: value,
+		})
 		return
 	}
 	d.Update(row, rdb.Patch{"value": value})

@@ -10,14 +10,10 @@ var cborDecodeMode cbor.DecMode
 
 func init() {
 	var err error
-	cborEncodeMode, err = (cbor.EncOptions{
-		NilContainers: cbor.NilContainerAsEmpty,
-	}).EncMode()
+	cborEncodeMode, err = (cbor.EncOptions{NilContainers: cbor.NilContainerAsEmpty}).EncMode()
 	vpre.MustNil(err)
 
-	cborDecodeMode, err = (cbor.DecOptions{
-		DupMapKey: cbor.DupMapKeyEnforcedAPF,
-	}).DecMode()
+	cborDecodeMode, err = (cbor.DecOptions{DupMapKey: cbor.DupMapKeyEnforcedAPF}).DecMode()
 	vpre.MustNil(err)
 }
 

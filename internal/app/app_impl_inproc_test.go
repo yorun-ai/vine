@@ -49,10 +49,19 @@ func TestAppImplStartInprocServerRollsBackPartialRegistration(t *testing.T) {
 	prefix := coreapp.PathWebAccess + "/rollback"
 	handler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 	target := &_AppImpl{
-		inprocFlag: &InternalInprocFlag{Enabled: true, HostPath: hostPath},
+		inprocFlag: &InternalInprocFlag{
+			Enabled:  true,
+			HostPath: hostPath,
+		},
 		routes: []_ServerRoute{
-			{Prefix: prefix, HttpHandler: handler},
-			{Prefix: prefix, HttpHandler: handler},
+			{
+				Prefix:      prefix,
+				HttpHandler: handler,
+			},
+			{
+				Prefix:      prefix,
+				HttpHandler: handler,
+			},
 		},
 	}
 
@@ -75,9 +84,7 @@ func TestAppImplStartRegistersWebberInprocRoutes(t *testing.T) {
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(true)
 
-	app := newApp(&testUniqueRouteAppSpec{
-		AppFlag: &RunFlag{},
-	}, flags)
+	app := newApp(&testUniqueRouteAppSpec{AppFlag: &RunFlag{}}, flags)
 	app.initInjector()
 	app.initServers()
 	app.startInprocServer()
@@ -107,9 +114,7 @@ func TestAppImplStopUnregistersWebberInprocRoutes(t *testing.T) {
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(true)
 
-	app := newApp(&testUniqueRouteAppSpec{
-		AppFlag: &RunFlag{},
-	}, flags)
+	app := newApp(&testUniqueRouteAppSpec{AppFlag: &RunFlag{}}, flags)
 	app.initInjector()
 	app.initServers()
 	app.startInprocServer()
@@ -127,9 +132,7 @@ func TestAppImplStartInprocServerRegistersConsoleInprocRoute(t *testing.T) {
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(true)
 
-	app := newApp(&testHelperAppSpec{
-		AppFlag: &RunFlag{},
-	}, flags)
+	app := newApp(&testHelperAppSpec{AppFlag: &RunFlag{}}, flags)
 	app.initInjector()
 	app.initServers()
 	app.startInprocServer()
@@ -152,9 +155,7 @@ func TestAppImplStartInprocServerRegistersEventerInprocRoute(t *testing.T) {
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(true)
 
-	app := newApp(&testEventerSpec{
-		AppFlag: &RunFlag{},
-	}, flags)
+	app := newApp(&testEventerSpec{AppFlag: &RunFlag{}}, flags)
 	app.initInjector()
 	app.initServers()
 	app.startInprocServer()
@@ -191,9 +192,7 @@ func TestAppImplStartInprocServerRegistersTaskerInprocRoute(t *testing.T) {
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(true)
 
-	app := newApp(&testTaskerRunnerSpec{
-		AppFlag: &RunFlag{},
-	}, flags)
+	app := newApp(&testTaskerRunnerSpec{AppFlag: &RunFlag{}}, flags)
 	app.initInjector()
 	app.initServers()
 	app.startInprocServer()

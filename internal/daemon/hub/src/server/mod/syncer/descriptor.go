@@ -51,7 +51,10 @@ func mainDescriptorValues(domainViews []core.DomainDescriptorView) map[string]_D
 	for _, view := range domainViews {
 		if view.DomainVersion.Main {
 			value := view.DomainVersion.Descriptor
-			values[watched.FormatDescriptorDomainKey(value.Name)] = _DescriptorValue{hash: value.Hash, value: value}
+			values[watched.FormatDescriptorDomainKey(value.Name)] = _DescriptorValue{
+				hash:  value.Hash,
+				value: value,
+			}
 		}
 
 		for _, version := range view.Actors {
@@ -59,7 +62,10 @@ func mainDescriptorValues(domainViews []core.DomainDescriptorView) map[string]_D
 				continue
 			}
 			value := version.Descriptor
-			values[watched.FormatDescriptorActorKey(value.SkelName)] = _DescriptorValue{hash: value.Hash, value: value}
+			values[watched.FormatDescriptorActorKey(value.SkelName)] = _DescriptorValue{
+				hash:  value.Hash,
+				value: value,
+			}
 		}
 
 		for _, version := range view.Resources {
@@ -67,7 +73,10 @@ func mainDescriptorValues(domainViews []core.DomainDescriptorView) map[string]_D
 				continue
 			}
 			value := version.Descriptor
-			values[watched.FormatDescriptorResourceKey(value.SkelName)] = _DescriptorValue{hash: value.Hash, value: value}
+			values[watched.FormatDescriptorResourceKey(value.SkelName)] = _DescriptorValue{
+				hash:  value.Hash,
+				value: value,
+			}
 		}
 
 		for _, version := range view.Services {
@@ -78,7 +87,10 @@ func mainDescriptorValues(domainViews []core.DomainDescriptorView) map[string]_D
 			if !value.Api {
 				continue
 			}
-			values[watched.FormatDescriptorServiceKey(value.SkelName)] = _DescriptorValue{hash: value.Hash, value: value}
+			values[watched.FormatDescriptorServiceKey(value.SkelName)] = _DescriptorValue{
+				hash:  value.Hash,
+				value: value,
+			}
 		}
 
 		for _, version := range view.Webs {
@@ -86,7 +98,10 @@ func mainDescriptorValues(domainViews []core.DomainDescriptorView) map[string]_D
 				continue
 			}
 			value := version.Descriptor
-			values[watched.FormatDescriptorWebKey(value.SkelName)] = _DescriptorValue{hash: value.Hash, value: value}
+			values[watched.FormatDescriptorWebKey(value.SkelName)] = _DescriptorValue{
+				hash:  value.Hash,
+				value: value,
+			}
 		}
 
 		for _, version := range view.Data {
@@ -94,7 +109,10 @@ func mainDescriptorValues(domainViews []core.DomainDescriptorView) map[string]_D
 				continue
 			}
 			value := version.Descriptor
-			values[watched.FormatDescriptorDataKey(value.SkelName)] = _DescriptorValue{hash: value.Hash, value: value}
+			values[watched.FormatDescriptorDataKey(value.SkelName)] = _DescriptorValue{
+				hash:  value.Hash,
+				value: value,
+			}
 		}
 
 		for _, version := range view.Enums {
@@ -102,7 +120,10 @@ func mainDescriptorValues(domainViews []core.DomainDescriptorView) map[string]_D
 				continue
 			}
 			value := version.Descriptor
-			values[watched.FormatDescriptorEnumKey(value.SkelName)] = _DescriptorValue{hash: value.Hash, value: value}
+			values[watched.FormatDescriptorEnumKey(value.SkelName)] = _DescriptorValue{
+				hash:  value.Hash,
+				value: value,
+			}
 		}
 
 		for _, version := range view.Configs {
@@ -110,7 +131,10 @@ func mainDescriptorValues(domainViews []core.DomainDescriptorView) map[string]_D
 				continue
 			}
 			value := version.Descriptor
-			values[watched.FormatDescriptorConfigKey(value.SkelName)] = _DescriptorValue{hash: value.Hash, value: value}
+			values[watched.FormatDescriptorConfigKey(value.SkelName)] = _DescriptorValue{
+				hash:  value.Hash,
+				value: value,
+			}
 		}
 
 		for _, version := range view.Events {
@@ -118,7 +142,10 @@ func mainDescriptorValues(domainViews []core.DomainDescriptorView) map[string]_D
 				continue
 			}
 			value := version.Descriptor
-			values[watched.FormatDescriptorEventKey(value.SkelName)] = _DescriptorValue{hash: value.Hash, value: value}
+			values[watched.FormatDescriptorEventKey(value.SkelName)] = _DescriptorValue{
+				hash:  value.Hash,
+				value: value,
+			}
 		}
 
 		for _, version := range view.Tasks {
@@ -126,7 +153,10 @@ func mainDescriptorValues(domainViews []core.DomainDescriptorView) map[string]_D
 				continue
 			}
 			value := version.Descriptor
-			values[watched.FormatDescriptorTaskKey(value.SkelName)] = _DescriptorValue{hash: value.Hash, value: value}
+			values[watched.FormatDescriptorTaskKey(value.SkelName)] = _DescriptorValue{
+				hash:  value.Hash,
+				value: value,
+			}
 		}
 	}
 	return values

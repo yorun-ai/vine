@@ -145,9 +145,7 @@ func TestContainerExecutorReturnsBadRequestWhenRequestMetaInvalid(t *testing.T) 
 		name   string
 		header func(http.Header)
 	}{
-		{
-			name: "trace missing",
-		},
+		{name: "trace missing"},
 		{
 			name: "initiator malformed",
 			header: func(header http.Header) {
@@ -238,7 +236,9 @@ type executorTestActorInfo struct{ Id string }
 
 func init() {
 	meta.RegisterActor(meta.ActorSpec{
-		Name: "ExecutorTestActor", SkelName: "test.web.ExecutorActor",
-		InfoSkelName: "test.web.ExecutorActorInfo", InfoType: reflect.TypeFor[*executorTestActorInfo](),
+		Name:         "ExecutorTestActor",
+		SkelName:     "test.web.ExecutorActor",
+		InfoSkelName: "test.web.ExecutorActorInfo",
+		InfoType:     reflect.TypeFor[*executorTestActorInfo](),
 	})
 }

@@ -29,10 +29,22 @@ func TestTrimSpacePtr(t *testing.T) {
 		input string
 		want  string
 	}{
-		{"", ""},
-		{" \t\n\u2003\u00a0", ""},
-		{"demo", "demo"},
-		{"\u2003 hello  world\ninside \u00a0", "hello  world\ninside"},
+		{
+			"",
+			"",
+		},
+		{
+			" \t\n\u2003\u00a0",
+			"",
+		},
+		{
+			"demo",
+			"demo",
+		},
+		{
+			"\u2003 hello  world\ninside \u00a0",
+			"hello  world\ninside",
+		},
 	} {
 		t.Run(tt.input, func(t *testing.T) {
 			value := tt.input

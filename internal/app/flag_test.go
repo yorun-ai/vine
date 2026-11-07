@@ -26,9 +26,7 @@ func TestFlagsEnsureRunFlagAddsDefaultRunFlag(t *testing.T) {
 }
 
 func TestFlagsEnsureRunFlagKeepsProvidedRunFlag(t *testing.T) {
-	runFlag := &RunFlag{
-		ListenAddr: ":18080",
-	}
+	runFlag := &RunFlag{ListenAddr: ":18080"}
 	flags := _Flags{
 		T[*RunFlag](): runFlag,
 	}

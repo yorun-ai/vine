@@ -58,7 +58,10 @@ func TestInvokerBuildRequestCreatesClientSpan(t *testing.T) {
 		Context:    context.Background(),
 		TraceValue: trace,
 	}
-	client := New(Option{Context: rpcContext, Logger: testClientLogger()})
+	client := New(Option{
+		Context: rpcContext,
+		Logger:  testClientLogger(),
+	})
 	methodInfo := testMethodInfo()
 
 	first := client.newInvoker(methodInfo, nil, nil).buildRequest()
@@ -221,9 +224,7 @@ func TestParseResponseReturnsTransportError(t *testing.T) {
 func TestParseResponseReturnsRPCError(t *testing.T) {
 	expected := ex.New(ex.NotFound, "missing")
 
-	result, err := parseResponse(&spec.ResponseImpl{
-		ErrorValue: expected,
-	}, nil)
+	result, err := parseResponse(&spec.ResponseImpl{ErrorValue: expected}, nil)
 	if result != nil {
 		t.Fatal("expected nil result when rpc response contains error")
 	}
@@ -246,8 +247,15 @@ func TestParseResponseAllowsOKErrorAndReturnsResult(t *testing.T) {
 }
 
 func TestInvokerDestination(t *testing.T) {
-	rpcContext := &meta.ContextImpl{Context: context.Background(), TraceValue: meta.InitialTrace()}
-	c := New(Option{Context: rpcContext, ClientApp: testClientApp(t), Logger: testClientLogger()})
+	rpcContext := &meta.ContextImpl{
+		Context:    context.Background(),
+		TraceValue: meta.InitialTrace(),
+	}
+	c := New(Option{
+		Context:   rpcContext,
+		ClientApp: testClientApp(t),
+		Logger:    testClientLogger(),
+	})
 	for _, destination := range []string{"target.app", ""} {
 		var options []InvokeOption
 		if destination != "" {

@@ -71,13 +71,24 @@ func TestInstantConfigReceivesSubscribedEvents(t *testing.T) {
 		assert.Empty(t, reader.GetInstant(instance.AppInfo.InstanceId(), name))
 		client := reader.Client.(*watchtest.Client)
 		key := watched.FormatConfigKey(name)
-		client.Publish(watch.Event{Kind: watch.EventKindUpsert, Key: key, Value: marshalTestConfigValue(name, `{"enabled":true}`)})
+		client.Publish(watch.Event{
+			Kind:  watch.EventKindUpsert,
+			Key:   key,
+			Value: marshalTestConfigValue(name, `{"enabled":true}`),
+		})
 		synctest.Wait()
 		assert.Equal(t, `{"enabled":true}`, reader.GetInstant(instance.AppInfo.InstanceId(), name))
-		client.Publish(watch.Event{Kind: watch.EventKindUpsert, Key: key, Value: "invalid"})
+		client.Publish(watch.Event{
+			Kind:  watch.EventKindUpsert,
+			Key:   key,
+			Value: "invalid",
+		})
 		synctest.Wait()
 		assert.Equal(t, `{"enabled":true}`, reader.GetInstant(instance.AppInfo.InstanceId(), name))
-		client.Publish(watch.Event{Kind: watch.EventKindDelete, Key: key})
+		client.Publish(watch.Event{
+			Kind: watch.EventKindDelete,
+			Key:  key,
+		})
 		synctest.Wait()
 		assert.Empty(t, reader.GetInstant(instance.AppInfo.InstanceId(), name))
 	})
@@ -95,7 +106,11 @@ func (c *watchContextRecorder) LoadAndSubscribe(ctx context.Context, key string,
 
 func TestInstantConfigThroughHubWatch(t *testing.T) {
 	server, client := watchtest.NewServer(t, watch.LinkUsername)
-	reader := &Reader{Context: t.Context(), Client: client, AppMinder: newTestMinder()}
+	reader := &Reader{
+		Context:   t.Context(),
+		Client:    client,
+		AppMinder: newTestMinder(),
+	}
 	reader.DIInit()
 	t.Cleanup(reader.AfterAppStop)
 	instance := registerTestAppInstance(reader, "11111111-1111-1111-1111-111111111111")

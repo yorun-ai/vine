@@ -140,7 +140,10 @@ func TestDeepCloneIsolatesNestedBeans(t *testing.T) {
 
 func TestDeepCloneIsolatesArrays(t *testing.T) {
 	source := [2]testChild{
-		{Name: "a", Tags: []string{"x"}},
+		{
+			Name: "a",
+			Tags: []string{"x"},
+		},
 		{Name: "b"},
 	}
 	cloned := DeepClone(source)
@@ -154,10 +157,16 @@ func TestDeepCloneHandlesRecursiveTypes(t *testing.T) {
 	source := testRecursive{
 		Value: 1,
 		Next: &testRecursive{
-			Value:    2,
-			Children: []testRecursive{{Value: 3, Children: []testRecursive{{Value: 4}}}},
+			Value: 2,
+			Children: []testRecursive{{
+				Value:    3,
+				Children: []testRecursive{{Value: 4}},
+			}},
 		},
-		Children: []testRecursive{{Value: 5, Next: &testRecursive{Value: 6}}},
+		Children: []testRecursive{{
+			Value: 5,
+			Next:  &testRecursive{Value: 6},
+		}},
 	}
 	cloned := DeepClone(source)
 
@@ -173,13 +182,22 @@ func TestDeepCloneHandlesRecursiveTypes(t *testing.T) {
 }
 
 func TestDeepCloneClonesInterfacePayloads(t *testing.T) {
-	source := testEnvelope{Label: "bean", Payload: []string{"a"}}
+	source := testEnvelope{
+		Label:   "bean",
+		Payload: []string{"a"},
+	}
 	cloned := DeepClone(source)
 	cloned.Payload.([]string)[0] = "changed"
 
 	assert.Equal(t, []string{"a"}, source.Payload.([]string))
-	assert.Equal(t, "bean", DeepClone(testEnvelope{Label: "bean", Payload: 42}).Label)
-	assert.Equal(t, 42, DeepClone(testEnvelope{Label: "bean", Payload: 42}).Payload)
+	assert.Equal(t, "bean", DeepClone(testEnvelope{
+		Label:   "bean",
+		Payload: 42,
+	}).Label)
+	assert.Equal(t, 42, DeepClone(testEnvelope{
+		Label:   "bean",
+		Payload: 42,
+	}).Payload)
 }
 
 func TestDeepCloneClonesAnyEntryPoint(t *testing.T) {
@@ -191,7 +209,10 @@ func TestDeepCloneClonesAnyEntryPoint(t *testing.T) {
 }
 
 func TestDeepCloneClonesUnexportedArgumentsType(t *testing.T) {
-	source := testArguments{Key: "bean", Names: []string{"a"}}
+	source := testArguments{
+		Key:   "bean",
+		Names: []string{"a"},
+	}
 	cloned := DeepClone[any](source).(testArguments)
 	cloned.Names[0] = "changed"
 	cloned.Key = "changed"

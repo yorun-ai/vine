@@ -24,9 +24,15 @@ import (
 func NewDialector(connURL string) gorm.Dialector {
 	switch {
 	case strings.HasPrefix(connURL, "sqlite://"):
-		return &_SQLiteDialector{Dialector: &sqlite.Dialector{DriverName: "vine-rdb-sqlite", DSN: strings.TrimPrefix(connURL, "sqlite://")}}
+		return &_SQLiteDialector{Dialector: &sqlite.Dialector{
+			DriverName: "vine-rdb-sqlite",
+			DSN:        strings.TrimPrefix(connURL, "sqlite://"),
+		}}
 	default:
-		return &_PostgresDialector{Dialector: postgres.New(postgres.Config{DriverName: "vine-rdb-pgx", DSN: connURL}).(*postgres.Dialector)}
+		return &_PostgresDialector{Dialector: postgres.New(postgres.Config{
+			DriverName: "vine-rdb-pgx",
+			DSN:        connURL,
+		}).(*postgres.Dialector)}
 	}
 }
 
@@ -84,7 +90,8 @@ func (d *_PostgresDialector) Initialize(db *gorm.DB) error {
 					return err
 				}
 				conn.TypeMap().RegisterType(&pgtype.Type{
-					Name: "timestamp", OID: pgtype.TimestampOID,
+					Name:  "timestamp",
+					OID:   pgtype.TimestampOID,
 					Codec: &pgtype.TimestampCodec{ScanLocation: location},
 				})
 				return nil

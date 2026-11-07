@@ -80,7 +80,11 @@ func TestHubInfoServiceReturnsNATSServerPortWhenEnabled(t *testing.T) {
 func TestHubInfoServicePreservesOldClientPort(t *testing.T) {
 	service := &InfoServiceServerImpl{
 		InprocFlag: &app.InternalInprocFlag{},
-		Flag:       &flag.Flag{ControlListen: ":7071", WatchListen: ":7072", MQNatsEndpoint: "nats://localhost:4222"},
+		Flag: &flag.Flag{
+			ControlListen:  ":7071",
+			WatchListen:    ":7072",
+			MQNatsEndpoint: "nats://localhost:4222",
+		},
 	}
 	type oldInfo struct {
 		ApiPort    int    `json:"apiPort"`
@@ -98,7 +102,11 @@ func TestHubInfoServicePreservesOldClientPort(t *testing.T) {
 func TestHubInfoServiceInprocEmbeddedMQ(t *testing.T) {
 	service := &InfoServiceServerImpl{
 		InprocFlag: &app.InternalInprocFlag{Enabled: true},
-		Flag:       &flag.Flag{ControlListen: ":7071", WatchListen: ":7072", MQMode: flag.MQModeEmbedded},
+		Flag: &flag.Flag{
+			ControlListen: ":7071",
+			WatchListen:   ":7072",
+			MQMode:        flag.MQModeEmbedded,
+		},
 	}
 	info := service.GetInfo()
 	assert.True(t, info.MqEmbedded)
@@ -111,11 +119,19 @@ func TestHubInfoServiceInprocEmbeddedMQ(t *testing.T) {
 func TestHubInfoAdvertisesLockConfiguration(t *testing.T) {
 	for _, mode := range []string{"embedded", "redis", "disable"} {
 		t.Run(mode, func(t *testing.T) {
-			flags := &flag.Flag{ControlListen: ":7071", WatchListen: ":7072", MQMode: flag.MQModeNATS, LockMode: mode}
+			flags := &flag.Flag{
+				ControlListen: ":7071",
+				WatchListen:   ":7072",
+				MQMode:        flag.MQModeNATS,
+				LockMode:      mode,
+			}
 			if mode == "redis" {
 				flags.LockRedisEndpoint = "rediss://user:secret@redis:6380/2"
 			}
-			service := &InfoServiceServerImpl{InprocFlag: &app.InternalInprocFlag{}, Flag: flags}
+			service := &InfoServiceServerImpl{
+				InprocFlag: &app.InternalInprocFlag{},
+				Flag:       flags,
+			}
 			info := service.GetInfo()
 			assert.Equal(t, mode, info.LockMode)
 			assert.Equal(t, flags.LockRedisEndpoint, info.LockRedisEndpoint)

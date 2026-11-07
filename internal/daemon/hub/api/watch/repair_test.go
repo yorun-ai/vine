@@ -118,7 +118,11 @@ func TestRepairFailureKeepsSubscriptionsAndCanRetry(t *testing.T) {
 	require.NoError(t, err)
 	addr := listener.Addr().String()
 	require.NoError(t, listener.Close())
-	option := &watch.Option{Endpoint: addr, Username: watch.LinkUsername, Password: watch.LinkPassword}
+	option := &watch.Option{
+		Endpoint: addr,
+		Username: watch.LinkUsername,
+		Password: watch.LinkPassword,
+	}
 	require.Panics(t, func() { client.RepairEndpoint(option) })
 	old.SetAndNotify("rpc:test:endpoint:demo", "old-still-live")
 	require.Eventually(t, events.has(watch.EventKindUpsert, "rpc:test:endpoint:demo", "old-still-live"), time.Second, time.Millisecond)
@@ -144,7 +148,11 @@ func TestSubscribeDuringEndpointReplacement(t *testing.T) {
 			subscription.Start()
 		})
 	}
-	client.RepairEndpoint(&watch.Option{Endpoint: testWatchEndpoint(t, next), Username: watch.LinkUsername, Password: watch.LinkPassword})
+	client.RepairEndpoint(&watch.Option{
+		Endpoint: testWatchEndpoint(t, next),
+		Username: watch.LinkUsername,
+		Password: watch.LinkPassword,
+	})
 	group.Wait()
 	next.SetAndNotify("rpc:test:endpoint:demo", "live")
 	for _, log := range logs {

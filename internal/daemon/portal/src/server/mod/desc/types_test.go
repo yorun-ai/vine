@@ -18,29 +18,70 @@ import (
 )
 
 func dataRef(name string) *skeldesc.Type {
-	return new(skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: name})
+	return new(skeldesc.Type{
+		Kind:     skeldesc.TypeKindData,
+		SkelName: name,
+	})
 }
 
 func apiDescriptor(name string, result *skeldesc.Type) *skeldesc.Service {
-	return new(skeldesc.Service{Api: true, SkelName: name, Methods: []*skeldesc.Method{{Name: "read", ResultType: result}}})
+	return new(skeldesc.Service{
+		Api:      true,
+		SkelName: name,
+		Methods:  []*skeldesc.Method{{Name: "read", ResultType: result}},
+	})
 }
 
 func testTypeValues() map[string]string {
 	return map[string]string{
-		watched.FormatDescriptorServiceKey("demo.API"):      vcode.MustMarshalJsonS(apiDescriptor("demo.API", new(skeldesc.Type{Kind: skeldesc.TypeKindList, Element: new(skeldesc.Type{Kind: skeldesc.TypeKindMap, Key: new(skeldesc.Type{Kind: skeldesc.TypeKindEnum, SkelName: "demo.Status"}), Value: new(skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: "demo.Wrapper", TypeArguments: []*skeldesc.Type{dataRef("demo.User")}})})}))),
-		watched.FormatDescriptorServiceKey("demo.Shared"):   vcode.MustMarshalJsonS(apiDescriptor("demo.Shared", dataRef("demo.User"))),
-		watched.FormatDescriptorServiceKey("demo.Internal"): vcode.MustMarshalJsonS(skeldesc.Service{SkelName: "demo.Internal", Methods: []*skeldesc.Method{{ResultType: dataRef("demo.Unused")}}}),
-		watched.FormatDescriptorDataKey("demo.Wrapper"):     vcode.MustMarshalJsonS(skeldesc.Data{SkelName: "demo.Wrapper", TypeParameters: []string{"T"}, Members: []*skeldesc.Member{{Name: "item", Type: new(skeldesc.Type{Kind: skeldesc.TypeKindTypeParameter, Name: "T"})}}}),
-		watched.FormatDescriptorDataKey("demo.User"):        vcode.MustMarshalJsonS(skeldesc.Data{SkelName: "demo.User", Members: []*skeldesc.Member{{Name: "address", Type: dataRef("demo.Address")}}}),
-		watched.FormatDescriptorDataKey("demo.Address"):     vcode.MustMarshalJsonS(skeldesc.Data{SkelName: "demo.Address", Members: []*skeldesc.Member{{Name: "owner", Type: dataRef("demo.User")}}}),
-		watched.FormatDescriptorDataKey("demo.Unused"):      vcode.MustMarshalJsonS(skeldesc.Data{SkelName: "demo.Unused"}),
-		watched.FormatDescriptorEnumKey("demo.Status"):      vcode.MustMarshalJsonS(skeldesc.Enum{SkelName: "demo.Status"}),
+		watched.FormatDescriptorServiceKey("demo.API"): vcode.MustMarshalJsonS(apiDescriptor("demo.API", new(skeldesc.Type{
+			Kind: skeldesc.TypeKindList,
+			Element: new(skeldesc.Type{
+				Kind: skeldesc.TypeKindMap,
+				Key: new(skeldesc.Type{
+					Kind:     skeldesc.TypeKindEnum,
+					SkelName: "demo.Status",
+				}),
+				Value: new(skeldesc.Type{
+					Kind:          skeldesc.TypeKindData,
+					SkelName:      "demo.Wrapper",
+					TypeArguments: []*skeldesc.Type{dataRef("demo.User")},
+				}),
+			}),
+		}))),
+		watched.FormatDescriptorServiceKey("demo.Shared"): vcode.MustMarshalJsonS(apiDescriptor("demo.Shared", dataRef("demo.User"))),
+		watched.FormatDescriptorServiceKey("demo.Internal"): vcode.MustMarshalJsonS(skeldesc.Service{
+			SkelName: "demo.Internal",
+			Methods:  []*skeldesc.Method{{ResultType: dataRef("demo.Unused")}},
+		}),
+		watched.FormatDescriptorDataKey("demo.Wrapper"): vcode.MustMarshalJsonS(skeldesc.Data{
+			SkelName:       "demo.Wrapper",
+			TypeParameters: []string{"T"},
+			Members: []*skeldesc.Member{{Name: "item", Type: new(skeldesc.Type{
+				Kind: skeldesc.TypeKindTypeParameter,
+				Name: "T",
+			})}},
+		}),
+		watched.FormatDescriptorDataKey("demo.User"): vcode.MustMarshalJsonS(skeldesc.Data{
+			SkelName: "demo.User",
+			Members:  []*skeldesc.Member{{Name: "address", Type: dataRef("demo.Address")}},
+		}),
+		watched.FormatDescriptorDataKey("demo.Address"): vcode.MustMarshalJsonS(skeldesc.Data{
+			SkelName: "demo.Address",
+			Members:  []*skeldesc.Member{{Name: "owner", Type: dataRef("demo.User")}},
+		}),
+		watched.FormatDescriptorDataKey("demo.Unused"): vcode.MustMarshalJsonS(skeldesc.Data{SkelName: "demo.Unused"}),
+		watched.FormatDescriptorEnumKey("demo.Status"): vcode.MustMarshalJsonS(skeldesc.Enum{SkelName: "demo.Status"}),
 	}
 }
 
 func publishDescriptor(t *testing.T, a *Manager, key string, value any) {
 	t.Helper()
-	a.Watch.(*watchtest.Client).Publish(hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: key, Value: vcode.MustMarshalJsonS(value)})
+	a.Watch.(*watchtest.Client).Publish(hubwatch.Event{
+		Kind:  hubwatch.EventKindUpsert,
+		Key:   key,
+		Value: vcode.MustMarshalJsonS(value),
+	})
 }
 
 func TestAPIDependencyCacheTracksReachabilityAndSharedCycles(t *testing.T) {
@@ -54,14 +95,24 @@ func TestAPIDependencyCacheTracksReachabilityAndSharedCycles(t *testing.T) {
 	require.Len(t, a.typeSubscription.keys, 4, "all dependency keys share a subscription")
 
 	// A Data change adds a dependency without any Service changing.
-	publishDescriptor(t, a, watched.FormatDescriptorDataKey("demo.User"), skeldesc.Data{SkelName: "demo.User", Hash: "updated", Members: []*skeldesc.Member{{Name: "role", Type: new(skeldesc.Type{Kind: skeldesc.TypeKindEnum, SkelName: "demo.Role"})}}})
+	publishDescriptor(t, a, watched.FormatDescriptorDataKey("demo.User"), skeldesc.Data{
+		SkelName: "demo.User",
+		Hash:     "updated",
+		Members: []*skeldesc.Member{{Name: "role", Type: new(skeldesc.Type{
+			Kind:     skeldesc.TypeKindEnum,
+			SkelName: "demo.Role",
+		})}},
+	})
 	require.Eventually(t, func() bool {
 		s := a.Snapshot()
 		return s.Data["demo.User"].Hash == "updated" && len(s.MissingKeys) == 1
 	}, time.Second, time.Millisecond)
 	require.NotContains(t, a.Snapshot().Data, "demo.Address")
 	require.Contains(t, initial.Data, "demo.Address", "previous snapshot remains stable")
-	publishDescriptor(t, a, watched.FormatDescriptorEnumKey("demo.Role"), skeldesc.Enum{SkelName: "demo.Role", Items: []*skeldesc.EnumItem{{Name: "ADMIN"}}})
+	publishDescriptor(t, a, watched.FormatDescriptorEnumKey("demo.Role"), skeldesc.Enum{
+		SkelName: "demo.Role",
+		Items:    []*skeldesc.EnumItem{{Name: "ADMIN"}},
+	})
 	require.Eventually(t, func() bool { return a.Snapshot().Enums["demo.Role"] != nil }, time.Second, time.Millisecond)
 
 	// Adding a Service dependency reads an already-published value.
@@ -72,11 +123,17 @@ func TestAPIDependencyCacheTracksReachabilityAndSharedCycles(t *testing.T) {
 	require.NotContains(t, a.Snapshot().Data, "demo.Wrapper")
 	require.NotContains(t, a.Snapshot().Enums, "demo.Status")
 
-	a.Watch.(*watchtest.Client).Publish(hubwatch.Event{Kind: hubwatch.EventKindDelete, Key: watched.FormatDescriptorServiceKey("demo.API")})
+	a.Watch.(*watchtest.Client).Publish(hubwatch.Event{
+		Kind: hubwatch.EventKindDelete,
+		Key:  watched.FormatDescriptorServiceKey("demo.API"),
+	})
 	require.Eventually(t, func() bool { return len(a.Snapshot().Services) == 1 }, time.Second, time.Millisecond)
 	require.NotContains(t, a.Snapshot().Data, "demo.Other")
 	require.Contains(t, a.Snapshot().Enums, "demo.Role")
-	a.Watch.(*watchtest.Client).Publish(hubwatch.Event{Kind: hubwatch.EventKindDelete, Key: watched.FormatDescriptorServiceKey("demo.Shared")})
+	a.Watch.(*watchtest.Client).Publish(hubwatch.Event{
+		Kind: hubwatch.EventKindDelete,
+		Key:  watched.FormatDescriptorServiceKey("demo.Shared"),
+	})
 	require.Eventually(t, func() bool { return len(a.Snapshot().Services) == 0 }, time.Second, time.Millisecond)
 	require.Empty(t, a.Snapshot().Data)
 	require.Empty(t, a.Snapshot().Enums)
@@ -87,11 +144,20 @@ func TestDependencyDeletionReappearanceAndStaleSubscription(t *testing.T) {
 		watched.FormatDescriptorServiceKey("demo.API"): vcode.MustMarshalJsonS(apiDescriptor("demo.API", dataRef("demo.User"))),
 	})
 	require.Equal(t, []string{watched.FormatDescriptorDataKey("demo.User")}, a.Snapshot().MissingKeys)
-	publishDescriptor(t, a, watched.FormatDescriptorDataKey("demo.User"), skeldesc.Data{SkelName: "demo.User", Hash: "first"})
+	publishDescriptor(t, a, watched.FormatDescriptorDataKey("demo.User"), skeldesc.Data{
+		SkelName: "demo.User",
+		Hash:     "first",
+	})
 	require.Eventually(t, func() bool { return a.Snapshot().Data["demo.User"] != nil }, time.Second, time.Millisecond)
-	a.Watch.(*watchtest.Client).Publish(hubwatch.Event{Kind: hubwatch.EventKindDelete, Key: watched.FormatDescriptorDataKey("demo.User")})
+	a.Watch.(*watchtest.Client).Publish(hubwatch.Event{
+		Kind: hubwatch.EventKindDelete,
+		Key:  watched.FormatDescriptorDataKey("demo.User"),
+	})
 	require.Eventually(t, func() bool { return len(a.Snapshot().MissingKeys) == 1 }, time.Second, time.Millisecond)
-	publishDescriptor(t, a, watched.FormatDescriptorDataKey("demo.User"), skeldesc.Data{SkelName: "demo.User", Hash: "restored"})
+	publishDescriptor(t, a, watched.FormatDescriptorDataKey("demo.User"), skeldesc.Data{
+		SkelName: "demo.User",
+		Hash:     "restored",
+	})
 	require.Eventually(t, func() bool {
 		s := a.Snapshot()
 		return s.Data["demo.User"] != nil && s.Data["demo.User"].Hash == "restored"
@@ -105,7 +171,14 @@ func TestDependencyDeletionReappearanceAndStaleSubscription(t *testing.T) {
 		return len(a.Snapshot().MissingKeys) == 1 && a.Snapshot().MissingKeys[0] == watched.FormatDescriptorDataKey("demo.Other")
 	}, time.Second, time.Millisecond)
 	require.Error(t, old.ctx.Err())
-	a.handleTypeEvent(old, hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: watched.FormatDescriptorDataKey("demo.User"), Value: vcode.MustMarshalJsonS(skeldesc.Data{SkelName: "demo.User", Hash: "stale"})})
+	a.handleTypeEvent(old, hubwatch.Event{
+		Kind: hubwatch.EventKindUpsert,
+		Key:  watched.FormatDescriptorDataKey("demo.User"),
+		Value: vcode.MustMarshalJsonS(skeldesc.Data{
+			SkelName: "demo.User",
+			Hash:     "stale",
+		}),
+	})
 	require.NotContains(t, a.Snapshot().Data, "demo.User")
 	// Turning an API into a backend service removes its retained graph.
 	publishDescriptor(t, a, watched.FormatDescriptorServiceKey("demo.API"), skeldesc.Service{SkelName: "demo.API"})
@@ -122,7 +195,10 @@ type attachmentChangingWatch struct {
 func (w *attachmentChangingWatch) LoadKeysAndSubscribe(ctx context.Context, keys []string, handle func(hubwatch.Event)) (map[string]string, hubwatch.Subscription, error) {
 	if !w.changed {
 		w.changed = true
-		w.client.SetValue(watched.FormatDescriptorDataKey("demo.User"), vcode.MustMarshalJsonS(skeldesc.Data{SkelName: "demo.User", Members: []*skeldesc.Member{{Name: "address", Type: dataRef("demo.Address")}}}))
+		w.client.SetValue(watched.FormatDescriptorDataKey("demo.User"), vcode.MustMarshalJsonS(skeldesc.Data{
+			SkelName: "demo.User",
+			Members:  []*skeldesc.Member{{Name: "address", Type: dataRef("demo.Address")}},
+		}))
 	}
 	return w.ClientOps.LoadKeysAndSubscribe(ctx, keys, handle)
 }
@@ -133,8 +209,14 @@ func TestDependencySnapshotReconcilesChangesDuringAttachment(t *testing.T) {
 		watched.FormatDescriptorDataKey("demo.User"):    vcode.MustMarshalJsonS(skeldesc.Data{SkelName: "demo.User"}),
 		watched.FormatDescriptorDataKey("demo.Address"): vcode.MustMarshalJsonS(skeldesc.Data{SkelName: "demo.Address"}),
 	})
-	watch := &attachmentChangingWatch{ClientOps: client, client: client}
-	a := &Manager{Context: t.Context(), Watch: watch}
+	watch := &attachmentChangingWatch{
+		ClientOps: client,
+		client:    client,
+	}
+	a := &Manager{
+		Context: t.Context(),
+		Watch:   watch,
+	}
 	a.DIInit()
 	t.Cleanup(a.AfterAppStop)
 	require.Len(t, a.Snapshot().Data, 2, "attached snapshot expands the dependency graph")
@@ -147,8 +229,14 @@ func TestDependencyTraversalIncludesInputDataAndEnumMembers(t *testing.T) {
 	service := apiDescriptor("demo.API", nil)
 	service.Methods[0].Arguments = []*skeldesc.Member{{Name: "input", Type: dataRef("demo.Settings")}}
 	a := newTestManager(t, map[string]string{
-		watched.FormatDescriptorServiceKey("demo.API"):     vcode.MustMarshalJsonS(service),
-		watched.FormatDescriptorDataKey("demo.Settings"):   vcode.MustMarshalJsonS(skeldesc.Data{SkelName: "demo.Settings", Members: []*skeldesc.Member{{Name: "status", Type: new(skeldesc.Type{Kind: skeldesc.TypeKindEnum, SkelName: "demo.Status"})}}}),
+		watched.FormatDescriptorServiceKey("demo.API"): vcode.MustMarshalJsonS(service),
+		watched.FormatDescriptorDataKey("demo.Settings"): vcode.MustMarshalJsonS(skeldesc.Data{
+			SkelName: "demo.Settings",
+			Members: []*skeldesc.Member{{Name: "status", Type: new(skeldesc.Type{
+				Kind:     skeldesc.TypeKindEnum,
+				SkelName: "demo.Status",
+			})}},
+		}),
 		watched.FormatDescriptorEnumKey("demo.Status"):     vcode.MustMarshalJsonS(skeldesc.Enum{SkelName: "demo.Status"}),
 		watched.FormatDescriptorConfigKey("demo.Settings"): "ignored config descriptor",
 		watched.FormatDescriptorEventKey("demo.Created"):   "ignored event descriptor",
@@ -165,11 +253,20 @@ func TestVersionedAPIDependenciesStayIndependent(t *testing.T) {
 	for _, version := range []string{"", "V1", "V2", "V10"} {
 		service, data, enum := "demo.OrderApiService"+version, "demo.Order"+version, "demo.Status"+version
 		values[watched.FormatDescriptorServiceKey(service)] = vcode.MustMarshalJsonS(apiDescriptor(service, dataRef(data)))
-		values[watched.FormatDescriptorDataKey(data)] = vcode.MustMarshalJsonS(skeldesc.Data{SkelName: data, Members: []*skeldesc.Member{
-			{Name: "shared", Type: dataRef("demo.Shared")},
-			{Name: "status", Type: new(skeldesc.Type{Kind: skeldesc.TypeKindEnum, SkelName: enum})},
-		}})
-		values[watched.FormatDescriptorEnumKey(enum)] = vcode.MustMarshalJsonS(skeldesc.Enum{SkelName: enum, Hash: "initial"})
+		values[watched.FormatDescriptorDataKey(data)] = vcode.MustMarshalJsonS(skeldesc.Data{
+			SkelName: data,
+			Members: []*skeldesc.Member{
+				{Name: "shared", Type: dataRef("demo.Shared")},
+				{Name: "status", Type: new(skeldesc.Type{
+					Kind:     skeldesc.TypeKindEnum,
+					SkelName: enum,
+				})},
+			},
+		})
+		values[watched.FormatDescriptorEnumKey(enum)] = vcode.MustMarshalJsonS(skeldesc.Enum{
+			SkelName: enum,
+			Hash:     "initial",
+		})
 	}
 	m := newTestManager(t, values)
 	initial := m.Snapshot()
@@ -181,10 +278,16 @@ func TestVersionedAPIDependenciesStayIndependent(t *testing.T) {
 		require.True(t, ok)
 		require.Equal(t, name, service.SkelName)
 	}
-	publishDescriptor(t, m, watched.FormatDescriptorEnumKey("demo.StatusV1"), skeldesc.Enum{SkelName: "demo.StatusV1", Hash: "updated"})
+	publishDescriptor(t, m, watched.FormatDescriptorEnumKey("demo.StatusV1"), skeldesc.Enum{
+		SkelName: "demo.StatusV1",
+		Hash:     "updated",
+	})
 	require.Eventually(t, func() bool { return m.Snapshot().Enums["demo.StatusV1"].Hash == "updated" }, time.Second, time.Millisecond)
 	require.Equal(t, "initial", m.Snapshot().Enums["demo.StatusV10"].Hash)
-	m.Watch.(*watchtest.Client).Publish(hubwatch.Event{Kind: hubwatch.EventKindDelete, Key: watched.FormatDescriptorServiceKey("demo.OrderApiServiceV1")})
+	m.Watch.(*watchtest.Client).Publish(hubwatch.Event{
+		Kind: hubwatch.EventKindDelete,
+		Key:  watched.FormatDescriptorServiceKey("demo.OrderApiServiceV1"),
+	})
 	require.Eventually(t, func() bool {
 		s := m.Snapshot()
 		return !s.Syncing && len(s.Services) == 3
@@ -225,15 +328,25 @@ func newControlledManager(t *testing.T, before func(context.Context, []string) e
 		watched.FormatDescriptorDataKey("demo.B"):      vcode.MustMarshalJsonS(skeldesc.Data{SkelName: "demo.B"}),
 		watched.FormatDescriptorDataKey("demo.C"):      vcode.MustMarshalJsonS(skeldesc.Data{SkelName: "demo.C"}),
 	})
-	watch := &controlledTypeWatch{ClientOps: client, before: before}
-	manager := &Manager{Context: t.Context(), Watch: watch}
+	watch := &controlledTypeWatch{
+		ClientOps: client,
+		before:    before,
+	}
+	manager := &Manager{
+		Context: t.Context(),
+		Watch:   watch,
+	}
 	manager.DIInit()
 	t.Cleanup(manager.AfterAppStop)
 	return manager, watch
 }
 
 func changeService(manager *Manager, result string) {
-	manager.handleServiceEvent(hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: watched.FormatDescriptorServiceKey("demo.API"), Value: vcode.MustMarshalJsonS(apiDescriptor("demo.API", dataRef(result)))})
+	manager.handleServiceEvent(hubwatch.Event{
+		Kind:  hubwatch.EventKindUpsert,
+		Key:   watched.FormatDescriptorServiceKey("demo.API"),
+		Value: vcode.MustMarshalJsonS(apiDescriptor("demo.API", dataRef(result))),
+	})
 }
 
 func TestDependencyRefreshKeepsReadsAvailableAndRejectsSupersededWork(t *testing.T) {
@@ -341,7 +454,10 @@ func TestServiceRevocationAndStopDoNotWaitForTypeIO(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		manager.handleServiceEvent(hubwatch.Event{Kind: hubwatch.EventKindDelete, Key: watched.FormatDescriptorServiceKey("demo.API")})
+		manager.handleServiceEvent(hubwatch.Event{
+			Kind: hubwatch.EventKindDelete,
+			Key:  watched.FormatDescriptorServiceKey("demo.API"),
+		})
 		_, ok := manager.Service("demo.API")
 		assert.False(t, ok, "revocation must take effect while type IO is stalled")
 		manager.AfterAppStop()

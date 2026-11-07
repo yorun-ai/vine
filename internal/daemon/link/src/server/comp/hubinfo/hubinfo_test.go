@@ -22,15 +22,11 @@ func (c *_TestInfoServiceClient) GetInfo(_ ...rpcclient.InvokeOption) hubskeled.
 }
 
 func TestHubInfoDIInitLoadsHubInfo(t *testing.T) {
-	client := &_TestInfoServiceClient{
-		info: hubskeled.Info{
-			WatchPort: 7072,
-			NatsPort:  4222,
-		},
-	}
-	flags := &flag.Flag{
-		HubEndpoint: "http://127.0.0.1:7071",
-	}
+	client := &_TestInfoServiceClient{info: hubskeled.Info{
+		WatchPort: 7072,
+		NatsPort:  4222,
+	}}
+	flags := &flag.Flag{HubEndpoint: "http://127.0.0.1:7071"}
 	flags.Normalize(false)
 	component := &HubInfo{
 		Flag:              flags,
@@ -44,15 +40,11 @@ func TestHubInfoDIInitLoadsHubInfo(t *testing.T) {
 }
 
 func TestHubInfoRefreshNotifiesListenersOnlyWhenHubInfoChanged(t *testing.T) {
-	client := &_TestInfoServiceClient{
-		info: hubskeled.Info{
-			MqEmbedded: true,
-			MqNatsPort: 4222,
-		},
-	}
-	flags := &flag.Flag{
-		HubEndpoint: "http://127.0.0.1:7071",
-	}
+	client := &_TestInfoServiceClient{info: hubskeled.Info{
+		MqEmbedded: true,
+		MqNatsPort: 4222,
+	}}
+	flags := &flag.Flag{HubEndpoint: "http://127.0.0.1:7071"}
 	flags.Normalize(false)
 	component := &HubInfo{
 		Flag:              flags,
@@ -78,7 +70,10 @@ func TestHubInfoRefreshRollsBackAndNotifiesEveryListenerAfterRepairFailure(t *te
 	client := &_TestInfoServiceClient{info: hubskeled.Info{WatchPort: 7072}}
 	flags := &flag.Flag{HubEndpoint: "http://127.0.0.1:7071"}
 	flags.Normalize(false)
-	component := &HubInfo{Flag: flags, InfoServiceClient: client}
+	component := &HubInfo{
+		Flag:              flags,
+		InfoServiceClient: client,
+	}
 	component.DIInit()
 
 	secondCalls := 0
@@ -134,12 +129,27 @@ func TestHubInfoWatchEndpointSupportsHubVersions(t *testing.T) {
 		payload string
 		want    string
 	}{
-		{"old hub", `{"redisPort":7072}`, "hub:7072"},
-		{"new hub", `{"watchPort":8072}`, "hub:8072"},
-		{"prefer watch port", `{"watchPort":8072,"redisPort":7072}`, "hub:8072"},
+		{
+			"old hub",
+			`{"redisPort":7072}`,
+			"hub:7072",
+		},
+		{
+			"new hub",
+			`{"watchPort":8072}`,
+			"hub:8072",
+		},
+		{
+			"prefer watch port",
+			`{"watchPort":8072,"redisPort":7072}`,
+			"hub:8072",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			component := &HubInfo{host: "hub", info: vcode.MustUnmarshalJsonS[hubskeled.Info](tc.payload)}
+			component := &HubInfo{
+				host: "hub",
+				info: vcode.MustUnmarshalJsonS[hubskeled.Info](tc.payload),
+			}
 			assert.Equal(t, tc.want, component.WatchEndpoint())
 		})
 	}
@@ -152,15 +162,49 @@ func TestHubInfoMQSupportsHubVersions(t *testing.T) {
 		endpoint string
 		embedded bool
 	}{
-		{"old embedded", `{"natsPort":4222}`, "nats://hub:4222", true},
-		{"new embedded", `{"mqEmbedded":true,"mqNatsPort":4223}`, "nats://hub:4223", true},
-		{"prefer new port", `{"mqEmbedded":true,"mqNatsPort":4223,"natsPort":4222}`, "nats://hub:4223", true},
-		{"old external", `{"mqEndpoint":"nats://old:4222"}`, "nats://old:4222", false},
-		{"new external", `{"mqNatsEndpoint":"nats://new:4222"}`, "nats://new:4222", false},
-		{"prefer new endpoint", `{"mqNatsEndpoint":"nats://new:4222","mqEndpoint":"nats://old:4222"}`, "nats://new:4222", false},
+		{
+			"old embedded",
+			`{"natsPort":4222}`,
+			"nats://hub:4222",
+			true,
+		},
+		{
+			"new embedded",
+			`{"mqEmbedded":true,"mqNatsPort":4223}`,
+			"nats://hub:4223",
+			true,
+		},
+		{
+			"prefer new port",
+			`{"mqEmbedded":true,"mqNatsPort":4223,"natsPort":4222}`,
+			"nats://hub:4223",
+			true,
+		},
+		{
+			"old external",
+			`{"mqEndpoint":"nats://old:4222"}`,
+			"nats://old:4222",
+			false,
+		},
+		{
+			"new external",
+			`{"mqNatsEndpoint":"nats://new:4222"}`,
+			"nats://new:4222",
+			false,
+		},
+		{
+			"prefer new endpoint",
+			`{"mqNatsEndpoint":"nats://new:4222","mqEndpoint":"nats://old:4222"}`,
+			"nats://new:4222",
+			false,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			component := &HubInfo{host: "hub", Flag: &flag.Flag{}, info: vcode.MustUnmarshalJsonS[hubskeled.Info](tc.payload)}
+			component := &HubInfo{
+				host: "hub",
+				Flag: &flag.Flag{},
+				info: vcode.MustUnmarshalJsonS[hubskeled.Info](tc.payload),
+			}
 			assert.Equal(t, tc.endpoint, component.MQEndpoint())
 			assert.Equal(t, tc.embedded, component.UsesEmbeddedNATS())
 		})

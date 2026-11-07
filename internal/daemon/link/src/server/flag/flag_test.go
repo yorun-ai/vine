@@ -11,7 +11,11 @@ import (
 func TestNormalizeRequiresHTTPSHubEndpointWithMTLS(t *testing.T) {
 	flags := Flag{
 		HubEndpoint: "http://demo.local:7071",
-		MTLS:        mtls.Files{CAFile: "ca.pem", CertFile: "cert.pem", KeyFile: "key.pem"},
+		MTLS: mtls.Files{
+			CAFile:   "ca.pem",
+			CertFile: "cert.pem",
+			KeyFile:  "key.pem",
+		},
 	}
 	assert.PanicsWithError(t, "hub-endpoint must use https when mTLS is enabled", func() {
 		flags.Normalize(false)
@@ -84,13 +88,34 @@ func TestExpectedAppAPIListen(t *testing.T) {
 		listen   string
 		expected bool
 	}{
-		{listen: "127.0.0.1:7079", expected: true},
-		{listen: "[::1]:7079", expected: true},
-		{listen: "localhost:7079", expected: true},
-		{listen: "0.0.0.0:7079", expected: false},
-		{listen: ":7079", expected: false},
-		{listen: "10.0.0.8:7079", expected: false},
-		{listen: "link.internal:7079", expected: false},
+		{
+			listen:   "127.0.0.1:7079",
+			expected: true,
+		},
+		{
+			listen:   "[::1]:7079",
+			expected: true,
+		},
+		{
+			listen:   "localhost:7079",
+			expected: true,
+		},
+		{
+			listen:   "0.0.0.0:7079",
+			expected: false,
+		},
+		{
+			listen:   ":7079",
+			expected: false,
+		},
+		{
+			listen:   "10.0.0.8:7079",
+			expected: false,
+		},
+		{
+			listen:   "link.internal:7079",
+			expected: false,
+		},
 	}
 	for _, test := range tests {
 		assert.Equal(t, test.expected, isExpectedAppAPIListen(test.listen), test.listen)

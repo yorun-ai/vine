@@ -19,9 +19,7 @@ type RepeatedStringFlag struct {
 // commas in YAML lists, objects and text remain part of the value. Its
 // environment source supplies one occurrence.
 func NewRepeatedStringFlag(name string, env string, target *[]string, usage string) *RepeatedStringFlag {
-	value := new(_RepeatedString{
-		values: target,
-	})
+	value := new(_RepeatedString{values: target})
 	return new(RepeatedStringFlag{
 		GenericFlag: new(ucli.GenericFlag{
 			Name:    name,

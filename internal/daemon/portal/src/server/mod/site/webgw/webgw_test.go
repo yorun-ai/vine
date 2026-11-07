@@ -445,9 +445,7 @@ func TestWebGatewayAllowsOptionsFromStrictAllowedOrigin(t *testing.T) {
 }
 
 func TestWebGatewayDoesNotAllowOptionsWhenCorsDisabled(t *testing.T) {
-	target := newTestWebGatewayWithCors(t, nil, watched.PortalCors{
-		Mode: watched.PortalCorsModeDisabled,
-	})
+	target := newTestWebGatewayWithCors(t, nil, watched.PortalCors{Mode: watched.PortalCorsModeDisabled})
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodOptions, "http://api.example.com/ping", nil)
 	request.Header.Set("Origin", "https://console.example.com")
@@ -468,11 +466,9 @@ func TestWebGatewayUpdateKeepsRegistrationWhenWebNameDoesNotChange(t *testing.T)
 	})
 
 	target.Update(watched.PortalSite{
-		Name: "demo-web",
-		Type: "WEBGW",
-		WebgwConfig: &watched.PortalWebgwConfig{
-			WebName: "admin@demo.app",
-		},
+		Name:        "demo-web",
+		Type:        "WEBGW",
+		WebgwConfig: &watched.PortalWebgwConfig{WebName: "admin@demo.app"},
 	})
 
 	if _, ok := target.routeWeb(); !ok {
@@ -497,11 +493,9 @@ func TestWebGatewayUpdateSwitchesWebName(t *testing.T) {
 	})
 
 	target.Update(watched.PortalSite{
-		Name: "demo-web",
-		Type: "WEBGW",
-		WebgwConfig: &watched.PortalWebgwConfig{
-			WebName: "home@demo.app",
-		},
+		Name:        "demo-web",
+		Type:        "WEBGW",
+		WebgwConfig: &watched.PortalWebgwConfig{WebName: "home@demo.app"},
 	})
 
 	registration, ok := target.routeWeb()
@@ -531,9 +525,7 @@ func testContextWithEntryOrigin(recorder http.ResponseWriter, request *http.Requ
 }
 
 func newTestWebGateway(t *testing.T, valuesByKey map[string]string) *WebGateway {
-	return newTestWebGatewayWithCors(t, valuesByKey, watched.PortalCors{
-		Mode: watched.PortalCorsModeSameDomain,
-	})
+	return newTestWebGatewayWithCors(t, valuesByKey, watched.PortalCors{Mode: watched.PortalCorsModeSameDomain})
 }
 
 func newTestWebGatewayWithCors(t *testing.T, valuesByKey map[string]string, cors watched.PortalCors) *WebGateway {
@@ -543,15 +535,25 @@ func newTestWebGatewayWithCors(t *testing.T, valuesByKey map[string]string, cors
 	for _, name := range []string{"admin@demo.app", "home@demo.app"} {
 		key := watched.FormatDescriptorWebKey(name)
 		if _, exists := valuesByKey[key]; !exists {
-			valuesByKey[key] = vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: name, AuthMode: skeldesc.AuthModeOptional})
+			valuesByKey[key] = vcode.MustMarshalJsonS(watched.DescriptorWeb{
+				SkelName: name,
+				AuthMode: skeldesc.AuthModeOptional,
+			})
 		}
 	}
 	valuesByKey[watched.FormatDescriptorActorKey("demo.ClientActor")] = vcode.MustMarshalJsonS(watched.DescriptorActor{SkelName: "demo.ClientActor"})
 	epmgrManager := newTestEpmgr(t, valuesByKey)
-	descriptors := new(desc.Manager{Context: t.Context(), Watch: watchtest.New(t, valuesByKey)})
+	descriptors := new(desc.Manager{
+		Context: t.Context(),
+		Watch:   watchtest.New(t, valuesByKey),
+	})
 	descriptors.DIInit()
 	t.Cleanup(descriptors.AfterAppStop)
-	accessManager := &access.Access{Context: t.Context(), Desc: descriptors, Epmgr: epmgrManager}
+	accessManager := &access.Access{
+		Context: t.Context(),
+		Desc:    descriptors,
+		Epmgr:   epmgrManager,
+	}
 	accessManager.DIInit()
 	t.Cleanup(accessManager.AfterAppStop)
 	return New(context.Background(), meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"), accessManager, epmgrManager, watched.PortalSite{
@@ -559,9 +561,7 @@ func newTestWebGatewayWithCors(t *testing.T, valuesByKey map[string]string, cors
 		Type:          "WEBGW",
 		Cors:          cors,
 		ActorSkelName: "demo.ClientActor",
-		WebgwConfig: &watched.PortalWebgwConfig{
-			WebName: "admin@demo.app",
-		},
+		WebgwConfig:   &watched.PortalWebgwConfig{WebName: "admin@demo.app"},
 	})
 }
 
@@ -672,10 +672,24 @@ func TestWebTimeoutPolicyHotUpdate(t *testing.T) {
 			}))
 			t.Cleanup(func() { ingressinproc.Unregister(endpoint) })
 			target := newTestWebGateway(t, map[string]string{
-				watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{Endpoint: endpoint + "/web/proxy/in/instance-1/admin@demo.app", WebSkelName: "admin@demo.app", AppName: "demo.app", AppInstanceId: "instance-1"}),
+				watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
+					Endpoint:      endpoint + "/web/proxy/in/instance-1/admin@demo.app",
+					WebSkelName:   "admin@demo.app",
+					AppName:       "demo.app",
+					AppInstanceId: "instance-1",
+				}),
 			})
 			t.Cleanup(target.Stop)
-			config := watched.PortalSite{Name: "demo-web", Type: "WEBGW", ActorSkelName: "demo.ClientActor", WebgwConfig: &watched.PortalWebgwConfig{WebName: "admin@demo.app"}, WebTimeout: &webtimeout.Config{Paths: []webtimeout.Path{{Path: "/go/**", Total: "15m"}}}}
+			config := watched.PortalSite{
+				Name:          "demo-web",
+				Type:          "WEBGW",
+				ActorSkelName: "demo.ClientActor",
+				WebgwConfig:   &watched.PortalWebgwConfig{WebName: "admin@demo.app"},
+				WebTimeout: &webtimeout.Config{Paths: []webtimeout.Path{{
+					Path:  "/go/**",
+					Total: "15m",
+				}}},
+			}
 			require.True(t, target.Update(config))
 			server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { target.Serve(testContext(w, r)) }))
 			server.EnableHTTP2 = http2
@@ -710,7 +724,13 @@ func TestWebTimeoutPolicyHotUpdate(t *testing.T) {
 			for _, test := range []struct {
 				path string
 				want time.Duration
-			}{{"/go/new", 5 * time.Second}, {"/other", 5 * time.Second}} {
+			}{{
+				"/go/new",
+				5 * time.Second,
+			}, {
+				"/other",
+				5 * time.Second,
+			}} {
 				response, err := server.Client().Get(server.URL + test.path)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)

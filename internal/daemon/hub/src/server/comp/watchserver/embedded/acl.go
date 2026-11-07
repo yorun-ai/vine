@@ -76,9 +76,7 @@ func connContext(conn interface{ Context() any }) *_ConnContext {
 	if !ok {
 		// A connection has no role until HELLO AUTH succeeds. In particular,
 		// anonymous connections must not inherit either read-only client role.
-		return &_ConnContext{
-			role: userRoleNone,
-		}
+		return &_ConnContext{role: userRoleNone}
 	}
 	return ctx
 }

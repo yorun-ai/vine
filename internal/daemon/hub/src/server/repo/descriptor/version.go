@@ -126,9 +126,7 @@ func descriptorVersionStates[T any](
 			}
 			state := states[ref.SkelName]
 			if state == nil {
-				state = &_DescriptorVersionState{
-					Hashes: map[string]struct{}{},
-				}
+				state = &_DescriptorVersionState{Hashes: map[string]struct{}{}}
 				states[ref.SkelName] = state
 			}
 			state.Hashes[ref.Hash] = struct{}{}

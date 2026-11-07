@@ -23,10 +23,24 @@ func TestSyncerSupportsConcurrentStateUpdates(t *testing.T) {
 			for iteration := range 20 {
 				id := iteration % 3
 				name := fmt.Sprintf("demo.%d.%d", worker, iteration)
-				target.SyncAppConfig(&core.AppConfig{Id: id, Name: name, Value: `{}`})
-				target.SyncPortalSite(&core.PortalSite{Id: id, Name: name, Type: core.PortalSiteTypeWEBGW})
-				target.SyncPortalRule(&core.PortalRule{Id: id, Name: name})
-				target.SyncPortalCert(&core.PortalCert{Id: id, Name: name})
+				target.SyncAppConfig(&core.AppConfig{
+					Id:    id,
+					Name:  name,
+					Value: `{}`,
+				})
+				target.SyncPortalSite(&core.PortalSite{
+					Id:   id,
+					Name: name,
+					Type: core.PortalSiteTypeWEBGW,
+				})
+				target.SyncPortalRule(&core.PortalRule{
+					Id:   id,
+					Name: name,
+				})
+				target.SyncPortalCert(&core.PortalCert{
+					Id:   id,
+					Name: name,
+				})
 
 				views := concurrentDescriptorViews(name)
 				if iteration%2 == 0 {
@@ -44,7 +58,10 @@ func TestSyncerSupportsConcurrentStateUpdates(t *testing.T) {
 func concurrentDescriptorViews(name string) []core.DomainDescriptorView {
 	return []core.DomainDescriptorView{{
 		Actors: []core.DescriptorVersion[*skeldesc.Actor]{{
-			Descriptor:     &skeldesc.Actor{SkelName: name, Hash: name},
+			Descriptor: &skeldesc.Actor{
+				SkelName: name,
+				Hash:     name,
+			},
 			SkelName:       name,
 			DescriptorHash: name,
 			Main:           true,

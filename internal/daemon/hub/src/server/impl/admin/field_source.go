@@ -28,7 +28,13 @@ func toServerFieldSources(sources core.FieldSources) []skeled.FieldSource {
 func fieldSourceBindings(bindings []core.FieldSourceBinding) []skeled.FieldSourceBinding {
 	result := make([]skeled.FieldSourceBinding, 0, len(bindings))
 	for _, item := range bindings {
-		result = append(result, skeled.FieldSourceBinding{Path: item.Path, Variable: item.Variable, Reference: item.Reference, Value: item.Value, DefaultUsed: item.DefaultUsed})
+		result = append(result, skeled.FieldSourceBinding{
+			Path:        item.Path,
+			Variable:    item.Variable,
+			Reference:   item.Reference,
+			Value:       item.Value,
+			DefaultUsed: item.DefaultUsed,
+		})
 	}
 	return result
 }

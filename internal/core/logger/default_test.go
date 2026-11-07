@@ -17,7 +17,10 @@ func TestStandardLoggerUsesIndependentName(t *testing.T) {
 	previousDefault := defaultLoggers.Load().logger
 	t.Cleanup(func() { SetDefault(previousDefault) })
 	SetGlobalLevel(LevelError)
-	SetDefault(New("vine:default", WithOption{Format: FormatText, Level: LevelAuto}))
+	SetDefault(New("vine:default", WithOption{
+		Format: FormatText,
+		Level:  LevelAuto,
+	}))
 	SetLevel("vine:stdlog", LevelDebug)
 
 	if defaultLoggers.Load().logger.Enabled(LevelDebug) {
@@ -34,13 +37,19 @@ func TestDefaultLoggerKeepsInjectedLoggerLevelSemantics(t *testing.T) {
 	t.Cleanup(func() { SetDefault(previousDefault) })
 	SetGlobalLevel(LevelInfo)
 
-	SetDefault(New("vine:test", WithOption{Format: FormatText, Level: LevelAuto}))
+	SetDefault(New("vine:test", WithOption{
+		Format: FormatText,
+		Level:  LevelAuto,
+	}))
 	SetGlobalLevel(LevelDebug)
 	if !defaultLoggers.Load().logger.Enabled(LevelDebug) {
 		t.Fatal("default auto logger should follow the default level")
 	}
 
-	fixed := New("vine:test", WithOption{Format: FormatText, Level: LevelInfo})
+	fixed := New("vine:test", WithOption{
+		Format: FormatText,
+		Level:  LevelInfo,
+	})
 	SetDefault(fixed)
 	if defaultLoggers.Load().logger.Enabled(LevelDebug) {
 		t.Fatal("explicit fixed default logger should keep its own threshold")
@@ -51,8 +60,14 @@ func TestSetDefaultConcurrentLogging(t *testing.T) {
 	previousDefault := defaultLoggers.Load().logger
 	t.Cleanup(func() { SetDefault(previousDefault) })
 
-	first := New("vine:test:first", WithOption{Format: FormatText, Level: LevelError})
-	second := New("vine:test:second", WithOption{Format: FormatText, Level: LevelError})
+	first := New("vine:test:first", WithOption{
+		Format: FormatText,
+		Level:  LevelError,
+	})
+	second := New("vine:test:second", WithOption{
+		Format: FormatText,
+		Level:  LevelError,
+	})
 	var wait sync.WaitGroup
 	wait.Go(func() {
 		for index := range 100 {
@@ -99,9 +114,18 @@ func TestDefaultLoggerFunctions(t *testing.T) {
 		level   string
 		message string
 	}{
-		{level: "DEBUG", message: "test debug"},
-		{level: "INFO", message: "test info"},
-		{level: "ERROR", message: "test error"},
+		{
+			level:   "DEBUG",
+			message: "test debug",
+		},
+		{
+			level:   "INFO",
+			message: "test info",
+		},
+		{
+			level:   "ERROR",
+			message: "test error",
+		},
 	}
 	records := readDefaultLoggerRecords(t, path)
 	if len(records) != len(want) {

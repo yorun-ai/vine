@@ -51,15 +51,42 @@ func TestAppConfigStructuredYAML(t *testing.T) {
 
 func TestAppConfigLegacyAndScalarYAML(t *testing.T) {
 	for _, test := range []struct{ input, expected string }{
-		{`'{"enabled":"yes","maxBatchSize":"many"}'`, `{"enabled":"yes","maxBatchSize":"many"}`},
-		{`'"legacy scalar"'`, `"legacy scalar"`},
-		{`'invalid JSON fixture'`, `invalid JSON fixture`},
-		{`true`, `true`},
-		{`42`, `42`},
-		{`null`, `null`},
-		{`[ACTIVE, LOCKED]`, `["ACTIVE","LOCKED"]`},
-		{`{}`, `{}`},
-		{`{"<<": "literal"}`, `{"<<":"literal"}`},
+		{
+			`'{"enabled":"yes","maxBatchSize":"many"}'`,
+			`{"enabled":"yes","maxBatchSize":"many"}`,
+		},
+		{
+			`'"legacy scalar"'`,
+			`"legacy scalar"`,
+		},
+		{
+			`'invalid JSON fixture'`,
+			`invalid JSON fixture`,
+		},
+		{
+			`true`,
+			`true`,
+		},
+		{
+			`42`,
+			`42`,
+		},
+		{
+			`null`,
+			`null`,
+		},
+		{
+			`[ACTIVE, LOCKED]`,
+			`["ACTIVE","LOCKED"]`,
+		},
+		{
+			`{}`,
+			`{}`,
+		},
+		{
+			`{"<<": "literal"}`,
+			`{"<<":"literal"}`,
+		},
 	} {
 		t.Run(test.input, func(t *testing.T) {
 			var item _AppConfig

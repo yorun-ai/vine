@@ -191,7 +191,12 @@ func TestNewTaskLauncherPanicsWhenTaskClientIsNil(t *testing.T) {
 
 func TestTaskLauncherPreservesNullableArguments(t *testing.T) {
 	client := &testLauncherTaskClient{}
-	launcher := NewLauncher(LauncherOption{Context: testLauncherContext(), Logger: testLauncherLogger(), ClientApp: meta.MustNewApp("test.app", "1.0.0", "123e4567-e89b-12d3-a456-426614174000"), TaskClient: client})
+	launcher := NewLauncher(LauncherOption{
+		Context:    testLauncherContext(),
+		Logger:     testLauncherLogger(),
+		ClientApp:  meta.MustNewApp("test.app", "1.0.0", "123e4567-e89b-12d3-a456-426614174000"),
+		TaskClient: client,
+	})
 	emptyItems, emptyLabels := []string{}, map[string]string{}
 	note, items, labels := "note", []string{"item"}, map[string]string{"key": "value"}
 	for _, args := range []*testLauncherTaskArguments{{}, {Items: &emptyItems, Labels: &emptyLabels}, {Note: &note, Items: &items, Labels: &labels}} {

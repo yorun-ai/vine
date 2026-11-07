@@ -88,9 +88,7 @@ func newTestRpcProxy(t *testing.T, watchClient *watchtest.Client) *RpcProxy {
 func registerLocalApp(proxy *RpcProxy, appInfo meta.App, serviceEndpoint string, ingressEndpoint string, serviceSkelNames []string) {
 	serviceHandlers := make([]skeled.ServiceHandlerRegistration, 0, len(serviceSkelNames))
 	for _, serviceSkelName := range serviceSkelNames {
-		serviceHandlers = append(serviceHandlers, skeled.ServiceHandlerRegistration{
-			ServiceSkelName: serviceSkelName,
-		})
+		serviceHandlers = append(serviceHandlers, skeled.ServiceHandlerRegistration{ServiceSkelName: serviceSkelName})
 	}
 	proxy.AppMinder.RegisterInstance(minder.AppRegistration{
 		AppInfo:         appInfo,
@@ -179,7 +177,5 @@ func newH2CTestServer(t *testing.T, handler http.Handler) *_H2CTestServer {
 		_ = server.Shutdown(context.Background())
 	})
 	port := listener.Addr().(*net.TCPAddr).Port
-	return &_H2CTestServer{
-		URL: fmt.Sprintf("http://127.0.0.1:%d", port),
-	}
+	return &_H2CTestServer{URL: fmt.Sprintf("http://127.0.0.1:%d", port)}
 }

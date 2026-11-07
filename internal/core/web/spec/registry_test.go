@@ -42,5 +42,11 @@ func TestRegisterValidatesMountPath(t *testing.T) {
 }
 
 func testWebSpec(mountPath string) *WebSpec {
-	return &WebSpec{Name: "RegistryTestWeb", SkelName: "demo.user.RegistryTestWeb", MountPath: mountPath, ServerType: reflect.TypeFor[_RegistryTestWebServer](), DefaultServerType: reflect.TypeFor[*_DefaultRegistryTestWebServer]()}
+	return &WebSpec{
+		Name:              "RegistryTestWeb",
+		SkelName:          "demo.user.RegistryTestWeb",
+		MountPath:         mountPath,
+		ServerType:        reflect.TypeFor[_RegistryTestWebServer](),
+		DefaultServerType: reflect.TypeFor[*_DefaultRegistryTestWebServer](),
+	}
 }

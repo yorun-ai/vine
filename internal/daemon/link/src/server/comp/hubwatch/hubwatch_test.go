@@ -20,17 +20,11 @@ func (c *_TestInfoServiceClient) GetInfo(_ ...rpcclient.InvokeOption) hubskeled.
 }
 
 func TestClientInitOptionUsesHubInfoWatchEndpoint(t *testing.T) {
-	flags := &flag.Flag{
-		HubEndpoint: "http://127.0.0.1:7071",
-	}
+	flags := &flag.Flag{HubEndpoint: "http://127.0.0.1:7071"}
 	flags.Normalize(false)
 	infoComponent := &hubinfo.HubInfo{
-		Flag: flags,
-		InfoServiceClient: &_TestInfoServiceClient{
-			info: hubskeled.Info{
-				WatchPort: 7072,
-			},
-		},
+		Flag:              flags,
+		InfoServiceClient: &_TestInfoServiceClient{info: hubskeled.Info{WatchPort: 7072}},
 	}
 	infoComponent.DIInit()
 

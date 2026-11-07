@@ -269,15 +269,18 @@ func TestRpcGatewayRejectsRpcOptionsTimeoutOverMax(t *testing.T) {
 }
 
 func TestRpcGatewayRejectsOversizedRequestBodyAsInvalidRequest(t *testing.T) {
-	target := newTestRpcGateway(t, nil)
-	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodPost, "http://demo.local/invoke/demo.UserService/Get", nil)
-	setTestAuthHeaders(request)
-	request.ContentLength = rpchttp.MaxRequestBodyBytes + 1
-
-	target.Serve(testContext(recorder, request))
-
-	assertRpcGatewayError(t, recorder, ex.InvalidRequest, "rpc request body exceeds")
+	for _, contentType := range []string{rpchttp.ContentTypeJson, rpchttp.ContentTypeCbor} {
+		t.Run(contentType, func(t *testing.T) {
+			target := newTestRpcGateway(t, nil)
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequest(http.MethodPost, "http://demo.local/invoke/demo.UserService/Get", nil)
+			setTestAuthHeaders(request)
+			request.Header.Set(rpchttp.HeaderContentType, contentType)
+			request.ContentLength = rpchttp.RequestBodyLimit(contentType) + 1
+			target.Serve(testContext(recorder, request))
+			assertRpcGatewayError(t, recorder, ex.InvalidRequest, "rpc request body exceeds")
+		})
+	}
 }
 
 func TestRpcGatewayGeneratesMissingRpcSpanBeforeForward(t *testing.T) {
@@ -598,9 +601,7 @@ func TestRpcGatewayAllowsOptionsFromStrictAllowedOrigin(t *testing.T) {
 }
 
 func TestRpcGatewayDoesNotAllowOptionsWhenCorsDisabled(t *testing.T) {
-	target := newTestRpcGatewayWithCors(t, nil, watched.PortalCors{
-		Mode: watched.PortalCorsModeDisabled,
-	})
+	target := newTestRpcGatewayWithCors(t, nil, watched.PortalCors{Mode: watched.PortalCorsModeDisabled})
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodOptions, "http://api.example.com/invoke/demo.UserService/Get", nil)
 	request.Header.Set("Origin", "https://console.example.com")
@@ -632,11 +633,9 @@ func TestRpcGatewayRejectsServiceOutsideConfiguredList(t *testing.T) {
 	})
 
 	target.Update(watched.PortalSite{
-		Name: "demo-api",
-		Type: "RPCGW",
-		RpcgwConfig: &watched.PortalRpcgwConfig{
-			Services: []watched.PortalRpcgwService{{SkelName: "demo.OrderService"}},
-		},
+		Name:        "demo-api",
+		Type:        "RPCGW",
+		RpcgwConfig: &watched.PortalRpcgwConfig{Services: []watched.PortalRpcgwService{{SkelName: "demo.OrderService"}}},
 	})
 
 	target.Update(watched.PortalSite{
@@ -693,9 +692,7 @@ func testCredentialDescriptor() *skeldesc.Data {
 }
 
 func newTestRpcGateway(t *testing.T, valuesByKey map[string]string) *RpcGateway {
-	return newTestRpcGatewayWithCors(t, valuesByKey, watched.PortalCors{
-		Mode: watched.PortalCorsModeSameDomain,
-	})
+	return newTestRpcGatewayWithCors(t, valuesByKey, watched.PortalCors{Mode: watched.PortalCorsModeSameDomain})
 }
 
 func newTestRpcGatewayWithCors(t *testing.T, valuesByKey map[string]string, cors watched.PortalCors) *RpcGateway {
@@ -705,9 +702,7 @@ func newTestRpcGatewayWithCors(t *testing.T, valuesByKey map[string]string, cors
 		Type:          "RPCGW",
 		ActorSkelName: "demo.UserActor",
 		Cors:          cors,
-		RpcgwConfig: &watched.PortalRpcgwConfig{
-			Services: []watched.PortalRpcgwService{{SkelName: "demo.UserService"}},
-		},
+		RpcgwConfig:   &watched.PortalRpcgwConfig{Services: []watched.PortalRpcgwService{{SkelName: "demo.UserService"}}},
 	})
 }
 
@@ -800,7 +795,10 @@ func newTestAccess(t *testing.T) *access.Access {
 		Watch:   watchClient,
 	}
 	epmgrManager.DIInit()
-	descriptors := new(desc.Manager{Context: t.Context(), Watch: watchClient})
+	descriptors := new(desc.Manager{
+		Context: t.Context(),
+		Watch:   watchClient,
+	})
 	descriptors.DIInit()
 	t.Cleanup(descriptors.AfterAppStop)
 	manager := &access.Access{
@@ -815,10 +813,9 @@ func newTestAccess(t *testing.T) *access.Access {
 
 func newTestDescriptorWatch(t *testing.T) *watchtest.Client {
 	watchClient := watchtest.New(t, map[string]string{
-		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.DescriptorActor{
-			SkelName: "demo.UserActor",
-		}),
-		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{Api: true,
+		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.DescriptorActor{SkelName: "demo.UserActor"}),
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
+			Api:      true,
 			SkelName: "demo.UserService",
 			AuthMode: skeldesc.AuthModeOptional,
 			Audiences: []*skeldesc.ActorAudience{
@@ -933,7 +930,10 @@ func TestRpcGatewayRemovesAuthorizationBeforeHTTPForwarding(t *testing.T) {
 	t.Cleanup(backend.Close)
 	target := newTestRpcGateway(t, map[string]string{
 		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
-			Endpoint: backend.URL, ServiceName: "demo.UserService", AppName: "demo.app", AppInstanceId: "instance-1",
+			Endpoint:      backend.URL,
+			ServiceName:   "demo.UserService",
+			AppName:       "demo.app",
+			AppInstanceId: "instance-1",
 		}),
 	})
 	authEndpoint := "link+inproc://vine/portal-rpcgw-auth-test"
@@ -949,15 +949,40 @@ func TestRpcGatewayRemovesAuthorizationBeforeHTTPForwarding(t *testing.T) {
 	}))
 	watchClient := newTestDescriptorWatch(t)
 	watchClient.SetValue(watched.FormatDescriptorActorKey("demo.UserActor"), vcode.MustMarshalJsonS(watched.DescriptorActor{
-		SkelName: "demo.UserActor", Auth: &skeldesc.ActorAuth{Credential: testCredentialDescriptor(), Info: new(skeldesc.Data{SkelName: "demo.UserInfo"}), Service: new(skeldesc.Service{SkelName: "demo.AuthService", AuthMode: skeldesc.AuthModeRequired, Methods: []*skeldesc.Method{{Name: "Auth", SkelName: "auth", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired}}}), MethodName: "Auth"},
+		SkelName: "demo.UserActor",
+		Auth: &skeldesc.ActorAuth{
+			Credential: testCredentialDescriptor(),
+			Info:       new(skeldesc.Data{SkelName: "demo.UserInfo"}),
+			Service: new(skeldesc.Service{
+				SkelName: "demo.AuthService",
+				AuthMode: skeldesc.AuthModeRequired,
+				Methods:  []*skeldesc.Method{{Name: "Auth", SkelName: "auth", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired}},
+			}),
+			MethodName: "Auth",
+		},
 	}))
-	watchClient.SetValue(watched.FormatRpcServiceRegistrationKey("demo.AuthService", "demo.auth", "auth-instance"), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{Endpoint: authEndpoint, ServiceName: "demo.AuthService", AppName: "demo.auth", AppInstanceId: "auth-instance"}))
-	authEpmgr := new(epmgr.Manager{Context: context.Background(), Watch: watchClient})
+	watchClient.SetValue(watched.FormatRpcServiceRegistrationKey("demo.AuthService", "demo.auth", "auth-instance"), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		Endpoint:      authEndpoint,
+		ServiceName:   "demo.AuthService",
+		AppName:       "demo.auth",
+		AppInstanceId: "auth-instance",
+	}))
+	authEpmgr := new(epmgr.Manager{
+		Context: context.Background(),
+		Watch:   watchClient,
+	})
 	authEpmgr.DIInit()
-	descriptors := new(desc.Manager{Context: t.Context(), Watch: watchClient})
+	descriptors := new(desc.Manager{
+		Context: t.Context(),
+		Watch:   watchClient,
+	})
 	descriptors.DIInit()
 	t.Cleanup(descriptors.AfterAppStop)
-	target.access = new(access.Access{Context: t.Context(), Desc: descriptors, Epmgr: authEpmgr})
+	target.access = new(access.Access{
+		Context: t.Context(),
+		Desc:    descriptors,
+		Epmgr:   authEpmgr,
+	})
 	target.access.DIInit()
 	t.Cleanup(target.access.AfterAppStop)
 	request := httptest.NewRequest(http.MethodPost, "http://demo.local/invoke/demo.UserService/Get", strings.NewReader("request"))

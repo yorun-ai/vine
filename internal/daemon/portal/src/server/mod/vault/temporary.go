@@ -72,7 +72,10 @@ func (s *_TemporaryWebCertificates) Certificate(serverName string) (*tls.Certifi
 	if err != nil {
 		return nil, err
 	}
-	element := s.order.PushBack(&_TemporaryWebCertificate{host: host, cert: cert})
+	element := s.order.PushBack(&_TemporaryWebCertificate{
+		host: host,
+		cert: cert,
+	})
 	s.certs[host] = element
 	if s.order.Len() > maxTemporaryWebCertificateCacheSize {
 		s.remove(s.order.Front())

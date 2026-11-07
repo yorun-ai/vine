@@ -50,7 +50,14 @@ func newTestCA(t *testing.T) testCA {
 	require.NoError(t, err)
 	cert, err := x509.ParseCertificate(der)
 	require.NoError(t, err)
-	return testCA{cert: cert, key: key, pem: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})}
+	return testCA{
+		cert: cert,
+		key:  key,
+		pem: pem.EncodeToMemory(&pem.Block{
+			Type:  "CERTIFICATE",
+			Bytes: der,
+		}),
+	}
 }
 
 func (ca testCA) files(t *testing.T, identityPath SPIFFEPath, usages ...x509.ExtKeyUsage) Files {
@@ -88,9 +95,19 @@ func (ca testCA) filesWithURIs(t *testing.T, commonName string, uriStrings []str
 	certFile := filepath.Join(dir, "cert.pem")
 	keyFile := filepath.Join(dir, "key.pem")
 	require.NoError(t, os.WriteFile(caFile, ca.pem, 0o600))
-	require.NoError(t, os.WriteFile(certFile, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}), 0o600))
-	require.NoError(t, os.WriteFile(keyFile, pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)}), 0o600))
-	return Files{CAFile: caFile, CertFile: certFile, KeyFile: keyFile}
+	require.NoError(t, os.WriteFile(certFile, pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: der,
+	}), 0o600))
+	require.NoError(t, os.WriteFile(keyFile, pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(key),
+	}), 0o600))
+	return Files{
+		CAFile:   caFile,
+		CertFile: certFile,
+		KeyFile:  keyFile,
+	}
 }
 
 func TestLoadDisabledIdentity(t *testing.T) {

@@ -58,8 +58,14 @@ func TestManagerReconcileEntriesBindsPortAndRules(t *testing.T) {
 
 	manager.reconcileEntriesLocked()
 
-	httpsKey := _Key{scheme: spec.SchemeHTTPS, port: 8443}
-	httpKey := _Key{scheme: spec.SchemeHTTP, port: 8080}
+	httpsKey := _Key{
+		scheme: spec.SchemeHTTPS,
+		port:   8443,
+	}
+	httpKey := _Key{
+		scheme: spec.SchemeHTTP,
+		port:   8080,
+	}
 	assert.Len(t, manager.entriesByKey, 2)
 	assert.Len(t, manager.entriesByKey[httpsKey].rules, 2)
 	assert.Equal(t, "admin@demo.app", manager.entriesByKey[httpsKey].rules[0].routeSiteName)
@@ -68,15 +74,26 @@ func TestManagerReconcileEntriesBindsPortAndRules(t *testing.T) {
 }
 
 func TestManagerHTTPEntryDoesNotInheritWildcardRedirect(t *testing.T) {
-	certificateVault := &vault.Vault{Context: context.Background(), Watch: watchtest.New(t, map[string]string{
-		watched.FormatPortalCertKey("test"): vcode.MustMarshalJsonS(testHTTPPortalCertificate(t, "*.example.com")),
-	})}
+	certificateVault := &vault.Vault{
+		Context: context.Background(),
+		Watch: watchtest.New(t, map[string]string{
+			watched.FormatPortalCertKey("test"): vcode.MustMarshalJsonS(testHTTPPortalCertificate(t, "*.example.com")),
+		}),
+	}
 	certificateVault.DIInit()
 	exact := testEntryConfig("exact", "http", "app.example.com", 8080, nil)
-	wildcard := watched.PortalEntry{Name: "wildcard", Protocol: "http", EffectiveHTTP: watched.PortalEntryHTTP{
-		Host: "*.example.com", HttpEnabled: true, HttpPort: 8080,
-		HttpsEnabled: true, HttpsPort: 8443, AutoHTTPSEnabled: true,
-	}}
+	wildcard := watched.PortalEntry{
+		Name:     "wildcard",
+		Protocol: "http",
+		EffectiveHTTP: watched.PortalEntryHTTP{
+			Host:             "*.example.com",
+			HttpEnabled:      true,
+			HttpPort:         8080,
+			HttpsEnabled:     true,
+			HttpsPort:        8443,
+			AutoHTTPSEnabled: true,
+		},
+	}
 	manager := &Manager{
 		Vault:              certificateVault,
 		entryConfigsByName: testEntryConfigs(exact, wildcard),
@@ -84,7 +101,10 @@ func TestManagerHTTPEntryDoesNotInheritWildcardRedirect(t *testing.T) {
 		entriesByKey:       map[_Key]*_Entry{},
 	}
 	require.NoError(t, manager.reconcileEntriesLocked())
-	ingress := manager.entriesByKey[_Key{scheme: spec.SchemeHTTP, port: 8080}]
+	ingress := manager.entriesByKey[_Key{
+		scheme: spec.SchemeHTTP,
+		port:   8080,
+	}]
 	request := func(target string, status int, location string) {
 		t.Helper()
 		response := httptest.NewRecorder()
@@ -95,15 +115,30 @@ func TestManagerHTTPEntryDoesNotInheritWildcardRedirect(t *testing.T) {
 	request("http://app.example.com:8080/path", http.StatusNotFound, "")
 	request("http://other.example.com:8080/path", http.StatusPermanentRedirect, "https://other.example.com:8443/path")
 
-	rule := watched.PortalRule{Name: "exact-rule", EntryName: "exact", ResolvedMatchPathPrefix: "/own", RouteType: routeTypeTemporaryRedirect, RouteRedirectionPattern: "http://target.test"}
-	manager.handlePortalRuleEvent(hubapiwatch.Event{Key: watched.FormatPortalRuleKey(rule.Name), Value: vcode.MustMarshalJsonS(rule)})
+	rule := watched.PortalRule{
+		Name:                    "exact-rule",
+		EntryName:               "exact",
+		ResolvedMatchPathPrefix: "/own",
+		RouteType:               routeTypeTemporaryRedirect,
+		RouteRedirectionPattern: "http://target.test",
+	}
+	manager.handlePortalRuleEvent(hubapiwatch.Event{
+		Key:   watched.FormatPortalRuleKey(rule.Name),
+		Value: vcode.MustMarshalJsonS(rule),
+	})
 	request("http://app.example.com:8080/own", http.StatusTemporaryRedirect, "http://target.test")
 	request("http://app.example.com:8080/other", http.StatusNotFound, "")
 
 	// Removing the exact entry lets the wildcard own this host again.
-	manager.handlePortalEntryEvent(hubapiwatch.Event{Kind: hubapiwatch.EventKindDelete, Key: watched.FormatPortalEntryKey(exact.Name)})
+	manager.handlePortalEntryEvent(hubapiwatch.Event{
+		Kind: hubapiwatch.EventKindDelete,
+		Key:  watched.FormatPortalEntryKey(exact.Name),
+	})
 	request("http://app.example.com:8080/path", http.StatusPermanentRedirect, "https://app.example.com:8443/path")
-	manager.handlePortalEntryEvent(hubapiwatch.Event{Key: watched.FormatPortalEntryKey(exact.Name), Value: vcode.MustMarshalJsonS(exact)})
+	manager.handlePortalEntryEvent(hubapiwatch.Event{
+		Key:   watched.FormatPortalEntryKey(exact.Name),
+		Value: vcode.MustMarshalJsonS(exact),
+	})
 	request("http://app.example.com:8080/path", http.StatusNotFound, "")
 }
 
@@ -132,8 +167,14 @@ func TestManagerReconcileEntriesDeduplicatesBySchemeAndPort(t *testing.T) {
 
 	manager.reconcileEntriesLocked()
 
-	httpsKey := _Key{scheme: spec.SchemeHTTPS, port: 8443}
-	httpKey := _Key{scheme: spec.SchemeHTTP, port: 8443}
+	httpsKey := _Key{
+		scheme: spec.SchemeHTTPS,
+		port:   8443,
+	}
+	httpKey := _Key{
+		scheme: spec.SchemeHTTP,
+		port:   8443,
+	}
 	assert.Len(t, manager.entriesByKey, 2)
 	assert.Len(t, manager.entriesByKey[httpsKey].rules, 1)
 	assert.Len(t, manager.entriesByKey[httpKey].rules, 1)
@@ -146,7 +187,10 @@ func TestManagerReconcileEntriesUpdatesExistingPortalRules(t *testing.T) {
 		entryConfigsByName: testEntryConfigs(testEntryConfig("admin", "https", "demo.local", 8443, nil)),
 		entryRulesByName:   map[string]watched.PortalRule{},
 		entriesByKey: map[_Key]*_Entry{
-			{scheme: spec.SchemeHTTPS, port: 8443}: existing,
+			{
+				scheme: spec.SchemeHTTPS,
+				port:   8443,
+			}: existing,
 		},
 		SiteManager: newTestSiteManager(t, "admin@demo.app"),
 	}
@@ -161,7 +205,10 @@ func TestManagerReconcileEntriesUpdatesExistingPortalRules(t *testing.T) {
 
 	manager.reconcileEntriesLocked()
 
-	assert.Same(t, existing, manager.entriesByKey[_Key{scheme: spec.SchemeHTTPS, port: 8443}])
+	assert.Same(t, existing, manager.entriesByKey[_Key{
+		scheme: spec.SchemeHTTPS,
+		port:   8443,
+	}])
 	assert.Len(t, existing.rules, 1)
 	assert.Equal(t, "admin", existing.rules[0].name)
 }
@@ -190,7 +237,10 @@ func TestManagerAfterAppStartStartsEntriesCreatedBeforeStart(t *testing.T) {
 			},
 		},
 		entriesByKey: map[_Key]*_Entry{
-			{scheme: spec.SchemeHTTP, port: 8080}: existing,
+			{
+				scheme: spec.SchemeHTTP,
+				port:   8080,
+			}: existing,
 		},
 		SiteManager: newTestSiteManager(t, "admin@demo.app"),
 	}
@@ -205,11 +255,9 @@ func newTestSiteManager(t *testing.T, names ...string) *site.Manager {
 	valuesByKey := map[string]string{}
 	for _, name := range names {
 		valuesByKey[watched.FormatPortalSiteKey(name)] = vcode.MustMarshalJsonS(watched.PortalSite{
-			Name: name,
-			Type: "RPCGW",
-			RpcgwConfig: &watched.PortalRpcgwConfig{
-				Services: []watched.PortalRpcgwService{{SkelName: "demo.UserService"}},
-			},
+			Name:        name,
+			Type:        "RPCGW",
+			RpcgwConfig: &watched.PortalRpcgwConfig{Services: []watched.PortalRpcgwService{{SkelName: "demo.UserService"}}},
 		})
 	}
 	epmgrManager := &epmgr.Manager{
@@ -217,7 +265,10 @@ func newTestSiteManager(t *testing.T, names ...string) *site.Manager {
 		Watch:   watchtest.New(t, valuesByKey),
 	}
 	epmgrManager.DIInit()
-	descriptors := new(desc.Manager{Context: t.Context(), Watch: watchtest.New(t, nil)})
+	descriptors := new(desc.Manager{
+		Context: t.Context(),
+		Watch:   watchtest.New(t, nil),
+	})
 	descriptors.DIInit()
 	t.Cleanup(descriptors.AfterAppStop)
 	manager := &site.Manager{
@@ -251,7 +302,12 @@ func (*_TestListener) Addr() net.Addr {
 }
 
 func testEntryConfig(name string, scheme string, host string, port int, ips []string) watched.PortalEntry {
-	config := watched.PortalEntry{Name: name, Protocol: "http", EffectiveHTTP: watched.PortalEntryHTTP{Host: host}, ListenIPs: ips}
+	config := watched.PortalEntry{
+		Name:          name,
+		Protocol:      "http",
+		EffectiveHTTP: watched.PortalEntryHTTP{Host: host},
+		ListenIPs:     ips,
+	}
 	if scheme == "http" {
 		config.EffectiveHTTP.HttpEnabled = true
 		config.EffectiveHTTP.HttpPort = port
@@ -269,15 +325,32 @@ func testEntryConfigs(configs ...watched.PortalEntry) map[string]watched.PortalE
 	return result
 }
 func testRedirectRule(name string, entryName string) watched.PortalRule {
-	return watched.PortalRule{Name: name, EntryName: entryName, RouteType: "PERMANENT_REDIRECT", RouteRedirectionPattern: "https://example.com"}
+	return watched.PortalRule{
+		Name:                    name,
+		EntryName:               entryName,
+		RouteType:               "PERMANENT_REDIRECT",
+		RouteRedirectionPattern: "https://example.com",
+	}
 }
 func TestManagerListenIPsShareAndUpdateBindings(t *testing.T) {
 	first := testEntryConfig("first", "http", "first.local", 8080, []string{"127.0.0.1", "::1"})
 	second := testEntryConfig("second", "http", "second.local", 8080, []string{"127.0.0.1"})
-	manager := &Manager{entryRulesByName: map[string]watched.PortalRule{"first": testRedirectRule("first", "first"), "second": testRedirectRule("second", "second")}, entryConfigsByName: testEntryConfigs(first, second), entriesByKey: map[_Key]*_Entry{}}
+	manager := &Manager{
+		entryRulesByName:   map[string]watched.PortalRule{"first": testRedirectRule("first", "first"), "second": testRedirectRule("second", "second")},
+		entryConfigsByName: testEntryConfigs(first, second),
+		entriesByKey:       map[_Key]*_Entry{},
+	}
 	require.NoError(t, manager.reconcileEntriesLocked())
-	v4 := _Key{scheme: spec.SchemeHTTP, port: 8080, listenIP: "127.0.0.1"}
-	v6 := _Key{scheme: spec.SchemeHTTP, port: 8080, listenIP: "::1"}
+	v4 := _Key{
+		scheme:   spec.SchemeHTTP,
+		port:     8080,
+		listenIP: "127.0.0.1",
+	}
+	v6 := _Key{
+		scheme:   spec.SchemeHTTP,
+		port:     8080,
+		listenIP: "::1",
+	}
 	require.Len(t, manager.entriesByKey, 2)
 	require.Len(t, manager.entriesByKey[v4].rules, 2)
 	require.Len(t, manager.entriesByKey[v6].rules, 1)
@@ -288,7 +361,11 @@ func TestManagerListenIPsShareAndUpdateBindings(t *testing.T) {
 	require.Same(t, shared, manager.entriesByKey[v4])
 	require.Len(t, shared.rules, 1)
 	require.NotContains(t, manager.entriesByKey, v6)
-	require.Contains(t, manager.entriesByKey, _Key{scheme: spec.SchemeHTTP, port: 8080, listenIP: "127.0.0.2"})
+	require.Contains(t, manager.entriesByKey, _Key{
+		scheme:   spec.SchemeHTTP,
+		port:     8080,
+		listenIP: "127.0.0.2",
+	})
 }
 func TestManagerListenIPsBindingFailureClosesPartialListeners(t *testing.T) {
 	previous := listenEntryTCP
@@ -305,7 +382,12 @@ func TestManagerListenIPsBindingFailureClosesPartialListeners(t *testing.T) {
 		return listener, err
 	}
 	config := testEntryConfig("local", "http", "", 8080, []string{"127.0.0.1", "::1"})
-	manager := &Manager{started: true, entryRulesByName: map[string]watched.PortalRule{"local": testRedirectRule("local", "local")}, entryConfigsByName: testEntryConfigs(config), entriesByKey: map[_Key]*_Entry{}}
+	manager := &Manager{
+		started:            true,
+		entryRulesByName:   map[string]watched.PortalRule{"local": testRedirectRule("local", "local")},
+		entryConfigsByName: testEntryConfigs(config),
+		entriesByKey:       map[_Key]*_Entry{},
+	}
 	t.Cleanup(manager.AfterAppStop)
 	require.Error(t, manager.reconcileEntriesLocked())
 	require.Empty(t, manager.entriesByKey)
@@ -326,10 +408,19 @@ func TestManagerListenIPsFailedUpdateRestoresOldListener(t *testing.T) {
 		return net.Listen("tcp4", "127.0.0.1:0")
 	}
 	config := testEntryConfig("local", "http", "", 8080, []string{"127.0.0.1"})
-	manager := &Manager{started: true, entriesByKey: map[_Key]*_Entry{}, entryRulesByName: map[string]watched.PortalRule{"local": testRedirectRule("local", "local")}, entryConfigsByName: testEntryConfigs(config)}
+	manager := &Manager{
+		started:            true,
+		entriesByKey:       map[_Key]*_Entry{},
+		entryRulesByName:   map[string]watched.PortalRule{"local": testRedirectRule("local", "local")},
+		entryConfigsByName: testEntryConfigs(config),
+	}
 	t.Cleanup(manager.AfterAppStop)
 	require.NoError(t, manager.reconcileEntriesLocked())
-	key := _Key{scheme: spec.SchemeHTTP, port: 8080, listenIP: "127.0.0.1"}
+	key := _Key{
+		scheme:   spec.SchemeHTTP,
+		port:     8080,
+		listenIP: "127.0.0.1",
+	}
 	old := manager.entriesByKey[key]
 	config.ListenIPs = []string{"127.0.0.2"}
 	manager.entryConfigsByName[watched.FormatPortalEntryKey(config.Name)] = config
@@ -354,18 +445,32 @@ func TestManagerWatchUpdatesConvergeFromWildcardToExplicitIPs(t *testing.T) {
 	first, second := testRedirectRule("one", "web"), testRedirectRule("two", "web")
 	first.ResolvedMatchPathPrefix = "/one"
 	second.ResolvedMatchPathPrefix = "/two"
-	manager := &Manager{entryRulesByName: map[string]watched.PortalRule{"one": first, "two": second}, entryConfigsByName: testEntryConfigs(config), entriesByKey: map[_Key]*_Entry{}}
+	manager := &Manager{
+		entryRulesByName:   map[string]watched.PortalRule{"one": first, "two": second},
+		entryConfigsByName: testEntryConfigs(config),
+		entriesByKey:       map[_Key]*_Entry{},
+	}
 	t.Cleanup(manager.AfterAppStop)
 	manager.AfterAppStart()
-	oldKey := _Key{scheme: spec.SchemeHTTP, port: port}
+	oldKey := _Key{
+		scheme: spec.SchemeHTTP,
+		port:   port,
+	}
 	old := manager.entriesByKey[oldKey]
 	require.NotNil(t, old)
 	config.ListenIPs = []string{"127.0.0.1", "::1"}
-	manager.handlePortalEntryEvent(hubapiwatch.Event{Key: watched.FormatPortalEntryKey(config.Name), Value: vcode.MustMarshalJsonS(config)})
+	manager.handlePortalEntryEvent(hubapiwatch.Event{
+		Key:   watched.FormatPortalEntryKey(config.Name),
+		Value: vcode.MustMarshalJsonS(config),
+	})
 	require.False(t, old.started)
 	require.Len(t, manager.entriesByKey, 2)
 	for _, ip := range config.ListenIPs {
-		entry := manager.entriesByKey[_Key{scheme: spec.SchemeHTTP, port: port, listenIP: ip}]
+		entry := manager.entriesByKey[_Key{
+			scheme:   spec.SchemeHTTP,
+			port:     port,
+			listenIP: ip,
+		}]
 		require.NotNil(t, entry)
 		require.True(t, entry.started)
 		require.Len(t, entry.rules, 2)
@@ -373,28 +478,63 @@ func TestManagerWatchUpdatesConvergeFromWildcardToExplicitIPs(t *testing.T) {
 		require.NoError(t, err)
 		_ = connection.Close()
 	}
-	manager.handlePortalRuleEvent(hubapiwatch.Event{Kind: hubapiwatch.EventKindDelete, Key: "one"})
-	manager.handlePortalRuleEvent(hubapiwatch.Event{Kind: hubapiwatch.EventKindDelete, Key: "two"})
+	manager.handlePortalRuleEvent(hubapiwatch.Event{
+		Kind: hubapiwatch.EventKindDelete,
+		Key:  "one",
+	})
+	manager.handlePortalRuleEvent(hubapiwatch.Event{
+		Kind: hubapiwatch.EventKindDelete,
+		Key:  "two",
+	})
 	require.Len(t, manager.entriesByKey, 2, "entries own listeners even without rules")
-	manager.handlePortalEntryEvent(hubapiwatch.Event{Kind: hubapiwatch.EventKindDelete, Key: watched.FormatPortalEntryKey(config.Name)})
+	manager.handlePortalEntryEvent(hubapiwatch.Event{
+		Kind: hubapiwatch.EventKindDelete,
+		Key:  watched.FormatPortalEntryKey(config.Name),
+	})
 	require.Empty(t, manager.entriesByKey)
 }
 func TestManagerIgnoresLegacyRulesWithoutEntryReference(t *testing.T) {
 	legacy := vcode.MustUnmarshalJsonS[watched.PortalRule](`{"name":"legacy","matchScheme":"http","matchPort":8080,"routeType":"PERMANENT_REDIRECT","routeRedirectionPattern":"https://example.com"}`)
-	manager := &Manager{entryRulesByName: map[string]watched.PortalRule{"legacy": legacy}, entryConfigsByName: map[string]watched.PortalEntry{}, entriesByKey: map[_Key]*_Entry{}}
+	manager := &Manager{
+		entryRulesByName:   map[string]watched.PortalRule{"legacy": legacy},
+		entryConfigsByName: map[string]watched.PortalEntry{},
+		entriesByKey:       map[_Key]*_Entry{},
+	}
 	require.NoError(t, manager.reconcileEntriesLocked())
 	require.Empty(t, manager.entriesByKey)
 	manager.entryConfigsByName = testEntryConfigs(testEntryConfig("web", "http", "", 8080, nil))
 	require.NoError(t, manager.reconcileEntriesLocked())
 	require.Len(t, manager.entriesByKey, 1)
-	require.Empty(t, manager.entriesByKey[_Key{scheme: spec.SchemeHTTP, port: 8080}].rules)
+	require.Empty(t, manager.entriesByKey[_Key{
+		scheme: spec.SchemeHTTP,
+		port:   8080,
+	}].rules)
 }
 
 func TestEntryFollowsEffectiveTransportUpdates(t *testing.T) {
-	certificateVault := &vault.Vault{Context: context.Background(), Watch: watchtest.New(t, map[string]string{watched.FormatPortalCertKey("test"): vcode.MustMarshalJsonS(testHTTPPortalCertificate(t))})}
+	certificateVault := &vault.Vault{
+		Context: context.Background(),
+		Watch:   watchtest.New(t, map[string]string{watched.FormatPortalCertKey("test"): vcode.MustMarshalJsonS(testHTTPPortalCertificate(t))}),
+	}
 	certificateVault.DIInit()
-	manager := &Manager{Vault: certificateVault, entryRulesByName: map[string]watched.PortalRule{}, entryConfigsByName: map[string]watched.PortalEntry{}, entriesByKey: map[_Key]*_Entry{}}
-	config := watched.PortalEntry{Name: "web", Protocol: "http", EffectiveHTTP: watched.PortalEntryHTTP{Host: "example.com", HttpEnabled: true, HttpPort: 8080, HttpsEnabled: true, HttpsPort: 8443, AutoHTTPSEnabled: true}}
+	manager := &Manager{
+		Vault:              certificateVault,
+		entryRulesByName:   map[string]watched.PortalRule{},
+		entryConfigsByName: map[string]watched.PortalEntry{},
+		entriesByKey:       map[_Key]*_Entry{},
+	}
+	config := watched.PortalEntry{
+		Name:     "web",
+		Protocol: "http",
+		EffectiveHTTP: watched.PortalEntryHTTP{
+			Host:             "example.com",
+			HttpEnabled:      true,
+			HttpPort:         8080,
+			HttpsEnabled:     true,
+			HttpsPort:        8443,
+			AutoHTTPSEnabled: true,
+		},
+	}
 	for _, test := range []struct {
 		name         string
 		httpEnabled  bool
@@ -402,19 +542,61 @@ func TestEntryFollowsEffectiveTransportUpdates(t *testing.T) {
 		autoHTTPS    bool
 		status       int
 	}{
-		{"both enabled", true, true, true, http.StatusPermanentRedirect},
-		{"HTTPS disabled", true, false, false, http.StatusNotFound},
-		{"HTTPS restored", true, true, true, http.StatusPermanentRedirect},
-		{"HTTP disabled", false, true, false, 0},
-		{"HTTP restored", true, true, true, http.StatusPermanentRedirect},
-		{"redirect disabled", true, true, false, http.StatusNotFound},
+		{
+			"both enabled",
+			true,
+			true,
+			true,
+			http.StatusPermanentRedirect,
+		},
+		{
+			"HTTPS disabled",
+			true,
+			false,
+			false,
+			http.StatusNotFound,
+		},
+		{
+			"HTTPS restored",
+			true,
+			true,
+			true,
+			http.StatusPermanentRedirect,
+		},
+		{
+			"HTTP disabled",
+			false,
+			true,
+			false,
+			0,
+		},
+		{
+			"HTTP restored",
+			true,
+			true,
+			true,
+			http.StatusPermanentRedirect,
+		},
+		{
+			"redirect disabled",
+			true,
+			true,
+			false,
+			http.StatusNotFound,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			config.EffectiveHTTP.HttpEnabled = test.httpEnabled
 			config.EffectiveHTTP.HttpsEnabled = test.httpsEnabled
 			config.EffectiveHTTP.AutoHTTPSEnabled = test.autoHTTPS
-			manager.handlePortalEntryEvent(hubapiwatch.Event{Key: watched.FormatPortalEntryKey("web"), Value: vcode.MustMarshalJsonS(config)})
-			ingress := manager.entriesByKey[_Key{scheme: spec.SchemeHTTP, port: 8080}]
+			manager.handlePortalEntryEvent(hubapiwatch.Event{
+				Key:   watched.FormatPortalEntryKey("web"),
+				Value: vcode.MustMarshalJsonS(config),
+			})
+			ingress := manager.entriesByKey[_Key{
+				scheme: spec.SchemeHTTP,
+				port:   8080,
+			}]
 			if !test.httpEnabled {
 				require.Nil(t, ingress)
 				return
@@ -433,11 +615,28 @@ func TestEntryFollowsEffectiveTransportUpdates(t *testing.T) {
 }
 
 func TestEntryEmptyHostEffectiveHTTPOnly(t *testing.T) {
-	config := watched.PortalEntry{Name: "ip", Protocol: "http", EffectiveHTTP: watched.PortalEntryHTTP{HttpEnabled: true, HttpPort: 8080, HttpsEnabled: false, HttpsPort: 8080, AutoHTTPSEnabled: false}}
-	manager := &Manager{entryConfigsByName: testEntryConfigs(config), entryRulesByName: map[string]watched.PortalRule{"ip": testRedirectRule("ip", "ip")}, entriesByKey: map[_Key]*_Entry{}}
+	config := watched.PortalEntry{
+		Name:     "ip",
+		Protocol: "http",
+		EffectiveHTTP: watched.PortalEntryHTTP{
+			HttpEnabled:      true,
+			HttpPort:         8080,
+			HttpsEnabled:     false,
+			HttpsPort:        8080,
+			AutoHTTPSEnabled: false,
+		},
+	}
+	manager := &Manager{
+		entryConfigsByName: testEntryConfigs(config),
+		entryRulesByName:   map[string]watched.PortalRule{"ip": testRedirectRule("ip", "ip")},
+		entriesByKey:       map[_Key]*_Entry{},
+	}
 	require.NoError(t, manager.reconcileEntriesLocked())
 	require.Len(t, manager.entriesByKey, 1)
-	ingress := manager.entriesByKey[_Key{scheme: spec.SchemeHTTP, port: 8080}]
+	ingress := manager.entriesByKey[_Key{
+		scheme: spec.SchemeHTTP,
+		port:   8080,
+	}]
 	require.NotNil(t, ingress)
 	require.Len(t, ingress.rules, 1)
 	require.Zero(t, ingress.rules[0].autoHTTPSPort)

@@ -43,10 +43,41 @@ func TestLaunchTaskRejectsInvalidRequestBeforePublishing(t *testing.T) {
 		request skeled.TaskDebugLaunchRequest
 		code    ex.Code
 	}{
-		{"missing runner", skeled.TaskDebugLaunchRequest{TaskSkelName: "missing", ArgumentsJson: skeltype.JSON(`{}`)}, ex.NotFound},
-		{"wrong version", skeled.TaskDebugLaunchRequest{TaskSkelName: "demo.A", DescriptorHash: "unknown", ArgumentsJson: skeltype.JSON(`{}`)}, ex.NotFound},
-		{"invalid JSON", skeled.TaskDebugLaunchRequest{TaskSkelName: "demo.A", DescriptorHash: "v1", ArgumentsJson: skeltype.JSON(`{`)}, ex.InvalidRequest},
-		{"invalid trace", skeled.TaskDebugLaunchRequest{TaskSkelName: "demo.A", ArgumentsJson: skeltype.JSON(`{}`), TraceId: new("invalid")}, ex.InvalidRequest},
+		{
+			"missing runner",
+			skeled.TaskDebugLaunchRequest{
+				TaskSkelName:  "missing",
+				ArgumentsJson: skeltype.JSON(`{}`),
+			},
+			ex.NotFound,
+		},
+		{
+			"wrong version",
+			skeled.TaskDebugLaunchRequest{
+				TaskSkelName:   "demo.A",
+				DescriptorHash: "unknown",
+				ArgumentsJson:  skeltype.JSON(`{}`),
+			},
+			ex.NotFound,
+		},
+		{
+			"invalid JSON",
+			skeled.TaskDebugLaunchRequest{
+				TaskSkelName:   "demo.A",
+				DescriptorHash: "v1",
+				ArgumentsJson:  skeltype.JSON(`{`),
+			},
+			ex.InvalidRequest,
+		},
+		{
+			"invalid trace",
+			skeled.TaskDebugLaunchRequest{
+				TaskSkelName:  "demo.A",
+				ArgumentsJson: skeltype.JSON(`{}`),
+				TraceId:       new("invalid"),
+			},
+			ex.InvalidRequest,
+		},
 	} {
 		t.Run(item.name, func(t *testing.T) { requireDebugError(t, item.code, func() { service.LaunchTask(item.request) }) })
 	}

@@ -8,18 +8,36 @@ import (
 )
 
 func TestConfigDefinitionPreservesReachableTypesAndMetadata(t *testing.T) {
-	enum := &skeldesc.Type{Kind: skeldesc.TypeKindEnum, SkelName: "foreign.Mode"}
-	dataType := &skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: "demo.Box", TypeArguments: []*skeldesc.Type{enum}}
-	recursive := &skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: "demo.Node", Nullable: true}
+	enum := &skeldesc.Type{
+		Kind:     skeldesc.TypeKindEnum,
+		SkelName: "foreign.Mode",
+	}
+	dataType := &skeldesc.Type{
+		Kind:          skeldesc.TypeKindData,
+		SkelName:      "demo.Box",
+		TypeArguments: []*skeldesc.Type{enum},
+	}
+	recursive := &skeldesc.Type{
+		Kind:     skeldesc.TypeKindData,
+		SkelName: "demo.Node",
+		Nullable: true,
+	}
 	descriptors := []*skeldesc.Data{
 		{Name: "Box", SkelName: "demo.Box", TypeParameters: []string{"T"}, Sensitive: true, Members: []*skeldesc.Member{
-			{Name: "value", Description: "Payload", Example: "ACTIVE", Deprecated: true, DeprecatedReason: "Old", Sensitive: true, Type: &skeldesc.Type{Kind: skeldesc.TypeKindTypeParameter, Name: "T"}},
+			{Name: "value", Description: "Payload", Example: "ACTIVE", Deprecated: true, DeprecatedReason: "Old", Sensitive: true, Type: &skeldesc.Type{
+				Kind: skeldesc.TypeKindTypeParameter,
+				Name: "T",
+			}},
 			{Name: "next", Type: recursive},
 		}},
 		{Name: "Node", SkelName: "demo.Node", Members: []*skeldesc.Member{{Name: "next", Type: recursive}}},
 		{SkelName: "demo.Unrelated"},
 	}
-	definition := NewAppConfigDefinition(&skeldesc.Config{Sensitive: true, Members: []*skeldesc.Member{{Name: "box", Type: dataType}}, Lifecycle: skeldesc.ConfigLifecycleEternal},
+	definition := NewAppConfigDefinition(&skeldesc.Config{
+		Sensitive: true,
+		Members:   []*skeldesc.Member{{Name: "box", Type: dataType}},
+		Lifecycle: skeldesc.ConfigLifecycleEternal,
+	},
 		[]*skeldesc.Enum{{SkelName: "foreign.Mode", Items: []*skeldesc.EnumItem{{Name: "ACTIVE", Description: "Active"}}}}, descriptors)
 	require.True(t, definition.Sensitive)
 	require.Equal(t, "demo.Box<foreign.Mode>", definition.Fields[0].Type)

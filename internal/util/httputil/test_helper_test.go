@@ -13,7 +13,9 @@ func newTestProxyLogger(t testing.TB, name string) (*logger.Logger, string) {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "proxy.jsonl")
 	log := logger.New(name, logger.WithOption{
-		Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path,
+		Format:     logger.FormatJSON,
+		Level:      logger.LevelDebug,
+		OutputPath: path,
 	})
 	return log, path
 }

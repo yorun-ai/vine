@@ -10,16 +10,47 @@ func TestConsumeDestination(t *testing.T) {
 		input, destination, remaining string
 		invalid                       bool
 	}{
-		{input: "timeout=10s,destination=order.app", destination: "order.app", remaining: "timeout=10s"},
-		{input: "destination=order.app,timeout=10s", destination: "order.app", remaining: "timeout=10s"},
-		{input: "destination=order.app", destination: "order.app"},
-		{input: "timeout=10s", remaining: "timeout=10s"},
+		{
+			input:       "timeout=10s,destination=order.app",
+			destination: "order.app",
+			remaining:   "timeout=10s",
+		},
+		{
+			input:       "destination=order.app,timeout=10s",
+			destination: "order.app",
+			remaining:   "timeout=10s",
+		},
+		{
+			input:       "destination=order.app",
+			destination: "order.app",
+		},
+		{
+			input:     "timeout=10s",
+			remaining: "timeout=10s",
+		},
 		{},
-		{input: "destination=", invalid: true},
-		{input: "destination=a,destination=b", invalid: true},
-		{input: "destination=a,timeout=bad", destination: "a", remaining: "timeout=bad"},
-		{input: "destination=a,unknown=b", destination: "a", remaining: "unknown=b"},
-		{input: "unknown=b,timeout=10s", remaining: "unknown=b,timeout=10s"},
+		{
+			input:   "destination=",
+			invalid: true,
+		},
+		{
+			input:   "destination=a,destination=b",
+			invalid: true,
+		},
+		{
+			input:       "destination=a,timeout=bad",
+			destination: "a",
+			remaining:   "timeout=bad",
+		},
+		{
+			input:       "destination=a,unknown=b",
+			destination: "a",
+			remaining:   "unknown=b",
+		},
+		{
+			input:     "unknown=b,timeout=10s",
+			remaining: "unknown=b,timeout=10s",
+		},
 	} {
 		t.Run(tc.input, func(t *testing.T) {
 			header := http.Header{}

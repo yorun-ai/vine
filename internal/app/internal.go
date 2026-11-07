@@ -53,9 +53,7 @@ type InternalInprocFlag struct {
 }
 
 func (f _Flags) InitInprocFlag(enableInproc bool) {
-	f[T[*InternalInprocFlag]()] = &InternalInprocFlag{
-		Enabled: enableInproc,
-	}
+	f[T[*InternalInprocFlag]()] = &InternalInprocFlag{Enabled: enableInproc}
 }
 
 func (f _Flags) InprocFlag() *InternalInprocFlag {

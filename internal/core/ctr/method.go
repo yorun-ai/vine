@@ -15,7 +15,10 @@ type _MethodCacheKey struct {
 var methodCache = vmap.NewMutexMap[_MethodCacheKey, reflect.Method]()
 
 func getMethodByName(kind reflect.Type, name string) reflect.Method {
-	key := _MethodCacheKey{kind: kind, name: name}
+	key := _MethodCacheKey{
+		kind: kind,
+		name: name,
+	}
 	if method, ok := methodCache.Load(key); ok {
 		return method
 	}

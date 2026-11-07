@@ -43,9 +43,7 @@ func (*_WatchTestClient) InitOption(option *Option) {
 }
 
 func initTestClient(component app.ManagedComponent) *ClientManager {
-	manager := &ClientManager{
-		Context: context.Background(),
-	}
+	manager := &ClientManager{Context: context.Background()}
 	manager.InitComponent(component)
 	return manager
 }

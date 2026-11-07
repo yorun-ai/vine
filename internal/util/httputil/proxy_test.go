@@ -27,7 +27,11 @@ func TestServeReverseProxyKeepsResultRequestLocal(t *testing.T) {
 			if r.URL.Path == "/failed" {
 				return nil, errors.New("transport failed")
 			}
-			return &http.Response{StatusCode: 503, Header: make(http.Header), Body: io.NopCloser(strings.NewReader("upstream unavailable"))}, nil
+			return &http.Response{
+				StatusCode: 503,
+				Header:     make(http.Header),
+				Body:       io.NopCloser(strings.NewReader("upstream unavailable")),
+			}, nil
 		}),
 	}
 	var group sync.WaitGroup
@@ -70,7 +74,11 @@ func TestServeReverseProxyPreservesLocalFailures(t *testing.T) {
 					if stage == "body" {
 						body = io.NopCloser(proxyFailingReader{err: failure})
 					}
-					return &http.Response{StatusCode: 200, Header: make(http.Header), Body: body}, nil
+					return &http.Response{
+						StatusCode: 200,
+						Header:     make(http.Header),
+						Body:       body,
+					}, nil
 				}),
 				ModifyResponse: func(r *http.Response) error {
 					if stage == "modify" {
@@ -116,11 +124,36 @@ func TestServeReverseProxyAbortsOnlyClientCancellation(t *testing.T) {
 		err    error
 		abort  bool
 	}{
-		{"client cancellation", true, context.Canceled, true},
-		{"EOF after cancellation", true, io.EOF, true},
-		{"upstream cancellation", false, context.Canceled, false},
-		{"deadline after cancellation", true, context.DeadlineExceeded, false},
-		{"unrelated failure after cancellation", true, io.ErrClosedPipe, false},
+		{
+			"client cancellation",
+			true,
+			context.Canceled,
+			true,
+		},
+		{
+			"EOF after cancellation",
+			true,
+			io.EOF,
+			true,
+		},
+		{
+			"upstream cancellation",
+			false,
+			context.Canceled,
+			false,
+		},
+		{
+			"deadline after cancellation",
+			true,
+			context.DeadlineExceeded,
+			false,
+		},
+		{
+			"unrelated failure after cancellation",
+			true,
+			io.ErrClosedPipe,
+			false,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			log, path := newTestProxyLogger(t, "web:devproxy")
@@ -172,14 +205,54 @@ func TestServeReverseProxyWriteFailures(t *testing.T) {
 		err    error
 		level  string
 	}{
-		{"write failure", false, io.ErrClosedPipe, "ERROR"},
-		{"canceled HTTP2 write", true, errors.New("http2: stream closed"), "DEBUG"},
-		{"live HTTP2 write", false, errors.New("http2: stream closed"), "ERROR"},
-		{"client cancellation", true, context.Canceled, "DEBUG"},
-		{"upstream cancellation", false, context.Canceled, "ERROR"},
-		{"deadline", true, context.DeadlineExceeded, "ERROR"},
-		{"unrelated failure after cancellation", true, io.ErrClosedPipe, "ERROR"},
-		{"short write after cancellation", true, nil, "ERROR"},
+		{
+			"write failure",
+			false,
+			io.ErrClosedPipe,
+			"ERROR",
+		},
+		{
+			"canceled HTTP2 write",
+			true,
+			errors.New("http2: stream closed"),
+			"DEBUG",
+		},
+		{
+			"live HTTP2 write",
+			false,
+			errors.New("http2: stream closed"),
+			"ERROR",
+		},
+		{
+			"client cancellation",
+			true,
+			context.Canceled,
+			"DEBUG",
+		},
+		{
+			"upstream cancellation",
+			false,
+			context.Canceled,
+			"ERROR",
+		},
+		{
+			"deadline",
+			true,
+			context.DeadlineExceeded,
+			"ERROR",
+		},
+		{
+			"unrelated failure after cancellation",
+			true,
+			io.ErrClosedPipe,
+			"ERROR",
+		},
+		{
+			"short write after cancellation",
+			true,
+			nil,
+			"ERROR",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			log, path := newTestProxyLogger(t, "web:devproxy")
@@ -189,15 +262,22 @@ func TestServeReverseProxyWriteFailures(t *testing.T) {
 			proxy := &stdhttputil.ReverseProxy{
 				Rewrite: func(r *stdhttputil.ProxyRequest) {},
 				Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
-					return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader("response"))}, nil
+					return &http.Response{
+						StatusCode: 200,
+						Header:     make(http.Header),
+						Body:       io.NopCloser(strings.NewReader("response")),
+					}, nil
 				}),
 			}
-			writer := &proxyFailingWriter{ResponseRecorder: httptest.NewRecorder(), write: func([]byte) (int, error) {
-				if tc.cancel {
-					cancel()
-				}
-				return 0, tc.err
-			}}
+			writer := &proxyFailingWriter{
+				ResponseRecorder: httptest.NewRecorder(),
+				write: func([]byte) (int, error) {
+					if tc.cancel {
+						cancel()
+					}
+					return 0, tc.err
+				},
+			}
 			var recovered any
 			func() {
 				defer func() { recovered = recover() }()
@@ -233,15 +313,22 @@ func TestServeReverseProxyFlushFailures(t *testing.T) {
 				Rewrite:       func(r *stdhttputil.ProxyRequest) {},
 				FlushInterval: -1,
 				Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
-					return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader("response"))}, nil
+					return &http.Response{
+						StatusCode: 200,
+						Header:     make(http.Header),
+						Body:       io.NopCloser(strings.NewReader("response")),
+					}, nil
 				}),
 			}
-			writer := &proxyFailingFlusher{ResponseRecorder: httptest.NewRecorder(), flush: func() error {
-				if canceled {
-					cancel()
-				}
-				return failure
-			}}
+			writer := &proxyFailingFlusher{
+				ResponseRecorder: httptest.NewRecorder(),
+				flush: func() error {
+					if canceled {
+						cancel()
+					}
+					return failure
+				},
+			}
 			if ServeReverseProxy(proxy, writer, httptest.NewRequestWithContext(ctx, "GET", "http://backend/", nil), log) {
 				t.Fatal("flush failure retained upstream classification")
 			}
@@ -269,7 +356,11 @@ func TestServeReverseProxyDoesNotDuplicateBodyFailureLogs(t *testing.T) {
 					if canceled {
 						cancel()
 					}
-					return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(proxyFailingReader{err: io.ErrUnexpectedEOF})}, nil
+					return &http.Response{
+						StatusCode: 200,
+						Header:     make(http.Header),
+						Body:       io.NopCloser(proxyFailingReader{err: io.ErrUnexpectedEOF}),
+					}, nil
 				}),
 			}
 			// With no ServerContextKey, ReverseProxy also logs its suppressed panic.
@@ -296,7 +387,11 @@ func TestServeReverseProxyRejectsInvalidUpgrade(t *testing.T) {
 	proxy := &stdhttputil.ReverseProxy{
 		Rewrite: func(r *stdhttputil.ProxyRequest) {},
 		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
-			return &http.Response{StatusCode: 101, Header: http.Header{"Connection": {"Upgrade"}, "Upgrade": {"other"}}, Body: io.NopCloser(strings.NewReader(""))}, nil
+			return &http.Response{
+				StatusCode: 101,
+				Header:     http.Header{"Connection": {"Upgrade"}, "Upgrade": {"other"}},
+				Body:       io.NopCloser(strings.NewReader("")),
+			}, nil
 		}),
 	}
 	request := httptest.NewRequestWithContext(t.Context(), "GET", "http://backend/hmr", nil)
@@ -424,7 +519,12 @@ func BenchmarkServeReverseProxy(b *testing.B) {
 			proxy := &stdhttputil.ReverseProxy{
 				Rewrite: func(r *stdhttputil.ProxyRequest) {},
 				Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
-					return &http.Response{StatusCode: 200, Header: make(http.Header), ContentLength: int64(size), Body: io.NopCloser(bytes.NewReader(payload))}, nil
+					return &http.Response{
+						StatusCode:    200,
+						Header:        make(http.Header),
+						ContentLength: int64(size),
+						Body:          io.NopCloser(bytes.NewReader(payload)),
+					}, nil
 				}),
 			}
 			request := httptest.NewRequestWithContext(b.Context(), "GET", "http://backend/", nil)

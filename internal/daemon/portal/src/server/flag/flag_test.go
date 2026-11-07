@@ -10,7 +10,11 @@ import (
 func TestNormalizeRequiresHTTPSHubEndpointWithMTLS(t *testing.T) {
 	flags := Flag{
 		HubEndpoint: "http://demo.local:7071",
-		MTLS:        mtls.Files{CAFile: "ca.pem", CertFile: "cert.pem", KeyFile: "key.pem"},
+		MTLS: mtls.Files{
+			CAFile:   "ca.pem",
+			CertFile: "cert.pem",
+			KeyFile:  "key.pem",
+		},
 	}
 	require.PanicsWithError(t, "hub-endpoint must use https when mTLS is enabled", func() {
 		flags.Normalize()

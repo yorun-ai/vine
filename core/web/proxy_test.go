@@ -36,7 +36,12 @@ func TestServeReverseProxyPreservesCustomHooks(t *testing.T) {
 				if failed {
 					return nil, errors.New("connection failed")
 				}
-				return &http.Response{StatusCode: 502, Header: make(http.Header), Body: io.NopCloser(strings.NewReader("upstream error")), ContentLength: 14}, nil
+				return &http.Response{
+					StatusCode:    502,
+					Header:        make(http.Header),
+					Body:          io.NopCloser(strings.NewReader("upstream error")),
+					ContentLength: 14,
+				}, nil
 			}),
 			ModifyResponse: func(r *http.Response) error {
 				modified = true

@@ -41,10 +41,22 @@ func TestNewAppLoggerUsesAppName(t *testing.T) {
 		appName string
 		pattern string
 	}{
-		{appName: "demo.user", pattern: "app:demo.user:rpc"},
-		{appName: "vine.hub", pattern: "app:vine.hub:rpc"},
-		{appName: "vine.link", pattern: "app:vine.link:rpc"},
-		{appName: "vine.portal", pattern: "app:vine.portal:rpc"},
+		{
+			appName: "demo.user",
+			pattern: "app:demo.user:rpc",
+		},
+		{
+			appName: "vine.hub",
+			pattern: "app:vine.hub:rpc",
+		},
+		{
+			appName: "vine.link",
+			pattern: "app:vine.link:rpc",
+		},
+		{
+			appName: "vine.portal",
+			pattern: "app:vine.portal:rpc",
+		},
 	}
 	for _, test := range tests {
 		logger.SetLevel(test.pattern, logger.LevelDebug)
@@ -68,7 +80,10 @@ type _TestHTTPListener struct {
 func newTestHTTPListener(port int) *_TestHTTPListener {
 	return &_TestHTTPListener{
 		closed: make(chan struct{}),
-		addr:   &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: port},
+		addr: &net.TCPAddr{
+			IP:   net.ParseIP("127.0.0.1"),
+			Port: port,
+		},
 	}
 }
 
@@ -627,9 +642,7 @@ func TestAppImplStopGracefullyPropagatesHookPanicToCaller(t *testing.T) {
 
 func TestAppImplStopGracefullyContinuesAfterUnregisterFailure(t *testing.T) {
 	events := []string{}
-	linker := &testLinker{
-		UnregisterError: ex.New(ex.InvocationTimeout, "unregister timed out"),
-	}
+	linker := &testLinker{UnregisterError: ex.New(ex.InvocationTimeout, "unregister timed out")}
 	app := newTestAppImpl()
 	app.ctx, app.cancel = context.WithCancel(context.Background())
 	app.linker = linker
@@ -667,9 +680,7 @@ func TestAppImplStartAndStopInvokeLifecycleHooks(t *testing.T) {
 		},
 	}
 	flags := _Flags{}
-	flags.Apply(With(&testLifecycleLog{
-		Events: &events,
-	}))
+	flags.Apply(With(&testLifecycleLog{Events: &events}))
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(true)
 	app := newApp(spec, flags)
@@ -973,9 +984,7 @@ func TestAppImplStartAndStopInvokeComponentAndModuleLifecycleHooksInOrder(t *tes
 		},
 	}
 	flags := _Flags{}
-	flags.Apply(With(&testLifecycleLog{
-		Events: &events,
-	}))
+	flags.Apply(With(&testLifecycleLog{Events: &events}))
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(true)
 	app := newApp(spec, flags)

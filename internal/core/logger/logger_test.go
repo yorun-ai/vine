@@ -99,7 +99,10 @@ func TestChildRejectsInvalidNameSegments(t *testing.T) {
 }
 
 func TestLoggerRejectsReservedLoggerAttr(t *testing.T) {
-	log := New("vine:test", WithOption{Format: FormatText, Level: LevelInfo})
+	log := New("vine:test", WithOption{
+		Format: FormatText,
+		Level:  LevelInfo,
+	})
 
 	assertPanics(t, func() {
 		log.With(slog.String(loggerKey, "custom"))
@@ -128,7 +131,10 @@ func TestChildKeepsFixedLevel(t *testing.T) {
 	resetRulesForTest(t)
 	SetLevel("daemon:link:event:client", LevelDebug)
 
-	parent := New("daemon:link:event", WithOption{Format: FormatText, Level: LevelInfo})
+	parent := New("daemon:link:event", WithOption{
+		Format: FormatText,
+		Level:  LevelInfo,
+	})
 	if parent.Child("client").Enabled(LevelDebug) {
 		t.Fatal("child should inherit the parent's fixed level")
 	}
@@ -160,7 +166,10 @@ func TestNewRejectsWildcardNameSegments(t *testing.T) {
 
 func TestNewRejectsWithOptionBeforeFinalArgument(t *testing.T) {
 	assertPanics(t, func() {
-		New("demo.user", WithOption{Format: FormatText, Level: LevelInfo}, "rpc")
+		New("demo.user", WithOption{
+			Format: FormatText,
+			Level:  LevelInfo,
+		}, "rpc")
 	})
 }
 

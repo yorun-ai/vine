@@ -20,9 +20,21 @@ func TestActorBase64RoundTripNonAuthenticated(t *testing.T) {
 		kind  ActorType
 		actor Actor
 	}{
-		{name: "absent", kind: ActorTypeAbsent, actor: NewAbsentActor()},
-		{name: "anonymous", kind: ActorTypeAnonymous, actor: NewAnonymousActor()},
-		{name: "authenticating", kind: ActorTypeAuthenticating, actor: NewAuthenticatingActor()},
+		{
+			name:  "absent",
+			kind:  ActorTypeAbsent,
+			actor: NewAbsentActor(),
+		},
+		{
+			name:  "anonymous",
+			kind:  ActorTypeAnonymous,
+			actor: NewAnonymousActor(),
+		},
+		{
+			name:  "authenticating",
+			kind:  ActorTypeAuthenticating,
+			actor: NewAuthenticatingActor(),
+		},
 	}
 
 	for _, test := range tests {
@@ -153,7 +165,11 @@ func TestActorIdentityRoundTrip(t *testing.T) {
 	type identityInfo struct {
 		ID int64 `json:"id" skel:"identifier"`
 	}
-	spec := ActorSpec{SkelName: "base.UserActor", InfoSkelName: "base.UserActorInfo", InfoType: reflect.TypeFor[*identityInfo]()}
+	spec := ActorSpec{
+		SkelName:     "base.UserActor",
+		InfoSkelName: "base.UserActorInfo",
+		InfoType:     reflect.TypeFor[*identityInfo](),
+	}
 	RegisterActor(spec)
 	actor := NewAuthenticatedActor(new(identityInfo{ID: 9007199254740993}))
 	raw := NewAuthenticatedActorWithRawInfo(spec.SkelName, "9007199254740993", spec.InfoSkelName, []byte(`{"id":9007199254740993}`))
@@ -170,8 +186,11 @@ func TestActorIdentityRoundTrip(t *testing.T) {
 		}
 	}
 	forwarded, err := DecodeActorFromBase64(encodePayloadToBase64(&_ActorPayload{
-		Type: ActorTypeAuthenticated, Realm: "forwarded.UserActor", Identifier: "forwarded-id",
-		InfoSkelName: spec.InfoSkelName, Info: []byte(`{"id":1}`),
+		Type:         ActorTypeAuthenticated,
+		Realm:        "forwarded.UserActor",
+		Identifier:   "forwarded-id",
+		InfoSkelName: spec.InfoSkelName,
+		Info:         []byte(`{"id":1}`),
 	}))
 	if err != nil || forwarded.Realm() != "forwarded.UserActor" || forwarded.Identifier() != "forwarded-id" {
 		t.Fatalf("forwarded identity changed: %v", err)
@@ -194,9 +213,20 @@ func TestActorIdentifierTag(t *testing.T) {
 	type uuidInfo struct {
 		ID uuid.UUID `json:"id" skel:"identifier"`
 	}
-	RegisterActor(ActorSpec{SkelName: "base.StringActor", InfoSkelName: "base.StringInfo", InfoType: reflect.TypeFor[*stringInfo]()})
-	RegisterActor(ActorSpec{SkelName: "base.UUIDActor", InfoSkelName: "base.UUIDInfo", InfoType: reflect.TypeFor[*uuidInfo]()})
-	if got := NewAuthenticatedActor(new(stringInfo{Name: "other", ID: "user-1"})).Identifier(); got != "user-1" {
+	RegisterActor(ActorSpec{
+		SkelName:     "base.StringActor",
+		InfoSkelName: "base.StringInfo",
+		InfoType:     reflect.TypeFor[*stringInfo](),
+	})
+	RegisterActor(ActorSpec{
+		SkelName:     "base.UUIDActor",
+		InfoSkelName: "base.UUIDInfo",
+		InfoType:     reflect.TypeFor[*uuidInfo](),
+	})
+	if got := NewAuthenticatedActor(new(stringInfo{
+		Name: "other",
+		ID:   "user-1",
+	})).Identifier(); got != "user-1" {
 		t.Fatalf("unexpected string identifier: %s", got)
 	}
 	id := uuid.MustParse("12345678-1234-5678-9abc-123456789abc")

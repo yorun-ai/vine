@@ -54,7 +54,10 @@ func TestPortalRegistryServiceRegistersAndUnregisters(t *testing.T) {
 	service := &PortalRegistryServiceServerImpl{PortalInstanceCore: &core.PortalInstanceCore{PortalInstanceRepo: repo}}
 
 	instanceId := skeltype.NewUUID(uuid.MustParse("11111111-1111-1111-1111-111111111111"))
-	service.Register(skeled.PortalRegistration{InstanceId: instanceId, Version: "1.2.3"})
+	service.Register(skeled.PortalRegistration{
+		InstanceId: instanceId,
+		Version:    "1.2.3",
+	})
 
 	require.Len(t, repo.saved, 1)
 	assert.Equal(t, "11111111-1111-1111-1111-111111111111", repo.saved[0].InstanceId)

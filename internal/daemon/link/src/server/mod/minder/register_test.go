@@ -80,7 +80,10 @@ func TestRegisterHubInstancePublishesRegistration(t *testing.T) {
 			Endpoint:    testWebProxyInEndpointOf("http://127.0.0.1:8081", appInfo.InstanceId(), "default@demo.app"),
 		}},
 		EventListeners: []hubskeled.EventListenerRegistration{{EventSkelName: "demo.event.Created"}},
-		TaskRunners:    []hubskeled.TaskRunnerRegistration{{TaskSkelName: "demo.task.Sync", CronSchedulers: []hubskeled.TaskRunnerCronScheduler{}}},
+		TaskRunners: []hubskeled.TaskRunnerRegistration{{
+			TaskSkelName:   "demo.task.Sync",
+			CronSchedulers: []hubskeled.TaskRunnerCronScheduler{},
+		}},
 	}, client.registrations[0])
 }
 

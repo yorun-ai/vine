@@ -147,9 +147,7 @@ func TestAppConfigCoreUpdate(t *testing.T) {
 	}
 	core := &AppConfigCore{AppConfigRepo: repo}
 
-	item := core.Update(3, AppConfigUpdate{
-		Value: &newValue,
-	})
+	item := core.Update(3, AppConfigUpdate{Value: &newValue})
 
 	assert.Equal(t, []string{
 		"GetById",
@@ -186,16 +184,27 @@ func capturePanic(fn func()) (got any) {
 func TestAppConfigSaveOwnsIdentityAndVersion(t *testing.T) {
 	repo := &configRepoSpy{}
 	target := &AppConfigCore{AppConfigRepo: repo}
-	first := target.Save(AppConfig{Id: 99, Name: "demo", Value: "one", Version: 99})
+	first := target.Save(AppConfig{
+		Id:      99,
+		Name:    "demo",
+		Value:   "one",
+		Version: 99,
+	})
 	require.Equal(t, 0, first.Id)
 	require.Equal(t, 1, first.Version)
 	require.False(t, first.CreatedAt.IsZero())
 	repo.items["demo"].Id = 7
-	same := target.Save(AppConfig{Name: "demo", Value: "one"})
+	same := target.Save(AppConfig{
+		Name:  "demo",
+		Value: "one",
+	})
 	require.Equal(t, 7, same.Id)
 	require.Equal(t, first.CreatedAt, same.CreatedAt)
 	require.Equal(t, 1, same.Version)
-	changed := target.Save(AppConfig{Name: "demo", Value: "two"})
+	changed := target.Save(AppConfig{
+		Name:  "demo",
+		Value: "two",
+	})
 	require.Equal(t, 2, changed.Version)
 	require.Equal(t, 2, target.Update(7, AppConfigUpdate{Value: new("two")}).Version)
 	require.Equal(t, 2, target.Update(7, AppConfigUpdate{}).Version)
@@ -205,8 +214,12 @@ func TestAppConfigSaveOwnsIdentityAndVersion(t *testing.T) {
 func TestAppConfigValidateDoesNotWrite(t *testing.T) {
 	repo := &configRepoSpy{}
 	target := &AppConfigCore{AppConfigRepo: repo}
-	require.NotPanics(t, func() { target.Validate(AppConfig{Name: "demo"}) })
-	require.Panics(t, func() { target.Validate(AppConfig{Name: " "}) })
+	require.NotPanics(t, func() {
+		target.Validate(AppConfig{Name: "demo"})
+	})
+	require.Panics(t, func() {
+		target.Validate(AppConfig{Name: " "})
+	})
 	require.Panics(t, func() { target.Save(AppConfig{}) })
 	require.Empty(t, repo.calls)
 }
@@ -228,11 +241,18 @@ func TestAppConfigCoreRejectsAbstractValues(t *testing.T) {
 				}
 			}
 			// Caller metadata cannot hide the registered abstract declaration.
-			item := AppConfig{Name: name, Value: "new", Definition: &AppConfigDefinition{}}
+			item := AppConfig{
+				Name:       name,
+				Value:      "new",
+				Definition: &AppConfigDefinition{},
+			}
 			got := capturePanic(func() {
 				switch operation {
 				case "create":
-					target.Create(AppConfigCreation{Name: name, Value: item.Value})
+					target.Create(AppConfigCreation{
+						Name:  name,
+						Value: item.Value,
+					})
 				case "update":
 					target.Update(7, AppConfigUpdate{Value: &item.Value})
 				default:

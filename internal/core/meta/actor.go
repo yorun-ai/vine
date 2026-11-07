@@ -104,10 +104,8 @@ func NewAuthenticatedActor[I any](info I) Actor {
 
 func NewAuthenticatedActorWithRawInfo(realm string, identifier string, infoSkelName string, info jsontext.Value) Actor {
 	return &_Actor{
-		kind: ActorTypeAuthenticated,
-		actorInfo: &_ActorInfo{
-			InfoSkelName: infoSkelName,
-		},
+		kind:        ActorTypeAuthenticated,
+		actorInfo:   &_ActorInfo{InfoSkelName: infoSkelName},
 		realm:       realm,
 		identifier:  identifier,
 		rawAuthInfo: info,

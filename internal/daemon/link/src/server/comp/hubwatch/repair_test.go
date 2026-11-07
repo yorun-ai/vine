@@ -31,12 +31,13 @@ func TestHubInfoRefreshRepairsWatchEndpoint(t *testing.T) {
 	previousHub.Set("config:demo", "from-previous-hub")
 	nextHub.Set("config:demo", "from-next-hub")
 
-	infoClient := &_TestInfoServiceClient{info: hubskeled.Info{
-		WatchPort: hubPort(t, previousHub),
-	}}
+	infoClient := &_TestInfoServiceClient{info: hubskeled.Info{WatchPort: hubPort(t, previousHub)}}
 	flags := &flag.Flag{HubEndpoint: "http://127.0.0.1:7071"}
 	flags.Normalize(false)
-	hubInfo := &hubinfo.HubInfo{Flag: flags, InfoServiceClient: infoClient}
+	hubInfo := &hubinfo.HubInfo{
+		Flag:              flags,
+		InfoServiceClient: infoClient,
+	}
 	hubInfo.DIInit()
 
 	client := &Client{

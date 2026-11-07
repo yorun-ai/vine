@@ -39,10 +39,41 @@ func TestEmitEventRejectsInvalidRequestBeforePublishing(t *testing.T) {
 		request skeled.EventDebugEmitRequest
 		code    ex.Code
 	}{
-		{"missing listener", skeled.EventDebugEmitRequest{EventSkelName: "missing", EventJson: skeltype.JSON(`{}`)}, ex.NotFound},
-		{"wrong version", skeled.EventDebugEmitRequest{EventSkelName: "demo.A", DescriptorHash: "unknown", EventJson: skeltype.JSON(`{}`)}, ex.NotFound},
-		{"invalid JSON", skeled.EventDebugEmitRequest{EventSkelName: "demo.A", DescriptorHash: "v1", EventJson: skeltype.JSON(`{`)}, ex.InvalidRequest},
-		{"invalid trace", skeled.EventDebugEmitRequest{EventSkelName: "demo.A", EventJson: skeltype.JSON(`{}`), TraceId: new("invalid")}, ex.InvalidRequest},
+		{
+			"missing listener",
+			skeled.EventDebugEmitRequest{
+				EventSkelName: "missing",
+				EventJson:     skeltype.JSON(`{}`),
+			},
+			ex.NotFound,
+		},
+		{
+			"wrong version",
+			skeled.EventDebugEmitRequest{
+				EventSkelName:  "demo.A",
+				DescriptorHash: "unknown",
+				EventJson:      skeltype.JSON(`{}`),
+			},
+			ex.NotFound,
+		},
+		{
+			"invalid JSON",
+			skeled.EventDebugEmitRequest{
+				EventSkelName:  "demo.A",
+				DescriptorHash: "v1",
+				EventJson:      skeltype.JSON(`{`),
+			},
+			ex.InvalidRequest,
+		},
+		{
+			"invalid trace",
+			skeled.EventDebugEmitRequest{
+				EventSkelName: "demo.A",
+				EventJson:     skeltype.JSON(`{}`),
+				TraceId:       new("invalid"),
+			},
+			ex.InvalidRequest,
+		},
 	} {
 		t.Run(item.name, func(t *testing.T) { requireDebugError(t, item.code, func() { service.EmitEvent(item.request) }) })
 	}

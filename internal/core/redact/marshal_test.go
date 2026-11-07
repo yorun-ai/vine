@@ -161,9 +161,7 @@ func TestRenderTagTakesPriorityOverCustomJSON(t *testing.T) {
 }
 
 func TestRenderNestedTagTakesPriorityOverOuterCustomJSON(t *testing.T) {
-	result, err := Render(nestedSensitiveMarshaler{
-		Value: nestedSensitiveValue{Token: "tagged-secret"},
-	})
+	result, err := Render(nestedSensitiveMarshaler{Value: nestedSensitiveValue{Token: "tagged-secret"}})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
@@ -175,9 +173,7 @@ func TestRenderNestedTagTakesPriorityOverOuterCustomJSON(t *testing.T) {
 }
 
 func TestRenderNestedMarkerTakesPriorityOverOuterCustomJSON(t *testing.T) {
-	result, err := Render(nestedMarkerMarshaler{
-		Value: nestedSensitiveMarker{Value: "marked-secret"},
-	})
+	result, err := Render(nestedMarkerMarshaler{Value: nestedSensitiveMarker{Value: "marked-secret"}})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
@@ -189,9 +185,7 @@ func TestRenderNestedMarkerTakesPriorityOverOuterCustomJSON(t *testing.T) {
 }
 
 func TestRenderDynamicMarkerTakesPriorityOverOuterCustomJSON(t *testing.T) {
-	result, err := Render(dynamicSensitiveMarshaler{
-		Value: nestedSensitiveMarker{Value: "marked-secret"},
-	})
+	result, err := Render(dynamicSensitiveMarshaler{Value: nestedSensitiveMarker{Value: "marked-secret"}})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}

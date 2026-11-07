@@ -18,7 +18,10 @@ func TestSchemaSensitiveMetadataJSON(t *testing.T) {
 			Members: []*MemberSchema{{
 				Name:      "token",
 				Sensitive: true,
-				Type:      &TypeSchema{Kind: TypeKindScalar, Scalar: ScalarString},
+				Type: &TypeSchema{
+					Kind:   TypeKindScalar,
+					Scalar: ScalarString,
+				},
 			}},
 		}},
 		Services: []*ServiceSchema{{

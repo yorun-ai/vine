@@ -22,11 +22,17 @@ import (
 func (g *RpcGateway) callMcpTool(_ context.Context, httpCtx *spec.Context, service string, method string, tool *mcp.Tool, call *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	input, err := resolveMcpSchema(tool.InputSchema)
 	if err != nil {
-		return nil, &jsonrpc.Error{Code: -32000, Message: "API input schema is unavailable"}
+		return nil, &jsonrpc.Error{
+			Code:    -32000,
+			Message: "API input schema is unavailable",
+		}
 	}
 	output, err := resolveMcpSchema(tool.OutputSchema)
 	if err != nil {
-		return nil, &jsonrpc.Error{Code: -32000, Message: "API output schema is unavailable"}
+		return nil, &jsonrpc.Error{
+			Code:    -32000,
+			Message: "API output schema is unavailable",
+		}
 	}
 	arguments := []byte(call.Params.Arguments)
 	if len(arguments) == 0 {
@@ -44,7 +50,10 @@ func (g *RpcGateway) callMcpTool(_ context.Context, httpCtx *spec.Context, servi
 	invokeCtx := httpCtx.Request.Context()
 	request, err := vrpchttp.NewRequest(invokeCtx, "http://portal", "/"+service+"/"+method, body, rpchttp.ContentTypeJson, rpchttp.ContentTypeJson)
 	if err != nil {
-		return nil, &jsonrpc.Error{Code: jsonrpc.CodeInternalError, Message: "cannot prepare tool invocation"}
+		return nil, &jsonrpc.Error{
+			Code:    jsonrpc.CodeInternalError,
+			Message: "cannot prepare tool invocation",
+		}
 	}
 	// Only credentials cross the transport boundary. Actor/initiator/options and
 	// other client-supplied vRPC headers must never become trusted backend context.
@@ -62,11 +71,18 @@ func (g *RpcGateway) callMcpTool(_ context.Context, httpCtx *spec.Context, servi
 	}
 	initiator, err := meta.NewInitiator("vine.mcp", "0.0.0", meta.MustNewInstanceId(), dialer, httpCtx.RemoteAddr)
 	if err != nil {
-		return nil, &jsonrpc.Error{Code: jsonrpc.CodeInternalError, Message: "cannot prepare tool initiator"}
+		return nil, &jsonrpc.Error{
+			Code:    jsonrpc.CodeInternalError,
+			Message: "cannot prepare tool initiator",
+		}
 	}
 	request.Header.Set(rpchttp.HeaderRpcInitiator, meta.EncodeInitiatorToBase64(initiator))
 	response := &_McpInvokeResponse{header: make(http.Header)}
-	g.invoke(&spec.Context{Request: request, ResponseWriter: response, RemoteAddr: httpCtx.RemoteAddr}, trace, initiator, service, method)
+	g.invoke(&spec.Context{
+		Request:        request,
+		ResponseWriter: response,
+		RemoteAddr:     httpCtx.RemoteAddr,
+	}, trace, initiator, service, method)
 	return mcpInvokeResult(response, output), nil
 }
 
@@ -144,5 +160,8 @@ func mcpToolFailure(code ex.Code, message string, reason string) *mcp.CallToolRe
 	if reason != "" {
 		text += " (" + reason + ")"
 	}
-	return &mcp.CallToolResult{IsError: true, Content: []mcp.Content{&mcp.TextContent{Text: text}}}
+	return &mcp.CallToolResult{
+		IsError: true,
+		Content: []mcp.Content{&mcp.TextContent{Text: text}},
+	}
 }

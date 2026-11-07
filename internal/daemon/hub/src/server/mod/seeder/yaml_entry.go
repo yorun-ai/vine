@@ -40,7 +40,11 @@ func (h *_PortalEntryHTTP) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (h _PortalEntryHTTP) config() core.PortalEntryHTTP {
-	value := core.PortalEntryHTTP{Http: h.Http, Https: h.Https, AutoHTTPS: h.AutoHTTPS}
+	value := core.PortalEntryHTTP{
+		Http:      h.Http,
+		Https:     h.Https,
+		AutoHTTPS: h.AutoHTTPS,
+	}
 	if h.Host != nil {
 		value.Host = *h.Host
 	}

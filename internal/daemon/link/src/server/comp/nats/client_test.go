@@ -34,18 +34,14 @@ func (c *_TestInfoServiceClient) GetInfo(_ ...rpcclient.InvokeOption) hubskeled.
 }
 
 func TestClientInitOptionUsesHubInfoNATSPort(t *testing.T) {
-	flags := &flag.Flag{
-		HubEndpoint: "http://127.0.0.1:7071",
-	}
+	flags := &flag.Flag{HubEndpoint: "http://127.0.0.1:7071"}
 	flags.Normalize(false)
 	infoComponent := &hubinfo.HubInfo{
 		Flag: flags,
-		InfoServiceClient: &_TestInfoServiceClient{
-			info: hubskeled.Info{
-				MqEmbedded: true,
-				MqNatsPort: 4222,
-			},
-		},
+		InfoServiceClient: &_TestInfoServiceClient{info: hubskeled.Info{
+			MqEmbedded: true,
+			MqNatsPort: 4222,
+		}},
 	}
 	infoComponent.DIInit()
 
@@ -62,17 +58,11 @@ func TestClientInitOptionUsesHubInfoNATSPort(t *testing.T) {
 }
 
 func TestClientInitOptionUsesHubInfoMQEndpointWhenNATSPortIsEmpty(t *testing.T) {
-	flags := &flag.Flag{
-		HubEndpoint: "http://127.0.0.1:7071",
-	}
+	flags := &flag.Flag{HubEndpoint: "http://127.0.0.1:7071"}
 	flags.Normalize(false)
 	infoComponent := &hubinfo.HubInfo{
-		Flag: flags,
-		InfoServiceClient: &_TestInfoServiceClient{
-			info: hubskeled.Info{
-				MqNatsEndpoint: "nats://10.0.0.8:4222",
-			},
-		},
+		Flag:              flags,
+		InfoServiceClient: &_TestInfoServiceClient{info: hubskeled.Info{MqNatsEndpoint: "nats://10.0.0.8:4222"}},
 	}
 	infoComponent.DIInit()
 
