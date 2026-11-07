@@ -74,9 +74,7 @@ func TestDependencyGraphRejectsIndirectSingletonToExecutionDependency(t *testing
 }
 
 func TestDependencyGraphIgnoresInjectedFieldsOnProvidedInstance(t *testing.T) {
-	instance := &_CaptiveSingleton{
-		Dependency: &_CaptiveTransient{Dependency: &_CaptiveExecution{}},
-	}
+	instance := &_CaptiveSingleton{Dependency: &_CaptiveTransient{Dependency: &_CaptiveExecution{}}}
 
 	assert.NotPanics(t, func() {
 		NewInjector(func(b *Binder) {

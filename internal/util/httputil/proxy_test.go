@@ -192,12 +192,15 @@ func TestServeReverseProxyWriteFailures(t *testing.T) {
 					return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader("response"))}, nil
 				}),
 			}
-			writer := &proxyFailingWriter{ResponseRecorder: httptest.NewRecorder(), write: func([]byte) (int, error) {
-				if tc.cancel {
-					cancel()
-				}
-				return 0, tc.err
-			}}
+			writer := &proxyFailingWriter{
+				ResponseRecorder: httptest.NewRecorder(),
+				write: func([]byte) (int, error) {
+					if tc.cancel {
+						cancel()
+					}
+					return 0, tc.err
+				},
+			}
 			var recovered any
 			func() {
 				defer func() { recovered = recover() }()
@@ -236,12 +239,15 @@ func TestServeReverseProxyFlushFailures(t *testing.T) {
 					return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader("response"))}, nil
 				}),
 			}
-			writer := &proxyFailingFlusher{ResponseRecorder: httptest.NewRecorder(), flush: func() error {
-				if canceled {
-					cancel()
-				}
-				return failure
-			}}
+			writer := &proxyFailingFlusher{
+				ResponseRecorder: httptest.NewRecorder(),
+				flush: func() error {
+					if canceled {
+						cancel()
+					}
+					return failure
+				},
+			}
 			if ServeReverseProxy(proxy, writer, httptest.NewRequestWithContext(ctx, "GET", "http://backend/", nil), log) {
 				t.Fatal("flush failure retained upstream classification")
 			}

@@ -48,9 +48,7 @@ func StartStandalone[S app.ApplicationSpec](t testing.TB, option Option, applier
 	runtimeMutex.Unlock()
 
 	standaloneOption, cleanupSeed := prepareStandaloneOption(t, option)
-	runtime := &Runtime{
-		clientApp: meta.MustNewAppWithRandomId("vine.testkit", "0.0.0"),
-	}
+	runtime := &Runtime{clientApp: meta.MustNewAppWithRandomId("vine.testkit", "0.0.0")}
 
 	func() {
 		defer func() {

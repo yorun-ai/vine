@@ -147,9 +147,7 @@ func TestAppConfigCoreUpdate(t *testing.T) {
 	}
 	core := &AppConfigCore{AppConfigRepo: repo}
 
-	item := core.Update(3, AppConfigUpdate{
-		Value: &newValue,
-	})
+	item := core.Update(3, AppConfigUpdate{Value: &newValue})
 
 	assert.Equal(t, []string{
 		"GetById",
@@ -205,8 +203,12 @@ func TestAppConfigSaveOwnsIdentityAndVersion(t *testing.T) {
 func TestAppConfigValidateDoesNotWrite(t *testing.T) {
 	repo := &configRepoSpy{}
 	target := &AppConfigCore{AppConfigRepo: repo}
-	require.NotPanics(t, func() { target.Validate(AppConfig{Name: "demo"}) })
-	require.Panics(t, func() { target.Validate(AppConfig{Name: " "}) })
+	require.NotPanics(t, func() {
+		target.Validate(AppConfig{Name: "demo"})
+	})
+	require.Panics(t, func() {
+		target.Validate(AppConfig{Name: " "})
+	})
 	require.Panics(t, func() { target.Save(AppConfig{}) })
 	require.Empty(t, repo.calls)
 }

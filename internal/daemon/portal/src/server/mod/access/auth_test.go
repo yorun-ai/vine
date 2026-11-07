@@ -250,9 +250,12 @@ func TestPortalAuthModes(t *testing.T) {
 							}
 							endpoint := registerTestAuthService(t, http.StatusOK, code, `{"userId":"u1"}`)
 							values := testAuthValues(endpoint)
-							values[watched.FormatDescriptorServiceKey("demo.UserService")] = vcode.MustMarshalJsonS(watched.DescriptorService{Api: true,
-								SkelName: "demo.UserService", Audiences: testUserActorAudiences(), AuthMode: mode,
-								Methods: []*skeldesc.Method{{SkelName: "Get", Name: "Get", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: mode}},
+							values[watched.FormatDescriptorServiceKey("demo.UserService")] = vcode.MustMarshalJsonS(watched.DescriptorService{
+								Api:       true,
+								SkelName:  "demo.UserService",
+								Audiences: testUserActorAudiences(),
+								AuthMode:  mode,
+								Methods:   []*skeldesc.Method{{SkelName: "Get", Name: "Get", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: mode}},
 							})
 							values[watched.FormatDescriptorWebKey("demo.Web")] = vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: mode})
 							access := newTestAccess(t, values)

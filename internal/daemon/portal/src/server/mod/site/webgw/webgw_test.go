@@ -445,9 +445,7 @@ func TestWebGatewayAllowsOptionsFromStrictAllowedOrigin(t *testing.T) {
 }
 
 func TestWebGatewayDoesNotAllowOptionsWhenCorsDisabled(t *testing.T) {
-	target := newTestWebGatewayWithCors(t, nil, watched.PortalCors{
-		Mode: watched.PortalCorsModeDisabled,
-	})
+	target := newTestWebGatewayWithCors(t, nil, watched.PortalCors{Mode: watched.PortalCorsModeDisabled})
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodOptions, "http://api.example.com/ping", nil)
 	request.Header.Set("Origin", "https://console.example.com")
@@ -468,11 +466,9 @@ func TestWebGatewayUpdateKeepsRegistrationWhenWebNameDoesNotChange(t *testing.T)
 	})
 
 	target.Update(watched.PortalSite{
-		Name: "demo-web",
-		Type: "WEBGW",
-		WebgwConfig: &watched.PortalWebgwConfig{
-			WebName: "admin@demo.app",
-		},
+		Name:        "demo-web",
+		Type:        "WEBGW",
+		WebgwConfig: &watched.PortalWebgwConfig{WebName: "admin@demo.app"},
 	})
 
 	if _, ok := target.routeWeb(); !ok {
@@ -497,11 +493,9 @@ func TestWebGatewayUpdateSwitchesWebName(t *testing.T) {
 	})
 
 	target.Update(watched.PortalSite{
-		Name: "demo-web",
-		Type: "WEBGW",
-		WebgwConfig: &watched.PortalWebgwConfig{
-			WebName: "home@demo.app",
-		},
+		Name:        "demo-web",
+		Type:        "WEBGW",
+		WebgwConfig: &watched.PortalWebgwConfig{WebName: "home@demo.app"},
 	})
 
 	registration, ok := target.routeWeb()
@@ -531,9 +525,7 @@ func testContextWithEntryOrigin(recorder http.ResponseWriter, request *http.Requ
 }
 
 func newTestWebGateway(t *testing.T, valuesByKey map[string]string) *WebGateway {
-	return newTestWebGatewayWithCors(t, valuesByKey, watched.PortalCors{
-		Mode: watched.PortalCorsModeSameDomain,
-	})
+	return newTestWebGatewayWithCors(t, valuesByKey, watched.PortalCors{Mode: watched.PortalCorsModeSameDomain})
 }
 
 func newTestWebGatewayWithCors(t *testing.T, valuesByKey map[string]string, cors watched.PortalCors) *WebGateway {
@@ -559,9 +551,7 @@ func newTestWebGatewayWithCors(t *testing.T, valuesByKey map[string]string, cors
 		Type:          "WEBGW",
 		Cors:          cors,
 		ActorSkelName: "demo.ClientActor",
-		WebgwConfig: &watched.PortalWebgwConfig{
-			WebName: "admin@demo.app",
-		},
+		WebgwConfig:   &watched.PortalWebgwConfig{WebName: "admin@demo.app"},
 	})
 }
 

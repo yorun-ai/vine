@@ -53,11 +53,7 @@ func runCLICommand(command *ucli.Command, args []string) (result _RunResult) {
 	err := command.Run(context.Background(), args)
 	if err != nil {
 		if stderr.Len() > 0 {
-			return _RunResult{
-				exitCode: exitCodeError,
-				stdout:   stdout.String(),
-				stderr:   stderr.String(),
-			}
+			return _RunResult{exitCode: exitCodeError, stdout: stdout.String(), stderr: stderr.String()}
 		}
 		return _RunResult{exitCode: exitCodeError, stdout: stdout.String(), stderr: err.Error()}
 	}

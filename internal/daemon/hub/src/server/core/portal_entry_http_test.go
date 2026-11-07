@@ -70,9 +70,13 @@ func TestPortalHTTPRejectsExplicitConflicts(t *testing.T) {
 		{Http: "DISABLED", Https: "DISABLED"},
 		{Host: "example.com", HttpPort: 443}, {HttpPort: -1}, {HttpsPort: 65536},
 	} {
-		require.Panics(t, func() { NormalizePortalEntry(PortalEntry{Protocol: "http", Http: &raw}) })
+		require.Panics(t, func() {
+			NormalizePortalEntry(PortalEntry{Protocol: "http", Http: &raw})
+		})
 	}
-	require.NotPanics(t, func() { NormalizePortalEntry(PortalEntry{Protocol: "http", Http: &PortalEntryHTTP{HttpPort: 443}}) })
+	require.NotPanics(t, func() {
+		NormalizePortalEntry(PortalEntry{Protocol: "http", Http: &PortalEntryHTTP{HttpPort: 443}})
+	})
 }
 func TestPortalCertificatePresenceIgnoresValidity(t *testing.T) {
 	for _, date := range []time.Time{time.Now().Add(-time.Hour), time.Now().Add(time.Hour)} {
@@ -132,7 +136,9 @@ func TestPortalHTTPModeJSON(t *testing.T) {
 	}
 	for _, mode := range []PortalSwitchMode{"enabled", "ON", "UNSPECIFIED"} {
 		for _, raw := range []PortalEntryHTTP{{Http: mode}, {Https: mode}, {AutoHTTPS: mode}} {
-			require.Panics(t, func() { NormalizePortalEntry(PortalEntry{Protocol: "http", Http: &raw}) })
+			require.Panics(t, func() {
+				NormalizePortalEntry(PortalEntry{Protocol: "http", Http: &raw})
+			})
 		}
 	}
 }

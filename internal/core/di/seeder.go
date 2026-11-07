@@ -13,9 +13,7 @@ type Seeder struct {
 }
 
 func newSeeder(injector *_ExecutionInjector) *Seeder {
-	return &Seeder{
-		injector: injector,
-	}
+	return &Seeder{injector: injector}
 }
 
 func (s *Seeder) seed(targetType reflect.Type, instance reflect.Value) {

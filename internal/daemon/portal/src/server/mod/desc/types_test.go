@@ -165,10 +165,13 @@ func TestVersionedAPIDependenciesStayIndependent(t *testing.T) {
 	for _, version := range []string{"", "V1", "V2", "V10"} {
 		service, data, enum := "demo.OrderApiService"+version, "demo.Order"+version, "demo.Status"+version
 		values[watched.FormatDescriptorServiceKey(service)] = vcode.MustMarshalJsonS(apiDescriptor(service, dataRef(data)))
-		values[watched.FormatDescriptorDataKey(data)] = vcode.MustMarshalJsonS(skeldesc.Data{SkelName: data, Members: []*skeldesc.Member{
-			{Name: "shared", Type: dataRef("demo.Shared")},
-			{Name: "status", Type: new(skeldesc.Type{Kind: skeldesc.TypeKindEnum, SkelName: enum})},
-		}})
+		values[watched.FormatDescriptorDataKey(data)] = vcode.MustMarshalJsonS(skeldesc.Data{
+			SkelName: data,
+			Members: []*skeldesc.Member{
+				{Name: "shared", Type: dataRef("demo.Shared")},
+				{Name: "status", Type: new(skeldesc.Type{Kind: skeldesc.TypeKindEnum, SkelName: enum})},
+			},
+		})
 		values[watched.FormatDescriptorEnumKey(enum)] = vcode.MustMarshalJsonS(skeldesc.Enum{SkelName: enum, Hash: "initial"})
 	}
 	m := newTestManager(t, values)

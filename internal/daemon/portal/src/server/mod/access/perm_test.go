@@ -226,8 +226,10 @@ func TestExtractCheckParamsUsesDescriptorCodeArgumentName(t *testing.T) {
 				request.Header.Set(rpchttp.HeaderContentType, mediaType)
 				operation := &RpcOperation{Request: request, requestBody: encoded}
 				params, ok := operation.extractCheckParams(&skeldesc.PermissionCheckInvocation{
-					ResourceSkelName: "app.User", ActionName: "update", CodeArgumentName: name,
-					Arguments: []*skeldesc.PermissionCheckArgument{{Name: businessName, JsonPath: businessName}},
+					ResourceSkelName: "app.User",
+					ActionName:       "update",
+					CodeArgumentName: name,
+					Arguments:        []*skeldesc.PermissionCheckArgument{{Name: businessName, JsonPath: businessName}},
 				})
 				if !ok || len(params) != 2 || params[name] != "app.User:update" || params[businessName] != "business-value" {
 					t.Fatalf("unexpected check arguments: ok=%v params=%#v", ok, params)
@@ -258,10 +260,18 @@ func TestCheckPreservesPermissionErrorReason(t *testing.T) {
 				Auther:            authOperationForTest(t, request, recorder),
 				Server:            testServerApp(),
 				serviceDescriptor: &skeldesc.Service{AuthMode: skeldesc.AuthModeRequired},
-				methodDescriptor: &skeldesc.Method{EffectiveRequire: &skeldesc.PermissionRequire{Expression: &skeldesc.PermissionExpression{
-					Mode: mode, Code: "app.User:update",
-					Check: &skeldesc.PermissionCheckInvocation{CodeArgumentName: "code", ServiceSkelName: serviceName, MethodSkelName: "check", ResourceSkelName: "app.User", ActionName: "update"},
-				}}, Name: "Call", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired},
+				methodDescriptor: &skeldesc.Method{
+					EffectiveRequire: &skeldesc.PermissionRequire{
+						Expression: &skeldesc.PermissionExpression{
+							Mode:  mode,
+							Code:  "app.User:update",
+							Check: &skeldesc.PermissionCheckInvocation{CodeArgumentName: "code", ServiceSkelName: serviceName, MethodSkelName: "check", ResourceSkelName: "app.User", ActionName: "update"},
+						},
+					},
+					Name:              "Call",
+					AuthMode:          skeldesc.AuthModeInherit,
+					EffectiveAuthMode: skeldesc.AuthModeRequired,
+				},
 			}
 			operation.endpointManager = access
 			operation.actorDescriptor = &skeldesc.Actor{Permission: &skeldesc.ActorPermission{Service: &skeldesc.Service{SkelName: serviceName, Methods: []*skeldesc.Method{{SkelName: "checkCodes", Name: "checkCodes", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired}}, AuthMode: skeldesc.AuthModeRequired}, MethodName: "checkCodes"}}

@@ -42,9 +42,7 @@ func TestReaderPreservesSensitiveStringValues(t *testing.T) {
 		t.Run(string(lifecycle), func(t *testing.T) {
 			registry := NewRegistry()
 			registry.Register(ConfigSpec{SkelName: key, Lifecycle: lifecycle, Type: reflect.TypeFor[*readerSensitiveConfig]()})
-			reader := newReader(&linktest.Linker{
-				EternalConfigByKey: map[string]string{key: raw}, InstantConfigByKey: map[string]string{key: raw},
-			}, registry)
+			reader := newReader(&linktest.Linker{EternalConfigByKey: map[string]string{key: raw}, InstantConfigByKey: map[string]string{key: raw}}, registry)
 			value := reader.GetByType(reflect.TypeFor[*readerSensitiveConfig]()).(*readerSensitiveConfig)
 			require.Equal(t, " plain ", value.Plain)
 			require.Equal(t, " secret ", value.Secret)
@@ -104,13 +102,12 @@ func TestReaderPreservesValuesAndIsolatesSnapshots(t *testing.T) {
 		t.Run(string(lifecycle), func(t *testing.T) {
 			registry := NewRegistry()
 			registry.Register(ConfigSpec{
-				Name: "ReaderValueConfig", SkelName: key, Lifecycle: lifecycle,
-				Type: reflect.TypeFor[*readerValueConfig](),
+				Name:      "ReaderValueConfig",
+				SkelName:  key,
+				Lifecycle: lifecycle,
+				Type:      reflect.TypeFor[*readerValueConfig](),
 			})
-			linker := &linktest.Linker{
-				EternalConfigByKey: map[string]string{key: raw},
-				InstantConfigByKey: map[string]string{key: raw},
-			}
+			linker := &linktest.Linker{EternalConfigByKey: map[string]string{key: raw}, InstantConfigByKey: map[string]string{key: raw}}
 			reader := newReader(linker, registry)
 			value := reader.GetByType(reflect.TypeFor[*readerValueConfig]()).(*readerValueConfig)
 			require.Equal(t, "\u2003 hello  world\ninside \u00a0", value.Name)
@@ -226,12 +223,11 @@ func TestReaderEnumMapKeysAndValues(t *testing.T) {
 		t.Run(string(lifecycle), func(t *testing.T) {
 			registry := NewRegistry()
 			registry.Register(ConfigSpec{
-				SkelName: key, Lifecycle: lifecycle, Type: reflect.TypeFor[*readerEnumMapConfig](),
+				SkelName:  key,
+				Lifecycle: lifecycle,
+				Type:      reflect.TypeFor[*readerEnumMapConfig](),
 			})
-			reader := newReader(new(linktest.Linker{
-				EternalConfigByKey: map[string]string{key: raw},
-				InstantConfigByKey: map[string]string{key: raw},
-			}), registry)
+			reader := newReader(new(linktest.Linker{EternalConfigByKey: map[string]string{key: raw}, InstantConfigByKey: map[string]string{key: raw}}), registry)
 			value := reader.GetByType(reflect.TypeFor[*readerEnumMapConfig]()).(*readerEnumMapConfig)
 			require.Equal(t, map[string]readerTestEnum{"primary": "ACTIVE"}, value.ByName)
 			require.Equal(t, map[readerTestEnum]readerTestEnum{"ACTIVE": "LOCKED"}, value.ByStatus)
@@ -283,10 +279,7 @@ func TestReaderStructuredValuesAndRedaction(t *testing.T) {
 		t.Run(string(lifecycle), func(t *testing.T) {
 			registry := NewRegistry()
 			registry.Register(ConfigSpec{SkelName: key, Lifecycle: lifecycle, Type: reflect.TypeFor[*readerStructuredConfig]()})
-			linker := new(linktest.Linker{
-				EternalConfigByKey: map[string]string{key: raw},
-				InstantConfigByKey: map[string]string{key: raw},
-			})
+			linker := new(linktest.Linker{EternalConfigByKey: map[string]string{key: raw}, InstantConfigByKey: map[string]string{key: raw}})
 			reader := newReader(linker, registry)
 			value := reader.GetByType(reflect.TypeFor[*readerStructuredConfig]()).(*readerStructuredConfig)
 			require.Equal(t, " nested ", value.Nested.Name)
@@ -344,10 +337,7 @@ func TestReaderRejectsInvalidBinary(t *testing.T) {
 			t.Run(string(lifecycle)+"/"+raw, func(t *testing.T) {
 				registry := NewRegistry()
 				registry.Register(ConfigSpec{SkelName: key, Lifecycle: lifecycle, Type: reflect.TypeFor[*readerStructuredConfig]()})
-				reader := newReader(new(linktest.Linker{
-					EternalConfigByKey: map[string]string{key: raw},
-					InstantConfigByKey: map[string]string{key: raw},
-				}), registry)
+				reader := newReader(new(linktest.Linker{EternalConfigByKey: map[string]string{key: raw}, InstantConfigByKey: map[string]string{key: raw}}), registry)
 				require.Panics(t, func() { reader.GetByType(reflect.TypeFor[*readerStructuredConfig]()) })
 			})
 		}

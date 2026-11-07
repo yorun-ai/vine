@@ -25,7 +25,9 @@ import (
 
 func inspectService(name string) *skeldesc.Service {
 	return new(skeldesc.Service{
-		Name: "UserService", SkelName: name, Api: true,
+		Name:      "UserService",
+		SkelName:  name,
+		Api:       true,
 		Audiences: []*skeldesc.ActorAudience{{SkelName: "demo.UserActor"}},
 		Methods: []*skeldesc.Method{{Name: "Get", SkelName: "GetV2", EffectiveAuthMode: skeldesc.AuthModeRequired,
 			Arguments:  []*skeldesc.Member{{Name: "id", Type: new(skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarInt})}},
@@ -38,16 +40,19 @@ func inspectWatch(t *testing.T) *watchtest.Client {
 	watch := newTestDescriptorWatch(t)
 	watch.SetValue(watched.FormatDescriptorServiceKey("demo.UserService"), vcode.MustMarshalJsonS(inspectService("demo.UserService")))
 	watch.SetValue(watched.FormatDescriptorDataKey("demo.User"), vcode.MustMarshalJsonS(skeldesc.Data{
-		SkelName: "demo.User", Members: []*skeldesc.Member{{Name: "name", Type: new(skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString})}},
+		SkelName: "demo.User",
+		Members:  []*skeldesc.Member{{Name: "name", Type: new(skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString})}},
 	}))
 	return watch
 }
 
 func inspectConfig(names ...string) watched.PortalSite {
 	config := watched.PortalSite{
-		Name: "api", Type: "RPCGW", ActorSkelName: "demo.UserActor",
-		Cors:        watched.PortalCors{Mode: watched.PortalCorsModeSameDomain},
-		RpcgwConfig: new(watched.PortalRpcgwConfig{InspectEnabled: true}),
+		Name:          "api",
+		Type:          "RPCGW",
+		ActorSkelName: "demo.UserActor",
+		Cors:          watched.PortalCors{Mode: watched.PortalCorsModeSameDomain},
+		RpcgwConfig:   new(watched.PortalRpcgwConfig{InspectEnabled: true}),
 	}
 	for _, name := range names {
 		config.RpcgwConfig.Services = append(config.RpcgwConfig.Services, watched.PortalRpcgwService{SkelName: name})
@@ -128,8 +133,11 @@ func TestInspectListsOnlySiteActorAPIsAndUsesWireMethodNames(t *testing.T) {
 	var methods _InspectMethodList
 	inspectResult(t, inspectRequest(gateway, http.MethodGet, "/inspect/demo.UserService/_list"), &methods)
 	require.Equal(t, _InspectService{
-		Name: "UserService", SkelName: "demo.UserService", Description: "Users",
-		Deprecated: true, DeprecatedReason: "Use demo.UserServiceV2",
+		Name:             "UserService",
+		SkelName:         "demo.UserService",
+		Description:      "Users",
+		Deprecated:       true,
+		DeprecatedReason: "Use demo.UserServiceV2",
 	}, methods.Service)
 	require.Len(t, methods.Methods, 1)
 	require.Equal(t, "GetV2", methods.Methods[0].SkelName)

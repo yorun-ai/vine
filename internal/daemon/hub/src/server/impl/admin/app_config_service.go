@@ -31,9 +31,7 @@ func (s *AppConfigApiServiceServerImpl) Get(key string) skeled.AppConfigItem {
 }
 
 func (s *AppConfigApiServiceServerImpl) Update(id int, update skeled.AppConfigUpdate) skeled.AppConfigItem {
-	return s.toServerAppConfigItem(s.AppConfigCore.Update(id, core.AppConfigUpdate{
-		Value: update.Value,
-	}))
+	return s.toServerAppConfigItem(s.AppConfigCore.Update(id, core.AppConfigUpdate{Value: update.Value}))
 }
 
 func (s *AppConfigApiServiceServerImpl) Create(creation skeled.AppConfigCreation) skeled.AppConfigItem {

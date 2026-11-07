@@ -60,8 +60,10 @@ func registerTestFixtures() {
 			ClientType:   reflect.TypeFor[_TestServiceClient](),
 			ClientCtor:   func(_ _TestServiceClientER) _TestServiceClient { return &_TestServiceClientImpl{} },
 			ERClientType: reflect.TypeFor[_TestServiceClientER](),
-			ERClientCtor: func(client *rpc.Client) _TestServiceClientER { return &_TestServiceClientERImpl{client: client} },
-			Methods:      []*rpcspec.MethodSpec{},
+			ERClientCtor: func(client *rpc.Client) _TestServiceClientER {
+				return &_TestServiceClientERImpl{client: client}
+			},
+			Methods: []*rpcspec.MethodSpec{},
 		})
 	})
 }

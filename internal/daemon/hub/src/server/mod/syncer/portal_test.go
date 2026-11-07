@@ -46,8 +46,13 @@ func TestSyncerPublishesOnlyEnabledConfiguration(t *testing.T) {
 	site := &core.PortalSite{Id: 1, Name: "web-site", Type: core.PortalSiteTypeWEBGW, WebName: "demo.Web", Enabled: true}
 	target.SyncPortalSite(site)
 	rule := &core.PortalRule{
-		Id: 1, Name: "web", EntryId: entry.Id, RouteType: core.PortalRuleRouteTypeSite,
-		RouteSiteName: site.Name, MatchPathPrefix: "/", Enabled: true,
+		Id:              1,
+		Name:            "web",
+		EntryId:         entry.Id,
+		RouteType:       core.PortalRuleRouteTypeSite,
+		RouteSiteName:   site.Name,
+		MatchPathPrefix: "/",
+		Enabled:         true,
 	}
 	target.SyncPortalRule(rule)
 	target.SyncPortalCert(&core.PortalCert{Id: 1, Name: "web-cert", Enabled: true})

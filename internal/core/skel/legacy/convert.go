@@ -35,9 +35,7 @@ func convertGeneratedInfo(value *GeneratedInfo) *descriptor.GeneratedInfo {
 	if value == nil {
 		return nil
 	}
-	result := &descriptor.GeneratedInfo{
-		CompilerVersion: value.CompilerVersion,
-	}
+	result := &descriptor.GeneratedInfo{CompilerVersion: value.CompilerVersion}
 	return result
 }
 
@@ -216,9 +214,7 @@ func convertPermissionRequire(value *PermRequire) *descriptor.PermissionRequire 
 	if value == nil {
 		return nil
 	}
-	result := &descriptor.PermissionRequire{
-		Expression: convertPermissionExpression(value.Expr),
-	}
+	result := &descriptor.PermissionRequire{Expression: convertPermissionExpression(value.Expr)}
 	return result
 }
 

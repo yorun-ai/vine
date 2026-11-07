@@ -144,10 +144,7 @@ func TestNewJoinsNameSegmentsAndAcceptsFinalWithOption(t *testing.T) {
 		t.Fatal("colon-separated arguments should form one matching logger name")
 	}
 
-	fixed := New("app", "demo.user", "rpc", "server", WithOption{
-		Format: FormatText,
-		Level:  LevelInfo,
-	})
+	fixed := New("app", "demo.user", "rpc", "server", WithOption{Format: FormatText, Level: LevelInfo})
 	if fixed.Enabled(LevelDebug) {
 		t.Fatal("final WithOption should override the dynamic level policy")
 	}

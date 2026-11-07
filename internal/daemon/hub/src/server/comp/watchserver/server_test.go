@@ -30,10 +30,8 @@ func newNetworkTestServer(t *testing.T) (*Server, *redis.Client) {
 	t.Helper()
 
 	server := &Server{
-		Context: context.Background(),
-		Option: &flag.Flag{
-			WatchListen: "127.0.0.1:0",
-		},
+		Context:    context.Background(),
+		Option:     &flag.Flag{WatchListen: "127.0.0.1:0"},
 		InprocFlag: &app.InternalInprocFlag{},
 	}
 	server.DIInit()
@@ -56,11 +54,9 @@ func newInprocTestServer(t *testing.T) (*Server, *redis.Client) {
 	t.Helper()
 
 	server := &Server{
-		Context: context.Background(),
-		Option:  &flag.Flag{},
-		InprocFlag: &app.InternalInprocFlag{
-			Enabled: true,
-		},
+		Context:    context.Background(),
+		Option:     &flag.Flag{},
+		InprocFlag: &app.InternalInprocFlag{Enabled: true},
 	}
 	server.DIInit()
 	t.Cleanup(server.AfterAppStop)

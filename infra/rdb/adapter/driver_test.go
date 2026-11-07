@@ -215,14 +215,20 @@ func TestDriverConnectorDelegation(t *testing.T) {
 	ctx := t.Context()
 	failure := errors.New("connect failed")
 	raw := new(driverConnStub)
-	connector := &driverConnectorStub{connect: func(received context.Context) (driver.Conn, error) {
-		assert.Same(t, ctx, received)
-		return raw, nil
-	}}
-	wrapped := &_Driver{Driver: &driverContextStub{connector: func(name string) (driver.Connector, error) {
-		assert.Equal(t, "dsn", name)
-		return connector, nil
-	}}}
+	connector := &driverConnectorStub{
+		connect: func(received context.Context) (driver.Conn, error) {
+			assert.Same(t, ctx, received)
+			return raw, nil
+		},
+	}
+	wrapped := &_Driver{
+		Driver: &driverContextStub{
+			connector: func(name string) (driver.Connector, error) {
+				assert.Equal(t, "dsn", name)
+				return connector, nil
+			},
+		},
+	}
 	opened, err := wrapped.OpenConnector("dsn")
 	require.NoError(t, err)
 	assert.Same(t, wrapped, opened.Driver())
@@ -237,10 +243,12 @@ func TestDriverConnectorDelegation(t *testing.T) {
 	opened, err = wrapped.OpenConnector("dsn")
 	assert.Nil(t, opened)
 	assert.ErrorIs(t, err, failure)
-	wrapped.Driver = &driverOpenStub{open: func(name string) (driver.Conn, error) {
-		assert.Equal(t, "fallback", name)
-		return raw, nil
-	}}
+	wrapped.Driver = &driverOpenStub{
+		open: func(name string) (driver.Conn, error) {
+			assert.Equal(t, "fallback", name)
+			return raw, nil
+		},
+	}
 	opened, err = wrapped.OpenConnector("fallback")
 	require.NoError(t, err)
 	conn, err = opened.Connect(ctx)
@@ -264,22 +272,26 @@ func TestDriverNamedValueConversionAndCheckerPrecedence(t *testing.T) {
 	} {
 		t.Run(item.name, func(t *testing.T) {
 			calls := []string{}
-			underlying := &driverContextConnStub{check: func(value *driver.NamedValue) error {
-				calls = append(calls, "connection")
-				assert.Equal(t, driver.NamedValue{Name: "arg", Ordinal: 2, Value: item.expected}, *value)
-				return failure
-			}}
+			underlying := &driverContextConnStub{
+				check: func(value *driver.NamedValue) error {
+					calls = append(calls, "connection")
+					assert.Equal(t, driver.NamedValue{Name: "arg", Ordinal: 2, Value: item.expected}, *value)
+					return failure
+				},
+			}
 			conn := &_Conn{Conn: underlying}
 			value := driver.NamedValue{Name: "arg", Ordinal: 2, Value: item.input}
 			assert.ErrorIs(t, conn.CheckNamedValue(&value), failure)
 			statement := &_Stmt{conn: conn, Stmt: new(driverStmtStub)}
 			value.Value = item.input
 			assert.ErrorIs(t, statement.CheckNamedValue(&value), failure)
-			statement.Stmt = &driverContextStmtStub{check: func(value *driver.NamedValue) error {
-				calls = append(calls, "statement")
-				assert.Equal(t, item.expected, value.Value)
-				return driver.ErrRemoveArgument
-			}}
+			statement.Stmt = &driverContextStmtStub{
+				check: func(value *driver.NamedValue) error {
+					calls = append(calls, "statement")
+					assert.Equal(t, item.expected, value.Value)
+					return driver.ErrRemoveArgument
+				},
+			}
 			value.Value = item.input
 			assert.ErrorIs(t, statement.CheckNamedValue(&value), driver.ErrRemoveArgument)
 			assert.Equal(t, []string{"connection", "connection", "statement"}, calls)

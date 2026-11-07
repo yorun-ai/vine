@@ -37,10 +37,8 @@ func TestRegisterDomainSchemaValidatesConvertedDescriptor(t *testing.T) {
 	})
 	require.Panics(t, func() {
 		RegisterDomainSchema(&DomainSchema{
-			Domain: t.Name(),
-			Generated: &GeneratedInfo{
-				CompilerVersion: "v99.0.0",
-			},
+			Domain:    t.Name(),
+			Generated: &GeneratedInfo{CompilerVersion: "v99.0.0"},
 			Services: []*ServiceSchema{{
 				AuthMode: AuthModeOff,
 			}},

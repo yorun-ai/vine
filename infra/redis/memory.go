@@ -66,9 +66,12 @@ func newMemoryRedis(endpoint string) *_MemoryRedis {
 	server := miniredis.NewMiniRedis()
 	server.ClockTTL(true)
 	instance := new(_MemoryRedis{
-		endpoint: endpoint, server: server,
-		clients: make(map[int]*goredis.Client), refs: make(map[int]int),
-		cleanupStop: make(chan struct{}), cleanupDone: make(chan struct{}),
+		endpoint:    endpoint,
+		server:      server,
+		clients:     make(map[int]*goredis.Client),
+		refs:        make(map[int]int),
+		cleanupStop: make(chan struct{}),
+		cleanupDone: make(chan struct{}),
 	})
 	go instance.cleanupLoop()
 	return instance

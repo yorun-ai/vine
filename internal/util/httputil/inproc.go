@@ -111,13 +111,15 @@ func (w *_ResponseWriter) WriteHeader(statusCode int) {
 			length = parsed
 		}
 	}
-	w.responseCh <- _InprocResponse{response: &http.Response{
-		Request:       w.request,
-		ContentLength: length,
-		StatusCode:    statusCode,
-		Header:        w.header.Clone(),
-		Body:          w.reader,
-	}}
+	w.responseCh <- _InprocResponse{
+		response: &http.Response{
+			Request:       w.request,
+			ContentLength: length,
+			StatusCode:    statusCode,
+			Header:        w.header.Clone(),
+			Body:          w.reader,
+		},
+	}
 }
 
 func (w *_ResponseWriter) Write(data []byte) (int, error) {

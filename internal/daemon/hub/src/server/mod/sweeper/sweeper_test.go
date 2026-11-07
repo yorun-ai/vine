@@ -100,37 +100,43 @@ func TestSweeperUnregistersExpiredLeaseStatus(t *testing.T) {
 		},
 		statusOK: true,
 	}
-	descriptorRepo := &_SweeperDescriptorRepo{views: []core.DomainDescriptorView{{
-		DomainVersion: core.DomainDescriptorVersion{
-			Descriptor: &skeldesc.Domain{
-				Services: []*skeldesc.Service{{
+	descriptorRepo := &_SweeperDescriptorRepo{
+		views: []core.DomainDescriptorView{{
+			DomainVersion: core.DomainDescriptorVersion{
+				Descriptor: &skeldesc.Domain{
+					Services: []*skeldesc.Service{{
+						SkelName: "demo.Service",
+						Hash:     "service-main",
+						Audiences: []*skeldesc.ActorAudience{{
+							SkelName: "demo.Actor",
+						}}, AuthMode: skeldesc.AuthModeRequired,
+					}},
+					Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
+				},
+				Main: true,
+			},
+			Services: []core.DescriptorVersion[*skeldesc.Service]{{
+				Descriptor: &skeldesc.Service{
 					SkelName: "demo.Service",
 					Hash:     "service-main",
-					Audiences: []*skeldesc.ActorAudience{{
-						SkelName: "demo.Actor",
-					}}, AuthMode: skeldesc.AuthModeRequired,
-				}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
-			},
-			Main: true,
-		},
-		Services: []core.DescriptorVersion[*skeldesc.Service]{{
-			Descriptor: &skeldesc.Service{
-				SkelName: "demo.Service",
-				Hash:     "service-main", AuthMode: skeldesc.AuthModeRequired,
-			},
-			SkelName:       "demo.Service",
-			DescriptorHash: "service-main",
-			Main:           true,
+					AuthMode: skeldesc.AuthModeRequired,
+				},
+				SkelName:       "demo.Service",
+				DescriptorHash: "service-main",
+				Main:           true,
+			}},
 		}},
-	}}}
-	portalSiteRepo := &_SweeperPortalSiteRepo{entries: []*core.PortalSite{{
-		Id:            1,
-		Name:          "demo-rpc",
-		Type:          core.PortalSiteTypeRPCGW,
-		ActorSkelName: "demo.Actor",
-		RpcgwServices: []string{"demo.Service"},
-		Enabled:       true,
-	}}}
+	}
+	portalSiteRepo := &_SweeperPortalSiteRepo{
+		entries: []*core.PortalSite{{
+			Id:            1,
+			Name:          "demo-rpc",
+			Type:          core.PortalSiteTypeRPCGW,
+			ActorSkelName: "demo.Actor",
+			RpcgwServices: []string{"demo.Service"},
+			Enabled:       true,
+		}},
+	}
 	target := &Sweeper{
 		PortalInstanceCore: &core.PortalInstanceCore{PortalInstanceRepo: &_SweeperPortalInstanceRepo{}},
 		DescriptorRepo:     descriptorRepo,

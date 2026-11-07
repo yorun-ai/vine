@@ -114,9 +114,7 @@ func newTestAppConfigRepo(t *testing.T) (*gorm.DB, *AppConfigRepo, *watchserver.
 	t.Cleanup(watchServer.AfterAppStop)
 
 	repo := &AppConfigRepo{
-		Dao: &model.AppConfigDao{
-			Dao: rdb.NewDao[*model.AppConfig](db),
-		},
+		Dao:            &model.AppConfigDao{Dao: rdb.NewDao[*model.AppConfig](db)},
 		DescriptorRepo: new(_PortalSiteDescriptorRepo),
 		Syncer:         testSyncer(watchServer),
 		Access:         new(configaccess.Access),

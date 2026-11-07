@@ -24,7 +24,8 @@ func (s *PortalEntryApiServiceServerImpl) List() []skeled.PortalEntry {
 func (s *PortalEntryApiServiceServerImpl) Update(id int, update skeled.PortalEntryUpdate) skeled.PortalEntry {
 	validatePortalEntryProtocol(update.Protocol)
 	entry := s.PortalEntryCore.Update(id, core.PortalEntryUpdate{
-		Protocol: update.Protocol, Http: toCoreHTTPConfig(update.Http),
+		Protocol:  update.Protocol,
+		Http:      toCoreHTTPConfig(update.Http),
 		Name:      update.Name,
 		ListenIPs: update.ListenIPs,
 		Enabled:   update.Enabled,
@@ -39,7 +40,8 @@ func (s *PortalEntryApiServiceServerImpl) Create(creation skeled.PortalEntryCrea
 		config = *toCoreHTTPConfig(creation.Http)
 	}
 	entry := s.PortalEntryCore.Create(core.PortalEntryCreation{
-		Protocol: creation.Protocol, Http: &config,
+		Protocol:  creation.Protocol,
+		Http:      &config,
 		Name:      creation.Name,
 		ListenIPs: creation.ListenIPs,
 		Enabled:   creation.Enabled,

@@ -19,33 +19,39 @@ import (
 )
 
 func TestPortalEntryServiceMapsRulesAndTargetSites(t *testing.T) {
-	ruleRepo := &_NamedPortalRuleRepoSpy{items: map[string]*core.PortalRule{
-		"demo-rule": {
-			Id:              1,
-			Name:            "demo-rule",
-			EntryId:         1,
-			MatchPathPrefix: "/demo",
-			RouteType:       core.PortalRuleRouteTypeSite,
-			RouteSiteName:   "demo-site",
-			FieldSources:    core.FieldSources{"/name": {Source: "app/default"}},
+	ruleRepo := &_NamedPortalRuleRepoSpy{
+		items: map[string]*core.PortalRule{
+			"demo-rule": {
+				Id:              1,
+				Name:            "demo-rule",
+				EntryId:         1,
+				MatchPathPrefix: "/demo",
+				RouteType:       core.PortalRuleRouteTypeSite,
+				RouteSiteName:   "demo-site",
+				FieldSources:    core.FieldSources{"/name": {Source: "app/default"}},
+			},
 		},
-	}}
-	siteRepo := &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{
-		"demo-site": {
-			Id:            2,
-			Name:          "demo-site",
-			Type:          core.PortalSiteTypeWEBGW,
-			ActorSkelName: "demo.Actor",
-			WebName:       "demo.Web",
-			WebMountPath:  "/demo",
-			FieldSources:  core.FieldSources{"/name": {Source: "app/default"}},
+	}
+	siteRepo := &_PortalSiteRepoSpy{
+		items: map[string]*core.PortalSite{
+			"demo-site": {
+				Id:            2,
+				Name:          "demo-site",
+				Type:          core.PortalSiteTypeWEBGW,
+				ActorSkelName: "demo.Actor",
+				WebName:       "demo.Web",
+				WebMountPath:  "/demo",
+				FieldSources:  core.FieldSources{"/name": {Source: "app/default"}},
+			},
 		},
-	}}
-	service := &PortalEntryApiServiceServerImpl{PortalEntryCore: &core.PortalEntryCore{
-		PortalEntryRepo: newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Name: "http:8080", Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}}),
-		PortalRuleRepo:  ruleRepo,
-		PortalSiteRepo:  siteRepo,
-	}}
+	}
+	service := &PortalEntryApiServiceServerImpl{
+		PortalEntryCore: &core.PortalEntryCore{
+			PortalEntryRepo: newTestPortalEntryRepoSpy(&core.PortalEntry{Id: 1, Name: "http:8080", Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}}),
+			PortalRuleRepo:  ruleRepo,
+			PortalSiteRepo:  siteRepo,
+		},
+	}
 
 	entries := service.List()
 
@@ -64,12 +70,14 @@ func TestPortalEntryServiceMapsRulesAndTargetSites(t *testing.T) {
 
 func TestPortalEntryServiceCreatesAndRemovesEntry(t *testing.T) {
 	entryRepo := newTestPortalEntryRepoSpy()
-	service := &PortalEntryApiServiceServerImpl{PortalEntryCore: &core.PortalEntryCore{
-		PortalEntryRepo: entryRepo,
-		PortalRuleRepo:  &_NamedPortalRuleRepoSpy{items: map[string]*core.PortalRule{}},
-		PortalSiteRepo:  &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{}},
-		PortalCertRepo:  new(_PortalCertRepoSpy),
-	}}
+	service := &PortalEntryApiServiceServerImpl{
+		PortalEntryCore: &core.PortalEntryCore{
+			PortalEntryRepo: entryRepo,
+			PortalRuleRepo:  &_NamedPortalRuleRepoSpy{items: map[string]*core.PortalRule{}},
+			PortalSiteRepo:  &_PortalSiteRepoSpy{items: map[string]*core.PortalSite{}},
+			PortalCertRepo:  new(_PortalCertRepoSpy),
+		},
+	}
 
 	created := service.Create(skeled.PortalEntryCreation{Name: "web", Protocol: "http", Http: new(skeled.PortalEntryHttp{HttpPort: 8080, Https: "DISABLED", Autohttps: "DISABLED"}), ListenIPs: []string{"127.0.0.1", "::1"}})
 

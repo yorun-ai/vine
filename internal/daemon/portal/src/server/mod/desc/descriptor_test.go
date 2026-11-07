@@ -39,10 +39,7 @@ func TestManagerHandlesActorDescriptorEvents(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "actor-next", actor.Hash)
 
-	manager.handleActorEvent(hubwatch.Event{
-		Kind: hubwatch.EventKindDelete,
-		Key:  key,
-	})
+	manager.handleActorEvent(hubwatch.Event{Kind: hubwatch.EventKindDelete, Key: key})
 	_, ok = manager.Actor("demo.UserActor")
 	assert.False(t, ok)
 }
@@ -54,12 +51,14 @@ func TestManagerHandlesServiceDescriptorEvents(t *testing.T) {
 	manager.handleServiceEvent(hubwatch.Event{
 		Kind: hubwatch.EventKindUpsert,
 		Key:  key,
-		Value: vcode.MustMarshalJsonS(watched.DescriptorService{Api: true,
+		Value: vcode.MustMarshalJsonS(watched.DescriptorService{
+			Api:      true,
 			SkelName: "demo.UserService",
 			Hash:     "service-main",
 			Methods: []*skeldesc.Method{
 				{SkelName: "Get", AuthMode: skeldesc.AuthModeRequired, Name: "Get", EffectiveAuthMode: skeldesc.AuthModeRequired},
-			}, AuthMode: skeldesc.AuthModeRequired,
+			},
+			AuthMode: skeldesc.AuthModeRequired,
 		}),
 	})
 	service, ok := manager.Service("demo.UserService")
@@ -68,10 +67,7 @@ func TestManagerHandlesServiceDescriptorEvents(t *testing.T) {
 	require.Len(t, service.Methods, 1)
 	assert.Equal(t, skeldesc.AuthModeRequired, service.Methods[0].AuthMode)
 
-	manager.handleServiceEvent(hubwatch.Event{
-		Kind: hubwatch.EventKindDelete,
-		Key:  key,
-	})
+	manager.handleServiceEvent(hubwatch.Event{Kind: hubwatch.EventKindDelete, Key: key})
 	_, ok = manager.Service("demo.UserService")
 	assert.False(t, ok)
 }
@@ -82,7 +78,9 @@ func TestManagerHandlesWebDescriptorEvents(t *testing.T) {
 	descriptor, ok := manager.Web("demo.Web")
 	require.True(t, ok)
 	require.Equal(t, skeldesc.AuthModeRequired, descriptor.AuthMode)
-	manager.handleWebEvent(hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: key,
+	manager.handleWebEvent(hubwatch.Event{
+		Kind:  hubwatch.EventKindUpsert,
+		Key:   key,
 		Value: vcode.MustMarshalJsonS(watched.DescriptorWeb{SkelName: "demo.Web", AuthMode: skeldesc.AuthModeAnonymous}),
 	})
 	descriptor, ok = manager.Web("demo.Web")

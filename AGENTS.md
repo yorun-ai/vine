@@ -9,6 +9,10 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
 - Declare the type of every parameter and result independently. Write
   `func f(key string, token string)`, never `func f(key, token string)`; the same
   applies to results, named function types, function literals, and variables.
+- In a struct literal, either keep all fields on one line or put each field on
+  its own line; do not mix layouts by grouping multiple fields on some lines.
+  Choose between these styles for visual consistency among related assignments
+  and clear visual distinction between groups.
 
 ## Naming
 

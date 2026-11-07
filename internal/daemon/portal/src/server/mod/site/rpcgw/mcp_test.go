@@ -4,6 +4,7 @@ import (
 	"encoding/json/jsontext"
 	"encoding/json/v2"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -257,4 +258,14 @@ func TestMcpSyncingAndDescriptorRecovery(t *testing.T) {
 	var result mcp.ListToolsResult
 	mcpResult(t, mcpServe(gateway, mcpRequest("tools/list", nil, "2026-07-28")), &result)
 	require.Len(t, result.Tools, 1)
+}
+
+func TestMCPRequestBodyRetainsJSONLimit(t *testing.T) {
+	gateway := newInspectGateway(t, inspectWatch(t), mcpConfig("demo.UserService"))
+	request := mcpRequest("tools/list", nil, mcpProtocolVersion)
+	request.Body = io.NopCloser(strings.NewReader(strings.Repeat(" ", (32<<20)+1)))
+	request.ContentLength = -1
+	response := mcpServe(gateway, request)
+	require.Equal(t, http.StatusRequestEntityTooLarge, response.Code)
+	require.Contains(t, response.Body.String(), "33554432")
 }

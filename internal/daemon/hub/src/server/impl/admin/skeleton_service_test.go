@@ -305,12 +305,10 @@ func TestSkeletonServiceListServices(t *testing.T) {
 						Deprecated:       true,
 						DeprecatedReason: "Use UserServiceV2",
 						Pub:              true,
-						Require: &skeldesc.PermissionRequire{
-							Expression: &skeldesc.PermissionExpression{
-								Mode: skeldesc.PermissionRequireModeCode,
-								Code: "demo.user.User:read",
-							},
-						},
+						Require: &skeldesc.PermissionRequire{Expression: &skeldesc.PermissionExpression{
+							Mode: skeldesc.PermissionRequireModeCode,
+							Code: "demo.user.User:read",
+						}},
 						Audiences: []*skeldesc.ActorAudience{
 							{Name: "UserActor", SkelName: "demo.user.UserActor"},
 						},
@@ -417,7 +415,9 @@ func TestSkeletonServiceListResources(t *testing.T) {
 		Arguments: []*skeldesc.Member{{
 			Name: "tenantId",
 			Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString},
-		}}, AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired,
+		}},
+		AuthMode:          skeldesc.AuthModeInherit,
+		EffectiveAuthMode: skeldesc.AuthModeRequired,
 	}
 	service := &SkeletonApiServiceServerImpl{
 		DescriptorRepo: &_SkeletonServiceDescriptorRepo{
@@ -455,7 +455,8 @@ func TestSkeletonServiceListResources(t *testing.T) {
 						Name:     "UserCheckService",
 						SkelName: "demo.user.UserCheckService",
 						Hash:     "user-check-service",
-						Methods:  []*skeldesc.Method{checkMethod}, AuthMode: skeldesc.AuthModeRequired,
+						Methods:  []*skeldesc.Method{checkMethod},
+						AuthMode: skeldesc.AuthModeRequired,
 					},
 				}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			}},
@@ -599,7 +600,8 @@ func TestSkeletonServiceIncludesActorCredentialInfoAndAuthService(t *testing.T) 
 				Name: "credential",
 				Type: &skeldesc.Type{Kind: skeldesc.TypeKindData, Name: credential.Name, SkelName: credential.SkelName},
 			}}, AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired,
-		}}, AuthMode: skeldesc.AuthModeRequired,
+		}},
+		AuthMode: skeldesc.AuthModeRequired,
 	}
 	permMethod := &skeldesc.Method{
 		Name:     "CheckAll",
@@ -607,13 +609,16 @@ func TestSkeletonServiceIncludesActorCredentialInfoAndAuthService(t *testing.T) 
 		Arguments: []*skeldesc.Member{{
 			Name: "codes",
 			Type: &skeldesc.Type{Kind: skeldesc.TypeKindList, Element: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarString}},
-		}}, AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired,
+		}},
+		AuthMode:          skeldesc.AuthModeInherit,
+		EffectiveAuthMode: skeldesc.AuthModeRequired,
 	}
 	permService := &skeldesc.Service{
 		Name:     "UserActorPermissionService",
 		SkelName: "demo.user.UserActorPermissionService",
 		Hash:     "perm-service-hash",
-		Methods:  []*skeldesc.Method{permMethod}, AuthMode: skeldesc.AuthModeRequired,
+		Methods:  []*skeldesc.Method{permMethod},
+		AuthMode: skeldesc.AuthModeRequired,
 	}
 	service := &SkeletonApiServiceServerImpl{
 		DescriptorRepo: &_SkeletonServiceDescriptorRepo{
@@ -689,7 +694,8 @@ func TestSkeletonServiceListActorsIncludesAccessibleItems(t *testing.T) {
 				SkelName: "demo.user.UserEvent",
 				Hash:     "user-event",
 			},
-		}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
+		},
+		Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 	}
 	oldDescriptor := &skeldesc.Domain{
 		Name: "demo.user",
@@ -714,7 +720,8 @@ func TestSkeletonServiceListActorsIncludesAccessibleItems(t *testing.T) {
 					{Name: "OtherActor", SkelName: "demo.user.OtherActor"},
 				}, AuthMode: skeldesc.AuthModeRequired,
 			},
-		}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
+		},
+		Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 	}
 	service := &SkeletonApiServiceServerImpl{
 		DescriptorRepo: &_SkeletonServiceDescriptorRepo{
@@ -864,7 +871,8 @@ func TestSkeletonServiceMergesItemVersionsOnServer(t *testing.T) {
 		},
 		Data: []*skeldesc.Data{
 			{Name: "StableData", SkelName: "demo.user.StableData", Hash: "stable-data"},
-		}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
+		},
+		Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 	}
 	oldDescriptor := &skeldesc.Domain{
 		Name: "demo.user",
@@ -879,14 +887,16 @@ func TestSkeletonServiceMergesItemVersionsOnServer(t *testing.T) {
 		},
 		Data: []*skeldesc.Data{
 			{Name: "StableData", SkelName: "demo.user.StableData", Hash: "stable-data"},
-		}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
+		},
+		Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 	}
 	crossDescriptor := &skeldesc.Domain{
 		Name: "demo.user",
 		Hash: "domain-cross",
 		Services: []*skeldesc.Service{
 			{Name: "RemovedService", SkelName: "demo.user.RemovedService", Hash: "removed-service-a", AuthMode: skeldesc.AuthModeRequired},
-		}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
+		},
+		Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 	}
 	service := &SkeletonApiServiceServerImpl{
 		DescriptorRepo: &_SkeletonServiceDescriptorRepo{

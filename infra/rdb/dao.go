@@ -25,9 +25,7 @@ type Patch map[string]any
 // Initialize DAOs before using an externally managed connection concurrently.
 func NewDao[M ModelConstraint](gdb *gorm.DB) Dao[M] {
 	ex.PanicIfError(adapter.RegisterCreateCallbacks(gdb))
-	return Dao[M]{
-		gormDB: gdb,
-	}
+	return Dao[M]{gormDB: gdb}
 }
 
 func (d *Dao[M]) setGormDB(gdb *gorm.DB) {

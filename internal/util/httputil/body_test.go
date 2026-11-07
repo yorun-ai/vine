@@ -141,9 +141,13 @@ func TestSSEIdleDoesNotHideTruncation(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		reader, writer := io.Pipe()
 		defer writer.Close()
-		response := &http.Response{StatusCode: 200, Header: http.Header{
-			"Content-Type": {"text/event-stream"}, "Content-Length": {"10"},
-		}, Body: reader}
+		response := &http.Response{
+			StatusCode: 200,
+			Header: http.Header{
+				"Content-Type": {"text/event-stream"}, "Content-Length": {"10"},
+			},
+			Body: reader,
+		}
 		_, err := CopyResponseBodyWithIdleTimeout(httptest.NewRecorder(), response, time.Second)
 		if !errors.Is(err, io.ErrUnexpectedEOF) {
 			t.Fatalf("fixed-length idle response must remain truncated: %v", err)
@@ -275,14 +279,22 @@ func TestSSEIdleDoesNotHideRequestTermination(t *testing.T) {
 		newContext func(context.Context) (context.Context, context.CancelFunc)
 		want       error
 	}{
-		{"deadline", func(parent context.Context) (context.Context, context.CancelFunc) {
-			return context.WithTimeout(parent, time.Second)
-		}, context.DeadlineExceeded},
-		{"cancel", func(parent context.Context) (context.Context, context.CancelFunc) {
-			ctx, cancel := context.WithCancel(parent)
-			cancel()
-			return ctx, cancel
-		}, context.Canceled},
+		{
+			"deadline",
+			func(parent context.Context) (context.Context, context.CancelFunc) {
+				return context.WithTimeout(parent, time.Second)
+			},
+			context.DeadlineExceeded,
+		},
+		{
+			"cancel",
+			func(parent context.Context) (context.Context, context.CancelFunc) {
+				ctx, cancel := context.WithCancel(parent)
+				cancel()
+				return ctx, cancel
+			},
+			context.Canceled,
+		},
 		{"idle cleanup", context.WithCancel, ErrStreamIdleTimeout},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

@@ -117,7 +117,7 @@ func TestDecodeRequestWithoutArgumentsAcceptsEmptyBody(t *testing.T) {
 		oversized.Header.Set(HeaderContentType, contentType)
 		EncodeTraceToHeader(oversized.Header, testContext().Trace())
 		EncodeClientToHeader(oversized.Header, testContext().Client())
-		oversized.ContentLength = MaxRequestBodyBytes + 1
+		oversized.ContentLength = RequestBodyLimit(contentType) + 1
 
 		_, err = DecodeRequest(oversized)
 		if err == nil || !strings.Contains(err.Error(), "rpc request body exceeds") {
@@ -244,9 +244,7 @@ func TestDecodeRequestAppliesTimeoutOption(t *testing.T) {
 func TestDecodeRequestParsesCborBody(t *testing.T) {
 	si := testServiceInfo()
 	method := si.Methods()[0]
-	body := cbor.RawMessage(mustTestMarshalCbor(t, &rpchttp.CBORRequest{
-		Params: mustTestMarshalCbor(t, &pingArguments{Name: "vine"}),
-	}))
+	body := cbor.RawMessage(mustTestMarshalCbor(t, &rpchttp.CBORRequest{Params: mustTestMarshalCbor(t, &pingArguments{Name: "vine"})}))
 
 	req, err := http.NewRequest(RequestMethod, "http://localhost:8080"+method.FullURLPath(), bytes.NewReader(body))
 	if err != nil {
@@ -495,5 +493,30 @@ func TestRequestCBORPreservesEnumValidation(t *testing.T) {
 		omitted, err := rpchttp.EncodeRequest(map[string]any{}, contentType)
 		require.NoError(t, err)
 		require.NoError(t, decoder.decodeArgumentsBytes(omitted, new(args)))
+	}
+}
+
+func TestDecodeRequestUsesEncodingSpecificBodyLimit(t *testing.T) {
+	method := testServiceInfo().Methods()[0]
+	name := strings.Repeat("x", 32<<20)
+	for _, contentType := range []string{ContentTypeJson, ContentTypeCbor + "; charset=binary"} {
+		t.Run(contentType, func(t *testing.T) {
+			body, err := rpchttp.EncodeRequest(&pingArguments{Name: name}, contentType)
+			require.NoError(t, err)
+			require.Greater(t, len(body), 32<<20)
+			req := httptest.NewRequest(RequestMethod, "http://localhost:8080"+method.FullURLPath(), bytes.NewReader(body))
+			req.ContentLength = -1
+			req.Header.Set(HeaderContentType, contentType)
+			req.Header.Set(HeaderAccept, ContentTypeJson)
+			EncodeTraceToHeader(req.Header, testContext().Trace())
+			EncodeClientToHeader(req.Header, testContext().Client())
+			got, err := DecodeRequest(req)
+			if contentType == ContentTypeJson {
+				require.ErrorContains(t, err, "rpc request body exceeds 33554432 byte limit")
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, name, got.Arguments().(*pingArguments).Name)
+		})
 	}
 }

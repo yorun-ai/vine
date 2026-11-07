@@ -24,9 +24,7 @@ func New[S ApplicationSpec](appliers ...FlagApplier) App {
 
 // NewWithOption constructs an application that connects to the Link in option.
 func NewWithOption[S ApplicationSpec](option Option, appliers ...FlagApplier) App {
-	return &_App{
-		apps: []App{internalapp.New[S](appAppliersWithCli(option, appliers)...)},
-	}
+	return &_App{apps: []App{internalapp.New[S](appAppliersWithCli(option, appliers)...)}}
 }
 
 // NewBundled combines applications created by New or NewWithOption into one

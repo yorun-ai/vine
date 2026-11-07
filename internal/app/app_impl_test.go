@@ -627,9 +627,7 @@ func TestAppImplStopGracefullyPropagatesHookPanicToCaller(t *testing.T) {
 
 func TestAppImplStopGracefullyContinuesAfterUnregisterFailure(t *testing.T) {
 	events := []string{}
-	linker := &testLinker{
-		UnregisterError: ex.New(ex.InvocationTimeout, "unregister timed out"),
-	}
+	linker := &testLinker{UnregisterError: ex.New(ex.InvocationTimeout, "unregister timed out")}
 	app := newTestAppImpl()
 	app.ctx, app.cancel = context.WithCancel(context.Background())
 	app.linker = linker
@@ -667,9 +665,7 @@ func TestAppImplStartAndStopInvokeLifecycleHooks(t *testing.T) {
 		},
 	}
 	flags := _Flags{}
-	flags.Apply(With(&testLifecycleLog{
-		Events: &events,
-	}))
+	flags.Apply(With(&testLifecycleLog{Events: &events}))
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(true)
 	app := newApp(spec, flags)
@@ -973,9 +969,7 @@ func TestAppImplStartAndStopInvokeComponentAndModuleLifecycleHooksInOrder(t *tes
 		},
 	}
 	flags := _Flags{}
-	flags.Apply(With(&testLifecycleLog{
-		Events: &events,
-	}))
+	flags.Apply(With(&testLifecycleLog{Events: &events}))
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(true)
 	app := newApp(spec, flags)

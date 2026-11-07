@@ -75,21 +75,15 @@ func TestNewBundledStartsInOrderAndStopsInReverse(t *testing.T) {
 }
 
 func TestApplyOptionOverridesCliOption(t *testing.T) {
-	cliOption := &Option{
-		LinkEndpoint: "http://cli-link.local:7079",
-	}
+	cliOption := &Option{LinkEndpoint: "http://cli-link.local:7079"}
 
-	applyOption(cliOption, Option{
-		LinkEndpoint: "http://option-link.local:7079",
-	})
+	applyOption(cliOption, Option{LinkEndpoint: "http://option-link.local:7079"})
 
 	assert.Equal(t, "http://option-link.local:7079", cliOption.LinkEndpoint)
 }
 
 func TestApplyOptionKeepsUnsetCliOption(t *testing.T) {
-	cliOption := &Option{
-		LinkEndpoint: "http://cli-link.local:7079",
-	}
+	cliOption := &Option{LinkEndpoint: "http://cli-link.local:7079"}
 
 	applyOption(cliOption, Option{})
 

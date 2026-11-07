@@ -81,7 +81,9 @@ func TestServerServesEmbeddedAssetsThroughContainer(t *testing.T) {
 			spec.ResetRegistryForTest()
 			t.Cleanup(spec.ResetRegistryForTest)
 			spec.Register(&spec.WebSpec{
-				Name: "ServerTestWeb", SkelName: "demo.user.ServerTestWeb", MountPath: mount,
+				Name:              "ServerTestWeb",
+				SkelName:          "demo.user.ServerTestWeb",
+				MountPath:         mount,
 				ServerType:        reflect.TypeFor[_ServerTestWebServer](),
 				DefaultServerType: reflect.TypeFor[*_DefaultServerTestWebServer](),
 			})
@@ -508,15 +510,17 @@ func TestServerRequestCompletionPreservesOrdinaryRequests(t *testing.T) {
 	defer cancel()
 	for _, status := range []int{http.StatusOK, http.StatusServiceUnavailable} {
 		request := httptest.NewRequestWithContext(ctx, "GET", "/demo.user.ServerTestWeb/ping", nil)
-		server := newServerTestServer(&_ServerTestExecutor{execute: func(route spec.Route, ginCtx *gin.Context) {
-			if ginCtx.Request != request || ginCtx.Request.Context() != ctx {
-				t.Fatal("completion logging replaced the request or its context")
-			}
-			if ginCtx.Keys != nil {
-				t.Fatal("ordinary request allocated tracking state")
-			}
-			ginCtx.Status(status)
-		}})
+		server := newServerTestServer(&_ServerTestExecutor{
+			execute: func(route spec.Route, ginCtx *gin.Context) {
+				if ginCtx.Request != request || ginCtx.Request.Context() != ctx {
+					t.Fatal("completion logging replaced the request or its context")
+				}
+				if ginCtx.Keys != nil {
+					t.Fatal("ordinary request allocated tracking state")
+				}
+				ginCtx.Status(status)
+			},
+		})
 		server.HTTPHandler().ServeHTTP(httptest.NewRecorder(), request)
 	}
 }
@@ -575,9 +579,11 @@ func TestServerReverseProxyAbortReachesTransport(t *testing.T) {
 	}
 	proxy := httputil.NewSingleHostReverseProxy(upstreamURL)
 	proxy.ErrorLog = log.New(io.Discard, "", 0)
-	server := newServerTestServer(&_ServerTestExecutor{execute: func(route spec.Route, ctx *gin.Context) {
-		proxy.ServeHTTP(ctx.Writer, ctx.Request)
-	}})
+	server := newServerTestServer(&_ServerTestExecutor{
+		execute: func(route spec.Route, ctx *gin.Context) {
+			proxy.ServeHTTP(ctx.Writer, ctx.Request)
+		},
+	})
 	for _, protocol := range []string{"http1", "http2", "inproc"} {
 		t.Run(protocol, func(t *testing.T) {
 			var response *http.Response
@@ -629,26 +635,28 @@ func TestDevProxyCompletionLogDistinguishesUpstreamFromLocalFailure(t *testing.T
 	proxy.SetStateFile(statePath)
 	var reportError bool
 	var panicAfter bool
-	server := newServerTestServer(&_ServerTestExecutor{execute: func(route spec.Route, ctx *gin.Context) {
-		if ctx.Query("local") == "true" {
-			if spec.IsUpstream5xx(ctx) {
-				t.Fatal("upstream marker leaked into another request")
+	server := newServerTestServer(&_ServerTestExecutor{
+		execute: func(route spec.Route, ctx *gin.Context) {
+			if ctx.Query("local") == "true" {
+				if spec.IsUpstream5xx(ctx) {
+					t.Fatal("upstream marker leaked into another request")
+				}
+				ctx.Status(http.StatusServiceUnavailable)
+				return
 			}
-			ctx.Status(http.StatusServiceUnavailable)
-			return
-		}
-		proxy.GinCtx = ctx
-		proxy.Serve()
-		if ctx.Query("success") == "true" && ctx.Keys != nil {
-			t.Fatal("successful proxy response allocated tracking state")
-		}
-		if panicAfter {
-			panic("local handler panic")
-		}
-		if reportError {
-			_ = ctx.Error(errors.New("local handler failure"))
-		}
-	}})
+			proxy.GinCtx = ctx
+			proxy.Serve()
+			if ctx.Query("success") == "true" && ctx.Keys != nil {
+				t.Fatal("successful proxy response allocated tracking state")
+			}
+			if panicAfter {
+				panic("local handler panic")
+			}
+			if reportError {
+				_ = ctx.Error(errors.New("local handler failure"))
+			}
+		},
+	})
 	for _, tc := range []struct {
 		name          string
 		query         string
@@ -832,11 +840,13 @@ func newServerTestDevProxy(t *testing.T, backendURL string) *Server {
 	if err := os.WriteFile(statePath, state, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	return newServerTestServer(&_ServerTestExecutor{execute: func(route spec.Route, ctx *gin.Context) {
-		proxy := new(devproxy.Server{GinCtx: ctx})
-		proxy.SetStateFile(statePath)
-		proxy.Serve()
-	}})
+	return newServerTestServer(&_ServerTestExecutor{
+		execute: func(route spec.Route, ctx *gin.Context) {
+			proxy := new(devproxy.Server{GinCtx: ctx})
+			proxy.SetStateFile(statePath)
+			proxy.Serve()
+		},
+	})
 }
 
 func TestDevProxyWebSocketHMR(t *testing.T) {

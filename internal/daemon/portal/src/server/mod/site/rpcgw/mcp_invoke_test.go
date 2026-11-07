@@ -32,7 +32,10 @@ func mcpBackend(t *testing.T, watch *watchtest.Client, service string, handler h
 	endpoint := "link+inproc://vine/mcp-" + meta.NewId()
 	registerTestIngress(t, endpoint, handler)
 	watch.SetValue(watched.FormatRpcServiceRegistrationKey(service, "demo.app", "instance-1"), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
-		Endpoint: endpoint, ServiceName: service, AppName: "demo.app", AppInstanceId: "instance-1",
+		Endpoint:      endpoint,
+		ServiceName:   service,
+		AppName:       "demo.app",
+		AppInstanceId: "instance-1",
 	}))
 }
 
@@ -52,10 +55,15 @@ func mcpBackendResult(t *testing.T, w http.ResponseWriter, result any, failure *
 
 func TestMcpCallAdmissionForwardingAndErrors(t *testing.T) {
 	watch := inspectWatch(t)
-	actor := &skeldesc.Actor{SkelName: "demo.UserActor", Auth: &skeldesc.ActorAuth{
-		Credential: testCredentialDescriptor(), Info: &skeldesc.Data{SkelName: "demo.UserInfo"},
-		Service: &skeldesc.Service{SkelName: "demo.AuthService", Methods: []*skeldesc.Method{{Name: "Auth", SkelName: "auth"}}}, MethodName: "Auth",
-	}}
+	actor := &skeldesc.Actor{
+		SkelName: "demo.UserActor",
+		Auth: &skeldesc.ActorAuth{
+			Credential: testCredentialDescriptor(),
+			Info:       &skeldesc.Data{SkelName: "demo.UserInfo"},
+			Service:    &skeldesc.Service{SkelName: "demo.AuthService", Methods: []*skeldesc.Method{{Name: "Auth", SkelName: "auth"}}},
+			MethodName: "Auth",
+		},
+	}
 	watch.SetValue(watched.FormatDescriptorActorKey(actor.SkelName), vcode.MustMarshalJsonS(actor))
 	mcpBackend(t, watch, "demo.AuthService", func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)

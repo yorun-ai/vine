@@ -27,9 +27,7 @@ type ServiceDebugApiServiceServerImpl struct {
 }
 
 func (s *ServiceDebugApiServiceServerImpl) defaultBuilder() _DebugDefaultBuilder {
-	return _DebugDefaultBuilder{
-		DescriptorRepo: s.DescriptorRepo,
-	}
+	return _DebugDefaultBuilder{DescriptorRepo: s.DescriptorRepo}
 }
 
 func (s *ServiceDebugApiServiceServerImpl) ListAppInstances() []skeled.ServiceDebugAppInstance {

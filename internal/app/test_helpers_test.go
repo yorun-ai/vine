@@ -40,9 +40,7 @@ func (*testHelperAppSpec) Name() string {
 
 func TestMain(m *testing.M) {
 	restoreLinkerFactory := link.SetNewLinkerForTest(func(_ meta.App, _ string) link.Linker {
-		return &testLinker{
-			RpcProxyOutEndpointValue: "http://127.0.0.1:7079/rpc/proxy/out",
-		}
+		return &testLinker{RpcProxyOutEndpointValue: "http://127.0.0.1:7079/rpc/proxy/out"}
 	})
 	code := m.Run()
 	restoreLinkerFactory()

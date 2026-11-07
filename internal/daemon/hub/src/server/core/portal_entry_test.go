@@ -216,9 +216,11 @@ func TestPortalEntryCoreSaveReplacesByName(t *testing.T) {
 	// A seed applies entries before rules: an entry keeps its identity, and
 	// replacing it republishes the rules it routes.
 	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Name: "web", Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}})
-	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		1: {Id: 1, Name: "app", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-	}}
+	ruleRepo := &entryRuleRepoSpy{
+		rules: map[int]*PortalRule{
+			1: {Id: 1, Name: "app", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+		},
+	}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
 	saved := core.Save(PortalEntry{Name: "web", Protocol: "http", Http: &PortalEntryHTTP{Host: "app.example.com", Http: "DISABLED", Https: "ENABLED", HttpsPort: 8443}})
@@ -248,10 +250,12 @@ func TestPortalEntryCoreSaveRejectsAccessTakenByAnotherEntry(t *testing.T) {
 		&PortalEntry{Id: 2, Name: "vine", Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7099}},
 		&PortalEntry{Id: 3, Name: "api", Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8099}},
 	)
-	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-		2: {Id: 2, Name: "vine", EntryId: 2, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-	}}
+	ruleRepo := &entryRuleRepoSpy{
+		rules: map[int]*PortalRule{
+			1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+			2: {Id: 2, Name: "vine", EntryId: 2, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+		},
+	}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
 	require.PanicsWithError(t,
@@ -276,12 +280,14 @@ func TestPortalEntryCoreListGroupsRulesByEntry(t *testing.T) {
 		&PortalEntry{Id: 3, Protocol: "http", Http: &PortalEntryHTTP{Host: "demo.local", Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}},
 		&PortalEntry{Id: 5, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 9090}},
 	)
-	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		2: {Id: 2, Name: "home", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "home-site"},
-		3: {Id: 3, Name: "api", EntryId: 2, MatchPathPrefix: "/api", RouteType: PortalRuleRouteTypePermanentRedirect, RouteRedirectionPattern: "https://demo.local"},
-		4: {Id: 4, Name: "ignored", EntryId: 2, MatchPathPrefix: "/", RouteType: "UNSUPPORTED"},
-		5: {Id: 5, Name: "hosted", EntryId: 3, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "home-site"},
-	}}
+	ruleRepo := &entryRuleRepoSpy{
+		rules: map[int]*PortalRule{
+			2: {Id: 2, Name: "home", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "home-site"},
+			3: {Id: 3, Name: "api", EntryId: 2, MatchPathPrefix: "/api", RouteType: PortalRuleRouteTypePermanentRedirect, RouteRedirectionPattern: "https://demo.local"},
+			4: {Id: 4, Name: "ignored", EntryId: 2, MatchPathPrefix: "/", RouteType: "UNSUPPORTED"},
+			5: {Id: 5, Name: "hosted", EntryId: 3, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "home-site"},
+		},
+	}
 	siteRepo := &portalSiteRepoSpy{
 		entries: map[int]*PortalSite{
 			1: {Id: 1, Name: "admin-site"},
@@ -366,9 +372,11 @@ func TestPortalEntryCoreRemove(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(
 		&PortalEntry{Id: 1, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}},
 	)
-	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-	}}
+	ruleRepo := &entryRuleRepoSpy{
+		rules: map[int]*PortalRule{
+			1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+		},
+	}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
 	// An entry keeps its rules: Hub refuses to leave them without an access.
@@ -390,9 +398,11 @@ func TestPortalEntryCoreRemove(t *testing.T) {
 
 func TestPortalEntryCoreListRejectsUnknownScheme(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Name: "invalid", Protocol: "tcp", Http: &PortalEntryHTTP{Http: "DISABLED", Https: "DISABLED", HttpPort: 9000, HttpsPort: 9000}})
-	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		1: {Id: 1, Name: "tcp", EntryId: 1, RouteType: PortalRuleRouteTypeSite},
-	}}
+	ruleRepo := &entryRuleRepoSpy{
+		rules: map[int]*PortalRule{
+			1: {Id: 1, Name: "tcp", EntryId: 1, RouteType: PortalRuleRouteTypeSite},
+		},
+	}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
 	panicValue := capturePanic(func() {
@@ -409,12 +419,14 @@ func TestPortalEntryCoreUpdateSavesEntryAndRepublishesRules(t *testing.T) {
 		&PortalEntry{Id: 1, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}},
 		&PortalEntry{Id: 2, Protocol: "http", Http: &PortalEntryHTTP{Host: "demo.local", Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}},
 	)
-	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-		2: {Id: 2, Name: "api", EntryId: 1, MatchPathPrefix: "/api", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "rpc-site"},
-		3: {Id: 3, Name: "other-host", EntryId: 2, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-		4: {Id: 4, Name: "redirect", EntryId: 1, MatchPathPrefix: "/old", RouteType: PortalRuleRouteTypePermanentRedirect, RouteRedirectionPattern: "https://demo.local"},
-	}}
+	ruleRepo := &entryRuleRepoSpy{
+		rules: map[int]*PortalRule{
+			1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+			2: {Id: 2, Name: "api", EntryId: 1, MatchPathPrefix: "/api", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "rpc-site"},
+			3: {Id: 3, Name: "other-host", EntryId: 2, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+			4: {Id: 4, Name: "redirect", EntryId: 1, MatchPathPrefix: "/old", RouteType: PortalRuleRouteTypePermanentRedirect, RouteRedirectionPattern: "https://demo.local"},
+		},
+	}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
 	entry := core.Update(1, PortalEntryUpdate{Http: &PortalEntryHTTP{Host: "app.example.com", Http: "DISABLED", Https: "ENABLED", HttpsPort: 8443}})
@@ -453,10 +465,12 @@ func TestPortalEntryCoreUpdateRejectsExistingAccess(t *testing.T) {
 		&PortalEntry{Id: 1, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}},
 		&PortalEntry{Id: 2, Protocol: "http", Http: &PortalEntryHTTP{Host: "demo.local", Http: "DISABLED", Https: "ENABLED", HttpsPort: 8443}},
 	)
-	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-		2: {Id: 2, Name: "api", EntryId: 2, MatchPathPrefix: "/api", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "rpc-site"},
-	}}
+	ruleRepo := &entryRuleRepoSpy{
+		rules: map[int]*PortalRule{
+			1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+			2: {Id: 2, Name: "api", EntryId: 2, MatchPathPrefix: "/api", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "rpc-site"},
+		},
+	}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
 	require.Panics(t, func() {
@@ -485,9 +499,11 @@ func TestPortalEntryCoreUpdateRejectsMissingEntry(t *testing.T) {
 
 func TestPortalEntryCoreUpdateNormalizesPatch(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 2, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}})
-	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		1: {Id: 1, Name: "web", EntryId: 2, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-	}}
+	ruleRepo := &entryRuleRepoSpy{
+		rules: map[int]*PortalRule{
+			1: {Id: 1, Name: "web", EntryId: 2, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+		},
+	}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
 	entry := core.Update(2, PortalEntryUpdate{Http: &PortalEntryHTTP{Host: " demo.local ", Http: "DISABLED", Https: "ENABLED", HttpPort: 0}})
@@ -507,9 +523,11 @@ func TestPortalEntryCoreUpdateNormalizesPatch(t *testing.T) {
 
 func TestPortalEntryCoreUpdateKeepsEntryOnUnchangedPatch(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}})
-	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-	}}
+	ruleRepo := &entryRuleRepoSpy{
+		rules: map[int]*PortalRule{
+			1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+		},
+	}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
 	entry := core.Update(1, PortalEntryUpdate{Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}})
@@ -528,9 +546,11 @@ func TestPortalEntryCoreUpdateRenamesEntry(t *testing.T) {
 		&PortalEntry{Id: 1, Name: "web", Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}},
 		&PortalEntry{Id: 2, Name: "api", Protocol: "http", Http: &PortalEntryHTTP{Host: "demo.local", Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}},
 	)
-	ruleRepo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-	}}
+	ruleRepo := &entryRuleRepoSpy{
+		rules: map[int]*PortalRule{
+			1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
+		},
+	}
 	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
 
 	entry := core.Update(1, PortalEntryUpdate{Name: new("web-console")})
@@ -602,7 +622,9 @@ func TestPortalEntryNormalizesHostBeforeValidation(t *testing.T) {
 		{Host: "127.0.0.1.", Https: "ENABLED"},
 		{Host: "127.0.0.1.", AutoHTTPS: "ENABLED"},
 	} {
-		require.Panics(t, func() { NormalizePortalEntry(PortalEntry{Protocol: "http", Http: &raw}) })
+		require.Panics(t, func() {
+			NormalizePortalEntry(PortalEntry{Protocol: "http", Http: &raw})
+		})
 	}
 }
 
@@ -681,6 +703,8 @@ func TestPortalEntryListenIPsRejectConflictsAndShareListeners(t *testing.T) {
 	}
 	assert.Len(t, repo.List(), 3)
 	disabled := target.Create(PortalEntryCreation{Name: "disabled", ListenIPs: []string{"127.0.0.1"}, Enabled: new(false), Protocol: "http", Http: &PortalEntryHTTP{Host: "disabled.local", Http: "DISABLED", Https: "ENABLED", HttpsPort: 8080}})
-	require.Panics(t, func() { target.Update(disabled.Id, PortalEntryUpdate{Enabled: new(true)}) })
+	require.Panics(t, func() {
+		target.Update(disabled.Id, PortalEntryUpdate{Enabled: new(true)})
+	})
 	assert.False(t, target.Get(disabled.Id).Enabled)
 }

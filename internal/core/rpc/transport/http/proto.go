@@ -34,13 +34,18 @@ const (
 )
 
 const (
-	// MaxRequestBodyBytes is the maximum encoded Rpc request body size.
-	MaxRequestBodyBytes int64 = rpchttp.MaxRequestBodyBytes
+	// MaxJSONRequestBodyBytes is the maximum encoded JSON Rpc request body size.
+	MaxJSONRequestBodyBytes int64 = rpchttp.MaxJSONRequestBodyBytes
+	// MaxCBORRequestBodyBytes is the maximum encoded CBOR Rpc request body size.
+	MaxCBORRequestBodyBytes int64 = rpchttp.MaxCBORRequestBodyBytes
 	// MaxResponseBodyBytes is the maximum encoded Rpc response body size.
 	MaxResponseBodyBytes int64 = rpchttp.MaxResponseBodyBytes
 )
 
-// ReadRequestBody reads the Rpc request body up to the fixed transport limit.
+// RequestBodyLimit selects the encoded request limit from Content-Type.
+var RequestBodyLimit = rpchttp.RequestBodyLimit
+
+// ReadRequestBody reads the Rpc request body up to its encoding-specific limit.
 var ReadRequestBody = rpchttp.ReadRequestBody
 
 // ReadResponseBody reads the Rpc response body up to the fixed transport limit.

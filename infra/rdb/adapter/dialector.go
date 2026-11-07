@@ -84,7 +84,8 @@ func (d *_PostgresDialector) Initialize(db *gorm.DB) error {
 					return err
 				}
 				conn.TypeMap().RegisterType(&pgtype.Type{
-					Name: "timestamp", OID: pgtype.TimestampOID,
+					Name:  "timestamp",
+					OID:   pgtype.TimestampOID,
 					Codec: &pgtype.TimestampCodec{ScanLocation: location},
 				})
 				return nil

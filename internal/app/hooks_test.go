@@ -83,29 +83,32 @@ func TestApplicationLifecycleHooks(t *testing.T) {
 	created := 0
 	var dependency *lifecycleHooksDependency
 	var a *_AppImpl
-	spec := &lifecycleHooksSpec{created: &created, register: func(add *HookAdder) {
-		add.BeforeAppStart(func(c *lifecycleHooksComponent, m *lifecycleHooksModule, dep *lifecycleHooksDependency, client *rpcclient.Client) error {
-			assert.Same(t, a.components[0], c)
-			assert.Same(t, a.modules[0], m)
-			assert.Same(t, c, m.Component)
-			assert.Same(t, m.Dependency, dep)
-			assert.NotNil(t, client)
-			dependency = dep
-			events = append(events, "app-before-start")
-			return nil
-		})
-		add.BeforeAppStart(func() { events = append(events, "app-before-start-second") })
-		add.AfterAppStart(func() { events = append(events, "app-after-start") })
-		add.BeforeAppStop(func() { events = append(events, "app-before-stop") })
-		add.BeforeAppStop(func() { events = append(events, "app-before-stop-second") })
-		add.AfterAppStop(func(ctx context.Context, dep *lifecycleHooksDependency) {
-			assert.ErrorIs(t, ctx.Err(), context.Canceled)
-			assert.Same(t, dependency, dep)
-			assert.Equal(t, 1, created)
-			events = append(events, "app-after-stop")
-		})
-		add.AfterAppStop(func() { events = append(events, "app-after-stop-second") })
-	}}
+	spec := &lifecycleHooksSpec{
+		created: &created,
+		register: func(add *HookAdder) {
+			add.BeforeAppStart(func(c *lifecycleHooksComponent, m *lifecycleHooksModule, dep *lifecycleHooksDependency, client *rpcclient.Client) error {
+				assert.Same(t, a.components[0], c)
+				assert.Same(t, a.modules[0], m)
+				assert.Same(t, c, m.Component)
+				assert.Same(t, m.Dependency, dep)
+				assert.NotNil(t, client)
+				dependency = dep
+				events = append(events, "app-before-start")
+				return nil
+			})
+			add.BeforeAppStart(func() { events = append(events, "app-before-start-second") })
+			add.AfterAppStart(func() { events = append(events, "app-after-start") })
+			add.BeforeAppStop(func() { events = append(events, "app-before-stop") })
+			add.BeforeAppStop(func() { events = append(events, "app-before-stop-second") })
+			add.AfterAppStop(func(ctx context.Context, dep *lifecycleHooksDependency) {
+				assert.ErrorIs(t, ctx.Err(), context.Canceled)
+				assert.Same(t, dependency, dep)
+				assert.Equal(t, 1, created)
+				events = append(events, "app-after-stop")
+			})
+			add.AfterAppStop(func() { events = append(events, "app-after-stop-second") })
+		},
+	}
 	a = newLifecycleHooksApp(&events, spec)
 	a.Start()
 	a.StopGracefully()
@@ -120,11 +123,14 @@ func TestApplicationLifecycleHooks(t *testing.T) {
 func TestBeforeAppStartErrorStopsStartup(t *testing.T) {
 	events := []string{}
 	created := 0
-	spec := &lifecycleHooksSpec{created: &created, register: func(add *HookAdder) {
-		add.BeforeAppStart(func() error { return errors.New("hook failed") })
-		add.BeforeAppStart(func() { t.Error("later callback ran") })
-		add.AfterAppStart(func() { t.Error("after-start callback ran") })
-	}}
+	spec := &lifecycleHooksSpec{
+		created: &created,
+		register: func(add *HookAdder) {
+			add.BeforeAppStart(func() error { return errors.New("hook failed") })
+			add.BeforeAppStart(func() { t.Error("later callback ran") })
+			add.AfterAppStart(func() { t.Error("after-start callback ran") })
+		},
+	}
 	a := newLifecycleHooksApp(&events, spec)
 	t.Cleanup(a.cancel)
 	assert.Panics(t, func() { a.Start() })
@@ -150,15 +156,18 @@ func TestLifecycleHookSignatures(t *testing.T) {
 
 func TestLifecycleHooksWithoutComponentsOrModules(t *testing.T) {
 	events := []string{}
-	spec := &lifecycleHooksSpec{empty: true, register: func(add *HookAdder) {
-		add.BeforeAppStart(func(ctx context.Context) { assert.NoError(t, ctx.Err()); events = append(events, "before-start") })
-		add.AfterAppStart(func() { events = append(events, "after-start") })
-		add.BeforeAppStop(func() { events = append(events, "before-stop") })
-		add.AfterAppStop(func(ctx context.Context) {
-			assert.ErrorIs(t, ctx.Err(), context.Canceled)
-			events = append(events, "after-stop")
-		})
-	}}
+	spec := &lifecycleHooksSpec{
+		empty: true,
+		register: func(add *HookAdder) {
+			add.BeforeAppStart(func(ctx context.Context) { assert.NoError(t, ctx.Err()); events = append(events, "before-start") })
+			add.AfterAppStart(func() { events = append(events, "after-start") })
+			add.BeforeAppStop(func() { events = append(events, "before-stop") })
+			add.AfterAppStop(func(ctx context.Context) {
+				assert.ErrorIs(t, ctx.Err(), context.Canceled)
+				events = append(events, "after-stop")
+			})
+		},
+	}
 	a := newLifecycleHooksApp(&events, spec)
 	a.Start()
 	a.StopGracefully()

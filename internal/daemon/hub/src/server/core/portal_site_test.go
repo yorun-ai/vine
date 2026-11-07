@@ -95,7 +95,8 @@ func TestMatchPortalSiteRpcgwServicesInDomainViewsIncludesVineDescriptors(t *tes
 							{SkelName: "demo.UserActor"},
 						}, AuthMode: skeldesc.AuthModeRequired,
 					},
-				}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
+				},
+				Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			},
 		},
 	}}
@@ -113,7 +114,8 @@ func TestMatchPortalSiteRpcgwServicesInDomainViewsRequiresActorAudience(t *testi
 		{SkelName: "demo.InternalService"},
 	}
 	views := []DomainDescriptorView{{DomainVersion: DomainDescriptorVersion{
-		Main: true, Descriptor: new(skeldesc.Domain{Services: services}),
+		Main:       true,
+		Descriptor: new(skeldesc.Domain{Services: services}),
 	}}}
 	assert.Equal(t, []string{"demo.UserApiService"}, MatchPortalSiteRpcgwServicesInDomainViews(site, views))
 }
@@ -189,7 +191,9 @@ func TestPortalSiteSaveAndUpdateProtectIdentityAndValidate(t *testing.T) {
 	incoming.Id = 99
 	got := target.Save(incoming)
 	require.Equal(t, 7, got.Id)
-	require.Panics(t, func() { target.Update(7, PortalSiteUpdate{WebName: new("")}) })
+	require.Panics(t, func() {
+		target.Update(7, PortalSiteUpdate{WebName: new("")})
+	})
 	require.Equal(t, "demo.Web", repo.entries[7].WebName)
 }
 

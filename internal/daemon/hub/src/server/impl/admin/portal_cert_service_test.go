@@ -11,17 +11,19 @@ import (
 )
 
 func TestPortalCertServiceMapsListItemsAndDetail(t *testing.T) {
-	repo := &_PortalCertRepoSpy{items: map[string]*core.PortalCert{
-		"demo-cert": {
-			Id:           5,
-			Name:         "demo-cert",
-			Issuer:       "letsencrypt",
-			Domains:      []string{"demo.local"},
-			Certificate:  "pub",
-			PrivateKey:   "pri",
-			FieldSources: core.FieldSources{"/certificate": {Source: "app/default", Override: "hub"}},
+	repo := &_PortalCertRepoSpy{
+		items: map[string]*core.PortalCert{
+			"demo-cert": {
+				Id:           5,
+				Name:         "demo-cert",
+				Issuer:       "letsencrypt",
+				Domains:      []string{"demo.local"},
+				Certificate:  "pub",
+				PrivateKey:   "pri",
+				FieldSources: core.FieldSources{"/certificate": {Source: "app/default", Override: "hub"}},
+			},
 		},
-	}}
+	}
 	service := &PortalCertApiServiceServerImpl{PortalCertCore: &core.PortalCertCore{PortalCertRepo: repo}}
 
 	list := service.List()

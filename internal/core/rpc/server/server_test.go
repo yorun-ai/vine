@@ -280,10 +280,8 @@ func TestServerHandlePreservesExecutorError(t *testing.T) {
 	}).Methods()[0]
 	wantErr := ex.New(ex.OperationFailed, "boom")
 	response := (&Server{
-		opt: &Option{App: testServerApp()},
-		executor: &_ServerTestExecutor{
-			err: wantErr,
-		},
+		opt:      &Option{App: testServerApp()},
+		executor: &_ServerTestExecutor{err: wantErr},
 	}).handle(&spec.RequestImpl{
 		ContextValue:    context.Background(),
 		TraceValue:      meta.InitialTrace(),
@@ -382,10 +380,8 @@ func TestServerHandleConvertsRecoveredPanicToInternalError(t *testing.T) {
 		t.Fatalf("NewApp() error = %v", err)
 	}
 	response := (&Server{
-		opt: &Option{App: app},
-		executor: &_ServerTestExecutor{
-			panicV: "boom",
-		},
+		opt:      &Option{App: app},
+		executor: &_ServerTestExecutor{panicV: "boom"},
 	}).handle(&spec.RequestImpl{
 		ContextValue:    context.Background(),
 		TraceValue:      meta.InitialTrace(),
@@ -406,10 +402,8 @@ func TestServerHandleDoesNotTreatPanickedOKErrorAsSuccess(t *testing.T) {
 		Methods:  []*spec.MethodSpec{{Name: "Ping", SkelName: "ping"}},
 	})).Methods()[0]
 	response := (&Server{
-		opt: &Option{},
-		executor: new(_ServerTestExecutor{
-			panicV: ex.NewOK(),
-		}),
+		opt:      &Option{},
+		executor: new(_ServerTestExecutor{panicV: ex.NewOK()}),
 	}).handle(new(spec.RequestImpl{
 		ContextValue:    context.Background(),
 		TraceValue:      meta.InitialTrace(),

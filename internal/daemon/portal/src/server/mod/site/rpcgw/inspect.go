@@ -120,16 +120,23 @@ func (g *RpcGateway) serveInspect(ctx *spec.Context) {
 
 func inspectServiceSummary(service *skeldesc.Service) _InspectService {
 	return _InspectService{
-		Name: service.Name, SkelName: service.SkelName, Description: service.Description,
-		Deprecated: service.Deprecated, DeprecatedReason: service.DeprecatedReason,
+		Name:             service.Name,
+		SkelName:         service.SkelName,
+		Description:      service.Description,
+		Deprecated:       service.Deprecated,
+		DeprecatedReason: service.DeprecatedReason,
 	}
 }
 
 func inspectMethod(method *skeldesc.Method) _InspectMethod {
 	return _InspectMethod{
-		Name: method.Name, SkelName: method.SkelName, Description: method.Description,
-		Deprecated: method.Deprecated, DeprecatedReason: method.DeprecatedReason,
-		AuthMode: method.EffectiveAuthMode, Require: method.EffectiveRequire,
+		Name:             method.Name,
+		SkelName:         method.SkelName,
+		Description:      method.Description,
+		Deprecated:       method.Deprecated,
+		DeprecatedReason: method.DeprecatedReason,
+		AuthMode:         method.EffectiveAuthMode,
+		Require:          method.EffectiveRequire,
 	}
 }
 

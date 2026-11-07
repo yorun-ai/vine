@@ -13,9 +13,7 @@ type Registry struct {
 
 // NewRegistry creates an isolated registry.
 func NewRegistry() *Registry {
-	return &Registry{
-		descriptorsByDomain: map[string]*descriptor.Domain{},
-	}
+	return &Registry{descriptorsByDomain: map[string]*descriptor.Domain{}}
 }
 
 var defaultRegistry = NewRegistry()

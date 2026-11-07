@@ -102,13 +102,16 @@ func TestHTTPProtocolRealRedirectAndTLSListeners(t *testing.T) {
 	t.Cleanup(manager.AfterAppStop)
 	roots := x509.NewCertPool()
 	roots.AddCert(parsed)
-	transport := &http.Transport{TLSClientConfig: &tls.Config{RootCAs: roots, ServerName: "example.com"}, DialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-		_, port, err := net.SplitHostPort(address)
-		if err != nil {
-			return nil, err
-		}
-		return (&net.Dialer{}).DialContext(ctx, "tcp4", net.JoinHostPort("127.0.0.1", port))
-	}}
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{RootCAs: roots, ServerName: "example.com"},
+		DialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+			_, port, err := net.SplitHostPort(address)
+			if err != nil {
+				return nil, err
+			}
+			return (&net.Dialer{}).DialContext(ctx, "tcp4", net.JoinHostPort("127.0.0.1", port))
+		},
+	}
 	defer transport.CloseIdleConnections()
 	client := &http.Client{Transport: transport, Timeout: 5 * time.Second}
 	request, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://example.com:%d/a%%2Fb?q=x%%2Fy", httpPort), nil)

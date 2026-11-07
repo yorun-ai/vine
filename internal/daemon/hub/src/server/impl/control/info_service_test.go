@@ -52,11 +52,7 @@ func TestHubInfoServiceReturnsPortsFromFlag(t *testing.T) {
 func TestHubInfoServiceReturnsNATSServerPortWhenEnabled(t *testing.T) {
 	service := &InfoServiceServerImpl{
 		InprocFlag: &app.InternalInprocFlag{},
-		Flag: &flag.Flag{
-			ControlListen: ":7071",
-			WatchListen:   ":7072",
-			MQMode:        flag.MQModeEmbedded,
-		},
+		Flag:       &flag.Flag{ControlListen: ":7071", WatchListen: ":7072", MQMode: flag.MQModeEmbedded},
 		NATSServer: &natsserver.NATSServer{
 			InprocFlag: &app.InternalInprocFlag{},
 			Flag:       &flag.Flag{MQMode: flag.MQModeEmbedded},

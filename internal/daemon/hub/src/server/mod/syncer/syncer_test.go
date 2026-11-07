@@ -30,14 +30,16 @@ func TestSyncerSyncDescriptorsWritesMainActorAndServiceDescriptors(t *testing.T)
 			{
 				Descriptor: &skeldesc.Actor{
 					SkelName: "demo.user.UserActor",
-					Hash:     "actor-main", Auth: &skeldesc.ActorAuth{Credential: &skeldesc.Data{
-						SkelName: "demo.user.UserCredential",
-					}, Info: &skeldesc.Data{
-						SkelName: "demo.user.UserInfo",
-					}, Service: &skeldesc.Service{
-						SkelName: "demo.user.UserAuthService",
-						Hash:     "auth-service-main", AuthMode: skeldesc.AuthModeRequired,
-					}},
+					Hash:     "actor-main",
+					Auth: &skeldesc.ActorAuth{
+						Credential: &skeldesc.Data{SkelName: "demo.user.UserCredential"},
+						Info:       &skeldesc.Data{SkelName: "demo.user.UserInfo"},
+						Service: &skeldesc.Service{
+							SkelName: "demo.user.UserAuthService",
+							Hash:     "auth-service-main",
+							AuthMode: skeldesc.AuthModeRequired,
+						},
+					},
 				},
 				SkelName:       "demo.user.UserActor",
 				DescriptorHash: "actor-main",
@@ -45,7 +47,8 @@ func TestSyncerSyncDescriptorsWritesMainActorAndServiceDescriptors(t *testing.T)
 			},
 			{
 				Descriptor: &skeldesc.Actor{
-					SkelName: "demo.user.OldActor", Auth: &skeldesc.ActorAuth{Service: &skeldesc.Service{SkelName: "demo.user.OldAuthService", AuthMode: skeldesc.AuthModeRequired}},
+					SkelName: "demo.user.OldActor",
+					Auth:     &skeldesc.ActorAuth{Service: &skeldesc.Service{SkelName: "demo.user.OldAuthService", AuthMode: skeldesc.AuthModeRequired}},
 				},
 				SkelName:       "demo.user.OldActor",
 				DescriptorHash: "actor-old",
@@ -64,7 +67,8 @@ func TestSyncerSyncDescriptorsWritesMainActorAndServiceDescriptors(t *testing.T)
 		Services: []core.DescriptorVersion[*skeldesc.Service]{
 			{
 				Descriptor: &skeldesc.Service{
-					SkelName: "demo.user.UserService", Api: true,
+					SkelName: "demo.user.UserService",
+					Api:      true,
 					Hash:     "service-main",
 					AuthMode: skeldesc.AuthModeRequired,
 					Audiences: []*skeldesc.ActorAudience{
@@ -82,7 +86,8 @@ func TestSyncerSyncDescriptorsWritesMainActorAndServiceDescriptors(t *testing.T)
 			{
 				Descriptor: &skeldesc.Service{
 					SkelName: "demo.user.OldService",
-					Hash:     "service-old", AuthMode: skeldesc.AuthModeRequired,
+					Hash:     "service-old",
+					AuthMode: skeldesc.AuthModeRequired,
 				},
 				SkelName:       "demo.user.OldService",
 				DescriptorHash: "service-old",
@@ -172,17 +177,15 @@ func TestSyncerWriteDescriptorsWritesMainActorAndServiceDescriptors(t *testing.T
 
 	target.WriteDescriptors([]core.DomainDescriptorView{{
 		Actors: []core.DescriptorVersion[*skeldesc.Actor]{{
-			Descriptor: &skeldesc.Actor{
-				SkelName: "vine.hub.admin.AdminActor",
-				Hash:     "admin-actor-main",
-			},
+			Descriptor:     &skeldesc.Actor{SkelName: "vine.hub.admin.AdminActor", Hash: "admin-actor-main"},
 			SkelName:       "vine.hub.admin.AdminActor",
 			DescriptorHash: "admin-actor-main",
 			Main:           true,
 		}},
 		Services: []core.DescriptorVersion[*skeldesc.Service]{{
 			Descriptor: &skeldesc.Service{
-				SkelName: "vine.hub.admin.SkeletonApiService", Api: true,
+				SkelName: "vine.hub.admin.SkeletonApiService",
+				Api:      true,
 				Hash:     "skeleton-service-main",
 				AuthMode: skeldesc.AuthModeOptional,
 			},
@@ -249,15 +252,18 @@ func TestSyncerSyncDescriptorsRemovesStaleDescriptors(t *testing.T) {
 	target.SyncDescriptors([]core.DomainDescriptorView{{
 		Actors: []core.DescriptorVersion[*skeldesc.Actor]{{
 			Descriptor: &skeldesc.Actor{
-				SkelName: "demo.user.UserActor", Auth: &skeldesc.ActorAuth{Service: &skeldesc.Service{SkelName: "demo.user.UserAuthService", AuthMode: skeldesc.AuthModeRequired}},
+				SkelName: "demo.user.UserActor",
+				Auth:     &skeldesc.ActorAuth{Service: &skeldesc.Service{SkelName: "demo.user.UserAuthService", AuthMode: skeldesc.AuthModeRequired}},
 			},
 			SkelName:       "demo.user.UserActor",
 			DescriptorHash: "actor-main",
 			Main:           true,
 		}},
 		Services: []core.DescriptorVersion[*skeldesc.Service]{{
-			Descriptor: &skeldesc.Service{Api: true,
-				SkelName: "demo.user.UserService", AuthMode: skeldesc.AuthModeRequired,
+			Descriptor: &skeldesc.Service{
+				Api:      true,
+				SkelName: "demo.user.UserService",
+				AuthMode: skeldesc.AuthModeRequired,
 			},
 			SkelName:       "demo.user.UserService",
 			DescriptorHash: "service-main",
@@ -293,9 +299,11 @@ func TestSyncerSyncDescriptorsOnlyWritesChangedHashes(t *testing.T) {
 			Main:           true,
 		}},
 		Services: []core.DescriptorVersion[*skeldesc.Service]{{
-			Descriptor: &skeldesc.Service{Api: true,
+			Descriptor: &skeldesc.Service{
+				Api:      true,
 				SkelName: "demo.user.UserService",
-				Hash:     "service-main", AuthMode: skeldesc.AuthModeRequired,
+				Hash:     "service-main",
+				AuthMode: skeldesc.AuthModeRequired,
 			},
 			SkelName:       "demo.user.UserService",
 			DescriptorHash: "service-main",
@@ -341,11 +349,13 @@ func TestPortalDescriptorsExcludeBackendServices(t *testing.T) {
 	watchServer := watchserver.NewServerForTest()
 	defer watchServer.AfterAppStop()
 	target := testSyncer(watchServer)
-	view := []core.DomainDescriptorView{{Services: []core.DescriptorVersion[*skeldesc.Service]{
-		{Main: true, Descriptor: &skeldesc.Service{SkelName: "demo.BackendService", Pub: true, Hash: "backend", AuthMode: skeldesc.AuthModeRequired}},
-		{Main: true, Descriptor: &skeldesc.Service{SkelName: "demo.ApiService", Api: true, Hash: "api", AuthMode: skeldesc.AuthModeRequired}},
-		{Main: true, Descriptor: &skeldesc.Service{SkelName: "demo.PrivateService", AuthMode: skeldesc.AuthModeRequired, Hash: "private"}},
-	}}}
+	view := []core.DomainDescriptorView{{
+		Services: []core.DescriptorVersion[*skeldesc.Service]{
+			{Main: true, Descriptor: &skeldesc.Service{SkelName: "demo.BackendService", Pub: true, Hash: "backend", AuthMode: skeldesc.AuthModeRequired}},
+			{Main: true, Descriptor: &skeldesc.Service{SkelName: "demo.ApiService", Api: true, Hash: "api", AuthMode: skeldesc.AuthModeRequired}},
+			{Main: true, Descriptor: &skeldesc.Service{SkelName: "demo.PrivateService", AuthMode: skeldesc.AuthModeRequired, Hash: "private"}},
+		},
+	}}
 	target.SyncDescriptors(view)
 	_, ok := watchServer.Get(watched.FormatDescriptorServiceKey("demo.ApiService"))
 	require.True(t, ok)

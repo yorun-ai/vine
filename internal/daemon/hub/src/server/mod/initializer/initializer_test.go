@@ -414,17 +414,23 @@ func TestInitializerReportsRulesThatShareOneRequest(t *testing.T) {
 			watchServer := watchserver.NewServerForTest()
 			defer watchServer.AfterAppStop()
 
-			ruleRepo := &testPortalRuleRepo{rules: []*core.PortalRule{
-				{Id: 1, Name: "demo.app", EntryId: 1, RouteType: "SITE", RouteSiteName: "demo.app-site", Enabled: true},
-				{Id: 2, Name: "demo.app-explicit", EntryId: 1, RouteType: "SITE", RouteSiteName: "demo.fixed-site", Enabled: true},
-			}}
-			siteRepo := &testPortalSiteRepo{entries: []*core.PortalSite{
-				{Id: 1, Name: "demo.app-site", Type: core.PortalSiteTypeWEBGW, Enabled: true},
-				{Id: 2, Name: "demo.fixed-site", Type: core.PortalSiteTypeWEBGW, Enabled: true},
-			}}
-			entryRepo := &testPortalEntryRepo{entries: []*core.PortalEntry{
-				{Id: 1, Name: "http:80", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}},
-			}}
+			ruleRepo := &testPortalRuleRepo{
+				rules: []*core.PortalRule{
+					{Id: 1, Name: "demo.app", EntryId: 1, RouteType: "SITE", RouteSiteName: "demo.app-site", Enabled: true},
+					{Id: 2, Name: "demo.app-explicit", EntryId: 1, RouteType: "SITE", RouteSiteName: "demo.fixed-site", Enabled: true},
+				},
+			}
+			siteRepo := &testPortalSiteRepo{
+				entries: []*core.PortalSite{
+					{Id: 1, Name: "demo.app-site", Type: core.PortalSiteTypeWEBGW, Enabled: true},
+					{Id: 2, Name: "demo.fixed-site", Type: core.PortalSiteTypeWEBGW, Enabled: true},
+				},
+			}
+			entryRepo := &testPortalEntryRepo{
+				entries: []*core.PortalEntry{
+					{Id: 1, Name: "http:80", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}},
+				},
+			}
 			p := withTestAudit(&Initializer{
 				Syncer:          testSyncer(watchServer),
 				AppConfigRepo:   &testAppConfigRepo{},

@@ -78,9 +78,7 @@ func newTestAppMinder() *minder.AppMinder {
 func registerLocalWebApp(proxy *WebProxy, appInfo meta.App, webEndpointPrefix string, ingressEndpoint string, webNames []string) {
 	webHandlers := make([]skeled.WebHandlerRegistration, 0, len(webNames))
 	for _, webSkelName := range webNames {
-		webHandlers = append(webHandlers, skeled.WebHandlerRegistration{
-			WebSkelName: webSkelName,
-		})
+		webHandlers = append(webHandlers, skeled.WebHandlerRegistration{WebSkelName: webSkelName})
 	}
 	proxy.AppMinder.RegisterInstance(minder.AppRegistration{
 		AppInfo:           appInfo,

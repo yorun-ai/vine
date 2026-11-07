@@ -36,9 +36,7 @@ func (s *AppConfigRepo) ListSlots() []*core.AppConfig {
 		if _, ok := declared[descriptor.SkelName]; ok {
 			continue
 		}
-		slots = append(slots, s.toCoreAppConfig(&core.AppConfig{
-			Name: descriptor.SkelName,
-		}, descriptors, enumDescriptors, dataDescriptors))
+		slots = append(slots, s.toCoreAppConfig(&core.AppConfig{Name: descriptor.SkelName}, descriptors, enumDescriptors, dataDescriptors))
 	}
 	return slots
 }
@@ -62,9 +60,7 @@ func (s *AppConfigRepo) FindByName(name string) (*core.AppConfig, bool) {
 	if descriptor == nil || descriptor.Abs {
 		return nil, false
 	}
-	return s.toCoreAppConfig(&core.AppConfig{
-		Name: name,
-	}, descriptors, enumDescriptors, dataDescriptors), true
+	return s.toCoreAppConfig(&core.AppConfig{Name: name}, descriptors, enumDescriptors, dataDescriptors), true
 }
 
 func (s *AppConfigRepo) GetById(id int) (*core.AppConfig, bool) {

@@ -22,20 +22,13 @@ func (c *_TestInfoServiceClient) GetInfo(_ ...rpcclient.InvokeOption) hubskeled.
 }
 
 func TestHubInfoDIInitLoadsHubInfo(t *testing.T) {
-	client := &_TestInfoServiceClient{
-		info: hubskeled.Info{
-			WatchPort: 7072,
-			NatsPort:  4222,
-		},
-	}
-	flags := &flag.Flag{
-		HubEndpoint: "http://127.0.0.1:7071",
-	}
+	client := &_TestInfoServiceClient{info: hubskeled.Info{
+		WatchPort: 7072,
+		NatsPort:  4222,
+	}}
+	flags := &flag.Flag{HubEndpoint: "http://127.0.0.1:7071"}
 	flags.Normalize(false)
-	component := &HubInfo{
-		Flag:              flags,
-		InfoServiceClient: client,
-	}
+	component := &HubInfo{Flag: flags, InfoServiceClient: client}
 
 	component.DIInit()
 	assert.Equal(t, 1, client.getInfoCall)
@@ -44,20 +37,13 @@ func TestHubInfoDIInitLoadsHubInfo(t *testing.T) {
 }
 
 func TestHubInfoRefreshNotifiesListenersOnlyWhenHubInfoChanged(t *testing.T) {
-	client := &_TestInfoServiceClient{
-		info: hubskeled.Info{
-			MqEmbedded: true,
-			MqNatsPort: 4222,
-		},
-	}
-	flags := &flag.Flag{
-		HubEndpoint: "http://127.0.0.1:7071",
-	}
+	client := &_TestInfoServiceClient{info: hubskeled.Info{
+		MqEmbedded: true,
+		MqNatsPort: 4222,
+	}}
+	flags := &flag.Flag{HubEndpoint: "http://127.0.0.1:7071"}
 	flags.Normalize(false)
-	component := &HubInfo{
-		Flag:              flags,
-		InfoServiceClient: client,
-	}
+	component := &HubInfo{Flag: flags, InfoServiceClient: client}
 	component.DIInit()
 
 	refreshes := 0
@@ -101,10 +87,7 @@ func TestHubInfoRefreshSkipsLookupInInprocMode(t *testing.T) {
 		HubEndpoint:   "rpc+inproc://vine/hub",
 	}
 	flags.Normalize(false)
-	component := &HubInfo{
-		Flag:              flags,
-		InfoServiceClient: client,
-	}
+	component := &HubInfo{Flag: flags, InfoServiceClient: client}
 	component.DIInit()
 
 	component.Refresh()
@@ -119,10 +102,7 @@ func TestHubInfoDIInitSkipsHubInfoLookupInInprocMode(t *testing.T) {
 		HubEndpoint:   "rpc+inproc://vine/hub",
 	}
 	flags.Normalize(false)
-	component := &HubInfo{
-		Flag:              flags,
-		InfoServiceClient: client,
-	}
+	component := &HubInfo{Flag: flags, InfoServiceClient: client}
 
 	component.DIInit()
 	assert.Equal(t, 0, client.getInfoCall)

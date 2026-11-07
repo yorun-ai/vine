@@ -10,9 +10,7 @@ type MutexSlice[E any] struct {
 
 // NewMutexSlice creates a synchronized slice initialized with a copy of items.
 func NewMutexSlice[E any](items ...E) *MutexSlice[E] {
-	return &MutexSlice[E]{
-		list: append([]E{}, items...),
-	}
+	return &MutexSlice[E]{list: append([]E{}, items...)}
 }
 
 // Append adds items to the end of the slice.

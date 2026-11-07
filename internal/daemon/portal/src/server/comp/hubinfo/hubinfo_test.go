@@ -25,19 +25,10 @@ func (c *_TestInfoServiceClient) GetInfo(_ ...rpcclient.InvokeOption) hubskeled.
 }
 
 func TestHubInfoDIInitLoadsHubInfo(t *testing.T) {
-	client := &_TestInfoServiceClient{
-		info: hubskeled.Info{
-			WatchPort: 7072,
-		},
-	}
-	flags := &flag.Flag{
-		HubEndpoint: "http://127.0.0.1:7071",
-	}
+	client := &_TestInfoServiceClient{info: hubskeled.Info{WatchPort: 7072}}
+	flags := &flag.Flag{HubEndpoint: "http://127.0.0.1:7071"}
 	flags.Normalize()
-	component := &HubInfo{
-		Flag:              flags,
-		InfoServiceClient: client,
-	}
+	component := &HubInfo{Flag: flags, InfoServiceClient: client}
 
 	component.DIInit()
 	assert.Equal(t, 1, client.getInfoCall)
@@ -46,14 +37,9 @@ func TestHubInfoDIInitLoadsHubInfo(t *testing.T) {
 
 func TestHubInfoDIInitSkipsHubInfoLookupInInprocMode(t *testing.T) {
 	client := &_TestInfoServiceClient{}
-	flags := &flag.Flag{
-		HubInprocMode: true,
-	}
+	flags := &flag.Flag{HubInprocMode: true}
 	flags.Normalize()
-	component := &HubInfo{
-		Flag:              flags,
-		InfoServiceClient: client,
-	}
+	component := &HubInfo{Flag: flags, InfoServiceClient: client}
 
 	component.DIInit()
 	assert.Equal(t, 0, client.getInfoCall)

@@ -186,9 +186,7 @@ func TestBoundBuildFactoryInstantiateFuncSkipsInitForBoundInstance(t *testing.T)
 }
 
 func TestBoundBuildInstantiateFuncPanicsOnFactoryError(t *testing.T) {
-	injector := &_PlainInjector{
-		bindings: map[reflect.Type]*Binding{},
-	}
+	injector := &_PlainInjector{bindings: map[reflect.Type]*Binding{}}
 	binding := newBinding(injector, T[*boundTestDependency](), false)
 	binding.ToFactory(func() (*boundTestDependency, error) {
 		return nil, errors.New("boom")

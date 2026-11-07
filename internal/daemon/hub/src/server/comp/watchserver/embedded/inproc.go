@@ -118,9 +118,7 @@ func newInprocConnPair() (net.Conn, net.Conn) {
 }
 
 func newInprocConnBuffer() *_InprocConnBuffer {
-	return &_InprocConnBuffer{
-		notify: make(chan struct{}),
-	}
+	return &_InprocConnBuffer{notify: make(chan struct{})}
 }
 
 func (c *_InprocConn) Read(p []byte) (int, error) {

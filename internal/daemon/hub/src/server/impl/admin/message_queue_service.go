@@ -25,17 +25,25 @@ func (s *MessageQueueStatusApiServiceServerImpl) List() []skeled.MessageQueueSta
 	items := make([]skeled.MessageQueueStatusView, 0, len(statuses))
 	for _, status := range statuses {
 		item := skeled.MessageQueueStatusView{
-			Kind: status.Kind, Stream: status.Stream, Exists: status.Exists,
-			Messages: strconv.FormatUint(status.Messages, 10), Bytes: strconv.FormatUint(status.Bytes, 10),
-			Subjects: []skeled.MessageQueueSubject{}, Consumers: []skeled.MessageQueueConsumer{},
+			Kind:      status.Kind,
+			Stream:    status.Stream,
+			Exists:    status.Exists,
+			Messages:  strconv.FormatUint(status.Messages, 10),
+			Bytes:     strconv.FormatUint(status.Bytes, 10),
+			Subjects:  []skeled.MessageQueueSubject{},
+			Consumers: []skeled.MessageQueueConsumer{},
 		}
 		for _, subject := range status.Subjects {
 			item.Subjects = append(item.Subjects, skeled.MessageQueueSubject{Subject: subject.Subject, Messages: strconv.FormatUint(subject.Messages, 10)})
 		}
 		for _, consumer := range status.Consumers {
 			item.Consumers = append(item.Consumers, skeled.MessageQueueConsumer{
-				Name: consumer.Name, FilterSubjects: consumer.FilterSubjects, Pending: strconv.FormatUint(consumer.Pending, 10),
-				AckPending: consumer.AckPending, Redelivered: consumer.Redelivered, Waiting: consumer.Waiting,
+				Name:           consumer.Name,
+				FilterSubjects: consumer.FilterSubjects,
+				Pending:        strconv.FormatUint(consumer.Pending, 10),
+				AckPending:     consumer.AckPending,
+				Redelivered:    consumer.Redelivered,
+				Waiting:        consumer.Waiting,
 			})
 		}
 		items = append(items, item)

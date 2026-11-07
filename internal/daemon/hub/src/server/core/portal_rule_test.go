@@ -69,7 +69,9 @@ func TestPortalRuleTargetPathCreateUpdateClear(t *testing.T) {
 	assert.Equal(t, "/internal", created.RoutePathPrefix)
 	updated := service.Update(created.Id, PortalRuleUpdate{RouteSiteName: new("next")})
 	assert.Equal(t, "/internal", updated.RoutePathPrefix)
-	assert.Panics(t, func() { service.Update(created.Id, PortalRuleUpdate{RouteType: new("TEMPORARY_REDIRECT")}) })
+	assert.Panics(t, func() {
+		service.Update(created.Id, PortalRuleUpdate{RouteType: new("TEMPORARY_REDIRECT")})
+	})
 	cleared := service.Update(created.Id, PortalRuleUpdate{RoutePathPrefix: new("")})
 	assert.Empty(t, cleared.RoutePathPrefix)
 }
@@ -93,26 +95,34 @@ func TestPortalRuleValidationAcrossCreateUpdateSave(t *testing.T) {
 		"site redirect field":      {change: func(r *PortalRule) { r.RouteRedirectionPattern = "/login" }},
 		"invalid route prefix":     {change: func(r *PortalRule) { r.RoutePathPrefix = "/../private" }},
 		"redirect missing pattern": {change: func(r *PortalRule) { r.RouteType = PortalRuleRouteTypeTemporaryRedirect; r.RouteSiteName = "" }},
-		"redirect with site": {change: func(r *PortalRule) {
-			r.RouteType = PortalRuleRouteTypeTemporaryRedirect
-			r.RouteRedirectionPattern = "/login"
-		}},
-		"redirect with prefix": {change: func(r *PortalRule) {
-			r.RouteType = PortalRuleRouteTypeTemporaryRedirect
-			r.RouteSiteName = ""
-			r.RouteRedirectionPattern = "/login"
-			r.RoutePathPrefix = "/x"
-		}},
-		"unknown placeholder": {change: func(r *PortalRule) {
-			r.RouteType = PortalRuleRouteTypeTemporaryRedirect
-			r.RouteSiteName = ""
-			r.RouteRedirectionPattern = "https://example.com{unknown}"
-		}},
-		"broken placeholder": {change: func(r *PortalRule) {
-			r.RouteType = PortalRuleRouteTypeTemporaryRedirect
-			r.RouteSiteName = ""
-			r.RouteRedirectionPattern = "https://example.com{uri"
-		}},
+		"redirect with site": {
+			change: func(r *PortalRule) {
+				r.RouteType = PortalRuleRouteTypeTemporaryRedirect
+				r.RouteRedirectionPattern = "/login"
+			},
+		},
+		"redirect with prefix": {
+			change: func(r *PortalRule) {
+				r.RouteType = PortalRuleRouteTypeTemporaryRedirect
+				r.RouteSiteName = ""
+				r.RouteRedirectionPattern = "/login"
+				r.RoutePathPrefix = "/x"
+			},
+		},
+		"unknown placeholder": {
+			change: func(r *PortalRule) {
+				r.RouteType = PortalRuleRouteTypeTemporaryRedirect
+				r.RouteSiteName = ""
+				r.RouteRedirectionPattern = "https://example.com{unknown}"
+			},
+		},
+		"broken placeholder": {
+			change: func(r *PortalRule) {
+				r.RouteType = PortalRuleRouteTypeTemporaryRedirect
+				r.RouteSiteName = ""
+				r.RouteRedirectionPattern = "https://example.com{uri"
+			},
+		},
 	}
 	for name, test := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -122,9 +132,13 @@ func TestPortalRuleValidationAcrossCreateUpdateSave(t *testing.T) {
 			service := newPortalRuleCoreWithEntriesForTest(repo, nil, newTestPortalRuleEntryRepo())
 			require.Panics(t, func() {
 				service.Create(PortalRule{
-					Name: bad.Name, EntryId: bad.EntryId,
-					MatchPathPrefix: bad.MatchPathPrefix, RouteType: bad.RouteType, RouteSiteName: bad.RouteSiteName,
-					RoutePathPrefix: bad.RoutePathPrefix, RouteRedirectionPattern: bad.RouteRedirectionPattern,
+					Name:                    bad.Name,
+					EntryId:                 bad.EntryId,
+					MatchPathPrefix:         bad.MatchPathPrefix,
+					RouteType:               bad.RouteType,
+					RouteSiteName:           bad.RouteSiteName,
+					RoutePathPrefix:         bad.RoutePathPrefix,
+					RouteRedirectionPattern: bad.RouteRedirectionPattern,
 				})
 			})
 			require.NotContains(t, repo.calls, "Save")
@@ -159,24 +173,32 @@ func TestPortalRuleCoreSaveKeepsEntry(t *testing.T) {
 	core := newPortalRuleCoreWithEntriesForTest(repo, nil, entryRepo)
 
 	saved := core.Save(PortalRule{
-		Name: "demo.web", EntryId: 4, MatchPathPrefix: "/",
-		RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site",
+		Name:            "demo.web",
+		EntryId:         4,
+		MatchPathPrefix: "/",
+		RouteType:       PortalRuleRouteTypeSite,
+		RouteSiteName:   "web-site",
 	})
 	assert.Equal(t, 4, saved.EntryId)
 
 	require.PanicsWithError(t, `portal rule "api": the entry it belongs to is required type=APPLICATION code=OPERATION_FAILED`,
 		func() {
 			core.Save(PortalRule{
-				Name: "api", MatchPathPrefix: "/",
-				RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site",
+				Name:            "api",
+				MatchPathPrefix: "/",
+				RouteType:       PortalRuleRouteTypeSite,
+				RouteSiteName:   "web-site",
 			})
 		})
 
 	require.PanicsWithError(t, "portal entry 9 not found type=APPLICATION code=OPERATION_FAILED",
 		func() {
 			core.Save(PortalRule{
-				Name: "other", EntryId: 9, MatchPathPrefix: "/",
-				RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site",
+				Name:            "other",
+				EntryId:         9,
+				MatchPathPrefix: "/",
+				RouteType:       PortalRuleRouteTypeSite,
+				RouteSiteName:   "web-site",
 			})
 		})
 }
@@ -220,18 +242,22 @@ func TestPortalRuleCoreValidateKeepsRuleRepoUntouched(t *testing.T) {
 // the applications register their descriptors.
 func TestPortalRuleCoreConflictsFollowSiteMountPaths(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Enabled: true, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}})
-	repo := &entryRuleRepoSpy{rules: map[int]*PortalRule{
-		1: {Id: 1, Name: "web", EntryId: 1, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site", Enabled: true},
-		2: {Id: 2, Name: "fixed", EntryId: 1, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "fixed-site", Enabled: true},
-	}}
+	repo := &entryRuleRepoSpy{
+		rules: map[int]*PortalRule{
+			1: {Id: 1, Name: "web", EntryId: 1, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site", Enabled: true},
+			2: {Id: 2, Name: "fixed", EntryId: 1, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "fixed-site", Enabled: true},
+		},
+	}
 	core := newPortalRuleCoreWithEntriesForTest(repo, nil, entryRepo)
 
 	// Two webs that declare no mount path both match the paths their rules
 	// declare, so the rules Hub would publish match the same request.
-	core.PortalSiteRepo = &portalSiteRepoSpy{entries: map[int]*PortalSite{
-		1: {Id: 1, Name: "web-site", Type: PortalSiteTypeWEBGW, Enabled: true},
-		2: {Id: 2, Name: "fixed-site", Type: PortalSiteTypeWEBGW, Enabled: true},
-	}}
+	core.PortalSiteRepo = &portalSiteRepoSpy{
+		entries: map[int]*PortalSite{
+			1: {Id: 1, Name: "web-site", Type: PortalSiteTypeWEBGW, Enabled: true},
+			2: {Id: 2, Name: "fixed-site", Type: PortalSiteTypeWEBGW, Enabled: true},
+		},
+	}
 	conflicts := core.Conflicts()
 	require.Len(t, conflicts, 1)
 	assert.Equal(t, "fixed", conflicts[0].Rule)
@@ -240,10 +266,12 @@ func TestPortalRuleCoreConflictsFollowSiteMountPaths(t *testing.T) {
 
 	// A Web mount path decides the prefix of the rules that target it, so two
 	// webs Hub serves at different paths no longer match the same request.
-	core.PortalSiteRepo = &portalSiteRepoSpy{entries: map[int]*PortalSite{
-		1: {Id: 1, Name: "web-site", Type: PortalSiteTypeWEBGW, WebMountPath: "/", Enabled: true},
-		2: {Id: 2, Name: "fixed-site", Type: PortalSiteTypeWEBGW, WebMountPath: "/fixed", Enabled: true},
-	}}
+	core.PortalSiteRepo = &portalSiteRepoSpy{
+		entries: map[int]*PortalSite{
+			1: {Id: 1, Name: "web-site", Type: PortalSiteTypeWEBGW, WebMountPath: "/", Enabled: true},
+			2: {Id: 2, Name: "fixed-site", Type: PortalSiteTypeWEBGW, WebMountPath: "/fixed", Enabled: true},
+		},
+	}
 	require.Empty(t, core.Conflicts())
 }
 
@@ -254,18 +282,22 @@ func TestPortalRuleCoreConflictsSkipDisabledEntities(t *testing.T) {
 	enabledRule := &PortalRule{Id: 2, Name: "fixed", EntryId: 1, RouteType: PortalRuleRouteTypeSite, RouteSiteName: "fixed-site", Enabled: true}
 	repo := &entryRuleRepoSpy{rules: map[int]*PortalRule{1: disabledRule, 2: enabledRule}}
 	core := newPortalRuleCoreWithEntriesForTest(repo, nil, newPortalEntryRepoSpy(&PortalEntry{Id: 1, Enabled: true, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}}))
-	core.PortalSiteRepo = &portalSiteRepoSpy{entries: map[int]*PortalSite{
-		1: {Id: 1, Name: "web-site", Type: PortalSiteTypeWEBGW, Enabled: true},
-		2: {Id: 2, Name: "fixed-site", Type: PortalSiteTypeWEBGW, Enabled: false},
-	}}
+	core.PortalSiteRepo = &portalSiteRepoSpy{
+		entries: map[int]*PortalSite{
+			1: {Id: 1, Name: "web-site", Type: PortalSiteTypeWEBGW, Enabled: true},
+			2: {Id: 2, Name: "fixed-site", Type: PortalSiteTypeWEBGW, Enabled: false},
+		},
+	}
 	assert.Empty(t, core.Conflicts())
 
 	disabledRule.Enabled = true
 	enabledRule.Enabled = true
-	core.PortalSiteRepo = &portalSiteRepoSpy{entries: map[int]*PortalSite{
-		1: {Id: 1, Name: "web-site", Type: PortalSiteTypeWEBGW, Enabled: true},
-		2: {Id: 2, Name: "fixed-site", Type: PortalSiteTypeWEBGW, Enabled: true},
-	}}
+	core.PortalSiteRepo = &portalSiteRepoSpy{
+		entries: map[int]*PortalSite{
+			1: {Id: 1, Name: "web-site", Type: PortalSiteTypeWEBGW, Enabled: true},
+			2: {Id: 2, Name: "fixed-site", Type: PortalSiteTypeWEBGW, Enabled: true},
+		},
+	}
 	assert.Len(t, core.Conflicts(), 1)
 }
 
@@ -275,8 +307,11 @@ func TestPortalRuleCoreCreateKeepsEntry(t *testing.T) {
 	core := newPortalRuleCoreWithEntriesForTest(repo, nil, entryRepo)
 
 	created := core.Create(PortalRule{
-		Name: "api", EntryId: 1, MatchPathPrefix: "/api",
-		RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site",
+		Name:            "api",
+		EntryId:         1,
+		MatchPathPrefix: "/api",
+		RouteType:       PortalRuleRouteTypeSite,
+		RouteSiteName:   "web-site",
 	})
 
 	assert.Equal(t, "/api", created.MatchPathPrefix)
@@ -340,7 +375,9 @@ func TestWildcardRulesOnlyTargetWebSites(t *testing.T) {
 				}
 				if route == "SITE" && kind == PortalSiteTypeWEBGW {
 					created := target.Create(rule)
-					assert.Panics(t, func() { target.Update(created.Id, PortalRuleUpdate{RouteSiteName: new("missing")}) })
+					assert.Panics(t, func() {
+						target.Update(created.Id, PortalRuleUpdate{RouteSiteName: new("missing")})
+					})
 					assert.NotPanics(t, func() { target.Save(rule) })
 				} else {
 					assert.Panics(t, func() { target.Create(rule) })

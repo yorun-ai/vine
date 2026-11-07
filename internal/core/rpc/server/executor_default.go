@@ -23,9 +23,7 @@ type _InjectionFunc func(*_DefaultExecutor, reflect.Value, spec.Context)
 var injectionFuncByType = map[reflect.Type]_InjectionFunc{}
 
 func NewDefaultExecutor(options ...DefaultExecutorOption) Executor {
-	executor := &_DefaultExecutor{
-		instanceByType: map[reflect.Type]reflect.Value{},
-	}
+	executor := &_DefaultExecutor{instanceByType: map[reflect.Type]reflect.Value{}}
 	for _, option := range options {
 		option.apply(executor)
 	}

@@ -81,8 +81,12 @@ func (r *MessageQueueRepo) List(ctx context.Context) ([]core.MessageQueueStatus,
 			}
 			slices.Sort(filters)
 			item.Consumers = append(item.Consumers, core.MessageQueueConsumer{
-				Name: info.Name, FilterSubjects: filters, Pending: info.NumPending,
-				AckPending: info.NumAckPending, Redelivered: info.NumRedelivered, Waiting: info.NumWaiting,
+				Name:           info.Name,
+				FilterSubjects: filters,
+				Pending:        info.NumPending,
+				AckPending:     info.NumAckPending,
+				Redelivered:    info.NumRedelivered,
+				Waiting:        info.NumWaiting,
 			})
 		}
 		if err := consumers.Err(); err != nil {

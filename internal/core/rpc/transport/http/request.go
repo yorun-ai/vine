@@ -37,16 +37,12 @@ func DecodeRequest(httpRequest *http.Request) (spec.Request, error) {
 }
 
 func DecodeRequestWithDiagnostic(httpRequest *http.Request) (spec.Request, *RejectionDiagnostic, error) {
-	decoder := &_RequestDecoder{
-		httpRequest: httpRequest,
-	}
+	decoder := &_RequestDecoder{httpRequest: httpRequest}
 	return decoder.decode()
 }
 
 func (d *_RequestDecoder) decode() (spec.Request, *RejectionDiagnostic, error) {
-	d.rpcRequest = &spec.RequestImpl{
-		ContextValue: d.httpRequest.Context(),
-	}
+	d.rpcRequest = &spec.RequestImpl{ContextValue: d.httpRequest.Context()}
 
 	var err error
 	decodes := []func() error{

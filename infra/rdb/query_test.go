@@ -40,9 +40,7 @@ func TestQueryFirstLimitsRows(t *testing.T) {
 	require.NoError(t, err)
 
 	sqlLogger := &_QuerySQLLogger{}
-	dao := NewDao[*queryTestModel](db.Session(&gorm.Session{
-		Logger: sqlLogger,
-	}))
+	dao := NewDao[*queryTestModel](db.Session(&gorm.Session{Logger: sqlLogger}))
 
 	first, ok := dao.Query("name = ?", "alpha").First()
 	require.True(t, ok)

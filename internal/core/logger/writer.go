@@ -11,9 +11,7 @@ import (
 
 // Global writer
 
-var globalWriter = &_GlobalWriter{
-	writer: os.Stderr,
-}
+var globalWriter = &_GlobalWriter{writer: os.Stderr}
 
 type _GlobalWriter struct {
 	mutex      sync.RWMutex
@@ -73,9 +71,7 @@ type _OpenedWriters struct {
 	byPath map[string]io.Writer
 }
 
-var openedWriters = &_OpenedWriters{
-	byPath: make(map[string]io.Writer),
-}
+var openedWriters = &_OpenedWriters{byPath: make(map[string]io.Writer)}
 
 // sharedLogWriter returns the writer shared by all logger instances that use
 // outputPath. Opened files intentionally remain open for the process lifetime:

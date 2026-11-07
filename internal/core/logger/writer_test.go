@@ -68,9 +68,7 @@ func TestOutputPathFailurePanics(t *testing.T) {
 	}
 
 	assertPanics(t, func() {
-		New("vine:test", WithOption{
-			OutputPath: filepath.Join(parentFile, "vine.log"),
-		})
+		New("vine:test", WithOption{OutputPath: filepath.Join(parentFile, "vine.log")})
 	})
 }
 

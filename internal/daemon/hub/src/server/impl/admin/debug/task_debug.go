@@ -28,9 +28,7 @@ type TaskDebugApiServiceServerImpl struct {
 }
 
 func (s *TaskDebugApiServiceServerImpl) defaultBuilder() _DebugDefaultBuilder {
-	return _DebugDefaultBuilder{
-		DescriptorRepo: s.DescriptorRepo,
-	}
+	return _DebugDefaultBuilder{DescriptorRepo: s.DescriptorRepo}
 }
 
 func (s *TaskDebugApiServiceServerImpl) natsPublisher() _DebugNATSPublisher {

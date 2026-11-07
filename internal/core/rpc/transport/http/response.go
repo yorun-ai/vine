@@ -31,9 +31,7 @@ func decodeResponse(httpResponse *http.Response, methodInfo spec.MethodInfo) (sp
 }
 
 func (d *_ResponseDecoder) decode() (spec.Response, error) {
-	d.rpcResponse = &spec.ResponseImpl{
-		MethodValue: d.methodInfo,
-	}
+	d.rpcResponse = &spec.ResponseImpl{MethodValue: d.methodInfo}
 
 	var err error
 	decodes := []func() error{

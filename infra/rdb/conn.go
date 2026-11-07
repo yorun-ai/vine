@@ -41,9 +41,7 @@ func openConnection(config Option) (*gorm.DB, error) {
 		return gormDB, nil
 	}
 
-	gormDB, err := gorm.Open(adapter.NewDialector(config.ConnURL), &gorm.Config{
-		Logger: newLogger(),
-	})
+	gormDB, err := gorm.Open(adapter.NewDialector(config.ConnURL), &gorm.Config{Logger: newLogger()})
 	if err != nil {
 		sharedGormDBsMu.Unlock()
 		return nil, err

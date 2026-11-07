@@ -20,7 +20,11 @@ func TestRenderCombinedFieldAttributes(t *testing.T) {
 		Password string `json:"password" skel:"sensitive,noTrim"`
 		Argument string `json:"argument" skel:"index(0),sensitive"`
 		Visible  string `json:"visible" skel:"noTrim"`
-	}{Password: " password ", Argument: "argument-secret", Visible: " visible "}
+	}{
+		Password: " password ",
+		Argument: "argument-secret",
+		Visible:  " visible ",
+	}
 	result, err := redact.Render(value)
 	if err != nil {
 		t.Fatal(err)

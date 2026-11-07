@@ -30,9 +30,7 @@ func newTestRegistryRepo(t *testing.T, inproc bool) (*RegistryRepo, *watchserver
 	watchServer.DIInit()
 	repo := &RegistryRepo{
 		WatchServer: watchServer,
-		InprocFlag: &internalapp.InternalInprocFlag{
-			Enabled: inproc,
-		},
+		InprocFlag:  &internalapp.InternalInprocFlag{Enabled: inproc},
 	}
 
 	t.Cleanup(func() {
@@ -336,10 +334,7 @@ func TestRegistryRepoKeepAndRemoveWebRegistration(t *testing.T) {
 func TestRegistryRepoInprocSavesWithoutTTL(t *testing.T) {
 	repo, watchServer := newTestRegistryRepo(t, true)
 
-	status := &core.AppStatus{
-		InstanceId: "instance-1",
-		Name:       "demo.app",
-	}
+	status := &core.AppStatus{InstanceId: "instance-1", Name: "demo.app"}
 	repo.SaveAppStatus(status)
 
 	key := watched.FormatAppStatusKey(status.Name, status.InstanceId)

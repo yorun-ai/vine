@@ -134,26 +134,50 @@ func TestBindingRejectsChangesAfterInjectorInitialization(t *testing.T) {
 		binding *Binding
 		change  func()
 	}{
-		{name: "dependencies", binding: resourceBinding, change: func() {
-			resourceBinding.WithDependencies(nil, func(reflect.Value, []reflect.Value) {})
-		}},
+		{
+			name:    "dependencies",
+			binding: resourceBinding,
+			change: func() {
+				resourceBinding.WithDependencies(nil, func(reflect.Value, []reflect.Value) {})
+			},
+		},
 		{name: "scope", binding: resourceBinding, change: func() { resourceBinding.In(ExecutionScope) }},
 		{name: "nullable", binding: resourceBinding, change: func() { resourceBinding.AsNullable() }},
-		{name: "factory", binding: resourceBinding, change: func() {
-			resourceBinding.ToFactory(func() *binderTestResource { return &binderTestResource{} })
-		}},
-		{name: "instance", binding: resourceBinding, change: func() {
-			resourceBinding.ToInstance(&binderTestResource{})
-		}},
-		{name: "disposer", binding: resourceBinding, change: func() {
-			resourceBinding.WithDisposer(func(*binderTestResource) {})
-		}},
-		{name: "implementation", binding: serviceBinding, change: func() {
-			serviceBinding.ToImplementation(T[*binderTestImpl]())
-		}},
-		{name: "abstract factory", binding: serviceBinding, change: func() {
-			serviceBinding.ToAbstractFactory(func(ResolveContext) binderTestService { return &binderTestImpl{} })
-		}},
+		{
+			name:    "factory",
+			binding: resourceBinding,
+			change: func() {
+				resourceBinding.ToFactory(func() *binderTestResource { return &binderTestResource{} })
+			},
+		},
+		{
+			name:    "instance",
+			binding: resourceBinding,
+			change: func() {
+				resourceBinding.ToInstance(&binderTestResource{})
+			},
+		},
+		{
+			name:    "disposer",
+			binding: resourceBinding,
+			change: func() {
+				resourceBinding.WithDisposer(func(*binderTestResource) {})
+			},
+		},
+		{
+			name:    "implementation",
+			binding: serviceBinding,
+			change: func() {
+				serviceBinding.ToImplementation(T[*binderTestImpl]())
+			},
+		},
+		{
+			name:    "abstract factory",
+			binding: serviceBinding,
+			change: func() {
+				serviceBinding.ToAbstractFactory(func(ResolveContext) binderTestService { return &binderTestImpl{} })
+			},
+		},
 	}
 
 	for _, test := range tests {

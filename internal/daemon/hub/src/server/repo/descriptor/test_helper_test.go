@@ -63,6 +63,7 @@ func testDomainDescriptor() *skeldesc.Domain {
 					{Name: "AdminActor", SkelName: "demo.user.AdminActor"},
 				}, AuthMode: skeldesc.AuthModeRequired,
 			},
-		}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
+		},
+		Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 	}
 }

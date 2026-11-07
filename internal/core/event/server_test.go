@@ -153,7 +153,9 @@ func TestServerOnEventForwardsToListener(t *testing.T) {
 		ListenerImplTypes: []reflect.Type{reflect.TypeFor[*testServerListenerImpl]()},
 		Executor:          NewContainerExecutor(nil, nil),
 		Logger: logger.New("vine:test", logger.WithOption{
-			Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: logPath,
+			Format:     logger.FormatJSON,
+			Level:      logger.LevelDebug,
+			OutputPath: logPath,
 		}),
 	})
 
@@ -229,9 +231,7 @@ func BenchmarkServerOnEvent(b *testing.B) {
 		App:               testEventServerApp(),
 		ListenerImplTypes: []reflect.Type{reflect.TypeFor[*testServerListenerImpl]()},
 		Executor:          NewContainerExecutor(nil, nil),
-		Logger: logger.New("vine:benchmark", logger.WithOption{
-			Level: logger.LevelError,
-		}),
+		Logger:            logger.New("vine:benchmark", logger.WithOption{Level: logger.LevelError}),
 	})
 	on := appskeled.EventOn{
 		Metadata: appskeled.EventOnMeta{
@@ -261,7 +261,9 @@ func TestServerRejectedUsesMainEventFieldNames(t *testing.T) {
 		ListenerImplTypes: []reflect.Type{reflect.TypeFor[*testServerListenerImpl]()},
 		Executor:          NewContainerExecutor(nil, nil),
 		Logger: logger.New("vine:test", logger.WithOption{
-			Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: logPath,
+			Format:     logger.FormatJSON,
+			Level:      logger.LevelDebug,
+			OutputPath: logPath,
 		}),
 	})
 

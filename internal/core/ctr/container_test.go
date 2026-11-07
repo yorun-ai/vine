@@ -148,9 +148,7 @@ func TestNewContainerRegistersFiltersAndContext(t *testing.T) {
 
 func TestNewContainerPanicsWhenFilterTypeIsInvalid(t *testing.T) {
 	assert.PanicsWithError(t, "filter type int must be pointer to struct", func() {
-		NewContainer(Option{
-			FilterTypes: []reflect.Type{reflect.TypeFor[int]()},
-		})
+		NewContainer(Option{FilterTypes: []reflect.Type{reflect.TypeFor[int]()}})
 	})
 }
 

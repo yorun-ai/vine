@@ -93,7 +93,9 @@ func TestIgnoredFlagAndItsEnvironmentAreDropped(t *testing.T) {
 }
 
 func TestUnknownIgnoredFlagPanics(t *testing.T) {
-	assert.Panics(t, func() { flags(&linkflag.Flag{}, Option{IgnoredFlags: []string{"link-unknown"}}) })
+	assert.Panics(t, func() {
+		flags(&linkflag.Flag{}, Option{IgnoredFlags: []string{"link-unknown"}})
+	})
 }
 
 // A renamed flag answers to the new name alone: the declared name and the
@@ -274,16 +276,26 @@ func TestLinkedRuntimeLifecycle(t *testing.T) {
 	os.Args = []string{"linked-lifecycle-test"}
 	controlAddr, watchAddr, adminAddr := linkedTestAddresses(t)
 	hub := internalapp.NewInternal[*hubapp.HubApp](internalapp.With(&hubflag.Flag{
-		ControlListen: controlAddr, WatchListen: watchAddr, AdminListen: adminAddr,
-		DBSQLiteFile: filepath.Join(t.TempDir(), "hub.sqlite"),
+		ControlListen: controlAddr,
+		WatchListen:   watchAddr,
+		AdminListen:   adminAddr,
+		DBSQLiteFile:  filepath.Join(t.TempDir(), "hub.sqlite"),
 	}))
 	hub.Start()
 	t.Cleanup(hub.StopGracefully)
-	service := &rpcspec.ServiceSpec{Type: rpcspec.ServiceSpecTypeServer, Name: "LinkedPing", SkelName: "test.LinkedPing", Hash: "test",
-		ServerType: reflect.TypeFor[linkedPingAPI](), ERServerType: reflect.TypeFor[linkedPingAPIER](),
-		WrapperERServerCtor: func(server linkedPingAPI) linkedPingAPIER { return &linkedPingWrapper{server: server} },
-		DefaultServerType:   reflect.TypeFor[*linkedPingDefault](), DefaultERServerType: reflect.TypeFor[*linkedPingDefaultER](),
-		Methods: []*rpcspec.MethodSpec{{Name: "Ping", SkelName: "Ping", ResultType: reflect.TypeFor[string]()}},
+	service := &rpcspec.ServiceSpec{
+		Type:         rpcspec.ServiceSpecTypeServer,
+		Name:         "LinkedPing",
+		SkelName:     "test.LinkedPing",
+		Hash:         "test",
+		ServerType:   reflect.TypeFor[linkedPingAPI](),
+		ERServerType: reflect.TypeFor[linkedPingAPIER](),
+		WrapperERServerCtor: func(server linkedPingAPI) linkedPingAPIER {
+			return &linkedPingWrapper{server: server}
+		},
+		DefaultServerType:   reflect.TypeFor[*linkedPingDefault](),
+		DefaultERServerType: reflect.TypeFor[*linkedPingDefaultER](),
+		Methods:             []*rpcspec.MethodSpec{{Name: "Ping", SkelName: "Ping", ResultType: reflect.TypeFor[string]()}},
 	}
 	rpcspec.Register(service)
 	application := NewWithOption[*linkedLifecycleSpec](Option{LinkHubEndpoint: "http://" + controlAddr, LinkIngressListen: "127.0.0.1:0"})

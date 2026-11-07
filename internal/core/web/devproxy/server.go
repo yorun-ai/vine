@@ -76,9 +76,7 @@ func (s *Server) Serve() {
 // handler is built for every request, while the proxy and the address it forwards
 // to outlive the request, so a frontend that restarts on another port is followed
 // without a restart of the application.
-var followedServers = &_FollowedServers{
-	byStateFile: map[string]*_FollowedServer{},
-}
+var followedServers = &_FollowedServers{byStateFile: map[string]*_FollowedServer{}}
 
 // _FollowedServers keeps one development server per state file.
 type _FollowedServers struct {

@@ -70,7 +70,10 @@ func TestForwardResponseIntegrity(t *testing.T) {
 			t.Cleanup(func() { ingressinproc.Unregister(endpoint) })
 			gateway := newTestWebGateway(t, map[string]string{
 				watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
-					Endpoint: endpoint + "/web/proxy/in/instance-1/admin@demo.app", WebSkelName: "admin@demo.app", AppName: "demo.app", AppInstanceId: "instance-1",
+					Endpoint:      endpoint + "/web/proxy/in/instance-1/admin@demo.app",
+					WebSkelName:   "admin@demo.app",
+					AppName:       "demo.app",
+					AppInstanceId: "instance-1",
 				}),
 			})
 			for _, h2 := range []bool{false, true} {

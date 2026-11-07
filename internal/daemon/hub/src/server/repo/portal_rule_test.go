@@ -139,9 +139,7 @@ func newTestPortalRuleRepo(t *testing.T) (*gorm.DB, *PortalRuleRepo, *watchserve
 	entryRepo.Dao.EnsureSchema()
 	entryRepo.CertDao.EnsureSchema()
 	repo := &PortalRuleRepo{
-		Dao: &model.PortalRuleDao{
-			Dao: rdb.NewDao[*model.PortalRule](db),
-		},
+		Dao:             &model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](db)},
 		Syncer:          sync,
 		Access:          new(configaccess.Access),
 		PortalEntryRepo: entryRepo,

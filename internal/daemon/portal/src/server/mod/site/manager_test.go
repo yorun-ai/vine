@@ -28,9 +28,7 @@ func TestManagerLoadsRpcgwSiteFromWatch(t *testing.T) {
 			Name:          "demo-api",
 			Type:          siteTypeRpcgw,
 			ActorSkelName: "demo.UserActor",
-			RpcgwConfig: &watched.PortalRpcgwConfig{
-				Services: []watched.PortalRpcgwService{{SkelName: "demo.UserService"}},
-			},
+			RpcgwConfig:   &watched.PortalRpcgwConfig{Services: []watched.PortalRpcgwService{{SkelName: "demo.UserService"}}},
 		}),
 	})
 
@@ -60,11 +58,9 @@ func TestManagerLoadsRpcgwSiteFromWatch(t *testing.T) {
 func TestManagerDoesNotLoadPortalRulesAsSites(t *testing.T) {
 	manager := newTestManager(t, map[string]string{
 		watched.FormatPortalSiteKey("demo-web"): vcode.MustMarshalJsonS(watched.PortalSite{
-			Name: "demo-web",
-			Type: siteTypeWebgw,
-			WebgwConfig: &watched.PortalWebgwConfig{
-				WebName: "demo.Web",
-			},
+			Name:        "demo-web",
+			Type:        siteTypeWebgw,
+			WebgwConfig: &watched.PortalWebgwConfig{WebName: "demo.Web"},
 		}),
 		watched.FormatPortalRuleKey("demo-web"): vcode.MustMarshalJsonS(watched.PortalRule{
 			Name:          "demo-web",
@@ -102,11 +98,9 @@ func TestManagerHandlesSiteEvents(t *testing.T) {
 			Kind: hubapiwatch.EventKindUpsert,
 			Key:  watched.FormatPortalSiteKey("demo-web"),
 			Value: vcode.MustMarshalJsonS(watched.PortalSite{
-				Name: "demo-web",
-				Type: siteTypeWebgw,
-				WebgwConfig: &watched.PortalWebgwConfig{
-					WebName: "admin@demo.app",
-				},
+				Name:        "demo-web",
+				Type:        siteTypeWebgw,
+				WebgwConfig: &watched.PortalWebgwConfig{WebName: "admin@demo.app"},
 			}),
 		})
 		synctest.Wait()
@@ -150,11 +144,9 @@ func TestManagerUpsertReplacesSiteWithoutRemovingName(t *testing.T) {
 func TestManagerUpsertUpdatesSameSiteTypeInPlace(t *testing.T) {
 	manager := newTestManager(t, map[string]string{
 		watched.FormatPortalSiteKey("demo-api"): vcode.MustMarshalJsonS(watched.PortalSite{
-			Name: "demo-api",
-			Type: siteTypeRpcgw,
-			RpcgwConfig: &watched.PortalRpcgwConfig{
-				Services: []watched.PortalRpcgwService{{SkelName: "demo.UserService"}},
-			},
+			Name:        "demo-api",
+			Type:        siteTypeRpcgw,
+			RpcgwConfig: &watched.PortalRpcgwConfig{Services: []watched.PortalRpcgwService{{SkelName: "demo.UserService"}}},
 		}),
 	})
 	before, ok := manager.Site("demo-api")
@@ -166,11 +158,9 @@ func TestManagerUpsertUpdatesSameSiteTypeInPlace(t *testing.T) {
 		Kind: hubapiwatch.EventKindUpsert,
 		Key:  watched.FormatPortalSiteKey("demo-api"),
 		Value: vcode.MustMarshalJsonS(watched.PortalSite{
-			Name: "demo-api",
-			Type: siteTypeRpcgw,
-			RpcgwConfig: &watched.PortalRpcgwConfig{
-				Services: []watched.PortalRpcgwService{{SkelName: "demo.OrderService"}},
-			},
+			Name:        "demo-api",
+			Type:        siteTypeRpcgw,
+			RpcgwConfig: &watched.PortalRpcgwConfig{Services: []watched.PortalRpcgwService{{SkelName: "demo.OrderService"}}},
 		}),
 	})
 
@@ -260,10 +250,9 @@ func newTestAccess(t *testing.T) *access.Access {
 
 func newTestDescriptorWatch(t *testing.T) *watchtest.Client {
 	watchClient := watchtest.New(t, map[string]string{
-		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.DescriptorActor{
-			SkelName: "demo.UserActor",
-		}),
-		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{Api: true,
+		watched.FormatDescriptorActorKey("demo.UserActor"): vcode.MustMarshalJsonS(watched.DescriptorActor{SkelName: "demo.UserActor"}),
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
+			Api:      true,
 			SkelName: "demo.UserService",
 			AuthMode: skeldesc.AuthModeOptional,
 			Audiences: []*skeldesc.ActorAudience{

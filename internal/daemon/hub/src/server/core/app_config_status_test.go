@@ -47,17 +47,24 @@ func TestStructuredConfigStatus(t *testing.T) {
 	}
 	parameter := &skeldesc.Type{Kind: skeldesc.TypeKindTypeParameter, Name: "T"}
 	box := &skeldesc.Data{SkelName: "demo.Box", TypeParameters: []string{"T"}, Members: []*skeldesc.Member{{Name: "value", Type: parameter}}}
-	leaf := &skeldesc.Data{SkelName: "demo.Leaf", Members: []*skeldesc.Member{
-		{Name: "bytes", Type: scalar(skeldesc.ScalarBinary)},
-		{Name: "text", Type: scalar(skeldesc.ScalarString)},
-	}}
+	leaf := &skeldesc.Data{
+		SkelName: "demo.Leaf",
+		Members: []*skeldesc.Member{
+			{Name: "bytes", Type: scalar(skeldesc.ScalarBinary)},
+			{Name: "text", Type: scalar(skeldesc.ScalarString)},
+		},
+	}
 	leafType := &skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: leaf.SkelName}
 	nullableLeaf := *leafType
 	nullableLeaf.Nullable = true
 	leaf.Members = append(leaf.Members, &skeldesc.Member{Name: "next", Type: &nullableLeaf})
-	kind := &skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: box.SkelName, TypeArguments: []*skeldesc.Type{
-		{Kind: skeldesc.TypeKindMap, Key: scalar(skeldesc.ScalarInt), Value: &skeldesc.Type{Kind: skeldesc.TypeKindList, Element: leafType}},
-	}}
+	kind := &skeldesc.Type{
+		Kind:     skeldesc.TypeKindData,
+		SkelName: box.SkelName,
+		TypeArguments: []*skeldesc.Type{
+			{Kind: skeldesc.TypeKindMap, Key: scalar(skeldesc.ScalarInt), Value: &skeldesc.Type{Kind: skeldesc.TypeKindList, Element: leafType}},
+		},
+	}
 	descriptor := &skeldesc.Config{Members: []*skeldesc.Member{{Name: "settings", Type: kind}}, Lifecycle: skeldesc.ConfigLifecycleEternal}
 	data := []*skeldesc.Data{box, leaf}
 	valid := `{"settings":{"value":{"9223372036854775807":[{"bytes":"aG\r\nVsbG8=","text":"  hello  ","next":{"bytes":"","text":"","next":null}}]}}}`
@@ -95,11 +102,15 @@ func TestNullableGenericParameterBindings(t *testing.T) {
 	parameter := &skeldesc.Type{Kind: skeldesc.TypeKindTypeParameter, Name: "TValue"}
 	optional := *parameter
 	optional.Nullable = true
-	box := &skeldesc.Data{SkelName: "demo.Box", TypeParameters: []string{"TValue"}, Members: []*skeldesc.Member{
-		{Name: "required", Type: parameter},
-		{Name: "optional", Type: &optional},
-		{Name: "items", Type: &skeldesc.Type{Kind: skeldesc.TypeKindList, Element: &optional}},
-	}}
+	box := &skeldesc.Data{
+		SkelName:       "demo.Box",
+		TypeParameters: []string{"TValue"},
+		Members: []*skeldesc.Member{
+			{Name: "required", Type: parameter},
+			{Name: "optional", Type: &optional},
+			{Name: "items", Type: &skeldesc.Type{Kind: skeldesc.TypeKindList, Element: &optional}},
+		},
+	}
 	for _, argumentNullable := range []bool{false, true} {
 		kind := &skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: box.SkelName, TypeArguments: []*skeldesc.Type{{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBinary, Nullable: argumentNullable}}}
 		descriptor := &skeldesc.Config{Members: []*skeldesc.Member{{Name: "box", Type: kind}}, Lifecycle: skeldesc.ConfigLifecycleEternal}

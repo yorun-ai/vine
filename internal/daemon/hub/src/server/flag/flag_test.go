@@ -174,9 +174,7 @@ func TestFlagInferStoreDefaultsToMemory(t *testing.T) {
 }
 
 func TestFlagInferStoreReturnsSQLite(t *testing.T) {
-	flags := &Flag{
-		DBSQLiteFile: "/tmp/hub.sqlite",
-	}
+	flags := &Flag{DBSQLiteFile: "/tmp/hub.sqlite"}
 
 	store, err := flags.inferStore()
 	require.NoError(t, err)

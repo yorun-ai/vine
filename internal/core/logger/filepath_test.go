@@ -28,9 +28,7 @@ func TestTrimSourceFileForReplaceDependency(t *testing.T) {
 }
 
 func TestTrimSourceFileForModuleCacheDependency(t *testing.T) {
-	got := trimSourceFile(&slog.Source{
-		File: "/Users/test/go/pkg/mod/gorm.io/gorm@v1.23.5/callbacks.go",
-	})
+	got := trimSourceFile(&slog.Source{File: "/Users/test/go/pkg/mod/gorm.io/gorm@v1.23.5/callbacks.go"})
 
 	if got != "gorm@v1.23.5/callbacks.go" {
 		t.Fatalf("unexpected module cache source: got %q", got)
@@ -38,9 +36,7 @@ func TestTrimSourceFileForModuleCacheDependency(t *testing.T) {
 }
 
 func TestTrimSourceFileForNestedModuleCacheDependency(t *testing.T) {
-	got := trimSourceFile(&slog.Source{
-		File: "/Users/test/go/pkg/mod/go.yorun.ai/vine@v1.1.0-alpha9/internal/core/web/server.go",
-	})
+	got := trimSourceFile(&slog.Source{File: "/Users/test/go/pkg/mod/go.yorun.ai/vine@v1.1.0-alpha9/internal/core/web/server.go"})
 
 	if got != "web/server.go" {
 		t.Fatalf("unexpected nested module cache source: got %q", got)
@@ -48,9 +44,7 @@ func TestTrimSourceFileForNestedModuleCacheDependency(t *testing.T) {
 }
 
 func TestTrimSourceFileFallsBackToShortCallerFile(t *testing.T) {
-	got := trimSourceFile(&slog.Source{
-		File: "/tmp/random/location/file.go",
-	})
+	got := trimSourceFile(&slog.Source{File: "/tmp/random/location/file.go"})
 
 	if got != "location/file.go" {
 		t.Fatalf("unexpected fallback source: got %q", got)

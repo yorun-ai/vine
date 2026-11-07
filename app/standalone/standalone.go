@@ -89,12 +89,8 @@ func (a *_App) initInfra() {
 	applyOption(flag, a.option)
 
 	a.hub = internalapp.NewInternalInproc[*hubapp.HubApp](internalapp.With(flag))
-	a.link = internalapp.NewInternalInproc[*linkapp.LinkApp](internalapp.With(&linkflag.Flag{
-		HubInprocMode: true,
-	}))
-	a.portal = internalapp.NewInternalInproc[*portalapp.PortalApp](internalapp.With(&portalflag.Flag{
-		HubInprocMode: true,
-	}))
+	a.link = internalapp.NewInternalInproc[*linkapp.LinkApp](internalapp.With(&linkflag.Flag{HubInprocMode: true}))
+	a.portal = internalapp.NewInternalInproc[*portalapp.PortalApp](internalapp.With(&portalflag.Flag{HubInprocMode: true}))
 }
 
 func (a *_App) startInfra() {

@@ -127,22 +127,18 @@ func testPortalCertPEM(t *testing.T, issuer string, dnsNames []string, ipAddress
 	require.NoError(t, err)
 	template := &x509.Certificate{
 		SerialNumber: big.NewInt(validFrom.UnixNano()),
-		Subject: pkix.Name{
-			CommonName: "demo.local",
-		},
-		DNSNames:    dnsNames,
-		IPAddresses: ipAddresses,
-		NotBefore:   validFrom,
-		NotAfter:    validTo,
-		KeyUsage:    x509.KeyUsageDigitalSignature,
+		Subject:      pkix.Name{CommonName: "demo.local"},
+		DNSNames:     dnsNames,
+		IPAddresses:  ipAddresses,
+		NotBefore:    validFrom,
+		NotAfter:     validTo,
+		KeyUsage:     x509.KeyUsageDigitalSignature,
 	}
 	parent := &x509.Certificate{
 		SerialNumber: big.NewInt(validFrom.UnixNano() + 1),
-		Subject: pkix.Name{
-			CommonName: issuer,
-		},
-		NotBefore: validFrom,
-		NotAfter:  validTo,
+		Subject:      pkix.Name{CommonName: issuer},
+		NotBefore:    validFrom,
+		NotAfter:     validTo,
 	}
 	der, err := x509.CreateCertificate(rand.Reader, template, parent, &key.PublicKey, key)
 	require.NoError(t, err)
@@ -193,14 +189,18 @@ func TestPortalCertPEMValidationAndUpdates(t *testing.T) {
 
 func TestPortalCertDisabledPlaceholderRequiresValidPEMOnEnable(t *testing.T) {
 	target := &PortalCertCore{PortalCertRepo: newTestPortalCertRepo(), PortalEntryRepo: newPortalEntryRepoSpy()}
-	require.Panics(t, func() { target.Create(PortalCertCreation{Enabled: new(false)}) })
+	require.Panics(t, func() {
+		target.Create(PortalCertCreation{Enabled: new(false)})
+	})
 	cert := target.Create(PortalCertCreation{Name: "placeholder", Enabled: new(false)})
 	require.Empty(t, cert.Certificate)
 	require.Empty(t, cert.PrivateKey)
 	cert = target.Update(cert.Id, PortalCertUpdate{Certificate: new("pending"), PrivateKey: new("pending")})
 	require.False(t, cert.Enabled)
 	require.Equal(t, "pending", cert.Certificate)
-	require.Panics(t, func() { target.Update(cert.Id, PortalCertUpdate{Enabled: new(true)}) })
+	require.Panics(t, func() {
+		target.Update(cert.Id, PortalCertUpdate{Enabled: new(true)})
+	})
 	require.False(t, target.Get(cert.Id).Enabled, "a failed enable leaves the stored certificate disabled")
 
 	from := time.Now().Add(-time.Hour)
@@ -229,7 +229,9 @@ func TestPortalCertChangesPreserveExplicitEntryRequirements(t *testing.T) {
 		entries.Save(entry)
 		for _, change := range []func(){
 			func() { target.Remove(cert.Id) },
-			func() { target.Update(cert.Id, PortalCertUpdate{Enabled: new(false)}) },
+			func() {
+				target.Update(cert.Id, PortalCertUpdate{Enabled: new(false)})
+			},
 			func() {
 				target.Update(cert.Id, PortalCertUpdate{Certificate: &otherCertificate, PrivateKey: &otherKey})
 			},

@@ -68,15 +68,26 @@ func TestManagerReconcileEntriesBindsPortAndRules(t *testing.T) {
 }
 
 func TestManagerHTTPEntryDoesNotInheritWildcardRedirect(t *testing.T) {
-	certificateVault := &vault.Vault{Context: context.Background(), Watch: watchtest.New(t, map[string]string{
-		watched.FormatPortalCertKey("test"): vcode.MustMarshalJsonS(testHTTPPortalCertificate(t, "*.example.com")),
-	})}
+	certificateVault := &vault.Vault{
+		Context: context.Background(),
+		Watch: watchtest.New(t, map[string]string{
+			watched.FormatPortalCertKey("test"): vcode.MustMarshalJsonS(testHTTPPortalCertificate(t, "*.example.com")),
+		}),
+	}
 	certificateVault.DIInit()
 	exact := testEntryConfig("exact", "http", "app.example.com", 8080, nil)
-	wildcard := watched.PortalEntry{Name: "wildcard", Protocol: "http", EffectiveHTTP: watched.PortalEntryHTTP{
-		Host: "*.example.com", HttpEnabled: true, HttpPort: 8080,
-		HttpsEnabled: true, HttpsPort: 8443, AutoHTTPSEnabled: true,
-	}}
+	wildcard := watched.PortalEntry{
+		Name:     "wildcard",
+		Protocol: "http",
+		EffectiveHTTP: watched.PortalEntryHTTP{
+			Host:             "*.example.com",
+			HttpEnabled:      true,
+			HttpPort:         8080,
+			HttpsEnabled:     true,
+			HttpsPort:        8443,
+			AutoHTTPSEnabled: true,
+		},
+	}
 	manager := &Manager{
 		Vault:              certificateVault,
 		entryConfigsByName: testEntryConfigs(exact, wildcard),
@@ -205,11 +216,9 @@ func newTestSiteManager(t *testing.T, names ...string) *site.Manager {
 	valuesByKey := map[string]string{}
 	for _, name := range names {
 		valuesByKey[watched.FormatPortalSiteKey(name)] = vcode.MustMarshalJsonS(watched.PortalSite{
-			Name: name,
-			Type: "RPCGW",
-			RpcgwConfig: &watched.PortalRpcgwConfig{
-				Services: []watched.PortalRpcgwService{{SkelName: "demo.UserService"}},
-			},
+			Name:        name,
+			Type:        "RPCGW",
+			RpcgwConfig: &watched.PortalRpcgwConfig{Services: []watched.PortalRpcgwService{{SkelName: "demo.UserService"}}},
 		})
 	}
 	epmgrManager := &epmgr.Manager{

@@ -188,9 +188,7 @@ func TestNewPanicsWhenLoggerIsNil(t *testing.T) {
 		}
 	}()
 
-	_ = New(Option{
-		Context: testClientContext(),
-	})
+	_ = New(Option{Context: testClientContext()})
 }
 
 func TestInvokeEncodingFailureLogsRejectedWithoutStarted(t *testing.T) {

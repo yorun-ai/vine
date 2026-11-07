@@ -82,7 +82,9 @@ func TestUUIDColumnTypes(t *testing.T) {
 
 	// Verify PostgreSQL schema and insert binding without requiring a running server.
 	pg, err := gorm.Open(adapter.NewDialector("host=localhost user=test dbname=test sslmode=disable"), &gorm.Config{
-		DisableAutomaticPing: true, DryRun: true, SkipDefaultTransaction: true,
+		DisableAutomaticPing:   true,
+		DryRun:                 true,
+		SkipDefaultTransaction: true,
 	})
 	require.NoError(t, err)
 	sqlDB, err := pg.DB()

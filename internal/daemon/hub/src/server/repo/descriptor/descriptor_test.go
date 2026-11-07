@@ -118,10 +118,13 @@ func TestRejectedRegistrationDoesNotPublishEndpoints(t *testing.T) {
 			invalid := testDomainDescriptor()
 			invalid.Hash = "replacement"
 			invalid.Services[0].AuthMode = mode
-			reg := core.AppRegistration{Name: "demo", InstanceId: "instance",
+			reg := core.AppRegistration{
+				Name:              "demo",
+				InstanceId:        "instance",
 				ServiceHandlers:   []core.ServiceHandlerRegistration{{ServiceSkelName: invalid.Services[0].SkelName, Endpoint: "http://replacement"}},
 				WebHandlers:       []core.WebHandlerRegistration{{WebSkelName: "demo.Web", Endpoint: "http://replacement"}},
-				DomainDescriptors: []*skeldesc.Domain{invalid}}
+				DomainDescriptors: []*skeldesc.Domain{invalid},
+			}
 			if mode == skeldesc.AuthModeOff {
 				require.Panics(t, func() { target.Register(reg) })
 				require.Empty(t, registry.writes)

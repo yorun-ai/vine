@@ -91,7 +91,10 @@ func TestPortalEntryRepoListenIPsRoundTrip(t *testing.T) {
 func TestPortalEntryRepoStoresHTTPHost(t *testing.T) {
 	repo := newTestPortalEntryRepoDB(t)
 	row := &model.PortalEntry{
-		Name: "legacy", Protocol: "http", ListenIPs: "[]", Enabled: true,
+		Name:       "legacy",
+		Protocol:   "http",
+		ListenIPs:  "[]",
+		Enabled:    true,
 		HTTPConfig: `{"host":"demo.local","http":"ENABLED","httpPort":80,"https":"ENABLED","httpsPort":443,"autohttps":"ENABLED"}`,
 	}
 	repo.Dao.Save(row)

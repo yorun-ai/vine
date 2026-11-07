@@ -148,9 +148,7 @@ func TestAppConfigServiceCreateConfig(t *testing.T) {
 }
 
 func TestAppConfigServiceCreateRejectsInvalidConfigSkelName(t *testing.T) {
-	service := &AppConfigApiServiceServerImpl{
-		AppConfigCore: &core.AppConfigCore{AppConfigRepo: &_AppConfigServiceAppConfigRepo{}},
-	}
+	service := &AppConfigApiServiceServerImpl{AppConfigCore: &core.AppConfigCore{AppConfigRepo: &_AppConfigServiceAppConfigRepo{}}}
 
 	for _, skelName := range []string{"ddd", "demo.ddd", "demo.user.bad-config", "demo.1user.BadConfig"} {
 		assert.Panics(t, func() {

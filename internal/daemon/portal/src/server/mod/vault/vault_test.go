@@ -42,11 +42,7 @@ func TestVaultGetCertificateMatchesHost(t *testing.T) {
 	cert := newTestPortalCert(t, "demo-cert", []string{"demo.local"})
 	parsed, err := newCertificate(cert)
 	require.NoError(t, err)
-	vault := &Vault{
-		certs: map[string]*_Certificate{
-			parsed.name: parsed,
-		},
-	}
+	vault := &Vault{certs: map[string]*_Certificate{parsed.name: parsed}}
 	vault.rebuildIndexLocked()
 
 	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "demo.local"})
@@ -59,11 +55,7 @@ func TestVaultGetCertificateMatchesWildcardHost(t *testing.T) {
 	cert := newTestPortalCert(t, "demo-cert", []string{"*.demo.local"})
 	parsed, err := newCertificate(cert)
 	require.NoError(t, err)
-	vault := &Vault{
-		certs: map[string]*_Certificate{
-			parsed.name: parsed,
-		},
-	}
+	vault := &Vault{certs: map[string]*_Certificate{parsed.name: parsed}}
 	vault.rebuildIndexLocked()
 
 	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "admin.demo.local"})
@@ -77,11 +69,7 @@ func TestVaultGetCertificateDoesNotMatchMissingHost(t *testing.T) {
 	cert := newTestPortalCert(t, "demo-cert", []string{"demo.local"})
 	parsed, err := newCertificate(cert)
 	require.NoError(t, err)
-	vault := &Vault{
-		certs: map[string]*_Certificate{
-			parsed.name: parsed,
-		},
-	}
+	vault := &Vault{certs: map[string]*_Certificate{parsed.name: parsed}}
 	vault.rebuildIndexLocked()
 
 	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "other.local"})
@@ -116,11 +104,7 @@ func TestVaultGetCertificateReturnsExpiredMatchingCert(t *testing.T) {
 	cert.ValidTo = time.Now().Add(-time.Hour)
 	parsed, err := newCertificate(cert)
 	require.NoError(t, err)
-	vault := &Vault{
-		certs: map[string]*_Certificate{
-			parsed.name: parsed,
-		},
-	}
+	vault := &Vault{certs: map[string]*_Certificate{parsed.name: parsed}}
 	vault.rebuildIndexLocked()
 
 	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "demo.local"})

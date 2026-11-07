@@ -69,7 +69,10 @@ func (c *Client) LoadKeysAndSubscribe(ctx context.Context, keys []string, handle
 		return nil, nil, err
 	}
 	watcher := &_Watcher{
-		client: c, ctx: ctx, keys: keys, handle: handle,
+		client:       c,
+		ctx:          ctx,
+		keys:         keys,
+		handle:       handle,
 		snapshot:     &_WatchListSnapshot{client: c, keys: keys, valuesByKey: vmap.Clone(values)},
 		subscription: newSubscription(ctx, handle),
 	}

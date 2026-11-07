@@ -43,21 +43,15 @@ func (l *Linker) CheckLoopback() (string, bool) {
 }
 
 func (l *Linker) RegistryClient() linkskeled.RegistryServiceClient {
-	return &_TestLinkRegistryClient{
-		linker: l,
-	}
+	return &_TestLinkRegistryClient{linker: l}
 }
 
 func (l *Linker) RegistryClientER() linkskeled.RegistryServiceClientER {
-	return &_TestLinkRegistryClientER{
-		linker: l,
-	}
+	return &_TestLinkRegistryClientER{linker: l}
 }
 
 func (l *Linker) ConfigClient() linkskeled.ConfigServiceClient {
-	return &_TestLinkConfigClient{
-		linker: l,
-	}
+	return &_TestLinkConfigClient{linker: l}
 }
 
 func (l *Linker) EventClient() linkskeled.EventServiceClient {

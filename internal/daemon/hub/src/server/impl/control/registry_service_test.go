@@ -56,7 +56,8 @@ func (r *_RegistryServiceDescriptorRepo) ListDomainDescriptorViews() []core.Doma
 		DomainVersion: core.DomainDescriptorVersion{
 			Main: true,
 			Descriptor: &skeldesc.Domain{
-				Services: r.serviceDescriptors, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
+				Services:  r.serviceDescriptors,
+				Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 			},
 		},
 		Actors: vslice.Collect(func(yield func(core.DescriptorVersion[*skeldesc.Actor]) bool) {
@@ -232,10 +233,13 @@ func TestRegistryServiceRefreshesDescriptors(t *testing.T) {
 			actorDescriptors: []*skeldesc.Actor{
 				{
 					SkelName: "demo.UserActor",
-					Hash:     "actor-main", Auth: &skeldesc.ActorAuth{Service: &skeldesc.Service{
-						SkelName: "demo.UserAuthService",
-						Hash:     "auth-service-main", AuthMode: skeldesc.AuthModeRequired,
-					}},
+					Hash:     "actor-main", Auth: &skeldesc.ActorAuth{
+						Service: &skeldesc.Service{
+							SkelName: "demo.UserAuthService",
+							Hash:     "auth-service-main",
+							AuthMode: skeldesc.AuthModeRequired,
+						},
+					},
 				},
 			},
 			serviceDescriptors: []*skeldesc.Service{

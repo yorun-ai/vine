@@ -8,13 +8,16 @@ import (
 )
 
 func TestPathPolicies(t *testing.T) {
-	config, err := Compile(&Config{Default: &Policy{Total: "30s"}, Paths: []Path{
-		{Path: "/go/private/*", Total: "5s"},
-		{Path: "/go/**", Total: "15m"},
-		{Path: "/assets/*.zip", Total: "2m"},
-		{Path: "/a/**/b", Total: "3m"},
-		{Path: "/exact", Total: "1m"},
-	}})
+	config, err := Compile(&Config{
+		Default: &Policy{Total: "30s"},
+		Paths: []Path{
+			{Path: "/go/private/*", Total: "5s"},
+			{Path: "/go/**", Total: "15m"},
+			{Path: "/assets/*.zip", Total: "2m"},
+			{Path: "/a/**/b", Total: "3m"},
+			{Path: "/exact", Total: "1m"},
+		},
+	})
 	require.NoError(t, err)
 	for path, want := range map[string]time.Duration{
 		"/go": 15 * time.Minute, "/go/": 15 * time.Minute, "/go/x/y": 15 * time.Minute,

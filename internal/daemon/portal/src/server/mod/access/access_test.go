@@ -22,7 +22,8 @@ func TestAccessLoadsActorAndServiceDescriptors(t *testing.T) {
 			SkelName: "demo.UserActor",
 			Hash:     "actor-main",
 		}),
-		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{Api: true,
+		watched.FormatDescriptorServiceKey("demo.UserService"): vcode.MustMarshalJsonS(watched.DescriptorService{
+			Api:      true,
 			SkelName: "demo.UserService",
 			Hash:     "service-main",
 			AuthMode: skeldesc.AuthModeRequired,

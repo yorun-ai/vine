@@ -141,10 +141,11 @@ func toServerPortalRuleListItem(entry *core.PortalEntry, rule *core.PortalRule, 
 		}
 	}
 	return skeled.PortalRuleListItem{
-		Enabled:   detail.Enabled,
-		Id:        detail.Id,
-		Name:      detail.Name,
-		EntryName: detail.EntryName, EntryAddresses: detail.EntryAddresses,
+		Enabled:                 detail.Enabled,
+		Id:                      detail.Id,
+		Name:                    detail.Name,
+		EntryName:               detail.EntryName,
+		EntryAddresses:          detail.EntryAddresses,
 		MatchPathPrefix:         detail.MatchPathPrefix,
 		RouteType:               detail.RouteType,
 		RouteSiteName:           detail.RouteSiteName,

@@ -249,8 +249,9 @@ func TestRegistryCoreRegisterSavesDomainDescriptors(t *testing.T) {
 	descriptorRepo := &descriptorRepoSpy{}
 	core := newRegistryCoreForTest(repo, descriptorRepo)
 	domainDescriptor := &skeldesc.Domain{
-		Name: "demo.user",
-		Hash: "pkg-hash-1", Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
+		Name:      "demo.user",
+		Hash:      "pkg-hash-1",
+		Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 	}
 
 	core.Register(AppRegistration{
@@ -365,7 +366,9 @@ func TestRegistryPropagatesApiBoundaryFromDescriptor(t *testing.T) {
 	repo := &registryRepoSpy{}
 	core := newRegistryCoreForTest(repo, &descriptorRepoSpy{})
 	core.Register(AppRegistration{
-		InstanceId: "instance-1", Name: "demo.app", Version: "1.0.0",
+		InstanceId:        "instance-1",
+		Name:              "demo.app",
+		Version:           "1.0.0",
 		DomainDescriptors: []*skeldesc.Domain{{Name: "demo", Services: []*skeldesc.Service{{SkelName: "demo.ApiService", Api: true, AuthMode: skeldesc.AuthModeRequired}, {SkelName: "demo.BackendService", Pub: true, AuthMode: skeldesc.AuthModeRequired}, {SkelName: "demo.LegacyService", AuthMode: skeldesc.AuthModeRequired}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"}}},
 		ServiceHandlers: []ServiceHandlerRegistration{
 			{ServiceSkelName: "demo.ApiService"},

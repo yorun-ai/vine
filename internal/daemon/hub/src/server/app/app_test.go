@@ -133,12 +133,10 @@ func TestHubAdminModuleServesOnlyAdminAPIHandlers(t *testing.T) {
 // module graph of the initializer must be constructible from the bindings a Hub
 // application installs, without a running daemon.
 func TestInitializerResolvesFromCommonBindings(t *testing.T) {
-	component := &repodb.HubDatabase{
-		Flag: &flag.Flag{
-			Store:        flag.StoreSQLite,
-			DBSQLiteFile: sharedTestSQLitePath(t),
-		},
-	}
+	component := &repodb.HubDatabase{Flag: &flag.Flag{
+		Store:        flag.StoreSQLite,
+		DBSQLiteFile: sharedTestSQLitePath(t),
+	}}
 	manager := initTestConfigDatabase(component)
 	t.Cleanup(manager.AfterAppStop)
 	watchServer := watchserver.NewServerForTest()
@@ -225,17 +223,23 @@ func TestHubConfigurationLifecycle(t *testing.T) {
 			}{
 				{"save config", func() { appConfigRepo.Save(&core.AppConfig{Name: "new.config", Value: "{}", Version: 1}) }},
 				{"remove config", func() { appConfigRepo.Remove(item.Id) }},
-				{"save site", func() {
-					siteRepo.Save(&core.PortalSite{Name: "new.site", Type: core.PortalSiteTypeWEBGW, WebName: "demo.Web"})
-				}},
+				{
+					"save site",
+					func() {
+						siteRepo.Save(&core.PortalSite{Name: "new.site", Type: core.PortalSiteTypeWEBGW, WebName: "demo.Web"})
+					},
+				},
 				{"remove site", func() { siteRepo.Remove(-1) }},
-				{"save rule", func() {
-					// A rule belongs to the entry that serves its access, so Hub
-					// stores the entry before the rule.
-					entry := &core.PortalEntry{Name: "http:80", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}}
-					entryRepo.Save(entry)
-					ruleRepo.Save(&core.PortalRule{Name: "new.rule", EntryId: entry.Id, RouteType: "SITE", RouteSiteName: "new.site"})
-				}},
+				{
+					"save rule",
+					func() {
+						// A rule belongs to the entry that serves its access, so Hub
+						// stores the entry before the rule.
+						entry := &core.PortalEntry{Name: "http:80", Enabled: true, Protocol: "http", Http: &core.PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 80}}
+						entryRepo.Save(entry)
+						ruleRepo.Save(&core.PortalRule{Name: "new.rule", EntryId: entry.Id, RouteType: "SITE", RouteSiteName: "new.site"})
+					},
+				},
 				{"remove rule", func() { ruleRepo.Remove(-1) }},
 				{"save cert", func() { certRepo.Save(&core.PortalCert{Name: "new.cert", Domains: []string{"demo.local"}}) }},
 				{"remove cert", func() { certRepo.Remove(-1) }},

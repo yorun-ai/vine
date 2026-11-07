@@ -75,9 +75,7 @@ func TestAppImplStartRegistersWebberInprocRoutes(t *testing.T) {
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(true)
 
-	app := newApp(&testUniqueRouteAppSpec{
-		AppFlag: &RunFlag{},
-	}, flags)
+	app := newApp(&testUniqueRouteAppSpec{AppFlag: &RunFlag{}}, flags)
 	app.initInjector()
 	app.initServers()
 	app.startInprocServer()
@@ -107,9 +105,7 @@ func TestAppImplStopUnregistersWebberInprocRoutes(t *testing.T) {
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(true)
 
-	app := newApp(&testUniqueRouteAppSpec{
-		AppFlag: &RunFlag{},
-	}, flags)
+	app := newApp(&testUniqueRouteAppSpec{AppFlag: &RunFlag{}}, flags)
 	app.initInjector()
 	app.initServers()
 	app.startInprocServer()
@@ -127,9 +123,7 @@ func TestAppImplStartInprocServerRegistersConsoleInprocRoute(t *testing.T) {
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(true)
 
-	app := newApp(&testHelperAppSpec{
-		AppFlag: &RunFlag{},
-	}, flags)
+	app := newApp(&testHelperAppSpec{AppFlag: &RunFlag{}}, flags)
 	app.initInjector()
 	app.initServers()
 	app.startInprocServer()
@@ -152,9 +146,7 @@ func TestAppImplStartInprocServerRegistersEventerInprocRoute(t *testing.T) {
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(true)
 
-	app := newApp(&testEventerSpec{
-		AppFlag: &RunFlag{},
-	}, flags)
+	app := newApp(&testEventerSpec{AppFlag: &RunFlag{}}, flags)
 	app.initInjector()
 	app.initServers()
 	app.startInprocServer()
@@ -191,9 +183,7 @@ func TestAppImplStartInprocServerRegistersTaskerInprocRoute(t *testing.T) {
 	flags.EnsureRunFlag()
 	flags.InitInprocFlag(true)
 
-	app := newApp(&testTaskerRunnerSpec{
-		AppFlag: &RunFlag{},
-	}, flags)
+	app := newApp(&testTaskerRunnerSpec{AppFlag: &RunFlag{}}, flags)
 	app.initInjector()
 	app.initServers()
 	app.startInprocServer()

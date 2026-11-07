@@ -40,12 +40,10 @@ func TestConvertNormalizesAuthAndComputesPolicy(t *testing.T) {
 					SkelName: "demo.Api",
 					Api:      true,
 					AuthMode: mode,
-					Require: &PermRequire{
-						Expr: &PermExpr{
-							Mode: PermRequireModeCode,
-							Code: "read",
-						},
-					},
+					Require: &PermRequire{Expr: &PermExpr{
+						Mode: PermRequireModeCode,
+						Code: "read",
+					}},
 					Methods: []*MethodSchema{
 						{
 							Name:     "Get",

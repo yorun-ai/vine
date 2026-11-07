@@ -374,9 +374,7 @@ func variableFlagTestDescriptors() []*skeldesc.Domain {
 					Lifecycle: skeldesc.ConfigLifecycleEternal,
 				},
 			},
-			Generated: &skeldesc.GeneratedInfo{
-				CompilerVersion: "v99.0.0",
-			},
+			Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"},
 		},
 	}
 }

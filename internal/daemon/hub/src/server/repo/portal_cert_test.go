@@ -102,9 +102,7 @@ func newTestPortalCertRepo(t *testing.T) (*gorm.DB, *PortalCertRepo, *watchserve
 	t.Cleanup(watchServer.AfterAppStop)
 
 	repo := &PortalCertRepo{
-		Dao: &model.PortalCertDao{
-			Dao: rdb.NewDao[*model.PortalCert](db),
-		},
+		Dao:    &model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](db)},
 		Syncer: testSyncer(watchServer),
 		Access: new(configaccess.Access),
 	}

@@ -55,10 +55,8 @@ func newTestCertificatePEM(t *testing.T, domains []string) ([]byte, []byte) {
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	require.NoError(t, err)
 	template := &x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject: pkix.Name{
-			CommonName: domains[0],
-		},
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: domains[0]},
 		DNSNames:              domains,
 		NotBefore:             time.Now().Add(-time.Hour),
 		NotAfter:              time.Now().Add(time.Hour),

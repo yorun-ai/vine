@@ -252,7 +252,9 @@ func TestIgnoredFlagAndItsEnvironmentAreDropped(t *testing.T) {
 }
 
 func TestUnknownIgnoredFlagPanics(t *testing.T) {
-	assert.Panics(t, func() { flags(&hubflag.Flag{}, Option{IgnoredFlags: []string{"hub-unknown"}}) })
+	assert.Panics(t, func() {
+		flags(&hubflag.Flag{}, Option{IgnoredFlags: []string{"hub-unknown"}})
+	})
 }
 
 // A renamed flag answers to the new name alone: the declared name and the

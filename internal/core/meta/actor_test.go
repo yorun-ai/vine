@@ -170,8 +170,11 @@ func TestActorIdentityRoundTrip(t *testing.T) {
 		}
 	}
 	forwarded, err := DecodeActorFromBase64(encodePayloadToBase64(&_ActorPayload{
-		Type: ActorTypeAuthenticated, Realm: "forwarded.UserActor", Identifier: "forwarded-id",
-		InfoSkelName: spec.InfoSkelName, Info: []byte(`{"id":1}`),
+		Type:         ActorTypeAuthenticated,
+		Realm:        "forwarded.UserActor",
+		Identifier:   "forwarded-id",
+		InfoSkelName: spec.InfoSkelName,
+		Info:         []byte(`{"id":1}`),
 	}))
 	if err != nil || forwarded.Realm() != "forwarded.UserActor" || forwarded.Identifier() != "forwarded-id" {
 		t.Fatalf("forwarded identity changed: %v", err)

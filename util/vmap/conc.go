@@ -10,9 +10,7 @@ type MutexMap[K comparable, V any] struct {
 
 // NewMutexMap creates an empty map protected by an RWMutex.
 func NewMutexMap[K comparable, V any]() *MutexMap[K, V] {
-	return &MutexMap[K, V]{
-		dict: map[K]V{},
-	}
+	return &MutexMap[K, V]{dict: map[K]V{}}
 }
 
 // Store associates value with key.
@@ -79,7 +77,10 @@ func (m *MutexMap[K, V]) Range(iteratee func(K, V) bool) {
 		entries = append(entries, struct {
 			key   K
 			value V
-		}{key: key, value: value})
+		}{
+			key:   key,
+			value: value,
+		})
 	}
 	m.mu.RUnlock()
 

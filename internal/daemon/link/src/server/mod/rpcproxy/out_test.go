@@ -29,11 +29,7 @@ func TestForwardOutboundRequestWithTransportInheritsContextDeadline(t *testing.T
 	var targetDeadline time.Time
 	transport := _OutboundRoundTripperFunc(func(request *http.Request) (*http.Response, error) {
 		targetDeadline, _ = request.Context().Deadline()
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			Header:     http.Header{},
-			Body:       io.NopCloser(strings.NewReader("ok")),
-		}, nil
+		return &http.Response{StatusCode: http.StatusOK, Header: http.Header{}, Body: io.NopCloser(strings.NewReader("ok"))}, nil
 	})
 
 	request, err := http.NewRequest(http.MethodPost, "http://link.local/demo.Service/Invoke", nil)

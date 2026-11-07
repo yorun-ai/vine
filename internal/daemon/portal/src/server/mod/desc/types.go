@@ -40,7 +40,8 @@ func (m *Manager) Snapshot() Snapshot {
 		Webs:      maps.Clone(m.websBySkelName),
 		Services:  maps.Clone(m.typeServices),
 		Syncing:   m.generation != m.syncedGeneration,
-		Data:      map[string]*skeldesc.Data{}, Enums: map[string]*skeldesc.Enum{},
+		Data:      map[string]*skeldesc.Data{},
+		Enums:     map[string]*skeldesc.Enum{},
 	}
 	for _, key := range vmap.SortedKeys(m.typesByKey) {
 		entry := m.typesByKey[key]

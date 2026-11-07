@@ -28,9 +28,7 @@ type EventDebugApiServiceServerImpl struct {
 }
 
 func (s *EventDebugApiServiceServerImpl) defaultBuilder() _DebugDefaultBuilder {
-	return _DebugDefaultBuilder{
-		DescriptorRepo: s.DescriptorRepo,
-	}
+	return _DebugDefaultBuilder{DescriptorRepo: s.DescriptorRepo}
 }
 
 func (s *EventDebugApiServiceServerImpl) natsPublisher() _DebugNATSPublisher {

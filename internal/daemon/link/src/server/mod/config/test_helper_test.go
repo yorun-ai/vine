@@ -67,9 +67,7 @@ func newTestAppInstance(instanceID string) *minder.AppInstance {
 	if err != nil {
 		panic(err)
 	}
-	return &minder.AppInstance{
-		AppInfo: appInfo,
-	}
+	return &minder.AppInstance{AppInfo: appInfo}
 }
 
 func registerTestAppInstance(reader *Reader, instanceID string) *minder.AppInstance {

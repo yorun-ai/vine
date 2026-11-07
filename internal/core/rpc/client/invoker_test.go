@@ -221,9 +221,7 @@ func TestParseResponseReturnsTransportError(t *testing.T) {
 func TestParseResponseReturnsRPCError(t *testing.T) {
 	expected := ex.New(ex.NotFound, "missing")
 
-	result, err := parseResponse(&spec.ResponseImpl{
-		ErrorValue: expected,
-	}, nil)
+	result, err := parseResponse(&spec.ResponseImpl{ErrorValue: expected}, nil)
 	if result != nil {
 		t.Fatal("expected nil result when rpc response contains error")
 	}

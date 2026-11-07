@@ -48,7 +48,9 @@ func TestManagerRetriesFailedMessageThroughJetStreamDelay(t *testing.T) {
 		AppInfo:      meta.MustNewApp("demo.app", "1.0.0", "11111111-1111-1111-1111-111111111111"),
 		TaskEndpoint: testLocalAppEndpoint(8080) + testPathTask,
 		TaskRunners: []skeled.TaskRunnerRegistration{{
-			TaskSkelName: "demo.task", TimeoutMs: 2500, Concurrency: 1,
+			TaskSkelName: "demo.task",
+			TimeoutMs:    2500,
+			Concurrency:  1,
 		}},
 	})
 	manager.LaunchTask(skeled.TaskLaunch{TaskSkelName: "demo.task"})
@@ -431,7 +433,9 @@ type dispatcherMessage struct {
 	metadataErr error
 }
 
-func newDispatcherMessage() *dispatcherMessage { return new(dispatcherMessage{delivered: 1}) }
+func newDispatcherMessage() *dispatcherMessage {
+	return new(dispatcherMessage{delivered: 1})
+}
 func (m *dispatcherMessage) Metadata() (*jetstream.MsgMetadata, error) {
 	if m.metadataErr != nil {
 		return nil, m.metadataErr
@@ -485,8 +489,12 @@ func newDispatcherFixture(t *testing.T, capacities ...int) (*Manager, *_TaskSubs
 		t.Cleanup(cancel)
 		runner := new(_TaskRunnerState{
 			instance:      new(minder.AppInstance{AppInfo: meta.MustNewApp("demo.app", "1.0.0", id)}),
-			appInstanceID: id, registration: skeled.TaskRunnerRegistration{TaskSkelName: "demo.task", Concurrency: capacity},
-			semaphore: make(chan struct{}, capacity), readContext: ctx, cancelRead: cancel, subscription: state,
+			appInstanceID: id,
+			registration:  skeled.TaskRunnerRegistration{TaskSkelName: "demo.task", Concurrency: capacity},
+			semaphore:     make(chan struct{}, capacity),
+			readContext:   ctx,
+			cancelRead:    cancel,
+			subscription:  state,
 		})
 		runners = append(runners, runner)
 		state.runnerByApp[id] = runner

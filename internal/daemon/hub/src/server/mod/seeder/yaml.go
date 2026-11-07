@@ -333,7 +333,8 @@ func seedEntityLabel(section string, name string) string {
 // toSeedRule carries a rule and its declared entry reference.
 func (r _PortalRule) toSeedRule() *seedRule {
 	return &seedRule{
-		Rule: &core.PortalRule{FieldSources: r.Sources,
+		Rule: &core.PortalRule{
+			FieldSources:            r.Sources,
 			Name:                    r.Name,
 			MatchPathPrefix:         r.MatchPathPrefix,
 			RouteType:               r.RouteType,
@@ -417,7 +418,8 @@ func (s _PortalSite) toCorePortalSite() *core.PortalSite {
 		Mode:           core.PortalCorsMode(s.Cors.Mode),
 		AllowedOrigins: append([]string{}, s.Cors.AllowedOrigins...),
 	}
-	site := &core.PortalSite{FieldSources: maps.Clone(s.Sources),
+	site := &core.PortalSite{
+		FieldSources:   maps.Clone(s.Sources),
 		Name:           s.Name,
 		Type:           core.PortalSiteType(s.Type),
 		ActorSkelName:  s.ActorSkelName,
@@ -460,11 +462,12 @@ func (c *_PortalCert) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (c _PortalCert) toCorePortalCert() *core.PortalCert {
-	cert := &core.PortalCert{FieldSources: c.Sources,
-		Name:        c.Name,
-		Certificate: c.Certificate,
-		PrivateKey:  c.PrivateKey,
-		Enabled:     core.EnabledOrDefault(c.Enabled),
+	cert := &core.PortalCert{
+		FieldSources: c.Sources,
+		Name:         c.Name,
+		Certificate:  c.Certificate,
+		PrivateKey:   c.PrivateKey,
+		Enabled:      core.EnabledOrDefault(c.Enabled),
 	}
 	return cert
 }

@@ -55,10 +55,13 @@ func (g *RpcGateway) serveMcp(ctx *spec.Context, cors watched.PortalCors) {
 	// advertised versions are restricted. Require the modern version at ingress.
 	if version := r.Header.Get("MCP-Protocol-Version"); r.Method == http.MethodPost && version != mcpProtocolVersion {
 		data, _ := json.Marshal(mcp.UnsupportedProtocolVersionData{
-			Supported: []string{mcpProtocolVersion}, Requested: version,
+			Supported: []string{mcpProtocolVersion},
+			Requested: version,
 		})
 		failure := &jsonrpc.Error{
-			Code: mcp.CodeUnsupportedProtocolVersion, Message: "Unsupported protocol version", Data: data,
+			Code:    mcp.CodeUnsupportedProtocolVersion,
+			Message: "Unsupported protocol version",
+			Data:    data,
 		}
 		if version == "" {
 			failure.Code = mcp.CodeHeaderMismatch
@@ -82,8 +85,10 @@ func (g *RpcGateway) serveMcp(ctx *spec.Context, cors watched.PortalCors) {
 	handler := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server {
 		return g.newMcpServer(&next)
 	}, &mcp.StreamableHTTPOptions{
-		Stateless: true, JSONResponse: true, PropagateRequestCancellation: true,
-		MaxRequestBodyBytes: vrpchttp.MaxRequestBodyBytes,
+		Stateless:                    true,
+		JSONResponse:                 true,
+		PropagateRequestCancellation: true,
+		MaxRequestBodyBytes:          vrpchttp.MaxJSONRequestBodyBytes,
 	})
 	handler.ServeHTTP(&_McpResponseWriter{ResponseWriter: w}, next.Request)
 }
@@ -154,9 +159,11 @@ func (g *RpcGateway) newMcpServer(httpCtx *spec.Context) *mcp.Server {
 						return nil, &jsonrpc.Error{Code: -32000, Message: "API schema is unavailable"}
 					}
 					tool := &mcp.Tool{
-						Name: name, Title: service.SkelName + "/" + operation.SkelName,
-						Description: mcpToolDescription(service, operation),
-						InputSchema: input, OutputSchema: output,
+						Name:         name,
+						Title:        service.SkelName + "/" + operation.SkelName,
+						Description:  mcpToolDescription(service, operation),
+						InputSchema:  input,
+						OutputSchema: output,
 					}
 					server.AddTool(tool, func(ctx context.Context, call *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 						return g.callMcpTool(ctx, &nextHTTP, service.SkelName, operation.SkelName, tool, call)

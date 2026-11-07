@@ -138,9 +138,7 @@ func New(code Code, message string, opts ...ErrorOption) Error {
 	return err
 }
 
-var okError = new(_Error{
-	code: OK,
-})
+var okError = new(_Error{code: OK})
 
 func NewOK() Error {
 	return okError
