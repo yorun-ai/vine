@@ -8,6 +8,27 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.32.6] - 2026-11-07
+
+### Changed
+
+- Upgrade the shared vRPC Go transport to v0.16.0. HTTP RPC requests now allow
+  encoded CBOR bodies up to 128 MiB while JSON requests remain limited to 32 MiB.
+  Portal and backend RPC readers enforce the encoding-specific limits; MCP
+  requests remain limited to 32 MiB and response bodies to 128 MiB.
+- Improve Hub Dashboard sidebar alignment and scene selection. Move Debug and
+  Skeleton into a separate Developer Tools scene while preserving page URLs,
+  and refine group expansion, keyboard navigation, and reduced-motion behavior.
+- Normalize Go struct literal layouts and document choosing consistent compact
+  or one-field-per-line forms for related assignments.
+- Update stable Hub, Link, and Portal Kubernetes images to v0.32.6.
+
+### Upgrade Notes
+
+- Upgrade Portal, Link, and backend Vine applications on the request path to accept
+  CBOR requests above 32 MiB. Limits apply to the complete encoded envelope,
+  including its overhead; existing JSON and CBOR requests remain compatible.
+
 ## [0.32.5] - 2026-10-22
 
 ### Fixed
@@ -1888,7 +1909,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.32.5...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.32.6...HEAD
+[0.32.6]: https://github.com/yorun-ai/vine/compare/v0.32.5...v0.32.6
 [0.32.5]: https://github.com/yorun-ai/vine/compare/v0.32.4...v0.32.5
 [0.32.4]: https://github.com/yorun-ai/vine/compare/v0.32.3...v0.32.4
 [0.32.3]: https://github.com/yorun-ai/vine/compare/v0.32.2...v0.32.3
