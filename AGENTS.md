@@ -9,15 +9,10 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
 - Declare the type of every parameter and result independently. Write
   `func f(key string, token string)`, never `func f(key, token string)`; the same
   applies to results, named function types, function literals, and variables.
-- Struct literals initializing only one field may use a single line; those
-  initializing two or more fields must put each field on its own line, with
-  the closing brace on a separate line. Count initialized fields, not the fields
-  declared in the type. Keep short literals multiline when comments or multiline
-  values warrant it. Apply this rule to nested literals and tests as well; leave
-  empty literals as `{}` and do not manually reformat generated code.
-- Exception: keep each `codeMetas` entry in `internal/core/ex/code.go` on one
-  line, even with multiple fields, to preserve the aligned layout of grouped
-  error-code metadata.
+- In a struct literal, either keep all fields on one line or put each field on
+  its own line; do not mix layouts by grouping multiple fields on some lines.
+  Choose between these styles for visual consistency among related assignments
+  and clear visual distinction between groups.
 
 ## Naming
 
