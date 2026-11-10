@@ -93,7 +93,7 @@ func TestExtractCheckParamsSupportsCborRequestBody(t *testing.T) {
 		Request:  request,
 		Response: httptest.NewRecorder(),
 		Server:   meta.MustNewApp("perm.test", "0.0.0", "123e4567-e89b-12d3-a456-426614174021"),
-		requestBody: vcode.MustMarshalCbor(map[string]any{
+		requestBody: mustMarshalTestCBOR(t, map[string]any{
 			"params": map[string]any{
 				"update": map[string]any{
 					"userId": 42,
@@ -220,7 +220,7 @@ func TestExtractCheckParamsUsesDescriptorCodeArgumentName(t *testing.T) {
 				body := map[string]any{"params": map[string]any{businessName: "business-value"}}
 				encoded := vcode.MustMarshalJson(body)
 				if mediaType == rpchttp.ContentTypeCbor {
-					encoded = vcode.MustMarshalCbor(body)
+					encoded = mustMarshalTestCBOR(t, body)
 				}
 				request := httptest.NewRequest(http.MethodPost, "/rpc/invoke/app.UserService/update", nil)
 				request.Header.Set(rpchttp.HeaderContentType, mediaType)

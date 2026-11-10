@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/fxamacker/cbor/v2"
 	"github.com/stretchr/testify/require"
@@ -519,4 +520,21 @@ func TestDecodeRequestUsesEncodingSpecificBodyLimit(t *testing.T) {
 			require.Equal(t, name, got.Arguments().(*pingArguments).Name)
 		})
 	}
+}
+
+func TestDecodeArgumentsBytesNativeUUID(t *testing.T) {
+	id := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
+	type arguments struct {
+		ID     uuid.UUID            `json:"id" cbor:"id"`
+		Lookup map[uuid.UUID]string `json:"lookup" cbor:"lookup"`
+	}
+	expected := arguments{ID: id, Lookup: map[uuid.UUID]string{id: "value"}}
+	body, err := rpchttp.EncodeRequest(expected, ContentTypeCbor)
+	require.NoError(t, err)
+	request := httptest.NewRequest("POST", "/", nil)
+	request.Header.Set(HeaderContentType, ContentTypeCbor)
+	decoder := &_RequestDecoder{httpRequest: request}
+	var decoded arguments
+	require.NoError(t, decoder.decodeArgumentsBytes(body, &decoded))
+	require.Equal(t, expected, decoded)
 }

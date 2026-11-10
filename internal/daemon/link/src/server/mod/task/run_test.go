@@ -3,26 +3,24 @@ package task
 import (
 	"context"
 	"fmt"
-	"github.com/nats-io/nats.go/jetstream"
-	"go.yorun.ai/vine/util/vcode"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"testing/synctest"
 	"time"
-
-	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 	"uuid"
 
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	skeltype "go.yorun.ai/skel/types"
+	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/meta"
 	taskspec "go.yorun.ai/vine/internal/core/task/spec"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
+	"go.yorun.ai/vine/util/vcode"
 )
 
 const testPathTask = "/task"
@@ -119,7 +117,7 @@ func TestManagerRegistersListenerAndDispatchesRun(t *testing.T) {
 			TraceSpan:     "0123456789abcdef",
 			AppName:       "launcher.app",
 			AppVersion:    "2.0.0",
-			AppInstanceId: skeltype.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
+			AppInstanceId: uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
 		},
 		TaskSkelName:    "demo.user.SyncUserTask",
 		TriggerSkelName: "demo.user.SyncUserTaskManualTrigger",
@@ -298,7 +296,7 @@ func TestManagerCompetesGloballyForTaskMessages(t *testing.T) {
 			TraceSpan:     "0123456789abcdef",
 			AppName:       "launcher.app",
 			AppVersion:    "2.0.0",
-			AppInstanceId: skeltype.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
+			AppInstanceId: uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
 		},
 		TaskSkelName:    "demo.user.SyncUserTask",
 		TriggerSkelName: "demo.user.SyncUserTaskManualTrigger",
@@ -384,7 +382,7 @@ func TestManagerDispatchesTaskToSingleRunner(t *testing.T) {
 			TraceSpan:     "0123456789abcdef",
 			AppName:       "launcher.app",
 			AppVersion:    "2.0.0",
-			AppInstanceId: skeltype.NewUUID(uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
+			AppInstanceId: uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
 		},
 		TaskSkelName:    "demo.user.SyncUserTask",
 		TriggerSkelName: "demo.user.SyncUserTaskManualTrigger",

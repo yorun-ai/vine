@@ -3,6 +3,7 @@ package debug
 import (
 	"encoding/json/v2"
 	"testing"
+	"uuid"
 
 	skeldesc "go.yorun.ai/skel/descriptor"
 	skeltype "go.yorun.ai/skel/types"
@@ -11,7 +12,7 @@ import (
 func TestDebugDefaultBuilderScalarValuesAreValidSkelJson(t *testing.T) {
 	builder := _DebugDefaultBuilder{}
 
-	assertValidSkelJsonValue[skeltype.UUID](t, builder.defaultValue(&skeldesc.Type{
+	assertValidSkelJsonValue[uuid.UUID](t, builder.defaultValue(&skeldesc.Type{
 		Kind:   skeldesc.TypeKindScalar,
 		Scalar: skeldesc.ScalarUUID,
 	}))

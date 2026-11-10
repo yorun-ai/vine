@@ -3,18 +3,18 @@ package event
 import (
 	"context"
 	"fmt"
-	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 	"reflect"
 	"sync"
 	"testing"
 	"time"
 	"unsafe"
+	"uuid"
 
 	gonats "github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/require"
-	skeltype "go.yorun.ai/skel/types"
 	internalapp "go.yorun.ai/vine/internal/app"
+	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
@@ -31,7 +31,7 @@ type _ManagerRegistryServiceClient struct{}
 
 func (*_ManagerRegistryServiceClient) Register(hubskeled.AppRegistration, ...rpcclient.InvokeOption) {
 }
-func (*_ManagerRegistryServiceClient) Unregister(string, skeltype.UUID, ...rpcclient.InvokeOption) {
+func (*_ManagerRegistryServiceClient) Unregister(string, uuid.UUID, ...rpcclient.InvokeOption) {
 }
 func (*_ManagerRegistryServiceClient) Heartbeat(hubskeled.AppStatus, ...rpcclient.InvokeOption) bool {
 	return true

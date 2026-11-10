@@ -5,6 +5,7 @@ import (
 	"encoding/json/v2"
 	"os"
 	"testing"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -234,7 +235,7 @@ func TestEditorScalarFormatsMatchRuntime(t *testing.T) {
 			case "decimal":
 				target = new(skeltype.Decimal)
 			case "uuid":
-				target = new(skeltype.UUID)
+				target = new(uuid.UUID)
 			case "timestamp":
 				target = new(skeltype.Timestamp)
 			case "localdate":

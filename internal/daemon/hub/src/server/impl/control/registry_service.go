@@ -1,7 +1,8 @@
 package control
 
 import (
-	skeltype "go.yorun.ai/skel/types"
+	"uuid"
+
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
@@ -33,7 +34,7 @@ func (s *RegistryServiceServerImpl) Register(reg skeled.AppRegistration) {
 	s.refreshPortalSiteRpcgwServices()
 }
 
-func (s *RegistryServiceServerImpl) Unregister(name string, instanceId skeltype.UUID) {
+func (s *RegistryServiceServerImpl) Unregister(name string, instanceId uuid.UUID) {
 	s.RegistryCore.Unregister(name, instanceId.String())
 	s.refreshDescriptors()
 	s.refreshPortalSiteRpcgwServices()

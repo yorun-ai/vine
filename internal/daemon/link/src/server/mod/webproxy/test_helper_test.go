@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"uuid"
 
-	skeltype "go.yorun.ai/skel/types"
 	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -21,7 +21,7 @@ const testPathWebAccess = "/web/access"
 type _WebProxyRegistryServiceClient struct{}
 
 func (*_WebProxyRegistryServiceClient) Register(hubskeled.AppRegistration, ...client.InvokeOption) {}
-func (*_WebProxyRegistryServiceClient) Unregister(string, skeltype.UUID, ...client.InvokeOption)   {}
+func (*_WebProxyRegistryServiceClient) Unregister(string, uuid.UUID, ...client.InvokeOption)       {}
 func (*_WebProxyRegistryServiceClient) Heartbeat(hubskeled.AppStatus, ...client.InvokeOption) bool {
 	return true
 }

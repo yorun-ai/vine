@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"uuid"
 
-	skeltype "go.yorun.ai/skel/types"
 	internalapp "go.yorun.ai/vine/internal/app"
 	coreapp "go.yorun.ai/vine/internal/core/app"
 	"go.yorun.ai/vine/internal/core/ex"
@@ -43,7 +43,7 @@ type _IngressRegistryServiceClient struct{}
 
 func (*_IngressRegistryServiceClient) Register(hubskeled.AppRegistration, ...client.InvokeOption) {
 }
-func (*_IngressRegistryServiceClient) Unregister(string, skeltype.UUID, ...client.InvokeOption) {}
+func (*_IngressRegistryServiceClient) Unregister(string, uuid.UUID, ...client.InvokeOption) {}
 func (*_IngressRegistryServiceClient) Heartbeat(hubskeled.AppStatus, ...client.InvokeOption) bool {
 	return true
 }

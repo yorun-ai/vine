@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	skeldesc "go.yorun.ai/skel/descriptor"
+	"go.yorun.ai/skel/types/codec"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/skel/legacy"
-	"go.yorun.ai/vine/util/vcode"
 	rpchttp "go.yorun.ai/vrpc/transport/http"
 )
 
@@ -73,7 +73,7 @@ func TestEvalPermExprPreservesLegacyShortCircuitAfterConversion(t *testing.T) {
 }
 
 func TestRequestParamsGetByPathSupportsFieldCascade(t *testing.T) {
-	data := vcode.MustMarshalCbor(map[string]any{
+	data := mustMarshalTestCBOR(t, map[string]any{
 		"params": map[string]any{
 			"update": map[string]any{
 				"userId": 42,
@@ -120,7 +120,7 @@ func TestRequestParamsGetByPathRejectsDuplicateKeysWithoutCachingPartialValue(t 
 }
 
 func TestRequestParamsGetByPathSupportsSingleWildcardPath(t *testing.T) {
-	data := vcode.MustMarshalCbor(map[string]any{
+	data := mustMarshalTestCBOR(t, map[string]any{
 		"params": map[string]any{
 			"items": []any{
 				map[string]any{"id": "first"},
@@ -141,7 +141,7 @@ func TestRequestParamsGetByPathSupportsSingleWildcardPath(t *testing.T) {
 }
 
 func TestRequestParamsGetByPathRejectsUnsupportedWildcardPaths(t *testing.T) {
-	data := vcode.MustMarshalCbor(map[string]any{
+	data := mustMarshalTestCBOR(t, map[string]any{
 		"params": map[string]any{
 			"items": []any{
 				map[string]any{
@@ -215,4 +215,13 @@ func TestEvalPermExprPreservesSelectedFailureReason(t *testing.T) {
 			}
 		})
 	}
+}
+
+func mustMarshalTestCBOR(t *testing.T, value any) []byte {
+	t.Helper()
+	data, err := codec.MarshalCBOR(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
 }

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/fxamacker/cbor/v2"
+	skelcodec "go.yorun.ai/skel/types/codec"
 	"go.yorun.ai/vine/util/vcode"
 	rpchttp "go.yorun.ai/vrpc/transport/http"
 )
@@ -66,9 +67,15 @@ func TestErrorWireRoundTrip(t *testing.T) {
 			unmarshal:   unmarshalJson,
 		},
 		{
-			name:        "cbor",
-			mustMarshal: vcode.MustMarshalCbor,
-			unmarshal:   cbor.Unmarshal,
+			name: "cbor",
+			mustMarshal: func(value any) []byte {
+				data, err := skelcodec.MarshalCBOR(value)
+				if err != nil {
+					t.Fatal(err)
+				}
+				return data
+			},
+			unmarshal: cbor.Unmarshal,
 		},
 	} {
 		t.Run(codec.name, func(t *testing.T) {

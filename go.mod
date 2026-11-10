@@ -28,8 +28,8 @@ require (
 	github.com/tidwall/gjson v1.19.0
 	github.com/tidwall/redcon v1.6.4
 	github.com/urfave/cli/v3 v3.14.0
-	go.yorun.ai/skel v0.33.0
-	go.yorun.ai/vrpc v0.16.0
+	go.yorun.ai/skel v0.35.0
+	go.yorun.ai/vrpc v0.17.0
 	golang.org/x/net v0.61.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/postgres v1.6.3

@@ -5,13 +5,11 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
-	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	skeltype "go.yorun.ai/skel/types"
+	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 	"go.yorun.ai/vine/internal/core/ctr"
 	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/internal/core/ex"
@@ -268,7 +266,7 @@ func TestAppTaskServiceServerRunTaskForwardsToTaskServer(t *testing.T) {
 			TraceSpan:     meta.InitialTrace().Span(),
 			AppName:       "remote.app",
 			AppVersion:    "1.0.0",
-			AppInstanceId: skeltype.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
+			AppInstanceId: uuid.MustParse("33333333-3333-3333-3333-333333333333"),
 		},
 		TaskSkelName:    "test.tasker.TaskerTestTask",
 		TriggerSkelName: "forGroup",

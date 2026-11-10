@@ -9,7 +9,6 @@ import (
 	"uuid"
 
 	"github.com/stretchr/testify/assert"
-	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -22,7 +21,7 @@ import (
 type _RegistryServiceClient struct {
 	mutex         sync.Mutex
 	registrations []hubskeled.AppRegistration
-	unregistered  []skeltype.UUID
+	unregistered  []uuid.UUID
 	heartbeats    []hubskeled.AppStatus
 	registered    bool
 	onRegister    func(hubskeled.AppRegistration)
@@ -37,7 +36,7 @@ func (c *_RegistryServiceClient) Register(registration hubskeled.AppRegistration
 	}
 }
 
-func (c *_RegistryServiceClient) Unregister(_ string, instanceId skeltype.UUID, _ivOpts ...client.InvokeOption) {
+func (c *_RegistryServiceClient) Unregister(_ string, instanceId uuid.UUID, _ivOpts ...client.InvokeOption) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.unregistered = append(c.unregistered, instanceId)
@@ -121,7 +120,7 @@ func TestRegisterInstanceRegistersHubAndProfileState(t *testing.T) {
 
 	client.mutex.Lock()
 	assert.Len(t, client.registrations, 1)
-	assert.Equal(t, skeltype.NewUUID(uuid.MustParse(appInfo.InstanceId())), client.registrations[0].InstanceId)
+	assert.Equal(t, uuid.MustParse(appInfo.InstanceId()), client.registrations[0].InstanceId)
 	assert.Equal(t, "", client.registrations[0].Endpoint)
 	assert.Equal(t, []hubskeled.ServiceHandlerRegistration{{
 		ServiceSkelName: "demo.service.UserService",
@@ -160,7 +159,7 @@ func TestUnregisterInstanceRemovesCatalogState(t *testing.T) {
 	minder.UnregisterInstance(appInfo.InstanceId())
 
 	client.mutex.Lock()
-	assert.Equal(t, []skeltype.UUID{skeltype.NewUUID(uuid.MustParse(appInfo.InstanceId()))}, client.unregistered)
+	assert.Equal(t, []uuid.UUID{uuid.MustParse(appInfo.InstanceId())}, client.unregistered)
 	client.mutex.Unlock()
 	_, ok := minder.appInstance(appInfo.InstanceId())
 	assert.False(t, ok)

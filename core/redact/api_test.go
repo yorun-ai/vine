@@ -77,3 +77,15 @@ func TestRenderSkelScalars(t *testing.T) {
 		t.Fatalf("binary should be summarized: %s", result.JSON)
 	}
 }
+
+func TestRenderNativeUUID(t *testing.T) {
+	result, err := redact.Render(struct {
+		ID uuid.UUID `json:"id"`
+	}{ID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(result.JSON, `"id":"123e4567-e89b-12d3-a456-426614174000"`) {
+		t.Fatalf("native UUID should keep its scalar representation: %s", result.JSON)
+	}
+}
