@@ -3,6 +3,9 @@ const durationUnits: Record<string, bigint> = {
   ms: 1000000n, s: 1000000000n, m: 60000000000n, h: 3600000000000n,
 }
 
+// Match shopspring/decimal's default limit on the exponent after fractional digits.
+const maxDecimalDecodeExponent = 10000n
+
 function validDuration(text: string) {
   const negative = text.startsWith('-')
   let rest = text.replace(/^[+-]/, '')
@@ -66,7 +69,8 @@ export function configScalarFormatMatches(value: unknown, type: string) {
       }
       const exponent = BigInt(match[3] ?? '0')
       const scale = exponent - BigInt((match[1] ?? match[2] ?? '').length)
-      return exponent >= -2147483648n && exponent <= 2147483647n && scale >= -2147483648n && scale <= 2147483647n
+      return exponent >= -2147483648n && exponent <= 2147483647n
+        && scale >= -maxDecimalDecodeExponent && scale <= maxDecimalDecodeExponent
     }
     case 'localdate':
       return validDate(value)

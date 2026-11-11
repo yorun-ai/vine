@@ -136,13 +136,58 @@
   },
   {
     "type": "decimal",
-    "value": "1e2147483647",
+    "value": "1e10000",
     "valid": true
   },
   {
     "type": "decimal",
-    "value": "1e-2147483648",
+    "value": "1e-10000",
     "valid": true
+  },
+  {
+    "type": "decimal",
+    "value": "0.1e10001",
+    "valid": true
+  },
+  {
+    "type": "decimal",
+    "value": "0.1e-9999",
+    "valid": true
+  },
+  {
+    "type": "decimal",
+    "value": "1e10001",
+    "valid": false
+  },
+  {
+    "type": "decimal",
+    "value": "1e-10001",
+    "valid": false
+  },
+  {
+    "type": "decimal",
+    "value": "0.1e10002",
+    "valid": false
+  },
+  {
+    "type": "decimal",
+    "value": "0.1e-10000",
+    "valid": false
+  },
+  {
+    "type": "decimal",
+    "value": "1.0e-10000",
+    "valid": false
+  },
+  {
+    "type": "decimal",
+    "value": "1e2147483647",
+    "valid": false
+  },
+  {
+    "type": "decimal",
+    "value": "1e-2147483648",
+    "valid": false
   },
   {
     "type": "decimal",
