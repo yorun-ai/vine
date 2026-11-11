@@ -77,10 +77,11 @@ func (a *_Actor) Impersonator() Actor {
 	return a.impersonator
 }
 
-// NewImpersonatedActor preserves the effective identity and attaches its operator.
+// NewImpersonatedActor attaches one direct operator to an effective identity.
+// Both actors must be ordinarily authenticated; existing impersonation is rejected.
 func NewImpersonatedActor(actor Actor, impersonator Actor) Actor {
-	vpre.Check(actor != nil && actor.IsAuthenticated(), "impersonation requires an authenticated effective actor")
-	vpre.Check(impersonator != nil && impersonator.IsAuthenticated(), "impersonation requires an authenticated operator")
+	vpre.Check(actor != nil && actor.Type() == ActorTypeAuthenticated, "impersonation requires an ordinary authenticated effective actor")
+	vpre.Check(impersonator != nil && impersonator.Type() == ActorTypeAuthenticated, "impersonation requires an ordinary authenticated operator")
 	result := *actor.(*_Actor)
 	result.kind = ActorTypeImpersonated
 	result.impersonator = impersonator.(*_Actor)
@@ -221,11 +222,11 @@ func DecodeActorFromBase64(value string) (Actor, error) {
 		return nil, err
 	}
 
-	return decodeActorPayload(payload, 0)
+	return decodeActorPayload(payload)
 }
 
-func decodeActorPayload(payload *_ActorPayload, depth int) (Actor, error) {
-	if payload == nil || depth > 32 {
+func decodeActorPayload(payload *_ActorPayload) (Actor, error) {
+	if payload == nil {
 		return nil, fmt.Errorf("invalid actor payload")
 	}
 	if payload.Type != ActorTypeImpersonated && payload.Impersonator != nil {
@@ -242,6 +243,24 @@ func decodeActorPayload(payload *_ActorPayload, depth int) (Actor, error) {
 	default:
 		return nil, fmt.Errorf("unknown actor type %s", payload.Type)
 	}
+	actor, err := decodeActorIdentity(payload)
+	if err != nil {
+		return nil, err
+	}
+	if payload.Type == ActorTypeImpersonated {
+		operator := payload.Impersonator
+		if operator == nil || operator.Type != ActorTypeAuthenticated || operator.Impersonator != nil {
+			return nil, fmt.Errorf("impersonator must be ordinarily authenticated without another impersonator")
+		}
+		actor.impersonator, err = decodeActorIdentity(operator)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return actor, nil
+}
+
+func decodeActorIdentity(payload *_ActorPayload) (*_Actor, error) {
 	payload.Info = bytes.TrimSpace(payload.Info)
 	if payload.InfoSkelName == "" || !payload.Info.IsValid() || len(payload.Info) == 0 || payload.Info[0] != '{' {
 		return nil, fmt.Errorf("invalid actor info payload")
@@ -258,21 +277,16 @@ func decodeActorPayload(payload *_ActorPayload, depth int) (Actor, error) {
 		identifier:  payload.Identifier,
 		rawAuthInfo: payload.Info,
 	})
-	if payload.Type == ActorTypeImpersonated {
-		operator, err := decodeActorPayload(payload.Impersonator, depth+1)
-		if err != nil {
-			return nil, err
-		}
-		if !operator.IsAuthenticated() {
-			return nil, fmt.Errorf("impersonator must be authenticated")
-		}
-		actor.impersonator = operator.(*_Actor)
-	}
 	return actor, nil
 }
 
 func EncodeActorToBase64(metaActor Actor) string {
-	return encodePayloadToBase64(actorPayload(metaActor.(*_Actor)))
+	actor := metaActor.(*_Actor)
+	payload := actorPayload(actor)
+	if actor.impersonator != nil {
+		payload.Impersonator = actorPayload(actor.impersonator)
+	}
+	return encodePayloadToBase64(payload)
 }
 
 func actorPayload(actor *_Actor) *_ActorPayload {
@@ -284,9 +298,6 @@ func actorPayload(actor *_Actor) *_ActorPayload {
 	})
 	if actor.actorInfo != nil {
 		payload.InfoSkelName = actor.actorInfo.InfoSkelName
-	}
-	if actor.impersonator != nil {
-		payload.Impersonator = actorPayload(actor.impersonator)
 	}
 	return payload
 }

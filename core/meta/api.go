@@ -112,6 +112,7 @@ func NewAuthenticatedActor[I any](info I) Actor {
 
 // NewImpersonatedActor attaches an authenticated operator to an effective actor.
 // Realm, identifier, and info continue to describe the effective actor.
+// It panics unless both actors are ordinarily authenticated, without impersonation.
 func NewImpersonatedActor(actor Actor, impersonator Actor) Actor {
 	return internalmeta.NewImpersonatedActor(actor, impersonator)
 }

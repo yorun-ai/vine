@@ -2,6 +2,7 @@ package meta
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 	"uuid"
 )
@@ -145,8 +146,7 @@ func TestImpersonatedActorRoundTrip(t *testing.T) {
 	RegisterActor(ActorSpec{SkelName: "demo.User", InfoSkelName: "demo.UserInfo", InfoType: reflect.TypeFor[*_TestActorInfo]()})
 	effective := NewAuthenticatedActor(new(_TestActorInfo{Name: "user"}))
 	operator := NewAuthenticatedActorWithRawInfo("ops.Operator", "9007199254740993", "ops.OperatorInfo", []byte(`{"id":9007199254740993,"scope":"all"}`))
-	root := NewAuthenticatedActorWithRawInfo("ops.Root", "root", "ops.RootInfo", []byte(`{"id":"root"}`))
-	actor := NewImpersonatedActor(effective, NewImpersonatedActor(operator, root))
+	actor := NewImpersonatedActor(effective, operator)
 	if effective.IsImpersonated() || effective.Impersonator() != nil {
 		t.Fatal("constructor mutated effective actor")
 	}
@@ -166,8 +166,8 @@ func TestImpersonatedActorRoundTrip(t *testing.T) {
 		if op.Identifier() != "9007199254740993" || op.RawInfo() != operator.RawInfo() || op.Realm() != operator.Realm() {
 			t.Fatal("operator lost")
 		}
-		if op.Impersonator().Identifier() != "root" {
-			t.Fatal("nested operator lost")
+		if op.Type() != ActorTypeAuthenticated || op.Impersonator() != nil {
+			t.Fatal("operator must be ordinarily authenticated")
 		}
 		if _, ok := GetActorInfo[*_TestActorInfo](op); ok {
 			t.Fatal("unregistered operator confused with effective actor")
@@ -288,13 +288,6 @@ func TestActorLogFields(t *testing.T) {
 			"actorIdentifier":        "9007199254740993",
 			"impersonatorActorRealm": "demo.OpsActor",
 		}},
-		{name: "direct operator only", actor: NewImpersonatedActor(user, NewImpersonatedActor(operator, user)), want: map[string]any{
-			"actorType":                   "impersonated",
-			"actorRealm":                  "demo.UserActor",
-			"actorIdentifier":             "9007199254740993",
-			"impersonatorActorRealm":      "demo.OpsActor",
-			"impersonatorActorIdentifier": "ops-1",
-		}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got := map[string]any{}
@@ -303,6 +296,66 @@ func TestActorLogFields(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Fatalf("log fields = %#v, want %#v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewImpersonatedActorRejectsInvalidIdentities(t *testing.T) {
+	user := NewAuthenticatedActorWithRawInfo("demo.UserActor", "user", "demo.UserActorInfo", []byte(`{"id":"user"}`))
+	operator := NewAuthenticatedActorWithRawInfo("demo.OpsActor", "ops", "demo.OpsActorInfo", []byte(`{"id":"ops"}`))
+	impersonated := NewImpersonatedActor(user, operator)
+	for _, tc := range []struct {
+		name  string
+		actor Actor
+	}{
+		{name: "nil"},
+		{name: "absent", actor: NewAbsentActor()},
+		{name: "anonymous", actor: NewAnonymousActor()},
+		{name: "authenticating", actor: NewAuthenticatingActor()},
+		{name: "already impersonated", actor: impersonated},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assertPanics(t, func() { NewImpersonatedActor(tc.actor, operator) })
+			assertPanics(t, func() { NewImpersonatedActor(user, tc.actor) })
+		})
+	}
+	if user.IsImpersonated() || operator.IsImpersonated() || impersonated.Impersonator() != operator {
+		t.Fatal("rejected construction mutated an existing identity")
+	}
+}
+
+func TestDecodeActorRejectsNestedImpersonation(t *testing.T) {
+	identity := func(kind ActorType) *_ActorPayload {
+		return new(_ActorPayload{
+			Type:         kind,
+			Realm:        "demo.UserActor",
+			Identifier:   "user",
+			InfoSkelName: "demo.UserActorInfo",
+			Info:         []byte(`{"id":"user"}`),
+		})
+	}
+	nested := identity(ActorTypeImpersonated)
+	nested.Impersonator = identity(ActorTypeAuthenticated)
+	hiddenNested := identity(ActorTypeAuthenticated)
+	hiddenNested.Impersonator = identity(ActorTypeAuthenticated)
+	for _, tc := range []struct {
+		name     string
+		operator *_ActorPayload
+	}{
+		{name: "missing"},
+		{name: "nested", operator: nested},
+		{name: "nested with authenticated type", operator: hiddenNested},
+		{name: "impersonated without operator", operator: identity(ActorTypeImpersonated)},
+		{name: "anonymous", operator: identity(ActorTypeAnonymous)},
+		{name: "authenticating", operator: identity(ActorTypeAuthenticating)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			payload := identity(ActorTypeImpersonated)
+			payload.Impersonator = tc.operator
+			_, err := DecodeActorFromBase64(encodePayloadToBase64(payload))
+			if err == nil || !strings.Contains(err.Error(), "impersonator must be ordinarily authenticated") {
+				t.Fatalf("expected operator validation error, got %v", err)
 			}
 		})
 	}
